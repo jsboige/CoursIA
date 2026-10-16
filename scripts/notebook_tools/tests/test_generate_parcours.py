@@ -401,6 +401,88 @@ def _expected_total_minutes(manifest, catalog, branch_or_accretion_ids,
     return total
 
 
+class TestMlEngineerManifest:
+    """Tests pour le manifeste ML Engineer (#19545, EPIC #19543 pli 1).
+
+    Couvre : (a) tous les notebooks cites existent sur disque ;
+    (b) le manifeste compile en 7 branches + 5 accretions ;
+    (c) la duree totale tient en moins de 50 h ;
+    (d) pas de chemin absent du catalogue (le manifeste n'ajoute pas
+        de carnet orphelin non catalogue par generate_catalog).
+    """
+    manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "ml-engineer.json"
+
+    def test_all_selected_notebooks_exist_on_disk(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        selected = [path for group in manifest["branches"] + manifest["accretions"]
+                    for path in group["notebooks"]]
+        assert len(selected) == len(set(selected)), "duplicate path in manifest"
+        assert all((gp.REPO_ROOT / "MyIA.AI.Notebooks" / path).is_file()
+                   for path in selected), \
+            f"chemins introuvables sur disque: {[p for p in selected if not (gp.REPO_ROOT / 'MyIA.AI.Notebooks' / p).is_file()]}"
+
+    def test_all_paths_are_in_catalog(self):
+        """Le manifeste ne reference pas un carnet absent du catalogue.
+
+        Si une accretion n'est pas encore cataloguee (generate_catalog
+        gele), la verification de production compile_parcours echoue.
+        La regle est explicite : on n'indexe pas un carnet orphelin dans
+        un manifeste ; le drop ou la regeneration du catalogue relevent
+        d'un autre grain.
+        """
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        catalog_paths = {entry["path"] for entry in catalog}
+        selected = [path for group in manifest["branches"] + manifest["accretions"]
+                    for path in group["notebooks"]]
+        missing = [p for p in selected if p not in catalog_paths]
+        assert not missing, \
+            f"chemins absents du catalogue (regenerer ou drop): {missing}"
+
+    def test_compiles_seven_branches_and_five_accretions(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        branches = [b["id"] for b in manifest["branches"]]
+        accretions = [a["id"] for a in manifest["accretions"]]
+        compiled = gp.compile_parcours(catalog, manifest, branches, accretions)
+        assert len(compiled["groups"]) == len(branches) + len(accretions)
+        assert [g["id"] for g in compiled["groups"][:len(branches)]] == branches
+
+    def test_total_duration_under_50_hours(self):
+        """Le parcours complet tient en moins de 50 h, sinon c'est un autre format qu'un parcours."""
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = gp.compile_parcours(
+            catalog, manifest,
+            [b["id"] for b in manifest["branches"]],
+            [a["id"] for a in manifest["accretions"]],
+        )
+        assert compiled["duration_minutes"] < 50 * 60, (
+            f"duree totale {compiled['duration_minutes']} min >= 50 h, "
+            f"le parcours n'est plus un itineraire mais une encyclopedie"
+        )
+
+    def test_ingenierie_threading(self):
+        """Le fil d'ingenierie est explicite : les descriptions de branche
+        portent au moins une mention de reproductibilite / production /
+        mise en service / derive / cout sur les branches profondes.
+
+        Branches superficielles (donnees, workflow-ml) peuvent ne pas
+        le mentionner : le socle est universel.
+        """
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        keywords = ["reproductib", "production", "service", "déploy",
+                    "drift", "drift", "cout", "coût", "calibration", "deploiement"]
+        for branch in manifest["branches"]:
+            if branch["id"] in {"donnees", "workflow-ml"}:
+                continue
+            desc_lower = branch["description"].lower()
+            assert any(kw.lower() in desc_lower for kw in keywords), (
+                f"branche {branch['id']} sans mention d'ingenierie "
+                f"(reproductibilite/production/service/deploy/cout/calibration)"
+            )
+
+
 class TestActuariatManifest:
     manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "actuariat.json"
 
@@ -529,6 +611,107 @@ class TestActuariatManifest:
         assert after == baseline + 15
 
 
+class TestLlmEngineerManifest:
+    """Tests pour le manifeste LLM Engineer (#19544, EPIC #19543 pli 1).
+
+    Couvre : (a) tous les notebooks cites existent sur disque ;
+    (b) le manifeste compile en 8 branches + 6 accretions ;
+    (c) la duree totale est raisonnable ;
+    (d) les jumeaux .NET (10d/10e/10f) n'apparaissent qu'en detour, pas en branche principale.
+    """
+    manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "llm-engineer.json"
+
+    def test_all_selected_notebooks_exist_on_disk(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        selected = [path for group in manifest["branches"] + manifest["accretions"]
+                    for path in group["notebooks"]]
+        assert len(selected) == len(set(selected)), "duplicate path in manifest"
+        assert all((gp.REPO_ROOT / "MyIA.AI.Notebooks" / path).is_file()
+                   for path in selected)
+
+    def test_compiles_eight_branches_and_six_accretions(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        branches = [b["id"] for b in manifest["branches"]]
+        accretions = [a["id"] for a in manifest["accretions"]]
+        compiled = gp.compile_parcours(catalog, manifest, branches, accretions)
+        assert len(compiled["groups"]) == len(branches) + len(accretions)
+        assert [g["id"] for g in compiled["groups"][:len(branches)]] == branches
+
+    def test_total_duration_under_50_hours(self):
+        """Le parcours complet tient en moins de 50 h, sinon c'est un autre format qu'un parcours."""
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = gp.compile_parcours(
+            catalog, manifest,
+            [b["id"] for b in manifest["branches"]],
+            [a["id"] for a in manifest["accretions"]],
+        )
+        assert compiled["duration_minutes"] < 50 * 60, (
+            f"duree totale {compiled['duration_minutes']} min >= 50 h, "
+            f"le parcours n'est plus un itineraire mais une encyclopedie"
+        )
+
+    def test_dotnet_jumeaux_only_in_detour_not_main_branch(self):
+        """Les jumeaux .NET (10d, 10e, 10f) sont en detour, jamais en branche principale.
+
+        La consigne du pli 1 (issue #19544) : les jumeaux .NET apparaissent comme
+        detours, pas comme branche principale (l'apprenant Python doit pouvoir
+        suivre le parcours ; l'apprenant .NET a un point d'entree).
+        """
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        dotnet_jumeaux = ["10d", "10e", "10f"]
+        for branch in manifest["branches"]:
+            for path in branch["notebooks"]:
+                for code in dotnet_jumeaux:
+                    if code in path and "DotNet" in path:
+                        raise AssertionError(
+                            f"jumeau .NET {path} dans la branche principale {branch['id']}; "
+                            f"il devrait etre dans une accretion (detour)"
+                        )
+
+    def test_committed_compiled_json_reflects_full_selection(self):
+        """Le `compiled.json` committe doit refleter la selection COMPLETE du manifeste.
+
+        Defaut fondateur (revue ai-01 du 2026-10-09 a `5aad378cea`) : le fichier
+        livre avait ete produit avec les 8 branches SEULES, sans aucune `--accretion`.
+        Les 6 detours en etaient absents, dont les jumeaux .NET (10d/10e/10f) que
+        #19544 exige en detour. Les tests ci-dessus ne lisent que le manifeste :
+        l'ecart entre le manifeste et l'artefact livre ne pouvait donc pas lever.
+
+        La comparaison porte sur la SELECTION — ids, kinds, ordre, prerequis et
+        chemins de carnets, ce que le manifeste possede. Les champs derives du
+        catalogue (titre, duree) ne sont pas verrouilles : le catalogue se regenere
+        (#9377) et ferait rougir ce test pour une raison etrangere a la PR, meme
+        convention que `_expected_total_minutes` qui suit le catalogue plutot qu'un
+        instantane.
+        """
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        committed = json.loads(
+            (gp.REPO_ROOT / "docs" / "curriculum" / "llm-engineer.compiled.json")
+            .read_text(encoding="utf-8"))
+        generated = gp.compile_parcours(
+            catalog, manifest,
+            [b["id"] for b in manifest["branches"]],
+            [a["id"] for a in manifest["accretions"]],
+        )
+
+        def selection(compiled):
+            return [
+                (group["id"], group["kind"], tuple(group["prerequisites"]),
+                 tuple(notebook["path"] for notebook in group["notebooks"]))
+                for group in compiled["groups"]
+            ]
+
+        assert selection(committed) == selection(generated), (
+            "le compiled.json committe ne correspond pas a la selection du manifeste : "
+            "regenerer avec `python scripts/notebook_tools/generate_parcours.py "
+            "--manifest docs/curriculum/llm-engineer.json`, suivi de TOUTES les "
+            "`--branch` et de TOUTES les `--accretion` du manifeste"
+        )
+
+
 class TestFailClosedWrite:
     def test_manual_page_without_marker_is_refused_and_preserved(
             self, monkeypatch, tmp_path, capsys):
@@ -601,3 +784,130 @@ class TestFailClosedWrite:
         assert MANUAL_BODY.splitlines()[0] in poisoned.read_text(encoding="utf-8")
         summary = capsys.readouterr().err
         assert "genai.md" in summary
+
+
+# ---------------------------------------------------------------------------
+# resolve_moved_entries -- carnet renomme sur disque, catalogue en retard (#20552)
+# ---------------------------------------------------------------------------
+
+def _write_nb(path: Path, title: str, code: str) -> dict:
+    """Ecrit un carnet minimal (1 titre markdown, 1 cellule de code) et le rend."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    nb = {
+        "cells": [
+            {"cell_type": "markdown", "metadata": {}, "source": [f"# {title}\n"]},
+            {"cell_type": "code", "metadata": {}, "source": [code],
+             "outputs": [], "execution_count": None},
+        ],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    path.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    return nb
+
+
+def _stale_entry(path: str, code_sha: str) -> dict:
+    """Entree de catalogue dont le chemin n'existe plus (titre et chemin perimes)."""
+    return {
+        "path": path, "title": "GameTheory-03d — Titre perime", "serie": "GameTheory",
+        "maturity": "BETA", "status": "READY", "executable_locally": True,
+        "scientific_review_detail": {"code_sha": code_sha},
+    }
+
+
+class TestResolveMovedEntries:
+    OLD = "GameTheory/GameTheory-03e-Plan-de-deformation-Python.ipynb"
+    NEW = "GameTheory/Dynamics/Dynamics-09-Biens-Publics-Python.ipynb"
+
+    @pytest.fixture
+    def root(self, tmp_path):
+        root = tmp_path / "MyIA.AI.Notebooks"
+        root.mkdir()
+        return root
+
+    def test_moved_notebook_is_relocated_with_its_own_title(self, root):
+        nb = _write_nb(root / self.NEW, "Dynamics 09 — Biens publics", "x = 1\n")
+        entry = _stale_entry(self.OLD, generate_catalog.code_source_sha(nb))
+
+        [out] = gp.resolve_moved_entries([entry], root=root)
+
+        assert out["path"] == self.NEW
+        assert out["title"] == "Dynamics 09 — Biens publics"
+        # Les metadonnees curees de l'entree (maturite, exécutabilite) suivent.
+        assert out["maturity"] == "BETA"
+        assert out["executable_locally"] is True
+
+    def test_page_links_to_real_file_instead_of_bare_stale_label(
+            self, root, tmp_path, monkeypatch):
+        monkeypatch.setattr(gp, "REPO_ROOT", tmp_path)
+        nb = _write_nb(root / self.NEW, "Dynamics 09 — Biens publics", "x = 1\n")
+        entries = [_stale_entry(self.OLD, generate_catalog.code_source_sha(nb))]
+
+        located = gp.resolve_moved_entries(entries, root=root)
+        page = generate_parcours_page(
+            "recherche", filter_for_parcours(located, "recherche"))
+
+        assert (f"| 1 | [Dynamics 09 — Biens publics](../../MyIA.AI.Notebooks/{self.NEW}) "
+                "| BETA | Oui |") in page
+        assert "Titre perime" not in page
+        assert "GameTheory-03d" not in page
+
+    def test_ambiguous_identity_keeps_entry_untouched(self, root):
+        code = "x = 1\n"
+        nb = _write_nb(root / "GameTheory/Dynamics/A.ipynb", "A", code)
+        _write_nb(root / "GameTheory/Dynamics/B.ipynb", "B", code)
+        entry = _stale_entry(self.OLD, generate_catalog.code_source_sha(nb))
+
+        [out] = gp.resolve_moved_entries([entry], root=root)
+
+        assert out is entry, "deux candidats au meme code : pas d'attribution fiable"
+
+    def test_two_missing_entries_on_one_candidate_are_not_attributed(self, root):
+        nb = _write_nb(root / self.NEW, "Dynamics 09", "x = 1\n")
+        sha = generate_catalog.code_source_sha(nb)
+        first = _stale_entry(self.OLD, sha)
+        second = _stale_entry("GameTheory/GameTheory-03x-Copie-Python.ipynb", sha)
+
+        out = gp.resolve_moved_entries([first, second], root=root)
+
+        assert out == [first, second]
+
+    def test_candidate_already_indexed_is_not_a_move_target(self, root):
+        nb = _write_nb(root / self.NEW, "Dynamics 09", "x = 1\n")
+        sha = generate_catalog.code_source_sha(nb)
+        # Le catalogue indexe deja le carnet a son chemin : ce n'est pas un
+        # deplacement de l'entree manquante, c'est une copie.
+        indexed = {"path": self.NEW, "title": "Dynamics 09", "serie": "GameTheory",
+                   "maturity": "BETA", "status": "READY", "executable_locally": True,
+                   "scientific_review_detail": {"code_sha": sha}}
+        stale = _stale_entry(self.OLD, sha)
+
+        out = gp.resolve_moved_entries([indexed, stale], root=root)
+
+        assert out[1] is stale
+
+    def test_archived_copy_is_not_a_move_target(self, root):
+        nb = _write_nb(root / "GameTheory/archive/Dynamics-09-old.ipynb", "Dynamics 09",
+                       "x = 1\n")
+        entry = _stale_entry(self.OLD, generate_catalog.code_source_sha(nb))
+
+        [out] = gp.resolve_moved_entries([entry], root=root)
+
+        assert out is entry, "le catalogue n'indexe pas les archives : pas une cible"
+
+    def test_markdown_only_anchor_is_never_matched(self, root):
+        md_only = {"cells": [{"cell_type": "markdown", "metadata": {},
+                              "source": ["# Texte seul\n"]}],
+                   "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+        (root / self.NEW).parent.mkdir(parents=True)
+        (root / self.NEW).write_text(json.dumps(md_only), encoding="utf-8")
+        entry = _stale_entry(self.OLD, generate_catalog.code_source_sha(md_only))
+
+        [out] = gp.resolve_moved_entries([entry], root=root)
+
+        assert out is entry, "l'empreinte sans code n'identifie aucun carnet"
+
+    def test_entries_on_disk_are_returned_unchanged(self, root):
+        nb = _write_nb(root / self.NEW, "Dynamics 09", "x = 1\n")
+        entries = [_stale_entry(self.NEW, generate_catalog.code_source_sha(nb))]
+
+        assert gp.resolve_moved_entries(entries, root=root) is entries

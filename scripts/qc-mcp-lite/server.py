@@ -258,7 +258,9 @@ def list_backtests(project_id: int) -> dict:
 
 
 @mcp.tool()
-def create_project(name: str, language: str = "Py") -> dict:
+def create_project(
+    name: str, language: str = "Py", organization_id: Optional[str] = None
+) -> dict:
     """Create a new QC project. Returns projectId.
 
     ``language`` is "Py" (default) or "C#". The project is created in the
@@ -266,8 +268,18 @@ def create_project(name: str, language: str = "Py") -> dict:
     to deploy local-only baseline-clone strategies (e.g. QC Strategy Library
     references like LongShortHarvest) to QC Cloud so they can be compiled and
     backtested — ``create_file`` requires an existing project.
+
+    ``organization_id`` names the organization explicitly. It is the escape
+    from a saturated default org: the personal org runs a single backtest node,
+    so one wedged run makes every later ``create_backtest`` fail with "no spare
+    nodes available in your cluster" — including the re-scoped relaunch of the
+    very run that wedged. The field is omitted when not given, so the API keeps
+    assigning its own default and existing callers are unaffected.
     """
-    data = _api_post("/projects/create", {"name": name, "language": language})
+    body: dict[str, Any] = {"name": name, "language": language}
+    if organization_id:
+        body["organizationId"] = organization_id
+    data = _api_post("/projects/create", body)
     # QC returns {"projects": [{projectId, name, organizationId}], ...} — mirror
     # the read_project shape so callers get a consistent projectId field.
     projects = data.get("projects", [])

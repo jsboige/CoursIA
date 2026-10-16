@@ -137,7 +137,7 @@ attributions:
   # ===== Passe 7 — rescan du 2026-10-05 (PR #19186) =====
   - arxiv_id: "1603.06518"
     notebook: "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/10-empilements-borne-lp-cohn-elkies.ipynb"
-    cell_index: 23
+    cell_index: 24
     expected_citation: "*The sphere packing problem in dimension 24*, Annals **185** (2017) — [arXiv:1603.06518](https://arxiv.org/abs/1603.06518)"
     source_pr: "#19186"
     correction: "Empilements dimension 24 (Cohn-Kumar-Miller-Radchenko-Viazovska): identifiant 1603.04244 (Antinolo et al. 2016, astrochimie -- Reactivity of OH and CH3OH ... Barnard 1b) -> 1603.06518 (The sphere packing problem in dimension 24). Titre et auteurs etaient deja justes : seule l'attribution de l'ID etait fausse."

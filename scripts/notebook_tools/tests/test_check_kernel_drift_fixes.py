@@ -203,7 +203,7 @@ def test_diff_signatures_no_ids_production_path():
     }
     head_nb = {
         "cells": [
-            {"cell_type": "code", "outputs": [{"text": "[1.0, 0.9999999999999999, 1.0]"}]},
+            {"cell_type": "code", "outputs": [{"text": "[1.0, 0.9999999999999998, 1.0]"}]},
             {"cell_type": "code", "outputs": [{"text": "[2.0, 2.0, 2.0]"}]},
         ],
     }
@@ -442,7 +442,7 @@ def test_diff_signatures_md_before_modified_code():
         "cells": [
             _mk_md("md-1", "Titre MODIFIÉ"),
             _mk_code("code-1", "print([1.0, 1.0, 1.0])",
-                     "[1.0, 0.9999999999999999, 1.0]"),
+                     "[1.0, 0.9999999999999998, 1.0]"),
         ],
         "metadata": {},
     }
@@ -551,10 +551,10 @@ def test_diff_signatures_mixte_unchanged_two_codes_drifted():
         "cells": [
             _mk_md("md-1", "Titre inchangé"),
             _mk_code("code-1", "print([1.0, 1.0, 1.0])",
-                     "[1.0, 0.9999999999999999, 1.0]"),
+                     "[1.0, 0.9999999999999998, 1.0]"),
             _mk_md("md-2", "Sous-titre inchangé"),
             _mk_code("code-2", "print([2.0, 2.0])",
-                     "[2.0, 1.9999999999999998]"),
+                     "[2.0, 1.9999999999999996]"),
         ],
         "metadata": {},
     }

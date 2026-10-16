@@ -77,10 +77,10 @@ la **discrépance combinatoire** (distillation Bansal–Jiang 2025, arXiv:2508.0
 `±1` de systèmes d'ensembles de degré `≤ k`, borne de Beck–Fiala assemblée, borne inférieure
 d'Erdős–Spencer à constante explicite. Ses companions :
 
-- [Discrepancy-02-Komlos-Lean](Discrepancy/Discrepancy-02-Komlos-Lean.ipynb)
+- [Search-09e-Komlos-Lean](Part1-Foundations/Search-09e-Komlos-Lean.ipynb)
   — compagnon formel, kernel `lean4-wsl` : `#check` des énoncés du lake et témoins
   coloriés ±1 énumérés exhaustivement sur des instances jouet ;
-- [Discrepancy-01-BeckFiala-Lean-Python](Discrepancy/Discrepancy-01-BeckFiala-Lean-Python.ipynb)
+- [Search-09d-BeckFiala-Lean-Python](Part1-Foundations/Search-09d-BeckFiala-Lean-Python.ipynb)
   — pont Python vers le même lake (CP-SAT en oracle exact), sans Lean au runtime.
 
 ## Démarrage rapide

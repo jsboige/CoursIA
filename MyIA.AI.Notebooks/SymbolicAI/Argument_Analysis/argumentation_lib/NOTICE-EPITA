@@ -36,6 +36,7 @@ CoursIA copy
 | `_taxonomy_tree.py` (55 lines) | `argumentation_analysis/utils/taxonomy_tree.py` | ecfd9b9c (2026-09-29, dep transitive de taxonomy_navigator) |
 | `_plaintext_destination.py` (75 lines) | `argumentation_analysis/core/plaintext_destination.py` | ecfd9b9c (2026-09-29, dep transitive de fallacy_workflow_plugin) |
 | `_identification_models.py` (59 lines) | `argumentation_analysis/plugins/identification_models.py` | ecfd9b9c (2026-09-29, dep transitive de fallacy_workflow_plugin) |
+| `_delegating_selection.py` (204 lines) | `argumentation_analysis/core/strategies.py` (L134-L246, classe `DelegatingSelectionStrategy`) | ecfd9b9c (2026-09-29, ref pinned par issue #18393, NOT-VERBATIM : 1 token `ProjectManager` -> `ProjectManagerAgent` documente en en-tete du fichier, portee 3 PR #20338 review) |
 
 Rationale for verbatim import
 -----------------------------

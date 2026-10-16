@@ -319,19 +319,20 @@ def _serie(tmp_path, name, ids, links):
 
 
 class TestExternallyAnchored:
-    """Le statut d'entree est calcule sur le graphe GLOBAL : un lien venu d'une
-    AUTRE serie retire a un carnet son statut d'entree dans la sienne, sans
-    qu'aucune chaine interne ne le rattache -- il est alors reclasse
-    `unreachable` (cas fondateur 07-Aspire, arbitrage coordinateur option b,
-    PR #19075).
+    """Option (a) de l'arbitrage #19076 (coordinateur, 2026-10-11,
+    c.6114582529) : le statut d'entree se perd seulement par un lien entrant
+    INTRA-serie. Un lien venu d'une AUTRE serie (ancre externe, cas fondateur
+    07-Aspire) ne reclasse PLUS le carnet `unreachable` -- il reste ENTREE de
+    sa serie. La reachability reste globale.
 
-    `analyse` publie desormais les DEUX vues. Ces tests pinent les deux
-    moities, parce qu'une seule des deux serait un demi-fix :
-      - le VERDICT est inchange (le carnet reste `unreachable`, aucun
-        `orphan_entry` nouveau, aucun baseline a realigner) ;
-      - la DIVERGENCE est rapportee (`externally_anchored` + ses sources),
-        parce que c'est elle qui rend l'arbitrage (a)/(b) mesurable au lieu
-        d'etre re-decouvert a chaque nouveau lien inter-series.
+    Ces tests pinent les deux moities du comportement, parce qu'une seule
+    des deux serait un demi-fix :
+      - le VERDICT (option a) : le carnet ancre de l'exterieur reste
+        `orphan_entry` quand sa serie a plusieurs entrees, jamais
+        `unreachable` -- le reclassement de l'option b (PR #19075) est
+        abandonne ;
+      - la DIVERGENCE reste rapportee (`externally_anchored` + ses sources) :
+        l'ancre externe est une information de lecture, pas un classement.
     """
 
     SERIE = "MyIA.AI.Notebooks/Serie"
@@ -357,17 +358,19 @@ class TestExternallyAnchored:
         assert not any(k == "unreachable" for k, _ in kinds)
         assert rec["externally_anchored"] == []
 
-    def test_founder_shape_keeps_unreachable_and_reports_the_divergence(self, tmp_path):
-        # Etat APRES (#19075) : le lien inter-series a fait perdre a 07 son
-        # statut d'entree -> `unreachable`. Le verdict NE BOUGE PAS.
+    def test_founder_shape_keeps_entry_and_reports_the_anchor(self, tmp_path):
+        # Option (a) (#19076, c.6114582529) : le lien inter-series ne fait
+        # PLUS perdre a 07 son statut d'entree. Il reste `orphan_entry`
+        # (la serie a plusieurs entrees : 01 et 07), jamais `unreachable`.
         rec, findings = self._report(tmp_path, external_link=True)
         kinds = {(f["kind"], f["notebook"]) for f in findings}
-        assert ("unreachable", f"{self.SERIE}/07.ipynb") in kinds
-        assert not any(k == "orphan_entry" for k, _ in kinds), (
-            "la vue intra-serie est INFORMATIVE : elle ne doit pas ressusciter "
-            "un orphan_entry que l'arbitrage option b a reclasse"
+        assert not any(k == "unreachable" for k, _ in kinds), (
+            "une ancre externe ne reclasse plus un carnet unreachable "
+            "(option a de l'arbitrage #19076)"
         )
-        # ...et la divergence est nommee, avec sa source.
+        assert ("orphan_entry", f"{self.SERIE}/07.ipynb") in kinds
+        assert ("orphan_entry", f"{self.SERIE}/01.ipynb") in kinds
+        # ...et l'ancre externe reste nommee, avec sa source.
         assert rec["externally_anchored"] == [{
             "notebook": f"{self.SERIE}/07.ipynb",
             "sources": [f"{self.AUTRE}/Ext-1.ipynb"],

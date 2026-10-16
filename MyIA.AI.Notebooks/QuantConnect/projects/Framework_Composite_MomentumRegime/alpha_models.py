@@ -13,7 +13,7 @@ class SectorMomentumAlpha(AlphaModel):
     Monthly emission.
     """
 
-    def __init__(self, tickers):
+    def __init__(self, tickers, lookback_weights=None):
         super().__init__()
         self.name = "SectorMomentum"
         self.tickers = tickers
@@ -21,7 +21,7 @@ class SectorMomentumAlpha(AlphaModel):
         self.spy_sma200 = None
         self.lookback_windows = [21, 63, 126, 252]  # 1, 3, 6, 12 months
         self.max_lookback = max(self.lookback_windows)
-        self.lookback_weights = [0.4, 0.2, 0.2, 0.2]
+        self.lookback_weights = list(lookback_weights) if lookback_weights else [0.4, 0.2, 0.2, 0.2]
         self._last_month = -1
 
     def update(self, algorithm, data):
@@ -130,7 +130,7 @@ class RegimeSwitchingAlpha(AlphaModel):
     Monthly emission + regime-change trigger.
     """
 
-    def __init__(self, tickers):
+    def __init__(self, tickers, momentum_lookback=63):
         super().__init__()
         self.name = "RegimeSwitching"
         self.risky = ["SPY", "QQQ"]
@@ -141,7 +141,7 @@ class RegimeSwitchingAlpha(AlphaModel):
         self.sma200 = None
         self.rsi_indicators = {}
         self.current_regime = None
-        self.momentum_lookback = 63
+        self.momentum_lookback = momentum_lookback
         self.rsi_oversold = 30
         self.rsi_exit = 50
         self._last_month = -1

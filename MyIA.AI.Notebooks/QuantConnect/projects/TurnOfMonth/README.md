@@ -34,7 +34,7 @@ lean backtest --project .
 ## Files
 
 - `main.py` - Strategy (v2.1, confirmed best after 5 iterations)
-- `research.ipynb` - Calendar anomaly analysis and 9 hypothesis tests (H1-H9)
+- `research.ipynb` - Calendar anomaly analysis and 6 hypothesis tests (H1-H6)
 
 ## References
 

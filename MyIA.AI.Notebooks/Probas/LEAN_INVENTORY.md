@@ -41,7 +41,7 @@ et le `lakefile.lean`. La CI dédiée `lean-percolation.yml` porte
 `sorry-baseline: "0"` / `sorry-filter-mode: real` (dernier run `success`
 2026-09-24T23:31:21Z).
 
-⁴ Un notebook câblé : **`Applications/Percolation/Percolation-Lean.ipynb`** (compagnon
+⁴ Un notebook câblé : **`Applications/Percolation/Percolation-02-Lean.ipynb`** (compagnon
 exécutable du lake — cf. [`Applications/Percolation/README.md`](Applications/Percolation/README.md)).
 
 *(Historique : `Infer/gittins_lean`, stub non-buildable documenté ici autrefois, a été
@@ -145,7 +145,7 @@ l'application Percolation.
   - `Boundary.lean` — frontière isopérimétrique (tranche 4, le plus riche : 17
     théorèmes/lemmes au grep) ;
   - `Percolation.lean` — agrégateur racine.
-- **Notebook câblé** : `Applications/Percolation/Percolation-Lean.ipynb` (compagnon
+- **Notebook câblé** : `Applications/Percolation/Percolation-02-Lean.ipynb` (compagnon
   exécutable, cf. #14871 / #14927).
 
 ---

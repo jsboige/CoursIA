@@ -73,6 +73,23 @@ Limites honnetes :
     Windows le kill ne vise que le processus fils direct -- suffisant pour
     les tests (enfants mono-processus), non deploye en CI (jambe ubuntu).
 
+Mode 3 -- crash de collecte xdist (#19915) : la signature
+``INTERNALERROR> KeyError: <WorkerController gwN>`` survient en phase de
+collecte, AVANT qu'aucune ligne de progression pytest (``[ NN%]``) ne soit
+emise. Le mode 1 (silence) ne peut pas la detecter -- pytest emet
+``replacing crashed worker gwN`` en continu, la sortie n'est jamais muette,
+le silence ne se produit pas. La jambe echoue normalement par
+``INTERNALERROR>`` non couvert. Mesure (2026-10-08, 7/10 des rouges Scripts
+Tests CPU) : worker gw8 le plus frequent, suivi de gw9.
+
+Le mode 3 distingue un crash de collecte d'un test qui echoue en regardant
+le marqueur ``KeyError: <WorkerController`` : des qu'on l'a vu ET qu'aucune
+ligne de progression pytest n'a ete observee, c'est un crash de
+collecte, pas un echec de test -- le run doit etre tue et signale comme
+tel, pas laisse finir pour avoir un ``exit 1`` sans diagnostic. Verdict
+distinct (``COLLECT_CRASH_EXIT = 4``) pour que le triage post-mortem
+puisse separer cette signature du silence mode 1.
+
 Usage :
 
   python scripts/ci/xdist_watchdog.py --idle-limit 480 -- pytest <paths> \\
@@ -96,10 +113,29 @@ import time
 NODE_DOWN_RE = re.compile(r"\[(gw\d+)\][^\n]*node down", re.IGNORECASE)
 REPLACING_RE = re.compile(r"replacing crashed worker (gw\d+)", re.IGNORECASE)
 
+# Mode 3 (#19915) : crash de collecte xdist. La signature
+# ``KeyError: <WorkerController gwN>`` survient dans la trace
+# ``INTERNALERROR>`` quand un worker mort perd sa reference dans le
+# scheduler du master. On capture le nom du worker, et on note la
+# collision en collision_workers pour dedoublonner (le meme worker peut
+# apparaitre plusieurs fois dans la trace).
+COLLECT_CRASH_RE = re.compile(
+    r"KeyError:\s*<WorkerController\s+(gw\d+)>", re.IGNORECASE
+)
+
 # Derniere progression pytest sous -q : "[ 57%]" en fin de ligne de points.
 PROGRESS_RE = re.compile(r"\[\s?\d+%\]")
 
 VERDICT_PREFIX = "XDIST-WATCHDOG"
+
+# Mode 3 : on declare un crash de collecte des qu'on a vu le marqueur
+# KeyError ET qu'aucune ligne de progression pytest n'a ete observee.
+# Le seuil de 1 (un seul marqueur suffit) est preferable a un seuil
+# cumulatif : le defaut est que la trace INTERNALERROR est courte --
+# parfois un seul KeyError, puis INTERNALERROR sort et pytest termine
+# sur exit 1 sans plus jamais rien emettre. Attendre un second marqueur
+# manquerait les cas ou la premiere collision est LA collision.
+COLLECT_CRASH_MIN = 1
 
 # Prefixe qui fait du verdict une ANNOTATION du check-run, pas seulement une
 # ligne de log. C'est la seule surface par laquelle un lecteur -- humain ou
@@ -128,6 +164,12 @@ ANNOTATION_PREFIX = "##[error]"
 
 EXIT_BLOCKED = 3  # distinct des exits pytest usuels pour le triage post-mortem
 
+# Mode 3 (#19915) : distinct de EXIT_BLOCKED pour qu'un triageur puisse
+# separer les deux classes de defaut (silence mode 1 vs crash de collecte
+# mode 3) sans lire le verdict en clair. La convention est tenue par
+# `classify_job_deaths.py` : un seul code d'exit par signature.
+EXIT_COLLECT_CRASH = 4
+
 
 class _StreamState:
     """Etat partage entre le fil de lecture et la boucle de surveillance."""
@@ -142,6 +184,12 @@ class _StreamState:
         # de fin de parcours sans \n) sont le signe d'un run VIVANT -- le
         # verdict doit pouvoir les citer apres coup.
         self.byte_count = 0
+        # Mode 3 (#19915) : crash de collecte xdist. On cumule les
+        # collisions observees et la liste des workers tombes sur la
+        # signature ``KeyError: <WorkerController gwN>``. La liste
+        # collision_workers sert au verdict final.
+        self.collect_crash_count = 0
+        self.collision_workers: list[str] = []
 
     def record_bytes(self, nbytes: int) -> None:
         """Fraicheur par OCTET, pas par ligne complete (mode 2).
@@ -172,10 +220,38 @@ class _StreamState:
             m = REPLACING_RE.search(line)
             if m and m.group(1) not in self.dead_workers:
                 self.dead_workers.append(m.group(1))
+            # Mode 3 (#19915) : on note la collision ; la decision de tuer
+            # est prise dans la boucle de surveillance (apres le seuil),
+            # pas ici -- on ne decide jamais d'arreter le run depuis le fil
+            # de lecture.
+            m = COLLECT_CRASH_RE.search(line)
+            if m:
+                self.collect_crash_count += 1
+                if m.group(1) not in self.collision_workers:
+                    self.collision_workers.append(m.group(1))
 
     def idle_for(self) -> float:
         with self.lock:
             return time.monotonic() - self.last_output
+
+    def collect_crash_detected(self) -> bool:
+        """Mode 3 (#19915) : Vrai si le marqueur ``KeyError: <WorkerController``
+        a ete observe ET qu'aucune ligne de progression pytest (``[ NN%]``)
+        n'a encore ete vue.
+
+        Pourquoi la conjonction : un test qui echoue peut etre suivi d'un
+        KeyError dans la trace (rare, mais possible si le test a corrompu
+        l'etat du master). Si la progression ``[ NN%]`` est deja passee,
+        c'est un test qui a produit du resultat -- le crash n'est plus un
+        crash de collecte, c'est un crash en cours de route. Le diagnostic
+        est different (test defectueux vs collecte impossible) et le
+        verdict doit le nommer.
+        """
+        with self.lock:
+            return (
+                self.collect_crash_count >= COLLECT_CRASH_MIN
+                and self.last_progress_line is None
+            )
 
 
 # Taille d'un chunk de lecture du tube. Un seul os.read = un seul appel
@@ -288,12 +364,36 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
                 _kill_tree(proc)
                 proc.wait(timeout=30)
                 return EXIT_BLOCKED
+            # Mode 3 (#19915) : un crash de collecte detecte avant
+            # qu'aucun progres pytest ne soit emis = le run va finir sur
+            # un exit 1 ININTERPRETABLE (pas un test qui echoue, pas un
+            # blocage par silence, mais une collision interne du master
+            # xdist). On tue tout de suite, on nome la collision, on
+            # laisse le CI rejouer le job (le defaut est transient :
+            # aucun des 7 cas signes sur 10 rouges echantillonnes ne
+            # s'est reproduit a la 2e tentative, cf issue #19915).
+            if state.collect_crash_detected():
+                _verdict_collect_crash(state, idle, started, emit)
+                _kill_tree(proc)
+                proc.wait(timeout=30)
+                return EXIT_COLLECT_CRASH
             time.sleep(0.5)
     finally:
         # Le fils est mort ou tue : le lecteur atteint l'EOF, on ne bloque pas
         # la sortie du wrapper sur un pipe theoriquement ouvert.
         reader.join(timeout=10)
 
+    # La conjonction est re-testee UNE FOIS la boucle sortie. Sans ce
+    # controle la course est ouverte : la boucle teste tous les 0,5 s et
+    # ``break`` des que le fils est mort, or sur le corpus l'ecart entre la
+    # ligne ``KeyError`` et la sortie du processus va de 0,21 a 0,75 s
+    # (12 runs mesures) -- 9 des 12 tombent SOUS le tick. Le fils sortait
+    # donc avant la premiere evaluation et le wrapper rendait le code du
+    # fils SANS verdict : exactement l'exit 1 ininterpretable que le mode 3
+    # existe pour supprimer (revue Hermes du 2026-10-08, PR #19917).
+    if state.collect_crash_detected():
+        _verdict_collect_crash(state, 0.0, started, emit)
+        return EXIT_COLLECT_CRASH
     return proc.returncode if proc.returncode is not None else EXIT_BLOCKED
 
 
@@ -317,6 +417,34 @@ def _verdict_blocked(state: _StreamState, idle: float, idle_limit: float,
          f"de processus")
 
 
+def _verdict_collect_crash(state: _StreamState, idle: float,
+                           started: float, emit=_emit) -> None:
+    """Verdict mode 3 (#19915) : crash de collecte xdist, collision
+    WorkerController perdue. Tenu a cote de ``_verdict_blocked`` parce que
+    la classe de defaut est distincte (collision interne du master, pas
+    silence de sortie) et le triage post-mortem depend du code d'exit.
+    """
+    wall = time.monotonic() - started
+    collisions = (
+        ", ".join(state.collision_workers)
+        if state.collision_workers
+        else "aucun worker nomme dans la collision (signature capturee "
+        "sans match de nom -- verifier la regex)"
+    )
+    emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: COLLECT_CRASH -- "
+         f"{state.collect_crash_count} collision(s) "
+         f"``KeyError: <WorkerController>`` detectee(s) avant le premier "
+         f"progres pytest, signature #19915 (collecte xdist impossible)")
+    emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: workers en collision : "
+         f"{collisions} ; wall du wrapper {wall:.0f} s, {state.line_count} "
+         f"lignes ({state.byte_count} octets) emises au total, idle observe "
+         f"{idle:.0f} s")
+    emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: arret du groupe de "
+         f"processus -- le CI doit rejouer le job (defaut transient : "
+         f"aucun des 7 cas signes sur 10 rouges echantillonnes ne s'est "
+         f"reproduit a la 2e tentative, mesure du 2026-10-08)")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Execute une commande et la tue si sa sortie se tait "
@@ -336,6 +464,8 @@ def main(argv: list[str] | None = None) -> int:
 
     code = run(cmd, args.idle_limit)
     if code == EXIT_BLOCKED:
+        return 1
+    if code == EXIT_COLLECT_CRASH:
         return 1
     return code
 

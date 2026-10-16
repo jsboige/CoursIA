@@ -433,7 +433,7 @@ def _self_test() -> int:
 
     # "se prouve" : toujours fautif
     if is_prouve_legitimate("se "):
-        failures.append("'se prouve' devrait etre fautif (cf Tell c.1315-L15)")
+        failures.append("'se prouve' devrait etre fautif")
 
     # Locution "etant donne" : legitime DANS la phrase courante (#17523)
     if not is_donne_legitimate("Etant donne les contraintes, le probleme est complexe pour "):

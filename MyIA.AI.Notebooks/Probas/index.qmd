@@ -69,6 +69,7 @@ listing:
     page-size: 24
   - id: standalone-root
     contents:
+      - "Probas-KLS-Concentration.ipynb"
       - "Applications/Pyro_RSA_Hyperbole.ipynb"
       - "Applications/Percolation/Percolation-Supercritique.ipynb"
       - "Applications/Percolation/Percolation-Lean.ipynb"

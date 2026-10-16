@@ -6,7 +6,7 @@ Source : mandat user **#9377** — « les données quantitatives doivent être t
 
 ## La frontière est la machine-dépendance, pas « nombre + unité »
 
-Arbitrage **#9434** (2026-08-06). Une valeur en `ms`/`sec`/`min` n'est pas toujours un runtime à retirer : la classe **donnée en unité de temps** regroupe les valeurs qui portent une unité de temps mais restent **déterministes** — moyenne statistique de données (postérieur bayésien, moyenne de trajets Infer-101 `15.33 min`), longueur d'un contenu (durée d'un clip `30 sec`), estimation pédagogique humaine (`Durée : ~2 h`). Elles ne dérivent ni avec la machine ni au re-run ; les retirer détruit du contenu pédagogique réel.
+Arbitrage **#9434** (2026-08-06). Une valeur en `ms`/`sec`/`min` n'est pas toujours un runtime à retirer : la classe **donnée en unité de temps** regroupe les valeurs qui portent une unité de temps mais restent **déterministes** — moyenne statistique de données (postérieur bayésien, moyenne de trajets cycliste dans `Infer-1b-Premiers-Modeles.ipynb` `15.33 min`), longueur d'un contenu (durée d'un clip `30 sec`), estimation pédagogique humaine (`Durée : ~2 h`). Elles ne dérivent ni avec la machine ni au re-run ; les retirer détruit du contenu pédagogique réel.
 
 Critère discriminateur : *« cette valeur changerait-elle si je ré-exécutais le notebook sur une autre machine ? »* — non pour un data-unit, oui pour un runtime.
 

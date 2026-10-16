@@ -411,3 +411,44 @@ def test_mismatches_temoin_negatif_renommage_rougit(monkeypatch):
     assert any("guard-renomme-dans-le-registre" in p for p in problems), (
         f"Renommage non detecte. Problems : {problems}"
     )
+
+
+def test_retirer_tranche10_du_registre_re_exige_la_tranche(monkeypatch):
+    """Le registre est l'unique source de verite des exemptions (Hermes #19207).
+
+    Reserve Hermes (review au head b6c2e61162) : le filet ne doit PAS porter
+    de copie locale des constantes d'exemption. Le temoin monkeypatche la
+    constante du REGISTRE -- jamais un alias du filet -- pour prouver que la
+    liaison est vivante : retirer TRANCHE10 de
+    `fast_lane_registry.TRANCHE_ALIGNMENT_EN_COURS` (le geste naturel a la
+    fin du programme #12567) doit faire reagir le filet dans la MEME
+    execution, sans aucune modification locale. Une copie figee (ou un
+    `from ... import` alias) laisserait le vert vert pour la mauvaise
+    raison.
+    """
+    import sys
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
+    import fast_lane_registry as fl_reg
+
+    tranche10 = [
+        g for g in getattr(fl_reg, "TRANCHE10", [])
+        if g.source != fl_reg.FAST_LANE_NATIVE
+    ]
+    assert tranche10, "TRANCHE10 vide : le temoin ne prouverait rien"
+    tranche10_names = {g.name for g in tranche10}
+
+    # Etat reel (constante du registre non patchee) : TRANCHE10 est exempte.
+    demanded_before = {g.name for g in caci.absorbed_guards()}
+    assert not (tranche10_names & demanded_before), (
+        f"TRANCHE10 exigee alors qu'elle est declaree en alignement en "
+        f"cours dans le registre : {sorted(tranche10_names & demanded_before)}"
+    )
+
+    # Retrait de TRANCHE10 de l'exemption REGISTRE : le filet doit l'exiger.
+    monkeypatch.setattr(fl_reg, "TRANCHE_ALIGNMENT_EN_COURS", frozenset())
+    demanded_after = {g.name for g in caci.absorbed_guards()}
+    assert tranche10_names <= demanded_after, (
+        f"TRANCHE10 retiree du registre mais toujours non exigee par le "
+        f"filet -- le filet ne lit pas la constante registre au moment de "
+        f"l'appel. Manquants : {sorted(tranche10_names - demanded_after)}"
+    )

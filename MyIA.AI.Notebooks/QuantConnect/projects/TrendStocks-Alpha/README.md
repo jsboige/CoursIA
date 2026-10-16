@@ -20,7 +20,7 @@ lean backtest --project .
 
 **QC Cloud:** Open project 28885507 in the QuantConnect IDE and click "Backtest".
 
-## Backtest Metrics (2015-2026)
+## Backtest Metrics (2020-2025)
 
 | Metric | Value |
 |--------|-------|
@@ -28,6 +28,8 @@ lean backtest --project .
 | Benchmark | SPY |
 | Rebalance | Weekly |
 | Universe | 15 large-cap stocks |
+
+Source : reproduction QuantBook (`quantbook.ipynb`, Sharpe 0.609 sur 2020-2025). Run cloud de sweep enregistré : Sharpe 0.512, CAGR 15.73 %, MaxDD 39.6 % (`docs/qc/qc-strategies-status.md` l.262).
 
 ## Files
 

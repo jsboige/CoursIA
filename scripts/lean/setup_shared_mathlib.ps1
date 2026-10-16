@@ -131,6 +131,34 @@ function Test-IsJunction([string]$Path) {
     return [bool]($item.Attributes -band [IO.FileAttributes]::ReparsePoint)
 }
 
+# --- Cible d'une jonction (#13962) ---
+# `Test-IsJunction` repond a « un lien existe-t-il ? », jamais a « vers quoi pointe-t-il ? ».
+# Un membre dont la jonction vise un cache ETRANGER ou PERIME (autre groupe, cible disparue)
+# reste casse alors que les deux modes le declarent sain : `Scan` affichait `JUNCTIONED` et
+# `Apply` « junction existante », sans jamais relire la cible -- le geste cense reparer ne
+# repointait rien. Mesure po-2025 (2026-10-09) : apres un `Apply` rc=0 qui a repeuple le cache
+# du groupe et restaure 21 lakes, `percolation_lean` et `argumentation_lean` pointaient encore
+# sur `leanprover_lean4_v4.32.1-520045ab\mathlib`, cache vide d'un groupe etranger, alors que
+# les deux sont membres `db584cd6` (toolchain `leanprover/lean4:v4.33.0`).
+# Symetrique cote mesure : `scripts/lean/check_mathlib_cache.py` (meme angle mort, corrige le
+# 2026-10-08, jonctions pendantes 14 -> 0).
+
+function Get-JunctionTarget([string]$Path) {
+    if (-not (Test-IsJunction $Path)) { return $null }
+    $item = Get-Item -LiteralPath $Path -Force
+    $t = @($item.Target) | Where-Object { $_ } | Select-Object -First 1
+    if (-not $t) { return $null }
+    return ([string]$t) -replace '^\\\\\?\\', ''
+}
+
+function Test-JunctionPointsTo([string]$Path, [string]$Expected) {
+    $t = Get-JunctionTarget $Path
+    if (-not $t) { return $false }
+    $a = $t.TrimEnd('\')
+    $b = ([string]$Expected).TrimEnd('\')
+    return [string]::Equals($a, $b, [StringComparison]::OrdinalIgnoreCase)
+}
+
 # --- Discovery : tous les projets Lake traques par git (lake-manifest.json) ---
 
 function Get-LeanProjects {
@@ -230,6 +258,7 @@ function Invoke-Scan {
     foreach ($g in $groups) {
         $members = @($g.Group)
         $groupId = Get-GroupId $members
+        $cacheMathlib = Join-Path (Join-Path $CacheRoot $groupId) 'mathlib'
         $shareable = $members.Count -ge 2
         $tag = if ($shareable) { 'MUTUALISABLE' } else { 'isole' }
         Write-Host "--- Groupe $groupId [$tag] : toolchain=$($members[0].Toolchain) mathlib=$($members[0].MathlibRev.Substring(0,8)) ---"
@@ -237,7 +266,13 @@ function Invoke-Scan {
         $sizes = @{}
         foreach ($m in $members) {
             $status =
-                if ($m.IsJunction) { 'JUNCTIONED' }
+                if ($m.IsJunction) {
+                    # (#13962) « un lien existe » n'est pas « le lien est bon » : la cible se lit.
+                    $tgt = Get-JunctionTarget $m.MathlibDir
+                    if (Test-JunctionPointsTo $m.MathlibDir $cacheMathlib) { 'JUNCTIONED' }
+                    elseif (-not $tgt -or -not (Test-Path -LiteralPath $tgt)) { 'JONCTION PENDANTE (cible disparue)' }
+                    else { "JONCTION PERIMEE -> $tgt" }
+                }
                 elseif ($m.HasCheckout) {
                     $sz = Get-DirSizeGB $m.MathlibDir
                     $sizes[$m.RelPath] = $sz
@@ -355,7 +390,20 @@ function Invoke-Apply {
                 $hadBackup = Test-Path -LiteralPath "$($m.MathlibDir)$BackupSuffix"
                 $prev = $existing | Where-Object { $_.relPath -eq $m.RelPath }
                 $isDonor = [bool]($prev -and $prev.isDonor)
-                Write-Host "  junction existante : $($m.RelPath) $(if ($hadBackup) { '(backup conserve)' })"
+                if (Test-JunctionPointsTo $m.MathlibDir $cacheMathlib) {
+                    Write-Host "  junction existante : $($m.RelPath) $(if ($hadBackup) { '(backup conserve)' })"
+                } else {
+                    # (#13962) Une jonction perimee n'est pas une jonction faite : elle vise un
+                    # cache etranger (autre groupe) ou disparu, et le membre restait casse a
+                    # travers l'Apply. `rmdir` ne retire QUE le lien -- la cible n'est jamais
+                    # touchee, meme absente (cf en-tete du script, mode Rollback).
+                    $staleTarget = Get-JunctionTarget $m.MathlibDir
+                    & cmd /c rmdir "$($m.MathlibDir)"
+                    New-Item -ItemType Junction -Path $m.MathlibDir -Target $cacheMathlib | Out-Null
+                    Write-Host "  junction REPOINTEE : $($m.RelPath)"
+                    Write-Host "     ancienne cible : $staleTarget"
+                    Write-Host "     nouvelle cible : $cacheMathlib"
+                }
             } else {
                 if (Test-Path -LiteralPath $m.MathlibDir) {
                     $bak = "$($m.MathlibDir)$BackupSuffix"

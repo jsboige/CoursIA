@@ -67,3 +67,26 @@ le commit, le SHA1 et le SHA-256 ci-dessus, ainsi que
 `SCENARII_UPSTREAM_COMMIT` et `SCENARII_BLOB_SHA1` dans le constructeur. Ne
 jamais éditer le CSV à la main : le constructeur le refuserait, et la copie
 cesserait d'être verbatim.
+
+Ancrage de reproductibilité côté dépôt (mesure po-2023 du 2026-10-08, #17578)
+---------------------------------------------------------------------------
+
+Le gitlink du sous-module Argumentum sur `main` a dérivé après la construction
+du dataset de Phase 2 (`0ab05d66` le 17/09 → `65af9c38` le 06/10 → puis
+d'avantage) : un `git submodule update` au moment de la lecture ne rend PAS
+l'entrée que le manifeste de Phase 2 épingle. Ce n'est pas une perte de
+reproductibilité — le constructeur lit **cette copie verbatim in-repo**, pas le
+sous-module vivant — mais la reproductibilité doit se lire depuis un commit que
+le dépôt atteint réellement :
+
+- commit du build (entrée du dataset sur `main`) : `4e0f5a103f404dba5ed27d3e9a1cd0b982de7cfe`
+- gitlink Argumentum à ce commit : `0ab05d66576a1007c3952a67e2dd1eaf8f9b502c`
+  (encore égal au pin amont au moment du build)
+
+Ces deux valeurs sont portées par le manifeste (`sources.build_repo_commit`,
+`sources.build_gitlink_commit`) et par les constantes `BUILD_REPO_COMMIT` /
+`BUILD_GITLINK_COMMIT` du constructeur ; le test
+`test_build_gitlink_matches_repo_commit_tree` vérifie leur cohérence contre
+l'arbre du commit. Une resynchronisation (section ci-dessus) régénère le
+dataset et met ces constantes à jour : la dérive du gitlink courant, elle, ne
+change rien au dataset tant que la procédure n'est pas rejouée.

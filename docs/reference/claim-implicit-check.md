@@ -9,10 +9,15 @@
 > 2026-09-01, acceptance **#14300**. Partial delivery c.925.
 
 Ce document fixe la procédure manuelle **en 3 étapes** que chaque worker applique
-avant d'éditer un fichier sur un grain substantiel. Une implémentation outillée
-(`scripts/check_lane_claim.py --check-implicit`, ex. #14300 suite) reste à livrer
-en suivi — le script sait déjà ce que cette procédure énonce, il ne sait pas
-encore l'**imposer** comme garde.
+avant d'éditer un fichier sur un grain substantiel. Depuis #14300, l'organe
+`check_lane_claim.py` rend lui-même le verdict en **mode issue** : quand aucune
+lane n'a posé de marqueur mais qu'une **PR ouverte d'une autre lane référence
+l'issue**, la sortie porte `IMPLICIT` (chemins nommés, exit 3 — distinct de
+CLEAR/0, BLOCKED/1 et de l'erreur io/gh/2) et `pick_idle_grain.py` retire le
+candidat du tirage. La procédure manuelle reste la règle pour le cas **mode
+chemins** (`--paths`, déjà couvert par la jambe #16570) et pour toute édition
+hors grain : l'organe voit les PRs qui *référencent l'issue*, pas celles qui
+touchent un chemin sans le citer.
 
 ## 1. Pourquoi — le tell fondateur
 

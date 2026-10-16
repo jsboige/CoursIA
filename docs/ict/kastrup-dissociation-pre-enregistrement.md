@@ -114,6 +114,6 @@ Le prototype [`strates-as-adjunctions-prototype.md`](strates-as-adjunctions-prot
 2. Le banc `MyIA.AI.Notebooks/IIT/ICT-Series/ict/kastrup_dissociation.py` + tests `ict/tests/test_kastrup_dissociation.py` + mesures `ict/results/kastrup_dissociation_results.json` vivront dans un commit fils, avec la ligne matrice case 18 mise à jour au statut `TESTÉ (...)` dans la même PR.
 3. Verdict rapporté sur [#8182](https://github.com/jsboige/CoursIA/issues/8182) avec les mesures brutes par graine. La veille ne se clôt pas sur une tranche.
 
----
+***
 
 **Statut : SCELLÉ (v4 — §6bis estimateur à décalages · §6ter observables au niveau alter + calibration gelée p_out=0.02 β_scale=0.3 · §6quater budget d'évocation préservé ; bandes v1 inchangées) — 2026-09-29, RUN EXÉCUTÉ.** Verdict : **NON_CONCLUSIF (null b)** — P1/P2/P3 toutes tenues sur les 5 graines (ratios P1 0.91-0.99, `|ρ_direct(1|env)|` ≤ 0.007, `ρ_env` 0.87-0.92), l'instrument voit le canal direct au repos (null a : 0.36-0.45), mais le bras dommage aléatoire passe P1 à 0.91-0.98 : à cette calibration, l'intégration intra des agrégats est portée par l'immersion environnementale commune, pas par le placement clusterisé de la masse — la structure n'est **pas prouvée** load-bearing. Mesures brutes : `ict/results/kastrup_dissociation_results.json`.
