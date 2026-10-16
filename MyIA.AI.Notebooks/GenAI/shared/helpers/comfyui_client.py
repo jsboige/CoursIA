@@ -1000,7 +1000,8 @@ def load_from_env(env_path: Optional[Path] = None) -> ComfyUIClient:
                 try:
                     file_token = secrets_file.read_text(encoding='utf-8').strip()
                     if file_token:
-                        print(f"✅ Token chargé depuis {secrets_file}")
+                        # Chemin relatif seulement : le chemin absolu fuiterait la machine dans les outputs
+                        print(f"✅ Token chargé depuis .secrets/{secrets_file.name}")
                         api_token = file_token
                         break
                 except Exception as e:
@@ -1038,3 +1039,97 @@ def create_client(config: Optional[ComfyUIConfig] = None) -> ComfyUIClient:
         base_url=config.base_url,
         api_token=config.api_token
     )
+
+
+# --- Workflows Qwen-Image 2.1 versionnes (fichiers au format UI) -------------
+# Les fichiers de scripts/genai-stack/workflows/qwen_image_2_1/ sont la source de
+# verite des graphes (palier INT8 versionne). L'API /prompt attend le format
+# "API" (dict node_id -> {class_type, inputs}) : ces fonctions font la conversion
+# pour les noeuds natifs utilises par ces workflows.
+
+WIDGETS_NOMMES_QWEN_IMAGE = {
+    "UNETLoader": ["unet_name", "weight_dtype"],
+    "CLIPLoader": ["clip_name", "type", "device"],
+    "VAELoader": ["vae_name"],
+    "CLIPTextEncode": ["text"],
+    "KSampler": ["seed", "control_after_generate", "steps", "cfg",
+                 "sampler_name", "scheduler", "denoise"],
+    "EmptyLatentImage": ["width", "height", "batch_size"],
+    "SaveImage": ["filename_prefix"],
+    "ResolutionSelector": ["aspect_ratio", "megapixels", "multiple"],
+    "VAEDecode": [],
+    "ConditioningZeroOut": [],
+    "PreviewImage": [],
+}
+
+
+def dossier_workflows_qwen_image_2_1(depuis: Optional[Path] = None) -> Path:
+    """Localise scripts/genai-stack/workflows/qwen_image_2_1 en remontant depuis `depuis`.
+
+    Args:
+        depuis: point de depart (defaut: repertoire courant)
+
+    Returns:
+        Chemin absolu du dossier des workflows
+
+    Raises:
+        FileNotFoundError: si le dossier n'est pas trouve dans les 6 niveaux parents
+    """
+    depart = Path(depuis or Path.cwd()).resolve()
+    courant = depart
+    for _ in range(6):
+        candidat = courant / "scripts" / "genai-stack" / "workflows" / "qwen_image_2_1"
+        if candidat.is_dir():
+            return candidat
+        courant = courant.parent
+    raise FileNotFoundError(
+        "scripts/genai-stack/workflows/qwen_image_2_1 introuvable depuis " + str(depart)
+    )
+
+
+def charger_workflow_ui(chemin) -> Dict[str, Any]:
+    """Charge un workflow ComfyUI au format UI (celui des fichiers versionnes)."""
+    return json.loads(Path(chemin).read_text(encoding="utf-8"))
+
+
+def ui_vers_api(workflow_ui: Dict[str, Any]) -> Dict[str, Any]:
+    """Convertit un workflow au format UI en prompt au format API (/prompt).
+
+    Les valeurs des widgets suivent l'ordre declare dans WIDGETS_NOMMES_QWEN_IMAGE ;
+    une entree reliee a un lien est remplacee par [node_id_source, slot].
+
+    Raises:
+        KeyError: si un noeud du graphe n'est pas couvert par la table des widgets.
+    """
+    noeuds = {n["id"]: n for n in workflow_ui["nodes"]}
+    liens = {l[0]: (l[1], l[2]) for l in workflow_ui["links"]}
+    prompt: Dict[str, Any] = {}
+    for nid, noeud in noeuds.items():
+        classe = noeud["type"]
+        if classe in ("MarkdownNote", "Note"):
+            continue
+        if classe not in WIDGETS_NOMMES_QWEN_IMAGE:
+            raise KeyError(f"Classe non couverte par le convertisseur : {classe}")
+        entrees: Dict[str, Any] = {}
+        widgets = list(noeud.get("widgets_values") or [])
+        for nom, valeur in zip(WIDGETS_NOMMES_QWEN_IMAGE[classe], widgets):
+            entrees[nom] = valeur
+        for entree in noeud.get("inputs", []):
+            lid = entree.get("link")
+            if lid is not None:
+                source, slot = liens[lid]
+                entrees[entree["name"]] = [str(source), slot]
+        prompt[str(nid)] = {"class_type": classe, "inputs": entrees}
+    return prompt
+
+
+def noeud_de_classe(prompt_api: Dict[str, Any], classe: str) -> Dict[str, Any]:
+    """Retourne le premier noeud du prompt API portant cette classe.
+
+    Raises:
+        KeyError: si aucun noeud du prompt ne porte cette classe.
+    """
+    for spec in prompt_api.values():
+        if spec["class_type"] == classe:
+            return spec
+    raise KeyError(classe)
