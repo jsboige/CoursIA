@@ -158,6 +158,8 @@ Pour éviter l'aller-retour téléchargement/dépôt à chaque review :
 | Le dépôt s'est fait sur **main** au lieu de la branche de travail | Sélecteur de branche non vérifié (étape 7.1) | Ouvrir une issue plutôt que d'improviser |
 | GitHub affiche du JSON illisible | Édition web du `.ipynb` | Ne jamais éditer le JSON : reprendre à l'étape 6 |
 | *This branch has no changes* à l'ouverture de la PR | Dépôt sur une autre branche que celle comparée | Vérifier le sélecteur **compare** à l'étape 8.2 |
+| La PR n'apparaît pas dans `jsboige/CoursIA`, seulement dans l'onglet *Pull requests* de votre fork | **base repository** resté sur `votre-compte/CoursIA` à l'étape 8.2 : la PR vise votre propre copie, personne ne la voit | Fermer cette PR, puis en rouvrir une depuis la même branche avec **base repository** = `jsboige/CoursIA`, base `main` |
+| Le fichier déposé apparaît comme un **nouveau fichier** à côté du notebook (autre nom, ou sans extension `.ipynb`) | Fichier renommé entre le téléchargement et le dépôt | Renommer le fichier exactement comme l'original, le redéposer au même endroit (étape 7.4), puis supprimer le fichier en trop |
 | Conflits signalés | Le dépôt d'origine a bougé sur le même fichier | Ouvrir une issue — ne pas cliquer sur *Resolve conflicts* en aveugle |
 | Deux contributions sur le même exercice | PRs ouvertes non vérifiées | Vérifier les PR ouvertes avant de choisir l'exercice |
 | *Select Kernel* ne propose rien (VS Code) | Interpréteur ou kernel non installé | Installer Python ou le SDK .NET, rouvrir VS Code (variante ci-dessus, point 3) |
