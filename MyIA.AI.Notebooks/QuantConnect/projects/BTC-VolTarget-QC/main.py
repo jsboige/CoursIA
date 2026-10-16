@@ -80,13 +80,19 @@ class BtcVolTargetAlgorithm(QCAlgorithm):
         self.set_end_date(*map(int, end.split("-")))
         self.set_account_currency("USD")
         self.set_cash(100000)
-        # IBKR pour les jambs equity des references, BTC en donnees Bitfinex --
-        # l'architecture mesuree de BitcoinRegimeGate-QC (#19929).
-        self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
         self.mode = self.get_parameter("mode") or "base"
         if self.mode not in MODES:
             raise ValueError(f"mode inconnu : {self.mode}")
+        # Brokerage par mode, mesure sur la sonde 2016-Q1 : sous IBKR les ordres
+        # crypto sont rejetes (courbe plate malgre 62 ordres) -- BTC-ETH-Rotation
+        # (#20189) trade le crypto sous BITFINEX/CASH ; les modes equity gardent
+        # IBKR pour leurs jambs SPY/IEF (l'architecture de BitcoinRegimeGate #19929).
+        if self.mode in ("base", "hold-btc"):
+            self.set_brokerage_model(BrokerageName.BITFINEX, AccountType.CASH)
+        else:
+            self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
+
         self.fee_mult = float(self.get_parameter("fee_mult") or 1)
         if self.fee_mult != 1.0:
             self.set_security_initializer(_ScaledFeeInitializer(
