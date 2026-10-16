@@ -126,4 +126,31 @@ variable {X : TopCat.{u}}
 -- Remaining frontier: the **complete iteration** of the reduction to higher
 -- degrees and the **acyclicity** `H^n(C⁰F) = 0` for `n ≥ 1` ([God58] II.5).
 
+-- **Part 93(a), local ingredients (landed in the FR twin of this module)** :
+-- transporting exactness to stalks requires two local facts, both valid for
+-- **every presheaf** — no sheaf hypothesis:
+--
+-- * `Grothendieck.epi_stalkFunctor_map_of_epi` — the stalk functor preserves
+--   epimorphisms, free by the stalk ⊣ skyscraper adjunction
+--   (`skyscraperPresheafStalkAdjunction`; a left adjoint preserves epis).
+-- * `Grothendieck.stalkEval` and `Grothendieck.toGodement_stalkEval` — the
+--   Godement unit is a **split monomorphism on every stalk**. The retraction
+--   is the evaluation `ev_x₀ : (C⁰F)ₓ₀ ⟶ Fₓ₀`, `σ ↦ σ(x₀)` — well-defined
+--   because a Godement section is a function and restrictions only restrict
+--   it, so the component at `x₀` does not depend on the chosen
+--   neighbourhood. This is the ingredient that **replaces the sheafification
+--   argument**: transporting exactness to stalks does not need `μ` to be
+--   mono at the presheaf level (that would require `F` separated — Part 91),
+--   only each `μₓ₀` to be mono — and the splitting by `ev_x₀` establishes it
+--   unconditionally. Cf. `Grothendieck.mono_stalkFunctor_map_toGodement`
+--   (split ⇒ injective ⇒ mono) and the apply-form
+--   `Grothendieck.stalkEval_stalkFunctor_map_toGodement_apply`.
+--
+-- **Named frontier**: the transport brick itself — the stalk functor, a
+-- syntactic composite `whiskering ⋙ colim` over the filtered category of
+-- neighbourhoods (`Presheaf.stalkFunctor`), also preserves finite limits by
+-- exactness of filtered colimits in `AddCommGrpCat` (AB5,
+-- `Mathlib.Algebra.Category.Grp.AB`). Deferred to the next delivery of
+-- Part 93(a).
+
 end Grothendieck_en
