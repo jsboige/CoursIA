@@ -640,6 +640,45 @@ _REQUIRES_PYTHON_RE = re.compile(r"""requires-python\s*=\s*["']([^"']+)["']""")
 _NUMPY_PIN_RE = re.compile(r"numpy\s*([<>=!~][0-9A-Za-z.,<>=!~*]*)")
 
 
+def _git_show_head(rel, root):
+    """Lit un fichier depuis l'object store git quand il n'est pas sur disque.
+
+    Issue #20868. Un arbre partiel (sparse-checkout, `git clone --filter=blob:none`)
+    peut materialiser le working tree sans le blob, ou detenir le blob sans le
+    materialiser. Le `read_text` du disque leve alors `OSError`, et l'ancienne
+    continuite silencieusement -- ce qui laisse le verdict de drift dire « la
+    serie n'epingle rien » alors que le fichier est bien dans le depot.
+
+    Retourne le contenu texte, ou None si :
+    - l'object n'est pas dans HEAD (`absent_from_repo`) ;
+    - git n'est pas dans le PATH ou `root` n'est pas un depot (`no_git`) ;
+    - la lecture via `git show` a echoue pour une autre raison (`unreadable`).
+
+    Le caller ne distingue pas ces trois cas : ils menent tous a `continue`
+    dans la recherche de l'artefact parent. La distinction appartient au log
+    si on en ajoute un, pas au contrat de cette fonction.
+    """
+    import subprocess
+    rel_posix = Path(rel).as_posix()
+    try:
+        exists = subprocess.run(
+            ["git", "cat-file", "-e", f"HEAD:{rel_posix}"],
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", check=False)
+    except (FileNotFoundError, OSError):
+        return None
+    if exists.returncode != 0:
+        return None
+    try:
+        shown = subprocess.run(
+            ["git", "show", f"HEAD:{rel_posix}"],
+            cwd=root, capture_output=True, text=True,
+            encoding="utf-8", errors="replace", check=True)
+    except subprocess.CalledProcessError:
+        return None
+    return shown.stdout
+
+
 def canonical_env_hint(nb_path, root="."):
     """Nomme l'environnement epingle qui couvre ce notebook, s'il existe (#17185).
 
@@ -652,9 +691,13 @@ def canonical_env_hint(nb_path, root="."):
     documente (cf `IIT/ICT-Series/pyproject.toml`) ; ce qui manquait est le
     POINTEUR vers lui au moment ou la lane lit le verdict.
 
-    Rend un dict ``{artifact, requires_python?, numpy_pin?}``, ou None quand
-    aucun artefact n'est trouve : l'absence est une information, pas un silence
-    a combler par un chemin suppose.
+    Rend un dict ``{artifact, requires_python?, numpy_pin?, from_object_store?}``,
+    ou None quand aucun artefact n'est trouve : l'absence est une information,
+    pas un silence a combler par un chemin suppose.
+
+    `from_object_store=True` signale que le verdict vient de l'object store
+    (sparse-checkout, #20868), pour que le lecteur sache que le rendu depend
+    de la materialisation du fichier sur disque.
     """
     parents = [p for p in Path(nb_path).parents if p.as_posix() != "."]
     for parent in parents[:_ENV_WALK_LEVELS]:
@@ -663,9 +706,19 @@ def canonical_env_hint(nb_path, root="."):
             try:
                 text = (Path(root) / rel).read_text(encoding="utf-8",
                                                     errors="replace")
+                from_object_store = False
             except OSError:
-                continue
+                # #20868 : l'OSError ne dit pas si l'artefact est absent du
+                # disque ou du depot. Interroger l'object store avant de
+                # renoncer -- un sparse-checkout materialise partiellement
+                # l'arbre, et la serie peut tres bien epingler son env.
+                text = _git_show_head(rel, root)
+                if text is None:
+                    continue
+                from_object_store = True
             hint = {"artifact": rel.as_posix()}
+            if from_object_store:
+                hint["from_object_store"] = True
             requires_python = _REQUIRES_PYTHON_RE.search(text)
             if requires_python:
                 hint["requires_python"] = requires_python.group(1)
