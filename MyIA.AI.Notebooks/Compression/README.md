@@ -17,12 +17,21 @@ Lean des définitions est prévu par les plis suivants.
 3. **Comparer** les arbres Shannon-Fano et Huffman sur un même corpus pour comprendre l'origine du gain
 4. **Calculer** la longueur moyenne d'un code et la confronter à la borne entropique de Shannon sur une source discrète
 5. **Encoder et décoder** un message avec un code préfixe arbitraire, et détecter les codes ambigus
+6. **Canoniser et décoder par table** : réduire l'en-tête d'un code Huffman à ses seules longueurs (Schwartz-Kallick), puis décoder par table indexée à $2^L$ entrées plutôt que par parcours d'arbre
 
 ## Carnets
 
 | Carnet | Niveau | Contenu |
 |---|---|---|
-| [Compression-01 — Codes préfixes : de Shannon-Fano à Huffman](Compression-01-ShannonFano-Prefixe-Python.html) | Découverte | codes préfixes, inégalité de Kraft, Shannon-Fano contre Huffman, l'entropie comme borne |
+| [Compression-01 — Codes préfixes : de Shannon-Fano à Huffman](Compression-01-ShannonFano-Prefixe-Python.ipynb) | Découverte | codes préfixes, inégalité de Kraft, Shannon-Fano contre Huffman, l'entropie comme borne |
+| [Compression-02 — Huffman canonique : des longueurs aux tables de décodage](Compression-02-HuffmanCanonique-Python.ipynb) | Découverte | forme canonique de Schwartz-Kallick (l'en-tête réduit aux longueurs), table de décodage $2^L$ et son coût mémoire, aller-retour octet-exact sur un extrait réel, débits mesurés contre chiffres cités |
+
+Compression-02 en une phrase : le récepteur n'a jamais besoin de l'arbre ni
+des mots — les longueurs suffisent, et une table de $2^L$ entrées transforme
+chaque symbole décodé en une lecture indexée. Le carnet le démontre sur 128 Kio
+du *Horla* (aller-retour exact, 58,2 % de l'original, longueur moyenne 4,655
+bits/octet contre une entropie de 4,620) et confronte ses débits Python aux
+chiffres publiés des Huffman de production (Huff0, Oodle).
 
 ## Position dans le dépôt
 

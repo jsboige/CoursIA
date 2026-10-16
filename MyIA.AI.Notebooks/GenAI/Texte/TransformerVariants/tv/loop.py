@@ -238,7 +238,7 @@ def realignement_lecture(
     logits_avant = modele.tete(z)
     exactitude_avant = (logits_avant.argmax(-1) == cible).float().mean().item()
 
-    W = modele.tete.weight  # (V, d)
+    W = modele.emb.weight  # (V, d) -- lire l'espace des embeddings, contrat docstring/body
     centre = W - W.mean(dim=0, keepdim=True)
     zc = z - z.mean(dim=-1, keepdim=True)
     sims = F.cosine_similarity(
