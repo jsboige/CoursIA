@@ -32,7 +32,7 @@ Usage
 Registre : JSON `{<PR>: {"last_read": ..., "watch_armed_at": ...,
 "watch_ended_at": ..., "signals": [{"at": ..., "kind": ...}]}}`, tenu par
 l'organe -- le skill appelant n'ecrit jamais le JSON a la main. Emplacement :
-`--ledger`, sinon `$PR_POLL_LEDGER`, sinon `<tempdir>/pr-poll-ledger.json`.
+`--ledger`, sinon `$PR_POLL_LEDGER`, sinon un emplacement stable hors tempdir (`%LOCALAPPDATA%\\CoursIA` sur Windows, `~/.local/share/CoursIA` sinon) — le tempdir est purgé par les règles de scratch de la flotte et vidait silencieusement le registre (review #21060).
 
 Fail-open assume : registre absent ou corrompu -> `check` sort 0 + warning
 stderr. L'organe garde des tokens ; il ne doit jamais bloquer la
@@ -47,7 +47,6 @@ import argparse
 import json
 import os
 import sys
-import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -82,7 +81,14 @@ def default_ledger_path() -> Path:
     env = os.environ.get("PR_POLL_LEDGER")
     if env:
         return Path(env)
-    return Path(tempfile.gettempdir()) / "pr-poll-ledger.json"
+    # Defaut stable hors tempdir (review #21060) : le tempdir est
+    # purge par les regles de scratch de la flotte ; un registre qui
+    # disparait avec lui rend le garde inoperant sans le dire.
+    # Precedent d'emplacement : journal de la tache planifiee prune
+    # (%LOCALAPPDATA%\CoursIA\prune_task\logs\).
+    local = os.environ.get("LOCALAPPDATA")
+    root = Path(local) if local else Path.home() / ".local" / "share"
+    return root / "CoursIA" / "pr-poll-ledger.json"
 
 
 def load_ledger(path: Path) -> tuple[dict[str, Any] | None, str | None]:
@@ -188,7 +194,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--ledger",
         type=Path,
         default=None,
-        help="chemin du registre (defaut : $PR_POLL_LEDGER, sinon <tempdir>/pr-poll-ledger.json)",
+        help="chemin du registre (defaut : $PR_POLL_LEDGER, sinon un emplacement "
+        "stable hors tempdir : %LOCALAPPDATA%\\CoursIA sur Windows, "
+        "~/.local/share/CoursIA sinon)",
     )
     sub = parser.add_subparsers(dest="verb", required=True)
 

@@ -15,6 +15,7 @@ Les 7 cas contractuels :
 import json
 import os
 import sys
+import tempfile
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -25,6 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from check_pr_repoll import (  # noqa: E402
     _iso,
+    default_ledger_path,
     evaluate,
     main,
 )
@@ -113,3 +115,19 @@ def test_evaluate_watch_end_signal_beats_fresh_read() -> None:
         "signals": [{"at": _iso(now - timedelta(minutes=2)), "kind": "watch-end"}],
     }
     assert evaluate(entry, now, 120).refused is False
+
+
+def test_9_default_ledger_is_stable_not_tempdir() -> None:
+    """Review #21060 : le defaut ne doit plus vivre sous le tempdir --
+    purge par les regles de scratch de la flotte, il vidait le registre
+    et le garde perdait son effet sans le dire."""
+    path = default_ledger_path()
+    assert path.name == "pr-poll-ledger.json"
+    tmp = Path(tempfile.gettempdir()).resolve()
+    try:
+        path.resolve().relative_to(tmp)
+        under = True
+    except ValueError:
+        under = False
+    assert not under, "le defaut ne doit pas vivre sous le tempdir"
+    assert "coursia" in [p.lower() for p in path.parts]
