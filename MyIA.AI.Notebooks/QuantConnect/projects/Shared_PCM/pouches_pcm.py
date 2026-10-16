@@ -31,7 +31,7 @@ class MultiStrategyPouchesPCM(PortfolioConstructionModel):
     """
 
     def __init__(self, alpha_allocations, rebalance=timedelta(days=31),
-                 additive=True, algorithm=None, watch_source=None, watch_tickers=()):
+                 additive=True, algorithm=None, watch_source=None, watch_tickers=None):
         super().__init__()
         if additive and algorithm is None:
             raise ValueError(
@@ -43,9 +43,11 @@ class MultiStrategyPouchesPCM(PortfolioConstructionModel):
         self._algorithm = algorithm
         # Diagnostics lus en fin de backtest (runtime statistics) : appels
         # de determine_target_percent, dont ceux ou un insight de
-        # watch_source sur un des watch_tickers atteint le PCM.
+        # watch_source atteint le PCM. watch_tickers=None compte sans filtre
+        # de symbole (comportement des copies d'origine) ; un itérable de
+        # tickers restreint aux seuls symboles listés.
         self._watch_source = watch_source
-        self._watch_tickers = set(watch_tickers)
+        self._watch_tickers = set(watch_tickers) if watch_tickers is not None else None
         self.calls = 0
         self.calls_with_watch = 0
         self.watch_up_seen = 0
@@ -58,7 +60,8 @@ class MultiStrategyPouchesPCM(PortfolioConstructionModel):
         self.calls += 1
         watched = [i for i in active_insights
                    if i.source_model == self._watch_source
-                   and i.symbol.value in self._watch_tickers]
+                   and (self._watch_tickers is None
+                        or i.symbol.value in self._watch_tickers)]
         if watched:
             self.calls_with_watch += 1
             self.watch_up_seen += sum(

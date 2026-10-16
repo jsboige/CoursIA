@@ -50,6 +50,9 @@ silencieuse du module.
 | `Framework_Composite_TrendWeather` | TrendStocks 0.75 / AllWeather 0.25 | 31 j |
 
 Duplication restante hors périmètre de l'extraction (copies pédagogiques ou
-projets autonomes, à migrer par tranches séparées) : `TrendWeatherPointInTime`,
-`TrendStocks-Alpha`, `partner-course-quant-trading/kit-transitoire` et la
-cellule pédagogique du notebook `QC-Py-14` (déclarée copie d'enseignement).
+projets autonomes, à migrer par tranches séparées) — quatre projets portent
+encore un `portfolio_construction.py` déclarant `MultiStrategyPCM` :
+`TrendWeatherPointInTime`, `TrendStocks-Alpha`, `EMA-Cross-Alpha` et
+`MomentumRegime-AdaptiveWeights` ; s'y ajoutent
+`partner-course-quant-trading/kit-transitoire` et la cellule pédagogique du
+notebook `QC-Py-14` (déclarée copie d'enseignement).
