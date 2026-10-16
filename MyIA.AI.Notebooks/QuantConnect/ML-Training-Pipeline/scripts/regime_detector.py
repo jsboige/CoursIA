@@ -68,16 +68,21 @@ def detect_regimes_price(
         ``known at t-1`` contract required for live and walk-forward
         use.
 
-        Warmup: ``rolling_std`` (a ``rolling(L).std()``) is NaN for
-        the first ``L - 1`` indices and valid from index ``L - 1``
-        onward. ``expanding(min_periods=L).quantile(...)`` then needs
-        ``L`` valid observations, so the first non-NaN output of the
-        expanding quantile lands at index ``2L - 2`` (e.g. ``L=30`` ->
-        first valid at index 58). The ``.shift(1)`` adds one more
-        index of latency, so the first usable threshold lands at
-        index ``2L - 1`` (e.g. ``L=30`` -> first usable at index 59).
-        Before that, the threshold is NaN and the volatility regime
-        is unreachable by construction (NaN-comparison yields False).
+        Warmup: ``returns = prices.pct_change()`` is NaN at index 0
+        (no previous price), so the ``rolling(L).std()`` of returns
+        needs ``L`` non-NaN return values, which means ``L + 1``
+        price observations. Its first non-NaN output is at index
+        ``L`` (e.g. ``L=30`` -> first valid at index 30, since
+        ``returns[1..30]`` are 30 non-NaN values and ``rolling(30)``
+        emits at the right edge). ``expanding(min_periods=L)`` then
+        needs ``L`` non-NaN ``rolling_std`` values, so the first
+        non-NaN output of the expanding quantile lands at index
+        ``2L - 1`` (e.g. ``L=30`` -> first valid at index 59). The
+        ``.shift(1)`` adds one more index of latency, so the first
+        usable threshold lands at index ``2L`` (e.g. ``L=30`` ->
+        first usable at index 60). Before that, the threshold is
+        NaN and the volatility regime is unreachable by
+        construction (NaN-comparison yields False).
 
         When False, the threshold is the *global* non-causal
         ``rolling_std.quantile(...)`` over the whole series; kept for
@@ -100,9 +105,9 @@ def detect_regimes_price(
         # known-at-t-1 contract). Without the shift, the expanding
         # quantile at t would include rolling_std[t] itself, which is
         # a 1-step look-ahead flagged by the adjoint (#21111 v2).
-        # First usable threshold at index 2*lookback_days - 1
-        # (rolling_std first valid at L-1, expanding needs L non-NaN
-        # so first output at 2L-2, shift pushes to 2L-1).
+        # First usable threshold at index 2*lookback_days
+        # (rolling_std first valid at L, expanding needs L non-NaN
+        # so first output at 2L-1, shift pushes to 2L).
         vol_threshold = (
             rolling_std.expanding(min_periods=lookback_days)
             .quantile(volatility_percentile / 100)
