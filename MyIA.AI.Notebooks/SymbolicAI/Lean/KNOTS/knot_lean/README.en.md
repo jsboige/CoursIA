@@ -393,7 +393,7 @@ Three notebooks in `SymbolicAI/Lean/` carry the transmission, one per level:
 
 **Human review — honest state**: to date the lake has been reviewed by bot organs (Hermes, proof-integrity CI) and merged by the coordinator, but **no named human review of the whole lake** has taken place. This is a declared limitation of the present digestion (grid **EPIC #13106 criterion 2**): the human review remains to be done and should be recorded here when it happens. To prepare for that review, two cheat sheets follow, to be cross-referenced with the "Structure" table above: who is already covered by the transmission, and under which form a named human-review act will be recorded.
 
-**Coverage by transmission**: the three notebooks listed above cover the lake only partially. This matrix cross-references each module with its coverage and the remaining review gap.
+**Coverage by transmission**: the three notebooks listed above cover the lake only partially. This matrix cross-references the 15 modules that `lakefile.lean` compiles (`globs := #[.submodules \`Knots, \`Knots_en]`, source of truth: the lakefile glob, not a memorised list) with their coverage and the remaining review gap.
 
 | Module | Covered by | Review gap |
 |--------|------------|------------|
@@ -404,6 +404,14 @@ Three notebooks in `SymbolicAI/Lean/` carry the transmission, one per level:
 | `Knots/Slice.lean` (slice, Piccirillo, Freedman) | KNOTS-01 (Piccirillo) | Slice/non-slice proofs, smooth/topological dichotomy |
 | `Knots/Lidman.lean` (11n102, unknotting = 2) | KNOTS-01 (Lidman) | Unknotting-number proofs, `Nat.sInf` |
 | `Knots/MathlibPrerequisites.lean` (prerequisite index) | Not covered by the notebooks | Index only, to be re-read against Mathlib v4.33.0 (`db584cd6`) |
+| `Knots/ArcPartition.lean` (`arcPartition` block + `alexanderRow_sum_zero`, polynomial basis) | KNOTS-03 (R2/R3 walls) | Integrations with `Mathlib.Algebra.Polynomial`, soundness of the polynomial block |
+| `Knots/ConwayPD.lean` (concrete PD codes: 11n34, 11n42 — mutants with trivial Alexander) | KNOTS-01 (Conway + KT), KNOTS-03 (codes) | Formal mutation spheres, complete polynomial computation |
+| `Knots/FigureEight.lean` (4_1 invariants: signed Alexander, determinant 5, non-tricolorability) | KNOTS-01 (4_1 historical), KNOTS-03 (Jones) | Formal soundness of Phase 3 crossing count |
+| `Knots/Jones.lean` (Kauffman bracket, Jones polynomial, Euler planarity) | KNOTS-02 (Fox), KNOTS-03 (Jones) | Formal soundness across all named diagrams |
+| `Knots/Mutation.lean` (Conway mutation: 4-point sphere, 180° rotation) | KNOTS-01 (Conway/KT mutants), KNOTS-03 (mutation) | Soundness of regluing isotopy, formal sphere structure |
+| `Knots/ReidemeisterCombinatorial.lean` (`MoveSequence`, `movesConnects`, `verifyMoves`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Soundness of bounded verifier, enumeration completeness |
+| `Knots/ReidemeisterInvariance.lean` (invariance of `alexanderPolynomialSigned` under R1/R2/R3) | KNOTS-02 (moves), KNOTS-03 (invariance) | Full soundness, Conway ↔ Reidemeister junction |
+| `Knots/ReidemeisterMoves.lean` (`ReidemeisterMove` + `verifyR1Fwd`/`R2Fwd`/`R3Fwd`, `movesConnects_sound`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Bridge to the 14 `sorry` of the lake (Reidemeister, Lidman, Slice) |
 
 **Human-review act to be signed**: when the human review is carried out, it will take the form `Review by <name, affiliation> — date <YYYY-MM-DD> — scope <whole lake / module> — checks: structure / main proofs / i18n FR-EN — overall verdict` and will be inserted into this README. Grid **#13106 criterion 2** is satisfied by the first signed act; no partial act is recorded silently, and the present section remains honest until the act is written.
 
