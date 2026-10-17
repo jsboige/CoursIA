@@ -1,7 +1,7 @@
 {
   "_comment": "Pedagogy-density baseline (#10479). Burn down, do not grow. One float per TRACKED pedagogical notebook: chars of markdown prose per code cell (continuous metric). Population: `git ls-files 'MyIA.AI.Notebooks/**/*.ipynb'` minus EXCLUDE_DIRS minus setup/out-of-corpus kinds. Regenerate with: python scripts/notebook_tools/pedagogy_density.py --update-baseline",
   "metric": "prose_chars / code_cells",
-  "count": 1341,
+  "count": 1352,
   "notebooks": {
     "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb": 1205.125,
     "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb": 1237.667,
@@ -1343,6 +1343,17 @@
     "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb": 1343.667,
     "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject-Python.ipynb": 1528.5,
     "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-ExplorerPattern-Csharp.ipynb": 812.125,
-    "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb": 1598.5
+    "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb": 1598.5,
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-03-Vie-Native.ipynb": 871.667,
+    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-2-pl_agent.ipynb": 3595.429,
+    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-1-informal_agent.ipynb": 2044.571,
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb": 702.875,
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-01-Regles-Vie-Lean.ipynb": 2645.85,
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16b-Conway-FRACTRAN-Lean-Native.ipynb": 970.875,
+    "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb": 1240.8,
+    "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/Argument_Analysis_Agentic-3-orchestration_agent.ipynb": 3739.167,
+    "MyIA.AI.Notebooks/GenAI/SemanticKernel/Notebook-Generated.ipynb": 908.444,
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb": 1581.429,
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/GOL-02-Golly.ipynb": 1490.889
   }
 }

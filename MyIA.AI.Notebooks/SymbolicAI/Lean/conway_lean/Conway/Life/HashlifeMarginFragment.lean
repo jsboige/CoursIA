@@ -2966,6 +2966,83 @@ theorem hashlife_correct_margin_of_union_periodic_dyadic (c : MacroCell) (k : Na
   rw [hsplit]
   exact hcap_of_union_periodic_dyadic hTi g₁ g₂ hsep hfix₁ hfix₂ hcan hne₁ hne₂ t
 
+/-! ### Maillon 4 — la classe dégénérée : unions à partie vide
+
+Le maillon 3 (`hcap_of_union_periodic_dyadic`) exige les DEUX parties non
+vides (`hne₁`, `hne₂`) : sa fenêtre `2 ^ i` est payée par l'écart ENTRE les
+deux parties, écart qu'une partie vide ne peut pas témoigner. Ce maillon clos
+la classe exclue : quand une partie est vide, l'union EST l'autre partie
+(`List.append_nil`), et la fenêtre se paie par l'étendue PROPRE de la partie
+porteuse — deux points de la même phase à distance `2 ^ i` forcent le niveau
+de reconstruction (`gridToMacroCellWithOffset_level_ge_of_span`), le même
+lemme que le maillon 3 mais avec la paire de points DANS le motif au lieu
+d'entre deux motifs. La séparation `hsep` disparaît de l'interface : il n'y a
+plus rien à séparer. Combiné aux maillons 2 (T ∈ {1, 2, 4}) et 3 (dyadique
+séparée des deux côtés), la décomposition P4.4 des unions périodiques est
+clos sur toute son étendue. -/
+
+/-- **hcap d'un oscillateur périodique à fenêtre intra-partie.** Un
+    oscillateur canonique de période `T = 2 ^ i` dont chaque phase porte deux
+    points à distance de Tchebychev `≥ 2 ^ i` est capturé à tout instant : la
+    trajectoire se réduit à ses `T` phases (`hcap_of_period`), et chaque
+    phase étalée sur `2 ^ i` est reconstruite à un niveau `≥ i`, donc
+    `2 ^ i ∣ 2 ^ level`. C'est le miroir mono-grille du maillon 3 : l'étendue
+    qui paie la fenêtre vit dans le motif au lieu de vivre entre deux
+    motifs. -/
+theorem hcap_of_period_span {T i : Nat} (hTi : T = 2 ^ i) (g : Grid)
+    (hg : Canonical g) (hper : evolve T g = g)
+    (hspan : ∀ s, ∃ p q, p ∈ evolve s g ∧ q ∈ evolve s g ∧ 2 ^ i ≤ chebDist p q) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  have hT0 : 0 < T := by rw [hTi]; exact pow_pos (by norm_num) i
+  refine hcap_of_period g hg hT0 hper ?_
+  intro j _
+  obtain ⟨p, q, hp, hq, hcheb⟩ := hspan j
+  have hlvl : i ≤ (gridToMacroCellWithOffset (evolve j g)).2.level :=
+    gridToMacroCellWithOffset_level_ge_of_span _ i p q hp hq hcheb
+  obtain ⟨m, hm⟩ : ∃ m, (gridToMacroCellWithOffset (evolve j g)).2.level = i + m :=
+    ⟨(gridToMacroCellWithOffset (evolve j g)).2.level - i, by omega⟩
+  rw [hTi, hm, pow_add]
+  exact ⟨2 ^ m, by ring⟩
+
+/-- **hcap des unions périodiques dégénérées — le maillon 4.** Une union
+    `g₁ ++ g₂` dont la seconde partie est vide se réduit à sa partie porteuse
+    (`List.append_nil`) : la capture est celle du mono-grille ci-dessus, la
+    fenêtre payée par l'étendue propre de `g₁`. Aucune hypothèse de
+    séparation (rien à séparer), aucun point fixe côté vide (`evolve` de la
+    grille vide est la grille vide, la partie exclue n'entre plus dans
+    l'interface). Le miroir gauche (`g₁ = []`) s'obtient par
+    `List.nil_append`. -/
+theorem hcap_of_union_periodic_singleton {T i : Nat} (hTi : T = 2 ^ i)
+    (g₁ g₂ : Grid) (hfix₁ : evolve T g₁ = g₁)
+    (hcan : Canonical (g₁ ++ g₂)) (hg₂ : g₂ = [])
+    (hspan : ∀ s, ∃ p q, p ∈ evolve s g₁ ∧ q ∈ evolve s g₁ ∧ 2 ^ i ≤ chebDist p q)
+    (t : Nat) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true := by
+  subst hg₂
+  rw [List.append_nil] at hcan ⊢
+  exact hcap_of_period_span hTi g₁ hcan hfix₁ hspan t
+
+/-- **L2 assemblée pour la classe dégénérée.** Miroir des deux corollaires
+    d'assemblage précédents : une MacroCell dont la grille rendue à l'origine
+    se scinde en une partie porteuse `2 ^ i`-périodique à fenêtre
+    intra-partie et une partie vide satisfait l'égalité Hashlife à tout
+    horizon `2 ^ k` sous `centralCorrect`. Après les unions basses
+    (`_of_union_periodic`, T ∈ {1, 2, 4}) et les unions dyadiques séparées
+    des deux côtés (`_of_union_periodic_dyadic`), la classe dégénérée
+    exclue par `hne₁`/`hne₂` du maillon 3 est couverte : elle n'était qu'un
+    oscillateur solitaire étalé sur sa période. -/
+theorem hashlife_correct_margin_of_union_periodic_singleton (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T i : Nat} (hTi : T = 2 ^ i)
+    (g₁ g₂ : Grid) (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hfix₁ : evolve T g₁ = g₁)
+    (hcan : Canonical (g₁ ++ g₂)) (hg₂ : g₂ = [])
+    (hspan : ∀ s, ∃ p q, p ∈ evolve s g₁ ∧ q ∈ evolve s g₁ ∧ 2 ^ i ≤ chebDist p q) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_union_periodic_singleton hTi g₁ g₂ hfix₁ hcan hg₂ hspan t
+
 /-! ## Synthèse — le fragment est non vide et l'énoncé-cadre est honnête
 
 `supportInMargin` est décidable et témoigné sur le bestiaire (ci-dessus). L'énoncé-cadre

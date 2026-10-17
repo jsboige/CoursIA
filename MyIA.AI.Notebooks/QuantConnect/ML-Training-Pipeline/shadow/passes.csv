@@ -1,0 +1,2 @@
+candidate,sha,frozen_on,pass_date,period_end,n_days,sharpe_net,cagr,max_drawdown,turnover,fees,fee_model
+levetf-base,f1a93779396b77398ed23ad8a02678acd786adfd,2026-10-10,2026-10-16,2026-10-15,3,-6.4572,-0.9974,-0.0626,0.327497,7.3e-05,modèle de frais par défaut de Lean pour ce courtier
