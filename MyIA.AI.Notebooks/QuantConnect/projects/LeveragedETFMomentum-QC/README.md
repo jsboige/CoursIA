@@ -120,7 +120,7 @@ En prix bruts, SPY et QQQ détenus passent des ordres périodiques, sans doute l
 - **La pire baisse vient de la fin 2018, en TQQQ** : −52,5 % entre le 2018-08-29 et le 2018-12-24, sommet retrouvé le 2019-04-15. Sur les mêmes dates, TQQQ détenu perd 58,1 % et QQQ 22,8 %. Sur toute la fenêtre, TQQQ détenu perd jusqu'à −81,6 %.
 - **Capacité.** Le portefeuille du backtest est multiplié par environ 45 000 et atteint plusieurs milliards de dollars, bien au-delà de la capacité estimée par QC (200 à 260 M$). Le Sharpe se calcule sur les rendements et ne dépend pas de l'échelle ; le CAGR au-delà de la capacité n'est pas atteignable, et le backtest ne modélise pas l'impact de marché.
 
-**Suivi en ombre.** `base` est gelé à la date de la mesure. Son suivi en ombre (#18923, point 6 du protocole) accumulera, à partir de cette date, la période hors échantillon qui manque. L'inscription au registre est faite à part, avec les autres gels en attente.
+**Suivi en ombre.** `base` est gelée sous l'identifiant `levetf-base` au registre du suivi en ombre (`ML-Training-Pipeline/shadow/registry.json`, #18923 — gel du 2026-10-10 au SHA `f1a93779`, projet Cloud dédié 37796612). Premier passage le 2026-10-16 : 4 séances rejouées (2026-10-10 → 2026-10-15) au code gelé, −4,8 % net, pire baisse −6,3 %, rotation 0,33 — chiffres non interprétables à cette taille de fenêtre, la série s'allonge à chaque passage mensuel et constitue le hors-échantillon qui manque au verdict. La ligne vit dans `ML-Training-Pipeline/shadow/passes.csv` ; les traces du passage sont hors dépôt, sous `QC-traces/18923-ombre-levetf-base/2026-10-16/`.
 
 Les traces des runs (graphiques, statistiques, journal des ordres, empreinte du code envoyé à QC) sont conservées hors dépôt, sous `QC-traces/19587-leveraged-etf-momentum/`.
 
@@ -220,6 +220,8 @@ La pire baisse de `lrs` va du 2022-01-03 au 2023-03-14 (−36,5 %), sommet retro
 - **`ucits` n'est pas hors échantillon.** Les seuils de l'arbre datent de fin 2025 : la fenêtre est celle sur laquelle ils ont pu être réglés.
 
 **Suivi en ombre.** Seul un BEATS déclenche l'inscription au registre du suivi en ombre (#18923). Aucune des deux candidates n'est gelée.
+
+**Place dans la matrice de la ligue.** `ucits` est inscrite dans la matrice de corrélation hebdomadaire de la ligue (`ML-Training-Pipeline/shadow/league_members.json`, #19821) sous l'identifiant `leveraged-etf-ucits`. Sa série est celle du run ci-dessus, lue dans sa trace sans nouveau backtest. Sur 755 semaines communes (2012-01-13 → 2026-06-26), sa corrélation au cœur actions (#20365) vaut 0,64, avec un intervalle à 95 % de [0,58 ; 0,70] par bootstrap par blocs. L'intervalle s'arrête juste sous le seuil de 0,7 de la règle d'entrée du panier (borne haute 0,696). Sa corrélation à `base` (`leveraged-etf-momentum`) vaut 0,77. Ces chiffres ne décident pas de l'entrée au panier.
 
 Les traces des runs (graphiques, statistiques, empreinte du code envoyé à QC, résultats du calcul) sont conservées hors dépôt, sous `QC-traces/20141-leveraged-etf-ucits/`.
 

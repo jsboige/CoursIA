@@ -612,7 +612,16 @@ def _neutralize_organs(monkeypatch, states, nits=None):
     laissent le VRAI `fetch_open_prs` courir derriere un faux `gh`.
     """
     monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {n: states[n] for n in nums if n in states})
-    monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: dict(nits or {}))
+    # #16926 : red_backlog consomme la variante detaillee. Les appelants
+    # historiques passent des comptes nus ({pr: n}) ; on les translate -- et
+    # un dict detaille passe tel quel, pour les tests qui veulent rendre des
+    # auteurs et un verdict.
+    def _as_detail(raw):
+        return {k: (v if isinstance(v, dict)
+                    else {"count": v, "authors": [], "verdict": None, "verdict_surface": None})
+                for k, v in (raw or {}).items()}
+    monkeypatch.setattr(pig, "unaddressed_review_points_detail",
+                        lambda nums: _as_detail(nits))
     # L721 : l'ardoise de lane ajoute un fetch gh dans main() AVANT le garde
     # rouge -- meme neutralisation par defaut, meme raison (reseau +
     # determinisme). Les tests qui veulent une ardoise la re-patchent apres.
@@ -922,6 +931,129 @@ def test_enrich_probe_with_workflow_runs_illisible_ne_touche_pas(monkeypatch):
     assert enriched["names"] == probe["names"]
 
 
+# #19767, 3e critere ([NOT-DELIVERED] du 12/10) : un motif None de
+# `_main_red_motif` dit « pas de rouge PROUVE », pas « vert prouve ».
+# Les trois tests suivants font tourner le VRAI organ (seul `_gh_json`
+# est remplace -- le wrapper de transport du picker l'observe) et
+# departagent vert lisible / illisible / sans verdict.
+
+
+def test_enrich_probe_run_illisible_marque_undecided_keys(monkeypatch):
+    """#19767 3e critere, controle illisible : l'endpoint des runs du
+    workflow leve (quota, panne) -> l'organ rend None, mais le vert n'est
+    pas prouvable : le check mappe part en `undecided_keys`, PAS en
+    acquittement silencieux du rollup (qui peut etre vert perime).
+    """
+    from ci import merge_dwell
+    from ci.merge_dwell import DwellError
+
+    def _fetch(path):
+        if "workflows/scripts-tests.yml/runs" in path:
+            raise DwellError("gh api a echoue (exit 1)")
+        return {"default_branch": "main"}
+
+    monkeypatch.setattr(merge_dwell, "_gh_json", _fetch)
+    probe = _probe(main_names=["Scripts Tests (CPU)", "Quarto Pages"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert enriched["undecided_keys"] == {"Scripts Tests (CPU)"}
+    # Le rollup n'est ni contredit ni acquitte : red_keys/names inchanges.
+    assert enriched["red_keys"] == probe["red_keys"]
+    assert enriched["names"] == probe["names"]
+
+
+def test_enrich_probe_fenetre_sans_verdict_marque_undecided_keys(monkeypatch):
+    """#19767 3e critere, controle sans verdict : dix runs `cancelled`
+    (fenetre #19069) -> aucun verdict lisible, le vert n'est pas prouvable
+    -> `undecided_keys`, meme si le transport a reussi.
+    """
+    from ci import merge_dwell
+
+    def _fetch(path):
+        if "workflows/scripts-tests.yml/runs" in path:
+            return {"workflow_runs": [
+                {"conclusion": "cancelled"}, {"conclusion": "skipped"}]}
+        return {"default_branch": "main"}
+
+    monkeypatch.setattr(merge_dwell, "_gh_json", _fetch)
+    probe = _probe(main_names=["Scripts Tests (CPU)"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert enriched.get("undecided_keys") == {"Scripts Tests (CPU)"}
+
+
+def test_enrich_probe_vert_lisible_reste_sans_undecided(monkeypatch):
+    """#19767 3e critere, controle negatif : run `push` VERTE lisible ->
+    le None de l'organ vaut vert CORROBORE, le probe est rendu inchange
+    (objet identique) et ne porte PAS de `undecided_keys` : le rejeu
+    (`infra_rerun`) reste justifie pour les rouges d'execution.
+    """
+    from ci import merge_dwell
+
+    def _fetch(path):
+        if "workflows/scripts-tests.yml/runs" in path:
+            return {"workflow_runs": [
+                {"conclusion": "success",
+                 "name": "Scripts & Notebook-Tools Tests"}]}
+        return {"default_branch": "main"}
+
+    monkeypatch.setattr(merge_dwell, "_gh_json", _fetch)
+    probe = _probe(main_names=["Scripts Tests (CPU)"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is probe
+    assert "undecided_keys" not in (enriched or {})
+
+
+def test_enrich_probe_branche_defaut_illisible_marque_undecided(monkeypatch):
+    """#19767 3e critere : la lecture de la branche par defaut echoue
+    AVANT les runs -> aucun workflow n'est lisible -> tous les checks
+    mappes partent en `undecided_keys`.
+    """
+    from ci import merge_dwell
+    from ci.merge_dwell import DwellError
+
+    def _fetch(path):
+        raise DwellError("quota exhausted")
+
+    monkeypatch.setattr(merge_dwell, "_gh_json", _fetch)
+    probe = _probe(main_names=["Scripts Tests (CPU)"])
+    enriched = pig._enrich_probe_with_workflow_runs(probe, repo="jsboige/CoursIA")
+    assert enriched is not None
+    assert enriched.get("undecided_keys") == {"Scripts Tests (CPU)"}
+
+
+def test_split_base_undecided_keys_ne_font_pas_infra():
+    """#19767 3e critere : un check vert dans le rollup mais NON PROUVABLE
+    (`undecided_keys` sur la sonde) ne part JAMAIS en `infra` (= rejeu) :
+    undecided + base, fail-closed -- un rollup vert perime ne doit pas
+    envoyer la lane rejouer un rouge possiblement reel de la base.
+    """
+    probe = dict(_probe(main_names=["Scripts Tests (CPU)"]),
+                 undecided_keys={"Scripts Tests (CPU)"})
+    corroborated = {"Scripts Tests (CPU)": [101, 102]}
+    names_by_key = {"Scripts Tests (CPU)": {"Scripts Tests (CPU)"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names_by_key, probe)
+    assert infra == {}
+    assert "Scripts Tests (CPU)" in undecided
+    assert "Scripts Tests (CPU)" in base
+
+
+def test_split_base_vert_prouve_reste_infra():
+    """#19767 3e critere, controle negatif : sans `undecided_keys`, le
+    comportement #17154 est preserve -- present et vert dans le rollup,
+    corroboré inter-lanes -> `infra` (rejeu), PAS de regression.
+    """
+    probe = _probe(main_names=["Scripts Tests (CPU)"])
+    corroborated = {"Scripts Tests (CPU)": [101, 102]}
+    names_by_key = {"Scripts Tests (CPU)": {"Scripts Tests (CPU)"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names_by_key, probe)
+    assert "Scripts Tests (CPU)" in infra
+    assert base == {}
+    assert undecided == {}
+
+
 def test_enrich_probe_with_workflow_runs_none_inchange(monkeypatch):
     """#19767 : probe=None (rollup vide) -> None, jamais elargi.
     C'est le contrat fail-closed : une sonde absente ne produit jamais
@@ -1144,6 +1276,51 @@ def test_diff_bounded_none_preserve_comportement_avant_19645(monkeypatch):
     # probe vide + undecided -> base (comportement d'avant)
     assert "prose-counts-guard" in base
     assert "prose-counts-guard" in undecided
+
+
+def test_nav_guards_declares_bornes_au_diff_registre_19645_c1503():
+    """#19645 suite c.1503 : nav-chain/navlinks sortent du registre, sans monkeypatch.
+
+    Leur workflow d'origine scopait au diff (`git diff $BASE...HEAD`), mais
+    l'argv absorbe (`--check`) ne porte plus ce drapeau : aucune heuristique
+    d'argv ne peut les detecter (c'est la mesure c.1503). La declaration
+    explicite `diff_bounded` du registre est le canal -- ce test mesure le
+    cablage REEL de bout en bout (pas un monkeypatch de la fonction), et
+    echoue si la declaration disparait ou si l'import du registre casse.
+    """
+    names = pig._diff_bounded_check_names()
+    assert "check-nav-chain" in names
+    assert "check-navlinks" in names
+
+
+def test_nav_chain_corrobore_absent_de_main_sort_de_base_c1503():
+    """#19645 suite c.1503 : le scenario fondateur, de bout en bout.
+
+    `check-nav-chain` rouge et corrobore par deux PR de lanes differentes
+    (#20044/#20062, notebooks distincts -- aucun rouge partage possible),
+    ABSENT du rollup de `main` (l'agregateur ne tourne que sur
+    `pull_request`). Avant la declaration : `undecided` + repli fail-closed
+    en `base` -> le tapis disait « pas le votre » et la lane ne cherchait
+    pas son `orphan_entry`. Apres : `undecided` SEUL -- la lane garde la
+    main. Controle negatif : un check non declare, meme scenario, reste
+    impute a la base (le filtre est un ensemble clos, il n'elargit pas la
+    classe des acquittes).
+    """
+    diff_bounded = pig._diff_bounded_check_names()
+    assert "check-nav-chain" in diff_bounded, "cablage registre absent"
+    corroborated = {"check-nav-chain": [20044, 20062],
+                    "Scripts Tests (CPU)": [20044, 20062]}
+    names_by_key = {"check-nav-chain": {"check-nav-chain"},
+                    "Scripts Tests (CPU)": {"Scripts Tests (CPU)"}}
+    base, infra, undecided = pig.split_base_corroboration(
+        corroborated, names_by_key, _probe(),  # rollup de main sans les nav
+        diff_bounded=diff_bounded)
+    assert "check-nav-chain" not in base
+    assert "check-nav-chain" in undecided
+    # Controle negatif : non declare -> repli fail-closed inchange.
+    assert "Scripts Tests (CPU)" in base
+    assert "Scripts Tests (CPU)" in undecided
+    assert infra == {}
 
 
 def test_geste_infra_n_invente_pas_d_id_de_run():
@@ -2804,7 +2981,7 @@ def test_only_the_lane_s_own_prs_are_examined(monkeypatch):
         _pr(3, "myia-po-2026:CoursIA", 3),
     ])
     monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {})
-    monkeypatch.setattr(pig, "unaddressed_review_points",
+    monkeypatch.setattr(pig, "unaddressed_review_points_detail",
                         lambda nums: seen.extend(nums) or {})
     pig.red_backlog("myia-po-2026:CoursIA", 24)
     assert seen == [1, 3]      # les deux PR de la lane
@@ -2823,7 +3000,7 @@ def test_organ_failure_is_said_not_swallowed(monkeypatch):
     monkeypatch.setattr(pig, "fetch_open_prs",
                         lambda: [_pr(1, "myia-po-2026:CoursIA", 30)])
     monkeypatch.setattr(pig, "fetch_pr_states", lambda nums: {1: green})
-    monkeypatch.setattr(pig, "unaddressed_review_points", boom)
+    monkeypatch.setattr(pig, "unaddressed_review_points_detail", boom)
     out = pig.red_backlog("myia-po-2026:CoursIA", 24)
     assert out["red"] == []
     assert out["nits_unavailable"] == "RuntimeError"
@@ -3434,6 +3611,116 @@ def test_unaddressed_review_points_pr_illisible_ne_bloque_pas_les_autres(monkeyp
     assert calls == [15049, 15081]
 
 
+def test_unaddressed_review_points_detail_carries_authors_and_verdict(monkeypatch):
+    """#16926 : la file de reparation rend QUI tient la reserve et sous
+    quelle voix -- auteurs deduits des entrees blocking (pas de second
+    round-trip nits), verdict latest-wins par l'organe pool_review_verdicts,
+    recherche SEULEMENT sur les PRs a points non leves."""
+    import types
+
+    def fake_entries(n):
+        if n == 20961:
+            return {"blocking": [
+                {"kind": "CONCERNS", "author": "clusterManager-Myia", "channel": "review"},
+                {"kind": "NIT", "author": "jsboige", "channel": "comment"},
+                {"kind": "NIT2", "author": "clusterManager-Myia", "channel": "comment"},
+            ], "blocked": True}
+        if n == 18829:
+            return {"blocking": [], "blocked": False}
+        return None  # PR illisible
+
+    calls = []
+
+    def fake_fetch_prs(repo, numbers):
+        calls.append((repo, list(numbers)))
+        return {20961: {"number": 20961, "verdict": "CONCERNS",
+                        "verdict_surface": "review-body"}}
+
+    monkeypatch.setattr(pig, "_nits_blocking_entries", fake_entries)
+    monkeypatch.setitem(sys.modules, "pool_review_verdicts",
+                        types.SimpleNamespace(fetch_prs=fake_fetch_prs))
+    out = pig.unaddressed_review_points_detail([20961, 18829, 15081])
+    # auteurs dedoublonnes et tries ; verdict de l'organe ; #18829 evaluee
+    # claire garde son count 0 ; 15081 illisible reste ABSENTE.
+    assert out[20961] == {"count": 3,
+                          "authors": ["clusterManager-Myia", "jsboige"],
+                          "verdict": "CONCERNS", "verdict_surface": "review-body"}
+    assert out[18829] == {"count": 0, "authors": [],
+                          "verdict": None, "verdict_surface": None}
+    assert 15081 not in out
+    # la voix n'est cherchee que sur les PRs a points -- pas sur la claire.
+    assert calls == [("jsboige/CoursIA", [20961])]
+
+
+def test_unaddressed_review_points_detail_organ_down_keeps_count_and_authors(monkeypatch):
+    """Panne de l'organe de verdicts : champs verdict omis, le compte et les
+    auteurs restent rendus -- la file ne se bloque jamais sur une surface
+    annexe."""
+    import types
+
+    def boom(repo, numbers):
+        raise RuntimeError("gh down")
+
+    monkeypatch.setattr(pig, "_nits_blocking_entries",
+                        lambda n: {"blocking": [{"author": "clusterManager-Myia"}],
+                                   "blocked": True})
+    monkeypatch.setitem(sys.modules, "pool_review_verdicts",
+                        types.SimpleNamespace(fetch_prs=boom))
+    out = pig.unaddressed_review_points_detail([42])
+    assert out[42]["count"] == 1
+    assert out[42]["authors"] == ["clusterManager-Myia"]
+    assert out[42]["verdict"] is None
+    assert out[42]["verdict_surface"] is None
+
+
+def test_unaddressed_review_points_detail_propage_la_derive_de_contrat(monkeypatch):
+    """#15139 tient pour la variante detaillee : un TypeError de l'organe
+    nits est un bug d'appel, pas une PR illisible -- il remonte jusqu'au
+    nits_unavailable de red_backlog, jamais un dict vide muet."""
+    def drift(n):
+        raise TypeError("analyse_pr() got an unexpected keyword argument")
+
+    monkeypatch.setattr(pig, "_nits_blocking_entries", drift)
+    try:
+        pig.unaddressed_review_points_detail([42])
+    except TypeError:
+        pass
+    else:
+        raise AssertionError("TypeError de contrat devait etre propagee")
+
+
+def test_red_backlog_rend_auteurs_et_verdict_des_reserves(monkeypatch):
+    """Le rendu de la file de reparation porte la ligne detaillee : la lane
+    voit QUI tient la reserve et le dernier verdict, sans rejouer
+    check_unaddressed_nits a la main (#16926)."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    detail = {1: {"count": 2, "authors": ["clusterManager-Myia", "jsboige"],
+                  "verdict": "CONCERNS", "verdict_surface": "review-body"}}
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)],
+                   {1: red}, nits=detail)
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=1)
+    causes = out["red"][0]["causes"]
+    assert causes[0].startswith("2 point(s) de review non leve(s)")
+    assert causes[1] == ("reserve(s) de : clusterManager-Myia, jsboige"
+                         " -- dernier verdict : CONCERNS (review-body)")
+    # et le trigger nits reste pose par le compte, pas par la truthiness du dict
+    assert "nits" in out["triggers"]
+
+
+def test_red_backlog_trigger_nits_pas_sur_une_entree_claire(monkeypatch):
+    """Reverifie le piege de truthiness du #16926 : une entree evaluee claire
+    ({count: 0}, dict truthy) ne doit PAS poser le trigger nits."""
+    red = _state(checks=[("PR gate", "FAILURE", True)])
+    detail = {1: {"count": 0, "authors": [], "verdict": None, "verdict_surface": None}}
+    _patch_backlog(monkeypatch, [_pr(1, "myia-po-2026:CoursIA", 30)],
+                   {1: red}, nits=detail)
+    out = pig.red_backlog("myia-po-2026:CoursIA", 24, count_threshold=1)
+    # rouge seul, ardoise de review propre : le motif nits ne doit pas exister
+    assert "nits" not in out["triggers"]
+    assert not any("point(s) de review" in c
+                   for c in out["red"][0]["causes"])
+
+
 # --- age de derniere livraison reelle : hook weight (#15491 Phase 1) ---------
 
 def _umbrella(n, age=120, idle=40):
@@ -3708,6 +3995,109 @@ def test_sonde_marqueur_ne_touche_pas_rest_quand_graphql_vit(monkeypatch):
         monkeypatch, calls, issue={"comments": [_delivered_marker_comment()]})
     assert pig._has_delivered_marker(14373) is True
     assert [c for c in calls if c[1:2] == ["api"]] == []
+
+
+# --- Rendre le marqueur RELEVABLE (il etait permanent) -----------------------
+#
+# Mesure du 2026-10-12 : sur 80 issues portant un marqueur de livraison, 20
+# l'etaient PARTIELLEMENT. Un `any(...)` rendait True des le premier marqueur,
+# a vie : la verification ulterieure du coordinateur ne pouvait plus remettre
+# l'issue sur le tapis, et elle restait ecartee de toutes les lanes worker
+# (ecartee par `has_delivered_signal` sur le tapis, annotee LIVRE-urn par
+# `recent_delivery` a la voie ponderee). Le marqueur devient un ETAT : les
+# deux transports rendent leurs corps en ordre chronologique, une forme de
+# retractation defait les marqueurs qui la precedent, un depot posterieur
+# rearme.
+
+
+def _issued_comments(*bodies):
+    """Charge `gh issue view --comments --json comments` : un corps par
+    commentaire, dans l'ordre du transport (`createdAt` croissant)."""
+    return {"comments": [{"body": b, "createdAt": f"2026-10-12T10:{i:02d}:00Z"}
+                         for i, b in enumerate(bodies)]}
+
+
+def test_marqueur_livre_puis_retracte_rend_faux(monkeypatch):
+    """Livraison partielle relevee par un commentaire POSTERIEUR : l'issue
+    n'est plus annotee LIVRE-urn, elle revient dans l'urne `grain`."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _delivered_marker_comment()["body"],
+            "[NOT-DELIVERED] verification first-hand : 2 cellules sur 5."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_retractation_puis_marqueur_repose_rearme(monkeypatch):
+    """Un marqueur poste APRES la retractation rearme : c'est l'ORDRE qui
+    porte le sens, pas la seule presence."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _delivered_marker_comment()["body"],
+            "[NOT-DELIVERED] livraison partielle.",
+            _delivered_marker_comment()["body"]))
+    assert pig._has_delivered_marker(14373) is True
+
+
+def test_retractation_seule_ne_fabrique_pas_de_livraison(monkeypatch):
+    """Controle NEGATIF : la retractation seule ne cree aucun signal."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            "[NOT-DELIVERED] issue jamais livree, remise sur le tapis."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_retractation_citee_en_prose_ne_releve_rien(monkeypatch):
+    """L'ancrage tete de ligne est la garde anti-FP : une mention en milieu
+    de ligne -- ou dans un bloc de citation `>` -- ne retracte pas."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _delivered_marker_comment()["body"],
+            "Je reprends ta remarque : la forme [NOT-DELIVERED] sert a\n"
+            "retracter un marqueur, et je la cite sans la poser.\n"
+            "> [NOT-DELIVERED] exemple de citation\n"))
+    assert pig._has_delivered_marker(14373) is True
+
+
+def test_candidate_delivered_revoked_n_est_pas_un_marqueur(monkeypatch):
+    """La retractation ne se relit pas comme une livraison : le lookahead
+    `(?![-_\\w])` de #20008 ferme `candidate-delivered` devant `-revoked`,
+    sur la forme canonique ET sur la forme annonce."""
+    assert pig._DELIVERED_MARKER_RE.search(
+        "[INFO] candidate-delivered-revoked -- verification partielle") is None
+    assert pig._DELIVERED_MARKER_RE.search(
+        "[INFO] lane myia-ai-01:CoursIA -- candidate-delivered-revoked") is None
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            "[INFO] candidate-delivered-revoked livraison partielle."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_corps_contradictoire_la_retractation_l_emporte(monkeypatch):
+    """Choix documente (`_delivered_state`) : un corps portant les DEUX formes
+    est contradictoire, la retractation l'emporte -- c'est le geste delibere,
+    celui que ce correctif doit rendre effectif."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            "[INFO] candidate-delivered -- verification first-hand 6d0bd02093.\n"
+            "[NOT-DELIVERED] en fait partiel, remis sur le tapis."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_retractation_lue_par_le_repli_rest(monkeypatch):
+    """GraphQL mort : le repli REST rend les corps DANS L'ORDRE -- meme etat
+    que la voie nominale, dans les deux sens (retractation apres marqueur,
+    puis marqueur apres retractation)."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=(_delivered_marker_comment()["body"] + "\n"
+              "[NOT-DELIVERED] livraison partielle.\n"))
+    assert pig._has_delivered_marker(14373) is False
+
+    _patch_gh_transports(
+        monkeypatch, [], issue=_GRAPHQL_MORT,
+        rest=("[NOT-DELIVERED] releve par le coordinateur.\n"
+              + _delivered_marker_comment()["body"] + "\n"))
+    assert pig._has_delivered_marker(14373) is True
 
 
 # --- #17038 : la sonde du TAPIS (`has_delivered_signal`) porte le meme repli

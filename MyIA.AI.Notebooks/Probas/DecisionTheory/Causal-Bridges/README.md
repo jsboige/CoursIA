@@ -19,6 +19,7 @@
 | [CausalBridges-06 — L'instrument faible](CausalBridges-06-Dowhy-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy.CausalModel` (pipeline `identify` + `estimate(iv.instrumental_variable)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée ; complète le 2SLS from scratch de la cellule 40 de `CausalBridges-07-Quasi-Experimental.ipynb` |
 | [CausalBridges-07 — Quasi-Experimental](CausalBridges-07-Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
 | [CausalBridges-08 — Décomposer la discrimination](CausalBridges-08-Causal-Fairness.ipynb) | ~50 min | Critères structurels Str-DE/IE/SE, famille TV (TE, Exp-SE, NDE, NIE) — Lem 4.1 et Thm 4.2 **vérifiés à la précision machine** sur un SCM à bruits partagés, `dowhy` backdoor vs naïf (+69 % d'écart mesuré), règle des 80 % (EEOC) sur le crédit allemand, business necessity |
+| [CausalBridges-09 — Emuler un essai ciblé](CausalBridges-09-Hernan-TargetTrialEmulation-Python.ipynb) | ~60 min | *Target trial emulation* (Hernan/Robins ch. 21-22) : confounding **variant dans le temps** sur lombalgie récurrente à deux visites, $L_1$ à la fois confondeur et médiateur, protocole d'essai ciblé à 7 composantes ; g-formula (Robins 1986, simulation forward) et IPTW stabilisé (Robins 1999, poids de censuration) contre trois réflexes naïfs ; benchmark **200 répliques × 2 forces de confounding** (biais/RMSE/couverture IC 95 %) — les deux g-méthodes sans biais, l'IPTW paie en variance (ET ×3) ; `dowhy` ancré sur l'instantané $t_0$ (SOTA-OK) ; pli 2 de l'EPIC #19309 |
 
 **Prérequis** : probabilités conditionnelles, graphes orientés acycliques (DAG), notions d'inférence bayésienne. Une lecture préalable de l'un des cinq notebooks de la constellation (ci-dessous) rend le pont plus concret.
 
@@ -36,7 +37,7 @@ Les quatre séries **implantent le même formalisme** avec des outils différent
 
 | Direction | Notebook | Moteur | Ce qu'il apporte de plus |
 |-----------|----------|--------|--------------------------|
-| Logique + SCM + contrefactuels | [Tweety-11](../../../SymbolicAI/Tweety/Tweety-11-Causal-Python.html) | Tweety (.NET) | backend causal logique, opérateur `do` natif |
+| Logique + SCM + contrefactuels | [Tweety-11](../../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) | Tweety (.NET) | backend causal logique, opérateur `do` natif |
 | Message passing exact | [Infer-5](../../Infer/Infer-5-Causal-Inference.ipynb) | Infer.NET | backdoor, front-door, Simpson, médiation, capstone contrefactuel |
 | MCMC bayésien | [PyMC-5](../../PyMC/PyMC-05-Causal-Inference.ipynb) | PyMC | incertitude postérieure sur l'effet, contrefactuel bayésien |
 | Émergence causale (Hoel) | [ICT-5](../../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb), [ICT-6](../../../IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | information effective, coarse-graining, multiscale |

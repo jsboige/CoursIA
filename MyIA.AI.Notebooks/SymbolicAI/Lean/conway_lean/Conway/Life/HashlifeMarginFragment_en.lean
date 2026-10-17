@@ -2965,6 +2965,81 @@ theorem hashlife_correct_margin_of_union_periodic_dyadic (c : MacroCell) (k : Na
   rw [hsplit]
   exact hcap_of_union_periodic_dyadic hTi g₁ g₂ hsep hfix₁ hfix₂ hcan hne₁ hne₂ t
 
+/-! ### Link 4 — the degenerate class: unions with an empty part
+
+Link 3 (`hcap_of_union_periodic_dyadic`) requires BOTH parts non-empty
+(`hne₁`, `hne₂`): its window `2 ^ i` is paid by the gap BETWEEN the two
+parts, a gap an empty part cannot witness. This link closes the excluded
+class: when one part is empty, the union IS the other part
+(`List.append_nil`), and the window is paid by the carrier part's OWN
+extent — two points of the same phase at distance `2 ^ i` force the
+reconstruction level (`gridToMacroCellWithOffset_level_ge_of_span`), the
+same lemma as link 3 but with the pair of points INSIDE the pattern instead
+of between two patterns. The separation `hsep` disappears from the
+interface: there is nothing left to separate. Combined with links 2
+(T ∈ {1, 2, 4}) and 3 (dyadic, separated on both sides), the P4.4
+decomposition of periodic unions is closed over its full extent. -/
+
+/-- **hcap of a periodic oscillator with an intra-part window.** A canonical
+    oscillator of period `T = 2 ^ i` whose every phase carries two points at
+    Chebyshev distance `≥ 2 ^ i` is captured at any instant: the trajectory
+    reduces to its `T` phases (`hcap_of_period`), and every phase spread over
+    `2 ^ i` is reconstructed at a level `≥ i`, hence `2 ^ i ∣ 2 ^ level`.
+    This is the single-grid mirror of link 3: the extent paying the window
+    lives inside the pattern instead of between two patterns. -/
+theorem hcap_of_period_span {T i : Nat} (hTi : T = 2 ^ i) (g : Grid)
+    (hg : Canonical g) (hper : evolve T g = g)
+    (hspan : ∀ s, ∃ p q, p ∈ evolve s g ∧ q ∈ evolve s g ∧ 2 ^ i ≤ chebDist p q) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true := by
+  have hT0 : 0 < T := by rw [hTi]; exact pow_pos (by norm_num) i
+  refine hcap_of_period g hg hT0 hper ?_
+  intro j _
+  obtain ⟨p, q, hp, hq, hcheb⟩ := hspan j
+  have hlvl : i ≤ (gridToMacroCellWithOffset (evolve j g)).2.level :=
+    gridToMacroCellWithOffset_level_ge_of_span _ i p q hp hq hcheb
+  obtain ⟨m, hm⟩ : ∃ m, (gridToMacroCellWithOffset (evolve j g)).2.level = i + m :=
+    ⟨(gridToMacroCellWithOffset (evolve j g)).2.level - i, by omega⟩
+  rw [hTi, hm, pow_add]
+  exact ⟨2 ^ m, by ring⟩
+
+/-- **hcap of degenerate periodic unions — link 4.** A union `g₁ ++ g₂`
+    whose second part is empty reduces to its carrier part
+    (`List.append_nil`): the capture is that of the single-grid lemma above,
+    the window paid by `g₁`'s own extent. No separation hypothesis (nothing
+    to separate), no fixpoint on the empty side (`evolve` of the empty grid
+    is the empty grid, the excluded part no longer enters the interface).
+    The left mirror (`g₁ = []`) follows by `List.nil_append`. -/
+theorem hcap_of_union_periodic_singleton {T i : Nat} (hTi : T = 2 ^ i)
+    (g₁ g₂ : Grid) (hfix₁ : evolve T g₁ = g₁)
+    (hcan : Canonical (g₁ ++ g₂)) (hg₂ : g₂ = [])
+    (hspan : ∀ s, ∃ p q, p ∈ evolve s g₁ ∧ q ∈ evolve s g₁ ∧ 2 ^ i ≤ chebDist p q)
+    (t : Nat) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true := by
+  subst hg₂
+  rw [List.append_nil] at hcan ⊢
+  exact hcap_of_period_span hTi g₁ hcan hfix₁ hspan t
+
+/-- **L2 assembly for the degenerate class.** Mirror of the two assembly
+    corollaries above: a MacroCell whose grid rendered at the origin splits
+    into a `2 ^ i`-periodic carrier part with an intra-part window and an
+    empty part satisfies the Hashlife equality at any horizon `2 ^ k` under
+    `centralCorrect`. After low unions (`_of_union_periodic`, T ∈ {1, 2, 4})
+    and dyadic unions separated on both sides
+    (`_of_union_periodic_dyadic`), the degenerate class excluded by
+    `hne₁`/`hne₂` of link 3 is covered: it was nothing but a solitary
+    oscillator spread over its period. -/
+theorem hashlife_correct_margin_of_union_periodic_singleton (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T i : Nat} (hTi : T = 2 ^ i)
+    (g₁ g₂ : Grid) (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hfix₁ : evolve T g₁ = g₁)
+    (hcan : Canonical (g₁ ++ g₂)) (hg₂ : g₂ = [])
+    (hspan : ∀ s, ∃ p q, p ∈ evolve s g₁ ∧ q ∈ evolve s g₁ ∧ 2 ^ i ≤ chebDist p q) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_union_periodic_singleton hTi g₁ g₂ hfix₁ hcan hg₂ hspan t
+
 /-! ## Synthesis — the fragment is non-empty and the framework statement is honest
 
 `supportInMargin` is decidable and witnessed on the bestiary (above). The framework

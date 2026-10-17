@@ -472,6 +472,9 @@ def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str 
     return None
 
 
+_REACHABLE_OBJECTS: dict[tuple[str, str], set[str]] = {}
+
+
 def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool:
     """Vrai si `blob_sha` est accessible depuis `ref` (= un commit ancetre le reference).
 
@@ -492,19 +495,35 @@ def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool
     figure, c'est un metadata-only drift (pas un orphelin). Sinon, c'est un
     orphelin par squash : le rebaseline doit le corriger.
 
-    Cout : `rev-list --objects HEAD` parcourt tout l'historique ; le defacto
-    full scan reste borne par la taille du depot (~5-10s sur CoursIA). Pour
-    un seul test is_noop par paire, c'est acceptable. Une optimisation
-    ulterieure (cache par ref+blob) n'est pas justifiee a c.409.
+    Cout : `rev-list --objects HEAD` parcourt tout l'historique (~4 s sur
+    CoursIA). Le parcours ne depend que du commit resolu, et la fonction est
+    appelee jusqu'a trois fois par paire : il est donc memorise par
+    (depot, commit).
+
+    Clone partiel : les workflows font leur checkout avec `filter: blob:none`.
+    Sans option, `rev-list --objects` y rapatrie un par un chaque blob absent
+    de l'historique (mesure du 2026-10-14 : 8 slots sur 10 bloques de 45 min a
+    4 h dans ce seul appel). `--missing=print` liste ces blobs sous la forme
+    `?<sha>` sans les telecharger ; l'appartenance se lit de la meme facon.
     """
     if not blob_sha or len(blob_sha) != 40:
         return False
-    r = _run_git(["git", "rev-list", "--objects", ref], cwd=str(repo_root))
-    if r.returncode != 0:
+    head = _run_git(["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
+                    cwd=str(repo_root))
+    if head.returncode != 0:
         return False
-    # Chaque ligne de `rev-list --objects` est soit "<commit_sha>" soit
-    # "<commit_sha> <blob_sha>". On grep simplement le blob SHA sur la sortie.
-    return blob_sha in r.stdout
+    key = (str(repo_root), head.stdout.strip())
+    reachable = _REACHABLE_OBJECTS.get(key)
+    if reachable is None:
+        r = _run_git(["git", "rev-list", "--objects", "--missing=print", key[1]],
+                     cwd=str(repo_root))
+        if r.returncode != 0:
+            return False
+        # Chaque ligne est "<sha>", "<sha> <chemin>" ou, pour un objet absent
+        # du clone partiel, "?<sha>".
+        reachable = {line.lstrip("?").split(" ", 1)[0] for line in r.stdout.splitlines()}
+        _REACHABLE_OBJECTS[key] = reachable
+    return blob_sha in reachable
 
 
 def _content_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str | None:
@@ -934,6 +953,13 @@ def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
         recorded divergente = MISMATCH (le sha a ete ecrit a la main, pas via
         --update, ou le carnet a bouge sans rebaseline).
 
+    Tolerance metadata-only (#20228) : un blob SHA qui a bouge sans que le
+    contenu (cellules + outputs) ait bouge -- tampon `nb["metadata"]` pose ou
+    retire -- n'est PAS rapporte. `--update` refuse ce cas comme no-op par
+    design (#9399 critere 2), donc le rapporter rendait l'avertissement
+    inextinguible : les deux modes du meme outil se contredisaient. Le side
+    concerne est liste dans `metadata_only_sha` (tracable, non bloquant).
+
     Migration progressive : les paires non encore re-auditees post-volet-(c)
     ont `content_*_sha: None` ; on les SAUTE (pas un mismatch, juste
     « pas encore migre »). Meme politique que les tests rename-aware (#9473).
@@ -964,16 +990,45 @@ def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
     rec_cpy = audit.get("content_python_sha")
     rec_ccs = audit.get("content_csharp_sha")
 
+    # Drift metadata-only (#20228) : le blob SHA a bouge -- un tampon
+    # `nb["metadata"]` (kernelspec, cost, papermill) pose ou retire -- sans que
+    # le contenu pedagogique (cellules + outputs) ait bouge. Le design exige que
+    # ce cas NE fasse PAS rougir le gate (#9399 critere 2 ; cf docstring de
+    # `_content_sha` : « un tampon `metadata.cost` seul ne porte aucune
+    # divergence pedagogique et ne doit PAS faire rougir le gate », faux
+    # positifs Sudoku-08/14 BDD du 2026-08-04). Coherence avec `--update`, qui
+    # le refuse deja comme no-op : sans cette tolerance, les deux modes se
+    # contredisaient -- `verify` disait « incoherent » quand `update` disait
+    # « rien a faire », et AUCUN geste ne pouvait eteindre l'avertissement.
+    #
+    # Un orphelin par squash reste rapporte : son blob n'est plus accessible
+    # depuis HEAD, il n'est donc pas un drift metadata-only et il EST
+    # rebaselinable (#11919).
+    def _metadata_only(rec_content, cur_content, rec_blob):
+        return (rec_content is not None and rec_content == cur_content
+                and rec_blob is not None
+                and _blob_ancestor_in(repo_root, rec_blob))
+
+    py_meta_only = _metadata_only(rec_cpy, cur_cpy, rec_py)
+    cs_meta_only = _metadata_only(rec_ccs, cur_ccs, rec_cs)
+
     mismatches = []
-    # Comparaison sur les blob SHA : compares stricte.
+    metadata_only_sha = []
+    # Comparaison sur les blob SHA : compares stricte, sauf drift metadata-only.
     if rec_py is not None and rec_py != cur_py:
-        mismatches.append(
-            f"python_sha: recorded={rec_py[:12]} calculated={cur_py[:12]}"
-        )
+        if py_meta_only:
+            metadata_only_sha.append("python_sha")
+        else:
+            mismatches.append(
+                f"python_sha: recorded={rec_py[:12]} calculated={cur_py[:12]}"
+            )
     if rec_cs is not None and rec_cs != cur_cs:
-        mismatches.append(
-            f"csharp_sha: recorded={rec_cs[:12]} calculated={cur_cs[:12]}"
-        )
+        if cs_meta_only:
+            metadata_only_sha.append("csharp_sha")
+        else:
+            mismatches.append(
+                f"csharp_sha: recorded={rec_cs[:12]} calculated={cur_cs[:12]}"
+            )
     # Comparaison sur les content_sha : on SKIP si recorded=None (migration
     # progressive post-volet-(c) ; les paires legacy n'ont pas encore ces
     # champs). Une comparaison `None != cur_cpy` serait un faux positif de
@@ -994,6 +1049,7 @@ def verify_recorded_sha(repo_root: Path, pair: dict) -> dict:
         "parity_level": pair.get("parity_level", "?"),
         "status": "MISMATCH" if mismatches else "OK",
         "mismatches": mismatches,
+        "metadata_only_sha": metadata_only_sha,
         "current_python_sha": cur_py,
         "current_csharp_sha": cur_cs,
         "current_content_python_sha": cur_cpy,
