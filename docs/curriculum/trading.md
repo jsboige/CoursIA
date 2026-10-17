@@ -20,9 +20,9 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 
 | Métrique | Valeur |
 |----------|--------|
-| Notebooks | 291 |
+| Notebooks | 292 |
 | PRODUCTION | 0 |
-| BETA | 269 |
+| BETA | 270 |
 | ALPHA | 22 |
 
 ## ML/DataScienceWithAgents (108 notebooks)
@@ -276,7 +276,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 |---|----------|----------|------------|
 | 1 | [M16 — HAR asymétrique débiaisé : le signal survit-il…](../../MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/m3_har_asymmetric_semivariance.ipynb) | BETA | Non |
 
-## QuantConnect/Python (28 notebooks)
+## QuantConnect/Python (29 notebooks)
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
@@ -299,15 +299,16 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 17 | [QC-Py-35 - Reinforcement Learning pour la Construction…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-35-RL-Portfolio-Construction.ipynb) | ALPHA | Non |
 | 18 | [QC-Py-40 : Paper Trading Binance - Mean Reversion…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-40-PaperTrading-Binance.ipynb) | BETA | Non |
 | 19 | [QC-Py-41 : Paper Trading IBKR - SP500 Momentum](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-41-PaperTrading-IBKR.ipynb) | BETA | Non |
-| 20 | [QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur QC…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | ALPHA | Non |
-| 21 | [QC-Py-Cloud-02 : Classification de Texte et Sentiment…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-ML-Classification.ipynb) | ALPHA | Non |
-| 22 | [QC-Py-Cloud-03 : Parite de Risque (Risk Parity)](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb) | BETA | Non |
-| 23 | [QC-Py-Cloud-05 : Prevision par Reseau de Neurones (MLP)](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-05-MLP-Forecasting.ipynb) | ALPHA | Non |
-| 24 | [Value Factor Z-Score — Sélection multi-facteurs…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-08-ValueFactor-ZScore.ipynb) | BETA | Non |
-| 25 | [Option Wheel — Le paradoxe du win-rate eleve](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-09-OptionWheel.ipynb) | BETA | Non |
-| 26 | [QC-Py-Cloud-10 : Reinforcement Learning - DQN Trading](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-10-RL-DQN-Trading.ipynb) | ALPHA | Non |
-| 27 | [QC-Py-Cloud-14 — Dual Momentum : Asset Sélection…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-14-DualMomentum.ipynb) | BETA | Non |
-| 28 | [Workflow : Téléchargement et gestion des datasets](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Dataset-Workflow.ipynb) | ALPHA | Non |
+| 20 | [QC-Py-43 — Données financières synthétiques par…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-43-Diffusion-Series-Synthetiques.ipynb) | BETA | Non |
+| 21 | [QC-Py-Cloud-01 : Analyse de Sentiment FinBERT sur QC…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-01-FinBERT-Sentiment.ipynb) | ALPHA | Non |
+| 22 | [QC-Py-Cloud-02 : Classification de Texte et Sentiment…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-02-ML-Classification.ipynb) | ALPHA | Non |
+| 23 | [QC-Py-Cloud-03 : Parite de Risque (Risk Parity)](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-03-Risk-Parity.ipynb) | BETA | Non |
+| 24 | [QC-Py-Cloud-05 : Prevision par Reseau de Neurones (MLP)](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-05-MLP-Forecasting.ipynb) | ALPHA | Non |
+| 25 | [Value Factor Z-Score — Sélection multi-facteurs…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-08-ValueFactor-ZScore.ipynb) | BETA | Non |
+| 26 | [Option Wheel — Le paradoxe du win-rate eleve](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-09-OptionWheel.ipynb) | BETA | Non |
+| 27 | [QC-Py-Cloud-10 : Reinforcement Learning - DQN Trading](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-10-RL-DQN-Trading.ipynb) | ALPHA | Non |
+| 28 | [QC-Py-Cloud-14 — Dual Momentum : Asset Sélection…](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Cloud-14-DualMomentum.ipynb) | BETA | Non |
+| 29 | [Workflow : Téléchargement et gestion des datasets](../../MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-Dataset-Workflow.ipynb) | ALPHA | Non |
 
 ## QuantConnect/kelly_lean (6 notebooks)
 
