@@ -2833,6 +2833,54 @@ La discrimination est attestée par le **témoin négatif interne** : exploitabi
 | SOTA Prong A | **SOTA-OK (déclaré)** | PyTorch réel entraîné + énumération exacte ; organe natif différé au grain B (déclaré) |
 | SOTA Prong B | **CONFORME** | Témoin négatif mesuré, lecture honnête du renversement, mono-seed assumé |
 
+## Entry #032 — GameTheory/13g-Ataraxos-Organe-Natif (owner po-2027, grain B #20408)
+
+| Métrique | Valeur |
+|----------|--------|
+| Famille | `MyIA.AI.Notebooks/GameTheory/GameTheory-13g-Ataraxos-Organe-Natif.ipynb` (1 .ipynb — invocation de l'organe natif `AtaraxosAI/doudizhu` à budget réduit, satellite Recherche tier 13g, suite de 13f) |
+| Kernel | `python3` |
+| Owner-lane | **po-2027** (`myia-po-2027:CoursIA`) |
+| Date | 2026-10-12 (numérotation allouée à la livraison ; l'entrée #031 vit sur #20435, mergée) |
+| PR | #20446 |
+| Verdict agrégé | **SOTA-OK** — organe natif installé, validé par sa suite de tests, entraîné et invoqué à échelle réduite ; la limite PerfectDou de la brique evaluations est mesurée et documentée, pas contournée |
+
+### Synthèse
+
+| Nb | Cells | Code | EXEC | Err | Stubs C.1 | Kernel | Outils SOTA | Verdict |
+|-----|-------|------|------|-----|-----------|--------|-------------|---------|
+| GameTheory-13g-Ataraxos-Organe-Natif | 16 | 8 | 8/8 | 0 | 0 (3 ex.) | python3 | organe `AtaraxosAI/doudizhu` natif : nanopokerlib C++20 (build MinGW), MARVEL VRPO 2 iter, Yomi 2 iter, Kagami update-equiv B in {4,16,64} | **SOTA-OK** |
+
+- **EXEC_PROVED** : 8/8 (100%) — `execution_count` 1–8 contigus, 0 erreur. Cellules organ-presence exécutées RÉELLEMENT à la re-exécution (constantes C++ lues depuis le module compilé ; `96 passed, 5 deselected, rc=0` — suite de tests native de l'organe rejouée en sous-processus pendant l'exécution du carnet).
+
+### Vrais outils SOTA invoqués (les quatre briques, nativement)
+
+- **nanopokerlib (C++20/pybind11)** — build MinGW-w64 g++ 16.2, générateur Ninja (patch local du `setup.py` : `-A x64` restreint aux générateurs multi-config ; `libwinpthread-1.dll` copiée près du `.pyd` après `-static-libstdc++ -static-libgcc`). 96/96 tests natifs.
+- **MARVEL (VRPO)** — entraînements réels 2 itérations : `doudizhu` full 202,4 s/iter (OOM 32,5 Go à défauts intacts — tampon de rejeu), `doudizhu_tiny` 40,2 s/iter (5 cartes/main, variante native de l'organe, défaut du moteur Kagami).
+- **Yomi (croyances)** — entraînement réel 2 itérations sur checkpoint MARVEL gelé (OOM 2,7 Go à batch 128 → batch 8).
+- **Kagami update-equiv** — `DoudizhuInferenceEngine` + `bind_marvel_model`/`bind_yomi_model` sur checkpoints réels, donnes racines construites par la méthode canonique des tests de l'organe (graines 0–5), budgets {4, 16, 64} vs défaut 512.
+
+### Mesures (relevées 2026-10-12, organ Windows/mingw, torch 2.14.1+cpu)
+
+KL(direct ‖ recherchée) par budget, 6 donnes : B=4 → 1,22 nat moyen (renversements 50 %) ; B=16 → 1,51 nat (max 4,04, 83 %) ; B=64 → 0,44 nat (67 %) ; direct 8 ms/requête vs 0,36–1,34 s recherchée.
+
+### Témoin négatif (Prong B — honnêteté mesurée)
+
+La divergence n'est **pas monotone en budget** (pic à B=16, chute à B=64 ; une donne sur six anti-converge, la donne 2 : 1,348 → 1,502 nat de B=4 a B=64) : à croyance sous-entraînée (2 iter vs 40 000 papier), chaque rollout hérite du bruit d'amont — le budget de recherche ne compense pas l'entraînement manquant. Le carnet enseigne cette lecture au lieu du récit « plus de budget = mieux ».
+
+### Limite mesurée, non contournée
+
+La brique `evaluations` (matches complets) exige le bootstrap externe PerfectDou (`from perfectdou.env.game import GameEnv` + données générées par son script) — import-chain + `CalledProcessError` relevés dans le carnet. La mesure passe par le moteur d'inference Kagami un-pas, sans dépôt externe. RECOVERABLE-MACHINE documenté pour les matches complets, pas substitué.
+
+### Conformité aux règles
+
+| Règle | Statut | Preuve |
+|-------|--------|--------|
+| C.1 | **CONFORME** | 3 stubs `print` + `return None` + `# TODO etudiant` ; 0 erreur d'exécution |
+| C.2 | **CONFORME** | 8/8 exec_count réels, sorties mesurées committées (96 passed natif, tableaux KL, figure) |
+| Stop & Repair | **CONFORME** | 0 hand-edit de sortie ; dégradation organ-absent = branche de code, pas un maquillage |
+| SOTA Prong A | **SOTA-OK** | organ-first : la sémantique update-equiv du patron 13f est remplacée par l'organe officiel ici (questions 1-3 répondues par construction) |
+| SOTA Prong B | **CONFORME** | échelle de budgets + témoin négatif non-monotonie mesuré, hétérogénéité par donne affichée |
+
 ## Cumul entries (registre axe-2 SOTA)
 
 Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Toute nouvelle entry doit etre ajoutee ici dans la meme PR (regle #14562).
@@ -2870,5 +2918,6 @@ Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Tout
 | 029 | GenAI/SemanticKernel 01-10b (12 nb) | owner-floue po-2025 consultatif | 2026-07-12 | SOTA-OK 12/12 | #6286 MERGED |
 | 030 | Probas/PyMC-05-Causal-Inference (1 nb) | po-2025 strict | 2026-07-16 | SOTA-OK 1/1 | #6808 MERGED |
 | 031 | GameTheory/13f-Ataraxos-Patron-Python (1 nb) | po-2027 | 2026-10-12 | SOTA-OK 1/1 (copie pédagogique déclarée) | #20435 |
+| 032 | GameTheory/13g-Ataraxos-Organe-Natif (1 nb) | po-2027 | 2026-10-12 | SOTA-OK 1/1 (organe natif invoqué, limite PerfectDou documentée) | #20446 |
 
-**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **31** (verifie le 2026-10-12). Ce tableau unique remplace les deux tableaux dupliques (huit lignes, entry #005 ; vingt-deux lignes, entry #008) supprimes par #14562.
+**Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **32** (verifie le 2026-10-13 ; l'entree #032 arrive avec #20446). Ce tableau unique remplace les deux tableaux dupliques (huit lignes, entry #005 ; vingt-deux lignes, entry #008) supprimes par #14562.

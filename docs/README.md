@@ -164,6 +164,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/l750-pivot-scope-discipline.md](lean/l750-pivot-scope-discipline.md) | L750 ★★ — Pivot Lean specialist, discipline de scope, remédiation OOM |
 | [lean/life-components-schema.md](lean/life-components-schema.md) | Schéma de motifs et de réactions de Game of Life — tranches 1-4 de #15635 |
 | [lean/origami-reconnaissance.md](lean/origami-reconnaissance.md) | Origami géométrie différentielle — Pli 1 reconnaissance |
+| [lean/18430-volet-b-leandojo-v2-bench.md](lean/18430-volet-b-leandojo-v2-bench.md) | Volet B #18430 — banc comparatif LeanDojo-v2 (Pantograph) vs harnais maison, rung 52 CONWAY, écarts de protocole mesurés |
 
 > Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
 
@@ -234,6 +235,7 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/aima-walk.md](curriculum/aima-walk.md) | Recherche et Corpus (AIMA-inspired) — lire le dépôt comme un corpus de recherche |
 | [curriculum/genai-rush.md](curriculum/genai-rush.md) | Accéléré vers GenAI |
 | [curriculum/symbolic-formalization.md](curriculum/symbolic-formalization.md) | IA Symbolique et Formalisation |
+| [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |
 
 ## Métadonnées notebooks (docs/notebook-metadata/)
 
@@ -338,6 +340,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/12204-ict-chantier-1-a5.md](ledgers/12204-ict-chantier-1-a5.md) | Chantier 1 — tranche A5 : opérations 2, 6, 10 après la distillation Sandholm |
 | [ledgers/12204-ict-chantier-1-a6.md](ledgers/12204-ict-chantier-1-a6.md) | Chantier 1 — tranche A6 : statuation des opérations 11-13 (promotions TABLE) et de la file d'attente |
 | [ledgers/12204-ict-chantier-1-a7.md](ledgers/12204-ict-chantier-1-a7.md) | Chantier 1 — tranche A7 : relecture froide — statuation des opérations 2 et 6, verdict « la table est-elle un catalogue ? », quatrième loi |
+| [ledgers/12204-ict-chantier-1-a8.md](ledgers/12204-ict-chantier-1-a8.md) | Chantier 1 — tranche A8 : rétro-équipement des conditions de rétrogradation — une condition de sortie exécutable par entrée TABLE (12 écrites, aucune entrée non falsifiable) |
 | [ledgers/13746-tests-eclates-dissipation.md](ledgers/13746-tests-eclates-dissipation.md) | EPIC #13746 — Ledger dissipation câblage tests éclatés |
 | [ledgers/14169-g1-recouvrement.md](ledgers/14169-g1-recouvrement.md) | Ledger G1 — Recouvrement 28 PRs amont endjin/Z3.Linq vs fork MyIntelligenceAgency/Z3.Linq |
 | [ledgers/14169-z3linq-upstream-overlap.md](ledgers/14169-z3linq-upstream-overlap.md) | Z3.Linq — recouvrement fork / amont |
