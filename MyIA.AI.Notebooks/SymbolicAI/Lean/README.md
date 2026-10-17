@@ -553,9 +553,6 @@ Lean/
 │   ├── serre100_lean/             # Lake Serre 100 (Hasse, MZV, Yoneda, caractères — modules FR + jumeaux _en)
 │   └── README.md
 ├── MIMO/                          # Sous-série détection MIMO par flips (budget de descente, seuil 2·log N, converse natif) — gradation #17545 : [README](MIMO/README.md)
-│   ├── MIMO-01-Descente-Budget-Lean-Python.ipynb # Python kernel - budget de descente (décroissance borne les flips, #12219)
-│   ├── MIMO-02-Detection-Flips-Lean-Python.ipynb # Python kernel - détection MIMO par flips (seuil 2·log N, companion mimo_lean)
-│   ├── MIMO-03-Converse-Native-Lean.ipynb # Lean4 (WSL) kernel - converse MIMO natif (NormTails, Hanson-Wright, #print axioms)
 │   ├── MIMO-04-Capstone-Digestion-Python.ipynb # Python kernel - capstone : les énoncés exécutés à la main, surface du lac recomptée
 │   └── README.md
 ├── assets/                        # Images des README de la série ([MANIFEST](assets/readme/MANIFEST.md))
