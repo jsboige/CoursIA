@@ -17,6 +17,7 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 | 07 | *(à venir)* | Géométrie riemannienne — l'habilitation de 1854 : distances, géodésiques (désendroit [#19333](https://github.com/jsboige/CoursIA/issues/19333)) | Python stdlib |
 | 08 | *(à venir)* | Riemann mapping — toute région simplement connexe ≠ ℂ est conforme au disque | Python stdlib |
 | 09 | *(à venir)* | Riemann–Lebesgue et Fourier — noyau de Dirichlet, phénomène de Gibbs | Python stdlib + matplotlib |
+| 10 | [10-ondes-riemann.ipynb](10-ondes-riemann.ipynb) | Le mémoire de 1860 : propagation des ondes d'amplitude finie — invariants de Riemann, onde simple exacte, formation géométrique du choc (t\*), solveur exact du problème de Riemann isotherme (Sod : raréfaction + choc) | Python stdlib + matplotlib |
 
 Le versant **preuves** vivra dans le lake compagnon `riemann200_lean/`, à créer au premier grain Lean de la série (même maison que [`serre100_lean/`](../Serre100/serre100_lean/)).
 
