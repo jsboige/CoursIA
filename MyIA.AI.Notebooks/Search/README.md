@@ -365,7 +365,7 @@ Search/
 │   └── CSP-9-Distributed.ipynb
 │
 ├── Applications/
-│   ├── Adversarial/                       # Recherche adversariale (4 notebooks)
+│   ├── Adversarial/                       # Recherche adversariale
 │   │   ├── App-14b-ConnectFour.ipynb
 │   │   ├── App-14c-ConnectFour-CSharp.ipynb
 │   │   ├── App-14-ConnectFour-Adversarial.ipynb
