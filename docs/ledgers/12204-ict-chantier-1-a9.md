@@ -18,7 +18,7 @@ Les deux attestations in-repo, indépendantes par le domaine :
 
 **Re-mesures firsthand de ce cycle** (une statuation ne s'appuie pas sur la mesure d'un autre sans relire — G.1) :
 
-- Frontieres-11 : **12 cellules code, `execution_count` 1-12 contigus, 0 erreur, sorties présentes** (lecture JSON du carnet post-papermill, kernel python3) ;
+- Frontieres-11 : **cellules code toutes exécutées (`execution_count` contigu dès 1), 0 erreur, sorties présentes** (lecture JSON du carnet post-papermill, kernel python3) ;
 - **Indépendance par construction confirmée : 0 occurrence de `Sandholm`/`Kroer` dans Frontieres-11** (grep insensible à la casse), contre **5 occurrences dans GT-19** — le contraste exact qui avait fondé la promotion de l'op 6 par Search-03f. L'indépendance n'est pas une allégation, elle est mesurée dans le texte de l'artefact.
 
 **Témoins de la loi « le relèvement transporte une garantie » dans Frontieres-11** (valeurs déterministes, graine 20261015, toutes imprimées par le carnet exécuté) :
