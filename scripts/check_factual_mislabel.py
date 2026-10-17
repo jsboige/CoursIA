@@ -90,10 +90,20 @@ UNITS_EXTENDED = (
 # par-fonction pour que le test puisse mocker les deux sans toucher au
 # scope par defaut.
 def _build_count_patterns(units: str) -> tuple[re.Pattern, re.Pattern]:
-    """Compile les regexes MD/stream compte pour le scope d'unites."""
+    """Compile les regexes MD/stream compte pour le scope d'unites.
+
+    Le pattern stream utilise `[ \t]*` (et non `\\s*`) entre le nom
+    d'unite et le separateur, et entre le separateur et le chiffre :
+    `\\s*` absorbe le saut de ligne et lit le premier digit d'une
+    liste numerotee comme un compte -- ex. `Etapes:\\n  1. Preparer`
+    devient `etapes = 1` (faux positif, Hermes 2026-10-15 sur
+    `GenAI/Texte/03_Structured_Outputs.ipynb` cellule md 19).
+    `[ \t]*` preserve les separateurs en espace/tabulation sur la
+    meme ligne et tue la classe FP sur les listes numerotees.
+    """
     return (
         re.compile(rf"(?i)\b(\d{{1,5}})\s*({units})\b"),
-        re.compile(rf"(?i)\b({units})\s*[:=]\s*(\d{{1,5}})\b"),
+        re.compile(rf"(?i)\b({units})[ \t]*[:=][ \t]*(\d{{1,5}})\b"),
     )
 
 

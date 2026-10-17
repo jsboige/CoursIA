@@ -209,3 +209,55 @@ def test_20035_extended_scope_is_default(tmp_path):
     assert rc == 1, (
         f"le scope par defaut DOIT etre `extended` (cas carnet attrape) : "
         f"rc={rc}, out={out!r}")
+
+
+def test_20956_numbered_list_not_misread_for_etapes(tmp_path):
+    """Regression #20956 (Hermes FP 2026-10-15) : un stream qui imprime
+    une liste numerotee sous un titre `Etapes:` ne doit PAS etre lu
+    comme `etapes = N` ou N = 1 (le premier digit de la liste).
+
+    Cas fondateur : `GenAI/Texte/03_Structured_Outputs.ipynb` cellule
+    md 19, stream `Etapes:\\n  1. Preparer les ingredients\\n  2. ...`,
+    prose `Les 10 etapes numerotees ...`. Avant fix, l'organe rendait
+    `etapes = 1` (faux positif, classe nouvelle dans UNITS_EXTENDED).
+    Apres fix (anchoring `[ \\t]*` autour du separateur), l'organe
+    ne matche plus la classe FP et ne contredit pas la prose.
+
+    Echantillon de garde : 1/9 carnets touches (Hermes, scope
+    `extended`). Les streams `Etapes: 10` et `Etapes = 10` sur la
+    meme ligne continuent d'attraper une contradiction reelle.
+    """
+    rc, out = _run(
+        [_code("Etapes:\n  1. Preparer les ingredients\n  2. Melanger\n"
+               "  3. Cuire 10 minutes\n  ...\n  10. Servir\n"),
+         _md("## Section 3\n\nLes 10 etapes numerotees ci-dessus "
+             "couvrent le protocole complet.")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc == 0, (
+        f"liste numerotee `Etapes:\\n  1.` NE doit PAS etre lue comme "
+        f"`etapes = 1` (FP #20956 Hermes) : rc={rc}, out={out!r}")
+    assert out["anomaly_count"] == 0
+    # Sanity : sur la meme ligne, le pattern fonctionne toujours.
+    rc_ok, out_ok = _run(
+        [_code("Etapes: 10\n"),
+         _md("Les 10 etapes numerotees ...")],
+        tmp_path,
+        units="extended",
+    )
+    # Cas ok : meme chiffre (10 == 10) -> pas de contradiction
+    assert rc_ok == 0, (
+        f"meme-ligne `Etapes: 10` / prose `10 etapes` : rc={rc_ok}, "
+        f"out={out_ok!r}")
+    # Sanity : contradiction reelle sur la meme ligne
+    rc_contradict, out_contradict = _run(
+        [_code("Etapes: 5\n"),
+         _md("Les 10 etapes numerotees ...")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc_contradict == 1, (
+        f"contradiction reelle meme-ligne `Etapes: 5` vs prose `10 "
+        f"etapes` DOIT etre attrapee : rc={rc_contradict}, "
+        f"out={out_contradict!r}")
