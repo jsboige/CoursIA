@@ -6,6 +6,7 @@
 -/
 import Knots.Basic_en
 import Knots.Reidemeister_en
+import Knots.Conway_en
 
 /-!
 # PD code redraw (link 6, EPIC #2874)
@@ -123,5 +124,132 @@ theorem Redraws.trans {d₁ d₂ d₃ : KnotDiagram} (h₁ : Redraws d₁ d₂) 
     have hmap := List.Perm.map (PDCrossing.relabel e₂) hp₁
     rw [List.map_map, relabel_trans_eq] at hmap
     exact hp₂.trans hmap
+
+/-! ### Bridge from the link-5 certificate (Conway mutant → KT census). -/
+
+/-- The link-5 relabeling is the identity outside the window `[0, 22)`:
+the ten permuted labels (9↔10, 14↔21, 15↔20, 16↔19, 17↔18) all live
+there. -/
+theorem ktRedrawRelabel_eq_self {n : Nat} (h : 22 ≤ n) : ktRedrawRelabel n = n := by
+  simp only [ktRedrawRelabel]
+  rw [if_neg (by omega : ¬ (n = 9)), if_neg (by omega : ¬ (n = 10)),
+      if_neg (by omega : ¬ (n = 14)), if_neg (by omega : ¬ (n = 21)),
+      if_neg (by omega : ¬ (n = 15)), if_neg (by omega : ¬ (n = 20)),
+      if_neg (by omega : ¬ (n = 16)), if_neg (by omega : ¬ (n = 19)),
+      if_neg (by omega : ¬ (n = 17)), if_neg (by omega : ¬ (n = 18))]
+
+/-- Five label transpositions: the link-5 relabeling is an involution of
+`Nat`. -/
+theorem ktRedrawRelabel_involutive (n : Nat) :
+    ktRedrawRelabel (ktRedrawRelabel n) = n := by
+  by_cases h : n < 22
+  · interval_cases n
+    all_goals decide
+  · have h1 : ktRedrawRelabel n = n := ktRedrawRelabel_eq_self (by omega)
+    rw [h1, h1]
+
+/-- The link-5 involution, viewed as an equivalence of `Nat`: this is the
+relabeling witness of the `Redraws` bridge. The involution serves as both
+forward and backward map (`Equiv.ofInvolutive` does not exist in Mathlib
+4.33: the two components are given explicitly). -/
+def ktRedrawEquiv : Nat ≃ Nat where
+  toFun := ktRedrawRelabel
+  invFun := ktRedrawRelabel
+  left_inv := ktRedrawRelabel_involutive
+  right_inv := ktRedrawRelabel_involutive
+
+/-- The equivalence applies as the link-5 function. -/
+theorem ktRedrawEquiv_apply (n : Nat) : ktRedrawEquiv n = ktRedrawRelabel n := rfl
+
+/-- So does its symmetric (it is an involution). -/
+theorem ktRedrawEquiv_symm_apply (n : Nat) : ktRedrawEquiv.symm n = ktRedrawRelabel n := rfl
+
+/-- Relabeling by the link-5 equivalence is the link-5 relabeling, per
+crossing — the two functions are definitionally equal. -/
+theorem relabel_ktRedrawEquiv (c : PDCrossing) :
+    PDCrossing.relabel (⇑ktRedrawEquiv) c = PDCrossing.relabel ktRedrawRelabel c := rfl
+
+/-- List version of the previous lemma: aligns the coercion `⇑ktRedrawEquiv`
+with the link-5 function inside a `map`. -/
+theorem map_relabel_ktRedrawEquiv (cs : List PDCrossing) :
+    cs.map (PDCrossing.relabel ⇑ktRedrawEquiv)
+      = cs.map (PDCrossing.relabel ktRedrawRelabel) := by
+  induction cs with
+  | nil => rfl
+  | cons c rest ih => rw [List.map_cons, List.map_cons, ih, relabel_ktRedrawEquiv]
+
+/-- `relabelCrossings` (link 5, Conway.lean) is the `map` of the
+per-crossing relabeling of this module. -/
+theorem relabelCrossings_eq (f : Nat → Nat) (cs : List PDCrossing) :
+    relabelCrossings f cs = cs.map (PDCrossing.relabel f) := rfl
+
+/-- The link-5 reordering is a permutation: two position transpositions
+(5↔7) and (8↔10) on the eleven-crossing list, identity elsewhere. Lists of
+length ≤ 10 or ≥ 12 fall back to the identity clause of the reordering
+(definitional reduction by shape discrimination), hence the mechanical
+`refl` branches. -/
+theorem ktRedrawOrder_perm : ∀ cs : List PDCrossing, (ktRedrawOrder cs).Perm cs
+  | [c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10] => by
+      have hA : ([c7, c6, c5] : List PDCrossing).Perm [c5, c6, c7] := by
+        simpa using List.reverse_perm [c5, c6, c7]
+      have hB : ([c10, c9, c8] : List PDCrossing).Perm [c8, c9, c10] := by
+        simpa using List.reverse_perm [c8, c9, c10]
+      show ([c0, c1, c2, c3, c4] ++ [c7, c6, c5] ++ [c10, c9, c8] : List PDCrossing).Perm
+          ([c0, c1, c2, c3, c4] ++ [c5, c6, c7] ++ [c8, c9, c10])
+      exact ((hA.append_right [c10, c9, c8]).trans
+        (hB.append_left [c5, c6, c7])).append_left [c0, c1, c2, c3, c4]
+  | [] => List.Perm.refl []
+  | [_] => List.Perm.refl _
+  | [_, _] => List.Perm.refl _
+  | [_, _, _] => List.Perm.refl _
+  | [_, _, _, _] => List.Perm.refl _
+  | [_, _, _, _, _] => List.Perm.refl _
+  | [_, _, _, _, _, _] => List.Perm.refl _
+  | [_, _, _, _, _, _, _] => List.Perm.refl _
+  | [_, _, _, _, _, _, _, _] => List.Perm.refl _
+  | [_, _, _, _, _, _, _, _, _] => List.Perm.refl _
+  | [_, _, _, _, _, _, _, _, _, _] => List.Perm.refl _
+  | _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ :: _ => List.Perm.refl _
+
+/-- The label window follows the relabeling: the image of a label used by
+a crossing of `cs` is used by the relabeled crossing. -/
+theorem mem_edges_map_relabel {cs : List PDCrossing} {f : Nat → Nat} {k : Nat}
+    (hk : k ∈ cs.flatMap (fun c => [c.e1, c.e2, c.e3, c.e4])) :
+    f k ∈ (cs.map (PDCrossing.relabel f)).flatMap (fun c => [c.e1, c.e2, c.e3, c.e4]) := by
+  obtain ⟨c, hc, hke⟩ := List.mem_flatMap.mp hk
+  refine List.mem_flatMap.mpr ⟨PDCrossing.relabel f c,
+    List.mem_map.mpr ⟨c, hc, rfl⟩, ?_⟩
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hke
+  rcases hke with h | h | h | h <;> simp [PDCrossing.relabel, h]
+
+/-- **Bridge link 5 → link 6**: the KT census redraw certificate — the
+Conway mutant is reordered (`ktRedrawOrder`) then relabeled
+(`ktRedrawRelabel`) into the Kinoshita-Terasaka census — yields a `Redraws`
+witness. The relation of this module captures exactly the gesture of the
+certificate committed at link 5; the final assembly (closing `AreMutants`)
+awaits the route choice. -/
+theorem conwayMutant_redraws_kt :
+    Redraws conwayMutantDiagram kinoshitaTerasakaDiagram := by
+  have hcross : kinoshitaTerasakaDiagram.crossings =
+      (ktRedrawOrder conwayMutantDiagram.crossings).map
+        (PDCrossing.relabel ktRedrawRelabel) :=
+    (conwayMutant_redraws_kinoshitaTerasaka).symm.trans (relabelCrossings_eq _ _)
+  refine ⟨rfl, ktRedrawEquiv, ?_, ?_, ?_⟩
+  · intro k hk
+    simp only [KnotDiagram.edges, ktRedrawEquiv_apply] at hk ⊢
+    rw [hcross]
+    exact mem_edges_map_relabel
+      (((ktRedrawOrder_perm _).flatMap_right _).symm.mem_iff.mpr hk)
+  · intro k hk
+    simp only [KnotDiagram.edges, ktRedrawEquiv_symm_apply] at hk ⊢
+    rw [hcross] at hk
+    obtain ⟨c', hc', hke⟩ := List.mem_flatMap.mp hk
+    obtain ⟨c, hc, rfl⟩ := List.mem_map.mp hc'
+    simp only [List.mem_cons, List.not_mem_nil, or_false] at hke
+    rcases hke with h | h | h | h <;> subst h <;>
+      simp only [PDCrossing.relabel] <;> rw [ktRedrawRelabel_involutive] <;>
+      exact List.mem_flatMap.mpr ⟨c, (ktRedrawOrder_perm _).mem_iff.mp hc, by simp⟩
+  · rw [hcross, map_relabel_ktRedrawEquiv]
+    exact List.Perm.map _ (ktRedrawOrder_perm _)
 
 end Knots_en
