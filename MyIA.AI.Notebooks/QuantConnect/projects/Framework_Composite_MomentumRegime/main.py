@@ -2,7 +2,7 @@
 from AlgorithmImports import *
 from datetime import datetime
 from alpha_models import SectorMomentumAlpha, RegimeSwitchingAlpha
-from Shared_PCM.pouches_pcm import MultiStrategyPouchesPCM
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
 # endregion
 
 ALL_TICKERS = ["SPY", "QQQ", "IEF", "GLD"]

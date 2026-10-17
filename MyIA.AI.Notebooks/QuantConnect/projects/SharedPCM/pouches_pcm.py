@@ -27,7 +27,7 @@ class MultiStrategyPouchesPCM(PortfolioConstructionModel):
     dossier). Sur QC Cloud, attacher ce projet en bibliotheque du
     consommateur, puis :
 
-        from Shared_PCM.pouches_pcm import MultiStrategyPouchesPCM
+        from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
     """
 
     def __init__(self, alpha_allocations, rebalance=timedelta(days=31),

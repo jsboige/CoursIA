@@ -1,4 +1,4 @@
-# Shared_PCM — module canonique du PCM par poches
+# SharedPCM — module canonique du PCM par poches
 
 `pouches_pcm.py` porte `MultiStrategyPouchesPCM`, le Portfolio Construction
 Model partagé par tous les composites multi-alpha du dépôt (brique 1 de la
@@ -32,13 +32,20 @@ projet** (fonctionnalité « Add Library » du panneau Projet —
 puis importer dans le `main.py` du consommateur :
 
 ```python
-from Shared_PCM.pouches_pcm import MultiStrategyPouchesPCM
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
 ```
 
 L'attachement est un geste d'interface (ni l'API REST ni le MCP ne l'exposent).
 Tant qu'il n'est pas fait, la compilation du consommateur échoue sur
 l'`ImportError` ci-dessus — échec fermé et explicite, jamais une replique
 silencieuse du module.
+
+**Contrainte de nommage (mesurée au 2026-10-17) :** QC Cloud refuse les
+underscores dans les noms de bibliothèque (« Only letters, numbers and '/' are
+supported in library names ») — le dossier s'appelle donc `SharedPCM`, sans
+underscore, et le chemin d'import suit. Une bibliothèque cloud homonyme
+`Library/SharedPCM` porte ce module ; la compile du consommateur et le backtest
+d'équivalence sont cités dans la PR d'extraction.
 
 ## Consommateurs
 
