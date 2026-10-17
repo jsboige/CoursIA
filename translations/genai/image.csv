@@ -1285,9 +1285,6 @@ generate_alt_text = True           # Generer descriptions accessibilite
 educational_level = ""university""   # ""elementary"", ""secondary"", ""university""
 language = ""francais""              # Langue des explications
 include_examples = True            # Inclure exemples pratiques",,,,,,,,67bdbb608fac2cb4,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,17aab9f8,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,yz3v2xhzft,markdown,fr,ac5a1198eb931bae,"## Setup de l'environnement
 
 Chargeons les dependances, configurons l'API OpenRouter pour acceder a GPT-5, et preparons les fonctions utilitaires pour le traitement d'images.","## Environment setup
@@ -1922,19 +1919,16 @@ Les trois modes d'analyse (quick, detailed, educational) couvrent des usages gé
 - Le prompt impose le **format de sortie** (sections numérotées) et la **langue** (`language`) — la réponse devient vérifiable mécaniquement
 - La qualité n'est pas seulement lue, elle est **mesurée par le code** : présence des sections, vocabulaire artistique détecté, nombre de questions guides
 - Une évaluation automatisée transforme une impression (« la réponse est bonne ») en critère reproductible
-","### Exercise 1 : Creating a personalized analysis prompt
+","### Guided example: a personalized analysis prompt for the Art domain
 
-The three analysis modes (quick, detailed, educational) cover general uses, but real cases often require specialized prompts. The goal is to create an optimized prompt for a specific domain.
+*Contribution from a group of EPF students (TP2, PR #20551), integrated as a guided example.*
 
-**Context** : You are a teacher and want to use GPT-5 to analyze images in class. You must create a prompt that produces a structured analysis suited to your discipline.
+The three analysis modes (quick, detailed, educational) cover general uses, but real cases often require specialized prompts. This example builds a prompt optimized for the **Art** domain: an expert role, four mandatory sections (technical description, stylistic analysis, context and meaning, guiding questions), a requirement for specific vocabulary, and a factuality instruction that separates what the model sees from what it infers.
 
-**Steps** :
-1. Choose a domain (History, Science, Geography, Art, or Medicine)
-2. Study the existing prompts in `analyze_image_with_gpt5()` to understand the structure
-3. Create your own prompt that includes: technical description, domain-specific vocabulary, and 3 guiding questions
-4. Test your prompt on the demonstration image and evaluate the quality of the response
-
-**Hint** : A good analysis prompt defines the role (""You are an expert professor in...""), the expected output format (sections, bullets), and the level of detail. Take inspiration from the ""educational"" mode.",,,,,"### Упражнение 1 : Создание персонализированного промпта для анализа
+**Key points**:
+- The prompt imposes the **output format** (numbered sections) and the **language** (`language`) — the answer becomes mechanically checkable
+- Quality is not only read, it is **measured by the code**: presence of the sections, detected art vocabulary, number of guiding questions
+- An automated evaluation turns an impression (""the answer is good"") into a reproducible criterion",,,,,"### Упражнение 1 : Создание персонализированного промпта для анализа
 
 Три режима анализа (quick, detailed, educational) покрывают общие варианты использования, но реальные случаи часто требуют специализированных промптов. Цель — создать промпт, оптимизированный для конкретной области.
 
@@ -1946,7 +1940,7 @@ The three analysis modes (quick, detailed, educational) cover general uses, but 
 3. Создайте собственный промпт, который включает: техническое описание, специфическую для области лексику и 3 направляющих вопроса
 4. Протестируйте ваш промпт на демонстрационном изображении и оцените качество ответа
 
-**Подсказка** : Хороший промпт для анализа определяет роль (""Ты эксперт-преподаватель по...""), ожидаемый формат вывода (разделы, пункты) и уровень детализации. Ориентируйтесь на режим ""educational"".",,5d240f999104a17f,ae49ae1ebbca569b,,,,,92893da34527924a,,
+**Подсказка** : Хороший промпт для анализа определяет роль (""Ты эксперт-преподаватель по...""), ожидаемый формат вывода (разделы, пункты) и уровень детализации. Ориентируйтесь на режим ""educational"".",,5d240f999104a17f,fd0113ca16ddd9ef,,,,,92893da34527924a,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,b87e983b,code,fr,0d807edc1de50e29,"# Exemple guide : un prompt d'analyse personnalise pour le domaine Art
 # (contribution d'un groupe d'etudiants EPF, TP2, PR #20551)
 
@@ -2040,7 +2034,7 @@ GPT-5 excels in two concrete use cases:
 
 The previous cell calls `analyze_image_with_gpt5()` with a specialized accessibility prompt that imposes three constraints: (1) output ≤ 125 characters, (2) factual and objective tone, (3) no additional formatting. The output obtained is *Vue aérienne de la Gran Vía à Madrid au coucher du soleil, dôme du Metropolis, immeubles illuminés et circulation.* — **114 characters** (under the 125 threshold), validated by the `print` that follows.
 
-**Why this length matters** : the WCAG 2.1 standard (criterion 1.1.1 *Non-text Content*) recommends short alt texts for informative images. Beyond 125 characters, screen readers truncate and the experience degrades. Below 50, the user loses context. Cell 19 below invites experimenting with three length levels to study this comfort zone — this is one of the uses where native multimodality replaces a separate pipeline (vision model → text model → formatting).",,,,,"### Практические применения: доступность и педагогика
+**Why this length matters** : the WCAG 2.1 standard (criterion 1.1.1 *Non-text Content*) recommends short alt texts for informative images. Beyond 125 characters, screen readers truncate and the experience degrades. Below 50, the user loses context. The guided example in cell 19 below runs the three length levels to study this comfort zone — this is one of the uses where native multimodality replaces a separate pipeline (vision model → text model → formatting).",,,,,"### Практические применения: доступность и педагогика
 
 GPT-5 отлично справляется с двумя конкретными сценариями использования:
 - **Alt text**: автоматическая генерация описаний доступности для веб-изображений
@@ -2050,7 +2044,7 @@ GPT-5 отлично справляется с двумя конкретными
 
 Предыдущая ячейка вызывает `analyze_image_with_gpt5()` со специализированным промптом доступности, налагающим три ограничения: (1) вывод ≤ 125 символов, (2) фактический и объективный тон, (3) без дополнительного форматирования. Полученный вывод — *Vue aérienne de la Gran Vía à Madrid au coucher du soleil, dôme du Metropolis, immeubles illuminés et circulation.* — **114 символов** (ниже порога 125), что подтверждает следующий за ним `print`.
 
-**Почему эта длина имеет значение**: стандарт WCAG 2.1 (критерий 1.1.1 *Non-text Content*) рекомендует короткие alt text для информативных изображений. Свыше 125 символов скринридеры обрезают текст, и опыт деградирует. Ниже 50 пользователь теряет контекст. Ячейка 19 ниже предлагает поэкспериментировать с тремя уровнями длины, чтобы изучить эту зону комфорта, — это одно из применений, где нативная мультимодальность заменяет отдельный пайплайн (модель зрения → текстовая модель → форматирование).",,70759bf374012f49,8985717806995eae,,,,,7bb55f5783c16de6,,
+**Почему эта длина имеет значение**: стандарт WCAG 2.1 (критерий 1.1.1 *Non-text Content*) рекомендует короткие alt text для информативных изображений. Свыше 125 символов скринридеры обрезают текст, и опыт деградирует. Ниже 50 пользователь теряет контекст. Ячейка 19 ниже предлагает поэкспериментировать с тремя уровнями длины, чтобы изучить эту зону комфорта, — это одно из применений, где нативная мультимодальность заменяет отдельный пайплайн (модель зрения → текстовая модель → форматирование).",,70759bf374012f49,46f5e5da4ef3e24c,,,,,7bb55f5783c16de6,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,a01bfa80,code,fr,fafb03e3949280b8,"# Génération de descriptions d'accessibilité (Alt text)
 if generate_alt_text and analysis_results:
     print(""\n♿ GÉNÉRATION DE DESCRIPTIONS D'ACCESSIBILITÉ"")
@@ -2099,20 +2093,16 @@ L'accessibilité web exige des textes alternatifs (alt text) adaptés au context
 - Chaque niveau a son **propre prompt** : la longueur maximale et le public sont écrits noir sur blanc dans la consigne
 - La vérification s'appuie sur `len()` des textes réels — la conformité à la limite WCAG est **constatée**, pas supposée
 - Le texte court vise ≤ 125 caractères : au-delà, les lecteurs d'écran tronquent (cf. l'analyse WCAG ci-dessus)
-","### Exercise 2 : Generating multi-level accessibility descriptions
+","### Guided example: multi-level accessibility descriptions
 
-Web accessibility requires alternative texts (alt text) adapted to the context. The same image may require descriptions of different lengths depending on the use: quick navigation (125 characters), detailed description (for screen readers), or a pedagogical summary.
+*Contribution from a group of EPF students (TP2, PR #20551), integrated as a guided example.*
 
-**Objective** : For an image of your choice, generate three levels of accessibility descriptions with GPT-5 and evaluate their quality.
+Web accessibility requires alternative texts (alt text) adapted to the context. The same image may require descriptions of different lengths depending on the use: quick navigation (≤ 125 characters), detailed description for screen readers (200-400 characters), or a pedagogical summary. This example generates the three levels with three distinct prompts — each one explicitly sets the target length and the intended audience — then measures in code the actual length of each text produced.
 
-**Steps** :
-1. Choose an image from the examples or provide your own URL
-2. Generate a short alt text (<= 125 characters) for quick navigation
-3. Generate a detailed description (200-400 characters) for screen readers
-4. Generate a pedagogical summary suited to the ""secondary"" level
-5. Check that each description is factual and objective
-
-**Hint** : Build specific prompts for each description level. Explicitly specify the maximum length and the usage context in the prompt.",,,,,"### Упражнение 2 : Генерация многоуровневых описаний доступности
+**Key points**:
+- Each level has its **own prompt**: the maximum length and the audience are spelled out in the instruction
+- The check relies on `len()` of the actual texts — compliance with the WCAG limit is **observed**, not assumed
+- The short text targets ≤ 125 characters: beyond that, screen readers truncate (see the WCAG analysis above)",,,,,"### Упражнение 2 : Генерация многоуровневых описаний доступности
 
 Веб-доступность требует альтернативных текстов (alt text), адаптированных к контексту. Одно и то же изображение может требовать описаний разной длины в зависимости от использования: быстрая навигация (125 символов), подробное описание (для программ чтения с экрана) или педагогическое резюме.
 
@@ -2125,7 +2115,7 @@ Web accessibility requires alternative texts (alt text) adapted to the context. 
 4. Сгенерируйте педагогическое резюме, адаптированное к уровню ""secondary""
 5. Проверьте, что каждое описание является фактическим и объективным
 
-**Подсказка** : Составьте специальные промпты для каждого уровня описания. Явно укажите максимальную длину и контекст использования в промпте.",,46a561f48fba8e12,f2494f11a9c4ef1f,,,,,12029e1026361450,,
+**Подсказка** : Составьте специальные промпты для каждого уровня описания. Явно укажите максимальную длину и контекст использования в промпте.",,46a561f48fba8e12,1902fe83d7ce19e5,,,,,12029e1026361450,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,01e1a458,code,fr,8c2207deb8e7dae8,"# Exemple guide : descriptions d'accessibilite multi-niveaux
 # (contribution d'un groupe d'etudiants EPF, TP2, PR #20551)
 
@@ -2275,13 +2265,13 @@ L'output ne contient pas de sortie GPT-5 visible — la cellule a uniquement *an
 
 The previous cell catalogs five application domains (History, Science, Geography, Art and Culture, Medicine) with for each a predefined `prompt_template` that can be passed directly to `analyze_image_with_gpt5()`. Each template imposes a disciplinary role, an output format, and a tone suited to the domain — for example, the `Médecine` prompt specifies *Analyse cette image médicale pour des étudiants en médecine. Explique l'anatomie visible et les points d'intérêt clinique.*
 
-The output contains no visible GPT-5 output — the cell only *announced* the use cases, without executing them yet. The actual executions are left to exercise 3 (cell 27), where the student composes their own template by combining the ingredients observed here. This is an interesting pedagogical inversion: cell 24 shows the templates, the exercise asks to recombine them.",,,,,"Интерактивный режим рассмотрен, и следующая ячейка представляет основные прикладные сценарии использования визуального анализа GPT-5 в профессиональном и педагогическом контексте.
+The output contains no visible GPT-5 output — the cell only *announced* the use cases, without executing them yet. The guided example that follows runs one of them for geography, and the exercises at the end of the notebook ask to recombine these ingredients. This is an interesting pedagogical inversion: cell 24 shows the templates, the exercises ask to recombine them.",,,,,"Интерактивный режим рассмотрен, и следующая ячейка представляет основные прикладные сценарии использования визуального анализа GPT-5 в профессиональном и педагогическом контексте.
 
 ### Чтение результата — матрица домен × промпт
 
 Предыдущая ячейка каталогизирует пять доменов применения (История, Науки, География, Искусство и культура, Медицина), каждому из которых соответствует предустановленный `prompt_template`, который можно передать напрямую в `analyze_image_with_gpt5()`. Каждый шаблон задаёт дисциплинарную роль, формат вывода и тон, адаптированный к домену, — например, промпт `Médecine` задаёт *Analyse cette image médicale pour des étudiants en médecine. Explique l'anatomie visible et les points d'intérêt clinique.*
 
-Вывод не содержит видимого результата GPT-5 — ячейка лишь *анонсировала* сценарии использования, не исполняя их. Фактические выполнения оставлены упражнению 3 (ячейка 27), где студент сам составляет свой шаблон, комбинируя наблюдаемые здесь ингредиенты. Это интересная педагогическая инверсия: ячейка 24 показывает шаблоны, упражнение требует их рекомбинировать.",,92fb9089c9f4fc4e,61464771a81f9603,,,,,11d0972728d5abb5,,
+Вывод не содержит видимого результата GPT-5 — ячейка лишь *анонсировала* сценарии использования, не исполняя их. Фактические выполнения оставлены упражнению 3 (ячейка 27), где студент сам составляет свой шаблон, комбинируя наблюдаемые здесь ингредиенты. Это интересная педагогическая инверсия: ячейка 24 показывает шаблоны, упражнение требует их рекомбинировать.",,92fb9089c9f4fc4e,9a360728c63231fa,,,,,11d0972728d5abb5,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,03146442,code,fr,583bd43216b1385e,"# Cas d'usage pédagogiques avec GPT-5
 print(""\n🎓 CAS D'USAGE PÉDAGOGIQUES GPT-5"")
 print(""="" * 45)
@@ -2508,27 +2498,9 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,ub
 Les trois exercices suivants prolongent les exemples guidés de ce notebook : sensibilité de l'analyse à la formulation du prompt, adaptation d'un alt text à son contexte de publication, et comparaison de deux images d'un même domaine. Chaque squelette s'exécute sans erreur tel quel — à vous de remplir les `TODO etudiant`.
 ","***
 
-### Exercise 3 : Synthesis — Complete multimodal analysis workflow
+## Exercises to complete
 
-**Estimated duration :** 15-20 minutes
-
-### Objective
-
-Create a personalized image analysis workflow with GPT-5 for a specific pedagogical use case (history, science, geography, art, or medicine).
-
-### Instructions
-
-1. **Choose a domain** among the 5 pedagogical use cases presented in the notebook
-2. **Select an image** relevant to this domain (public URL or local image)
-3. **Create a personalized prompt** suited to the targeted educational level
-4. **Implement an analysis function** that combines the 3 modes (quick, detailed, educational)
-5. **Generate the pedagogical questions** that GPT-5 suggests for students
-
-> **Hints:**
-
-- Hint 1 : Use the `analyze_image_with_gpt5()` function with the `prompt` parameter for your personalized prompt
-- Hint 2 : The ""educational"" mode automatically generates 3 reflection questions for students
-- Hint 3 : Adapt the prompt vocabulary to the level (elementary, secondary, university)",,,,,"### Упражнение 3: Синтез — полный workflow мультимодального анализа
+The following three exercises extend the guided examples of this notebook: sensitivity of the analysis to the wording of the prompt, adapting an alt text to its publication context, and comparing two images from the same domain. Each skeleton runs without error as is — it is up to you to fill in the `TODO etudiant`.",,,,,"### Упражнение 3: Синтез — полный workflow мультимодального анализа
 
 **Оценочная продолжительность:** 15-20 минут
 
@@ -2548,7 +2520,7 @@ Create a personalized image analysis workflow with GPT-5 for a specific pedagogi
 
 - Подсказка 1: Используйте функцию `analyze_image_with_gpt5()` с параметром `prompt` для вашего персонализированного prompt
 - Подсказка 2: Режим ""educational"" автоматически генерирует 3 вопроса для размышления для студентов
-- Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,ff3fc815c4cb740d,96c8a30abed51334,,,,,6b20b97c4063d231,,
+- Подсказка 3: Адаптируйте лексику prompt к уровню (elementary, secondary, university)",,ff3fc815c4cb740d,4a927ff5835987b2,,,,,6b20b97c4063d231,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,tvhxa6pat2h,code,fr,9a0d91072759ecc9,"# Exercice 3 : Comparateur d'images -- deux images du meme domaine cote a cote
 # TODO etudiant : implementer compare_images() pour deux images d'un meme domaine
 
@@ -2610,23 +2582,23 @@ Pour les étudiants avancés :
 La cellule précédente pose un exercice de synthèse structurant : choisir un domaine parmi les cinq catalogués dans la cellule *Cas d'usage pédagogiques*, sélectionner deux images de ce domaine, imposer un format d'analyse identique, et implémenter `compare_images()` qui croise les résultats. Le squelette fourni se contente de `pass` et renvoie un dictionnaire vide : le carnet s'exécute de bout en bout tant que l'exercice n'est pas complété. Les exercices 1 et 2, plus courts, se préparent avec les exemples guidés du corps du notebook : le premier mesure la sensibilité à la formulation, le second adapte un alt text à son contexte de publication.
 ","### Success criteria
 
-- [ ] The personalized prompt is suited to the domain and the educational level
-- [ ] The 3 analysis modes are implemented (quick, detailed, educational)
-- [ ] The pedagogical questions are generated by the educational mode
-- [ ] The results are structured and clearly presented
-- [ ] The total response time is under 60 seconds for the 3 analyses
+- [ ] Both images belong to the same domain and the analyses use the same format
+- [ ] `compare_images()` returns a dictionary with both analyses and the comparison
+- [ ] The comparison separates common points and differences in a structured way
+- [ ] The results are clearly presented (`pprint` or formatted display)
+- [ ] The total response time stays reasonable (2 analyses + cross-comparison)
 
 ### Extension (optional)
 
 For advanced students:
-- Add a **comparison** function between 2 images of the same domain
 - Implement an **evaluation** of student answers with GPT-5
 - Create an **interactive quiz** based on the generated questions
+- Extend the comparator to **three images** or more (comparison matrix)
 
 
 ### Reading the result — exercise 3 (synthesis)
 
-The previous cell poses a structuring synthesis exercise: choose a domain among the five cataloged in cell 24, select an image, build a personalized prompt, and implement an `analyse_complete()` function that calls the three modes in sequence. The provided skeleton is `pass` — the code is deliberately left unfilled to comply with C.1 (no voluntary error). This is exactly the kind of exercise where the density of the surrounding markdown cells is valuable: the student has before their eyes the signature of `analyze_image_with_gpt5()`, the three documented modes, and the success criteria in cell 28 below, without having to navigate between sections.",,,,,,,68468125c9faf6c6,a330f10c8088f390,,,,,,,
+The previous cell poses a structuring synthesis exercise: choose a domain among the five cataloged in the *Pedagogical use cases* cell, select two images from this domain, impose an identical analysis format, and implement `compare_images()`, which cross-compares the results. The provided skeleton only contains `pass` and returns an empty dictionary: the notebook runs end to end as long as the exercise is not completed. Exercises 1 and 2, which are shorter, build on the guided examples in the body of the notebook: the first measures sensitivity to wording, the second adapts an alt text to its publication context.",,,,,,,68468125c9faf6c6,20e792b9b1b6cb7c,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,c7eec602,markdown,fr,b4d84fb200146d2f,"**Navigation** : [Index](../../README.md) | [<< Précédent](01-2-GPT-5-Image-Generation.ipynb) | [Suivant >>](01-4-Forge-SD-XL-Turbo.ipynb)
 
 # Opérations de Base sur les Images
@@ -2979,69 +2951,136 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,4d
     print(f""\n✅ {len(transformations)} transformations effectuées"")
 else:
     print(""\n⏭️  Transformations désactivées (enable_transformations=False)"")",,,,,,,,22596c58ff0e16a2,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,37db3fde,markdown,fr,c23384ce4dbe217a,"### Exercice 1 : Creation d'un mosaic d'images avec transformations
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,37db3fde,markdown,fr,ed2d55f779832f43,"### Exemple guidé 1 : Mosaïque de transformations géométriques
 
-Les transformations geometriques (resize, crop, rotate) sont les briques de base de toute pipeline de traitement d'images. Cet exercice vous demande de les combiner pour créer une mosaique composee de différentes vues d'une même image source.
+*Contribution d'un groupe d'étudiants EPF (TP2, PR #20678), intégrée comme exemple guidé.*
 
-**Objectif** : Créer une mosaique 3x3 affichant 9 transformations différentes de l'image de test, disposees dans une seule canevas PIL.
+Les transformations géométriques (resize, crop, rotate, flip) sont les briques de base de tout pipeline de traitement d'images. Cet exemple les combine en une mosaïque 3x3 : neuf vues d'une même image source, disposées sur un seul canevas PIL.
+
+**Objectif** : composer une image à partir de plusieurs variantes, avec `Image.new()`, `paste()` et `ImageDraw`.
 
 **Étapes** :
-1. Créez une image canevas vide de taille suffisante (par ex. 3 fois la largeur d'un thumbnail)
-2. Generez 9 variants de l'image source en combinant resize, crop, rotation, et flip
-3. Collez chaque variant dans la bonne position sur le canevas avec `Image.paste()`
-4. Ajoutez des labels textuels sous chaque variant avec `ImageDraw`
-5. Affichez le résultat avec matplotlib
+1. Générer neuf variantes de l'image source : originale, resize 50 %, crop du quart central, rotations de 30° et 90°, miroirs horizontal et vertical, deux combinaisons
+2. Créer un canevas blanc dimensionné pour trois colonnes et trois lignes de vignettes, avec marges et place pour les légendes
+3. Redimensionner chaque variante à la taille de vignette et la coller à sa position (`divmod(i, cols)` donne ligne et colonne)
+4. Écrire la légende sous chaque vignette, puis afficher le canevas
 
-**Indice** : Utilisez `Image.new()` pour le canevas, `img.resize((w, h))` pour uniformiser les tailles, et `ImageDraw.Draw(canevas).text()` pour les labels. Parcourez les positions avec une double boucle `for row in range(3): for col in range(3):`.",,,,,,,,c23384ce4dbe217a,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,36ebfe77,code,fr,e96783c550f79313,"# Exercice 1 : Creation d'un mosaic d'images avec transformations
+**Points clés du code** :
+- `source.convert(""RGB"")` garantit trois canaux avant de coller sur un canevas RGB
+- `rotate(..., expand=True, fillcolor=""white"")` agrandit le cadre pour ne rien couper ; les coins ajoutés sont remplis de blanc
+- toutes les variantes sont ramenées à la même vignette `(250, 188)`, quel que soit leur format : une rotation de 90° (portrait) ou le cadre agrandi d'une rotation de 30° sont donc étirés. L'exercice 1 mesure cette déformation",,,,,,,,ed2d55f779832f43,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,36ebfe77,code,fr,54adf896e6ac7e36,"# Exemple guide 1 : Creation d'une mosaique d'images avec transformations
 
 # Etape 1 : Definition des 9 transformations
+# On convertit la source en RGB pour garantir la compatibilite avec le canevas.
+source = test_image.convert(""RGB"")
+width, height = source.size
+
+# 1. Image originale
+img_original = source.copy()
+
+# 2. Resize a 50 %
+img_resize = source.resize(
+    (max(1, width // 2), max(1, height // 2)),
+    Image.Resampling.LANCZOS
+)
+
+# 3. Crop du quart central (zone centrale de l'image)
+left, top = width // 4, height // 4
+right, bottom = 3 * width // 4, 3 * height // 4
+img_crop = source.crop((left, top, right, bottom))
+
+# 4. Rotation de 30 degres
+img_rotate30 = source.rotate(
+    30, expand=True, fillcolor=""white""
+)
+
+# 5. Rotation de 90 degres
+img_rotate90 = source.rotate(
+    90, expand=True, fillcolor=""white""
+)
+
+# 6. Flip horizontal
+img_flip_h = source.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+
+# 7. Flip vertical
+img_flip_v = source.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
+
+# 8. Resize + Sharpen
+img_resize_sharpen = img_resize.filter(ImageFilter.SHARPEN)
+
+# 9. Crop + Rotation
+img_crop_rotate = img_crop.rotate(
+    30, expand=True, fillcolor=""white""
+)
+
 transformations = [
-    (""Original"", None),                    # Pas de transformation
-    (""Resize 50%"", None),                  # TODO etudiant : resize a 50%
-    (""Crop centre"", None),                 # TODO etudiant : crop du quart central
-    (""Rotation 30 deg"", None),             # TODO etudiant : rotation 30 degres
-    (""Rotation 90 deg"", None),             # TODO etudiant : rotation 90 degres
-    (""Flip horizontal"", None),             # TODO etudiant : miroir horizontal
-    (""Flip vertical"", None),               # TODO etudiant : miroir vertical
-    (""Resize + Sharpen"", None),            # TODO etudiant : resize puis sharpen
-    (""Crop + Rotation"", None),             # TODO etudiant : crop puis rotation
+    (""Original"", img_original),
+    (""Resize 50%"", img_resize),
+    (""Crop centre"", img_crop),
+    (""Rotation 30 deg"", img_rotate30),
+    (""Rotation 90 deg"", img_rotate90),
+    (""Flip horizontal"", img_flip_h),
+    (""Flip vertical"", img_flip_v),
+    (""Resize + Sharpen"", img_resize_sharpen),
+    (""Crop + Rotation"", img_crop_rotate),
 ]
 
-# TODO etudiant : implementez chaque transformation et stockez le resultat
-# dans la liste ci-dessus a la place de None
-# Indice : utilisez test_image comme image source
-
 # Etape 2 : Creation du canevas
-thumb_size = (250, 188)  # Taille de chaque vignette
+thumb_size = (250, 188)
 cols, rows = 3, 3
 padding = 10
 label_height = 20
 
-# TODO etudiant : calculez la taille totale du canevas
-# canevas_width = cols * (thumb_size[0] + padding) + padding
-# canevas_height = rows * (thumb_size[1] + padding + label_height) + padding
-# canevas = Image.new(""RGB"", (canevas_width, canevas_height), ""white"")
+canevas_width = cols * (thumb_size[0] + padding) + padding
+canevas_height = rows * (
+    thumb_size[1] + padding + label_height
+) + padding
+
+canevas = Image.new(
+    ""RGB"",
+    (canevas_width, canevas_height),
+    ""white""
+)
 
 # Etape 3 : Assemblage de la mosaique
-# draw = ImageDraw.Draw(canevas)
-# for i, (label, img) in enumerate(transformations):
-#     row, col = divmod(i, cols)
-#     x = padding + col * (thumb_size[0] + padding)
-#     y = padding + row * (thumb_size[1] + padding + label_height)
-#     if img is not None:
-#         vignette = img.resize(thumb_size, Image.Resampling.LANCZOS)
-#         canevas.paste(vignette, (x, y))
-#         draw.text((x, y + thumb_size[1] + 2), label, fill=""black"")
+draw = ImageDraw.Draw(canevas)
+
+for i, (label, img) in enumerate(transformations):
+    row, col = divmod(i, cols)
+
+    x = padding + col * (thumb_size[0] + padding)
+    y = padding + row * (
+        thumb_size[1] + padding + label_height
+    )
+
+    # Uniformiser la taille pour la mosaique
+    vignette = img.resize(
+        thumb_size,
+        Image.Resampling.LANCZOS
+    )
+
+    # Coller l'image sur le canevas
+    canevas.paste(vignette, (x, y))
+
+    # Ajouter le label sous l'image
+    draw.text(
+        (x, y + thumb_size[1] + 2),
+        label,
+        fill=""black""
+    )
 
 # Etape 4 : Affichage
-# plt.figure(figsize=(12, 12))
-# plt.imshow(canevas)
-# plt.axis('off')
-# plt.title(""Mosaique de transformations"")
-# plt.show()
+plt.figure(figsize=(12, 12))
+plt.imshow(canevas)
+plt.axis(""off"")
+plt.title(""Mosaique de transformations"")
+plt.show()
 
-print(""Exercice a completer"")",,,,,,,,e96783c550f79313,,,,,,,,
+print(""Mosaique creee avec succes !"")
+print(f""Nombre de transformations : {len(transformations)}"")
+print(f""Taille du canevas : {canevas.size}"")
+",,,,,,,,54adf896e6ac7e36,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,61461f92,markdown,fr,923d3f1a9923347c,"## 🎨 Section 3: Filtres et Effets
 
 Application de filtres classiques pour améliorer ou styliser les images.",,,,,,,,923d3f1a9923347c,,,,,,,,
@@ -3136,138 +3175,287 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,f1
     print(f""\n✅ {len(filters_applied)} filtres/effets appliqués"")
 else:
     print(""\n⏭️  Filtres désactivés (enable_filters=False)"")",,,,,,,,825eb0c115937356,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,c9b7e540,markdown,fr,c46432bc14aada54,"### Exercice 2 : Pipeline de filtres personnalise
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,c9b7e540,markdown,fr,d62d5028874de519,"### Exemple guidé 2 : Pipeline de filtres personnalisé
 
-Les filtres PIL peuvent etre combines pour créer des effets visuels uniques. L'objectif est de concevoir un pipeline de traitement qui transforme une image selon un style artistique défini.
+*Contribution d'un groupe d'étudiants EPF (TP2, PR #20678), intégrée comme exemple guidé.*
 
-**Contexte** : Vous devez créer trois presets de traitement d'images : ""Vintage"" (tons chauds, vignettage, grain), ""Cyberpunk"" (contraste eleve, saturation neon, nettete accrue), et ""Aquarelle"" (flou leger, contour adouci, couleurs pastel).
+Les filtres PIL se combinent pour créer des effets visuels. Cet exemple définit trois styles (« presets ») par une fonction `appliquer_preset(image, preset_name)` qui enchaîne les opérations.
+
+**Objectif** : traduire un style visuel en une suite d'opérations PIL justifiées.
 
 **Étapes** :
-1. Implementez une fonction `appliquer_preset(image, preset)` qui chaîne les filtres PIL
-2. Créez au minimum les presets ""Vintage"" et ""Cyberpunk"" en combinant `ImageFilter`, `ImageEnhance` et `ImageOps`
-3. Affichez les résultats dans une grille comparative (original + chaque preset)
-4. Justifiez le choix de chaque filtre pour chaque style
+1. **Vintage** : saturation et contraste réduits, luminosité légèrement augmentée, voile chaud (`Image.blend` avec une couleur), léger flou, puis vignettage radial
+2. **Cyberpunk** : contraste et saturation forts, luminosité légèrement augmentée, double accentuation de la netteté
+3. **Aquarelle** : flou gaussien, couleurs désaturées vers le pastel, luminosité augmentée, contraste réduit
+4. Afficher l'original et les trois presets côte à côte
 
-**Indice** : Utilisez `ImageEnhance.Brightness`, `.Contrast`, `.Color` pour les ajustements globaux, puis `ImageFilter.GaussianBlur` ou `.SHARPEN` pour la nettete. Pour le vignettage, un degrade radial créé avec `ImageDraw` fonctionne bien.",,,,,,,,c46432bc14aada54,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,29f74485,code,fr,cd49926dd9792ab1,"# Exercice 2 : Pipeline de filtres personnalise
+**Points clés du code** :
+- chaque preset part d'une copie (`image.convert(""RGB"").copy()`) : l'image source n'est jamais modifiée
+- le vignettage construit un masque en niveaux de gris (ellipses concentriques puis flou), et `Image.composite` mélange l'image avec un calque sombre selon ce masque
+- un nom de preset inconnu lève une `ValueError` explicite plutôt que de renvoyer l'image intacte
+- les presets sont écrits comme du code : changer un réglage ou l'ordre des opérations demande de modifier la fonction. L'exercice 2 les transforme en données",,,,,,,,d62d5028874de519,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,29f74485,code,fr,837db294bfd42150,"# Exemple guide 2 : Pipeline de filtres personnalise
+
+from PIL import Image, ImageFilter, ImageEnhance, ImageOps, ImageDraw
+import matplotlib.pyplot as plt
+
 
 def appliquer_preset(image, preset_name):
     """"""
     Applique un preset de filtres a une image.
-    
+
     Args:
         image: Image PIL d'origine
         preset_name: Nom du preset (""vintage"", ""cyberpunk"", ""aquarelle"")
-    
+
     Returns:
         Image PIL transformee
     """"""
-    # TODO etudiant : implementez les presets
-    # Indice : chainez les operations ImageEnhance et ImageFilter
-    
+
+    # On travaille sur une copie pour ne pas modifier l'image originale
+    result = image.convert(""RGB"").copy()
+
     if preset_name == ""vintage"":
-        # Etape 1 : reduire legerement la saturation
-        # Etape 2 : augmenter la chaleur (brightness legerement plus chaude)
-        # Etape 3 : ajouter un leger flou
-        # Etape 4 : optionnel - ajouter du vignettage
-        pass  # TODO etudiant
-    
+        # Couleurs legerement moins saturees pour un rendu ancien
+        result = ImageEnhance.Color(result).enhance(0.75)
+
+        # Contraste legerement reduit pour adoucir l'image
+        result = ImageEnhance.Contrast(result).enhance(0.9)
+
+        # Luminosite legerement augmentee
+        result = ImageEnhance.Brightness(result).enhance(1.05)
+
+        # Ajout d'une teinte chaude
+        warm_overlay = Image.new(""RGB"", result.size, (255, 220, 170))
+        result = Image.blend(result, warm_overlay, 0.12)
+
+        # Leger flou pour simuler une ancienne photographie
+        result = result.filter(ImageFilter.GaussianBlur(radius=0.5))
+
+        # Vignettage radial
+        width, height = result.size
+        mask = Image.new(""L"", (width, height), 0)
+        draw = ImageDraw.Draw(mask)
+
+        max_radius = int((width ** 2 + height ** 2) ** 0.5 / 2)
+
+        for radius in range(max_radius, 0, -10):
+            intensity = int(255 * (1 - radius / max_radius))
+            bbox = [
+                width // 2 - radius,
+                height // 2 - radius,
+                width // 2 + radius,
+                height // 2 + radius
+            ]
+            draw.ellipse(bbox, fill=intensity)
+
+        mask = mask.filter(ImageFilter.GaussianBlur(radius=max(10, max_radius // 4)))
+        dark_layer = Image.new(""RGB"", result.size, (20, 10, 5))
+        result = Image.composite(dark_layer, result, mask)
+
     elif preset_name == ""cyberpunk"":
-        # Etape 1 : augmenter fortement le contraste
-        # Etape 2 : augmenter la saturation des couleurs
-        # Etape 3 : appliquer un sharpen pour les details
-        pass  # TODO etudiant
-    
+        # Contraste eleve pour renforcer les zones lumineuses et sombres
+        result = ImageEnhance.Contrast(result).enhance(1.6)
+
+        # Saturation forte pour obtenir des couleurs neon
+        result = ImageEnhance.Color(result).enhance(1.8)
+
+        # Legere augmentation de luminosite
+        result = ImageEnhance.Brightness(result).enhance(1.05)
+
+        # Nettete accentuee pour rendre les details plus visibles
+        result = result.filter(ImageFilter.SHARPEN)
+
+        # Deuxieme renforcement de nettete
+        result = ImageEnhance.Sharpness(result).enhance(1.5)
+
     elif preset_name == ""aquarelle"":
-        # Etape 1 : appliquer un leger flou gaussien
-        # Etape 2 : reduire la saturation
-        # Etape 3 : augmenter la luminosite legerement
-        pass  # TODO etudiant
-    
-    return None  # TODO etudiant : retourner l'image transformee
+        # Flou leger pour adoucir les formes
+        result = result.filter(ImageFilter.GaussianBlur(radius=1.5))
+
+        # Couleurs moins saturees pour un rendu pastel
+        result = ImageEnhance.Color(result).enhance(0.65)
+
+        # Luminosite legerement augmentee
+        result = ImageEnhance.Brightness(result).enhance(1.12)
+
+        # Contraste reduit pour adoucir encore le rendu
+        result = ImageEnhance.Contrast(result).enhance(0.85)
+
+    else:
+        raise ValueError(
+            ""Preset inconnu. Utilisez 'vintage', 'cyberpunk' ou 'aquarelle'.""
+        )
+
+    return result
 
 
-# Test et affichage
-# Indice : utilisez plt.subplots(1, 4, figsize=(20, 5)) pour comparer
-# original + vintage + cyberpunk + aquarelle
+# Application des trois presets
+vintage = appliquer_preset(test_image, ""vintage"")
+cyberpunk = appliquer_preset(test_image, ""cyberpunk"")
+aquarelle = appliquer_preset(test_image, ""aquarelle"")
 
-# for preset in [""vintage"", ""cyberpunk"", ""aquarelle""]:
-#     resultat = appliquer_preset(test_image, preset)
-#     print(f""Preset '{preset}': {'OK' if resultat else 'non implemente'}"")
 
-print(""Exercice a completer"")",,,,,,,,cd49926dd9792ab1,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,edf341ad,markdown,fr,add14518becf05d2,"### Exercice 3 : Analyse comparative d'histogrammes par canal
+# Affichage comparatif
+fig, axes = plt.subplots(1, 4, figsize=(20, 5))
 
-Dans la Section 1, un histogramme RGB a ete affiche pour l'image originale. L'objectif est d'implementer une **analyse d'histogrammes** qui compare quantitativement les distributions de couleurs avant et après application de filtres.
+images = [
+    (test_image, ""Original""),
+    (vintage, ""Vintage""),
+    (cyberpunk, ""Cyberpunk""),
+    (aquarelle, ""Aquarelle"")
+]
 
-**Contexte** : L'histogramme d'une image revele des informations sur l'exposition, le contraste et la balance des couleurs. Comparer les histogrammes avant/après un filtre permet de mesurer objectivement l'impact du traitement.
+for ax, (img, title) in zip(axes, images):
+    ax.imshow(img)
+    ax.set_title(title)
+    ax.axis(""off"")
+
+plt.tight_layout()
+plt.show()
+
+
+# Verification
+for preset in [""vintage"", ""cyberpunk"", ""aquarelle""]:
+    resultat = appliquer_preset(test_image, preset)
+    print(f""Preset '{preset}': {'OK' if resultat else 'non implemente'}"")",,,,,,,,837db294bfd42150,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,edf341ad,markdown,fr,81f67e015a7f37f0,"### Exemple guidé 3 : Analyse comparative d'histogrammes par canal
+
+*Contribution d'un groupe d'étudiants EPF (TP2, PR #20678), intégrée comme exemple guidé.*
+
+L'histogramme d'une image révèle son exposition, son contraste et sa balance des couleurs. Cet exemple compare quantitativement les distributions de chaque canal avant et après trois filtres.
+
+**Objectif** : mesurer l'effet d'un filtre sur la distribution des couleurs, plutôt que de le juger à l'œil.
 
 **Étapes** :
-1. Implementer une fonction `compute_histogram_stats(image)` qui retourne la moyenne, l'ecart-type et la mediane pour chaque canal RGB
-2. Appliquer plusieurs filtres (brightness +30%, contrast +50%, grayscale) et calculer les stats pour chaque résultat
-3. Presenter les résultats dans un DataFrame avec une ligne par (filtre, canal)
-4. Identifier le filtre qui modifie le plus la distribution (plus grand ecart de mediane)
+1. `compute_histogram_stats(image)` lit `image.histogram()` (768 valeurs : 256 par canal R, G, B) et calcule pour chaque canal la moyenne, l'écart-type et la médiane, pondérés par les effectifs
+2. Appliquer luminosité +30 %, contraste +50 % et passage en niveaux de gris
+3. Rassembler les statistiques dans un DataFrame, une ligne par couple (filtre, canal), puis un tableau croisé des médianes
+4. Désigner le filtre qui déplace le plus la médiane par rapport à l'original, en moyenne sur les trois canaux
 
-**Indices** :
-- Utilisez `image.histogram()` pour obtenir les valeurs brutes par canal
-- Pour le canal R : `hist[0:256]`, canal G : `hist[256:512]`, canal B : `hist[512:768]`
-- La moyenne d'un canal se calcule avec `np.mean(np.arange(256) * np.array(hist)) / sum(hist)`
-- Pour le grayscale, utilisez `ImageOps.grayscale(image)` puis convertissez en RGB pour garder 3 canaux",,,,,,,,add14518becf05d2,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,6e1e5d75,code,fr,4b3cd499d2036a34,"# Exercice 3 : Analyse comparative d'histogrammes par canal
+**Points clés du code** :
+- les statistiques se calculent sur l'histogramme, sans parcourir les pixels : la moyenne est `Σ valeur × effectif / total`
+- la médiane se lit sur l'histogramme cumulé : c'est la première valeur où le cumul atteint la moitié des pixels (`np.searchsorted`)
+- l'image en niveaux de gris est reconvertie en RGB, pour garder trois canaux comparables
+- trois nombres par canal résument une distribution de 256 valeurs : deux images très différentes peuvent avoir la même médiane. L'exercice 3 compare des distributions entières",,,,,,,,81f67e015a7f37f0,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,6e1e5d75,code,fr,522af1f4e6103812,"import numpy as np
+import pandas as pd
+
+from PIL import Image, ImageEnhance, ImageOps
+from typing import Dict
+# Exemple guide 3 : Analyse comparative d'histogrammes par canal
 
 def compute_histogram_stats(image: Image.Image) -> Dict[str, Dict[str, float]]:
     """"""
     Calcule les statistiques d'histogramme pour chaque canal RGB.
-    
+
     Args:
         image: Image PIL en mode RGB
-    
+
     Returns:
         Dict par canal {'R': {'mean': ..., 'std': ..., 'median': ...}, ...}
     """"""
+
+    # S'assurer que l'image possède bien 3 canaux RGB
+    image = image.convert(""RGB"")
+
     hist = image.histogram()
     stats = {}
-    
+
     for ch_name, offset in [('R', 0), ('G', 256), ('B', 512)]:
         channel_hist = hist[offset:offset + 256]
+
         values = np.arange(256)
         counts = np.array(channel_hist, dtype=float)
         total = counts.sum()
-        
+
         if total > 0:
-            # TODO etudiant : calculer la moyenne ponderee
-            mean_val = 0.0  # TODO etudiant : np.sum(values * counts) / total
-            
-            # TODO etudiant : calculer l'ecart-type
-            std_val = 0.0  # TODO etudiant
-            
-            # TODO etudiant : calculer la mediane (cumsum jusqu'a 50%)
-            median_val = 0.0  # TODO etudiant
+            # Moyenne pondérée
+            mean_val = np.sum(values * counts) / total
+
+            # Ecart-type pondéré
+            variance = np.sum(((values - mean_val) ** 2) * counts) / total
+            std_val = np.sqrt(variance)
+
+            # Médiane à partir de l'histogramme cumulé
+            cumulative = np.cumsum(counts)
+            median_val = np.searchsorted(cumulative, total / 2)
+
         else:
             mean_val = std_val = median_val = 0.0
-        
-        stats[ch_name] = {'mean': mean_val, 'std': std_val, 'median': median_val}
-    
+
+        stats[ch_name] = {
+            'mean': float(mean_val),
+            'std': float(std_val),
+            'median': float(median_val)
+        }
+
     return stats
 
 
-# TODO etudiant : Comparer les histogrammes pour differents filtres
-# filters_to_test = {
-#     ""original"": test_image,
-#     ""brightness_+30%"": ImageEnhance.Brightness(test_image).enhance(1.3),
-#     ""contrast_+50%"": ImageEnhance.Contrast(test_image).enhance(1.5),
-#     ""grayscale"": ImageOps.grayscale(test_image).convert(""RGB""),
-# }
-#
-# rows = []
-# for filter_name, img in filters_to_test.items():
-#     stats = compute_histogram_stats(img)
-#     for channel, values in stats.items():
-#         rows.append({'filtre': filter_name, 'canal': channel, **values})
-#
-# df_hist = pd.DataFrame(rows)
-# print(df_hist.pivot(index='filtre', columns='canal', values='median'))
-print(""Exercice a completer"")",,,,,,,,4b3cd499d2036a34,,,,,,,,
+# Etape 2 : Images à comparer
+filters_to_test = {
+    ""original"": test_image,
+    ""brightness_+30%"": ImageEnhance.Brightness(test_image).enhance(1.3),
+    ""contrast_+50%"": ImageEnhance.Contrast(test_image).enhance(1.5),
+    ""grayscale"": ImageOps.grayscale(test_image).convert(""RGB""),
+}
+
+
+# Etape 3 : Construire le DataFrame
+rows = []
+
+for filter_name, img in filters_to_test.items():
+    stats = compute_histogram_stats(img)
+
+    for channel, values in stats.items():
+        rows.append({
+            'filtre': filter_name,
+            'canal': channel,
+            'mean': values['mean'],
+            'std': values['std'],
+            'median': values['median']
+        })
+
+
+df_hist = pd.DataFrame(rows)
+
+print(""Statistiques par filtre et canal :"")
+display(df_hist)
+
+
+# Affichage plus lisible des médianes
+median_table = df_hist.pivot(
+    index='filtre',
+    columns='canal',
+    values='median'
+)
+
+print(""\nMédianes par filtre et canal :"")
+display(median_table)
+
+
+# Etape 4 : Identifier le filtre qui modifie le plus la distribution
+original_medians = median_table.loc[""original""]
+
+median_differences = (
+    median_table
+    .drop(index=""original"")
+    .subtract(original_medians)
+    .abs()
+)
+
+median_differences[""ecart_moyen""] = median_differences.mean(axis=1)
+
+filter_max_change = median_differences[""ecart_moyen""].idxmax()
+
+print(""\nEcarts de médiane par rapport à l'image originale :"")
+display(median_differences)
+
+print(
+    f""\nLe filtre qui modifie le plus la distribution est : ""
+    f""{filter_max_change}""
+)",,,,,,,,522af1f4e6103812,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,1566b504,markdown,fr,8b8dace08b3172e1,"## 📋 Section 4: Métadonnées et EXIF
 
 Extraction et manipulation des métadonnées EXIF des images.",,,,,,,,8b8dace08b3172e1,,,,,,,,
@@ -3875,9 +4063,9 @@ print(""✅ Notebook 01-3-Basic-Image-Operations terminé!"")
 print(""🎓 Vous maîtrisez maintenant les opérations fondamentales sur les images"")
 print(""🚀 Prêt pour les modules suivants!"")
 print(""="" * 50)",,,,,,,,c1a91073b6f93edc,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,nm6fteb1dn,markdown,fr,f04483580c7c23df,"***
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,nm6fteb1dn,markdown,fr,cec88a28336e88d8,"***
 
-## Exemple guide : Pipeline de Traitement d'Images pour GenAI
+## Exercice 4 : Pipeline de traitement d'images pour GenAI
 
 **Durée estimée :** 20-25 minutes
 
@@ -3898,7 +4086,7 @@ Créer un pipeline complet de préparation d'images pour une API de génération
 - Indice 1 : DALL-E 3 préfère les carrés (1024x1024), Stable Diffusion img2img utilise 512x512 ou 768x768
 - Indice 2 : Utilisez `ImageEnhance` pour les ajustements et `prepare_for_api()` pour l'optimisation
 - Indice 3 : Pour GPT-5 Vision, n'oubliez pas l'encodage base64 avec `encode_image_base64()`
-- Indice 4 : Les métadonnées PNG sont utiles pour la traçabilité des images générées",,,,,,,,f04483580c7c23df,,,,,,,,
+- Indice 4 : Les métadonnées PNG sont utiles pour la traçabilité des images générées",,,,,,,,cec88a28336e88d8,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,yccszlm6y8k,markdown,fr,199ee67ecfef6af3,"### Critères de succès
 
 - [ ] L'image est correctement chargée depuis URL ou fichier
@@ -4026,15 +4214,15 @@ def complete_pipeline(image_source, api_target, save_intermediates=False):
 # 6. Tester le pipeline avec votre image
 # Indice: Affichez un avant/après pour vérifier les transformations
 pass",,,,,,,,91d70b98bc6dfbe0,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,cell-63bd4614,markdown,fr,51745797725e6f24,"## Conclusion
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,cell-63bd4614,markdown,fr,40ef47dea8cfa964,"## Conclusion
 
 Ce notebook a permis d'explorer les aspects essentiels de 01 3 basic image opérations. Les points cles :
 
 - Les concepts fondamentaux ont ete presentes et illustres
-- Les Exemple guides proposent une mise en pratique progressive
+- Les trois exemples guidés et les quatre exercices proposent une mise en pratique progressive
 - Les résultats obtenus permettent de valider la comprehension
 
-**Pour aller plus loin** : approfondir les aspects avances du sujet et explorer les liens avec d'autres domaines.",,,,,,,,51745797725e6f24,,,,,,,,
+**Pour aller plus loin** : approfondir les aspects avances du sujet et explorer les liens avec d'autres domaines.",,,,,,,,40ef47dea8cfa964,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-4-Forge-SD-XL-Turbo.ipynb,7aee4370,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
@@ -20827,7 +21015,7 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,in
 - **Régime dual, même code** : la cellule de comparaison encode `test_image`, chargée depuis une URL avec un **repli synthétique** (`create_test_image`, gradient lisse) si le téléchargement échoue. Sur le gradient (faible entropie), la hiérarchie s'inverse — le PNG sans perte devient le plus léger, le JPEG le plus lourd. La leçon complète est le **contraste entre les deux régimes** : aucune hiérarchie de formats n'est absolue, elle dépend de l'entropie du contenu.
 - **WEBP Q90** s'intercale ici entre le JPEG Q85 et le JPEG Q95 : à qualité visuelle comparable, c'est un bon compromis moderne dans le cas photo, au prix d'une compatibilité de décodage un peu plus récente.
 - Le **ratio** affiché (0.399 pour le PNG) se lit comme la fraction de la taille mémoire vive (~1406 KB, Section 1) : la chaîne complète chargement → encodage → upload (Section 5) peut être budgétée chiffre en main avant l'appel API — l'économie maximale mesurée ici atteint **89.1 %** (JPEG Q75 61.0 KB vs PNG 561.2 KB).",,,,,,,,677a97cc1585368f,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,interp-recap-013,markdown,fr,0ef46690802e047e,"**Lecture du résultat.** La synthèse reprend le fil complet parcouru — charger, transformer, filtrer, métadonner, préparer pour API, exporter — et c'est l'ordre canonique d'un pipeline de pré-traitement GenAI : chaque section de ce notebook est une étape franchissable indépendamment, mais l'enchaînement est la vraie compétence. Le chemin mémo : une image est une matrice (Section 1) qu'on redresse et découpe (2), qu'on lisse ou accentue (3), qu'on documente (4), qu'on adapte aux contraintes du moteur cible (5), et qu'on encode au bon rapport qualité/poids (7). Les exercices qui suivent fixent chaque maillon.",,,,,,,,0ef46690802e047e,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,interp-recap-013,markdown,fr,9a074d81f2d976bc,"**Lecture du résultat.** La synthèse reprend le fil complet parcouru — charger, transformer, filtrer, métadonner, préparer pour API, exporter — et c'est l'ordre canonique d'un pipeline de pré-traitement GenAI : chaque section de ce notebook est une étape franchissable indépendamment, mais l'enchaînement est la vraie compétence. Le chemin mémo : une image est une matrice (Section 1) qu'on redresse et découpe (2), qu'on lisse ou accentue (3), qu'on documente (4), qu'on adapte aux contraintes du moteur cible (5), et qu'on encode au bon rapport qualité/poids (7). L'exercice 4 qui suit assemble ces maillons en un pipeline complet.",,,,,,,,9a074d81f2d976bc,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,note-debug-013,markdown,fr,ba9dee4fe96f3400,"**Erreurs classiques du débutant PIL — à connaître avant de débugger.** Trois pièges reviennent dans quasi tout premier pipeline :
 
 - **`Image.open` est *lazy*** : l'ouverture ne lit que l'en-tête ; la matrice de pixels n'est chargée qu'au premier accès. Un fichier modifié ou supprimé entre `open` et l'exploitation explose tardivement — appelez `image.load()` (ou un `image.size` suffit parfois à révéler le problème) au plus tôt quand la source est volatile.
@@ -20915,39 +21103,38 @@ Writing a rich prompt is one thing; checking that the model actually obeyed is a
 **Hint 1** : `img.convert(""HSV"")` separates hue (H), saturation (S) and brightness (V); `ImageStat.Stat(img_hsv).mean` gives the mean of each channel. **Mind the units**: Pillow encodes H on **0-255** (not 0-360°); a pure blue gives H ≈ 170, not 240. **Beware of circularity**: hue is an angle — two reds on either side of the wrap-around (H=254 and H=0) give an arithmetic mean of 127 (cyan), while the circular mean stays red. **Mask low-saturation pixels** (S < 30): a gray has H=0 and must not count as red. For a warm vs cold palette, measure a **proportion of pixels** in H sectors (warm: 0-60 and 200-255, cold: 100-180) rather than a mean alone. Daytime vs night reads mostly on V; saturated vs desaturated on S.
 
 **Hint 2** : to decode the image from the result of `generate_image()`: `Image.open(BytesIO(base64.b64decode(result[""image_url""].split("","", 1)[1])))`.",,,,,,,3125fe228698ecf5,2895e19875e1992b,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,ccb08b37,code,fr,bc641f20e9b594bb,"# Exercice 4 : Le prompt tient-il ses promesses ? (mesure sur les pixels)
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,ccb08b37,code,fr,2a9dfbff3fef64d1,"# Exercice 4 : Le prompt tient-il ses promesses ? (densite de detail, mesure sur les pixels)
 
 # Etape 1 : Axe visuel binaire choisi
-axe_choisi = None  # TODO etudiant : nommez votre axe (ex. ""palette chaude vs froide"")
+axe_choisi = None  # TODO etudiant : ""minimaliste vs detaille""
 
 # Etape 2 : Deux prompts identiques sauf la mention de l'axe
-prompt_axe_a = ""...""  # TODO etudiant : version A de l'axe (ex. ""warm color palette"")
-prompt_axe_b = ""...""  # TODO etudiant : version B de l'axe (ex. ""cool color palette"")
-# Indice : ne changez QUE la mention de l'axe, gardez sujet et style identiques
+prompt_axe_a = ""...""  # TODO etudiant : version A (ex. ""minimalist composition, few large flat shapes"")
+prompt_axe_b = ""...""  # TODO etudiant : version B (ex. ""highly detailed, intricate scene"")
+# Indice : ne changez QUE la mention du niveau de detail, gardez sujet et style identiques
 
 # Etape 3 : Generation des deux images (quality=""low"" suffit pour mesurer)
 # result_a = generate_image(prompt=prompt_axe_a, size=""1024x1024"", quality=""low"")
 # result_b = generate_image(prompt=prompt_axe_b, size=""1024x1024"", quality=""low"")
-# Indice : decoder l'image -> Image.open(BytesIO(base64.b64decode(result_a[""image_url""].split("","", 1)[1])))
+# Indice : decoder l'image comme dans l'exemple guide 4 (data: URL ou https)
 
 # Etape 4 : Mesure PIL sur chaque image
-# from PIL import ImageStat
+# from PIL import ImageFilter
 mesure_a = None  # TODO etudiant : statistique PIL pour l'image A
 mesure_b = None  # TODO etudiant : meme statistique pour l'image B
-# Indice (ATTENTION) : ne prenez PAS la moyenne arithmetique de la teinte -- la teinte
-# est un angle, et Pillow l encode sur 0-255 (pas 0-360). Deux rouges de part et d autre
-# de la coupure (H=254 et H=0) donnent une moyenne de 127, soit du CYAN : c est le piege
-# que l Indice 1 de la consigne ci-dessus detaille.
-# Pistes correctes : masquer les pixels peu satures (S < 30 ; un gris a H=0 ne doit pas
-# compter comme rouge), puis mesurer une PROPORTION de pixels dans des secteurs de teinte
-# (chaud : 0-60 et 200-255, froid : 100-180), ou une statistique circulaire accompagnee
-# d une mesure de concentration.
-# ImageStat.Stat(img_hsv).mean -> [H, S, V] reste utile pour S et V.
+# Indice : deux familles de mesures possibles --
+# - densite de contours : img.convert(""L"").filter(ImageFilter.FIND_EDGES), puis
+#   moyenne des pixels ; une image minimaliste a de grands aplats -> peu de contours ;
+# - richesse de couleurs : img.quantize(colors=64).getcolors() puis nombre de
+#   couleurs reellement utilisees (et pas seulement demandees).
+# ATTENTION au piege : la densite de contours depend aussi du SUJET (un ciel est
+# vide, une foule est dense). Figez le meme sujet dans les deux prompts, sinon la
+# mesure confond le niveau de detail demande et la scene decrite.
 
 # Etape 5 : Conclusion chiffree
 conclusion_ex4 = None  # TODO etudiant : la mesure confirme-t-elle l'axe ? de combien ?
 
-print(""Exercice a completer"")",,,,,,,,bc641f20e9b594bb,,,,,,,,
+print(""Exercice a completer"")",,,,,,,,2a9dfbff3fef64d1,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,aa0a8773,markdown,fr,64fd592dbbe12823,"## Conclusion
 
 gpt-image (la famille de generation d'images d'OpenAI utilisee depuis 2025, qui a succede a DALL-E 3) via l'API OpenAI directe illustre l'approche **boite noire managée** : on delègue entierement le pipeline de generation a un service heberge et on consomme le resultat via `generate_image(prompt, size, quality, style)`. Les parametres exposes (`size`, `quality`, `style`) restent volontairement restreints -- l'optimisation fine (sampler, scheduler, CFG) est inaccessible, ce qui est coherent avec le public vise (createurs de contenu, prototypage rapide).
@@ -21148,9 +21335,6 @@ verdicts_ex6 = []  # TODO etudiant : un booleen par image
 conclusion_ex6 = None  # TODO etudiant : combien sur 3 ? la reformulation aide-t-elle ?
 
 print(""Exercice a completer"")",,,,,,,,7252021ea6e64399,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,c2c2cab5,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,bd9f3275,code,fr,06c484f9b7560109,"# Parameters
 notebook_mode = ""batch""
 skip_widgets = ""True""
@@ -21704,7 +21888,15 @@ Synthèse des deux exemples précédents : la fonction `analyse_complete()` ench
 **Points clés** :
 - Un seul appel de fonction produit les **trois niveaux** de description — le résultat est un dictionnaire réutilisable, pas trois affichages séparés
 - Le prompt éducatif est **construit à partir du domaine** : changer `domain` en tête de cellule adapte l'analyse à une autre discipline
-",,,,,,,,b667b1b68a05e661,,,,,,,,
+","### Guided example: three-mode personalized analysis for a domain
+
+*Contribution from a group of EPF students (TP2, PR #20551), integrated as a guided example.*
+
+Synthesis of the two previous examples: the `analyse_complete()` function chains three analyses of the same image — a short factual description, a detailed description for screen readers, a pedagogical summary contextualized by the domain — and returns everything in a dictionary displayed with `pprint`. The domain (`Géographie`), the level (`university`) and the image are set at the top of the cell.
+
+**Key points**:
+- A single function call produces the **three levels** of description — the result is a reusable dictionary, not three separate displays
+- The educational prompt is **built from the domain**: changing `domain` at the top of the cell adapts the analysis to another discipline",,,,,,,b667b1b68a05e661,f3593e8c0a558bc2,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exemple-3modes-code,code,fr,9c488597d8da6e0b,"# Exemple guide : analyse personnalisee a trois modes pour un domaine
 # (contribution d'un groupe d'etudiants EPF, TP2, PR #20551)
 
@@ -21769,7 +21961,18 @@ Une même image analysée par GPT-5 peut produire des réponses très différent
 5. Concluez en une phrase : quelle formulation sert quel usage pédagogique ?
 
 **Indice** : ne changez QUE la consigne d'orientation entre les deux prompts — si le format de sortie diffère aussi, la comparaison ne mesure plus la formulation.
-",,,,,,,,6f2e3887c3ff7ae7,,,,,,,,
+","### Exercise 1 : Neutral prompt vs oriented prompt — measuring the sensitivity to wording
+
+The same image analyzed by GPT-5 can produce very different answers depending on how the prompt is worded. The goal is to **measure** this sensitivity instead of undergoing it: two prompts that differ only in their angle (neutral vs oriented toward a reading frame), same image, same output format.
+
+**Steps**:
+1. Choose an image from `example_images`
+2. Write a `prompt_neutre`: objective description, without theoretical orientation
+3. Write a `prompt_oriente`: same output format, but it orients the analysis toward a frame (historical, aesthetic, technical...)
+4. Run both analyses and compare: elements mentioned, vocabulary, structure
+5. Conclude in one sentence: which wording serves which pedagogical use?
+
+**Hint**: change ONLY the orientation instruction between the two prompts — if the output format also differs, the comparison no longer measures the wording.",,,,,,,6f2e3887c3ff7ae7,71ca99cb1e66f5f8,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo1-code,code,fr,5fb17155d5ea3bc3,"# Exercice 1 : Prompt neutre vs prompt oriente -- mesurer la sensibilite de la formulation
 # TODO etudiant : comparer deux analyses de la MEME image sous deux formulations
 
@@ -21805,7 +22008,17 @@ L'exemple guidé d'accessibilité a généré trois **longueurs** de description
 4. Générez les trois textes et vérifiez : chacun ≤ 125 caractères, et les trois textes sont bien **distincts**
 
 **Indice** : posez-vous la question « que vient faire le lecteur sur cette page ? » — c'est elle qui détermine quoi garder dans les 125 caractères.
-",,,,,,,,00cd7ee3c99af9d4,,,,,,,,
+","### Exercise 2 : Contextual alt text — one image, three contexts
+
+The accessibility guided example generated three description **lengths** for the same image. The next level: the same image published in three different **contexts** calls for three different alt texts, even if the 125-character limit stays the same. A relevant alt text depends on what the reader came looking for.
+
+**Steps**:
+1. Choose an image from `example_images` (or your own URL)
+2. Define three publication contexts: popular-science article, social network, school textbook
+3. Write one prompt per context: same ≤ 125-character limit, but the information angle adapts to the context
+4. Generate the three texts and check: each one is ≤ 125 characters, and the three texts are indeed **distinct**
+
+**Hint**: ask yourself ""what did the reader come to do on this page?"" — that question determines what to keep in the 125 characters.",,,,,,,00cd7ee3c99af9d4,d4133e2e75d3e7d3,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv-exo2-code,code,fr,a82719dd72ed6dd5,"# Exercice 2 : Alt text contextuel -- une image, trois contextes
 # TODO etudiant : produire trois alt texts DIFFERENTS pour la meme image
 
@@ -21846,4 +22059,363 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-2-GPT-5-Image-Generation.ipynb,nv
 - Indice 1 : `analyze_image_with_gpt5()` accepte n'importe quelle URL — appelez-la une fois par image
 - Indice 2 : pour croiser, injectez le texte de la première analyse dans le prompt de la seconde — GPT-5 comparera l'image visible au texte fourni
 - Indice 3 : un même format de sortie pour les deux analyses rend la comparaison mécanique
-",,,,,,,,275eaceb6f66a2d9,,,,,,,,
+","### Exercise 3 : Image comparator — two images from the same domain side by side
+
+**Estimated duration :** 15-20 minutes
+
+**Objective**: compare two images from the same category in a single workflow — individual analyses with an identical format, then cross-comparison of the results.
+
+**Instructions**:
+1. **Choose a domain** among the pedagogical use cases presented above
+2. **Select two images** relevant to this domain (public URLs or local images)
+3. **Write an analysis prompt** that imposes an identical structure for both images
+4. **Implement `compare_images()`**: analysis of each image, then cross-comparison — common points, differences, verdict
+5. **Display the result** in a readable way (dictionary + `pprint`)
+
+> **Hints:**
+- Hint 1 : `analyze_image_with_gpt5()` accepts any URL — call it once per image
+- Hint 2 : to cross-compare, inject the text of the first analysis into the prompt of the second — GPT-5 will compare the visible image to the provided text
+- Hint 3 : the same output format for both analyses makes the comparison mechanical",,,,,,,275eaceb6f66a2d9,72a9f5c422432eaf,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,ex1-vignettes-md,markdown,fr,ff695ea94ad6158a,"### Exercice 1 : Vignettes sans déformation
+
+L'exemple guidé 1 force chaque variante dans une vignette de `250 x 188` pixels. Une image dont le rapport largeur / hauteur diffère de celui de la vignette est alors étirée : la rotation de 90° en est le cas extrême. PIL propose trois stratégies qui conservent les proportions, chacune avec son prix :
+
+| Fonction | Ce qu'elle fait | Prix à payer |
+|---|---|---|
+| `ImageOps.contain(img, taille)` | réduit l'image pour qu'elle tienne entière dans la vignette | la vignette n'est pas remplie |
+| `ImageOps.pad(img, taille, color=...)` | `contain`, puis complète par des bandes de couleur | des pixels de remplissage |
+| `ImageOps.fit(img, taille)` | remplit toute la vignette en recadrant | une partie de l'image est coupée |
+
+**Étapes** :
+1. Écrire `facteur_deformation(img, taille)` : le rapport entre le format de la vignette et celui de l'image (`(tw / th) / (w / h)`), qui vaut 1 quand il n'y a pas de déformation
+2. Calculer ce facteur pour les neuf variantes de `transformations` (exemple guidé 1) : lesquelles sont étirées, et de combien ?
+3. Pour `pad` et `fit`, mesurer le prix payé sur chaque variante : la part de pixels de remplissage pour `pad`, la part de l'image perdue au recadrage pour `fit`
+4. Reconstruire la mosaïque avec la stratégie de votre choix, et justifier ce choix pour une galerie de miniatures
+5. Pour la rotation de 30°, mesurer aussi la part de pixels blancs ajoutés par `expand=True` avant tout redimensionnement
+
+**Indices** :
+- `# Indice` : le format d'une image est `img.width / img.height`
+- `# Indice` : l'image réduite par `contain` couvre `cw * ch` pixels sur les `tw * th` de la vignette
+- `# Indice` : pour la rotation, comparez le nombre de pixels de l'image tournée à celui de la source (`width * height`)",,,,,,,,ff695ea94ad6158a,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,ex1-vignettes-code,code,fr,ee2b0149bdba8aee,"# Exercice 1 : vignettes sans deformation
+# TODO etudiant : completer les etapes 1 a 5
+
+from PIL import ImageOps
+
+TAILLE_VIGNETTE = (250, 188)
+
+def facteur_deformation(img, taille):
+    """"""Rapport entre le format de la vignette et celui de l'image (1.0 = pas de deformation).""""""
+    # Etape 1 : (tw / th) / (w / h)
+    return None
+
+def part_remplissage_pad(img, taille):
+    """"""Part des pixels de la vignette qui sont du remplissage avec ImageOps.pad.""""""
+    # Etape 3 : 1 - (surface de ImageOps.contain(img, taille)) / (tw * th)
+    return None
+
+deformations = {}
+for label, img in transformations:
+    facteur = facteur_deformation(img, TAILLE_VIGNETTE)
+    if facteur is not None:
+        deformations[label] = facteur
+
+if deformations:
+    # Etapes 2 a 5 : tableau des facteurs, prix de pad et fit, nouvelle mosaique
+    pass
+else:
+    print(""Exercice a completer : facteur_deformation() renvoie None pour l'instant"")
+    print(f""Variantes a analyser : {len(transformations)}"")
+",,,,,,,,ee2b0149bdba8aee,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,ex2-presets-data-md,markdown,fr,e30e4527be3124ff,"### Exercice 2 : Des presets décrits par des données — et l'ordre des opérations
+
+Dans l'exemple guidé 2, un preset est un bloc de code. Dans un vrai pipeline (préparation d'images avant génération, application de retouche), un preset est plutôt une **donnée** : une liste d'étapes `(opération, paramètre)` qu'on peut sauvegarder en JSON, versionner et partager. Ce format pose aussi une question que le code masquait : **l'ordre des étapes change-t-il le résultat ?**
+
+**Étapes** :
+1. Écrire `appliquer_etapes(image, etapes)`, où `etapes` est une liste de couples `(nom, valeur)` parmi `couleur`, `contraste`, `luminosite`, `nettete` (facteurs `ImageEnhance`) et `flou` (rayon de `GaussianBlur`)
+2. Décrire les presets **cyberpunk** et **aquarelle** de l'exemple guidé 2 sous cette forme, et vérifier que le résultat est identique au pixel près à celui d'`appliquer_preset` (`np.array_equal`)
+3. Permuter deux étapes d'un preset (par exemple contraste et couleur) et mesurer l'écart moyen absolu entre les deux résultats, en niveaux de 0 à 255 : quelles paires d'opérations commutent, lesquelles non ?
+4. Sauvegarder les presets dans `presets.json`, puis ajouter un quatrième preset de votre invention uniquement en éditant ce fichier
+
+**Indices** :
+- `# Indice` : un dictionnaire `{""couleur"": ImageEnhance.Color, ...}` associe chaque nom à sa classe ; `ImageEnhance.Color(img).enhance(valeur)` applique le facteur
+- `# Indice` : l'accentuation `ImageFilter.SHARPEN` du preset cyberpunk n'a pas de paramètre : ajoutez une opération `accentuer` dont la valeur est ignorée
+- `# Indice` : l'écart moyen absolu vaut `np.abs(a.astype(int) - b.astype(int)).mean()` sur les deux tableaux `np.array(image)`",,,,,,,,e30e4527be3124ff,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,ex2-presets-data-code,code,fr,977e83cda1fe7ed4,"# Exercice 2 : presets decrits par des donnees
+# TODO etudiant : completer les etapes 1 a 4
+
+import json
+import numpy as np
+
+def appliquer_etapes(image, etapes):
+    """"""Applique une liste d'etapes (nom, valeur) a une copie RGB de l'image.""""""
+    resultat = image.convert(""RGB"").copy()
+    for nom, valeur in etapes:
+        # Etape 1 : appliquer l'operation correspondant a `nom`
+        pass
+    return None
+
+PRESETS = {
+    ""cyberpunk"": [],   # TODO etudiant : etapes du preset cyberpunk de l'exemple guide 2
+    ""aquarelle"": [],   # TODO etudiant : etapes du preset aquarelle
+}
+
+resultat = appliquer_etapes(test_image, PRESETS[""aquarelle""])
+if resultat is not None:
+    # Etapes 2 a 4 : egalite au pixel pres, permutations, presets.json
+    pass
+else:
+    print(""Exercice a completer : appliquer_etapes() renvoie None pour l'instant"")
+    print(f""Presets a decrire : {list(PRESETS)}"")
+",,,,,,,,977e83cda1fe7ed4,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,ex3-wasserstein-md,markdown,fr,f6e46be185f76a30,"### Exercice 3 : Comparer des distributions entières, puis transférer une ambiance
+
+L'exemple guidé 3 résume chaque canal par trois nombres. Deux distributions très différentes peuvent pourtant partager moyenne et médiane. Une mesure plus complète compare les histogrammes entiers : la **distance de Wasserstein** en une dimension (ou « distance du terrassier »). Elle mesure la quantité de pixels à déplacer, multipliée par la distance à parcourir, pour transformer une distribution en l'autre. Sur des histogrammes, elle se calcule simplement : c'est la somme des écarts absolus entre les deux **histogrammes cumulés** normalisés.
+
+Le même histogramme cumulé sert à **transférer une ambiance** d'une image à l'autre (*histogram matching*) : on remplace chaque valeur de l'image source par la valeur de la référence qui occupe le même rang dans sa distribution.
+
+**Étapes** :
+1. Écrire `distance_wasserstein(img_a, img_b)` : pour chaque canal, somme des écarts absolus entre histogrammes cumulés normalisés, puis moyenne sur les trois canaux
+2. Classer les trois filtres de l'exemple guidé 3 selon cette distance à l'original : le classement est-il le même que celui des écarts de médiane ?
+3. Écrire `transferer_histogramme(source, reference)` : pour chaque canal, construire une table de correspondance de 256 valeurs à partir des deux histogrammes cumulés, puis l'appliquer avec `Image.point()`
+4. Choisir comme référence le résultat d'un preset de l'exemple guidé 2 (par exemple `vintage`), transférer son histogramme sur l'image originale, et vérifier que la distance à la référence diminue
+5. Afficher côte à côte l'original, la référence et le résultat : qu'est-ce que le transfert d'histogramme reproduit, et qu'est-ce qu'il ne peut pas reproduire (le vignettage, le flou) ?
+
+**Indices** :
+- `# Indice` : `np.cumsum(hist) / hist.sum()` donne l'histogramme cumulé normalisé d'un canal
+- `# Indice` : pour la table de correspondance, `np.searchsorted(cdf_reference, cdf_source[v])` donne la valeur de référence de même rang que `v`
+- `# Indice` : `Image.point()` sur une image RGB accepte une table de 768 valeurs (R, puis G, puis B)",,,,,,,,f6e46be185f76a30,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-3-Basic-Image-Operations.ipynb,ex3-wasserstein-code,code,fr,7961d66a1e8b3119,"# Exercice 3 : distances entre distributions et transfert d'histogramme
+# TODO etudiant : completer les etapes 1 a 5
+
+def distance_wasserstein(img_a, img_b):
+    """"""Distance moyenne sur les trois canaux entre les histogrammes cumules normalises.""""""
+    # Etape 1 : par canal, somme des |cdf_a - cdf_b|, puis moyenne des canaux
+    return None
+
+def transferer_histogramme(source, reference):
+    """"""Image source dont chaque canal prend la distribution de la reference.""""""
+    # Etape 3 : table de 768 valeurs construite canal par canal, appliquee avec source.point(table)
+    return None
+
+distances = {}
+for nom_filtre, img in filters_to_test.items():
+    distance = distance_wasserstein(filters_to_test[""original""], img)
+    if distance is not None:
+        distances[nom_filtre] = distance
+
+if distances:
+    # Etapes 2 a 5 : classement, transfert vers un preset, verification et affichage
+    pass
+else:
+    print(""Exercice a completer : distance_wasserstein() renvoie None pour l'instant"")
+    print(f""Filtres a comparer : {list(filters_to_test)}"")
+",,,,,,,,7961d66a1e8b3119,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,cd415ea8,code,fr,d8cfd07b7b0f3965,"# Parameters
+BATCH_MODE = ""true""
+",,,,,,,,d8cfd07b7b0f3965,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,5689b8c9,markdown,fr,46717c89b080f7f7,"### Exemple guidé 4 : Le prompt tient-il ses promesses ? — mesure sur les pixels
+
+*Contribution étudiante du groupe de la PR #20957, intégrée comme exemple guidé.*
+
+Un prompt qui demande une « palette chaude » tient-il sa promesse, ou l'impression visuelle suffit-elle à le croire ? La méthode : deux prompts identiques sauf la mention de l'axe (chaud contre froid), génération en `quality=""low""`, puis mesure sur les pixels — parts de secteurs de teinte sur les pixels saturés seulement (les gris n'ont pas de teinte), moyenne circulaire de la teinte accompagnée de sa concentration, et la moyenne arithmétique affichée uniquement pour montrer le piège qu'elle constitue sur un angle.","### Guided example 4: Does the prompt keep its promises? — measuring on the pixels
+
+*Student contribution from the group of PR #20957, integrated as a guided example.*
+
+Does a prompt that asks for a ""warm palette"" keep its promise, or does the visual impression alone tempt us to believe it? The method: two identical prompts except for the axis mention (warm vs. cool), generation at `quality=""low""`, then measurement on the pixels — hue-sector shares over saturated pixels only (greys have no hue), circular mean of the hue together with its concentration, and the arithmetic mean displayed solely to show the trap it is on an angle.",,,,,,,46717c89b080f7f7,1f87f3ee8d6632ef,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,8b5d44bb,code,fr,a41a53b559aac651,"# Exemple guide 4 : Le prompt tient-il ses promesses ? (mesure sur les pixels)
+# Contribution etudiante du groupe de la PR #20957
+import base64
+from io import BytesIO
+
+import numpy as np
+import requests
+import matplotlib.pyplot as plt
+from PIL import Image, ImageStat
+
+# --- Filet de securite : si les cellules de setup du notebook n'ont pas ete executees
+# (ou si on est sur Colab), on redefinit generate_image() de facon autonome.
+if ""generate_image"" not in globals():
+    import os
+
+    _cle = os.getenv(""OPENAI_API_KEY"")
+    if not _cle:
+        try:  # Google Colab : cle stockee dans les ""Secrets"" (icone cle a gauche)
+            from google.colab import userdata
+            _cle = userdata.get(""OPENAI_API_KEY"")
+        except Exception:
+            pass
+    if not _cle:
+        import getpass
+        _cle = getpass.getpass(""OPENAI_API_KEY : "")
+
+    _api_base = os.getenv(""OPENAI_BASE_URL"", ""https://api.openai.com/v1"")
+    _headers = {""Authorization"": f""Bearer {_cle}"", ""Content-Type"": ""application/json""}
+
+    def generate_image(prompt, size=""1024x1024"", quality=""medium"", style=""vivid""):
+        """"""Version autonome, meme interface que celle du notebook (style ignore par gpt-image-1).""""""
+        payload = {""model"": ""gpt-image-1"", ""prompt"": prompt, ""n"": 1, ""size"": size, ""quality"": quality}
+        try:
+            print(f""[generate_image] Prompt: {prompt[:100]}..."")
+            r = requests.post(f""{_api_base}/images/generations"", headers=_headers, json=payload, timeout=180)
+            if r.status_code != 200:
+                return {""success"": False, ""error"": f""HTTP {r.status_code}: {r.text[:300]}""}
+            d = r.json()[""data""][0]
+            src = d.get(""url"") or f""data:image/png;base64,{d['b64_json']}""
+            return {""success"": True, ""image_url"": src, ""revised_prompt"": d.get(""revised_prompt"", prompt)}
+        except Exception as e:
+            return {""success"": False, ""error"": str(e)}
+
+# Etape 1 : Axe visuel binaire choisi
+axe_choisi = ""palette chaude vs froide""
+
+# Etape 2 : Deux prompts identiques sauf la mention de l'axe
+# Sujet, cadrage, style et eclairage sont figes : SEULE la mention de la palette change.
+_base = (
+    ""A quiet harbor with small fishing boats, wooden pier and hills in the background, ""
+    ""wide shot, digital painting, soft even light, {palette}.""
+)
+prompt_axe_a = _base.format(palette=""warm color palette dominated by red, orange and yellow tones"")
+prompt_axe_b = _base.format(palette=""cool color palette dominated by blue, cyan and teal tones"")
+
+# Verification : les deux prompts ne different que par la mention de l'axe
+assert prompt_axe_a.replace(""warm color palette dominated by red, orange and yellow tones"", """") == \
+       prompt_axe_b.replace(""cool color palette dominated by blue, cyan and teal tones"", """")
+
+# Etape 3 : Generation des deux images (quality=""low"" suffit pour mesurer)
+result_a = generate_image(prompt=prompt_axe_a, size=""1024x1024"", quality=""low"")
+result_b = generate_image(prompt=prompt_axe_b, size=""1024x1024"", quality=""low"")
+
+
+def decoder_image(result):
+    """"""Convertit le resultat de generate_image() en PIL.Image RGB (None si echec).""""""
+    if not result.get(""success""):
+        print(f""Generation echouee : {result.get('error', 'erreur inconnue')}"")
+        return None
+    src = result[""image_url""]
+    if src.startswith(""data:""):
+        img = Image.open(BytesIO(base64.b64decode(src.split("","", 1)[1])))
+    else:
+        img = Image.open(BytesIO(requests.get(src, timeout=30).content))
+    return img.convert(""RGB"")
+
+
+img_a = decoder_image(result_a)
+img_b = decoder_image(result_b)
+
+# Affichage cote a cote
+fig, axes = plt.subplots(1, 2, figsize=(12, 6))
+for ax, img, titre in [(axes[0], img_a, ""A : palette chaude""), (axes[1], img_b, ""B : palette froide"")]:
+    if img is not None:
+        ax.imshow(img)
+    else:
+        ax.text(0.5, 0.5, ""Generation echouee"", ha=""center"", va=""center"")
+    ax.set_title(titre)
+    ax.axis(""off"")
+plt.tight_layout()
+plt.show()
+
+
+# Etape 4 : Mesure PIL sur chaque image
+SEUIL_S = 30  # pixels peu satures (gris) exclus : leur H=0 ne veut rien dire
+
+
+def mesurer_palette(img):
+    """"""Proportions de pixels chauds / froids parmi les pixels satures + stats HSV.""""""
+    img_hsv = img.convert(""HSV"")
+    h, s, v = [np.asarray(c, dtype=np.float64) for c in img_hsv.split()]
+
+    masque = s >= SEUIL_S
+    n_sat = int(masque.sum())
+    h_sat = h[masque]
+
+    # Secteurs de teinte (Pillow : H sur 0-255, pas 0-360)
+    chaud = (h_sat <= 60) | (h_sat >= 200)   # rouges / oranges / jaunes / magentas
+    froid = (h_sat >= 100) & (h_sat <= 180)  # cyans / bleus
+
+    part_chaud = chaud.mean() if n_sat else 0.0
+    part_froid = froid.mean() if n_sat else 0.0
+    if not n_sat:
+        h_sat = np.zeros(1)  # evite les warnings numpy sur une image entierement grise
+
+    # Moyenne CIRCULAIRE de la teinte + concentration R (0 = dispersee, 1 = une seule teinte)
+    angles = h_sat / 256.0 * 2 * np.pi
+    c, si = np.cos(angles).mean(), np.sin(angles).mean()
+    h_circ = (np.arctan2(si, c) % (2 * np.pi)) / (2 * np.pi) * 256 if n_sat else float(""nan"")
+    concentration = float(np.hypot(c, si)) if n_sat else 0.0
+
+    # Moyennes globales S et V (ImageStat) : utiles en controle
+    _, s_moy, v_moy = ImageStat.Stat(img_hsv).mean
+    h_arith = h_sat.mean() if n_sat else float(""nan"")  # piege, affiche a titre de comparaison
+
+    return {
+        ""part_saturee"": n_sat / h.size,
+        ""part_chaud"": float(part_chaud),
+        ""part_froid"": float(part_froid),
+        ""indice_chaud_froid"": float(part_chaud - part_froid),  # de -1 (tout froid) a +1 (tout chaud)
+        ""h_circulaire"": float(h_circ),
+        ""h_circulaire_deg"": float(h_circ) * 360 / 256,
+        ""concentration"": concentration,
+        ""h_arithmetique"": float(h_arith),
+        ""s_moyenne"": s_moy,
+        ""v_moyenne"": v_moy,
+    }
+
+
+mesure_a = mesurer_palette(img_a) if img_a is not None else None
+mesure_b = mesurer_palette(img_b) if img_b is not None else None
+
+for nom, m in [(""A (chaud)"", mesure_a), (""B (froid)"", mesure_b)]:
+    if m is None:
+        print(f""{nom:10s}: pas de mesure"")
+        continue
+    print(f""{nom:10s}: pixels satures {m['part_saturee']:5.1%} | ""
+          f""chauds {m['part_chaud']:5.1%} | froids {m['part_froid']:5.1%} | ""
+          f""indice {m['indice_chaud_froid']:+.2f}"")
+    print(f""{'':10s}  H circulaire {m['h_circulaire']:5.1f}/255 (~{m['h_circulaire_deg']:5.1f} deg, ""
+          f""R={m['concentration']:.2f}) | H arithmetique {m['h_arithmetique']:5.1f} (piege) | ""
+          f""S moy {m['s_moyenne']:5.1f} | V moy {m['v_moyenne']:5.1f}"")
+
+# Etape 5 : Conclusion chiffree
+if mesure_a and mesure_b:
+    ecart = mesure_a[""indice_chaud_froid""] - mesure_b[""indice_chaud_froid""]
+    confirme = (mesure_a[""part_chaud""] > mesure_a[""part_froid""]
+                and mesure_b[""part_froid""] > mesure_b[""part_chaud""])
+    conclusion_ex4 = (
+        f""Axe '{axe_choisi}' : image A = {mesure_a['part_chaud']:.0%} de pixels chauds vs ""
+        f""{mesure_a['part_froid']:.0%} froids ; image B = {mesure_b['part_chaud']:.0%} chauds vs ""
+        f""{mesure_b['part_froid']:.0%} froids. Ecart d'indice chaud-froid A-B = {ecart:+.2f} ""
+        f""(echelle -2 a +2). ""
+        + (""La mesure CONFIRME la difference promise : chaque image est dominee par la palette demandee. ""
+           if confirme else
+           ""La mesure NE confirme PAS pleinement la difference promise : au moins une image n'est pas ""
+           ""dominee par la palette demandee. "")
+        + ""Limite : un seul couple = un seul tirage par condition. Sans repeter la generation ""
+          ""(ex. 3-5 images par prompt) on ne peut pas separer l'effet du prompt du bruit entre tirages ; ""
+          ""il faudrait comparer l'ecart A-B a l'ecart entre deux images d'un MEME prompt.""
+    )
+else:
+    conclusion_ex4 = ""Au moins une generation a echoue : impossible de conclure.""
+
+print(""\nConclusion :"", conclusion_ex4)",,,,,,,,a41a53b559aac651,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,1e7b8e69,markdown,fr,160a278511e6575f,"### Lecture du résultat — exemple guidé 4
+
+À cette exécution, la promesse est tenue de façon nette, et la mesure la chiffre :
+
+- l'image A (« palette chaude ») est à **100 % de pixels chauds** (indice **+1,00**) ; sa teinte circulaire moyenne est d'environ **21,6°** avec une concentration **R = 0,99** : presque tous les pixels tournent autour d'un même orange ;
+- l'image B (« palette froide ») est à **100 % de pixels froids** (indice **−1,00**) ; teinte circulaire d'environ **182,4°**, concentration **R = 1,00** : un bleu-cyan unanime ;
+- l'écart d'indice chaud-froid A−B atteint **+2,00**, le maximum de l'échelle.
+
+La saturation moyenne (195 pour A, 130 pour B) rappelle que « chaud » et « froid » ne se distinguent pas par l'intensité de couleur mais par la **position** de la teinte — c'est bien l'axe mesuré. La moyenne arithmétique de H reste affichée à titre de piège : ici elle coïncide avec la circulaire (R proche de 1, une seule teinte), mais sur un mélange de deux teintes de part et d'autre de la coupure 0/255, elle inventerait une teinte inexistante.
+
+La limite posée par la conclusion est celle de la méthode : **un seul tirage par condition**. L'écart maximal dit que cette paire-là tient la promesse ; il ne dit pas si chaque paire la tiendrait — il faudrait répéter la génération et comparer l'écart A−B à l'écart entre deux images d'un même prompt, la même réserve que pour l'exemple guidé 2.","### Reading the result — guided example 4
+
+At this execution, the promise is kept in a clear-cut way, and the measurement quantifies it:
+
+- image A (""warm palette"") is at **100 % warm pixels** (index **+1.00**); its circular mean hue is about **21.6°** with a concentration **R = 0.99**: almost every pixel revolves around the same orange;
+- image B (""cool palette"") is at **100 % cool pixels** (index **−1.00**); circular hue of about **182.4°**, concentration **R = 1.00**: a unanimous blue-cyan;
+- the warm-cool index gap A−B reaches **+2.00**, the maximum of the scale.
+
+The mean saturation (195 for A, 130 for B) is a reminder that ""warm"" and ""cool"" are not distinguished by colour intensity but by the **position** of the hue — which is indeed the measured axis. The arithmetic mean of H stays displayed as a trap: here it coincides with the circular one (R close to 1, a single hue), but over a blend of two hues on either side of the 0/255 wrap-around, it would invent a hue that exists nowhere.
+
+The limit stated by the conclusion is the method's own: **a single draw per condition**. The maximal gap says that this particular pair keeps the promise; it does not say that every pair would — one would need to repeat the generation and compare the A−B gap with the gap between two images of the same prompt, the same reservation as for guided example 2.",,,,,,,160a278511e6575f,7512eb3ba1d0dd35,,,,,,,
