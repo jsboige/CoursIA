@@ -1,10 +1,23 @@
 # region imports
 from AlgorithmImports import *
+import numpy as np
 from alpha_models import ValueAlpha, QualityAlpha, LowVolAlpha, MomentumFactorAlpha
 from portfolio_construction import MeanVariancePCM
 from risk_management import SectorCapRiskModel
 from execution import TWAPExecutionModel
 # endregion
+
+
+def _ratio(field):
+    """Morningstar ratio as a float, None when NaN.
+
+    Multi-period fields (roe, total_debt_equity_ratio) carry their latest
+    value in .value; plain ratios (pb_ratio, pe_ratio) are numbers. Zero is
+    kept: a debt-free company has a debt-to-equity of 0, and the alphas
+    already drop P/B, P/E and ROE at or below 0.
+    """
+    value = float(getattr(field, 'value', field))
+    return value if np.isfinite(value) else None
 
 
 class CompositeC2EquityFactor(QCAlgorithm):
@@ -102,20 +115,21 @@ class CompositeC2EquityFactor(QCAlgorithm):
         selected = sorted_by_mcap[:25]
 
         # Cache fundamental data for alpha models
-        # (security.fundamental_data doesn't exist in LEAN)
+        # (security.fundamental_data doesn't exist in LEAN).
+        # Lean names (#21141): pb_ratio, pe_ratio, roe, total_debt_equity_ratio.
+        # The former names (price_to_book, return_on_equity...) do not exist:
+        # getattr(..., None) returned None and Value/Quality never emitted.
+        # A wrong name now raises at the first selection instead.
         self.fundamental_cache = {}
         for f in selected:
-            try:
-                vr = f.valuation_ratios
-                opr = f.operation_ratios
-                self.fundamental_cache[f.symbol] = {
-                    'price_to_book': getattr(vr, 'price_to_book', None),
-                    'price_to_earnings': getattr(vr, 'price_to_earnings', None),
-                    'return_on_equity': getattr(opr, 'return_on_equity', None),
-                    'debt_to_equity': getattr(opr, 'debt_to_equity', None),
-                }
-            except Exception:
-                pass
+            vr = f.valuation_ratios
+            opr = f.operation_ratios
+            self.fundamental_cache[f.symbol] = {
+                'price_to_book': _ratio(vr.pb_ratio),
+                'price_to_earnings': _ratio(vr.pe_ratio),
+                'return_on_equity': _ratio(opr.roe),
+                'debt_to_equity': _ratio(opr.total_debt_equity_ratio),
+            }
         for fields in self.fundamental_cache.values():
             self.fund_seen += 1
             for name, value in fields.items():
