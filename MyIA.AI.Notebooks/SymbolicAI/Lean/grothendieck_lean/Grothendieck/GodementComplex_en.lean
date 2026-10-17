@@ -98,9 +98,19 @@ variable {X : TopCat.{u}}
 -- `stalk_exact_godementStep` at `f = dⁿ`, both assembly patterns —
 -- `d^{n+1} = godementStep dⁿ` and `C^{n+2} = C⁰(coker dⁿ)` — being
 -- definitional (`rfl`): the recurrence promised by Part 93(a) is the lemma
--- itself, no induction over `n` is needed. Acyclicity `Hⁿ(C⁰) = 0` for
--- `n ≥ 1` — the homological reading, which the
--- `stalkFunctor_preservesHomology` instance already transports — is the
--- remaining named frontier of Part 93.
+-- itself, no induction over `n` is needed.
+--
+-- **Part 93(b), homological reading landed in the FR twin**:
+-- `Grothendieck.isZero_stalk_homology_godementCanonicalComplex` — the
+-- homology of the canonical complex is zero at every stalk, for every
+-- degree `n ≥ 1`, with **no sheaf hypothesis**. Three gestures: the stalk
+-- short complex centered at `n` is exact (the assembly theorem in `n - 1`);
+-- an exact short complex has zero homology; and the
+-- `stalkFunctor_preservesHomology` instance transports this `IsZero` along
+-- `ShortComplex.mapHomologyIso` — the homology of the stalk is the stalk
+-- of the homology. **Why stalks and not the presheaf**: a presheaf with
+-- all stalks zero need not be zero (non-separated) — stalkwise nullity is
+-- the unconditional form. The sheaf corollary (nullity of `Hⁿ` in the
+-- category of sheaves, [God58] II Th. 5.2.1) is the next frontier.
 
 end Grothendieck_en
