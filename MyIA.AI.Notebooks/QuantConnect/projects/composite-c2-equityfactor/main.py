@@ -57,13 +57,16 @@ class CompositeC2EquityFactor(QCAlgorithm):
             self.set_alpha(self.alpha_models[0])
         else:
             self.alpha_models = [
-                ValueAlpha(),
-                QualityAlpha(),
+                ValueAlpha(owner=self),
+                QualityAlpha(owner=self),
                 LowVolAlpha(),
                 MomentumFactorAlpha()
             ]
             self.set_alpha(CompositeAlphaModel(*self.alpha_models))
         # Fundamental fields read with a usable value, per field (#21141).
+        # The cache exists before the first selection: Value and Quality read
+        # it through their owner reference.
+        self.fundamental_cache = {}
         self.fund_seen = 0
         self.fund_nonnull = {}
 
@@ -150,6 +153,13 @@ class CompositeC2EquityFactor(QCAlgorithm):
         for name in ('price_to_book', 'price_to_earnings', 'return_on_equity', 'debt_to_equity'):
             self.set_runtime_statistic(
                 f"Field {name}", f"{self.fund_nonnull.get(name, 0)}/{self.fund_seen}")
+        # Calls where getattr(algorithm, 'fundamental_cache') saw nothing
+        # (missed/calls), for the alphas that read the cache (#21141).
+        for alpha in self.alpha_models:
+            probe = getattr(alpha, 'cache_probe', None)
+            if probe is not None:
+                self.set_runtime_statistic(
+                    f"Cache {alpha.name}", f"{probe['algo_missing']}/{probe['calls']}")
         # Diagnostics for #21137: insights reaching the PCM, per alpha.
         self.set_runtime_statistic("PCM calls", str(self.pcm.calls))
         for source in sorted(set(self.pcm.reached) | set(self.pcm.reached_active)):
