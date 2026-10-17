@@ -21,6 +21,7 @@ du maillon 5 : `relabelCrossings f (ktRedrawOrder d₁) = d₂`.
 import Knots.Basic
 import Knots.Reidemeister
 import Knots.Conway
+import Mathlib.Logic.Relation
 
 /-!
 # Redraw d'un code PD (maillon 6)
@@ -30,7 +31,7 @@ et en renommant les étiquettes par une bijection qui échange les fenêtres
 `edges` des deux diagrammes. C'est l'incarnation formelle du
 « réordonnancement + renommage » du certificat de redraw du maillon 5.
 
-## État et écart restant (NOTE MAJ)
+## État et écart restant (NOTE MAJ, après tranche 5)
 
 Trois voies pour fermer `AreMutants conwayKnot kinoshitaTerasakaKnot` :
 
@@ -45,16 +46,28 @@ Trois voies pour fermer `AreMutants conwayKnot kinoshitaTerasakaKnot` :
    représentants à redraw près. Fidèle au docstring (« diagrammes des mêmes
    classes d'isotopie »), mais affaiblit l'énoncé — décision de design à
    instruire avec le coordinateur (EPIC #2874).
-3. **Équivalence composée** : introduire `SameKnot d₁ d₂ := ∃ m₁ m₂,
-   Redraws d₁ m₁ ∧ Redraws d₂ m₂ ∧ ReidemeisterEquiv m₁ m₂` et l'utiliser
-   dans l'assemblage du maillon 6 sans toucher `AreMutants` (variante de 2).
+3. **Équivalence composée** : introduire `SameKnot` (fermeture transitive
+   du pas `Redraws ∨ ReidemeisterEquiv`) et l'utiliser dans l'assemblage du
+   maillon 6 sans toucher `AreMutants` (variante de 2).
 
-Tranches posées : définition + équivalence `refl`/`symm`/`trans`, pont
-depuis le certificat du maillon 5 (`ktRedrawOrder_perm`,
-`ktRedrawRelabel_involutive`, `conwayMutant_redraws_kt` — ce fichier), puis
+**Arbitrage ai-01 (2026-10-16T23:51Z, consigné #2874 c.6226898563) :
+voie 3 retenue.** Mise en œuvre (tranche 5) : `SameKnot` est la fermeture
+transitive (`Relation.EqvGen`, Mathlib) — la forme courte
+`∃ m₁ m₂, Redraws d₁ m₁ ∧ Redraws d₂ m₂ ∧ ReidemeisterEquiv m₁ m₂` esquissée
+ci-dessus est réflexive et symétrique mais PAS transitive (chaque application
+consomme un segment `ReidemeisterEquiv` ; recoller deux segments exigerait
+exactement la congruence voie 1) ; le constructeur
+`SameKnot.of_redraws_reidemeister` l'embarque comme certificat suffisant.
+L'assemblage `conwayMutant_sameKnot_kt` ferme le maillon 6 sous `SameKnot`
+(le pont du maillon 5 en est un pas unaire). La voie 1 reste ouverte en
+renforcement futur.
+
+Tranches livrées : définition + équivalence (tranche 1, corrigée en
+tranche 2), pont du maillon 5 (`ktRedrawOrder_perm`,
+`ktRedrawRelabel_involutive`, `conwayMutant_redraws_kt` — tranche 3),
 transfert de `wf` (`Redraws.wf` — tranche 4 : clauses de fenêtre
-d'étiquettes `[1, numEdges]` ajoutées à la définition, sans elles le transfert
-est faux). Tranche suivante : le choix de voie.
+d'étiquettes `[1, numEdges]`, sans elles le transfert est faux), assemblage
+`SameKnot` (tranche 5).
 -/
 
 namespace Knots
@@ -400,5 +413,72 @@ theorem Redraws.wf {d₁ d₂ : KnotDiagram} (h : Redraws d₁ d₂) (hwf : d₁
       rw [decide_eq_true_iff] at hb
       rw [hc]
       exact decide_eq_true_iff.mpr hb
+
+/-! ### Équivalence composée : `SameKnot` (voie 3, arbitrage consigné) -/
+
+/-- Deux diagrammes représentent le même nœud s'ils se relient par une chaîne
+de pas `Redraws` ou `ReidemeisterEquiv` : la fermeture transitive du pas
+composé. C'est l'incarnation formelle du « modulo Reidemeister ET isotopie
+planaire » du docstring de `Knot` (Basic.lean) — le redraw en est le bloc
+combinatoire, les mouvements de Reidemeister la chirurgie.
+
+Forme retenue (voie 3, arbitrage ai-01 2026-10-16) : `Relation.EqvGen` sur le pas
+`Redraws ∨ ReidemeisterEquiv`. La forme courte
+`∃ m₁ m₂, Redraws d₁ m₁ ∧ Redraws d₂ m₂ ∧ ReidemeisterEquiv m₁ m₂` (esquisse
+initiale de la note de conception) est réflexive et symétrique mais PAS
+transitive — chaque application consomme un segment `ReidemeisterEquiv`, et
+recoller deux segments exigerait `Redraws → ReidemeisterEquiv` (voie 1).
+La fermeture transitive est l'implémentation fidèle de « équivalence
+composée » ; le constructeur `SameKnot.of_redraws_reidemeister` embarque la
+forme courte comme certificat suffisant. -/
+def SameKnot (d₁ d₂ : KnotDiagram) : Prop :=
+  Relation.EqvGen (fun a b => Redraws a b ∨ ReidemeisterEquiv a b) d₁ d₂
+
+theorem SameKnot.refl (d : KnotDiagram) : SameKnot d d :=
+  Relation.EqvGen.refl d
+
+theorem SameKnot.symm {d₁ d₂ : KnotDiagram} (h : SameKnot d₁ d₂) : SameKnot d₂ d₁ :=
+  Relation.EqvGen.symm d₁ d₂ h
+
+theorem SameKnot.trans {d₁ d₂ d₃ : KnotDiagram} (h₁ : SameKnot d₁ d₂)
+    (h₂ : SameKnot d₂ d₃) : SameKnot d₁ d₃ :=
+  Relation.EqvGen.trans d₁ d₂ d₃ h₁ h₂
+
+/-- `SameKnot` est une relation d'équivalence (emballage des constructeurs
+`Relation.EqvGen`). -/
+theorem sameKnot_equivalence : Equivalence SameKnot where
+  refl := SameKnot.refl
+  symm := SameKnot.symm
+  trans := SameKnot.trans
+
+/-- Un redraw isole le même nœud : c'est un pas unaire de la fermeture. -/
+theorem Redraws.sameKnot {d₁ d₂ : KnotDiagram} (h : Redraws d₁ d₂) : SameKnot d₁ d₂ :=
+  Relation.EqvGen.rel d₁ d₂ (Or.inl h)
+
+/-- Une équivalence de Reidemeister isole le même nœud : c'est un pas unaire
+de la fermeture. -/
+theorem ReidemeisterEquiv.sameKnot {d₁ d₂ : KnotDiagram} (h : ReidemeisterEquiv d₁ d₂) :
+    SameKnot d₁ d₂ :=
+  Relation.EqvGen.rel d₁ d₂ (Or.inr h)
+
+/-- La forme courte de la note de conception comme certificat suffisant :
+des représentants redraw-accessibles de chaque côté, liés par
+`ReidemeisterEquiv`. -/
+theorem SameKnot.of_redraws_reidemeister {d₁ d₂ m₁ m₂ : KnotDiagram}
+    (hr₁ : Redraws d₁ m₁) (hr₂ : Redraws d₂ m₂) (hre : ReidemeisterEquiv m₁ m₂) :
+    SameKnot d₁ d₂ :=
+  Relation.EqvGen.trans d₁ m₁ d₂ (Relation.EqvGen.rel d₁ m₁ (Or.inl hr₁))
+    (Relation.EqvGen.trans m₁ m₂ d₂ (Relation.EqvGen.rel m₁ m₂ (Or.inr hre))
+      (Relation.EqvGen.symm d₂ m₂ (Relation.EqvGen.rel d₂ m₂ (Or.inl hr₂))))
+
+/-- **Assemblage du maillon 6 (voie 3)** : le mutant de sphère Conway et le
+census Kinoshita-Terasaka représentent le même nœud au sens composé. Le pont
+du maillon 5 (`conwayMutant_redraws_kt`, certificat `rfl` du maillon 5
+réinterprété) en est un pas unaire. `AreMutants` (Mutation.lean) reste
+intact : la clôture `AreMutants conwayKnot kinoshitaTerasakaKnot` au sens
+strict resterait à instruire par la congruence voie 1. -/
+theorem conwayMutant_sameKnot_kt :
+    SameKnot conwayMutantDiagram kinoshitaTerasakaDiagram :=
+  conwayMutant_redraws_kt.sameKnot
 
 end Knots

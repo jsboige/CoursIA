@@ -7,6 +7,7 @@
 import Knots.Basic_en
 import Knots.Reidemeister_en
 import Knots.Conway_en
+import Mathlib.Logic.Relation
 
 /-!
 # PD code redraw (link 6, EPIC #2874)
@@ -20,8 +21,10 @@ Conway.lean) to the equivalence required by `AreMutants` (Mutation.lean).
 
 The `Knot` docstring (Basic.lean) names the target equivalence — "modulo
 Reidemeister moves AND planar isotopy" — and notes the latter is not yet
-connected. `Redraws` is its combinatorial building block. See the FR
-canonical file for the full design note (three closing routes).
+connected. `Redraws` is its combinatorial building block, and `SameKnot`
+(transitive closure of a redraw or Reidemeister step — route 3, the one
+retained by the coordinator arbitration) composes both into the link 6
+assembly. See the FR canonical file for the full design note.
 -/
 
 open Knots_en
@@ -367,5 +370,73 @@ theorem Redraws.wf {d₁ d₂ : KnotDiagram} (h : Redraws d₁ d₂) (hwf : d₁
       rw [decide_eq_true_iff] at hb
       rw [hc]
       exact decide_eq_true_iff.mpr hb
+
+/-! ### Composed equivalence: `SameKnot` (route 3, arbitration recorded) -/
+
+/-- Two diagrams depict the same knot when they connect through a chain of
+`Redraws` or `ReidemeisterEquiv` steps: the transitive closure of the
+composed step. This is the formal incarnation of the `Knot` docstring's
+"modulo Reidemeister moves AND planar isotopy" (Basic.lean) — the redraw is
+its combinatorial building block, Reidemeister moves its surgery.
+
+Retained form (route 3, ai-01 arbitration 2026-10-16): `Relation.EqvGen` over the
+step `Redraws ∨ ReidemeisterEquiv`. The short form
+`∃ m₁ m₂, Redraws d₁ m₁ ∧ Redraws d₂ m₂ ∧ ReidemeisterEquiv m₁ m₂` (initial
+sketch of the design note) is reflexive and symmetric but NOT transitive —
+each application consumes one `ReidemeisterEquiv` segment, and gluing two
+segments would require `Redraws → ReidemeisterEquiv` (route 1). The
+transitive closure is the faithful implementation of a "composed
+equivalence"; the constructor `SameKnot.of_redraws_reidemeister` embeds the
+short form as a sufficient certificate. -/
+def SameKnot (d₁ d₂ : KnotDiagram) : Prop :=
+  Relation.EqvGen (fun a b => Redraws a b ∨ ReidemeisterEquiv a b) d₁ d₂
+
+theorem SameKnot.refl (d : KnotDiagram) : SameKnot d d :=
+  Relation.EqvGen.refl d
+
+theorem SameKnot.symm {d₁ d₂ : KnotDiagram} (h : SameKnot d₁ d₂) : SameKnot d₂ d₁ :=
+  Relation.EqvGen.symm d₁ d₂ h
+
+theorem SameKnot.trans {d₁ d₂ d₃ : KnotDiagram} (h₁ : SameKnot d₁ d₂)
+    (h₂ : SameKnot d₂ d₃) : SameKnot d₁ d₃ :=
+  Relation.EqvGen.trans d₁ d₂ d₃ h₁ h₂
+
+/-- `SameKnot` is an equivalence relation (packaging of the `Relation.EqvGen`
+constructors). -/
+theorem sameKnot_equivalence : Equivalence SameKnot where
+  refl := SameKnot.refl
+  symm := SameKnot.symm
+  trans := SameKnot.trans
+
+/-- A redraw fixes the same knot: it is a one-step move of the closure. -/
+theorem Redraws.sameKnot {d₁ d₂ : KnotDiagram} (h : Redraws d₁ d₂) : SameKnot d₁ d₂ :=
+  Relation.EqvGen.rel d₁ d₂ (Or.inl h)
+
+/-- A Reidemeister equivalence fixes the same knot: it is a one-step move
+of the closure. -/
+theorem ReidemeisterEquiv.sameKnot {d₁ d₂ : KnotDiagram} (h : ReidemeisterEquiv d₁ d₂) :
+    SameKnot d₁ d₂ :=
+  Relation.EqvGen.rel d₁ d₂ (Or.inr h)
+
+/-- The short form of the design note as a sufficient certificate:
+redraw-accessible representatives on each side, linked by
+`ReidemeisterEquiv`. -/
+theorem SameKnot.of_redraws_reidemeister {d₁ d₂ m₁ m₂ : KnotDiagram}
+    (hr₁ : Redraws d₁ m₁) (hr₂ : Redraws d₂ m₂) (hre : ReidemeisterEquiv m₁ m₂) :
+    SameKnot d₁ d₂ :=
+  Relation.EqvGen.trans d₁ m₁ d₂ (Relation.EqvGen.rel d₁ m₁ (Or.inl hr₁))
+    (Relation.EqvGen.trans m₁ m₂ d₂ (Relation.EqvGen.rel m₁ m₂ (Or.inr hre))
+      (Relation.EqvGen.symm d₂ m₂ (Relation.EqvGen.rel d₂ m₂ (Or.inl hr₂))))
+
+/-- **Link 6 assembly (route 3)**: the Conway sphere mutant and the
+Kinoshita-Terasaka census depict the same knot in the composed sense. The
+link 5 bridge (`conwayMutant_redraws_kt`, the link 5 `rfl` certificate
+reinterpreted) is a one-step move of the closure. `AreMutants`
+(Mutation.lean) is left untouched: closing
+`AreMutants conwayKnot kinoshitaTerasakaKnot` in the strict sense remains
+to be pursued through the route 1 congruence. -/
+theorem conwayMutant_sameKnot_kt :
+    SameKnot conwayMutantDiagram kinoshitaTerasakaDiagram :=
+  conwayMutant_redraws_kt.sameKnot
 
 end Knots_en
