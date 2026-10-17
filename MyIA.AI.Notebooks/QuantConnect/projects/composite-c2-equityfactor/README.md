@@ -24,20 +24,45 @@ Créer un nouveau projet, uploader tous les fichiers `.py`, compiler et lancer u
 |---------|---------------|-----------------|
 | Alpha Framework (4 facteurs + PCM MeanVar) | Hebdomadaire | Top 25 par capitalisation, exposition max 65 %, plafond sectoriel 18 %, TWAP 6 tranches |
 
-### Baseline alignée (2018-2025)
+### Ce que le composite calculait en fait (#21137, octobre 2026)
 
-Fenêtre #1630 standardisée (2018-01-01 à 2025-01-01, 1761 dates tradables), backtestée sur QC Cloud avec frais réels post-#2801.
+Les quatre alphas notent les mêmes titres au même instant, au premier passage de chaque mois. Avant d'appeler `determine_target_percent`, la classe de base Lean (`PortfolioConstructionModel.GetTargetInsights`) ne garde que l'insight actif le plus récent de chaque symbole : sur chaque titre, l'alpha qui émet en dernier efface les autres. C'est le mécanisme déjà mesuré par #19740 sur les `Framework_Composite_*`.
+
+Trois backtests sur QC Cloud, même fenêtre (2018-01-01 à 2025-01-01, 1761 dates tradables), même code, deux paramètres de projet :
+
+| Variante | `pcm_mode` | `alphas` | Sharpe | CAGR | Pire baisse | PSR | Ordres |
+|----------|------------|----------|--------|------|-------------|-----|--------|
+| A. Code d'avant #21137 | `symbol` | `all` | 0.584 | 13.183 % | 20.500 % | 7.631 % | 7568 |
+| B. Témoin : momentum seul | `symbol` | `momentum` | 0.585 | 13.194 % | 20.500 % | 7.650 % | 7362 |
+| C. Correction par poches (défaut) | `sleeve` | `all` | 0.441 | 9.126 % | 17.600 % | 3.284 % | 9003 |
+
+Backtests `e8d5fd4f` (A), `122d1a54` (B), `67da341f` (C), projet 37945484.
+
+**Lecture.** A et B sont presque identiques : le composite d'avant #21137 se réduisait au facteur momentum. Les compteurs écrits en fin de backtest (statistiques `PCM <alpha>`, insights actifs / insights reçus par le PCM) le confirment : seuls `MomFactor` (5729 / 23837) et `LowVol` (76 / 328, sur les titres que le momentum ne note pas) atteignent le PCM, `Value` et `Quality` jamais.
+
+La correction par poches (C) garde le dernier insight de chaque couple (symbole, alpha), normalise les scores à l'intérieur de chaque poche, donne une part égale à chaque poche active et additionne par symbole. Elle fait ce que le composite annonce, et fait **moins bien** que le momentum seul sur cette fenêtre : Sharpe 0.441 contre 0.585, avec une volatilité plus basse (9.1 % contre 12.2 %) et une pire baisse plus faible. Verdict : **NO BEATS**. La correction est une correction de comptabilité, pas une amélioration de performance.
+
+**Reste à mesurer.** `ValueAlpha` et `QualityAlpha` lisent `valuation_ratios.price_to_book`, `price_to_earnings`, `operation_ratios.return_on_equity` et `debt_to_equity` par `getattr(..., None)`. Les autres projets du dépôt utilisent `pb_ratio`, `pe_ratio` et `roe`. Si ces noms n'existent pas dans Lean, les deux alphas n'émettent jamais rien, et la variante C ne mélange que LowVol et momentum. Ce point n'est pas encore mesuré et relève d'un grain séparé.
+
+### Paramètres de projet
+
+| Paramètre | Valeurs | Effet |
+|-----------|---------|-------|
+| `pcm_mode` | `sleeve` (défaut), `symbol` | `symbol` reproduit le PCM d'avant #21137 |
+| `alphas` | `all` (défaut), `momentum` | `momentum` ne branche que `MomentumFactorAlpha` (témoin) |
+
+### Historique : baseline publiée avant #21137
+
+Ces chiffres ont été obtenus avec le PCM d'avant #21137, donc avec le seul momentum en pratique. Rejoué en octobre 2026, le même code donne la ligne A ci-dessus : les données et le moteur QC ont évolué entre-temps.
 
 | Métrique | Catalogue (2015-2025) | Alignée (2018-2025) |
 |----------|-----------------------|---------------------|
-| Sharpe Ratio | 0.543 | **0.574** |
+| Sharpe Ratio | 0.543 | 0.574 |
 | CAGR | 10.010 % | 11.942 % |
 | Max Drawdown | 18.800 % | 18.600 % |
 | PSR | 16.822 % | 25.765 % |
 
-Backtest `8eecba32` (alignée) / `3173f8b39` (catalogue `c2-equityfactor-post2801`), projet 32981222.
-
-La baseline COMP (composite-framework) la plus robuste vérifiée à ce jour : le Sharpe 0.574 est le plus élevé parmi les composites Alpha Framework testés sur la fenêtre alignée, et proche du territoire Tier-1 (>0.5). Il **se maintient et s'améliore légèrement** sur la fenêtre catalogue (0.543 à 0.574, PSR 16.8 % à 25.8 %) — véritablement robuste, non sur-ajusté à la période. Cela contraste fortement avec la stratégie sœur `composite-c1-multiasset` (Sharpe 0.258) : les deux partagent l'échafaudage Alpha Framework, mais l'investissement factoriel sur un univers d'actions US large-cap top-25 par fondamentaux (Value/Quality/LowVol/Momentum + MeanVariancePCM) surperforme de manière spectaculaire la rotation statique multi-actifs à 5 ETF (ensemble momentum 3-alpha + RiskParityPCM). Le choix des alphas composantes/PCM et l'univers d'actions au niveau fondamental comptent bien plus que le câblage du framework lui-même. Promu Tier 4 (Untested) vers Tier 2 (Historique). `totalOrders=0` dans le wrapper MCP est un artefact d'extraction (le CAGR 11.9 % implique des trades réels).
+Backtest `8eecba32` (alignée) / `3173f8b39` (catalogue `c2-equityfactor-post2801`), projet 32981222. L'interprétation qui accompagnait ces chiffres (avantage de l'investissement factoriel à quatre facteurs sur la rotation multi-actifs de `composite-c1-multiasset`) ne tient plus : la performance mesurée était celle du momentum seul.
 
 ## Fichiers
 
@@ -45,7 +70,7 @@ La baseline COMP (composite-framework) la plus robuste vérifiée à ce jour : l
 |---------|-------------|
 | `main.py` | Algorithme composite equity factor orchestrant la sélection d'univers, les alphas, le PCM, le risque et l'exécution |
 | `alpha_models.py` | Quatre modèles factoriels : Value, Quality, LowVolatility et Momentum |
-| `portfolio_construction.py` | MeanVariancePCM avec rééquilibrage hebdomadaire, plafonds sectoriels et limites d'exposition |
+| `portfolio_construction.py` | MeanVariancePCM avec rééquilibrage hebdomadaire, plafonds sectoriels et limites d'exposition ; mode par poches (`by_sleeve`) et compteurs par alpha (#21137) |
 | `risk_management.py` | SectorCapRiskModel avec poids sectoriel max et contraintes de beta |
 | `execution.py` | Modèle d'exécution TWAP (6 tranches, fenêtre de 10 minutes) |
 
