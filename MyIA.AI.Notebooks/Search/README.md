@@ -120,14 +120,14 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 
 Problèmes du monde réel adaptés de projets étudiants. Chaque application est un **binôme Python ⇄ C#** (parité complète depuis le marathon #4956) ; les jumeaux C# suivent la convention `App-Nb-...-CSharp.ipynb`.
 
-### Applications Search (`Applications/Search/`)
+### Applications Adversarial (`Applications/Adversarial/`)
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-14b-ConnectFour](Applications/Search/App-14b-ConnectFour.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
-| 1b | [App-14c-ConnectFour-CSharp](Applications/Search/App-14c-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
-| 2 | [App-14-ConnectFour-Adversarial](Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
-| 2b | [App-14-ConnectFour-CSharp](Applications/Search/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 1 | [App-14b-ConnectFour](Applications/Adversarial/App-14b-ConnectFour.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
+| 1b | [App-14c-ConnectFour-CSharp](Applications/Adversarial/App-14c-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 2 | [App-14-ConnectFour-Adversarial](Applications/Adversarial/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
+| 2b | [App-14-ConnectFour-CSharp](Applications/Adversarial/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
 ### Applications CSP (`Applications/CSP/`)
 
@@ -324,7 +324,7 @@ Search/
 ├── README.md                              # Ce fichier
 ├── requirements.txt                       # Dependances Python
 ├── search_helpers.py                      # Utilitaires partages
-├── Part1-Foundations/                     # Search Fondamental — jumeaux directs -Csharp Search-1..11/2b/03b..03d + Search-2c QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets + Search-09b/09c discrépance + Search-09d/09e compagnons Lean + Search-09f optimisation convexe + Search-03e optimalité A* + Search-11c/11d sélection empirique & descente sous budget + Search-12a Composer-Regards + Search-13a Traverser-Murs-Certifies
+├── Part1-Foundations/                     # Search Fondamental — jumeaux directs -Csharp Search-1..11/2b/03b..03d + Search-2c QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets + Search-09b/09c discrépance + Search-09d/09e compagnons Lean + Search-09f optimisation convexe + Search-09g Szpiro–Pasten (compagnon search_lean) + Search-03e optimalité A* + Search-11c/11d sélection empirique & descente sous budget + Search-12a Composer-Regards + Search-13a Traverser-Murs-Certifies
 │   ├── Search-01-StateSpace.ipynb
 │   ├── Search-02-Uninformed.ipynb
 │   ├── Search-02b-NetworkX.ipynb
@@ -342,6 +342,7 @@ Search/
 │   ├── Search-09d-BeckFiala-Lean-Python.ipynb   # Beck–Fiala : pont Python vers le lake, sans Lean au runtime
 │   ├── Search-09e-Komlos-Lean.ipynb             # Compagnon formel : lake discrepancy_lean via kernel lean4-wsl (#13868)
 │   ├── Search-09f-ConvexOptimisation-Python.ipynb   # Du linéaire au convexe : LP → QP → SOCP (cvxpy), Markowitz App-10 en QP exacte
+│   ├── Search-09g-Szpiro-Pasten-Python.ipynb        # Szpiro–Pasten 2026 rendu opérable — compagnon du lake search_lean (ex-App-32, #16549)
 │   ├── Search-10-SymbolicAutomata.ipynb
 │   ├── Search-11-Metaheuristics.ipynb
 │   ├── Search-11c-Empirical-Algorithm-Selection.ipynb
@@ -364,7 +365,7 @@ Search/
 │   └── CSP-9-Distributed.ipynb
 │
 ├── Applications/
-│   ├── Search/                            # Applications Search (4 notebooks)
+│   ├── Adversarial/                       # Recherche adversariale (4 notebooks)
 │   │   ├── App-14b-ConnectFour.ipynb
 │   │   ├── App-14c-ConnectFour-CSharp.ipynb
 │   │   ├── App-14-ConnectFour-Adversarial.ipynb
