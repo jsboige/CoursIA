@@ -162,4 +162,36 @@ theorem godementCanonicalComplex_d_one (F : X.Presheaf AddCommGrpCat.{u}) :
     (godementCanonicalComplex F).d 1 2 = godementCanonicalDOne F := by
   rw [godementCanonicalComplex_d, godementCanonicalD_one]
 
+/-- **Partie 93(b) — l'assemblage : le complexe canonique est exact en
+chaque tige, à tout degré, sans aucune hypothèse de faisceau** : pour tout
+`n`, la suite de tiges `CⁿFₓ₀ ⟶ C^{n+1}Fₓ₀ ⟶ C^{n+2}Fₓ₀` est exacte en
+`C^{n+1}Fₓ₀`. La récurrence promise par la Partie 93(a) est le lemme
+générique lui-même : chaque degré est `stalk_exact_godementStep` en
+`f = dⁿ`, les deux motifs d'assemblage — `d^{n+1} = godementStep dⁿ`
+(P89) et `C^{n+2} = C⁰(coker dⁿ)` (P92) — étant **définitionnels**
+(`rfl`), aucune récurrence sur `n` n'est à écrire. Les degrés explicités
+en 93(a) sont les instances `n = 0` du présent énoncé
+(`stalk_exact_godementCanonicalDZero_godementCanonicalDOne`) et le degré
+augmenté `Fₓ₀ ⟶ (C⁰F)ₓ₀ ⟶ (C¹F)ₓ₀` en `f = μ`
+(`stalk_exact_toGodement_godementCanonicalDZero`). Reste la lecture
+homologique — l'acyclicité `Hⁿ(C⁰F) = 0` pour `n ≥ 1`, que l'instance
+`stalkFunctor_preservesHomology` transporte déjà. -/
+theorem stalk_exact_godementCanonicalD (F : X.Presheaf AddCommGrpCat.{u})
+    (x₀ : X) (n : ℕ) :
+    (ShortComplex.mk
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalD F n))
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalD F (n + 1)))
+      (by rw [show ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalD F n) ≫
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalD F (n + 1))) =
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalD F n ≫ godementCanonicalD F (n + 1)) from
+              (Functor.map_comp _ _ _).symm,
+        godementCanonicalD_comp_zero,
+        Functor.map_zero])).Exact :=
+  stalk_exact_godementStep (godementCanonicalD F n) x₀
+
 end Grothendieck
