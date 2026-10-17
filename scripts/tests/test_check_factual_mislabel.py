@@ -30,13 +30,14 @@ def _code(out_text):
     }
 
 
-def _run(cells, tmp_path):
+def _run(cells, tmp_path, *, units=None):
     p = tmp_path / "fixture.ipynb"
     p.write_text(json.dumps(_nb(cells), ensure_ascii=False), encoding="utf-8")
-    r = subprocess.run(
-        [sys.executable, str(SCRIPT), "--json", str(p)],
-        capture_output=True, text=True, encoding="utf-8",
-    )
+    args = [sys.executable, str(SCRIPT), "--json"]
+    if units is not None:
+        args.extend(["--units", units])
+    args.append(str(p))
+    r = subprocess.run(args, capture_output=True, text=True, encoding="utf-8")
     return r.returncode, json.loads(r.stdout)
 
 
@@ -102,3 +103,161 @@ def test_absent_number_not_flagged_here(tmp_path):
         tmp_path,
     )
     assert rc == 0
+
+
+# === #20035 : UNITS_EXTENDED -- la liste etendue ajoute des substantifs
+# de comptage trouves sur les cotes hors-App-5 (carnet, lemme, modele,
+# ...). Le scope par defaut est `extended` ; `core` reste rejouable.
+
+
+def test_20035_carnet_contradiction_in_extended(tmp_path):
+    """Le cas fondateur #19918 : 8 carnets en prose vs 15 dans le stream.
+
+    Le scope `extended` (defaut) doit attraper la contradiction -- la
+    liste UNITS historique (App-5) ne contient pas `carnet`, l'extension
+    l'ajoute. La garde SUBCOUNT_CONTEXT_RE ne filtre pas (pas de mot
+    `chacun`/`par`/...).
+    """
+    rc, out = _run(
+        [_code("Listing de Serre100/\n================\n"
+               "Carnets : 15\n"),
+         _md("## Section 2\n\nLes 8 carnets couvrent les theoremes.")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc == 1, (
+        f"l'organe etendu DOIT attraper 8 vs 15 carnets : rc={rc}, out={out!r}")
+    units = [f for f in out["findings"] if f["kind"] == "unit-count"]
+    assert any(f["unit"] == "carnet" and f["claimed"] == "8"
+               and f["stream"] == [15] for f in units), (
+        f"finding carnet 8 vs 15 absent : {units!r}")
+
+
+def test_20035_carnet_ignored_in_core_scope(tmp_path):
+    """Le scope `core` NE doit PAS attraper le carnet -- c'est la
+    portee historique d'App-5, qui n'a pas la couverture `carnet`.
+
+    Ce test verifie que le garde-fou `--units core` fonctionne : un
+    audit cible App-5 reste sur la portee d'origine, sans regression
+    silencieuse introduite par l'extension.
+    """
+    rc, out = _run(
+        [_code("Listing de Serre100/\n================\n"
+               "Carnets : 15\n"),
+         _md("## Section 2\n\nLes 8 carnets couvrent les theoremes.")],
+        tmp_path,
+        units="core",
+    )
+    assert rc == 0, (
+        f"le scope core NE doit PAS attraper carnet (hors-App-5) : "
+        f"rc={rc}, out={out!r}")
+    assert out["anomaly_count"] == 0
+
+
+def test_20035_subcount_guard_still_works_on_extended(tmp_path):
+    """SUBCOUNT_CONTEXT_RE doit continuer a filtrer les sous-comptes
+    pour les nouvelles unites (chacun, par, ...). Sans cette garde,
+    l'extension ferait exploser le taux de FP.
+
+    Cas verifie : la prose dit « dans chacun des 6 carnets, 3 lemmes »,
+    le stream dit `Carnets : 15`. La garde `chacun` filtre la mention
+    de 6, qui n'est PAS le total.
+    """
+    rc, out = _run(
+        [_code("Carnets : 15\nLemmes par carnet : 3\n"),
+         _md("Dans chacun des 6 carnets, on compte 3 lemmes par section.")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc == 0, (
+        f"les sous-comptes filtres par SUBCOUNT_CONTEXT_RE ne doivent "
+        f"pas etre releves en `extended` : rc={rc}, out={out!r}")
+
+
+def test_20035_lemme_count_contradiction(tmp_path):
+    """Compteur Lean : 12 lemmes stream vs 9 lemmes prose.
+
+    Cas de la serie Lean : un carnet de comptage peut imprimer
+    `Lemmes : 12` (re-execution d'un script). Si la prose dit
+    `9 lemmes`, c'est une derive.
+    """
+    rc, out = _run(
+        [_code("Resultat du compteur :\nLemmes : 12\n"),
+         _md("## Synthese\n\nLes 9 lemmes sont les suivants :\n")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc == 1
+    units = [f for f in out["findings"] if f["kind"] == "unit-count"]
+    assert any(f["unit"] == "lemme" and f["claimed"] == "9"
+               and f["stream"] == [12] for f in units), (
+        f"finding lemme 9 vs 12 absent : {units!r}")
+
+
+def test_20035_extended_scope_is_default(tmp_path):
+    """Le defaut (sans --units) est `extended`, et attrape le cas carnet.
+
+    Pin structurel : si une future PR change le defaut, ce test rougit
+    et force un arbitrage explicite.
+    """
+    rc, out = _run(
+        [_code("Carnets : 15\n"),
+         _md("Les 8 carnets suivants ...")],
+        tmp_path,
+        # PAS d'argument --units : on teste le defaut.
+    )
+    assert rc == 1, (
+        f"le scope par defaut DOIT etre `extended` (cas carnet attrape) : "
+        f"rc={rc}, out={out!r}")
+
+
+def test_20956_numbered_list_not_misread_for_etapes(tmp_path):
+    """Regression #20956 (Hermes FP 2026-10-15) : un stream qui imprime
+    une liste numerotee sous un titre `Etapes:` ne doit PAS etre lu
+    comme `etapes = N` ou N = 1 (le premier digit de la liste).
+
+    Cas fondateur : `GenAI/Texte/03_Structured_Outputs.ipynb` cellule
+    md 19, stream `Etapes:\\n  1. Preparer les ingredients\\n  2. ...`,
+    prose `Les 10 etapes numerotees ...`. Avant fix, l'organe rendait
+    `etapes = 1` (faux positif, classe nouvelle dans UNITS_EXTENDED).
+    Apres fix (anchoring `[ \\t]*` autour du separateur), l'organe
+    ne matche plus la classe FP et ne contredit pas la prose.
+
+    Echantillon de garde : 1/9 carnets touches (Hermes, scope
+    `extended`). Les streams `Etapes: 10` et `Etapes = 10` sur la
+    meme ligne continuent d'attraper une contradiction reelle.
+    """
+    rc, out = _run(
+        [_code("Etapes:\n  1. Preparer les ingredients\n  2. Melanger\n"
+               "  3. Cuire 10 minutes\n  ...\n  10. Servir\n"),
+         _md("## Section 3\n\nLes 10 etapes numerotees ci-dessus "
+             "couvrent le protocole complet.")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc == 0, (
+        f"liste numerotee `Etapes:\\n  1.` NE doit PAS etre lue comme "
+        f"`etapes = 1` (FP #20956 Hermes) : rc={rc}, out={out!r}")
+    assert out["anomaly_count"] == 0
+    # Sanity : sur la meme ligne, le pattern fonctionne toujours.
+    rc_ok, out_ok = _run(
+        [_code("Etapes: 10\n"),
+         _md("Les 10 etapes numerotees ...")],
+        tmp_path,
+        units="extended",
+    )
+    # Cas ok : meme chiffre (10 == 10) -> pas de contradiction
+    assert rc_ok == 0, (
+        f"meme-ligne `Etapes: 10` / prose `10 etapes` : rc={rc_ok}, "
+        f"out={out_ok!r}")
+    # Sanity : contradiction reelle sur la meme ligne
+    rc_contradict, out_contradict = _run(
+        [_code("Etapes: 5\n"),
+         _md("Les 10 etapes numerotees ...")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc_contradict == 1, (
+        f"contradiction reelle meme-ligne `Etapes: 5` vs prose `10 "
+        f"etapes` DOIT etre attrapee : rc={rc_contradict}, "
+        f"out={out_contradict!r}")
