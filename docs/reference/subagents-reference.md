@@ -41,7 +41,7 @@ Distinction : `corrective-auditor` = audit sémantique profond d'une cible ; `co
 
 ### Cross-cutting maintenance (toutes machines, alignement env)
 - `readme-hierarchy-auditor` (audit/maj hiérarchie README bottom-up), `readme-updater` (maj README d'une série après ajout/modif notebooks).
-- `slide-analyzer` / `slide-improver` (decks PPTX/Marp, vision sk-agent) pour les tracks slides EPITA/ECE.
+- `slide-analyzer` / `slide-improver` (decks Slidev, captures Playwright + vision sk-agent, baseline renders PPTX) pour les tracks slides EPITA/ECE.
 - `general-purpose` (catch-all, exploration/analyse async non couverte par un specialist).
 
 ## Usage async (pattern)
