@@ -22,13 +22,8 @@ from ict.humor_pairs import (
     validate_pairs,
 )
 
-# Les cellules endpoint du banc humour exigent la cle OpenRouter (presente dans
-# .secrets/master.env sur les machines du cluster, absente en CI sans secrets).
-# Le corpus lui-meme est deterministe et n'appelle jamais l'API.
-_NEEDS_KEY = pytest.mark.skipif(
-    not os.environ.get("OPENROUTER_API_KEY"),
-    reason="cle OPENROUTER_API_KEY requise par les cellules endpoint du banc humour",
-)
+# Depuis l'extraction #20316, le corpus vit dans l'organe GameTheory/humour_banc
+# (fichiers committes) : aucun secret, aucun reseau -- ces tests tournent partout.
 
 
 @pytest.fixture(scope="module")
@@ -43,24 +38,30 @@ def test_banc_humour_path_exists() -> None:
     assert banc_humour_path().exists(), f"banc humour manquant : {banc_humour_path()}"
 
 
-@_NEEDS_KEY
 def test_load_corpus_dur_contract(corpus: list[dict]) -> None:
     # Le banc consolide declare >= 100 instances annotees manuellement.
     assert len(corpus) >= 100
     validate_corpus(corpus)  # leve si champs/taxonomie/unicite violent le contrat
 
 
-@_NEEDS_KEY
+def test_corpus_identity_against_derivation() -> None:
+    # Temoin d'identite #20316 : le corpus committé doit etre EGAL a la
+    # derivation rejouee depuis le snapshot Argumentum (heuristiques + seed 42).
+    from ict.humor_pairs import _organ
+
+    _organ.assert_corpus_identity()
+
+
 def test_label_distribution_sums_to_corpus(corpus: list[dict]) -> None:
     dist = label_distribution(corpus)
     assert sum(dist.values()) == len(corpus)
     assert set(dist) <= set(LABELS)
 
 
-@_NEEDS_KEY
 def test_load_corpus_dur_cwd_independent(tmp_path: Path) -> None:
-    # Regression : la cellule 26 du banc humour resout son cache Argumentum en chemin
-    # relatif — depuis un cwd sans cache, elle declenchait un fetch reseau.
+    # Regression (pre-extraction) : la cellule 26 du banc resolvait son cache
+    # Argumentum en chemin relatif — fetch reseau depuis un cwd sans cache.
+    # L'organe est ancre sur __file__ : le chargement doit rester cwd-independant.
     prev = Path.cwd()
     os.chdir(tmp_path)
     try:
@@ -82,7 +83,6 @@ def test_validate_corpus_rejects_duplicate_ids() -> None:
         validate_corpus([inst, dict(inst)], min_size=1)
 
 
-@_NEEDS_KEY
 def test_build_pairs_contract(corpus: list[dict]) -> None:
     # 28 blagues (p01/p17 exclues, textes committes malformes) + 2 one-liners
     # edge-case = 30 paires, plancher protocolaire #14035 atteint.
@@ -91,7 +91,6 @@ def test_build_pairs_contract(corpus: list[dict]) -> None:
     validate_pairs(pairs)  # min_pairs=30 par defaut
 
 
-@_NEEDS_KEY
 def test_build_prompts_json_contract(corpus: list[dict]) -> None:
     payload = build_prompts_json(build_pairs(corpus))
     assert set(payload) == {"humour", "unfun", "ctrl_edit"}
