@@ -2,7 +2,7 @@
 from AlgorithmImports import *
 from datetime import datetime
 from alpha_models import EMACrossAlpha, TrendStocksAlpha
-from Shared_PCM.pouches_pcm import MultiStrategyPouchesPCM
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
 # endregion
 
 # EMA-Cross universe: 5 tech/Mag7 stocks

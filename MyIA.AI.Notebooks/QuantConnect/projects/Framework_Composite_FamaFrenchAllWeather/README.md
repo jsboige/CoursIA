@@ -31,7 +31,7 @@ Le modèle de construction de portefeuille (`MultiStrategyPCM`) répartit le cap
 
 - `main.py` : Configuration de l'algorithme avec CompositeAlpha et MultiStrategyPouchesPCM
 - `alpha_models.py` : Classes FamaFrenchAlpha et AllWeatherAlpha
-- `Shared_PCM/pouches_pcm.py` (bibliothèque de projet QC) : `MultiStrategyPouchesPCM`, PCM par poches canonique importé par `main.py` (extraction #19821 brique 1)
+- `SharedPCM/pouches_pcm.py` (bibliothèque de projet QC) : `MultiStrategyPouchesPCM`, PCM par poches canonique importé par `main.py` (extraction #19821 brique 1)
 - `quantbook.ipynb` : Notebook de recherche avec analyse de backtest
 
 ## Performance
