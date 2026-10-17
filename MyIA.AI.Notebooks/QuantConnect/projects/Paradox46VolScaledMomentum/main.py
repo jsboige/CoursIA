@@ -25,7 +25,8 @@
 #   UDOW 3x Dow30      -> DIA
 #   TECL 3x Technologie-> XLK
 #   SOXL 3x Semis      -> SMH
-#   USD  3x Financiers -> XLF
+#   USD  2x Semis (ProShares Ultra Semiconductors, et non un 3x financier :
+#        ecart connu, voir le README) -> XLF
 #
 # Choix fixes AVANT tout calcul (protocole #18906, point 5) :
 #   fenetres momentum court/moyen/intermediaire : 21/63/126 jours (base) ;
@@ -37,11 +38,20 @@
 #     (chaque tranche de 20 points de RSI au-dessus de 70 divise le score
 #     par environ deux -- forme declaree, la fiche ne donne pas la sienne)
 #   eligibilite : cloture > SMA ET score > 0 ; sinon liquidites
-#   allocation : 100 % sur l'argmax du score ajuste, revue quotidienne
-#     30 minutes apres l'ouverture
+#   allocation : 98 % sur l'argmax du score ajuste (2 % en liquide, voir
+#     ci-dessous), revue quotidienne 30 minutes apres l'ouverture
 #   fee_mult : multiplicateur des frais IBKR (1.0 = identite ; 2.0 = test de
 #     sensibilite du point 4)
 #   start_date / end_date : fenetre (defauts 2018-01-01 / 2026-09-25)
+#
+# Rotation (#20388) : set_holdings(cible, 1.0) ne vendait pas la ligne
+# precedente. Sur le compte marge par defaut (levier 2), l'achat etait finance a
+# credit, puis refuse faute de marge, et seuls les appels de marge vendaient :
+# jusqu'a trois lignes detenues a la fois, 174 achats refuses et 192 ordres
+# d'appel de marge sur 2018-2026 en univers "leveraged". _rotate_to vend les
+# autres lignes d'abord, vise 98 % et plafonne l'achat a la marge libre a
+# l'envoi. Les ordres refuses et les ordres d'appel de marge sont publies en
+# statistiques d'execution "refused" et "margin_calls".
 
 from AlgorithmImports import *
 
@@ -72,6 +82,11 @@ UNIVERSES = {
     "leveraged": ["UPRO", "TQQQ", "UDOW", "TECL", "SOXL", "USD"],
     "unlevered": ["SPY", "QQQ", "DIA", "XLK", "SMH", "XLF"],
 }
+
+# Part du portefeuille visee par une rotation, et seuil sous lequel une ligne
+# deja detenue est completee (#20388, meme modele que LeveragedETFMomentum-QC).
+TARGET_WEIGHT = 0.98
+TOP_UP_BELOW = 0.97
 
 
 class Paradox46VolScaledMomentum(QCAlgorithm):
@@ -203,10 +218,62 @@ class Paradox46VolScaledMomentum(QCAlgorithm):
                 self.liquidate()
                 self.log(f"{self.time.date()} -> CASH (aucun eligible)")
             else:
-                self.set_holdings(target, 1.0)
                 self.log(f"{self.time.date()} -> {target} (score={best_score:.4f})")
+        if target is not None:
+            self._rotate_to(target)
+
+    # --- execution (#20388) -------------------------------------------------
+
+    def _open_quantity(self, symbol):
+        return sum(t.quantity - t.quantity_filled
+                   for t in self.transactions.get_open_order_tickets(symbol))
+
+    def _rotate_to(self, target):
+        # Detient `target` seul a 98 % du portefeuille. La revue tourne en
+        # seance sur des donnees journalieres : les ordres partent en
+        # MarketOnClose et sont remplis a la cloture, dans l'ordre d'envoi. La
+        # quantite est calculee avant les ventes, les ventes partent d'abord, et
+        # les 2 % laisses en liquide couvrent le controle de marge a l'envoi.
+        # Appelee a chaque revue : sans ordre quand la cible est deja seule et a
+        # 97 % au moins. Un ordre reste ouvert (cloture sans barre) est deduit
+        # plutot que renvoye.
+        pending = {s: self._open_quantity(s) for s in self._symbols}
+        sells = {s: -self.portfolio[s].quantity - pending[s]
+                 for s in self._symbols if s != target}
+        sells = {s: q for s, q in sells.items() if q != 0}
+        if not sells and self.portfolio[target].quantity + pending[target] > 0:
+            held = (self.portfolio[target].holdings_value
+                    + pending[target] * self.securities[target].price)
+            if held >= TOP_UP_BELOW * self.portfolio.total_portfolio_value:
+                return
+        # La revue est planifiee, pas declenchee par une barre : a la premiere
+        # seance, aucune barre n'est encore arrivee et le prix vaut 0. L'achat
+        # attend alors la revue suivante.
+        security = self.securities[target]
+        quantity = 0
+        if security.price > 0:
+            quantity = self.calculate_order_quantity(target, TARGET_WEIGHT) - pending[target]
+            # Plafond de marge a l'envoi : les ventes ne liberent leur marge
+            # qu'a leur remplissage. La quantite est calculee sur la cloture de
+            # la veille et remplie a celle du jour : sur un ETF x3, une hausse
+            # de plus de 2 % dans la seance porte la ligne au-dela de 100 % du
+            # portefeuille, et l'achat suivant entier serait refuse. Il est
+            # plafonne a la marge libre, frais compris, et complete a la revue
+            # suivante.
+            room = 0.97 * self.portfolio.margin_remaining * security.leverage
+            quantity = min(quantity, int(room / security.price))
+        for symbol, q in sells.items():
+            self.market_order(symbol, q)
+        if quantity > 0:
+            self.market_order(target, quantity)
 
     def on_end_of_algorithm(self):
         years = (self.end_date - self.start_date).days / 365.25
+        orders = list(self.transactions.get_orders())
+        refused = sum(1 for o in orders if o.status == OrderStatus.INVALID)
+        margin_calls = sum(1 for o in orders if "margin call" in (o.tag or "").lower())
+        self.set_runtime_statistic("refused", str(refused))
+        self.set_runtime_statistic("margin_calls", str(margin_calls))
         self.log(f"rotations={self._n_rotations} fenetre={years:.1f} ans "
-                 f"univers={self.universe_mode}")
+                 f"univers={self.universe_mode} refused={refused} "
+                 f"margin_calls={margin_calls}")
