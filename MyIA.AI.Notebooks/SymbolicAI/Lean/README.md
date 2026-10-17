@@ -17,14 +17,14 @@ Six visualisations extraites des notebooks illustrent l'arc de la série : de l'
 
 ### Assistance aux preuves et vérification formelle
 
-L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-07b-Examples-Python.ipynb)), puis TorchLean propage intervalles (IBP) et bornes (CROWN) pour certifier formellement la robustesse d'un réseau de neurones ([Lean-11b](Lean-11b-TorchLean-Python.ipynb)).
+L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-07b-Examples-Python.ipynb)), puis [Lean-11b](Lean-11b-TorchLean-Python.ipynb) **borne numériquement** la robustesse d'un petit MLP via IBP et CROWN en Python ; [Lean-11](Lean-11-TorchLean.ipynb) présente la formalisation Lean **illustrative** de TorchLean (architecture cible, types locaux, code `#eval`-able, preuves `#sorry` signalées) — la chaîne « implémentation numérique vérifiable → certificats formels » n'est pas tenue bout-en-bout dans la série.
 
 <p align="center">
   <a href="Lean-07b-Examples-Python.ipynb"><img src="assets/readme/lean-llm-examples.png" width="420" alt="Génération de preuves par LLM sur dix théorèmes Lean : 0 succès / 10 échecs — itérations, temps d'exécution et tokens consommés par théorème."></a>
 </p>
 
 <p align="center">
-  <a href="Lean-11b-TorchLean-Python.ipynb"><img src="assets/readme/lean-torchlean.png" width="420" alt="TorchLean : propagation IBP pour la vérification formelle de réseaux de neurones."></a>
+  <a href="Lean-11b-TorchLean-Python.ipynb"><img src="assets/readme/lean-torchlean.png" width="420" alt="Lean-11b : propagation IBP et CROWN en Python pour borner numériquement la robustesse d'un petit MLP (IBP conservatif, CROWN simplifié)."></a>
 </p>
 
 ### Conway — Game of Life
