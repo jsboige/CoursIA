@@ -542,11 +542,8 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,fdc6262
 La cellule 6 crée le kernel et stocke `MOT_A_DEVINER = ""anticonstitutionnellement""` (25 lettres, l'un des plus longs mots français standards). Cette constante est ce que **l'agent va devoir deviner** au cours du duel via une stratégie d'énigmes posée par le Père Fouras. Le choix du mot est pédagogique : sa longueur force l'agent à mobiliser des **stratégies d'indice indirect** (rime, contexte, longueur) plutôt qu'une description directe. L'étudiant peut substituer un mot plus court pour des parties plus rapides (`""kayak""` pour un palindrome).
 ","### Reading the result: Semantic Kernel kernel instantiated
 
-Cell 4 creates the kernel and stores `MOT_A_DEVINER = ""anticonstitutionnellement""` (25 letters, one of the longest standard French words). This constant is what **the agent will have to guess** during the duel through a riddle strategy set by Père Fouras. The choice of word is pedagogical: its length forces the agent to mobilize **indirect hint strategies** (rhyme, context, length) rather than a direct description. The student can substitute a shorter word for faster games (`""kayak""` for a palindrome).
- Forces progression.
- More.
- Progression.
-",,,,,,,e811182b5c647dff,c9048e7dca7f986a,,,,,,,
+Cell 6 creates the kernel and stores `MOT_A_DEVINER = ""anticonstitutionnellement""` (25 letters, one of the longest standard French words). This constant is what **the agent will have to guess** during the duel through a riddle strategy set by Père Fouras. The choice of word is pedagogical: its length forces the agent to mobilize **indirect hint strategies** (rhyme, context, length) rather than a direct description. The student can substitute a shorter word for faster games (`""kayak""` for a palindrome).
+",,,,,,,e811182b5c647dff,a5cfb088a38ab4c8,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,f0496c5b,markdown,fr,d11675550b6a8613,"## Définition des prompts
 
 Chaque agent conversationnel est piloté par un **prompt système** (ses *instructions*) qui définit son rôle, sa personnalité et les règles qu'il doit respecter. Ces instructions conditionnent tout le comportement de l'agent au fil du dialogue : un même Kernel peut produire deux interlocuteurs radicalement différents selon le prompt qu'on lui donne.
@@ -578,8 +575,8 @@ La cellule 10 définit `PERE_FOURAS_PROMPT` et `LAURENT_JALABERT_PROMPT` structu
 ","### Reading the result: Père Fouras and cyclist prompts configured
 
 Cell 10 defines `PERE_FOURAS_PROMPT` and `LAURENT_JALABERT_PROMPT` structured via `f""""""...""""""` — only the Père Fouras f-string interpolates `MOT_A_DEVINER`. The Père Fouras prompt encodes the **persona + the mechanics**: pose a riddle, wait for an answer, validate, offer the next hint. The cyclist prompt encodes the **guessing strategy**: extract letters, length, context, ask for a hint. This persona/mechanics separation is crucial — without an explicit persona, the LLM would answer in generic Q&A mode without the **Fort Boyard narrative frame**. Guided example 1 (contribution from PR #21009) replaces the duo with two new characters — a **Detective** (deductive questions) and a **Witness** (evasive answers) — a classic extension of the **multi-agent cast**.
- The `f""""""...""""""` format allows the interpolation of runtime variables
-",,,,,,,e147f1f8a80c8b9c,db144478a918d275,,,,,,,
+ The `f""""""...""""""` format allows the interpolation of runtime variables (word to guess, current score).
+",,,,,,,e147f1f8a80c8b9c,082c8047eede866a,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,649ac34e,markdown,fr,7562414dd8da085d,"### Exemple guidé 1 : Personnaliser les personnages du duel
 
 *Contribution du groupe de la PR #21009, intégrée comme exemple guidé.*
@@ -663,14 +660,13 @@ laurent_jalabert = ChatCompletionAgent(
     name=""Laurent_Jalabert"",
     instructions=LAURENT_JALABERT_PROMPT,
 )",,,,,,,,1884ec56d5922898,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,2bbc1e0f,markdown,fr,7d14ad0a0723503b,"### Lecture du résultat : agents conversationnels créés
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,2bbc1e0f,markdown,fr,c6e805e08460483e,"### Lecture du résultat : agents conversationnels créés
 
-La cellule 15 instancie `pere_fouras` et `laurent_jalabert` via `ChatCompletionAgent(kernel=..., name=..., instructions=...)` — sans paramètre `description` ici. Chaque agent reçoit son propre kernel via `create_kernel()` : les agents utilisent le kernel mais ne le possèdent pas, et chacun porte un prompt différent. Sans sélection explicite, le groupe alterne simplement les agents dans l'ordre de la liste (round-robin) ; le paramètre `description` n'entrerait en jeu qu'avec une `selection_strategy` sémantique, qui choisit le prochain locuteur en comparant les descriptions au contexte du dernier message. La cellule 18 (après les agents) importe `TerminationStrategy` — la base class des stratégies de fin custom.
+La cellule 16 instancie `pere_fouras` et `laurent_jalabert` via `ChatCompletionAgent(kernel=..., name=..., instructions=...)` — sans paramètre `description` ici. Chaque agent reçoit son propre kernel via `create_kernel()` : les agents utilisent le kernel mais ne le possèdent pas, et chacun porte un prompt différent. Sans sélection explicite, le groupe alterne simplement les agents dans l'ordre de la liste (round-robin) ; le paramètre `description` n'entrerait en jeu qu'avec une `selection_strategy` sémantique, qui choisit le prochain locuteur en comparant les descriptions au contexte du dernier message. La cellule 19 (après les agents) importe `TerminationStrategy` — la base class des stratégies de fin custom.
 ","### Reading the result: conversational agents created
 
-Cell 10 instantiates `pere_fouras` and `jalabert` via `ChatCompletionAgent(kernel=..., name=..., instructions=..., description=...)`. The `description` parameter is often underused: it serves the **selection_strategy** to choose the active agent when the chat group must decide who speaks. Without an explicit description, the orchestrator would risk alternating arbitrarily. Cell 12 (after agents) imports `TerminationStrategy` — the base class for custom termination strategies. The student must observe the **difference between agents and the kernel**: agents use the kernel but do not own it, and each agent can have a different prompt.
- It is a parameter.
-",,,,,,,7d14ad0a0723503b,c7367a24ca55d879,,,,,,,
+Cell 16 instantiates `pere_fouras` and `laurent_jalabert` via `ChatCompletionAgent(kernel=..., name=..., instructions=...)` — without a `description` parameter here. Each agent receives its own kernel via `create_kernel()`: agents use the kernel but do not own it, and each carries a different prompt. Without an explicit selection, the group simply alternates the agents in list order (round-robin); the `description` parameter would only come into play with a semantic `selection_strategy`, which chooses the next speaker by comparing descriptions to the context of the last message. Cell 19 (after the agents) imports `TerminationStrategy` — the base class for custom termination strategies.
+",,,,,,,c6e805e08460483e,914497b0e74ff40a,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,4a00c813,markdown,fr,02b7ed50c96b72d7,"## Stratégie de terminaison personnalisée
 
 Dans un dialogue multi-agent, il faut décider **quand s'arrêter**. Semantic Kernel délègue cette décision à une `TerminationStrategy` : après chaque tour, la méthode asynchrone `should_agent_terminate` est invoquée et renvoie un booléen qui détermine si la boucle se clôt.
@@ -780,13 +776,13 @@ chat = AgentGroupChat(
     )
 )
 ",,,,,,,,e3c965a025256976,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,cb4bd6c9,markdown,fr,5cc5f90b5ed5518b,"### Lecture du résultat : groupe de chat configuré
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,cb4bd6c9,markdown,fr,4401434e76ef9378,"### Lecture du résultat : groupe de chat configuré
 
-La cellule 22 construit `AgentGroupChat(agents=[pere_fouras, laurent_jalabert], termination_strategy=...)` — sans `selection_strategy` explicite. C'est l'**objet central** qui orchestre le duel : à chaque tour, l'agent suivant parle dans l'ordre de la liste (round-robin — la sélection par défaut, visible dans les lignes `Selected agent at index 0` / `at index 1` alternées de la sortie), et le `termination_strategy` détecte la fin — ici, le mot deviné : la sortie évalue `should terminate` après chaque tour de Laurent_Jalabert, et la partie s'arrête sur le premier `True` — ou à l'épuisement des itérations si le mot n'est jamais nommé. Sans ce wrapper, les deux agents parleraient en parallèle. La **spécificité Fort Boyard** est le renoncement : l'exemple guidé 2 montre la stratégie hybride qui laisse aussi l'agent abandonner (« je donne ma langue au chat ») — émulation du stress télévisé.
+La cellule 25 construit `AgentGroupChat(agents=[pere_fouras, laurent_jalabert], termination_strategy=...)` — sans `selection_strategy` explicite. C'est l'**objet central** qui orchestre le duel : à chaque tour, l'agent suivant parle dans l'ordre de la liste (round-robin — la sélection par défaut, visible dans les lignes `Selected agent at index 0` / `at index 1` alternées de la sortie), et le `termination_strategy` détecte la fin — ici, le mot deviné : la sortie évalue `should terminate` après chaque tour de Laurent_Jalabert, et la partie s'arrête sur le premier `True` — ou à l'épuisement des itérations si le mot n'est jamais nommé. Sans ce wrapper, les deux agents parleraient en parallèle. La **spécificité Fort Boyard** est le renoncement : l'exemple guidé 2 montre la stratégie hybride qui laisse aussi l'agent abandonner (« je donne ma langue au chat ») — émulation du stress télévisé.
 ","### Reading the result: chat group configured
 
-The cell builds `AgentGroupChat(agents=[pere_fouras, laurent_jalabert], termination_strategy=...)` — without an explicit `selection_strategy`. This is the **central object** that orchestrates the duel: at each turn, the next agent speaks in list order (round-robin — the default selection, visible in the alternating `Selected agent at index 0` / `at index 1` lines of the output), and the `termination_strategy` detects the end — here, the guessed word: the output evaluates `should terminate` after each Laurent_Jalabert turn, and the game stops on the first `True` — or when the iterations run out if the word is never named. Without this wrapper, both agents would speak in parallel. The **Fort Boyard specificity** is the give-up: guided example 2 shows the hybrid strategy that also lets the agent abandon (""je donne ma langue au chat"") — an emulation of the TV stress.
-",,,,,,,5cc5f90b5ed5518b,093c7850c9ab3f9e,,,,,,,
+Cell 25 builds `AgentGroupChat(agents=[pere_fouras, laurent_jalabert], termination_strategy=...)` — without an explicit `selection_strategy`. This is the **central object** that orchestrates the duel: at each turn, the next agent speaks in list order (round-robin — the default selection, visible in the alternating `Selected agent at index 0` / `at index 1` lines of the output), and the `termination_strategy` detects the end — here, the guessed word: the output evaluates `should terminate` after each Laurent_Jalabert turn, and the game stops on the first `True` — or when the iterations run out if the word is never named. Without this wrapper, both agents would speak in parallel. The **Fort Boyard specificity** is the give-up: guided example 2 shows the hybrid strategy that also lets the agent abandon (""je donne ma langue au chat"") — an emulation of the TV stress.
+",,,,,,,4401434e76ef9378,b612effd767f05cf,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ada98689,markdown,fr,9894be02bbc84b15,"## Lancement de la partie !
 
 Le groupe est configuré, on peut lancer la partie. On sème le dialogue avec un **message utilisateur initial** (`add_chat_message`) — sinon les agents n'ont rien à quoi réagir — puis on itère asynchronement sur `chat.invoke()`, qui produit chaque message tour à tour.
