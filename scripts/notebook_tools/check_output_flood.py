@@ -27,6 +27,15 @@ absolute floor:
           cell ADDED by the branch already above ``CELL_CAP``.
   TOTAL   the notebook's summed output-object count GREW beyond ``TOTAL_CAP``.
 
+Content objects only: a stream write that merely repaints one terminal
+line -- ``\r``-prefixed with no newline, i.e. a tqdm/progress refresh --
+is excluded on BOTH sides. Its count measures repaint RATE (machine
+timing), not output volume: re-executing the same cell on a busier GPU
+emits one extra object per repaint with byte-identical sources
+(measured #21099: chatterbox sampling at 16-18 it/s vs the base run's
+30-36 it/s, +106 objects, effective count 38 -> 38). A closed bar
+(newline-terminated repaint) stays counted.
+
 Cap calibration (measured on origin/main 2026-09-06): median per-cell output
 count is 1, p99 is 40. The flood family starts at 55; the clear outliers above
 CELL_CAP are the named degeneration and a few other legacy notebooks which the
@@ -82,15 +91,39 @@ def _cell_key(cell, index):
     return cid if cid else "@%d" % index
 
 
+def _is_refresh_write(output):
+    """Terminal repaint write: repaints ONE line, adds no content.
+
+    tqdm and friends emit one ``\r``-prefixed write per repaint with no
+    newline until the bar closes, so N repaints are ONE visual line and
+    their object count measures repaint RATE, not output volume.
+    Measured on #21099: chatterbox sampled at 16-18 it/s instead of the
+    base run's 30-36 it/s -- +106 repaint objects, byte-identical
+    sources, effective count unchanged (38 -> 38).
+    """
+    if output.get("output_type") != "stream":
+        return False
+    text = output.get("text", [])
+    if isinstance(text, list):
+        text = "".join(text)
+    return text.startswith("\r") and "\n" not in text
+
+
 def _cell_counts(nb):
-    """{(id-or-positional-key): output-object-count} for every code cell."""
+    """{(id-or-positional-key): CONTENT-object count} for every code cell.
+
+    Terminal repaint writes (see _is_refresh_write) are excluded: they
+    are excluded on both sides of every comparison this module makes.
+    """
     if not nb:
         return {}
     counts = {}
     for i, c in enumerate(nb.get("cells", []) or []):
         if c.get("cell_type") != "code":
             continue
-        counts[_cell_key(c, i)] = len(c.get("outputs", []) or [])
+        counts[_cell_key(c, i)] = sum(
+            1 for o in (c.get("outputs", []) or [])
+            if not _is_refresh_write(o))
     return counts
 
 
@@ -210,6 +243,34 @@ def self_test(cwd=None):
     if _analyze([], [("a", 800)], added=True)["regressed"]:
         failures.append("added notebook gated instead of advisory")
 
+    # 9. repaint-only growth is not a flood: 3 -> 3 content + 500
+    #    refresh writes stays silent (measured #21099: +106 refresh
+    #    objects on a busier GPU, effective count 38 -> 38).
+    repaint = {"output_type": "stream", "name": "stderr",
+               "text": "\rSampling:  50%|#####     | 500/1000"}
+    nb9b = {"cells": [{"cell_type": "code", "id": "a",
+                       "outputs": [{}] * 3}]}
+    nb9h = {"cells": [{"cell_type": "code", "id": "a",
+                       "outputs": [{}] * 3 + [repaint] * 500}]}
+    if analyze(nb9b, nb9h)["cells"] or analyze(nb9b, nb9h)["total"]:
+        failures.append("repaint-only growth (3 -> 3+500 refresh) flagged")
+
+    # 10. refresh writes must not MASK a real flood: same cell also
+    #     growing 3 -> 303 content objects still fires.
+    nb10h = {"cells": [{"cell_type": "code", "id": "a",
+                        "outputs": [{}] * 303 + [repaint] * 500}]}
+    if not analyze(nb9b, nb10h)["cells"]:
+        failures.append("content flood (3 -> 303) masked by refresh writes")
+
+    # 11. a CLOSED bar (newline-terminated repaint) is content: 60 of
+    #     them above the cap still fires.
+    closed = {"output_type": "stream", "name": "stderr",
+              "text": "\rSampling: 100%|##########| 1000/1000\n"}
+    nb11h = {"cells": [{"cell_type": "code", "id": "a",
+                        "outputs": [{}] * 3 + [closed] * 60}]}
+    if not analyze(nb9b, nb11h)["cells"]:
+        failures.append("newline-terminated repaint excluded from count")
+
     # Replay the founding commit against its parent.
     from check_output_failure_text import git
     if git("cat-file", "-e", SELF_TEST_COMMIT, cwd=cwd) is None:
@@ -318,11 +379,13 @@ def main(argv=None):
                 print("  TOTAL: " + str(t["base"]) + " -> " + str(t["head"])
                       + " (+" + str(t["delta"]) + ")")
         if bad:
-            print("\nCause is in the notebook code, not the environment: an "
-                  "Infer.NET / solver loop is printing one output object per "
-                  "iteration (ShowProgress, per-line Console.Write in a loop, "
-                  "one display per table row). Fix the source and RE-EXECUTE; "
-                  "never hand-edit a committed output (Stop & Repair).")
+            print("\nContent-object growth (terminal repaint writes -- "
+                  "\\r with no newline -- are already excluded on both "
+                  "sides): typically a loop printing one output object per "
+                  "iteration (ShowProgress, per-line Console.Write in a "
+                  "loop, one display per table row). Fix the source and "
+                  "RE-EXECUTE; never hand-edit a committed output "
+                  "(Stop & Repair).")
     return 1 if bad else 0
 
 
