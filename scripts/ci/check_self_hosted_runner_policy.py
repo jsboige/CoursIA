@@ -741,8 +741,22 @@ def _runner_selection(
 # label. Guard, label set and fallback are enumerated -- any variation
 # (different guard, different labels, different fallback) stays an
 # unauditable expression and keeps the DYNAMIC_RUNS_ON rejection.
+#
+# c.509 (dispatch c.2180, owner myia-ai-01:CoursIA-2) : the audited label
+# set is now a TUPLE of accepted dedicated sets, not a single set. The
+# waiter pool (WAITER_LABELS) keeps the #13363 B role (pr-gate.yml
+# aggregator that polls up to 45 min -- the dedicated label is what lets
+# the gate WAIT without holding a work slot, arbitrage ai-01 2026-09-02).
+# The Linux pool (LINUX_RUNNER_LABELS, [self-hosted, coursia-ephemeral,
+# coursia-linux]) is added to relieve the ubuntu-latest queue (#14283
+# tranche 5 + Q35 etape 4 tranche 2): the same audited dynamic form now
+# applies to pure-Python guards (gitleaks, kernel-drift, papermill
+# ratchet, outputs-required) routed to the containerized Linux leg
+# without forfeiting the same-repo guard or the github-hosted fallback.
+# Every other expression stays an unauditable DYNAMIC_RUNS_ON.
 HYBRID_RUNS_ON_GUARD = SAME_REPO_GUARD
-HYBRID_RUNS_ON_LABELS = WAITER_LABELS
+HYBRID_RUNS_ON_LABELS = WAITER_LABELS  # kept for backward compat (single set)
+HYBRID_RUNS_ON_LABEL_SETS = (WAITER_LABELS, LINUX_RUNNER_LABELS)
 HYBRID_RUNS_ON_FALLBACK = "ubuntu-latest"
 _HYBRID_PATTERN = re.compile(
     r"^\s*\("
@@ -772,7 +786,7 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
         labels = {str(item) for item in json.loads(match.group("labels"))}
     except json.JSONDecodeError:
         return None
-    if labels != HYBRID_RUNS_ON_LABELS:
+    if labels not in HYBRID_RUNS_ON_LABEL_SETS:
         return None
     return {"labels": labels}
 
