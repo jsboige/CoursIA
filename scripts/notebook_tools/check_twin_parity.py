@@ -472,6 +472,9 @@ def _git_blob_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str 
     return None
 
 
+_REACHABLE_OBJECTS: dict[tuple[str, str], set[str]] = {}
+
+
 def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool:
     """Vrai si `blob_sha` est accessible depuis `ref` (= un commit ancetre le reference).
 
@@ -492,19 +495,35 @@ def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool
     figure, c'est un metadata-only drift (pas un orphelin). Sinon, c'est un
     orphelin par squash : le rebaseline doit le corriger.
 
-    Cout : `rev-list --objects HEAD` parcourt tout l'historique ; le defacto
-    full scan reste borne par la taille du depot (~5-10s sur CoursIA). Pour
-    un seul test is_noop par paire, c'est acceptable. Une optimisation
-    ulterieure (cache par ref+blob) n'est pas justifiee a c.409.
+    Cout : `rev-list --objects HEAD` parcourt tout l'historique (~4 s sur
+    CoursIA). Le parcours ne depend que du commit resolu, et la fonction est
+    appelee jusqu'a trois fois par paire : il est donc memorise par
+    (depot, commit).
+
+    Clone partiel : les workflows font leur checkout avec `filter: blob:none`.
+    Sans option, `rev-list --objects` y rapatrie un par un chaque blob absent
+    de l'historique (mesure du 2026-10-14 : 8 slots sur 10 bloques de 45 min a
+    4 h dans ce seul appel). `--missing=print` liste ces blobs sous la forme
+    `?<sha>` sans les telecharger ; l'appartenance se lit de la meme facon.
     """
     if not blob_sha or len(blob_sha) != 40:
         return False
-    r = _run_git(["git", "rev-list", "--objects", ref], cwd=str(repo_root))
-    if r.returncode != 0:
+    head = _run_git(["git", "rev-parse", "--verify", "--quiet", f"{ref}^{{commit}}"],
+                    cwd=str(repo_root))
+    if head.returncode != 0:
         return False
-    # Chaque ligne de `rev-list --objects` est soit "<commit_sha>" soit
-    # "<commit_sha> <blob_sha>". On grep simplement le blob SHA sur la sortie.
-    return blob_sha in r.stdout
+    key = (str(repo_root), head.stdout.strip())
+    reachable = _REACHABLE_OBJECTS.get(key)
+    if reachable is None:
+        r = _run_git(["git", "rev-list", "--objects", "--missing=print", key[1]],
+                     cwd=str(repo_root))
+        if r.returncode != 0:
+            return False
+        # Chaque ligne est "<sha>", "<sha> <chemin>" ou, pour un objet absent
+        # du clone partiel, "?<sha>".
+        reachable = {line.lstrip("?").split(" ", 1)[0] for line in r.stdout.splitlines()}
+        _REACHABLE_OBJECTS[key] = reachable
+    return blob_sha in reachable
 
 
 def _content_sha(repo_root: Path, rel_path: str, git_ref: str = "HEAD") -> str | None:

@@ -13,7 +13,7 @@ ML.NET — la bibliothèque open-source de Microsoft — apporte le machine lear
 
 > **Jumeaux de parité (C# ⇄ Python/scikit-learn).** Plusieurs notebooks de cette série disposent d'un **jumeau Python** co-localisé (`*-Python.ipynb`) qui couvre le **même concept pédagogique** avec les outils canoniques de l'écosystème Python (scikit-learn, statsmodels) — un contrepoint direct au pipeline ML.NET. Dès l'introduction ([ML-01-Python](ML-01-Introduction-Python.ipynb)), le même workflow (régression, classification) se code en quelques lignes de scikit-learn. Là où ML.NET `RandomizedPca` détecte les anomalies, le jumeau utilise `sklearn.PCA` + erreur de reconstruction ; là où `ForecastBySsa` prévoit les séries temporelles, le jumeau emploie `statsmodels` STL + SARIMA ; là où `MatrixFactorization` recommande, le jumeau applique `NMF`. Cette parité permet de voir qu'un **même problème** se modélise idiomatiquement dans deux écosystèmes, et que les concepts (résidu de reconstruction, facteurs latents, décomposition tendance/saisonnalité) sont universels — seuls les outils diffèrent. Les jumeaux sont signalés dans les tables des notebooks ci-dessous.
 
-Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : préparation des données et feature engineering (ML-02), entraînement et AutoML (ML-03), évaluation rigoureuse par cross-validation et importance des variables (ML-04), puis les fonctionnalités avancées — prévision de séries temporelles par SSA (ML-05), interopérabilité ONNX (ML-06), systèmes de recommandation (ML-07), clustering non-supervisé par K-Means (ML-08) et détection d'anomalies par Randomized PCA (ML-09), puis l'introspection critique des benchmarks de détection d'anomalies (ML-09b), et enfin le Matrix Profile multidimensionnel, qui détecte sans rien apprendre (ML-09c) — avant un TP capstone qui marie ML.NET et la régression bayésienne d'Infer.NET.
+Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : préparation des données et feature engineering (ML-02), entraînement et AutoML (ML-03), évaluation rigoureuse par cross-validation et importance des variables (ML-04), que prolonge la validité statistique d'une comparaison entre modèles (ML-04b, complément Python), puis les fonctionnalités avancées — prévision de séries temporelles par SSA (ML-05), interopérabilité ONNX (ML-06), systèmes de recommandation (ML-07), clustering non-supervisé par K-Means (ML-08) et détection d'anomalies par Randomized PCA (ML-09), puis l'introspection critique des benchmarks de détection d'anomalies (ML-09b), et enfin le Matrix Profile multidimensionnel, qui détecte sans rien apprendre (ML-09c) — avant un TP capstone qui marie ML.NET et la régression bayésienne d'Infer.NET.
 
 > **À qui s'adresse cette série** : développeurs C#/.NET découvrant le Machine Learning, équipes enterprise souhaitant intégrer du ML sans sortir de leur stack .NET, ou data scientists souhaitant servir des modèles en production dans des applications C#. Aucun prérequis en statistiques avancées — les concepts sont introduits progressivement dans chaque notebook.
 
@@ -37,6 +37,7 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 | 02 | [ML-02-Data&Features](ML-02-Data&Features.ipynb) | IDataView, TextLoader, encodage · *jumeau [Python](ML-02-Data&Features-Python.ipynb)* | 40-50 min |
 | 03 | [ML-03-Entrainement&AutoML](ML-03-Entrainement&AutoML.ipynb) | SDCA, LightGBM, AutoML · *jumeau [Python](ML-03-Entrainement&AutoML-Python.ipynb)* | 45-60 min |
 | 04 | [ML-04-Evaluation](ML-04-Evaluation.ipynb) | Cross-validation, métriques, PFI · *jumeau [Python](ML-04-Evaluation-Python.ipynb)* | 40-50 min |
+| 04b | [ML-04b-ModelComparison-Validity](ML-04b-ModelComparison-Validity-Python.ipynb) | Validité statistique des comparaisons de modèles : variance d'un split, bootstrap, t-test corrigé (Nadeau-Bengio), Bonferroni · *standalone Python (scikit-learn, scipy)* | 45-60 min |
 
 ### Fonctionnalités avancées (ML-05 à ML-09c)
 
@@ -71,6 +72,8 @@ Le notebook 2 plonge dans la préparation des données — l'étape la plus chro
 Le notebook 3 introduit l'entraînement proprement dit. Vous découvrirez SDCA (Stochastic Dual Coordinate Ascent) pour la régression linéaire, LightGBM pour les problèmes non linéaires, et surtout l'AutoML de ML.NET qui automatise la recherche d'hyperparamètres et la sélection d'algorithme. Vous verrez aussi les dangers du surapprentissage et comment l'arrêter précocement.
 
 Le notebook 4 est le plus dense et le plus crucial : évaluation rigoureuse. Vous apprendrez à mesurer un modèle avec R², MAE, RMSE, à utiliser la validation croisée pour estimer la généralisation, et à expliquer les prédictions avec la Permutation Feature Importance (PFI) et le Feature Contribution Calculation (FCC). Ce notebook transforme un "modèle qui marche" en un modèle que vous comprenez et pouvez justifier.
+
+Le complément **4b** ([ML-04b-ModelComparison-Validity-Python](ML-04b-ModelComparison-Validity-Python.ipynb), en Python) prolonge le notebook 4 par la question qu'un score seul ne tranche pas : quand le modèle A affiche un R² plus élevé que le modèle B, A est-il *vraiment* meilleur ? Le carnet montre qu'un seul découpage train/test, ou une moyenne ± écart-type en validation croisée, ne suffit pas à conclure. Il construit ensuite un intervalle de confiance bootstrap sur la différence entre deux modèles, applique le t-test corrigé de Nadeau et Bengio (le t-test naïf sur les plis paraît significatif là où le test corrigé ne l'est pas), puis aborde la taille d'effet et la correction de Bonferroni quand on compare plusieurs modèles à la fois. Ses exercices à compléter portent sur l'intervalle bootstrap du RMSE et sur sa stabilité.
 
 ### Phase 2 : Fonctionnalités avancées (ML-05 à ML-09c, ~4h30)
 
@@ -178,6 +181,17 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | PFI | Permutation Feature Importance |
 | Confusion Matrix | Évaluation classification |
 
+### ML-04b-ModelComparison-Validity-Python
+
+| Section | Contenu |
+|---------|---------|
+| Données | Jeu `diabetes` (bundle scikit-learn, sans téléchargement) |
+| Variance d'un split | Classement des modèles qui change d'une graine à l'autre |
+| k-fold | Moyenne ± écart-type des R² par pli, et pourquoi leur chevauchement ne suffit pas à conclure |
+| Bootstrap | Intervalle de confiance sur la différence entre deux modèles |
+| Nadeau-Bengio | t-test corrigé pour la validation croisée, face au t-test naïf sur les plis |
+| Taille d'effet, Bonferroni | « Significatif » n'est pas « important » ; correction des comparaisons multiples |
+
 ### TP-prevision-ventes
 
 | Section | Contenu |
@@ -194,6 +208,18 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Saisonnalité | Détection de patterns périodiques |
 | AutoML | Optimisation d'hyperparamètres |
 | Intervalles de confiance | Quantification de l'incertitude |
+
+### ML-05b-Series-Temporelles-Classiques-Python
+
+| Section | Contenu |
+|---------|---------|
+| Données | `daily-sales.csv`, la série de ventes quotidiennes de ML-05 (fournie dans le dossier) |
+| Décomposition | `seasonal_decompose` : tendance, saisonnalité, résidu (série synthétique, puis série réelle) |
+| Stationnarité | Test ADF (H0, p-value, conclusion écrite) et différenciation d=1 |
+| ACF / PACF | Lecture des ordres p et q, cas pédagogique d'un AR(2) synthétique |
+| SARIMA | Grille par AIC, diagnostic des résidus (ACF, Ljung-Box), prévision avec intervalle de confiance |
+| Lissage exponentiel | Simple, Holt, Holt-Winters (saisonnalité 7) |
+| Backtest glissant | Naïf, Holt-Winters et SARIMA comparés sur un horizon de 7 jours (walk-forward) |
 
 ### ML-06-ONNX
 
@@ -319,6 +345,8 @@ ML-03-Entrainement&AutoML (modèles)
     |
 ML-04-Evaluation (validation)
     |
+ML-04b-ModelComparison-Validity-Python (comparaison statistique, facultatif, Python)
+    |
 TP-prevision-ventes (application)
 ```
 
@@ -326,6 +354,8 @@ TP-prevision-ventes (application)
 
 ```text
 ML-05-TimeSeries (forecasting)
+    |
+ML-05b-Series-Temporelles-Classiques-Python (socle statistique des séries temporelles)
     |
 ML-06-ONNX (interopérabilité)
     |
@@ -445,7 +475,7 @@ Voir la licence du repository principal.
 Cette série vous a fait passer du **premier pipeline ML en C#** ([ML-01](ML-01-Introduction.ipynb)) à une **application complète de bout en bout**, en consolidant trois acquis cibles pour un praticien .NET :
 
 - **Construire et justifier un pipeline ML.NET complet** — de `MLContext` au `PredictionEngine`, vous savez enchaîner chargement ([ML-02](ML-02-Data&Features.ipynb)), entraînement ([ML-03](ML-03-Entrainement&AutoML.ipynb)) et prédiction, en laissant l'AutoML explorer l'espace des algorithmes (SDCA, LightGBM) plutôt que de choisir à l'aveugle.
-- **Évaluer rigoureusement et expliquer** — [ML-04](ML-04-Evaluation.ipynb) (le notebook le plus dense) vous a armé pour ne plus vous contenter d'un « ça marche » : cross-validation K-fold, R²/MAE/RMSE, Permutation Feature Importance. Un modèle que vous comprenez et pouvez défendre devant un stakeholder, pas seulement un score.
+- **Évaluer rigoureusement et expliquer** — [ML-04](ML-04-Evaluation.ipynb) (le notebook le plus dense) vous a armé pour ne plus vous contenter d'un « ça marche » : cross-validation K-fold, R²/MAE/RMSE, Permutation Feature Importance. Un modèle que vous comprenez et pouvez défendre devant un stakeholder, pas seulement un score. Et quand il faut dire qu'un modèle en bat un autre, [ML-04b](ML-04b-ModelComparison-Validity-Python.ipynb) vous apprend à le démontrer par un test (bootstrap, t-test corrigé) plutôt qu'à l'affirmer à partir d'un seul chiffre.
 - **Servir en production sans quitter .NET** — les notebooks avancés couvrent les cas où ML.NET excelle en entreprise : prévision par [SSA](ML-05-TimeSeries.ipynb), [interop ONNX](ML-06-ONNX.ipynb) (modèles scikit-learn/PyTorch/Hugging Face consommés en C#), [recommandation](ML-07-Recommendation.ipynb) par factorisation matricielle. Le R&D reste en Python, la production tourne en .NET.
 
 ### Prochaines étapes
