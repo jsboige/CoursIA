@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,translate_policy
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,4923354c,markdown,fr,dd42809d6cb46822,"# 1.2 - Manipulation de Données avec NumPy
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,4923354c,markdown,fr,dd42809d6cb46822,"# 1.2 - Manipulation de Données avec NumPy
 
 **Navigation** : [Index](../../README.md) | [>> 1.3 Pandas](1.3-Analyse_de_Donnees_avec_Pandas.ipynb)
 
@@ -21,17 +21,17 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2
 ---
 
 Bienvenue dans ce notebook dédié à NumPy, la bibliothèque fondamentale pour le calcul scientifique en Python.",,,,,,,,dd42809d6cb46822,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,a1d811f2,markdown,fr,b619d3562c95112f,"## Qu'est-ce que NumPy ?
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,a1d811f2,markdown,fr,b619d3562c95112f,"## Qu'est-ce que NumPy ?
 
 NumPy (Numerical Python) est une bibliothèque qui fournit un objet de tableau multi-dimensionnel puissant, des routines pour des opérations rapides sur les tableaux, et des outils pour l'algèbre linéaire, les transformées de Fourier, et les nombres aléatoires.
 
 C'est le socle sur lequel de nombreuses autres bibliothèques de data science (comme Pandas) sont construites.
 
 > **Repère bibliographique.** NumPy est décrit et formalisé dans l'article de référence C. R. Harris et al., *Array programming with NumPy*, Nature, 585:357-362, 2020 (doi:10.1038/s41586-020-2649-2). Cet article présente l'objet `ndarray`, l'écosystème de tableaux N-dimensionnels et les fondations d'interopérabilité sur lesquelles reposent Pandas, SciPy, scikit-learn et la quasi-totalité de la data science Python.",,,,,,,,b619d3562c95112f,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,4d2754f1,markdown,fr,1973751266ab8ead,"## Création d'un tableau (Array)
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,4d2754f1,markdown,fr,1973751266ab8ead,"## Création d'un tableau (Array)
 
 L'objet principal de NumPy est le `ndarray` (n-dimensional array). Créons-en un à partir d'une simple liste Python.",,,,,,,,1973751266ab8ead,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,3ba57b3a,code,fr,6219e8e2de02a05b,"import numpy as np
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,3ba57b3a,code,fr,6219e8e2de02a05b,"import numpy as np
 
 # Création d'un array à partir d'une liste
 ma_liste = [1, 2, 3, 4, 5]
@@ -39,12 +39,12 @@ mon_array = np.array(ma_liste)
 
 print(mon_array)
 print(type(mon_array))",,,,,,,,6219e8e2de02a05b,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,333b6497,markdown,fr,318406a3f58e7861,"## Opérations de base et Vectorisation
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,333b6497,markdown,fr,318406a3f58e7861,"## Opérations de base et Vectorisation
 
 L'un des plus grands avantages de NumPy est sa capacité à effectuer des opérations ""vectorisées"". Cela signifie que vous pouvez appliquer une opération à un tableau entier sans avoir besoin d'écrire une boucle `for`.
 
 Par exemple, pour additionner tous les éléments d'un tableau, nous pouvons utiliser `np.sum()`. La vectorisation repose sur des implémentations pré-compilées (C/Fortran via BLAS/LAPACK) qui contournent l'interpréteur Python — c'est ce qui confère à NumPy son avantage de performance (Harris et al., *Array programming with NumPy*, Nature 585, 2020). C'est cette fonction qui est validée par nos tests.",,,,,,,,318406a3f58e7861,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,8fafc194,code,fr,10f8fbb0797792ee,"# Créons un tableau simple pour le test
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,8fafc194,code,fr,10f8fbb0797792ee,"# Créons un tableau simple pour le test
 array_test = np.array([1, 2, 3])
 
 # Utilisons np.sum() pour calculer la somme
@@ -52,8 +52,8 @@ somme_totale = np.sum(array_test)
 
 print(f""Le tableau : {array_test}"")
 print(f""La somme des éléments : {somme_totale}"")",,,,,,,,10f8fbb0797792ee,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,f8526f14,markdown,fr,cc81d16ebcb0f4dd,Essayez de multiplier le tableau par 2 ci-dessous pour voir la vectorisation en action.,,,,,,,,cc81d16ebcb0f4dd,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,01bc785a,markdown,fr,1ba579ea2c7f474e,"## Exercice 2
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,f8526f14,markdown,fr,cc81d16ebcb0f4dd,Essayez de multiplier le tableau par 2 ci-dessous pour voir la vectorisation en action.,,,,,,,,cc81d16ebcb0f4dd,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,01bc785a,markdown,fr,1ba579ea2c7f474e,"## Exercice 2
 
 Créez un tableau NumPy de 10 éléments allant de 0 a 9, puis calculez :
 1. La somme de tous les éléments
@@ -65,7 +65,7 @@ Indices :
 - ,  pour les statistiques
 - NumPy supporte les opérations élément par élément (ex: )
 ",,,,,,,,1ba579ea2c7f474e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,d9afb18d,code,fr,3c88f117a4dd2cc4,"# Exercice : Multipliez le tableau par 2 et affichez le resultat
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,d9afb18d,code,fr,3c88f117a4dd2cc4,"# Exercice : Multipliez le tableau par 2 et affichez le resultat
 array_exercice = np.array([2, 4, 6, 8, 10])
 
 # TODO: Multipliez chaque element de array_exercice par 2
@@ -75,7 +75,7 @@ resultat = None  # Remplacez None par l'operation appropriee
 print(f""Tableau original : {array_exercice}"")
 print(f""Tableau multiplie par 2 : {resultat}"")
 ",,,,,,,,3c88f117a4dd2cc4,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,6d75d594,markdown,fr,14660875ba86df25,"## Exercice : Statistiques sur un Dataset
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,6d75d594,markdown,fr,14660875ba86df25,"## Exercice : Statistiques sur un Dataset
 
 À vous de pratiquer les opérations vectorisées avec NumPy !
 
@@ -85,7 +85,7 @@ Créez un tableau de données synthétiques et calculez des statistiques descrip
 ### Instructions
 
 ",,,,,,,,14660875ba86df25,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,c2204570,code,fr,00443d5607887ddc,"import numpy as np
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,c2204570,code,fr,00443d5607887ddc,"import numpy as np
 
 # TODO: Créez un tableau de 100 valeurs aléatoires entre 0 et 100
 # Indice: utilisez np.random.randint()
@@ -112,7 +112,7 @@ if donnees is not None and valeurs_sup_50 is not None:
 else:
     print(""Exercice à compléter : remplacez les None par votre code"")
 ",,,,,,,,00443d5607887ddc,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,3bb03fb2,markdown,fr,58c79026afbe3889,"### Exercice 3 : Opérations sur les matrices 2D
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,3bb03fb2,markdown,fr,58c79026afbe3889,"### Exercice 3 : Opérations sur les matrices 2D
 
 NumPy excelle dans les opérations sur les tableaux multidimensionnels. Vous allez créer une matrice 2D (tableau de tableaux) et appliquer des opérations avancees : transposition, produit matriciel et extraction de sous-matrices.
 
@@ -123,7 +123,7 @@ NumPy excelle dans les opérations sur les tableaux multidimensionnels. Vous all
 - `matrice.T` ou `np.transpose(matrice)` pour la transposition
 - `np.dot(A, B)` ou l'opérateur `@` pour le produit matriciel
 - `matrice[0:2, 1:3]` pour extraire une sous-matrice (slicing)",,,,,,,,58c79026afbe3889,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,0afc20fd,code,fr,721ba5f9e26546c2,"# Exercice 3 : Operations sur les matrices 2D
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,0afc20fd,code,fr,721ba5f9e26546c2,"# Exercice 3 : Operations sur les matrices 2D
 # Creez et manipulez une matrice avec NumPy
 
 # Etape 1: Creez une matrice 3x3
@@ -150,7 +150,7 @@ if matrice is not None:
     print(f""\nSous-matrice 2x2 :\n{sous_matrice}"")
 else:
     print(""Exercice 3 a completer : operations sur les matrices 2D"")",,,,,,,,721ba5f9e26546c2,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,np12concl,markdown,fr,4ffff9c17aa1d4b7,"## Conclusion
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,np12concl,markdown,fr,4ffff9c17aa1d4b7,"## Conclusion
 
 Ce notebook a posé les **fondations NumPy** indispensables à toute la data science Python — le socle sur lequel s'appuient Pandas (notebook [1.3](1.3-Analyse_de_Donnees_avec_Pandas.ipynb)), scikit-learn et les frameworks de deep learning.
 
@@ -163,12 +163,12 @@ Ce notebook a posé les **fondations NumPy** indispensables à toute la data sci
 **Le pont vers Pandas** : NumPy manipule des **tableaux numériques nus** ; Pandas (1.3) ajoute par-dessus l'**indexation par étiquettes** (lignes et colonnes nommées) et le **typage hétérogène** (colonnes de types différents) — mais tout `DataFrame` Pandas enveloppe un `ndarray` NumPy. Maîtriser la vectorisation ici, c'est comprendre pourquoi une opération Pandas vectorisée bat toujours une boucle `iterrows`.
 
 **Pour aller plus loin** : le **broadcasting** (diffusion automatique entre formes compatibles, ex. `tableau_2D + vecteur_1D`), les fonctions d'algèbre linéaire de `np.linalg` (inverse, déterminant, valeurs propres) et la génération aléatoire reproductible (`np.random.default_rng(seed)`) sont les prochaines capacités à explorer.",,,,,,,,4ffff9c17aa1d4b7,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,cell-a4c4a43f,markdown,fr,6a5888bd0be85fcc,"## Références
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,cell-a4c4a43f,markdown,fr,6a5888bd0be85fcc,"## Références
 
 1. C. R. Harris et al., *Array programming with NumPy*, Nature, 585(7825):357-362, 2020. doi:10.1038/s41586-020-2649-2. Article de référence décrivant l'objet `ndarray`, l'écosystème de tableaux N-dimensionnels et les fondations de la data science Python.
 2. S. van der Walt, S. C. Colbert, G. Varoquaux, *The NumPy Array: A Structure for Efficient Numerical Computation*, Computing in Science & Engineering, 13(2):22-30, 2011. Architecture interne de `ndarray` et principes de vectorisation.
 3. T. E. Oliphant, *A Guide to NumPy*, Trelgol Publishing, 2006. Référence technique historique sur NumPy (première édition).",,,,,,,,6a5888bd0be85fcc,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,e7563b95,markdown,fr,5822f7bd047aaa57,"# 1.3 - Analyse de Données avec Pandas
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,e7563b95,markdown,fr,5822f7bd047aaa57,"# 1.3 - Analyse de Données avec Pandas
 
 **Navigation** : [<< 1.2 NumPy](1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | [Index](../../README.md) | [>> Lab 1](../../Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb)
 
@@ -190,7 +190,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3
 ---
 
 Ce notebook est une introduction à Pandas, la bibliothèque incontournable pour la manipulation et l'analyse de données en Python.",,,,,,,,5822f7bd047aaa57,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,9a6a2ba4,markdown,fr,de5006770a6d7332,"## Qu'est-ce que Pandas ?
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,9a6a2ba4,markdown,fr,de5006770a6d7332,"## Qu'est-ce que Pandas ?
 
 Pandas fournit des structures de données et des outils d'analyse de données de haut niveau et faciles à utiliser. Les deux structures de données principales sont :
 
@@ -198,22 +198,22 @@ Pandas fournit des structures de données et des outils d'analyse de données de
 *   **`DataFrame`** : une structure de données bidimensionnelle avec des étiquettes, similaire à une table de base de données ou une feuille de calcul Excel.
 
 > **Repère bibliographique.** Pandas et ses structures `Series`/`DataFrame` sont présentés dans l'article fondateur W. McKinney, *Data Structures for Statistical Computing in Python*, Proceedings of the 9th Python in Science Conference (SciPy), pp. 51-56, 2010. Le `DataFrame` y est conçu comme une structure étiquetée bidimensionnelle inspirée des *data frames* de R, optimisée pour l'analyse de données tabulaires. Voir aussi McKinney, *Python for Data Analysis*, O'Reilly, 3e éd., 2022, comme référence livresque de référence.",,,,,,,,de5006770a6d7332,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,251ff9f5,markdown,fr,c7e46f269e0411a2,"## Création d'un DataFrame
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,251ff9f5,markdown,fr,c7e46f269e0411a2,"## Création d'un DataFrame
 
 Un DataFrame peut être créé de plusieurs manières. L'une des plus courantes est de partir d'un dictionnaire Python.",,,,,,,,c7e46f269e0411a2,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,fb918b11,code,fr,b9306cf289d9a50b,"import pandas as pd
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,fb918b11,code,fr,b9306cf289d9a50b,"import pandas as pd
 
 # Création d'un DataFrame à partir d'un dictionnaire
 donnees = {'col1': [1, 2, 10], 'col2': [3, 4, 30], 'Nom': ['Alice', 'Bob', 'Charles']}
 df = pd.DataFrame(donnees)
 
 print(df)",,,,,,,,b9306cf289d9a50b,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,94f4ece9,markdown,fr,442d6b99dc1ab1c9,"## Sélection de Données
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,94f4ece9,markdown,fr,442d6b99dc1ab1c9,"## Sélection de Données
 
 La sélection de colonnes est une opération fondamentale. On peut la réaliser en utilisant les crochets `[]` avec le nom de la colonne.
 
 C'est cette opération simple qui est validée par les tests de ce module.",,,,,,,,442d6b99dc1ab1c9,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,6ceb3338,code,fr,8d58fa302b641c8b,"# Créons le DataFrame spécifique du test
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,6ceb3338,code,fr,8d58fa302b641c8b,"# Créons le DataFrame spécifique du test
 data_test = {'col1': [1, 2], 'col2': [3, 4]}
 df_test = pd.DataFrame(data_test)
 
@@ -224,15 +224,15 @@ print(""Le DataFrame complet :"")
 print(df_test)
 print(""\nLa colonne 'col2' (qui est une Series Pandas) :"")
 print(colonne_2)",,,,,,,,8d58fa302b641c8b,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,4cdc0e3c,markdown,fr,ea5a51ce451e23b9,"## Filtrage simple
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,4cdc0e3c,markdown,fr,ea5a51ce451e23b9,"## Filtrage simple
 
 On peut également filtrer les lignes d'un DataFrame en fonction d'une condition.",,,,,,,,ea5a51ce451e23b9,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,171b1e9d,code,fr,a31937e7b748dfbd,"# Afficher uniquement les lignes où col1 est supérieur à 1
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,171b1e9d,code,fr,a31937e7b748dfbd,"# Afficher uniquement les lignes où col1 est supérieur à 1
 filtre = df['col1'] > 1
 df_filtre = df[filtre]
 
 print(df_filtre)",,,,,,,,a31937e7b748dfbd,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,a1eb8902,markdown,fr,181d38f33d2d9400,"## Exemple guide : Analyse d'un Dataset Étudiants
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,a1eb8902,markdown,fr,181d38f33d2d9400,"## Exemple guide : Analyse d'un Dataset Étudiants
 
 À vous de pratiquer la création et la manipulation de DataFrames avec Pandas !
 
@@ -242,7 +242,7 @@ Créez un DataFrame d'étudiants et effectuez des analyses simples.
 ### Instructions
 
 ",,,,,,,,181d38f33d2d9400,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,45d01fda,code,fr,5a2671b4b1a50463,"import pandas as pd
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,45d01fda,code,fr,5a2671b4b1a50463,"import pandas as pd
 
 #Exemple guide: Créez un DataFrame avec 5 étudiants
 # Colonnes: 'Nom', 'Age', 'Note', 'Filiere'
@@ -276,8 +276,8 @@ if df is not None and excellents is not None:
 else:
     print(""Exercice à compléter : créez le DataFrame et remplacez les None"")
 ",,,,,,,,5a2671b4b1a50463,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,c26ac7b1,markdown,fr,ba5f36113b72f9d9,Mise en pratique : creation de DataFrame.,,,,,,,,ba5f36113b72f9d9,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,5cc1082e,code,fr,535790f2ba44acee,"#Exemple guide : Creez votre propre DataFrame
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,c26ac7b1,markdown,fr,ba5f36113b72f9d9,Mise en pratique : creation de DataFrame.,,,,,,,,ba5f36113b72f9d9,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,5cc1082e,code,fr,535790f2ba44acee,"#Exemple guide : Creez votre propre DataFrame
 # Creez un DataFrame avec les informations suivantes :
 # - 3 etudiants (Alice, Bob, Charlie)
 # - Colonnes : 'Nom', 'Age', 'Note'
@@ -301,7 +301,7 @@ print(df_etudiants)
 notes = None  # Remplacez None
 print(f""\nNotes des etudiants : {notes}"")
 ",,,,,,,,535790f2ba44acee,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,2269c665,markdown,fr,564214bfc08cba38,"### Exercice 1 : Filtrage et tri d'un DataFrame
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,2269c665,markdown,fr,564214bfc08cba38,"### Exercice 1 : Filtrage et tri d'un DataFrame
 
 Le filtrage et le tri sont des opérations fondamentales en analyse de données. Vous allez créer un DataFrame de produits et appliquer des filtres combinés avec un tri pour extraire des informations spécifiques.
 
@@ -311,7 +311,7 @@ Le filtrage et le tri sont des opérations fondamentales en analyse de données.
 - Combinez plusieurs conditions avec `&` (ET) ou `|` (OU) en utilisant des parentheses
 - Utilisez `df.sort_values(by='colonne', ascending=False)` pour trier par ordre decroissant
 - `df.reset_index(drop=True)` pour reinitialiser les indices après filtrage",,,,,,,,564214bfc08cba38,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,f8ff78da,code,fr,e2576e7cdde466df,"# Exercice 1 : Filtrage et tri
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,f8ff78da,code,fr,e2576e7cdde466df,"# Exercice 1 : Filtrage et tri
 # Creez un DataFrame de produits et appliquez des filtres combinés
 
 # Etape 1: Creez le DataFrame
@@ -336,7 +336,7 @@ if produits_chers is not None:
     print(produits_tries)
 else:
     print(""Exercice 1 a completer : filtrage et tri d'un DataFrame"")",,,,,,,,e2576e7cdde466df,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,ea39352d,markdown,fr,eef349cdd0d5423a,"### Exercice 2 : Agrégation et groupby
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,ea39352d,markdown,fr,eef349cdd0d5423a,"### Exercice 2 : Agrégation et groupby
 
 Les opérations d'agregation permettent de synthetiser les données par groupes. Vous allez utiliser les fonctions `groupby()`, `agg()` et les statistiques descriptives pour analyser un jeu de données de ventes.
 
@@ -346,7 +346,7 @@ Les opérations d'agregation permettent de synthetiser les données par groupes.
 - `df.groupby('colonne')` créé un groupe par valeur unique de la colonne
 - `df.groupby('cat')['val'].agg(['sum', 'mean', 'count'])` pour plusieurs agregats en une fois
 - `df.groupby('cat').describe()` pour un resume statistique complet par groupe",,,,,,,,eef349cdd0d5423a,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,2e17b996,code,fr,ac36dd36b122f2c7,"# Exercice 2 : Agregation et groupby
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,2e17b996,code,fr,ac36dd36b122f2c7,"# Exercice 2 : Agregation et groupby
 # Analysez des donnees de ventes avec les fonctions d'agregation
 
 # Etape 1: Creez le DataFrame de ventes
@@ -376,7 +376,7 @@ if total_par_vendeur is not None:
     print(f""\nMeilleur vendeur : {meilleur_vendeur}"")
 else:
     print(""Exercice 2 a completer : agregation et groupby"")",,,,,,,,ac36dd36b122f2c7,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,7f6cbccb,markdown,fr,7448918381601ddc,"### Exercice 3 : Transformation et nettoyage de colonnes
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,7f6cbccb,markdown,fr,7448918381601ddc,"### Exercice 3 : Transformation et nettoyage de colonnes
 
 En pratique, les données necessitent souvent des transformations avant analyse : conversion de types, renommage de colonnes, creation de nouvelles colonnes calculees. Vous allez appliquer ces opérations sur un DataFrame d'employes.
 
@@ -387,7 +387,7 @@ En pratique, les données necessitent souvent des transformations avant analyse 
 - `df.rename(columns={'ancien': 'nouveau'})` pour renommer
 - `df['col'].astype(float)` ou `pd.to_numeric()` pour convertir des types
 - `df.drop(columns=['col'])` pour supprimer une colonne",,,,,,,,7448918381601ddc,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,b7be3e19,code,fr,15afde82c6f1079e,"# Exercice 3 : Transformation et nettoyage de colonnes
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,b7be3e19,code,fr,15afde82c6f1079e,"# Exercice 3 : Transformation et nettoyage de colonnes
 # Transformez un DataFrame d'employes
 
 # Etape 1: Creez le DataFrame d'employes
@@ -418,7 +418,7 @@ if salaire_annuel is not None:
     print(employes_renomme)
 else:
     print(""Exercice 3 a completer : transformation et nettoyage de colonnes"")",,,,,,,,15afde82c6f1079e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,cell-ced13a1a,markdown,fr,151c8c21cb629287,"## Conclusion
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,cell-ced13a1a,markdown,fr,151c8c21cb629287,"## Conclusion
 
 Ce notebook a permis d explorer les aspects essentiels de 1.3 analyse de données avec pandas. Les points cles :
 
@@ -427,7 +427,7 @@ Ce notebook a permis d explorer les aspects essentiels de 1.3 analyse de donnée
 - Les résultats obtenus permettent de valider la comprehension
 
 **Pour aller plus loin** : approfondir les aspects avances du sujet et explorer les liens avec d autres domaines.",,,,,,,,151c8c21cb629287,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,cell-042df0dd,markdown,fr,db821d39ab335c88,"## Références
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,cell-042df0dd,markdown,fr,db821d39ab335c88,"## Références
 
 1. W. McKinney, *Data Structures for Statistical Computing in Python*, Proceedings of the 9th Python in Science Conference (SciPy 2010), pp. 51-56, 2010. Article fondateur de Pandas : structures `Series` et `DataFrame`, conçues pour le calcul statistique sur données étiquetées.
 2. W. McKinney, *Python for Data Analysis: Data Wrangling with Pandas, NumPy, and Jupyter*, O'Reilly Media, 3e édition, 2022. Référence livresque canonique sur l'usage pratique de Pandas (`groupby`, indexation, nettoyage).
