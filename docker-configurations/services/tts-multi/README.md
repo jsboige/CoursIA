@@ -44,7 +44,7 @@ OpenAI-compatible TTS API with 3 models: Kokoro, TADA 3B ML, and Qwen3 TTS.
 - **Model**: Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice
 - **VRAM**: ~4GB
 - **Speed**: Medium
-- **Voices**: speakers natifs CustomVoice en snake_case (`serena`, `aiden`, `vivian`, …) ; alias OpenAI acceptes via remappage gateway (default, female, male, custom1-3)
+- **Voices**: speakers natifs CustomVoice en snake_case (`serena`, `aiden`, `vivian`, …) ; alias OpenAI acceptes via remappage gateway (`alloy`, `echo`, `fable`, `onyx`, `nova`, `shimmer`)
 
 ## Setup
 
@@ -227,9 +227,9 @@ Sans ces deux surcharges, un appel « Qwen » du client aboutit à Kokoro sans a
 
 | OpenAI Voice | Kokoro | TADA | Qwen3 |
 |--------------|--------|------|-------|
-| alloy | af_sky | default | default |
-| echo | am_adam | default | female |
-| fable | af_bella | default | male |
-| onyx | am_michael | default | custom1 |
-| nova | af_nova | default | custom2 |
-| shimmer | af_sarah | default | custom3 |
+| alloy | af_sky | default | serena |
+| echo | am_adam | default | aiden |
+| fable | af_bella | default | vivian |
+| onyx | am_michael | default | dylan |
+| nova | af_nova | default | ono_anna |
+| shimmer | af_sarah | default | sohee |
