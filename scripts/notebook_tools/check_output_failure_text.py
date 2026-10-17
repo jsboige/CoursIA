@@ -61,6 +61,12 @@ kept to MACHINE_PATH -- metadata never carries a tool-failure banner, and the
 convention permits normalizing a metadata key by hand (secrets-hygiene rule 6)
 only because the gate has to be able to SEE it first.
 
+Texte de programme affiche (#20120) : un chemin qui est l'argument littéral
+d'un appel ecrit sur la ligne affichee par la cellule (un source genere que
+le carnet imprime, par exemple) n'est pas emis par le runtime. Il sort de
+MACHINE_PATH et est compte a part dans la classe PROGRAM_LITERAL de --all,
+jamais silencieusement. Conditions et bornes : ``_is_program_literal``.
+
 The sweep also ventilates a third class, ``DEGRADED_HINT`` (#11692): the two
 soft "non disponible / not available" motifs, which on an absolute sweep are
 the large majority of hits and are mostly DELIBERATE fallback banners. They
@@ -269,6 +275,48 @@ _PATH_WITNESSES = (
     "/home/agent/CoursIA/MyIA.AI.Notebooks",
     "/Users/jsboige/CoursIA/scripts",
 )
+
+# --- MACHINE_PATH : texte de programme affiche (#20120) ----------------------
+# Un chemin est une valeur EMISE PAR LE RUNTIME (il change avec la machine qui
+# a execute le carnet : le defaut) ou du TEXTE DE PROGRAMME que la cellule
+# affiche (un littéral stable, voulu : une cible de montage ecrite dans le
+# code montre). Deux carnets Aspire affichent le source AppHost.cs qu'ils
+# viennent de generer : `"/home/appuser/.cache/huggingface"` y est un argument
+# d'appel. Le discriminant porte sur la FORME de l'argument, sur une seule
+# ligne, et exige les trois conditions :
+#   1. le chemin ouvre un littéral entre guillemets doubles, apres `(` ou `,`
+#      (position d'argument : `cle="..."` et le JSON `"cle": "..."` n'en
+#      sont pas) ;
+#   2. le littéral se ferme sur la meme ligne, suivi de `)`, `,` ou `;` ;
+#   3. un appel `Nom(` s'ouvre plus tot sur cette ligne.
+# Bornes, dites plutot que cachees : un echo runtime de la meme forme
+# (`Config("/home/u/x")`, appel positionnel rejoue) est exempte ; une banniere
+# qui cite le chemin en prose (`Serving from "/home/u/x"`), un repr Python
+# (`'/home/u/x'`), une trace d'erreur ou une valeur JSON ne le sont PAS.
+# Un commentaire de code qui porte un chemin reste signale (faux positif
+# conserve, par prudence). Les occurrences exemptees sont comptees dans la
+# classe PROGRAM_LITERAL de --all : jamais un silence.
+_PROGRAM_LITERAL_OPEN = re.compile(r'(?:\(|,\s*)"$')
+_PROGRAM_LITERAL_CLOSE = re.compile(r'\s*[),;]')
+_CALL_OPEN = re.compile(r'\w\(')
+
+
+def _is_program_literal(probe, start, end):
+    """True si le chemin ``probe[start:end]`` est un argument littéral d'un
+    appel affiché sur sa propre ligne (cf. bloc ci-dessus)."""
+    line_start = probe.rfind("\n", 0, start) + 1
+    line_end = probe.find("\n", end)
+    if line_end == -1:
+        line_end = len(probe)
+    before = probe[line_start:start]
+    if not _PROGRAM_LITERAL_OPEN.search(before):
+        return False
+    if not _CALL_OPEN.search(before):
+        return False
+    close = probe.find('"', end, line_end)
+    if close == -1:
+        return False
+    return _PROGRAM_LITERAL_CLOSE.match(probe, close + 1, line_end) is not None
 
 # --- class 3 (ADVISORY, never gates): capability downgrade -------------------
 # #14603. Each half of the couple alone is legitimate: a value can move on a
@@ -511,7 +559,8 @@ def scan(nb, base_nb=None):
     carry tool-failure banners, and the machine-path metadata class is what a
     re-execution leaks.
     """
-    found = {"TOOL_FAILURE": [], "MACHINE_PATH": [], "DECLARED_FALLBACK": []}
+    found = {"TOOL_FAILURE": [], "MACHINE_PATH": [], "DECLARED_FALLBACK": [],
+             "PROGRAM_LITERAL": []}
     if not nb:
         return found
     for idx, text in output_texts(nb):
@@ -545,7 +594,12 @@ def scan(nb, base_nb=None):
         path_probe = _path_probe(text)
         for pat in MACHINE_PATH_PATTERNS:
             for m in pat.finditer(path_probe):
-                found["MACHINE_PATH"].append((idx, m.group(0)[:120]))
+                # #20120: program text the cell prints is not a runtime path.
+                # Exempted hits stay visible in their own class (never silent).
+                if _is_program_literal(path_probe, m.start(), m.end()):
+                    found["PROGRAM_LITERAL"].append((idx, m.group(0)[:120]))
+                else:
+                    found["MACHINE_PATH"].append((idx, m.group(0)[:120]))
     # #14513: a machine path can also sit in document/cell metadata, invisible
     # to the output-only loop above -- the exact hole that let PT_11c's
     # metadata.path pass the gate green while the branch still carried the
@@ -872,6 +926,37 @@ def self_test(cwd=None):
         if not any(p.search(_path_probe(leak)) for p in MACHINE_PATH_PATTERNS):
             failures.append("machine path hidden by the URL filter: "
                             + repr(leak))
+
+    # #20120: program text vs runtime path, on the real calibration lines.
+    # The Aspire line prints a literal of the program it shows: exempted, and
+    # counted as PROGRAM_LITERAL. The Orleans line is a runtime emission and
+    # the quoted or repr forms are runtime too: all three must keep firing.
+    # An exemption that only proves it silences is indistinguishable from a
+    # hole -- both directions are asserted.
+    def _pathonly(text):
+        return scan({"cells": [{"cell_type": "code", "outputs": [
+            {"output_type": "stream", "text": text}]}]})
+
+    _aspire_line = (
+        '.WithBindMount(Path.Combine(Environment.GetFolderPath('
+        'Environment.SpecialFolder.UserProfile), ".cache/huggingface"), '
+        '"/home/appuser/.cache/huggingface")')
+    _aspire = _pathonly(_aspire_line)
+    if _aspire["MACHINE_PATH"] or len(_aspire["PROGRAM_LITERAL"]) != 1:
+        failures.append("Aspire program-text literal not exempted: "
+                        + repr(_aspire))
+    _orleans = _pathonly("Content root path: /home/user/wt-aspire/"
+                         "MyIA.AI.Notebooks/GenAI/Integrations-DotNet/"
+                         "Orleans/OrleansAspireLab")
+    if len(_orleans["MACHINE_PATH"]) != 1 or _orleans["PROGRAM_LITERAL"]:
+        failures.append("Orleans runtime path lost its MACHINE_PATH "
+                        "(control): " + repr(_orleans))
+    for _runtime in ('Serving from "/home/user/wt-aspire/x"',
+                     "No such file or directory: '/home/user/x.csv'"):
+        _rt = _pathonly(_runtime)
+        if len(_rt["MACHINE_PATH"]) != 1 or _rt["PROGRAM_LITERAL"]:
+            failures.append("runtime shape exempted (hole): "
+                            + repr(_runtime))
 
 
     # Benign banner: matched by "not available", neutralised by
@@ -1221,7 +1306,8 @@ def main(argv=None):
         for path in all_notebooks():
             found = scan(read_notebook_at(None, path))
             if (found["TOOL_FAILURE"] or found["MACHINE_PATH"]
-                    or found["DECLARED_FALLBACK"]):
+                    or found["DECLARED_FALLBACK"]
+                    or found["PROGRAM_LITERAL"]):
                 # Ventilation (#11692): soft-motif hits leave the
                 # TOOL_FAILURE count and are reported as DEGRADED_HINT --
                 # never summed back. #18916: the soft hits whose banner is
@@ -1240,12 +1326,15 @@ def main(argv=None):
                     "DECLARED_FALLBACK": [{"cell": c, "match": t}
                                           for c, t in
                                           found["DECLARED_FALLBACK"]],
+                    "PROGRAM_LITERAL": [{"cell": c, "match": t}
+                                        for c, t in found["PROGRAM_LITERAL"]],
                     "MACHINE_PATH": [{"cell": c, "match": t}
                                      for c, t in found["MACHINE_PATH"]]})
         total_tool = sum(len(r["TOOL_FAILURE"]) for r in rows)
         total_hint = sum(len(r["DEGRADED_HINT"]) for r in rows)
         total_declared = sum(len(r["DECLARED_FALLBACK"]) for r in rows)
         total_path = sum(len(r["MACHINE_PATH"]) for r in rows)
+        total_literal = sum(len(r["PROGRAM_LITERAL"]) for r in rows)
         if args.as_json:
             print(json.dumps({"mode": "sweep", "provenance": provenance,
                               "head": head, "behind_origin_main": behind,
@@ -1253,7 +1342,8 @@ def main(argv=None):
                               "hits": {"TOOL_FAILURE": total_tool,
                                        "DEGRADED_HINT": total_hint,
                                        "DECLARED_FALLBACK": total_declared,
-                                       "MACHINE_PATH": total_path},
+                                       "MACHINE_PATH": total_path,
+                                       "PROGRAM_LITERAL": total_literal},
                               "rows": rows}, indent=2, ensure_ascii=False))
         else:
             print("ADVISORY sweep [" + provenance + "]")
@@ -1264,17 +1354,21 @@ def main(argv=None):
             # banners) is reported for visibility and NEVER added to it.
             # #18916: DECLARED_FALLBACK is the subset whose banner the cell
             # source itself prints (demo stubs) -- documented, not owed.
+            # #20120: PROGRAM_LITERAL is the exempted subset of path shapes
+            # (program text the cell prints), named so it is never silent.
             print("TOOL_FAILURE " + str(total_tool)
                   + " | DEGRADED_HINT " + str(total_hint)
                   + " (reported, not summed) | DECLARED_FALLBACK "
                   + str(total_declared) + " | MACHINE_PATH "
-                  + str(total_path))
+                  + str(total_path) + " | PROGRAM_LITERAL "
+                  + str(total_literal) + " (exempted, not summed)")
             for r in rows:
                 print("  " + r["notebook"]
                       + "  tool=" + str(len(r["TOOL_FAILURE"]))
                       + " hint=" + str(len(r["DEGRADED_HINT"]))
                       + " declared=" + str(len(r["DECLARED_FALLBACK"]))
-                      + " path=" + str(len(r["MACHINE_PATH"])))
+                      + " path=" + str(len(r["MACHINE_PATH"]))
+                      + " literal=" + str(len(r["PROGRAM_LITERAL"])))
         return 0
 
     if not args.base:
