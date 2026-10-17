@@ -31,9 +31,14 @@ complétude du pas, décodage complet du flux, théorème de round-trip ;
 `McMillan` — réciproque de Kraft, sens réalisation (pli 3 de #18706) :
 code canonique construit depuis une bande de longueurs admissible,
 préfixe-liberté et longueurs exactes via l'invariant de masse à l'échelle
-`2 ^ L`. -/
+`2 ^ L` ; `Huffman` — le trie canonique depuis les fréquences (pli 4 de
+#18706) : arbres pondérés, construction de Huffman par fusion des deux
+minima d'une forêt triée, profondeurs, Kraft à l'échelle entière, et le
+théorème capital — le code canonique des profondeurs du trie existe et est
+préfixe-libre (invocation du pli 3), le code de l'arbre l'est aussi
+(invocation du pli 1). -/
 @[default_target]
 lean_lib «PrefixCodes» where
   -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`) :
   -- pas de `.submodules`, cf la note `MathUniverse` de `learning_theory_lean`.
-  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan]
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman]
