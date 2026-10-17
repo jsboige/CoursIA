@@ -23,8 +23,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from strip_probe_banner import (
     BANNER_SIGNATURES,
     count_banner_lines,
+    count_empty_envelopes,
     find_banner_outputs,
     has_banner,
+    is_empty_envelope,
     strip_banner_in_place,
 )
 
@@ -97,8 +99,8 @@ def _banner_html_string() -> str:
     Mirrors the newer .NET Interactive kernel format: the whole HTML+JS is a
     single inline string in ``data["text/html"]`` rather than a list. Anchors
     on the same signatures (``probeAddresses`` / ``probingAddresses`` /
-    ``loadDotnetInteractiveApi``) — the strip just replaces the whole string
-    with ``""``.
+    ``loadDotnetInteractiveApi``) — the strip drops the whole output, so no
+    empty ``display_data`` envelope is left behind (#20190).
     """
     return (
         "<div>\r\n"
@@ -303,10 +305,11 @@ class TestStripBannerSafety:
 
     def test_strip_string_form_banner(self, tmp_path):
         # The newer .NET Interactive kernel emits the banner as a single inline
-        # ``text/html`` STRING (not a list). The strip must handle this case:
-        # replace the whole string with ``""`` (empty string = no display)
-        # while preserving the surrounding ``data: {...}`` dict and the
-        # ``outputs: [...]`` shape.
+        # ``text/html`` STRING (not a list). The strip must handle this case by
+        # dropping the banner output entirely. Blanking the string instead (the
+        # pre-#20190 behaviour) left an empty ``display_data`` envelope that no
+        # later run could see again — with no banner left, the tool skips the
+        # notebook, so the residue was permanent.
         banner = {
             "output_type": "display_data",
             "data": {"text/html": _banner_html_string()},
@@ -335,13 +338,11 @@ class TestStripBannerSafety:
             new_nb = json.load(f)
         cell = new_nb["cells"][0]
         assert cell["execution_count"] == 7
-        assert len(cell["outputs"]) == 2
-        assert cell["outputs"][1] == other_output  # byte-identical
-        sanitized = cell["outputs"][0]["data"]["text/html"]
-        assert sanitized == ""  # banner replaced with empty string
-        # And the data key is still there (just empty).
-        assert "text/html" in cell["outputs"][0]["data"]
-        assert cell["outputs"][0]["output_type"] == "display_data"
+        # The banner output is gone; the neighbour is byte-identical.
+        assert len(cell["outputs"]) == 1
+        assert cell["outputs"][0] == other_output
+        # And no empty envelope was left in its place (#20190).
+        assert count_empty_envelopes(str(nb)) == 0
 
     def test_string_form_idempotent(self, tmp_path):
         # String-form strip must also be byte-stable on second invocation.
@@ -447,3 +448,122 @@ class TestStripBannerSafety:
         # No banner signature may survive.
         for line in cell["outputs"][0]["data"]["text/html"]:
             assert not any(sig in line for sig in BANNER_SIGNATURES)
+
+
+# ---------------------------------------------------------------------------
+# Empty display_data envelope (#20190)
+# ---------------------------------------------------------------------------
+
+def _empty_envelope() -> dict:
+    """The residue an older strip left on disk: banner removed, wrapper kept."""
+    return {"output_type": "display_data", "data": {"text/html": ""}, "metadata": {}}
+
+
+def _stream(text: str) -> dict:
+    return {"output_type": "stream", "name": "stdout", "text": [text]}
+
+
+class TestEmptyEnvelope:
+    def test_is_empty_envelope_matches_the_strip_residue(self):
+        assert is_empty_envelope(_empty_envelope())
+
+    @pytest.mark.parametrize("obj", [
+        {"output_type": "display_data", "data": {"text/html": "<b>x</b>"}, "metadata": {}},
+        # A second data key means the output carries something else too.
+        {"output_type": "display_data",
+         "data": {"text/html": "", "text/plain": "kept"}, "metadata": {}},
+        {"output_type": "stream", "name": "stdout", "text": [""]},
+        {"output_type": "display_data", "data": {"image/png": ""}, "metadata": {}},
+        {"output_type": "display_data", "data": {}, "metadata": {}},
+        "not-a-dict",
+        None,
+    ])
+    def test_is_empty_envelope_rejects_everything_else(self, obj):
+        assert not is_empty_envelope(obj)
+
+    def test_count_empty_envelopes(self, tmp_path):
+        cells = [
+            _code(["a"], outputs=[_empty_envelope(), _stream("ok")], execution_count=1),
+            _code(["b"], outputs=[_stream("ok")], execution_count=2),
+        ]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+        assert count_empty_envelopes(str(nb)) == 1
+        # No banner is involved: the residue is invisible to the banner count,
+        # which is why it used to survive every later run of the tool.
+        assert count_banner_lines(str(nb)) == 0
+
+    def test_removes_inherited_envelope_without_banner(self, tmp_path):
+        cells = [_code(["a"], outputs=[_empty_envelope(), _stream("ok")],
+                       execution_count=4)]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+
+        outputs_with_banner, fixed = strip_banner_in_place(str(nb))
+        assert outputs_with_banner == 0
+        assert fixed == 0  # nothing banner-related was rewritten
+
+        with open(nb, encoding="utf-8") as f:
+            new_nb = json.load(f)
+        cell = new_nb["cells"][0]
+        assert cell["execution_count"] == 4
+        assert len(cell["outputs"]) == 1
+        assert cell["outputs"][0] == _stream("ok")
+        assert count_empty_envelopes(str(nb)) == 0
+
+    def test_removes_envelope_between_real_outputs(self, tmp_path):
+        a, b = _stream("first"), _stream("last")
+        cells = [_code(["a"], outputs=[a, _empty_envelope(), b],
+                       execution_count=9)]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+
+        strip_banner_in_place(str(nb))
+
+        with open(nb, encoding="utf-8") as f:
+            new_nb = json.load(f)
+        outs = new_nb["cells"][0]["outputs"]
+        assert len(outs) == 2
+        assert outs[0] == a
+        assert outs[1] == b
+        assert new_nb["cells"][0]["execution_count"] == 9
+
+    def test_removes_envelope_after_last_real_output(self, tmp_path):
+        # Cover the "head comma" branch: the envelope is the LAST element, so
+        # the comma before it has to go with it.
+        a = _stream("only")
+        cells = [_code(["a"], outputs=[a, _empty_envelope()], execution_count=9)]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+
+        strip_banner_in_place(str(nb))
+
+        with open(nb, encoding="utf-8") as f:
+            new_nb = json.load(f)
+        outs = new_nb["cells"][0]["outputs"]
+        assert outs == [a]
+
+    def test_envelope_removal_idempotent(self, tmp_path):
+        cells = [_code(["a"], outputs=[_empty_envelope()], execution_count=1)]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+
+        strip_banner_in_place(str(nb))
+        first = nb.read_text(encoding="utf-8")
+        strip_banner_in_place(str(nb))
+        assert nb.read_text(encoding="utf-8") == first
+        with open(nb, encoding="utf-8") as f:
+            new_nb = json.load(f)
+        assert new_nb["cells"][0]["outputs"] == []
+
+    def test_legitimate_outputs_are_untouched(self, tmp_path):
+        # Guard against over-reach: a notebook with real outputs must come out
+        # byte-identical (the removal is text-surgical, no re-serialization).
+        cells = [
+            _code(["a"], outputs=[_stream("ok\r\n")], execution_count=3),
+            _code(["b"], outputs=[{"output_type": "execute_result",
+                                   "data": {"text/plain": ["42"]},
+                                   "metadata": {}, "execution_count": 3}],
+                  execution_count=3),
+        ]
+        nb = _write_nb(tmp_path / "x.ipynb", cells)
+        before = nb.read_text(encoding="utf-8")
+
+        strip_banner_in_place(str(nb))
+
+        assert nb.read_text(encoding="utf-8") == before
