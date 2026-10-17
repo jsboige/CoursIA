@@ -49,10 +49,12 @@ Trois voies pour fermer `AreMutants conwayKnot kinoshitaTerasakaKnot` :
    Redraws d₁ m₁ ∧ Redraws d₂ m₂ ∧ ReidemeisterEquiv m₁ m₂` et l'utiliser
    dans l'assemblage du maillon 6 sans toucher `AreMutants` (variante de 2).
 
-Tranches posées : définition + équivalence `refl`/`symm`/`trans`, puis pont
+Tranches posées : définition + équivalence `refl`/`symm`/`trans`, pont
 depuis le certificat du maillon 5 (`ktRedrawOrder_perm`,
-`ktRedrawRelabel_involutive`, `conwayMutant_redraws_kt` — ce fichier).
-Tranches suivantes : transfert de `wf`, puis le choix de voie.
+`ktRedrawRelabel_involutive`, `conwayMutant_redraws_kt` — ce fichier), puis
+transfert de `wf` (`Redraws.wf` — tranche 4 : clauses de fenêtre
+d'étiquettes `[1, numEdges]` ajoutées à la définition, sans elles le transfert
+est faux). Tranche suivante : le choix de voie.
 -/
 
 namespace Knots
@@ -67,15 +69,22 @@ def PDCrossing.relabel (f : Nat → Nat) (c : PDCrossing) : PDCrossing where
   e4 := f c.e4
 
 /-- Redraw : `d₂` s'obtient de `d₁` par un renommage bijectif des étiquettes
-qui échange les fenêtres `edges` (donc `numEdges`), et une permutation de la
-liste des croisements — la liste de `d₂` est une permutation de la liste de
-`d₁` renommée. C'est la direction du certificat du maillon 5 :
-`relabelCrossings f (ktRedrawOrder d₁.crossings) = d₂.crossings`. -/
+qui échange les fenêtres `edges` (donc `numEdges`), préserve la fenêtre des
+étiquettes `[1, numEdges]` dans les deux sens, et une permutation de la liste
+des croisements. C'est la direction du certificat du maillon 5 :
+`relabelCrossings f (ktRedrawOrder d₁.crossings) = d₂.crossings`.
+
+Tranche 4 : les deux clauses de fenêtre `1 ≤ k ≤ numEdges → 1 ≤ e k ≤ numEdges`
+(et le symétrique) sont requises pour le transfert de `wf` — sans elles il est
+faux (contre-exemple : `d₁` à un croisement wf, `e = swap(2,5)`,
+`d₂ = [⟨1,5,1,5⟩]` : les quatre clauses v2 tiennent, `d₂.wf = false`). -/
 def Redraws (d₁ d₂ : KnotDiagram) : Prop :=
   d₁.numEdges = d₂.numEdges ∧
   ∃ e : Nat ≃ Nat,
     (∀ k ∈ d₁.edges, e k ∈ d₂.edges) ∧
     (∀ k ∈ d₂.edges, e.symm k ∈ d₁.edges) ∧
+    (∀ k, 1 ≤ k → k ≤ d₁.numEdges → 1 ≤ e k ∧ e k ≤ d₂.numEdges) ∧
+    (∀ k, 1 ≤ k → k ≤ d₂.numEdges → 1 ≤ e.symm k ∧ e.symm k ≤ d₁.numEdges) ∧
     d₂.crossings.Perm (d₁.crossings.map (PDCrossing.relabel e))
 
 /-! ### Lemmes auxiliaires : renommage et structure de liste. -/
@@ -114,15 +123,17 @@ theorem relabel_trans_eq (e₁ e₂ : Nat ≃ Nat) :
 
 /-- Réflexivité du redraw : bijection identité, permutation identité. -/
 theorem Redraws.refl (d : KnotDiagram) : Redraws d d := by
-  refine ⟨rfl, Equiv.refl Nat, fun _ hk => hk, fun _ hk => hk, ?_⟩
+  refine ⟨rfl, Equiv.refl Nat, fun _ hk => hk, fun _ hk => hk,
+    fun _ h1 h2 => ⟨h1, h2⟩, fun _ h1 h2 => ⟨h1, h2⟩, ?_⟩
   rw [map_relabel_equiv_refl]
 
 /-- Symétrie du redraw : la bijection inverse `e.symm` échange les fenêtres
 dans l'autre sens, et l'annulation `e.symm ∘ e = id` ramène la liste
 renommée à la liste de départ. -/
 theorem Redraws.symm {d₁ d₂ : KnotDiagram} (h : Redraws d₁ d₂) : Redraws d₂ d₁ := by
-  obtain ⟨hne, e, hw₁, hw₂, hperm⟩ := h
-  refine ⟨hne.symm, e.symm, fun k hk => hw₂ k hk, fun k hk => hw₁ k hk, ?_⟩
+  obtain ⟨hne, e, hw₁, hw₂, hw₃, hw₄, hperm⟩ := h
+  refine ⟨hne.symm, e.symm, fun k hk => hw₂ k hk, fun k hk => hw₁ k hk,
+    fun k h1 h2 => hw₄ k h1 h2, fun k h1 h2 => hw₃ k h1 h2, ?_⟩
   -- De hperm : d₂ ~ d₁.map (relabel e), on mappe par (relabel e.symm) :
   -- d₂.map (relabel e.symm) ~ (d₁.map (relabel e)).map (relabel e.symm)
   --   = d₁.map (relabel e.symm ∘ relabel e) = d₁.map id = d₁,
@@ -140,15 +151,23 @@ theorem Redraws.symm {d₁ d₂ : KnotDiagram} (h : Redraws d₁ d₂) : Redraws
 composition des renommages), et les permutations se chaînent. -/
 theorem Redraws.trans {d₁ d₂ d₃ : KnotDiagram} (h₁ : Redraws d₁ d₂) (h₂ : Redraws d₂ d₃) :
     Redraws d₁ d₃ := by
-  obtain ⟨hne₁, e₁, hw₁₁, hw₁₂, hp₁⟩ := h₁
-  obtain ⟨hne₂, e₂, hw₂₁, hw₂₂, hp₂⟩ := h₂
-  refine ⟨hne₁.trans hne₂, e₁.trans e₂, ?_, ?_, ?_⟩
+  obtain ⟨hne₁, e₁, hw₁₁, hw₁₂, hw₃₁, hw₄₁, hp₁⟩ := h₁
+  obtain ⟨hne₂, e₂, hw₂₁, hw₂₂, hw₃₂, hw₄₂, hp₂⟩ := h₂
+  refine ⟨hne₁.trans hne₂, e₁.trans e₂, ?_, ?_, ?_, ?_, ?_⟩
   · intro k hk
     rw [Equiv.trans_apply]
     exact hw₂₁ (e₁ k) (hw₁₁ k hk)
   · intro k hk
     rw [Equiv.symm_trans_apply]
     exact hw₁₂ (e₂.symm k) (hw₂₂ k hk)
+  · intro k h1 h2
+    rw [Equiv.trans_apply]
+    obtain ⟨ha, hb⟩ := hw₃₁ k h1 h2
+    exact hw₃₂ (e₁ k) ha hb
+  · intro k h1 h2
+    rw [Equiv.symm_trans_apply]
+    obtain ⟨ha, hb⟩ := hw₄₂ k h1 h2
+    exact hw₄₁ (e₂.symm k) ha hb
   · -- d₃ ~ d₂.map (relabel e₂) [hp₂] et
     -- d₂.map (relabel e₂) ~ d₁.map (relabel (e₁.trans e₂)) [mapping de hp₁].
     have hmap := List.Perm.map (PDCrossing.relabel e₂) hp₁
@@ -177,6 +196,12 @@ theorem ktRedrawRelabel_involutive (n : Nat) :
     all_goals decide
   · have h1 : ktRedrawRelabel n = n := ktRedrawRelabel_eq_self (by omega)
     rw [h1, h1]
+
+/-- Le renommage du maillon 5 préserve la fenêtre des étiquettes `[1, 22]`. -/
+theorem ktRedrawRelabel_window {k : Nat} (h1 : 1 ≤ k) (h2 : k ≤ 22) :
+    1 ≤ ktRedrawRelabel k ∧ ktRedrawRelabel k ≤ 22 := by
+  interval_cases k
+  all_goals decide
 
 /-- L'involution du maillon 5, vue comme équivalence de `Nat` : c'est le
 témoin de renommage du pont `Redraws`. L'involution sert d'aller ET de
@@ -253,6 +278,49 @@ theorem mem_edges_map_relabel {cs : List PDCrossing} {f : Nat → Nat} {k : Nat}
   simp only [List.mem_cons, List.not_mem_nil, or_false] at hke
   rcases hke with h | h | h | h <;> simp [PDCrossing.relabel, h]
 
+/-- La liste `edges` de `d₂` est une permutation du `map e` de celle de `d₁`. -/
+theorem edges_perm_map {d₁ d₂ : KnotDiagram} {e : Nat ≃ Nat}
+    (hperm : d₂.crossings.Perm (d₁.crossings.map (PDCrossing.relabel e))) :
+    d₂.edges.Perm (d₁.edges.map e) := by
+  have h1 : d₂.edges.Perm ((d₁.crossings.map (PDCrossing.relabel e)).flatMap
+      (fun c => [c.e1, c.e2, c.e3, c.e4])) :=
+    hperm.flatMap_right _
+  have h2 : (d₁.crossings.map (PDCrossing.relabel e)).flatMap
+      (fun c => [c.e1, c.e2, c.e3, c.e4]) =
+      (d₁.crossings.flatMap (fun c => [c.e1, c.e2, c.e3, c.e4])).map e := by
+    induction d₁.crossings with
+    | nil => rfl
+    | cons c rest ih =>
+        simp only [List.map_cons, List.flatMap_cons, List.map_append,
+          PDCrossing.relabel]
+        exact congrArg (List.append _) ih
+  simp only [KnotDiagram.edges] at h1 ⊢
+  rw [← h2]
+  exact h1
+
+/-- Compter après un renommage bijectif : le compte de `a` dans `map e l`
+est le compte de `e.symm a` dans `l`. -/
+theorem count_map_equiv {l : List Nat} {e : Nat ≃ Nat} {a : Nat} :
+    (l.map e).count a = l.count (e.symm a) := by
+  induction l with
+  | nil => rfl
+  | cons x rest ih =>
+      by_cases h : e x = a
+      · subst h
+        rw [Equiv.symm_apply_apply e x] at ih ⊢
+        simp only [List.map_cons, List.count_cons]
+        rw [if_pos (beq_self_eq_true (e x)), if_pos (beq_self_eq_true x)]
+        omega
+      · have hs : e.symm a ≠ x := by
+          intro hxa
+          apply h
+          rw [← hxa, Equiv.apply_symm_apply]
+        have h1 : ¬ ((e x == a) = true) := fun he => h (beq_iff_eq.mp he)
+        have h2 : ¬ ((x == e.symm a) = true) := fun he => hs (beq_iff_eq.mp he).symm
+        simp only [List.map_cons, List.count_cons]
+        rw [if_neg h1, if_neg h2]
+        omega
+
 /-- **Pont maillon 5 → maillon 6** : le certificat de redraw du census KT —
 le mutant de Conway se réordonne (`ktRedrawOrder`) puis se renomme
 (`ktRedrawRelabel`) en le census Kinoshita-Terasaka — fournit un témoin de
@@ -265,7 +333,7 @@ theorem conwayMutant_redraws_kt :
       (ktRedrawOrder conwayMutantDiagram.crossings).map
         (PDCrossing.relabel ktRedrawRelabel) :=
     (conwayMutant_redraws_kinoshitaTerasaka).symm.trans (relabelCrossings_eq _ _)
-  refine ⟨rfl, ktRedrawEquiv, ?_, ?_, ?_⟩
+  refine ⟨rfl, ktRedrawEquiv, ?_, ?_, ?_, ?_, ?_⟩
   · intro k hk
     simp only [KnotDiagram.edges, ktRedrawEquiv_apply] at hk ⊢
     rw [hcross]
@@ -280,7 +348,57 @@ theorem conwayMutant_redraws_kt :
     rcases hke with h | h | h | h <;> subst h <;>
       simp only [PDCrossing.relabel] <;> rw [ktRedrawRelabel_involutive] <;>
       exact List.mem_flatMap.mpr ⟨c, (ktRedrawOrder_perm _).mem_iff.mp hc, by simp⟩
+  · intro k h1 h2
+    exact ktRedrawRelabel_window h1 h2
+  · intro k h1 h2
+    exact ktRedrawRelabel_window h1 h2
   · rw [hcross, map_relabel_ktRedrawEquiv]
     exact List.Perm.map _ (ktRedrawOrder_perm _)
+
+/-- Le redraw préserve la bonne formation : les fenêtres d'étiquettes de la
+définition transportent la clause (a) du prédicat `wf` (toute étiquette
+utilisée est dans `[1, numEdges]`), la bijectivité transporte la clause de
+parité (b) (toute étiquette de `[1, numEdges]` apparaît exactement deux fois). -/
+theorem Redraws.wf {d₁ d₂ : KnotDiagram} (h : Redraws d₁ d₂) (hwf : d₁.wf = true) :
+    d₂.wf = true := by
+  obtain ⟨hne, e, hw₁, hw₂, hw₃, hw₄, hperm⟩ := h
+  have hedges := edges_perm_map hperm
+  by_cases hnil : d₂.crossings = []
+  · simp only [KnotDiagram.wf, if_pos hnil]
+    have h1nil : d₁.crossings = [] := by
+      have hlen := hperm.length_eq
+      rw [hnil] at hlen
+      simp at hlen
+      exact List.length_eq_zero_iff.mp hlen.symm
+    simp only [KnotDiagram.wf, if_pos h1nil] at hwf
+    rw [hne] at hwf
+    exact hwf
+  · simp only [KnotDiagram.wf, if_neg hnil]
+    have hd₁ : d₁.crossings ≠ [] := by
+      intro hc
+      rw [hc, List.map_nil] at hperm
+      exact hnil (List.Perm.eq_nil hperm)
+    simp only [KnotDiagram.wf, if_neg hd₁] at hwf
+    rw [Bool.and_eq_true] at hwf ⊢
+    refine ⟨?_, ?_⟩
+    · rw [List.all_eq_true]
+      intro l hl
+      have hl' : l ∈ d₁.edges.map e := hedges.mem_iff.mp hl
+      obtain ⟨k, hk, rfl⟩ := List.mem_map.mp hl'
+      have hka := (List.all_eq_true.mp hwf.1) k hk
+      rw [decide_eq_true_iff] at hka
+      exact decide_eq_true_iff.mpr (hw₃ k hka.1 hka.2)
+    · rw [List.all_eq_true]
+      intro i himem
+      have hi : i < d₂.numEdges := List.mem_range.mp himem
+      have hc : d₂.edges.count (i + 1) = d₁.edges.count (e.symm (i + 1)) := by
+        rw [hedges.count_eq, count_map_equiv]
+      have hw := hw₄ (i + 1) (by omega) (by omega)
+      have hb := (List.all_eq_true.mp hwf.2) (e.symm (i + 1) - 1)
+        (List.mem_range.mpr (by omega))
+      rw [show (e.symm (i + 1) - 1) + 1 = e.symm (i + 1) from by omega] at hb
+      rw [decide_eq_true_iff] at hb
+      rw [hc]
+      exact decide_eq_true_iff.mpr hb
 
 end Knots
