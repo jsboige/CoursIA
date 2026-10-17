@@ -128,6 +128,13 @@
       "pr": 20216
     },
     {
+      "id": "crypto-short-reversion",
+      "role": "candidate",
+      "trace": "21129-crypto-shortterm-reversion/base",
+      "issue": 21129,
+      "pr": 21130
+    },
+    {
       "id": "ema-cross-stocks",
       "role": "candidate",
       "trace": "20258-ema-cross-stocks/pit-ema",
