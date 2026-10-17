@@ -977,6 +977,34 @@ def main(argv=None):
     verdicts = examine(targets, occ, releases)
     conflicts = [v for v in verdicts if v["verdict"] == "conflict"]
 
+    # Fail-closed en mode en ligne : si la source `open_prs` est indisponible
+    # alors qu'on a au moins une cible (un carnet vise), la detection de
+    # collision cross-PR est incomplete -- on ne peut pas distinguer
+    # "aucune collision" de "collision masquee par la panne". Avant #20913-fixes,
+    # l'organe continuait son verdict sur sources residuelles (base + revision
+    # + declared) et pouvait laisser passer une collision que #20774 etait
+    # cense boucher. On rend rc=2 pour ramener le consommateur (merge_ready
+    # etape 5bis.bis) en mode `slot-collision-unreadable` -- fail-closed.
+    if (not a.offline) and targets and status.get(SOURCE_OPEN_PRS, {}).get("status") == "unavailable":
+        if a.json:
+            print(json.dumps({
+                "base": a.base, "head": a.head, "mode": mode,
+                "sources": status,
+                "targets_examined": len(targets),
+                "states": {s: sum(1 for v in verdicts if v["state"] == s)
+                           for s in sorted({v["state"] for v in verdicts})},
+                "verdicts": verdicts,
+                "conflicts": len(conflicts),
+                "accretion": [],
+                "accretion_count": 0,
+                "unavailable_open_prs": True,
+            }, indent=2, ensure_ascii=False))
+        else:
+            print("open_prs : INDISPONIBLE en mode en ligne avec %d cible(s) -- "
+                  "rc=2 fail-closed (collision cross-PR indetectable)"
+                  % len(targets), file=sys.stderr)
+        return 2
+
     # Les constats d'accretion sont calcules AVANT le retour anticipe « aucune
     # cible » : une PR qui n'edite que le README d'une serie en renommage n'a
     # aucune cible et doit pourtant sortir son PENDING_TABLE.

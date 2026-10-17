@@ -375,6 +375,88 @@ class TestDistinctStates(unittest.TestCase):
             self.assertEqual(doc["sources"]["base"]["notebooks"], 1)
 
 
+class TestOpenPrsUnavailableInOnlineModeIsFailClosed(unittest.TestCase):
+    """#20913-fixes -- fail-closed en mode en ligne quand `gh pr list` echoue.
+
+    En mode en ligne, la source `open_prs` est lue par `subprocess` (vs `--offline`
+    qui rend la source indisponible par construction). Si `gh` echoue (reseau, auth,
+    jeton expire), l'organe NE doit PAS continuer son verdict sur sources
+    residuelles (base + revision + declared) en rendant rc=0 ou rc=1 : la
+    detection de collision cross-PR est incomplete et une collision pourrait
+    passer au merge exactement comme avant #20774 dans ce scenario. On rend
+    rc=2 pour ramener le consommateur (merge_ready etape 5bis.bis) en mode
+    `slot-collision-unreadable`.
+    """
+
+    def _run_online_with_failing_gh(self, repo: Path, base: str) -> subprocess.CompletedProcess:
+        """Run l'organe SANS `--offline`, avec `gh` qui echoue (rc != 0)."""
+        from unittest import mock
+        from scripts.notebook_tools import check_slot_reservation as csr
+        import subprocess as _real_sp
+
+        # Capture la reference reelle de `subprocess.run` AVANT le patch.
+        # `csr.subprocess` est le meme module que `_real_sp` (singleton), donc
+        # appeler `_real_sp.run` apres `mock.patch.object(csr.subprocess, "run", ...)`
+        # passe par le mock -- il faut capturer la fonction elle-meme.
+        _real_run = _real_sp.run
+
+        def fake_gh(argv, **kwargs):
+            # Toute commande `gh` en mode revision echoue (rc=1) avec stderr
+            # explicite -- simule un crash reseau ou un auth refuse.
+            if argv and argv[0] == "gh" and "pr" in argv[:3]:
+                return _real_sp.CompletedProcess(
+                    argv, returncode=1,
+                    stdout="", stderr="gh: GraphQL: Could not resolve to a Repository",
+                )
+            # Delegue tout autre subprocess (git, etc.) au vrai `run`,
+            # qui est la fonction ORIGINALE capturee avant le patch.
+            return _real_run(argv, **kwargs)
+
+        with mock.patch.object(csr.subprocess, "run", fake_gh):
+            args = [sys.executable, str(_SCRIPT), "--base", base, "--head", "HEAD",
+                    "--reservations", str(repo / "no_such_reservations.json"),
+                    "--json"]
+            return _real_run(args, cwd=str(repo), capture_output=True, text=True,
+                             encoding="utf-8", errors="replace")
+
+    def test_online_mode_with_failing_gh_returns_rc2_when_targets_exist(self):
+        """Mode en ligne + au moins un carnet vise + `gh` en echec => rc=2."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [SERIES + "/04-1-Previous.ipynb"])
+            _write(repo, SERIES + "/04-2-Alpha.ipynb")
+            _commit(repo)
+
+            r = self._run_online_with_failing_gh(repo, base)
+            self.assertEqual(r.returncode, 2,
+                             "mode en ligne + targets + gh en echec => fail-closed rc=2\n"
+                             + r.stdout + r.stderr)
+            doc = json.loads(r.stdout)
+            self.assertTrue(doc.get("unavailable_open_prs"),
+                            "le payload doit signaler unavailable_open_prs=True\n"
+                            + r.stdout)
+            self.assertEqual(doc["sources"]["open_prs"]["status"], "unavailable",
+                             "le statut de la source open_prs doit etre 'unavailable'")
+
+    def test_online_mode_with_failing_gh_returns_rc0_when_no_targets(self):
+        """Mode en ligne + aucun carnet vise + `gh` en echec => rc=0 (rien a verifier).
+
+        Si la PR ne touche aucun carnet, la source `open_prs` n'est pas requise :
+        l'organe rend rc=0 avec verdict vide, comme en mode revision sans cible.
+        Ce test protege contre une regression qui fail-closed a tort.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [SERIES + "/04-1-Previous.ipynb"])
+            _write(repo, "README.md")
+            _commit(repo)
+
+            r = self._run_online_with_failing_gh(repo, base)
+            self.assertEqual(r.returncode, 0,
+                             "mode en ligne + SANS targets + gh en echec => rc=0 (rien a verifier)\n"
+                             + r.stdout + r.stderr)
+
+
 class TestOpenPrSourceDiscriminatesOnStatus(unittest.TestCase):
     """#15734 -- « une entree a `additions == 0` » ne veut pas dire « suppression ».
 
