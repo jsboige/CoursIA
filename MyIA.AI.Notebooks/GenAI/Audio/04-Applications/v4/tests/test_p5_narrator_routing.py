@@ -334,3 +334,166 @@ def test_strip_brackets_never_glues_neighbouring_words():
     assert _strip_brackets_for_qwen(
         "Ils entrèrent dans la ville.[pause] On voyait des soldats."
     ) == "Ils entrèrent dans la ville. On voyait des soldats."
+
+
+# ---------------------------------------------------------------------------
+# Phase 2 (#17586 acceptance) — Qwen3-TTS CustomVoice narrator routing
+# ---------------------------------------------------------------------------
+
+def test_customvoice_off_by_default():
+    """Phase 2: CustomVoice routing is OFF by default. The user confirmed
+    voice B at 09:10Z on 15/10, but the custom-voice route shape on the
+    self-hosted TTS gateway (`tts-api.myia.io/v1`, HTTP 200 on /v1/models
+    as of c.1672 2026-10-15) is still TBD by ops. The default narrator
+    engine stays Qwen VoiceDesign until ops publishes the route AND the
+    user (or ai-01) flips the flag. No silent engine swap (acceptance #6
+    of #15002)."""
+    from v4 import p5_tts
+
+    assert p5_tts._NARRATOR_CUSTOMVOICE_ROUTING is False
+    # The CustomVoice branch must not be the selected engine by default.
+    seg = _build_seg(speaker="narrateur")
+    assert p5_tts._should_route_narrator_to("customvoice", seg) is False
+
+
+def test_routes_narrator_to_customvoice_when_flag_on():
+    """When NARRATOR_CUSTOMVOICE_ROUTING is ON and no other narrator
+    engine is selected, narrator segments route to CustomVoice. The flag
+    is opt-in: the user confirmed voice B but the activation is reserved
+    to the ops-aware launch (after the endpoint is published)."""
+    from v4 import p5_tts
+
+    orig_qwen = p5_tts._NARRATOR_QWEN_ROUTING
+    orig_cv3 = p5_tts._NARRATOR_COSYVOICE3_ROUTING
+    orig_cv = p5_tts._NARRATOR_CUSTOMVOICE_ROUTING
+    try:
+        # CustomVoice is exclusive with the other engines (same contract
+        # as #15002 acceptance 6): flip Qwen and CV3 OFF before turning
+        # CustomVoice ON, otherwise _selected_narrator_engine raises.
+        p5_tts._NARRATOR_QWEN_ROUTING = False
+        p5_tts._NARRATOR_COSYVOICE3_ROUTING = False
+        p5_tts._NARRATOR_CUSTOMVOICE_ROUTING = True
+        seg = _build_seg(speaker="narrateur")
+        assert p5_tts._should_route_narrator_to("customvoice", seg) is True
+    finally:
+        p5_tts._NARRATOR_QWEN_ROUTING = orig_qwen
+        p5_tts._NARRATOR_COSYVOICE3_ROUTING = orig_cv3
+        p5_tts._NARRATOR_CUSTOMVOICE_ROUTING = orig_cv
+
+
+def test_does_not_route_non_narrator_to_customvoice():
+    """Acceptance #1 (carries over from #15002): CustomVoice routing is
+    limited to the narrateur speaker. Every other speaker stays on
+    FishAudio clone even when the CustomVoice flag is ON."""
+    from v4 import p5_tts
+
+    original = p5_tts._NARRATOR_CUSTOMVOICE_ROUTING
+    try:
+        p5_tts._NARRATOR_CUSTOMVOICE_ROUTING = True
+        for speaker in (
+            "elisabeth_rousset",
+            "loiseau",
+            "comte",
+            "comtesse",
+            "cornudet",
+            "officier",
+            "figurant",
+        ):
+            seg = _build_seg(speaker=speaker)
+            assert p5_tts._should_route_narrator_to("customvoice", seg) is False, (
+                f"non-narrator speaker '{speaker}' must NOT route to customvoice"
+            )
+    finally:
+        p5_tts._NARRATOR_CUSTOMVOICE_ROUTING = original
+
+
+def test_customvoice_skeleton_raises_without_endpoint():
+    """The skeleton is honest: with NARRATOR_CUSTOMVOICE_GATEWAY_URL
+    undefined (the ops state at 15/10 12:00Z), the call raises
+    NarratorCustomVoiceUnavailable instead of silently falling back to
+    FishAudio (acceptance #6 of #15002 carries over). The pass therefore
+    ABORTS -- the same no-silent-swap contract used for Qwen VoiceDesign
+    and CosyVoice3."""
+    from v4 import p5_tts
+    from v4.schemas import AnnotatedSegment
+    import os
+
+    # Make sure the env var is unset for this test, regardless of the
+    # host's environment. p5_tts._synthesize_narrator_customvoice reads
+    # os.getenv at call time, so popping here is sufficient.
+    os.environ.pop("NARRATOR_CUSTOMVOICE_GATEWAY_URL", None)
+
+    text = "Un texte narrateur volontairement non cache pour CustomVoice."
+    seg = AnnotatedSegment(
+        seg_index=888001,  # distinctive: no cached mp3 can match
+        speaker="narrateur",
+        type="narration",
+        text=text,
+        annotated_text=text,
+    )
+
+    try:
+        p5_tts._synthesize_narrator_customvoice(
+            seg=seg,
+            fishaudio_text=text,
+            mp3_path=Path("/tmp/should_never_be_written_customvoice.mp3"),
+            seed=42,
+            text_hash="deadbeef",
+        )
+    except p5_tts.NarratorCustomVoiceUnavailable:
+        return  # success: raised as designed
+    raise AssertionError(
+        "NarratorCustomVoiceUnavailable not raised on undefined endpoint"
+    )
+
+
+def test_customvoice_exclusivity_with_other_engines():
+    """Two narrator engines active at once is a configuration error (same
+    no-silent-swap contract as #15002 acceptance 6). This test covers
+    CustomVoice vs Qwen VoiceDesign and CustomVoice vs CosyVoice3."""
+    from v4 import p5_tts
+
+    orig_qwen = p5_tts._NARRATOR_QWEN_ROUTING
+    orig_cv3 = p5_tts._NARRATOR_COSYVOICE3_ROUTING
+    orig_cv = p5_tts._NARRATOR_CUSTOMVOICE_ROUTING
+    try:
+        p5_tts._NARRATOR_QWEN_ROUTING = True
+        p5_tts._NARRATOR_CUSTOMVOICE_ROUTING = True
+        try:
+            p5_tts._selected_narrator_engine()
+        except ValueError:
+            pass  # success: exclusivity raises
+        else:
+            raise AssertionError(
+                "two active narrator engines (Qwen + CustomVoice) did not raise"
+            )
+
+        p5_tts._NARRATOR_QWEN_ROUTING = False
+        p5_tts._NARRATOR_COSYVOICE3_ROUTING = True
+        p5_tts._NARRATOR_CUSTOMVOICE_ROUTING = True
+        try:
+            p5_tts._selected_narrator_engine()
+        except ValueError:
+            pass  # success: exclusivity raises
+        else:
+            raise AssertionError(
+                "two active narrator engines (CV3 + CustomVoice) did not raise"
+            )
+    finally:
+        p5_tts._NARRATOR_QWEN_ROUTING = orig_qwen
+        p5_tts._NARRATOR_COSYVOICE3_ROUTING = orig_cv3
+        p5_tts._NARRATOR_CUSTOMVOICE_ROUTING = orig_cv
+
+
+def test_customvoice_reference_id_is_engine_specific():
+    """The narrator cache is keyed on reference_id (#19692). A CustomVoice
+    MP3 must carry its own sentinel, distinct from Qwen VoiceDesign and
+    CosyVoice3, so a future engine swap cannot silently re-serve a stale
+    MP3 from a previous engine."""
+    from v4 import p5_tts
+
+    assert p5_tts._CUSTOMVOICE_NARRATOR_REFERENCE_ID != p5_tts._QWEN_NARRATOR_REFERENCE_ID
+    assert p5_tts._CUSTOMVOICE_NARRATOR_REFERENCE_ID != p5_tts._CV3_NARRATOR_REFERENCE_ID
+    assert p5_tts._NARRATOR_ENGINE_REFERENCE_IDS["customvoice"] == (
+        p5_tts._CUSTOMVOICE_NARRATOR_REFERENCE_ID
+    )
