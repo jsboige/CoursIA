@@ -2,6 +2,18 @@ from AlgorithmImports import *
 import numpy as np
 
 
+def _tally(alpha, insights):
+    """Count the insights an alpha emits, per direction (diagnostic, #21141).
+
+    The PCM counters of #21137 only see what reaches the PCM; this counts
+    what each alpha produces before the composite merges them.
+    """
+    for insight in insights:
+        key = "up" if insight.direction == InsightDirection.UP else "flat"
+        alpha.emitted[key] += 1
+    return insights
+
+
 class ValueAlpha(AlphaModel):
     """
     Value Factor Alpha: Book-to-price and earnings yield.
@@ -14,6 +26,7 @@ class ValueAlpha(AlphaModel):
     def __init__(self):
         super().__init__()
         self.name = "Value"
+        self.emitted = {"up": 0, "flat": 0}
         self._last_month = -1
 
     def update(self, algorithm, data):
@@ -71,7 +84,7 @@ class ValueAlpha(AlphaModel):
                     source_model=self.name
                 ))
 
-        return insights
+        return _tally(self, insights)
 
 
 class QualityAlpha(AlphaModel):
@@ -84,6 +97,7 @@ class QualityAlpha(AlphaModel):
     def __init__(self):
         super().__init__()
         self.name = "Quality"
+        self.emitted = {"up": 0, "flat": 0}
         self._last_month = -1
 
     def update(self, algorithm, data):
@@ -138,7 +152,7 @@ class QualityAlpha(AlphaModel):
                     source_model=self.name
                 ))
 
-        return insights
+        return _tally(self, insights)
 
 
 class LowVolAlpha(AlphaModel):
@@ -152,6 +166,7 @@ class LowVolAlpha(AlphaModel):
     def __init__(self):
         super().__init__()
         self.name = "LowVol"
+        self.emitted = {"up": 0, "flat": 0}
         self._last_month = -1
 
     def update(self, algorithm, data):
@@ -201,7 +216,7 @@ class LowVolAlpha(AlphaModel):
                     source_model=self.name
                 ))
 
-        return insights
+        return _tally(self, insights)
 
 
 class MomentumFactorAlpha(AlphaModel):
@@ -215,6 +230,7 @@ class MomentumFactorAlpha(AlphaModel):
     def __init__(self):
         super().__init__()
         self.name = "MomFactor"
+        self.emitted = {"up": 0, "flat": 0}
         self._last_month = -1
 
     def update(self, algorithm, data):
@@ -262,4 +278,4 @@ class MomentumFactorAlpha(AlphaModel):
                     source_model=self.name
                 ))
 
-        return insights
+        return _tally(self, insights)

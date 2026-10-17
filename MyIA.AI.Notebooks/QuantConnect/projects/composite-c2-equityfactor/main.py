@@ -38,15 +38,21 @@ class CompositeC2EquityFactor(QCAlgorithm):
 
         # Alpha Models: 4-factor ensemble. alphas=momentum keeps the momentum
         # factor alone: the control of #21137.
+        # References kept for the emission counters of #21141.
         if (self.get_parameter("alphas") or "all") == "momentum":
-            self.set_alpha(MomentumFactorAlpha())
+            self.alpha_models = [MomentumFactorAlpha()]
+            self.set_alpha(self.alpha_models[0])
         else:
-            self.set_alpha(CompositeAlphaModel(
+            self.alpha_models = [
                 ValueAlpha(),
                 QualityAlpha(),
                 LowVolAlpha(),
                 MomentumFactorAlpha()
-            ))
+            ]
+            self.set_alpha(CompositeAlphaModel(*self.alpha_models))
+        # Fundamental fields read with a usable value, per field (#21141).
+        self.fund_seen = 0
+        self.fund_nonnull = {}
 
         # PCM: Mean-Variance with sector cap
         sector_cap = float(self.get_parameter("sector_cap", 0.18))
@@ -110,6 +116,11 @@ class CompositeC2EquityFactor(QCAlgorithm):
                 }
             except Exception:
                 pass
+        for fields in self.fundamental_cache.values():
+            self.fund_seen += 1
+            for name, value in fields.items():
+                if value is not None:
+                    self.fund_nonnull[name] = self.fund_nonnull.get(name, 0) + 1
 
         return [f.symbol for f in selected]
 
@@ -117,6 +128,14 @@ class CompositeC2EquityFactor(QCAlgorithm):
         final = self.portfolio.total_portfolio_value
         self.log(f"C4.2 EQUITY FACTOR COMPOSITE: Final=${final:,.2f}, "
                  f"Return={(final - 100000) / 100000:.2%}")
+        # Diagnostics for #21141: insights emitted per alpha (UP/total),
+        # and fundamental fields read with a value (non-null/read).
+        for alpha in self.alpha_models:
+            up, flat = alpha.emitted["up"], alpha.emitted["flat"]
+            self.set_runtime_statistic(f"Emitted {alpha.name}", f"{up}/{up + flat}")
+        for name in ('price_to_book', 'price_to_earnings', 'return_on_equity', 'debt_to_equity'):
+            self.set_runtime_statistic(
+                f"Field {name}", f"{self.fund_nonnull.get(name, 0)}/{self.fund_seen}")
         # Diagnostics for #21137: insights reaching the PCM, per alpha.
         self.set_runtime_statistic("PCM calls", str(self.pcm.calls))
         for source in sorted(set(self.pcm.reached) | set(self.pcm.reached_active)):
