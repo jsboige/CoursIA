@@ -3962,31 +3962,14 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
     """
     if not numbers:
         return {}
-    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-    import check_unaddressed_nits as nits  # noqa: PLC0415 - import tardif volontaire
-
     out: dict[int, int] = {}
     for n in numbers:
-        try:
-            # #15139 : delegation via le point d'entree `analyse_pr` de
-            # l'organe, pas un assemblage local de kwargs -- l'assemblage
-            # local avait derive (kwarg `issue_created` disparu de la
-            # signature) et le TypeError avale rendait un dict vide
-            # silencieux : la cause 4 ne se declenchait plus, pour aucune
-            # lane, pendant que le merge-gate (qui appelle juste) refusait
-            # les memes PRs.
-            result = nits.analyse_pr(n)
-        except (TypeError, AttributeError):
-            # Derive de contrat avec l'organe : bug d'appel, pas « PR
-            # illisible ». Propager jusqu'au try de `red_backlog` qui rend
-            # `nits_unavailable` -- visible, jamais un dict vide muet.
-            raise
-        except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
+        info = _nits_blocking_entries(n)
+        if info is None:
             continue
-        blocking = result.get("blocking") or []
-        if blocking:
-            out[n] = len(blocking)
-        elif not result.get("blocked"):
+        if info["blocking"]:
+            out[n] = len(info["blocking"])
+        elif not info["blocked"]:
             # #18829 : l'organe a EVALUE cette PR et la declare claire. Le 0 est
             # une INFORMATION, pas une absence -- sans cette entree, l'appelant
             # ne distingue pas « evaluee, claire » de « jamais evaluee » et doit
@@ -3994,6 +3977,88 @@ def unaddressed_review_points(numbers: list[int]) -> dict[int, int]:
             # autorise `blocking_causes` a ignorer un `CHANGES_REQUESTED` natif
             # deja leve.
             out[n] = 0
+    return out
+
+
+def _nits_blocking_entries(n: int) -> dict | None:
+    """Une PR vue par l'organe nits : {blocking, blocked}, ou None si illisible.
+
+    Partage entre `unaddressed_review_points` (le compte) et
+    `unaddressed_review_points_detail` (compte + auteurs + verdict) : une
+    seule delegation a `analyse_pr` par PR, pas de second round-trip.
+
+    Derive de CONTRAT avec l'organe (TypeError/AttributeError) relancee
+    (#15139) ; toute autre panne rend None -- une PR illisible ne bloque pas
+    les autres.
+    """
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    import check_unaddressed_nits as nits  # noqa: PLC0415 - import tardif volontaire
+
+    try:
+        # #15139 : delegation via le point d'entree `analyse_pr` de
+        # l'organe, pas un assemblage local de kwargs -- l'assemblage
+        # local avait derive (kwarg `issue_created` disparu de la
+        # signature) et le TypeError avale rendait un dict vide
+        # silencieux : la cause 4 ne se declenchait plus, pour aucune
+        # lane, pendant que le merge-gate (qui appelle juste) refusait
+        # les memes PRs.
+        result = nits.analyse_pr(n)
+    except (TypeError, AttributeError):
+        # Derive de contrat avec l'organe : bug d'appel, pas « PR
+        # illisible ». Propager jusqu'au try de `red_backlog` qui rend
+        # `nits_unavailable` -- visible, jamais un dict vide muet.
+        raise
+    except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
+        return None
+    return {"blocking": result.get("blocking") or [],
+            "blocked": bool(result.get("blocked"))}
+
+
+def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
+    """Variante enrichie de `unaddressed_review_points` pour la file de reparation (#16926).
+
+    Memes presentes et memes zeros que la fonction simple (absente = non
+    evaluee, count 0 = evaluee claire, #18829 ; TypeError/AttributeError
+    propagees, #15139) -- mais chaque entree porte en plus :
+
+    - ``authors`` : auteurs des points non leves, deduits des entrees
+      blocking que l'organe nits a DEJA en main (pas de second appel) ;
+    - ``verdict`` / ``verdict_surface`` : dernier verdict latest-wins par
+      l'organe ``scripts/ci/pool_review_verdicts.py`` -- le prefixe de
+      corps, PAS ``reviewDecision``, structurellement null sur ce depot
+      (#15511, #16926).
+
+    La voix de verdict n'est recherchee QUE pour les PRs a points non leves
+    (une poignee, une requete GraphQL chacune) : cout borne. Panne de
+    l'organe de verdicts : champs verdict omis, le compte et les auteurs
+    restent rendus -- la file ne se bloque jamais sur une surface annexe.
+    """
+    out: dict[int, dict] = {}
+    numbers_with_points: list[int] = []
+    for n in numbers:
+        info = _nits_blocking_entries(n)
+        if info is None:
+            continue
+        if info["blocking"]:
+            authors = sorted({str(e.get("author") or "?")
+                              for e in info["blocking"] if isinstance(e, dict)})
+            out[n] = {"count": len(info["blocking"]), "authors": authors,
+                      "verdict": None, "verdict_surface": None}
+            numbers_with_points.append(n)
+        elif not info["blocked"]:
+            out[n] = {"count": 0, "authors": [],
+                      "verdict": None, "verdict_surface": None}
+    if numbers_with_points:
+        try:
+            sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
+            import pool_review_verdicts as verdicts  # noqa: PLC0415 - import tardif volontaire
+            voices = verdicts.fetch_prs(REPO, numbers_with_points)
+        except Exception:  # noqa: BLE001 - surface annexe, jamais bloquante
+            voices = {}
+        for n, entry in voices.items():
+            if n in out and out[n]["count"]:
+                out[n]["verdict"] = entry.get("verdict")
+                out[n]["verdict_surface"] = entry.get("verdict_surface")
     return out
 
 
@@ -4189,7 +4254,7 @@ def red_backlog(lane: str, threshold_hours: float,
 
     states = fetch_pr_states([pr["number"] for pr in mine])
     try:
-        nits_by_pr = unaddressed_review_points([pr["number"] for pr in mine])
+        nits_by_pr = unaddressed_review_points_detail([pr["number"] for pr in mine])
         nits_unavailable = None
     except Exception as exc:  # noqa: BLE001
         nits_by_pr, nits_unavailable = {}, f"{type(exc).__name__}"
@@ -4279,16 +4344,30 @@ def red_backlog(lane: str, threshold_hours: float,
                                  resolved_keys_by_name=keys_by_name,
                                  dwell_by_name=dwell_by_name,
                                  gate_evidence=gate_evidence_for(state, gate_cache),
-                                 # `== 0` et non `not ...` : une PR ABSENTE du
-                                 # dict n'a pas ete evaluee par l'organe, et la
-                                 # cause doit alors etre conservee (fail-closed).
-                                 review_points_clear=nits_by_pr.get(pr["number"]) == 0)
-        n_nits = nits_by_pr.get(pr["number"], 0)
+                                 # `count == 0` et non `not info` : une PR
+                                 # ABSENTE du dict n'a pas ete evaluee par
+                                 # l'organe, et la cause doit alors etre
+                                 # conservee (fail-closed).
+                                 review_points_clear=(nits_by_pr.get(pr["number"]) or {}).get("count") == 0)
+        nits_info = nits_by_pr.get(pr["number"]) or {}
+        n_nits = nits_info.get("count", 0)
         if n_nits:
             # Un point de review non leve est une cause A PART ENTIERE : la PR
             # peut etre verte et sans conflit et rester non mergeable (B.0).
             causes.insert(0, f"{n_nits} point(s) de review non leve(s) -> repondre, "
                              f"corriger en citant le commit, ou ouvrir une issue de suivi nommee")
+            # #16926 : QUI tient la reserve et sous quelle voix, sans rejouer
+            # check_unaddressed_nits a la main -- auteurs depuis les entrees
+            # blocking deja en main, verdict latest-wins via l'organe
+            # pool_review_verdicts (prefixe de corps, pas reviewDecision).
+            detail_bits = []
+            if nits_info.get("authors"):
+                detail_bits.append("reserve(s) de : " + ", ".join(nits_info["authors"]))
+            if nits_info.get("verdict"):
+                surface = nits_info.get("verdict_surface") or "surface inconnue"
+                detail_bits.append(f"dernier verdict : {nits_info['verdict']} ({surface})")
+            if detail_bits:
+                causes.insert(1, " -- ".join(detail_bits))
         # #12830 : 3e etat file-saturation (cf docstring file_saturation_cause).
         # Seuil par defaut = threshold_hours (meme qu'aged) pour ne pas creer
         # un nouveau param a retenir ; surchargeable via --saturation-hours.
@@ -4333,7 +4412,10 @@ def red_backlog(lane: str, threshold_hours: float,
                                     if pair not in resolved_dwell]
 
     triggers = []
-    if any(nits_by_pr.get(r["number"]) for r in red):
+    # `.get("count")` et non le dict brut : depuis #16926 la valeur est un
+    # dict, TOUJOURS truthy -- `{"count": 0}` (evaluee claire) aurait sinon
+    # declenche le trigger nits sur une ardoise propre.
+    if any((nits_by_pr.get(r["number"]) or {}).get("count") for r in red):
         # D'abord dans la liste : c'est l'ordre dans lequel le mandat du
         # 2026-08-24 veut que la lane les traite.
         triggers.append("nits")
