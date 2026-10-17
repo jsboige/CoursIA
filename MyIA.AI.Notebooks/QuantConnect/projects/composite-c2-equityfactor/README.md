@@ -42,7 +42,27 @@ Backtests `e8d5fd4f` (A), `122d1a54` (B), `67da341f` (C), projet 37945484.
 
 La correction par poches (C) garde le dernier insight de chaque couple (symbole, alpha), normalise les scores à l'intérieur de chaque poche, donne une part égale à chaque poche active et additionne par symbole. Elle fait ce que le composite annonce, et fait **moins bien** que le momentum seul sur cette fenêtre : Sharpe 0.441 contre 0.585, avec une volatilité plus basse (9.1 % contre 12.2 %) et une pire baisse plus faible. Verdict : **NO BEATS**. La correction est une correction de comptabilité, pas une amélioration de performance.
 
-**Reste à mesurer.** `ValueAlpha` et `QualityAlpha` lisent `valuation_ratios.price_to_book`, `price_to_earnings`, `operation_ratios.return_on_equity` et `debt_to_equity` par `getattr(..., None)`. Les autres projets du dépôt utilisent `pb_ratio`, `pe_ratio` et `roe`. Si ces noms n'existent pas dans Lean, les deux alphas n'émettent jamais rien, et la variante C ne mélange que LowVol et momentum. Ce point n'est pas encore mesuré et relève d'un grain séparé.
+La variante C ne mélangeait en fait que LowVol et le momentum : Value et Quality n'émettaient rien, pour deux raisons mesurées par #21141 (section suivante).
+
+### Value et Quality branchés (#21141, octobre 2026)
+
+Deux défauts empêchaient `ValueAlpha` et `QualityAlpha` d'émettre, et tous deux passaient sans erreur :
+
+1. **Noms de champs.** La sélection fine lisait `valuation_ratios.price_to_book`, `price_to_earnings`, `operation_ratios.return_on_equity` et `debt_to_equity` par `getattr(..., None)` sous un `try/except`. Ces noms n'existent pas dans Lean : les quatre champs valaient `None` à chaque lecture (0 sur 50350). Les noms corrects sont `pb_ratio`, `pe_ratio` (des nombres), `roe` et `total_debt_equity_ratio` (des champs multi-périodes, lus par `.value`).
+2. **Cache invisible.** Les deux alphas lisaient le cache fondamental par `getattr(algorithm, 'fundamental_cache', {})`. L'objet que le framework leur passe ne porte pas l'attribut Python posé par la sélection : le `{}` par défaut revenait à chacun des 84 appels mensuels, et l'alpha sortait sans score. Les deux alphas reçoivent désormais l'algorithme Python à leur construction (`owner=self`).
+
+Les deux backtests finaux, même fenêtre et même projet que la section précédente :
+
+| Variante | `pcm_mode` | `alphas` | Sharpe | CAGR | Pire baisse | PSR | Ordres |
+|----------|------------|----------|--------|------|-------------|-----|--------|
+| B''. Témoin : momentum seul | `symbol` | `momentum` | 0.585 | 13.194 % | 20.500 % | 7.650 % | 7362 |
+| F. Quatre facteurs par poches (défaut) | `sleeve` | `all` | 0.301 | 7.106 % | 18.900 % | 1.195 % | 9685 |
+
+Backtests `f678eaad` (B'') et `4482adb4` (F), projet 37945484. Statistiques écrites en fin de backtest : `Emitted Value` 504/2099 et `Emitted Quality` 496/2062 (insights UP / insights émis), `Cache Value` et `Cache Quality` 84/84 (appels où l'ancienne lecture du cache ne voyait rien / appels).
+
+**Lecture.** B'' reproduit B à l'identique : le nouveau code de lecture ne touche pas au momentum seul. Avec ses quatre facteurs effectivement branchés, le composite fait moins bien que le momentum seul (Sharpe 0.301 contre 0.585) et moins bien que le mélange LowVol et momentum de la variante C (0.441). Sa volatilité est la plus basse des trois (8.7 % contre 12.2 % pour le momentum seul) et sa pire baisse reste sous celle du témoin, mais le rendement baisse davantage que le risque. Verdict : **NO BEATS**, selon une règle écrite avant les backtests. Une fenêtre unique, déjà vue : le verdict porte sur la conception du composite, pas sur une validation hors échantillon.
+
+Les statistiques `PCM <alpha>` comptent ce que la classe de base passe au PCM après sa déduplication par symbole. Le mode par poches reconstruit ses poches en amont, à partir de tous les insights actifs : ces compteurs ne mesurent donc pas ce qu'il consomme.
 
 ### Paramètres de projet
 
@@ -68,8 +88,8 @@ Backtest `8eecba32` (alignée) / `3173f8b39` (catalogue `c2-equityfactor-post280
 
 | Fichier | Description |
 |---------|-------------|
-| `main.py` | Algorithme composite equity factor orchestrant la sélection d'univers, les alphas, le PCM, le risque et l'exécution |
-| `alpha_models.py` | Quatre modèles factoriels : Value, Quality, LowVolatility et Momentum |
+| `main.py` | Algorithme composite equity factor orchestrant la sélection d'univers, les alphas, le PCM, le risque et l'exécution ; cache fondamental et compteurs `Emitted`, `Field` et `Cache` (#21141) |
+| `alpha_models.py` | Quatre modèles factoriels : Value, Quality, LowVolatility et Momentum ; Value et Quality lisent le cache par l'algorithme Python passé à leur construction (#21141) |
 | `portfolio_construction.py` | MeanVariancePCM avec rééquilibrage hebdomadaire, plafonds sectoriels et limites d'exposition ; mode par poches (`by_sleeve`) et compteurs par alpha (#21137) |
 | `risk_management.py` | SectorCapRiskModel avec poids sectoriel max et contraintes de beta |
 | `execution.py` | Modèle d'exécution TWAP (6 tranches, fenêtre de 10 minutes) |
