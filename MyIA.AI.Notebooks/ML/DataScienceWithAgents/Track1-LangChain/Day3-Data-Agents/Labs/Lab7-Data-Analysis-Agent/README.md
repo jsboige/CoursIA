@@ -10,8 +10,10 @@ Ce laboratoire **fusionne les deux mondes** explorés précédemment : la **Data
 
 1. Créer un agent spécialisé avec `create_pandas_dataframe_agent` de LangChain
 2. Exposer un DataFrame en entrée d'un agent et contrôler son périmètre
-3. Comprendre les risques d'exécution de code généré (verbose / sandbox)
-4. Comparer la productivité "agent analyste" vs analyse manuelle
+3. Dialoguer en langage naturel avec un agent pour obtenir des insights
+4. Comprendre comment un LLM raisonne pour utiliser des outils (code Python/Pandas)
+
+> **Note :** le carnet crée l'agent avec `allow_dangerous_code=True`. Selon le commentaire de la cellule de création, ce paramètre est requis pour autoriser l'exécution du code Python que l'agent génère.
 
 ## Prérequis
 
@@ -21,8 +23,7 @@ Ce laboratoire **fusionne les deux mondes** explorés précédemment : la **Data
 
 ## Notebook
 
-- [Lab7-Data-Analysis-Agent.ipynb](Lab7-Data-Analysis-Agent.html) - notebook étudiant
-- `Lab7-Data-Analysis-Agent_output.ipynb` - version exécutée de référence
+- [Lab7-Data-Analysis-Agent.ipynb](Lab7-Data-Analysis-Agent.ipynb) - notebook étudiant, committé avec les sorties de son exécution (version exécutée de référence)
 
 ## Suite et transition
 

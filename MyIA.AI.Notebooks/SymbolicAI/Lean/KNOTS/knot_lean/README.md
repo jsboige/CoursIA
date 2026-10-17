@@ -360,7 +360,11 @@ Référence : Fox (1962), A quick trip through knot theory ; Adams, *The Knot Bo
 | `Knots/Basic.lean` | Définitions (Knot, Link, PD-code, nœuds nommés), `KnotDiagram.wf` | 0 |
 | `Knots/Reidemeister.lean` | Mouvements R1/R2/R3 (modèle Phase 5), `ReidemeisterEquiv`, symétries | 2 |
 | `Knots/Invariant.lean` | 3-colorabilité (Fox), crossing number, contre-exemple PR1, bi-implication R1 connectée (#3000 + #3124/#11227), transfer R2-up + murs nommés (#11276), marquee `tricolorable_invariant` (#11958), `unknottingNumber` via `Nat.sInf` (#15082) | 0 |
-| `Knots/Conway.lean` | Nœud de Conway (11n34), mutation, codes PD Conway/KT, arcPartition, Alexander trivial | 0 |
+| `Knots/Mutation.lean` | Mutation de Conway, mutant du trèfle (extrait de Conway, #18397 tranche 2) | 0 |
+| `Knots/ConwayPD.lean` | Codes PD des nœuds Conway (11n34) et Kinoshita-Terasaka (11n42) (extrait de Conway, #18397 tranche 2) | 0 |
+| `Knots/ArcPartition.lean` | Partition des arcs du code PD et outils directs jusqu'à `alexanderRow_sum_zero` (extrait de Conway, #18397 tranche 3) | 0 |
+| `Knots/AlexanderTrivial.lean` | Polynôme d'Alexander (matrice de Dehn), contrôles discriminateurs, variante signée, preuves de Dehn `conway_trivial_alexander` (−t⁶) et `KT_trivial_alexander` (t⁵) (extrait de Conway, #18397 tranche 4) | 0 |
+| `Knots/Conway.lean` | Stub aggregator du plan Option A (#18397) : entrée historique `import Knots.Conway`, contenu dans les sous-modules ci-dessus | 0 |
 | `Knots/Slice.lean` | Nœuds slice, Piccirillo, Freedman, dichotomie lisse/topologique (extrait de Conway, #18397) | 4 |
 | `Knots/Lidman.lean` | 11n102, unknotting number = 2 | 2 |
 | `Knots/MathlibPrerequisites.lean` | Index des prérequis Mathlib manquants par tier | 0 |

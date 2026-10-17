@@ -17,6 +17,7 @@ Faux-negatifs mesures (l'organe DOIT les trouver) :
 - lien dans une rangee de nav sous `## Navigation` vers .ipynb absent.
 - lien avec mot `suivant` / `precedent` dans le texte vers .ipynb absent.
 """
+import subprocess
 import sys
 import textwrap
 from pathlib import Path
@@ -273,3 +274,141 @@ class TestPartitionNewByDiff:
 
     def test_load_diff_files_missing_file_fail_closed(self, tmp_path):
         assert nav_chain._load_diff_files(tmp_path / "absent.txt") == set()
+
+
+class TestDiffBaseScope:
+    """#20303 : la voie rapide n'a pas de fichier de liste. `--diff-base REF`
+    fait calculer au checker `git diff REF...HEAD`, le meme diff que le
+    `pr_files.txt` du workflow d'origine. Sans cette portee, un NEW du graphe
+    global rougissait toute PR touchant un carnet ou un README de serie."""
+
+    def test_changed_since_reads_the_base_head_range(self, monkeypatch):
+        calls = []
+
+        def fake_run(cmd, **kwargs):
+            calls.append(cmd)
+            return subprocess.CompletedProcess(
+                cmd, 0, stdout="MyIA.AI.Notebooks/A/x.ipynb\n\nscripts/y.py\n", stderr="")
+
+        monkeypatch.setattr(nav_chain.subprocess, "run", fake_run)
+        assert nav_chain._changed_since("origin/main") == {
+            "MyIA.AI.Notebooks/A/x.ipynb", "scripts/y.py"}
+        assert calls[0][-1] == "origin/main...HEAD"
+        assert "core.quotePath=false" in calls[0]
+
+    def test_changed_since_git_failure_is_fail_closed(self, monkeypatch, capsys):
+        monkeypatch.setattr(
+            nav_chain.subprocess, "run",
+            lambda cmd, **kwargs: subprocess.CompletedProcess(
+                cmd, 128, stdout="", stderr="fatal: bad revision"))
+        assert nav_chain._changed_since("origin/absent") == set()
+        assert "fail-closed" in capsys.readouterr().err
+
+    def test_diff_base_and_diff_files_are_mutually_exclusive(self):
+        with pytest.raises(SystemExit) as exc:
+            nav_chain.main(["--check", "--diff-base", "origin/main",
+                            "--diff-files", "pr_files.txt"])
+        assert exc.value.code == 2
+
+    def test_diff_base_scope_reaches_the_verdict(self, monkeypatch, capsys):
+        """Controle positif et negatif de bout en bout, par `main` sur le graphe
+        reel. Baseline vide : chaque finding du depot est NEW. Un diff qui ne
+        touche que le registre ne bloque pas ; le meme argv avec le README de la
+        serie ICT (finding present) dans le diff bloque."""
+        seen_bases = []
+
+        def diff_for(paths):
+            def _changed_since(base):
+                seen_bases.append(base)
+                return set(paths)
+            return _changed_since
+
+        monkeypatch.setattr(nav_chain, "_load_baseline", lambda: set())
+        argv = ["--check", "--diff-base", "origin/main"]
+
+        monkeypatch.setattr(nav_chain, "_changed_since",
+                            diff_for({"scripts/ci/fast_lane_registry.py"}))
+        assert nav_chain.main(argv) == 0
+
+        monkeypatch.setattr(nav_chain, "_changed_since",
+                            diff_for({"MyIA.AI.Notebooks/IIT/ICT-Series/README.md"}))
+        assert nav_chain.main(argv) == 1
+        assert seen_bases == ["origin/main", "origin/main"]
+
+
+class TestIntraSeriesEntryStatus:
+    """Option (a) de l'arbitrage #19076 (2026-10-11, c.6114582529) : le statut
+    d'entree se perd seulement par un lien entrant INTRA-serie ; une ancre
+    externe ne le vole plus. Reachability globale inchangee."""
+
+    @staticmethod
+    def _graph(tmp_path, edges):
+        """Construit (inbound, outbound, series) depuis une liste d'aretes
+        (src_name, dst_name) sur des fichiers poses sous tmp_path."""
+        files = {}
+        for a, b in edges:
+            files.setdefault(a, None)
+            files.setdefault(b, None)
+        for name in files:
+            p = tmp_path / f"{name}.ipynb"
+            p.write_text("{}", encoding="utf-8")
+            files[name] = p
+        inbound, outbound = {}, {}
+        for a, b in edges:
+            outbound.setdefault(files[a], []).append(files[b])
+            inbound.setdefault(files[b], set()).add(files[a])
+        series = {}
+        for name, p in files.items():
+            series.setdefault(p.parent, []).append(p)
+        return inbound, outbound, series
+
+    @pytest.fixture
+    def anchored(self, tmp_path, monkeypatch):
+        """Serie A (chaine A1->A2) dont A1 ancre B1 de la serie B ; B porte une
+        convention de navigation interne (cycle B2<->B3) qui n'atteint pas B1."""
+        monkeypatch.setattr(nav_chain, "REPO_ROOT", tmp_path)
+        dir_a = tmp_path / "SerieA"
+        dir_b = tmp_path / "SerieB"
+        dir_a.mkdir()
+        dir_b.mkdir()
+        a1, a2 = dir_a / "A-1.ipynb", dir_a / "A-2.ipynb"
+        b1 = dir_b / "B-1.ipynb"
+        b2, b3 = dir_b / "B-2.ipynb", dir_b / "B-3.ipynb"
+        for p in (a1, a2, b1, b2, b3):
+            p.write_text("{}", encoding="utf-8")
+        outbound = {a1: [a2, b1], b2: [b3], b3: [b2]}
+        inbound = {a2: {a1}, b1: {a1}, b3: {b2}, b2: {b3}}
+        series = {dir_a: [a1, a2], dir_b: [b1, b2, b3]}
+        return nav_chain.analyse(inbound, outbound, series), (a1, a2, b1, b2, b3)
+
+    def test_external_anchor_does_not_steal_entry(self, anchored):
+        """Controle positif (cas #20392) : B1, ancre seulement depuis A1
+        (autre serie), reste ENTREE de B -- plus de finding unreachable."""
+        report, (a1, a2, b1, b2, b3) = anchored
+        unreach = [f for f in report["findings"] if f["kind"] == "unreachable"]
+        assert unreach == []
+
+    def test_unreachable_survives_disconnected_cycles(self, tmp_path, monkeypatch):
+        """Controle negatif : une serie sans AUCUNE entree, faite de deux
+        cycles disjoints, garde des unreachable -- l'option (a) n'a pas
+        neantere le garde."""
+        monkeypatch.setattr(nav_chain, "REPO_ROOT", tmp_path)
+        d = tmp_path / "SerieC"
+        d.mkdir()
+        c1, c2, c3, c4 = (d / f"C-{i}.ipynb" for i in (1, 2, 3, 4))
+        for p in (c1, c2, c3, c4):
+            p.write_text("{}", encoding="utf-8")
+        outbound = {c1: [c2], c2: [c1], c3: [c4], c4: [c3]}
+        inbound = {c2: {c1}, c1: {c2}, c4: {c3}, c3: {c4}}
+        series = {d: [c1, c2, c3, c4]}
+        report = nav_chain.analyse(inbound, outbound, series)
+        unreach = sorted(f["notebook"] for f in report["findings"] if f["kind"] == "unreachable")
+        assert len(unreach) == 2  # le cycle non couvert par le depart le plus couvrant
+
+    def test_externally_anchored_still_reported(self, anchored):
+        """La vue informative #19099 survit : B1 liste avec sa source A1."""
+        report, (a1, a2, b1, b2, b3) = anchored
+        per_b = [s for s in report.get("series", []) if s["series"].endswith("SerieB")]
+        assert per_b, report.get("series")
+        anchors = per_b[0].get("externally_anchored", [])
+        assert any(a["notebook"].endswith("B-1.ipynb") and a["sources"] for a in anchors)

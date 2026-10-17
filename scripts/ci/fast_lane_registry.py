@@ -53,6 +53,16 @@ class Guard:
                 statut.
     needs_base  Le garde compare HEAD a la base : le runner lui garantit que
                 `origin/<base_ref>` est joignable.
+    diff_bounded  Le verdict du garde est un DELTA (comparaison base/head, ou
+                lignes ajoutees par la PR) : un rouge corrobore ne peut pas
+                heriter de `main`. Lu par le picker (`_diff_bounded_check_names`,
+                #19645) -- la declaration est EXPLICITE et distincte de
+                `needs_base`, parce que l'information de bornage peut manquer
+                a l'argv absorbe (cas `check-nav-chain`/`check-navlinks`,
+                suite c.1503 du 2026-10-09 : leur workflow d'origine scopait
+                au diff via `git diff $BASE...HEAD`, l'argv absorbe dit
+                seulement `--check`) et que les ~20 gardes `needs_base` ne
+                sont PAS un delta borne au diff par defaut.
     delta_argv  Present => le garde est un DELTA en trois temps : `argv` est
                 execute sur HEAD (sa sortie standard est capturee comme
                 `head.json`), puis sur l'arbre bascule a la base
@@ -76,6 +86,10 @@ class Guard:
     paths: list[str] = field(default_factory=list)
     blocking: bool = True
     needs_base: bool = False
+    # #19645 suite c.1503 : verdict DELTA lu par le picker (voir la docstring
+    # du champ). Declare sur les gardes dont l'argv absorbe a perdu
+    # l'information de bornage -- une heuristique d'argv ne peut pas la voir.
+    diff_bounded: bool = False
     delta_argv: list[str] = field(default_factory=list)
     swap_paths: list[str] = field(default_factory=list)
     iterates_paths: bool = False  # voir `run_iter` dans fast_lane.py
@@ -344,8 +358,19 @@ PILOT: list[Guard] = [
             "scripts/tests/baseline_nb_navlinks.json",
             ".github/workflows/notebook-navlink-check.yml",
         ],
+        # Portee du workflow d'origine rendue (#21016, symetrique de #20582
+        # pour nav-chain) : `--diff-base {base_ref}` fait calculer au checker
+        # `git diff base...HEAD`, le meme diff que `pr_files.txt`. Sans ce
+        # jeton, tout NEW du graphe global (entree deja presente sur main)
+        # rougissait toute PR touchant un carnet ; avec lui, seul un NEW
+        # imputable au diff bloque. Decision c.5854935546 transposable.
         argv=["python", "scripts/notebook_tools/check_notebook_navlinks.py",
-              "--check"],
+              "--check", "--diff-base", "{base_ref}"],
+        # Verdict DELTA (NEW vs baseline), borne au diff par `--diff-base`.
+        # Declaration explicite (#19645 suite c.1503) : elle ne se devine pas
+        # dans l'argv.
+        needs_base=True,
+        diff_bounded=True,
         blocking=True,
         absorbed=True,
     ),
@@ -358,8 +383,18 @@ PILOT: list[Guard] = [
             "scripts/tests/baseline_nb_nav_chain.json",
             ".github/workflows/notebook-nav-chain-guard.yml",
         ],
+        # Portee du workflow d'origine rendue (#20303) : `--diff-base {base_ref}`
+        # fait calculer au checker `git diff base...HEAD`, le meme diff que
+        # `pr_files.txt`. Sans ce jeton, tout NEW du graphe global (entree deja
+        # presente sur main) rougissait toute PR touchant un carnet ou un README
+        # de serie ; avec lui, seul un NEW imputable au diff bloque.
         argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
-              "--check"],
+              "--check", "--diff-base", "{base_ref}"],
+        # Verdict DELTA (NEW vs baseline), borne au diff par `--diff-base`.
+        # Declaration explicite (#19645 suite c.1503) : elle ne se devine pas
+        # dans l'argv.
+        needs_base=True,
+        diff_bounded=True,
         blocking=True,
         absorbed=True,
     ),
@@ -408,12 +443,15 @@ PILOT: list[Guard] = [
         ],
         # Le dump imprime le JSON sur stdout ; le moteur fast-lane le
         # capture via payload_of() et l'ecrit dans {name}.head.json (puis
-        # base.json apres bascule phase 2). Le comparator recoit les deux.
+        # base.json apres bascule phase 2). Le comparator recoit les deux,
+        # plus les SHA base/head : l'appariement MOVED exige la preuve de
+        # renommage git (fail-closed sans elle, #20274).
         argv=["python",
               "scripts/notebook_tools/dump_readme_link_violations.py"],
         delta_argv=["python",
                     "scripts/notebook_tools/diff_readme_link_violations.py",
-                    "{base_json}", "{head_json}"],
+                    "{base_json}", "{head_json}",
+                    "--base-sha", "{base_sha}", "--head-sha", "{head_sha}"],
         swap_paths=[
             "MyIA.AI.Notebooks",
             "_quarto.yml",
@@ -2025,6 +2063,50 @@ TRANCHE21: list[Guard] = [
         blocking=True,           # BLOQUANT sur les AJOUTS seuls
         needs_base=True,
         warn_rc=(2,),
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 22 -- schema des cellules markdown des carnets (#20167, advisory).
+#
+# Garde NATIF : aucun workflow d'origine. Il ferme la classe « une cellule
+# markdown porte execution_count / outputs », cles que le schema nbformat
+# reserve aux cellules de code. Mesure du 2026-10-09 : 37 carnets et 384
+# cellules fautives dans MyIA.AI.Notebooks. Le defaut bloque le MCP
+# jupyter-papermill, qui valide le carnet entier avant d'ecrire et refuse
+# toute edition, meme d'une cellule saine.
+#
+# Forme : iter par carnet modifie (`--check {changed_paths}`). Un carnet
+# modifie qui porte encore la cle fait remonter le defaut sur la PR.
+#
+# ADVISORY (`blocking=False`) : le corpus n'est pas encore entierement corrige
+# (lots B et C de l'issue #20167). La bascule en bloquant se fera quand `main`
+# ne portera plus aucune cellule fautive, comme geste trace.
+#
+# `absorbed=True` : sans absorption, le job always-on lancerait `fast_lane.py
+# --shadow` et la conclusion serait neutre sous le prefixe d'ombre. Meme
+# convention que TRANCHE13 (advisory natif).
+# ---------------------------------------------------------------------------
+TRANCHE22: list[Guard] = [
+    Guard(
+        name="Markdown-cell schema advisory (cles interdites, #20167)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/fix_markdown_cell_schema.py",
+            "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        argv=[
+            "python", "scripts/notebook_tools/fix_markdown_cell_schema.py",
+            "--check", "{changed_paths}",
+        ],
+        blocking=False,
+        iterates_paths=True,
         absorbed=True,
     ),
 ]

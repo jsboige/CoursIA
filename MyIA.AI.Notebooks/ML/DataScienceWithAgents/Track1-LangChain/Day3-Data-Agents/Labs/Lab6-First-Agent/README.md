@@ -10,19 +10,18 @@ Après avoir utilisé des chaînes LangChain "fil tendu" dans les Labs 2 et 3, c
 
 1. Assembler les 4 piliers d'un agent LangChain / LangGraph (LLM, Tools, Prompt, Executor)
 2. Créer un outil personnalisé avec le décorateur `@tool`
-3. Comprendre le cycle ReAct (Reason -> Act -> Observe -> Reason)
-4. Tracer les étapes intermédiaires d'un agent pour le débogage
+3. Configurer un prompt template pour agent REACT
+4. Orchestrer l'exécution avec `create_react_agent` de LangGraph
 
 ## Prérequis
 
-- [Lab 5 (Viz + ML)](../Lab5-Viz-ML/README.md) : bases scikit-learn (utilisé comme outil par l'agent)
+- [Lab 5 (Viz + ML)](../Lab5-Viz-ML/README.md) : bases de Machine Learning (scikit-learn)
 - [Lab 2 / 3](../../../Day2-Document-Agents/Labs/) : LangChain de base
 - Clé API LLM configurée (`.env` racine)
 
 ## Notebook
 
-- [Lab6-First-Agent.ipynb](Lab6-First-Agent.html) - notebook étudiant
-- `Lab6-First-Agent_output.ipynb` - version exécutée de référence
+- [Lab6-First-Agent.ipynb](Lab6-First-Agent.ipynb) - notebook étudiant, committé avec les sorties de son exécution (version exécutée de référence)
 
 ## Suite
 
