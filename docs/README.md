@@ -340,6 +340,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/12204-ict-chantier-1-a5.md](ledgers/12204-ict-chantier-1-a5.md) | Chantier 1 — tranche A5 : opérations 2, 6, 10 après la distillation Sandholm |
 | [ledgers/12204-ict-chantier-1-a6.md](ledgers/12204-ict-chantier-1-a6.md) | Chantier 1 — tranche A6 : statuation des opérations 11-13 (promotions TABLE) et de la file d'attente |
 | [ledgers/12204-ict-chantier-1-a7.md](ledgers/12204-ict-chantier-1-a7.md) | Chantier 1 — tranche A7 : relecture froide — statuation des opérations 2 et 6, verdict « la table est-elle un catalogue ? », quatrième loi |
+| [ledgers/12204-ict-chantier-1-a8.md](ledgers/12204-ict-chantier-1-a8.md) | Chantier 1 — tranche A8 : rétro-équipement des conditions de rétrogradation — une condition de sortie exécutable par entrée TABLE (12 écrites, aucune entrée non falsifiable) |
 | [ledgers/13746-tests-eclates-dissipation.md](ledgers/13746-tests-eclates-dissipation.md) | EPIC #13746 — Ledger dissipation câblage tests éclatés |
 | [ledgers/14169-g1-recouvrement.md](ledgers/14169-g1-recouvrement.md) | Ledger G1 — Recouvrement 28 PRs amont endjin/Z3.Linq vs fork MyIntelligenceAgency/Z3.Linq |
 | [ledgers/14169-z3linq-upstream-overlap.md](ledgers/14169-z3linq-upstream-overlap.md) | Z3.Linq — recouvrement fork / amont |
