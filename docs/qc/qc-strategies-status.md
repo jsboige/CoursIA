@@ -914,7 +914,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | Stratégie | Chemin | Type | Statut (best-guess) | Signal source (fichier/ligne ou nom) |
 |-----------|--------|------|---------------------|--------------------------------------|
 | `Research-Executor` | `projects/Research-Executor/` | Harness d'exécution recherche | Utilitaire | README : « Utility (research execution harness, not a trading strategy) » + main.py: class ResearchExecutor(QCAlgorithm) |
-| `_docs` | `projects/_docs/` | Documentation / audits | Utilitaire | dossier de docs (OPTIMIZATION_BACKLOG.md, QUANTCONNECT_PROJECTS_AUDIT.md, …) ; pas d'algo |
+| `_docs` | `projects/_docs/` | Documentation / audits | Utilitaire | dossier de docs (OPTIMIZATION_BACKLOG.md, REGIME_ANALYSIS.md, …) ; pas d'algo. L'audit projets vit dans `docs/audits/QUANTCONNECT_PROJECTS_AUDIT.md` (déplacé #9535) |
 
 ### Incertitudes prioritaires — résolues firsthand (spot-check code, c.570)
 
