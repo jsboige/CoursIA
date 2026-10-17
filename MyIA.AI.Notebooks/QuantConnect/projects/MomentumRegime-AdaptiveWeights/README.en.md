@@ -181,7 +181,7 @@ The variant dramatically underperforms the baseline. Root causes:
 
 - main.py - Strategy (T85/RS15 allocation), instrumented for measure #19759
 - alpha_models.py - SectorMomentum + RegimeSwitching alpha models
-- portfolio_construction.py - MultiStrategyPCM portfolio construction (`intent` mode taken from #19758)
+- `Shared_PCM/pouches_pcm.py` (QC project library) — canonical `MultiStrategyPouchesPCM`, imported by `main.py` (#19821 brick 1, dedup tranche)
 
 ## References
 
