@@ -297,6 +297,35 @@ def test_titled_step_no_colon_with_glued_colon_not_hint():
     assert "HINT-AS-HEADING" not in _kinds(_write_nb(cells))
 
 
+def test_titled_piste_not_hint():
+    """`### Piste N : Titre (niveau)` is a real numbered exercise section.
+
+    Regression guard for #16472 (2026-10-11): the four `### Piste 1..4 : ...`
+    headings of GenAI/Texte/11_Quantization.ipynb cell 46 open real exercise
+    sections (numbered instructions, GPU-scope preamble) and were re-confirmed
+    false positives 22 consecutive feeder wakes. Corpus-bounded: they are the
+    only `Piste` headings in MyIA.AI.Notebooks/.
+    """
+    cells = [_md("# Titre\n"), _md("### Piste 1 : Quantification avec llmcompressor (intermediaire)\n")]
+    assert "HINT-AS-HEADING" not in _kinds(_write_nb(cells))
+
+
+def test_titled_piste_no_colon_not_hint():
+    """`### Piste 2 Deploiement vLLM` (no colon) — same class as Step-no-colon."""
+    cells = [_md("# Titre\n"), _md("### Piste 2 Deploiement vLLM\n")]
+    assert "HINT-AS-HEADING" not in _kinds(_write_nb(cells))
+
+
+def test_bare_piste_aside_still_hint():
+    """`## Piste` (bare, no number, no title) remains a bare aside, still flagged.
+
+    Regression guard: extending TITLED_STEP_RE to `piste` must not relax the
+    bare-aside rule — only the numbered+titled form is a real section header.
+    """
+    cells = [_md("# Titre\n"), _md("## Piste\n")]
+    assert "HINT-AS-HEADING" in _kinds(_write_nb(cells))
+
+
 # ---------------------------------------------------------------------------
 # CLI contract — an EMPTY scan is never reported as a CLEAN scan
 #
