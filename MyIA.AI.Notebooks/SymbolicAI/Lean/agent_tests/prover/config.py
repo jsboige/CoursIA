@@ -2048,6 +2048,33 @@ DEMOS = {
         ),
         "difficulty": "open_problem",
     },
+    65: {
+        "name": "KNOT_CONWAY_TOPOLOGICALLY_SLICE",
+        "file": str(KNOT_SLICE_FILE) if KNOT_SLICE_FILE else "",
+        "line": 118,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "conway_topologically_slice",
+        "theorem": "conway_topologically_slice",
+        "imports": KNOT_SLICE_IMPORTS,
+        "description": (
+            "Second knot_lean DEMO (#1453 'Ce qui reste' n.1, tranche 2 — the\n"
+            "positive arm of the Conway slice pair). Target: Freedman's theorem\n"
+            "— the Conway knot IS topologically slice (Lean AI Leaderboard\n"
+            "problem). Statement is clean (theorem at Slice.lean:118, single\n"
+            "`exact sorry` at :122, no sorry inside the statement) and is a\n"
+            "LIVE dependency: Slice.lean:151 consumes it in the pair\n"
+            "`<conway_topologically_slice, conway_not_smoothly_slice>`.\n"
+            "Unlike DEMO 64, nearby infrastructure exists: the docstring\n"
+            "notes the trivial Alexander polynomial of Conway (established\n"
+            "in Knots.Conway) is exactly Freedman's hypothesis — the gap is\n"
+            "the disc-embedding theorem itself (Freedman 1982), absent from\n"
+            "Mathlib. Not expected to close; value = second terrain of the\n"
+            "knot_lean sorry map exercised by the BG harness + probe defect\n"
+            "observation (GoalExtract 'Unknown identifier exact', #1453\n"
+            "c.6228696735). LEAN_PROJECT must be knot_lean."
+        ),
+        "difficulty": "open_problem",
+    },
 }
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO
 # whose key appears in this set.
