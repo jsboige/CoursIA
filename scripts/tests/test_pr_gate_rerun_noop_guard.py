@@ -131,11 +131,23 @@ def test_absent_leg_never_posts_beside_an_existing_gate_check_run():
 def test_resolve_routes_rerun_and_absent():
     """La structure a trois jambes : resolve decide, rerun rejoue l'original,
     aggregate_absent POSTe sur une tete orpheline -- les deux dernieres
-    bornees par needs.resolve.outputs.action."""
+    bornees par needs.resolve.outputs.action. La garde same-repo
+    (c.2180-hybride) est mergee dans la meme expression `if:` -- une
+    duplication silencieuse (YAML cle dupliquee = derniere gagne) avait
+    ecrase le filtre d'action (CHANGES_REQUESTED Hermes c.517)."""
     data = _load()
     jobs = data.get("jobs", {})
     assert "resolve" in jobs and "rerun" in jobs
-    assert jobs["rerun"].get("if") == "needs.resolve.outputs.action == 'rerun'"
-    assert jobs["aggregate_absent"].get("if") == (
-        "needs.resolve.outputs.action == 'aggregate_absent'"
-    )
+    # Filtre d'action ET garde same-repo merges (pas de cle `if:` dupliquee).
+    rerun_if = jobs["rerun"].get("if", "")
+    assert rerun_if == (
+        "needs.resolve.outputs.action == 'rerun' && "
+        "(github.event.pull_request.head.repo.full_name == null || "
+        "github.event.pull_request.head.repo.full_name == github.repository)"
+    ), f"rerun.if inattendu: {rerun_if!r}"
+    agg_if = jobs["aggregate_absent"].get("if", "")
+    assert agg_if == (
+        "needs.resolve.outputs.action == 'aggregate_absent' && "
+        "(github.event.pull_request.head.repo.full_name == null || "
+        "github.event.pull_request.head.repo.full_name == github.repository)"
+    ), f"aggregate_absent.if inattendu: {agg_if!r}"
