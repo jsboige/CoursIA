@@ -358,16 +358,17 @@ PILOT: list[Guard] = [
             "scripts/tests/baseline_nb_navlinks.json",
             ".github/workflows/notebook-navlink-check.yml",
         ],
+        # Portee du workflow d'origine rendue (#21016, symetrique de #20582
+        # pour nav-chain) : `--diff-base {base_ref}` fait calculer au checker
+        # `git diff base...HEAD`, le meme diff que `pr_files.txt`. Sans ce
+        # jeton, tout NEW du graphe global (entree deja presente sur main)
+        # rougissait toute PR touchant un carnet ; avec lui, seul un NEW
+        # imputable au diff bloque. Decision c.5854935546 transposable.
         argv=["python", "scripts/notebook_tools/check_notebook_navlinks.py",
-              "--check"],
-        # #19645 (suite c.1503) : verdict DELTA -- NEW vs baseline committe,
-        # le workflow d'origine scopait au diff (`git diff $BASE...HEAD` ->
-        # `--diff-files`). L'argv absorbe ne porte plus ce drapeau : la borne
-        # se declare ici, lue par le picker (`_diff_bounded_check_names`).
-        # `needs_base` suit l'arbitrage ai-01 du 2026-10-12 (declaration de
-        # coherence : mesure du meme jour, aucun consommateur operationnel ne
-        # lit `needs_base` dans scripts/ ou .github/ ; le canal operant de
-        # l'imputation reste `diff_bounded`).
+              "--check", "--diff-base", "{base_ref}"],
+        # Verdict DELTA (NEW vs baseline), borne au diff par `--diff-base`.
+        # Declaration explicite (#19645 suite c.1503) : elle ne se devine pas
+        # dans l'argv.
         needs_base=True,
         diff_bounded=True,
         blocking=True,
