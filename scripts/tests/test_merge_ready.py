@@ -153,6 +153,8 @@ class ScriptedRunner:
         fetch_rc: int = 0,
         twin_rc: int = 0,
         twin_stdout: str = "",
+        slot_rc: int = 0,
+        slot_stdout: str = "",
         commits: dict[str, dict] | None = None,
         auto_tree: str | None = None,
         base_search: dict[str, list[dict]] | None = None,
@@ -176,6 +178,11 @@ class ScriptedRunner:
         # Vide par defaut (les tests historiques ``twin-index-collision``
         # n'attendent pas de classification).
         self.twin_stdout = twin_stdout
+        # Meme contrat que twin pour 5quater (slot, #20774). rc=0 = pas de
+        # conflit (verdict None), rc=1 = collision detectee (verdict porte
+        # par slot_stdout en JSON classifie).
+        self.slot_rc = slot_rc
+        self.slot_stdout = slot_stdout
         # Remontee first-parent de merge_dwell (etape 2ter) : payloads de
         # ``repos/.../commits/<sha>`` et arbre rendu par ``git merge-tree``.
         self.commits = commits or {}
@@ -265,6 +272,8 @@ class ScriptedRunner:
             return mr.RunResult(self.fetch_rc, "", "")
         if len(c) > 1 and "check_twin_index_collisions.py" in c[1]:
             return mr.RunResult(self.twin_rc, self.twin_stdout, "")
+        if len(c) > 1 and "check_slot_reservation.py" in c[1]:
+            return mr.RunResult(self.slot_rc, self.slot_stdout, "")
         raise AssertionError("commande non scriptee : " + " ".join(c))
 
     def sleep(self, seconds: float) -> None:
@@ -1048,6 +1057,157 @@ def test_twin_pure_onmain_skips(tmp_path):
     rc, lines, _ = run_organ(tmp_path, runner)
     assert lines[0]["verdict"] == "skipped"
     assert lines[0]["reason"].startswith("twin-collision-on-main:sw-5-linked-data/0012")
+
+
+# --- 5quinquies. collision de slot d'accretion (#20774) ------------------------
+
+SLOT_FILE = "scripts/notebook_tools/slot_reservations.json"
+
+
+def test_slot_organ_not_called_when_registry_untouched(tmp_path):
+    """Une PR hors registre slot ne paie ni fetch ni organe (5quinquies)."""
+    runner = ScriptedRunner()
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[0]["verdict"] == "would-merge"
+    assert not any("check_slot_reservation.py" in f for f in runner.flat())
+
+
+def test_slot_clean_merges_and_compares_the_gated_head(tmp_path):
+    """PR qui touche la table : un fetch, puis l'organe avec --offline --json."""
+    view = default_view(files=(SLOT_FILE,))
+    runner = ScriptedRunner(views={123: view}, slot_rc=0)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    slot = [c for c in runner.cmds() if len(c) > 1 and "check_slot_reservation.py" in c[1]]
+    assert len(slot) == 1
+    assert slot[0][slot[0].index("--head") + 1] == HEAD
+    assert slot[0][slot[0].index("--base") + 1] == "origin/main"
+    # --offline : la voie rapide n'a pas acces au reseau gh, l'organe doit
+    # fonctionner en mode prive.
+    assert "--offline" in slot[0]
+    # le fetch precede l'organe (meme mecanique que 5bis, cf #20774).
+    flat = runner.flat()
+    fetch_at = next(i for i, f in enumerate(flat) if f.startswith("git ") and " fetch " in f)
+    slot_at = next(i for i, f in enumerate(flat) if "check_slot_reservation.py" in f)
+    assert fetch_at < slot_at
+    assert "pull/123/head" in flat[fetch_at]
+
+
+def test_slot_organ_unreadable_is_fail_closed(tmp_path):
+    """rc=2 sur l'organe -> skip fail-closed (l'organe n'a pas pu lire)."""
+    view = default_view(files=(SLOT_FILE,))
+    runner = ScriptedRunner(views={123: view}, slot_rc=2)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "slot-collision-unreadable:rc=2"
+
+
+def test_slot_fetch_failure_is_fail_closed(tmp_path):
+    """Le fetch de la tete echoue -> skip sans meme appeler l'organe.
+
+    C'est exactement le bug que #20774 corrige (5bis l'a, 5quinquies ne
+    l'avait pas) : sans le fetch, l'organe recevait un sha absent localement
+    et rendait rc=2 sur `upload-pack: not our ref` -- un检出 partial
+    fabriquait un silence vert."""
+    view = default_view(files=(SLOT_FILE,))
+    runner = ScriptedRunner(views={123: view}, fetch_rc=128)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "slot-collision-unreadable:fetch"
+    assert not any("check_slot_reservation.py" in f for f in runner.flat())
+
+
+def test_slot_collision_rc0_with_conflicts_skips(tmp_path):
+    """L'organe en rc=0 sort un JSON avec conflicts > 0 -> skip dur.
+
+    Forme la plus frequente : l'organe detecte un conflit ON-MAIN, sort
+    proprement avec le verdict dans le JSON, et l'organe de merge reprend
+    le motif pour nommer la collision au coordinateur."""
+    view = default_view(files=(SLOT_FILE,))
+    slot_stdout = json.dumps({
+        "conflicts": 1,
+        "cross_ref": [
+            {"pair": "search-metaheuristics", "index": "0042",
+             "verdict": "ON-MAIN"},
+        ],
+        "base_ref": "origin/main",
+    })
+    runner = ScriptedRunner(views={123: view}, slot_rc=0,
+                            slot_stdout=slot_stdout)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"].startswith(
+        "slot-collision-on-main:search-metaheuristics/0042")
+
+
+def test_slot_collision_rc1_classified_multipr_passes(tmp_path):
+    """rc=1 + toutes collisions MULTI-PR -> la premiere mergee gagne."""
+    view = default_view(files=(SLOT_FILE,))
+    slot_stdout = json.dumps({
+        "conflicts": 2,
+        "cross_ref": [
+            {"pair": "ict-25", "index": "0007", "verdict": "MULTI-PR"},
+            {"pair": "ict-25", "index": "0008", "verdict": "MULTI-PR"},
+        ],
+        "base_ref": "origin/main",
+    })
+    runner = ScriptedRunner(views={123: view}, slot_rc=1,
+                            slot_stdout=slot_stdout)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+
+
+def test_slot_collision_rc1_classified_onmain_skips(tmp_path):
+    """rc=1 + au moins une collision ON-MAIN -> skip dur, premiere nommee."""
+    view = default_view(files=(SLOT_FILE,))
+    slot_stdout = json.dumps({
+        "conflicts": 2,
+        "cross_ref": [
+            {"pair": "ict-25", "index": "0007", "verdict": "MULTI-PR"},
+            {"pair": "ict-25", "index": "0008", "verdict": "ON-MAIN"},
+        ],
+        "base_ref": "origin/main",
+    })
+    runner = ScriptedRunner(views={123: view}, slot_rc=1,
+                            slot_stdout=slot_stdout)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"].startswith("slot-collision-on-main:ict-25/0008")
+
+
+def test_slot_collision_rc1_unclassified_fails_closed(tmp_path):
+    """rc=1 sans classification -> motif historique, jamais de silence vert.
+
+    Symetrie stricte de 5bis (#18823) : un mix verdict-connu + verdict-absent
+    refuse, pas d'avertissement seul silencieux."""
+    view = default_view(files=(SLOT_FILE,))
+    slot_stdout = json.dumps({
+        "conflicts": 1,
+        "cross_ref": [
+            {"pair": "ict-25", "index": "0007", "verdict": None},
+        ],
+        "base_ref": "origin/main",
+    })
+    runner = ScriptedRunner(views={123: view}, slot_rc=1,
+                            slot_stdout=slot_stdout)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "slot-index-collision"
+
+
+def test_slot_organ_precedes_twin_organ(tmp_path):
+    """Le pipeline execute 5quinquies apres 5bis, mais avant 5ter (defense
+    en profondeur base != main). On verifie l'ordre relatif par index
+    d'appel du runner -- le slot doit etre appele APRES le twin."""
+    view = default_view(files=(TWIN_FILE, SLOT_FILE))
+    runner = ScriptedRunner(views={123: view}, twin_rc=0, slot_rc=0)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    flat = runner.flat()
+    twin_at = next(i for i, f in enumerate(flat) if "check_twin_index_collisions.py" in f)
+    slot_at = next(i for i, f in enumerate(flat) if "check_slot_reservation.py" in f)
+    assert twin_at < slot_at
 
 
 # --- 2ter. approbation du coordinateur (Q67, arbitrage user 2026-09-28) ----------

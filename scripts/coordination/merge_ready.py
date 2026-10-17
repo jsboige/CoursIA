@@ -178,6 +178,13 @@ GATE_PATH = SCRIPTS_DIR / "check_adjoint_prevalidation.py"
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
 TWIN_REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
+# Prefixe declencheur de l'etape 5quater : collision de slot (defaut 4 de #15489,
+# light-organe #20774). Ne se declenche que si la PR touche la table de
+# reservation publiee -- les PRs qui n'editent que des notebooks remontent
+# par l'organe de la voie rapide (`slot-reservation-guard`, TRANCHE12) et
+# n'ont rien a payer ici.
+SLOT_REGISTRY = "scripts/notebook_tools/slot_reservations.json"
+SLOT_PATH = SCRIPTS_DIR / "notebook_tools" / "check_slot_reservation.py"
 REPO_ROOT = SCRIPTS_DIR.parent
 
 # Parapluies et branches de campagne GELES par un veto user, exemption des
@@ -887,6 +894,115 @@ def twin_collision_reason(
     return f"twin-collision-unreadable:rc={res.returncode}"
 
 
+def slot_reservation_reason(
+    runner: Runner, pr: int, head: str, files: list[dict]
+) -> str | None:
+    """Etape 5quinquies (#20774, suite defaut 4 de #15489) : collision de slot
+    d'accretion contre le ``main`` du moment.
+
+    Ne touche rien aux PRs qui n'editent pas la table de reservation publiee
+    (``slot_reservations.json``). Pour les autres, un fetch puis l'organe
+    partage -- ``None`` s'il rend 0, un motif de skip sinon. L'organe rend 1
+    sur collision (champ JSON ``conflicts > 0``), 2 sur incident d'entree
+    (cf organe). Comme 5bis : « je n'ai pas pu lire » n'est pas « c'est
+    propre » : skip, jamais merge.
+
+    Le fetch de la tete precede l'organe (5bis meme mecanique) -- sur un
+    clone ou la tete n'est pas locale, l'organe rend rc=2 sur
+    `upload-pack: not our ref` et la PR est sautee en
+    ``slot-collision-unreadable:fetch``. C'est un faux blocage (le promisor
+    rapatrie l'objet a la demande sur le clone principal ai-01), mais le
+    clone d'un worker tiers n'a pas cette chance -- et l'absence du fetch
+    transformerait un检出 partial en silence vert, qui est le pire
+    defaut d'un garde de merge.
+
+    La classification semantique de la collision distingue deux cas (a venir
+    via un champ JSON de l'organe, cf organe note) :
+      ON-MAIN    la base porte deja le slot et une tete le RE-porte. Le
+                 merge rendrait le garde CI ``slot-reservation-guard``
+                 DRIFT-INTRO sur une autre PR qui n'a rien demande. Skip
+                 dur.
+      MULTI-PR   la base NE porte PAS le slot, mais deux tetes differentes
+                 le portent (concurrence de lanes). La premiere mergee
+                 gagne. Avertissement seul.
+    En attendant la classification, ON-MAIN = la table existe et la
+    collision est ``conflicts > 0`` ; MULTI-PR = un slot declare dans la
+    table est vise par un PR ouverte differente -- on laisse passer et
+    l'avertissement remonte par le check-run de l'organe.
+    """
+    touched = any(
+        str((row or {}).get("path") or "") == SLOT_REGISTRY
+        for row in files
+    )
+    if not touched:
+        return None
+    fetch = runner.run(
+        ["git", "-C", str(REPO_ROOT), "fetch", "--quiet", "origin", "main",
+         f"pull/{pr}/head"]
+    )
+    if fetch.returncode != 0:
+        return "slot-collision-unreadable:fetch"
+    res = runner.run(
+        [sys.executable, str(SLOT_PATH), "--repo", str(REPO_ROOT),
+         "--base", "origin/main", "--head", head, "--offline", "--json"]
+    )
+    if res.returncode == 0:
+        # Lecture tolérante : un organe anterieur (sans le champ JSON
+        # `conflicts`) n'invalide pas le verdict propre, on laisse passer.
+        try:
+            data = json.loads(res.stdout)
+        except (json.JSONDecodeError, ValueError):
+            return None
+        if not isinstance(data, dict):
+            return None
+        if int(data.get("conflicts") or 0) > 0:
+            cross_ref = data.get("cross_ref") or []
+            first = cross_ref[0] if cross_ref and isinstance(cross_ref[0], dict) else {}
+            pair = str(first.get("pair") or "?")
+            index = str(first.get("index") or "?")
+            gist = (
+                "renumeroter la tete vers le premier slot libre de "
+                f"'{pair}' (max sur base + 1) par `git mv` PUR, "
+                "puis committer. Voir scripts/notebook_tools/"
+                "check_slot_reservation.py::ordinal_correction_gist."
+            )
+            return f"slot-collision-on-main:{pair}/{index} -- {gist}"
+        return None
+    if res.returncode == 1:
+        # L'organe a detecte une collision ; sa sortie texte est exploitable
+        # si la classification a ete ajoutee ulterieurement. En attendant,
+        # on tente le JSON, puis on retombe sur le motif historique.
+        try:
+            data = json.loads(res.stdout)
+        except (json.JSONDecodeError, ValueError):
+            return "slot-index-collision"
+        if not isinstance(data, dict):
+            return "slot-index-collision"
+        cross_ref = data.get("cross_ref") or []
+        if not all(
+            isinstance(c, dict) and c.get("verdict") in ("ON-MAIN", "MULTI-PR")
+            for c in cross_ref
+        ):
+            return "slot-index-collision"
+        on_main = [
+            c for c in cross_ref
+            if isinstance(c, dict) and c.get("verdict") == "ON-MAIN"
+        ]
+        if not on_main:
+            return None  # MULTI-PR : la premiere mergee gagne
+        first = on_main[0]
+        pair = str(first.get("pair") or "?")
+        index = str(first.get("index") or "?")
+        gist = (
+            "renumeroter la tete vers le premier slot libre de "
+            f"'{pair}' (max sur base + 1) par `git mv` PUR, "
+            "puis committer. Voir scripts/notebook_tools/"
+            "check_slot_reservation.py::ordinal_correction_gist."
+        )
+        return f"slot-collision-on-main:{pair}/{index} -- {gist}"
+    return f"slot-collision-unreadable:rc={res.returncode}"
+
+
 # Conventions retenues pour detecter une PR empilee sur une parente non-encore
 # mergee, dans le body de la PR courante. Le format le plus frequent dans
 # CoursIA est "Depends on #N" (po-2024 Origami pli 2-9 sur pli 1), suivi de
@@ -1110,6 +1226,13 @@ def evaluate_pr(
         return skip("b0-organ-blocked")
     # 5bis. collision d'index twin contre le main du moment.
     reason = twin_collision_reason(runner, pr, gate_head, view.get("files") or [])
+    if reason is not None:
+        return skip(reason)
+    # 5quinquies. collision de slot d'accretion contre le main du moment
+    # (defaut 4 de #15489, light-organe #20774). Declenche uniquement sur
+    # la table de reservation publiee -- la voie rapide (TRANCHE12) porte
+    # le cas frequent des renumerotations de notebooks.
+    reason = slot_reservation_reason(runner, pr, gate_head, view.get("files") or [])
     if reason is not None:
         return skip(reason)
     # 5ter. defense en profondeur : la base de la PR doit etre `main` (#19002,
