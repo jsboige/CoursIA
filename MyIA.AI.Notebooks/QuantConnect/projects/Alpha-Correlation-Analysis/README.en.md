@@ -101,7 +101,7 @@ The "Preliminary Results" table of the legacy README (before c.1285) presented *
 |-------------------------|-------------------|---------|
 | "EMA-Cross + All-Weather ~0.3 correlation, combined Sharpe > 0.8" | cell[34] row 6: EMA-Cross-Tech / All-Weather corr=**0.277**, Sharpe=**1.128** | **OK** (rounded ~0.3, > 0.8 verified) |
 | "Dual-Momentum + Mean-Reversion ~0.1 correlation, combined Sharpe > 0.7" | cell[34] row 4: Dual-Momentum / Mean-Reversion corr=**0.138**, Sharpe=**1.171** | **OK** (rounded ~0.1, > 0.7 verified, but ~0.1 is permissive rounding of 0.138) |
-| "Trend-Following + Mean-Reversion ~0.0 correlation, combined Sharpe > 0.6" | cell[22]: Trend-Following / Mean-Reversion corr=**0.463** (NOT in top-10 cell[24] nor cell[34]) | **❌ FABRICATED** — correlation 0.463, NOT ~0.0; the pair does not appear in any top-10 ranking |
+| "Trend-Following + Mean-Reversion ~0.0 correlation, combined Sharpe > 0.6" | cell[22]: Trend-Following / Mean-Reversion corr=**0.463** (NOT in the top-10 rankings of cell[24] and cell[34]) | **❌ FABRICATED** — correlation 0.463, NOT ~0.0; the pair does not appear in any top-10 ranking |
 
 **Cause**: the "preliminary" README table appears to be a **manual round-numbered synthesis** without back-citation to cell[N]. The 3rd line is particularly false: the actual correlation 0.463 is in the **medium-high range** of the matrix (cf. cell[22] stream), not "~0.0". **NOT a live deployment signal** for a Trend-Following + Mean-Reversion composite on the strength of this line.
 

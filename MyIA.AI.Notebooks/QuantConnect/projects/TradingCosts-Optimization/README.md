@@ -121,7 +121,7 @@ sous-jacente à corriger — le code est cohérent avec sa documentation.
 
 ## Fichiers
 
-- `main.py` — la stratégie complète (251 lignes, voir le diff pour traçabilité).
+- `main.py` — la stratégie complète (voir le diff pour traçabilité).
 - `README.en.md` — version anglaise préservée (gold set de référence Phase 3
   de l'EPIC #1650, traduction).
 

@@ -101,7 +101,7 @@ Le tableau « Résultats préliminaires » du README legacy (avant c.1285) prés
 |-----------------------|----------------|---------|
 | « EMA-Cross + All-Weather ~0.3 correlation, Sharpe combiné > 0.8 » | cell[34] row 6 : EMA-Cross-Tech / All-Weather corr=**0.277**, Sharpe=**1.128** | **OK** (arrondi ~0.3, > 0.8 vérifié) |
 | « Dual-Momentum + Mean-Reversion ~0.1 correlation, Sharpe combiné > 0.7 » | cell[34] row 4 : Dual-Momentum / Mean-Reversion corr=**0.138**, Sharpe=**1.171** | **OK** (arrondi ~0.1, > 0.7 vérifié, mais ~0.1 = arrondi permissif de 0.138) |
-| « Trend-Following + Mean-Reversion ~0.0 correlation, Sharpe combiné > 0.6 » | cell[22] : Trend-Following / Mean-Reversion corr=**0.463** (pas dans top-10 cell[24] ni cell[34]) | **❌ FABRIQUÉ** — corrélation 0.463, pas ~0.0 ; la paire n'apparaît dans aucun ranking top-10 |
+| « Trend-Following + Mean-Reversion ~0.0 correlation, Sharpe combiné > 0.6 » | cell[22] : Trend-Following / Mean-Reversion corr=**0.463** (pas dans les classements cell[24] ni cell[34]) | **❌ FABRIQUÉ** — corrélation 0.463, pas ~0.0 ; la paire n'apparaît dans aucun ranking top-10 |
 
 **Cause** : le tableau « préliminaire » du README semble être une **synthèse manuelle round-numbered** sans back-citation vers cell[N]. La 3ᵉ ligne est particulièrement fausse : la corrélation réelle 0.463 est dans la **fourchette moyenne-haute** de la matrice (cf. cell[22] stream), pas « ~0.0 ». **PAS un signal de déploiement live** d'un composite Trend-Following + Mean-Reversion sur la foi de cette ligne.
 
