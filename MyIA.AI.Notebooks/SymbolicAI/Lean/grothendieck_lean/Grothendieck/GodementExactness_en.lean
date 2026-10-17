@@ -126,4 +126,84 @@ variable {X : TopCat.{u}}
 -- Remaining frontier: the **complete iteration** of the reduction to higher
 -- degrees and the **acyclicity** `H^n(C⁰F) = 0` for `n ≥ 1` ([God58] II.5).
 
+-- **Part 93(a), local ingredients (landed in the FR twin of this module)** :
+-- transporting exactness to stalks requires two local facts, both valid for
+-- **every presheaf** — no sheaf hypothesis:
+--
+-- * `Grothendieck.epi_stalkFunctor_map_of_epi` — the stalk functor preserves
+--   epimorphisms, free by the stalk ⊣ skyscraper adjunction
+--   (`skyscraperPresheafStalkAdjunction`; a left adjoint preserves epis).
+-- * `Grothendieck.stalkEval` and `Grothendieck.toGodement_stalkEval` — the
+--   Godement unit is a **split monomorphism on every stalk**. The retraction
+--   is the evaluation `ev_x₀ : (C⁰F)ₓ₀ ⟶ Fₓ₀`, `σ ↦ σ(x₀)` — well-defined
+--   because a Godement section is a function and restrictions only restrict
+--   it, so the component at `x₀` does not depend on the chosen
+--   neighbourhood. This is the ingredient that **replaces the sheafification
+--   argument**: transporting exactness to stalks does not need `μ` to be
+--   mono at the presheaf level (that would require `F` separated — Part 91),
+--   only each `μₓ₀` to be mono — and the splitting by `ev_x₀` establishes it
+--   unconditionally. Cf. `Grothendieck.mono_stalkFunctor_map_toGodement`
+--   (split ⇒ injective ⇒ mono) and the apply-form
+--   `Grothendieck.stalkEval_stalkFunctor_map_toGodement_apply`.
+--
+-- **Part 93(a), brick (i) — transport of exactness by the stalk functor
+-- (landed in the FR twin of this module)** : the stalk functor of presheaves
+-- of abelian groups preserves exactness — the categorical face of AB5:
+--
+-- * `Grothendieck.stalkFunctor_preservesMono` — a mono of presheaves is
+--   componentwise injective (`NatTrans.mono_iff_mono_app` +
+--   `AddCommGrpCat.mono_iff_injective`), and componentwise injectivity
+--   passes to stalks (`Presheaf.stalkFunctor_map_injective_of_app_injective`)
+--   — the concrete face of AB5.
+-- * `Grothendieck.stalkFunctor_preservesHomology` and
+--   `Grothendieck.stalkFunctor_preservesFiniteLimits` — reading the stalk
+--   functor as the composite `whiskering ⋙ colim` over the opposite of the
+--   lattice of neighbourhoods (`OpenNhds x₀` is a cofiltered lattice, hence
+--   its opposite is filtered), exactness of filtered colimits in
+--   `AddCommGrpCat` (AB5, `Mathlib.Algebra.Category.Grp.AB`) makes the
+--   composite preserve homology, hence finite limits. Formalized by the
+--   same homology pattern Mathlib uses for the sheaf-level composite
+--   (`Topology/Sheaves/Abelian.lean`), lifted here to bare presheaves.
+-- * `Grothendieck.stalkFunctor_map_exact` — the transport itself: a short
+--   exact sequence of presheaves of abelian groups remains exact at every
+--   stalk.
+--
+-- **Part 93(a), bricks (ii)+(iii) — stalks of the cokernels and the
+-- splicing recurrence, unconditional (landed in the FR twin of this
+-- module)** : for **every** morphism `f` of presheaves of abelian groups —
+-- with no sheaf hypothesis whatsoever — the sequence of stalks
+-- `Aₓ₀ ⟶ Bₓ₀ ⟶ (C⁰(coker f))ₓ₀` is exact at `Bₓ₀`
+-- (`Grothendieck.stalk_exact_godementStep`). The two bricks combine into
+-- this single generic statement rather than two separate lemmas:
+--
+-- * brick (ii) — `A ⟶ B ⟶ coker f` is exact at `B`
+--   (`ShortComplex.exact_cokernel`), and brick (i) transports this
+--   exactness to every stalk; preservation of cokernels by the stalk
+--   functor (left adjoint, hence colimits) is consumed in this form, with
+--   no explicit isomorphism `(coker f)ₓ₀ ≅ coker (fₓ₀)` to construct.
+-- * brick (iii) — postcomposing the stalk of the projection with the
+--   stalk of the cokernel's unit does not change the kernel, as soon as
+--   the latter is mono — and it is so **unconditionally**
+--   (`mono_stalkFunctor_map_toGodement`, valid for every presheaf, hence
+--   for `coker f`). The transfer `ShortComplex.exact_iff_of_epi_of_isIso_of_mono`
+--   is the same gesture as `exact_toGodement_godementCanonicalDZero` at
+--   the presheaf level (Part 91 step B), with the same τ₁ = τ₂ = 𝟙 and
+--   τ₃ = stalk of the unit — but τ₃ is mono for **every** presheaf here,
+--   where the presheaf-level version required `F` a sheaf (separatedness
+--   of the cokernel, Part 91 step A).
+--
+-- The recurrence *is* this lemma: each degree of the canonical complex is
+-- an instance of it — degree 0 at `f = μ`
+-- (`stalk_exact_toGodement_godementCanonicalDZero`, unconditional, where
+-- the presheaf-level twin required `F` a sheaf), degree 1 at `f = d⁰`
+-- (`stalk_exact_godementCanonicalDZero_godementCanonicalDOne`), every
+-- further degree at `f = dⁿ` by the uniform pattern `d^{n+1} =
+-- godementStep dⁿ` (P89) — nothing new appears at any degree.
+--
+-- **Named frontier**: the full complex as a formal object (degrees ≥ 2 as
+-- a `HomologicalComplex`), and the acyclicity `H^n(C⁰F) = 0` for `n ≥ 1`
+-- ([God58] II.5) — the homological reading of the stalkwise exactness
+-- landed here, which the `stalkFunctor_preservesHomology` instance of
+-- brick (i) already transports.
+
 end Grothendieck_en
