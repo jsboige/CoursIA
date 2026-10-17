@@ -505,7 +505,8 @@ def test_run_git_leve_une_erreur_explicite_au_depassement(monkeypatch):
 def test_parcours_historique_a_sa_propre_borne(monkeypatch):
     """`rev-list --objects` (`_blob_ancestor_in`) recoit la borne d'historique,
     plus large que la borne par defaut : sur le runner CI ce seul appel depasse
-    300 s, alors qu'un `show` ou un `ls-tree` garde la borne courte."""
+    300 s, alors que la resolution `rev-parse` du commit (#20717), un `show` ou
+    un `ls-tree` gardent la borne courte."""
     vus = []
 
     def faux_run(args, **kwargs):
@@ -513,11 +514,15 @@ def test_parcours_historique_a_sa_propre_borne(monkeypatch):
         return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
 
     monkeypatch.setattr(subprocess, "run", faux_run)
+    # Le parcours est memorise par (depot, commit) : un cache vide garantit
+    # que `rev-list` est bien appele ici, quel que soit l'ordre des tests.
+    monkeypatch.setattr(ctp, "_REACHABLE_OBJECTS", {})
 
     assert ctp._GIT_HISTORY_TIMEOUT_S > ctp._GIT_TIMEOUT_S
     ctp._blob_ancestor_in(Path("."), "a" * 40)
     ctp._run_git(["git", "show", "HEAD:x.ipynb"])
-    assert vus == [("rev-list", ctp._GIT_HISTORY_TIMEOUT_S),
+    assert vus == [("rev-parse", ctp._GIT_TIMEOUT_S),
+                   ("rev-list", ctp._GIT_HISTORY_TIMEOUT_S),
                    ("show", ctp._GIT_TIMEOUT_S)]
 
 
