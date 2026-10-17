@@ -3039,27 +3039,104 @@ def _enrich_probe_with_workflow_runs(probe: dict | None,
     sur `main` ; on ajoute alors a `red_keys` les noms de check qui
     pourraient venir de ce workflow (mapping `_WORKFLOW_YML_TO_CHECK_NAMES`).
 
-    Fail-CLOSED : si `_main_red_motif` retourne None, c'est vert OU
-    illisible, et on NE TOUCHE PAS au probe -- le `split_base_corroboration`
-    retombe sur le comportement d'avant #19767 (tout impute a la base si
-    le rollup ne tranche pas). Si l'import du module `merge_dwell` echoue,
-    on rend le probe inchange. C'est le sens de la regle : un instrument
-    de plus ne doit jamais elargir la classe `infra_rerun` sans preuve.
+    Fail-CLOSED a trois etats (3e critere de #19767, reste du
+    [NOT-DELIVERED] du 12/10) : un motif None de `_main_red_motif` dit
+    « pas de rouge PROUVE », pas « vert prouve ». L'organe lui-meme
+    confond vert et illisible dans sa valeur de retour (sa docstring :
+    « une couleur illisible ne vaut pas rouge : None ») -- c'est CORRECT
+    pour la derogation DWELL qu'il sert, mais INSUFFISANT pour la classe
+    `infra_rerun`, qui exige une PREUVE POSITIVE de vert. On distingue
+    donc les deux par un wrapper de `fetch` qui observe, SANS re-ecrire
+    la lecture (organe-first : l'interpretation des runs reste integralement
+    dans `_main_red_motif`), le transport de chaque appel :
+
+    - exception sur l'endpoint des runs d'un workflow, payload malforme,
+      ou fenetre sans AUCUN run portant verdict (`MAIN_VERDICT_CONCLUSIONS`,
+      constante de l'organe -- dix runs `cancelled` ne prouvent pas un vert) :
+      le vert de ce workflow est NON PROUVABLE -> ses check names mappes
+      partent dans `undecided_keys`, et `split_base_corroboration` les
+      route en `base_undecided` au lieu de `infra` ;
+    - exception sur la lecture de la branche par defaut (avant meme les
+      runs) : tous les workflows sont non prouvables ;
+    - lecture saine AVEC verdict : le None de l'organe vaut vert CORROBORE,
+      le probe reste inchange (le rejeu reste justifie).
+
+    Si `_main_red_motif` retourne None SANS avoir consulte le fetch (organe
+    remplace, tests) ou si l'import de `merge_dwell` echoue, on rend le
+    probe inchange : on ne declasse que sur observation POSITIVE
+    d'illisibilite, jamais sur absence d'observation. C'est le sens de la
+    regle : un instrument de plus ne doit jamais elargir la classe
+    `infra_rerun` sans preuve.
     """
     if probe is None:
         return None
     try:
-        from ci.merge_dwell import _main_red_motif, MAIN_RED_WORKFLOWS
+        from ci.merge_dwell import (_main_red_motif, MAIN_RED_WORKFLOWS,
+                                    MAIN_VERDICT_CONCLUSIONS,
+                                    _gh_json as _organ_fetch)
     except Exception:  # noqa: BLE001 - cross-check optionnel, jamais bloquant
         return probe
+    # Transport observe par workflow : {yml: {"ok": bool, "verdict": bool}}.
+    # Un yml absent = non consulte par l'organe (pas de declassement).
+    reads: dict[str, dict] = {}
+    default_branch_failed = False
+
+    def _tracking_fetch(path: str):
+        ymls = [y for y, _ in MAIN_RED_WORKFLOWS
+                if "workflows/{}/runs".format(y) in path]
+        try:
+            payload = _organ_fetch(path)
+        except Exception:
+            if ymls:
+                for y in ymls:
+                    reads[y] = {"ok": False, "verdict": False}
+            else:
+                # Lecture hors runs (branche par defaut) : sans elle, rien
+                # n'est lisible.
+                nonlocal default_branch_failed
+                default_branch_failed = True
+            raise
+        if ymls:
+            verdict = False
+            runs = (payload.get("workflow_runs")
+                    if isinstance(payload, dict) else None) or []
+            for run in runs:
+                if isinstance(run, dict) and run.get(
+                        "conclusion") in MAIN_VERDICT_CONCLUSIONS:
+                    verdict = True
+                    break
+            for y in ymls:
+                reads[y] = {"ok": isinstance(payload, dict)
+                            and "workflow_runs" in payload,
+                            "verdict": verdict}
+        return payload
+
     try:
-        motif = _main_red_motif(repo)
+        motif = _main_red_motif(repo, fetch=_tracking_fetch)
     except Exception:  # noqa: BLE001
         return probe
     if motif is None:
-        # Vert ou illisible : on ne touche pas au probe, l'appelant
-        # tranchera sur les autres mesures (rollup, corroboration).
-        return probe
+        names = probe.get("names") or set()
+        unreadable = set()
+        for yml, _display in MAIN_RED_WORKFLOWS:
+            state = reads.get(yml)
+            if default_branch_failed or (state is not None
+                                         and not (state["ok"]
+                                                  and state["verdict"])):
+                unreadable.add(yml)
+        if not unreadable:
+            # Vert lisible (ou organe non consulte) : rien a declasser.
+            return probe
+        undecided = {cn for y in unreadable
+                     for cn in _WORKFLOW_YML_TO_CHECK_NAMES.get(y, frozenset())
+                     if cn in names}
+        if not undecided:
+            return probe
+        # Le vert de ces checks n'est PAS prouvable : on le DIT au split
+        # au lieu de laisser un rollup perime trancher en `infra`.
+        return {"sha": probe.get("sha", ""),
+                "red_keys": set(probe.get("red_keys") or set()),
+                "names": names, "undecided_keys": undecided}
     # Motif non-None : au moins un canary workflow est rouge. On
     # cherche lequel par son display_name, et on propage aux check
     # names du mapping. Si le display_name ne matche aucun canary,
@@ -3457,7 +3534,12 @@ def split_base_corroboration(corroborated: dict[str, list[int]],
       n'est pas « vert ». On ne tranche pas, et on retombe sur le comportement
       d'avant #17154 (impute a la base), en le DISANT : c'est la philosophie
       de #14567, ou l'echec de mesure ne doit jamais passer pour un acquittement.
-      Les cles ``undecided`` sont donc AUSSI dans ``base``.
+      Les cles ``undecided`` sont donc AUSSI dans ``base``. #19767 (3e critere) :
+      y entre AUSSI le cas « present et vert dans le rollup, mais vert NON
+      PROUVABLE par la lecture workflow-directe » -- la sonde le dit par
+      ``probe["undecided_keys"]`` (pose par ``_enrich_probe_with_workflow_runs``
+      quand le run `push` du workflow est illisible ou sans verdict) : un vert
+      non prouvable ne vaut JAMAIS la classe `infra`.
 
     ``probe`` a ``None`` (mesure non prise) vaut pour la totalite du tri :
     tout part en ``base``. Une sonde indisponible ne doit jamais elargir la
@@ -3495,7 +3577,18 @@ def split_base_corroboration(corroborated: dict[str, list[int]],
         if key in probe["red_keys"]:
             base[key] = nums
         elif names and names <= probe["names"]:
-            infra[key] = nums
+            # #19767 (3e critere) : le vert du rollup ne vaut classe
+            # `infra` que si la lecture workflow-directe l'a CORROBORE
+            # (lisible, avec verdict). Un check dont le vert n'est PAS
+            # prouvable -- `undecided_keys`, pose sur la sonde par
+            # `_enrich_probe_with_workflow_runs` quand `_main_red_motif`
+            # n'a pas pu lire le run -- ne doit JAMAIS partir en rejeu :
+            # undecided + base, fail-closed, comme l'absence du rollup.
+            if (probe.get("undecided_keys") or set()) & (names | {key}):
+                undecided[key] = nums
+                base[key] = nums
+            else:
+                infra[key] = nums
         else:
             undecided[key] = nums
             base[key] = nums  # fail-closed : jamais un acquittement par defaut
