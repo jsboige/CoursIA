@@ -11,7 +11,9 @@ Deux sous-commandes :
         differe Big Data. Les figures non republiables suivent la
         PUBLICATION_POLICY (redessinees, remplacees par un tableau, ou
         neutralisees) ; les autres images embarquees en base64 sont extraites vers
-        <out>/images/. Rend un rapport : lues / publiées / exclues / différées /
+        <out>/images/. Les decisions de relecture du mainteneur (06/10,
+        #18285) sont reappliquees : questions retirees (RETIRED) et cles
+        corrigees avec leur note (KEY_CORRECTIONS). Rend un rapport : lues / publiées / exclues / différées /
         doublons / types non pris en charge.
 
     check --bank <banque repo>
@@ -100,6 +102,109 @@ PUBLICATION_POLICY = {
     "ia2-010": "external",
 }
 
+# Decisions du mainteneur du 2026-10-06 (#18285) sur la relecture
+# RELECTURE-2026-09.md. Comme PUBLICATION_POLICY, elles vivent dans le
+# convertisseur pour qu'une re-conversion les REAPPLIQUE : la source Moodle
+# n'est pas reecrite, la banque l'est, et chaque correction laisse une note
+# dans l'explication de la question.
+
+# Questions retirees de la banque. Leur identifiant n'est pas reattribue : les
+# questions suivantes gardent le leur (PUBLICATION_POLICY, KEY_CORRECTIONS et
+# les consommateurs de #18207 les citent).
+RETIRED = {
+    "ia2-010": "doublon de ia2-027 (meme question, export 2020, figure embarquee)",
+}
+
+# Cles corrigees. `cles` : texte d'option -> valeur correcte ; `textes` : texte
+# d'option -> texte corrige (quand la bonne reponse est absente des options) ;
+# `dedoublonner` : retire le second exemplaire d'une option dupliquee dans la
+# source. Chaque valeur a ete recalculee, le calcul est dans la note.
+KEY_CORRECTIONS = {
+    "ia2-018": {
+        "cles": {"3.2": False},
+        "note": "sous C1, Min choisit 2 puis 4 (0,8 × 2 + 0,2 × 4 = 2,4) ; sous C2, 1 puis 5 "
+                "(0,9 × 1 + 0,1 × 5 = 1,4). Max retient 2,4. La valeur 3,2, cochée dans la "
+                "source, ne se déduit d'aucune lecture de l'arbre.",
+    },
+    "ia2-019": {
+        "cles": {"4.7": False},
+        "note": "sous C1, Min choisit 5 puis 4 (0,8 × 5 + 0,2 × 4 = 4,8) ; sous C2, 8 puis 5 "
+                "(0,9 × 8 + 0,1 × 5 = 7,7). Max retient 7,7. La valeur 4,7, cochée dans la "
+                "source, ne se déduit d'aucune lecture de l'arbre.",
+    },
+    "ia3-015": {
+        "cles": {"¬(¬p∧¬q)": False},
+        "note": "¬(¬p∧¬q) équivaut à p∨q, et non à p⇒q (c'est-à-dire ¬p∨q). Contre-exemple : "
+                "p vrai et q faux rendent p∨q vrai et p⇒q faux.",
+    },
+    "ia3-019": {
+        "cles": {"¬(¬p∧¬q)": True},
+        "note": "¬(¬p∧¬q) équivaut à p∨q, qui n'est pas équivalent à p⇒q (contre-exemple : "
+                "p vrai et q faux). Cette option fait donc partie des réponses attendues.",
+    },
+    "ia4-011": {
+        "cles": {"62/64": False, "59/64": True},
+        "note": "chaque combinaison de trois symboles a une probabilité de 1/64. Gain espéré "
+                "= (20 + 16 + 5 + 3)/64 + 2 × 3/64 (CERISE/CERISE/autre) + 1 × 9/64 "
+                "(CERISE/autre/autre) = 59/64.",
+    },
+    "ia4-018": {
+        "textes": {"378.92€": "389.47€"},
+        "cles": {"389.47€": True},
+        "note": "P(test réussi) = 0,8 × 0,7 + 0,35 × 0,3 = 0,665, donc P(bon état | réussi) = "
+                "0,56/0,665 = 0,8421. Utilité espérée = 0,8421 × (2000 − 1500) + 0,1579 × "
+                "(2000 − 700 − 1500) = 389,47 €. La valeur 378,92 € de la source ne se déduit "
+                "d'aucun calcul cohérent avec l'énoncé.",
+    },
+    "ia5-002": {
+        "dedoublonner": True,
+        "note": "la source portait cette option en deux exemplaires, l'un compté juste, "
+                "l'autre faux ; le second exemplaire est retiré.",
+    },
+    "ia5-007": {
+        "cles": {"Arbres de décision": False},
+        "note": "les arbres de décision sont un modèle non paramétrique : leur nombre de "
+                "paramètres croît avec les données (Russell et Norvig ; documentation de "
+                "scikit-learn, « Decision Trees »).",
+    },
+}
+
+
+def apply_key_corrections(qid: str, rec: dict) -> dict:
+    """Applique KEY_CORRECTIONS a une question deja convertie.
+
+    Echoue BRUYAMMENT si une option visee n'existe pas : une source modifiee ne
+    doit pas laisser passer une correction qui ne s'applique plus.
+    """
+    corr = KEY_CORRECTIONS.get(qid)
+    if not corr:
+        return rec
+    options = rec["options"]
+    for old, new in corr.get("textes", {}).items():
+        hits = [o for o in options if o["texte"] == old]
+        if len(hits) != 1:
+            raise ValueError(f"{qid}: option a reecrire '{old}' trouvee {len(hits)} fois")
+        hits[0]["texte"] = new
+    if corr.get("dedoublonner"):
+        seen: set[str] = set()
+        kept = []
+        for o in options:
+            if o["texte"] in seen:
+                continue
+            seen.add(o["texte"])
+            kept.append(o)
+        if len(kept) == len(options):
+            raise ValueError(f"{qid}: aucune option dupliquee a retirer")
+        rec["options"] = options = kept
+    for texte, valeur in corr.get("cles", {}).items():
+        hits = [o for o in options if o["texte"] == texte]
+        if len(hits) != 1:
+            raise ValueError(f"{qid}: option a corriger '{texte}' trouvee {len(hits)} fois")
+        hits[0]["correcte"] = valeur
+    note = "Correction de la relecture d'octobre 2026 : " + corr["note"]
+    rec["explication"] = (rec["explication"] + "\n\n" if rec.get("explication") else "") + note
+    return rec
+
 # Table de distribution conjointe du dentiste (Russell & Norvig, exemple du
 # dentiste) : restituee en tableau markdown a la place de la capture d'ecran
 # du manuel. Controle des valeurs attendues par les enonces : P(carie | mal
@@ -152,8 +257,25 @@ def _represent_str(dumper: yaml.SafeDumper, data: str):
 BankDumper.add_representer(str, _represent_str)
 
 
+_SUPERSCRIPT_RE = re.compile(
+    r'<span[^>]*style="[^"]*vertical-align:\s*super[^"]*"[^>]*>(.*?)</span>|<sup>(.*?)</sup>',
+    re.S,
+)
+
+
+def _superscript(m: re.Match) -> str:
+    texte = re.sub(r"<[^>]+>", "", m.group(1) if m.group(1) is not None else m.group(2)).strip()
+    if not texte:
+        return ""
+    return "^" + texte if len(texte) == 1 else f"^({texte})"
+
+
 def html_to_text(s: str) -> str:
-    s = re.sub(r"<br\s*/?>", "\n", s or "")
+    # exposants : les exports portent les puissances en
+    # <span style="...vertical-align:super">d</span>. Les aplatir faisait de
+    # O(b^d) un « O(bd) » et fabriquait des options en double (ia2-008, #18285).
+    s = _SUPERSCRIPT_RE.sub(_superscript, s or "")
+    s = re.sub(r"<br\s*/?>", "\n", s)
     s = re.sub(r"</p>\s*", "\n", s)
     # le <img> porte la reference de la figure extraite : la conserver en
     # texte AVANT le nettoyage des balises, sinon l'image commise devient
@@ -281,6 +403,9 @@ def convert(src: str, out: str) -> int:
         records = []
         for i, q in enumerate(qs, start=1):
             qid = f"{prefix}-{i:03d}"
+            if qid in RETIRED:
+                stats.setdefault("retired", []).append(f"{qid}: {RETIRED[qid]}")
+                continue
             rec = {"id": qid, "theme": theme, "type": q["type"], "source": q["source"]}
             enonce = q["enonce_raw"]
             politique = PUBLICATION_POLICY.get(qid, "")
@@ -332,7 +457,7 @@ def convert(src: str, out: str) -> int:
                     "Feedback par option :\n- " + "\n- ".join(feedbacks)
             if explication:
                 rec["explication"] = explication
-            records.append(rec)
+            records.append(apply_key_corrections(qid, rec))
         path = os.path.join(out, f"{theme}.yaml")
         with open(path, "w", encoding="utf-8", newline="\n") as fh:
             yaml.dump(records, fh, Dumper=BankDumper, allow_unicode=True,
@@ -356,6 +481,9 @@ def convert(src: str, out: str) -> int:
     print(f"  EXCLUES (csharp-dotnet) : {counts['exclu']}")
     print(f"  DIFFEREES (big-data)    : {counts['differe']}")
     print(f"  IMAGES EXTRAITES        : {total_images}")
+    for line in stats.get("retired", []):
+        print(f"  RETIREE   {line}")
+    print(f"  CLES CORRIGEES          : {len(KEY_CORRECTIONS)} (#18285)")
     for line in stats.get("bad_images", []):
         print(f"  IMAGE-INVALIDE {line}")
     for line in unclassified:
@@ -408,10 +536,10 @@ def check(bank: str) -> int:
                 texts = [o.get("texte") for o in options]
                 if any(not (t or "").strip() for t in texts):
                     errors.append(f"{qid}: option vide")
-                # Defaut de SOURCE Moodle (pas du convertisseur) : meme texte d'option
-                # en double exemplaire avec des cles contradictoires. La banque reste
-                # fidele a la source ; le defaut est signale dans RELECTURE-2026-09.md,
-                # donc ATTENTION sans echec.
+                # Meme texte d'option en double exemplaire avec des cles
+                # contradictoires : defaut de source a dedoublonner par
+                # KEY_CORRECTIONS, ou perte de mise en forme a la conversion (les
+                # exposants aplatis de ia2-008, #18285). ATTENTION sans echec.
                 keys_by_text = {}
                 for o in options:
                     keys_by_text.setdefault((o.get("texte") or "").strip(), set()).add(bool(o.get("correcte")))

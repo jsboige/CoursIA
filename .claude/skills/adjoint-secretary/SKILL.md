@@ -5,7 +5,7 @@ description: Cycle 30 min du secrétaire vérificateur myia-po-2026:CoursIA-3. A
 
 # Secrétaire vérificateur — myia-po-2026:CoursIA-3
 
-Cycle court (30 min) du secondataire de l'adjoint titulaire (`myia-po-2025:CoursIA-2`). Le dashboard `workspace-CoursIA-3` est le lieu d'organisation à trois : titulaire, secrétaire, coordinateur (`myia-ai-01:CoursIA`).
+Cycle court (30 min) du secrétaire de l'adjoint titulaire (`myia-po-2025:CoursIA-2`). Le dashboard `workspace-CoursIA-3` est le lieu d'organisation à trois : titulaire, secrétaire, coordinateur (`myia-ai-01:CoursIA`).
 
 Cette commande est réservée au slot `myia-po-2026:CoursIA-3` et ne doit jamais être remplacée par `/coordinate`, `/coordinate-adjoint` ou `/continue`.
 
@@ -70,6 +70,27 @@ Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures, reviews `APP
 
 **Budget : le quota mesuré, pas un compte d'appels.** Le quota GitHub est partagé par toute la flotte (5 000 points par heure et **par utilisateur** `jsboige`, REST et GraphQL comptés à part). Avant chaque PR, relire les en-têtes : sous 1 000 points restants sur l'un des deux, finir la PR en cours, consigner l'heure du reset, et reprendre après. Tant que le quota le permet, un cycle traite autant de PRs que ses 30 minutes le permettent. Repères du 28/09 : le matin, une salve de 11 READY a donné 9 merges ; l'après-midi, un cycle s'est arrêté après 5 dossiers sur le plafond fixe de 40 appels que cette section portait jusque-là.
 
+## Tournée issues — dossiers `[CLOSURE PREFLIGHT]` (Grain C, #17956)
+
+**Pointeur** : la **forme** du geste (5 points : entrée / lecture G.9 / fermer en lot / Epics ne ferment pas sur PR / budget) vit dans [Phase 4bis de `coordinate/SKILL.md`](../coordinate/SKILL.md#phase-4bis---passe-issues-sur-dossiers-de-fermeture-mandat-user-2026-09-26). Cette section dit **ce que le secrétaire fait de différent**.
+
+**Rôle du secrétaire** : proactif, le **pool d'issues est sa tranche**, comme la liste des PRs sans dossier (item 4 du cycle). Il n'attend ni tranche ni dispatch nominatif : il **annonce** un lot sur `workspace-CoursIA-3` avant de le traiter, et consomme la file dans l'ordre READY du crible, puis AMBIGUOUS du plus ancien au plus récent.
+
+**Geste concret** :
+- **Crible mécanique** (`scripts/candidate_delivered.py` puis `scripts/verifier_cleanup.py`) **ne donne pas de preuve** : son verdict READY rate les issues-conteneurs de série et les acceptances partielles (précision mesurée ~42 %, fondatrice #17956). Il sert à **produire du travail** au secrétaire, pas à court-circuiter la lecture G.9 ;
+- **ordre** : `READY` du crible d'abord, puis `AMBIGUOUS` du plus ancien au plus récent, puis les `[INFO] candidate-delivered` informels posés par les lanes qui n'ont pas livré (transition prévue par le point 1 de la Phase 4bis tant que le gate n'est pas cablé sur main) ;
+- **verdict** : `verdict: CLOSE` ou `verdict: KEEP` dans le bloc `[CLOSURE PREFLIGHT]` (gabarit `--template` de `scripts/check_closure_dossier.py`) ; un dossier KEEP nomme ce qui manque et un éventuel `followup: #<M>` ;
+- **lot affiché** : annoncer les numéros sur `workspace-CoursIA-3` avant de commencer, comme pour les PRs (item 5) ; l'adjoint ne stampe pas les mêmes (item 13 transposé) ;
+- **KEEP honnête** : un dossier KEEP est un livrable complet — il dit à la lane porteuse ce qu'il manque. Ne jamais écrire `CLOSE` pour être visible ;
+- **Epics** : ne ferment pas sur une PR (Phase 4bis point 4). Le secrétaire pose `verdict: KEEP` sur l'Epic avec un `followup: #<M>` qui pointe les PRs atomiques restantes, ou consigne dans le ledger `issue-debt` (cf [coordinate-adjoint §Ledger de dette](../coordinate-adjoint/SKILL.md)).
+
+**Mesure 7j** : l'acceptance de #17956 demande un delta `issues fermées par semaine / taille du pool` avant et après. Le secrétaire consigne dans son rapport `[DONE][SECRETARY]` : compte de dossiers `[CLOSURE PREFLIGHT]` émis dans la journée (verdict CLOSE vs KEEP), et compte d'issues fermées par ai-01 sur la foi de ces dossiers, pour la fenêtre de 7 j glissants. Les fermetures de l'urne d'aujourd'hui (lots 4 à 8) comptent. **Référence pré-mesure** : semaine du 21/09, 266 créées / 133 fermées (fondatrice #17956).
+
+**Anti-patterns** :
+- **Poser un dossier sur une issue qu'il a lui-même livrée** (auto-attestation) : le gate le refusera. Lane hors `QUALIFYING_LANES` (la liste canonique vit dans `scripts/check_adjoint_prevalidation.py` l.134, importée par `check_closure_dossier.py` l.80) = `NO-DOSSIER`. Le secrétaire figure dans cette liste pour les dossiers de **PRÉVALIDATION** (PRs, attestation tierce) ; la lane porteuse de la PR est exclue par construction.
+- **Confondre les deux tournées** : la division du travail entre secrétaire, adjoint titulaire et coordinateur porte sur **deux tournées distinctes**, et les confondre est ce qui a fait écrire « l'adjoint ne ferme pas » à tort avant le 04/10 (cote adjoint) ou « le secrétaire ferme » à tort après (cote secrétaire). **Tournée 1 — prévalidation** (PRs) : le secrétaire atteste en tiers les PRs sans dossier valide ; `merge_ready` ne merge qu'après un dossier `[ADJOINT PREFLIGHT]` rc=0, et la **fermeture** (le merge) reste un geste ai-01 — c'est la ligne « Fermer soi-même » qui s'applique, et elle est juste. **Tournée 2 — fermeture de l'urne `delivered`** (issues) : la **fermeture elle-même** des issues de l'urne `delivered` est un geste de l'adjoint titulaire (`myia-po-2025:CoursIA-2`), pas du secrétaire, pas d'ai-01 seul — c'est la décision coordinateur du 04/10, sous la latitude du 19/09, et la liste `DELIVERED_URN_LANES` (le symbole vit dans `scripts/pick_idle_grain.py`) le porte explicitement (deux lanes : coordinateur + adjoint). Le secrétaire **pose** le dossier `[CLOSURE PREFLIGHT]` (Tournée 2 tierce, attestation), l'adjoint titulaire **ferme** l'issue après lecture G.9, et consigne le delta dans son rapport `[DONE][ADJOINT]`. Confondre les deux tournées = soit paralyser le pool delivered (avant 04/10, sec paralyzed), soit merger des PRs sans lire ai-01 (ligne inverse, qui ré-ouvre le passif du 23-28/09).
+- **Consigner un READY mécanique sans lecture G.9** : c'est exactement le piégeage fondateur du pool. La règle est l'inverse de ce que le nom suggère : c'est **après** le crible, **par** la lecture G.9, **que** le dossier se pose.
+
 ## Doctrine Hub — décharger, pas attester (22/09), corrigée le 28/09
 
 **Le secrétaire dépense des tokens à la PLACE de l'adjoint et du coordinateur, pas EN PLUS d'eux.**
@@ -110,7 +131,7 @@ Référence complète : [coordinate-adjoint §Émission de dossiers](../coordina
 3. **Le gate ne lit pas l'état de merge** : un dossier READY exige la vérification `mergeable` côté attestant (`CONFLICTING` → BLOCKED conflit ; `UNKNOWN` → HOLD re-mesure).
 4. **Dossier posé EN DERNIER** : toute prose postée après le dossier le périmé (surfaces-sha256). Le post passe par `post_dossier.py`, qui poste en REST `--input` et relit le corps publié (`gh-posting-hygiene` HARD 1 et 2). En fenêtre GraphQL épuisée, le gate est illisible et l'organe refuse de poster : attendre le reset, puis régénérer le template. **Un re-stamp est un nouveau post, jamais un PATCH du dossier précédent** : `--template` compte les commentaires existants, ancien dossier compris, et le gate exclut du compte le seul dossier qu'il évalue. Posté comme nouveau commentaire, le compte tombe juste ; collé par PATCH dans l'ancien dossier, il est faux d'une unité.
 5. **DWELL = minuteur, pas un défaut de contenu** : un rouge `PR gate: DWELL -- ... ecoule a <HH:MM>Z. Rien a corriger dans le code` ne se répare PAS par push (chaque push ré-arme le plancher 120 min depuis la nouvelle tête) ; un dossier BLOCKED qui le nomme est un livrable valide, le merge suit l'échéance. `gh pr update-branch` ne ré-arme PAS le plancher depuis #16149. Corollaire : `statusCheckRollup` ment sur ~20 % des candidates (mesuré ai-01 2026-09-21) — ne jamais en faire un verdict.
-6. **Lane qualifiée AVANT émission** : vérifier que la lane du dossier figure dans `QUALIFYING_LANES` (`scripts/check_adjoint_prevalidation.py`) — une lane hors liste rend `NO-DOSSIER` quelle que soit la qualité des mesures (6 commentaires invalides mesurés cycles 1-2).
+6. **Lane qualifiée AVANT émission** : vérifier que la lane du dossier figure dans `QUALIFYING_LANES` (`scripts/check_adjoint_prevalidation.py` l.134) — une lane hors liste rend `NO-DOSSIER` quelle que soit la qualité des mesures (6 commentaires invalides mesurés cycles 1-2).
 
 Un BLOCKED honnête est un livrable valide (le gate rend rc=3) ; ne jamais écrire READY pour être visible.
 

@@ -158,6 +158,18 @@ jobs:
           fetch-depth: 0
           filter: blob:none
 
+      # #17407 / #17444 : `python` nu n'est pas expose par les slots natifs du
+      # parc coursia-linux (contrat image seulement). Sans lui l'etape suivante
+      # echoue sur sa propre sonde de controle positif et rapporte "positive
+      # control FAILED" -- message trompeur, qui accuse le detecteur alors que
+      # c'est le PATH qui manque. setup-python aligne ce job sur les workflows
+      # sains du depot. Place ICI et non apres : l'invariant documente
+      # ci-dessous ("Runs BEFORE the Node setup") reste tenu, setup-python
+      # n'etant pas setup-node.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
       # Runs BEFORE the Node setup, deliberately: the two defects it catches are
       # invisible to `slidev build`, so this step must survive an install failure.
       #

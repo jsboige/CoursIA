@@ -182,10 +182,11 @@ def test_diff_signatures_identical():
 
 
 def test_diff_signatures_float_drift():
-    # NumPy 1.x: [1.0, 1.0, ...]
-    # NumPy 2.x: [1.0, 0.9999999999999999, 1.0, ...]
+    # #19961 : la paire NumPy 1.x/2.x (1.0 vs 0.9999999999999999, 1 ULP)
+    # est du bruit assume (contre-temoin 1-ULP en fin de fichier) ; le
+    # controle positif garde un drift reel a 2 ULP.
     a = (("[1.0, 1.0, 1.0, 1.0, 1.0]",),)
-    b = (("[1.0, 0.9999999999999999, 1.0, 1.0, 1.0]",),)
+    b = (("[1.0, 0.9999999999999998, 1.0, 1.0, 1.0]",),)
     assert ckd.diff_signatures(a, b) == [0]
 
 
@@ -203,7 +204,7 @@ def test_diff_signatures_removed_cell():
 
 def test_diff_signatures_complex_float_with_exponent():
     a = (("[-1.5e+00, 2.5e-01, 3.14159]",),)
-    b = (("[-1.5e+00, 2.5000000000000004e-01, 3.14159]",),)
+    b = (("[-1.5e+00, 0.2500000000000001, 3.14159]",),)
     assert ckd.diff_signatures(a, b) == [0]
 
 
@@ -271,7 +272,7 @@ def test_diff_signatures_added_empty_cell_does_not_mask_a_real_drift():
     """An empty added cell must not mask drift on a common cell."""
     assert _id_aligned_diffs(
         [("c1", "[1.0, 1.0]\n"), ("c2", "[2.0, 2.0]\n")],
-        [("params-new", None), ("c1", "[1.0, 0.9999999999999999]\n"),
+        [("params-new", None), ("c1", "[1.0, 0.9999999999999998]\n"),
          ("c2", "[2.0, 2.0]\n")],
     ) == ["c1"]
 
@@ -370,7 +371,9 @@ def test_canonical_transition_python_38_to_313_refused():
     # mesure #19160 ; sans scope par chemin/série, ajouter la transition
     # ferait passer vert un carnet ICT rejoue par erreur -- reserve Hermes
     # PRR_kwDOH2Odns8AAAABQnPfEQ, 2026-10-05). Les 2 rescapes 3.8.10/3.9.0
-    # sont traites au cas par cas.
+    # sont traites au cas par cas : QC-Py-16 via la table scoped
+    # (tests ci-dessous), QC-Py-03 verdict INTRINSIC (metadonnee fossile,
+    # aucune cellule executable localement).
     a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
     assert ckd.accepted_canonical_transition(a, b) is False
@@ -381,6 +384,38 @@ def test_canonical_transition_python_39_to_313_refused():
     a = {"language_version": "3.9.0", "kernelspec_name": "python3"}
     b = {"language_version": "3.13.3", "kernelspec_name": "python3"}
     assert ckd.accepted_canonical_transition(a, b) is False
+
+
+def test_canonical_transition_scoped_qcpy16_38_to_313_accepted():
+    # Cas par cas #19181 (decision coordinateur du 11/10) : le seul carnet
+    # nominatif porte sa transition -- QC-Py-16, re-execution selective du
+    # sous-ensemble local (cellules REF QC Cloud non executables
+    # localement) sous le canon d'execution 3.13.
+    a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    path = ("MyIA.AI.Notebooks/QuantConnect/Python/"
+            "QC-Py-16-Alternative-Data.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is True
+
+
+def test_canonical_transition_scoped_does_not_leak_to_other_paths():
+    # La meme transition 3.8 -> 3.13 reste rouge ailleurs : le scope protege
+    # la serie ICT (<3.10) -- c'est la raison d'etre de la table scoped.
+    a = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    b = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    assert ckd.accepted_canonical_transition(a, b) is False
+    assert ckd.accepted_canonical_transition(
+        a, b, nb_path="MyIA.AI.Notebooks/IIT/ICT-47.ipynb") is False
+
+
+def test_canonical_transition_scoped_reverse_still_refused():
+    # Direction inverse : rouge meme sur le chemin scope (le cliquet ne
+    # descend pas).
+    a = {"language_version": "3.13.14", "kernelspec_name": "python3"}
+    b = {"language_version": "3.8.10", "kernelspec_name": "python3"}
+    path = ("MyIA.AI.Notebooks/QuantConnect/Python/"
+            "QC-Py-16-Alternative-Data.ipynb")
+    assert ckd.accepted_canonical_transition(a, b, nb_path=path) is False
 
 
 def test_canonical_transition_python_313_to_311_refused():
@@ -476,10 +511,135 @@ def test_run_canonical_transition_does_not_mask_sig_drift(monkeypatch):
     # signature float coexistante reste un finding (elle releve de C.4).
     base_nb = _nb(".net-csharp", "12.0", ["[1.0, 1.0, 1.0]\n"])
     head_nb = _nb(".net-csharp", "13.0",
-                  ["[1.0, 0.9999999999999999, 1.0]\n"])
+                  ["[1.0, 0.9999999999999998, 1.0]\n"])
     result = _patched_run(monkeypatch, base_nb, head_nb)
     assert len(result["findings"]) == 1
     f = result["findings"][0]
     assert f["kernel_diffs"] == []
     assert f["signature_drift_cells"]
     assert f["canonical_transition"] is True
+
+# --- #19961 : tolerance numerique 1 ULP (decision bruit assume) ------------
+# Tests consolides ici (fichier canonique du guard) : le pairage 1-ULP est
+# du bruit, 2 ULP et plus restent du drift. Les fixtures historiques plus
+# haut passent leurs valeurs derivees a 2 ULP pour la meme decision.
+
+from check_kernel_drift import (  # noqa: E402
+    _diff_signatures_ordinal,
+    _signatures_equivalent,
+    _within_ulp,
+    diff_signatures,
+    float_signatures,
+)
+
+ONE_ULP_BELOW_1 = 0.9999999999999999   # 1 nextafter step sous 1.0
+TWO_ULP_BELOW_1 = 0.9999999999999998   # 2 steps
+
+
+def _nb_ulp(*outputs_text, cell_id="c1"):
+    return {
+        "cells": [
+            {
+                "cell_type": "code",
+                "id": cell_id,
+                "outputs": [
+                    {"output_type": "execute_result",
+                     "data": {"text/plain": text}}
+                    for text in outputs_text
+                ],
+            }
+        ]
+    }
+
+
+class TestWithinUlp:
+    def test_exact_equality(self):
+        assert _within_ulp(1.0, 1.0)
+
+    def test_one_ulp_is_noise(self):
+        assert _within_ulp(1.0, ONE_ULP_BELOW_1)
+        assert _within_ulp(ONE_ULP_BELOW_1, 1.0)
+
+    def test_two_ulp_is_drift(self):
+        assert not _within_ulp(1.0, TWO_ULP_BELOW_1)
+
+    def test_nan_nan_accepted(self):
+        assert _within_ulp(float("nan"), float("nan"))
+
+    def test_nan_vs_value_refused(self):
+        assert not _within_ulp(float("nan"), 1.0)
+
+    def test_infinities_require_exact_sign(self):
+        assert _within_ulp(float("inf"), float("inf"))
+        assert not _within_ulp(float("inf"), float("-inf"))
+        assert not _within_ulp(float("inf"), 1e308)
+
+    def test_subnormal_one_step(self):
+        assert _within_ulp(0.0, 5e-324)     # le plus petit sous-normal
+        assert not _within_ulp(0.0, 1e-323)
+
+    def test_complex_partwise(self):
+        assert _within_ulp(complex(1.0, 2.0), complex(ONE_ULP_BELOW_1, 2.0))
+        assert not _within_ulp(complex(1.0, 2.0), complex(1.0, 2.5))
+
+
+class TestSignaturesEquivalent:
+    def test_numpy2_repr_case_is_noise(self):
+        """Le cas fondateur : NumPy 1.x imprime 1.0 la ou 2.x imprime
+        0.9999999999999999 -- meme valeur a 1 ULP pres, pas de drift."""
+        base = ("[1.0, 1.0, 1.0]",)
+        head = (f"[1.0, {ONE_ULP_BELOW_1!r}, 1.0]",)
+        assert base != head                      # byte-text DIFFERENT
+        assert _signatures_equivalent(base, head)
+
+    def test_beyond_one_ulp_stays_drift(self):
+        base = ("[1.0, 1.0]",)
+        head = (f"[{TWO_ULP_BELOW_1!r}, 1.0]",)
+        assert not _signatures_equivalent(base, head)
+
+    def test_different_value_stays_drift(self):
+        assert not _signatures_equivalent(("[1.0, 2.0]",), ("[1.0, 2.1]",))
+
+    def test_element_count_mismatch_stays_drift(self):
+        assert not _signatures_equivalent(("[1.0, 1.0]",), ("[1.0]",))
+
+    def test_array_count_mismatch_stays_drift(self):
+        assert not _signatures_equivalent(("[1.0, 1.0]",), ())
+        assert not _signatures_equivalent(
+            ("[1.0, 1.0]",), ("[1.0, 1.0]", "[2.0, 3.0]"))
+
+    def test_identical_text_short_circuits(self):
+        assert _signatures_equivalent(("[1.0, 1.0]",), ("[1.0, 1.0]",))
+
+    def test_unparseable_falls_back_to_text_fail_closed(self):
+        """Une paire qui ne parse pas retombe sur l'egalite textuelle :
+        jamais d'equivalence fabriquee sur une valeur non mesuree."""
+        assert _signatures_equivalent(("[1.0, a.b]",), ("[1.0, a.b]",))
+        assert not _signatures_equivalent(("[1.0, a.b]",), ("[1.0, c.d]",))
+
+
+class TestDiffSignatures:
+    def test_id_aligned_one_ulp_not_reported(self):
+        base = _nb_ulp("[1.0, 1.0, 1.0]")
+        head = _nb_ulp(f"[1.0, {ONE_ULP_BELOW_1!r}, 1.0]")
+        b_sig, h_sig = float_signatures(base), float_signatures(head)
+        assert b_sig != h_sig
+        assert diff_signatures(b_sig, h_sig, base_nb=base, head_nb=head) == []
+
+    def test_id_aligned_beyond_one_ulp_reported(self):
+        base = _nb_ulp("[1.0, 1.0]")
+        head = _nb_ulp(f"[{TWO_ULP_BELOW_1!r}, 1.0]")
+        b_sig, h_sig = float_signatures(base), float_signatures(head)
+        assert diff_signatures(b_sig, h_sig, base_nb=base, head_nb=head) == ["c1"]
+
+    def test_ordinal_fallback_same_tolerance(self):
+        # Notebooks sans ids : alignement ordinal legacy, meme tolerance.
+        base = _nb_ulp("[1.0, 1.0]")
+        base["cells"][0].pop("id")
+        head = _nb_ulp(f"[1.0, {ONE_ULP_BELOW_1!r}]")
+        head["cells"][0].pop("id")
+        b_sig, h_sig = float_signatures(base), float_signatures(head)
+        assert _diff_signatures_ordinal(b_sig, h_sig) == []
+        head2 = _nb_ulp("[1.0, 2.0]")
+        head2["cells"][0].pop("id")
+        assert _diff_signatures_ordinal(b_sig, float_signatures(head2)) == [0]

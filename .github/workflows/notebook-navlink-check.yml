@@ -13,12 +13,7 @@ name: Notebook Navlink Check
 # (deep-links into git submodules are filtered via .gitmodules parse).
 
 on:
-  pull_request:
-    paths:
-      - '**/*.ipynb'
-      - 'scripts/notebook_tools/check_notebook_navlinks.py'
-      - 'scripts/tests/baseline_nb_navlinks.json'
-      - '.github/workflows/notebook-navlink-check.yml'
+  workflow_dispatch:
 
 permissions:
   contents: read

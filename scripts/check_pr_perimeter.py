@@ -1146,6 +1146,50 @@ def _count_is_provenance_sha(line: str, m: re.Match) -> bool:
     return bool(_PROVENANCE_SHA_TAIL.match(after))
 
 
+# #20086 -- prose descriptive chiffree : un compte OUVERT par un verbe de
+# CONSTATATION sur la meme ligne decrit ce que l'auteur a LU ou ATTESTE, pas
+# le perimetre de la PR. Founder #20076 (body avant correction) : deux
+# phrases -- « `life-lean-stats` (exec 12) atteste 4 fichiers (`Life.lean`
+# 253, ...) » (les sources que la cellule lit) et « `phase1-files-list`
+# (exec 18) atteste ~80 fichiers `.lean` » (idem) -- confrontees aux 7
+# fichiers reels de la PR, le garde rougissait une PR saine. Le contournement
+# applique alors (« sources » / « modules ») a rendu rc=0 : c'est ce qui
+# mesure que la classe etait ouverte.
+#
+# Liste FERMEE -- jamais elargie a du vocabulaire inconnu (cout FN borne et
+# visible, meme doctrine que COUNT_WORDS). Le VERBE est ce qui borne
+# l'exemption : sans lui la forme fondatrice reste bloquante.
+# Review #20125 : `couvre|couvrent|covers?|lists?` retires -- ce sont des
+# verbes de PERIMETRE, et « Cette PR couvre N fichiers » est la phrase la plus
+# courante d'un body qui annonce son perimetre : l'exemption la blanchissait.
+# Le fondateur #20076 n'utilise que « atteste ».
+DESCRIPTIVE_VERB = re.compile(
+    r"\b(?:atteste|attestent|constate|constatent|lit|lisent|"
+    r"[ée]num[èe]re|[ée]num[èe]rent|r[ée]cense|r[ée]censent|"
+    r"d[ée]nombre|d[ée]nombrent|"
+    r"attests?|reads?|counts?|enumerates?)\b",
+    re.IGNORECASE,
+)
+# Controle positif exige par l'issue : la forme CANONIQUE de declaration de
+# perimetre -- « N fichiers : a, b, c » -- n'est ouverte par aucun verbe et
+# reste bloquante. Le deux-points immediat est la garde qui empeche un verbe
+# de constatation de blanchir une vraie assertion (« j'atteste 7 fichiers :
+# a.py, b.py »), et c'est ce qui separe l'exemption du blanc-seing.
+_DESCRIPTIVE_VERB_WINDOW = 80
+_PERIMETER_COLON_TAIL = re.compile(r"^\s*:")
+
+
+def _count_is_descriptive_attestation(line: str, m: re.Match) -> bool:
+    """#20086: True when the COUNT match `m` is opened by a CONSTATATION verb
+    within the 80 chars before it, and is not the canonical colon-declared
+    perimeter form. See DESCRIPTIVE_VERB for the founder measurement."""
+    before = line[max(0, m.start() - _DESCRIPTIVE_VERB_WINDOW):m.start()]
+    if not DESCRIPTIVE_VERB.search(before):
+        return False
+    after = PLURAL_PAREN.sub(" ", line[m.end():], count=1)
+    return not _PERIMETER_COLON_TAIL.match(after)
+
+
 def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
     """True when the specific COUNT match `m` on `line` is exempted by the
     per-count filters (zero, threshold citation, locative scan scope,
@@ -1190,6 +1234,8 @@ def _count_is_exempt(line: str, m: re.Match, ante_context: str = "") -> bool:
         return True
     if _count_has_incidental_qualifier(line, m):
         return True
+    if _count_is_descriptive_attestation(line, m):
+        return True  # prose descriptive ouverte par un verbe de constatation (#20086)
     return False
 
 

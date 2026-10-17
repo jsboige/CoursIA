@@ -3,7 +3,7 @@
   catalogue. scripts/notebook_tools/generate_parcours.py n'écrit que les
   5 pages catalogue (genai.md, ia-classique.md, ia-symbolique.md,
   trading.md, recherche.md) ; ce fichier suit la convention des pages
-  manuelles (comme _inventory.md, hors de la liste du générateur et du cron
+  manuelles (comme 2026-09-02-curriculum-inventory.md, hors de la liste du générateur et du cron
   catalog-cron.yml) et n'est jamais régénéré. Cf EPIC #13844 Phase 2
   (pilote 1) et #15805.
 -->
@@ -12,7 +12,7 @@
 
 Premier des trois parcours narratifs pilotes de l'EPIC #13844 (Phase 2). Sa
 matière première est l'inventaire des embryons de parcours livré en Phase 0
-([_inventory.md](_inventory.md), entrées #19-27 et #36) ; sa forme généralise
+([2026-09-02-curriculum-inventory.md](../transients/2026-09-02-curriculum-inventory.md), entrées #19-27 et #36) ; sa forme généralise
 les « Parcours alternatifs » de GameTheory ([README](../../MyIA.AI.Notebooks/GameTheory/README.md) :
 durée annoncée, liste numérotée, clause de prérequis explicite). Les cinq
 pages catalogue (`genai.md`, `ia-classique.md`, …) restent en place comme
@@ -232,7 +232,7 @@ lu sur la section Prérequis réelle du notebook quand elle existe (marqué
 
 ## Sources
 
-- [_inventory.md](_inventory.md) — inventaire Phase 0 de l'EPIC #13844 :
+- [2026-09-02-curriculum-inventory.md](../transients/2026-09-02-curriculum-inventory.md) — inventaire Phase 0 de l'EPIC #13844 :
   entrées #19 (modèle profil/durée), #20-27 (branches GenAI, statut
   INTEGRATE), #36 (DAG Texte) ; section « Modèles à exporter ».
 - [README GameTheory](../../MyIA.AI.Notebooks/GameTheory/README.md) §

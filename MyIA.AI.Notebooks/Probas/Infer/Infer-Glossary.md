@@ -9,8 +9,8 @@ Ce glossaire recapitule les termes techniques utilises dans la serie de notebook
 | Terme | Definition | Notebook(s) |
 |-------|------------|-------------|
 | **EP (Expectation Propagation)** | Algorithme d'inference approchee qui propage des messages gaussiens entre facteurs. Rapide mais peut diverger. | Tous |
-| **VMP (Variational Message Passing)** | Algorithme variationnel qui minimise la divergence KL. Plus stable que EP, mais sous-estime l'incertitude. | Infer-2, Infer-11 |
-| **Gibbs Sampling** | Methode MCMC qui echantillonne chaque variable conditionnellement aux autres. Exact asymptotiquement mais lent. | Infer-13 |
+| **VMP (Variational Message Passing)** | Algorithme variationnel qui minimise la divergence KL. Plus stable que EP, mais sous-estime l'incertitude. | Infer-1b, Infer-2, Infer-2b, Infer-10, Infer-11 |
+| **Gibbs Sampling** | Methode MCMC qui echantillonne chaque variable conditionnellement aux autres. Exact asymptotiquement mais lent. | Infer-1 |
 | **Message Passing** | Paradigme ou les distributions sont propagees entre variables via des "messages". | Infer-3, Infer-2b |
 
 ---
@@ -23,7 +23,7 @@ Ce glossaire recapitule les termes techniques utilises dans la serie de notebook
 | **Beta** | [0, 1] | alpha, beta | Prior sur probabilités |
 | **Gaussian** | R | mean, precision | Valeurs continues |
 | **TruncatedGaussian** | [a, b] | mean, variance, lower, upper | Valeurs contraintes |
-| **Gamma** | R+ | shape, scale | Prior sur precisions |
+| **Gamma** | R+ | shape, rate (`GammaFromShapeAndRate`) | Prior sur precisions |
 | **Dirichlet** | Simplex | alpha[] | Prior sur poids de mélange |
 | **Discrete** | {0, ..., K-1} | probs[] | Variables categoriques |
 

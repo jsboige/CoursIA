@@ -144,7 +144,7 @@ La cause tombe dans l'un de TROIS cas (le scanner ne les distingue PAS — c'est
 
 
 
----
+***
 
 
 
@@ -451,6 +451,36 @@ Source : convergence des harnais roo-extensions <-> CoursIA (Epic roo-extensions
 
 
 
+
+### 2.8 Déporté depuis la règle — justifications, récits mesurés et provenances (tranche #15204, 2026-10-06)
+
+Déporté depuis `.claude/rules/coordinator-discipline.md` (tranche 2 du slimming #15204 ; sources citées = lignes du fichier avant déport, commit 70b0932df5). La règle garde chaque prescription ; ce qui suit est le détail en lecture différée.
+
+**Mécanisme de la mesure 3 (unicité de session), anciennes lignes 32-40.** L'organe écrit `uniqueness_measured: false` dans chacun de ses verdicts. Les noms de session (`coursia-0f`) **n'encodent pas la lane**, seule une réponse du pair la qualifie. Deux sessions lancées du **même** clone rendent toutes deux `exit 0` et le rôle COORDINATOR — `clone_ok` ne sépare que des clones *distincts*. L'organe porte la racine canonique et **rétrograde en worker** (fail-CLOSED) une session lancée depuis un clone jumeau, mais il ne tranche jamais l'unicité.
+
+**Pourquoi le perdant de l'arbitrage passe en `git worktree add`, ancienne ligne 47.** Deux sessions d'un même clone partagent HEAD, l'index et le stash, et aucune garde ne rougit sur cette corruption-là ([[concurrent-sessions-share-the-working-tree]]).
+
+**Lisibilité des deux critères de défaut, anciennes lignes 51-52.** Les deux critères de défaut de la table de décision sont choisis pour être **lisibles des deux côtés** : chaque session peut rendre son `CronList` et son heure de démarrage.
+
+**Mesure « champ de vision », ancienne ligne 73.** Mesure du 2026-09-12 : **71 des 76 PRs ouvertes (93 %) n'attendaient aucun geste de lane** — 26 prêtes à merger, 45 en attente de review coord.
+
+**Incident fondateur #15828 (rouge = requête sur ma file), ancienne ligne 75.** Le 2026-09-12, ai-01 a diagnostiqué lui-même un test d'inventaire rouge (lecture du script, du test, du générateur, d'un workflow ligne à ligne) puis délégué sa correction à un sous-agent — alors que **PR #15828 portait déjà ce fix, livrée par po-2023 dès le cycle c.507 et garée dans sa propre file**, avec 174 non-lus en inbox. Le geste correct était `gh pr list` + la lecture de l'inbox, pas `Read` sur `build_inventory`.
+
+**Provenances des mandats de l'adjoint, ancienne ligne 136.** Preflight : #13605 `issuecomment-5467391147` ; cas `ADJOINT PREFLIGHT` de `check_unaddressed_nits.py` : PR #13883 ; recalculs firsthand : DM `msg-20260904T043716-lo9ryu`.
+
+**Limites de l'organe `check_adjoint_prevalidation.py`, ancienne ligne 146.** GitHub ne permet pas à cet organe stateless de prouver un événement ensuite supprimé ou reverté. Son format canonique est généré par `--template` (hash inclus ; `--fingerprint` reste disponible). Le login GitHub étant partagé, `lane: myia-po-2025:CoursIA-2` est une déclaration de protocole fail-closed, pas une authentification cryptographique.
+
+### 2.9 « Cron armé + production gelée » se lit comme un tour continu, pas comme une panne de cron (#14728, item 4)
+
+**Constat mesuré (2026-09-05)** : le cron coordinateur était **armé** (`CronList` le montrait vivant, vérifié à 10:04Z) pendant une fenêtre de **6h16 sans aucun merge** — merges par heure : `00h`=13, `01h`=9, `02h`=16, `03h`=4, puis `04h`-`10h` = 0. Les déclenchements attendus de 04:13 et 08:13 ne sont pas survenus. Les workers, eux, produisaient normalement pendant toute la fenêtre : ce ne sont pas les lanes qui ralentissent, c'est la passe de merge du coordinateur.
+
+**Cause** : `CronCreate` ne déclenche **que lorsque le REPL est idle, jamais mid-query**. La session tenait un seul tour continu depuis ~03:26Z. « Cron armé » et « merges gelés » ne sont donc **pas contradictoires — c'est la même cause**. C'est ce qui rend le défaut difficile à lire : `CronList` montre le job, le job est réellement vivant, et il ne tirera pourtant jamais tant que le tour ne se termine pas.
+
+**Boucle auto-renforçante** : plus le backlog est gros, plus le cycle est long ; plus le cycle est long, plus de déclenchements sautent ; plus de déclenchements sautent, plus le backlog grossit.
+
+**L'anti-diagnostic à ne pas faire** : « le cron est mort, j'en arme un second ». Cela **aggrave** la situation — double-firing silencieux, et si le second cron vit dans une autre session partageant le tag de lane, violation de la prémisse d'identité de #14323 (`check_lane_claim.py` `CLEAR` ne dit que « aucune AUTRE lane », jamais « aucun autre processus de la mienne »).
+
+**La lecture correcte et le levier** : `CronList` armé + zéro merge sur plusieurs fenêtres de cadence = la session tient un **tour continu**. Le levier est de **borner le cycle** — passe de merge courte qui rend la main (items 1-2 de #14728, livrés : « Budget de cycle » du skill `coordinate` + dossiers `[ADJOINT PREFLIGHT]` exact-head qui persistent les verdicts de gate par SHA) — pas d'ajouter un tireur. La dépense de la cadence hors REPL (tâche planifiée en polling) a été écartée dans #14728 : un déclencheur externe qui réveille une session déjà occupée ne merge pas davantage.
 
 ## 3. Secrets via RooSync — recits et justification datee
 

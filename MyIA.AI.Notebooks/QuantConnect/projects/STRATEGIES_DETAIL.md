@@ -2,6 +2,8 @@
 
 Descriptions par catégorie des projets de trading algorithmique. Pour le tableau de performance résumé, voir [README.md](README.md).
 
+> **Dossiers sans fiche ici.** Les dossiers présents sur disque mais sans verdict de backtest classant (évaluations en cours de stratégies publiques ou d'articles, benchmarks et corrélations d'appui, documentation interne) sont listés dans la section [« Livrables en attente de classement »](README.md#livrables-en-attente-de-classement-pr%C3%A9sents-sur-disque-non-encore-d%C3%A9partis-par-robustesse) du README — ils n'ont pas de fiche détaillée tant que leur classement par robustesse n'est pas établi (#17526).
+
 > **Lecture vérifiée sous frais réels (#1630, 2018-2025).** Les Sharpes ci-dessous sont des valeurs **catalogue (pré-frais, fenêtres variables)**. La campagne #1630 a re-vérifié 36+ stratégies sous frais IBKR réels sur une fenêtre alignée 2018-2025 — plusieurs s'effondrent, d'autres tiennent :
 
 | Stratégie | Sharpe catalogue | Sharpe aligné | Verdict |
@@ -190,6 +192,7 @@ Projets présents sur le disque sans entrée dans les sections thématiques ci-d
 - [RL-Options-Hedging](RL-Options-Hedging/) : RL couverture d'options (Ch07-01) — vérifié tranche 12 (backtests QC Cloud MCP)
 - [Research-Executor](Research-Executor/) : harness d'exécution de recherche (main.py + runner.ipynb + MockQB) — pas une stratégie
 - [Sparse-Index-Tracking-QC](Sparse-Index-Tracking-QC/) : réplication creuse d'indice (fiche squelette)
+- [ShortTermReversalFutures-QC](ShortTermReversalFutures-QC/) : vérification de l'article « Short Term Reversal With Futures » (qc-research 15366, draft) — 2 bras QC Cloud sous frais IBKR : longue 2016-2026 Sharpe **−0.474** (net −31.7 %, MaxDD 44.9 %), alignée 2018-2025 Sharpe **−0.345** (net −9.9 %) → **NO BEATS** contre le cash, aucun chiffre article à battre (liens morts) (See #18466)
 - [TFT-Crypto-Ranking](TFT-Crypto-Ranking/) : recherche DL TFT ranking crypto — pas de main.py (research)
 - [Vol-Ensemble-Conservative](Vol-Ensemble-Conservative/) : ensemble volatilité conservateur — Needs-improvement (Sharpe 0.265)
 - [Vol-GARCH-Target](Vol-GARCH-Target/) : vol targeting GARCH — Needs-improvement (Sharpe 0.325)

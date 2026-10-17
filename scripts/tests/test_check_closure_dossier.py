@@ -88,6 +88,37 @@ def test_close_integre():
     assert dossier.fields["lane"] == "myia-po-2025:CoursIA-2"
 
 
+def test_fleet_app_identity_is_an_accepted_dossier_author():
+    """#17437: this gate accepts the same dossier authors as the adjoint gate.
+
+    Both read the AUTHOR of the same kind of dossier, from the same organ
+    (``gh_identity.ACCEPTED_DOSSIER_AUTHORS``). Widening only one would let a
+    lane's merge dossier through while its closure dossier is refused -- a
+    half-migration whose failure surfaces at the last step, on the issue that
+    was about to be closed.
+    """
+    for lane in ccd.gh_identity.APP_DOSSIER_LANES:
+        login = f"{ccd.gh_identity.APP_LOGIN_PREFIX}{lane}[bot]"
+        snap = _snapshot(comments=[_comment(_dossier_body(), login=login)])
+        verdict, errors, _ = evaluate(snap)
+        assert verdict == "CLOSE", f"{login}: {errors}"
+        assert errors == [], f"{login}: {errors}"
+
+
+def test_app_shaped_login_outside_the_frozen_lanes_is_refused():
+    """The set is CLOSED: a login that only looks like a fleet App is refused."""
+    for login in (
+        "coursia-lane-po-2099[bot]",  # unknown lane
+        "coursia-lane-po-2024",       # right lane, no App suffix
+        "coursia-lane-po-204[bot]",   # prefix of a real lane
+    ):
+        snap = _snapshot(comments=[_comment(_dossier_body(), login=login)])
+        _, errors, _ = evaluate(snap)
+        assert any(
+            "is not an accepted dossier author" in e for e in errors
+        ), f"{login}: {errors}"
+
+
 def test_keep_integre(monkeypatch):
     monkeypatch.setattr(ccd, "gh_json", lambda args: {
         "number": 17910, "state": "OPEN"})
@@ -666,3 +697,23 @@ def test_merged_referring_prs_ignore_les_cross_ref_non_merged(monkeypatch):
     out = _merged_referring_prs("o/r", 15578)
     assert out == []
 
+
+
+def test_delivering_lanes_refuse_le_point_final_de_phrase():
+    """#15864 (mesure #14549, 2026-10-09) -- un marqueur ponctue doit reduire a
+    la lane REELLE : sinon une lane nommee uniquement sous forme ponctuee est
+    absente de l'ensemble d'exclusion et son dossier d'auto-attestation passe
+    le gate. Instance mesuree : `myia-po-2023:CoursIA-2.` dans delivering_lanes."""
+    snap = _snapshot(
+        comments=[_comment("[DELIVERED] lane myia-po-2023:CoursIA-2. "
+                           "Tranche livree, voir PR.")],
+        merged_prs=[
+            {"number": 17901, "merged_at": "2026-09-19T10:00:00Z",
+             "body": "Grain: DEEP/notebook-python — lane myia-po-2024:CoursIA. "
+                     "-- See #17900."},
+        ],
+    )
+    lanes = ccd.delivering_lanes(snap)
+    assert "myia-po-2023:CoursIA-2" in lanes
+    assert "myia-po-2024:CoursIA" in lanes
+    assert not any(ln.endswith(".") for ln in lanes), sorted(lanes)

@@ -214,7 +214,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # repliee comme etape du sweep ci-dessous (design-gate ai-01 : "meme
     # population, meme requete ; seule la branche de remediation differe.
     # Ne pas creer un troisieme organe").
-    "pr-path-collision-advisory.yml",
+    # pr-path-collision-advisory.yml : migre ubuntu-latest par Q35 etape 2
+    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows agregateurs,
+    # 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme
+    # commit. Precedent : #17443 (po-2023, 4 agregateurs).
+
     # queue-ghost-watch.yml (#14367, owner myia-po-2023:CoursIA-2) : sonde cron
     #   04:17 UTC (offset anti-stampede, hors-:00) sur les 18 zombies QUEUED
     #   du 2026-08-19. Meme profil que runner-starvation-advisory : advisory
@@ -228,7 +232,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "queue-ghost-watch.yml",
     "qc-research-monitor.yml",
-    "repo-size-advisory.yml",
+    # repo-size-advisory.yml : migre ubuntu-latest par Q35 etape 2 (#17397,
+    # PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows agregateurs,
+    # 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme
+    # commit. Precedent : #17443 (po-2023, 4 agregateurs).
     "review-coverage-advisory.yml",
     "slides-build-advisory.yml",
     "slow-lane.yml",
@@ -247,7 +254,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (tarball, voir l'entree dediee) ; seul `deploy` reste exclu (Pages/OIDC).
     "bare-cross-dir-load-gate.yml",
     "base-not-main-advisory.yml",
-    "concurrency-conj-guard.yml",
+    # concurrency-conj-guard.yml : migre ubuntu-latest par Q35 etape 2
+    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
+    # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
+    # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
     "degenerate-figure-gate.yml",
     "docs-link-check.yml",
     "exercise-leak-ci.yml",
@@ -318,7 +328,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   intra-notebook (detect_repeated_prose.py), advisory pur-Python
     #   stdlib-only, label signe, jamais exit != 0, aucun secret.
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
-    "repeated-prose-advisory.yml",
+    # repeated-prose-advisory.yml : migre ubuntu-latest par Q35 etape 2
+    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
+    # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
+    # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
     "scripts-tests.yml",
     "series-naming-gate.yml",
     # registre TRANCHE14 (issue #16762, owner myia-po-2023:CoursIA) : meme
@@ -345,7 +358,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "svg-decimal-comma-gate.yml",
     "svg-empty-display-gate.yml",
     "svg-offscreen-flat-gate.yml",
-    "testpaths-coverage-guard.yml",
+    # testpaths-coverage-guard.yml : migre ubuntu-latest par Q35 etape 2
+    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
+    # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
+    # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
     "translation-drift.yml",
     "translation-sync.yml",
     "variation-light-genre.yml",
@@ -519,6 +535,27 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   niveau job (`if: head.repo.full_name == repository`).
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "lean-formal-logic.yml",
+    # #20049 (owner myia-po-2024:CoursIA-2, PR #20076) : live-read-freshness --
+    #   troisieme axe des ratchets de carnet : la coherence entre la sortie
+    #   COMMITTEE d'une cellule et l'etat COURANT du fichier qu'elle lit. Les
+    #   ratchets existants comparent une base a une tete
+    #   (check_output_collapse / check_source_collapse) ou mesurent la
+    #   structure d'un carnet ; aucun ne relie une sortie committee a sa
+    #   source vivante. Detecteur scripts/notebook_tools/
+    #   check_live_read_freshness.py, stdlib-only, self-test a controle
+    #   positif ET negatif. Le verdict par-PR est rendu par
+    #   fast-lane-shadow.yml (entree TRANCHE2 de fast_lane_registry.py) ; ce
+    #   fichier ne garde que workflow_dispatch (relance manuelle + cible
+    #   d'identite). Aucun secret, aucun GITHUB_TOKEN cote job, garde
+    #   same-repo universelle parenthesee au niveau job (#13874). Runner =
+    #   jambe Linux containerisee (LINUX_RUNNER_LABELS, meme profil que
+    #   translation-hot-drift-advisory.yml / notebook-plan-loss-gate.yml).
+    #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED remonte par
+    #   `Scripts Tests (CPU)` (run 37931243189) : la PR routait le job
+    #   self-hosted sans toucher cette allowlist fail-closed -- meme classe que
+    #   organ-duplication-advisory.yml et docs-transients-guard.yml.
+    #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
+    "live-read-freshness.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
@@ -704,8 +741,22 @@ def _runner_selection(
 # label. Guard, label set and fallback are enumerated -- any variation
 # (different guard, different labels, different fallback) stays an
 # unauditable expression and keeps the DYNAMIC_RUNS_ON rejection.
+#
+# c.509 (dispatch c.2180, owner myia-ai-01:CoursIA-2) : the audited label
+# set is now a TUPLE of accepted dedicated sets, not a single set. The
+# waiter pool (WAITER_LABELS) keeps the #13363 B role (pr-gate.yml
+# aggregator that polls up to 45 min -- the dedicated label is what lets
+# the gate WAIT without holding a work slot, arbitrage ai-01 2026-09-02).
+# The Linux pool (LINUX_RUNNER_LABELS, [self-hosted, coursia-ephemeral,
+# coursia-linux]) is added to relieve the ubuntu-latest queue (#14283
+# tranche 5 + Q35 etape 4 tranche 2): the same audited dynamic form now
+# applies to pure-Python guards (gitleaks, kernel-drift, papermill
+# ratchet, outputs-required) routed to the containerized Linux leg
+# without forfeiting the same-repo guard or the github-hosted fallback.
+# Every other expression stays an unauditable DYNAMIC_RUNS_ON.
 HYBRID_RUNS_ON_GUARD = SAME_REPO_GUARD
-HYBRID_RUNS_ON_LABELS = WAITER_LABELS
+HYBRID_RUNS_ON_LABELS = WAITER_LABELS  # kept for backward compat (single set)
+HYBRID_RUNS_ON_LABEL_SETS = (WAITER_LABELS, LINUX_RUNNER_LABELS)
 HYBRID_RUNS_ON_FALLBACK = "ubuntu-latest"
 _HYBRID_PATTERN = re.compile(
     r"^\s*\("
@@ -735,7 +786,7 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
         labels = {str(item) for item in json.loads(match.group("labels"))}
     except json.JSONDecodeError:
         return None
-    if labels != HYBRID_RUNS_ON_LABELS:
+    if labels not in HYBRID_RUNS_ON_LABEL_SETS:
         return None
     return {"labels": labels}
 

@@ -59,6 +59,14 @@ Trois gestes, dans cet ordre, et **le premier est une conservation** :
 
 Le stub d'exercice n'utilise **jamais** `raise NotImplementedError` / `assert False` / `1/0`. Patterns corrects : `pass`, `print("Exercice a completer")`, `return None`, `result = None  # TODO etudiant`. Le notebook doit s'executer de bout en bout meme exercices non completes.
 
+## Indice commente sans preuve complete (durcissement #8053, #17714)
+
+Un scaffold d'exercice **commente** (bloc `-- TODO etudiant`, indice) ne contient **jamais la preuve complete** : ni la tactique finale, ni les valeurs concretes qui constituent la reponse. L'enonce, le squelette et les etapes a trous restent ; la derniere marche reste a l'etudiant. Un indice qui livre `simp [foo]` final, un `decide` de cloture ou l'affectation demandee est une solution de-leakable en commentaire — a degrader comme #18119 l'a fait, pas un cas assumable.
+
+**Ce que l'organe couvre, et sa limite** : depuis #18161 (pour #18121, mergee le 2026-09-28), `detect_solution_leaks.py` porte `is_leaky_stub` — une cellule classee stub qui porte **en plus** une preuve commentee (ligne de definition, ou marqueur de tactique de preuve) leve un **LOW/advisory** « Leaky stub ... Reviewer decision needed ». Sonde controlee du 07/10 : la cellule stub + tactique commentee leve bien le LOW, la cellule stub simple reste muette (pas de faux positif), et `--check` rend rc=0 malgre le LOW. La limite est donc double : un advisory ne bloque pas la CI, et le test de preuve est une regex *definition-ou-tactique* — un indice commente qui ne livre que des **valeurs concretes**, sans declaration ni tactique, passe inapercu. La convention ecrite reste donc necessaire : l'organe rend l'asymetrie audible, il ne l'interdit pas. La mesure #17714 du 25/09 (0 finding avant ET apres) est anterieure a #18161 : elle constatait l'absence d'un organe qui n'existait pas encore, elle ne decrit pas le detecteur actuel.
+
+**Precedent** : Lean-36-Structures-Finies-MUH (#18119, see #17714) — les trois indices commentes perdaient le `simp [sameBinaryTable]` final, les cibles concretes de `shift3` et le `decide` final ; enonce + squelette + etapes a trous conserves, re-execution 9/9 (C.2), densite 1620 c/cell au-dela du plancher 1200.
+
 ## Incidents de reference
 
 - **#1214** (commit a9d8ff8b) "fix(leaks): relabel SemanticWeb instructor solutions as Exemple guide (16->0 HIGH)" : find-replace AVEUGLE `Exercice` -> `Exemple guide` sur 7 notebooks SW pour faire passer le leak-scanner SANS de-leaker. A corrompu la prose. Gaming du detecteur, pas une correction. Reverte/corrige via #1339.

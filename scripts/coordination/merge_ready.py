@@ -103,6 +103,11 @@ Comportement :
   (``approved-exact-head`` / ``approval-not-on-head`` / ``no-approval``,
   point 1 de #17672) sur TOUTES les voix, bots compris ; elle informe.
   Ce qui BLOQUE est l'etape 2ter : la seule voix du coordinateur.
+  Une quatrieme valeur, ``review-ready`` (point 2 de #17672), signale
+  les PRs qui ont franchi TOUTES les portes delegables (prefiltre,
+  perimetre, dossier precheck) et n'attendent que la relecture
+  coordinateur -- le dashboard les distingue des PRs bloquees sur
+  un autre probleme.
 - Journal : une ligne JSON par PR evaluee (ts UTC en Z, pr, head,
   verdict, reason, merged, review) dans
   ``%LOCALAPPDATA%/CoursIA/merge_ready/journal.jsonl`` (surchargeable
@@ -205,6 +210,13 @@ APPROVED_EXACT_HEAD = "approved-exact-head"
 APPROVAL_NOT_ON_HEAD = "approval-not-on-head"
 NO_APPROVAL = "no-approval"
 NOT_EVALUATED = "not-evaluated"  # ligne d'un run interrompu avant evaluation
+#: Disposition de la PR telle que la verrait l'organe si la lecture du
+#: coordinateur etait reglee : toutes les portes delegables (prefiltre,
+#: perimetre, dossier precheck) sont vertes, seule manque la disposition
+#: ai-01 a la tete exacte. Sert au dashboard coordinateur a distinguer
+#: « PR qui n'attend que sa relecture » de « PR qui a un autre probleme ».
+#: Voir #17672 point 2.
+REVIEW_READY = "review-ready"
 
 #: Ce qui vaut approbation : l'etat REEL ``APPROVED``, ou le verdict type
 #: ``LGTM`` emis en corps de voix (``VERDICT_RE`` du canon ne type que LGTM et
@@ -875,6 +887,71 @@ def twin_collision_reason(
     return f"twin-collision-unreadable:rc={res.returncode}"
 
 
+# Conventions retenues pour detecter une PR empilee sur une parente non-encore
+# mergee, dans le body de la PR courante. Le format le plus frequent dans
+# CoursIA est "Depends on #N" (po-2024 Origami pli 2-9 sur pli 1), suivi de
+# "Blocked by #N" (GitHub-style) et de "Stacked on #N" (convention locale
+# signalee par po-2027 c.1485). Les emojis prefixant la mention sont
+# tolerees (PRs pedagogiques :sparkles: Depends on #N).
+_STACKED_PATTERNS = (
+    re.compile(r"(?:^|\s|[\W_])(?:depends\s+on|blocked\s+by|stacked\s+on|"
+               r"requires|stack\s*:)\s*#(\d+)", re.IGNORECASE | re.MULTILINE),
+)
+
+
+def find_stacked_parents(body: str | None) -> list[int]:
+    """Renvoie TOUS les numeros de parentes empilees declarees, dedupliques.
+
+    Un body peut declarer plusieurs dependances **directes** de la meme PR :
+    ``Depends on #A`` puis ``Blocked by #B``. Ce n'est pas une chaine
+    recursive, ce sont deux parentes que la PR courante attend l'une **et**
+    l'autre -- n'en lire qu'une laisse la seconde invisible, et si la
+    premiere est MERGED le chemin nominal repart sans avoir examine la
+    seconde (defaut mesure du 2026-10-08, review du coordinateur).
+
+    Ne considere pas les PRs mentionnees en passant : le marqueur
+    "depends on" / "blocked by" doit etre explicite. L'ordre d'apparition
+    est conserve, les doublons retires -- un body qui repete la meme
+    parente ne fait pas travailler le runner deux fois."""
+    if not body:
+        return []
+    seen: dict[int, None] = {}
+    for pattern in _STACKED_PATTERNS:
+        for match in pattern.finditer(body):
+            seen.setdefault(int(match.group(1)), None)
+    return list(seen)
+
+
+def stacked_parent_state(
+    runner: Runner, parent_pr: int, gh_env: dict[str, str]
+) -> str:
+    """Renvoie l'etat logique de la PR parente empilee.
+
+    Sorties : ``MERGED``, ``OPEN``, ``CLOSED``, ``unreadable``. Le check
+    d'empilement est fail-CLOSED : tout etat non lisible equivaut a
+    ``unreadable`` et bloque le merge par defaut (meme politique que
+    ``base_ref_liveness`` ligne 905)."""
+    res = runner.run(
+        ["gh", "pr", "view", str(parent_pr),
+         "--json", "state,mergedAt", "--repo", REPO],
+        env=gh_env,
+    )
+    if res.returncode != 0:
+        return "unreadable"
+    data = _json_stdout(res, f"gh pr view {parent_pr}")
+    if not isinstance(data, dict):
+        return "unreadable"
+    state = str(data.get("state") or "").upper()
+    merged_at = data.get("mergedAt")
+    if state == "MERGED" or merged_at:
+        return "MERGED"
+    if state == "OPEN":
+        return "OPEN"
+    if state in {"CLOSED", "DRAFT"}:
+        return "CLOSED"
+    return "unreadable"
+
+
 def base_ref_liveness(
     runner: Runner, gh_env: dict[str, str], base_ref_name: str
 ) -> str:
@@ -1007,9 +1084,15 @@ def evaluate_pr(
     if reason is not None:
         return skip(reason)
     # 2ter. approbation du coordinateur (Q67) : une PR non lue ne paie pas le gate.
+    # Si on skip ici, les portes delegables EN AMONT ont toutes ete vertes
+    # (prefiltre 1, perimetre 2, dossier precheck 2bis) -- c'est precisement
+    # la definition de l'etat REVIEW_READY (#17672 point 2) : seule manque la
+    # disposition ai-01 a la tete exacte. On la porte en disposition, le
+    # ``reason`` conserve la granularite (``no-coordinator-approval`` /
+    # ``coordinator-approval-stale`` / ``coordinator-approval-unverifiable``).
     reason = coordinator_approval_reason(view, view_head, runner, gh_env)
     if reason is not None:
-        return skip(reason)
+        return PRVerdict(pr, view_head, "skipped", reason, False, REVIEW_READY)
     # 3. gate d'entree.
     ready, gate_head, gate_reason = run_gate(runner, pr, gh_env)
     if not ready:
@@ -1048,6 +1131,25 @@ def evaluate_pr(
         if liveness == "gone":
             return skip(f"base-gone:{base_ref_name}")
         return skip(f"base-not-main-unreadable:{base_ref_name}")
+    # 5quater. PR empilee via convention body (depends on / blocked by /
+    # stacked on) avec baseRefName == main. Le cas Origami 2026-10-08 :
+    # 6 PRs empilees logiquement, baseRefName = main sur chacune (la
+    # convention GitHub est de rebrancher chaque PR sur main apres un
+    # update-branch), 5 d'entre elles sans CI complete parce que la
+    # racine n'avait pas ete mergee. base_ref_liveness ne s'applique
+    # pas (base = main), mais la parente empilee dans le body donne
+    # l'info manquante. Refus tant que la parente n'est pas MERGED.
+    # TOUTES les parentes declarees sont examinees, pas seulement la
+    # premiere : un body « Depends on #A / Blocked by #B » dont #A est
+    # MERGED ne doit pas repartir au nominal en laissant #B ouverte.
+    for parent in find_stacked_parents(view.get("body")):
+        if parent == pr:
+            # Se declarer soi-meme parente est un body mal forme : etat
+            # explicite plutot qu'ignorance silencieuse.
+            return skip(f"stacked-on-main:{parent}:self-reference")
+        pstate = stacked_parent_state(runner, parent, gh_env)
+        if pstate != "MERGED":
+            return skip(f"stacked-on-main:{parent}:{pstate}")
     # 6. REST : mergeable + tete.
     state, live_head = mergeable_state_and_head(runner, pr, gh_env)
     if state != "clean":

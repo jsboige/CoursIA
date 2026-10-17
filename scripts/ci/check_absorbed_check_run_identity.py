@@ -40,12 +40,16 @@ sys.path.insert(0, str(CI_DIR))
 
 import fast_lane_registry as reg  # noqa: E402
 from check_unique_check_run_names import _parse_workflow, _load_yaml  # noqa: E402
-from fast_lane_registry import (  # noqa: E402
-    Guard,
-    FAST_LANE_NATIVE,
-    PILOT_LOT_NAME,
-    TRANCHE_ALIGNMENT_EN_COURS,
-)
+from fast_lane_registry import Guard, FAST_LANE_NATIVE  # noqa: E402
+
+# Lot pilote (#11835) et tranches dont l'alignement byte-identique est en
+# cours dans le programme #12567 : l'unique source de verite est
+# `fast_lane_registry` (`PILOT_LOT_NAME`, `TRANCHE_ALIGNMENT_EN_COURS`),
+# lue par attribute access AU MOMENT DE L'APPEL -- jamais de copie locale
+# (reserve Hermes, review #19207 au head b6c2e61162) : une copie figerait
+# le filet sur un etat perime du registre, et retirer TRANCHE10 du registre
+# a la fin du programme #12567 doit re-exiger la tranche dans la meme
+# execution, sans toucher au filet.
 
 EXIT_OK, EXIT_MISMATCH, EXIT_BROKEN = 0, 1, 2
 WORKFLOWS_DIR = ROOT / ".github" / "workflows"
@@ -76,20 +80,24 @@ def absorbed_guards():
     Categories d'exemption :
     - `source == FAST_LANE_NATIVE` : aucun workflow d'origine, exemptes
       par declaration (cf `native_exemptions`).
-    - Gardes du lot `PILOT` (programme #12567, #11835) : absorption par
-      declaration sans alignement byte-identique.
+    - Gardes du lot `PILOT` NON absorbes (programme #12567, #11835) :
+      absorption par declaration sans alignement byte-identique. Depuis
+      l'etape 3 de #12856, un garde PILOT absorbe (`absorbed=True`) EST
+      exige byte-identique : son workflow source a ete renomme et retire
+      de `pull_request` dans le meme commit -- l'exempter laisserait le
+      rename non verifie.
     - Gardes des tranches `TRANCHE_ALIGNMENT_EN_COURS` (programme #12567) : absorption
       faite mais le `name:` du job source n'a pas ete renomme byte-identique.
       Le filet les signale en sortie mais ne les exige pas.
     """
-    pilot_set = set(map(id, getattr(reg, PILOT_LOT_NAME, [])))
+    pilot_set = set(map(id, getattr(reg, reg.PILOT_LOT_NAME, [])))
     align_set = set()
-    for tranche_name in TRANCHE_ALIGNMENT_EN_COURS:
+    for tranche_name in reg.TRANCHE_ALIGNMENT_EN_COURS:
         align_set.update(map(id, getattr(reg, tranche_name, [])))
     for guard in all_guards():
         if guard.source == FAST_LANE_NATIVE:
             continue
-        if id(guard) in pilot_set:
+        if id(guard) in pilot_set and not guard.absorbed:
             continue
         if id(guard) in align_set:
             continue
@@ -160,20 +168,23 @@ def native_exemptions() -> list[str]:
 
 
 def pilot_exemptions() -> list[str]:
-    """Exemptions declarees du lot pilote (programme #12567).
+    """Exemptions declarees du lot pilote NON absorbe (programme #12567).
 
-    Le lot PILOT est absorbe par declaration : le workflow d'origine porte
-    encore le declencheur `pull_request`, donc le renommage byte-identique
-    n'a pas ete fait. Le filet ne peut verifier que le garde est absorbe,
-    pas que le nom est aligne -- la bascule est dans le programme #12567.
+    Un garde PILOT non absorbe reste en ombre : le workflow d'origine porte
+    encore le declencheur `pull_request`, c'est lui qui bloque, et le
+    renommage byte-identique n'a pas ete fait. Les gardes PILOT absorbes
+    (etape 3 de #12856) ne sont PAS exemptes : leur identite est exigee par
+    `absorbed_guards()` ci-dessus -- la bascule des non-absorbes reste dans
+    le programme #12567.
     """
-    pilot_set = set(map(id, getattr(reg, PILOT_LOT_NAME, [])))
+    pilot_set = set(map(id, getattr(reg, reg.PILOT_LOT_NAME, [])))
     return [
         f"{guard.name!r}: lot pilote (#11835, programme #12567), "
         "absorption par declaration sans alignement byte-identique."
         for guard in all_guards()
         if guard.source != FAST_LANE_NATIVE
         and id(guard) in pilot_set
+        and not guard.absorbed
     ]
 
 
@@ -186,12 +197,12 @@ def alignment_en_cours_exemptions() -> list[str]:
     portee par le programme #12567.
     """
     align_set = set()
-    for tranche_name in TRANCHE_ALIGNMENT_EN_COURS:
+    for tranche_name in reg.TRANCHE_ALIGNMENT_EN_COURS:
         align_set.update(map(id, getattr(reg, tranche_name, [])))
     return [
         f"{guard.name!r}: tranche {tranche_name} (programme #12567), "
         "absorption faite mais job.name du workflow source non aligne."
-        for tranche_name in TRANCHE_ALIGNMENT_EN_COURS
+        for tranche_name in reg.TRANCHE_ALIGNMENT_EN_COURS
         for guard in getattr(reg, tranche_name, [])
         if guard.source != FAST_LANE_NATIVE and id(guard) in align_set
     ]

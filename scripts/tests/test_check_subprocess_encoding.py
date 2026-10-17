@@ -165,6 +165,105 @@ def test_main_base_mode(monkeypatch, capsys):
             "scripts/a.py\n_peters/b.py\nnotebook.ipynb\n",
     }[a])
     # No files on disk with those names -> 0 violations, exit 0, paths filtered.
+    # .ipynb now in scope (#19475): the diff yields 2 files (a.py + notebook.ipynb);
+    # both are non-existent on disk so neither is read -> 0 violations.
     assert cse.main(["--base", "origin/main"]) == 0
     out = capsys.readouterr().out
-    assert "1 changed .py file(s)" in out
+    assert "= 2 changed file(s)" in out
+    assert ".ipynb" in out
+
+
+# ---- #19475: ipynb code-cell extraction ----
+
+def _nb_for_write(cells, path):
+    """Tiny nbformat-shape writer for pre-commit testing. not Papermill 1:1,
+    only the keys scan_ipynb() reads (cells[*].cell_type and source list)."""
+    import json
+    path.write_text(json.dumps({"cells": cells}), encoding="utf-8")
+
+
+def test_scan_ipynb_clean_code_cell(tmp_path):
+    nb = tmp_path / "good.ipynb"
+    _nb_for_write([
+        {"cell_type": "markdown", "source": ["# prose about subprocess.run\n"]},
+        {"cell_type": "code",
+         "source": ["import subprocess\n",
+                    "subprocess.run(['x'], text=True, encoding='utf-8')\n"]},
+    ], nb)
+    assert cse.scan_ipynb(str(nb)) == []
+
+
+def test_scan_ipynb_violation_in_code_cell(tmp_path):
+    nb = tmp_path / "bad.ipynb"
+    _nb_for_write([
+        {"cell_type": "code",
+         "source": ["import subprocess\n",
+                    "subprocess.run(['x'], text=True)\n"]},
+    ], nb)
+    findings = cse.scan_ipynb(str(nb))
+    assert len(findings) == 1
+    cell_idx, line_no, _ = findings[0]
+    assert cell_idx == 0
+    assert line_no == 2  # the line of the call
+
+
+def test_scan_ipynb_skips_markdown_cells(tmp_path):
+    nb = tmp_path / "md.ipynb"
+    _nb_for_write([
+        {"cell_type": "markdown",
+         "source": ["def fake_subprocess_run(*a, text=True): pass\n",
+                    "fake_subprocess_run('x', text=True)\n"]},
+        {"cell_type": "code",
+         "source": ["# clean cell\n"]},
+    ], nb)
+    # The markdown cell's source IS valid Python in this test, but we don't
+    # care: scan_ipynb only walks code cells, so the markdown is skipped
+    # regardless of its content. The defect lives where it can be executed.
+    assert cse.scan_ipynb(str(nb)) == []
+
+
+def test_scan_ipynb_unparseable_is_skipped(tmp_path):
+    nb = tmp_path / "corrupt.ipynb"
+    nb.write_text("{not json", encoding="utf-8")
+    assert cse.scan_ipynb(str(nb)) == []
+
+
+def test_scan_ipynb_multiline_call_reports_call_line(tmp_path):
+    nb = tmp_path / "multi.ipynb"
+    _nb_for_write([
+        {"cell_type": "code",
+         "source": ["import subprocess\n",
+                    "proc = subprocess.run(\n",
+                    "    ['git', 'log'],\n",
+                    "    capture_output=True,\n",
+                    "    text=True,\n",
+                    ")\n"]},
+    ], nb)
+    findings = cse.scan_ipynb(str(nb))
+    assert len(findings) == 1
+    cell_idx, line_no, _ = findings[0]
+    assert cell_idx == 0
+    assert line_no == 2  # the line of the call, not of text=True
+
+
+def test_main_files_mode_mixed_py_ipynb(tmp_path, capsys):
+    bad_py = tmp_path / "bad.py"
+    bad_py.write_text("import subprocess\nsubprocess.run(['x'], text=True)\n",
+                      encoding="utf-8")
+    good_nb = tmp_path / "good.ipynb"
+    _nb_for_write([
+        {"cell_type": "code",
+         "source": ["import subprocess\n",
+                    "subprocess.run(['x'], text=True, encoding='utf-8')\n"]},
+    ], good_nb)
+    bad_nb = tmp_path / "bad.ipynb"
+    _nb_for_write([
+        {"cell_type": "code",
+         "source": ["import subprocess\n",
+                    "subprocess.run(['x'], text=True)\n"]},
+    ], bad_nb)
+    assert cse.main([str(bad_py), str(good_nb), str(bad_nb)]) == 1
+    out = capsys.readouterr().out
+    assert f"{bad_py}" in out
+    assert f"{good_nb}" not in out
+    assert f"{bad_nb}:cell_00:2" in out  # cell index in the report

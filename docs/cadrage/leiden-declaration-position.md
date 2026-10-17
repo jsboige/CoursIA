@@ -4,7 +4,7 @@
 
 La [Déclaration de Leiden sur l’intelligence artificielle et les mathématiques](https://leidendeclaration.ai/) a été publiée le 2 juin 2026, déposée sous le DOI [`10.5281/zenodo.20302944`](https://doi.org/10.5281/zenodo.20302944) et endossée par l’[International Mathematical Union](https://www.mathunion.org/fileadmin/documents/2026-06/IMU_AO_CL_8_2026.pdf). Elle est issue d’un groupe de travail réuni au Lorentz Center en septembre 2025.
 
-Ce document n’est ni une paraphrase de la Déclaration, ni une déclaration d’adhésion sans réserve. Il situe CoursIA face à ses valeurs, confronte ces valeurs à des artefacts vérifiables du dépôt et nomme les écarts qui restent ouverts. Il suit en cela deux précédents du projet : le [dialogue avec *Magnifica Humanitas*](../magnifica-humanitas-dialogue.md), qui répond à un texte externe par des objets concrets, et la [clé de lecture grothendieckienne](grothendieckian-lens.md), qui conserve les changements de cadre, les échecs et les niveaux de certification.
+Ce document n’est ni une paraphrase de la Déclaration, ni une déclaration d’adhésion sans réserve. Il situe CoursIA face à ses valeurs, confronte ces valeurs à des artefacts vérifiables du dépôt et nomme les écarts qui restent ouverts. Il suit en cela deux précédents du projet : le [dialogue avec *Magnifica Humanitas*](magnifica-humanitas-dialogue.md), qui répond à un texte externe par des objets concrets, et la [clé de lecture grothendieckienne](grothendieckian-lens.md), qui conserve les changements de cadre, les échecs et les niveaux de certification.
 
 Le texte est daté. Un workflow, un registre ou un notebook cité ici peut évoluer ; le lien vers l’artefact prime sur la déclaration de conformité.
 

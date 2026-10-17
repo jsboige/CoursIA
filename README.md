@@ -34,7 +34,7 @@ Quatre façons d'entrer dans le dépôt, sans parcourir tout le catalogue :
 
 1. **Par série, à sa vitesse** : ouvrir le README d'une série (voir [Séries de notebooks](#séries-de-notebooks)) et suivre son parcours principal. C'est le mode de lecture par défaut.
 2. **Par itinéraire narratif** : [PARCOURS.md](PARCOURS.md) présente trois itinéraires certifiés qui traversent plusieurs séries (accéléré GenAI, IA symbolique, lecture AIMA), avec leur public, leur durée et leur sortie concrète. Les cinq pages du catalogue qui listent les notebooks par domaine y sont présentées comme des **vues du catalogue**, pas comme des parcours.
-3. **Par contrainte d'infrastructure** : [`parcours.qmd`](parcours.qmd) propose trois niveaux d'équipement : local sobre (Python seul), .NET et Lean, puis GenAI complet (Docker et GPU).
+3. **Par contrainte d'infrastructure** : [`parcours.qmd`](https://jsboige.github.io/CoursIA/parcours.html) propose trois niveaux d'équipement : local sobre (Python seul), .NET et Lean, puis GenAI complet (Docker et GPU).
 4. **Par inventaire** : le [catalogue](COURSE_CATALOG.generated.md) liste tout, avec les statuts et la maturité.
 
 Pour exécuter immédiatement, commencer par [Mise en route](#mise-en-route), puis ouvrir le notebook `Setup` ou `Environment` de la série choisie.
@@ -131,7 +131,7 @@ L'apprentissage n'est pas une sixième étape : c'est une **couche disponible à
 
 **Explorer les frontières de recherche** -- Les preuves formelles, le pipeline ML multi-seed, le post-training des LLMs et IIT/ICT proposent des résultats falsifiables, y compris des résultats négatifs documentés.
 
-Pour les itinéraires notebook par notebook, leur maturité et leurs prérequis, voir [PARCOURS.md](PARCOURS.md) (parcours narratifs) et [`parcours.qmd`](parcours.qmd) (choix par contraintes d'infrastructure).
+Pour les itinéraires notebook par notebook, leur maturité et leurs prérequis, voir [PARCOURS.md](PARCOURS.md) (parcours narratifs) et [`parcours.qmd`](https://jsboige.github.io/CoursIA/parcours.html) (choix par contraintes d'infrastructure).
 
 ---
 

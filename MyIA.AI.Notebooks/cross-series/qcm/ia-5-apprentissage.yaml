@@ -39,14 +39,14 @@
     correcte: false
   - texte: La longueur de description minimale
     correcte: true
-  - texte: La longueur de description minimale
-    correcte: false
   - texte: Le Boosting
     correcte: false
   - texte: L'apprentissage en ligne
     correcte: false
   - texte: La normalisation
     correcte: false
+  explication: 'Correction de la relecture d''octobre 2026 : la source portait cette option en deux exemplaires,
+    l''un compté juste, l''autre faux ; le second exemplaire est retiré.'
 - id: ia5-003
   theme: ia-5-apprentissage
   type: multichoice
@@ -134,13 +134,16 @@
   choix_unique: false
   options:
   - texte: Arbres de décision
-    correcte: true
+    correcte: false
   - texte: Réseaux de neurones artificiels
     correcte: true
   - texte: K plus proches voisins
     correcte: false
   - texte: Machines à vecteurs de support
     correcte: false
+  explication: 'Correction de la relecture d''octobre 2026 : les arbres de décision sont un modèle non
+    paramétrique : leur nombre de paramètres croît avec les données (Russell et Norvig ; documentation
+    de scikit-learn, « Decision Trees »).'
 - id: ia5-008
   theme: ia-5-apprentissage
   type: multichoice

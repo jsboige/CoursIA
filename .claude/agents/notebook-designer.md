@@ -515,8 +515,8 @@ Task(
     Topic: "Induction Proofs in Lean 4"
     Domain: Logic
     Level: intro
-    Kernel: lean4 (WSL)
-    Output: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-<NN>-Induction-Lean.ipynb
+    Kernel: python3 (defaut) ; basculer sur `lean4-wsl` quand le carnet execute du Lean 4
+    Output: MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-<NN>-Induction-Lean-Python.ipynb
 
     Objectives:
     - Comprendre le principe d'induction

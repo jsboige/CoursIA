@@ -131,8 +131,26 @@ def _run_gh(args: list[str]) -> str:
 
 
 def _head_sha(pr: int) -> str:
-    return json.loads(_run_gh(["pr", "view", str(pr), "--repo", REPO,
-                               "--json", "headRefOid"]))["headRefOid"]
+    """Head d'une PR : REST d'abord, GraphQL en repli (#19912/#19913/#19917).
+
+    Defaut mesure (po-2023, 2026-10-08) : `gh pr view` est GraphQL. Sous
+    throttle GraphQL il echoue par `API rate limit already exceeded for user
+    ID ...` ALORS que `core` est ouvert (`rate_limit` rendait 5000/5000 core
+    et 4461/5000 graphql) et que le meme champ est servi par REST. L'instrument
+    entier mourait sur `instrument error`, et `pick_idle_grain.py` -- qui
+    l'appelle -- classait la PR « organe non lisible » : **un defaut
+    d'instrument lu comme un defaut de PR**, sur trois PR d'une meme lane.
+
+    REST en tete parce que c'est le chemin qui survit au throttle qui a produit
+    le defaut ; GraphQL garde en repli pour le cas inverse (endpoint `pulls`
+    indisponible, jeton sans scope). Les deux rendent le meme SHA : ce n'est
+    pas un choix de source, c'est une redondance de transport.
+    """
+    try:
+        return json.loads(_run_gh(["api", f"repos/{REPO}/pulls/{pr}"]))["head"]["sha"]
+    except (RuntimeError, KeyError, TypeError, ValueError):
+        return json.loads(_run_gh(["pr", "view", str(pr), "--repo", REPO,
+                                   "--json", "headRefOid"]))["headRefOid"]
 
 
 def collect(pr: int | None = None, sha: str | None = None) -> tuple[str, list[dict]]:

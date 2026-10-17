@@ -33,7 +33,11 @@ Refus (rc 4, RIEN n'est poste) si :
    peut etre perime a la meme tete et la lane d'origine peut etre
    indisponible (#19420). Le gate juge ensuite la refutation comme pour
    toute contradiction muette (#18934). rc 0 reste refuse : un second
-   tampon n'ouvre pas une guerre de dossiers.
+   tampon n'ouvre pas une guerre de dossiers -- SAUF la porte #19922 :
+   un READY du secretariat sur une PR ``Grain: DEEP`` peut etre remplace
+   par le dossier de domaine d'une lane qualifiee (le merge refuse un
+   DEEP dossiere par le secretariat, #19612), toujours sous supersedes +
+   supersedes-why explicites.
 
 Le POST part par ``gh api ... --input payload.json`` (jamais ``-f body=@``,
 cf gh-posting-hygiene.md), puis le corps publie est relu (ligne 1, longueur,
@@ -59,12 +63,19 @@ if str(SCRIPTS_DIR) not in sys.path:
 
 import check_adjoint_prevalidation as adjoint_gate  # noqa: E402
 import check_closure_dossier as closure_gate  # noqa: E402
+import grain_tag  # noqa: E402
 
 REPO = "jsboige/CoursIA"
 # Hors de l'espace 0-3 du gate : 0 READY/CLOSE, 1 NO-DOSSIER/REFUSED,
 # 2 UNKNOWN, 3 BLOCKED-WITH-SUBSTANCE/KEEP. Un refus du poster ne se lit
 # ainsi jamais comme un verdict du gate.
 EXIT_REFUSED = 4
+# #19922 : le contrat du secretariat exclut le DEEP -- la garde merge refuse
+# un DEEP dont le dossier tient du secretariat (#19612) -- donc le dossier
+# de domaine que cette meme garde exige doit pouvoir REMPLACER un READY du
+# secretariat qui tient le gate. Sans cette porte, le DEEP sur dossier
+# secretariat est impostable (mesure 2026-10-08 sur #19801 et #19838).
+SECRETARIAT_LANES = frozenset({"myia-po-2026:CoursIA-3"})
 # gh-posting-hygiene regle 2, membre metrique : un corps court apres le POST
 # d'un fichier est la signature du piege de transport.
 MIN_PUBLISHED_LEN = 100
@@ -144,6 +155,12 @@ def load_first_json(stdout: str) -> dict[str, Any]:
 def refuse(reason: str) -> int:
     print(f"REFUSED -- {reason}", file=sys.stderr)
     return EXIT_REFUSED
+
+
+def grain_tier_of(pr_body: str) -> str | None:
+    """Tier du tag ``Grain:`` du body de la PR (grammaire grain_tag, #9485)."""
+    tag = grain_tag.parse_grain_tag(pr_body)
+    return tag.get("tier") if tag else None
 
 
 def preflight(family: Family, body: str, lane: str) -> tuple[Any, int] | tuple[None, int]:
@@ -265,10 +282,11 @@ def main(argv: list[str] | None = None) -> int:
     if incoherent_rc is not None:
         return incoherent_rc
 
+    pr_body = ""
     if family is ADJOINT:
-        current_head = gh_json(
-            ["pr", "view", str(target), "--json", "headRefOid"]
-        )["headRefOid"]
+        pr_view = gh_json(["pr", "view", str(target), "--json", "headRefOid,body"])
+        current_head = pr_view["headRefOid"]
+        pr_body = pr_view.get("body") or ""
         stated_head = dossier.fields.get("head", "")
         if stated_head != current_head:
             return refuse(
@@ -306,6 +324,20 @@ def main(argv: list[str] | None = None) -> int:
                         "is licite only with non-empty 'supersedes' and "
                         "'supersedes-why' fields naming what is refuted (#19420)"
                     )
+            elif (
+                # #19922 -- rc 0 (READY) du secretariat sur un Grain: DEEP : la
+                # garde merge refuse un DEEP dossiere par le secretariat
+                # (#19612), le dossier de domaine d'une lane qualifiee doit
+                # pouvoir remplacer le READY qui tient le gate. Refutation
+                # explicite exigee comme pour le rc 3 (#19420) : le gate
+                # juge ensuite la refutation (#18934).
+                family is ADJOINT
+                and existing_lane in SECRETARIAT_LANES
+                and grain_tier_of(pr_body) == "DEEP"
+                and dossier.fields.get("supersedes", "").strip()
+                and dossier.fields.get("supersedes-why", "").strip()
+            ):
+                pass  # re-stamp tiers autorise : dossier de domaine pour un DEEP
             else:
                 return refuse(
                     f"anti-double-stamp: gate rc {gate_rc} with an intact dossier by "

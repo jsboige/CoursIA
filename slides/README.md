@@ -53,6 +53,7 @@ Les images pleine-largeur utilisent le layout **`image-overlay`** (fond d'image 
 | 06 | Apprentissage | `06-apprentissage/` | ~2394 | 140 | EPITA, ECE, EPF |
 | 07 | Elargissements | `07-elargissements/` | ~642 | 9 | EPITA, EPF |
 | 08 | IA Generative | `08-ia-generative/` | ~464 | 36 | EPITA, ECE, EPF |
+| 09 | Traitement automatique des langues | `09-traitement-automatique-langues/` | - | - | - |
 | S1 | Argumentation | `S1-argumentation/` | ~791 | 20 | Sessions avancees |
 | S2 | IA exploratoire/symbolique | `S2-ia-exploratoire-symbolique/` | ~1112 | 54 | Sessions avancees |
 | S3 | Acculturation IA | `S3-acculturation/` | ~2039 | 133 | Sessions avancees |
@@ -136,7 +137,7 @@ Regles de base pour les images et le layout :
 ## Decisions de conception
 
 - **Slidev** (Markdown + Vue) : hot-reload, layouts custom, composants Vue pour interactivite, export HTML/PDF
-- **Theme-ia101 partage** : coherence visuelle entre tous les decks (13 au total)
+- **Theme-ia101 partage** : coherence visuelle entre tous les decks
 - **Images en overlay** : layout `image-overlay` pour les slides image-dominantes, jamais en colonne droite (convention issue #221, confirmee 5+ fois)
 - **Slides "Questions?"** conservees comme pauses respiratoires entre sections
 - **PPTX-reference en `.gitignore` ou committe** selon le deck : les renders PNG servent a l'audit visuel
@@ -178,6 +179,16 @@ layout: section
 ### Layout `image-overlay` (HARD, issue #221)
 
 Images pleine-largeur : layout `image-overlay` avec texte par-dessus, **JAMAIS** en colonne droite (`two-cols` avec image a droite). Convention confirmee 5+ fois.
+
+### Minification CSS : `magic-string` 1.4.3 casse le build des decks
+
+**Symptome** : `slidev build` echoue sur chaque deck avec `Invalid token in pseudo element: Dimension 1.5rem`, leve par lightningcss (le minifieur CSS par defaut de Vite 8).
+
+**Cause amont**, ni Slidev ni le theme : depuis `magic-string` **1.4.3** (publiee le 2026-10-05), `@unocss/transformer-directives` reecrit en double, en fin de fichier, les declarations qu'il a inserees quand le fichier contient aussi une regle vide a nettoyer (unocss/unocss#5373, correctif propose #5375 ; cote Slidev slidevjs/slidev#2768).
+
+**Reparation** : l'override `"magic-string@^1": "1.4.2"` dans `slides/package.json`. Le contournement anterieur (`build.cssMinify: false` dans un `vite.config.ts` du theme, #19981) a ete retire avec le fichier : il desactivait la minification de tout le site construit pour masquer une dependance fautive. A retirer quand une version d'UnoCSS portant le correctif de #5375 sera publiee et tiree par Slidev (suivi dans #20051).
+
+**Ou vit un `vite.config.*`** : Slidev ne lit un `vite.config.*` que dans ses **racines** (le theme, les addons, la racine du deck) -- un `slides/vite.config.ts` serait **ignore**. Une configuration destinee aux 19 decks vit donc dans le theme (`theme-ia101/`), jamais a la racine de `slides/`.
 
 ### Verification visuelle obligatoire avant merge
 
