@@ -52,6 +52,13 @@
     diagnosed above on the vertical chains is resolved by the annular
     embedding.
 
+  What link 3 proves (the braid closure, §6): the chirality divergence
+  documented on the canonical planar code of 4₁
+  (`alexander_figureEight_not_classical`) is an encoding artifact, not
+  an engine limit — the closure of the braid (σ₁ σ₂⁻¹)², tracked strand
+  by strand, reaches the unit class of the classical under the unsigned
+  engine (`braidFour_classical_unit_class`).
+
   Sign convention: the lake's PD code does not encode crossing chirality
   (docstring of `alexanderEntry`); only |aᵢ| is read, and the mirror of a
   notation shares all its designated values.
@@ -459,5 +466,92 @@ theorem spiral_five_alexander :
   simp only [Matrix.of_apply]
   simp (config := { decide := true }) [alexanderEntry]
   ring
+
+/-! ### Link 3: the figure-eight knot via braid closure (§6)
+
+The annular construction of link 2 settled the all-positive T(2,n)
+families. The figure-eight knot 4₁ eluded the engine: on the canonical
+planar code, the unsigned minor returns `t³ − 2t² + 2t`, outside the unit
+class of the classical `t² − 3t + 1`
+(`alexander_figureEight_not_classical`), and the repair went through the
+signed variant (`alexander_figureEight_signed`). This link establishes
+that the divergence was an **encoding artifact, not an engine limit**:
+the closure of the 3-strand braid `(σ₁ σ₂⁻¹)²` — the standard
+representation of 4₁ — encoded by tracking the **strands** through the
+crossings (not the tracks), yields a PD on which the UNSIGNED engine
+reaches the unit class of the classical directly
+(`braidFour_classical_unit_class` below: the exact positive counterpart
+of `alexander_figureEight_not_classical`, same shape, proven where the
+other is refuted).
+
+Encoding derivation (each strand followed top to bottom, a braid
+swapping tracks at each crossing): strands S1, S2, S3 start in tracks
+1, 2, 3; S1 passes c1 (over, σ₁), c2 (under, σ₂⁻¹), c4 (over, σ₂⁻¹);
+S2 passes c1 (under), c3 (over, σ₁), c4 (under); S3 passes c2 (over,
+σ₂⁻¹), c3 (under, σ₁). The 8 edges are the inter-crossing segments, the
+closure gluing the bottom of track k to the top of track k (E1 = S1-head
+∪ S3-tail, E4 = S1-tail ∪ S2-head, E7 = S2-tail ∪ S3-head, E2 E3 E5 E6
+E8 = proper segments). The retained PD code lives in the family of
+coherent readings — every crossing carries its two over-strand edges in
+positions e1/e3 — and it is this coherence that makes the classical unit
+class reachable, not a uniqueness of reading: on the braid incidence
+structure (8 plausible alternating readings per crossing), the
+under-strand orientation is neutral for the designated value, and among
+the 16 over-strand orientations exactly 4 reach the classical unit class
+(the retained one, −t² + 3t − 1, and t³ − 3t² + t); the other 12 fall
+back into the planar-code classes (t³ − 2t² + 2t in particular), and an
+incoherent reading — an over-strand in e2/e4 — recovers the class only
+by coincidence (64 out of 3 840). This is the orientation coherence
+that the canonical planar encoding does not carry.
+-/
+
+/-- PD of the closure of the braid `(σ₁ σ₂⁻¹)²`: crossing c1 =
+(1, 4, 2, 5) — literally the first crossing of the lake's
+`trefoilDiagram` —, c2 = (7, 2, 8, 3), c3 = (6, 1, 5, 8), c4 =
+(3, 6, 4, 7), over 8 edges. -/
+def braidFourDiagram : KnotDiagram :=
+  ⟨[⟨1, 4, 2, 5⟩, ⟨7, 2, 8, 3⟩, ⟨6, 1, 5, 8⟩, ⟨3, 6, 4, 7⟩], 8⟩
+
+theorem braidFour_wf : braidFourDiagram.wf = true := by
+  decide
+
+/-- No reflexive edge in the braid closure: the four labels of each
+crossing are pairwise distinct. -/
+theorem braidFour_noReflect :
+    braidFourDiagram.crossings.all (fun c =>
+      c.e1 ≠ c.e2 ∧ c.e1 ≠ c.e3 ∧ c.e1 ≠ c.e4 ∧
+      c.e2 ≠ c.e3 ∧ c.e2 ≠ c.e4 ∧ c.e3 ≠ c.e4) = true := by
+  decide
+
+/-- The designated value of the braid closure: `−t² + 3t − 1`, the
+classical of 4₁ within its unit class — reached by the UNSIGNED engine
+(pattern of `alexander_figureEight`: literalisation, 3×3 minor by
+`det_three_aux`). -/
+theorem braidFour_alexander :
+    alexanderPolynomialAux braidFourDiagram =
+      -(Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+  have hc : braidFourDiagram =
+      ⟨[⟨1, 4, 2, 5⟩, ⟨7, 2, 8, 3⟩, ⟨6, 1, 5, 8⟩, ⟨3, 6, 4, 7⟩], 8⟩ := by
+    decide
+  simp only [alexanderPolynomialAux, hc]
+  simp (config := { decide := true })
+  rw [det_three_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-- Positive counterpart of `alexander_figureEight_not_classical`:
+where the canonical planar code fails (no unit `ε = ±1`, no exponent
+`k`), the braid encoding reaches the unit class of the classical with
+`ε = −1`, `k = 0`. The determinant |Δ(−1)| = 5 = det(4₁) is preserved —
+and this time the shape of the polynomial with it. -/
+theorem braidFour_classical_unit_class :
+    ∃ (k : ℕ) (ε : ℤ), ε * ε = 1 ∧
+      alexanderPolynomialAux braidFourDiagram =
+        Polynomial.C ε * Polynomial.X ^ k *
+          (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+  refine ⟨0, -1, by norm_num, ?_⟩
+  rw [braidFour_alexander]
+  norm_num
 
 end Knots_en
