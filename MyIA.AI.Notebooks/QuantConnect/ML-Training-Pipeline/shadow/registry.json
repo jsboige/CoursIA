@@ -77,6 +77,26 @@
       },
       "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
       "fingerprint": "b7d1c0c9e85fb76b"
+    },
+    {
+      "id": "levetf-base",
+      "kind": "qc",
+      "sha": "f1a93779396b77398ed23ad8a02678acd786adfd",
+      "frozen_on": "2026-10-10",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/LeveragedETFMomentum-QC:37796612",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier",
+      "fingerprint": "29901378fae71c8c"
+    },
+    {
+      "id": "btc-voltarget-base",
+      "kind": "qc",
+      "sha": "4d26b3a6129b1245095e45c1f448a59c34a51b36",
+      "frozen_on": "2026-10-17",
+      "entrypoint": "MyIA.AI.Notebooks/QuantConnect/projects/BTC-VolTarget-QC:37950433",
+      "params": {},
+      "fee_model": "modèle de frais par défaut de Lean pour ce courtier (Bitfinex crypto, IBKR equity)",
+      "fingerprint": "653384a26fcaf8d3"
     }
   ]
 }

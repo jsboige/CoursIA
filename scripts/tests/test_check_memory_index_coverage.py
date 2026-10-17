@@ -100,3 +100,70 @@ def test_real_memory_dir() -> None:
     # MEMORY.md reel : on accepte OK ou FAIL (c.874 travaille a couverture 100%)
     assert report["verdict"] in ("OK", "FAIL")
     assert report["total_files"] > 100  # au moins 100 fichiers de Tells
+
+
+NL = chr(10)  # newline literal, heredoc-proof
+
+
+def _run_args(tmp_path: Path, mem_text: str, extra_args: list) -> dict:
+    """Comme _run mais avec des args CLI supplementaires."""
+    (tmp_path / "MEMORY.md").write_text(mem_text, encoding="utf-8")
+    (tmp_path / "alpha.md").write_text("# alpha", encoding="utf-8")
+    (tmp_path / "beta.md").write_text("# beta", encoding="utf-8")
+    (tmp_path / "gamma.md").write_text("# gamma", encoding="utf-8")
+    out = subprocess.run(
+        [sys.executable, str(SCRIPT), "--memory-dir", str(tmp_path), "--json", *extra_args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    assert out.returncode in (0, 1), f"unexpected rc={out.returncode}: stderr={out.stderr}"
+    return json.loads(out.stdout)
+
+
+def test_default_ceiling_oversize(tmp_path: Path) -> None:
+    """MEMORY.md > 24 400 o au defaut #4204 => FAIL_OVERSIZE, rc=1."""
+    line = "- [alpha](alpha.md)" + NL
+    filler = "# Memoire" + NL + NL + (line * 1300)
+    (tmp_path / "MEMORY.md").write_text(filler, encoding="utf-8")
+    (tmp_path / "alpha.md").write_text("# alpha", encoding="utf-8")
+    out = subprocess.run(
+        [sys.executable, str(SCRIPT), "--memory-dir", str(tmp_path), "--json"],
+        capture_output=True, text=True, encoding="utf-8",
+    )
+    report = json.loads(out.stdout)
+    assert report["verdict"] == "FAIL_OVERSIZE"
+    assert report["max_bytes"] == 24400
+    assert out.returncode == 1
+
+
+def test_alert_band_warns_without_failing(tmp_path: Path) -> None:
+    """21 960 < taille <= 24 400 => size_alert vrai, verdict reste OK."""
+    head = (
+        "# Memoire" + NL + NL
+        + "- [alpha](alpha.md)" + NL
+        + "- [beta](beta.md)" + NL
+        + "- [gamma](gamma.md)" + NL + NL
+    )
+    pad = "x" * (22500 - len(head))
+    report = _run_args(tmp_path, head + pad, [])
+    assert report["size_bytes"] > 21960
+    assert report["size_bytes"] <= 24400
+    assert report["size_alert"] is True
+    assert report["verdict"] == "OK"
+
+
+def test_no_max_bytes_binary_only(tmp_path: Path) -> None:
+    """--no-max-bytes : pas de plafond, verdict binaire seul (pre-#4204)."""
+    head = (
+        "# Memoire" + NL + NL
+        + "- [alpha](alpha.md)" + NL
+        + "- [beta](beta.md)" + NL
+        + "- [gamma](gamma.md)" + NL + NL
+    )
+    pad = "x" * (25000 - len(head))  # > 24 400 o
+    report = _run_args(tmp_path, head + pad, ["--no-max-bytes"])
+    assert report["max_bytes"] is None
+    assert report["alert_bytes"] is None
+    assert report["size_alert"] is False
+    assert report["verdict"] == "OK"
