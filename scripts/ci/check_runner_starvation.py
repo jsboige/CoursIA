@@ -56,8 +56,10 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
@@ -429,8 +431,74 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int) -> Verdict:
     else:
         v.notes.append("ni queue affamee ni job en cours -- OK")
 
+    # Alertes de perte de pool par hote (#20697 point 4) -- disjointes de
+    # EXTINCTION globale : un hote peut perdre tous ses online pendant que le
+    # pool global reste vert (les autres hotes du label tournent). Cas
+    # fondateur : myia-ai-01-wsl 0 online / 10 offline pendant ~2 jours,
+    # EXTINCTION muette car d'autres hotes du label restaient online.
+    if inv.available:
+        v.warnings.extend(evaluate_host_loss(inv))
+
     v.status = "ERROR" if v.errors else "OK"
     return v
+
+
+_HOST_SUFFIX = re.compile(r"-\d+$")
+
+
+def _host_of(runner_name: str) -> str:
+    """Nom de l'hote extrait du nom de slot (suffixe '-N' jete).
+
+    Le format canonique sur la flotte est `<host>-<slot>` (ex :
+    `myia-ai-01-wsl-1` -> host `myia-ai-01-wsl` ; `myia-po-2024-linux-docker-3`
+    -> host `myia-po-2024-linux-docker`). Les noms qui ne portent pas ce
+    suffixe (futur format) restent tels quels -- la detection par hote est
+    best-effort, le predicat EXTINCTION global reste la borne dure.
+    """
+    return _HOST_SUFFIX.sub("", runner_name)
+
+
+def evaluate_host_loss(inv: RunnerInventory) -> list[str]:
+    """Warnings de perte de pool par hote (#20697 point 4).
+
+    Constat fondateur (12:45Z) : le pool `myia-ai-01-wsl` est reste 0 online
+    pendant ~2 jours alors que les 10 conteneurs tournaient (visible cote
+    superviseur, invisible cote GitHub). Aucun signal n'a nomme cette
+    disjonction -- l'organe EXTINCTION global ne rougit que si TOUS les
+    online tombent (les 10 slots etaient OFFLINE cote GitHub, mais d'autres
+    hotes du label restaient online ; l'extinction globale n'a jamais tire).
+
+    Le predicat par hote : `online == 0` ET `offline > 0` -- les conteneurs
+    existent (slots listes, ne serait-ce qu'en OFFLINE) mais aucun n'a pu
+    s'inscrire. C'est la disjonction superviseur mort / conteneurs vivants
+    sur UN hote, pas la famine globale.
+
+    Un hote avec `online > 0` et `offline > 0` n'est PAS une perte de pool :
+    certains slots sont en cours de redemarrage et le pool rend des jobs.
+    C'est la garde anti-FP, mesure du jour : `myia-po-2024-linux-docker-3`
+    est OFFLINE pendant que `myia-po-2024-linux-docker-1` est ONLINE, et
+    l'inventaire rend `online=1, offline=1` -- on NE DOIT PAS alerter.
+    """
+    if not inv.available:
+        return []
+    online = set(inv.online)
+    offline = set(inv.offline)
+    by_host: dict[str, dict[str, int]] = defaultdict(lambda: {"online": 0, "offline": 0})
+    for name in online | offline:
+        host = _host_of(name)
+        bucket = by_host[host]
+        if name in online:
+            bucket["online"] += 1
+        else:
+            bucket["offline"] += 1
+    out: list[str] = []
+    for host, counts in sorted(by_host.items()):
+        if counts["online"] == 0 and counts["offline"] > 0:
+            out.append(
+                f"POOL LOSS: host {host} a 0 runner online et {counts['offline']} offline -- "
+                f"conteneurs listes mais aucun ne s'inscrit (superviseur mort ? #20697)"
+            )
+    return out
 
 
 def main() -> int:
