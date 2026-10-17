@@ -1114,6 +1114,33 @@ def test_slot_clean_merges(tmp_path):
     assert f"--head {HEAD}" in slot_cmd
 
 
+def test_slot_fetches_pr_head_before_organ(tmp_path):
+    """L'organe lit l'arbre de la tete par `git` sans la rapatrier : le fetch
+    de `pull/<N>/head` precede l'appel (mesure du 17/10, #20468 et #20471
+    sautees en `slot-collision-unreadable` faute d'objet local)."""
+    view = default_view(files=(SLOT_NOTEBOOK,))
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    flat = runner.flat()
+    fetch_idx = next(i for i, f in enumerate(flat)
+                     if f.startswith("git ") and "pull/123/head" in f)
+    slot_idx = next(i for i, f in enumerate(flat)
+                    if "check_slot_reservation.py" in f)
+    assert fetch_idx < slot_idx
+
+
+def test_slot_fetch_failure_is_fail_closed(tmp_path):
+    """Fetch en echec : skip nomme, l'organe n'est pas appele sur une tete
+    qu'il ne pourrait pas lire."""
+    view = default_view(files=(SLOT_NOTEBOOK,))
+    runner = ScriptedRunner(views={123: view}, fetch_rc=128)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "slot-collision-unreadable:fetch"
+    assert not any("check_slot_reservation.py" in f for f in runner.flat())
+
+
 def test_slot_collision_reserved_by_open_pr_skips(tmp_path):
     """L'organe detecte une collision avec une autre PR ouverte (ICT-48 et
     SL-12b mesures le 14/10 dans #20774) : skip dur, motif nomme."""
