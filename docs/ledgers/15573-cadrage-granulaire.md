@@ -38,7 +38,7 @@ La **première** moitié est livrée (PR #15457 réécrite en cinq fournées G.4
 | 8 | **#15573 (elle-même)** | `cadrage-par-item` | **CYCLE EN COURS** (ce ledger) | Auto-référencement. |
 | 9 | [#15516](https://github.com/jsboige/CoursIA/issues/15516) | `pour-chaque` | **OUVERTE** | « Pour chaque fichier fautif » — 25 fichiers / 90 règles, conforme. |
 | 10 | [#14944](https://github.com/jsboige/CoursIA/issues/14944) | `sweep-N-fichiers` | **OUVERTE** | « 13 fichiers » mesurés, OK G.4. |
-| 11 | [#14926](https://github.com/jsboige/CoursIA/issues/14926) | `cadrage-par-item` | **OUVERTE** | « une PR par notebook ou par groupe homogène » — cadrage explicite, à borner. |
+| 11 | [#14926](https://github.com/jsboige/CoursIA/issues/14926) | `cadrage-par-item` | **RÉÉCRITE (2026-10-14)** | « une PR par notebook ou par groupe homogène » — réécrite en 3 fournées de décision (A param-fidélité, B vision, C infra), entrée dédiée ci-dessous. |
 
 ## Vérdict — ceux qui ne s'y prêtent pas en l'état
 
@@ -47,7 +47,7 @@ Les 11 hits se répartissent ainsi :
 - **4 hits déjà conformes** (#16638, #16231, #16034, #15516, #14944, #16081-delivered) : cadrage déjà par série/domaine ≤ 15 fichiers, OK G.4.
 - **1 hit auto-référent** (#15573) : ce ledger.
 - **2 EPICs partitionnés** (#17073, #17066) : cadrage d'origine déjà granularisé, partition en sous-EPICs documentée.
-- **Hits réécrits** : #18058 (2026-09-29, PR #18382) · #15615 (2026-10-03, ce ledger). **Reste à réécrire** : #14926 (et d'autres si l'instrument en détecte) — cadrage d'origine dépasse G.4, nécessitent une réécriture en fournées.
+- **Hits réécrits** : #18058 (2026-09-29, PR #18382) · #15615 (2026-10-03, ce ledger) · #14926 (2026-10-14, entrée dédiée ci-dessous — résiduel NOT-DELIVERED du 12/10 livré). **Reste à réécrire** : aucun de la recension du 2026-09-22 ; l'instrument peut détecter de nouveaux hits à l'avenir (critère 1 vivant).
 
 **Conclusion** : la méthode de #15573 ne s'applique **pas uniformément**. Les cadrages granuleux **par série** sont déjà G.4-compatibles ; les cadrages **par fichier unitaire** sur des ensembles > 15 (GameTheory 33 carnets) dépassent le seuil et appellent une réécriture.
 
@@ -75,7 +75,6 @@ Une fournée = un sous-tableau de gradation posté en commentaire de l'issue = u
 
 ## Ce qui reste hors périmètre (acceptance différée)
 
-- Réécriture effective de #14926 (dernier hit ouvert de la recension du 2026-09-22) : cadrage « une PR par notebook ou par groupe homogène » à borner — domaine claudish.
 - **Exécution des fournées A-D de #15615** : la réécriture pose le cadrage, les sous-tableaux de gradation restent à produire par une lane spécialisée GameTheory.
 - Élargissement de l'instrument aux cadrages implicites (énumérations sans mot-clé) : non prioritaire — la détection actuelle suffit à montrer le défaut.
 
@@ -95,3 +94,19 @@ Une fournée = un sous-tableau de gradation posté en commentaire de l'issue = u
 **Réécriture appliquée** : bullet remplacé par « Fournées par famille d'abord — 2 à 4 PRs au total, jamais une PR par notebook », avec l'exception mono-PR (ré-exécution > ~30 min ou claim conflictuel) et les modèles livrés cités. Préfixe daté posé sur le body (le lecteur voit ce qui a changé, historique conservé).
 
 **Hit #17550 dispositionné sans réécriture** (même cycle) : le plateau s'est auto-corrigé — 9 mono-PRs revertées puis fermées par ai-01 « le reste consolidé en une seule PR » (po-2025:CoursIA-2) ; il ne reste que #18255 (tranche 15/16, dossier adjoint). Réécrire maintenant serait du churn sur une issue presque résolue.
+
+## Entrée #14926 — réécriture APPLIQUÉE, résiduel NOT-DELIVERED livré (lane myia-po-2023:CoursIA, 2026-10-14)
+
+**Hit** : `cadrage-par-item` (rang 11 de la recension) — « une PR par notebook ou par groupe homogène ». Résiduel du verdict ai-01 du 12/10 ([NOT-DELIVERED] : « la réécriture par-item de #14926 n'est pas faite »).
+
+**Mesure fondatrice** : inventaire du 07/10 — le reliquat « chat simple » est **vide** (03d dernier migratable mécanique, PR #19634 MERGED). Le cadrage d'origine prescrivait un grain unitaire par item alors qu'aucun item mécanique ne restait.
+
+**Réécriture appliquée** le 2026-10-14 (c.1537) : bloc « Cadrage réécrit en fournées au 2026-10-14 » en tête du body (préfixe daté, historique conservé). Le reste se prend **par fournée de décision**, jamais carnet par carnet :
+
+| Fournée | Contenu | Gate |
+|---|---|---|
+| **A — param-fidélité** | 10b + 10c (1 domaine serving) | binaire : exception documentée OU extension passerelle claudish (sémantiques closes : `chat_template_kwargs`, `seed`, `logprobs`) — puis **une seule PR pour les deux carnets** |
+| **B — vision** | 09-KM-Multimodal + e2e_quant | arbitrage déjà ouvert — grain unitaire légitime (critère 3) |
+| **C — infra** | 02-Aspire | à cadrer avec la lane propriétaire — pas une migration de carnet |
+
+Les fournées A-C restent **à exécuter** (domaine claudish) : cette entrée clôt le critère 2 de #15573 (réécriture), pas l'exécution des fournées.
