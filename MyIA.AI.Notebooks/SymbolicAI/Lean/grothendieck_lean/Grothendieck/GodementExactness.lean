@@ -723,4 +723,137 @@ theorem stalkFunctor_map_exact {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
     (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).exact_tfae.out 2 1
   exact h.mp inferInstance S hS
 
+/-! ### Partie 93(a), briques (ii)+(iii) — le splicing en chaque tige, inconditionnel
+
+Les deux briques restantes du re-scopage de la Partie 93 se combinent en un
+seul énoncé générique plutôt qu'en deux lemmes séparés.
+
+**Brique (ii) — tiges des conoyaux.** La suite `A ⟶ B ⟶ coker f` est exacte
+en `B` (`ShortComplex.exact_cokernel`), et la brique (i)
+(`stalkFunctor_map_exact`) transporte cette exactitude en chaque tige. La
+préservation des conoyaux par le foncteur tige (adjoint à gauche, donc
+colimites) est consommée sous cette forme : aucun isomorphisme explicite
+`(coker f)ₓ₀ ≅ coker (fₓ₀)` n'a besoin d'être construit — l'exactitude de la
+tige de la projection est exactement ce dont le splicing a besoin.
+
+**Brique (iii) — récurrence splicing.** Composer à droite la tige de la
+projection avec la tige de l'unité du conoyau ne change pas le noyau, dès
+que cette dernière est mono — et elle l'est **inconditionnellement**
+(`mono_stalkFunctor_map_toGodement`, valable pour tout préfaisceau, donc
+pour `coker f`). Le transfert `ShortComplex.exact_iff_of_epi_of_isIso_of_mono`
+est le même geste que `exact_toGodement_godementCanonicalDZero` côté
+préfaisceaux (Partie 91 pas B), avec les mêmes τ₁ = τ₂ = 𝟙 et τ₃ = tige de
+l'unité — mais ici τ₃ est mono pour **tout** préfaisceau, là où la version
+préfaisceaux exigeait `F` faisceau (séparéité du conoyau, pas A de la
+Partie 91).
+
+Résultat : pour **toute** flèche `f` de préfaisceaux, sans aucune hypothèse
+de faisceau, la suite de tiges `Aₓ₀ ⟶ Bₓ₀ ⟶ (C⁰(coker f))ₓ₀` est exacte en
+`Bₓ₀`. La récurrence est ce lemme même : chaque degré du complexe canonique
+en est une instance — degré 0 en `f = μ`, degré 1 en `f = d⁰`, chaque degré
+suivant en `f = dⁿ` par le motif uniforme `d^{n+1} = godementStep dⁿ` (P89)
+— sans que rien de nouveau n'apparaisse à aucun degré. -/
+
+/-- **Le pas canonique est exact en chaque tige, pour toute flèche —
+l'énoncé central des briques (ii)+(iii) de la Partie 93(a)** : pour tout
+`f : A ⟶ B` de préfaisceaux de groupes abéliens et tout point `x₀`, la suite
+de tiges `Aₓ₀ ⟶ Bₓ₀ ⟶ (C⁰(coker f))ₓ₀` est exacte en `Bₓ₀`. La preuve
+transfère l'exactitude de la tige de `f ≫ π_f` — brique (i) appliquée à
+`ShortComplex.exact_cokernel` — le long du morphisme de complexes courts
+`(𝟙, 𝟙, tige de l'unité de coker f)` : la composante τ₃ est mono par
+`mono_stalkFunctor_map_toGodement`, **sans aucune hypothèse de faisceau**.
+C'est la brique de récurrence du complexe canonique : chaque degré en est
+une instance. -/
+theorem stalk_exact_godementStep {A B : X.Presheaf AddCommGrpCat.{u}}
+    (f : A ⟶ B) (x₀ : X) :
+    (ShortComplex.mk
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map f)
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map (godementStep f))
+      (by rw [show ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map f ≫
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementStep f)) =
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (f ≫ godementStep f) from
+              (Functor.map_comp _ _ _).symm, comp_godementStep_zero,
+        Functor.map_zero])).Exact := by
+  have hmono : Mono ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+      (toGodement (cokernel f))) :=
+    mono_stalkFunctor_map_toGodement (cokernel f) x₀
+  have key : (ShortComplex.mk
+        ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map f)
+        ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map (cokernel.π f))
+        (by rw [show ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map f ≫
+              (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+                (cokernel.π f)) =
+              (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+                (f ≫ cokernel.π f) from
+              (Functor.map_comp _ _ _).symm, cokernel.condition,
+          Functor.map_zero])).Exact ↔
+      (ShortComplex.mk
+        ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map f)
+        ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map (godementStep f))
+        (by rw [show ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map f ≫
+              (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+                (godementStep f)) =
+              (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+                (f ≫ godementStep f) from
+              (Functor.map_comp _ _ _).symm, comp_godementStep_zero,
+          Functor.map_zero])).Exact :=
+    ShortComplex.exact_iff_of_epi_of_isIso_of_mono
+      { τ₁ := 𝟙 _, τ₂ := 𝟙 _,
+        τ₃ := (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+          (toGodement (cokernel f)),
+        comm₁₂ := by rw [Category.id_comp, Category.comp_id],
+        comm₂₃ := by simp [godementStep] }
+  exact key.mp
+    (stalkFunctor_map_exact (ShortComplex.exact_cokernel f) x₀)
+
+/-- **Exactitude en tige du degré 0, inconditionnelle** : la suite
+`Fₓ₀ ⟶ (C⁰F)ₓ₀ ⟶ (C¹F)ₓ₀` est exacte en `(C⁰F)ₓ₀` pour **tout** préfaisceau
+`F` — là où la version préfaisceaux
+(`exact_toGodement_godementCanonicalDZero`, Partie 91 pas B) exige `F`
+faisceau. Le mono de l'unité, coûteux en préfaisceaux (il fallait la
+séparéité du conoyau, pas A), est gratuit en tige
+(`mono_stalkFunctor_map_toGodement`). Instance du lemme générique en
+`f = μ` : `d⁰ = godementStep μ` par définition. -/
+theorem stalk_exact_toGodement_godementCanonicalDZero
+    (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) :
+    (ShortComplex.mk
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map (toGodement F))
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalDZero F))
+      (by rw [show ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (toGodement F) ≫
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalDZero F)) =
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (toGodement F ≫ godementCanonicalDZero F) from
+              (Functor.map_comp _ _ _).symm,
+        toGodement_comp_godementCanonicalDZero, Functor.map_zero])).Exact :=
+  stalk_exact_godementStep (toGodement F) x₀
+
+/-- **Exactitude en tige du degré 1 — la récurrence en acte** : la suite
+`(C⁰F)ₓ₀ ⟶ (C¹F)ₓ₀ ⟶ (C²F)ₓ₀` est exacte en `(C¹F)ₓ₀`, pour tout préfaisceau
+`F`. C'est le même lemme générique appliqué à `f = d⁰` : chaque degré
+suivant du complexe canonique en est une instance identique, le motif
+`d^{n+1} = godementStep dⁿ` (P89) rendant la récurrence uniforme — la
+preuve ne change pas d'un degré à l'autre. -/
+theorem stalk_exact_godementCanonicalDZero_godementCanonicalDOne
+    (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) :
+    (ShortComplex.mk
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalDZero F))
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalDOne F))
+      (by rw [show ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalDZero F) ≫
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalDOne F)) =
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalDZero F ≫ godementCanonicalDOne F) from
+              (Functor.map_comp _ _ _).symm,
+        godementCanonicalDZero_comp_godementCanonicalDOne,
+        Functor.map_zero])).Exact :=
+  stalk_exact_godementStep (godementCanonicalDZero F) x₀
+
 end Grothendieck
