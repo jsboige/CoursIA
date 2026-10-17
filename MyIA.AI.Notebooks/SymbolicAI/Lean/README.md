@@ -254,9 +254,9 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 16d | Conway-Game-of-Life-Lean-Native | ~32 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
 | 16e | Conway-FRACTRAN-Lean-Native | ~22 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
 | 16f | Conway-Free-Will-Theorem | ~28 | 3 | 0 | **NOUVEAU** (hommage) |
-| 16g | Conway-Canons | ~23 | 3 | - | **NOUVEAU** (barreau 2 #12223) |
+| 16g | Conway-Canons | ~23 | 3 | - | **NOUVEAU** |
 | 16h | Conway-PatternTour-Native | ~9 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
-| 16i | Translateur-Life | ~4 | 0 | - | **NOUVEAU** (grain B1 #12205) |
+| 16i | Translateur-Life | ~4 | 0 | - | **NOUVEAU** |
 | 16j | Conway-Hashlife-Correctness-Native | ~15 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
 | 17a | Knots-a-Conway-and-Proofs | ~13 | 0 | - | **NOUVEAU** (hommage) |
 | 17b | Knots-b-Invariants-Companion | ~19 | 3 | - | **NOUVEAU** |
@@ -264,10 +264,10 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 18 | Sendov-Complex-Analysis | ~22 | 3 | 0 | **NOUVEAU** |
 | 19 | Analysis-I-Tao-Workflow | ~18 | 3 | 0 | **NOUVEAU** |
 | 20 | PFR-Entropy-Method | ~23 | 3 | 0 | **NOUVEAU** |
-| 20b | PFR-Primitives-Transportables | ~6 | 0 | - | **NOUVEAU** (digestion #12214) |
+| 20b | PFR-Primitives-Transportables | ~6 | 0 | - | **NOUVEAU** |
 | 21 | MIMO-Detection-Flips | ~34 | 6 | 0 | **NOUVEAU** |
 | 21b | MIMO-Converse-Native | ~30 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`) |
-| 21c | Descente-Budget | ~9 | 8 | 0 | **NOUVEAU** (#12219) |
+| 21c | Descente-Budget | ~9 | 8 | 0 | **NOUVEAU** |
 | 22 | Galois-Probleme-Inverse-M23 | ~25 | 3 | 0 | **NOUVEAU** (exécution Lean + sympy) |
 | 23 | ERC20-Invariant-Companion | ~21 | 3 | 0 | **NOUVEAU** (lecture statique Python du lake) |
 | 23b | Lean-ERC20-Native-Companion | ~30 | 2 | - | **NOUVEAU** (kernel `lean4-wsl`) |
@@ -280,7 +280,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 29 | Hecke-Operators-Native | ~32 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `hecke_lean`) |
 | 30 | FormalGroups-Native | ~33 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `formal_groups_lean`) |
 | 31 | Euler-Navier-Stokes | 34 | 3 | 0 | **NOUVEAU** (kernel `python3`, reproduction pinée et double noyau) |
-| 34 | Calculabilite-et-Limites | 19 | 3 | 0 | **NOUVEAU** (kernel `python3` + lake `formal_logic_lean`, Tranche E Epic #15066) |
+| 34 | Calculabilite-et-Limites | 19 | 3 | 0 | **NOUVEAU** (kernel `python3` + lake `formal_logic_lean` ; Tranche E — Epic #15066) |
 | 36 | Structures-Finies-MUH | 23 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `tegmark_muh_lean`, Annexe A de Tegmark) |
 
 Tous les notebooks incluent :
