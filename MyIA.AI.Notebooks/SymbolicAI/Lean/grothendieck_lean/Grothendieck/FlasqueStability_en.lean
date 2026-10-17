@@ -43,29 +43,36 @@ site version of Part 79:
     `Subsingleton (H F (n+1))`. This theorem delivers its content in the
     statement, not the proof (`inferInstance`, the cancellation being a
     Mathlib instance already bridged in Part 20): it lays the stone where
-    Godement uses Zorn. The full Godement theorem (II.5.2-5.3) is
-    *flasque => injective => Γ-acyclic*; here, **the only missing link is
-    `flasque => injective`** (II.5.2, proof by inductive extension via
-    Zorn's lemma), explicitly documented as a boundary of the lake: the
-    chain provable without Zorn is recorded, the Zorn link is left open.
+    Godement uses Zorn. **Correction (Part 94)**: the initial gloss
+    "flasque => injective (II.5.2)" is **false** — on a two-point discrete
+    space every sheaf is flasque and the constant sheaf (Z, Z) is not
+    injective in Ab x Ab. Godement's true statement is
+    *flasque => Γ-acyclic* (II.5.1): Part 94
+    (`Grothendieck.FlasqueAcyclic`) delivers its unconditional degree 1,
+    the shift step, and the conditional capstone whose only hypothesis is
+    *injective => flasque* (II.4, `j_!` absent from Mathlib) — a boundary
+    named for Part 95.
 
 The conceptual reading: the stabilities recorded here are the ones that
 cost **no choice** — an isomorphism transports a structure canonically, a
 product amalgamates component by component because compatibility and
 amalgamation are read component by component. The boundary is exactly
-where a choice (Zorn's maximal extension) becomes necessary: *flasque =>
-injective* is not canonical. This dividing line — what can be done
+where a choice (Zorn's maximal extension) becomes necessary: *injective =>
+flasque* is not canonical (it requires the extension by zero `j_!`). This
+dividing line — what can be done
 without choice, what requires choice — is a thoroughly Grothendieckian
 line.
 
 References:
   - R. Godement, *Topologie algebrique et theorie des faisceaux* [God58],
-    Chap. II §3 (prop. 2: stability under products) and §5 (acyclicity of
-    flasque sheaves, theorem 5.2: flasque => injective via Zorn).
+    Chap. II §3 (prop. 2: stability under products), §4 (injective =>
+    flasque) and §5 (th. 5.1: acyclicity of flasque sheaves).
   - SGA 4, Expose II (sites and sieves).
   - Mathlib, `Mathlib.CategoryTheory.Limits.FunctorCategory` (`piObjIso`).
   - Part 20 (`Grothendieck.SheafCohomology.Basic`): Ext cohomology.
   - Part 79 (`Grothendieck.Flasque`): `IsFlasqueSieves`.
+  - Part 94 (`Grothendieck.FlasqueAcyclic`): flasque => Γ-acyclic,
+    unconditional degree 1 + shift step + conditional capstone.
   - Part 63 (`Grothendieck.SheafCondition`): the product-equalizer
     decomposition of which flasqueness is the existence half.
 
@@ -214,9 +221,11 @@ for an abelian sheaf `F` flasque at the level of sieves (composed with
 `forget`) **and** injective in the category of sheaves, the cohomology
 `H^{n+1}` is trivial. The cancellation is the Mathlib instance already
 bridged by Part 20; this theorem consumes it in the flasque setting.
-The stone laid here points exactly at the missing link of Godement's
-theorem II.5: *flasque => injective* (II.5.2, via Zorn) — a documented
-boundary of the lake, consciously not crossed. -/
+The stone laid here precedes the unconditional degree-1 acyclicity
+delivered by Part 94 (`Grothendieck.FlasqueAcyclic`): Godement's true
+theorem II.5.1 is *flasque => Γ-acyclic*, whose only missing link is
+*injective => flasque* (II.4) — a documented boundary of the lake,
+consciously not crossed. -/
 theorem subsingleton_H_succ_of_flasque_of_injective
     (F : Sheaf J AddCommGrpCat.{max v u}) [Injective F]
     [HasSheafify J AddCommGrpCat.{max v u}]
