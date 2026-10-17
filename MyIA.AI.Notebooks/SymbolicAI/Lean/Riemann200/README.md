@@ -18,7 +18,7 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 | 08 | *(à venir)* | Riemann mapping — toute région simplement connexe ≠ ℂ est conforme au disque | Python stdlib |
 | 09 | *(à venir)* | Riemann–Lebesgue et Fourier — noyau de Dirichlet, phénomène de Gibbs | Python stdlib + matplotlib |
 
-Le versant **preuves** vivra dans le lake compagnon `riemann200_lean/`, à créer au premier grain Lean de la série (même maison que [`serre100_lean/`](../Serre100/serre100_lean/)).
+Le versant **preuves** vit dans le lake compagnon [`riemann200_lean/`](riemann200_lean/) — premier module [`Riemann200/Memoire1859.lean`](riemann200_lean/Riemann200/Memoire1859.lean) : le pôle en s = 1 et la divergence des inverses des premiers, face à Mathlib (`lake build SUCCESS`, `distinct_code_sorry` 0). Même maison que [`serre100_lean/`](../Serre100/serre100_lean/).
 
 ## Conventions
 
