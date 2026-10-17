@@ -29,7 +29,7 @@ en un seul package multi-`lean_lib` aligné sur le modèle éprouvé de
   `NoCrossCounterexample` (carré latin 3×3, cf `StableMarriage/Lattice.lean`
   bloc « Man-optimalité, version honnête »). `Lattice` est désormais
   sorry-free.
-- **Lignes** : ~17 890 (FR + EN confondus, modules frères, hors `lakefile.lean`)
+- **Lignes** : voir catalogue (FR + EN confondus, modules frères, hors `lakefile.lean`)
 - **CI** : `lean-social-choice.yml` ne build PAS ce projet (cf
   [lean-merge-discipline.md](../../../.claude/rules/lean-merge-discipline.md) — seul
   `lake build <module>` local fait foi)
@@ -116,13 +116,13 @@ Cinq sous-modules FR + leurs siblings EN, absorbés depuis l'ancien
 `stable_marriage_lean/` (supprimé via PR #5971, contenu intégralement
 préservé ici — anti-régression 4 étapes respectée).
 
-| Sous-module | Lignes (FR / EN) | Sorries (FR / EN) | Contenu |
+| Sous-module | Lignes (voir catalogue) | Sorries (FR / EN) | Contenu |
 |-------------|------------------|------------------|---------|
-| [`StableMarriage.Definitions`](StableMarriage/Definitions.lean) | 125 / 132 | 0 / 0 | `PrefProfile`, `Matching`, `IsStable`, ordre `ManLE` |
-| [`StableMarriage.GSState`](StableMarriage/GSState.lean) | 178 / 187 | 0 / 0 | État de l'algorithme Gale-Shapley, file d'hommes libres, propositions |
-| [`StableMarriage.Lemmas`](StableMarriage/Lemmas.lean) | 898 / 907 | 0 / 0 | Lemmes intermédiaires (44 lemmes, 0 sorry) |
-| [`StableMarriage.Lattice`](StableMarriage/Lattice.lean) | 885 / 881 | 0 / 0 | Treillis des mariages (join/meet), optimalité homme/femme ; les énoncés contrefactuels `man_optimality_key_step` et `doctor_optimal_eq_top` ont été **retirés et réfutés** (`NoCrossCounterexample.*_is_false`, carré latin 3×3), Lattice est sorry-free |
-| [`StableMarriage.GaleShapley`](StableMarriage/GaleShapley.lean) | 191 / 184 | 0 / 0 | Terminaison, stabilité, optimalité homme, existence d'un stable |
+| [`StableMarriage.Definitions`](StableMarriage/Definitions.lean) | (catalogue) | 0 / 0 | `PrefProfile`, `Matching`, `IsStable`, ordre `ManLE` |
+| [`StableMarriage.GSState`](StableMarriage/GSState.lean) | (catalogue) | 0 / 0 | État de l'algorithme Gale-Shapley, file d'hommes libres, propositions |
+| [`StableMarriage.Lemmas`](StableMarriage/Lemmas.lean) | (catalogue) | 0 / 0 | Lemmes intermédiaires (44 lemmes, 0 sorry) |
+| [`StableMarriage.Lattice`](StableMarriage/Lattice.lean) | (catalogue) | 0 / 0 | Treillis des mariages (join/meet), optimalité homme/femme ; les énoncés contrefactuels `man_optimality_key_step` et `doctor_optimal_eq_top` ont été **retirés et réfutés** (`NoCrossCounterexample.*_is_false`, carré latin 3×3), Lattice est sorry-free |
+| [`StableMarriage.GaleShapley`](StableMarriage/GaleShapley.lean) | (catalogue) | 0 / 0 | Terminaison, stabilité, optimalité homme, existence d'un stable |
 
 **Théorèmes clés** (`namespace StableMarriage`) :
 
@@ -155,7 +155,7 @@ en est l'illustration la plus complète.
   `INTRACTABLE_UNTIL_GS_IMPL` : les tentatives stagnaient de façon
   **reproductible** (138 s sur l'énoncé de stabilité, 83 s sur l'optimalité
   homme), et le diagnostic nommait la seule condition déblocante — le port
-  complet de l'algorithme (~1000 lignes de lemmes), livré par #997. Les
+  complet de l'algorithme (volume catalogué de lemmes), livré par #997. Les
   trois théorèmes ci-dessus sont le produit direct de cette condition
   diagnostiquée.
 - **Un résiduel fermé par l'indice conservé.** `gsChooseMax_maximal` est
@@ -175,11 +175,11 @@ documentation directe, les traces prover ne couvrant pas ce module.
 Trois sous-modules FR + leurs siblings EN, absorbés depuis l'ancien
 `cooperative_games_lean/` et progressivement complétés.
 
-| Sous-module | Lignes (FR / EN) | Sorries (FR / EN) | Contenu |
+| Sous-module | Lignes (voir catalogue) | Sorries (FR / EN) | Contenu |
 |-------------|------------------|------------------|---------|
-| [`CooperativeGames.Basic`](CooperativeGames/Basic.lean) | 607 / 606 | 0 / 0 | `Coalition = Finset N`, `TUGame`, unanimity/majority games, `BondedWeights`, **théorème de Bondareva-Shapley** (forward) |
-| [`CooperativeGames.ConeKernel`](CooperativeGames/ConeKernel.lean) | 753 / 757 | 0 / 0 | `BondarevaCone.augCone`, séparateur, **Bondareva-Shapley bidirectionnel** (forward + backward), `marginalVector_mem_core`, `convex_core_nonempty` |
-| [`CooperativeGames.Shapley`](CooperativeGames/Shapley.lean) | 2 024 / 2 034 | 0 / 0 | `Solution`, **les quatre axiomes de Shapley** (efficience, symétrie, joueur nul, additivité), unicité, `mobius_decomposition`, `shapley_smulGame`, `shapley_addGames` |
+| [`CooperativeGames.Basic`](CooperativeGames/Basic.lean) | (catalogue) | 0 / 0 | `Coalition = Finset N`, `TUGame`, unanimity/majority games, `BondedWeights`, **théorème de Bondareva-Shapley** (forward) |
+| [`CooperativeGames.ConeKernel`](CooperativeGames/ConeKernel.lean) | (catalogue) | 0 / 0 | `BondarevaCone.augCone`, séparateur, **Bondareva-Shapley bidirectionnel** (forward + backward), `marginalVector_mem_core`, `convex_core_nonempty` |
+| [`CooperativeGames.Shapley`](CooperativeGames/Shapley.lean) | (catalogue) | 0 / 0 | `Solution`, **les quatre axiomes de Shapley** (efficience, symétrie, joueur nul, additivité), unicité, `mobius_decomposition`, `shapley_smulGame`, `shapley_addGames` |
 
 **Ouvrages-ancrage du cluster** :
 
@@ -302,7 +302,7 @@ pour éviter de retélécharger `~3 GB` à chaque incrément.
 | [`SocialChoice/social_choice_lean_peters/`](../SocialChoice/social_choice_lean_peters/) | Lake séparé (pinné commit `94a4c650` Peters) | Gibbard-Satterthwaite, Duggan-Schwartz — divergence de rev ; convergence Mathlib v4.32.1 acquise (#12134) |
 | `cooperative_games_lean/` | **Supprimé** (rm #6587, absorbé dans `game_theory_lean/CooperativeGames/`) | contenu (Basic / ConeKernel / Shapley, FR + EN) préservé byte-identique sous `CooperativeGames/` |
 | `stable_marriage_lean/` | **Supprimé** (c.305 finalisation + PR #5971 doublon) | — |
-| [`lean_game_defs/`](../lean_game_defs/) | Couche introductive (pas un Lake) | 6 fichiers `.lean` de **référence** pour copier-coller dans les notebooks d'enseignement ; 0 sorries, Mathlib-free |
+| [`lean_game_defs/`](../lean_game_defs/) | Couche introductive (pas un Lake) | fichiers `.lean` de **référence** pour copier-coller dans les notebooks d'enseignement ; 0 sorries, Mathlib-free |
 | [`decision_theory_lean/`](../../Probas/DecisionTheory/decision_theory_lean/) | Modèle architectural | `lean_lib Gittins`/`Utility`/`Coherence` cohabitent comme libs distinctes du même package — **modèle** suivi ici |
 
 ## Voir aussi
@@ -341,7 +341,7 @@ treillis des mariages, optimalité), de **jeux coopératifs** (valeur
 de Shapley, cône de Bondareva-Shapley, décomposition de Möbius), de
 **choix social** (Arrow, Sen, vote, Vickrey) et de **jeux répétés**
 (folk theorem, grim trigger, actualisation), avec une vingtaine de
-sous-modules totalisant ~17 890 lignes, **2 sorries** (théorème
+sous-modules totalisant un volume catalogué, **2 sorries** (théorème
 **STRETCH** `folk_theorem_discounted` dans `RepeatedGames/Folk` + son
 sibling `_en`, Issue [#4880](https://github.com/jsboige/CoursIA/issues/4880) ;
 les anciens énoncés contrefactuels de `StableMarriage.Lattice` ont été
