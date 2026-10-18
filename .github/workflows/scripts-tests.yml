@@ -132,6 +132,11 @@ on:
       - 'MyIA.AI.Notebooks/QuantConnect/scripts/**'
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests/**'
       - 'GradeBookApp/**'
+      # #21104 pli 0 Origami : la suite du service Kernel Gateway CFR vit sous
+      # GameTheory/gateway/** et n'est PAS couverte par GameTheory/tests (chemin
+      # distinct) -- meme classe que #18392/#13746 : sans cette entree, une PR
+      # qui ne touche que le service n'executerait AUCUNE jambe pytest.
+      - 'MyIA.AI.Notebooks/GameTheory/gateway/**'
       # #21100 pli 0 Origami (Kernel Gateway) : le coeur du service Z3 Sudoku
       # vit hors scripts/** (Z3-API/gateway/) ; sans entree, une PR qui ne
       # touche que lui n'executerait AUCUNE jambe pytest (#10416 pattern, cf.
@@ -193,6 +198,8 @@ on:
       - 'MyIA.AI.Notebooks/QuantConnect/scripts/**'
       - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests/**'
       - 'GradeBookApp/**'
+      # #21104 pli 0 Origami (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/GameTheory/gateway/**'
       # #21100 pli 0 Origami (Kernel Gateway) (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
   workflow_dispatch:
@@ -362,6 +369,12 @@ jobs:
           # Without it the 6 tests fail on ModuleNotFoundError instead of
           # exercising the script.
           pip install pypdf
+          # open_spiel: coeur du service Kernel Gateway CFR (GameTheory/gateway,
+          # #21104 / pli 0 de l'Epic #19571). La roue 2.0.2 manylinux_2_27
+          # x86_64 existe pour le python 3.11 de ce job ; sans le paquet, la
+          # cible pytest ci-dessous est une erreur de collecte au lieu
+          # d'exercer le service pour de vrai.
+          pip install open_spiel
           # z3-solver: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/
           # test_z3_sudoku_core.py imports z3 at module level (#21100, pli 0
           # Origami). Without it the suite fails on ModuleNotFoundError
@@ -427,6 +440,7 @@ jobs:
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py \
+            MyIA.AI.Notebooks/GameTheory/gateway/test_openspiel_cfr_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
             scripts/secrets/tests \
