@@ -6,7 +6,7 @@
 
 ## Description
 
-Composite C4.1 de rotation multi-actifs (v10), construit sur l'Alpha Framework. Cinq ETF (SPY, TLT, GLD, USO, EFA), levier 2x. Trois modèles d'alpha : MomentumAlpha (suivi de tendance), MACDAlpha (croisement MACD / ligne de signal) et RelativeStrengthAlpha (force relative entre classes d'actifs). Construction du portefeuille par poches : chaque alpha reçoit un tiers du capital via `MultiStrategyPouchesPCM` du module partagé `Shared_PCM`, avec un rebalancement hebdomadaire et un plafond de 40 % par ligne. Une poche dont l'alpha n'a aucun insight actif reste en liquidités. Gestion du risque : plafond de baisse de 12 % et stop suiveur de 4 %. Exécution VWAP (4 tranches, fenêtre de 15 minutes).
+Composite C4.1 de rotation multi-actifs (v10), construit sur l'Alpha Framework. Cinq ETF (SPY, TLT, GLD, USO, EFA), levier 2x. Trois modèles d'alpha : MomentumAlpha (suivi de tendance), MACDAlpha (croisement MACD / ligne de signal) et RelativeStrengthAlpha (force relative entre classes d'actifs). Construction du portefeuille par poches : chaque alpha reçoit un tiers du capital via `MultiStrategyPouchesPCM` du module partagé `SharedPCM`, avec un rebalancement hebdomadaire et un plafond de 40 % par ligne. Une poche dont l'alpha n'a aucun insight actif reste en liquidités. Gestion du risque : plafond de baisse de 12 % et stop suiveur de 4 %. Exécution VWAP (4 tranches, fenêtre de 15 minutes).
 
 Deux paramètres de projet servent aux comparaisons : `pcm_mode` (`sleeve` par défaut, `symbol` pour reprendre `RiskParityPCM`, le PCM d'avant) et `alphas` (`all` par défaut, ou `momentum`, `macd`, `relstrength` pour isoler un alpha).
 
@@ -20,7 +20,7 @@ lean backtest --algorithm composite-c1-multiasset/main.py
 ### QC Cloud
 Create a new project, upload all `.py` files, compile and run a backtest.
 
-Le projet importe `Shared_PCM.pouches_pcm` : attacher d'abord le projet `Shared_PCM` comme bibliothèque (voir `../Shared_PCM/README.md`), sinon la compilation échoue sur l'import.
+Le projet importe `SharedPCM.pouches_pcm` : attacher d'abord le projet `SharedPCM` comme bibliothèque (voir `../SharedPCM/README.md`), sinon la compilation échoue sur l'import.
 
 ## Backtest Metrics
 
@@ -78,7 +78,7 @@ Lecture :
 |------|-------------|
 | `main.py` | Composite algorithm orchestrating alpha models, PCM, risk management, and execution |
 | `alpha_models.py` | Three alpha models: Momentum, MACD, and Relative Strength |
-| `portfolio_construction.py` | `CappedPouchesPCM` (mode `sleeve` : PCM par poches de `Shared_PCM`, plafond par ligne) et `RiskParityPCM` (mode `symbol`, PCM d'avant), avec les compteurs d'insights par alpha |
+| `portfolio_construction.py` | `CappedPouchesPCM` (mode `sleeve` : PCM par poches de `SharedPCM`, plafond par ligne) et `RiskParityPCM` (mode `symbol`, PCM d'avant), avec les compteurs d'insights par alpha |
 | `risk_management.py` | Drawdown cap (12%) and trailing stop (4%) risk models |
 | `execution.py` | VWAP execution model (4 slices, 15-minute window) |
 

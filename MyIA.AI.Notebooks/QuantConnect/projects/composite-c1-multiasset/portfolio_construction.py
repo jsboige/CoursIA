@@ -1,5 +1,5 @@
 from AlgorithmImports import *
-from Shared_PCM.pouches_pcm import MultiStrategyPouchesPCM
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
 
 
 def count_sources(counts, counts_active, insights):
@@ -55,7 +55,7 @@ class RiskParityPCM(PortfolioConstructionModel):
 
 class CappedPouchesPCM(MultiStrategyPouchesPCM):
     """
-    PCM par poches canonique (Shared_PCM, #21134) avec le plafond par ligne
+    PCM par poches canonique (SharedPCM, #21134) avec le plafond par ligne
     de RiskParityPCM.
 
     Lean ne transmet au PCM que le dernier insight actif par symbole : avec
