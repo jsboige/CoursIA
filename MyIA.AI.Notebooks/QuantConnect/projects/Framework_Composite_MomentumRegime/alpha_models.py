@@ -155,6 +155,8 @@ class RegimeSwitchingAlpha(AlphaModel):
         self._last_month = -1
         self._need_rebalance = False
         self.algorithm = None  # Store algorithm reference for price access
+        # Diagnostic (#21349): dates of emissions where only one risky ticker is oversold.
+        self.partial_oversold = []
 
     def update(self, algorithm, data):
         # Store algorithm reference for price access
@@ -303,6 +305,9 @@ class RegimeSwitchingAlpha(AlphaModel):
                 rsi_val = self.rsi_indicators[ticker].current.value
                 if rsi_val < self.rsi_oversold:
                     oversold.append(ticker)
+
+        if 0 < len(oversold) < len(self.risky):
+            self.partial_oversold.append(algorithm.time.strftime("%Y-%m-%d"))
 
         if oversold:
             weight_per_asset = 0.30 / len(oversold)
