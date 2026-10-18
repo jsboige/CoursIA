@@ -45,9 +45,11 @@ import Knots.Invariant_en
 import Knots.Mutation_en
 import Knots.ConwayPD_en
 import Knots.Conway_en
+import Knots.ConwayNotation_en
 import Knots.Slice_en
 import Knots.ReidemeisterInvariance_en
 import Knots.ReidemeisterMoves_en
+import Knots.ReidemeisterCombinatorial_en
 import Knots.Jones_en
 import Knots.FigureEight_en
 import Knots.Lidman_en

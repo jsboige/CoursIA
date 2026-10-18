@@ -59,7 +59,7 @@ Les séries thématiques de GenAI démontent chaque composant ; ces quatre proje
 
 **[Fort-Boyard](Fort-Boyard/README.md)** est le meilleur point de départ : un Père Fouras qui fait deviner un mot secret à un personnage célèbre, orchestré par deux `ChatCompletionAgent` dans un `AgentGroupChat` de Semantic Kernel. C'est l'occasion de comprendre les stratégies de terminaison : comment décider qu'un dialogue entre deux agents est terminé (mot trouvé, ou borne d'itérations).
 
-**[Barbie-Schreck](Barbie-Schreck/README.md)** est le plus visuel : deux personnages que tout oppose sont forcés de débattre sous contraintes, pendant que DALL-E illustre la joute. Sous le jeu, la mécanique est sérieuse : c'est un vrai dialogue multi-agent Semantic Kernel, avec ses prompts système rivaux et l'intégration image-dans-conversation.
+**[Barbie-Schreck](Barbie-Schreck/README.md)** est le plus visuel : deux personnages que tout oppose sont forcés de débattre sous contraintes, pendant que ComfyUI illustre la joute. Sous le jeu, la mécanique est sérieuse : c'est un vrai dialogue multi-agent Semantic Kernel, avec ses prompts système rivaux et l'intégration image-dans-conversation.
 
 **[Recipe-Maker](Recipe-Maker/README.md)** fait collaborer plusieurs agents pour produire une recette personnalisée et l'exporter en PDF. Son intérêt est la chaîne complète : de la conversation entre agents jusqu'au livrable final, en passant par la division du travail entre rôles.
 
