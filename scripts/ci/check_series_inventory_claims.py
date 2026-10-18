@@ -31,6 +31,11 @@ Conventions portees par l'organe :
   `_archive`, 11 emplacements) ;
 - un nom cite sans suffixe `.ipynb` compte (les plans citent souvent le
   basename nu, ex. `Percolation-03-Critique-Python`) ;
+- comparaison repliee en ASCII (NFD) et par nom COMPLET aux frontieres de
+  mot : un carnet accentue ou multi-mots cite dans le body est reconnu
+  (`Createur de mail personnalise`, reel sur main). Limite assumee : un nom
+  FANTOME multi-mots sans prefixe numerique de serie n'est pas detectable ;
+  le sens ON_DISK reste juste, le sens CITED_NOT_ON_DISK est fail-open ;
 - `--expect` list des omissions assumees (carnet deliberement non cite),
   chacune exigee AVEC motif ecrit : `--expect Nom=motif` -- une exemption sans
   motif est refusee (un filet qui s'elargit sans trace ne vaut rien).
@@ -50,9 +55,21 @@ import argparse
 import json
 import re
 import sys
+import unicodedata
 from pathlib import Path
 
-TOKEN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.\-]*[A-Za-z0-9]")
+# Tokenizer Unicode : `\w` couvre les lettres accentuees, contrairement a
+# [A-Za-z0-9]. Les noms multi-mots ne sont pas reconstructibles par un
+# tokenizer ; la citation d'un carnet REEL passe par `cites_stem`, qui
+# travaille sur le body entier.
+TOKEN_RE = re.compile(r"\w[\w.\-]*")
+
+# Caracteres consideres comme appartenant a un token : une frontiere est un
+# caractere hors de cet ensemble (ou le debut/la fin du body). Le point est
+# EXCLU : il termine une phrase (`Percolation-02-Lean.`) et precede
+# l'extension (`Percolation-02-Lean.ipynb`) -- dans les deux cas la citation
+# est valide, le stem s'arretant avant le point.
+WORD_CHARS = r"A-Za-z0-9_\-"
 
 # Un token du body compte comme citation de carnet s'il ressemble a un nom de
 # carnet de la serie : il apparait litteralement (avec ou sans .ipynb) dans le
@@ -60,6 +77,16 @@ TOKEN_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.\-]*[A-Za-z0-9]")
 # stem exact -- jamais par sous-chaine, qui fabriquerait des citations
 # (Search-03 citerait Search-03b).
 ARCHIVE_DIR = "_archive"
+
+
+def fold(text: str) -> str:
+    """Repli NFD -> ASCII : retire les diacritiques, conserve les espaces/casse.
+
+    Permet de comparer un body accentue a un nom de carnet sans accent (et
+    l'inverse) sans deplacer les frontieres de mots.
+    """
+    decomposed = unicodedata.normalize("NFD", text)
+    return "".join(ch for ch in decomposed if not unicodedata.combining(ch))
 
 
 def notebook_stem(path: Path) -> str:
@@ -81,14 +108,29 @@ def list_series_notebooks(series_dir: Path, repo_root: Path) -> list[Path]:
 
 
 def body_citations(body: str) -> set[str]:
-    """Stems cites dans le body : tokens litteraux, extension optionnelle."""
+    """Stems cites dans le body : tokens repliees en ASCII, extension optionnelle.
+
+    Les noms multi-mots ne survivent pas au tokenizer ; `analyse` verifie la
+    citation des carnets REELS via `cites_stem` sur le body entier.
+    """
     cited: set[str] = set()
-    for token in TOKEN_RE.findall(body):
+    for token in TOKEN_RE.findall(fold(body)):
+        token = token.rstrip(".-")
         if token.endswith(".ipynb"):
-            cited.add(token[: -len(".ipynb")])
-        else:
+            token = token[: -len(".ipynb")]
+        if token:
             cited.add(token)
     return cited
+
+
+def cites_stem(stem: str, body_norm: str) -> bool:
+    """Le body replie cite-t-il ce stem, en nom COMPLET et aux frontieres ?
+
+    Les frontieres conservent la semantique stem exact (`Search-03` ne cite
+    pas `Search-03b`) tout en acceptant les noms accentues et multi-mots.
+    """
+    pattern = rf"(?<![{WORD_CHARS}]){re.escape(fold(stem))}(?![{WORD_CHARS}])"
+    return re.search(pattern, body_norm) is not None
 
 
 def parse_expect(raw: list[str]) -> dict[str, str]:
@@ -110,11 +152,12 @@ def parse_expect(raw: list[str]) -> dict[str, str]:
 
 def analyse(body: str, notebooks: list[Path]) -> list[dict[str, str]]:
     """Findings bruts, sans appliquer les exemptions."""
-    cited = body_citations(body)
+    body_norm = fold(body)
     on_disk = {notebook_stem(p): p for p in notebooks}
+    folded_real = {fold(stem) for stem in on_disk}
     findings: list[dict[str, str]] = []
     for stem in sorted(on_disk):
-        if stem not in cited:
+        if not cites_stem(stem, body_norm):
             findings.append(
                 {
                     "verdict": "ON_DISK_NOT_CITED",
@@ -122,24 +165,24 @@ def analyse(body: str, notebooks: list[Path]) -> list[dict[str, str]]:
                     "path": str(on_disk[stem]),
                 }
             )
-    for stem in sorted(cited):
+    for stem in sorted(body_citations(body)):
         # Un stem cite ne compte CITED_NOT_ON_DISK que s'il ressemble a un
         # carnet de la serie : soit il porte l'extension dans le body (donne
         # plus haut), soit il partage le prefix de serie d'un carnet reel.
         # Les tokens de prose quelconques ("README", "main") restent hors
         # verdict : un body cite toujours autre chose que des carnets.
-        if stem not in on_disk and looks_like_series_notebook(stem, on_disk):
+        if stem not in folded_real and looks_like_series_notebook(stem, folded_real):
             findings.append({"verdict": "CITED_NOT_ON_DISK", "notebook": stem, "path": "-"})
     return findings
 
 
-def looks_like_series_notebook(stem: str, on_disk: dict[str, Path]) -> bool:
+def looks_like_series_notebook(stem: str, on_disk: set[str]) -> bool:
     """Le stem cite ressemble-t-il a un carnet de la serie ?
 
     Critere conservateur : il partage le prefix numerique de serie avec un
     carnet reel (ex. `Percolation-04-Sharpness-Lean` partage `Percolation-04`
     avec `Percolation-04-Sharpness-Python` reel). Un token quelconque du body
-    ne declenche donc jamais le verdict.
+    ne declenche donc jamais le verdict. `on_disk` porte des stems repliees.
     """
     m = re.match(r"^(?P<prefix>.+?-\d+[a-z]?)", stem)
     if not m:

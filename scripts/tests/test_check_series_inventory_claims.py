@@ -101,6 +101,35 @@ def test_prose_tokens_never_ghosts(percolation: Path) -> None:
     assert len([f for f in findings if f["verdict"] == "ON_DISK_NOT_CITED"]) == 6
 
 
+def test_accented_multiword_notebook_cited(tmp_path: Path) -> None:
+    """Repro #21289 (review Hermes) : nom accentue + espaces, cite -> reconnu.
+
+    Le tokenizer ASCII cassait `Createur de mail personnalise` en morceaux et
+    rapportait a tort le carnet comme manquant.
+    """
+    series = tmp_path / "GenAI" / "SemanticKernel"
+    series.mkdir(parents=True)
+    (series / "Créateur de mail personnalisé.ipynb").write_text("{}", encoding="utf-8")
+    notebooks = list_series_notebooks(Path("GenAI/SemanticKernel"), tmp_path)
+    body = "Le carnet `Créateur de mail personnalisé` est livre sur main."
+    assert analyse(body, notebooks) == []
+
+
+def test_accent_fold_matches_both_directions(tmp_path: Path) -> None:
+    """Body sans accents vs fichier accentue (et l'inverse) : meme carnet."""
+    series = tmp_path / "GenAI" / "SemanticKernel"
+    series.mkdir(parents=True)
+    (series / "Créateur de mail personnalisé.ipynb").write_text("{}", encoding="utf-8")
+    notebooks = list_series_notebooks(Path("GenAI/SemanticKernel"), tmp_path)
+    assert analyse("Createur de mail personnalise est livre.", notebooks) == []
+
+    plain = tmp_path / "Autre" / "Serie"
+    plain.mkdir(parents=True)
+    (plain / "Createur de mail personnalise.ipynb").write_text("{}", encoding="utf-8")
+    notebooks2 = list_series_notebooks(Path("Autre/Serie"), tmp_path)
+    assert analyse("Le carnet Créateur de mail personnalisé est livre.", notebooks2) == []
+
+
 def test_expect_suppresses_with_reason(percolation: Path) -> None:
     """04-Lean planifie : exemption avec motif, sortie 0."""
     body_file = percolation / "body.txt"
