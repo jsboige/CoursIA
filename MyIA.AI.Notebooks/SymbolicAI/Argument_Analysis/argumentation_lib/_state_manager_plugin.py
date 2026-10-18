@@ -333,7 +333,7 @@ class StateManagerPlugin:
             return tr_id
         except Exception as e:
             self._logger.error(
-                f"Erreur lors de l'ajout traduction NL→logique: {e}", exc_info=True
+                f"Erreur lors de l'ajout traduction NL→logique: {e}"
             )
             return f"FUNC_ERROR: Erreur ajout traduction: {e}"
 
