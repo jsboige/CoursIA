@@ -57,9 +57,15 @@ from train_rl_dt import (
     DecisionTransformerModel,
     build_trajectories,
     compute_majority_class_baseline,
-    create_sequence_batches,
     evaluate_dt,
     train_dt,
+)
+from validate_xrp_dt import CAUSAL_EVAL_PROTOCOL, train_rtg_per_step
+from ablation_rtg_leak import (
+    causal_condition_actions,
+    causal_eval_returns,
+    score_actions,
+    simulate_dt_portfolio,
 )
 
 sys.path.insert(0, str(SCRIPTS_DIR.parent / "shared"))
@@ -89,38 +95,6 @@ def compute_sharpe(returns: np.ndarray, annual_factor: int = 252) -> float:
     return float(strategy_metrics.sharpe(returns, periods_per_year=annual_factor))
 
 
-def simulate_dt_portfolio(
-    prices: np.ndarray,
-    actions: np.ndarray,
-    commission_bps: float = 5.0,
-) -> np.ndarray:
-    """Simulate portfolio returns from DT action predictions.
-
-    Actions: 0=hold, 1=buy (long), 2=sell (short/flat).
-    Transaction cost in basis points per trade.
-    """
-    n = len(actions)
-    commission = commission_bps / 10000.0
-    position = 0.0
-    portfolio_returns = np.zeros(n, dtype=np.float64)
-
-    for i in range(1, n):
-        price_ret = (prices[i] - prices[i - 1]) / (prices[i - 1] + 1e-8)
-
-        if actions[i] == 1:
-            target_pos = 1.0
-        elif actions[i] == 2:
-            target_pos = 0.0  # flat, not short (conservative)
-        else:
-            target_pos = position
-
-        trade_cost = abs(target_pos - position) * commission
-        portfolio_returns[i] = position * price_ret - trade_cost
-        position = target_pos
-
-    return portfolio_returns
-
-
 def run_single_combo(
     symbol: str,
     seed: int,
@@ -138,13 +112,25 @@ def run_single_combo(
 ) -> dict:
     """Run walk-forward DT training for one (symbol, seed) combo.
 
+    Evaluation protocol ``causal-v1`` (#21187): one DT decision per test
+    return, computed on states up to the previous row, with the RTG schedule
+    fixed from the training fold (mean teacher reward per step times the
+    remaining steps). Positions are long/flat (sell = flat), each one applied
+    to the return it drives; buy-and-hold is scored on the same returns.
+    Until #21187 the sweep fed the realized test RTG, which sums future test
+    rewards, and paired each window's last decision with a return about
+    ``context_length`` rows earlier.
+
     Returns dict with:
         sharpe_dt: annualized Sharpe from DT-driven portfolio
         sharpe_bh: annualized Sharpe from buy-and-hold
         delta_sharpe: sharpe_dt - sharpe_bh
-        auc_dt: direction accuracy of DT predictions
+        mean_auc: direction accuracy of the buy label (not an AUC; the key
+            name is kept for continuity)
+        mean_hit_rate: accuracy of the held position's sign
+        mean_exposure: share of returns held long
         n_folds: number of completed folds
-        n_trades: total trades across folds
+        n_trades: total position changes across folds
     """
     np.random.seed(seed)
     torch.manual_seed(seed)
@@ -176,6 +162,8 @@ def run_single_combo(
 
     fold_deltas = []
     fold_auc = []
+    fold_hit = []
+    fold_exposure = []
     fold_trades = []
     all_dt_rets = []
     all_bh_rets = []
@@ -233,70 +221,36 @@ def run_single_combo(
         if len(test_trajs["states"]) <= context_length:
             continue
 
+        # Input RTG fixed from the training fold: the realized test RTG sums
+        # future test rewards (#21187).
+        rtg_step = train_rtg_per_step(train_trajs)
         eval_result = evaluate_dt(
             model, test_trajs,
             context_length=context_length,
             device=device,
+            rtg_per_step=rtg_step,
         )
 
-        # Get predicted actions for portfolio simulation
-        model.eval()
-        with torch.no_grad():
-            batches = create_sequence_batches(
-                test_trajs, context_length=context_length, batch_size=64, shuffle=False,
-            )
-            all_preds = []
-            for batch in batches:
-                states = batch["states"].to(device)
-                actions = batch["actions"].to(device)
-                rtg = batch["rtg"].to(device)
-                mask = batch["attention_mask"].to(device)
-                logits = model(states, actions, rtg, attention_mask=mask)
-                preds = logits.argmax(dim=-1)[:, -1].cpu().numpy()
-                all_preds.extend(preds.tolist())
-
-        # Align predictions with test prices
-        n_preds = len(all_preds)
-        if n_preds < 10:
+        # One decision per return k -> k+1, read on rows <= k-2.
+        rtg_rows = rtg_step * (len(test_prices) - np.arange(len(test_prices)))
+        actions = causal_condition_actions(
+            model, test_prices, test_features_norm, rtg_rows,
+            context_length=context_length, window=window, device=device,
+        )
+        if len(actions) < 10:
             continue
+        returns = causal_eval_returns(test_prices, window, context_length)
 
-        # Use last prediction from each sequence for portfolio
-        test_prices_subset = test_prices[window:window + n_preds]
+        dt_rets = simulate_dt_portfolio(actions, returns, commission_bps=commission_bps)
+        scores = score_actions(actions, returns, commission_bps=commission_bps)
+        all_dt_rets.extend(dt_rets.tolist())
+        all_bh_rets.extend(returns.tolist())
 
-        if len(test_prices_subset) < n_preds:
-            n_preds = len(test_prices_subset)
-            all_preds = all_preds[:n_preds]
-        test_prices_subset = test_prices_subset[:n_preds]
-
-        # Simulate DT portfolio
-        dt_rets = simulate_dt_portfolio(
-            test_prices_subset, np.array(all_preds, dtype=np.int64),
-            commission_bps=commission_bps,
-        )
-        # Buy-and-hold returns
-        bh_rets = np.diff(test_prices_subset) / (test_prices_subset[:-1] + 1e-8)
-        bh_rets = np.concatenate([[0.0], bh_rets])
-
-        min_len = min(len(dt_rets), len(bh_rets))
-        all_dt_rets.extend(dt_rets[:min_len].tolist())
-        all_bh_rets.extend(bh_rets[:min_len].tolist())
-
-        # Per-fold metrics
-        fold_sharpe_dt = compute_sharpe(dt_rets[:min_len])
-        fold_sharpe_bh = compute_sharpe(bh_rets[:min_len])
-        fold_deltas.append(fold_sharpe_dt - fold_sharpe_bh)
-
-        # Direction accuracy
-        actual_dir = (np.diff(test_prices_subset[:min_len]) > 0).astype(int)
-        pred_dir = np.array(all_preds[:len(actual_dir)])
-        if len(pred_dir) >= len(actual_dir):
-            pred_dir = pred_dir[:len(actual_dir)]
-            correct = (pred_dir == 1) == (actual_dir == 1)
-            fold_auc.append(float(correct.mean()) if len(correct) > 0 else 0.5)
-        else:
-            fold_auc.append(0.5)
-
-        fold_trades.append(int(np.sum(np.diff(all_preds[:min_len]) != 0)))
+        fold_deltas.append(compute_sharpe(dt_rets) - compute_sharpe(returns))
+        fold_auc.append(scores["auc"])
+        fold_hit.append(scores["hit_rate"])
+        fold_exposure.append(scores["exposure"])
+        fold_trades.append(scores["n_trades"])
 
     if not fold_deltas:
         return {"error": "no valid folds completed"}
@@ -312,6 +266,9 @@ def run_single_combo(
         "mean_fold_delta": round(float(np.mean(fold_deltas)), 4),
         "std_fold_delta": round(float(np.std(fold_deltas)), 4),
         "mean_auc": round(float(np.mean(fold_auc)), 4),
+        "mean_hit_rate": round(float(np.mean(fold_hit)), 4),
+        "mean_exposure": round(float(np.mean(fold_exposure)), 4),
+        "eval_protocol": CAUSAL_EVAL_PROTOCOL,
         "n_folds": len(fold_deltas),
         "n_trades": sum(fold_trades),
         "fold_deltas": [round(d, 4) for d in fold_deltas],
