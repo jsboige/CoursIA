@@ -4589,6 +4589,61 @@ def test_recent_delivery_marker_FROZEN_true(monkeypatch):
     assert pig.has_recent_delivery_marker(12345) is True
 
 
+def test_recent_delivery_marker_INFO_candidate_delivered_true(monkeypatch):
+    """2026-10-17 (mesure #10643) : `[INFO] candidate-delivered` en tete du
+    DERNIER commentaire -> ecarte.
+
+    C'est la forme par laquelle une lane WORKER rend la main au
+    coordinateur (#15069/#19295). #10643 a ete servie 3 fois en 3 cycles
+    alors que chaque service reposait ce marqueur en dernier commentaire :
+    la fenetre de sonde de tete (bulk 8 + extension 36) ne l'atteignait
+    pas, la sonde pleine (budget 16) non plus -- le filtre bon marche est
+    le seul rempart qui la lit TOUJOURS, il doit donc reconnaitre la
+    forme. Grammaire reutilisee de `_DELIVERED_MARKER_RE`.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "Confrontation des criteres par une "
+                                     "lane, sans marqueur."},
+                            {"body": "[INFO] candidate-delivered — lane "
+                                     "myia-po-2024:CoursIA (belt c205, "
+                                     "preuves re-verifiees firsthand ce "
+                                     "jour)"},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_INFO_revoked_false(monkeypatch):
+    """Controle negatif : `[INFO] candidate-delivered-revoked` en dernier
+    commentaire -> False. La retractation n'est pas une livraison (le
+    lookahead `(?![-_\\w])` de `_DELIVERED_MARKER_RE` ferme devant
+    `-revoked`) -- le candidat reste servi par la sonde pleine, qui gere
+    l'ORDRE marqueur/retractation, pas ce filtre.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "[INFO] candidate-delivered-revoked : "
+                                     "livraison partielle constatee, "
+                                     "l'item 2 reste ouvert"},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_delivery_marker_INFO_mention_discursive_false(monkeypatch):
+    """Controle negatif : un dernier commentaire qui PARLE du marqueur
+    sans le poser (mention en milieu de ligne) -> False. L'ancrage debut
+    de ligne de `_DELIVERED_MARKER_RE` protege, comme pour les en-tetes.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "Je vois dans le registre que le "
+                                     "ticket voisin est [INFO] "
+                                     "candidate-delivered, mais celui-ci "
+                                     "n'est pas livre."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
 def test_recent_delivery_marker_absent_false(monkeypatch):
     """#19768 controle negatif : pas de marqueur -> False (l'appelant enchaine
     sur la sonde pleine)."""
