@@ -39,7 +39,7 @@ La vérification tierce du 2026-10-07 (commentaire `[PARTIAL]` sur #16754) a nom
 
 ## Pourquoi ces notebooks ne rejouent pas les LLMs d'Engels
 
-R12 utilise des LLMs réels (GPT-4, Claude, Mistral) comme Houdini et Guard. po-2024 n'a pas la stack GenAI (Tell c.1261-L1 ★★★ strict), et l'exécution réelle demanderait :
+R12 utilise des LLMs réels (GPT-4, Claude, Mistral) comme Houdini et Guard. po-2024 n'a pas la stack GenAI ([cluster-agents.md](../../../docs/reference/cluster-agents.md)), et l'exécution réelle demanderait :
 - API OpenAI/Anthropic/Mistral (token-bound, hors scope session worker)
 - ou stack vLLM locale sur ai-01 (91,9% idle mais sk-agent/RX9 collision non résolue)
 - ou stack ComfyUI/docker sur po-2023 (GenAI dédié)
