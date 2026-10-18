@@ -127,7 +127,7 @@ Cf [docs/archive/STABLE_SNAPSHOT.md](../archive/STABLE_SNAPSHOT.md).
 
 ***
 
-## Ratchet exec-sequence (#11112 tier 2) — échecs fail-by-design assumés (#11577)
+## Ratchet exec-sequence (#11112 tier 2) — échecs fail-by-design assumés (#11577, ack #21273)
 
 Le gate `notebook-exec-sequence-ratchet.yml` échoue **par design** sur toute séquence CLEAN → non-CLEAN. Il existe un cas légitime où l'échec est inévitable : une PR RECOVERABLE-MACHINE qui re-exécute **une cellule unique** (ex. fix d'un loader, #11420) sans pouvoir re-exécuter les cellules aval — l'artefact `scripts/results/**` est gitignored et son runtime (GPU, 10 h+) est hors scope de la PR. La cellule re-exécutée bump son `execution_count` → verdict aval DUPLICATE / NOT_FROM_1.
 
@@ -135,14 +135,22 @@ Le gate `notebook-exec-sequence-ratchet.yml` échoue **par design** sur toute s�
 
 1. La re-exécution complète du notebook est hors scope vérifiable de la PR (artefact aval gitignored + runtime documenté dans le body).
 2. Le guard est **correct** — il détecte exactement ce qu'il doit détecter. Aucun contournement : jamais de hand-edit d'`execution_count` ni de sortie de cellule (règle 6 [secrets-hygiene.md](../../.claude/rules/secrets-hygiene.md) — falsifier la preuve d'exécution).
-3. Le body PR documente la séquence dégradée (avant/après chiffrés) **et** le reviewer (ai-01) accuse réception explicitement avant merge.
+3. Le body PR documente la séquence dégradée (avant/après chiffrés) **et** le reviewer (`myia-ai-01`) accuse réception par le **mécanisme d'ack à double clé** (label `exec-sequence-ack` + commentaire/revue `[EXEC-SEQ-ACK] head=<sha40>` à la tête exacte, #21273).
 
-**Précédents** : #11574 (freshness guard fail-by-design, résolu par #11575), #11420 (première instance exec-sequence), #11577 (présente section).
+**Précédents** : #11574 (freshness guard fail-by-design, résolu par #11575), #11420 (première instance exec-sequence), #11577 (présente section), #21273 (mécanisme d'ack à double clé implémenté dans `scripts/ci/exec_sequence_ack_required.py` + `scripts/notebook_tools/check_exec_ratchet.py`).
+
+**Mécanisme d'ack à double clé (#21273)** — le gate consomme l'ack par :
+
+1. Le label `exec-sequence-ack` posé sur la PR.
+2. Un commentaire ou une review sur la PR portant le marker `[EXEC-SEQ-ACK] head=<sha40>` sur sa propre ligne, depuis le **seul login autorisé `myia-ai-01`** (la lane coordinatrice ; `jsboige` ou `clusterManager-Myia` sont des findings, pas des acks).
+3. **Les deux requis** à la tête exacte — un push après l'ack perime le marker et le gate reste rouge (cliquet non désarmé).
+
+L'override est **auditable sans être facile** : le marker est journalisé dans le log du job, le verdict ACK est explicite, et un faux ack (label sans marker, marker sans label, marker d'un autre auteur, marker à une tête périmée) échoue toujours.
 
 **Template de commentaire PR réutilisable** (copier, remplacer les `<...>`) :
 
 ```markdown
-**Ratchet exec-sequence — fail-by-design assumé (pattern #11577)**
+**Ratchet exec-sequence — fail-by-design assumé (pattern #11577, ack #21273)**
 
 La séquence de `<notebook>` passe de CLEAN à `<VERDICT>` sur cette PR :
 
@@ -154,8 +162,12 @@ RECOVERABLE-MACHINE, issue #...>). Les cellules aval dépendent de l'artefact
 `<chemin gitignored>` (runtime <durée>, hors scope de cette PR).
 
 Le guard est correct — il détecte ce qu'il doit détecter. La re-exécution
-complète est hors scope. Séquence dégradée documentée ici ; ack reviewer
-explicite requis avant merge.
+complète est hors scope. Séquence dégradée documentée ici.
+
+**Ack demandé** : un commentaire de `myia-ai-01` à la tête exacte de la PR :
+`[EXEC-SEQ-ACK] head=<sha40>` + label `exec-sequence-ack` posé sur la PR.
+Le gate consomme la double clé (label + marker à la tête exacte, #21273) ;
+un push après l'ack perime le marker.
 ```
 
 ***
