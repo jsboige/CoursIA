@@ -11,7 +11,7 @@ maturity: BETA=26, ALPHA=2
 
 Le Web Sémantique est la promesse d'un Web où les machines comprennent la signification des données, pas seulement leur syntaxe. RDF, SPARQL, OWL, SHACL : ces standards du W3C définissent un langage commun pour décrire, interroger, valider et raisonner sur des graphes de connaissances. Cette série vous mène des fondations (.NET C# avec dotNetRDF) aux applications modernes (Python avec rdflib, pySHACL, GraphRAG), en passant par les ontologies, les données liées et les standards émergents (RDF 1.2, JSON-LD 1.1).
 
-**À qui s'adresse cette série** : développeurs web curieux du sens caché dans leurs données, data scientists voulant structurer leurs pipelines, et étudiants en IA souhaitant comprendre comment les graphes de connaissances ancrent les LLMs. Aucun prérequis en logique formelle. Le décompte exact des notebooks et leur maturité figurent dans le catalogue généré ci-dessous.
+**À qui s'adresse cette série** : développeurs web curieux du sens caché dans leurs données, data scientists voulant structurer leurs pipelines, et étudiants en IA souhaitant comprendre comment les graphes de connaissances ancrent les LLMs. Aucun prérequis en logique formelle. Le décompte exact des notebooks et leur maturité figurent dans le bandeau `CATALOG-STATUS` en tête de fichier.
 
 ## Pourquoi cette série
 
@@ -34,7 +34,7 @@ flowchart BT
     KG --> GRAG["<b>GraphRAG</b><br/>ancrer les LLMs"]
 ```
 
-La série propose délibérément deux stacks en parité (.NET ⇄ Python, marathon #4956) : **.NET C#** avec dotNetRDF (fondations SW-1 à SW-7, standards modernes SW-8/9/10/11/13) et **Python** avec rdflib/pySHACL/owlready2 (miroirs fondations SW-2b à SW-7b, standards modernes SW-8 à SW-13). Les sidetracks Python (SW-2b, 3b, 4b, 5b, 6b, 7b) offrent un miroir des notebooks C# fondations en Python.
+La série propose délibérément deux stacks en parité (.NET ⇄ Python, marathon #4956) : **.NET C#** avec dotNetRDF (fondations SW-1 à SW-7, standards modernes SW-8/9/10/11/13) et **Python** avec rdflib/pySHACL/owlready2 (miroirs fondations SW-2b à SW-7b, standards modernes SW-8 à SW-13, extensions SW-14 à SW-16). Les sidetracks Python (SW-2b, 3b, 4b, 5b, 6b, 7b) offrent un miroir des notebooks C# fondations en Python.
 
 ## Concepts clés
 
@@ -54,7 +54,7 @@ La série propose délibérément deux stacks en parité (.NET ⇄ Python, marat
 | **Raisonneurs OWL/RDFS** | Moteurs d'inférence (owlrl, HermiT, reasonable, Growl, StaticRdfsReasoner) — compromis Python/Java/Rust | SW-13 |
 | **Coup ontologique** | Extension de vocabulaire exécutable : triplets ajoutés, verdict pySHACL, delta owlrl, provenance RDF-star | SW-14 |
 | **Coup argumentatif** | Greffe AIF/Dung sur le pipeline : extension grounded basculée par le coup | SW-15 |
-| **Proof-Carrying Ontologies** | Ontologies dont les axiomes sont accompagnés de preuves Lean (PCO, déploiement certifiable) | SW-16 |
+| **Proof-Carrying Ontologies** | Une conclusion de raisonneur accompagnée d'un certificat qu'un checker indépendant accepte ou rejette (PCO) | SW-16 |
 
 ## Vue d'ensemble
 
@@ -85,7 +85,7 @@ Les sidetracks marqués `b-Python` sont des notebooks complémentaires qui prés
 | SW-3b-Python-GraphOperations | SW-3-CSharp-GraphOperations | Graphes RDF en Python avec rdflib |
 | SW-4b-Python-SPARQL | SW-4-CSharp-SPARQL | SPARQL en Python avec rdflib |
 | SW-5b-Python-LinkedData | SW-5-CSharp-LinkedData | DBpedia/Wikidata avec SPARQLWrapper |
-| SW-6b-Python-RDFS | SW-6-CSharp-RDFS | RDFS en Python avec rdflib/owlready2 |
+| SW-6b-Python-RDFS | SW-6-CSharp-RDFS | RDFS en Python avec rdflib/owlrl |
 | SW-7b-Python-OWL | SW-7-CSharp-OWL | Ontologies OWL avec OWLReady2 |
 
 ---
@@ -167,7 +167,7 @@ Découvrez le Web de données liées en interrogeant des endpoints publics comme
 
 **Points clés appris** :
 - Endpoint SPARQL public vs. graphe local
-- `SparqlRemoteEndpoint` pour exécuter des requêtes distantes
+- `SparqlQueryClient` pour exécuter des requêtes distantes
 - Requêtes fédérées avec `SERVICE` : interroger plusieurs endpoints simultanément
 - Exploration de DBpedia : sujets, catégories, liens inter-langues
 - Wikidata et ses Q-items/P-properties
@@ -182,7 +182,7 @@ RDFS (RDF Schema) est la couche vocabulaire du Web Sémantique. Ce notebook vous
 - Vocabulaire RDFS : `rdfs:Class`, `rdfs:subClassOf`, `rdfs:domain`, `rdfs:range`
 - Hiérarchies de classes et transitivité de `subClassOf`
 - Inférence RDFS : déduction automatique de types et de relations
-- `OntologyGraph` de dotNetRDF pour activer l'inférence
+- `StaticRdfsReasoner` de dotNetRDF pour matérialiser l'inférence
 
 #### SW-7-CSharp-OWL : Ontologies et Raisonnement Avancé (50 min)
 
@@ -192,16 +192,16 @@ OWL (Web Ontology Language) étend RDFS avec des constructeurs logiques puissant
 - OWL 2 vs. RDFS : expressivité accrue (restrictions, cardinalités, disjonction)
 - Profils OWL 2 : EL (grandes ontologies), QL (query rewriting), RL (règles)
 - Constructeurs clés : `owl:equivalentClass`, `owl:unionOf`, `owl:intersectionOf`
-- Restrictions : `owl:someValuesFrom` (∃), `owl:allValuesFrom` (∀)
+- Restrictions et cardinalités sur les classes (`Restriction`, `Cardinality`)
 - Raisonnement avec `OntologyGraph`
 
 > **Sidetrack Python disponible** : [SW-7b-Python-OWL](SW-7b-Python-OWL.ipynb) - Ontologies OWL avec OWLReady2
 
 ---
 
-### Partie 3 : Standards Modernes (Python, avec jumeau C# SW-8)
+### Partie 3 : Standards Modernes (Python, avec jumeaux C# SW-8 à SW-10)
 
-Cette partie couvre les standards modernes du Web Sémantique. L'écosystème Python (rdflib, pySHACL, owlready2) y domine, complété par un jumeau C# / dotNetRDF pour SHACL (parité .NET ⇄ Python, marathon #4956).
+Cette partie couvre les standards modernes du Web Sémantique. L'écosystème Python (rdflib, pySHACL, owlready2) y domine, complété par des jumeaux C# / dotNetRDF pour SHACL, JSON-LD et RDF-Star (parité .NET ⇄ Python, marathon #4956).
 
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
@@ -209,7 +209,7 @@ Cette partie couvre les standards modernes du Web Sémantique. L'écosystème Py
 | 8 (C#) | **SW-8-CSharp-SHACL** | 45 min | Jumeau .NET de SW-8 : validation SHACL avec dotNetRDF (`VDS.RDF.Shacl`) |
 | 9 | **SW-9-Python-JSONLD** | 40 min | Données structurées pour le web |
 | 9 (C#) | **SW-9-CSharp-JSONLD** | 40 min | Jumeau .NET de SW-9 : parsing/écriture JSON-LD avec dotNetRDF (`JsonLdParser`/`JsonLdWriter`, `TripleStore`) |
-| 10 | **SW-10-Python-RDFStar** | 40 min | RDF 1.2, annotations et provenance |
+| 10 | **SW-10-Python-RDFStar** | 45 min | RDF 1.2, annotations et provenance |
 | 10 (C#) | **SW-10-CSharp-RDFStar** | 40 min | Jumeau .NET de SW-10 : réification + annotations de confiance avec dotNetRDF (`Graph`, `TripleStore`, graphes nommés) |
 
 #### SW-8-Python-SHACL : Validation de Qualité des Données (45 min)
@@ -221,7 +221,7 @@ SHACL (Shapes Constraint Language) est le standard W3C pour valider la conformit
 - Contraintes communes : `sh:minCount`, `sh:maxCount`, `sh:datatype`, `sh:nodeKind`
 - `sh:property` pour valider les propriétés d'un nœud
 - `sh:pattern` (regex), `sh:in` (enum), `sh:class` (type checking)
-- Validation avec pySHACL : `Validate(graph, data_graph)`
+- Validation avec pySHACL : `validate(data_graph, shacl_graph=...)`, qui rend `conforms`, le graphe du rapport et son texte
 
 #### SW-9-Python-JSONLD : Données Structurées pour le Web (40 min)
 
@@ -230,28 +230,28 @@ JSON-LD est le pont entre le monde JSON des développeurs web et le Web Sémanti
 **Points clés appris** :
 - Format JSON-LD : `@context`, `@id`, `@type` pour mapper JSON vers RDF
 - Intégration Schema.org (vocabulaire Google, Bing, Yahoo)
-- Compactage et expansion JSON-LD avec `jsonld` Python
-- Rich snippets Google : 73% des résultats utilisent des données structurées
-- Cas d'usage : e-commerce (Produit), articles (Article), organisations (Organization)
+- Formes compactée, étendue et aplatie du JSON-LD, produites et relues par rdflib (`parse` / `serialize` au format `json-ld`)
+- Part des rich snippets Google utilisant JSON-LD : environ 73 % (estimation Schema.org 2024, citée dans le carnet)
+- Cas d'usage : e-commerce (Produit), articles (Article), organisations (Organization), recette (Recipe), événement (Event), fil d'Ariane et FAQ (BreadcrumbList, FAQPage)
 
-> **Twin C# disponible** : [SW-9-CSharp-JSONLD](SW-9-CSharp-JSONLD.ipynb) — JSON-LD via dotNetRDF (`JsonLdParser`/`JsonLdWriter`, `TripleStore`). Compagnon cross-langage du notebook Python `rdflib` + `pyld` sur le même standard W3C JSON-LD 1.1 (marathon parité .NET ⇄ Python #4956, Prong B).
+> **Twin C# disponible** : [SW-9-CSharp-JSONLD](SW-9-CSharp-JSONLD.ipynb) — JSON-LD via dotNetRDF (`JsonLdParser`/`JsonLdWriter`, `TripleStore`). Compagnon cross-langage du notebook Python `rdflib` sur le même standard W3C JSON-LD 1.1 (marathon parité .NET ⇄ Python #4956, Prong B).
 
-#### SW-10-Python-RDFStar : Annotations et Provenance (40 min)
+#### SW-10-Python-RDFStar : Annotations et Provenance (45 min)
 
 RDF-Star (RDF 1.2) permet d'exprimer des statements à propos de statements, essentiel pour les annotations, la provenance et la confiance.
 
 **Points clés appris** :
-- Quoted triples : `<<<:s :p :o>>> :confidence 0.9`
+- Quoted triples : `<< :s :p :o >> :confidence 0.9`
 - Use cases : annotations, provenance, confiance, probabilités
 - Syntaxe Turtle-Star et N-Triples-Star
-- SPARQL-Star : requêtes sur les quoted triples
-- rdflib support expérimental RDF-Star
+- SPARQL-Star (conceptuel) : le carnet exécute le pattern équivalent sur la réification classique, rdflib 7.6 n'ayant pas la syntaxe native
+- rdflib 7.6 : syntaxe quoted triples native non disponible ; le carnet compare réification classique et graphes nommés (`rdflib.Dataset`)
 
 > **Twin C# disponible** : [SW-10-CSharp-RDFStar](SW-10-CSharp-RDFStar.ipynb) — réification classique (4 triplets `rdf:Statement` par fait annoté), annotations de confiance/source et graphes nommés via dotNetRDF (`Graph(IRefNode)`, `TripleStore`, `SparqlQueryParser`). Compagnon cross-langage du notebook Python `rdflib` sur la même thématique RDF-Star/provenance (marathon parité .NET ⇄ Python #4956, Prong B).
 
 ---
 
-### Partie 4 : Graphes de Connaissances et IA (Python)
+### Partie 4 : Graphes de Connaissances et IA (Python, avec jumeaux C# SW-11 et SW-13)
 
 Cette partie connecte le Web Sémantique avec l'IA moderne, notamment les LLMs et les graphes de connaissances.
 
@@ -264,7 +264,7 @@ Cette partie connecte le Web Sémantique avec l'IA moderne, notamment les LLMs e
 | 13 (C#) | **SW-13-Reasoners-CSharp** | 40 min | Jumeau .NET : raisonnement RDFS forward-chaining avec dotNetRDF (`StaticRdfsReasoner`) |
 | **Bonus** | **SW-14-Python-Coup-Ontologique** | 40 min | Le coup ontologique comme diff de graphe exécutable (extension, verdict SHACL, delta owlrl, provenance RDF-star) |
 | **Bonus** | **SW-15-Python-Coup-Argumentatif** | 45 min | Greffe AIF/Dung sur le pipeline de SW-14 : le coup argumentatif bascule l'extension grounded |
-| **Bonus** | **SW-16-Python-ProofCarryingOntologies** | 60 min | Preuves Lean sur les axiomes OWL (PCO) : déploiement certifiable, hashing de preuve, vérification indépendante |
+| **Bonus** | **SW-16-Python-ProofCarryingOntologies** | 50 min | Certificat d'inférence (PCO) : checker indépendant qui accepte ou rejette nommément ; théorème Lean cité, non rejoué |
 
 #### SW-11-Python-KnowledgeGraphs : Construction et Visualisation (55 min)
 
@@ -277,7 +277,7 @@ Ce notebook pratique vous guide dans la construction d'un graphe de connaissance
 - Visualisation avec NetworkX et pyvis : graphes interactifs HTML
 - Patterns de modélisation : entités, relations, attributs
 
-> **Twin C# disponible** : [SW-11-CSharp-KnowledgeGraphs](SW-11-CSharp-KnowledgeGraphs.ipynb) — construction d'un Knowledge Graph avec dotNetRDF (`Graph`, `Assert`, TurtleFormatter), requêtage SPARQL (`ExecuteQuery` : SELECT, agrégats, GROUP_CONCAT), adjacence from-scratch + BFS, métriques de qualité (orphelins, complétude, cohérence range), centralité de degré. Compagnon cross-langage du notebook Python (rdflib + networkx + kglab) sur la même thématique KG (marathon parité .NET ⇄ Python #4956, Prong B). Verdict SOTA honnête : le cœur (construction RDF, SPARQL, parcours graphe, qualité, centralité) est SOTA-OK (vrai moteur dotNetRDF, adjacence/BFS réimplémentée) ; pyvis (interactif web) et kglab (surcouche Python) sont INTRINSIC ; HermiT (OWL 2 DL complet, Java) est RECOVERABLE-MACHINE — documenté in-notebook.
+> **Twin C# disponible** : [SW-11-CSharp-KnowledgeGraphs](SW-11-CSharp-KnowledgeGraphs.ipynb) — construction d'un Knowledge Graph avec dotNetRDF (`Graph`, `Assert`, TurtleFormatter), requêtage SPARQL (`ExecuteQuery` : SELECT, agrégats, GROUP_CONCAT), adjacence from-scratch + BFS, métriques de qualité (orphelins, complétude, cohérence range), centralité de degré. Compagnon cross-langage du notebook Python (rdflib + networkx + kglab) sur la même thématique KG (marathon parité .NET ⇄ Python #4956, Prong B). Section 6 du carnet (« Verdict SOTA ») : sont couverts la construction, SPARQL, le parcours BFS, la qualité et la centralité de degré ; restent hors périmètre l'inférence OWL, SHACL, les embeddings et les raisonneurs, renvoyés à SW-7, SW-8 et SW-13.
 
 **Figures — sous-graphes RDF interrogés en SPARQL.** `SW-11-Python-KnowledgeGraphs.ipynb`
 construit un graphe RDF (vocabulaire `schema.org`), l'interroge en SPARQL (`UNION` sur `actor` /
@@ -297,11 +297,12 @@ d'un KG opérationnel :
 GraphRAG combine les graphes de connaissances avec les LLMs pour un Retrieval-Augmented Generation structuré. Ce notebook présente l'approche de Microsoft GraphRAG.
 
 **Points clés appris** :
-- RAP (Retrieval-Augmented Generation) : limiter les hallucinations LLM
+- RAG (Retrieval-Augmented Generation) : limiter les hallucinations des LLM
 - GraphRAG Microsoft : extraction d'entités, construction de communautés
-- LeMay-Huan framework : KG + LLM pour question answering
+- Interrogation augmentée par le graphe : le sous-graphe extrait est injecté dans le prompt, la réponse s'appuie sur des faits structurés
+- Cache de l'extraction : le graphe est sérialisé puis relu sans relancer le LLM
 - Implémentation avec OpenAI/Anthropic APIs
-- Comparaison RAP vectoriel vs. RAP structuré (GraphRAG)
+- Comparaison RAG vectoriel vs. RAG structuré (GraphRAG), évaluée sur neuf questions (trois par classe)
 
 **Figures — pipeline GraphRAG en action.** `SW-12-Python-GraphRAG.ipynb` implémente le pipeline
 Microsoft GraphRAG : extraction LLM des entités et relations d'un corpus, construction du graphe
@@ -310,7 +311,7 @@ C'est l'anti-hallucination par excellence : un LLM ancré sur des faits RDF vér
 
 ![Graphe orienté des entités extraites par LLM, noeuds colorés par type et arêtes étiquetées](assets/readme/sw12_graphrag_c18_o0.png)
 
-*SW-12 (cellule 18) : **graphe orienté des entités extraites par LLM** (filmographie Nolan) — noeuds colorés par type d'entité **extrait** (Person / Movie / Organization / Award ; `Genre` et `Concept` existent dans le vocabulaire `TYPE_MAP` mais aucune entité de ce type n'est extraite du texte de démonstration), arêtes orientées étiquetées par la relation extraite.*
+*SW-12 (cellule 18) : **graphe orienté des entités extraites par LLM** (filmographie Nolan) — noeuds colorés par type d'entité **extrait** (Person / Movie / Organization / Award ; les types `Genre` et `Concept`, présents dans le vocabulaire `TYPE_MAP`, ne sont pas dessinés sur cette figure), arêtes orientées étiquetées par la relation extraite.*
 
 ![Communautés détectées par modularité gloutonne (networkx) sur le graphe non-dirigé](assets/readme/sw12_graphrag_c30_o1.png)
 
@@ -354,7 +355,7 @@ Ce notebook bonus incarne l'extension de vocabulaire $\eta : L_t \to L_{t+1}$ co
 - Pipeline composé : OWL (déclarer) + SHACL (juger) + owlrl (mesurer) + RDF-star (attribuer)
 - Le coup nul : une extension sans conséquence déductive est un résultat, pas un échec
 - Provenance de l'auteur du coup par reification RDF-star + PROV : *qui a proposé ce schéma, et au nom de quoi ?*
-- **Contrôle négatif** : un coup qui passe le juge SHACL mais produit un delta owlrl vide borne la falsifiabilité de la mesure
+- **Contrôle négatif** : une extension rejetée par SHACL (`ebook2` sans `format`) doit produire un rapport de violation ; un rapport vide n'est pas un test
 
 #### SW-15-Python-Coup-Argumentatif (Bonus) : la greffe AIF/Dung (45 min)
 
@@ -390,8 +391,8 @@ Ce notebook bonus introduit le **proof-carrying inference** : chaque conclusion 
 2. **Interroger un graphe en SPARQL 1.1** (SELECT, CONSTRUCT, ASK, DESCRIBE, federations via SERVICE) côté .NET (`SW-4-CSharp-SPARQL.ipynb`) et Python (`SW-4b-Python-SPARQL.ipynb`), puis publier des données Linked Data résolvables (`SW-5-CSharp-LinkedData.ipynb`, `SW-5b-Python-LinkedData.ipynb`).
 3. **Formaliser une ontologie en RDFS puis OWL** (classes, propriétés, restrictions, hiérarchies) et tirer parti d'un raisonneur pour matérialiser les inférences (`SW-6-CSharp-RDFS.ipynb`, `SW-7-CSharp-OWL.ipynb`, `SW-7b-Python-OWL.ipynb`, `SW-13-Python-Reasoners.ipynb`).
 4. **Valider la conformité d'un graphe** avec SHACL (NodeShapes/PropertyShapes, contraintes de cardinalité et de type, rapport de validation) via pySHACL (`SW-8-Python-SHACL.ipynb`).
-5. **Sérialiser et échanger des données RDF en JSON-LD** (`@context`, framing, compaction/expansion) pour interopérer avec les APIs Web modernes (`SW-9-Python-JSONLD.ipynb`).
-6. **Annoter des assertions avec RDF-Star / SPARQL-Star** (citations de triplets, provenance, niveau de confiance) pour modéliser métadonnées et réification compacte (`SW-10-Python-RDFStar.ipynb`).
+5. **Sérialiser et échanger des données RDF en JSON-LD** (`@context`, `@id`/`@type`, `@graph`, formes compactée, étendue et aplatie) pour interopérer avec les APIs Web modernes (`SW-9-Python-JSONLD.ipynb`).
+6. **Annoter des assertions avec RDF-Star** (citations de triplets, provenance, niveau de confiance), et mesurer le coût de la réification classique qui la remplace sous rdflib (`SW-10-Python-RDFStar.ipynb`).
 
 **Applicatives**
 
@@ -407,7 +408,7 @@ Ce notebook bonus introduit le **proof-carrying inference** : chaque conclusion 
 
 ## Parcours alternatifs
 
-### Parcours Python-only (~5h)
+### Parcours Python-only
 
 Si vous n'avez pas d'environnement .NET, vous pouvez suivre uniquement les notebooks Python :
 
@@ -415,21 +416,21 @@ Si vous n'avez pas d'environnement .NET, vous pouvez suivre uniquement les noteb
 2. Puis **SW-8** (SHACL) → **SW-9** (JSON-LD) → **SW-10** (RDF-Star) → **SW-11** (KG) → **SW-12** (GraphRAG) : les standards modernes et l'IA.
 3. Extensions : **SW-14** (coup ontologique) → **SW-15** (coup argumentatif) → **SW-16** (proof-carrying) : la trilogie qui ferme le pipeline.
 
-### Parcours data engineer (~3h)
+### Parcours data engineer
 
 Pour les praticiens qui veulent aller vite :
 
-1. **SW-2b** (RDF en 5 min) → **SW-4b** (SPARQL) → **SW-8** (SHACL : valider vos données) → **SW-9** (JSON-LD : exposer en API) → **SW-12** (GraphRAG : connecter aux LLMs).
+1. **SW-2b** (RDF Basics) → **SW-4b** (SPARQL) → **SW-8** (SHACL : valider vos données) → **SW-9** (JSON-LD : exposer en API) → **SW-12** (GraphRAG : connecter aux LLMs).
 2. Si vous déployez des ontologies en production, ajoutez **SW-14** (coup) et **SW-16** (certificat) à la fin.
 
-### Parcours ontologue (~4h)
+### Parcours ontologue
 
 Pour les personnes créant des ontologies et des vocabulaires :
 
 1. **SW-6** (RDFS) → **SW-7** (OWL) → **SW-7b** (OWL Python) → **SW-8** (SHACL : contraintes sur les données) → **SW-13** (comparaison raisonneurs).
 2. La trilogie de l'**évolution d'ontologie** : **SW-14** (coup) → **SW-15** (coup argumentatif) → **SW-16** (preuve vérifiable).
 
-### Parcours extensions (~3h, bonus Python)
+### Parcours extensions (bonus Python)
 
 Pour les personnes intéressées par la **composition des standards** et la **vérification des inférences** :
 
@@ -441,7 +442,7 @@ Pour les personnes intéressées par la **composition des standards** et la **v�
 
 ```bash
 # Python (notebooks SW-2b a SW-7b, SW-8 a SW-13 ; bonus SW-14/15/16)
-pip install rdflib pySHACL owlready2 kglab SPARQLWrapper
+pip install rdflib pySHACL owlready2 owlrl reasonable kglab SPARQLWrapper
 
 # .NET (notebooks SW-1 a SW-7, jumeaux C# SW-8/9/10/11/13)
 dotnet restore
@@ -459,13 +460,13 @@ Aucune API key requise pour les notebooks fondamentaux (SW-1 à SW-11) ni pour l
 
 ## Prérequis
 
-### Pour les notebooks .NET (SW-1 à SW-7)
+### Pour les notebooks .NET (SW-1 à SW-7 et jumeaux C#)
 
 - .NET SDK 9.0+
 - .NET Interactive (Jupyter kernel)
 - VS Code avec Polyglot Notebooks (recommandé)
 
-### Pour les notebooks Python (SW-8 à SW-13 et sidetracks)
+### Pour les notebooks Python (SW-8 à SW-16 et sidetracks)
 
 - Python 3.10+
 - pip install -r requirements.txt
@@ -506,8 +507,8 @@ cp .env.example .env
 | `dotNetRDF` NuGet restore échoue | Vérifier .NET SDK 9.0+ (`dotnet --version`). Relancer la cellule d'import. |
 | Endpoint DBpedia/Wikidata timeout | Les endpoints publics ont des limites. Ajouter `LIMIT 100` aux requêtes. Réessayer hors heures de pointe. |
 | pySHACL validation vide | Vérifier que les préfixes du graphe de données correspondent aux shapes (même `ex:` namespace). |
-| OWLReady2 Java bridge error | Installer JDK 11+ (OWlReady2 utilise HermiT en Java). Windows : `winget install EclipseAdoptium.Temurin.11.JDK`. macOS : `brew install --cask temurin@11`. Linux : `sudo apt install openjdk-17-jdk`. |
-| RDF-Star syntax non reconnue | rdflib 7.x supporte RDF-Star en mode expérimental. Vérifier `rdflib.__version__ >= 7.0`. |
+| OWLReady2 Java bridge error | Installer JDK 11+ (OWLReady2 utilise HermiT en Java). Windows : `winget install EclipseAdoptium.Temurin.11.JDK`. macOS : `brew install --cask temurin@11`. Linux : `sudo apt install openjdk-17-jdk`. |
+| RDF-Star syntax non reconnue | Avec rdflib 7.6 (version des carnets), la syntaxe native `<< … >>` n'est pas reconnue : utiliser la réification classique montrée dans SW-10, ou tester une version plus récente de rdflib. |
 | GraphRAG : `OPENAI_API_KEY` manquant | SW-12 requiert une clé LLM (OpenAI ou Anthropic). Configurer `.env` (voir `.env.example`). Les notebooks SW-1 à SW-11 n'ont pas besoin de clé. |
 
 ## Lecture transversale
@@ -520,13 +521,14 @@ La série SemanticWeb illustre un mouvement profond du dépôt CoursIA : **prend
 
 | Technologie | Version | Notebooks | Rôle |
 |-------------|---------|-----------|------|
-| dotNetRDF | 3.4.1 | SW-1 à SW-7 | Core RDF/SPARQL en .NET |
-| rdflib | 7.5.0 | Sidetracks, SW-8 à SW-13 | Core RDF/SPARQL en Python |
-| pySHACL | 0.27.0 | SW-8 | Validation SHACL |
+| dotNetRDF | 3.2.1 | SW-1 à SW-7 | Core RDF/SPARQL en .NET |
+| dotNetRDF | 3.4.0 / 3.4.1 | Jumeaux C# SW-8 à SW-13 | Standards modernes en .NET (SW-9 en 3.4.0, les autres en 3.4.1) |
+| rdflib | 7.6.0 | Sidetracks, SW-8 à SW-16 | Core RDF/SPARQL en Python (version des sorties commitées) |
+| pySHACL | 0.31.0 à 0.40.1 | SW-8, SW-14, SW-15 | Validation SHACL (version des sorties commitées) |
 | OWLReady2 | 0.50+ | SW-7b, SW-11 | Manipulation ontologies |
 | SPARQLWrapper | 2.0+ | SW-5b | Requêtes endpoints distants |
 | kglab | 0.6.1+ | SW-11 | Abstraction graphes de connaissances |
-| owlrl | 6.0+ | SW-13 | Raisonneur OWL 2 RL Python pur |
+| owlrl | 6.0+ | SW-6b, SW-13, SW-14 | Raisonneur OWL 2 RL Python pur |
 | reasonable | 0.1+ | SW-13 | Raisonneur OWL 2 RL Rust |
 
 ## Standards W3C couverts
@@ -589,6 +591,7 @@ SemanticWeb/
 ├── SW-15-Python-Coup-Argumentatif.ipynb  # Bonus (coup argumentatif : greffe AIF/Dung, #13567)
 ├── SW-16-Python-ProofCarryingOntologies.ipynb   # Bonus (PCO : ontologies a preuves Lean, #16787)
 ├── movie_kg_interactive.html        # Livrable interactif SW-11 (pyvis)
+├── assets/readme/                   # Figures du README (alt-text français)
 └── RDF.Net-Legacy/                  # Archive C# RDF.NET (pré-migration Python)
     ├── RDF.Net.ipynb                # Notebook .NET historique
     ├── Example.ttl                  # Données Turtle
@@ -613,7 +616,7 @@ SemanticWeb/
 | Harris & Seaborne, "SPARQL 1.1 Query Language", W3C Rec. (2013) | Standard SPARQL |
 | Cyganiak, Wood & Lanthaler, "RDF 1.1 Concepts", W3C Rec. (2014) | Standard RDF |
 | Knublauch et al., "SHACL Shapes Constraint Language", W3C Rec. (2017) | Standard SHACL |
-| Edge & Tramer, "GraphRAG" (Microsoft, 2024) | SW-12 GraphRAG |
+| Edge et al., « From Local to Global: A Graph RAG Approach to Query-Focused Summarization » (Microsoft, 2024) | SW-12 GraphRAG |
 
 ### Ressources en ligne
 
@@ -697,10 +700,10 @@ Les comptes de notebooks et leur maturité vivent dans le bandeau `CATALOG-STATU
 | Fondations RDF/OWL — miroirs Python (SW-2b à SW-7b, rdflib/owlready2) | Équivalent Python des notebooks .NET fondations — rdflib + owlready2 |
 | Standards modernes — .NET C# (SW-8 SHACL, SW-9 JSON-LD, SW-10 RDF-Star, SW-11 KG, SW-13 Reasoners) | SHACL, JSON-LD 1.1, RDF-Star, KG, raisonneurs (dotNetRDF) |
 | Standards modernes — Python (SW-8 à SW-13 : SHACL, JSON-LD, RDF-Star, KG, GraphRAG, Reasoners) | SHACL pySHACL, JSON-LD 1.1, RDF-Star, KG + kglab, GraphRAG (anti-hallucination), comparaisons raisonneurs |
-| Extensions Python (SW-14 coup ontologique, SW-15 coup argumentatif, SW-16 Proof-Carrying Ontologies) | Diff de graphe exécutable (pySHACL, owlrl, RDF-star), greffe AIF/Dung, preuves Lean attachées aux axiomes |
+| Extensions Python (SW-14 coup ontologique, SW-15 coup argumentatif, SW-16 Proof-Carrying Ontologies) | Diff de graphe exécutable (pySHACL, owlrl, RDF-star), greffe AIF/Dung, certificat d'inférence vérifié par un checker indépendant (théorème Lean cité) |
 | Setup / legacy .NET (`RDF.Net-Legacy/`) | Démonstration RDF.Net historique |
 
-**Conformité C.1 — stubs d'exercice sans erreur volontaire** : les templates `student/` portent les stubs conformes (`pass` / `return None` / `print("Exercice à compléter")` / `result = None  # TODO étudiant`) — **jamais** `raise NotImplementedError`, `assert False` ou `1/0`. Dépendances Python : `rdflib`, `pySHACL`, `owlready2`, `kglib`, `SPARQLWrapper` (cf `requirements.txt` racine). Dépendances .NET : `dotNetRDF` + .NET 9.0 + .NET Interactive. La double stack .NET/Python reflète le mandat EPIC #3975 : un même raisonnement rendu par deux runtimes (ici, dotNetRDF côté C# typé, rdflib côté Python expressif), la parité devenant un objet d'étude en soi.
+**Conformité C.1 — stubs d'exercice sans erreur volontaire** : les cellules « Exercices à compléter » des carnets portent des stubs conformes (`pass`, `return None`, `print("Exercice a completer")`) — **jamais** `raise NotImplementedError`, `assert False` ou `1/0` (aucune occurrence dans les cellules source). Dépendances Python : `rdflib`, `pySHACL`, `owlready2`, `kglab`, `SPARQLWrapper` (cf `requirements.txt` racine). Dépendances .NET : `dotNetRDF` + .NET 9.0 + .NET Interactive. La double stack .NET/Python reflète le mandat EPIC #3975 : un même raisonnement rendu par deux runtimes (ici, dotNetRDF côté C# typé, rdflib côté Python expressif), la parité devenant un objet d'étude en soi.
 
 ## Écosystème MCP et parenté cross-lane
 
