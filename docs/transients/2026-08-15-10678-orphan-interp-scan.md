@@ -1,3 +1,5 @@
+> RAPPORT - 2026-08-15 - Re-scan interprétations orphelines fin de notebook (Phase 1b, #10678) - figé
+
 # EPIC #10678 Phase 1b — orphan end-of-notebook interp cells
 
 ## Résumé (HONESTY FIRST)
@@ -70,7 +72,7 @@ Helper `_interp_matches_code(source_interp, source_code)` : tokenize les 2 sourc
 - **c.240-L2 ★** : Toujours classifier AVANT de commit un scan. La confiance naïve en un "détecteur élargi" génère des faux positifs massifs (21/21 ici). Vérification cell-by-cell obligatoire (c.239-L2 reaffirmé + c.237-L1 reaffirmed).
 - **c.240-L3 ★ NEW** : `gap_after = None` est un signal positionnel mais **PAS sémantique**. Le classificateur position-based rate les orphan sémantiques (interp qui parle d'un sujet différent du code adjacent). Solution = heuristique sémantique keywords ↔ code contenu (à venir dans PR #10682).
 
-Voir aussi : [rapport c.237 original](10678-interp-positioning-audit.md) (24 CHECK).
+Voir aussi : [rapport c.237 original](2026-08-13-10678-interp-positioning-audit.md) (24 CHECK).
 
 
 ## Orphelins détectés
@@ -325,4 +327,4 @@ else:
     gap_after = next_code - idx
 ```
 
-Voir aussi `notebooks_interp_orphans.json` (inventaire brut) et le rapport c.237 original `docs/ledgers/10678-interp-positioning-audit.md`.
+Voir aussi `notebooks_interp_orphans.json` (inventaire brut) et le rapport c.237 original `docs/transients/2026-08-13-10678-interp-positioning-audit.md`.

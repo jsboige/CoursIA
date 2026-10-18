@@ -1,3 +1,5 @@
+> RAPPORT - 2026-08-13 - Audit cellules interprétation mal positionnées (Phase 1, #10678) - figé
+
 # Audit cellules interprétation mal positionnees (#10678 Phase 1)
 
 ## Resume
