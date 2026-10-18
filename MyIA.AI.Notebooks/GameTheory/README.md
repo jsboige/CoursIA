@@ -118,7 +118,7 @@ Le modèle s'enrichit du temps et de l'incertitude : arbres de jeu et ensembles 
 |---|----------|--------------------|-------|--------|------------------|
 | 07 | Forme extensive — [Python](GameTheory-07-ExtensiveForm-Python.ipynb) · [C#](GameTheory-07-ExtensiveForm-CSharp.ipynb) | Arbres de jeu, ensembles d'information, stratégies comportementales | 50 min | Licence | — |
 | 08 | Jeux combinatoires — [Python](GameTheory-08-CombinatorialGames-Python.ipynb) · [C#](GameTheory-08-CombinatorialGames-CSharp.ipynb) | Positions P/N, Nim, valeurs de Grundy, théorème de Sprague-Grundy | 55 min | Licence | [08b](GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) · [08c](GameTheory-08c-CombinatorialGames-Python.ipynb) · [08d](GameTheory-08d-Lean-CGT-Lean.ipynb) |
-| 09 | Induction arrière — [Python](GameTheory-09-BackwardInduction-Python.ipynb) · [C#](GameTheory-09-BackwardInduction-CSharp.ipynb) | Induction arrière, mille-pattes, escalade, engagement | 55 min | Licence | [09b](GameTheory-09b-Commitment-Stackelberg-Python.ipynb) · [09c](GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) |
+| 09 | Induction arrière — [Python](GameTheory-09-BackwardInduction-Python.ipynb) · [C#](GameTheory-09-BackwardInduction-CSharp.ipynb) | Induction arrière, mille-pattes, escalade, engagement | 55 min | Licence | [09b](GameTheory-09b-Commitment-Stackelberg-Python.ipynb) · [09c](GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) · [09d](GameTheory-09d-Stackelberg-PPO-Co-Design-Python.ipynb) |
 | 10 | Induction avant et SPE — [Python](GameTheory-10-ForwardInduction-SPE-Python.ipynb) · [C#](GameTheory-10-ForwardInduction-SPE-CSharp.ipynb) | Équilibre parfait en sous-jeux, menaces crédibles, induction avant | 60 min | Licence | — |
 | 11 | Jeux bayésiens — [Python](GameTheory-11-BayesianGames-Python.ipynb) · [C#](GameTheory-11-BayesianGames-CSharp.ipynb) | Types privés, croyances, équilibre bayésien | 55 min | Licence | [11b](GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) |
 | 12 | Jeux de réputation — [Python](GameTheory-12-ReputationGames-Python.ipynb) · [C#](GameTheory-12-ReputationGames-CSharp.ipynb) | Signaling, cheap talk, réputation (Kreps-Wilson) | 50 min | Licence | — |
@@ -241,6 +241,7 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 |--------|----------|-----------------|-------|--------|
 | 09b | [Engagement et Stackelberg](GameTheory-09b-Commitment-Stackelberg-Python.ipynb) | L'engagement contraignant qui transforme la meilleure réponse d'autrui, l'annonce révocable dissoute par induction arrière, le seuil de crédibilité | Python | Licence |
 | 09c | [Security game](GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) | Le défenseur s'engage, l'attaquant observe avec bruit : robustesse du patrouilleur à un capteur imparfait | Python | Licence |
+| 09d | [Stackelberg PPO et co-design](GameTheory-09d-Stackelberg-PPO-Co-Design-Python.ipynb) | Le concepteur anticipe l'adaptation du contrôleur : gradient implicite de Stackelberg, théorème 1 de Dai et al. (ICLR 2026) vérifié, PPO ordinaire piégé dans un équilibre de Nash | Python | Recherche |
 
 ### Autour de 11 — jeux bayésiens
 
