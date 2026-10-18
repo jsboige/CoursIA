@@ -77,7 +77,7 @@ Le [Frontieres-10-NeuralDiving-Coloration-Python](Frontieres-10-NeuralDiving-Col
 | [Partie 4 : Métaheuristiques](../Part4-Metaheuristics/README.md) | Sélection d'algorithmes | MGS-16 : Rice, No Free Lunch (Frontieres-06, Frontieres-10) |
 | [GameTheory](../../GameTheory/README.md) | GameTheory-16 (VCG) | Paiements VCG et garanties d'enchères (Frontieres-04) |
 | [SymbolicAI — Planners](../../SymbolicAI/Planners/README.md) | Planners-8 (temporel) | Réseaux de contraintes temporelles (Frontieres-09) |
-| [Langlands](../../SymbolicAI/Lean/Langlands/) | Szpiro–Pasten 2026 | La distillation arithmétique (App-32) reliée à la sous-série Langlands (#18368) |
+| [Langlands](../../SymbolicAI/Lean/Langlands/) | Szpiro–Pasten 2026 | La distillation arithmétique (Search-09g) reliée à la sous-série Langlands (#18368) |
 
 ## Références
 

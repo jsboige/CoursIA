@@ -43,7 +43,7 @@ flowchart LR
     P1["<b>Partie 1 — Search</b><br/>exploration, jeux adversariaux"]
     P2["<b>Partie 2 — CSP</b><br/>modélisation déclarative<br/>(X, D, C) + propagation"]
     P4["<b>Partie 4 — Métaheuristiques</b><br/>SA, GA, ACO, recuit"]
-    A["<b>Applications Adversarial</b> (4)<br/>2 Python + 2 C# :<br/>ConnectFour, Minimax, Alpha-Beta, MCTS, AIMA"]
+    A["<b>Applications Adversarial</b> (4)<br/>2 Python + 2 C# :<br/>ConnectFour — Minimax, Alpha-Beta, MCTS, AIMA"]
     C["<b>Applications CSP</b><br/>N-Queens, GraphColoring,<br/>Nurse/JobShop, Minesweeper,<br/>Wordle, Picross, WFC..."]
     H["<b>Applications Hybrides</b><br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT..."]
     P1 --> A
