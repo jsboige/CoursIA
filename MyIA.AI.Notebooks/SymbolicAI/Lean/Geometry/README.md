@@ -55,4 +55,4 @@ Les systèmes de preuve géométriques automatisés connaissent un regain avec l
 - J. F. Ritt, *Differential Algebra* (1950) — théorie des ensembles caractéristiques, base de la décomposition (accrétion 03b).
 - Sinha et al., *Wu's Method can Boost Symbolic AI to Rival Silver Medalists and AlphaGeometry to Outperform Gold Medalists at IMO Geometry* (2024), arXiv:2404.06405 — cité en « Pourquoi une série de plus ».
 
-Série parente : [SymbolicAI](../README.md) — le cycle complet du raisonnement vérifiable.
+Série parente : [Lean](../README.md) — solveur mathématique et vérification formelle (grand-parente : [SymbolicAI](../../README.md), le cycle complet du raisonnement vérifiable).
