@@ -110,8 +110,14 @@ OBSOLETE_MODEL_SUBSTITUTIONS = {
 
 def _resolve_chat_model_id() -> str:
     _load_env()
-    configured = os.getenv("OPENAI_CHAT_MODEL_ID", "<unset>")
-    return OBSOLETE_MODEL_SUBSTITUTIONS.get(configured, configured)
+    configured = os.getenv("OPENAI_CHAT_MODEL_ID")
+    if not configured:
+        raise RuntimeError(
+            "OPENAI_CHAT_MODEL_ID absent : aucun modele n'est configure. "
+            "Renseigner la variable (voir Argument_Analysis/.env.example) "
+            "plutot que de laisser la serie appeler un identifiant par defaut."
+        )
+    return OBSOLETE_MODEL_SUBSTITUTIONS.get(configured.strip(), configured)
 
 
 def _text_overlap(text: str, candidate: str) -> int:
