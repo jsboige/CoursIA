@@ -129,6 +129,27 @@ lean_lib Abstraction where
 lean_lib ProgramGames where
   globs := #[`ProgramGames.*]
 
+-- c.1548 (po-2023, #21221 organe 2/2) : ajout `lean_lib StackelbergBilevel`
+-- — Distillation D4 du co-design bilevel morphologie-controle par
+-- Stackelberg PPO (Dai et al, ICLR 2026). Module formel du duopole
+-- leader/suiveur en demande linéaire et coûts marginaux constants,
+-- adossé aux invariants `tests/test_stackelberg*.py`. Forme close
+-- (eq. 1 du papier) et best-response follower (invariant central
+-- qu'un bug historique avait casse). 0 sorry. Resultats-phare :
+-- `cournotSymmetric_eq_is_fixed_point`,
+-- `stackelberg_follower_eq_reaction_clamped`,
+-- `stackelberg_closed_form_expansion`,
+-- `first_mover_advantage_symmetric`,
+-- `welfare_above_cournot_symmetric`, plus 6 valeurs-pytest par
+-- `norm_num`. VOLONTAIREMENT sans `ProgramGames` (pas de bilevel
+-- imbriqué — Stackelberg statique est un cas particulier où le
+-- leader connaît l'identité du follower) et sans `RepeatedGames`
+-- (pas de temps, pas de jeu repete). 8ᵉ cohorte `lean_lib` du
+-- même package — modèle `decision_theory_lean`.
+@[default_target]
+lean_lib StackelbergBilevel where
+  globs := #[`StackelbergBilevel.*]
+
 -- Tranche L2 (po-2025) : `ProgramGames/FairBot.lean` (+ sibling `_en`) —
 -- EPIC #15062, FairBot par le théorème de Löb. Interface
 -- `ModalProvability box` (D1 nécessitation, D2 distribution, D3
