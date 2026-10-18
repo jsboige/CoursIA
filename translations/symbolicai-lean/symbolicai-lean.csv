@@ -31713,7 +31713,7 @@ tmp.unlink(missing_ok=True)
 print()
 print(""Squelette Lean-21 termine (sections 1-4). Corps (sections 5-9 + exercices) : grain 3.2."")
 print(""Voir issue #10932 pour le plan complet et #10763 (Epic digestions Tao)."")",,,,,,,,d1fc646bb879098c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,70952654,markdown,fr,a9c11b8a02b97a95,"# Lean-22 : Detection MIMO par flips -- le seuil 2 log N sous preuve Lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,70952654,markdown,fr,a9c11b8a02b97a95,"# Lean-22 : Detection MIMO par flips -- le seuil 2 log N sous preuve Lean
 
 **Navigation** : [Index](README.md) | [Lean-21 (PFR)](Lean-21-PFR-Entropy-Method.ipynb) | [Lean-23 (Galois) >>](Lean-23-Galois-Probleme-Inverse-M23.ipynb)
 
@@ -31743,7 +31743,7 @@ registres : des **illustrations numeriques** (Python) qui montrent les phenomene
 puis des **`#check` reels** executes par `lake env lean` sur le lac compile --
 les enonces affiches sont ceux que le compilateur Lean 4 a verifies, pas des
 paraphrases.",,,,,,,,a9c11b8a02b97a95,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,c5f10467,markdown,fr,25240c3c339885ff,"## Une question laissée en friche pendant vingt-cinq ans
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,c5f10467,markdown,fr,25240c3c339885ff,"## Une question laissée en friche pendant vingt-cinq ans
 
 Le résultat formalisé ici clôt une question que la communauté des communications sans fil a intensivement travaillée de 2000 à la fin des années 2010, avant de passer à autre chose. L'auteur raconte cette histoire dans un article de vulgarisation (août 2026) qui mérite d'être lu en entier ; en voici la colonne vertébrale :
 
@@ -31757,7 +31757,7 @@ Le résultat formalisé ici clôt une question que la communauté des communicat
 | 2026 | Théorème 2.1 : LMMSE signé puis flips gloutons réussit dès **2 log N**, en temps polynomial. L'écart entre ce que ML atteint et ce qu'un algorithme polynomial peut prouver est refermé. |
 
 Pendant ce temps, le champ avait déménagé. L'auteur le dit sans amertume : des pans entiers de la littérature restent « ouverts et seuls », non parce qu'ils sont impossibles, mais parce que les gens ont lentement arrêté de s'en soucier. Ce que ce théorème aurait valu vers 2010 -- un best paper ISIT ou IT Society, des entretiens à MIT, Berkeley, Stanford -- vaut aujourd'hui un préprint et un article sur X : la question n'a pas changé, son audience a disparu.",,,,,,,,25240c3c339885ff,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,d23c3fa4,markdown,fr,3a894acaab2b251f,"## 1. Le modele MIMO et le detecteur a flips
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,d23c3fa4,markdown,fr,3a894acaab2b251f,"## 1. Le modele MIMO et le detecteur a flips
 
 Une transmission MIMO a `N` antennes emisuelles et `M` recepteurs se modelise par
 
@@ -31775,7 +31775,7 @@ cout : la descente ne peut pas revisiter un etat et son nombre de pas est
 majore par le cout initial (Phase 1). Le Lemme 11.1 (Phase 2) donne la forme
 fermee du cout d'un flip : accepter la coordonnee `i` equivaut a tester le signe
 de `s·‖h_i‖² + √s·⟪h_i, w⟫`.",,,,,,,,3a894acaab2b251f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,5fe45a9f,code,fr,848ce1a6eb6bad21,"# Code 1.1 - Descente a flips sur un canal MIMO simule
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,5fe45a9f,code,fr,848ce1a6eb6bad21,"# Code 1.1 - Descente a flips sur un canal MIMO simule
 #
 # On simule y = Hx + w en BPSK (x_i = ±1), puis on execute le detecteur :
 # partir d'une initialisation (filtre apparie), retourner iterativement la
@@ -31826,14 +31826,14 @@ M_N = 2 * np.log(N)                           # echelle du seuil du papier
 print(f""N = {N} antennes, seuil indicatif M_N ~ 2 log N = {M_N:.2f}"")
 print(f""flips acceptes par la descente : {n_flips} (plafond theorique : strictement < M_N sous les hypotheses)"")
 print(f""erreurs de detection          : {int(np.sum(x_hat != x_true))} / {N} symboles"")",,,,,,,,848ce1a6eb6bad21,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,7265b4ad,markdown,fr,305f6d3625f1bc5f,"**Ce que montre la sortie.** La descente s'arrete d'elle-meme (aucun flip
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,7265b4ad,markdown,fr,305f6d3625f1bc5f,"**Ce que montre la sortie.** La descente s'arrete d'elle-meme (aucun flip
 n'ameliore plus l'objectif) : c'est le **run terminal** de la Proposition 9.1.
 Le nombre de flips est petit devant `N` -- la Phase 1 prouve qu'il est
 strictement majore par `M_N` des que le cout initial est confine sous une
 barriere `B < M_N`. Notez aussi que la descente peut echouer (symboles errones) :
 c'est exactement la question du seuil -- sous `2·log N` (bruit fort / canal
 defavorable), aucune methode ne recupere le message (converse, Phase 3b).",,,,,,,,305f6d3625f1bc5f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,1992087b,code,fr,7878ba464c6825c2,"# Code 1.2 - Probabilite d'echappement du bruit (brique du converse)
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,1992087b,code,fr,7878ba464c6825c2,"# Code 1.2 - Probabilite d'echappement du bruit (brique du converse)
 #
 # Le coeur du converse §11 : le recepteur ne peut distinguer le bon symbole x
 # d'un voisin x' que si le bruit w ne tombe PAS dans l'union des ""intervalles
@@ -31874,13 +31874,13 @@ print(f""produit exact (1-m)^n      : {prod_exact:.5f}"")
 print(f""chaine (1-m)^n <= (1-p)^n  : {prod_exact:.5f} <= {bound_pow:.5f} : {prod_exact <= bound_pow}"")
 print(f""chaine (1-p)^n <= e^(-n p) : {bound_pow:.5f} <= {bound_exp:.5f} : {bound_pow <= bound_exp}"")
 print(""(les bornes en p = masse MINIMALE sont valides mais laches quand eps est petit)"")",,,,,,,,7878ba464c6825c2,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,12d3c789,markdown,fr,2fc231a958f8b9b7,"**Ce que montre la sortie.** L'echantillon Monte-Carlo coincide avec le produit
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,12d3c789,markdown,fr,2fc231a958f8b9b7,"**Ce que montre la sortie.** L'echantillon Monte-Carlo coincide avec le produit
 exact `∏(1−m_i)` (independance des coordonnees du bruit -- c'est
 `Measure.pi_pi` dans le lac), et la chaine d'inegalites de la Brique 2 est
 verifiee numeriquement. C'est le **mecanisme du seuil** : quand `n` grandit,
 `e^{−np}` decroit exponentiellement -- echapper a tous les intervalles devient
 impossible, et avec lui toute methode de detection fiable sous le seuil.",,,,,,,,2fc231a958f8b9b7,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,b9d3df9c,markdown,fr,04f5b1a82111aadf,"## Comment cette preuve a été trouvée
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,b9d3df9c,markdown,fr,04f5b1a82111aadf,"## Comment cette preuve a été trouvée
 
 C'est la partie la plus vivante de l'histoire, et la plus proche des pratiques de ce cours. Motivé par les succès des modèles de frontière sur les mathématiques dures, l'auteur est retourné aux problèmes qui l'avaient hanté en début de thèse et leur a -- ses mots -- « pointé l'Étoile de la Mort dessus ». Il a posé la question à GPT-5.6 et Claude Fable 5 : *quand la détection ML peut-elle être résolue en temps polynomial ?*
 
@@ -31893,14 +31893,14 @@ Sa conclusion, qui condense tout le rapport preuve/vérification :
 > Proving the thing took 30 minutes and making it verifiable by me took 5ish days.
 
 La division du travail n'est pas « l'IA trouve, l'humain approuve ». C'est la **contrainte de vérification humaine** qui a façonné l'exposition finale : une preuve longue mais élémentaire, composée d'étapes qu'il décrit comme digestibles « par un vieux dinosaure à l'attention courte ». C'est aussi le workflow de ce dépôt : le livrable est produit par des agents, vérifié par le compilateur Lean, puis relu par l'humain -- et l'exigence de relecture humaine façonne ce qu'on accepte de merger.",,,,,,,,04f5b1a82111aadf,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,1e6685ce,markdown,fr,b40c15a61cb5f396,"## 2. La formalisation en quatre phases
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,1e6685ce,markdown,fr,b40c15a61cb5f396,"## 2. La formalisation en quatre phases
 
 Le lac `mimo_lean` vit dans ce depot, a cote du notebook. Nous executons
 maintenant de vrais `#check` contre le lac compile : les enonces ci-dessous
 sont imprimes par Lean 4 depuis les `.olean` construits par `lake build`.
 La premiere cellule localise le lac (et le construit s'il n'est pas encore
 compile -- long la premiere fois, cache ensuite).",,,,,,,,b40c15a61cb5f396,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,c4310610,code,fr,9b024429883bc268,"# Code 2.1 - Localisation du lac + #check des quatre theoremes phases
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,c4310610,code,fr,9b024429883bc268,"# Code 2.1 - Localisation du lac + #check des quatre theoremes phases
 #
 # Mecanique identique a Lean-21 : subprocess `lake env lean` sur un snippet
 # qui importe les modules du lac et interroge les declarations reelles.
@@ -31966,7 +31966,7 @@ import Converse
 print(""--- lake env lean : les quatre theoremes phases (chargement de l'environnement) ---"")
 run_lean_snippet(SNIPPET_PHASES, ""phases"")
 print(""Sortie ci-dessus : declarations RELLES du lac mimo_lean (compilation locale)."")",,,,,,,,9b024429883bc268,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,28f1611c,markdown,fr,7c2742edef1a6601,"**Lecture des enonces.** Chaque `#check` imprime la signature complete :
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,28f1611c,markdown,fr,7c2742edef1a6601,"**Lecture des enonces.** Chaque `#check` imprime la signature complete :
 
 - `Mimo.descent_target_before_ceiling` (Phase 1) : sous `hstrict` (chaque flip
   accepte decroit strictement le cout), `hnostall` (tout point bloque est dans
@@ -31981,7 +31981,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,28f1611c,ma
 - `Mimo.gaussian_coordinate_escape_bound` (Phase 3b) : la probabilite que le
   bruit s'echappe des `n` intervalles est majoree par `e^{−np}` avec
   `p = ε·φ(2)` -- le squelette complet de l'impossibilite sous le seuil.",,,,,,,,7c2742edef1a6601,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,f6286096,code,fr,dc2dd7d88ff9c75a,"# Code 2.2 - Zoom sur la boucle de controle + propretes formelles
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,f6286096,code,fr,dc2dd7d88ff9c75a,"# Code 2.2 - Zoom sur la boucle de controle + propretes formelles
 #
 # flip_accepted_iff fait le pont entre les deux phases : le critere d'acceptation
 # (score strictement negatif) EST l'hypothesse hstrict que consomme la
@@ -32020,7 +32020,7 @@ import Converse
 print(""--- lake env lean : boucle de controle, lemmes, axiomes ---"")
 run_lean_snippet(SNIPPET_CONTROL, ""control"")
 print(""Attendu : propext/Classical.choice/Quot.sound (Phase 1 : propext, Quot.sound seulement) -- aucun sorryAx."")",,,,,,,,dc2dd7d88ff9c75a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,4b799252,markdown,fr,90666aa3ecaea16c,"**Proprete formelle.** Les quatre theoremes ne reposent que sur les axiomes
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,4b799252,markdown,fr,90666aa3ecaea16c,"**Proprete formelle.** Les quatre theoremes ne reposent que sur les axiomes
 standard de Mathlib (`propext`, `Classical.choice`, `Quot.sound` -- la Phase 1,
 sans Mathlib, n'utilise que `propext` et `Quot.sound`) :
 aucun `sorryAx`, aucun axiome ajoute. La Phase 3b s'appuie sur le lake externe
@@ -32028,7 +32028,7 @@ aucun `sorryAx`, aucun axiome ajoute. La Phase 3b s'appuie sur le lake externe
 (ICML 2026, Apache 2.0, lui-meme sorry-free) pour la brique Hanson-Wright --
 l'inegalite de concentration des formes quadratiques gaussiennes, absente de
 Mathlib.",,,,,,,,90666aa3ecaea16c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,a9c66539,markdown,fr,7347b454205c7e12,"## Le pont : quand la quatrième phase touche l'objectif ML
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,a9c66539,markdown,fr,7347b454205c7e12,"## Le pont : quand la quatrième phase touche l'objectif ML
 
 Les quatre théorèmes ci-dessus racontent la mécanique de la descente et la
 structure du bruit ; il leur manquait, à la fin de la phase 3b, la jonction
@@ -32051,7 +32051,7 @@ avec l'objectif : aucun énoncé du lac ne disait encore « donc le ML échoue �
    explicite, portée par la brique gaussienne de la phase 3b. C'est le premier
    énoncé du lac qui parle de l'objectif ML sous le bruit — la brique de base
    d'un futur `P(ML échoue) ≥ c > 0` sous le seuil.",,,,,,,,7347b454205c7e12,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,66bb5c2f,code,fr,6be8fdaa5eb4fc6b,"# Code 2.3 - Le pont vers l'objectif ML : les declarations de Bridge.lean (phase 4)
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,66bb5c2f,code,fr,6be8fdaa5eb4fc6b,"# Code 2.3 - Le pont vers l'objectif ML : les declarations de Bridge.lean (phase 4)
 #
 # Mecanique identique a Code 2.1 : subprocess `lake env lean` sur un snippet
 # qui importe le module et interroge les declarations reelles.
@@ -32077,7 +32077,7 @@ SNIPPET_BRIDGE = """"""import Bridge
 print(""--- lake env lean : les cinq declarations du pont (Bridge.lean, phase 4) ---"")
 run_lean_snippet(SNIPPET_BRIDGE, ""bridge"")
 print(""Sortie ci-dessus : declarations RELLES de Bridge.lean (compilation locale)."")",,,,,,,,6be8fdaa5eb4fc6b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,18f7ee57,markdown,fr,9c75cc66174ab54b,"**Lecture des énoncés du pont.** Les signatures confirment les trois
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,18f7ee57,markdown,fr,9c75cc66174ab54b,"**Lecture des énoncés du pont.** Les signatures confirment les trois
 gestes, dans l'ordre où le notebook les raconte :
 
 - `Mimo.mimoObj_sub_mimoObj` : pour **deux configurations quelconques**
@@ -32105,7 +32105,7 @@ interroge l'énoncé terminal `ml_error_prob_ge_threshold`, qui pousse la
 chaîne jusqu'à `P(erreur ML) ≥ 1 − exp(−(2·log N − log log N))` sous
 couverture diagonale. Le pont n'est plus la première marche : c'est le
 palier d'où l'escalier a été construit.",,,,,,,,9c75cc66174ab54b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,00f09991,code,fr,a2e4a96779c7230a,"# Code 2.4 - Le converse complet : echec global, reduction, assemblage
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,00f09991,code,fr,a2e4a96779c7230a,"# Code 2.4 - Le converse complet : echec global, reduction, assemblage
 #
 # Les declarations livrees apres le squelette du pont (issues #11673, #11709) :
 # de la borne locale ""un flip peut battre x*"" a l'enonce terminal du Thm 2.1.
@@ -32131,7 +32131,7 @@ SNIPPET_CONVERSE = """"""import Bridge
 print(""--- lake env lean : le converse complet (Bridge.lean, grains 4-5) ---"")
 run_lean_snippet(SNIPPET_CONVERSE, ""converse"")
 print(""Attendu : [propext, Classical.choice, Quot.sound] -- aucun sorryAx."")",,,,,,,,a2e4a96779c7230a,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,534105cf,markdown,fr,8c609906e7735354,"**Lecture des énoncés du converse.** La chaîne complète, maillon par maillon :
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,534105cf,markdown,fr,8c609906e7735354,"**Lecture des énoncés du converse.** La chaîne complète, maillon par maillon :
 
 - `Mimo.no_flip_beats_prob_le` : sous la **couverture diagonale** `hcover` (si
   une coordonnée du bruit reste dans l'intervalle d'ambiguïté `I(c, ε)`, alors
@@ -32153,7 +32153,7 @@ Les trois maillons reposent uniquement sur les axiomes standard
 ouvert**, honnêtement : le raffinement `− s_N` du seuil exact et le lien
 quantitatif `SNR ↔ ε` qui rend la couverture diagonale vraie pour un canal
 donné — la suite du §11, suivie par l'issue #11152.",,,,,,,,8c609906e7735354,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,a686a91e,markdown,fr,49538f7341dff21b,"### Le module invisible : `NormTails.lean` -- les queues de normes
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,a686a91e,markdown,fr,49538f7341dff21b,"### Le module invisible : `NormTails.lean` -- les queues de normes
 
 Les sections precedentes interrogent `Descent`, `Objective`, `Lmmse`, `Converse`
 et `Bridge` -- mais le lac porte un sixieme module que ce notebook ne montrait
@@ -32172,7 +32172,7 @@ l'instancie depuis le lake externe SLT (`YuanheZ/lean-stat-learning-theory`,
 `gaussian_lipschitz_concentration`) puis specialise au MIMO pour `w` et pour
 chaque colonne `hᵢ`.
 ",,,,,,,,49538f7341dff21b,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,798bf95b,code,fr,c3ebf21624c059df,"# Code 2.5 - Le sixieme module : queues de normes (NormTails.lean)
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,798bf95b,code,fr,c3ebf21624c059df,"# Code 2.5 - Le sixieme module : queues de normes (NormTails.lean)
 #
 # Ce module etait le module invisible du lac : aucune de ses declarations
 # n'etait citee par un notebook (mesure #11703). On l'interroge comme les
@@ -32202,7 +32202,7 @@ print(""--- lake env lean : les six declarations de NormTails (module invisible 
 run_lean_snippet(SNIPPET_NORMTAILS, ""normtails"")
 print(""Sortie ci-dessus : declarations REELLES de NormTails.lean."")
 ",,,,,,,,c3ebf21624c059df,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,f4c2b1b0,markdown,fr,d7584a7440c873d3,"**Lecture des énoncés de NormTails.** Les six declarations, dans l'ordre
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,f4c2b1b0,markdown,fr,d7584a7440c873d3,"**Lecture des énoncés de NormTails.** Les six declarations, dans l'ordre
 ou le module les construit :
 
 - `Mimo.norm_lipschitz_one` : le certificat `LipschitzWith 1` pour
@@ -32226,7 +32226,7 @@ qui prend le relais. **Avec cette section, les six modules du lac
 `mimo_lean` sont montres par le notebook** -- plus aucun module invisible
 (cible de l'EPIC #11703 pour ce lac).
 ",,,,,,,,d7584a7440c873d3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,a3c04a64,markdown,fr,da4e035399a80991,"## « Je ne veux pas de Lean » -- l'objection de l'auteur
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,a3c04a64,markdown,fr,da4e035399a80991,"## « Je ne veux pas de Lean » -- l'objection de l'auteur
 
 Détail savoureux pour une série Lean : l'auteur d'un papier à preuves assistées par modèles a explicitement **refusé** la vérification formelle pour ce projet. Sa position, telle qu'il l'écrit :
 
@@ -32238,7 +32238,7 @@ L'objection est sérieuse, et ce notebook en est le banc d'essai idéal :
 - **Là où l'objection marque la frontière du lac.** Le bras probabiliste du converse (concentration gaussienne, Hanson--Wright) repose sur les outils « exotiques » que l'auteur ne voulait pas vérifier à la main ; notre Phase 3b les délègue à un lac externe, et notre vérification de ces briques reste numérique (codes 1.2 et 3.1). Là où l'humain ne peut plus suivre, la chaîne de confiance s'allonge.
 
 Les deux positions défendent en fait la même valeur -- la vérifiabilité -- et tranchent son coût différemment : vérifier soi-même des étapes élémentaires, ou raccourcir la chaîne en déléguant au compilateur et en relisant la traduction des énoncés. C'est un débat de conception légitime, et il est exactement à sa place dans un cours.",,,,,,,,da4e035399a80991,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,1ccdcf28,markdown,fr,e13a0593ae6db3f9,"## 3. Pourquoi un seuil en 2 log N
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,1ccdcf28,markdown,fr,e13a0593ae6db3f9,"## 3. Pourquoi un seuil en 2 log N
 
 Les deux moities du resultat se rejoignent :
 
@@ -32253,7 +32253,7 @@ Les deux moities du resultat se rejoignent :
 La cellule suivante trace la decroissance exponentielle des trois expressions
 du converse : le produit exact, la borne en puissance, et la borne
 exponentielle.",,,,,,,,e13a0593ae6db3f9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,fff8c4d1,code,fr,098e9477447f5803,"# Code 3.1 - Les trois courbes du converse : prod(1-m_i), (1-p)^n, e^{-np}
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,fff8c4d1,code,fr,098e9477447f5803,"# Code 3.1 - Les trois courbes du converse : prod(1-m_i), (1-p)^n, e^{-np}
 #
 # Pour une masse d'intervalle fixee, la probabilite d'echappement total
 # s'effondre exponentiellement avec n -- c'est le bras ""impossibilite"" du seuil.
@@ -32287,13 +32287,13 @@ n_star = int(np.ceil(np.log(1e-6) / np.log(1 - m)))
 print(f""avec m = {m} : produit exact (1-m)^n < 1e-6 des n >= {n_star}"")
 print(""Au-dela, il devient statistiquement impossible que TOUTES les coordonnees"")
 print(""du bruit s'echappent simultanement des intervalles."")",,,,,,,,098e9477447f5803,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,2f75ee39,markdown,fr,eb7884a87e56a6d9,"## Exercices
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,2f75ee39,markdown,fr,eb7884a87e56a6d9,"## Exercices
 
 Les exercices suivants approfondissent les trois registres du notebook :
 simulation de la descente, verification numerique des bornes du converse, et
 interrogation directe du lac Lean. Ils sont a completer -- chaque stub
 s'execute sans erreur et affiche un message d'attente.",,,,,,,,eb7884a87e56a6d9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,82fcc55e,markdown,fr,67700c6f4ae7966c,"### Exercice 1 : comptage de flips et barriere
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,82fcc55e,markdown,fr,67700c6f4ae7966c,"### Exercice 1 : comptage de flips et barriere
 
 Le code 1.1 mesure le nombre de flips pour **un** canal. Ecrivez une etude
 Monte-Carlo : pour 200 canaux aleatoires a SNR fixee, collectez le nombre de
@@ -32304,7 +32304,7 @@ augmente).
 **Indices** : reutilisez `flip_descent` telle quelle ; faites varier
 l'ecart-type du bruit `sigma_w` sur une grille `[0.4, 0.8, 1.2]` ;
 `M_N = 2 * log(N)`.",,,,,,,,67700c6f4ae7966c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,653ff8c8,code,fr,121e92522321bf63,"# Exercice 1 : etude Monte-Carlo des flips vs barriere M_N
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,653ff8c8,code,fr,121e92522321bf63,"# Exercice 1 : etude Monte-Carlo des flips vs barriere M_N
 # TODO etudiant : boucle sur 200 tirages de canal, collecte des n_flips,
 # comparaison a M_N = 2*log(N), affichage du taux de depassement par sigma_w.
 
@@ -32315,7 +32315,7 @@ result = None  # TODO etudiant : dataframe ou dict {sigma_w: taux_de_depassement
 # Etape 3 : comparer chaque run a M_N et afficher le taux.
 
 print(""Exercice a completer : Monte-Carlo flips vs M_N"")",,,,,,,,121e92522321bf63,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,5e0bf875,markdown,fr,a34df9a208a0e7f9,"### Exercice 2 : borne de Brique 1 sur une grille
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,5e0bf875,markdown,fr,a34df9a208a0e7f9,"### Exercice 2 : borne de Brique 1 sur une grille
 
 La Brique 1 dit que tout intervalle de largeur `eps` inclus dans `[-2, 2]`
 porte une masse `>= eps * phi(2)`. Verifiez numeriquement : pour une grille
@@ -32326,7 +32326,7 @@ echoue.
 
 **Indices** : `masse(c, eps) = Phi(c+eps/2) - Phi(c-eps/2)` avec
 `Phi(t) = 0.5*(1+erf(t/sqrt(2)))` ; l'incondition est `|c| + eps/2 <= 2`.",,,,,,,,a34df9a208a0e7f9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,c5cf7bf8,code,fr,2e2428e0e11e0aea,"# Exercice 2 : verification numerique de la Brique 1
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,c5cf7bf8,code,fr,2e2428e0e11e0aea,"# Exercice 2 : verification numerique de la Brique 1
 # TODO etudiant : grille de (c, eps), test masse >= eps*phi(2) sous inclusion,
 # et recherche d'un contre-exemple hors inclusion.
 
@@ -32337,7 +32337,7 @@ result = None  # TODO etudiant : (nb_violations_sous_inclusion, contre_exemple_h
 # Etape 3 : compter les violations quand |c|+eps/2 <= 2 (attendu : 0).
 
 print(""Exercice a completer : Brique 1 vs masses exactes"")",,,,,,,,2e2428e0e11e0aea,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,c905a0bc,markdown,fr,d20968eed510c741,"### Exercice 3 : interroger le lac vous-meme
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,c905a0bc,markdown,fr,d20968eed510c741,"### Exercice 3 : interroger le lac vous-meme
 
 En utilisant la fonction `run_lean_snippet` du code 2.1, ecrivez un snippet
 Lean qui `#check` les deux lemmes de queue de la Phase 1
@@ -32348,7 +32348,7 @@ par declaration.
 **Indices** : les imports necessaires sont deja dans les snippets precedents ;
 la sortie attendue liste les signatures puis `[propext, Classical.choice,
 Quot.sound]`.",,,,,,,,d20968eed510c741,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,d06ba7b8,code,fr,87a6c410413986eb,"# Exercice 3 : snippet Lean personnel contre le lac mimo_lean
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,d06ba7b8,code,fr,87a6c410413986eb,"# Exercice 3 : snippet Lean personnel contre le lac mimo_lean
 # TODO etudiant : construire le snippet (str) et l'executer via run_lean_snippet.
 
 snippet = None  # TODO etudiant : ""import Descent\nimport Converse\n#check ...""
@@ -32358,7 +32358,7 @@ snippet = None  # TODO etudiant : ""import Descent\nimport Converse\n#check ..."
 # Etape 3 : verifier que les axiomes imprimes ne contiennent pas sorryAx.
 
 print(""Exercice a completer : #check des lemmes de queue + axiomes"")",,,,,,,,87a6c410413986eb,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,d7a4dd6d,markdown,fr,b75c46a9a8f2d885,"## Épilogue : aucune nouvelle mathématique
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,d7a4dd6d,markdown,fr,b75c46a9a8f2d885,"## Épilogue : aucune nouvelle mathématique
 
 L'addendum de l'article mérite une cellule à lui seul, car il dit quelque chose d'important sur la nature de ce résultat :
 
@@ -32367,7 +32367,7 @@ L'addendum de l'article mérite une cellule à lui seul, car il dit quelque chos
 La difficulté n'est pas conceptuelle mais **compositionnelle** : vingt pages d'étapes standard, qu'il faut assembler « à la bonne granularité et au bon moment pour qu'elles s'emboîtent parfaitement ». D'où sa thèse : il existe une classe de problèmes dont la solution n'exige aucune idée nouvelle -- seulement l'assemblage d'idées connues, maintenu ensemble par des chaînes de tokens plus longues que ce que quiconque avait jamais voulu dépenser. « Personne n'a essayé les choses connues assez longtemps » décrirait plus de problèmes ouverts qu'on ne le croit.
 
 Sa spéculation finale fait écho aux thèmes de ce cours sur l'apprentissage par renforcement : un modèle entraîné uniquement sur des données d'avant 2005 aurait-il trouvé ? Peut-être pas -- non par manque de capacité, mais parce que l'attraction vers les bonnes idées que le modèle « sent » dépend de la popularité enregistrée des méthodes dans ses données d'entraînement. Les modèles seraient « des distillations de nos instincts accumulés, aiguisés par le RL ». Quant aux problèmes abandonnés, ils « attendent tranquillement, sans défense, dans un coin reculé de l'univers de la littérature, que l'Étoile de la Mort tire -- pour 200 $ par mois ».",,,,,,,,b75c46a9a8f2d885,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,674c5a05,markdown,fr,0d82c796e2815023,"## Resume
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,674c5a05,markdown,fr,0d82c796e2815023,"## Resume
 
 Ce notebook a presente la formalisation complete du detecteur MIMO a flips de
 Papailiopoulos (2026) dans le lake `mimo_lean` de ce depot :
@@ -32395,7 +32395,7 @@ Papailiopoulos (2026) dans le lake `mimo_lean` de ce depot :
 
 Le lac suit la convention i18n du depot (docstrings FR par defaut, twins `_en`
 a namespace `Mimo_en`, code byte-identique hors docstrings).",,,,,,,,0d82c796e2815023,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb,58f270da,markdown,fr,6eef6fa6354c90ef,"## References
+MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb,58f270da,markdown,fr,6eef6fa6354c90ef,"## References
 
 - **Papailiopoulos, 2026** -- *Polynomial-Time MIMO Detection at the
   Maximum-Likelihood Threshold* (préprint 2026, preuves assistées GPT-5.6 +

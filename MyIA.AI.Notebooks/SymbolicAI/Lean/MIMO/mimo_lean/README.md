@@ -27,7 +27,7 @@ du premier découpage.
 ## Build
 
 ```bash
-cd MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean
+cd MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/mimo_lean
 lake build   # 6 libs × 2 namespaces (Mimo + Mimo_en) — Descent (cœur,
              # instantané) + Objective/Lmmse/Converse/Bridge/NormTails
              # (Mathlib + SLT requis)
@@ -154,13 +154,13 @@ combinent ces queues par union bound sur les `N` colonnes du canal.
 
 ## Companion canonique
 
-Le compagnon natif est **[Lean-21b-MIMO-Converse-Native.ipynb](../Lean-21b-MIMO-Converse-Native.ipynb)**
+Le compagnon natif est **[MIMO-03-Converse-Native.ipynb](../MIMO-03-Converse-Native.ipynb)**
 (kernel `lean4-wsl`) — il visite les 35 déclarations de `NormTails` /
 `Converse` / `Bridge`, chacune interrogée par `#check` et sondée par
 `#print axioms` sur les théorèmes clés. Trois axiomes standards, zéro
 `sorry`, zéro axiome non standard.
 
-Lean-21b **distingue** le prouvé localement (les énoncés de ce lake) de
+MIMO-03 **distingue** le prouvé localement (les énoncés de ce lake) de
 l'emprunté (les deux théorèmes SLT rappelés explicitement) — la lecture
 est self-contained, sans confusion de frontière.
 
