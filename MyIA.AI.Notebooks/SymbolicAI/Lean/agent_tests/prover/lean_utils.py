@@ -1489,14 +1489,14 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
     real_build_ok = None
     if is_success and persist_on_success:
         original_content = content
-        # #21323: `subdir` was never assigned in this scope — the write-back
-        # raised NameError BEFORE touching the real file, so persist_on_success
-        # never worked (and crashed its caller, workflow.py's verify loop).
-        # Derive the project-relative path from project_dir, the same re-rooting
-        # probe_relative_path applies to the probe (see its docstring).
-        real_relative = (Path(filepath).resolve()
-                         .relative_to(Path(project_dir).resolve()).as_posix())
         try:
+            # #21323: `subdir` was never assigned in this scope — the write-back
+            # raised NameError BEFORE touching the real file, so persist_on_success
+            # never worked (and crashed its caller, workflow.py's verify loop).
+            # Derive the project-relative path from project_dir, the same re-rooting
+            # probe_relative_path applies to the probe (see its docstring).
+            real_relative = (Path(filepath).resolve()
+                             .relative_to(Path(project_dir).resolve()).as_posix())
             Path(filepath).write_text(new_content, encoding="utf-8", newline="")
             real_result = verifier.verify_project_file(real_relative, force=True)
             real_output = real_result.get("raw_output", "") or ""
@@ -1537,6 +1537,18 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             real_build_ok = False
             error_type = "persist_io_error"
             error_msg = f"Failed to persist replacement to real file: {_persist_err}"
+        except ValueError as _persist_err:
+            # filepath outside project_dir: relative_to raised BEFORE any
+            # write, so the real file was never touched — nothing to restore.
+            # Handled inside the persist contract instead of crashing the
+            # caller (the same escape class the #21323 NameError had).
+            is_success = False
+            real_build_ok = False
+            error_type = "persist_path_outside_project"
+            error_msg = (
+                "Cannot persist: filepath is outside project_dir "
+                f"({_persist_err}); real file untouched."
+            )
 
     return {
         "success": is_success,

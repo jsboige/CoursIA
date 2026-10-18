@@ -31,6 +31,11 @@ Pins:
      (single-quote wording — the v4.33 backticked wording is carried by
      #21324's regex widening; once merged, this call site inherits it).
   4. ``persist_on_success=False`` never touches the real file.
+  5. A filepath that ends up OUTSIDE the derived project root is a
+     contract failure (``persist_path_outside_project``), not an uncaught
+     ValueError crashing the caller — the escape class NanoClaw flagged on
+     #21325; simulated by pointing ``resolve_lake_module`` at a foreign
+     root (layout drift, symlinked monorepo).
 
 Run from ``agent_tests/``:
     python -m pytest tests/test_persist_writeback.py -q
@@ -196,3 +201,31 @@ class TestPersistOptIn:
         assert result["real_build_ok"] is None
         assert disk == _SOURCE  # sorry still there
         assert len(fake.calls) == 1  # probe only, no real-module rebuild
+
+
+# ── 5. filepath outside the derived project root: contract failure ─────────
+
+class TestPersistOutsideProject:
+    def test_outside_project_dir_fails_clean_not_crash(
+            self, lake_project, monkeypatch):
+        # #21325 review (NanoClaw): real_relative used to sit OUTSIDE the
+        # try — a filepath not under the derived root raised an UNCAUGHT
+        # ValueError, crashing the caller (same escape class as the #21323
+        # NameError). Simulate the drift: resolve_lake_module lands on a
+        # root that does not contain the file (lakefile found on another
+        # subtree after a layout change / symlinked monorepo). The probe's
+        # own ValueError fallback keeps the probe path working.
+        elsewhere = lake_project.parent / "elsewhere"
+        elsewhere.mkdir()
+        monkeypatch.setattr(
+            lu, "resolve_lake_module", lambda fp: (str(elsewhere), "Other"),
+        )
+        result, fake, disk = _run(lake_project)
+
+        assert result["success"] is False
+        assert result["persisted"] is False
+        assert result["real_build_ok"] is False
+        assert result["error_type"] == "persist_path_outside_project"
+        assert "real file untouched" in result["errors"]
+        # Never written, never left broken.
+        assert disk == _SOURCE
