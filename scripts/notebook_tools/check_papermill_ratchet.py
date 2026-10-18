@@ -113,6 +113,36 @@ def papermill_block(nb):
     return json.dumps(block, sort_keys=True, ensure_ascii=False)
 
 
+def cell_papermill_signature(nb):
+    """Canonical hash of the per-cell ``metadata.papermill`` blocks.
+
+    papermill rewrites the top-level ``metadata.papermill`` AND the per-cell
+    block of every cell it executed. A branch that hand-rewrites the
+    top-level block alone -- the FORGED_BLOCK pattern of #21229/#21230/#21232
+    -- leaves the per-cell blocks identical to the base. Comparing the
+    signature is therefore a positive test: same signature + different
+    top-level block = hand-rewrite, regression. Same signature + same
+    top-level block = STALE_BLOCK (the original regression class). Different
+    signature + different top-level block = a real re-execution, the
+    legitimate BLOCK_MOVED path.
+
+    The signature hashes only the ``metadata.papermill`` field of each cell
+    (when present), in cell order. Cells without a ``metadata.papermill``
+    field contribute nothing -- both legs of a comparison share the same
+    empty-list contribution, so the signature stays stable across a
+    block-removal operation that targets only the top-level field.
+    """
+    parts = []
+    for cell in nb.get("cells", []):
+        if cell.get("cell_type") != "code":
+            continue
+        cell_pm = (cell.get("metadata") or {}).get("papermill")
+        if cell_pm is None:
+            continue
+        parts.append(json.dumps(cell_pm, sort_keys=True, ensure_ascii=False))
+    return "\n".join(parts)
+
+
 # --- sanctioned output strips -------------------------------------------
 # Three pre-commit hooks in .pre-commit-config.yaml rewrite committed cell
 # outputs without any re-execution. Two of them touch the code-cell outputs
@@ -166,10 +196,10 @@ def stripped_evidence(content):
 
 
 def state_at_base(base, path, cwd=None):
-    """(evidence, block) of the notebook blob at base ref.
+    """(status, evidence, block, cell_papermill_sig) of the notebook blob at base ref.
 
-    Returns ("ABSENT", None, None) when the file does not exist at base and
-    ("PARSE_ERROR", None, None) on invalid JSON.
+    Returns ("ABSENT", None, None, None) when the file does not exist at base
+    and ("PARSE_ERROR", None, None, None) on invalid JSON.
     """
     content = git("show", f"{base}:{path}", cwd=cwd)
     if content is None:
@@ -182,22 +212,23 @@ def state_at_base(base, path, cwd=None):
     # consulted on the STALE_BLOCK branch, which is the rare one. A thunk
     # keeps a 200-notebook PR at the cost it had before this exemption.
     return ("OK", exec_evidence(nb), papermill_block(nb),
-            lambda: stripped_evidence(content))
+            lambda: stripped_evidence(content), cell_papermill_signature(nb))
 
 
 def state_at_head(path, cwd=None):
-    """(status, evidence, block) of the working-tree notebook."""
+    """(status, evidence, block, cell_papermill_sig) of the working-tree notebook."""
     try:
         nb = json.loads((Path(cwd or ".") / path).read_text(encoding="utf-8"))
     except Exception:
         return "PARSE_ERROR", None, None, None
-    return "OK", exec_evidence(nb), papermill_block(nb), None
+    return "OK", exec_evidence(nb), papermill_block(nb), None, \
+        cell_papermill_signature(nb)
 
 
 def classify(base_state, head_state):
-    """Verdict of one changed notebook. Regression iff stale block ridden."""
-    b_status, b_ev, b_block, b_ev_stripped = base_state  # 4th is a thunk
-    h_status, h_ev, h_block, _ = head_state
+    """Verdict of one changed notebook. Regression iff stale or forged block ridden."""
+    b_status, b_ev, b_block, b_ev_stripped, b_cell_sig = base_state
+    h_status, h_ev, h_block, _, h_cell_sig = head_state
     if b_status == "ABSENT":
         return "ADDED", False
     if b_status == "PARSE_ERROR" or h_status == "PARSE_ERROR":
@@ -218,7 +249,14 @@ def classify(base_state, head_state):
         # Outputs changed but the block is byte-identical: it describes the
         # previous run, not the one that produced the committed outputs.
         return "STALE_BLOCK", True
-    # Block changed or newly written alongside the new outputs.
+    # h_block != b_block at this point (top-level block changed). A real
+    # papermill re-execution also rewrites every per-cell papermill block;
+    # a hand-rewrite of the top-level block alone leaves the per-cell
+    # signature identical to the base. #21229/#21230/#21232 measured on
+    # 18/10 all rode that path. #21232: 16.0 s exactly, microsecond-identical
+    # end_time, no cell-level block touched - the FORGED_BLOCK class.
+    if h_cell_sig == b_cell_sig and b_block is not None:
+        return "FORGED_BLOCK", True
     return "BLOCK_MOVED" if b_block is not None else "BLOCK_ADDED", False
 
 
@@ -269,11 +307,21 @@ def main():
 
     if regressions:
         for r in regressions:
-            print(f"::error file={r['notebook']}::outputs/execution_count "
-                  f"changed but the metadata.papermill block is identical to "
-                  f"{args.base} - the block describes the previous run. "
-                  f"Re-execute the notebook via an executor that rewrites the "
-                  f"block, or remove the block", file=sys.stderr)
+            verdict = r["verdict"]
+            if verdict == "FORGED_BLOCK":
+                print(f"::error file={r['notebook']}::top-level "
+                      f"metadata.papermill block changed but the per-cell "
+                      f"papermill blocks are identical to {args.base} - a "
+                      f"real papermill run rewrites both layers. The "
+                      f"top-level block was hand-rewritten. Re-execute the "
+                      f"notebook via an executor that rewrites both, or "
+                      f"revert the hand-rewrite", file=sys.stderr)
+            else:
+                print(f"::error file={r['notebook']}::outputs/execution_count "
+                      f"changed but the metadata.papermill block is identical to "
+                      f"{args.base} - the block describes the previous run. "
+                      f"Re-execute the notebook via an executor that rewrites the "
+                      f"block, or remove the block", file=sys.stderr)
         sys.exit(1)
     sys.exit(0)
 
