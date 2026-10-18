@@ -146,6 +146,7 @@ La migration Plotly-CDN → SVG inline `text/html` (canon ai-01 `svg-6927-canon.
 | `epita_prcon_autograde.py` | Autograde EPITA Programmation par Contraintes |
 | `weekly_digest.py` | Digest hebdomadaire d'activité |
 | `fix_audio_dependencies.py` | Dépendances audio ; `optimize_dvs.py` **archivé** 2026-10-01 (palier 1 #18153) |
+| `learner_preflight.py` | Preflight apprenant #18208 (#18765) : vérifie le profil de parcours (`--parcours local\|dotnet\|genai`, `--json` pour #10921) par paliers — kernels, SDK, GPU, clés (présence seule), services Docker ; rc 0 si le palier courant est prêt |
 | `_alpha_diag.py`, `generate_16e.py` | Diagnostics ponctuels |
 
 ## Audit, coûts & fidélité — `scripts/audit/`
