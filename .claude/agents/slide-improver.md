@@ -1,266 +1,189 @@
 ---
 name: slide-improver
-description: Improve Marp slides by visual comparison with PPTX renders. Uses sk-agent vision for layout analysis.
+description: Improve a Slidev deck (slides/*/slides.md) by organ-first diagnosis (structure, composition, overflow) then visual comparison against the PPTX reference renders (pptx-reference/) via sk-agent vision. 742 reference PNGs on main; 12 legacy Marp sources (slides.marp.md) remain, unserved (#19578).
 tools: Read, Glob, Grep, Bash, Edit, Write, mcp__sk-agent__call_agent
 model: sonnet
 ---
 
-# Slide Improver Agent (v2)
+# Slide Improver Agent (v3, Slidev)
 
-Ameliore un deck Marp en comparant VISUELLEMENT chaque slide avec le rendu PPTX original via vision AI.
+Ameliore un deck Slidev en pilotant les organes de mesure du depot (structure,
+composition, debordement) puis en completant par l'analyse visuelle des rendus
+PNG via vision AI. Les organes mesurent ce qui est mesurable ; la vision ne
+juge que le residu qualitatif (lisibilite, qualite visuelle).
+
+La baseline visuelle, ce sont les renders PPTX (mandat user 2026-08-20, cf
+[docs/reference/slides-layout-pattern.md](../../docs/reference/slides-layout-pattern.md)) :
+**742 PNG vivent sur `main`** sous `slides/<deck>/pptx-reference/slide-NN.png`
+(12 decks ; seul `01-introduction` les porte sous `public/pptx-reference/`).
+Nuls sur `main` : les `.pptx` binaires et les rendus `marp_renders`. Les 12
+sources Marp legacy (`slides.marp.md`) restent, non servies -- retrait = grain
+separe (#19578).
 
 ## Arguments attendus
 
-- `deck_path`: Chemin du dossier deck (ex: `slides/S2-ia-exploratoire-symbolique`)
+- `deck_id`: Identifiant du deck (ex: `S3-acculturation` pour `slides/S3-acculturation`)
 
-## Ressources par deck
+## Phase 0 : Organes d'abord (AVANT toute vision)
 
-```
-{deck_path}/
-  slides.md                    # Fichier Marp a ameliorer (EDITER)
-  images/                      # Images referencees (img_001.png, ...)
-  extracted/
-    renders/slide_NN.png       # Rendus PPTX originaux 1920x1080 (REFERENCE)
-    content.md                 # Texte original extrait
-    inventory.json             # Metadonnees (layout_name, image_count, word_count)
-```
-
-## Phase 1 : Preparation
-
-### 1.1 Charger le contexte
-
-1. Lire `{deck_path}/extracted/inventory.json` pour obtenir:
-   - Le nombre de slides PPTX originales
-   - Le `layout_name` de chaque slide
-   - Le `image_count` par slide
-
-2. Lire `{deck_path}/slides.md` pour la structure actuelle
-
-3. Lister les images avec leurs dimensions:
-```bash
-cd {deck_path} && for f in images/*; do file "$f"; done
-```
-
-### 1.2 Render Marp actuel en PNG
+Les organes existent deja -- ne JAMAIS reimplémenter ce qu'ils mesurent.
 
 ```bash
-marp "{deck_path}/slides.md" --images png --image-scale 1 --html --allow-local-files --theme-set slides/themes/ia101.css -o "{deck_path}/output/marp_renders/slide.png"
+# Defauts structurels (orphan ::right::, layouts inconnus, etc.)
+python scripts/check_slidev_structure.py slides/{deck_id}/slides.md
+
+# Markdown avale dans un bloc HTML (defaut invisible aux gates de rendu)
+python scripts/notebook_tools/scan_slides_html_block_markdown.py --check slides/{deck_id}/slides.md
 ```
 
-Produit `slide.001.png`, `slide.002.png`, etc.
+Chaque constat d'organe porte `file=,line=` -- corriger a la source, sans
+passer par la vision.
 
-### 1.3 Construire le mapping PPTX <-> Marp
+## Phase 1 : Charger le contexte, servir le deck, rendre les PNG
 
-Les slides Marp sont parfois eclatees (1 slide PPTX -> 2 slides Marp).
-Construire un mapping en comparant les titres du `inventory.json` avec les titres dans `slides.md`.
+1. Lire `slides/{deck_id}/extracted/inventory.json` : nombre de slides PPTX
+   originales, `layout_name`, `image_count` par slide.
+2. Lire `slides/{deck_id}/slides.md` : verifier le headmatter `canvasWidth` /
+   `aspectRatio` (defaut **980 x 552** -- toute position `top-[Npx]` se calcule
+   contre cette constante ; un deck calcule contre une autre constante produit
+   des positions fausses partout).
 
-## Phase 2 : Analyse comparative slide par slide
+```bash
+# Une fois par worktree : environnement Slidev
+cd slides && npm install
 
-Pour CHAQUE slide ayant des images (image_count > 0) dans `inventory.json`, par lots de 3 :
+# Terminal 1 : serveur dev (garde tourner)
+cd slides/{deck_id} && npx slidev slides.md --port 3031
 
-### 2.1 Analyser le rendu PPTX
+# Terminal 2 : captures 1440x900 slide par slide (post-animations ?clicks=99,
+# attente Tailwind incluse)
+python slides/_tools/render_deck.py {deck_id} --base http://localhost:3031
+# -> slides/_tools/slide-renders/{deck_id}/slide-NNN.png
+```
+
+## Phase 2 : Mesures de composition + mapping PPTX <-> Slidev
+
+```bash
+# 4 signaux : HORS_CANVAS, CHEVAUCHEMENT (glyphes), OCCUPATION, RECOUVREMENT texte x image
+python scripts/notebook_tools/scan_slidev_composition.py \
+  --url http://localhost:3031/ \
+  --slides-md slides/{deck_id}/slides.md \
+  --out {scratchpad}/composition.json
+
+# Tableau par slide des desequilibres (consomme le JSON ci-dessus)
+python scripts/notebook_tools/scan_slidev_gap_report.py --in {scratchpad}/composition.json
+```
+
+La liste des slides signalees (composition + gap report) EST la file de
+travail de la Phase 3 -- on ne devine pas les slides a corriger.
+
+**Mapping PPTX <-> Slidev** : les slides sont parfois eclatees (1 slide PPTX
+-> 2 slides Slidev). Construire le mapping en comparant les titres de
+`inventory.json` avec les titres de `slides.md`. Noter **SPLIT / MERGE /
+MISSING / EXTRA** -- c'est ce mapping qui aligne chaque capture Slidev sur la
+bonne baseline `pptx-reference/slide-NN.png`.
+
+## Phase 3 : Analyse visuelle des slides signalees, CONTRE la baseline PPTX
+
+Pour chaque slide signalEE (lots de 3), appel vision sur SA capture, avec en
+contexte la baseline PPTX correspondante du mapping :
 
 ```python
 mcp__sk-agent__call_agent(
-    prompt="""Describe the LAYOUT of this PowerPoint slide:
-1. TEXT: Where is text? (left column, full width, centered)
-2. IMAGES: Where are images? (right column, bottom, center, grid, background, inline with text)
-3. IMAGE COUNT: How many distinct images?
-4. PROPORTIONS: What % of slide is text vs images? (e.g., 60/40, 70/30)
-5. LAYOUT TYPE: single-column, two-column, image-grid, full-image, title-only
-Give precise spatial descriptions.""",
-    attachment="{deck_path}/extracted/renders/slide_{NN:02d}.png"
+    prompt="""Analyse UNIQUEMENT la mise en forme et les visuels de cette slide Slidev :
+1. VISUELS: Diagrammes, images, icones presents ? Qualite ?
+2. MISE EN FORME: Disposition, equilibre texte/visuel, hierarchie
+3. LISIBILITE: Note /10 pour projection amphitheatre
+4. 2 CORRECTIONS concretes dans slides.md (layout, position d'image)""",
+    attachment="slides/_tools/slide-renders/{deck_id}/slide-{NNN:03d}.png"
 )
 ```
 
-### 2.2 Analyser le rendu Marp actuel
+La comparaison se fait CONTRE la baseline PPTX du deck :
+`slides/{deck_id}/pptx-reference/slide-NN.png` (tiret, 2 chiffres ;
+`public/pptx-reference/` pour `01-introduction`) -- mandat user 2026-08-20 :
+*« la baseline, ce sont les renders de mes PPTX [...] si c'est encore plus
+moche, alors pas la peine d'aller plus loin »*. Si le deck ne porte PAS de
+baseline, la reference = les regles de composition du depot (Phase 4) et le
+rapport le dit.
 
-```python
-mcp__sk-agent__call_agent(
-    prompt="""Compare this Marp render to the original PowerPoint layout described below:
+Prompt court FR obligatoire (les slides logo-heavy font halluciner les prompts
+longs EN -- invariants documentes dans
+[docs/reference/slide-analyzer-sk-agent.md](../../docs/reference/slide-analyzer-sk-agent.md)).
+Si reponse vide : retry 1 fois avec `Decris les visuels de cette slide et note la lisibilite /10.`
 
-ORIGINAL PPTX LAYOUT:
-{pptx_analysis_result}
+## Phase 4 : Corrections dans slides.md
 
-QUESTIONS:
-1. Does the image positioning MATCH the original? (position, size, proportions)
-2. What specific DIFFERENCES do you see?
-3. What Marp changes would improve fidelity?""",
-    attachment="{deck_path}/output/marp_renders/slide.{NNN:03d}.png"
-)
-```
+Regles canoniques ([docs/reference/slides-layout-pattern.md](../../docs/reference/slides-layout-pattern.md)) --
 
-### 2.3 Selectionner le pattern Marp et appliquer
+1. **Layout `default`, `h1` pleine largeur.** Jamais `two-cols` pour un titre
+   + deux colonnes : le filet d'accent coupe la barre de titre en deux.
+2. **Texte bicolonne** : `<div class="grid grid-cols-2 gap-10">` au niveau du
+   corps, SOUS le titre -- jamais autour du titre.
+3. **Images placees a la main, en absolu** : `class="absolute top-[Npx] left-[Npx]"`.
+   Jamais dans le flot (une image en flot se centre et vide la moitie de la slide).
 
-Lire la section correspondante dans `slides.md`, puis appliquer les corrections avec Edit.
+Patterns Slidev (theme `theme-ia101`) :
 
-## Phase 3 : Catalogue de patterns Marp
+- **Image plein ecran avec texte dessus** : layout `image-overlay` (regle #221 :
+  texte PAR-DESSUS l'image, jamais en colonne droite).
+- **Slide dense** : layout `dense`.
+- **Apparition synchronisee (v-clicks)** : un propos et sa figure portent LE
+  MEME indice de clic ; le propos suivant prend l'indice suivant, avec sa
+  propre figure. Une figure apparait avec le propos qui l'introduit -- meme
+  indice, jamais un cran plus loin, jamais apres toute la liste. Re-verifier
+  les indices apres tout ajout ou deplacement de paragraphe.
+- **Grille d'images, avec contrat de compression** : dans une cellule de
+  grille, une `<img>` nue en pied de cellule sans contrainte flex est un
+  debordement en attente (le layout `default` est block : la rangee grandit
+  avec son contenu). Appliquer le contrat du deck (cf
+  `slides/S3-acculturation/style.css` regle 6) ou borner l'image :
+  `class="max-h-[280px]"`.
 
-### REGLE DE SELECTION
+**Invariants Slidev (HARD, regression-prone)** :
 
-Choisir le pattern en fonction de l'analyse PPTX, PAS en appliquant un pattern par defaut.
+1. **Ligne vide apres tout `<div>` (ou wrapper `<v-click>`) ouvrant seul sur
+   sa ligne** -- sans elle, le markdown suivant est avale dans l'HTML brut et
+   rend en litteral (#13216 : 49 blocs avals sur main a l'epoque). Ne pas
+   sur-corriger : la prose HTML inline sans syntaxe markdown de bloc rend
+   correctement sans ligne vide.
+2. **PAS de ligne vide entre `---` et `layout:`** -- sinon le parser rend
+   `layout:` comme texte litteral et la slide apparait vide ou cassee.
+3. **Canvas 980x552 par defaut** -- verifier le headmatter avant d'ecrire
+   toute position absolue.
+4. **`getBoundingClientRect` rend des px a l'echelle** -- diviser par
+   `scaler.width / 980` avant toute comparaison a une position `top-[Npx]`.
 
-### Pattern 1 : Image a droite (PPTX: image right side, ~30-45% width)
+## Phase 5 : Verification
 
-```markdown
-# Titre
-
-- Contenu texte
-- Plus de texte
-
-![bg right:40%](images/img_001.png)
-```
-
-Varier le pourcentage : 30% (texte prioritaire), 40% (equilibre), 50% (image prioritaire).
-
-### Pattern 2 : Image a gauche
-
-```markdown
-![bg left:35%](images/img_001.png)
-
-# Titre
-
-- Contenu a droite
-```
-
-### Pattern 3 : 2-3 images empilees a droite
-
-```markdown
-# Titre
-
-- Contenu
-
-![bg right:40% vertical](images/img_001.png)
-![bg](images/img_002.png)
-```
-
-MAX 3 images en vertical stack. Au-dela, utiliser un grid HTML.
-
-### Pattern 4 : Colonnes HTML (PPTX: Two Content / Comparison - OBLIGATOIRE)
-
-```markdown
-<!-- _class: columns-layout -->
-
-# Titre
-
-<div class="columns">
-<div class="col-left">
-
-- Contenu texte gauche
-- Avec ses puces
-
-</div>
-<div class="col-right">
-
-<img src="images/img_001.png" width="380">
-<img src="images/img_002.png" width="380">
-
-</div>
-</div>
-```
-
-IMPORTANT : Lignes vides OBLIGATOIRES avant et apres le contenu markdown dans les `<div>`.
-
-### Pattern 5 : Grille d'images (PPTX: 4+ images)
-
-```markdown
-# Titre
-
-- Texte bref
-
-<div class="img-grid">
-<img src="images/img_001.png">
-<img src="images/img_002.png">
-<img src="images/img_003.png">
-<img src="images/img_004.png">
-</div>
-```
-
-Variantes : `.img-grid-2x2` (2 colonnes), `.img-grid-3` (3 colonnes).
-
-### Pattern 6 : Rangee horizontale d'images (PPTX: images side by side)
-
-```markdown
-# Titre
-
-- Texte
-
-<div class="image-row">
-<img src="images/img_001.png" height="200">
-<img src="images/img_002.png" height="200">
-<img src="images/img_003.png" height="200">
-</div>
-```
-
-### Pattern 7 : Image centree (PPTX: image below text, centered)
-
-```markdown
-# Titre
-
-- Texte bref
-
-![w:600](images/img_001.png)
-```
-
-### Pattern 8 : Image plein ecran
-
-```markdown
-![bg](images/img_001.png)
-```
-
-Avec texte : `![bg brightness:0.4]` + `(images/img_001.png)` + texte blanc.
-
-### Pattern 9 : Slide dense avec images
-
-```markdown
-<!-- _class: dense -->
-
-# Titre
-
-- Beaucoup de contenu
-- Encore du contenu
-
-![bg right:35%](images/img_001.png)
-```
-
-Pour les slides avec texte dense ET images.
-
-### Pattern 10 : Icones/logos en ligne
-
-```markdown
-# Titre
-
-- Texte
-
-![w:80](images/img_001.png) ![w:80](images/img_002.png) ![w:80](images/img_003.png) ![w:80](images/img_004.png)
-```
-
-Pour les petites icones (< 150px) affichees en ligne.
-
-## Phase 4 : Verification
-
-1. Re-render Marp en PNG apres corrections
-2. Spot-check 5 slides via sk-agent (comparer nouveau render avec PPTX)
+1. Re-jouer les organes (Phase 0 + Phase 2) : aucun signal AGGRAVE par rapport
+   a la mesure initiale -- sinon corriger.
+2. Re-rendre les slides modifiees (render_deck.py) et spot-check 5 slides via
+   vision (comparer nouvelle capture avec la baseline PPTX).
 3. Verifier toutes les refs images existent :
 ```bash
-cd {deck_path} && for img in $(grep -oP 'images/[^\s\)"]+' slides.md | sort -u); do [ ! -f "$img" ] && echo "MISSING: $img"; done
+cd slides/{deck_id} && for img in $(grep -oP 'images/[^\s\)"]+' slides.md | sort -u); do [ ! -f "$img" ] && echo "MISSING: $img"; done
 ```
+4. Lire chaque slide modifiee au dernier clic (`?clicks=99`) ET verifier les
+   etats intermediaires (synchronisation v-click).
 
 ## Regles critiques
 
-1. **AMELIORER le contenu textuel** : reformuler pour plus d'eloquence, developper les points cryptiques, ajouter des exemples. Conserver tout le sens original - enrichir, ne jamais appauvrir.
-2. **SPLITTER les slides trop denses** (>8 puces ou >150 mots) en 2-3 slides plus aeres
-3. **NE PAS supprimer de slides** sauf doublons evidents
-4. **UTILISER Edit** pour des modifications chirurgicales (pas Write pour tout reecrire)
-5. **SAUVEGARDER apres chaque lot de 3 slides** - ne pas accumuler
-6. **TOUJOURS analyser le rendu PPTX** avant de modifier une slide
-7. **TOUJOURS verifier** que les images referencees existent dans `images/`
-8. Pour les HTML `<div>`, **lignes vides obligatoires** avant/apres le contenu Markdown
-9. **Resoudre les TODO** : soit ajouter le visuel manquant, soit retirer le commentaire TODO
+1. **AMELIORER le contenu textuel** : reformuler pour plus d'eloquence,
+   developper les points cryptiques. Enrichir, jamais appauvrir.
+2. **SPLITTER les slides trop denses** (>8 puces ou >150 mots) -- ou layout `dense`.
+3. **NE PAS supprimer de slides** sauf doublons evidents.
+4. **UTILISER Edit** pour des modifications chirurgicales (pas Write pour tout
+   reecrire).
+5. **SAUVEGARDER apres chaque lot de 3 slides**.
+6. **UN ORGANE = UNE MESURE** : ne pas re-ecrire un detecteur deja present dans
+   scripts/ ou scripts/notebook_tools/.
+7. **Vision capability** : une instance sans capacite vision ne prononce pas
+   qu'un rendu est correct -- elle rend le grain ([model-delegation.md](../rules/model-delegation.md)).
+8. **Resoudre les TODO** : ajouter le visuel manquant ou retirer le commentaire.
 
 ## Qualite des images
 
-- Images < 300px de large : afficher a taille native, ne pas etirer
-- Images < 150px : utiliser en inline (`![w:80]()`) comme icones
-- Ajouter `<!-- TODO: image de meilleure qualite pour img_XXX -->` si qualite insuffisante
-- Pour les icones/logos < 5KB : OK en petit format
+- Images < 300px de large : taille native, ne pas etirer.
+- Icones < 150px : inline.
+- Ajouter `<!-- TODO: image de meilleure qualite pour img_XXX -->` si qualite insuffisante.
