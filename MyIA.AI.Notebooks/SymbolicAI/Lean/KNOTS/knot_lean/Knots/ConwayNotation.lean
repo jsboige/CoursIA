@@ -36,6 +36,19 @@
     telles quelles, avec ce diagnostic — la désignation classique du trèfle
     attend une construction en spirale (suite du programme Phase 3).
 
+  Ce que le maillon 2 prouve (la construction en spirale, §5) :
+
+  - la fermeture du 2-brin à `n` demi-twists lue en spirale (dessin
+    annulaire : croisement `i` portant les arêtes `(2i−1, 2i−1+n, 2i, 2i+n)`
+    modulo `2n`) produit pour `n = 3` EXACTEMENT le `trefoilDiagram` du
+    lake — la lecture spirale de `[3]` désigne 3₁ (valeur désignée
+    `t² − t + 1`, celle d'`alexander_trefoil`) ;
+  - pour `n = 5`, la même lecture désigne 5₁ (valeur désignée
+    `t⁴ − t³ + t² − t + 1`, déterminant |Δ(−1)| = 5) ;
+  - aucun croisement de la spirale ne porte d'arête réflexive : le défaut
+    diagnostiqué sur les chaînes verticales ci-dessus est résolu par
+    l'embedding annulaire.
+
   Convention de signe : le code PD du lake ne code pas la chiralité des
   croisements (docstring d'`alexanderEntry`) ; seul |aᵢ| est lu, et le
   miroir d'une notation partage toutes ses valeurs désignées.
@@ -296,7 +309,8 @@ t² N'EST PAS significative (ce n'est pas une unité fois t² − t + 1 ; les
 mineurs calculés valent ±1 et t²). Le nœud sous-jacent est bien 3₁ (fait
 classique : la fermeture numerator du tangle à trois twists) ; sa
 désignation classique exige une construction en spirale, suite du
-programme de la Phase 3. -/
+programme de la Phase 3 — livrée au maillon 2 (§5 :
+`spiral_three_designates_trefoil`). -/
 theorem conway_three_designated :
     alexanderPolynomialAux (conwayKnotOf trefoilNotation) = Polynomial.X ^ 2 := by
   have hc : conwayKnotOf trefoilNotation =
@@ -313,7 +327,8 @@ theorem conway_three_designated :
   ring
 
 /-- Même diagnostic pour `[5]` (5₁ des tables) : chaîne verticale pure,
-arêtes réflexives, valeur désignée t⁴ non significative. -/
+arêtes réflexives, valeur désignée t⁴ non significative — résolu au
+maillon 2 (§5 : `spiral_five_alexander`). -/
 theorem conway_five_designated :
     alexanderPolynomialAux (conwayKnotOf cinquefoilNotation) = Polynomial.X ^ 4 := by
   have hc : conwayKnotOf cinquefoilNotation =
@@ -329,5 +344,120 @@ theorem conway_five_designated :
   simp (config := { decide := true }) [alexanderEntry]
   ring
 
+
+/-! ## 5. La construction en spirale (maillon 2)
+
+Le défaut du maillon 1 — la fermeture numerator en chaîne verticale joint
+les deux sortants d'un même croisement (arêtes réflexives) — n'est pas un
+défaut du LANGAGE mais du DESSIN : la même fraction `[n]` se dessine en
+enroulant le 2-brin fermé autour d'un cylindre, chaque croisement `i`
+portant les quatre arêtes `(2i−1, 2i−1+n, 2i, 2i+n)` lues modulo `2n`.
+Pour `n` impair (`n ≥ 3`), la fermeture numerator du tangle `[n]` est le
+nœud torique `T(2, n)` (fait classique) : `[3]` désigne 3₁, `[5]` désigne
+5₁. Les valeurs désignées ci-dessous sont celles de la sonde Python du
+module (header), validées avant le port.
+-/
+
+/-- Étiquette spirale : `k` lu modulo `2n`, dans `1..2n`. -/
+def spiralLabel (n k : Nat) : Nat := (k - 1) % (2 * n) + 1
+
+/-- Le croisement `i` (1-indexé) de la spirale à `n` demi-twists : les
+deux arêtes entrantes `2i−1` et `2i`, les deux sortantes décalées de `n`
+(un demi-tour de cylindre plus loin sur la spire). -/
+def spiralCross (n i : Nat) : PDCrossing :=
+  ⟨spiralLabel n (2 * i - 1), spiralLabel n (2 * i - 1 + n),
+   spiralLabel n (2 * i), spiralLabel n (2 * i + n)⟩
+
+/-- La fermeture du 2-brin à `n` demi-twists, enroulée en spirale : le
+dessin annulaire de la fraction `[n]` (pour `n` impair ≥ 3, le nœud
+torique `T(2, n)`), sans arête réflexive. -/
+def spiralDiagram (n : Nat) : KnotDiagram :=
+  ⟨(List.range n).map (fun i => spiralCross n (i + 1)), 2 * n⟩
+
+/-! ### Bonne formation
+
+Chaque étiquette de `1..2n` apparaît exactement deux fois, dans deux
+croisements distincts — en particulier les quatre étiquettes d'un
+croisement sont deux à deux distinctes : le défaut Wirtinger du maillon 1
+disparaît.
+-/
+
+theorem spiral_wf_three : (spiralDiagram 3).wf = true := by
+  decide
+
+theorem spiral_wf_five : (spiralDiagram 5).wf = true := by
+  decide
+
+/-- Aucune arête réflexive dans la spirale `[3]` : les quatre étiquettes de
+chaque croisement sont deux à deux distinctes. -/
+theorem spiral_noReflect_three :
+    (spiralDiagram 3).crossings.all (fun c =>
+      c.e1 ≠ c.e2 ∧ c.e1 ≠ c.e3 ∧ c.e1 ≠ c.e4 ∧
+      c.e2 ≠ c.e3 ∧ c.e2 ≠ c.e4 ∧ c.e3 ≠ c.e4) = true := by
+  decide
+
+/-- Même absence d'arête réflexive pour la spirale `[5]`. -/
+theorem spiral_noReflect_five :
+    (spiralDiagram 5).crossings.all (fun c =>
+      c.e1 ≠ c.e2 ∧ c.e1 ≠ c.e3 ∧ c.e1 ≠ c.e4 ∧
+      c.e2 ≠ c.e3 ∧ c.e2 ≠ c.e4 ∧ c.e3 ≠ c.e4) = true := by
+  decide
+
+/-! ### Les valeurs désignées des spirales
+
+`[3]` désigne le trèfle : la spirale à trois demi-twists littéralise
+EXACTEMENT le diagramme de référence du lake (`trefoilDiagram`,
+`Knots/Basic.lean`) — la désignation suit par `alexander_trefoil`. `[5]`
+désigne 5₁ : valeur désignée `t⁴ − t³ + t² − t + 1`, déterminant
+|Δ(−1)| = 5.
+-/
+
+/-- La spirale `[3]` EST le diagramme du trèfle du lake, arête pour
+arête : la lecture annulaire de la fraction `[3]` produit le PD de
+référence `trefoilDiagram`. -/
+theorem spiral_three_eq_trefoilDiagram :
+    spiralDiagram 3 = trefoilDiagram := by
+  decide
+
+/-- La valeur désignée de la spirale `[3]` : `t² − t + 1`, calculée sur
+place (motif d'`alexander_trefoil` — littéralisation, partition d'arcs,
+mineur 2×2). -/
+theorem spiral_three_alexander :
+    alexanderPolynomialAux (spiralDiagram 3) =
+      Polynomial.X ^ 2 - Polynomial.X + 1 := by
+  have hc : spiralDiagram 3 =
+      ⟨[⟨1, 4, 2, 5⟩, ⟨3, 6, 4, 1⟩, ⟨5, 2, 6, 3⟩], 6⟩ := by
+    decide
+  simp only [alexanderPolynomialAux, hc]
+  simp (config := { decide := true })
+  rw [det_two_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-- Corollaire de désignation : la spirale `[3]` porte exactement le
+polynôme d'Alexander du trèfle du lake — la notation désigne 3₁, le
+diagnostic réflexif du maillon 1 est résolu par l'embedding annulaire. -/
+theorem spiral_three_designates_trefoil :
+    alexanderPolynomialAux (spiralDiagram 3) = alexanderPolynomial trefoil := by
+  rw [spiral_three_alexander, alexander_trefoil]
+
+/-- La valeur désignée de la spirale `[5]` : `t⁴ − t³ + t² − t + 1`, le
+polynôme d'Alexander de 5₁ (déterminant |Δ(−1)| = 5). Le mineur 4×4 est
+déplié par `conway_det_four_aux`. -/
+theorem spiral_five_alexander :
+    alexanderPolynomialAux (spiralDiagram 5) =
+      Polynomial.X ^ 4 - Polynomial.X ^ 3 + Polynomial.X ^ 2
+        - Polynomial.X + 1 := by
+  have hc : spiralDiagram 5 =
+      ⟨[⟨1, 6, 2, 7⟩, ⟨3, 8, 4, 9⟩, ⟨5, 10, 6, 1⟩, ⟨7, 2, 8, 3⟩,
+        ⟨9, 4, 10, 5⟩], 10⟩ := by
+    decide
+  simp only [alexanderPolynomialAux, hc]
+  simp (config := { decide := true })
+  rw [conway_det_four_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
 
 end Knots
