@@ -255,7 +255,7 @@ Ces statistiques sont celles de QC. Son Sharpe intègre un taux sans risque, ce 
 - **En `base`, une partie du résultat de 2020 tenait à des refus.** En mars 2020, pendant la chute, le code d'avant voit ses achats de TECL refusés le 12 et le 16, et le portefeuille reste en liquide par accident. Avec le correctif, `base` exécute ces achats. Sur l'année 2020, la valeur est multipliée par 13,6, contre 23,4 en 1re itération, où les mêmes achats étaient encore refusés.
 - **En `ucits`, l'effet sur 2020 est négligeable** (×2,37 contre ×2,39). Les refus d'avant portaient sur SHV (23), QLD (22) et SSO (4).
 
-**Verdicts recalculés sur le code corrigé.** La règle de #19587 est appliquée telle quelle : mêmes conditions, même statistique, mêmes sous-périodes. Le recalcul a été inscrit sur #19587 avant tout calcul (c.6240032874), et ses résultats y sont publiés (c.6240054542, c.6240360809). Seule la fenêtre change : 2012-01-01 → 2026-06-30, soit 3642 séances, car les nœuds de backtest utilisés s'arrêtent 90 jours avant la date du jour. Pour séparer l'effet du code de celui de la fenêtre, le run `base` de #19587 a été recalculé sur la même fenêtre. SPY et QQQ détenus sont les références des sections précédentes.
+**Verdicts recalculés sur le code corrigé.** La règle de #19587 est appliquée telle quelle : mêmes conditions, même statistique, mêmes sous-périodes. Le recalcul a été inscrit sur #19587 avant tout calcul (c.6240032874), et ses résultats y sont publiés (c.6240054542, c.6240360809 ; sous-périodes d'`ucits` : c.6249696050). Seule la fenêtre change : 2012-01-01 → 2026-06-30, soit 3642 séances, car les nœuds de backtest utilisés s'arrêtent 90 jours avant la date du jour. Pour séparer l'effet du code de celui de la fenêtre, le run `base` de #19587 a été recalculé sur la même fenêtre. SPY et QQQ détenus sont les références des sections précédentes.
 
 | Run, fenêtre → 2026-06-30 | Sharpe | CAGR | Pire baisse |
 |---|---|---|---|
@@ -263,7 +263,7 @@ Ces statistiques sont celles de QC. Son Sharpe intègre un taux sans risque, ce 
 | `base`, code corrigé | 1,48 | 104,5 % | −52,0 % |
 | `base` corrigé, frais doublés | 1,45 | 101,1 % | −52,5 % |
 | `ucits`, code d'avant | 1,14 | 40,0 % | −46,1 % |
-| `ucits`, code corrigé | 1,19 | 41,6 % | −40,9 % |
+| `ucits`, code corrigé | 1,19 | 41,6 % | −41,0 % |
 
 | Différence de Sharpe (code corrigé) | Écart | IC 95 % | p Holm | Frais doublés | 2012-2016 | 2017-2021 | 2022 → 2026-06 |
 |---|---|---|---|---|---|---|---|
