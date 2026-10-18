@@ -111,6 +111,19 @@ public static class PythonNetLoader
         {
             var roots = new List<string>();
             roots.AddRange(PythonDirectories(@"C:\"));
+            // Installation all-users de python.org (cf #20270) : le programme d'installation
+            // standard depose Python 3.x dans C:\Program Files\Python3xx. Cas mesure sur
+            // myia-po-2027 ou Python 3.13.15 + mealpy 3.0.2 y vivent, et la sonde ne
+            // trouvait aucun interpreteur compatible -> pythonnet retombait sur le venv
+            // du projet (Python 3.14) et le carnets .NET mouraient sur l'ABI numpy.
+            roots.AddRange(PythonDirectories(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Python313")));
+            roots.AddRange(PythonDirectories(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Python312")));
+            roots.AddRange(PythonDirectories(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Python313")));
+            roots.AddRange(PythonDirectories(Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86), "Python312")));
             var localAppData = Environment.GetEnvironmentVariable("LOCALAPPDATA");
             if (!string.IsNullOrWhiteSpace(localAppData))
                 roots.AddRange(PythonDirectories(Path.Combine(localAppData, "Programs", "Python")));
