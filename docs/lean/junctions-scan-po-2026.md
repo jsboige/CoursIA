@@ -128,8 +128,7 @@ L'auteur de #13962 est sur ai-01. **Décision Apply** :
 5. **Apply ai-01** : décision séparée du coordinateur, scan distinct.
 
 **Aucun Apply n'est lancé par ce rapport.** Le worker po-2026 documente et
-rend la main. La décision Apply reste coordinateur (Tell c.1502 strict ★★
-fondateur respect).
+rend la main. La décision Apply reste coordinateur ([CLAUDE.md](../../CLAUDE.md) §A).
 
 ## Suivi machine-par-machine
 
