@@ -1,3 +1,5 @@
+> RAPPORT — 2026-05-17 — Audit Reassessment Findings (NanoClaw #488), liste vivante d'items reclassés — figé
+
 # Audit Reassessment Findings (NanoClaw #488)
 
 Liste des items déjà reclassés par le protocole [.claude/rules/audit-reassessment.md](../../.claude/rules/audit-reassessment.md). Mettre à jour lors de chaque nouvelle reassessment.
