@@ -2826,7 +2826,7 @@ _ORGAN_BANNER_RE = re.compile(r"Organes bloquants en echec\s*:\s*([a-z_ ]+?)\s*(
 _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
     number mergeable
-    reviews(last:40) { nodes { state submittedAt author { login } } }
+    reviews(last:40) { nodes { state submittedAt author { login } body } }
     commits(last:1) { nodes { commit { statusCheckRollup {
       state   # #12830 : SUCCESS/FAILURE/PENDING/NEUTRAL au niveau rollup, pour le 3e etat file-saturation
       contexts(first:100) { nodes {
@@ -3842,9 +3842,27 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
     if state.get("mergeable") == "CONFLICTING":
         causes.append("conflits avec main -> rebaser")
     latest: dict[str, dict] = {}
+    body_latest: dict[str, dict] = {}
+    # #16926 : sous token COMMENT-only, le verdict d'une review vit dans son
+    # CORPS (prefixe VERDICT: / marqueurs de persona), invisible a
+    # reviews[].state. L'organe pool_review_verdicts lit ces voix -- importe,
+    # jamais copie. Les verdicts en COMMENTAIRES d'issue restent couverts par
+    # la 4e cause via check_unaddressed_nits (B.0).
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
+    from pool_review_verdicts import _voice  # noqa: E402, PLC0415 - import tardif
     for review in (state.get("reviews", {}) or {}).get("nodes") or []:
         if review["state"] in ("APPROVED", "CHANGES_REQUESTED", "DISMISSED"):
             latest[review["author"]["login"]] = review
+            continue
+        if review["state"] == "COMMENTED":
+            found = _voice(review.get("body"))
+            if found and found.get("verdict"):
+                login = review["author"]["login"]
+                prev = body_latest.get(login)
+                if prev is None or (review.get("submittedAt") or "") >= prev["submittedAt"]:
+                    body_latest[login] = {"login": login,
+                                          "verdict": found["verdict"],
+                                          "submittedAt": review.get("submittedAt") or ""}
     for login, review in latest.items():
         if review["state"] == "CHANGES_REQUESTED":
             if review_points_clear:
@@ -3855,6 +3873,16 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
                 # le merge-gate accepte (#18829).
                 continue
             causes.append(f"CHANGES_REQUESTED non leve ({login})")
+    # #16926 : verdict de corps vivant sous COMMENTED -- meme regle de primaute
+    # que l'etat natif : si l'organe B.0 a evalue les surfaces et n'a rien
+    # trouve de non leve, le verdict est un residu, pas une file a ouvrir.
+    for login in sorted(body_latest):
+        entry = body_latest[login]
+        if entry["verdict"] in ("CONCERNS", "CHANGES_REQUESTED") and not review_points_clear:
+            cause = (f"verdict de corps non leve : {entry['verdict']} ({login})"
+                     " -- organe pool_review_verdicts (#16926)")
+            if cause not in causes:
+                causes.append(cause)
     # 3ᵉ declencheur `file_saturation` (cf issue #12830) : aucun check n'a
     # demarre (PENDING/QUEUED partout), pas de conflit, pas de CHANGES_REQUESTED
     # non leve, et la PR est ouverte depuis plus de `saturation_hours`.
