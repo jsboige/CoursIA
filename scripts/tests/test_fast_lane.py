@@ -32,7 +32,7 @@ sys.path.insert(0, str(CI_DIR))
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
     FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
-    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, Guard,
+    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, TRANCHE22, Guard,
 )
 
 # Lot PILOTE absorbe a l'etape 3 de #12856 (programme #12567) : comparaison
@@ -1715,3 +1715,61 @@ def test_check_hr_substitution_gh_failure_exits_two(monkeypatch):
     assert excinfo.value.code == 2, (
         "l'echec gh doit sortir rc=2 (incident), pas rc=1 (verdict)"
     )
+
+
+def test_tranche22_markdown_schema_advisory_guard_is_wired():
+    """Tranche 22 = schema des cellules markdown (#20167), advisory. Contrat :
+    native, absorbe, non bloquant (calibration avant bascule), iteration par
+    carnet modifie. Le detecteur DOIT tirer sur un carnet fautif et rester
+    muet sur un carnet propre : un organe qui ne dit jamais rien est
+    indiscernable d'un organe debranche (lecon #11685).
+    """
+    import json
+    import tempfile
+
+    assert len(TRANCHE22) == 1, "la tranche 22 documente 1 seul garde (#20167)"
+    guard = TRANCHE22[0]
+    assert guard.source == FAST_LANE_NATIVE
+    assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    assert not guard.blocking, (
+        f"{guard.name} est advisory : bascule en bloquant seulement quand main "
+        f"ne porte plus aucune cellule markdown fautive"
+    )
+    assert guard.iterates_paths and "{changed_paths}" in guard.argv
+    assert "--check" in guard.argv
+    assert "MyIA.AI.Notebooks/**/*.ipynb" in guard.iterate_paths
+    for needle in (
+        "scripts/notebook_tools/fix_markdown_cell_schema.py",
+        "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
+        "scripts/ci/fast_lane_registry.py",
+    ):
+        assert needle in guard.paths, f"{needle} doit figurer dans les paths"
+
+    # Controle positif et negatif du detecteur, sur de vrais fichiers.
+    root = Path(__file__).resolve().parents[2]
+    script = root / "scripts" / "notebook_tools" / "fix_markdown_cell_schema.py"
+    nb_defect = {
+        "cells": [{"cell_type": "markdown", "id": "a", "metadata": {},
+                   "source": ["x\n"], "outputs": []}],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    nb_clean = {
+        "cells": [{"cell_type": "markdown", "id": "a", "metadata": {},
+                   "source": ["x\n"]}],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        bad = Path(tmp) / "bad.ipynb"
+        good = Path(tmp) / "good.ipynb"
+        bad.write_text(json.dumps(nb_defect), encoding="utf-8")
+        good.write_text(json.dumps(nb_clean), encoding="utf-8")
+        rc_bad = subprocess.run(
+            ["python", str(script), "--check", str(bad)],
+            capture_output=True, text=True, encoding="utf-8",
+        ).returncode
+        rc_good = subprocess.run(
+            ["python", str(script), "--check", str(good)],
+            capture_output=True, text=True, encoding="utf-8",
+        ).returncode
+    assert rc_bad == 1, "le detecteur doit tirer (rc=1) sur un carnet fautif"
+    assert rc_good == 0, "le detecteur doit rester muet (rc=0) sur un carnet propre"

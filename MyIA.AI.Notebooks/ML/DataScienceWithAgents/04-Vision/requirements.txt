@@ -1,16 +1,26 @@
 # Environnement de la sous-serie 04-Vision (14 carnets) -- CPython (canon ML DataScienceWithAgents).
 # Dependances relevees par grep des imports de TOUS les carnets (issue #19591), pas au juge.
 # Pins poses la ou une sortie commitee etablit la version ; ailleurs, declaration sans pin.
-# Verification : venv neuf + pip install -r + execution Papermill 4.4..4.6b -- a router
-# vers lane GPU (les carnets 4.4-4.6b entrainent des detecteurs, c.8236 RECOVERABLE-MACHINE).
+# Verification : venv neuf + pip install -r + execution Papermill d'un echantillon
+# 4.4/4.5/4.5b/4.5d/4.6b sur lane GPU RTX 4060 (c.8236 RECOVERABLE-MACHINE).
 
-# torch : 2.14.0 (4.5d cell 2 et 4.6b cell 4 -- build +cu126 locale, base 2.14.0 sur PyPI)
+# Correctif (issue #19591, point 3 execute) : la premiere livraison (PR #19593) pinnait
+# torchvision==0.23.0 et ultralytics==8.4.153 -- deux pins contredits par les sorties
+# commitees, et rendant le fichier NON INSTALLABLE (pip ResolutionImpossible :
+# torchvision 0.23.0 exige torch==2.8.0, contradictoire avec torch==2.14.0).
+# Pins corriges depuis les sorties commitees : torchvision 0.29.0 (sortie du 4.5),
+# ultralytics 8.4.173 (sorties de 4 carnets sur 5 : 4.5b/4.5c/4.6b/4.6c ; le seul 4.6
+# a tourne sous 8.4.155) -- paire installable avec torch 2.14.0 : contrainte PyPI
+# torch>=1.8.0, et la banniere du 4.5b montre torch 2.14.0+cu126 a cote de 8.4.173.
+# Identique a l'env kernel python3 du depot (torch 2.14.0+cu126 / torchvision 0.29.0+cu126).
+
+# torch : 2.14.0 (sorties 4.5/4.5b/4.5c/4.5d/4.6/4.6b/4.6c -- build +cu126 locale, base 2.14.0 sur PyPI)
 torch==2.14.0
-# torchvision : 0.23.0 (4.5 cell 2)
-torchvision==0.23.0
-# ultralytics : 8.4.153 (4.5b cell 2)
-ultralytics==8.4.153
-# libreyolo : 1.6.0 (4.5d cell 2)
+# torchvision : 0.29.0 (sortie du 4.5 ; l'ancien pin 0.23.0 exigeait torch 2.8.0)
+torchvision==0.29.0
+# ultralytics : 8.4.173 (sorties 4.5b/4.5c/4.6b/4.6c ; le 4.6 a tourne sous 8.4.155)
+ultralytics==8.4.173
+# libreyolo : 1.6.0 (sortie du 4.5d)
 libreyolo==1.6.0
 
 # Socle numerique / plot (12 carnets numpy, 12 matplotlib, 4 cv2, 2 PIL, 1 requests)

@@ -3371,7 +3371,12 @@ def test_build_queue_unknown_pr_is_listed_not_fatal():
     )
     assert [row["pr"] for row in result["unknown"]] == [1]
     assert [item["pr"] for item in result["queue"]] == [123]
-    assert result["metrics"] == {mod.VERDICT_READY: 1}
+    # #16480 critere 6 : les compteurs par verdict sont sur la racine,
+    # les projections consume + timing sont dans des sous-clés.
+    assert result["metrics"][mod.VERDICT_READY] == 1
+    assert result["metrics"]["consume"]["success"] == 1
+    assert result["metrics"]["consume"]["attempts"] == 1
+    assert result["metrics"]["consume"]["rejects_by_cause"] == {}
 
 
 def test_build_queue_sorts_oldest_first_not_by_number():
@@ -3410,11 +3415,17 @@ def test_build_queue_metrics_count_verdicts():
     result = mod.build_queue(
         [1, 2, 3], now=QUEUE_NOW, probe=_clear_probe, loader=loader
     )
-    assert result["metrics"] == {
-        mod.VERDICT_READY: 1,
-        mod.QUEUE_VERDICT_REVIEW_READY: 1,
-        mod.QUEUE_VERDICT_STALE: 1,
-    }
+    # #16480 critere 6 : les compteurs par verdict sont sur la racine ;
+    # les sous-clés `consume` et `timing` ajoutent les projections derivees
+    # sans stockage. Le contrat reste : READY=1, REVIEW_READY=1, STALE=1.
+    metrics = result["metrics"]
+    assert metrics[mod.VERDICT_READY] == 1
+    assert metrics[mod.QUEUE_VERDICT_REVIEW_READY] == 1
+    assert metrics[mod.QUEUE_VERDICT_STALE] == 1
+    assert metrics["consume"]["attempts"] == 3
+    assert metrics["consume"]["success"] == 1
+    assert metrics["consume"]["rejects_by_cause"][mod.QUEUE_VERDICT_REVIEW_READY] == 1
+    assert metrics["consume"]["rejects_by_cause"][mod.QUEUE_VERDICT_STALE] == 1
 
 
 def test_consume_refuses_mutation_after_dossier():
@@ -3433,7 +3444,166 @@ def test_consume_ready_nominal():
     )
     assert entry.verdict == mod.VERDICT_READY
     assert entry.to_json()["verdict"] == mod.VERDICT_READY
-# --- #17315 : le cout de l'invocation est mesure et publie -------------------
+
+
+# --- #16480 critere 6 : metriques derivees de --queue et --consume -----------
+#
+# Trois mesures sans stockage (#16480 acceptance) : tentatives/succes/rejets
+# de --consume par verdict, delai dossier->merge pour les PRs MERGED, age du
+# dossier au moment du consume. Tout est derive des timestamps deja lus
+# (dossier_created_at, mergedAt, createdAt), aucun fichier d'etat.
+
+
+def test_build_queue_metrics_consume_projection_groups_by_verdict():
+    """Un READY + un REVIEW_READY + un STALE : success=1, rejets par verdict."""
+    stale = _reviewed_snapshot()
+    stale["comments"].append(_comment("late"))
+    loader = {1: _reviewed_snapshot(), 2: _queue_snapshot([]), 3: stale}.__getitem__
+    result = mod.build_queue(
+        [1, 2, 3], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    consume = result["metrics"]["consume"]
+    assert consume["attempts"] == 3
+    assert consume["success"] == 1
+    assert consume["rejects_by_cause"][mod.QUEUE_VERDICT_REVIEW_READY] == 1
+    assert consume["rejects_by_cause"][mod.QUEUE_VERDICT_STALE] == 1
+    # Verbatim : pas de cle parasite quand rien n'est rejete.
+    assert sum(consume["rejects_by_cause"].values()) == 2
+
+
+def test_build_queue_metrics_timing_empty_when_no_dossier():
+    """Sans dossier, les timings restent a count=0 + None (jamais ZeroDivision)."""
+    snapshot = _base_snapshot()
+    # pas de _queue_snapshot ici, donc pas de dossier.
+    loader = {1: snapshot}.__getitem__
+    result = mod.build_queue(
+        [1], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    timing = result["metrics"]["timing"]
+    age = timing["dossier_age_minutes"]
+    merge = timing["merged_after_dossier_minutes"]
+    assert age == {"count": 0, "min": None, "max": None, "mean": None, "median": None}
+    assert merge == {"count": 0, "min": None, "max": None, "mean": None, "median": None}
+
+
+def test_build_queue_metrics_timing_dossier_age_for_ready():
+    """Un READY avec dossier : age > 0 si la queue est ouverte plus tard."""
+    snapshot = _reviewed_snapshot()
+    # Le dossier est poste 60 min avant QUEUE_NOW -- sans createdAt, l'age
+    # n'est pas derivable. On surcharge le dernier commentaire (le dossier)
+    # avec un createdAt explicite, sans toucher les autres.
+    snapshot["comments"][-1]["createdAt"] = "2026-10-08T19:00:00Z"
+    loader = {1: snapshot}.__getitem__
+    result = mod.build_queue(
+        [1], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    age = result["metrics"]["timing"]["dossier_age_minutes"]
+    assert age["count"] == 1
+    assert age["min"] is not None and age["min"] >= 0
+    assert age["max"] == age["min"]  # un seul echantillon
+
+
+def test_build_queue_metrics_timing_merged_after_dossier_for_merged():
+    """Un READY + MERGED : delai dossier->merge expose en minutes."""
+    snapshot = _reviewed_snapshot()
+    snapshot["state"] = "MERGED"
+    snapshot["comments"][-1]["createdAt"] = "2026-10-08T19:00:00Z"
+    # dossier 60 min avant la queue ; merge 30 min apres.
+    snapshot["mergedAt"] = "2026-10-08T20:30:00Z"
+    loader = {1: snapshot}.__getitem__
+    result = mod.build_queue(
+        [1], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    merge = result["metrics"]["timing"]["merged_after_dossier_minutes"]
+    assert merge["count"] == 1
+    # dossier 19:00, merge 20:30 -> 90 min
+    assert merge["min"] == 90
+    assert merge["max"] == 90
+    assert merge["mean"] == 90
+    assert merge["median"] == 90
+
+
+def test_build_queue_metrics_timing_ignores_merged_for_non_ready():
+    """Un PR non-READY (REVIEW_READY/STALE) avec mergedAt : pas dans la stat.
+
+    Le delai dossier->merge n'a de sens que si le dossier a valide READY ;
+    sinon le PR n'est pas dans la fenetre de consommation. Le sample doit
+    etre vide (count=0) pour eviter de melanger READY et non-READY dans
+    la moyenne d'un cycle /coordinate.
+    """
+    snapshot = _queue_snapshot([])  # pas de review qualifiante -> REVIEW_READY
+    snapshot["state"] = "MERGED"
+    snapshot["mergedAt"] = "2026-10-08T20:30:00Z"
+    loader = {1: snapshot}.__getitem__
+    result = mod.build_queue(
+        [1], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    merge = result["metrics"]["timing"]["merged_after_dossier_minutes"]
+    assert merge["count"] == 0
+
+
+def test_consume_metrics_out_populates_on_ready():
+    """`metrics_out` est peuple avec success=1 et l'age du dossier en minutes."""
+    snapshot = _reviewed_snapshot()
+    snapshot["comments"][-1]["createdAt"] = "2026-10-08T19:00:00Z"
+    out: dict = {}
+    entry = mod.consume_pr(
+        123, now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: snapshot,
+        metrics_out=out,
+    )
+    assert entry.verdict == mod.VERDICT_READY
+    assert out["attempts"] == 1
+    assert out["success"] == 1
+    assert out["rejects_by_cause"] == {}
+    assert out["dossier_age_minutes_at_consume"] is not None
+    assert out["dossier_age_minutes_at_consume"] >= 0
+
+
+def test_consume_metrics_out_populates_on_stale():
+    """`metrics_out` groupe le rejet par verdict (pas par la phrase descriptive)."""
+    snapshot = _reviewed_snapshot()
+    snapshot["comments"].append(_comment("posted after dossier"))
+    out: dict = {}
+    entry = mod.consume_pr(
+        123, now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: snapshot,
+        metrics_out=out,
+    )
+    assert entry.verdict == mod.QUEUE_VERDICT_STALE
+    assert out["attempts"] == 1
+    assert out["success"] == 0
+    assert out["rejects_by_cause"] == {mod.QUEUE_VERDICT_STALE: 1}
+
+
+def test_consume_metrics_out_populates_on_dwell():
+    """Un dossier DWELL_PENDING : la cause est le verdict DWELL, pas READY."""
+    snapshot = _reviewed_snapshot()
+    # Force le verdict DWELL_PENDING via une jambe PR gate "failure" avec
+    # un titre parse-able par ``parse_pending_message`` (cf. _dwell_run).
+    snapshot["checkRuns"] = [_dwell_run(lift="2026-10-08T21:00:00Z")]
+    out: dict = {}
+    entry = mod.consume_pr(
+        123, now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: snapshot,
+        metrics_out=out,
+    )
+    assert entry.verdict == mod.QUEUE_VERDICT_DWELL_PENDING
+    assert out["success"] == 0
+    assert out["rejects_by_cause"] == {mod.QUEUE_VERDICT_DWELL_PENDING: 1}
+
+
+def test_consume_metrics_out_clear_before_populate():
+    """Un second appel ecrase le dict (pas de cumul cross-call)."""
+    out: dict = {"stale": "should be cleared"}
+    mod.consume_pr(
+        123, now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: _reviewed_snapshot(),
+        metrics_out=out,
+    )
+    assert "stale" not in out
+    assert out["attempts"] == 1
+
 #
 # Le bucket GraphQL est partage par toute la flotte ; le bucket REST (core) est
 # par machine. L'organe publie les deux pour qu'une lane secretaire puisse
