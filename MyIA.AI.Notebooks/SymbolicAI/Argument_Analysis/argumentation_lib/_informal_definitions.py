@@ -81,6 +81,7 @@ from .prompts import (
     prompt_analyze_fallacies_v3_tool_use,
     prompt_justify_fallacy_attribution_v1,
 )
+from ._llm_settings import apply_reasoning_none_for_function_tools
 
 
 # --- Modèles Pydantic pour une sortie structurée ---
@@ -791,6 +792,11 @@ def setup_informal_kernel(
         try:
             default_settings = kernel.get_prompt_execution_settings_from_service_id(
                 llm_service.service_id
+            )
+            # #20135 : la famille 5.6 exige reasoning_effort explicite pour les
+            # outils de fonction sur /v1/chat/completions (400 sinon).
+            default_settings = apply_reasoning_none_for_function_tools(
+                default_settings, getattr(llm_service, "ai_model_id", None)
             )
             logger.debug(f"Settings LLM récupérés pour {plugin_name}.")
         except Exception as e:
