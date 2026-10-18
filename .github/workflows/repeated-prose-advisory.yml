@@ -49,7 +49,7 @@ jobs:
     # cf. entete du fichier). Aucun secret, aucun GPU/CUDA/Lean/.NET.
     # Routage #14283 inverse, retour sur ubuntu-latest et sortie de
     # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == github.repository || github.event_name == 'workflow_dispatch'
 
     steps:
