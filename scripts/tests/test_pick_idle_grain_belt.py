@@ -1691,6 +1691,29 @@ def test_validate_picks_live_drops_closed(monkeypatch):
         f"la cause `fermee` doit etre explicite : {dropped!r}")
 
 
+def test_validate_picks_live_drops_merged(monkeypatch):
+    """Issue reellement resolue : PR fermee par merge.
+
+    Trouve au c.586 (revue Hermes sur #20954) : `gh issue view --json state`
+    rend `MERGED` pour une PR fermee par merge, distinct de `CLOSED` (qui
+    designe une PR fermee sans merge). Le candidat obsolete doit etre
+    droppe avec le motif `mergee` pour que le rapport de la lane distingue
+    les deux cas (cf `validate_picks_live` et le motif `fermee`/`mergee`).
+    """
+    picks = [_make_item(17029, age_days=20, idle=5)]
+
+    def fake_run(argv, **kwargs):
+        return _FakePopenResult(stdout=json.dumps(
+            {"number": 17029, "state": "MERGED"}))
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    kept, dropped = pig.validate_picks_live(picks)
+
+    assert kept == [], "l'issue mergee ne doit pas rester en tete"
+    assert dropped == [(17029, "mergee")], (
+        f"la cause `mergee` doit etre explicite : {dropped!r}")
+
+
 def test_validate_picks_live_keeps_open(monkeypatch):
     """Le vert reste vert : OPEN ne droppe pas."""
     picks = [_make_item(20923, age_days=2, idle=0)]

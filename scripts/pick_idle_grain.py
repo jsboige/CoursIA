@@ -4969,8 +4969,14 @@ def validate_picks_live(
         state = (payload.get("state") or "").upper()
         if state == "OPEN":
             kept.append(it)
-        elif state == "CLOSED":
-            dropped.append((number, "fermee"))
+        elif state in ("CLOSED", "MERGED"):
+            # MERGED : une PR fermee par merge -- exactement le candidat
+            # obsolete que #20923 veut borner. Traitee comme CLOSED pour
+            # le verdict, mais le motif differe pour la lecture du
+            # rapport (cf revue Hermes c.586). Tests `state in CLOSED/MERGED`
+            # ajoutes au belt_test.
+            motif = "fermee" if state == "CLOSED" else "mergee"
+            dropped.append((number, motif))
         else:
             kept.append(it)
     # La queue (picks au-dela de ``max_to_check``) garde sa position
