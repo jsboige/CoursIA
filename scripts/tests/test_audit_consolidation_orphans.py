@@ -215,3 +215,93 @@ def test_load_input_roundtrip(tmp_path):
     assert issues[0]["number"] == 9001
     assert 5081 in chaperones
     assert comments is not None and 9001 in comments
+
+
+# --- attached_specific (organ v2, issue #21267) ---------------------------
+# Classe mesurée sur le lot 4 (c.1651, 2026-10-17) : 7/14 « orphelines »
+# citaient un parent EPIC vivant non-chaperon dans leur body (« Part of #N »),
+# invisible à la recherche de preuves chaperon.
+
+
+def test_parent_links_extraction():
+    from audit_consolidation_orphans import parent_links
+    body = "Tranche du lot.\nPart of #4362 et See #9999.\nRattachée à #13737."
+    assert parent_links(body) == {
+        4362: "Part of #4362 et See #9999.",
+        9999: "Part of #4362 et See #9999.",
+        13737: "Rattachée à #13737.",
+    }
+    assert parent_links("") == {}
+    # Frontiere de mot : "Dsee" n'est pas "See"
+    assert parent_links("Dsee #5 ne matche pas") == {}
+
+
+def test_audit_attached_specific_live_parent():
+    # Parent EPIC vivant non-chaperon cite dans le body -> attached_specific,
+    # pas orpheline ; le parent lui-meme reste une issue a part entiere.
+    issues = [
+        _issue(7100, title="EPIC vivante", body="parapluie de serie"),
+        _issue(7101, title="sous-grain", body="Part of #7100"),
+    ]
+    report = audit(issues, CHAPERONES_STATE)
+    assert report["attached"] == 0
+    assert report["attached_specific"] == 1
+    entry = report["attached_specific_details"][0]
+    assert entry["number"] == 7101
+    assert entry["parents"] == [7100]
+    assert report["orphans"] == 1  # 7100, sans preuve elle-meme
+
+
+def test_audit_chaperone_proof_beats_parent_marker():
+    # Priorite chaperon > parent specifique : pas de double comptage.
+    issues = [
+        _issue(7200, title="EPIC vivante", body="parapluie"),
+        _issue(7201, title="sous-grain", body="See #5081 aussi\nPart of #7200"),
+    ]
+    report = audit(issues, CHAPERONES_STATE)
+    assert report["attached"] == 1
+    assert report["attached_specific"] == 0
+    assert any(d["number"] == 7201 for d in report["attached_details"])
+
+
+def test_audit_stale_parent_stays_orphan():
+    # Parent absent du fetch (ferme ou inexistant) : le marqueur ne rattache rien.
+    issues = [_issue(7301, title="sous-grain veuf", body="Part of #7399")]
+    report = audit(issues, CHAPERONES_STATE)
+    assert report["attached_specific"] == 0
+    assert report["orphans"] == 1
+
+
+def test_audit_two_parents_one_entry():
+    issues = [
+        _issue(7400, title="EPIC A", body="a"),
+        _issue(7401, title="EPIC B", body="b"),
+        _issue(7402, title="multi-parent", body="Part of #7400 et Rattaché à #7401"),
+    ]
+    report = audit(issues, CHAPERONES_STATE)
+    entry = report["attached_specific_details"][0]
+    assert entry["number"] == 7402
+    assert entry["parents"] == [7400, 7401]
+    assert len(entry["proofs"]) == 2
+
+
+def test_audit_self_link_ignored_chaperone_parent_reclassified():
+    # Auto-reference : pas de rattachement. Parent chaperon : capte par la
+    # preuve chaperon (mention simple #9535), pas par attached_specific.
+    issues = [
+        _issue(7500, title="boucle", body="Part of #7500"),
+        _issue(7501, title="vers chaperon", body="Rattachés à #9535"),
+    ]
+    report = audit(issues, CHAPERONES_STATE)
+    assert report["attached_specific"] == 0
+    assert report["attached"] == 1
+    assert report["orphans"] == 1  # 7500
+
+
+def test_render_markdown_shows_attached_specific_counter():
+    issues = [
+        _issue(7600, title="EPIC vivante", body="x"),
+        _issue(7601, title="sous-grain", body="Part of #7600"),
+    ]
+    md = render_markdown(audit(issues, CHAPERONES_STATE))
+    assert "rattachées (parent spécifique) : 1" in md

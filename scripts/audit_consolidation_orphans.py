@@ -15,6 +15,14 @@ Attachment semantics (a TRIAGE, deliberately generous -- a human arbitrates):
   - ``issue_comment``   (``--deep`` only) a comment on the issue cites
                         ``#<chaperone>``.
 
+A SECOND, distinct attachment channel (issue #21267, organ v2): an issue whose
+body carries a parent-specific marker -- ``Part of #N`` / ``Rattaché(e)(s) à
+#N`` / ``See #N`` -- where ``#N`` is an OPEN non-chaperone issue of the same
+fetch, counts as ``attached_specific`` (the "fausse orpheline" class measured
+2026-10-17 on lot 4: a live parent EPIC cited in the body but invisible to the
+chaperone proof search). Priority: a chaperone proof wins (no double-count);
+a closed or nonexistent parent attaches nothing -- the issue stays an orphan.
+
 A bare ``#N`` mention counts as attachment here even when the prose around it
 is negative ("ne pas dupliquer #5081") -- the report surfaces the line, the
 reader decides. This is the opposite failure mode of a verdict tool: a false
@@ -132,6 +140,31 @@ def mention_lines(text: str, number: int) -> list[str]:
     return [line.strip() for line in text.splitlines() if pattern.search(line)]
 
 
+# Marqueurs de rattachement a un parent SPECIFIQUE (non chaperon) dans le body
+# de l'issue elle-meme : convention de lane ("Part of #N", cf CLAUDE.md /continue
+# Phase 3), formulaire de tri ("Rattache(e)(s) a #N") et renvoi de lien
+# ("See #N"). Le parent doit etre OPEN dans le meme fetch pour compter.
+PARENT_LINK_RE = re.compile(r"\b(?:Part of|Rattach[ée]e?s? [aà]|See)\s+#(\d+)", re.IGNORECASE)
+
+
+def parent_links(body: str) -> dict[int, str]:
+    """Parent-specific markers in an issue body: parent number -> proof line.
+
+    Word-bounded prefix (``Dsee #5`` does not match); one entry per parent
+    even when cited twice (first line wins, same dedup posture as
+    ``attachment_proofs``).
+    """
+    if not body:
+        return {}
+    links: dict[int, str] = {}
+    for line in body.splitlines():
+        for match in PARENT_LINK_RE.finditer(line):
+            parent = int(match.group(1))
+            if parent not in links:
+                links[parent] = line.strip()
+    return links
+
+
 def attachment_proofs(
     issue: dict[str, Any],
     chaperones: dict[int, dict[str, Any]],
@@ -205,7 +238,9 @@ def audit(
     preserve existing report consumers (acceptance 1 wire).
     """
     chaperone_numbers = {i["number"] for i in issues} & set(CHAPERONES)
+    open_numbers = {i["number"] for i in issues}
     attached: list[dict[str, Any]] = []
+    attached_specific: list[dict[str, Any]] = []
     orphans: list[dict[str, Any]] = []
     for issue in issues:
         number = issue["number"]
@@ -221,6 +256,20 @@ def audit(
                     {"type": p["type"], "chaperone": p["chaperone"], "line": p["lines"][0]}
                     for p in proofs
                 ],
+            })
+            continue
+        parents = {
+            parent: line
+            for parent, line in parent_links(issue.get("body") or "").items()
+            if parent in open_numbers and parent != number and parent not in CHAPERONES
+        }
+        if parents:
+            attached_specific.append({
+                "number": number,
+                "title": issue.get("title") or "",
+                "parents": sorted(parents),
+                "proofs": [{"parent": parent, "line": parents[parent]}
+                           for parent in sorted(parents)],
             })
             continue
         absence = ["body: 0 citation des chaperons (#%s)" % " #".join(map(str, CHAPERONES))]
@@ -248,9 +297,11 @@ def audit(
         "chaperones": list(CHAPERONES),
         "scanned": len(issues) - len(chaperone_numbers),
         "attached": len(attached),
+        "attached_specific": len(attached_specific),
         "orphans": len(orphans),
         "deep": issues_comments is not None,
         "attached_details": attached,
+        "attached_specific_details": attached_specific,
         "orphans_by_axis": by_axis,
     }
 
@@ -260,7 +311,7 @@ def render_markdown(report: dict[str, Any]) -> str:
         "# Audit consolidation-orphans (#16473, acceptance 1)",
         "",
         "Chaperons : %s" % " ".join(f"#{c}" for c in report["chaperones"]),
-        f"Issues ouvertes scannées : {report['scanned']} ; rattachées : {report['attached']} ; orphelines : {report['orphans']}"
+        f"Issues ouvertes scannées : {report['scanned']} ; rattachées : {report['attached']} ; rattachées (parent spécifique) : {report['attached_specific']} ; orphelines : {report['orphans']}"
         + (" (scan --deep : commentaires inclus)" if report["deep"] else " (bodies seulement, lancer --deep pour les commentaires)"),
         "",
         "Un tri, pas un verdict : chaque ligne orpheline liste la preuve de ce qui a été cherché. L'arbitrage de rattachement (acceptance 2) reste humain.",
