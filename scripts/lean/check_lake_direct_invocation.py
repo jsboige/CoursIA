@@ -274,6 +274,77 @@ def _argparse_payload_list_ids(tree: ast.AST) -> set[int]:
     return ids
 
 
+def _confined_sink_names(tree: ast.AST) -> set[str]:
+    """Noms des fonctions LOCALES qui atteignent l'organe par appel.
+
+    Une fonction qui construit le chemin de l'organe (Constant finissant
+    par ``lean_exec.py``, meme marqueur que ``_organ_driver``) -- ou qui
+    appelle une fonction locale qui le fait (fermeture par point fixe,
+    ex. ``_organ_run`` -> ``_find_lean_exec``) -- confie ses commandes au
+    budget commun : les listes qu'on lui passe sont des PAYLOADS decrivant
+    ce que l'organe lancera, pas des argv executes ici.
+
+    Le marqueur est la Constant, jamais le nom de fonction : definir une
+    fausse fonction ``_organ_run`` sans referencer l'organe n'exonere rien.
+    """
+    funcs: dict[str, set[str]] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        calls: set[str] = set()
+        refs_organ = False
+        for sub in ast.walk(node):
+            if (isinstance(sub, ast.Constant) and isinstance(sub.value, str)
+                    and sub.value.endswith("lean_exec.py")):
+                refs_organ = True
+            elif isinstance(sub, ast.Call) and isinstance(sub.func, ast.Name):
+                calls.add(sub.func.id)
+        if refs_organ:
+            calls.add("*organ*")  # sentinelle : atteint l'organe directement
+        funcs[node.name] = calls
+
+    sinks: set[str] = set()
+    changed = True
+    while changed and len(sinks) < len(funcs) + 1:
+        changed = False
+        for name, calls in funcs.items():
+            if name in sinks:
+                continue
+            if "*organ*" in calls or (calls & sinks):
+                sinks.add(name)
+                changed = True
+    sinks.discard("*organ*")
+    return sinks
+
+
+def _confined_payload_list_ids(tree: ast.AST,
+                               sink_names: set[str]) -> set[int]:
+    """Ids des List/Tuple passes a un sink confiné (payload pour l'organe).
+
+    Couvre l'argument direct (``_organ_run(proj, ["lake", "build"])``) et la
+    tete de concatenation (``_organ_run(proj, ["lake"] + args.split())``) :
+    dans les deux cas le jeton ``lake`` decrit la commande que L'ORGANE
+    lancera, pas un processus spawn par ce fichier.
+    """
+    if not sink_names:
+        return set()
+    ids: set[int] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = (node.func.id if isinstance(node.func, ast.Name) else "")
+        if name not in sink_names:
+            continue
+        for arg in list(node.args) + [kw.value for kw in node.keywords]:
+            targets = [arg]
+            if isinstance(arg, ast.BinOp) and isinstance(arg.op, ast.Add):
+                targets = [arg.left, arg.right]
+            for t in targets:
+                if isinstance(t, (ast.List, ast.Tuple)):
+                    ids.add(id(t))
+    return ids
+
+
 def scan_file(path: Path) -> list[tuple[int, str, str]]:
     """Retourne [(ligne, forme, extrait)] des invocations directes du fichier."""
     try:
@@ -286,6 +357,8 @@ def scan_file(path: Path) -> list[tuple[int, str, str]]:
     exempt_ids = non_command_ids
     if _organ_driver(tree):
         exempt_ids |= _argparse_payload_list_ids(tree)
+        exempt_ids |= _confined_payload_list_ids(
+            tree, _confined_sink_names(tree))
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and _launch_like(node.func):
             constants: list[str] = []
