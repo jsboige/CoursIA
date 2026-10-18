@@ -317,6 +317,15 @@ class RegimeSwitchingAlpha(AlphaModel):
                     weight=weight_per_asset,
                     source_model=self.name
                 ))
+            # A risky ticker that is not oversold gets an explicit FLAT: otherwise its
+            # insight from the previous emission (31 trading days) stays active, and
+            # the intent PCM adds it to this sleeve, past its slice (#21349).
+            for ticker in self.risky:
+                if ticker not in oversold:
+                    insights.append(Insight.price(
+                        self.symbols[ticker], period, InsightDirection.FLAT,
+                        source_model=self.name
+                    ))
 
             # Defensive allocation
             insights.append(Insight.price(
