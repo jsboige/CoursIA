@@ -70,7 +70,7 @@ References
 ----------
 T. Metzinger, « Minimal phenomenal experience: Meditation, tonic alertness, and
 the phenomenology of "pure" consciousness », Philosophy and the Mind Sciences
-1(I)7 (2020), DOI 10.33766/jphims.1128. Pré-enregistrement :
+1(I)7 (2020), DOI 10.33735/phimisci.2020.i.46. Pré-enregistrement :
 ``docs/ict/metzinger-mpe-pre-enregistrement.md`` (case 16 de
 ``docs/ict/dissociations-matrix.md``).
 """
