@@ -2019,6 +2019,11 @@ class QueueEntry:
     head: str = ""
     dossier_comment_id: str = ""
     dossier_created_at: str = ""
+    # #16480 critere 6 : timestamp de merge du PR (None sur les PRs ouverts
+    # ou fermes sans merge). Sert a deriver ``merged_after_dossier_minutes``
+    # sans stockage. Meme regle que created_at : expose dans to_json, hors
+    # du payload d'empreinte.
+    merged_at: str = ""
     surfaces_sha256: str = ""
     b0_rc: str = ""
     checks: str = ""
@@ -2040,6 +2045,7 @@ class QueueEntry:
             "head": self.head,
             "dossier_comment_id": self.dossier_comment_id,
             "dossier_created_at": self.dossier_created_at,
+            "merged_at": self.merged_at,
             "surfaces_sha256": self.surfaces_sha256,
             "b0_rc": self.b0_rc,
             "checks": self.checks,
@@ -2137,6 +2143,7 @@ def classify_snapshot(
             head=snapshot.get("headRefOid") or "",
             dossier_comment_id=comment_id,
             dossier_created_at=record.created_at if record else "",
+            merged_at=snapshot.get("mergedAt") or "",
             surfaces_sha256=record.fields.get("surfaces-sha256", "") if record else "",
             b0_rc=record.fields.get("b0", "") if record else "",
             checks=checks_label,
@@ -2276,6 +2283,69 @@ def classify_snapshot(
     )
 
 
+def _summarize_stats(values: list[float]) -> dict[str, Any]:
+    """Min/max/mean/median/count d'un echantillon.
+
+    Vide = ``count: 0`` + ``None`` pour les autres champs, jamais un
+    ``ZeroDivisionError`` ni une cle absente. L'organe de coordination
+    agrege sans etat persistant (#16480 critere 6) ; les champs sont
+    derives des horodatages deja lus, et le contrat d'interface reste
+    stable que l'echantillon soit vide ou non.
+    """
+    if not values:
+        return {"count": 0, "min": None, "max": None, "mean": None, "median": None}
+    ordered = sorted(values)
+    n = len(ordered)
+    total = sum(ordered)
+    median = (
+        ordered[n // 2]
+        if n % 2 == 1
+        else (ordered[n // 2 - 1] + ordered[n // 2]) / 2
+    )
+    return {
+        "count": n,
+        "min": ordered[0],
+        "max": ordered[-1],
+        "mean": total / n,
+        "median": median,
+    }
+
+
+def _consume_metrics(
+    entry: QueueEntry | None,
+    *,
+    now: datetime,
+) -> dict[str, Any]:
+    """Metriques derivees d'un seul appel consume_pr (critere 6).
+
+    ``attempts`` = 1 (cet appel). ``success`` = 1 si verdict READY.
+    ``rejects_by_cause`` = {verdict: 1} si non-READY, ``{}`` sinon. Aucun
+    fichier d'etat ; tout est derive du QueueEntry a l'instant-T. La
+    structure reste stable quand ``entry`` est None (erreur reseau) :
+    ``attempts=1, success=0, rejects_by_cause={"UNKNOWN": 1}``. On groupe
+    par verdict (categorie metier) plutot que par la phrase descriptive
+    du ``reject_cause`` : celle-ci est preservee par-entree et sert au
+    diagnostic, l'agregat veut un bucket lisible pour la secretaire.
+    """
+    if entry is None:
+        return {
+            "attempts": 1,
+            "success": 0,
+            "rejects_by_cause": {"UNKNOWN": 1},
+            "dossier_age_minutes_at_consume": None,
+        }
+    is_ready = entry.verdict == VERDICT_READY
+    rejects: dict[str, int] = (
+        {} if is_ready else {entry.verdict or "UNKNOWN": 1}
+    )
+    return {
+        "attempts": 1,
+        "success": 1 if is_ready else 0,
+        "rejects_by_cause": rejects,
+        "dossier_age_minutes_at_consume": entry.dossier_age_minutes,
+    }
+
+
 def build_queue(
     prs: list[int],
     *,
@@ -2289,6 +2359,11 @@ def build_queue(
     Chaque PR est relue depuis le reseau au moment de l'appel ; une PR dont
     la lecture echoue (reseau, mutation pendant la lecture) part dans
     ``unknown`` -- la queue partielle reste exploitable et nomme son trou.
+
+    Le bloc ``metrics`` cumule trois mesures derivees sans stockage (#16480
+    critere 6) : compte par verdict, projections consume (attempts +
+    success + rejets par cause), et timings (age du dossier au moment de
+    la queue, delai dossier -> merge pour les PRs MERGED).
     """
     now = now or datetime.now(timezone.utc)
     load = loader or load_snapshot
@@ -2312,9 +2387,49 @@ def build_queue(
         _parse_ts(item.created_at) or datetime.max.replace(tzinfo=timezone.utc),
         item.pr,
     ))
-    metrics: dict[str, int] = {}
+    metrics: dict[str, Any] = {}
     for item in entries:
         metrics[item.verdict] = metrics.get(item.verdict, 0) + 1
+    # #16480 critere 6 : agregations derivees (consume + timing) -- aucune
+    # nouvelle lecture, tout vient des QueueEntry deja classifies.
+    # Le `reject_cause` de chaque entree est une phrase descriptive unique
+    # (cf. `entry()` en queue), trop fine pour un agregat lisible ; on groupe
+    # par verdict (categorie metier), et la phrase reste par-entree dans
+    # `entry.reject_cause` pour le diagnostic.
+    consume: dict[str, Any] = {
+        "attempts": len(entries),
+        "success": 0,
+        "rejects_by_cause": {},
+    }
+    dossier_ages: list[float] = []
+    merge_delays: list[float] = []
+    for item in entries:
+        if item.verdict == VERDICT_READY:
+            consume["success"] += 1
+        else:
+            bucket = item.verdict or "UNKNOWN"
+            consume["rejects_by_cause"][bucket] = (
+                consume["rejects_by_cause"].get(bucket, 0) + 1
+            )
+        if item.dossier_age_minutes is not None:
+            dossier_ages.append(float(item.dossier_age_minutes))
+        # Le delai dossier->merge se mesure sur l'historique, pas sur le
+        # verdict courant : un PR MERGED dont le gate derive aujourd'hui
+        # un BLOCKED (e.g. live B.0 contredit) reste un PR dont le merge
+        # a ete declenche apres la pose du dossier -- le delta est un fait,
+        # pas une hypothese.
+        if item.merged_at and item.dossier_created_at:
+            merged_ts = _parse_ts(item.merged_at)
+            dossier_ts = _parse_ts(item.dossier_created_at)
+            if merged_ts is not None and dossier_ts is not None:
+                diff_minutes = (merged_ts - dossier_ts).total_seconds() / 60.0
+                if diff_minutes >= 0:
+                    merge_delays.append(diff_minutes)
+    metrics["consume"] = consume
+    metrics["timing"] = {
+        "dossier_age_minutes": _summarize_stats(dossier_ages),
+        "merged_after_dossier_minutes": _summarize_stats(merge_delays),
+    }
     return {
         "schema": "1",
         "stale_after_minutes": stale_after_minutes,
@@ -2332,6 +2447,7 @@ def consume_pr(
     stale_after_minutes: int = STALE_AFTER_MINUTES_DEFAULT,
     probe: Any = None,
     loader: Any = None,
+    metrics_out: dict[str, Any] | None = None,
 ) -> QueueEntry:
     """Revalide UNE candidate a l'instant-T pour consommation exact-head.
 
@@ -2339,15 +2455,31 @@ def consume_pr(
     rien avec un eventuel ``--queue`` precedent) et refus de toute mutation :
     un commentaire poste apres le dossier, une jambe en vol, un plancher non
     ecoule ou le moindre point de review non leve rendent la sortie non-READY.
+
+    ``metrics_out`` (#16480 critere 6) : si fourni, le dict est peuple en
+    place avec la projection consume de cet appel (attempts=1, success 0/1,
+    rejets par cause, age du dossier au moment du consume). Permet au CLI
+    d'integrer la metrique dans la reponse JSON sans repasser par la queue.
     """
     now = now or datetime.now(timezone.utc)
     load = loader or load_snapshot
-    return classify_snapshot(
-        load(pr),
-        now=now,
-        stale_after_minutes=stale_after_minutes,
-        probe=probe,
-    )
+    try:
+        entry = classify_snapshot(
+            load(pr),
+            now=now,
+            stale_after_minutes=stale_after_minutes,
+            probe=probe,
+        )
+    except Exception as exc:  # noqa: BLE001 - UNKNOWN, pas un crash
+        if metrics_out is not None:
+            metrics_out.clear()
+            metrics_out.update(_consume_metrics(None, now=now))
+            metrics_out["error"] = str(exc)[:300]
+        raise
+    if metrics_out is not None:
+        metrics_out.clear()
+        metrics_out.update(_consume_metrics(entry, now=now))
+    return entry
 
 
 def blocking_fields(dossier: Dossier) -> list[str]:
@@ -2641,6 +2773,12 @@ def _pr_metadata(pr: int) -> dict[str, Any]:
         # statut que headRefName -- hors empreinte (cles explicites), donc
         # l'ajouter n'invalide aucun dossier vivant.
         "createdAt": row.get("created_at"),
+        # #16480 critere 6 : temps entre l'arrivee du dossier READY et le
+        # merge, derive sans stockage. Meme statut que createdAt -- hors
+        # empreinte (cles explicites), donc l'ajouter n'invalide aucun
+        # dossier vivant. None si le PR n'est pas MERGED (la valeur REST
+        # reste None sur les PRs ouverts ou fermes sans merge).
+        "mergedAt": row.get("merged_at"),
         "changedFiles": row.get("changed_files"),
         "additions": row.get("additions"),
         "deletions": row.get("deletions"),
@@ -2968,18 +3106,25 @@ def main() -> int:
             else EXIT_READY
         )
     if args.consume is not None:
+        consume_metrics: dict[str, Any] = {}
         try:
             item = consume_pr(
                 args.consume,
                 stale_after_minutes=args.stale_after_minutes,
+                metrics_out=consume_metrics,
             )
         except Exception as exc:  # noqa: BLE001 - UNKNOWN, pas un crash
-            print(json.dumps(
-                {"pr": args.consume, "verdict": "UNKNOWN", "error": str(exc)[:300]},
-                ensure_ascii=False,
-            ))
+            payload = {
+                "pr": args.consume,
+                "verdict": "UNKNOWN",
+                "error": str(exc)[:300],
+            }
+            payload.setdefault("metrics", consume_metrics)
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
             return EXIT_UNKNOWN
-        print(json.dumps(item.to_json(), ensure_ascii=False, indent=2))
+        payload = item.to_json()
+        payload["metrics"] = consume_metrics
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
         return EXIT_READY if item.verdict == VERDICT_READY else (
             EXIT_NO_DOSSIER
             if item.verdict == VERDICT_BLOCKED and "no dossier" in item.reject_cause
