@@ -15,7 +15,7 @@
 
   `Swaps/Parite.lean` ajoute l'obstruction **non bornée** (§6 de l'EPIC
   #12205). Là où `aucun_chemin_court` réfute 7 chemins par énumération
-  et où le certificat du notebook `GameTheory-24b` réfute tout chemin
+  et où le certificat du notebook `GameTheory-20b` réfute tout chemin
   au-delà d'un budget `k_max`, la parité jointe du nombre d'inversions
   est un invariant transporté le long d'un chemin de longueur
   **quelconque** : `parite_determinee` lit la parité de la longueur sur
