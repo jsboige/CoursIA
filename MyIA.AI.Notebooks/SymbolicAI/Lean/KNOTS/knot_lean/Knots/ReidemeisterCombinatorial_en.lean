@@ -34,11 +34,21 @@ What this module **does not do**:
   by previous sections — these statements live in a 4-manifolds / Khovanov /
   Kirby theory that Mathlib does not have.
 
-Target Lidman:81 — `unknotting_11n102_upper` — **becomes accessible** once
-this module lands: exhibit a `MoveSequence` connecting
+Target Lidman:81 — `unknotting_11n102_upper` — **is not made accessible by this
+module** (status corrected 2026-10-09, #18611). The planned route was: exhibit a
+`MoveSequence` connecting
 `(changeCrossingAt c₁ (changeCrossingAt c₂ knot_11n102)).diagram` to
-`unknotDiagram`, and `verifyMoves_sound` (proved by prover passes on this
-module) seals the implication.
+`unknotDiagram`, and seal the implication with `verifyMoves_sound` — **proved
+on this module** by the prover passes (#19890/#20000; see the status block
+below). Two measurements nonetheless contradict the route: (a) the bounded
+search of #18611 (excursions ≤ +2 crossings, diagrams ≤ 13 crossings; 138,623
+states explored from the 67 n-changed diagrams) reaches `unknotDiagram` from
+none of them, and `min_crossings` stays at 11 for each; (b) the conditioned
+floor theorem (`Knots.ReidemeisterMoves` §8) shows that a sequence all of whose
+moves preserve `allFourDistinct` cannot decrease the crossing count — a
+certificate for 11n102 would therefore have to leave that class along the way.
+The organ remains necessary to state the contract; it is not enough to honour
+it, and neither side (this module, `Knots.Lidman`) supplies the witness.
 
 Convention i18n (EPIC #4980, user decision 2026-07-04): this file is the **EN
 mirror** of `ReidemeisterCombinatorial.lean` (FR canonical), via the sibling
@@ -53,10 +63,10 @@ witness `Lidman:81` (`unknotting_11n102_upper`) remains the target of the
 following passes, and the inverse of the R3 move is documented future work.
 -/
 
-import Knots.Reidemeister
-import Knots.Invariant
+import Knots.Reidemeister_en
+import Knots.Invariant_en
 
-namespace Knots
+namespace Knots_en.Combinatorial
 
 /-! ## 1. Sequence of moves — indexed inductive
 
@@ -138,6 +148,10 @@ useful in practice (n ≤ 4), the branching factor stays dominated by
 trivial symmetries (`ReidemeisterEquiv.symm`, `trans`).
 -/
 
+end Knots_en.Combinatorial
+
+namespace Knots_en
+
 /-- A view of `ReidemeisterStep` as a pure constructor (without existential
 `d₂`). Used by the algorithm to reconstruct the target diagram at each step. -/
 def ReidemeisterStep.toWitness (d₁ : KnotDiagram) (d₂ : KnotDiagram)
@@ -185,6 +199,10 @@ proof-carrying: each slot option is emitted WITH the disjunction that
 justifies it in `isRenameOf` / `isDoubleRenameOf`, which avoids any
 a-posteriori membership lemma.
 -/
+
+end Knots_en
+
+namespace Knots_en.Combinatorial
 
 /-- A witness of a move: the target diagram and the proof of the
 `ReidemeisterStep`, built at the same enumeration site. -/
@@ -258,6 +276,11 @@ def unRename2Opts (y o₁ o₂ a : Nat) :
   else
     [⟨y, Or.inl rfl⟩]
 
+end Knots_en.Combinatorial
+
+namespace Knots_en
+open Knots_en.Combinatorial (renameOptsWith rename2OptsWith unRenameOptsWith unRename2Opts)
+
 /-- All R1 renames of `c`, with the `isRenameOf` proof attached. -/
 def PDCrossing.allRenamesWith (c : PDCrossing) (a b : Nat) :
     List { Y : PDCrossing // Y.isRenameOf c a b } :=
@@ -294,6 +317,10 @@ def PDCrossing.allUnDoubleRenamesWith (Y' : PDCrossing) (a o₁ o₂ : Nat) :
       (unRename2Opts Y'.e3 o₁ o₂ a).flatMap fun e3 =>
         (unRename2Opts Y'.e4 o₁ o₂ a).map fun e4 =>
           ⟨⟨e1.1, e2.1, e3.1, e4.1⟩, ⟨e1.2, e2.2, e3.2, e4.2⟩⟩
+
+end Knots_en
+
+namespace Knots_en.Combinatorial
 
 /-- Candidate arcs of `d` (bounds and membership proved). -/
 def arcCandidatesWith (d : KnotDiagram) :
@@ -660,8 +687,10 @@ a knot (fold left). This is the « `indices` witness » of
 `unknottingWitness` seals the typical usage: « for a knot to have unknotting
 number ≤ n, exhibit a length-n crossing-change sequence and a
 ReidemeisterEquiv sequence between its image and `unknotDiagram` ». This is
-the contract that `unknotting_11n102_upper` (Lidman:81) will honour once
-this module has landed and `verifyMoves_sound` is proved.
+the contract that `unknotting_11n102_upper` (Lidman:81) is meant to honour — the
+structure exists, no instance is supplied: #18611 measured that a bounded search
+(diagrams ≤ 13 crossings, 138,623 states) does not reach `unknotDiagram` from the
+11n102 class, and this module does not supply the witness.
 -/
 
 /-- Sequentially applies a list of crossing changes. -/
@@ -684,9 +713,16 @@ The module only depends on `Knots.Reidemeister` and `Knots.Invariant` — not
 on `Knots.ReidemeisterInvariance` (which would import `Knots.Conway` and
 spin the lake needlessly for passes that only attack the combinatorial side).
 
-The lakefile (`Knots.lean`, import line) will need to add
-`import Knots.ReidemeisterCombinatorial` once this module has been verified
-by CI — PR3, after soundness and Lidman:81 witness.
+Wired in as of 2026-10-15: `Knots.lean` imports
+`Knots.ReidemeisterCombinatorial` (and `Knots_en.lean` its `_en` mirror).
+The API collision with `Knots.ReidemeisterMoves` (`movesConnects`,
+`verifyMoves`, `verifyMoves_sound`, ReidemeisterMoves.lean:303/295/501) is
+resolved through a sub-namespace: this module's definitions live under
+`Knots_en.Combinatorial.*`, leaving the `ReidemeisterMoves_en` API
+(`Knots_en.movesConnects`, …) untouched — with one exception: dot-extensions
+of imported types (`ReidemeisterStep.toWitness`, `PDCrossing.all*With`)
+stay in `namespace Knots_en`, since dot notation on an imported type only
+resolves in the type's own namespace.
 -/
 
-end Knots
+end Knots_en.Combinatorial

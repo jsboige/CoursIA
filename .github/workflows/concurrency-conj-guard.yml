@@ -35,7 +35,7 @@ jobs:
     # ci-dessous est conservee telle quelle -- seul le runner change, aucune
     # semantic de declenchement. Sortie de SELF_HOSTED_WORKFLOW_ALLOWLIST
     # dans le meme commit.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 5
     steps:

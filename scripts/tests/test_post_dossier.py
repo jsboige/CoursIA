@@ -103,8 +103,9 @@ class GhRouter:
         self.pr_body = pr_body
         self.calls: list[list[str]] = []
 
-    def __call__(self, args: list[str]):
+    def __call__(self, args: list[str], env: dict | None = None):
         self.calls.append(list(args))
+        self.last_env = env
         if args[0] == "pr":
             return {"headRefOid": self.head, "body": self.pr_body or ""}
         if args[0] == "api":
@@ -112,6 +113,7 @@ class GhRouter:
             assert "--input" in args, "POST must go through --input, never -f body=@"
             payload_path = Path(args[args.index("--input") + 1])
             body = json.loads(payload_path.read_text(encoding="ascii"))["body"]
+            self.last_posted_body = body
             return {
                 "id": 999,
                 "body": self.published_body if self.published_body is not None else body,
@@ -412,3 +414,133 @@ def test_payload_trap_detected_post_post(tmp_path, monkeypatch, capsys):
     stderr = capsys.readouterr().err
     assert "PAYLOAD-TRAP" in stderr
     assert "999" in stderr  # l'id du commentaire piege, pour le PATCH de remediation
+
+
+# --- mode emission #19505 : la sequence trois-jetons en une commande -------
+
+
+def test_fill_placeholder_remplace_le_champ():
+    block = "[ADJOINT PREFLIGHT]\ncomplete: REPLACE_WITH_true\nbody: read\n[/ADJOINT PREFLIGHT]\n"
+    filled = mod.fill_placeholder(block, "complete", "true")
+    assert "complete: true" in filled
+    assert "body: read" in filled
+
+
+def test_fill_placeholder_refuse_un_champ_introuvable():
+    block = "[ADJOINT PREFLIGHT]\ncomplete: true\n[/ADJOINT PREFLIGHT]\n"
+    with pytest.raises(ValueError, match="no REPLACE_WITH placeholder"):
+        mod.fill_placeholder(block, "complete", "true")
+
+
+def test_write_env_remplace_gh_token(monkeypatch):
+    monkeypatch.setenv("GH_TOKEN", "read-token")
+    env = mod.write_env("write-token")
+    assert env["GH_TOKEN"] == "write-token"
+
+
+def test_resolve_write_token_retire_gh_token(monkeypatch):
+    monkeypatch.setenv("GH_TOKEN", "read-token")
+    seen: dict[str, object] = {}
+
+    def fake_run(cmd, **kwargs):
+        seen["cmd"] = cmd
+        seen["env"] = kwargs.get("env")
+        class P:
+            returncode = 0
+            stdout = "write-token\n"
+            stderr = ""
+        return P()
+
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    assert mod.resolve_write_token() == "write-token"
+    assert seen["cmd"][:4] == ["gh", "auth", "token", "--user"]
+    # Le jeton de lecture ambiant ne doit PAS atteindre la resolution.
+    assert "GH_TOKEN" not in seen["env"]
+
+
+def test_emit_mode_refuse_rc_sans_dossier(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "emit_body", lambda pr, lane: (1, "", "boom"))
+    rc = mod.main(["--pr", "101", "--emit", "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert "emission rc=1" in capsys.readouterr().err
+
+
+def test_emit_mode_refuse_placeholder_restant(monkeypatch, capsys):
+    emitted = _adjoint_body(complete="REPLACE_WITH_true")
+    monkeypatch.setattr(mod, "emit_body", lambda pr, lane: (0, emitted, ""))
+    monkeypatch.setattr(
+        mod, "gh_json", lambda *a, **k: (_ for _ in ()).throw(AssertionError("gh must not be called"))
+    )
+    rc = mod.main(["--pr", "101", "--emit", "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert "REPLACE_WITH" in capsys.readouterr().err
+
+
+def test_set_sans_emit_refuse(monkeypatch, capsys):
+    rc = mod.main(["--pr", "101", "--file", "x.md", "--lane", LANE, "--set", "complete=true"])
+    assert rc == mod.EXIT_REFUSED
+    assert "requires --emit" in capsys.readouterr().err
+
+
+def test_emit_mode_refuse_issue(monkeypatch, capsys):
+    monkeypatch.setattr(mod, "emit_body", lambda pr, lane: (0, _closure_body(), ""))
+    rc = mod.main(["--issue", "55", "--emit", "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert "--pr only" in capsys.readouterr().err
+
+
+def test_emit_mode_refuse_auteur_etranger_avant_tout_post(monkeypatch, capsys):
+    emitted = _adjoint_body()
+    monkeypatch.setattr(mod, "emit_body", lambda pr, lane: (3, emitted, ""))
+    monkeypatch.setattr(mod, "resolve_write_token", lambda: "tok")
+    monkeypatch.setattr(
+        mod,
+        "check_post_author",
+        lambda token: (_ for _ in ()).throw(RuntimeError("author guard: the write token serves 'jsboigeEPF', not 'jsboige'")),
+    )
+    # Les lectures (pr view, gate) precedent la garde auteur ; le POST, lui,
+    # ne doit JAMAIS etre atteint.
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=1))
+    rc = mod.main(["--pr", "101", "--emit", "--lane", LANE])
+    assert rc == mod.EXIT_REFUSED
+    assert "author guard" in capsys.readouterr().err
+    assert not any(
+        call[0] == "api" and "--input" in call for call in router.calls
+    ), "no POST may follow the author refusal"
+
+
+def test_emit_mode_nominal_poste_sous_jeton_epingle(monkeypatch, capsys, tmp_path):
+    # Emission : rc 3 (BLOCKED licite) avec deux actes de lecture a remplir.
+    emitted = _adjoint_body(
+        complete="REPLACE_WITH_true",
+        body="REPLACE_WITH_read",
+        verdict="BLOCKED",
+        **{"organ-rc": "3"},
+    )
+    monkeypatch.setattr(mod, "emit_body", lambda pr, lane: (3, emitted, ""))
+    monkeypatch.setattr(mod, "resolve_write_token", lambda: "write-token")
+    monkeypatch.setattr(mod, "check_post_author", lambda token: "jsboige")
+    router = GhRouter()
+    monkeypatch.setattr(mod, "gh_json", router)
+    monkeypatch.setattr(mod, "run_gate", GateStub(rc=1))
+    monkeypatch.setattr(mod, "rerun_gate", lambda family, repo, target: 0)
+    rc = mod.main(
+        [
+            "--pr", "101",
+            "--emit",
+            "--lane", LANE,
+            "--set", "complete=true",
+            "--set", "body=read",
+        ]
+    )
+    assert rc == 0
+    # Le POST est parti sous le jeton epingle, pas sous l'env ambiant.
+    post_call_env = router.last_env
+    assert post_call_env is not None and post_call_env["GH_TOKEN"] == "write-token"
+    # Le corps poste porte les champs remplis, sans placeholder.
+    posted = router.last_posted_body
+    assert posted.count("REPLACE_WITH") == 0
+    assert "complete: true" in posted and "body: read" in posted
+    assert "POSTED -- comment 999" in capsys.readouterr().out

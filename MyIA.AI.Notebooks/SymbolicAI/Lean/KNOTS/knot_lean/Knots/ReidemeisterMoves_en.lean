@@ -651,4 +651,267 @@ example : verifyR1
     { crossings := [⟨1,2,3,4⟩, ⟨1,5,6,6⟩, ⟨5,2,3,4⟩], numEdges := 6 }
     = false := by decide
 
+/-! ## 8. Conditioned floor theorem (#18611) — four-distinctness closes the
+descending steps
+
+The #18611 diagnosis establishes that the surgery of connected moves is
+**append-only** in R1/R2 (`d₁.crossings.set i Y' ++ [kink(s)]`) and **in place**
+in R3 (a triple `List.set`): an original crossing is never removed, it is
+rewritten (R1/R2 at index `i`, R3 at three consecutive indices) or appended. The
+mechanical measurement (a Python replica faithful to the definitions, plus a
+provenance run bounded by 14: 400,000 states per orbit, 0 violation,
+`min_crossings = 11`) confirms it on the 11n102 diagram.
+
+What the kernel can establish, and **under which condition**, is the content of
+this section:
+
+> a Reidemeister step relating two diagrams whose crossings ALL carry four
+> pairwise distinct labels cannot decrease the crossing count.
+
+The reason is structural and short: the moves that remove a crossing (R1/R2
+inverse) require a kink `⟨a, b, c, c⟩` (`e3 = e4`) or a bigon `⟨a, u, u, o⟩`
+(`e2 = e3`) at the **end of the list** — two shapes that violate
+four-distinctness. The condition is therefore not decorative: it is exactly what
+closes the descending moves (see the negative witness at the end of this
+section).
+
+**Why the condition is on ALL crossings and not on the first `n`** (the shape
+the diagnosis used when speaking of the "core"): the invariant "the first `n`
+crossings are four-distinct" is NOT preserved by R1/R2 inverse. The inverse
+rename can turn a distinct crossing into a non-distinct one — `c = ⟨1,1,2,3⟩`
+yields `Y' = ⟨5,1,2,3⟩` under R1, so the return `Y' → c` breaks the core's
+distinctness — and on the R2 side, `Reidemeister2Connected` does not even
+require the arc `a` to be proper, so `wf` parity does not rescue that case (the
+two bigons `⟨a, u₁, u₁, o₁⟩`, `⟨a, u₂, u₂, o₂⟩` carry both occurrences of `a` on
+their own). It is the "all crossings" form that is provable without a leap of
+reasoning; only it is invoked below.
+-/
+
+/-- A crossing whose four labels are pairwise distinct. This is the shape that
+    rules out the kink (`e3 = e4`) and bigon (`e2 = e3`) silhouettes on which the
+    descending R1/R2 surgeries rely. -/
+def PDCrossing.fourDistinct (c : PDCrossing) : Prop :=
+  c.e1 ≠ c.e2 ∧ c.e1 ≠ c.e3 ∧ c.e1 ≠ c.e4 ∧
+  c.e2 ≠ c.e3 ∧ c.e2 ≠ c.e4 ∧ c.e3 ≠ c.e4
+
+/-- Every crossing of the diagram is four-distinct. This is the hypothesis of the
+    floor theorem. -/
+def allFourDistinct (d : KnotDiagram) : Prop := ∀ c ∈ d.crossings, c.fourDistinct
+
+/-- `fourDistinct` is decidable (the six disequalities are over `Nat`). Without
+    this instance, a `Prop`-valued `def` is not unfolded by instance search and
+    `decide` fails on a literal crossing — the same trap documented by the R1
+    witness of `Reidemeister.lean` for `isRenameOf`. -/
+instance : DecidablePred PDCrossing.fourDistinct := fun c => by
+  unfold PDCrossing.fourDistinct
+  infer_instance
+
+/-- A kink `⟨a, b, c, c⟩` is never four-distinct: its last two slots coincide.
+    Local negative witness for the descending R1 surgery. -/
+theorem not_fourDistinct_kink (a b c : Nat) :
+    ¬ (⟨a, b, c, c⟩ : PDCrossing).fourDistinct := by
+  intro h
+  unfold PDCrossing.fourDistinct at h
+  exact h.2.2.2.2.2 rfl
+
+/-- A bigon `⟨a, u, u, o⟩` is never four-distinct: its slots 2 and 3 coincide.
+    Local negative witness for the descending R2 surgery. -/
+theorem not_fourDistinct_bigon (a u o : Nat) :
+    ¬ (⟨a, u, u, o⟩ : PDCrossing).fourDistinct := by
+  intro h
+  unfold PDCrossing.fourDistinct at h
+  exact h.2.2.2.1 rfl
+
+/-- `changeCrossing` (the permutation `e2 ↔ e4`) preserves four-distinctness: the
+    six pairwise disequalities are reordered, none is lost. It carries the "fold"
+    witnesses of the upper bound (`Knot.changeCrossingAt`). -/
+theorem changeCrossing_fourDistinct {c : PDCrossing} (h : c.fourDistinct) :
+    (changeCrossing c).fourDistinct := by
+  obtain ⟨h12, h13, h14, h23, h24, h34⟩ := h
+  unfold PDCrossing.fourDistinct changeCrossing
+  exact ⟨h14, h13, h12, h34.symm, h24.symm, h23.symm⟩
+
+/-- `List.modify` preserves a pointwise property of the elements: the list changes
+    at a single index only, and the rewritten element goes through `f`, whose
+    stability is hypothesis `hf`. -/
+private theorem modify_forall_mem {f : PDCrossing → PDCrossing}
+    (hf : ∀ c, c.fourDistinct → (f c).fourDistinct) :
+    ∀ (l : List PDCrossing) (i : Nat) (c : PDCrossing),
+      (∀ d ∈ l, d.fourDistinct) → c ∈ l.modify i f → c.fourDistinct := by
+  intro l
+  induction l with
+  | nil => intro i c _ hc; simp at hc
+  | cons x xs ih =>
+    intro i c hl hc
+    cases i with
+    | zero =>
+      simp only [List.modify_zero_cons, List.mem_cons] at hc
+      rcases hc with rfl | hc
+      · exact hf x (hl x (by simp))
+      · exact hl c (by simp [hc])
+    | succ i' =>
+      simp only [List.modify_succ_cons, List.mem_cons] at hc
+      rcases hc with hcx | hc
+      · exact hl c (by simp [hcx])
+      · exact ih i' c (fun d hd => hl d (by simp [hd])) hc
+
+/-- Changing the crossing at index `i` preserves the four-distinctness of the
+    diagram: `List.modify` rewrites a single crossing and `changeCrossing`
+    preserves the property pointwise. -/
+theorem changeCrossingAt_allFourDistinct (k : Knot) (i : Nat)
+    (h : allFourDistinct k.diagram) :
+    allFourDistinct (k.changeCrossingAt i).diagram := by
+  intro c hc
+  exact modify_forall_mem (f := changeCrossing)
+    (fun c hc => changeCrossing_fourDistinct hc) k.diagram.crossings i c h hc
+
+/-- The fold of crossing changes preserves four-distinctness: the property
+    therefore holds on **every** unknotting candidate of the upper bound (the
+    folds `indices.foldl Knot.changeCrossingAt` of `Knot.UnknottableIn`), not
+    only on the starting table. -/
+theorem foldl_changeCrossingAt_allFourDistinct (indices : List Nat) (k : Knot)
+    (h : allFourDistinct k.diagram) :
+    allFourDistinct (indices.foldl Knot.changeCrossingAt k).diagram := by
+  induction indices generalizing k with
+  | nil => simpa using h
+  | cons i is ih => exact ih _ (changeCrossingAt_allFourDistinct k i h)
+
+/-- **Conditioned floor theorem (#18611)**: a Reidemeister step relating two
+    diagrams that are both entirely four-distinct never decreases the crossing
+    count.
+
+    Proof by cases on the step. R1/R2 in the FORWARD direction enlarge the
+    crossing list (`set i Y' ++ [kink(s)]`, length `+1`/`+2`). R1/R2 in the
+    INVERSE direction would require the source diagram to carry the kink
+    `⟨a, m+1, m+2, m+2⟩` or the bigons `⟨a, m+1, m+1, m+2⟩` at the end of the
+    list: those shapes violate four-distinctness, so `hd` refutes them. R3
+    preserves the length (a field of the definition, in both orientations). No
+    `wf` or parity argument is needed: the hypothesis condition suffices. -/
+theorem reidemeisterStep_length_le_of_allFourDistinct {d d' : KnotDiagram}
+    (hstep : ReidemeisterStep d d')
+    (hd : allFourDistinct d) (_hd' : allFourDistinct d') :
+    d.crossings.length ≤ d'.crossings.length := by
+  cases hstep with
+  | r1 h =>
+    rcases h with h | h
+    · obtain ⟨_, _, _, _, _, _, _, _, _, _, _, hsurg, _⟩ := h
+      rw [hsurg]
+      simp only [List.length_append, List.length_set]
+      omega
+    · obtain ⟨_, _, _, a, _, _, _, _, _, _, _, hsurg, _⟩ := h
+      exfalso
+      have hk : (⟨a, d'.numEdges + 1, d'.numEdges + 2, d'.numEdges + 2⟩ : PDCrossing)
+          ∈ d.crossings := by
+        rw [hsurg]
+        simp
+      exact not_fourDistinct_kink a (d'.numEdges + 1) (d'.numEdges + 2) (hd _ hk)
+  | r2 h =>
+    rcases h with h | h
+    · obtain ⟨_, _, _, _, _, _, _, _, _, _, hsurg, _⟩ := h
+      rw [hsurg]
+      simp only [List.length_append, List.length_set]
+      omega
+    · obtain ⟨_, _, _, a, _, _, _, _, _, _, hsurg, _⟩ := h
+      exfalso
+      have hb : (⟨a, d'.numEdges + 3, d'.numEdges + 3, d'.numEdges + 4⟩ : PDCrossing)
+          ∈ d.crossings := by
+        rw [hsurg]
+        simp
+      exact not_fourDistinct_bigon a (d'.numEdges + 3) (d'.numEdges + 4) (hd _ hb)
+  | r3 h =>
+    rcases h with h | h
+    · obtain ⟨_, _, hlen, _, _⟩ := h
+      omega
+    · obtain ⟨_, _, hlen, _, _⟩ := h
+      omega
+
+/-- Chained version of the conditioned floor, on the **certified** language of
+    #18611 (point 2): if every link of a `movesConnects` certificate has both of
+    its diagrams four-distinct, the starting length lower-bounds the final one.
+    This is the form that covers an explicit sequence of moves (the one a prover
+    would build), as opposed to the single elementary step. -/
+theorem movesConnects_length_le_of_allFourDistinct {ms : List ReidemeisterMove}
+    {d₂ : KnotDiagram} :
+    ∀ (d₁ : KnotDiagram), movesConnects ms d₁ d₂ →
+      (∀ m ∈ ms, allFourDistinct m.source ∧ allFourDistinct m.target) →
+      d₁.crossings.length ≤ d₂.crossings.length := by
+  induction ms with
+  | nil =>
+    intro d₁ h _
+    simp only [movesConnects, verifyMoves] at h
+    rw [of_decide_eq_true h]
+  | cons m ms ih =>
+    intro d₁ h hall
+    simp only [movesConnects, verifyMoves, Bool.and_eq_true] at h
+    obtain ⟨⟨hsrc, hmove⟩, hrest⟩ := h
+    have hsrc' : m.source = d₁ := of_decide_eq_true hsrc
+    have hm := hall m (by simp)
+    have h₁ : d₁.crossings.length ≤ m.target.crossings.length := by
+      rw [← hsrc']
+      exact reidemeisterStep_length_le_of_allFourDistinct (verifyMove_sound hmove) hm.1 hm.2
+    have h₂ : m.target.crossings.length ≤ d₂.crossings.length :=
+      ih m.target hrest (fun m' hm' => hall m' (by simp [hm']))
+    omega
+
+/-- Corollary: no certificate whose diagrams are all four-distinct can relate a
+    diagram with `n > 0` crossings to the trivial diagram (whose crossing list is
+    empty). This is the "closed route" form of the theorem, the one #18611 cares
+    about: the language of connected moves does not relate an entirely
+    four-distinct diagram to the trivial knot **along a path that stays
+    four-distinct**. -/
+theorem movesConnects_not_unknot_of_allFourDistinct {ms : List ReidemeisterMove}
+    {d₁ : KnotDiagram} (hn : 0 < d₁.crossings.length)
+    (h : movesConnects ms d₁ unknotDiagram)
+    (hall : ∀ m ∈ ms, allFourDistinct m.source ∧ allFourDistinct m.target) :
+    False := by
+  have hl := movesConnects_length_le_of_allFourDistinct (d₂ := unknotDiagram) d₁ h hall
+  have h0 : unknotDiagram.crossings.length = 0 := rfl
+  omega
+
+/-! ### 8.1 Negative witness — the condition is not decorative
+
+The satisfiable pair of the lake (`reidemeister1Connected_satisfiable`,
+`Reidemeister.lean`) is an R1 step from 2 to 3 crossings. Read **backwards**, it
+is a **descending** step 3 → 2, which the Bool verifier accepts — hence an
+apparent counterexample to the floor. What defuses it is exactly the hypothesis:
+the source diagram carries the kink `⟨1,5,6,6⟩`, which is not four-distinct, so
+`reidemeisterStep_length_le_of_allFourDistinct` does not apply to it. The three
+theorems below are the three faces of this observation (the step goes through;
+the hypothesis fails; the theorem is inapplicable rather than false).
+-/
+
+/-- The descending step 3 → 2 is **certified**: the satisfiable R1 pair of the
+    lake, read backwards, passes `verifyMove` and forms a `movesConnects`
+    chain. -/
+theorem reidemeister1Connected_descent_is_certified :
+    movesConnects
+      [ReidemeisterMove.r1
+        { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 }
+        { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 }]
+      { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 }
+      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 } := by
+  unfold movesConnects
+  decide
+
+/-- … and its **source** diagram is not entirely four-distinct: the kink
+    `⟨1,5,6,6⟩` has `e3 = e4`. It is through this missing hypothesis, and not
+    through a flaw in the theorem, that the descending step escapes the
+    floor. -/
+theorem not_allFourDistinct_reidemeister1Connected_witness :
+    ¬ allFourDistinct
+      { crossings := [⟨1,2,3,4⟩, ⟨5,2,3,4⟩, ⟨1,5,6,6⟩], numEdges := 6 } := by
+  intro h
+  exact not_fourDistinct_kink 1 5 6 (h ⟨1,5,6,6⟩ (by simp))
+
+/-- Twin positive control of the negative witness: the TARGET diagram of the same
+    step (2 crossings) is itself entirely four-distinct. The condition therefore
+    does separate the two banks of the step — it is neither always true nor
+    always false on this pair. -/
+theorem allFourDistinct_reidemeister1Connected_witness_small :
+    allFourDistinct
+      { crossings := [⟨1,2,3,4⟩, ⟨1,2,3,4⟩], numEdges := 4 } := by
+  intro c hc
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at hc
+  rcases hc with rfl | rfl <;> decide
+
 end Knots_en

@@ -10,12 +10,11 @@ Fichiers présents directement à la racine du répertoire `docs/`. Triage initi
 |---------|---------|--------|
 | [README.md](README.md) (ce fichier) | **KEEP** | Index vivant — tous les `*.md` live sous `docs/` (hors `archive/`, figée à dessein) sont **atteignables** depuis cet index, directement ou via un index de sous-répertoire. L'atteignabilité est la bonne métrique : un doc cité par `lean/README.md` ou `ict/README.md` est dans l'index, pas absent. L'invariant n'est plus un compte écrit ici — ce chiffre avait dérivé de plus de soixante fichiers — mais la sortie de `python scripts/check_docs_index.py`, qui rend `exit 1` dès qu'un doc vivant devient inatteignable |
 | [index.qmd](index.qmd) | **KEEP + repair** | Portail Quarto miroir du `index.md` racine — 3 liens cassés détectés (lean/README.md → lean/coordinator-workflow.md ; ../parcours.qmd → ../../parcours.qmd ; ../COURSE_CATALOG.generated.md → ../../COURSE_CATALOG.generated.md) — corrigés c.805 |
-| [grothendieckian-lens.md](cadrage/grothendieckian-lens.md) | **KEEP** | Manifesto pédagogique transversal, durable, lié depuis `index.md` racine + docs/README.md ; aucune rot détectée |
-| [magnifica-humanitas-dialogue.md](cadrage/magnifica-humanitas-dialogue.md) | **migré** (2026-10-08) | Dialogue avec l'encyclique *Magnifica Humanitas* (Léon XIV, 2026) — le programme du dépôt confronté, § par §, aux appels du texte (vérification comme bien commun, désarmement, choix social, écologie, éducation) ; tensions conservées. Migré de `docs/` vers `cadrage/` (#19283, tranche 1 résiduelle — communauté interlocutrice « Autorité morale »). #11359 |
-| [leiden-declaration-position.md](cadrage/leiden-declaration-position.md) | **nouveau** (2026-08-26) | Positionnement de CoursIA face à la Déclaration de Leiden sur l’IA et les mathématiques : principes confrontés aux artefacts, lacunes nommées, engagements mesurables et tensions conservées. #13105 |
+| [cadrage/](cadrage/README.md) | **index dédié** | Documents épistémiques de cadrage — **un document par communauté interlocutrice** (mathématique, autorité morale, sûreté IA, fondateurs), la veille y figure : ces documents sont indexés par [cadrage/README.md](cadrage/README.md), renvoi unique (#17525). Provenance : grothendieckian-lens et leiden-declaration-position migrés par #19022 (tranche 2), magnifica-humanitas-dialogue par #19283 (tranche 1 résiduelle) |
 | [PARCOURS.md](PARCOURS.md) | **KEEP** | Schéma maturité 3 axes (éditorial / reproductibilité / revue scientifique) — décompose le `maturity` monolithique du catalogue (5 valeurs mélangées) en 3 préoccupations orthogonales auditables indépendamment. ACCEPTÉ 2026-07-23, pilote c.763 critères 1-3. Linked #8051. 110 lignes. Triage #7422 (c.911, po-2023) |
 | qc-research-issue-template.md | ~~**doublon** supprimé~~ (#19283) | Ébauche racinaire dupliquée par [qc/qc-research-issue-template.md](qc/qc-research-issue-template.md). La copie racine n'était référencée par aucun script ni lien entrant — supprimée pour réduire la surface de désynchronisation (la version `qc/` est l'unique source). EPIC #11698 inchangé |
 | [data-policy.md](cadrage/data-policy.md) | **nouveau** (2026-09-02) | Politique de données (statut cadrage, pas doctrine exécutable) : 4 catégories (curée / brute téléchargeable + fetch / checkpoint documenté / trace régénérable) + arbitrage par cas. Migré #19283 vers `cadrage/` — le cadrage agrégateur n'indexe pas les politiques techniques ; le sommaire `cadrage/README.md` ne le porte pas non plus (communauté interlocutrice ≠ règle de dépôt). #13742 |
+| [TUTORIEL-GITHUB-TP.md](TUTORIEL-GITHUB-TP.md) | **nouveau** (2026-10-14) | Tutoriel pas à pas « clic par clic » pour soumettre une correction d'exercice par PR sans connaître GitHub (compte, fork, branche, notebook via Jupyter/Colab, dépôt par Upload files, PR, review) — version débutante du mode 2 de [CONTRIBUTING.md](../CONTRIBUTING.md) — parcours de base 100 % navigateur, avec variante locale VS Code (extensions Jupyter / Polyglot Notebooks) |
 
 ## Référence (docs/reference/)
 
@@ -115,6 +114,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [transients/2026-06-14-genai-service-security-audit.md](transients/2026-06-14-genai-service-security-audit.md) | Audit de sécurisation des services IA auto-hébergés (po-2023) |
 | [genai/audio-fading-remediation.md](genai/audio-fading-remediation.md) | Remédiation FADING audio et verdicts SOTA associés (#11719) — référence opérationnelle ; le détecteur vit dans les scripts, ce document porte le raisonnement |
 | [genai/audio-onset-chunk-detection.md](genai/audio-onset-chunk-detection.md) | Détection onset/mid/end/spread des spans d'omission audio (classifier déterministe CPU, #19739) — convention de hiérarchie et tests verts |
+| [genai/audio-bakeoff-bank.md](genai/audio-bakeoff-bank.md) | Format de banc bakeoff audio (schema v1 : `bank_schema_v1.json`, `bake_append.py`, `bake_report.py`, `test_bake_bank.py`) — référence pour les comparaisons inter-modèles ASR/TTS/prosodie (#19695) |
 | [genai/decision-models.md](genai/decision-models.md) | Modèles de décision — relevé et shortlist |
 | [genai/model-mapping-openai.md](genai/model-mapping-openai.md) | Mapping des modèles OpenAI — génération courante |
 | [genai/model-mapping.md](genai/model-mapping.md) | Inventaire et table de correspondance — modèles GenAI/OpenAI |
@@ -147,6 +147,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/ab-methodology.md](lean/ab-methodology.md) | Méthodologie d'A/B pour le harnais prover Lean |
 | [lean/i18n-inventory-cycle-38.md](lean/i18n-inventory-cycle-38.md) | Lean i18n — inventaire FR/EN et proposition de convention (cycle 38, See #4980) |
 | [lean/i18n-sibling-patterns.md](lean/i18n-sibling-patterns.md) | Lean i18n — patterns de paires FR/EN et discipline du checker (#4980) |
+| [lean/iit-lean-escalier.md](lean/iit-lean-escalier.md) | Note de conception de l'escalier du lake `iit_lean` — inventaire, escalier 3 marches, capstone, modules non exposés (Epic #16781, sous-grain #20414) |
 | [lean/mimo-converse-cartography.md](lean/mimo-converse-cartography.md) | Cartographie converse MIMO (#11152) — correspondance brique → source, mesurée le 2026-08-16 sur le Mathlib et le SLT du manifest `mimo_lean` courant |
 | [lean/junctions-scan-po-2026.md](lean/junctions-scan-po-2026.md) | Scan des jonctions NTFS Mathlib sur `myia-po-2026` (2026-09-01) — #13962, enfant de #4362 (mutualisation du cluster) |
 | [lean/cluster-junctions-c857.md](lean/cluster-junctions-c857.md) | Scan de mutualisation Mathlib à l'échelle du cluster (c.857, po-2024, 2026-09-02) — pendant du précédent, vue multi-machines |
@@ -161,6 +162,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/l750-pivot-scope-discipline.md](lean/l750-pivot-scope-discipline.md) | L750 ★★ — Pivot Lean specialist, discipline de scope, remédiation OOM |
 | [lean/life-components-schema.md](lean/life-components-schema.md) | Schéma de motifs et de réactions de Game of Life — tranches 1-4 de #15635 |
 | [lean/origami-reconnaissance.md](lean/origami-reconnaissance.md) | Origami géométrie différentielle — Pli 1 reconnaissance |
+| [lean/18430-volet-b-leandojo-v2-bench.md](lean/18430-volet-b-leandojo-v2-bench.md) | Volet B #18430 — banc comparatif LeanDojo-v2 (Pantograph) vs harnais maison, rung 52 CONWAY, écarts de protocole mesurés |
 
 > Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
 
@@ -212,6 +214,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/bach-self-model-pre-enregistrement.md](ict/bach-self-model-pre-enregistrement.md) | Case 8d — self-model causal vs cache descriptif (H_b), ré-attribution option (c) Bach 2009 ; dette IIT-05 #12215 DOCUMENTÉE et OUVERTE (livre non archivé en GDrive) |
 | [ict/inoculation-rl-experimental-conditions.md](ict/inoculation-rl-experimental-conditions.md) | Distillation des conditions expérimentales de l'*Inoculation Prompting* (Anthropic, arXiv 2511.18397) confrontée au protocole ICT-25 — source canonique citée et vérifiée en HTML |
 | [ict/strates-as-adjunctions-prototype.md](ict/strates-as-adjunctions-prototype.md) | Prototype **grade C** : les strates ICT comme adjonctions — conjecture du jalon 3 de #8182 (TOE ↔ conscience), explicitement non démontrée |
+| [ict/butlin-indicators-pre-enregistrement.md](ict/butlin-indicators-pre-enregistrement.md) | Case 19 — le mot « using » de RPT-1 (Butlin et al. 2023) : protocole scellé avant écriture du banc, dissociation procédurale entre inspection structurelle et sonde causale |
 
 ## Curriculum (docs/curriculum/)
 
@@ -230,6 +233,8 @@ Guides pédagogiques et parcours d'apprentissage.
 | [curriculum/aima-walk.md](curriculum/aima-walk.md) | Recherche et Corpus (AIMA-inspired) — lire le dépôt comme un corpus de recherche |
 | [curriculum/genai-rush.md](curriculum/genai-rush.md) | Accéléré vers GenAI |
 | [curriculum/symbolic-formalization.md](curriculum/symbolic-formalization.md) | IA Symbolique et Formalisation |
+| [curriculum/ia-hybride.md](curriculum/ia-hybride.md) | IA hybride — LLM + solveurs + vérificateurs (manuel, EPIC #13844) |
+| [curriculum/ia-societe-responsabilite.md](curriculum/ia-societe-responsabilite.md) | Parcours IA, société et responsabilité — 16 étapes en 5 actes, des biais mesurés aux choix sociaux et à l'argumentation (EPIC #13844) |
 
 ## Métadonnées notebooks (docs/notebook-metadata/)
 
@@ -249,9 +254,7 @@ Schémas canoniques de métadonnées par notebook : registre datasets (licence +
 
 | Fichier | Description |
 |---------|-------------|
-| [grothendieckian-lens.md](cadrage/grothendieckian-lens.md) | Clé de lecture grothendieckienne du dépôt (changement de représentation, certification A/B/C) |
-| [magnifica-humanitas-dialogue.md](cadrage/magnifica-humanitas-dialogue.md) | Dialogue avec l'encyclique *Magnifica Humanitas* — le dépôt face aux appels de Léon XIV sur l'IA (convergences citées § par §, tensions gardées) |
-| [leiden-declaration-position.md](cadrage/leiden-declaration-position.md) | Positionnement face à la Déclaration de Leiden — preuve, attribution, revue, autonomie et digestion mathématique reliées à des artefacts vérifiables |
+| [cadrage/README.md](cadrage/README.md) | Index des documents épistémiques de cadrage — un document par communauté interlocutrice (Leiden/SAIR, *Magnifica Humanitas*, Singapore Consensus, AIMA ; clé de lecture grothendieckienne), chaque texte rattaché daté, la veille explicite. Renvoi unique #17525 : les documents ne sont plus listés ici un par un |
 
 ## Internationalisation & Traduction (docs/i18n/, docs/translation/)
 
@@ -276,10 +279,18 @@ Documents de recherche durables fondant les EPICs de R&D (grade A-recherche). Di
 | [research/c1111-hoel-pearl-ict32-verdict.md](research/c1111-hoel-pearl-ict32-verdict.md) | Verdict de la confrontation Hoel/Pearl sur ICT-32 (c.1111, #19508, P6 #16620) : **ne tient pas** — substrat B3/S23 déterministe ($P(Y\mid X) = \delta$ distribution delta) → coïncidence triviale des deux lectures, DAG non-trivial absent ; ICT-33 (random soups, $\det = 0.334$) est le substrat où la confrontation redevient non-triviale |
 | [research/cartier-miller-p1-plus-scoping.md](research/cartier-miller-p1-plus-scoping.md) | Scoping P1+ ground truth 92 du dépôt bbrhuft/Cartier-Miller-evaluation-of-genus-one-coefficient-sums au pin `37a9b72` (#19452). Cible 92 premiers admissibles `range(7, 500) ∩ is_prime`, architecture pipeline 3-archi (Cornacchia/Schoof/BSGS/Harvey C++), RÈGLE F NTL/Sage RECOVERABLE-MACHINE po-2027/ai-01, plan 4 phases ~80 min. c.1100 (1ère rédaction, §1 erronée corrigée) |
 | [research/cartier-miller-p1-plus-results.md](research/cartier-miller-p1-plus-results.md) | Résultats P1+ ground truth 92 (Python-only slice, #19452) — vendoring verbatim `pilot.py` + `elliptic_prefix.py` (SPDX GPL-2.0-or-later), 4/4 critères PASS (92 / 10809 stopping indices / 2130 exact_binomial_checks / 43 quarter_cross_checks subset of 328 upstream), 0 désaccord inter-backends Python sur 100% des 10809 stopping indices. c.1101 |
+| [research/cartier-miller-p1-cpp.md](research/cartier-miller-p1-cpp.md) | Cartier-Miller P1 ancrage amont C++ (EPIC #19452) — table d'ancres (algorithme amont au pin `37a9b72` → `fichier:ligne` → reconstruction Python/C# CoursIA → vérification), pureté des fichiers upstream, I/O cantonnée à harvey_adapter.cpp. |
 | [research/cartier-miller-p1-elliptic-prefix.md](research/cartier-miller-p1-elliptic-prefix.md) | Lecture ligne-par-ligne de elliptic_prefix.py (P1 elliptic curve Cartier-Miller, EPIC #19452) — composante Schoof+BSGS quarter-point, stdlib only, 8 composants documentés. Suite #19487 (P0 cartography). |
+| [research/cartier-miller-p1-pilot.md](research/cartier-miller-p1-pilot.md) | Lecture ligne-par-ligne de pilot.py (P1 elliptic curve Cartier-Miller, EPIC #19452) — orchestration, hash, per-call math, validation cross-prime 7 premiers, garde flush-après-chaque-prime. Suite PRs #19487 / #19488. |
 | [research/cartier-miller-p1-point-count.md](research/cartier-miller-p1-point-count.md) | Lecture ligne-par-ligne de `point_count.py` (P1 Schoof + BSGS, EPIC #19452) — stdlib only, 0 import, 9 composants documentés. Suite des PRs #19487 (P0 cartography), #19488 (P1 elliptic_prefix), #19493 (P1 pilot). |
 | [research/cartier-miller-p1-integration.md](research/cartier-miller-p1-integration.md) | Cross-check 4 backends de la P1 Cartier-Miller (EPIC #19452) : elliptic_prefix + pilot + point_count + C++ pseudocode, confrontation littérale aux `output.json` du pin reproductible `37a9b72`. P1+ à venir (P2 Lean Mathlib, P3+ multi-cycle) |
+| [research/percolation-03-critique-scoping.md](research/percolation-03-critique-scoping.md) | Scoping du carnet `Percolation-03-Critique-Python.ipynb` (palier 3 *finite-size scaling*) — plan 4 phases ~70 min wall-clock, ~700 l. carnet + 250 l. rapport, 640 simulations `L × p × seeds`. Suite directe de #19494. c.1103 |
 | [research/slide-agents-marptoslidev-scoping.md](research/slide-agents-marptoslidev-scoping.md) | Scoping Marp→Slidev pour les agents de slides (c.1110, #19578) — inventaire firsthand (12 Marp coexistants avec 18 Slidev, configs et outils legacy), diagnostic des fronts communs (format Marp, PNG rendering mort-né, sk-agent vision périmé), 4 voies arbitrées (réécrire/fusionner/retirer/legacy), recommandation voie 1 (réécrire pour Slidev, 3 raisons mesurées). Critère de fermeture documenté ; arbitrage user ou coordinateur requis pour passer à la phase 2 |
+| [research/percolation-03-critique-results.md](research/percolation-03-critique-results.md) | Résultats d'exécution du palier 03 critique Percolation (#19494, c.1104) — mesure des exposants critiques (`β/ν`, `τ'`, `p_c(L) → 1/2`) par sweep `L × p × seeds` sur `networkx`. Verdict : tendances conformes mais convergence asymptotique non atteinte, corrections d'échelle finie dominantes. |
+| [research/percolation-03b-critique-results.md](research/percolation-03b-critique-results.md) | Extension du palier 03 aux tailles `L ∈ {128, 256}` (#19494, c.1105) — vérifie la convergence asymptotique `β/ν → 5/48` et `τ' → 187/91`. Verdict : `β/ν` compatible avec la cible corrigée dès 6 points, `τ'` encore biaisé par le bulk. |
+| [research/percolation-03c-critique-results.md](research/percolation-03c-critique-results.md) | Extension du palier 03 à `L = 512` (#19494, c.1106) — pousse le sweep au plus grand réseau du plan. Verdict : `β/ν` mesuré dans la barre de la cible corrigée `5/48` ; `τ'` reste biaisé par le bulk. |
+| [research/percolation-04-sharpness-scoping.md](research/percolation-04-sharpness-scoping.md) | Mémo de cadrage du palier 04 sharpness (#19494, c.1107) — mesure de la vitesse de disparition du géant en régime supercritique au regard du théorème de Diskin–Easo–Radhakrishnan–Sudakov–Tassion (arXiv:2603.03257). Définit l'architecture du sweep et les critères d'acceptation du palier. |
+| [research/percolation-04-sharpness-results.md](research/percolation-04-sharpness-results.md) | Résultats du palier 04 sharpness (#19494, c.1108) — queue supérieure `Ψ(n) = P(|C_o| ≥ n)` sur tores finis supercritiques. Verdict **honnête** : la décroissance exponentielle n'est pas visible dans la fenêtre de seuils accessible à `L ≤ 512` ; trois causes identifiées, plan #19494 clos par ce palier. |
 
 ## Audit sémantique cross-famille (docs/audit/)
 
@@ -325,6 +336,8 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [transients/2026-08-24-12204-ict-chantier-1-audit-froid.md](transients/2026-08-24-12204-ict-chantier-1-audit-froid.md) | EPIC #12204, tranche audit-froid — trois labels par opération, **quatre entrées tombées**. Un audit dont le livrable est ce qui ne survit pas à la relecture est plus utile qu'un audit qui confirme |
 | [ledgers/12204-ict-chantier-1-a5.md](ledgers/12204-ict-chantier-1-a5.md) | Chantier 1 — tranche A5 : opérations 2, 6, 10 après la distillation Sandholm |
 | [ledgers/12204-ict-chantier-1-a6.md](ledgers/12204-ict-chantier-1-a6.md) | Chantier 1 — tranche A6 : statuation des opérations 11-13 (promotions TABLE) et de la file d'attente |
+| [ledgers/12204-ict-chantier-1-a7.md](ledgers/12204-ict-chantier-1-a7.md) | Chantier 1 — tranche A7 : relecture froide — statuation des opérations 2 et 6, verdict « la table est-elle un catalogue ? », quatrième loi |
+| [ledgers/12204-ict-chantier-1-a8.md](ledgers/12204-ict-chantier-1-a8.md) | Chantier 1 — tranche A8 : rétro-équipement des conditions de rétrogradation — une condition de sortie exécutable par entrée TABLE (12 écrites, aucune entrée non falsifiable) |
 | [ledgers/13746-tests-eclates-dissipation.md](ledgers/13746-tests-eclates-dissipation.md) | EPIC #13746 — Ledger dissipation câblage tests éclatés |
 | [ledgers/14169-g1-recouvrement.md](ledgers/14169-g1-recouvrement.md) | Ledger G1 — Recouvrement 28 PRs amont endjin/Z3.Linq vs fork MyIntelligenceAgency/Z3.Linq |
 | [ledgers/14169-z3linq-upstream-overlap.md](ledgers/14169-z3linq-upstream-overlap.md) | Z3.Linq — recouvrement fork / amont |
@@ -334,6 +347,10 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/15159-wan-video-inv.md](ledgers/15159-wan-video-inv.md) | Issue #15159 — axe Vidéo Wan 2.1/2.2 sur TensorSharp .NET — ledger d'investigation |
 | [ledgers/15573-cadrage-granulaire.md](ledgers/15573-cadrage-granulaire.md) | Ledger — Issue #15573 (cadrage granulaire) |
 | [ledgers/15615-gradation-foundations.md](ledgers/15615-gradation-foundations.md) | Ledger — Issue #15615 (gradation GameTheory, strate "Fondations") |
+| [ledgers/15615-gradation-fournee-a.md](ledgers/15615-gradation-fournee-a.md) | Ledger — Issue #15615 (gradation GameTheory, fournée A : blocs 01/04/05) |
+| [ledgers/15615-gradation-fournee-b.md](ledgers/15615-gradation-fournee-b.md) | Ledger — Issue #15615 (gradation GameTheory, fournée B : blocs 06-10) |
+| [ledgers/15615-gradation-fournee-c.md](ledgers/15615-gradation-fournee-c.md) | Ledger — Issue #15615 (gradation GameTheory, fournée C : blocs 11-15) |
+| [ledgers/15615-gradation-fournee-d.md](ledgers/15615-gradation-fournee-d.md) | Ledger — Issue #15615 (gradation GameTheory, fournée D : blocs 16-20) |
 | [ledgers/16473-consolidation-acceptance-2-log.md](ledgers/16473-consolidation-acceptance-2-log.md) | EPIC #16473 acceptance 2 — suivi des rattachements nominatifs des sous-grains des axes A-F, par lot livré (snapshots de compteur réconciliés dans le document) |
 | [ledgers/17375-md-content-loss-justified.md](ledgers/17375-md-content-loss-justified.md) | Ledger #17375 -- md-content-loss justification |
 | [ledgers/18493-counter-scan-classification.md](ledgers/18493-counter-scan-classification.md) | Issue #18493 — Scan des compteurs littéraux dans commentaires code |
