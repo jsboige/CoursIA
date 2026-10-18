@@ -43,8 +43,8 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 12 | [GameTheory 03c : Chambres, murs, codimension — les jeux…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03c-Chambres-et-Murs-Python.ipynb) | BETA | Oui |
 | 13 | [GameTheory-03d — Le joueur LLM dans le tableau…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03d-Le-Joueur-LLM-Python.ipynb) | BETA | Non |
 | 14 | [Dynamics 09 — Biens publics non-linéaires : plan de…](../../MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) | BETA | Oui |
-| 15 | [GameTheory 03f : Meta-Actions Tarifees et Parcours…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb) | BETA | Oui |
-| 16 | [GameTheory-03g — Deux espèces de flèches : quand une…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03g-Deux-Especes-de-Fleches-Python.ipynb) | BETA | Oui |
+| 15 | [GameTheory 03e : Meta-Actions Tarifees et Parcours…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) | BETA | Oui |
+| 16 | [GameTheory-03f — Deux espèces de flèches : quand une…](../../MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Deux-Especes-de-Fleches-Python.ipynb) | BETA | Oui |
 | 17 | [GameTheory-04-NashEquilibrium-Python (C#)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-CSharp.ipynb) | BETA | Oui |
 | 18 | [GameTheory-04-NashEquilibrium-Python](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb) | BETA | Oui |
 | 19 | [GameTheory 4b - Theoreme d'Existence de Nash (Lean)](../../MyIA.AI.Notebooks/GameTheory/GameTheory-04b-Lean-NashExistence-Lean.ipynb) | BETA | Non |
