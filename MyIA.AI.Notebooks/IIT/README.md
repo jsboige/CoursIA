@@ -34,6 +34,7 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 | 4 | [IIT-04-Le-Probleme-de-Frontiere-Python](IIT-04-Le-Probleme-de-Frontiere-Python.ipynb) | Le problème de frontière : faire varier le découpage du même substrat, maximiseur de Φ, complexe majeur (`major_complex`), double dissociation Φ vs EI | 45-60 min |
 | 5 | [IIT-05-Lentilles-et-Dissociations-Python](IIT-05-Lentilles-et-Dissociations-Python.ipynb) | Six théories de la conscience (GWT, GNW, FEP, AST, SMT, HOT) comme mesures exécutables sur un même substrat : dissociation accès vs autoréférence, orthogonalité AST/SMT, contre-claim FEP | 60-75 min |
 | 6 | [IIT-06-L-Objet-qui-a-Mordu-IIT-Python](IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb) | L'échange Aaronson/Tononi (2014) exécuté : Vandermonde et le hack W en Φ_DM sur F_p, grille/ligne/feedforward en Φ 3.0 (PyPhi), les deux positions citées avec leurs grades | 75-90 min |
+| 7 | [IIT-07-Integration-Par-Coupes-Lean](IIT-07-Integration-Par-Coupes-Lean.ipynb) | Marche 1 de l'escalier Lean du lake `iit_lean` : coupe et motifs (`projT`/`projF`), verdict relationnel `cutIndep`/`decomposable`/`integrated`, `product_decomposable` instancié sur un système concret, la butée du broadcast | 45-60 min |
 
 ## Parcours recommandés
 
@@ -54,6 +55,9 @@ Notebook 5 (Les lentilles de conscience)
     |
     v
 Notebook 6 (L'objet qui a mordu IIT)
+    |
+    v
+Notebook 7 (La coupe et le verdict — Lean)
 ```
 
 | Objectif | Parcours |
@@ -65,6 +69,7 @@ Notebook 6 (L'objet qui a mordu IIT)
 | Focus frontières & dissociation | Notebook 1 + Notebook 4 (Φ vs EI selon le découpage, complexe majeur) |
 | Focus théories rivales | Notebook 1 + Notebook 5 (six lentilles, contre-claims exécutés) |
 | Focus controverse fondatrice | Notebook 1 + Notebook 6 (l'objection Aaronson exécutée, la réponse assumée mesurée) |
+| Focus moitié formelle | Notebook 6 puis 7 (l'objection Aaronson : mesurée en Φ_DM/PyPhi, puis énoncée en Lean — première marche de l'escalier du lake `iit_lean`) |
 
 ### Parcours d'apprentissage
 
@@ -247,6 +252,21 @@ flowchart TD
 | L'après | Relance Griffith, fertilité pour PyPhi/IIT 4.0, le test falsifiable proposé par Tononi (doubler une grille corticale) |
 | Exercices | Identité/permutation en Φ_DM, W à autre échelle, ligne vs anneau n=5 en PyPhi, grille bruitée |
 
+### IIT-07-Integration-Par-Coupes-Lean.ipynb
+
+Marche 1 de l'escalier qui expose le lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.md) (moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
+
+| Section | Contenu |
+|---------|---------|
+| Environnement | `import IIT.Integration`, contrôle positif `#eval 2 + 2`, toolchain `v4.33.0` |
+| Systèmes | `State`/`System` comme fonctions (`Fin n → Bool`), état one-hot, système à décalage, déterminisme par composition |
+| Coupe et motifs | `Cut` (non-trivialité `ha`/`hb` close par `rfl`), `projT`/`projF` calculés sur un état concret — marchepied avant `cutIndep` |
+| Verdict | `cutIndep` lu comme produit d'images, `decomposable`/`integrated` par `#print`, force de l'ordre des quantificateurs |
+| Théorème A | `cutIndep_of_sides_independent` → `product_decomposable`, `#print axioms` (`propext`, `Quot.sound` — les deux axiomes du core, aucun `Classical.choice`), instance `echange_decomposable` prouvée sans énumération |
+| Butée du broadcast | `parity`/`broadcast` sur les 8 états de n=3, table des couples de motifs : (A=vrai, B=faux) réalisable séparément, jamais ensemble — prépare la marche 3 |
+| Grade | le proxy relationnel contre Φ (MIP, perturbation, valeur numérique) — ce que le carnet ne claim pas |
+| Exercices | écrire une coupe (`selPairs`), reconstruire le motif d'un côté (`motifA`), reconstruire la parité (`pariteA4`) |
+
 ## Théorie IIT
 
 La Théorie de l'Information Intégrée (IIT) propose une approche mathématique de la conscience :
@@ -354,6 +374,7 @@ IIT/
 ├── IIT-04-Le-Probleme-de-Frontiere-Python.ipynb # Notebook 4 : qui décide des bords — Φ vs EI selon la frontière
 ├── IIT-05-Lentilles-et-Dissociations-Python.ipynb # Notebook 5 : six théories de la conscience comme bancs de dissociation
 ├── IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb # Notebook 6 : l'échange Aaronson/Tononi exécuté (Φ_DM + PyPhi)
+├── IIT-07-Integration-Par-Coupes-Lean.ipynb # Notebook 7 : la coupe et le verdict — lake iit_lean (Lean 4)
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
@@ -493,7 +514,7 @@ Voir la licence du repository principal.
 
 ---
 
-*Version 1.3.1 — Août 2026*
+*Version 1.4.0 — Octobre 2026*
 
 <!-- CATALOG-STATUS
 series: IIT

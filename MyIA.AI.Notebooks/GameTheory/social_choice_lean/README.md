@@ -24,7 +24,7 @@ Ce répertoire est l'**archive** des formalisations mathématiques de la théori
 
 | Statistique | Valeur |
 |-------------|--------|
-| Théorèmes/Lemmas | 76 (0 sorry, 7 modules) |
+| Théorèmes/Lemmas | voir catalogue (0 sorry, modules absorbés) |
 | sorry restants | 0 |
 | Toolchain | `leanprover/lean4:v4.31.0-rc1` |
 | Dépendances | Mathlib4, Lake |
@@ -35,7 +35,7 @@ le home canonique [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialC
 
 ## Théorèmes formalisés
 
-*Les quatre résultats fondateurs formalisés (0 sorry, 7 modules) — de l'impossibilité de
+*Les quatre résultats fondateurs formalisés (0 sorry, modules absorbés) — de l'impossibilité de
 Arrow et du paradoxe de Sen jusqu'au théorème de l'électeur médian et à la véridicité de
 l'enchère de Vickrey :*
 
@@ -121,7 +121,7 @@ flowchart TD
 
 ### 3. Théorie du vote (Voting.lean)
 
-**Dans `SocialChoice/Voting.lean`** (port de chasenorman/Formalized-Voting, 19 théorèmes,
+**Dans `SocialChoice/Voting.lean`** (port de chasenorman/Formalized-Voting, voir catalogue,
 0 sorry). Le module couvre bien au-delà du seul électeur médian :
 
 - **Marges** (`margin_pos`, `margin_antisymm`, `margin_pos_iff_neg_rev`) : la marge
@@ -141,7 +141,7 @@ flowchart TD
 
 ### 4. Théorie des mécanismes — Enchère de Vickrey (MechanismDesign.lean)
 
-**Dans `SocialChoice/MechanismDesign.lean`** (4 théorèmes, 0 sorry). Le projet s'étend
+**Dans `SocialChoice/MechanismDesign.lean`** (voir catalogue, 0 sorry). Le projet s'étend
 au-delà du choix social pur vers la **théorie des mécanismes** (incitations et véridicité) :
 
 - **Véridicité de Vickrey** (`vickrey_truthful_bidder0`, `vickrey_truthful_bidder1`,
@@ -173,7 +173,7 @@ social_choice_lean/                     (tombstone documentaire — plus un lake
 │   ── sources déplacées vers game_theory_lean/SocialChoice/ (PR #6058) ──
 │
 ├── SocialChoice.lean                  # [DÉPLACÉ] Fichier d'imports principaux
-└── SocialChoice/                      # [DÉPLACÉ] Module principal (7 fichiers, 0 sorry)
+└── SocialChoice/                      # [DÉPLACÉ] Module principal (fichiers absorbés, 0 sorry)
     ├── Basic.lean                    # Définitions de base (P, I, PrefOrder, QuasiOrder,
     │                                 # lemmes de transitivité, best/maximal elements)
     ├── Framework.lean                # Cadre SWF (Profile, SWF, weak_pareto, IIA,
@@ -239,7 +239,7 @@ Ce projet est un port depuis [asouther4/lean-social-choice](https://github.com/a
 ```bash
 cd MyIA.AI.Notebooks/GameTheory/game_theory_lean
 lake exe cache get      # cache Mathlib (première fois)
-lake build SocialChoice # compile les 7 modules absorbés (0 sorry)
+lake build SocialChoice # compile les modules absorbés (0 sorry)
 ```
 
 ## Concepts clés formels
@@ -276,7 +276,7 @@ Voir la licence du repository principal.
 
 ## Conclusion
 
-Ce projet formalise en Lean 4 (**0 `sorry`**, 76 théorèmes/lemmas sur 7 modules) les
+Ce projet formalise en Lean 4 (**0 `sorry`**, voir catalogue en modules absorbés) les
 résultats fondateurs de la théorie du choix social : le **théorème d'impossibilité
 d'Arrow**, le **paradoxe libéral de Sen**, la **théorie du vote** (Condorcet, électeur
 médian, Split Cycle) et la **véridicité de l'enchère de Vickrey** (théorie des mécanismes).
