@@ -1,6 +1,6 @@
 ---
 name: slide-improver
-description: Improve a Slidev deck (slides/*/slides.md) by organ-first diagnosis (structure, composition, overflow) then visual comparison via sk-agent vision. 0 PPTX / 0 marp_renders in tree; 12 legacy Marp sources (slides.marp.md) remain, unserved (#19578).
+description: Improve a Slidev deck (slides/*/slides.md) by organ-first diagnosis (structure, composition, overflow) then visual comparison against the PPTX reference renders (pptx-reference/) via sk-agent vision. 742 reference PNGs on main; 12 legacy Marp sources (slides.marp.md) remain, unserved (#19578).
 tools: Read, Glob, Grep, Bash, Edit, Write, mcp__sk-agent__call_agent
 model: sonnet
 ---
@@ -11,6 +11,14 @@ Ameliore un deck Slidev en pilotant les organes de mesure du depot (structure,
 composition, debordement) puis en completant par l'analyse visuelle des rendus
 PNG via vision AI. Les organes mesurent ce qui est mesurable ; la vision ne
 juge que le residu qualitatif (lisibilite, qualite visuelle).
+
+La baseline visuelle, ce sont les renders PPTX (mandat user 2026-08-20, cf
+[docs/reference/slides-layout-pattern.md](../../docs/reference/slides-layout-pattern.md)) :
+**742 PNG vivent sur `main`** sous `slides/<deck>/pptx-reference/slide-NN.png`
+(12 decks ; seul `01-introduction` les porte sous `public/pptx-reference/`).
+Nuls sur `main` : les `.pptx` binaires et les rendus `marp_renders`. Les 12
+sources Marp legacy (`slides.marp.md`) restent, non servies -- retrait = grain
+separe (#19578).
 
 ## Arguments attendus
 
@@ -31,7 +39,14 @@ python scripts/notebook_tools/scan_slides_html_block_markdown.py --check slides/
 Chaque constat d'organe porte `file=,line=` -- corriger a la source, sans
 passer par la vision.
 
-## Phase 1 : Servir le deck et rendre les PNG
+## Phase 1 : Charger le contexte, servir le deck, rendre les PNG
+
+1. Lire `slides/{deck_id}/extracted/inventory.json` : nombre de slides PPTX
+   originales, `layout_name`, `image_count` par slide.
+2. Lire `slides/{deck_id}/slides.md` : verifier le headmatter `canvasWidth` /
+   `aspectRatio` (defaut **980 x 552** -- toute position `top-[Npx]` se calcule
+   contre cette constante ; un deck calcule contre une autre constante produit
+   des positions fausses partout).
 
 ```bash
 # Une fois par worktree : environnement Slidev
@@ -40,12 +55,13 @@ cd slides && npm install
 # Terminal 1 : serveur dev (garde tourner)
 cd slides/{deck_id} && npx slidev slides.md --port 3031
 
-# Terminal 2 : captures 1440x900 slide par slide
+# Terminal 2 : captures 1440x900 slide par slide (post-animations ?clicks=99,
+# attente Tailwind incluse)
 python slides/_tools/render_deck.py {deck_id} --base http://localhost:3031
 # -> slides/_tools/slide-renders/{deck_id}/slide-NNN.png
 ```
 
-## Phase 2 : Mesures de composition sur le deck servi
+## Phase 2 : Mesures de composition + mapping PPTX <-> Slidev
 
 ```bash
 # 4 signaux : HORS_CANVAS, CHEVAUCHEMENT (glyphes), OCCUPATION, RECOUVREMENT texte x image
@@ -61,9 +77,16 @@ python scripts/notebook_tools/scan_slidev_gap_report.py --in {scratchpad}/compos
 La liste des slides signalees (composition + gap report) EST la file de
 travail de la Phase 3 -- on ne devine pas les slides a corriger.
 
-## Phase 3 : Analyse visuelle des slides signalees
+**Mapping PPTX <-> Slidev** : les slides sont parfois eclatees (1 slide PPTX
+-> 2 slides Slidev). Construire le mapping en comparant les titres de
+`inventory.json` avec les titres de `slides.md`. Noter **SPLIT / MERGE /
+MISSING / EXTRA** -- c'est ce mapping qui aligne chaque capture Slidev sur la
+bonne baseline `pptx-reference/slide-NN.png`.
 
-Pour chaque slide signalEE (lots de 3), appel vision sur SON PNG :
+## Phase 3 : Analyse visuelle des slides signalees, CONTRE la baseline PPTX
+
+Pour chaque slide signalEE (lots de 3), appel vision sur SA capture, avec en
+contexte la baseline PPTX correspondante du mapping :
 
 ```python
 mcp__sk-agent__call_agent(
@@ -76,15 +99,18 @@ mcp__sk-agent__call_agent(
 )
 ```
 
+La comparaison se fait CONTRE la baseline PPTX du deck :
+`slides/{deck_id}/pptx-reference/slide-NN.png` (tiret, 2 chiffres ;
+`public/pptx-reference/` pour `01-introduction`) -- mandat user 2026-08-20 :
+*« la baseline, ce sont les renders de mes PPTX [...] si c'est encore plus
+moche, alors pas la peine d'aller plus loin »*. Si le deck ne porte PAS de
+baseline, la reference = les regles de composition du depot (Phase 4) et le
+rapport le dit.
+
 Prompt court FR obligatoire (les slides logo-heavy font halluciner les prompts
 longs EN -- invariants documentes dans
 [docs/reference/slide-analyzer-sk-agent.md](../../docs/reference/slide-analyzer-sk-agent.md)).
 Si reponse vide : retry 1 fois avec `Decris les visuels de cette slide et note la lisibilite /10.`
-
-Si le dossier porte une baseline PPTX ({deck}/extracted/renders/slide_NN.png),
-la comparaison visuelle se fait CONTRE CETTE baseline (mandat user 2026-08-20 :
-la baseline, ce sont les renders PPTX). Sinon la reference = les regles de
-composition du depot (Phase 4).
 
 ## Phase 4 : Corrections dans slides.md
 
@@ -102,26 +128,44 @@ Patterns Slidev (theme `theme-ia101`) :
 - **Image plein ecran avec texte dessus** : layout `image-overlay` (regle #221 :
   texte PAR-DESSUS l'image, jamais en colonne droite).
 - **Slide dense** : layout `dense`.
-- **Grille d'images** : `<div class="grid grid-cols-N gap-10">` avec une image
-  par cellule, positions absolutes si la baseline PPTX les place a la main.
+- **Apparition synchronisee (v-clicks)** : un propos et sa figure portent LE
+  MEME indice de clic ; le propos suivant prend l'indice suivant, avec sa
+  propre figure. Une figure apparait avec le propos qui l'introduit -- meme
+  indice, jamais un cran plus loin, jamais apres toute la liste. Re-verifier
+  les indices apres tout ajout ou deplacement de paragraphe.
+- **Grille d'images, avec contrat de compression** : dans une cellule de
+  grille, une `<img>` nue en pied de cellule sans contrainte flex est un
+  debordement en attente (le layout `default` est block : la rangee grandit
+  avec son contenu). Appliquer le contrat du deck (cf
+  `slides/S3-acculturation/style.css` regle 6) ou borner l'image :
+  `class="max-h-[280px]"`.
 
-**LIGNES VIDES OBLIGATOIRES** apres chaque `<div>` ouvrant et avant chaque
-`</div>` fermant : c'est le mecanisme (regle HTML-block de markdown-it), pas
-de la cosmetique -- sans elles, la liste markdown suivante est avalee dans
-l'HTML brut et rend en litteral (#13216 : 49 blocs avals sur main a l'epoque).
+**Invariants Slidev (HARD, regression-prone)** :
 
-Canvas : 980 x 552 (cf slides-layout-pattern.md, facteur d'echelle).
+1. **Ligne vide apres tout `<div>` (ou wrapper `<v-click>`) ouvrant seul sur
+   sa ligne** -- sans elle, le markdown suivant est avale dans l'HTML brut et
+   rend en litteral (#13216 : 49 blocs avals sur main a l'epoque). Ne pas
+   sur-corriger : la prose HTML inline sans syntaxe markdown de bloc rend
+   correctement sans ligne vide.
+2. **PAS de ligne vide entre `---` et `layout:`** -- sinon le parser rend
+   `layout:` comme texte litteral et la slide apparait vide ou cassee.
+3. **Canvas 980x552 par defaut** -- verifier le headmatter avant d'ecrire
+   toute position absolue.
+4. **`getBoundingClientRect` rend des px a l'echelle** -- diviser par
+   `scaler.width / 980` avant toute comparaison a une position `top-[Npx]`.
 
 ## Phase 5 : Verification
 
 1. Re-jouer les organes (Phase 0 + Phase 2) : aucun signal AGGRAVE par rapport
    a la mesure initiale -- sinon corriger.
 2. Re-rendre les slides modifiees (render_deck.py) et spot-check 5 slides via
-   vision.
+   vision (comparer nouvelle capture avec la baseline PPTX).
 3. Verifier toutes les refs images existent :
 ```bash
 cd slides/{deck_id} && for img in $(grep -oP 'images/[^\s\)"]+' slides.md | sort -u); do [ ! -f "$img" ] && echo "MISSING: $img"; done
 ```
+4. Lire chaque slide modifiee au dernier clic (`?clicks=99`) ET verifier les
+   etats intermediaires (synchronisation v-click).
 
 ## Regles critiques
 

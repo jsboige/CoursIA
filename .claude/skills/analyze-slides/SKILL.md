@@ -7,9 +7,12 @@ description: Analyze a Slidev deck qualitatively — organ reports (structure, c
 
 Analyse qualitative d'un deck Slidev : organes du depot d'abord (mesures
 objectives), vision AI ensuite sur les rendus PNG (modele vision du MCP
-sk-agent). Les modes PPTX/Marp sont retires depuis #19578 : 0 PPTX et 0
-rendu marp_renders dans l'arbre ; les 12 sources Marp legacy
-(slides.marp.md) restent presentes, non servies par les agents.
+sk-agent). Le mode Marp seul est retire depuis #19578 : 0 fichier `.pptx`
+binaire et 0 rendu `marp_renders` dans l'arbre, MAIS la baseline PPTX est
+vivante -- 742 renders PNG sous `slides/<deck>/pptx-reference/slide-NN.png`
+(12 decks ; `public/pptx-reference/` pour `01-introduction`), d'ou les modes
+`pptx` et `compare` de l'agent. Les 12 sources Marp legacy (slides.marp.md)
+restent presentes, non servies par les agents.
 
 **Target**: `$ARGUMENTS`
 
