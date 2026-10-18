@@ -13,7 +13,10 @@ changements de position de la condition, seul le calendrier change.
 - un calendrier parfait (long exactement sur les hausses) sort du temoin
   (temoin positif), un calendrier sans information y reste (calibration) ;
 - ``symbol_null_test`` et ``skill_verdict`` appliquent le protocole publie sur
-  #21187 avant toute mesure.
+  #21187 avant toute mesure ;
+- la ligne C (``null_condition_row``) ne porte que le ``hit_rate`` du temoin,
+  calcule comme celui de A et B sur la position tenue : sa cle ``auc`` est
+  vide, le temoin n'ayant pas d'etiquettes d'action.
 """
 
 import sys
@@ -28,9 +31,10 @@ pytest.importorskip("torch")
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ablation_rtg_leak import (  # noqa: E402
-    compute_sharpe, count_trades, held_positions, matched_null, null_p_value,
-    permute_runs, position_returns, row_sharpes, simulate_dt_portfolio,
-    skill_verdict, symbol_null_test,
+    compute_sharpe, count_trades, held_positions, matched_null,
+    null_condition_row, null_p_value, permute_runs, position_returns,
+    row_sharpes, score_actions, simulate_dt_portfolio, skill_verdict,
+    symbol_null_test,
 )
 
 COMMISSION_BPS = 5.0
@@ -138,6 +142,32 @@ def test_a_single_run_ties_with_every_draw(actions):
     res = matched_null(actions.astype(np.int64), returns, n_draws=99,
                        commission_bps=COMMISSION_BPS, rng=np.random.default_rng(2))
     assert null_p_value(res["sharpe"], res["null"]) == 1.0
+
+
+def test_hit_rate_is_the_same_measure_for_conditions_and_null():
+    # Positions tenues : long, long, a plat, long ; rendements +, -, +, +.
+    returns = np.array([0.01, -0.02, 0.04, 0.01])
+    res = score_actions(np.array([1, 0, 2, 1]), returns, commission_bps=COMMISSION_BPS)
+    assert res["hit_rate"] == pytest.approx(0.5)
+    assert res["auc"] == pytest.approx(0.75)  # etiquette d'achat, pas la position
+    # Une seule periode : chaque tirage est la condition, meme hit_rate.
+    flat_long = np.full(50, 1)
+    rets = np.random.default_rng(8).normal(0.0, 0.01, 50)
+    null = matched_null(flat_long, rets, n_draws=20, commission_bps=COMMISSION_BPS,
+                        rng=np.random.default_rng(3))
+    scored = score_actions(flat_long, rets, commission_bps=COMMISSION_BPS)
+    assert null["hit_rate"] == pytest.approx(scored["hit_rate"])
+
+
+def test_condition_c_row_has_no_label_accuracy():
+    res_a = {"sharpe_bh": 0.8, "n_trades": 6, "exposure": 0.7, "n_preds": 250}
+    null_a = {"null": np.array([0.5, 0.7, 0.9]), "hit_rate": 0.51234}
+    row = null_condition_row(res_a, null_a)
+    assert row["auc"] is None
+    assert row["hit_rate"] == 0.5123
+    assert row["sharpe_dt"] == pytest.approx(0.7)
+    assert row["delta_sharpe"] == pytest.approx(-0.1)
+    assert (row["n_trades"], row["exposure"], row["n_preds"]) == (6, 0.7, 250)
 
 
 def test_uninformed_timing_is_calibrated():

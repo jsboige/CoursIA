@@ -197,16 +197,21 @@ def score_actions(
     dt_rets = simulate_dt_portfolio(actions, returns, commission_bps=commission_bps)
     sharpe_dt = compute_sharpe(dt_rets)
     sharpe_bh = compute_sharpe(returns)
-    # Direction accuracy: a long call is right when the return it drives is up.
+    # Direction accuracy of the buy label: a buy is right when the return it
+    # drives is up. Despite its key name it is an accuracy, not an AUC.
     auc = float(((actions == 1) == (returns > 0)).mean()) if len(actions) else 0.5
+    positions = held_positions(actions)
+    # Same accuracy on the held position: the only one the null can share.
+    hit_rate = float(((positions > 0) == (returns > 0)).mean()) if len(actions) else 0.5
     n_trades = count_trades(actions)
     # Share of returns held long: C matches A in trades, not in exposure.
-    exposure = float(held_positions(actions).mean()) if len(actions) else 0.0
+    exposure = float(positions.mean()) if len(actions) else 0.0
     return {
         "sharpe_dt": round(sharpe_dt, 4),
         "sharpe_bh": round(sharpe_bh, 4),
         "delta_sharpe": round(sharpe_dt - sharpe_bh, 4),
         "auc": round(auc, 4),
+        "hit_rate": round(hit_rate, 4),
         "n_trades": n_trades,
         "exposure": round(exposure, 4),
         "n_preds": int(len(actions)),
@@ -286,8 +291,8 @@ def matched_null(
     it. ``null`` holds the draws' Sharpe ratios in draw order: draw j of
     every seed is averaged into draw j of the symbol's null. ``hit_rate``
     is the mean over draws of the share of returns whose sign matches the
-    held position; the null has no action labels, so it is not the ``auc``
-    of ``score_actions``.
+    held position, as the ``hit_rate`` of ``score_actions``; the null has no
+    action labels, so it has no ``auc``.
     """
     rng = rng if rng is not None else np.random.default_rng(0)
     returns = np.asarray(returns, dtype=np.float64)
@@ -297,6 +302,26 @@ def matched_null(
     null = row_sharpes(position_returns(draws, returns, commission_bps))
     hit_rate = float(((draws > 0) == (returns > 0)).mean())
     return {"sharpe": sharpe, "null": null, "hit_rate": hit_rate}
+
+
+def null_condition_row(res_a: dict, null_a: dict) -> dict:
+    """Fold row of condition C: the mean of A's exposure-matched null.
+
+    The null has no action labels: its row carries ``hit_rate`` (sign of the
+    held position against the return, as for A and B) and ``auc`` is None,
+    so that no column compares an accuracy of A's labels with the null.
+    """
+    null_mean = float(null_a["null"].mean())
+    return {
+        "sharpe_dt": round(null_mean, 4),
+        "sharpe_bh": res_a["sharpe_bh"],
+        "delta_sharpe": round(null_mean - res_a["sharpe_bh"], 4),
+        "auc": None,
+        "hit_rate": round(null_a["hit_rate"], 4),
+        "n_trades": res_a["n_trades"],
+        "exposure": res_a["exposure"],
+        "n_preds": res_a["n_preds"],
+    }
 
 
 def null_p_value(statistic: float, null: np.ndarray) -> float:
@@ -713,16 +738,7 @@ def run_single_ablation(
 
         # Condition C: A's null, i.e. A's exposure and position changes.
         if "A" in nulls:
-            null_mean = float(nulls["A"]["null"].mean())
-            fold_results["C"].append({
-                "sharpe_dt": round(null_mean, 4),
-                "sharpe_bh": res_a["sharpe_bh"],
-                "delta_sharpe": round(null_mean - res_a["sharpe_bh"], 4),
-                "auc": round(nulls["A"]["hit_rate"], 4),
-                "n_trades": res_a["n_trades"],
-                "exposure": res_a["exposure"],
-                "n_preds": res_a["n_preds"],
-            })
+            fold_results["C"].append(null_condition_row(res_a, nulls["A"]))
 
         # Condition C_trades: random timing on the same returns (trade count from A)
         res_c = run_condition_c(
@@ -743,14 +759,15 @@ def run_single_ablation(
             continue
 
         deltas = [f["delta_sharpe"] for f in folds]
-        aucs = [f["auc"] for f in folds]
+        aucs = [f["auc"] for f in folds if f.get("auc") is not None]
         trades = [f["n_trades"] for f in folds]
 
         agg[cond] = {
             "mean_dSharpe": round(float(np.mean(deltas)), 4),
             "std_dSharpe": round(float(np.std(deltas)), 4),
             "t_stat": round(float(np.mean(deltas) / (np.std(deltas) + 1e-10)), 4),
-            "mean_auc": round(float(np.mean(aucs)), 4),
+            "mean_auc": round(float(np.mean(aucs)), 4) if aucs else None,
+            "mean_hit_rate": round(float(np.mean([f["hit_rate"] for f in folds])), 4),
             "mean_trades": int(np.mean(trades)),
             "mean_exposure": round(float(np.mean([f["exposure"] for f in folds])), 4),
             "n_folds": len(folds),
@@ -875,7 +892,7 @@ def main():
                         r = result[cond]
                         print(f"  Cond {cond}: dSharpe={r['mean_dSharpe']:+.4f} "
                               f"(std={r['std_dSharpe']:.4f}, t={r['t_stat']:.2f}) "
-                              f"auc={r['mean_auc']:.4f} trades={r['mean_trades']}")
+                              f"hit_rate={r['mean_hit_rate']:.4f} trades={r['mean_trades']}")
                     else:
                         print(f"  Cond {cond}: ERROR")
                 if result.get("fixed_g_mean"):
@@ -894,7 +911,7 @@ def main():
     print("ABLATION RESULTS TABLE")
     print(f"{'='*80}")
     print(f"{'Symbol':<8} {'Cond':<9} {'Mean dS':>10} {'Std':>8} {'t-stat':>8} "
-          f"{'Mean AUC':>10} {'Trades':>8}")
+          f"{'Hit rate':>10} {'Trades':>8}")
     print("-" * 71)
 
     # Per-symbol aggregation
@@ -904,6 +921,7 @@ def main():
         for cond in CONDITIONS:
             deltas = []
             aucs = []
+            hits = []
             trades = []
             for seed in seeds:
                 res = all_results.get(symbol, {}).get(seed, {})
@@ -911,25 +929,28 @@ def main():
                 if "error" in cond_data:
                     continue
                 deltas.append(cond_data["mean_dSharpe"])
-                aucs.append(cond_data["mean_auc"])
+                if cond_data.get("mean_auc") is not None:
+                    aucs.append(cond_data["mean_auc"])
+                hits.append(cond_data["mean_hit_rate"])
                 trades.append(cond_data["mean_trades"])
 
             if deltas:
                 mean_d = float(np.mean(deltas))
                 std_d = float(np.std(deltas))
                 t_stat = mean_d / (std_d + 1e-10)
-                mean_auc = float(np.mean(aucs))
+                mean_hit = float(np.mean(hits))
                 mean_trades = int(np.mean(trades))
                 table[symbol][cond] = {
                     "mean_dSharpe": round(mean_d, 4),
                     "std_dSharpe": round(std_d, 4),
                     "t_stat": round(t_stat, 4),
-                    "mean_auc": round(mean_auc, 4),
+                    "mean_auc": round(float(np.mean(aucs)), 4) if aucs else None,
+                    "mean_hit_rate": round(mean_hit, 4),
                     "mean_trades": mean_trades,
                     "n_seeds": len(deltas),
                 }
                 print(f"{symbol:<8} {cond:<9} {mean_d:>+10.4f} {std_d:>8.4f} "
-                      f"{t_stat:>8.4f} {mean_auc:>10.4f} {mean_trades:>8d}")
+                      f"{t_stat:>8.4f} {mean_hit:>10.4f} {mean_trades:>8d}")
             else:
                 table[symbol][cond] = {"error": "no valid seeds"}
                 print(f"{symbol:<8} {cond:<9} {'ERROR':>10}")
@@ -940,29 +961,33 @@ def main():
     for cond in CONDITIONS:
         all_deltas = []
         all_aucs = []
+        all_hits = []
         all_trades = []
         for symbol in symbols:
             if cond in table.get(symbol, {}) and "error" not in table[symbol].get(cond, {}):
                 all_deltas.append(table[symbol][cond]["mean_dSharpe"])
-                all_aucs.append(table[symbol][cond]["mean_auc"])
+                if table[symbol][cond]["mean_auc"] is not None:
+                    all_aucs.append(table[symbol][cond]["mean_auc"])
+                all_hits.append(table[symbol][cond]["mean_hit_rate"])
                 all_trades.append(table[symbol][cond]["mean_trades"])
 
         if all_deltas:
             mean_d = float(np.mean(all_deltas))
             std_d = float(np.std(all_deltas))
             t_stat = mean_d / (std_d + 1e-10)
-            mean_auc = float(np.mean(all_aucs))
+            mean_hit = float(np.mean(all_hits))
             mean_trades = int(np.mean(all_trades))
             agg_table[cond] = {
                 "mean_dSharpe": round(mean_d, 4),
                 "std_dSharpe": round(std_d, 4),
                 "t_stat": round(t_stat, 4),
-                "mean_auc": round(mean_auc, 4),
+                "mean_auc": round(float(np.mean(all_aucs)), 4) if all_aucs else None,
+                "mean_hit_rate": round(mean_hit, 4),
                 "mean_trades": mean_trades,
                 "n_symbols": len(all_deltas),
             }
             print(f"{'ALL':<8} {cond:<9} {mean_d:>+10.4f} {std_d:>8.4f} "
-                  f"{t_stat:>8.4f} {mean_auc:>10.4f} {mean_trades:>8d}")
+                  f"{t_stat:>8.4f} {mean_hit:>10.4f} {mean_trades:>8d}")
         else:
             agg_table[cond] = {"error": "no data"}
             print(f"{'ALL':<8} {cond:<9} {'ERROR':>10}")
