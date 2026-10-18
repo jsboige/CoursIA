@@ -8387,7 +8387,7 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.
 >
 > *Backtest ID: a764d2faa2e942a0feb3e552da0d3fdc*
 
-> *Ancre savante -- Bailey, D.H. & Lopez de Prado, M. (2012), The Sharpe Ratio Efficient Frontier, Journal of Risk 15(2):3-44. DOI 10.21314/JOR.2012.259. (Probabilistic Sharpe Ratio, corrige du biais de l'echantillon non-IID.)*
+> *Ancre savante -- Bailey, D.H. & Lopez de Prado, M. (2012), The Sharpe Ratio Efficient Frontier, Journal of Risk 15(2):3-44. DOI 10.21314/JOR.2012.255. (Probabilistic Sharpe Ratio, corrige du biais de l'echantillon non-IID.)*
 ",,,,,,,,c03da860a29d7fe4,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb,f20e2d9f,markdown,fr,3bfbe93d8c401d1f,On définit ici le modèle de construction du portefeuille en spécifiant les pondérations cibles et les contraintes d'optimisation.,,,,,,,,3bfbe93d8c401d1f,,,,,,,,
 MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-14-Portfolio-Construction-Execution.ipynb,cell-b52418b6,code,fr,7ab449cd58c5871a,"# [REFERENCE QC] Code a copier dans main.py QC Lab (non executable ici)
@@ -10814,7 +10814,7 @@ Dans ce notebook, nous avons appris a :
 
 ### References academiques
 
-- Bailey, D.H. & Lopez de Prado, M. (2012). The Sharpe Ratio Efficient Frontier. Journal of Risk 15(2):3-44. DOI 10.21314/JOR.2012.259.
+- Bailey, D.H. & Lopez de Prado, M. (2012). The Sharpe Ratio Efficient Frontier. Journal of Risk 15(2):3-44. DOI 10.21314/JOR.2012.255.
 - Black, F. & Litterman, R. (1991). Asset Allocation: Combining Investor Views with Market Equilibrium. The Journal of Fixed Income 1(2):7-18. DOI 10.3905/jfi.1991.408013.
 - Maillard, S., Roncalli, T. & Teiletche, J. (2010). The Properties of Equally Weighted Risk Contribution Portfolios. The Journal of Portfolio Management 36(4):60-70. DOI 10.3905/jpm.2010.36.4.060.
 - Markowitz, H. (1952). Portfolio Sélection. The Journal of Finance 7(1):77-91. DOI 10.1111/j.1540-6261.1952.tb01525.x.
@@ -28832,7 +28832,7 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-22-Deep-Learning-LSTM.ipynb,6141418c
 ---
 
 **Notebook complete. Les architectures SOTA 2024-2026 offrent un excellent compromis entre performance et efficacite. DLinear reste une baseline remarquablement forte, tandis que PatchTST et iTransformer apportent des innovations significatives.**",,,,,,,,23007e0cd430c00e,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,d093891b,markdown,fr,84d222d95d1f2aef,"
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,d093891b,markdown,fr,84d222d95d1f2aef,"
 ## Objectifs d'Apprentissage
 
 À la fin de ce notebook, vous serez capable de :
@@ -28872,12 +28872,12 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,d093
 | **S4** | ICLR 2022 | Structured State Space Sequences |
 | **SST** | CIKM 2024 | Hybrid Mamba-Transformer |
 | **CMDMamba** | Frontiers AI 2025 | Dual-layer Mamba pour finance |",,,,,,,,84d222d95d1f2aef,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,f414a472,markdown,fr,1497fdffcd61efcd,"> **[REFERENCE QC Cloud]**
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,f414a472,markdown,fr,1497fdffcd61efcd,"> **[REFERENCE QC Cloud]**
 > Ce notebook illustre du code QuantConnect a executer dans l'IDE Cloud (https://www.quantconnect.com/research).
 > L'environnement local ne dispose pas de QuantBook ni de l'historical data feed.
 > Pour executer : cloner le projet QC associe, ouvrir `research.ipynb`, executer cellule par cellule.
 ",,,,,,,,1497fdffcd61efcd,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,fb7f8792,markdown,fr,bfa05fb7aa28f50f,"---
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,fb7f8792,markdown,fr,bfa05fb7aa28f50f,"---
 
 > **Mode d'emploi** : Ce notebook a **deux parties** :
 > 1. **Sections analyse/ML** (pandas, sklearn, matplotlib) : **executables en Jupyter local**
@@ -28886,7 +28886,7 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,fb7f
 > Les cellules QCAlgorithm sont marquees `# [REFERENCE QC]` et ne sont pas executables localement.
 
 ---",,,,,,,,bfa05fb7aa28f50f,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,b317e87d,markdown,fr,f76793d74e338e71,"---
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,b317e87d,markdown,fr,f76793d74e338e71,"---
 
 ## Partie 1 : Le Problème de l'Attention O(n²) (10 min)
 
@@ -28921,7 +28921,7 @@ L'attention des Transformers calcule une matrice **Q × K^T** de taille **(n × 
 | **State Space Models** | O(n) | ✅ Exact, scalable, hardware-friendly |
 
 > *Ancres savantes -- Beltagy, Peters & Cohan (2020), « Longformer: The Long-Document Transformer » (arXiv:2004.05150) -- sparse attention O(n√n). Choromanski et al. (2021), « Rethinking Attention with Performers », ICLR 2021 (arXiv:2009.14794) -- linear attention O(n) via approximation randomisée.*",,,,,,,,f76793d74e338e71,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,baa2eea3,code,fr,afdf18cafd0f9622,"# Imports
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,baa2eea3,code,fr,afdf18cafd0f9622,"# Imports
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -28957,7 +28957,7 @@ print(f""PyTorch version: {torch.__version__}"")
 print(f""Device: {device}"")
 print(""\nCe notebook est optimisé CPU-first."")
 print(""Les SSMs sont particulièrement efficaces sur CPU grâce à leur complexité O(n)."")",,,,,,,,afdf18cafd0f9622,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,83a8d765,markdown,fr,44147fe5397681b4,"### Configuration de l'environnement
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,83a8d765,markdown,fr,44147fe5397681b4,"### Configuration de l'environnement
 
 Cette cellule importe toutes les bibliotheques necessaires et configure l'environnement PyTorch.
 
@@ -28968,7 +28968,7 @@ Cette cellule importe toutes les bibliotheques necessaires et configure l'enviro
 - **Scikit-learn** : Preparation des données et evaluation
 
 **Note importante** : Ce notebook est optimise pour CPU. Les State Space Models ont une complexite O(n) qui les rend très efficaces même sans GPU, contrairement aux Transformers qui necessitent du materiel accelere pour de longues sequences.",,,,,,,,44147fe5397681b4,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,f810e13d,code,fr,83093a2c1508ee06,"def visualize_complexity_comparison():
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,f810e13d,code,fr,83093a2c1508ee06,"def visualize_complexity_comparison():
     """"""
     Visualise la différence de complexité entre Transformer et SSM.
     """"""
@@ -29036,7 +29036,7 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,f810
     print(f""  - Mémoire SSM pour 5 ans: {memory_ssm_mb[-1]:.1f} MB"")
 
 visualize_complexity_comparison()",,,,,,,,83093a2c1508ee06,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,d4efc713,markdown,fr,5502e5ca76a3105d,"### Interpretation : Complexite et consommation memoire
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,d4efc713,markdown,fr,5502e5ca76a3105d,"### Interpretation : Complexite et consommation memoire
 
 Les graphiques confirment l'avantage decisif des SSMs pour les longues sequences.
 
@@ -29054,7 +29054,7 @@ Les graphiques confirment l'avantage decisif des SSMs pour les longues sequences
 - Pour le trading, cela signifie qu'on peut inclure des annees de contexte avec Mamba
 
 **Consequence pratique** : Avec Mamba, on peut modeliser des cycles economiques complets (3-5 ans) la ou un Transformer serait limite a quelques mois de données.",,,,,,,,5502e5ca76a3105d,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,475af7fe,markdown,fr,1e7d82ea11296fd8,"---
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,475af7fe,markdown,fr,1e7d82ea11296fd8,"---
 
 ## Partie 2 : Théorie des State Space Models (20 min)
 
@@ -29092,7 +29092,7 @@ $$y = x * \bar{K}$$
 où $\bar{K} = (C\bar{B}, C\bar{A}\bar{B}, C\bar{A}^2\bar{B}, ...)$ est le kernel SSM.
 
 **C'est la clé de la scalabilité O(n)** : on peut utiliser FFT pour calculer la convolution en O(n log n).",,,,,,,,1e7d82ea11296fd8,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,ae7dcca0,code,fr,270d2be6ceb2490f,"def demonstrate_ssm_concept():
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,ae7dcca0,code,fr,270d2be6ceb2490f,"def demonstrate_ssm_concept():
     """"""
     Démontre visuellement le concept de State Space Model.
     """"""
@@ -29169,7 +29169,7 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,ae7d
     print(""  - La matrice A contrôle la 'mémoire' (decay)"")
 
 demonstrate_ssm_concept()",,,,,,,,270d2be6ceb2490f,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,4233c830,markdown,fr,4b838dbeab8b81f1,"### Interpretation : Demonstration visuelle du SSM
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,4233c830,markdown,fr,4b838dbeab8b81f1,"### Interpretation : Demonstration visuelle du SSM
 
 Les graphiques illustrent le fonctionnement interne d'un State Space Model en action.
 
@@ -29189,7 +29189,7 @@ Les graphiques illustrent le fonctionnement interne d'un State Space Model en ac
 - La matrice A avec decay=0.95 assure une memoire stable sans divergence
 
 **Intuition** : Le SSM est comme un ensemble de filtres adaptatifs qui memorisent différentes echelles temporelles du signal d'entree.",,,,,,,,4b838dbeab8b81f1,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,ccea1b74,markdown,fr,6537b8695115dd85,"### S4 : Structured State Space Sequence (ICLR 2022)
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,ccea1b74,markdown,fr,6537b8695115dd85,"### S4 : Structured State Space Sequence (ICLR 2022)
 
 Le papier S4 de Gu et al. a résolu les problèmes de stabilité numérique des SSM avec :
 
@@ -29207,7 +29207,7 @@ $$A = -\frac{1}{2} + \text{low-rank}$$
 
 > *Ancre savante -- Gu, A., Goel, K. & Re, C. (2022), Efficiently Modeling Long Sequences with Structured State Spaces, ICLR 2022 (arXiv:2111.00396). (Papier S4 : representation NPLR + noyau de Cauchy via FFT, premier SSM competitif avec les Transformers sur les benchmarks Long Range Arena ; fonde l'initialisation HiPPO comme condition de stabilite.) Suite directe de HiPPO (Gu, Dao, Ermon, Rudra & Re 2020, arXiv:2008.07669).*
 ",,,,,,,,6537b8695115dd85,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,f5c52384,code,fr,146f56962f4c9618,"class S4Layer(nn.Module):
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,f5c52384,code,fr,146f56962f4c9618,"class S4Layer(nn.Module):
     """"""
     Simplified S4 Layer for educational purposes.
     
@@ -29327,7 +29327,7 @@ output = s4_layer(test_input)
 print(f""  Input shape: {test_input.shape}"")
 print(f""  Output shape: {output.shape}"")
 print(f""  Parameters: {sum(p.numel() for p in s4_layer.parameters()):,}"")",,,,,,,,146f56962f4c9618,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,3478a141,markdown,fr,e9f8c7e868a51d0b,"### Interpretation : Test de S4Layer
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,3478a141,markdown,fr,e9f8c7e868a51d0b,"### Interpretation : Test de S4Layer
 
 L'implementation simplifiee de S4 fonctionne correctement et preserve les dimensions d'entree/sortie.
 
@@ -29343,7 +29343,7 @@ L'implementation simplifiee de S4 fonctionne correctement et preserve les dimens
 - S4 reste le precurseur de Mamba, mais sans selectivite input-dependent
 
 **Limitation de S4** : Les matrices A, B, C sont fixes pour toute la sequence, ce qui limite l'adaptation au contexte. C'est ce que Mamba resout avec ses paramètres selectifs.",,,,,,,,e9f8c7e868a51d0b,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,dc423004,markdown,fr,e2f056ff30cc143b,"---
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,dc423004,markdown,fr,e2f056ff30cc143b,"---
 
 ## Partie 3 : De S4 à Mamba - Selective State Spaces (20 min)
 
@@ -29382,7 +29382,7 @@ Mamba utilise des optimisations GPU spécifiques :
 
 > *Ancre savante -- Gu, A. & Dao, T. (2023), Mamba: Linear-Time Sequence Modeling with Selective State Spaces (arXiv:2312.00752). (Innovation cle : rendre les matrices B, C et le pas Delta dependants de l'input -> state space model selectif, contexte-aware, complexite lineaire O(n) vs quadratique O(n^2) de l'attention ; scan parallele hardware-aware.) Generalise S4 (Gu, Goel & Re 2022) en levant la contrainte de matrices fixes.*
 ",,,,,,,,e2f056ff30cc143b,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,21ac35a0,code,fr,b577ff6d32cfe80e,"class MambaBlock(nn.Module):
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,21ac35a0,code,fr,b577ff6d32cfe80e,"class MambaBlock(nn.Module):
     """"""
     Mamba Block - Selective State Space Model.
     
@@ -29559,7 +29559,7 @@ output = mamba_block(test_input)
 print(f""  Input shape: {test_input.shape}"")
 print(f""  Output shape: {output.shape}"")
 print(f""  Parameters: {sum(p.numel() for p in mamba_block.parameters()):,}"")",,,,,,,,b577ff6d32cfe80e,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,67096d4c,markdown,fr,66a1ca2a3b7b5399,"### Interpretation : Test du MambaBlock
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,67096d4c,markdown,fr,66a1ca2a3b7b5399,"### Interpretation : Test du MambaBlock
 
 L'implementation du MambaBlock fonctionne correctement avec les paramètres attendus.
 
@@ -29581,7 +29581,7 @@ L'implementation du MambaBlock fonctionne correctement avec les paramètres atte
 - La selectivite input-dependent permet d'ignorer le bruit dynamiquement
 - Le nombre de paramètres est comparable aux autres architectures
 - L'implementation est volontairement simplifiee (pas de parallel scan GPU)",,,,,,,,66a1ca2a3b7b5399,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,829b9031,markdown,fr,e2cd959aa2e62658,"---
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,829b9031,markdown,fr,e2cd959aa2e62658,"---
 
 ## Partie 4 : Implémentation Mamba Complète pour Trading (20 min)
 
@@ -29602,7 +29602,7 @@ Input (batch, seq_len, n_features)
            |
 Output (batch, 1)
 ```",,,,,,,,e2cd959aa2e62658,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,93402b45,code,fr,ca82d4ea05251285,"class MambaForTrading(nn.Module):
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,93402b45,code,fr,ca82d4ea05251285,"class MambaForTrading(nn.Module):
     """"""
     Mamba model for financial time series classification.
     
@@ -29702,7 +29702,7 @@ print(f""  Total parameters: {sum(p.numel() for p in model.parameters()):,}"")
 # Comparer avec un Transformer équivalent
 print(f""\n  Note: Un Transformer équivalent aurait ~2x plus de paramètres"")
 print(f""  et une complexité O(n²) au lieu de O(n)"")",,,,,,,,ca82d4ea05251285,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,7e2f6f9c,markdown,fr,9aef93e304f1e4fa,"### Interpretation : Modèle complet pour trading
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,7e2f6f9c,markdown,fr,9aef93e304f1e4fa,"### Interpretation : Modèle complet pour trading
 
 Le modèle MambaForTrading assemble tous les composants dans une architecture de bout en bout.
 
@@ -29724,7 +29724,7 @@ Le modèle MambaForTrading assemble tous les composants dans une architecture de
 - La complexite reste O(n) même avec plusieurs couches Mamba empilees
 
 Cette architecture est maintenant prete pour l'entrainement sur des données de trading.",,,,,,,,9aef93e304f1e4fa,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,151c464e,code,fr,84e51c460c630f00,"# Générer des données de trading synthétiques
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,151c464e,code,fr,84e51c460c630f00,"# Générer des données de trading synthétiques
 def generate_trading_data(n_samples=2000, seq_length=60, n_features=5):
     """"""
     Génère des données synthétiques de trading.
@@ -29808,7 +29808,7 @@ train_dataset = TensorDataset(X_train_t, y_train_t)
 val_dataset = TensorDataset(X_val_t, y_val_t)
 train_loader = DataLoader(train_dataset, batch_size=64, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=64, shuffle=False)",,,,,,,,84e51c460c630f00,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,1bf45e8b,markdown,fr,437162ce76b6a89a,"### Preparation des données d'entrainement
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,1bf45e8b,markdown,fr,437162ce76b6a89a,"### Preparation des données d'entrainement
 
 Avant d'entrainer le modèle, nous allons generer des données synthetiques de trading realistes.
 
@@ -29825,7 +29825,7 @@ Avant d'entrainer le modèle, nous allons generer des données synthetiques de t
 - Permet de valider l'architecture avant d'utiliser des vraies données
 
 Le code suivant genere ces données et prepare les DataLoaders PyTorch pour l'entrainement.",,,,,,,,437162ce76b6a89a,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,f24434f2,code,fr,a565a0eae87dec08,"def train_mamba_model(model, train_loader, val_loader, epochs=20, lr=0.001):
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,f24434f2,code,fr,a565a0eae87dec08,"def train_mamba_model(model, train_loader, val_loader, epochs=20, lr=0.001):
     """"""
     Entraîne le modèle Mamba.
     """"""
@@ -29932,8 +29932,8 @@ mamba_model, history = train_mamba_model(
     epochs=20,
     lr=0.001
 )",,,,,,,,a565a0eae87dec08,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,a83c3bee,markdown,fr,19793a16d3895262,On configure ici l'architecture du Transformer avec les mécanismes d'attention multi-têtes pour la prédiction de séries temporelles financières.,,,,,,,,19793a16d3895262,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,f01c0292,code,fr,8ca6dd977bd2ded8,"# Visualiser l'entraînement
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,a83c3bee,markdown,fr,19793a16d3895262,On configure ici l'architecture du Transformer avec les mécanismes d'attention multi-têtes pour la prédiction de séries temporelles financières.,,,,,,,,19793a16d3895262,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,f01c0292,code,fr,8ca6dd977bd2ded8,"# Visualiser l'entraînement
 fig, axes = plt.subplots(1, 2, figsize=(14, 4))
 
 # Loss
@@ -29969,7 +29969,7 @@ print(""\nÉvaluation sur le test set:"")
 print(f""  Accuracy: {accuracy_score(y_test, y_pred):.2%}"")
 print(f""\nClassification Report:"")
 print(classification_report(y_test, y_pred, target_names=['Down', 'Up']))",,,,,,,,8ca6dd977bd2ded8,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,cc284339,markdown,fr,b4cee99c500a43d7,"### Interpretation : Résultats d'entrainement Mamba
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,cc284339,markdown,fr,b4cee99c500a43d7,"### Interpretation : Résultats d'entrainement Mamba
 
 Les courbes d'entrainement montrent une convergence saine du modèle Mamba.
 
@@ -29989,7 +29989,7 @@ Les courbes d'entrainement montrent une convergence saine du modèle Mamba.
 - La stabilite de l'entrainement confirme la robustesse de l'architecture Mamba
 
 > **Note technique** : Le classification report montre un equilibre entre precision et recall, important pour eviter les biais directionnels dans le trading.",,,,,,,,b4cee99c500a43d7,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,1143c2d5,markdown,fr,1611b3998b55ed77,"---
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,1143c2d5,markdown,fr,1611b3998b55ed77,"---
 
 ## Partie 5 : SST Hybrid - Mamba + Transformer (15 min)
 
@@ -30016,7 +30016,7 @@ Input
                                  |
                             Output
 ```",,,,,,,,1611b3998b55ed77,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,52359092,code,fr,5c0e08bcefd07b96,"class LocalAttention(nn.Module):
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,52359092,code,fr,5c0e08bcefd07b96,"class LocalAttention(nn.Module):
     """"""
     Local (windowed) attention for short-range patterns.
     
@@ -30200,7 +30200,7 @@ output = sst_model(test_input)
 print(f""  Input shape: {test_input.shape}"")
 print(f""  Output shape: {output.shape}"")
 print(f""  Parameters: {sum(p.numel() for p in sst_model.parameters()):,}"")",,,,,,,,5c0e08bcefd07b96,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,5c19bcf9,markdown,fr,856599d2b3cdb90d,"### Interpretation : Architecture SST Hybrid
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,5c19bcf9,markdown,fr,856599d2b3cdb90d,"### Interpretation : Architecture SST Hybrid
 
 Le modèle SST combine avec succes Mamba et Local Attention dans une architecture hybride.
 
@@ -30219,7 +30219,7 @@ Le modèle SST combine avec succes Mamba et Local Attention dans une architectur
 - Le gating apprend automatiquement le poids relatif de chaque branche (long-range vs short-range)
 
 **Avantage attendu** : Meilleure capture des patterns multi-echelle (tendances longues + retournements courts).",,,,,,,,856599d2b3cdb90d,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,5141a091,markdown,fr,0e467e2773bd0e93,"---
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,5141a091,markdown,fr,0e467e2773bd0e93,"---
 
 ## Partie 6 : Comparaison LSTM vs Transformer vs Mamba (10 min)
 
@@ -30227,7 +30227,7 @@ MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,5141
 
 > *Ancre savante -- Hochreiter, S. & Schmidhuber, J. (1997), Long Short-Term Memory, Neural Computation 9(8):1735-1780. DOI 10.1162/neco.1997.9.8.1735. (Architecture LSTM a portes forget/input/output, resout le vanishing-gradient des RNN classiques sur les longues sequences ; baseline recurrente de la comparaison LSTM vs Transformer vs Mamba ci-dessous. Vaswani et al. 2017 / Gu & Dao 2023 sont ancrees dans les Parties 1 et 3.)*
 ",,,,,,,,0e467e2773bd0e93,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,a458e762,markdown,fr,54bfca1247159ec9,"### Preparation du benchmark
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,a458e762,markdown,fr,54bfca1247159ec9,"### Preparation du benchmark
 
 Nous allons maintenant comparer 4 architectures sur les mêmes données de trading :
 
@@ -30242,7 +30242,7 @@ Chaque modèle sera entraine pendant 15 epochs sur le même train/validation set
 - Nombre de paramètres (taille du modèle)
 - Temps d'entrainement (efficacite computationnelle)
 - Accuracy sur le test set (performance)",,,,,,,,54bfca1247159ec9,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,37c2a9bd,code,fr,3df84bf029b4a818,"class LSTMBaseline(nn.Module):
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,37c2a9bd,code,fr,3df84bf029b4a818,"class LSTMBaseline(nn.Module):
     """"""LSTM baseline pour comparaison.""""""
     def __init__(self, n_features, hidden_size=32, n_layers=2, dropout=0.1):
         super().__init__()
@@ -30345,8 +30345,8 @@ models = {
 # Benchmark
 print(""Benchmark des architectures..."")
 results_df = benchmark_models(models, train_loader, val_loader, X_test, y_test, epochs=15)",,,,,,,,3df84bf029b4a818,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,2580e6ee,markdown,fr,63b8125c3051662c,On entraîne le modèle Transformer sur les données historiques de marché et on évalue sa capacité à capturer les dépendances à long terme.,,,,,,,,63b8125c3051662c,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,942b3962,code,fr,84b5752b289b26dc,"# Visualiser les résultats
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,2580e6ee,markdown,fr,63b8125c3051662c,On entraîne le modèle Transformer sur les données historiques de marché et on évalue sa capacité à capturer les dépendances à long terme.,,,,,,,,63b8125c3051662c,,,,,,,,
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,942b3962,code,fr,84b5752b289b26dc,"# Visualiser les résultats
 print(""\n"" + ""=""*60)
 print(""RÉSULTATS DU BENCHMARK"")
 print(""=""*60)
@@ -30388,7 +30388,7 @@ print(""  - Mamba offre un bon compromis paramètres/performance"")
 print(""  - SST Hybrid capture à la fois long-range et short-range patterns"")
 print(""  - Sur des séquences plus longues (>256), Mamba surpasserait le Transformer"")
 print(""  - LSTM reste compétitif sur séquences courtes"")",,,,,,,,84b5752b289b26dc,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,ea82a7bf,markdown,fr,405606ba3c467f85,"---
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,ea82a7bf,markdown,fr,405606ba3c467f85,"---
 
 ## Partie 7 : Intégration QuantConnect (15 min)
 
@@ -30408,7 +30408,7 @@ QUANTCONNECT CLOUD (CPU)
 ├── Inférence quotidienne (~50ms)
 └── Générer signaux de trading
 ```",,,,,,,,405606ba3c467f85,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,7193495f,code,fr,00a86619c23189bc,"# Sauvegarder le modèle pour QuantConnect
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,7193495f,code,fr,00a86619c23189bc,"# Sauvegarder le modèle pour QuantConnect
 import io
 
 # Sauvegarder state_dict
@@ -30422,7 +30422,7 @@ print(f""Compatible ObjectStore: {'Oui' if model_size < 9 * 1024 * 1024 else 'No
 # Sauvegarder localement pour test
 torch.save(mamba_model.state_dict(), 'mamba_trading_model.pt')
 print(""\nModèle sauvegardé: mamba_trading_model.pt"")",,,,,,,,00a86619c23189bc,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,ef74f6a8,markdown,fr,a291b135c76100ae,"### Interpretation : Sauvegarde du modèle
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,ef74f6a8,markdown,fr,a291b135c76100ae,"### Interpretation : Sauvegarde du modèle
 
 Le modèle Mamba entraine pese moins de 100 KB, ce qui est très largement compatible avec les 9 MB autorises par ObjectStore QuantConnect.
 
@@ -30433,7 +30433,7 @@ Le modèle Mamba entraine pese moins de 100 KB, ce qui est très largement compa
 - Le fichier `.pt` contient uniquement les poids (state_dict), pas l'architecture
 
 **Prochaine étape** : Integration dans une stratégie QuantConnect avec chargement depuis ObjectStore.",,,,,,,,a291b135c76100ae,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,258b7799,code,fr,76ed41679817c166,"# [REFERENCE QC] Code a copier dans main.py QC Lab (non executable ici)
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,258b7799,code,fr,76ed41679817c166,"# [REFERENCE QC] Code a copier dans main.py QC Lab (non executable ici)
 # Code QuantConnect pour Mamba Trading Strategy
 qc_mamba_strategy = '''
 from AlgorithmImports import *
@@ -30729,7 +30729,7 @@ Avantages vs Transformer:
   - Moins de mémoire GPU/CPU
   - Comparable en performance sur séquences courtes
 """""")",,,,,,,,76ed41679817c166,,,,,,,,
-MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-Attention-Transformers.ipynb,b8efdbe7,markdown,fr,22925d39624fd52a,"---
+MyIA.AI.Notebooks/QuantConnect/Python/QC-Py-23-State-Space-Models.ipynb,b8efdbe7,markdown,fr,22925d39624fd52a,"---
 
 ## Conclusion et Prochaines Étapes
 
