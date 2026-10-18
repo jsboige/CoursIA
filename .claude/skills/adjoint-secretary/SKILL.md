@@ -58,8 +58,8 @@ Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures, reviews `APP
 3. **Mesurer le quota** sur les en-têtes d'un vrai appel (item 21), GraphQL et REST `core` séparément.
 4. **Lister le pool** en une requête GraphQL paginée (item 2) et en tirer la file : PRs ouvertes, hors brouillon, sans dossier vivant d'une autre lane. Ordre :
    1. les PRs nommées par ai-01 ou par le titulaire ;
-   2. les PRs hors harnais et hors DEEP, du plus ancien au plus récent : une fois approuvées par ai-01, `merge_ready` les merge sans attendre son cycle ;
-   3. les PRs de harnais et DEEP.
+   2. les PRs hors harnais (`DEEP` et hors flotte `claude/*` compris depuis le 2026-10-19, Q131), du plus ancien au plus récent : une fois approuvées par ai-01, `merge_ready` les merge sans attendre son cycle ;
+   3. les PRs de harnais.
 5. **Annoncer le lot** (numéros) sur `workspace-CoursIA-3` avant de le traiter : le titulaire ne stampe pas les mêmes PRs (item 13).
 6. **Pour chaque PR du lot** :
    1. `check_adjoint_prevalidation.py N` : rc=0 ou rc=3 sous une autre lane, passer à la suivante ;
