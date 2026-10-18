@@ -742,3 +742,120 @@ def test_compare_gates_a_banner_that_replaces_a_render():
     assert rows[0]["regressed"] is True
     assert rows[0]["classes"]["TOOL_FAILURE"]["delta"] == 1
     assert rows[0]["classes"]["DECLARED_FALLBACK"]["delta"] == 0
+
+
+# ---------------------------------------------------------------------------
+# #20120 : texte de programme affiche vs chemin emis par le runtime.
+# Calibration de l'issue : deux carnets Aspire affichent le source AppHost
+# qu'ils generent, et le chemin de montage y est un argument litteral d'appel
+# (faux positifs, doivent sortir de MACHINE_PATH) ; le carnet Orleans affiche
+# une valeur emise par le runtime (controle positif, doit rester signale).
+# Lignes verbatim des sorties committees.
+# ---------------------------------------------------------------------------
+
+ASPIRE_LINE = (
+    '.WithBindMount(Path.Combine(Environment.GetFolderPath('
+    'Environment.SpecialFolder.UserProfile), ".cache/huggingface"), '
+    '"/home/appuser/.cache/huggingface")')
+ORLEANS_LINE = ("Content root path: /home/user/wt-aspire/MyIA.AI.Notebooks/"
+                "GenAI/Integrations-DotNet/Orleans/OrleansAspireLab")
+
+
+def test_20120_aspire_program_literal_exempted():
+    got = scan(nb(cell("print(x)", ASPIRE_LINE)))
+
+    assert got["MACHINE_PATH"] == []
+    assert [m for _, m in got["PROGRAM_LITERAL"]] == ["/home/appuser/"]
+
+
+def test_20120_orleans_runtime_control_still_flagged():
+    got = scan(nb(cell("print(x)", ORLEANS_LINE)))
+
+    assert [m for _, m in got["MACHINE_PATH"]] == ["/home/user/"]
+    assert got["PROGRAM_LITERAL"] == []
+
+
+def test_20120_runtime_shapes_stay_flagged():
+    # Formes d'emission runtime : jamais exemptees. Chacune porte un chemin
+    # cite (prose, repr, argument nomme, JSON, parenthese, couples, Windows).
+    for line in (
+            'Serving from "/home/alice/CoursIA/x"',
+            "No such file or directory: '/home/alice/CoursIA/x.csv'",
+            'Config(path="/home/alice/CoursIA/x")',
+            '{"path": "/home/alice/CoursIA/x", "n": 1}',
+            'error: cannot open file ("/home/alice/CoursIA/x")',
+            "[('cwd', \"/home/alice/CoursIA/x\"), ('n', 1)]",
+            "Output written to D:\\dev\\CoursIA\\out.txt"):
+        got = scan(nb(cell("print(x)", line)))
+        assert len(got["MACHINE_PATH"]) == 1, line
+        assert got["PROGRAM_LITERAL"] == [], line
+
+
+def test_20120_traceback_runtime_path_still_flagged():
+    trace = ('Traceback (most recent call last):\n'
+             '  File "/home/alice/CoursIA/run.py", line 3, in <module>\n'
+             '    main()\n'
+             "FileNotFoundError: [Errno 2] No such file or directory: "
+             "'/home/alice/CoursIA/data.csv'")
+    got = scan(nb(cell("main()", trace)))
+
+    assert len(got["MACHINE_PATH"]) == 2
+    assert got["PROGRAM_LITERAL"] == []
+
+
+def test_20120_code_comment_path_stays_flagged():
+    # Borne assumee dans l'autre sens : un chemin dans un commentaire affiche
+    # n'est pas un littéral d'appel. Il reste signale (faux positif conserve).
+    got = scan(nb(cell("print(x)", '# chemin: "/home/alice/CoursIA/x"')))
+
+    assert len(got["MACHINE_PATH"]) == 1
+
+
+def test_20120_positional_call_echo_is_known_exempt_bound():
+    # Borne connue, epinglee pour qu'elle reste visible : un echo runtime qui
+    # reproduit un appel positionnel (`Config("/home/...")`) a la forme du
+    # texte de programme et est exempte. Aucune occurrence dans le corpus.
+    got = scan(nb(cell("print(x)", 'Config("/home/alice/CoursIA/x")')))
+
+    assert got["MACHINE_PATH"] == []
+    assert len(got["PROGRAM_LITERAL"]) == 1
+
+
+def test_20120_windows_call_literal_follows_the_same_rule():
+    # La regle porte sur les quatre formes de chemin, pas sur /home seul :
+    # un littéral Windows d'appel affiche est du texte de programme aussi.
+    line = 'Path.Combine("D:\\\\dev\\\\CoursIA", "x")'
+    got = scan(nb(cell("print(x)", line)))
+
+    assert got["MACHINE_PATH"] == []
+    assert len(got["PROGRAM_LITERAL"]) == 1
+
+
+def test_20120_metadata_is_not_exempted():
+    # L'exemption ne touche que les sorties affichees, jamais les metadata.
+    got = scan({"cells": [], "metadata": {
+        "cfg": 'Config(a, "/home/alice/CoursIA/x")'}})
+
+    assert len(got["MACHINE_PATH"]) == 1
+    assert got["PROGRAM_LITERAL"] == []
+
+
+def test_20120_compare_gate_still_fires_on_runtime_path_only():
+    # Bout en bout : le ratchet reste rouge sur un chemin runtime ajoute, et
+    # reste silencieux sur un littéral de programme ajoute (pas de
+    # regression).
+    from check_output_failure_text import compare
+    import check_output_failure_text as m
+
+    empty = {"cells": []}
+    orig = m.read_notebook_at
+    try:
+        for head_line, expected in ((ORLEANS_LINE, True),
+                                    (ASPIRE_LINE, False)):
+            head_nb = nb(cell("print(x)", head_line))
+            m.read_notebook_at = lambda ref, path, cwd=None, _h=head_nb: (
+                empty if ref == "b" else _h)
+            rows = compare("b", "h", ["nb.ipynb"])
+            assert rows[0]["regressed"] is expected, head_line
+    finally:
+        m.read_notebook_at = orig
