@@ -1937,6 +1937,15 @@ def test_stop_cli_inspect_then_yes_kills_real_process():
 # recover — recuperation apres crash (case 8 volet 2b)
 # ---------------------------------------------------------------------------
 
+# PID « vivant » fictif : vivant seulement par le monkeypatch de
+# _with_recover_env. Le sous-processus CLI de test_recover_cli_inspect_then_yes
+# le lit sans monkeypatch et doit le voir MORT : un petit PID (l'ancien 111)
+# existe souvent dans un conteneur de runner, et le test rougissait alors
+# (stale de longueur 1, run 39124191907). Au-dela de pid_max Linux (4194304)
+# et non multiple de 4 (jamais un PID Windows), il n'existe nulle part.
+FAKE_LIVE_PID = 999999998
+
+
 def _recover_state(state: Path) -> None:
     """Etat residuel post-crash sur les TROIS familles : pour chacune, un
     item mort de notre host (recuperable), un vivant (travail actif), un
@@ -1948,7 +1957,7 @@ def _recover_state(state: Path) -> None:
         (directory / f"{name}-dead.json").write_text(json.dumps(
             {"pid": DEAD_PID, "host": le.host_id()}), encoding="utf-8")
         (directory / f"{name}-live.json").write_text(json.dumps(
-            {"pid": 111, "host": le.host_id()}), encoding="utf-8")
+            {"pid": FAKE_LIVE_PID, "host": le.host_id()}), encoding="utf-8")
         (directory / f"{name}-foreign.json").write_text(json.dumps(
             {"pid": 1, "host": "autre-machine/nt"}), encoding="utf-8")
         (directory / f"{name}-corrupt.json").write_text("{illisible",
@@ -1958,7 +1967,7 @@ def _recover_state(state: Path) -> None:
 def _with_recover_env(state: Path, fn):
     saved_env = os.environ.get("LEAN_EXEC_STATE_DIR")
     saved_alive = le.pid_alive
-    le.pid_alive = lambda pid: pid == 111
+    le.pid_alive = lambda pid: pid == FAKE_LIVE_PID
     os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
     try:
         return fn()
