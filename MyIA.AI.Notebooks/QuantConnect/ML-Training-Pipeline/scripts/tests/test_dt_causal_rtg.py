@@ -23,8 +23,8 @@ torch = pytest.importorskip("torch")
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from ablation_rtg_leak import (  # noqa: E402
-    causal_condition_actions, causal_eval_returns, realized_rtg_rows,
-    run_condition_c, score_actions, simulate_dt_portfolio,
+    causal_condition_actions, causal_eval_returns, count_trades,
+    realized_rtg_rows, run_condition_c, score_actions, simulate_dt_portfolio,
 )
 from train_rl_dt import (  # noqa: E402
     DecisionTransformerModel, build_trajectories, evaluate_dt,
@@ -175,6 +175,30 @@ def test_condition_c_scores_the_returns_it_is_given():
                             commission_bps=COMMISSION_BPS, seed=7)
     assert first == again
     assert first["n_preds"] == len(returns)
+
+
+@pytest.mark.parametrize("actions, expected", [
+    ([0, 1, 0, 0], 1),      # un achat isole entre deux attentes : 1 changement
+    ([1, 1, 1, 0], 1),      # achats repetes en position longue : rien de plus
+    ([2, 0, 2, 0], 0),      # deja a plat : aucune commission
+    ([1, 0, 2, 1], 3),      # entree, sortie, re-entree
+])
+def test_count_trades_counts_position_changes(actions, expected):
+    actions = np.array(actions)
+    assert count_trades(actions) == expected
+    # Une commission par changement de position, pas par etiquette.
+    out = simulate_dt_portfolio(actions, np.zeros(len(actions)),
+                                commission_bps=COMMISSION_BPS)
+    assert -out.sum() == pytest.approx(expected * COMMISSION_BPS / 10000.0)
+
+
+def test_condition_c_matches_the_target_in_position_changes():
+    returns = np.random.default_rng(5).normal(0.0, 0.01, 2000)
+    counts = [run_condition_c(returns, n_trades_target=100,
+                              commission_bps=COMMISSION_BPS, seed=s)["n_trades"]
+              for s in range(8)]
+    # Binomiale(2000, 0.05) : moyenne 100, ecart-type ~9,7.
+    assert abs(np.mean(counts) - 100) < 10
 
 
 def _eval_logits(model, prices, feats, rtg_per_step):

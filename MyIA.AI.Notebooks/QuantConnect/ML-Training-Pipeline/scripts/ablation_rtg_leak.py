@@ -141,6 +141,30 @@ def simulate_dt_portfolio(
     return portfolio_returns
 
 
+def held_positions(actions: np.ndarray) -> np.ndarray:
+    """Position held after each action (1 = long, 0 = flat), starting flat."""
+    positions = np.zeros(len(actions), dtype=np.float64)
+    position = 0.0
+    for i, action in enumerate(actions):
+        if action == 1:
+            position = 1.0
+        elif action == 2:
+            position = 0.0
+        positions[i] = position
+    return positions
+
+
+def count_trades(actions: np.ndarray) -> int:
+    """Position changes, i.e. commissions ``simulate_dt_portfolio`` charges.
+
+    Before #21187 the ablation counted action-label changes: a lone buy
+    between two holds counted twice though it moves the position once, and a
+    buy issued while already long counted though it moves nothing.
+    """
+    positions = held_positions(actions)
+    return int(np.sum(np.diff(np.concatenate([[0.0], positions])) != 0))
+
+
 def score_actions(
     actions: np.ndarray,
     returns: np.ndarray,
@@ -154,7 +178,7 @@ def score_actions(
     sharpe_bh = compute_sharpe(returns)
     # Direction accuracy: a long call is right when the return it drives is up.
     auc = float(((actions == 1) == (returns > 0)).mean()) if len(actions) else 0.5
-    n_trades = int(np.sum(np.diff(actions) != 0))
+    n_trades = count_trades(actions)
     return {
         "sharpe_dt": round(sharpe_dt, 4),
         "sharpe_bh": round(sharpe_bh, 4),
@@ -343,11 +367,16 @@ def run_condition_c(
     even with ZERO directional skill (volatility reduction).
 
     Method:
-        1. Compute target trade count from condition A (n_trades_target).
+        1. Compute target trade count from condition A (n_trades_target),
+           counted as position changes (``count_trades``).
         2. Compute target trade probability = n_trades_target / n_preds.
-        3. At each timestep, with that probability, randomly choose
-           action 1 (buy) or 2 (flat). Otherwise hold current position.
+        3. At each timestep, with that probability, flip the position
+           (buy when flat, go flat when long). Otherwise hold.
         4. Score these actions on the returns of conditions A and B.
+
+    Before #21187 a trade event drew long or flat at random, so about half
+    the events left the position unchanged, and the target and the reported
+    count were action-label changes: A and C were not matched in trades.
     """
     rng = np.random.RandomState(seed + 1000)  # offset seed to decorrelate
     n_preds = len(returns)
@@ -360,11 +389,11 @@ def run_condition_c(
 
     # Generate random actions
     random_actions = np.zeros(n_preds, dtype=np.int64)
+    position = 0
     for i in range(1, n_preds):
         if rng.random() < trade_prob:
-            # Randomly choose to go long or flat
-            new_pos = rng.choice([0, 1])
-            random_actions[i] = 1 if new_pos == 1 else 2  # buy / flat (sell)
+            position = 1 - position
+            random_actions[i] = 1 if position == 1 else 2  # buy / flat (sell)
         else:
             random_actions[i] = 0  # hold
 
