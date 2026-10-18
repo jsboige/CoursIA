@@ -43,7 +43,8 @@ La production des lanes et la digestion (CI, reviews, merges) sont **deux pipeli
 - **Aucun de mes messages n'est un prealable (HARD).** Une reserve s'attache a la candidate et **me** revient a executer (#15463).
 - **Deux nombres AVANT la premiere lecture de fichier du depot (HARD).** Inbox non-lus (`deep:true`) + PRs en attente de mon merge.
 - **Un rouge = requete sur ma file, jamais enquete.** #15828.
-- ai-01 delegue a l'adjoint : preflights B.0/exact-head, relectures post-fix, recalculs. **Objectif : >=20 dossiers READY/4 h quand >=20 eligibles** (`check_adjoint_prevalidation.py --queue` #16480).
+- ai-01 delegue a l'adjoint : preflights B.0/exact-head, relectures post-fix, recalculs. **Objectif : >=20 dossiers READY/4 h quand >=20 eligibles** (`check_adjoint_prevalidation.py --queue` #16480). **Ordre du cycle** (reponse user 2026-10-09, option c -- [PR #19980](https://github.com/jsboige/CoursIA/pull/19980#issuecomment-6076750742)) : (1) consommer d'abord, en quelques minutes et sans investigation, la file des PRs deja READY a la tete exacte (`--queue` puis `--consume`) ; (2) puis dispatcher (Phase 3 complete, lanes nourries) ; (3) puis le reste des merges et des lectures longues.
+- **Le travail des bots se consomme, ou il ne sert a rien.** Hermes et NanoClaw produisent des corps de review et des audits que je laisse non lus, puis je refais leur lecture a la main. Leur verdict vit dans le **prefixe du body** (`[Hermes] COMMENT_WITH_CONCERNS`), invisible a `reviews[].state` : les lire est la condition pour que leur travail existe. Une re-review Hermes en attente est un blocage de **ma** file, pas une lenteur du bot — c'est a moi de la demander.
 - Une candidate prete n'attend pas le cron suivant : merger des qu'elle est sure. B.0, H.4 et G-VAR restent inchanges.
 
 ## Regle 1 : ai-01 merge activement sous `myia-ai-01`
@@ -89,7 +90,7 @@ Incident 2026-06-16 + rollouts LIVE (#3973, #4212, #3870, #2876, #2161) : [§2.4
 **L'idle est un echec COORDINATEUR, jamais worker**. Un steer poste sur l'intercom (auto-condense), redige depuis un status condense, ou qui defere les design-gates = **phantom**. Chaque cycle, par lane :
 
 1. **DIRECT MESSAGE** (`roosync_messages send`/`reply`), pas seulement dashboard — le worker lit `inbox status:unread` en premier, et le DM survit a la condensation.
-2. **Grounder chaque grain firsthand AVANT de dispatcher** (`gh issue view N` / `gh pr view N`). Worker firsthand-sature → **le croire**, fournir un grain HORS scope.
+2. **Grounder chaque grain firsthand AVANT de dispatcher** (`gh issue view N` / `gh pr view N`), jamais depuis le status condense. Un steer qui pointe une issue CLOSED / une PR mergee / un rollout sature = phantom. Worker firsthand-sature → **le croire**, fournir un grain HORS scope. **Un body d'issue est date de sa redaction, pas de sa lecture** : `gh issue view N` est un status condense de plus des qu'un merge est passe apres. Grounder = lire l'**artefact** (`git log -- <fichier>` + le fichier sur `main` courant) **et** le **plateau** (`gh pr list` sur le chemin), pas le body seul.
 3. **DECIDER les design-gates, ne pas deferer** : greenlight nomme + acceptance dans le cycle.
 4. **Familles matures = fallback perenne epuisable** → (a) CREATION SUBSTANTIELLE stockee en avance ; (b) DIVERSITE DU BACKLOG en souffrance — piocher une tranche concrete par cycle, varier genres ET familles.
 
