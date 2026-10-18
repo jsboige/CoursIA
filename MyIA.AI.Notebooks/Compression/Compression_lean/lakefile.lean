@@ -27,9 +27,13 @@ préfixe, somme de Kraft ≤ 1, arbre complet de profondeur k (2^k feuilles,
 Kraft = 1 exactement), ancres numériques des carnets Python frères (sibling
 EN : `PrefixCodes_en`) ; `Decode` — décodage préfixe et table de décodage
 (pli 2 de #18706) : un pas de décodage le long de l'arbre, correction et
-complétude du pas, décodage complet du flux, théorème de round-trip. -/
+complétude du pas, décodage complet du flux, théorème de round-trip ;
+`McMillan` — réciproque de Kraft, sens réalisation (pli 3 de #18706) :
+code canonique construit depuis une bande de longueurs admissible,
+préfixe-liberté et longueurs exactes via l'invariant de masse à l'échelle
+`2 ^ L`. -/
 @[default_target]
 lean_lib «PrefixCodes» where
   -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`) :
   -- pas de `.submodules`, cf la note `MathUniverse` de `learning_theory_lean`.
-  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode]
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan]
