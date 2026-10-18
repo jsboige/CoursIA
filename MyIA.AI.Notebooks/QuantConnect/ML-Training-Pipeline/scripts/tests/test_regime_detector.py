@@ -491,6 +491,87 @@ class TestGaussianHMM:
 
 
 # ---------------------------------------------------------------------------
+# Decoding causality tests (#21054 case 2): viterbi is retrospective,
+# mode="filter" is the causal forward-only decode for signal use.
+# ---------------------------------------------------------------------------
+
+
+class TestDecodeCausality:
+    @pytest.fixture
+    def hand_set_hmm(self):
+        """Two-state HMM with hand-set parameters (deterministic decode).
+
+        Emissions are weakly informative (sigma=4) so the globally most
+        likely path is driven by the sticky transition matrix, making the
+        end-backtracking sensitive to future observations.
+        """
+        hmm = GaussianHMM(n_states=2)
+        hmm.pi = np.array([0.5, 0.5])
+        hmm.A = np.array([[0.95, 0.05], [0.05, 0.95]])
+        hmm.mu = np.array([[0.0], [1.0]])
+        hmm.sig = np.array([[4.0], [4.0]])
+        return hmm
+
+    def test_filter_truncation_invariant_on_fitted(self):
+        """Filter decode of X[:t] equals the first t states of the decode
+        of X[:T] — the labels at t never depend on observations after t."""
+        rng = np.random.default_rng(42)
+        X = np.vstack([rng.normal(0.002, 0.01, (200, 2)),
+                       rng.normal(-0.003, 0.015, (200, 2))])
+        hmm = GaussianHMM(n_states=2, n_iter=50)
+        hmm.fit(X)
+        full = hmm.predict(X, mode="filter")
+        for t in (1, 2, 5, 50, 199, 350, 399):
+            truncated = hmm.predict(X[:t], mode="filter")
+            np.testing.assert_array_equal(truncated, full[:t])
+
+    def test_viterbi_label_depends_on_future_observation(self, hand_set_hmm):
+        """Witness of the look-ahead: appending one observation flips the
+        VITERBI label at t=0 (0 -> 1 via end-backtracking), while the
+        filter label at t=0 stays 0."""
+        X = np.array([[0.0], [1.2]])
+        # Truncated series: only x=0 observed, emission favors state 0.
+        assert hand_set_hmm.predict(X[:1])[0] == 0
+        # Full series: the future observation x=1.2 makes the sticky path
+        # ending in state 1 globally better, and the backtracking rewrites
+        # t=0 to state 1 — that label was NOT knowable at t=0.
+        assert hand_set_hmm.predict(X)[0] == 1
+        # Filter decode is unaffected by the appended observation.
+        assert hand_set_hmm.predict(X[:1], mode="filter")[0] == 0
+        assert hand_set_hmm.predict(X, mode="filter")[0] == 0
+
+    def test_filter_matches_argmax_forward(self, hand_set_hmm):
+        """Filter decode is exactly argmax of the forward probabilities."""
+        X = np.array([[0.0], [1.2], [0.4], [0.9], [0.1]])
+        log_emit = hand_set_hmm._log_emission(X)
+        alpha = hand_set_hmm._forward(log_emit)
+        expected = np.argmax(alpha, axis=1)
+        np.testing.assert_array_equal(hand_set_hmm.predict(X, mode="filter"), expected)
+
+    def test_predict_invalid_mode_raises(self, hand_set_hmm):
+        X = np.array([[0.0], [1.2]])
+        with pytest.raises(ValueError, match="mode"):
+            hand_set_hmm.predict(X, mode="smooth")
+
+    def test_detect_regimes_hmm_decode_mode_propagates(self):
+        rng = np.random.default_rng(42)
+        returns = rng.normal(0.0004, 0.01, 500)
+        prices = pd.Series(100 * np.cumprod(1 + returns))
+        default_result = detect_regimes_hmm(prices, n_states=3)
+        assert default_result.decode_mode == "viterbi"
+        filtered = detect_regimes_hmm(prices, n_states=3, decode_mode="filter")
+        assert filtered.decode_mode == "filter"
+        assert len(filtered.labels) == len(prices)
+
+    def test_detect_regimes_hmm_invalid_decode_mode_raises(self):
+        rng = np.random.default_rng(42)
+        returns = rng.normal(0.0004, 0.01, 500)
+        prices = pd.Series(100 * np.cumprod(1 + returns))
+        with pytest.raises(ValueError, match="mode"):
+            detect_regimes_hmm(prices, n_states=3, decode_mode="bogus")
+
+
+# ---------------------------------------------------------------------------
 # HMM regime detection (full pipeline) tests
 # ---------------------------------------------------------------------------
 

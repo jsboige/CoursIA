@@ -165,6 +165,7 @@ class HMMRegimeResult:
     log_likelihood: float       # Final log-likelihood
     n_states: int               # Number of HMM states
     transition_matrix: np.ndarray  # State transition probabilities
+    decode_mode: str = "viterbi"   # Decoding scheme used ("viterbi" or "filter")
 
 
 class GaussianHMM:
@@ -294,23 +295,45 @@ class GaussianHMM:
         self.log_likelihood_ = ll
         return self
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
-        """Decode most likely state sequence via Viterbi.
+    def predict(self, X: np.ndarray, mode: str = "viterbi") -> np.ndarray:
+        """Decode most likely state sequence.
 
         Parameters
         ----------
         X : np.ndarray, shape (T, D)
             Observation matrix.
+        mode : {"viterbi", "filter"}, default "viterbi"
+            "viterbi": globally most likely path (Viterbi with backtracking
+            from the final observation). RETROSPECTIVE ONLY — the state
+            decoded at t depends on observations strictly after t, so a
+            Viterbi label is NOT known at t and leaks future information
+            into any walk-forward or live signal built on it (#21054).
+            Kept as the default for backward compatibility of historical
+            analyses; do not use for signal generation.
+            "filter": forward-only decoding — the state at t is the argmax
+            over states of the forward probability p(z_t | x_0..t), so it
+            is a function of observations up to t only. This is the causal
+            mode for signal use (Hamilton-style filtered probabilities,
+            argmax instead of sum-product smoothing).
 
         Returns
         -------
         np.ndarray of int, shape (T,)
             Most likely state sequence.
         """
+        if mode not in ("viterbi", "filter"):
+            raise ValueError(f"mode must be 'viterbi' or 'filter', got {mode!r}")
+        log_emit = self._log_emission(X)
+
+        if mode == "filter":
+            # Forward-only: alpha[t, k] = log p(z_t=k, x_0..t) up to a
+            # per-t constant, so argmax_k alpha[t] is the filtered state.
+            alpha = self._forward(log_emit)
+            return np.argmax(alpha, axis=1)
+
         T = len(X)
         K = self.n_states
         log_A = np.log(self.A + 1e-300)
-        log_emit = self._log_emission(X)
 
         viterbi = np.zeros((T, K))
         backptr = np.zeros((T, K), dtype=int)
@@ -334,6 +357,7 @@ def detect_regimes_hmm(
     n_states: int = 3,
     lookback: int = 400,
     min_samples: int = 80,
+    decode_mode: str = "viterbi",
 ) -> HMMRegimeResult:
     """Detect market regimes using Gaussian HMM on price features.
 
@@ -358,10 +382,18 @@ def detect_regimes_hmm(
         Maximum history to use for feature computation.
     min_samples : int
         Minimum samples required for fitting.
+    decode_mode : {"viterbi", "filter"}, default "viterbi"
+        Decoding scheme passed through to ``GaussianHMM.predict``.
+        CAUTION (#21054): ``"viterbi"`` (default, backward compatible) is
+        retrospective — the label at t depends on observations after t
+        via the end-backtracking, so it must not feed a walk-forward or
+        live signal. Use ``decode_mode="filter"`` when labels are
+        consumed as a known-at-t signal feature.
 
     Returns
     -------
-    HMMRegimeResult with labels, regime_names, and metadata.
+    HMMRegimeResult with labels, regime_names, and metadata
+    (``decode_mode`` echoes the scheme used).
     """
     original_prices = pd.Series(prices).reset_index(drop=True)
     original_len = len(original_prices)
@@ -380,6 +412,7 @@ def detect_regimes_hmm(
             log_likelihood=0.0,
             n_states=n_states,
             transition_matrix=np.eye(n_states),
+            decode_mode=decode_mode,
         )
 
     vol20 = np.array([ret[max(0, i - 19):i + 1].std() for i in range(n)])
@@ -398,7 +431,7 @@ def detect_regimes_hmm(
 
     hmm = GaussianHMM(n_states=n_states)
     hmm.fit(X_raw)
-    labels_raw = hmm.predict(X_raw)
+    labels_raw = hmm.predict(X_raw, mode=decode_mode)
 
     # Name states by mean return (column 0)
     state_means = []
@@ -430,6 +463,7 @@ def detect_regimes_hmm(
         log_likelihood=hmm.log_likelihood_,
         n_states=n_states,
         transition_matrix=hmm.A.copy(),
+        decode_mode=decode_mode,
     )
 
 

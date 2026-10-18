@@ -196,6 +196,9 @@ def _train_moe_panier(
                 continue
 
             prices = df["Close"].loc[common_idx]
+            # CAUTION (#21054): default HMM decode is Viterbi = retrospective;
+            # for regime-routed MoE evaluated walk-forward, decode_mode
+            # ="filter" (via method="hmm" kwargs) gives causal labels.
             regime_series = detect_regimes(prices, method=regime_method)
             regime_labels = regime_series.values
 
