@@ -163,10 +163,16 @@ def _execution_settings_for(kernel: Kernel, llm_service_id: str) -> Dict[str, An
     """Réglages d'exécution des agents, indexés par identifiant de service.
 
     Le helper partagé force ``reasoning_effort="none"`` pour les modèles qui
-    l'exigent (famille 5.6) et laisse les autres inchangés.
+    l'exigent (famille 5.6) et laisse les autres inchangés. Un service qui
+    n'expose pas ``get_prompt_execution_settings_class`` (doublon de test,
+    service hors connecteur SK) ne reçoit aucun réglage explicite : les agents
+    retombent alors sur les réglages par défaut, comme avant ce helper.
     """
     service = _resolve_service(kernel, llm_service_id)
-    settings = service.get_prompt_execution_settings_class()()
+    factory = getattr(service, "get_prompt_execution_settings_class", None)
+    if factory is None:
+        return {}
+    settings = factory()
     return {
         llm_service_id: apply_reasoning_none_for_function_tools(
             settings, getattr(service, "ai_model_id", None)
