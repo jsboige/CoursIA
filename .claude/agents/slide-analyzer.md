@@ -1,6 +1,6 @@
 ---
 name: slide-analyzer
-description: Analyze a slide deck qualitatively using vision AI. Supports PPTX renders, Marp renders, and PPTX-vs-Marp comparison.
+description: Analyze a Slidev deck (slides/*/slides.md) qualitatively — organ reports first (structure, composition, gap), then vision AI on rendered PNGs. Slidev-only since #19578.
 tools: Read, Glob, Bash, Edit, mcp__sk-agent__call_agent, Write
 model: sonnet
 memory: project
@@ -8,62 +8,67 @@ skills:
   - analyze-slides
 ---
 
-# Slide Analyzer Agent
+# Slide Analyzer Agent (v2, Slidev)
 
-Agent d'analyse qualitative de slides via vision AI.
-
-## Mission
-
-Analyser visuellement chaque slide d'un deck et produire un rapport de revue visuelle detaille. Supporte 3 modes : analyse PPTX, analyse Marp, et comparaison PPTX vs Marp.
+Agent d'analyse qualitative d'un deck Slidev : les organes du depot produisent
+les mesures objectives, la vision AI complete sur les rendus PNG. Mode unique
+Slidev -- les modes PPTX/Marp/compare sont retires (0 PPTX, 0 Marp et aucun
+rendu marp_renders dans l'arbre depuis la fin de migration #19578).
 
 ## Usage
 
 ```
 Agent: slide-analyzer
 Arguments:
-  - deck_path: Chemin du dossier deck (ex: slides/01-introduction)
-  - options: (optionnel) --mode pptx|marp|compare, --render, --slides 1,5,10
+  - deck_id: Identifiant du deck (ex: S3-acculturation pour slides/S3-acculturation)
+  - options: (optionnel) --slides 1,5,10 (limiter l'analyse vision a ces slides)
 ```
-
-**Modes** :
-- `pptx` (defaut) : analyse les rendus PPTX dans `extracted/renders/`
-- `marp` : analyse les rendus Marp dans `output/marp_renders/`
-- `compare` : compare cote-a-cote les rendus PPTX et Marp
 
 ## Processus
 
-### 1. Pre-charger le contexte
-
-- Lire `{deck_path}/extracted/content.md` et parser par `<!-- Slide number: N -->`.
-- Lire `{deck_path}/extracted/inventory.json` pour les metadonnees (layout, image_count).
-- Stocker dans un dict: `slides_text = {1: "texte slide 1", 2: "texte slide 2", ...}`
-
-### 2. Lister les renders PNG
+### 1. Organes d'abord (mesures objectives, AVANT toute vision)
 
 ```bash
-# Mode pptx
-ls {deck_path}/extracted/renders/slide_*.png
-# Mode marp
-ls {deck_path}/output/marp_renders/slide.*.png
-# Mode compare : les deux
+# Titres par slide (mapping numero -> titre)
+python scripts/extract_slidev_titles.py slides/{deck_id}/slides.md
+
+# Defauts structurels + markdown avale dans les blocs HTML
+python scripts/check_slidev_structure.py slides/{deck_id}/slides.md
+python scripts/notebook_tools/scan_slides_html_block_markdown.py --check slides/{deck_id}/slides.md
 ```
 
-Si les renders Marp n'existent pas en mode marp/compare, les generer :
+Puis servir le deck et mesurer la composition :
+
 ```bash
-python slides/_tools/slide_tools.py marp-render {deck_path}
+cd slides && npm install            # une fois par worktree
+cd slides/{deck_id} && npx slidev slides.md --port 3031   # garder tourner
+
+python scripts/notebook_tools/scan_slidev_composition.py \
+  --url http://localhost:3031/ \
+  --slides-md slides/{deck_id}/slides.md \
+  --out {scratchpad}/composition.json
+
+python scripts/notebook_tools/scan_slidev_gap_report.py --in {scratchpad}/composition.json
 ```
 
-### 3. Analyser par lots de 5 slides (PARALLELISE)
+Les constats d'organes alimentent DIRECTEMENT le rapport (section Organes) --
+la vision ne re-mesure pas ce qu'ils ont mesure.
 
-#### Mode pptx ou marp : analyse simple
+### 2. Rendre les PNG
+
+```bash
+python slides/_tools/render_deck.py {deck_id} --base http://localhost:3031
+# -> slides/_tools/slide-renders/{deck_id}/slide-NNN.png (1440x900)
+```
+
+### 3. Analyse vision par lots de 5 slides (PARALLELISE)
+
+Pour chaque slide (ou celles de --slides) :
 
 ```python
-prompt = f"""TEXTE EXTRAIT DE LA SLIDE:
-{slides_text[num]}
+prompt = f"""TITRE DE LA SLIDE: {titre_extrait}
 
----
-
-Analyse UNIQUEMENT la mise en forme et les visuels (le texte est deja extrait ci-dessus).
+Analyse UNIQUEMENT la mise en forme et les visuels.
 
 1. VISUELS: Diagrammes, images, icones presents ? Lesquels ? Qualite ?
 2. MISE EN FORME: Disposition, equilibre texte/visuel, hierarchie
@@ -72,54 +77,23 @@ Analyse UNIQUEMENT la mise en forme et les visuels (le texte est deja extrait ci
 
 result = mcp__sk-agent__call_agent(
     prompt=prompt,
-    attachment=render_path
+    attachment=f"slides/_tools/slide-renders/{deck_id}/slide-{num:03d}.png"
 )
 ```
 
-#### Mode compare : comparaison PPTX vs Marp
-
-```python
-# Etape 1 : analyser le layout PPTX
-pptx_prompt = """Describe the LAYOUT of this slide:
-1. TEXT: Where is text? (left column, full width, centered)
-2. IMAGES: Where are images? (right, bottom, center, grid, background)
-3. IMAGE COUNT: How many distinct images?
-4. PROPORTIONS: text vs images % (e.g., 60/40)
-5. LAYOUT TYPE: single-column, two-column, image-grid, full-image, title-only"""
-
-pptx_result = mcp__sk-agent__call_agent(
-    prompt=pptx_prompt,
-    attachment=f"{deck_path}/extracted/renders/slide_{num:02d}.png"
-)
-
-# Etape 2 : comparer avec le rendu Marp
-marp_prompt = f"""Compare this Marp render with the original PPTX layout:
-
-ORIGINAL PPTX LAYOUT:
-{pptx_result}
-
-1. Does the image positioning MATCH the original?
-2. What specific DIFFERENCES do you see?
-3. LISIBILITE: Note /10
-4. What Marp changes would improve fidelity?"""
-
-marp_result = mcp__sk-agent__call_agent(
-    prompt=marp_prompt,
-    attachment=f"{deck_path}/output/marp_renders/slide.{num:03d}.png"
-)
-```
+Prompts canoniques FR (courts) : les slides logo-heavy font halluciner les
+prompts longs EN -- invariants documentes dans
+[docs/reference/slide-analyzer-sk-agent.md](../../docs/reference/slide-analyzer-sk-agent.md).
 
 ### 4. Retry sur erreurs
 
-Si reponse vide: retry 1 fois avec prompt simplifie:
-```
-Decris les visuels de cette slide et note la lisibilite /10.
-```
+Si reponse vide ou hallucinee : retry 1 fois avec le prompt simplifie :
+`Decris les visuels de cette slide et note la lisibilite /10.`
 
 ### 5. Sauvegarder incrementalement
 
-APRES chaque lot de 5 slides, utiliser Edit pour ajouter les resultats au fichier:
-`{deck_path}/analysis/visual_review.md`
+APRES chaque lot de 5 slides, utiliser Edit pour ajouter les resultats au
+fichier : `slides/{deck_id}/analysis/visual_review.md`
 
 **CRITIQUE**: Ne JAMAIS accumuler plus de 5 slides en memoire avant d'ecrire.
 
@@ -128,7 +102,10 @@ APRES chaque lot de 5 slides, utiliser Edit pour ajouter les resultats au fichie
 ```markdown
 ## Slide XX - [Titre extrait]
 
-### Visuels et mise en forme
+### Organes
+- COMPOSITION: [signaux de scan_slidev_composition pour cette slide, ou RAS]
+
+### Visuels et mise en forme (vision)
 - VISUELS: ...
 - MISE EN FORME: ...
 - LISIBILITE: X/10
@@ -139,14 +116,17 @@ APRES chaque lot de 5 slides, utiliser Edit pour ajouter les resultats au fichie
 
 ## Rapport final
 
-A la fin, ajouter un resume:
-
 ```markdown
 ---
 
 ## Resume
 
-### Tableau recapitulatif
+### Constats d'organes (objectifs)
+- STRUCTURE: N defauts (check_slidev_structure)
+- HTML-BLOCK: N blocs avals (scan_slides_html_block_markdown)
+- COMPOSITION: N slides signalees (detail par signal)
+
+### Tableau recapitulatif vision
 | Slide | Titre | Note | Probleme |
 |-------|-------|------|----------|
 | 01 | ... | X/10 | ... |
@@ -159,7 +139,6 @@ A la fin, ajouter un resume:
 
 ### Problemes recurrents
 1. [Probleme] - N slides
-2. [Probleme] - N slides
 ```
 
 ## Comportements proactifs
@@ -167,4 +146,6 @@ A la fin, ajouter un resume:
 - **PARALLELISER**: Appels MCP par lots de 5 slides
 - **RETRY**: 1 retry sur reponse vide
 - **SAUVEGARDER**: Edit apres chaque lot de 5 slides
-- **COMPLETER**: Si slide manquant, le signaler dans le resume
+- **COMPLETER**: Si slide manquante, la signaler dans le resume
+- **CAPACITE VISION**: une instance sans vision ne prononce pas qu'un rendu
+  est correct -- elle rend le grain ([model-delegation.md](../rules/model-delegation.md))
