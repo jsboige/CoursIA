@@ -252,6 +252,21 @@ CONWAY_HASHLIFE_FILE = (
     CONWAY_DIR / "Conway" / "Life" / "HashlifeCorrectness.lean"
     if CONWAY_DIR.exists() else None
 )
+# ── Knots terrain (Epic #1453 « Ce qui reste » n.1 — first knot_lean DEMO) ──
+_KNOT_CANDIDATES = [
+    _workspace_relative("SymbolicAI/Lean/KNOTS/knot_lean"),
+    Path(r"C:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\KNOTS\knot_lean"),
+    Path(r"D:\dev\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\KNOTS\knot_lean"),
+    Path(r"d:\CoursIA\MyIA.AI.Notebooks\SymbolicAI\Lean\KNOTS\knot_lean"),
+]
+KNOT_DIR = next(
+    (p for p in _KNOT_CANDIDATES if p is not None and p.exists()),
+    _KNOT_CANDIDATES[0],
+)
+KNOT_SLICE_FILE = (
+    KNOT_DIR / "Knots" / "Slice.lean" if KNOT_DIR.exists() else None
+)
+KNOT_SLICE_IMPORTS = "import Knots.Slice\n"
 CONWAY_HASHLIFE_IMPORTS = """import Conway.Life
 import Conway.Life.GridCanonical
 import Conway.Life.MacroCell
@@ -2006,6 +2021,32 @@ DEMOS = {
             "LEAN_PROJECT must be conway_lean."
         ),
         "difficulty": "very_hard",
+    },
+    64: {
+        "name": "KNOT_CONWAY_NOT_SMOOTHLY_SLICE",
+        "file": str(KNOT_SLICE_FILE) if KNOT_SLICE_FILE else "",
+        "line": 82,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "conway_not_smoothly_slice",
+        "theorem": "conway_not_smoothly_slice",
+        "imports": KNOT_SLICE_IMPORTS,
+        "description": (
+            "First knot_lean DEMO (#1453 'Ce qui reste' n.1 — the EPIC's named\n"
+            "DEEP grain: BG iter against the knot_lean sorry terrain, which the\n"
+            "63 prior DEMOS never touched). Target: Piccirillo's theorem — the\n"
+            "Conway knot is not smoothly slice (Lean AI Leaderboard problem).\n"
+            "Statement is clean (single `exact sorry` at Slice.lean:85, no sorry\n"
+            "inside the statement). This target is NOT expected to close: the\n"
+            "proof needs 4-manifolds, Kirby calculus, Khovanov homology and the\n"
+            "Rasmussen s-invariant — none in Mathlib. Its value is exercising\n"
+            "the harness against genuinely hard targets: real multi-iteration\n"
+            "runs instead of the instant `already_solved` the calibrated\n"
+            "conway_lean DEMOS produce. Lean AI Leaderboard:\n"
+            "https://lean-lang.org/eval/problems/conway_knot_not_smoothly_slice/\n"
+            "Expected: max-iter exhausted without proof, diagnostic trace.\n"
+            "LEAN_PROJECT must be knot_lean."
+        ),
+        "difficulty": "open_problem",
     },
 }
 # (gale_shapley_stable) was proved in PR #1194. The prover skips any DEMO

@@ -933,6 +933,18 @@ def slot_reservation_reason(
     )
     if not touched:
         return None
+    # Le fetch que la docstring annonce : l'organe lit l'arbre de `head` par
+    # `git`, et ne le rapatrie pas lui-meme. Une tete absente du clone de
+    # l'organe (clone partiel, PR jamais fetchee) le faisait sortir en rc=2,
+    # donc en skip `slot-collision-unreadable` d'une PR pourtant approuvee a
+    # sa tete exacte (mesure du 17/10 : #20468 et #20471, trois passes de
+    # suite). Meme geste que `twin_collision_reason` (5bis).
+    fetch = runner.run(
+        ["git", "-C", str(REPO_ROOT), "fetch", "--quiet", "origin", "main",
+         f"pull/{pr}/head"]
+    )
+    if fetch.returncode != 0:
+        return "slot-collision-unreadable:fetch"
     # Mode en ligne : sans `--offline`, l'organe lit `gh pr list --json files`
     # pour la source `open_prs`. La voie rapide ne dispose pas de `gh`, ce
     # qui l'a forcee a `--offline` ; ici on en sert.
