@@ -470,6 +470,18 @@ Déporté depuis `.claude/rules/coordinator-discipline.md` (tranche 2 du slimmin
 
 **Limites de l'organe `check_adjoint_prevalidation.py`, ancienne ligne 146.** GitHub ne permet pas à cet organe stateless de prouver un événement ensuite supprimé ou reverté. Son format canonique est généré par `--template` (hash inclus ; `--fingerprint` reste disponible). Le login GitHub étant partagé, `lane: myia-po-2025:CoursIA-2` est une déclaration de protocole fail-closed, pas une authentification cryptographique.
 
+### 2.9 « Cron armé + production gelée » se lit comme un tour continu, pas comme une panne de cron (#14728, item 4)
+
+**Constat mesuré (2026-09-05)** : le cron coordinateur était **armé** (`CronList` le montrait vivant, vérifié à 10:04Z) pendant une fenêtre de **6h16 sans aucun merge** — merges par heure : `00h`=13, `01h`=9, `02h`=16, `03h`=4, puis `04h`-`10h` = 0. Les déclenchements attendus de 04:13 et 08:13 ne sont pas survenus. Les workers, eux, produisaient normalement pendant toute la fenêtre : ce ne sont pas les lanes qui ralentissent, c'est la passe de merge du coordinateur.
+
+**Cause** : `CronCreate` ne déclenche **que lorsque le REPL est idle, jamais mid-query**. La session tenait un seul tour continu depuis ~03:26Z. « Cron armé » et « merges gelés » ne sont donc **pas contradictoires — c'est la même cause**. C'est ce qui rend le défaut difficile à lire : `CronList` montre le job, le job est réellement vivant, et il ne tirera pourtant jamais tant que le tour ne se termine pas.
+
+**Boucle auto-renforçante** : plus le backlog est gros, plus le cycle est long ; plus le cycle est long, plus de déclenchements sautent ; plus de déclenchements sautent, plus le backlog grossit.
+
+**L'anti-diagnostic à ne pas faire** : « le cron est mort, j'en arme un second ». Cela **aggrave** la situation — double-firing silencieux, et si le second cron vit dans une autre session partageant le tag de lane, violation de la prémisse d'identité de #14323 (`check_lane_claim.py` `CLEAR` ne dit que « aucune AUTRE lane », jamais « aucun autre processus de la mienne »).
+
+**La lecture correcte et le levier** : `CronList` armé + zéro merge sur plusieurs fenêtres de cadence = la session tient un **tour continu**. Le levier est de **borner le cycle** — passe de merge courte qui rend la main (items 1-2 de #14728, livrés : « Budget de cycle » du skill `coordinate` + dossiers `[ADJOINT PREFLIGHT]` exact-head qui persistent les verdicts de gate par SHA) — pas d'ajouter un tireur. La dépense de la cadence hors REPL (tâche planifiée en polling) a été écartée dans #14728 : un déclencheur externe qui réveille une session déjà occupée ne merge pas davantage.
+
 ## 3. Secrets via RooSync — recits et justification datee
 
 

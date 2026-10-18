@@ -7,12 +7,12 @@
 
 ## Description
 
-Clone de la stratégie 60 de la Strategy Library QuantConnect (*Leveraged ETF Momentum Allocator*, Grant Forman). Chaque jour, en données journalières, `main.py` place 100 % du capital sur un seul ETF :
+Clone de la stratégie 60 de la Strategy Library QuantConnect (*Leveraged ETF Momentum Allocator*, Grant Forman). Chaque jour, en données journalières, `main.py` place le capital sur un seul ETF (98 % de sa valeur depuis le correctif #20388) :
 
 - **SPY au-dessus de sa SMA200** : UVXY si le RSI(10) de QQQ dépasse 81 ou celui de SPY dépasse 80, sinon TQQQ (QQQ ×3) ;
 - **SPY sous sa SMA200** : un arbre de seuils RSI(10) choisit entre TECL et SPXL (×3 haussiers), UVXY, TECS (×3 baissier) et BSV (obligations courtes). Les seuils sont 30, 74, 84, 31 et 34, combinés aux SMA20 de QQQ et de TQQQ.
 
-Le code tourne avec le modèle de frais du courtier choisi par l'auteur (`SetBrokerageModel`), en compte sur marge, sans levier au-delà de 100 % du capital.
+Le code tourne avec le modèle de frais du courtier choisi par l'auteur (`SetBrokerageModel`), en compte sur marge. La règle ne vise pas plus de 100 % du capital, mais un remplissage sur un écart d'ouverture peut porter la ligne détenue au-delà, jusqu'à la rotation suivante (section #20388).
 
 ## Mesure du code de la stratégie (#19587) — verdict INCONCLUSIVE (pas de période hors échantillon)
 
@@ -120,7 +120,7 @@ En prix bruts, SPY et QQQ détenus passent des ordres périodiques, sans doute l
 - **La pire baisse vient de la fin 2018, en TQQQ** : −52,5 % entre le 2018-08-29 et le 2018-12-24, sommet retrouvé le 2019-04-15. Sur les mêmes dates, TQQQ détenu perd 58,1 % et QQQ 22,8 %. Sur toute la fenêtre, TQQQ détenu perd jusqu'à −81,6 %.
 - **Capacité.** Le portefeuille du backtest est multiplié par environ 45 000 et atteint plusieurs milliards de dollars, bien au-delà de la capacité estimée par QC (200 à 260 M$). Le Sharpe se calcule sur les rendements et ne dépend pas de l'échelle ; le CAGR au-delà de la capacité n'est pas atteignable, et le backtest ne modélise pas l'impact de marché.
 
-**Suivi en ombre.** `base` est gelé à la date de la mesure. Son suivi en ombre (#18923, point 6 du protocole) accumulera, à partir de cette date, la période hors échantillon qui manque. L'inscription au registre est faite à part, avec les autres gels en attente.
+**Suivi en ombre.** `base` est gelée sous l'identifiant `levetf-base` au registre du suivi en ombre (`ML-Training-Pipeline/shadow/registry.json`, #18923 — gel du 2026-10-10 au SHA `f1a93779`, projet Cloud dédié 37796612). Premier passage le 2026-10-16 : 4 séances rejouées (2026-10-10 → 2026-10-15) au code gelé, −4,8 % net, pire baisse −6,3 %, rotation 0,33 — chiffres non interprétables à cette taille de fenêtre, la série s'allonge à chaque passage mensuel et constitue le hors-échantillon qui manque au verdict. La ligne vit dans `ML-Training-Pipeline/shadow/passes.csv` ; les traces du passage sont hors dépôt, sous `QC-traces/18923-ombre-levetf-base/2026-10-16/`.
 
 Les traces des runs (graphiques, statistiques, journal des ordres, empreinte du code envoyé à QC) sont conservées hors dépôt, sous `QC-traces/19587-leveraged-etf-momentum/`.
 
@@ -225,6 +225,38 @@ La pire baisse de `lrs` va du 2022-01-03 au 2023-03-14 (−36,5 %), sommet retro
 
 Les traces des runs (graphiques, statistiques, empreinte du code envoyé à QC, résultats du calcul) sont conservées hors dépôt, sous `QC-traces/20141-leveraged-etf-ucits/`.
 
+## Achats refusés (#20388) — correctif mesuré
+
+**Le défaut.** Le code d'origine tournait avec `SetHoldings(cible, 1.0, liquidateExistingHoldings=True)`, qui envoie les ventes et l'achat ensemble. En données journalières, tout ordre devient `MarketOnOpen`. Un achat est alors contrôlé deux fois : à l'envoi, à la clôture, puis au remplissage, à l'ouverture suivante. Or les ventes en attente ne libèrent leur marge qu'à leur remplissage, si bien que l'achat, dimensionné à 100 % de la valeur, était refusé faute de marge. La ligne restait alors en liquide jusqu'à la séance suivante. Sur la fenêtre 2012-01-01 → 2026-06-30, 51 ordres sur 778 étaient refusés en `base` et 49 sur 633 en `ucits`. Tous étaient des achats.
+
+**Le correctif** (`RotateTo` dans `main.py`) :
+- les ventes partent d'abord ;
+- l'achat vise 98 % de la valeur et il est plafonné à la marge libre à l'envoi, frais compris ;
+- la part manquante est complétée à la séance suivante.
+
+Il a été mis au point en deux itérations, chacune avec ses prédictions inscrites sur #20388 avant le backtest.
+- La première itération (ventes d'abord, cible 98 %) laissait 39 et 14 refus, tous à l'envoi. Après une rotation remplie sur un écart d'ouverture, la ligne détenue peut dépasser 100 % de la valeur, et l'achat suivant manque alors de marge.
+- La seconde itération ajoute le plafond.
+
+| Mode | Code | Achats refusés | Ordres | Sharpe (QC) | CAGR | Pire baisse |
+|---|---|---|---|---|---|---|
+| `base` | avant | 51 | 778 | 1,712 | 109,7 % | 52,5 % |
+| `base` | 1re itération | 39 | 629 | 1,726 | 110,2 % | 50,9 % |
+| `base` | correctif | 1 | 628 | 1,650 | 104,3 % | 52,0 % |
+| `ucits` | avant | 49 | 633 | 1,017 | 39,9 % | 46,1 % |
+| `ucits` | 1re itération | 14 | 515 | 1,076 | 42,1 % | 40,7 % |
+| `ucits` | correctif | 0 | 520 | 1,063 | 41,5 % | 40,9 % |
+
+Ces statistiques sont celles de QC. Son Sharpe intègre un taux sans risque, ce qui le rend non comparable aux différences de Sharpe à taux nul des sections précédentes. Le nombre d'ordres refusés est publié dans la statistique d'exécution `refused`.
+
+**Le refus restant.** Il a lieu au remplissage, et non à l'envoi. L'achat d'UVXY, envoyé le vendredi 2020-03-13 à la clôture, est refusé à l'ouverture du lundi 16. La vente de TECL s'y est remplie en forte baisse, ce qui a réduit la marge sur laquelle l'achat avait été plafonné la veille. Aucune réserve calculée à la clôture ne couvre un tel écart sur un ETF ×3. La ligne reste en liquide une séance, puis la règle reprend.
+
+**Ce que le correctif change aux mesures précédentes.** Les tableaux des sections #19587 et #20141 ont été mesurés avec le code d'avant le correctif, et le calcul des verdicts n'a pas été refait.
+- **En `base`, une partie du résultat de 2020 tenait à des refus.** En mars 2020, pendant la chute, le code d'avant voit ses achats de TECL refusés le 12 et le 16, et le portefeuille reste en liquide par accident. Avec le correctif, `base` exécute ces achats. Sur l'année 2020, la valeur est multipliée par 13,6, contre 23,4 en 1re itération, où les mêmes achats étaient encore refusés.
+- **En `ucits`, l'effet sur 2020 est négligeable** (×2,37 contre ×2,39). Les refus d'avant portaient sur SHV (23), QLD (22) et SSO (4).
+
+Les traces (plan, empreinte du code envoyé, ordres, journal, graphique `shadow`) sont conservées hors dépôt, sous `QC-traces/20388-levetf-fix/`, pour les projets QC 37801405 (`base`) et 37801425 (`ucits`).
+
 ## Comment exécuter
 
 **Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/LeveragedETFMomentum-QC"`
@@ -239,7 +271,7 @@ Avec les défauts, la règle de trading est celle d'origine.
 
 ## Fichiers
 
-- `main.py` — stratégie (clone de la stratégie 60 de la Strategy Library), instrumentée pour les mesures #19587 et #20141
+- `main.py` — stratégie (clone de la stratégie 60 de la Strategy Library), instrumentée pour les mesures #19587 et #20141, exécution des rotations corrigée par #20388
 
 ## Références
 
@@ -249,4 +281,5 @@ Avec les défauts, la règle de trading est celle d'origine.
 - M. A. Gayed, C. V. Bilello, *Leverage for the Long Run — A Systematic Approach to Managing Risk and Magnifying Returns in Stocks*, SSRN 2741701, 2016 — règle LRS mesurée par #20141
 - #20141 — protocole et résultats de la transposition UCITS et de la règle LRS ; #19821 — ligue de stratégies, protocole commun
 - #18923 — suivi en ombre des stratégies mesurées
+- #20388 — achats refusés faute de marge : recensement, prédictions des deux itérations et résultats du correctif
 - #19450 — même protocole, appliqué à `LongShortHarvest-QC`
