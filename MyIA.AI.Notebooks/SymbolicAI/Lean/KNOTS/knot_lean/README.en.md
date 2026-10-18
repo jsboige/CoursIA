@@ -411,7 +411,7 @@ Three notebooks in `SymbolicAI/Lean/` carry the transmission, one per level:
 | `Knots/Mutation.lean` (Conway mutation: 4-point sphere, 180° rotation) | KNOTS-01 (Conway/KT mutants), KNOTS-03 (mutation) | Soundness of regluing isotopy, formal sphere structure |
 | `Knots/ReidemeisterCombinatorial.lean` (`MoveSequence`, `movesConnects`, `verifyMoves`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Soundness of bounded verifier, enumeration completeness |
 | `Knots/ReidemeisterInvariance.lean` (invariance of `alexanderPolynomialSigned` under R1/R2/R3) | KNOTS-02 (moves), KNOTS-03 (invariance) | Full soundness, Conway ↔ Reidemeister junction |
-| `Knots/ReidemeisterMoves.lean` (`ReidemeisterMove` + `verifyR1Fwd`/`R2Fwd`/`R3Fwd`, `movesConnects_sound`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Bridge to the 14 `sorry` of the lake (Reidemeister, Lidman, Slice) |
+| `Knots/ReidemeisterMoves.lean` (`ReidemeisterMove` + `verifyR1Fwd`/`R2Fwd`/`R3Fwd`, `movesConnects_sound`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Bridge to the 8 real `sorry` of the lake (2 Reidemeister, 4 Slice, 2 Lidman), CI baseline `lean-knot.yml` at `"8"` |
 
 **Human-review act to be signed**: when the human review is carried out, it will take the form `Review by <name, affiliation> — date <YYYY-MM-DD> — scope <whole lake / module> — checks: structure / main proofs / i18n FR-EN — overall verdict` and will be inserted into this README. Grid **#13106 criterion 2** is satisfied by the first signed act; no partial act is recorded silently, and the present section remains honest until the act is written.
 

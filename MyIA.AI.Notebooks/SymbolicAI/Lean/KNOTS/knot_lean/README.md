@@ -420,7 +420,7 @@ Trois notebooks dans `SymbolicAI/Lean/` assurent la transmission, par niveau :
 | `Knots/Mutation.lean` (mutation de Conway : sphère 4 points, rotation 180°) | KNOTS-01 (Conway/KT mutants), KNOTS-03 (mutation) | Soundness de l'isotopie de recollement, structure de la sphère formelle |
 | `Knots/ReidemeisterCombinatorial.lean` (`MoveSequence`, `movesConnects`, `verifyMoves`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Soundness du vérificateur borné, complétude énumération |
 | `Knots/ReidemeisterInvariance.lean` (invariance d'`alexanderPolynomialSigned` sous R1/R2/R3) | KNOTS-02 (moves), KNOTS-03 (invariance) | Soundness complète, jonction Conway ↔ Reidemeister |
-| `Knots/ReidemeisterMoves.lean` (`ReidemeisterMove` + `verifyR1Fwd`/`R2Fwd`/`R3Fwd`, `movesConnects_sound`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Pont vers les 14 `sorry` du lake (Reidemeister, Lidman, Slice) |
+| `Knots/ReidemeisterMoves.lean` (`ReidemeisterMove` + `verifyR1Fwd`/`R2Fwd`/`R3Fwd`, `movesConnects_sound`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Pont vers les 8 `sorry` réels du lake (2 Reidemeister, 4 Slice, 2 Lidman), baseline CI `lean-knot.yml` à `"8"` |
 
 **Acte de revue humaine à signer** : lorsque la revue humaine sera effectuée, elle prendra la forme `Revue par <nom, affiliation> — date <YYYY-MM-DD> — scope <lake entier / module> — vérifications : structure / preuves principales / i18n FR-EN — verdict global` et sera insérée dans ce README. La grille **#13106 critère 2** est satisfaite par le premier acte signé ; aucun acte partiel n'est consigné en silencieusement, et la présente section reste honnête tant que l'acte n'est pas posé.
 
