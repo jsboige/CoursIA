@@ -98,10 +98,16 @@ repos:
           blocks, setext underlines, or a real cell-0 frontmatter; outputs
           and execution_count are byte-intact (no re-execution, no falsified
           proof). See #11451 (tool) and #12075 (this wiring).
+          Frozen `_archive/` snapshots are excluded (#21058): the hook is
+          deterministic, so an archived notebook still carrying legacy `---`
+          on main cannot be restored byte-identical by an ordinary commit —
+          the hook would rewrite it every time (#20709 worked around with a
+          one-off SKIP).
         entry: python scripts/notebook_tools/fix_hr_separator.py --apply
         language: system
         pass_filenames: true
         files: '\.ipynb$'
+        exclude: '(^|/)_archive/.*\.ipynb$'
         stages: [pre-commit]
 
       - id: markdown-rendering-guard

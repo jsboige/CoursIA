@@ -457,6 +457,41 @@ class TestValidateNotebookH1:
         assert any("advisory" in e.lower() or "QC Cloud" in e for e in result["errors"])
 
 
+class TestValidateNotebookArchiveExemption:
+    """Archive snapshots: H.1 error outputs are advisory (#6803 suffix,
+    #21058 directory marker) — a frozen exploration log keeps its record."""
+
+    ERROR_OUTPUT = [{"output_type": "error", "ename": "SyntaxError",
+                     "evalue": "unterminated f-string", "traceback": []}]
+
+    def test_error_in_archive_suffix_is_advisory(self, tmp_path):
+        nb = _write_nb(tmp_path / "research_archive.ipynb", [
+            _code("x = 1", exec_count=1, outputs=self.ERROR_OUTPUT),
+        ])
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert any("archive" in e.lower() for e in result["errors"])
+
+    def test_error_in_archive_dir_is_advisory(self, tmp_path):
+        """#21058 : notebooks vivant dans un répertoire `_archive/` (convention
+        `_archive-convention.md`), pas seulement le suffixe de fichier."""
+        nb = _write_nb(tmp_path / "SymbolicAI" / "_archive" / "Tweety.ipynb", [
+            _code("x = 1", exec_count=1, outputs=self.ERROR_OUTPUT),
+        ])
+        result = validate_notebook(nb)
+        assert result["passed"] is True
+        assert any("archive" in e.lower() for e in result["errors"])
+
+    def test_error_outside_archive_still_fails(self, tmp_path):
+        """Contrôle négatif : hors archive, l'error output reste bloquante."""
+        nb = _write_nb(tmp_path / "live" / "research.ipynb", [
+            _code("x = 1", exec_count=1, outputs=self.ERROR_OUTPUT),
+        ])
+        result = validate_notebook(nb)
+        assert result["passed"] is False
+        assert any("error output" in e for e in result["errors"])
+
+
 # ---------------------------------------------------------------------------
 # validate_notebook — structural checks
 # ---------------------------------------------------------------------------

@@ -83,17 +83,22 @@ QC_CLOUD_PATHS = ("QuantConnect/Python", "QuantConnect/projects")
 # the execution gate agree on what "is a QC notebook" means. See #8056.
 QUANTBOOK_PATTERN = re.compile(r"QuantBook\(\)|self\.QuantBook")
 
-# Research-exploration archive snapshots (path suffix). An `*_archive.ipynb` is
-# a frozen log of exploratory iteration; its error outputs (KeyError/NameError
-# from cells run out of order, a missing data field, ...) are a RECORD of what
-# happened, not a bug to fix — the live counterpart (`research.ipynb`) carries
-# the clean run. The H.1 error-output check is ADVISORY for these so a future
-# nbformat pass / enrichment does not re-trip on the deliberate snapshot. C.1
-# (no intentional-error source) and H.3 (execution_count != null) stay enforced
-# — an archive was still executed and must not embed forbidden patterns. Scope
-# is deliberately tight (path suffix) so only explicit archives opt out. See
-# #6803.
+# Research-exploration archive snapshots. An `*_archive.ipynb` (path suffix)
+# or any notebook under an `_archive/` directory (convention
+# `docs/reference/_archive-convention.md`, 11 emplacements) is a frozen log of
+# exploratory iteration; its error outputs (KeyError/NameError from cells run
+# out of order, a missing data field, ...) are a RECORD of what happened, not
+# a bug to fix — the live counterpart (`research.ipynb`) carries the clean
+# run. The H.1 error-output check is ADVISORY for these so a future nbformat
+# pass / enrichment does not re-trip on the deliberate snapshot. C.1 (no
+# intentional-error source) and H.3 (execution_count != null) stay enforced
+# — an archive was still executed and must not embed forbidden patterns.
+# Scope stays explicit (marker in path, suffix or directory) so only declared
+# archives opt out. Suffix: #6803. Directory marker: #21058 (the suffix alone
+# left the Tweety archive — `SyntaxError` cell 12, identical on main — one
+# cosmetic diff away from reddening a PR).
 ARCHIVE_NOTEBOOK_SUFFIX = "_archive.ipynb"
+ARCHIVE_DIR_MARKER = "_archive/"
 
 # Notebooks whose OUTPUTS would embed personal data (student rosters, e-mails,
 # individual grades). Here an EMPTY output is the compliant state, not a defect
@@ -267,8 +272,12 @@ def validate_notebook(nb_path: Path) -> dict:
     qc_cloud = _is_qc_cloud(rel_path, data)
     ci_reexec_skipped = any(k in kernel for k in SKIP_EXEC_KERNELS) or qc_cloud
     # Research archive snapshot: error outputs are a deliberate record, not a
-    # bug (#6803). H.1 is advisory; H.3 + C.1 still enforced below.
-    is_archive = rel_path.replace("\\", "/").endswith(ARCHIVE_NOTEBOOK_SUFFIX)
+    # bug (#6803 suffix, #21058 directory marker). H.1 is advisory; H.3 + C.1
+    # still enforced below.
+    _norm_rel = rel_path.replace("\\", "/")
+    is_archive = _norm_rel.endswith(ARCHIVE_NOTEBOOK_SUFFIX) or (
+        ARCHIVE_DIR_MARKER in _norm_rel
+    )
     # "A null execution_count is tolerated" — STRICTER than ci_reexec_skipped.
     # Only where local execution is ALSO impossible (QC Cloud needs QuantBook;
     # Lean kept advisory for now — own rendering subtleties, out of #5214).
