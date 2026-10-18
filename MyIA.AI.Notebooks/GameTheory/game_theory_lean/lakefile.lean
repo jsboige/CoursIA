@@ -146,3 +146,17 @@ lean_lib ProgramGames where
 -- conformément au gate L3 de
 -- l'EPIC : « sans forcer ces dépendances dans game_theory_lean 4.32.1 »
 -- (split toolchain 4.32.1/4.33.1 mesuré). 0 sorry ajouté.
+
+-- 2026-10-18 (po-2024) : ajout `lean_lib StackelbergBilevel` — organe 2 de
+-- #21221 (distillation D4 de #16775), companion formel du notebook
+-- GameTheory-19b-Bilevel-PPO-Python. Duopole de Stackelberg en quantites sur Q
+-- (demande b = 1, convention test_stackelberg.py) : meilleure reponse du
+-- suiveur par completion du carre (`profitF_carre`, `reaction_argmax`),
+-- optimum du leader contre la reaction (`bilevel_carre`, `bilevel_optimum`),
+-- ancres numeriques (45, 45/2, prix 65/2, profit 2025/2, Cournot 900) et
+-- valeur d'engagement `(a-c)^2/8 ≥ (a-c)^2/9` (`engagement_bat_cournot`).
+-- Structure eq. 1 de Dai, Wang, Ashley, Schmidhuber (ICLR 2026,
+-- arXiv:2603.15388) en forme close. 0 sorry.
+@[default_target]
+lean_lib StackelbergBilevel where
+  globs := #[`StackelbergBilevel.*]
