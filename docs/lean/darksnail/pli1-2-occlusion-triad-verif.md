@@ -8,7 +8,7 @@
 
 ## TL;DR
 
-Le dépôt upstream [`sneed-and-feed/projectdarksnail`](https://github.com/sneed-and-feed/projectdarksnail) annonce un badge « Lean 4 Verified (Zero Sorry) » dans son README. Une vérification first-hand du contenu Lean montre que le code `formalization/OcclusionTriad.lean` (510 lignes) est **syntaxiquement propre** — aucun `sorry`, aucun `native_decide.*`, aucun `sorryAx`, aucun `Classical.choice`. **Mais** le projet n'a aucune structure de build (pas de `lakefile.lean`, pas de `lean-toolchain`), et le seul module `.lean` importe deux modules qui n'existent pas dans le dépôt. Le claim « Lean 4 Verified » est donc **non vérifiable** à partir du dépôt public.
+Le dépôt upstream [`sneed-and-feed/projectdarksnail`](https://github.com/sneed-and-feed/projectdarksnail) annonce un badge « Lean 4 Verified (Zero Sorry) » dans son README. Une vérification first-hand du contenu Lean montre que le code `formalization/OcclusionTriad.lean` (510 lignes, 27 252 octets) est **syntaxiquement propre** — aucun `sorry`, aucun `native_decide.*`, aucun `sorryAx`, aucun `Classical.choice`. **Mais** le projet n'a aucune structure de build (pas de `lakefile.lean`, pas de `lean-toolchain`), et le seul module `.lean` importe deux modules qui n'existent pas dans le dépôt. Le claim « Lean 4 Verified » est donc **non vérifiable** à partir du dépôt public.
 
 ## Méthode
 
@@ -47,18 +47,24 @@ Le dépôt upstream [`sneed-and-feed/projectdarksnail`](https://github.com/sneed
 
 ## Constat factuel
 
-### Code `OcclusionTriad.lean` (510 lignes, 25 476 caractères)
+### Code `OcclusionTriad.lean` (510 lignes, 27 252 octets ; 26 232 hors LF)
 
-Le module déclare `namespace Ultrametric.Analysis.OcclusionTriad` et expose 5 théorèmes principaux et 5 lemmes/definitions de support :
+Le module déclare `namespace Ultrametric.Analysis.OcclusionTriad` et expose **9 `theorem` + 13 `lemma` + 18 `def` (10 + 8 `noncomputable`) = 40 déclarations** :
 
+**9 théorèmes** :
 - `skew_triad_swap_neg`, `skew_triad_self_zero` (antisymétrie du tenseur)
 - `occlusion_triad_breaks_symmetric_tie` (bris de symétrie exact)
 - `darksnail_readout_energy_conservation` (conservation d'énergie)
 - `darksnail_step0_system1_homotopy` (homotopie à l'initialisation)
 - `rope2d_medoid_relative_invariance`, `rope2d_arithmetic_norm_lt` (RoPE 2D)
-- `tangentTriadStep` (pas tangent de la triade récurrente)
+- `darksnail_multistep_spherical_invariance` (invariance sphérique multi-pas)
+- `darksnail_multistep_step0_homotopy` (homotopie multi-pas à l'init)
 
-Les **preuves semblent complètes** au sens syntaxique : pas de `sorry`, pas d'axiome exotique, pas d'usage de `native_decide`. La stratégie est `norm_num` / `simp` / `field_simp` / `linarith` / `nlinarith` selon les besoins.
+**13 lemmes** de support (extraits : `triadOperator_two_color_eval`, `inner2_rot2_shift`, `normSq2_avg2_rot2`, `normSq2_nonneg`, `normSq2_avg2_rot2_le`, `normSq2_avg2_rot2_lt`, `shellEnergy_nonneg`, `shellEnergy_eq_zero_iff`, `tangentTriadStep_orthogonal`, `shellEnergy_add_of_orthogonal`, `shellEnergy_scale`, `sphericalTriadStep_preserves_energy`, `sphericalTriadStep_zero`).
+
+**18 `def`** dont `tangentTriadStep`, `sphericalTriadStep`, `multistepSphericalTriad`, `darksnailReadout`, `rope2d`, `rope2dPatchAvg`, `rot2`, etc.
+
+Les **preuves semblent complètes** au sens syntaxique : pas de `sorry`, pas d'axiome exotique, pas d'usage de `native_decide`. Stratégies de preuve effectivement présentes (comptées sur le source sans commentaires) : `simp` ×9, `linarith` ×5, `nlinarith` ×3. `norm_num` et `field_simp` sont **absents** du fichier (correction du rapport initial qui les mentionnait à tort).
 
 ### Imports non résolus
 
@@ -80,7 +86,7 @@ Le README upstream affiche un badge **« Lean 4 Verified (Zero Sorry) »** et la
 
 **`INSUFFICISANT`** — les claims « Lean 4 verified (0 sorry) » ne sont **pas vérifiables** à partir du dépôt public.
 
-- ✅ La partie « 0 sorry » est vraie (vérifiée first-hand, 4 patterns, 510 lignes).
+- ✅ La partie « 0 sorry » est vraie (vérifiée first-hand, 4 patterns, 510 lignes, 9 `theorem` + 13 `lemma` + 18 `def`).
 - ❌ La partie « Lean 4 verified » (au sens d'un build clean) ne peut pas être reproduite par un tiers : pas de `lakefile.lean`, pas de `lean-toolchain`, et deux imports non résolus.
 
 ## Recommandations
