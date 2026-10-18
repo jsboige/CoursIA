@@ -163,7 +163,19 @@ TOOL_FAILURE_PATTERNS = (
     re.compile(r"no such file or directory", re.IGNORECASE),
     # inherited from check_render_volume_delta._UNAVAILABLE_PATTERNS
     *DEGRADED_HINT_PATTERNS,
-    re.compile(r"importerror", re.IGNORECASE),
+    # ImportError (#20701) : la FORME d'une exception levee (le nom, son
+    # deux-points et un message), et non le mot nu. Une reponse de LLM cite la
+    # classe dans sa prose (« `ImportError` si la CLI est lancee ... ») : une
+    # citation n'est pas un echec. La trace Jupyter colore le nom
+    # (ESC[0;31m ... ESC[0m) avant son deux-points, d'ou la reinitialisation
+    # facultative. La seconde alternative garde une derniere ligne de trace qui
+    # ne porte aucun message. Un gestionnaire qui imprime « Erreur: ImportError:
+    # <msg> » en milieu de ligne reste detecte. Le motif ne consomme qu'un jeton
+    # apres le deux-points : _is_degraded_hint lit ainsi l'extrait fidelement.
+    re.compile(r"(?<!`)ImportError(?:\x1b\[[0-9;]*m)*:[ \t]+\S+"
+               r"|^[ \t]*(?:\x1b\[[0-9;]*m)*ImportError(?:\x1b\[[0-9;]*m)*"
+               r"[ \t\r]*$",
+               re.IGNORECASE | re.MULTILINE),
 )
 
 # Witnesses: real strings observed in committed outputs. The self-test asserts
@@ -179,6 +191,7 @@ _PATTERN_WITNESSES = (
     "graphviz.backend.ExecutableNotFound",
     "bash: dot: command not found",
     "simanneal non disponible",
+    "ImportError: cannot import name 'X' from 'y'",
 )
 
 # --- benign banners: matched above, and NOT a tool failure -----------------
@@ -881,7 +894,19 @@ def self_test(cwd=None):
                    # LLM-generated code sample: literal backslash-n ESCAPES in
                    # the response text are data, not drive paths -- the
                    # 2-char minimum segment quantifier keeps them out.
-                   r"pour 1..n:\n\ndef fizzbuzz(n):\n    result = []"):
+                   r"pour 1..n:\n\ndef fizzbuzz(n):\n    result = []",
+                   # Citation d'une classe d'exception par une reponse de LLM
+                   # (#20701) : le nom nu dans un tableau de risques, le
+                   # meme nom entre backticks avec un message, et en prose.
+                   # Une citation est une donnee, pas une levee.
+                   "| **Imports plats vs package** : le projet utilise "
+                   "`from utils import ...` (pas de package) | `ImportError` "
+                   "si la CLI est lancee depuis un autre dossier | Meme "
+                   "pattern que `tests/test_utils.py` : `sys.path` ou "
+                   "lancement depuis `sample_project/` ; ne pas introduire "
+                   "d'imports relatifs |",
+                   "Voir `ImportError: cannot import name 'X'` dans la doc.",
+                   "Le module peut lever ImportError pendant l'import."):
         hit = ([p.pattern for p in TOOL_FAILURE_PATTERNS if p.search(benign)]
                + [p.pattern for p in MACHINE_PATH_PATTERNS if p.search(benign)])
         if hit:
@@ -963,6 +988,36 @@ def self_test(cwd=None):
     if not _one(_sandbox + "\nModuleNotFoundError: No module named 'simanneal'"):
         failures.append("sandbox banner masked a real failure in the same "
                         "stream")
+
+    # Forme ImportError (#20701). Chaque levee REELLE que le mot nu attrapait
+    # doit rester un TOOL_FAILURE : la derniere ligne d'une trace, sa variante
+    # coloree IPython, une derniere ligne sans message, et un gestionnaire qui
+    # imprime la classe en milieu de ligne avec son message. La citation de la
+    # ligne de tableau dans une reponse reste silencieuse, et ne doit pas
+    # masquer une levee partageant le meme flux.
+    for raised in ("Traceback (most recent call last):\n"
+                   "ImportError: cannot import name 'X' from 'y'",
+                   "\x1b[0;31mImportError\x1b[0m: cannot import name 'X'",
+                   "Traceback (most recent call last):\nImportError",
+                   "Erreur: ImportError: cannot import name 'X'"):
+        if len(_one(raised)) != 1:
+            failures.append("ImportError levee non classee TOOL_FAILURE : "
+                            + repr(raised))
+    _cite = ("| `ImportError` si la CLI est lancee depuis un autre dossier |")
+    if _one(_cite):
+        failures.append("citation ImportError d'un tableau de reponse "
+                        "declenchee (#20701)")
+    if len(_one(_cite + "\nImportError: cannot import name 'X'")) != 1:
+        failures.append("la citation ImportError masque une ImportError levee "
+                        "dans le meme flux (#20701)")
+    # Le balayage ventile un constat en DEGRADED_HINT sur son texte extrait.
+    # Une levee dont le message porte un motif mou doit garder son extrait hors
+    # de cette classe, sinon le balayage classerait une vraie ImportError en
+    # simple indice.
+    _soft = _one("ImportError: not available on this platform")
+    if not _soft or _is_degraded_hint(_soft[0][1]):
+        failures.append("ImportError levee a message en motif mou ventilee en "
+                        "DEGRADED_HINT (#20701) : " + repr(_soft))
 
     # Declared fallback (#18916): a demo-mode stub whose banner is printed BY
     # THE CELL'S OWN SOURCE is a DECLARED_FALLBACK, not a TOOL_FAILURE. Two
