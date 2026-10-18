@@ -130,9 +130,9 @@ jobs:
           # verdict de l'organe est inchange : seule la severite imprimee ici
           # change.
           if [ "${EVENT_NAME}" = "push" ]; then
-            python scripts/ci/check_scheduler_liveness.py --repo "$REPO" --dead-exit warning
+            python3 scripts/ci/check_scheduler_liveness.py --repo "$REPO" --dead-exit warning
           else
-            python scripts/ci/check_scheduler_liveness.py --repo "$REPO"
+            python3 scripts/ci/check_scheduler_liveness.py --repo "$REPO"
           fi
 
       - name: Check age of last successful sweep run
@@ -159,7 +159,7 @@ jobs:
           # mode ne remplace pas la sonde, il lui retire un faux positif ; il ne
           # peut donc pas masquer un sweep vraiment mort pour ce commit.
           if [ "${EVENT_NAME}" = "push" ]; then
-            if python scripts/ci/check_scheduler_liveness.py --repo "$REPO" --sweep-alive-for-sha "${GITHUB_SHA}"; then
+            if python3 scripts/ci/check_scheduler_liveness.py --repo "$REPO" --sweep-alive-for-sha "${GITHUB_SHA}"; then
               echo "[sweep-health] sweep vivant pour ce commit -- age non juge (course, #18292)"
               exit 0
             fi
@@ -183,7 +183,7 @@ jobs:
           # No successful run at all -> that absence IS the state this exists
           # to catch (history purged or scheduler dead). Fail visibly but, being
           # advisory, non-blocking.
-          AGE_S=$(python - "$RUN" <<'PY'
+          AGE_S=$(python3 - "$RUN" <<'PY'
           import json, sys
           from datetime import datetime, timezone
           runs = json.loads(sys.argv[1])

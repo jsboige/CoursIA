@@ -128,7 +128,7 @@ jobs:
         # le rc reel).
         run: |
           set +e
-          python scripts/notebook_tools/check_notebook_outputs_required.py \
+          python3 scripts/notebook_tools/check_notebook_outputs_required.py \
             --pr-diff origin/${{ github.base_ref }} HEAD \
             --json 2>&1 | tee /tmp/outputs_required.json
           VALIDATOR_EXIT=${PIPESTATUS[0]}
@@ -146,7 +146,7 @@ jobs:
             exit 1
           fi
 
-          OCCURRENCES=$(python -c "import json; print(json.load(open('/tmp/outputs_required.json'))['occurrences'])")
+          OCCURRENCES=$(python3 -c "import json; print(json.load(open('/tmp/outputs_required.json'))['occurrences'])")
           echo "All notebooks pass: $OCCURRENCES defective code-cell(s) found."
 
       - name: Post validation summary
