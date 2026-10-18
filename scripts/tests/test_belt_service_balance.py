@@ -699,7 +699,54 @@ def test_fetch_closed_issues_in_memory_window_filter():
             datetime(2026, 10, 1, 0, 0, 0, tzinfo=timezone.utc),
             max_pages=1,
         )
-    # Le serveur dit issueCount=1, mais le filtre memoire vide la liste.
-    # Controle positif declenche (read=0 vs issueCount=1).
+    # Le serveur dit issueCount=1, le noeud est lu (read=1) puis ecarte par le
+    # filtre memoire : read=1 = issueCount=1, le controle positif ne se declenche pas.
     assert count == 1
     assert services == []
+
+
+def test_fetch_closed_issues_positive_control_counts_nodes_read_before_window_filter():
+    """Reproduction #19804 : le controle positif compare `issueCount` au
+    nombre de noeuds LUS (avant le filtre memoire `closedAt >= window_start`),
+    et non au nombre de fermetures retenues.
+
+    Trois noeuds lus, dont deux fermes le meme jour que la fenetre mais avant
+    son heure de debut (2026-10-01T02:00Z et 03:00Z, fenetre a 12:00Z). Le
+    serveur, qui tronque `closed:>=YYYY-MM-DD` a la date, les renvoie tous
+    trois. Attendu : aucune RuntimeError, un seul service retenu, count=3.
+    Avant correctif, le controle comparait 1 (retenu) a issueCount=3 et levait.
+    """
+    import unittest.mock as mock
+
+    def _node(number: int, closed_at: str) -> dict:
+        return {
+            "number": number,
+            "createdAt": "2026-09-28T00:00:00Z",
+            "closedAt": closed_at,
+            "comments": {"nodes": []},
+        }
+
+    fake_response = json.dumps({
+        "data": {
+            "search": {
+                "issueCount": 3,
+                "nodes": [
+                    _node(1, "2026-10-01T02:00:00Z"),  # meme jour, avant la fenetre
+                    _node(2, "2026-10-01T03:00:00Z"),  # meme jour, avant la fenetre
+                    _node(3, "2026-10-07T10:00:00Z"),  # dans la fenetre
+                ],
+                "pageInfo": {"hasNextPage": False, "endCursor": None},
+            }
+        }
+    })
+    fake_completed = mock.Mock(returncode=0, stdout=fake_response, stderr="")
+    with mock.patch("subprocess.run", return_value=fake_completed), \
+         mock.patch.dict("os.environ", {"GH_TOKEN": "fake-token"}, clear=False), \
+         mock.patch.object(bsb, "_run_capture", return_value="fake-token"):
+        services, count = bsb.fetch_closed_issues(
+            "jsboige", "CoursIA",
+            datetime(2026, 10, 1, 12, 0, 0, tzinfo=timezone.utc),
+            max_pages=1,
+        )
+    assert count == 3
+    assert [s.issue_number for s in services] == [3]
