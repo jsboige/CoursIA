@@ -15,6 +15,7 @@ ils valident les artefacts committes, pas seulement des fixtures.
 """
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -314,7 +315,13 @@ def _passphrase_from_env_example() -> str:
     for line in env_example.read_text(encoding="utf-8").splitlines():
         line = line.strip()
         if line.startswith("ICT_S6B_PASSPHRASE"):
-            return line.split("=", 1)[1].strip().strip('"')
+            value = line.split("=", 1)[1]
+            # Convention .env : un blanc avant `#` ouvre un commentaire de fin
+            # de ligne (la ligne porte une exemption `# OK: <raison>` depuis
+            # l'issue #21013 -- sans ce retrait, le commentaire entre dans la
+            # passphrase et le decryptage echoue sur InvalidToken).
+            value = re.split(r"\s+#", value, maxsplit=1)[0]
+            return value.strip().strip('"')
     raise AssertionError("ICT_S6B_PASSPHRASE absente du .env.example")
 
 
