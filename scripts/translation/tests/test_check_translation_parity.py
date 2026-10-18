@@ -728,7 +728,12 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # depuis le CSV, 11 cellules code copiees verbatim, 0 orphelin). Rouge mesure
 # a tete constante avant cet enregistrement (1 failed / 34 passed, found 12
 # declared 11), meme classe que #19996/#20392. Total apres fusion : 12 + 1 = 13.
-EXPECTED_PAIR_COUNT = 13
+# 2026-10-18 (#1650 tranche research_archive EN, T4): +1 paire T4 --
+# QuantConnect/partner-course/examples/Crypto-MultiCanal/research_archive_en
+# (35 cellules md EN rendues depuis le CSV, 33 cellules code copiees verbatim,
+# 0 orphelin, 0 fallback ; serie non jugee par le nav-chain, aucune entree
+# baseline requise -- sortie guard byte-identique a main). Total : 13 + 1 = 14.
+EXPECTED_PAIR_COUNT = 14
 
 
 def _collect_parity_failures(repo_root: Path,
