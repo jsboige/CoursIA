@@ -165,6 +165,7 @@ def test_score_actions_counts_on_the_same_returns():
     assert res["n_trades"] == 3
     assert res["n_preds"] == 4
     assert res["auc"] == pytest.approx(0.75)
+    assert res["exposure"] == pytest.approx(0.75)  # long, long, a plat, long
 
 
 def test_condition_c_scores_the_returns_it_is_given():

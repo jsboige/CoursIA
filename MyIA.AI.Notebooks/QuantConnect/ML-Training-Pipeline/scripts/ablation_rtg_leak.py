@@ -179,12 +179,15 @@ def score_actions(
     # Direction accuracy: a long call is right when the return it drives is up.
     auc = float(((actions == 1) == (returns > 0)).mean()) if len(actions) else 0.5
     n_trades = count_trades(actions)
+    # Share of returns held long: C matches A in trades, not in exposure.
+    exposure = float(held_positions(actions).mean()) if len(actions) else 0.0
     return {
         "sharpe_dt": round(sharpe_dt, 4),
         "sharpe_bh": round(sharpe_bh, 4),
         "delta_sharpe": round(sharpe_dt - sharpe_bh, 4),
         "auc": round(auc, 4),
         "n_trades": n_trades,
+        "exposure": round(exposure, 4),
         "n_preds": int(len(actions)),
     }
 
@@ -556,6 +559,7 @@ def run_single_ablation(
             "t_stat": round(float(np.mean(deltas) / (np.std(deltas) + 1e-10)), 4),
             "mean_auc": round(float(np.mean(aucs)), 4),
             "mean_trades": int(np.mean(trades)),
+            "mean_exposure": round(float(np.mean([f["exposure"] for f in folds])), 4),
             "n_folds": len(folds),
             "fold_deltas": [round(d, 4) for d in deltas],
         }
