@@ -192,7 +192,7 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | 03a | [Chemins de swaps](GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb) | À quelle distance sont deux jeux : parcours en largeur, théorème de décomposition, certificat Lean indépendant du plus court chemin | Python | Licence |
 | 03f | [Deux espèces de flèches](GameTheory-03f-Deux-Especes-de-Fleches-Python.ipynb) | Le théorème fini du chemin minimal : quand un swap traverse un mur ; la conjecture naïve réfutée, la condition exacte vérifiée | Python | Recherche |
 | 03c | [Le joueur LLM](GameTheory-03d-Le-Joueur-LLM-Python.ipynb) | Un modèle de langage placé dans la table périodique et confronté à ses transformations ordinales | Python | Licence |
-| 03e | [Méta-actions tarifées](GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb) | Changer les règles comme action payante : coût en échelons de rang, seuil de migration, méta-jeu ; puis le parcours complet, du jeu nommé au coût de la méta-action | Python | Recherche |
+| 03e | [Méta-actions tarifées](GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb) | Changer les règles comme action payante : coût en échelons de rang, seuil de migration, méta-jeu ; puis le parcours complet, du jeu nommé au coût de la méta-action | Python | Recherche |
 
 ### Autour de 04 — existence et nature de l'équilibre
 
