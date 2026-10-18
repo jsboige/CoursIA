@@ -16,7 +16,7 @@ les lire depuis un repertoire de cache : on les embarque donc dans l'image.
 La cle de cache, lue dans le source du runner (pas devinee)
 -----------------------------------------------------------
 `src/Runner.Worker/ActionManager.cs`, `PrepareRepositoryAsync`, verifie au pin
-`v2.337.0` (celui du `RUNNER_VERSION` du Dockerfile) ET sur `main` :
+`v2.337.0` (predecesseur du `RUNNER_VERSION` courant du Dockerfile) ET sur `main` :
 
     var cacheArchiveFile = Path.Combine(
         actionArchiveCacheDir,

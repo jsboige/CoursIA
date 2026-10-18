@@ -296,7 +296,7 @@ Pas de `--gpus` (aucun passthrough GPU, par design). Le runner `--ephemeral` tra
 
 ```bash
 scripts/ci/docker/linux-runner/supervise.sh pin        # epingle le contexte hors arbre (#16134)
-docker build -t coursia-linux-runner:2.337.0 "$COURSIA_RUNNER_PINNED_CTX"
+docker build -t coursia-linux-runner:2.338.0 "$COURSIA_RUNNER_PINNED_CTX"
 scripts/ci/docker/linux-runner/supervise.sh start 2   # 2 slots concurrents
 scripts/ci/docker/linux-runner/supervise.sh status
 scripts/ci/docker/linux-runner/supervise.sh stop      # gracieux : les jobs en cours finissent
@@ -396,7 +396,7 @@ Un job qui meurt sur `Set up job` **avant le moindre checkout** porte un rouge r
 
 Ces archives sont par construction **identiques à chaque run**. Le runner sait les lire depuis un répertoire de cache : l'image les embarque donc une fois, au build, au lieu de les re-télécharger à chaque job.
 
-**La convention de nommage se lit dans le source du runner, elle ne se devine pas** — `src/Runner.Worker/ActionManager.cs`, `PrepareRepositoryAsync`, vérifié au pin `v2.337.0` (celui du `RUNNER_VERSION`) et sur `main` :
+**La convention de nommage se lit dans le source du runner, elle ne se devine pas** — `src/Runner.Worker/ActionManager.cs`, `PrepareRepositoryAsync`, vérifié au pin `v2.337.0` (prédécesseur du `RUNNER_VERSION` courant) et sur `main` :
 
 ```
 $ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE/<owner>_<repo>/<sha_resolu>.tar.gz
