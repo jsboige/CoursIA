@@ -1,35 +1,41 @@
-name: Runner starvation advisory (waiter+lean)
+name: Runner starvation advisory (lean)
 
-# Sonde d'extinction multi-labels (issue #14846, grain c.1063 myia-po-2027).
-# Le 2026-09-05 entre 20:26Z et 00:52Z, le pool `coursia-waiter` est tombe
-# sans rougir nulle part : 28 runners enregistres, 0 en ligne, 4h20 de gel
-# de tous les merges (le `PR gate` est le seul check requis par la protection
-# de `main`, sa jambe same-repo tourne sur ce label -- `pr-gate.yml:107`).
-# L'organe `scripts/ci/check_runner_starvation.py` mesurait deja le predicat
-# EXTINCTION (zero runner online sur le label), mais le seul workflow qui
-# l'appelait (`linux-runner-starvation-advisory.yml`) ne couvrait que
-# `coursia-linux`. Cette sonde etend la couverture a deux des trois labels
-# requis par `pr-gate.yml` (waiter) + workflows bloquants (lean) ;
-# `coursia-linux` reste couvert par son workflow dedie
-# (`linux-runner-starvation-advisory.yml`, cron 19,49).
+# Sonde d'extinction du label `coursia-lean` (issue #14846, grain c.1063 myia-po-2027).
+# Le label `coursia-waiter` n'est plus couvert depuis #20835 / #17436 :
+# depuis 46df1d691f (PR #17436, 2026-09-23), la jambe `pull_request` du
+# `pr-gate.yml` tourne sur `ubuntu-latest` (ligne 163) et n'a plus aucun
+# consommateur du label. Le pool est vide par construction ; le signaler
+# comme famine fabriquerait un bruit regulier sans cause. Le retrait systeme
+# du pool (service systemd, desinscription des 16 runners sur ai-01) est
+# porte par le point 1 de #20835 et reste a po-2024 (jambe A) -- voir le
+# commentaire de la matrice ci-dessous pour la liste des labels encore
+# surveilles.
 #
-# Pourquoi une matrice et pas 2 workflows dedies : un seul cron centralise
-# l'observabilite, les 2 sondes partagent la fenetre STARVATION et le secret
-# RUNNERS_READ_PAT, et la matrice GitHub Actions parallellise les 2 mesures
+# L'organe `scripts/ci/check_runner_starvation.py` mesurait deja le predicat
+# EXTINCTION (zero runner online sur le label). `coursia-linux` reste
+# couvert par son workflow dedie
+# (`linux-runner-starvation-advisory.yml`, cron 19,49). `coursia-lean` est
+# le seul label encore sous surveillance ici -- les builds Lean restent un
+# goulet serieux, le retrait du waiter n'ouvre pas la couverture de cette
+# sonde.
+#
+# Pourquoi une sonde et pas un check bloquant : un seul cron centralise
+# l'observabilite, la sonde partage la fenetre STARVATION et le secret
+# RUNNERS_READ_PAT, et la matrice GitHub Actions parallellise les mesures
 # sans collision de rate-limit. Schedule dediee (cron offset 19,49 pour
-# coursia-linux + 23,53 pour les 2 autres -- l'offset disjoint evite de
-# charger le meme runner sur 2 vagues consecutives).
+# coursia-linux + 23,53 pour lean -- l'offset disjoint evite de charger le
+# meme runner sur 2 vagues consecutives).
 #
 # Acceptance #14846 A1 verifiee par construction :
 #   - predicat EXTINCTION : si 0 runner online sur un label -> ::error::
 #   - predicat STARVATION : si jobs queued > seuil SANS aucun in_progress ->
 #     ::error:: (symptome distinct de l'extinction -- file profonde qui ne
 #     draine pas)
-#   - WARN floor configurable par label (waiter = 1, lean = 1)
+#   - WARN floor configurable par label (lean = 1)
 #
-# Acceptance A2 (persistance systemd) deja livree par PR #14981 (waiter) +
-# PR #15401 (lean). Acceptance A3 (verification systemctl is-enabled po-2024)
-# -> DM coord, hors scope worker.
+# Acceptance A2 (persistance systemd) deja livree par PR #15401 (lean).
+# Acceptance A3 (verification systemctl is-enabled po-2024) -> DM coord,
+# hors scope worker.
 #
 # ADVISORY PAR CONSTRUCTION : schedule + workflow_dispatch uniquement, jamais
 # pull_request/push -- un run rouge ne peut jamais bloquer une PR. Le nom
@@ -37,7 +43,7 @@ name: Runner starvation advisory (waiter+lean)
 
 on:
   schedule:
-    - cron: '23,53 * * * *'  # waiter + lean (offset distinct du cron linux 19,49)
+    - cron: '23,53 * * * *'  # lean (offset distinct du cron linux 19,49)
   workflow_dispatch:
 
 permissions:
@@ -56,11 +62,11 @@ jobs:
     # Ce job portait ce commentaire : « un observateur qui tourne sur le label
     # qu'il observe mourrait avec lui ». Le raisonnement est juste, la
     # conclusion ne l'etait pas -- `coursia-linux` n'est pas un abri, c'est une
-    # troisieme jambe du MEME parc que `coursia-waiter` et `coursia-lean`.
+    # deuxieme jambe du MEME parc que `coursia-lean`.
     # Changer de label ne change pas de risque : une reconstruction d'image
-    # invalide les trois ensembles (le garde de fraicheur de #14801 est
+    # invalide les deux ensembles (le garde de fraicheur de #14801 est
     # fail-closed et compare le checkout vivant a l'image), et plus aucune des
-    # trois ne peut alors heberger l'observateur.
+    # deux ne peut alors heberger l'observateur.
     #
     # Mesure du 2026-09-14 : 01:44Z -> 07:11Z sans un seul run pour un cron
     # declare `23,53 * * * *`. Le run de 07:12Z n'a tourne que parce qu'une
@@ -76,9 +82,6 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: coursia-waiter
-            warn_floor: 1
-            starve_minutes: "15"
           - label: coursia-lean
             warn_floor: 1
             starve_minutes: "15"
