@@ -402,7 +402,7 @@ Trois notebooks dans `SymbolicAI/Lean/` assurent la transmission, par niveau :
 
 **Revue humaine — état honnête** : à ce jour, le lake a été revu par les organes bots (Hermes, proof-integrity CI) et mergé par le coordinateur, mais **aucune revue humaine nommée du lake entier** n'a eu lieu. C'est une limite déclarée de la présente digestion (grille **EPIC #13106 critère 2**) : la revue humaine reste à faire et à inscrire ici le moment venu. Pour préparer cette revue, deux aide-mémoire suivent, à croiser avec la table « Structure » plus haut : qui est déjà couvert par la transmission, et sous quelle forme un acte de revue humaine nommé sera consigné.
 
-**Couverture par la transmission** : les trois notebooks listés ci-dessus couvrent partiellement le lake. Cette matrice croise les 15 modules que `lakefile.lean` compile (`globs := #[.submodules \`Knots, \`Knots_en]`, source de vérité : le glob du lakefile, pas une liste mémorisée) avec leur couverture et la lacune de revue restante.
+**Couverture par la transmission** : les trois notebooks listés ci-dessus couvrent partiellement le lake. Cette matrice croise les modules que `lakefile.lean` compile (`globs := #[.submodules \`Knots, \`Knots_en]`, source de vérité : le glob du lakefile, pas une liste mémorisée) avec leur couverture et la lacune de revue restante.
 
 | Module | Couvert par | Lacune de revue |
 |--------|-------------|-----------------|

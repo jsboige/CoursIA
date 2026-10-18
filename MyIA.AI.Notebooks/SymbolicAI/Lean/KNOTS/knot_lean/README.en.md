@@ -393,7 +393,7 @@ Three notebooks in `SymbolicAI/Lean/` carry the transmission, one per level:
 
 **Human review — honest state**: to date the lake has been reviewed by bot organs (Hermes, proof-integrity CI) and merged by the coordinator, but **no named human review of the whole lake** has taken place. This is a declared limitation of the present digestion (grid **EPIC #13106 criterion 2**): the human review remains to be done and should be recorded here when it happens. To prepare for that review, two cheat sheets follow, to be cross-referenced with the "Structure" table above: who is already covered by the transmission, and under which form a named human-review act will be recorded.
 
-**Coverage by transmission**: the three notebooks listed above cover the lake only partially. This matrix cross-references the 15 modules that `lakefile.lean` compiles (`globs := #[.submodules \`Knots, \`Knots_en]`, source of truth: the lakefile glob, not a memorised list) with their coverage and the remaining review gap.
+**Coverage by transmission**: the three notebooks listed above cover the lake only partially. This matrix cross-references the modules that `lakefile.lean` compiles (`globs := #[.submodules \`Knots, \`Knots_en]`, source of truth: the lakefile glob, not a memorised list) with their coverage and the remaining review gap.
 
 | Module | Covered by | Review gap |
 |--------|------------|------------|
