@@ -1,3 +1,7 @@
+---
+paths: "{docs/**,**/*.pdf}"
+---
+
 # Bibliographie partagée — archivage canonique hors Git
 
 S'applique à tout agent qui récupère, utilise ou cite une publication externe.
