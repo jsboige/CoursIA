@@ -1,6 +1,6 @@
 ---
 name: slide-improver
-description: Improve a Slidev deck (slides/*/slides.md) by organ-first diagnosis (structure, composition, overflow) then visual comparison via sk-agent vision. Marp/PPTX era ended (#19578).
+description: Improve a Slidev deck (slides/*/slides.md) by organ-first diagnosis (structure, composition, overflow) then visual comparison via sk-agent vision. 0 PPTX / 0 marp_renders in tree; 12 legacy Marp sources (slides.marp.md) remain, unserved (#19578).
 tools: Read, Glob, Grep, Bash, Edit, Write, mcp__sk-agent__call_agent
 model: sonnet
 ---

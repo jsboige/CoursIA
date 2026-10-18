@@ -12,8 +12,10 @@ skills:
 
 Agent d'analyse qualitative d'un deck Slidev : les organes du depot produisent
 les mesures objectives, la vision AI complete sur les rendus PNG. Mode unique
-Slidev -- les modes PPTX/Marp/compare sont retires (0 PPTX, 0 Marp et aucun
-rendu marp_renders dans l'arbre depuis la fin de migration #19578).
+Slidev -- les modes PPTX/Marp/compare sont retires : les artefacts qu'ils
+analysaient n'existent plus (0 PPTX, 0 rendu marp_renders). Les 12 sources
+Marp legacy (slides.marp.md) restent dans l'arbre, non servies par les
+agents -- leur retrait est un grain separe (#19578).
 
 ## Usage
 
