@@ -23,16 +23,22 @@
 #        gfortran pour ses extensions Fortran ; construction via
 #        assets/Dockerfile.aifeynman, execution papermill dans le conteneur)
 
-# Scientific computing (SL-3, SL-5, SL-12b)
-numpy>=1.24
+# Scientific computing (SL-3, SL-5, SL-12b, SL-13, SL-13b)
+# Bornes SUPERIEURES epinglees sur le run fondateur SL-13b (2026-09-28, issue #20863) :
+#   numpy 2.4.4 | matplotlib 3.10.8 | torch 2.11.0+cpu
+# Les versions mesurees dans le carnet doivent etre reproduites pour conserver
+# les metriques : facteurs dedies 34/40, ablation pos0 0.532, dispersion
+# "parmi actives" 0.617 +/- 0.038. numpy <2.5, matplotlib <3.11 et torch <2.12
+# fixent l'environnement avant les breaking changes mesures sur le run fondateur.
+numpy>=1.24,<2.5
 scikit-learn>=1.2              # Information mutual comparison (SL-3)
-matplotlib>=3.7                # Spectres, cartes Sinkhorn, trajectoires de recherche (SL-12b)
+matplotlib>=3.7,<3.11          # Spectres, cartes Sinkhorn, trajectoires de recherche (SL-12b)
 
 # Knowledge Graphs (SL-8)
 rdflib>=7.0                    # RDF graph manipulation, AMIE rule mining
 
-# Neuro-symbolique (SL-7)
-torch>=2.0                     # CPU suffit pour les demos
+# Neuro-symbolique (SL-7, SL-13, SL-13b)
+torch>=2.0,<2.12               # CPU suffit pour les demos
 LTNtorch>=1.0                  # ATTENTION : pas "pip install ltn" (homonyme TensorFlow)
 
 # Integration LLM (SL-9, SL-11)
