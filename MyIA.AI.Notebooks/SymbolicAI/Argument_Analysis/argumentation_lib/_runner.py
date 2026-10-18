@@ -172,7 +172,9 @@ def _execution_settings_for(kernel: Kernel, llm_service_id: str) -> Dict[str, An
     factory = getattr(service, "get_prompt_execution_settings_class", None)
     if factory is None:
         return {}
-    settings = factory()
+    # get_prompt_execution_settings_class rend la CLASSE, pas une instance :
+    # le second appel construit l'instance attendue par from_prompt_execution_settings.
+    settings = factory()()
     return {
         llm_service_id: apply_reasoning_none_for_function_tools(
             settings, getattr(service, "ai_model_id", None)
