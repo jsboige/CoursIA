@@ -90,9 +90,6 @@ _CV3_NARRATOR_REFERENCE_ID: str = "cosyvoice3-zeroshot-narrator-fr-v3"
 
 # Engine -> reference_id sentinel. The narrator cache is keyed on it
 # (#19692): an MP3 rendered by one engine is never served for another.
-# The CustomVoice sentinel embeds the speaker name so that re-pointing
-# NARRATOR_CUSTOMVOICE_SPEAKER also invalidates the cache without
-# a manual bump (a clean env override alone re-renders, by design).
 _NARRATOR_ENGINE_REFERENCE_IDS: dict[str, str] = {
     "qwen_voicedesign": _QWEN_NARRATOR_REFERENCE_ID,
     "cosyvoice3": _CV3_NARRATOR_REFERENCE_ID,
@@ -106,41 +103,29 @@ _NARRATOR_ENGINE_REFERENCE_IDS: dict[str, str] = {
 # (8 GB card on po-2027). The render runs on the bakeoff_large side
 # (po-2023, RTX 3090 24 GB) and is exposed via the self-hosted TTS gateway.
 #
-# Status as of c.1672 (2026-10-15): the public endpoint `tts-api.myia.io/v1`
-# is live (HTTP 200 on `/v1/models` verified from po-2027 c.1671) and the
-# TTS API key is integrated locally in `.secrets/master.env` (po-2027 c.1671).
-# The custom-voice synthesis route is the SAME socket as VoiceDesign: the
-# client function `qwen_tts_customvoice` (main) posts a custom-voice payload
-# to `QWEN_GATEWAY_URL/v1/audio/speech`. There is no separate
-# NARRATOR_CUSTOMVOICE_GATEWAY_URL: the narrator route reuses the client
-# already shipped for VoiceDesign, so the gateway address, the API key and
-# the timeout policy have a single source of truth.
+# Status as of #21145 (2026-10-19): the public endpoint `tts-api.myia.io/v1`
+# is live and auth-gated (`/health` healthy, `/v1/*` 401 without bearer,
+# probed from po-2025). The CustomVoice HTTP call is IMPLEMENTED in
+# `_synthesize_narrator_customvoice`: chunked render via
+# `prosody_lab.qwen_tts_client.qwen_tts_customvoice_chunked` (sentence
+# chunks, silence gap, single WAV), WAV->MP3 at 192 kbps — the transport
+# parallel of the VoiceDesign narrator call on the same socket. Point
+# NARRATOR_CUSTOMVOICE_GATEWAY_URL at the published URL to activate the
+# call; TTS_GATEWAY_API_KEY carries the bearer (client env).
 #
-# The route stays OFF by default (NARRATOR_CUSTOMVOICE_ROUTING=0): the engine
-# is opt-in, and the default narrator engine is unchanged until the flag is
-# flipped (#15002 acceptance 6 -- no silent engine swap).
-# The no-silent-swap contract carries over: an unreachable gateway, a 4xx/5xx,
-# a short audio response or a failed WAV->MP3 conversion raises
-# NarratorCustomVoiceUnavailable, and _synthesize_batch re-raises it instead
+# This branch stays OFF by default (NARRATOR_CUSTOMVOICE_ROUTING=0) until
+# the user (or ai-01) validates a sample chapter end-to-end. The
+# no-silent-swap contract of #15002 acceptance 6 carries over: any HTTP
+# call that returns 4xx/5xx, short audio, or an undefined endpoint raises
+# NarratorCustomVoiceUnavailable, and _synthesize_batch re-raises instead
 # of absorbing it into a survivable status="failed" record.
 _NARRATOR_CUSTOMVOICE_ROUTING: bool = os.getenv("NARRATOR_CUSTOMVOICE_ROUTING", "0") == "1"
 _CUSTOMVOICE_NARRATOR_SPEAKER: str = os.getenv("NARRATOR_CUSTOMVOICE_SPEAKER", "serena")
-# La sentinelle embarque le speaker : re-pointer NARRATOR_CUSTOMVOICE_SPEAKER
-# invalide le cache sans bump manuel -- un MP3 rendu par une autre voix ne doit
-# jamais etre resservi. La valeur par defaut reste celle du rendu VALIDE
-# (speaker=serena, instruct=None, mesure A0C citee ci-dessous) ; seul le
-# format change, la route n'ayant jamais rendu avant (le stub levait toujours),
-# donc aucune entree de cache n'est perdue.
-def _customvoice_narrator_reference_id(speaker: str) -> str:
-    """Sentinelle de cache de la route CustomVoice : elle encode le speaker,
-    pour que re-pointer NARRATOR_CUSTOMVOICE_SPEAKER invalide le cache sans
-    bump manuel (un MP3 rendu par une autre voix ne doit jamais etre resservi)."""
-    return f"qwen3tts-customvoice-{speaker}-narrateur-fr-v1"
-
-
-_CUSTOMVOICE_NARRATOR_REFERENCE_ID: str = _customvoice_narrator_reference_id(
-    _CUSTOMVOICE_NARRATOR_SPEAKER
-)
+# Served model id on the published gateway (GET /v1/models with the bearer
+# returns exactly ["kokoro", "tada", "qwen3"], measured 19/10 #21145) — NOT
+# the VoiceDesign checkpoint name the client defaults to. Override via env
+# if ops renames the served id.
+_CUSTOMVOICE_SERVED_MODEL: str = os.getenv("NARRATOR_CUSTOMVOICE_MODEL", "qwen3")
 # Consigne de voix par defaut : AUCUNE. Le rendu valide par l'Association
 # Bibliotheques Sonores est CustomVoice NEUTRE (mesure dans
 # `A0C-qwen3tts-customvoice-neutral-metrics.json` sur GDrive) -- `speaker=serena`,
@@ -153,6 +138,23 @@ _CUSTOMVOICE_NARRATOR_INSTRUCTIONS: str | None = (
     os.getenv("NARRATOR_CUSTOMVOICE_INSTRUCTIONS") or None
 )
 
+
+def _customvoice_narrator_reference_id(speaker: str) -> str:
+    """Sentinelle de cache de la route CustomVoice : elle encode le speaker,
+    pour que re-pointer NARRATOR_CUSTOMVOICE_SPEAKER invalide le cache sans
+    bump manuel (un MP3 rendu par une autre voix ne doit jamais etre resservi).
+
+    La sentinelle statique d'origine ("qwen3tts-customvoice-narrator-fr-B-v1")
+    annonçait un locuteur "B" alors que le rendu par défaut est "serena" :
+    la cle de cache n'identifiait donc pas la voix rendue.
+    """
+    return f"qwen3tts-customvoice-{speaker}-narrateur-fr-v1"
+
+
+_CUSTOMVOICE_NARRATOR_REFERENCE_ID: str = _customvoice_narrator_reference_id(
+    _CUSTOMVOICE_NARRATOR_SPEAKER
+)
+
 _NARRATOR_ENGINE_REFERENCE_IDS["customvoice"] = _CUSTOMVOICE_NARRATOR_REFERENCE_ID
 
 
@@ -163,6 +165,136 @@ class NarratorCustomVoiceUnavailable(RuntimeError):
     hard failure, never a silent fall back to FishAudio (#15002 acceptance 6).
     """
 
+
+# Short-audio floor for CustomVoice (#21145): same gross-backstop reasoning
+# as the CV3 degenerate-render guard (#19692) — legitimate French speech tops
+# out well under 40 chars/s, so a whole-segment WAV under this floor is a
+# degenerate render, not fast speech.
+_CUSTOMVOICE_MIN_CHARS_PER_SEC = 40.0
+_CUSTOMVOICE_MIN_ABS_S = 0.20
+
+
+def _customvoice_min_expected_s(text: str) -> float:
+    """Shortest audio that could plausibly hold `text` (CustomVoice)."""
+    return max(
+        _CUSTOMVOICE_MIN_ABS_S, len(text) / _CUSTOMVOICE_MIN_CHARS_PER_SEC
+    )
+
+
+def _synthesize_narrator_customvoice(
+    seg: AnnotatedSegment,
+    fishaudio_text: str,
+    mp3_path: Path,
+    seed: int,
+    text_hash: str,
+) -> TTSResult:
+    """Synthesize a narrator segment via Qwen3-TTS CustomVoice 1.7B (voice B).
+
+    Live HTTP call against the published gateway route (#21145, successor
+    of the wiring skeleton #20925): chunked CustomVoice render via the
+    prosody_lab client (sentence chunks, silence gap, single WAV), then
+    WAV->MP3 at 192 kbps -- the exact transport parallel of the
+    VoiceDesign narrator path on the same socket. The no-silent-swap
+    contract of #15002 acceptance 6 carries over: an undefined endpoint,
+    a 4xx/5xx (the client returns None), a failed chunk, or a short-audio
+    render below the char-derived floor all surface as
+    NarratorCustomVoiceUnavailable here, and `_synthesize_batch`
+    re-raises instead of absorbing it into a survivable status="failed"
+    record.
+    """
+    endpoint = os.getenv("NARRATOR_CUSTOMVOICE_GATEWAY_URL", "")
+    if not endpoint:
+        raise NarratorCustomVoiceUnavailable(
+            f"seg {seg.seg_index}: NARRATOR_CUSTOMVOICE_GATEWAY_URL is not "
+            f"defined; the CustomVoice branch is wired but awaits ops to "
+            f"publish the custom-voice route on the self-hosted TTS "
+            f"gateway (tts-api.myia.io/v1, HTTP 200 on /v1/models as of "
+            f"c.1672 2026-10-15)."
+        )
+
+    plain_text = _strip_brackets_for_qwen(fishaudio_text)
+    if not plain_text:
+        raise NarratorCustomVoiceUnavailable(
+            f"seg {seg.seg_index}: empty text after stripping brackets"
+        )
+
+    # Imported here (not at module top) so hermetic tests need neither the
+    # gateway nor pydub — the guards above run network-free.
+    from .prosody_lab.qwen_tts_client import qwen_tts_customvoice_chunked
+
+    # The client appends "/v1/audio/speech" itself; accept the documented
+    # ".../v1" endpoint form too instead of producing a /v1/v1 URL.
+    base_url = endpoint.rstrip("/")
+    if base_url.endswith("/v1"):
+        base_url = base_url[: -len("/v1")]
+
+    wav_bytes = qwen_tts_customvoice_chunked(
+        plain_text,
+        voice=_CUSTOMVOICE_NARRATOR_SPEAKER,
+        instructions=_CUSTOMVOICE_NARRATOR_INSTRUCTIONS or "",
+        language="French",
+        speed=1.0,
+        max_chars=_MAX_CHUNK_CHARS,
+        per_chunk_timeout=290,
+        gap_ms=120,
+        base_url=base_url,
+        model=_CUSTOMVOICE_SERVED_MODEL,
+    )
+    if not wav_bytes:
+        raise NarratorCustomVoiceUnavailable(
+            f"seg {seg.seg_index}: CustomVoice gateway returned no audio "
+            f"(unreachable, 4xx/5xx, or a failed chunk) at {endpoint}"
+        )
+
+    try:
+        from pydub import AudioSegment
+
+        audio = AudioSegment.from_file(io.BytesIO(wav_bytes), format="wav")
+    except Exception as exc:  # pragma: no cover — pydub/ffmpeg missing
+        raise NarratorCustomVoiceUnavailable(
+            f"seg {seg.seg_index}: CustomVoice WAV decode failed: {exc}"
+        ) from exc
+
+    # Short-audio guard (same gross-backstop logic as the CV3 degenerate
+    # render guard, #19692): a WAV under the char-derived floor is a
+    # degenerate render, not fast speech, and must not become a silent
+    # short MP3.
+    duration_s = len(audio) / 1000.0
+    floor_s = _customvoice_min_expected_s(plain_text)
+    if duration_s < floor_s:
+        raise NarratorCustomVoiceUnavailable(
+            f"seg {seg.seg_index}: CustomVoice short audio {duration_s:.2f}s "
+            f"< floor {floor_s:.2f}s for {len(plain_text)} chars"
+        )
+
+    try:
+        buf = io.BytesIO()
+        audio.export(buf, format="mp3", bitrate="192k")
+        mp3_bytes = buf.getvalue()
+    except Exception as exc:  # pragma: no cover — pydub/ffmpeg missing
+        raise NarratorCustomVoiceUnavailable(
+            f"seg {seg.seg_index}: WAV->MP3 conversion failed: {exc}"
+        ) from exc
+
+    mp3_path.write_bytes(mp3_bytes)
+    duration = audio_duration_mp3(mp3_bytes)
+
+    logger.info(
+        "[CustomVoice] seg %s: %d chars, %.1fs audio at %s",
+        seg.seg_index, len(plain_text), duration, endpoint,
+    )
+
+    return TTSResult(
+        seg_index=seg.seg_index,
+        speaker=seg.speaker,
+        reference_id=_CUSTOMVOICE_NARRATOR_REFERENCE_ID,
+        mp3_path=str(mp3_path),
+        duration_s=duration,
+        seed=seed,
+        status="generated",
+        attempts=1,
+        text_hash=text_hash,
+    )
 
 # VoiceDesign `instructions` prompt — describes the desired voice and delivery
 # for a 19th-century French audiobook narrator. Tuned from prosody_lab A/B
@@ -1558,92 +1690,6 @@ def _synthesize_narrator_cosyvoice3(
         seed=seed,
         status="generated",
         attempts=attempts,
-        text_hash=text_hash,
-    )
-
-
-# ---------------------------------------------------------------------------
-# Phase 2 (#17586) — Narrator routing to Qwen3-TTS CustomVoice
-# ---------------------------------------------------------------------------
-# Hard failure on gateway unreachable / render error, never a silent fall
-# back to FishAudio (#15002 acceptance 6). The failure is typed
-# NarratorCustomVoiceUnavailable, which _synthesize_batch re-raises: the
-# generic `except Exception` handler below would otherwise absorb it into a
-# survivable status="failed" record and ship an audiobook whose narrator
-# segments are silently missing. The default is OFF: the engine is opt-in,
-# and combining it with another active flag is a configuration error caught
-# at flag resolution time (see _selected_narrator_engine).
-
-
-def _synthesize_narrator_customvoice(
-    seg: AnnotatedSegment,
-    fishaudio_text: str,
-    mp3_path: Path,
-    seed: int,
-    text_hash: str,
-) -> TTSResult:
-    """Synthesize a narrator segment via Qwen3-TTS CustomVoice.
-
-    Named native speaker + neutral style instruction (defaults overridable
-    via env). Chunked by sentence using the same splitter as VoiceDesign
-    so a long passage renders in pieces under the gateway timeout. Returns
-    a TTSResult with status="generated" on success; raises
-    NarratorCustomVoiceUnavailable on any gateway / render failure (no
-    silent fall back to FishAudio -- #15002 acceptance 6).
-    """
-    # Imported here (not at module top) so this module remains usable even
-    # if the prosody_lab package is absent in a slim environment.
-    from .prosody_lab.qwen_tts_client import qwen_tts_customvoice_chunked
-
-    plain_text = _strip_brackets_for_qwen(fishaudio_text)
-    if not plain_text:
-        raise NarratorCustomVoiceUnavailable(
-            f"seg {seg.seg_index}: empty text after stripping brackets"
-        )
-
-    wav_bytes = qwen_tts_customvoice_chunked(
-        plain_text,
-        voice=_CUSTOMVOICE_NARRATOR_SPEAKER,
-        instructions=_CUSTOMVOICE_NARRATOR_INSTRUCTIONS or "",
-        language="French",
-        speed=1.0,
-        max_chars=_MAX_CHUNK_CHARS,
-        per_chunk_timeout=290,
-        gap_ms=120,
-    )
-    if not wav_bytes:
-        raise NarratorCustomVoiceUnavailable(
-            f"seg {seg.seg_index}: Qwen CustomVoice returned None (gateway "
-            f"unreachable, voice={_CUSTOMVOICE_NARRATOR_SPEAKER} rejected, or "
-            f"render failed)"
-        )
-
-    # CustomVoice returns WAV; downstream pipeline writes MP3 (same naming
-    # convention as VoiceDesign and CosyVoice3 paths). Convert via pydub at
-    # 192 kbps to match.
-    try:
-        from pydub import AudioSegment
-        audio = AudioSegment.from_file(io.BytesIO(wav_bytes), format="wav")
-        buf = io.BytesIO()
-        audio.export(buf, format="mp3", bitrate="192k")
-        mp3_bytes = buf.getvalue()
-    except Exception as exc:  # pragma: no cover — pydub/ffmpeg missing
-        raise NarratorCustomVoiceUnavailable(
-            f"seg {seg.seg_index}: WAV->MP3 conversion failed: {exc}"
-        ) from exc
-
-    mp3_path.write_bytes(mp3_bytes)
-    duration = audio_duration_mp3(mp3_bytes)
-
-    return TTSResult(
-        seg_index=seg.seg_index,
-        speaker=seg.speaker,
-        reference_id=_CUSTOMVOICE_NARRATOR_REFERENCE_ID,
-        mp3_path=str(mp3_path),
-        duration_s=duration,
-        seed=seed,
-        status="generated",
-        attempts=1,
         text_hash=text_hash,
     )
 
