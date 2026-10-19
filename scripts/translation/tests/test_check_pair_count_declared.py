@@ -343,7 +343,9 @@ class TestAcceptance:
 
     @classmethod
     def setup_class(cls):
-        repo = Path(r"D:\CoursIA-2")  # the real checkout
+        # Walk up from the test file to the repo root (scripts/translation/tests -> 3 levels).
+        # CI runners on Linux would otherwise fail on a hardcoded Windows path.
+        repo = Path(__file__).resolve().parents[3]
         cls.repo = repo
         for remote_ref, local_ref in (
             ("pull/19943/head", "pr-19943"),
