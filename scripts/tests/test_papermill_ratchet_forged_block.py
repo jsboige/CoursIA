@@ -313,3 +313,31 @@ def test_forged_block_per_cell_block_added_not_flagged():
     verdict, regression = cpr.classify(base, head)
     assert verdict == "BLOCK_MOVED", verdict
     assert regression is False, regression
+
+
+def test_forged_block_not_triggered_on_notebook_without_per_cell_blocks():
+    """Notebooks with a top-level papermill block but no per-cell blocks
+    (legacy papermill versions, or pre-per-cell-write runs) cannot be a
+    hand-rewrite of the top-level -- the per-cell layer is simply absent.
+    Without the ``b_cell_pms`` truthiness guard on the global signature
+    branch, a legitimate BLOCK_MOVED (executor rewrote the top-level
+    alongside outputs) was being mis-routed as FORGED_BLOCK because both
+    per-cell signatures are the empty string.
+
+    C'est le cas du test legacy ``test_block_moved_passes`` (run 39179203301
+    rouge au head ``c0799dd1``) : les notebooks construits par ``make_nb``
+    n'ont qu'un bloc top-level, et la garde globale se declenchait a tort
+    (regression du contrat #11155, reproduit in-memory par Hermes en revue
+    c2190, 19/10 03:08Z). Le correctif ajoute ``b_cell_pms`` truthiness a
+    la branche FORGED_BLOCK globale, ce qui retablit BLOCK_MOVED pour les
+    notebooks sans per-cell blocks.
+    """
+    base, head = _states(
+        REAL_TOP, HAND_TOP,
+        None, None,  # no per-cell blocks on either side
+        [{"text": ["hello"]}],
+        [{"text": ["hello fresh"]}],
+    )
+    verdict, regression = cpr.classify(base, head)
+    assert verdict == "BLOCK_MOVED", verdict
+    assert regression is False, regression

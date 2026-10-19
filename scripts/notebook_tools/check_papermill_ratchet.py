@@ -281,7 +281,16 @@ def classify(base_state, head_state):
     # signature identical to the base. #21229/#21230/#21232 measured on
     # 18/10 all rode that path. #21232: 16.0 s exactly, microsecond-identical
     # end_time, no cell-level block touched - the FORGED_BLOCK class.
-    if h_cell_sig == b_cell_sig and b_block is not None:
+    # The guard requires b_cell_pms to be non-empty: a notebook with a
+    # top-level metadata.papermill but NO per-cell blocks (legacy papermill
+    # versions, or papermill run that pre-dates the per-cell block write)
+    # cannot be a hand-rewrite of the top-level -- the per-cell layer is
+    # simply absent. Falling through to BLOCK_MOVED preserves the legacy
+    # green path for such notebooks (issue #11155 contract). #11155
+    # regression reproduced on test_block_moved_passes without this guard
+    # (Hermes review c2190, run 39179203301).
+    if (h_cell_sig == b_cell_sig and b_block is not None
+            and b_cell_pms):
         return "FORGED_BLOCK", True
     # Per-cell check (c2187-ask, refine #21299): the global signature above
     # is the all-identical case. Mixed cases -- a hand-rewriter that touched
