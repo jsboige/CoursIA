@@ -780,7 +780,7 @@ def render_text(
     if famine:
         lines.append("")
         lines.append(
-            f"Famine de progression (issues ouvertes > {famine['threshold_weeks']} sem.) : {famine['count']}"
+            f"Issues ouvertes creees > {famine['threshold_weeks']} sem. (proxy famine) : {famine['count']}"
         )
         if famine.get("examples"):
             lines.append(f"  plus vieilles : {', '.join(f'#{n}' for n in famine['examples'])}")
