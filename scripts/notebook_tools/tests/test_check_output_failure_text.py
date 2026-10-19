@@ -860,9 +860,11 @@ def test_20120_bare_shapes_stay_flagged():
 
 
 def test_20120_traceback_paths_are_the_known_bound():
-    # Meme borne faux negatif : une trace d'erreur cite ses chemins entre
-    # guillemets (`File "..."`, repr Python) -- exemptes sous la forme
-    # retenue. Aucune occurrence dans le corpus.
+    # #21444 inverse la borne : une trace d'erreur cite ses chemins entre
+    # guillemets (`File "..."`, en-tete `<Nom>Error: [Errno ...`) -- c'est la
+    # classe B de la regle 6 (chemin dans une exception), le mecanisme meme
+    # de l'Epic #21424 : ces lignes restent MACHINE_PATH. La ligne citante
+    # HORS trace reste exempte (test quoted_shapes ci-dessus).
     trace = ('Traceback (most recent call last):\n'
              '  File "/home/alice/CoursIA/run.py", line 3, in <module>\n'
              '    main()\n'
@@ -870,8 +872,8 @@ def test_20120_traceback_paths_are_the_known_bound():
              "'/home/alice/CoursIA/data.csv'")
     got = scan(nb(cell("main()", trace)))
 
-    assert got["MACHINE_PATH"] == []
-    assert len(got["PROGRAM_LITERAL"]) == 2
+    assert len(got["MACHINE_PATH"]) == 2
+    assert got["PROGRAM_LITERAL"] == []
 
 
 def test_20120_code_comment_path_stays_flagged():
