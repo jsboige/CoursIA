@@ -796,8 +796,8 @@ def test_update_existing_csv_preserves_src_hash_lang(tmp_path):
     # text_en et hash_en sont préservés (anti-écrasement des traductions T3).
     assert rows[0]["text_en"] == "old-translation"
     assert rows[0]["hash_en"] == "h-old"
-    # Et — c'est le新增 — src_hash_en est préservée verbatim, ce qui permettra
-    # à STALE_TRAD de signaler la retraduction requise en aval.
+    # Et — c'est l'ajout de #20836 — src_hash_en est préservée verbatim, ce qui
+    # permettra à STALE_TRAD de signaler la retraduction requise en aval.
     assert rows[0]["src_hash_en"] == "ancien"
 
 
