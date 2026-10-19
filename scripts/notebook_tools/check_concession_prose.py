@@ -17,8 +17,18 @@ lignes ; mesure ai-01 concordante).
 
 Sorties :
   - mode --commit / --history : une ligne JSON (JSONL) par ligne d'aveu
-    ajoutee, champs {commit, date, notebook, cell, line, motif} ; plus un
-    resume par commit sur stderr et un resume final sur stdout.
+    ajoutee, champs {commit, date, notebook, cell, line, motif, kind} ; plus
+    un resume par commit sur stderr et un resume final sur stdout.
+    - "cell" : id nbformat de la cellule (stable au deplacement), position
+      "pos-N" en repli (apport #21443) ;
+    - "line" : la ligne BRUTE, accents et casse d'origine -- le match et la
+      comparaison au parent portent sur la forme normalisee (apport #21443) ;
+    - "kind" : "added" (ligne prouvee ajoutee sur un carnet existant) vs
+      "notebook-added" (carnet CREE par le commit, aucune baseline -- espece
+      separee, comptee a part : la mesurer lane montre ~95 degrades de
+      naissance vs ~189 ajoutes sur 3 jours, les melanger fausserait la
+      calibration T2 ; apport #21443).
+
   - mode --self-test : controles positif/negatif (voir SELF_TEST_*).
 
 Historique reprenable : --state <fichier> retient le dernier commit traite ;
@@ -73,37 +83,52 @@ def _source_text(cell):
     return str(src or "")
 
 
-def markdown_lines(nb):
-    """Cellules markdown -> {index_cellule: [lignes normalisees]}."""
+def markdown_cells(nb):
+    """Cellules markdown -> {adresse: [lignes brutes]}.
+
+    Adresse stable (apport #21443) : l'id nbformat (4.5) de la cellule quand
+    present, la position "pos-N" en repli -- un id survit au deplacement de
+    la cellule, une position non.
+    """
     out = {}
-    for i, cell in enumerate(nb.get("cells", [])):
-        if cell.get("cell_type") == "markdown":
-            out[i] = [_normalize(ln)
-                      for ln in _source_text(cell).splitlines()]
+    if not nb:
+        return out
+    for i, cell in enumerate(nb.get("cells") or []):
+        if cell.get("cell_type") != "markdown":
+            continue
+        key = cell.get("id") or ("pos-%d" % i)
+        out[key] = _source_text(cell).splitlines()
     return out
 
 
 def added_concession_lines(parent_nb, head_nb):
     """Lignes d'aveu AJOUTEES entre deux carnets parses.
 
-    Une ligne du head compte comme ajoutee seulement si elle n'apparait dans
-    AUCUNE cellule markdown du parent (comparaison normalisee exacte) : une
-    ligne deja presente au parent -- meme deplacee d'une cellule a l'autre --
-    ne compte pas (correction F1, attendu 2 de #21433).
+    Une ligne du head compte comme ajoutee seulement si sa forme normalisee
+    n'apparait dans AUCUNE cellule markdown du parent (comparaison
+    normalisee exacte) : une ligne deja presente au parent -- meme deplacee
+    d'une cellule a l'autre -- ne compte pas (correction F1, attendu 2 de
+    #21433).
 
-    Rend la liste ET le compte (lecons count-vs-list) : [{cell, line, motif}].
+    Le MATCH de motif et la comparaison au parent portent sur la ligne
+    normalisee ; le champ "line" du hit garde la ligne BRUTE, accents et
+    casse d'origine -- c'est elle que le tri humain lira (apport #21443).
+
+    Rend la liste ET le compte (lecons count-vs-list) :
+    [{cell, line, motif}] avec cell = id nbformat ou "pos-N".
     """
     parent_all = set()
-    for lines in markdown_lines(parent_nb).values():
-        parent_all.update(lines)
+    for lines in markdown_cells(parent_nb).values():
+        parent_all.update(_normalize(ln) for ln in lines)
     hits = []
-    for idx, lines in markdown_lines(head_nb).items():
+    for key, lines in markdown_cells(head_nb).items():
         for line in lines:
-            if line in parent_all:
+            norm = _normalize(line)
+            if norm in parent_all:
                 continue
-            m = CONCESSION_RE.search(line)
+            m = CONCESSION_RE.search(norm)
             if m:
-                hits.append({"cell": idx,
+                hits.append({"cell": key,
                              "line": line.strip()[:200],
                              "motif": m.group(0)})
     return hits
@@ -131,7 +156,12 @@ def commit_hits(sha, cwd=None):
     """Hits d'un commit : carnets ipynb ajoutes/modifies, parent vs head.
 
     Les commits de merge (plusieurs parents) sont ecartes : leur diff
-    n'est pas de la prose d'auteur. Rend (hits, notebooks_vus, skipped).
+    n'est pas de la prose d'auteur. Un carnet CREE par le commit (absent au
+    parent) est une espece separee, kind="notebook-added" : sans baseline,
+    aucune ligne ne peut etre prouvee ajoutee (apport #21443). Un parent
+    present mais illisible (JSON casse, historique ancien) ecarte le carnet
+    -- lui fabriquer une baseline vide attribuerait a tort tout le stock du
+    head a ce commit. Rend (hits, notebooks_vus, skipped).
     """
     raw = git("log", "-1", "--format=%P", sha, cwd=cwd)
     if raw is None:
@@ -152,11 +182,16 @@ def commit_hits(sha, cwd=None):
         if head_nb is None:
             continue
         parent_blob = git("show", f"{sha}~1:{nb_path}", cwd=cwd)
-        parent_nb = (parse_notebook(parent_blob)
-                     if parent_blob is not None else {"cells": []})
+        if parent_blob is None:
+            parent_nb = None  # carnet cree par ce commit
+        else:
+            parent_nb = parse_notebook(parent_blob)
+            if parent_nb is None:
+                continue  # parent illisible : pas de baseline, on ecarte
         seen.append(nb_path)
+        kind = "notebook-added" if parent_nb is None else "added"
         for h in added_concession_lines(parent_nb, head_nb):
-            h.update({"commit": sha, "notebook": nb_path})
+            h.update({"commit": sha, "notebook": nb_path, "kind": kind})
             hits.append(h)
     return hits, seen, None
 
@@ -193,8 +228,11 @@ def self_test(cwd=None):
                                              "Prose sans aveu.\n",
                                              "Resultat illustratif."]}]}
     hits = added_concession_lines(parent, head)
-    if len(hits) == 1 and hits[0]["motif"] == "illustrati":
-        notes.append("PASS positif synthetique: 1 hit motif=illustrati")
+    if (len(hits) == 1 and hits[0]["motif"] == "illustrati"
+            and hits[0]["cell"] == "pos-0"
+            and hits[0]["line"] == "Resultat illustratif."):
+        notes.append("PASS positif synthetique: 1 hit motif=illustrati, "
+                     "ligne brute conservee")
     else:
         ok = False
         notes.append(f"FAIL positif synthetique: hits={hits}")
@@ -223,15 +261,17 @@ def self_test(cwd=None):
         ok = False
         notes.append("FAIL ligne deplacee (deja au parent): compte a tort")
 
-    # (d) Accent-blind : « exécution sautée » hit « sautee ».
+    # (d) Accent-blind : « exécution sautée » hit « sautee », et le hit
+    #     garde la ligne BRUTE (apport #21443).
     head4 = {"cells": [
         {"cell_type": "markdown", "source": ["Exécution sautée (locale)"]}]}
     hits4 = added_concession_lines({"cells": []}, head4)
-    if len(hits4) == 1:
-        notes.append("PASS accent-blind (sautee)")
+    if (len(hits4) == 1 and hits4[0]["motif"] == "sautee"
+            and hits4[0]["line"] == "Exécution sautée (locale)"):
+        notes.append("PASS accent-blind (sautee), ligne brute conservee")
     else:
         ok = False
-        notes.append("FAIL accent-blind (sautee)")
+        notes.append(f"FAIL accent-blind (sautee): {hits4}")
 
     # (e) Code ne compte pas : cellule code avec « placeholder » ->
     #     hors champ (markdown seulement).
@@ -249,6 +289,7 @@ def self_test(cwd=None):
         n_hits = len(res[0]) if res else -1
         good_nb = (res is not None and n_hits == SELF_TEST_EXPECTED_HITS
                    and all(h["notebook"] == SELF_TEST_NOTEBOOK
+                           and h["kind"] == "added"
                            for h in res[0]))
         if good_nb:
             notes.append(f"PASS replay {SELF_TEST_COMMIT[:12]}: exactement "
@@ -306,8 +347,11 @@ def main(argv=None):
             h["date"] = (git("log", "-1", "--format=%ci",
                              args.commit, cwd=cwd) or "").strip()
         emit(hits, args.out)
-        print(f"{args.commit[:12]}: {len(hits)} hit(s), "
-              f"{len(seen)} carnet(s){' [merge ecarte]' if skipped else ''}")
+        n_added = sum(1 for h in hits if h.get("kind") == "added")
+        n_new = len(hits) - n_added
+        print(f"{args.commit[:12]}: {n_added} hit(s) ajoute(s), "
+              f"{n_new} notebook-added, {len(seen)} carnet(s)"
+              f"{' [merge ecarte]' if skipped else ''}")
         return 0
 
     if args.history:
@@ -323,7 +367,8 @@ def main(argv=None):
             print("historique inaccessible (git log a echoue)",
                   file=sys.stderr)
             return 1
-        total_hits = 0
+        total_added = 0
+        total_new = 0
         merges = 0
         last_sha = after
         out = open(args.out, "a", encoding="utf-8") if args.out else sys.stdout
@@ -342,7 +387,10 @@ def main(argv=None):
                 for h in hits:
                     h["date"] = date
                     print(json.dumps(h, ensure_ascii=False), file=out)
-                total_hits += len(hits)
+                total_added += sum(1 for h in hits
+                                   if h.get("kind") == "added")
+                total_new += sum(1 for h in hits
+                                 if h.get("kind") == "notebook-added")
                 last_sha = sha
         finally:
             if out is not sys.stdout:
@@ -351,7 +399,8 @@ def main(argv=None):
             with open(args.state, "w", encoding="utf-8") as fh:
                 fh.write(last_sha + "\n")
         print(f"historique: {len(rows)} commit(s) ipynb, "
-              f"{merges} merge(s) ecarte(s), {total_hits} hit(s) au total"
+              f"{merges} merge(s) ecarte(s), {total_added} hit(s) ajoute(s) "
+              f"+ {total_new} notebook-added au total"
               + (f", repris apres {after[:12]}" if after else ""))
         return 0
 

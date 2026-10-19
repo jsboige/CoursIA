@@ -20,7 +20,7 @@ from check_concession_prose import (  # noqa: E402
     added_concession_lines,
     iter_commits,
     main,
-    markdown_lines,
+    markdown_cells,
 )
 
 NB_PLAIN = {
@@ -46,7 +46,7 @@ class TestAddedConcessionLines:
         hits = added_concession_lines(NB_PLAIN, head)
         assert len(hits) == 1
         assert hits[0]["motif"] == "illustrati"
-        assert hits[0]["cell"] == 0
+        assert hits[0]["cell"] == "pos-0"
 
     def test_negative_ordinary_prose(self):
         head = _nb("# Titre\n", "Prose ordinaire.\n",
@@ -96,14 +96,39 @@ class TestAddedConcessionLines:
 
     def test_list_and_count_agree(self):
         # Lecon count-vs-list : la liste et son compte restent coherents.
+        # Le motif se matche sur la forme NORMALISEE (la ligne brute garde
+        # accents et casse, apport #21443).
+        from check_concession_prose import _normalize
         head = _nb("Resultat illustratif.", "Mode degrade assume.")
         hits = added_concession_lines({"cells": []}, head)
         assert len(hits) == 2
-        assert all(CONCESSION_RE.search(h["line"]) for h in hits)
+        assert all(CONCESSION_RE.search(_normalize(h["line"])) for h in hits)
 
     def test_markdown_lines_normalizes(self):
-        lines = markdown_lines(_nb("Limites du modèle"))
-        assert lines[0] == ["limites du modele"]
+        # markdown_cells rend les lignes BRUTES ; la normalisation est
+        # interne a added_concession_lines (match + comparaison parent).
+        cells = markdown_cells(_nb("Limites du modèle"))
+        assert cells == {"pos-0": ["Limites du modèle"]}
+
+    def test_raw_line_preserved_in_hit(self):
+        # Apport 1 (#21443) : le hit garde la ligne BRUTE, accents et casse
+        # d'origine -- le match seul porte sur la forme normalisee.
+        head = _nb("Le résultat est purement illustratif ici.")
+        hits = added_concession_lines({"cells": []}, head)
+        assert len(hits) == 1
+        assert hits[0]["line"] == "Le résultat est purement illustratif ici."
+        assert hits[0]["motif"] == "illustrati"
+
+    def test_cell_address_id_then_position_fallback(self):
+        # Apport 2 (#21443) : adresse stable par id nbformat quand present,
+        # position "pos-N" en repli pour les carnets sans id.
+        head = {"cells": [
+            {"cell_type": "markdown", "id": "cell-conclusion",
+             "source": ["Résultat illustratif.\n"]},
+            {"cell_type": "markdown", "source": ["Mode dégradé assumé.\n"]},
+        ]}
+        hits = added_concession_lines({"cells": []}, head)
+        assert {h["cell"] for h in hits} == {"cell-conclusion", "pos-1"}
 
 
 def _run_git(repo, *args):
@@ -154,6 +179,39 @@ class TestCommitHitsAndHistory:
         assert rc == 0
         assert not [l for l in out.splitlines() if l.startswith("{")]
 
+    def test_notebook_created_is_separate_kind(self, tmp_path, capsys):
+        # Apport 3 (#21443) : un carnet CREE par le commit n'a pas de
+        # baseline -- espece "notebook-added", comptee separement.
+        from check_concession_prose import commit_hits
+        repo = self._repo(tmp_path)
+        _commit_nb(repo, "a.ipynb", self._nb_file("Prose ordinaire."), "c1")
+        _commit_nb(repo, "nouveau.ipynb",
+                   self._nb_file("Résultat illustratif."), "c2")
+        hits, seen, skipped = commit_hits("HEAD", cwd=str(repo))
+        assert skipped is None and seen == ["nouveau.ipynb"]
+        assert len(hits) == 1
+        assert hits[0]["kind"] == "notebook-added"
+        assert hits[0]["line"] == "Résultat illustratif."
+        # Via main : le resume separe bien les deux especes.
+        rc = main(["--commit", "HEAD", "--cwd", str(repo)])
+        out = capsys.readouterr().out
+        assert rc == 0
+        assert "0 hit(s) ajoute(s), 1 notebook-added" in out
+
+    def test_broken_parent_json_skips_notebook(self, tmp_path):
+        # Regression : un parent present mais JSON casse (historique ancien)
+        # doit ecarter le carnet, pas crasher ni fabriquer une baseline
+        # vide qui attribuerait tout le stock du head a ce commit.
+        from check_concession_prose import commit_hits
+        repo = self._repo(tmp_path)
+        (repo / "a.ipynb").write_text("{pas du json", encoding="utf-8")
+        _run_git(repo, "add", "a.ipynb")
+        _run_git(repo, "commit", "-m", "c1", "-q")
+        _commit_nb(repo, "a.ipynb",
+                   self._nb_file("Résultat illustratif."), "c2")
+        hits, seen, skipped = commit_hits("HEAD", cwd=str(repo))
+        assert (hits, seen, skipped) == ([], [], None)
+
     def test_history_and_since_resume(self, tmp_path, capsys):
         repo = self._repo(tmp_path)
         _commit_nb(repo, "a.ipynb", self._nb_file("Prose ordinaire."), "c1")
@@ -196,7 +254,7 @@ class TestCommitHitsAndHistory:
         rc = main(["--history", "--cwd", str(repo)])
         out = capsys.readouterr().out
         assert rc == 0
-        assert "0 hit(s) au total" in out
+        assert "0 hit(s) ajoute(s) + 0 notebook-added" in out
 
     def test_state_file_written(self, tmp_path, capsys):
         repo = self._repo(tmp_path)
