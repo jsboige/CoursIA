@@ -18,13 +18,13 @@ Avant de committer une sortie degradee, repondre **par ecrit (body PR)** par 1 d
 | **RECOVERABLE-USER-HAND** | Action user one-time (token, OAuth, creds paper-trading, acces modele gate, hardware) | signaler **EXPLICITEMENT dans vscode** ([user-blocker-signaling](user-blocker-signaling.md)), puis re-exec |
 | **INTRINSIC** | Aucun chemin SOTA reel (service externe mort, vraiment intractable) | documenter **HONNETEMENT** le plafond atteignable — explicite, jamais maquille en resultat SOTA |
 
-Le defaut paresseux (« ASCII art / reimplementation jouet / 'Java absent' / 'kernel not available locally' ») committe **sans avoir verifie RECOVERABLE-*** = manquement grave.
+Le defaut paresseux (« ASCII art / reimplementation jouet / 'Java absent' / 'kernel not available locally' ») committe **sans avoir verifie RECOVERABLE-*** = manquement grave. **Une issue ou un dispatch ne propose jamais « reformuler » comme alternative a une reparation RECOVERABLE-\*** : la branche bon marche est celle que la lane prendra (#21053).
 
 **Flowcharts : Mermaid est le moteur canonique.** Une architecture pipeline, un flux de données ou un organigramme dessiné en ASCII se remplace par un bloc `mermaid` (`flowchart LR`/`TD`), après vérification sémantique humaine ; `scripts/notebook_tools/detect_ascii_flowchart.py` détecte les candidats mais n'auto-convertit jamais. Les tables et grilles ASCII légitimes sont hors scope et restent des tables.
 
 ### Procedure d'etablissement INTRINSIC — checklist 6 axes obligatoire (NEW c.8243, #10459)
 
-`INTRINSIC` declare une impossibilite : il justifie une substitution durable, invisible pour les auditeurs suivants. Donc **chaque verdict `INTRINSIC` doit repondre nominativement les 6 axes** suivants, par « non applicable, parce que… » ou « oui, mais testé, résultat : ... » :
+`INTRINSIC` declare une impossibilite : il justifie une substitution durable, invisible pour les auditeurs suivants. **Condition d'entree, avant la grille** : prouver que l'outil vise n'est pas disponible, par une recherche a la source (depot, registre de paquets, page du projet), URL et date dans le body. Une grille remplie « N/A » sur un outil qui existe est un faux `INTRINSIC` (#21121 : TorchLean, public depuis le 2026-05-11). Ensuite, **chaque verdict `INTRINSIC` doit repondre nominativement les 6 axes** suivants, par « non applicable, parce que… » ou « oui, mais testé, résultat : ... » :
 
 | # | Axe | Question a repondre dans le body PR |
 |---|---|---|
