@@ -17,6 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from check_output_collapse import (
     BASE_FLOOR,
+    CONCESSION_RE,
     DIAGNOSTIC_LINE_FRACTION,
     MAGNITUDE_FACTOR,
     MOVED_GAIN_FRACTION,
@@ -25,6 +26,7 @@ from check_output_collapse import (
     _diagnostic_fraction,
     _normalize,
     analyze,
+    history,
 )
 
 
@@ -184,3 +186,167 @@ def test_constants_pinned():
     assert SIGNATURE_FACTOR == 2
     assert MOVED_GAIN_FRACTION == 0.5
     assert DIAGNOSTIC_LINE_FRACTION == 0.8
+
+
+# --- --history mode (Epic #21424, T1) -----------------------------------
+
+import json
+import os
+import subprocess
+import tempfile
+
+# CONCESSION_RE is the regex that the --history mode uses to count added
+# prose lines that admit a degraded state. The calibration dataset is built
+# by hand from a few representative notebooks, but the regex itself is
+# pinned here, against both positive controls (the prose twins of
+# SIGNATURE cells) and a negative control (ordinary prose).
+CONCESSION_POSITIVE = [
+    "## Note honnete : la cellule 5 a ete executee partiellement",
+    "**Mode simulation** -- la branche Anthropic n'est pas testee ici",
+    "API non configuree, merci de renseigner OPENAI_API_KEY",
+    "cle api absente sur la machine d'execution",
+    "execution sautee (le modele n'est pas disponible)",
+    "ce carnet a des limites : la jambe QC n'est pas executee",
+    "placeholder pour les exemples reels",
+    "indisponible en l'absence du fichier modele",
+    "note d'illustration, ce resultat n'est pas un benchmark",
+]
+
+
+def test_concession_re_matches_known_shapes():
+    for line in CONCESSION_POSITIVE:
+        assert CONCESSION_RE.search(_normalize(line)), (
+            "CONCESSION_RE missed positive control: " + line[:80])
+
+
+def test_concession_re_does_not_over_fire_on_ordinary_prose():
+    ordinary = [
+        "Cette cellule calcule la moyenne du tableau ci-dessus.",
+        "Le resultat depend de la graine aleatoire choisie.",
+        "Voir la documentation officielle pour plus de details.",
+        "L'API est appelee avec un timeout de 30 secondes.",
+    ]
+    for line in ordinary:
+        assert not CONCESSION_RE.search(_normalize(line)), (
+            "CONCESSION_RE over-fired on ordinary prose: " + line)
+
+
+def test_history_writes_json_lines_resumable(tmp_path=None):
+    # Synthesise a git history with one commit that carries a prose
+    # concession line. The replay must:
+    #   - produce exactly one JSON line (the commit's SHA + the matched
+    #     concession snippet + a non-empty concessions list),
+    #   - be re-runnable: a second call on the same output file is a
+    #     no-op (deduped by short SHA), so the file still has one row.
+    # The setup avoids touching the real repo: a throwaway git repo is
+    # built in a temp dir with branch `main` and a `origin/main` ref so
+    # the `git log origin/main` call inside ``history`` finds commits.
+    tmp = tempfile.mkdtemp()
+    subprocess.run(["git", "init", "-q", "-b", "main", tmp], check=True)
+    subprocess.run(["git", "-C", tmp, "config", "user.email",
+                    "test@example.com"], check=True)
+    subprocess.run(["git", "-C", tmp, "config", "user.name",
+                    "Test"], check=True)
+    # Initial commit: a notebook with a healthy output.
+    nb_path = "demo.ipynb"
+    nb_v1 = {
+        "cells": [
+            {"cell_type": "code", "id": "c1",
+             "outputs": [{"output_type": "stream",
+                          "text": "x" * 1000}]}],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    with open(os.path.join(tmp, nb_path), "w", encoding="utf-8") as f:
+        json.dump(nb_v1, f)
+    subprocess.run(["git", "-C", tmp, "add", "."], check=True)
+    subprocess.run(["git", "-C", tmp, "commit", "-q", "-m",
+                    "initial healthy notebook"], check=True)
+    # Second commit: collapse the cell to a skip notice AND add a prose
+    # concession line in a markdown cell. The regression must fire AND
+    # the concession must be recorded.
+    nb_v2 = {
+        "cells": [
+            {"cell_type": "code", "id": "c1",
+             "outputs": [{"output_type": "stream",
+                          "text": ("[INFO] API non configuree - "
+                                   "execution sautee\n")}]},
+            {"cell_type": "markdown", "id": "c2",
+             "source": ("## Note honnete : la cellule 5 a ete "
+                        "executee partiellement\n")}],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    with open(os.path.join(tmp, nb_path), "w", encoding="utf-8") as f:
+        json.dump(nb_v2, f)
+    subprocess.run(["git", "-C", tmp, "add", "."], check=True)
+    subprocess.run(["git", "-C", tmp, "commit", "-q", "-m",
+                    "collapse to skip notice + concession prose"],
+                   check=True)
+    # The replay targets `origin/main`; we add a local remote-less ref
+    # that points at HEAD, which ``git log origin/main`` resolves
+    # without a network. Equivalent to ``git remote add`` followed by
+    # ``git fetch`` in a real workflow, but pure local.
+    head = subprocess.run(["git", "-C", tmp, "rev-parse", "HEAD"],
+                          capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", check=True
+                          ).stdout.strip()
+    subprocess.run(["git", "-C", tmp, "update-ref",
+                    "refs/remotes/origin/main", head], check=True)
+    out = os.path.join(tmp, "calibration.jsonl")
+    scanned, emitted = history("1970-01-01", "2099-01-01", out, cwd=tmp)
+    assert scanned == 2, f"expected 2 commits scanned, got {scanned}"
+    assert emitted == 1, f"expected 1 commit emitted, got {emitted}"
+    with open(out, "r", encoding="utf-8") as f:
+        rows = [json.loads(line) for line in f if line.strip()]
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["regressed"], "expected the collapse to be detected"
+    assert row["n_concessions"] >= 1, "expected at least one concession"
+    assert any("honnete" in c for c in row["concessions"]), (
+        "expected the 'honnete' concession snippet to be captured")
+    # Re-run: must be idempotent (no duplicate row). The first commit
+    # is healthy (no row), the second is in the dedupe set -- both are
+    # skipped on the re-run, so the file still has one row.
+    scanned2, emitted2 = history("1970-01-01", "2099-01-01", out, cwd=tmp)
+    assert emitted2 == 0
+    with open(out, "r", encoding="utf-8") as f:
+        rows2 = [json.loads(line) for line in f if line.strip()]
+    assert len(rows2) == 1
+
+
+def test_history_silent_commit_emits_no_row():
+    # A commit that ONLY adds an unrelated source file (no notebook
+    # touched, no concession prose) must produce no row. The replay
+    # function must not invent findings.
+    tmp = tempfile.mkdtemp()
+    subprocess.run(["git", "init", "-q", "-b", "main", tmp], check=True)
+    subprocess.run(["git", "-C", tmp, "config", "user.email",
+                    "test@example.com"], check=True)
+    subprocess.run(["git", "-C", tmp, "config", "user.name",
+                    "Test"], check=True)
+    open(os.path.join(tmp, "README.md"), "w", encoding="utf-8").write("# hi")
+    subprocess.run(["git", "-C", tmp, "add", "."], check=True)
+    subprocess.run(["git", "-C", tmp, "commit", "-q", "-m",
+                    "add readme"], check=True)
+    head = subprocess.run(["git", "-C", tmp, "rev-parse", "HEAD"],
+                          capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", check=True
+                          ).stdout.strip()
+    subprocess.run(["git", "-C", tmp, "update-ref",
+                    "refs/remotes/origin/main", head], check=True)
+    out = os.path.join(tmp, "calibration.jsonl")
+    scanned, emitted = history("1970-01-01", "2099-01-01", out, cwd=tmp)
+    assert scanned == 1, f"expected 1 commit scanned, got {scanned}"
+    assert emitted == 0
+    assert os.path.getsize(out) == 0
+
+
+def test_history_missing_origin_main_returns_zero():
+    # A repo without origin/main (the throwaway case above) must
+    # return (0, 0) without writing the file -- ``git log origin/main``
+    # produces no output, and the function must not invent commits.
+    tmp = tempfile.mkdtemp()
+    subprocess.run(["git", "init", "-q", "-b", "main", tmp], check=True)
+    out = os.path.join(tmp, "calibration.jsonl")
+    scanned, emitted = history("1970-01-01", "2099-01-01", out, cwd=tmp)
+    assert (scanned, emitted) == (0, 0)
+    assert not os.path.exists(out)

@@ -10,6 +10,16 @@ graceful-degradation guards (``if api_ok:``) did their job: three cells ran
 "successfully" and printed ``Execution sautee (API non configuree)`` instead
 of their real output (2195 -> 147, 2568 -> 38, 2074 -> 42 chars).
 
+The ``--history`` mode (Epic #21424, T1) replays the same per-cell analysis
+over the first-parent commits of ``origin/main`` between ``--since`` and
+``--until``, classifying added prose lines that CONCEDE a degraded state
+(sautee, simule, non disponible, etc.). Each commit with a regression or a
+concession line is written as one JSON line to ``--out``, carrying the
+per-cell finding and a few matched concession snippets -- a calibrated
+historical map of which output collapses were detected at merge time and
+which slipped through, plus the list of prose cells where the notebook
+admits a degraded state and the organ did not fire.
+
 Every existing surface stayed green on that diff: H.1 (no ``error`` output),
 H.3/pre-commit (cells executed with outputs), the failure-text ratchet (a
 skip notice is not a failure banner), the output-flood ratchet (asymmetric:
@@ -134,6 +144,22 @@ DIAGNOSTIC_RE = re.compile(
     r"|userwarning"
     r"|runtimewarning"
     r"|pendingdeprecationwarning"
+)
+
+# Prose lines that CONCEDE a degraded state (Epic #21424, T1). The historical
+# mode counts ADDED lines in changed notebooks whose normalized text matches
+# one of these motifs: "execution sautee", "mode simulation", "API non
+# configuree", "cle absente", etc. The list is the union of the SIGNATURE
+# motifs of the organ itself and the human-side vocabulary of "this notebook
+# admits it did not really run" -- a concession line in a notebook is the
+# prose twin of a SIGNATURE cell that did not trigger the organ (because the
+# notebook was added with a degraded output, not re-executed from a healthy
+# base). The match is accent-blind: "sauté" and "saute" both hit "sautee".
+CONCESSION_RE = re.compile(
+    r"honnete|illustrati|non disponible|pas disponible|indisponible|non tenu"
+    r"|sautee|simulee?s?\b|mode (simulation|degrade|simule)"
+    r"|hors scope|limites"
+    r"|n'a pas pu|non execute|cle api absente|api non configuree|placeholder"
 )
 
 # Reference case (#15209), replayed by --self-test. 56d98429a is the
@@ -299,6 +325,133 @@ def compare(base_ref, head_ref, paths, cwd=None):
     return _apply_moved_content(rows)
 
 
+def history(since, until, out, cwd=None):
+    """Replay the collapse analysis over the first-parent commits of main.
+
+    For every commit between ``since`` and ``until`` that touches at least one
+    ``.ipynb`` (excluding ``_output.ipynb``), the analysis runs between
+    ``sha^`` and ``sha`` on the touched paths. Commits that produced a
+    regression or an added prose-concession line (or raised an error) are
+    written as one JSON line to ``out`` -- a calibrated historical map of
+    output collapses, paired with the prose cells that admitted a degraded
+    state. The organ itself is unchanged: history is a *consumer* of
+    ``compare``, not a second detector.
+
+    The output file is opened in append mode so partial runs are resumable.
+    A per-commit ``sha`` key lets a caller dedupe across resumptions. The
+    function returns a tuple (commits_scanned, commits_emitted) for the
+    caller's own logging. ``cwd`` is the repo root; ``out`` is the path of
+    the JSON-Lines report.
+    """
+    # Local import: this module is also imported from the test harness
+    # where subprocess is not yet pulled in at the top of the file.
+    import subprocess
+
+    def _git(*args):
+        try:
+            proc = subprocess.run(
+                ["git", *args], cwd=cwd, capture_output=True,
+                encoding="utf-8", errors="replace", check=False)
+        except OSError:
+            return None
+        return proc.stdout if proc.returncode == 0 else None
+
+    log = _git("log", "origin/main", "--first-parent",
+               f"--since={since}", f"--until={until}",
+               "--format=%H%x00%ad%x00%s", "--date=short")
+    if not log:
+        return 0, 0
+    commits = [line.split("\x00", 2) for line in log.splitlines() if line]
+    scanned = 0
+    emitted = 0
+    # Read already-emitted SHAs so a re-run is idempotent (resume support).
+    seen = set()
+    try:
+        with open(out, "r", encoding="utf-8") as f:
+            for line in f:
+                try:
+                    rec = json.loads(line)
+                    seen.add(rec.get("sha", ""))
+                except json.JSONDecodeError:
+                    pass
+    except OSError:
+        pass
+    with open(out, "a", encoding="utf-8") as f:
+        for i, (sha, date, subject) in enumerate(commits):
+            short = sha[:10]
+            if short in seen:
+                continue
+            scanned += 1
+            paths_raw = _git("diff-tree", "--no-commit-id", "--name-only",
+                             "-r", sha) or ""
+            paths = [p for p in paths_raw.splitlines()
+                     if p.endswith(".ipynb")
+                     and not p.endswith("_output.ipynb")]
+            if not paths:
+                continue
+            try:
+                rows = compare(sha + "^", sha, paths, cwd=cwd)
+            except Exception as exc:
+                # Measurement must not stop on a single commit: emit a
+                # sentinel row, then continue. A hard failure in
+                # ``compare`` is a calibration finding, not a stopper.
+                rows = [{"error": repr(exc)}]
+            show = _git("show", "--format=", sha, "--", *paths) or ""
+            concessions = []
+            for line in show.splitlines():
+                if not line.startswith("+") or line.startswith("+++"):
+                    continue
+                if CONCESSION_RE.search(_normalize(line[1:])):
+                    concessions.append(_normalize(line[1:])[:160])
+            # Notebook diffs are JSON: a single line can be a long
+            # nbformat blob whose markdown cell source is buried past
+            # the 160-char truncation. Decode each touched notebook at
+            # the head commit and run the regex against the actual
+            # markdown source strings -- cleaner snippets, no JSON
+            # quoting noise.
+            for path in paths:
+                if not path.endswith(".ipynb"):
+                    continue
+                head_nb = read_notebook_at(sha, path, cwd=cwd)
+                if not head_nb:
+                    continue
+                for cell in head_nb.get("cells", []) or []:
+                    if cell.get("cell_type") != "markdown":
+                        continue
+                    src = _text_of(cell.get("source"))
+                    if not src:
+                        continue
+                    for sub in src.splitlines():
+                        if CONCESSION_RE.search(_normalize(sub)):
+                            snippet = _normalize(sub).strip()[:160]
+                            if snippet and snippet not in concessions:
+                                concessions.append(snippet)
+            regressed = [r for r in rows if r.get("regressed")]
+            errors = [r["error"] for r in rows if "error" in r]
+            if not (regressed or concessions or errors):
+                continue
+            record = {
+                "sha": short, "date": date, "subject": subject,
+                "notebooks": len(paths),
+                "regressed": [
+                    {"nb": r["notebook"], "base": r["base_total"],
+                     "head": r["head_total"],
+                     "cells": [c for c in r["cells"]
+                               if c["kind"] in ("signature", "magnitude")]}
+                    for r in regressed
+                ],
+                "concessions": concessions[:8],
+                "n_concessions": len(concessions),
+                "errors": errors,
+            }
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+            f.flush()
+            emitted += 1
+            if i % 200 == 0:
+                print(f"{i}/{len(commits)} {date}", flush=True)
+    return scanned, emitted
+
+
 def self_test(cwd=None):
     """Positive and negative control, then the reference-case replay.
 
@@ -390,6 +543,30 @@ def self_test(cwd=None):
     if not rows[0]["regressed"]:
         failures.append("insufficient moved gain exempted the collapse")
 
+    # 14. CONCESSION_RE fires on the prose shapes the --history mode will
+    #     count (Epic #21424, T1). The regex is accent-blind and case-blind
+    #     (we normalize before matching), and a few positive controls
+    #     cover the main shapes: skip-notice, declared fallback, missing
+    #     key, placeholder. A negative control proves we do not over-fire
+    #     on ordinary prose.
+    concessions_positive = [
+        "## Note honnete : la cellule 5 a ete executee partiellement",
+        "**Mode simulation** -- la branche Anthropic n'est pas testee ici",
+        "API non configuree, merci de renseigner OPENAI_API_KEY",
+        "cle api absente sur la machine d'execution",
+        "execution sautee (le modele n'est pas disponible)",
+        "ce carnet a des limites : la jambe QC n'est pas executee",
+        "placeholder pour les exemples reels",
+    ]
+    for line in concessions_positive:
+        if not CONCESSION_RE.search(_normalize(line)):
+            failures.append("CONCESSION_RE missed positive control: "
+                            + line[:60])
+    # Negative control: ordinary prose does not match.
+    if CONCESSION_RE.search(_normalize(
+            "Cette cellule calcule la moyenne du tableau ci-dessus.")):
+        failures.append("CONCESSION_RE over-fired on ordinary prose")
+
     # Replay the reference case (#15209).
     from check_output_failure_text import git
     if (git("cat-file", "-e", SELF_TEST_HEAD, cwd=cwd) is None
@@ -424,20 +601,46 @@ def main(argv=None):
     ap = argparse.ArgumentParser(
         description="Advisory ratchet: no silent per-cell collapse of output"
                     " volume between the merge base and HEAD (mirror of"
-                    " check_output_flood.py).")
+                    " check_output_flood.py). --history replays the same"
+                    " per-cell analysis over first-parent commits of main"
+                    " and writes a JSON-Lines calibration report (Epic"
+                    " #21424, T1).")
     ap.add_argument("base", nargs="?",
                     help="Base git ref (CI: origin/<base branch>)")
     ap.add_argument("--self-test", action="store_true",
                     help="Positive + negative control, then replay the"
                          " reference case (#15209)")
     ap.add_argument("--json", action="store_true", dest="as_json")
+    ap.add_argument("--history", action="store_true",
+                    help="Replay over first-parent commits of origin/main"
+                         " between --since and --until, write JSON-Lines"
+                         " to --out (Epic #21424, T1).")
+    ap.add_argument("--since", default="2026-06-01",
+                    help="Lower bound date (YYYY-MM-DD) for --history,"
+                         " default 2026-06-01")
+    ap.add_argument("--until", default="2099-01-01",
+                    help="Upper bound date (YYYY-MM-DD) for --history,"
+                         " default 2099-01-01")
+    ap.add_argument("--out", default=None,
+                    help="Output path for --history (JSON Lines). The file"
+                         " is opened in append mode and deduped by short"
+                         " SHA, so a re-run is resumable.")
     args = ap.parse_args(argv)
 
     if args.self_test:
         return self_test()
 
+    if args.history:
+        if not args.out:
+            ap.error("--history requires --out <path>")
+        scanned, emitted = history(args.since, args.until,
+                                   args.out, cwd=None)
+        print(f"history: scanned {scanned} commits, emitted {emitted}"
+              f" calibration rows ({args.since} -> {args.until})")
+        return 0
+
     if not args.base:
-        ap.error("base ref required (or --self-test)")
+        ap.error("base ref required (or --self-test or --history)")
 
     base = resolve_base(args.base)
     paths = changed_notebooks(base)
