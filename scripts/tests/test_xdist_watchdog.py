@@ -482,3 +482,100 @@ def test_exit_collect_crash_mappe_vers_1_via_main(capsys):
         xdist_watchdog.run = orig_run
     assert code == 1
 
+
+# --- #19915 -- le verdict ne prescrit plus un rejeu mesure comme nul -------
+#
+# Census du 2026-10-19 (7 j, 113 jobs collect-crash sur 394 jobs CPU
+# rouges) : la mort qui precede la collision est toujours de MASSE (7 a 12
+# workers, meme horodatage). Les reproductions consecutives du 2026-10-18
+# (4/4) et du 2026-10-19 (2/2) mesurent un rejeu qui REPRODUIT : prescrire
+# "le CI doit rejouer le job" dans cette classe coute un cycle de CI pour
+# un resultat nul. Le verdict doit donc distinguer les deux classes et
+# nommer le runner, seul discriminant de la signature.
+
+
+def _child_multi_death(n_dead: int, worker: str = "gw8") -> list[str]:
+    """Enfant : n_dead workers morts puis la collision du master.
+
+    Le code est produit a plat (une instruction par ligne, aucune
+    indentation) -- ``python -c`` l'execute tel quel, et un dedent sur un
+    texte indenté partiellement casserait l'enfant.
+    """
+    lines = []
+    for i in range(n_dead):
+        gw = f"gw{i}"
+        lines.append(f'print("[{gw}] node down: Not properly terminated", '
+                     f"flush=True)")
+        lines.append(f'print("replacing crashed worker {gw}", flush=True)')
+    lines.append('print("INTERNALERROR> KeyError: <WorkerController '
+                 f'{worker}>", flush=True)')
+    lines.append("import time")
+    lines.append("time.sleep(300)")
+    return _child("\n".join(lines))
+
+
+def test_verdict_collect_crash_mort_systematique_ne_prescrit_pas_le_rejeu():
+    # 7 workers morts (le regime mesure) : le verdict doit dire
+    # "SYSTEMATIQUE" et ne doit PLUS prescrire le rejeu.
+    code, out, verdict = _run_watchdog(
+        _child_multi_death(7), idle_limit=480.0,
+    )
+    assert code == wd.EXIT_COLLECT_CRASH
+    assert "COLLECT_CRASH" in verdict
+    assert "SYSTEMATIQUE" in verdict
+    # La prescription historique est retiree de la classe systematique.
+    assert "doit rejouer le job" not in verdict
+    # ... et le verdict pointe le runner, pas la PR.
+    assert "cote runner" in verdict
+
+
+def test_verdict_collect_crash_mort_isolee_conserve_la_piste_du_rejeu():
+    # Un seul worker mort : la seule classe ou un rejeu garde un sens.
+    # Le verdict doit le dire -- et ne pas appliquer le libelle
+    # "SYSTEMATIQUE" (qui est le cas mesure, lui).
+    code, out, verdict = _run_watchdog(
+        _child_multi_death(1), idle_limit=480.0,
+    )
+    assert code == wd.EXIT_COLLECT_CRASH
+    assert "mort isolee" in verdict
+    assert "SYSTEMATIQUE" not in verdict
+
+
+def test_le_verdict_collect_crash_nomme_le_runner(monkeypatch):
+    # Le runner est le discriminant de la signature #19915 (113/113 des cas
+    # mesures sur le pool docker ephemere, 0 sur les wsl). L'annotation
+    # doit le nommer : c'est la seule surface lisible sans le log.
+    monkeypatch.setenv("RUNNER_NAME", "myia-po-2024-linux-docker-1")
+    code, out, verdict = _run_watchdog(
+        _child_multi_death(7), idle_limit=480.0,
+    )
+    assert code == wd.EXIT_COLLECT_CRASH
+    assert "myia-po-2024-linux-docker-1" in verdict
+
+
+def test_le_verdict_collect_crash_annonce_le_runner_inconnu(monkeypatch):
+    # Hors CI, RUNNER_NAME n'est pas pose : le verdict doit le dire
+    # explicitement plutot que d'emettre un nom vide.
+    monkeypatch.delenv("RUNNER_NAME", raising=False)
+    code, out, verdict = _run_watchdog(
+        _child_multi_death(7), idle_limit=480.0,
+    )
+    assert code == wd.EXIT_COLLECT_CRASH
+    assert "runner inconnu" in verdict
+
+
+def test_le_mode_1_garde_son_verdict_propre():
+    # Non-regression : le verdict mode 1 (silence) garde son contenu --
+    # le nom du runner et le libelle systematique sont ajoutes au mode 3,
+    # qui est la classe de la signature #19915.
+    code, out, verdict = _run_watchdog(
+        _child("""
+            import time
+            time.sleep(300)
+        """),
+        idle_limit=0.2,
+    )
+    assert code == wd.EXIT_BLOCKED
+    assert "BLOQUE" in verdict
+    assert "SYSTEMATIQUE" not in verdict
+
