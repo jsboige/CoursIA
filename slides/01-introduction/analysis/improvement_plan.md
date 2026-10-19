@@ -110,7 +110,7 @@ Le deck Introduction est transversal : il presente les concepts que les notebook
 | 28 | Intelligence symbolique | `SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb` a `Lean-10-LeanDojo.ipynb` |
 | 28 | Solveurs SMT | `Sudoku/Sudoku-04-Z3.ipynb` |
 | 28 | Argumentation | `SymbolicAI/Argument_Analysis/` (5 notebooks) |
-| 29 | Inference bayesienne | `Probas/Infer-101.ipynb`, `Probas/Infer/Infer-3-Factor-Graphs.ipynb` a `Infer-14` |
+| 29 | Inference bayesienne | `Probas/Infer-101.ipynb`, `Probas/Infer/Infer-03-Factor-Graphs.ipynb` a `Infer-14` |
 | 29 | Reseaux de decision | `Probas/Infer/Infer-14-Decision-Utility-Foundations.ipynb` |
 | 29 | Theorie des jeux | `GameTheory/GameTheory-02b-Lean-Definitions-Lean.ipynb` a `GameTheory-16b` |
 | 13 | Deep learning / GenAI | `GenAI/Image/` (15+ notebooks), `ML/ML.Net/` (5 notebooks) |
