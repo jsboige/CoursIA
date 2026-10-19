@@ -281,6 +281,18 @@ class TestExtractStats:
         assert result["statistics"]["totalNetProfit"] == "76.088%"  # NOT "-"
         assert result["statistics"]["netProfitAbsolute"] == "$59,745.60"
         assert result["statistics"]["sharpeRatio"] == "0.35"
+        # runtimeStatistics passthrough (custom SetRuntimeStatistic counters,
+        # e.g. #19455 'Short stop exits'): verbatim, not just Net Profit.
+        assert result["runtimeStatistics"] == {
+            "Net Profit": "$59,745.60",
+            "Return": "76.09 %",
+        }
+
+    def test_runtime_statistics_absent_omits_key(self):
+        """No SetRuntimeStatistic values in the payload -> no empty dict key,
+        so callers can distinguish 'instrumented but zero' from 'not exposed'."""
+        result = _extract_stats({"statistics": {"Total Orders": "318"}})
+        assert "runtimeStatistics" not in result
 
     def test_zero_orders_in_statistics_stays_zero(self):
         """A genuinely 0-trade backtest (statistics['Total Orders']='0' or '-')
