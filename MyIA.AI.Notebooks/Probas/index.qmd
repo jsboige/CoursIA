@@ -5,8 +5,8 @@ description: "Série Probas du dépôt CoursIA — modèles graphiques, réseaux
 listing:
   - id: infer-setup
     contents:
-      - "Infer/Infer-1-Setup.ipynb"
-      - "Infer/Infer-1b-Premiers-Modeles.ipynb"
+      - "Infer/Infer-01-Setup.ipynb"
+      - "Infer/Infer-01b-Premiers-Modeles.ipynb"
     type: grid
     sort: "filename"
     page-size: 24

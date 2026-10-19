@@ -201,6 +201,13 @@ Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; D
 | Gibbard (1973) / Satterthwaite (1975) | Théorème de manipulabilité (SC-05) |
 | Harsanyi (1959) ; Curiel, *Cooperative Game Theory and Applications* (1997) | Dividendes de coalition, jeux de vote pondérés (SC-06) |
 | Becker, Greger & Peters, "Existence of the Core in Approval-Based Committee Elections" (arXiv 2609.11912) | Core non vide, quotas Hare/Droop, certificats (SC-07) |
+| Brandt, Conitzer, Endriss, Lang & Procaccia (dir.), *Handbook of Computational Social Choice* (2016) | Ouvrage d'ancrage de la sous-série — ch. 1-2 (impossibilités, théorie du vote), ch. 4 (Kemeny, ranked pairs), ch. 5 (Dodgson, complexité) |
+| Kemeny, "Mathematics without Numbers" (1959) | Règle du rang médian, score de Kemeny (SC-08) |
+| Young & Levenglick, "A Consistent Extension of Condorcet's Election Principle" (1978) | Caractérisation axiomatique de Kemeny : unique extension de Condorcet neutre et consistante — renforcement (SC-08, Handbook ch. 4) |
+| Tideman, "Independence of Clones as a Criterion for Voting Rules" (1987) | Ranked Pairs (SC-08) |
+| Caragiannis, Hemaspaandra & Hemaspaandra, "Dodgson's Rule and Young's Rule" (2016) | NP-dureté de la détermination du gagnant Dodgson (SC-08, Handbook ch. 5 §5.3) |
+
+> L'ouvrage d'ancrage est archivé dans le gisement bibliographique du cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf` — le chemin est cité, le fichier n'est jamais copié dans le dépôt public.
 
 ## Conclusion / Prochaines étapes
 

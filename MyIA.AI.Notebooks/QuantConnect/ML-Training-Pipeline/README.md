@@ -178,7 +178,7 @@ scripts/
   checkpoint_utils.py              # Shared sauvegarde checkpoint PyTorch (model.pt + metadata.json)
   launch_po2025_track_a1.py        # Launcher séquentiel : Transformer -> DQN -> LSTM
   launch_ai01_track_b.py           # Launcher Track B (ai-01 RTX 4090 baselines)
-  validate_training_package.py     # Valider tous les scripts avec --dry-run
+  validate_training_package.py     # Valider les 4 scripts de base avec --dry-run (classification, lstm, transformer, dqn_rl)
   registry_update.py               # Construire REGISTRY.md depuis checkpoints
   walk_forward.py                  # Splitter walk-forward (expanding window, 5-fold)
 
@@ -481,7 +481,7 @@ python scripts/train_dqn_rl.py --data-dir ../datasets/yfinance --symbol SPY \
 Tous les scripts supportent `--dry-run` (données synthétiques, 2 epochs) sauf `train_moe.py`, `train_volatility_garch_dl.py`, et `train_regime_classifier.py` (pas de flag dry-run).
 
 ```bash
-# Valider tous les scripts
+# Valider les 4 scripts couverts par le validateur (TRAINING_SCRIPTS : classification, lstm, transformer, dqn_rl)
 python scripts/validate_training_package.py --verbose
 ```
 

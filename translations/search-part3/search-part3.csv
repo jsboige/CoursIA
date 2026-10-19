@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,translate_policy
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,59b131c4,markdown,fr,0bee5bef0fc4cbd4,"# Search-12 (C#) — Bases de données de motifs (Pattern Databases) pour le 15-puzzle
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,59b131c4,markdown,fr,0bee5bef0fc4cbd4,"# Search-12 (C#) — Bases de données de motifs (Pattern Databases) pour le 15-puzzle
 
 > **Partie 3 — Recherche avancée.** Version C# / .NET du notebook [Search-12-PatternDatabases](Search-12-PatternDatabases.ipynb) (Python). Ce notebook fait partie de l'Epic de parité .NET ⇄ Python [#4956](../../../../issues/4956) : chaque concept porté invoque le **vrai moteur** — ici, l'algorithme est porté *from scratch* en C# (les PDB n'ont pas de solveur off-the-shelf, c'est l'archétype du précalcul heuristique).
 
@@ -23,11 +23,11 @@ consiste à *précalculer* une heuristique admissible bien plus fine : la **base
 données de motifs**. Ce notebook construit d'abord une PDB simple (concept), puis
 la **PDB additive** qui est, quarante ans après Korf, la référence absolue du
 15-puzzle.",,,,,,,,0bee5bef0fc4cbd4,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,7a959a73,markdown,fr,dd8710129f01bf1e,"## 2. Formalisation du 15-puzzle
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,7a959a73,markdown,fr,dd8710129f01bf1e,"## 2. Formalisation du 15-puzzle
 
 État = tableau de 16 entiers (cellules en row-major), `0` = case vide. But = tuiles
 1..15 en ordre, vide en bas à droite.",,,,,,,,dd8710129f01bf1e,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,28736592,code,fr,923f13924a927a0e,"using System;
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,28736592,code,fr,923f13924a927a0e,"using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -56,8 +56,8 @@ int[][] Successors(int[] state) {
 }
 
 Console.WriteLine($""OK : le but a {Successors(GOAL).Length} successeurs"");",,,,,,,,923f13924a927a0e,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,7e1c9315,markdown,fr,20394dba9c6ab6be,"## 3. Heuristique de Manhattan (référence, vu en Search-3)",,,,,,,,20394dba9c6ab6be,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,9e87706c,code,fr,e5fbcb6b5b8786ba,"Dictionary<int,int> GOAL_POS = GOAL.Select((t,i) => (t,i)).ToDictionary(p => p.t, p => p.i);
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,7e1c9315,markdown,fr,20394dba9c6ab6be,"## 3. Heuristique de Manhattan (référence, vu en Search-3)",,,,,,,,20394dba9c6ab6be,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,9e87706c,code,fr,e5fbcb6b5b8786ba,"Dictionary<int,int> GOAL_POS = GOAL.Select((t,i) => (t,i)).ToDictionary(p => p.t, p => p.i);
 
 int Manhattan(int[] state) {
     int h = 0;
@@ -72,12 +72,12 @@ int Manhattan(int[] state) {
 }
 
 Console.WriteLine($""Manhattan(but) = {Manhattan(GOAL)}"");",,,,,,,,e5fbcb6b5b8786ba,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,87c28303,markdown,fr,3437b2fc5c839742,"### 3.b Mélange reproductible (marche aléatoire)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,87c28303,markdown,fr,3437b2fc5c839742,"### 3.b Mélange reproductible (marche aléatoire)
 
 On brouille le but par une marche aléatoire longue (90-130 pas), ce qui produit
 des instances *réalistement difficiles* (optimal typiquement ~38-46 coups) — bien
 plus coûteuses à résoudre que les instances jouets où Manhattan est instantané.",,,,,,,,3437b2fc5c839742,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,415fe253,code,fr,a124217cdafc9473,"int[] Scramble(int[] goal, int nSteps, int seed) {
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,415fe253,code,fr,a124217cdafc9473,"int[] Scramble(int[] goal, int nSteps, int seed) {
     var rng = new Random(seed);
     int[] s = (int[])goal.Clone();
     int[] prev = null;
@@ -94,7 +94,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,
 int[] INST = Scramble(GOAL, 100, seed: 11);
 Console.WriteLine($""Instance de démo : ({string.Join("", "", INST)})"");
 Console.WriteLine($""Manhattan = {Manhattan(INST)} (borne inférieure ; l'optimal est nettement supérieur)"");",,,,,,,,a124217cdafc9473,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,c28ae90f,markdown,fr,86b1bb6208da18d2,"## 4. Concept : base de données de motifs
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,c28ae90f,markdown,fr,86b1bb6208da18d2,"## 4. Concept : base de données de motifs
 
 L'idée de Culberson & Schaeffer (1996) :
 
@@ -111,7 +111,7 @@ admissible. IDA\* + PDB reste donc optimal.
 **Fonction de rang.** Pour stocker la table dans un tableau compact, on *range*
 chaque état abstrait vers un entier : rang de permutation des positions du motif
 `P(16,k)` (code de Lehmer), multiplié par le nombre de cellules restantes pour le vide.",,,,,,,,86b1bb6208da18d2,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,39fce963,code,fr,bb820f9e424c86e0,"int P(int n, int k) { int r = 1; for (int i=0; i<k; i++) r *= (n - i); return r; }
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,39fce963,code,fr,bb820f9e424c86e0,"int P(int n, int k) { int r = 1; for (int i=0; i<k; i++) r *= (n - i); return r; }
 
 int PermRank(int[] positions, int basis=16) {
     var avail = new List<int>(); for (int i=0; i<basis; i++) avail.Add(i);
@@ -144,13 +144,13 @@ for (int i=0; i<20000; i++) {
     else seen[rk] = (pos, blank);
 }
 Console.WriteLine($""Injectivité du rang : {seen.Count} états abstraits testés, {collisions} collision (attendu 0)"");",,,,,,,,bb820f9e424c86e0,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,0038145f,markdown,fr,e8ec3853b7386955,"## 5. PDB simple : construction par BFS rétrograde
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,0038145f,markdown,fr,e8ec3853b7386955,"## 5. PDB simple : construction par BFS rétrograde
 
 On construit d'abord une PDB sur **un** motif de tuiles. BFS = coût unitaire =
 distances optimales depuis le but abstrait. Cette PDB unique couvre un sous-ensemble
 de tuiles ; elle servira de brique, puis la **PDB additive** (section 6) en combinera
 plusieurs pour couvrir les 15 tuiles.",,,,,,,,e8ec3853b7386955,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,d6c11ea3,code,fr,c5830b71c905f67c,"(byte[] table, int nSeen) BuildPdb(int[] group) {
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,d6c11ea3,code,fr,c5830b71c905f67c,"(byte[] table, int nSeen) BuildPdb(int[] group) {
     int k = group.Length;
     int[] goalPos = group.Select(t => Array.IndexOf(GOAL, t)).ToArray();
     int goalBlank = Array.IndexOf(GOAL, 0);
@@ -187,7 +187,7 @@ var (PDB5, n5) = BuildPdb(PATTERN);
 sw.Stop();
 int dmax = PDB5.Where(v => v < 255).Max();
 Console.WriteLine($""PDB simple ({PATTERN.Length} tuiles) : {n5} états en {sw.Elapsed.TotalSeconds:F1}s, distance max = {dmax}"");",,,,,,,,c5830b71c905f67c,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,98244622,markdown,fr,174442a41a9c7e2c,"## 6. La SOTA : PDB *additives* (Korf & Felner 2002)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,98244622,markdown,fr,174442a41a9c7e2c,"## 6. La SOTA : PDB *additives* (Korf & Felner 2002)
 
 Une PDB unique sur quelques tuiles n'informe qu'une fraction du puzzle. L'idée de
 génie de Korf & Felner (2002) : **partitionner** les 15 tuiles en groupes *disjoints*
@@ -202,7 +202,7 @@ tuile, donc la somme des minima par groupe disjoint minore le nombre total de co
 On utilise une partition **4-4-4-3** (les groupes couvrent les 15 tuiles). Le BFS
 devient un **0-1 BFS** (deque) : déplacer une tuile du groupe coûte 1, déplacer la
 case vide à travers un joker coûte 0.",,,,,,,,174442a41a9c7e2c,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,196a9961,code,fr,09b3384701fd7412,"int[][] GROUPS = { new[]{1,2,3,4}, new[]{5,6,7,8}, new[]{9,10,11,12}, new[]{13,14,15} };
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,196a9961,code,fr,09b3384701fd7412,"int[][] GROUPS = { new[]{1,2,3,4}, new[]{5,6,7,8}, new[]{9,10,11,12}, new[]{13,14,15} };
 
 (byte[] table, int nSeen) BuildAdditivePdb(int[] group) {
     int k = group.Length;
@@ -243,7 +243,7 @@ foreach (var (g, a) in GROUPS.Zip(ADDITIVE)) {
     int dm = a.table.Where(v => v < 255).Max();
     Console.WriteLine($""  groupe ({string.Join("","", g)}): {a.nSeen} états, dist max = {dm}"");
 }",,,,,,,,09b3384701fd7412,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,05f3f20b,markdown,fr,6d6610602c576ef5,"## 7. IDA\* instrumenté
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,05f3f20b,markdown,fr,6d6610602c576ef5,"## 7. IDA\* instrumenté
 
 Rappel de [Search-3](../Part1-Foundations/Search-3-Informed.ipynb) : seuils
 itératifs sur `f = g + h`, recherche en profondeur. On compte les **nœuds
@@ -254,7 +254,7 @@ On se fixe un **budget de 2 millions de nœuds** par résolution : c'est largeme
 assez pour résoudre les instances faciles, et cela rend visible (et rapide) la
 frontière où une heuristique termine et l'autre non. *L'état est encodé en un
 `long` (16 cellules × 4 bits) pour le hachage du chemin (cycle-avoidance).*",,,,,,,,6d6610602c576ef5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,34f5bb94,code,fr,5a790c3cddec2561,"long Encode(int[] state) { long k = 0; foreach (int t in state) k = k * 16 + t; return k; }
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,34f5bb94,code,fr,5a790c3cddec2561,"long Encode(int[] state) { long k = 0; foreach (int t in state) k = k * 16 + t; return k; }
 
 (int? cost, long nodes) IdaStar(int[] start, Func<int[],int> heuristic, int[] goal=null, long nodeLimit=2_000_000) {
     goal ??= GOAL;
@@ -293,13 +293,13 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,
 int[] easy = Scramble(GOAL, 8, seed: 1);
 var (sm, _) = IdaStar(easy, Manhattan);
 Console.WriteLine($""Sanity : instance facile optimal={sm} (Manhattan résout bien)"");",,,,,,,,5a790c3cddec2561,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,ebb072a8,markdown,fr,d258064a0d36a81a,"## 8. Heuristique additive et vérification d'admissibilité
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,ebb072a8,markdown,fr,d258064a0d36a81a,"## 8. Heuristique additive et vérification d'admissibilité
 
 `h_additive(s) = Σ PDB_groupe(s)`. On **vérifie empiriquement l'admissibilité** :
 sur un échantillon d'instances résolues à l'optimum (via Manhattan, elle-même
 admissible), `h_additive(s) ≤ optimal(s)` doit toujours tenir. On vérifie aussi la
 convergence (même optimum) sur une instance facile.",,,,,,,,d258064a0d36a81a,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,4e2621ef,code,fr,a74a388d9a0742ec,"int HAdditive(int[] state) => ADD_TBLS.Zip(GROUPS).Sum(p => PdbLookup(state, p.First, p.Second));
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,4e2621ef,code,fr,a74a388d9a0742ec,"int HAdditive(int[] state) => ADD_TBLS.Zip(GROUPS).Sum(p => PdbLookup(state, p.First, p.Second));
 
 // Convergence : deux heuristiques admissibles -> même optimum.
 var (sa, _) = IdaStar(easy, HAdditive);
@@ -316,7 +316,7 @@ for (int i=0; i<40; i++) {
 }
 Console.WriteLine($""Admissibilité : {checkedCount} instances, h_additive <= optimal tient {checkedCount - violations}/{checkedCount} fois"");
 Console.WriteLine($""Sur l'instance de démo : Manhattan={Manhattan(INST)}, h_additive={HAdditive(INST)} (additive >= Manhattan attendu)"");",,,,,,,,a74a388d9a0742ec,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,b69f1d52,markdown,fr,5bddf86df22c55e0,"## 9. Expérience : Manhattan vs PDB additive (la valeur du moteur, visible)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,b69f1d52,markdown,fr,5bddf86df22c55e0,"## 9. Expérience : Manhattan vs PDB additive (la valeur du moteur, visible)
 
 Trois instances **réalistement difficiles** (brouillage 50-80 pas, optimal ~24-53
 coups), choisies pour révéler la frontière de résolubilité au budget de 2M nœuds.
@@ -325,7 +325,7 @@ On mesure les **nœuds explorés** : c'est la métrique qui révèle la puissanc
 l'heuristique. Sur les instances intermédiaires (optimal ~45-53), **Manhattan
 dépasse le budget de 2M nœuds sans conclure**, tandis que la PDB additive
 (4-4-4-3) résout — assez pour repousser la frontière du résolvable.",,,,,,,,5bddf86df22c55e0,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,ea2577e7,code,fr,c20867bdb36e0e54,"var INSTANCES = new Dictionary<string,int[]> {
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,ea2577e7,code,fr,c20867bdb36e0e54,"var INSTANCES = new Dictionary<string,int[]> {
     [""I1 (facile, opt 24)""] = Scramble(GOAL, 50, seed: 11),
     [""I2 (moyen, opt 45)""] = Scramble(GOAL, 81, seed: 78690737),
     [""I3 (dur, opt 53)""] = Scramble(GOAL, 71, seed: 163151276),
@@ -343,11 +343,11 @@ foreach (var (name, s) in INSTANCES) {
     string naS = solA.HasValue ? $""{na,12:N0}"" : ""  >= 2M (limite)"";
     Console.WriteLine($""{name,-20} optimal={opt} | Manhattan: {nmS} ({tm,6:F1}s) | additive: {naS} ({ta,6:F1}s) | speedup x{speedup,6:F1}"");
 }",,,,,,,,c20867bdb36e0e54,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,cb50dc32,markdown,fr,47618bf4a19620e2,"## Synthèse : la PDB additive repousse la frontière du résolvable
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,cb50dc32,markdown,fr,47618bf4a19620e2,"## Synthèse : la PDB additive repousse la frontière du résolvable
 
 (Version texte — pas de graphique matplotlib en C# ; le tableau numérique brut
 montre directement le nœud où chaque heuristique termine ou dépasse le budget.)",,,,,,,,47618bf4a19620e2,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,9921184c,code,fr,feec5b022d91538d,"Console.WriteLine($""{""Instance"",-20} {""opt"",-5} {""Manhattan nodes"",-18} {""Additive nodes"",-18} {""speedup"",-10}"");
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,9921184c,code,fr,feec5b022d91538d,"Console.WriteLine($""{""Instance"",-20} {""opt"",-5} {""Manhattan nodes"",-18} {""Additive nodes"",-18} {""speedup"",-10}"");
 Console.WriteLine(new string('-', 75));
 foreach (var r in bench) {
     string nmS = r.mSolved ? r.nm.ToString(""N0"") : "">= 2M"";
@@ -359,7 +359,7 @@ Console.WriteLine(""Lecture : sur l'instance facile (I1), les deux heuristiques 
 Console.WriteLine(""PDB additive explore ~3x moins de nœuds. Sur I2 et I3 (optimal 45 et 53),"");
 Console.WriteLine(""Manhattan dépasse le budget de 2M nœuds sans conclure, tandis que la PDB"");
 Console.WriteLine(""additive (4-4-4-3) résout à l'optimum — elle repousse la frontière du résolvable."");",,,,,,,,feec5b022d91538d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,f1c33b0f,markdown,fr,a65792da85f20f60,"## 11. Limites et au-delà
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,f1c33b0f,markdown,fr,a65792da85f20f60,"## 11. Limites et au-delà
 
 - **Coût de construction.** Plus le groupe est grand, plus la PDB est fine mais
   plus le BFS est coûteux (`P(16,k)` explose). Korf & Felner poussent aux
@@ -370,7 +370,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,
 - **Généralité.** La même technique résout le Rubik's Cube (Korf 1997), la Tour de
   Hanoï, tout puzzle de permutation. C'est l'archétype du compromis
   *mémoire contre qualité d'heuristique*.",,,,,,,,a65792da85f20f60,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,3d651408,markdown,fr,7fbf6fb694cb9ca5,"> Rappel (convention de la série) : un exercice est un **squelette à compléter**.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,3d651408,markdown,fr,7fbf6fb694cb9ca5,"> Rappel (convention de la série) : un exercice est un **squelette à compléter**.
 > Les stubs s'exécutent sans erreur (`// TODO etudiant` + garde le code compilable) ;
 > à vous de les remplir. Ne supprimez pas les `// Indice` / `// Étape N`.
 
@@ -381,7 +381,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,
 Remplacez la partition 4-4-4-3 par **6-6-3** (Korf & Felner 2002). Combien d'états
 par PDB (`P(16,6)×10`, `P(16,3)×13`) ? Mesurez le speedup supplémentaire sur les
 instances du banc d'essai. Attention au temps de construction des groupes de 6.",,,,,,,,7fbf6fb694cb9ca5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,9572540d,code,fr,8369c35a17ae33bb,"// Exercice 1 — à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,9572540d,code,fr,8369c35a17ae33bb,"// Exercice 1 — à compléter
 int[][] GROUPS_663 = { new[]{1,2,3,4,5,6}, new[]{7,8,9,10,11,12}, new[]{13,14,15} };
 
 // Indice : réutilisez BuildAdditivePdb sur chaque groupe.
@@ -390,14 +390,14 @@ int[][] GROUPS_663 = { new[]{1,2,3,4,5,6}, new[]{7,8,9,10,11,12}, new[]{13,14,15
 // int HAdditive663(int[] state) => tbls663.Zip(GROUPS_663).Sum(p => PdbLookup(state, p.First, p.Second));
 // TODO etudiant
 Console.WriteLine(""Exercice 1 à compléter : partition 6-6-3 (Korf & Felner 2002) + speedup."");",,,,,,,,8369c35a17ae33bb,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,1cfd59c7,markdown,fr,9d8b5f5b7f2bc904,"### Exercice 2 — PDB symétrique gratuit (Felner et al. 2004)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,1cfd59c7,markdown,fr,9d8b5f5b7f2bc904,"### Exercice 2 — PDB symétrique gratuit (Felner et al. 2004)
 
 Le 15-puzzle possède une symétrie : refléter la grille (miroir vertical) **et**
 renverser les numéros (`t -> 16 - t`) laisse le puzzle invariant. Construisez la
 transformation `Reflect(state)`, vérifiez qu'elle préserve la résolubilité et que
 `HAdditive(state) == HAdditive(Reflect(state))`. En déduire une seconde PDB
 *gratuite* et combinez-la par `Math.Max`.",,,,,,,,9d8b5f5b7f2bc904,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,1de07836,code,fr,91d15e3b198aef29,"// Exercice 2 — à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,1de07836,code,fr,91d15e3b198aef29,"// Exercice 2 — à compléter
 // int[] Reflect(int[] state) {
 //     // Indice : miroir vertical de la grille 4x4, puis renversement des numéros
 //     // t -> 16 - t pour t != 0 (le vide reste le vide).
@@ -408,20 +408,20 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,
 // Indice : vérifiez Reflect(Reflect(s)).SequenceEqual(s) et HAdditive(s) == HAdditive(Reflect(s)).
 // TODO etudiant
 Console.WriteLine(""Exercice 2 à compléter : PDB symétrique gratuit (Felner et al. 2004)."");",,,,,,,,91d15e3b198aef29,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,b644cc24,markdown,fr,b7b5510676be59f3,"### Exercice 3 — Généralisation au 24-puzzle
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,b644cc24,markdown,fr,b7b5510676be59f3,"### Exercice 3 — Généralisation au 24-puzzle
 
 Le **24-puzzle** (5×5) est le vrai défi : Manhattan y est désespérément faible et
 seules les PDB additives rendent la résolution optimale envisageable. Adaptez ce
 notebook (25 cellules, partition 6-6-6-7) et résolvez une instance. Que
 constatez-vous sur le rapport construction/qualité ?",,,,,,,,b7b5510676be59f3,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,599c98a5,code,fr,64fa8dc2dd9d00ff,"// Exercice 3 — à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,599c98a5,code,fr,64fa8dc2dd9d00ff,"// Exercice 3 — à compléter
 // Indice : la structure est inchangée ; changent la taille (N=5), le but (1..24,0),
 // et la partition.
 //   Étape 1 : redéfinissez GOAL24 et Neighbors pour N=5.
 //   Étape 2 : attention à l'explosion de P(25, k) — restez sur des groupes <= 6.
 // TODO etudiant
 Console.WriteLine(""Exercice 3 à compléter : généralisation au 24-puzzle (5x5, partition 6-6-6-7)."");",,,,,,,,64fa8dc2dd9d00ff,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases-Csharp.ipynb,08e76387,markdown,fr,81dbf3af5de86e26,"## Conclusion
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases-CSharp.ipynb,08e76387,markdown,fr,81dbf3af5de86e26,"## Conclusion
 
 La **base de données de motifs** illustre un principe central de la recherche
 heuristique avancée : **investir du calcul en amont** (précalculer des tables une
@@ -461,7 +461,7 @@ construction amorti sur des millions de requêtes.
 
 | ↑ [Search (racine)](../README.md) | [Partie 4 — Métaheuristiques →](../Part4-Metaheuristics/README.md)
 | 🐍 [Version Python](Search-12-PatternDatabases.ipynb)",,,,,,,,81dbf3af5de86e26,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,05478eeb,markdown,fr,f86e06a656ece30f,"# Search-13 (C#) — Recherche à écart limité (Limited Discrepancy Search)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,05478eeb,markdown,fr,f86e06a656ece30f,"# Search-13 (C#) — Recherche à écart limité (Limited Discrepancy Search)
 
 > **Partie 3 — Recherche avancée.** Ce notebook est le **jumeau .NET** du notebook
 > [Search-13 — Limited Discrepancy Search](Search-13-LimitedDiscrepancySearch.ipynb)
@@ -473,7 +473,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Cshar
 > [Partie 1 — Search-3 (Informed)](../Part1-Foundations/Search-3-Informed.ipynb)
 > (A\*, heuristiques admissibles).
 ",,,,,,,,f86e06a656ece30f,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,8e0ed971,markdown,fr,0aee48f5174745b8,"## 2. Le problème-banc d'essai : le sac à dos 0/1
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,8e0ed971,markdown,fr,0aee48f5174745b8,"## 2. Le problème-banc d'essai : le sac à dos 0/1
 
 Le **sac à dos binaire** (*0/1 knapsack*) est NP-difficile et se prête naturellement
 à une recherche arborescente. On dispose de $n$ objets, chacun avec un poids $w_i$ et
@@ -484,7 +484,7 @@ L'**heuristique gloutonne** consistant à prendre les objets par **ratio valeur/
 décroissant** est naturelle mais **myope** : elle peut rater l'optimum en se bloquant
 trop tôt. C'est précisément le défaut que LDS corrige.
 ",,,,,,,,0aee48f5174745b8,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,3e039179,code,fr,29705d1f0808fc28,"// Le sac à dos 0/1 : liste d'objets (nom, poids, valeur), ordonnés par RATIO valeur/poids décroissant
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,3e039179,code,fr,29705d1f0808fc28,"// Le sac à dos 0/1 : liste d'objets (nom, poids, valeur), ordonnés par RATIO valeur/poids décroissant
 // (c'est l'ordre où l'heuristique gloutonne les considère).
 // Item: nom, poids, valeur — record C# immuable (équivalent du tuple nommé Python).
 public record Item(string Name, int Weight, int Value);
@@ -504,10 +504,10 @@ foreach (var it in items)
     Console.WriteLine($""  {it.Name}: poids={it.Weight}, valeur={it.Value}, ratio={it.Value / (double)it.Weight:F2}"");
 Console.WriteLine($""Capacité du sac : {capacity}"");
 ",,,,,,,,29705d1f0808fc28,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,27e86ae8,markdown,fr,822070a74769600b,"### Stratégie gloutonne (k = 0)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,27e86ae8,markdown,fr,822070a74769600b,"### Stratégie gloutonne (k = 0)
 
 Suivre aveuglément l'heuristique : prendre chaque objet s'il rentre.",,,,,,,,822070a74769600b,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,ca10750e,code,fr,6f149e90eab5dd5e,"// Stratégie GLOUTONNE (k=0) : suivre l'heuristique aveuglement — prendre chaque objet s'il rentre.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,ca10750e,code,fr,6f149e90eab5dd5e,"// Stratégie GLOUTONNE (k=0) : suivre l'heuristique aveuglement — prendre chaque objet s'il rentre.
 (int Value, List<string> Selection, int Nodes) GreedyKnapsack(Item[] items, int capacity)
 {
     var sel = new List<string>();
@@ -528,7 +528,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Cshar
 var (greedyV, greedySel, greedyNodes) = GreedyKnapsack(items, capacity);
 Console.WriteLine($""Greedy (k=0) : valeur={greedyV}, sélection=[{string.Join("", "", greedySel)}], nœuds={greedyNodes}"");
 ",,,,,,,,6f149e90eab5dd5e,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,72895213,markdown,fr,697c534b8aeea511,"## 3. Le concept d'écart, et l'algorithme LDS(k)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,72895213,markdown,fr,697c534b8aeea511,"## 3. Le concept d'écart, et l'algorithme LDS(k)
 
 À chaque nœud, l'heuristique **recommande** une action (prendre l'objet s'il rentre,
 sinon le laisser). Choisir l'**autre** action coûte **un écart** :
@@ -540,7 +540,7 @@ sinon le laisser). Choisir l'**autre** action coûte **un écart** :
 l'heuristique. Pour $k = 0$ on retrouve le glouton ; pour $k \to \infty$ on retrouve
 la DFS exhaustive. L'intuition de Harvey & Ginsberg : *si l'heuristique est bonne,
 l'optimum est un proche voisin du chemin glouton*, donc un petit $k$ suffit souvent.",,,,,,,,697c534b8aeea511,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,ebf5d44b,code,fr,5db72837dfefaa80,"// LDS(k) sur le sac à dos 0/1 — version récursive bornée par le nombre d'écarts.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,ebf5d44b,code,fr,5db72837dfefaa80,"// LDS(k) sur le sac à dos 0/1 — version récursive bornée par le nombre d'écarts.
 // items : tableau ordonné par ordre heuristique (meilleur ratio d'abord).
 // Renvoie (meilleure valeur, meilleure sélection, nombre de nœuds explorés).
 (int Value, List<string>? Selection, int Nodes) LdsKnapsack(Item[] items, int capacity, int kMax)
@@ -598,12 +598,12 @@ for (int k = 0; k <= items.Length; k++)
     Console.WriteLine(string.Format(""{0,3}{1,8}{2,10}  [{3}]"", k, v, nd, string.Join("", "", sel ?? new List<string>())));
 }
 ",,,,,,,,5db72837dfefaa80,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,0880099f,markdown,fr,8a29b88cec202e26,"## 4. Référence : l'optimum par énumération exhaustive
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,0880099f,markdown,fr,8a29b88cec202e26,"## 4. Référence : l'optimum par énumération exhaustive
 
 Pour prouver que LDS atteint bien le **vrai** optimum (et non une borne locale),
 on calcule la solution optimale par énumération exhaustive de l'arbre binaire
 complet ($2^n$ feuilles). LDS devra converger vers cette même valeur pour $k$ assez grand.",,,,,,,,8a29b88cec202e26,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,b45e52c4,code,fr,3a40547b02bb89c7,"// Optimum exact par énumération exhaustive (2^n) — référence de vérité.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,b45e52c4,code,fr,3a40547b02bb89c7,"// Optimum exact par énumération exhaustive (2^n) — référence de vérité.
 (int Value, List<string> Selection, int Nodes) ExhaustiveKnapsack(Item[] items, int capacity)
 {
     int n = items.Length;
@@ -636,7 +636,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Cshar
 var (optV, optSel, exNodes) = ExhaustiveKnapsack(items, capacity);
 Console.WriteLine($""Exhaustif : valeur optimale={optV}, sélection=[{string.Join("", "", optSel)}], nœuds={exNodes}"");
 ",,,,,,,,3a40547b02bb89c7,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,25ebca38,code,fr,cb80ac88840019f6,"// Tableau comparatif : greedy vs LDS(k) vs exhaustif — QUALITÉ de solution et COÛT (nœuds).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,25ebca38,code,fr,cb80ac88840019f6,"// Tableau comparatif : greedy vs LDS(k) vs exhaustif — QUALITÉ de solution et COÛT (nœuds).
 string hdr = string.Format(""{0,-18}{1,8}{2,11}{3,10}{4,14}"", ""stratégie"", ""valeur"", ""optimal?"", ""nœuds"", ""% exhaustif"");
 Console.WriteLine(hdr);
 Console.WriteLine(new string('-', hdr.Length));
@@ -661,7 +661,7 @@ Row(""exhaustif"", optV, exNodes);
 Console.WriteLine();
 Console.WriteLine($""=> LDS atteint l'optimum dès k*={kStar}, en {ldsNodesStar} nœuds ({100.0*ldsNodesStar/exNodes:F1}% de l'exhaustif)."");
 ",,,,,,,,cb80ac88840019f6,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,8242686f,markdown,fr,fdfb09997ffa946b,"### Lecture du résultat
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,8242686f,markdown,fr,fdfb09997ffa946b,"### Lecture du résultat
 
 Le **greedy** (k=0) est **sous-optimal** : il prend A au ratio le plus élevé (1,33),
 qui remplit 6 des 10 unités de capacité et ne laisse de la place que pour D — ratant
@@ -670,7 +670,7 @@ la paire B+C dont la valeur (12) est supérieure. Dès **k=1**, LDS explore le c
 l'arbre exhaustif. C'est tout l'intérêt de LDS : **saisir l'optimum à coût sous-exponentiel
 quand l'heuristique est bonne**.
 ",,,,,,,,fdfb09997ffa946b,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,fe1a193b,markdown,fr,8e2623feca666545,"## 5. Ponts avec le reste de la série
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,fe1a193b,markdown,fr,8e2623feca666545,"## 5. Ponts avec le reste de la série
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
@@ -682,7 +682,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Cshar
 
 > **Référence :** Harvey & Ginsberg, *Limited Discrepancy Search*, IJCAI 1995.
 ",,,,,,,,8e2623feca666545,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,fb46626d,markdown,fr,2daa7e3a124791e9,"## 6. Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,fb46626d,markdown,fr,2daa7e3a124791e9,"## 6. Exercices
 
 ### Exercice 1 : Iterative LDS (ILDC)
 Implémentez **ILDS** : exécutez LDS pour k=0, 1, 2, … en vous arrêtant dès que la
@@ -692,13 +692,13 @@ cette instance.
 - **Indice :** le critère d'arrêt « valeur qui stagne » évite de gaspiller des nœuds
   pour des k qui n'apportent plus rien. Accumulez les nœuds de chaque appel `LdsKnapsack(k)`.
 ",,,,,,,,2daa7e3a124791e9,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,3c7d1177,code,fr,74f5f8791c2c0e6a,"// Exercice 1 à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,3c7d1177,code,fr,74f5f8791c2c0e6a,"// Exercice 1 à compléter
 // Conseil : bouclez k = 0..n, accumulez les nœuds, arrêtez quand la valeur cesse de croître.
 // Comparez le total accumulé à exNodes (l'exhaustif calculé ci-dessus).
 int totalNodesIlds = 0;
 Console.WriteLine(""Exercice 1 à compléter"");
 ",,,,,,,,74f5f8791c2c0e6a,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,52ccd683,markdown,fr,4118d83479b039f6,"### Exercice 2 : passage à l'échelle — LDS vs exhaustif
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,52ccd683,markdown,fr,4118d83479b039f6,"### Exercice 2 : passage à l'échelle — LDS vs exhaustif
 Construisez une instance plus grande (par ex. n=18 objets aléatoires, capacité ~50%
 du poids total) où le greedy est sous-optimal. Mesurez :
 1. Le **plus petit k** pour lequel LDS atteint l'optimum (vérifié via DP ou exhaustif si n petit).
@@ -706,12 +706,12 @@ du poids total) où le greedy est sous-optimal. Mesurez :
 - **Indice :** tirez des (poids, valeur) aléatoires avec une graine fixée (`new Random(42)`),
   calculez l'optimum exhaustif, puis balayez k jusqu'à l'atteindre.
 ",,,,,,,,4118d83479b039f6,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,a251d36c,code,fr,cc2220f411f295fe,"// Exercice 2 à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,a251d36c,code,fr,cc2220f411f295fe,"// Exercice 2 à compléter
 // Conseil : générez n=18 objets aléatoires (poids, valeur), calculez l'optimum exhaustif,
 // puis balayez k jusqu'à l'atteindre. Affichez le ratio LDS(k*)/2**18.
 Console.WriteLine(""Exercice 2 à compléter"");
 ",,,,,,,,cc2220f411f295fe,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,da81ecbe,markdown,fr,f1c7bc08147bebf4,"### Exercice 3 : sensibilité à la qualité de l'heuristique
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,da81ecbe,markdown,fr,f1c7bc08147bebf4,"### Exercice 3 : sensibilité à la qualité de l'heuristique
 LDS suppose une heuristique *bonne*. Refaites le balayage k=0..n mais en **perturbant
 l'ordre** des objets : (a) ordre aléatoire, (b) ordre par valeur absolue décroissante
 (au lieu du ratio). Pour chaque heuristique, notez le **k minimum** pour atteindre
@@ -720,12 +720,12 @@ l'optimum.
   intérêt si l'heuristique est essentiellement aléatoire. Permutez le tableau `items`
   et réutilisez `LdsKnapsack`.
 ",,,,,,,,f1c7bc08147bebf4,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,640d97ce,code,fr,6db0e43d58db79f3,"// Exercice 3 à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,640d97ce,code,fr,6db0e43d58db79f3,"// Exercice 3 à compléter
 // Conseil : permutez `items` selon différents ordres, et pour chacun cherchez le k min.
 // Perturbation : utilisez new Random(123) pour un ordre aléatoire reproductible.
 Console.WriteLine(""Exercice 3 à compléter"");
 ",,,,,,,,6db0e43d58db79f3,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch-Csharp.ipynb,493df909,markdown,fr,9fea340043c6accc,"## Conclusion
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch-CSharp.ipynb,493df909,markdown,fr,9fea340043c6accc,"## Conclusion
 
 **Limited Discrepancy Search** occupe une niche précise dans le spectre de la
 recherche heuristique. À une extrémité, le **greedy** est instantané mais myope ;
@@ -749,7 +749,7 @@ L'algorithmique, elle, est **identique** — LDS est language-agnostic. Voir le
 > **Référence :** Harvey, W. D., & Ginsberg, M. L. (1995). *Limited Discrepancy Search.*
 > Proceedings of IJCAI 1995.
 ",,,,,,,,9fea340043c6accc,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,6558d065,markdown,fr,a3cdde7e8c9e371d,"# Search-13 — Recherche à écart limité (Limited Discrepancy Search)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,6558d065,markdown,fr,a3cdde7e8c9e371d,"# Search-13 — Recherche à écart limité (Limited Discrepancy Search)
 
 > **Partie 3 — Recherche avancée.** Ce notebook prolonge la Partie 3 : techniques
 > de recherche heuristique *avancées*, au-delà des fondations de la
@@ -777,7 +777,7 @@ progressivement le voisinage du chemin greedy, sans jamais payer le coût expone
 de la DFS complète. C'est l'incarnation algorithmique du principe « l'optimum est un
 voisin du greedy ». 
 ",,,,,,,,a3cdde7e8c9e371d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,e0cd36e5,markdown,fr,7b7230da2d099428,"## 2. Le problème-banc d'essai : le sac à dos 0/1
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,e0cd36e5,markdown,fr,7b7230da2d099428,"## 2. Le problème-banc d'essai : le sac à dos 0/1
 
 Le **sac à dos binaire** (*0/1 knapsack*) est NP-diff et se prête naturellement à
 une recherche arborescente. On dispose de $n$ objets, chacun avec un poids $w_i$ et
@@ -791,7 +791,7 @@ rentre. Cette heuristique est *bonne* (les objets à fort ratio sont rarement un
 mauvais choix) mais **imparfaite** : un objet à ratio élevé peut en *bloquer* deux
 de ratio moyen dont la somme dépasse sa valeur — auquel cas le greedy se trompe.
 ",,,,,,,,7b7230da2d099428,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,3257e194,code,fr,acade9936564ac94,"# Le sac a dos 0/1 : liste d'objets (nom, poids, valeur), ordonnes par RATIO valeur/poids decroissant
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,3257e194,code,fr,acade9936564ac94,"# Le sac a dos 0/1 : liste d'objets (nom, poids, valeur), ordonnes par RATIO valeur/poids decroissant
 # (c'est l'ordre ou l'heuristique gloutonne les considere).
 items = [
     (""A"", 6, 8),   # ratio 1.33  <-- top ratio, MAIS poids 6 bloque la paire B+C (valeur 12 > 10)
@@ -811,7 +811,7 @@ for name, r in ratios:
     print(f""  {name}: ratio = {r:.3f}"")
 print(f""Capacite C = {CAPACITY}"")
 ",,,,,,,,acade9936564ac94,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,d73e1e03,code,fr,568947d5b1a5088b,"# StratEGIE GLOUTONNE (k=0) : suivre l'heuristique aveuglement -- prendre chaque objet s'il rentre.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,d73e1e03,code,fr,568947d5b1a5088b,"# StratEGIE GLOUTONNE (k=0) : suivre l'heuristique aveuglement -- prendre chaque objet s'il rentre.
 def greedy_knapsack(items, capacity):
     selection, total_w, total_v = [], 0, 0
     for name, w, v in items:
@@ -826,7 +826,7 @@ print(f""Greedy (k=0) : valeur = {gv}, selection = {gsel}"")
 print(""--> Le greedy prend A (poids 6, valeur 8), puis il ne reste que 4 de capacite :"")
 print(""    seul D (poids 4) y rentre. Greedy = {A, D} = 10. La paire B+C (valeur 12) est bloquee par A."")
 ",,,,,,,,568947d5b1a5088b,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,2fa39111,markdown,fr,7f25c54f57845777,"## 3. Le concept d'écart, et l'algorithme LDS(k)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,2fa39111,markdown,fr,7f25c54f57845777,"## 3. Le concept d'écart, et l'algorithme LDS(k)
 
 À chaque nœud, l'heuristique **recommande** une action (prendre l'objet s'il rentre,
 sinon le laisser). Choisir l'**autre** action coûte **un écart** :
@@ -838,7 +838,7 @@ sinon le laisser). Choisir l'**autre** action coûte **un écart** :
 « contraire » que si le budget d'écarts `k` n'est pas épuisé. Elle énumère ainsi tous
 les chemins à **au plus k** écarts, et retient la meilleure valeur rencontrée. 
 ",,,,,,,,7f25c54f57845777,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,87413e2a,code,fr,c94ef5723c1d2fdc,"def lds_knapsack(items, capacity, k_max):
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,87413e2a,code,fr,c94ef5723c1d2fdc,"def lds_knapsack(items, capacity, k_max):
     # LDS(k_max) sur le sac a dos 0/1.
     # items : liste (nom, poids, valeur), ordre heuristique (meilleur ratio d'abord).
     # Renvoie (meilleure valeur, meilleure selection, nombre de noeuds explores).
@@ -878,7 +878,7 @@ for k in range(len(items) + 1):
     val, sel, nd = lds_knapsack(items, CAPACITY, k)
     print(f""{k} | {val:6d} | {str(sel):15s} | {nd}"")
 ",,,,,,,,c94ef5723c1d2fdc,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,a2d421db,markdown,fr,5c2463021f0c29e4,"## 4. Référence : l'optimum par énumération exhaustive
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,a2d421db,markdown,fr,5c2463021f0c29e4,"## 4. Référence : l'optimum par énumération exhaustive
 
 Pour prouver que LDS atteint bien le **vrai** optimum (et non une borne locale),
 on calcule la solution optimale par énumération exhaustive de l'arbre binaire
@@ -886,7 +886,7 @@ complet ($2^n$ feuilles) puis par programmation dynamique. LDS devra converger v
 cette valeur à mesure que $k$ croît — idéalement pour un $k$ **petit**, bien avant
 l'énumération complète.
 ",,,,,,,,5c2463021f0c29e4,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,6beeeb9c,code,fr,751e18e7f2150bd1,"from itertools import product
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,6beeeb9c,code,fr,751e18e7f2150bd1,"from itertools import product
 
 def exhaustive_knapsack(items, capacity):
     # Optimum exact par enumeration exhaustive (2^n) -- reference de verite.
@@ -928,7 +928,7 @@ print(f""Optimum (exhaustif, 2^{len(items)} = {2**len(items)} feuilles) : valeur
 print(f""Optimum (DP)                                         : valeur = {dp_v}, selection = {dp_sel}"")
 print(f""nœuds explores par l'exhaustif : {ex_nodes}"")
 ",,,,,,,,751e18e7f2150bd1,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,579af77d,code,fr,15aa5c7820599914,"# Tableau comparatif : greedy vs LDS(k) vs exhaustif -- QUALITE de solution et COUT (nœuds).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,579af77d,code,fr,15aa5c7820599914,"# Tableau comparatif : greedy vs LDS(k) vs exhaustif -- QUALITE de solution et COUT (nœuds).
 print(f""{'strategie':<18}{'valeur':>8}{'optimal?':>11}{'nœuds':>10}{'% exhaustif':>14}"")
 print(""-"" * 61)
 ex_total = ex_nodes
@@ -945,7 +945,7 @@ for k in range(len(items) + 1):
     row(f""LDS(k={k})"", val, nd)
 row(""exhaustif (ref)"", opt_v, ex_total)
 ",,,,,,,,15aa5c7820599914,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,7a39ab96,markdown,fr,92c9d2277baffca0,"### Lecture du résultat
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,7a39ab96,markdown,fr,92c9d2277baffca0,"### Lecture du résultat
 
 Le **greedy** (k=0) est **sous-optimal** (valeur 10, sélection {A, D}) : il prend A au
 ratio le plus élevé (1,33), qui remplit 6 des 10 unités de capacité et ne laisse de la
@@ -961,7 +961,7 @@ La leçon générale tient en une phrase : **quand l'heuristique est bonne, l'op
 proche voisin du greedy, et LDS le trouve en bornant les écarts plutôt qu'en énumérant
 l'arbre entier**.
 ",,,,,,,,92c9d2277baffca0,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,28866dde,markdown,fr,588d39d59d5f8b84,"## 5. Ponts avec le reste de la série
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,28866dde,markdown,fr,588d39d59d5f8b84,"## 5. Ponts avec le reste de la série
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
@@ -973,7 +973,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb
 Discrepancy Search*, Proceedings of IJCAI. L'article qui formalise le principe
 « l'optimum est un voisin du greedy » et l'algorithme LDS(k).
 ",,,,,,,,588d39d59d5f8b84,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,34731b33,markdown,fr,d167397d6819e9ca,"## 6. Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,34731b33,markdown,fr,d167397d6819e9ca,"## 6. Exercices
 
 ### Exercice 1 : Iterative LDS (ILDS)
 Implémentez **ILDS** : exécutez LDS pour k=0, 1, 2, … en vous arrêtant dès que la
@@ -985,13 +985,13 @@ cette instance.
   k < n — justifiez votre critère d'arrêt.
 - **Objectif :** mesurer le gain (ratio des nœuds ILDS / exhaustif).
 ",,,,,,,,d167397d6819e9ca,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,94320df2,code,fr,ea9ae2ac3a58dab5,"# Exercice 1 a completer
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,94320df2,code,fr,ea9ae2ac3a58dab5,"# Exercice 1 a completer
 # Conseil : bouclez k = 0..n, accumulez les nœuds, arretez quand la valeur cesse de croitre.
 # Comparez le total accumule a ex_nodes (l'exhaustif calcule ci-dessus).
 total_nodes_ilds = 0
 print(""Exercice 1 a completer"")
 ",,,,,,,,ea9ae2ac3a58dab5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,4e18a6a2,markdown,fr,7f8c067f9341edb9,"### Exercice 2 : passage à l'échelle — LDS vs exhaustif
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,4e18a6a2,markdown,fr,7f8c067f9341edb9,"### Exercice 2 : passage à l'échelle — LDS vs exhaustif
 Construisez une instance plus grande (par ex. n=18 objets aléatoires, capacité ~50%
 du poids total) où le greedy est sous-optimal. Mesurez :
 1. Le **plus petit k** pour lequel LDS atteint l'optimum (vérifié via DP).
@@ -1000,12 +1000,12 @@ du poids total) où le greedy est sous-optimal. Mesurez :
   référence. Observez comment le ratio de nœuds se dégrade quand l'heuristique est
   *mauvaise* (ratio aléatoire) vs *bonne* (vraie valeur/poids).
 ",,,,,,,,7f8c067f9341edb9,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,ac243985,code,fr,d48e1fec6e582222,"# Exercice 2 a completer
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,ac243985,code,fr,d48e1fec6e582222,"# Exercice 2 a completer
 # Conseil : genere n=18 objets avec des (poids, valeur) aleatoires, calcule l'optimum par DP,
 # puis balaye k jusqu'a l'atteindre. Affiche le ratio LDS(k*)/2**18.
 print(""Exercice 2 a completer"")
 ",,,,,,,,d48e1fec6e582222,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,3e219e74,markdown,fr,2af89c6fde321526,"### Exercice 3 : sensibilité à la qualité de l'heuristique
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,3e219e74,markdown,fr,2af89c6fde321526,"### Exercice 3 : sensibilité à la qualité de l'heuristique
 LDS suppose une heuristique *bonne*. Refaites le balayage k=0..n mais en **perturbant
 l'ordre** des objets : (a) ordre aléatoire, (b) ordre par valeur absolue décroissante
 (au lieu du ratio). Pour chaque heuristique, notez le **k minimum** pour atteindre
@@ -1014,12 +1014,12 @@ l'optimum.
   donc plus le k nécessaire est grand — LDS y perd son avantage. C'est la limite du
   paradigme : LDS n'est efficace que si l'heuristique est *effectivement* bonne.
 ",,,,,,,,2af89c6fde321526,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,bbd8fa31,code,fr,2c59eb03740727a8,"# Exercice 3 a completer
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,bbd8fa31,code,fr,2c59eb03740727a8,"# Exercice 3 a completer
 # Conseil : permutez `items` selon differents ordres, et pour chacun cherchez le k min.
 # Perturbation : essayez random.shuffle(items) (avec une graine fixee pour la reproductibilite).
 print(""Exercice 3 a completer"")
 ",,,,,,,,2c59eb03740727a8,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-13-LimitedDiscrepancySearch.ipynb,bdb6cea2,markdown,fr,e0433a26be1ed1d0,"## Conclusion
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03c-LimitedDiscrepancySearch.ipynb,bdb6cea2,markdown,fr,e0433a26be1ed1d0,"## Conclusion
 
 **Limited Discrepancy Search** occupe une niche précise dans le spectre de la
 recherche heuristique. À une extrémité, le **greedy** est instantané mais myope ;
@@ -1043,7 +1043,7 @@ une meilleure heuristique, l'autre exploite au mieux celle dont on dispose.
 > s'applique à tout arbre de recherche muni d'une heuristique ordonnante :
 > ordonnancement, planification, satisfaction de contraintes.
 ",,,,,,,,e0433a26be1ed1d0,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,5cd7d0ac,markdown,fr,9faa526783e8641b,"# Search-14 (C#) — Weighted A\* : recherche à sous-optimalité bornée
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,5cd7d0ac,markdown,fr,9faa526783e8641b,"# Search-14 (C#) — Weighted A\* : recherche à sous-optimalité bornée
 
 > **Partie 3 — Recherche avancée.** Ce notebook est le **jumeau .NET** du notebook
 > [Search-14 — Weighted A\*](Search-14-WeightedAstar.ipynb) (Python). Il implémente en C#
@@ -1062,7 +1062,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,5cd
 > Weighted A\* interpolle avec garantie $\text{coût} \leq W \cdot \text{optimal}$)
 > sont préservées sur tout terrain non-dégénéré.
 ",,,,,,,,9faa526783e8641b,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,da6a59e2,markdown,fr,215d6498bb3e4cf0,"## 2. Le banc d'essai : cheminement sur un terrain pondéré
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,da6a59e2,markdown,fr,215d6498bb3e4cf0,"## 2. Le banc d'essai : cheminement sur un terrain pondéré
 
 Pour mettre Weighted A\* en valeur, il faut un problème où **A\* explore beaucoup**
 (où l'optimalité coûte de nombreux nœuds) et où le compromis vitesse/qualité est net :
@@ -1071,7 +1071,7 @@ Sur un graphe à coût uniforme, A\* dégénère en BFS et Weighted A\* n'apport
 (cf la leçon « problème dégénéré ») — il faut des **coûts contrastés** pour que
 l'heuristique et l'inflation par $W$ soient visibles dans la sortie.
 ",,,,,,,,215d6498bb3e4cf0,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,a0d83d87,code,fr,c9b1c237090e4474,"// --- Terrain pondéré : chaque case a un coût de traversée ---
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,a0d83d87,code,fr,c9b1c237090e4474,"// --- Terrain pondéré : chaque case a un coût de traversée ---
 // 1 = route (rapide), 3 = herbe, 8 = marécage, '#' = mur infranchissable.
 // Coûts CONTRASTÉS -> A* va explorer, Greedy va se tromper : terrain non-dégénéré.
 using System.Collections.Generic;
@@ -1162,7 +1162,7 @@ foreach (var v in grid.Values) if (v == '#') nWalls++;
 Console.WriteLine($""Grille {ROWS}x{COLS} : {nWalls} murs ({100.0*nWalls/(ROWS*COLS):F0}%), départ {start}, but {goal} (seed .NET = {actualSeed})."");
 Console.WriteLine(""Coûts contrastés (route=1, herbe=3, marécage=8) -> A* va explorer, Greedy va se tromper : terrain non-dégénéré."");
 ",,,,,,,,c9b1c237090e4474,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,87be1bff,markdown,fr,cbef8d7cc1d4da7c,"## 3. A\*, Greedy, et Weighted A\* : un seul algorithme paramétré
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,87be1bff,markdown,fr,cbef8d7cc1d4da7c,"## 3. A\*, Greedy, et Weighted A\* : un seul algorithme paramétré
 
 Les algorithmes se ramènent à **un même best-first search** sur $f(n) = g(n) + W \cdot h(n)$ :
 le **poids $W$ de l'heuristique** est le seul paramètre.
@@ -1174,7 +1174,7 @@ le **poids $W$ de l'heuristique** est le seul paramètre.
 On implémente donc une fonction unique `BestFirst(grid, start, goal, W)` paramétrée par $W$,
 puis un `TrueGreedy` séparé (qui ignore $g$ dans la file de priorité, pôle non borné).
 ",,,,,,,,cbef8d7cc1d4da7c,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,6b39b910,code,fr,70cd045dba2341ea,"// Best-first search sur f(n) = g(n) + W*h(n). W=1 -> A* ; W>1 -> Weighted A*.
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,6b39b910,code,fr,70cd045dba2341ea,"// Best-first search sur f(n) = g(n) + W*h(n). W=1 -> A* ; W>1 -> Weighted A*.
 // Renvoie (chemin, coût, nœuds développés). Re-push sur meilleur g (pas de decrease-key explicite).
 (List<(int, int)> Path, int Cost, int Nodes) BestFirst(
     Dictionary<(int, int), char> g, (int, int) start, (int, int) goal, double W,
@@ -1259,7 +1259,7 @@ Console.WriteLine($""Greedy (f=h, non borné) : coût = {greedyCost,3} | nœuds 
 int optimal = astarCost;   // A* admissible -> référence d'optimalité
 Console.WriteLine($""\nRéférence d'optimalité (A* admissible) : {optimal}."");
 ",,,,,,,,70cd045dba2341ea,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,bb780bab,markdown,fr,d2e698f3ca97801f,"## 4. Le balayage de $W$ : la frontière coût/nœuds
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,bb780bab,markdown,fr,d2e698f3ca97801f,"## 4. Le balayage de $W$ : la frontière coût/nœuds
 
 Faisons varier $W$ de 1 (A\* optimal) à de grandes valeurs (proche Greedy). À chaque
 $W$, on mesure **le coût de la solution** et **le nombre de nœuds développés**. La
@@ -1268,7 +1268,7 @@ promesse de Weighted A\* est double, et on la vérifie honnêtement :
 1. **Vitesse** — à mesure que $W$ croît, le nombre de nœuds **chute**.
 2. **Garantie** — le coût de la solution reste **$\leq W \cdot \text{optimal}$** (Pohl 1970).
 ",,,,,,,,d2e698f3ca97801f,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,d42ebd52,code,fr,ce09becc7e51667a,"// Balayage de W >= 1 (le régime Weighted A*) : A* (W=1) -> de plus en plus ""confiant"".
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,d42ebd52,code,fr,ce09becc7e51667a,"// Balayage de W >= 1 (le régime Weighted A*) : A* (W=1) -> de plus en plus ""confiant"".
 double[] weights = { 1.0, 1.5, 2.0, 3.0, 5.0, 8.0, 12.0 };
 Console.WriteLine(string.Format(""{0,5} | {1,5} | {2,9} | {3,7} | {4,6} | {5,6} | {6}"",
     ""W"", ""coût"", ""ratio/opt"", ""borne W"", ""nœuds"", ""% A*"", ""garantie?""));
@@ -1283,7 +1283,7 @@ foreach (double W in weights)
         W, cost, ratio, W, nodes, pct, garantit));
 }
 ",,,,,,,,ce09becc7e51667a,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,87a56bb5,code,fr,e8d36db32f8c1535,"// Visualisation ASCII : le chemin trouvé par A* (W=1) vs Weighted A* (W=3).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,87a56bb5,code,fr,e8d36db32f8c1535,"// Visualisation ASCII : le chemin trouvé par A* (W=1) vs Weighted A* (W=3).
 string Render(Dictionary<(int, int), char> g, List<(int, int)> path)
 {
     var sym = new Dictionary<char, char> { ['.'] = '.', ['g'] = ',', ['s'] = '~', ['#'] = '#' };
@@ -1308,7 +1308,7 @@ Console.WriteLine(Render(grid, astarPath));
 Console.WriteLine(""\n=== Weighted A* (W=3) ==="");
 Console.WriteLine(Render(grid, wa3Path));
 ",,,,,,,,e8d36db32f8c1535,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,e3e2da9f,markdown,fr,ac381e0745468c9d,"### Lecture du résultat
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,e3e2da9f,markdown,fr,ac381e0745468c9d,"### Lecture du résultat
 
 Le balayage encadre le **compromis structurel** de Weighted A\* par ses deux pôles,
 puis l'interpolation bornée entre les deux :
@@ -1323,7 +1323,7 @@ puis l'interpolation bornée entre les deux :
 C'est tout l'intérêt : **échanger une garantie d'optimalité contre un gain de vitesse,
 de façon paramétrable**.
 ",,,,,,,,ac381e0745468c9d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,c4f966c4,markdown,fr,16a8322963b80682,"## 5. Pourquoi ça marche : la garantie de sous-optimalité bornée
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,c4f966c4,markdown,fr,16a8322963b80682,"## 5. Pourquoi ça marche : la garantie de sous-optimalité bornée
 
 La garantie $\text{coût} \leq W \cdot \text{optimal}$ repose sur une idée simple. En
 gonflant l'heuristique par $W$, on rend la recherche **plus confiante** dans l'estimation
@@ -1334,7 +1334,7 @@ d'inflation $W$ **borne exactement** de combien on peut dévier.
 Formellement (Pohl 1970) : si $h$ est admissible ($h \leq h^*$), alors la solution
 retournée par Weighted A\* a un coût $\leq W \cdot C^*$, où $C^*$ est le coût optimal.
 ",,,,,,,,16a8322963b80682,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,c741c424,markdown,fr,d4f8d4dd39a68c80,"## 6. Ponts avec le reste de la série
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,c741c424,markdown,fr,d4f8d4dd39a68c80,"## 6. Ponts avec le reste de la série
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
@@ -1347,7 +1347,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,c74
 > **Référence :** Pohl, I. (1970). *Heuristic Search Viewed as Path Finding in a Graph.*
 > Artificial Intelligence 1(3-4). Origine de Weighted A\* et de la garantie $W$-bornée.
 ",,,,,,,,d4f8d4dd39a68c80,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,01136e51,markdown,fr,20885cd30856fcc9,"## 7. Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,01136e51,markdown,fr,20885cd30856fcc9,"## 7. Exercices
 
 ### Exercice 1 : courbe de Pareto coût/nœuds
 Tracez (ou affichez en ASCII) la **frontière de Pareto** : en abscisse le nombre de nœuds
@@ -1358,24 +1358,24 @@ vitesse coûte cher en qualité.
   peu de qualité perdue ; après, le ratio coûte/optimal grimpe vite. Reprenez le balayage
   avec un pas plus fin (ex. `[1, 1.2, 1.5, 2, 2.5, 3, 4, 6, 9, 12]`).
 ",,,,,,,,20885cd30856fcc9,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,44043fac,code,fr,8bbc1aca48ece398,"// Exercice 1 à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,44043fac,code,fr,8bbc1aca48ece398,"// Exercice 1 à compléter
 // Conseil : reprenez le balayage ci-dessus (weights plus fin), collectez (nodes, ratio)
 // pour chaque W, et repérez le ""genou"" de la frontière de Pareto.
 Console.WriteLine(""Exercice 1 à compléter"");
 ",,,,,,,,8bbc1aca48ece398,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,1ef7ebed,markdown,fr,65bf25f6e9f90643,"### Exercice 2 : sensibilité à l'heuristique (admissible vs inadmissible)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,1ef7ebed,markdown,fr,65bf25f6e9f90643,"### Exercice 2 : sensibilité à l'heuristique (admissible vs inadmissible)
 Refaitez le balayage de $W$ avec une heuristique **inadmissible** (par ex. Manhattan
 **sans** tenir compte du coût minimal : $h$ sur-estimé d'un facteur 2 dès le départ).
 Vérifiez que la **garantie** $\text{coût} \leq W \cdot \text{optimal}$ est alors **violée**.
 - **Indice :** la garantie suppose $h$ admissible. Avec `h_bad = 2 * Manhattan`, le
   « W effectif » devient $W \cdot 2$, et la borne théorique n'est plus tenue.
 ",,,,,,,,65bf25f6e9f90643,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,f6af45af,code,fr,c8d43358048d1766,"// Exercice 2 à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,f6af45af,code,fr,c8d43358048d1766,"// Exercice 2 à compléter
 // Conseil : définissez HBad(s) = 2*Manhattan(s, goal) (inadmissible), relancez le balayage,
 // et cherchez un W où cost > W*optimal (garantie violée).
 Console.WriteLine(""Exercice 2 à compléter"");
 ",,,,,,,,c8d43358048d1766,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,433f3010,markdown,fr,3eef9ed0c23822b0,"### Exercice 3 : Anytime Repairing A\* (ARA\*)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,433f3010,markdown,fr,3eef9ed0c23822b0,"### Exercice 3 : Anytime Repairing A\* (ARA\*)
 Implémentez une version **anytime** : démarrez avec un grand $W_0$ (solution rapide),
 puis **décrémentez** $W$ par petits pas en **réutilisant** la liste OPEN déjà construite,
 jusqu'à $W=1$ (solution optimale). À chaque étape, affichez le coût courant et le temps
@@ -1383,12 +1383,12 @@ jusqu'à $W=1$ (solution optimale). À chaque étape, affichez le coût courant 
 - **Indice :** l'idée de Likhachev et al. (2003) est que la OPEN d'un $W$ donné contient
   déjà la quasi-totalité du travail pour le $W$ suivant. Bouclez $W = W_0, W_0 - \delta, \dots, 1$.
 ",,,,,,,,3eef9ed0c23822b0,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,88e0bda4,code,fr,d8d9cc90193c8eb2,"// Exercice 3 à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,88e0bda4,code,fr,d8d9cc90193c8eb2,"// Exercice 3 à compléter
 // Conseil : bouclez W = W0, W0-step, ..., 1. À chaque W, re-triez l'OPEN existante par la
 // nouvelle clé f=g+W*h (ou réinsérez), développez jusqu'au but, affichez (W, coût, t).
 Console.WriteLine(""Exercice 3 à compléter"");
 ",,,,,,,,d8d9cc90193c8eb2,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar-Csharp.ipynb,080af778,markdown,fr,95d1081a7994fada,"## Conclusion
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar-CSharp.ipynb,080af778,markdown,fr,95d1081a7994fada,"## Conclusion
 
 **Weighted A\*** referme le triptyque de la Partie 3. Face à un problème où A\* optimal
 explore trop de nœuds, on dispose de trois leviers : **renforcer** l'heuristique
@@ -1414,7 +1414,7 @@ exacts sur un terrain Mersenne-Twister).
 > **Référence :** Pohl, I. (1970). *Heuristic Search Viewed as Path Finding in a Graph.*
 > Artificial Intelligence 1(3-4).
 ",,,,,,,,95d1081a7994fada,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,e2ad45f9,markdown,fr,55e5a772605be3f5,"# Search-14 — Weighted A\* : recherche à sous-optimalité bornée
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,e2ad45f9,markdown,fr,55e5a772605be3f5,"# Search-14 — Weighted A\* : recherche à sous-optimalité bornée
 
 > **Partie 3 — Recherche avancée.** Ce notebook complète le **triptyque** de la
 > Partie 3 sur la question « l'heuristique ne suffit pas à résoudre à l'optimum ».
@@ -1446,7 +1446,7 @@ C'est le compromis « bon citizen » : on sait exactement jusqu'où on dérive d
 l'optimum, et on l'échange contre un gain de nœuds qui peut être de plusieurs ordres
 de grandeur.
 ",,,,,,,,55e5a772605be3f5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,7a448daa,markdown,fr,8dd16c3749e532ab,"## 2. Le banc d'essai : cheminement sur un terrain pondéré
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,7a448daa,markdown,fr,8dd16c3749e532ab,"## 2. Le banc d'essai : cheminement sur un terrain pondéré
 
 Pour mettre Weighted A\* en valeur, il faut un problème où **A\* explore beaucoup**
 (où l'optimalité coûte de nombreux nœuds) et où le compromis vitesse/qualité est net :
@@ -1454,7 +1454,7 @@ un terrain pondéré (routes rapides, herbe lente, marécages quasi-impraticable
 dégenère en BFS et Weighted A\* n'apporte rien (cf la leçon « problème dégénéré ») —
 il faut des **coûts contrastés** pour que l'heuristique et l'inflation discriminent.
 ",,,,,,,,8dd16c3749e532ab,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,32a831be,code,fr,545f474e69298068,"import heapq
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,32a831be,code,fr,545f474e69298068,"import heapq
 import random
 from itertools import product
 
@@ -1508,7 +1508,7 @@ print(f""Grille {ROWS}x{COLS} : {n_walls} murs ({100*n_walls/(ROWS*COLS):.0f}%),
 print(""Coûts contrastés (route=1, herbe=3, marécage=8) -> A* va explorer, ""
       ""Greedy va se tromper : terrain non-dégénéré."")
 ",,,,,,,,545f474e69298068,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,d6cf6e5e,markdown,fr,e72a7ca522a4e6e3,"## 3. A\*, Greedy, et Weighted A\* : un seul algorithme paramétré
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,d6cf6e5e,markdown,fr,e72a7ca522a4e6e3,"## 3. A\*, Greedy, et Weighted A\* : un seul algorithme paramétré
 
 Les algorithmes se ramènent à **un même best-first search** sur $f(n) = g(n) + W \cdot h(n)$ :
 le **poids $W$ de l'heuristique** est le seul paramètre. $W=1$ → A\* (optimal) ; $W>1$ →
@@ -1518,7 +1518,7 @@ domine, $g$ devient négligeable). À noter : $W=0$ donne $f=g$, c'est-à-dire *
 traité à part comme pôle non borné. On instrumente le **nombre de nœuds développés** (coût
 de la recherche) et le **coût de la solution trouvée** (sa qualité).
 ",,,,,,,,e72a7ca522a4e6e3,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,aa008f41,code,fr,f356f0e4895a65a3,"def best_first(grid, start, goal, W, h=manhattan):
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,aa008f41,code,fr,f356f0e4895a65a3,"def best_first(grid, start, goal, W, h=manhattan):
     # f(n) = g(n) + W*h(n). W=1 -> A* ; W>1 -> Weighted A* (borne W).
     g = {start: 0}
     parent = {start: None}
@@ -1572,7 +1572,7 @@ print(f""Greedy (f=h, non borné) : coût = {greedy_cost:3d} | nœuds développ�
 optimal = astar_cost   # A* admissible -> référence d'optimalité
 print(f""\nRéférence d'optimalité (A* admissible) : {optimal}."")
 ",,,,,,,,f356f0e4895a65a3,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,3e57df18,markdown,fr,d2e698f3ca97801f,"## 4. Le balayage de $W$ : la frontière coût/nœuds
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,3e57df18,markdown,fr,d2e698f3ca97801f,"## 4. Le balayage de $W$ : la frontière coût/nœuds
 
 Faisons varier $W$ de 1 (A\* optimal) à de grandes valeurs (proche Greedy). À chaque
 $W$, on mesure **le coût de la solution** et **le nombre de nœuds développés**. La
@@ -1581,7 +1581,7 @@ promesse de Weighted A\* est double, et on la vérifie honnêtement :
 1. **Vitesse** — à mesure que $W$ croît, le nombre de nœuds **chute**.
 2. **Garantie** — le coût de la solution reste **$\leq W \cdot \text{optimal}$** (Pohl 1970).
 ",,,,,,,,d2e698f3ca97801f,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,02135c13,code,fr,f100098062819728,"# Balayage de W >= 1 (le régime Weighted A*) : A* (W=1) -> de plus en plus ""confiant"".
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,02135c13,code,fr,f100098062819728,"# Balayage de W >= 1 (le régime Weighted A*) : A* (W=1) -> de plus en plus ""confiant"".
 # Greedy (f=h, pôle non borné) a déjà été mesuré ci-dessus ; ici on explore la BORNE W.
 weights = [1.0, 1.5, 2.0, 3.0, 5.0, 8.0, 12.0]
 print(f""{'W':>5} | {'coût':>5} | {'ratio/opt':>9} | {'borne W':>7} | {'nœuds':>6} | {'% A*':>6} | garantie?"")
@@ -1595,7 +1595,7 @@ for W in weights:
     print(f""{W:5.1f} | {cost:5d} | {ratio:9.3f} | {W:7.2f} | {nodes:6d} | {pct:5.1f}% | {garantit}"")
     rows.append((W, cost, ratio, nodes, pct))
 ",,,,,,,,f100098062819728,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,08771ac8,code,fr,4578e6d43b5d7bb6,"# Visualisation ASCII : le chemin trouvé par A* (W=1) vs Weighted A* (W=3) vs Greedy (W=0).
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,08771ac8,code,fr,4578e6d43b5d7bb6,"# Visualisation ASCII : le chemin trouvé par A* (W=1) vs Weighted A* (W=3) vs Greedy (W=0).
 def render(grid, path):
     sym = {""."": ""."", ""g"": "","", ""s"": ""~"", ""#"": ""#""}
     cells_map = {s: sym[t] for s, t in grid.items()}
@@ -1614,7 +1614,7 @@ print(render(grid, astar_path))
 print(""\n=== Weighted A* (W=3) ==="")
 print(render(grid, wa3_path))
 ",,,,,,,,4578e6d43b5d7bb6,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,1cc5b9ec,markdown,fr,52af29add4f273ef,"### Lecture du résultat
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,1cc5b9ec,markdown,fr,52af29add4f273ef,"### Lecture du résultat
 
 Les repères et le balayage encadrent le **compromis structurel** de Weighted A\* par ses
 deux pôles, puis l'interpolation bornée entre les deux :
@@ -1639,7 +1639,7 @@ La carte ASCII montre l'effet visuel : A\* ($W=1$) contourne méthodiquement les
 chères pour aller plus droit — un chemin légèrement plus cher (89 vs 78), trouvé en développant
 **8 fois moins** de nœuds (57 vs 472).
 ",,,,,,,,52af29add4f273ef,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,18929ec5,markdown,fr,4f83455a782b35e2,"## 5. Pourquoi ça marche : la garantie de sous-optimalité bornée
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,18929ec5,markdown,fr,4f83455a782b35e2,"## 5. Pourquoi ça marche : la garantie de sous-optimalité bornée
 
 La garantie $\text{coût} \leq W \cdot \text{optimal}$ repose sur une idée simple. En
 gonflant l'heuristique par $W$, on rend la recherche **plus confiante** dans l'estimation
@@ -1663,7 +1663,7 @@ Conséquences pratiques :
   réduire progressivement en réutilisant la recherche, pour raffiner vers l'optimal
   (Anytime Repairing A\*, Likhachev 2003 — exercice 3).
 ",,,,,,,,4f83455a782b35e2,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,c1edf769,markdown,fr,107b0b0719f2f702,"## 6. Ponts avec le reste de la série
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,c1edf769,markdown,fr,107b0b0719f2f702,"## 6. Ponts avec le reste de la série
 
 | Direction | Lien | Relation |
 |-----------|------|----------|
@@ -1680,7 +1680,7 @@ l'optimum » : **renforcer** l'heuristique (Search-12, PDB), **borner les écart
 Graph*, Artificial Intelligence 1(3-4). Première formalisation de Weighted A\* et de sa
 garantie de sous-optimalité bornée par le facteur d'inflation $W$.
 ",,,,,,,,107b0b0719f2f702,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,35ec125a,markdown,fr,94ce6593a1bc077c,"## 7. Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,35ec125a,markdown,fr,94ce6593a1bc077c,"## 7. Exercices
 
 ### Exercice 1 : courbe de Pareto coût/nœuds
 Tracez (ou affichez en ASCII) la **frontière de Pareto** : en abscisse le nombre de nœuds
@@ -1691,12 +1691,12 @@ vitesse coûte cher en qualité.
   l'utilité marginale d'augmenter $W$ décroît (les nœuds économisés s'amenuisent, la
   dérive quality s'accumule).
 ",,,,,,,,94ce6593a1bc077c,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,f9a035e8,code,fr,3e6a49bc070d1dab,"# Exercice 1 a completer
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,f9a035e8,code,fr,3e6a49bc070d1dab,"# Exercice 1 a completer
 # Conseil : reprenez le balayage ci-dessus (weights plus fin, ex. [1, 1.2, 1.5, 2, 2.5, 3, 4, 6, 9, 12]),
 # collectez (nodes, ratio) pour chaque W, et repérez le ""genou"" de la frontière de Pareto.
 print(""Exercice 1 a completer"")
 ",,,,,,,,3e6a49bc070d1dab,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,574ea9f5,markdown,fr,a31739a783a91e7a,"### Exercice 2 : sensibilité à l'heuristique (admissible vs inadmissible)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,574ea9f5,markdown,fr,a31739a783a91e7a,"### Exercice 2 : sensibilité à l'heuristique (admissible vs inadmissible)
 Refaitez le balayage de $W$ avec une heuristique **inadmissible** (par ex. Manhattan
 **sans** tenir compte du coût minimal : ou $h$ sur-estimé d'un facteur 2 dès le départ).
 Vérifiez que la **garantie** $\text{coût} \leq W \cdot \text{optimal}$ est alors **violée**.
@@ -1704,12 +1704,12 @@ Vérifiez que la **garantie** $\text{coût} \leq W \cdot \text{optimal}$ est alo
   par $W$ aggrave la triche et la borne n'a plus de raison de tenir. C'est pourquoi Weighted
   A\* part toujours d'une heuristique *honnête*.
 ",,,,,,,,a31739a783a91e7a,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,10ee8db4,code,fr,37d53665b2c6b597,"# Exercice 2 a completer
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,10ee8db4,code,fr,37d53665b2c6b597,"# Exercice 2 a completer
 # Conseil : définissez h_bad(s) = 2*manhattan(s, goal) (inadmissible), relancez le balayage,
 # et cherchez un W où cost > W*optimal (garantie violée).
 print(""Exercice 2 a completer"")
 ",,,,,,,,37d53665b2c6b597,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,a6bdf4a5,markdown,fr,1e114157fe9fccea,"### Exercice 3 : Anytime Repairing A\* (ARA\*)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,a6bdf4a5,markdown,fr,1e114157fe9fccea,"### Exercice 3 : Anytime Repairing A\* (ARA\*)
 Implémentez une version **anytime** : démarrez avec un grand $W_0$ (solution rapide),
 puis **décrémentez** $W$ par petits pas en **réutilisant** la liste OPEN déjà construite,
 jusqu'à $W=1$ (solution optimale). À chaque étape, affichez le coût courant et le temps
@@ -1719,12 +1719,12 @@ jusqu'à $W=1$ (solution optimale). À chaque étape, affichez le coût courant 
   une solution **immédiate** qui s'améliore avec le budget temps. C'est l'usage typique de
   Weighted A\* en robotique (planification de mouvement sous contrainte temps-réel).
 ",,,,,,,,1e114157fe9fccea,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,613a2af1,code,fr,78dd83d4965e49e4,"# Exercice 3 a completer
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,613a2af1,code,fr,78dd83d4965e49e4,"# Exercice 3 a completer
 # Conseil : boucle W = W0, W0-step, ... 1. À chaque W, re-triez l'OPEN existante par la
 # nouvelle clé f=g+W*h (ou réinsérez), développez jusqu'au but, affichez (W, coût, t).
 print(""Exercice 3 a completer"")
 ",,,,,,,,78dd83d4965e49e4,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-14-WeightedAstar.ipynb,9e40bafd,markdown,fr,df5e39b31e7446e9,"## Conclusion
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03d-WeightedAstar.ipynb,9e40bafd,markdown,fr,df5e39b31e7446e9,"## Conclusion
 
 **Weighted A\*** referme le triptyque de la Partie 3. Face à un problème où A\* optimal
 explore trop de nœuds, on dispose de trois leviers : **renforcer** l'heuristique
@@ -1747,7 +1747,7 @@ c'est choisir son budget d'erreur — un compromis honnête, quantitatif, et qui
 > à « garantir une qualité calculable » — justo avant que la Partie 4 n'abandonne toute
 > garantie.
 ",,,,,,,,df5e39b31e7446e9,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-b69788eb,markdown,fr,4895e2d5189e7719,"# Search-12 — Bases de données de motifs (Pattern Databases) pour le 15-puzzle
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-b69788eb,markdown,fr,4895e2d5189e7719,"# Search-12 — Bases de données de motifs (Pattern Databases) pour le 15-puzzle
 
 > **Partie 3 — Recherche avancée.** Ce notebook ouvre la Partie 3 : techniques de
 > recherche heuristique *avancées*, au-delà des fondations de la
@@ -1776,11 +1776,11 @@ consiste à *précalculer* une heuristique admissible bien plus fine : la **base
 données de motifs**. Ce notebook construit d'abord une PDB simple (concept), puis
 la **PDB additive** qui est, quarante ans après Korf, la référence absolue du
 15-puzzle.",,,,,,,,4895e2d5189e7719,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-0e4b6589,markdown,fr,c9f0df9895a63c42,"## 2. Formalisation du 15-puzzle
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-0e4b6589,markdown,fr,c9f0df9895a63c42,"## 2. Formalisation du 15-puzzle
 
 État = tuple de 16 entiers (cellules en row-major), `0` = case vide. But = tuiles
 1..15 en ordre, vide en bas à droite.",,,,,,,,c9f0df9895a63c42,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-faa5473a,code,fr,6f949612eb899eb2,"from collections import deque
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-faa5473a,code,fr,6f949612eb899eb2,"from collections import deque
 import numpy as np
 import matplotlib.pyplot as plt
 import time, random
@@ -1806,8 +1806,8 @@ def successors(state):
 
 assert len(successors(GOAL)) == 2  # le coin bas-droit a 2 voisins
 print(""OK : le but a"", len(successors(GOAL)), ""successeurs"")",,,,,,,,6f949612eb899eb2,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-15266b30,markdown,fr,20394dba9c6ab6be,"## 3. Heuristique de Manhattan (référence, vu en Search-3)",,,,,,,,20394dba9c6ab6be,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-2eff1d4b,code,fr,2cb1ce486760a3c6,"GOAL_POS = {t: i for i, t in enumerate(GOAL)}
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-15266b30,markdown,fr,20394dba9c6ab6be,"## 3. Heuristique de Manhattan (référence, vu en Search-3)",,,,,,,,20394dba9c6ab6be,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-2eff1d4b,code,fr,2cb1ce486760a3c6,"GOAL_POS = {t: i for i, t in enumerate(GOAL)}
 
 def manhattan(state):
     h = 0
@@ -1820,12 +1820,12 @@ def manhattan(state):
 
 assert manhattan(GOAL) == 0
 print(""Manhattan(but) ="", manhattan(GOAL))",,,,,,,,2cb1ce486760a3c6,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-ab365b47,markdown,fr,c4aaa6cf3397deb5,"### 3.b Mélange reproductible (marche aléatoire)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-ab365b47,markdown,fr,c4aaa6cf3397deb5,"### 3.b Mélange reproductible (marche aléatoire)
 
 On brouille le but par une marche aléatoire longue (90-130 pas), ce qui produit
 des instances *réalistement difficiles* (optimal typiquement ~38-46 coups) — bien
 plus coût à résoudre que les instances jouets où Manhattan est instantané.",,,,,,,,c4aaa6cf3397deb5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-73d47a5f,code,fr,e6c47b0b3237e4c4,"def scramble(goal, n_steps, seed=0):
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-73d47a5f,code,fr,e6c47b0b3237e4c4,"def scramble(goal, n_steps, seed=0):
     rng = random.Random(seed)
     s, prev = goal, None
     for _ in range(n_steps):
@@ -1839,7 +1839,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-73
 INST = scramble(GOAL, 100, seed=11)
 print(""Instance de démo :"", INST)
 print(""Manhattan ="", manhattan(INST), ""(borne inférieure ; l'optimal est nettement supérieur)"")",,,,,,,,e6c47b0b3237e4c4,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-f4577a77,markdown,fr,b804d405c346f9de,"## 4. Concept : base de données de motifs
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-f4577a77,markdown,fr,b804d405c346f9de,"## 4. Concept : base de données de motifs
 
 L'idée de Culberson & Schaeffer (1996) :
 
@@ -1856,7 +1856,7 @@ admissible. IDA\* + PDB reste donc optimal.
 **Fonction de rang.** Pour stocker la table dans un tableau compact, on *range*
 chaque état abstrait vers un entier : rang de permutation des positions du motif
 `P(16,k)`, multiplié par le nombre de cellules restantes pour le vide.",,,,,,,,b804d405c346f9de,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-480b43c8,code,fr,e4d838bccb9f6c05,"from math import factorial
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-480b43c8,code,fr,e4d838bccb9f6c05,"from math import factorial
 def P(n, k):
     r = 1
     for i in range(k): r *= (n - i)
@@ -1892,13 +1892,13 @@ for _ in range(20000):
         seen[rk] = (pos, blank)
 print(f""Injectivité du rang : {len(seen)} états abstraits testés, {collisions} collision (attendu 0)"")
 assert collisions == 0",,,,,,,,e4d838bccb9f6c05,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-28a5c873,markdown,fr,b39615f524619b1d,"## 5. PDB simple : construction par BFS rétrograde
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-28a5c873,markdown,fr,b39615f524619b1d,"## 5. PDB simple : construction par BFS rétrograde
 
 On construit d'abord une PDB sur **un** motif de 4 tuiles. BFS = coût unitaire =
 distances optimales depuis le but abstrait. Cette PDB unique couvre 4 tuiles ;
 elle servira de briques, puis la **PDB additive** (section 6) en combinera
 plusieurs pour couvrir les 15 tuiles.",,,,,,,,b39615f524619b1d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-138d881a,code,fr,0f15ed7659eb46f0,"def build_pdb(group):
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-138d881a,code,fr,0f15ed7659eb46f0,"def build_pdb(group):
     '''BFS rétrograde sur le groupe de tuiles. Coût unitaire = distance optimale.
     Renvoie (table uint8, n_états_atteignables).'''
     k = len(group); gset = set(group)
@@ -1932,7 +1932,7 @@ t0 = time.time()
 PDB5, n5 = build_pdb(PATTERN)
 print(f""PDB simple ({len(PATTERN)} tuiles) : {n5:,} états en {time.time()-t0:.1f}s, ""
       f""distance max = {int(PDB5[PDB5<255].max())}"")",,,,,,,,0f15ed7659eb46f0,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-ebf444e1,markdown,fr,e226d40c33c475f0,"## 6. La SOTA : PDB *additives* (Korf & Felner 2002)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-ebf444e1,markdown,fr,e226d40c33c475f0,"## 6. La SOTA : PDB *additives* (Korf & Felner 2002)
 
 Une PDB unique sur 4 tuiles n'informe qu'environ un quart du puzzle. L'idée de génie de
 Korf & Felner (2002) : **partitionner** les 15 tuiles en groupes *disjoints* et
@@ -1948,7 +1948,7 @@ coups.
 On utilise une partition **4-4-4-3** (les groupes couvrent les 15 tuiles). Le BFS
 devient un **0-1 BFS** : déplacer une tuile du groupe coûte 1, déplacer la case
 vide à travers un joker coûte 0.",,,,,,,,e226d40c33c475f0,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-c66a73a7,code,fr,2a41b7632a538178,"GROUPS = [(1,2,3,4), (5,6,7,8), (9,10,11,12), (13,14,15)]  # partition 4-4-4-3
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-c66a73a7,code,fr,2a41b7632a538178,"GROUPS = [(1,2,3,4), (5,6,7,8), (9,10,11,12), (13,14,15)]  # partition 4-4-4-3
 
 def build_additive_pdb(group):
     '''0-1 BFS : coût 1 si une tuile du groupe bouge, 0 sinon (joker).'''
@@ -1982,13 +1982,13 @@ ADD_TBLS = [t for t, _ in ADDITIVE]
 print(f""PDB additives (4-4-4-3) construites en {time.time()-t0:.1f}s"")
 for g, (tbl, ns) in zip(GROUPS, ADDITIVE):
     print(f""  groupe {g}: {ns:,} états, dist max = {int(tbl[tbl<255].max())}"")",,,,,,,,2a41b7632a538178,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-69af6593,markdown,fr,a7bbf8ec306ffbb5,"## 7. IDA\* instrumenté
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-69af6593,markdown,fr,a7bbf8ec306ffbb5,"## 7. IDA\* instrumenté
 
 Rappel de [Search-3](../Part1-Foundations/Search-3-Informed.ipynb) : seuils
 itératifs sur `f = g + h`, recherche en profondeur. On compte les **nœuds
 explorés** (métrique du coût de recherche). On l'introduit avant l'heuristique
 additive car il sert à sa vérification d'admissibilité ci-après.",,,,,,,,a7bbf8ec306ffbb5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-633a8f06,code,fr,2f8380d7fb527f65,"def ida_star(start, heuristic, goal=GOAL, node_limit=20_000_000):
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-633a8f06,code,fr,2f8380d7fb527f65,"def ida_star(start, heuristic, goal=GOAL, node_limit=20_000_000):
     threshold = heuristic(start); nodes = 0
     while True:
         res, t, n = _dfs(start, 0, threshold, heuristic, goal, {start}, node_limit - nodes)
@@ -2018,13 +2018,13 @@ def _dfs(state, g, threshold, heuristic, goal, path, budget):
 easy = scramble(GOAL, 8, seed=1)
 sm, _ = ida_star(easy, manhattan)
 print(f""Sanity : instance facile optimal={sm} (Manhattan résout bien)"")",,,,,,,,2f8380d7fb527f65,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-484927d5,markdown,fr,d258064a0d36a81a,"## 8. Heuristique additive et vérification d'admissibilité
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-484927d5,markdown,fr,d258064a0d36a81a,"## 8. Heuristique additive et vérification d'admissibilité
 
 `h_additive(s) = Σ PDB_groupe(s)`. On **vérifie empiriquement l'admissibilité** :
 sur un échantillon d'instances résolues à l'optimum (via Manhattan, elle-même
 admissible), `h_additive(s) ≤ optimal(s)` doit toujours tenir. On vérifie aussi la
 convergence (même optimum) sur une instance facile.",,,,,,,,d258064a0d36a81a,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-5ccf0cf3,code,fr,ce1d3d76f479ab82,"def h_additive(state):
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-5ccf0cf3,code,fr,ce1d3d76f479ab82,"def h_additive(state):
     return sum(pdb_lookup(state, tbl, g) for tbl, g in zip(ADD_TBLS, GROUPS))
 
 # Convergence : deux heuristiques admissibles -> même optimum.
@@ -2046,7 +2046,7 @@ print(""OK : h_additive est admissible (ne surestime pas la vraie distance)."")
 # Dominance vs Manhattan sur une instance
 print(f""Sur l'instance de démo : Manhattan={manhattan(INST)}, h_additive={h_additive(INST)} ""
       f""(additive >= Manhattan attendu)"")",,,,,,,,ce1d3d76f479ab82,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-48fd0855,markdown,fr,2c1dd31110af936e,"## 9. Expérience : Manhattan vs PDB additive (la valeur du moteur, visible)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-48fd0855,markdown,fr,2c1dd31110af936e,"## 9. Expérience : Manhattan vs PDB additive (la valeur du moteur, visible)
 
 Trois instances **réalistement difficiles** (brouillage 50-90 pas, optimal ~26-52
 coups). On résout à l'optimum avec (a) Manhattan seule, puis (b) la PDB additive.
@@ -2054,7 +2054,7 @@ On mesure les **nœuds explorés** : c'est la métrique qui révèle la puissanc
 l'heuristique. Sur les instances les plus dures, Manhattan frappe la limite
 (20M nœuds) tandis que la PDB additive en explore **un ordre de grandeur moins**
 et termine.",,,,,,,,2c1dd31110af936e,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-4cf2ee63,code,fr,5d5f9ce38c5fb0b5,"INSTANCES = {
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-4cf2ee63,code,fr,5d5f9ce38c5fb0b5,"INSTANCES = {
     ""I1 (brouillage 50)"": scramble(GOAL, 50, seed=11),
     ""I2 (brouillage 70)"": scramble(GOAL, 70, seed=23),
     ""I3 (brouillage 90)"": scramble(GOAL, 90, seed=41),
@@ -2073,8 +2073,8 @@ for name, s in INSTANCES.items():
           f""additive: {na_s} ({ta:6.1f}s) | speedup x{speedup:6.1f}"")
 
 bench = rows",,,,,,,,5d5f9ce38c5fb0b5,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-e423da18,markdown,fr,2285fd94cd144720,## 10. Visualisation : la PDB additive comprime l'arbre de recherche,,,,,,,,2285fd94cd144720,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-228ee245,code,fr,3716c0c444bbec73,"names = [r[0] for r in bench]
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-e423da18,markdown,fr,2285fd94cd144720,## 10. Visualisation : la PDB additive comprime l'arbre de recherche,,,,,,,,2285fd94cd144720,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-228ee245,code,fr,3716c0c444bbec73,"names = [r[0] for r in bench]
 man_nodes = [r[4] if r[4] is not None else 20_000_000 for r in bench]
 add_nodes = [r[5] if r[5] is not None else 20_000_000 for r in bench]
 x = np.arange(len(names)); w = 0.38
@@ -2089,7 +2089,7 @@ for bars in (b1, b2):
         ax.annotate(f'{int(r.get_height()):,}', (r.get_x()+r.get_width()/2, r.get_height()),
                     ha='center', va='bottom', fontsize=7)
 plt.tight_layout(); plt.show()",,,,,,,,3716c0c444bbec73,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-0b79209d,markdown,fr,a65792da85f20f60,"## 11. Limites et au-delà
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-0b79209d,markdown,fr,a65792da85f20f60,"## 11. Limites et au-delà
 
 - **Coût de construction.** Plus le groupe est grand, plus la PDB est fine mais
   plus le BFS est coûteux (`P(16,k)` explose). Korf & Felner poussent aux
@@ -2100,7 +2100,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-0b
 - **Généralité.** La même technique résout le Rubik's Cube (Korf 1997), la Tour de
   Hanoï, tout puzzle de permutation. C'est l'archétype du compromis
   *mémoire contre qualité d'heuristique*.",,,,,,,,a65792da85f20f60,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-932b57b3,markdown,fr,cc14c2e5c7580622,"## 12. Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-932b57b3,markdown,fr,cc14c2e5c7580622,"## 12. Exercices
 
 > Rappel (convention de la série) : un exercice est un **squelette à compléter**.
 > Les stubs s'exécutent sans erreur (`pass` / `return None`) ; à vous de les
@@ -2111,7 +2111,7 @@ MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-93
 Remplacez la partition 4-4-4-3 par **6-6-3** (Korf & Felner 2002). Combien d'états
 par PDB (`P(16,6)×10`, `P(16,3)×13`) ? Mesurez le speedup supplémentaire sur les
 instances du banc d'essai. Attention au temps de construction des groupes de 6.",,,,,,,,cc14c2e5c7580622,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-f9e3f29a,code,fr,5719cf54098cb21d,"# Exercice 1 — à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-f9e3f29a,code,fr,5719cf54098cb21d,"# Exercice 1 — à compléter
 GROUPS_663 = [(1,2,3,4,5,6), (7,8,9,10,11,12), (13,14,15)]
 
 def build_additive_for(groups):
@@ -2123,14 +2123,14 @@ def build_additive_for(groups):
 def h_additive_663(state):
     # Indice : somme des lookups sur GROUPS_663.
     pass  # TODO etudiant",,,,,,,,5719cf54098cb21d,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-5328983f,markdown,fr,4872b8356c8b5cd4,"### Exercice 2 — PDB symétrique gratuit (Felner et al. 2004)
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-5328983f,markdown,fr,4872b8356c8b5cd4,"### Exercice 2 — PDB symétrique gratuit (Felner et al. 2004)
 
 Le 15-puzzle possède une symétrie : refléter la grille (miroir vertical) **et**
 renverser les numéros (`t -> 16 - t`) laisse le puzzle invariant. Construisez la
 transformation `reflect(state)`, vérifiez qu'elle préserve la résolubilité et que
 `h_additive(state) == h_additive(reflect(state))`. En déduire une seconde PDB
 *gratuite* et combinez-la par `max`.",,,,,,,,4872b8356c8b5cd4,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-5f194e47,code,fr,95684c70cf7cb401,"# Exercice 2 — à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-5f194e47,code,fr,95684c70cf7cb401,"# Exercice 2 — à compléter
 def reflect(state):
     # Indice : miroir vertical de la grille 4x4, puis renversement des numéros
     # t -> 16 - t pour t != 0 (le vide reste le vide).
@@ -2139,18 +2139,18 @@ def reflect(state):
     pass  # TODO etudiant
 
 # Indice : vérifiez reflect(reflect(s)) == s et h_additive(s) == h_additive(reflect(s)).",,,,,,,,95684c70cf7cb401,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-ca1ae9c2,markdown,fr,b7b5510676be59f3,"### Exercice 3 — Généralisation au 24-puzzle
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-ca1ae9c2,markdown,fr,b7b5510676be59f3,"### Exercice 3 — Généralisation au 24-puzzle
 
 Le **24-puzzle** (5×5) est le vrai défi : Manhattan y est désespérément faible et
 seules les PDB additives rendent la résolution optimale envisageable. Adaptez ce
 notebook (25 cellules, partition 6-6-6-7) et résolvez une instance. Que
 constatez-vous sur le rapport construction/qualité ?",,,,,,,,b7b5510676be59f3,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-12a65b8b,code,fr,df81e76a1a6a3d70,"# Exercice 3 — à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-12a65b8b,code,fr,df81e76a1a6a3d70,"# Exercice 3 — à compléter
 # Indice : la structure est inchangée ; changent la taille (N=5), le but (1..24,0),
 # et la partition. Étape 1 : redéfinissez GOAL24 et neighbors pour N=5.
 # Étape 2 : attention à l'explosion de P(25, k) — restez sur des groupes <= 6.
 pass  # TODO etudiant",,,,,,,,df81e76a1a6a3d70,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-58db3f04,markdown,fr,77478471ade87780,"## Conclusion
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-58db3f04,markdown,fr,77478471ade87780,"## Conclusion
 
 La **base de données de motifs** illustre un principe central de la recherche
 heuristique avancée : **investir du calcul en amont** (précalculer des tables une
@@ -2192,7 +2192,7 @@ millions de requêtes.
 
 ← [Search-3 — Recherche informée](../Part1-Foundations/Search-3-Informed.ipynb)
 | ↑ [Search (racine)](../README.md) | [Partie 4 — Métaheuristiques →](../Part4-Metaheuristics/README.md)",,,,,,,,77478471ade87780,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Advanced/Search-12-PatternDatabases.ipynb,cell-pdb-speedup-interpretation,markdown,fr,5b1a98fae08f4fe6,"### Lecture du résultat : pourquoi le speedup **croît** avec la difficulté
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-pdb-speedup-interpretation,markdown,fr,5b1a98fae08f4fe6,"### Lecture du résultat : pourquoi le speedup **croît** avec la difficulté
 
 Le tableau ci-dessus raconte l'histoire la plus importante de ce notebook, et elle
 n'est pas dans les chiffres absolus — elle est dans la **dernière colonne**.

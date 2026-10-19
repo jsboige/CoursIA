@@ -41,7 +41,7 @@ Distinction : `corrective-auditor` = audit sémantique profond d'une cible ; `co
 
 ### Cross-cutting maintenance (toutes machines, alignement env)
 - `readme-hierarchy-auditor` (audit/maj hiérarchie README bottom-up), `readme-updater` (maj README d'une série après ajout/modif notebooks).
-- `slide-analyzer` / `slide-improver` (decks PPTX/Marp, vision sk-agent) pour les tracks slides EPITA/ECE.
+- `slide-analyzer` / `slide-improver` (decks Slidev : organes structure/composition puis vision sk-agent, #19578) pour les tracks slides EPITA/ECE.
 - `general-purpose` (catch-all, exploration/analyse async non couverte par un specialist).
 
 ## Usage async (pattern)
@@ -75,7 +75,7 @@ Les skills sont les slash-commands de `.claude/skills/`, plus un module de réf�
 | `/execute-notebook` | Exécution (scripts locaux ou MCP Jupyter). `--mode`, `--batch`, `--save` | validation toutes séries |
 | `/verify-notebooks` | Vérif + fix itératif (`--quick`, `--fix`, `--python-only`, `--dotnet-only`) | gate avant PR |
 | `/validate-genai` | Valider stack GenAI (services, auth, modèles, notebooks, VRAM). `--local`, `--remote`, `--quick` | GenAI hosting, #1385 |
-| `/analyze-slides` | Analyse qualitative deck PPTX via vision AI. `--render`, `--slides` | tracks slides EPITA/ECE |
+| `/analyze-slides` | Analyse qualitative deck Slidev (organes + vision AI). `--slides` | tracks slides EPITA/ECE |
 | `/qc-iterative-improve` | Workflow amélioration stratégies QC (`[strategy\|issue#]`, `--iterations`, `--backtest`) | #1409 trading |
 | `/train-model` | Entraîner un modèle ML (thermal-safe GPU, walk-forward + multi-seed + DM). `--dry-run`, `--seeds`, `--folds`, `--bg` | #1454 Training |
 | `/genai-iterate` | Itérer un notebook GenAI contre la stack (auth, sous-domaines, quant, GPU/VRAM) via CLI genai-stack. `--service`, `--quant`, `--validate`, `--bg` | #1385 GenAI |

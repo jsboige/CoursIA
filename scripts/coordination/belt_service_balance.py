@@ -552,8 +552,10 @@ def fetch_closed_issues(
     levee) remonte en tete du tri UPDATED_AT et fait tomber la fenetre trop
     tot. Le filtre cote serveur evite ce piege.
 
-    Controle positif : `issueCount` de la meme requete = nombre de
-    fermetures lues (apres pagination complete). Si ecart, RuntimeError.
+    Controle positif : `issueCount` de la meme requete = nombre de noeuds
+    lus (apres pagination complete), compte AVANT le filtre memoire ci-dessous.
+    Une fermeture anterieure a l'heure de debut de la fenetre est lue puis
+    ecartee : elle ne fait pas echouer le controle. Si ecart, RuntimeError.
 
     Spec #19804 : la requete inclut `comments(first: 100, orderBy: UPDATED_AT
     DESC)` pour attribuer les fermetures a la lane du dernier claim/delivery
@@ -574,6 +576,7 @@ def fetch_closed_issues(
     pages = 0
     has_next = True
     expected_total = 0  # issueCount de la premiere page
+    read_total = 0  # noeuds lus, avant le filtre memoire (controle positif)
     query = (
         "query($q: String!, $endCursor: String) {\n"
         "  search(query: $q, type: ISSUE, first: 100, after: $endCursor) {\n"
@@ -623,6 +626,7 @@ def fetch_closed_issues(
         if pages == 1:
             expected_total = search.get("issueCount", 0)
         for issue in search.get("nodes", []):
+            read_total += 1
             closed_at = issue.get("closedAt")
             created = issue.get("createdAt")
             if not closed_at or not created:
@@ -651,9 +655,9 @@ def fetch_closed_issues(
         pi = search.get("pageInfo", {})
         has_next = bool(pi.get("hasNextPage"))
         end_cursor = pi.get("endCursor")
-    if out and len(out) != expected_total:
+    if read_total != expected_total:
         raise RuntimeError(
-            f"closed-issues count mismatch: read={len(out)} "
+            f"closed-issues count mismatch: read={read_total} "
             f"issueCount={expected_total} (search_q={search_q!r})"
         )
     return out, expected_total

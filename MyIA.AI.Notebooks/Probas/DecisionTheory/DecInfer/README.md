@@ -4,7 +4,7 @@
 
 Arc autonome de **théorie de la décision bayésienne** en Infer.NET : les notebooks 1-10 et l'accrétion Lean 2b prolongent la modélisation probabiliste (le corpus bayésien [`../../Infer/`](../../Infer/README.md)) jusqu'au **choix d'action sous incertitude**. Un posterior n'est pas une fin — c'est l'**input** d'une politique optimale. Cette série formalise ce passage, de l'utilité espérée aux processus markoviens, jusqu'à la **preuve formelle Lean 4** de l'indice de Gittins.
 
-**Prérequis** : le corpus bayésien [`../../Infer/`](../../Infer/README.md) (notamment [Infer-4-Bayesian-Networks](../../Infer/Infer-4-Bayesian-Networks.ipynb), [Infer-7-Skills-IRT](../../Infer/Infer-7-Skills-IRT.ipynb) pour les posteriors Beta). Aucun prérequis en théorie de la décision : les axiomes de Von Neumann-Morgenstern sont introduits ex nihilo.
+**Prérequis** : le corpus bayésien [`../../Infer/`](../../Infer/README.md) (notamment [Infer-04-Bayesian-Networks](../../Infer/Infer-04-Bayesian-Networks.ipynb), [Infer-07-Skills-IRT](../../Infer/Infer-07-Skills-IRT.ipynb) pour les posteriors Beta). Aucun prérequis en théorie de la décision : les axiomes de Von Neumann-Morgenstern sont introduits ex nihilo.
 
 **Stack** : Infer.NET (.NET 9.0 + dotnet-interactive), EP/VMP par défaut. Les notebooks companions (2, 2b, 8b) utilisent le **kernel Lean 4** (WSL) et le lake [`decision_theory_lean`](../decision_theory_lean/).
 
@@ -55,7 +55,7 @@ Le socle des **fondations** (1-3) pose les axiomes de rationalité et la notion 
 
 ### DecInfer-01 : Fondements de l'utilité (axiomes VNM)
 
-**Durée** : 50 min | **Prérequis** : corpus bayésien [Infer-4](../../Infer/Infer-4-Bayesian-Networks.ipynb)
+**Durée** : 50 min | **Prérequis** : corpus bayésien [Infer-4](../../Infer/Infer-04-Bayesian-Networks.ipynb)
 
 Les loteries comme représentation des choix stochastiques ; les **axiomes de Von Neumann-Morgenstern** (complétude, transitivité, continuité, indépendance) ; dérivation de la fonction d'utilité par calibration ; l'agent rationnel maximise E[U]. Applications : décision médicale, assurance, investissement.
 
@@ -91,7 +91,7 @@ Décisions multi-critères, fonctions de valeur vs utilité, indépendance préf
 
 ### DecInfer-05 : Réseaux de décision
 
-**Durée** : 55 min | **Prérequis** : [Infer-4 bayésien](../../Infer/Infer-4-Bayesian-Networks.ipynb), Infer-1, Infer-4
+**Durée** : 55 min | **Prérequis** : [Infer-4 bayésien](../../Infer/Infer-04-Bayesian-Networks.ipynb), Infer-1, Infer-4
 
 Extension des réseaux bayésiens par les nœuds de **décision** (rectangle) et d'**utilité** (losange) ; arcs informationnels ; calcul de la politique optimale par backward induction ; décisions séquentielles. Applications : diagnostic médical avec décision de traitement, investissement avec étude de marché.
 
@@ -121,7 +121,7 @@ Systèmes experts (architecture, historique) ; décision sous **incertitude sév
 
 ### DecInfer-10 : Thompson Sampling bayésien
 
-**Durée** : 60 min | **Prérequis** : [Infer-7 bayésien](../../Infer/Infer-7-Skills-IRT.ipynb) (posterior Beta), Infer-8 (bandits, ε-greedy, UCB1)
+**Durée** : 60 min | **Prérequis** : [Infer-7 bayésien](../../Infer/Infer-07-Skills-IRT.ipynb) (posterior Beta), Infer-8 (bandits, ε-greedy, UCB1)
 
 Le **bandit multi-bras** vu comme un programme probabiliste Infer.NET : le moteur d'inférence (EP/VMP) calcule le posterior Beta-Bernoulli de chaque bras plutôt que d'appliquer la formule conjuguée à la main. **Thompson Sampling** : jouer le bras dont l'échantillon posterior est le plus élevé. Mesure du **regret cumulé** face à ε-greedy et UCB1 (Thompson exploite l'incertitude posterior). Extension au **best-arm identification**. La généralisation à des modèles non conjugués (où seule l'inférence approchée sait calculer le posterior) justifie l'usage du moteur.
 
