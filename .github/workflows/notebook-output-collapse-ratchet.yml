@@ -82,10 +82,13 @@ jobs:
 
       # Refs reach the script via env, never inline in the run script
       # (script-injection guard, same as the siblings).
-      - name: Ratchet check (advisory)
+      - name: Ratchet check (blocking since #21424 T2)
         env:
           BASE_REF: ${{ github.event.inputs.base_ref }}
           PR_BASE: ${{ github.base_ref }}
+          # Body for the `## Output-collapse justification` bypass. Empty
+          # in dispatch mode (no PR body), full body on pull_request.
+          COLLAPSE_PR_BODY: ${{ github.event.pull_request.body || '' }}
         run: |
           BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
           python scripts/notebook_tools/check_output_collapse.py "$BASE"

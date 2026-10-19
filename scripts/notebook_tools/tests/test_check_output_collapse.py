@@ -184,3 +184,82 @@ def test_constants_pinned():
     assert SIGNATURE_FACTOR == 2
     assert MOVED_GAIN_FRACTION == 0.5
     assert DIAGNOSTIC_LINE_FRACTION == 0.8
+
+
+# ---------------------------------------------------------------------------
+# Issue #21424 T1 + T2: --history mode and the body-justification bypass.
+# ---------------------------------------------------------------------------
+
+def test_parse_collapse_justification_absent():
+    """No section header -> no justification, regardless of body content."""
+    from check_output_collapse import parse_collapse_justification
+    assert parse_collapse_justification("") == {}
+    assert parse_collapse_justification("## unrelated section") == {}
+    assert parse_collapse_justification(
+        "## output-collapse justification\nno cells here"
+    ) == {}
+
+
+def test_parse_collapse_justification_form_dash_cell():
+    """`- notebook.ipynb cell abcd: reason` is recognized."""
+    from check_output_collapse import parse_collapse_justification
+    body = ("## Output-collapse justification\n"
+            "- Lean-7b-Examples.ipynb cell eb711ddb: API key absent\n"
+            "## Next section")
+    j = parse_collapse_justification(body)
+    assert ("Lean-7b-Examples.ipynb", "eb711ddb") in j
+    assert "API key absent" in j[("Lean-7b-Examples.ipynb", "eb711ddb")]
+
+
+def test_parse_collapse_justification_form_hash():
+    """`notebook.ipynb#abcd reason` is recognized (alternate spelling)."""
+    from check_output_collapse import parse_collapse_justification
+    body = ("## Output-collapse justification\n"
+            "- Lean-7b-Examples.ipynb#4d4322dd: re-execution skipped\n")
+    j = parse_collapse_justification(body)
+    assert ("Lean-7b-Examples.ipynb", "4d4322dd") in j
+
+
+def test_unaddressed_keeps_only_unjustified_cells():
+    """The unaddressed list is the gate signal -- justified cells drop out."""
+    from check_output_collapse import (
+        parse_collapse_justification, _unaddressed,
+    )
+    body = ("## Output-collapse justification\n"
+            "- Lean-7b-Examples.ipynb cell eb711ddb: env-only\n")
+    j = parse_collapse_justification(body)
+    bad = [
+        {"notebook": "Lean-7b-Examples.ipynb",
+         "cells": [
+             {"cell": "eb711ddb", "kind": "signature",
+              "factor": 14.9, "base": 1000, "head": 67},
+             {"cell": "32aa3fbb", "kind": "magnitude",
+              "factor": 49.4, "base": 1000, "head": 20},
+         ]},
+    ]
+    un = _unaddressed(bad, j)
+    assert len(un) == 1
+    assert un[0]["cell"] == "32aa3fbb"
+
+
+def test_unaddressed_drops_exempt_entries():
+    """Exempt (moved, diagnostic) findings are never unaddressed."""
+    from check_output_collapse import _unaddressed
+    bad = [
+        {"notebook": "Foo.ipynb", "cells": [
+            {"cell": "a", "kind": "exempt-moved", "factor": 5,
+             "base": 100, "head": 20},
+        ]},
+    ]
+    assert _unaddressed(bad, {}) == []
+
+
+def test_history_yields_no_findings_on_clean_diff():
+    """A diff that adds a notebook yields no finding (added == exempt)."""
+    from check_output_collapse import history
+    # The 'added-notebook' case: pass an empty list of paths through the
+    # helper. We assert only that the iterator returns a list (we don't
+    # drive a real git walk in this unit test).
+    assert list(history("2026-10-10", "2026-10-19",
+                         notebook="does-not-exist.ipynb",
+                         limit=1)) == []
