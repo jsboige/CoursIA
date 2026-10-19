@@ -42,7 +42,12 @@ __all__ = [
     "OntologicalMove",
     "internal_move",
     "apply_ontology",
+    "candidate_key",
     "quorum_mechanism",
+    "authority_mechanism",
+    "competing_mechanisms",
+    "compose_ontology",
+    "composition_report",
     "expansion_ontology",
     "political_opening",
     "non_canonicity",
@@ -133,13 +138,82 @@ def quorum_mechanism(
     """
     accepted: list[OntologicalMove] = []
     for eta in proposals:
-        key = ",".join(sorted(eta.new_concepts))
-        if len(votes.get(key, ())) >= quorum:
+        if len(votes.get(candidate_key(eta), ())) >= quorum:
             accepted.append(eta)
     result = game
     for eta in accepted:
         result = apply_ontology(result, eta)
     return result, tuple(accepted)
+
+
+def candidate_key(eta: OntologicalMove) -> str:
+    """Cle canonique d'une candidature : ses concepts tries (identite des candidats)."""
+    return ",".join(sorted(eta.new_concepts))
+
+
+def authority_mechanism(
+    game: EvolutiveGame,
+    proposals: tuple[OntologicalMove, ...],
+    votes: dict[str, set[str]],
+    authority: str,
+) -> tuple[OntologicalMove, ...]:
+    """Regle d'anciennete : seul le soutien de ``authority`` decide.
+
+    Deuxieme regle d'admission du banc, volontairement disjointe du quorum :
+    elle lit les **memes** votes mais n'en retient qu'un electeur. Avec le
+    quorum seul, le choix entre extensions concurrentes est tranche par
+    construction (une seule regle) ; avec les deux, il devient observable.
+    """
+    accepted = [
+        eta for eta in proposals if authority in votes.get(candidate_key(eta), ())
+    ]
+    return tuple(accepted)
+
+
+def competing_mechanisms(
+    game: EvolutiveGame,
+    proposals: tuple[OntologicalMove, ...],
+    votes: dict[str, set[str]],
+    mechanisms: dict[str, "object"],
+    policy: str = "and",
+) -> tuple[EvolutiveGame, tuple[OntologicalMove, ...], tuple[str, ...]]:
+    """Deux regles d'admission se disputent les memes candidatures (#20773).
+
+    ``mechanisms`` mappe un nom vers un appelable
+    ``(game, proposals, votes) -> tuple[OntologicalMove, ...]`` (le profil de
+    ``quorum_mechanism`` partiellement applique et d'``authority_mechanism``).
+    ``policy`` compose les verdicts : ``"and"`` (conjonction — les deux regles
+    doivent admettre) ou ``"or"`` (disjonction — une suffit).
+
+    Retourne ``(G_{t+1}, etas_acceptes, litiges)`` ou ``litiges`` sont les
+    cles des candidatures sur lesquelles les regles **divergent** (l'une
+    admet, l'autre refuse) : c'est la que le choix de politique change le jeu
+    public, donc l'observable propre de la concurrence.
+    """
+    if policy not in ("and", "or"):
+        raise ValueError("policy doit valoir 'and' ou 'or'")
+    if not mechanisms:
+        raise ValueError("au moins une regle d'admission")
+    decisions = {
+        name: frozenset(
+            candidate_key(eta) for eta in mech(game, proposals, votes)
+        )
+        for name, mech in mechanisms.items()
+    }
+    litiges: list[str] = []
+    accepted: list[OntologicalMove] = []
+    for eta in proposals:
+        key = candidate_key(eta)
+        admits = [key in decided for decided in decisions.values()]
+        if len(set(admits)) > 1:
+            litiges.append(key)
+        admit = all(admits) if policy == "and" else any(admits)
+        if admit:
+            accepted.append(eta)
+    result = game
+    for eta in accepted:
+        result = apply_ontology(result, eta)
+    return result, tuple(accepted), tuple(litiges)
 
 
 def expansion_ontology(g0: EvolutiveGame, g1: EvolutiveGame) -> int:
@@ -168,6 +242,58 @@ def non_canonicity(
         extended = apply_ontology(game, eta)
         action_sets.add(frozenset(extended.actions))
     return len(action_sets)
+
+
+def compose_ontology(game: EvolutiveGame, etas: tuple[OntologicalMove, ...]) -> EvolutiveGame:
+    """Compose des coups ontologiques **dans l'ordre donne** (fold d'``apply_ontology``).
+
+    L'ordre est le parametre experimental : ``compose(G, (e1, e2))`` vs
+    ``compose(G, (e2, e1))`` alimente ``composition_report``.
+    """
+    for eta in etas:
+        game = apply_ontology(game, eta)
+    return game
+
+
+def composition_report(
+    game: EvolutiveGame,
+    eta1: OntologicalMove,
+    eta2: OntologicalMove,
+) -> dict:
+    """Communativite de la composition de deux coups ontologiques (#20773).
+
+    Deux ordres d'application, quatre observables :
+
+    - ``same_lexicon`` / ``same_actions`` : le langage et l'espace de coups
+      sont des unions — ils commutent *structurellement* par construction de
+      l'organe ;
+    - ``structural_commutativity`` : les deux precedents conjoints ;
+    - ``payoff_commutativity`` :
+      les paiements des actions ouvertes sont poses par ``setdefault`` au
+      nom du **proposeur** — quand deux coups ouvrent la **meme action**,
+      le premier poseur capture la coordonnee (paiement de proposeur 1.0)
+      et le second devient simple tiers (0.5). ``payoff_conflicts`` liste
+      les cles ``(agent, action)`` dont le paiement depend de l'ordre.
+
+    Le temoin negatif du banc : deux coups ouvrant des actions **disjointes**
+    doivent commuter sur les QUATRE axes — une non-commutativite mesuree sur
+    ce cas serait un defaut de l'organe, pas un resultat.
+    """
+    g12 = compose_ontology(game, (eta1, eta2))
+    g21 = compose_ontology(game, (eta2, eta1))
+    conflicts = {
+        k
+        for k in set(g12.payoffs) | set(g21.payoffs)
+        if g12.payoffs.get(k) != g21.payoffs.get(k)
+    }
+    return {
+        "same_lexicon": g12.lexicon == g21.lexicon,
+        "same_actions": g12.actions == g21.actions,
+        "structural_commutativity": g12.lexicon == g21.lexicon
+        and g12.actions == g21.actions,
+        "payoff_commutativity": not conflicts,
+        "payoff_conflicts": frozenset(conflicts),
+    }
 
 
 def simulate_trajectory(
