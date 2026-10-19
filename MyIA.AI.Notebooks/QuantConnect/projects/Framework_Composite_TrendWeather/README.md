@@ -56,7 +56,7 @@ Cf. **c.1281-L3 / c.1282-L3 / c.1283-L3 ★★** (library clones) : le pattern �
 **Lean CLI (recherche locale, défaut 50/50) :** `lean research "MyIA.AI.Notebooks/QuantConnect/projects/Framework_Composite_TrendWeather" --notebook quantbook.ipynb`
 **Lean CLI (backtest, défaut 50/50) :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/Framework_Composite_TrendWeather"`
 **Lean CLI (backtest production T75/AW25) :** identique, `main.py` fixe `alpha_allocations={"TrendStocks": 0.75, "AllWeather": 0.25}` ligne 53. **Mais attendre une variation ~±30-50 % sur Sharpe** vs le 1.155 docstring à cause de (a) `INTERACTIVE_BROKERS_BROKERAGE` ligne 45 vs 0 frais dans recherche, (b) périmètre univers TrendStocks `main.py:36-50` (15 noms) vs 15 noms identiques OK, (c) momentum-weighted TrendStocks vs equal-weight, (d) mensuel 31j vs weekly par défaut.
-**QC Cloud :** non déployé. Copier `main.py + alpha_models.py + portfolio_construction.py` dans un nouveau projet QC Cloud pour exécuter et préserver les outputs dans `lean-workspace/<project>/backtests/<timestamp>/`. **Recommandation anti-SUSPECT** : **re-exécuter** le backtest cloud avec le T75/AW25 exact, **préserver le JSON output** dans le worktree, et **comparer** au 1.155 docstring — l'écart attendu (cf. `iter4_research.py:176` 2-3× overstate) devrait ramener le Sharpe à ~0.4-0.6 dans le pire cas (surestimation locale) ou confirmer le 1.155 (backtest one-shot originel correct).
+**QC Cloud :** non déployé. Créer un projet QC Cloud, y attacher le projet `SharedPCM` en bibliothèque (geste « Add Library », cf README de `SharedPCM`), puis copier `main.py + alpha_models.py` pour exécuter et préserver les outputs dans `lean-workspace/<project>/backtests/<timestamp>/`. **Recommandation anti-SUSPECT** : **re-exécuter** le backtest cloud avec le T75/AW25 exact, **préserver le JSON output** dans le worktree, et **comparer** au 1.155 docstring — l'écart attendu (cf. `iter4_research.py:176` 2-3× overstate) devrait ramener le Sharpe à ~0.4-0.6 dans le pire cas (surestimation locale) ou confirmer le 1.155 (backtest one-shot originel correct).
 
 **Note variations Docker Lean** : `quantbook.ipynb` cell 23 montre que la même stratégie exécutée en **monthly vs weekly** donne Sharpe **1.064** vs **0.674** (cell 11) — c'est l'effet « less-frequent-rebalance » qui réduit le turnover et préserve les trends. Le `main.py` ligne 54 utilise `rebalance=timedelta(days=31)` (monthly) — donc **dans la même veine que les 1.064**, **pas 0.674**.
 
@@ -64,7 +64,7 @@ Cf. **c.1281-L3 / c.1282-L3 / c.1283-L3 ★★** (library clones) : le pattern �
 
 - `main.py` — Stratégie composite v1.5 production (T75/AW25, monthly rebalance, IBKR fees). **Contient le sweep comment `Allocation sweep results (2015-2026)` lignes 8-13, source du 1.155/27.4 %/27.7 %** ⚠️
 - `alpha_models.py` — TrendStocksAlpha (momentum-weighted) + AllWeatherAlpha (static)
-- `portfolio_construction.py` — MultiStrategyPCM (allocation dict + rebalance interval)
+- `SharedPCM/pouches_pcm.py` (bibliothèque de projet QC) — `MultiStrategyPouchesPCM`, PCM par poches canonique importé par `main.py` (extraction #19821 brique 1)
 - `iter4_research.py` — Recherche yfinance locale (avertit 2-3× overstate cloud Sharpe, ligne 176)
 - `quantbook.ipynb` — Recherche Lean CLI Docker : 50/50 default + sweeps (allocation, stop-loss, rebalance freq, T×freq) avec outputs préservés
 
