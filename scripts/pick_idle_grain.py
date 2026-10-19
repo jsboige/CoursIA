@@ -7438,7 +7438,7 @@ def main(argv: list[str] | None = None) -> int:
             # Si la voie multiplexee echoue, on retombe sur la sonde unitaire
             # (chemin d'avant patch, lent mais fonctionnel) et on marque le
             # fait en banniere. Cf memo c.1113 §4.
-            bulk_targets = [it["number"] for it in belt_pool[:belt_check_window]]
+            bulk_targets = [it["number"] for it in belt_pool[:belt_check_window * 3 + 12]]
             bulk_stamps, bulk_err = fetch_latest_claim_stamps_bulk(
                 bulk_targets,
                 cache=payload_cache,
@@ -7459,11 +7459,19 @@ def main(argv: list[str] | None = None) -> int:
 
                 settle_belt_head(belt_pool, belt_check_window, _probe,
                                  max_probes=belt_check_window * 3 + 12)
-                if fallback_used and not args.json:
-                    print(f"   Sonde unitaire repli sur {len(fallback_used)} "
-                          f"issue(s) absente(s) du bulk GraphQL : "
-                          f"{', '.join('#'+str(n) for n in fallback_used[:5])}"
-                          f"{'...' if len(fallback_used) > 5 else ''}.")
+                if fallback_used:
+                    # ai-01 review 5568273366 : en --json, le silence du
+                    # comptage masquait la cause (cf c.1113). On emet
+                    # toujours la mesure -- sur stderr en mode --json
+                    # pour ne pas polluer le document, en stdout sinon.
+                    msg = (f"   Sonde unitaire repli sur {len(fallback_used)} "
+                           f"issue(s) absente(s) du bulk GraphQL : "
+                           f"{', '.join('#'+str(n) for n in fallback_used[:5])}"
+                           f"{'...' if len(fallback_used) > 5 else ''}.")
+                    if args.json:
+                        print(msg, file=sys.stderr)
+                    else:
+                        print(msg)
             else:
                 # Bulk totalement en echec : on laisse `latest_claim_stamp`
                 # gerer -- lent. On previent le lecteur.
@@ -7630,6 +7638,23 @@ def main(argv: list[str] | None = None) -> int:
                     "probes_attempted": bool(args.lane),
                     "unread": sorted(set(belt_pick_state.get("claim_unread")
                                          or [])),
+                },
+                # Volet bulk GraphQL (#19643, ai-01 review 5568273366) :
+                # `fallback_count` est le nombre de numeros absents de
+                # la map bulk et qui ont du recourir a la sonde unitaire
+                # (`gh issue view --json comments` ~1.4 s/appel). Une
+                # valeur elevee (>= 1) signale que la fenetre du bulk
+                # est plus etroite que celle de `settle_belt_head` --
+                # la piste 1 a deja ete appliquee (bulk_targets elargi
+                # a `belt_check_window * 3 + 12`), mais le compteur
+                # reste utile comme diagnostic en cas de regression.
+                "bulk_signal": {
+                    "bulk_targets": bulk_targets if "bulk_targets" in locals() else [],
+                    "fallback_count": len(fallback_used) if "fallback_used" in locals() else 0,
+                    "fallback_nums": (sorted(fallback_used)
+                                      if ("fallback_used" in locals()
+                                          and fallback_used) else []),
+                    "bulk_err": bulk_err if "bulk_err" in locals() else None,
                 },
                 "last_delivery_window_days": delivery_window_days,
                 "substance_drought": {"triggered": False, "measured": False,
