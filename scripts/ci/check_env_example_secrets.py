@@ -37,6 +37,20 @@ Formes de marqueurs acceptees (case-insensitive) :
 Cle de type secret : le nom matche ``(?i)(PASS|SECRET|TOKEN|KEY|PWD)`` (partiel,
 insensible a la casse). Les lignes de commentaire (premier caractere non blanc = ``#``)
 sont ignorees.
+
+Exemption en ligne : une valeur de cle de type secret peut etre publiee deliberement
+(cas du corpus chiffre ICT, decision user #7742 : le chiffrement achete la
+non-indexabilite, pas la confidentialite). Elle porte alors un marqueur
+``# OK: <raison>`` (raison non vide), place de deux facons :
+
+- **en fin de ligne de la valeur** : ``API_KEY=realvalue  # OK: <raison>`` ;
+- **sur une ligne de commentaire juste au-dessus** : la valeur reste alors
+  byte-identique, ce qui compte quand elle est load-bearing (le corpus chiffre
+  la relit depuis ce fichier).
+
+Une exemption sans raison apres ``# OK:`` n'est pas une exemption : la valeur
+rouge toujours. Les exemptions sont listees dans la sortie JSON et rappelees en
+texte : elles restent visibles en revue.
 """
 from __future__ import annotations
 
@@ -54,6 +68,9 @@ ENV_GLOBS = ("*.env.example", "*.env.sample", "*.env.template")
 # Cle dont le nom matche ce motif (partiel) -- PAS de match sur le nom complet.
 SECRET_NAME_RE = re.compile(r"(?i)(PASS|SECRET|TOKEN|KEY|PWD)")
 LINE_RE = re.compile(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*$")
+# Marqueur d'exemption : ``# OK: <raison>``. La raison est obligatoire -- sans elle,
+# le marqueur n'exempte rien (une ligne de commentaire ordinaire ne protege pas).
+_EXEMPT_RE = re.compile(r"(?:^|\s)#\s*OK\s*:\s*(?P<reason>\S.*)", re.IGNORECASE)
 
 
 # Motifs de marqueur (regex compilees, case-insensitive sauf mention contraire).
@@ -191,25 +208,76 @@ def _collect_files(roots: list[Path], explicit: list[str]) -> list[Path]:
     return sorted(set(files), key=lambda p: str(p).lower())
 
 
-def check_file(path: Path) -> list[tuple[int, str, str, str]]:
-    """Rend la liste des defauts (ligne, nom, valeur_brute, valeur_strip)."""
+def _exemption_reason(text: str) -> str | None:
+    """Rend la raison d'exemption portee par ``text``, ou None.
+
+    Deux formes acceptees :
+    - en fin de ligne de la valeur : ``API_KEY=realvalue  # OK: <raison>`` ;
+    - sur une ligne de commentaire : ``# OK: <raison>``.
+
+    La raison est obligatoire : un ``# OK:`` suivi de rien n'exempte rien.
+    """
+    m = _EXEMPT_RE.search(text)
+    if not m:
+        return None
+    reason = m.group("reason").strip()
+    return reason or None
+
+
+def check_file(
+    path: Path,
+    exemptions: list[dict[str, object]] | None = None,
+) -> list[tuple[int, str, str, str]]:
+    """Rend la liste des defauts (ligne, nom, valeur_brute, valeur_strip).
+
+    ``exemptions`` est une liste d'enregistrements alimentee en place : chaque
+    exemption consommee y laisse une trace {file, line, name, reason} — elle
+    reste visible en revue (sortie JSON + rappel en texte).
+    """
     defects: list[tuple[int, str, str, str]] = []
     try:
         text = path.read_text(encoding="utf-8", errors="replace")
     except OSError as exc:
         # Mesure impossible : on ne confonds pas avec un defaut (cf check_secret_paths_ignored).
         raise RuntimeError(f"read failed: {path}: {exc}") from exc
+    # Exemption en attente,_ARMEE par un marqueur de commentaire pose plus haut.
+    pending_reason: str | None = None
     for i, line in enumerate(text.splitlines(), 1):
-        if line.lstrip().startswith("#"):
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            reason = _exemption_reason(stripped)
+            if reason is not None:
+                # Un marqueur de ligne s'applique a la prochaine valeur Rencontree.
+                # Il traverse les lignes de commentaire et les lignes vides
+                # intermédiaires ; il est consomme par la premiere valeur secrete.
+                pending_reason = reason
             continue
         m = LINE_RE.match(line)
         if not m:
+            # Une ligne qui n'est ni commentaire, ni vide, ni cle=valeur rompt
+            # l'adjacence : le marqueur ne vaut plus pour la suite.
+            if stripped:
+                pending_reason = None
             continue
         name, raw_value = m.group(1), m.group(2)
-        value = _strip_value(raw_value)
+        # Forme 1 : exemption en fin de ligne de la valeur.
+        line_reason = _exemption_reason(raw_value)
+        pending = pending_reason
+        pending_reason = None
         if not SECRET_NAME_RE.search(name):
             continue
+        value = _strip_value(raw_value)
         if not is_marker(value):
+            reason = line_reason or pending
+            if reason is not None:
+                if exemptions is not None:
+                    exemptions.append({
+                        "file": str(path),
+                        "line": i,
+                        "name": name,
+                        "reason": reason,
+                    })
+                continue
             defects.append((i, name, raw_value, value))
     return defects
 
@@ -234,9 +302,10 @@ def main(argv: list[str] | None = None) -> int:
         return EXIT_UNREACHABLE
 
     all_defects: list[dict[str, object]] = []
+    all_exemptions: list[dict[str, object]] = []
     for path in files:
         try:
-            defects = check_file(path)
+            defects = check_file(path, exemptions=all_exemptions)
         except RuntimeError as exc:
             if args.json:
                 print(f'{{"status":"UNREACHABLE","reason":"{exc}"}}')
@@ -258,10 +327,13 @@ def main(argv: list[str] | None = None) -> int:
             "status": "OK" if not all_defects else "DEFECT",
             "files_scanned": len(files),
             "defects": all_defects,
+            "exemptions": all_exemptions,
         }, indent=2, ensure_ascii=False))
     else:
         if not all_defects:
             print(f"OK: {len(files)} files scanned, no real secret values in env examples.")
+            for ex in all_exemptions:
+                print(f"  EXEMPT {ex['file']}:{ex['line']}  {ex['name']}  -- {ex['reason']}")
             return EXIT_OK
         print(f"DEFECT: {len(all_defects)} real secret value(s) in env examples:", file=sys.stderr)
         for d in all_defects:
@@ -269,7 +341,8 @@ def main(argv: list[str] | None = None) -> int:
         print("", file=sys.stderr)
         print("Either replace the value with a marker (your_X_here, <your_X>, xxx, ...),",
               file=sys.stderr)
-        print("or exempt with a trailing comment  # OK: <reason>.",
+        print("or exempt with a trailing comment  # OK: <reason>,", file=sys.stderr)
+        print("or with a marker line just above the value:  # OK: <reason>.",
               file=sys.stderr)
     return EXIT_OK if not all_defects else EXIT_DEFECT
 

@@ -213,3 +213,113 @@ def test_check_file_exemption_commentaire_inline(tmp_path):
     )
     defects = mod.check_file(f)
     assert defects == []
+
+
+# ---------- 5. exemption inline : une valeur REELLE peut etre publiee ----------
+
+def test_check_file_exemption_en_fin_de_ligne_valeur_reelle(tmp_path):
+    """`KEY=vraie_valeur  # OK: <raison>` est acceptee (forme en fin de ligne)."""
+    f = tmp_path / "sub.env.example"
+    f.write_text(
+        "API_KEY=myrealpassword  # OK: valeur legitime\n"
+        "GOOD_KEY=your_key_here\n",
+        encoding="utf-8",
+    )
+    exemptions: list = []
+    defects = mod.check_file(f, exemptions=exemptions)
+    assert defects == []
+    assert len(exemptions) == 1
+    assert exemptions[0]["name"] == "API_KEY"
+    assert "valeur legitime" in exemptions[0]["reason"]
+
+
+def test_check_file_exemption_marqueur_ligne_precedente(tmp_path):
+    """Un marqueur `# OK: <raison>` sur la ligne du dessus couvre la valeur.
+
+    Cette forme laisse la valeur byte-identique -- indispensable quand la
+    valeur est relue par du code (le corpus chiffre ICT la relit depuis ce
+    fichier) : un commentaire en fin de ligne la casserait.
+    """
+    f = tmp_path / "sub.env.example"
+    f.write_text(
+        "# Corpus chiffre, passphrase publiee par design (decision user #7742).\n"
+        "# OK: passphrase publiee par design\n"
+        "ICT_S6B_PASSPHRASE=\"Rhetorique\"\n",
+        encoding="utf-8",
+    )
+    exemptions: list = []
+    defects = mod.check_file(f, exemptions=exemptions)
+    assert defects == []
+    assert len(exemptions) == 1
+    assert exemptions[0]["name"] == "ICT_S6B_PASSPHRASE"
+    assert exemptions[0]["line"] == 3
+
+
+def test_check_file_exemption_sans_raison_ne_exempte_pas(tmp_path):
+    """`# OK:` sans raison n'est pas une exemption : la valeur rouge toujours."""
+    f = tmp_path / "sub.env.example"
+    f.write_text(
+        "# OK:\n"
+        "API_KEY=myrealpassword\n",
+        encoding="utf-8",
+    )
+    defects = mod.check_file(f)
+    assert len(defects) == 1
+    assert defects[0][1] == "API_KEY"
+
+
+def test_check_file_exemption_sans_raison_en_fin_de_ligne(tmp_path):
+    """`KEY=vraie_valeur  # OK:` (raison vide) rouge aussi."""
+    f = tmp_path / "sub.env.example"
+    f.write_text(
+        "API_KEY=myrealpassword  # OK:\n",
+        encoding="utf-8",
+    )
+    defects = mod.check_file(f)
+    assert len(defects) == 1
+    assert defects[0][1] == "API_KEY"
+
+
+def test_check_file_exemption_non_adjacente_ne_couvre_pas(tmp_path):
+    """Le marqueur ne couvre que la valeur qu'il precede immediatement."""
+    f = tmp_path / "sub.env.example"
+    f.write_text(
+        "# OK: raison pour la valeur ci-dessous\n"
+        "BATCH_MODE=1\n"
+        "API_KEY=myrealpassword\n",
+        encoding="utf-8",
+    )
+    defects = mod.check_file(f)
+    assert len(defects) == 1
+    assert defects[0][1] == "API_KEY"
+
+
+def test_check_file_marqueur_avant_commentaire_intermediaire(tmp_path):
+    """Un commentaire ordinaire entre le marqueur et la valeur n'annule pas."""
+    f = tmp_path / "sub.env.example"
+    f.write_text(
+        "# OK: raison\n"
+        "# un commentaire ordinaire\n"
+        "API_KEY=myrealpassword\n",
+        encoding="utf-8",
+    )
+    defects = mod.check_file(f)
+    assert defects == []
+
+
+def test_exemptions_listees_dans_la_sortie_json(tmp_path, capsys):
+    """Les exemptions restent visibles : elles sont listees dans la sortie JSON."""
+    f = tmp_path / "sub.env.example"
+    f.write_text(
+        "# OK: passphrase publiee par design\n"
+        "API_KEY=myrealpassword\n",
+        encoding="utf-8",
+    )
+    rc = mod.main(["--files", str(f), "--json"])
+    out = capsys.readouterr().out
+    payload = json.loads(out)
+    assert rc == mod.EXIT_OK, payload
+    assert payload["status"] == "OK", payload
+    assert len(payload["exemptions"]) == 1, payload
+    assert payload["exemptions"][0]["name"] == "API_KEY"
+    assert payload["exemptions"][0]["reason"], payload
