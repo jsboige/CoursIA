@@ -80,8 +80,17 @@ def check_notebook(
     notebook_path: Path,
     notebook_root: Path,
     allow_patterns: tuple[str, ...],
+    rel_resolve_from_repo_root: bool = False,
 ) -> list[str]:
-    """Return a list of finding strings; empty if clean."""
+    """Return a list of finding strings; empty if clean.
+
+    rel_resolve_from_repo_root (R3 opt-in) : si True, un chemin relatif
+    qui ne resout pas depuis le dossier du carnet tente un repli sur
+    le repo_root. Defaut False (fail-closed) -- un chemin relatif qui
+    n'existe pas dans le carnet reste un finding, sans repli. Le
+    repli est opt-in parce qu'il peut masquer des chemins ../../foo
+    qui ne sont valides que depuis la racine.
+    """
     findings: list[str] = []
     try:
         with open(notebook_path, "r", encoding="utf-8") as f:
@@ -99,6 +108,7 @@ def check_notebook(
             # Two resolution strategies:
             # 1. Absolute repo path → check directly.
             # 2. Relative path (knot_lean/...) → check relative to notebook_dir.
+            #    Opt-in repli repo_root si R3 active.
             abs_candidate = notebook_root / path
             rel_candidate = notebook_dir / path
             if path.startswith("MyIA.AI.Notebooks/"):
@@ -108,7 +118,10 @@ def check_notebook(
                         f"STALE_PATH (abs) {path}"
                     )
             else:
-                if not rel_candidate.exists():
+                resolved = rel_candidate.exists()
+                if not resolved and rel_resolve_from_repo_root:
+                    resolved = abs_candidate.exists()
+                if not resolved:
                     findings.append(
                         f"{notebook_path}:cell_{cell_idx:02d}:{line_no}: "
                         f"STALE_PATH (rel) {path}"
@@ -135,6 +148,19 @@ def main(argv: list[str] | None = None) -> int:
         default=r"Lean/KNOTS/",
         help="Substring path filter — only check notebooks under this. "
         "Default: r'Lean/KNOTS/'. Pass empty string to disable filter.",
+    )
+    parser.add_argument(
+        "--rel-resolve-from-repo-root",
+        action="store_true",
+        help=(
+            "Opt-in (R3) : pour un chemin relatif qui ne resout pas "
+            "depuis le dossier du carnet, tente un repli sur --repo-root "
+            "avant de signaler STALE_PATH. Defaut off (fail-closed) : "
+            "un chemin relatif qui n'existe pas dans le carnet reste "
+            "un finding, sans repli. Utile pour les chemins "
+            "../Knots/Foo.lean qui sont valides depuis n'importe quel "
+            "sous-dossier du repo."
+        ),
     )
     parser.add_argument(
         "notebooks",
@@ -167,7 +193,12 @@ def main(argv: list[str] | None = None) -> int:
             all_findings.append(f"{p}: file not found")
             continue
         all_findings.extend(
-            check_notebook(p, repo_root, tuple(args.allow or ()))
+            check_notebook(
+                p,
+                repo_root,
+                tuple(args.allow or ()),
+                rel_resolve_from_repo_root=args.rel_resolve_from_repo_root,
+            )
         )
 
     if all_findings:
