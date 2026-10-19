@@ -224,6 +224,35 @@ def test_parse_collapse_justification_form_hash():
     assert ("Lean-7b-Examples.ipynb", "4d4322dd") in j
 
 
+def test_parse_collapse_justification_hyphenated_cell_id():
+    """A cell id with a hyphen is captured whole (`cell-melody`).
+
+    The nbformat ids of this repo are `cell-<nom>`; a capture that stopped
+    at the hyphen named a cell that does not exist, and the finding stayed
+    unaddressed on exactly the notebooks the bypass targets (measured on
+    `02-3-MusicGen-Generation.ipynb`, cell `cell-melody`).
+    """
+    from check_output_collapse import (
+        parse_collapse_justification, _unaddressed,
+    )
+    nb = "MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-3-MusicGen-Generation.ipynb"
+    body = ("## Output-collapse justification\n"
+            f"- {nb} cell cell-melody: allegement declare (sorties de progression)\n")
+    j = parse_collapse_justification(body)
+    assert (nb, "cell-melody") in j, j
+    # The alternate spelling carries the hyphen too.
+    body_hash = ("## Output-collapse justification\n"
+                 f"- {nb}#cell-text-to-music: faux positif\n")
+    j_hash = parse_collapse_justification(body_hash)
+    assert (nb, "cell-text-to-music") in j_hash, j_hash
+    # And the cell drops out of the unaddressed list.
+    bad = [{"notebook": nb, "cells": [
+        {"cell": "cell-melody", "kind": "magnitude", "factor": 14.3,
+         "base": 27566, "head": 1923},
+    ]}]
+    assert _unaddressed(bad, j) == []
+
+
 def test_unaddressed_keeps_only_unjustified_cells():
     """The unaddressed list is the gate signal -- justified cells drop out
     only when the reason is one of the 3 accepted motifs (faux positif,

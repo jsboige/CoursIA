@@ -974,10 +974,16 @@ JUSTIFICATION_HEADER = re.compile(
 # A cell line: `- notebook.ipynb cell abcd1234: reason` or
 #              `- notebook.ipynb#abcd1234 reason` or
 #              `- abcd1234 (notebook.ipynb): reason`.
+# The cell id accepts the hyphen: the nbformat ids of this repo are the
+# conventional `cell-<nom>` (`cell-setup`, `cell-melody`,
+# `cell-text-to-music`), and a `[A-Za-z0-9_]+` capture stopped at the
+# hyphen -- the bypass then named a cell that does not exist, and the
+# finding stayed unaddressed on exactly the notebooks it targets
+# (measured on `02-3-MusicGen-Generation.ipynb`, cell `cell-melody`).
 JUSTIFICATION_CELL = re.compile(
     r"^\s*[-*]\s*"
     r"(?P<notebook>[^#\s:]+(?:\.ipynb))"
-    r"(?:\s*cell\s+|\s*#)(?P<cell>[A-Za-z0-9_]+)"
+    r"(?:\s*cell\s+|\s*#)(?P<cell>[A-Za-z0-9_-]+)"
     r"\b",
     re.IGNORECASE,
 )
