@@ -305,10 +305,15 @@ class HMMKMeansVoting(QCAlgorithm):
         if self.hmm is None or self.kmeans is None:
             return None
 
-        bars = self.history(self.spy, 30, Resolution.DAILY)
+        # Fenetre double (#20286) : sur une demi-seance, history() rend moins de
+        # barres que demandees et le regime n'est pas detecte (retour None).
+        # On demande le double puis on re-slice sur les 30 dernieres barres :
+        # la matrice de features est donc inchangee hors demi-seance.
+        bars = self.history(self.spy, 2 * 30, Resolution.DAILY)
         if bars is None or bars.empty or len(bars) < 25:
             return None
 
+        bars = bars.iloc[-30:]
         close = bars["close"].values.astype(float)
         ret = np.diff(np.log(close + 1e-10))
         n = len(ret)
@@ -350,10 +355,14 @@ class HMMKMeansVoting(QCAlgorithm):
         if self.is_warming_up:
             return
 
-        bars = self.history(self.spy, 7, Resolution.DAILY)
+        # Fenetre double (#20286) : meme mecanisme que _detect_regime ; la vol5
+        # porte sur les 5 dernieres differences, donc sur 6 barres. Ce controle
+        # est quotidien : il est donc expose a chaque demi-seance.
+        bars = self.history(self.spy, 2 * 7, Resolution.DAILY)
         if bars is None or bars.empty or len(bars) < 6:
             return
 
+        bars = bars.iloc[-7:]
         close = bars["close"].values.astype(float)
         vol5 = np.diff(np.log(close + 1e-10))[-5:].std() * np.sqrt(252)
 

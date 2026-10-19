@@ -173,11 +173,16 @@ class MLXGBoostAlgorithm(QCAlgorithm):
 
         for ticker in self.tickers:
             try:
-                history = self.history(self.symbols[ticker], self.lookback, Resolution.DAILY)
+                # Fenetre double (#20286) : sur une demi-seance, history() rend
+                # moins de barres que demandees et le ticker saute de
+                # l'entrainement. On demande le double puis on re-slice sur la
+                # fenetre d'origine : memes features, meme cible.
+                history = self.history(self.symbols[ticker], 2 * self.lookback, Resolution.DAILY)
 
                 if history.empty or len(history) < self.lookback:
                     continue
 
+                history = history.iloc[-self.lookback:]
                 features = self.calculate_features(history, ticker)
                 closes = history['close']
 

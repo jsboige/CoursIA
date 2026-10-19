@@ -84,12 +84,17 @@ class ForexCarryTradeStrategy(QCAlgorithm):
             symbol = self.forex_symbols[pair]
             # Fetch enough history: lookback_mom + vol_lookback days
             history_len = self.lookback_mom + self.vol_lookback + 5
-            history = self.history(symbol, history_len, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et la garde ecarte la paire. On demande le
+            # double puis on re-slice sur la fenetre d'origine : les index
+            # negatifs (iloc[-lookback_mom], iloc[-skip_days]) visent ainsi les
+            # memes barres qu'avant, le calcul est inchange.
+            history = self.history(symbol, 2 * history_len, Resolution.DAILY)
             if len(history) < self.lookback_mom + self.skip_days:
                 continue
 
             try:
-                closes = history['close']
+                closes = history['close'].iloc[-history_len:]
 
                 # Skip-month momentum: return from J-lookback to J-skip
                 # Excludes the last month (J-21 to J-0) which contains mean-reversion
