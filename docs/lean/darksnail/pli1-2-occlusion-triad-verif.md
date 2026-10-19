@@ -8,7 +8,7 @@
 
 ## TL;DR
 
-Le dépôt upstream [`sneed-and-feed/projectdarksnail`](https://github.com/sneed-and-feed/projectdarksnail) annonce un badge « Lean 4 Verified (Zero Sorry) » dans son README. Une vérification first-hand du contenu Lean montre que le code `formalization/OcclusionTriad.lean` (510 lignes, 27 252 octets) est **syntaxiquement propre** — aucun `sorry`, aucun `native_decide.*`, aucun `sorryAx`, aucun `Classical.choice`. **Mais** le projet n'a aucune structure de build (pas de `lakefile.lean`, pas de `lean-toolchain`), et le seul module `.lean` importe deux modules qui n'existent pas dans le dépôt. Le claim « Lean 4 Verified » est donc **non vérifiable** à partir du dépôt public.
+Le dépôt upstream [`sneed-and-feed/projectdarksnail`](https://github.com/sneed-and-feed/projectdarksnail) annonce un badge « Lean 4 Verified (Zero Sorry) » dans son README. Une vérification first-hand du contenu Lean montre que le code `formalization/OcclusionTriad.lean` (510 lignes, 26 742 octets) est **syntaxiquement propre** — aucun `sorry`, aucun `native_decide.*`, aucun `sorryAx`, aucun `Classical.choice`. **Mais** le projet n'a aucune structure de build (pas de `lakefile.lean`, pas de `lean-toolchain`), et le seul module `.lean` importe deux modules qui n'existent pas dans le dépôt. Le claim « Lean 4 Verified » est donc **non vérifiable** à partir du dépôt public.
 
 ## Méthode
 
@@ -47,7 +47,7 @@ Le dépôt upstream [`sneed-and-feed/projectdarksnail`](https://github.com/sneed
 
 ## Constat factuel
 
-### Code `OcclusionTriad.lean` (510 lignes, 27 252 octets ; 26 232 hors LF)
+### Code `OcclusionTriad.lean` (510 lignes, 26 742 octets ; 26 232 hors LF)
 
 Le module déclare `namespace Ultrametric.Analysis.OcclusionTriad` et expose **9 `theorem` + 13 `lemma` + 18 `def` (10 + 8 `noncomputable`) = 40 déclarations** :
 
