@@ -728,6 +728,35 @@ class TestLoadFromEnv:
         assert client.server_url == "http://comfy:8188"
         assert client.api_token == "secret"
 
+    def test_env_token_not_overridden_by_secrets_file(self, tmp_path):
+        """Le token du .env prime sur .secrets/qwen-api-user.token.
+
+        Regression : le fichier .secrets/qwen-api-user.token contient le
+        hachage bcrypt du mot de passe de l'interface web, pas un credential
+        Bearer. Ecraser le token API du .env avec ce hachage faisait
+        repondre 401 a /system_stats pour tous les carnets Image.
+        """
+        env_file = tmp_path / ".env"
+        env_file.write_text(
+            "COMFYUI_API_URL=http://comfy:8188\n"
+            "COMFYUI_API_TOKEN=token-du-env\n"
+        )
+        secrets_dir = tmp_path / ".secrets"
+        secrets_dir.mkdir()
+        (secrets_dir / "qwen-api-user.token").write_text("hachage-bcrypt\n")
+        client = comfyui_client.load_from_env(env_file)
+        assert client.api_token == "token-du-env"
+
+    def test_secrets_file_used_as_fallback_without_env_token(self, tmp_path):
+        """Sans COMFYUI_API_TOKEN dans le .env, le fichier .secrets fait repli."""
+        env_file = tmp_path / ".env"
+        env_file.write_text("COMFYUI_API_URL=http://comfy:8188\n")
+        secrets_dir = tmp_path / ".secrets"
+        secrets_dir.mkdir()
+        (secrets_dir / "qwen-api-user.token").write_text("hachage-bcrypt\n")
+        client = comfyui_client.load_from_env(env_file)
+        assert client.api_token == "hachage-bcrypt"
+
 
 # ============================================================================
 # create_client
