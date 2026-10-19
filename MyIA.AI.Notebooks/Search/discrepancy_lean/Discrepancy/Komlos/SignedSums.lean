@@ -554,4 +554,42 @@ theorem exists_isColouring_mean_add_sum_mem_convexHull (n d : ℕ)
     Finset.map_subset_map.mpr (Finset.filter_subset _ _)
   exact convexHull_mono (Finset.coe_subset.2 hsub) hmem
 
+/-- **Le défaut de l'énoncé public du Lemme 1.4, démontré** (mesure k5.2) :
+les hypothèses de contention `hA0 : 0 ∈ A` et
+`hAstab : ∀ a ∈ A, ∀ i, a + 3 • v i ∈ A ∧ a - 3 • v i ∈ A` d'un `Finset`
+forcent `v i = 0` pour tout `i`. L'argument est l'orbite de
+`eq_zero_of_image_add_eq_self` (k1.7) transposée de `S` à `A` : la stabilité
+de `A` par `+ 3 • v i` dit que `A.image (fun x => x + 3 • v i) ⊆ A`, l'image
+d'une translation a même cardinal, donc l'égalité, et l'invariance d'image
+d'un ensemble non vide force le décalage nul dans le groupe sans torsion
+`ℤ^d`.
+
+Conséquence mesurée : `exists_isColouring_mean_add_sum_mem_convexHull`
+n'est instanciable qu'à famille `v` identiquement nulle — le régime où
+`shiftDistance S P (6 • v i) ≤ 3⁻¹` est trivial et la conclusion ne porte
+aucune somme. C'est la même classe de défaut que celle mesurée en k1.7 sur
+l'invariance de `S` (hypothèse de stabilité par translation non nulle sur un
+ensemble fini), réintroduite au sommet k2.6 sur `A` : la correction requiert
+de réifier la contention du côté de la distance de décalage fonctionnelle
+(`shiftDistanceTV`, voie k4.2c) plutôt que d'un ensemble fini stable. L'issue
+de suivi nomme le chantier ; l'assemblage k5.2 (GridCase) en dépend. -/
+theorem contention_stability_forces_zero {d n : ℕ} (v : Fin n → (Fin d → ℤ))
+    {A : Finset (Fin d → ℤ)} (hA0 : 0 ∈ A)
+    (hAstab : ∀ a ∈ A, ∀ i, a + 3 • v i ∈ A ∧ a - 3 • v i ∈ A) :
+    ∀ i, v i = 0 := by
+  intro i
+  have hsub : A.image (fun x => x + 3 • v i) ⊆ A := by
+    intro y hy
+    obtain ⟨a, ha, rfl⟩ := Finset.mem_image.mp hy
+    exact (hAstab a ha i).1
+  have hcard : (A.image (fun x => x + 3 • v i)).card = A.card :=
+    Finset.card_image_of_injective _ (fun x y h => add_right_cancel h)
+  have hEq : A.image (fun x => x + 3 • v i) = A :=
+    Finset.eq_of_subset_of_card_le hsub (hcard ▸ Nat.le_refl _)
+  have h3 : 3 • v i = 0 :=
+    eq_zero_of_image_add_eq_self hEq ⟨0, hA0⟩
+  funext j
+  have hcoord : (3 • v i) j = 0 := congrFun h3 j
+  simpa [Pi.smul_apply] using hcoord
+
 end Discrepancy.Komlos
