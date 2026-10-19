@@ -3627,4 +3627,90 @@ theorem conwayMutant_trivial_alexander :
     conwayMutant_diag]
 
 
+/-! ### Maillon 5 : le certificat de redraw — le census KT est le mutant de sphère du census Conway
+
+Le NOTE de `Knots.Mutation` (limite du témoin canonique) demandait un
+diagramme intermédiaire : aucun envoi one-shot ne superpose les PD désignés.
+La sonde Python c165 (moteur validé sur les valeurs prouvées −t⁶/11n34 et
+t⁵/11n42) a balayé la famille des 96 mutations de sphère du census Conway
+(4 rotations × 24 recollements des 4 points de bord) contre le census KT en
+isomorphisme combinatoire complet (réordonnancement de liste + renommage
+d'étiquettes, positions préservées). Résultat mesuré : **exactement un**
+membre de la famille est isomorphe au census KT — le mutant désigné du
+maillon 4 lui-même (r13, (8 ↔ 11) (13 ↔ 22)).
+
+Le pont se décompose en deux identités combinatoires pures, toutes deux par
+évaluation : la mutation de sphère du maillon 4
+(`conwayMutant_eq_sphereMutate`), puis le **redraw** ci-dessous — le census
+KT est la liste du mutant réordonnée par les transpositions de positions
+(5 ↔ 7) et (8 ↔ 10), chaque étiquette renommée par l'involution intérieure
+(9 10)(14 21)(15 20)(16 19)(17 18), l'extérieur étant fixe.
+
+Pourquoi ce pont est honnête : l'ordre de la liste de croisements et les noms
+des étiquettes ne portent aucune information de dessin — un code PD est un
+ensemble de croisements sur des arêtes abstraites. Le redraw est donc une
+identité de diagramme combinatoire, pas un mouvement de Reidemeister. En
+revanche, `AreMutants` (§`Knots.Mutation`) exige `ReidemeisterEquiv` sur les
+représentants : tant que le redraw n'est pas relié formellement à
+`ReidemeisterEquiv` (maillon ultérieur), l'écart reste documenté — mais il
+est désormais purement définitionnel, plus géométrique.
+
+Contrôle négatif inchangé : aucune combinaison (ρ, perm, σ-bord) ne
+superpose les listes désignées (mesure maillon 4) — c'est le renommage
+intérieur du redraw qui porte le pont.
+-/
+
+/-- Réordonnancement des croisements du mutant dans l'ordre du census KT :
+les cinq croisements extérieurs (têtes de liste) sont inchangés, les six
+croisements intérieurs sont permutés par les transpositions de positions
+(5 ↔ 7) et (8 ↔ 10). Hors liste à 11 croisements : identité. -/
+def ktRedrawOrder : List PDCrossing → List PDCrossing
+  | [c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10] =>
+      [c0, c1, c2, c3, c4, c7, c6, c5, c10, c9, c8]
+  | cs => cs
+
+/-- Renommage des étiquettes du mutant en celles du census KT : les douze
+étiquettes extérieures (1-8, 11-13, 22) sont fixes, les dix intérieures
+sont échangées par cinq transpositions. Involution sur les étiquettes
+utilisées. -/
+def ktRedrawRelabel : Nat → Nat :=
+  fun e =>
+    if e = 9 then 10
+    else if e = 10 then 9
+    else if e = 14 then 21
+    else if e = 21 then 14
+    else if e = 15 then 20
+    else if e = 20 then 15
+    else if e = 16 then 19
+    else if e = 19 then 16
+    else if e = 17 then 18
+    else if e = 18 then 17
+    else e
+
+/-- Renommage global d'un code PD : chaque étiquette de chaque croisement est
+réécrite par σ, positions préservées. -/
+def relabelCrossings (σ : Nat → Nat) (cs : List PDCrossing) : List PDCrossing :=
+  cs.map (fun c => ⟨σ c.e1, σ c.e2, σ c.e3, σ c.e4⟩)
+
+/-- **Maillon 5 : le certificat de redraw.** Le census Kinoshita-Terasaka est
+le mutant de sphère du census Conway, lu dans un autre ordre de liste et sous
+d'autres noms d'étiquettes — identité combinatoire par évaluation (sonde
+c165, certificat composé vérifié préalablement par sonde avant émission). -/
+theorem conwayMutant_redraws_kinoshitaTerasaka :
+    relabelCrossings ktRedrawRelabel (ktRedrawOrder conwayMutantDiagram.crossings)
+      = kinoshitaTerasakaDiagram.crossings := by
+  rfl
+
+/-- La chaîne complète du maillon 5 : census Conway → mutation de sphère
+(maillon 4) → redraw = census KT. Le diagramme intermédiaire du NOTE de
+`Knots.Mutation` est le mutant désigné lui-même. -/
+theorem conway_sphereMutate_redraws_kinoshitaTerasaka :
+    relabelCrossings ktRedrawRelabel
+        (ktRedrawOrder (sphereMutate conwayKnotDiagram.crossings 5 11 KleinRot.r13
+          conwayJunctionSwap)) =
+      kinoshitaTerasakaDiagram.crossings := by
+  rw [← conwayMutant_eq_sphereMutate]
+  exact conwayMutant_redraws_kinoshitaTerasaka
+
+
 end Knots
