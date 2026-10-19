@@ -339,7 +339,7 @@ la facture positionnelle rend 19 − (4−1)·(3−2) = 16. -/
 
 example : costW (exchPos (exchPos desequilibre [false, false, true] [true] 2 1)
     [false, false, false] [false, true] 4 1) = 16 := by
-  native_decide
+  decide
 
 /-- Le théorème vit sur la maille du carnet : un arbre de coût ≤ 21, mêmes
 feuilles, porte LES DEUX minima (la maille compte deux 1) dans une paire de
