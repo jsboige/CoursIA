@@ -122,6 +122,11 @@ _NARRATOR_ENGINE_REFERENCE_IDS: dict[str, str] = {
 _NARRATOR_CUSTOMVOICE_ROUTING: bool = os.getenv("NARRATOR_CUSTOMVOICE_ROUTING", "0") == "1"
 _CUSTOMVOICE_NARRATOR_REFERENCE_ID: str = "qwen3tts-customvoice-narrator-fr-B-v1"
 _CUSTOMVOICE_NARRATOR_SPEAKER: str = os.getenv("NARRATOR_CUSTOMVOICE_SPEAKER", "serena")
+# Served model id on the published gateway (GET /v1/models with the bearer
+# returns exactly ["kokoro", "tada", "qwen3"], measured 19/10 #21145) — NOT
+# the VoiceDesign checkpoint name the client defaults to. Override via env
+# if ops renames the served id.
+_CUSTOMVOICE_SERVED_MODEL: str = os.getenv("NARRATOR_CUSTOMVOICE_MODEL", "qwen3")
 # Consigne de voix par defaut : AUCUNE. Le rendu valide par l'Association
 # Bibliotheques Sonores est CustomVoice NEUTRE (mesure dans
 # `A0C-qwen3tts-customvoice-neutral-metrics.json` sur GDrive) -- `speaker=serena`,
@@ -217,6 +222,7 @@ def _synthesize_narrator_customvoice(
         per_chunk_timeout=290,
         gap_ms=120,
         base_url=base_url,
+        model=_CUSTOMVOICE_SERVED_MODEL,
     )
     if not wav_bytes:
         raise NarratorCustomVoiceUnavailable(

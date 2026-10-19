@@ -104,6 +104,7 @@ def test_customvoice_success_writes_mp3_and_sentinel(tmp_path, monkeypatch):
     # French, gap-injected.
     kw = recorder["kwargs"]
     assert kw["base_url"] == "https://tts-api.myia.io"
+    assert kw["model"] == p5_tts._CUSTOMVOICE_SERVED_MODEL
     assert kw["voice"] == "serena"
     assert kw["instructions"] == ""
     assert kw["language"] == "French"
