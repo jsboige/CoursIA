@@ -83,7 +83,8 @@ HAND_TOP = dict(REAL_TOP, duration=16.0,
 
 def _state_from_nb(nb, *, status="OK"):
     return (status, cpr.exec_evidence(nb), cpr.papermill_block(nb),
-            None, cpr.cell_papermill_signature(nb))
+            None, cpr.cell_papermill_signature(nb),
+            cpr.cell_papermill_blocks(nb))
 
 
 def _nb(top_block, cell_pm, base_outputs, head_outputs=None):
@@ -178,7 +179,7 @@ def test_outputs_unchanged_passes_regardless_of_block():
 
 def test_forged_block_not_triggered_on_added_notebook():
     """b_block is None on an added notebook - the FORGED_BLOCK branch requires it."""
-    base = ("ABSENT", None, None, None, None)
+    base = ("ABSENT", None, None, None, None, None)
     head = _state_from_nb(_nb(HAND_TOP, SHARED_CELL_PM, [{"text": ["hello fresh"]}], [{"text": ["hello fresh"]}]))
     verdict, regression = cpr.classify(base, head)
     assert verdict == "ADDED", verdict
@@ -204,4 +205,111 @@ def test_block_removed_returns_block_removed():
     head = _state_from_nb(head_nb)
     verdict, regression = cpr.classify(base, head)
     assert verdict == "BLOCK_REMOVED", verdict
+    assert regression is False, regression
+
+
+# --- per-cell FORGED_BLOCK (c2187-ask, refine #21299) --------------------
+#
+# The original FORGED_BLOCK detector compares the global per-cell signature
+# (a concatenation of every per-cell block). It catches the all-identical
+# case (the 3 PRs that founded #21299 rode this path). The c2187-ask
+# refines it: a hand-rewrite that touches the top-level AND some per-cell
+# blocks but leaves at least one cell-with-changed-output's per-cell block
+# byte-identical to the base is still FORGED_BLOCK. A real re-execution
+# rewrites every per-cell block together with the top-level one.
+
+# A SECOND legitimate per-cell block (the 3rd code cell's run was retried
+# by the executor) -- distinct from FRESH_CELL_PM by both timestamps and
+# duration.
+ALT_CELL_PM = _pm("2026-10-19T07:11:43.123456+00:00",
+                  "2026-10-19T07:11:46.789012+00:00",
+                  3.665556)
+
+
+def _nb_with_per_cell_pms(top_block, cell_pms, base_outputs, head_outputs):
+    """Notebook with one code cell per entry in cell_pms (and outputs).
+
+    cell_pms[i] is the per-cell papermill block of code cell i (or None to
+    skip). base_outputs[i] and head_outputs[i] are the outputs lists of
+    cell i. Cell count = len(cell_pms) = len(base_outputs) =
+    len(head_outputs).
+    """
+    assert len(cell_pms) == len(base_outputs) == len(head_outputs)
+    cells = [_cell(i + 1, head_outputs[i], cell_pms[i])
+             for i in range(len(cell_pms))]
+    return {
+        "cells": cells,
+        "metadata": {"papermill": top_block},
+    }
+
+
+def _states_with_per_cell(top_block_b, top_block_h, cell_pms_b, cell_pms_h,
+                          base_outputs, head_outputs):
+    base = _state_from_nb(_nb_with_per_cell_pms(
+        top_block_b, cell_pms_b, base_outputs, base_outputs))
+    head = _state_from_nb(_nb_with_per_cell_pms(
+        top_block_h, cell_pms_h, base_outputs, head_outputs))
+    return base, head
+
+
+def test_forged_block_partial_per_cell_hand_rewrite():
+    """Per-cell check: only SOME per-cell blocks touched, one cell's block
+    still identical to base while its outputs changed -> FORGED_BLOCK.
+
+    c2187-ask. The global signature check above is the special case where
+    ALL per-cell blocks are identical; this test pins the partial case.
+    The hand-rewriter touched the top-level block AND cell 1's per-cell
+    block (the executor-like signal), but cell 0's per-cell block is still
+    the base block while its outputs changed - a real re-execution would
+    have rewritten both.
+    """
+    base, head = _states_with_per_cell(
+        REAL_TOP, HAND_TOP,  # top-level changed
+        [SHARED_CELL_PM, SHARED_CELL_PM],  # base per-cell
+        [SHARED_CELL_PM, ALT_CELL_PM],     # head: cell 0 untouched, cell 1 retried
+        [{"text": ["hello"]}, {"text": ["world"]}],
+        [{"text": ["hello fresh"]}, {"text": ["world"]}],  # only cell 0's outputs changed
+    )
+    verdict, regression = cpr.classify(base, head)
+    assert verdict == "FORGED_BLOCK", verdict
+    assert regression is True, regression
+
+
+def test_forged_block_per_cell_does_not_flag_legit_partial():
+    """Legit re-execution: per-cell blocks ALL changed (one per cell, even
+    if they happen to share a value with the base by accident) AND outputs
+    changed -> BLOCK_MOVED, NOT FORGED_BLOCK.
+
+    A real re-execution can produce a per-cell block byte-identical to the
+    base by accident (same kernel, same code, same duration). The check
+    must NOT flag this as FORGED_BLOCK. The per-cell check is gated on
+    ``b_line != h_line`` (outputs changed) AND ``b_pm == h_pm`` (block
+    identical). A real run with rewritten outputs will have rewritten
+    per-cell blocks for those cells; this test confirms the gate.
+    """
+    base, head = _states_with_per_cell(
+        REAL_TOP, HAND_TOP,
+        [SHARED_CELL_PM, SHARED_CELL_PM],
+        [FRESH_CELL_PM, FRESH_CELL_PM],  # all per-cell blocks rewritten
+        [{"text": ["hello"]}, {"text": ["world"]}],
+        [{"text": ["hello fresh"]}, {"text": ["world fresh"]}],
+    )
+    verdict, regression = cpr.classify(base, head)
+    assert verdict == "BLOCK_MOVED", verdict
+    assert regression is False, regression
+
+
+def test_forged_block_per_cell_block_added_not_flagged():
+    """A new per-cell block at head (not in base) is not a forgery. Real
+    re-execution can populate a per-cell block that the base lacked. The
+    check requires a per-cell block on BOTH sides."""
+    base, head = _states_with_per_cell(
+        REAL_TOP, HAND_TOP,
+        [None, SHARED_CELL_PM],     # base: cell 0 had no per-cell block
+        [FRESH_CELL_PM, ALT_CELL_PM],  # head: cell 0 now has a fresh one
+        [{"text": ["hello"]}, {"text": ["world"]}],
+        [{"text": ["hello fresh"]}, {"text": ["world fresh"]}],
+    )
+    verdict, regression = cpr.classify(base, head)
+    assert verdict == "BLOCK_MOVED", verdict
     assert regression is False, regression
