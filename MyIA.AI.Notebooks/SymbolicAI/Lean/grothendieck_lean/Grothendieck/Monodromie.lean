@@ -15,10 +15,13 @@ calculable de bout en bout : la couverture `z ↦ z²` du plan complexe époint�
 La boucle générateur `t ↦ exp(2πi·t)` se relève depuis `1` en
 `t ↦ exp(πi·t)`, et ce relèvement finit en `-1` : la monodromie est la
 transposition `x ↦ -x` de la fibre `{1, -1}`. D'ordre 2, sa valeur propre
-non triviale `-1` est une racine de l'unité — exactement ce que prédit le
-théorème de quasi-unipotence de Grothendieck (SGA 7, XII), énoncé ci-dessous
-comme `Prop` documentaire : Mathlib ne le formalise pas, et ce module dit
-honnêtement où s'arrête la frontière.
+non triviale `-1` est une racine de l'unité : l'exemple illustre l'implication
+algébrique élémentaire « opérateur d'ordre fini ⇒ valeurs propres racines de
+l'unité » (`finiteOrderEigenvaluesRootsOfUnity` ci-dessous, consigné comme
+`Prop` documentaire). Le théorème géométrique de quasi-unipotence de
+Grothendieck (SGA 7, XII), lui, porte sur les familles lisses paramétrées par
+un disque épointé — Mathlib ne le formalise pas, et ce module ne prétend pas
+le remplacer.
 
 La couverture universelle `exp : ℂ → ℂ*` (le plan épointé) est le décor :
 `Complex.exp_ne_zero` garantit qu'on ne quitte jamais `ℂ*`.
@@ -120,49 +123,41 @@ de départ du relèvement sur son point d'arrivée — `1 ↦ -1`. -/
 theorem monodromy_of_generator : monodromySq (generatorLift 0) = generatorLift 1 := by
   simp [monodromySq, lift_zero, lift_one]
 
-/-! ## Quasi-unipotence : le théorème et sa frontière -/
+/-! ## De l'exemple à la frontière : le fait algébrique, le théorème géométrique -/
 
 /-- La puissance deuxième de la monodromie est l'identité — après deux
-tours, l'objet revient inchangé. Un opérateur dont une puissance est
-unipotent (ici : trivial, l'identité) est quasi-unipotent. -/
+tours, l'objet revient inchangé. La monodromie est donc d'ordre fini
+(ici : exactement 2), le cas d'école de l'implication consignée plus bas. -/
 theorem monodromySq_pow_two_eq_id (x : ℂ) : monodromySq (monodromySq x) = x :=
   monodromySq_sq x
 
 /-- La valeur propre non triviale de la monodromie (`-1`) est une racine de
-l'unité : `(-1)² = 1`. C'est la moitié « racines de l'unité » de la
-quasi-unipotence, vérifiée sur l'exemple. -/
+l'unité : `(-1)² = 1`. C'est la conclusion de l'implication algébrique
+consignée plus bas, vérifiée sur l'exemple. -/
 theorem eigenvalue_neg_one_sq : (-1 : ℂ) ^ 2 = 1 := by
   norm_num
 
-/-- **Énoncé documentaire (non prouvé — hors Mathlib), à ne pas confondre
-avec son implication algébrique triviale.**
+/-- **Implication algébrique documentaire (consignée, non prouvée ici).**
+Un opérateur linéaire d'ordre fini sur un ℂ-espace vectoriel — un `T` tel
+qu'une puissance `T^[n]` (`n > 0`) soit l'identité — n'a que des valeurs
+propres racines de l'unité : appliqué à un vecteur propre `v ≠ 0`,
+`T^[n] v = v` force `μ ^ n = 1`. Le fait est élémentaire et n'a rien de
+géométrique.
 
-Le théorème profond de quasi-unipotence de Grothendieck (SGA 7, exposé
-XII, théorème 1.1 ; voir aussi *Weil II*, Deligne 1980) dit que, pour
-toute famille lisse paramétrée par un disque épointé, il existe un entier
-`n` tel que `T^n` soit **unipotent** (c'est-à-dire `1 + N` pour un certain
-`N` nilpotent, pas trivialement l'identité) — conclusion : les valeurs
-propres de `T` sont des racines de l'unité.
-
-Ce `Prop` énonce l'**implication algébrique triviale** qu'on obtient
-lorsqu'on remplace « unipotent » par « d'ordre fini » dans l'antécédent :
-si `T` est d'ordre fini (`T^n = id` pour un certain `n`), alors ses valeurs
-propres sont des racines de l'unité. C'est un cas particulier
-— et même strictement plus restrictif, car unipotent n'implique pas
-d'ordre fini (un bloc de Jordan `1 + N` avec `N ≠ 0` n'est jamais
-d'ordre fini). Le théorème profond est **plus faible dans l'antécédent**,
-ce qui est exactement ce qui le rend non-trivial.
-
-**Frontière honnête.** Mathlib 4 ne formalise ni le théorème profond
-(aucune théorie des familles lisses paramétrées ni de monodromie
-ℓ-adique), ni la famille d'exemples où la monodromie est d'ordre fini.
-Le présent `Prop` est défini pour mémoire ; sur l'exemple `z ↦ z²`, la
-monodromie est d'ordre 2 (`monodromySq_pow_two_eq_id`,
-`eigenvalue_neg_one_sq`), donc l'implication triviale s'applique mais
-**on ne prétend pas avoir prouvé le théorème profond** — on a seulement
-construit un `Prop` dont la prémisse « T d'ordre fini » est satisfaite
-par l'exemple. -/
-def quasiUnipotenceSGA7 : Prop :=
+Il ne se confond pas avec le **théorème géométrique de quasi-unipotence
+de Grothendieck** (SGA 7, exposé XII, théorème 1.1 ; voir aussi *Weil II*,
+Deligne 1980), qui porte sur la monodromie d'une famille lisse paramétrée
+par un disque épointé. Ce théorème a une autre hypothèse (sa monodromie
+est rarement d'ordre fini) et une autre conclusion (une puissance de la
+transformation est unipotente, pas l'identité). La direction compte :
+unipotent n'implique pas d'ordre fini — un bloc de Jordan `1 + N`, `N ≠ 0`,
+n'est jamais d'ordre fini — le théorème profond couvre donc toutes les
+familles lisses, un antécédent strictement plus large, au prix d'une
+conclusion plus faible. Mathlib 4 ne le formalise
+pas — ni familles lisses paramétrées, ni monodromie ℓ-adique — et il reste
+hors de ce module ; la monodromie de `z ↦ z²` ci-dessus est un cas d'ordre
+fini, où l'implication algébrique s'applique. -/
+def finiteOrderEigenvaluesRootsOfUnity : Prop :=
   ∀ (F : Type) [AddCommGroup F] [Module ℂ F] (T : F →ₗ[ℂ] F),
     (∃ (n : ℕ), 0 < n ∧ ∀ v : F, T^[n] v = v) →
       ∀ μ : ℂ, (∃ v : F, v ≠ 0 ∧ T v = μ • v) → ∃ (r : ℕ), 0 < r ∧ μ ^ r = 1

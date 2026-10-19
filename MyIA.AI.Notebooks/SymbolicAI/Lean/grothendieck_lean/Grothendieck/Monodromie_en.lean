@@ -18,9 +18,12 @@ covering `z ↦ z²` of the punctured complex plane.
 The generator loop `t ↦ exp(2πi·t)` lifts from `1` to `t ↦ exp(πi·t)`, and
 that lift ends at `-1`: the monodromy is the transposition `x ↦ -x` of the
 fiber `{1, -1}`. Of order 2, its nontrivial eigenvalue `-1` is a root of
-unity — exactly what Grothendieck's quasi-unipotence theorem (SGA 7, XII)
-predicts, stated below as a documentary `Prop`: Mathlib does not formalize
-it, and this module says honestly where the boundary lies.
+unity: the example illustrates the elementary algebraic implication
+"finite-order operator ⇒ eigenvalues are roots of unity"
+(`finiteOrderEigenvaluesRootsOfUnity` below, recorded as a documentary
+`Prop`). Grothendieck's geometric quasi-unipotence theorem (SGA 7, XII), by
+contrast, is about smooth families parametrized by a punctured disc — Mathlib
+does not formalize it, and this module does not claim to replace it.
 
 The universal covering `exp : ℂ → ℂ*` (the punctured plane) is the setting:
 `Complex.exp_ne_zero` guarantees we never leave `ℂ*`.
@@ -121,49 +124,40 @@ point of the lift to its endpoint — `1 ↦ -1`. -/
 theorem monodromy_of_generator : monodromySq (generatorLift 0) = generatorLift 1 := by
   simp [monodromySq, lift_zero, lift_one]
 
-/-! ## Quasi-unipotence: the theorem and its boundary -/
+/-! ## From the example to the boundary: the algebraic fact, the geometric theorem -/
 
 /-- The second power of the monodromy is the identity — after two turns,
-the object comes back unchanged. An operator of which some power is
-unipotent (here: trivially, the identity) is quasi-unipotent. -/
+the object comes back unchanged. The monodromy is therefore of finite order
+(here: exactly 2), the textbook case of the implication recorded below. -/
 theorem monodromySq_pow_two_eq_id (x : ℂ) : monodromySq (monodromySq x) = x :=
   monodromySq_sq x
 
 /-- The nontrivial eigenvalue of the monodromy (`-1`) is a root of unity:
-`(-1)² = 1`. This is the "roots of unity" half of quasi-unipotence,
-verified on the example. -/
+`(-1)² = 1`. This is the conclusion of the algebraic implication recorded
+below, verified on the example. -/
 theorem eigenvalue_neg_one_sq : (-1 : ℂ) ^ 2 = 1 := by
   norm_num
 
-/-- **Documentary statement (not proved — beyond Mathlib), not to be
-confused with its trivial algebraic implication.**
+/-- **Documentary algebraic implication (recorded, not proved here).**
+A finite-order linear operator on a ℂ-vector space — a `T` such that some
+power `T^[n]` (`n > 0`) is the identity — has only roots of unity as
+eigenvalues: applied to an eigenvector `v ≠ 0`, `T^[n] v = v` forces
+`μ ^ n = 1`. The fact is elementary and has nothing geometric about it.
 
-Grothendieck's deep quasi-unipotence theorem (SGA 7, lecture XII,
-theorem 1.1; see also *Weil II*, Deligne 1980) states that, for any
-smooth family parametrized by a punctured disc, there exists an integer
-`n` such that `T^n` is **unipotent** (i.e. `1 + N` for some
-`N` nilpotent, not trivially the identity) — conclusion: the eigenvalues
-of `T` are roots of unity.
-
-This `Prop` states the **trivial algebraic implication** one obtains
-by replacing “unipotent” with “of finite order” in the antecedent:
-if `T` is of finite order (`T^n = id` for some `n`), then its eigenvalues
-are roots of unity. This is a special case — and indeed strictly
-more restrictive, since unipotent does not imply finite order (a
-Jordan block `1 + N` with `N ≠ 0` is never of finite order). The
-deep theorem is **weaker in the antecedent**, which is exactly what
-makes it non-trivial.
-
-**Honest boundary.** Mathlib 4 formalizes neither the deep theorem
-(no theory of parametrized smooth families nor of ℓ-adic
-monodromy), nor the family of examples where the monodromy is of
-finite order. This `Prop` is defined for memory; on the example
-`z ↦ z²`, the monodromy is of order 2
-(`monodromySq_pow_two_eq_id`, `eigenvalue_neg_one_sq`), so the
-trivial implication applies but **we do not claim to have proved the
-deep theorem** — we have only built a `Prop` whose premise “T of finite
-order” is satisfied by the example. -/
-def quasiUnipotenceSGA7 : Prop :=
+It must not be confused with the **geometric quasi-unipotence theorem of
+Grothendieck** (SGA 7, lecture XII, theorem 1.1; see also *Weil II*,
+Deligne 1980), which is about the monodromy of a smooth family parametrized
+by a punctured disc. That theorem has another hypothesis (its monodromy is
+rarely of finite order) and another conclusion (some power of the
+transformation is unipotent, not the identity). The direction matters:
+unipotent does not imply finite order — a Jordan block `1 + N` with
+`N ≠ 0` is never of finite order — so the deep theorem covers every smooth
+family, a strictly wider hypothesis, at the price of a weaker conclusion.
+Mathlib 4 does not formalize
+it — neither parametrized smooth families nor ℓ-adic monodromy — and it
+stays outside this module; the monodromy of `z ↦ z²` above is a finite-order
+case, where the algebraic implication applies. -/
+def finiteOrderEigenvaluesRootsOfUnity : Prop :=
   ∀ (F : Type) [AddCommGroup F] [Module ℂ F] (T : F →ₗ[ℂ] F),
     (∃ (n : ℕ), 0 < n ∧ ∀ v : F, T^[n] v = v) →
       ∀ μ : ℂ, (∃ v : F, v ≠ 0 ∧ T v = μ • v) → ∃ (r : ℕ), 0 < r ∧ μ ^ r = 1
