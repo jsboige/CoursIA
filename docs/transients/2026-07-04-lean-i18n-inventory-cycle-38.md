@@ -1,3 +1,5 @@
+> RAPPORT — 2026-07-04 — Lean i18n : inventaire FR/EN et proposition de convention (cycle 38) — figé
+
 # Lean i18n — inventaire FR/EN et proposition de convention (cycle 38, See #4980)
 
 **Source** : décision user 2026-07-02 (verbatim body #4980) — « je ne parlais pas des readme qui doivent tous etre traduits comme les autres, mais des fichiers lean eux-memes dont certains sont en fr et d'autres en en. Je serais pour les harmoniser en francais et les traduire au moins en anglais, comme les readme. »
