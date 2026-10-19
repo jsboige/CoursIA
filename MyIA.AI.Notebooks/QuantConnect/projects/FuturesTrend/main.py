@@ -84,7 +84,10 @@ class FuturesTrendFollowing(QCAlgorithm):
 
     def _is_trending_up(self, symbol):
         """Check if price is above SMA50 (light trend filter)."""
-        hist = self.history(symbol, self.trend_sma_period + 2, Resolution.DAILY)
+        # Fenetre double (#20286) : sur une demi-seance, history() rend moins de
+        # barres que demandees et le filtre de tendance ecarte le titre. On garde
+        # les `trend_sma_period` dernieres barres : meme SMA qu'avant.
+        hist = self.history(symbol, 2 * (self.trend_sma_period + 2), Resolution.DAILY)
         if hist.empty or len(hist) < self.trend_sma_period:
             return False
 
@@ -103,11 +106,11 @@ class FuturesTrendFollowing(QCAlgorithm):
                 continue
 
             symbol = self.symbols[etf]
-            hist = self.history(symbol, self.exit_period + 1, Resolution.DAILY)
+            hist = self.history(symbol, 2 * (self.exit_period + 1), Resolution.DAILY)
             if hist.empty or len(hist) < self.exit_period + 1:
                 continue
 
-            lows = hist['low'].values
+            lows = hist['low'].values[-(self.exit_period + 1):]
             current_price = self.securities[symbol].price
             exit_low = np.min(lows[:-1])
 
@@ -128,11 +131,11 @@ class FuturesTrendFollowing(QCAlgorithm):
             if not self._is_trending_up(symbol):
                 continue
 
-            hist = self.history(symbol, self.entry_period + 1, Resolution.DAILY)
+            hist = self.history(symbol, 2 * (self.entry_period + 1), Resolution.DAILY)
             if hist.empty or len(hist) < self.entry_period + 1:
                 continue
 
-            highs = hist['high'].values
+            highs = hist['high'].values[-(self.entry_period + 1):]
             current_price = self.securities[symbol].price
             entry_high = np.max(highs[:-1])
 
