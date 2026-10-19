@@ -36,9 +36,13 @@ préfixe-liberté et longueurs exactes via l'invariant de masse à l'échelle
 minima d'une forêt triée, profondeurs, Kraft à l'échelle entière, et le
 théorème capital — le code canonique des profondeurs du trie existe et est
 préfixe-libre (invocation du pli 3), le code de l'arbre l'est aussi
-(invocation du pli 1). -/
+(invocation du pli 1) ; `Optimalite` — le coût d'un code préfixe (pli 5 de
+#18706) : poids des feuilles en parcours, deux lectures du coût (externe à
+profondeur de départ `k`, interne par nœuds fusionnés) unies par le théorème
+`costAt_eq`, ancre du carnet 02 — le trie de Huffman `[1,1,2,4]` coûte 14
+contre 16 au code fixe. -/
 @[default_target]
 lean_lib «PrefixCodes» where
   -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`) :
   -- pas de `.submodules`, cf la note `MathUniverse` de `learning_theory_lean`.
-  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman]
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite]
