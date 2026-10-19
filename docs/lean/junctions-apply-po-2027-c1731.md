@@ -60,7 +60,21 @@ Donneur : MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean -> D:\dev\CoursIA-2\
 Etat persiste : D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd6\share-state.json
 ```
 
-- **17 junctions creees** (9 nouveaux + 8 remplacements, dont 7 re-pointages PERIMEE→db584cd6 + 1 donneur qui devient junction).
+- **Junctions posees** : la sortie verbatim ci-dessus fait foi — **16** jonctions creees
+  (les entrees `junction :`, dont `knot_lean`, le donneur, dont le `.lake/packages/mathlib`
+  a ete deplace puis re-jonctionne, et `mathlib_examples`, le seul conserve avec backup),
+  **7** re-pointees vers `db584cd6` (les entrees `junction REPOINTEE :`, les jonctions
+  PERIMEE), **0** inchangee (aucune entree `junction existante :`) — soit **23** entrees de
+  jonction dans la sortie.
+- Le total anterieur (« 17 junctions creees (9 nouveaux + 8 remplacements) ») reprenait le
+  `17 a traiter` de l'en-tete de l'outil — les membres du groupe *sans* jonction, sur 24
+  membres au total (17 + 7 deja jonctionnees) — et ne se raccordait pas aux entrees de la
+  sortie : il est retire au profit de la sortie verbatim, qui fait foi.
+- L'ecart d'un membre (24 membres declares contre 23 entrees dans la sortie capturee) n'est
+  pas explicite par cette sortie : le seul chemin de `setup_shared_mathlib.ps1` qui
+  n'imprime rien pour un membre est le skip « backup deja present », dont l'avertissement
+  sort sur le flux d'avertissement — hors d'une capture stdout seule. L'etat du groupe apres
+  Apply et rollback est mesure par ailleurs (24 declares => 18 jonctions / 6 absents).
 - **1 backup** preserve (mathlib_examples, avant jonction).
 - **Donneur** : `knot_lean` (10.02 Go) — son `.lake/packages/mathlib` a ete deplace vers `.mathlib-cache/leanprover_lean4_v4.33.0-db584cd6/mathlib`, puis re-jonctionne.
 - **`share-state.json`** ecrit : source de verite des junctions, persistance cross-session.
