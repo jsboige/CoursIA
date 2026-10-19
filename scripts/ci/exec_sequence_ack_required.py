@@ -54,6 +54,14 @@ fetcher calls ``gh api .../issues/<n>/comments``. The review fetcher calls
 returns 404 on PRs; Hermes review on #21273 measured it live). ``--head`` is
 the PR head SHA.
 
+Both the comment and the review fetchers are **paginated**
+(``--paginate ?per_page=100``): the API returns only the first 30 items
+otherwise, and the ack is posted **last**, on the busiest PRs of #21273
+(measured: 24 comments on #20369 and #20377, 35 on #20246) -- an ack beyond
+the first page would be read as "no marker". ``--paginate`` applies the jq
+filter page by page, so the CLI prints one compact JSON object per element;
+the parsers read that stream.
+
 Exit codes: 0 pass / 1 fail (ack not satisfied).
 """
 from __future__ import annotations
@@ -111,6 +119,49 @@ CommentFetcher = Callable[[int], list[dict]]
 ReviewFetcher = Callable[[int], list[dict]]
 
 
+def _parse_item_stream(text: str, surface: str) -> list[dict]:
+    """Parse the output of a paginated ``gh api --jq '.[] | {...}'`` call.
+
+    ``--paginate`` applies the jq filter page by page: the CLI prints one
+    compact JSON object per element, across all the pages. A single JSON
+    array (the shape of a non-paginated call) is accepted too, so the
+    parser does not depend on the pagination mode.
+
+    Raises :class:`FetchError` when the stream cannot be read -- an
+    unreadable source is never rendered as a measured absence (#15342).
+    """
+    stripped = (text or "").strip()
+    if not stripped:
+        return []
+    try:
+        whole = json.loads(stripped)
+    except json.JSONDecodeError:
+        pass
+    else:
+        if isinstance(whole, dict):
+            return [whole]
+        if isinstance(whole, list):
+            return [x for x in whole if isinstance(x, dict)]
+        return []
+    items: list[dict] = []
+    for lineno, line in enumerate(stripped.splitlines(), start=1):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            obj = json.loads(line)
+        except json.JSONDecodeError as e:
+            raise FetchError(
+                f"cannot read PR {surface}: gh api output line {lineno} is not "
+                f"JSON: {e}"
+            ) from e
+        if isinstance(obj, dict):
+            items.append(obj)
+        elif isinstance(obj, list):
+            items.extend(x for x in obj if isinstance(x, dict))
+    return items
+
+
 def gh_label_fetcher(pr_number: int) -> list[str]:
     """Fetch the label NAMES attached to a PR via the ``gh`` CLI.
 
@@ -160,6 +211,10 @@ def gh_comment_fetcher(pr_number: int) -> list[dict]:
     is reserved for the measured fact "the PR has no comments". Same
     fail-closed-with-honest-restitution rationale as ``gh_label_fetcher``
     (#15342).
+
+    The call is **paginated** (``--paginate ?per_page=100``): the API
+    returns only the first 30 items otherwise, and the ack is posted last
+    (#21332, re-review 5574107628).
     """
     repo = os.environ.get("GH_REPO") or os.environ.get("GITHUB_REPOSITORY")
     if not repo:
@@ -169,8 +224,10 @@ def gh_comment_fetcher(pr_number: int) -> list[dict]:
     try:
         out = subprocess.run(
             [
-                "gh", "api", f"repos/{repo}/issues/{pr_number}/comments",
-                "--jq", "[.[] | {author: .user.login, body: .body, createdAt: .created_at}]",
+                "gh", "api",
+                f"repos/{repo}/issues/{pr_number}/comments?per_page=100",
+                "--paginate",
+                "--jq", ".[] | {author: .user.login, body: .body, createdAt: .created_at}",
             ],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
         )
@@ -181,13 +238,7 @@ def gh_comment_fetcher(pr_number: int) -> list[dict]:
         raise FetchError(
             f"cannot read PR comments: gh api rc={out.returncode}: {stderr}"
         )
-    try:
-        comments = json.loads(out.stdout or "[]")
-    except json.JSONDecodeError as e:
-        raise FetchError(
-            f"cannot read PR comments: gh api output is not JSON: {e}"
-        ) from e
-    return comments
+    return _parse_item_stream(out.stdout or "", "comments")
 
 
 def gh_review_fetcher(pr_number: int) -> list[dict]:
@@ -197,6 +248,9 @@ def gh_review_fetcher(pr_number: int) -> list[dict]:
     ack marker may appear in a review body just as it may in a comment; the
     dual-key does not care which surface carries it. Same fail-closed
     rationale as ``gh_comment_fetcher`` (#15342).
+
+    The call is **paginated** (``--paginate ?per_page=100``): the API
+    returns only the first 30 items otherwise (#21332, re-review 5574107628).
     """
     repo = os.environ.get("GH_REPO") or os.environ.get("GITHUB_REPOSITORY")
     if not repo:
@@ -206,8 +260,10 @@ def gh_review_fetcher(pr_number: int) -> list[dict]:
     try:
         out = subprocess.run(
             [
-                "gh", "api", f"repos/{repo}/pulls/{pr_number}/reviews",
-                "--jq", "[.[] | {author: .user.login, body: .body, state: .state, submittedAt: .submitted_at}]",
+                "gh", "api",
+                f"repos/{repo}/pulls/{pr_number}/reviews?per_page=100",
+                "--paginate",
+                "--jq", ".[] | {author: .user.login, body: .body, state: .state, submittedAt: .submitted_at}",
             ],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
         )
@@ -218,13 +274,7 @@ def gh_review_fetcher(pr_number: int) -> list[dict]:
         raise FetchError(
             f"cannot read PR reviews: gh api rc={out.returncode}: {stderr}"
         )
-    try:
-        reviews = json.loads(out.stdout or "[]")
-    except json.JSONDecodeError as e:
-        raise FetchError(
-            f"cannot read PR reviews: gh api output is not JSON: {e}"
-        ) from e
-    return reviews
+    return _parse_item_stream(out.stdout or "", "reviews")
 
 
 # ---------------------------------------------------------------------------
@@ -258,6 +308,78 @@ def _author_ok(item: dict | None) -> bool:
         return False
     auth = item.get("author")
     return isinstance(auth, str) and auth == ACK_AUTHOR
+
+
+def _item_timestamp(item: dict) -> str:
+    """The ISO timestamp of a comment or review, ``""`` when absent.
+
+    Comments carry ``createdAt``, reviews carry ``submittedAt``. Both
+    spellings are accepted (camelCase from the jq filter, snake_case from a
+    raw API payload). ISO-8601 sorts lexicographically, so the string
+    comparison below is a chronological one.
+    """
+    for key in ("createdAt", "submittedAt", "created_at", "submitted_at"):
+        value = item.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return ""
+
+
+def _most_recent(
+    candidates: list[tuple[str, dict, str, str]],
+) -> tuple[str, dict, str, str]:
+    """The most recent candidate, ties keeping the API order (first wins).
+
+    Candidates without a timestamp are treated as undated: when none of
+    them carries one, the first in API order is returned.
+    """
+    dated = [c for c in candidates if c[3]]
+    if dated:
+        # ``max`` returns the FIRST maximal element: equal timestamps keep
+        # the API order.
+        return max(dated, key=lambda c: c[3])
+    return candidates[0]
+
+
+def _select_marker(
+    candidates: list[tuple[str, dict, str, str]], expected: str
+) -> tuple[str, dict, str, str]:
+    """Choose the marker that decides the ack among ``candidates``.
+
+    Each candidate is ``(surface, item, marker_head, timestamp)`` and the
+    list is in API order (comments first, then reviews). The decision, in
+    order:
+
+    1. an authorised marker **at the exact expected head** -- the dual-key
+       is satisfied by it, whatever else the thread carries;
+    2. failing that, the **most recent** authorised marker -- the ack exists
+       but is stale, and the verdict must say so (head mismatch);
+    3. failing that, the first marker matching the expected head -- no
+       authorised marker at all: the verdict reports the author problem
+       rather than a head mismatch;
+    4. failing that, the most recent marker of any author -- nothing matches
+       the head either: the verdict reports a stale head.
+
+    Rule 1 comes before rule 2 because the ack is a property of the head
+    ("the coordinator acked THIS head"), not of the last word in the
+    thread. It is what unblocks the ``ack -> update-branch -> re-ack``
+    path: the older ack must not mask the newer one (#21332, re-review
+    5574107628).
+
+    Rule 2 before rule 3 for the same reason, in reverse: a marker by
+    another author is never an ack, so it must not be promoted over a real
+    (but stale) authorised one.
+    """
+    authorised = [c for c in candidates if _author_ok(c[1])]
+    at_head = [c for c in authorised if expected and c[2] == expected]
+    if at_head:
+        return _most_recent(at_head)
+    if authorised:
+        return _most_recent(authorised)
+    matching = [c for c in candidates if expected and c[2] == expected]
+    if matching:
+        return matching[0]
+    return _most_recent(candidates)
 
 
 def check(
@@ -417,20 +539,27 @@ def check(
             combined.extend(("comment", c) for c in comment_items if isinstance(c, dict))
         if review_items is not None:
             combined.extend(("review", r) for r in review_items if isinstance(r, dict))
+        candidates: list[tuple[str, dict, str, str]] = []
         for surface, item in combined:
             head_in_body = _extract_marker(item.get("body", ""))
             if head_in_body is None:
                 continue
+            candidates.append(
+                (surface, item, head_in_body, _item_timestamp(item))
+            )
+        if candidates:
+            surface, item, marker_head, _stamp = _select_marker(candidates, expected)
             auth = item.get("author")
             author_ok = bool(isinstance(auth, str) and auth == ACK_AUTHOR)
             marker_present = True
-            marker_head = head_in_body
-            head_match = bool(expected) and (head_in_body == expected)
+            head_match = bool(expected) and (marker_head == expected)
             ack_author = auth if author_ok else None
-            break
     elif comment_bodies_final is not None and review_bodies_final is not None:
         # Bodies-only fast-path: we cannot check the author here, so the
         # author dimension is reported as ``None`` to surface that limitation.
+        # It also has no timestamp to order the markers by -- it stays a
+        # debug hatch, first hit wins, and it is NOT the path the CI takes
+        # (the fetchers return items).
         combined_bodies = list(comment_bodies_final) + list(review_bodies_final)
         any_marker = False
         for body in combined_bodies:
