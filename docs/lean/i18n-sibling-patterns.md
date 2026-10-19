@@ -3,7 +3,7 @@
 **Statut** : référence durable (2026-07). EPIC **#4980** (harmonisation FR + traduction EN des `*.lean`).
 **Scope** : tout `*.lean` « own » (hors `.lake/packages/`, `_peters/`, `reference_docs/`, `agent_tests/`, libs vendored) portant une paire sibling `Foo.lean` (FR canonique) / `Foo_en.lean` (miroir EN), convention Pattern A ratifiée user 2026-07-04.
 
-Ce fichier **complète** [`i18n-inventory-cycle-38.md`](i18n-inventory-cycle-38.md) (qui porte la *proposition de convention* Options A/B/C) et l'inventaire live [`I18N_INVENTORY.md`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/I18N_INVENTORY.md). Il documente ce que ni l'un ni l'autre ne couvre : les **trois formes structurelles** qu'une paire sibling peut légitimement prendre, et **la discipline opératoire** qui évite de casser un build en « corrigeant » une sortie de checker.
+Ce fichier **complète** [`i18n-inventory-cycle-38.md`](../transients/2026-07-04-lean-i18n-inventory-cycle-38.md) (qui porte la *proposition de convention* Options A/B/C — déplacé en lane transiente, tranche 3b #14623) et l'inventaire live [`I18N_INVENTORY.md`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/I18N_INVENTORY.md). Il documente ce que ni l'un ni l'autre ne couvre : les **trois formes structurelles** qu'une paire sibling peut légitimement prendre, et **la discipline opératoire** qui évite de casser un build en « corrigeant » une sortie de checker.
 
 ## Convention de base (rappel §Lean i18n de `code-style.md`)
 
@@ -89,7 +89,7 @@ Sortie : `N/M pairs byte-identical | k consumer-pattern | j drift | i orphan`, a
 ## Voir aussi
 
 - [`code-style.md` §Lean (i18n)](../../.claude/rules/code-style.md) — convention Pattern A ratifiée, siblings `Foo.lean`/`Foo_en.lean`
-- [`i18n-inventory-cycle-38.md`](i18n-inventory-cycle-38.md) — proposition de convention (Options A/B/C), méthodologie d'inventaire
+- [`i18n-inventory-cycle-38.md`](../transients/2026-07-04-lean-i18n-inventory-cycle-38.md) — proposition de convention (Options A/B/C), méthodologie d'inventaire (lane transiente)
 - [`I18N_INVENTORY.md`](../../MyIA.AI.Notebooks/SymbolicAI/Lean/I18N_INVENTORY.md) — inventaire de couverture live
 - [`lean-merge-discipline.md`](../../.claude/rules/lean-merge-discipline.md) — Lake build local/CI avant merge Lean
 - [`readme-french-first.md`](../../.claude/rules/readme-french-first.md) — FR d'abord, EN préservé (parallèle prose ↔ docstrings)
