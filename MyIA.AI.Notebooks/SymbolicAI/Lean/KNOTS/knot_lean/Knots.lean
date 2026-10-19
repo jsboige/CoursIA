@@ -11,6 +11,9 @@
     nœuds en Lean 4 / Mathlib 4, briques :
     - `Knots.Basic` — fondations combinatoires (croisements,
       diagrammes, PD-codes, Gauss codes, Dowker-Thistlethwaite)
+    - `Knots.Tangle` — tangles à quatre extrémités (convention
+      Conway : tangle nul/infini/1, rotation, compositions
+      verticale/horizontale, clôtures numérateur/dénominateur)
     - `Knots.Reidemeister` — mouvements de Reidemeister (RI, RII,
       RIII) et invariance des invariants
     - `Knots.ReidemeisterMoves` — suite de mouvements vérifiable par le
@@ -40,6 +43,7 @@
 -/
 
 import Knots.Basic
+import Knots.Tangle
 import Knots.Reidemeister
 import Knots.Invariant
 import Knots.Mutation
