@@ -52,6 +52,16 @@ on:
       # the credential gate an effective CI guard (finding Hermes PR #18722).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/provider_gate.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py'
+      # #21331 prover harness suites in CI: prover/__init__.py now resolves
+      # the stack-bound subpackages lazily (PEP 562) and tests/conftest.py
+      # reclassifies stack-absence as SKIP, so test_prover_guards.py +
+      # test_lean_utils.py run hermetically on this bare runner (164 pass /
+      # 163 skip measured under WSL with this job's exact pip set; 327/327
+      # on a full env). Trigger on the harness spine, the lean server, the
+      # suites and their conftest. Mirrored under pull_request: below.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/**'
       # #11349 native_decide ratchet rewire: scripts/lean/tests/test_proof_integrity_audit_wiring.py
       # pins the conway_lean proof-integrity-audit allow-list to the build-enumerated
       # footprint (61 names after #11368). The test lives under scripts/** so its only
@@ -119,7 +129,7 @@ on:
       # #13746 tranche 2 : les trois suites executees par le bloc pytest
       # ci-dessous qui ne vivent PAS sous scripts/** -- GradeBookApp,
       # QuantConnect/scripts/tests (imports : audit_readme,
-      # validate_qc_notebooks, test_algorithms) et 01-PythonForDataScience/
+      # validate_qc_notebooks, test_algorithms) et 01-Python-For-Data-Science/
       # tests (numpy/pandas purs, tests self-contenus sans reference aux
       # notebooks) -- n'avaient aucun declencheur sur leurs propres arbres :
       # elles ne s'executaient qu'en riders d'un push scripts/**, et une PR
@@ -130,8 +140,13 @@ on:
       # Python (tests self-contenus), et GradeBookApp/** qui est la cible
       # pytest verbatim. Miroir push/pull_request.
       - 'MyIA.AI.Notebooks/QuantConnect/scripts/**'
-      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests/**'
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests/**'
       - 'GradeBookApp/**'
+      # #21104 pli 0 Origami : la suite du service Kernel Gateway CFR vit sous
+      # GameTheory/gateway/** et n'est PAS couverte par GameTheory/tests (chemin
+      # distinct) -- meme classe que #18392/#13746 : sans cette entree, une PR
+      # qui ne touche que le service n'executerait AUCUNE jambe pytest.
+      - 'MyIA.AI.Notebooks/GameTheory/gateway/**'
       # #21100 pli 0 Origami (Kernel Gateway) : le coeur du service Z3 Sudoku
       # vit hors scripts/** (Z3-API/gateway/) ; sans entree, une PR qui ne
       # touche que lui n'executerait AUCUNE jambe pytest (#10416 pattern, cf.
@@ -160,6 +175,10 @@ on:
       # #18709 provider gate (mirror of the PR paths above).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/provider_gate.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py'
+      # #21331 prover harness suites (mirror of the push paths above).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/**'
       # #11349 native_decide ratchet rewire (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
@@ -191,8 +210,10 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/tests/**'
       # #13746 tranche 2 (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/QuantConnect/scripts/**'
-      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests/**'
+      - 'MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests/**'
       - 'GradeBookApp/**'
+      # #21104 pli 0 Origami (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/GameTheory/gateway/**'
       # #21100 pli 0 Origami (Kernel Gateway) (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
   workflow_dispatch:
@@ -362,6 +383,12 @@ jobs:
           # Without it the 6 tests fail on ModuleNotFoundError instead of
           # exercising the script.
           pip install pypdf
+          # open_spiel: coeur du service Kernel Gateway CFR (GameTheory/gateway,
+          # #21104 / pli 0 de l'Epic #19571). La roue 2.0.2 manylinux_2_27
+          # x86_64 existe pour le python 3.11 de ce job ; sans le paquet, la
+          # cible pytest ci-dessous est une erreur de collecte au lieu
+          # d'exercer le service pour de vrai.
+          pip install open_spiel
           # z3-solver: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/
           # test_z3_sudoku_core.py imports z3 at module level (#21100, pli 0
           # Origami). Without it the suite fails on ModuleNotFoundError
@@ -395,15 +422,24 @@ jobs:
         # installed above. The 7 suites run here green (354 tests, validated
         # under WSL ubuntu + CI deps). genai -> po-2023, wsl -> po-2025.
         #
-        # #6790 tree-lock guard: only test_bg_tree_lock.py is included from
-        # agent_tests/tests/, NOT the whole dir. That file loads tree_lock.py by
+        # #6790 tree-lock guard: test_bg_tree_lock.py loads tree_lock.py by
         # file path (stdlib-only) and importorskips the LLM stack for its 3
         # launcher-wiring tests, so on a bare runner it is hermetic: 14 pass,
-        # 3 skip. Its sibling test_prover_guards.py imports prover.state/.tools,
-        # which pull prover/__init__.py -> agent_framework at collection time and
-        # would abort the whole pytest session with a collection error (masking
-        # every other result) — the exact failure mode this workflow exists to
-        # prevent. agent_tests owner: po-2026 (Lean lane).
+        # 3 skip.
+        #
+        # #21331 prover harness suites: test_prover_guards.py +
+        # test_lean_utils.py now collect on this bare runner (lazy
+        # prover/__init__.py, PEP 562) and their tests/conftest.py
+        # reclassifies LLM-stack absence (agent_framework /
+        # agent_framework_openai) as SKIP — the same classification
+        # importorskip gives. Measured under WSL on this job's exact pip
+        # set, submodules absent: 164 pass / 163 skip, 0 fail; on a full
+        # env (stack + submodules): 327 pass. The 5 inherited reds Hermes
+        # flagged on #21324 are fixed: 2 layout pins skip with a written
+        # motif when the game_theory_lean gitlink is not materialized,
+        # 3 #18432 venue tests align Linux EEXIST-on-directory with the
+        # Windows PermissionError semantics (unusable venue, no suffix
+        # bump). agent_tests owner: po-2026 (Lean lane).
         #
         # scripts/audit/tests re-cabled here (family 2 of #14615): the
         # 2026-08-14 CI-EXCLUDED reason (4 env-dependent failures, DALLE-3
@@ -424,11 +460,14 @@ jobs:
             MyIA.AI.Notebooks/GameTheory/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
+            MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_guards.py \
+            MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_lean_utils.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py \
+            MyIA.AI.Notebooks/GameTheory/gateway/test_openspiel_cfr_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py \
-            MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests \
+            MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
             MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \
