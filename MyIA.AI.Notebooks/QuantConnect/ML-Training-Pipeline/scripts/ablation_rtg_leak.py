@@ -11,13 +11,23 @@ PURPOSE:
     giving the model a summary of future returns before it predicts the action.
 
 CONDITIONS:
-    A. REALIZED-RTG (status quo): feed batch["rtg"] unchanged (leaked).
+    A. REALIZED-RTG (status quo): feed the realized RTG of each row (leaked).
     B. FIXED-G: replace ALL rtg values in eval sequences with a single CONSTANT
        desired-return prompt = 90th percentile of training-set per-trajectory
        initial RTG. This removes future info while keeping a "aim high" signal.
     C. RANDOM-TIMING: ignore the model entirely; generate random actions with
        per-symbol trade frequency matched to condition A. Isolates the cash-
        timing Sharpe artifact from variable-sizing portfolios.
+
+ALIGNMENT (#21187):
+    A and B take one decision per step through ``validate_xrp_dt.
+    dt_causal_positions``: the decision that drives return k -> k+1 reads
+    states on rows <= k-2 and teacher actions on rows <= k-1. The two
+    conditions differ only by the RTG fed to the model, so A - B measures the
+    RTG leak alone, and C is scored on the same returns. Before #21187 each
+    condition applied a window's last argmax about context_length rows before
+    the window's last state: both A and B read future states, and results
+    produced before that change are not comparable with later ones.
 
 VERDICT CRITERIA:
     - "LEAK-DOMINATED" if A >> B ≈ C
@@ -41,6 +51,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 import time
@@ -58,10 +69,10 @@ from train_rl_dt import (
     DecisionTransformerModel,
     build_trajectories,
     compute_majority_class_baseline,
-    create_sequence_batches,
     evaluate_dt,
     train_dt,
 )
+from validate_xrp_dt import CAUSAL_EVAL_PROTOCOL, dt_causal_positions
 
 sys.path.insert(0, str(SCRIPTS_DIR.parent / "shared"))
 from features import FeatureEngineer
@@ -95,34 +106,90 @@ def compute_sharpe(returns: np.ndarray, annual_factor: int = 252) -> float:
 
 
 def simulate_dt_portfolio(
-    prices: np.ndarray,
     actions: np.ndarray,
+    returns: np.ndarray,
     commission_bps: float = 5.0,
 ) -> np.ndarray:
-    """Simulate portfolio returns from DT action predictions.
+    """Portfolio returns of an action sequence aligned on the returns it drives.
 
-    Actions: 0=hold, 1=buy (long), 2=sell (flat).
+    Actions: 0=hold, 1=buy (long), 2=sell (flat). ``actions[i]`` sets the
+    position held over ``returns[i]``, and a position change pays the
+    commission on that same return. Until #21187 the function took a price
+    window and paired each action with a return its decision had already
+    read past.
     """
-    n = len(actions)
+    actions = np.asarray(actions)
+    returns = np.asarray(returns, dtype=np.float64)
+    if len(actions) != len(returns):
+        raise ValueError(f"{len(actions)} actions for {len(returns)} returns")
     commission = commission_bps / 10000.0
     position = 0.0
-    portfolio_returns = np.zeros(n, dtype=np.float64)
+    portfolio_returns = np.zeros(len(returns), dtype=np.float64)
 
-    for i in range(1, n):
-        price_ret = (prices[i] - prices[i - 1]) / (prices[i - 1] + 1e-8)
-
-        if actions[i] == 1:
+    for i, action in enumerate(actions):
+        if action == 1:
             target_pos = 1.0
-        elif actions[i] == 2:
+        elif action == 2:
             target_pos = 0.0  # flat
         else:
             target_pos = position
 
         trade_cost = abs(target_pos - position) * commission
-        portfolio_returns[i] = position * price_ret - trade_cost
+        portfolio_returns[i] = target_pos * returns[i] - trade_cost
         position = target_pos
 
     return portfolio_returns
+
+
+def held_positions(actions: np.ndarray) -> np.ndarray:
+    """Position held after each action (1 = long, 0 = flat), starting flat."""
+    positions = np.zeros(len(actions), dtype=np.float64)
+    position = 0.0
+    for i, action in enumerate(actions):
+        if action == 1:
+            position = 1.0
+        elif action == 2:
+            position = 0.0
+        positions[i] = position
+    return positions
+
+
+def count_trades(actions: np.ndarray) -> int:
+    """Position changes, i.e. commissions ``simulate_dt_portfolio`` charges.
+
+    Before #21187 the ablation counted action-label changes: a lone buy
+    between two holds counted twice though it moves the position once, and a
+    buy issued while already long counted though it moves nothing.
+    """
+    positions = held_positions(actions)
+    return int(np.sum(np.diff(np.concatenate([[0.0], positions])) != 0))
+
+
+def score_actions(
+    actions: np.ndarray,
+    returns: np.ndarray,
+    commission_bps: float = 5.0,
+) -> dict:
+    """Metrics shared by the three conditions, on the same aligned returns."""
+    actions = np.asarray(actions, dtype=np.int64)
+    returns = np.asarray(returns, dtype=np.float64)
+    dt_rets = simulate_dt_portfolio(actions, returns, commission_bps=commission_bps)
+    sharpe_dt = compute_sharpe(dt_rets)
+    sharpe_bh = compute_sharpe(returns)
+    # Direction accuracy: a long call is right when the return it drives is up.
+    auc = float(((actions == 1) == (returns > 0)).mean()) if len(actions) else 0.5
+    n_trades = count_trades(actions)
+    # Share of returns held long: C matches A in trades, not in exposure.
+    exposure = float(held_positions(actions).mean()) if len(actions) else 0.0
+    return {
+        "sharpe_dt": round(sharpe_dt, 4),
+        "sharpe_bh": round(sharpe_bh, 4),
+        "delta_sharpe": round(sharpe_dt - sharpe_bh, 4),
+        "auc": round(auc, 4),
+        "n_trades": n_trades,
+        "exposure": round(exposure, 4),
+        "n_preds": int(len(actions)),
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -173,81 +240,97 @@ def compute_train_rtg_p90(
     return float(np.percentile(initial_rtgs, 90))
 
 
+def causal_eval_returns(
+    test_prices: np.ndarray,
+    window: int = 20,
+    context_length: int = 20,
+) -> np.ndarray:
+    """Test returns driven by a DT decision: k -> k+1 for k >= window + context_length."""
+    returns = np.diff(test_prices) / (test_prices[:-1] + 1e-8)
+    return returns[window + context_length:]
+
+
+def realized_rtg_rows(
+    test_prices: np.ndarray,
+    test_features_norm: np.ndarray,
+    window: int = 20,
+    commission_bps: float = 5.0,
+) -> np.ndarray:
+    """Realized RTG of each test row, as ``build_trajectories`` computes it.
+
+    ``rtg[t]`` sums the teacher rewards from row t to the end of the test set:
+    it reads every later price. Condition A feeds it on purpose. Rows before
+    ``window`` carry no trajectory and stay at 0; ``dt_causal_positions``
+    never reads them.
+    """
+    trajs = build_trajectories(
+        test_prices, test_features_norm,
+        window=window, context_length=1,
+        commission=commission_bps / 10000.0,
+    )
+    vals = np.asarray(trajs["rtg"], dtype=np.float32).reshape(-1)
+    rtg = np.zeros(len(test_prices), dtype=np.float32)
+    rtg[window:window + len(vals)] = vals
+    return rtg
+
+
+def causal_condition_actions(
+    model: DecisionTransformerModel,
+    test_prices: np.ndarray,
+    test_features_norm: np.ndarray,
+    rtg_rows: np.ndarray,
+    context_length: int = 20,
+    window: int = 20,
+    device: str = "cpu",
+) -> np.ndarray:
+    """DT actions, one per return of ``causal_eval_returns`` (#21187).
+
+    Wraps ``dt_causal_positions``: the decision that drives return k -> k+1
+    reads states on rows <= k-2 and teacher actions on rows <= k-1. Conditions
+    A and B differ only by ``rtg_rows``, so their gap measures the RTG leak
+    alone. Before #21187 each condition took every window's last argmax and
+    applied it about context_length rows before the window's last state.
+    """
+    positions, first_k = dt_causal_positions(
+        model, test_prices, test_features_norm, window, context_length,
+        rtg_per_step=0.0, batch_size=64, device=device, rtg_rows=rtg_rows,
+    )
+    # dt_causal_positions maps argmax 1 -> +1, 2 -> -1, 0 -> 0: invert it.
+    actions = np.where(positions > 0, 1, np.where(positions < 0, 2, 0))
+    return actions[first_k:].astype(np.int64)
+
+
 def run_condition_a(
     model: DecisionTransformerModel,
-    test_trajs: dict,
     test_prices: np.ndarray,
+    test_features_norm: np.ndarray,
     context_length: int = 20,
     window: int = 20,
     commission_bps: float = 5.0,
     device: str = "cpu",
 ) -> dict:
-    """Condition A: REALIZED-RTG (status quo, leaked).
+    """Condition A: REALIZED-RTG (leaked through the RTG only).
 
-    Runs the exact same eval as L4 sweep lines 238-293.
+    Same causal alignment as condition B; the input RTG is the realized one.
     """
-    model.eval()
-    with torch.no_grad():
-        batches = create_sequence_batches(
-            test_trajs, context_length=context_length, batch_size=64, shuffle=False,
-        )
-        all_preds = []
-        for batch in batches:
-            states = batch["states"].to(device)
-            actions = batch["actions"].to(device)
-            rtg = batch["rtg"].to(device)  # REALIZED RTG (leaked)
-            mask = batch["attention_mask"].to(device)
-            logits = model(states, actions, rtg, attention_mask=mask)
-            preds = logits.argmax(dim=-1)[:, -1].cpu().numpy()
-            all_preds.extend(preds.tolist())
-
-    n_preds = len(all_preds)
-    if n_preds < 10:
-        return {"error": "too few predictions"}
-
-    test_prices_subset = test_prices[window:window + n_preds]
-    if len(test_prices_subset) < n_preds:
-        n_preds = len(test_prices_subset)
-        all_preds = all_preds[:n_preds]
-    test_prices_subset = test_prices_subset[:n_preds]
-
-    dt_rets = simulate_dt_portfolio(
-        test_prices_subset, np.array(all_preds, dtype=np.int64),
+    rtg_rows = realized_rtg_rows(
+        test_prices, test_features_norm, window=window,
         commission_bps=commission_bps,
     )
-    bh_rets = np.diff(test_prices_subset) / (test_prices_subset[:-1] + 1e-8)
-    bh_rets = np.concatenate([[0.0], bh_rets])
-
-    min_len = min(len(dt_rets), len(bh_rets))
-    sharpe_dt = compute_sharpe(dt_rets[:min_len])
-    sharpe_bh = compute_sharpe(bh_rets[:min_len])
-
-    # Direction accuracy
-    actual_dir = (np.diff(test_prices_subset[:min_len]) > 0).astype(int)
-    pred_arr = np.array(all_preds[:len(actual_dir)])
-    if len(pred_arr) >= len(actual_dir):
-        pred_arr = pred_arr[:len(actual_dir)]
-        correct = (pred_arr == 1) == (actual_dir == 1)
-        auc = float(correct.mean()) if len(correct) > 0 else 0.5
-    else:
-        auc = 0.5
-
-    n_trades = int(np.sum(np.diff(all_preds[:min_len]) != 0))
-
-    return {
-        "sharpe_dt": round(sharpe_dt, 4),
-        "sharpe_bh": round(sharpe_bh, 4),
-        "delta_sharpe": round(sharpe_dt - sharpe_bh, 4),
-        "auc": round(auc, 4),
-        "n_trades": n_trades,
-        "n_preds": n_preds,
-    }
+    actions = causal_condition_actions(
+        model, test_prices, test_features_norm, rtg_rows,
+        context_length=context_length, window=window, device=device,
+    )
+    if len(actions) < 10:
+        return {"error": "too few predictions"}
+    returns = causal_eval_returns(test_prices, window, context_length)
+    return score_actions(actions, returns, commission_bps=commission_bps)
 
 
 def run_condition_b(
     model: DecisionTransformerModel,
-    test_trajs: dict,
     test_prices: np.ndarray,
+    test_features_norm: np.ndarray,
     fixed_g: float,
     context_length: int = 20,
     window: int = 20,
@@ -256,84 +339,26 @@ def run_condition_b(
 ) -> dict:
     """Condition B: FIXED-G (constant desired return prompt).
 
-    Replaces ALL rtg values in eval sequences with a single constant
-    `fixed_g`. This removes the realized-future signal while keeping
-    a plausible 'aim high' conditioning.
-
-    Implementation note:
-        - create_sequence_batches returns batch["rtg"] of shape [B, T, 1]
-        - We clone the batch and replace ALL rtg entries with fixed_g.
-        - The model processes the interleaved [rtg_0, state_0, action_0, ...]
-          sequence. By replacing rtg at all positions, every 'return cue'
-          the model sees is identical = no future information.
-        - The prediction at [:, -1] (last timestep) depends on the full
-          context, so even the last-position RTG is constant.
+    Every RTG the model sees is ``fixed_g``: no future information enters
+    through the RTG, and the causal alignment keeps it out of the states and
+    actions too.
     """
-    model.eval()
-    with torch.no_grad():
-        batches = create_sequence_batches(
-            test_trajs, context_length=context_length, batch_size=64, shuffle=False,
-        )
-        all_preds = []
-        for batch in batches:
-            states = batch["states"].to(device)
-            actions = batch["actions"].to(device)
-            # Replace RTG with constant
-            rtg = torch.full_like(batch["rtg"], fixed_g).to(device)
-            mask = batch["attention_mask"].to(device)
-            logits = model(states, actions, rtg, attention_mask=mask)
-            preds = logits.argmax(dim=-1)[:, -1].cpu().numpy()
-            all_preds.extend(preds.tolist())
-
-    n_preds = len(all_preds)
-    if n_preds < 10:
-        return {"error": "too few predictions"}
-
-    test_prices_subset = test_prices[window:window + n_preds]
-    if len(test_prices_subset) < n_preds:
-        n_preds = len(test_prices_subset)
-        all_preds = all_preds[:n_preds]
-    test_prices_subset = test_prices_subset[:n_preds]
-
-    dt_rets = simulate_dt_portfolio(
-        test_prices_subset, np.array(all_preds, dtype=np.int64),
-        commission_bps=commission_bps,
+    rtg_rows = np.full(len(test_prices), fixed_g, dtype=np.float32)
+    actions = causal_condition_actions(
+        model, test_prices, test_features_norm, rtg_rows,
+        context_length=context_length, window=window, device=device,
     )
-    bh_rets = np.diff(test_prices_subset) / (test_prices_subset[:-1] + 1e-8)
-    bh_rets = np.concatenate([[0.0], bh_rets])
-
-    min_len = min(len(dt_rets), len(bh_rets))
-    sharpe_dt = compute_sharpe(dt_rets[:min_len])
-    sharpe_bh = compute_sharpe(bh_rets[:min_len])
-
-    # Direction accuracy
-    actual_dir = (np.diff(test_prices_subset[:min_len]) > 0).astype(int)
-    pred_arr = np.array(all_preds[:len(actual_dir)])
-    if len(pred_arr) >= len(actual_dir):
-        pred_arr = pred_arr[:len(actual_dir)]
-        correct = (pred_arr == 1) == (actual_dir == 1)
-        auc = float(correct.mean()) if len(correct) > 0 else 0.5
-    else:
-        auc = 0.5
-
-    n_trades = int(np.sum(np.diff(all_preds[:min_len]) != 0))
-
-    return {
-        "sharpe_dt": round(sharpe_dt, 4),
-        "sharpe_bh": round(sharpe_bh, 4),
-        "delta_sharpe": round(sharpe_dt - sharpe_bh, 4),
-        "auc": round(auc, 4),
-        "n_trades": n_trades,
-        "n_preds": n_preds,
-        "fixed_g": round(fixed_g, 6),
-    }
+    if len(actions) < 10:
+        return {"error": "too few predictions"}
+    returns = causal_eval_returns(test_prices, window, context_length)
+    result = score_actions(actions, returns, commission_bps=commission_bps)
+    result["fixed_g"] = round(fixed_g, 6)
+    return result
 
 
 def run_condition_c(
-    test_prices: np.ndarray,
+    returns: np.ndarray,
     n_trades_target: int,
-    n_preds: int,
-    window: int = 20,
     commission_bps: float = 5.0,
     seed: int = 42,
 ) -> dict:
@@ -345,13 +370,19 @@ def run_condition_c(
     even with ZERO directional skill (volatility reduction).
 
     Method:
-        1. Compute target trade count from condition A (n_trades_target).
+        1. Compute target trade count from condition A (n_trades_target),
+           counted as position changes (``count_trades``).
         2. Compute target trade probability = n_trades_target / n_preds.
-        3. At each timestep, with that probability, randomly choose
-           action 1 (buy) or 2 (flat). Otherwise hold current position.
-        4. Run simulate_dt_portfolio with these random actions.
+        3. At each timestep, with that probability, flip the position
+           (buy when flat, go flat when long). Otherwise hold.
+        4. Score these actions on the returns of conditions A and B.
+
+    Before #21187 a trade event drew long or flat at random, so about half
+    the events left the position unchanged, and the target and the reported
+    count were action-label changes: A and C were not matched in trades.
     """
     rng = np.random.RandomState(seed + 1000)  # offset seed to decorrelate
+    n_preds = len(returns)
 
     # Compute trade probability
     if n_preds < 2 or n_trades_target < 1:
@@ -361,57 +392,17 @@ def run_condition_c(
 
     # Generate random actions
     random_actions = np.zeros(n_preds, dtype=np.int64)
-    current_pos = 0  # 0=flat, 1=long
+    position = 0
     for i in range(1, n_preds):
         if rng.random() < trade_prob:
-            # Randomly choose to go long or flat
-            new_pos = rng.choice([0, 1])
-            if new_pos == 1:
-                random_actions[i] = 1  # buy
-            else:
-                random_actions[i] = 2  # flat (sell)
-            current_pos = new_pos
+            position = 1 - position
+            random_actions[i] = 1 if position == 1 else 2  # buy / flat (sell)
         else:
             random_actions[i] = 0  # hold
 
-    test_prices_subset = test_prices[window:window + n_preds]
-    if len(test_prices_subset) < n_preds:
-        n_preds = len(test_prices_subset)
-        random_actions = random_actions[:n_preds]
-    test_prices_subset = test_prices_subset[:n_preds]
-
-    rand_rets = simulate_dt_portfolio(
-        test_prices_subset, random_actions,
-        commission_bps=commission_bps,
-    )
-    bh_rets = np.diff(test_prices_subset) / (test_prices_subset[:-1] + 1e-8)
-    bh_rets = np.concatenate([[0.0], bh_rets])
-
-    min_len = min(len(rand_rets), len(bh_rets))
-    sharpe_rand = compute_sharpe(rand_rets[:min_len])
-    sharpe_bh = compute_sharpe(bh_rets[:min_len])
-
-    # Direction accuracy (random baseline)
-    actual_dir = (np.diff(test_prices_subset[:min_len]) > 0).astype(int)
-    pred_arr = random_actions[:len(actual_dir)]
-    if len(pred_arr) >= len(actual_dir):
-        pred_arr = pred_arr[:len(actual_dir)]
-        correct = (pred_arr == 1) == (actual_dir == 1)
-        auc = float(correct.mean()) if len(correct) > 0 else 0.5
-    else:
-        auc = 0.5
-
-    n_trades_actual = int(np.sum(np.diff(random_actions[:min_len]) != 0))
-
-    return {
-        "sharpe_dt": round(sharpe_rand, 4),
-        "sharpe_bh": round(sharpe_bh, 4),
-        "delta_sharpe": round(sharpe_rand - sharpe_bh, 4),
-        "auc": round(auc, 4),
-        "n_trades": n_trades_actual,
-        "n_preds": n_preds,
-        "trade_prob": round(trade_prob, 4),
-    }
+    result = score_actions(random_actions, returns, commission_bps=commission_bps)
+    result["trade_prob"] = round(trade_prob, 4)
+    return result
 
 
 def run_single_ablation(
@@ -521,28 +512,18 @@ def run_single_ablation(
         )
         fixed_g_values.append(fixed_g)
 
-        # Build test trajectories
-        test_trajs = build_trajectories(
-            test_prices, test_features_norm,
-            window=window, context_length=context_length,
-            commission=commission_bps / 10000.0,
-        )
-
-        if len(test_trajs["states"]) <= context_length:
-            continue
-
-        # Condition A: realized RTG (leaked)
+        # Condition A: realized RTG (leaked), causal alignment (#21187)
         res_a = run_condition_a(
-            model, test_trajs, test_prices,
+            model, test_prices, test_features_norm,
             context_length=context_length, window=window,
             commission_bps=commission_bps, device=device,
         )
         if "error" not in res_a:
             fold_results["A"].append(res_a)
 
-        # Condition B: fixed-G
+        # Condition B: fixed-G, same alignment
         res_b = run_condition_b(
-            model, test_trajs, test_prices,
+            model, test_prices, test_features_norm,
             fixed_g=fixed_g,
             context_length=context_length, window=window,
             commission_bps=commission_bps, device=device,
@@ -550,14 +531,10 @@ def run_single_ablation(
         if "error" not in res_b:
             fold_results["B"].append(res_b)
 
-        # Condition C: random timing (needs trade count from A)
-        n_trades_a = res_a.get("n_trades", 10)
-        n_preds_a = res_a.get("n_preds", 100)
+        # Condition C: random timing on the same returns (trade count from A)
         res_c = run_condition_c(
-            test_prices,
-            n_trades_target=n_trades_a,
-            n_preds=n_preds_a,
-            window=window,
+            causal_eval_returns(test_prices, window, context_length),
+            n_trades_target=res_a.get("n_trades", 10),
             commission_bps=commission_bps,
             seed=seed,
         )
@@ -582,12 +559,15 @@ def run_single_ablation(
             "t_stat": round(float(np.mean(deltas) / (np.std(deltas) + 1e-10)), 4),
             "mean_auc": round(float(np.mean(aucs)), 4),
             "mean_trades": int(np.mean(trades)),
+            "mean_exposure": round(float(np.mean([f["exposure"] for f in folds])), 4),
             "n_folds": len(folds),
             "fold_deltas": [round(d, 4) for d in deltas],
         }
 
     agg["fixed_g_mean"] = round(float(np.mean(fixed_g_values)), 6) if fixed_g_values else None
     agg["fixed_g_values"] = [round(g, 6) for g in fixed_g_values]
+    # Fingerprint of the evaluated prices, so a re-run can be compared (#21187).
+    agg["data_sha256"] = hashlib.sha256(prices.tobytes()).hexdigest()[:16]
 
     return agg
 
@@ -884,6 +864,11 @@ def main():
             "context_length": args.context_length,
             "window": args.window,
             "commission_bps": args.commission_bps,
+            "eval_protocol": CAUSAL_EVAL_PROTOCOL,
+            "alignment": (
+                "first decision at row window + context_length; decision k "
+                "reads rows <= k-1 and drives return k -> k+1"
+            ),
         },
         "elapsed_s": round(elapsed, 2),
         "device": device,

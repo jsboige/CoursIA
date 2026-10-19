@@ -17,6 +17,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import check_lane_claim as clc  # noqa: E402
@@ -7028,3 +7030,180 @@ def test_unwrap_reuses_the_traps_organ_predicate():
     from check_gh_comment_traps import classify_payload_body  # noqa: PLC0415
     assert classify_payload_body(_PAYLOAD_19727) is not None
     assert clc._unwrap_trapped_body(_PAYLOAD_19727) == classify_payload_body(_PAYLOAD_19727)
+
+
+# --- #19643 / c.1753 -- timeout= sur _gh_open_prs_with_files ----------------
+
+def test_gh_open_prs_default_timeout_is_60s():
+    """La constante module _GH_OPEN_PRS_TIMEOUT_S defaut 60s, surchargeable
+    par env CHECK_LANE_CLAIM_GH_TIMEOUT. C'est la borne qui protege le tapis
+    du picker (pick_idle_grain.py:2355) contre un appel `gh` lent (rate
+    limit secondaire, backoff silencieux)."""
+    # Defaut observe = 60s (constante module, surcharge env).
+    assert clc._GH_OPEN_PRS_TIMEOUT_S == 60
+
+
+def test_gh_open_prs_timeout_raises_runtime_error(monkeypatch):
+    """Si subprocess.run leve TimeoutExpired, _gh_open_prs_with_files() doit
+    lever un RuntimeError descriptif (pas un TimeoutExpired nu) -- l'appelant
+    picker traduit ca en CLAIM_CODE_ERROR (verdict 'verification
+    indisponible'), jamais un silence."""
+    def fake_run(*args, **kwargs):
+        # Simule un `gh` qui dort au-dela du timeout : leve TimeoutExpired
+        # comme le vrai subprocess.run quand timeout= est depasse.
+        raise subprocess.TimeoutExpired(cmd=kwargs.get("args", ["gh"]), timeout=60)
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    with pytest.raises(RuntimeError) as excinfo:
+        clc._gh_open_prs_with_files()
+    msg = str(excinfo.value)
+    # Le message doit nommer le timeout, le temps, et la variable d'env
+    # pour qu'un operateur en deballage sache quoi faire.
+    assert "timed out" in msg.lower()
+    assert "60s" in msg
+    assert "CHECK_LANE_CLAIM_GH_TIMEOUT" in msg
+
+
+def test_gh_open_prs_timeout_override_via_env(monkeypatch):
+    """La constante _GH_OPEN_PRS_TIMEOUT_S respecte l'env
+    CHECK_LANE_CLAIM_GH_TIMEOUT (utile pour tests + debug operateur)."""
+    monkeypatch.setenv("CHECK_LANE_CLAIM_GH_TIMEOUT", "5")
+    # Recharger le module n'est pas possible ici, mais on verifie que
+    # l'overrride est implemente dans le code source directement.
+    import importlib
+    importlib.reload(clc)
+    try:
+        assert clc._GH_OPEN_PRS_TIMEOUT_S == 5
+    finally:
+        # Recharger sans l'env pour les tests suivants.
+        monkeypatch.delenv("CHECK_LANE_CLAIM_GH_TIMEOUT", raising=False)
+        importlib.reload(clc)
+
+
+def test_gh_open_prs_no_keyword_timeout_does_not_apply(monkeypatch):
+    """Si subprocess.run est appele SANS timeout= (defaut), on ne leve PAS
+    TimeoutExpired artificiellement -- on verifie juste que le timeout=
+    est passe par _gh_open_prs_with_files() au subprocess.run()."""
+    seen_kwargs = {}
+
+    def fake_run(*args, **kwargs):
+        seen_kwargs.update(kwargs)
+        # Simule un succes : retourne un objet avec stdout JSON vide
+        # pour eviter json.JSONDecodeError et returncode=0.
+        return subprocess.CompletedProcess(
+            args=args[0] if args else ["gh"],
+            returncode=0,
+            stdout="[]",
+            stderr="",
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    clc._gh_open_prs_with_files()
+    # La borne doit etre passee au subprocess.run, surchargeable par env.
+    assert seen_kwargs.get("timeout") == clc._GH_OPEN_PRS_TIMEOUT_S
+
+
+def test_gh_open_prs_cache_path_via_env(monkeypatch, tmp_path):
+    """#19643 -- si env CHECK_LANE_CLAIM_OPEN_PRS_JSON pointe sur un JSON
+    valide, _gh_open_prs_with_files() lit le cache et n'appelle PAS
+    subprocess.run. Test : on pose un fichier JSON, on verifie que la
+    fonction retourne le contenu du fichier sans appel `gh` (subprocess.run
+    n'est pas appele)."""
+    cache = tmp_path / "open_prs.json"
+    cache.write_text(json.dumps([{"number": 1, "title": "cached", "body": "",
+                                    "headRefName": "x", "files": []}]),
+                     encoding="utf-8")
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(cache))
+
+    def fail_run(*args, **kwargs):
+        raise AssertionError("subprocess.run was called; cache should win")
+
+    monkeypatch.setattr(clc.subprocess, "run", fail_run)
+    # Recharger le module pour que l'env soit lue.
+    import importlib
+    importlib.reload(clc)
+    try:
+        out = clc._gh_open_prs_with_files()
+        assert out == [{"number": 1, "title": "cached", "body": "",
+                          "headRefName": "x", "files": []}]
+    finally:
+        monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+        importlib.reload(clc)
+
+
+def test_gh_open_prs_cache_missing_falls_back_to_gh(monkeypatch, tmp_path):
+    """#19643 -- si l'env pointe sur un fichier absent, on retombe sur le
+    subprocess `gh` (avec timeout). Pas de corruption silencieuse."""
+    missing = tmp_path / "absent.json"
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(missing))
+
+    calls = []
+
+    def fake_run(*args, **kwargs):
+        calls.append(kwargs.get("timeout"))
+        return subprocess.CompletedProcess(
+            args=["gh"], returncode=0, stdout="[]", stderr=""
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    import importlib
+    importlib.reload(clc)
+    try:
+        out = clc._gh_open_prs_with_files()
+        assert out == []
+        # Le timeout=_GH_OPEN_PRS_TIMEOUT_S doit avoir ete passe.
+        assert calls == [clc._GH_OPEN_PRS_TIMEOUT_S]
+    finally:
+        monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+        importlib.reload(clc)
+
+
+def test_gh_open_prs_cache_corrupt_falls_back_to_gh(monkeypatch, tmp_path):
+    """#19643 -- si l'env pointe sur un JSON corrompu, on retombe sur le
+    subprocess `gh` (avec timeout). Pas de crash silencieux."""
+    cache = tmp_path / "corrupt.json"
+    cache.write_text("{not valid json", encoding="utf-8")
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(cache))
+
+    calls = []
+
+    def fake_run(*args, **kwargs):
+        calls.append("called")
+        return subprocess.CompletedProcess(
+            args=["gh"], returncode=0, stdout="[]", stderr=""
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    import importlib
+    importlib.reload(clc)
+    try:
+        out = clc._gh_open_prs_with_files()
+        assert out == []
+        # Le fallback a bien eu lieu.
+        assert calls == ["called"]
+    finally:
+        monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+        importlib.reload(clc)
+
+
+def test_gh_open_prs_cache_wrong_type_falls_back_to_gh(monkeypatch, tmp_path):
+    """#19643 -- si l'env pointe sur un JSON valide mais pas une liste
+    (ex: dict), on retombe sur le subprocess `gh`. Pas de corruption."""
+    cache = tmp_path / "wrong_type.json"
+    cache.write_text(json.dumps({"not": "a list"}), encoding="utf-8")
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(cache))
+
+    def fake_run(*args, **kwargs):
+        return subprocess.CompletedProcess(
+            args=["gh"], returncode=0, stdout="[]", stderr=""
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    import importlib
+    importlib.reload(clc)
+    try:
+        out = clc._gh_open_prs_with_files()
+        assert out == []
+    finally:
+        monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+        importlib.reload(clc)
