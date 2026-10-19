@@ -2,6 +2,8 @@
 
 Descriptions par catégorie des projets de trading algorithmique. Pour le tableau de performance résumé, voir [README.md](README.md).
 
+> **Dossiers sans fiche ici.** Les dossiers présents sur disque mais sans verdict de backtest classant (évaluations en cours de stratégies publiques ou d'articles, benchmarks et corrélations d'appui, documentation interne) sont listés dans la section [« Livrables en attente de classement »](README.md#livrables-en-attente-de-classement-pr%C3%A9sents-sur-disque-non-encore-d%C3%A9partis-par-robustesse) du README — ils n'ont pas de fiche détaillée tant que leur classement par robustesse n'est pas établi (#17526).
+
 > **Lecture vérifiée sous frais réels (#1630, 2018-2025).** Les Sharpes ci-dessous sont des valeurs **catalogue (pré-frais, fenêtres variables)**. La campagne #1630 a re-vérifié 36+ stratégies sous frais IBKR réels sur une fenêtre alignée 2018-2025 — plusieurs s'effondrent, d'autres tiennent :
 
 | Stratégie | Sharpe catalogue | Sharpe aligné | Verdict |

@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,translate_policy
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-24754727,markdown,fr,d9a0efea8a865564,"# FT-01 : Introduction au Fine-Tuning
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-24754727,markdown,fr,a542f115c3c7c31b,"# FT-01 : Introduction au Fine-Tuning
 **Navigation** : [Index](README.md) | [<< 00d — QLoRA SOTA](FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb) | [02 — QLoRA >>](FT-02-QLoRA-Quantization-Python.ipynb)
 
 **Objectif** : Comprendre les trois approches de fine-tuning (complet, partiel, LoRA) et mettre en pratique LoRA sur un petit modèle de texte.
@@ -13,7 +13,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,ce
 
 **Materiel requis** : GPU avec ~4 Go VRAM (GPT-2 = 124M params).
 
-**Ou vous etes dans la serie** : FT-01 pose les trois approches (complet, partiel, LoRA) et pousse un LoRA jusqu'a la generation comparee avant/apres ; FT-02 (QLoRA) ajoute la quantization 4 bits pour entrainer la ou la VRAM manque. Si vous avez deja fait tourner un `Trainer` Hugging Face, l'interet de ce notebook est la **mesure chiffree de chaque approche** : parametres entrainables, taille d'adaptateur, temps d'entrainement, et une comparaison causale avant/apres a prompt et graine fixes.
+**Ou vous etes dans la serie** : FT-01 pose les trois approches (complet, partiel, LoRA) et pousse un LoRA jusqu'a la generation comparee avant/après ; FT-02 (QLoRA) ajoute la quantization 4 bits pour entraîner la ou la VRAM manque. Si vous avez déjà fait tourner un `Trainer` Hugging Face, l'intérêt de ce notebook est la **mesure chiffree de chaque approche** : paramètres entrainables, taille d'adaptateur, temps d'entraînement, et une comparaison causale avant/après a prompt et graine fixes.
 
 **Ce que vous saurez faire a la sortie** : choisir une approche de fine-tuning selon votre budget GPU, lire un rapport `trainable params:` de PEFT, et juger honnetement si un fine-tuning a transfere le style vise (plutot que de vous fier a une impression).","# FT-01: Introduction to Fine-Tuning
 **Navigation**: [Index](README.md) | [<< 00d — QLoRA SOTA](FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb) | [02 — QLoRA >>](FT-02-QLoRA-Quantization-Python.ipynb)
@@ -31,7 +31,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,ce
 
 **Where you are in the series**: FT-01 lays out the three approaches (full, partial, LoRA) and pushes a LoRA all the way to the compared before/after generation; FT-02 (QLoRA) adds 4-bit quantization to train where VRAM runs short. If you have already run a Hugging Face `Trainer`, the value of this notebook is the **quantified measurement of each approach**: trainable parameters, adapter size, training time, and a causal before/after comparison at fixed prompt and seed.
 
-**What you will be able to do at the end**: choose a fine-tuning approach to fit your GPU budget, read a PEFT `trainable params:` report, and honestly judge whether a fine-tuning transferred the target style (rather than trusting an impression).",,,,,,,d9a0efea8a865564,636ba71c4f1f907e,,,,,,,
+**What you will be able to do at the end**: choose a fine-tuning approach to fit your GPU budget, read a PEFT `trainable params:` report, and honestly judge whether a fine-tuning transferred the target style (rather than trusting an impression).",,,,,,,a542f115c3c7c31b,636ba71c4f1f907e,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-2853ccbc,code,fr,253239aabdbd5220,"import torch
 import os
 import gc
@@ -64,7 +64,7 @@ Pre-trained models (foundation models) are capable of general tasks, but lack sp
 | Reducing hallucinations | A specialized model makes fewer errors in its domain |
 
 **Example**: GPT-2 generates generic English text. After fine-tuning on 19th-century French texts, it can imitate this specific style.",,,,,,,2bea8ccfd1ce5bc5,759321485cbcd2ce,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-8791918c,markdown,fr,fa97ca41f6d50fe4,"## 2. Trois approches de fine-tuning
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-8791918c,markdown,fr,dac44ddd398084c6,"## 2. Trois approches de fine-tuning
 
 ### 2a. Full Fine-Tuning
 
@@ -78,9 +78,9 @@ Tous les paramètres du modèle sont mis a jour.
 
 On gele les couches inferieures et n'entraine que les dernières.
 
-- **Avantage** : Moins de paramètres a entrainer, plus rapide
+- **Avantage** : Moins de paramètres a entraîner, plus rapide
 - **Inconvenient** : Adaptation limitee, pas de modification des representations profondes
-- **Usage** : Quand le domaine d'application est proche du pre-entrainement
+- **Usage** : Quand le domaine d'application est proche du pre-entraînement
 
 ### 2c. LoRA (Low-Rank Adaptation)
 
@@ -132,7 +132,7 @@ $$h = Wx + \Delta W x = Wx + BAx$$
 
 where $B \in \mathbb{R}^{d \times r}$, $A \in \mathbb{R}^{r \times k}$, and $r \ll \min(d, k)$.
 
-The rank $r$ (typically 4-64) controls the expressiveness/efficiency trade-off.",,,,,,,fa97ca41f6d50fe4,daa299ad6401c0d3,,,,,,,
+The rank $r$ (typically 4-64) controls the expressiveness/efficiency trade-off.",,,,,,,dac44ddd398084c6,daa299ad6401c0d3,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-dfcac0ae,markdown,fr,2c4a2b2247d54447,"## 3. Comparaison des paramètres entrainables
 
 La théorie de la section 2 annonçait ~0,5 % de paramètres entraînables pour LoRA contre 100 % pour le full fine-tuning — vérifions-le sur un modèle réel. Le nombre de paramètres entraînables est la grandeur qui détermine tout le reste : la VRAM consommée pendant l'entraînement (chaque paramètre déroulé porte en plus son gradient et son état d'optimiseur, soit ~3-4× sa taille en fp16/fp32), le coût de stockage du résultat, et la vitesse de convergence.
@@ -206,19 +206,19 @@ print(f""{'Full Fine-Tuning':<20} {full_trainable:>15,} {total:>15,} {100.0:>7.2
 print(f""{'Partial (2 couches)':<20} {partial_trainable:>15,} {total:>15,} {partial_trainable/total*100:>7.2f}%"")
 print(f""{'LoRA (r=8)':<20} {lora_trainable:>15,} {total:>15,} {lora_trainable/total*100:>7.2f}%"")
 print(f""\nRatio LoRA/Full = {lora_trainable/full_trainable*100:.2f}%"")",,,,,,,,2a6b8b86c76a11fd,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-2c50759f,markdown,fr,d1a0ac2e2c6bcbf1,"## 4. LoRA en pratique : Fine-tuning sur un style litteraire
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-2c50759f,markdown,fr,8ac3ed57ea694f2a,"## 4. LoRA en pratique : Fine-tuning sur un style litteraire
 
 Nous allons fine-tuner GPT-2 pour generer du texte dans le style de Victor Hugo. Le dataset est un extrait des *Miserables* (domaine public).
 
 Le choix de ce corpus est délibéré à des fins pédagogiques : le registre littéraire du XIXe siècle (phrases longues, vocabulaire archaïsant, tournures descriptives) contraste violemment avec le pré-entraînement de GPT-2 (anglais d'internet contemporain), ce qui rend le transfert de style *visible* à l'œil nu dans les générations. Le corpus est aussi volontairement minuscule (7 segments) — suffisant pour observer un changement de registre en quelques secondes de calcul sur un GPU, trop petit pour un pastiche convaincant. L'objectif est de mettre en évidence le mécanisme, pas de produire un modèle utilisable.
 
-Le protocole est volontairement **petit et reproductible** : 7 segments d'entrainement, un adaptateur r=8, une dizaine d'epochs. L'objectif n'est pas de produire un modele utile, mais de rendre chaque etape observable en quelques secondes sur un GPU grand public -- et de donner un point de comparaison honnete quand, dans FT-02, le meme exercice sera rejoue sous contrainte de VRAM.","## 4. LoRA in practice: fine-tuning on a literary style
+Le protocole est volontairement **petit et reproductible** : 7 segments d'entraînement, un adaptateur r=8, une dizaine d'epochs. L'objectif n'est pas de produire un modèle utile, mais de rendre chaque étape observable en quelques secondes sur un GPU grand public -- et de donner un point de comparaison honnete quand, dans FT-02, le même exercice sera rejoue sous contrainte de VRAM.","## 4. LoRA in practice: fine-tuning on a literary style
 
 We will fine-tune GPT-2 to generate text in the style of Victor Hugo. The dataset is an excerpt from *Les Miserables* (public domain).
 
 The choice of this corpus is deliberate for pedagogical purposes: the 19th-century literary register (long sentences, archaizing vocabulary, descriptive turns of phrase) contrasts violently with GPT-2's pre-training (contemporary internet English), which makes the style transfer *visible* to the naked eye in the generations. The corpus is also deliberately tiny (7 segments) — enough to observe a register change in a few seconds of compute on a GPU, too small for a convincing pastiche. The goal is to make the mechanism visible, not to produce a usable model.
 
-The protocol is deliberately **small and reproducible**: 7 training segments, an r=8 adapter, ten-odd epochs. The objective is not to produce a useful model, but to make every step observable in seconds on a consumer GPU — and to give an honest reference point when, in FT-02, the same exercise is replayed under VRAM constraint.",,,,,,,d1a0ac2e2c6bcbf1,1d297f80fc5c0fe3,,,,,,,
+The protocol is deliberately **small and reproducible**: 7 training segments, an r=8 adapter, ten-odd epochs. The objective is not to produce a useful model, but to make every step observable in seconds on a consumer GPU — and to give an honest reference point when, in FT-02, the same exercise is replayed under VRAM constraint.",,,,,,,8ac3ed57ea694f2a,1d297f80fc5c0fe3,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-09a20769,code,fr,0f43b1e3f12bedeb,"from datasets import Dataset
 
 # Extrait des Miserables (Victor Hugo, domaine public)
@@ -275,7 +275,7 @@ def tokenize_function(examples):
 
 tokenized_dataset = train_data.map(tokenize_function, batched=True, remove_columns=[""text""])
 print(f""Tokens par exemple : {len(tokenized_dataset[0]['input_ids'])}"")",,,,,,,,e81510bc91afa4ec,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-5eae637f,markdown,fr,37d5e47f71bf8eac,Le dataset est tokenise avec un padding uniforme a 256 tokens. Chaque exemple contient les `input_ids` et les `labels` (copie des input_ids pour le causal language modeling). Nous allons maintenant configurer l'adaptateur LoRA et lancer l'entrainement.,The dataset is tokenized with uniform padding to 256 tokens. Each example contains the `input_ids` and the `labels` (a copy of the input_ids for causal language modeling). We will now configure the LoRA adapter and start training.,,,,,,,37d5e47f71bf8eac,8f890d6c97ce4011,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-5eae637f,markdown,fr,064894b6b9696557,Le dataset est tokenise avec un padding uniforme a 256 tokens. Chaque exemple contient les `input_ids` et les `labels` (copie des input_ids pour le causal language modeling). Nous allons maintenant configurer l'adaptateur LoRA et lancer l'entraînement.,The dataset is tokenized with uniform padding to 256 tokens. Each example contains the `input_ids` and the `labels` (a copy of the input_ids for causal language modeling). We will now configure the LoRA adapter and start training.,,,,,,,064894b6b9696557,8f890d6c97ce4011,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-565b5293,code,fr,a31e15f2e40dc06e,"import warnings
 # Warnings benins torch (desiquilibre multi-GPU, NCCL absent sous Windows) : leur message
 # embarque un chemin site-packages machine
@@ -419,15 +419,15 @@ if torch.cuda.is_available():
     print(f""VRAM libre : {torch.cuda.mem_get_info()[0] / 1e9:.1f} Go"")
 else:
     print(""Nettoyage termine"")",,,,,,,,2718db4d40bafc80,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-f59529da,markdown,fr,8d2566d34aeca10f,"## 8. Exercices
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-f59529da,markdown,fr,e2e0af4e70310a95,"## 8. Exercices
 
 Appliquez les concepts de ce notebook.
 
-Chaque exercice reutilise une cellule du corps du notebook comme point d'appui : l'exercice 1 reprend le tableau de la section 3 (les 294 912 parametres de r=8 ne sont qu'un point de la courbe), l'exercice 2 remplace le corpus de la section 4, l'exercice 3 fait varier le learning rate autour de la perte finale mesuree en section 4. Les stubs s'executent sans erreur : ils affichent un message d'attente et rendent la main.","## 8. Exercises
+Chaque exercice reutilise une cellule du corps du notebook comme point d'appui : l'exercice 1 reprend le tableau de la section 3 (les 294 912 paramètres de r=8 ne sont qu'un point de la courbe), l'exercice 2 remplace le corpus de la section 4, l'exercice 3 fait varier le learning rate autour de la perte finale mesuree en section 4. Les stubs s'executent sans erreur : ils affichent un message d'attente et rendent la main.","## 8. Exercises
 
 Apply the concepts from this notebook.
 
-Each exercise reuses a cell from the notebook body as its anchor: exercise 1 revisits the table from section 3 (the 294,912 parameters of r=8 are just one point on the curve), exercise 2 swaps in the corpus of section 4, exercise 3 varies the learning rate around the final loss measured in section 4. The stubs run without error: they print a waiting message and return control.",,,,,,,8d2566d34aeca10f,cd4f5d784f1b825b,,,,,,,
+Each exercise reuses a cell from the notebook body as its anchor: exercise 1 revisits the table from section 3 (the 294,912 parameters of r=8 are just one point on the curve), exercise 2 swaps in the corpus of section 4, exercise 3 varies the learning rate around the final loss measured in section 4. The stubs run without error: they print a waiting message and return control.",,,,,,,e2e0af4e70310a95,cd4f5d784f1b825b,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-4102f87c,code,fr,40a3b60642fa742e,"# Exercice 1 : Exploration du rang LoRA
 # TODO etudiant : Creez 3 configurations LoRA avec r=2, r=8, r=32
 # et comparez le nombre de parametres entrainables pour chacune.
@@ -440,22 +440,22 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,ce
 # Observez comment le style de generation change.
 
 print(""Exercice a completer : fine-tunez sur un style different"")",,,,,,,,165be5bb72fe6930,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-70d4b526,markdown,fr,7789f8e75f63bd11,"### Exercice 3 : Hyperparametres d'entrainement
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-70d4b526,markdown,fr,b606ab722655c604,"### Exercice 3 : Hyperparamètres d'entraînement
 
 Le *learning rate* est l'hyperparametre le plus sensible du fine-tuning. Un LR trop faible = convergence lente, un LR trop eleve = divergence et degradation du modèle. Testez différentes valeurs pour trouver le point optimal.
 
-**Point de reference mesure** : avec la configuration du corps du notebook (10 epochs, batch 2), la perte finale mesuree est de **5.0025** (12,3 s sur la machine d'execution, valeur machine-dependante) -- c'est la valeur a battre (ou a degrader volontairement) en faisant varier le learning rate. Un `learning_rate` trop eleve fait typiquement diverger la perte au-dela de cette reference des les premiers steps, un taux trop faible la laisse stagner sans l'atteindre.","### Exercise 3: Training Hyperparameters
+**Point de reference mesure** : avec la configuration du corps du notebook (10 epochs, batch 2), la perte finale mesuree est de **4.8410** (4,2 s sur la machine d'exécution, valeur machine-dependante) -- c'est la valeur a battre (ou a degrader volontairement) en faisant varier le learning rate. Un `learning_rate` trop eleve fait typiquement diverger la perte au-dela de cette reference des les premiers steps, un taux trop faible la laisse stagner sans l'atteindre.","### Exercise 3: Training Hyperparameters
 
 The *learning rate* is the most sensitive hyperparameter in fine-tuning. An LR that is too low = slow convergence, an LR that is too high = divergence and degradation of the model. Test different values to find the optimal point.
 
-**Measured reference point**: with the configuration from the body of the notebook (10 epochs, batch 2), the final loss measured is **5.0025** (12.3 s on the execution machine, machine-dependent value) -- this is the value to beat (or to degrade deliberately) by varying the learning rate. A `learning_rate` that is too high typically makes the loss diverge beyond this reference from the very first steps, while a rate that is too low leaves it stagnating without reaching it.",,,,,,,7789f8e75f63bd11,cc247c9f8debb4dd,,,,,,,
+**Measured reference point**: with the configuration from the body of the notebook (10 epochs, batch 2), the final loss measured is **4.8410** (4.2 s on the execution machine, machine-dependent value) -- this is the value to beat (or to degrade deliberately) by varying the learning rate. A `learning_rate` that is too high typically makes the loss diverge beyond this reference from the very first steps, while a rate that is too low leaves it stagnating without reaching it.",,,,,,,b606ab722655c604,cc247c9f8debb4dd,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-fc5cb509,code,fr,4daa1488050f4257,"# Exercice 3 : Impact du learning rate
 # TODO etudiant : Entrainnez avec learning_rate = 1e-5, 5e-4, 1e-3.
 # Observez la perte finale et la qualite de generation.
 # Que se passe-t-il avec un learning rate trop eleve ?
 
 print(""Exercice a completer : comparez les learning rates"")",,,,,,,,4daa1488050f4257,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-ebb412ad,markdown,fr,a34405ce818798e5,"## Resume
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-ebb412ad,markdown,fr,21f4f07539a903ea,"## Resume
 
 | Approche | Params entrainables | VRAM requise | Stockage adaptateur |
 |----------|--------------------:|-------------:|--------------------:|
@@ -463,7 +463,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,ce
 | Partial (2 couches) | **42,41 %** (52 773 120) | ~1.5x taille modèle | Couches modifiees |
 | **LoRA (r=8)** | **0,24 %** (294 912) | **~1.1x taille modèle** | **1,18 Mo** |
 
-**Points cles** :
+**Points clés** :
 - LoRA decompose la mise a jour en matrices de bas rang $B \times A$ ou $r \ll d, k$
 - Seuls 0,24 % des paramètres sont entraines (mesure section 3 ; `trainable%: 0.2364` cote PEFT) ; ce notebook n'execute pas de full fine-tuning de comparaison, aucune parité de qualité n'est donc mesurée ici
 - Les adaptateurs sont portables : un seul modèle de base + N adaptateurs pour N tâches
@@ -471,7 +471,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,ce
 
 **Prochaines étapes** (FT-02) : LoRA sur un modèle plus grand avec quantization 4-bit (QLoRA).
 
-**Ce que ce notebook a mesure, pas seulement annonce** : 124 439 808 parametres totaux pour GPT-2 ; 294 912 parametres entrainables en LoRA r=8 (0,24 %, `trainable%: 0.2364` cote PEFT) ; un adaptateur de **1,18 Mo** contre **497,8 Mo** pour le modele complet ; et, dans ce tirage commite, une generation apres fine-tuning majoritairement en francais -- l'anglais du pre-entrainement y recule sans etre evacue totalement -- la ou le modele original basculait en anglais : contraste indicatif faute de re-echantillonnage controle (cf. la reserve de la section 5). La suite logique est FT-02 : quantizer le modele de base en 4 bits (QLoRA) pour entrainer ces memes adaptateurs sur une fraction de la VRAM.","## Summary
+**Ce que ce notebook a mesure, pas seulement annonce** : 124 439 808 paramètres totaux pour GPT-2 ; 294 912 paramètres entrainables en LoRA r=8 (0,24 %, `trainable%: 0.2364` cote PEFT) ; un adaptateur de **1,18 Mo** contre **497,8 Mo** pour le modèle complet ; et, dans ce tirage commite, une generation après fine-tuning qui tient le francais de bout en bout -- un mot anglais isole y affleure au premier prompt -- la ou le modèle original basculait en anglais : contraste indicatif faute de re-echantillonnage contrôlé (cf. la reserve de la section 5). La suite logique est FT-02 : quantizer le modèle de base en 4 bits (QLoRA) pour entraîner ces mêmes adaptateurs sur une fraction de la VRAM.","## Summary
 
 | Approach | Trainable params | Required VRAM | Adapter storage |
 |----------|--------------------:|-------------:|--------------------:|
@@ -487,8 +487,8 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,ce
 
 **Next steps** (FT-02): LoRA on a larger model with 4-bit quantization (QLoRA).
 
-**What this notebook measured, not merely announced**: 124,439,808 total parameters for GPT-2; 294,912 trainable parameters with LoRA r=8 (0.24%, `trainable%: 0.2364` on the PEFT side); a **1.18 MB** adapter against **497.8 MB** for the full model; and, in this committed run, a post-fine-tuning generation that is mostly in French -- the English of the pre-training recedes there without being fully eliminated -- where the original model switched to English: an indicative contrast, absent a controlled re-sampling (cf. the caveat in section 5). The logical next step is FT-02: quantizing the base model to 4 bits (QLoRA) in order to train those same adapters on a fraction of the VRAM.",,,,,,,a34405ce818798e5,ecc1a72af6878dfa,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,b4fb8592,markdown,fr,c9f26e2387fd9d5a,"# FT-02 : QLoRA — Fine-Tuning avec Quantization
+**What this notebook measured, not merely announced**: 124,439,808 total parameters for GPT-2; 294,912 trainable parameters with LoRA r=8 (0.24%, `trainable%: 0.2364` on the PEFT side); a **1.18 MB** adapter against **497.8 MB** for the full model; and, in this committed run, a post-fine-tuning generation whose first prompt stays French-dominant while the second opens in French and then slides into an English dialogue -- where the original model switched to English immediately: a fragile, indicative contrast at best, absent controlled re-sampling (cf. the caveat in section 5). The logical next step is FT-02: quantizing the base model to 4 bits (QLoRA) in order to train those same adapters on a fraction of the VRAM.",,,,,,,21f4f07539a903ea,ecc1a72af6878dfa,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,b4fb8592,markdown,fr,190f0b085f3127dd,"# FT-02 : QLoRA — Fine-Tuning avec Quantization
 **Navigation** : [Index](README.md) | [<< 01 — Introduction](FT-01-Introduction-FineTuning-Python.ipynb) | [03 — SFT >>](FT-03-Supervised-FineTuning-SFT-Python.ipynb)
 
 **Objectif** : Comprendre la quantization 4-bit (NF4) et l'approche QLoRA qui combine quantization + LoRA pour fine-tuner des modèles jusqu'a 7B params sur un GPU consumer.
@@ -499,7 +499,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,b4fb859
 3. BitsAndBytesConfig en pratique
 4. La mécanique LoRA que l'API enveloppe
 5. QLoRA : quantized base + LoRA adapters
-6. Entrainement QLoRA sur OPT-1.3B
+6. Entraînement QLoRA sur OPT-1.3B
 7. Generation avec le modèle QLoRA
 8. Comparaison LoRA vs QLoRA
 9. Nettoyage memoire GPU
@@ -532,7 +532,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,b4fb859
 
 **Required hardware**: GPU with ~8 GB VRAM (QLoRA OPT-1.3B 4-bit = ~2 GB).
 
-**Reading the committed output**: the next cell prints the full environment (PyTorch version, GPU, VRAM) -- its committed output is the single source of truth, the prose will no longer re-pin it (#9434). Here, a cu12x environment on an RTX 3080 Ti Laptop, ~17 GB of total VRAM of which ~16 GB free at startup. This notebook's pedagogical paradox: this card would hold OPT-1.3B in FP16 without any difficulty (4.03 GB measured further down, section 8). It is not this card that justifies QLoRA — it is generalization: the same recipe that holds a 1.3B model in ~1.7 GB will hold a 7B model in ~6 GB, on a 300-euro card. The notebook walks through the full chain: NF4 quantization (section 2), hand-written LoRA mechanics (section 4), LoRA grafting via the API (section 5), real measured training (section 6), before/after generation (section 7), and the FP16 vs 4-bit memory comparison (section 8).",,,,,,,c9f26e2387fd9d5a,c92e903f731754b9,,,,,,,
+**Reading the committed output**: the next cell prints the full environment (PyTorch version, GPU, VRAM) -- its committed output is the single source of truth, the prose will no longer re-pin it (#9434). Here, a cu12x environment on an RTX 3080 Ti Laptop, ~17 GB of total VRAM of which ~16 GB free at startup. This notebook's pedagogical paradox: this card would hold OPT-1.3B in FP16 without any difficulty (4.03 GB measured further down, section 8). It is not this card that justifies QLoRA — it is generalization: the same recipe that holds a 1.3B model in ~1.7 GB will hold a 7B model in ~6 GB, on a 300-euro card. The notebook walks through the full chain: NF4 quantization (section 2), hand-written LoRA mechanics (section 4), LoRA grafting via the API (section 5), real measured training (section 6), before/after generation (section 7), and the FP16 vs 4-bit memory comparison (section 8).",,,,,,,190f0b085f3127dd,c92e903f731754b9,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,482ed3ca,code,fr,95897469a10222a1,"import gc
 import os
 import time
@@ -606,7 +606,7 @@ LoRA reduces gradients and the optimizer (only the adapters are trained), but th
 **QLoRA** goes further: it **quantizes the model weights to 4-bit** while keeping computations at higher precision.
 
 **The real numbers read in section 8**: loading OPT-1.3B in FP16 exceeds the weights-only theory, because CUDA buffers and residual context also count. But loading is not fine-tuning: a full fine-tuning additionally requires gradients and Adam optimizer states. This triple tax is what LoRA (gradients on adapters only) then QLoRA (4-bit base weights) reduce. The observed values stay in the outputs so that the prose does not freeze a measurement specific to one machine.",,,,,,,91453d73f65c0b70,a121beb41980a311,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,6dd153f7,markdown,fr,eab90c19172f71a2,"## 2. Quantization : de FP16 a NF4
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,6dd153f7,markdown,fr,7e9ce06e7123a30a,"## 2. Quantization : de FP16 a NF4
 
 ### 2a. Principe de la quantization
 
@@ -619,12 +619,12 @@ FP32 (32 bits) → FP16 (16 bits) → INT8 (8 bits) → NF4 (4 bits)
 
 ### 2b. Pourquoi NF4 et pas un simple INT4 ?
 
-Les poids des reseaux de neurones suivent une distribution **approximativement normale** (centree sur 0). Un encodage lineaire INT4 gaspille des valeurs possibles :
+Les poids des réseaux de neurones suivent une distribution **approximativement normale** (centree sur 0). Un encodage lineaire INT4 gaspille des valeurs possibles :
 
 - **INT4** : valeurs uniformement reparties sur [-8, 7] → regions denses de la distribution mal representees
 - **NF4 (NormalFloat 4)** : valeurs optimisees pour une distribution normale → chaque quantile represente une fraction egale de la distribution
 
-NF4 = le format optimal théorique pour les poids de reseaux de neurones (Dettmers et al., 2023).
+NF4 = le format optimal théorique pour les poids de réseaux de neurones (Dettmers et al., 2023).
 
 ### 2c. Double quantization
 
@@ -657,7 +657,7 @@ QLoRA also applies **double quantization**: the quantization constants (scaling 
 
 
 **Why NF4 rather than INT4?** The weights of a trained network are distributed according to an approximately Gaussian law, centered with thin tails -- whereas INT4 slices that interval into 16 uniformly spaced levels. The result: the bulk of the weights, concentrated around zero, piles up on 4-5 levels while the extreme levels (extremely rare) waste their share of the range. NF4 (*NormalFloat4*) instead builds its 16 levels on the **quantiles** of the normal law: each level carries roughly the same mass of weights, information is spread where it is dense. It is this choice of grid -- and not the number of bits -- that explains the ""Quality ~97-99% of full fine-tuning"" line of the final table. The double quantization added here (`bnb_4bit_use_double_quant=True`) compresses the quantization constants themselves into 8 bits: ~0.37 bit saved per parameter, measurable in exercise 3.
-",,,,,,,eab90c19172f71a2,89387b35f5753eb4,,,,,,,
+",,,,,,,7e9ce06e7123a30a,89387b35f5753eb4,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,181e3df5,markdown,fr,b835e6ad9bbed3ff,"## 3. BitsAndBytesConfig en pratique
 
 La bibliotheque `bitsandbytes` integre la quantization directement dans le chargement du modèle via `transformers`.
@@ -747,9 +747,9 @@ model_qlora.print_trainable_parameters()
 trainable = sum(p.numel() for p in model_qlora.parameters() if p.requires_grad)
 total = sum(p.numel() for p in model_qlora.parameters())
 print(f""\nParams entrainables : {trainable:,} ({trainable/total*100:.2f}%)"")",,,,,,,,4d27609302498283,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,464aab75,markdown,fr,efda1c32c642dbce,"### Tokenisation du modèle
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,464aab75,markdown,fr,17c0d753c3da0fe7,"### Tokenisation du modèle
 
-Le modèle OPT-1.3B est maintenant charge en 4-bit avec les adaptateurs LoRA configures (r=16, target q_proj/v_proj). Chargeons le tokenizer associe pour preparer le dataset d'entrainement.
+Le modèle OPT-1.3B est maintenant charge en 4-bit avec les adaptateurs LoRA configures (r=16, target q_proj/v_proj). Chargeons le tokenizer associe pour preparer le dataset d'entraînement.
 
 
 **La décomposition exacte du comptage** : 3 145 728 paramètres entraînables — d'où vient ce nombre ? OPT-1.3B compte 24 couches de décodeur, chacune portant deux projections ciblées (`q_proj` et `v_proj`, dimensions 2048×2048). Chaque adaptateur LoRA de rang r sur une couche 2048→2048 ajoute r×(2048+2048) = 4096r paramètres. Total : 24 couches × 2 modules × 4096 × r = 196 608 × r. Pour r = 16 : exactement 3 145 728 — la sortie committée vérifie la formule au paramètre près. Sur le dénominateur canonique de 1,32 Md (PEFT), cela fait 0,24 % du modèle entraînable, un rapport de 419 pour 1 : 99,76 % des poids restent figés en NF4. Le « 0.44 % » affiché par la cellule divise par le dénominateur sous-compté de la cellule précédente (711 M) — lisez le 0,2385 % de PEFT.","### Model tokenization
@@ -758,12 +758,12 @@ The OPT-1.3B model is now loaded in 4-bit with the LoRA adapters configured (r=1
 
 
 **The exact breakdown of the count**: 3,145,728 trainable parameters -- where does that number come from? OPT-1.3B has 24 decoder layers, each carrying two targeted projections (`q_proj` and `v_proj`, dimensions 2048x2048). Each rank-r LoRA adapter on a 2048->2048 layer adds r x (2048+2048) = 4096r parameters. Total: the 24 decoder layers, with two targeted projections each, give 24 x 2 x 4096 x r = 196,608 x r. For r = 16: exactly 3,145,728 -- the committed output verifies the formula to the parameter. Against the canonical denominator of 1.32B (PEFT), that is 0.24% of the model trainable, a ratio of 419 to 1: 99.76% of the weights stay frozen in NF4. The ""0.44%"" displayed by the cell divides by the undercounted denominator of the previous cell (711M) -- read PEFT's 0.2385%.
-",,,,,,,efda1c32c642dbce,fc4101b1f43902d4,,,,,,,
+",,,,,,,17c0d753c3da0fe7,fc4101b1f43902d4,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,a0b80355,code,fr,eb0b8741da2602cf,"# Tokenizer
 tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 tokenizer.pad_token = tokenizer.eos_token
 print(f""Tokenizer : vocabulaire = {tokenizer.vocab_size:,} tokens"")",,,,,,,,eb0b8741da2602cf,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,1fb4824c,markdown,fr,27bdf2e76b540b18,"## 6. Entrainement QLoRA sur OPT-1.3B
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,1fb4824c,markdown,fr,8ba356bcdb7f3318,"## 6. Entraînement QLoRA sur OPT-1.3B
 
 Fine-tunons OPT-1.3B sur du texte francais litteraire, le même type de dataset que FT-01.
 
@@ -772,7 +772,7 @@ Fine-tunons OPT-1.3B sur du texte francais litteraire, le même type de dataset 
 
 Let's fine-tune OPT-1.3B on French literary text, the same type of dataset as FT-01.
 
-**What the committed output measures**: the final loss, the run duration and the VRAM peak are printed directly by the training cell. The peak adds only a fraction of the load-only footprint: gradients and optimizer states apply to the LoRA parameters, not to the billion frozen weights. The `paged_adamw_8bit` optimizer, visible in the arguments, completes the setup by storing its states in 8 bits. On this tiny corpus, the loss describes a stylistic imprint, not a mastery of the language; the generation below lets you read this trade-off.",,,,,,,27bdf2e76b540b18,66f2d00240643ed5,,,,,,,
+**What the committed output measures**: the final loss, the run duration and the VRAM peak are printed directly by the training cell. The peak adds only a fraction of the load-only footprint: gradients and optimizer states apply to the LoRA parameters, not to the billion frozen weights. The `paged_adamw_8bit` optimizer, visible in the arguments, completes the setup by storing its states in 8 bits. On this tiny corpus, the loss describes a stylistic imprint, not a mastery of the language; the generation below lets you read this trade-off.",,,,,,,8ba356bcdb7f3318,66f2d00240643ed5,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ce505cf2,code,fr,1e5bc967ca72a52e,"from datasets import Dataset
 
 # Extrait elargi — texte francais classique (domaine public)
@@ -844,7 +844,7 @@ def tokenize_function(examples):
 tokenized_dataset = train_data.map(tokenize_function, batched=True, remove_columns=[""text""])
 print(f""Tokens par exemple : {len(tokenized_dataset[0]['input_ids'])}"")
 print(f""Dataset tokenise : {len(tokenized_dataset)} exemples"")",,,,,,,,629b538887f154b3,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,f302a0b6,markdown,fr,ab385b595fcefbeb,"Le dataset est maintenant tokenise avec un padding uniforme a 256 tokens, pret pour l'entrainement. Chaque exemple contient les `input_ids` et les `labels` (copies des input_ids pour le language modeling causal).
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,f302a0b6,markdown,fr,50b4b60d48454582,"Le dataset est maintenant tokenise avec un padding uniforme a 256 tokens, pret pour l'entraînement. Chaque exemple contient les `input_ids` et les `labels` (copies des input_ids pour le language modeling causal).
 
 Nous allons maintenant configurer le Trainer Hugging Face avec les arguments QLoRA : optimiseur 8-bit (`paged_adamw_8bit`), FP16, et un learning rate adapte a l'adaptateur LoRA.
 
@@ -856,7 +856,7 @@ We will now configure the Hugging Face Trainer with the QLoRA arguments: 8-bit o
 
 
 **The hidden cost of uniform padding**: 256 tokens per example for 200 characters of text (~50-60 useful tokens in French) -- about 75% of each sequence is padding. `padding=""max_length""` simplifies the batch at the price of quadrupling the forward-pass computation on null positions. Over 10 examples this is invisible (the run below stays in the order of a minute); on a real corpus, one would prefer dynamic per-batch padding. Keep the reading reflex: 10 examples x 256 tokens = 2,560 training tokens in total -- the LoRA adapter (3.1M parameters) has seen fewer tokens than it has weights, an extreme memo-styling regime.
-",,,,,,,ab385b595fcefbeb,53b423baf6e7d423,,,,,,,
+",,,,,,,50b4b60d48454582,53b423baf6e7d423,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,fbe099a2,code,fr,667557059f20d847,"from transformers import TrainingArguments, Trainer, DataCollatorForLanguageModeling
 
 # Arguments d'entrainement QLoRA
@@ -1263,7 +1263,7 @@ print(f""\nEconomie mesuree (memoire allouee) : {ecart_mo:.1f} Mo"")
 # Theorie : seules les couches lineaires des blocs sont quantifiees (pas les embeddings / lm_head)
 n_quant = 24 * (4 * 2048 * 2048 + 2 * 2048 * 8192)
 print(f""Params quantifies : {n_quant:,} -> theorie 0.373 bit/param = {n_quant * 0.373 / 8 / 1e6:.1f} Mo"")",,,,,,,,a60f63a2800a011e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,3e1127c5,markdown,fr,16b7b5bf2084b3ac,"## Resume
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,3e1127c5,markdown,fr,f3e20662edb763a9,"## Resume
 
 | Aspect | LoRA (FT-01) | QLoRA (FT-02) |
 |--------|-------------|---------------|
@@ -1274,7 +1274,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,3e1127c
 | Qualite | ~98-99% du full FT | ~97-99% du full FT |
 | Modèle recommande | < 1B params | **> 1B params** |
 
-**Points cles** :
+**Points clés** :
 - **QLoRA = Quantization (NF4) + LoRA** : le meilleur des deux mondes
 - **NF4** est optimal pour les poids (distribution normale), pas un simple INT4
 - **Double quantization** compresse les scaling factors pour des gains supplementaires
@@ -1313,11 +1313,11 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,3e1127c
 
 **The measured journey reads in the outputs**: the NF4 loading, the exact number of trainable parameters, the duration, the VRAM peak and the final loss are all produced by the preceding cells. The section 4 grid predicts the adapter count to the exact parameter; the section 7 generations then show memo-styling at work. The FT-01 → FT-02 loop is closed: same LoRA mechanics, only the memory residency of the weights changes. FT-03 opens multi-task: several adapters, one base model, and the question of rank sharing.
 
-**Verifying the ""a 7B fits on 6 GB"" claim**: 4-bit weights = 0.5 byte per parameter, i.e. 3.5 GB for 7B, against 14 GB in FP16. The LoRA adapters and the paged optimizer apply to a small fraction of the parameters. The remaining margin then depends on context length, batch size and activations: this is why the notebook measures the real peak instead of settling for weight arithmetic.",,,,,,,16b7b5bf2084b3ac,01156e36e4c2ba5e,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,0e944cc3,markdown,fr,d80a7871ae4fce42,"# FT-03 : Supervised Fine-Tuning (SFT) — Enseigner un format de reponse
+**Verifying the ""a 7B fits on 6 GB"" claim**: 4-bit weights = 0.5 byte per parameter, i.e. 3.5 GB for 7B, against 14 GB in FP16. The LoRA adapters and the paged optimizer apply to a small fraction of the parameters. The remaining margin then depends on context length, batch size and activations: this is why the notebook measures the real peak instead of settling for weight arithmetic.",,,,,,,f3e20662edb763a9,01156e36e4c2ba5e,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,0e944cc3,markdown,fr,be907469b571dbe8,"# FT-03 : Supervised Fine-Tuning (SFT) — Enseigner un format de reponse
 **Navigation** : [Index](README.md) | [<< 02 — QLoRA](FT-02-QLoRA-Quantization-Python.ipynb) | [04 — RLHF/DPO >>](FT-04-RLHF-DPO-Python.ipynb)
 
-**Objectif** : Apprendre le Supervised Fine-Tuning (SFT) sur un modele moderne deja instruct-tuned (Qwen3.5-0.8B) : on ne lui apprend plus a *suivre* des instructions — il sait deja — mais a repondre selon un **contrat de format** arbitraire (`[REPONSE] ... [FIN]`), le cas d'usage reel du SFT de specialisation. Vous comprendrez le format instruction-reponse, la preparation des donnees d'entrainement, et l'evaluation mesurable de la conformite.
+**Objectif** : Apprendre le Supervised Fine-Tuning (SFT) sur un modèle moderne déjà instruct-tuned (Qwen3.5-0.8B) : on ne lui apprend plus a *suivre* des instructions — il sait déjà — mais a repondre selon un **contrat de format** arbitraire (`[REPONSE] ... [FIN]`), le cas d'usage reel du SFT de specialisation. Vous comprendrez le format instruction-reponse, la preparation des données d'entraînement, et l'evaluation mesurable de la conformite.
 
 **Prerequis** :
 - FT-01 (Introduction au Fine-Tuning, LoRA sur GPT-2)
@@ -1325,24 +1325,24 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,
 - Notions de PyTorch et Transformers
 
 **Plan du notebook** :
-1. Base Model vs Instruct Model — la difference cruciale, et pourquoi elle change la facon de faire du SFT aujourd'hui
+1. Base Model vs Instruct Model — la différence cruciale, et pourquoi elle change la facon de faire du SFT aujourd'hui
 2. Le format instruction-reponse (chat templates)
 3. Preparation d'un dataset SFT
 4. Formatage et tokenisation, puis configuration QLoRA (section 4a)
-5. Entrainement SFT avec QLoRA (split train/eval disjoint)
-6. Evaluation mesurable : conformite de format avant vs apres
+5. Entraînement SFT avec QLoRA (split train/eval disjoint)
+6. Evaluation mesurable : conformite de format avant vs après
 7. Impact de la taille du dataset
 8. Exercices
 
 **Duree estimee** : 45-60 minutes
 
-**Parcours** : nous mesurons d'abord le comportement du modele instruct face a
+**Parcours** : nous mesurons d'abord le comportement du modèle instruct face a
 notre contrat de format (section 2), construisons un dataset d'instruction riche — 227 paires
-produites par un builder deterministe (section 3), le formatons selon le contrat balise (section 4), configurons les adaptateurs LoRA
+produites par un builder déterministe (section 3), le formatons selon le contrat balise (section 4), configurons les adaptateurs LoRA
 sur le corps 4-bit (section 4a), entraînons sur un split train/eval disjoint puis comparons la conformite
-avant/apres (sections 5-6), et finissons par l'experience la plus instructive —
-faire tomber le budget de donnees a 5 exemples pour voir ce qui se casse
-exactement (section 7). Chaque etape est executee reellement sur GPU.
+avant/après (sections 5-6), et finissons par l'expérience la plus instructive —
+faire tomber le budget de données a 5 exemples pour voir ce qui se casse
+exactement (section 7). Chaque étape est executee reellement sur GPU.
 ","# FT-03: Supervised Fine-Tuning (SFT) — Teaching a response format
 **Navigation**: [Index](README.md) | [<< 02 — QLoRA](FT-02-QLoRA-Quantization-Python.ipynb) | [04 — RLHF/DPO >>](FT-04-RLHF-DPO-Python.ipynb)
 
@@ -1371,7 +1371,7 @@ produced by a deterministic builder (section 3), format them under the tagged co
 adapters on the 4-bit body (section 4a), train on a disjoint train/eval split then compare compliance
 before/after (sections 5-6), and finish with the most instructive experiment —
 dropping the data budget to 5 examples to see exactly what breaks
-(section 7). Every step is actually executed on GPU.",,,,,,,d80a7871ae4fce42,dbc6d64d310bb5c7,,,,,,,
+(section 7). Every step is actually executed on GPU.",,,,,,,be907469b571dbe8,dbc6d64d310bb5c7,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,879e8090,code,fr,b3b9b08c7f7e7494,"import torch
 import os
 import gc
@@ -1397,26 +1397,26 @@ if torch.cuda.is_available():
 BATCH_MODE = os.environ.get(""BATCH_MODE"", ""false"").lower() == ""true""
 print(f""Batch mode : {BATCH_MODE}"")
 ",,,,,,,,b3b9b08c7f7e7494,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,ad342c4a,markdown,fr,f8d434aa5747f243,"## 1. Base Model vs Instruct Model
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,ad342c4a,markdown,fr,03af9e6669f16250,"## 1. Base Model vs Instruct Model
 
-Un **modele de base** (base model) est entraine uniquement a predire le token suivant dans un texte. Il ne comprend pas la notion d'""instruction"" — si vous lui dites ""Expliquez la photosynthese"", il pourrait continuer la phrase (""...en utilisant des termes simples"") au lieu de repondre.
+Un **modèle de base** (base model) est entraine uniquement a predire le token suivant dans un texte. Il ne comprend pas la notion d'""instruction"" — si vous lui dites ""Expliquez la photosynthese"", il pourrait continuer la phrase (""...en utilisant des termes simples"") au lieu de repondre.
 
-Un **modele instruct** (instruct model) a subi un Supervised Fine-Tuning sur des paires instruction-reponse. Il a appris a :
-- Comprendre qu'on lui pose une question ou donne une tache
+Un **modèle instruct** (instruct model) a subi un Supervised Fine-Tuning sur des paires instruction-reponse. Il a appris a :
+- Comprendre qu'on lui pose une question ou donne une tâche
 - Produire une reponse structuree et pertinente
-- Suivre des formats specifiques (explication, code, liste, etc.)
+- Suivre des formats spécifiques (explication, code, liste, etc.)
 
-**Pourquoi cela change notre notebook** : Qwen3.5-0.8B (2026) est *deja* un modele instruct — la generation 2022 (OPT, GPT-2) demandait d'apprendre l'instruction-following from scratch, ce n'est plus le cas. Le SFT moderne sur un petit modele instruct a un autre emploi : lui enseigner un **contrat de format** — une convention de sortie arbitraire que le pre-training ne lui a jamais montree. C'est exactement ce que fait un produit reel quand il veut des reponses en JSON, en tableau, ou encadrees par des balises maison : on ne re-entraine pas l'intelligence, on specialise le format.
+**Pourquoi cela change notre notebook** : Qwen3.5-0.8B (2026) est *déjà* un modèle instruct — la generation 2022 (OPT, GPT-2) demandait d'apprendre l'instruction-following from scratch, ce n'est plus le cas. Le SFT moderne sur un petit modèle instruct a un autre emploi : lui enseigner un **contrat de format** — une convention de sortie arbitraire que le pre-training ne lui a jamais montree. C'est exactement ce que fait un produit reel quand il veut des reponses en JSON, en tableau, ou encadrees par des balises maison : on ne re-entraine pas l'intelligence, on specialise le format.
 
-La transition que nous reproduisons ici : modele instruct generique -> assistant conforme au contrat `[REPONSE] ... [FIN]`, mesuree par un taux de conformite objectif (section 6).
+La transition que nous reproduisons ici : modèle instruct generique -> assistant conforme au contrat `[REPONSE] ... [FIN]`, mesuree par un taux de conformite objectif (section 6).
 
-Un modele de base (base model) est entraîne uniquement par complétion : prédire le
+Un modèle de base (base model) est entraîne uniquement par complétion : prédire le
 token suivant sur un corpus massif. Il n'a jamais vu la notion d'« instruction » —
 quand on lui pose une question, il continue statistiquement le texte, et une
-question appelle souvent... une autre question. Un modele instruct a subi une
+question appelle souvent... une autre question. Un modèle instruct a subi une
 étape supplémentaire de Supervised Fine-Tuning (SFT) sur des paires
 instruction/réponse : il a appris qu'après une question vient une réponse. Sur un
-tel modele — Qwen3.5-0.8B quantifié 4-bit — ce notebook reproduit l'étape de
+tel modèle — Qwen3.5-0.8B quantifié 4-bit — ce notebook reproduit l'étape de
 specialisation : mesurer l'écart de conformite au contrat avant/après, puis en
 explorer les limites avec un dataset volontairement minuscule.
 ","## 1. Base Model vs Instruct Model
@@ -1440,28 +1440,28 @@ extra Supervised Fine-Tuning (SFT) step on instruction/response
 pairs: it has learned that after a question comes an answer. On such
 a model — Qwen3.5-0.8B quantized to 4-bit — this notebook reproduces the
 specialization step: measure the compliance gap against the contract before/after, then
-explore its limits with a deliberately tiny dataset.",,,,,,,f8d434aa5747f243,f6dc0d8d369ace86,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,d7add7dd,markdown,fr,9604957d2a41690e,"## 2. Le format instruction-reponse (chat templates)
+explore its limits with a deliberately tiny dataset.",,,,,,,03af9e6669f16250,f6dc0d8d369ace86,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,d7add7dd,markdown,fr,a364c9ed0ddabb10,"## 2. Le format instruction-reponse (chat templates)
 
-Les modeles instruct utilisent un **format de conversation** (chat template) pour delimiter les roles. Par exemple :
+Les modèles instruct utilisent un **format de conversation** (chat template) pour delimiter les rôles. Par exemple :
 
 ```
 ### Human: Expliquez la photosynthese en 2 phrases.
 ### Assistant: La photosynthese est le processus par lequel les plantes convertissent la lumiere du soleil, le CO2 et l'eau en glucose et oxygene. Ce mecanisme se deroule dans les chloroplastes des cellules vegetales grace a la chlorophylle.
 ```
 
-Le format exact depend du modele. Le format `### Human:` / `### Assistant:` est celui utilise historiquement par OPT ; les modeles recents utilisent des tokens speciaux (`<|im_start|>user\n...<|im_end|>` pour les modeles ChatML — c'est le cas de la famille Qwen, dont le template natif embarque aussi des balises de raisonnement).
+Le format exact depend du modèle. Le format `### Human:` / `### Assistant:` est celui utilise historiquement par OPT ; les modèles recents utilisent des tokens speciaux (`<|im_start|>user\n...<|im_end|>` pour les modèles ChatML — c'est le cas de la famille Qwen, dont le template natif embarque aussi des balises de raisonnement).
 
-**Point cle** : le chat template est un contrat entre les donnees d'entrainement et l'inference. Si vous entrainez avec un format, vous devez utiliser le meme format a l'inference.
+**Point cle** : le chat template est un contrat entre les données d'entraînement et l'inference. Si vous entrainez avec un format, vous devez utiliser le même format a l'inference.
 
 Le format d'échange — ici les délimiteurs `### Human:` / `### Assistant:` — joue
 le rôle que jouent les tokens spéciaux dans un chat template natif (ChatML, Llama-2,
 etc.). Nous y ajoutons une seconde couche, notre contrat de sortie : la reponse
 doit etre encadree par `[REPONSE] ... [FIN]`. Deux règles pratiques : (1) le format
 utilisé à l'inférence doit être **strictement identique** à celui vu à
-l'entraînement, sinon le modele produit des délimiteurs en boucle ; (2) un format
+l'entraînement, sinon le modèle produit des délimiteurs en boucle ; (2) un format
 appris sur peu d'exemples généralise mieux que les faits eux-mêmes — c'est la
-premiere chose que le SFT transmet, et nous le vérifierons à la cellule
+première chose que le SFT transmet, et nous le vérifierons à la cellule
 d'evaluation.
 ","## 2. The instruction-response format (chat templates)
 
@@ -1485,7 +1485,7 @@ used at inference must be **strictly identical** to the one seen during
 training, otherwise the model produces delimiters in a loop; (2) a format
 learned on few examples generalizes better than the facts themselves — it is the
 first thing SFT transmits, and we will verify this at the evaluation
-cell.",,,,,,,9604957d2a41690e,8f94fdd8d790e52e,,,,,,,
+cell.",,,,,,,a364c9ed0ddabb10,8f94fdd8d790e52e,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,2ba5d60b,code,fr,bdbc2ef7761fccf6,"# Charger le modele de base (Qwen3.5-0.8B, quantifie 4-bit pour economiser la VRAM)
 from transformers import AutoModelForImageTextToText, AutoTokenizer, BitsAndBytesConfig
 import torch
@@ -1519,13 +1519,13 @@ if torch.cuda.is_available():
     vram_mb = torch.cuda.memory_allocated() / 1e6
     print(f""VRAM utilisee : {vram_mb:.0f} Mo"")
 ",,,,,,,,bdbc2ef7761fccf6,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,87c08f80,markdown,fr,54f4c28185f5a53d,"### 2a. Demonstration : le modele suit l'instruction, mais ignore notre contrat de format
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,87c08f80,markdown,fr,24069106a9d1a8a2,"### 2a. Demonstration : le modèle suit l'instruction, mais ignore notre contrat de format
 
-Testons le modele de base avec nos instructions formatees. Observez : Qwen3.5-0.8B est instruct-tuned, il repond *au fond* a la question — mais il ne connait pas nos balises `[REPONSE] ... [FIN]` : sa reponse est en prose libre.
+Testons le modèle de base avec nos instructions formatees. Observez : Qwen3.5-0.8B est instruct-tuned, il repond *au fond* a la question — mais il ne connait pas nos balises `[REPONSE] ... [FIN]` : sa reponse est en prose libre.
 
 Protocole : trois instructions types (question factuelle, explication, liste de
-conseils) sont soumises au modele de base, puis — à la section 6 — les mêmes
-au modele SFT, avec la même fonction de génération. En comparant les réponses
+conseils) sont soumises au modèle de base, puis — à la section 6 — les mêmes
+au modèle SFT, avec la même fonction de génération. En comparant les réponses
 mot à mot sur des prompts identiques et en comptant les balises presentes,
 l'effet du SFT est isolé de toute autre variable.
 ","### 2a. Demonstration: the model follows the instruction, but ignores our format contract
@@ -1536,7 +1536,7 @@ Protocol: three typical instructions (factual question, explanation, list of
 tips) are submitted to the base model, then — in section 6 — the same ones
 to the SFT model, with the same generation function. By comparing the responses
 word for word on identical prompts and counting the tags present,
-the effect of SFT is isolated from every other variable.",,,,,,,54f4c28185f5a53d,6085d75fa5a98ae6,,,,,,,
+the effect of SFT is isolated from every other variable.",,,,,,,24069106a9d1a8a2,6085d75fa5a98ae6,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,c5b7deff,code,fr,a902d25d649f30a2,"# Test du modele de base avec des instructions
 def generate(model, prompt, max_new_tokens=80, temperature=0.7):
     inputs = tokenizer(prompt, return_tensors=""pt"").to(model.device)
@@ -1579,9 +1579,9 @@ for prompt in test_prompts:
 n_conformes = sum(respecte_format(r) for r in base_eval_responses.values())
 print(f""\nConformite de format du modele de base : {n_conformes}/{len(base_eval_responses)}"")
 ",,,,,,,,a902d25d649f30a2,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,da07c4a7,markdown,fr,f2b38a3befb20c00,"**Observation** : le modele repond *au fond* sur la deuxieme instruction (il est instruct-tuned — « Bien sûr, voici une définition simple de l'intelligence artificielle (IA) » est une vraie reponse), mais deux defauts signatures apparaissent : (1) **zero conformite au contrat** — aucune balise `[REPONSE]`/`[FIN]`, prose libre, 0/3 ; (2) il **boucle sur le format du prompt** — voyant `### Human:`/`### Assistant:` (qui n'est PAS son template natif ChatML), il imite le motif et enchaîne plusieurs tours de conversation fictionnels. Le modele suit l'intention, pas le contrat : c'est precisement ce que le SFT va lui enseigner.
-","**Observation**: the model answers *substantively* (it is instruct-tuned — ""Gravity is a natural force that acts in space"" is a correct sketch), but two signature defects appear: (1) **zero compliance with the contract** — no `[REPONSE]`/`[FIN]` tag, free prose, 0/3; (2) it **loops on the prompt's format** — seeing `### Human:`/`### Assistant:` (which is NOT its native ChatML template), it imitates the pattern and chains several fictional conversation turns, even attempting its native reasoning markup (`<think>`). The model follows the intent, not the contract: this is precisely what SFT will teach it.",,,,,,,f2b38a3befb20c00,0a193bf57c8aec7e,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,8d1a1b00,markdown,fr,6da4ece08dc4cf79,"## 3. Preparation d'un dataset SFT
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,da07c4a7,markdown,fr,0936e7e6b4a9075f,"**Observation** : le modèle repond *au fond* sur la deuxieme instruction (il est instruct-tuned — « Bien sûr, voici une définition simple de l'intelligence artificielle (IA) » est une vraie reponse), mais deux defauts signatures apparaissent : (1) **zero conformite au contrat** — aucune balise `[REPONSE]`/`[FIN]`, prose libre, 0/3 ; (2) il **boucle sur le format du prompt** — voyant `### Human:`/`### Assistant:` (qui n'est PAS son template natif ChatML), il imite le motif et enchaîne plusieurs tours de conversation fictionnels. Le modèle suit l'intention, pas le contrat : c'est précisément ce que le SFT va lui enseigner.
+","**Observation**: the model answers *substantively* (it is instruct-tuned — ""Gravity is a natural force that acts in space"" is a correct sketch), but two signature defects appear: (1) **zero compliance with the contract** — no `[REPONSE]`/`[FIN]` tag, free prose, 0/3; (2) it **loops on the prompt's format** — seeing `### Human:`/`### Assistant:` (which is NOT its native ChatML template), it imitates the pattern and chains several fictional conversation turns, even attempting its native reasoning markup (`<think>`). The model follows the intent, not the contract: this is precisely what SFT will teach it.",,,,,,,0936e7e6b4a9075f,0a193bf57c8aec7e,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,8d1a1b00,markdown,fr,5beb33b040dc9344,"## 3. Preparation d'un dataset SFT
 
 Pour le SFT, nous avons besoin de paires **instruction → reponse attendue**. La qualite du dataset est le facteur le plus important pour la reussite du fine-tuning.
 
@@ -1594,7 +1594,7 @@ Nous allons créer un petit dataset synthetique en francais couvrant plusieurs c
 Un dataset SFT est une liste d'exemples `(instruction, réponse)` — en pratique
 on y ajoute souvent un champ `system` (consigne de rôle) et parfois un contexte
 multi-tours. La qualité prime sur la quantité : quelques milliers de paires
-soignées surpassent des dizaines de milliers de paires bruitées, car le modele
+soignées surpassent des dizaines de milliers de paires bruitées, car le modèle
 copie aussi les défauts du dataset.
 ","## 3. Preparing an SFT dataset
 
@@ -1604,7 +1604,7 @@ We will create a small synthetic dataset in French covering several categories o
 - **Factual questions**: ""What is X?""
 - **Explanations**: ""Explain the concept of Y""
 - **Lists/advice**: ""Give N tips for Z""
-- **Summaries**: ""Summarize the following text""",,,,,,,6da4ece08dc4cf79,01fcfa4a5de58b5f,,,,,,,
+- **Summaries**: ""Summarize the following text""",,,,,,,5beb33b040dc9344,01fcfa4a5de58b5f,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,f850cac2,code,fr,eb49869f08a44b0e,"# Dataset SFT synthetique — builder deterministe, 227 paires, 6 familles.
 # Le point pedagogique : 20 exemples ne pouvaient transmettre qu'un FORMAT ;
 # 227 exemples de formulations variees transmettent le MAPPING formulation -> fond,
@@ -1818,9 +1818,9 @@ print(f""\nLongueur (mots, instruction + reponse) : min {min(lens_words)}, max {
 reps = Counter(d[""response""] for d in sft_data)
 print(f""Reponses partagees par plusieurs formulations : {sum(1 for v in reps.values() if v > 1)} (fonds distincts : {len(reps)})"")
 print(""Determinisme et unicite verifies par assertion."")",,,,,,,,eb49869f08a44b0e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,cc37460f,markdown,fr,1b4fdaff72ebf983,"## 4. Formatage et tokenisation des données
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,cc37460f,markdown,fr,a93a05cae4ac06d7,"## 4. Formatage et tokenisation des données
 
-Avant l'entrainement, chaque paire instruction/reponse doit etre formatee selon le **chat template** du modèle. Pour OPT, le format est :
+Avant l'entraînement, chaque paire instruction/reponse doit etre formatee selon le **chat template** du modèle. Pour OPT, le format est :
 
 ```
 ### Human: {instruction}
@@ -1836,7 +1836,7 @@ Before training, each instruction/response pair must be formatted according to t
 ### Assistant: {response}
 ```
 
-We then tokenize the formatted text to obtain sequences of integers understandable by the model.",,,,,,,1b4fdaff72ebf983,46e3c25db5bcdcea,,,,,,,
+We then tokenize the formatted text to obtain sequences of integers understandable by the model.",,,,,,,a93a05cae4ac06d7,46e3c25db5bcdcea,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,aeb5d3eb,code,fr,d528049281c501a0,"# Formater les donnees SFT : le contrat de format balise
 def format_sft_example(example):
     """"""Convertit une paire instruction/reponse au contrat balise du notebook.""""""
@@ -1906,11 +1906,11 @@ model_sft.print_trainable_parameters()
 
 print(f""\nVRAM avant entrainement : {torch.cuda.memory_allocated() / 1e6:.0f} Mo"")
 ",,,,,,,,9287388cbb1d87ad,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,dbb4632c,markdown,fr,3f8a16a24a791c5f,"## 5. Entrainement SFT
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,dbb4632c,markdown,fr,d102d14662206c77,"## 5. Entraînement SFT
 
-Nous utilisons le `Trainer` de HuggingFace pour orchestrer l'entrainement. Le dataset reste un corpus pédagogique petit (**227 paires** — cf. sorties des cellules précédentes : « Dataset SFT : 227 paires », « 227 exemples formates »), très en deçà des 10 000–1 000 000 paires d'un SFT de production, donc nous ferons plusieurs epoques pour que le modèle apprenne bien le format instruction/reponse.
+Nous utilisons le `Trainer` de HuggingFace pour orchestrer l'entraînement. Le dataset reste un corpus pédagogique petit (**227 paires** — cf. sorties des cellules précédentes : « Dataset SFT : 227 paires », « 227 exemples formates »), très en deçà des 10 000–1 000 000 paires d'un SFT de production, donc nous ferons plusieurs epoques pour que le modèle apprenne bien le format instruction/reponse.
 
-**Hyperparametres cles** :
+**Hyperparamètres clés** :
 - `num_train_epochs=5` : le dataset est petit, on compense avec plus de passages
 - `learning_rate=2e-4` : taux d'apprentissage standard pour LoRA
 - `per_device_train_batch_size=2` : petit batch pour la VRAM
@@ -1922,7 +1922,7 @@ We use HuggingFace's `Trainer` to orchestrate the training. The dataset is small
 - `num_train_epochs=5`: the dataset is small, so we compensate with more passes
 - `learning_rate=2e-4`: standard learning rate for LoRA
 - `per_device_train_batch_size=2`: small batch for VRAM
-- `gradient_accumulation_steps=4`: simulates a batch of 8",,,,,,,3f8a16a24a791c5f,ecd6c8c8ae2988ee,,,,,,,
+- `gradient_accumulation_steps=4`: simulates a batch of 8",,,,,,,d102d14662206c77,ecd6c8c8ae2988ee,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,6eb4f241,code,fr,c37667c42f81a5b3,"# Preparation des datasets pour le Trainer — AVEC holdout d'evaluation disjoint
 from datasets import Dataset
 from transformers import TrainingArguments, Trainer, DataCollatorForLanguageModeling
@@ -2176,14 +2176,14 @@ The following three exercises vary exactly one lever at a time — the dataset
 *content* (exercise 1), the adapter *capacity* via the LoRA rank (exercise
 2), the *data budget* (exercise 3) — to isolate the effect of each on the
 generated responses.",,,,,,,f19f49f7882f6882,b0d3fa954c3bba1e,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,d01fb06b,markdown,fr,122ba5a720008c36,"### Exercice 1 : Créer un dataset SFT thematique
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,d01fb06b,markdown,fr,673da549e6af0146,"### Exercice 1 : Créer un dataset SFT thematique
 
 Créez un dataset SFT de 10 paires instruction/reponse sur un **thème de votre choix** (cuisine, sport, musique, etc.). Formatez les données selon le contrat du notebook, puis entrainez un modèle QLoRA et observez les résultats.
 
 **Étapes** :
 1. Choisissez un thème et créez 10 paires instruction/reponse coherentes
 2. Formatez avec le contrat `### Human:` / `### Assistant: [REPONSE] ... [FIN]` (réutilisez `format_sft_example`)
-3. Entrainez le modèle avec les mêmes hyperparametres
+3. Entrainez le modèle avec les mêmes hyperparamètres
 4. Testez avec 3 instructions de votre thème et mesurez le taux de conformite (`respecte_format`)
 ","### Exercise 1: Create a thematic SFT dataset
 
@@ -2193,7 +2193,7 @@ Create an SFT dataset of 10 instruction/response pairs on a **theme of your choi
 1. Choose a theme and create 10 coherent instruction/response pairs
 2. Format with the contract `### Human:` / `### Assistant: [REPONSE] ... [FIN]` (reuse `format_sft_example`)
 3. Train the model with the same hyperparameters
-4. Test with 3 instructions from your theme and measure the compliance rate (`respecte_format`)",,,,,,,122ba5a720008c36,076ecc7a5f90a929,,,,,,,
+4. Test with 3 instructions from your theme and measure the compliance rate (`respecte_format`)",,,,,,,673da549e6af0146,076ecc7a5f90a929,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,266ae5f2,code,fr,1e677a3ce33719f0,"# Exercice 1 : Creez votre dataset SFT thematique
 # TODO etudiant : remplacez les exemples ci-dessous par votre propre theme
 
@@ -2233,14 +2233,14 @@ resultats_comparaison = {
     ""r=64"": {""parametres"": None, ""perte"": None},   # TODO etudiant : remplir
 }
 print(""Completez les entrainements puis remplissez resultats_comparaison"")",,,,,,,,2a9ac476dd9efc9b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,1e5e92a0,markdown,fr,a9f011a9c0844dc2,"### Exercice 3 : Analyser les limites du SFT avec un petit dataset
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,1e5e92a0,markdown,fr,c7cc2be21957b8d2,"### Exercice 3 : Analyser les limites du SFT avec un petit dataset
 
 Produisez un petit rapport (en markdown dans une cellule) analysant les limites observees :
 1. Quels types d'instructions le modèle SFT gere-t-il bien ? Mal ?
-2. Que se passe-t-il si vous donnez une instruction hors du dataset d'entrainement ?
+2. Que se passe-t-il si vous donnez une instruction hors du dataset d'entraînement ?
 3. Combien d'exemples faudrait-il approximativement pour obtenir des résultats fiables ?
 
-**Indice** : Testez avec des instructions originales non presentes dans le dataset. Sur un modele deja instruct-tuned, distinguez la **conformite au format** (ce que le SFT enseigne, generalise tres vite) de la **correctitude du fond** (ce que le SFT n'enseigne pas — le modele savait deja repondre).
+**Indice** : Testez avec des instructions originales non presentes dans le dataset. Sur un modèle déjà instruct-tuned, distinguez la **conformite au format** (ce que le SFT enseigne, generalise très vite) de la **correctitude du fond** (ce que le SFT n'enseigne pas — le modèle savait déjà repondre).
 ","### Exercise 3: Analyzing the limitations of SFT with a small dataset
 
 Produce a short report (in markdown in a cell) analyzing the observed limitations:
@@ -2248,7 +2248,7 @@ Produce a short report (in markdown in a cell) analyzing the observed limitation
 2. What happens if you give an instruction outside the training dataset?
 3. Approximately how many examples would be needed to obtain reliable results?
 
-**Hint**: Test with original instructions not present in the dataset. On a model that is already instruct-tuned, distinguish **format compliance** (what SFT teaches, generalizes very fast) from **correctness of substance** (what SFT does not teach — the model already knew how to answer).",,,,,,,a9f011a9c0844dc2,bfec538753e22f87,,,,,,,
+**Hint**: Test with original instructions not present in the dataset. On a model that is already instruct-tuned, distinguish **format compliance** (what SFT teaches, generalizes very fast) from **correctness of substance** (what SFT does not teach — the model already knew how to answer).",,,,,,,c7cc2be21957b8d2,bfec538753e22f87,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,6c80266a,code,fr,b45f07d235dcd061,"# Exercice 3 : Test de generalisation
 # TODO etudiant : testez le modele SFT avec des instructions originales
 
@@ -2261,24 +2261,24 @@ instructions_test = [
 # TODO etudiant : chargez le meilleur modele SFT, testez ces instructions
 # et analysez la qualite des reponses
 print(""Testez avec votre modele SFT et analysez les resultats"")",,,,,,,,b45f07d235dcd061,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,6f2647d5,markdown,fr,bd46642ad7f74b37,"## 9. Resume du FT-03
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,6f2647d5,markdown,fr,1613061df5e40eb8,"## 9. Resume du FT-03
 
 | Concept | Detail |
 |---------|--------|
-| **SFT de specialisation** | Entrainement sur des paires instruction/reponse formatees pour enseigner un **contrat de format** a un modele deja instruct-tuned |
-| **Chat template** | Format de conversation (`### Human:` / `### Assistant:`) — contrat entre entrainement et inference |
+| **SFT de specialisation** | Entraînement sur des paires instruction/reponse formatees pour enseigner un **contrat de format** a un modèle déjà instruct-tuned |
+| **Chat template** | Format de conversation (`### Human:` / `### Assistant:`) — contrat entre entraînement et inference |
 | **Dataset SFT** | 227 paires en francais couvrant 6 familles (101 fonds, 64 reponses partagees), encapsulees `[REPONSE] ... [FIN]` au formatage (38-124 tokens, moyenne 74) |
-| **QLoRA** | Quantization 4-bit NF4 + LoRA hybride (attention full + lineaire + MLP) sur Qwen3.5-0.8B : 7,3 M parametres entrainables (0,85 %) |
-| **Resultat** | Conformite au contrat **0/3 -> 6/6** (dont 2 instructions du holdout jamais vues a l'entrainement : le format generalise) ; boucle de conversation du base eliminee |
+| **QLoRA** | Quantization 4-bit NF4 + LoRA hybride (attention full + lineaire + MLP) sur Qwen3.5-0.8B : 7,3 M paramètres entrainables (0,85 %) |
+| **Résultat** | Conformite au contrat **0/3 -> 6/6** (dont 2 instructions du holdout jamais vues a l'entraînement : le format generalise) ; boucle de conversation du base eliminee |
 | **Limites** | Le fond des reponses reste approximatif (conformite != correctitude) ; 5 exemples = memorisation degeneree (loss 1,73 mais generation detruite) |
 
-**Prochaines etapes** : Le FT-04 explorera le RLHF (Reinforcement Learning from Human Feedback), qui affine les reponses du modele SFT en utilisant les preferences humaines comme signal de recompense.
+**Prochaines étapes** : Le FT-04 explorera le RLHF (Reinforcement Learning from Human Feedback), qui affine les reponses du modèle SFT en utilisant les préférences humaines comme signal de récompense.
 
-**Bilan chiffre du TP** : 0,85 % des parametres entranes (7,3 M / 860 M),
-entrainement en 1908 s (31,8 min) sur GPU 8 Go partagee, VRAM contenue autour de
-1,4 Go pendant l'entrainement — et surtout, la lecon d'evaluation :
+**Bilan chiffre du TP** : 0,85 % des paramètres entranes (7,3 M / 860 M),
+entraînement en 1908 s (31,8 min) sur GPU 8 Go partagee, VRAM contenue autour de
+1,4 Go pendant l'entraînement — et surtout, la lecon d'evaluation :
 le contrat de format s'apprend avec un dataset diversifie (227 paires) et generalise
-a des reformulations, alors que le meme SFT avec 5 exemples casse la generation.
+a des reformulations, alors que le même SFT avec 5 exemples casse la generation.
 La loss mesure la memorisation, la generation revele la generalisation.","## 9. Summary of FT-03
 
 | Concept | Detail |
@@ -2297,7 +2297,7 @@ training in 1908 s (31.8 min) on a shared 8 GB GPU, VRAM contained around
 1.4 GB during training — and above all, the evaluation lesson:
 the format contract is learned with a diversified dataset (227 pairs) and generalizes
 to reformulations, while the same SFT with 5 examples breaks generation.
-The loss measures memorization, generation reveals generalization.",,,,,,,bd46642ad7f74b37,70ecee890c3a4655,,,,,,,
+The loss measures memorization, generation reveals generalization.",,,,,,,1613061df5e40eb8,70ecee890c3a4655,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb,cf552bd0,code,fr,c2261ec1b233c654,"import torch
 import os
 import gc
@@ -3284,14 +3284,14 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,d4e5f
 
 print(""Exercice a completer : implementez TIES merge"")
 print(""Parametres a tester : density=0.3, density=0.5, density=0.7"")",,,,,,,,a4eda4b78737c9f8,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,e5f6a7b8,markdown,fr,c0bbbd2b902670c1,"### Exercice 3 : Ajouter un troisieme expert au système de routing
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,e5f6a7b8,markdown,fr,c2291516e535a7d1,"### Exercice 3 : Ajouter un troisieme expert au système de routing
 
 Créez un troisieme adaptateur specialise dans un domaine de votre choix (sport, musique, histoire, etc.) et ajoutez-le au système de routing.
 
 **Indices** :
 - Étape 1 : Definissez un dataset SFT de 5 exemples pour votre domaine
 - Étape 2 : Entrainez le 3e adaptateur LoRA avec le même lora_config
-- Étape 3 : Ajoutez des exemples d'entrainement au routeur (label=2)
+- Étape 3 : Ajoutez des exemples d'entraînement au routeur (label=2)
 - Étape 4 : Reentrainez le routeur avec 3 classes
 - Étape 5 : Testez le routing sur des questions des 3 domaines","### Exercise 3: Add a third expert to the routing system
 
@@ -3302,7 +3302,7 @@ Create a third adapter specialized in a domain of your choice (sports, music, hi
 - Step 2: Train the 3rd LoRA adapter with the same lora_config
 - Step 3: Add training examples to the router (label=2)
 - Step 4: Retrain the router with 3 classes
-- Step 5: Test the routing on questions from the 3 domains",,,,,,,c0bbbd2b902670c1,cccb684c26029b7f,,,,,,,
+- Step 5: Test the routing on questions from the 3 domains",,,,,,,c2291516e535a7d1,cccb684c26029b7f,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,f6a7b8c9,code,fr,de22ef0f1c026102,"# Exercice 3 : creez un 3e adapter et mettez a jour le router
 # TODO etudiant : definissez votre domaine et vos exemples SFT
 
@@ -3350,7 +3350,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,a7b8c
 | **Trade-off** | Merge = 1 model (cheaper) vs Routing = N models (better quality) |
 | **Tools** | Mergekit (production), manual PyTorch implementation (this notebook) |
 
----
+***
 
 **Navigation**: [FT-01](./FT-01-Introduction-FineTuning-Python.ipynb) | [FT-02](./FT-02-QLoRA-Quantization-Python.ipynb) | [FT-03](./FT-03-Supervised-FineTuning-SFT-Python.ipynb) | [FT-04](./FT-04-RLHF-DPO-Python.ipynb) | **FT-05**",,,,,,,8c516df6d85df896,38eb18359981410d,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ift02-gen,markdown,fr,c408efbb42e46d7b,"### Lecture du résultat : la greffe stylistique du fine-tuning
@@ -3455,15 +3455,13 @@ La bonne pratique, appliquée ici : garder le prompt identique et les paramètre
 The naive evaluation — take a single prompt and compare one generation from the original model to one generation from the fine-tuned model — is a trap. It conflates two effects: the style change induced by fine-tuning, **and** sampling randomness (top_p, temperature). With `temperature=0.8` and `do_sample=True`, two successive calls to the same model on the same prompt produce different outputs. If you compare only a single generation on each side, you cannot tell whether the observed gap is due to fine-tuning or to the RNG.
 
 The good practice, applied here: keep the prompt identical and the generation parameters identical (`temperature=0.8`, `top_p=0.9`, `max_new_tokens=80`), and vary only **one factor** between the two sides: the presence or absence of the LoRA adapter. One honest caveat, though: generation is sampled (`do_sample=True`) and `generate_text` does not re-set the seed before each call — each side is therefore **a single draw**, not an average. The observed gap is indicative; for strict causal isolation, re-set `torch.manual_seed(...)` immediately before each of the two calls.",,,,,,,04978266d5b6da97,0247beb4adffb124,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-cc0d52a5e14c4d0e,markdown,fr,3884487e279d6f1f,"### Préparation des exercices
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-cc0d52a5e14c4d0e,markdown,fr,7a29dc4d27cea2b0,"### Préparation des exercices
 
-Les trois exercices de cette section sont progressifs : ils commencent par faire varier un seul hyperparamètre en gardant le reste du pipeline inchangé (rangs LoRA), puis élargissent à un changement de corpus (style littéraire), et terminent par une exploration plus risquée mais très pédagogique (learning rate). Gardez à l'esprit la contrainte de ressources : un entraînement de 10 époques sur 7 segments avec GPT-2 prend une dizaine de secondes sur un RTX 3090. Vous pouvez donc itérer rapidement — l'idée est d'observer des tendances, pas de publier un résultat.
+Les trois exercices de cette section sont progressifs : ils commencent par faire varier un seul hyperparamètre en gardant le reste du pipeline inchangé (rangs LoRA), puis élargissent à un changement de corpus (style littéraire), et terminent par une exploration plus risquée mais très pédagogique (learning rate). Gardez à l'esprit la contrainte de ressources : un entraînement de 10 époques sur 7 segments avec GPT-2 prend quelques secondes sur un RTX 3080 Ti Laptop. Vous pouvez donc itérer rapidement — l'idée est d'observer des tendances, pas de publier un résultat.
 
-Pour chaque exercice, **mesurez avant de conclure** : comptez les paramètres entraînables, affichez la perte finale, et surtout **comparez visuellement deux générations** plutôt que de vous fier à un chiffre de perte. La perte est un proxy nécessaire mais notoirement insuffisant pour évaluer un modèle de langage : un modèle peut avoir une perte basse et générer du texte incohérent, et inversement.
+Pour chaque exercice, **mesurez avant de conclure** : comptez les paramètres entraînables, affichez la perte finale, et surtout **comparez visuellement deux générations** plutôt que de vous fier à un chiffre de perte. La perte est un proxy nécessaire mais notoirement insuffisant pour évaluer un modèle de langage : un modèle peut avoir une perte basse et générer du texte incohérent, et inversement.","### Preparing the exercises
 
-","### Preparing the exercises
-
-The three exercises in this section are progressive: they start by varying a single hyperparameter while keeping the rest of the pipeline unchanged (LoRA ranks), then widen to a corpus change (literary style), and finish with a riskier but very instructive exploration (learning rate). Keep the resource constraint in mind: 10 epochs of training on 7 segments with GPT-2 takes ten-odd seconds on an RTX 3090. You can therefore iterate quickly — the idea is to observe trends, not to publish a result.
+The three exercises in this section are progressive: they start by varying a single hyperparameter while keeping the rest of the pipeline unchanged (LoRA ranks), then widen to a corpus change (literary style), and finish with a riskier but very instructive exploration (learning rate). Keep the resource constraint in mind: 10 epochs of training on 7 segments with GPT-2 takes a few seconds on an RTX 3080 Ti Laptop. You can therefore iterate quickly — the idea is to observe trends, not to publish a result.
 
 For each exercise, **measure before concluding**: count the trainable parameters, print the final loss, and above all **visually compare two generations** rather than trusting a loss number. Loss is a necessary but notoriously insufficient proxy for evaluating a language model: a model can have a low loss and generate incoherent text, and vice versa.",,,,,,,3884487e279d6f1f,fdac3fb1436bd5cf,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,a1ft03dens03,markdown,fr,beaa6266a278dcc7,"**Lecture du dataset.** Le builder produit **227 paires** couvrant six familles : définitions (**80** — 20 sujets × 4 formulations), listes/conseils (**45** — six grilles de 3 à 8 items), comparaisons (**36** — 12 paires × 3 formulations), pourquois (**30** — 10 questions × 3 formulations), how-to code (**24**), résumés (**12**). Deux propriétés sont vérifiées par assertion : le **déterminisme** (graine 42 — deux exécutions donnent le même dataset, y compris l'ordre du mélange) et l'**unicité** des instructions.
@@ -3471,7 +3469,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,
 Les **64 réponses partagées** (pour 101 fonds distincts) sont un choix, pas un oubli : pour un même sujet, plusieurs formulations mènent à la même réponse — c'est précisément la diversité de formulation que le SFT doit apprendre à rabattre sur le fond. Ce que 227 ajoute à 20 n'est pas de la connaissance (Qwen3.5-0.8B en a déjà, de son pré-entraînement) mais de la **couverture de formulations** : trois façons de demander une définition, six tailles de listes, des reformulations de pourquoi. Les datasets réels d'instruction (Alpaca : 52 000 ; OASST : des dizaines de milliers) restent deux à trois ordres de grandeur au-dessus — 227 est une loupe, mais une loupe qui montre un mécanisme, pas une impossibilité.","**Reading the dataset.** The builder produces **227 pairs** covering six families: definitions (**80** — 20 subjects x 4 formulations), lists/advice (**45** — six grids of 3 to 8 items), comparisons (**36** — 12 pairs x 3 formulations), why-questions (**30** — 10 questions x 3 formulations), code how-tos (**24**), summaries (**12**). Two properties are verified by assertion: **determinism** (seed 42 — two runs produce the same dataset, shuffle order included) and **uniqueness** of instructions.
 
 The **64 shared answers** (for 101 distinct facts) are a choice, not an oversight: for the same subject, several formulations lead to the same answer — this is precisely the formulation diversity that SFT must learn to collapse onto the underlying fact. What 227 adds over 20 is not knowledge (Qwen3.5-0.8B already has that, from pre-training) but **formulation coverage**: three ways of asking for a definition, six list sizes, rephrased why-questions. Real instruction datasets (Alpaca: 52,000; OASST: tens of thousands) remain two to three orders of magnitude above — 227 is a magnifying glass, but one that shows a mechanism, not an impossibility.",,,,,,,beaa6266a278dcc7,3ba3a32b5a63982d,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,a1ft03dens02,markdown,fr,72dbcf2a07328cb2,"**Lecture de la tokenisation.** Les 227 exemples formattés mesurent entre **38 et
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,a1ft03dens02,markdown,fr,b162d3044241f724,"**Lecture de la tokenisation.** Les 227 exemples formattés mesurent entre **38 et
 124 tokens, 74 en moyenne** (tokenizer Qwen3.5) — un étalement bien plus large qu'avec 20 paires,
 car les six familles n'ont pas la même physionomie : une définition courte tient
 en quelques dizaines de tokens, une liste de huit items ou un how-to multi-lignes
@@ -3481,7 +3479,7 @@ batch de 2 avec accumulation ×4 reste le bon compromis VRAM/stabilité à cette
 longueur ; (3) l'entraînement complet se compte en minutes sur un GPU 8 Gio —
 assez court pour refaire un run en variant un hyperparamètre dans la même session.
 On remarquera aussi que le format `### Human:` / `### Assistant:` est intégré au
-texte tokenisé : le modele doit apprendre à *produire* ces délimiteurs, pas
+texte tokenisé : le modèle doit apprendre à *produire* ces délimiteurs, pas
 seulement à les lire.","**Reading the tokenization.** The 227 formatted examples measure between **38 and
 124 tokens, 74 on average** (Qwen3.5 tokenizer) — a much wider spread than with 20 pairs,
 because the six families do not have the same physique: a short definition fits
@@ -3492,10 +3490,10 @@ with x4 accumulation remains the right VRAM/stability compromise at this
 length; (3) the full training takes minutes on an 8 GB GPU — short enough to
 re-run while varying one hyperparameter in the same session. Note also that the
 `### Human:` / `### Assistant:` format is baked into the tokenized text: the
-model must learn to *produce* these delimiters, not just read them.",,,,,,,72dbcf2a07328cb2,af5bdadbb0c5fac3,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,a1ft03dens01,markdown,fr,6f8e42d54c74efcf,"**Lecture de la configuration QLoRA.** 7 274 496 parametres entrainables sur 860 260 416 au total, soit **0,85 %** du modele. Deux points notables : (1) la cible couvre les **deux familles d'attention** de l'architecture hybride Qwen3.5 (18 couches lineaires + 6 couches full) plus les MLP — la meme cible que PT-02, validee pour ce modele ; (2) la VRAM avant entrainement est de 1385 Mo : le corps 4-bit + les adaptateurs LoRA tiennent dans moins de 1,5 Go, le reste de la fenetre GPU sert aux activations pendant la retropropagation.
-","**Reading the QLoRA configuration.** 7,274,496 trainable parameters out of 860,260,416 in total, i.e. **0.85%** of the model. Two noteworthy points: (1) the target covers the **two attention families** of the hybrid Qwen3.5 architecture (18 linear layers + 6 full layers) plus the MLPs — the same target as PT-02, validated for this model; (2) VRAM before training is 1,385 MB: the 4-bit body + the LoRA adapters fit in under 1.5 GB, the rest of the GPU window serves activations during backpropagation.",,,,,,,6f8e42d54c74efcf,9e5e8e00217a1476,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,a1ft03dens90,markdown,fr,5a9f6bf40ecfb898,"**Lecture de la préparation.** Le split disjoint (graine 42) met **205 exemples** côté entraînement et **22** côté évaluation — aucune paire exacte en commun. Des reformulations d'un même fond peuvent se trouver des deux côtés : c'est voulu, et c'est ce que la perte d'évaluation mesure alors — restituer un fond déjà rencontré sous une formulation nouvelle, pas réciter un exemple appris. Le `Dataset` HuggingFace embarque les textes tokenisés avec leurs `input_ids` et `attention_mask` — le conteneur standard que le `Trainer` sait itérer. Le `DataCollatorForLanguageModeling` configuré avec `mlm=False` (pas de masked language modeling) se contente de padder les séquences du batch à la même longueur : en SFT complet, la loss est calculée sur **tous** les tokens, réponse incluse — on veut précisément que le modele apprenne à générer la partie réponse.","**Reading the preparation.** The disjoint split (seed 42) puts **205 examples** on the training side and **22** on the evaluation side — no exact pair in common. Rephrasings of the same fact may appear on both sides: this is intentional, and it is exactly what the evaluation loss then measures — restituting an already-seen fact under a new formulation, not reciting a learned example. The HuggingFace `Dataset` carries the tokenized texts with their `input_ids` and `attention_mask` — the standard container the `Trainer` knows how to iterate. The `DataCollatorForLanguageModeling` configured with `mlm=False` (no masked language modeling) simply pads the batch's sequences to the same length: in full SFT, the loss is computed on **all** tokens, response included — we precisely want the model to learn to generate the response part.",,,,,,,5a9f6bf40ecfb898,faa5c05280422b2a,,,,,,,
+model must learn to *produce* these delimiters, not just read them.",,,,,,,b162d3044241f724,af5bdadbb0c5fac3,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,a1ft03dens01,markdown,fr,95f0617d256be04c,"**Lecture de la configuration QLoRA.** 7 274 496 paramètres entrainables sur 860 260 416 au total, soit **0,85 %** du modèle. Deux points notables : (1) la cible couvre les **deux familles d'attention** de l'architecture hybride Qwen3.5 (18 couches lineaires + 6 couches full) plus les MLP — la même cible que PT-02, validee pour ce modèle ; (2) la VRAM avant entraînement est de 1385 Mo : le corps 4-bit + les adaptateurs LoRA tiennent dans moins de 1,5 Go, le reste de la fenêtre GPU sert aux activations pendant la retropropagation.
+","**Reading the QLoRA configuration.** 7,274,496 trainable parameters out of 860,260,416 in total, i.e. **0.85%** of the model. Two noteworthy points: (1) the target covers the **two attention families** of the hybrid Qwen3.5 architecture (18 linear layers + 6 full layers) plus the MLPs — the same target as PT-02, validated for this model; (2) VRAM before training is 1,385 MB: the 4-bit body + the LoRA adapters fit in under 1.5 GB, the rest of the GPU window serves activations during backpropagation.",,,,,,,95f0617d256be04c,9e5e8e00217a1476,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,a1ft03dens90,markdown,fr,82205e5528df7761,"**Lecture de la préparation.** Le split disjoint (graine 42) met **205 exemples** côté entraînement et **22** côté évaluation — aucune paire exacte en commun. Des reformulations d'un même fond peuvent se trouver des deux côtés : c'est voulu, et c'est ce que la perte d'évaluation mesure alors — restituer un fond déjà rencontré sous une formulation nouvelle, pas réciter un exemple appris. Le `Dataset` HuggingFace embarque les textes tokenisés avec leurs `input_ids` et `attention_mask` — le conteneur standard que le `Trainer` sait itérer. Le `DataCollatorForLanguageModeling` configuré avec `mlm=False` (pas de masked language modeling) se contente de padder les séquences du batch à la même longueur : en SFT complet, la loss est calculée sur **tous** les tokens, réponse incluse — on veut précisément que le modèle apprenne à générer la partie réponse.","**Reading the preparation.** The disjoint split (seed 42) puts **205 examples** on the training side and **22** on the evaluation side — no exact pair in common. Rephrasings of the same fact may appear on both sides: this is intentional, and it is exactly what the evaluation loss then measures — restituting an already-seen fact under a new formulation, not reciting a learned example. The HuggingFace `Dataset` carries the tokenized texts with their `input_ids` and `attention_mask` — the standard container the `Trainer` knows how to iterate. The `DataCollatorForLanguageModeling` configured with `mlm=False` (no masked language modeling) simply pads the batch's sequences to the same length: in full SFT, the loss is computed on **all** tokens, response included — we precisely want the model to learn to generate the response part.",,,,,,,82205e5528df7761,faa5c05280422b2a,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,a1ft03dens00,markdown,fr,15235e01a4685842,"**Lecture de l'entraînement.** Trois choses à lire sur la courbe, dans l'ordre :
 
 1. **Les deux pertes descendent ensemble** — le signal d'apprentissage réel. Mesuré : la perte d'évaluation disjointe passe de **1,34 à 0,38** pendant que la perte d'entraînement descend aussi. À 20 exemples, seule la perte d'entraînement existait : elle pouvait descendre par pure mémorisation et rien ne pouvait le détecter. Ici, les 22 exemples d'évaluation — aucune paire exacte vue à l'entraînement — descendent : le modèle restitue des fonds déjà rencontrés sous des formulations nouvelles. C'est la généralisation *formulation → fond*, exactement ce que la couverture de formulations du dataset visait.
@@ -3509,12 +3507,12 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,
 3. **The shape of the eval curve** — it is still descending at the end of the run: five epochs have not exhausted the dataset, but the slope is slowing; this is the classic trade-off that early stopping (stop when the eval ceases to descend) formalizes.
 
 **Written verdict**: at 205 training examples (31.8 min on an 8 GB GPU, VRAM ~1.45 GB), the disjoint eval loss descending from 1.34 to 0.38 demonstrates a generalization — a real one — of the formulation -> fact mapping. What the old configuration (20 examples) produced — a descending loss + gibberish generations — was not this signal: it was format memorization without substance. The difference comes from the dataset's **formulation diversity**, not from training duration.",,,,,,,15235e01a4685842,16afd8472991e508,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,3fc218c8,markdown,fr,78ee5cf634c4adbb,"# FT-05 : Fusion et Routage de Modèles -- Combiner les Expertises
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,3fc218c8,markdown,fr,92bca6772937db7d,"# FT-05 : Fusion et Routage de Modèles -- Combiner les Expertises
 **Navigation** : [Index](README.md) | [<< 04 — RLHF/DPO](FT-04-RLHF-DPO-Python.ipynb) | [06 — Vision-langage >>](FT-06-Vision-Language-LoRA-Python.ipynb)
 
 **Objectif** : Comprendre comment fusionner plusieurs modèles fine-tunes en un seul modèle plus performant, du merge de poids au routage dynamique.
 
-**Prerequis** : FT-01 (LoRA), FT-02 (QLoRA), FT-03 (SFT), FT-04 (DPO)
+**Prerequis** : FT-01 (panorama du fine-tuning), FT-02 (quantization QLoRA), FT-03 (SFT), FT-04 (DPO)
 
 **Duree estimee** : ~35 min
 
@@ -3553,9 +3551,11 @@ des task vectors est une addition vectorielle homogène (~3.1M params) qui tient
 sur le portatif de la sortie committée — ni serveur ni GPU dédiée.
 ","# FT-05: Model Merging and Routing -- Combining Expertises
 
+**Navigation** : [Index](README.md) | [<< 04 — RLHF/DPO](FT-04-RLHF-DPO-Python.ipynb) | [06 — Vision-Language >>](FT-06-Vision-Language-LoRA-Python.ipynb)
+
 **Objective**: Understand how to merge several fine-tuned models into a single, more capable model, from weight merging to dynamic routing.
 
-**Prerequisites**: FT-01 (LoRA), FT-02 (QLoRA), FT-03 (SFT), FT-04 (DPO)
+**Prerequisites**: FT-01 (fine-tuning overview), FT-02 (QLoRA quantization), FT-03 (SFT), FT-04 (DPO)
 
 **Estimated duration**: ~35 min
 
@@ -3587,10 +3587,13 @@ hyperparameter or implement a variant.
 **GPU**: recommended (CUDA); the notebook degrades on CPU with a smaller
 model (full prerequisites at the top of the notebook).
 
-**Measured cost-benefit**: ~5 min on an RTX 3090 (25.8 GB peak VRAM, 1.3B
-base params × 2 LoRA adapters of 3.1M params). That is the order of
-magnitude to reproduce this notebook's figures locally.",,,,,,,78ee5cf634c4adbb,4c5287b0d0e96e44,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,7975df42,markdown,fr,0c6dffef77087fad,"## 1. Pourquoi fusionner des modèles ?
+**Cost-benefit**: this notebook is committed with outputs produced
+on an **8 GB GPU** (`NVIDIA GeForce RTX 3070 Laptop GPU, 8.6 GB
+VRAM`, cf. cell #1). The real cost sits in fine-tuning the adapters
+(FT-02/03/04); the **merge** of the task vectors is a homogeneous
+vector addition (~3.1M params) that fits on the laptop of the
+committed output — no server or dedicated GPU needed.",,,,,,,92bca6772937db7d,69b9beb0947275cb,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,7975df42,markdown,fr,9c16f6f13ab22790,"## 1. Pourquoi fusionner des modèles ?
 
 Après avoir fine-tune plusieurs adaptateurs LoRA pour différentes tâches (FT-03, FT-04), une question naturelle se pose : **comment combiner ces expertises ?**
 
@@ -3627,7 +3630,7 @@ Trois familles de solutions coexistent dans la pratique moderne :
    l'adaptateur approprié selon l'input. Plus coûteux en VRAM, plus
    flexible.
 3. **Sélection / distillation** — entraîner un méta-modèle qui choisit
-   l'expert. Hors scope ici (cf. série RL, rlpt_5 si elle existe).
+   l'expert. Hors scope ici.
 
 **La fusion est l'option par défaut** : zéro coût additionnel en VRAM
 (1 seul adaptateur), zéro nouvel entraînement, et la qualité est
@@ -3676,7 +3679,7 @@ Three families of solutions coexist in modern practice:
 **Merging is the default option**: zero additional VRAM cost
 (a single adapter), no new training, and the quality is
 sufficient for most uses. **DARE** (section 5) is the 2023-2024
-state of the art.",,,,,,,0c6dffef77087fad,7190d50e7f109e11,,,,,,,
+state of the art.",,,,,,,9c16f6f13ab22790,7190d50e7f109e11,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,6a30a03a,markdown,fr,f55b1b58f7d3ed0a,"Nous allons maintenant créer deux adaptateurs LoRA specialises. Chaque adaptateur sera fine-tune sur un domaine spécifique via un SFT rapide (2 epochs, 5 exemples). Ce processus est le même que celui vu en FT-03, mais execute deux fois pour deux domaines différents.
 Nous créons maintenant **deux adaptateurs LoRA spécialisés** sur le
 même modèle de base (1.3B params) :
@@ -3704,16 +3707,16 @@ Each adapter has **3,145,728 trainable parameters** (0.24 % of the
 base model — the standard ratio for LoRA r=16 on attention layers).
 Both adapters start from the same initialization as the base model
 and then diverge through fine-tuning on their respective corpora.",,,,,,,f55b1b58f7d3ed0a,b63924078405175d,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,822c737d,markdown,fr,a3184338d2cc867b,"Premier adaptateur : fine-tune sur 5 exemples de QA technique (Python, Docker, Git, API REST, Machine Learning).
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,822c737d,markdown,fr,4a9c157c23ea28de,"Premier adaptateur : fine-tune sur 5 exemples de QA technique (Python, Docker, Git, API REST, Machine Learning).
 **Premier adaptateur** : fine-tune sur 5 exemples de QA technique.
-L'entraînement est minimal (5 steps × 1 époque) — c'est une
+L'entraînement est minimal (2 époques sur 5 exemples) — c'est une
 **démonstration de la mécanique**, pas un fine-tuning de production.
 En pratique, on utilise 100-1000 exemples et 3 époques.
 ","First adapter: fine-tuned on 5 technical QA examples (Python, Docker, Git, REST APIs, Machine Learning).
 **First adapter**: fine-tuned on 5 technical QA examples. The
 training is minimal (5 steps × 1 epoch) — it is a **demonstration
 of the mechanics**, not a production fine-tuning. In practice, one
-uses 100-1000 examples and 3 epochs.",,,,,,,a3184338d2cc867b,7976c0516ffb0d69,,,,,,,
+uses 100-1000 examples and 3 epochs.",,,,,,,4a9c157c23ea28de,7976c0516ffb0d69,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,436ea01d,markdown,fr,0f356b0cf6e7fc25,"Deuxieme adaptateur : fine-tune sur 5 exemples de QA cuisine (sauces, cuisson, vinaigrette, beurre, pate brisee).
 **Deuxième adaptateur** : fine-tune sur 5 exemples de QA cuisine. Les
 deux adaptateurs ont rigoureusement la même architecture (3.1M params
@@ -3722,11 +3725,11 @@ chacun) et ne divergent que par les exemples d'entraînement.
 **Second adapter**: fine-tuned on 5 cooking QA examples. The two
 adapters have rigorously the same architecture (3.1M params each)
 and differ only by their training examples.",,,,,,,0f356b0cf6e7fc25,441641bd004a7d7a,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,dfde4294,markdown,fr,7f8bcd03c78bf5c1,"### Interpretation : Deux adaptateurs specialises
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,dfde4294,markdown,fr,ae8b85d5d8d419f3,"### Interpretation : Deux adaptateurs specialises
 
 Nous avons maintenant deux adaptateurs LoRA :
 
-| Adaptateur | Domaine | Données d'entrainement |
+| Adaptateur | Domaine | Données d'entraînement |
 |-----------|---------|----------------------|
 | A (Tech) | Programmation, DevOps, APIs | 5 exemples QA technique |
 | B (Cuisine) | Recettes, techniques culinaires | 5 exemples QA cuisine |
@@ -3741,7 +3744,7 @@ l'objet de la section §2 (task vectors) — c'est elle qui quantifie
 
 **Observation empirique** : sur 5 exemples, le delta est très
 petit. Pour des entraînements plus longs (100+ exemples, 3+ époques),
-la norme croît typiquement de 5-10×. C'est cette norme qui pilote la
+la norme croît — ordre de grandeur non mesuré ici. C'est cette norme qui pilote la
 stabilité des fusions (LERP, SLERP, DARE).
 ","### Interpretation: Two specialized adapters
 
@@ -3763,7 +3766,7 @@ adapter moves from the base"".
 **Empirical observation**: on 5 examples, the delta is very small.
 For longer trainings (100+ examples, 3+ epochs), the norm typically
 grows 5-10x. It is this norm that drives the stability of the merges
-(LERP, SLERP, DARE).",,,,,,,7f8bcd03c78bf5c1,c541c7929cc0234e,,,,,,,
+(LERP, SLERP, DARE).",,,,,,,ae8b85d5d8d419f3,c541c7929cc0234e,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,e3f84171,markdown,fr,4feea7e9fcaf4db4,"**Lecture attendue** : chaque adaptateur devrait repondre mieux dans son domaine de specialisation — l'adaptateur A (Tech) sur les sujets techniques, l'adaptateur B (Cuisine) sur les sujets culinaires. À confirmer sur un jeu d'évaluation dédié.
 
 Le problème : si on deploie un chatbot generaliste, il faudrait servir les deux modèles. C'est ici que le **model merging** intervient.
@@ -3846,7 +3849,7 @@ subtraction).
 - `θ_base + τ_A − projection(τ_B, τ_A)` ≈ subtracting the cooking signal (negation).
 
 It is this algebra that underlies sections §3-§5.",,,,,,,9795791ff3f084cf,6f7fc87881b45b60,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,595ecced,markdown,fr,3398093674dc18c9,"### Interpretation : Task Vectors
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,595ecced,markdown,fr,9f37725e6d5552c0,"### Interpretation : Task Vectors
 
 **Sortie obtenue** : Les normes et statistiques des poids LoRA pour chaque adaptateur.
 
@@ -3856,7 +3859,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,595ec
 | Cosine similarity | Si proche de 0, les vecteurs sont orthogonaux (competences independantes) |
 | Distribution | Les valeurs sont centrees autour de 0 avec un ecart-type faible |
 
-**Points cles** :
+**Points clés** :
 1. Les task vectors sont des modifications **denses** -- chaque poids contribue un peu
 2. Si la cosine similarity est faible, les competences sont independantes et le merge sera plus efficace
 3. Si elle est elevee, il peut y avoir des conflits lors du merge
@@ -3864,19 +3867,21 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,595ec
 C'est cette structure que nous allons maintenant combiner.
 ### Lecture du résultat : Task Vectors
 
-**Sortie obtenue** (cellule #13) : les normes des task vectors
-par couche sont imprimées. **Observation** : les premières couches
-(embedding, layer 0-3) ont des normes quasi nulles — le fine-tuning
-n'a pas modifié les représentations lexicales. Les **couches
-intermédiaires et finales** (layer 8-23) portent les normes les plus
-élevées : c'est là que le modèle apprend les spécificités du
-domaine.
+**Sortie obtenue** (cellule #13) : les normes par couche sont imprimées —
+et elles sont quasi uniformes sur tout le réseau (lora_A ≈ 2.3,
+lora_B ≈ 0.19 d'une couche à l'autre). Avec 5 exemples et 2 époques,
+aucun profil par couche ne se distingue : ce fine-tuning minimal n'a
+pas produit de spécialisation localisable. Le seul écart visible
+sépare les deux matrices LoRA : lora_B (initialisée à zéro, donc
+entièrement apprise) reste petite devant lora_A (initialisée
+aléatoirement).
 
-**Implication pour la fusion** : fusionner des task vectors sur les
-couches intermédiaires est plus « signifiant » que sur les premières
-couches. La technique **TIES** (§5) exploite cette observation pour
-résoudre les conflits entre task vectors qui modifient les mêmes
-poids dans des directions opposées.
+**Implication pour la fusion** : le signal appris est faible et
+homogène — rien ne privilégie une couche plutôt qu'une autre pour la
+fusion. La cosine similarity mesurée (0.0006) montre des task vectors
+quasi orthogonaux : deux compétences indépendantes, condition
+favorable au merge. **TIES** (§5) résout les conflits entre task
+vectors qui modifient les mêmes poids dans des directions opposées.
 ","### Interpretation: Task Vectors
 
 **Output obtained**: The norms and statistics of the LoRA weights for each adapter.
@@ -3900,8 +3905,8 @@ layer are printed. **Observation**: the first layers (embedding,
 layers 0-3) have near-zero norms — fine-tuning did not modify the
 lexical representations. The **intermediate and final layers**
 (layers 8-23) carry the highest norms: that is where the model
-learns the domain's specificities.",,,,,,,3398093674dc18c9,598d28dcc059a848,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,93cfbebe,markdown,fr,9fe391682eb3fe7e,"## 3. Interpolation Lineaire (LERP)
+learns the domain's specificities.",,,,,,,9f37725e6d5552c0,598d28dcc059a848,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,93cfbebe,markdown,fr,8047f2f1a85fe702,"## 3. Interpolation Lineaire (LERP)
 
 La méthode la plus simple pour fusionner : la moyenne ponderee des poids.
 
@@ -3926,8 +3931,8 @@ La méthode la plus simple : **moyenne pondérée** des task vectors.
 `α ∈ [0, 1]` contrôle le mélange. `α = 0` = adaptateur B pur ;
 `α = 1` = adaptateur A pur ; `α = 0.5` = moyenne.
 
-**Coût** : 1 addition vectorielle par paramètre (~10 ms pour 3.1M
-params). **Zéro nouvel entraînement**.
+**Coût** : une addition vectorielle par paramètre — négligeable devant
+une passe avant. **Zéro nouvel entraînement**.
 
 **Limite connue** : quand les task vectors sont **fortement
 orthogonaux** (deux domaines très distincts), LERP produit un
@@ -3966,8 +3971,8 @@ params). **Zero new training**.
 orthogonal** (two very distinct domains), LERP produces a model
 ""sitting between two chairs"" — it loses quality on both
 domains. This is the **failure mode of LERP**, and the motivation
-for SLERP and DARE (§4-§5).",,,,,,,9fe391682eb3fe7e,ee0331564b9dab97,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,b1cc4612,markdown,fr,ae90907ac1e5f5df,"### Interpretation : LERP
+for SLERP and DARE (§4-§5).",,,,,,,8047f2f1a85fe702,ee0331564b9dab97,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,b1cc4612,markdown,fr,d39a27ce1f432ed2,"### Interpretation : LERP
 
 **Sortie obtenue** : Reponses du modèle fusionne avec interpolation lineaire.
 
@@ -3977,7 +3982,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,b1cc4
 | Qualite tech | Peut etre degradee par rapport a l'adaptateur A seul |
 | Qualite cuisine | Peut etre degradee par rapport a l'adaptateur B seul |
 
-**Points cles** :
+**Points clés** :
 1. Le LERP est simple mais peut degrader les deux expertises
 2. Dans un espace de grande dimension, la moyenne de deux vecteurs peut ""dilater"" l'espace et perdre des informations
 3. C'est pourquoi SLERP (section suivante) est souvent préférée dans la littérature — l'avantage en qualité n'est pas mesuré ici
@@ -4024,8 +4029,8 @@ versatility trade-off**.
 **Key hyperparameter**: `α = 0.5` is the default, but one can bias
 towards Tech (`α = 0.7`) or Cooking (`α = 0.3`) if the target use
 is dominated by one domain. Section §7 exercise 1 invites you to
-explore this dimension.",,,,,,,ae90907ac1e5f5df,6ce62bc023a17344,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,5d290593,markdown,fr,45ae24d99839c10d,"## 4. SLERP -- Interpolation Spherique Lineaire
+explore this dimension.",,,,,,,d39a27ce1f432ed2,6ce62bc023a17344,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,5d290593,markdown,fr,1c4fb518d84cfa15,"## 4. SLERP -- Interpolation Spherique Lineaire
 
 Le SLERP (Spherical Linear Interpolation) resout le problème du LERP en interpolant le long d'un **grand cercle** sur la sphere unitaire, plutot que le long d'une ligne droite.
 
@@ -4047,7 +4052,8 @@ dans l'espace vectoriel. Avantage : préserve mieux la **norme** des
 task vectors (donc l'« intensité » du fine-tuning), au prix d'une
 géométrie non linéaire.
 
-> `θ_fusion = θ_base + [sin((1−t)·Ω) · τ̂_A_norm + sin(t·Ω) · τ̂_B_norm] · ‖τ_A‖`
+> `θ_fusion = s0 · θ_A + s1 · θ_B` (par couche), avec `s0 = sin((1−t)·Ω)/sin(Ω)`
+> et `s1 = sin(t·Ω)/sin(Ω)` — les coefficients exacts de la cellule #19.
 
 où `Ω = arccos(τ̂_A · τ̂_B)` est l'angle entre les deux task vectors
 normalisés, et `t ∈ [0, 1]` est le paramètre de mélange.
@@ -4056,9 +4062,10 @@ normalisés, et `t ∈ [0, 1]` est le paramètre de mélange.
 LERP. C'est cohérent : dans ce cas, la pondération linéaire et
 sphérique coïncident.
 
-**Implémentation** : cellule #19 (référence à `merge_slerp` dans la
-lib `lorafusion`). La bibliothèque Python `lorafusion` (Jeremy
-Howard, fast.ai) implémente SLERP prêt à l'emploi.
+**Implémentation** : cellule #19 — `slerp` écrite à la main
+(normalisation, angle, coefficients sinusoïdaux, fallback LERP si
+quasi-colinéaires). En production, `mergekit` automatise les merges
+SLERP/DARE/TIES (note technique ci-dessous).
 ","## 4. SLERP -- Spherical Linear Interpolation
 
 SLERP (Spherical Linear Interpolation) solves LERP's problem by interpolating along a **great circle** on the unit sphere, rather than along a straight line.
@@ -4092,8 +4099,8 @@ weighting coincide.
 
 **Implementation**: cell #19 (reference to `merge_slerp` in the
 `lorafusion` lib). The Python library `lorafusion` (Jeremy Howard,
-fast.ai) implements SLERP ready to use.",,,,,,,45ae24d99839c10d,d4e8ecc56265f354,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,ba2645cd,markdown,fr,bd72bc9fcd14ef99,"### Interpretation : SLERP
+fast.ai) implements SLERP ready to use.",,,,,,,1c4fb518d84cfa15,d4e8ecc56265f354,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,ba2645cd,markdown,fr,def69b67e6fe0ede,"### Interpretation : SLERP
 
 **Sortie obtenue** : Reponses du modèle fusionne avec interpolation spherique.
 
@@ -4103,7 +4110,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,ba264
 | Couches quasi-colineaires | N/A | Fallback automatique vers LERP |
 | Qualite du melange (non mesurée) | Lecture attendue : moyenne, risque de dégradation | Lecture attendue : meilleure préservation des expertises |
 
-**Points cles** :
+**Points clés** :
 1. Propriété de l'algorithme : SLERP interpole sur l'arc de grand cercle, ce qui préserve les propriétés géométriques des deux task vectors
 2. Quand les vecteurs sont quasi-colineaires (même direction), SLERP retombe sur LERP
 3. C'est la méthode de merge la plus utilisee en pratique pour les modèles de grande taille
@@ -4154,7 +4161,7 @@ is what is observed empirically in the literature (Ilharco et al.
 **Fallback implementation**: if the norms of the task vectors are
 very different (one task vector dominates the other), SLERP falls
 back to LERP for the layer concerned (cf. the log ""LERP fallback:
-0 layers"" in the output).",,,,,,,bd72bc9fcd14ef99,f9944aa51a90c3b9,,,,,,,
+0 layers"" in the output).",,,,,,,def69b67e6fe0ede,f9944aa51a90c3b9,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,05c5777e,markdown,fr,ab3f1b46243d66f7,"## 5. TIES et DARE -- Techniques avancees
 
 Le LERP et le SLERP font une moyenne de tous les poids. Mais tous les poids ne sont pas également utiles. Deux techniques recentes introduisent une **sélection** des poids :
@@ -4244,7 +4251,7 @@ statistically: two conflicting task vectors have a 30 % chance
 benchmarks (lm-eval-harness, MT-Bench) for an identical
 computational cost. It is the default option in the `mergekit`
 lib.",,,,,,,ab3f1b46243d66f7,99ca6499d9e0d8aa,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,1f45af4a,markdown,fr,bb635aa2db62a0d2,"### Interpretation : DARE
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,1f45af4a,markdown,fr,3506cde14decd48c,"### Interpretation : DARE
 
 **Sortie obtenue** : Reponses du modèle fusionne avec DARE (30% de dropout).
 
@@ -4254,7 +4261,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,1f45a
 | Rescaling | Les poids restants sont multiplies par 1/(1-0.3) ~ 1.43 |
 | Interference (non mesurée) | Lecture attendue : réduite par la suppression aléatoire — le code mesure le taux de poids supprimés, pas les interférences |
 
-**Points cles** :
+**Points clés** :
 1. DARE est très simple a implementer et ne necessite pas de calcul de signe
 2. Le rescaling preserve la magnitude attendue des modifications
 3. Un drop_rate plus eleve (0.5-0.7) reduit davantage les interferences mais peut perdre des informations utiles
@@ -4299,7 +4306,7 @@ LERP/SLERP for orthogonal domains.
 **Hyperparameter**: `drop_rate ∈ [0.1, 0.5]` is the reasonable
 range. Beyond 0.5, the spacing becomes too sparse and quality
 degrades. **mergekit default**: `drop_rate = 0.5`,
-`temperature = 1.0`.",,,,,,,bb635aa2db62a0d2,d88e884d732f63c5,,,,,,,
+`temperature = 1.0`.",,,,,,,3506cde14decd48c,d88e884d732f63c5,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,20357aa9,markdown,fr,183355db679227b1,"## 6. Routing et Mixture of Experts
 
 Le model merging combine les poids en un seul modèle. Le **routing** adopte une approche différente : garder tous les experts et **sélectionner dynamiquement** le bon pour chaque requête.
@@ -4450,10 +4457,10 @@ saved for the forward pass).
 **Simplified implementation**: cell #26 uses the base model's mean
 embeddings as features for the classifier. It is a lightweight
 proxy (not a production classifier).",,,,,,,befb6f2add5931b9,cf6e4c0e60f0e943,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,75aa5a19,markdown,fr,208d48606e6ace2d,"### Interpretation : Routeur — et l'arbitrage contre la baseline
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,75aa5a19,markdown,fr,425601cc5a39bfcb,"### Interpretation : Routeur — et l'arbitrage contre la baseline
 
 L'arbitrage leave-one-out parle par lui-même : **routeur appris 13/14 (92,9 %) vs
-centroïde trivial 12/14 (85,7 %)** — le classifieur entraîné apporte **+7,2 points
+centroïde trivial 12/14 (85,7 %)** — le classifieur entraîné apporte **+7,1 points
 hors échantillon** sur la baseline la plus naïve qui existe. Et l'in-sample à
 100 % masquait entièrement ce gain comme sa fragilité : sur 14 points
 linéairement séparables, 13 vs 12 réussites, c'est un pli de différence — l'écart
@@ -4483,8 +4490,8 @@ space and tens to hundreds of queries. Keep this audit reflex for any classifier
 demo: **always demand the trivial baseline and out-of-sample evaluation** — here,
 without it, the notebook displayed 92.9 % (the previous commit's in-sample score
 was 100 %) without any reader being able to tell whether a centroid would have
-sufficed.",,,,,,,208d48606e6ace2d,c931c0892c2aeda0,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,bf51c29a,markdown,fr,782e052678eaa81d,"### Comparaison : Merging vs Routing
+sufficed.",,,,,,,425601cc5a39bfcb,c931c0892c2aeda0,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,bf51c29a,markdown,fr,56bce685daaf101a,"### Comparaison : Merging vs Routing
 
 Maintenant que nous avons implemente toutes les approches, comparons-les systematiquement.
 
@@ -4510,7 +4517,7 @@ Maintenant que nous avons démontré les deux paradigmes, voici leur
 |---|---|---|
 | VRAM | × 1 adaptateur | × N experts chargés |
 | Latence | × 1 forward pass | × 1 forward pass + classification |
-| Qualité par domaine | 95-98 % du spécialiste | 100 % du spécialiste (si bien routé) |
+| Qualité par domaine | 95-98 % du spécialiste (littérature, non mesuré) | 100 % du spécialiste (si bien routé) |
 | Entraînement additionnel | 0 | Classifieur léger (~5 min) |
 | Gestion des inputs hybrides | Mauvaise (perte par moyennage) | Excellente (soft-routing) |
 
@@ -4560,8 +4567,8 @@ Now that we have demonstrated both paradigms, here is their
   **Routing/soft-MoE** is preferable. Preserves per-token quality.
 - For **general multi-task systems** (an LLM that must do
   everything) → **Merging** (DARE) often beats routing through
-  its simplicity.",,,,,,,782e052678eaa81d,e8381b82aa04178c,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,095833db,markdown,fr,1d242bbaa509b5ee,"### Interpretation : Comparaison finale
+  its simplicity.",,,,,,,56bce685daaf101a,e8381b82aa04178c,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,095833db,markdown,fr,671380ffe72bc3ea,"### Interpretation : Comparaison finale
 
 **Résultats attendus (hypothèses qualitatives — aucun classement mesuré, cf. Hypothèse à tester ci-dessous)** :
 
@@ -4571,10 +4578,10 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,09583
 | Adaptateur B | Faible | Bon | Specialise cuisine |
 | LERP | Moyen | Moyen | Melange egalitaire, degradation des deux |
 | SLERP | Moyen+ | Moyen+ | Meilleur preservation que LERP (attendu) |
-| DARE | Variable | Variable | Dependant du dropout aleatoire |
+| DARE | Variable | Variable | Dependant du dropout aléatoire |
 | Routing | Bon | Bon | Selectionne le bon expert, meilleur résultat (attendu) |
 
-**Points cles** :
+**Points clés** :
 1. Le **routing** est attendu le plus performant par domaine (hypothèse, non mesurée) mais coute plus cher en VRAM
 2. Le **SLERP** est souvent cité comme le meilleur merge statique (littérature) ; l'hypothèse à tester ci-dessous privilégie DARE — non mesuré ici
 3. Le **DARE** est efficace quand on a beaucoup d'experts, mais moins bon avec seulement 2 (littérature, non mesuré ici)
@@ -4633,10 +4640,10 @@ needs **4+ seeds** and a **confidence interval** — beyond the scope
 of this pedagogical notebook.
 
 **Practical conclusion**: for a quick deployment, **DARE with
-drop_rate = 0.3** is the no-regret option.",,,,,,,1d242bbaa509b5ee,7e2969c31487cda7,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,7ea0d064,markdown,fr,00a1b5b5b3bd4162,"## 7. Exercices
+drop_rate = 0.3** is the no-regret option.",,,,,,,671380ffe72bc3ea,7e2969c31487cda7,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,7ea0d064,markdown,fr,db13bf59c4af023b,"## 7. Exercices
 
-Mettez en pratique les concepts de ce notebook. Chaque exercice build sur les concepts précédents.
+Mettez en pratique les concepts de ce notebook.
 ## 7. Exercices
 
 Mettez en pratique les concepts de ce notebook avec 3 exercices
@@ -4675,8 +4682,8 @@ Disjoint Merge).
 system. Extend the classifier to handle 3 classes.
 
 Each exercise is **independent** — you can do them in any
-order.",,,,,,,00a1b5b5b3bd4162,d15955e25b193faf,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,981e8e66,markdown,fr,75004de5026e5902,"
+order.",,,,,,,db13bf59c4af023b,d15955e25b193faf,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,981e8e66,markdown,fr,32a8916be1e6c971,"
 
 
 **Note méthodologique — quand ce notebook est utile (et quand il ne l'est pas)**
@@ -4687,13 +4694,12 @@ spécialisations distinctes (Tech + Cuisine + Code + …) en un seul
 modèle de production ; (3) tester rapidement l'effet d'un merge sur
 un benchmark interne avant de sceller la config ; (4) enseigner la
 mécanique du model merging à des étudiants ; (5) POC avant de scaler
-sur mergekit / Hugging Face  API.
+sur mergekit / Hugging Face API.
 
 **Cas où ce notebook ne s'applique pas** : (1) modèles de
 **tailles hétérogènes** (Qwen 1.5B + Llama 7B) — le merge suppose la
 même architecture de base ; (2) **sparsité extrême** (> 95% drop_rate)
-— préférer la distillation ; (3) très grands modèles > 13B (utiliser
- avec gestion de la mémoire unifiée) ; (4) besoin de
+— préférer la distillation ; (3) très grands modèles > 13B (utiliser l'offloading avec gestion de la mémoire unifiée) ; (4) besoin de
 **sélection dynamique par token** — préférer un vrai MoE (Mixtral,
 DeepSeek-MoE).
 
@@ -4725,14 +4731,15 @@ prefer distillation; (3) very large models > 13B (use with unified
 memory management); (4) the need for **per-token dynamic selection** —
 prefer a true MoE (Mixtral, DeepSeek-MoE).
 
-**Measured cost-benefit**: for 2 LoRA adapters on a 1.3B base, the
-full merge (DARE drop_rate=0.3) runs in **~10 seconds** on an RTX
-3090. That is the real cost of reproducing this notebook's figures —
-the investment sits in the adapters' fine-tuning (FT-02/03/04), not
-in the merge.
+**Cost-benefit**: for 2 LoRA adapters on a 1.3B base, the full
+merge (DARE drop_rate=0.3) is a vector addition over ~3.1M params —
+negligible next to fine-tuning the adapters (FT-02/03/04), whatever
+the hardware; its exact cost depends on the GPU and versions (not
+measured here). The investment sits in the fine-tuning, not in the
+merge.
 
 **Assumed limitations**: (1) the **quality metrics** (perplexity,
-lm-eval-harness) are **manual** in this notebook — for publishable
+lm-eval-harness) are **not computed** in this notebook — for publishable
 conclusions, one would need 4+ seeds and a confidence interval;
 (2) the **router** is a lightweight proxy (mean embeddings), not a
 production classifier; (3) **DARE drop_rate = 0.3** is a reasonable
@@ -5319,23 +5326,23 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ft02-ne
 resultats_exo4 = None  # TODO etudiant
 
 print(""Exercice a completer : alpha/r vs alpha/sqrt(r) a r = 4, 16, 64"")",,,,,,,,79bad61aa11c00d9,,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,7b894d1d,markdown,fr,7b86781bedb9005a,"### Lecture du resultat : l'environnement d'execution
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,7b894d1d,markdown,fr,0358eb06c4412cf3,"### Lecture du résultat : l'environnement d'exécution
 
-La cellule ci-dessus imprime la version effective de PyTorch -- sa sortie committee est la source unique, la prose ne la re-epinglera plus (#9434). Les sorties de ce notebook ont ete produites sur un GPU NVIDIA de classe RTX 3090 (~24 Go de VRAM visible). C'est la banniere sous laquelle tout le reste du notebook doit se lire : GPT-2 (124 M parametres, ~500 Mo en float32) tient ici tres largement, y compris ses gradients et ses optimisateurs -- meme le full fine-tuning de la section 3 resterait executable. Le choix de GPT-2 n'est donc pas une contrainte de cette machine, c'est un choix pedagogique : chaque etape reste mesurable en secondes, et la comparaison des approches reste lisible. Sur une machine sans CUDA, la meme cellule afficherait `CUDA disponible : False` et l'entrainement de la section 4 passerait de quelques secondes a plusieurs minutes -- le notebook resterait exact, seulement plus lent.","### Reading the result: the execution environment
+La cellule ci-dessus imprime la version effective de PyTorch -- sa sortie committee est la source unique, la prose ne la re-epinglera plus (#9434). Les sorties de ce notebook ont ete produites sur un GPU NVIDIA RTX 3080 Ti Laptop (~17 Go de VRAM visible). C'est la banniere sous laquelle tout le reste du notebook doit se lire : GPT-2 (124 M paramètres, ~500 Mo en float32) tient ici très largement, y compris ses gradients et ses optimisateurs -- même le full fine-tuning de la section 3 resterait executable. Le choix de GPT-2 n'est donc pas une contrainte de cette machine, c'est un choix pedagogique : chaque étape reste mesurable en secondes, et la comparaison des approches reste lisible. Sur une machine sans CUDA, la même cellule afficherait `CUDA disponible : False` et l'entraînement de la section 4 passerait de quelques secondes a plusieurs minutes -- le notebook resterait exact, seulement plus lent.","### Reading the result: the execution environment
 
-The cell above prints the effective PyTorch version — its committed output is the single source of truth, the prose will not re-pin it (#9434). This notebook's outputs were produced on an NVIDIA RTX 3090-class GPU (~24 GB of visible VRAM). That is the banner under which the rest of the notebook must be read: GPT-2 (124M params, ~500 MB in float32) fits here with plenty of room, gradients and optimizers included — even the full fine-tuning of section 3 would remain executable. The choice of GPT-2 is therefore not a constraint of this machine, it is a pedagogical choice: every step remains measurable in seconds, and the comparison of approaches stays readable. On a machine without CUDA, the same cell would print `CUDA disponible : False` and the training of section 4 would go from a few seconds to several minutes — the notebook would remain exact, only slower.",,,,,,,7b86781bedb9005a,809376a70bf1f33d,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cad73bc9,markdown,fr,81297ff76508e29e,"### Lecture du resultat : le modele de base charge
+The cell above prints the effective PyTorch version — its committed output is the single source of truth, the prose will not re-pin it (#9434). This notebook's outputs were produced on an NVIDIA RTX 3080 Ti Laptop GPU (~17 GB of visible VRAM). That is the banner under which the rest of the notebook must be read: GPT-2 (124M params, ~500 MB in float32) fits here with plenty of room, gradients and optimizers included — even the full fine-tuning of section 3 would remain executable. The choice of GPT-2 is therefore not a constraint of this machine, it is a pedagogical choice: every step remains measurable in seconds, and the comparison of approaches stays readable. On a machine without CUDA, the same cell would print `CUDA disponible : False` and the training of section 4 would go from a few seconds to several minutes — the notebook would remain exact, only slower.",,,,,,,0358eb06c4412cf3,809376a70bf1f33d,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cad73bc9,markdown,fr,8a15b48f8127a999,"### Lecture du résultat : le modèle de base charge
 
-`Parametres totaux : 124,439,808` -- soit les 124 M parametres annonces de GPT-2 small, la plus petite variante de la famille. C'est ce nombre qui servira de denominateur a toute la section 3 : le meme total, trois fractions entrenables differentes.
+`Parametres totaux : 124,439,808` -- soit les 124 M paramètres annonces de GPT-2 small, la plus petite variante de la famille. C'est ce nombre qui servira de denominateur a toute la section 3 : le même total, trois fractions entrenables différentes.
 
-L'avertissement `HF_TOKEN` visible dans la sortie est bénin : sans jeton, les telechargements du Hub passent en anonyme avec des limites de debit plus basses. Une fois le modele en cache local (`model.safetensors` dans la barre de progression), les executions ulterures ne retéléchargent rien -- d'ou les chargements quasi instantanés des cellules suivantes. Le `pad_token` recopie depuis `eos_token` n'est pas un detail de style : GPT-2 n'a pas de token de padding natif, et l'entrainement par batchs de la section 4 en exige un.","### Reading the result: the base model loaded
+L'avertissement `HF_TOKEN` visible dans la sortie est bénin : sans jeton, les telechargements du Hub passent en anonyme avec des limites de debit plus basses. Une fois le modèle en cache local (`model.safetensors` dans la barre de progression), les exécutions ulterures ne retéléchargent rien -- d'ou les chargements quasi instantanés des cellules suivantes. Le `pad_token` recopie depuis `eos_token` n'est pas un detail de style : GPT-2 n'a pas de token de padding natif, et l'entraînement par batchs de la section 4 en exige un.","### Reading the result: the base model loaded
 
 `Parametres totaux : 124,439,808` — the announced 124M params of GPT-2 small, the smallest variant of the family. This number will serve as the denominator for all of section 3: the same total, three different trainable fractions.
 
-The `HF_TOKEN` warning visible in the output is benign: without a token, Hub downloads go anonymous with lower rate limits. Once the model is in the local cache (`model.safetensors` in the progress bar), subsequent runs re-download nothing — hence the near-instant loads of the following cells. The `pad_token` copied from `eos_token` is not a style detail: GPT-2 has no native padding token, and the batched training of section 4 needs one.",,,,,,,81297ff76508e29e,756b12d594247cfd,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,300bb827,markdown,fr,79a00a02ad98646f,"### Lecture du resultat : le tableau des trois approches, mesure
+The `HF_TOKEN` warning visible in the output is benign: without a token, Hub downloads go anonymous with lower rate limits. Once the model is in the local cache (`model.safetensors` in the progress bar), subsequent runs re-download nothing — hence the near-instant loads of the following cells. The `pad_token` copied from `eos_token` is not a style detail: GPT-2 has no native padding token, and the batched training of section 4 needs one.",,,,,,,8a15b48f8127a999,756b12d594247cfd,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,300bb827,markdown,fr,10b2dff83d5ace7b,"### Lecture du résultat : le tableau des trois approches, mesure
 
-Le tableau mesure ce que la section 2 annoncait en theorie :
+Le tableau mesure ce que la section 2 annoncait en théorie :
 
 | Approche | Entrainables | % | Ratio |
 |---|---:|---:|---|
@@ -5343,7 +5350,7 @@ Le tableau mesure ce que la section 2 annoncait en theorie :
 | Partial (2 couches) | 52,773,120 | 42.41% | ~1/2.4 |
 | LoRA (r=8) | 294,912 | 0.24% | ~1/420 |
 
-La theorie promettait « ~0,5 % » pour LoRA : la mesure donne **0,24 %** avec cette configuration (r=8, `target_modules=[""c_attn""]`). L'ecart n'est pas une erreur : le pourcentage depend du rang r choisi et du nombre de modules cibles -- l'exercice 1 de la section 8 vous fera mesurer cette dependance pour r=2, 8, 32. Retenez surtout l'ordre de grandeur : LoRA entraine ici **~420 fois moins** de parametres que le full fine-tuning, tout en ciblant les memes projections d'attention (`c_attn` est la projection convolutive des blocs transformer de GPT-2).
+La théorie promettait « ~0,5 % » pour LoRA : la mesure donne **0,24 %** avec cette configuration (r=8, `target_modules=[""c_attn""]`). L'ecart n'est pas une erreur : le pourcentage depend du rang r choisi et du nombre de modules cibles -- l'exercice 1 de la section 8 vous fera mesurer cette dépendance pour r=2, 8, 32. Retenez surtout l'ordre de grandeur : LoRA entraine ici **~420 fois moins** de paramètres que le full fine-tuning, tout en ciblant les mêmes projections d'attention (`c_attn` est la projection convolutive des blocs transformer de GPT-2).
 
 L'avertissement `fan_in_fan_out` signale exactement cela : PEFT detecte que le module cible est un `Conv1D` (architecture GPT-2) et corrige l'orientation des matrices A et B de LoRA en consequence. Sans cette correction, l'adaptateur apprendrait sur une transposee -- silencieusement.","### Reading the result: the table of three approaches, measured
 
@@ -5357,43 +5364,43 @@ The table measures what section 2 announced in theory:
 
 Theory promised ""~0.5%"" for LoRA: the measurement gives **0.24%** with this configuration (r=8, `target_modules=[""c_attn""]`). The gap is not an error: the percentage depends on the chosen rank r and the number of target modules — exercise 1 of section 8 will have you trace this dependency for r=2, 8, 32. Above all, remember the order of magnitude: LoRA here trains **~420 times fewer** parameters than full fine-tuning, while targeting the same attention projections (`c_attn` is the convolutional projection of GPT-2's transformer blocks).
 
-The `fan_in_fan_out` warning signals exactly that: PEFT detects that the target module is a `Conv1D` (GPT-2 architecture) and corrects the orientation of the LoRA A and B matrices accordingly. Without this correction, the adapter would silently learn on a transpose.",,,,,,,79a00a02ad98646f,d827e5a37c451762,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,63b5fff4,markdown,fr,9a5711d6dbdf72cc,"### Lecture du resultat : sept segments, pas sept mille
+The `fan_in_fan_out` warning signals exactly that: PEFT detects that the target module is a `Conv1D` (GPT-2 architecture) and corrects the orientation of the LoRA A and B matrices accordingly. Without this correction, the adapter would silently learn on a transpose.",,,,,,,10b2dff83d5ace7b,d827e5a37c451762,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,63b5fff4,markdown,fr,6e2553f1289519b8,"### Lecture du résultat : sept segments, pas sept mille
 
-`Segments d'entrainement : 7` et `Dataset : 7 exemples`. Ce corpus est minuscule a dessein. Un fine-tuning complet sur 7 segments apprendrait surtout le bruit ; avec un corpus aussi minuscule, meme un LoRA de 294 912 parametres court un **risque reel de sur-apprentissage** -- memorisation du corpus comprise. Ce run ne mesure pas ce risque (pas de loss d'evaluation disjointe ici) ; ce qu'on observe en pratique, ce sont des regularites grossieres : longueur de phrase, ponctuation, champs lexicaux.
+`Segments d'entrainement : 7` et `Dataset : 7 exemples`. Ce corpus est minuscule a dessein. Un fine-tuning complet sur 7 segments apprendrait surtout le bruit ; avec un corpus aussi minuscule, même un LoRA de 294 912 paramètres court un **risque reel de sur-apprentissage** -- memorisation du corpus comprise. Ce run ne mesure pas ce risque (pas de loss d'evaluation disjointe ici) ; ce qu'on observe en pratique, ce sont des regularites grossieres : longueur de phrase, ponctuation, champs lexicaux.
 
-La contrepartie assumee : la generation de la section 5 montrera des repetitions (la boucle « l'une nouvelle, l'une nouvelle » du premier prompt) -- signature typique d'un adaptateur sous-dimensionne entraîne sur peu de donnees. Distinguer « le style a ete transfere » de « la qualite du texte a ete amelioree » est l'un des apprentissages centraux de ce notebook.","### Reading the result: seven segments, not seven thousand
+La contrepartie assumee : la generation de la section 5 montrera des repetitions (la boucle « les études illes études illes » du second prompt) -- signature typique d'un adaptateur sous-dimensionne entraîne sur peu de données. Distinguer « le style a ete transfere » de « la qualite du texte a ete amelioree » est l'un des apprentissages centraux de ce notebook.","### Reading the result: seven segments, not seven thousand
 
 `Segments d'entrainement : 7` and `Dataset : 7 exemples`. This corpus is tiny by design. A full fine-tuning on 7 segments would mostly learn noise; with a corpus this small, even a 294,912-parameter LoRA runs a **real overfitting risk** — memorization of the corpus included. This run does not measure that risk (no separate evaluation loss here); what one observes in practice is coarse regularities: sentence length, punctuation, lexical fields.
 
-The assumed counterpart: the generation of section 5 will show repetitions (the ""l'une nouvelle, l'une nouvelle"" loop of the first prompt) — the typical signature of an undersized adapter trained on little data. Telling apart ""the style was transferred"" from ""the text quality improved"" is one of the central lessons of this notebook.",,,,,,,9a5711d6dbdf72cc,0d0aef72a1b13338,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,2fbeb1b5,markdown,fr,98e881684eff549a,"### Lecture du resultat : 256 tokens par exemple
+The assumed counterpart: the generation of section 5 will show repetitions (the repeated ""l'exemplary"" and the ""l'université ... l'univer-de-Lait"" echo of the first prompt) — the typical signature of an undersized adapter trained on little data. Telling apart ""the style was transferred"" from ""the text quality improved"" is one of the central lessons of this notebook.",,,,,,,6e2553f1289519b8,0d0aef72a1b13338,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,2fbeb1b5,markdown,fr,ece694ab51a83f91,"### Lecture du résultat : 256 tokens par exemple
 
-`Tokens par exemple : 256`. Chaque segment des Miserables est coupe (truncation) ou complete (padding) a exactement 256 tokens. Le choix de `labels = input_ids.copy()` merite une pause : en causal language modeling, apprendre a predire le token *suivant* signifie que la cible est la sequence elle-meme, decalee d'un cran -- la librairie fait le decalage en interne, la copie suffit.
+`Tokens par exemple : 256`. Chaque segment des Miserables est coupe (truncation) ou complete (padding) a exactement 256 tokens. Le choix de `labels = input_ids.copy()` merite une pause : en causal language modeling, apprendre a predire le token *suivant* signifie que la cible est la sequence elle-même, decalee d'un cran -- la librairie fait le decalage en interne, la copie suffit.
 
-Le padding uniforme a un cout (les tokens de padding des segments courts sont calcules pour rien) et un avantage decisif ici : tous les exemples ont la meme forme, les batchs se forment sans collate sur mesure. Sur 7 exemples, le cout est invisible ; sur un corpus reel, on prefererait un padding dynamique par batch -- FT-02 garde le padding uniforme et en mesure le cout cache (les trois quarts de chaque sequence sont du remplissage).","### Reading the result: 256 tokens per example
+Le padding uniforme a un cout (les tokens de padding des segments courts sont calcules pour rien) et un avantage decisif ici : tous les exemples ont la même forme, les batchs se forment sans collate sur mesure. Sur 7 exemples, le cout est invisible ; sur un corpus reel, on prefererait un padding dynamique par batch -- FT-02 garde le padding uniforme et en mesure le cout cache (les trois quarts de chaque sequence sont du remplissage).","### Reading the result: 256 tokens per example
 
 `Tokens par exemple : 256`. Each segment of the Misérables is cut (truncation) or padded to exactly 256 tokens. The choice of `labels = input_ids.copy()` deserves a pause: in causal language modeling, learning to predict the *next* token means the target is the sequence itself, shifted by one — the library does the shift internally, the copy suffices.
 
-Uniform padding has a cost (the padding tokens of short segments are computed for nothing) and one decisive advantage here: all examples have the same shape, batches form without a custom collate. On 7 examples the cost is invisible; on a real corpus one would prefer dynamic per-batch padding — a refinement that FT-02 reintroduces in its pipeline.",,,,,,,98e881684eff549a,acde1dfb0e6035f4,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,106fd5ce,markdown,fr,196017a00abf6ad9,"### Lecture du resultat : ce que dit vraiment le rapport d'entrainement
+Uniform padding has a cost (the padding tokens of short segments are computed for nothing) and one decisive advantage here: all examples have the same shape, batches form without a custom collate. On 7 examples the cost is invisible; on a real corpus one would prefer dynamic per-batch padding — a refinement that FT-02 reintroduces in its pipeline.",,,,,,,ece694ab51a83f91,acde1dfb0e6035f4,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,106fd5ce,markdown,fr,b9c0c14803bc94d1,"### Lecture du résultat : ce que dit vraiment le rapport d'entraînement
 
 Trois lignes structurent la sortie :
 
-- **`trainable params: 294,912 || all params: 124,734,720 || trainable%: 0.2364`** -- PEFT confirme la mesure de la section 3 (leger denominateur different : 124,7 M car il ajoute au total les 294 912 parametres de l'adaptateur). Seuls ces 0,24 % recoivent des gradients ; le reste du modele est gele.
-- **`Perte finale : 5.0025`** -- sur 7 exemples, 10 epochs. Ce chiffre n'est **pas** une performance a etaler : il confirme surtout que l'optimisation a tourne sans diverger. Ce sera la valeur de reference de l'exercice 3.
-- **`Temps : ...`** -- sur RTX 3090 (runtime *machine-dep*), dix epochs sur GPT-2 en LoRA tiennent en une dizaine de secondes. C'est l'argument operationnel de LoRA : le meme budget en full fine-tuning devrait aussi porter les gradients et les etats d'optimiseur des 124 M parametres.
+- **`trainable params: 294,912 || all params: 124,734,720 || trainable%: 0.2364`** -- PEFT confirme la mesure de la section 3 (leger denominateur différent : 124,7 M car il ajoute au total les 294 912 paramètres de l'adaptateur). Seuls ces 0,24 % recoivent des gradients ; le reste du modèle est gele.
+- **`Perte finale : 4.8410`** -- sur 7 exemples, 10 epochs. Ce chiffre n'est **pas** une performance a etaler : il confirme surtout que l'optimisation a tourne sans diverger. Ce sera la valeur de reference de l'exercice 3.
+- **`Temps : 4.2s`** -- sur RTX 3080 Ti Laptop (runtime *machine-dep*), dix epochs sur GPT-2 en LoRA tiennent en quelques secondes. C'est l'argument operationnel de LoRA : le même budget en full fine-tuning devrait aussi porter les gradients et les etats d'optimiseur des 124 M paramètres.
 
-Les avertissements (`GPU imbalance`, `NCCL`, `loss_type=None`) sont ceux d'une station multi-GPU heterogene -- ils documentent l'environnement, rien de l'entraînement lui-meme. La discipline de lecture : un warning s'explique avant de s'elimine.","### Reading the result: what the training report really says
+L'avertissement (`loss_type=None`) vient de la configuration Trainer sans type de perte explicite : transformers retombe sur la perte par defaut `ForCausalLMLoss` -- il documente l'environnement, rien de l'entraînement lui-même. La discipline de lecture : un warning s'explique avant de s'elimine.","### Reading the result: what the training report really says
 
 Three lines structure the output:
 
 - **`trainable params: 294,912 || all params: 124,734,720 || trainable%: 0.2364`** — PEFT confirms the measurement of section 3 (slightly different denominator: 124.7M because it adds the adapter's 294,912 parameters to the total). Only these 0.24% receive gradients; the rest of the model is frozen.
-- **`Perte finale : 5.0025`** — on 7 examples, 10 epochs. This number is **not** a performance to boast about: it mostly confirms that the optimization ran without diverging. It will be the reference value of exercise 3.
-- **`Temps : ...`** — on an RTX 3090 (runtime *machine-dep*), ten epochs of GPT-2 in LoRA fit in about ten seconds. That is LoRA's operational argument: the same budget in full fine-tuning would also have to carry the gradients and optimizer states of all 124M parameters.
+- **`Perte finale : 4.8410`** — on 7 examples, 10 epochs. This number is **not** a performance to boast about: it mostly confirms that the optimization ran without diverging. It will be the reference value of exercise 3.
+- **`Temps : 4.2s`** — on an RTX 3080 Ti Laptop (runtime *machine-dep*), ten epochs of GPT-2 in LoRA fit in a few seconds. That is LoRA's operational argument: the same budget in full fine-tuning would also have to carry the gradients and optimizer states of all 124M parameters.
 
-The warnings (`GPU imbalance`, `NCCL`, `loss_type=None`) are those of a heterogeneous multi-GPU station — they document the environment, nothing about the training itself. The reading discipline: a warning is explained before it is eliminated.",,,,,,,196017a00abf6ad9,2e176f425e5667e7,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,98401081,markdown,fr,170a1d67e7614460,"### Ce qu'on attend, ce qu'on n'attend pas — le cadre avant de lire les générations
+The warning (`loss_type=None`) comes from the Trainer configuration without an explicit loss type — transformers falls back on the default `ForCausalLMLoss`; it documents the environment, nothing about the training itself. The reading discipline: a warning is explained before it is eliminated.",,,,,,,b9c0c14803bc94d1,2e176f425e5667e7,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,98401081,markdown,fr,d486b5dcbc14af4d,"### Ce qu'on attend, ce qu'on n'attend pas — le cadre avant de lire les générations
 
 Ce notebook fine-tune sur **7 exemples**. Il faut donc lire les deux générations de la section 5 avec le bon niveau d'exigence :
 
@@ -5401,7 +5408,7 @@ Ce notebook fine-tune sur **7 exemples**. Il faut donc lire les deux génératio
 |---|---|
 | que le **format** du corpus soit appris : phrases courtes et cadencées, ponctuation régulière, champ lexical resserré (rue, Paris, lune) | qu'un pastiche convaincant de Victor Hugo émerge |
 | que l'anglais du pré-entraînement recule au profit du français | que la grammaire, les accords ou le sens soient corrects |
-| qu'un artefact de sous-dimensionnement apparaisse (la répétition en boucle « l'une nouvelle ») | qu'un texte fluide, varié et grammaticalement propre soit produit |
+| qu'un artefact de sous-dimensionnement apparaisse (la répétition en boucle « les études illes ») | qu'un texte fluide, varié et grammaticalement propre soit produit |
 
 **Le critère de réussite atteignable à cette échelle est donc un critère de FORMAT, pas de contenu.** Ici la génération est causale — on n'utilise pas de template chat `### Human/Assistant`, donc le « format » à vérifier est la **signature structurelle** du texte généré (longueur de phrase, cadence, langue, lexique, artefact de répétition). C'est l'adaptation du critère « structure de réponse respectée » à ce type de génération. Les lectures ci-dessous mesurent exactement cela — et se terminent par un tableau chiffré de ces signaux.","### What we expect, what we don't — the frame before reading the generations
 
@@ -5411,69 +5418,69 @@ This notebook fine-tunes on **7 examples**. The two generations of section 5 mus
 |---|---|
 | that the corpus **format** is learned: short cadenced sentences, regular punctuation, a narrowed lexical field (street, Paris, moon) | that a convincing pastiche of Victor Hugo emerges |
 | that the English of pre-training recedes in favor of French | that grammar, agreement, or meaning be correct |
-| that an undersizing artifact appears (the ""l'une nouvelle"" loop repetition) | that a fluent, varied, grammatically clean text be produced |
+| that an undersizing artifact appears (the repeated ""l'exemplary"" of the first prompt) | that a fluent, varied, grammatically clean text be produced |
 
 **The achievable success criterion at this scale is therefore a FORMAT criterion, not a content one.** Here the generation is causal — no `### Human/Assistant` chat template is used, so the ""format"" to check is the **structural signature** of the generated text (sentence length, cadence, language, lexicon, repetition artifact). This is the adaptation of the ""response structure respected"" criterion to this type of generation. The readings below measure exactly that — and end with a quantified table of these signals.",,,,,,,170a1d67e7614460,2558fa1571f9d40f,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,e78ef0cc,markdown,fr,4d88f830dcc172a6,"### Lecture du resultat : premiere generation -- le style, pas la qualite
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,e78ef0cc,markdown,fr,bce2665af921264a,"### Lecture du résultat : première generation -- le style, pas la qualite
 
-Cote **original** : « l'amour d'un seul et de l'accérieur en France, l'un peut-etre la monde en France, l'ambassador sombre... » -- du francais approximatif, des accords inexistants, un effet salade de mots. GPT-2 small est un modele 124 M dont le pre-entrainement est anglophone (WebText) : son francais de surface, assemble de residus, est fragile.
+Cote **original** : « l'amour d'un seul et de l'accérieur en France, l'un peut-etre la monde en France, l'ambassador sombre... » -- du francais approximatif, des accords inexistants, un effet salade de mots. GPT-2 small est un modèle 124 M dont le pre-entraînement est anglophone (WebText) : son francais de surface, assemble de residus, est fragile.
 
-Cote **fine-tune** : « les rues à la nouvelle à la lune. Paris, l'une nouvelle, l'une nouvelle, l'une nouvelle, l'une nouvelle. » -- la syntaxe reste approximative, mais trois choses ont change : les phrases sont **courtes**, la ponctuation **cadence** le texte (une phrase par ligne), et le vocabulaire s'est **resserre** sur le champ du corpus (rues, Paris, lune) -- au prix d'une repetition en boucle typique d'un adaptateur sous-dimensionne. C'est le transfert de style attendu d'un petit LoRA : il deplace la distribution vers les regularites du corpus sans ameliorer la grammaire de base. Juger un fine-tuning, c'est apprendre a lire cette difference pour ce qu'elle est.","### Reading the result: first generation — the style, not the quality
+Cote **fine-tune** : « et les vivreurs pour l'exemplary dans une pauvre, une répondite à tout ce mains, et la nouveau nous enfants. / Et, le grand lune, d'argent de la même de la moinde. » -- la syntaxe reste approximative, mais trois choses ont change : les phrases sont **courtes**, la ponctuation **cadence** le texte (une phrase par ligne), et le vocabulaire s'est **resserre** sur des mots du champ du corpus (lune, enfants, pauvre) -- avec un mot anglais isole (« l'exemplary ») qui affleure. La boucle de repetition typique d'un adaptateur sous-dimensionne surviendra surtout au second prompt. C'est le transfert de style attendu d'un petit LoRA : il deplace la distribution vers les regularites du corpus sans ameliorer la grammaire de base. Juger un fine-tuning, c'est apprendre a lire cette différence pour ce qu'elle est.","### Reading the result: first generation — the style, not the quality
 
-On the **original** side: ""l'amour d'un seul et de l'accérieur en France, l'un peut-etre la monde en France, l'ambassador sombre..."" — approximate French, nonexistent agreement, a word-salad effect. Multilingual GPT-2 small is a 124M model: its surface French is fragile.
+On the **original** side: ""l'amour d'un seul et de l'accérieur en France, l'un peut-etre la monde en France, l'ambassador sombre..."" — approximate French, nonexistent agreement, a word-salad effect. GPT-2 small is a 124M model pretrained on English (WebText): its surface French, assembled from residue, is fragile.
 
-On the **fine-tuned** side: ""les rues à la nouvelle à la lune. Paris, l'une nouvelle, l'une nouvelle, l'une nouvelle, l'une nouvelle."" — the syntax remains approximate, but three things changed: the sentences are **short**, the punctuation **cadences** the text (one sentence per line), and the vocabulary has **narrowed** to the corpus field (streets, Paris, moon) — at the cost of a loop repetition typical of an undersized adapter. This is the style transfer one expects from a small LoRA: it shifts the distribution toward the corpus regularities without improving the underlying grammar. Judging a fine-tuning means learning to read this difference for what it is.",,,,,,,4d88f830dcc172a6,a549a0099b96d8ff,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,33f1d8d1,markdown,fr,42021e67d9392cb8,"### Le critère de format, mesuré sur les deux générations
+On the **fine-tuned** side: ""et les vivreurs pour l'exemplary dans une pauvre, une répondite à tout ce mais, et la nouveau nous enfant de l'exemplary. / L'université de l'autre au VIeurs, l'univer-de-Lait et de la recher"" — the syntax remains approximate, but the cadence has changed: the sentences are **short**, the punctuation **cadences** the text (one sentence per line), and French-morphology words **dominate** (pauvre, enfants, Lait), with the repeated ""l'exemplary"" as the undersizing artifact of this draw. This is the style transfer one expects from a small LoRA: it shifts the distribution toward the corpus regularities without improving the underlying grammar. Judging a fine-tuning means learning to read this difference for what it is.",,,,,,,bce2665af921264a,a549a0099b96d8ff,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,33f1d8d1,markdown,fr,70ccdfbbcc4f6854,"### Le critère de format, mesuré sur les deux générations
 
 Le cadre ci-dessus promettait un critère de **format**, pas de contenu. Mesurons-le sur les sorties réelles des deux prompts, avant vs après LoRA :
 
 | Signal de format | Original (pré-entraîné) | Après LoRA (style Hugo) | Ce que ça dit |
 |---|---|---|---|
-| **Longueur de phrase** | phrases-salade enchaînées (« l'amour d'un seul et de l'accérieur en France, l'un peut-être la monde ») | phrases **courtes** et détachées (« les rues à la nouvelle à la lune. ») | le rythme du corpus est capté |
+| **Longueur de phrase** | phrases-salade enchaînées (« l'amour d'un seul et de l'accérieur en France, l'un peut-être la monde ») | phrases **courtes** et détachées (« Et, le grand lune, d'argent de la même de la moinde. ») | le rythme du corpus est capté |
 | **Cadence / ponctuation** | virgules en rafale, pas de découpage net | phrases **courtes et détachées**, une par ligne (1ᵉʳ prompt) | la structure du corpus est approchée |
-| **Langue** | bascule en **anglais** en plein prompt français (« (I want you to see) ») | **français dominant**, l'anglais en recul net — un résidu anglophone affleure en fin de 2ᵉ prompt | le lexique du corpus déplace celui du pré-entraînement sans l'évacuer entièrement |
-| **Lexique du corpus** | champ large, hors corpus (« ambassador », « consommateurs ») | resserré sur le corpus (« rue », « Paris », « lune », « vie ») | le champ lexical cible émerge |
-| **Artefact de sous-dimensionnement** | absent | **répétition** en boucle « l'une nouvelle » (1ᵉʳ prompt), « leur leur » (2ᵉ prompt) | signature d'un adaptateur sous-dimensionné sur 7 exemples |
+| **Langue** | bascule en **anglais** en plein prompt français (« (I want you to see) ») | **français tenu de bout en bout** dans ce tirage — un mot anglais isolé (« l'exemplary ») au 1ᵉʳ prompt | le lexique du corpus déplace presque entièrement celui du pré-entraînement |
+| **Lexique du corpus** | champ large, hors corpus (« ambassador », « consommateurs ») | resserré sur le corpus (« lune », « enfants », « pauvre », « vie ») | le champ lexical cible émerge |
+| **Artefact de sous-dimensionnement** | absent | **répétition** : « était » martelé, boucle « les études illes études illes » (2ᵉ prompt) | signature d'un adaptateur sous-dimensionné sur 7 exemples |
 
-**Ce que l'échantillon committé montre** : côté fine-tune, quatre signaux de format sont réunis (phrases courtes, cadence, lexique resserré, répétition d'artefact) et la langue reste dominante en français avec un résidu anglophone ; la maîtrise, elle, n'est pas au rendez-vous (grammaire, accords, sens — « cette doute leur leur des mains »). Ces observations sont **compatibles avec** un transfert de format par l'adaptateur, sans l'isoler causalement — un tirage unique par côté, cf. la réserve de la section 5. Les deux colonnes répondent à la question posée par le cadrage : à 7 exemples, on exige le format, pas la maîtrise — et on le lit sur ces cinq signaux — quatre nets, la langue en recul marqué sans être totale. C'est ce qui distingue un fine-tuning **jugé** (par un critère checkable) d'un fine-tuning **ressenti** (par impression).","### The format criterion, measured on both generations
+**Ce que l'échantillon committé montre** : côté fine-tune, quatre signaux de format sont réunis (phrases courtes, cadence, lexique resserré, répétition d'artefact) et la langue tient le français de bout en bout à un mot près ; la maîtrise, elle, n'est pas au rendez-vous (grammaire, accords, sens — « Il avait un était les études illes études illes ésseures »). Ces observations sont **compatibles avec** un transfert de format par l'adaptateur, sans l'isoler causalement — un tirage unique par côté, cf. la réserve de la section 5. Les deux colonnes répondent à la question posée par le cadrage : à 7 exemples, on exige le format, pas la maîtrise — et on le lit sur ces cinq signaux — quatre nets, la langue tenue à un mot anglais près. C'est ce qui distingue un fine-tuning **jugé** (par un critère checkable) d'un fine-tuning **ressenti** (par impression).","### The format criterion, measured on both generations
 
 The frame above promised a **format** criterion, not a content one. Let us measure it on the actual outputs of the two prompts, before vs after LoRA:
 
 | Format signal | Original (pre-trained) | After LoRA (Hugo style) | What it says |
 |---|---|---|---|
-| **Sentence length** | chained word-salad sentences (""l'amour d'un seul et de l'accérieur en France, l'un peut-être la monde"") | **short** detached sentences (""les rues à la nouvelle à la lune."") | the corpus rhythm is captured |
+| **Sentence length** | chained word-salad sentences (""l'amour d'un seul et de l'accérieur en France, l'un peut-être la monde"") | **short** detached sentences (""et la nouveau nous enfant de l'exemplary."") | the corpus rhythm is approximated |
 | **Cadence / punctuation** | commas in bursts, no clean segmentation | **short detached sentences**, one per line (1st prompt) | the corpus structure is approximated |
-| **Language** | switches to **English** mid-French-prompt (""(I want you to see)"") | **dominant French**, English clearly receding — an anglophone residue surfaces at the end of the 2nd prompt | the corpus lexicon displaces that of pre-training without fully evicting it |
-| **Corpus lexicon** | wide field, off-corpus (""ambassador"", ""consommateurs"") | narrowed to the corpus (""rue"", ""Paris"", ""lune"", ""vie"") | the target lexical field emerges |
-| **Undersizing artifact** | absent | loop **repetition** ""l'une nouvelle"" (1st prompt), ""leur leur"" (2nd prompt) | signature of an undersized adapter on 7 examples |
+| **Language** | switches to **English** mid-French-prompt (""(I want you to see)"") | **mixed**: 1st prompt French-dominant; 2nd opens in French then slides into an **English dialogue** | the corpus lexicon only partially displaces that of pre-training |
+| **Corpus lexicon** | wide field, off-corpus (""ambassador"", ""consommateurs"") | tilted toward the corpus (""pauvre"", ""enfants"", ""lait"") | the target lexical field emerges partially |
+| **Undersizing artifact** | absent | repeated **""l'exemplary""** (1st prompt); none visible in the 2nd | signature of an undersized adapter on 7 examples |
 
-**What the committed sample shows**: on the fine-tuned side, four format signals are present (short sentences, cadence, narrowed lexicon, repetition artifact) and the language remains dominantly French with an anglophone residue; mastery, on the other hand, is not there (grammar, agreement, meaning — ""cette doute leur leur des mains""). These observations are **consistent with** a format transfer by the adapter, without isolating it causally — a single draw per side, cf. the reservation of section 5. Both columns answer the question the framing posed: at 7 examples, we require the format, not the mastery — and we read it on these five signals — four clean ones, the language in marked recession without being total. This is what distinguishes a fine-tuning **judged** (by a checkable criterion) from a fine-tuning **felt** (by impression).",,,,,,,42021e67d9392cb8,600ccfb4e03f0bb9,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,8990d557,markdown,fr,a322c9003d4ccf6b,"### Lecture du resultat : l'anglais recule tres nettement -- sans disparaitre tout a fait
+**What the committed sample shows**: on the fine-tuned side, three format signals are present (short sentences, cadence, repetition artifact) and the lexicon tilts toward French corpus words, but the language signal splits by prompt — French-dominant first, an English dialogue second; mastery, on the other hand, is not there (grammar, agreement, meaning — ""une répondite à tout ce mais""). These observations are **consistent with** a partial format transfer by the adapter, without isolating it causally — a single draw per side, cf. the reservation of section 5. Both columns answer the question the framing posed: at 7 examples, we require the format, not the mastery — and we read it on these five signals — three clean ones, the lexicon tilted, the language split by prompt. This is what distinguishes a fine-tuning **judged** (by a checkable criterion) from a fine-tuning **felt** (by impression).",,,,,,,42021e67d9392cb8,600ccfb4e03f0bb9,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,8990d557,markdown,fr,7e4575c160d1e8ba,"### Lecture du résultat : l'anglais recule très nettement
 
 Ce deuxieme prompt donne la comparaison la plus parlante du notebook :
 
-- **ORIGINAL** : « Jean Valjean marchait dans la nuit **(I want you to see) It's the moment when the truth is revealed.** » -- le modele bascule en anglais au milieu d'un prompt francais, et enchaîne des restes de dialogues anglophones `(A) Vigour de vivre...`.
-- **FINE-TUNE** : « ...à la vie est réponse une réputation des fois en France, cette doute leur leur des mains, qui la comme de vie de la cette sommage. » -- imparfait, mais le **corps narratif reste en francais**, avec une cadence de phrase longue typique du corpus Hugo ; la generation se termine toutefois par un residu anglophone (« The question was: What were the effects of the French revolution... »).
+- **ORIGINAL** : « Jean Valjean marchait dans la nuit **(I want you to see) It's the moment when the truth is revealed.** » -- le modèle bascule en anglais au milieu d'un prompt francais, et enchaîne des restes de dialogues anglophones `(A) Vigour de vivre...`.
+- **FINE-TUNE** : « ...et d'un grande dernier à tout le déput était une monde. Mais était de leur dernier, et je suis était à la vie. Il avait un était les études illes études illes ésseures, il n'écouter était ux » -- imparfait, mais le **corps narratif reste en francais du debut a la fin**, avec une cadence de phrase longue typique du corpus Hugo, terminee par la boucle de repetition « les études illes études illes ».
 
-Le prompt est identique et les parametres de generation sont ceux de la fonction `generate_text` ; chaque cote reste neanmoins **un tirage echantillonne unique** (la graine n'est pas re-fixee avant chaque appel -- cf. la reserve de la section 5). Dans ce tirage commite, le corps de la generation fine-tune reste en francais la ou l'original basculait immediatement en anglais, avec un residu anglophone en finale : le contraste est **indicatif**, faute de re-echantillonnage controle -- un tirage par cote, pas une moyenne ; seul un protocole multi-tirages a graine fixee permettrait d'attribuer l'ecart a l'adaptateur LoRA de 1,18 Mo.","### Reading the result: English recedes very clearly — without disappearing entirely
+Le prompt est identique et les paramètres de generation sont ceux de la fonction `generate_text` ; chaque cote reste neanmoins **un tirage echantillonne unique** (la graine n'est pas re-fixee avant chaque appel -- cf. la reserve de la section 5). Dans ce tirage commite, la generation fine-tune tient le francais de bout en bout la ou l'original basculait immediatement en anglais : le contraste est **indicatif**, faute de re-echantillonnage contrôlé -- un tirage par cote, pas une moyenne ; seul un protocole multi-tirages a graine fixee permettrait d'attribuer l'ecart a l'adaptateur LoRA de 1,18 Mo.","### Reading the result: the second prompt — a fragile contrast
 
-This second prompt gives the notebook's most telling comparison:
+This second prompt gives the notebook's most demanding comparison:
 
 - **ORIGINAL**: ""Jean Valjean marchait dans la nuit **(I want you to see) It's the moment when the truth is revealed.**"" — the model switches to English in the middle of a French prompt, and chains remnants of English dialogues `(A) Vigour de vivre...`.
-- **FINE-TUNE**: ""...à la vie est réponse une réputation des fois en France, cette doute leur leur des mains, qui la comme de vie de la cette sommage."" — imperfect, but the **narrative body remains French**, with a long-sentence cadence typical of the Hugo corpus; the generation nonetheless ends with an anglophone residue (""The question was: What were the effects of the French revolution..."").
+- **FINE-TUNE**: ""...et d'un grande dernier à tout le déput était une monde. Mais était de leur dernier, et je suis était à la vie. Il avait un était les études illes études illes ésseures, il n'écouter était ux"" — imperfect, but the **narrative body stays in French from start to finish**, with the long-sentence cadence typical of the Hugo corpus, ended by the repetition loop ""les études illes études illes"".
 
-The prompt is identical and the generation parameters are those of the `generate_text` function; each side nevertheless remains **a single sampled draw** (the seed is not re-set before each call — cf. the reservation of section 5). In this committed draw, the body of the fine-tuned generation remains French where the original switched to English immediately, with an anglophone residue at the end: the contrast is **indicative**, lacking controlled re-sampling — one draw per side, not an average; only a fixed-seed multi-draw protocol would attribute the gap to the 1.18 MB LoRA adapter.",,,,,,,a322c9003d4ccf6b,369796be61f3bcd5,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,065a8f8c,markdown,fr,e84e1740461f39a5,"### Lecture du resultat : 1,18 Mo contre 497,8 Mo
+The prompt is identical and the generation parameters are those of the `generate_text` function; each side nevertheless remains **a single sampled draw** (the seed is not re-set before each call — cf. the reservation of section 5). In this committed draw, the fine-tuned generation holds French from start to finish where the original switched to English immediately: the contrast is **indicative**, lacking controlled re-sampling — one draw per side, not an average; only a fixed-seed multi-draw protocol would attribute the gap, or its absence, to the 1.18 MB LoRA adapter.",,,,,,,7e4575c160d1e8ba,369796be61f3bcd5,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,065a8f8c,markdown,fr,5e32f35450665ab2,"### Lecture du résultat : 1,18 Mo contre 497,8 Mo
 
-`Modele complet (GPT-2) : 497.8 Mo` -- les 124 439 808 parametres en float32. `Adaptateur LoRA seul : 1.18 Mo` -- les matrices A et B de rang 8 apprises, soit un **ratio de 0,24 %** coherant avec la fraction entrenable mesuree en section 3 (ce n'est pas un hasard : en LoRA, la taille de l'adaptateur est proportionnelle au nombre de parametres entrenables).
+`Modele complet (GPT-2) : 497.8 Mo` -- les 124 439 808 paramètres en float32. `Adaptateur LoRA seul : 1.18 Mo` -- les matrices A et B de rang 8 apprises, soit un **ratio de 0,24 %** coherant avec la fraction entrenable mesuree en section 3 (ce n'est pas un hasard : en LoRA, la taille de l'adaptateur est proportionnelle au nombre de paramètres entrenables).
 
-L'implication operationnelle est dans la derniere ligne : pour deployer, il suffit de distribuer le modele de base (telechargeable une fois, partageable entre tous vos adaptateurs) plus un fichier de 1,18 Mo par style appris. Dix styles Hugo, Zola, Sand... = dix adaptateurs de ~1 Mo sur un seul GPT-2. C'est le modele de distribution que rendent possible les adaptateurs -- et que FT-02 poussera encore en quantizant le modele de base lui-meme.","### Reading the result: 1.18 MB against 497.8 MB
+L'implication operationnelle est dans la dernière ligne : pour deployer, il suffit de distribuer le modèle de base (telechargeable une fois, partageable entre tous vos adaptateurs) plus un fichier de 1,18 Mo par style appris. Dix styles Hugo, Zola, Sand... = dix adaptateurs de ~1 Mo sur un seul GPT-2. C'est le modèle de distribution que rendent possible les adaptateurs -- et que FT-02 poussera encore en quantizant le modèle de base lui-même.","### Reading the result: 1.18 MB against 497.8 MB
 
 `Modele complet (GPT-2) : 497.8 Mo` — the 124,439,808 params in float32. `Adaptateur LoRA seul : 1.18 Mo` — the learned rank-8 A and B matrices, a **ratio of 0.24%** consistent with the trainable fraction measured in section 3 (no coincidence: in LoRA, the adapter size is proportional to the number of trainable parameters).
 
-The operational implication is in the last line: to deploy, it suffices to distribute the base model (downloadable once, shareable across all your adapters) plus one 1.18 MB file per learned style. Ten styles — Hugo, Zola, Sand... — make ten ~1 MB adapters over a single GPT-2. This is the distribution model that adapters make possible — and that FT-02 will push further by quantizing the base model itself.",,,,,,,e84e1740461f39a5,2771ca279ac2a83a,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,5ff27a53,markdown,fr,62a752991b8e0499,"### Lecture du resultat : la memoire rendue
+The operational implication is in the last line: to deploy, it suffices to distribute the base model (downloadable once, shareable across all your adapters) plus one 1.18 MB file per learned style. Ten styles — Hugo, Zola, Sand... — make ten ~1 MB adapters over a single GPT-2. This is the distribution model that adapters make possible — and that FT-02 will push further by quantizing the base model itself.",,,,,,,5e32f35450665ab2,2771ca279ac2a83a,,,,,,,
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,5ff27a53,markdown,fr,1f697dae7737f999,"### Lecture du résultat : la memoire rendue
 
-`VRAM libre : 24.4 Go` apres suppression des references et `empty_cache()`. Sur les ~25,8 Go vus en section 1, l'entrainement LoRA complet n'avait donc occupe qu'une fraction visible de la carte. Cette cellule n'est pas de la decoration : dans un notebook suivant, le premier reflexe est de rendre la VRAM avant de charger le prochain modele -- sinon l'`OutOfMemoryError` arrive a la cellule d'apres, tres loin de sa vraie cause.","### Reading the result: memory handed back
+`VRAM libre : 14.3 Go` après suppression des references et `empty_cache()`. Sur les ~17,2 Go vus en section 1, l'entraînement LoRA complet n'avait donc occupe qu'une fraction visible de la carte. Cette cellule n'est pas de la decoration : dans un notebook suivant, le premier reflexe est de rendre la VRAM avant de charger le prochain modèle -- sinon l'`OutOfMemoryError` arrive a la cellule d'après, très loin de sa vraie cause.","### Reading the result: memory handed back
 
-`VRAM libre : 24.4 Go` after deleting the references and calling `empty_cache()`. Of the ~25.8 GB seen in section 1, the complete LoRA training had therefore occupied only a visible fraction of the card. This cell is not decoration: in a follow-on notebook, the first reflex is to hand the VRAM back before loading the next model — otherwise the `OutOfMemoryError` arrives at the next cell, very far from its true cause.",,,,,,,62a752991b8e0499,279d9a08f616c6f3,,,,,,,
+`VRAM libre : 15.1 Go` after deleting the references and calling `empty_cache()`. Of the ~17.2 GB seen in section 1, the complete LoRA training had therefore occupied only a visible fraction of the card. This cell is not decoration: in a follow-on notebook, the first reflex is to hand the VRAM back before loading the next model — otherwise the `OutOfMemoryError` arrives at the next cell, very far from its true cause.",,,,,,,1f697dae7737f999,279d9a08f616c6f3,,,,,,,

@@ -15,7 +15,9 @@ require mathlib from git
 
 @[default_target]
 lean_lib «Knots» where
-  -- `.submodules `Knots` covers the Knots.* submodules (FR + their _en siblings);
-  -- the root `Knots_en` aggregator must be globbed explicitly (bare `.submodules`
-  -- matches only submodules, not sibling root modules), pattern #6585 / #4980.
-  globs := #[.submodules `Knots, `Knots_en]
+  -- `.andSubmodules `Knots` covers the FR root aggregator `Knots.lean` itself plus
+  -- the Knots.* submodules (FR + their _en siblings); the root `Knots_en` aggregator
+  -- must still be globbed explicitly (a glob entry matches one root module only),
+  -- pattern #6585 / #4980. FR root glob added when wiring ReidemeisterCombinatorial
+  -- into it: with `.submodules` alone, `lake build` never elaborated `Knots.lean`.
+  globs := #[.andSubmodules `Knots, `Knots_en]
