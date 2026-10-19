@@ -155,8 +155,8 @@ sur `origin/main` @ `63a8207db`, 2026-10-19) :
 
 **Mesure du porteur hors ligne** — noyau `.net-csharp` canon 1.0.712001, .NET 10 machine-wide,
 2026-10-19 : **11,0 s** de wall-clock rapporté par `notebook_tools.py execute`, **0 erreur**.
-La même exécution chronométrée par l'exécuteur canonique
-`exec_dotnet_persist.py` donne 7,9 s et 8,9 s sur deux passages : la dispersion du wall-clock
+La même exécution chronométrée par l'exécuteur .NET `dotnet_executor.py` (via son wrapper
+`exec_dotnet_persist.py`) donne 7,9 s et 8,9 s sur deux passages : la dispersion du wall-clock
 carnet est celle décrite plus haut (kernel + Roslyn dominent).
 
 | Carnet (axe 1) | net10 (canon) | net11 (RC) | Delta | État |
