@@ -307,7 +307,10 @@ class VolatilityHarvestML(QCAlgorithm):
     def OnData(self, data):
         if self.IsWarmingUp:
             return
-        if self.mode in REFERENCE_WEIGHTS and self.Time.month != self.ref_month:
+        # Un avis de dividende ou de division arrive seul dans une tranche de minuit,
+        # sans barre (#20264) : il ne doit pas consommer le reequilibrage du mois.
+        if (self.mode in REFERENCE_WEIGHTS and self.Time.month != self.ref_month
+                and any(data.Bars.ContainsKey(self.symbols[t]) for t in REFERENCE_WEIGHTS[self.mode])):
             # Reference detenue, reequilibree a la premiere barre journaliere du mois.
             self.ref_month = self.Time.month
             for ticker, weight in REFERENCE_WEIGHTS[self.mode].items():

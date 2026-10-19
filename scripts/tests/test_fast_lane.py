@@ -32,8 +32,42 @@ sys.path.insert(0, str(CI_DIR))
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
     FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
-    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, Guard,
+    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, TRANCHE22, Guard,
 )
+
+# Lot PILOTE absorbe a l'etape 3 de #12856 (programme #12567) : comparaison
+# conclue pour ces neuf gardes -- job renomme byte-identique au `guard.name`
+# + declencheur `pull_request` retire du workflow source dans le meme commit.
+# Epingler le lot ici rend toute absorption/desabsorption ulterieure d'un
+# garde PILOT visible : c'est un geste trace, jamais un effet de bord.
+PILOT_ABSORBED_LOT_12856 = frozenset({
+    "probeAddresses banner guard (main-repo notebooks)",
+    "!pip install HIGH delta guard (#6314)",
+    "prose-counts",
+    "No bare cross-dir #load in changed notebooks",
+    "check-navlinks",
+    "check-nav-chain",
+    "Audit README -> .ipynb links",
+    "check_interp_positioning.py",
+    "markdown-rendering guard (main-repo notebooks)",
+})
+
+
+def _blank_other_tranches(monkeypatch, keep=()):
+    """Vide toutes les tranches du moteur sauf celles nommees dans `keep`.
+
+    Patcher une liste figee (`TRANCHE2/4/5`) laissait tourner les gardes
+    REELLES des tranches oubliees : leur rc, injecte par un `run_argv`
+    simule, faisait rougir le job et le test mesurait le registre au lieu du
+    comportement vise. Le depot a paye ce defaut le 2026-10-05 (absorption
+    des tranches 15/16 #19168 puis 17 #19118) et de nouveau le 2026-10-09
+    (`TRANCHE20`, garde live-read bloquant) : la bonne forme est de blanker
+    par ENUMERATION du module, pas par liste apprise.
+    """
+    import fast_lane as fl
+    for _name in sorted(n for n in vars(fl) if n.startswith("TRANCHE")):
+        if _name not in keep:
+            monkeypatch.setattr(fl, _name, [])
 
 
 # ---------------------------------------------------------------------------
@@ -91,8 +125,8 @@ def test_notebook_guards_select_a_root_level_notebook():
     """Controle de bout en bout du piege `**/` sur le registre reel."""
     changed = ["Notebook-A-La-Racine.ipynb"]
     selected = [g.name for g in PILOT if fast_lane.guard_applies(g, changed)]
-    for expected in ("banner-guard", "pip-leak-guard", "solution-leak-guard",
-                     "prose-counts-guard"):
+    for expected in ("probeAddresses banner guard (main-repo notebooks)", "!pip install HIGH delta guard (#6314)", "solution-leak-guard",
+                     "prose-counts"):
         assert expected in selected, (
             f"{expected} devrait couvrir un notebook a la racine "
             "(motif `**/*.ipynb`)"
@@ -406,22 +440,65 @@ def test_advisory_flags_match_the_source_workflows():
     """
     by_name = {g.name: g for g in PILOT}
     assert by_name["solution-leak-guard"].blocking is False
-    assert by_name["prose-counts-guard"].blocking is True
-    assert "--strict" in by_name["prose-counts-guard"].argv
-    assert by_name["banner-guard"].blocking is True
-    assert by_name["pip-leak-guard"].blocking is True
+    assert by_name["prose-counts"].blocking is True
+    assert "--strict" in by_name["prose-counts"].argv
+    assert by_name["probeAddresses banner guard (main-repo notebooks)"].blocking is True
+    assert by_name["!pip install HIGH delta guard (#6314)"].blocking is True
     assert by_name["perimeter-review-guard"].blocking is True
     # 5 gardes ajoutees (extension 5 -> 10) -- bloquer par defaut
-    assert by_name["bare-cross-dir-load-gate"].blocking is True
-    assert by_name["notebook-navlink-check"].blocking is True
+    assert by_name["No bare cross-dir #load in changed notebooks"].blocking is True
+    assert by_name["check-navlinks"].blocking is True
     # nav-chain reachability (#17284) : bloquant sur le NOUVEAU seulement,
     # le baseline porte la dette assumee (450 entrees a ce head -- compte
     # informatif, le JSON fait foi ; rollout par serie)
-    assert by_name["notebook-nav-chain-guard"].blocking is True
-    assert by_name["notebook-interp-positioning-guard"].blocking is True
-    assert by_name["markdown-rendering-guard"].blocking is True
+    assert by_name["check-nav-chain"].blocking is True
+    assert by_name["check_interp_positioning.py"].blocking is True
+    assert by_name["markdown-rendering guard (main-repo notebooks)"].blocking is True
     assert by_name["self-hosted-runner-policy"].blocking is True
 
+
+def test_check_nav_chain_argv_carries_the_pr_diff_scope_issue_20303():
+    """#20303 : la garde absorbee doit garder la portee de son workflow d'origine.
+
+    Le workflow d'origine passait `--diff-files pr_files.txt` (diff base...HEAD).
+    L'argv absorbe n'avait que `--check` : tout NEW du graphe global, meme hors
+    de la PR, rougissait la PR. La portee passe par `{base_ref}` (comme
+    split-reading, prose-counts, md-content-loss) : le checker calcule le diff.
+    Un finding NEW hors diff ne bloque pas ; dans le diff, il bloque (controle
+    positif et negatif de bout en bout : test_check_notebook_nav_chain.py).
+    """
+    by_name = {g.name: g for g in PILOT}
+    guard = by_name["check-nav-chain"]
+    assert "--check" in guard.argv
+    assert "--diff-base" in guard.argv
+    i = guard.argv.index("--diff-base")
+    assert guard.argv[i + 1] == "{base_ref}", "la base vient de la lane, pas en dur"
+    resolved = fast_lane.substitute(guard.argv, {"base_ref": "origin/main"})
+    assert resolved[resolved.index("--diff-base") + 1] == "origin/main"
+    assert guard.needs_base and guard.diff_bounded
+
+
+def test_check_navlinks_argv_carries_the_pr_diff_scope_issue_21016():
+    """#21016 : la garde absorbee check-navlinks doit garder la portee de son
+    workflow d'origine (symetrique de check-nav-chain, #20303/#20582).
+
+    Le workflow d'origine passait `--diff-files pr_files.txt` (diff base...HEAD).
+    L'argv absorbe n'avait que `--check` : tout NEW du graphe global, meme hors
+    de la PR, rougissait la PR. La portee passe par `{base_ref}` (comme
+    split-reading, prose-counts, md-content-loss, nav-chain) : le checker
+    calcule le diff lui-meme. Un finding NEW hors diff ne bloque pas ; dans
+    le diff, il bloque (controle positif et negatif de bout en bout :
+    test_check_notebook_navlinks.py).
+    """
+    by_name = {g.name: g for g in PILOT}
+    guard = by_name["check-navlinks"]
+    assert "--check" in guard.argv
+    assert "--diff-base" in guard.argv
+    i = guard.argv.index("--diff-base")
+    assert guard.argv[i + 1] == "{base_ref}", "la base vient de la lane, pas en dur"
+    resolved = fast_lane.substitute(guard.argv, {"base_ref": "origin/main"})
+    assert resolved[resolved.index("--diff-base") + 1] == "origin/main"
+    assert guard.needs_base and guard.diff_bounded
 
 def test_self_hosted_policy_guard_is_wired_fail_closed():
     guard = {item.name: item for item in PILOT}["self-hosted-runner-policy"]
@@ -456,8 +533,8 @@ def test_non_iterate_guards_have_no_paths_placeholder():
     `{changed_paths}` dans argv (le placeholder n'aurait pas de sens). On
     verifie au moins que les 5 gardes existants en sont exempts."""
     by_name = {g.name: g for g in PILOT}
-    for name in ("banner-guard", "pip-leak-guard", "solution-leak-guard",
-                 "prose-counts-guard", "perimeter-review-guard"):
+    for name in ("probeAddresses banner guard (main-repo notebooks)", "!pip install HIGH delta guard (#6314)", "solution-leak-guard",
+                 "prose-counts", "perimeter-review-guard"):
         assert "{changed_paths}" not in by_name[name].argv, (
             f"{name} n'est pas iterates_paths mais porte le placeholder"
         )
@@ -679,24 +756,55 @@ def test_tranche1_guards_are_absorbed_and_pilot_is_not():
     rend son verdict sous son nom canonique (donc rougissant), un garde du
     pilote reste en observation. Si les deux lots se melangent, soit le
     pilote bloque sans preuve de comparaison, soit la tranche absorbee est
-    neutralisee et son garde d'origine parti sans remplacement."""
+    neutralisee et son garde d'origine parti sans remplacement.
+
+    Lot PILOTE absorbe (#12856 etape 3, programme #12567) : les NEUF gardes
+    de PILOT_ABSORBED_LOT_12856 ont conclu leur comparaison -- job renomme
+    byte-identique + declencheur `pull_request` retire dans le meme commit.
+    Le lot est EPINGLE par intention : absorber un dixieme garde PILOT sans
+    mettre a jour cette liste (ni le checker d'identite) doit rougir ici --
+    chaque absorption du pilote est un geste trace, pas un effet de bord."""
     assert TRANCHE1, "la tranche 1 est vide : ce test n'exerce plus rien"
     for guard in TRANCHE1:
         assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
-    for guard in PILOT:
-        assert not guard.absorbed, (
-            f"{guard.name} est un garde PILOT : il reste en ombre jusqu'a "
-            "la conclusion de la comparaison")
+    absorbes_pilote = {g.name for g in PILOT if g.absorbed}
+    assert absorbes_pilote == PILOT_ABSORBED_LOT_12856, (
+        f"gardes PILOT absorbes = {sorted(absorbes_pilote)} != lot epingle "
+        f"{sorted(PILOT_ABSORBED_LOT_12856)} : absorption ou desabsorption "
+        "non tracee -- mettre a jour le lot ET verifier que le workflow "
+        "concerne a perdu son declencheur pull_request")
 
 
 def test_absorbed_workflows_no_longer_trigger_on_pull_request():
     """Chaque garde absorbe voit son workflow d'origine retire du
     declenchement `pull_request` -- sinon le garde tourne deux fois (une
     fois canonique par la voie rapide, une fois par son workflow) et la
-    mutualisation ne sauuche aucun run. Verification textuelle ancre'e :
-    `pull_request:` en debut d'indentation sous `on:`."""
+    mutualisation ne sauve aucun run. Verification textuelle ancre'e :
+    `pull_request:` en debut d'indentation sous `on:`.
+
+    Depuis l'etape 3 de #12856 le contrat couvre TOUT garde absorbe du
+    registre (decouverte dynamique des listes de Guard), y compris le lot
+    PILOTE absorbe -- pas seulement TRANCHE1. Les tranches declarees dans
+    `TRANCHE_ALIGNMENT_EN_COURS` restent exemptees : leur absorption est
+    faite par declaration mais le geste de bascule (rename + retrait du
+    trigger) est encore en cours, exactement l'exemption du checker
+    d'identite."""
     import re as _re
-    for guard in TRANCHE1:
+    import fast_lane_registry
+    align_set = set()
+    for tranche_name in fast_lane_registry.TRANCHE_ALIGNMENT_EN_COURS:
+        align_set.update(
+            id(g) for g in getattr(fast_lane_registry, tranche_name, []))
+    absorbes = []
+    for value in vars(fast_lane_registry).values():
+        if isinstance(value, list) and value and all(
+                isinstance(item, Guard) for item in value):
+            absorbes.extend(
+                g for g in value
+                if g.absorbed and g.source != FAST_LANE_NATIVE
+                and id(g) not in align_set)
+    assert absorbes, "aucun garde absorbe : ce test ne mesurerait rien"
+    for guard in absorbes:
         wf = WORKFLOWS / guard.source
         assert wf.is_file(), f"{guard.source} absent du depot"
         txt = wf.read_text(encoding="utf-8")
@@ -724,9 +832,7 @@ def _drive_mixed_emission(monkeypatch, pilot_rc, tranche_rc):
     # l'absorption des tranches 15/16 (#19168) et 17 (#19118) a fait echouer ce
     # test, qui passait par accident tant qu'aucune tranche oubliee n'etait
     # absorbe et bloquante.
-    for _tranche in sorted(n for n in vars(fl) if n.startswith("TRANCHE")):
-        if _tranche != "TRANCHE1":
-            monkeypatch.setattr(fl, _tranche, [])
+    _blank_other_tranches(monkeypatch, keep={"TRANCHE1"})
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
     monkeypatch.setattr(
         fl, "run_argv",
@@ -820,9 +926,7 @@ def test_pre_argv_failure_short_circuits_the_guard(monkeypatch):
     calls = []
     monkeypatch.setattr(fl, "PILOT", [])
     monkeypatch.setattr(fl, "TRANCHE1", [guard])
-    monkeypatch.setattr(fl, "TRANCHE2", [])
-    monkeypatch.setattr(fl, "TRANCHE4", [])
-    monkeypatch.setattr(fl, "TRANCHE5", [])
+    _blank_other_tranches(monkeypatch, keep={"TRANCHE1"})
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
 
     def fake_run_argv(argv, ctx):
@@ -851,9 +955,7 @@ def test_pre_argv_success_chains_into_the_scan(monkeypatch):
     calls = []
     monkeypatch.setattr(fl, "PILOT", [])
     monkeypatch.setattr(fl, "TRANCHE1", [guard])
-    monkeypatch.setattr(fl, "TRANCHE2", [])
-    monkeypatch.setattr(fl, "TRANCHE4", [])
-    monkeypatch.setattr(fl, "TRANCHE5", [])
+    _blank_other_tranches(monkeypatch, keep={"TRANCHE1"})
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
 
     def fake_run_argv(argv, ctx):
@@ -998,9 +1100,7 @@ def test_warn_rc_incident_coherent_on_all_three_surfaces(monkeypatch):
     import fast_lane as fl
     monkeypatch.setattr(fl, "PILOT", [])
     monkeypatch.setattr(fl, "TRANCHE1", [guard])
-    monkeypatch.setattr(fl, "TRANCHE2", [])
-    monkeypatch.setattr(fl, "TRANCHE4", [])
-    monkeypatch.setattr(fl, "TRANCHE5", [])
+    _blank_other_tranches(monkeypatch, keep={"TRANCHE1"})
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
     monkeypatch.setattr(fl, "run_argv", lambda argv, ctx: (2, "illisible"))
     monkeypatch.setattr(
@@ -1036,8 +1136,7 @@ def test_iter_paths_skips_files_deleted_by_the_pr(monkeypatch):
     monkeypatch.setattr(fl, "PILOT", [])
     monkeypatch.setattr(fl, "TRANCHE1", [])
     monkeypatch.setattr(fl, "TRANCHE2", [fig])
-    monkeypatch.setattr(fl, "TRANCHE4", [])
-    monkeypatch.setattr(fl, "TRANCHE5", [])
+    _blank_other_tranches(monkeypatch, keep={"TRANCHE2"})
 
     # Un notebook REEL (pour le cas here) + un chemin absent (gone) : le
     # filtre doit garder le premier et ecarter le second.
@@ -1550,10 +1649,7 @@ def test_warn_rc_incident_emits_neutral_distinct_title_not_blocking(monkeypatch)
                   blocking=True, paths=["**/*.ipynb"], absorbed=True,
                   warn_rc=(2,))
     monkeypatch.setattr(fl, "PILOT", [guard])
-    monkeypatch.setattr(fl, "TRANCHE1", [])
-    monkeypatch.setattr(fl, "TRANCHE2", [])
-    monkeypatch.setattr(fl, "TRANCHE4", [])
-    monkeypatch.setattr(fl, "TRANCHE5", [])
+    _blank_other_tranches(monkeypatch)
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
     monkeypatch.setattr(fl, "run_argv",
                         lambda argv, ctx: (2, "gh pr diff failed: rate limit"))
@@ -1584,10 +1680,7 @@ def test_warn_rc_verdict_zero_stays_plain_success(monkeypatch):
                   blocking=True, paths=["**/*.ipynb"], absorbed=True,
                   warn_rc=(2,))
     monkeypatch.setattr(fl, "PILOT", [guard])
-    monkeypatch.setattr(fl, "TRANCHE1", [])
-    monkeypatch.setattr(fl, "TRANCHE2", [])
-    monkeypatch.setattr(fl, "TRANCHE4", [])
-    monkeypatch.setattr(fl, "TRANCHE5", [])
+    _blank_other_tranches(monkeypatch)
     monkeypatch.setattr(fl, "changed_files", lambda _ref: ["x.ipynb"])
     monkeypatch.setattr(fl, "run_argv", lambda argv, ctx: (0, "clean"))
     monkeypatch.setattr(fl, "run_iter",
@@ -1622,3 +1715,61 @@ def test_check_hr_substitution_gh_failure_exits_two(monkeypatch):
     assert excinfo.value.code == 2, (
         "l'echec gh doit sortir rc=2 (incident), pas rc=1 (verdict)"
     )
+
+
+def test_tranche22_markdown_schema_advisory_guard_is_wired():
+    """Tranche 22 = schema des cellules markdown (#20167), advisory. Contrat :
+    native, absorbe, non bloquant (calibration avant bascule), iteration par
+    carnet modifie. Le detecteur DOIT tirer sur un carnet fautif et rester
+    muet sur un carnet propre : un organe qui ne dit jamais rien est
+    indiscernable d'un organe debranche (lecon #11685).
+    """
+    import json
+    import tempfile
+
+    assert len(TRANCHE22) == 1, "la tranche 22 documente 1 seul garde (#20167)"
+    guard = TRANCHE22[0]
+    assert guard.source == FAST_LANE_NATIVE
+    assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    assert not guard.blocking, (
+        f"{guard.name} est advisory : bascule en bloquant seulement quand main "
+        f"ne porte plus aucune cellule markdown fautive"
+    )
+    assert guard.iterates_paths and "{changed_paths}" in guard.argv
+    assert "--check" in guard.argv
+    assert "MyIA.AI.Notebooks/**/*.ipynb" in guard.iterate_paths
+    for needle in (
+        "scripts/notebook_tools/fix_markdown_cell_schema.py",
+        "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
+        "scripts/ci/fast_lane_registry.py",
+    ):
+        assert needle in guard.paths, f"{needle} doit figurer dans les paths"
+
+    # Controle positif et negatif du detecteur, sur de vrais fichiers.
+    root = Path(__file__).resolve().parents[2]
+    script = root / "scripts" / "notebook_tools" / "fix_markdown_cell_schema.py"
+    nb_defect = {
+        "cells": [{"cell_type": "markdown", "id": "a", "metadata": {},
+                   "source": ["x\n"], "outputs": []}],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    nb_clean = {
+        "cells": [{"cell_type": "markdown", "id": "a", "metadata": {},
+                   "source": ["x\n"]}],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        bad = Path(tmp) / "bad.ipynb"
+        good = Path(tmp) / "good.ipynb"
+        bad.write_text(json.dumps(nb_defect), encoding="utf-8")
+        good.write_text(json.dumps(nb_clean), encoding="utf-8")
+        rc_bad = subprocess.run(
+            ["python", str(script), "--check", str(bad)],
+            capture_output=True, text=True, encoding="utf-8",
+        ).returncode
+        rc_good = subprocess.run(
+            ["python", str(script), "--check", str(good)],
+            capture_output=True, text=True, encoding="utf-8",
+        ).returncode
+    assert rc_bad == 1, "le detecteur doit tirer (rc=1) sur un carnet fautif"
+    assert rc_good == 0, "le detecteur doit rester muet (rc=0) sur un carnet propre"

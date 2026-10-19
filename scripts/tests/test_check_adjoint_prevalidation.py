@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -15,6 +16,10 @@ sys.modules["check_adjoint_prevalidation"] = mod
 spec.loader.exec_module(mod)
 
 HEAD = "0123456789abcdef0123456789abcdef01234567"
+
+# Le vrai acces a l'index de pile, capture AVANT que le garde d'hermeticite ne
+# le remplace : le test du cache a besoin du code reel (#20251).
+_REAL_DEFAULT_STACK_INDEX = mod.default_stack_index
 
 
 def _comment(body: str, login: str = "jsboige") -> dict:
@@ -1800,14 +1805,41 @@ def test_blocked_dossier_on_frozen_campaign_keeps_its_own_message(
 
 
 def test_no_dossier_on_frozen_campaign_keeps_rc1(monkeypatch, capsys):
-    """Sans dossier digne de confiance : rc=1 inchange, le gel n'y ajoute
-    rien (la PR est deja non mergeable par absence de dossier)."""
+    """#19630 (revise c.1428) : sans dossier, le gel doit etre nomine dans
+    la sortie mais le code de retour reste `EXIT_NO_DOSSIER` (rc=1).
+    L'acceptance 1 de #19630 dit « sans changer le code de sortie » : un
+    NO-DOSSIER reste NO-DOSSIER, le gel COMPLETE la sortie stdout et le
+    champ JSON `frozen` sans inverser le verdict fonctionnel. Une PR non
+    gelee sans dossier reste en rc=1 sans mention de gel (voir
+    `test_no_dossier_non_gelee_reste_rc1` plus bas)."""
     snapshot = _base_snapshot()
     snapshot["title"] = FROZEN_TITLE
     snapshot["headRefName"] = "feature/densite-13"
     rc = _run_main(monkeypatch, snapshot)
     assert rc == mod.EXIT_NO_DOSSIER
-    assert capsys.readouterr().out.startswith("NO-DOSSIER")
+    out = capsys.readouterr().out
+    assert out.startswith("NO-DOSSIER")
+    # FROZEN_TITLE cite le parapluie encore gele au monde rouvert
+    # (#11601 depuis la reouverture user de #13410, 2026-10-07) : la
+    # campagne nommee suit le fixture, pas l'historique de la branche.
+    assert "frozen:#11601(veto #17040)" in out
+    assert "do not merge even if a dossier is added later" in out
+
+
+def test_no_dossier_non_gelee_reste_rc1(monkeypatch, capsys):
+    """#19630 temoin negatif : une PR non gelee sans dossier rend toujours
+    `NO-DOSSIER` sans mention de gel -- le nouveau chemin d'evaluation
+    systematique du gel n'ajoute du bruit que quand il y a un gel a
+    nommer."""
+    snapshot = _base_snapshot()
+    # Pas de FROZEN_TITLE ici -- titre anodin.
+    snapshot["headRefName"] = "fix/quiet-pr"
+    rc = _run_main(monkeypatch, snapshot)
+    assert rc == mod.EXIT_NO_DOSSIER
+    out = capsys.readouterr().out
+    assert out.startswith("NO-DOSSIER")
+    assert "frozen:" not in out
+    assert "frozen campaign" not in out
 
 
 def test_headrefname_does_not_change_the_fingerprint():
@@ -2868,6 +2900,112 @@ def test_render_emitted_dossier_blocked_at_same_head_then_changed_head(monkeypat
     assert "supersedes" not in block
 
 
+# --- #19014 -- vivacite de la base -------------------------------------------
+#
+# Le volet `merge_ready` de #19014 est livre par #19021 (`base_ref_liveness`,
+# motifs `base-gone:` / `base-live-not-main:`). Ces tests couvrent le volet
+# **gate**, qui rendait encore un motif unique ne disant pas a la lane si la
+# branche de base etait morte ou vivante, plus l'acceptance 2 : la lecture
+# REST de `base` par `_pr_metadata`, y compris quand le champ est absent.
+
+
+def _rest_pull(**changes) -> dict:
+    row = {
+        "number": 123,
+        "title": "PR title",
+        "body": "PR body",
+        "state": "open",
+        "merged": False,
+        "draft": False,
+        "base": {"ref": "feature/parent"},
+        "head": {"sha": HEAD, "ref": "feature/bracket"},
+        "updated_at": "2026-09-28T12:00:00Z",
+        "changed_files": 3,
+        "additions": 42,
+        "deletions": 7,
+    }
+    row.update(changes)
+    return row
+
+
+def test_base_liveness_reads_the_open_pr_on_the_base_head(monkeypatch):
+    seen = {}
+
+    def fake_gh_json(args):
+        seen["args"] = args
+        return [{"number": 18985, "state": "OPEN"}]
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    assert mod._base_liveness("feature/parent") == "live"
+    assert "head:feature/parent" in seen["args"]
+
+
+def test_base_liveness_reports_a_gone_base(monkeypatch):
+    for rows in ([{"number": 1, "state": "MERGED"}], [{"number": 1, "state": "CLOSED"}], []):
+        monkeypatch.setattr(mod, "gh_json", lambda args, rows=rows: rows)
+        assert mod._base_liveness("feature/parent") == "gone", rows
+
+
+def test_base_liveness_fails_closed_and_short_circuits_main(monkeypatch):
+    calls = []
+
+    def fake_gh_json(args):
+        calls.append(args)
+        raise RuntimeError("gh exploded")
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    # `main` n'a pas besoin de la mesure : aucun appel.
+    assert mod._base_liveness("main") == "main"
+    assert calls == []
+    # Un `base` absent n'est pas un etat mesure.
+    assert mod._base_liveness(None) == "unreadable"
+    assert mod._base_liveness("") == "unreadable"
+    # Une erreur `gh` ne devient jamais un etat devine.
+    assert mod._base_liveness("feature/parent") == "unreadable"
+    # Une reponse non-liste non plus.
+    monkeypatch.setattr(mod, "gh_json", lambda args: {"not": "a list"})
+    assert mod._base_liveness("feature/parent") == "unreadable"
+
+
+def test_pr_metadata_reads_base_ref_name_from_a_rest_row(monkeypatch):
+    # Deux appels distincts : la ligne REST de la PR, puis la liste des PRs
+    # portant la tete de base. Le faux doit repondre a chacun son type.
+    def fake_gh_json(args):
+        if "list" in args:
+            return [{"number": 18985, "state": "MERGED"}]
+        return _rest_pull()
+
+    monkeypatch.setattr(mod, "gh_json", fake_gh_json)
+    data = mod._pr_metadata(123)
+    assert data["baseRefName"] == "feature/parent"
+    assert data["baseLiveness"] == "gone"
+    assert data["headRefOid"] == HEAD
+
+
+def test_pr_metadata_fails_closed_when_the_rest_row_has_no_base(monkeypatch):
+    monkeypatch.setattr(mod, "gh_json", lambda args: _rest_pull(base={}))
+    data = mod._pr_metadata(123)
+    assert data["baseRefName"] is None
+    assert data["baseLiveness"] == "unreadable"
+
+
+def test_ready_refusal_names_which_of_the_two_cases_applies():
+    for liveness, marker in (("live", "base-live-not-main:"), ("gone", "base-gone:")):
+        snapshot = _snapshot(_body())
+        snapshot["baseRefName"] = "feature/parent"
+        snapshot["baseLiveness"] = liveness
+        errors = _errors(snapshot)
+        assert any(error.startswith(marker) for error in errors), liveness
+
+    # Snapshot anterieur a #19014, qui ne porte pas le champ : le message
+    # generique reste, et le refus n'est pas perdu.
+    snapshot = _snapshot(_body())
+    snapshot["baseRefName"] = "feature/parent"
+    assert any(
+        error.startswith("baseRefName must be") for error in _errors(snapshot)
+    )
+
+
 
 
 # ===========================================================================
@@ -2965,6 +3103,51 @@ def test_queue_comment_after_dossier_is_stale():
     snapshot["comments"].append(_comment("late concern"))
     entry = _classified(snapshot)
     assert entry.verdict == mod.QUEUE_VERDICT_STALE
+    # Le commentaire humain tardif fait echouer le GATE : la queue relaye le
+    # refus, elle n'a plus de compte brut propre a contredire (c2151).
+    assert "discussion changed after dossier" in entry.reject_cause
+
+
+def test_queue_bot_advisory_after_dossier_is_ready():
+    """#16480-c2151 (controle positif, queue) : la pose consultative d'un bot
+    apres le dossier ne rend PAS la file STALE. Le gate neutralise deja ces
+    poses (#17818 marker-guards, #18637 sticky/resumes) ; la queue comptait
+    le tail en brut et reintroduisait exactement ce que ces correctifs avaient
+    retire. Mesure fondatrice : #20094 et #20372 STALE sur la seule pose
+    PATH-COLLISION de ``github-actions[bot]`` (11/10, 6 PR sur 102 a 18:21Z).
+    """
+    bot_forms = (
+        "<!-- PR-PATH-COLLISION:START -->\n## Path-collision (organ #1)\npaire: X / Y",
+        _STICKY_STALE,
+    )
+    for body in bot_forms:
+        snapshot = _reviewed_snapshot()
+        snapshot["comments"].append(_comment(body, login="github-actions[bot]"))
+        entry = _classified(snapshot)
+        assert entry.verdict == mod.VERDICT_READY, body
+        # Le compte brut survit en information : la ligne reste a relire.
+        assert entry.tail_to_read == 1, body
+
+
+def test_queue_coordinator_late_comment_after_dossier_is_ready():
+    """Voix du coordinateur apres le dossier : neutre pour le gate
+    (``_is_own_later_act``, horodatee apres le dossier), neutre pour la
+    queue -- meme predicat partage (_foreign_tail_rows).
+    """
+    snapshot = _reviewed_snapshot()
+    snapshot["comments"][-1] = {
+        "author": {"login": "jsboige"},
+        "body": snapshot["comments"][-1]["body"],
+        "createdAt": "2026-10-08T18:00:00Z",
+    }
+    snapshot["comments"].append({
+        "author": {"login": "myia-ai-01"},
+        "body": "reserve levee par ecrit sur la tete exacte",
+        "createdAt": "2026-10-08T19:00:00Z",
+    })
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.tail_to_read == 1
 
 
 def test_queue_dossier_older_than_stale_after_is_stale():
@@ -3188,7 +3371,12 @@ def test_build_queue_unknown_pr_is_listed_not_fatal():
     )
     assert [row["pr"] for row in result["unknown"]] == [1]
     assert [item["pr"] for item in result["queue"]] == [123]
-    assert result["metrics"] == {mod.VERDICT_READY: 1}
+    # #16480 critere 6 : les compteurs par verdict sont sur la racine,
+    # les projections consume + timing sont dans des sous-clés.
+    assert result["metrics"][mod.VERDICT_READY] == 1
+    assert result["metrics"]["consume"]["success"] == 1
+    assert result["metrics"]["consume"]["attempts"] == 1
+    assert result["metrics"]["consume"]["rejects_by_cause"] == {}
 
 
 def test_build_queue_sorts_oldest_first_not_by_number():
@@ -3227,11 +3415,17 @@ def test_build_queue_metrics_count_verdicts():
     result = mod.build_queue(
         [1, 2, 3], now=QUEUE_NOW, probe=_clear_probe, loader=loader
     )
-    assert result["metrics"] == {
-        mod.VERDICT_READY: 1,
-        mod.QUEUE_VERDICT_REVIEW_READY: 1,
-        mod.QUEUE_VERDICT_STALE: 1,
-    }
+    # #16480 critere 6 : les compteurs par verdict sont sur la racine ;
+    # les sous-clés `consume` et `timing` ajoutent les projections derivees
+    # sans stockage. Le contrat reste : READY=1, REVIEW_READY=1, STALE=1.
+    metrics = result["metrics"]
+    assert metrics[mod.VERDICT_READY] == 1
+    assert metrics[mod.QUEUE_VERDICT_REVIEW_READY] == 1
+    assert metrics[mod.QUEUE_VERDICT_STALE] == 1
+    assert metrics["consume"]["attempts"] == 3
+    assert metrics["consume"]["success"] == 1
+    assert metrics["consume"]["rejects_by_cause"][mod.QUEUE_VERDICT_REVIEW_READY] == 1
+    assert metrics["consume"]["rejects_by_cause"][mod.QUEUE_VERDICT_STALE] == 1
 
 
 def test_consume_refuses_mutation_after_dossier():
@@ -3250,7 +3444,166 @@ def test_consume_ready_nominal():
     )
     assert entry.verdict == mod.VERDICT_READY
     assert entry.to_json()["verdict"] == mod.VERDICT_READY
-# --- #17315 : le cout de l'invocation est mesure et publie -------------------
+
+
+# --- #16480 critere 6 : metriques derivees de --queue et --consume -----------
+#
+# Trois mesures sans stockage (#16480 acceptance) : tentatives/succes/rejets
+# de --consume par verdict, delai dossier->merge pour les PRs MERGED, age du
+# dossier au moment du consume. Tout est derive des timestamps deja lus
+# (dossier_created_at, mergedAt, createdAt), aucun fichier d'etat.
+
+
+def test_build_queue_metrics_consume_projection_groups_by_verdict():
+    """Un READY + un REVIEW_READY + un STALE : success=1, rejets par verdict."""
+    stale = _reviewed_snapshot()
+    stale["comments"].append(_comment("late"))
+    loader = {1: _reviewed_snapshot(), 2: _queue_snapshot([]), 3: stale}.__getitem__
+    result = mod.build_queue(
+        [1, 2, 3], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    consume = result["metrics"]["consume"]
+    assert consume["attempts"] == 3
+    assert consume["success"] == 1
+    assert consume["rejects_by_cause"][mod.QUEUE_VERDICT_REVIEW_READY] == 1
+    assert consume["rejects_by_cause"][mod.QUEUE_VERDICT_STALE] == 1
+    # Verbatim : pas de cle parasite quand rien n'est rejete.
+    assert sum(consume["rejects_by_cause"].values()) == 2
+
+
+def test_build_queue_metrics_timing_empty_when_no_dossier():
+    """Sans dossier, les timings restent a count=0 + None (jamais ZeroDivision)."""
+    snapshot = _base_snapshot()
+    # pas de _queue_snapshot ici, donc pas de dossier.
+    loader = {1: snapshot}.__getitem__
+    result = mod.build_queue(
+        [1], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    timing = result["metrics"]["timing"]
+    age = timing["dossier_age_minutes"]
+    merge = timing["merged_after_dossier_minutes"]
+    assert age == {"count": 0, "min": None, "max": None, "mean": None, "median": None}
+    assert merge == {"count": 0, "min": None, "max": None, "mean": None, "median": None}
+
+
+def test_build_queue_metrics_timing_dossier_age_for_ready():
+    """Un READY avec dossier : age > 0 si la queue est ouverte plus tard."""
+    snapshot = _reviewed_snapshot()
+    # Le dossier est poste 60 min avant QUEUE_NOW -- sans createdAt, l'age
+    # n'est pas derivable. On surcharge le dernier commentaire (le dossier)
+    # avec un createdAt explicite, sans toucher les autres.
+    snapshot["comments"][-1]["createdAt"] = "2026-10-08T19:00:00Z"
+    loader = {1: snapshot}.__getitem__
+    result = mod.build_queue(
+        [1], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    age = result["metrics"]["timing"]["dossier_age_minutes"]
+    assert age["count"] == 1
+    assert age["min"] is not None and age["min"] >= 0
+    assert age["max"] == age["min"]  # un seul echantillon
+
+
+def test_build_queue_metrics_timing_merged_after_dossier_for_merged():
+    """Un READY + MERGED : delai dossier->merge expose en minutes."""
+    snapshot = _reviewed_snapshot()
+    snapshot["state"] = "MERGED"
+    snapshot["comments"][-1]["createdAt"] = "2026-10-08T19:00:00Z"
+    # dossier 60 min avant la queue ; merge 30 min apres.
+    snapshot["mergedAt"] = "2026-10-08T20:30:00Z"
+    loader = {1: snapshot}.__getitem__
+    result = mod.build_queue(
+        [1], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    merge = result["metrics"]["timing"]["merged_after_dossier_minutes"]
+    assert merge["count"] == 1
+    # dossier 19:00, merge 20:30 -> 90 min
+    assert merge["min"] == 90
+    assert merge["max"] == 90
+    assert merge["mean"] == 90
+    assert merge["median"] == 90
+
+
+def test_build_queue_metrics_timing_ignores_merged_for_non_ready():
+    """Un PR non-READY (REVIEW_READY/STALE) avec mergedAt : pas dans la stat.
+
+    Le delai dossier->merge n'a de sens que si le dossier a valide READY ;
+    sinon le PR n'est pas dans la fenetre de consommation. Le sample doit
+    etre vide (count=0) pour eviter de melanger READY et non-READY dans
+    la moyenne d'un cycle /coordinate.
+    """
+    snapshot = _queue_snapshot([])  # pas de review qualifiante -> REVIEW_READY
+    snapshot["state"] = "MERGED"
+    snapshot["mergedAt"] = "2026-10-08T20:30:00Z"
+    loader = {1: snapshot}.__getitem__
+    result = mod.build_queue(
+        [1], now=QUEUE_NOW, probe=_clear_probe, loader=loader
+    )
+    merge = result["metrics"]["timing"]["merged_after_dossier_minutes"]
+    assert merge["count"] == 0
+
+
+def test_consume_metrics_out_populates_on_ready():
+    """`metrics_out` est peuple avec success=1 et l'age du dossier en minutes."""
+    snapshot = _reviewed_snapshot()
+    snapshot["comments"][-1]["createdAt"] = "2026-10-08T19:00:00Z"
+    out: dict = {}
+    entry = mod.consume_pr(
+        123, now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: snapshot,
+        metrics_out=out,
+    )
+    assert entry.verdict == mod.VERDICT_READY
+    assert out["attempts"] == 1
+    assert out["success"] == 1
+    assert out["rejects_by_cause"] == {}
+    assert out["dossier_age_minutes_at_consume"] is not None
+    assert out["dossier_age_minutes_at_consume"] >= 0
+
+
+def test_consume_metrics_out_populates_on_stale():
+    """`metrics_out` groupe le rejet par verdict (pas par la phrase descriptive)."""
+    snapshot = _reviewed_snapshot()
+    snapshot["comments"].append(_comment("posted after dossier"))
+    out: dict = {}
+    entry = mod.consume_pr(
+        123, now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: snapshot,
+        metrics_out=out,
+    )
+    assert entry.verdict == mod.QUEUE_VERDICT_STALE
+    assert out["attempts"] == 1
+    assert out["success"] == 0
+    assert out["rejects_by_cause"] == {mod.QUEUE_VERDICT_STALE: 1}
+
+
+def test_consume_metrics_out_populates_on_dwell():
+    """Un dossier DWELL_PENDING : la cause est le verdict DWELL, pas READY."""
+    snapshot = _reviewed_snapshot()
+    # Force le verdict DWELL_PENDING via une jambe PR gate "failure" avec
+    # un titre parse-able par ``parse_pending_message`` (cf. _dwell_run).
+    snapshot["checkRuns"] = [_dwell_run(lift="2026-10-08T21:00:00Z")]
+    out: dict = {}
+    entry = mod.consume_pr(
+        123, now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: snapshot,
+        metrics_out=out,
+    )
+    assert entry.verdict == mod.QUEUE_VERDICT_DWELL_PENDING
+    assert out["success"] == 0
+    assert out["rejects_by_cause"] == {mod.QUEUE_VERDICT_DWELL_PENDING: 1}
+
+
+def test_consume_metrics_out_clear_before_populate():
+    """Un second appel ecrase le dict (pas de cumul cross-call)."""
+    out: dict = {"stale": "should be cleared"}
+    mod.consume_pr(
+        123, now=QUEUE_NOW, probe=_clear_probe,
+        loader=lambda pr: _reviewed_snapshot(),
+        metrics_out=out,
+    )
+    assert "stale" not in out
+    assert out["attempts"] == 1
+
 #
 # Le bucket GraphQL est partage par toute la flotte ; le bucket REST (core) est
 # par machine. L'organe publie les deux pour qu'une lane secretaire puisse
@@ -3452,3 +3805,736 @@ def test_grain_lane_re_refuse_le_point_final_de_phrase():
     # Aucune lane ne se reduit a un point : machine et workspace requis.
     assert mod.GRAIN_LANE_RE.findall("Grain: MED/docs — lane :CoursIA-2") == []
     assert mod.GRAIN_LANE_RE.findall("Grain: MED/docs — lane myia-po-2023:") == []
+
+
+# --- #20251 : porte « pile » -------------------------------------------------
+# L'organe juge UNE PR contre `main`. Il ne voyait pas qu'une AUTRE PR ouverte
+# porte une version plus recente des memes commits : un sommet de pile sortait
+# READY, merger en premier faisait atterrir sur `main` la version anterieure aux
+# corrections. Instance fondatrice : la pile Percolation #19548 -> #19556 ->
+# #19567 le 2026-10-10.
+#
+# Ces tests sont hermetiques : l'index est injecte, et `git` est simule. Le
+# controle positif, lui, se rejoue sur le depot reel avec `--stack-index`.
+
+
+@pytest.fixture(autouse=True)
+def _no_live_stack_index(monkeypatch):
+    """Le harnais de tests ne touche jamais le reseau par la porte « pile ».
+
+    Sans ce garde, toute fonction qui appelle ``derive_verdict`` sans argument
+    ``stack`` declencherait une enumeration des PR ouvertes et un `git fetch`
+    de chaque tete. Les tests qui ont besoin d'un index l'injectent.
+    """
+    monkeypatch.setattr(mod, "default_stack_index", lambda: None)
+
+
+def _synthetic_git(ancestor_pairs=()):
+    """`git` simule : seule la question d'ascendance a une reponse."""
+    pairs = set(ancestor_pairs)
+    calls = []
+
+    def fake(args, check=True):
+        calls.append(list(args))
+        if args[:2] == ["merge-base", "--is-ancestor"]:
+            rc = 0 if (args[2], args[3]) in pairs else 1
+        else:
+            rc = 1
+        return subprocess.CompletedProcess(["git", *args], rc, "", "")
+
+    fake.calls = calls
+    return fake
+
+
+def _stack_entry(pr, subjects):
+    # #20641 -- `author_ref` est rendu egal a `ref` par defaut : les
+    # tests qui n'ont pas besoin d'exercer le saut content-free
+    # preservent l'ancien comportement sans modifier chaque call site.
+    ref = f"{mod.STACK_REF_PREFIX}{pr}"
+    return mod.StackEntry(
+        number=pr,
+        ref=ref,
+        commits=list(subjects),
+        subjects=dict(subjects),
+        author_ref=ref,
+    )
+
+
+def _patch_ids(mapping):
+    """Fake ``mod._patch_id`` : sha -> id, hors mapping -> None.
+
+    Le repli par sujets corrobore par le patch-id (#20263, controle negatif
+    de l'adjoint c6105057753) : les tests du repli patchent la mesure pour
+    rester hermetiques -- sans cela, la vraie mesure shellerait ``git`` sur
+    des SHA synthetiques et rendrait ``None`` (repli desactive de fait).
+    """
+    def fake(sha):
+        return mapping.get(sha)
+    return fake
+
+
+def _stack_index(*entries):
+    return {e.number: e for e in entries}
+
+
+def test_stack_top_divergent_is_not_ready(monkeypatch):
+    """#20251 (1) -- sommet de pile diverge : #19548 porte la version ancienne.
+
+    #19548 et #19556 partagent des commits, aucune des deux tetes n'est
+    ancetre de l'autre, et #19556 porte un commit absent de #19548 : merger
+    #19548 d'abord ferait atterrir sur `main` la version anterieure.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B", "c": "C"}),
+        _stack_entry(19556, {"a": "A", "b": "B", "c": "C",
+                             "d": "D: correctif absent du bas de pile"}),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+    assert any("D: correctif absent du bas de pile" in r for r in reasons), reasons
+
+
+def test_stack_bottom_linear_stays_ready(monkeypatch):
+    """#20251 (2) -- bas de pile lineaire : merger en premier est l'ordre juste.
+
+    La tete de #19548 est un ancetre de celle de #19556 : la porte ne dit rien.
+    C'est le controle negatif qui distingue la porte d'un simple « deux PRs se
+    ressemblent ».
+    """
+    bottom = mod.STACK_REF_PREFIX + "19548"
+    top = mod.STACK_REF_PREFIX + "19556"
+    monkeypatch.setattr(mod, "_git", _synthetic_git({(bottom, top)}))
+    monkeypatch.setattr(mod, "_author_ref", lambda ref, base_ref=None: ref)
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"a": "A", "b": "B", "c": "C"}),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+# --- #20641 : rafraichissement content-free de la base d'une pile ----------
+# Un ``gh pr update-branch`` sans conflit prepende une fusion de
+# rafraichissement a la tete de la base : pre-fix, la porte comparait
+# la tete brute et rejetait a tort la base lineaire. Le predicat
+# doit utiliser le SHA d'auteur (au-dela des fusions content-free),
+# pas la tete brute. Les tests suivants verifient les trois cas
+# nommes dans l'acceptance #20641.
+
+
+def test_stack_bottom_content_free_update_stays_silent(monkeypatch):
+    """#20641 (controle positif) -- base rafraichie content-free, bas de pile lineaire.
+
+    ``#20521`` a sa tete = fusion depuis main (``author_ref = b59ae``),
+    et ``#20525`` est construite sur ``b59ae``. La comparaison brute
+    ``entry.ref -> other.ref`` echouait ; la comparaison
+    ``author_ref -> author_ref`` reussit. La porte se tait.
+    """
+    bottom_ref = mod.STACK_REF_PREFIX + "20521"
+    top_ref = mod.STACK_REF_PREFIX + "20525"
+    bottom_author = "b59ae3257b1111111111111111111111111111"
+    top_author = "b59ae3257b1111111111111111111111111111"
+    monkeypatch.setattr(
+        mod, "_git", _synthetic_git({(bottom_author, top_author)})
+    )
+    # L'index n'a que les deux PR de la pile : aucune autre PR ne doit
+    # apparaitre comme "sommet" (ce qui ferait ecraser le verdict).
+    index = _stack_index(
+        _stack_entry(20521, {"a": "A", "b": "B"}),
+        _stack_entry(20525, {"a": "A", "b": "B", "c": "C"}),
+    )
+    index[20521].ref = bottom_ref
+    index[20521].author_ref = bottom_author
+    index[20525].ref = top_ref
+    index[20525].author_ref = top_author
+    snapshot = _base_snapshot()
+    snapshot["number"] = 20521
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_top_rebuilt_is_still_detected(monkeypatch):
+    """#20641 (controle negatif 1, cas fondateur #20251) -- sommet de pile rebati.
+
+    Le sommet REBATI reste un sommet : ``author_ref`` du sommet n'est
+    pas un ancetre de l'``author_ref`` de la base. Le fix #20641 n'a
+    pas regresse le cas fondateur.
+    """
+    bottom_ref = mod.STACK_REF_PREFIX + "19548"
+    top_ref = mod.STACK_REF_PREFIX + "19556"
+    # Bottom = ancetre, top = divergent. La comparaison author_ref->author_ref
+    # doit echouer (top pas ancetre de bottom).
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod,
+        "_author_ref",
+        lambda ref, base_ref=None: {
+            bottom_ref: "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+            top_ref: "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+        }[ref],
+    )
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"a": "A", "b": "B", "c": "C"}),
+    )
+    index[19548].author_ref = "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+    index[19556].author_ref = "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+
+
+def test_stack_bottom_with_conflict_resolution_stays_measured(monkeypatch):
+    """#20641 (controle negatif 2) -- base avec resolution de conflit.
+
+    Quand l'update-branch a exige une resolution manuelle, l'arbre du
+    merge differe de l'auto-merge : ``_author_ref`` ne saute pas la
+    fusion et la compare brute. Le gate reste fail-closed sur ce cas :
+    le test verifie que la mesure de l'ancetre est faite sur le SHA
+    de la fusion (avec resolution), pas sur l'auto-merge.
+    """
+    bottom_ref = mod.STACK_REF_PREFIX + "20521"
+    top_ref = mod.STACK_REF_PREFIX + "20525"
+    # Cas : ``_author_ref`` rend la tete brute (pas de saut content-free
+    # parce que la resolution a change l'arbre). La comparaison
+    # author_ref = entry.ref pour la base, et top author_ref != bas
+    # author_ref. La porte detecte un sommet de pile (correctement --
+    # la base n'est pas un bas lineaire quand sa tete porte un
+    # conflit resolu).
+    bottom_author = "cccccccccccccccccccccccccccccccccccccccc"  # = entry.ref apres resolution
+    top_author = "dddddddddddddddddddddddddddddddddddd"
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod,
+        "_author_ref",
+        lambda ref, base_ref=None: {
+            bottom_ref: bottom_author,
+            top_ref: top_author,
+        }[ref],
+    )
+    index = _stack_index(
+        _stack_entry(20521, {"a": "A", "b": "B"}),
+        _stack_entry(20525, {"a": "A", "b": "B", "c": "C"}),
+    )
+    index[20521].ref = bottom_ref
+    index[20521].author_ref = bottom_author
+    index[20525].ref = top_ref
+    index[20525].author_ref = top_author
+    snapshot = _base_snapshot()
+    snapshot["number"] = 20521
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    # L'ancetre author_ref -> author_ref echoue (top pas ancetre de
+    # bottom), donc la porte rapporte un stack top -- c'est le bon
+    # verdict : la fusion avec resolution a change la base, et le
+    # sommet porte des corrections distinctes.
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#20525" in r for r in reasons), reasons
+
+
+def test_stack_without_shared_commit_is_unchanged(monkeypatch):
+    """#20251 (3) -- aucune PR ne partage de commit : verdict inchange.
+
+    Deux PRs ouvertes sur des chemins disjoints ne sont pas une pile, meme si
+    le tapis les sert voisines.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"c": "C", "d": "D"}),
+    )
+    verdict, reasons = mod.derive_verdict(
+        _base_snapshot(), lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_noise_subjects_alone_do_not_block(monkeypatch):
+    """#20251 (3bis) -- un commit de re-declenchement n'est pas un diff.
+
+    Sans ce filtre, deux PRs qui ne different que par un vidage de commit
+    seraient vues comme une pile, et la porte refuserait du bruit.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"a": "A", "b": "B",
+                             "c": "Fix: empty commit to retrigger CI"}),
+    )
+    verdict, reasons = mod.derive_verdict(
+        _base_snapshot(), lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+
+
+# #20263 -- un rebase reecrit les SHA : l'intersection vide de SHA ne
+# prouve pas l'independance (trou mesure par l'adjoint, dossier
+# c6098840404). Les temoins suivants couvrent le repli par SUJETS.
+
+
+def test_stack_top_rebased_is_detected(monkeypatch):
+    """#20263 -- sommet REBATI : SHA aucun commun, sujets partages.
+
+    Un rebase reecrit tous les SHA : pre-fix, l'intersection vide
+    ecartait la candidate et la porte rendait READY le bas de pile
+    perime -- exactement le cas que le contrat promet d'attraper
+    (« par sujet, jamais par SHA »). Les patchs, eux, survivent au
+    rebase : la corroboration par patch-id (a<->x, b<->y) tient.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod, "_patch_id", _patch_ids({"a": "pA", "x": "pA", "b": "pB", "y": "pB"})
+    )
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"x": "A", "y": "B",
+                             "z": "D: correctif absent du bas de pile"}),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+    assert any("D: correctif absent du bas de pile" in r for r in reasons), reasons
+
+
+def test_stack_fortuitous_subject_collision_is_not_blocked(monkeypatch):
+    """#20263 (controle negatif de l'adjoint, dossier c6105057753) --
+    collision de titres GENGIN-FORTUITE : pas de pile, pas de blocage.
+
+    Deux branches INDEPENDANTES depuis main, chacune un commit « Fix:
+    validation » de contenu DIFFERENT (patch-ids distincts) et un apport
+    propre : le sujet partage seul ne corrobore rien. Pre-fix, la porte
+    appariait les deux dans CHAQUE sens et derive_verdict rendait BlocAGE
+    mutuel -- reproduit en git reel par le driver de la reserve. Post-fix,
+    le repli exige l'egalite de patch-id : aucune paire, verdict READY des
+    deux cotes.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod, "_patch_id", _patch_ids({"a": "pidA", "x": "pidX"})
+    )
+    index = _stack_index(
+        _stack_entry(19548, {"a": "Fix: validation", "b": "Add: apport A"}),
+        _stack_entry(19556, {"x": "Fix: validation", "y": "Add: apport B"}),
+    )
+    for target in (19548, 19556):
+        snapshot = _base_snapshot()
+        snapshot["number"] = target
+        verdict, reasons = mod.derive_verdict(
+            snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+        )
+        assert verdict == mod.VERDICT_READY, (target, reasons)
+        assert reasons == [], (target, reasons)
+
+
+def test_stack_subject_match_unmeasured_patch_does_not_block(monkeypatch):
+    """#20263 -- mesure de patch-id impossible : jamais de blocage fabrique.
+
+    Sujets partages mais patch-id incalculable des deux cotes (SHA
+    disparus, commits vides) : ``None`` ne corrobore pas -- la porte ne
+    refuse pas sur une mesure impossible.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(mod, "_patch_id", _patch_ids({}))
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"x": "A", "y": "B", "z": "C"}),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+
+
+def test_stack_rebased_linear_base_stays_silent(monkeypatch):
+    """#20263 -- bas de pile rebati LINEAIRE : le silence d'ancetre tient.
+
+    Le repli par sujets ne court-circuite pas le controle d'ancetre :
+    meme rebatie (SHA disjoints), une base dont la tete est ancetre de
+    celle du sommet reste l'ordre de merge correct.
+    """
+    bottom = mod.STACK_REF_PREFIX + "19548"
+    top = mod.STACK_REF_PREFIX + "19556"
+    monkeypatch.setattr(mod, "_git", _synthetic_git({(bottom, top)}))
+    monkeypatch.setattr(
+        mod, "_patch_id", _patch_ids({"a": "pA", "x": "pA", "b": "pB", "y": "pB"})
+    )
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"x": "A", "y": "B", "z": "C"}),
+    )
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_rebased_without_new_subject_is_not_blocked(monkeypatch):
+    """#20263 -- sujets partages sans APPORT reel : pas de blocage.
+
+    Le repli herite du controle d'apport : une branche rebatie qui ne
+    porte aucun sujet nouveau n'est pas un sommet perime.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod, "_patch_id", _patch_ids({"a": "pA", "x": "pA", "b": "pB", "y": "pB"})
+    )
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"x": "A", "y": "B"}),
+    )
+    verdict, reasons = mod.derive_verdict(
+        _base_snapshot(), lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_rebased_noise_only_shared_is_not_blocked(monkeypatch):
+    """#20263 -- sujets partages = bruit SEUL : le repli ne s'arme pas.
+
+    Deux PRs dont le seul sujet commun est un vidage de re-declenchement
+    ne sont pas une pile, meme rebaties : le filtre de bruit s'applique
+    au repli par sujets comme au chemin SHA.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A",
+                             "b": "Fix: empty commit to retrigger CI"}),
+        _stack_entry(19556, {"x": "C",
+                             "y": "Fix: empty commit to retrigger CI",
+                             "z": "D"}),
+    )
+    verdict, reasons = mod.derive_verdict(
+        _base_snapshot(), lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+
+
+def test_stack_vanished_head_ref_is_ignored(monkeypatch):
+    """#20251 (4) -- ref de tete disparue : ecartee, jamais un incident.
+
+    Un lot de `git fetch` echoue entierement des qu'une ref a disparu : on
+    retire la fautive et on relance. La PR dont la branche n'existe plus n'est
+    pas une candidate de pile -- elle ne doit pas priver l'organe de la porte,
+    ni fabriquer un refus.
+    """
+    state = {"tries": 0}
+
+    def fake(args, check=True):
+        if args[0] == "fetch":
+            state["tries"] += 1
+            if state["tries"] == 1:
+                return subprocess.CompletedProcess(
+                    ["git", *args], 1, "",
+                    "fatal: couldn't find remote ref pull/19548/head",
+                )
+            return subprocess.CompletedProcess(["git", *args], 0, "", "")
+        raise AssertionError(f"appel git inattendu : {args}")
+
+    monkeypatch.setattr(mod, "_git", fake)
+    remaining, incidents = mod._fetch_pr_heads([19548, 19556])
+    assert remaining == [19556], remaining
+    assert incidents == []
+    assert state["tries"] == 2
+
+
+def test_stack_unfetchable_refs_are_an_incident_not_a_refusal(monkeypatch):
+    """#20251 -- mesure impossible : aucun refus fabrique, un incident dit.
+
+    L'echec de mesure prive l'organe d'une porte ; il ne l'autorise pas a
+    refuser. Toute la classe est couverte par ce cas generique (reseau,
+    authentification, depot illisible).
+    """
+    def fake(args, check=True):
+        return subprocess.CompletedProcess(["git", *args], 1, "", "boom reseau")
+
+    monkeypatch.setattr(mod, "_git", fake)
+    remaining, incidents = mod._fetch_pr_heads([19548])
+    assert remaining == []
+    assert incidents and "impossible" in incidents[0]
+
+    def boom(args):
+        raise RuntimeError("gh indisponible")
+
+    monkeypatch.setattr(mod, "gh_lines", boom)
+    index, incidents = mod.build_stack_index()
+    assert index is None
+    assert incidents
+
+
+def test_stack_index_cache_is_built_once(monkeypatch):
+    """#20251 -- la passe est payee une fois par processus, pas par PR.
+
+    `--queue` evalue N candidates : rejouer l'enumeration et le `git fetch` a
+    chaque appel ferait payer N fois une mesure identique.
+    """
+    calls = {"n": 0}
+
+    def fake_build():
+        calls["n"] += 1
+        return {1: _stack_entry(1, {"a": "A"})}, []
+
+    monkeypatch.setattr(mod, "build_stack_index", fake_build)
+    monkeypatch.setattr(mod, "default_stack_index", _REAL_DEFAULT_STACK_INDEX)
+    monkeypatch.setattr(mod, "_STACK_INDEX_CACHE", {"built": False, "index": None})
+    first = mod.default_stack_index()
+    second = mod.default_stack_index()
+    assert first == second and calls["n"] == 1
+
+
+def test_stack_refs_are_pruned_to_the_open_set(monkeypatch):
+    """#20251 -- la passe elague ses propres refs dans le clone de l'appelant.
+
+    Elle en ecrit une par PR ouverte ; sans elagage il en resterait une par PR
+    jamais nettoyee. Une ref hors de l'ensemble courant est un residu d'une
+    passe precedente, pas une mesure.
+    """
+    deleted: list[str] = []
+    now = "refs/remotes/prh/19548 refs/remotes/prh/19556 refs/remotes/prh/99999"
+
+    def fake(args, check=True):
+        if args[0] == "for-each-ref":
+            return subprocess.CompletedProcess(["git", *args], 0, now, "")
+        if args[0] == "update-ref" and args[1] == "-d":
+            deleted.append(args[2])
+            return subprocess.CompletedProcess(["git", *args], 0, "", "")
+        raise AssertionError(f"appel git inattendu : {args}")
+
+    monkeypatch.setattr(mod, "_git", fake)
+    mod._prune_stack_refs([19548, 19556])
+
+    assert deleted == ["refs/remotes/prh/99999"], deleted
+
+
+def test_stack_prune_is_quiet_when_nothing_closed(monkeypatch):
+    """#20251 -- rien a elaguer = aucun appel `update-ref`.
+
+    Le cas nominal de la passe : la totalite des refs correspond a une PR
+    ouverte, donc l'elagage ne coute rien.
+    """
+    calls: list[list[str]] = []
+
+    def fake(args, check=True):
+        calls.append(list(args))
+        if args[0] == "for-each-ref":
+            return subprocess.CompletedProcess(
+                ["git", *args], 0, "refs/remotes/prh/1 refs/remotes/prh/2", "")
+        raise AssertionError(f"appel git inattendu : {args}")
+
+    monkeypatch.setattr(mod, "_git", fake)
+    mod._prune_stack_refs([1, 2])
+
+    assert [c[0] for c in calls] == ["for-each-ref"], calls
+
+
+def test_stack_door_reaches_the_merge_gate_path(monkeypatch):
+    """#20251 -- la porte atteint le chemin que le merge organe emprunte.
+
+    C'est l'assertion d'integration qui compte : `merge_ready.run_gate` lance
+    `check_adjoint_prevalidation.py <PR> --json`, dont le flot passe par
+    `refute_ready_verdict` -> `derive_verdict`. Sans ce maillon, la porte
+    n'aurait protege que la lane emettrice, pas le merge -- or c'est un MERGE
+    de sommet de pile qui a fait atterrir la version anterieure sur `main`.
+    """
+    verdict, dossier = _ready_dossier()
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(mod, "default_stack_index", lambda: _stack_index(
+        _stack_entry(snapshot["number"], {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"a": "A", "b": "B", "c": "C: correctif ulterieur"}),
+    ))
+
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        snapshot, verdict, [], dossier,
+        probe=lambda pr: {"blocked": False, "blocking": []},
+    )
+
+    assert verdict != mod.VERDICT_READY, (verdict, errors)
+    assert dossier is None
+    assert any("stack top" in e and "#19556" in e for e in errors), errors
+
+
+def test_stack_door_is_silent_on_the_merge_path_when_not_a_stack_top(monkeypatch):
+    """#20251 -- controle negatif du meme chemin : rien a signaler, rien ne change.
+
+    Sans lui, `test_stack_door_reaches_the_merge_gate_path` passerait aussi si
+    la porte refusait tout ce qu'elle voit.
+    """
+    verdict, dossier = _ready_dossier()
+    snapshot = _snapshot(_body())
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(mod, "default_stack_index", lambda: _stack_index(
+        _stack_entry(snapshot["number"], {"a": "A"}),
+        _stack_entry(19556, {"z": "Z"}),
+    ))
+
+    verdict, errors, dossier = mod.refute_ready_verdict(
+        snapshot, verdict, [], dossier,
+        probe=lambda pr: {"blocked": False, "blocking": []},
+    )
+
+    assert verdict == mod.VERDICT_READY, errors
+    assert errors == [] and dossier is not None
+
+
+# --- #20641 : test direct du mecanisme `_author_ref` (NanoClaw review 5503...) --
+# La review NanoClaw (c.469) a releve que les trois tests #20641 posaient
+# `author_ref` manuellement sur l'index et patchaient le test preexistant
+# l.3743 en identite : `_synthetic_git` ne repond qu'aux questions
+# `merge-base`, et la logique de saut content-free (4eme bloc de
+# `_author_ref` : derive du premier parent, et uniquement quand la fusion
+# est content-free) n'avait aucun test direct. Le couple auto-coherent
+# par construction, c'est precisement ce qu'il faut fermer.
+
+
+def _author_ref_synthetic_git(*, parents=(), ancestors=(), trees=(), auto_merges=()):
+    """`git` simule repondant aux 4 questions de `_author_ref`.
+
+    `parents` : sha -> "<first> <second>" (sortie de `log -1 --format=%P`).
+    `ancestors` : paires (second, base) pour lesquelles merge-base rc=0.
+    `trees` : sha -> tree_sha (sortie de `log -1 --format=%T`).
+    `auto_merges` : (first, second) -> tree_sha (sortie de
+    `merge-tree --write-tree`).
+    """
+    anc = set(ancestors)
+    par = dict(parents)
+    tre = dict(trees)
+    auto = dict(auto_merges)
+
+    def fake(args, check=True):
+        if args[:3] == ["log", "-1", "--format=%P"]:
+            return subprocess.CompletedProcess(
+                ["git", *args], 0, par.get(args[3], ""), ""
+            )
+        if args[:2] == ["merge-base", "--is-ancestor"]:
+            rc = 0 if (args[2], args[3]) in anc else 1
+            return subprocess.CompletedProcess(["git", *args], rc, "", "")
+        if args[:3] == ["log", "-1", "--format=%T"]:
+            return subprocess.CompletedProcess(
+                ["git", *args], 0, tre.get(args[3], ""), ""
+            )
+        if args[:2] == ["merge-tree", "--write-tree"]:
+            tree = auto.get((args[2], args[3]), "")
+            return subprocess.CompletedProcess(["git", *args], 0, tree, "")
+        return subprocess.CompletedProcess(["git", *args], 1, "", "")
+
+    return fake
+
+
+def test_author_ref_skips_content_free_merge(monkeypatch):
+    """#20641 (controle direct positif) -- une fusion content-free est sautee.
+
+    `top` est un commit de fusion : `parents[0]` = la branche ou on
+    etait (feature), `parents[1]` = la branche mergee (main). C'est la
+    disposition de `gh pr update-branch` (merge main dans la branche
+    de la PR). Le second parent est donc l'ancetre de la base, et
+    l'arbre de `top` est identique a l'arbre de l'auto-merge des
+    parents : `_author_ref` doit deriver sur `feature` (le premier
+    parent). C'est le saut qui rend muette la porte pile dans le cas
+    fondateur #20521/#20525 (base rafraichie content-free).
+    """
+    base = "refs/remotes/origin/main"
+    main_sha = "1" * 40
+    feature_sha = "2" * 40
+    top = "3" * 40
+    monkeypatch.setattr(
+        mod,
+        "_git",
+        _author_ref_synthetic_git(
+            parents={top: f"{feature_sha} {main_sha}"},
+            ancestors={(main_sha, base)},
+            trees={top: "tree_top"},
+            auto_merges={(feature_sha, main_sha): "tree_top"},
+        ),
+    )
+    assert mod._author_ref(top, base_ref=base) == feature_sha
+
+
+def test_author_ref_stops_at_conflict_resolution(monkeypatch):
+    """#20641 (controle direct negatif) -- une fusion avec conflit N'EST PAS sautee.
+
+    Meme forme que le test positif, mais l'arbre de `top` differe de
+    l'arbre de l'auto-merge : c'est une resolution manuelle de conflit
+    (contenu d'auteur). `_author_ref` doit rendre `top` inchange, et la
+    remontee first-parent ne deriver pas. Le predicat du
+    `last_authoritative_sha` de `merge_dwell.py` est ici transpose :
+    le contenu d'auteur se mesure, et il bloque la remontee.
+    """
+    base = "refs/remotes/origin/main"
+    main_sha = "1" * 40
+    feature_sha = "2" * 40
+    top = "3" * 40
+    monkeypatch.setattr(
+        mod,
+        "_git",
+        _author_ref_synthetic_git(
+            parents={top: f"{feature_sha} {main_sha}"},
+            ancestors={(main_sha, base)},
+            trees={top: "tree_resolved"},
+            auto_merges={(feature_sha, main_sha): "tree_auto"},
+        ),
+    )
+    assert mod._author_ref(top, base_ref=base) == top
+
+
+def test_author_ref_returns_on_non_merge_commit(monkeypatch):
+    """#20641 (controle direct) -- un commit non-fusion n'est pas une cible de saut.
+
+    `top` n'a qu'un seul parent : `_author_ref` rend `top` inchange
+    (la remontee n'a rien a sauter). Le test ferme le trou des
+    4 conditions de la remontee (parents != 2, second non-ancetre,
+    arbre vide, arbre != auto-merge) : ce sont les sorties de
+    remontee que le code tient.
+    """
+    base = "refs/remotes/origin/main"
+    top = "3" * 40
+    monkeypatch.setattr(
+        mod,
+        "_git",
+        _author_ref_synthetic_git(
+            parents={top: "1" * 40},
+            trees={top: "tree_top"},
+        ),
+    )
+    assert mod._author_ref(top, base_ref=base) == top
+
+
+def test_author_ref_returns_on_git_failure(monkeypatch):
+    """#20641 (controle direct) -- un echec de mesure ne leve pas d'exception.
+
+    Le `_git` synthetique minimal rend rc=1 sur tout (defaut de la
+    derniere branche) : `_author_ref` doit rendre `ref` inchange
+    (fail-closed). Une mesure impossible ne fabrique jamais de refus.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    ref = "refs/pull/12345/head"
+    assert mod._author_ref(ref) == ref

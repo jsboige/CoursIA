@@ -2,7 +2,7 @@
 from AlgorithmImports import *
 from datetime import datetime
 from alpha_models import EMACrossAlpha, TrendStocksAlpha
-from portfolio_construction import MultiStrategyPCM
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
 # endregion
 
 # EMA-Cross universe: 5 tech/Mag7 stocks
@@ -133,7 +133,7 @@ class FrameworkCompositeEMATrend(QCAlgorithm):
                 # Target allocation: EMA70/Trend30 (sweep winner)
                 allocations = {"EMACross": ema_allocation, "TrendStocks": trend_allocation}
 
-            self.pcm = MultiStrategyPCM(
+            self.pcm = MultiStrategyPouchesPCM(
                 alpha_allocations=allocations,
                 rebalance=timedelta(days=7),  # Weekly rebalance to align with TrendStocks
                 additive=(self.mode == "intent"),
@@ -157,6 +157,10 @@ class FrameworkCompositeEMATrend(QCAlgorithm):
 
     def on_data(self, data):
         if self.is_warming_up:
+            return
+        if not any(data.bars.contains_key(sym) for sym in self.symbols.values()):
+            # Midnight dividend/distribution slices carry no bars (#20264):
+            # consuming the month guard here would rebalance on stale prices.
             return
         if self.mode in REFERENCE_WEIGHTS and self.time.month != self._ref_month:
             # Held reference, rebalanced on the first daily bar of each month.

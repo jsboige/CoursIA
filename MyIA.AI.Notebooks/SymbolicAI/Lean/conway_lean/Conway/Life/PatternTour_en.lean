@@ -11,10 +11,13 @@ regimes:
 
 Each section performs the same gesture twice: a `#eval` that *computes* the evolution
 ("watch the pattern live"), then a `theorem ... := by decide` that *proves* that what
-we see is indeed the advertised property. The `decide` proofs run in the kernel without
-adding axioms (cf. `Computation.lean` §6, the `ceilLog2` fix #9536); the rare
-`native_decide` calls (pulsar, gun) are flagged and add the `Lean.ofReduceBool` axiom —
-the formal equivalent of a witness `#eval`.
+we see is indeed the advertised property. These proofs run in the kernel; their
+*certificate* is not always empty, though, and §5 **measures** this instead of assuming
+it: theorems built on the reference `step`/`evolve` depend on no axiom, while those of
+the accelerated path inherit `propext` from the `MacroCell` layer (`MacroCell.toGrid`
+depends on it, measured via `#print axioms`). The rare `native_decide` calls (pulsar,
+gun) are flagged and add the `Lean.ofReduceBool` axiom — the formal equivalent of a
+witness `#eval`.
 
 The i18n convention is Pattern A (cf. `code-style.md`, EPIC #4980): this file is the
 English mirror; the French canonical lives in `PatternTour.lean`. Only docstrings and
@@ -158,9 +161,14 @@ advancing by 2^(k-1).
 
 The correctness of this "fast path" is proved against the naive reference `evolve`.
 After the `ceilLog2` fix (#9536, resolving #8869), these equalities pass `decide` in the
-kernel without adding axioms — the `MacroCell` layer is no longer opaque to the reducer.
-This is the endpoint of the tour: the same evolution, computed by two algorithms of
-radically different complexity, proved equal. -/
+kernel — the `MacroCell` layer is no longer opaque to the reducer. **The certificate is
+not empty, though**: `#print axioms` returns `[propext]` on these theorems, as on
+`MacroCell.toGrid` itself. `propext` is not added by `decide`: a `decide` proof inherits
+the axioms of the definitions it unfolds, and the accelerated layer carries one. The
+reference `step`/`evolve` carries none — the line runs between the two *paths*, not
+between two tactics. This is the endpoint of the tour: the same evolution, computed by
+two algorithms of radically different complexity, proved equal, at the price of a kernel
+axiom shown rather than hidden. -/
 
 -- Hashlife vs reference: same result on the glider, at 4 and 8 generations.
 #eval evolveHashlifeFast 4 glider == evolve 4 glider   -- expected: true
@@ -177,8 +185,10 @@ radically different complexity, proved equal. -/
 
 /-- The Hashlife fast path recovers, in a single `MacroCell` step, the diagonal
     translation (1, -1) that the reference computes step by step over 4 generations. This
-    is the scale-invariance of §3 as seen from the accelerated algorithm. Kernel proof,
-    zero axioms. -/
+    is the scale-invariance of §3 as seen from the accelerated algorithm. The proof is a
+    kernel `decide`, but its certificate is not empty: `#print axioms` returns `[propext]`,
+    inherited from the `MacroCell` layer (cf. §5). The reference `step`/`evolve` carries
+    none — the line runs between the two paths, not between two tactics. -/
 theorem hashlife_fast_glider_translation_4 : evolveHashlifeFast 4 glider = shift (1, -1) glider := by decide
 
 /-! ## Coda
