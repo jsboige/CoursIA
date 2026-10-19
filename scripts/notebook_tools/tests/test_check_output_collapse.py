@@ -66,11 +66,15 @@ def test_signature_is_accent_blind():
     assert got["cells"] and got["cells"][0]["kind"] == "signature"
 
 
-def test_signature_needs_real_contraction():
-    # A motif substring in a GROWN output is not degradation.
+def test_signature_fires_on_motif_even_when_grown():
+    # Issue #21424 T2-corrige : la signature attrape le motif "nouveau"
+    # independamment de la contraction. Un "skipped" apparu dans une
+    # sortie reelle est un signal de degradation (meme si la cellule
+    # a grossi en meme temps, le motif a ete ajoute). C'est le cas
+    # fondateur Kokoro f82ed24e (566 -> 15602 chars).
     got = analyze(base([("a", LONG)]),
                   nb([("a", "skipped 0 tests\n" + "x" * 1500)]))
-    assert got["cells"] == []
+    assert any(f["kind"] == "signature" for f in got["cells"]), got["cells"]
 
 
 def test_magnitude_fires_on_order_of_magnitude_loss():
@@ -221,12 +225,14 @@ def test_parse_collapse_justification_form_hash():
 
 
 def test_unaddressed_keeps_only_unjustified_cells():
-    """The unaddressed list is the gate signal -- justified cells drop out."""
+    """The unaddressed list is the gate signal -- justified cells drop out
+    only when the reason is one of the 3 accepted motifs (faux positif,
+    allegement, contenu deplace)."""
     from check_output_collapse import (
         parse_collapse_justification, _unaddressed,
     )
     body = ("## Output-collapse justification\n"
-            "- Lean-7b-Examples.ipynb cell eb711ddb: env-only\n")
+            "- Lean-7b-Examples.ipynb cell eb711ddb: faux positif (avertissement transformers)\n")
     j = parse_collapse_justification(body)
     bad = [
         {"notebook": "Lean-7b-Examples.ipynb",
@@ -252,6 +258,127 @@ def test_unaddressed_drops_exempt_entries():
         ]},
     ]
     assert _unaddressed(bad, {}) == []
+
+
+# ---------------------------------------------------------------------------
+# Issue #21424 T2-corrige : 4 controles positifs + soupape 3 motifs.
+# ---------------------------------------------------------------------------
+
+def test_calibration_bonsai_under_floor():
+    """Bonsai `recipe-cell` (274 chars base) is caught by motif nouveau
+    even though it sits under the legacy BASE_FLOOR=500."""
+    from check_output_collapse import analyze
+    base = ("ComfyUI connecte : http://127.0.0.1:8188\n"
+            "GPU : cuda:0\nGeneration terminee en 2.0s\n"
+            "Image : bonsai_demo_00001_.png\n")
+    head = ("ComfyUI non disponible : COMFYUI_API_URL manquant dans .env\n"
+            "Generation skipped (ComfyUI non disponible).\n")
+    b = {"cells": [{"cell_type": "code", "id": "recipe-cell",
+                    "outputs": [{"output_type": "stream", "text": base}]}]}
+    h = {"cells": [{"cell_type": "code", "id": "recipe-cell",
+                    "outputs": [{"output_type": "stream", "text": head}]}]}
+    r = analyze(b, h)
+    assert r["regressed"]
+    assert any(f["kind"] == "signature" and f["cell"] == "recipe-cell"
+               for f in r["cells"])
+
+
+def test_calibration_planners0_equal_length():
+    """Planners-0 `cell-17` (538->593 chars) is caught despite no
+    contraction, because the motif is newly present in head."""
+    from check_output_collapse import analyze
+    base = "Plateforme: Windows\nPython: 3.13.12\nFast Downward: OK (Docker)\n"
+    head = "Plateforme: Windows\nPython: 3.13.7\nFast Downward: Non disponible\n"
+    b = {"cells": [{"cell_type": "code", "id": "cell-17",
+                    "outputs": [{"output_type": "stream", "text": base}]}]}
+    h = {"cells": [{"cell_type": "code", "id": "cell-17",
+                    "outputs": [{"output_type": "stream", "text": head}]}]}
+    r = analyze(b, h)
+    assert r["regressed"]
+    assert any(f["kind"] == "signature" and f["cell"] == "cell-17"
+               for f in r["cells"])
+
+
+def test_calibration_kokoro_grows():
+    """Kokoro `f82ed24e` (566->15602 chars) is caught despite growing,
+    because the motif is newly present in head."""
+    from check_output_collapse import analyze
+    base = "INFLECT-NANO-V1\nRecuperation du modele...\nGeneration reussie\n"
+    head = ("INFLECT-NANO-V1\n" + "x" * 15000 +
+            "\nInflect-Nano n'est pas installe - demonstration sautee.\n")
+    b = {"cells": [{"cell_type": "code", "id": "f82ed24e",
+                    "outputs": [{"output_type": "stream", "text": base}]}]}
+    h = {"cells": [{"cell_type": "code", "id": "f82ed24e",
+                    "outputs": [{"output_type": "stream", "text": head}]}]}
+    r = analyze(b, h)
+    assert r["regressed"]
+    assert any(f["kind"] == "signature" and f["cell"] == "f82ed24e"
+               for f in r["cells"])
+
+
+def test_calibration_sd35_classic():
+    """SD-3.5 `cell-1` (598->346 chars) is caught by motif nouveau
+    even though the motif sits after a `WARNING:` prefix."""
+    from check_output_collapse import analyze
+    base = "Toutes les dependances sont disponibles\nHuggingFace: OK\n"
+    head = ("WARNING: diffusers non installe - pip install diffusers\n"
+            "Dependances manquantes: ['diffusers']\nHuggingFace: OK\n")
+    b = {"cells": [{"cell_type": "code", "id": "cell-1",
+                    "outputs": [{"output_type": "stream", "text": base}]}]}
+    h = {"cells": [{"cell_type": "code", "id": "cell-1",
+                    "outputs": [{"output_type": "stream", "text": head}]}]}
+    r = analyze(b, h)
+    assert r["regressed"]
+    assert any(f["kind"] == "signature" and f["cell"] == "cell-1"
+               for f in r["cells"])
+
+
+def test_soupape_refuses_api_key_absence():
+    """A justification naming an absent API key is refused -- the
+    Epic #21424 / #21427 (CLAUDE.md C.2) close this door."""
+    from check_output_collapse import classify_justification_reason
+    for r in ["API key not configured", "cle api absente", "mode degrade",
+              "GPU absent", "skipped", "demonstration sautee",
+              "non disponible", "non installe", "out of scope"]:
+        assert classify_justification_reason(r) == "refused", r
+
+
+def test_soupape_accepts_three_motifs():
+    """Only faux positif, allegement declare, contenu deplace are
+    accepted by the body-justification bypass."""
+    from check_output_collapse import classify_justification_reason
+    for r in ["faux positif (transformers warning)",
+              "allègement déclaré (probe de diagnostic)",
+              "contenu déplacé vers cellule 6",
+              "moved content",
+              "allege"]:
+        assert classify_justification_reason(r) == "accepted", r
+
+
+def test_soupape_prose_without_keyword_refused():
+    """A justification line that names no accepted motif is refused."""
+    from check_output_collapse import classify_justification_reason
+    assert classify_justification_reason("") == "empty"
+    assert classify_justification_reason("just prose") == "refused"
+
+
+def test_unaddressed_keeps_refused_justification():
+    """A refused reason keeps the cell unaddressed -- the soupape
+    restriction from the #21426 CHANGES_REQUESTED review."""
+    from check_output_collapse import parse_collapse_justification, _unaddressed
+    body = ("## Output-collapse justification\n"
+            "- Foo.ipynb cell a: faux positif\n"
+            "- Foo.ipynb cell b: API key not configured\n"
+            "- Foo.ipynb cell c: allégement déclaré\n")
+    j = parse_collapse_justification(body)
+    bad = [{"notebook": "Foo.ipynb", "cells": [
+        {"cell": "a", "kind": "signature", "factor": 5, "base": 100, "head": 20},
+        {"cell": "b", "kind": "signature", "factor": 5, "base": 100, "head": 20},
+        {"cell": "c", "kind": "signature", "factor": 5, "base": 100, "head": 20},
+    ]}]
+    un = _unaddressed(bad, j)
+    cells_unaddressed = sorted(u["cell"] for u in un)
+    assert cells_unaddressed == ["b"], cells_unaddressed
 
 
 def test_history_yields_no_findings_on_clean_diff():

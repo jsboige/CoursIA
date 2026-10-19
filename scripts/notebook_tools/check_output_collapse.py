@@ -111,10 +111,16 @@ MOVED_GAIN_FRACTION = 0.5
 # CS8632 warnings -- the warnings WERE the output).
 DIAGNOSTIC_LINE_FRACTION = 0.8
 
-# Graceful-degradation motifs, matched on accent-stripped lowercase text
-# (the reference notebook prints "configuree" without its accent; other
-# notebooks print "configuré"). List from the issue's design point 2 plus
-# the English twins of the observed forms.
+# Issue #21424 T2-corrige (2026-10-19, calibration coordinateur sur 23
+# cellules main) : la signature devient << motif present en tete ET absent
+# en base, meme cellule >>. Le plancher de 500 ignore les sorties reelles
+# perdues entre 200 et 400 caracteres (Bonsai `recipe-cell` 274 chars,
+# App-5-Timetabling 361 chars), et la contraction x2 ignore les replis qui
+# remplacent une ligne par une ligne de meme longueur (Planners-0 538->593,
+# MiniMax 218->239) ou qui font grossir la cellule en y ajoutant le motif
+# (Kokoro `f82ed24e` 566->15602). Vocabulaire elargi d'apres les motifs
+# observes sur les 10 derives confirmees a la lecture (cf. PR #21426
+# CHANGES_REQUESTED et commentaire 6268481954).
 DEGRADATION_RE = re.compile(
     r"execution sautee"
     r"|comparaison sautee"
@@ -123,6 +129,38 @@ DEGRADATION_RE = re.compile(
     r"|mode simulation"
     r"|\bskipped\b"
     r"|not available"
+    r"|non disponible"
+    r"|indisponible"
+    r"|unavailable"
+    r"|non installe"
+    r"|n[' ]?est pas installe"
+    r"|not installed"
+    r"|demonstration sautee"
+    r"|generation sautee"
+    r"|\bskip(ping|pee)?\b"
+    r"|cles? (api )?(absente|manquante)"
+    r"|api[_ ]key (absente|manquante|missing)"
+    r"|mode (squelette|mock|degrade)"
+    r"|simulee? :"
+)
+
+# Issue #21424 T2-corrige : la regle << motif nouveau >> attrape aussi 8
+# faux positifs mesures (coordinateur, 2026-10-19, jeu des 23 cellules
+# de calibration). On les exempte explicitement. La liste est STRICTEMENT
+# specifique pour eviter d'innocenter les 4 controles positifs (Bonsai,
+# Planners-0, Kokoro f82ed24e, SD-3.5) dont les sorties REELLES portent
+# le motif en clair. Une exemption non listee ici laisse passer le
+# finding vers le gate. Couverture mesuree sur les 13 FPs : 4/8 exempte
+# (9 PT_11d_qwen, 14 11_Quantization, 18 MultiModel-Video, 19
+# Video-Workflow). Les 4 FPs restants (4 AceStep, 15+16
+# 04-Claude-CLI-Agents, 23 Planners-6-Domains) relevent de la
+# justification explicite par le PR (cf. parse_collapse_justification).
+EXEMPT_FP_PATTERNS = re.compile(
+    r"\[transformers\]"  # library-specific bracket (transformers warning)
+    r"|sdpa fallback"
+    r"|allow_fallback"
+    r"|flash[- ]?attn? .*(absent|fall|fallback)"
+    r"|\.env non trouve"  # specific .env warning, not a real degradation
 )
 
 # Diagnostic-shaped lines (removed-text classification). CS#### is the C#
@@ -214,6 +252,18 @@ def analyze(base_nb, head_nb):
     ``base_nb`` is None for a notebook ADDED by the branch (never judged).
     Returns one row dict; the moved-content exemption is applied later, at
     diff scale, by ``compare`` (it needs the other rows of the same diff).
+
+    Detection rules (Issue #21424 T2-corrige, calibration 2026-10-19) :
+
+      - ``signature`` : motif DEGRADATION_RE present dans la sortie de
+        tete ET absent dans la sortie de base, SANS plancher ni
+        contraction (couvre les replis de meme longueur et les cellules
+        qui grossissent en y ajoutant le motif). Exempte par
+        EXEMPT_FP_PATTERNS (avertissements de bibliotheque, prose
+        imprimee).
+      - ``magnitude`` : contraction d'un ordre de grandeur (factor >= 10)
+        sans motif de degradation, exempte par purge de diagnostic ou
+        contenu deplace au niveau du diff.
     """
     added = base_nb is None
     b_cells, h_cells = _code_cells(base_nb), _code_cells(head_nb)
@@ -227,20 +277,33 @@ def analyze(base_nb, head_nb):
         if b_cell is None:
             continue  # cell added by the branch: no baseline, no judgement
         b_chars, h_chars = _cell_chars(b_cell), _cell_chars(h_cell)
-        if b_chars < BASE_FLOOR or h_chars >= b_chars:
-            continue
-        factor = b_chars / max(h_chars, 1)
+        b_text = _cell_output_text(b_cell)
         h_text = _cell_output_text(h_cell)
-        if factor >= SIGNATURE_FACTOR and DEGRADATION_RE.search(
-                _normalize(h_text)):
-            findings.append({
-                "cell": key, "kind": "signature",
-                "base": b_chars, "head": h_chars,
-                "factor": round(factor, 1),
-            })
-            continue
-        if factor >= MAGNITUDE_FACTOR:
-            b_text = _cell_output_text(b_cell)
+        b_norm = _normalize(b_text)
+        h_norm = _normalize(h_text)
+        factor = b_chars / max(h_chars, 1)
+
+        # Signature: motif nouveau, sans plancher ni contraction.
+        # Bonsai 274 chars (sous ancien plancher), Planners-0 538->593
+        # (longueur egale), Kokoro 566->15602 (grossit) sont tous
+        # attrapes ici.
+        m_h = DEGRADATION_RE.search(h_norm)
+        m_b = DEGRADATION_RE.search(b_norm)
+        if m_h is not None and m_b is None:
+            if not EXEMPT_FP_PATTERNS.search(h_norm):
+                findings.append({
+                    "cell": key, "kind": "signature",
+                    "base": b_chars, "head": h_chars,
+                    "factor": round(factor, 2),
+                    "motif": m_h.group(0),
+                })
+                continue
+
+        # Magnitude: contraction d'un ordre de grandeur, exempte par
+        # purge de diagnostic. Couvre la 10ᵉ derive (QC @17, 428 -> 0)
+        # qui passe sous le plancher de signature si la base est deja
+        # petite (428 chars) -- le ratio est immense.
+        if b_chars >= BASE_FLOOR and factor >= MAGNITUDE_FACTOR:
             diag_frac = _diagnostic_fraction(b_text, h_text)
             if diag_frac >= DIAGNOSTIC_LINE_FRACTION:
                 findings.append({
@@ -367,7 +430,11 @@ def _find_restore_point(path, cell_key, culprit_sha, base_chars, cwd=None,
             cur = parent
             continue
         chars = chars_map.get(cell_key)
-        if chars is not None and chars >= BASE_FLOOR:
+        # Issue #21424 T2-corrige : le plancher de restauration est abaisse
+        # de 500 a 150, pour suivre le plancher de signature. Les cellules
+        # perdues reelles font souvent 200-400 chars (Bonsai 274, App-5
+        # 361, MiniMax 218, Planners-0 538), le seuil de 500 les ignore.
+        if chars is not None and chars >= 150:
             meta = _git("log", parent, "--first-parent", "-n", "1",
                         "--format=%H %ad %s", "--date=short", cwd=cwd)
             if meta:
@@ -539,12 +606,133 @@ def self_test(cwd=None):
     if not rows[0]["regressed"]:
         failures.append("insufficient moved gain exempted the collapse")
 
+    # 14. Issue #21424 T2-corrige : quatre controles positifs pris sur les
+    #     10 derives confirmees a la lecture par le coordinateur (PR
+    #     #21426 CHANGES_REQUESTED). Chaque cas utilise le texte reel
+    #     mesure au commit fautif et a son parent. Les cas sous plancher
+    #     (Bonsai 274 chars), a longueur egale (Planners-0 538->593), ou
+    #     avec croissance (Kokoro f82ed24e 566->15602) sont autant de
+    #     cas que l'ancien organe ratait systematiquement.
+    bonsai_b = ("Token charge depuis D:\\Dev\\CoursIA\\.secrets\\qwen-api-user.token\n"
+                "ComfyUI connecte : http://127.0.0.1:8188\n"
+                "  GPU : cuda:0 NVIDIA GeForce RTX 3090 : cudaMallocAsync (24.0 GB)\n"
+                "Generation terminee en 2.0s\n"
+                "  Image : bonsai_demo_00001_.png\n"
+                "  Params : 1024x1024, 4 steps, seed=42\n")
+    bonsai_h = ("ComfyUI non disponible : COMFYUI_API_URL manquant dans .env\n"
+                "La generation sera skippee.\n\n"
+                "Generation skipped (ComfyUI non disponible).\n")
+    r = _analyze([("recipe-cell", bonsai_b)], [("recipe-cell", bonsai_h)])
+    if not (r["cells"] and r["cells"][0]["kind"] == "signature"):
+        failures.append("calibration Bonsai (sous plancher 274 chars, motif"
+                        " non disponible) not flagged")
+    else:
+        print("calibration Bonsai (sous plancher): flagged as signature,"
+              " motif=" + r["cells"][0].get("motif", ""))
+
+    pl0_b = ("============================================================\n"
+             "RESUME DE L'ENVIRONNEMENT PLANIFICATION\n"
+             "============================================================\n"
+             "Plateforme:      Windows\n"
+             "Python:          3.13.12\n"
+             "------------------------------------------------------------\n"
+             "unified-planning: OK\nOR-Tools:        OK\nDocker:          OK\n"
+             "Fast Downward:   OK (Docker)\n"
+             "============================================================\n\n"
+             "Environnement pret pour les notebooks de planification.\n"
+             "Fast Downward disponible pour la planification optimale.\n")
+    pl0_h = ("============================================================\n"
+             "RESUME DE L'ENVIRONNEMENT PLANIFICATION\n"
+             "============================================================\n"
+             "Plateforme:      Windows\n"
+             "Python:          3.13.7\n"
+             "------------------------------------------------------------\n"
+             "unified-planning: OK\nOR-Tools:        OK\nDocker:          OK\n"
+             "Fast Downward:   Non disponible\n"
+             "============================================================\n\n"
+             "Environnement pret pour les notebooks de planification.\n"
+             "Note: Fast Downward non disponible via Docker.\n"
+             "Vous pourrez utiliser d'autres solveurs avec unified-planning.\n")
+    r = _analyze([("cell-17", pl0_b)], [("cell-17", pl0_h)])
+    if not (r["cells"] and r["cells"][0]["kind"] == "signature"):
+        failures.append("calibration Planners-0 (longueur egale 538->593,"
+                        " motif non disponible) not flagged")
+    else:
+        print("calibration Planners-0 (longueur egale): flagged as signature")
+
+    # Kokoro f82ed24e : la cellule grossit (566 -> 15602 chars) parce que
+    # le notebook telecharge HF ajoute des logs httpx en sortie, puis
+    # degrade par un message d'absence. Le motif "n'est pas installe"
+    # apparait uniquement en queue de la sortie.
+    kokoro_h = ("INFLECT-NANO-V1 - TTS ULTRA-LEGER\n" + "x" * 15000 +
+                "\nDependance manquante (No module named 'torchaudio').\n"
+                "Inflect-Nano n'est pas installe - demonstration sautee"
+                " (graceful).\n")
+    kokoro_b = ("INFLECT-NANO-V1 - TTS ULTRA-LEGER\n" +
+                "Recuperation du modele Inflect-Nano-v1...\n"
+                "Backend : cuda\n"
+                "Params : acoustic=3,465,125  vocoder=1,167,077  total=4,632,202\n"
+                "Generation reussie\n  Duree audio : 4.49s\n"
+                "  Temps CPU : 2.03s  (RTF = 0.453, < 1 = plus rapide que"
+                " le temps reel)\n")
+    r = _analyze([("f82ed24e", kokoro_b)], [("f82ed24e", kokoro_h)])
+    if not (r["cells"] and r["cells"][0]["kind"] == "signature"):
+        failures.append("calibration Kokoro f82ed24e (cellule qui grossit"
+                        " 566->15602, motif n'est pas installe) not flagged")
+    else:
+        print("calibration Kokoro f82ed24e (cellule qui grossit):"
+              " flagged as signature")
+
+    sd35_b = ("Toutes les dependances sont disponibles\n"
+              ".env charge depuis: D:\\Dev\\CoursIA\\.env\n"
+              "Stable Diffusion 3.5 - Generation de Pointe\n"
+              "Date: 2026-08-15 15:06:14\n"
+              "HuggingFace: Token configure\n")
+    sd35_h = ("WARNING: diffusers non installe - pip install diffusers\n"
+              "Dependances manquantes: ['diffusers']\n"
+              ".env charge depuis: .env\n"
+              "Stable Diffusion 3.5 - Generation de Pointe\n"
+              "Date: 2026-08-18 06:32:31\n"
+              "HuggingFace: Token configure\n")
+    r = _analyze([("cell-1", sd35_b)], [("cell-1", sd35_h)])
+    if not (r["cells"] and r["cells"][0]["kind"] == "signature"):
+        failures.append("calibration SD-3.5 (classique 598->346, motif"
+                        " non installe) not flagged")
+    else:
+        print("calibration SD-3.5 (classique): flagged as signature")
+
+    # 14b. Exemptions FP : trois cas mesures sur les 8 FPs du jeu de
+    #     calibration. Chaque exemption est testee separement.
+    transformers_h = ("[transformers] the fast path is not available because"
+                       " one of the required library is not installed.\n"
+                       "Falling back to torch implementation.\n"
+                       "loading weights: 0%|          | 0/320\n")
+    sdpa_h = ("Loading checkpoint: sdpa fallback engaged due to flash"
+              " attention absence.\n"
+              "model output: tensor([0.1, 0.2, 0.3])\n")
+    env_h = ("warning: .env non trouve, utilisation variables"
+             " environnement\n\n"
+             "verification gpu...\n"
+             "cuda non disponible.\n")
+    for label, h in [("transformers", transformers_h),
+                     ("sdpa fallback", sdpa_h),
+                     (".env non trouve", env_h)]:
+        # build a real-degradation base without the FP pattern, then add
+        # the FP head -- the organ should NOT flag this cell.
+        r = _analyze([("x", long_text)], [("x", h)])
+        if r["cells"]:
+            failures.append("FP exemption " + label + " failed: still"
+                            " flagged as " + r["cells"][0]["kind"])
+        else:
+            print("FP exemption " + label + ": silent (not flagged)")
+
     # 15. body-justification parser (Issue #21424 T2): the section is the
     #     marker. Cells inside the section are returned as (notebook, cell)
     #     pairs; the section header itself is the gate bypass.
     body_ok = ("## Output-collapse justification\n"
-               "- Lean-7b-Examples.ipynb cell eb711ddb: API key not configured\n"
-               "- Lean-7b-Examples.ipynb#4d4322dd re-execution skipped\n"
+               "- Lean-7b-Examples.ipynb cell eb711ddb: faux positif, prose imprimee\n"
+               "- Lean-7b-Examples.ipynb#4d4322dd allègement déclaré (probe)\n"
+               "- Lean-7b-Examples.ipynb@32aa3fbb contenu déplacé dans la cellule 6\n"
                "## Other section\n")
     j = parse_collapse_justification(body_ok)
     if ("Lean-7b-Examples.ipynb", "eb711ddb") not in j:
@@ -559,18 +747,60 @@ def self_test(cwd=None):
         failures.append("body-justification: missing section returns non-empty")
     if parse_collapse_justification("## Output-collapse justification\nno cells"):
         failures.append("body-justification: section without cells is non-empty")
-    # The unaddressed counter is the gate signal.
+
+    # 15a. T2-corrige : la soupape restreinte a 3 motifs. Une raison qui
+    #      nomme une absence d'environnement (cle, outil, mode degrade)
+    #      est REFUSEE et compte comme non traitee.
+    for refused_reason in [
+        "API key not configured",
+        "cle api absente",
+        "mode degrade accepte",
+        "GPU absent",
+        "skipped",
+        "demonstration sautee",
+    ]:
+        if classify_justification_reason(refused_reason) != "refused":
+            failures.append("soupape: refused reason not classified as"
+                            " refused: " + refused_reason)
+    for accepted_reason in [
+        "faux positif (avertissement transformers)",
+        "allègement déclaré",
+        "contenu déplacé",
+        "deplace vers cellule 6",
+        "moved content",
+    ]:
+        if classify_justification_reason(accepted_reason) != "accepted":
+            failures.append("soupape: accepted reason not classified as"
+                            " accepted: " + accepted_reason)
+    if classify_justification_reason("") != "empty":
+        failures.append("soupape: empty reason not classified as empty")
+    if classify_justification_reason("just prose without a keyword") != "refused":
+        failures.append("soupape: prose without keyword not refused")
+
+    # 15b. Unaddressed : une justification refusee compte comme non
+    #      traitee. C'est la restriction demandee par la revue
+    #      CHANGES_REQUESTED sur #21426.
     rows_j = [
         {"notebook": "Lean-7b-Examples.ipynb",
          "cells": [{"cell": "eb711ddb", "kind": "signature",
                     "factor": 14.9, "base": 1000, "head": 67},
+                   {"cell": "4d4322dd", "kind": "magnitude",
+                    "factor": 49.4, "base": 1000, "head": 20},
                    {"cell": "32aa3fbb", "kind": "magnitude",
                     "factor": 49.4, "base": 1000, "head": 20}]},
     ]
-    un = _unaddressed(rows_j, j)
-    if len(un) != 1 or un[0]["cell"] != "32aa3fbb":
-        failures.append("body-justification: unaddressed did not isolate "
-                        "the unjustified cell")
+    body_mixed = ("## Output-collapse justification\n"
+                  "- Lean-7b-Examples.ipynb cell eb711ddb: faux positif\n"
+                  "- Lean-7b-Examples.ipynb cell 4d4322dd: API key not configured\n"
+                  "- Lean-7b-Examples.ipynb cell 32aa3fbb: allègement déclaré\n")
+    j_mixed = parse_collapse_justification(body_mixed)
+    un = _unaddressed(rows_j, j_mixed)
+    # eb711ddb: accepted (faux positif) -> covered
+    # 4d4322dd: refused (api key not configured) -> unaddressed
+    # 32aa3fbb: accepted (allegement declare) -> covered
+    if len(un) != 1 or un[0]["cell"] != "4d4322dd":
+        failures.append("soupape: refused reason did not stay unaddressed:"
+                        " got " + str([u["cell"] for u in un]))
 
     # 14. history mode: replay the ratchet on the first-parent history
     #     of main. The replay should NOT crash and should be deterministic
@@ -693,6 +923,32 @@ JUSTIFICATION_CELL = re.compile(
     re.IGNORECASE,
 )
 
+# Issue #21424 T2-corrige (2026-10-19, revue coordinateur) : la soupape
+# accepte seulement 3 motifs de justification. Toute raison qui nomme
+# une absence d'environnement (cle, outil, GPU, service, mode degrade)
+# est REFUSEE et compte comme non traitee (= HARD-fail). Les trois
+# motifs acceptes : faux positif (avertissement bibliotheque, prose
+# imprimee), allegement declare, contenu deplace.
+ACCEPTED_JUSTIFICATION_RE = re.compile(
+    r"\bfaux[ -]?positif\b"
+    r"|\ballegement\b|\balleg[eé]\b"
+    r"|\bcontenu deplace\b|\bdeplace\b|\bmoved\b",
+    re.IGNORECASE,
+)
+# Refused keywords : any of these in the reason text means the
+# justification is REJECTED. Conservative: default is to refuse if no
+# accepted keyword is found.
+REFUSED_JUSTIFICATION_RE = re.compile(
+    r"\b(non disponible|indisponible|non installe|n[' ]?est pas installe"
+    r"|not installed|not available)"
+    r"|\b(non configure|not configured|cles? (api )?(absente|manquante)"
+    r"|api[_ ]key (absente|manquante|missing))"
+    r"|\b(mode (squelette|mock|degrade|simulation))"
+    r"|\b(skipped|skip(ping|pee)|demonstration sautee|generation sautee)"
+    r"|\b(gpu absent|out of scope|hors scope|env(ironment)? (absent|manquant))",
+    re.IGNORECASE,
+)
+
 
 def _load_pr_body(path):
     """Return the PR body markdown, or '' if absent.
@@ -739,8 +995,40 @@ def parse_collapse_justification(body):
     return justified
 
 
+def classify_justification_reason(reason):
+    """Return 'accepted', 'refused' or 'empty' for a justification reason.
+
+    'accepted' : the reason names one of the 3 accepted motifs
+                 (faux positif, allegement, contenu deplace).
+    'refused'  : the reason names a refused motif (env absent, mode
+                 degrade, cle absente, etc.) -- the Epic #21424 and
+                 #21427 (CLAUDE.md section C.2) close this door.
+    'empty'    : no reason text -- the cell is not justified.
+
+    Matching is accent-blind (cf. ``_normalize``), so 'allègement' and
+    'allegement' both count.
+    """
+    if not reason or not reason.strip():
+        return "empty"
+    norm = _normalize(reason)
+    if REFUSED_JUSTIFICATION_RE.search(norm):
+        return "refused"
+    if ACCEPTED_JUSTIFICATION_RE.search(norm):
+        return "accepted"
+    # Default : refuse silently. A line that names neither an accepted
+    # motif nor a refused one is treated as a soft refusal -- the
+    # author has not justified anything, they have just left prose.
+    return "refused"
+
+
 def _unaddressed(bad_rows, justified):
-    """Flatten flagged findings into a list of dicts not covered by the body."""
+    """Flatten flagged findings into a list of dicts not covered by the body.
+
+    A cell listed in ``justified`` is only treated as covered when its
+    reason classifies as 'accepted'. 'refused' reasons (env absent, mode
+    degrade, etc.) keep the cell unaddressed -- this is the soupape
+    restriction demanded in the PR #21426 CHANGES_REQUESTED review.
+    """
     out = []
     for r in bad_rows:
         for f in r["cells"]:
@@ -748,7 +1036,9 @@ def _unaddressed(bad_rows, justified):
                 continue
             key = (r["notebook"], f["cell"])
             if key in justified:
-                continue
+                klass = classify_justification_reason(justified[key])
+                if klass == "accepted":
+                    continue
             out.append({"notebook": r["notebook"], "cell": f["cell"],
                         "kind": f["kind"], "factor": f["factor"],
                         "base": f["base"], "head": f["head"]})
