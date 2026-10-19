@@ -2434,9 +2434,9 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb,4b8e695f,markdown,fr,423
 - [CSP-1-Fondamentaux](../Search/Part2-CSP/CSP-1-Fundamentals.ipynb) - Fondamentaux CSP
 - [CSP-2-Consistance](../Search/Part2-CSP/CSP-2-Consistency.ipynb) - Propagation de contraintes
 - [App-1-NQueens](../Search/Applications/CSP/App-1-NQueens.ipynb) - Autre application CSP",,,,,,,,423169cb29a19105,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb,2455ea10,markdown,fr,a650713ee578409a,"# Sudoku-10-ORTools-Python : OR-Tools CP-SAT (Python)
+MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb,2455ea10,markdown,fr,602e2409fee13a64,"# Sudoku-10-ORTools-Python : OR-Tools CP-SAT (Python)
 
-**Navigation** : [<< Python Backtracking](Sudoku-1-Backtracking-Python.ipynb) | [Index](README.md) | [Z3 Python >>](Sudoku-12-Z3-Python.ipynb)
+**Navigation** : [<< Python Backtracking](Sudoku-01-Backtracking-Python.ipynb) | [Index](README.md) | [Z3 Python >>](Sudoku-12-Z3-Python.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -2476,7 +2476,7 @@ Cette approche est equivalente au notebook C# `Sudoku-10-ORTools-CSharp.ipynb`.
 
 ```bash
 pip install ortools
-```",,,,,,,,a650713ee578409a,,,,,,,,
+```",,,,,,,,602e2409fee13a64,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb,31f3025f-f1c7-4b39-bbcc-fe29c9da0ea2,code,fr,dbe9fd17045d77d5,"# Installation silencieuse d'OR-Tools (uniquement si absent de l'environnement)
 import subprocess, sys
 try:
@@ -2939,7 +2939,7 @@ for n in [3, 4, 5, 6, 7]:
                 print(f""    {row}"")
     else:
         print(f""  N={n}: Aucune solution trouvee"")",,,,,,,,b0c3b2944f09d125,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb,rnozjwu8rs,markdown,fr,d1d5c77b8b9e4ec8,"### Interpretation : Benchmark OR-Tools CP-SAT
+MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb,rnozjwu8rs,markdown,fr,f4c1810d80b79193,"### Interpretation : Benchmark OR-Tools CP-SAT
 
 Les résultats du benchmark montrent que OR-Tools CP-SAT resout tous les puzzles avec des temps excellents.
 
@@ -2987,7 +2987,7 @@ Le Sudoku est un excellent problème pedagogique car il est facile a comprendre 
 
 ---
 
-**Navigation** : [<< Python Backtracking](Sudoku-1-Backtracking-Python.ipynb) | [Index](README.md) | [Z3 Python >>](Sudoku-12-Z3-Python.ipynb)",,,,,,,,d1d5c77b8b9e4ec8,,,,,,,,
+**Navigation** : [<< Python Backtracking](Sudoku-01-Backtracking-Python.ipynb) | [Index](README.md) | [Z3 Python >>](Sudoku-12-Z3-Python.ipynb)",,,,,,,,f4c1810d80b79193,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-CSharp.ipynb,09f280ec,markdown,fr,3c701e1e92c3ec3e,"# Sudoku-11-Choco-CSharp : Solveur Choco via IKVM
 
 **Navigation** : [<< OR-Tools](Sudoku-10-ORTools-CSharp.ipynb) | [Index](README.md) | [Z3 >>](Sudoku-12-Z3-CSharp.ipynb)
@@ -4539,7 +4539,7 @@ class ChocoSudokuDiagonalSolver:
 # print(f""Solution avec diagonales : {diagonal_solution is not None}"")
 
 print(""Exercice Choco a implementer !"")",,,,,,,,af15e0676eb0b809,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,conclusion,markdown,fr,fb4ac436b4315e9f,"## Conclusion
+MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb,conclusion,markdown,fr,03a855d448600586,"## Conclusion
 
 Dans ce notebook, nous avons :
 
@@ -4566,7 +4566,7 @@ Dans ce notebook, nous avons :
 | Notebook | Lien conceptuel |
 |----------|-----------------|
 | [Sudoku-10-ORTools](./Sudoku-10-ORTools-Python.ipynb) | CP-SAT vs Choco: deux approches CP différentes |
-| [Sudoku-6-AIMA-CSP](./Sudoku-6-AIMA-CSP-Python.ipynb) | Théorie des CSP et backtracking |
+| [Sudoku-6-AIMA-CSP](./Sudoku-06-AIMA-CSP-Python.ipynb) | Théorie des CSP et backtracking |
 | [Sudoku-12-Z3](./Sudoku-12-Z3-Python.ipynb) | SMT solving vs Constraint Programming |
 | [CSP-1-Fondamentaux](../Search/Part2-CSP/CSP-1-Fundamentals.ipynb) | Fondements théoriques des CSP |
 
@@ -4581,7 +4581,7 @@ Dans ce notebook, nous avons :
 ---
 
 **Retour au sommaire** : [Index Sudoku](README.md)
-",,,,,,,,fb4ac436b4315e9f,,,,,,,,
+",,,,,,,,03a855d448600586,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-CSharp.ipynb,89962877,markdown,fr,a0c5828c4153fffa,"# Sudoku-12 : Résolution avec Z3 SMT Solver (C#)
 
 **Navigation** : [<< Sudoku-11 Choco C#](Sudoku-11-Choco-CSharp.ipynb) | [Index](README.md) | [Sudoku-13 Symbolic Automata C# >>](Sudoku-13-SymbolicAutomata-CSharp.ipynb)
@@ -13284,7 +13284,7 @@ class NeuroConstraintSolver:
 Votre solveur doit :
 - Ne jamais produire une grille invalide (contraintes respectees)
 - Avoir un meilleur taux de resolution que la prediction directe ou iterative",,,,,,,,51d2e687f150c8e0,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,footer-nav,markdown,fr,59bd992eec4bebde,"---
+MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,footer-nav,markdown,fr,079d89791f66c606,"---
 
 **Navigation** : [<< Sudoku-15-Infer-Python](Sudoku-15-Infer-Python.ipynb) | [Index](README.md) | [Sudoku-17-LLM-Python >>](Sudoku-17-LLM-Python.ipynb)
 
@@ -13293,10 +13293,10 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb,footer-nav,markdow
 - [Sudoku-17-LLM-Python](Sudoku-17-LLM-Python.ipynb) - Résolution par grands modèles de langage
 
 ### Notebooks associés
-- [Sudoku-1-Backtracking](Sudoku-1-Backtracking-Python.ipynb) : solveur algorithmique de référence
-- [Sudoku-Python-Backtracking](Sudoku-1-Backtracking-Python.ipynb) : backtracking en Python (même SudokuGrid)
-- [Sudoku-7-Norvig](Sudoku-7-Norvig-Python.ipynb) : propagation de contraintes
-- [Sudoku-Python-Genetic](Sudoku-3-Genetic-Python.ipynb) : autre approche non-déterministe",,,,,,,,59bd992eec4bebde,,,,,,,,
+- [Sudoku-1-Backtracking](Sudoku-01-Backtracking-Python.ipynb) : solveur algorithmique de référence
+- [Sudoku-Python-Backtracking](Sudoku-01-Backtracking-Python.ipynb) : backtracking en Python (même SudokuGrid)
+- [Sudoku-7-Norvig](Sudoku-07-Norvig-Python.ipynb) : propagation de contraintes
+- [Sudoku-Python-Genetic](Sudoku-03-Genetic-Python.ipynb) : autre approche non-déterministe",,,,,,,,079d89791f66c606,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-17-LLM-Python.ipynb,intro,markdown,fr,fea2510bf0c9cc92,"**Navigation** : [Index](README.md) | [<< Sudoku-16 Python](Sudoku-16-NeuralNetwork-Python.ipynb) | [Sudoku-18 >>](Sudoku-18-Comparison-Python.ipynb)
 
 # Notebook 17: Resolution de Sudoku avec Large Language Models (LLM)
@@ -14477,7 +14477,7 @@ if fs_solution:
     print(f""Valide : {validate_solution(fs_solution, test_grid)}"")
 else:
     print(""Echec de la resolution"")",,,,,,,,20250f58c765f9b7,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-17-LLM-Python.ipynb,conclusion,markdown,fr,128b3b8d2aa5492d,"## Conclusion
+MyIA.AI.Notebooks/Sudoku/Sudoku-17-LLM-Python.ipynb,conclusion,markdown,fr,f1835657c50a8bc0,"## Conclusion
 
 Dans ce notebook, nous avons explore l'utilisation des **Large Language Models** pour la resolution de Sudoku :
 
@@ -14509,7 +14509,7 @@ Cependant, pour les problemes combinatoires comme Sudoku, **les solveurs dedies 
 
 | Notebook | Lien conceptuel |
 |----------|-----------------|
-| [Sudoku-1-Backtracking](./Sudoku-1-Backtracking-Python.ipynb) | Algorithme que le LLM peut generer |
+| [Sudoku-1-Backtracking](./Sudoku-01-Backtracking-Python.ipynb) | Algorithme que le LLM peut generer |
 | [Sudoku-10-ORTools](./Sudoku-10-ORTools-Python.ipynb) | Solveur optimal pour comparaison |
 | [Sudoku-16-NeuralNetwork](./Sudoku-16-NeuralNetwork-Python.ipynb) | Autre approche ML (apprentissage supervise) |
 | [Sudoku-18-Comparison](./Sudoku-18-Comparison-Python.ipynb) | Comparaison exhaustive de toutes les approches |
@@ -14526,7 +14526,7 @@ Cependant, pour les problemes combinatoires comme Sudoku, **les solveurs dedies 
 ---
 
 **Retour au sommaire** : [Index Sudoku](README.md)
-",,,,,,,,128b3b8d2aa5492d,,,,,,,,
+",,,,,,,,f1835657c50a8bc0,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb,10722324,markdown,fr,810125e03c5f3680,"**Navigation** : [Index](README.md) | [<< Sudoku-17 Python](Sudoku-17-LLM-Python.ipynb) | [Fin de serie >>]
 
 # Comparaison des Solveurs de Sudoku
@@ -14546,25 +14546,25 @@ A la fin de ce notebook, vous saurez :
 - Python 3.10+ avec numpy, matplotlib, ortools
 
 ### Duree estimee : 35 minutes",,,,,,,,810125e03c5f3680,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb,5ed20fef,markdown,fr,04ba6f75b16fad38,"## 1. Introduction
+MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb,5ed20fef,markdown,fr,179311770c5dd483,"## 1. Introduction
 
 Au fil de cette serie de notebooks, nous avons explore **9 approches différentes** pour resoudre le Sudoku. Chacune incarne une philosophie algorithmique distincte :
 
 | # | Notebook | Approche | Philosophie |
 |---|----------|----------|-------------|
-| 1 | [Backtracking](Sudoku-1-Backtracking-Python.ipynb) | Recherche exhaustive | Explorer systematiquement toutes les possibilites |
-| 2 | [Genetic](Sudoku-3-Genetic-Python.ipynb) | métaheuristique | Faire evoluer une population de solutions candidates |
+| 1 | [Backtracking](Sudoku-01-Backtracking-Python.ipynb) | Recherche exhaustive | Explorer systematiquement toutes les possibilites |
+| 2 | [Genetic](Sudoku-03-Genetic-Python.ipynb) | métaheuristique | Faire evoluer une population de solutions candidates |
 | 3 | [OR-Tools](Sudoku-10-ORTools-Python.ipynb) | Programmation par contraintes | Declarer les contraintes, laisser le solveur chercher |
 | 4 | [Z3](Sudoku-12-Z3-Python.ipynb) | Satisfiabilite (SMT) | Prouver l'existence d'une solution satisfaisant des formules logiques |
-| 5 | [Dancing Links](Sudoku-2-DancingLinks-Python.ipynb) | Couverture exacte | Reduire a un problème de sélection de sous-ensembles |
+| 5 | [Dancing Links](Sudoku-02-DancingLinks-Python.ipynb) | Couverture exacte | Reduire a un problème de sélection de sous-ensembles |
 | 6 | [Infer.NET](Sudoku-15-Infer-Python.ipynb) | Inference probabiliste | Propager des distributions de probabilite |
-| 7 | [Norvig](Sudoku-7-Norvig-Python.ipynb) | Propagation de contraintes | Eliminer les impossibilites avant de chercher |
+| 7 | [Norvig](Sudoku-07-Norvig-Python.ipynb) | Propagation de contraintes | Eliminer les impossibilites avant de chercher |
 | 8 | Simulated Annealing | Recuit simule | Optimiser par perturbations aleatoires avec refroidissement |
 | 10 | Neural Network | Apprentissage profond | Apprendre les motifs de resolution a partir d'exemples |
 
 Ce notebook final propose une **comparaison systématique** de ces approches selon plusieurs dimensions : vitesse, fiabilite, elegance du code et scalabilite. Nous implementerons 4 solveurs Python representatifs et les testerons sur un benchmark commun.
 
-> **Twin C# .NET de `Sudoku-18-Comparison-Python.ipynb`** (marathon parité #4956). Kernel `.net-csharp`. Solveurs Backtracking / MRV / Norvig / Norvig-FC / Simulated-Annealing réimplémentés **from-scratch** (BCL .NET seule, Prong B) ; OR-Tools CP-SAT utilise le **vrai moteur industriel** via `#r ""nuget: Google.OrTools""` (Prong A, même solveur que le twin Python). Graphiques matplotlib remplacés par un rendu ASCII autonome.",,,,,,,,04ba6f75b16fad38,,,,,,,,
+> **Twin C# .NET de `Sudoku-18-Comparison-Python.ipynb`** (marathon parité #4956). Kernel `.net-csharp`. Solveurs Backtracking / MRV / Norvig / Norvig-FC / Simulated-Annealing réimplémentés **from-scratch** (BCL .NET seule, Prong B) ; OR-Tools CP-SAT utilise le **vrai moteur industriel** via `#r ""nuget: Google.OrTools""` (Prong A, même solveur que le twin Python). Graphiques matplotlib remplacés par un rendu ASCII autonome.",,,,,,,,179311770c5dd483,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb,24a731fc,code,fr,84e0ac0c62e0cf07,"// Imports et environnement
 // Prong A : Google.OrTools (vrai CP-SAT industriel, meme moteur que le twin Python)
 #r ""nuget: Google.OrTools""
@@ -14607,7 +14607,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb,466f92a0,markdown,fr,
 
 > **Note** : Aucune dépendance lourde (pas de tensorflow, pytorch, etc.). Ce notebook reste leger et s'execute sur n'importe quel environnement **.NET Interactive** standard.
 ",,,,,,,,1f3b3a717025004c,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb,58e50755,markdown,fr,b9275887727ba664,"## 2. catégories d'approches
+MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb,58e50755,markdown,fr,29acac7b70016817,"## 2. catégories d'approches
 
 Les 9 approches etudiees se regroupent naturellement en **5 grandes catégories**, chacune correspondant a un paradigme algorithmique fondamental.
 
@@ -14617,9 +14617,9 @@ Ces méthodes explorent l'espace de recherche de maniere systématique et **trou
 
 | méthode | Principe | Complexite pratique | Notebook |
 |---------|----------|---------------------|----------|
-| **Backtracking** | DFS + validation | Rapide (facile), lent (difficile) | [Sudoku-1](Sudoku-1-Backtracking-Python.ipynb) |
-| **Backtracking + MRV** | DFS + heuristique MRV | Rapide même sur puzzles difficiles | [Sudoku-Python-BT](Sudoku-1-Backtracking-Python.ipynb) |
-| **Dancing Links** | Couverture exacte (Algorithm X) | Optimal pour les problemes de couverture | [Sudoku-5](Sudoku-2-DancingLinks-Python.ipynb) |
+| **Backtracking** | DFS + validation | Rapide (facile), lent (difficile) | [Sudoku-1](Sudoku-01-Backtracking-Python.ipynb) |
+| **Backtracking + MRV** | DFS + heuristique MRV | Rapide même sur puzzles difficiles | [Sudoku-Python-BT](Sudoku-01-Backtracking-Python.ipynb) |
+| **Dancing Links** | Couverture exacte (Algorithm X) | Optimal pour les problemes de couverture | [Sudoku-5](Sudoku-02-DancingLinks-Python.ipynb) |
 | **OR-Tools CP-SAT** | CP + SAT + CDCL | très rapide, constant | [Sudoku-3](Sudoku-10-ORTools-Python.ipynb) |
 | **Z3 SMT** | Satisfiabilite Modulo théories | Rapide, overhead d'initialisation | [Sudoku-4](Sudoku-12-Z3-Python.ipynb) |
 
@@ -14629,7 +14629,7 @@ Ces méthodes **reduisent l'espace de recherche** en eliminant les valeurs impos
 
 | méthode | Principe | Completude | Notebook |
 |---------|----------|------------|----------|
-| **Norvig** | Elimination + naked singles + DFS de secours | Complet (avec fallback recherche) | [Sudoku-7](Sudoku-7-Norvig-Python.ipynb) |
+| **Norvig** | Elimination + naked singles + DFS de secours | Complet (avec fallback recherche) | [Sudoku-7](Sudoku-07-Norvig-Python.ipynb) |
 | **stratégies humaines** | règles logiques (naked pairs, X-Wing, etc.) | Incomplet sans recherche | (integre dans divers notebooks) |
 
 ### 2.3 méthodes heuristiques (pas de garantie)
@@ -14638,7 +14638,7 @@ Ces méthodes utilisent des **mécanismes d'optimisation stochastique** et ne ga
 
 | méthode | Principe | Fiabilite | Notebook |
 |---------|----------|-----------|----------|
-| **Algorithme génétique** | Evolution de populations | Faible sur puzzles difficiles | [Sudoku-2](Sudoku-3-Genetic-Python.ipynb) |
+| **Algorithme génétique** | Evolution de populations | Faible sur puzzles difficiles | [Sudoku-2](Sudoku-03-Genetic-Python.ipynb) |
 | **Recuit simule** | Perturbations + refroidissement | Moyenne | Sudoku-8 |
 
 ### 2.4 méthodes d'apprentissage
@@ -14651,7 +14651,7 @@ Ces méthodes utilisent des **mécanismes d'optimisation stochastique** et ne ga
 
 | méthode | Principe | Fiabilite | Notebook |
 |---------|----------|-----------|----------|
-| **Infer.NET** | Graphe de facteurs, inference bayesienne | Experimentale | [Sudoku-6](Sudoku-15-Infer-Python.ipynb) |",,,,,,,,b9275887727ba664,,,,,,,,
+| **Infer.NET** | Graphe de facteurs, inference bayesienne | Experimentale | [Sudoku-6](Sudoku-15-Infer-Python.ipynb) |",,,,,,,,29acac7b70016817,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb,03d53a67,markdown,fr,d22600ec31f08242,"## 3. Implementations Python des solveurs
 
 Pour une comparaison equitable, nous implementons **4 solveurs representatifs** dans le même environnement Python. Chaque solveur represente une catégorie différente.
@@ -16068,23 +16068,23 @@ A la fin de ce notebook, vous saurez :
 - Python 3.10+ avec numpy, matplotlib, ortools
 
 ### Duree estimee : 35 minutes",,,,,,,,9980a313ad2560f4,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb,u6m3zst9zqh,markdown,fr,af51e1b931cb82e2,"## 1. Introduction
+MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb,u6m3zst9zqh,markdown,fr,011b43e39e5659f4,"## 1. Introduction
 
 Au fil de cette serie de notebooks, nous avons explore **9 approches différentes** pour résoudre le Sudoku. Chacune incarne une philosophie algorithmique distincte :
 
 | # | Notebook | Approche | Philosophie |
 |---|----------|----------|-------------|
-| 1 | [Backtracking](Sudoku-1-Backtracking-Python.ipynb) | Recherche exhaustive | Explorer systématiquement toutes les possibilites |
-| 2 | [Genetic](Sudoku-3-Genetic-Python.ipynb) | Métaheuristique | Faire evoluer une population de solutions candidates |
+| 1 | [Backtracking](Sudoku-01-Backtracking-Python.ipynb) | Recherche exhaustive | Explorer systématiquement toutes les possibilites |
+| 2 | [Genetic](Sudoku-03-Genetic-Python.ipynb) | Métaheuristique | Faire evoluer une population de solutions candidates |
 | 3 | [OR-Tools](Sudoku-10-ORTools-Python.ipynb) | Programmation par contraintes | Declarer les contraintes, laisser le solveur chercher |
 | 4 | [Z3](Sudoku-12-Z3-Python.ipynb) | Satisfiabilite (SMT) | Prouver l'existence d'une solution satisfaisant des formules logiques |
-| 5 | [Dancing Links](Sudoku-2-DancingLinks-Python.ipynb) | Couverture exacte | Reduire a un problème de sélection de sous-ensembles |
+| 5 | [Dancing Links](Sudoku-02-DancingLinks-Python.ipynb) | Couverture exacte | Reduire a un problème de sélection de sous-ensembles |
 | 6 | [Infer.NET](Sudoku-15-Infer-Python.ipynb) | Inference probabiliste | Propager des distributions de probabilité |
-| 7 | [Norvig](Sudoku-7-Norvig-Python.ipynb) | Propagation de contraintes | Eliminer les impossibilites avant de chercher |
+| 7 | [Norvig](Sudoku-07-Norvig-Python.ipynb) | Propagation de contraintes | Eliminer les impossibilites avant de chercher |
 | 8 | Simulated Annealing | Recuit simule | Optimiser par perturbations aléatoires avec refroidissement |
 | 10 | Neural Network | Apprentissage profond | Apprendre les motifs de résolution a partir d'exemples |
 
-Ce notebook final propose une **comparaison systématique** de ces approches selon plusieurs dimensions : vitesse, fiabilite, elegance du code et scalabilite. Nous implementerons 4 solveurs Python représentatifs et les testerons sur un benchmark commun.",,,,,,,,af51e1b931cb82e2,,,,,,,,
+Ce notebook final propose une **comparaison systématique** de ces approches selon plusieurs dimensions : vitesse, fiabilite, elegance du code et scalabilite. Nous implementerons 4 solveurs Python représentatifs et les testerons sur un benchmark commun.",,,,,,,,011b43e39e5659f4,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb,ncy5d3t7ch,code,fr,d04a9033bed00314,"# Imports
 import time
 from typing import List, Optional, Tuple, Dict
@@ -16133,7 +16133,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb,e63ed6bc,markdown,fr,
 - **matplotlib** génère les graphiques comparatifs (barres, boxplots, radar)
 
 > **Note** : Aucune dépendance lourde (pas de tensorflow, pytorch, etc.). Ce notebook reste léger et s'exécute sur n'importe quel environnement Python standard.",,,,,,,,55f4bf1000228a63,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb,hab7larz16t,markdown,fr,96ab7ce4794e4ed7,"## 2. Catégories d'approches
+MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb,hab7larz16t,markdown,fr,638701f485a06598,"## 2. Catégories d'approches
 
 Les 9 approches etudiees se regroupent naturellement en **5 grandes catégories**, chacune correspondant a un paradigme algorithmique fondamental.
 
@@ -16143,9 +16143,9 @@ Ces méthodes explorent l'espace de recherche de manière systématique et **tro
 
 | Méthode | Principe | Complexite pratique | Notebook |
 |---------|----------|---------------------|----------|
-| **Backtracking** | DFS + validation | Rapide (facile), lent (difficile) | [Sudoku-1](Sudoku-1-Backtracking-Python.ipynb) |
-| **Backtracking + MRV** | DFS + heuristique MRV | Rapide même sur puzzles difficiles | [Sudoku-Python-BT](Sudoku-1-Backtracking-Python.ipynb) |
-| **Dancing Links** | Couverture exacte (Algorithm X) | Optimal pour les problèmes de couverture | [Sudoku-5](Sudoku-2-DancingLinks-Python.ipynb) |
+| **Backtracking** | DFS + validation | Rapide (facile), lent (difficile) | [Sudoku-1](Sudoku-01-Backtracking-Python.ipynb) |
+| **Backtracking + MRV** | DFS + heuristique MRV | Rapide même sur puzzles difficiles | [Sudoku-Python-BT](Sudoku-01-Backtracking-Python.ipynb) |
+| **Dancing Links** | Couverture exacte (Algorithm X) | Optimal pour les problèmes de couverture | [Sudoku-5](Sudoku-02-DancingLinks-Python.ipynb) |
 | **OR-Tools CP-SAT** | CP + SAT + CDCL | Très rapide, constant | [Sudoku-3](Sudoku-10-ORTools-Python.ipynb) |
 | **Z3 SMT** | Satisfiabilite Modulo Théories | Rapide, overhead d'initialisation | [Sudoku-4](Sudoku-12-Z3-Python.ipynb) |
 
@@ -16155,7 +16155,7 @@ Ces méthodes **reduisent l'espace de recherche** en eliminant les valeurs impos
 
 | Méthode | Principe | Completude | Notebook |
 |---------|----------|------------|----------|
-| **Norvig** | Elimination + naked singles + DFS de secours | Complet (avec fallback recherche) | [Sudoku-7](Sudoku-7-Norvig-Python.ipynb) |
+| **Norvig** | Elimination + naked singles + DFS de secours | Complet (avec fallback recherche) | [Sudoku-7](Sudoku-07-Norvig-Python.ipynb) |
 | **Stratégies humaines** | Règles logiques (naked pairs, X-Wing, etc.) | Incomplet sans recherche | (integre dans divers notebooks) |
 
 ### 2.3 Méthodes heuristiques (pas de garantie)
@@ -16164,7 +16164,7 @@ Ces méthodes utilisent des **mécanismes d'optimisation stochastique** et ne ga
 
 | Méthode | Principe | Fiabilite | Notebook |
 |---------|----------|-----------|----------|
-| **Algorithme génétique** | Evolution de populations | Faible sur puzzles difficiles | [Sudoku-2](Sudoku-3-Genetic-Python.ipynb) |
+| **Algorithme génétique** | Evolution de populations | Faible sur puzzles difficiles | [Sudoku-2](Sudoku-03-Genetic-Python.ipynb) |
 | **Recuit simule** | Perturbations + refroidissement | Moyenne | Sudoku-8 |
 
 ### 2.4 Méthodes d'apprentissage
@@ -16177,7 +16177,7 @@ Ces méthodes utilisent des **mécanismes d'optimisation stochastique** et ne ga
 
 | Méthode | Principe | Fiabilite | Notebook |
 |---------|----------|-----------|----------|
-| **Infer.NET** | Graphe de facteurs, inference bayesienne | Experimentale | [Sudoku-6](Sudoku-15-Infer-Python.ipynb) |",,,,,,,,96ab7ce4794e4ed7,,,,,,,,
+| **Infer.NET** | Graphe de facteurs, inference bayesienne | Experimentale | [Sudoku-6](Sudoku-15-Infer-Python.ipynb) |",,,,,,,,638701f485a06598,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb,kcu1ir5104,markdown,fr,8007f4ec99d5f33d,"## 3. Implementations Python des solveurs
 
 Pour une comparaison equitable, nous implementons **4 solveurs représentatifs** dans le même environnement Python. Chaque solveur représente une catégorie différente.
