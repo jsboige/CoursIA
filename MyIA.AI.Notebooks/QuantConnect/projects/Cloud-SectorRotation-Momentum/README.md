@@ -18,6 +18,13 @@ lean backtest --algorithm Cloud-SectorRotation-Momentum/main.py
 ### QC Cloud
 Projet 30821748. Téléverser `main.py`, compiler et lancer un backtest. Période codée en dur : **2018-01-01 → 2025-01-01** (alignée sur la baseline cross-stratégie #1630 ; le code ne fixe pas de date de fin mobile, donc la fenêtre est figée par les dates du source).
 
+Trois paramètres optionnels servent à la mesure contre références détenues (#21371). Absents, ils ne changent rien :
+
+- `mode` : `strategy` (défaut, la stratégie), `spy` (SPY détenu) ou `6040` (SPY 60 %, BND 40 %, rééquilibré au début de chaque mois, une minute après l'ouverture) ;
+- `start_date` et `end_date` (`%Y%m%d`), qui remplacent les dates codées.
+
+Dans les trois modes, le graphique `shadow` trace la valeur du portefeuille à chaque ouverture de SPY.
+
 ## Métriques de backtest
 
 Mesure du 2026-10-10 sur les nœuds QC, fenêtre codée 2018-01-01 → 2025-01-01, **avant et après** le correctif de la tranche de minuit (#20264). Le protocole a été pré-enregistré sur l'issue avant les deux runs (commentaire `c.6099402027`). La colonne « avant » est le code de `main` au commit `a492cda2b3`, exécuté tel quel. La troisième colonne, mesurée le 2026-10-11, est le code actuel : il corrige en plus les demi-séances (#20286, protocole pré-enregistré sur l'issue, commentaires `c.6105254259` et `c.6105308987`).
@@ -72,7 +79,46 @@ Une première version, qui demandait 5 barres de plus, n'a rien changé : elle r
 
 Seule l'année 2019 change vraiment (+7,1 % → +3,4 %) : le passage en SHY à tort de juillet 2019 avait fait mieux que la position investie. L'écart de Sharpe (−0,028) reste sous le seuil de 0,05 fixé d'avance. C'est un effet de trajectoire, pas un verdict.
 
-**Verdict : NO-BEATS**, rendu le 2026-08-07 sur le code avant correctif. Ces mesures n'en rendent pas de nouveau. À titre descriptif, le code actuel reste loin de SPY détenu sur la même fenêtre en rendement (CAGR à deux chiffres pour SPY, contre 6,3 % ici). Son drawdown max de 27,6 % n'est en revanche plus supérieur à celui de SPY, de l'ordre de 34 % au krach de 2020.
+Le verdict NO-BEATS du 2026-08-07 avait été rendu sur le code avant correctif, et les mesures des 10 et 11 octobre n'en rendaient pas de nouveau. Le verdict sur le code actuel est rendu dans la section suivante.
+
+### Verdict contre références détenues (#21371)
+
+**Verdict : NO BEATS**, sur la fenêtre codée et sur la fenêtre hors échantillon.
+
+Mesure du 2026-10-19 sur les nœuds QC. Le protocole a été pré-enregistré sur #21371 avant le premier backtest, sur le modèle de #21329. La stratégie (code actuel, décision inchangée) est comparée à deux références détenues dans le même algorithme, sous le même modèle de courtage et le même préchauffage de 200 séances : SPY détenu, et un 60/40 SPY/BND rééquilibré au début de chaque mois.
+
+**Contrôle d'innocuité : tenu.** En mode `strategy`, sur la fenêtre codée, le code instrumenté reproduit `5661dc62` ordre par ordre (307 ordres, même date, même symbole, même quantité) et sur ses 27 statistiques QC.
+
+**Tests.** Les séries sont la valeur du portefeuille à chaque ouverture de SPY. Le script `Paradox46Benchmarks/significance.py` les compare avec un taux sans risque nul : écart de Sharpe de Ledoit-Wolf, bootstrap stationnaire, écart de moyennes de Newey-West, puis correction de Holm sur les six p-valeurs de chaque fenêtre.
+
+**Règle de verdict, écrite avant la mesure :**
+
+- `BEATS` : l'écart de Sharpe est positif et significatif (Holm < 0,05) contre les deux références ;
+- `NO BEATS` : le Sharpe de la stratégie est inférieur à celui de SPY détenu ;
+- `INCONCLUSIVE` : tous les autres cas.
+
+| Fenêtre | Séances | Sharpe stratégie | SPY détenu | 60/40 | p Holm (Ledoit-Wolf, SPY / 60/40) | Verdict |
+|---|---|---|---|---|---|---|
+| Codée, 2018-01-02 → 2024-12-31 | 1761 | 0,464 | 0,758 | 0,751 | 1,0 / 1,0 | **NO BEATS** |
+| Hors échantillon, 2025-01-02 → 2026-07-21 | 387 | 0,908 | 1,034 | 1,158 | 1,0 / 1,0 | **NO BEATS** |
+
+Statistiques QC des mêmes runs (projet 38081193, taux sans risque de QC) :
+
+| Fenêtre | Mode | Sharpe QC | CAGR | Pire baisse | Ordres | Backtest |
+|---|---|---|---|---|---|---|
+| Codée | stratégie | 0,196 | 6,29 % | 27,6 % | 307 | `40af1c25d64c80a77a574de56ce000ba` |
+| Codée | SPY détenu | 0,496 | 13,58 % | 33,7 % | 3 | `ae15f6714a2c156dfc5b822bcf03a954` |
+| Codée | 60/40 | 0,378 | 8,66 % | 21,7 % | 147 | `09e7ae2e198134dcd163da2d2e889e27` |
+| Hors échantillon | stratégie | 0,551 | 16,19 % | 14,5 % | 79 | `afa13c14daf65aa0447bc8419724a104` |
+| Hors échantillon | SPY détenu | 0,651 | 18,49 % | 18,7 % | 2 | `19ae7d2186db8a01379dc0a65806050a` |
+| Hors échantillon | 60/40 | 0,554 | 12,80 % | 11,2 % | 30 | `4faedf9e53a2666e623cf7e7fc657fff` |
+
+**Ce que montrent les verdicts.** Sur la fenêtre codée, le verdict confirme le NO-BEATS du 2026-08-07, cette fois sur le code corrigé et avec un test. Hors échantillon, la fin effective est le 2026-07-21 : les nœuds QC coupent les backtests environ 90 jours avant la date demandée (`end_date=20261019`). Sur cette fenêtre courte, aucun écart n'est significatif. La règle range pourtant le cas en NO BEATS, puisque le Sharpe ponctuel reste sous celui de SPY.
+
+**À titre descriptif**, sans effet sur les verdicts :
+
+- sur les deux fenêtres, la pire baisse de la stratégie est inférieure à celle de SPY détenu, mais supérieure à celle du 60/40 ;
+- le compteur de rééquilibrage part de zéro : la stratégie reste en liquidités pendant ses 21 premières séances, dans chaque fenêtre. Cette propriété du code est gardée telle quelle. Elle pèse surtout sur la fenêtre courte.
 
 ## Lecture honnête
 
@@ -88,12 +134,13 @@ Sur le code actuel, le double filtre (SMA200 + momentum 126 j positif) et la pon
 
 | Fichier | Description |
 |---------|-------------|
-| `main.py` | Rotation sectorielle avec allocation pondérée par momentum et double filtre de tendance (v4) |
+| `main.py` | Rotation sectorielle avec allocation pondérée par momentum et double filtre de tendance (v4) ; modes de mesure `spy` et `6040`, trace `shadow` (#21371) |
 
 ## Références
 
 - [Documentation QuantConnect](https://www.quantconnect.com/docs/)
 - EPIC de consolidation QC / Trading : #1621
 - Discipliné par l'EPIC #9768 (dérive des métriques de backtest à travers les révisions)
+- Mesure contre références détenues : #21371, sur le protocole de #21329
 
 See #1621 (contribution partielle : honest-read d'une stratégie non auditée).

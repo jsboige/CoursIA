@@ -39,7 +39,7 @@ Pour constater l'état de la MAJ côté bots :
 
 ## Voir aussi
 
-- `docs/reference/audit-reassessment-findings.md` — règle `.claude/rules/audit-reassessment.md` (≈60 % FP mesurés sur échantillon initial, ramené à < 5 % par le protocole de vérification — protocole issu de l'issue [#499](https://github.com/jsboige/CoursIA/issues/499), trace dans `docs/archive/stabilization-phase1-matrix.md` l. 72)
+- `docs/transients/2026-05-17-reference-audit-reassessment-findings.md` — règle `.claude/rules/audit-reassessment.md` (≈60 % FP mesurés sur échantillon initial, ramené à < 5 % par le protocole de vérification — protocole issu de l'issue [#499](https://github.com/jsboige/CoursIA/issues/499), trace dans `docs/archive/stabilization-phase1-matrix.md` l. 72) — déplacé en lane transiente (tranche 3b #14623)
 - `docs/reference/pr-review-context.md` — règle §D.6 + incidents fondateurs `#3473`/`#11685`/`#13517` (…)
 - Issue `jsboige/CoursIA#13517` (CLOSED) — origine du résidu
 - Issue `jsboige/CoursIA#16635` (cette issue) — résolu par ce pointeur

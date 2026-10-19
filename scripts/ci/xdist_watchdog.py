@@ -90,6 +90,31 @@ tel, pas laisse finir pour avoir un ``exit 1`` sans diagnostic. Verdict
 distinct (``COLLECT_CRASH_EXIT = 4``) pour que le triage post-mortem
 puisse separer cette signature du silence mode 1.
 
+Ce que le verdict PRESCRIT a ete mesure, puis repris (#19915, census du
+2026-10-19, 7 jours 2026-10-12..19, 113 jobs collect-crash sur 394 jobs
+``Scripts Tests (CPU)`` rouges) :
+
+  * la mort qui precede la collision est toujours de MASSE -- 7 a 12
+    workers morts, tous au meme horodatage, jamais un seul worker. Le
+    seuil ``SYSTEMATIC_DEATH_MIN_WORKERS = 2`` separe donc la mort
+    isolee (seule classe ou un rejeu garde un sens) de la mort
+    systematique ;
+  * l'id ``gwN`` est un COMPTEUR DE VIE, pas un rang de worker : il est
+    alloue par execnet et incremente a chaque remplacement de worker
+    (``xdist/multi.py:189``). ``gw11`` n'implique donc pas 12 workers
+    concurrentS, et le budget de relance par defaut de xdist
+    (``numprocesses * 4`` = 16 pour ``-n 4``) explique la montee ;
+  * les 113 cas sont sur les 4 runners ``myia-po-2024-linux-docker-*`` et
+    ZERO sur les 14 ``myia-ai-01-wsl-*`` : la cause est cote runner
+    (caps memoire/pids de l'ephemere), pas dans le contenu de la PR.
+
+Consequence sur le verdict : prescrire « le CI doit rejouer le job » n'a
+plus de fondement dans la classe systematique -- les reproductions
+consecutives du 2026-10-18 (4/4 sur le pool docker) et du 2026-10-19 (2/2
+sur la meme PR) mesurent un rejeu qui REPRODUIT. Le verdict nomme desormais
+le runner et distingue les deux classes au lieu de prescrire un rejeu
+mesure comme nul.
+
 Usage :
 
   python scripts/ci/xdist_watchdog.py --idle-limit 480 -- pytest <paths> \\
@@ -136,6 +161,43 @@ VERDICT_PREFIX = "XDIST-WATCHDOG"
 # sur exit 1 sans plus jamais rien emettre. Attendre un second marqueur
 # manquerait les cas ou la premiere collision est LA collision.
 COLLECT_CRASH_MIN = 1
+
+# Mode 3 : seuil de mort MASSIVE (#19915, census du 2026-10-19, lane
+# myia-ai-01:CoursIA-2, 7 jours 2026-10-12..19, 113 jobs collect-crash
+# sur 394 jobs CPU rouges).
+#
+# CE QUE LE CENSUS A MESURE, ET QUI CHANGE LA PRESCRIPTION DU VERDICT :
+#
+#   * le nombre de workers morts avant la collision est TOUJOURS compris
+#     entre 7 et 12 (46 jobs a 7, 50 a 8, 7 a 9, 4 a 10, 1 a 11, 5 a 12) ;
+#     il n'y a AUCUN cas a 1 worker mort ;
+#   * les horodatages de mort sont tous IDENTIQUES (premier = dernier
+#     "node down") : la mort est un KILL DE MASSE, pas des crashes
+#     individuels ;
+#   * le nombre de "replacing crashed worker" egale exactement le nombre
+#     de "node down" : chaque worker mort a ete remplace ;
+#   * l'id gw maximal observe est gw8 (46 jobs), gw9 (49), gw10 (8),
+#     gw11 (4), gw12 (1), gw13 (5) -- ce sont des COMPTEURS DE VIE, pas
+#     des rangs de worker : l'id est alloue par execnet (`_autoidcounter`,
+#     xdist/multi.py:189) et incremente a chaque remplacement, donc gw11
+#     n'implique pas 12 workers ;
+#   * les 113 cas sont sur les 4 runners `myia-po-2024-linux-docker-*`,
+#     ZERO sur les 14 `myia-ai-01-wsl-*` ; la cause est cote runner (caps
+#     memoire/pids de l'ephemere), pas dans le contenu de la PR.
+#
+# CONTRADICTION EXPLICITE de la prescription historique. Le verdict
+# prescrivait "le CI doit rejouer le job (defaut transient : aucun des 7
+# cas signes sur 10 rouges echantillonnes ne s'est reproduit a la 2e
+# tentative, mesure du 2026-10-08)". La mesure du 2026-10-08 est
+# DEPASSEE par les reproductions consecutives du 2026-10-18 (4/4 sur le
+# pool docker) et du 2026-10-19 (2/2 sur la meme PR) : un rejeu sur le
+# meme pool REPRODUIT. Prescrire le rejeu dans ce cas coute un cycle de
+# CI pour un resultat mesure comme nul.
+#
+# Le seuil vaut 2 : la seule classe ou un rejeu garde un sens est la mort
+# ISOLEE (un seul worker). Le corpus mesure ne contient aucun cas de
+# mort isolee -- le seuil est donc un garde-fou, pas une description.
+SYSTEMATIC_DEATH_MIN_WORKERS = 2
 
 # Prefixe qui fait du verdict une ANNOTATION du check-run, pas seulement une
 # ligne de log. C'est la seule surface par laquelle un lecteur -- humain ou
@@ -425,6 +487,12 @@ def _verdict_collect_crash(state: _StreamState, idle: float,
     silence de sortie) et le triage post-mortem depend du code d'exit.
     """
     wall = time.monotonic() - started
+    # Le runner qui porte le job : c'est le discriminant de la signature
+    # #19915 (113/113 des cas mesures sur `po-2024-linux-docker-*`, 0 sur
+    # `ai-01-wsl-*`). Le nom dans l'annotation evite au triage d'ouvrir le
+    # job pour rien -- c'est la seule surface que lisible sans le log.
+    runner = os.environ.get("RUNNER_NAME") or "(runner inconnu)"
+    dead = list(state.dead_workers)
     collisions = (
         ", ".join(state.collision_workers)
         if state.collision_workers
@@ -436,13 +504,24 @@ def _verdict_collect_crash(state: _StreamState, idle: float,
          f"``KeyError: <WorkerController>`` detectee(s) avant le premier "
          f"progres pytest, signature #19915 (collecte xdist impossible)")
     emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: workers en collision : "
-         f"{collisions} ; wall du wrapper {wall:.0f} s, {state.line_count} "
-         f"lignes ({state.byte_count} octets) emises au total, idle observe "
-         f"{idle:.0f} s")
-    emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: arret du groupe de "
-         f"processus -- le CI doit rejouer le job (defaut transient : "
-         f"aucun des 7 cas signes sur 10 rouges echantillonnes ne s'est "
-         f"reproduit a la 2e tentative, mesure du 2026-10-08)")
+         f"{collisions} ; runner {runner} ; wall du wrapper {wall:.0f} s, "
+         f"{state.line_count} lignes ({state.byte_count} octets) emises au "
+         f"total, idle observe {idle:.0f} s")
+    if len(dead) >= SYSTEMATIC_DEATH_MIN_WORKERS:
+        emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: mort SYSTEMATIQUE -- "
+             f"{len(dead)} workers sont morts AVANT la collision "
+             f"({', '.join(dead)}) ; la signature n'est PAS un transient : "
+             f"un rejeu sur le meme runner la reproduit (mesure 2026-10-18 : "
+             f"4/4 sur le pool `po-2024-linux-docker-*` ; 2026-10-19 : 2/2 "
+             f"sur la meme PR ; 0 sur `ai-01-wsl-*`) ; la cause est cote "
+             f"runner (caps memoire/pids de l'ephemere), pas dans le contenu "
+             f"de la PR -- ne pas rejouer sur le meme pool")
+    else:
+        emit(f"{ANNOTATION_PREFIX}{VERDICT_PREFIX}: arret du groupe de "
+             f"processus -- mort isolee ({len(dead)} worker mort avant la "
+             f"collision) ; aucun cas de mort isolee dans le corpus mesure "
+             f"(7 j : les 113 cas collect-crash sont des morts massives de 7 "
+             f"a 12 workers) ; un rejeu du job peut etre tente")
 
 
 def main(argv: list[str] | None = None) -> int:

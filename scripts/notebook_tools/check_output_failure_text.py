@@ -280,43 +280,30 @@ _PATH_WITNESSES = (
 # Un chemin est une valeur EMISE PAR LE RUNTIME (il change avec la machine qui
 # a execute le carnet : le defaut) ou du TEXTE DE PROGRAMME que la cellule
 # affiche (un littéral stable, voulu : une cible de montage ecrite dans le
-# code montre). Deux carnets Aspire affichent le source AppHost.cs qu'ils
-# viennent de generer : `"/home/appuser/.cache/huggingface"` y est un argument
-# d'appel. Le discriminant porte sur la FORME de l'argument, sur une seule
-# ligne, et exige les trois conditions :
-#   1. le chemin ouvre un littéral entre guillemets doubles, apres `(` ou `,`
-#      (position d'argument : `cle="..."` et le JSON `"cle": "..."` n'en
-#      sont pas) ;
-#   2. le littéral se ferme sur la meme ligne, suivi de `)`, `,` ou `;` ;
-#   3. un appel `Nom(` s'ouvre plus tot sur cette ligne.
-# Bornes, dites plutot que cachees : un echo runtime de la meme forme
-# (`Config("/home/u/x")`, appel positionnel rejoue) est exempte ; une banniere
-# qui cite le chemin en prose (`Serving from "/home/u/x"`), un repr Python
-# (`'/home/u/x'`), une trace d'erreur ou une valeur JSON ne le sont PAS.
-# Un commentaire de code qui porte un chemin reste signale (faux positif
-# conserve, par prudence). Les occurrences exemptees sont comptees dans la
-# classe PROGRAM_LITERAL de --all : jamais un silence.
-_PROGRAM_LITERAL_OPEN = re.compile(r'(?:\(|,\s*)"$')
-_PROGRAM_LITERAL_CLOSE = re.compile(r'\s*[),;]')
-_CALL_OPEN = re.compile(r'\w\(')
+# code montre). Le discriminant retenu -- decision du proprietaire de l'organe
+# (ai-01, c.6262311553) sur la mesure po-2024 (c.6086700118) -- est la forme
+# OPEN_LITERAL : le chemin ouvre un littéral de chaîne sur sa ligne de sortie,
+# c'est-a-dire que le caractere immediatement a sa gauche est un guillemet
+# (simple ou double). Sur le corpus de la mesure, la forme separe exactement
+# les 2 faux positifs Aspire des 5 occurrences Orleans, avec 0 occurrence
+# touchee sur les hote/env.
+#
+# Bornes assumees, epinglees par --self-test (le comportement EST la limite,
+# dite plutot que cachee) :
+#   - faux negatif : une ligne runtime qui CITE le chemin entre guillemets
+#     (`Serving from "/home/u/x"`, une trace `File "..."`, un repr Python)
+#     ouvre un littéral et est exemptee ;
+#   - faux positif : un chemin nu dans un commentaire de code affiche
+#     (`// /home/u/x`) n'ouvre rien et reste signale.
+# Les occurrences exemptees sont comptees dans la classe PROGRAM_LITERAL de
+# --all : jamais un silence.
 
 
 def _is_program_literal(probe, start, end):
-    """True si le chemin ``probe[start:end]`` est un argument littéral d'un
-    appel affiché sur sa propre ligne (cf. bloc ci-dessus)."""
-    line_start = probe.rfind("\n", 0, start) + 1
-    line_end = probe.find("\n", end)
-    if line_end == -1:
-        line_end = len(probe)
-    before = probe[line_start:start]
-    if not _PROGRAM_LITERAL_OPEN.search(before):
-        return False
-    if not _CALL_OPEN.search(before):
-        return False
-    close = probe.find('"', end, line_end)
-    if close == -1:
-        return False
-    return _PROGRAM_LITERAL_CLOSE.match(probe, close + 1, line_end) is not None
+    """True si le chemin ``probe[start:end]`` ouvre un littéral de chaîne --
+    le caractere immediatement a sa gauche est un guillemet (forme OPEN_LITERAL
+    de la decision ai-01 c.6262311553)."""
+    return start > 0 and probe[start - 1] in ('"', "'")
 
 # --- class 3 (ADVISORY, never gates): capability downgrade -------------------
 # #14603. Each half of the couple alone is legitimate: a value can move on a
@@ -930,9 +917,13 @@ def self_test(cwd=None):
     # #20120: program text vs runtime path, on the real calibration lines.
     # The Aspire line prints a literal of the program it shows: exempted, and
     # counted as PROGRAM_LITERAL. The Orleans line is a runtime emission and
-    # the quoted or repr forms are runtime too: all three must keep firing.
-    # An exemption that only proves it silences is indistinguishable from a
-    # hole -- both directions are asserted.
+    # keeps firing -- both directions are asserted, because an exemption that
+    # only proves it silences is indistinguishable from a hole. The two named
+    # bounds of the retained form (decision ai-01 c.6262311553) are pinned in
+    # their own direction: a runtime line QUOTING the path opens a literal and
+    # is exempted (known false negative), a bare path in a code comment opens
+    # nothing and stays flagged (known false positive). If one of these four
+    # verdicts moves, the self-test reddens.
     def _pathonly(text):
         return scan({"cells": [{"cell_type": "code", "outputs": [
             {"output_type": "stream", "text": text}]}]})
@@ -951,12 +942,27 @@ def self_test(cwd=None):
     if len(_orleans["MACHINE_PATH"]) != 1 or _orleans["PROGRAM_LITERAL"]:
         failures.append("Orleans runtime path lost its MACHINE_PATH "
                         "(control): " + repr(_orleans))
-    for _runtime in ('Serving from "/home/user/wt-aspire/x"',
-                     "No such file or directory: '/home/user/x.csv'"):
-        _rt = _pathonly(_runtime)
-        if len(_rt["MACHINE_PATH"]) != 1 or _rt["PROGRAM_LITERAL"]:
-            failures.append("runtime shape exempted (hole): "
-                            + repr(_runtime))
+    _quoted = _pathonly('Serving from "/home/user/wt-aspire/x"')
+    if _quoted["MACHINE_PATH"] or len(_quoted["PROGRAM_LITERAL"]) != 1:
+        failures.append("quoted runtime line no longer exempted -- known "
+                        "false-negative bound moved: " + repr(_quoted))
+    _comment = _pathonly("// /home/user/wt-aspire/x")
+    if len(_comment["MACHINE_PATH"]) != 1 or _comment["PROGRAM_LITERAL"]:
+        failures.append("bare comment path no longer flagged -- known "
+                        "false-positive bound moved: " + repr(_comment))
+    # Cinquieme ligne : la borne materialisee sur l'historique. Le fondateur
+    # #11685 est fait de traces runtime qui CITENT le chemin (`working
+    # directory 'D:\...'`) -- des guillemets a gauche, donc exemptees sous la
+    # forme retenue. Le replay du fondateur (bas de ce self-test) les compte
+    # en PROGRAM_LITERAL ; ici le verdict unitaire est epingle pour que le
+    # jour ou l'on voudra les ramener dans la classe bloquante, ce soit le
+    # predicat qui change, jamais ce test qui se taise.
+    _founder = _pathonly(
+        "Exception message: an error occurred trying to start process 'dot' "
+        "with working directory 'D:" + BS + "dev" + BS + "CoursIA'")
+    if _founder["MACHINE_PATH"] or len(_founder["PROGRAM_LITERAL"]) != 1:
+        failures.append("quoted founding witness moved -- known "
+                        "false-negative bound moved: " + repr(_founder))
 
 
     # Benign banner: matched by "not available", neutralised by
@@ -1188,6 +1194,15 @@ def self_test(cwd=None):
         failures.append("capability UPGRADE flagged (restoration must pass)")
 
     # Replay the founding commit against its parent.
+    # #20120: sous la forme OPEN_LITERAL, les 12 witnesses fondateurs tombent
+    # dans la borne faux-negatif materialisee -- ce sont des traces runtime
+    # qui CITENT le chemin (`working directory 'D:\...'`,
+    # `DOT file is saved to "D:\..."` : guillemet a gauche), donc exemptees
+    # de la classe bloquante et comptees en PROGRAM_LITERAL. Le plancher
+    # porte sur la CAPTURE (les deux classes ensemble) : les 12 restent
+    # vues, aucune ne disparait en silence. Le basculement lui-meme est
+    # epingle dans les lignes fixes ci-dessus ; s'il doit un jour etre
+    # annule, c'est le predicat qui change, jamais ce plancher.
     if git("cat-file", "-e", SELF_TEST_COMMIT, cwd=cwd) is None:
         print("SKIP replay: " + SELF_TEST_COMMIT[:12] + " not in this clone")
     else:
@@ -1196,15 +1211,22 @@ def self_test(cwd=None):
         rows = compare(parent, SELF_TEST_COMMIT, paths, cwd=cwd)
         tool = sum(r["classes"]["TOOL_FAILURE"]["delta"] for r in rows)
         n_path = sum(r["classes"]["MACHINE_PATH"]["delta"] for r in rows)
+        n_lit = 0
+        for p in paths:
+            head_nb = read_notebook_at(SELF_TEST_COMMIT, p, cwd=cwd)
+            base_nb = read_notebook_at(parent, p, cwd=cwd)
+            n_lit += (len(scan(head_nb)["PROGRAM_LITERAL"])
+                      - len(scan(base_nb)["PROGRAM_LITERAL"]))
         print("replay " + SELF_TEST_COMMIT[:12] + ": " + str(len(paths))
               + " notebooks, TOOL_FAILURE +" + str(tool)
-              + ", MACHINE_PATH +" + str(n_path))
+              + ", MACHINE_PATH +" + str(n_path)
+              + ", PROGRAM_LITERAL +" + str(n_lit))
         if tool < SELF_TEST_MIN_TOOL:
             failures.append("replay TOOL_FAILURE +" + str(tool) + " < "
                             + str(SELF_TEST_MIN_TOOL) + " expected")
-        if n_path < SELF_TEST_MIN_PATH:
-            failures.append("replay MACHINE_PATH +" + str(n_path) + " < "
-                            + str(SELF_TEST_MIN_PATH) + " expected")
+        if n_path + n_lit < SELF_TEST_MIN_PATH:
+            failures.append("replay path capture +" + str(n_path + n_lit)
+                            + " < " + str(SELF_TEST_MIN_PATH) + " expected")
 
     # #14513 replay: the metadata-only leak of #14272 / #13891, the defect
     # this extension exists to close. c4b99a3ec4 is the PT_11c head whose
