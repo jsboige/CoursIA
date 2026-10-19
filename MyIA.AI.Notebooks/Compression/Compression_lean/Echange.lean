@@ -58,7 +58,7 @@ theorem exchange_lt (k a b : ℕ) (r : WTree) (h : a < b) :
 
 /-- Les poids `[1, 1, 2, 4]` mal orientés (faibles en haut) coûtent 21. -/
 example : costAt 0 (.node (.leaf 1) (.node (.leaf 1) (.node (.leaf 2) (.leaf 4)))) = 21 := by
-  native_decide
+  decide
 
 /- Premier échange : le 4 monte d'un niveau contre un 1 (instance directe de
 `exchange_le` avec `a = 1`, `b = 4`, `r = .node (.leaf 2) (.leaf 1)`). Le coût
@@ -66,7 +66,7 @@ tombe de 21 à 15. -/
 
 /-- Après l'échange 1 contre 4 : coût 15 = 4·1 + 1·2 + 2·3 + 1·3. -/
 example : costAt 0 (.node (.leaf 4) (.node (.leaf 1) (.node (.leaf 2) (.leaf 1)))) = 15 := by
-  native_decide
+  decide
 
 /-- La première étape ne augmente pas le coût — instance de `exchange_le`. -/
 example :
@@ -81,7 +81,7 @@ l'ancre du pli 5. -/
 /-- Après le second échange : coût 14 = 4·1 + 2·2 + 1·3 + 1·3 — le trie de
 Huffman de `[1, 1, 2, 4]` (comparer `Optimalite.lean`, ancre 14 contre 16). -/
 example : costAt 0 (.node (.leaf 4) (.node (.leaf 2) (.node (.leaf 1) (.leaf 1)))) = 14 := by
-  native_decide
+  decide
 
 /-- La seconde étape ne augmente pas le coût : `exchange_le` au niveau du
 sous-arbre, puis le 4 commun à la racine paie `4·1` des deux côtés. -/
@@ -99,6 +99,6 @@ coûte 10, le mettre en dessous du 1 coûte 13 — écart 3 = `b - a`. -/
 example :
     costAt 0 (.node (.leaf 4) (.node (.leaf 1) (.leaf 2))) = 10 ∧
       costAt 0 (.node (.leaf 1) (.node (.leaf 4) (.leaf 2))) = 13 := by
-  constructor <;> native_decide
+  constructor <;> decide
 
 end CompressionLean
