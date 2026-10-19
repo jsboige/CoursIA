@@ -17,7 +17,9 @@ The notebook Lean-28-Complex-Structure-S6.ipynb consumes the JSON emitted by
 `check` so that every committed output traces back to a real artifact on disk
 (build.log, comparator.log written by the actual runs -- never hand-edited).
 `full` capture (tee) les builds Challenge/Solution dans build.log et le
-comparator dans comparator.log : pipefail garde visible le rc du producteur,
+comparator dans comparator.log (enveloppe ``{ time ... ; }`` : la ligne
+``real XmY.Ys`` du timing est ecrite DANS le log, ou ``check`` la relit en
+``real_seconds``) : pipefail garde visible le rc du producteur,
 et un log precedent est mis de cote sous un suffixe .bak date UTC (GNU
 --backup=numbered : deux rotations dans la meme seconde s'empilent, jamais
 ne se remplacent) -- jamais d'ecrasement silencieux. `check` sort en echec
@@ -67,7 +69,7 @@ def rotate_if_present(log: str) -> str:
 
 
 def captured_step(work: str, log: str, append: bool = False,
-                  cwd: str = HOPF_DIR) -> str:
+                  cwd: str = HOPF_DIR, timed: bool = False) -> str:
     """Etape executee au checkout : conserver le log precedent, capturer via tee.
 
     Lecture shell (precedence verifiee par les tests bash reels, cf. tests/) :
@@ -81,12 +83,19 @@ def captured_step(work: str, log: str, append: bool = False,
     - rotation datee UTC avec ``mv --backup=numbered`` : deux rotations dans la
       meme seconde se numerotent, jamais de remplacement d'une sauvegarde ;
     - ``append=True`` : le build Solution complete le build.log fraichement
-      ouvert par le build Challenge (pas de rotation).
+      ouvert par le build Challenge (pas de rotation) ;
+    - ``timed=True`` : le producteur est enveloppe ``{ time ... ; }`` -- le
+      timing bash de ``time`` (``real XmY.Ys``, ecrit sur stderr DU GROUPE)
+      suit la redirection 2>&1 et atterrit donc dans le log ; ``time``
+      retournant le rc de la commande enveloppee, pipefail garde le rc du
+      producteur. ``parse_comparator_log`` consomme cette ligne
+      (``real_seconds``), et ``check`` refuse un comparator sans timing lu.
     """
     preserve = "" if append else rotate_if_present(log) + " && "
     append_flag = "-a " if append else ""
+    producer = f"{{ time {work} ; }} 2>&1" if timed else f"{work} 2>&1"
     return (
-        f"cd {cwd} && {preserve}set -o pipefail && {work} 2>&1 "
+        f"cd {cwd} && {preserve}set -o pipefail && {producer} "
         f"| tee {append_flag}{log}"
     )
 
@@ -159,7 +168,7 @@ FULL_PROTOCOL = [
     f"cd {HOPF_DIR} && lake build lean4export",
     captured_step("lake build Challenge", BUILD_LOG),
     captured_step("lake build Solution", BUILD_LOG, append=True),
-    captured_step(COMPARATOR_WORK, COMPARATOR_LOG),
+    captured_step(COMPARATOR_WORK, COMPARATOR_LOG, timed=True),
 ]
 
 
@@ -285,11 +294,17 @@ def cmd_check() -> int:
         out["sorry_proof_count"] == 0,
         out["axiom_decl_count"] == 0,
         out["native_decide_count"] == 0,
-        # comparator : les trois verdicts d'acceptation
+        # comparator : les trois verdicts d'acceptation ET le timing --
+        # real_seconds est consomme par le notebook (cellule verdict, division
+        # par 60) : un comparator execute sans capture time (ligne ``real``
+        # absente du log) ne valide pas le protocole, meme si les verdicts y
+        # sont (mesure 2026-10-19 : check_ok true + real_seconds None a fait
+        # echouer la cellule 18 du notebook).
         out["comparator_log_present"],
         comparator.get("verdict") == "Your solution is okay!",
         comparator.get("nanoda") == "accepts",
         comparator.get("lean_kernel") == "accepts",
+        comparator.get("real_seconds") is not None,
     ])
     print(json.dumps(out, indent=2, ensure_ascii=False))
     return 0 if out["check_ok"] else 1

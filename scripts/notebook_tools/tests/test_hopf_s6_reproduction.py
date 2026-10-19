@@ -9,6 +9,7 @@ pas par ces tests.
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -64,8 +65,10 @@ class TestFullProtocolSteps:
         for step in FULL_PROTOCOL:
             # $d n'est jamais defini cote shell : il rendait le chemin racine.
             assert "$d" not in step
-            # aucun placeholder .format() non resolu ne doit atteindre le shell.
-            assert "{" not in step
+            # aucun placeholder .format() non resolu ne doit atteindre le shell
+            # (``{ident}`` ; le groupe bash ``{ time ... ; }`` -- espace apres
+            # l'accolade ouvrante -- n'est pas un placeholder).
+            assert not re.search(r"\{\w+\}", step)
 
     def test_intentional_shell_variables_are_preserved(self):
         # Le fix ne touche que $d : les variables WSL legitimes restent.
@@ -156,6 +159,18 @@ class TestCapturedStep:
             f"| tee -a {BUILD_LOG}"
         )
 
+    def test_timed_step_wraps_producer_and_keeps_pipefail(self):
+        step = captured_step("lake exe comparator c.json", COMPARATOR_LOG,
+                             timed=True)
+        # groupe { time ... ; } : le timing (stderr du groupe) suit le 2>&1
+        # vers tee -> la ligne ``real XmY.Ys`` atterrit dans le log
+        assert step == (
+            f"cd {HOPF_DIR} && {rotate_if_present(COMPARATOR_LOG)} "
+            f"&& set -o pipefail && {{ time lake exe comparator c.json ; }} 2>&1 "
+            f"| tee {COMPARATOR_LOG}"
+        )
+        assert step.index("set -o pipefail") < step.index("| tee")
+
 
 class TestFullProtocolLogCapture:
     def test_challenge_step_preserves_previous_build_log(self):
@@ -174,6 +189,12 @@ class TestFullProtocolLogCapture:
         assert rotate_if_present(COMPARATOR_LOG) in step
         assert "tee -a" not in step
         assert f"| tee {COMPARATOR_LOG}" in step
+
+    def test_comparator_step_is_timed(self):
+        # sans enveloppe time, comparator.log ne contient aucune ligne
+        # ``real`` et check_ok rend real_seconds None (defaut mesure 2026-10-19)
+        step = FULL_PROTOCOL[-1]
+        assert "{ time " in step and " ; } 2>&1 | tee" in step
 
     def test_pipefail_precedes_every_captured_pipeline(self):
         # tee ne masque jamais le rc du producteur : pipefail avant le pipeline.
@@ -337,6 +358,26 @@ class TestCmdCheckVerdict:
         assert out["comparator"]["nanoda"] is None
         assert out["check_ok"] is False
 
+    def test_missing_comparator_timing_fails_closed(self, capsys):
+        # les trois verdicts d'acceptation SANS ligne ``real`` : le run reel du
+        # 2026-10-19 a produit exactement ce log (comparator execute sans
+        # enveloppe time) -- check doit le refuser, real_seconds etant consomme
+        # par le notebook (division par 60 dans la cellule verdict)
+        values = positive_mapping()
+        values[f"cat {COMPARATOR_LOG}"] = (
+            "Running nanoda kernel on solution\n"
+            "Nanoda kernel accepts the solution\n"
+            "Running Lean default kernel on solution.\n"
+            "Lean default kernel accepts the solution\n"
+            "Your solution is okay!\n"
+        )
+        rc, out = run_check(values, capsys)
+        assert rc == 1
+        assert out["comparator_log_present"] is True
+        assert out["comparator"]["verdict"] == "Your solution is okay!"
+        assert out["comparator"]["real_seconds"] is None
+        assert out["check_ok"] is False
+
     def test_missing_olean_fails_closed(self, capsys):
         values = positive_mapping()
         del values["stat -c %s"]
@@ -460,6 +501,26 @@ class TestRealBashCapture:
         proc = wsl_bash(step)
         assert proc.returncode == 7, (proc.returncode, proc.stdout, proc.stderr)
         # le log capture quand meme la sortie du producteur
+        assert "boom" in wsl_bash(f"cat {log}").stdout
+
+    def test_timed_producer_rc_and_timing_line_both_land_in_log(self, wsl_tmp):
+        log = f"{wsl_tmp}/build.log"
+        step = captured_step("bash -c 'echo verdict; exit 0'", log,
+                             cwd=wsl_tmp, timed=True)
+        proc = wsl_bash(step)
+        assert proc.returncode == 0, (proc.returncode, proc.stdout, proc.stderr)
+        captured = wsl_bash(f"cat {log}").stdout
+        assert "verdict" in captured
+        # la ligne ``real XmY.Ys`` (stderr du groupe time) est bien dans le log
+        assert "real" in captured and re.search(r"real\s+\d+m[\d.]+s", captured)
+
+    def test_timed_producer_failure_keeps_producer_rc(self, wsl_tmp):
+        log = f"{wsl_tmp}/build.log"
+        step = captured_step("bash -c 'echo boom; exit 7'", log,
+                             cwd=wsl_tmp, timed=True)
+        proc = wsl_bash(step)
+        # time retourne le rc de la commande enveloppee : pipefail le garde
+        assert proc.returncode == 7, (proc.returncode, proc.stdout, proc.stderr)
         assert "boom" in wsl_bash(f"cat {log}").stdout
 
     def test_failed_rotation_never_truncates_existing_log(self, wsl_tmp):
