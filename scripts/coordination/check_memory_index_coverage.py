@@ -9,23 +9,27 @@ Implémente l'acceptance de #17885 (consolider MEMORY.md en grappes, 0 orphelin,
   - 0 lien mort : tout lien markdown explicite vers un .md local pointe sur un
                   fichier existant.
   - Couverture : referenced / total (sortie diagnostique).
-  - Taille : rapport en octets, ligne count.
+  - Taille : rapport en octets, ligne count. Plafond par défaut 24 400 octets
+             (truncation-at-load de Claude Code) ; alerte NON bloquante à 90 %
+             (21 960 octets). Aligné sur roo-extensions #4204.
 
 Usage :
 
     python scripts/coordination/check_memory_index_coverage.py \\
         --memory-dir C:/Users/Jesse/.claude/projects/<hash>/memory \\
-        [--json]
+        [--json] [--max-bytes N] [--no-max-bytes]
 
-Exit 0 si 0 orphelin ET 0 lien mort ; exit 1 sinon.
+Exit 0 si 0 orphelin ET 0 lien mort ET taille <= plafond ; exit 1 sinon.
+L'alerte 90 % est un avertissement, pas un échec.
 
-L'organe n'écrit rien : il mesure. Les seuils (couverture 100%, taille
-max-bytes) sont passés en CLI ; sans --max-bytes, seul le verdict binaire
-est rendu.
+L'organe n'écrit rien : il mesure. Sans --no-max-bytes, la taille est bornée
+par le plafond aligné #4204 (24 400 o) ; --max-bytes N le surcharge ;
+--no-max-bytes rend le verdict binaire seul (comportement pré-#4204).
 
 Origine : #17885 (arbitrage user Q10 du 2026-09-26 : « complétude et
 consolidation en grappes »). Avant cet organe, la couverture était vérifiée à
-l'œil dans le cycle c.874.
+l'œil dans le cycle c.874. Seuils de taille alignés le 2026-10-16 sur
+roo-extensions #4204 (plafond 24,4 Ko, alerte 21 960 o, budget <= 63 o/entrée).
 """
 
 from __future__ import annotations
@@ -35,6 +39,12 @@ import json
 import re
 import sys
 from pathlib import Path
+
+# Alignement #4204 : 24 400 o = plafond de truncation-at-load de Claude Code,
+# alerte à 90 % (21 960 o). Le budget par entrée (<= 63 o) relève du contenu,
+# pas de cet organe.
+DEFAULT_MAX_BYTES = 24_400
+ALERT_RATIO = 0.90
 
 
 def main() -> int:
@@ -49,8 +59,13 @@ def main() -> int:
     p.add_argument(
         "--max-bytes",
         type=int,
-        default=None,
-        help="si défini, exit 1 si MEMORY.md dépasse cette taille (octets)",
+        default=DEFAULT_MAX_BYTES,
+        help=f"exit 1 si MEMORY.md dépasse cette taille (octets) ; défaut {DEFAULT_MAX_BYTES} (#4204)",
+    )
+    p.add_argument(
+        "--no-max-bytes",
+        action="store_true",
+        help="désactive le plafond de taille (verdict binaire seul, comportement pré-#4204)",
     )
     args = p.parse_args()
 
@@ -90,6 +105,10 @@ def main() -> int:
 
     coverage_pct = (100.0 * len(referenced) / len(all_files)) if all_files else 100.0
 
+    max_bytes = None if args.no_max_bytes else args.max_bytes
+    alert_bytes = int(max_bytes * ALERT_RATIO) if max_bytes is not None else None
+    size_alert = alert_bytes is not None and size_bytes > alert_bytes
+
     report = {
         "memory_file": str(mem_file),
         "size_bytes": size_bytes,
@@ -101,18 +120,22 @@ def main() -> int:
         "broken_links": broken_links,
         "broken_link_count": len(broken_links),
         "coverage_pct": coverage_pct,
+        "max_bytes": max_bytes,
+        "alert_bytes": alert_bytes,
+        "size_alert": size_alert,
         "verdict": "OK" if not orphans and not broken_links else "FAIL",
     }
 
-    if args.max_bytes is not None and size_bytes > args.max_bytes:
+    if max_bytes is not None and size_bytes > max_bytes:
         report["verdict"] = "FAIL_OVERSIZE"
-        report["max_bytes"] = args.max_bytes
 
     if args.json:
         print(json.dumps(report, indent=2, ensure_ascii=False))
     else:
         print(f"MEMORY.md: {mem_file}")
         print(f"  taille: {size_bytes} octets, {line_count} lignes")
+        if max_bytes is not None:
+            print(f"  plafond: {max_bytes} octets, alerte 90%: {alert_bytes} octets")
         print(f"  couverture: {len(referenced)}/{len(all_files)} = {coverage_pct:.1f}%")
         print(f"  orphelins: {len(orphans)}")
         if orphans:
@@ -124,6 +147,11 @@ def main() -> int:
         if broken_links:
             for t, u in broken_links[:5]:
                 print(f"    - [{t}]({u})")
+        if size_alert:
+            print(
+                f"  ATTENTION taille: {size_bytes} > {alert_bytes} octets "
+                "(90 % du plafond #4204) -- consolider avant le durcissement"
+            )
         print(f"  verdict: {report['verdict']}")
 
     return 0 if report["verdict"] == "OK" else 1
