@@ -97,6 +97,8 @@ Préférer cette forme à `gh auth switch`, qui mute un état **global au proces
 
 Une lane sans grain peut être servie par un sous-module : son backlog fait partie du pool. Un cycle `/coordinate` qui ne regarde que `jsboige/CoursIA` laisse structurellement quatre dépôts sans coordinateur — c'est précisément l'état que ce mandat corrige. La mesure de la Règle 2 est à passer **à chaque cycle**, au même titre que la passe de merge.
 
+**Organe** : `scripts/coordination/submodule_watch.py`, passé en Phase 2 de `/coordinate`. Il fait la mesure de la Règle 2 et liste les PRs ouvertes des cinq dépôts. Une PR humaine sans commentaire ni review depuis plus de 24 h y est `UNSEEN`, et rougit l'organe. Les deux mesures vivaient en prose, et aucune ne listait les PRs : MetaGeneticSharp#62 et Automata#10, propres et fusionnables, ont attendu trois jours (19/10). Le premier passage de l'organe en a relevé onze.
+
 ## Règle HARD 7 — le gitlink suit la tête de sa branche (mandat user 2026-09-23)
 
 `Z3.Linq` et `Argumentum` pointent toujours vers la tête de leur branche, et se modifient depuis le dépôt principal.
