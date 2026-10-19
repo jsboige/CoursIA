@@ -97,6 +97,25 @@ from pathlib import Path
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
 from grain_tag import extract_lane, lane_marker_residues
 
+# #19643 / c.1753 -- borne sur l'appel `gh pr list` interne (autrefois sans
+# `timeout=`). Le picker belt (pick_idle_grain.py:2355) appelle ce script
+# une fois par candidat, et chaque appel re-telecharge la liste des PRs
+# ouvertes : sans borne, un appel `gh` lent (secondary rate limit, backoff
+# silencieux) bloque tout le tapis. La constante est surchargeable par
+# l'env `CHECK_LANE_CLAIM_GH_TIMEOUT` (utile pour les tests et le debug
+# operateur) ; defaut 60s = 6x le nominal observe sur po-2027.
+_GH_OPEN_PRS_TIMEOUT_S = int(
+    os.environ.get("CHECK_LANE_CLAIM_GH_TIMEOUT", "60")
+)
+
+# #19643 / c.1753 -- cache de session : si l'env `CHECK_LANE_CLAIM_OPEN_PRS_JSON`
+# pointe sur un fichier JSON valide, `_gh_open_prs_with_files` lit le cache
+# au lieu de re-telecharger via `gh`. Le picker belt ecrit 1 fois le fichier,
+# invoque check_lane_claim N fois (1 par candidat), et sauve N-1 appels `gh`
+# (~6s x N = le bottleneck mesure du tapis c.1753). Le fallback fetch `gh`
+# est preserve si le fichier est absent ou corrompu.
+_OPEN_PRS_CACHE_PATH = os.environ.get("CHECK_LANE_CLAIM_OPEN_PRS_JSON")
+
 # --- markers -----------------------------------------------------------------
 
 # A comment is a claim EVENT only if it carries one of these bracketed markers.
@@ -1448,19 +1467,56 @@ def _gh_open_prs_with_files() -> list[dict]:
     `extract_lane` reader, NOT here, so the lane-detection rule lives in
     exactly one place (#9485 single-reader discipline).
 
-    Raises RuntimeError on `gh` failure so callers surface exit 2.
+    If env `CHECK_LANE_CLAIM_OPEN_PRS_JSON` is set to a valid JSON file path,
+    reads the cache directly (#19643) -- the picker belt fetches once per
+    drawing pass and shares the cache across all N candidates, instead of
+    re-downloading per call. On any read/parse failure, falls back to a fresh
+    `gh pr list` (never silent corruption).
+
+    Raises RuntimeError on `gh` failure (incl. timeout) so callers surface
+    exit 2 -- the picker (pick_idle_grain.py:2355) traduit ca en
+    `CLAIM_CODE_ERROR` (verdict "verification indisponible"), jamais un
+    silence.
     """
-    proc = subprocess.run(
-        [
-            "gh", "pr", "list", "--state", "open",
-            "--json", "number,title,headRefName,body,files,additions,deletions",
-            "--limit", "200",
-        ],
-        # #12811 -- 200 PR bodies in one payload: a single non-cp1252 byte
-        # anywhere kills the whole --paths mode on Windows.
-        capture_output=True, text=True, shell=False,
-        encoding="utf-8", errors="replace",
-    )
+    # #19643 -- chemin cache : 1 lecture de fichier au lieu d'un appel `gh`
+    # (chaque candidat du picker en sauve un, ~6s x N). Le path est porte
+    # par l'env plutot qu'un arg CLI : ca traverse le subprocess.run du
+    # picker sans modifier l'API publique (les 5 sites d'appel a
+    # `_gh_open_prs_with_files` restent byte-identiques).
+    if _OPEN_PRS_CACHE_PATH:
+        try:
+            with open(_OPEN_PRS_CACHE_PATH, "r", encoding="utf-8") as f:
+                cached = json.load(f)
+            if isinstance(cached, list):
+                return cached
+            # Format invalide : on tombe sur le fetch `gh` frais.
+        except (OSError, json.JSONDecodeError):
+            # Cache absent ou corrompu : on retombe sur le subprocess `gh`
+            # (avec timeout, comme toujours). Jamais de corruption silencieuse.
+            pass
+    try:
+        proc = subprocess.run(
+            [
+                "gh", "pr", "list", "--state", "open",
+                "--json", "number,title,headRefName,body,files,additions,deletions",
+                "--limit", "200",
+            ],
+            # #12811 -- 200 PR bodies in one payload: a single non-cp1252 byte
+            # anywhere kills the whole --paths mode on Windows.
+            capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",
+            # #19643 / c.1753 -- borne sur le subprocess interne. Sans ca,
+            # un `gh` lent (rate-limit secondaire, backoff silencieux) bloque
+            # le tapis du picker (un appel par candidat, 40+ candidats par
+            # tirage) au-dela du timeout de l'appelant. Defaut 60s,
+            # surchargeable par env `CHECK_LANE_CLAIM_GH_TIMEOUT`.
+            timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"gh pr list --state open timed out after {_GH_OPEN_PRS_TIMEOUT_S}s "
+            f"(set CHECK_LANE_CLAIM_GH_TIMEOUT to override)"
+        ) from exc
     if proc.returncode != 0:
         raise RuntimeError(
             f"gh pr list --state open failed (exit {proc.returncode}): "

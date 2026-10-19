@@ -203,6 +203,7 @@ import random
 import re
 import subprocess
 import sys
+import tempfile
 from typing import Any, Callable
 
 try:
@@ -2348,22 +2349,82 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
     ``--lane`` est **requis** par ``check_lane_claim.py`` : sans lui, l'appel
     sort en erreur d'usage et chaque candidat affichait ``usage: ...`` a la
     place de son verdict -- un check qui ne peut pas rougir, donc pas un check.
+
+    #19643 / c.1753 -- partage du cache des PRs ouvertes via l'env
+    `CHECK_LANE_CLAIM_OPEN_PRS_JSON` : on fetch la liste 1 fois, on ecrit le
+    JSON dans un tempfile, et chaque invocation de check_lane_claim le lit.
+    Sauve N-1 appels `gh pr list` (~6s x N = bottleneck du tapis).
     """
     verdicts = {}
-    for n in numbers:
-        try:
-            r = subprocess.run(
-                [sys.executable, "scripts/check_lane_claim.py",
-                 "--lane", lane, str(n)],
-                capture_output=True, text=True, encoding="utf-8", timeout=60,
-                env=_utf8_child_env(),
-            )
-            verdicts[n] = _summarize_claim(r.stdout or r.stderr or "",
-                                           r.returncode)
-        except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
-            verdicts[n] = (CLAIM_CODE_ERROR,
-                           f"(check indisponible: {type(exc).__name__})")
+    # #19643 -- 1 fetch partage. Si le fetch echoue, on n'exporte pas
+    # l'env et chaque appel retombe sur son propre `gh pr list` (chemin
+    # legacy, plus lent mais sur). Pas de rejection du tapis pour autant.
+    cache_path = _build_open_prs_cache_for_belt(lane)
+    env = _utf8_child_env()
+    if cache_path is not None:
+        env["CHECK_LANE_CLAIM_OPEN_PRS_JSON"] = cache_path
+    else:
+        # S'assurer que l'env n'est pas heritee d'un run precedent si on
+        # est dans un test ou un process qui l'avait posee.
+        env.pop("CHECK_LANE_CLAIM_OPEN_PRS_JSON", None)
+    try:
+        for n in numbers:
+            try:
+                r = subprocess.run(
+                    [sys.executable, "scripts/check_lane_claim.py",
+                     "--lane", lane, str(n)],
+                    capture_output=True, text=True, encoding="utf-8", timeout=60,
+                    env=env,
+                )
+                verdicts[n] = _summarize_claim(r.stdout or r.stderr or "",
+                                               r.returncode)
+            except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
+                verdicts[n] = (CLAIM_CODE_ERROR,
+                               f"(check indisponible: {type(exc).__name__})")
+    finally:
+        # Nettoyer le tempfile, qu'il ait ete utile ou pas.
+        if cache_path is not None:
+            try:
+                os.unlink(cache_path)
+            except OSError:
+                pass
     return verdicts
+
+
+def _build_open_prs_cache_for_belt(lane: str) -> str | None:
+    """#19643 -- fetch 1 fois la liste des PRs ouvertes, ecrit dans un
+    tempfile, retourne le path (None si le fetch a echoue, l'appelant
+    laisse alors chaque appel de check_lane_claimfetcher sa propre liste,
+    chemin legacy)."""
+    try:
+        r = subprocess.run(
+            ["gh", "pr", "list", "--state", "open",
+             "--json", "number,title,headRefName,body,files,additions,deletions",
+             "--limit", "200"],
+            capture_output=True, text=True, encoding="utf-8",
+            # 60s : aligne sur le timeout par defaut de check_lane_claim.
+            # Si le fetch est lent, on laisse l'appelant retomber sur le
+            # chemin legacy (chaque appel fait son propre fetch).
+            timeout=60,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    if r.returncode != 0:
+        return None
+    try:
+        # Valide que c'est bien une liste JSON.
+        parsed = json.loads(r.stdout)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(parsed, list):
+        return None
+    try:
+        fd, path = tempfile.mkstemp(prefix="open_prs_", suffix=".json")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(r.stdout)
+        return path
+    except OSError:
+        return None
 
 
 def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
