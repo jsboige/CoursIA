@@ -1,0 +1,16 @@
+date: '2026-10-19'
+by: myia-po-2024:CoursIA
+python_sha: 750e9f50c89ae62eb1af8cacd378d7982c1297b6
+csharp_sha: dfb33334f88bc104a217d17c05c7b23cd3c1e24b
+content_python_sha: 289568fb9215f4b95354d008e7ed9734318e96b4ead62e127cfe2c64d9e83136
+content_csharp_sha: a6af73b2bfeb94f14402adc40f5c65ad4a81eb1c0b98644c95bb40cb39677791
+reason: 'Markdown-only prose alignment on the Python side (commit a75349b3bd1, PR
+  #20947): three markdown cells announced 3 rooms / (3x20)^8 = 60^8 while the data
+  cell defines 4 rooms and the committed output shows num_rooms = 4. Fixed to 4
+  salles / (4x20)^8 = 80^8 ~ 1.7e15 (cell-intro-section), 4 salles (cell-data-section),
+  and CP-SAT domain course_room {0..2} -> {0..3} (cell-cpsat-section). The C# twin
+  already displayed four rooms and is NOT touched (asymmetry documented in known_differences);
+  defect inherited from the pre-T4 base, not introduced by the PR. Verified independently
+  by the adjoint (myia-po-2025:CoursIA-2, c.88) at head a75349b3bd1: factual-mislabel
+  3->0, code/outputs/execution_count unchanged over 47 cells. No re-execution required
+  for a verified markdown delta (C.2 markdown exception).'

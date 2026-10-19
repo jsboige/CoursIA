@@ -920,7 +920,27 @@ cycle_backoff() {
   # reste lisible sans lui.
   local hint=""
   if [ "$rc" -ne 0 ] && [ -n "$work_log" ]; then
-    hint=" -- voir $work_log"
+    # #21446 : un echec qui n'ecrit RIEN dans le log du slot ne peut pas etre
+    # explique par ce log -- le rappel « -- voir <fichier> » y renvoie vers une
+    # source muette, et le journal systeme repetait « cycle court (rc=128) »
+    # 51 fois sans jamais nommer la classe de cause. Mesure ai-01 du 19/10
+    # (slot myia-ai-01-wsl-10) : le conteneur mourait AVANT l'enregistrement
+    # du runner -- donc avant toute ligne de job -- et les mesures de sante de
+    # l entrypoint suppriment leur stderr (2>/dev/null) : zero octet dans le
+    # log, rc=128 (le fatal de git), et rien de plus.
+    # Un cycle qui n'a rien ecrit est donc DIAGNOSTIQUE : la cause est cote
+    # entrypoint, pas cote job. Le message le dit, plutot que de renvoyer vers
+    # un fichier qui ne peut rien dire.
+    local log_now=0
+    if [ -f "$work_log" ]; then
+      log_now="$(wc -c < "$work_log" 2>/dev/null | tr -d ' ' || echo 0)"
+      log_now="${log_now:-0}"
+    fi
+    if [ "$log_now" -le "$log_off" ]; then
+      hint=" -- ECHEC MUET : ce cycle n a rien ecrit dans $work_log (le conteneur n a produit aucune sortie) -- la cause est cote entrypoint du runner, pas cote job"
+    else
+      hint=" -- voir $work_log"
+    fi
   fi
   if [ "$lifetime" -lt "$HEALTHY_CYCLE_SECS" ]; then
     if [ "$worked" -eq 1 ]; then
