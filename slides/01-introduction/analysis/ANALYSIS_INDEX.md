@@ -65,6 +65,19 @@
 - Reference pour les scripts d'automatisation
 - Documentation des noms de fichiers
 
+### 5. Rapport de comparaison complet du deck
+
+**Fichier** : `slidev_comparison_report.md`
+
+**Contenu** :
+- Comparaison PPTX vs Slidev sur les 43 slides du deck (2026-02-26)
+- Problèmes de layout et de fidélité identifiés par zone
+- Résumé exécutif chiffré
+
+**Points clés** :
+- Complément du document 1, qui ne couvre que les slides 1-10
+- Vue d'ensemble du deck entier pour la validation de conversion
+
 ---
 
 ## Résumé Exécutif
