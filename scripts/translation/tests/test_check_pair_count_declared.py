@@ -329,6 +329,22 @@ class TestIntegration:
         # -- guard against accidental path move.
         assert CONSTANT_PATH == Path("scripts/translation/tests/test_check_translation_parity.py")
 
+    def test_rouge_message_line_number_is_derived_not_hardcoded(self):
+        # F2 (Hermes, 2026-10-19) : the ROUGE message must name the constant's
+        # CURRENT line, not a hardcoded one -- else it drifts silently when
+        # history is added above the constant. The live constant moved from
+        # :731 (at PR time) to :737 (now); the helper must track it.
+        from check_pair_count_declared import _constant_line_number_in_head
+        repo_root = Path(__file__).resolve().parents[3]
+        resolved = _constant_line_number_in_head(repo_root)
+        const_text = (repo_root / CONSTANT_PATH).read_text(encoding="utf-8")
+        real_line = next(
+            i for i, ln in enumerate(const_text.splitlines(), start=1)
+            if ln.startswith("EXPECTED_PAIR_COUNT = ")
+        )
+        assert resolved == real_line
+        assert resolved != 731, "helper must not return the stale hardcoded :731"
+
 
 # --------------------------------------------------------------------------- #
 # Acceptance against the real PRs in #21391

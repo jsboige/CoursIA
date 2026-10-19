@@ -335,7 +335,23 @@ def check_pair_count_declared(
 # --------------------------------------------------------------------------- #
 
 
-def _rouge_message(report: CheckReport) -> str:
+def _constant_line_number_in_head(repo_root: Path | None) -> int | None:
+    """Return the 1-based line number of EXPECTED_PAIR_COUNT in the constant
+    file at the head we inspected, or None if it cannot be resolved (fail
+    soft -- the caller then prints the search pattern instead of a number).
+    """
+    root = repo_root if repo_root is not None else Path.cwd()
+    try:
+        text = (root / CONSTANT_PATH).read_text(encoding="utf-8")
+    except OSError:
+        return None
+    for i, line in enumerate(text.splitlines(), start=1):
+        if CONSTANT_LINE.match(line):
+            return i
+    return None
+
+
+def _rouge_message(report: CheckReport, repo_root: Path | None = None) -> str:
     """Render the exact message a human or a CI runner can apply verbatim."""
     names = ", ".join(
         f"{Path(pc.translation_path).stem}" for pc in report.pair_changes
@@ -346,11 +362,18 @@ def _rouge_message(report: CheckReport) -> str:
         delta_added = sum(1 for pc in report.pair_changes if pc.status in ("added", "renamed"))
         delta_removed = sum(1 for pc in report.pair_changes if pc.status == "removed")
         next_value = old + delta_added - delta_removed
+        # Derive the constant line number at the head we inspected -- never
+        # hardcode it, or the message silently drifts when history is added
+        # above the constant (reserve F2).
+        line_no = _constant_line_number_in_head(repo_root)
+        location = (
+            f"{CONSTANT_PATH.as_posix()}:{line_no}" if line_no is not None
+            else f"{CONSTANT_PATH.as_posix()} (search `^EXPECTED_PAIR_COUNT = `)"
+        )
         return (
             f"ROUGE: pair change detected without EXPECTED_PAIR_COUNT bump.\n"
             f"  Pairs affected: {names}\n"
-            f"  Constant path: {CONSTANT_PATH.as_posix()}:731 "
-            f"(search `^EXPECTED_PAIR_COUNT = $`)\n"
+            f"  Constant path: {location}\n"
             f"  Expected bump: {old} -> {next_value}\n"
             f"  History entry pattern (preceding comment, ~5 lines above):\n"
             f"    # YYYY-MM-DD (PR #NNNN, <issue> <summary>): +N paire(s) --\n"
@@ -372,7 +395,7 @@ def _rouge_message(report: CheckReport) -> str:
     return "ROUGE (unknown reason)"
 
 
-def render_text(report: CheckReport) -> str:
+def render_text(report: CheckReport, repo_root: Path | None = None) -> str:
     if not report.pair_changes and not report.constant_modified:
         return "GREEN: no pair change, no constant bump -- nothing to check."
     if not report.rouge:
@@ -381,7 +404,7 @@ def render_text(report: CheckReport) -> str:
             f"{report.constant_change.old_value} -> {report.constant_change.new_value}, "
             f"actual count = {report.actual_count}."
         )
-    return _rouge_message(report)
+    return _rouge_message(report, repo_root=repo_root)
 
 
 # --------------------------------------------------------------------------- #
@@ -436,7 +459,7 @@ def main(argv: list[str] | None = None) -> int:
             "notes": report.notes,
         }, indent=2, ensure_ascii=False))
     else:
-        print(render_text(report))
+        print(render_text(report, repo_root=repo_root))
 
     return 1 if report.rouge else 0
 
