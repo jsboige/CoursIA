@@ -61,14 +61,14 @@ Verdict rule, written before the measurement:
 
 The strategy's orders are submitted at 10:00 New York time and filled at the close, on both windows; none is placed at midnight.
 
-| Window | Sessions | Strategy Sharpe | SPY held | 60/40 | Holm p (Ledoit-Wolf, SPY / 60/40) | Verdict |
+| Window | Sessions | Strategy Sharpe (zero rate) | SPY held (zero rate) | 60/40 (zero rate) | Holm p (Ledoit-Wolf, SPY / 60/40) | Verdict |
 |---|---|---|---|---|---|---|
 | Coded, 2015-01-02 → 2024-12-31 | 2516 | 0.710 | 0.786 | 0.802 | 1.0 / 1.0 | **NO BEATS** |
 | Out of sample, 2025-01-02 → 2026-07-21 | 387 | 1.230 | 1.034 | 1.158 | 1.0 / 1.0 | **INCONCLUSIVE** |
 
-QC statistics (computed by QC with its own risk-free rate):
+QC statistics (computed by QC with its own risk-free rate). Their Sharpe ratios do not compare with those of the table above: QC subtracts a non-zero risk-free rate and starts from its own daily series, whereas the protocol uses a zero rate on the portfolio value at the open. The ranking of the portfolios can therefore change from one table to the other, and the verdict is read on the table above.
 
-| Window | Mode | QC Sharpe | CAGR | Max drawdown | Orders | Backtest |
+| Window | Mode | QC Sharpe (QC's rate, different scale) | CAGR | Max drawdown | Orders | Backtest |
 |---|---|---|---|---|---|---|
 | Coded | strategy | 0.360 | 7.29% | 18.4% | 438 | `5475762624cf4a91e21c1e6a6cf24f98` |
 | Coded | SPY held | 0.533 | 12.97% | 33.7% | 1 | `626f0da67dc03f843c7a48f1eba06a5e` |

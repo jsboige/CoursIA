@@ -64,14 +64,14 @@ Règle de verdict, écrite avant la mesure :
 
 Les ordres de la stratégie sont soumis à 10:00 New York et remplis à la clôture, sur les deux fenêtres ; aucun n'est passé à minuit.
 
-| Fenêtre | Séances | Sharpe stratégie | SPY détenu | 60/40 | p Holm (Ledoit-Wolf, SPY / 60/40) | Verdict |
+| Fenêtre | Séances | Sharpe stratégie (taux nul) | SPY détenu (taux nul) | 60/40 (taux nul) | p Holm (Ledoit-Wolf, SPY / 60/40) | Verdict |
 |---|---|---|---|---|---|---|
 | Codée, 2015-01-02 → 2024-12-31 | 2516 | 0,710 | 0,786 | 0,802 | 1,0 / 1,0 | **NO BEATS** |
 | Hors échantillon, 2025-01-02 → 2026-07-21 | 387 | 1,230 | 1,034 | 1,158 | 1,0 / 1,0 | **INCONCLUSIVE** |
 
-Statistiques QC (calculées par QC avec son propre taux sans risque) :
+Statistiques QC (calculées par QC avec son propre taux sans risque). Leurs Sharpe ne se comparent pas à ceux de la table du dessus : QC retranche un taux sans risque non nul et part de ses propres séries quotidiennes, alors que le protocole prend un taux nul sur la valeur du portefeuille à l'ouverture. Le classement des portefeuilles peut donc changer d'une table à l'autre, et le verdict se lit sur la table du dessus.
 
-| Fenêtre | Mode | Sharpe QC | CAGR | Pire baisse | Ordres | Backtest |
+| Fenêtre | Mode | Sharpe QC (taux de QC, autre échelle) | CAGR | Pire baisse | Ordres | Backtest |
 |---|---|---|---|---|---|---|
 | Codée | stratégie | 0,360 | 7,29 % | 18,4 % | 438 | `5475762624cf4a91e21c1e6a6cf24f98` |
 | Codée | SPY détenu | 0,533 | 12,97 % | 33,7 % | 1 | `626f0da67dc03f843c7a48f1eba06a5e` |
