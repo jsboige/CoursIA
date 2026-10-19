@@ -20,6 +20,13 @@ lean backtest --algorithm Cloud-SectorRotation-Momentum/main.py
 
 Project 30821748. Upload `main.py`, compile and run a backtest. Hard-coded period: **2018-01-01 → 2025-01-01** (aligned with the cross-strategy baseline #1630; the code sets no moving end date, so the window is fixed by the source dates).
 
+Three optional parameters serve the measurement against held references (#21371). When absent, they change nothing:
+
+- `mode`: `strategy` (default, the strategy), `spy` (SPY held) or `6040` (SPY 60%, BND 40%, rebalanced at the start of each month, one minute after the open);
+- `start_date` and `end_date` (`%Y%m%d`), which replace the coded dates.
+
+In all three modes, the `shadow` chart plots the portfolio value at each SPY open.
+
 ## Backtest Metrics
 
 Measured on 2026-10-10 on QC nodes over the coded window 2018-01-01 → 2025-01-01, **before and after** the midnight-slice fix (#20264). The protocol was pre-registered on the issue before both runs (comment `c.6099402027`). The "before" column is the code on `main` at commit `a492cda2b3`, run unchanged. The third column, measured on 2026-10-11, is the current code: it also fixes half-day sessions (#20286, protocol pre-registered on the issue, comments `c.6105254259` and `c.6105308987`).
@@ -74,7 +81,46 @@ A first version, which requested 5 more bars, changed nothing: it still received
 
 Only 2019 really changes (+7.1% → +3.4%): the mistaken move to SHY in July 2019 had done better than the invested position. The Sharpe gap (−0.028) stays below the 0.05 threshold set in advance. This is a path effect, not a verdict.
 
-**Verdict: NO-BEATS**, rendered on 2026-08-07 on the code before the fix. These measurements do not render a new one. Descriptively, the current code still trails SPY held over the same window in return (double-digit CAGR for SPY, against 6.3% here). Its 27.6% max drawdown, however, is no longer above SPY's, on the order of 34% in the 2020 crash.
+The 2026-08-07 NO-BEATS verdict was rendered on the code before the fix, and the October 10 and 11 measurements did not render a new one. The verdict on the current code is rendered in the next section.
+
+### Verdict against held references (#21371)
+
+**Verdict: NO BEATS**, on the coded window as well as out of sample.
+
+Measured on 2026-10-19 on QC nodes. The protocol was pre-registered on #21371 before the first backtest, following #21329. The strategy (current code, decision unchanged) is compared with two references held in the same algorithm, under the same brokerage model and the same 200-session warm-up: SPY held, and a 60/40 SPY/BND portfolio rebalanced at the start of each month.
+
+**Harmlessness check: held.** In `strategy` mode, over the coded window, the instrumented code reproduces `5661dc62` order by order (307 orders, same date, same symbol, same quantity) and on its 27 QC statistics.
+
+**Tests.** The series are the portfolio value at each SPY open. The `Paradox46Benchmarks/significance.py` script compares them with a zero risk-free rate: Ledoit-Wolf Sharpe difference, stationary bootstrap, Newey-West mean difference, then a Holm correction over the six p-values of each window.
+
+**Verdict rule, written before the measurement:**
+
+- `BEATS`: the Sharpe difference is positive and significant (Holm < 0.05) against both references;
+- `NO BEATS`: the strategy's Sharpe is below that of SPY held;
+- `INCONCLUSIVE`: all other cases.
+
+| Window | Sessions | Strategy Sharpe | SPY held | 60/40 | Holm p (Ledoit-Wolf, SPY / 60/40) | Verdict |
+|---|---|---|---|---|---|---|
+| Coded, 2018-01-02 → 2024-12-31 | 1761 | 0.464 | 0.758 | 0.751 | 1.0 / 1.0 | **NO BEATS** |
+| Out of sample, 2025-01-02 → 2026-07-21 | 387 | 0.908 | 1.034 | 1.158 | 1.0 / 1.0 | **NO BEATS** |
+
+QC statistics of the same runs (project 38081193, QC risk-free rate):
+
+| Window | Mode | QC Sharpe | CAGR | Worst drawdown | Orders | Backtest |
+|---|---|---|---|---|---|---|
+| Coded | strategy | 0.196 | 6.29% | 27.6% | 307 | `40af1c25d64c80a77a574de56ce000ba` |
+| Coded | SPY held | 0.496 | 13.58% | 33.7% | 3 | `ae15f6714a2c156dfc5b822bcf03a954` |
+| Coded | 60/40 | 0.378 | 8.66% | 21.7% | 147 | `09e7ae2e198134dcd163da2d2e889e27` |
+| Out of sample | strategy | 0.551 | 16.19% | 14.5% | 79 | `afa13c14daf65aa0447bc8419724a104` |
+| Out of sample | SPY held | 0.651 | 18.49% | 18.7% | 2 | `19ae7d2186db8a01379dc0a65806050a` |
+| Out of sample | 60/40 | 0.554 | 12.80% | 11.2% | 30 | `4faedf9e53a2666e623cf7e7fc657fff` |
+
+**What the verdicts show.** On the coded window, the verdict confirms the 2026-08-07 NO-BEATS, this time on the fixed code and with a test. Out of sample, the effective end is 2026-07-21: the QC nodes cut backtests about 90 days before the requested date (`end_date=20261019`). On this short window, no difference is significant. The rule still classifies the case as NO BEATS, since the point Sharpe stays below SPY's.
+
+**Descriptively**, with no effect on the verdicts:
+
+- on both windows, the strategy's worst drawdown is below that of SPY held, but above that of the 60/40;
+- the rebalance counter starts at zero: the strategy stays in cash for its first 21 sessions, in each window. This property of the code is kept as is. It weighs mostly on the short window.
 
 ## Honest read
 
@@ -90,12 +136,13 @@ On the current code, the dual filter (SMA200 + positive 126-day momentum) and th
 
 | File | Description |
 |------|-------------|
-| `main.py` | Sector rotation with momentum-weighted allocation and dual trend filter (v4) |
+| `main.py` | Sector rotation with momentum-weighted allocation and dual trend filter (v4); `spy` and `6040` measurement modes, `shadow` trace (#21371) |
 
 ## References
 
 - [QuantConnect Documentation](https://www.quantconnect.com/docs/)
 - QC / Trading consolidation EPIC: #1621
 - Governed by EPIC #9768 (backtest-metric drift across revisions)
+- Measurement against held references: #21371, following the #21329 protocol
 
 See #1621 (partial contribution: honest-read of a previously-unaudited strategy).
