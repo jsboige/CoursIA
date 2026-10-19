@@ -60,9 +60,16 @@ nombre de symboles ; `Feuilles` — profondeurs et substitution d'un poids
 (`swapW`) avec ses invariants (poids, multi-ensemble des feuilles) et sa
 facture — l'écart de poids fois la profondeur de la cible
 (`costW_swapW_eq`), dont le corollaire monotone alléger ne coûte jamais
-plus. -/
+plus ; `Soeurs` — paires profondes et échange de deux feuilles (pli 5f de
+#18706) : adressage positionnel (`subtreeAt`, `replaceAt`) et sa facture
+(`costW_replaceAt_eq` — l'écart fois la profondeur du chemin), existence
+d'une paire de feuilles sœurs exactement à la profondeur maximale
+(`sisterPath_spec`), et l'échange de deux poids en un parcours
+(`exchangeW`, facture `costW_exchangeW_eq`, corollaire strict
+`costW_exchangeW_lt` — le réarrangement du pli 5c lu sur l'arbre), ancres
+de la descente 21 -> 15 -> 14 du carnet 02. -/
 @[default_target]
 lean_lib «PrefixCodes» where
   -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`) :
   -- pas de `.submodules`, cf la note `MathUniverse` de `learning_theory_lean`.
-  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion, `Feuilles]
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion, `Feuilles, `Soeurs]
