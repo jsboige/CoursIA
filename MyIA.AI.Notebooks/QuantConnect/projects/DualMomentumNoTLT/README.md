@@ -25,26 +25,32 @@ Stratégie de **rotation momentum dual multi-actifs** (Gary Antonacci, *Dual Mom
 
 ## Backtest réel (QC Cloud, variante Framework, frais IBKR margin inclus)
 
-| Métrique | Valeur |
-|----------|--------|
-| Sharpe ratio | **0.633** |
-| CAGR | **16.91 %** |
-| Drawdown max | **34.50 %** |
-| Rendement total net | 377.4 % (+317 497 $ sur 100 k $) |
-| PSR (Probabilistic Sharpe Ratio) | **5.98 %** |
-| Ordres exécutés | 2238 |
-| Jours tradés | 2516 |
+Ce README a longtemps affiché pour cette variante un Sharpe de 0.633, un CAGR de 16.91 % et un drawdown de 34.50 % (projet QC 31244186, 2238 ordres, 2026-08-06). Ces chiffres venaient d'un défaut du code, corrigé dans [#20388](https://github.com/jsboige/CoursIA/issues/20388) :
 
-*Backtest frais via QC Cloud project 31244186 (compile `BuildSuccess`, 2026-08-06). Métriques vérifiées, pas claim de docstring.*
+- `InsightWeightingPortfolioConstructionModel` ignore les insights qui ne portent pas de poids. Les insights `FLAT` de `DualMomentumAlpha` n'en portaient pas : la cible `UP` précédente restait en place, et une ligne sortie du top-2 n'était jamais vendue.
+- Le compte est sur marge par défaut. Les lignes s'accumulaient donc à crédit : avant 104 émissions sur 120, le portefeuille portait les 5 titres, et son exposition brute atteignait 1.71 fois la valeur nette en fin de période. Une partie des achats dépassait même la marge disponible : 282 ordres d'achat refusés pour pouvoir d'achat insuffisant.
+- Correctif : les insights `FLAT` portent `weight=0`. Le même correctif reprend la garde de barres (#20264) et la demande d'historique doublée (#20286) de la variante standalone, décrites plus bas.
 
-### Lecture honnête — CAGR supérieur à SPY, drawdown coûteux, skill statistiquement faible
+Mesure sur les nœuds QC, frais de courtage inclus, sept prédictions fixées avant les backtests ([#20388, c.6200954314](https://github.com/jsboige/CoursIA/issues/20388#issuecomment-6200954314)), toutes tenues ([résultat, c.6201190294](https://github.com/jsboige/CoursIA/issues/20388#issuecomment-6201190294)) :
 
-La stratégie **bat le benchmark SPY** en rendement absolu (CAGR 16.91 % vs ~12-13 % pour SPY sur 2015-2024), principalement parce que la rotation momentum garde QQQ (tech, forte hausse de la décennie) dans le top-2 lors des années de bull market. **Mais** :
+| Fenêtre | Variante | Sharpe | CAGR | Drawdown max | Ordres | Refusés | Lignes détenues | Exposition brute | Backtest |
+|---|---|---|---|---|---|---|---|---|---|
+| 2015-01-01 → 2024-12-31 (codée) | avant | 0.633 | 16.89 % | 34.4 % | 2225 | 282 | 5 avant 104 émissions sur 120 | 1.71 en fin de période | `0f8e0f58df1b2dc01eeb20d35cde65f9` |
+| | après | 0.442 | 10.00 % | 21.5 % | 1410 | 0 | 2 au plus | 0.998 au plus | `02551c21423f1aa958678303eca6ec2b` |
+| 2025-01-01 → 2026-07-10 (hors échantillon) | avant | 1.17 | 35.03 % | 16.0 % | 396 | 0 | 4 dans 16 émissions sur 19 | 1.68 au plus | `36c1d64eef77b6a5552ae4616d56e240` |
+| | après | 1.20 | 29.94 % | 13.9 % | 374 | 0 | 2 | 0.998 au plus | `c0081f5801967cd1880997c1c67f5b1e` |
 
-- **Drawdown de 34.50 %** — considérable. C'est le coût du « No TLT » : sans la duration longue comme refuge *flight-to-quality*, le portefeuille n'avait nulle part où se cacher lors des sell-offs *cross-asset* (2022 : actions, or et obligations intermédiaires ont chuté ensemble). À comparer au Trend-Following AQR (MaxDD 15 %) qui, lui, bascule vers un safe-haven explicite en régime baissier. Le momentum dual **rot** dans les actifs qui tombent ; il ne **fuit** pas.
-- **PSR à 5.98 %** — malgré un CAGR supérieur au marché, la probabilité que le ratio de Sharpe soit **statistiquement supérieur à zéro** reste faible (~6 %). Le rendement excédentaire observé n'est **pas** une preuve de compétence prédictive ; il s'explique en grande partie par l'exposition beta au momentum tech (QQQ) durant une décennie haussière atypique.
+Sharpe calculé par QC, taux sans risque inclus. La ligne « avant » de la fenêtre codée est le backtest de référence de #20264, qui tourne le code du projet 31244186 (2225 ordres contre 2238 dans le tableau historique du 6 août ; ces deux exécutions distinctes ne sont pas confondues, et la cause de cet écart n'est pas établie ici). Lignes détenues et exposition brute sont reconstruites à partir des remplissages, juste avant chaque émission ; la trésorerie n'y compte pas les dividendes, si bien que l'exposition est une borne haute.
 
-**Conclusion honnête** : ne PAS présenter cette stratégie comme génératrice d'alpha statistiquement significatif. C'est un **beta de momentum géré** avec un **drawdown élevé** — l'exemple pédagogique de la limite du momentum dual « rotation pure » sans overlay de protection. Le companion naturel est la DualMomentum (avec TLT) — un contre-exemple documenté (TLT a saboté 2020-2023) — cf. [DualMomentum/README](../DualMomentum/README.md). Les deux illustrent le **même compromis** : un diversifiant qui aide dans un régime nuit dans l'autre.
+### Lecture honnête — le CAGR de 16,9 % venait du levier, pas du signal
+
+Une fois le défaut corrigé, la variante Framework rejoint la variante standalone corrigée : Sharpe 0.442 contre 0.446, CAGR 10.00 % contre 10.05 %, drawdown 21.5 % contre 21.4 %. La stratégie **ne bat plus SPY** en rendement absolu sur 2015-2024 (~12-13 % par an pour SPY). Hors échantillon, le CAGR baisse de 35.0 % à 29.9 % pour la même raison, et le Sharpe ne baisse pas.
+
+- **Drawdown de 21.5 %**, contre 34.4 % avant correction : l'écart vient surtout du levier. Il reste au-dessus de celui du Trend-Following AQR (MaxDD 15 %), qui bascule vers un safe-haven explicite en régime baissier. Sans la duration longue comme refuge *flight-to-quality*, le momentum dual **tourne** dans les actifs qui tombent ; il ne **fuit** pas. La date du drawdown n'est pas mesurée ici.
+- **PSR à 1.4 %** sur la fenêtre codée : la probabilité que le ratio de Sharpe soit **statistiquement supérieur à zéro** est faible. Le rendement observé n'est **pas** une preuve de compétence prédictive ; il s'explique en grande partie par l'exposition au momentum tech (QQQ) durant une décennie haussière atypique.
+- **Frais** : 1 606 $ sur dix ans pour la variante Framework, contre 434 $ pour la variante standalone (`a32a1a24f317c96e5d0fe2bbb00ca583`). Sans fonction de rééquilibrage, le modèle de construction de portefeuille re-cible chaque jour les lignes actives et envoie de petits ajustements : 1410 ordres contre 239, dont 90 % hors des jours d'émission.
+
+**Conclusion honnête** : ne PAS présenter cette stratégie comme génératrice d'alpha statistiquement significatif. C'est un **beta de momentum géré**, avec un drawdown supérieur à celui d'une stratégie à bascule défensive — l'exemple pédagogique de la limite du momentum dual « rotation pure » sans overlay de protection. Le défaut corrigé ci-dessus donne une seconde leçon : un CAGR qui bat le marché se vérifie d'abord sur les positions détenues, avant d'être attribué au signal. Le companion naturel est la DualMomentum (avec TLT) — un contre-exemple documenté (TLT a saboté 2020-2023) — cf. [DualMomentum/README](../DualMomentum/README.md). Les deux illustrent le **même compromis** : un diversifiant qui aide dans un régime nuit dans l'autre.
 
 ## Variante standalone (`main.py`) : rééquilibrage déplacé hors de la tranche de minuit (#20264)
 
@@ -82,29 +88,29 @@ Les quatre prédictions tiennent :
 
 Le 3 juillet 2017, la sélection ne change pas (QQQ et SPY) : le rééquilibrage ne fait qu'ajuster les quantités. Le 3 juillet 2023, il vend l'or et passe sur QQQ et SPY un mois plus tôt que la variante avant. L'écart de Sharpe (+0,005) reste sous le seuil de 0,05 fixé d'avance.
 
-Ces chiffres portent sur la variante standalone, pas sur la variante Framework mesurée plus haut. Ils ne sont pas un verdict de stratégie : il s'agit de la correction de deux défauts, mesurée sur des fenêtres déjà vues. La variante Framework (`alpha_model.py`) porte la même garde de mois et le même appel d'historique. Elle n'est ni corrigée ni mesurée ici.
+Ces chiffres portent sur la variante standalone. Ils ne sont pas un verdict de stratégie : il s'agit de la correction de deux défauts, mesurée sur des fenêtres déjà vues. La variante Framework (`alpha_model.py`) a reçu les deux mêmes correctifs dans #20388, mesurés avec celui des insights `FLAT` dans le tableau du haut.
 
 ## Comment exécuter
 
-**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/DualMomentumNoTLT"`
-**QC Cloud :** Déployé comme projet 31244186 (variante Framework avec `alpha_model.py`).
+**Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/DualMomentumNoTLT"` (variante standalone, `main.py`).
+**QC Cloud :** pour la variante Framework, déployer `main_framework.py` sous le nom `main.py`, avec `alpha_model.py`. Le projet QC 31244186 porte cette variante dans sa version d'avant #20388.
 
 ## Architecture
 
-Le projet embarque **deux implémentations** de la même stratégie, qui diffèrent en turnover :
+Le projet embarque **deux implémentations** de la même stratégie :
 
-- **`alpha_model.py` + `main.py` (Framework, déployée/backtestée)** — version AlphaModel QC : `DualMomentumAlpha` (émission mensuelle d'insights prix 30 jours) + `InsightWeightingPortfolioConstructionModel` + `ImmediateExecutionModel`. **C'est la version déployée et backtestée ci-dessus.** Le docstring cible explicitement « Sharpe within ±15 % du standalone » — les deux variantes ne sont donc pas identiques par construction.
-- **`main.py` (standalone)** — version `QCAlgorithm` directe qui positionne les holdings mensuellement sans passage par insights. Logiquement équivalente mais **turnover plus faible** (pas d'expiration/churn d'insights).
+- **`main_framework.py` + `alpha_model.py` (Framework)** — version AlphaModel QC : `DualMomentumAlpha` (émission mensuelle d'insights prix 30 jours) + `InsightWeightingPortfolioConstructionModel` + `ImmediateExecutionModel`. C'est la variante mesurée dans le tableau du haut. Son docstring vise un « Sharpe within ±15 % du standalone » ; après #20388, l'écart mesuré est de 1 %.
+- **`main.py` (standalone)** — version `QCAlgorithm` directe qui rééquilibre les positions une fois par mois, sans passer par des insights. C'est elle que lance `lean backtest`.
 - `config_framework.json` — configuration QC Framework.
 - `quantbook.ipynb` — recherche (analyse des signaux momentum).
 - `dual_momentum_notl_analysis.png` — figure d'analyse.
 
-**Note doc-honesty** : les métriques ci-dessus sont celles de la **variante Framework** (2238 ordres sur 2516 jours, churn d'expiration d'insights). La variante standalone, à turnover plus faible, donnerait des frais de transaction moindres et possiblement un Sharpe légèrement différent (cible ±15 %). Backtester les deux et comparer est un exercice pédagogique pertinent.
+**Ce qui distingue encore les deux variantes** : le nombre d'ordres. Sans fonction de rééquilibrage, `InsightWeightingPortfolioConstructionModel` recalcule ses cibles chaque jour tant que les insights sont actifs, et envoie un petit ajustement dès que les prix ont fait dériver les poids : 1410 ordres en dix ans contre 239 pour la variante standalone, et 1 606 $ de frais contre 434 $. Passer une fonction de rééquilibrage mensuelle au modèle de construction de portefeuille est un exercice pédagogique pertinent ; il n'est pas mesuré ici.
 
 ## Concepts enseignés
 
 - **Momentum dual** (Antonacci 2014) : combinaison d'un filtre **absolu** (rendement > 0) et d'un classement **relatif** (top-N).
 - **Trade-off de diversification** : un même actif (TLT) peut être nuisance dans un régime (hausses de taux) et refuge dans un autre (flight-to-quality) — retirer un diversifiant est un pari sur le régime futur.
-- **Momentum rotation vs safe-haven switch** : comparer le drawdown de cette stratégie (34.5 %, rotation pure) à celui du Trend-Following (15 %, avec bascule safe-haven) isole la valeur de l'overlay défensif.
-- **Probabilistic Sharpe Ratio (PSR)** : un CAGR supérieur au marché ≠ skill statistiquement significative (5.98 % ici).
-- **Variante Framework vs standalone** : l'architecture AlphaModel + Insight-weighting PCM introduit un turnover (expiration d'insights) que n'a pas la version directe — illustration qu'un même énoncé de stratégie peut donner des métriques différentes selon le harnais QC.
+- **Momentum rotation vs safe-haven switch** : comparer le drawdown de cette stratégie (21.5 %, rotation pure) à celui du Trend-Following (15 %, avec bascule safe-haven) isole la valeur de l'overlay défensif.
+- **Probabilistic Sharpe Ratio (PSR)** : un Sharpe positif ≠ skill statistiquement significative (1.4 % ici).
+- **Variante Framework vs standalone** : un même énoncé de stratégie peut donner des métriques différentes selon le harnais QC. Ici, un insight `FLAT` sans poids, ignoré par le modèle de construction de portefeuille, faisait porter au compte jusqu'à 1.7 fois sa valeur nette ; une fois corrigé, il reste l'écart de turnover dû au re-ciblage quotidien.
