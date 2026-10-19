@@ -3584,15 +3584,29 @@ theorem tricolorable_forward_redraw {d₁ d₂ : KnotDiagram} (hred : Redraws d�
       unfold KnotDiagram.colorAtNat
       rw [dif_neg (by omega : d₂.numEdges ≠ 0), dif_neg (by omega : d₁.numEdges ≠ 0)]
       simp only [Nat.mod_eq_of_lt (by omega : e l - 1 < d₂.numEdges)]
-      rw [show (e l - 1) + 1 = e l from by omega, Equiv.symm_apply_apply]
+      -- Nat-valued equality proved separately (pure-Nat motive), then lifted to
+      -- a Fin equality by Fin.ext and to colours by congrArg, in term mode:
+      -- TriColoring is a semireducible def, and a rewrite crossing a colouring
+      -- argument fails its motive at the implicit transparency level
+      -- (measured 2026-10-19, Invariant_en.lean:3587).
+      have hval : (e.symm (e l - 1 + 1) - 1) % d₁.numEdges = (l - 1) % d₁.numEdges := by
+        rw [show (e l - 1) + 1 = e l from by omega, Equiv.symm_apply_apply]
+      exact congrArg (coloring : Fin d₁.numEdges → TriColor)
+        (Fin.ext hval : (⟨(e.symm (e l - 1 + 1) - 1) % d₁.numEdges,
+          Nat.mod_lt _ hpos1⟩ : Fin d₁.numEdges)
+          = ⟨(l - 1) % d₁.numEdges, Nat.mod_lt _ hpos1⟩)
     · intro i
       have hi1 : 1 ≤ i.val + 1 ∧ i.val + 1 ≤ d₁.numEdges := ⟨by omega, by omega⟩
       have hei := hw₃ (i.val + 1) hi1.1 hi1.2
       simp only [Nat.mod_eq_of_lt (by omega : e (i.val + 1) - 1 < d₂.numEdges)]
-      rw [show (e (i.val + 1) - 1) + 1 = e (i.val + 1) from by omega,
-        Equiv.symm_apply_apply,
-        show i.val + 1 - 1 = i.val from by omega,
-        Nat.mod_eq_of_lt i.isLt]
+      have hval : (e.symm (e (i.val + 1) - 1 + 1) - 1) % d₁.numEdges = i.val := by
+        rw [show (e (i.val + 1) - 1) + 1 = e (i.val + 1) from by omega,
+          Equiv.symm_apply_apply,
+          show i.val + 1 - 1 = i.val from by omega,
+          Nat.mod_eq_of_lt i.isLt]
+      exact congrArg (coloring : Fin d₁.numEdges → TriColor)
+        (Fin.ext hval : (⟨(e.symm (e (i.val + 1) - 1 + 1) - 1) % d₁.numEdges,
+          Nat.mod_lt _ hpos1⟩ : Fin d₁.numEdges) = i)
   refine ⟨f, ?_, by omega, ?_⟩
   · intro c' hc'
     obtain ⟨c, hc, rfl⟩ := List.mem_map.mp (hperm.mem_iff.mp hc')
@@ -3604,17 +3618,27 @@ theorem tricolorable_forward_redraw {d₁ d₂ : KnotDiagram} (hred : Redraws d�
     have w2 := hw₃ c.e2 a2 b2
     have w3 := hw₃ c.e3 a3 b3
     have w4 := hw₃ c.e4 a4 b4
-    rw [hfkey c.e1 a1 b1, hfkey c.e2 a2 b2, hfkey c.e3 a3 b3, hfkey c.e4 a4 b4]
-    exact ⟨⟨w1.1, w1.2, w2.1, w2.2, w3.1, w3.2, w4.1, w4.2⟩, hc24, hfox⟩
+    -- Colour (in)equalities transported in term mode: a rewrite whose motive
+    -- crosses a colouring application fails (TriColoring semireducible) -- the
+    -- hfkey equations are composed through Eq.trans instead.
+    have htr : ∀ l m, 1 ≤ l → l ≤ d₁.numEdges → 1 ≤ m → m ≤ d₁.numEdges →
+        (d₂.colorAtNat (↑f) (e l) = d₂.colorAtNat (↑f) (e m) ↔
+          d₁.colorAtNat (↑coloring) l = d₁.colorAtNat (↑coloring) m) := by
+      intro l m hl1 hl2 hm1 hm2
+      exact ⟨fun h => (hfkey l hl1 hl2).symm.trans (h.trans (hfkey m hm1 hm2)),
+        fun h => (hfkey l hl1 hl2).trans (h.trans (hfkey m hm1 hm2).symm)⟩
+    refine ⟨⟨w1.1, w1.2, w2.1, w2.2, w3.1, w3.2, w4.1, w4.2⟩,
+      (htr c.e2 c.e4 a2 b2 a4 b4).mpr hc24, ?_⟩
+    rcases hfox with ⟨h12, h23⟩ | ⟨h12, h23, h13⟩
+    · exact Or.inl ⟨(htr c.e1 c.e2 a1 b1 a2 b2).mpr h12,
+      (htr c.e2 c.e3 a2 b2 a3 b3).mpr h23⟩
+    · exact Or.inr ⟨fun heq => h12 ((htr c.e1 c.e2 a1 b1 a2 b2).mp heq),
+      fun heq => h23 ((htr c.e2 c.e3 a2 b2 a3 b3).mp heq),
+      fun heq => h13 ((htr c.e1 c.e3 a1 b1 a3 b3).mp heq)⟩
   · obtain ⟨i, j, hneij⟩ := hused
-    have hi1 : 1 ≤ i.val + 1 ∧ i.val + 1 ≤ d₁.numEdges := ⟨by omega, by omega⟩
-    have hj1 : 1 ≤ j.val + 1 ∧ j.val + 1 ≤ d₁.numEdges := ⟨by omega, by omega⟩
-    have hei := hw₃ (i.val + 1) hi1.1 hi1.2
-    have hej := hw₃ (j.val + 1) hj1.1 hj1.2
     refine ⟨⟨(e (i.val + 1) - 1) % d₂.numEdges, Nat.mod_lt _ hpos2⟩,
             ⟨(e (j.val + 1) - 1) % d₂.numEdges, Nat.mod_lt _ hpos2⟩, ?_⟩
-    rw [hfval i, hfval j]
-    exact hneij
+    exact fun heq => hneij ((hfval i).symm.trans (heq.trans (hfval j)))
 
 /-- Tricolorability is invariant along a redraw (link 8, route 1): the
 backward direction is the direct transfer along the symmetric redraw. -/
