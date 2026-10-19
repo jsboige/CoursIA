@@ -135,15 +135,34 @@ verified on the example. -/
 theorem eigenvalue_neg_one_sq : (-1 : ℂ) ^ 2 = 1 := by
   norm_num
 
-/-- **Documentary statement (not proved — beyond Mathlib).**
-Grothendieck's quasi-unipotence theorem (SGA 7, lecture XII, theorem 1.1;
-see also *Weil II*, Deligne 1980): the monodromy of a smooth family
-parametrized by a punctured disc is quasi-unipotent — some power of the
-transformation is unipotent, in other words all its eigenvalues are roots
-of unity. This `Prop` records the statement for memory; Mathlib 4 does not
-formalize it (no theory of parametrized smooth families nor of ℓ-adic
-monodromy), and the present module verifies its conclusion on the
-computable example `z ↦ z²` above. -/
+/-- **Documentary statement (not proved — beyond Mathlib), not to be
+confused with its trivial algebraic implication.**
+
+Grothendieck's deep quasi-unipotence theorem (SGA 7, lecture XII,
+theorem 1.1; see also *Weil II*, Deligne 1980) states that, for any
+smooth family parametrized by a punctured disc, there exists an integer
+`n` such that `T^n` is **unipotent** (i.e. `1 + N` for some
+`N` nilpotent, not trivially the identity) — conclusion: the eigenvalues
+of `T` are roots of unity.
+
+This `Prop` states the **trivial algebraic implication** one obtains
+by replacing “unipotent” with “of finite order” in the antecedent:
+if `T` is of finite order (`T^n = id` for some `n`), then its eigenvalues
+are roots of unity. This is a special case — and indeed strictly
+more restrictive, since unipotent does not imply finite order (a
+Jordan block `1 + N` with `N ≠ 0` is never of finite order). The
+deep theorem is **weaker in the antecedent**, which is exactly what
+makes it non-trivial.
+
+**Honest boundary.** Mathlib 4 formalizes neither the deep theorem
+(no theory of parametrized smooth families nor of ℓ-adic
+monodromy), nor the family of examples where the monodromy is of
+finite order. This `Prop` is defined for memory; on the example
+`z ↦ z²`, the monodromy is of order 2
+(`monodromySq_pow_two_eq_id`, `eigenvalue_neg_one_sq`), so the
+trivial implication applies but **we do not claim to have proved the
+deep theorem** — we have only built a `Prop` whose premise “T of finite
+order” is satisfied by the example. -/
 def quasiUnipotenceSGA7 : Prop :=
   ∀ (F : Type) [AddCommGroup F] [Module ℂ F] (T : F →ₗ[ℂ] F),
     (∃ (n : ℕ), 0 < n ∧ ∀ v : F, T^[n] v = v) →
