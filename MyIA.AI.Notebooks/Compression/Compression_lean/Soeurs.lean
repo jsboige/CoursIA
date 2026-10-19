@@ -398,12 +398,12 @@ descentes à droite vers les feuilles 2 et 4, à la profondeur maximale 3. -/
 
 /-- La première maille : échanger le poids 4 (profondeur 3) contre le poids 1
 (profondeur 1) rend 21 − (4−1)·(3−1) = 15. -/
-example : costW (exchangeW desequilibre 4 1 1 4) = 15 := by native_decide
+example : costW (exchangeW desequilibre 4 1 1 4) = 15 := by decide
 
 /-- La seconde maille : échanger le poids 2 (profondeur 3) contre le poids 1
 (profondeur 2) rend 14 — la descente complète 21 → 15 → 14 du carnet 02,
 jusqu'au coût du trie de Huffman pour [1, 1, 2, 4]. -/
-example : costW (exchangeW (exchangeW desequilibre 4 1 1 4) 2 1 1 2) = 14 := by native_decide
+example : costW (exchangeW (exchangeW desequilibre 4 1 1 4) 2 1 1 2) = 14 := by decide
 
 /-- La seconde maille par le corollaire strict : le poids 2 vit à la
 profondeur 3, le poids 1 à la profondeur 2 — l'échange améliore strictement. -/
@@ -411,8 +411,8 @@ example : costW (exchangeW (exchangeW desequilibre 4 1 1 4) 2 1 1 2)
     < costW (exchangeW desequilibre 4 1 1 4) :=
   costW_exchangeW_lt
     (exchangeW desequilibre 4 1 1 4) 2 1
-    (by native_decide) (by native_decide)
-    (by native_decide) (by native_decide)
-    (by native_decide)
+    (by decide) (by decide)
+    (by decide) (by decide)
+    (by decide)
 
 end CompressionLean
