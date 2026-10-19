@@ -76,6 +76,7 @@ def default_view(
     reviews: list[dict] | None = None,
     coordinator=_DEFAULT,
     head: str = HEAD,
+    head_ref: str = "feature/une-pr-ordinaire",
 ) -> dict:
     rows = list(reviews) if reviews is not None else []
     if coordinator is _DEFAULT:
@@ -88,6 +89,7 @@ def default_view(
         "isDraft": draft,
         "body": body if body is not None else GRAIN_MED,
         "headRefOid": head,
+        "headRefName": head_ref,
         # baseRefName is the branch the PR is targeting. The merge-ready
         # defense-in-depth check (#19002) refuses anything other than
         # `main`. Tests that need a non-`main` base override this field.
@@ -372,11 +374,52 @@ def test_frozen_umbrella_qc_density_round2():
     assert mr.frozen_umbrella_exclusion("fix: #116010", None) is None
 
 
-def test_skip_grain_deep(tmp_path):
+def test_grain_deep_approuve_passe_le_filtre(tmp_path):
+    # Q131 (2026-10-19) : DEEP entre dans le perimetre, sous l'approbation
+    # prealable du coordinateur posee a la tete (default_view la fournit).
     runner = ScriptedRunner(views={123: default_view(body=GRAIN_DEEP)})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    assert lines[-1]["reason"] == "grain-tier-DEEP"
+    assert lines[-1]["verdict"] == "merged" and lines[-1]["merged"] is True
+
+
+def test_grain_deep_sans_approbation_du_coordinateur_skip(tmp_path):
+    # Q131 : rien ne se merge sans la validation prealable du coordinateur.
+    runner = ScriptedRunner(views={123: default_view(body=GRAIN_DEEP, coordinator=None)})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+    assert lines[-1]["merged"] is False
+
+
+def test_hors_flotte_sans_tag_approuve_passe_le_filtre(tmp_path):
+    # Q131 : une PR de la session cloud (branche claude/*) n'a pas de tag
+    # Grain ; l'absence de tag ne l'exclut plus, l'approbation la gouverne.
+    view = default_view(body="Hors flotte -- session cloud.", head_ref="claude/fix-readme-links")
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged" and lines[-1]["merged"] is True
+
+
+def test_hors_flotte_sans_approbation_du_coordinateur_skip(tmp_path):
+    view = default_view(
+        body="Hors flotte -- session cloud.",
+        head_ref="claude/fix-readme-links",
+        coordinator=None,
+    )
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+    assert lines[-1]["merged"] is False
+
+
+def test_grain_exclusion_prefixe_claude_strict():
+    # Seul le prefixe de branche exact ouvre l'exemption de tag.
+    assert mr.grain_exclusion("pas de tag", "claude/x") is None
+    assert mr.grain_exclusion("pas de tag", "feature/claude/x") == "grain-tier-unparsable"
+    assert mr.grain_exclusion("pas de tag", None) == "grain-tier-unparsable"
 
 
 def test_skip_grain_unparsable(tmp_path):
@@ -1112,6 +1155,33 @@ def test_slot_clean_merges(tmp_path):
     assert "--base origin/main" in slot_cmd
     # La tete passee est celle du gate (post-merge), pas celle de la vue.
     assert f"--head {HEAD}" in slot_cmd
+
+
+def test_slot_fetches_pr_head_before_organ(tmp_path):
+    """L'organe lit l'arbre de la tete par `git` sans la rapatrier : le fetch
+    de `pull/<N>/head` precede l'appel (mesure du 17/10, #20468 et #20471
+    sautees en `slot-collision-unreadable` faute d'objet local)."""
+    view = default_view(files=(SLOT_NOTEBOOK,))
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "would-merge"
+    flat = runner.flat()
+    fetch_idx = next(i for i, f in enumerate(flat)
+                     if f.startswith("git ") and "pull/123/head" in f)
+    slot_idx = next(i for i, f in enumerate(flat)
+                    if "check_slot_reservation.py" in f)
+    assert fetch_idx < slot_idx
+
+
+def test_slot_fetch_failure_is_fail_closed(tmp_path):
+    """Fetch en echec : skip nomme, l'organe n'est pas appele sur une tete
+    qu'il ne pourrait pas lire."""
+    view = default_view(files=(SLOT_NOTEBOOK,))
+    runner = ScriptedRunner(views={123: view}, fetch_rc=128)
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert lines[0]["verdict"] == "skipped"
+    assert lines[0]["reason"] == "slot-collision-unreadable:fetch"
+    assert not any("check_slot_reservation.py" in f for f in runner.flat())
 
 
 def test_slot_collision_reserved_by_open_pr_skips(tmp_path):
