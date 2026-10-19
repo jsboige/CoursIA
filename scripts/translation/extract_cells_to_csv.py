@@ -437,9 +437,18 @@ def main() -> int:
     args = parser.parse_args()
 
     # `input` est une liste (nargs="+"). On accepte des chemins individuels ou
-    # des répertoires (récursif). Les chemins inexistants sont signalés via
-    # iter_notebooks() mais ne font pas échouer le run si au moins un notebook
-    # est trouvé.
+    # des répertoires (récursif). Les chemins inexistants sont écartés du
+    # traitement mais LISTÉS en warning (#21006 : l'écart silencieux a masqué
+    # des invocations aux chemins pollués — seuls les compteurs restaient, et
+    # un traitement partiel se lisait comme un traitement complet). Le run
+    # échoue (exit 2) si AUCUN input n'est valide.
+    dropped_inputs = [p for p in args.input if not p.exists()]
+    if dropped_inputs:
+        print(
+            "WARNING : input(s) inexistant(s), écarté(s) du traitement : "
+            + ", ".join(str(p) for p in dropped_inputs),
+            file=sys.stderr,
+        )
     existing_inputs = [p for p in args.input if p.exists()]
     if not existing_inputs:
         print(f"ERROR : aucun chemin d'input valide (reçus : {args.input}).", file=sys.stderr)
