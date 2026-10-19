@@ -76,7 +76,7 @@ import Mathlib.Tactic
 - `Formalization.Analysis.RoPECoherence` — **module absent** du dépôt upstream.
 
 ### 2.3 Le code n'est pas un lake incomplet — il est **incomplet par construction**
-Contrairement à l'hypothèse initiale (manque de lakefile), le problème n'est **pas** un packaging raté. Le code **référence** des modules qui n'ont jamais été écrits. Le dépôt upstream livre une promesse (`Lean 4 Verified (0 sorry)`) qui n'est pas tenue par les faits : un module qui dépend de 2 modules absents ne peut pas être vérifié, et la badge « 0 sorry » n'est pas falsifiable en l'état.
+Contrairement à l'hypothèse initiale (manque de lakefile), le problème n'est **pas** un packaging raté. Le code **référence** des modules qui n'ont jamais été écrits. Le dépôt upstream livre une promesse (`Lean 4 Verified (0 sorry)`) qui n'est pas tenue par les faits : un module qui dépend de modules absents ne peut pas être vérifié, et le badge « 0 sorry » n'est pas falsifiable en l'état.
 
 ## 3. Élimination des options de Pli 2
 
