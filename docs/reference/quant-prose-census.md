@@ -99,7 +99,7 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 |---|---|
 | `MyIA.AI.Notebooks\ML\ML.Net\ML-6-ONNX-Python.ipynb` | 32 |
 | `MyIA.AI.Notebooks\ML\ML.Net\ML-6-ONNX.ipynb` | 24 |
-| `MyIA.AI.Notebooks\ML\DataScienceWithAgents\01-PythonForDataScience\notebooks\1.2-Manipulation_de_Donnees_avec_NumPy.ipynb` | 22 |
+| `MyIA.AI.Notebooks\ML\DataScienceWithAgents\01-Python-For-Data-Science\notebooks\1.2-Manipulation_de_Donnees_avec_NumPy.ipynb` | 22 |
 | `MyIA.AI.Notebooks\ML\DataScienceWithAgents\02-ML-Cours\2.5-Biais-Variance-CV-ROC.ipynb` | 22 |
 | `MyIA.AI.Notebooks\ML\ML.Net\ML-4-Evaluation-Python.ipynb` | 20 |
 

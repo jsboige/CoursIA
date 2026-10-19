@@ -7,7 +7,10 @@ par Playwright headed — pattern injecte par hash d'URL, visuals
 declares dans le code (``.pianoroll()`` / ``.scope()``), audio exporte
 par le moteur offline NATIF du REPL (Export to WAV, aucune
 instrumentation WebAudio, aucun routage systeme VB-Cable), video
-capturee par ``canvas.captureStream`` + MediaRecorder, mux ffmpeg.
+capturee par ``record_video`` du contexte Playwright (page ENTIERE :
+editeur de code + canvas, defaut depuis le fix critere 5a) ou, en
+option ``--capture-mode canvas``, par ``canvas.captureStream`` +
+MediaRecorder (canvas seul, comportement historique), mux ffmpeg.
 Etape 2 (narration poetique timestampee) livree : segments
 ``{start_s, end_s, text, intensity}`` generes par moteur template
 deterministe (defaut, offline) ou moteur LLM optionnel (client
@@ -63,6 +66,7 @@ import math
 import os
 import re
 import sys
+import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -767,8 +771,9 @@ def run_pipeline(
     playwright_url: str = "https://strudel.cc/",
     ffmpeg_loudnorm_lufs: float = -14.0,
     capture: bool = False,
-    capture_seconds: int = 30,
+    capture_seconds: Optional[int] = None,
     headless: bool = False,
+    capture_mode: str = "page",
     narration_engine: str = "template",
     narration_json_path: Optional[str] = None,
     tts_engine: Optional[str] = None,
@@ -806,6 +811,11 @@ def run_pipeline(
     dicts segments), 'tts', 'browser_capture', 'visualizer',
     'final_mix', 'verdict'.
     """
+    # Defaut coherent : sans --capture-seconds explicite, la capture suit
+    # --duration (mesure c.1528 : le defaut fige 30 tronquait une demo
+    # de 180 s a 30,9 s avec 4/11 segments mixes).
+    capture_seconds = _resolve_capture_seconds(capture_seconds, duration_seconds)
+
     strudel = compose_strudel(
         style_name=style_name,
         duration_seconds=duration_seconds,
@@ -853,6 +863,7 @@ def run_pipeline(
             capture_seconds=capture_seconds,
             cycles=cycles_for_duration(style_cps(style_name), capture_seconds) + 1,
             headless=headless,
+            capture_mode=capture_mode,
         )
         browser_capture = (
             f"LIVREE : {capture_result['final_mp4']} "
@@ -864,6 +875,7 @@ def run_pipeline(
             # loudnorm + fade-out coordonne) — remplace le mux PoC.
             video_webm = Path(str(capture_result["video_webm"]))
             audio_wav = Path(str(capture_result["audio_wav"]))
+            trim_start = capture_result.get("trim_start")
             try:
                 duration_v = probe_duration_ffprobe(video_webm)
                 duration_src = "video"
@@ -873,6 +885,14 @@ def run_pipeline(
                 # toujours la duree — meme fenetre de capture.
                 duration_v = probe_duration_ffprobe(audio_wav)
                 duration_src = "wav navigateur (webm sans Cues)"
+            if trim_start is not None:
+                # Mode page : la webm brute inclut le preambule (chargement,
+                # play, warmup) — la fenetre utile commence a trim_start — ET
+                # la queue d'export (clics menu/export apres l'attente) : la
+                # fenetre se borne a capture_seconds par definition.
+                duration_v = max(0.0, duration_v - float(trim_start))
+                duration_v = min(duration_v, float(capture_seconds))
+                duration_src = f"video (webm page entiere, -ss {float(trim_start):.1f} s, fenetre {duration_v:.0f} s)"
             audible = [
                 t for t in tts_tracks if float(t["start_s"]) < duration_v - 1.0
             ]
@@ -880,6 +900,7 @@ def run_pipeline(
                 video_webm, audio_wav, audible, Path(output_path),
                 loudnorm_lufs=ffmpeg_loudnorm_lufs,
                 duration_override=duration_v,
+                video_trim_start=float(trim_start) if trim_start is not None else None,
             )
             proc = subprocess.run(
                 mix_cmd, capture_output=True, text=True,
@@ -981,21 +1002,40 @@ async (durationMs) => {
 """
 
 
-def mux_ffmpeg(video_webm: Path, audio_wav: Path, out_mp4: Path) -> List[str]:
+def mux_ffmpeg(
+    video_webm: Path,
+    audio_wav: Path,
+    out_mp4: Path,
+    trim_start: Optional[float] = None,
+    trim_duration: Optional[float] = None,
+) -> List[str]:
     """Construit la commande de mux ffmpeg video+audio -> mp4 (H.264/AAC).
 
     ``-shortest`` aligne la duree sur la piste la plus courte : la capture
     video (reelle) et le WAV exporte (cycles arrondis) different de <1 cycle.
+
+    ``trim_start``/``trim_duration`` (secondes) decoupent la FENETRE VIDEO
+    dans la capture brute — requis en mode ``page`` : ``record_video`` filme
+    toute la duree de vie du contexte (chargement, clic play, warmup, export
+    WAV inclus) alors que le livrable ne couvre que les ``capture_seconds``
+    posterieurs au warmup. ``-ss`` avant le premier ``-i`` (fast seek sur la
+    piste video seule), ``-t`` borne la duree de la sortie (les deux pistes).
+    L'audio, lui, demarre a 0 (export offline du pattern depuis son debut) —
+    meme semantique temporelle que le recorder in-page historique.
     """
-    return [
-        "ffmpeg", "-y",
-        "-i", str(video_webm),
-        "-i", str(audio_wav),
+    cmd = ["ffmpeg", "-y"]
+    if trim_start is not None:
+        cmd += ["-ss", f"{trim_start:.3f}"]
+    cmd += ["-i", str(video_webm), "-i", str(audio_wav)]
+    if trim_duration is not None:
+        cmd += ["-t", f"{trim_duration:.3f}"]
+    cmd += [
         "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p",
         "-c:a", "aac", "-b:a", "192k",
         "-shortest",
         str(out_mp4),
     ]
+    return cmd
 
 
 # --- Etape 3 : TTS expressif via le gateway tts-multi (#15604) ----------------
@@ -1177,6 +1217,7 @@ def mix_final_ffmpeg(
     loudnorm_lufs: float = -14.0,
     fade_out_s: float = 3.0,
     duration_override: Optional[float] = None,
+    video_trim_start: Optional[float] = None,
 ) -> List[str]:
     """Etape 6 : commande de mixage final ffmpeg (critere 4 : -14 LUFS
     sans clipping ; fade-out coordonne musique + video).
@@ -1190,6 +1231,12 @@ def mix_final_ffmpeg(
     puis ``afade`` sortant, et fade video synchronise sur ``[0:v]``.
     Retourne la commande complete (testable en unitaire sans
     l'executer).
+
+    ``video_trim_start`` (mode page, fix critere 5a) : la webm
+    ``record_video`` filme TOUT le contexte (chargement + play + warmup
+    + capture + export) — ``-ss`` avant l'input video extrait la fenetre
+    utile, et ``duration`` (donc le fade) se mesure sur la FENETRE, pas
+    sur la webm brute. Le caller retranche trim_start du probe.
     """
     duration = (
         duration_override if duration_override is not None
@@ -1197,8 +1244,10 @@ def mix_final_ffmpeg(
     )
     fade_start = max(0.0, duration - fade_out_s)
 
-    cmd: List[str] = [
-        "ffmpeg", "-y",
+    cmd: List[str] = ["ffmpeg", "-y"]
+    if video_trim_start is not None:
+        cmd += ["-ss", f"{video_trim_start:.3f}"]
+    cmd += [
         "-i", str(video_webm),
         "-i", str(browser_wav),
     ]
@@ -1229,6 +1278,43 @@ def mix_final_ffmpeg(
     return cmd
 
 
+def _resolve_capture_seconds(
+    capture_seconds: Optional[int], duration_seconds: int
+) -> int:
+    """Defaut coherent de la duree de capture (etape 4, #15604).
+
+    Sans valeur explicite, la capture suit ``duration_seconds`` : le
+    defaut fige 30 tronquait silencieusement une demo de 180 s a
+    30,9 s (mesure c.1528, 4/11 segments mixes). Une valeur explicite
+    (capture plus courte que la musique) reste respectee.
+    """
+    if capture_seconds is not None:
+        return capture_seconds
+    return duration_seconds
+
+
+def _click_play(page: object, url: str, attempts: int = 3) -> None:
+    """Clic play robuste : re-navigation entre tentatives (etape 4).
+
+    Mesure c.1528 : le clic play echoue par timeout ~1 run sur 3
+    (``Locator.click: Timeout 10000ms``) — etat de page variable au
+    chargement du hash strudel. Un re-chargement de l'URL de partage
+    recharge le REPL avec le pattern et suffit a retablir le clic.
+    La derniere tentative echouee remonte telle quelle (echec explicite,
+    pas de fallback silencieux). Orchestration pure : le verdict de
+    capture reste porte par le checksum canvas en aval.
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            page.get_by_role("button", name="play").first.click(timeout=10_000)
+            return
+        except Exception:
+            if attempt == attempts:
+                raise
+            page.goto(url)
+            page.wait_for_timeout(5000)
+
+
 def capture_repl_session(
     pattern: str,
     output_dir: Path,
@@ -1236,6 +1322,7 @@ def capture_repl_session(
     cycles: Optional[int] = None,
     headless: bool = False,
     warmup_seconds: float = 5.0,
+    capture_mode: str = "page",
 ) -> Dict[str, object]:
     """Pilote le REPL strudel.cc et capture la session (etape 4, #15604).
 
@@ -1245,15 +1332,34 @@ def capture_repl_session(
        un user gesture et l'AudioContext live reste suspendu) ;
     3. les visuals declares (``.pianoroll()``/``.scope()`` dans le code)
        animent le canvas — gate par checksum avant l'enregistrement ;
-    4. ``canvas.captureStream`` + MediaRecorder -> webm base64 ;
+    4. capture video : ``capture_mode="page"`` (DEFAUT, fix critere 5a) —
+       ``record_video`` du contexte Playwright filme la page ENTIERE
+       (editeur de code a gauche + canvas a droite, disposition native du
+       REPL) pendant toute la session, la fenetre utile est extraite au
+       mux par ``-ss``/``-t`` mesures a l'horloge du process ; ou
+       ``capture_mode="canvas"`` — recorder in-page historique
+       (``canvas.captureStream`` + MediaRecorder, canvas seul) ;
     5. menu ``export`` -> ``Export to WAV`` : rendu offline NATIF du
        moteur strudel (aucun routage audio systeme), download capture ;
     6. ffmpeg mux -> mp4 (H.264/AAC).
 
+    Le mode ``page`` existe parce que le critere 5a de #15604 exige « le
+    code Strudel » visible dans la video : le canvas seul (mode historique)
+    ne montre QUE la visualisation — constat etabli par lecture visuelle
+    indirecte corroborée mecaniquement (c.6203472737 : 0 % de tons moyens
+    = aucun texte rendu, 7/7 frames sans caractere lisible).
+
     Retourne un dict : ``video_webm``, ``audio_wav``, ``final_mp4``,
-    ``video_bytes``, ``wav_bytes``, ``mp4_bytes``, ``cycles``.
+    ``video_bytes``, ``wav_bytes``, ``mp4_bytes``, ``cycles``,
+    ``capture_mode``.
     """
     import base64
+
+    # Garde AVANT l'import playwright : le contrat "echec explicite sans
+    # navigateur" doit aussi tenir sur une machine sans playwright installe
+    # (CI) -- sinon la garde meurt en ModuleNotFoundError avant de tirer.
+    if capture_mode not in ("page", "canvas"):
+        raise ValueError(f"capture_mode inconnu : {capture_mode!r} (page|canvas)")
 
     from playwright.sync_api import sync_playwright
 
@@ -1262,14 +1368,29 @@ def capture_repl_session(
     audio_wav = output_dir / "capture.wav"
     final_mp4 = output_dir / "capture_final.mp4"
     url = build_repl_url(pattern)
+    trim_start: Optional[float] = None
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=headless)
-        page = browser.new_page(viewport={"width": 1280, "height": 1024})
+        if capture_mode == "page":
+            # record_video filme la page entiere DES la premiere navigation :
+            # l'origine de la piste video est la creation du contexte.
+            context = browser.new_context(
+                viewport={"width": 1280, "height": 1024},
+                record_video_dir=str(output_dir),
+                record_video_size={"width": 1280, "height": 1024},
+            )
+            page = context.new_page()
+            video = page.video
+            t_video_zero = time.monotonic()
+        else:
+            context = None
+            page = browser.new_page(viewport={"width": 1280, "height": 1024})
+            video = None
         try:
             page.goto(url)
             page.wait_for_timeout(5000)
-            page.get_by_role("button", name="play").first.click(timeout=10_000)
+            _click_play(page, url)
             page.wait_for_timeout(int(warmup_seconds * 1000))
 
             h1 = page.evaluate(_CANVAS_CHECKSUM_JS)
@@ -1281,8 +1402,14 @@ def capture_repl_session(
                     "pattern (compose_strudel(visuals=True)) ou play non effectif"
                 )
 
-            rec = page.evaluate(_RECORDER_JS, int(capture_seconds * 1000))
-            video_webm.write_bytes(base64.b64decode(rec["b64"]))
+            if capture_mode == "page":
+                # Fenetre utile : capture_seconds a partir de maintenant ;
+                # l'attente est consommee ici (la video tourne deja).
+                trim_start = time.monotonic() - t_video_zero
+                page.wait_for_timeout(int(capture_seconds * 1000))
+            else:
+                rec = page.evaluate(_RECORDER_JS, int(capture_seconds * 1000))
+                video_webm.write_bytes(base64.b64decode(rec["b64"]))
 
             # Export WAV natif : le bouton play est devenu '...' (lecture en
             # cours) ; l'export stoppe la lecture lui-meme (cyclist stop).
@@ -1298,12 +1425,31 @@ def capture_repl_session(
             with page.expect_download(timeout=300_000) as download_info:
                 page.get_by_role("button", name="Export to WAV").click()
             download_info.value.save_as(str(audio_wav))
+
+            if capture_mode == "page":
+                # La webm n'est finalisee qu'a la fermeture du contexte ;
+                # on la recupere puis la deplace sous son nom canonique.
+                assert video is not None
+                recorded = Path(video.path())
+                context.close()
+                if not recorded.is_file() or recorded.stat().st_size < 10_000:
+                    raise RuntimeError(
+                        "record_video: webm absente ou < 10 Ko — la capture "
+                        "page entiere n'a pas produit de piste exploitable"
+                    )
+                recorded.replace(video_webm)
         finally:
             browser.close()
 
     import subprocess
 
-    cmd = mux_ffmpeg(video_webm, audio_wav, final_mp4)
+    cmd = mux_ffmpeg(
+        video_webm,
+        audio_wav,
+        final_mp4,
+        trim_start=trim_start,
+        trim_duration=float(capture_seconds) if trim_start is not None else None,
+    )
     proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
     if proc.returncode != 0:
         raise RuntimeError(f"ffmpeg a echoue ({proc.returncode}) : {proc.stderr[-800:]}")
@@ -1316,6 +1462,8 @@ def capture_repl_session(
         "wav_bytes": audio_wav.stat().st_size,
         "mp4_bytes": final_mp4.stat().st_size,
         "cycles": cycles,
+        "capture_mode": capture_mode,
+        "trim_start": trim_start,
     }
 
 
@@ -1383,20 +1531,30 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--capture",
         action="store_true",
-        help="etape 4 : piloter strudel.cc (Playwright headed), capturer le "
-             "canvas (MediaRecorder) + exporter le WAV natif, mux ffmpeg",
+        help="etape 4 : piloter strudel.cc (Playwright), capturer la video "
+             "(cf --capture-mode) + exporter le WAV natif, mux ffmpeg",
     )
     parser.add_argument(
         "--capture-seconds",
         type=int,
-        default=30,
-        help="duree de capture video en secondes (default: 30)",
+        default=None,
+        help="duree de capture video en secondes (default: suit --duration "
+             "— le defaut fige 30 tronquait la demo, mesure c.1528)",
+    )
+    parser.add_argument(
+        "--capture-mode",
+        choices=("page", "canvas"),
+        default="page",
+        help="etape 4 : 'page' filme la page REPL ENTIERE via record_video "
+             "(editeur de code + canvas — defaut, fix critere 5a #15604) ; "
+             "'canvas' = recorder in-page historique (canvas seul)",
     )
     parser.add_argument(
         "--headless",
         action="store_true",
-        help="lancer Chromium headless (DECONSEILLE : le canvas REPL ne "
-             "s'anime pas sans fenetre compositée — mesure c.580)",
+        help="lancer Chromium headless (mesure c.1528 : capture 180 s "
+             "verifiee headless, le checksum canvas en aval reste le "
+             "garde contre un canvas immobile — cf mesure c.580 anterieure)",
     )
     parser.add_argument(
         "--narration-engine",
@@ -1426,6 +1584,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             capture=args.capture,
             capture_seconds=args.capture_seconds,
             headless=args.headless,
+            capture_mode=args.capture_mode,
             narration_engine=args.narration_engine,
             narration_json_path=args.narration_json,
             tts_engine=args.tts_engine,

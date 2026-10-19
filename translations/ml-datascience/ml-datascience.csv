@@ -1,5 +1,5 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,translate_policy
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,4923354c,markdown,fr,dd42809d6cb46822,"# 1.2 - Manipulation de Données avec NumPy
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,4923354c,markdown,fr,dd42809d6cb46822,"# 1.2 - Manipulation de Données avec NumPy
 
 **Navigation** : [Index](../../README.md) | [>> 1.3 Pandas](1.3-Analyse_de_Donnees_avec_Pandas.ipynb)
 
@@ -21,17 +21,17 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2
 ---
 
 Bienvenue dans ce notebook dédié à NumPy, la bibliothèque fondamentale pour le calcul scientifique en Python.",,,,,,,,dd42809d6cb46822,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,a1d811f2,markdown,fr,b619d3562c95112f,"## Qu'est-ce que NumPy ?
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,a1d811f2,markdown,fr,b619d3562c95112f,"## Qu'est-ce que NumPy ?
 
 NumPy (Numerical Python) est une bibliothèque qui fournit un objet de tableau multi-dimensionnel puissant, des routines pour des opérations rapides sur les tableaux, et des outils pour l'algèbre linéaire, les transformées de Fourier, et les nombres aléatoires.
 
 C'est le socle sur lequel de nombreuses autres bibliothèques de data science (comme Pandas) sont construites.
 
 > **Repère bibliographique.** NumPy est décrit et formalisé dans l'article de référence C. R. Harris et al., *Array programming with NumPy*, Nature, 585:357-362, 2020 (doi:10.1038/s41586-020-2649-2). Cet article présente l'objet `ndarray`, l'écosystème de tableaux N-dimensionnels et les fondations d'interopérabilité sur lesquelles reposent Pandas, SciPy, scikit-learn et la quasi-totalité de la data science Python.",,,,,,,,b619d3562c95112f,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,4d2754f1,markdown,fr,1973751266ab8ead,"## Création d'un tableau (Array)
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,4d2754f1,markdown,fr,1973751266ab8ead,"## Création d'un tableau (Array)
 
 L'objet principal de NumPy est le `ndarray` (n-dimensional array). Créons-en un à partir d'une simple liste Python.",,,,,,,,1973751266ab8ead,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,3ba57b3a,code,fr,6219e8e2de02a05b,"import numpy as np
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,3ba57b3a,code,fr,6219e8e2de02a05b,"import numpy as np
 
 # Création d'un array à partir d'une liste
 ma_liste = [1, 2, 3, 4, 5]
@@ -39,12 +39,12 @@ mon_array = np.array(ma_liste)
 
 print(mon_array)
 print(type(mon_array))",,,,,,,,6219e8e2de02a05b,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,333b6497,markdown,fr,318406a3f58e7861,"## Opérations de base et Vectorisation
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,333b6497,markdown,fr,318406a3f58e7861,"## Opérations de base et Vectorisation
 
 L'un des plus grands avantages de NumPy est sa capacité à effectuer des opérations ""vectorisées"". Cela signifie que vous pouvez appliquer une opération à un tableau entier sans avoir besoin d'écrire une boucle `for`.
 
 Par exemple, pour additionner tous les éléments d'un tableau, nous pouvons utiliser `np.sum()`. La vectorisation repose sur des implémentations pré-compilées (C/Fortran via BLAS/LAPACK) qui contournent l'interpréteur Python — c'est ce qui confère à NumPy son avantage de performance (Harris et al., *Array programming with NumPy*, Nature 585, 2020). C'est cette fonction qui est validée par nos tests.",,,,,,,,318406a3f58e7861,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,8fafc194,code,fr,10f8fbb0797792ee,"# Créons un tableau simple pour le test
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,8fafc194,code,fr,10f8fbb0797792ee,"# Créons un tableau simple pour le test
 array_test = np.array([1, 2, 3])
 
 # Utilisons np.sum() pour calculer la somme
@@ -52,8 +52,8 @@ somme_totale = np.sum(array_test)
 
 print(f""Le tableau : {array_test}"")
 print(f""La somme des éléments : {somme_totale}"")",,,,,,,,10f8fbb0797792ee,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,f8526f14,markdown,fr,cc81d16ebcb0f4dd,Essayez de multiplier le tableau par 2 ci-dessous pour voir la vectorisation en action.,,,,,,,,cc81d16ebcb0f4dd,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,01bc785a,markdown,fr,1ba579ea2c7f474e,"## Exercice 2
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,f8526f14,markdown,fr,cc81d16ebcb0f4dd,Essayez de multiplier le tableau par 2 ci-dessous pour voir la vectorisation en action.,,,,,,,,cc81d16ebcb0f4dd,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,01bc785a,markdown,fr,1ba579ea2c7f474e,"## Exercice 2
 
 Créez un tableau NumPy de 10 éléments allant de 0 a 9, puis calculez :
 1. La somme de tous les éléments
@@ -65,7 +65,7 @@ Indices :
 - ,  pour les statistiques
 - NumPy supporte les opérations élément par élément (ex: )
 ",,,,,,,,1ba579ea2c7f474e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,d9afb18d,code,fr,3c88f117a4dd2cc4,"# Exercice : Multipliez le tableau par 2 et affichez le resultat
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,d9afb18d,code,fr,3c88f117a4dd2cc4,"# Exercice : Multipliez le tableau par 2 et affichez le resultat
 array_exercice = np.array([2, 4, 6, 8, 10])
 
 # TODO: Multipliez chaque element de array_exercice par 2
@@ -75,7 +75,7 @@ resultat = None  # Remplacez None par l'operation appropriee
 print(f""Tableau original : {array_exercice}"")
 print(f""Tableau multiplie par 2 : {resultat}"")
 ",,,,,,,,3c88f117a4dd2cc4,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,6d75d594,markdown,fr,14660875ba86df25,"## Exercice : Statistiques sur un Dataset
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,6d75d594,markdown,fr,14660875ba86df25,"## Exercice : Statistiques sur un Dataset
 
 À vous de pratiquer les opérations vectorisées avec NumPy !
 
@@ -85,7 +85,7 @@ Créez un tableau de données synthétiques et calculez des statistiques descrip
 ### Instructions
 
 ",,,,,,,,14660875ba86df25,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,c2204570,code,fr,00443d5607887ddc,"import numpy as np
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,c2204570,code,fr,00443d5607887ddc,"import numpy as np
 
 # TODO: Créez un tableau de 100 valeurs aléatoires entre 0 et 100
 # Indice: utilisez np.random.randint()
@@ -112,7 +112,7 @@ if donnees is not None and valeurs_sup_50 is not None:
 else:
     print(""Exercice à compléter : remplacez les None par votre code"")
 ",,,,,,,,00443d5607887ddc,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,3bb03fb2,markdown,fr,58c79026afbe3889,"### Exercice 3 : Opérations sur les matrices 2D
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,3bb03fb2,markdown,fr,58c79026afbe3889,"### Exercice 3 : Opérations sur les matrices 2D
 
 NumPy excelle dans les opérations sur les tableaux multidimensionnels. Vous allez créer une matrice 2D (tableau de tableaux) et appliquer des opérations avancees : transposition, produit matriciel et extraction de sous-matrices.
 
@@ -123,7 +123,7 @@ NumPy excelle dans les opérations sur les tableaux multidimensionnels. Vous all
 - `matrice.T` ou `np.transpose(matrice)` pour la transposition
 - `np.dot(A, B)` ou l'opérateur `@` pour le produit matriciel
 - `matrice[0:2, 1:3]` pour extraire une sous-matrice (slicing)",,,,,,,,58c79026afbe3889,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,0afc20fd,code,fr,721ba5f9e26546c2,"# Exercice 3 : Operations sur les matrices 2D
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,0afc20fd,code,fr,721ba5f9e26546c2,"# Exercice 3 : Operations sur les matrices 2D
 # Creez et manipulez une matrice avec NumPy
 
 # Etape 1: Creez une matrice 3x3
@@ -150,7 +150,7 @@ if matrice is not None:
     print(f""\nSous-matrice 2x2 :\n{sous_matrice}"")
 else:
     print(""Exercice 3 a completer : operations sur les matrices 2D"")",,,,,,,,721ba5f9e26546c2,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,np12concl,markdown,fr,4ffff9c17aa1d4b7,"## Conclusion
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,np12concl,markdown,fr,4ffff9c17aa1d4b7,"## Conclusion
 
 Ce notebook a posé les **fondations NumPy** indispensables à toute la data science Python — le socle sur lequel s'appuient Pandas (notebook [1.3](1.3-Analyse_de_Donnees_avec_Pandas.ipynb)), scikit-learn et les frameworks de deep learning.
 
@@ -163,12 +163,12 @@ Ce notebook a posé les **fondations NumPy** indispensables à toute la data sci
 **Le pont vers Pandas** : NumPy manipule des **tableaux numériques nus** ; Pandas (1.3) ajoute par-dessus l'**indexation par étiquettes** (lignes et colonnes nommées) et le **typage hétérogène** (colonnes de types différents) — mais tout `DataFrame` Pandas enveloppe un `ndarray` NumPy. Maîtriser la vectorisation ici, c'est comprendre pourquoi une opération Pandas vectorisée bat toujours une boucle `iterrows`.
 
 **Pour aller plus loin** : le **broadcasting** (diffusion automatique entre formes compatibles, ex. `tableau_2D + vecteur_1D`), les fonctions d'algèbre linéaire de `np.linalg` (inverse, déterminant, valeurs propres) et la génération aléatoire reproductible (`np.random.default_rng(seed)`) sont les prochaines capacités à explorer.",,,,,,,,4ffff9c17aa1d4b7,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,cell-a4c4a43f,markdown,fr,6a5888bd0be85fcc,"## Références
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb,cell-a4c4a43f,markdown,fr,6a5888bd0be85fcc,"## Références
 
 1. C. R. Harris et al., *Array programming with NumPy*, Nature, 585(7825):357-362, 2020. doi:10.1038/s41586-020-2649-2. Article de référence décrivant l'objet `ndarray`, l'écosystème de tableaux N-dimensionnels et les fondations de la data science Python.
 2. S. van der Walt, S. C. Colbert, G. Varoquaux, *The NumPy Array: A Structure for Efficient Numerical Computation*, Computing in Science & Engineering, 13(2):22-30, 2011. Architecture interne de `ndarray` et principes de vectorisation.
 3. T. E. Oliphant, *A Guide to NumPy*, Trelgol Publishing, 2006. Référence technique historique sur NumPy (première édition).",,,,,,,,6a5888bd0be85fcc,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,e7563b95,markdown,fr,5822f7bd047aaa57,"# 1.3 - Analyse de Données avec Pandas
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,e7563b95,markdown,fr,5822f7bd047aaa57,"# 1.3 - Analyse de Données avec Pandas
 
 **Navigation** : [<< 1.2 NumPy](1.2-Manipulation_de_Donnees_avec_NumPy.ipynb) | [Index](../../README.md) | [>> Lab 1](../../Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb)
 
@@ -190,7 +190,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3
 ---
 
 Ce notebook est une introduction à Pandas, la bibliothèque incontournable pour la manipulation et l'analyse de données en Python.",,,,,,,,5822f7bd047aaa57,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,9a6a2ba4,markdown,fr,de5006770a6d7332,"## Qu'est-ce que Pandas ?
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,9a6a2ba4,markdown,fr,de5006770a6d7332,"## Qu'est-ce que Pandas ?
 
 Pandas fournit des structures de données et des outils d'analyse de données de haut niveau et faciles à utiliser. Les deux structures de données principales sont :
 
@@ -198,22 +198,22 @@ Pandas fournit des structures de données et des outils d'analyse de données de
 *   **`DataFrame`** : une structure de données bidimensionnelle avec des étiquettes, similaire à une table de base de données ou une feuille de calcul Excel.
 
 > **Repère bibliographique.** Pandas et ses structures `Series`/`DataFrame` sont présentés dans l'article fondateur W. McKinney, *Data Structures for Statistical Computing in Python*, Proceedings of the 9th Python in Science Conference (SciPy), pp. 51-56, 2010. Le `DataFrame` y est conçu comme une structure étiquetée bidimensionnelle inspirée des *data frames* de R, optimisée pour l'analyse de données tabulaires. Voir aussi McKinney, *Python for Data Analysis*, O'Reilly, 3e éd., 2022, comme référence livresque de référence.",,,,,,,,de5006770a6d7332,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,251ff9f5,markdown,fr,c7e46f269e0411a2,"## Création d'un DataFrame
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,251ff9f5,markdown,fr,c7e46f269e0411a2,"## Création d'un DataFrame
 
 Un DataFrame peut être créé de plusieurs manières. L'une des plus courantes est de partir d'un dictionnaire Python.",,,,,,,,c7e46f269e0411a2,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,fb918b11,code,fr,b9306cf289d9a50b,"import pandas as pd
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,fb918b11,code,fr,b9306cf289d9a50b,"import pandas as pd
 
 # Création d'un DataFrame à partir d'un dictionnaire
 donnees = {'col1': [1, 2, 10], 'col2': [3, 4, 30], 'Nom': ['Alice', 'Bob', 'Charles']}
 df = pd.DataFrame(donnees)
 
 print(df)",,,,,,,,b9306cf289d9a50b,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,94f4ece9,markdown,fr,442d6b99dc1ab1c9,"## Sélection de Données
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,94f4ece9,markdown,fr,442d6b99dc1ab1c9,"## Sélection de Données
 
 La sélection de colonnes est une opération fondamentale. On peut la réaliser en utilisant les crochets `[]` avec le nom de la colonne.
 
 C'est cette opération simple qui est validée par les tests de ce module.",,,,,,,,442d6b99dc1ab1c9,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,6ceb3338,code,fr,8d58fa302b641c8b,"# Créons le DataFrame spécifique du test
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,6ceb3338,code,fr,8d58fa302b641c8b,"# Créons le DataFrame spécifique du test
 data_test = {'col1': [1, 2], 'col2': [3, 4]}
 df_test = pd.DataFrame(data_test)
 
@@ -224,15 +224,15 @@ print(""Le DataFrame complet :"")
 print(df_test)
 print(""\nLa colonne 'col2' (qui est une Series Pandas) :"")
 print(colonne_2)",,,,,,,,8d58fa302b641c8b,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,4cdc0e3c,markdown,fr,ea5a51ce451e23b9,"## Filtrage simple
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,4cdc0e3c,markdown,fr,ea5a51ce451e23b9,"## Filtrage simple
 
 On peut également filtrer les lignes d'un DataFrame en fonction d'une condition.",,,,,,,,ea5a51ce451e23b9,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,171b1e9d,code,fr,a31937e7b748dfbd,"# Afficher uniquement les lignes où col1 est supérieur à 1
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,171b1e9d,code,fr,a31937e7b748dfbd,"# Afficher uniquement les lignes où col1 est supérieur à 1
 filtre = df['col1'] > 1
 df_filtre = df[filtre]
 
 print(df_filtre)",,,,,,,,a31937e7b748dfbd,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,a1eb8902,markdown,fr,181d38f33d2d9400,"## Exemple guide : Analyse d'un Dataset Étudiants
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,a1eb8902,markdown,fr,181d38f33d2d9400,"## Exemple guide : Analyse d'un Dataset Étudiants
 
 À vous de pratiquer la création et la manipulation de DataFrames avec Pandas !
 
@@ -242,7 +242,7 @@ Créez un DataFrame d'étudiants et effectuez des analyses simples.
 ### Instructions
 
 ",,,,,,,,181d38f33d2d9400,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,45d01fda,code,fr,5a2671b4b1a50463,"import pandas as pd
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,45d01fda,code,fr,5a2671b4b1a50463,"import pandas as pd
 
 #Exemple guide: Créez un DataFrame avec 5 étudiants
 # Colonnes: 'Nom', 'Age', 'Note', 'Filiere'
@@ -276,8 +276,8 @@ if df is not None and excellents is not None:
 else:
     print(""Exercice à compléter : créez le DataFrame et remplacez les None"")
 ",,,,,,,,5a2671b4b1a50463,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,c26ac7b1,markdown,fr,ba5f36113b72f9d9,Mise en pratique : creation de DataFrame.,,,,,,,,ba5f36113b72f9d9,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,5cc1082e,code,fr,535790f2ba44acee,"#Exemple guide : Creez votre propre DataFrame
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,c26ac7b1,markdown,fr,ba5f36113b72f9d9,Mise en pratique : creation de DataFrame.,,,,,,,,ba5f36113b72f9d9,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,5cc1082e,code,fr,535790f2ba44acee,"#Exemple guide : Creez votre propre DataFrame
 # Creez un DataFrame avec les informations suivantes :
 # - 3 etudiants (Alice, Bob, Charlie)
 # - Colonnes : 'Nom', 'Age', 'Note'
@@ -301,7 +301,7 @@ print(df_etudiants)
 notes = None  # Remplacez None
 print(f""\nNotes des etudiants : {notes}"")
 ",,,,,,,,535790f2ba44acee,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,2269c665,markdown,fr,564214bfc08cba38,"### Exercice 1 : Filtrage et tri d'un DataFrame
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,2269c665,markdown,fr,564214bfc08cba38,"### Exercice 1 : Filtrage et tri d'un DataFrame
 
 Le filtrage et le tri sont des opérations fondamentales en analyse de données. Vous allez créer un DataFrame de produits et appliquer des filtres combinés avec un tri pour extraire des informations spécifiques.
 
@@ -311,7 +311,7 @@ Le filtrage et le tri sont des opérations fondamentales en analyse de données.
 - Combinez plusieurs conditions avec `&` (ET) ou `|` (OU) en utilisant des parentheses
 - Utilisez `df.sort_values(by='colonne', ascending=False)` pour trier par ordre decroissant
 - `df.reset_index(drop=True)` pour reinitialiser les indices après filtrage",,,,,,,,564214bfc08cba38,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,f8ff78da,code,fr,e2576e7cdde466df,"# Exercice 1 : Filtrage et tri
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,f8ff78da,code,fr,e2576e7cdde466df,"# Exercice 1 : Filtrage et tri
 # Creez un DataFrame de produits et appliquez des filtres combinés
 
 # Etape 1: Creez le DataFrame
@@ -336,7 +336,7 @@ if produits_chers is not None:
     print(produits_tries)
 else:
     print(""Exercice 1 a completer : filtrage et tri d'un DataFrame"")",,,,,,,,e2576e7cdde466df,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,ea39352d,markdown,fr,eef349cdd0d5423a,"### Exercice 2 : Agrégation et groupby
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,ea39352d,markdown,fr,eef349cdd0d5423a,"### Exercice 2 : Agrégation et groupby
 
 Les opérations d'agregation permettent de synthetiser les données par groupes. Vous allez utiliser les fonctions `groupby()`, `agg()` et les statistiques descriptives pour analyser un jeu de données de ventes.
 
@@ -346,7 +346,7 @@ Les opérations d'agregation permettent de synthetiser les données par groupes.
 - `df.groupby('colonne')` créé un groupe par valeur unique de la colonne
 - `df.groupby('cat')['val'].agg(['sum', 'mean', 'count'])` pour plusieurs agregats en une fois
 - `df.groupby('cat').describe()` pour un resume statistique complet par groupe",,,,,,,,eef349cdd0d5423a,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,2e17b996,code,fr,ac36dd36b122f2c7,"# Exercice 2 : Agregation et groupby
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,2e17b996,code,fr,ac36dd36b122f2c7,"# Exercice 2 : Agregation et groupby
 # Analysez des donnees de ventes avec les fonctions d'agregation
 
 # Etape 1: Creez le DataFrame de ventes
@@ -376,7 +376,7 @@ if total_par_vendeur is not None:
     print(f""\nMeilleur vendeur : {meilleur_vendeur}"")
 else:
     print(""Exercice 2 a completer : agregation et groupby"")",,,,,,,,ac36dd36b122f2c7,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,7f6cbccb,markdown,fr,7448918381601ddc,"### Exercice 3 : Transformation et nettoyage de colonnes
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,7f6cbccb,markdown,fr,7448918381601ddc,"### Exercice 3 : Transformation et nettoyage de colonnes
 
 En pratique, les données necessitent souvent des transformations avant analyse : conversion de types, renommage de colonnes, creation de nouvelles colonnes calculees. Vous allez appliquer ces opérations sur un DataFrame d'employes.
 
@@ -387,7 +387,7 @@ En pratique, les données necessitent souvent des transformations avant analyse 
 - `df.rename(columns={'ancien': 'nouveau'})` pour renommer
 - `df['col'].astype(float)` ou `pd.to_numeric()` pour convertir des types
 - `df.drop(columns=['col'])` pour supprimer une colonne",,,,,,,,7448918381601ddc,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,b7be3e19,code,fr,15afde82c6f1079e,"# Exercice 3 : Transformation et nettoyage de colonnes
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,b7be3e19,code,fr,15afde82c6f1079e,"# Exercice 3 : Transformation et nettoyage de colonnes
 # Transformez un DataFrame d'employes
 
 # Etape 1: Creez le DataFrame d'employes
@@ -418,7 +418,7 @@ if salaire_annuel is not None:
     print(employes_renomme)
 else:
     print(""Exercice 3 a completer : transformation et nettoyage de colonnes"")",,,,,,,,15afde82c6f1079e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,cell-ced13a1a,markdown,fr,151c8c21cb629287,"## Conclusion
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,cell-ced13a1a,markdown,fr,151c8c21cb629287,"## Conclusion
 
 Ce notebook a permis d explorer les aspects essentiels de 1.3 analyse de données avec pandas. Les points cles :
 
@@ -427,7 +427,7 @@ Ce notebook a permis d explorer les aspects essentiels de 1.3 analyse de donnée
 - Les résultats obtenus permettent de valider la comprehension
 
 **Pour aller plus loin** : approfondir les aspects avances du sujet et explorer les liens avec d autres domaines.",,,,,,,,151c8c21cb629287,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,cell-042df0dd,markdown,fr,db821d39ab335c88,"## Références
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb,cell-042df0dd,markdown,fr,db821d39ab335c88,"## Références
 
 1. W. McKinney, *Data Structures for Statistical Computing in Python*, Proceedings of the 9th Python in Science Conference (SciPy 2010), pp. 51-56, 2010. Article fondateur de Pandas : structures `Series` et `DataFrame`, conçues pour le calcul statistique sur données étiquetées.
 2. W. McKinney, *Python for Data Analysis: Data Wrangling with Pandas, NumPy, and Jupyter*, O'Reilly Media, 3e édition, 2022. Référence livresque canonique sur l'usage pratique de Pandas (`groupby`, indexation, nettoyage).
@@ -7498,7 +7498,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day7-Production/Lab1
 - Nam, J., et al. (2025). *DS-STAR: Data Science Agent for Solving Diverse Tasks across Heterogeneous Formats and Open-Ended Queries*. arXiv:2509.21825. https://arxiv.org/abs/2509.21825
 - Ji, Z., Lee, N., Frieske, R., et al. (2023). *Survey of Hallucination in Natural Language Generation*. ACM Computing Surveys 55. arXiv:2202.03629. https://arxiv.org/abs/2202.03629
 - Xi, Z., et al. (2025). *The Rise and Potential of Large Language Model Based Agents: A Survey*. arXiv:2309.07864.",,,,,,,,e8f5801737ed8197,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,835f4a3b,markdown,fr,d329c31a31eb5e24,"# Lab 1 - Les Bases de la Data Science en Python
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,835f4a3b,markdown,fr,d329c31a31eb5e24,"# Lab 1 - Les Bases de la Data Science en Python
 
 **Navigation** : [Index](../../README.md) | [Suivant >>](../../Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb)
 
@@ -7517,10 +7517,10 @@ A la fin de ce laboratoire, vous saurez :
 - Aucune expérience préalable en Data Science requise
 
 ### Durée estimée : 30-40 minutes",,,,,,,,d329c31a31eb5e24,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,15325427,markdown,fr,354bf36786195d71,"## Introduction à Pandas
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,15325427,markdown,fr,354bf36786195d71,"## Introduction à Pandas
 
 Pandas est une bibliothèque essentielle pour la manipulation de données en Python. Elle introduit la notion de DataFrame, une structure de données tabulaire puissante.",,,,,,,,354bf36786195d71,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,b8135e93,code,fr,ef510b0a041080b0,"import pandas as pd
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,b8135e93,code,fr,ef510b0a041080b0,"import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 
@@ -7567,10 +7567,10 @@ print(f""\nDataset de ventes : {len(df)} enregistrements sur {n_days} jours"")
 print(f""Produits : {df['Produit'].nunique()} | Catégories : {df['Categorie'].nunique()}"")
 print(""\nAperçu des données :"")
 df.head(10)",,,,,,,,ef510b0a041080b0,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,dc7197a5,markdown,fr,a1ca0d9d8c418bce,"## Exploration de Données
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,dc7197a5,markdown,fr,a1ca0d9d8c418bce,"## Exploration de Données
 
 Une fois les données chargées, les premières étapes consistent à les explorer pour comprendre leur structure et leur contenu.",,,,,,,,a1ca0d9d8c418bce,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,ab6b41dc,code,fr,fb69d291921b15fb,"# Afficher les premières lignes
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,ab6b41dc,code,fr,fb69d291921b15fb,"# Afficher les premières lignes
 print(""Premières lignes (head) :"")
 print(df.head())
 
@@ -7585,10 +7585,10 @@ print(df.describe())
 # Statistiques par catégorie
 print(""\nVentes moyennes par catégorie :"")
 print(df.groupby('Categorie')['Ventes'].mean().round(2))",,,,,,,,fb69d291921b15fb,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,3d48fe3e,markdown,fr,2509380a0e80cf8f,"## Sélection et Filtrage
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,3d48fe3e,markdown,fr,2509380a0e80cf8f,"## Sélection et Filtrage
 
 Apprenons à sélectionner des colonnes spécifiques et à filtrer les lignes en fonction de conditions.",,,,,,,,2509380a0e80cf8f,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,ca121e84,code,fr,ab91e434318cbd83,"# Sélectionner une seule colonne
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,ca121e84,code,fr,ab91e434318cbd83,"# Sélectionner une seule colonne
 produits = df['Produit']
 print(""Colonne 'Produit' (5 premiers) :"")
 print(produits.head())
@@ -7602,10 +7602,10 @@ print(ventes_elevees.head())
 electronique = df[df['Categorie'] == 'Electronique']
 print(f""\nProduits Electronique : {len(electronique)} enregistrements"")
 print(electronique[['Date', 'Produit', 'Ventes']].head())",,,,,,,,ab91e434318cbd83,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,1130c5f1,markdown,fr,3af4c8bc3ab0dc40,"## Visualisation de Données
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,1130c5f1,markdown,fr,3af4c8bc3ab0dc40,"## Visualisation de Données
 
 La visualisation est cruciale pour comprendre les tendances. Nous utiliserons Matplotlib pour créer un graphique simple.",,,,,,,,3af4c8bc3ab0dc40,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,0a68ef7b,code,fr,1705f7d4ab938b4a,"import matplotlib.pyplot as plt
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,0a68ef7b,code,fr,1705f7d4ab938b4a,"import matplotlib.pyplot as plt
 
 # Graphique 1 : Ventes par date (échantillon)
 fig, axes = plt.subplots(1, 2, figsize=(14, 5))
@@ -7627,7 +7627,7 @@ axes[1].set_ylabel('Ventes moyennes')
 
 plt.tight_layout()
 plt.show()",,,,,,,,1705f7d4ab938b4a,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,fcfbcab7,markdown,fr,6881a62245d0c759,"## Introduction au Machine Learning
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,fcfbcab7,markdown,fr,6881a62245d0c759,"## Introduction au Machine Learning
 
 Pour cette premiere approche du Machine Learning, nous utilisons **scikit-learn** (sklearn), la
 bibliotheque de reference en Python pour les algorithmes de ML classique (regression, classification,
@@ -7639,7 +7639,7 @@ r2_score). Ici, un modele de **regression lineaire** est entraite pour predire l
 > arXiv:1201.0490. https://arxiv.org/abs/1201.0490
 
 Le Machine Learning consiste à entraîner un 'modèle' sur des données pour qu'il puisse faire des 'prédictions' sur de nouvelles données. C'est un concept clé de l'IA. Ici, nous allons simuler une prédiction très simple.",,,,,,,,6881a62245d0c759,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,35c17584,code,fr,70a6debefb8f2b6b,"from sklearn.linear_model import LinearRegression
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,35c17584,code,fr,70a6debefb8f2b6b,"from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import r2_score, mean_squared_error
 import numpy as np
@@ -7678,7 +7678,7 @@ print(f""  Intercept : {model.intercept_:.2f}"")
 jour_futur = 90  # 31 mars
 prediction = model.predict([[jour_futur]])
 print(f""\nPrédiction des ventes pour le jour {jour_futur} : {prediction[0]:.2f}"")",,,,,,,,70a6debefb8f2b6b,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,usehv1a6pxl,markdown,fr,8209e22889a843ba,"## 🎯 Exercices Pratiques
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,usehv1a6pxl,markdown,fr,8209e22889a843ba,"## 🎯 Exercices Pratiques
 
 ### Exercice 1 : Calcul de statistiques par produit
 
@@ -7688,7 +7688,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-Pytho
 3. Le jour avec les ventes les plus élevées pour chaque produit
 
 **Indices** : Utilisez `groupby()` et les fonctions d'agrégation de Pandas.",,,,,,,,8209e22889a843ba,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,zbon5l0ll6d,code,fr,736ffdd526891f49,"# Votre code pour l'Exercice 1
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,zbon5l0ll6d,code,fr,736ffdd526891f49,"# Votre code pour l'Exercice 1
 
 # TODO: Calculez le total des ventes par produit
 total_ventes_produit = None  # Utilisez groupby('Produit')['Ventes'].sum()
@@ -7707,7 +7707,7 @@ print(""\nMoyenne des ventes par produit :"")
 print(moyenne_ventes_produit)
 print(""\nJour avec ventes maximales par produit :"")
 print(jour_max_ventes)",,,,,,,,736ffdd526891f49,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,jwndxchh3x9,markdown,fr,e14b789c2707732f,"### Exercice 2 : Filtrage conditionnel et statistiques
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,jwndxchh3x9,markdown,fr,e14b789c2707732f,"### Exercice 2 : Filtrage conditionnel et statistiques
 
 À partir du DataFrame `df`, identifiez les transactions « exceptionnelles » de la catégorie **Electronique** :
 
@@ -7716,7 +7716,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-Pytho
 3. Affichez le nombre d'enregistrements filtrés et un aperçu du résultat
 
 **Indices** : Utilisez `df[""Ventes""].mean()` pour la moyenne, et combinez les deux conditions avec l'opérateur `&` (pensez aux parenthèses autour de chaque condition).",,,,,,,,e14b789c2707732f,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,p6vxw85pwk,code,fr,99d126baa604c587,"# Votre code pour l'Exercice 2
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,p6vxw85pwk,code,fr,99d126baa604c587,"# Votre code pour l'Exercice 2
 
 # TODO: Calculez la moyenne globale des ventes
 moyenne_globale = None  # Utilisez df[""Ventes""].mean()
@@ -7733,12 +7733,12 @@ if moyenne_globale is not None and df_filtre is not None:
     print(df_filtre.head())
 else:
     print(""Exercice à compléter : calculez la moyenne et filtrez le DataFrame"")",,,,,,,,99d126baa604c587,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,i2y3q9gnxge,markdown,fr,3476d2fb80bd0d5f,"### Exercice 3 : Prédictions pour chaque produit
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,i2y3q9gnxge,markdown,fr,3476d2fb80bd0d5f,"### Exercice 3 : Prédictions pour chaque produit
 
 Entraînez un modèle de régression linéaire **séparé** pour chaque produit (Widget A et Widget B), puis prédisez les ventes pour le jour 7 de chacun.
 
 **Indices** : Filtrez le DataFrame par produit avant d'entraîner le modèle.",,,,,,,,3476d2fb80bd0d5f,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,vqzr58prbl,code,fr,9e172eb0da7d7cd8,"# Votre code pour l'Exercice 3
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,vqzr58prbl,code,fr,9e172eb0da7d7cd8,"# Votre code pour l'Exercice 3
 
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
@@ -7774,7 +7774,7 @@ if prediction_a is not None and prediction_x is not None:
 else:
     print(""Exercice à compléter : filtrez les DataFrames et entraînez les modèles"")
 ",,,,,,,,9e172eb0da7d7cd8,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,c90eacd2,markdown,fr,732f7ce30a3f6010,"## Conclusion : De la Data aux Agents IA
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,c90eacd2,markdown,fr,732f7ce30a3f6010,"## Conclusion : De la Data aux Agents IA
 
 Félicitations ! Vous avez exploré les briques fondamentales de la Data Science en Python : charger et manipuler des données avec Pandas, les visualiser, et même faire une prédiction simple avec un modèle de Machine Learning.
 
@@ -7790,12 +7790,12 @@ Ce laboratoire constitue la base technique essentielle pour construire des syst�
 ---
 
 **Navigation** : [Index](../../README.md) | [Suivant >> Lab 2 - RFP Analysis](../../Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb)",,,,,,,,732f7ce30a3f6010,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1/Labs/Lab1-PythonForDataScience.ipynb,cell-99ebb962,markdown,fr,456ed9abcf66aa68,"## References
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day1-Foundations/Labs/Lab1-PythonForDataScience.ipynb,cell-99ebb962,markdown,fr,456ed9abcf66aa68,"## References
 
 - Pedregosa, F., Varoquaux, G., Gramfort, A., et al. (2011). *Scikit-learn: Machine Learning in Python*. Journal of Machine Learning Research 12, pp. 2825-2830. arXiv:1201.0490. https://arxiv.org/abs/1201.0490
 - McKinney, W. (2010). *Data Structures for Statistical Computing in Python*. SciPy 2010 proceedings, pp. 51-56.
 - Harris, C.R., Millman, K.J., et al. (2020). *Array programming with NumPy*. Nature 585, pp. 357-362.",,,,,,,,456ed9abcf66aa68,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,d6923f62,markdown,fr,c3af56b9678b11be,"# Lab 2 - Analyser un Appel d'Offre avec l'IA
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,d6923f62,markdown,fr,c3af56b9678b11be,"# Lab 2 - Analyser un Appel d'Offre avec l'IA
 
 **Navigation** : [Lab 1 <<](../../../Day1/Labs/Lab1-PythonForDataScience.ipynb) | [Index](../../README.md) | [>> Lab 3](../Lab3-CV-Screening/Lab3-CV-Screening.ipynb)
 
@@ -7813,7 +7813,7 @@ A la fin de ce laboratoire, vous saurez :
 - Connaissance de base de LangChain
 
 ### Duree estimee : 45-60 minutes",,,,,,,,c3af56b9678b11be,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,41e8e92d,markdown,fr,535a939591a54cd4,"## Cas d'usage
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,41e8e92d,markdown,fr,535a939591a54cd4,"## Cas d'usage
 
 Dans le monde de l'avant-vente, la réactivité et la pertinence sont des facteurs clés de succès. Répondre à un appel d'offre (RFP - Request for Proposal) est un processus chronophage qui demande de bien cerner les besoins du client pour proposer une solution adaptée. 
 
@@ -7822,22 +7822,22 @@ Ce laboratoire démontre comment une IA agentique simple peut accélérer drasti
 1.  Lire et comprendre un appel d'offre.
 2.  En extraire les informations stratégiques.
 3.  Générer une première ébauche de proposition technique.",,,,,,,,535a939591a54cd4,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,d04128bc,markdown,fr,b971a6387a85a02e,"- **Étape 1 :** Charger le document d'appel d'offre
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,d04128bc,markdown,fr,b971a6387a85a02e,"- **Étape 1 :** Charger le document d'appel d'offre
 ",,,,,,,,b971a6387a85a02e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,cce8d28f,code,fr,f2a2d92e2dbce25e,"from langchain_community.document_loaders import TextLoader
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,cce8d28f,code,fr,f2a2d92e2dbce25e,"from langchain_community.document_loaders import TextLoader
 
 loader = TextLoader('./appel_offre.txt')
 document = loader.load()
 
 print(document[0].page_content)",,,,,,,,f2a2d92e2dbce25e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,ae09d1c0,markdown,fr,f5ce5bd370123f1f,"- **Étape 2 :** Créer une chaîne d'extraction d'informations
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,ae09d1c0,markdown,fr,f5ce5bd370123f1f,"- **Étape 2 :** Créer une chaîne d'extraction d'informations
 
 Nous allons définir un `PromptTemplate` qui guidera le LLM pour qu'il identifie précisément les points qui nous intéressons.
 
 #### LCEL — LangChain Expression Language
 
 La chaîne est assemblée avec **LCEL** (*LangChain Expression Language*), la syntaxe déclarative introduite par LangChain en 2023 pour composer des briques (prompt, modèle, parseur) via l'opérateur tube `|`. Chaque brique implémente l'interface `Runnable`, ce qui rend la chaîne homogène et lui donne *de facto* le support du *batch*, de l'asynchrone et du *streaming*. LCEL remplace l'ancienne classe `LLMChain` : on écrit désormais `prompt | llm` plutôt qu'un objet `LLMChain(prompt, llm)`. C'est exactement ce pattern (`extraction_prompt | llm`) que nous utilisons ci-dessous. Pour le cadre général LangChain (chaînes, *tools*, mémoire), voir la référence bibliographique du Lab 8 (H. Chase, 2022).",,,,,,,,f5ce5bd370123f1f,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,cbce3c96,code,fr,8b7f216ad2884050,"from langchain_core.prompts import ChatPromptTemplate
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,cbce3c96,code,fr,8b7f216ad2884050,"from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
 # Initialiser le modèle
@@ -7870,9 +7870,9 @@ extraction_prompt = ChatPromptTemplate.from_template(extraction_template)
 extraction_chain = extraction_prompt | llm
 
 print(""Chaîne d'extraction créée."")",,,,,,,,8b7f216ad2884050,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,aaa2262f,markdown,fr,58ae5a67fd6fad75,"- **Étape 3 :** Exécuter la chaîne et extraire les points clés
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,aaa2262f,markdown,fr,58ae5a67fd6fad75,"- **Étape 3 :** Exécuter la chaîne et extraire les points clés
 ",,,,,,,,58ae5a67fd6fad75,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,63d887da,code,fr,1be823e2c47d285a,"import json
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,63d887da,code,fr,1be823e2c47d285a,"import json
 
 # Utiliser invoke() au lieu de run() et extraire le contenu
 response = extraction_chain.invoke({""document_text"": document[0].page_content})
@@ -7881,9 +7881,9 @@ extracted_data = json.loads(raw_result)
 
 print(""Informations extraites de l'appel d'offre :\n"")
 print(json.dumps(extracted_data, indent=2, ensure_ascii=False))",,,,,,,,1be823e2c47d285a,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,a860ab14,markdown,fr,bacf977a989bfe58,"- **Étape 4 :** Créer une chaîne de génération de proposition
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,a860ab14,markdown,fr,bacf977a989bfe58,"- **Étape 4 :** Créer une chaîne de génération de proposition
 ",,,,,,,,bacf977a989bfe58,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,b01c6b1f,code,fr,f14e3a7e6eef46c4,"# Créer le template de prompt pour la génération avec ChatPromptTemplate (API moderne)
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,b01c6b1f,code,fr,f14e3a7e6eef46c4,"# Créer le template de prompt pour la génération avec ChatPromptTemplate (API moderne)
 generation_template = """"""
 Agis en tant qu'architecte de solutions IA. En te basant sur les informations extraites de l'appel d'offre, rédige une ébauche de proposition technique en 3 points clairs et concis.
 
@@ -7906,16 +7906,16 @@ generation_prompt = ChatPromptTemplate.from_template(generation_template)
 generation_chain = generation_prompt | llm
 
 print(""Chaîne de génération créée."")",,,,,,,,f14e3a7e6eef46c4,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,73c7309b,markdown,fr,d7f9929dc73ed82e,"- **Étape 5 :** Execution de la generation
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,73c7309b,markdown,fr,d7f9929dc73ed82e,"- **Étape 5 :** Execution de la generation
 
 Maintenant que notre chaine de generation est configuree, nous allons l'executer avec les donnees extraites precedemment. Le LLM va synthetiser une proposition structuree en trois volets (approche, technologies, livrables) adaptee aux besoins specifiques du client.",,,,,,,,d7f9929dc73ed82e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,59d16d6f,code,fr,fe85ae0402c7f6a7,"# Exécuter la chaîne de génération avec invoke() et extraire le contenu
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,59d16d6f,code,fr,fe85ae0402c7f6a7,"# Exécuter la chaîne de génération avec invoke() et extraire le contenu
 response = generation_chain.invoke(extracted_data)
 proposition = response.content
 
 print(""--- ÉBAUCHE DE PROPOSITION TECHNIQUE ---\n"")
 print(proposition)",,,,,,,,fe85ae0402c7f6a7,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,5d4552c9,markdown,fr,da39904f355cb232,"## Conclusion
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,5d4552c9,markdown,fr,da39904f355cb232,"## Conclusion
 
 En quelques minutes, nous avons automatisé une partie significative du travail d'analyse d'un appel d'offre et de rédaction d'une proposition. Les gains sont multiples :
 
@@ -7928,7 +7928,7 @@ Dans un vrai projet, cet agent pourrait être enrichi avec des **outils** (`tool
 *   Une recherche web pour se renseigner sur l'entreprise cliente.
 *   Une base de connaissances interne (via RAG) pour réutiliser des briques de projets précédents.
 *   Un outil de pricing pour estimer le coût du projet.",,,,,,,,da39904f355cb232,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,8e833adf,markdown,fr,80f8d694dd23d386,"### Exercice 1 : Generer une estimation de budget
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,8e833adf,markdown,fr,80f8d694dd23d386,"### Exercice 1 : Generer une estimation de budget
 
 Dans cet exercice, vous allez creer une chaine LangChain qui estime le budget d'un projet a partir des informations extraites de l'appel d'offre. L'objectif est de faire raisonner le LLM sur les couts probables (developpement, infrastructure, maintenance).
 
@@ -7938,7 +7938,7 @@ Dans cet exercice, vous allez creer une chaine LangChain qui estime le budget d'
 - Definissez un template qui demande au LLM d'estimer un budget en Jours-Homme et en euros
 - Utilisez `ChatPromptTemplate.from_template()` puis l'operateur `|` pour creer la chaine
 - Invoquez la chaine avec les donnees de `extracted_data`",,,,,,,,80f8d694dd23d386,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,917e216a,code,fr,e0ba22872c4c9e20,"# Exercice 1 : Estimation de budget
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,917e216a,code,fr,e0ba22872c4c9e20,"# Exercice 1 : Estimation de budget
 # Creez une chaine LangChain qui estime le budget du projet
 
 # Etape 1: Definissez le template de prompt
@@ -7955,7 +7955,7 @@ budget_chain = None
 # response_budget = ...
 
 print(""Exercice 1 a completer : estimation de budget avec LangChain"")",,,,,,,,e0ba22872c4c9e20,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,52182217,markdown,fr,9709b4d137d6df58,"### Exercice 2 : Comparer deux appels d'offres
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,52182217,markdown,fr,9709b4d137d6df58,"### Exercice 2 : Comparer deux appels d'offres
 
 Dans un contexte reel, un avant-vente doit souvent comparer plusieurs opportunites. Cet exercice vous demande de creer une chaine qui compare l'appel d'offre existant avec un second document fictif, et produit une synthese comparative.
 
@@ -7965,7 +7965,7 @@ Dans un contexte reel, un avant-vente doit souvent comparer plusieurs opportunit
 - Definissez un template avec deux variables : `{offre_1}` et `{offre_2}`
 - Le format JSON de sortie pourrait contenir : `critere`, `offre_1_valeur`, `offre_2_valeur`, `recommandation`
 - Creez un second texte d'appel d'offre fictif dans une variable `offre_2_texte`",,,,,,,,9709b4d137d6df58,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,42e66402,code,fr,30cf362a6c874378,"# Exercice 2 : Comparaison de deux appels d'offres
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,42e66402,code,fr,30cf362a6c874378,"# Exercice 2 : Comparaison de deux appels d'offres
 
 # Etape 1: Definissez un second appel d'offre fictif
 # Indice: ecrivez un texte similaire a l'appel d'offre original avec des exigences differentes
@@ -7984,7 +7984,7 @@ comparaison_chain = None
 # Indice: comparaison_chain.invoke({""offre_1"": document[0].page_content, ""offre_2"": offre_2_texte})
 
 print(""Exercice 2 a completer : comparaison de deux appels d'offres"")",,,,,,,,30cf362a6c874378,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,216fa782,code,fr,f4185b89c58e365c,"# Exercice : Creez votre propre chaine LangChain
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,216fa782,code,fr,f4185b89c58e365c,"# Exercice : Creez votre propre chaine LangChain
 # Modifiez le template pour extraire differentes informations d'un document
 
 # TODO: Definissez un nouveau template d'extraction
@@ -8017,15 +8017,15 @@ extraction_chain_exo = None   # Remplacez None
 # print(""Resultat de l'exercice :"")
 # print(response_exo.content)
 ",,,,,,,,f4185b89c58e365c,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,26c0e0e2,markdown,fr,ccbfce563a6e6c8e,"### Exercice 3 : Creer une chaine d'extraction personnalisee
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,26c0e0e2,markdown,fr,ccbfce563a6e6c8e,"### Exercice 3 : Creer une chaine d'extraction personnalisee
 
 Creez votre propre chaine LangChain en modifiant le template d'extraction pour extraire des informations differentes du document d'appel d'offre (client, budget, technologies).",,,,,,,,ccbfce563a6e6c8e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,cell-4eb0b399,markdown,fr,b354879bada5d513,"## References
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb,cell-4eb0b399,markdown,fr,b354879bada5d513,"## References
 
 1. LangChain, *LangChain Expression Language (LCEL)*, 2023, `python.langchain.com/docs/concepts/lcel`. Syntaxe déclarative de composition de chaînes via l'opérateur tube `|` ; chaque composant implémente l'interface `Runnable` (*batch*, asynchrone, *streaming*). Primitive centrale de ce laboratoire (`extraction_prompt | llm`).
 2. H. Chase, *LangChain*, octobre 2022, `github.com/langchain-ai/langchain`. Framework modulaire open-source pour applications LLM — chaînes composables, *tools*, mémoire. Référence bibliographique détaillée au Lab 8 (ADK Introduction).
 ",,,,,,,,b354879bada5d513,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,15ead243,markdown,fr,f50c1e297953fb81,"# Lab 3 - Pré-qualifier des Candidats avec l'IA
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,15ead243,markdown,fr,f50c1e297953fb81,"# Lab 3 - Pré-qualifier des Candidats avec l'IA
 
 **Navigation** : [Lab 2 <<](../Lab2-RFP-Analysis/Lab2-RFP-Analysis.ipynb) | [Index](../../README.md) | [>> Lab 4](../../../Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb)
 
@@ -8045,10 +8045,10 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Sc
 ### Durée estimée : 30-40 minutes
 
 ---",,,,,,,,f50c1e297953fb81,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,e834dff6,markdown,fr,088d6542045341d2,"Ce notebook démontre comment utiliser un agent d'IA pour automatiser la pré-qualification de CVs. L'objectif est de comparer des CVs à une offre d'emploi, d'extraire les informations pertinentes, de noter l'adéquation et de fournir un résumé pour aider les recruteurs à se concentrer sur les candidats les plus prometteurs.",,,,,,,,088d6542045341d2,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,3cf3af1b,markdown,fr,b5555b71cf263b7f,"- **Étape 1 :** Charger l'Offre et les CVs
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,e834dff6,markdown,fr,088d6542045341d2,"Ce notebook démontre comment utiliser un agent d'IA pour automatiser la pré-qualification de CVs. L'objectif est de comparer des CVs à une offre d'emploi, d'extraire les informations pertinentes, de noter l'adéquation et de fournir un résumé pour aider les recruteurs à se concentrer sur les candidats les plus prometteurs.",,,,,,,,088d6542045341d2,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,3cf3af1b,markdown,fr,b5555b71cf263b7f,"- **Étape 1 :** Charger l'Offre et les CVs
 ",,,,,,,,b5555b71cf263b7f,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,6aa8a936,code,fr,c55606f73bd2fb11,"with open('offre_datascience.txt', 'r', encoding='utf-8') as f:
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,6aa8a936,code,fr,c55606f73bd2fb11,"with open('offre_datascience.txt', 'r', encoding='utf-8') as f:
     offre_emploi = f.read()
 
 with open('cv_candidat_A.txt', 'r', encoding='utf-8') as f:
@@ -8063,7 +8063,7 @@ print(""\n--- CV Candidat A ---"")
 print(cv_candidat_A)
 print(""\n--- CV Candidat B ---"")
 print(cv_candidat_B)",,,,,,,,c55606f73bd2fb11,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,675804c5,markdown,fr,5ee199e53cb3811a,"- **Étape 2 :** Définir l'Agent de Recrutement IA
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,675804c5,markdown,fr,5ee199e53cb3811a,"- **Étape 2 :** Définir l'Agent de Recrutement IA
 
 #### Prompt engineering pour l'extraction structurée
 
@@ -8073,7 +8073,7 @@ Ce laboratoire repose sur le **prompt engineering** : on pilote le LLM uniquemen
 * **Format de sortie structuré** : on spécifie explicitement le schéma JSON attendu (`competences_correspondantes`, `score_adequation`, …). Le `temperature=0` favorise une sortie déterministe et fidèle à ce schéma.
 
 Cette capacité à extraire de l'information structurée à partir de texte non structuré (les CVs) par simple instruction est l'illustration directe du paradigme du *prompting* / *in-context learning* introduit par GPT-3 (Brown et al., 2020) : un même modèle pré-entraîné accomplit des tâches variées sans mise à jour de ses poids. La chaîne LangChain (`prompt | llm`) est assemblée en LCEL — voir Lab 2 pour la primitive.",,,,,,,,5ee199e53cb3811a,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,e4e7295f,code,fr,5570059caf96572f,"import os
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,e4e7295f,code,fr,5570059caf96572f,"import os
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 import json
@@ -8111,9 +8111,9 @@ chain = prompt | llm
 
 print(""Agent de recrutement IA prêt."")
 ",,,,,,,,5570059caf96572f,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,2e48875f,markdown,fr,e90d2e90c2bdae00,"- **Étape 3 :** Évaluer les candidats
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,2e48875f,markdown,fr,e90d2e90c2bdae00,"- **Étape 3 :** Évaluer les candidats
 ",,,,,,,,e90d2e90c2bdae00,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,a71a9715,code,fr,491bd6a0304846b0,"# Évaluation du Candidat A - utiliser invoke() et extraire le contenu
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,a71a9715,code,fr,491bd6a0304846b0,"# Évaluation du Candidat A - utiliser invoke() et extraire le contenu
 response_A = chain.invoke({""offre"": offre_emploi, ""cv"": cv_candidat_A})
 result_A_json = json.loads(response_A.content)
 
@@ -8127,8 +8127,8 @@ result_B_json = json.loads(response_B.content)
 print(""\n--- Analyse du Candidat B (Bob Durand) ---"")
 print(json.dumps(result_B_json, indent=2, ensure_ascii=False))
 ",,,,,,,,491bd6a0304846b0,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,86d8853d,markdown,fr,be031d37bb75d96e,## Conclusion,,,,,,,,be031d37bb75d96e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,201bc756,markdown,fr,f088cce24c09b957,"Ce laboratoire montre comment l'IA peut transformer le processus de recrutement. En structurant l'information non structurée des CVs, l'agent fournit une analyse objective et rapide.
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,86d8853d,markdown,fr,be031d37bb75d96e,## Conclusion,,,,,,,,be031d37bb75d96e,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,201bc756,markdown,fr,f088cce24c09b957,"Ce laboratoire montre comment l'IA peut transformer le processus de recrutement. En structurant l'information non structurée des CVs, l'agent fournit une analyse objective et rapide.
 
 **Bénéfices clés :**
 - **Gain de temps :** Automatisation du tri initial, permettant aux recruteurs de se concentrer sur les candidats qualifiés.
@@ -8136,10 +8136,10 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Sc
 - **Aide à la décision :** Le scoring et le résumé fournissent une base de données solide pour les décisions de recrutement.
 
 Une telle solution peut être directement intégrée dans un Applicant Tracking System (ATS) pour automatiser entièrement le flux de travail.",,,,,,,,f088cce24c09b957,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,72b7b55d,markdown,fr,30f21ee1212194bb,"### Exercice 1 : Analyser un CV avec une grille a 5 criteres
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,72b7b55d,markdown,fr,30f21ee1212194bb,"### Exercice 1 : Analyser un CV avec une grille a 5 criteres
 
 Enrichissez l'agent de recrutement avec une grille d'evaluation a 5 criteres (experience, competences techniques, soft skills, score, recommandation) au lieu des 3 criteres actuels.",,,,,,,,30f21ee1212194bb,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,2fb06ffe,code,fr,05c95bccbdc8c542,"# Exercice : Analysez un nouveau CV avec une grille d'evaluation differente
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,2fb06ffe,code,fr,05c95bccbdc8c542,"# Exercice : Analysez un nouveau CV avec une grille d'evaluation differente
 # Creez un template qui evalue les CVs sur 5 criteres au lieu de 3
 
 # TODO: Definissez un nouveau template avec 5 criteres d'evaluation
@@ -8176,7 +8176,7 @@ chain_exo = None   # Remplacez None (prompt | llm)
 # result_exo_A = json.loads(response_exo_A.content)
 # print(json.dumps(result_exo_A, indent=2, ensure_ascii=False))
 ",,,,,,,,05c95bccbdc8c542,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,65b3b472,markdown,fr,ff3aaa861f8434a4,"### Exercice 2 : Generer un email de feedback personnalise
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,65b3b472,markdown,fr,ff3aaa861f8434a4,"### Exercice 2 : Generer un email de feedback personnalise
 
 L'un des usages concrets de l'IA en recrutement est la redaction automatique de emails de feedback aux candidats. Vous allez creer un template qui genere un email professionnel, adapte au resultat de l'evaluation (favorable ou non).
 
@@ -8186,7 +8186,7 @@ L'un des usages concrets de l'IA en recrutement est la redaction automatique de 
 - Utilisez les resultats de l'evaluation precedente (`result_A_json` ou `result_B_json`) comme donnees d'entree
 - Le template doit contenir des variables comme `{nom}`, `{score}`, `{competences_correspondantes}`, `{competences_manquantes}`
 - Adaptez le ton du message selon que le score est eleve ou faible",,,,,,,,ff3aaa861f8434a4,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,65b3d6ab,code,fr,5656129e3e258a61,"# Exercice 2 : Email de feedback personnalise
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,65b3d6ab,code,fr,5656129e3e258a61,"# Exercice 2 : Email de feedback personnalise
 # Creez une chaine qui genere un email professionnel pour le candidat
 
 # Etape 1: Definissez le template d'email
@@ -8203,7 +8203,7 @@ email_chain = None
 # response_email = email_chain.invoke({""nom"": ""Alice Martin"", ""score"": result_A_json[""score_adequation""], ...})
 
 print(""Exercice 2 a completer : email de feedback personnalise"")",,,,,,,,5656129e3e258a61,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,acd10a2b,markdown,fr,f40db0b36aab460b,"### Exercice 3 : Classement automatique de multiples candidats
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,acd10a2b,markdown,fr,f40db0b36aab460b,"### Exercice 3 : Classement automatique de multiples candidats
 
 Dans un processus de recrutement reel, on recoit souvent des dizaines de CV. Vous allez ecrire une fonction qui automatise l'evaluation et le classement de plusieurs candidats en utilisant la chaine d'evaluation existante.
 
@@ -8214,7 +8214,7 @@ Dans un processus de recrutement reel, on recoit souvent des dizaines de CV. Vou
 - Stockez les resultats dans une liste de dictionnaires contenant le nom et le score
 - Utilisez `sorted()` avec le parametre `key` pour trier par score decroissant
 - Gerez les erreurs potentielles avec un `try/except` (le JSON peut etre mal formate)",,,,,,,,f40db0b36aab460b,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,3b6bce31,code,fr,44d36e07207ab73e,"# Exercice 3 : Classement automatique de candidats
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,3b6bce31,code,fr,44d36e07207ab73e,"# Exercice 3 : Classement automatique de candidats
 # Creez une fonction qui evalue et classe plusieurs candidats
 
 def classer_candidats(candidats, offre):
@@ -8248,12 +8248,12 @@ candidats_test = [(""Alice Martin"", cv_candidat_A), (""Bob Durand"", cv_candida
 # print(json.dumps(classement_final, indent=2, ensure_ascii=False))
 
 print(""Exercice 3 a completer : classement automatique de candidats"")",,,,,,,,44d36e07207ab73e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,cell-5702efc2,markdown,fr,c2f80196691f1dcc,"## References
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day2-Document-Agents/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb,cell-5702efc2,markdown,fr,c2f80196691f1dcc,"## References
 
 1. T. B. Brown, B. Mann, N. Ryder, et al., *Language Models are Few-Shot Learners*, Advances in Neural Information Processing Systems (NeurIPS) 33, 2020, pp. 1877-1901, arXiv:2005.14165. Article fondateur de GPT-3 établissant le paradigme du *prompting* et de l'*in-context learning* : un même modèle accomplit des tâches variées (dont l'extraction structurée) sans *fine-tuning*, uniquement par instruction. Concept central de ce laboratoire.
 2. LangChain, *LangChain Expression Language (LCEL)*, 2023, `python.langchain.com/docs/concepts/lcel`. Syntaxe de composition de chaînes (`prompt | llm`) utilisée pour assembler l'agent de recrutement — primitive détaillée au Lab 2.
 ",,,,,,,,c2f80196691f1dcc,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,392b8b6a,markdown,fr,ccbe0e73b0837948,"# Lab 4 - Le Nettoyage de Données avec Pandas
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,392b8b6a,markdown,fr,ccbe0e73b0837948,"# Lab 4 - Le Nettoyage de Données avec Pandas
 
 **Navigation** : [Lab 3 <<](../../../Day2/Labs/Lab3-CV-Screening/Lab3-CV-Screening.ipynb) | [Index](../../README.md) | [>> Lab 5](../Lab5-Viz-ML/Lab5-Viz-ML.ipynb)
 
@@ -8271,16 +8271,16 @@ A la fin de ce laboratoire, vous saurez :
 - Fichier transactions.csv dans le repertoire courant
 
 ### Duree estimee : 30-45 minutes",,,,,,,,ccbe0e73b0837948,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,954a7822,markdown,fr,b9d833221a38e07e,"## Introduction : La Règle des 80/20 en Data Science
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,954a7822,markdown,fr,b9d833221a38e07e,"## Introduction : La Règle des 80/20 en Data Science
 
 En Data Science, on dit souvent que 80% du temps est consacré à la préparation et au nettoyage des données, et seulement 20% à l'analyse et à la modélisation. Cette étape, bien que moins glamour, est absolument cruciale. Des données de mauvaise qualité mènent inévitablement à des modèles et des conclusions de mauvaise qualité ('Garbage In, Garbage Out').
 
 Dans ce laboratoire, nous allons aborder de front ce travail de préparation en utilisant un jeu de données volontairement ""sale"".
 
 > **Origine de la règle.** Cette statistique provient du *CrowdFlower Data Science Report* (2016), une enquête auprès de data scientists popularisée par la presse spécialisée (Forbes, 2016) : environ 80% du temps de travail est consacré à la collecte, au nettoyage et à l'organisation des données, contre ~20% à la modélisation et l'analyse. Elle souligne l'importance — et la rentabilité — des compétences en *data wrangling*.",,,,,,,,b9d833221a38e07e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,c5a2b52c,markdown,fr,5181981fe8b44ba2,"- **Étape 1 :** Inspection des Données
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,c5a2b52c,markdown,fr,5181981fe8b44ba2,"- **Étape 1 :** Inspection des Données
 ",,,,,,,,5181981fe8b44ba2,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,a6144429,code,fr,412bc4d8f5307da0,"import pandas as pd
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,a6144429,code,fr,412bc4d8f5307da0,"import pandas as pd
 from pathlib import Path
 
 # Resolution robuste : CWD = repertoire du notebook (Jupyter classique)
@@ -8299,59 +8299,59 @@ df = pd.read_csv(_data)
 # Afficher les premieres lignes
 df.head()
 ",,,,,,,,412bc4d8f5307da0,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,08ef4835,markdown,fr,bb5da49838cff075,"### Vue d'ensemble de la structure
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,08ef4835,markdown,fr,bb5da49838cff075,"### Vue d'ensemble de la structure
 
 Apres avoir examine les premieres lignes, explorons la structure globale du DataFrame : types de colonnes, nombre de valeurs non-nulles, et memoire utilisee. Cette etape nous revelera les problemes potentiels (types incorrects, valeurs manquantes).",,,,,,,,bb5da49838cff075,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,1005c87a,code,fr,ae0133d53e144851,"# Obtenir un résumé des informations du DataFrame
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,1005c87a,code,fr,ae0133d53e144851,"# Obtenir un résumé des informations du DataFrame
 df.info()",,,,,,,,ae0133d53e144851,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,a1298e68,markdown,fr,8b1622491b5553d4,"### Analyse des valeurs manquantes
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,a1298e68,markdown,fr,8b1622491b5553d4,"### Analyse des valeurs manquantes
 
 Maintenant, comptabilisons precisement les valeurs manquantes par colonne. Cela nous permettra de prioriser les actions de nettoyage et de choisir la strategie appropriee (suppression, imputation, etc.).",,,,,,,,8b1622491b5553d4,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,5a45efe2,code,fr,d3beafa2dd63920c,"# Compter les valeurs manquantes par colonne
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,5a45efe2,code,fr,d3beafa2dd63920c,"# Compter les valeurs manquantes par colonne
 df.isnull().sum()",,,,,,,,d3beafa2dd63920c,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,a5ec2961,markdown,fr,d7440e2cb80d6ff3,"**Observations :** Exécutez les cellules ci-dessus, puis notez vos observations :
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,a5ec2961,markdown,fr,d7440e2cb80d6ff3,"**Observations :** Exécutez les cellules ci-dessus, puis notez vos observations :
 - Quel est le type de la colonne `date` ? Devrait-elle être convertie ?
 - Combien de valeurs manquantes y a-t-il dans chaque colonne ?
 - Quelles colonnes semblent avoir des types incorrects ?",,,,,,,,d7440e2cb80d6ff3,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,e1df5985,markdown,fr,8e5cc03cf906c71c,"- **Étape 2 :** Nettoyage - Gestion des Valeurs Manquantes
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,e1df5985,markdown,fr,8e5cc03cf906c71c,"- **Étape 2 :** Nettoyage - Gestion des Valeurs Manquantes
 ",,,,,,,,8e5cc03cf906c71c,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,89d7246b,code,fr,53ca20c08b33763a,"# Supprimer les lignes où la quantité est manquante
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,89d7246b,code,fr,53ca20c08b33763a,"# Supprimer les lignes où la quantité est manquante
 # Une transaction sans quantité n'est pas exploitable
 df.dropna(subset=['quantite'], inplace=True)
 print(f""Lignes restantes apres suppression des quantites manquantes : {len(df)}"")",,,,,,,,53ca20c08b33763a,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,bfc306bb,markdown,fr,5f6e7256685e6e4b,"### Imputation intelligente des prix manquants
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,bfc306bb,markdown,fr,5f6e7256685e6e4b,"### Imputation intelligente des prix manquants
 
 Pour les prix unitaires manquants, nous allons utiliser une strategie d'imputation plus sophistiquee que la simple moyenne globale : nous remplacerons chaque valeur manquante par la moyenne des prix du meme produit. Cette approche preserve mieux la coherence economique des donnees.",,,,,,,,5f6e7256685e6e4b,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,8eca96a7,code,fr,0a7a14d1bd751682,"# Remplir le prix manquant avec la moyenne des prix du même produit
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,8eca96a7,code,fr,0a7a14d1bd751682,"# Remplir le prix manquant avec la moyenne des prix du même produit
 # C'est une stratégie d'imputation plus intelligente que la moyenne globale
 df['prix_unitaire'] = df.groupby('id_produit')['prix_unitaire'].transform(lambda x: x.fillna(x.mean()))
 
 # Vérifions s'il reste des valeurs nulles
 df.isnull().sum()",,,,,,,,0a7a14d1bd751682,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,689f2818,markdown,fr,b9f8bd034db70d44,"- **Étape 3 :** Correction des Types
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,689f2818,markdown,fr,b9f8bd034db70d44,"- **Étape 3 :** Correction des Types
 ",,,,,,,,b9f8bd034db70d44,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,c7bdbd37,code,fr,2ab6878afe1db1ab,"# Convertir la colonne 'date' en datetime
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,c7bdbd37,code,fr,2ab6878afe1db1ab,"# Convertir la colonne 'date' en datetime
 # errors='coerce' transformera les dates invalides en NaT (Not a Time)
 df['date'] = pd.to_datetime(df['date'], errors='coerce')
 print(f""Colonne date convertie en datetime : dtype = {df['date'].dtype}"")",,,,,,,,2ab6878afe1db1ab,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,51499ff6,markdown,fr,8fc3fcd3b692cce6,"### Verification de la conversion
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,51499ff6,markdown,fr,8fc3fcd3b692cce6,"### Verification de la conversion
 
 Verifions que la colonne `date` a bien ete convertie en type datetime et que les autres colonnes sont correctement typees. Cela nous permettra d'exploiter les fonctionnalites temporelles de Pandas (extraction de mois, annee, tri chronologique, etc.).",,,,,,,,8fc3fcd3b692cce6,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,756a92f4,code,fr,50d4f47a25c19451,"# Vérifions les types à nouveau
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,756a92f4,code,fr,50d4f47a25c19451,"# Vérifions les types à nouveau
 df.info()",,,,,,,,50d4f47a25c19451,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,53beea6f,markdown,fr,faf83d057c593e8d,"- **Étape 4 :** Transformation - Création de Colonnes
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,53beea6f,markdown,fr,faf83d057c593e8d,"- **Étape 4 :** Transformation - Création de Colonnes
 ",,,,,,,,faf83d057c593e8d,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,302c7b24,code,fr,3c344518a756220a,"# Créer une colonne 'chiffre_affaires'
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,302c7b24,code,fr,3c344518a756220a,"# Créer une colonne 'chiffre_affaires'
 df['chiffre_affaires'] = df['quantite'] * df['prix_unitaire']
 df.head()",,,,,,,,3c344518a756220a,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,da25cf64,markdown,fr,bad39f69ce292c4b,"- **Étape 5 :** Agrégation pour l'Analyse
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,da25cf64,markdown,fr,bad39f69ce292c4b,"- **Étape 5 :** Agrégation pour l'Analyse
 ",,,,,,,,bad39f69ce292c4b,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,74a4d912,code,fr,f1d606718d60bf5c,"# Question métier : Quel est le chiffre d'affaires total par catégorie de produit ?
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,74a4d912,code,fr,f1d606718d60bf5c,"# Question métier : Quel est le chiffre d'affaires total par catégorie de produit ?
 ca_par_categorie = df.groupby('categorie')['chiffre_affaires'].sum().reset_index()
 
 print(""Chiffre d'affaires total par catégorie :"")
 print(ca_par_categorie)",,,,,,,,f1d606718d60bf5c,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,kajesru0lv8,markdown,fr,758a320d4b74e574,"## Exercices
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,kajesru0lv8,markdown,fr,758a320d4b74e574,"## Exercices
 
 ### Exercice 1 : Analyse temporelle
 
@@ -8361,7 +8361,7 @@ A partir du DataFrame `df` (nettoyé), créez une analyse qui :
 3. Affiche le mois avec le chiffre d'affaires le plus élevé
 
 **Indices** : Utilisez `dt.month` pour extraire le mois d'une datetime, puis `groupby()` et `sum()`.",,,,,,,,758a320d4b74e574,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,e55nqyc0vui,code,fr,58ed91954b8a327c,"# Votre code pour l'Exercice 1
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,e55nqyc0vui,code,fr,58ed91954b8a327c,"# Votre code pour l'Exercice 1
 
 #Exemple guide: Extrait le mois de chaque transaction
 df['mois'] = None
@@ -8376,7 +8376,7 @@ mois_max_ca = None
 print(""Chiffre d'affaires par mois :"")
 print(ca_par_mois)
 print(f""\nMois avec le CA le plus élevé : {mois_max_ca}"")",,,,,,,,58ed91954b8a327c,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,yet5ddiee6,markdown,fr,ce8cdc234f55ecc1,"### Exercice 2 : Detection d'anomalies (methode IQR)
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,yet5ddiee6,markdown,fr,ce8cdc234f55ecc1,"### Exercice 2 : Detection d'anomalies (methode IQR)
 
 Les valeurs aberrantes (outliers) peuvent fausser vos analyses. Créez une fonction qui :
 1. Calcule les bornes d'une colonne numérique en utilisant la méthode de l'écart interquartile (IQR)
@@ -8388,7 +8388,7 @@ Les valeurs aberrantes (outliers) peuvent fausser vos analyses. Créez une fonct
 **Indices** : Utilisez `quantile()` pour obtenir Q1 et Q3, puis un filtre booléen pour identifier les anomalies.
 
 > **Référence.** La méthode des bornes à 1,5×IQR et le *box-plot* (boîte à moustaches) qui l'illustre ont été introduits par John W. Tukey dans *Exploratory Data Analysis* (Addison-Wesley, 1977), ouvrage fondateur de l'analyse exploratoire de données. Sous une distribution normale, ces bornes signalent environ 0,7% des observations comme potentiellement aberrantes.",,,,,,,,ce8cdc234f55ecc1,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,gefzn49u41f,code,fr,1d1dbcf45574107b,"# Votre code pour l'Exercice 2
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,gefzn49u41f,code,fr,1d1dbcf45574107b,"# Votre code pour l'Exercice 2
 
 def detecter_anomalies_iqr(data, colonne):
     """"""
@@ -8428,7 +8428,7 @@ if inf is not None and sup is not None:
         print(anomalies_ca[['date', 'id_produit', 'chiffre_affaires']])
 else:
     print(""Remplissez d'abord les TODO dans detecter_anomalies_iqr() pour voir les résultats."")",,,,,,,,1d1dbcf45574107b,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,cbf9244a,markdown,fr,cb5b799d173a01fd,"### Exercice 3 : Detection et correction de doublons
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,cbf9244a,markdown,fr,cb5b799d173a01fd,"### Exercice 3 : Detection et correction de doublons
 
 Les doublons sont un probleme frequent dans les jeux de donnees reels (erreurs de saisie, imports multiples). Vous allez ecrire une fonction qui detecte et gere les lignes dupliquees dans un DataFrame.
 
@@ -8438,7 +8438,7 @@ Les doublons sont un probleme frequent dans les jeux de donnees reels (erreurs d
 - Utilisez `df.duplicated(subset=['id_produit', 'date'])` pour detecter les doublons partiels
 - Utilisez `df.drop_duplicates()` avec le parametre `subset` pour les supprimer
 - Pour une fusion plus avancee, utilisez `groupby()` avec `.agg()` pour moyenner les valeurs numeriques",,,,,,,,cb5b799d173a01fd,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,8bdf5f74,code,fr,fdd90354de2ddd27,"# Exercice 3 : Detection et correction de doublons
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,8bdf5f74,code,fr,fdd90354de2ddd27,"# Exercice 3 : Detection et correction de doublons
 # Creez une fonction qui detecte et deduplique les transactions
 
 def detecter_et_dedupliquer(data, colonnes_cle):
@@ -8473,7 +8473,7 @@ def detecter_et_dedupliquer(data, colonnes_cle):
 # print(f""Lignes avant : {len(df)}, apres : {len(result_dedup)}"")
 
 print(""Exercice 3 a completer : detection et correction de doublons"")",,,,,,,,fdd90354de2ddd27,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,0a03c482,markdown,fr,d8a7324bfe44cc20,"## Conclusion
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,0a03c482,markdown,fr,d8a7324bfe44cc20,"## Conclusion
 
 Félicitations ! Vous avez nettoyé un jeu de données, corrigé ses types, créé de nouvelles informations et répondu à une question métier grâce à une agrégation.
 
@@ -8485,15 +8485,15 @@ Vous avez appris à :
 - Agréger les données avec `groupby()` pour obtenir des insights.
 
 **Lien avec l'après-midi :** Ces étapes de nettoyage et d'analyse sont exactement le type de tâches qu'un agent d'IA pourra bientôt réaliser de manière autonome. En maîtrisant ces techniques, vous comprenez la logique qu'il faudra implémenter dans les ""outils"" que nous fournirons à nos agents pour qu'ils puissent travailler efficacement avec des données du monde réel.",,,,,,,,d8a7324bfe44cc20,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,cell-875c3aa4,markdown,fr,4abb1a13db502324,"## References
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab4-DataWrangling/Lab4-DataWrangling.ipynb,cell-875c3aa4,markdown,fr,4abb1a13db502324,"## References
 
 1. CrowdFlower, *Data Science Report*, 2016 ; vulgarisé par G. Press, *Cleaning Big Data: Most Time-Consuming, Least Enjoyable Data Science Task, Survey Says*, Forbes, 23 mars 2016. Enquête établissant la règle des 80/20 : ~80% du temps des data scientists consacré à la préparation/nettoyage des données. Concept central de l'introduction de ce laboratoire.
 2. J. W. Tukey, *Exploratory Data Analysis*, Addison-Wesley, Reading, MA, 1977. Ouvrage fondateur de l'analyse exploratoire de données ; introduit le *box-plot* et la règle des bornes à 1,5×IQR pour la détection de valeurs aberrantes (Exercice 2).
 3. W. McKinney, *Data Structures for Statistical Computing in Python*, Proc. SciPy 2010, pp. 51-56. Sous-jacent aux manipulations `DataFrame` de ce laboratoire (pandas) — référence détaillée au Lab 1.3.
 ",,,,,,,,4abb1a13db502324,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,3efdaa4e,markdown,fr,c4d3559e6f87c62d,"**Navigation** : [Index](../../../../README.md) | [<< Lab4](../Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | [Lab6 >>](../Lab6-First-Agent/Lab6-First-Agent.ipynb)
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,3efdaa4e,markdown,fr,c4d3559e6f87c62d,"**Navigation** : [Index](../../../../README.md) | [<< Lab4](../Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | [Lab6 >>](../Lab6-First-Agent/Lab6-First-Agent.ipynb)
 # Lab 5 - De la Visualisation au Machine Learning",,,,,,,,c4d3559e6f87c62d,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,l0o8hy58zr,markdown,fr,0d55074c33970b3e,"## Lab 5 - De la Visualisation au Machine Learning
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,l0o8hy58zr,markdown,fr,0d55074c33970b3e,"## Lab 5 - De la Visualisation au Machine Learning
 
 **Navigation** : [Lab 4 <<](../Lab4-DataWrangling/Lab4-DataWrangling.ipynb) | [Index](../../README.md) | [>> Lab 6](../Lab6-First-Agent/Lab6-First-Agent.ipynb)
 
@@ -8513,10 +8513,10 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-M
 ### Durée estimée : 40-50 minutes
 
 ---",,,,,,,,0d55074c33970b3e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,7fce93d0,markdown,fr,8cc54e379d19cfd2,"**Contexte :** Le Lab 4 nous a fourni un jeu de données propre sur les transactions. Notre objectif est maintenant de le ""faire parler"" en utilisant la visualisation de données, puis de construire un premier modèle de Machine Learning capable de faire des prédictions.",,,,,,,,8cc54e379d19cfd2,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,67e889fb,markdown,fr,10e58fc9069f6eda,"- **Étape 1 :** Préparation des Données
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,7fce93d0,markdown,fr,8cc54e379d19cfd2,"**Contexte :** Le Lab 4 nous a fourni un jeu de données propre sur les transactions. Notre objectif est maintenant de le ""faire parler"" en utilisant la visualisation de données, puis de construire un premier modèle de Machine Learning capable de faire des prédictions.",,,,,,,,8cc54e379d19cfd2,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,67e889fb,markdown,fr,10e58fc9069f6eda,"- **Étape 1 :** Préparation des Données
 ",,,,,,,,10e58fc9069f6eda,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,90987bcc,code,fr,9a0724ea3117e0ab,"import pandas as pd
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,90987bcc,code,fr,9a0724ea3117e0ab,"import pandas as pd
 from pathlib import Path
 
 # Resolution robuste (cf. Lab 4) : fonctionne depuis n'importe quel CWD
@@ -8546,26 +8546,26 @@ df['chiffre_affaires'] = df['quantite'] * df['prix_unitaire']
 
 df.head()
 ",,,,,,,,9a0724ea3117e0ab,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,8144b5f0,markdown,fr,991e29c58f15bba4,"- **Étape 2 :** Analyse Exploratoire par la Visualisation (EDA)
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,8144b5f0,markdown,fr,991e29c58f15bba4,"- **Étape 2 :** Analyse Exploratoire par la Visualisation (EDA)
 ",,,,,,,,991e29c58f15bba4,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,caa57012,code,fr,57b95701e17597ad,"import matplotlib.pyplot as plt
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,caa57012,code,fr,57b95701e17597ad,"import matplotlib.pyplot as plt
 import seaborn as sns
 
 # Style des graphiques
 sns.set_style(""whitegrid"")
 
 print(""Bibliotheques de visualisation chargees (matplotlib, seaborn) - style 'whitegrid' applique"")",,,,,,,,57b95701e17597ad,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,809423b5,markdown,fr,5c106cc454ec111c,### Visualisation 1 : Chiffre d'affaires total par catégorie,,,,,,,,5c106cc454ec111c,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,b6be9975,code,fr,307bde8bb8b66558,"plt.figure(figsize=(10, 6))
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,809423b5,markdown,fr,5c106cc454ec111c,### Visualisation 1 : Chiffre d'affaires total par catégorie,,,,,,,,5c106cc454ec111c,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,b6be9975,code,fr,307bde8bb8b66558,"plt.figure(figsize=(10, 6))
 sns.barplot(x='categorie', y='chiffre_affaires', data=df, estimator=sum, errorbar=None)
 plt.title(""Chiffre d'Affaires Total par Catégorie de Produit"")
 plt.xlabel(""Catégorie"")
 plt.ylabel(""Chiffre d'Affaires Total"")
 plt.xticks(rotation=45)
 plt.show()",,,,,,,,307bde8bb8b66558,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,6f7356f0,markdown,fr,208315a320deb667,**Interprétation :** Ce graphique nous montre quelles catégories de produits génèrent le plus de revenus. Exécutez les cellules ci-dessus pour visualiser les résultats et identifier les catégories les plus performantes.,,,,,,,,208315a320deb667,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,57b5b47a,markdown,fr,542274de4030cf0a,### Visualisation 2 : Évolution du chiffre d'affaires journalier,,,,,,,,542274de4030cf0a,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,4092c8b8,code,fr,967a53b370543c5e,"daily_revenue = df.groupby('date')['chiffre_affaires'].sum().reset_index()
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,6f7356f0,markdown,fr,208315a320deb667,**Interprétation :** Ce graphique nous montre quelles catégories de produits génèrent le plus de revenus. Exécutez les cellules ci-dessus pour visualiser les résultats et identifier les catégories les plus performantes.,,,,,,,,208315a320deb667,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,57b5b47a,markdown,fr,542274de4030cf0a,### Visualisation 2 : Évolution du chiffre d'affaires journalier,,,,,,,,542274de4030cf0a,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,4092c8b8,code,fr,967a53b370543c5e,"daily_revenue = df.groupby('date')['chiffre_affaires'].sum().reset_index()
 
 plt.figure(figsize=(12, 6))
 sns.lineplot(x='date', y='chiffre_affaires', data=daily_revenue)
@@ -8573,14 +8573,14 @@ plt.title(""Évolution du Chiffre d'Affaires Journalier"")
 plt.xlabel(""Date"")
 plt.ylabel(""Chiffre d'Affaires"")
 plt.show()",,,,,,,,967a53b370543c5e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,387401eb,markdown,fr,dea7882a8f30a710,"**Interprétation :** Ce graphique linéaire permet de visualiser les tendances des ventes au fil du temps. Exécutez les cellules pour repérer d'éventuelles saisonnalités, pics de vente, ou périodes de creux.",,,,,,,,dea7882a8f30a710,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,3f987ccf,markdown,fr,2e6baeaf1b021bed,"- **Étape 3 :** Introduction au Machine Learning - Classification
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,387401eb,markdown,fr,dea7882a8f30a710,"**Interprétation :** Ce graphique linéaire permet de visualiser les tendances des ventes au fil du temps. Exécutez les cellules pour repérer d'éventuelles saisonnalités, pics de vente, ou périodes de creux.",,,,,,,,dea7882a8f30a710,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,3f987ccf,markdown,fr,2e6baeaf1b021bed,"- **Étape 3 :** Introduction au Machine Learning - Classification
 
 #### Régression logistique
 
 Pour cette première tâche de **classification supervisée**, nous utilisons la **régression logistique** : un modèle linéaire qui estime la probabilité d'appartenance à chaque classe via la fonction logistique (sigmoïde). C'est l'un des classifieurs les plus utilisés et les plus interprétables ; introduit formellement par Cox (1958) pour la régression de variables binaires, il reste une référence pédagogique incontournable. Scikit-learn l'expose via la classe `LogisticRegression`.",,,,,,,,2e6baeaf1b021bed,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,64f9475a,markdown,fr,a4932b8db9cc9128,**Problématique :** Pouvons-nous prédire la `categorie` d'un produit en nous basant uniquement sur son `prix_unitaire` et la `quantite` vendue ?,,,,,,,,a4932b8db9cc9128,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,abba522b,code,fr,17504a869ae96a47,"from sklearn.model_selection import train_test_split
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,64f9475a,markdown,fr,a4932b8db9cc9128,**Problématique :** Pouvons-nous prédire la `categorie` d'un produit en nous basant uniquement sur son `prix_unitaire` et la `quantite` vendue ?,,,,,,,,a4932b8db9cc9128,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,abba522b,code,fr,17504a869ae96a47,"from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
 
@@ -8599,8 +8599,8 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 
 print(f""Donnees preparees : {len(X_train)} echantillons d'entrainement, {len(X_test)} de test"")
 print(f""Features utilisees : {features} | Target : {target}"")",,,,,,,,17504a869ae96a47,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,03c22654,markdown,fr,c948f9cd28550f21,### Entraînement et Évaluation du modèle,,,,,,,,c948f9cd28550f21,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,998fec65,code,fr,d0bda55d5444ccd6,"# Instancier et entraîner le modèle
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,03c22654,markdown,fr,c948f9cd28550f21,### Entraînement et Évaluation du modèle,,,,,,,,c948f9cd28550f21,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,998fec65,code,fr,d0bda55d5444ccd6,"# Instancier et entraîner le modèle
 model = LogisticRegression()
 model.fit(X_train, y_train)
 
@@ -8611,12 +8611,12 @@ y_pred = model.predict(X_test)
 accuracy = accuracy_score(y_test, y_pred)
 
 print(f""Précision du modèle : {accuracy:.2f}"")",,,,,,,,d0bda55d5444ccd6,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,5e3a09e6,markdown,fr,a109c5ccd74267d1,"**Interprétation du score :** Le score de précision (accuracy) nous indique le pourcentage de prédictions correctes que notre modèle a faites sur l'ensemble de test. Exécutez les cellules ci-dessus pour obtenir le score, puis interprétez-le :
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,5e3a09e6,markdown,fr,a109c5ccd74267d1,"**Interprétation du score :** Le score de précision (accuracy) nous indique le pourcentage de prédictions correctes que notre modèle a faites sur l'ensemble de test. Exécutez les cellules ci-dessus pour obtenir le score, puis interprétez-le :
 - **> 0.7** : le modèle distingue bien les catégories à partir du prix et de la quantité.
 - **0.4-0.7** : les features choisies donnent des résultats mitigés.
 - **< 0.4** : le prix et la quantité seuls ne suffisent pas à différencier les catégories de produits.",,,,,,,,a109c5ccd74267d1,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,c111b9db,markdown,fr,be031d37bb75d96e,## Conclusion,,,,,,,,be031d37bb75d96e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,e1d050cf,markdown,fr,f43e1bad600daf1c,"Félicitations ! Vous avez acquis deux compétences fondamentales en Data Science :
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,c111b9db,markdown,fr,be031d37bb75d96e,## Conclusion,,,,,,,,be031d37bb75d96e,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,e1d050cf,markdown,fr,f43e1bad600daf1c,"Félicitations ! Vous avez acquis deux compétences fondamentales en Data Science :
 1.  **L'analyse exploratoire par la visualisation**, pour comprendre vos données.
 2.  **La modélisation prédictive**, pour utiliser vos données afin de faire des prédictions.
 
@@ -8624,13 +8624,13 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-M
 Ce processus que nous avons mené manuellement peut être entièrement automatisé par un agent d'IA. Imaginez pouvoir demander simplement : ""Analyse les ventes du trimestre dernier, identifie les 3 meilleures catégories de produit, et construis un modèle pour prédire la catégorie des nouveaux produits.""
 
 Pour ce faire, l'agent utiliserait des **outils** (tools) qui encapsuleraient la logique que nous venons d'écrire avec `pandas`, `seaborn` et `sklearn`. Le rôle de l'agent est d'orchestrer ces outils pour répondre à la demande de l'utilisateur.",,,,,,,,f43e1bad600daf1c,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,jwygopq4ls,markdown,fr,a23573c5bdd987d6,"## Exemple guidé
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,jwygopq4ls,markdown,fr,a23573c5bdd987d6,"## Exemple guidé
 
 À vous de pratiquer la visualisation et la classification binaire !
 ---
 **Retour au sommaire** : [Index ML](../../../../README.md)
 ",,,,,,,,a23573c5bdd987d6,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,m8r5k70drr8,code,fr,c7ebf56cefd758c4,"# Exercice : Creez une nouvelle visualisation et entrainez un autre modele
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,m8r5k70drr8,code,fr,c7ebf56cefd758c4,"# Exercice : Creez une nouvelle visualisation et entrainez un autre modele
 # 1. Creez un graphique montrant le prix moyen par categorie
 # 2. Entrainez un modele pour predire si le chiffre d'affaires est > 50
 
@@ -8662,7 +8662,7 @@ prix_moyen = None  # Remplacez None
 # ...
 # print(f""Precision du modele binaire (CA > 50) : {accuracy_bin:.2f}"")
 ",,,,,,,,c7ebf56cefd758c4,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,5679da57,markdown,fr,fc94d49d4e92d495,"### Exercice 2 : Analyse de la distribution des prix
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,5679da57,markdown,fr,fc94d49d4e92d495,"### Exercice 2 : Analyse de la distribution des prix
 
 La comprehension de la distribution des variables est essentielle avant de construire un modele. Vous allez creer un histogramme et un boxplot pour analyser la repartition des prix unitaires par categorie.
 
@@ -8672,7 +8672,7 @@ La comprehension de la distribution des variables est essentielle avant de const
 - Utilisez `sns.histplot()` avec le parametre `bins` pour l'histogramme
 - Utilisez `sns.boxplot()` avec `x='categorie'` et `y='prix_unitaire'` pour le boxplot
 - Utilisez `plt.subplots(1, 2, figsize=(14, 5))` pour afficher les deux graphiques cote a cote",,,,,,,,fc94d49d4e92d495,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,6a7cdbe7,code,fr,ba94a8ddd47910df,"# Exercice 2 : Distribution des prix unitaires
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,6a7cdbe7,code,fr,ba94a8ddd47910df,"# Exercice 2 : Distribution des prix unitaires
 # Creez un histogramme et un boxplot pour analyser les prix
 
 # Etape 1: Creez une figure avec deux sous-graphiques (1 ligne, 2 colonnes)
@@ -8690,7 +8690,7 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-M
 # plt.show()
 
 print(""Exercice 2 a completer : distribution des prix avec histogramme et boxplot"")",,,,,,,,ba94a8ddd47910df,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,8799361b,markdown,fr,ab9e0f462d603460,"### Exercice 3 : Evaluation avec la matrice de confusion
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,8799361b,markdown,fr,ab9e0f462d603460,"### Exercice 3 : Evaluation avec la matrice de confusion
 
 L'accuracy seule ne suffit pas toujours a evaluer un modele de classification. Vous allez utiliser la matrice de confusion et le rapport de classification pour obtenir une vue detaillee des performances de votre modele par categorie.
 
@@ -8701,7 +8701,7 @@ L'accuracy seule ne suffit pas toujours a evaluer un modele de classification. V
 - Utilisez `confusion_matrix(y_test, y_pred)` pour obtenir la matrice
 - Utilisez `sns.heatmap()` pour visualiser la matrice de confusion
 - Appelez `classification_report(y_test, y_pred)` pour le rapport detaille",,,,,,,,ab9e0f462d603460,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,9ddb0258,code,fr,244f479015ff23a7,"# Exercice 3 : Matrice de confusion et rapport de classification
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,9ddb0258,code,fr,244f479015ff23a7,"# Exercice 3 : Matrice de confusion et rapport de classification
 # Evaluez plus finement les performances du modele de classification
 
 # Etape 1: Importez les metriques
@@ -8722,7 +8722,7 @@ cm = None  # Remplacez None
 # Indice: print(classification_report(y_test, y_pred))
 
 print(""Exercice 3 a completer : matrice de confusion et rapport de classification"")",,,,,,,,244f479015ff23a7,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,e9fe6ce9,markdown,fr,a6a3c64b0b92cb33,"### Exercice 4 : Courbe ROC et evaluation visuelle du modele
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,e9fe6ce9,markdown,fr,a6a3c64b0b92cb33,"### Exercice 4 : Courbe ROC et evaluation visuelle du modele
 
 L'accuracy et la matrice de confusion donnent une vision globale, mais la courbe ROC (Receiver Operating Characteristic) permet de visualiser le compromis entre le taux de vrais positifs et le taux de faux positifs a differents seuils de decision. Vous allez tracer la courbe ROC pour la classification binaire (chiffre d'affaires eleve vs. bas).
 
@@ -8735,7 +8735,7 @@ L'accuracy et la matrice de confusion donnent une vision globale, mais la courbe
 - Calculez l'AUC avec `roc_auc_score(y_test_bin, y_proba)`
 
 > **Référence.** La courbe ROC et l'AUC sont issues de la théorie du signal (radars, années 1950) et popularisées en apprentissage automatique par Fawcett (2006), *An Introduction to ROC Analysis*, Pattern Recognition Letters 27(8):861-874. L'AUC (aire sous la courbe) résume la performance du classifieur sur tous les seuils.",,,,,,,,a6a3c64b0b92cb33,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,c3797048,code,fr,485100867925a67f,"# Exercice 4 : Courbe ROC pour la classification binaire
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,c3797048,code,fr,485100867925a67f,"# Exercice 4 : Courbe ROC pour la classification binaire
 # Construisez un modele binaire et tracez la courbe ROC
 
 # Etape 1: Creez la cible binaire
@@ -8768,16 +8768,16 @@ y_proba = None  # TODO etudiant
 # plt.show()
 
 print(""Exercice 4 a completer : courbe ROC et AUC"")",,,,,,,,485100867925a67f,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,cell-d1c9f249,markdown,fr,bb328562d29a572e,"## References
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab5-Viz-ML/Lab5-Viz-ML.ipynb,cell-d1c9f249,markdown,fr,bb328562d29a572e,"## References
 
 1. D. R. Cox, *The Regression Analysis of Binary Sequences*, Journal of the Royal Statistical Society: Series B (Methodological) 20(2), 1958, pp. 215-232. Origine formelle de la régression logistique pour les variables binaires — classifieur central de l'Étape 3 de ce laboratoire.
 2. T. Fawcett, *An Introduction to ROC Analysis*, Pattern Recognition Letters 27(8), 2006, pp. 861-874. Référence canonique de la courbe ROC et de l'AUC (Exercice 4).
 3. F. Pedregosa et al., *Scikit-learn: Machine Learning in Python*, JMLR 12, 2011, pp. 2825-2830. Implémentation `LogisticRegression` / `roc_curve` / `train_test_split` — référence détaillée au Lab 1.
 4. J. W. Tukey, *Exploratory Data Analysis*, Addison-Wesley, 1977. Cadre de l'EDA (Étape 2) — référence détaillée au Lab 4.
 ",,,,,,,,bb328562d29a572e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,47521b10,markdown,fr,03a058d5d5af9e59,"**Navigation** : [Index](../../../../README.md) | [<< Lab5](../Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | [Lab7 >>](../Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb)
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,47521b10,markdown,fr,03a058d5d5af9e59,"**Navigation** : [Index](../../../../README.md) | [<< Lab5](../Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | [Lab7 >>](../Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb)
 # Lab 6 - Anatomie de votre premier Agent d'IA",,,,,,,,03a058d5d5af9e59,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,af749b29,markdown,fr,31ea51c88d2c45d9,"## Lab 6 - Anatomie de votre premier Agent d'IA
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,af749b29,markdown,fr,31ea51c88d2c45d9,"## Lab 6 - Anatomie de votre premier Agent d'IA
 
 **Navigation** : [Lab 5 <<](../Lab5-Viz-ML/Lab5-Viz-ML.ipynb) | [Index](../../README.md) | [>> Lab 7](../Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb)
 
@@ -8797,30 +8797,30 @@ A la fin de ce laboratoire, vous saurez :
 ### Duree estimee : 30-40 minutes
 
 ---",,,,,,,,31ea51c88d2c45d9,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,3e42bf33,markdown,fr,f30bf18424b70b66,"Un agent est un programme qui utilise un LLM pour raisonner, choisir des actions (outils) et atteindre un objectif. Dans ce lab, nous allons construire les 4 piliers d'un agent LangChain.",,,,,,,,f30bf18424b70b66,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,f7e61a57,markdown,fr,362caf2ccca2c403,"- **Étape 1 :** Le ""Cerveau"" - Le LLM
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,3e42bf33,markdown,fr,f30bf18424b70b66,"Un agent est un programme qui utilise un LLM pour raisonner, choisir des actions (outils) et atteindre un objectif. Dans ce lab, nous allons construire les 4 piliers d'un agent LangChain.",,,,,,,,f30bf18424b70b66,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,f7e61a57,markdown,fr,362caf2ccca2c403,"- **Étape 1 :** Le ""Cerveau"" - Le LLM
 ",,,,,,,,362caf2ccca2c403,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,ff4efbf5,markdown,fr,61e64823f949ea48,"Le LLM (Large Language Model) est le moteur de raisonnement de notre agent. Nous utiliserons `ChatOpenAI`, qui nécessite une clé API OpenAI.",,,,,,,,61e64823f949ea48,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,1e0aecc4,code,fr,b5008328786a3b09,"from langchain_openai import ChatOpenAI
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,ff4efbf5,markdown,fr,61e64823f949ea48,"Le LLM (Large Language Model) est le moteur de raisonnement de notre agent. Nous utiliserons `ChatOpenAI`, qui nécessite une clé API OpenAI.",,,,,,,,61e64823f949ea48,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,1e0aecc4,code,fr,b5008328786a3b09,"from langchain_openai import ChatOpenAI
 
 # Assurez-vous d'avoir défini votre clé OPENAI_API_KEY dans vos variables d'environnement
 llm = ChatOpenAI(model=""gpt-3.5-turbo"", temperature=0)",,,,,,,,b5008328786a3b09,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,945ba2ba,markdown,fr,766599b7d4e44d4b,"- **Étape 2 :** Les ""Mains"" - Les Outils (Tools)
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,945ba2ba,markdown,fr,766599b7d4e44d4b,"- **Étape 2 :** Les ""Mains"" - Les Outils (Tools)
 ",,,,,,,,766599b7d4e44d4b,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,3b4f0fad,markdown,fr,fa51dcb877ea7ea6,"Les outils sont des fonctions que l'agent peut appeler pour interagir avec le monde extérieur. La *docstring* de la fonction est cruciale, car c'est ce que le LLM lit pour comprendre l'utilité de l'outil.
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,3b4f0fad,markdown,fr,fa51dcb877ea7ea6,"Les outils sont des fonctions que l'agent peut appeler pour interagir avec le monde extérieur. La *docstring* de la fonction est cruciale, car c'est ce que le LLM lit pour comprendre l'utilité de l'outil.
 
 > **Référence — outil-augmentation.** La capacité pour un LLM à *décider* d'appeler un outil, *quand* l'appeler et avec *quels* arguments constitue le paradigme des LLMs *tool-augmented* (ou *function calling*). Son fondement académique est Toolformer (Schick et al., 2023), qui montre qu'un modèle peut apprendre par lui-même à insérer des appels d'API. Le décorateur `@tool` de LangChain expose précisément cette interface : la *docstring* devient la description que le LLM utilise pour choisir l'outil.",,,,,,,,fa51dcb877ea7ea6,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,38cf4cd1,code,fr,6debc7ee2c5e9f07,"from langchain_core.tools import tool
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,38cf4cd1,code,fr,6debc7ee2c5e9f07,"from langchain_core.tools import tool
 import math
 
 @tool
 def calculer_racine_carree(nombre: float) -> float:
     """"""Calcule la racine carrée d'un nombre.""""""
     return math.sqrt(nombre)",,,,,,,,6debc7ee2c5e9f07,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,6542e83c,markdown,fr,fc8cb5cb71114845,"- **Étape 3 :** Les ""Instructions"" - Le Prompt
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,6542e83c,markdown,fr,fc8cb5cb71114845,"- **Étape 3 :** Les ""Instructions"" - Le Prompt
 ",,,,,,,,fc8cb5cb71114845,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,cbcf2fce,markdown,fr,3cc9b40e47f7e6b4,"Le prompt est le modèle d'instructions qui guide le raisonnement de l'agent. Pour commencer, nous allons utiliser un prompt pré-construit et éprouvé depuis le `LangChain Hub`.",,,,,,,,3cc9b40e47f7e6b4,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,cdd296c8,code,fr,78d717951d185058,"from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,cbcf2fce,markdown,fr,3cc9b40e47f7e6b4,"Le prompt est le modèle d'instructions qui guide le raisonnement de l'agent. Pour commencer, nous allons utiliser un prompt pré-construit et éprouvé depuis le `LangChain Hub`.",,,,,,,,3cc9b40e47f7e6b4,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,cdd296c8,code,fr,78d717951d185058,"from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 # Creer le prompt template pour l'agent REACT
 # LangGraph utilise un format base sur les messages
@@ -8830,21 +8830,21 @@ prompt = ChatPromptTemplate.from_messages([
 ])
 
 print(""Prompt REACT configure avec ChatPromptTemplate"")",,,,,,,,78d717951d185058,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,2ab21f9e,markdown,fr,8feaf8ee0a38f1f2,"- **Étape 4 :** L' ""Orchestrateur"" - L'Agent et son Exécuteur
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,2ab21f9e,markdown,fr,8feaf8ee0a38f1f2,"- **Étape 4 :** L' ""Orchestrateur"" - L'Agent et son Exécuteur
 ",,,,,,,,8feaf8ee0a38f1f2,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,28b0e369,markdown,fr,2d0d0e3756a7afd4,"Nous assemblons maintenant tous les composants pour creer l'agent avec `create_react_agent` de LangGraph. Cette fonction cree un graphe qui gere la boucle `Pensee -> Action -> Observation` automatiquement.
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,28b0e369,markdown,fr,2d0d0e3756a7afd4,"Nous assemblons maintenant tous les composants pour creer l'agent avec `create_react_agent` de LangGraph. Cette fonction cree un graphe qui gere la boucle `Pensee -> Action -> Observation` automatiquement.
 
 > **Référence — ReAct.** La boucle *Pensée → Action → Observation* est le paradigme **ReAct** (*Reasoning + Acting*) formalisé par Yao et al. (2023) : l'agent alterne un pas de raisonnement (pensée), l'appel d'un outil (action), puis l'intégration du résultat (observation), jusqu'à produire la réponse finale. `create_react_agent` de LangGraph implémente directement cette boucle. Le prolongement multi-agent (boucle Planner-Coder-Verifier) est abordé au Lab 11 (Track2-GoogleADK).",,,,,,,,2d0d0e3756a7afd4,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,6877d0ac,code,fr,063859148f6ae7f8,"from langgraph.prebuilt import create_react_agent
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,6877d0ac,code,fr,063859148f6ae7f8,"from langgraph.prebuilt import create_react_agent
 
 tools = [calculer_racine_carree]
 graph = create_react_agent(model=llm, tools=tools, prompt=prompt)
 
 print(""Agent REACT cree avec LangGraph"")",,,,,,,,063859148f6ae7f8,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,ba74b487,markdown,fr,7487b1815deb17f6,## Mise en Action,,,,,,,,7487b1815deb17f6,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,926d2c0e,code,fr,813ea9ae771c9674,"result = graph.invoke({""messages"": [(""user"", ""Quelle est la racine carree de 256 ?"")]})",,,,,,,,813ea9ae771c9674,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,479cf1ff,markdown,fr,be031d37bb75d96e,## Conclusion,,,,,,,,be031d37bb75d96e,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,e27f2ea9,markdown,fr,19c54e6cc1e92052,"### Exercice 1 : Ajouter un outil de conversion de temperature
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,ba74b487,markdown,fr,7487b1815deb17f6,## Mise en Action,,,,,,,,7487b1815deb17f6,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,926d2c0e,code,fr,813ea9ae771c9674,"result = graph.invoke({""messages"": [(""user"", ""Quelle est la racine carree de 256 ?"")]})",,,,,,,,813ea9ae771c9674,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,479cf1ff,markdown,fr,be031d37bb75d96e,## Conclusion,,,,,,,,be031d37bb75d96e,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,e27f2ea9,markdown,fr,19c54e6cc1e92052,"### Exercice 1 : Ajouter un outil de conversion de temperature
 
 Les agents deviennent utiles quand ils disposent de plusieurs outils complementaires. Vous allez creer un outil qui convertit une temperature de Celsius en Fahrenheit (et inversement), puis l'integrer dans un agent multi-outils.
 
@@ -8855,7 +8855,7 @@ Les agents deviennent utiles quand ils disposent de plusieurs outils complementa
 - Le decorateur `@tool` requiert une docstring descriptive (le LLM l'utilise pour choisir l'outil)
 - Ajoutez un parametre `sens` (string: ""C2F"" ou ""F2C"") pour specifier la direction de conversion
 - Creez un nouvel agent avec la liste `tools` augmentee",,,,,,,,19c54e6cc1e92052,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,13d363d8,code,fr,4052063bb36f9e3b,"# Exercice 1 : Outil de conversion de temperature
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,13d363d8,code,fr,4052063bb36f9e3b,"# Exercice 1 : Outil de conversion de temperature
 # Creez un outil qui convertit les temperatures et ajoutez-le a l'agent
 
 # Etape 1: Definissez l'outil avec le decorateur @tool
@@ -8875,7 +8875,7 @@ graph_temp = None  # Remplacez None (create_react_agent(...))
 # Indice: graph_temp.invoke({""messages"": [(""user"", ""Combien font 100 degres Celsius en Fahrenheit ?"")]})})
 
 print(""Exercice 1 a completer : outil de conversion de temperature"")",,,,,,,,4052063bb36f9e3b,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,12d42e68,markdown,fr,a1bc95a43ee769e4,"### Exercice 2 : Outil de calcul statistique
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,12d42e68,markdown,fr,a1bc95a43ee769e4,"### Exercice 2 : Outil de calcul statistique
 
 Un agent destine a l'analyse de donnees doit pouvoir realiser des calculs statistiques de base. Vous allez creer un outil qui prend une liste de nombres et retourne les statistiques descriptives (moyenne, mediane, ecart-type).
 
@@ -8886,7 +8886,7 @@ Un agent destine a l'analyse de donnees doit pouvoir realiser des calculs statis
 - `statistics.mean()`, `statistics.median()`, `statistics.stdev()` pour les calculs
 - L'outil prend une liste de floats en entree et retourne une string formattee (le LLM ne sait pas lire les dicts directement)
 - La docstring doit mentionner les metriques calculees pour que le LLM sache quand utiliser cet outil",,,,,,,,a1bc95a43ee769e4,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,af4844ac,code,fr,246fb75fe2e5ace5,"# Exercice 2 : Outil de calcul statistique
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,af4844ac,code,fr,246fb75fe2e5ace5,"# Exercice 2 : Outil de calcul statistique
 # Creez un outil qui calcule les statistiques descriptives d'une liste de nombres
 
 import statistics
@@ -8911,7 +8911,7 @@ graph_stats = None  # Remplacez None
 # result_stats = graph_stats.invoke({""messages"": [(""user"", ""..."")]})
 
 print(""Exercice 2 a completer : outil de calcul statistique"")",,,,,,,,246fb75fe2e5ace5,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,f595bfe3,markdown,fr,4d8c274e6e95387a,"### Exercice 3 : Personnaliser le prompt systeme
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,f595bfe3,markdown,fr,4d8c274e6e95387a,"### Exercice 3 : Personnaliser le prompt systeme
 
 Le prompt systeme definit la personnalite et le comportement de l'agent. Vous allez modifier le prompt pour creer un agent specialise en mathematiques qui explique ses raisonnements etape par etape.
 
@@ -8921,7 +8921,7 @@ Le prompt systeme definit la personnalite et le comportement de l'agent. Vous al
 - Modifiez le message `""system""` dans le `ChatPromptTemplate.from_messages()`
 - Ajoutez des instructions comme ""Explique chaque etape de ton raisonnement"" et ""Affiche les calculs intermediaires""
 - Recreez l'agent avec le nouveau prompt et testez-le sur un probleme a plusieurs etapes",,,,,,,,4d8c274e6e95387a,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,598cb3f2,code,fr,54e421a3a71b3cd5,"# Exercice 3 : Prompt systeme personnalise
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,598cb3f2,code,fr,54e421a3a71b3cd5,"# Exercice 3 : Prompt systeme personnalise
 # Creez un agent avec un prompt systeme pedagogique
 
 # Etape 1: Definissez un nouveau prompt systeme
@@ -8940,16 +8940,16 @@ graph_pedago = None  # Remplacez None
 # result_pedago = graph_pedago.invoke({""messages"": [(""user"", ""..."")]})
 
 print(""Exercice 3 a completer : personnalisation du prompt systeme"")",,,,,,,,54e421a3a71b3cd5,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,cc215b72,markdown,fr,65f905a5eca79108,"Felicitations ! Vous avez assemble les 4 composants fondamentaux d'un agent : un LLM pour raisonner, un Outil pour agir, un Prompt pour guider, et un Graphe LangGraph pour orchestrer.
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,cc215b72,markdown,fr,65f905a5eca79108,"Felicitations ! Vous avez assemble les 4 composants fondamentaux d'un agent : un LLM pour raisonner, un Outil pour agir, un Prompt pour guider, et un Graphe LangGraph pour orchestrer.
 
 Maintenant que nous savons construire un agent et lui donner un outil simple, nous sommes prets pour la prochaine etape : lui donner des outils puissants pour interagir avec des DataFrames Pandas et devenir un veritable assistant d'analyse de donnees. C'est l'objet du Lab 7 !",,,,,,,,65f905a5eca79108,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,5dbb2a89,markdown,fr,fca402a08f20ec9d,"## Exemple guidé
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,5dbb2a89,markdown,fr,fca402a08f20ec9d,"## Exemple guidé
 
 À vous d'étendre l'agent en lui ajoutant un nouvel outil mathématique !
 ---
 **Retour au sommaire** : [Index ML](../../../../README.md)
 ",,,,,,,,fca402a08f20ec9d,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,20603f66,code,fr,73d66bfe3231407f,"# Exercice : Ajoutez un nouvel outil a l'agent
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,20603f66,code,fr,73d66bfe3231407f,"# Exercice : Ajoutez un nouvel outil a l'agent
 # Creez un outil qui calcule la puissance d'un nombre
 
 # Exercice: Creez un outil 'calculer_puissance' avec le decorateur @tool
@@ -8970,13 +8970,13 @@ graph_exo = None           # Remplacez None
 
 # Exercice: Testez l'agent avec une question necessitant la puissance
 # result_exo = graph_exo.invoke({""messages"": [(""user"", ""Quelle est la puissance de 5 eleve au carre ?"")]})",,,,,,,,73d66bfe3231407f,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,cell-7ecacbd6,markdown,fr,1f2de98292d35d63,"## References
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab6-First-Agent/Lab6-First-Agent.ipynb,cell-7ecacbd6,markdown,fr,1f2de98292d35d63,"## References
 
 1. S. Yao, J. Zhao, D. Yu, et al., *ReAct: Synergizing Reasoning and Acting in Language Models*, ICLR 2023, arXiv:2210.03629. Paradigme Reasoning+Acting (boucle Pensée → Action → Observation) implémenté par `create_react_agent` (Étape 4) — concept central de ce laboratoire.
 2. T. Schick, J. Dwivedi-Yu, R. Dessì, et al., *Toolformer: Language Models Can Teach Themselves to Use Tools*, NeurIPS 2023, arXiv:2302.04761. Fondement académique des LLMs *tool-augmented* (décider/quand/arguments d'un appel d'outil) sous-jacent au décorateur `@tool` (Étape 2).
 3. H. Chase, *LangChain*, 2022 ; LangGraph, `langchain-ai/langgraph`. Framework d'orchestration d'agents (graphe d'états) utilisé tout au long du laboratoire — référence bibliographique détaillée au Lab 8.
 ",,,,,,,,1f2de98292d35d63,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,3835c398,markdown,fr,a9326b3fe9728fce,"# Lab 7 - Votre premier Agent Analyste de Données
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,3835c398,markdown,fr,a9326b3fe9728fce,"# Lab 7 - Votre premier Agent Analyste de Données
 
 **Navigation** : [Lab 6 <<](../Lab6-First-Agent/Lab6-First-Agent.ipynb) | [Index](../../README.md) | [>> Lab 8](../../../../Track2-GoogleADK/Day4-Foundations/Lab8-ADK-Introduction.ipynb)
 
@@ -8995,10 +8995,10 @@ A la fin de ce laboratoire, vous saurez :
 - Connaissance de LangChain (Lab 2 complete)
 
 ### Duree estimee : 45-60 minutes",,,,,,,,a9326b3fe9728fce,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,9c3e9efc,markdown,fr,53a9e65e162d81ce,Nous allons maintenant fusionner les deux mondes : la Data Science (Pandas) et l'IA Agentique (LangChain). L'objectif est de créer un agent qui peut effectuer des analyses de données à notre place.,,,,,,,,53a9e65e162d81ce,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,72514776,markdown,fr,632bf9ffcff87b11,"- **Étape 1 :** Préparation de l'Environnement et des Données
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,9c3e9efc,markdown,fr,53a9e65e162d81ce,Nous allons maintenant fusionner les deux mondes : la Data Science (Pandas) et l'IA Agentique (LangChain). L'objectif est de créer un agent qui peut effectuer des analyses de données à notre place.,,,,,,,,53a9e65e162d81ce,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,72514776,markdown,fr,632bf9ffcff87b11,"- **Étape 1 :** Préparation de l'Environnement et des Données
 ",,,,,,,,632bf9ffcff87b11,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,8347e543,code,fr,ff6ce652a6cb24c1,"import pandas as pd
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,8347e543,code,fr,ff6ce652a6cb24c1,"import pandas as pd
 from langchain_openai import ChatOpenAI
 from langchain_experimental.agents.agent_toolkits import create_pandas_dataframe_agent
 import os
@@ -9011,8 +9011,8 @@ df = pd.read_csv('../Lab4-DataWrangling/transactions.csv')
 
 print(""Imports OK : pandas, langchain_openai, langchain_experimental"")
 print(f""Donnees chargees : {len(df)} lignes, {len(df.columns)} colonnes"")",,,,,,,,ff6ce652a6cb24c1,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,d2a3ec9d,markdown,fr,df0e0eede3a6fe55,"Un agent, comme un humain, a besoin de données de qualité pour bien travailler. Nous allons donc répéter les mêmes étapes de nettoyage que dans le Lab 4.",,,,,,,,df0e0eede3a6fe55,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,7fd4a313,code,fr,16c6363e50b4c7c3,"# Supprimer les lignes où la quantité est manquante car une transaction sans quantité n'est pas exploitable
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,d2a3ec9d,markdown,fr,df0e0eede3a6fe55,"Un agent, comme un humain, a besoin de données de qualité pour bien travailler. Nous allons donc répéter les mêmes étapes de nettoyage que dans le Lab 4.",,,,,,,,df0e0eede3a6fe55,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,7fd4a313,code,fr,16c6363e50b4c7c3,"# Supprimer les lignes où la quantité est manquante car une transaction sans quantité n'est pas exploitable
 df.dropna(subset=['quantite'], inplace=True)
 
 # Remplir le prix manquant avec la moyenne des prix du même produit (stratégie d'imputation)
@@ -9027,12 +9027,12 @@ df['chiffre_affaires'] = df['quantite'] * df['prix_unitaire']
 print(""Données nettoyées et prêtes pour l'agent. Aperçu :"")
 df.head()
 ",,,,,,,,16c6363e50b4c7c3,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,3552234a,markdown,fr,00b4090fbfafc713,"- **Étape 2 :** Le Cerveau et le nouvel ""Outil""
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,3552234a,markdown,fr,00b4090fbfafc713,"- **Étape 2 :** Le Cerveau et le nouvel ""Outil""
 ",,,,,,,,00b4090fbfafc713,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,746c8675,markdown,fr,b82e9aef2db7153d,"Voici la fonction clé : `create_pandas_dataframe_agent`. C'est un ""constructeur d'agent"" spécialisé. Au lieu de lui donner nos propres outils manuellement, cette fonction va analyser le DataFrame et fournir à l'agent une boîte à outils (`PythonREPLTool`) lui permettant d'écrire et d'exécuter du code Python (et donc Pandas) pour répondre à des questions.
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,746c8675,markdown,fr,b82e9aef2db7153d,"Voici la fonction clé : `create_pandas_dataframe_agent`. C'est un ""constructeur d'agent"" spécialisé. Au lieu de lui donner nos propres outils manuellement, cette fonction va analyser le DataFrame et fournir à l'agent une boîte à outils (`PythonREPLTool`) lui permettant d'écrire et d'exécuter du code Python (et donc Pandas) pour répondre à des questions.
 
 > **Référence — CodeAct.** Le mécanisme au cœur de cet agent — un LLM qui *écrit puis exécute lui-même du code* (ici via `PythonREPLTool`) pour agir et observer le résultat — est le paradigme **CodeAct** (*executable code actions*), formalisé par Wang et al. (2024) : utiliser du code exécutable comme espace d'action unifie raisonnement, appel d'outils et calcul dans une même boucle, plutôt que d'émettre des appels d'API figés. C'est précisément ce que fait l'agent pandas : il génère du code Pandas, l'exécute, lit la sortie, puis itère. Le paradigme ReAct (boucle Pensée→Action→Observation, Lab 6) sous-tend cette itération ; le prolongement data-science SOTA (DS-STAR) est au Lab 10.",,,,,,,,b82e9aef2db7153d,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,f7185256,code,fr,a5d0c04ad573ac60,"llm = ChatOpenAI(temperature=0, model=""gpt-4o"")
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,f7185256,code,fr,a5d0c04ad573ac60,"llm = ChatOpenAI(temperature=0, model=""gpt-4o"")
 
 # Création de l'agent
 # Note: agent_type=""openai-tools"" est une méthode moderne et robuste qui utilise les ""OpenAI Tools"" pour une meilleure fiabilité.
@@ -9040,25 +9040,25 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-
 agent_executor = create_pandas_dataframe_agent(llm, df, agent_type=""openai-tools"", verbose=True, allow_dangerous_code=True)
 
 print(""Agent LangChain configure : LLM gpt-4o, agent_type=openai-tools, DataFrame transactions"")",,,,,,,,a5d0c04ad573ac60,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,658dc0fa,markdown,fr,62cc9218e6576bad,"- **Étape 3 :** Dialoguer avec l'Agent Analyste
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,658dc0fa,markdown,fr,62cc9218e6576bad,"- **Étape 3 :** Dialoguer avec l'Agent Analyste
 ",,,,,,,,62cc9218e6576bad,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,f0f55774,code,fr,83dd25c988c64e3a,"agent_executor.invoke({""input"": ""Combien y a-t-il de lignes dans les données ?""})",,,,,,,,83dd25c988c64e3a,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,74ffd8b1,markdown,fr,bac3ae91a411f12a,"### Question de calcul : Agregation metier
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,f0f55774,code,fr,83dd25c988c64e3a,"agent_executor.invoke({""input"": ""Combien y a-t-il de lignes dans les données ?""})",,,,,,,,83dd25c988c64e3a,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,74ffd8b1,markdown,fr,bac3ae91a411f12a,"### Question de calcul : Agregation metier
 
 Testons maintenant une question qui necessite un calcul d'agregation. L'agent devra identifier la colonne `chiffre_affaires` et appliquer la fonction `.sum()` appropriee. Le parametre `verbose=True` nous permettra de voir le raisonnement de l'agent.
 ",,,,,,,,bac3ae91a411f12a,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,cb22fc5e,code,fr,615ba4c3cdba001a,"agent_executor.invoke({""input"": ""Quel est le chiffre d'affaires total réalisé ?""})",,,,,,,,615ba4c3cdba001a,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,04764bb6,markdown,fr,a58c5fbaacc8ff76,"### Question d'exploration : Valeurs uniques
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,cb22fc5e,code,fr,615ba4c3cdba001a,"agent_executor.invoke({""input"": ""Quel est le chiffre d'affaires total réalisé ?""})",,,,,,,,615ba4c3cdba001a,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,04764bb6,markdown,fr,a58c5fbaacc8ff76,"### Question d'exploration : Valeurs uniques
 
 Explorons maintenant les categories de produits disponibles. Cette question teste la capacite de l'agent a identifier et utiliser les methodes appropriees de Pandas (comme `.unique()` ou `.nunique()`).
 ",,,,,,,,a58c5fbaacc8ff76,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,f9fde191,code,fr,0fa7d7372a0e6128,"agent_executor.invoke({""input"": ""Liste les catégories de produits uniques.""})",,,,,,,,0fa7d7372a0e6128,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,e7f5796a,markdown,fr,55ba15f0ce54f744,"### Question complexe : Analyse comparative
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,f9fde191,code,fr,0fa7d7372a0e6128,"agent_executor.invoke({""input"": ""Liste les catégories de produits uniques.""})",,,,,,,,0fa7d7372a0e6128,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,e7f5796a,markdown,fr,55ba15f0ce54f744,"### Question complexe : Analyse comparative
 
 Maintenant, posons une question qui necessite un raisonnement plus elabore. L'agent devra non seulement calculer des agregations, mais egalement comparer et identifier le maximum. Observez comment il decompose le probleme en etapes logiques.
 ",,,,,,,,55ba15f0ce54f744,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,4ad883c6,code,fr,89dcc85904a5d57d,"agent_executor.invoke({""input"": ""Quelle est la catégorie qui a généré le plus de chiffre d'affaires ?""})",,,,,,,,89dcc85904a5d57d,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,adef963a,markdown,fr,fb13174f8e015308,"## 🎯 Exercices Pratiques
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,4ad883c6,code,fr,89dcc85904a5d57d,"agent_executor.invoke({""input"": ""Quelle est la catégorie qui a généré le plus de chiffre d'affaires ?""})",,,,,,,,89dcc85904a5d57d,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,adef963a,markdown,fr,fb13174f8e015308,"## 🎯 Exercices Pratiques
 
 ### Exercice 1 : Questions à l'agent
 
@@ -9070,7 +9070,7 @@ Formulez et testez 3 questions supplémentaires à poser à l'agent `agent_execu
 **Analysez la sortie verbose** : Observez comment l'agent décompose chaque question en étapes Python exécutables.
 
 **Indices** : Utilisez `agent_executor.invoke({""input"": ""votre question""})` pour chaque question.",,,,,,,,fb13174f8e015308,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,f98c128d,code,fr,5c35363907061c03,"# Votre code pour l'Exercice 1
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,f98c128d,code,fr,5c35363907061c03,"# Votre code pour l'Exercice 1
 
 # TODO: Formulez et testez vos 3 questions
 # Question 1 - Filtrage
@@ -9084,7 +9084,7 @@ reponse_complexe = None
 
 # Note: Les réponses seront affichées automatiquement par le mode verbose de l'agent
 print(""Exercice a completer"")",,,,,,,,5c35363907061c03,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,4b976756,markdown,fr,539cbc7acaaa9a2a,"### Exercice 2 : Comparer les performances de deux modeles LLM
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,4b976756,markdown,fr,539cbc7acaaa9a2a,"### Exercice 2 : Comparer les performances de deux modeles LLM
 
 Tous les LLM ne se valent pas en termes de capacite d'analyse de donnees. Vous allez comparer les performances du modele `gpt-4o` (deja utilise) avec un modele plus leger comme `gpt-3.5-turbo` sur une meme question analytique.
 
@@ -9095,7 +9095,7 @@ Tous les LLM ne se valent pas en termes de capacite d'analyse de donnees. Vous a
 - Utilisez la meme fonction `create_pandas_dataframe_agent()` avec le nouveau LLM
 - Posez une question analytique complexe aux deux agents (ex: ""Quelle est la correlation entre la quantite vendue et le chiffre d'affaires ?"")
 - Comparez la pertinence et la precision des deux reponses",,,,,,,,539cbc7acaaa9a2a,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,0aecdc00,code,fr,60841a7a30d03b1f,"# Exercice 2 : Comparaison de modeles LLM
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,0aecdc00,code,fr,60841a7a30d03b1f,"# Exercice 2 : Comparaison de modeles LLM
 # Creez un second agent avec un modele different et comparez les resultats
 
 # Etape 1: Creez un LLM avec un modele different
@@ -9122,7 +9122,7 @@ question_test = ""Quelle est la categorie avec le prix unitaire moyen le plus el
 # print(reponse_light[""output""])
 
 print(""Exercice 2 a completer : comparaison de deux modeles LLM"")",,,,,,,,60841a7a30d03b1f,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,ab609e79,markdown,fr,5f1c8d506e012663,"### Exercice 3 : Analyser un nouveau dataset avec l'agent
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,ab609e79,markdown,fr,5f1c8d506e012663,"### Exercice 3 : Analyser un nouveau dataset avec l'agent
 
 Un analyste de donnees doit souvent travailler avec des sources de donnees nouvelles. Vous allez charger un dataset different (les donnees des etudiants creees dans le notebook Pandas) et demander a l'agent de produire une analyse complete.
 
@@ -9132,7 +9132,7 @@ Un analyste de donnees doit souvent travailler avec des sources de donnees nouve
 - Creez un DataFrame avec `pd.DataFrame()` contenant des donnees d'etudiants (Nom, Age, Note, Filiere)
 - Utilisez `create_pandas_dataframe_agent()` avec le nouveau DataFrame
 - Demandez a l'agent de calculer la moyenne par filiere, d'identifier les outliers et de produire un resume",,,,,,,,5f1c8d506e012663,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,931b5c66,code,fr,0110d70fafb8d720,"# Exercice 3 : Analyse d'un nouveau dataset
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,931b5c66,code,fr,0110d70fafb8d720,"# Exercice 3 : Analyse d'un nouveau dataset
 # Creez un DataFrame d'etudiants et demandez a l'agent de l'analyser
 
 # Etape 1: Creez un DataFrame synthetique
@@ -9159,14 +9159,14 @@ agent_etudiants = None  # Remplacez None
 # reponse_resume = agent_etudiants.invoke({""input"": ""Donne un resume statistique complet de ce dataset""})
 
 print(""Exercice 3 a completer : analyse d'un nouveau dataset avec l'agent"")",,,,,,,,0110d70fafb8d720,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,0c4103c6,markdown,fr,8699ce6933fcf562,"## Conclusion
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,0c4103c6,markdown,fr,8699ce6933fcf562,"## Conclusion
 
 Félicitations ! Vous avez créé un véritable agent spécialisé, un ""Data Analyst junior"".
 
 Le concept clé à retenir est que nous n'avons pas codé les analyses nous-mêmes. Nous avons donné au LLM un **outil** (la capacité d'exécuter du code sur un DataFrame) et un **contexte** (le DataFrame lui-même), et il a **raisonné** pour déterminer comment utiliser cet outil pour atteindre l'objectif.
 
 Dans les prochains jours, nous apprendrons à construire des agents encore plus complexes, avec de multiples outils et des capacités de planification plus avancées.",,,,,,,,8699ce6933fcf562,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,cell-68fc25a0,markdown,fr,e18b28188d69b52f,"## References
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track1-LangChain/Day3-Data-Agents/Labs/Lab7-Data-Analysis-Agent/Lab7-Data-Analysis-Agent.ipynb,cell-68fc25a0,markdown,fr,e18b28188d69b52f,"## References
 
 1. X. Wang, Y. Chen, L. Yuan, et al., *Executable Code Actions Elicit Better LLM Agents* (CodeAct), ICML 2024, PMLR 235:50208-50232, arXiv:2402.01030. Paradigme de l'action-par-code-exécutable : un LLM écrit et exécute lui-même du code pour raisonner et agir — mécanisme central du `create_pandas_dataframe_agent` (Étape 2).
 2. S. Yao et al., *ReAct: Synergizing Reasoning and Acting in Language Models*, ICLR 2023, arXiv:2210.03629. Boucle Pensée→Action→Observation sous-jacente à l'itération de l'agent — détaillée au Lab 6.
