@@ -744,6 +744,56 @@ def test_compare_gates_a_banner_that_replaces_a_render():
     assert rows[0]["classes"]["DECLARED_FALLBACK"]["delta"] == 0
 
 
+# --- ImportError : la forme d'une exception levee, pas le mot nu (#20701) ---
+
+IMPORT_TABLE_CITATION = (
+    "| **Imports plats vs package** : le projet utilise `from utils import ...` "
+    "(pas de package) | `ImportError` si la CLI est lancee depuis un autre "
+    "dossier | Meme pattern que `tests/test_utils.py` |")
+
+
+def test_importerror_raised_forms_fire():
+    """Chaque forme produite par une levee reelle reste un TOOL_FAILURE :
+    derniere ligne de trace, variante coloree IPython, derniere ligne sans
+    message, et gestionnaire imprimant la classe en milieu de ligne."""
+    for raised in ("Traceback (most recent call last):\n"
+                   "ImportError: cannot import name 'X' from 'y'",
+                   "\x1b[0;31mImportError\x1b[0m: cannot import name 'X'",
+                   "Traceback (most recent call last):\nImportError",
+                   "Erreur: ImportError: cannot import name 'X'"):
+        got = scan(nb(cell("print(x)", raised)))["TOOL_FAILURE"]
+        assert len(got) == 1, raised
+
+
+def test_importerror_table_citation_silent():
+    """Ligne citee dans l'issue #20701 : le nom nu dans un tableau de risques."""
+    assert scan(nb(cell("print(x)", IMPORT_TABLE_CITATION)))[
+        "TOOL_FAILURE"] == []
+
+
+def test_importerror_backticked_citation_with_message_silent():
+    """Une citation qui porte un message reste une citation : le backtick
+    place avant le nom l'exclut."""
+    text = "Voir `ImportError: cannot import name 'X'` dans la doc."
+    assert scan(nb(cell("print(x)", text)))["TOOL_FAILURE"] == []
+
+
+def test_importerror_citation_does_not_mask_raise_in_same_stream():
+    text = IMPORT_TABLE_CITATION + "\nImportError: cannot import name 'X'"
+    assert len(scan(nb(cell("print(x)", text)))["TOOL_FAILURE"]) == 1
+
+
+def test_importerror_sample_is_not_ventilated_as_degraded_hint():
+    """Le balayage classe un constat en DEGRADED_HINT si son texte extrait
+    contient un motif mou. Une levee dont le message en porte un doit rester
+    un TOOL_FAILURE."""
+    from check_output_failure_text import _is_degraded_hint
+    hits = scan(nb(cell("print(x)", "ImportError: not available on this "
+                                    "platform")))["TOOL_FAILURE"]
+    assert len(hits) == 1
+    assert not _is_degraded_hint(hits[0][1])
+
+
 # ---------------------------------------------------------------------------
 # #20120 : texte de programme affiche vs chemin emis par le runtime.
 # Calibration de l'issue : deux carnets Aspire affichent le source AppHost
