@@ -30,10 +30,31 @@ class RiskParity(QCAlgorithm):
     MIN_TRENDING = 2
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2024, 12, 31)
+        # Measurement against held references (#21420, protocol of #21329):
+        # `strategy` (default) keeps the code's decision; `spy` (SPY held) and
+        # `6040` (SPY 60 %, BND 40 %) are the two references.
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040"):
+            raise ValueError(
+                f"unknown mode parameter: {self._mode} (strategy | spy | 6040)"
+            )
+
+        # The start_date and end_date parameters (%Y%m%d) open the out-of-sample
+        # measurement; without them, the window stays as coded below.
+        start_date_param = self._parse_date_param("start_date")
+        end_date_param = self._parse_date_param("end_date")
+        if start_date_param is not None:
+            self.set_start_date(start_date_param)
+        else:
+            self.set_start_date(2015, 1, 1)
+        if end_date_param is not None:
+            self.set_end_date(end_date_param)
+        else:
+            self.set_end_date(2024, 12, 31)
         self.set_cash(100_000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
+        if self._mode != "strategy":
+            self.settings.seed_initial_prices = True
         self.set_benchmark("SPY")
 
         self.all_tickers = self.TICKERS + [self.SAFE_TICKER]
@@ -69,8 +90,52 @@ class RiskParity(QCAlgorithm):
 
         self.set_warm_up(timedelta(days=self.WARMUP_DAYS))
 
-    def rebalance(self):
+        # References: same subscriptions, indicators and warm-up, no strategy
+        # decision (rebalance and the re-send exit at once), rebalanced at the
+        # start of each month.
+        if self._mode != "strategy":
+            self.schedule.on(
+                self.date_rules.month_start("SPY"),
+                self.time_rules.after_market_open("SPY", 1),
+                self._rebalance_reference,
+            )
+
+        # Daily `shadow` trace (contract #18923): portfolio value at the open of
+        # each SPY session, spread over e0..e4. The three modes take it at the
+        # same instant, on the previous close.
+        self._closes = 0
+        self.schedule.on(
+            self.date_rules.every_day("SPY"),
+            self.time_rules.after_market_open("SPY", 0),
+            self._trace,
+        )
+
+    def _parse_date_param(self, name):
+        raw = self.get_parameter(name)
+        if raw is None or str(raw).strip() == "":
+            return None
+        return datetime.strptime(str(raw).strip(), "%Y%m%d")
+
+    def _rebalance_reference(self):
         if self.is_warming_up:
+            return
+        spy = self.symbols["SPY"]
+        if self._mode == "spy":
+            self.set_holdings([PortfolioTarget(spy, 1.0)])
+        else:
+            self.set_holdings([
+                PortfolioTarget(spy, 0.6),
+                PortfolioTarget(self.symbols[self.SAFE_TICKER], 0.4),
+            ])
+
+    def _trace(self):
+        if self.is_warming_up:
+            return
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
+
+    def rebalance(self):
+        if self.is_warming_up or self._mode != "strategy":
             return
 
         trending = {}
@@ -139,7 +204,7 @@ class RiskParity(QCAlgorithm):
             self._refused[order_event.symbol] = self.time.date()
 
     def _resend_refused(self):
-        if self.is_warming_up or not self._refused:
+        if self.is_warming_up or self._mode != "strategy" or not self._refused:
             return
         today = self.time.date()
         for sym, day in list(self._refused.items()):

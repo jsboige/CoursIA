@@ -45,7 +45,8 @@ Le matériel QC mélange 4 types de notebooks qu'un visiteur doit distinguer :
 | `ML-RandomForest` | ML supervisé (RF) | US large-cap | **Needs-improvement** (PSR < 50 %) | Figure #5747. QC Cloud 2026-08-06, projet 29434751, 2015-2024 : Sharpe 0.819 ; CAGR 24.25 % ; MaxDD 40.5 % ; **PSR 14.52 %**. Sept titres Mag7 sur dix et une seule graine : du bêta filtré, pas d'alpha ML (README) (réaligné #19709) |
 | `ML-XGBoost` | ML supervisé (XGBoost) | US large-cap | **Needs-improvement** (PSR < 50 %) | Figure #5749. QC Cloud 2026-08-06, projet 29434753, 2015-2024 : Sharpe 0.787 ; CAGR 19.49 % ; MaxDD 35.9 % ; **PSR 15.40 %**. Régresseur `GradientBoostingRegressor` (pas la bibliothèque `xgboost`) utilisé en classement, univers Mag7 + tech (README) (réaligné #19709) |
 | `ForexCarry` | FX carry/momentum | G10 FX | **BROKEN** (`main.py` actuel) | Figure #5748. Mesure du README, 2018-2026, `main.py` v4.0 : **Sharpe −0.156** ; CAGR −0.6 % ; MaxDD 13.95 %. Les variantes v3a et v3e (Sharpe +0.501 et +1.687) ne vivent que dans `research.ipynb`, pas dans `main.py` (réaligné #19709) |
-| `RiskParity` / `Cloud-RiskParity-Composite` | Inverse-vol risk-parity | Multi-actifs | **Needs-improvement** (plafond structurel) | Sharpe 0.399 (contre-exemple pédagogique, figure #5753) ; **run frais 2026-08-14 baseline #1630 : 0.027** (tranche 24 ci-dessous) |
+| `RiskParity` | Inverse-vol risk-parity (filtre de tendance, rang du momentum) | Multi-actifs | **NO BEATS** (fenêtre codée) · **INCONCLUSIVE** (hors échantillon) | QC Cloud 2026-10-19 (#21420), code actuel, contre SPY détenu et un 60/40. Fenêtre codée 2015-01 → 2024-12 : Sharpe 0,71 (taux sans risque nul) contre 0,79 pour SPY détenu et 0,80 pour le 60/40, p Holm 1,00 ; CAGR 7,3 % contre 13,0 % et 8,4 %, pire baisse −18,4 % contre −33,7 % et −21,7 %. Hors échantillon 2025-01 → 2026-07 : Sharpe 1,23 contre 1,03 et 1,16, p Holm 1,00. L'ancien statut reposait sur le Sharpe 0.399 de la figure #5753 et sur un run de `Cloud-RiskParity-Composite`, un autre code, sans test contre une référence détenue |
+| `Cloud-RiskParity-Composite` | Inverse-vol risk-parity | Multi-actifs | **Needs-improvement** (plafond structurel) | **run frais 2026-08-14 baseline #1630 : 0.027** (tranche 24 ci-dessous) ; code distinct de `RiskParity` |
 | `DualMomentum` | Momentum dual-asset | Multi-actifs | **Superseded** | Échec TLT 2022 → remplacé par `DualMomentumNoTLT` |
 | `DualMomentumNoTLT` | Momentum (sans TLT) | Multi-actifs | **Needs-improvement** (remplacement, PSR < 50 %) | Figure #5754. QC Cloud 2026-08-06, projet 31244186, 2015-2024 : Sharpe 0.633 ; CAGR 16.91 % ; MaxDD 34.5 % ; **PSR 5.98 %**. Bat SPY en CAGR, sans alpha statistiquement significatif (README) (réaligné #19709) |
 
@@ -139,7 +140,7 @@ Backtests cross-stratégies 2022–2024 (stress test) — un visiteur peut antic
 | `LongShortHarvest-QC` | `projects/LongShortHarvest-QC/` | Long/short actions | Vérifié | tableau vérifié ci-dessus (NO BEATS, #19450 et #19837) |
 | `ML-RandomForest` | `projects/ML-RandomForest/` | ML supervisé (RF) | Vérifié | tableau vérifié ci-dessus (figure #5747) |
 | `ML-XGBoost` | `projects/ML-XGBoost/` | ML supervisé (XGBoost) | Vérifié | tableau vérifié ci-dessus (figure #5749) |
-| `RiskParity` | `projects/RiskParity/` | Inverse-vol risk-parity | Vérifié | tableau vérifié ci-dessus (Needs-improvement, 0.399) |
+| `RiskParity` | `projects/RiskParity/` | Inverse-vol risk-parity | Vérifié | tableau vérifié ci-dessus (NO BEATS sur la fenêtre codée, #21420) |
 
 #### Vérifié (tranche 2, backtests QC Cloud via MCP) (5)
 
