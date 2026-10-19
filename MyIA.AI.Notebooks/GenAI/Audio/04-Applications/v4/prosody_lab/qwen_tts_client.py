@@ -208,13 +208,19 @@ def qwen_tts_customvoice(
     response_format: str = "wav",
     speed: float = 1.0,
     timeout: int = 300,
+    base_url: str | None = None,
+    api_key: str | None = None,
+    model: str | None = None,
 ) -> bytes | None:
     """Synthesize via a named native speaker (CustomVoice task).
 
     ``instructions`` may optionally add a style hint on top of the speaker.
+    ``base_url``/``api_key``/``model`` override the module-level gateway
+    constants per call (used when the CustomVoice checkpoint is served on a
+    different host than the local :8196 VoiceDesign socket — #21145).
     """
     payload: dict = {
-        "model": QWEN_MODEL,
+        "model": model or QWEN_MODEL,
         "input": text,
         "task_type": "CustomVoice",
         "voice": voice,
@@ -224,7 +230,65 @@ def qwen_tts_customvoice(
     }
     if instructions.strip():
         payload["instructions"] = instructions.strip()[:MAX_INSTRUCTIONS_LEN]
-    return _post_speech(payload, timeout)
+    return _post_speech(payload, timeout, base_url=base_url, api_key=api_key)
+
+
+def qwen_tts_customvoice_chunked(
+    text: str,
+    voice: str = "Vivian",
+    instructions: str = "",
+    language: str = "French",
+    speed: float = 1.0,
+    max_chars: int = 160,
+    per_chunk_timeout: int = 290,
+    gap_ms: int = 120,
+    base_url: str | None = None,
+    api_key: str | None = None,
+    model: str | None = None,
+) -> bytes | None:
+    """CustomVoice render of long text, chunked to stay under the gateway timeout.
+
+    Same orchestration as :func:`qwen_tts_voicedesign_chunked` (sentence-level
+    chunks, silence gap, single WAV out, ``None`` if any chunk fails so a
+    partial passage is never silently measured), for the CustomVoice task on
+    the published gateway (#21145).
+    """
+    from io import BytesIO
+
+    from pydub import AudioSegment
+
+    chunks = _split_sentences(text, max_chars=max_chars)
+    if not chunks:
+        return None
+    logger.info("CustomVoice chunked render: %d chunk(s)", len(chunks))
+    segments: list[AudioSegment] = []
+    for i, ch in enumerate(chunks, start=1):
+        audio = qwen_tts_customvoice(
+            ch,
+            voice=voice,
+            instructions=instructions,
+            language=language,
+            response_format="wav",
+            speed=speed,
+            timeout=per_chunk_timeout,
+            base_url=base_url,
+            api_key=api_key,
+            model=model,
+        )
+        if not audio:
+            logger.error(
+                "CustomVoice chunk %d/%d failed (%d chars): %r",
+                i, len(chunks), len(ch), ch[:60],
+            )
+            return None
+        segments.append(AudioSegment.from_file(BytesIO(audio), format="wav"))
+    combined = segments[0]
+    gap = AudioSegment.silent(duration=gap_ms)
+    for seg in segments[1:]:
+        combined = combined + gap + seg
+    buf = BytesIO()
+    combined.export(buf, format="wav")
+    return buf.getvalue()
 
 
 def qwen_tts_clone(
@@ -255,12 +319,21 @@ def qwen_tts_clone(
     return _post_speech(payload, timeout)
 
 
-def _post_speech(payload: dict, timeout: int) -> bytes | None:
+def _post_speech(
+    payload: dict,
+    timeout: int,
+    base_url: str | None = None,
+    api_key: str | None = None,
+) -> bytes | None:
+    url_base = base_url or QWEN_GATEWAY_URL
+    headers = _headers()
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
     try:
         resp = requests.post(
-            f"{QWEN_GATEWAY_URL}/v1/audio/speech",
+            f"{url_base}/v1/audio/speech",
             json=payload,
-            headers=_headers(),
+            headers=headers,
             timeout=timeout,
         )
         if not resp.ok:
