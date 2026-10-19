@@ -15,7 +15,10 @@ Cet organe repond a deux questions, pour chaque depot declare dans ``.gitmodules
    depuis plus de ``--max-age-hours`` heures, sans aucun commentaire ni review,
    est ``UNSEEN`` : personne ne l'a regardee. Les PRs de bots (Dependabot) sont
    comptees a part : elles ne rougissent pas l'organe, mais leur nombre et leur
-   age s'affichent.
+   age s'affichent. Une PR dont le titre commence par ``[HOLD`` ou ``[WIP`` est
+   un gel declare (``HOLD``) : comptee et affichee, elle ne rougit pas non plus.
+   Les PRs se lisent page par page ; un compte lu different de ``totalCount``
+   rend le depot illisible plutot que de taire la queue de la liste.
 2. **Le gitlink de CoursIA suit-il sa branche ?** Meme mesure que la Regle 2 :
    ``git ls-tree <ref> <chemin>`` contre ``git ls-remote <url> <branche declaree>``
    (``HEAD`` quand ``.gitmodules`` ne declare pas de branche). Un ``ls-remote``
@@ -44,14 +47,18 @@ from typing import Callable
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_MAX_AGE_HOURS = 24.0
+MAX_PAGES = 20  # 2 000 PRs ouvertes par depot : au-dela, le depot est declare illisible
+# Gel declare dans le titre : la PR est comptee, elle ne rougit pas l'organe.
+_HOLD_RE = re.compile(r"^\s*\[(HOLD|WIP)\b", re.IGNORECASE)
 
 _URL_RE = re.compile(r"github\.com[:/]+([^/]+)/([^/]+?)(?:\.git)?/?$")
 
 _PRS_QUERY = """
-query($owner: String!, $name: String!) {
+query($owner: String!, $name: String!, $after: String) {
   repository(owner: $owner, name: $name) {
-    pullRequests(states: OPEN, first: 100, orderBy: {field: CREATED_AT, direction: ASC}) {
+    pullRequests(states: OPEN, first: 100, after: $after, orderBy: {field: CREATED_AT, direction: ASC}) {
       totalCount
+      pageInfo { hasNextPage endCursor }
       nodes {
         number title isDraft createdAt baseRefName mergeable
         author { __typename login }
@@ -111,6 +118,8 @@ def classify_pr(node: dict, now: datetime, max_age_hours: float) -> dict:
         state = "BOT"
     elif node.get("isDraft"):
         state = "DRAFT"
+    elif _HOLD_RE.match(node.get("title") or ""):
+        state = "HOLD"
     elif comments == 0 and reviews == 0 and age_h > max_age_hours:
         state = "UNSEEN"
     else:
@@ -131,15 +140,35 @@ def classify_pr(node: dict, now: datetime, max_age_hours: float) -> dict:
 
 
 def fetch_prs(slug: str, run: Runner = _run) -> list[dict]:
+    """Toutes les PRs ouvertes, page par page : une PR au-dela de la premiere page
+    n'est jamais muette, et un compte lu different de ``totalCount`` rend le depot illisible."""
     owner, name = slug.split("/", 1)
-    out = run(["gh", "api", "graphql", "-f", f"query={_PRS_QUERY}", "-F", f"owner={owner}", "-F", f"name={name}"])
-    if out.returncode != 0:
-        raise RuntimeError(out.stderr.strip() or "gh api graphql a echoue")
-    data = json.loads(out.stdout)
-    repo = (data.get("data") or {}).get("repository")
-    if repo is None:
-        raise RuntimeError(f"depot illisible : {data.get('errors')}")
-    return repo["pullRequests"]["nodes"]
+    nodes: list[dict] = []
+    after = None
+    total = None
+    for _ in range(MAX_PAGES):
+        cmd = ["gh", "api", "graphql", "-f", f"query={_PRS_QUERY}", "-F", f"owner={owner}", "-F", f"name={name}"]
+        if after:
+            cmd += ["-f", f"after={after}"]
+        out = run(cmd)
+        if out.returncode != 0:
+            raise RuntimeError(out.stderr.strip() or "gh api graphql a echoue")
+        data = json.loads(out.stdout)
+        repo = (data.get("data") or {}).get("repository")
+        if repo is None:
+            raise RuntimeError(f"depot illisible : {data.get('errors')}")
+        page = repo["pullRequests"]
+        total = page.get("totalCount", total)
+        nodes.extend(page["nodes"])
+        info = page.get("pageInfo") or {}
+        if not info.get("hasNextPage"):
+            break
+        after = info.get("endCursor")
+    else:
+        raise RuntimeError(f"plus de {MAX_PAGES} pages de PRs ouvertes : lecture tronquee")
+    if total is not None and len(nodes) != total:
+        raise RuntimeError(f"lecture incomplete : {len(nodes)} PRs lues pour totalCount={total}")
+    return nodes
 
 
 def gitlink_drift(sub: dict, ref: str, run: Runner = _run) -> dict:

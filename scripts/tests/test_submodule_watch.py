@@ -173,3 +173,61 @@ def test_unseen_l_emporte_sur_unknown():
     run = make_runner({"MyIntelligenceAgency/semantic-fleet": [_pr(64, "2026-07-20T00:00:00Z")]},
                       gitlinks=SAME, remotes=REMOTES_SAME, fail_repo="jsboige/MetaGeneticSharp")
     assert sw.exit_code(sw.watch(24.0, "origin/main", NOW, run)) == 1
+
+
+def test_gel_declare_dans_le_titre_est_hold_et_ne_rougit_pas():
+    # Cas Argumentum#666 : « [HOLD post-tag] », gelee sciemment, jamais commentee.
+    gel = dict(_pr(666, "2026-09-01T00:00:00Z"), title="[HOLD post-tag] retrait du shim")
+    wip = dict(_pr(667, "2026-09-01T00:00:00Z"), title="[wip] essai")
+    assert sw.classify_pr(gel, NOW, 24.0)["state"] == "HOLD"
+    assert sw.classify_pr(wip, NOW, 24.0)["state"] == "HOLD"
+    # Un mot qui commence comme le marqueur, ou un marqueur hors tete de titre, ne gele rien.
+    assert sw.classify_pr(dict(gel, title="[WIPE] x"), NOW, 24.0)["state"] == "UNSEEN"
+    assert sw.classify_pr(dict(gel, title="fix [HOLD]"), NOW, 24.0)["state"] == "UNSEEN"
+    run = make_runner({"jsboige/MetaGeneticSharp": [gel]}, gitlinks=SAME, remotes=REMOTES_SAME)
+    report = sw.watch(24.0, "origin/main", NOW, run)
+    assert sw.exit_code(report) == 0
+    assert "HOLD" in sw.render(report)
+
+
+def _paged_runner(pages: dict, total: int):
+    """Runner GraphQL pagine : ``pages`` associe le curseur demande (None = premiere page) a ses noeuds."""
+    order = list(pages)
+
+    def run(cmd: list) -> subprocess.CompletedProcess:
+        after = next((a.split("=", 1)[1] for a in cmd if a.startswith("after=")), None)
+        idx = order.index(after)
+        nxt = order[idx + 1] if idx + 1 < len(order) else None
+        page = {"totalCount": total, "nodes": pages[after],
+                "pageInfo": {"hasNextPage": nxt is not None, "endCursor": nxt}}
+        return _cp(json.dumps({"data": {"repository": {"pullRequests": page}}}))
+
+    return run
+
+
+def test_pagination_lit_toutes_les_pages():
+    p1 = [_pr(n, "2026-10-18T12:00:00Z") for n in range(1, 101)]
+    p2 = [_pr(101, "2026-09-01T00:00:00Z")]  # la PR muette est sur la seconde page
+    nodes = sw.fetch_prs("jsboige/MetaGeneticSharp", _paged_runner({None: p1, "c1": p2}, total=101))
+    assert len(nodes) == 101
+    assert sw.classify_pr(nodes[-1], NOW, 24.0)["state"] == "UNSEEN"
+
+
+def test_compte_lu_different_du_total_rend_le_depot_illisible():
+    nodes = [_pr(1, "2026-10-18T12:00:00Z")]
+    try:
+        sw.fetch_prs("jsboige/MetaGeneticSharp", _paged_runner({None: nodes}, total=3))
+    except RuntimeError as exc:
+        assert "totalCount=3" in str(exc)
+    else:
+        raise AssertionError("une lecture tronquee doit lever")
+
+    def run(cmd: list) -> subprocess.CompletedProcess:
+        if cmd[:3] == ["gh", "api", "graphql"]:
+            page = {"totalCount": 3, "nodes": nodes, "pageInfo": {"hasNextPage": False, "endCursor": None}}
+            return _cp(json.dumps({"data": {"repository": {"pullRequests": page}}}))
+        return make_runner({}, gitlinks=SAME, remotes=REMOTES_SAME)(cmd)
+
+    report = sw.watch(24.0, "origin/main", NOW, run)
+    assert all(r["prs"] is None for r in report["repos"])
+    assert sw.exit_code(report) == 2
