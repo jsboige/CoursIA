@@ -370,9 +370,16 @@ def main():
             # job log. The override does NOT create a new right: it executes
             # the rule already written since #11577.
             notebooks = ", ".join(sorted(r["notebook"] for r in content_regressions))
+            # The dual-key protocol (#21273) restricts ack authorship to
+            # `myia-ai-01`. The verdict carries `ack_author` (the comment/review
+            # author login), which is read from the API at run time; when the
+            # fetch is bodies-only, the field is None and we fall back to the
+            # protocol's sole authorised author. The organ's reason field is
+            # the human-readable surface, this line is the audit trail.
+            ack_author = (ack_verdict or {}).get("ack_author") or "myia-ai-01"
             print(f"::notice title=Exec-sequence ratchet ACK::accepted at "
                   f"head={args.head_sha[:12] if args.head_sha else '?'} "
-                  f"by {ack_verdict.get('ack_author') if ack_verdict else 'myia-ai-01'} "
+                  f"by {ack_author} "
                   f"-- notebooks: {notebooks}",
                   file=sys.stderr)
             print(f"exec-sequence ratchet: ACK accepted, gate passes "

@@ -315,6 +315,7 @@ def check(
     ``None`` on a clean read.
     """
     fetch_errors: list[str] = []
+    ack_author: str | None = None
 
     # Normalise the expected head.
     expected = (head or "").strip().lower()
@@ -327,6 +328,7 @@ def check(
                 f"expected a 40-char hex SHA (#21273)."
             ),
             "ack_applied": False,
+            "ack_author": ack_author,
             "label_present": None,
             "marker_present": None,
             "marker_head": None,
@@ -422,6 +424,7 @@ def check(
             marker_present = True
             marker_head = head_in_body
             head_match = bool(expected) and (head_in_body == expected)
+            ack_author = auth if author_ok else None
             break
     elif comment_bodies_final is not None and review_bodies_final is not None:
         # Bodies-only fast-path: we cannot check the author here, so the
@@ -438,6 +441,7 @@ def check(
             break
         marker_present = any_marker
         author_ok = None if any_marker else False
+        ack_author = None
 
     warnings: list[str] = []
     if fetch_errors:
@@ -457,6 +461,7 @@ def check(
                 f"Ceci n'est pas une absence mesuree (fail-closed inchange). See #15342."
             ),
             "ack_applied": False,
+            "ack_author": ack_author,
             "label_present": label_present,
             "marker_present": marker_present,
             "marker_head": marker_head,
@@ -480,6 +485,7 @@ def check(
                 f"de myia-ai-01 a la tete exacte."
             ),
             "ack_applied": False,
+            "ack_author": ack_author,
             "label_present": False,
             "marker_present": False,
             "marker_head": None,
@@ -497,6 +503,7 @@ def check(
                 f"manquant. Les deux sont requis (cle double, #21273)."
             ),
             "ack_applied": False,
+            "ack_author": ack_author,
             "label_present": False,
             "marker_present": True,
             "marker_head": marker_head,
@@ -515,6 +522,7 @@ def check(
                 f"Les deux sont requis (cle double, #21273)."
             ),
             "ack_applied": False,
+            "ack_author": ack_author,
             "label_present": True,
             "marker_present": False,
             "marker_head": None,
@@ -539,6 +547,7 @@ def check(
                 f"exacte (#21273)."
             ),
             "ack_applied": False,
+            "ack_author": ack_author,
             "label_present": True,
             "marker_present": True,
             "marker_head": marker_head,
@@ -557,6 +566,7 @@ def check(
                 f"login est un finding, pas un ack (#21273)."
             ),
             "ack_applied": False,
+            "ack_author": ack_author,
             "label_present": True,
             "marker_present": True,
             "marker_head": marker_head,
@@ -577,6 +587,7 @@ def check(
             f"this job's log; see #21273 for the protocol."
         ),
         "ack_applied": True,
+            "ack_author": ack_author,
         "label_present": True,
         "marker_present": True,
         "marker_head": marker_head,
