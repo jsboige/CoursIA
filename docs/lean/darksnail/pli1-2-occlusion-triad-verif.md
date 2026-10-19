@@ -8,11 +8,11 @@
 
 ## TL;DR
 
-Le dépôt upstream [`sneed-and-feed/projectdarksnail`](https://github.com/sneed-and-feed/projectdarksnail) annonce un badge « Lean 4 Verified (Zero Sorry) » dans son README. Une vérification first-hand du contenu Lean montre que le code `formalization/OcclusionTriad.lean` (510 lignes, 26 742 octets) est **syntaxiquement propre** — aucun `sorry`, aucun `native_decide.*`, aucun `sorryAx`, aucun `Classical.choice`. **Mais** le projet n'a aucune structure de build (pas de `lakefile.lean`, pas de `lean-toolchain`), et le seul module `.lean` importe deux modules qui n'existent pas dans le dépôt. Le claim « Lean 4 Verified » est donc **non vérifiable** à partir du dépôt public.
+Le dépôt upstream [`sneed-and-feed/projectdarksnail`](https://github.com/sneed-and-feed/projectdarksnail) annonce un badge « Lean 4 Verified (Zero Sorry) » dans son README. Une vérification first-hand du contenu Lean montre que le code `formalization/OcclusionTriad.lean` est **syntaxiquement propre** — aucun `sorry`, aucun `native_decide.*`, aucun `sorryAx`, aucun `Classical.choice`. **Mais** le projet n'a aucune structure de build (pas de `lakefile.lean`, pas de `lean-toolchain`), et le seul module `.lean` importe deux modules qui n'existent pas dans le dépôt. Le claim « Lean 4 Verified » est donc **non vérifiable** à partir du dépôt public.
 
 ## Méthode
 
-1. **Clone shallow** du dépôt upstream (78 fichiers, licence CC0-1.0 vérifiée c.485) :
+1. **Clone shallow** du dépôt upstream (licence CC0-1.0 vérifiée c.485) :
    ```bash
    git clone --depth 1 https://github.com/sneed-and-feed/projectdarksnail.git
    ```
@@ -47,7 +47,7 @@ Le dépôt upstream [`sneed-and-feed/projectdarksnail`](https://github.com/sneed
 
 ## Constat factuel
 
-### Code `OcclusionTriad.lean` (510 lignes, 26 742 octets ; 26 232 hors LF)
+### Code `OcclusionTriad.lean` (26 742 octets ; 26 232 hors LF)
 
 Le module déclare `namespace Ultrametric.Analysis.OcclusionTriad` et expose **9 `theorem` + 13 `lemma` + 18 `def` (10 + 8 `noncomputable`) = 40 déclarations** :
 
@@ -86,7 +86,7 @@ Le README upstream affiche un badge **« Lean 4 Verified (Zero Sorry) »** et la
 
 **`INSUFFICISANT`** — les claims « Lean 4 verified (0 sorry) » ne sont **pas vérifiables** à partir du dépôt public.
 
-- ✅ La partie « 0 sorry » est vraie (vérifiée first-hand, 4 patterns, 510 lignes, 9 `theorem` + 13 `lemma` + 18 `def`).
+- ✅ La partie « 0 sorry » est vraie (vérifiée first-hand, 4 patterns, 9 `theorem` + 13 `lemma` + 18 `def`).
 - ❌ La partie « Lean 4 verified » (au sens d'un build clean) ne peut pas être reproduite par un tiers : pas de `lakefile.lean`, pas de `lean-toolchain`, et deux imports non résolus.
 
 ## Recommandations
