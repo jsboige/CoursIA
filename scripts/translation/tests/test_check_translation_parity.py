@@ -733,7 +733,17 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # (35 cellules md EN rendues depuis le CSV, 33 cellules code copiees verbatim,
 # 0 orphelin, 0 fallback ; serie non jugee par le nav-chain, aucune entree
 # baseline requise -- sortie guard byte-identique a main). Total : 13 + 1 = 14.
-EXPECTED_PAIR_COUNT = 14
+# 2026-10-19 (PR #19943, #19898 pli 3 Origami tranches A+B): +1 paire --
+# jumeau _en d'un carnet Lean : SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique_en.
+# Meme classe que #19996/#20392 : la paire est arrivee sur main avec son carnet
+# sans mettre a jour cette ligne, ce qui a rougi test_full_repo_state_passes_parity
+# (found 14, declared 13) sur main pur et sur toute PR path-filtree scripts/**
+# (diagnostic po-2027, dashboard 2026-10-19T06:10Z). Total apres fusion : 13 + 1 = 14.
+# Resolution du merge origin/main (2026-10-19, PR #21296) : les deux entrees
+# ci-dessus declarent chacune « 13 + 1 = 14 » depuis des bases divergentes --
+# main porte desormais ANALYSE-07_en (perimetre 14), cette branche ajoute
+# research_archive_en. Total apres fusion des deux lignees : 14 + 1 = 15.
+EXPECTED_PAIR_COUNT = 15
 
 
 def _collect_parity_failures(repo_root: Path,
