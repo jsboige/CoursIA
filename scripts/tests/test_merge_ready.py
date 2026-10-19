@@ -76,6 +76,7 @@ def default_view(
     reviews: list[dict] | None = None,
     coordinator=_DEFAULT,
     head: str = HEAD,
+    head_ref: str = "feature/une-pr-ordinaire",
 ) -> dict:
     rows = list(reviews) if reviews is not None else []
     if coordinator is _DEFAULT:
@@ -88,6 +89,7 @@ def default_view(
         "isDraft": draft,
         "body": body if body is not None else GRAIN_MED,
         "headRefOid": head,
+        "headRefName": head_ref,
         # baseRefName is the branch the PR is targeting. The merge-ready
         # defense-in-depth check (#19002) refuses anything other than
         # `main`. Tests that need a non-`main` base override this field.
@@ -372,11 +374,52 @@ def test_frozen_umbrella_qc_density_round2():
     assert mr.frozen_umbrella_exclusion("fix: #116010", None) is None
 
 
-def test_skip_grain_deep(tmp_path):
+def test_grain_deep_approuve_passe_le_filtre(tmp_path):
+    # Q131 (2026-10-19) : DEEP entre dans le perimetre, sous l'approbation
+    # prealable du coordinateur posee a la tete (default_view la fournit).
     runner = ScriptedRunner(views={123: default_view(body=GRAIN_DEEP)})
     rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
     assert rc == 0
-    assert lines[-1]["reason"] == "grain-tier-DEEP"
+    assert lines[-1]["verdict"] == "merged" and lines[-1]["merged"] is True
+
+
+def test_grain_deep_sans_approbation_du_coordinateur_skip(tmp_path):
+    # Q131 : rien ne se merge sans la validation prealable du coordinateur.
+    runner = ScriptedRunner(views={123: default_view(body=GRAIN_DEEP, coordinator=None)})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+    assert lines[-1]["merged"] is False
+
+
+def test_hors_flotte_sans_tag_approuve_passe_le_filtre(tmp_path):
+    # Q131 : une PR de la session cloud (branche claude/*) n'a pas de tag
+    # Grain ; l'absence de tag ne l'exclut plus, l'approbation la gouverne.
+    view = default_view(body="Hors flotte -- session cloud.", head_ref="claude/fix-readme-links")
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["verdict"] == "merged" and lines[-1]["merged"] is True
+
+
+def test_hors_flotte_sans_approbation_du_coordinateur_skip(tmp_path):
+    view = default_view(
+        body="Hors flotte -- session cloud.",
+        head_ref="claude/fix-readme-links",
+        coordinator=None,
+    )
+    runner = ScriptedRunner(views={123: view})
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["reason"] == "no-coordinator-approval"
+    assert lines[-1]["merged"] is False
+
+
+def test_grain_exclusion_prefixe_claude_strict():
+    # Seul le prefixe de branche exact ouvre l'exemption de tag.
+    assert mr.grain_exclusion("pas de tag", "claude/x") is None
+    assert mr.grain_exclusion("pas de tag", "feature/claude/x") == "grain-tier-unparsable"
+    assert mr.grain_exclusion("pas de tag", None) == "grain-tier-unparsable"
 
 
 def test_skip_grain_unparsable(tmp_path):
