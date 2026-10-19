@@ -1005,7 +1005,8 @@ retrouvée par le théorème — c'est le minimum). -/
 de Huffman est optimal, l'ancre 14 du pli 5 est un minimum. -/
 example (t : WTree) (h : List.Perm (leafWeights t) [1, 1, 2, 4]) :
     14 ≤ costW t := by
-  have h14 : costW (huffman [1, 1, 2, 4]) = 14 := by native_decide
+  have h14 : costW (huffman [1, 1, 2, 4]) = 14 := by
+    simp [huffman, build, insertT, weight, costW]
   have hopt := huffman_optimal 4 [1, 1, 2, 4] (by decide) t h
   rwa [h14] at hopt
 
