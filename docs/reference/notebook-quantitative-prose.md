@@ -6,7 +6,7 @@ Source : mandat user **#9377** — « les données quantitatives doivent être t
 
 ## La frontière est la machine-dépendance, pas « nombre + unité »
 
-Arbitrage **#9434** (2026-08-06). Une valeur en `ms`/`sec`/`min` n'est pas toujours un runtime à retirer : la classe **donnée en unité de temps** regroupe les valeurs qui portent une unité de temps mais restent **déterministes** — moyenne statistique de données (postérieur bayésien, moyenne de trajets cycliste dans `Infer-1b-Premiers-Modeles.ipynb` `15.33 min`), longueur d'un contenu (durée d'un clip `30 sec`), estimation pédagogique humaine (`Durée : ~2 h`). Elles ne dérivent ni avec la machine ni au re-run ; les retirer détruit du contenu pédagogique réel.
+Arbitrage **#9434** (2026-08-06). Une valeur en `ms`/`sec`/`min` n'est pas toujours un runtime à retirer : la classe **donnée en unité de temps** regroupe les valeurs qui portent une unité de temps mais restent **déterministes** — moyenne statistique de données (postérieur bayésien, moyenne de trajets cycliste dans `Infer-01b-Premiers-Modeles.ipynb` `15.33 min`), longueur d'un contenu (durée d'un clip `30 sec`), estimation pédagogique humaine (`Durée : ~2 h`). Elles ne dérivent ni avec la machine ni au re-run ; les retirer détruit du contenu pédagogique réel.
 
 Critère discriminateur : *« cette valeur changerait-elle si je ré-exécutais le notebook sur une autre machine ? »* — non pour un data-unit, oui pour un runtime.
 
@@ -46,9 +46,9 @@ Rappel du contexte dans lequel C.5 est le plus sollicitée. Une contradiction pr
 | Verdict | Critère | Action |
 |---------|---------|--------|
 | `CAUSE_FIXED` | Cause racine corrigée (env réparé règle F, claim antérieure revertée, seed ajouté) | Merge OK |
-| `CAUSE_DOCUMENTED_ONLY` | Cause identifiée, non traitée (ré-alignement cosmétique = « jambe de bois repeinte ») | Issue fille ouverte + `See #N` |
+| `CAUSE_DOCUMENTED_ONLY` | Cause identifiée, non traitée (ré-alignement cosmétique = « jambe de bois repeinte ») | **Pas une sortie de merge si la cause est réparable par la flotte** (environnement, dépendance, clé, machine) : réparer, ou router vers la machine qui a l'environnement. Admis seulement pour une cause hors de portée de la flotte, avec issue fille + `See #N` |
 | `CAUSE_INTRINSIC` | Cause structurelle non corrigeable (moteur upstream cassé sans alternative) | Bandeau honnête + issue engine-fix |
 
-Ré-aligner sans diagnostic = consacrer la dégénérescence : le notebook re-dérive au cycle suivant. Vague de référence SW-13 : #7751 → #7872 → #7944 → #8343, quatre PRs pour colmater des claims fabriquées en série.
+Ré-aligner sans diagnostic = consacrer la dégénérescence : le notebook re-dérive au cycle suivant. Ré-aligner **avec** diagnostic sur une sortie dégénérée rend la prose vraie sans réparer le carnet : ce n'est pas non plus une correction (Epic #21424). Vague de référence SW-13 : #7751 → #7872 → #7944 → #8343, quatre PRs pour colmater des claims fabriquées en série.
 
 See #9377, #8052, #9434, #8364.

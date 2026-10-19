@@ -11,6 +11,7 @@ vocabulary/provenance follow-up from issue #21011:
   6. Cell 21 conclusions must cite the Sharpe printed by the executed cell 12
   7. Cell 0 must include a 'Provenance des donnees' section naming the data
      source, the dividend-only factor adjustment, and the effective window
+     (read from the committed cell 5 output, not hardcoded)
 
 The notebook runs in the LEAN Research container (QuantBook). The tests read
 the committed outputs: the prose must quote the values of the execution that
@@ -198,10 +199,19 @@ class TestIntroCodeAlignment(unittest.TestCase):
                       'Provenance section must mention dividend adjustment')
         self.assertIn('split', cell0_src,
                       'Provenance section must mention split non-reapplication')
-        self.assertIn('2011-03-23', cell0_src,
-                      'Provenance section must state the executed start date')
-        self.assertIn('2025-12-31', cell0_src,
-                      'Provenance section must state the executed end date')
+        # La fenetre annoncee doit etre celle de l'execution commitee : elle est
+        # lue dans la sortie de la cellule 5 plutot que figee en dur, pour qu'une
+        # re-execution qui la change fasse echouer ce test tant que la prose
+        # n'est pas re-ancree.
+        import re
+        out5 = get_cell_text_output(nb, 5)
+        m = re.search(r'P\S*riode: (\d{4}-\d\d-\d\d) \S+ (\d{4}-\d\d-\d\d)', out5)
+        self.assertIsNotNone(m, 'Cell 5 must carry its executed output (period line)')
+        start, end = m.groups()
+        self.assertIn(start, cell0_src,
+                      f'Provenance section must state the executed start date {start}')
+        self.assertIn(end, cell0_src,
+                      f'Provenance section must state the executed end date {end}')
 
     def test_conclusions_have_provenance_rappel(self):
         """Cell 21 must include a Provenance (rappel) section (issue #21011 point 1)."""
@@ -214,8 +224,14 @@ class TestIntroCodeAlignment(unittest.TestCase):
         """Cell 21 summary table must be filled with the executed values, not placeholders."""
         self.assertNotIn('(à remplir)', cell21_src,
                          'Cell 21 must not contain unfilled placeholders')
-        self.assertIn('0.690', cell21_src,
-                      'Cell 21 must cite the executed Sharpe 0.690 from cell 12')
+        import re
+        out12 = get_cell_text_output(nb, 12)
+        m = re.search(r'Meilleur Top N: (\d) \(Sharpe=([0-9.]+)\)', out12)
+        self.assertIsNotNone(m, 'Cell 12 must carry its executed output (best Top N line)')
+        idx_cmp = cell21_src.find('### Comparaison')
+        summary = cell21_src[:idx_cmp] if idx_cmp > 0 else cell21_src
+        self.assertIn(m.group(2), summary,
+                      f'Cell 21 summary table must cite the executed Sharpe {m.group(2)}')
 
 
 if __name__ == '__main__':

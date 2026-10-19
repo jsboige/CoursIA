@@ -600,6 +600,16 @@ def _write_verified_archive(path: Path, text: str) -> Optional[Path]:
             with cand.open("x", encoding="utf-8") as f:
                 f.write(text)
         except FileExistsError:
+            # #21331: on Linux, open(<existing directory>, "x") raises
+            # FileExistsError (EEXIST on O_CREAT|O_EXCL) where Windows raises
+            # PermissionError. A directory squatting the archive name is a
+            # sabotaged VENUE, not an archive collision: declare it unusable
+            # instead of bumping the suffix (which silently archives beside
+            # the blocker and diverges from Windows semantics).
+            if cand.is_dir():
+                print(f"  WARNING: archive venue unusable at {cand} "
+                      f"(existing directory) (#18432/#21331).")
+                return None
             continue
         except OSError as _e:
             print(f"  WARNING: archive venue unusable at {cand} ({_e}) (#18432).")

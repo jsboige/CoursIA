@@ -20,6 +20,7 @@
 | [CausalBridges-07 — Quasi-Experimental](CausalBridges-07-Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
 | [CausalBridges-08 — Décomposer la discrimination](CausalBridges-08-Causal-Fairness.ipynb) | ~50 min | Critères structurels Str-DE/IE/SE, famille TV (TE, Exp-SE, NDE, NIE) — Lem 4.1 et Thm 4.2 **vérifiés à la précision machine** sur un SCM à bruits partagés, `dowhy` backdoor vs naïf (+69 % d'écart mesuré), règle des 80 % (EEOC) sur le crédit allemand, business necessity |
 | [CausalBridges-09 — Emuler un essai ciblé](CausalBridges-09-Hernan-TargetTrialEmulation-Python.ipynb) | ~60 min | *Target trial emulation* (Hernan/Robins ch. 21-22) : confounding **variant dans le temps** sur lombalgie récurrente à deux visites, $L_1$ à la fois confondeur et médiateur, protocole d'essai ciblé à 7 composantes ; g-formula (Robins 1986, simulation forward) et IPTW stabilisé (Robins 1999, poids de censuration) contre trois réflexes naïfs ; benchmark **200 répliques × 2 forces de confounding** (biais/RMSE/couverture IC 95 %) — les deux g-méthodes sans biais, l'IPTW paie en variance (ET ×3) ; `dowhy` ancré sur l'instantané $t_0$ (SOTA-OK) ; pli 2 de l'EPIC #19309 |
+| [CausalBridges-10 — Automated Social Science](CausalBridges-10-Automated-Social-Science.ipynb) | ~45 min | Manning/Zhu/Horton (2024) en version bornée locale : un **SCM générateur** à β vrai connu (vendeur logistique, offre = 0.8 × budget), sujets LLM mono-tour sur les endpoints vLLM self-hosted de la stack GenAI (Qwen2.5-0.5B **AWQ vs GPTQ** × 3 seeds, 450 runs), ajustement `dowhy` (`linear_regression`, l'estimateur LPM du papier), **écart de calibration mesuré** contre le monde générateur et bras **élicitation directe** (l'argument central du papier — l'élicitation ne remplace pas la simulation — rejoué sur modèles 0.5B) ; distinction simulation/humains explicite ; grain #21203 du réservoir #14468 |
 
 **Prérequis** : probabilités conditionnelles, graphes orientés acycliques (DAG), notions d'inférence bayésienne. Une lecture préalable de l'un des cinq notebooks de la constellation (ci-dessous) rend le pont plus concret.
 
@@ -38,7 +39,7 @@ Les quatre séries **implantent le même formalisme** avec des outils différent
 | Direction | Notebook | Moteur | Ce qu'il apporte de plus |
 |-----------|----------|--------|--------------------------|
 | Logique + SCM + contrefactuels | [Tweety-11](../../../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) | Tweety (.NET) | backend causal logique, opérateur `do` natif |
-| Message passing exact | [Infer-5](../../Infer/Infer-5-Causal-Inference.ipynb) | Infer.NET | backdoor, front-door, Simpson, médiation, capstone contrefactuel |
+| Message passing exact | [Infer-5](../../Infer/Infer-05-Causal-Inference.ipynb) | Infer.NET | backdoor, front-door, Simpson, médiation, capstone contrefactuel |
 | MCMC bayésien | [PyMC-5](../../PyMC/PyMC-05-Causal-Inference.ipynb) | PyMC | incertitude postérieure sur l'effet, contrefactuel bayésien |
 | Émergence causale (Hoel) | [ICT-5](../../../IIT/ICT-Series/ICT-05-CausalEmergence-Python.ipynb), [ICT-6](../../../IIT/ICT-Series/ICT-06-SortingToTPM-CausalEmergence-Python.ipynb) | PyPhi (CE 2.0) | information effective, coarse-graining, multiscale |
 
@@ -83,3 +84,8 @@ Exercices de CausalBridges-08 (famille TV, Epic #16620) :
 2. **Str-DE-fair n'efface pas l'écart observé** — mettre le coefficient direct `A → Y` à zéro : NDE ≈ 0 mais la TV reste positive (canal indirect + spurieux) ; la règle des 80 % mesure l'écart, pas la discrimination directe.
 3. **La règle des 80 % sur d'autres attributs du crédit allemand** — `foreign_worker` (groupe de référence minuscule : quelle confiance au ratio ?) et l'âge binarisé à 25 ans.
 
+Exercices de CausalBridges-10 (Automated Social Science, #21203) :
+
+1. **Le parseur de secours** — le parseur strict compte `None` toute réponse non conforme ; écrire un parseur fallback (DECLINE/REFUSE/NO d'un côté, ACCEPT/YES/OK de l'autre, trancher seulement si un seul camp apparaît) et mesurer combien de runs il récupère, puis si les β estimés bougent.
+2. **Les coefficients standardisés** — calculer les β* (β × σ(cause) / σ(réponse)) des trois causes sur les sujets simulés : quelle cause domine la décision du vendeur ? (le papier : budget 0.51, prix minimum −0.49).
+3. **La sensibilité au libellé** — rejouer la cellule pilote avec une paraphrase du prompt (par ex. « Would you sell your mug at that price? », offre mécanique inchangée à 0.8 × budget, sinon le β vrai ne tient plus) et mesurer combien de réponses changent : c'est le bruit de mesure propre aux sujets simulés.

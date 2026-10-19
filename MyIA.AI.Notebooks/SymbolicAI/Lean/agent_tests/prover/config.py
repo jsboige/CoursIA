@@ -2035,8 +2035,11 @@ DEMOS = {
             "DEEP grain: BG iter against the knot_lean sorry terrain, which the\n"
             "63 prior DEMOS never touched). Target: Piccirillo's theorem — the\n"
             "Conway knot is not smoothly slice (Lean AI Leaderboard problem).\n"
-            "Statement is clean (single `exact sorry` at Slice.lean:85, no sorry\n"
-            "inside the statement). This target is NOT expected to close: the\n"
+            "Statement is sorry-defined transitively: the predicate\n"
+            "IsSmoothlySlice is itself `def ... := sorry` (Slice.lean:42), so\n"
+            "closing the `exact sorry` at :85 alone cannot produce a\n"
+            "legitimate proof — the predicate must be defined first (smooth\n"
+            "slice disc). This target is NOT expected to close: the\n"
             "proof needs 4-manifolds, Kirby calculus, Khovanov homology and the\n"
             "Rasmussen s-invariant — none in Mathlib. Its value is exercising\n"
             "the harness against genuinely hard targets: real multi-iteration\n"
@@ -2045,6 +2048,36 @@ DEMOS = {
             "https://lean-lang.org/eval/problems/conway_knot_not_smoothly_slice/\n"
             "Expected: max-iter exhausted without proof, diagnostic trace.\n"
             "LEAN_PROJECT must be knot_lean."
+        ),
+        "difficulty": "open_problem",
+    },
+    65: {
+        "name": "KNOT_CONWAY_TOPOLOGICALLY_SLICE",
+        "file": str(KNOT_SLICE_FILE) if KNOT_SLICE_FILE else "",
+        "line": 118,
+        "sorry_type": "sorry_replacement",
+        "theorem_name": "conway_topologically_slice",
+        "theorem": "conway_topologically_slice",
+        "imports": KNOT_SLICE_IMPORTS,
+        "description": (
+            "Second knot_lean DEMO (#1453 'Ce qui reste' n.1, tranche 2 — the\n"
+            "positive arm of the Conway slice pair). Target: Freedman's theorem\n"
+            "— the Conway knot IS topologically slice (Lean AI Leaderboard\n"
+            "problem). Statement is sorry-defined transitively: the predicate\n"
+            "IsTopologicallySlice is itself `def ... := sorry` (Slice.lean:55),\n"
+            "so the theorem at :118 (single `exact sorry` at :121) cannot be\n"
+            "closed legitimately until the predicate is defined — the real\n"
+            "debt is :55 (Freedman's disc-embedding). Still a\n"
+            "LIVE dependency: Slice.lean:151 consumes it in the pair\n"
+            "`<conway_topologically_slice, conway_not_smoothly_slice>`.\n"
+            "Unlike DEMO 64, nearby infrastructure exists: the docstring\n"
+            "notes the trivial Alexander polynomial of Conway (established\n"
+            "in Knots.Conway) is exactly Freedman's hypothesis — the gap is\n"
+            "the disc-embedding theorem itself (Freedman 1982), absent from\n"
+            "Mathlib. Not expected to close; value = second terrain of the\n"
+            "knot_lean sorry map exercised by the BG harness + probe defect\n"
+            "observation (GoalExtract 'Unknown identifier exact', #1453\n"
+            "c.6228696735). LEAN_PROJECT must be knot_lean."
         ),
         "difficulty": "open_problem",
     },
