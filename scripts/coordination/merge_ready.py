@@ -16,18 +16,25 @@ disposition de review n'etait que relevee : sur les 211 merges du journal
 (23/09 -> 28/09), 6 portaient une approbation ``myia-ai-01``, et toute lane
 ne portant pas la PR pouvait la faire merger par son seul dossier.
 
+Arbitrage user 2026-10-19 (Q131) : les grains DEEP et les PRs hors flotte de
+la session cloud (branche ``claude/*``, sans tag ``Grain:``) entrent dans le
+perimetre, a la meme condition que toutes les autres : l'approbation
+prealable du coordinateur (etape 2ter). L'organe ne merge rien que le
+coordinateur n'a pas valide au prealable.
+
 L'organe est deterministe et tourne sous l'identite coordinateur
 (myia-ai-01) toutes les ~20 minutes, et seulement en perimetre (b) -- hors
-harnais et hors grains DEEP. Tour de controle par PR, TOUT doit tenir sinon
-skip avec raison nommee :
+harnais. Tour de controle par PR, TOUT doit tenir sinon skip avec raison
+nommee :
 
 1. pas un brouillon, et au moins un commentaire d'issue dont la premiere
    ligne est ``[ADJOINT PREFLIGHT]`` (prefiltre bon marche avant le gate
    couteux) ;
 2. perimetre (b) fail-closed : aucun fichier sous ``.claude/``, aucun
    ``CLAUDE.md`` (n'importe quel repertoire), aucun fichier sous
-   ``.github/`` ; tier du tag ``Grain:`` MED ou LIGHT (DEEP refuse, tier
-   illisible refuse) -- lecture par le parseur PARTAGE
+   ``.github/`` ; tier du tag ``Grain:`` DEEP, MED ou LIGHT (tier illisible
+   refuse, sauf branche hors flotte ``claude/*`` qui n'a pas de tag, Q131)
+   -- lecture par le parseur PARTAGE
    ``scripts/grain_tag.py`` (#9485, meme lecteur que variation_light_cap
    et le guard CI), jamais une regex locale ; liste de fichiers TRONQUEE
    (``changedFiles`` > fichiers listes, ou absent) -> skip fail-closed,
@@ -446,21 +453,27 @@ def scope_exclusion(path: str) -> str | None:
     return None
 
 
-def grain_exclusion(body: str | None) -> str | None:
+OUT_OF_FLEET_BRANCH_PREFIX = "claude/"
+
+
+def grain_exclusion(body: str | None, head_ref: str | None = None) -> str | None:
     """Raison d'exclusion du tag Grain, sinon None.
 
     Le lecteur est le parseur PARTAGE (grain_tag.parse_grain_tag, #9485) :
     formes tolerees (gras, titre, sans deux-points) et refus de substance
-    (aucun TIER/GENRE lisible -> None). DEEP est hors perimetre (b) ; un
-    tier hors (DEEP, MED, LIGHT) est illisible au sens de la grammaire ->
-    fail-closed.
+    (aucun TIER/GENRE lisible -> None). DEEP est dans le perimetre depuis
+    Q131 (2026-10-19), sous la meme approbation prealable du coordinateur
+    que MED et LIGHT. Une PR hors flotte (branche ``claude/*``) n'a pas de
+    tag par construction : son absence n'est pas une exclusion. Ailleurs,
+    un tag absent ou un tier hors (DEEP, MED, LIGHT) est illisible au sens
+    de la grammaire -> fail-closed.
     """
     tag = parse_grain_tag(body)
     if tag is None:
+        if (head_ref or "").startswith(OUT_OF_FLEET_BRANCH_PREFIX):
+            return None
         return "grain-tier-unparsable"
     tier = tag.get("tier") or ""
-    if tier == "DEEP":
-        return "grain-tier-DEEP"
     if tier not in TIERS:
         return f"grain-tier-unknown:{tier}"
     return None
@@ -1184,7 +1197,7 @@ def evaluate_pr(
     listed = len(view.get("files") or [])
     if not isinstance(changed, int) or changed > listed:
         return skip(f"files-truncated:{listed}/{changed}")
-    reason = grain_exclusion(view.get("body"))
+    reason = grain_exclusion(view.get("body"), view.get("headRefName"))
     if reason is not None:
         return skip(reason)
     reason = frozen_umbrella_exclusion(

@@ -17,14 +17,14 @@ Six visualisations extraites des notebooks illustrent l'arc de la série : de l'
 
 ### Assistance aux preuves et vérification formelle
 
-L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-07b-Examples-Python.ipynb)), puis TorchLean propage intervalles (IBP) et bornes (CROWN) pour certifier formellement la robustesse d'un réseau de neurones ([Lean-11b](Lean-11b-TorchLean-Python.ipynb)).
+L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-07b-Examples-Python.ipynb)), puis [Lean-11b](Lean-11b-TorchLean-Python.ipynb) **borne numériquement** la robustesse d'un petit MLP via IBP et CROWN en Python ; [Lean-11](Lean-11-TorchLean.ipynb) présente la formalisation Lean **illustrative** de TorchLean (architecture cible, types locaux, code `#eval`-able, preuves `#sorry` signalées) — la chaîne « implémentation numérique vérifiable → certificats formels » n'est pas tenue bout-en-bout dans la série.
 
 <p align="center">
   <a href="Lean-07b-Examples-Python.ipynb"><img src="assets/readme/lean-llm-examples.png" width="420" alt="Génération de preuves par LLM sur dix théorèmes Lean : 0 succès / 10 échecs — itérations, temps d'exécution et tokens consommés par théorème."></a>
 </p>
 
 <p align="center">
-  <a href="Lean-11b-TorchLean-Python.ipynb"><img src="assets/readme/lean-torchlean.png" width="420" alt="TorchLean : propagation IBP pour la vérification formelle de réseaux de neurones."></a>
+  <a href="Lean-11b-TorchLean-Python.ipynb"><img src="assets/readme/lean-torchlean.png" width="420" alt="Lean-11b : propagation IBP et CROWN en Python pour borner numériquement la robustesse d'un petit MLP (IBP conservatif, CROWN simplifié)."></a>
 </p>
 
 ### Conway — Game of Life
@@ -139,6 +139,15 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 17b | [Lean-17b-Knots-Invariants-Companion](KNOTS/KNOTS-02-Invariants-Python.ipynb) | Invariants de nœuds : PD-codes, mouvements de Reidemeister, tricolorabilité de Fox, diagrammes bien formés - companion `knot_lean` (Epic #2874, transfer forward #3000 sorry-free + backward #3124 partiel) | 60 min |
 | 17c | [Lean-17c-Knots-Companion-Formel](KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb) | Companion formel du lake `knot_lean` en kernel python3 (kernel lean4-wsl gelé #11874) : les modules que Lean-17 ne cite pas (Basic, Invariant, Reidemeister) interrogés par leurs déclarations réelles, murs nommés R2/R3, sorries réels (14) vs prose, miroir i18n byte-identique attesté par l'instrument canonique - Epic #2874 / #11703 | 40 min |
 
+### Annexe méthodologique : bornes de concentration et inférence bayésienne (détection MIMO)
+
+| # | Notebook | Contenu | Durée |
+|---|----------|---------|-------|
+| 19 | [Lean-19-Detection-MIMO-Index-Python](Lean-19-Detection-MIMO-Index-Python.ipynb) | Banc d'essai Hoeffding pour la détection MIMO : vérification empirique de la loi de Bernoulli composée (p_hat ≈ p) sur 20 instances BSC, rapport écart/borne Hoeffding 0.016 à 0.698 (20/20 = 100 % des instances sous la borne) — étalon de référence pour la sous-série MIMO (PR #20371) qui consumera Lean-19 comme baseline — kernel `python3`, 3 exercices | 20 min |
+| 19b | [Lean-19b-Borne-Chernoff-Python](Lean-19b-Borne-Chernoff-Python.ipynb) | Borne de Chernoff pour le BSC : dérivation depuis la fonction génératrice des moments exacte de la Bernoulli, puis comparaison des trois bornes (Hoeffding / Chernoff / Bernstein) sur les mêmes 20 instances — Chernoff domine Hoeffding sur 19/20 instances (égalité numérique à p = 0.50), le gain croissant quand `p` s'éloigne de 1/2 — kernel `python3` | 25 min |
+| 19c | [Lean-19c-Borne-Bernstein-Python](Lean-19c-Borne-Bernstein-Python.ipynb) | Borne de Bernstein pour le BSC : borne en `mu`/`sigma^2` sans fonction génératrice, tableau des ratios par instance et lecture par régime de `p` — les trois bornes y sont calculées et confrontées à la fréquence observée — kernel `python3` | 25 min |
+| 19d | [Lean-19d-Inference-Bayesian-Beta-Binomial-Python](Lean-19d-Inference-Bayesian-Beta-Binomial-Python.ipynb) | Inférence bayésienne Beta-Binomial : posterior conjugué, intervalle de crédibilité HDI, confrontation aux bornes fréquentistes sur les mêmes 20 instances — le HDI reste plus étroit que Hoeffding à tout `N`, l'écart ne se refermant pas avec la taille d'échantillon — kernel `python3` | 25 min |
+
 ### Partie 6 : Recherche pondérée et optimalité (A*)
 
 | # | Notebook | Contenu | Durée |
@@ -181,6 +190,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 37 | [Lean-37-Capstone-Serre100](Lean-37-Capstone-Serre100.ipynb) | **Capstone (escalier)** vers la sous-série [Serre 100](Serre100/README.md) — née du centenaire de Jean-Pierre Serre (EPIC #16334) : le geste de *distillation* (un énoncé de Serre rendu calculable) et son diptyque **mesure** (carnet, kernel `python3`) / **preuve** (lake [`serre100_lean/`](Serre100/serre100_lean/), kernel `lean4-wsl`) ; table de routage des huit carnets, citation du lake par ses déclarations réelles (cinq modules FR + miroirs `_en` : `trace_eg_moins_somme_caractere`, `ombreZeta_eq_zero`, `round_trip_domain`, `orthogonaliteLignesS3`, `member_iff_outer`…), et **surface de la sous-série mesurée** plutôt que déclarée — kernel `python3`, exécuté sans erreur, 3 exercices | 20 min |
 | 38 | [Lean-38-Capstone-Geometry-Lean-Python](Lean-38-Capstone-Geometry-Lean-Python.ipynb) | **Capstone (escalier)** vers la sous-série [Geometry](Geometry/README.md) (EPIC #18601) : le fil rouge du milieu de l'hypoténuse monté par cinq marches de garantie croissante — figure numérique, identité symbolique `sympy`, témoin négatif (triangle non rectangle), lecture du lake companion [`geometry_lean/`](Geometry/geometry_lean/) comme un consommateur (fichier réel, pas une copie), audit des axiomes interdits (`sorry`, `native_decide` : 0) — la réponse incarnée à la position 05 du programme gradué ([#17544](https://github.com/jsboige/CoursIA/issues/17544)) : que garantit « prouvé par Gröbner » ? Kernel `python3`, exécuté sans erreur, 3 exercices | 15 min |
 | 39 | [Lean-39-Capstone-GOL](Lean-39-Capstone-GOL.ipynb) | **Capstone (escalier)** vers la sous-série [GOL](GOL/README.md) (réorg #20204, filière Conway de l'EPIC #1647) : l'échelle des témoins du Jeu de la Vie — règle, mémoire (canons), calcul (translateur, Hashlife) — survolée en une marche ; **surface de la sous-série mesurée** plutôt que déclarée : 9 carnets, 3 kernels (les trois `lean4-wsl` sans importation Python — leurs cellules illisibles par `ast` sont du Lean —, deux `python3-lean`, quatre `python3`), lake [`conway_lean/`](conway_lean/) lu par ses fichiers réels (modules `.lean` FR et miroirs `_en` dans `Conway/Life/`, moteur `scripts/hashlife.py`, patterns RLE dont `gemini.rle`) ; 3 exercices sur le moteur du lake (périodes, canon Gosper, concordance du README) | 15 min |
+| 40 | [Lean-40-Capstone-Langlands-Python](Lean-40-Capstone-Langlands-Python.ipynb) | **Capstone (escalier)** vers la sous-série [Langlands](Langlands/README.md) (EPIC #17969) : la relation de Hecke sur les coefficients de Δ montée par six marches de garantie croissante — table de Ramanujan exacte par convolution entière (13 valeurs publiées, concordance 13/13), identité τ(pn) + p¹¹τ(n/p) = τ(p)τ(n) vérifiée sur 9 cas (p = 2, 3, 5), témoin négatif (la suite perturbée τ+n la viole 9 fois sur 9), lecture du lac [`hecke_lean`](hecke_lean/) comme un consommateur (définition `coeffHeckeT`, preuve de `coeffHeckeT_of_dvd`, audit `sorry`/`native_decide` : 0), et le pont Moonshine (j = E₄³/Δ recalculé, 196884 = 1 + 196883) — kernel `python3`, exécuté sans erreur, 3 exercices | 25 min |
 
 > Numérotation : le notebook Confiance-Preuves-Native — initialement prévu en 35 — est livré en 24b (accrétion du palier 24 Calibration, décision #17545) par la PR #17530 (issue #17520) ; l'annexe A de Tegmark arrive donc en 36.
 
@@ -257,9 +267,9 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 16d | Conway-Game-of-Life-Lean-Native | ~32 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
 | 16e | Conway-FRACTRAN-Lean-Native | ~22 | 3 | 0 | **NOUVEAU** (hommage, kernel `lean4-wsl`) |
 | 16f | Conway-Free-Will-Theorem | ~28 | 3 | 0 | **NOUVEAU** (hommage) |
-| 16g | Conway-Canons | ~23 | 3 | - | **NOUVEAU** (barreau 2 #12223) |
+| 16g | Conway-Canons | ~23 | 3 | - | **NOUVEAU** |
 | 16h | Conway-PatternTour-Native | ~9 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
-| 16i | Translateur-Life | ~4 | 0 | - | **NOUVEAU** (grain B1 #12205) |
+| 16i | Translateur-Life | ~4 | 0 | - | **NOUVEAU** |
 | 16j | Conway-Hashlife-Correctness-Native | ~15 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, Epic #11703) |
 | 17a | Knots-a-Conway-and-Proofs | ~13 | 0 | - | **NOUVEAU** (hommage) |
 | 17b | Knots-b-Invariants-Companion | ~19 | 3 | - | **NOUVEAU** |
@@ -267,10 +277,10 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 18 | Sendov-Complex-Analysis | ~22 | 3 | 0 | **NOUVEAU** |
 | 19 | Analysis-I-Tao-Workflow | ~18 | 3 | 0 | **NOUVEAU** |
 | 20 | PFR-Entropy-Method | ~23 | 3 | 0 | **NOUVEAU** |
-| 20b | PFR-Primitives-Transportables | ~6 | 0 | - | **NOUVEAU** (digestion #12214) |
+| 20b | PFR-Primitives-Transportables | ~6 | 0 | - | **NOUVEAU** |
 | 21 | MIMO-Detection-Flips | ~34 | 6 | 0 | **NOUVEAU** |
 | 21b | MIMO-Converse-Native | ~30 | 0 | - | **NOUVEAU** (kernel `lean4-wsl`) |
-| 21c | Descente-Budget | ~9 | 8 | 0 | **NOUVEAU** (#12219) |
+| 21c | Descente-Budget | ~9 | 8 | 0 | **NOUVEAU** |
 | 22 | Galois-Probleme-Inverse-M23 | ~25 | 3 | 0 | **NOUVEAU** (exécution Lean + sympy) |
 | 23 | ERC20-Invariant-Companion | ~21 | 3 | 0 | **NOUVEAU** (lecture statique Python du lake) |
 | 23b | Lean-ERC20-Native-Companion | ~30 | 2 | - | **NOUVEAU** (kernel `lean4-wsl`) |
@@ -283,7 +293,7 @@ Pour l'état formel détaillé des modules support (preuves résolues vs `sorry`
 | 29 | Hecke-Operators-Native | ~32 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `hecke_lean`) |
 | 30 | FormalGroups-Native | ~33 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `formal_groups_lean`) |
 | 31 | Euler-Navier-Stokes | 34 | 3 | 0 | **NOUVEAU** (kernel `python3`, reproduction pinée et double noyau) |
-| 34 | Calculabilite-et-Limites | 19 | 3 | 0 | **NOUVEAU** (kernel `python3` + lake `formal_logic_lean`, Tranche E Epic #15066) |
+| 34 | Calculabilite-et-Limites | 19 | 3 | 0 | **NOUVEAU** (kernel `python3` + lake `formal_logic_lean` ; Tranche E — Epic #15066) |
 | 36 | Structures-Finies-MUH | 23 | 3 | 0 | **NOUVEAU** (kernel `lean4-wsl`, lake `tegmark_muh_lean`, Annexe A de Tegmark) |
 
 Tous les notebooks incluent :
@@ -505,6 +515,7 @@ Lean/
 ├── Lean-36-Structures-Finies-MUH-Lean.ipynb # Lean4 (WSL) kernel - Annexe A de Tegmark : structures finies, encodage/complexité, C₃/C₂/NAND, Aut(S), frontière du décideur exhibée (lake tegmark_muh_lean, sans Mathlib)
 ├── Lean-37-Capstone-Serre100.ipynb # Python kernel - escalier capstone vers la sous-série Serre 100 : entrée, démos, prérequis de la série distillations
 ├── Lean-38-Capstone-Geometry-Lean-Python.ipynb # Python kernel - escalier capstone vers la sous-série Geometry : le fil rouge (milieu de l'hypoténuse) monté de la figure numérique au noyau du lac geometry_lean
+├── Lean-40-Capstone-Langlands-Python.ipynb # Python kernel - escalier capstone vers la sous-série Langlands : la relation de Hecke de la table de Ramanujan au lac hecke_lean, et le pont Moonshine
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md

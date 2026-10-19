@@ -191,6 +191,6 @@ concentré Mag7. Voir Key-finding #36 dans `docs/qc/qc-comparative-backtests.md`
 
 - `main.py` — Stratégie (composite EMA70/Trend30, alignée 2018-2025 ; paramètres `mode`, `start`, `end`, `fee_mult` et grille depuis #19759)
 - `alpha_models.py` — EMACrossAlpha + TrendStocksAlpha
-- `portfolio_construction.py` — MultiStrategyPCM (blend d'allocation alpha)
+- `SharedPCM/pouches_pcm.py` (bibliothèque de projet QC) — `MultiStrategyPouchesPCM`, PCM par poches canonique importé par `main.py` (extraction #19821 brique 1)
 - `quantbook.ipynb` — QuantBook de recherche du composite (sweep d'allocation cellule 12 : EMA70/Trend30 élu, Sharpe 0.497)
 - `quantbook_composite_research.ipynb` — QuantBook pré-composite (corrélation des signaux EMA-Cross × TrendStocks)

@@ -79,6 +79,7 @@ from prover.trace import TraceLogger  # noqa: E402
 from prover.lean_utils import (  # noqa: E402  (#9402: real-token counter)
     count_real_sorries,
     stub_theorem_proof,
+    sweep_execution_leftovers,
 )
 from prover.tree_lock import (  # noqa: E402
     acquire_tree_lock,
@@ -264,14 +265,31 @@ async def _run_locked(
         )
 
     calibration = calibration_target is not None
+    run_result = None
     try:
-        return await _run_calibration_ready(
+        run_result = await _run_calibration_ready(
             args, demo, file_target, calibration=calibration
         )
+        return run_result
     finally:
         if calibration_target is not None:
             calibration_target[0].write_bytes(calibration_target[1])
             _bg("CALIBRATION_RESTORE approved proof restored")
+        # C4 (#1453 forensic, 2026-09-19): sweep the execution leftovers the
+        # run may leave next to its target (GoalExtract probe, sandboxes) on
+        # every exit path — under the tree lock, after the calibration
+        # restore. Sandboxes survive a failed run: crash evidence.
+        error_flag = sys.exc_info()[0] is not None or (
+            isinstance(run_result, int) and run_result != 0
+        )
+        removed = sweep_execution_leftovers(
+            file_target, keep_sandboxes=error_flag
+        )
+        if removed:
+            _bg(
+                f"LEFTOVER-SWEEP removed {len(removed)} leftover(s) next to "
+                f"{Path(file_target).name}"
+            )
 
 
 async def _run_calibration_ready(

@@ -401,6 +401,8 @@ La causalité est traitée à **quatre endroits** du dépôt, chacun avec son mo
 | [CausalBridges-06 — L'instrument faible](DecisionTheory/Causal-Bridges/CausalBridges-06-Dowhy-Instrument-Faible.ipynb) | ~45 min | Variable instrumentale via `dowhy` (pipeline `identify` + `estimate(iv)` + `refute`) ; F-stat Staiger-Stock, biais IV vs OLS en Monte-Carlo, **verdict NON_IDENTIFIABLE** honnête sur exclusion violée |
 | [CausalBridges-07 — Quasi-Experimental](DecisionTheory/Causal-Bridges/CausalBridges-07-Quasi-Experimental.ipynb) | ~50 min | Méthodes quasi-expérimentales (DiD, contrôle synthétique, RDD, variables instrumentales) sur données réalistes ; estimands et hypothèses d'identification explicités |
 | [CausalBridges-08 — Décomposer la discrimination](DecisionTheory/Causal-Bridges/CausalBridges-08-Causal-Fairness.ipynb) | ~50 min | Équité causale : critères structurels Str-DE/IE/SE, famille TV (TE, Exp-SE, NDE, NIE) — Lem 4.1 et Thm 4.2 vérifiés avec `dowhy` sur données de crédit |
+| [CausalBridges-09 — Emuler un essai ciblé](DecisionTheory/Causal-Bridges/CausalBridges-09-Hernan-TargetTrialEmulation-Python.ipynb) | ~60 min | *Target trial emulation* (Hernan/Robins) : confounding variant dans le temps, g-formula et IPTW stabilisé contre trois réflexes naïfs, benchmark 200 répliques |
+| [CausalBridges-10 — Automated Social Science](DecisionTheory/Causal-Bridges/CausalBridges-10-Automated-Social-Science.ipynb) | ~45 min | Manning/Zhu/Horton (2024) en version bornée locale : SCM générateur à β vrai connu, sujets LLM mono-tour sur endpoints vLLM self-hosted (AWQ vs GPTQ × 3 seeds), ajustement `dowhy`, écart de calibration + bras élicitation directe |
 
 | Série | Moteur | Angle causal |
 |-------|--------|--------------|
