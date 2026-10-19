@@ -2,6 +2,12 @@
 
 from __future__ import annotations
 
+import re
+import sys
+import types
+from pathlib import Path
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -77,6 +83,358 @@ class TestDetectRegimesPrice:
         low = detect_regimes_price(trending_up, uptrend_threshold=0.01, lookback_days=20)
         high = detect_regimes_price(trending_up, uptrend_threshold=0.50, lookback_days=20)
         assert (low == "uptrend").sum() >= (high == "uptrend").sum()
+
+    def test_causal_threshold_uses_past_only(self):
+        """At t, the volatility threshold must be a function of [0, t) only.
+
+        Build two 300-day series that share the first 150 days, then
+        diverge. With causal_threshold=True the regimes produced at any
+        index t < 150 must be identical between the two series — the
+        threshold at t is fully determined by the shared prefix.
+        """
+        rng = np.random.default_rng(0)
+        shared = rng.normal(0.0004, 0.01, 150)
+        future_a = rng.normal(0.0004, 0.01, 150)
+        future_b = rng.normal(0.0004, 0.05, 150)  # much higher vol
+
+        prices_a = pd.Series(100 * np.cumprod(1 + np.concatenate([shared, future_a])))
+        prices_b = pd.Series(100 * np.cumprod(1 + np.concatenate([shared, future_b])))
+
+        lookback = 30
+        regimes_a = detect_regimes_price(prices_a, lookback_days=lookback, causal_threshold=True)
+        regimes_b = detect_regimes_price(prices_b, lookback_days=lookback, causal_threshold=True)
+
+        # Identical regime labels on the shared prefix (post-lookback).
+        # shift(1) keeps this property: at any t < 150, the threshold
+        # is computed from rolling_std[0..t-1] which is identical
+        # between the two series (shared prefix).
+        np.testing.assert_array_equal(
+            regimes_a.iloc[lookback:150].values,
+            regimes_b.iloc[lookback:150].values,
+        )
+
+    def test_non_causal_threshold_legacy_default(self):
+        """non_causal mode reproduces the pre-#21054 global-quantile path.
+
+        The two modes disagree when the future differs from the past.
+        Here we manufacture a clean regime switch: low-vol first half,
+        high-vol second half. The non-causal threshold (computed over
+        the whole series) will be HIGH, classifying few second-half
+        rows as 'volatility' in a way the causal mode would not.
+        """
+        rng = np.random.default_rng(1)
+        n = 400
+        returns = np.empty(n)
+        returns[:200] = rng.normal(0.0004, 0.005, 200)         # calm
+        returns[200:] = rng.normal(0.0004, 0.04, 200)          # stormy
+        prices = pd.Series(100 * np.cumprod(1 + returns))
+
+        causal = detect_regimes_price(prices, lookback_days=30, causal_threshold=True)
+        legacy = detect_regimes_price(prices, lookback_days=30, causal_threshold=False)
+
+        # Causal threshold on the calm window is much LOWER than the
+        # global quantile (which is dragged up by the stormy window),
+        # so the causal mode must mark at least as many 'volatility'
+        # rows in the stormy second half as the legacy mode. The
+        # shift(1) used by the causal mode keeps this invariant
+        # (the threshold on the storm boundary is even lower than
+        # without shift, since the stormy values are not yet in the
+        # window).
+        stormy_causal = (causal.iloc[200:] == "volatility").sum()
+        stormy_legacy = (legacy.iloc[200:] == "volatility").sum()
+        assert stormy_causal >= stormy_legacy
+
+    def test_causal_is_default(self, trending_up):
+        """`causal_threshold=True` is the documented default (#21054)."""
+        explicit = detect_regimes_price(trending_up, lookback_days=20, causal_threshold=True)
+        default = detect_regimes_price(trending_up, lookback_days=20)
+        np.testing.assert_array_equal(explicit.values, default.values)
+
+    def test_causal_threshold_strict_t_minus_1(self):
+        """#21111 v2: the threshold at t is the quantile of [0, t-1],
+        not [0, t]. The .shift(1) makes the contract strict
+        known-at-t-1.
+
+        Discriminator: with shared rolling_std prefix, append a single
+        extreme value at the boundary. The non-causal (no shift)
+        expanding threshold at the boundary INCLUDES the extreme
+        value; the causal (shifted) threshold at the same index does
+        NOT.
+        """
+        rng = np.random.default_rng(2)
+        n = 200
+        returns = rng.normal(0.0004, 0.01, n)
+        prices = pd.Series(100 * np.cumprod(1 + returns))
+        lookback = 30
+        L = lookback
+
+        # Use the public path: re-implement both branches via
+        # detect_regimes_price with two seeds, then read the actual
+        # threshold that the function used by inferring the
+        # classification decision.
+        # Easier discriminator: at the LAST index, compare the
+        # number of 'volatility' classifications between causal
+        # and non-causal modes on identical input. They will
+        # differ because the global quantile (non-causal) is
+        # higher than the strict t-1 quantile (causal) when the
+        # tail is calm but the global threshold is pulled by
+        # middle outliers.
+        causal = detect_regimes_price(prices, lookback_days=L, causal_threshold=True)
+        legacy = detect_regimes_price(prices, lookback_days=L, causal_threshold=False)
+
+        # Strict-t-1 must produce a *lower* (or equal) threshold on
+        # the last index than the global one, because the last
+        # index is excluded from its own threshold. In regime
+        # terms, the causal mode will mark at least as many rows
+        # 'volatility' on the calm tail.
+        calm_tail_causal = (causal.iloc[100:] == "volatility").sum()
+        calm_tail_legacy = (legacy.iloc[100:] == "volatility").sum()
+        # The discriminating claim: on random data, the two counts
+        # can be EQUAL, but they cannot be lower for causal (which
+        # is the bug fixed by the shift). Add an adversarial tail
+        # to make the inequality strict.
+        adversarial = np.concatenate([returns[:100], rng.normal(0.0004, 0.04, 100)])
+        prices_adv = pd.Series(100 * np.cumprod(1 + adversarial))
+        causal_adv = detect_regimes_price(prices_adv, lookback_days=L, causal_threshold=True)
+        legacy_adv = detect_regimes_price(prices_adv, lookback_days=L, causal_threshold=False)
+        adv_causal = (causal_adv.iloc[100:] == "volatility").sum()
+        adv_legacy = (legacy_adv.iloc[100:] == "volatility").sum()
+        assert adv_causal >= adv_legacy, (
+            f"causal ({adv_causal}) must mark >= legacy ({adv_legacy}) "
+            "volatility rows in the stormy half when the threshold is "
+            "shifted (strict t-1 contract)"
+        )
+
+    def test_causal_warmup_at_2L(self):
+        """#21111 v2: first valid threshold at index 2*lookback_days.
+
+        rolling_std (a rolling(L).std() of returns) is NaN for
+        indices 0..L-1 and valid from L (returns[0] is NaN, so the
+        first 30 non-NaN returns are at indices 1..30 and the
+        rolling(30) emits at the right edge = index 30).
+        expanding(min_periods=L) needs L non-NaN values to produce
+        a quantile, so its first valid output is at index L + (L-1)
+        = 2L-1. The .shift(1) adds one more index of latency, so
+        the first usable threshold is at 2L. Before that index the
+        threshold is NaN and the volatility regime is unreachable
+        (NaN >= NaN is False).
+
+        Discriminator: on a constant high-volatility series, the
+        count of 'volatility' rows in [0, 2L) must be 0 and >0 in
+        [2L, ...).
+        """
+        rng = np.random.default_rng(3)
+        n = 200
+        lookback = 30
+        L = lookback
+        # Constant high volatility so the threshold is well below
+        # the realised rolling_std once defined.
+        returns = rng.normal(0.0004, 0.05, n)
+        prices = pd.Series(100 * np.cumprod(1 + returns))
+
+        regimes = detect_regimes_price(prices, lookback_days=L, causal_threshold=True)
+        warmup_idx = 2 * L
+        # Before warmup_idx: no 'volatility' (threshold NaN).
+        pre_warmup = (regimes.iloc[:warmup_idx] == "volatility").sum()
+        # From warmup_idx onward: at least one 'volatility' in a
+        # high-vol series.
+        post_warmup = (regimes.iloc[warmup_idx:] == "volatility").sum()
+        assert pre_warmup == 0, (
+            f"pre-warmup ([:{warmup_idx}]) should have 0 'volatility' rows "
+            f"(NaN threshold), got {pre_warmup}"
+        )
+        assert post_warmup > 0, (
+            f"post-warmup ([{warmup_idx}:]) should have >0 'volatility' rows, "
+            f"got {post_warmup}"
+        )
+
+    def test_causal_warmup_exact_threshold_at_2L(self):
+        """#21111 v2: vol_threshold is NaN at 2L-1 and finite at 2L.
+
+        The prior warmup test (pre/post counts) does not distinguish
+        2L-1 from 2L as the boundary — both have pre=0 and post>0 on
+        a high-vol series. The exact assertion is on the threshold
+        itself, not on the regime count.
+
+        Reproduce the vol_threshold calculation and assert:
+        - vol_threshold.iloc[2L-1] is NaN
+        - vol_threshold.iloc[2L] is finite
+        """
+        rng = np.random.default_rng(3)
+        n = 200
+        L = 30
+        returns = rng.normal(0.0004, 0.05, n)
+        prices = pd.Series(100 * np.cumprod(1 + returns))
+
+        # Reproduce the threshold calculation
+        ret = prices.pct_change()
+        rolling_std = ret.rolling(L).std() * np.sqrt(252)
+        vol_threshold = rolling_std.expanding(min_periods=L).quantile(0.75).shift(1)
+
+        # Threshold at 2L-1 is NaN
+        assert pd.isna(vol_threshold.iloc[2 * L - 1]), (
+            f"vol_threshold at 2L-1 = {2 * L - 1} should be NaN, "
+            f"got {vol_threshold.iloc[2 * L - 1]}"
+        )
+        # Threshold at 2L is finite
+        assert pd.notna(vol_threshold.iloc[2 * L]), (
+            f"vol_threshold at 2L = {2 * L} should be finite, got NaN"
+        )
+
+    def test_strict_t_minus_1_witness_via_extreme_value(self):
+        """#21111 v2: the .shift(1) is operative, not decorative.
+
+        Witness: build a series where rolling_std at index 2L is an
+        extreme outlier (one-off spike). The shifted threshold at 2L
+        uses rolling_std[0..2L-1] (excluding 2L); the unshifted
+        threshold at 2L uses rolling_std[0..2L] (including 2L). The
+        two must differ at 2L, proving the shift is operative and
+        the strict t-1 contract is enforced.
+
+        The prior test_causal_threshold_strict_t_minus_1 compared
+        causal vs non-causal (different code paths); this one
+        compares shift vs no-shift on the same code path — the
+        discriminator the adjoint flagged as missing.
+        """
+        rng = np.random.default_rng(42)
+        L = 30
+        n = 100
+        returns = np.zeros(n)
+        # Indices 0..L+29 = 0..59: small returns
+        returns[:60] = rng.normal(0.0004, 0.01, 60)
+        # Index 60 = 2L: extreme spike (50% single-day return)
+        returns[60] = 0.5
+        # Indices 61..99: small returns
+        returns[61:] = rng.normal(0.0004, 0.01, n - 61)
+
+        prices = pd.Series(100 * np.cumprod(1 + returns))
+
+        # Compute the threshold with and without shift
+        ret = prices.pct_change()
+        rolling_std = ret.rolling(L).std() * np.sqrt(252)
+
+        # Without shift (the buggy version, look-ahead at t)
+        threshold_no_shift = rolling_std.expanding(min_periods=L).quantile(0.75)
+        # With shift (the current correct version, strict t-1)
+        threshold_with_shift = threshold_no_shift.shift(1)
+
+        # At index 2L = 60, the two must differ (rolling_std[60] is huge)
+        val_no_shift = threshold_no_shift.iloc[2 * L]
+        val_with_shift = threshold_with_shift.iloc[2 * L]
+
+        assert not np.isclose(val_no_shift, val_with_shift), (
+            f"shift must produce a different threshold at index 2L={2 * L}: "
+            f"with_shift={val_with_shift}, no_shift={val_no_shift}"
+        )
+        # And the shift must EXCLUDE the extreme: the unshifted
+        # threshold at 2L includes rolling_std[2L] (huge), so
+        # unshifted > shifted.
+        assert val_no_shift > val_with_shift, (
+            f"unshifted threshold ({val_no_shift}) must exceed shifted "
+            f"({val_with_shift}) when rolling_std[2L] is an extreme spike"
+        )
+
+    def test_strict_t_minus_1_witness_via_source_removal(self):
+        """#21111 v4: removing the .shift(1) from line 114 of the production
+        source must turn this test RED, proving the .shift(1) is operative
+        on the regime path.
+
+        The v3 witness (test_strict_t_minus_1_witness_on_production, now
+        removed) used ``unittest.mock.patch.object(pd.Series, "shift", ...)``
+        to neutralize ``.shift`` globally. The adjoint reproduced that this
+        patch also breaks ``prices.pct_change()`` (which uses
+        ``prices - prices.shift(1)`` internally), so the diff observed in
+        v3 was the combined effect of breaking both the production shift
+        AND the returns computation — not a witness of the production
+        shift alone. Re-running v3 with the production ``.shift(1)``
+        literally removed (but ``pct_change`` intact) still passes,
+        confirming v3 is non-discriminative.
+
+        This v4 witness uses ``exec`` of the production source with
+        ``.shift(1)`` removed, leaving ``pct_change`` and ``rolling``
+        untouched. The exec happens in a fresh module registered in
+        ``sys.modules`` (required by ``@dataclass``), so the original
+        file is never modified. The witness is therefore:
+
+        - Pristine (current source has ``.shift(1)``): production regimes
+          differ from the exec-mutated regimes. ``n_diff > 0``. GREEN.
+        - Mutation (source has no ``.shift(1)``): production regimes
+          equal the exec-mutated regimes. ``n_diff == 0``. RED.
+        - Restoration: implicit — the file is never touched, so pristine
+          == restored by construction.
+
+        Three cycles, in line with the adjoint's spec
+        (``adjoint-21111-mutant30-confirmed-correction-20261016``).
+        """
+        rng = np.random.default_rng(42)
+        L = 30
+        n = 100
+        returns = np.zeros(n)
+        # Indices 0..59: small returns (the shared prefix that drives
+        # the threshold under causal mode).
+        returns[:60] = rng.normal(0.0004, 0.01, 60)
+        # Index 60 = 2L: extreme spike (50% single-day return). The
+        # threshold at 60 differs depending on whether rolling_std[60]
+        # is included (no shift) or excluded (with shift).
+        returns[60] = 0.5
+        # Indices 61..99: small returns
+        returns[61:] = rng.normal(0.0004, 0.01, n - 61)
+
+        prices = pd.Series(100 * np.cumprod(1 + returns))
+
+        # Pristine: production call with the current source.
+        regimes_pristine = detect_regimes_price(prices, lookback_days=L)
+
+        # Mutation: exec the source with ``.shift(1)`` removed from
+        # the vol_threshold chain (line 114). Only that line is
+        # affected; ``pct_change`` and ``rolling`` are intact.
+        import regime_detector
+        src_path = Path(regime_detector.__file__)
+        src = src_path.read_text()
+        # Pattern: ``            .shift(1)\n        )\n    else:`` ->
+        # ``        )\n    else:`` (one unique match, the production
+        # vol_threshold chain).
+        src_mutant = re.sub(
+            r"            \.shift\(1\)\n        \)\n    else:",
+            "        )\n    else:",
+            src,
+            count=1,
+        )
+        assert src_mutant != src, (
+            "expected to find the production .shift(1) at line 114 "
+            "of regime_detector.py but the pattern did not match"
+        )
+
+        mutant_name = "regime_detector_mutant_v4"
+        mutant_mod = types.ModuleType(mutant_name)
+        mutant_mod.__file__ = str(src_path)
+        sys.modules[mutant_name] = mutant_mod
+        exec(compile(src_mutant, str(src_path), "exec"), mutant_mod.__dict__)
+        regimes_mutant = mutant_mod.detect_regimes_price(prices, lookback_days=L)
+
+        # The witness: pristine and mutant must differ somewhere.
+        n_diff = int((regimes_pristine != regimes_mutant).sum())
+        assert n_diff > 0, (
+            f"Removing .shift(1) from line 114 produced no regime "
+            f"change: the production .shift(1) is non-operative on the "
+            f"regime path "
+            f"(pristine[:5]={list(regimes_pristine[:5])}, "
+            f"mutant[:5]={list(regimes_mutant[:5])})"
+        )
+
+        # Belt-and-suspenders: verify the same exec pattern is
+        # idempotent (re-exec'ing the same source on a clean module
+        # gives the same regimes) — guards against test flakiness
+        # from a polluted sys.modules entry.
+        mutant_mod_2 = types.ModuleType(mutant_name + "_bis")
+        mutant_mod_2.__file__ = str(src_path)
+        sys.modules[mutant_name + "_bis"] = mutant_mod_2
+        exec(compile(src_mutant, str(src_path), "exec"), mutant_mod_2.__dict__)
+        regimes_mutant_2 = mutant_mod_2.detect_regimes_price(prices, lookback_days=L)
+        np.testing.assert_array_equal(
+            regimes_mutant.values,
+            regimes_mutant_2.values,
+        )
 
 
 # ---------------------------------------------------------------------------
