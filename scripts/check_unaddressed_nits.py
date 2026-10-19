@@ -3352,9 +3352,19 @@ def ts(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
+# #19643 (residu) -- borne PAR APPEL sur chaque `gh` de l'organe. Mesure de
+# l'issue (commentaire 2026-10-09T09:20:40Z) : 195 appels sans borne sur 200,
+# environ 0,75 s par appel. 90 s est un choix, pas la queue mesuree : large
+# pour un `gh api --paginate` sur une PR chargee, sous le timeout des tools
+# shell des agents (~115-120 s). Une expiration remonte (TimeoutExpired),
+# jamais avalee. La borne ne couvre pas le total de la chaine B.0.
+GH_CALL_TIMEOUT_S = 90
+
+
 def gh_json(args: list[str]) -> object:
     out = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True
+        ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
+        timeout=GH_CALL_TIMEOUT_S,
     ).stdout
     return json.loads(out)
 
@@ -3405,6 +3415,10 @@ def _gh_fetch_issue(n: int) -> dict | None:
     if n not in _ISSUE_INFO_CACHE:
         try:
             d = gh_json(["api", "repos/" + REPO + "/issues/" + str(n)])
+        except subprocess.TimeoutExpired:
+            # #19643 (residu) : une expiration n'est pas « numero qui n'est pas
+            # une issue » -- elle ne doit pas etre mise en cache comme None.
+            raise
         except Exception:
             _ISSUE_INFO_CACHE[n] = None
             return None
@@ -4369,6 +4383,10 @@ def improper_dismissals(pr: int) -> set[str]:
     try:
         reviews = gh_json(["api", f"repos/{REPO}/pulls/{pr}/reviews", "--paginate"])
         events = gh_json(["api", f"repos/{REPO}/issues/{pr}/timeline", "--paginate"])
+    except subprocess.TimeoutExpired:
+        # #19643 (residu) : un ensemble vide lirait la reserve d'un tiers comme
+        # levee. Une expiration remonte jusqu'au verdict non-CLEAN de main().
+        raise
     except Exception:
         return set()  # timeline illisible : on retombe sur l'ancien comportement
     if not isinstance(reviews, list) or not isinstance(events, list):
@@ -5518,7 +5536,7 @@ def _print_sha_notes(result: dict) -> None:
               f"rembobiné par un push muet ({why}) — preuve conservée, "
               f"non bloquant")
     for v in result.get("voided_lifts") or []:
-        detail = (" — l'arbre DIFFÈRE de la tête : vraie réserve à reposer"
+        detail = (" — l'arbre DIFFÈRE de la tête : blob modifié depuis la levée, fond non vérifié"
                   if v.get("tree_differs")
                   else " — arbre non comparable, refus conservateur")
         print(f"  [!] NON LEVE — levee de {v['author']} à {v['at']} : cite "
@@ -5668,11 +5686,20 @@ def main() -> int:
     ap.add_argument("--search", help="filtre gh (ex: 'merged:2026-07-01..2026-07-15')")
     ap.add_argument("--json", action="store_true", help="sortie machine (mode gate)")
     args = ap.parse_args()
-    if args.audit:
-        return audit(args.limit, args.search)
-    if args.pr is None:
-        ap.error("fournir un numero de PR, ou --audit")
-    return gate(args.pr, args.json)
+    try:
+        if args.audit:
+            return audit(args.limit, args.search)
+        if args.pr is None:
+            ap.error("fournir un numero de PR, ou --audit")
+        return gate(args.pr, args.json)
+    except subprocess.TimeoutExpired as exc:
+        # #19643 (residu) : gh n'a pas repondu dans sa borne -- aucun verdict.
+        # Non-CLEAN (rc=1, fail-closed), jamais un rc=0 ni une trace nue.
+        # ASCII seul : stderr peut etre une console cp1252 (cf #16103).
+        print(f"NON MESURE : gh n'a pas repondu en {exc.timeout}s "
+              f"({' '.join(map(str, exc.cmd))[:120]}) -- aucun verdict, rc=1 (fail-closed)",
+              file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":

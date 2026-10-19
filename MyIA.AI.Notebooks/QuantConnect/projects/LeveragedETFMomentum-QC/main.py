@@ -25,6 +25,12 @@ from datetime import datetime
 # Rotation Strategy de Gayed et Bilello (2016) : SSO quand SPY cloture au-dessus de sa SMA,
 # SHV sinon ; controles sma1x (SPY au lieu de SSO) et sso, qld (levier x2 constant).
 # Les titres ajoutes ne sont souscrits que par les modes qui les utilisent.
+#
+# Achats refuses (#20388) : SetHoldings(cible, 1.0, liquidateExistingHoldings=True) envoyait
+# ventes et achat ensemble, et l'achat etait refuse faute de marge (51 fois sur 778 ordres en
+# base, 2012-2026). RotateTo envoie les ventes d'abord, vise 98 % et plafonne l'achat a la
+# marge libre a l'envoi ; le nombre d'ordres refuses est publie en statistique d'execution
+# "refused".
 
 
 class _ScaledFeeModel(FeeModel):
@@ -52,6 +58,11 @@ UCITS_MAP = {"TQQQ": "QLD", "TECL": "QLD", "SPXL": "SSO",
 # Titres d'execution ajoutes par mode (hors signal, sans indicateur).
 TRADE_TICKERS = {"ucits": ("QLD", "SSO", "SHV"), "lrs": ("SSO", "SHV"),
                  "sma1x": ("SHV",), "sso": ("SSO",), "qld": ("QLD",)}
+
+# Part du portefeuille visee par une rotation, et seuil sous lequel une ligne deja detenue
+# est completee (#20388).
+TARGET_WEIGHT = 0.98
+TOP_UP_BELOW = 0.97
 
 
 class ConditionalSectorRotation(QCAlgorithm):
@@ -133,14 +144,57 @@ class ConditionalSectorRotation(QCAlgorithm):
         self.closes = 0
         self.traded = 0.0
         self.days_on = {}
+        self.refused = 0
 
     def OnOrderEvent(self, event):
         if event.Status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED):
             self.traded += (abs(event.FillQuantity * event.FillPrice) / self.Portfolio.TotalPortfolioValue)
+        elif event.Status == OrderStatus.INVALID:
+            self.refused += 1
 
     def OnEndOfAlgorithm(self):
         for ticker, days in sorted(self.days_on.items()):
             self.SetRuntimeStatistic(f"days_{ticker}", str(days))
+        self.SetRuntimeStatistic("refused", str(self.refused))
+        self.Log(f"done refused={self.refused}")
+
+    def _OpenQuantity(self, symbol):
+        return sum(t.Quantity - t.QuantityFilled for t in self.Transactions.GetOpenOrderTickets(symbol))
+
+    def RotateTo(self, target):
+        # Detient `target` seul a 98 % du portefeuille (#20388). En resolution journaliere,
+        # tout ordre devient MarketOnOpen, et un achat est controle deux fois : a l'envoi, puis
+        # a l'ouverture suivante, dans l'ordre d'envoi. SetHoldings(1.0) envoyait ventes et
+        # achat ensemble, et l'achat etait refuse quand il manquait un peu de marge ; la ligne
+        # restait alors en liquide jusqu'a la seance suivante. Comme dans SetHoldings, la
+        # quantite est calculee avant les ventes. Les ventes partent d'abord, et les 2 % laisses
+        # en liquide couvrent le controle a l'envoi (modele #20548).
+        # L'arbre est evalue a chaque seance, et une seconde fois sur la tranche de minuit d'un
+        # dividende (#20264). Les ordres en attente sont donc deduits, et aucune vente en
+        # attente n'est annulee : renvoyee, elle partirait apres l'achat.
+        pending = {s: self._OpenQuantity(s) for s in self.symbols.values()}
+        sells = {s: -self.Portfolio[s].Quantity - pending[s]
+                 for s in self.symbols.values() if s != target}
+        sells = {s: q for s, q in sells.items() if q != 0}
+        if not sells and self.Portfolio[target].Quantity + pending[target] > 0:
+            # Cible deja detenue seule, ou en route : pas d'ordre, sauf si la ligne est passee
+            # sous 97 % du portefeuille (liquidites accumulees, dividendes en prix bruts).
+            held = self.Portfolio[target].HoldingsValue + pending[target] * self.Securities[target].Price
+            if held >= TOP_UP_BELOW * self.Portfolio.TotalPortfolioValue:
+                return
+        quantity = self.CalculateOrderQuantity(target, TARGET_WEIGHT) - pending[target]
+        # Plafond de marge a l'envoi. Les ventes ne liberent leur marge qu'a leur remplissage,
+        # a l'ouverture suivante. Apres une rotation remplie sur un ecart d'ouverture (ETF x3),
+        # la ligne detenue peut depasser 100 % du portefeuille : l'achat entier serait alors
+        # refuse a l'envoi. Il est plafonne a la marge libre, frais compris (jusqu'a 1 % de la
+        # valeur chez IB), et la part manquante est completee a la seance suivante (seuil 97 %).
+        security = self.Securities[target]
+        room = 0.97 * self.Portfolio.MarginRemaining * security.Leverage
+        quantity = min(quantity, int(room / security.Price))
+        for symbol, q in sells.items():
+            self.MarketOrder(symbol, q)
+        if quantity > 0:
+            self.MarketOrder(target, quantity)
 
     def OnData(self, data):
         # Ensure data is ready before running logic
@@ -244,8 +298,8 @@ class ConditionalSectorRotation(QCAlgorithm):
             if self.mode == "ucits":
                 exec_ticker = UCITS_MAP.get(target_ticker, target_ticker)
                 self.days_on[f"sig_{target_ticker}"] = self.days_on.get(f"sig_{target_ticker}", 0) + 1
-            # liquidates all other holdings and puts 100% into target
-            self.SetHoldings(self.symbols[exec_ticker], 1.0, liquidateExistingHoldings=True)
+            # sells all other holdings, then puts 98 % into target (#20388)
+            self.RotateTo(self.symbols[exec_ticker])
             self.days_on[exec_ticker] = self.days_on.get(exec_ticker, 0) + 1
 
     def TradeControl(self):
@@ -263,7 +317,7 @@ class ConditionalSectorRotation(QCAlgorithm):
             target_ticker = risk_on if price_spy > sma_spy else risk_off
         else:
             target_ticker = HOLD_MODES[self.mode]
-        self.SetHoldings(self.symbols[target_ticker], 1.0, liquidateExistingHoldings=True)
+        self.RotateTo(self.symbols[target_ticker])
         self.days_on[target_ticker] = self.days_on.get(target_ticker, 0) + 1
 
     def HistorySignals(self):
