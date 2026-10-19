@@ -1006,6 +1006,11 @@ class StackEntry:
     # sha -> sujet. Le sujet est ce qui s'apparie entre deux versions d'une PR
     # rebatie ; le sha, lui, ne survit pas au rebase.
     subjects: dict[str, str]
+    # #20641 -- SHA d'auteur (au-dela des fusions de rafraichissement de base
+    # prouvees content-free). Recouvre `ref` quand la tete est elle-meme le
+    # commit d'auteur, et un ancetre de `ref` quand un update-branch a
+    # prepende une fusion content-free depuis `main`.
+    author_ref: str = ""
 
 
 def _git(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -1016,6 +1021,77 @@ def _git(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
     if check and proc.returncode != 0:
         raise RuntimeError(f"git {' '.join(args[:3])} -> {proc.stderr.strip()[:200]}")
     return proc
+
+
+#: Borne de la remontee first-parent (alignee sur ``merge_dwell._MAX_WALK``).
+#: Une PR accumule rarement 50 rafraichissements de base non rebases, et
+#: au-dela c'est un defaut cote PR -- la porte ne contourne pas.
+_AUTHOR_REF_MAX_WALK = 50
+
+#: Ref de la base canonique de toutes les PR de la porte pile. Le gate
+#: exige ``baseRefName == CANONICAL_BASE`` pour un verdict READY (cf
+#: ``baseRefName must be ...``), donc la base est toujours main.
+_STACK_BASE_REF = "refs/remotes/origin/main"
+
+
+def _author_ref(ref: str, base_ref: str = _STACK_BASE_REF) -> str:
+    """#20641 -- SHA d'auteur de ``ref`` (au-dela des fusions content-free).
+
+    La remontee first-parent est celle de ``last_authoritative_sha`` dans
+    ``scripts/ci/merge_dwell.py`` : on saute une fusion si et seulement
+    si elle est content-free (deux parents, second ancetre de la base,
+    arbre du merge identique a l'auto-merge des parents). Une
+    resolution de conflit (arbre different de l'auto-merge) reste du
+    contenu d'auteur, et la remontee s'arrete la.
+
+    On ne reimplemente pas ``last_authoritative_sha`` : le contrat est
+    qu'on utilise la MEME condition de saut. Le predicat reste local-git
+    ici -- la porte pile n'a pas besoin du GitHub API, elle dispose
+    deja des refs de tete de chaque PR ouverte.
+
+    Echec de mesure (git absent, SHA orphelin, sortie vide) : on rend
+    ``ref`` inchange, jamais une exception. Une mesure impossible ne
+    doit pas fabriquer de refus.
+    """
+    current = ref
+    for _ in range(_AUTHOR_REF_MAX_WALK):
+        parents_proc = _git(["log", "-1", "--format=%P", current], check=False)
+        if parents_proc.returncode != 0:
+            return current
+        parents = (parents_proc.stdout or "").strip().split()
+        if len(parents) != 2:
+            return current
+        first, second = parents
+        # Le second parent doit etre un ancetre de la base.
+        if (
+            _git(
+                ["merge-base", "--is-ancestor", second, base_ref], check=False
+            ).returncode
+            != 0
+        ):
+            return current
+        # L'arbre du merge doit etre l'auto-merge des parents (meme
+        # condition que `last_authoritative_sha`).
+        tree_proc = _git(["log", "-1", "--format=%T", current], check=False)
+        if tree_proc.returncode != 0:
+            return current
+        current_tree = (tree_proc.stdout or "").strip()
+        if not current_tree:
+            return current
+        # `git merge-tree --write-tree` (Git >= 2.38) ecrit l'arbre de
+        # l'auto-merge ; une sortie non nulle signale des conflits, et
+        # donc du contenu d'auteur.
+        auto_proc = _git(
+            ["merge-tree", "--write-tree", first, second], check=False
+        )
+        if auto_proc.returncode != 0:
+            return current
+        first_line = (auto_proc.stdout or "").splitlines()[:1]
+        auto_tree = first_line[0].strip() if first_line else ""
+        if not auto_tree or auto_tree != current_tree:
+            return current
+        current = first
+    return current
 
 
 def _own_ref_content(ref: str) -> tuple[list[str], dict[str, str]]:
@@ -1116,7 +1192,14 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
     for p in fetched:
         ref = f"{STACK_REF_PREFIX}{p}"
         commits, subjects = _own_ref_content(ref)
-        index[p] = StackEntry(p, ref, commits, subjects)
+        # #20641 -- un cout de un appel git par PR (jusqu'a 50
+        # first-parent walks), borne par `_AUTHOR_REF_MAX_WALK`. C'est
+        # le seul ajout de la passe : sans lui, un rafraichissement
+        # content-free (update-branch sans conflit) fait sortir la
+        # base de la pile de l'ordre lineaire.
+        index[p] = StackEntry(
+            p, ref, commits, subjects, _author_ref(ref)
+        )
     _prune_stack_refs(fetched)
     return index, []
 
@@ -1228,10 +1311,16 @@ def _stack_partners(target: int, index: dict[int, StackEntry]) -> list[int]:
                 continue
             if not _subjects_corroborated(entry, other, set(shared)):
                 continue
-        # Bas de pile lineaire : la tete de `target` est un ancetre de celle
-        # de `other`, donc merger `target` d'abord est l'ordre correct.
+        # Bas de pile lineaire : la tete d'AUTEUR (au-dela d'un eventuel
+        # rafraichissement content-free, #20641) de `target` est un
+        # ancetre de celle de `other`, donc merger `target` d'abord est
+        # l'ordre correct. On utilise `author_ref`, pas `ref` : un
+        # `gh pr update-branch` content-free prepende une fusion de
+        # rafraichissement a `entry.ref` (et potentiellement a
+        # `other.ref`), et la comparer brute faisait croire a un
+        # sommet de pile la ou il y a un bas lineaire.
         if _git(
-            ["merge-base", "--is-ancestor", entry.ref, other.ref], check=False
+            ["merge-base", "--is-ancestor", entry.author_ref, other.author_ref], check=False
         ).returncode == 0:
             continue
         if not [
