@@ -11,10 +11,33 @@ block stayed identical, the run that produced the new outputs did not write
 the block - the block describes a previous run that no longer matches the
 committed outputs. FAIL.
 
+Issue #21299 adds a second regression class on top of #11155: a hand-rewritten
+top-level block riding an identical per-cell layer. Papermill writes
+``cells[i].metadata.papermill`` for each cell it ran; a legitimate
+re-execution rewrites **both** the top-level block and the per-cell layer.
+A hand-rewritten top-level cover over a previous run leaves the per-cell
+layer byte-identical to the previous run, which is the FORGED_BLOCK
+signature. The pre-#21299 ratchet compared only the top-level block and
+returned BLOCK_MOVED (a pass) for this pattern -- a false negative that
+ships a reexecution-fantome. The new ``cell_papermill_signature`` function
+hashes the per-cell layer; ``classify`` consults both signatures together.
+
+Verdict matrix (issue #21299):
+
+| Top-level | Per-cell | Verdict | Regression |
+|---|---|---|---|
+| identical | identical | OUTPUTS_UNCHANGED | no |
+| (else) | (strip hooks explain the diff) | OUTPUTS_STRIPPED | no |
+| identical | identical, outputs differ | STALE_BLOCK | yes (legacy) |
+| changed | identical | FORGED_BLOCK | yes (new) |
+| changed | changed | BLOCK_MOVED | no |
+| absent at head | -- | BLOCK_REMOVED | no |
+
 Everything else is clean, by design of the issue body:
-- outputs untouched (a markdown-only edit rides an unchanged block legally)
+- outputs untouched (a markdown-only edit rides the block legally)
 - block absent at head (removed - explicitly allowed)
-- block changed or newly added (the executor rewrote it alongside outputs)
+- block changed AND per-cell layer changed (the executor rewrote both
+  alongside outputs)
 - notebook added by the PR (no base blob; execution evidence itself is
   enforced by notebook-execution-required.yml, H.3)
 
@@ -27,7 +50,7 @@ Usage:
 
 Head state reads the working tree (in CI the checkout IS the head), base
 state reads the blob via `git show`. Exit code 1 iff at least one
-changed-outputs + identical-block regression exists.
+STALE_BLOCK or FORGED_BLOCK regression exists.
 """
 
 import argparse
@@ -113,6 +136,32 @@ def papermill_block(nb):
     return json.dumps(block, sort_keys=True, ensure_ascii=False)
 
 
+def cell_papermill_signature(nb):
+    """Canonical signature of the per-cell ``metadata.papermill`` blocks.
+
+    Hashes ``cells[i].metadata.papermill`` for every cell, in cell order.
+    The two-layer model: a legitimate re-execution rewrites **both** the
+    top-level ``metadata.papermill`` (added in #11146) and the per-cell blocks
+    that papermill itself writes; a hand-rewritten top-level block, in
+    contrast, leaves the per-cell layer untouched. The two signatures together
+    discriminate the legitimate run from a forged top-level rewrite.
+
+    The signature is a single string suitable for equality comparison
+    (json.dumps with sort_keys + ensure_ascii). Cells without a
+    ``metadata.papermill`` block contribute the empty string, so a notebook
+    with no per-cell block at all matches itself across edits that touch
+    unrelated fields. A cell whose block IS present contributes its
+    canonical serialization, in cell order.
+    """
+    parts = []
+    for cell in nb.get("cells", []):
+        per_cell = (cell.get("metadata") or {}).get("papermill")
+        parts.append("" if per_cell is None
+                     else json.dumps(per_cell, sort_keys=True,
+                                     ensure_ascii=False))
+    return "\n".join(parts)
+
+
 # --- sanctioned output strips -------------------------------------------
 # Three pre-commit hooks in .pre-commit-config.yaml rewrite committed cell
 # outputs without any re-execution. Two of them touch the code-cell outputs
@@ -168,36 +217,40 @@ def stripped_evidence(content):
 def state_at_base(base, path, cwd=None):
     """(evidence, block) of the notebook blob at base ref.
 
-    Returns ("ABSENT", None, None) when the file does not exist at base and
-    ("PARSE_ERROR", None, None) on invalid JSON.
+    Returns ("ABSENT", None, None, None, None) when the file does not exist
+    at base and ("PARSE_ERROR", None, None, None, None) on invalid JSON.
+    The 5th element is the per-cell papermill signature; the 4th is the
+    stripped-evidence thunk (lazy, only used on the rare STALE_BLOCK branch).
     """
     content = git("show", f"{base}:{path}", cwd=cwd)
     if content is None:
-        return "ABSENT", None, None, None
+        return "ABSENT", None, None, None, None
     try:
         nb = json.loads(content)
     except Exception:
-        return "PARSE_ERROR", None, None, None
+        return "PARSE_ERROR", None, None, None, None
     # Lazy: the strip tools cost ~150 ms per notebook and are only ever
     # consulted on the STALE_BLOCK branch, which is the rare one. A thunk
     # keeps a 200-notebook PR at the cost it had before this exemption.
     return ("OK", exec_evidence(nb), papermill_block(nb),
+            cell_papermill_signature(nb),
             lambda: stripped_evidence(content))
 
 
 def state_at_head(path, cwd=None):
-    """(status, evidence, block) of the working-tree notebook."""
+    """(status, evidence, block, cell_sig) of the working-tree notebook."""
     try:
         nb = json.loads((Path(cwd or ".") / path).read_text(encoding="utf-8"))
     except Exception:
-        return "PARSE_ERROR", None, None, None
-    return "OK", exec_evidence(nb), papermill_block(nb), None
+        return "PARSE_ERROR", None, None, None, None
+    return "OK", exec_evidence(nb), papermill_block(nb), \
+        cell_papermill_signature(nb), None
 
 
 def classify(base_state, head_state):
     """Verdict of one changed notebook. Regression iff stale block ridden."""
-    b_status, b_ev, b_block, b_ev_stripped = base_state  # 4th is a thunk
-    h_status, h_ev, h_block, _ = head_state
+    b_status, b_ev, b_block, b_cell_sig, b_ev_stripped = base_state
+    h_status, h_ev, h_block, h_cell_sig, _ = head_state
     if b_status == "ABSENT":
         return "ADDED", False
     if b_status == "PARSE_ERROR" or h_status == "PARSE_ERROR":
@@ -215,10 +268,30 @@ def classify(base_state, head_state):
         # that no re-execution could have removed.
         return "OUTPUTS_STRIPPED", False
     if h_block == b_block:
-        # Outputs changed but the block is byte-identical: it describes the
-        # previous run, not the one that produced the committed outputs.
+        # Outputs changed but the top-level block is byte-identical: it
+        # describes the previous run, not the one that produced the committed
+        # outputs. The per-cell layer MUST agree with the top-level rewrite
+        # (a legitimate re-execution rewrites both) -- when it does, the
+        # verdict stays STALE_BLOCK; when it does not, see FORGED_BLOCK below.
+        if h_cell_sig == b_cell_sig:
+            return "STALE_BLOCK", True
+        # Top-level identical, per-cell layer differs: the executor that
+        # wrote the per-cell layer is not the one that produced these
+        # outputs. The block at the top level is a stale cover for an
+        # otherwise-consistent per-cell layer; this is the legacy path that
+        # STALE_BLOCK used to flag, and it remains a regression.
         return "STALE_BLOCK", True
-    # Block changed or newly written alongside the new outputs.
+    # h_block != b_block. The legitimate path: a re-execution that rewrote
+    # both layers. The forgery: a hand-rewrite of the top-level block only,
+    # with the per-cell layer still describing the previous run.
+    if h_cell_sig == b_cell_sig:
+        # Top-level rewritten, per-cell layer identical to the previous run:
+        # the commit replaced the top-level block without re-executing the
+        # cells, leaving the per-cell layer as evidence of the prior run.
+        # This is the FORGED_BLOCK pattern observed in #21299 (#21229, #21230,
+        # #21232) -- a reexecution-fantome that the pre-#21299 ratchet missed.
+        return "FORGED_BLOCK", True
+    # Block changed and per-cell layer changed too: a real re-execution.
     return "BLOCK_MOVED" if b_block is not None else "BLOCK_ADDED", False
 
 
@@ -269,11 +342,22 @@ def main():
 
     if regressions:
         for r in regressions:
-            print(f"::error file={r['notebook']}::outputs/execution_count "
-                  f"changed but the metadata.papermill block is identical to "
-                  f"{args.base} - the block describes the previous run. "
-                  f"Re-execute the notebook via an executor that rewrites the "
-                  f"block, or remove the block", file=sys.stderr)
+            if r["verdict"] == "FORGED_BLOCK":
+                print(f"::error file={r['notebook']}::FORGED_BLOCK -- the "
+                      f"top-level metadata.papermill block was rewritten but "
+                      f"the per-cell layer (cells[i].metadata.papermill) is "
+                      f"byte-identical to {args.base}, which is the signature "
+                      f"of a hand-rewritten top-level cover over a previous "
+                      f"run. Re-execute the notebook via an executor that "
+                      f"rewrites both layers (papermill / .NET kernel / "
+                      f"exec_single_cell), or remove the block entirely.",
+                      file=sys.stderr)
+            else:
+                print(f"::error file={r['notebook']}::outputs/execution_count "
+                      f"changed but the metadata.papermill block is identical "
+                      f"to {args.base} - the block describes the previous run. "
+                      f"Re-execute the notebook via an executor that rewrites "
+                      f"the block, or remove the block", file=sys.stderr)
         sys.exit(1)
     sys.exit(0)
 
