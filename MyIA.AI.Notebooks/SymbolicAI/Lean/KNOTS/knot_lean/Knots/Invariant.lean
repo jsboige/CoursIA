@@ -3645,13 +3645,88 @@ theorem tricolorable_invariant_r3_connected {d₁ d₂ : KnotDiagram}
   ⟨Reidemeister3Connected.tricolorable_forward h,
    Reidemeister3Connected.tricolorable_backward h⟩
 
+/-! ### Transfert le long d'un redraw (maillon 8, voie 1)
+
+Le constructeur `ReidemeisterEquiv.redraw` (Reidemeister.lean) étend
+l'équivalence du pas de bookkeeping `Redraws` — permutation de la liste des
+croisements + renommage bijectif des étiquettes. Contrepartie de vérité : la
+tricolorabilité doit être invariante le long de CE pas aussi. Le transport
+est le renommage du coloriage : l'étiquette `e k` de `d₂` porte la couleur de
+l'étiquette `k` de `d₁` (la bijection `e` échange les fenêtres `[1, numEdges]`,
+le transport reste donc dans les bornes) ; la permutation de la liste est
+inoffensive — la condition de Fox est un `∀ c ∈ crossings`, inchangée par
+`List.Perm`. La direction arrière s'obtient par `Redraws.symm`, comme pour
+les moves connectés (`Iff.symm` du transfert direct).
+-/
+
+theorem tricolorable_forward_redraw {d₁ d₂ : KnotDiagram} (hred : Redraws d₁ d₂) :
+    IsTricolorable d₁ → IsTricolorable d₂ := by
+  obtain ⟨hne, e, hw₁, hw₂, hw₃, hw₄, hperm⟩ := hred
+  rintro ⟨coloring, hcond, hn2, hused⟩
+  have hpos1 : 0 < d₁.numEdges := by omega
+  have hpos2 : 0 < d₂.numEdges := by omega
+  -- Coloriage transporté, muni de ses deux équations caractéristiques :
+  -- (hfkey) les couleurs suivent le renommage étiquette par étiquette ;
+  -- (hfval) la valeur à l'indice transporté est celle de l'indice d'origine.
+  obtain ⟨f, hfkey, hfval⟩ : ∃ f : TriColoring d₂,
+      (∀ l, 1 ≤ l → l ≤ d₁.numEdges →
+        d₂.colorAtNat (↑f) (e l) = d₁.colorAtNat (↑coloring) l) ∧
+      (∀ i : Fin d₁.numEdges,
+        f ⟨(e (i.val + 1) - 1) % d₂.numEdges, Nat.mod_lt _ hpos2⟩ = coloring i) := by
+    refine ⟨fun i => coloring ⟨(e.symm (i.val + 1) - 1) % d₁.numEdges,
+      Nat.mod_lt _ hpos1⟩, ?_, ?_⟩
+    · intro l h1l h2l
+      have he := hw₃ l h1l h2l
+      unfold KnotDiagram.colorAtNat
+      rw [dif_neg (by omega : d₂.numEdges ≠ 0), dif_neg (by omega : d₁.numEdges ≠ 0)]
+      simp only [Nat.mod_eq_of_lt (by omega : e l - 1 < d₂.numEdges)]
+      rw [show (e l - 1) + 1 = e l from by omega, Equiv.symm_apply_apply]
+    · intro i
+      have hi1 : 1 ≤ i.val + 1 ∧ i.val + 1 ≤ d₁.numEdges := ⟨by omega, by omega⟩
+      have hei := hw₃ (i.val + 1) hi1.1 hi1.2
+      simp only [Nat.mod_eq_of_lt (by omega : e (i.val + 1) - 1 < d₂.numEdges)]
+      rw [show (e (i.val + 1) - 1) + 1 = e (i.val + 1) from by omega,
+        Equiv.symm_apply_apply,
+        show i.val + 1 - 1 = i.val from by omega,
+        Nat.mod_eq_of_lt i.isLt]
+  refine ⟨f, ?_, by omega, ?_⟩
+  · intro c' hc'
+    obtain ⟨c, hc, rfl⟩ := List.mem_map.mp (hperm.mem_iff.mp hc')
+    have hcondc : triColorConditionAt d₁ (↑coloring) c := hcond c hc
+    simp only [triColorConditionAt] at hcondc ⊢
+    simp only [PDCrossing.relabel] at ⊢
+    obtain ⟨⟨a1, b1, a2, b2, a3, b3, a4, b4⟩, hc24, hfox⟩ := hcondc
+    have w1 := hw₃ c.e1 a1 b1
+    have w2 := hw₃ c.e2 a2 b2
+    have w3 := hw₃ c.e3 a3 b3
+    have w4 := hw₃ c.e4 a4 b4
+    rw [hfkey c.e1 a1 b1, hfkey c.e2 a2 b2, hfkey c.e3 a3 b3, hfkey c.e4 a4 b4]
+    exact ⟨⟨w1.1, w1.2, w2.1, w2.2, w3.1, w3.2, w4.1, w4.2⟩, hc24, hfox⟩
+  · obtain ⟨i, j, hneij⟩ := hused
+    have hi1 : 1 ≤ i.val + 1 ∧ i.val + 1 ≤ d₁.numEdges := ⟨by omega, by omega⟩
+    have hj1 : 1 ≤ j.val + 1 ∧ j.val + 1 ≤ d₁.numEdges := ⟨by omega, by omega⟩
+    have hei := hw₃ (i.val + 1) hi1.1 hi1.2
+    have hej := hw₃ (j.val + 1) hj1.1 hj1.2
+    refine ⟨⟨(e (i.val + 1) - 1) % d₂.numEdges, Nat.mod_lt _ hpos2⟩,
+            ⟨(e (j.val + 1) - 1) % d₂.numEdges, Nat.mod_lt _ hpos2⟩, ?_⟩
+    rw [hfval i, hfval j]
+    exact hneij
+
+/-- La tricolorabilité est invariante le long d'un redraw (maillon 8, voie 1) :
+la direction arrière est le transfert direct le long du redraw symétrique. -/
+theorem tricolorable_invariant_redraw {d₁ d₂ : KnotDiagram} (hred : Redraws d₁ d₂) :
+    (IsTricolorable d₁ ↔ IsTricolorable d₂) :=
+  ⟨tricolorable_forward_redraw hred,
+   fun h => tricolorable_forward_redraw (Redraws.symm hred) h⟩
+
 /-! ## 2-Ω. Le théorème maître : la tricolorabilité est un invariant de nœud
 
 L'induction sur la fermeture réflexive transitive `ReidemeisterEquiv` compose
-les transferts des trois moves connectés (§3e/§3f/§3g). Chaque pas
-`ReidemeisterStep` porte sa direction dans une disjonction `d d' ∨ d' d`
-(Stage 2, #2874) : la branche `Or.inl` est le transfert direct, la branche
-`Or.inr` son symétrique (`Iff.symm`). La transitivité compose par `Iff.trans`.
+les transferts des trois moves connectés (§3e/§3f/§3g) et du pas de
+bookkeeping `redraw` (maillon 8, voie 1). Chaque pas `ReidemeisterStep`
+porte sa direction dans une disjonction `d d' ∨ d' d` (Stage 2, #2874) : la
+branche `Or.inl` est le transfert direct, la branche `Or.inr` son symétrique
+(`Iff.symm`). La transitivité compose par `Iff.trans`.
 -/
 
 theorem tricolorable_invariant :
@@ -3680,6 +3755,7 @@ theorem tricolorable_invariant :
       cases h with
       | inl h => exact tricolorable_invariant_r3_connected h
       | inr h => exact Iff.symm (tricolorable_invariant_r3_connected h)
+  | redraw h => exact tricolorable_invariant_redraw h
   | trans _ _ ih₁ ih₂ => exact Iff.trans ih₁ ih₂
 
 /-! ## 5. Corollaire : le trefoil n'est pas l'unknot
