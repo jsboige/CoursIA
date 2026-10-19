@@ -3787,6 +3787,15 @@ def _filter_by_claim_scope(
         scope (at least one live glob) stays scoped on its live part: the
         lock is real, the dead globs are surfaced in the JSON for the lane
         to fix. `tracked` None (no repo walk) -> no lift (cannot prove).
+      - #21431: a scope that is entirely dead BUT is a CREATION scope (the
+        files it names do not exist yet, in a directory that DOES exist) is
+        not broken -- it is a tranche in progress. The tracked tree cannot
+        decide a disjointness question about a file it does not contain,
+        so the two scopes are compared BY PATTERN. The same relaxation
+        applies to the caller's own scope (an entirely-dead creation scope
+        no longer keeps every other lane) and to the other lane's scope (a
+        creation scope is not lifted to epic-wide). A scope whose directory
+        does not exist stays a typo and keeps the #10958 fail-CLOSED.
 
     The reducer `compute_active_claims` is untouched; this filter only prunes
     the `others` view. The active_claims summary keeps the full state, so the
@@ -3800,8 +3809,15 @@ def _filter_by_claim_scope(
     # either. Dropping an other-lane claim as "disjoint" from globs that lock
     # no real file would be the same fail-open with the roles swapped, so the
     # caller keeps every other lane until its own scope is reissued clean.
+    # #21431 -- UNLESS the scope is a CREATION scope: the files it names do
+    # not exist yet (a new detector, a new notebook) and the tracked tree is
+    # blind to them. There the disjointness IS provable -- by comparing the
+    # patterns, which is what `_scopes_intersect` does for a creation scope.
+    # A scope whose directory does not exist is a typo, not a creation: it
+    # keeps the fail-CLOSED.
     if tracked is not None and _empty_scope_in(my_scope, tracked) == my_scope:
-        return others
+        if not _scope_is_creation(my_scope, tracked):
+            return others
     filtered: dict[str, ClaimEvent] = {}
     for ln, ev in others.items():
         scope = ev.get("paths")
@@ -3824,8 +3840,19 @@ def _filter_by_claim_scope(
         # the walk succeeded); a missing/empty witness never lifts.
         empty = ev.get("empty_scope") or []
         if empty and len(empty) >= len(scope):
-            filtered[ln] = ev  # lifted to epic-wide -- always blocking
-            continue
+            # #10958 fail-safe -- an ENTIRELY dead scope (every glob matches
+            # zero tracked files) is a broken claim, not a permissive one:
+            # lifted to epic-wide before the disjointness test, mirroring
+            # #10597. The witness is `ev.get("empty_scope")` (attached by
+            # `_run_check` when the walk succeeded); a missing/empty witness
+            # never lifts.
+            # #21431 -- a CREATION scope is not a broken claim: the files it
+            # names will exist. It is compared BY PATTERN with the caller's
+            # scope, like any other scoped claim. A scope whose directory
+            # does not exist keeps the lift (a typo, not a creation).
+            if not _scope_is_creation(scope, tracked):
+                filtered[ln] = ev  # lifted to epic-wide -- always blocking
+                continue
         if _scopes_intersect(my_scope, scope, tracked):
             filtered[ln] = ev  # scopes intersect -> real collision
         # else: both scoped, disjoint -> free, drop from others
@@ -3883,6 +3910,107 @@ def _glob_overlap(ga: str, gb: str) -> bool:
     return True
 
 
+def _tracked_dirs(tracked: list[str] | None) -> set[str]:
+    """The set of directories that hold at least one tracked file.
+
+    Derived from the same walk `_empty_scope_in` uses -- no second `git`
+    call. The ancestors of every tracked path are the directories that
+    exist on disk.
+    """
+    dirs: set[str] = set()
+    for path in tracked or []:
+        parts = path.split("/")
+        for i in range(1, len(parts)):
+            dirs.add("/".join(parts[:i]))
+    return dirs
+
+
+def _glob_parent_dir(glob: str) -> str:
+    """The literal parent directory of a glob.
+
+    The literal prefix of the glob (up to the first fnmatch meta) is the
+    part of the path that is certain; its directory is the directory the
+    glob lives in. A glob with no directory (`newfile.py`) lives at the
+    repository root, whose parent is the empty string (always existing).
+    """
+    prefix = _literal_prefix(glob)
+    if "/" not in prefix:
+        return ""
+    return prefix.rsplit("/", 1)[0]
+
+
+def _scope_is_creation(scope: list[str] | None,
+                       tracked: list[str] | None) -> bool:
+    """True when every glob of `scope` names a file to be CREATED.
+
+    #21431 -- a scope whose files do not exist YET is not a broken claim
+    (the #10958 fail-safe reading): it is the normal state of a creation
+    tranche (a new detector, a new notebook). The tracked tree cannot
+    decide a disjointness question about a file it does not contain -- it
+    would read "disjoint" for every creation scope -- so the two scopes
+    are compared BY PATTERN instead (`_scopes_may_overlap_by_pattern`).
+
+    Three conditions per glob, all required:
+      (a) it matches ZERO tracked file -- it does not exist yet;
+      (b) it is syntactically valid (`_unparseable_scope_in` says nothing)
+          -- a prose residue is a typo, not a path;
+      (c) its literal parent directory EXISTS in the tracked tree -- the
+          file is a new file in a real directory. A path whose directory
+          does not exist (`scripts/nowhere/typo.py`) is a typo: the
+          #10958 fail-CLOSED stays, because the lane that wrote it meant
+          something else. This is the discriminator the issue leaves to
+          the implementation, and it is the one that keeps every existing
+          fail-safe test green.
+    """
+    if not scope or tracked is None:
+        return False
+    dirs = _tracked_dirs(tracked)
+    for glob in scope:
+        if _glob_matches_tracked(glob, tracked):
+            return False          # (a) the file already exists
+        if _unparseable_scope_in([glob], tracked):
+            return False          # (b) prose residue -- a typo
+        parent = _glob_parent_dir(glob)
+        if parent and parent not in dirs:
+            return False          # (c) the directory does not exist -- a typo
+    return True
+
+
+def _scopes_may_overlap_by_pattern(a: list[str], b: list[str]) -> bool:
+    """True if two path scopes MAY cover a common file, compared BY PATTERN.
+
+    #21431 -- the pattern-wise reading of a scope: a glob is a glob, and
+    two scopes overlap when one of them can match a string the other can
+    also match. The concrete members of each side are matched against the
+    other side's globs -- fnmatch in BOTH directions, because the loop
+    walks both sides: the concrete path against the other side's glob,
+    and (on the other turn) the other side's concrete path against this
+    side's glob. The remaining glob-vs-glob pairs are decided by the
+    conservative literal-prefix test of `_glob_overlap`, which over-blocks
+    when unsure (the safe direction for a collision guard).
+
+    This is the test the tracked walk cannot make for a creation scope: a
+    file that does not exist yet is matched by no tracked file, so the
+    walk would read "disjoint" for a scope whose whole point is to create
+    that file.
+    """
+    if not a or not b:
+        return False
+    for side, other in ((a, b), (b, a)):
+        for g in side:
+            if not _glob_has_meta(g) and _path_matches(g, other):
+                return True
+    for ga in a:
+        if not _glob_has_meta(ga):
+            continue
+        for gb in b:
+            if not _glob_has_meta(gb):
+                continue
+            if _glob_overlap(ga, gb):
+                return True
+    return False
+
+
 def _scopes_intersect(
     a: list[str], b: list[str], tracked: list[str] | None = None
 ) -> bool:
@@ -3904,6 +4032,13 @@ def _scopes_intersect(
     prefix test of `_glob_overlap`. The fallback never wrongly reports
     "disjoint" (it over-blocks when unsure), which is the safe direction for
     a collision guard.
+
+    #21431 -- the walk is exact for the scopes that live on disk, but BLIND
+    to a creation scope: a file that does not exist yet is matched by no
+    tracked file, so the walk reads "disjoint" for a scope whose whole point
+    is to create that file. When either side is a creation scope, the two
+    scopes are compared BY PATTERN instead -- the same proof, on the
+    patterns rather than on the tree.
     """
     if not a or not b:
         return False
@@ -3911,21 +4046,11 @@ def _scopes_intersect(
         for path in tracked:
             if _path_matches(path, a) and _path_matches(path, b):
                 return True
+        if _scope_is_creation(a, tracked) or _scope_is_creation(b, tracked):
+            return _scopes_may_overlap_by_pattern(a, b)
         return False
     # no repo walk: concrete members of each side, matched against the other
-    for side, other in ((a, b), (b, a)):
-        for g in side:
-            if not _glob_has_meta(g) and _path_matches(g, other):
-                return True
-    for ga in a:
-        if not _glob_has_meta(ga):
-            continue
-        for gb in b:
-            if not _glob_has_meta(gb):
-                continue
-            if _glob_overlap(ga, gb):
-                return True
-    return False
+    return _scopes_may_overlap_by_pattern(a, b)
 
 
 def _fmt_active(ev: ClaimEvent) -> str:
