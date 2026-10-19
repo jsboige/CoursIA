@@ -445,11 +445,18 @@ def check(
 
     warnings: list[str] = []
     if fetch_errors:
+        # A surface is "unreadable" if it could not be read (None) and the
+        # fetch error log does not already name it (the log entry IS the
+        # unreadable signal). Simpler than the previous ternary
+        # `fetch_errors and "comments" or ""` which conflated truthiness of
+        # the list with membership of the literal "comments".
+        comment_error = any("comments" in e for e in fetch_errors)
+        review_error = any("reviews" in e for e in fetch_errors)
         unreadable = [
             name for name, present in (
                 ("labels", label_present),
-                ("comments", comment_bodies_final is None and "comments" not in (fetch_errors and "comments" or "")),
-                ("reviews", review_bodies_final is None),
+                ("comments", comment_bodies_final is None and not comment_error),
+                ("reviews", review_bodies_final is None and not review_error),
             )
             if present is None
         ]
