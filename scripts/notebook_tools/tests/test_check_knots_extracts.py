@@ -13,8 +13,9 @@ y trouve).
 """
 
 import json
+import re
 import sys
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 
 import pytest
 
@@ -229,3 +230,64 @@ class TestRelativeResolutionScope:
         # NOTE : si on veut autoriser le repli repo_root pour les
         # chemins relatifs, c'est une option opt-in (voir main()).
         # Par defaut, c'est fail-closed, ce que ce test verifie.
+
+
+# ---------------------------------------------------------------------------
+# R1-fix Windows : la classe 1 stale path documentee par #21007
+#
+# Le filtre par defaut du hook (``Lean/KNOTS/``) est forward-slash.
+# Sur Windows, ``str(Path)`` rend des antislashs (``\``), donc
+# ``re.search(filter, str(path))`` ne matche JAMAIS un carnet KNOTS,
+# et le hook scanne 0 fichier puis sort en rc 0 sans un mot. C'est
+# exactement la classe 1 stale path (silencieux) que #21007 a
+# documente.
+#
+# Remede : ``path.as_posix()`` normalise la forme vers les forward-
+# slashes, et le filtre retrouve les deux variantes.
+#
+# Ces tests utilisent ``PureWindowsPath`` pour avoir un comportement
+# deterministe cross-OS (le test reste valide sur Linux et Mac, alors
+# que ``Path`` est natif a la machine de test).
+# ---------------------------------------------------------------------------
+
+class TestPathFilterWindowsCompat:
+    """Le filtre par defaut ``Lean/KNOTS/`` doit attraper les chemins
+    Windows antislashes comme les chemins POSIX forward-slashes."""
+
+    DEFAULT_FILTER = re.compile(r"Lean/KNOTS/")
+
+    def test_str_path_windows_antislashes_does_not_match(self):
+        """Cas fondateur preserve : SANS le fix, le hook ne matche
+        jamais un carnet KNOTS sur Windows. Ce test documente la
+        regression si quelqu'un revient a ``str(p)``."""
+        # PureWindowsPath rend inconditionnellement des antislashs.
+        p = PureWindowsPath("MyIA", "AI", "Notebooks", "Lean", "KNOTS", "demo.ipynb")
+        s = str(p)  # forme native Windows : antislashs
+        assert "\\" in s, "sanity check : on est bien sur une forme Windows"
+        # Le filtre forward-slash NE MATCHE PAS la forme antislashes.
+        assert self.DEFAULT_FILTER.search(s) is None
+
+    def test_as_posix_path_windows_antislashes_matches(self):
+        """Avec ``as_posix()``, le filtre forward-slash retrouve la
+        forme Windows normalisee -- c'est le fix."""
+        p = PureWindowsPath("MyIA", "AI", "Notebooks", "Lean", "KNOTS", "demo.ipynb")
+        # ``as_posix()`` rend la forme forward-slash portable.
+        posix_form = p.as_posix()
+        assert "\\" not in posix_form
+        assert self.DEFAULT_FILTER.search(posix_form) is not None
+
+    def test_posix_path_forward_slashes_still_matches(self):
+        """Le fix ne regresse pas le cas POSIX historique."""
+        p = Path("MyIA/AI/Notebooks/Lean/KNOTS/demo.ipynb")
+        # ``as_posix()`` est un no-op sur POSIX, le filtre matche.
+        assert self.DEFAULT_FILTER.search(p.as_posix()) is not None
+
+    def test_filter_rejects_non_KNOTS_path(self):
+        """Le filtre reste restrictif : un carnet hors KNOTS n'est
+        pas scanne, meme apres le fix."""
+        p = PureWindowsPath("MyIA", "AI", "Notebooks", "Lean", "Knots", "demo.ipynb")
+        # ``Knots`` (capitalisation differente) ne matche pas ``KNOTS/``.
+        # NOTE : le filtre par defaut est sensible a la casse sur
+        # intention (le perimetre est la convention repo ``KNOTS/``).
+        assert self.DEFAULT_FILTER.search(p.as_posix()) is None
+

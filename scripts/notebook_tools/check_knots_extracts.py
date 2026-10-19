@@ -34,11 +34,16 @@ import sys
 from pathlib import Path
 
 # Candidat : un chemin de fichier ``.lean`` qui ressemble à un chemin
-# du projet. On capture :
+# du projet. La regex capture :
 #  - `knot_lean/.../*.lean` (relatif au cwd d'exécution du notebook)
-#  - `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/...` (absolu)
-#  - `lean/Knots/...` (le défaut historique pré-4ee14af19e, qu'on
-#    n'attrape pas ici : ce hook vise le stale post-4ee14af19e).
+#  - `KNOTS/.../*.lean` (relatif, forme post-4ee14af19e)
+#  - `MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/...` (absolu repo)
+#
+# Variante historique pré-4ee14af19e NON capturée (volontaire) :
+#  - `lean/Knots/...` (lowercase ``lean/`` + capital ``Knots/``) — le
+#    défaut historique que ce hook ne vise pas. La convention repo
+#    post-4ee14af19e est normalisée sur ``knot_lean/`` ou ``KNOTS/`` ;
+#    on n'élargit pas le périmètre au-delà de ce qui est mesuré.
 LEAN_PATH_RE = re.compile(
     r"""
     (?P<path>
@@ -182,7 +187,16 @@ def main(argv: list[str] | None = None) -> int:
     # Filter
     if args.path_filter:
         flt = re.compile(args.path_filter)
-        paths = [p for p in paths if flt.search(str(p))]
+        # Windows : ``str(Path)`` rend des antislashs (``\``) sur les
+        # .ipynb crees/renommes par Git ou par pre-commit. Le filtre
+        # par defaut (``Lean/KNOTS/``) est forward-slash -- applique
+        # sur la forme Windows, il ne matche JAMAIS, le hook scanne 0
+        # carnet et sort en rc 0 sans un mot. C'est la classe 1 stale
+        # path documente par #21007. On normalise via ``as_posix()``
+        # pour que le filtre forward-slash attrape les deux formes
+        # (cf. test_path_filter_matches_windows_path dans le fichier
+        # de tests, cas fondateur preserve).
+        paths = [p for p in paths if flt.search(p.as_posix())]
 
     if not paths:
         return 0
