@@ -708,8 +708,22 @@ ci_docker_endpoints() {
 # fois. Si l'ID ne se lit pas (info muet ou vide), on ne refuse PAS -- on
 # enumere sans dedup, ce qui ne peut que surcompter (refus conservateur),
 # jamais sous-compter.
-running_ci_mb() {
-  local ep d id ids ins total=0 seen=" "
+# Lignes d'inspection des conteneurs CI en vol, sur TOUS les demons de
+# ci_docker_endpoints, au format demande par l'appelant.
+#
+# C'est le FACTEUR COMMUN de running_ci_mb (la flotte entiere) et de
+# running_family_mb (une famille de slots). Les deux doivent voir EXACTEMENT le
+# meme perimetre -- memes demons, meme deduplication par ID de demon, meme
+# contrat fail-closed. Deux perimetres divergents feraient diverger la somme
+# en vol et la reprise d'une famille, et c'est ce desaccord qui rendait le
+# double-comptage du budget invisible (#20727).
+#
+# Le contrat fail-closed est celui de running_ci_mb, inchange : un demon muet
+# (docker ps en echec) ou un inspect muet alors que le daemon repond rend
+# rc!=0 et nomme la raison sur stderr -- compter 0 pour lui serait exactement
+# le defaut que ce garde ferme (#15164).
+ci_inspect_rows() {
+  local fmt="$1" ep d id ids rows seen=" "
   for ep in $(ci_docker_endpoints); do
     case "$ep" in
       default) d="docker" ;;
@@ -735,21 +749,52 @@ running_ci_mb() {
       seen="$seen $id "
     fi
     [ -n "$ids" ] || continue
-    if ! ins="$($d inspect --format '{{.HostConfig.Memory}}' $ids 2>/dev/null)"; then
+    if ! rows="$($d inspect --format "$fmt" $ids 2>/dev/null)"; then
       echo "docker inspect muet sur '$ep' alors que le daemon repond -- budget non mesurable. (#15164)" >&2
       return 1
     fi
-    total=$(( total + $(printf '%s\n' "$ins" | awk '{ s += $1 } END { printf "%d", (s+0)/1048576 }') ))
+    printf '%s\n' "$rows"
   done
-  echo "$total"
+  return 0
+}
+
+running_ci_mb() {
+  local rows
+  rows="$(ci_inspect_rows '{{.HostConfig.Memory}}')" || return 1
+  printf '%s\n' "$rows" | awk '{ s += $1 } END { printf "%d", (s+0)/1048576 }'
+}
+
+# Nombre de slots et memoire (Mo) d'UNE famille de conteneurs CI deja en vol.
+# La famille est identifiee par le prefixe de NOM de conteneur : un slot est un
+# conteneur dont le nom est EXACTEMENT <prefixe>-<numero>. Le predicat est
+# strict -- '<prefixe>-backup', '<prefixe>-4x' ou '<prefixe>' ne sont pas des
+# slots de la famille.
+#
+# Rend "<nombre> <Mo>" sur stdout. Fail-closed comme running_ci_mb : un demon
+# muet rend rc!=0, jamais 0.
+running_family_mb() {
+  local prefix="$1" rows
+  [ -n "$prefix" ] || { echo "0 0"; return 0; }
+  rows="$(ci_inspect_rows '{{.Name}} {{.HostConfig.Memory}}')" || return 1
+  printf '%s\n' "$rows" | CI_FAMILY_PREFIX="$prefix" awk '
+    BEGIN { p = ENVIRON["CI_FAMILY_PREFIX"] }
+    { n = $1; m = $2; sub(/^\//, "", n);
+      if (index(n, p) == 1) {
+        # Le nom d un slot est <prefixe>-<numero> : le reste commence par le
+        # TIRET, pas par le chiffre. Un predicat sur `^[0-9]+$` ne verrait
+        # donc AUCUN slot (le reste vaut « -4 »), et la reprise serait nulle.
+        rest = substr(n, length(p) + 1);
+        if (rest ~ /^-[0-9]+$/) { c++; s += m } } }
+    END { printf "%d %d", c + 0, (s + 0) / 1048576 }'
 }
 
 # Refuse le demarrage si la famille demandee ne tient pas dans le budget, ou si
 # l'hote est deja sous le plancher. Montre l'arithmetique dans les deux cas :
 # un refus qui ne montre pas son calcul se contourne au juge.
 assert_memory_budget() {
-  local famille="$1" n="$2" per="$3"
+  local famille="$1" n="$2" per="$3" prefix="${4:-}"
   local per_mb want_mb used_mb budget_mb rc
+  local reprise_n=0 reprise_mb=0 add_mb
   per_mb="$(mem_to_mb "$per")"
   want_mb=$(( per_mb * n ))
   if ! used_mb="$(running_ci_mb)"; then
@@ -782,21 +827,53 @@ par COURSIA_RUNNER_DISTRESS_IDLE_PCT_MAX / _GAP_S / COURSIA_RUNNER_MAPPED_DROP_M
 -- en connaissance de cause, et jamais pour faire passer un demarrage."
   fi
 
-  if [ $(( used_mb + want_mb )) -gt "$budget_mb" ]; then
+  # REPRISE (#20727) : les slots de la MEME famille deja en vol ne sont pas
+  # AJOUTES a la demande -- ils en font PARTIE. Le superviseur attend que le
+  # nom du conteneur soit rendu (reclaim_container_name, #15278) avant de
+  # relancer le slot : un slot ne porte jamais deux conteneurs a la fois, donc
+  # l'empreinte de la famille reste bornee a n x per.
+  #
+  # Sans cette correction, la meme famille etait comptee DEUX fois -- une fois
+  # dans la somme en vol (running_ci_mb), une fois dans la demande. Au
+  # redemarrage du service, 3 slots orphelins de la generation precedente
+  # suffisaient a faire passer la somme au-dessus d'un budget dimensionne au
+  # plus juste : le garde REFUSAIT un demarrage qui tenait, Restart=always
+  # rejouait, et au cinquieme refus StartLimitBurst faisait tomber le POOL
+  # entier (issue #20727, mesure du 2026-10-14).
+  if [ -n "$prefix" ]; then
+    local reprise
+    if ! reprise="$(running_family_mb "$prefix")"; then
+      die "budget CI NON MESURABLE -- REFUS. Les slots de la famille '$famille' en vol n'ont pas pu etre mesures (raison ci-dessus) : compter 0 pour eux serait exactement le defaut que ce garde ferme. (#20727)"
+    fi
+    reprise_n="${reprise%% *}"
+    reprise_mb="${reprise##* }"
+  fi
+  add_mb=$(( want_mb - reprise_mb ))
+  [ "$add_mb" -lt 0 ] && add_mb=0
+
+  if [ $(( used_mb + add_mb )) -gt "$budget_mb" ]; then
     local reste_mb max_n
-    reste_mb=$(( budget_mb - used_mb ))
+    # Ce qui reste se lit sur la FAMILLE, reprise comprise : les slots deja en
+    # vol comptent dans la place totale de la famille, pas dans la place
+    # residuelle du hote.
+    reste_mb=$(( budget_mb - used_mb + reprise_mb ))
     max_n=$(( reste_mb / per_mb ))
     [ "$max_n" -lt 0 ] && max_n=0
     die "budget CI depasse -- REFUS.
   deja en vol ......... $used_mb Mo
   demande ($famille) .. $n x $per = $want_mb Mo
-  total ............... $(( used_mb + want_mb )) Mo
+  reprise en vol ..... $reprise_n slot(s) de cette famille = $reprise_mb Mo (reprises, pas ajoutees)
+  demande nette ...... $add_mb Mo
+  total ............... $(( used_mb + add_mb )) Mo
   budget .............. $budget_mb Mo (COURSIA_RUNNER_BUDGET_GB=$BUDGET_GB)
-Il reste de la place pour $max_n slot(s) de cette famille.
+Il reste de la place pour $max_n slot(s) de cette famille au total (reprise comprise).
 Arreter une autre famille, ou demarrer '$famille $max_n'."
   fi
 
-  echo "[budget] hote sans detresse soutenue ; CI en vol ${used_mb} Mo + ${want_mb} Mo demandes <= ${budget_mb} Mo"
+  # L'arithmetique s'affiche dans les DEUX sens : un garde qui ne montre son
+  # calcul que quand il refuse laisse le lecteur deviner pourquoi il a passe.
+  echo "[budget] hote sans detresse soutenue ; CI en vol ${used_mb} Mo + ${add_mb} Mo demandes <= ${budget_mb} Mo"
+  echo "[budget] reprise en vol ..... $reprise_n slot(s) de cette famille = $reprise_mb Mo (reprises, pas ajoutees)"
 }
 
 # Nombre de slots que le budget residuel autorise pour un cap donne. Sert au
@@ -1763,7 +1840,7 @@ cmd_start() {
   # on nomme les PIDs -- un deuxieme `start` produirait deux boucles
   # concurrantes portant des copies differentes de l'environnement
   # (incident po-2024 2026-09-02, plusieurs PRs de contenu bloquees).
-  assert_memory_budget start "$n" "$MEMORY"
+  assert_memory_budget start "$n" "$MEMORY" "$NAME_PREFIX"
   assert_ci_slice
   local existing_pids
   existing_pids="$(supervisor_pids)"
@@ -2276,7 +2353,7 @@ cmd_waiters() {
   assert_cgroup_budget
   assert_cpu_budget "waiters" "$n" "$WAITER_CPUS"
   compute_blkio_args
-  assert_memory_budget waiters "$n" "$WAITER_MEMORY"
+  assert_memory_budget waiters "$n" "$WAITER_MEMORY" "$WAITER_NAME_PREFIX"
   assert_ci_slice
   rm -f "$STATE_DIR/waiter-pids"
   echo "demarrage de $n waiter(s) ; labels=$WAITER_LABELS ; caps : cpus=$WAITER_CPUS memory=$WAITER_MEMORY pids=$WAITER_PIDS"
@@ -2330,7 +2407,7 @@ cmd_lean() {
   assert_cgroup_budget
   assert_cpu_budget "lean" "$n" "$LEAN_CPUS"
   compute_blkio_args
-  assert_memory_budget lean "$n" "$LEAN_MEMORY"
+  assert_memory_budget lean "$n" "$LEAN_MEMORY" "$LEAN_NAME_PREFIX"
   assert_ci_slice
   rm -f "$STATE_DIR/lean-pids"
   echo "demarrage de $n slot(s) lean ; labels=$LEAN_LABELS ; caps : cpus=$LEAN_CPUS memory=$LEAN_MEMORY pids=$LEAN_PIDS ; image=$LEAN_IMAGE ; .lake chaud=${LEAN_WORK_VOLUME_PREFIX}-{1..$n} -> $WORK_MOUNT"
