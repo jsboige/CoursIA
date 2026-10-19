@@ -65,7 +65,7 @@ import sys
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
 import torch
@@ -194,7 +194,9 @@ def train_rtg_per_step(train_trajs: dict) -> float:
 @torch.no_grad()
 def dt_causal_positions(model, prices: np.ndarray, features_norm: np.ndarray,
                         window: int, context_length: int, rtg_per_step: float,
-                        batch_size: int, device: str) -> Tuple[np.ndarray, int]:
+                        batch_size: int, device: str,
+                        rtg_rows: Optional[np.ndarray] = None
+                        ) -> Tuple[np.ndarray, int]:
     """Positions DT non anticipatives, indexees sur les rendements du test.
 
     Rend ``(positions, first_k)`` : ``positions`` a la longueur ``len(prices)-1``
@@ -205,6 +207,12 @@ def dt_causal_positions(model, prices: np.ndarray, features_norm: np.ndarray,
     <= k-2, actions du teacher sur les lignes <= k-1 (calculees sur les prix
     <= k-2), RTG du calendrier fixe. Aucune entree ne depend d'un prix
     posterieur a la ligne k-2.
+
+    ``rtg_rows`` (longueur ``len(prices)``, indexe par ligne) remplace le
+    calendrier ``rtg_per_step * (n - ligne)``, alors ignore. La causalite ne
+    tient que si ``rtg_rows[t]`` ne depend d'aucun prix posterieur a la ligne
+    k-2 : une constante la preserve, un RTG realise la rompt (l'ablation de
+    ``ablation_rtg_leak.py`` s'en sert comme condition de fuite).
     """
     model.eval()
     n = len(prices)
@@ -219,7 +227,13 @@ def dt_causal_positions(model, prices: np.ndarray, features_norm: np.ndarray,
     feats = np.asarray(features_norm, dtype=np.float32)
     states_all = np.stack([feats[t - window:t].reshape(-1) for t in rows])
     actions_all = teacher_actions(prices, window)[rows]
-    rtg_all = (rtg_per_step * (n - rows)).astype(np.float32)
+    if rtg_rows is None:
+        rtg_all = (rtg_per_step * (n - rows)).astype(np.float32)
+    else:
+        rtg_rows = np.asarray(rtg_rows, dtype=np.float32).reshape(-1)
+        if len(rtg_rows) != n:
+            raise ValueError(f"rtg_rows: {len(rtg_rows)} lignes, {n} attendues")
+        rtg_all = rtg_rows[rows]
 
     offsets = np.arange(C)
     for start in range(0, n_windows, batch_size):
