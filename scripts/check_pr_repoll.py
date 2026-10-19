@@ -195,7 +195,7 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         default=None,
         help="chemin du registre (defaut : $PR_POLL_LEDGER, sinon un emplacement "
-        "stable hors tempdir : %LOCALAPPDATA%\\CoursIA sur Windows, "
+        "stable hors tempdir : %%LOCALAPPDATA%%\\CoursIA sur Windows, "
         "~/.local/share/CoursIA sinon)",
     )
     sub = parser.add_subparsers(dest="verb", required=True)

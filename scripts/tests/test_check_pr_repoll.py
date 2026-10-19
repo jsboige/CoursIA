@@ -26,6 +26,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from check_pr_repoll import (  # noqa: E402
     _iso,
+    build_parser,
     default_ledger_path,
     evaluate,
     main,
@@ -131,3 +132,18 @@ def test_9_default_ledger_is_stable_not_tempdir() -> None:
         under = False
     assert not under, "le defaut ne doit pas vivre sous le tempdir"
     assert "coursia" in [p.lower() for p in path.parts]
+
+
+def test_10_build_parser_format_help_does_not_crash() -> None:
+    """Review coordinateur #21060 : argparse.help= doit etre exempt de % non
+    echappes, sinon `format_help()` leve ValueError (3.11) ou la construction
+    du parser leve en 3.14+. Regression : `%%LOCALAPPDATA%%` ecrit en clair
+    dans le help= de `--ledger`."""
+    help_text = build_parser().format_help()
+    # verifie que le path documente bien la cible (avec %% reduit a % par argparse)
+    assert "LOCALAPPDATA" in help_text, help_text
+    # et qu'aucun format involontaire ne reste (le %% est reduit a % par argparse)
+    assert "%L" not in help_text.replace("%%", "").replace("LOCALAPPDATA", ""), (
+        "le help= doit etre ecrit sans % non echappe susceptible d'etre "
+        "interprete par argparse comme un format"
+    )
