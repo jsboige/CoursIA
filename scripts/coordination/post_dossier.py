@@ -327,7 +327,12 @@ def check_post_author(token: str) -> str:
     Mesure #19325 : un POST sous compte etudiant rend ``comment author must
     be 'jsboige'`` ET perime le stamp calcule avant lui.
     """
-    login = gh_json(["api", "user", "--jq", ".login"], env=write_env(token))
+    # gh --jq imprime une chaîne RESULTAT sans guillemets : `--jq .login`
+    # sort `jsboige`, que json.loads refuse (Expecting value char 0) -- le
+    # garde crasht donc depuis #20881 sur tout POST --emit. On parse la
+    # reponse /user complete (JSON valide) et on lit la cle.
+    user = gh_json(["api", "user"], env=write_env(token))
+    login = user.get("login") if isinstance(user, dict) else None
     if not isinstance(login, str) or login != POST_AUTHOR:
         raise RuntimeError(
             f"author guard: the write token serves {login!r}, not {POST_AUTHOR!r}"
