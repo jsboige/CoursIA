@@ -9,10 +9,10 @@
 
 ## TL;DR
 
-Le verdict Pli 1.2 de po-2027 (`INSUFFICISANT`) est **confirmé et sa cause est identifiée first-hand** : la reconstruction du lakefile est **insuffisante**. Le code `formalization/OcclusionTriad.lean` référence 2 modules (`Formalization.Analysis.TriadConservation` et `Formalization.Analysis.RoPECoherence`) qui **n'existent pas** dans le dépôt upstream.
+Le verdict Pli 1.2 de po-2027 (`INSUFFICISANT`) est **confirmé et sa cause est identifiée first-hand** : la reconstruction du lakefile est **insuffisante**. Le code `formalization/OcclusionTriad.lean` référence des modules absents du dépôt upstream : `Formalization.Analysis.TriadConservation` et `Formalization.Analysis.RoPECoherence`.
 
 **Conséquence** : Pli 2 (lake d'enveloppe) ne peut pas être livré sans :
-- (a) Ré-écrire les 2 modules absents (travail substantif, hors scope vérification tierce).
+- (a) Ré-écrire les modules absents (`TriadConservation`, `RoPECoherence` — travail substantif, hors scope vérification tierce).
 - (b) Demander upstream `sneed-and-feed` de publier les modules manquants (social, hors cluster).
 - (c) **Arrêter Pli 2** et pivoter sur l'algèbre de Lie `so(M)` via d'autres sources (#18205 géométrie différentielle).
 
@@ -50,8 +50,8 @@ L'erreur initiale était syntaxique (Lake 5.0 utilise TOML, pas Lean DSL). Corri
 ### 1.5 Deuxième essai `lake build DarkSnail.OcclusionTriad`
 - Mathlib materializing : OK (v4.35.0 épinglé)
 - Batteries, Aesop, ProofWidgets, Qq, LeanSearchClient, ImportGraph, Plausible, Cli, Cache, etc. : tous materializing OK
-- Build en cours au moment de la rédaction de ce document (42 modules à construire, ETA 5-10 min sur po-2024)
-- Le **résultat final attendu est `FAILED`** : les 2 imports `Formalization.Analysis.{TriadConservation,RoPECoherence}` ne peuvent pas être résolus (modules absents du dépôt).
+- Build en cours au moment de la rédaction de ce document (ETA de quelques minutes sur po-2024)
+- Le **résultat final attendu est `FAILED`** : les imports `Formalization.Analysis.{TriadConservation,RoPECoherence}` ne peuvent pas être résolus (modules absents du dépôt).
 
 ## 2. Cause identifiée first-hand
 
@@ -83,13 +83,13 @@ Contrairement à l'hypothèse initiale (manque de lakefile), le problème n'est 
 ### Option (a) « Reconstruire le lakefile manuellement »
 **Éliminée** : le lakefile est en place (test ci-dessus, Lake 5.0 syntaxe TOML). Le problème est en aval (modules absents), pas en amont (packaging).
 
-### Option (b) « Ré-écrire les 2 modules absents »
+### Option (b) « Ré-écrire les modules absents »
 **Hors scope** : ré-écrire `TriadConservation.lean` et `RoPECoherence.lean` à partir des commentaires d'OcclusionTriad.lean et du paper est un travail de **ré-implémentation mathématique**, pas de vérification. Cela demanderait 1-2 cycles substantifs et un mathématicien. Coût/bénéfice défavorable.
 
 ### Option (c) « Arrêter Pli 2 et pivoter sur `so(M)` via d'autres sources »
 **Recommandée** : l'algèbre de Lie `so(M)` est un objet mathématique substantiel, indépendant du dépôt DarkSnail. Notre matériel `differential_lean/` (#18205 géométrie différentielle) et nos EPICs Origami siblings (#19898 openai/math, #20404 Thurston) sont des sources upstream plus solides. Le pivot préserve la valeur mathématique tout en évitant un upstream non vérifiable.
 
-### Option (d) « Demander upstream `sneed-and-feed` de publier les 2 modules »
+### Option (d) « Demander upstream `sneed-and-feed` de publier les modules manquants »
 **Différée** : geste social, peut être tenté en parallèle de (c). Si upstream répond, Pli 2 peut être ré-ouvert. Sinon, (c) reste la voie.
 
 ## 4. Verdict consolidé
@@ -97,7 +97,7 @@ Contrairement à l'hypothèse initiale (manque de lakefile), le problème n'est 
 **Pli 2 — `INSUFFICISANT_BLOQUANT`** :
 - 0 sorry réel (4 patterns) — **vérifié** par po-2027 c.1728.
 - 0 axiome piégeant (`sorryAx`, `native_decide.*`) — **vérifié** par po-2027 c.1728.
-- **MAIS** : 2 modules référencés mais absents du dépôt → **non compilable** → **non vérifiable** par tiers.
+- **MAIS** : modules référencés mais absents du dépôt → **non compilable** → **non vérifiable** par tiers.
 - Reconstruction lakefile (cette PR) : OK, mais **insuffisante** pour résoudre le problème.
 
 **Recommandation au coordinateur** : trancher Pli 2 selon l'option (c) « arrêt + pivot `so(M)` via autres sources ». Geler Pli 2 en attendant que l'algèbre de Lie `so(M)` soit re-dérivée d'une source vérifiable.
