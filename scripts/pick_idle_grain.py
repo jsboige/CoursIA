@@ -2339,8 +2339,38 @@ def _utf8_child_env() -> dict:
     return {**os.environ, "PYTHONIOENCODING": "utf-8"}
 
 
+def _summarize_claim_from_batch(json_payload: dict, n: int) -> tuple[str, str]:
+    """Remappe un verdict batch (FREE/BLOCKED/IMPLICIT/ERROR) sur les codes
+    internes du picker.
+
+    Le mode batch (#19643 / PR #21373 v3) sort un JSON `{results: {N:
+    {code, human, exit, ...}}}`. Le code est une des 4 valeurs
+    `_summarize_run_check_output` (FREE, BLOCKED, IMPLICIT, ERROR) ;
+    on les remappe sur les codes internes `CLAIM_CODE_*` consommés par
+    `draw_unclaimed`. La nuance OWNED_BY_ME / FREE_STALE est portee par
+    d'autres jambes (comment parser du picker, hors batch) -- le batch
+    est une borne superieure du cout, pas une degradation.
+    """
+    if not isinstance(json_payload, dict):
+        return CLAIM_CODE_ERROR, "(batch: payload non-dict)"
+    res = json_payload.get("results", {}).get(str(n))
+    if not isinstance(res, dict):
+        return CLAIM_CODE_ERROR, f"(batch: pas de verdict pour #{n})"
+    code = res.get("code", "ERROR")
+    human = res.get("human", code) or code
+    if code == "FREE":
+        return CLAIM_CODE_FREE, "libre"
+    if code == "BLOCKED":
+        return CLAIM_CODE_BLOCKED, human
+    if code == "IMPLICIT":
+        return CLAIM_CODE_IMPLICIT, human
+    if code == "ERROR":
+        return CLAIM_CODE_ERROR, human
+    return CLAIM_CODE_ERROR, f"(batch: code {code} inconnu)"
+
+
 def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
-    """Verif claims sur les seuls candidats tires (N appels, pas 140).
+    """Verif claims sur les seuls candidats tires (1 appel batch, pas N).
 
     Retourne ``{n: (code, human)}`` ou ``code`` ∈ {FREE, FREE_STALE,
     OWNED_BY_ME, BLOCKED, ERROR} est consommable par machine, et ``human``
@@ -2354,8 +2384,16 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
     `CHECK_LANE_CLAIM_OPEN_PRS_JSON` : on fetch la liste 1 fois, on ecrit le
     JSON dans un tempfile, et chaque invocation de check_lane_claim le lit.
     Sauve N-1 appels `gh pr list` (~6s x N = bottleneck du tapis).
+
+    #19643 / c.1778 -- Piste 2 (review ai-01 5571014393) : 1 seul
+    subprocess.run avec N numeros positionnels. Le mode batch de
+    check_lane_claim sort un JSON `{results, total_wall, phases}` sur
+    stdout et timestamp les phases sur stderr. Cout : O(1) subprocess
+    au lieu de O(N).
     """
     verdicts = {}
+    if not numbers:
+        return verdicts
     # #19643 -- 1 fetch partage. Si le fetch echoue, on n'exporte pas
     # l'env et chaque appel retombe sur son propre `gh pr list` (chemin
     # legacy, plus lent mais sur). Pas de rejection du tapis pour autant.
@@ -2368,17 +2406,64 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
         # est dans un test ou un process qui l'avait posee.
         env.pop("CHECK_LANE_CLAIM_OPEN_PRS_JSON", None)
     try:
-        for n in numbers:
-            try:
-                r = subprocess.run(
-                    [sys.executable, "scripts/check_lane_claim.py",
-                     "--lane", lane, str(n)],
-                    capture_output=True, text=True, encoding="utf-8", timeout=60,
-                    env=env,
-                )
-                verdicts[n] = _summarize_claim(r.stdout or r.stderr or "",
-                                               r.returncode)
-            except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
+        # 1 seul subprocess.run avec N numeros positionnels (mode
+        # batch de check_lane_claim). La sortie est un JSON
+        # `{results: {N: {code, human, exit, duration, ...}},
+        # total_wall, phases}` -- voir `_summarize_claim_from_batch`
+        # pour le remappage.
+        cmd = [sys.executable, "scripts/check_lane_claim.py",
+               "--lane", lane]
+        cmd.extend(str(n) for n in numbers)
+        try:
+            r = subprocess.run(
+                cmd,
+                capture_output=True, text=True, encoding="utf-8",
+                # 60s + N * 1s en budget ; le tapis consomme generalement
+                # 5-15 numeros, donc ~75 s max. Au-dela, on retombe sur le
+                # chemin legacy (N subprocess.run) cycle suivant -- c'est
+                # preferable a un tapis gele.
+                timeout=60 + 10 * len(numbers),
+                env=env,
+            )
+            if r.returncode != 0:
+                # Batch a echoue (probable: check_lane_claim pre-v3, ou
+                # gh down) ; on retombe sur le chemin legacy N
+                # subprocess.run par issue.
+                for n in numbers:
+                    try:
+                        rr = subprocess.run(
+                            [sys.executable, "scripts/check_lane_claim.py",
+                             "--lane", lane, str(n)],
+                            capture_output=True, text=True, encoding="utf-8",
+                            timeout=60, env=env,
+                        )
+                        verdicts[n] = _summarize_claim(
+                            rr.stdout or rr.stderr or "", rr.returncode)
+                    except Exception as exc:  # noqa: BLE001
+                        verdicts[n] = (
+                            CLAIM_CODE_ERROR,
+                            f"(check indisponible: {type(exc).__name__})")
+            else:
+                try:
+                    payload = json.loads(r.stdout)
+                except json.JSONDecodeError as exc:
+                    # JSON parse fail -- legacy fallback
+                    for n in numbers:
+                        verdicts[n] = (CLAIM_CODE_ERROR,
+                                      f"(batch JSON: {exc})")
+                else:
+                    for n in numbers:
+                        verdicts[n] = _summarize_claim_from_batch(payload, n)
+        except subprocess.TimeoutExpired:
+            # Le batch a timeout (rare ; depasse 60+10N secondes). On
+            # delivre un verdict UNCHECKED pour les numeros non encore
+            # vus, le tapis pioche ailleurs.
+            for n in numbers:
+                if n not in verdicts:
+                    verdicts[n] = (CLAIM_CODE_UNCHECKED,
+                                   f"batch timeout (>{60 + 10 * len(numbers)}s)")
+        except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
+            for n in numbers:
                 verdicts[n] = (CLAIM_CODE_ERROR,
                                f"(check indisponible: {type(exc).__name__})")
     finally:
@@ -7414,8 +7499,19 @@ def main(argv: list[str] | None = None) -> int:
             metrics = belt_report_metrics(pool, closed_7d=None)
             print_belt_report(metrics)
             return 0
+        # Phases tapees sur stderr au fil de l'eau (cf review ai-01
+        # 5571014393, CHANGES_REQUESTED v2). Permettent a un run
+        # interrompu par timeout de dire ou il en etait.
+        import time as _time_belt
+        _belt_t0 = _time_belt.monotonic()
+        def _belt_phase(name: str) -> None:
+            print(f"[t={_time_belt.monotonic() - _belt_t0:.2f}s] belt {name}",
+                  file=sys.stderr, flush=True)
+        _belt_phase(f"start: grains={args.grains} lane={args.lane}")
         belt_pool = belt_filter(admitted, args, urns=selected_urns)
         belt_pool.sort(key=belt_sort_key)
+        _belt_phase(f"pool charge: {len(belt_pool)} candidates "
+                    f"(apres belt_filter)")
         # Verification des claims tenes par une autre lane : on regarde
         # plus large que `args.grains` pour tolerer un remplacement si
         # la tete de file est tenue. Cout borne : au plus `grains + 4`
@@ -7450,6 +7546,8 @@ def main(argv: list[str] | None = None) -> int:
                 # absents de la map (issue inconnue, rate-limit, ...) tombent
                 # sur la sonde unitaire, comme un repli.
                 fallback_used: list[int] = []
+                _belt_phase(f"bulk fait: {len(bulk_stamps)} stamps "
+                            f"(window={belt_check_window * 3 + 12})")
 
                 def _probe(n: int) -> str | None:
                     if n in bulk_stamps:
@@ -7459,6 +7557,8 @@ def main(argv: list[str] | None = None) -> int:
 
                 settle_belt_head(belt_pool, belt_check_window, _probe,
                                  max_probes=belt_check_window * 3 + 12)
+                _belt_phase(f"settle_belt_head fait: "
+                            f"{len(fallback_used)} fallback(s) unitaire(s)")
                 if fallback_used:
                     # ai-01 review 5568273366 : en --json, le silence du
                     # comptage masquait la cause (cf c.1113). On emet
@@ -7480,8 +7580,12 @@ def main(argv: list[str] | None = None) -> int:
                           f"indisponible : {bulk_err or 'cache miss sans refresh'}).")
                 settle_belt_head(belt_pool, belt_check_window, latest_claim_stamp,
                                  max_probes=belt_check_window * 3 + 12)
+                _belt_phase("settle_belt_head fait: chemin unitaire (bulk absent)")
         belt_check_nums = [it["number"] for it in belt_pool[:belt_check_window]]
+        _belt_phase(f"claims start: {len(belt_check_nums)} numeros "
+                    f"(fenetre belt_check_window={belt_check_window})")
         belt_claims = check_claims(belt_check_nums, args.lane)
+        _belt_phase(f"claims faits: {len(belt_claims)} verdicts")
         # Boucle de service extraite (#19390) : claims + sonde de livraison
         # bornee a la fenetre de tete, remplacement dans la meme urne.
         # Epuisement du budget de sondes = fail-OPEN, rapporte en banniere
@@ -7489,6 +7593,7 @@ def main(argv: list[str] | None = None) -> int:
         # sont injectees ICI explicitement : les defauts de la boucle sont
         # inertes (#19913) pour que les tests ne sortent jamais sur le
         # reseau par oubli.
+        _belt_phase("pick_with_replacements start")
         belt_picks, belt_withheld, belt_pick_state = (
             belt_pick_with_replacements(belt_pool, belt_claims, args,
                                         belt_probe_budget(belt_check_window),
@@ -7496,6 +7601,8 @@ def main(argv: list[str] | None = None) -> int:
                                         merged_pr_probe=merged_pr_signal,
                                         recent_marker_probe=(
                                             has_recent_delivery_marker)))
+        _belt_phase(f"pick_with_replacements fait: "
+                    f"{len(belt_picks)} retenu(s), {len(belt_withheld)} witheld")
         belt_delivered_failures = belt_pick_state["failures"]
         belt_probe_budget_hit = [belt_pick_state["budget_hit"]]
         # Geste 5 #18203 : consigner le tirage du tapis -- candidats servis
