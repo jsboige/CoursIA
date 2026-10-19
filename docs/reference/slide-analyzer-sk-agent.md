@@ -1,8 +1,8 @@
-# Slide Analyzer — observabilité sk-agent (Marp vs PPTX + prompts)
+# Slide Analyzer — observabilité sk-agent (prompts canoniques + grille comparative Marp vs PPTX)
 
 > **Origine** : fichier `.claude/agent-memory/slide-analyzer/MEMORY.md` (relocalisé en c.1301+210 dans le cadre de l'EPIC #9535, item 7 — agent-memory relocalisation en doc pérenne). Le contenu est conservé tel quel (anti-régression : cf triage jsboigeEpita, durable vs scratch) ; seul un sommaire FR est ajouté.
 >
-> **Statut** : durable, **avec un outil périmé**. sk-agent n'expose plus d'outil `analyze_image` (mesuré 2026-09-29 : le serveur déclare 9 outils, dont `call_agent(prompt, attachment, model_override, ...)`, et aucun `analyze_image`) — l'appel est à adapter en `call_agent(prompt=..., attachment=<chemin de l'image>)`. Le contenu documente (a) le **comportement observé** de `sk-agent analyze_image` (routage `glm-4.6v`, indépendamment du paramètre `model`) ; (b) deux **prompts canoniques** (primaire FR + retry FR court) qui contournent les hallucinations sur slides logo-heavy — toujours valables, l'outil de vision ayant simplement changé de nom et de signature ; (c) une **grille de comparaison** Marp vs PPTX (deck `01-introduction`) qui sert de baseline pour les audits futurs de slides. Ce sont des invariants d'environnement, pas du scratch daté.
+> **Statut** : durable, **avec un outil périmé**. sk-agent n'expose plus d'outil `analyze_image` (mesuré 2026-09-29 : le serveur déclare 9 outils, dont `call_agent(prompt, attachment, model_override, ...)`, et aucun `analyze_image`) — l'appel est à adapter en `call_agent(prompt=..., attachment=<chemin de l'image>)`. Le contenu documente (a) le **comportement observé** de `sk-agent analyze_image` (routage `glm-4.6v`, indépendamment du paramètre `model`) ; (b) deux **prompts canoniques** (primaire FR + retry FR court) qui contournent les hallucinations sur slides logo-heavy — toujours valables, l'outil de vision ayant simplement changé de nom et de signature ; (c) une **grille de comparaison** Marp vs PPTX (deck `01-introduction`) qui sert de baseline pour les audits futurs de slides. Ce sont des invariants d'environnement, pas du scratch daté. Depuis la réécriture Slidev des agents (#19578, 2026-10-18), les prompts canoniques ci-dessous restent la référence des appels `call_agent` ; la grille comparative « Marp vs PPTX » qui suit est une **baseline historique** — les fichiers `.pptx` binaires et les rendus `marp_renders` ont disparu de l'arbre (0 de chaque), mais la **baseline PPTX est vivante** : 742 renders PNG sous `slides/<deck>/pptx-reference/slide-NN.png` (12 decks ; `public/pptx-reference/` pour `01-introduction` — mandat user 2026-08-20). 12 sources Marp legacy (`slides.marp.md`) restent présentes sur `main`, non servies par les agents (retrait = grain séparé) ; le deck `01-introduction` cité porte désormais aussi un `slides.md` Slidev.
 
 ## Sk-agent analyze_image : comportement observé
 
@@ -58,7 +58,7 @@ Decris les visuels de cette slide et note la lisibilite /10.
   diagram and pseudocode box visible; book image small but present. Minor: accents stripped.
 
 ## File Locations
-- PPTX renders: `slides/01-introduction/extracted/renders/slide_NN.png`
-- Marp renders: `slides/01-introduction/output/marp_renders/slide.NNN.png`
+- PPTX reference renders: `slides/01-introduction/public/pptx-reference/slide-NN.png` (ce deck les porte sous `public/` ; les 11 autres decks : `slides/<deck>/pptx-reference/`)
+- Marp renders: disparus de l'arbre (0 `marp_renders`) — historique
 - Extracted text: `slides/01-introduction/extracted/content.md`
 - Analysis output: `slides/01-introduction/analysis/visual_review.md`

@@ -110,7 +110,7 @@ Voir section 2.1.
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/percolation_lean/` — convention `_lean` suffix
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/geometry_lean/` — convention `_lean` suffix (tranche 2 livrée 2026-10-03 po-2027)
 - `.claude/rules/notebook-accretion-numbering.md` — règle de numérotation
-- `docs/lean/i18n-inventory-cycle-38.md` — inventaire i18n Pattern A sibling pair
+- `docs/transients/2026-07-04-lean-i18n-inventory-cycle-38.md` — inventaire i18n Pattern A sibling pair (lane transiente, tranche 3b #14623)
 
 ## 7. Mesure firsthand et conformité
 
