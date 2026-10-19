@@ -368,10 +368,14 @@ def run(argv: list[str], idle_limit: float, echo=None, emit=None) -> int:
             # qu'aucun progres pytest ne soit emis = le run va finir sur
             # un exit 1 ININTERPRETABLE (pas un test qui echoue, pas un
             # blocage par silence, mais une collision interne du master
-            # xdist). On tue tout de suite, on nome la collision, on
-            # laisse le CI rejouer le job (le defaut est transient :
-            # aucun des 7 cas signes sur 10 rouges echantillonnes ne
-            # s'est reproduit a la 2e tentative, cf issue #19915).
+            # xdist). On tue tout de suite, on nome la collision ; la
+            # prescription de rejeu est bornee par la classe de mort
+            # (_verdict_collect_crash) : un rejeu n'a de sens qu'en mort
+            # ISOLEE ; en mort SYSTEMATIQUE (7 a 12 workers morts avant la
+            # collision, census #19915 du 2026-10-19), un rejeu sur le meme
+            # pool REPRODUIT la signature (4/4 le 2026-10-18, 2/2 le
+            # 2026-10-19) -- signaler l'hote, ne pas rejouer sur le meme pool
+            # (issue #19915).
             if state.collect_crash_detected():
                 _verdict_collect_crash(state, idle, started, emit)
                 _kill_tree(proc)
