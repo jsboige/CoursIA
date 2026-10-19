@@ -149,6 +149,63 @@ theorem reattachWindow_length (cs : List PDCrossing) (i j : Nat) (σ : Nat → N
     | _+1, 0 => rfl
     | _+1, _+1 => simp [reattachWindow, ih]
 
+/-- Empty window: re-attachment is the identity there, for any list. -/
+theorem reattachWindow_zero_window (cs : List PDCrossing) (σ : Nat → Nat) :
+    reattachWindow cs 0 0 σ = cs := by
+  cases cs <;> rfl
+
+/-- Re-attachment by the identity: no label is rewritten. -/
+theorem reattachWindow_id (cs : List PDCrossing) (i j : Nat) :
+    reattachWindow cs i j id = cs := by
+  induction cs generalizing i j with
+  | nil => rfl
+  | cons c cs' ih =>
+    match i, j with
+    | 0, 0 => rfl
+    | 0, j+1 => simp only [reattachWindow, id_eq, ih 0 j]
+    | _+1, 0 => rfl
+    | _+1, _+1 => simp only [reattachWindow, ih _ _]
+
+/-- Re-attachment is involutive as soon as σ is (`σ ∘ σ = id` pointwise):
+two successive re-attachments by the same involution give back the initial
+list. This is the case of a genuine mutation — re-attachment is a half-turn
+of the four-punctured sphere, hence a Klein group element. -/
+theorem reattachWindow_involutive (cs : List PDCrossing) (i j : Nat) (σ : Nat → Nat)
+    (hσ : ∀ x, σ (σ x) = x) :
+    reattachWindow (reattachWindow cs i j σ) i j σ = cs := by
+  induction cs generalizing i j with
+  | nil => rfl
+  | cons c cs' ih =>
+    match i, j with
+    | 0, 0 => rfl
+    | 0, j+1 =>
+      simp only [reattachWindow, hσ c.e1, hσ c.e2, hσ c.e3, hσ c.e4, ih 0 j]
+    | _+1, 0 => rfl
+    | _+1, _+1 => simp only [reattachWindow, ih _ _]
+
+/-- Klein rotation after re-attachment: permuting label positions then
+rewriting their values = rewriting the values then permuting the positions. -/
+theorem KleinRot.apply_reattach (ρ : KleinRot) (σ : Nat → Nat) (c : PDCrossing) :
+    ρ.apply ⟨σ c.e1, σ c.e2, σ c.e3, σ c.e4⟩ =
+      ⟨σ (ρ.apply c).e1, σ (ρ.apply c).e2, σ (ρ.apply c).e3, σ (ρ.apply c).e4⟩ := by
+  cases ρ <;> rfl
+
+/-- Rotation and re-attachment of the same window **commute**: ρ permutes
+the label positions, σ rewrites their values. -/
+theorem mutateWindow_reattachWindow_comm (cs : List PDCrossing) (i j : Nat)
+    (ρ : KleinRot) (σ : Nat → Nat) :
+    mutateWindow (reattachWindow cs i j σ) i j ρ =
+      reattachWindow (mutateWindow cs i j ρ) i j σ := by
+  induction cs generalizing i j with
+  | nil => rfl
+  | cons c cs' ih =>
+    match i, j with
+    | 0, 0 => rfl
+    | 0, j+1 =>
+      simp only [reattachWindow, mutateWindow, ih 0 j, KleinRot.apply_reattach]
+    | _+1, 0 => rfl
+    | _+1, _+1 => simp only [reattachWindow, mutateWindow, ih _ _]
+
 /-- **Conway sphere mutation at the PD level**: Klein rotation ρ of the
 crossings in window [i, j) (the interior tangle), then re-attachment of the
 interior occurrences of the boundary labels by σ. Outside the window,
@@ -164,10 +221,38 @@ theorem sphereMutate_length (cs : List PDCrossing) (i j : Nat) (ρ : KleinRot)
     (sphereMutate cs i j ρ σ).length = cs.length := by
   rw [sphereMutate, reattachWindow_length, mutateWindow_length]
 
-/-- Two diagrams are mutants if there exist a window and a Klein rotation
-mapping the crossing list of one onto the other. -/
-def AreMutantDiagrams (d₁ d₂ : KnotDiagram) : Prop :=
+/-- Sphere mutation is **involutive** as soon as σ is involutive: mutating
+twice the same sphere with the same rotation and the same re-attachment gives
+back the initial diagram. This is the geometric gesture — two half-turns =
+identity — and the reason why the mutation relation is symmetric. -/
+theorem sphereMutate_involutive (cs : List PDCrossing) (i j : Nat) (ρ : KleinRot)
+    (σ : Nat → Nat) (hσ : ∀ x, σ (σ x) = x) :
+    sphereMutate (sphereMutate cs i j ρ σ) i j ρ σ = cs := by
+  simp only [sphereMutate]
+  rw [mutateWindow_reattachWindow_comm, mutateWindow_involutive]
+  exact reattachWindow_involutive cs i j σ hσ
+
+/-- Two diagrams are **mutants at the bare-window level**: there exist a
+window and a Klein rotation mapping the crossing list of one onto the other,
+without re-attachment of the boundary points. This is the "tangle rotation"
+half of the Conway gesture — the weaker notion, kept under its own name (it
+is refuted at gadget depth ≤ 2 on the Conway/KT pair, cf. NOTE below). -/
+def AreWindowMutantDiagrams (d₁ d₂ : KnotDiagram) : Prop :=
   ∃ (i j : Nat) (ρ : KleinRot), mutateWindow d₁.crossings i j ρ = d₂.crossings
+
+/-- Two diagrams are **mutants** if there exists a Conway sphere mutation —
+cut along the sphere, perform a half-turn, reglue — mapping the crossing list
+of one onto that of the other. The complete combinatorial translation
+(`sphereMutate`): a window [i, j) (the interior tangle), a Klein rotation ρ
+(the half-turn of the tangle, an element of the Klein group on the four
+boundary points), and re-attachment of the boundary points by σ. The
+re-attachment of a half-turn is itself of order ≤ 2 (the three half-turns of
+the Klein group are involutions), hence the condition `σ ∘ σ = id` — without
+it the relation would not be symmetric and would no longer represent the
+Conway gesture. -/
+def AreMutantDiagrams (d₁ d₂ : KnotDiagram) : Prop :=
+  ∃ (i j : Nat) (ρ : KleinRot) (σ : Nat → Nat),
+    (∀ x, σ (σ x) = x) ∧ sphereMutate d₁.crossings i j ρ σ = d₂.crossings
 
 /-- Two knots are mutants if they admit representative diagrams (in the
 Reidemeister sense) that are mutants. The existential quantifier over
@@ -181,11 +266,12 @@ def AreMutants (k₁ k₂ : Knot) : Prop :=
 
 /-! ### Elementary theory: reflexivity and symmetry
 
-Reflexivity: empty window. Symmetry: involutivity of `mutateWindow` (every
-Klein rotation is its own inverse). Transitivity is false in general for
-mutation (composing two mutations on different windows is not a one-shot
-mutation) — this is NOT an equivalence relation, and that is correct.
--/
+Reflexivity: empty window, σ = id. Symmetry: involutivity of `mutateWindow`,
+of the Klein rotation and of the re-attachment σ (`mutateWindow_involutive`,
+`reattachWindow_involutive`, `sphereMutate_involutive` — every half-turn is
+its own inverse). Transitivity is false in general for mutation (composing
+two mutations on different windows is not a one-shot mutation) — this is NOT
+an equivalence relation, and that is correct. -/
 /- NOTE: no transitivity claimed — mutation composes rotations over
 potentially different windows, which is not a one-shot rotation. -/
 
@@ -196,15 +282,26 @@ theorem mutateWindow_zero_window (cs : List PDCrossing) (ρ : KleinRot) :
   | nil => rfl
   | cons _ _ => rfl
 
-theorem AreMutantDiagrams.refl (d : KnotDiagram) : AreMutantDiagrams d d :=
+theorem AreWindowMutantDiagrams.refl (d : KnotDiagram) : AreWindowMutantDiagrams d d :=
   ⟨0, 0, .id, mutateWindow_zero_window d.crossings .id⟩
 
-theorem AreMutantDiagrams.symm {d₁ d₂ : KnotDiagram} (h : AreMutantDiagrams d₁ d₂) :
-    AreMutantDiagrams d₂ d₁ := by
+theorem AreWindowMutantDiagrams.symm {d₁ d₂ : KnotDiagram}
+    (h : AreWindowMutantDiagrams d₁ d₂) : AreWindowMutantDiagrams d₂ d₁ := by
   obtain ⟨i, j, ρ, hmut⟩ := h
   refine ⟨i, j, ρ, ?_⟩
   rw [← hmut]
   exact mutateWindow_involutive d₁.crossings i j ρ
+
+theorem AreMutantDiagrams.refl (d : KnotDiagram) : AreMutantDiagrams d d :=
+  ⟨0, 0, .id, id, fun _ => rfl, by
+    rw [sphereMutate, mutateWindow_zero_window, reattachWindow_zero_window]⟩
+
+theorem AreMutantDiagrams.symm {d₁ d₂ : KnotDiagram} (h : AreMutantDiagrams d₁ d₂) :
+    AreMutantDiagrams d₂ d₁ := by
+  obtain ⟨i, j, ρ, σ, hσ, hmut⟩ := h
+  exact ⟨i, j, ρ, σ, hσ, by
+    rw [← hmut]
+    exact sphereMutate_involutive d₁.crossings i j ρ σ hσ⟩
 
 theorem AreMutants.refl (k : Knot) : AreMutants k k :=
   ⟨k.diagram, k.diagram, ReidemeisterEquiv.refl k.diagram,
@@ -219,11 +316,13 @@ theorem AreMutants.symm {k₁ k₂ : Knot} (h : AreMutants k₁ k₂) : AreMutan
 A definition catching neither a mutant pair nor a counterexample would be a
 disguised `True` and removing the `sorry` would be cosmetic. Two controls:
 
-- NEGATIVE (`not_areMutantDiagrams_trefoil_unknot`): mutation preserves the
-  crossing count, so the trefoil (3 crossings) and the unknot (0) are not
-  mutants — at the designated-diagram level.
-- POSITIVE (`areMutants_trefoil_mutant`): a non-trivial mutation (full
-  window, r12 rotation) is captured by the definition.
+- NEGATIVE (`not_areWindowMutantDiagrams_trefoil_unknot`,
+  `not_areMutantDiagrams_trefoil_unknot`): mutation preserves the crossing
+  count, so the trefoil (3 crossings) and the unknot (0) are not mutants —
+  at the designated-diagram level.
+- POSITIVE (`areWindowMutantDiagrams_trefoil_mutant`,
+  `areMutantDiagrams_trefoil_mutant`): a non-trivial mutation (full window,
+  r12 rotation) is captured by each definition.
 
 NOTE (limit of the canonical witness): the designated diagrams
 `conwayKnotDiagram` and `kinoshitaTerasakaDiagram` (corrected census PD
@@ -253,14 +352,35 @@ no crossing of C, K or M carries. Reading: a gadget adds crossings without
 reconfiguring the boundary arcs of the window — the effect of σ (rewriting
 boundary arcs, 8↔11 and 13↔22 in the census) stays out of reach at these
 depths.
+NOTE update 3 (link 8, 2bis — ai-01 arbitration of 2026-10-19, #2874
+c.6261930038): the σ amendment is applied. `AreMutantDiagrams` now quantifies
+over the full sphere mutation (`sphereMutate`: window + rotation ρ +
+involution re-attachment σ), a form faithful to the cut / half-turn / reglue
+gesture; the bare-window notion measured above keeps its own name
+(`AreWindowMutantDiagrams`) and all its lemmas. The depth-0 witness (C, M)
+under the new definition is `areMutantDiagrams_conway_conwayMutant`
+(`Knots.Conway_en`, link 4): the pair requires no gadget at all, the single
+sphere mutation of the census (window [5, 11), r13, re-attachment
+(8 11)(13 22)) realizes it. What the bare window did not provide,
+re-attachment does.
 -/
 
-/-- Negative control: trefoil and unknot are not mutants (mutation preserves
-the crossing count). -/
-theorem not_areMutantDiagrams_trefoil_unknot :
-    ¬ AreMutantDiagrams trefoilDiagram unknotDiagram := by
+/-- Negative control of the bare window: trefoil and unknot are not mutants
+at the window level (rotation preserves the crossing count). -/
+theorem not_areWindowMutantDiagrams_trefoil_unknot :
+    ¬ AreWindowMutantDiagrams trefoilDiagram unknotDiagram := by
   intro ⟨i, j, ρ, hmut⟩
   have hlen := mutateWindow_length trefoilDiagram.crossings i j ρ
+  simp only [unknotDiagram] at hmut
+  rw [hmut] at hlen
+  simp [trefoilDiagram] at hlen
+
+/-- Negative control: trefoil and unknot are not mutants (sphere mutation
+preserves the crossing count). -/
+theorem not_areMutantDiagrams_trefoil_unknot :
+    ¬ AreMutantDiagrams trefoilDiagram unknotDiagram := by
+  intro ⟨i, j, ρ, σ, _hσ, hmut⟩
+  have hlen := sphereMutate_length trefoilDiagram.crossings i j ρ σ
   simp only [unknotDiagram] at hmut
   rw [hmut] at hlen
   simp [trefoilDiagram] at hlen
@@ -273,11 +393,19 @@ def trefoilMutantDiagram : KnotDiagram where
 def trefoilMutant : Knot where
   diagram := trefoilMutantDiagram
 
-/-- Positive control: the definition catches a non-trivial mutation (full
-window, non-identity rotation). -/
+/-- Positive control of the bare window: a non-trivial mutation (full
+window, non-identity rotation) is captured by the definition. -/
+theorem areWindowMutantDiagrams_trefoil_mutant :
+    AreWindowMutantDiagrams trefoilDiagram trefoilMutantDiagram :=
+  ⟨0, 3, .r12, rfl⟩
+
+/-- Positive control: the mutation definition catches a non-trivial mutation
+(full window, r12 rotation, identity re-attachment). -/
 theorem areMutantDiagrams_trefoil_mutant :
     AreMutantDiagrams trefoilDiagram trefoilMutantDiagram :=
-  ⟨0, 3, .r12, rfl⟩
+  ⟨0, 3, .r12, id, fun _ => rfl, by
+    rw [sphereMutate, reattachWindow_id]
+    rfl⟩
 
 theorem areMutants_trefoil_mutant : AreMutants trefoil trefoilMutant :=
   ⟨trefoilDiagram, trefoilMutantDiagram, ReidemeisterEquiv.refl _,
