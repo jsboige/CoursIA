@@ -1,3 +1,5 @@
+> **Archive (2026-10-17, #9535 item 2).** Audit de consolidation figé au 2026-05-26 (po-2023, 27/27 executes). Deplace depuis `STATUS.md` a la racine de la serie : 0 reference au moment du deplacement, deps couvertes par le README (section Outils). La serie vit dans son `README.md` et `LEAN_INVENTORY.md`.
+
 # SmartContracts - Audit de Consolidation (2026-05-26)
 
 **Branche**: `feature/1455-smartcontracts-consolidation`
