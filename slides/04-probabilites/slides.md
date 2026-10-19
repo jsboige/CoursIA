@@ -75,7 +75,7 @@ Intelligence Artificielle - IV
   - A25 suffira s'il n'y a pas d'accident sur le pont et il ne pleut pas et mes pneus ne crèvent pas etc. = problème de la qualification logique
   - A1500 conduira raisonnablement au but, mais il me faudra dormir à l'aéroport
 
-*Notebooks : pas de notebook dédié pour la démarche incertitude/probabilités — voir [Infer-1b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb) (modélisation probabiliste : croyances, prédictions).*
+*Notebooks : pas de notebook dédié pour la démarche incertitude/probabilités — voir [Infer-01b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/Infer-01b-Premiers-Modeles.ipynb) (modélisation probabiliste : croyances, prédictions).*
 
 
 ---
@@ -166,7 +166,7 @@ Intelligence Artificielle - IV
 
 <img src="./images/img_001.png" alt="Axiomes des probabilités : normalisation et bornes de Kolmogorov" style="display:block; width:100%; max-height:240px; object-fit:contain; margin:4px auto;">
 
-*Notebooks : [Infer-1b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb) (variables aléatoires, distributions) · [Infer-2-Gaussian-Mixtures](../../MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb) (mixtures, tables de probabilités).*
+*Notebooks : [Infer-01b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/Infer-01b-Premiers-Modeles.ipynb) (variables aléatoires, distributions) · [Infer-02-Gaussian-Mixtures](../../MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb) (mixtures, tables de probabilités).*
 
 
 ---
@@ -190,7 +190,7 @@ Intelligence Artificielle - IV
 
 - Chaque question sur un domaine peut être répondue par la distribution conjointe
 
-*Notebooks : [Infer-1b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb) (priors, distributions conjointes) · [Infer-2-Gaussian-Mixtures](../../MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb) (variables continues, gaussiennes).*
+*Notebooks : [Infer-01b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/Infer-01b-Premiers-Modeles.ipynb) (priors, distributions conjointes) · [Infer-02-Gaussian-Mixtures](../../MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb) (variables continues, gaussiennes).*
 
 
 ---
@@ -221,7 +221,7 @@ layout: dense
   - Permettent la simplification
   - P(Carie | MalDeDent, ensoleillé) = P(Carie | MalDeDent) = 0.8
 
-*Notebooks : [Infer-1b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb) (distributions conditionnelles) · [Infer-3-Factor-Graphs](../../MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb) (produit de facteurs, chaînage).*
+*Notebooks : [Infer-01b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/Infer-01b-Premiers-Modeles.ipynb) (distributions conditionnelles) · [Infer-03-Factor-Graphs](../../MyIA.AI.Notebooks/Probas/Infer/Infer-03-Factor-Graphs.ipynb) (produit de facteurs, chaînage).*
 
 
 ---
@@ -257,7 +257,7 @@ layout: dense
 <img src="./images/img_004.png" alt="Inférence par énumération — figure 1 de 2 : parcours de la distribution conjointe" style="display:inline-block; margin:0 6px; max-width:47%; vertical-align:middle;">
 <img src="./images/img_005.png" alt="Inférence par énumération — figure 2 de 2 : tableau résultant" style="display:inline-block; margin:0 6px; max-width:47%; vertical-align:middle;">
 
-*Notebooks : [Infer-3-Factor-Graphs](../../MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb) (énumération, élimination de variables) · [PyMC-03-Factor-Graphs](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb) (même approche en PyMC).*
+*Notebooks : [Infer-03-Factor-Graphs](../../MyIA.AI.Notebooks/Probas/Infer/Infer-03-Factor-Graphs.ipynb) (énumération, élimination de variables) · [PyMC-03-Factor-Graphs](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb) (même approche en PyMC).*
 
 
 ---
@@ -302,7 +302,7 @@ layout: dense
 
 <img src="./images/img_007.png" alt="Indépendance de deux événements : P(A|B) = P(A)" style="display:block; margin:10px auto; max-width:100%;">
 
-*Notebooks : [Infer-4-Bayesian-Networks](../../MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb) (indépendances encodées par la topologie).*
+*Notebooks : [Infer-04-Bayesian-Networks](../../MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb) (indépendances encodées par la topologie).*
 
 
 ---
@@ -340,7 +340,7 @@ layout: dense
   - P(m | s) = P(s | m) P(m) / P(s) = 0.8 × 0.0001 / 0.1 = 0.0008
   - La probabilité a posteriori est encore très faible
 
-*Notebooks : [Infer-4-Bayesian-Networks](../../MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb) (règle de Bayes, modèle naïf) · [Infer-9-Classification](../../MyIA.AI.Notebooks/Probas/Infer/Infer-9-Classification.ipynb) (classification bayésienne naïve).*
+*Notebooks : [Infer-04-Bayesian-Networks](../../MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb) (règle de Bayes, modèle naïf) · [Infer-09-Classification](../../MyIA.AI.Notebooks/Probas/Infer/Infer-09-Classification.ipynb) (classification bayésienne naïve).*
 
 
 ---
@@ -411,7 +411,7 @@ layout: section
   - Une distribution conditionnelle est représentée par une table de probabilités conditionnelles (CPT)
   - Donnant la distribution en Xᵢ pour chaque combinaison de valeur parente
 
-*Notebooks : [Infer-4-Bayesian-Networks](../../MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb) (RB classiques : CPT, topologie, compacité) · [PyMC-04-Bayesian-Networks](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb) (jumeau PyMC).*
+*Notebooks : [Infer-04-Bayesian-Networks](../../MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb) (RB classiques : CPT, topologie, compacité) · [PyMC-04-Bayesian-Networks](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb) (jumeau PyMC).*
 
 <!-- Reseau bayesien : DAG + tables de probabilités conditionnelles (CPT) -->
 
@@ -633,7 +633,7 @@ layout: dense
 
 <!-- Distributions canoniques : OR-bruite, agregation, min/max -->
 
-*Notebooks : [Infer-2-Gaussian-Mixtures](../../MyIA.AI.Notebooks/Probas/Infer/Infer-2-Gaussian-Mixtures.ipynb) (gaussiennes, priors conjugués) · [Infer-16-Sparse-Gaussian-Process](../../MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb) (processus gaussiens, variables continues).*
+*Notebooks : [Infer-02-Gaussian-Mixtures](../../MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb) (gaussiennes, priors conjugués) · [Infer-16-Sparse-Gaussian-Process](../../MyIA.AI.Notebooks/Probas/Infer/Infer-16-Sparse-Gaussian-Process.ipynb) (processus gaussiens, variables continues).*
 
 
 ---
@@ -827,7 +827,7 @@ layout: two-cols
   - Combinaison avec FOL = Modèles probabilistes relationnels (MPR)
   - + Incertitude d'existence et d'identité = MP en Univers Ouvert
 
-*Notebooks : [Infer-3-Factor-Graphs](../../MyIA.AI.Notebooks/Probas/Infer/Infer-3-Factor-Graphs.ipynb) (inférence exacte) · [PyMC-03-Factor-Graphs](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb) (inférence approchée) · pas de notebook dédié pour les MPR/univers ouverts.*
+*Notebooks : [Infer-03-Factor-Graphs](../../MyIA.AI.Notebooks/Probas/Infer/Infer-03-Factor-Graphs.ipynb) (inférence exacte) · [PyMC-03-Factor-Graphs](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-03-Factor-Graphs.ipynb) (inférence approchée) · pas de notebook dédié pour les MPR/univers ouverts.*
 
 
 ---
@@ -1396,7 +1396,7 @@ layout: section
   - Tutoriels (en anglais)
   - Guide utilisateur
 
-*Notebooks : [Infer-1b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb) (Infer.NET prise en main) · [PyMC-01-Setup](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb) (PyMC) · [Pyro_RSA_Hyperbole](../../MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb) (Pyro, bases bayésiennes).*
+*Notebooks : [Infer-01b-Premiers-Modeles](../../MyIA.AI.Notebooks/Probas/Infer/Infer-01b-Premiers-Modeles.ipynb) (Infer.NET prise en main) · [PyMC-01-Setup](../../MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb) (PyMC) · [Pyro_RSA_Hyperbole](../../MyIA.AI.Notebooks/Probas/Applications/Pyro_RSA_Hyperbole.ipynb) (Pyro, bases bayésiennes).*
 
 <!-- Voir notebooks Probas/Infer/ pour exemples de code Infer.NET -->
 
@@ -1949,9 +1949,9 @@ layout: section
 
 # Pour aller plus loin: Notebooks
 
-- **Infer.NET prise en main**: `Probas/Infer/Infer-1b-Premiers-Modeles.ipynb`
-- **Réseaux bayésiens**: `Probas/Infer/Infer-4-Bayesian-Networks.ipynb`, `Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb`
-- **Inférence**: `Probas/Infer/Infer-3-Factor-Graphs.ipynb`, `Probas/PyMC/PyMC-03-Factor-Graphs.ipynb`
+- **Infer.NET prise en main**: `Probas/Infer/Infer-01b-Premiers-Modeles.ipynb`
+- **Réseaux bayésiens**: `Probas/Infer/Infer-04-Bayesian-Networks.ipynb`, `Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb`
+- **Inférence**: `Probas/Infer/Infer-03-Factor-Graphs.ipynb`, `Probas/PyMC/PyMC-03-Factor-Graphs.ipynb`
 - **HMM et séries temporelles**: `Probas/Infer/Infer-14-Sequences.ipynb`, `Probas/PyMC/PyMC-14-Sequences.ipynb`, `Probas/Infer/Infer-17-Kalman-Filter.ipynb`
 - **Décision et utilité**: `Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb`, `DecInfer-05-Decision-Networks.ipynb`, `DecInfer-06-Value-Information.ipynb`
 - **MDP, bandits et POMDP**: `Probas/DecisionTheory/DecInfer/DecInfer-08-Sequential.ipynb`, `DecInfer-08b-Lean-Gittins.ipynb`, `DecInfer-10-Thompson-Sampling.ipynb`

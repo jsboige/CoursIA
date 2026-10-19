@@ -97,6 +97,25 @@ from pathlib import Path
 # Shared lane reader (#9485) -- see scripts/grain_tag.py.
 from grain_tag import extract_lane, lane_marker_residues
 
+# #19643 / c.1753 -- borne sur l'appel `gh pr list` interne (autrefois sans
+# `timeout=`). Le picker belt (pick_idle_grain.py:2355) appelle ce script
+# une fois par candidat, et chaque appel re-telecharge la liste des PRs
+# ouvertes : sans borne, un appel `gh` lent (secondary rate limit, backoff
+# silencieux) bloque tout le tapis. La constante est surchargeable par
+# l'env `CHECK_LANE_CLAIM_GH_TIMEOUT` (utile pour les tests et le debug
+# operateur) ; defaut 60s = 6x le nominal observe sur po-2027.
+_GH_OPEN_PRS_TIMEOUT_S = int(
+    os.environ.get("CHECK_LANE_CLAIM_GH_TIMEOUT", "60")
+)
+
+# #19643 / c.1753 -- cache de session : si l'env `CHECK_LANE_CLAIM_OPEN_PRS_JSON`
+# pointe sur un fichier JSON valide, `_gh_open_prs_with_files` lit le cache
+# au lieu de re-telecharger via `gh`. Le picker belt ecrit 1 fois le fichier,
+# invoque check_lane_claim N fois (1 par candidat), et sauve N-1 appels `gh`
+# (~6s x N = le bottleneck mesure du tapis c.1753). Le fallback fetch `gh`
+# est preserve si le fichier est absent ou corrompu.
+_OPEN_PRS_CACHE_PATH = os.environ.get("CHECK_LANE_CLAIM_OPEN_PRS_JSON")
+
 # --- markers -----------------------------------------------------------------
 
 # A comment is a claim EVENT only if it carries one of these bracketed markers.
@@ -1448,19 +1467,56 @@ def _gh_open_prs_with_files() -> list[dict]:
     `extract_lane` reader, NOT here, so the lane-detection rule lives in
     exactly one place (#9485 single-reader discipline).
 
-    Raises RuntimeError on `gh` failure so callers surface exit 2.
+    If env `CHECK_LANE_CLAIM_OPEN_PRS_JSON` is set to a valid JSON file path,
+    reads the cache directly (#19643) -- the picker belt fetches once per
+    drawing pass and shares the cache across all N candidates, instead of
+    re-downloading per call. On any read/parse failure, falls back to a fresh
+    `gh pr list` (never silent corruption).
+
+    Raises RuntimeError on `gh` failure (incl. timeout) so callers surface
+    exit 2 -- the picker (pick_idle_grain.py:2355) traduit ca en
+    `CLAIM_CODE_ERROR` (verdict "verification indisponible"), jamais un
+    silence.
     """
-    proc = subprocess.run(
-        [
-            "gh", "pr", "list", "--state", "open",
-            "--json", "number,title,headRefName,body,files,additions,deletions",
-            "--limit", "200",
-        ],
-        # #12811 -- 200 PR bodies in one payload: a single non-cp1252 byte
-        # anywhere kills the whole --paths mode on Windows.
-        capture_output=True, text=True, shell=False,
-        encoding="utf-8", errors="replace",
-    )
+    # #19643 -- chemin cache : 1 lecture de fichier au lieu d'un appel `gh`
+    # (chaque candidat du picker en sauve un, ~6s x N). Le path est porte
+    # par l'env plutot qu'un arg CLI : ca traverse le subprocess.run du
+    # picker sans modifier l'API publique (les 5 sites d'appel a
+    # `_gh_open_prs_with_files` restent byte-identiques).
+    if _OPEN_PRS_CACHE_PATH:
+        try:
+            with open(_OPEN_PRS_CACHE_PATH, "r", encoding="utf-8") as f:
+                cached = json.load(f)
+            if isinstance(cached, list):
+                return cached
+            # Format invalide : on tombe sur le fetch `gh` frais.
+        except (OSError, json.JSONDecodeError):
+            # Cache absent ou corrompu : on retombe sur le subprocess `gh`
+            # (avec timeout, comme toujours). Jamais de corruption silencieuse.
+            pass
+    try:
+        proc = subprocess.run(
+            [
+                "gh", "pr", "list", "--state", "open",
+                "--json", "number,title,headRefName,body,files,additions,deletions",
+                "--limit", "200",
+            ],
+            # #12811 -- 200 PR bodies in one payload: a single non-cp1252 byte
+            # anywhere kills the whole --paths mode on Windows.
+            capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",
+            # #19643 / c.1753 -- borne sur le subprocess interne. Sans ca,
+            # un `gh` lent (rate-limit secondaire, backoff silencieux) bloque
+            # le tapis du picker (un appel par candidat, 40+ candidats par
+            # tirage) au-dela du timeout de l'appelant. Defaut 60s,
+            # surchargeable par env `CHECK_LANE_CLAIM_GH_TIMEOUT`.
+            timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"gh pr list --state open timed out after {_GH_OPEN_PRS_TIMEOUT_S}s "
+            f"(set CHECK_LANE_CLAIM_GH_TIMEOUT to override)"
+        ) from exc
     if proc.returncode != 0:
         raise RuntimeError(
             f"gh pr list --state open failed (exit {proc.returncode}): "
@@ -3510,6 +3566,191 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     return 0
 
 
+def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
+    """Court libelle machine-consommable issu du stdout d'un `_run_check`.
+
+    Le code de retour de `_run_check`:
+        0 -> CLEAR (libre)
+        1 -> BLOCKED (autre lane tient un claim)
+        2 -> NOT_SCOPED / path-collision / gh-error
+        3 -> IMPLICIT (#14300, PR ouverte d'une autre lane)
+
+    Le stdout contient la phrase "CLEAR: no other lane claims #N" ou
+    "BLOCKED: another lane holds an active claim on #N" ou
+    "IMPLICIT: lane X a une PR ouverte ..." ou un WARN NOT_SCOPED.
+
+    Pour le batch (#19643, c.1778) on s'en tient a 4 codes. Le picker
+    (pick_idle_grain.check_claims) les remappe sur ses propres codes
+    internes, et la nuance OWNED_BY_ME / FREE_STALE est portee par
+    d'autres jambes -- le mode batch est une borne superieure du cout
+    (1 subprocess.run au lieu de N), pas une degradation de la
+    discrimination. Source: PR #21373 review ai-01 5571014393.
+    """
+    text = stdout_text or ""
+    if returncode == 0:
+        return "FREE"
+    if returncode == 3:
+        return "IMPLICIT"
+    if returncode == 1:
+        return "BLOCKED"
+    if returncode == 2:
+        # exit 2 = NOT_SCOPED, path-collision, ou gh-error. Le picker
+        # n'agit pas sur un verdict 2 (sortie du chemin "free" du
+        # picker), donc on le note sans le confondre avec un BLOCKED
+        # d'une autre lane.
+        if "NOT_SCOPED" in text or "OPEN PR(s) of other lanes touch" in text:
+            return "BLOCKED"
+        return "ERROR"
+    return f"EXIT_{returncode}"
+
+
+def _run_check_batch(
+    issues: list[str],
+    lane: str,
+    stale_threshold: float | None = 48.0,
+    from_json: str | None = None,
+    my_paths: list[str] | None = None,
+) -> int:
+    """Mode batch N issues -> JSON.
+
+    Une seule invocation de check_lane_claim traite N issues et sort un
+    JSON `{results: {N: {code, exit, human, duration, ...}}, total_wall,
+    phases}` sur stdout. Le cout du tapis (N subprocess.run) descend a 1
+    subprocess.run, et chaque phase est timestampsee sur stderr pour
+    qu'un run tue dise ou il en etait (#19643, PR #21373 v3, piste 2
+    demandee par ai-01 review 5571014393).
+
+    Les verdicts par issue reprennent les 4 codes de sortie de
+    `_run_check` (FREE, BLOCKED, IMPLICIT, ERROR) ; le remappage vers
+    les codes internes du picker vit cote pick_idle_grain.
+
+    Stderr au fil de l'eau : chaque phase importante (fetch payload,
+    check, etc.) emet `[t={Ns}] {phase}` pour permettre un diagnostic
+    a partir d'un run interrompu.
+    """
+    import contextlib
+    import io
+    import time as _time
+
+    t0 = _time.monotonic()
+    results: dict[str, dict] = {}
+    phases: list[dict] = []
+
+    def _phase(name: str) -> None:
+        # Phase emit sur stderr. Format strict `[t={Ns}] {phase}` pour
+        # permettre le grep ulterieur (#19643 c.1778).
+        elapsed = _time.monotonic() - t0
+        print(f"[t={elapsed:.2f}s] {name}", file=sys.stderr, flush=True)
+        phases.append({"name": name, "t": round(elapsed, 4)})
+
+    _phase(f"batch start: {len(issues)} issues, lane={lane}")
+
+    for idx, raw_issue in enumerate(issues):
+        issue = str(raw_issue)
+        issue_t0 = _time.monotonic()
+        result: dict = {"issue": issue, "exit": None, "code": None,
+                        "human": "", "duration": 0.0, "stderr_tail": ""}
+        # Capture stdout+stderr du check unitaire, sans bruit sur le
+        # stdout reel (le resultat sort en JSON, pas en texte).
+        buf_out = io.StringIO()
+        buf_err = io.StringIO()
+        rc = 2  # default si la branche n'aboutit pas
+        try:
+            _phase(f"#{issue} fetch+check ({idx + 1}/{len(issues)})")
+            if from_json:
+                try:
+                    payload = json.loads(
+                        Path(from_json).read_text(encoding="utf-8"))
+                except (OSError, json.JSONDecodeError) as exc:
+                    result["code"] = "ERROR"
+                    result["human"] = f"from-json: {exc}"
+                    result["duration"] = round(
+                        _time.monotonic() - issue_t0, 4)
+                    results[issue] = result
+                    continue
+            else:
+                try:
+                    payload = _gh_issue_comments(issue)
+                except (RuntimeError, ValueError) as exc:
+                    result["code"] = "ERROR"
+                    result["human"] = f"gh: {exc}"
+                    result["duration"] = round(
+                        _time.monotonic() - issue_t0, 4)
+                    results[issue] = result
+                    continue
+            _phase(f"#{issue} check running")
+            with contextlib.redirect_stdout(buf_out), \
+                    contextlib.redirect_stderr(buf_err):
+                rc = _run_check(
+                    payload, lane,
+                    stale_threshold=stale_threshold,
+                    my_paths=my_paths,
+                    # Batch = read path only (L898), pas de posting
+                    # leg.
+                    check_open_pr_paths=True,
+                )
+            result["exit"] = rc
+            captured = buf_out.getvalue()
+            result["code"] = _summarize_run_check_output(captured, rc)
+            # Human: on cherche la ligne-verdict parmi les dernieres non
+            # vides du stdout. Le stdout contient d'abord un JSON
+            # summary (`print(json.dumps(summary, ...))` ~L3209) puis
+            # la phrase verdict `CLEAR: ...` / `BLOCKED: ...` /
+            # `IMPLICIT: ...` / `LOCKED (v2): ...` / `DEAD-SCOPE LOCK
+            # ...` / `NOT_SCOPED: ...`. Le pattern prioritaire est
+            # ^CLEAR: / ^BLOCKED: / ^IMPLICIT: / ^LOCKED / ^DEAD-SCOPE
+            # / ^NOT_SCOPED : on parcourt les lignes de la fin vers le
+            # debut pour eviter le bruit du JSON.
+            verdict_line = ""
+            for line in reversed(captured.splitlines()):
+                stripped = line.strip()
+                if not stripped:
+                    continue
+                if any(stripped.startswith(prefix) for prefix in (
+                        "CLEAR:", "BLOCKED:", "IMPLICIT:", "LOCKED",
+                        "DEAD-SCOPE", "NOT_SCOPED", "DUMP",
+                )):
+                    verdict_line = stripped
+                    break
+            if verdict_line:
+                result["human"] = verdict_line[:200]
+            else:
+                # Pas de ligne-verdict : ERROR (exit 2) ou sortie
+                # minimale. Le `code` est deja informatif ; on le
+                # garde comme reponse humaine. Le `stderr_tail`
+                # contient le detail (scope typo, transport, etc).
+                result["human"] = f"({result['code']})"
+            if not result["human"]:
+                result["human"] = result["code"]
+        except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
+            result["code"] = "ERROR"
+            result["human"] = f"(batch indisponible: {type(exc).__name__})"
+        result["duration"] = round(_time.monotonic() - issue_t0, 4)
+        # Stderr tail : 200 derniers chars (les WARN longs -- #11239,
+        # #12624, scope dead -- sont diagnostiques sans inonder).
+        err_text = buf_err.getvalue()
+        if err_text:
+            result["stderr_tail"] = err_text[-200:].strip()
+        results[issue] = result
+        _phase(f"#{issue} done code={result['code']} exit={rc} "
+               f"dur={result['duration']}s")
+
+    total_wall = round(_time.monotonic() - t0, 4)
+    _phase(f"batch end: total_wall={total_wall}s")
+
+    output = {
+        "mode": "batch",
+        "lane": lane,
+        "n_issues": len(issues),
+        "results": results,
+        "phases": phases,
+        "total_wall": total_wall,
+    }
+    # Toujours ecrire le JSON final sur stdout, sans prefixe.
+    print(json.dumps(output, ensure_ascii=False, indent=2))
+    return 0
+
+
 def _filter_by_claim_scope(
     others: dict[str, ClaimEvent],
     my_paths: list[str] | None,
@@ -3976,11 +4217,16 @@ def main(argv: list[str] | None = None) -> int:
             "editing. Defaut-2-safe: server UTC timestamps only."
         )
     )
-    p.add_argument("issue", nargs="?", default=None,
-                   help="issue number (or URL); optional when --paths is used "
-                        "(--paths does not need an issue number, the dispatch "
-                        "cote coordinateur calls it pre-claim to detect cross- "
-                        "lane PR collisions on the same files)")
+    p.add_argument("issues", nargs="*", default=None,
+                   help="issue number(s) (or URL). One = legacy single-issue "
+                        "check. Multiple (>= 2) = batch mode (#19643, "
+                        "PR #21373 v3) : un seul subprocess.run sort un JSON "
+                        "{results, total_wall, phases} sur stdout ; chaque "
+                        "phase est timestampsee sur stderr. Optional when "
+                        "--paths is used (--paths does not need an issue "
+                        "number, the dispatch cote coordinateur calls it "
+                        "pre-claim to detect cross-lane PR collisions on the "
+                        "same files).")
     p.add_argument("--lane", required=True,
                    help="your lane, e.g. myia-po-2024:CoursIA")
     p.add_argument("--from-json", metavar="FILE",
@@ -4092,7 +4338,7 @@ def main(argv: list[str] | None = None) -> int:
     # WITHOUT an issue; when both are present we go through the issue-claim
     # check with `my_paths` (the `--paths` are then used to scope-bind any
     # `[OVERRIDE]` markers, #10342).
-    if args.paths is not None and args.issue is None:
+    if args.paths is not None and not args.issues:
         return _run_check_paths(args.paths, args.lane)
 
     # #13595 -- list-mode: no lane filter, non-blocking. `--open-prs-on` is
@@ -4101,10 +4347,31 @@ def main(argv: list[str] | None = None) -> int:
         return _run_open_prs_on(args.open_prs_on)
 
     # Posting modes: short-circuit before any read. Both require an issue.
-    if args.issue is None:
+    if not args.issues:
         print("error: an issue number is required (or use --paths PATH ...)",
               file=sys.stderr)
         return 1
+    # #19643 / PR #21373 v3 -- batch mode: N issues positionnels, 1
+    # subprocess.run, JSON sur stdout + phases timestampées sur stderr.
+    # Le mode batch ne supporte QUE la lecture (check), pas --claim ni
+    # --release (l'écriture reste unitaire, et l'asymétrie est documentée
+    # dans la sortie : posting leg exige 1 issue).
+    if len(args.issues) >= 2:
+        if args.claim is not None or args.release is not None:
+            print("error: --claim and --release are not supported in batch "
+                  "mode (>= 2 issues). Run posting modes per-issue.",
+                  file=sys.stderr)
+            return 1
+        return _run_check_batch(
+            args.issues, args.lane,
+            stale_threshold=args.stale_threshold,
+            from_json=args.from_json,
+            my_paths=args.paths,
+        )
+    # Single-issue mode (legacy). The 8 references below (3 fn calls,
+    # 2 prints, 2 prints with scope) all consume this local `issue` to
+    # stay compatible with the legacy CLI.
+    issue = args.issues[0]
     if args.claim is not None:
         # #11064: `--claim` must not short-circuit the check. The old path
         # posted FIRST (unchecked) and printed a reassuring "posted" line
@@ -4119,7 +4386,7 @@ def main(argv: list[str] | None = None) -> int:
                     payload = json.loads(
                         Path(args.from_json).read_text(encoding="utf-8"))
                 else:
-                    payload = _gh_issue_comments(args.issue)
+                    payload = _gh_issue_comments(issue)
             except (RuntimeError, json.JSONDecodeError, OSError) as exc:
                 print(f"error: {exc}", file=sys.stderr)
                 return 2
@@ -4127,7 +4394,7 @@ def main(argv: list[str] | None = None) -> int:
                             stale_threshold=args.stale_threshold,
                             my_paths=args.paths)
             if rc != 0:
-                print(f"BLOCKED: not posting [CLAIMED] on #{args.issue} "
+                print(f"BLOCKED: not posting [CLAIMED] on #{issue} "
                       f"-- another lane holds an active claim (the check "
                       f"above names it). Use --force only for coordinator "
                       f"arbitration.",
@@ -4138,12 +4405,12 @@ def main(argv: list[str] | None = None) -> int:
             paths_clause=_paths_clause(args.paths),
         )
         try:
-            _post_comment(args.issue, body)
+            _post_comment(issue, body)
         except RuntimeError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
         scope = f" (paths: {', '.join(args.paths)})" if args.paths else ""
-        print(f"posted [CLAIMED] lane {args.lane} on #{args.issue}{scope}")
+        print(f"posted [CLAIMED] lane {args.lane} on #{issue}{scope}")
         return 0
     if args.release is not None:
         # #12386 v2 -- smart DELIVERED-vs-RELEASED selection. A `[RELEASED]`
@@ -4185,7 +4452,7 @@ def main(argv: list[str] | None = None) -> int:
         else:
             try:
                 chosen_pr = _find_open_pr_for_issue_by_lane(
-                    int(args.issue), args.lane,
+                    int(issue), args.lane,
                 )
             except (RuntimeError, ValueError) as exc:
                 # gh failure or non-integer issue -- degrade to RELEASED
@@ -4210,13 +4477,13 @@ def main(argv: list[str] | None = None) -> int:
                 paths_clause=_paths_clause(args.paths),
             )
         try:
-            _post_comment(args.issue, body)
+            _post_comment(issue, body)
         except RuntimeError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 2
         scope = f" (paths: {', '.join(args.paths)})" if args.paths else ""
         marker = "[DELIVERED]" if chosen_kind == "DELIVERED" else "[RELEASED]"
-        print(f"posted {marker} lane {args.lane} on #{args.issue}{scope}")
+        print(f"posted {marker} lane {args.lane} on #{issue}{scope}")
         return 0
 
     # Check mode (default). `--paths` (when supplied with an issue) threads
@@ -4227,7 +4494,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.from_json:
             payload = json.loads(Path(args.from_json).read_text(encoding="utf-8"))
         else:
-            payload = _gh_issue_comments(args.issue)
+            payload = _gh_issue_comments(issue)
     except (RuntimeError, json.JSONDecodeError, OSError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
