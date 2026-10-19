@@ -45,15 +45,20 @@ _MAX_PREFIX_TAGS = 4  # Max prosody tags prepended before segment text.
 # F6 — Narrator routing to Qwen3-TTS VoiceDesign (Issue #15002, EPIC #1028)
 # ---------------------------------------------------------------------------
 # The FishAudio S2-Pro narrator clone (v4_narrator_male_neutral) renders as a
-# monotone bourdon ("DRONE" verdict) on Boule de Suif. A measured alternative
-# is the Qwen3-TTS VoiceDesign task on the self-hosted gateway :8196, which
-# delivers `EXPRESSIVE` prosody on the same passage (~110 Hz, expressive
-# intonation, motion >= 2.0 st/syll). The acceptance of #15002 is to ROUTE
-# narrator segments to Qwen while leaving every other speaker unchanged on
-# FishAudio clone.
+# monotone bourdon ("DRONE" verdict) on Boule de Suif, which motivated routing
+# narrator segments to the Qwen3-TTS VoiceDesign task on the self-hosted
+# gateway :8196 (issue #15002: EXPRESSIVE prosody, ~110 Hz, motion >= 2.0
+# st/syll). The full run however exposed the flip side, measured in #19454:
+# the Qwen narrator catastrophically degrades literary French (WER ~0.52,
+# "Quelksons avion de Gros, Intererts"), and no gateway voice fixes it
+# (kokoro 0.44-0.73 same distortions), while the FishAudio narrator clone
+# transcribes near-perfectly on the same witness segments (WER 0.000-0.067,
+# better than the 0.097 historical baseline). A monotone but intelligible
+# narrator dominates an expressive but unintelligible one.
 #
-# Activation: env flag NARRATOR_QWEN_ROUTING (default "1"). Set "0" to fall
-# back to the FishAudio narrator clone (legacy path).
+# Activation: env flag NARRATOR_QWEN_ROUTING (default "0" since #19454 =
+# FishAudio narrator clone). Set "1" to route narrator segments to Qwen
+# VoiceDesign (EXPRESSIVE prosody, degraded French WER).
 #
 # Failure contract: if the gateway is unreachable / 4xx, the narrator branch
 # raises NarratorQwenUnavailable, and `_synthesize_batch` re-raises it instead
@@ -62,16 +67,17 @@ _MAX_PREFIX_TAGS = 4  # Max prosody tags prepended before segment text.
 # NOT silently fall back to FishAudio (that would defeat the measurement in
 # #1028), and we do not emit an audiobook whose narrator segments are simply
 # missing. Acceptance #6 of #15002.
-_NARRATOR_QWEN_ROUTING: bool = os.getenv("NARRATOR_QWEN_ROUTING", "1") == "1"
+_NARRATOR_QWEN_ROUTING: bool = os.getenv("NARRATOR_QWEN_ROUTING", "0") == "1"
 _QWEN_NARRATOR_REFERENCE_ID: str = "qwen-voicedesign-narrator-fr-literary"
 
 # Phase 1 of the narrator pivot (#19692): a second candidate engine,
 # CosyVoice3 (Fun-CosyVoice3-0.5B-2512, Apache-2.0), synthesizes the narrator
-# chunked-by-sentence behind its own flag. The DEFAULT IS UNCHANGED — flag
-# "0": Qwen VoiceDesign stays the narrator engine until the association's
-# listening picks the final engine (#17586). Engines are exclusive: both
-# flags ON raises a configuration error, never a silent precedence (same
-# no-silent-swap contract as #15002 acceptance 6).
+# chunked-by-sentence behind its own flag. Flag "0": the narrator default is
+# the FishAudio clone since the #19454 WER measurement (Qwen VoiceDesign had
+# been the default engine of #15002); CosyVoice3 goes through the
+# association's listening to pick the final engine (#17586). Engines are
+# exclusive: both flags ON raises a configuration error, never a silent
+# precedence (same no-silent-swap contract as #15002 acceptance 6).
 _NARRATOR_COSYVOICE3_ROUTING: bool = os.getenv("NARRATOR_COSYVOICE3_ROUTING", "0") == "1"
 # The "-v2" suffix is not decoration: this sentinel is bumped whenever a
 # change can alter the AUDIO of an already-rendered segment, so the batch
@@ -969,10 +975,12 @@ def _synthesize_segment(seg: AnnotatedSegment, fishaudio_text: str) -> TTSResult
     """Synthesize a single segment, dispatching narrateur -> Qwen VoiceDesign.
 
     F6 (Issue #15002): narrator segments are routed to Qwen3-TTS VoiceDesign
-    when NARRATOR_QWEN_ROUTING is ON (default). Every other speaker stays on
-    the legacy FishAudio S2-Pro path. On Qwen gateway failure the narrator
-    branch raises NarratorQwenUnavailable — there is no silent fallback to
-    FishAudio (acceptance #6 of #15002).
+    when NARRATOR_QWEN_ROUTING is ON (default "0" since the #19454 WER
+    measurement — the Qwen narrator degrades literary French to ~0.52 WER
+    while the FishAudio clone stays at 0.000-0.067). Every other speaker
+    stays on the legacy FishAudio S2-Pro path. On Qwen gateway failure the
+    narrator branch raises NarratorQwenUnavailable — there is no silent
+    fallback to FishAudio (acceptance #6 of #15002).
     """
     reference_id = _resolve_voice(seg)
     seed = 42 + seg.seg_index
