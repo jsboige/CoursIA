@@ -236,6 +236,23 @@ of the KT census (explicit reordering + renaming, cf. `Knots.Conway_en`
 impossible on the designated diagrams; what remains is to formally relate
 the redraw to `ReidemeisterEquiv` to close
 `AreMutants conwayKnot kinoshitaTerasakaKnot` — later sub-grain.
+NOTE update 2 (link 7): the obstruction is GRADED and measured (issue #2874,
+comment c.6258386829 — exact-decision probes, controlled against the link-5
+certificate). The one-shot pair WITHOUT reattachment σ does not exist at
+gadget depth ≤ 2 either:
+(a) 11 crossings: for every redraw of C (a reordering makes any window = any
+subset of crossings realizable, and renaming commutes with slot rotation)
+and every rotation ρ, no result is a redraw of K or M — 6 141 candidates, 0;
+(b) 12 crossings: one connected R1 kink (`Reidemeister1Connected`, 44 cells
+per base) on each side — 0 out of 46 230 pairs;
+(c) 14 crossings: R1 then connected R2 (`Reidemeister2Connected` on the
+doubled label of the kink) on each side — 0 out of 465 616 pairs.
+The direct R2 family is empty to begin with: `Reidemeister2Connected`
+requires a double arc (both occurrences of `a` in the same crossing), which
+no crossing of C, K or M carries. Reading: a gadget adds crossings without
+reconfiguring the boundary arcs of the window — the effect of σ (rewriting
+boundary arcs, 8↔11 and 13↔22 in the census) stays out of reach at these
+depths.
 -/
 
 /-- Negative control: trefoil and unknot are not mutants (mutation preserves

@@ -233,6 +233,24 @@ du census KT (réordonnancement + renommage explicites, cf. `Knots.Conway`
 sur les désignés ; il reste à relier formellement le redraw à
 `ReidemeisterEquiv` pour fermer `AreMutants conwayKnot kinoshitaTerasakaKnot`
 — sous-grain ultérieur.
+NOTE MAJ 2 (maillon 7) : l'obstruction est GRADUÉE et mesurée (issue #2874,
+commentaire c.6258386829 — sondes à décision exacte, contrôlées contre le
+certificat du maillon 5). La paire one-shot SANS réattachement σ n'existe
+pas non plus à profondeur de gadget ≤ 2 :
+(a) 11 croisements : pour tout redraw de C (un réordonnacement rend
+réalisable toute fenêtre = tout sous-ensemble de croisements, et le
+renommage commute avec la rotation des slots) et toute rotation ρ, aucun
+résultat n'est un redraw de K ou M — 6 141 candidats, 0 ;
+(b) 12 croisements : un pli R1 connecté (`Reidemeister1Connected`, 44
+cellules par base) de chaque côté — 0 sur 46 230 paires ;
+(c) 14 croisements : R1 puis R2 connecté (`Reidemeister2Connected` sur le
+label doublé du kink) de chaque côté — 0 sur 465 616 paires.
+La famille R2 directe est vide d'entrée : `Reidemeister2Connected` exige un
+arc double (les deux occurrences de `a` dans le même croisement), qu'aucun
+croisement de C, K ni M ne porte. Lecture : un gadget ajoute des croisements
+sans reconfigurer les arcs de bord de la fenêtre — l'effet du σ (réécriture
+des arcs de bord, 8↔11 et 13↔22 dans le census) reste hors de portée à ces
+profondeurs.
 -/
 
 /-- Contrôle négatif : trèfle et nœud trivial ne sont pas mutants (la
