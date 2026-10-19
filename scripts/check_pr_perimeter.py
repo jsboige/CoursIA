@@ -1170,7 +1170,10 @@ def _count_is_provenance_sha(line: str, m: re.Match) -> bool:
 # une mesure d'une autre date), jamais le diff courant -- une PR n'annonce pas
 # son perimetre au passe. Le present « compte » reste HORS liste : « Cette PR
 # compte 3 fichiers » est une annonce de perimetre (meme raison que le retrait
-# de `couvre` en review #20125).
+# de `couvre` en review #20125). Asymetrie assumee : le passe anglais
+# (`counted`, `listed`) n'est PAS exempte, faute d'instance mesuree ; si la
+# classe reparait cote EN, l'ajouter ici avec son fondateur (liste fermee, le
+# faux negatif reste du cote bloquant).
 DESCRIPTIVE_VERB = re.compile(
     r"\b(?:atteste|attestent|constate|constatent|lit|lisent|"
     r"[ée]num[èe]re|[ée]num[èe]rent|r[ée]cense|r[ée]censent|"
