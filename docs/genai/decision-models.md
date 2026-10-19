@@ -269,12 +269,12 @@ Usage dans la CI et la coordination — chaque site candidat passe d'abord en **
 
 ### 8.2 Conformité
 
-- Tell c.4 strict fondateur applicable : 3 sources vérifiées firsthand = (1) l'index source **référencé** ; (2) le périmètre du Pli 1 **déclaré** dans la PR ; (3) la **mesure locale** hors périmètre. Une vérification effective du SHA et de la licence de chaque modèle viendra au Pli 2.
-- Tell c.1356 strict applicable : pas de doublon PR, pas de claim conflictuel.
-- Tell c.1502 strict fondateur : lane ne merge pas, ripe-signal nominatif.
-- Tell c.8236 strict applicable : RTX 3070 8GB = `RECOVERABLE-MACHINE`, pas `INTRINSIC`.
-- Tell c.11900 strict reaffirmed 14e : pas de claim conflictuel sur #18204.
-- Tell c.970-L2 ★★ reaffirmed 41e : narrow-cache tari — Pli 1 EPIC est un DEEP/genai* viable.
+- Applicable ([verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md)) : 3 sources vérifiées firsthand = (1) l'index source **référencé** ; (2) le périmètre du Pli 1 **déclaré** dans la PR ; (3) la **mesure locale** hors périmètre. Une vérification effective du SHA et de la licence de chaque modèle viendra au Pli 2.
+- Applicable ([proactive-coordination.md](../../.claude/rules/proactive-coordination.md), leçons L898 et L1356) : pas de doublon PR, pas de claim conflictuel.
+- Rappel ([CLAUDE.md](../../CLAUDE.md) §A) : lane ne merge pas, ripe-signal nominatif.
+- Applicable ([sota-not-workaround.md](../../.claude/rules/sota-not-workaround.md)) : RTX 3070 8GB = `RECOVERABLE-MACHINE`, pas `INTRINSIC`.
+- Applicable ([lane-claim-protocol.md](../../.claude/rules/lane-claim-protocol.md)) : pas de claim conflictuel sur #18204.
+- Applicable ([variation-protocol.md](../../.claude/rules/variation-protocol.md)) : narrow-cache tari — Pli 1 EPIC est un DEEP/genai* viable.
 
 Refs #18204, Pli 1, body 5276 chars édition 2026-09-19.
 
