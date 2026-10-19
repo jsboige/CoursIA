@@ -105,4 +105,4 @@ Etat persiste : D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd
 - Doc precedent (Scan po-2027, c.1470, 2026-10-07) : `docs/lean/junctions-scan-po-2027-CoursIA2.md` — partiellement contredit par la presente mesure
 - `scripts/lean/count_code_sorry.py` (instrument de comptage `distinct_code_sorry`)
 - BG id : byfrzf36p (Apply -Build verification en cours, journal `C:\Users\Jesse\AppData\Local\Temp\claude\d--dev-CoursIA-2\6643de94-8aa5-456e-b642-8ca6f07ae12d\tasks\byfrzf36p.output`)
-- Source verbatim AVANT/APRES : `git ls-files --cached --others --exclude-standard -- '*lake-manifest.json'` (32 fichiers), `Get-DirSizeGB` (script de mesure)
+- Source verbatim AVANT/APRES : `git ls-files --cached --others --exclude-standard -- '*lake-manifest.json'`, `Get-DirSizeGB` (script de mesure)
