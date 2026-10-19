@@ -1295,6 +1295,16 @@ DELIVERED_SIGNAL_UNPROBED = object()
 #   - `[DELIVERED]` : cloture explicite du travail
 #   - `[RELEASED]`  : claim libere (lane a rendu la main)
 #   - `[FROZEN]`    : gel coordinateur (decision explicite)
+#   - `[INFO] candidate-delivered` : la forme par laquelle une lane WORKER
+#     rend la main au coordinateur (#15069/#19295). Mesure fondatrice du
+#     2026-10-17 : #10643 servie 3 fois en 3 cycles (2 fois par cette lane,
+#     1 fois par po-2024) alors que chaque service posait ce marqueur en
+#     DERNIER commentaire -- la fenetre de sonde de tete (bulk 8 issues +
+#     extension 36) ne l'atteignait jamais (des dizaines d'issues jamais
+#     servies la precedent au tri), donc son stamp de visite n'etait pas
+#     pose, et la sonde pleine (budgete, 16) non plus. Reconnue ici par la
+#     MEME grammaire que la sonde pleine (`_DELIVERED_MARKER_RE`), pas une
+#     regex nouvelle : ce filtre ne fait qu'avancer la meme decision.
 # Les majuscules sont preservees -- c'est un en-tete, pas une
 # mention de prose. Pas de `\b` apres `]` : `]` n'est pas un caractere
 # de mot, donc `\b` n'a pas de frontiere a valider entre `]` et un
@@ -1311,7 +1321,9 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
 
     TRI-ETAT (cf. `has_delivered_signal`) :
     - ``True``  : le dernier commentaire a un en-tete `[DELIVERED]`,
-      `[RELEASED]`, ou `[FROZEN]`. Le candidat doit etre ecarte SANS
+      `[RELEASED]`, `[FROZEN]`, ou porte un marqueur de livraison
+      ``[INFO] candidate-delivered`` (grammaire `_DELIVERED_MARKER_RE`).
+      Le candidat doit etre ecarte SANS
       appeler la sonde pleine -- c'est le filtre bon marche de #19768 ;
     - ``False`` : aucun marqueur de cloture dans le dernier commentaire.
       L'appelant peut proceder a la sonde pleine ;
@@ -1355,7 +1367,17 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     body = last.get("body") or ""
     if not isinstance(body, str):
         return False
-    return bool(_RECENT_DELIVERY_MARKER_RE.search(body))
+    # Deux grammaires, un seul verdict : les en-tetes de cloture ci-dessus,
+    # PLUS le marqueur de livraison `[INFO] candidate-delivered` (mesure
+    # 2026-10-17 : une issue rendue au coordinateur par ce marqueur et
+    # repostee ainsi en DERNIER commentaire restait servie en boucle par le
+    # tapis -- la sonde de tete ne l'atteignait pas, le budget de la sonde
+    # pleine non plus). Grammaire reutilisee de la sonde pleine
+    # (`_DELIVERED_MARKER_RE`, lookahead anti-`-revoked`/`-partial`) : tout
+    # ce que ce filtre attrape, la sonde pleine l'aurait ecarte aussi -- il
+    # n'introduit aucun verdict nouveau, il avance le meme.
+    return bool(_RECENT_DELIVERY_MARKER_RE.search(body)
+                or _DELIVERED_MARKER_RE.search(body))
 
 
 
@@ -1741,7 +1763,8 @@ def print_delivered_signal_report(
         print(f"Filtre recent (#19768) : {len(dropped)} candidat(s) "
               f"ECARTE(S) HORS BUDGET : {numbers}.")
         print("   Marqueur de cloture sur le DERNIER commentaire "
-              "([DELIVERED] / [RELEASED] / [FROZEN]) : le tapis a")
+              "([DELIVERED] / [RELEASED] / [FROZEN] / [INFO] "
+              "candidate-delivered) : le tapis a")
         print("   elimine ces clotures SANS consommer une sonde de la "
               "borne `DELIVERED_SIGNAL_MAX_PROBES`. C'est le filtre bon")
         print("   marche de #19768 -- mesure avant/apres : comparer avec")
@@ -2515,7 +2538,8 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                             conflicts.append((c, "LIVRAISON (recent) : "
                                 "marqueur de cloture sur le dernier "
                                 "commentaire ([DELIVERED] / [RELEASED] "
-                                "/ [FROZEN]). Candidat remplace dans "
+                                "/ [FROZEN] / [INFO] candidate-delivered)."
+                                " Candidat remplace dans "
                                 "la meme urne, hors budget de sonde."))
                             continue
                         # Le label est teste A COUT NUL et vaut meme quand le
@@ -2826,7 +2850,7 @@ _ORGAN_BANNER_RE = re.compile(r"Organes bloquants en echec\s*:\s*([a-z_ ]+?)\s*(
 _PR_STATE_FRAGMENT = """
   p%(n)d: pullRequest(number:%(n)d) {
     number mergeable
-    reviews(last:40) { nodes { state submittedAt author { login } } }
+    reviews(last:40) { nodes { state submittedAt author { login } body } }
     commits(last:1) { nodes { commit { statusCheckRollup {
       state   # #12830 : SUCCESS/FAILURE/PENDING/NEUTRAL au niveau rollup, pour le 3e etat file-saturation
       contexts(first:100) { nodes {
@@ -3842,9 +3866,27 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
     if state.get("mergeable") == "CONFLICTING":
         causes.append("conflits avec main -> rebaser")
     latest: dict[str, dict] = {}
+    body_latest: dict[str, dict] = {}
+    # #16926 : sous token COMMENT-only, le verdict d'une review vit dans son
+    # CORPS (prefixe VERDICT: / marqueurs de persona), invisible a
+    # reviews[].state. L'organe pool_review_verdicts lit ces voix -- importe,
+    # jamais copie. Les verdicts en COMMENTAIRES d'issue restent couverts par
+    # la 4e cause via check_unaddressed_nits (B.0).
+    sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
+    from pool_review_verdicts import _voice  # noqa: E402, PLC0415 - import tardif
     for review in (state.get("reviews", {}) or {}).get("nodes") or []:
         if review["state"] in ("APPROVED", "CHANGES_REQUESTED", "DISMISSED"):
             latest[review["author"]["login"]] = review
+            continue
+        if review["state"] == "COMMENTED":
+            found = _voice(review.get("body"))
+            if found and found.get("verdict"):
+                login = review["author"]["login"]
+                prev = body_latest.get(login)
+                if prev is None or (review.get("submittedAt") or "") >= prev["submittedAt"]:
+                    body_latest[login] = {"login": login,
+                                          "verdict": found["verdict"],
+                                          "submittedAt": review.get("submittedAt") or ""}
     for login, review in latest.items():
         if review["state"] == "CHANGES_REQUESTED":
             if review_points_clear:
@@ -3855,6 +3897,16 @@ def blocking_causes(state: dict, *, age_hours: float | None = None,
                 # le merge-gate accepte (#18829).
                 continue
             causes.append(f"CHANGES_REQUESTED non leve ({login})")
+    # #16926 : verdict de corps vivant sous COMMENTED -- meme regle de primaute
+    # que l'etat natif : si l'organe B.0 a evalue les surfaces et n'a rien
+    # trouve de non leve, le verdict est un residu, pas une file a ouvrir.
+    for login in sorted(body_latest):
+        entry = body_latest[login]
+        if entry["verdict"] in ("CONCERNS", "CHANGES_REQUESTED") and not review_points_clear:
+            cause = (f"verdict de corps non leve : {entry['verdict']} ({login})"
+                     " -- organe pool_review_verdicts (#16926)")
+            if cause not in causes:
+                causes.append(cause)
     # 3ᵉ declencheur `file_saturation` (cf issue #12830) : aucun check n'a
     # demarre (PENDING/QUEUED partout), pas de conflit, pas de CHANGES_REQUESTED
     # non leve, et la PR est ouverte depuis plus de `saturation_hours`.
@@ -6600,7 +6652,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 belt_withheld.append(
                     (it, "LIVRAISON (recent) : marqueur de cloture sur le "
                      "dernier commentaire ([DELIVERED] / [RELEASED] / "
-                     "[FROZEN]). Candidat remplace hors budget de sonde."))
+                     "[FROZEN] / [INFO] candidate-delivered). "
+                     "Candidat remplace hors budget de sonde."))
                 continue
             reason = delivered_signal_reason(
                 it, args.lane, counted_probe, state["failures"],
@@ -7409,7 +7462,8 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"   Filtre recent (#19768) : {len(recent_held)} "
                       f"candidat(s) ECARTE(S) HORS BUDGET : {numbers}.")
                 print("   Marqueur de cloture sur le DERNIER commentaire "
-                      "([DELIVERED] / [RELEASED] / [FROZEN]) -- ecarte sans "
+                      "([DELIVERED] / [RELEASED] / [FROZEN] / [INFO] "
+                      "candidate-delivered) -- ecarte sans "
                       "consommer de sonde de livraison.")
             delivered_held = [(it, c) for it, c in belt_withheld
                               if c.startswith("LIVRAISON")
