@@ -13,7 +13,7 @@
   axiomatic characterization and uniqueness; **anchorages to be confirmed**
   against the book, the PDF not being available on this machine).
 
-  i18n convention (cycle 39 ratified, see `docs/lean/i18n-inventory-cycle-38.md`):
+  i18n convention (cycle 39 ratified, see `../../../../docs/transients/2026-07-04-lean-i18n-inventory-cycle-38.md`):
   headers, sections, docstrings and intra-proof comments in English;
   the Lean tactical code (symbol names, Mathlib references, lemma statements,
   proofs) stays in English to preserve Mathlib compatibility.
