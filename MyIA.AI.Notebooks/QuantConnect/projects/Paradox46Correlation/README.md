@@ -25,20 +25,62 @@ l'ObjectStore du run.
 
 ## Résultats
 
-> **Recalcul en cours (code v2).** La review adjointe de PR #19082 a relevé
-> que ce projet mesurait les paniers ombres en poids×prix (portefeuille à
-> nombres de titres pondérés, pas à allocations de capital : 50/50 sur
-> 100/10 → 100/20 donne +9,09 % au lieu de +50 %) avec une base
-> début-de-mois (rendements cumulés intra-mois, effacés au franchissement de
-> mois), et que sa jambe stratégie portait les mêmes défauts de fenêtres et
-> de sens des rendements que le projet principal. Corrigé au commit
-> `1d3584d8` : quantités fixées aux prix de rebalance (allocation de
-> capital), rendements hebdo chainés vendredi-à-vendredi comme la jambe P46.
-> Les valeurs ci-dessous restent publiées comme **mesures historiques du
-> code v1, explicitement séparées**, remplacées par le run v2 relancé le
-> 2026-10-04.
+Deux corrections successives, chacune suivie d'une nouvelle mesure. Les
+mesures antérieures restent publiées, séparées, comme mesures historiques ;
+les conclusions ne portent que sur la v3.
 
-### Recalcul v2 (code corrigé, QC Cloud, 2026-10-04)
+- **v2 (#19082)** : ce projet mesurait les paniers ombres en poids×prix
+  (portefeuille à nombres de titres pondérés, pas à allocations de capital :
+  50/50 sur 100/10 → 100/20 donne +9,09 % au lieu de +50 %) avec une base
+  début-de-mois (rendements cumulés intra-mois, effacés au franchissement de
+  mois), et sa jambe stratégie portait les mêmes défauts de fenêtres et de
+  sens des rendements que le projet principal. Corrigé au commit `1d3584d8` :
+  quantités fixées aux prix de rebalance (allocation de capital), rendements
+  hebdo chainés vendredi-à-vendredi comme la jambe P46.
+- **v3 (#20388)** : la rotation de la jambe P46 achetait la nouvelle cible
+  par `set_holdings(cible, 1.0)` sans vendre la ligne précédente. Sur le
+  compte marge par défaut (levier 2), jusqu'à trois lignes étaient détenues à
+  la fois, 178 achats étaient refusés faute de marge et 36 ordres d'appel de
+  marge vendaient à leur place : la jambe dont on mesurait la corrélation
+  n'était pas la stratégie 46. La rotation vend désormais d'abord et vise
+  98 % (même correctif que `Paradox46VolScaledMomentum`).
+
+### Recalcul v3 (rotation corrigée, QC Cloud, 2026-10-15)
+
+> Run `00505ff942dd9248f21b216d95328575` (nœud de backtest QC Cloud, projet
+> 37847852, mode `unlevered`, fenêtre 2018-01-01 → 2024-12-31, 731 ordres,
+> Sharpe 0,455, CAGR 11,678 %, pire baisse 19,700 %) — une seule ligne
+> détenue à chaque clôture, 0 ordre refusé, 0 appel de marge. Valeurs lues
+> dans la ligne `CORRELATIONS {...}` du log du run.
+
+**Période pleine 2018-2024** :
+
+| Panier | Corrélation hebdo avec la stratégie 46 sans levier |
+|---|---:|
+| VT2 | **0,324** |
+| AW | 0,256 |
+| TW | 0,256 |
+
+Par année civile (VT2 / AW=TW) :
+
+| Année | VT2 | AW/TW |
+|---|---:|---:|
+| 2018 | 0,652 | 0,628 |
+| 2019 | 0,185 | −0,013 |
+| 2020 | 0,266 | 0,201 |
+| 2021 | 0,233 | 0,138 |
+| 2022 | 0,220 | 0,209 |
+| 2023 | 0,533 | 0,476 |
+| 2024 | 0,389 | 0,327 |
+
+Lecture v3 : la décorrélation tient (0,26-0,32 sur la période pleine, contre
+0,23-0,31 en v2), elle bouge à peine avec la rotation. Ce qui change, c'est
+la jambe stratégie elle-même : Sharpe 0,455 contre 0,124 en v2, pire baisse
+19,7 % contre 45,3 %. Le potentiel de diversification est donc porté par un
+moteur nettement plus solide que ce que la v2 laissait croire — le verdict
+de la stratégie elle-même vit dans `Paradox46VolScaledMomentum/`.
+
+### Mesures historiques — code v2 (rotation fautive, #20388, remplacées)
 
 > Run `5bc6e8102a95a81881333994489580f2` (mode `unlevered`, fenêtre
 > 2018-01-01 → 2024-12-31, 1 761 dates, 433 ordres, Sharpe 0,124) — valeurs
@@ -64,7 +106,7 @@ Par année civile (VT2 / AW=TW) :
 | 2023 | 0,324 | 0,246 |
 | 2024 | 0,530 | 0,452 |
 
-Lecture v2 : la correction **renforce** la décorrélation (0,23-0.31 sur la
+Lecture v2 (rotation fautive) : la correction **renforce** la décorrélation (0,23-0.31 sur la
 période pleine contre 0.34-0.38 en v1 ; 2019 bascule négatif) — le noyau
 momentum corrigé décorelle encore plus des paniers statiques. Mais la jambe
 stratégie elle-même s'affaiblit fortement (Sharpe 0,124 contre 0,463 en v1) :

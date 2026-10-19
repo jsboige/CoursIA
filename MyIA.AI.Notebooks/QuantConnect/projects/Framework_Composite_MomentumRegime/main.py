@@ -2,7 +2,7 @@
 from AlgorithmImports import *
 from datetime import datetime
 from alpha_models import SectorMomentumAlpha, RegimeSwitchingAlpha
-from portfolio_construction import MultiStrategyPCM
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
 # endregion
 
 ALL_TICKERS = ["SPY", "QQQ", "IEF", "GLD"]
@@ -120,11 +120,12 @@ class FrameworkCompositeMomentumRegime(QCAlgorithm):
                 self.set_alpha(CompositeAlphaModel(sector_momentum, regime_switching))
                 allocations = {"SectorMomentum": sm_allocation, "RegimeSwitching": rs_allocation}
 
-            self.pcm = MultiStrategyPCM(
+            self.pcm = MultiStrategyPouchesPCM(
                 alpha_allocations=allocations,
                 rebalance=timedelta(days=31),  # Monthly
                 additive=(self.mode == "intent"),
                 algorithm=self,
+                watch_source="SectorMomentum",
             )
             self.set_portfolio_construction(self.pcm)
 
@@ -176,8 +177,8 @@ class FrameworkCompositeMomentumRegime(QCAlgorithm):
         self.set_runtime_statistic("Gross exposure", f"{gross:.3f}")
         if self.pcm is not None:
             self.set_runtime_statistic("PCM calls", str(self.pcm.calls))
-            self.set_runtime_statistic("PCM calls with SM", str(self.pcm.calls_with_sm))
-            self.set_runtime_statistic("SM UP reaching PCM", str(self.pcm.sm_up_seen))
+            self.set_runtime_statistic("PCM calls with SM", str(self.pcm.calls_with_watch))
+            self.set_runtime_statistic("SM UP reaching PCM", str(self.pcm.watch_up_seen))
         final = self.portfolio.total_portfolio_value
         self.log(f"FRAMEWORK COMPOSITE ({self.mode}): Final=${final:,.2f}, "
                  f"Return={(final - 100000) / 100000:.2%}, gross exposure={gross:.3f}")
