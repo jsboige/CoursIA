@@ -2353,7 +2353,7 @@ Vous pouvez maintenant adapter et combiner ces techniques pour vos propres proje
 ---
 **Retour au sommaire** : [Index RL](README.md)
 ",,,,,,,,1443355f034a9168,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,1ece4c96,markdown,fr,307376e4d42f14e9,"**Navigation** : [Index](README.md) | [<< RL-2 Wrappers](RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb) | [RL-4 Bandits >>](RL-04-Bandits-Manchots-Python.ipynb)
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,1ece4c96,markdown,fr,307376e4d42f14e9,"**Navigation** : [Index](README.md) | [<< RL-2 Wrappers](RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb) | [RL-4 Bandits >>](RL-04-Bandits-Manchots-Python.ipynb)
 # Notebook 3 – Hindsight Experience Replay (HER) et Sauvegarde Avancée
 
 **Serie** : Reinforcement Learning | **Notebook** : 3/13 | **Duree estimee** : 40-45 min
@@ -2374,7 +2374,7 @@ Nous verrons comment utiliser HER avec différents algorithmes (SAC, DDPG), comm
 - Les observations se présentent souvent comme un dictionnaire : `{'observation': ..., 'desired_goal': ..., 'achieved_goal': ...}`.  
 - HER (Hindsight Experience Replay) ré-étiquette des transitions a posteriori pour rendre l’apprentissage plus efficace, surtout quand la récompense est très clairsemée (sparse).
 ",,,,,,,,307376e4d42f14e9,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,639cc41d,markdown,fr,208b3df4d2508a6d,"## Installation des dépendances
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,639cc41d,markdown,fr,208b3df4d2508a6d,"## Installation des dépendances
 
 Sous Windows, nous n’utilisons pas de commandes `apt-get`. Nous procédons uniquement par `pip` pour installer :
 
@@ -2392,9 +2392,9 @@ Dans un notebook Python, on peut faire :
 ```python
 %pip install ""stable-baselines3[extra]>=2.0.0a4"" highway-env moviepy
 ```",,,,,,,,208b3df4d2508a6d,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,88f90212,code,fr,fcd7c1716b5a86ca,"# Installation par commande magique Notebook (Windows-friendly, pas de apt-get)
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,88f90212,code,fr,fcd7c1716b5a86ca,"# Installation par commande magique Notebook (Windows-friendly, pas de apt-get)
 ",,,,,,,,fcd7c1716b5a86ca,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,dd59bd5c,markdown,fr,6c7564dda0c0b268,"## Imports Essentiels
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,dd59bd5c,markdown,fr,6c7564dda0c0b268,"## Imports Essentiels
 
 Nous importons :
 - `HerReplayBuffer` : le buffer de rejouage spécialisé pour HER,
@@ -2404,7 +2404,7 @@ Nous importons :
 
 
 > *Ancres savantes -- Andrychowicz, M., Wolski, F., Ray, A., Schneider, J., Fong, R., Welinder, P., McGrew, B., Tobin, J., Abbeel, P. & Zaremba, W. (2017), Hindsight Experience Replay, NeurIPS 2017, arXiv:1707.01495 (HER, re-etiquetage des echecs en succes synthetiques pour apprentissage goal-conditioned multi-objectif) ; Haarnoja, T., Zhou, A., Abbeel, P. & Levine, S. (2018), Soft Actor-Critic, ICML 2018, arXiv:1801.01290 (SAC, acteur-critique off-policy a entropie maximale) ; Lillicrap, T.P., Hunt, J.J., Pritzel, A., Heess, N., Erez, T., Tassa, Y., Silver, D. & Wierstra, D. (2016), Continuous Control with Deep Reinforcement Learning, ICLR 2016, arXiv:1509.02971 (DDPG, acteur-critique déterministe off-policy pour actions continues).*",,,,,,,,6c7564dda0c0b268,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,536464bc,code,fr,106665f1dd358317,"import gymnasium as gym
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,536464bc,code,fr,106665f1dd358317,"import gymnasium as gym
 import highway_env
 import numpy as np
 
@@ -2413,19 +2413,19 @@ from stable_baselines3.common.noise import NormalActionNoise
 from stable_baselines3.common.evaluation import evaluate_policy
 
 print(""Imports OK"")",,,,,,,,106665f1dd358317,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,56dbde10,markdown,fr,5e2e95a3308095ff,"### Environnement Parking
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,56dbde10,markdown,fr,5e2e95a3308095ff,"### Environnement Parking
 
 [`parking-v0`](https://github.com/eleurent/highway-env#parking-env) est un environnement « goal-conditioned » : la position et l’orientation cibles font partie de l’`info['goal']`. Pour résoudre cette tâche, on doit apprendre à manœuvrer la voiture pour qu’elle se gare.
 
 ![parking-env](https://raw.githubusercontent.com/eleurent/highway-env/gh-media/docs/media/parking-env.gif)
 ",,,,,,,,5e2e95a3308095ff,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,06d5da9a,markdown,fr,f33b310353d8b31c,### Création de l’environnement Gym,,,,,,,,f33b310353d8b31c,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,34a822a7,code,fr,d54b7b8824ef0f74,"env = gym.make(""parking-v0"")
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,06d5da9a,markdown,fr,f33b310353d8b31c,### Création de l’environnement Gym,,,,,,,,f33b310353d8b31c,,,,,,,,
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,34a822a7,code,fr,d54b7b8824ef0f74,"env = gym.make(""parking-v0"")
 obs, _ = env.reset()
 print(""Observation :"", obs.keys())
 print(""Exemple d'observation['observation']:"", obs[""observation""].shape)
 print(""Exemple d'observation['desired_goal']:"", obs[""desired_goal""].shape)",,,,,,,,d54b7b8824ef0f74,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,a2e7a1dc,markdown,fr,1f876cbc8358c40e,"Par défaut, l’action est continue (2 dimensions : accélération et direction). On peut vérifier en imprimant `env.action_space` ou `env.observation_space`.
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,a2e7a1dc,markdown,fr,1f876cbc8358c40e,"Par défaut, l’action est continue (2 dimensions : accélération et direction). On peut vérifier en imprimant `env.action_space` ou `env.observation_space`.
 
 **Structure de l’observation**  
 - `obs['observation']`: informations sur la voiture (position, vitesse, angle...).  
@@ -2434,7 +2434,7 @@ MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,a2e7a1dc,markdown,fr,1f876
 
 La récompense dépend souvent de la distance entre `achieved_goal` et `desired_goal`. HER va ré-étiqueter certains buts pour générer des transitions artificiellement “réussies”.
 ",,,,,,,,1f876cbc8358c40e,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,c0b6a86f,markdown,fr,86f98a2e01eff21c,"## Entraîner un agent SAC avec HER
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,c0b6a86f,markdown,fr,86f98a2e01eff21c,"## Entraîner un agent SAC avec HER
 
 La configuration de `HerReplayBuffer` est centrale ici. Nous choisissons :
 - `goal_selection_strategy=""future""` (la stratégie la plus courante, on va remplacer le but original par un but futur observé dans le même épisode),
@@ -2445,7 +2445,7 @@ Au final, l’entraînement dure un certain temps (on peut ajuster le `total_tim
 
 
 ",,,,,,,,86f98a2e01eff21c,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,c1b85094,code,fr,cbeb41d14a1422ad,"model_sac = SAC(
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,c1b85094,code,fr,cbeb41d14a1422ad,"model_sac = SAC(
     ""MultiInputPolicy"",
     env,
     replay_buffer_class=HerReplayBuffer,
@@ -2473,17 +2473,17 @@ model_sac.save_replay_buffer(""her_sac_parking_replay_buffer"")
 del model_sac  # On supprime de la RAM
 
 ",,,,,,,,cbeb41d14a1422ad,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,7b954c0c,markdown,fr,aa58e97e60c19823,"
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,7b954c0c,markdown,fr,aa58e97e60c19823,"
 **Focus sur la stratégie `goal_selection_strategy=\""future\""`**  
 - “future” signifie qu’on va remplacer le but initial par un but échantillonné **plus tard** dans la même trajectoire.  
 - Cela favorise l’apprentissage, car beaucoup d’états futurs atteints sont convertis en “objectifs cibles”.  
 - Alternatives : “final”, “episode”, “random” — à tester selon l’environnement.
 ",,,,,,,,aa58e97e60c19823,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,e7f121fb,markdown,fr,66568d8ef92f6e2b,"## Rechargement du modèle et évaluation
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,e7f121fb,markdown,fr,66568d8ef92f6e2b,"## Rechargement du modèle et évaluation
 
 Nous rechargeons ensuite le modèle, et on peut l’évaluer sur quelques épisodes :
 ",,,,,,,,66568d8ef92f6e2b,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,7f3a99ac,code,fr,c2ee7b2c7b7c4fda,"from stable_baselines3.common.monitor import Monitor
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,7f3a99ac,code,fr,c2ee7b2c7b7c4fda,"from stable_baselines3.common.monitor import Monitor
 
 # Rechargement
 model_sac = SAC.load(""her_sac_parking"", env=env)
@@ -2496,11 +2496,11 @@ mean_reward, std_reward = evaluate_policy(model_sac, eval_env, n_eval_episodes=1
 print(f""SAC Parking : reward moyen={mean_reward:.2f} +/- {std_reward:.2f}"")
 
 ",,,,,,,,c2ee7b2c7b7c4fda,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,7be65583,markdown,fr,c8c0dc69147af963,"La notion de « récompense » dans un environnement `goal-conditioned` (HER) reflète la distance à l’objectif et la réussite/échec à se garer. On peut inspecter `info.get(""is_success"", False)` pour savoir si l’épisode est terminé avec succès.",,,,,,,,c8c0dc69147af963,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,fc0afad1,markdown,fr,8d7ea5d664ee9e43,"## Exemple avec DDPG
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,7be65583,markdown,fr,c8c0dc69147af963,"La notion de « récompense » dans un environnement `goal-conditioned` (HER) reflète la distance à l’objectif et la réussite/échec à se garer. On peut inspecter `info.get(""is_success"", False)` pour savoir si l’épisode est terminé avec succès.",,,,,,,,c8c0dc69147af963,,,,,,,,
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,fc0afad1,markdown,fr,8d7ea5d664ee9e43,"## Exemple avec DDPG
 
 Nous pouvons reproduire la même idée avec un autre algorithme off-policy (DDPG). On ajoute souvent un bruit d’exploration, `NormalActionNoise` :",,,,,,,,8d7ea5d664ee9e43,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,1bae099e,code,fr,6bc91ef610336da3,"# On crée un bruit gaussien pour l’action
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,1bae099e,code,fr,6bc91ef610336da3,"# On crée un bruit gaussien pour l’action
 n_actions = env.action_space.shape[0]  # en général = 2
 noise_std = 0.2
 action_noise = NormalActionNoise(mean=np.zeros(n_actions), sigma=noise_std * np.ones(n_actions))
@@ -2538,14 +2538,14 @@ model_ddpg.learn(10_000)  # par exemple
 model_ddpg.save(""her_ddpg_parking"")
 del model_ddpg
 ",,,,,,,,6bc91ef610336da3,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,8ca4b997,markdown,fr,07ecef7c52c0390e,Chargement du modèle DDPG entraine avec HER pour comparaison.,,,,,,,,07ecef7c52c0390e,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,ac729679,code,fr,2cee5a562eb86ff3,"model_ddpg = DDPG.load(""her_ddpg_parking"", env=env)
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,8ca4b997,markdown,fr,07ecef7c52c0390e,Chargement du modèle DDPG entraine avec HER pour comparaison.,,,,,,,,07ecef7c52c0390e,,,,,,,,
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,ac729679,code,fr,2cee5a562eb86ff3,"model_ddpg = DDPG.load(""her_ddpg_parking"", env=env)
 
 eval_env = Monitor(env)  # Ajout du Monitor pour eviter les warnings
 mean_reward, std_reward = evaluate_policy(model_ddpg, eval_env, n_eval_episodes=10, deterministic=True)
 print(f""DDPG Parking : reward moyen={mean_reward:.2f} +/- {std_reward:.2f}"")
 ",,,,,,,,2cee5a562eb86ff3,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,954ed70a,markdown,fr,9b7250833ffbbfd3,"## Sauvegarde et Chargement de la Replay Buffer
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,954ed70a,markdown,fr,9b7250833ffbbfd3,"## Sauvegarde et Chargement de la Replay Buffer
 
 Une fonctionnalité avancée de Stable-Baselines3 est la **possibilité de sauvegarder aussi la buffer de rejouage** (replay buffer) :
 
@@ -2555,7 +2555,7 @@ Une fonctionnalité avancée de Stable-Baselines3 est la **possibilité de sauve
 Cela permet de **reprendre un entraînement** où on l’avait laissé, en conservant tout l’historique d’expériences collectées. Sur des environnements complexes, c’est très utile pour éviter de tout recommencer !
 
 Exemple :",,,,,,,,9b7250833ffbbfd3,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,1b49487e,code,fr,3477f33c73150d55,"# Rechargement du modele + de sa replay buffer (sauvegardee a l'entrainement)
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,1b49487e,code,fr,3477f33c73150d55,"# Rechargement du modele + de sa replay buffer (sauvegardee a l'entrainement)
 
 model_sac_2 = SAC.load(""her_sac_parking"", env=env)
 print(""Taille de la replay buffer AVANT rechargement :"", model_sac_2.replay_buffer.size())
@@ -2565,17 +2565,17 @@ print(""Taille de la replay buffer AVANT rechargement :"", model_sac_2.replay_bu
 model_sac_2.load_replay_buffer(""her_sac_parking_replay_buffer"", truncate_last_traj=False)
 print(""Taille de la replay buffer APRES rechargement :"", model_sac_2.replay_buffer.size())
 ",,,,,,,,3477f33c73150d55,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,2f066f97,markdown,fr,3bd2281883e5bc81,"
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,2f066f97,markdown,fr,3bd2281883e5bc81,"
 **Reprendre l’entraînement**  
 - Après avoir chargé le modèle et la replay buffer, on peut appeler `model_sac_2.learn(N)` pour continuer exactement là où l’on s’était arrêté.  
 - Utile pour *checkpoint* l’entraînement de temps en temps, sans perdre l’historique des transitions passées (particulièrement en off-policy).
 ",,,,,,,,3bd2281883e5bc81,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,884fef6e,markdown,fr,16dab34956f1d51c,"## Enregistrement vidéo sous Windows
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,884fef6e,markdown,fr,16dab34956f1d51c,"## Enregistrement vidéo sous Windows
 
 Comme évoqué dans les notebooks précédents, sous Windows, pas besoin de démarrer un display virtuel via `xvfb`. On peut simplement enregistrer en mode `rgb_array`. 
 
 Voici une fonction utilitaire pour enregistrer une vidéo d’un agent (la même que dans les notebooks précédents, adaptée pour Windows) :",,,,,,,,16dab34956f1d51c,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,aecdb299,code,fr,375ea81504b283d3,"import base64
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,aecdb299,code,fr,375ea81504b283d3,"import base64
 from pathlib import Path
 from IPython.display import HTML
 
@@ -2619,8 +2619,8 @@ def show_videos(video_path=""videos"", prefix=""""):
     return HTML(html_video)
 
 print(""Fonctions video enregistrees (record_video, show_videos)"")",,,,,,,,375ea81504b283d3,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,0b032432,markdown,fr,4b28b4649a85a41d,"Pour tester, nous pouvons enregistrer une vidéo de `model_sac` ou `model_ddpg`. (Attention : `parking-v0` peut boucler un peu longtemps si on met un `video_length` trop grand.)",,,,,,,,4b28b4649a85a41d,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,a9f1cf71,code,fr,f88f335eb512a68f,"import contextlib
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,0b032432,markdown,fr,4b28b4649a85a41d,"Pour tester, nous pouvons enregistrer une vidéo de `model_sac` ou `model_ddpg`. (Attention : `parking-v0` peut boucler un peu longtemps si on met un `video_length` trop grand.)",,,,,,,,4b28b4649a85a41d,,,,,,,,
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,a9f1cf71,code,fr,f88f335eb512a68f,"import contextlib
 import io
 
 # Le logger de VecVideoRecorder imprime un chemin absolu machine ;
@@ -2633,16 +2633,16 @@ print(""Video enregistree : "" + "", "".join(video_files))
 
 show_videos(""videos"", prefix=""sac-parking"")
 ",,,,,,,,f88f335eb512a68f,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,75f28150,markdown,fr,2b962c72f9685140,Vous devriez voir la voiture tenter de se garer…,,,,,,,,2b962c72f9685140,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,36c8123d,markdown,fr,2d3f5a249cbd9c07,"## Exercices
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,75f28150,markdown,fr,2b962c72f9685140,Vous devriez voir la voiture tenter de se garer…,,,,,,,,2b962c72f9685140,,,,,,,,
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,36c8123d,markdown,fr,2d3f5a249cbd9c07,"## Exercices
 
 Les exercices suivants approfondissent les concepts de HER et d'apprentissage par renforcement objectif-conditionne (goal-conditioned RL) abordes dans ce notebook.",,,,,,,,2d3f5a249cbd9c07,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,e99a46e5,markdown,fr,3f440c0f149cc484,"### Exercice 1 : Comparaison des stratégies de sélection de buts
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,e99a46e5,markdown,fr,3f440c0f149cc484,"### Exercice 1 : Comparaison des stratégies de sélection de buts
 
 HER propose plusieurs stratégies pour re-etiqueter les transitions : `""future""`, `""final""` et `""episode""`. L'objectif est de comparer ces trois stratégies sur l'environnement `parking-v0` et d'observer leurs effets sur la vitesse de convergence et la performance finale.
 
 **Indice** : Modifiez le paramètre `goal_selection_strategy` dans `replay_buffer_kwargs`. Entrainez chaque configuration avec le même nombre de `total_timesteps` (par exemple 5000) et comparez les recompenses moyennes.",,,,,,,,3f440c0f149cc484,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,2e94ae19,code,fr,d27575c942e11e3d,"# Exercice 1 : Comparaison des strategies de selection de buts
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,2e94ae19,code,fr,d27575c942e11e3d,"# Exercice 1 : Comparaison des strategies de selection de buts
 # TODO etudiant : Comparez ""future"", ""final"" et ""episode"" sur parking-v0 avec HER+SAC
 # Indice : strategies = [""future"", ""final"", ""episode""]
 # Indice : Pour chaque strategie, modifier goal_selection_strategy dans replay_buffer_kwargs
@@ -2652,12 +2652,12 @@ MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,2e94ae19,code,fr,d27575c94
 
 strategy_results = {}  # TODO etudiant : remplir avec {strategy: mean_reward}
 print(""Exercice a completer : comparaison des strategies de selection de buts"")",,,,,,,,d27575c942e11e3d,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,87f89349,markdown,fr,0c1eb1dea6369023,"### Exercice 2 : Comparaison SAC vs DDPG avec HER
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,87f89349,markdown,fr,0c1eb1dea6369023,"### Exercice 2 : Comparaison SAC vs DDPG avec HER
 
 SAC et DDPG sont deux algorithmes off-policy compatibles avec HER, mais ils différent dans leur approche (SAC maximise l'entropie pour encourager l'exploration, DDPG utilise un bruit d'action explicite). Comparez leurs performances avec HER sur `parking-v0`.
 
 **Indice** : Reprenez les configurations SAC et DDPG des sections précédentes. Entrainez les deux avec le même `total_timesteps` et comparez les courbes de recompense avec `matplotlib`.",,,,,,,,0c1eb1dea6369023,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,89d42266,code,fr,03f7015dca9560f0,"# Exercice 2 : Comparaison SAC vs DDPG avec HER
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,89d42266,code,fr,03f7015dca9560f0,"# Exercice 2 : Comparaison SAC vs DDPG avec HER
 # TODO etudiant : Entrainez SAC et DDPG (avec HER) sur parking-v0, comparez les courbes
 # Indice : Reprenez les modeles des sections precedentes (HerReplayBuffer, meme timesteps)
 # Indice : Stockez les rewards d'evaluation a intervalles reguliers pour tracer les courbes
@@ -2667,12 +2667,12 @@ MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,89d42266,code,fr,03f7015dc
 
 algo_results = {}  # TODO etudiant : remplir avec {""SAC"": mean_reward, ""DDPG"": mean_reward}
 print(""Exercice a completer : comparaison SAC vs DDPG avec HER"")",,,,,,,,03f7015dca9560f0,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,50ce3b2c,markdown,fr,ff8f3dc6b51d338b,"### Exercice 3 : Modification de la fonction de recompense
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,50ce3b2c,markdown,fr,ff8f3dc6b51d338b,"### Exercice 3 : Modification de la fonction de recompense
 
 La fonction de recompense par defaut de `parking-v0` depend de la distance a l'objectif. L'objectif est de créer un wrapper qui penalise plus agressivement la distance a l'objectif, en utilisant par exemple une penalite proportionnelle au carre de la distance. Observez comment cette modification affecte le comportement de l'agent.
 
 **Indice** : Créez un `gym.Wrapper` qui intercepte l'appel `step()` et recalcule la recompense en fonction de la distance entre `achieved_goal` et `desired_goal`. Utilisez `np.linalg.norm()` pour calculer la distance et renvoyez une penalite proportionnelle a `-distance**2`.",,,,,,,,ff8f3dc6b51d338b,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,80992633,code,fr,c6ef32f5136feb96,"# Exercice 3 : Modification de la fonction de recompense
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,80992633,code,fr,c6ef32f5136feb96,"# Exercice 3 : Modification de la fonction de recompense
 # TODO etudiant : Creez un wrapper qui penalise plus agressivement la distance a l'objectif
 # Indice : class AggressiveRewardWrapper(gym.Wrapper):
 # Indice : Dans step(), recalculez reward = -np.linalg.norm(achieved - desired)**2
@@ -2690,7 +2690,7 @@ MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,80992633,code,fr,c6ef32f51
 #         return obs, reward, terminated, truncated, info
 
 print(""Exercice a completer : modification de la fonction de recompense"")",,,,,,,,c6ef32f5136feb96,,,,,,,,
-MyIA.AI.Notebooks/RL/rl_3_experience_replay_dqn.ipynb,a83c7486,markdown,fr,08ac157919de5d48,"## Conclusion
+MyIA.AI.Notebooks/RL/RL-03-Experience-Replay-HER-Python.ipynb,a83c7486,markdown,fr,08ac157919de5d48,"## Conclusion
 
 Dans ce troisième notebook, nous avons abordé des fonctionnalités avancées de Stable-Baselines3 :
 

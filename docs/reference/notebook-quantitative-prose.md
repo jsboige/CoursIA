@@ -46,9 +46,9 @@ Rappel du contexte dans lequel C.5 est le plus sollicitée. Une contradiction pr
 | Verdict | Critère | Action |
 |---------|---------|--------|
 | `CAUSE_FIXED` | Cause racine corrigée (env réparé règle F, claim antérieure revertée, seed ajouté) | Merge OK |
-| `CAUSE_DOCUMENTED_ONLY` | Cause identifiée, non traitée (ré-alignement cosmétique = « jambe de bois repeinte ») | Issue fille ouverte + `See #N` |
+| `CAUSE_DOCUMENTED_ONLY` | Cause identifiée, non traitée (ré-alignement cosmétique = « jambe de bois repeinte ») | **Pas une sortie de merge si la cause est réparable par la flotte** (environnement, dépendance, clé, machine) : réparer, ou router vers la machine qui a l'environnement. Admis seulement pour une cause hors de portée de la flotte, avec issue fille + `See #N` |
 | `CAUSE_INTRINSIC` | Cause structurelle non corrigeable (moteur upstream cassé sans alternative) | Bandeau honnête + issue engine-fix |
 
-Ré-aligner sans diagnostic = consacrer la dégénérescence : le notebook re-dérive au cycle suivant. Vague de référence SW-13 : #7751 → #7872 → #7944 → #8343, quatre PRs pour colmater des claims fabriquées en série.
+Ré-aligner sans diagnostic = consacrer la dégénérescence : le notebook re-dérive au cycle suivant. Ré-aligner **avec** diagnostic sur une sortie dégénérée rend la prose vraie sans réparer le carnet : ce n'est pas non plus une correction (Epic #21424). Vague de référence SW-13 : #7751 → #7872 → #7944 → #8343, quatre PRs pour colmater des claims fabriquées en série.
 
 See #9377, #8052, #9434, #8364.
