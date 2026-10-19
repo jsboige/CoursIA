@@ -83,7 +83,7 @@ Le verdict NO-BEATS du 2026-08-07 avait été rendu sur le code avant correctif,
 
 ### Verdict contre références détenues (#21371)
 
-**Verdict : NO BEATS**, sur la fenêtre codée comme hors échantillon.
+**Verdict : NO BEATS**, sur la fenêtre codée et sur la fenêtre hors échantillon.
 
 Mesure du 2026-10-19 sur les nœuds QC. Le protocole a été pré-enregistré sur #21371 avant le premier backtest, sur le modèle de #21329. La stratégie (code actuel, décision inchangée) est comparée à deux références détenues dans le même algorithme, sous le même modèle de courtage et le même préchauffage de 200 séances : SPY détenu, et un 60/40 SPY/BND rééquilibré au début de chaque mois.
 
