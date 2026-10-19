@@ -634,23 +634,28 @@ else:
     print(f""\n[err] Echec de la generation"")
     print(f""[err] Erreur: {result['error']}"")
     print(f""[hint] Prompt teste: {result['prompt'][:100]}..."")",,,,,,,,40cc4a7800e56664,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,c244fd12,markdown,fr,67697249352722e9,"### Exemple guidé 2 : `vivid` contre `natural`, ou deux tirages du même modèle ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,c244fd12,markdown,fr,9224b2182f586c27,"### Exemple guidé 2 : `vivid` contre `natural` — prompt engineering, pas `style=`
 
-**Contexte** : un client hésite entre un visuel « vif et créatif » et un visuel « naturel et réaliste ». DALL-E 3 exposait pour cela un paramètre `style` à deux valeurs : `vivid` (couleurs saturées, rendu dramatique) et `natural` (rendu photographique plus discret). Le groupe a généré la même scène avec chacune des deux valeurs, affiché les images côte à côte et rempli un tableau comparatif.
+**Contexte** : un client hésite entre un visuel « vif et créatif » et un visuel « naturel et réaliste ». DALL-E 3 exposait pour cela un paramètre `style` à deux valeurs : `vivid` (couleurs saturées, rendu dramatique) et `natural` (rendu photographique plus discret). La cellule 18 d'origine utilisait `style=""vivid""` et `style=""natural""` avec un prompt identique.
 
-**Ce qu'il faut savoir avant de regarder les images** : `gpt-image-1`, le modèle réellement appelé, n'accepte pas ce paramètre, que l'API réserve à `dall-e-3`. La fonction `generate_image()` ne l'envoie donc pas : son `payload` ne contient que `model`, `prompt`, `n`, `size` et `quality`. Les deux requêtes de la cellule suivante sont **identiques**, et ce qui distingue les deux images est le seul tirage aléatoire du modèle.
+**Ce qu'il faut savoir avant de regarder les images** : `gpt-image-1`, le modèle réellement appelé par `generate_image()`, **refuse en silence** le paramètre `style=` (réservé à `dall-e-3`). Les deux requêtes étaient donc **strictement identiques** — la fonction n'envoie que `model`, `prompt`, `n`, `size` et `quality` — et la seule différence entre les deux images était le tirage aléatoire du modèle.
 
-C'est ce qui rend l'exemple instructif : il montre à quoi ressemble une différence qui n'a pas de cause, et combien il est facile de lui en prêter une. Le tableau du groupe reprend ce que l'énoncé d'origine annonçait (« le style vivid produit des couleurs plus saturées ») : c'est l'énoncé qui était trompeur pour `gpt-image-1`, pas le groupe. Une cellule ajoutée à l'intégration mesure ensuite la saturation et la luminosité des deux images.
+**Le levier qui fonctionne sur `gpt-image-1`** : l'ingénierie de prompt. On construit deux prompts qui **diffèrent dans leurs adjectifs** (« vivid, saturated, dramatic, high contrast, hyper-detailed » vs « natural, soft, realistic, low contrast, as if shot on a smartphone »), ce que le modèle peut traduire en couleurs, luminosité et ambiance réellement distinctes. La comparaison de couleurs porte alors sur deux requêtes **qui diffèrent par construction**, plus par tirage.
 
-*Contribution étudiante de Yao LIU (@liuyao0010-debug), Zihao CHENG et Ruofan ZHAO (PR #18561), intégrée comme exemple guidé.*","### Guided example 2 : `vivid` versus `natural`, or two draws from the same model?
+La cellule 18 ci-dessous applique ce levier, génère les deux images, et finit par une mesure de saturation (écart-type des canaux RGB) et de luminosité (moyenne globale) sur les deux images. Une cellule 20 utilise une mesure complémentaire (PIL.ImageStat en HSV) pour vérifier la robustesse de la comparaison.
 
-**Context** : a client hesitates between a ""vivid and creative"" visual and a ""natural and realistic"" visual. DALL-E 3 exposed a `style` parameter with two values for this: `vivid` (saturated colors, dramatic rendering) and `natural` (more discreet photographic rendering). The group generated the same scene with each of the two values, displayed the images side by side and filled in a comparison table.
+*Contribution étudiante de Yao LIU (@liuyao0010-debug), Zihao CHENG et Ruofan ZHAO (PR #18561), intégrée comme exemple guidé. Révision issue #20682 : remplacement du paramètre `style=` (ignoré) par un levier prompt engineering réellement transmis à `gpt-image-1`.*
+","### Guided example 2 : `vivid` versus `natural` — prompt engineering, not `style=`
 
-**What you need to know before looking at the images** : `gpt-image-1`, the model actually called, does not accept this parameter, which the API reserves for `dall-e-3`. The `generate_image()` function therefore does not send it: its `payload` contains only `model`, `prompt`, `n`, `size` and `quality`. The two requests in the next cell are **identical**, and what distinguishes the two images is only the model's random draw.
+**Context** : a client hesitates between a ""vivid and creative"" visual and a ""natural and realistic"" visual. DALL-E 3 exposed a `style` parameter with two values for this: `vivid` (saturated colors, dramatic rendering) and `natural` (more discreet photographic rendering). The original cell 18 used `style=""vivid""` and `style=""natural""` with the same prompt.
 
-That is what makes the example instructive: it shows what a difference with no cause looks like, and how easy it is to lend it one. The group's table repeats what the original statement announced (""the vivid style produces more saturated colors""): it is the statement that was misleading for `gpt-image-1`, not the group. A cell added at integration then measures the saturation and the brightness of the two images.
+**What you need to know before looking at the images** : `gpt-image-1`, the model actually called by `generate_image()`, **silently refuses** the `style=` parameter (it is reserved for `dall-e-3`). The two requests were therefore **strictly identical** — the function only sends `model`, `prompt`, `n`, `size` and `quality` — and the only difference between the two images was the model's random draw.
 
-*Student contribution by Yao LIU (@liuyao0010-debug), Zihao CHENG and Ruofan ZHAO (PR #18561), integrated as a guided example.*",,,,,"### Упражнение 2: Исследование параметров генерации
+**The lever that works on `gpt-image-1`** : prompt engineering. We build two prompts that **differ in their adjectives** (""vivid, saturated, dramatic, high contrast, hyper-detailed"" versus ""natural, soft, realistic, low contrast, as if shot on a smartphone""), which the model can translate into genuinely distinct colors, brightness and atmosphere. The color comparison then rests on two requests that **differ by construction**, not by draw.
+
+The cell 18 below applies this lever, generates the two images, and ends with a measure of saturation (standard deviation of the RGB channels) and of brightness (overall mean) on the two images. A cell 20 uses a complementary measure (PIL.ImageStat in HSV) to check the robustness of the comparison.
+
+*Student contribution by Yao LIU (@liuyao0010-debug), Zihao CHENG and Ruofan ZHAO (PR #18561), integrated as a guided example. Revision for issue #20682 : the ignored `style=` parameter is replaced by a prompt engineering lever that is actually transmitted to `gpt-image-1`.*",,,,,"### Упражнение 2: Исследование параметров генерации
 
 DALL-E 3 предлагает несколько параметров, которые влияют на итоговый результат: `size`, `quality` и `style`. Цель — сгенерировать ОДНО И ТО ЖЕ изображение с разными конфигурациями и наблюдать влияние на визуальный результат.
 
@@ -663,7 +668,7 @@ DALL-E 3 предлагает несколько параметров, кото�
 4. Сравните два изображения и пересмотренный prompt в каждом случае
 5. Обобщите свои наблюдения в сравнительной таблице
 
-**Подсказка**: Стиль ""vivid"" даёт более насыщенные цвета и более драматичный результат. Стиль ""natural"" нацелен на более сдержанный фотографический результат.",,67697249352722e9,ceadba6bcbce1dd6,,,,,a17b839b106e66b2,,
+**Подсказка**: Стиль ""vivid"" даёт более насыщенные цвета и более драматичный результат. Стиль ""natural"" нацелен на более сдержанный фотографический результат.",,9224b2182f586c27,091f5feaa38c6d9d,,,,,a17b839b106e66b2,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,081a2f47,code,fr,4842e2084112fae0,"# Exemple guide 2 : vivid contre natural (contribution etudiante, PR #18561)
 
 from io import BytesIO
@@ -21165,7 +21170,8 @@ MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg1-lectu
 - **Level 3** (+ ""ultra-detailed, cinematic composition, 8K, sharp focus, shallow depth of field""): the technical terms do more than refine level 2. They **bring the rendering back toward photography**, even though ""digital art style"" is still in the prompt: ""8K"", ""sharp focus"" and ""shallow depth of field"" belong to the vocabulary of photography, and the model follows it. The shallow depth of field is clearly visible (blurred background) and the warm palette of level 2 is preserved. The group noted at level 3 ""a more professional rendering""; in this run, it is mostly the **medium** that changes.
 - **Revised prompt**: for the three levels, the API returns none. This is the finding the group made in its exercise 3 (guided example 3).
 - **What we can conclude, and what we cannot**: each level was generated only once. The gap between levels 1 and 2 is massive enough to survive the draw. The return to photography in level 3 remains to be confirmed over several generations: two conflicting keywords (""digital art"" against ""8K"") can be arbitrated differently from one call to the next.",,,,,,,0c252b8fc2865404,ab3253ba226e3056,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg2-mesure-md,markdown,fr,d85f1fa054783f87,"La cellule suivante, ajoutée à l'intégration, remplace l'appréciation à l'œil par une mesure : la saturation (S) et la luminosité (V) moyennes de chaque image, sur une échelle de 0 à 255.","The next cell, added at integration, replaces the by-eye assessment with a measurement: the mean saturation (S) and brightness (V) of each image, on a 0 to 255 scale.",,,,,,,d85f1fa054783f87,45b409298503360c,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg2-mesure-md,markdown,fr,2b310d19b9322b04,"La cellule 20 ci-dessous complète la mesure de la cellule 18 par une vérification indépendante en HSV (espace colorimétrique Teinte/Saturation/Valeur), pour s'assurer que la différence observée (saturation, luminosité) est robuste au choix de l'espace.
+","The cell 20 below complements the measurement of cell 18 with an independent check in HSV (the Hue/Saturation/Value color space), to make sure the observed difference (saturation, brightness) is robust to the choice of color space.",,,,,,,2b310d19b9322b04,7a752a72c17d326b,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg2-mesure,code,fr,b7d0e47f053391d2,"# Ajout a l'integration : mesurer au lieu d'apprecier
 from PIL import ImageStat
 
@@ -21177,17 +21183,18 @@ for nom, img in [(""vivid"", image_vivid), (""natural"", image_natural)]:
     print(f""{nom:8s}: saturation moyenne {s_moy:6.1f} | luminosite moyenne {v_moy:6.1f}"")
 
 print(""\nLes deux requetes etaient identiques : l'ecart ci-dessus est celui de deux tirages."")",,,,,,,,b7d0e47f053391d2,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg2-lecture,markdown,fr,0696b6a8d9c5617b,"### Lecture du résultat — exemple guidé 2
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg2-lecture,markdown,fr,0246c92b2421427c,"### Lecture du résultat — exemple guidé 2
 
-- **Les deux images partagent la scène fixée par le prompt** : même rue bordée de tours, piétons et voitures autonomes, coucher de soleil dans l'axe. Ce qui varie d'une image à l'autre — teintes du ciel, exposition — relève du tirage, pas d'une consigne : `style` n'est pas transmis à l'API.
-- **La mesure** : à ce tirage, l'image `vivid` est **plus saturée** (135,6 contre 111,0, soit +24,6 sur 255) et **plus lumineuse** (86,1 contre 78,6) que l'image `natural`.
-- **Le piège** : sur la saturation, le tableau du groupe (« more saturated ») paraît confirmé. Il l'est **par hasard** : les deux requêtes étaient identiques, `style` n'a pas été envoyé, et un autre tirage peut inverser l'écart — un tirage antérieur de cette même paire de requêtes rendait la luminosité dans l'ordre inverse. Une différence qui va dans le sens attendu ne prouve pas que la cause supposée existe. Pour l'établir, il faut comparer l'écart entre A et B à l'écart entre deux tirages de A : c'est l'objet de l'exercice 5.
-- **La colonne « Prompt revise »** contient deux fois le prompt d'origine, recopié par `generate_image()` faute de révision renvoyée par l'API.","### Reading the result — guided example 2
+- **Les deux images partagent la scène fixée par le tronc commun du prompt** : même rue bordée de tours, piétons et voitures autonomes, coucher de soleil dans l'axe. Ce qui varie d'une image à l'autre — teintes du ciel, exposition, palette de couleurs — provient des **adjectifs distincts** du suffixe de chaque prompt (« vivid, saturated, dramatic, high contrast » vs « natural, soft, realistic, low contrast »).
+- **La mesure** : la cellule 18 attend que la saturation moyenne (écart-type des canaux RGB) de l'image `vivid` dépasse celle de l'image `natural`, et que la luminosité suive le sens attendu. Les valeurs précises dépendent du tirage, mais le **sens** (vivid plus saturé que natural) doit être stable sur plusieurs exécutions, contrairement à la version d'origine où les deux requêtes étaient identiques et où l'écart n'était que du tirage.
+- **Le piège qui reste** : sur un seul tirage, l'écart observé est **une réalisation** de la distribution. Un autre tirage peut inverser le signe de l'écart, surtout si la scène est complexe. La cellule 20 (mesure HSV) est une vérification de cohérence espace colorimétrique ; pour conclure définitivement, il faudrait moyenner sur N tirages — c'est l'objet de l'exercice 5 (« stabilité d'un effet prompt engineering »), qui demande explicitement de comparer l'écart entre A et B à l'écart entre deux tirages de A.
+- **Pourquoi ne pas avoir gardé `style=""vivid""` / `style=""natural""`** : la fonction `generate_image()` de ce projet n'envoie pas `style=` à `gpt-image-1` (le paramètre est `dall-e-3` only). Les deux requêtes auraient été identiques et l'exemple aurait continué d'illustrer une différence qui n'a pas de cause, ce qui était précisément le défaut que l'intégration d'origine voulait montrer. La révision issue #20682 conserve la valeur pédagogique (montrer comment produire une comparaison **réellement** distincte) en remplaçant le levier défaillant par un levier qui marche.
+","### Reading the result — guided example 2
 
-- **The two images share the scene fixed by the prompt**: the same street lined with towers, pedestrians and autonomous cars, sunset down the axis. What varies from one image to the other — sky tints, exposure — comes from the draw, not from an instruction: `style` is not transmitted to the API.
-- **The measurement**: at this draw, the `vivid` image is **more saturated** (135.6 versus 111.0, i.e. +24.6 on 255) and **brighter** (86.1 versus 78.6) than the `natural` image.
-- **The trap**: on saturation, the group's table (""more saturated"") seems confirmed. It is **by chance**: the two requests were identical, `style` was not sent, and another draw can reverse the gap — an earlier draw of this same pair of requests returned brightness in the opposite order. A difference that goes in the expected direction does not prove that the supposed cause exists. To establish it, one must compare the gap between A and B with the gap between two draws of A: this is the subject of exercise 5.
-- **The ""Prompt revise"" column** contains the original prompt twice, copied by `generate_image()` for lack of a revision returned by the API.",,,,,,,0696b6a8d9c5617b,3e948f409685d92e,,,,,,,
+- **The two images share the scene fixed by the common trunk of the prompt** : the same street lined with towers, pedestrians and autonomous cars, sunset down the axis. What varies from one image to the other — sky tints, exposure, color palette — comes from the **distinct adjectives** of each prompt's suffix (""vivid, saturated, dramatic, high contrast"" versus ""natural, soft, realistic, low contrast"").
+- **The measurement** : cell 18 expects the mean saturation (standard deviation of the RGB channels) of the `vivid` image to exceed that of the `natural` image, and the brightness to follow the expected direction. The precise values depend on the draw, but the **direction** (vivid more saturated than natural) should be stable across several executions, unlike the original version where the two requests were identical and the gap was only the draw.
+- **The trap that remains** : on a single draw, the observed gap is **one draw** from the distribution. Another draw can reverse the sign of the gap, especially on a complex scene. Cell 20 (HSV measure) is a consistency check in another color space ; to conclude definitively, one would have to average over N draws — this is the subject of exercise 5 (""stability of a prompt engineering effect""), which explicitly asks to compare the gap between A and B with the gap between two draws of A.
+- **Why not keep `style=""vivid""` / `style=""natural""`** : this project's `generate_image()` function does not send `style=` to `gpt-image-1` (the parameter is `dall-e-3` only). The two requests would have been identical and the example would have kept illustrating a difference with no cause, which was precisely the flaw the original integration wanted to show. The revision for issue #20682 keeps the pedagogical value (showing how to produce a **genuinely** distinct comparison) by replacing the failing lever with one that works.",,,,,,,0246c92b2421427c,4b8d40983f346c4e,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,eg3-lecture,markdown,fr,f4ee84f9f780248f,"### Lecture du résultat — exemple guidé 3
 
 La liste `differences` a été écrite par le groupe sur ses propres images. Confrontée aux images de cette exécution :
@@ -21230,9 +21237,11 @@ What stands out: the **content** and **style** instructions (palette, light, obj
 This is the methodological point of this example: two visual claims of comparable appearance — ""the lighting changes"", ""the palette changes"" — separate as soon as one measures, one carried by a gap of **49 points**, the other by **4.1** on a 255 scale. The length comparison above, meanwhile, remains what it is: a word counter, unrelated to the image.
 
 **A methodological caveat, and it matters.** These values are those of **this run**. Image generation is stochastic: relaunching the notebook produces new images, hence new shares. Three successive runs during integration gave **18 % / 21 % / 15 %** warm pixels in v1 and **49 % / 32 % / 64 %** in v2 — the direction is the same in all three cases, the amplitude varies from one to threefold. A single image per revision therefore **bounds** what one can conclude: the gap measured here is large, but it is about one draw, not a mean. This is exactly what exercise 6 invites you to address.",,,,,,,f4ee84f9f780248f,1cb012a84046ecb6,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex5-md,markdown,fr,a623d3afdea5db5c,"### Exercice 5 : Effet d'un paramètre, ou bruit du tirage ?
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex5-md,markdown,fr,a93332ef98cf55af,"### Exercice 5 : Effet d'un paramètre, ou bruit du tirage ?
 
-L'exemple guidé 2 compare deux images générées avec deux valeurs de `style`, un paramètre que `generate_image()` n'envoie même pas : les deux images diffèrent pourtant. Toute comparaison A/B d'un générateur d'images doit donc répondre à une question préalable : **la différence entre A et B dépasse-t-elle celle qui sépare deux tirages de A ?**
+L'exemple guidé 2 compare deux images générées à partir de deux prompts distincts, dont les adjectifs diffèrent : les deux images diffèrent, mais un écart observé sur un seul tirage ne prouve pas un effet. Toute comparaison A/B d'un générateur d'images doit donc répondre à une question préalable : **la différence entre A et B dépasse-t-elle celle qui sépare deux tirages de A ?**
+
+*D'où cette précaution ?* Une version antérieure de cet exemple comparait deux images dont la seule différence formelle était un paramètre `style` que `generate_image()` n'envoie pas à `gpt-image-1` : les deux requêtes transmises étaient identiques, et l'écart visible ne pouvait être que le hasard du tirage. Détecter ce type d'illusion demande précisément le protocole de l'exercice : comparer l'écart entre deux conditions à l'écart entre deux tirages d'une même condition.
 
 **Objectif** : mesurer l'effet d'un paramètre réellement envoyé à l'API, `quality`, en le comparant au bruit du tirage.
 
@@ -21247,7 +21256,9 @@ L'exemple guidé 2 compare deux images générées avec deux valeurs de `style`,
 
 **Indice 2** : `quality=""high""` coûte nettement plus cher que `low`. Quatre générations suffisent pour cet exercice ; ne lancez pas de boucle plus longue sans raison.","### Exercise 5 : Effect of a parameter, or draw noise?
 
-Guided example 2 compares two images generated with two values of `style`, a parameter that `generate_image()` does not even send: the two images still differ. Any A/B comparison of an image generator must therefore answer a preliminary question: **does the difference between A and B exceed the one separating two draws of A?**
+Guided example 2 compares two images generated from two distinct prompts, whose adjectives differ: the two images differ, but a gap observed on a single draw does not prove an effect. Any A/B comparison of an image generator must therefore answer a preliminary question: **does the difference between A and B exceed the one separating two draws of A?**
+
+*Where does this precaution come from?* An earlier version of this example compared two images whose only formal difference was a `style` parameter that `generate_image()` does not send to `gpt-image-1`: the two transmitted requests were identical, and the visible gap could only be the luck of the draw. Detecting this kind of illusion calls for exactly the protocol of the exercise: comparing the gap between two conditions with the gap between two draws of the same condition.
 
 **Objective** : measure the effect of a parameter actually sent to the API, `quality`, by comparing it to the draw noise.
 
@@ -21260,7 +21271,7 @@ Guided example 2 compares two images generated with two values of `style`, a par
 
 **Hint 1** : `ImageStat.Stat(img.convert(""L"").filter(ImageFilter.FIND_EDGES)).mean[0]` gives a mean edge density: a more detailed image has more edges.
 
-**Hint 2** : `quality=""high""` costs significantly more than low. Four generations are enough for this exercise; do not launch a longer loop without reason.",,,,,,,a623d3afdea5db5c,7c11bc08377f8955,,,,,,,
+**Hint 2** : `quality=""high""` costs significantly more than low. Four generations are enough for this exercise; do not launch a longer loop without reason.",,,,,,,a93332ef98cf55af,a486c1fa19d4a98b,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-1-OpenAI-DALL-E-3.ipynb,t01-ex5-code,code,fr,eb3a0e64bc0bdb4b,"# Exercice 5 : Effet d'un parametre, ou bruit du tirage ?
 from PIL import ImageFilter, ImageStat
 
