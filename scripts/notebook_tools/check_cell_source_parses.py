@@ -112,6 +112,19 @@ def _scan_line(line: str, depth: int, in_triple: Optional[str]) -> Tuple[int, Op
     return depth, in_triple
 
 
+def _is_line_continuation(line: str) -> bool:
+    """True when the physical line ends with an odd number of backslashes:
+    a single trailing backslash continues the logical line, an escaped
+    backslash (``\\\\``) does not."""
+    n = 0
+    for ch in reversed(line.rstrip()):
+        if ch == "\\":
+            n += 1
+        else:
+            break
+    return n % 2 == 1
+
+
 def _strip_ipython_magics(src: str) -> str:
     """Drop lines starting with `!` (shell) or `%` (magics incl. `%%`). The
     cell source may legitimately contain `!pip install` or `%%time` -- those
@@ -126,17 +139,43 @@ def _strip_ipython_magics(src: str) -> str:
     ``print("..."\\n      % (a, b))`` lost its argument line and the cell
     was flagged "'(' was never closed"). The stripper therefore tracks
     bracket depth and triple-quote state and only drops a magic line at
-    logical-line start."""
+    logical-line start.
+
+    A dropped magic line may chain physical continuations with trailing
+    backslashes (``%pip install a \\\\<newline>    b c``): those physical
+    lines belong to the magic's logical line, not to Python. Leaving them
+    behind used to compile to "unexpected indent" (TP #21036, install cell).
+    The stripper consumes the whole backslash run of a dropped magic.
+
+    A magic may also be INDENTED -- the body of an ``if``/``try`` block
+    (TP #21036: ``if run_inflect_nano:`` guarded install). Dropping it
+    entirely would leave the block header without a body and compile to
+    IndentationError; an indented magic is replaced by ``pass`` at the
+    same indentation. At depth 0 a statement can never start with ``%`` or
+    ``!`` in valid Python, so the replacement cannot shadow real code."""
     out_lines = []
     depth = 0
     in_triple: Optional[str] = None
+    in_continuation = False
+    pending_pass_indent: Optional[str] = None
     for line in src.splitlines():
+        if in_continuation:
+            in_continuation = _is_line_continuation(line)
+            continue
         if depth == 0 and in_triple is None:
             stripped = line.lstrip()
             if stripped.startswith("!") or stripped.startswith("%"):
+                in_continuation = _is_line_continuation(line)
+                if line[: len(line) - len(line.lstrip())]:
+                    pending_pass_indent = line[: len(line) - len(line.lstrip())]
                 continue
+        if pending_pass_indent is not None:
+            out_lines.append(pending_pass_indent + "pass")
+            pending_pass_indent = None
         depth, in_triple = _scan_line(line, depth, in_triple)
         out_lines.append(line)
+    if pending_pass_indent is not None:
+        out_lines.append(pending_pass_indent + "pass")
     return "\n".join(out_lines)
 
 
