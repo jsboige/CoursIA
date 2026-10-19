@@ -76,6 +76,18 @@ echo "📦 Vérification des dépendances..."
 venv/bin/pip install -r requirements.txt
 venv/bin/pip install einops
 
+# Compat triton 3.x / gemlite 0.4.x
+# gemlite ecrit ses `early_config_prune` sous forme de generateur, alors que
+# triton 3.8 consume le retour comme une collection taillee : le noeud Bonsai
+# meurt alors sur `TypeError: object of type 'generator' has no len()`.
+# Le patch materialise le retour du pruner (une ligne) ; il est idempotent :
+# le rejeu sur un venv deja patche ne change rien.
+if [ -f "patch_triton_gemlite_compat.py" ] && ls venv/lib/python*/site-packages/triton >/dev/null 2>&1; then
+    echo "Patch compat triton/gemlite..."
+    venv/bin/python3 patch_triton_gemlite_compat.py --venv "$(pwd)/venv" \
+        || echo "Patch triton/gemlite NON applique : voir le message ci-dessus"
+fi
+
 # =============================================================================
 # CUSTOM NODES INSTALLATION
 # =============================================================================
