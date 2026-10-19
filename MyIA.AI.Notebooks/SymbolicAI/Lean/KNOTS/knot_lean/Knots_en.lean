@@ -11,6 +11,9 @@
     Lean 4 / Mathlib 4, bricks:
     - `Knots.Basic` — combinatorial foundations (crossings,
       diagrams, PD-codes, Gauss codes, Dowker-Thistlethwaite notation)
+    - `Knots.Tangle` — four-ended tangles (Conway convention:
+      zero/infinity/one tangles, rotation, vertical/horizontal
+      compositions, numerator/denominator closures)
     - `Knots.Reidemeister` — Reidemeister moves (RI, RII, RIII) and
       invariance of the polynomial / combinatorial invariants
     - `Knots.ReidemeisterMoves` — kernel-verifiable sequences of moves
@@ -40,6 +43,7 @@
 -/
 
 import Knots.Basic_en
+import Knots.Tangle_en
 import Knots.Reidemeister_en
 import Knots.Invariant_en
 import Knots.Mutation_en
