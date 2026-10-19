@@ -27,6 +27,8 @@ on:
       - 'scripts/notebook_tools/check_exec_sequence.py'
       - 'scripts/notebook_tools/check_exec_ratchet.py'
       - 'scripts/notebook_tools/tests/**'
+      - 'scripts/ci/exec_sequence_ack_required.py'
+      - 'scripts/tests/test_exec_sequence_ack_required.py'
       - '.github/workflows/notebook-exec-sequence-ratchet.yml'
   workflow_dispatch:
     inputs:
@@ -37,6 +39,8 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
+  issues: read
 
 concurrency:
   group: notebook-exec-sequence-ratchet-${{ github.ref }}
@@ -87,11 +91,22 @@ jobs:
         run: python -m pytest scripts/notebook_tools/tests/test_check_exec_sequence.py scripts/notebook_tools/tests/test_check_exec_ratchet.py -q
 
       # Refs reach the script via env, never inline in the run script
-      # (script-injection guard).
+      # (script-injection guard). The ratchet delegates to the ack organ
+      # (#11577, #21273) when --pr-number + --head-sha are passed; the ack
+      # organ calls `gh` for labels + comments + reviews, hence GH_TOKEN +
+      # GH_REPO. Fail-by-design ack requires a coordinator-level decision;
+      # GITHUB_TOKEN (the Actions ephemeral) is enough to fetch the data, and
+      # the marker carries the explicit authorship check (`myia-ai-01`).
       - name: Ratchet check
         env:
           BASE_REF: ${{ github.event.inputs.base_ref }}
           PR_BASE: ${{ github.base_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GH_REPO: ${{ github.repository }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BASE="${BASE_REF:-origin/${PR_BASE:-main}}"
-          python scripts/notebook_tools/check_exec_ratchet.py "$BASE"
+          python scripts/notebook_tools/check_exec_ratchet.py "$BASE" \
+            --pr-number "${PR_NUMBER}" \
+            --head-sha "${HEAD_SHA}"
