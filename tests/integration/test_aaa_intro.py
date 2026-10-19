@@ -142,6 +142,25 @@ class TestIntroCodeAlignment(unittest.TestCase):
         self.assertNotIn(6, values,
                          f'Cell 12 must NOT include Top N=6 (degenerate on 5 assets), got {values}')
 
+    def test_top_n_output_line_count_matches_source(self):
+        """Cell 12 committed output must print exactly one result row per top_n_values entry.
+
+        Regression guard for the kernel-drift finding (Hermes review, PR #21278 F1) :
+        the base output carried a 4th '6 0.000 ...' row that the source
+        ``top_n_values = [3, 4, 5]`` could never produce. A re-execution that
+        silently diverges from the source list is caught here.
+        """
+        import re
+        m = re.search(r'top_n_values\s*=\s*\[(.*?)\]', cell12_src)
+        self.assertIsNotNone(m, 'Cell 12 must define top_n_values list')
+        values = [int(x.strip()) for x in m.group(1).split(',') if x.strip()]
+        out = get_cell_text_output(nb, 12)
+        # One result row per value: "<n>  <sharpe>  <cagr>%  <maxdd>%  <vol>%"
+        rows = re.findall(r'^\s*(\d+)\s+[-0-9.]+\s+[-0-9.]+%\s+[-0-9.]+%\s+[-0-9.]+%', out, re.MULTILINE)
+        self.assertEqual(len(rows), len(values),
+                         f'Cell 12 output must print {len(values)} result rows '
+                         f'(one per top_n_values={values}), got {len(rows)}: {rows}')
+
     def test_top_n_test_acknowledges_constraint(self):
         """Cell 12 must explain WHY Top N is bounded by N assets available."""
         self.assertTrue(
