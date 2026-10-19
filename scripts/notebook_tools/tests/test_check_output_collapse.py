@@ -390,3 +390,87 @@ def test_history_yields_no_findings_on_clean_diff():
     assert list(history("2026-10-10", "2026-10-19",
                          notebook="does-not-exist.ipynb",
                          limit=1)) == []
+
+
+# --- #21426 R2 / R3 : exemption line-scoped, marqueurs restants testes ---
+
+# Base de 600 chars : au-dessus du plancher de magnitude (500), assez
+# court pour que le ratio base/tete reste sous MAGNITUDE_FACTOR. Ces
+# tests mesurent l'EXEMPTION, pas la regle de contraction.
+EXEMPT_BASE = "x" * 600
+
+EXEMPT_HEADS = {
+    "transformers": ("[transformers] the fast path is not available because"
+                     " one of the required library is not installed.\n"
+                     "Falling back to torch implementation.\n"
+                     "loading weights: 0%|          | 0/320\n"),
+    "sdpa fallback": ("Loading checkpoint: sdpa fallback engaged due to flash"
+                      " attention absence.\n"
+                      "model output: tensor([0.1, 0.2, 0.3])\n"),
+    "allow_fallback": ("torch.backends.cuda.allow_fallback = True\n"
+                       "model output: tensor([0.1, 0.2, 0.3])\n"),
+    "flash-attn": ("flash-attn fallback engaged, torch native attention used\n"
+                   "model output: tensor([0.1, 0.2, 0.3])\n"),
+    ".env non trouve": ("warning: .env non trouve, utilisation variables"
+                        " environnement\n"
+                        "verification gpu...\n"
+                        "model output: tensor([0.1, 0.2, 0.3])\n"),
+}
+
+
+def test_each_exempt_marker_silences_its_own_line():
+    """R2 : les cinq marqueurs de EXEMPT_FP_PATTERNS sont testes un par un.
+
+    Hors ligne exemptee, le contenu est neutre : ce qui tait la cellule,
+    c'est l'exemption de la ligne.
+    """
+    for label, head in EXEMPT_HEADS.items():
+        got = analyze(base([("x", EXEMPT_BASE)]), nb([("x", head)]))
+        assert got["cells"] == [], (label, got["cells"])
+
+
+def test_cooccurrence_exempt_line_plus_real_degradation_fires():
+    """R3 (controle positif) : la co-occurrence doit rester signalee.
+
+    L'exemption porte sur la LIGNE, pas sur la cellule. Une cellule qui
+    melange un avertissement de bibliotheque et une degradation reelle
+    (ici ComfyUI non disponible / generation skippee) doit etre signalee
+    comme signature.
+    """
+    head = ("Loading checkpoint: sdpa fallback engaged due to flash"
+            " attention absence.\n"
+            "ComfyUI non disponible : generation skippee.\n"
+            "model output: tensor([0.1, 0.2, 0.3])\n")
+    got = analyze(base([("x", EXEMPT_BASE)]), nb([("x", head)]))
+    assert len(got["cells"]) == 1, got["cells"]
+    assert got["cells"][0]["kind"] == "signature", got["cells"][0]
+    assert "non disponible" in got["cells"][0]["motif"], got["cells"][0]
+
+
+def test_exempt_line_removal_keeps_transformers_line_silent():
+    """R3 : la ligne ``[transformers] ... not available`` porte un motif.
+
+    Si l'exemption ne retirait que le MOTIF au lieu de la LIGNE, le
+    "not available" de l'avertissement resterait et la cellule serait
+    a nouveau signalee -- d'ou le retrait de la ligne entiere.
+    """
+    head = EXEMPT_HEADS["transformers"]
+    assert "not available" in head
+    got = analyze(base([("x", EXEMPT_BASE)]), nb([("x", head)]))
+    assert got["cells"] == [], got["cells"]
+
+
+def test_magnitude_keeps_its_own_floor():
+    """R1 : le plancher porte sur la BASE (b_chars >= BASE_FLOOR).
+
+    Une cellule dont la base est sous 500 chars n'est jugee par aucune
+    des deux regles -- point mort documente (QC @17, 428 -> 0).
+    """
+    small_base = "x" * (BASE_FLOOR - 1)
+    head = "y" * 10
+    got = analyze(base([("a", small_base)]), nb([("a", head)]))
+    assert got["cells"] == [], got["cells"]
+    # ... et la meme cellule, avec une base au-dessus du plancher, est
+    # bien jugee : le plancher est la seule difference.
+    got2 = analyze(base([("a", "x" * BASE_FLOOR)]), nb([("a", head)]))
+    assert [c["kind"] for c in got2["cells"]] == ["magnitude"], got2["cells"]

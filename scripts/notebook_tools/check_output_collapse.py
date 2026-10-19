@@ -155,6 +155,12 @@ DEGRADATION_RE = re.compile(
 # Video-Workflow). Les 4 FPs restants (4 AceStep, 15+16
 # 04-Claude-CLI-Agents, 23 Planners-6-Domains) relevent de la
 # justification explicite par le PR (cf. parse_collapse_justification).
+#
+# Portee de l'exemption : la LIGNE, pas la cellule (#21426 R3). Une
+# cellule qui melange un avertissement de bibliotheque et une degradation
+# reelle (co-occurrence) doit rester signalee ; seule la ligne exemptée
+# est retiree, puis DEGRADATION_RE est cherche sur le reste
+# (cf. _strip_exempt_lines).
 EXEMPT_FP_PATTERNS = re.compile(
     r"\[transformers\]"  # library-specific bracket (transformers warning)
     r"|sdpa fallback"
@@ -228,6 +234,29 @@ def _code_cells(nb):
     return out
 
 
+def _strip_exempt_lines(text):
+    """Drop the lines that carry a library-warning marker.
+
+    The FP exemption is LINE-scoped, not cell-scoped. A cell whose output
+    mixes a library warning with a real degradation -- co-occurrence, the
+    positive control of #21426 R3 (``sdpa fallback engaged.`` on one line,
+    ``ComfyUI non disponible : generation skippee.`` on the next) -- must
+    still be flagged. Dropping only the offending lines, then searching
+    the remainder, keeps the real degradation visible.
+
+    Line granularity is not a nicety: the ``[transformers]`` warning line
+    itself contains ``not available``, a DEGRADATION_RE motif. Removing
+    the exempt *match* instead of the exempt *line* would leave that
+    motif behind and re-flag a known false positive.
+    """
+    kept = []
+    for line in text.splitlines():
+        if EXEMPT_FP_PATTERNS.search(_normalize(line)):
+            continue
+        kept.append(line)
+    return "\n".join(kept)
+
+
 def _diagnostic_fraction(base_text, head_text):
     """Fraction (in chars) of the REMOVED text that is diagnostic-shaped.
 
@@ -258,9 +287,10 @@ def analyze(base_nb, head_nb):
       - ``signature`` : motif DEGRADATION_RE present dans la sortie de
         tete ET absent dans la sortie de base, SANS plancher ni
         contraction (couvre les replis de meme longueur et les cellules
-        qui grossissent en y ajoutant le motif). Exempte par
-        EXEMPT_FP_PATTERNS (avertissements de bibliotheque, prose
-        imprimee).
+        qui grossissent en y ajoutant le motif). Les lignes porteuses
+        d'un marqueur EXEMPT_FP_PATTERNS (avertissements de bibliotheque)
+        sont retirees AVANT la recherche du motif -- exemption
+        line-scoped, pas cell-scoped (#21426 R3).
       - ``magnitude`` : contraction d'un ordre de grandeur (factor >= 10)
         sans motif de degradation, exempte par purge de diagnostic ou
         contenu deplace au niveau du diff.
@@ -287,22 +317,24 @@ def analyze(base_nb, head_nb):
         # Bonsai 274 chars (sous ancien plancher), Planners-0 538->593
         # (longueur egale), Kokoro 566->15602 (grossit) sont tous
         # attrapes ici.
-        m_h = DEGRADATION_RE.search(h_norm)
+        m_h = DEGRADATION_RE.search(_normalize(_strip_exempt_lines(h_text)))
         m_b = DEGRADATION_RE.search(b_norm)
         if m_h is not None and m_b is None:
-            if not EXEMPT_FP_PATTERNS.search(h_norm):
-                findings.append({
-                    "cell": key, "kind": "signature",
-                    "base": b_chars, "head": h_chars,
-                    "factor": round(factor, 2),
-                    "motif": m_h.group(0),
-                })
-                continue
+            findings.append({
+                "cell": key, "kind": "signature",
+                "base": b_chars, "head": h_chars,
+                "factor": round(factor, 2),
+                "motif": m_h.group(0),
+            })
+            continue
 
         # Magnitude: contraction d'un ordre de grandeur, exempte par
-        # purge de diagnostic. Couvre la 10ᵉ derive (QC @17, 428 -> 0)
-        # qui passe sous le plancher de signature si la base est deja
-        # petite (428 chars) -- le ratio est immense.
+        # purge de diagnostic. ATTENTION : le plancher porte sur la BASE
+        # (b_chars >= BASE_FLOOR = 500). Une cellule dont la base est
+        # deja sous 500 chars n'est jugee par AUCUNE des deux regles --
+        # signature exige un motif nouveau, magnitude exige une base
+        # >= 500. QC @17 (428 -> 0) est ce point mort mesure, hors
+        # perimetre de cet organe (cf. le blind spot dans le body).
         if b_chars >= BASE_FLOOR and factor >= MAGNITUDE_FACTOR:
             diag_frac = _diagnostic_fraction(b_text, h_text)
             if diag_frac >= DIAGNOSTIC_LINE_FRACTION:
@@ -701,8 +733,10 @@ def self_test(cwd=None):
     else:
         print("calibration SD-3.5 (classique): flagged as signature")
 
-    # 14b. Exemptions FP : trois cas mesures sur les 8 FPs du jeu de
-    #     calibration. Chaque exemption est testee separement.
+    # 14b. Exemptions FP : un cas par marqueur de la liste, tous
+    #     mesures. Hors ligne exemptee, le contenu est NEUTRE : ce qui
+    #     fait taire la cellule, c'est l'exemption de la ligne -- pas
+    #     une cellule entiere muette (#21426 R3).
     transformers_h = ("[transformers] the fast path is not available because"
                        " one of the required library is not installed.\n"
                        "Falling back to torch implementation.\n"
@@ -710,21 +744,46 @@ def self_test(cwd=None):
     sdpa_h = ("Loading checkpoint: sdpa fallback engaged due to flash"
               " attention absence.\n"
               "model output: tensor([0.1, 0.2, 0.3])\n")
+    allow_h = ("torch.backends.cuda.allow_fallback = True\n"
+               "model output: tensor([0.1, 0.2, 0.3])\n")
+    flash_h = ("flash-attn fallback engaged, torch native attention used\n"
+               "model output: tensor([0.1, 0.2, 0.3])\n")
     env_h = ("warning: .env non trouve, utilisation variables"
-             " environnement\n\n"
+             " environnement\n"
              "verification gpu...\n"
-             "cuda non disponible.\n")
+             "model output: tensor([0.1, 0.2, 0.3])\n")
     for label, h in [("transformers", transformers_h),
                      ("sdpa fallback", sdpa_h),
+                     ("allow_fallback", allow_h),
+                     ("flash-attn", flash_h),
                      (".env non trouve", env_h)]:
-        # build a real-degradation base without the FP pattern, then add
-        # the FP head -- the organ should NOT flag this cell.
-        r = _analyze([("x", long_text)], [("x", h)])
+        # Base neutre de 600 chars : au-dessus du plancher de magnitude
+        # (500), mais assez court pour que le ratio base/tete reste
+        # sous MAGNITUDE_FACTOR -- ce test mesure l'EXEMPTION de
+        # signature, pas la regle de contraction.
+        r = _analyze([("x", "x" * 600)], [("x", h)])
         if r["cells"]:
             failures.append("FP exemption " + label + " failed: still"
                             " flagged as " + r["cells"][0]["kind"])
         else:
             print("FP exemption " + label + ": silent (not flagged)")
+
+    # 14c. Co-occurrence (#21426 R3) : CONTROLE POSITIF. La ligne
+    #     exemptee est retiree, le reste est juge. Une cellule qui
+    #     melange un avertissement de bibliotheque et une degradation
+    #     REELLE doit rester signalee -- l'exemption ne porte pas sur
+    #     la cellule entiere.
+    cooc_h = ("Loading checkpoint: sdpa fallback engaged due to flash"
+              " attention absence.\n"
+              "ComfyUI non disponible : generation skippee.\n"
+              "model output: tensor([0.1, 0.2, 0.3])\n")
+    r = _analyze([("x", long_text)], [("x", cooc_h)])
+    if not (r["cells"] and r["cells"][0]["kind"] == "signature"):
+        failures.append("co-occurrence R3 (ligne exemptee + degradation"
+                        " reelle) not flagged")
+    else:
+        print("co-occurrence R3 (ligne exemptee + degradation reelle):"
+              " flagged as signature")
 
     # 15. body-justification parser (Issue #21424 T2): the section is the
     #     marker. Cells inside the section are returned as (notebook, cell)
