@@ -1,5 +1,7 @@
 # Slide agents Marp→Slidev — scoping (c.1110)
 
+> **Statut post-#21318 (2026-10-19) :** voie 1 retenue. Les 11 sources `slides.marp.md` actifs ont été retirées (Slidev canonique) ; `S4-trading-algorithmique/_archive/slides.marp.md` reste avec header de disposition per la convention `_archive-convention.md`. Le config `.marprc.yml` et les outils `marp_to_slidev.py` / `pptx_to_marp.py` / `compare_marp_pptx.py` / `MARP_CORRECTION_GUIDE.md` ont été retirés. Le présent doc reste comme **artefact historique** du scoping qui a motivé l'arbitrage voie 1.
+
 Issue : [#19578](https://github.com/jsboige/CoursIA/issues/19578) — `[Suivi #19525]` agents de slides face à l'abandon de Marp. Mesure et décision à partir de l'arbre de travail `main` @ `d09acde1a2` (2026-10-06).
 
 Le constat de l'issue est en partie faux (le corps dit « l'abandon de Marp » alors que 12 decks Marp subsistent comme source), et en partie vrai (l'outil sous-jacent `sk-agent.analyze_image` est déjà périmé, documenté comme tel dans `slide-analyzer-sk-agent.md`). Le scoping tranche avec des chiffres firsthand et propose une voie.

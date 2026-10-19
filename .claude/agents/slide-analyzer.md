@@ -24,8 +24,10 @@ La baseline PPTX est VIVANTE sur `main` : **742 renders PNG** sous
 `slides/<deck>/pptx-reference/slide-NN.png` (12 decks ; seul
 `01-introduction` les porte sous `public/pptx-reference/`). Ce qui est nul :
 les fichiers `.pptx` binaires et les rendus `marp_renders`. Les 12 sources
-Marp legacy (`slides.marp.md`) restent dans l'arbre, non servies par les
-agents -- leur retrait est un grain separe (#19578).
+Marp legacy (`slides.marp.md`) ont ete retirees par #21318 (sauf
+`S4-trading-algorithmique/_archive/slides.marp.md` qui reste dans le
+repertoire `_archive/` avec header de disposition per la convention
+`_archive-convention.md`).
 
 ## Usage
 
