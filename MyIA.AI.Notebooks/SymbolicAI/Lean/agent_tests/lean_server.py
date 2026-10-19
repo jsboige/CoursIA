@@ -696,6 +696,7 @@ class LeanVerifier:
         whitelist: list = None,
         fail_on_sorry: bool = False,
         timeout: int = 300,
+        declarations: list = None,
     ) -> dict:
         """Check axioms used by a module via ``#print axioms``.
 
@@ -731,6 +732,14 @@ class LeanVerifier:
                 on a cold Mathlib cache can exceed the previous hard-coded 60 s
                 (issue #8677). Callers -- e.g. the CI review gate -- can raise it
                 without re-editing this module.
+            declarations: Optional pinned declaration list (namespace-qualified
+                names). When given, enumeration is skipped entirely and ONLY
+                these declarations are probed — a scoped check for callers that
+                need the axioms of ONE target, not the whole module (#21298:
+                ``verify_sorry_replacement`` probes the single declaration it
+                just proved, so the file's other — workflow-legitimate —
+                sorries never false-positive). Default None = enumerate the
+                module as before.
 
         Returns:
             dict with 'success', 'axioms', 'forbidden', 'has_sorry',
@@ -763,7 +772,23 @@ class LeanVerifier:
             if root is not None:
                 project = root
 
-        declarations = _enumerate_module_declarations(project, module_name)
+        if declarations is not None:
+            # Pinned list (#21298): caller-scoped check — skip both the module
+            # enumeration and the empty-enumeration classification below (the
+            # caller named what it wants probed; the module's OTHER
+            # declarations, including its other sorries, are out of scope).
+            declarations = list(declarations)
+            if not declarations:
+                # Pinned-empty: the caller scoped the check to nothing —
+                # vacuously clean, not a parse gap to classify.
+                return {
+                    "success": True, "axioms": [], "forbidden": [],
+                    "whitelist": whitelist, "has_sorry": False,
+                    "fail_on_sorry": fail_on_sorry, "declarations": [],
+                    "enumerated": False, "raw_output": "",
+                }
+        else:
+            declarations = _enumerate_module_declarations(project, module_name)
         if not declarations:
             # An empty enumeration is not one situation but two (see
             # ``_classify_empty_enumeration``): the gate could not run, or the
