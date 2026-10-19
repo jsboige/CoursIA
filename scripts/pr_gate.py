@@ -1965,6 +1965,15 @@ def verdict_body(message: str, advisory: Sequence[str] = ()) -> str:
             "(`gh run rerun <run_id> --job <job_id>`) ou laisser le "
             "balayage la reprendre -- sa cadence mesuree est de 2 h 33 "
             "a 5 h 18, pas horaire (#15197).",
+            "",
+            "Note #21300 : `gh run rerun` est INERT sur un run en "
+            "`startup_failure` (le re-run recopie la sortie de la "
+            "tentative precedente -- 9 tentatives mesurees sans "
+            "progres, #20874). Le sweep detecte maintenant ce cas et "
+            "ne rejoue plus : voir le log du sweep pour le geste "
+            "applique (`update-branch` ou signalement). Si la jambe "
+            "est muette (output vide), c'est la voie de reparation "
+            "de #15825, pas un re-run.",
         ]
     if advisory:
         lines += ["", "Advisory (not blocking):"]
