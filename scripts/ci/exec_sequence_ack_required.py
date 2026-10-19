@@ -50,7 +50,9 @@ network.
 
 The label fetcher calls ``gh pr view --json labels`` (CI). The comment
 fetcher calls ``gh api .../issues/<n>/comments``. The review fetcher calls
-``gh api .../issues/<n>/reviews``. ``--head`` is the PR head SHA.
+``gh api .../pulls/<n>/reviews`` (not ``issues/<n>/reviews`` -- that endpoint
+returns 404 on PRs; Hermes review on #21273 measured it live). ``--head`` is
+the PR head SHA.
 
 Exit codes: 0 pass / 1 fail (ack not satisfied).
 """
@@ -204,7 +206,7 @@ def gh_review_fetcher(pr_number: int) -> list[dict]:
     try:
         out = subprocess.run(
             [
-                "gh", "api", f"repos/{repo}/issues/{pr_number}/reviews",
+                "gh", "api", f"repos/{repo}/pulls/{pr_number}/reviews",
                 "--jq", "[.[] | {author: .user.login, body: .body, state: .state, submittedAt: .submitted_at}]",
             ],
             capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30,
