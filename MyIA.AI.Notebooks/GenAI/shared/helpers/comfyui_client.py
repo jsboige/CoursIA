@@ -1000,9 +1000,15 @@ def load_from_env(env_path: Optional[Path] = None) -> ComfyUIClient:
     server_url = env_vars.get("COMFYUI_API_URL")
     api_token = env_vars.get("COMFYUI_API_TOKEN")
 
-    # Tenter de récupérer le token depuis le fichier .secrets/qwen-api-user.token
-    # On cherche le répertoire .secrets à la racine du projet (en remontant depuis env_path)
-    if env_path:
+    # Le token API est celui du .env, provisionné par
+    # scripts/secrets/render_envs.py depuis .secrets/master.env.
+    # Le fichier .secrets/qwen-api-user.token contient le HACHAGE bcrypt du
+    # mot de passe de l'interface web : ce n'est pas un credential Bearer, et
+    # il ne doit donc JAMAIS écraser le token du .env. Mesuré : avec cet
+    # écrasement, /system_stats répondait 401 pour tous les carnets Image
+    # (T4 de l'Epic #21424). Il ne sert que de repli, quand le .env ne
+    # fournit aucun COMFYUI_API_TOKEN.
+    if env_path and not api_token:
         project_root = env_path.parent
         # Remonter jusqu'à trouver .secrets ou atteindre la racine
         for _ in range(5): # Max 5 niveaux
@@ -1012,7 +1018,12 @@ def load_from_env(env_path: Optional[Path] = None) -> ComfyUIClient:
                     file_token = secrets_file.read_text(encoding='utf-8').strip()
                     if file_token:
                         # Chemin relatif seulement : le chemin absolu fuiterait la machine dans les outputs
-                        print(f"✅ Token chargé depuis .secrets/{secrets_file.name}")
+                        print(
+                            "⚠️  COMFYUI_API_TOKEN absent du .env - repli sur "
+                            f".secrets/{secrets_file.name} (hachage bcrypt du mot de passe "
+                            "web : ce n'est pas un credential Bearer, l'authentification "
+                            "peut echouer en 401)"
+                        )
                         api_token = file_token
                         break
                 except Exception as e:
