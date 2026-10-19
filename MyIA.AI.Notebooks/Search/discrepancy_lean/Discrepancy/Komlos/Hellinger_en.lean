@@ -36,10 +36,13 @@ bound needs), `half_sum_abs_sq_sub_sq_sq_le` (the **Hellinger bound** :
 **Weierstrass product inequality** `1 − Σ a ≤ Π (1 − a)` on `[0, 1]`, via
 `prod_one_sub_ordered`).
 
-**Postponed to k4.2** : the "distribution" version of the bound — replacing
+**Delivered by k4.2b** : the "distribution" version of the bound — replacing
 the weights by the distributions and the factor `2⁻¹` by
-`tvDistance S P Q` in Finset vocabulary — as soon as `Komlos.Cube` fixes
-its call site ; then the chain `Cube` → `NearInvariant` (Lemma 1.5). The
+`tvDistance S P Q` in Finset vocabulary — now lives in
+`Komlos/TvDistance.lean` (`tvDistance`, `tvDistance_sq_le`), where
+`Komlos.Cube`'s call fixed it ; this module carries only its analytic core,
+stated on the weights. Remains the chain `Cube` → `NearInvariant`
+(Lemma 1.5, k4.3). The
 `Transport` substrate is **delivered** (k2.3, PR #19081 **merged** on
 2026-10-08) ; a single one of its statements is still postponed,
 `shiftDist_push`, with its reason measured inside the module itself (the
