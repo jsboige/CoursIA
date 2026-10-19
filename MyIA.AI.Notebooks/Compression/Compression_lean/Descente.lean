@@ -614,7 +614,7 @@ theorem min_to_bottom : ∀ (t : WTree), (∃ l r, t = WTree.node l r) → ∀ (
 -- 19
 
 example : costW (exchPos desequilibre [false, false, true] [true] 2 1) = 19 := by
-  native_decide
+  decide
 
 /-- Le théorème vit sur la maille du carnet : un arbre de coût ≤ 21 porte le
 poids 1 dans une paire de sœurs à la profondeur maximale. -/
