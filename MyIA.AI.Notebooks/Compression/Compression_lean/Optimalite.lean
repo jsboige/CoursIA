@@ -91,7 +91,7 @@ example : costAt 0 (huffman [1, 1, 2, 4]) = 14 := by native_decide
 /-- Le code fixe de 2 bits sur les mêmes poids : toute profondeur 2, coût
 2·(1+1+2+4) = 16 — Huffman économise 2 en montant les poids forts. -/
 example : costAt 0 (.node (.node (.leaf 1) (.leaf 1)) (.node (.leaf 2) (.leaf 4))) = 16 := by
-  native_decide
+  decide
 
 /-- La masse se conserve : le trie porte le poids total de la forêt initiale. -/
 example : weight (huffman [1, 1, 2, 4]) = 8 := by native_decide
