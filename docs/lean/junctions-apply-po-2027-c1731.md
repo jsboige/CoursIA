@@ -7,7 +7,7 @@ EPIC parente : [#4362](https://github.com/jsboige/CoursIA/issues/4362) — Lean 
 **Date** : 2026-10-18 (c.1731).
 **Outil** : `scripts/lean/setup_shared_mathlib.ps1 -Mode {Scan,Apply,Apply -Build}`.
 **Worktree d'operation** : `D:/dev/CoursIA-2` (clone principal de po-2027, workspace CoursIA-2 — les jonctions NTFS operent au niveau filesystem, pas au niveau git).
-**Statut** : **Apply execute, build verification en cours** (BG byfrzf36p, ~600s+ prevu, pool auto-heberge sollicite).
+**Statut** : **Apply execute ; verification `lake build` CONCLUE** (BG byfrzf36p, sortie 2026-10-18 20:20, exit 4) — **4 SUCCESS / 6 FAILED (rollbackes) / 14 membres non couverts**. La section « Verification `lake build` » plus bas remplace le statut provisoire « en cours » de la premiere version de ce rapport.
 
 > **Distinction importante** — ce rapport detruit partiellement les hypotheses du precedent doc `docs/lean/junctions-scan-po-2027-CoursIA2.md` (c.1470, 2026-10-07). En 11 jours : (1) la situation a change sur po-2027, (2) le cluster dominant est passe de v4.32.1/520045ab a v4.33.0/db584cd6, (3) 2 jonctions PERIMEE (repeated_games_lean, decision_theory_lean) ont ete re-routees et ne sont plus en conflit, (4) 1 checkout physique (mathlib_examples 0.54 Go) est apparu dans le nouveau groupe dominant. C'est le **drift de portee** que le precedent rapport predisait (« un checkout present dans un autre worktree resterait invisible »).
 
@@ -79,21 +79,67 @@ Etat persiste : D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd
 | `naive_sorry` total (avant/apres) | 675 / 675 (identique, prose incluse) |
 | Source de verite | `python scripts/lean/count_code_sorry.py --json` (instrument de comptage `distinct_code_sorry`) |
 
-## Verdict interim
+## Verification `lake build` — resultat CONCLU du BG byfrzf36p (2026-10-18 20:20, exit 4)
 
-**`MIXED`** :
-- ✅ **Acceptance 1 (Scan)** : cluster rendu **manifest-identique** sur les 24 membres (pas seulement rev Mathlib — pin-tree complet + lean-toolchain). 7 PERIMEE detectees, 17 nouveaux junctions crees.
-- ✅ **Acceptance 2 (Apply)** : jonctions posees, etat persiste dans `share-state.json`.
-- ✅ **Acceptance 3 (Anti-regression HARD)** : `distinct_code_sorry` **inchangé** avant/apres (12 -> 12). Les sources `*.lean` ne sont pas touchees par le mouvement filesystem.
-- ⏳ **Acceptance 3bis (lake build SUCCESS par membre)** : **en cours** (BG byfrzf36p, ~600s+ prevu, 24 membres a compiler sur le pool auto-heberge). Les 7 lacs PERIMEE passes de v4.32.1 a v4.33.0/db584cd6 peuvent avoir des ruptures API — chaque rollback automatique est possible (`Restore-Member`).
-- ⏳ **Acceptance 4 (espace recupere)** : **11.79 Go** a liberer par purge du cache orphelin `v4.32.1-520045ab/` (a faire **apres verification `lake build` reussie** sur les 7 lacs re-pointes, sinon rollback).
+Le BG `byfrzf36p` (`setup_shared_mathlib.ps1 -Mode Apply -Build -Group 'db584cd6'`) a **termine** : 10 membres traites, 4 build vert, 6 build rouge avec rollback par membre, puis **arret du run (exit 4)** — les 14 membres restants n'ont pas ete traites. Journal : `tasks/byfrzf36p.output` (11 345 octets, sortie 2026-10-18 20:20).
+
+| Membre | `lake build` | Cause de l'echec |
+|---|---|---|
+| `Compression/Compression_lean` | SUCCESS | — |
+| `GameTheory/assignment_lean` | SUCCESS | — |
+| `GameTheory/minimax_lean` | SUCCESS | — |
+| `Probas/Applications/Percolation/percolation_lean` | SUCCESS | — |
+| `GameTheory/game_theory_lean` | FAILED (rollback) | cibles requises en echec : `SocialChoice.*` (Basic, AMD, MechanismDesign, SortedListCounting), `StableMarriage.*` (GSState, Lattice), `RepeatedGames.Stage`, `CooperativeGames.ConeKernel` (+ variantes `_en`) |
+| `ML/learning_theory_lean` | FAILED (rollback) | cibles requises en echec : `PacLearning.*` (BernoulliMGF, Data), `GradientFlow.*` (Plain, Residual), `EffectiveTheory.*` (CircleOfDays, Grokking, InfoBits, Repons), `Perceptron.Data` (+ `_en`) |
+| `Probas/DecisionTheory/decision_theory_lean` | FAILED (rollback) | cibles requises en echec : `Coherence.Basic`, `Utility.Basic` (+ `_en`) — `Gittins` compile (12 s, `sorry` preexistant signale, non introduit ici) |
+| `QuantConnect/kelly_lean` | FAILED (rollback) | `failed to read file .../mathlib/.lake/build/lib/lean/Mathlib/GroupTheory/GroupAction/Blocks.olean` — **olean manquant dans le cache partage** |
+| `Search/search_lean` | FAILED (rollback) | idem (`Blocks.olean.private` manquant dans le cache partage) |
+| `Sudoku/sudoku_lean` | FAILED (rollback) | sortie de trace sur `Sudoku.Propagation_en` ; le run s'interrompt la (exit 4) |
+| 14 membres restants | NON COUVERTS | run interrompu avant eux (calibration, formal_groups, galois, grothendieck, hecke, sensitivity, serre100, knot_lean, mathlib_examples, conway, geometry, planning, erc20, argumentation) |
+
+**Deux causes distinctes, a ne pas confondre** :
+
+1. **Rupture de cible sur les 7 PERIMEE** (`game_theory_lean`, `learning_theory_lean` — les 2PERIMEE re-pointes qui echouent) : les cibles `SocialChoice.*` / `PacLearning.*` / `EffectiveTheory.*` / `Coherence.Basic` / `Utility.Basic` existaient sous Mathlib **v4.32.1/520045ab** et ne sont pas disponibles sous **v4.33.0/db584cd6** ⇒ le **risque n°1** de la premiere version de ce rapport est **materialise**, et il ne se resume pas a une hypothese de rupture d'API : c'est une **difference de jeu de cibles** entre les deux revisions.
+2. **Defaut d'infrastructure du cache partage** (`kelly_lean`, `search_lean`) : le cache `leanprover_lean4_v4.33.0-db584cd6` est **valide** (rev `db584cd6d46c92f209a44c0f1c829460d327499d`, reutilise tel quel) mais son **arbre de build Mathlib est incomplet** (`Blocks.olean` / `Blocks.olean.private` absents) ⇒ les membres qui besoin de ce module echouent sur un **artefact de cache manquant**, pas sur une source cassee. `decision_theory_lean` et `sudoku_lean` sont dans un cas tiers (cibles en echec / run interrompu).
+
+**Etat reel du groupe, mesure le 2026-10-19 sur le disque (hors BG)** — 24 membres declares dans `share-state.json`, **18 jonctions + 6 absents** :
+
+| Etat | Nombre | Membres |
+|---|---|---|
+| Jonction sur `db584cd6` (mutualisation active) | **18** | les 4 SUCCESS, les 14 non couverts |
+| **Rollback — ni jonction ni copie physique** (`.lake/packages/mathlib` **absent**) | **6** | game_theory_lean, learning_theory_lean, decision_theory_lean, kelly_lean, search_lean, sudoku_lean |
+| Cache orphelin `v4.32.1-520045ab` | 11,79 Go | toujours present, **toujours referenced par personne** |
+
+Le rollback par membre (`Restore-Member`) **retire la jonction et ne restaure une copie physique que si un backup existe** (`hadBackup`). Les 6 membres en echec etaient `hadBackup: false` (leur mathlib physique avait ete deplace vers le cache partage lors de l'Apply) ⇒ apres rollback, `Restore-Member` **ne restaure rien** et le membre se retrouve **sans Mathlib du tout** : un `lake build` y re-telechargera Mathlib selon son manifest, et la mutualisation n'est pas active pour eux. Le rollback n'est donc **pas** un retour a l'etat anterieur pour ces 6 — c'est un etat tiers, a traiter.
+
+**Defaut constate au passage** : `share-state.json` continue de declarer **24 membres** alors que 6 ont ete rollbackes. La cause est dans la fusion de l'etat (`Invoke-Apply`, etape 4) : `$merged = @($existing) + @($stateMembers)` groupe par `relPath` et garde le dernier element de chaque groupe — un membre **retire** de `$stateMembers` (rollback) mais present dans `$existing` (etat charge avant la boucle) se retrouve **reintroduit**. Consequence : un `-Mode Rollback` ou `-Mode Verify` ulterieur repartira d'une liste qui ne correspond plus au disque. Suivi : issue de suivi nommee (voir « Suite »).
+
+## Suite (ordonnee)
+
+1. **Rebuilder les artefacts Mathlib du cache partage** (`Blocks.olean` / `Blocks.olean.private` manquants) avant tout nouvel essai — sans cela, kelly/search/sudoku echoueront de la meme facon.
+2. **Rejouer `lake build`** sur les 6 rollbackes **puis** sur les 14 non couverts, dans un BG unique qui ne s'interrompt pas au premier echec (le run actuel s'arrete a exit 4 et perd les 14 derniers).
+3. **Statuer sur les 2 PERIMEE encore re-pointes et non verifies** (`conway_lean`, `argumentation_lean`) : ils sont sur `db584cd6` sans build vert — meme cause que game_theory/learning_theory a confirmer.
+4. **Ne pas purger** le cache orphelin `v4.32.1-520045ab` (11,79 Go) : la condition posee par la premiere version (build vert sur les 7 re-pointes) n'est **pas** remplie, et c'est ce cache qui reste la seule voie de retour arriere pour les 6 rollbackes.
+5. **Corriger l'outillage** : `share-state.json` doit etre reecrit a l'etat reel apres rollback (cf. issue de suivi).
+
+## Verdict revise (c.1787, 2026-10-19)
+
+**`MIXED` — verdict sur donnees CONCLUES (BG byfrzf36p, 2026-10-18 20:20)** :
+- ✅ **Acceptance 1 (Scan)** : cluster rendu **manifest-identique** sur les 24 membres (pas seulement rev Mathlib — pin-tree complet + lean-toolchain). 7 PERIMEE detectees, 17 nouveaux junctions crees. *Reste vrai : c'est la construction du groupe (par manifest), pas un build par membre.*
+- ✅ **Acceptance 2 (Apply)** : jonctions posees, etat persiste dans `share-state.json` — **avec une reserve** : le fichier d'etat declare 24 membres alors que 6 ont ete rollbackes (cf. « Defaut constate au passage »).
+- ✅ **Acceptance 3 (Anti-regression HARD)** : `distinct_code_sorry` **inchangé** avant/apres (12 -> 12). Les sources `*.lean` ne sont pas touchees par le mouvement filesystem — ni par les rollbacks, qui ne portent que sur `.lake/packages/mathlib`.
+- ⛔ **Acceptance 3bis (lake build SUCCESS par membre)** : **NON TENU en l'etat** — **4 SUCCESS sur 10 membres traites** (24 membres au groupe), **6 FAILED** avec rollback, **14 non couverts** (run interrompu, exit 4). Le risque de rupture v4.32.1 -> v4.33.0 est **materialise** sur `game_theory_lean` et `learning_theory_lean` ; `kelly_lean` et `search_lean` echouent sur un **artefact de cache manquant** (cause infrastructure, distincte). 7 des 24 membres restent **re-pointes et non verifies** (dont `conway_lean` et `argumentation_lean`, eux aussi PERIMEE).
+- ⛔ **Acceptance 4 (espace recupere)** : **11.79 Go NON liberes** — la purge du cache orphelin `v4.32.1-520045ab/` reste **interdite** tant que le build vert sur les 7 re-pointes n'est pas etabli (condition non remplie) : c'est la seule voie de retour arriere pour les 6 rollbackes.
 
 ## Risques identifies
 
-1. **Rupture API v4.32.1 -> v4.33.0** : les 7 lacs re-pointes (game_theory_lean, learning_theory_lean, percolation_lean, kelly_lean, search_lean, conway_lean, argumentation_lean) utilisaient jusqu'ici Mathlib v4.32.1/520045ab (cible de la jonction perimee) bien que leur manifest declare v4.33.0/db584cd6. Si une API Mathlib a change entre les deux revisions, `lake build` peut casser.
-2. **Build pre-empted par pool saturé** : 2538 jobs en queue c.1730, l'auto-heberge peut etre lent. BG byfrzf36p gere le cas, mais une PR signalee avant build SUCCESS **n'a pas** la verification anti-regression complete au sens strict de l'acceptance 3.
-3. **Cache orphelin v4.32.1-520045ab = 11.79 Go** : a purger **apres** build SUCCESS sur les 7 lacs re-pointes, sinon perte de la possibilite de rollback.
-4. **mimo_lean (6.69 Go, isole)** : manifest divergent (`slt 0b1020a4` ajoute), hors groupe db584cd6 mutualisable. Non touche par l'Apply c.1731 — a traiter dans un cycle futur (EPIC #4362 sous-grain dedie).
+1. **Rupture v4.32.1 -> v4.33.0 — MATERIALISEE (mesure BG byfrzf36p, 2026-10-18)** : les 7 lacs re-pointes (game_theory_lean, learning_theory_lean, percolation_lean, kelly_lean, search_lean, conway_lean, argumentation_lean) utilisaient jusqu'ici Mathlib v4.32.1/520045ab (cible de la jonction perimee) bien que leur manifest declare v4.33.0/db584cd6. Sur les 2 PERIMEE effectivement verifies (`game_theory_lean`, `learning_theory_lean`), le build **echoue** : les cibles `SocialChoice.*`, `StableMarriage.*`, `RepeatedGames.Stage`, `CooperativeGames.ConeKernel`, `PacLearning.*`, `GradientFlow.*`, `EffectiveTheory.*`, `Perceptron.Data` ne sont pas disponibles sous v4.33.0/db584cd6. Ce n'est donc pas une hypothese : c'est une **difference de jeu de cibles** entre les deux revisions, qui demande une decision de fond (adapter les sources, ou garder v4.32.1 pour ces membres) — pas un contournement.
+2. **Artefacts de build incomplets dans le cache partage** : le cache `db584cd6` est valide (rev `db584cd6d46c92f209a44c0f1c829460d327499d`) mais son arbre de build Mathlib est **incomplet** (`Mathlib/GroupTheory/GroupAction/Blocks.olean` et `.olean.private` absents) ⇒ `kelly_lean` et `search_lean` echouent sur un artefact manquant, pas sur une source. Cause infrastructure distincte de la rupture de cibles, a traiter en amont de tout nouveau run.
+3. **Build pre-empted par pool saturé** : 2538 jobs en queue c.1730, l'auto-heberge peut etre lent. **Le BG a bien demarre, mais son run s'est arrete en exit 4 au 10e membre** ⇒ 14 membres n'ont pas ete traites. Le defaut operationnel n'est donc pas seulement la saturation : le run **ne continue pas apres un echec** et perd la queue de verification. A corriger avant de rejouer (cf. « Suite » et l'issue de suivi).
+4. **Cache orphelin v4.32.1-520045ab = 11.79 Go** : a purger **apres** build SUCCESS sur les 7 lacs re-pointes, sinon perte de la possibilite de rollback. **Condition non remplie a ce jour** ⇒ purge interdite ; c'est en outre la seule voie de retour arriere pour les 6 membres rollbackes.
+5. **Rollback partiel — 6 membres sans Mathlib** : `Restore-Member` retire la jonction et ne restaure une copie physique que si un backup existe (`hadBackup`). Les 6 membres en echec sont `hadBackup: false` ⇒ apres rollback, `.lake/packages/mathlib` est **absent** (mesure du 2026-10-19 : 18 jonctions / 6 absents / 0 physique). Ils ne sont ni mutualises ni fonctionnels : `lake build` y re-telechargera Mathlib depuis le reseau. Le rollback **n'est pas** un retour a l'etat anterieur pour ces membres.
+6. **`share-state.json` desynchronise du disque** : le fichier declare 24 membres alors que 6 sont rollbackes (cause : la fusion `$existing` + `$stateMembers` de `Invoke-Apply` reintroduit un membre retire de `$stateMembers` s'il figure dans l'etat charge avant la boucle). Un `-Mode Rollback` ou `-Mode Verify` ulterieur repartira d'une liste non conforme au disque. Issue de suivi nommee.
+7. **mimo_lean (6.69 Go, isole)** : manifest divergent (`slt 0b1020a4` ajoute), hors groupe db584cd6 mutualisable. Non touche par l'Apply c.1731 — a traiter dans un cycle futur (EPIC #4362 sous-grain dedie).
 
 ## Liens
 
@@ -104,5 +150,6 @@ Etat persiste : D:\dev\CoursIA-2\.mathlib-cache\leanprover_lean4_v4.33.0-db584cd
 - PR scanner pin-tree identity : #14602 (merged)
 - Doc precedent (Scan po-2027, c.1470, 2026-10-07) : `docs/lean/junctions-scan-po-2027-CoursIA2.md` — partiellement contredit par la presente mesure
 - `scripts/lean/count_code_sorry.py` (instrument de comptage `distinct_code_sorry`)
-- BG id : byfrzf36p (Apply -Build verification en cours, journal `C:\Users\Jesse\AppData\Local\Temp\claude\d--dev-CoursIA-2\6643de94-8aa5-456e-b642-8ca6f07ae12d\tasks\byfrzf36p.output`)
+- BG id : byfrzf36p — **conclu** (Apply -Build, sortie 2026-10-18 20:20, exit 4), journal `C:\Users\Jesse\AppData\Local\Temp\claude\d--dev-CoursIA-2\6643de94-8aa5-456e-b642-8ca6f07ae12d\tasks\byfrzf36p.output` (11 345 octets)
+- Etat du groupe mesure le 2026-10-19 (hors BG) : `Get-Item` sur les 24 `.lake/packages/mathlib` de `share-state.json` ⇒ **18 jonctions / 6 absents / 0 physique** ; caches `v4.32.1-520045ab` = 11,79 Go, `v4.33.0-db584cd6` = 10,02 Go (mesure recursive, identique aux valeurs de l'Apply)
 - Source verbatim AVANT/APRES : `git ls-files --cached --others --exclude-standard -- '*lake-manifest.json'`, `Get-DirSizeGB` (script de mesure)
