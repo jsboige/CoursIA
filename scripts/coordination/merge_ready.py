@@ -16,18 +16,25 @@ disposition de review n'etait que relevee : sur les 211 merges du journal
 (23/09 -> 28/09), 6 portaient une approbation ``myia-ai-01``, et toute lane
 ne portant pas la PR pouvait la faire merger par son seul dossier.
 
+Arbitrage user 2026-10-19 (Q131) : les grains DEEP et les PRs hors flotte de
+la session cloud (branche ``claude/*``, sans tag ``Grain:``) entrent dans le
+perimetre, a la meme condition que toutes les autres : l'approbation
+prealable du coordinateur (etape 2ter). L'organe ne merge rien que le
+coordinateur n'a pas valide au prealable.
+
 L'organe est deterministe et tourne sous l'identite coordinateur
 (myia-ai-01) toutes les ~20 minutes, et seulement en perimetre (b) -- hors
-harnais et hors grains DEEP. Tour de controle par PR, TOUT doit tenir sinon
-skip avec raison nommee :
+harnais. Tour de controle par PR, TOUT doit tenir sinon skip avec raison
+nommee :
 
 1. pas un brouillon, et au moins un commentaire d'issue dont la premiere
    ligne est ``[ADJOINT PREFLIGHT]`` (prefiltre bon marche avant le gate
    couteux) ;
 2. perimetre (b) fail-closed : aucun fichier sous ``.claude/``, aucun
    ``CLAUDE.md`` (n'importe quel repertoire), aucun fichier sous
-   ``.github/`` ; tier du tag ``Grain:`` MED ou LIGHT (DEEP refuse, tier
-   illisible refuse) -- lecture par le parseur PARTAGE
+   ``.github/`` ; tier du tag ``Grain:`` DEEP, MED ou LIGHT (tier illisible
+   refuse, sauf branche hors flotte ``claude/*`` qui n'a pas de tag, Q131)
+   -- lecture par le parseur PARTAGE
    ``scripts/grain_tag.py`` (#9485, meme lecteur que variation_light_cap
    et le guard CI), jamais une regex locale ; liste de fichiers TRONQUEE
    (``changedFiles`` > fichiers listes, ou absent) -> skip fail-closed,
@@ -178,6 +185,13 @@ GATE_PATH = SCRIPTS_DIR / "check_adjoint_prevalidation.py"
 NITS_PATH = SCRIPTS_DIR / "check_unaddressed_nits.py"
 TWIN_PATH = SCRIPTS_DIR / "notebook_tools" / "check_twin_index_collisions.py"
 TWIN_REGISTRY_PREFIX = "scripts/notebook_tools/twin_pairs.d/"
+# Issue #20774 : au merge, le slot-reservation-guard doit lire la source
+# `open_prs` (mode en ligne) pour qu'une collision cross-PR rougisse avant
+# le merge. La voie rapide continue de l'appeler en `--offline` (pas de
+# `gh` reseau) -- ici on dispose de `gh`, on en sert.
+SLOT_PATH = SCRIPTS_DIR / "notebook_tools" / "check_slot_reservation.py"
+SLOT_NOTEBOOK_PREFIX = "MyIA.AI.Notebooks/"
+SLOT_RESERVATIONS_PATH = SCRIPTS_DIR / "notebook_tools" / "slot_reservations.json"
 REPO_ROOT = SCRIPTS_DIR.parent
 
 # Parapluies et branches de campagne GELES par un veto user, exemption des
@@ -190,6 +204,9 @@ REPO_ROOT = SCRIPTS_DIR.parent
 GATE_DOCUMENTED_RC = frozenset({0, 1, 2, 3})  # ready / no-dossier / unknown / blocked
 GATE_RC_REASONS = {1: "gate:no-dossier", 2: "gate:unknown", 3: "gate:blocked"}
 NITS_DOCUMENTED_RC = frozenset({0, 1})  # clear / blocked
+# Issue #20774 : 0 = tous les slots libres, 1 = collision, 2 = lecture impossible.
+# Tout autre rc est inattendu -> arret du run, comme les autres organes.
+SLOT_DOCUMENTED_RC = frozenset({0, 1, 2})  # clear / collision / unreadable
 
 # --- disposition de review classsee a la tete evaluee (point 1 de #17672) ------
 # Le dossier HACHE l'oid de chaque review dans son empreinte
@@ -436,21 +453,27 @@ def scope_exclusion(path: str) -> str | None:
     return None
 
 
-def grain_exclusion(body: str | None) -> str | None:
+OUT_OF_FLEET_BRANCH_PREFIX = "claude/"
+
+
+def grain_exclusion(body: str | None, head_ref: str | None = None) -> str | None:
     """Raison d'exclusion du tag Grain, sinon None.
 
     Le lecteur est le parseur PARTAGE (grain_tag.parse_grain_tag, #9485) :
     formes tolerees (gras, titre, sans deux-points) et refus de substance
-    (aucun TIER/GENRE lisible -> None). DEEP est hors perimetre (b) ; un
-    tier hors (DEEP, MED, LIGHT) est illisible au sens de la grammaire ->
-    fail-closed.
+    (aucun TIER/GENRE lisible -> None). DEEP est dans le perimetre depuis
+    Q131 (2026-10-19), sous la meme approbation prealable du coordinateur
+    que MED et LIGHT. Une PR hors flotte (branche ``claude/*``) n'a pas de
+    tag par construction : son absence n'est pas une exclusion. Ailleurs,
+    un tag absent ou un tier hors (DEEP, MED, LIGHT) est illisible au sens
+    de la grammaire -> fail-closed.
     """
     tag = parse_grain_tag(body)
     if tag is None:
+        if (head_ref or "").startswith(OUT_OF_FLEET_BRANCH_PREFIX):
+            return None
         return "grain-tier-unparsable"
     tier = tag.get("tier") or ""
-    if tier == "DEEP":
-        return "grain-tier-DEEP"
     if tier not in TIERS:
         return f"grain-tier-unknown:{tier}"
     return None
@@ -887,6 +910,108 @@ def twin_collision_reason(
     return f"twin-collision-unreadable:rc={res.returncode}"
 
 
+def slot_reservation_reason(
+    runner: Runner, pr: int, head: str, files: list[dict]
+) -> str | None:
+    """Etape 5bis.bis (#20774) : collision de slot contre les PRs ouvertes.
+
+    Le `slot-reservation-guard` (scripts/notebook_tools/check_slot_reservation.py)
+    est appele en voie rapide en `--offline` (pas de `gh` reseau). Au merge on
+    dispose de `gh` : on appelle ici le MEME organe en mode en ligne, et la
+    source `open_prs` devient lisible. Une collision entre la PR courante et
+    une autre PR ouverte sur le meme slot est un skip dur -- sans cette
+    garde, deux PRs distinctes visent le meme slot ICT-48 sous des noms
+    differents et mergent l'une apres l'autre sans que rien ne rouspette
+    (cf. ICT-48 et SL-12b mesures le 14/10 dans #20774).
+
+    Cout nul pour les PRs qui ne touchent pas de carnet (filtre prefixe).
+    Pour les autres, un fetch puis l'organe partage. Sortie : ``None`` si
+    l'organe rend 0 (clear), un motif de skip sinon.
+
+    Filiation avec `twin_collision_reason` (5bis) :
+      - 5bis porte les collisions de twin-pair (registre `twin_pairs.d/`) ;
+      - 5bis.bis porte les collisions de slot de carnet contre la base et
+        les PRs ouvertes. Les deux sont independants et complementaires :
+        un meme slot vise par deux PRs n'est PAS une collision de
+        twin-pair (les chemins different) -- c'est precisement le trou
+        que cette garde bouche, et que `check_pr_path_collisions.py` ne
+        couvre pas par construction (collision de chemins != collision
+        de slot).
+    """
+    touched = any(
+        str((row or {}).get("path") or "").startswith(SLOT_NOTEBOOK_PREFIX)
+        and str((row or {}).get("path") or "").endswith(".ipynb")
+        and not str((row or {}).get("path") or "").endswith("_output.ipynb")
+        for row in files
+    )
+    if not touched:
+        return None
+    # Le fetch que la docstring annonce : l'organe lit l'arbre de `head` par
+    # `git`, et ne le rapatrie pas lui-meme. Une tete absente du clone de
+    # l'organe (clone partiel, PR jamais fetchee) le faisait sortir en rc=2,
+    # donc en skip `slot-collision-unreadable` d'une PR pourtant approuvee a
+    # sa tete exacte (mesure du 17/10 : #20468 et #20471, trois passes de
+    # suite). Meme geste que `twin_collision_reason` (5bis).
+    fetch = runner.run(
+        ["git", "-C", str(REPO_ROOT), "fetch", "--quiet", "origin", "main",
+         f"pull/{pr}/head"]
+    )
+    if fetch.returncode != 0:
+        return "slot-collision-unreadable:fetch"
+    # Mode en ligne : sans `--offline`, l'organe lit `gh pr list --json files`
+    # pour la source `open_prs`. La voie rapide ne dispose pas de `gh`, ce
+    # qui l'a forcee a `--offline` ; ici on en sert.
+    res = runner.run(
+        [sys.executable, str(SLOT_PATH),
+         "--base", "origin/main", "--head", head,
+         "--exclude-pr", str(pr),
+         "--json"],
+        env={**os.environ, "GH_TOKEN": _runner_token(runner)},
+    )
+    if res.returncode == 0:
+        return None
+    if res.returncode == 1:
+        # L'organe a detecte une collision : on tente de nommer la premiere
+        # pour le diagnostic. Lecture JSON tolerante (cf. pattern 5bis).
+        try:
+            data = json.loads(res.stdout)
+        except (json.JSONDecodeError, ValueError):
+            return "slot-collision"
+        if not isinstance(data, dict):
+            return "slot-collision"
+        # L'organe rend une liste sous la cle `verdicts` (cf. emit JSON de
+        # `check_slot_reservation.py` ligne 1001) ; la collision est un etat
+        # `conflict` avec un `conflicts[0]["state"]`. On prend la premiere
+        # pour la nommer. Note : avant #20913-fixes, le parse lisait
+        # `data.get("targets")` (cle inexistante), ce qui rendait la branche
+        # de motif nomme morte (fallback `slot-collision` muet) ; les tests
+        # passaient par des fixtures qui n'alignaient pas sur l'organe reel.
+        conflicts: list[tuple[str, str]] = []
+        for row in (data.get("verdicts") or []):
+            if isinstance(row, dict) and row.get("verdict") == "conflict":
+                state = str((row.get("conflicts") or [{}])[0].get("state") or "?")
+                target = str(row.get("target") or "?")
+                conflicts.append((target, state))
+        if not conflicts:
+            return "slot-collision"
+        first_target, first_state = conflicts[0]
+        # Motif : on cite la cible et la cause (taken_on_base / reserved_by_open_pr /
+        # declared_reserved / duplicate_within_revision). Le geste est explicite
+        # par la cause : voir la docstring de l'organe.
+        return (
+            f"slot-collision-on-merge:{first_state}:{first_target} -- "
+            f"renumeroter ou retirer la PR concurrente (voir {SLOT_PATH.name})"
+        )
+    if res.returncode == 2:
+        return "slot-collision-unreadable"
+    return f"slot-collision-unreadable:rc={res.returncode}"
+
+
+def _runner_token(runner: Runner) -> str:
+    """Renvoie le token gh resolu par le runner (helpers, ne double pas l'appel)."""
+    return resolve_token(runner)
+
+
 # Conventions retenues pour detecter une PR empilee sur une parente non-encore
 # mergee, dans le body de la PR courante. Le format le plus frequent dans
 # CoursIA est "Depends on #N" (po-2024 Origami pli 2-9 sur pli 1), suivi de
@@ -1072,7 +1197,7 @@ def evaluate_pr(
     listed = len(view.get("files") or [])
     if not isinstance(changed, int) or changed > listed:
         return skip(f"files-truncated:{listed}/{changed}")
-    reason = grain_exclusion(view.get("body"))
+    reason = grain_exclusion(view.get("body"), view.get("headRefName"))
     if reason is not None:
         return skip(reason)
     reason = frozen_umbrella_exclusion(
@@ -1110,6 +1235,11 @@ def evaluate_pr(
         return skip("b0-organ-blocked")
     # 5bis. collision d'index twin contre le main du moment.
     reason = twin_collision_reason(runner, pr, gate_head, view.get("files") or [])
+    if reason is not None:
+        return skip(reason)
+    # 5bis.bis. collision de slot contre la base ET les PRs ouvertes (#20774).
+    # Independant de 5bis : 5bis = twin-pair registry, 5bis.bis = slot de carnet.
+    reason = slot_reservation_reason(runner, pr, gate_head, view.get("files") or [])
     if reason is not None:
         return skip(reason)
     # 5ter. defense en profondeur : la base de la PR doit etre `main` (#19002,
