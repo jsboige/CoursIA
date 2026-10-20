@@ -43,12 +43,16 @@ finer aggregate threshold. Two signals, two mechanical exemptions:
                  diagnostic-shaped (CS#### / warning / DeprecationWarning
                  lines) -- classify the removed lines, not just count them.
              The third legitimate cause (declared lightening) is
-             human-side: the advisory label appears and the PR body
-             justifies it, same contract as the other ratchets.
+             human-side: the PR body carries a
+             ``## Output-collapse justification`` section naming the cell
+             and the reason, same contract as the other ratchets.
 
-Placement (issue point 3): ADVISORY first, blocking later once the threshold
-is calibrated on history. Wired as ``blocking=False`` in the fast lane: the
-verdict is published under a neutral conclusion, never gate.
+Placement: the gate is BLOCKING in the fast lane since T2 of #21424
+(``blocking=True`` dans ``scripts/ci/fast_lane_registry.py``). Un finding
+``SIGNATURE`` ou ``MAGNITUDE`` est un echec dur, sauf si le body de la PR
+porte une section ``## Output-collapse justification`` qui nomme la cellule
+et le motif. L'advisory avait ete pose le temps de calibrer le seuil sur
+l'historique -- ce calage est fait, le regime bloque est le regime courant.
 
 Cells are matched BASE -> HEAD by nbformat cell ``id`` when both sides carry
 one, falling back to positional index (same contract as the flood sibling).
