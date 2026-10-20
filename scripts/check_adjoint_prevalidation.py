@@ -1131,11 +1131,22 @@ def _fetch_pr_heads(numbers: list[int]) -> tuple[list[int], list[str]]:
     comme « propres » des commits deja merges -- la porte inventerait des piles.
     Une passe qui rafraichit sa reference ne depend pas de la fraicheur de
     l'appelant.
+
+    Les refspecs de tete sont **forces** (``+pull/N/head:...``). Une tete de PR
+    reecrite (force-push) fait pointer la ref locale ``prh/N`` vers un commit
+    qui n'est plus un ancetre de la nouvelle tete : git refuse alors la mise a
+    jour non-fast-forward et **rejette le lot entier**, ce qui eteint la porte
+    « pile » pour toute la flotte. Le refus n'est meme pas visible : ``-q``
+    supprime la ligne ``! [rejected] ... (non-fast-forward)``, si bien que
+    l'incident se lisait ``rc=1`` sans stderr, et le repli ci-dessous ne
+    reconnait que les refs DISPARUES. Le ``+`` est sans risque ici :
+    ``refs/remotes/prh/`` est une copie jetable d'une tete de PR, pas une
+    branche -- la perdre ou la reecrire n'a aucun effet sur le depot.
     """
     remaining = list(numbers)
     for _ in range(STACK_FETCH_TRIES):
         specs = ["main:refs/remotes/origin/main"]
-        specs += [f"pull/{p}/head:{STACK_REF_PREFIX}{p}" for p in remaining]
+        specs += [f"+pull/{p}/head:{STACK_REF_PREFIX}{p}" for p in remaining]
         proc = _git(["fetch", "-q", "origin", *specs], check=False)
         if proc.returncode == 0:
             return remaining, []

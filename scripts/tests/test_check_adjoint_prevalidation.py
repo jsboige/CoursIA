@@ -4538,3 +4538,111 @@ def test_author_ref_returns_on_git_failure(monkeypatch):
     monkeypatch.setattr(mod, "_git", _synthetic_git())
     ref = "refs/pull/12345/head"
     assert mod._author_ref(ref) == ref
+
+
+# --- porte « pile » : une tete reecrite eteignait la porte (2026-10-20) ---
+#
+# Mesure fondatrice (poste myia-po-2028, 2026-10-20) : la tete de la PR
+# #20720 a ete reecrite (force-push). La ref locale `prh/20720` pointait donc
+# vers un commit qui n'est plus un ancetre de la nouvelle tete, et `git fetch`
+# REFUSE une telle mise a jour non-fast-forward : le lot entier de 307 tetes
+# echouait, rc=1. Deux details ont rendu le defaut invisible :
+#
+#   1. `git fetch -q` SUPPRIME la ligne `! [rejected] ... (non-fast-forward)`,
+#      si bien que stderr etait vide et que l'incident se lisait `rc=1` ;
+#   2. le repli du code ne reconnait que les refs DISPARUES
+#      (`fatal: couldn't find remote ref pull/N/head`, qui passe bien par
+#      stderr), pas le rejet non-fast-forward.
+#
+# Consequence mesuree : des qu'un clone avait en cache une tete reecrite, la
+# porte « pile » (#20251) s'eteignait pour TOUTE la flotte, sans bruire, et
+# chaque READY etait emis sans cette porte.
+#
+# Correctif : refspec force (`+pull/N/head:...`). `refs/remotes/prh/` est une
+# copie jetable d'une tete de PR, pas une branche -- la reecrire n'a aucun
+# effet sur le depot.
+
+
+class _GitFakeHeadFetch:
+    """Emule git pour le fetch des tetes de PR.
+
+    - refspec force (`+pull/N/head:dst`) : git accepte la mise a jour ;
+    - refspec NON force sur une tete reecrite : git refuse la mise a jour
+      non-fast-forward et sort rc=1 ; avec `-q` la ligne de rejet est
+      supprimee, donc stderr est VIDE (c'est l'etat reel du 2026-10-20) ;
+    - ref de PR disparue : git sort rc=1 avec
+      `fatal: couldn't find remote ref pull/N/head` (stderr, meme avec `-q`).
+    """
+
+    def __init__(self, rewritten=(), missing=()):
+        # Les numeros de PR sont compares en CHAINE : le code reel extrait les
+        # refs disparues par regex (str) puis les compare a `str(p)`.
+        self.rewritten = {str(p) for p in rewritten}
+        self.missing = {str(p) for p in missing}
+        self.calls = []
+
+    def __call__(self, args, check=True):
+        self.calls.append(list(args))
+        specs = args[3:] if args[:3] == ["fetch", "-q", "origin"] else args[1:]
+        for spec in specs:
+            pr = None
+            if spec.startswith("+pull/"):
+                pr = spec.split("/")[1]
+            elif spec.startswith("pull/"):
+                pr = spec.split("/")[1]
+            if pr is None:
+                continue
+            if pr in self.missing:
+                return subprocess.CompletedProcess(
+                    ["git", *args], 1, "",
+                    f"fatal: couldn't find remote ref pull/{pr}/head\n",
+                )
+            if pr in self.rewritten and not spec.startswith("+"):
+                # `-q` supprime la ligne de rejet : stderr vide, rc=1.
+                return subprocess.CompletedProcess(["git", *args], 1, "", "")
+        return subprocess.CompletedProcess(["git", *args], 0, "", "")
+
+
+def test_fetch_pr_heads_survive_a_tete_reecrite(monkeypatch):
+    """Controle positif : une tete de PR reecrite ne doit plus eteindre la porte.
+
+    Le controle est POSITIF au sens de la porte « pile » : la situation
+    (ref locale `prh/N` sur un commit non-ancetre de la nouvelle tete) est
+    celle qui faisait echouer la passe entiere. Sur le code non corrige, ce
+    test ECHOUE (la passe rend un incident) ; avec le refspec force, il passe.
+    """
+    fake = _GitFakeHeadFetch(rewritten={20720})
+    monkeypatch.setattr(mod, "_git", fake)
+    remaining, incidents = mod._fetch_pr_heads([20720])
+    assert incidents == [], f"la porte « pile » s'eteint sur une tete reecrite : {incidents}"
+    assert remaining == [20720]
+
+
+def test_fetch_pr_heads_uses_forced_refspecs(monkeypatch):
+    """Le correctif est dans le refspec : `+` devant `pull/N/head`.
+
+    On l'assert sur la FORME de la commande, pas sur le comportement du
+    faux git : c'est le contrat qui doit tenir quand git est le vrai.
+    """
+    fake = _GitFakeHeadFetch()
+    monkeypatch.setattr(mod, "_git", fake)
+    mod._fetch_pr_heads([123])
+    assert fake.calls, "aucun fetch lance"
+    fetch_args = fake.calls[0]
+    assert any(
+        spec.startswith("+pull/123/head:") for spec in fetch_args
+    ), fetch_args
+
+
+def test_fetch_pr_heads_keeps_dropping_refs_disparues(monkeypatch):
+    """Controle NEGATIF : le repli des refs disparues doit survivre au correctif.
+
+    Une ref de PR disparue n'est pas un incident : elle est ecartee, et la
+    passe est relancee sur les autres. Le correctif du refspec ne doit pas
+    transformer ce cas en incident.
+    """
+    fake = _GitFakeHeadFetch(missing={456})
+    monkeypatch.setattr(mod, "_git", fake)
+    remaining, incidents = mod._fetch_pr_heads([456, 789])
+    assert incidents == [], f"une ref disparue ne doit pas etre un incident : {incidents}"
+    assert remaining == [789], remaining
