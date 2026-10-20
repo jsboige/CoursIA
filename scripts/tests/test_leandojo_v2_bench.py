@@ -413,6 +413,39 @@ def test_extract_whole_proof_unterminated_and_raw(bench):
     )
 
 
+def test_extract_whole_proof_strips_think_block(bench):
+    # Sortie MESUREE le 2026-10-20 (run corrige) : claude-opus-4.7 ouvre
+    # d'un bloc <think>...</think> AVANT la fence. L'extrateur doit rendre
+    # la preuve seule -- jamais le raisonnement au check_compile.
+    measured = (
+        "<think>\n"
+        "I need to prove this theorem but I don't know the definitions.\n"
+        "Likely `natToDigits` produces digits and `digitsToNat` reverses it.\n"
+        "</think>\n\n"
+        "```lean\n"
+        "  induction n using Nat.strong_induction_on with\n"
+        "  | _ n ih =>\n"
+        "    unfold Conway.natToDigits Conway.digitsToNat\n"
+        "    simp_all\n"
+        "    split <;> simp_all <;> omega\n"
+        "```"
+    )
+    assert bench._extract_whole_proof(measured) == (
+        "induction n using Nat.strong_induction_on with\n"
+        "  | _ n ih =>\n"
+        "    unfold Conway.natToDigits Conway.digitsToNat\n"
+        "    simp_all\n"
+        "    split <;> simp_all <;> omega"
+    )
+
+
+def test_extract_whole_proof_think_without_fence(bench):
+    # think retire meme sans fence derriere : reste rendu nu.
+    assert bench._extract_whole_proof(
+        "<think>\nreasoning\n</think>\n  rfl"
+    ) == "rfl"
+
+
 def test_post_emulates_n_with_successive_requests(monkeypatch, bench):
     # openrouter rend 1 choix par requete : _post doit repeter la requete
     # jusqu'a n choix collectes, chaque payload demandant n=1.

@@ -173,10 +173,21 @@ def _extract_whole_proof(output: str) -> str:
     lignes, fence comprise). La branche ``deepseek`` du meme parser garde la
     preuve complete : ce des-enveloppement s'aligne sur cette semantique.
 
-    Les trois formes observees passent : bloc fence ferme
-    (`````lean\\n<preuve>\\n`````), bloc non termine, sortie nue.
+    Second defaut mesure (run corrige du 2026-10-20) : claude-opus-4.7 via
+    openrouter peut ouvrir sa sortie d'un bloc de raisonnement
+    ``<think>...</think>`` AVANT la fence -- un extrateur qui ne regarde
+    que le debut de chaine rend le bloc entier au ``check_compile`` (echec
+    de parse, pas de preuve). On retire donc d'abord les blocs think,
+    puis on prend le DERNIER bloc fence s'il existe.
+
+    Les formes observees passent : bloc fence ferme, bloc non termine,
+    sortie nue, think + fence (mesure 2026-10-20).
     """
+    import re
+
     text = output.strip()
+    # blocs de raisonnement retires (un ou plusieurs, non imbriques)
+    text = re.sub(r"<think>.*?</think>\s*", "", text, flags=re.DOTALL)
     if text.startswith("```"):
         lines = text.splitlines()
         # ligne d'ouverture (``` ou ```lean) retiree
@@ -186,6 +197,11 @@ def _extract_whole_proof(output: str) -> str:
         if lines and lines[-1].strip().startswith("```"):
             lines = lines[:-1]
         text = "\n".join(lines)
+        return text.strip()
+    # pas de fence a l'ouverture : derniere fence du texte, sinon brute
+    fenced = re.findall(r"```(?:lean)?\s*\n(.*?)```", text, flags=re.DOTALL)
+    if fenced:
+        return fenced[-1].strip()
     return text.strip()
 
 
