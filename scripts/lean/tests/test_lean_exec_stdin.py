@@ -73,14 +73,16 @@ def _env(state: Path, **extra) -> dict:
     env["LEAN_EXEC_STATE_DIR"] = str(state)
     env["LEAN_EXEC_WSL"] = "off"
     env.update(NEUTRAL_RESOURCE_GATE)
-    env.update({k: str(v) for k, v in extra.items()})
+    env.update({k: str(v) for k, v in extra.items() if v is not None})
     return env
 
 
 def _run(state: Path, args: list[str], cwd: Path | None = None,
-         timeout: float = 90) -> subprocess.CompletedProcess:
+         timeout: float = 90, force_backends: str | None = None,
+         ) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [PY, LEAN_EXEC, *args], env=_env(state),
+        [PY, LEAN_EXEC, *args],
+        env=_env(state, LEAN_EXEC_FORCE_BACKENDS=force_backends),
         cwd=str(cwd) if cwd else None,
         capture_output=True, text=True, timeout=timeout,
         encoding="utf-8", errors="replace",
@@ -142,6 +144,59 @@ def test_run_without_stdin_file_unchanged(tmp_path):
     ])
     assert r.returncode == 0, r.stderr
     assert "stdin_file" not in _last(state)
+
+
+def _fake_lake(tmp_path: Path) -> Path:
+    """Lake factice : lakefile.toml + marqueur de cache .lake/build (le
+    workflow CI construit son cache nativement, hors organe)."""
+    lake = tmp_path / "lake"
+    lake.mkdir()
+    (lake / "lakefile.toml").write_text('name = "fake"\n', encoding="utf-8")
+    (lake / ".lake" / "build").mkdir(parents=True)
+    return lake
+
+
+def test_unknown_cache_sole_backend_auto_pins(tmp_path):
+    """Cache d'origine inconnue + backend UNIQUE (runner CI posix) :
+    l'auto-epinglage pose l'unique choix au lieu de refuser. Fix des
+    proof-integrity rouges x7 + serre100 sur #21655 — la migration
+    lean_server -> organe routait le gate CI dans ce refus fail-closed."""
+    state = tmp_path / "state"; state.mkdir()
+    lake = _fake_lake(tmp_path)
+    r = _run(state, [
+        "run", "--json", "--timeout", "30",
+        "--cwd", str(lake),
+        "--", PY, "-c", "print('ci-side run')",
+    ], force_backends="native")
+    assert r.returncode == 0, r.stderr
+    verdict = json.loads(r.stdout[r.stdout.index("{"):])
+    assert verdict["status"] == "ok"
+    registry = json.loads(
+        (state / "backends.json").read_text(encoding="utf-8"))
+    (key, entry), = registry.items()
+    assert key.endswith("/lake") or "\\lake" in key.lower().replace(
+        "\\", "/")
+    assert entry["backend"] == "native"
+    assert entry["origin"] == "sole-backend (cache origine inconnue)"
+
+
+def test_unknown_cache_two_backends_still_refuses(tmp_path):
+    """Deux backends declares + cache d'origine inconnue : le refus
+    fail-closed TIENT (machine de dev native+WSL — le piege 1-2 h de
+    recompilation Mathlib que l'epinglage existe pour bloquer), et le
+    refus ne pose aucune epingle."""
+    state = tmp_path / "state"; state.mkdir()
+    lake = _fake_lake(tmp_path)
+    r = _run(state, [
+        "run", "--json", "--timeout", "30",
+        "--cwd", str(lake),
+        "--", PY, "-c", "print('never')",
+    ], force_backends="wsl,native")
+    assert r.returncode == le.EXIT_REFUSED
+    verdict = json.loads(r.stdout[r.stdout.index("{"):])
+    assert verdict["status"] == "refused"
+    assert "sans epingle connue" in verdict["reason"]
+    assert not (state / "backends.json").exists()
 
 
 # ---------------------------------------------------------------------------

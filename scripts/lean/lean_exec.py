@@ -859,6 +859,23 @@ def forced_backends() -> list[str] | None:
     return [b for b in raw.split(",") if b in BACKENDS]
 
 
+def sole_backend() -> str | None:
+    """Backend UNIQUE offert par la machine, sinon None.
+
+    Sert le cas cache-d'origine-inconnue de resolve_backend : quand un
+    seul backend existe (runner CI posix : WSL off par construction, lake
+    natif installe par le workflow), l'auto-epinglage ne peut basculer
+    vers rien du tout — il n'y a pas d'ambiguite a refuser de trancher.
+    La surcharge LEAN_EXEC_FORCE_BACKENDS declare l'univers tel quel :
+    une entree unique = backend unique, deux entrees = ambiguite reelle.
+    Les sondes sont memoisees par processus : le second appel est gratuit."""
+    forced = forced_backends()
+    if forced is not None:
+        return forced[0] if len(forced) == 1 else None
+    available = [b for b in BACKENDS if _probe(b)[0]]
+    return available[0] if len(available) == 1 else None
+
+
 def preflight_backends(
     requested: str, lake_root: Path | None, pinned: str | None,
 ) -> list[str]:
@@ -915,6 +932,9 @@ def resolve_backend(
     - pas de lake englobant -> native, rien a epingler ;
     - pas d'epingle -> premier disponible de DEFAULT_BACKEND_ORDER, epingle
       posee (premier-ecrivain proprietaire) ;
+    - pas d'epingle + cache d'origine inconnue -> refus fail-closed, SAUF
+      machine a backend unique (runner CI posix) : rien a trancher, epingle
+      posee sur l'unique backend ;
     - epingle existante -> elle gagne, auto comme demande conforme ;
     - demande differente de l'epingle -> refus sauf --repin ET cache purge
       (.lake/build absent) : la bascule implicite coute 1-2 h de
@@ -965,9 +985,21 @@ def resolve_backend(
             )
         if _cache_present(lake_root):
             # Cache d'origine INCONNUE (aucune epingle ne l'a enregistre) :
-            # l'auto-epinglage ne tranche pas a sa place. La bascule coute
-            # 1-2 h de recompilation Mathlib (lean_server.py:86-89) et
-            # l'organe ne purge JAMAIS un cache lui-meme.
+            # l'auto-epinglage ne tranche pas entre plusieurs candidats —
+            # la bascule coute 1-2 h de recompilation Mathlib
+            # (lean_server.py:86-89) et l'organe ne purge JAMAIS un cache
+            # lui-meme. Exception mesuree : une machine a backend UNIQUE
+            # (runner CI posix, qui construit son cache nativement hors
+            # organe — proof-integrity rouges x7 sur #21655) ; sans second
+            # candidat il n'y a rien a trancher et aucune bascule n'est
+            # possible : l'auto-epinglage pose l'unique choix.
+            sole = sole_backend()
+            if sole is not None:
+                _record(sole, "sole-backend (cache origine inconnue)")
+                return sole, (
+                    f"cache origine inconnue, backend unique {sole} : "
+                    + ("auto-epinglage sans ambiguite" if not dry
+                       else "dry-run : NON epingle"))
             return None, (
                 "cache .lake/build present sans epingle connue : origine "
                 "inconnue, l'auto-epinglage ne tranche pas — epinglez "
