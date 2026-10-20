@@ -425,13 +425,41 @@ def _probe_duration_s(path: str) -> Optional[float]:
     return None
 
 
+def _plan_window_bounds(n_samples: int, step: int) -> List[tuple]:
+    """Return the ``(start, end)`` sample bounds of the analysis windows.
+
+    Pure sample arithmetic -- no audio, no I/O -- so the cut the organ makes
+    is unit-testable in plain CI (the defect class of #21521 item 3 lives
+    here, not in the fold). Fixed windows of ``step`` samples, with ONE
+    exception: the closing queue. A tail shorter than half a window is
+    narrow-range BY CONSTRUCTION (a 10-s remainder of a 1 450-s chapter),
+    and the fold takes the WORST melody verdict and the MINIMUM global
+    range over the windows -- such a tail read FLAT on its own would reject
+    the whole chapter on the monotone floor by duration alone, the exact
+    false-REJECT-by-duration class #21486 retired. A sub-half tail is
+    therefore merged into the previous window; the merged window stays
+    under 1.5x window_s, still in the regime the instruments were calibrated
+    on (30-130 s segments, window 180 s). An artefact shorter than one
+    window is returned as the single window it is.
+    """
+    if n_samples <= 0 or step <= 0:
+        return []
+    bounds = [(s, min(s + step, n_samples)) for s in range(0, n_samples, step)]
+    if len(bounds) >= 2 and (bounds[-1][1] - bounds[-1][0]) < step // 2:
+        prev_start, _ = bounds[-2]
+        bounds[-2] = (prev_start, bounds[-1][1])
+        bounds.pop()
+    return bounds
+
+
 def _window_audio_files(path: str, window_s: float, tmp_dir: str) -> List[str]:
     """Split *path* into fixed-length windows; return the written file paths.
 
     The audio is read once through the lab's own loader (resampled to the
     lab's rate, so the windows are exactly what the instruments would have
     read) and each window is written as a wav the short-segment path can
-    analyse unchanged.
+    analyse unchanged. The cut itself is planned by ``_plan_window_bounds``
+    (queue-window guard, #21521).
     """
     import soundfile as sf
     from prosody_metrics import load_audio
@@ -441,12 +469,9 @@ def _window_audio_files(path: str, window_s: float, tmp_dir: str) -> List[str]:
         return []
     step = max(1, int(window_s * sr))
     out: List[str] = []
-    for i, start in enumerate(range(0, len(y), step)):
-        chunk = y[start:start + step]
-        if chunk.size == 0:
-            continue
+    for i, (start, end) in enumerate(_plan_window_bounds(len(y), step)):
         p = Path(tmp_dir) / ("w%02d.wav" % i)
-        sf.write(str(p), chunk, sr)
+        sf.write(str(p), y[start:end], sr)
         out.append(str(p))
     return out
 
