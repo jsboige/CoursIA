@@ -87,7 +87,25 @@ essayées) + verdict `success`/`termination` par mode. L'écart au verdict
 maison (FAILED 1 925,1 s / timeout raisonnement) est **rapporté** dans le fil
 #1453, jamais moyenné.
 
-## 5. Reproduction (machine po-2024)
+## 5. Transport corrigé (2026-10-20) — le run du 2026-10-12 mesurait le transport, pas l'organe
+
+Le premier run (2026-10-12) était **dégénéré sur les deux modes** : pas-à-pas
+`generator_exhausted` en 3 appels / 5,9 s (contre 1 925 s maison), preuve
+entière réduite à une ligne puis `compile_error`. Deux défauts de transport,
+mesurés puis corrigés dans le shim du banc :
+
+| # | Défaut | Mesure (po-2024, 2026-10-20) | Correctif |
+|---|---|---|---|
+| 1 | **`n` non honoré** | Sonde HTTP 200 sur openrouter avec `"n": 4` : **1 seul choix** rendu (l'API Anthropic n'a pas de sampling `n`). Le générateur v2 attend n échantillons par pas ; à 1 seul, le dédoublonnage `used_tactics` épuise la recherche dès que le modèle réitère. | `_post` émule `n` par requêtes successives, chacune bornée par la deadline résiduelle ; erreur API ou budget épuisé interrompt et rend les choix déjà collectés. |
+| 2 | **Parser upstream une-ligne** | Branche `"claude"` de `external_parser.post_process_output` : `.split("lean")[-1].split("```")[0].split("\n")[1]` — **tronque toute sortie à une ligne**. La preuve entière brute mesurée fait 7 lignes (fence comprise) ; le banc du 12/10 n'en recevait qu'une. La branche `deepseek` du même parser garde la preuve complète — bug copy-paste upstream. | `_extract_whole_proof` (module) : dés-enveloppe le bloc fence, préserve le multi-ligne — sémantique de la branche deepseek, appliquée au shim sans toucher au package. |
+
+Pins : `scripts/tests/test_leandojo_v2_bench.py` (26 tests) — l'émulation
+compte chaque sous-requête (`gen.calls`), ne part jamais `"n": k` dans le
+payload, s'arrête net sur budget épuisé ou erreur ; le parser injecté dans
+les tests **imite la branche claude réelle** et le test exige que la preuve
+entière lui survive.
+
+## 6. Reproduction (machine po-2024)
 
 ```bash
 # WSL, venv dédié (smoke 6/6 : `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/tests/test_leandojo_v2_smoke.py`)

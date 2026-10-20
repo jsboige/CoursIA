@@ -293,7 +293,12 @@ def _inject_factory_deps(monkeypatch):
     parser = types.ModuleType(
         "lean_dojo_v2.external_api.python.external_models.external_parser")
     parser.pre_process_input = lambda _model, s: s
-    parser.post_process_output = lambda _model, s: s
+    # Fidele a la branche "claude" REELLE d'external_parser.py (mesure
+    # 2026-10-20) : tronque toute sortie a une ligne. Le shim du banc doit
+    # etre IMMUNISE contre ce comportement sur les preuves entieres.
+    parser.post_process_output = (
+        lambda _model, s: s.split("lean")[-1].split("```")[0].split("\n")[1]
+    )
     loguru = types.ModuleType("loguru")
 
     class _Logger:
@@ -368,3 +373,162 @@ def test_factory_without_deadline_keeps_none(monkeypatch, bench):
     _inject_factory_deps(monkeypatch)
     gen = bench._make_openrouter_generator()
     assert gen.deadline is None
+
+
+# --- Defauts de transport mesures le 2026-10-20 (run 2026-10-12 degenere) ---
+#
+# Sonde HTTP 200 sur openrouter : "n": 4 rend 1 SEUL choix (l'API Anthropic
+# n'a pas de sampling n). Le generateur v2 attend n echantillons par pas ;
+# sans emulation, le dedoublonnage used_tactics epuise la recherche en 3
+# appels (5,9 s contre 1 925 s maison). Second defaut : la branche claude
+# de post_process_output tronque a UNE ligne -- fatal aux preuves entieres.
+
+
+def test_extract_whole_proof_fenced_block(bench):
+    # Sortie brute mesuree le 2026-10-20 (7 lignes fence comprise) : la
+    # preuve doit resister ENTIERE, pas une ligne.
+    raw = (
+        "```lean\n"
+        "  induction n using Conway.natToDigits.induct with\n"
+        "  | case1 => rfl\n"
+        "  | case2 n h ih =>\n"
+        "    unfold Conway.natToDigits\n"
+        "    simp [h, Conway.digitsToNat, ih]\n"
+        "```"
+    )
+    assert bench._extract_whole_proof(raw) == (
+        "induction n using Conway.natToDigits.induct with\n"
+        "  | case1 => rfl\n"
+        "  | case2 n h ih =>\n"
+        "    unfold Conway.natToDigits\n"
+        "    simp [h, Conway.digitsToNat, ih]"
+    )
+
+
+def test_extract_whole_proof_unterminated_and_raw(bench):
+    # bloc non termine (pas de fermeture) et sortie nue : passes tels quels
+    assert bench._extract_whole_proof("```lean\n  rfl") == "rfl"
+    assert bench._extract_whole_proof("  induction n\n  rfl") == (
+        "induction n\n  rfl"
+    )
+
+
+def test_post_emulates_n_with_successive_requests(monkeypatch, bench):
+    # openrouter rend 1 choix par requete : _post doit repeter la requete
+    # jusqu'a n choix collectes, chaque payload demandant n=1.
+    _inject_factory_deps(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "cle-de-test")
+    gen = bench._make_openrouter_generator(deadline=time.monotonic() + 60.0)
+
+    payloads = []
+
+    class _Resp:
+        @staticmethod
+        def json():
+            return {"choices": [{"message": {"content": "exact rfl"}}]}
+
+    def fake_post(_url, headers=None, json=None, timeout=None):
+        payloads.append(json)
+        return _Resp()
+
+    import requests as _requests
+
+    monkeypatch.setattr(_requests, "post", fake_post)
+    outs = gen._post("prompt", n=4, max_tokens=256)
+    assert outs == ["exact rfl"] * 4  # 4 choix collectes
+    assert len(payloads) == 4  # ...par 4 requetes successives
+    assert all(p["n"] == 1 for p in payloads)  # jamais "n": k dans le payload
+    assert gen.calls == 4  # chaque sous-requete compte
+
+
+def test_post_emulation_stops_when_budget_expires(monkeypatch, bench):
+    # Budget epuise en pleine emulation : les sous-requetes suivantes ne
+    # partent pas, budget_hit monte, les choix deja collectes sont rendus.
+    _inject_factory_deps(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "cle-de-test")
+    # deadline courte : la 1re sous-requete (60 ms) la consomme presque toute
+    gen = bench._make_openrouter_generator(
+        deadline=time.monotonic() + 0.03
+    )
+
+    class _Resp:
+        @staticmethod
+        def json():
+            return {"choices": [{"message": {"content": "simp"}}]}
+
+    def fake_post(_url, headers=None, json=None, timeout=None):
+        time.sleep(0.06)
+        return _Resp()
+
+    import requests as _requests
+
+    monkeypatch.setattr(_requests, "post", fake_post)
+    outs = gen._post("prompt", n=4, max_tokens=256)
+    assert gen.budget_hit is True
+    assert len(outs) < 4  # emulation coupee avant n choix
+
+
+def test_post_error_midway_returns_collected(monkeypatch, bench):
+    # Erreur API en pleine emulation : on rend ce qui est deja collecte,
+    # sans hammer le serveur -- et budget_hit reste faux (erreur != budget).
+    _inject_factory_deps(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "cle-de-test")
+    gen = bench._make_openrouter_generator(deadline=time.monotonic() + 60.0)
+
+    state = {"n": 0}
+
+    class _OkResp:
+        @staticmethod
+        def json():
+            return {"choices": [{"message": {"content": "rfl"}}]}
+
+    class _ErrResp:
+        @staticmethod
+        def json():
+            return {"error": {"message": "rate limited"}}
+
+    def fake_post(_url, headers=None, json=None, timeout=None):
+        state["n"] += 1
+        return _OkResp() if state["n"] == 1 else _ErrResp()
+
+    import requests as _requests
+
+    monkeypatch.setattr(_requests, "post", fake_post)
+    outs = gen._post("prompt", n=4, max_tokens=256)
+    assert outs == ["rfl"]
+    assert state["n"] == 2  # erreur arrete l'emulation
+    assert gen.budget_hit is False
+
+
+def test_generate_whole_proof_returns_full_proof(monkeypatch, bench):
+    # Pin fonctionnel du second defaut : generate_whole_proof rend la preuve
+    # COMPLETE extraite du bloc, jamais la premiere ligne (le run 2026-10-12
+    # avait "induction n using Nat.strong_induction_on with" -- une ligne).
+    _inject_factory_deps(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "cle-de-test")
+    gen = bench._make_openrouter_generator(deadline=time.monotonic() + 60.0)
+
+    class _Resp:
+        @staticmethod
+        def json():
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": (
+                                "```lean\n"
+                                "  induction n using Conway.natToDigits.induct with\n"
+                                "  | case1 => rfl\n"
+                                "```"
+                            )
+                        }
+                    }
+                ]
+            }
+
+    import requests as _requests
+
+    monkeypatch.setattr(_requests, "post", lambda *a, **k: _Resp())
+    proof = gen.generate_whole_proof("theorem t : True := by")
+    assert proof.count("\n") == 1  # deux lignes : pas de troncature une-ligne
+    assert "case1 => rfl" in proof

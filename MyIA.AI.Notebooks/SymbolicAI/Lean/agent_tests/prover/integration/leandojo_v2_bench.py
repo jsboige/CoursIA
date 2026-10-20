@@ -49,6 +49,25 @@ Execution de reference (WSL, venv dedie, machine po-2024) :
 
 Aucun secret n'est lu ni ecrit par ce module : ``OPENROUTER_API_KEY`` vient
 de l'environnement (secrets-hygiene regle 3).
+
+Defauts de transport mesures puis corriges (po-2024, 2026-10-20 -- le run du
+2026-10-12 etait degenere sur les deux modes, il mesurait le transport, pas
+l'organe) :
+
+1. **``n`` non honore par openrouter** : la sonde HTTP 200 sur le prompt de
+   test avec ``"n": 4`` rend **1 seul choix** (l'API Anthropic n'a pas de
+   sampling ``n``). Le generateur v2, concu pour n echantillons par pas,
+   n'en recevait qu'un : le dedoublonnage ``used_tactics`` epuisait la
+   recherche en 3 appels (run 2026-10-12 : ``generator_exhausted`` en 5,9 s
+   contre 1 925 s maison). ``_post`` emule maintenant ``n`` par requetes
+   successives, chacune bornee par la deadline residuelle.
+2. **Parser upstream une-ligne sur les preuves entieres** : la branche
+   ``"claude"`` de ``external_parser.post_process_output`` fait
+   ``.split("\\n")[1]`` -- elle tronque toute sortie a UNE ligne (la preuve
+   entiere du 2026-10-12 etait reduite a ``induction n using
+   Nat.strong_induction_on with``). La branche ``deepseek`` du meme parser
+   garde la preuve complete : ``_extract_whole_proof`` aligne le shim sur
+   cette semantique (bloc fence des-enveloppe, multi-ligne preserve).
 """
 from __future__ import annotations
 
@@ -143,6 +162,33 @@ def lake_lean_path(project: str) -> str:
     raise ConfigError("LEAN_PATH introuvable dans la sortie de `lake env printenv`")
 
 
+def _extract_whole_proof(output: str) -> str:
+    """Extrait la preuve entiere de la sortie brute du modele.
+
+    Bug mesure du parser upstream (``external_parser.py``, branche
+    ``"claude"``) : ``.split("lean")[-1].split("```")[0].split("\\n")[1]``
+    tronque toute sortie a UNE ligne -- fatal a ``generate_whole_proof``
+    (preuve du 2026-10-12 reduite a ``induction n using
+    Nat.strong_induction_on with`` alors que la sortie brute mesurait 7
+    lignes, fence comprise). La branche ``deepseek`` du meme parser garde la
+    preuve complete : ce des-enveloppement s'aligne sur cette semantique.
+
+    Les trois formes observees passent : bloc fence ferme
+    (`````lean\\n<preuve>\\n`````), bloc non termine, sortie nue.
+    """
+    text = output.strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        # ligne d'ouverture (``` ou ```lean) retiree
+        if lines and lines[0].startswith("```"):
+            lines = lines[1:]
+        # derniere ligne de fermeture retiree si presente
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        text = "\n".join(lines)
+    return text.strip()
+
+
 def _make_openrouter_generator(deadline: Optional[float] = None):
     """Construit le generateur de tactiques branche openrouter.
 
@@ -186,29 +232,41 @@ def _make_openrouter_generator(deadline: Optional[float] = None):
             self.budget_hit = False
 
         def _post(self, prompt: str, n: int, max_tokens: int) -> list[str]:
-            timeout = transport_timeout_s(deadline_remaining(self.deadline))
-            if timeout is not None and timeout <= 0:
-                # Budget epuise avant l'appel : la requete synchrone ne part
-                # pas, et la coupure remonte aux modes via budget_hit.
-                self.budget_hit = True
-                return []
-            headers = {"Authorization": f"Bearer {_openrouter_key()}"}
-            payload = {
-                "messages": [{"role": "user", "content": prompt}],
-                "model": self.model,
-                "temperature": 0.6,
-                "max_tokens": max_tokens,
-                "top_p": 0.9,
-                "n": n,
-            }
-            data = requests.post(
-                self.API_URL, headers=headers, json=payload, timeout=timeout
-            ).json()
-            if data.get("error"):
-                logger.error(f"erreur openrouter: {data['error']}")
-                return []
-            self.calls += 1
-            return [c["message"]["content"] for c in data.get("choices", [])]
+            # Emulation de n (mesure 2026-10-20) : openrouter rend 1 seul
+            # choix pour les modeles Anthropic malgre "n": k -- le generateur
+            # v2 attend n echantillons par pas. On repete la requete jusqu'a
+            # n choix, chaque sous-requete bornee par la deadline residuelle
+            # (jamais de rafale hors budget). Une erreur API ou une reponse
+            # vide interrompt : on rend les choix deja collectes.
+            collected: list[str] = []
+            while len(collected) < n:
+                timeout = transport_timeout_s(deadline_remaining(self.deadline))
+                if timeout is not None and timeout <= 0:
+                    # Budget epuise : la requete ne part pas, la coupure
+                    # remonte aux modes via budget_hit.
+                    self.budget_hit = True
+                    break
+                headers = {"Authorization": f"Bearer {_openrouter_key()}"}
+                payload = {
+                    "messages": [{"role": "user", "content": prompt}],
+                    "model": self.model,
+                    "temperature": 0.6,
+                    "max_tokens": max_tokens,
+                    "top_p": 0.9,
+                    "n": 1,
+                }
+                data = requests.post(
+                    self.API_URL, headers=headers, json=payload, timeout=timeout
+                ).json()
+                if data.get("error"):
+                    logger.error(f"erreur openrouter: {data['error']}")
+                    break
+                self.calls += 1
+                choices = [c["message"]["content"] for c in data.get("choices", [])]
+                if not choices:
+                    break
+                collected.extend(choices)
+            return collected[:n]
 
         def generate(self, input: str, target_prefix: str = "") -> list[tuple[str, float]] | str:
             prompt = pre_process_input(self.model_name, input + target_prefix)
@@ -231,7 +289,10 @@ def _make_openrouter_generator(deadline: Optional[float] = None):
             outs = self._post(prompt, n=1, max_tokens=1024)
             if not outs:
                 return "sorry"
-            return post_process_output(self.model_name, outs[0])
+            # Jamais post_process_output ici : sa branche claude tronque a
+            # UNE ligne (mesure 2026-10-20) -- _extract_whole_proof garde la
+            # preuve complete (semantique de la branche deepseek upstream).
+            return _extract_whole_proof(outs[0])
 
     # Le joint deadline (mesure adjoint 2026-10-13 sur 4920b146840) : la
     # factory recevait ``deadline`` mais instanciait le generateur sans le
