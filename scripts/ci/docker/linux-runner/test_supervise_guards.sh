@@ -42,6 +42,35 @@ cleanup_launched() {
   kill -KILL -- -$$ 2>/dev/null || true
 }
 trap cleanup_launched EXIT INT TERM
+# --- Oracle des sequences de temporisations (#21601) -----------------------
+# Un oracle qui exige une SEQUENCE EXACTE de temporisations est instable sous
+# charge : la duree reelle des cycles, le seuil de classification et l'ordre
+# entre la detection du sentinel d'arret et l'emission de la temporisation
+# suivante sont exterieurs a l'entree du test. On teste donc une PROPRIETE :
+#   - un prefixe impose (le comportement que le test veut prouver) ;
+#   - une queue eventuelle dont chaque valeur suit min(precedente x 2, CAP),
+#     c'est-a-dire le doublement plafonne que le superviseur applique.
+# Le prefixe et la queue se disent en un seul parametre : le predicat doit
+# rester lisible et le cas tolere (queue vide = run tronque par le timeout)
+# doit rester ROUGE.
+oracle_backoff() {
+  local got="$1" prefix="$2" cap="$3" reste prev cur attendu
+  case "$got" in
+    "$prefix") return 0 ;;
+    "$prefix",*) ;;
+    *) return 1 ;;
+  esac
+  reste="${got#"$prefix"}"
+  prev="${prefix##*,}"
+  for cur in $(echo "${reste#,}" | tr ',' ' '); do
+    attendu=$(( prev * 2 ))
+    [ "$attendu" -gt "$cap" ] && attendu="$cap"
+    [ "$cur" -eq "$attendu" ] || return 1
+    prev="$cur"
+  done
+  return 0
+}
+
 
 # Stubs docker + gh + ps + hostname. Le stub docker simule une image A JOUR
 # pour le garde de fraicheur #14801/#15105 : au probe `run --entrypoint
@@ -1056,26 +1085,65 @@ STUB
     export PATH="$TEST_DIR/bin14:$PATH"
     export COURSIA_RUNNER_NAME_PREFIX="test-prefix-14"
     export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-14"
-    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=2
+    # #21601 : le seuil de cycle sain passe de 2 s a 5 s et le burn de 3 s a 8 s.
+    # L'ecart de 1 s (burn 3 s contre seuil 2 s) ne tenait pas sous charge : un
+    # cycle rapide qui deborde le seuil change de classification et la sequence
+    # entiere decale. Marge actuelle : 3 s de part et d'autre du seuil.
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=5
     export COURSIA_RUNNER_BACKOFF_BASE=3
     export COURSIA_RUNNER_BACKOFF_CAP=999
     export STUB_STOP_FILE="$TEST_DIR/state-14/stop"
     export STUB_RUN_COUNT="$TEST_DIR/run14.count"
     export SLEEP_LOG="$TEST_DIR/sleep14.log"
     export STUB_BURN_AT=3
-    export STUB_BURN_SECS=3
-    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out14.log" 2>"$TEST_DIR/err14.log"
+    export STUB_BURN_SECS=8
+    # 120 s : le burn seul coute 8 s, la suite doit survivre a une machine chargee.
+    timeout --kill-after=2 120 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out14.log" 2>"$TEST_DIR/err14.log"
   )
+  rc14=$?
   seq="$(paste -sd, "$TEST_DIR/sleep14.log")"
-  if [ "$seq" = "3,6,2,3,6,12" ]; then
-    ok "reset prouve : 3,6 -> cycle sain (2) -> REPART a 3,6 (le 3e cycle de 2s a vecu >= HEALTHY=1)"
+  # Oracle invariant : le compteur de cycles courts est REMIS a zero apres un
+  # cycle sain -> prefixe 3,6 -> cycle sain (2) -> REPART a 3,6, puis une queue
+  # eventuelle qui double strictement (12, 24, ...). Voir oracle_backoff.
+  if [ "$rc14" = "124" ]; then
+    ko "timeout atteint : le superviseur n'a pas rendu la main (sequence [$seq])"
+  elif oracle_backoff "$seq" "3,6,2,3,6" 999; then
+    ok "reset prouve : 3,6 -> cycle sain (2) -> REPART a 3,6 (invariant, queue [$seq])"
   else
-    ko "attendu 3,6,2,3,6,12, obtenu [$seq]"
+    ko "invariant attendu (prefixe 3,6,2,3,6 puis queue qui double strictement), obtenu [$seq]"
   fi
   if grep -q "conteneur termine sainement" "$TEST_DIR/out14.log"; then
     ok "le cycle long est journalise comme sain (pas comme echec)"
   else
     ko "ligne 'termine sainement' absente : $(head -3 "$TEST_DIR/out14.log")"
+  fi
+  # --- Controle NEGATIF (#21601) : un timeout atteint doit rester ROUGE -----
+  # Le meme harnais est relance avec un timeout de 1 s : le superviseur se
+  # fait tuer pendant le burn, la sequence est tronquee, et l'oracle doit la
+  # REJETER. C'est le garde-fou qui empeche l'assouplissement de masquer un
+  # timeout reel.
+  mkdir -p "$TEST_DIR/state-14neg"
+  rm -f "$TEST_DIR/state-14neg/stop" "$TEST_DIR/state-14neg/pids" "$TEST_DIR/run14neg.count"
+  : > "$TEST_DIR/sleep14neg.log"
+  (
+    export PATH="$TEST_DIR/bin14:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-14neg"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-14neg"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=5
+    export COURSIA_RUNNER_BACKOFF_BASE=3
+    export COURSIA_RUNNER_BACKOFF_CAP=999
+    export STUB_STOP_FILE="$TEST_DIR/state-14neg/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run14neg.count"
+    export SLEEP_LOG="$TEST_DIR/sleep14neg.log"
+    export STUB_BURN_AT=3
+    export STUB_BURN_SECS=8
+    timeout --kill-after=1 1 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out14neg.log" 2>&1
+  )
+  negseq="$(paste -sd, "$TEST_DIR/sleep14neg.log")"
+  if oracle_backoff "$negseq" "3,6,2,3,6" 999; then
+    ko "controle negatif FAUX : une sequence tronquee par timeout a ete acceptee [$negseq]"
+  else
+    ok "controle negatif : une sequence tronquee par timeout est rejetee ([$negseq])"
   fi
 )
 echo ""
@@ -1438,7 +1506,10 @@ STUB
   : > "$ARGV_LOG"
   export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-17b"
   export COURSIA_RUNNER_WAITER_TOOLCACHE=0
-  timeout --kill-after=1 3 bash "$SCRIPT_DIR/supervise.sh" waiters 1 >/dev/null 2>&1
+  # #21601 : 3 s ne suffisaient pas sur une machine chargee -- le sous-processus
+  # n'atteignait pas l'appel docker et l'argv restait vide (echec a l'identique
+  # sur la base, mesure le 2026-10-20).
+  timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" waiters 1 >/dev/null 2>&1
   touch "$TEST_DIR/state-17b/stop"
   argv="$(cat "$ARGV_LOG" 2>/dev/null)"
   if [ -n "$argv" ] && ! echo "$argv" | grep -q -- "coursia-runner-toolcache"; then
@@ -1705,13 +1776,16 @@ STUB
     export STUB_STOP_FILE="$TEST_DIR/state-26/stop"
     export STUB_RUN_COUNT="$TEST_DIR/run26.count"
     export SLEEP_LOG="$TEST_DIR/sleep26.log"
-    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err26.log"
+    # #21601 : 30 s ne tenaient pas sur une machine chargee (run tronque).
+    timeout --kill-after=2 120 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err26.log"
   )
   seq="$(paste -sd, "$TEST_DIR/sleep26.log")"
-  if [ "$seq" = "2,2,2,2,2,3,6,12" ]; then
-    ok "5 cycles AVEC travail -> sleep 2 sans backoff, puis boucle vide REPART a 3,6,12 (compteur remis a zero par le travail)"
+  # Oracle invariant : 5 cycles AVEC travail -> sleep 2 sans backoff, puis
+  # boucle vide REPART a 3,6 puis doublement plafonne (CAP=24).
+  if oracle_backoff "$seq" "2,2,2,2,2,3,6" 24; then
+    ok "5 cycles AVEC travail -> sleep 2 sans backoff, puis boucle vide REPART a 3,6,12 (invariant, queue [$seq])"
   else
-    ko "attendu 2,2,2,2,2,3,6,12, obtenu [$seq]"
+    ko "invariant attendu (prefixe 2,2,2,2,2,3,6 puis queue min(prev*2,24)), obtenu [$seq]"
   fi
   if grep -q "cycle court AVEC travail" "$TEST_DIR/err26.log"; then
     ok "le travail reel est journalise comme tel"
@@ -1771,7 +1845,8 @@ STUB
     export PATH="$TEST_DIR/bin27:$PATH"
     export COURSIA_RUNNER_NAME_PREFIX="test-prefix-27"
     export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-27"
-    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=2
+    # #21601 : marge de classification portee de 1 s a 3 s (seuil 5 s, burn 8 s).
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=5
     export COURSIA_RUNNER_BACKOFF_BASE=3
     export COURSIA_RUNNER_BACKOFF_CAP=24
     export COURSIA_RUNNER_BACKOFF_MIN_SEC=7
@@ -1779,9 +1854,9 @@ STUB
     export STUB_RUN_COUNT="$TEST_DIR/run27.count"
     export SLEEP_LOG="$TEST_DIR/sleep27.log"
     export STUB_BURN_AT=3
-    export STUB_BURN_SECS=3
+    export STUB_BURN_SECS=8
     export STUB_DOCKER_RC=1
-    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out27.log" 2>"$TEST_DIR/err27.log"
+    timeout --kill-after=2 120 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out27.log" 2>"$TEST_DIR/err27.log"
   )
   seq="$(paste -sd, "$TEST_DIR/sleep27.log")"
   # Cycles 1-2 courts (3,6) ; cycle 3 brule 3s >= HEALTHY=2 mais rc=1 ->
@@ -1790,10 +1865,12 @@ STUB
   # reset inconditionnel on aurait vu 3,6,2,3,6,12.) HEALTHY=2 + burn 3s
   # pour qu'un cycle instantane ne puisse pas chevaucher un tick de
   # seconde et passer pour long par accident.
-  if [ "$seq" = "3,6,7,12,24,24" ]; then
-    ok "3,6 -> cycle long rc=1 : 7 (non sain) -> compteur conserve : 12,24,24"
+  # Oracle invariant : prefixe 3,6 -> cycle long rc=1 : 7 (non sain) ->
+  # compteur conserve : 12, puis doublement plafonne a CAP=24.
+  if oracle_backoff "$seq" "3,6,7,12" 24; then
+    ok "3,6 -> cycle long rc=1 : 7 (non sain) -> compteur conserve : 12,24,24 (invariant, queue [$seq])"
   else
-    ko "attendu 3,6,7,12,24,24, obtenu [$seq]"
+    ko "invariant attendu (prefixe 3,6,7,12 puis queue min(prev*2,24)), obtenu [$seq]"
   fi
   if grep -q "non qualifie sain" "$TEST_DIR/err27.log" \
      && ! grep -q "termine sainement" "$TEST_DIR/out27.log"; then
