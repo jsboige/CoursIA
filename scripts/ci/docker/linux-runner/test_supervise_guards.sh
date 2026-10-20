@@ -3113,7 +3113,7 @@ echo "Test 65 : budget -- socket absent : hors perimetre sans refus (#15164)"
 )
 echo ""
 
-# --- Test 66 : un echec qui n'ecrit RIEN est nomme MUET (#21446) -----------
+# --- Test 67 : un echec qui n'ecrit RIEN est nomme MUET (#21446) -----------
 # Mesure ai-01 du 19/10 (slot myia-ai-01-wsl-10) : 51 cycles consecutifs en
 # rc=128, et le journal du slot muet depuis le 16/10 -- le conteneur mourait
 # AVANT l'enregistrement du runner, donc avant toute ligne de job, et les
@@ -3122,72 +3122,7 @@ echo ""
 # ce soit. Ce test verrouille le diagnostic : un cycle qui n'a rien ecrit est
 # nomme ECHEC MUET, et le rappel muet disparait au profit de la classe de
 # cause.
-echo "Test 66 : un cycle qui n'ecrit rien dans le log du slot est nomme ECHEC MUET (#21446)"
-(
-  cd "$SCRIPT_DIR"
-  unset PS_OUTPUT
-  mkdir -p "$TEST_DIR/bin66" "$TEST_DIR/state-66"
-  cat > "$TEST_DIR/bin66/docker" <<STUB
-#!/usr/bin/env bash
-if [ "\$1" = "info" ]; then exit 0; fi
-if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
-if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
-  case "\$*" in
-    *work_cache_health.sh*)
-      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
-      ;;
-    *)
-      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
-      ;;
-  esac
-  exit 0
-fi
-if [ "\$1" = "run" ]; then
-  # Cycle MUET : le conteneur ne produit AUCUNE sortie (la redirection cree le
-  # fichier, vide) et meurt en rc=128, comme le slot wsl-10 mesure le 19/10.
-  touch "\$STUB_STOP_FILE"
-  exit 128
-fi
-exit 0
-STUB
-  chmod +x "$TEST_DIR/bin66/docker"
-  cat > "$TEST_DIR/bin66/sleep" <<'STUB'
-#!/usr/bin/env bash
-echo "$@" >> "$SLEEP_LOG"
-STUB
-  chmod +x "$TEST_DIR/bin66/sleep"
-  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin66/gh"
-  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin66/ps"
-  rm -f "$TEST_DIR/state-66/stop" "$TEST_DIR/state-66/pids" "$TEST_DIR/run66.count"
-  : > "$TEST_DIR/sleep66.log"
-  (
-    export PATH="$TEST_DIR/bin66:$PATH"
-    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-66"
-    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-66"
-    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=9999
-    export COURSIA_RUNNER_BACKOFF_BASE=3
-    export COURSIA_RUNNER_BACKOFF_CAP=6
-    export STUB_STOP_FILE="$TEST_DIR/state-66/stop"
-    export STUB_RUN_COUNT="$TEST_DIR/run66.count"
-    export SLEEP_LOG="$TEST_DIR/sleep66.log"
-    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err66.log"
-  )
-  if grep -q "ECHEC MUET" "$TEST_DIR/err66.log" \
-     && grep -q -- "test-prefix-66-1.log" "$TEST_DIR/err66.log" \
-     && ! grep -q -- "-- voir " "$TEST_DIR/err66.log"; then
-    ok "un cycle muet est nomme ECHEC MUET, sans renvoyer vers un log incapable de parler"
-  else
-    ko "echec muet non nomme : $(head -3 "$TEST_DIR/err66.log")"
-  fi
-)
-echo ""
-
-# --- Test 67 : CONTROLE NEGATIF -- un cycle qui ECRIT garde le rappel (#21446)
-# Le diagnostic muet ne doit pas swallows le rappel « -- voir » des echecs qui
-# ont, eux, un message docker a lire (image perimee, nom de conteneur pris).
-# Sans ce controle, le correctif du test 66 pourrait faire perdre au
-# superviseur la source de verite de tous les autres echecs.
-echo "Test 67 : controle negatif -- un cycle qui ecrit dans le log garde le rappel #15278 (#21446)"
+echo "Test 67 : un cycle qui n'ecrit rien dans le log du slot est nomme ECHEC MUET (#21446)"
 (
   cd "$SCRIPT_DIR"
   unset PS_OUTPUT
@@ -3208,11 +3143,10 @@ if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
   exit 0
 fi
 if [ "\$1" = "run" ]; then
-  # Cycle PARLANT : le conteneur ecrit dans le log du slot (la redirection du
-  # `docker run`), puis meurt en rc=125 comme un conflit de nom de conteneur.
-  echo "Conflict. The container name is already in use"
+  # Cycle MUET : le conteneur ne produit AUCUNE sortie (la redirection cree le
+  # fichier, vide) et meurt en rc=128, comme le slot wsl-10 mesure le 19/10.
   touch "\$STUB_STOP_FILE"
-  exit 125
+  exit 128
 fi
 exit 0
 STUB
@@ -3238,11 +3172,77 @@ STUB
     export SLEEP_LOG="$TEST_DIR/sleep67.log"
     timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err67.log"
   )
-  if grep -q -- "-- voir $TEST_DIR/state-67/test-prefix-67-1.log" "$TEST_DIR/err67.log" \
-     && ! grep -q "ECHEC MUET" "$TEST_DIR/err67.log"; then
+  if grep -q "ECHEC MUET" "$TEST_DIR/err67.log" \
+     && grep -q -- "test-prefix-67-1.log" "$TEST_DIR/err67.log" \
+     && ! grep -q -- "-- voir " "$TEST_DIR/err67.log"; then
+    ok "un cycle muet est nomme ECHEC MUET, sans renvoyer vers un log incapable de parler"
+  else
+    ko "echec muet non nomme : $(head -3 "$TEST_DIR/err67.log")"
+  fi
+)
+echo ""
+
+# --- Test 68 : CONTROLE NEGATIF -- un cycle qui ECRIT garde le rappel (#21446)
+# Le diagnostic muet ne doit pas swallows le rappel « -- voir » des echecs qui
+# ont, eux, un message docker a lire (image perimee, nom de conteneur pris).
+# Sans ce controle, le correctif du test 67 pourrait faire perdre au
+# superviseur la source de verite de tous les autres echecs.
+echo "Test 68 : controle negatif -- un cycle qui ecrit dans le log garde le rappel #15278 (#21446)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin68" "$TEST_DIR/state-68"
+  cat > "$TEST_DIR/bin68/docker" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = "info" ]; then exit 0; fi
+if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
+if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  # Cycle PARLANT : le conteneur ecrit dans le log du slot (la redirection du
+  # `docker run`), puis meurt en rc=125 comme un conflit de nom de conteneur.
+  echo "Conflict. The container name is already in use"
+  touch "\$STUB_STOP_FILE"
+  exit 125
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin68/docker"
+  cat > "$TEST_DIR/bin68/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$TEST_DIR/bin68/sleep"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin68/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin68/ps"
+  rm -f "$TEST_DIR/state-68/stop" "$TEST_DIR/state-68/pids" "$TEST_DIR/run68.count"
+  : > "$TEST_DIR/sleep68.log"
+  (
+    export PATH="$TEST_DIR/bin68:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-68"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-68"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=9999
+    export COURSIA_RUNNER_BACKOFF_BASE=3
+    export COURSIA_RUNNER_BACKOFF_CAP=6
+    export STUB_STOP_FILE="$TEST_DIR/state-68/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run68.count"
+    export SLEEP_LOG="$TEST_DIR/sleep68.log"
+    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err68.log"
+  )
+  if grep -q -- "-- voir $TEST_DIR/state-68/test-prefix-68-1.log" "$TEST_DIR/err68.log" \
+     && ! grep -q "ECHEC MUET" "$TEST_DIR/err68.log"; then
     ok "un cycle qui ecrit garde le rappel du log (le diagnostic muet ne le remplace pas)"
   else
-    ko "rappel du log perdu sur un cycle parlant : $(head -3 "$TEST_DIR/err67.log")"
+    ko "rappel du log perdu sur un cycle parlant : $(head -3 "$TEST_DIR/err68.log")"
   fi
 )
 echo ""
