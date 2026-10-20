@@ -342,10 +342,11 @@ class WorktreeStatus:
     # Champs v1.3 (protocole Maintenance #113, dae338b, arbitrage 19/10) :
     # verrou `git worktree lock`. `locked_reason` = raison brute lue au
     # porcelain (None = pas de verrou, "" = verrou sans raison) ;
-    # `lock_class` = "agent" (forme `claude agent agent-<hex> (pid N)`)
-    # ou "optout" (raison libre, honoree indefiniment) ; `lock_pid` = pid
-    # capture pour un lock d'agent. `dead_lock_unlocked` porte la decision
-    # v1.3 : lock d'agent a pid MORT sur un worktree REMOVE-ready --
+    # `lock_class` = "agent" (forme PURE `claude agent agent-<hex> (pid N)`)
+    # ou "optout" (raison libre, honoree indefiniment) ou "unclassified"
+    # (verrou nu sans raison : REFUSE, F2 de la revue #21503) ; `lock_pid` =
+    # pid capture pour un lock d'agent. `dead_lock_unlocked` porte la
+    # decision v1.3 : lock d'agent a pid MORT sur un worktree REMOVE-ready --
     # l'apply execute `git worktree unlock` puis `remove` (jamais -f -f).
     locked_reason: Optional[str] = None
     lock_class: Optional[str] = None
@@ -660,14 +661,39 @@ AGENT_LOCK_RE = re.compile(r"claude agent \S+ \(pid (\d+)\)")
 def classify_worktree_lock(reason: Optional[str]) -> tuple[Optional[str], Optional[int]]:
     """Classe la raison d'un verrou porcelain en (classe, pid).
 
-    Retourne ("agent", pid) pour un lock d'agent, ("optout", None) pour
-    toute autre raison non vide -- y compris une raison qu'on ne comprend
-    pas : incompris = opt-out, on ne deverrouille jamais ce qu'on n'a pas
-    classifie. (None, None) quand il n'y a pas de verrou (raison None).
+    Retourne ("agent", pid) pour un lock d'agent reconnu a sa **forme
+    pure** (`fullmatch` : `claude agent <nom> (pid N)` et rien d'autre),
+    ("optout", None) pour toute autre raison non vide, et
+    ("unclassified", None) pour un verrou REEL dont la raison est vide ou
+    blanche (`git worktree lock` sans `--reason` : l'invocation par
+    defaut). (None, None) uniquement quand il n'y a pas de verrou du tout
+    (raison None).
+
+    Deux fail-safes distincts, tous deux mesures en revue (F1/F2, Hermes
+    du 2026-10-20 sur #21503) :
+
+    - **F1 -- forme pure exigee** : `search()` laissait passer une raison
+      humaine qui *cite* la forme agent, par exemple
+      `'claude agent agent-7f3a11 (pid 999999) -- NE PAS TOUCHER'`
+      (`git worktree lock --reason` ecrase la raison precedente, donc
+      completer une raison d'agent est le geste naturel d'un humain qui
+      garde la tracabilite du pid). Un tel lock etait classe `agent` et
+      pouvait etre deverrouille : une garde humaine honoree comme un
+      cadavre. `fullmatch` rend `optout` des qu'autre chose entoure la
+      forme -- incompris = opt-out, jamais deverrouille.
+    - **F2 -- verrou nu non confondu avec l'absence de verrou** : rendre
+      `(None, None)` pour une raison vide faisait sortir la politique en
+      REMOVE, puis `git worktree remove` echouait (`fatal: cannot remove a
+      locked working tree`) -- exactement la classe de mensonge corrigee
+      en #14693. Une raison vide est une raison qu'on ne comprend pas,
+      pas une absence de verrou.
     """
-    if not reason:
+    if reason is None:
         return (None, None)
-    m = AGENT_LOCK_RE.search(reason)
+    stripped = reason.strip()
+    if not stripped:
+        return ("unclassified", None)
+    m = AGENT_LOCK_RE.fullmatch(stripped)
     if m:
         return ("agent", int(m.group(1)))
     return ("optout", None)
@@ -720,6 +746,10 @@ def enforce_lock_policy(status: "WorktreeStatus", locked_reason: Optional[str]) 
       REMOVE ; il n'ajoute qu'un REFUSE sur un statut qui aurait ete
       retirable) ;
     - opt-out : REFUSE "lane_optout_lock", honore indefiniment ;
+    - verrou non classifie (raison vide) : REFUSE "unclassified_lock" --
+      `git worktree lock` sans `--reason` est l'invocation par defaut, et
+      une raison vide est une raison qu'on ne comprend pas (F2 de la revue
+      #21503) ;
     - agent + pid vivant : REFUSE "live_agent_lock:<pid>" ;
     - agent + pid mort : le statut reste REMOVE et porte
       dead_lock_unlocked=True -- l'apply deverrouillera puis retirera.
@@ -729,10 +759,15 @@ def enforce_lock_policy(status: "WorktreeStatus", locked_reason: Optional[str]) 
     cause, le lock est cite dans les champs de visibilite.
     """
     status.locked_reason = locked_reason
-    if not locked_reason:
+    if locked_reason is None:
         return status
     status.lock_class, status.lock_pid = classify_worktree_lock(locked_reason)
     if status.decision != "REMOVE":
+        return status
+    if status.lock_class == "unclassified":
+        status.decision = "REFUSE"
+        if not status.refusal_reason:
+            status.refusal_reason = "unclassified_lock"
         return status
     if status.lock_class == "optout":
         status.decision = "REFUSE"

@@ -3012,12 +3012,29 @@ class TestLockPolicy:
         # lock d'agent -- on ne deverrouille pas ce qu'on n'a pas classe.
         assert pmw.classify_worktree_lock("n'importe quoi (pid 1)") == ("optout", None)
 
-    def test_classify_empty_and_none_are_no_lock(self):
-        # Un verrou pose sans raison (`git worktree lock` nu) rend une
-        # ligne porcelain "locked" vide : pas de pid, pas de lane
-        # identifiable. None = pas de verrou.
-        assert pmw.classify_worktree_lock("") == (None, None)
+    def test_classify_agent_reason_with_human_suffix_is_optout(self):
+        # F1 (revue #21503) : `git worktree lock --reason` ECRASE la raison
+        # precedente, donc un humain qui garde la tracabilite du pid ecrit
+        # la forme agent SUIVIE d'une consigne. `search()` classait ce
+        # verrou `agent` et pouvait le deverrouiller -- une garde humaine
+        # honoree comme un cadavre. La forme doit etre PURE (fullmatch).
+        assert pmw.classify_worktree_lock(
+            "claude agent agent-7f3a11 (pid 999999) -- NE PAS TOUCHER, revue en cours"
+        ) == ("optout", None)
+
+    def test_classify_none_is_no_lock(self):
+        # None = aucune ligne "locked" dans le porcelain : pas de verrou.
         assert pmw.classify_worktree_lock(None) == (None, None)
+
+    def test_classify_bare_lock_reason_is_unclassified(self):
+        # F2 (revue #21503) : `git worktree lock` SANS `--reason` est
+        # l'invocation par defaut ; le porcelain rend une ligne "locked"
+        # vide. Une raison vide est une raison qu'on ne comprend pas, PAS
+        # une absence de verrou : la rendre (None, None) faisait sortir la
+        # politique en REMOVE, puis le remove echouait sur un worktree
+        # verrouille -- la classe de mensonge corrigee en #14693.
+        assert pmw.classify_worktree_lock("") == ("unclassified", None)
+        assert pmw.classify_worktree_lock("   ") == ("unclassified", None)
 
     # --- enforce_lock_policy : opt-out ---
 
@@ -3029,14 +3046,16 @@ class TestLockPolicy:
         assert s.lock_pid is None
         assert s.dead_lock_unlocked is False
 
-    def test_bare_locked_is_not_a_lock_known_to_policy(self):
-        # `git worktree lock` sans raison : porcelain rend "locked" seul,
-        # donc une raison VIDE. Classify rend (None, None) : la politique
-        # ne voit pas de verrou classable et laisse le statut intact --
-        # git refusera de toute facon le remove d'un worktree verrouille,
-        # le garde-fou reste cote git, pas cote organe.
+    def test_bare_locked_refuses_remove(self):
+        # F2 (revue #21503) : un verrou nu REFUSE le retrait au lieu de le
+        # laisser partir en REMOVE pour echouer cote git a l'apply. Le
+        # garde-fou git reste la derniere ressource ; l'organe, lui, ne
+        # plus annoncer un REMOVE qui ne passera pas.
         s = pmw.enforce_lock_policy(_make_status(), "")
-        assert s.decision == "REMOVE"
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "unclassified_lock"
+        assert s.lock_class == "unclassified"
+        assert s.lock_pid is None
         assert s.dead_lock_unlocked is False
 
     # --- enforce_lock_policy : lock d'agent ---
