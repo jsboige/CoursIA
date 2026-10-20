@@ -162,7 +162,7 @@ def rapport(mesure: Dict[str, Any]) -> str:
         for cle, data in par_encodage.items():
             lignes.append(f"  {cle:<10} {data['octets']:>10} octets   sha256:{data['sha256']}")
         lignes.append("")
-    return "\n".join(lines)
+    return "\n".join(lignes)
 
 
 def main() -> int:
