@@ -85,6 +85,18 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[triton-gemlite-compat] ECHEC {target}: {exc}", file=sys.stderr)
             rc = 2
             continue
+        if state == "unknown":
+            # Layout inconnu : ni la forme attendue, ni deja patche. Un triton futur
+            # qui deplacerait la ligne doit rendre le boot BRUYANT, pas silencieusement
+            # non patche (docstring : exit 2). Le message va sur stderr pour que le
+            # `|| echo` de l'entrypoint le relaye comme avertissement de demarrage.
+            print(
+                f"[triton-gemlite-compat] layout INCONNU: {target} "
+                "(needle absent et fichier non deja patche) -- triton a change, patch a reexaminer",
+                file=sys.stderr,
+            )
+            rc = 2
+            continue
         print(f"[triton-gemlite-compat] {state}: {target}")
 
     if rc == 0:

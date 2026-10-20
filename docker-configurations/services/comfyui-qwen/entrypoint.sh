@@ -211,6 +211,20 @@ else
 fi
 
 # =============================================================================
+# RE-APPLICATION DU PATCH TRITON/GEMLITE (post custom nodes)
+# =============================================================================
+# Un custom node qui installe lui-meme gemlite/triton-windows via son
+# requirements.txt (ex. ComfyUI-Bonsai-4B-2Bit au premier deploiement) peut
+# reecrire triton/runtime/autotuner.py APRES le patch du debut de boot et
+# l'effacer pour ce boot. Le script etant idempotent, ce second passage ne
+# change rien sur un venv sain et retablit le patch sinon.
+if [ -f "patch_triton_gemlite_compat.py" ] && ls venv/lib/python*/site-packages/triton >/dev/null 2>&1; then
+    echo "Re-verification du patch triton/gemlite (post custom nodes)..."
+    venv/bin/python3 patch_triton_gemlite_compat.py --venv "$(pwd)/venv" \
+        || echo "Patch triton/gemlite NON applique : voir le message ci-dessus"
+fi
+
+# =============================================================================
 # DEMARRAGE
 # =============================================================================
 echo "Demarrage du serveur ComfyUI..."
