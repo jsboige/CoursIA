@@ -15,15 +15,54 @@ class SectorRotationMomentum(QCAlgorithm):
     """
 
     def initialize(self):
+        # Mesure contre references detenues (#21371, protocole de #21329) :
+        # `strategy` (defaut) garde la decision du code ; `spy` (SPY detenu) et
+        # `6040` (SPY 60 %, BND 40 %) sont les deux references.
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040"):
+            raise ValueError(
+                f"parametre mode inconnu : {self._mode} (strategy | spy | 6040)"
+            )
+
         # Aligned baseline period 2018-2025 (#1630). Original start was 2014;
         # standardized to 2018-01-01 for cross-strategy comparison.
-        self.set_start_date(2018, 1, 1)
-        self.set_end_date(2025, 1, 1)
+        # Les parametres start_date et end_date (%Y%m%d) ouvrent la mesure hors
+        # echantillon ; sans eux, la fenetre reste celle-ci.
+        start_date_param = self._parse_date_param("start_date")
+        end_date_param = self._parse_date_param("end_date")
+        if start_date_param is not None:
+            self.set_start_date(start_date_param)
+        else:
+            self.set_start_date(2018, 1, 1)
+        if end_date_param is not None:
+            self.set_end_date(end_date_param)
+        else:
+            self.set_end_date(2025, 1, 1)
         self.set_cash(100000)
         self.set_brokerage_model(
             BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN
         )
 
+        if self._mode == "strategy":
+            self._initialize_strategy()
+        else:
+            self._initialize_reference()
+
+        self.set_benchmark("SPY")
+        self.set_warm_up(200, Resolution.DAILY)
+
+        # Trace journaliere `shadow` (contrat #18923) : valeur du portefeuille a
+        # l'ouverture de chaque seance de SPY, repartie sur e0..e4. Les trois
+        # modes la prennent au meme instant, sur la cloture de la veille.
+        self._closes = 0
+        self._trace_symbol = Symbol.create("SPY", SecurityType.EQUITY, Market.USA)
+        self.schedule.on(
+            self.date_rules.every_day(self._trace_symbol),
+            self.time_rules.after_market_open(self._trace_symbol, 0),
+            self._trace,
+        )
+
+    def _initialize_strategy(self):
         # Universe: equity growth, broad, intl, gold, small cap
         self.tickers = ["QQQ", "SPY", "EFA", "GLD", "IWM"]
         self.sma_dict = {}
@@ -40,11 +79,45 @@ class SectorRotationMomentum(QCAlgorithm):
         self.rebalance_days = 21
         self.days_since_rebalance = 0
 
-        self.set_benchmark("SPY")
-        self.set_warm_up(200, Resolution.DAILY)
+    def _initialize_reference(self):
+        self.settings.seed_initial_prices = True
+        self._ref_spy = self.add_equity("SPY", Resolution.DAILY).symbol
+        self._ref_bnd = (
+            self.add_equity("BND", Resolution.DAILY).symbol
+            if self._mode == "6040"
+            else None
+        )
+        self.schedule.on(
+            self.date_rules.month_start(self._ref_spy),
+            self.time_rules.after_market_open(self._ref_spy, 1),
+            self._rebalance_reference,
+        )
+
+    def _rebalance_reference(self):
+        if self.is_warming_up:
+            return
+        if self._ref_bnd is None:
+            self.set_holdings([PortfolioTarget(self._ref_spy, 1.0)])
+        else:
+            self.set_holdings([
+                PortfolioTarget(self._ref_spy, 0.6),
+                PortfolioTarget(self._ref_bnd, 0.4),
+            ])
+
+    def _parse_date_param(self, name):
+        raw = self.get_parameter(name)
+        if raw is None or str(raw).strip() == "":
+            return None
+        return datetime.strptime(str(raw).strip(), "%Y%m%d")
+
+    def _trace(self):
+        if self.is_warming_up:
+            return
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
 
     def on_data(self, data):
-        if self.is_warming_up:
+        if self.is_warming_up or self._mode != "strategy":
             return
 
         # En journalier, Lean livre les avis de dividende et de division dans une

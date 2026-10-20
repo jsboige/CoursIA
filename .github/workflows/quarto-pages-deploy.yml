@@ -127,7 +127,7 @@ jobs:
         env:
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
           GITHUB_TOKEN: ${{ github.token }}
-        run: python scripts/quarto_render_timing.py --sample-occupation occupation.json
+        run: python3 scripts/quarto_render_timing.py --sample-occupation occupation.json
 
       - name: Set up Quarto
         # Routage #14283 (feu vert ai-01 2026-09-02) : PAS quarto-dev/quarto-actions/setup@v2 —
@@ -153,7 +153,7 @@ jobs:
         # nouveaux fichiers apparaissent sur le site sans commit manuel de
         # _quarto.yml (Axe C #4211). Idempotent ; archives et libs vendored
         # exclues (cf. scripts/regen_quarto_render.py).
-        run: python scripts/regen_quarto_render.py
+        run: python3 scripts/regen_quarto_render.py
 
       - name: Normalize .NET kernel language for Quarto (C# -> csharp)
         # Quarto derive la classe pandoc du code-block depuis kernelspec.language.
@@ -166,7 +166,7 @@ jobs:
         # render et le restore APRES. kernelspec.language est informationnel :
         # l'execution Jupyter/papermill utilise kernelspec.name ".net-csharp"
         # (inchange) -> le patch n'affecte jamais l'execution.
-        run: python scripts/quarto_csharp_kernel_fix.py apply
+        run: python3 scripts/quarto_csharp_kernel_fix.py apply
 
       - name: Escape YAML-ambiguous `---` separators (issue #11611)
         # Les cellules markdown commencant par `---` (separateur visuel avant
@@ -178,7 +178,7 @@ jobs:
         # standalone en `***` (autre syntaxe de regle horizontale markdown, NON
         # reconnue comme separateur YAML). Round-trip byte-level propre, restore
         # via le meme script en fin de job.
-        run: python scripts/quarto_yaml_safe.py apply
+        run: python3 scripts/quarto_yaml_safe.py apply
 
       - name: Render Quarto site
         # `freeze: auto` (dans _quarto.yml) => Quarto n'exécute PAS les notebooks
@@ -204,19 +204,19 @@ jobs:
         # --occupation : busy/online echantillonne au demarrage (step amont) ;
         # --runner-name implicite via $RUNNER_NAME. Imprime aussi la ligne
         # greppable "#14597-covariates:" pour la moisson multi-runs.
-        run: python scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
+        run: python3 scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
 
       - name: Restore kernel language (hygiene)
         # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
         # garde le worktree coherent si un step futur relit les notebooks sources.
-        run: python scripts/quarto_csharp_kernel_fix.py restore
+        run: python3 scripts/quarto_csharp_kernel_fix.py restore
 
       - name: Restore YAML-safe separators
         # Restore les `***` en `---` dans les notebooks sources pour ne pas laisser
         # le worktree dans un etat different de la branche. Le checkout CI est
         # ephemere (meme remarque que ci-dessus), mais le restore garde les
         # outputs `git diff` propres pour les etapes suivantes.
-        run: python scripts/quarto_yaml_safe.py restore
+        run: python3 scripts/quarto_yaml_safe.py restore
 
       - name: Check output
         # Sécurité : vérifie que _site/ existe (sinon le deploy échouera avec une
