@@ -20,15 +20,15 @@ Les **verdicts de cycle** d'audit et les **décisions de suivi** ne vivent plus 
 
 | Notebook | Cells | Source / attribution (snippet + cell) |
 |----------|------:|---------------------------------------|
-| Infer/Infer-1-Setup.ipynb | 41 (29+12) | « [Model-Based Machine Learning Book](https://mbmlbook.com/) » @ cell 37 (footer Pour aller plus loin) |
-| Infer/Infer-2-Gaussian-Mixtures.ipynb | 84 (57+27) | Mélanges gaussiens exécutés sans citation inline ; sources canoniques = Bishop PRML §9.2 (Mixture of Gaussians) + §9.2.2 (EM pour mixtures) + §10.7 (Variational Bayes pour mélanges) ; MBML ne couvre pas ce modèle canoniquement |
-| Infer/Infer-3-Factor-Graphs.ipynb | 53 (38+15) | « **MBML Book, Chapter 1** » @ cell 7 (Murder Mystery scenario) — **attribution canonique explicite** |
-| Infer/Infer-4-Bayesian-Networks.ipynb | 66 (46+20) | WetGrass/Sprinkler (144 hits) ; source canonique citée = « Lauritzen & Spiegelhalter (1988) et Jensen, Lauritzen & Olesen (1990) » (Springer) — couvre le MBML WetGrass Chap.5 avec pedigree académique différent |
-| Infer/Infer-5-Causal-Inference.ipynb | 38 (23+15) | do-calculus = MBML Chap.7 ; notebook cite « Pearl, J. (2000) » sans mention MBML — sous-portée, à clarifier |
-| Infer/Infer-2b-Debugging-Bonnes-Pratiques.ipynb | 50 (33+17) | Debugging pur EP/VMP/Gibbs — pas de concept MBML à attribuer |
-| **Infer/Infer-7-Skills-IRT.ipynb** | 74 (51+23) | IRT / DINA — source canonique = MBML Ch.2 (StudentSkills) + Rasch (1960), Birnbaum (1968), Lord (1980), Junker & Sijtsma (2001). Attribution **présente** aux cellules 8-9 (backfill [#8530](https://github.com/jsboige/CoursIA/pull/8530), `16376a901`) — le verdict « notebook muet / PIRE CAS » du c.803 est périmé |
-| **Infer/Infer-8-TrueSkill.ipynb** | 59 (40+19) | Pilote vérifié end-to-end : structure MBML Ch.3 fidèle (model 2 joueurs, draw via ConstrainBetween, online learning, teams, free-for-all, Elo bayésien, 3 exercices) MAIS **pas de formules V(t)/W(t)/τ² reproduites** (délégué à la machinerie EP Infer.NET). Cell 51 « Pour aller plus loin : Herbrich et al., 2006 » (référence 2006, pas 2007 NeurIPS — léger typo) |
-| Infer/Infer-9-Classification.ipynb | 55 (37+18) | BPM (Herbrich, MBML Chap.4) exécuté sans citation explicite — source = Herbrich 2001 thesis mais MBML non nommé |
+| Infer/Infer-01-Setup.ipynb | 41 (29+12) | « [Model-Based Machine Learning Book](https://mbmlbook.com/) » @ cell 37 (footer Pour aller plus loin) |
+| Infer/Infer-02-Gaussian-Mixtures.ipynb | 84 (57+27) | Mélanges gaussiens exécutés sans citation inline ; sources canoniques = Bishop PRML §9.2 (Mixture of Gaussians) + §9.2.2 (EM pour mixtures) + §10.7 (Variational Bayes pour mélanges) ; MBML ne couvre pas ce modèle canoniquement |
+| Infer/Infer-03-Factor-Graphs.ipynb | 53 (38+15) | « **MBML Book, Chapter 1** » @ cell 7 (Murder Mystery scenario) — **attribution canonique explicite** |
+| Infer/Infer-04-Bayesian-Networks.ipynb | 66 (46+20) | WetGrass/Sprinkler (144 hits) ; source canonique citée = « Lauritzen & Spiegelhalter (1988) et Jensen, Lauritzen & Olesen (1990) » (Springer) — couvre le MBML WetGrass Chap.5 avec pedigree académique différent |
+| Infer/Infer-05-Causal-Inference.ipynb | 38 (23+15) | do-calculus = MBML Chap.7 ; notebook cite « Pearl, J. (2000) » sans mention MBML — sous-portée, à clarifier |
+| Infer/Infer-02b-Debugging-Bonnes-Pratiques.ipynb | 50 (33+17) | Debugging pur EP/VMP/Gibbs — pas de concept MBML à attribuer |
+| **Infer/Infer-07-Skills-IRT.ipynb** | 74 (51+23) | IRT / DINA — source canonique = MBML Ch.2 (StudentSkills) + Rasch (1960), Birnbaum (1968), Lord (1980), Junker & Sijtsma (2001). Attribution **présente** aux cellules 8-9 (backfill [#8530](https://github.com/jsboige/CoursIA/pull/8530), `16376a901`) — le verdict « notebook muet / PIRE CAS » du c.803 est périmé |
+| **Infer/Infer-08-TrueSkill.ipynb** | 59 (40+19) | Pilote vérifié end-to-end : structure MBML Ch.3 fidèle (model 2 joueurs, draw via ConstrainBetween, online learning, teams, free-for-all, Elo bayésien, 3 exercices) MAIS **pas de formules V(t)/W(t)/τ² reproduites** (délégué à la machinerie EP Infer.NET). Cell 51 « Pour aller plus loin : Herbrich et al., 2006 » (référence 2006, pas 2007 NeurIPS — léger typo) |
+| Infer/Infer-09-Classification.ipynb | 55 (37+18) | BPM (Herbrich, MBML Chap.4) exécuté sans citation explicite — source = Herbrich 2001 thesis mais MBML non nommé |
 | Infer/Infer-10-Model-Selection.ipynb | 58 (40+18) | Bayes Factors / ARD — MBML Chap.11 (Model Comparison) hors-cité |
 | Infer/Infer-11-Topic-Models.ipynb | 55 (38+17) | LDA — « Source primaire : Blei, Ng & Jordan (2003) » — couvre MBML Chap.10 mais en citant la source primaire canonique |
 | Infer/Infer-12-Modeles-Hierarchiques.ipynb | 18 (10+8) | Pooling partiel / shrinkage — modèle générique, pas de MBML spécifique |
@@ -39,7 +39,7 @@ Les **verdicts de cycle** d'audit et les **décisions de suivi** ne vivent plus 
 | Infer/Infer-17-Kalman-Filter.ipynb | 20 (12+8) | Kalman canonique (1960), pas MBML Chap.15 spécifiquement |
 | Infer/Infer-18-Change-Point.ipynb | 23 (14+9) | Change-point pur, hors-scope MBML |
 | Infer/Infer-19-Survival-Analysis.ipynb | 27 (17+10) | Survie / Weibull / Gamma — MBML Chap.17 (Survival Analysis) hors-cité |
-| PyMC/PyMC-01-Setup.ipynb | 26 (15+11) | « Equivalent Infer.NET : Infer-1-Setup » — attribution interne CoursIA (parité #4956), pas source canonique externe. Couvre le setup PyMC sans pedigree MBML |
+| PyMC/PyMC-01-Setup.ipynb | 26 (15+11) | « Equivalent Infer.NET : Infer-01-Setup » — attribution interne CoursIA (parité #4956), pas source canonique externe. Couvre le setup PyMC sans pedigree MBML |
 | PyMC/PyMC-02-Gaussian-Mixtures.ipynb | 23 (13+10) | Cycliste / Gaussian mixt — sources canoniques = Bishop PRML §9.2 + §9.2.2 + §10.7 (jumeau PyMC d'Infer-2) ; MBML ne couvre pas ce modèle (Ch.6 = Asthma, Ch.8 = How to Read a Model) |
 | PyMC/PyMC-03-Factor-Graphs.ipynb | 18 (10+8) | « Implémenter le problème Murder Mystery (**MBML Ch.1**) » @ cell 0 (intro Objectifs). **Variante assumée** : 3 suspects Clue/Cluedo (Scarlet/Mustard/Peacock) au lieu de 2 (Auburn/Grey MBML original) — adaptation pédagogique justifiée par l'explaining away |
 | PyMC/PyMC-04-Bayesian-Networks.ipynb | 26 (15+11) | WetGrass/Sprinkler (111 hits) ; « Lauritzen & Spiegelhalter (1988) » — Springer canonique |
