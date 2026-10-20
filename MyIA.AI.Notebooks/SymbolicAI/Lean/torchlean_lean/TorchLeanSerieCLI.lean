@@ -80,17 +80,50 @@ def baseName (p : String) : String :=
   | last :: _ => last
   | [] => p
 
-/-- Point d'entrée : `reports [eps]` ou `<state_dict.json> [eps]`. -/
+/-- Imprime les valeurs des trois tenseurs de l'exemple 1 du carnet Lean-11.
+
+Le `#eval Spec.pretty …` correspondant ne peut pas les imprimer : `pretty`
+passe par `Tensor.unstack`, donc par le tampon natif `@[extern]` de la Storage,
+que l'interpréteur ne résout pas. Le binaire lié l'exécute — c'est le runtime
+supporté du paquet (voir l'en-tête de ce module). Les définitions sont celles
+du carnet, à l'identique. -/
+def printTensors : IO Unit := do
+  let v3 : TorchLean.Tensor Float [3] :=
+    (Tensor.from (#[1.0, 2.0, 3.0] : Array Float)).reshape [3] (by dsimp; decide)
+  let m23 : TorchLean.Tensor Float [2, 3] :=
+    (Tensor.from (#[1.0, 2.0, 3.0, 4.0, 5.0, 6.0] : Array Float)).reshape
+      [2, 3] (by dsimp; decide)
+  IO.println s!"v3  = {pretty v3}"
+  IO.println s!"m23 = {pretty m23}"
+  IO.println s!"w1  = {pretty w1}"
+
+/-- Imprime les valeurs de l'exemple 2 du carnet Lean-11 : couche Linear réelle
+(`fc1`), ReLU, puis forward complet — même raison que `printTensors`. Le point
+nominal et les poids sont ceux de `TorchLeanSerie` et du carnet Lean-11b. -/
+def printLayer : IO Unit := do
+  -- Annoter `[2]` en littéral : `TorchLeanSerie.xShape` est un `def`, et la
+  -- synthèse d'instance ne le déplie pas — `Shape.EndsWith 2 xShape` échoue,
+  -- alors qu'elle réussit sur la forme littérale (même type par définition).
+  let x0 : TorchLean.Tensor Float [2] := x0Tensor
+  let fc1 : TorchLean.Tensor Float [4] := x0.linear w1 b1
+  let h : TorchLean.Tensor Float [4] := fc1.relu
+  let out : TorchLean.Tensor Float [2] := h.linear w2 b2
+  IO.println s!"fc1       = {pretty fc1}"
+  IO.println s!"relu(fc1) = {pretty h}"
+  IO.println s!"forward   = {pretty out}"
+
 def main (args : List String) : IO Unit := do
   match args with
   | ["reports"] => reports 0.1
   | ["reports", epsStr] => reports (← parseEps epsStr)
   | ["report", name] => report name 0.1
   | ["report", name, epsStr] => report name (← parseEps epsStr)
+  | ["print", "tensors"] => printTensors
+  | ["print", "layer"] => printLayer
   | [jsonPath] => run jsonPath 0.1
   | [jsonPath, epsStr] => run jsonPath (← parseEps epsStr)
   | _ => throw (IO.userError
-      "usage: torchlean_serie report <ibp|crown|cert|export> [epsilon] | reports [epsilon] | <state_dict.json> [epsilon]")
+      "usage: torchlean_serie report <ibp|crown|cert|export> [epsilon] | reports [epsilon] | print <tensors|layer> | <state_dict.json> [epsilon]")
 where
   run (jsonPath : String) (eps : Float) : IO Unit := do
     -- `IO.FS.readFile` rend le chemin absolu dans son exception : on la capte
