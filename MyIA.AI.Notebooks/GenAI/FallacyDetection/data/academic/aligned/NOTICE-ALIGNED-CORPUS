@@ -1,0 +1,29 @@
+Corpus aligne MAFALDA gold -> grille Argumentum (critere 1 de #20222)
+=====================================================================
+
+Provenance
+----------
+- Textes : gold_standard_dataset.jsonl MAFALDA (Helwe, Calamai, Paris, Clavel,
+  Suchanek, NAACL 2024, arXiv:2311.09761), acquis verbatim au commit amont
+  0df434477b914a20f55c0592ba05a53fe924c65b — cf NOTICE-MAFALDA parent.
+- Grille cible : chaque span annote est projete par la table d'alignement
+  logic_mafalda_to_argumentum.csv (#20315, reprise de #20028).
+- Licence : derive d'un corpus CC-BY-SA 4.0 — ShareAlike. Ce fichier derive
+  herite la mention et l'attribution ci-dessus. Aucun octet LOGIC commite.
+
+Construction (join_report.json porte les effectifs)
+---------------------------------------------------
+228 paires : 128 exactes (egalite insensible a la casse label du span /
+academic_label de la table), 100 par pont declare (subsumption documentee,
+un rationale par pont dans DECLARED_BRIDGES du builder), 44 exclues avec
+motif (nothing, to clean, labels sans entree L2 honnete).
+
+Famille Tricherie : 0 paire source, mesure sur le gold entier — aucun span
+MAFALDA ne porte le label L2 "Fallacy of proportion". L'echantillon run1
+(critere 1 de #20222) est donc stratifie sur les 6 familles ayant du
+materiel ; l'ecart au critere (7 familles attendues) est consigne sur
+l'issue, pas silencieux.
+
+Rejouer : python scripts/fallacy_detection/build_aligned_eval_corpus.py
+--gold .../MAFALDA/gold_standard_dataset.jsonl --table
+.../logic_mafalda_to_argumentum.csv --out-dir <ce repertoire>

@@ -72,6 +72,6 @@ Un identifiant qui afficherait la graine (forme `eval-<graine>-<rang>`) la donne
 ## 7. État
 
 - [x] Instrument d'échantillonnage + tests (ce grain).
-- [ ] Échantillon réel : dès le merge de la table d'alignement (#20028), une commande (§2) produit `run1`.
+- [x] Échantillon réel `run1` (2026-10-20, table mergée via #20315) : le corpus aligné (228 paires, `data/academic/aligned/`) est construit par `build_aligned_eval_corpus.py` — 128 joins exacts, 100 par pont déclaré (un rationale par pont), 44 exclus motivés. Tirage : 200 items, graine 42, stratifiés sur **6 familles** (17-55 par famille) ; la 7ᵉ (Tricherie) est **mesurée à 0 paire source** dans le gold MAFALDA entier — aucun span ne porte son unique label L2 (`Fallacy of proportion`). `sheet.jsonl` / `key.jsonl` / `manifest.json` (empreintes SHA-256 de la source, de la feuille et de la clé) vivent hors dépôt : `G:\Mon Drive\MyIA\IA\external-eval-20222\run1\` (circulation §6 — organisateur seul).
 - [ ] Panel d'évaluateurs : arbitrage user Q25 (recommandation lane : étudiants des cours, TP guidé).
 - [ ] Campagne d'annotation + mesures (§4) + re-vues (§5).
