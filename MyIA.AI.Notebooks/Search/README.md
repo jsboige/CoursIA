@@ -324,7 +324,7 @@ Search/
 ├── README.md                              # Ce fichier
 ├── requirements.txt                       # Dependances Python
 ├── search_helpers.py                      # Utilitaires partages
-├── Part1-Foundations/                     # Search Fondamental — jumeaux directs -Csharp Search-1..11/2b/03b..03d + Search-2c QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets + Search-09b/09c discrépance + Search-09d/09e compagnons Lean + Search-09f optimisation convexe + Search-09g Szpiro–Pasten (compagnon search_lean) + Search-03e optimalité A* + Search-11c/11d sélection empirique & descente sous budget + Search-12a Composer-Regards + Search-13a Traverser-Murs-Certifies
+├── Part1-Foundations/                     # Search Fondamental — jumeaux directs -Csharp Search-1..11/2b/03b..03d + Search-2c QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets + Search-09b/09c discrépance + Search-09d/09e compagnons Lean + Search-09f optimisation convexe + Search-03e optimalité A* + Search-11c/11d sélection empirique & descente sous budget + Search-12a Composer-Regards + Search-13a Traverser-Murs-Certifies
 │   ├── Search-01-StateSpace.ipynb
 │   ├── Search-02-Uninformed.ipynb
 │   ├── Search-02b-NetworkX.ipynb
@@ -342,7 +342,6 @@ Search/
 │   ├── Search-09d-BeckFiala-Lean-Python.ipynb   # Beck–Fiala : pont Python vers le lake, sans Lean au runtime
 │   ├── Search-09e-Komlos-Lean.ipynb             # Compagnon formel : lake discrepancy_lean via kernel lean4-wsl (#13868)
 │   ├── Search-09f-ConvexOptimisation-Python.ipynb   # Du linéaire au convexe : LP → QP → SOCP (cvxpy), Markowitz App-10 en QP exacte
-│   ├── Search-09g-Szpiro-Pasten-Python.ipynb        # Szpiro–Pasten 2026 rendu opérable — compagnon du lake search_lean (ex-App-32, #16549)
 │   ├── Search-10-SymbolicAutomata.ipynb
 │   ├── Search-11-Metaheuristics.ipynb
 │   ├── Search-11c-Empirical-Algorithm-Selection.ipynb
@@ -589,7 +588,7 @@ Le hub Search alignait une riche prose sur la double approche *exploration syst�
 | Search / Part 1 | `search_lean` | A\* consistance d'heuristique (P2) + relaxation pondérée | [Search-03d-WeightedAstar](Part1-Foundations/Search-03d-WeightedAstar.ipynb) (Weighted A\*, Pohl 1970) |
 | Search / Part 1 | `search_lean` | Pattern DB additives (Korf & Felner 2002) | [Search-03b-PatternDatabases](Part1-Foundations/Search-03b-PatternDatabases.ipynb) |
 | ML | `learning_theory_lean` (#5054) | Novikoff perceptron 0 sorry #4140 | [`Perceptron.lean`](../ML/learning_theory_lean/Perceptron/Perceptron.lean) (lake, pas notebook pédagogique) |
-| Probas | `decision_theory_lean` (#5053) | Concentration uniforme + Hoeffding (PAC iter-2) | [Infer-3-Factor-Graphs](../Probas/Infer/Infer-3-Factor-Graphs.ipynb) (factor graphs + PAC) |
+| Probas | `decision_theory_lean` (#5053) | Concentration uniforme + Hoeffding (PAC iter-2) | [Infer-03-Factor-Graphs](../Probas/Infer/Infer-03-Factor-Graphs.ipynb) (factor graphs + PAC) |
 | QC | `kelly_lean` (#5047) | Kelly criterion + mean-variance bound | [QC-Py-10-Risk-Portfolio-Management](../QuantConnect/Python/QC-Py-10-Risk-Portfolio-Management.ipynb) (Kelly sizing) |
 | GameTheory | `game_theory_lean/SocialChoice` (lakes standalone `social_choice_lean` #5050 + `cooperative_games_lean` absorbés post-#4365, contenue dans `game_theory_lean/`) | Arrow + Sen voting | [GameTheory-15-CooperativeGames-Python](../GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) |
 | GameTheory | `game_theory_lean/CooperativeGames/Shapley.lean` (lake `cooperative_games_lean` supprimé post-#4365, contenu absorbé) | Bondareva-Shapley 0 sorry #3954 | [GameTheory-13-ImperfectInfo-CFR-Python](../GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) |
@@ -627,7 +626,7 @@ La double culture **simulation + preuve formelle** est précisément ce que la [
 
 Sans cette section, le chainage vers ML (perceptron 0 sorry comme borne duale de la convergence A\* sur graphes pondérés), QC (Kelly, borné inférieurement par l'arbitrage risque/rendement), GameTheory (Arrow, posant les conditions sur les procédures de vote), Probas (PAC iter-2, formalisant pourquoi un échantillon suffit) et SymbolicAI (argumentation, formalisant la sémantique preferred) restait invisible depuis Search.
 
-**Note sur les références notebooks** : six références historiques de cette section ont suivi les renumérotations du dépôt (cf issue #5065) : ML-2.3-Perceptron → `Perceptron.lean` (lake, pas de notebook pédagogique correspondant), Infer-3-ProbabilisticReasoning → Infer-3-Factor-Graphs, QC-Py-10 → QC-Py-10-Risk-Portfolio-Management, GT-15 SocialChoice ↔ CooperativeGames et GT-13 CooperativeGames ↔ ImperfectInfo-CFR (inversions), Tweety-3-PreferredSemantics → Tweety-03-Dung-CSharp.
+**Note sur les références notebooks** : six références historiques de cette section ont suivi les renumérotations du dépôt (cf issue #5065) : ML-2.3-Perceptron → `Perceptron.lean` (lake, pas de notebook pédagogique correspondant), Infer-3-ProbabilisticReasoning → Infer-03-Factor-Graphs, QC-Py-10 → QC-Py-10-Risk-Portfolio-Management, GT-15 SocialChoice ↔ CooperativeGames et GT-13 CooperativeGames ↔ ImperfectInfo-CFR (inversions), Tweety-3-PreferredSemantics → Tweety-03-Dung-CSharp.
 
 Liens : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean) · cross-refs hubs [QC](../QuantConnect/README.md) (#5047) · [central P0](../README.md) (#5049) · [GameTheory](../GameTheory/README.md) (#5050) · [Probas](../Probas/README.md) (#5053) · [ML](../ML/README.md) (#5054) · [SymbolicAI Lean](../SymbolicAI/Lean/README.md) (#5043 MERGED).
 

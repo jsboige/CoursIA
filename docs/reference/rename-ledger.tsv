@@ -192,6 +192,9 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-7b-Examples.ipynb	MyIA.AI.Notebooks/Symbo
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-8-Agentic-Proving.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08-Agentic-Proving-Python.ipynb	2026-09-28	myia-ai-01:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-8b-Erdos-Formal-Conjectures-Native.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb	2026-09-28	myia-ai-01:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-9-SK-Multi-Agents.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-09-SK-Multi-Agents-Lean-Python.ipynb	2026-09-28	myia-ai-01:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21c-Descente-Budget.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb	2026-10-11	myia-po-2024:CoursIA-2
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb	2026-10-11	myia-po-2024:CoursIA-2
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21b-MIMO-Converse-Native.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-03-Converse-Native-Lean.ipynb	2026-10-11	myia-po-2024:CoursIA-2
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb	MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb	2026-09-28	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-17-Array-Theory.ipynb	MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb	2026-09-25	myia-po-2026:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb	MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb	2026-09-25	myia-po-2025:CoursIA
@@ -344,4 +347,4 @@ MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipyn
 MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb	MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14-ConnectFour-CSharp.ipynb	2026-10-17	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb	MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14b-ConnectFour.ipynb	2026-10-17	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb	MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14c-ConnectFour-CSharp.ipynb	2026-10-17	myia-po-2023:CoursIA
-MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb	MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09g-Szpiro-Pasten-Python.ipynb	2026-10-17	myia-po-2023:CoursIA
+MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb	MyIA.AI.Notebooks/Search/App-32-Szpiro-Pasten-2026.ipynb	2026-10-20	myia-po-2023:CoursIA-2
