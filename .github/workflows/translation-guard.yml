@@ -53,6 +53,12 @@ on:
 
 permissions:
   contents: read
+  # `pull-requests: write` : l'etape `Fail if violated` poste le commentaire
+  # structure `<!-- translation-guard-violation -->` (gh pr comment). Sans ce
+  # droit ni GH_TOKEN, le POST echouait en silence (`|| true`) : le contributeur
+  # ne voyait jamais les trois sorties du garde (#20450). Garde same-repo au
+  # niveau job : une PR de fork ne recoit jamais ce jeton.
+  pull-requests: write
 
 concurrency:
   group: translation-guard-${{ github.ref }}
@@ -201,12 +207,24 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: |
           set -uo pipefail
+          # Shell reel de l'etape : `bash -e {0}`. `set -uo pipefail` n'enleve
+          # pas -e : sans capture protegee, un exit 1 du helper (verdict BLOCK)
+          # tuait l'etape avant `RC=$?`, et le commentaire structure
+          # `<!-- translation-guard-violation -->` de l'etape Fail n'etait jamais
+          # poste (#20450). Capture via `&& RC=0 || RC=$?`, idiome des gardes
+          # freres (always-on-guards.yml). RC=1 est aussi le code d'une exception
+          # Python non rattrapee : le verdict fait foi par le JSON, pas par le
+          # seul code de retour.
           python3 scripts/ci/translation_override_required.py \
-            --pr-number "$PR_NUMBER" > /tmp/override.json
-          RC=$?
-          echo "--- override verdict ---"
+            --pr-number "$PR_NUMBER" > /tmp/override.json && RC=0 || RC=$?
+          echo "--- override verdict (rc=$RC) ---"
           cat /tmp/override.json
-          OVERRIDE_APPLIED=$(python3 -c "import json; print(json.load(open('/tmp/override.json')).get('override_applied', False))")
+          # Verdict illisible (crash, exit 2 argparse, JSON absent) = erreur
+          # d'execution : le job echoue ici, jamais comme "pas de violation".
+          if ! OVERRIDE_APPLIED=$(python3 -c "import json; print(json.load(open('/tmp/override.json')).get('override_applied', False))"); then
+            echo "::error title=Translation guard::verdict du helper illisible (rc=$RC) : erreur d'execution, pas une absence de violation."
+            exit 1
+          fi
           if [ "$OVERRIDE_APPLIED" = "True" ]; then
             MOTIF=$(python3 -c "import json; print(json.load(open('/tmp/override.json')).get('motif',''))")
             echo "override_applied=true" >> "$GITHUB_OUTPUT"
@@ -214,14 +232,16 @@ jobs:
           else
             echo "override_applied=false" >> "$GITHUB_OUTPUT"
           fi
-          # Exit code of the python script decides: 0 = pass, 1 = block.
-          # We always proceed to the next step so we can print a structured
-          # log either way; the `Fail if violated (or unsatisfied override)`
-          # step below reads `override_applied`.
+          # Le verdict (0 = pass, 1 = block) est journalise ci-dessus. Sur un
+          # verdict lisible, on sort 0 : l'etape `Fail if violated (or unsatisfied
+          # override)` lit `override_applied` et porte l'echec.
           exit 0
 
       - name: Fail if violated (or unsatisfied override)
         if: steps.check.outputs.violated == 'true' && steps.override.outputs.override_applied != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           REASON=$(python3 -c "import json; print(json.load(open('/tmp/override.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
           echo "::error title=Translation guard FAILED::$REASON"
@@ -238,7 +258,7 @@ jobs:
 
           See #10332 for the override protocol.
           EOF
-          )" 2>/dev/null || true
+          )" || echo "::warning title=Translation guard::commentaire de violation non poste (gh pr comment en echec) ; le verdict ci-dessus reste la reference."
           exit 1
 
       - name: Journalise accepted override (#10332)

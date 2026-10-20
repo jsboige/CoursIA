@@ -78,6 +78,10 @@ teste donc le **comportement observable** — plusieurs tours d'affilée continu
 de répondre et le modèle **garde le fil** (il retrouve une info du 1er tour).
 C'est un test de **non-régression de la conversation longue**.
 
+## Couche pédagogique (notebook)
+
+Le notebook [`06-Nouveautes-v0.10-QA-OWUI.ipynb`](06-Nouveautes-v0.10-QA-OWUI.ipynb) est un module bonus, hors de la mission principale qui s'achève au module 05 (voir le notebook chapeau [`../00-Parcours-QA-OWUI.ipynb`](../00-Parcours-QA-OWUI.ipynb)). Il ne lance aucun test navigateur : il lit `06-nouveautes.spec.ts` et explique l'isolation par nettoyage pour la mémoire, la détection de fonctionnalité par un champ de réponse, le traitement du raisonnement streamé (un test saute quand sa précondition n'est pas réunie, au lieu d'échouer) et le test de la compaction par son comportement observable. Il propose des exercices Python exécutables. L'inventaire `npx playwright test --list` n'est appelé que si les dépendances Node sont installées.
+
 ## Exécuter ce module
 
 ```bash

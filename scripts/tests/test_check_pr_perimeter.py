@@ -4235,6 +4235,27 @@ def test_issue_20125_perimeter_verbs_do_not_exempt():
     assert not _count_exempt("This PR covers 4 files.")
 
 
+def test_imperfect_count_verb_is_exempt():
+    """Founder #21154 (body avant reformulation) : un denombrement a
+    l'imparfait decrit un inventaire anterieur, pas le perimetre de la PR."""
+    assert _count_exempt(
+        "le bandeau du 02/09 comptait 11 fichiers `_REPORT/_STATUS/_AUDIT.md` "
+        "a trier"
+    )
+    assert _count_exempt("l'audit du 12/10 recensait 14 fichiers orphelins")
+    assert _count_exempt("l'ancien index listait 9 fichiers")
+
+
+def test_imperfect_count_verb_keeps_the_colon_guard():
+    """L'imparfait ne blanchit pas une declaration par deux-points."""
+    assert not _count_exempt("comptait 3 fichiers : a.py, b.py, c.py")
+
+
+def test_present_count_verb_still_fails():
+    """Le present « compte » reste une annonce de perimetre."""
+    assert not _count_exempt("Cette PR compte 3 fichiers.")
+
+
 def _body_candidates(body: str, n_files: int):
     items = [{"kind": "body", "author": "lane", "body": body, "source": "body", "ts": ""}]
     return select_candidates(items, n_files)[0]

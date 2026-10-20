@@ -20,7 +20,7 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------ |
 | 1 | [04-1-Educational-Video-Generation](04-1-Educational-Video-Generation.ipynb) | Contenu éducatif | Mixed | ~12GB |
-| 2 | [04-2-Creative-Video-Workflows](04-2-Creative-Video-Workflows.ipynb) | Workflows créatifs | ComfyUI | ~14GB |
+| 2 | [04-2-Creative-Video-Workflows](04-2-Creative-Video-Workflows.ipynb) | Workflows créatifs | Local (moviepy, diffusers) | ~16GB (optionnel) |
 | 3 | [04-3-Sora-API-Cloud-Video](04-3-Sora-API-Cloud-Video.ipynb) | Sora API cloud | OpenAI API | 0 |
 | 4 | [04-4-Production-Video-Pipeline](04-4-Production-Video-Pipeline.ipynb) | Pipeline production | Mixed | ~18GB |
 | 5 | [04-5-MiniMax-H3-Cloud-Video](04-5-MiniMax-H3-Cloud-Video.ipynb) | Hailuo API, HD/2K + audio natif | MiniMax API | 0 |
@@ -33,16 +33,16 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
   <em>Sortie du notebook <a href="04-1-Educational-Video-Generation.ipynb">04-1</a> : les 4 premiers slides du deck pédagogique « Introduction au Machine Learning » (titre/définition/types/pipeline) — la chaîne script → prompts → slides → vidéo a produit ce rendu visuellement cohérent à partir d'un script textuel.</em>
 </p>
 
-**[04-2](04-2-Creative-Video-Workflows.ipynb) — Workflows créatifs (ComfyUI).** Deux compositions illustrant la souplesse du workflow créatif : une séquence narrative complète, puis une variante explorant une composition différente à partir des mêmes briques ComfyUI :
+**[04-2](04-2-Creative-Video-Workflows.ipynb) — Workflows créatifs (moviepy, diffusers).** Deux compositions illustrant la souplesse du workflow créatif : une séquence narrative complète, puis une variante explorant une composition différente à partir des mêmes briques moviepy :
 
 <p align="center">
   <a href="04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/vid4-creative.png" alt="Grille 2×3 « Effets synchronisés sur les beats (120 BPM) » — frames originales (haut, beat 1/2/3 à frame 0/12/24) vs frames transformées par effet audio-réactif (bas), carré cyan et cercle orange se déplaçant sur fond dégradé bleu-violet-rose" width="460"/></a><br>
-  <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 9) : effets audio-réactifs synchronisés sur les battements à 120 BPM — ComfyUI orchestre le déplacement des formes géométriques (carré + cercle) à chaque beat, transformant le clip original en version réactive.</em>
+  <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 9) : effets audio-réactifs synchronisés sur les battements à 120 BPM — le pipeline numpy/moviepy déplace les formes géométriques (carré + cercle) à chaque beat, transformant le clip original en version réactive.</em>
 </p>
 
 <p align="center">
   <a href="04-2-Creative-Video-Workflows.ipynb"><img src="assets/readme/vid4-creative2.png" alt="Collage vidéo 2×2 « Original / Aquarelle / Dessin / Teal & Orange » à 3 timestamps t=0/3/6s — comparaison de 4 styles visuels (Original bleu/violet, Aquarelle vert/olive pastel, Dessin simplifié sur fond clair, Teal & Orange grade cinématique)" width="460"/></a><br>
-  <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 15) : mosaïque 2×2×3 comparant 4 styles visuels (Original / Aquarelle / Dessin / Teal & Orange) appliqués au même clip à 3 timestamps — illustre la flexibilité du pipeline ComfyUI pour explorer rapidement des directions artistiques différentes sur un même contenu.</em>
+  <em>Sortie du notebook <a href="04-2-Creative-Video-Workflows.ipynb">04-2</a> (cellule 15) : mosaïque 2×2×3 comparant 4 styles visuels (Original / Aquarelle / Dessin / Teal & Orange) appliqués au même clip à 3 timestamps — illustre la flexibilité du pipeline moviepy pour explorer rapidement des directions artistiques différentes sur un même contenu.</em>
 </p>
 
 **[04-3](04-3-Sora-API-Cloud-Video.ipynb) — Workflow cloud Sora (en simulation).** Côté cloud cette fois : le notebook illustre le workflow de génération vidéo via l'API Sora d'OpenAI. L'accès Sora réel étant restreint (clé et quota côté utilisateur), il en produit une **simulation disciplinée** — deux séquences de frames synthétiques, chacune auto-étiquetée « Sora API - Simulation » dans l'image, représentant le rendu attendu (déplacement d'un objet sur un décor prompt-dépendant). Aucun GPU ni accès API réel requis :
@@ -75,13 +75,6 @@ OPENAI_API_KEY=sk-...
 MINIMAX_GENAI_API_KEY=...   # 04-5 (H3/v2 HD/2K + audio) et 04-5b (video-01/v1 muet) : même clé, services cloud Hailuo (5 générations HD/jour)
 ```
 
-### Docker Services (optionnel)
-```bash
-cd docker-configurations/services/comfyui-qwen
-docker-compose up -d
-```
-Accès : http://localhost:8188
-
 ### Dépendances
 ```bash
 pip install -r requirements.txt
@@ -92,12 +85,12 @@ pip install -r requirements-video.txt
 
 ### 04-1 Educational Video Generation
 - **Objectif** : Automatiser la création de contenu vidéo éducatif
-- **Technologies** : GPT-5 + modèles vidéo + post-production
+- **Technologies** : OpenAI API optionnelle (génération de contenu, désactivée par défaut), moviepy, Pillow, diffusers (optionnel)
 - **Applications** : Cours vidéo, tutoriels, formations
 
 ### 04-2 Creative Video Workflows
 - **Objectif** : Workflows créatifs automatisés
-- **Technologies** : ComfyUI + modèles avancés
+- **Technologies** : moviepy, diffusers, Pillow, numpy, scipy
 - **Applications** : Création artistique, publicités, clips musicaux
 
 ### 04-3 Sora API Cloud Video
@@ -124,12 +117,12 @@ pip install -r requirements-video.txt
 
 ### Éducation
 ```
-Brief → GPT-4o (script) → Modèle vidéo → Post-production → Vidéo finale
+Brief → script → Modèle vidéo → Post-production → Vidéo finale
 ```
 
 ### Création
 ```
-Idée → ComfyUI (génération) → Édition → Validation → Livraison
+Idée → génération → Édition (moviepy) → Validation → Livraison
 ```
 
 ### Production
@@ -140,5 +133,5 @@ Batch → Queue → Processing → QC → Distribution → Analytics
 ## Ressources
 
 - [Documentation Video principale](../README.md)
-- [Guide ComfyUI](../../00-GenAI-Environment/README.md)
+- [Guide de l'environnement GenAI](../../00-GenAI-Environment/README.md)
 - [GenAI Services](../../../../docs/genai/genai-services.md)
