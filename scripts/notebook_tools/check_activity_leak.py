@@ -121,6 +121,15 @@ _COMMIT_REF_RE = re.compile(r"\b(?:commit|t[eê]te)\s+`?[0-9a-f]{7,12}`?", re.IG
 _ISO_TS_RE = re.compile(r"\b20\d\d-\d\d-\d\dT\d\d:\d\d")
 _LESSON_TAG_RE = re.compile(r"\bL\d{3,4}(?:-L\d)?\b")
 _DM_RE = re.compile(r"\bDM\b")
+# Ce qui vit DANS une URL n'est pas du recit. Une ancre de permalien GitHub
+# (`.../Foo.cs#L261`) matche ``_LESSON_TAG_RE`` parce que ``#`` est un
+# caractere non-mot : un `#L261` est une ligne de code citee, pas une lecon.
+# Mesure fondatrice (#21019/#21024, 2026-10-20) : la cellule 24 du carnet
+# Aspire-07 portait 7 motifs ``L\d{3,4}``, tous dans ses 6 permaliens, AUCUN
+# hors URL -- score 14, densite 9/1000, passage dense AJOUTE par un simple
+# re-ancrage de citations. Neutraliser les URL avant le match est la seule
+# correction qui ne demande pas au carnet de retirer les liens qu'il enseigne.
+_URL_RE = re.compile(r"https?://\S+")
 
 _LANE_RE = re.compile(r"\blanes?\b", re.IGNORECASE)
 _COMMIT_BARE_RE = re.compile(r"\bcommits?\b", re.IGNORECASE)
@@ -256,6 +265,11 @@ def _context_guarded(text: str, at: int, end: int, ok_context: re.Pattern[str]) 
 CO_MARKER_ONLY = frozenset({"cellule"})
 
 
+def _inside_any(start: int, end: int, spans: list[tuple[int, int]]) -> bool:
+    """True si ``[start, end)`` recouvre au moins une des ``spans``."""
+    return any(a < end and start < b for a, b in spans)
+
+
 def markers_in_text(text: str) -> list[tuple[str, str, int]]:
     """Rend [(nom, extrait, poids)] pour tous les marqueurs de ``text``.
 
@@ -264,10 +278,16 @@ def markers_in_text(text: str) -> list[tuple[str, str, int]]:
     statistique, pas un message du coordinateur. Les marqueurs de
     ``CO_MARKER_ONLY`` ne sont retenus que si un AUTRE marqueur est present
     dans le meme passage.
+
+    Une occurrence qui tombe dans une URL est ignoree (cf ``_URL_RE``) : une
+    ancre de permalien n'est pas une etiquette de lecon.
     """
     out: list[tuple[str, str, int]] = []
+    url_spans = [(u.start(), u.end()) for u in _URL_RE.finditer(text)]
     for name, rx, weight in ALL_MARKERS:
         for m in rx.finditer(text):
+            if url_spans and _inside_any(m.start(), m.end(), url_spans):
+                continue
             if name == "dm" and _context_guarded(text, m.start(), m.end(), _DM_OK_CONTEXT):
                 continue
             if name == "dispatch" and _context_guarded(text, m.start(), m.end(), _DISPATCH_OK_CONTEXT):

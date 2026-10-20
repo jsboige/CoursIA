@@ -157,6 +157,39 @@ class TestNegativeControls(unittest.TestCase):
         self.assertFalse(v.dense)
         self.assertEqual(v.markers, [])
 
+    def test_permalink_line_anchor_not_lesson_tag(self):
+        # FP mesure (#21019/#21024, 2026-10-20) : la cellule 24 du carnet
+        # Aspire-07 portait 7 motifs L\d{3,4}, tous dans ses permaliens.
+        para = (
+            "| Niveau | Canal | Ecriture (2023) | Drainage (2023) |\n"
+            "|---|---|---|---|\n"
+            "| Transport | socket | [`OobaboogaCompletionBase.cs:99`]"
+            "(https://github.com/MyIntelligenceAgency/semantic-fleet/blob/"
+            "v0.34.3/dotnet/src/Connectors/AI/OobaboogaCompletionBase.cs#L99) "
+            "| [`MultiTextCompletion.cs:217-236`]"
+            "(https://github.com/MyIntelligenceAgency/semantic-fleet/blob/"
+            "v0.34.3/dotnet/src/Connectors/MultiTextCompletion.cs#L217-L236) |\n"
+            "| Collecte | Channel | [`CollectSamplesAsync:261`]"
+            "(https://github.com/MyIntelligenceAgency/semantic-fleet/blob/"
+            "v0.34.3/dotnet/src/Connectors/MultiTextCompletion.cs#L261) "
+            "| [`:309`](https://github.com/MyIntelligenceAgency/"
+            "semantic-fleet/blob/v0.34.3/dotnet/src/Analysis/P.cs#L309) |\n"
+        )
+        self.assertFalse(
+            any(n == "lesson_tag" for n, _, _ in markers_in_text(para)),
+            "une ancre de permalien #L<n> ne doit pas compter comme lesson_tag",
+        )
+        self.assertFalse(judge_passage(0, para).dense)
+
+    def test_lesson_tag_in_prose_still_flagged(self):
+        # Controle POSITIF : neutraliser les URL ne doit pas eteindre le
+        # marqueur quand une lecon est citee en prose.
+        text = (
+            "L261 et L740 ont ete apprises sur cette lane ; le carnet porte "
+            "desormais le renvoi vers la lecon L1356 au lieu du recit de cycle."
+        )
+        self.assertTrue(any(n == "lesson_tag" for n, _, _ in markers_in_text(text)))
+
     def test_dm_diebold_mariano_not_flagged(self):
         for text in (
             "Le test de Diebold-Mariano rend DM p = 0.032 sur 4 seeds, sous le seuil.",
