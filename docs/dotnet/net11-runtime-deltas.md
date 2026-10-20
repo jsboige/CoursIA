@@ -202,12 +202,14 @@ calme ». Cette section est la réponse mesurée à ce drapeau.
    effet runtime n'y est visible ; la non-reproduction est cohérente avec un artefact de la
    fenêtre du 02/10, sans le prouver.
 2. **Le drapeau « StdDev in-passe ≈ mean » ne se reproduit pas non plus** : en net11, le
-   rapport StdDev/moyenne vaut 18,1 % sur la passe 1 (19,4 % sur la base médiane), et les
-   rapports StdDev/médiane des passes 2 et 3 valent 6,4 % / 11,8 % — loin du relevé du
+   rapport StdDev/moyenne vaut 18,1 % sur la passe 1 (19,4 % sur la base médiane), le
+   rapport StdDev/médiane de la passe 2 vaut 6,4 %, et la passe 3 vaut 11,8 % en
+   StdDev/moyenne (11,9 % en StdDev/médiane) — loin du relevé du
    02/10, où le StdDev in-passe était de l'ordre de la moyenne de la passe (1738 de
-   médiane sur 2685 de moyenne). BDN signale une distribution multimodale (« the
-   distribution can have several modes », mValue = 3) dans 5 des 9 logs de la fenêtre
-   (1 des 3 passes sur `Pipeline_EvilRegex` en net11) — cohérent avec une charge très
+   médiane sur 2685 de moyenne). BDN signale une distribution multimodale dans 5 des
+   9 logs de la fenêtre — mValue 3,25 (net10) et 3,33 (net9) sur
+   `Pipeline_ConvertDeterminizeMinimize`, 3 sur `Pipeline_EvilRegex` (net10 et net11,
+   passe 3) et 3,25 (net9) sur `Matching_DotNetDelegate` — cohérent avec une charge très
    allouante (2,13 Mo par opération), pas un défaut propre à un runtime ; la pression
    Gen0 invoquée comme cause n'a **pas** été mesurée dans cette fenêtre.
 3. **La fenêtre du 20/10 n'est pas plus calme que celle du 02/10** : la dispersion **entre
