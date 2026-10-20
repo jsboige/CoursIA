@@ -57,8 +57,8 @@ C'est la même arithmétique que le run 0,8 B GRPO+QLoRA (95,7 %) : le pionnier 
 
 ## Artefacts
 
-- Manifeste de mesure (entraînement) : `MyIA.AI.Notebooks/GenAI/3D/_measurements/3d01_enveloppe_8go.json` (pic VRAM, température, débit, courbe PSNR complète, comparaison avec la mesure #21620).
-- Manifeste de mesure (volet évaluatif) : `MyIA.AI.Notebooks/GenAI/3D/_measurements/3d02_enveloppe_8go.json` (pic VRAM et son profil par phase, température, débit, grilles critic / pose / focale / comptage de points).
+- Manifeste de mesure (entraînement) : `scripts/results/3d_enveloppe_8go/3d01_enveloppe_8go.json` (pic VRAM, température, débit, courbe PSNR complète, comparaison avec la mesure #21620).
+- Manifeste de mesure (volet évaluatif) : `scripts/results/3d_enveloppe_8go/3d02_enveloppe_8go.json` (pic VRAM et son profil par phase, température, débit, grilles critic / pose / focale / comptage de points).
 - Mesure jumelle de l'étage pionnier : `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/results/p15294_8go_pionnier/` (issue #21620, PR #21624).
 
 **Reproductibilité.** Issue #21626 (fille de l'EPIC #18605). GPU réservé au ledger `CoursIA-gpu-reservation-ledger` **avant** tout chargement (`obs-55b043a6b21cc586` pour `3D-01`, `obs-12e553f00d6132f3` pour `3D-02` ; `held` puis `released`), un seul job à la fois, sortie `nvidia-smi` échantillonnée à 5 s. Les deux notebooks ont été exécutés **sur une copie hors dépôt** : `3D-01` et `3D-02` sont dans le scope de claims d'autres lanes (PR #21413, #20544) et n'ont pas été touchés. Les deux mesures portent le même siège et la même carte mais deux versions de torch (2.8.0+cu126 pour `3D-01`, 2.14.1+cu126 pour `3D-02`) : l'effet de la version n'est pas isolé comme facteur du pic.
