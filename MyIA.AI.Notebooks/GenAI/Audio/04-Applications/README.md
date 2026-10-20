@@ -62,6 +62,14 @@ Trois satellites : la **compréhension** (MERT2, 04-15), la **génération** ([Y
 
 > **Note (consolidation #13741)** : un sibling pédagogique plus minimal (re-voicing CP-SAT + MIDI synthèse, version allégée du canonique) a été archivé sous [`MyIA.AI.Notebooks/GenAI/Audio/_archive/04-14-VoiceLeading-RenduGenAI.ipynb`](../_archive/04-14-VoiceLeading-RenduGenAI.ipynb) pour éliminer le doublon de slot 04-14. Le contenu reste préservé (re-voicing, synthèse MIDI, MusicGen, spectrogrammes, export WAV) ; ce notebook canonique `Rendu-GenAI` (version complète re-exécutée #13398) reste la référence.
 
+### Analyse musicale classique (MIR)
+
+Le socle DSP et statistique sous les approches neuronales de la famille YuE2 : les mêmes questions (tempo, tonalité, accords) traitées par descripteurs et modèles de connaissance compacts, sans entraînement.
+
+| # | Notebook | Contenu | Service | VRAM |
+|---|----------|---------|---------|------|
+| 17 | [04-17-MIR-Classique](04-17-MIR-Classique.ipynb) | MIR classique librosa : beat tracking + tempo (enveloppe d'onsets, dynamic programming), tonalité Krumhansl–Schmuckler sur chroma CQT, grille d'accords par templates triades — validés sur vérité terrain synthétique (100 BPM, Do majeur, C–Am–F–G) puis vraie musique (exemples librosa brahms/nutcracker), 3 exercices (tempo 140 BPM, tonalité en mode mineur, banque étendue aux accords de septième) | librosa (CPU local) | 0 |
+
 **Flux du pipeline audiobook** :
 
 ```text

@@ -69,6 +69,21 @@ def test_call_site_passes_the_utf8_env():
 
     On lit l'AST plutot que le texte : un ``grep`` sur "env=" passerait au
     vert sur une occurrence en commentaire ou dans une autre fonction.
+
+    v4 (PR #21373 review Hermes 5571014393) -- l'invariant originel
+    "exactement 1 subprocess.run" ne tient plus depuis la v3 : la piste
+    2 (mode batch) introduit un fallback legacy en sous-process par
+    issue, donc la fonction en compte 2, et le test crie a tort sur du
+    code sain (les 2 runs portent l'env UTF-8 partage). On rebascule
+    l'invariant sur ce qu'on GARDAIT vraiment -- l'UTF-8 du sous-process
+    -- et il devient plus fort : chaque appel, pas le premier.
+
+    Forme acceptée pour ``env=`` :
+      - appel direct ``env=_utf8_child_env()`` (cas 1)
+      - alias local ``env=env`` ou ``env=child_env`` quand la variable
+        locale a ete assignee a ``_utf8_child_env()`` dans la meme
+        fonction (cas 2, le pattern partage utilise par la v3 pour
+        factoriser le dict).
     """
     tree = ast.parse((REPO / "scripts" / "pick_idle_grain.py").read_text(encoding="utf-8"))
 
@@ -79,17 +94,44 @@ def test_call_site_passes_the_utf8_env():
             if isinstance(n, ast.Call)
             and isinstance(n.func, ast.Attribute)
             and n.func.attr == "run"]
-    assert len(runs) == 1, f"attendu 1 subprocess.run dans check_claims, vu {len(runs)}"
-
-    kwargs = {kw.arg for kw in runs[0].keywords}
-    assert "env" in kwargs, (
-        "check_claims lance un enfant Python sans env= : son stdout sera encode "
-        "en cp1252 sous Windows FR et le decodage UTF-8 du parent plantera"
+    assert len(runs) >= 1, (
+        f"attendu au moins 1 subprocess.run dans check_claims (v4), vu {len(runs)}"
     )
 
-    env_kw = next(kw for kw in runs[0].keywords if kw.arg == "env")
-    assert isinstance(env_kw.value, ast.Call), "env= doit appeler _utf8_child_env()"
-    assert env_kw.value.func.id == "_utf8_child_env"
+    # Noms locaux (Name) assignes a _utf8_child_env() dans la meme fonction
+    # -- la v3 factorise via ``env = _utf8_child_env()`` puis ``env=env``.
+    local_env_aliases = {
+        tgt.id
+        for n in ast.walk(fn)
+        if isinstance(n, ast.Assign)
+        for tgt in n.targets
+        if isinstance(tgt, ast.Name)
+        and isinstance(n.value, ast.Call)
+        and isinstance(n.value.func, ast.Name)
+        and n.value.func.id == "_utf8_child_env"
+    }
+
+    for i, run in enumerate(runs):
+        kwargs = {kw.arg for kw in run.keywords}
+        assert "env" in kwargs, (
+            f"subprocess.run #{i} dans check_claims lance un enfant Python "
+            f"sans env= : son stdout sera encode en cp1252 sous Windows FR "
+            f"et le decodage UTF-8 du parent plantera"
+        )
+        env_kw = next(kw for kw in run.keywords if kw.arg == "env")
+        # Cas 1 : appel direct env=_utf8_child_env()
+        if (isinstance(env_kw.value, ast.Call)
+                and isinstance(env_kw.value.func, ast.Name)
+                and env_kw.value.func.id == "_utf8_child_env"):
+            continue
+        # Cas 2 : alias local assigne a _utf8_child_env() dans la fonction
+        if isinstance(env_kw.value, ast.Name) and env_kw.value.id in local_env_aliases:
+            continue
+        assert False, (
+            f"subprocess.run #{i} : env= doit etre _utf8_child_env() ou un "
+            f"alias local (_utf8_child_env() assigne a un Name). Trouve : "
+            f"{ast.dump(env_kw.value)[:80]}"
+        )
 
 
 def test_helper_is_defined_at_module_scope():

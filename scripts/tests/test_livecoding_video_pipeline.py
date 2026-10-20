@@ -41,6 +41,9 @@ from scripts.livecoding_video_pipeline import (
     STYLES,
     StrudelStyle,
     _load_env_files,
+    _build_arg_parser,
+    _click_play,
+    _resolve_capture_seconds,
     build_repl_url,
     compose_narration,
     compose_strudel,
@@ -1164,3 +1167,118 @@ class TestMixDurationOverride:
         fc = cmd[cmd.index("-filter_complex") + 1]
         assert "st=87.850" in fc  # 90.85 - 3.0
         assert cmd[cmd.index("-t") + 1] == "90.850"
+
+
+class TestResolveCaptureSeconds:
+    """Defaut coherent capture/duration (mesure c.1528 : demo 180 s
+    tronquee a 30,9 s, 4/11 segments mixes, sans drapeau explicite)."""
+
+    def test_none_suit_duration(self):
+        assert _resolve_capture_seconds(None, 180) == 180
+
+    def test_explicite_respecte(self):
+        """Une capture plus courte que la musique reste legale
+        (verification rapide, capture de test)."""
+        assert _resolve_capture_seconds(45, 180) == 45
+
+
+class TestCliCaptureSecondsDefault:
+    def test_parser_defaut_none(self):
+        """Le parser ne fixe plus 30 : None traverse jusqu'a la
+        resolution dans run_pipeline, la capture reste coherente avec
+        --duration (cycles, narration, mix)."""
+        args = _build_arg_parser().parse_args(["--duration", "90"])
+        assert args.capture_seconds is None
+        assert args.duration == 90
+
+    def test_run_pipeline_transmet_duration_a_la_capture(self, tmp_path, monkeypatch):
+        """Wiring : sans capture_seconds explicite, capture_repl_session
+        recoit duration_seconds."""
+        import scripts.livecoding_video_pipeline as pl
+
+        seen = {}
+
+        def _fake_capture(pattern, output_dir, capture_seconds, cycles, headless,
+                          capture_mode="page"):
+            seen["capture_seconds"] = capture_seconds
+            return {
+                "video_webm": str(tmp_path / "capture.webm"),
+                "audio_wav": str(tmp_path / "capture.wav"),
+                "final_mp4": str(tmp_path / "capture_final.mp4"),
+                "video_bytes": 1,
+                "wav_bytes": 1,
+                "mp4_bytes": 1,
+                "cycles": cycles,
+            }
+
+        monkeypatch.setattr(pl, "capture_repl_session", _fake_capture)
+        pl.run_pipeline(
+            style_name="trance",
+            duration_seconds=90,
+            output_path=str(tmp_path / "out.mp4"),
+            capture=True,
+            headless=True,
+        )
+        assert seen["capture_seconds"] == 90
+
+
+class _FakePlayPage:
+    """Page fake minimale pour l'orchestration _click_play : le clic
+    echoue les ``fail_first`` premiers essais puis reussit. Precedent
+    _FakeClient (LLM) : on valide la SEQUENCE retry, pas un verdict de
+    capture — la capture reelle reste provee par l'execution documentee
+    dans le body de la PR."""
+
+    def __init__(self, fail_first: int = 0):
+        self.clicks = 0
+        self.gotos = 0
+        self.waits = 0
+        self.last_url = None
+        self._fail_first = fail_first
+        outer = self
+
+        class _First:
+            @staticmethod
+            def click(timeout=None):
+                outer.clicks += 1
+                if outer.clicks <= outer._fail_first:
+                    raise RuntimeError(f"Locator.click: Timeout {timeout}ms")
+
+        self._first = _First()
+
+    def get_by_role(self, role, name=None):
+        return SimpleNamespace(first=self._first)
+
+    def goto(self, url):
+        self.gotos += 1
+        self.last_url = url
+
+    def wait_for_timeout(self, ms):
+        self.waits += 1
+
+
+class TestClickPlayRetry:
+    """Retry du clic play (timeout flaky 1 run sur 3, mesure c.1528) :
+    re-navigation de l'URL de partage entre tentatives, echec explicite
+    au dernier essai."""
+
+    def test_succes_immediat_sans_reload(self):
+        page = _FakePlayPage(fail_first=0)
+        _click_play(page, "https://strudel.cc/#HASH")
+        assert page.clicks == 1
+        assert page.gotos == 0
+
+    def test_timeout_puis_succes_apres_reload(self):
+        page = _FakePlayPage(fail_first=1)
+        _click_play(page, "https://strudel.cc/#HASH")
+        assert page.clicks == 2
+        assert page.gotos == 1
+        assert page.last_url == "https://strudel.cc/#HASH"
+        assert page.waits == 1  # attente post-navigation avant le 2e essai
+
+    def test_epuise_leve_la_derniere_erreur(self):
+        page = _FakePlayPage(fail_first=99)
+        with pytest.raises(RuntimeError, match="Timeout 10000ms"):
+            _click_play(page, "https://strudel.cc/#HASH", attempts=3)
+        assert page.clicks == 3
+        assert page.gotos == 2
