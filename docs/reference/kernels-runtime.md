@@ -2,7 +2,7 @@
 
 Document de référence détaillant l'inventaire kernels obligatoire sur toute machine du cluster (cf CLAUDE.md règle H.2).
 
-**Regle user 2026-05-07** : toute machine du cluster (ai-01, po-2023, po-2024, po-2025, po-2026) doit pouvoir executer n'importe quel notebook du depot. Reparation env > contournement (regle F, cf [env-python-reparation.md](env-python-reparation.md)).
+**Regle user 2026-05-07** : toute machine du cluster (ai-01, po-2023, po-2024, po-2025, po-2026, po-2027, po-2028) doit pouvoir executer n'importe quel notebook du depot. Reparation env > contournement (regle F, cf [env-python-reparation.md](env-python-reparation.md)).
 
 ## Setup macOS / Linux (poste contributeur)
 
@@ -71,8 +71,9 @@ Chaque ligne est une **mesure firsthand de la machine**, jamais une deduction d'
 | `myia-po-2026` | **1.0.712001** | 2026-10-05 (re-mesure) | `dotnet tool list -g` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` |
 | `myia-ai-01` | **1.0.712001** (outil **global**) | 2026-10-19 (re-mesure) | `dotnet tool list -g` = `microsoft.dotnet-interactive 1.0.712001` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` — **le meme hash de build que po-2026 et po-2027**, sur une troisieme machine. Execution reelle via le kernelspec `.net-csharp` **global** (dont l'`argv` est `dotnet interactive jupyter`, donc l'outil global) : probe `#load` + appel, **SUCCES** (`Greet says: Hello from helper.cs`), et `language_info.version` = `13.0` — **aucun drift `13.0 -> 14.0`** sous le nouveau canon. La commande machine-globale, due au **coordinateur**, a ete jouee depuis le 2026-10-02 : l'etat « outil global encore `1.0.617701` » consigne dans la mesure du 2026-10-02 est **perime**. Le `ArgumentNullException` #8485 reste **non reproduit** |
 | `myia-po-2027` | **1.0.712001** | 2026-10-09 | mesure firsthand par sa lane, **avant / apres reparation** — l'outil **global** portait `1.0.617701`, l'ancien canon : une **divergence non signalee de plus**, du meme type que celle de po-2024 avant le de-pin. Reparee par `dotnet tool update --global Microsoft.dotnet-interactive --version 1.0.712001` puis `dotnet interactive jupyter install` (regle F ; les 3 noyaux `.net-csharp`/`.net-fsharp`/`.net-powershell` re-enregistres). Apres reparation, les **deux** mesures concordent : `dotnet tool list -g` = `1.0.712001` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` — **le meme hash de build que po-2026**, sur une autre machine et une autre lane. Cette machine est celle du bug `#r "nuget:"` documente sous l'ancien canon ([`dotnet-restore-rfc-17361.md`](dotnet-restore-rfc-17361.md)) : ce bug n'est **pas** re-teste ici |
+| `myia-po-2028` | **1.0.712001** | 2026-10-20 | `dotnet tool list -g` = `microsoft.dotnet-interactive 1.0.712001` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` — **le meme hash de build** que po-2026, po-2027 et ai-01, sur un poste livre **vierge cote dev** dont la toolchain a ete remontee de zero (`jsboige/CoursIA#21603`) ; SDKs 8.0.426 / 9.0.319 / 10.0.402 installes per-user. **Reserve de premiere ligne** : sous ce **meme** build, l'execution reelle y emet `language_info.version` = **`12.0`** la ou ai-01 mesure `13.0` — divergence **mesuree** mais **cause non isolee** ; tests refutes et consequence operationnelle dans [po-2028](#po-2028-inventaire-kernels-2026-10-20) |
 
-**Etat de l'acceptance de #18766** : le canon est **unique** et documente ici — oui ; **les machines de la flotte sont conformes par mesure** (`po-2023`, `po-2024`, `po-2025`, `po-2026`, `po-2027`, et `ai-01` depuis la re-mesure du 2026-10-19). La derniere ligne qui restait non mesuree — `ai-01`, dont l'outil global portait encore l'ancien canon au 2026-10-09 — est **desormais mesuree et conforme** : l'outil global porte le canon, l'execution reelle d'un carnet .NET via le kernelspec global passe, et le stamp `language_info.version` confirme `13.0`. Les deux cases d'acceptance sont donc tenues : la matrice est publiee, et le canon est unique et tenu par mesure sur chaque machine — il ne l'est plus « par confiance de compte », ce qui est exactement le mecanisme qui avait laisse la divergence vivre trois semaines.
+**Etat de l'acceptance de #18766** : le canon est **unique** et documente ici — oui ; **les machines de la flotte sont conformes par mesure** (`po-2023`, `po-2024`, `po-2025`, `po-2026`, `po-2027`, `po-2028` depuis le 2026-10-20, et `ai-01` depuis la re-mesure du 2026-10-19). La derniere ligne qui restait non mesuree — `ai-01`, dont l'outil global portait encore l'ancien canon au 2026-10-09 — est **desormais mesuree et conforme** : l'outil global porte le canon, l'execution reelle d'un carnet .NET via le kernelspec global passe, et le stamp `language_info.version` confirme `13.0`. Les deux cases d'acceptance sont donc tenues : la matrice est publiee, et le canon est unique et tenu par mesure sur chaque machine — il ne l'est plus « par confiance de compte », ce qui est exactement le mecanisme qui avait laisse la divergence vivre trois semaines.
 
 La mesure de `po-2027` **etaye cet argument plutot que de le contredire** : demandee a sa lane au lieu d'etre deduite, elle a trouve une **deuxieme machine en divergence** (`1.0.617701`, l'ancien canon), que rien n'aurait signalee — `dotnet tool list -g` repondait normalement, et le pin n'etait confronte a rien. C'est la troisieme divergence de la flotte decouverte par mesure directe (#11157 po-2024, #18766 po-2026, celle-ci) : la ligne « non mesuree » de cette matrice n'est pas une case administrative, c'est l'endroit ou les divergences se cachent.
 
@@ -389,9 +390,55 @@ Relevé `jupyter kernelspec list` firsthand sur po-2023, 2026-08-10.
 
 **Couverture des trois kernels installables partout** (règle F / H.2) : .NET Interactive **OK**, Python **OK**, Lean 4 **OK** (via WSL). Aucun contournement « kernel not available locally » n'est recevable sur cette lane.
 
+### po-2028 (inventaire kernels, 2026-10-20)
+
+Machine `MYIA-PO-2028` — poste qui **remplace `po-2026`** (décision actée par ai-01 le 2026-10-20). Windows 11 Pro 10.0.26300, i7-12700H, **63,8 Go RAM**, GPU **RTX 3070 Ti Laptop (8 192 MiB)**, `C:` 741 Go libres. WSL2 présent (default `docker-desktop`), Docker Desktop installé. Le poste a été livré **vierge côté dev** : ni Python, ni Conda, ni .NET SDK, ni Jupyter — la toolchain a été remontée de zéro (`jsboige/CoursIA#21603`).
+
+#### SDKs et dotnet-interactive
+
+| Élément | Valeur mesurée |
+|---------|----------------|
+| SDKs | 8.0.426 · 9.0.319 · 10.0.402 — installés **per-user** via `dotnet-install.ps1` : les paquets `winget` `Microsoft.DotNet.SDK.*` n'ont **pas** de scope `user` (`No applicable installer found`) |
+| `dotnet-interactive` (outil global) | **1.0.712001** — `dotnet tool list -g` et `dotnet interactive --version` = `1.0.712001+df4e5cbc…` (**le même hash de build** que po-2026, po-2027 et ai-01) |
+| Hôte de l'outil | `tools/net10.0/any/`, Roslyn embarqué 5.0.25.56712 |
+| Noyaux Jupyter | `.net-csharp` · `.net-fsharp` · `.net-powershell` (kernelspecs globaux) |
+
+#### Python
+
+| Env | Python | Usage |
+|-----|---------|-------|
+| `mcp-jupyter-py313` | 3.13.16 | exécution Papermill (`papermill` 2.7.0, `jupyterlab` 4.6.4, `ipykernel` 7.4.0) |
+
+Créé via `conda-forge --override-channels` : les canaux Anaconda par défaut exigent l'acceptation de leurs **ToS**, non acceptées ici — accepter une licence à la place de l'org n'est pas un geste d'agent, et c'est déjà la convention du dépôt pour l'env `pyphi`.
+
+#### Divergence mesurée : le stamp `language_info.version` est **12.0**, pas 13.0
+
+**Fait** : une exécution réelle d'un carnet `.net-csharp` sur ce poste, sous le **canon 1.0.712001** (même hash de build que les autres machines), émet `language_info.version` = **`12.0`** — là où ai-01 mesure `13.0` sous le même build.
+
+C'est une divergence de **plus** dans la flotte, du même type que celles que cette matrice a déjà attrapées (#11157 po-2024, #18766 po-2026, po-2027) : elle n'est visible que par une **mesure**, jamais par la réponse de la commande.
+
+**Variables testées et réfutées** — chaque test est une exécution réelle du noyau, stamp relu dans la métadonnée du carnet :
+
+| Variable testée | Résultat |
+|------------------|----------|
+| SDK 8.0.426 présent (le **plus bas** installé) | masquer le répertoire `sdk/8.0.426` ne change **rien** : stamp toujours `12.0` |
+| SDK résolu par `global.json` (pin `10.0.402`) | stamp toujours `12.0` |
+| `argv` du kernelspec (muxer `dotnet interactive jupyter` vs apphost `dotnet-interactive.exe`) | stamp toujours `12.0` dans les deux cas |
+| Roslyn livré par SDK | 8.0.426 → 4.11 · 9.0.319 → 4.14 · 10.0.402 → 5.9 · tool store → 5.0.25 |
+
+**Conséquence opérationnelle, immédiate** : la table `CANONICAL_LANGUAGE_TRANSITIONS` du `Kernel drift guard` n'accepte que la transition `12.0 -> 13.0` — la transition inverse `13.0 -> 12.0` **reste rouge**. Une ré-exécution .NET faite sur ce poste transforme donc un carnet stampé `13.0` en `12.0` et **rouge le guard**.
+
+**Règle de la lane `myia-po-2028:CoursIA-2`** : ne pas ré-exécuter un carnet .NET dont la base est stampée `13.0` ; ne ré-exécuter que ceux stampés `12.0` (degré de drift nul). Le point n'est pas de contourner le guard mais de **ne pas fabriquer** la dérive qu'il détecte.
+
+#### Exécuteurs et chemins
+
+- Python : `python -m papermill` / `jupyter nbconvert --execute --inplace` — **jamais** le MCP `jupyter-papermill` pour l'exécution (#835) ; chemin canonique du dépôt : `scripts/notebook_tools/notebook_tools.py execute <nb>`.
+- .NET : `scripts/notebook_tools/notebook_tools.py execute <nb> --cell-by-cell --kernel .net-csharp` — **vérifié** : 8 cellules, 0 erreur, 27,5 s.
+- Le MCP `jupyter-papermill` est câblé sur ce poste (scope user) pour l'**édition** des carnets (`NotebookEdit` est `deny` au harnais) ; son handicap #835 (stdout bufferisé) reste : `python -u` + `PYTHONUNBUFFERED=1` sont posés.
+
 ### Autres machines (po-2024/26)
 
-Inventaire kernels non encore relevé. Vérifier aussi l'env Conda dédié ou son venv équivalent : la mémoire est spécifique ai-01 mais le pattern (env dédié ML) est cluster-wide. Relever via `conda env list` **et** `jupyter kernelspec list` sur chaque machine.
+Inventaire kernels non encore relevé (po-2024 et po-2026 — ce dernier poste est remplacé par po-2028, dont l'inventaire est décrit ci-dessus). Vérifier aussi l'env Conda dédié ou son venv équivalent : la mémoire est spécifique ai-01 mais le pattern (env dédié ML) est cluster-wide. Relever via `conda env list` **et** `jupyter kernelspec list` sur chaque machine.
 
 ### GenAI GPU stack : triton-windows + bitsandbytes
 
