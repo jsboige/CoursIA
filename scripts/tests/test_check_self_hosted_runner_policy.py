@@ -737,6 +737,137 @@ def test_hybrid_runs_on_pull_request_target_is_rejected(tmp_path):
     assert "PULL_REQUEST_TARGET" in codes(result)
 
 
+# c.509 (dispatch c.2180) : the audited hybrid form now also accepts the
+# Linux runner label set [self-hosted, coursia-ephemeral, coursia-linux].
+# The same-repo guard, the ubuntu-latest fallback and the trigger policy
+# are reused -- only the label set widens.
+HYBRID_RUNS_ON_LINUX = (
+    "${{ (github.event.pull_request.head.repo.full_name == github.repository)"
+    " && fromJSON('[\"self-hosted\",\"coursia-ephemeral\",\"coursia-linux\"]') "
+    "|| 'ubuntu-latest' }}"
+)
+
+
+def test_hybrid_runs_on_linux_form_is_accepted(tmp_path):
+    """c.509 : the LINUX_RUNNER_LABELS triplet is the second audited
+    dynamic form, alongside the WAITER_LABELS form. A pure-Python guard
+    (no kernel, no GPU, no docker) routed to the containerized Linux leg
+    goes through the same-repo guard the same way pr-gate.yml does.
+
+    The carrier workflow is allowlisted (always-on-metadata-guards.yml
+    is the twin of always-on-guards.yml, both on main). The audit gates
+    the form AND the carrier -- widening the audited label set is not
+    enough to widen the allowlist; that is tested separately by
+    test_hybrid_runs_on_linux_in_non_allowlisted_workflow_is_rejected."""
+    write_workflow(tmp_path, "always-on-metadata-guards", """
+        name: always-on-metadata-guards
+        on:
+          pull_request:
+            branches: [main]
+          workflow_dispatch:
+        jobs:
+          guard:
+            name: kernel-drift-guard
+            runs-on: RUNSON
+            steps:
+              - run: echo pure-python
+        """)
+    (tmp_path / "always-on-metadata-guards.yml").write_text(
+        (tmp_path / "always-on-metadata-guards.yml").read_text(
+            encoding="utf-8"
+        ).replace("RUNSON", HYBRID_RUNS_ON_LINUX),
+        encoding="utf-8",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    assert result.self_hosted_jobs == 1
+
+
+def test_hybrid_runs_on_linux_wrong_labels_is_rejected(tmp_path):
+    """Negative control : swapping any label in the LINUX trio
+    (dropping coursia-ephemeral, swapping coursia-linux for coursia-waiter,
+    adding a fourth label) keeps the DYNAMIC_RUNS_ON rejection -- the
+    audited set is a TUPLE of exact sets, not a prefix/super-set check."""
+    write_workflow(tmp_path, "kernel-drift-canonical-env-hint", """
+        name: kernel-drift
+        on: workflow_dispatch
+        jobs:
+          guard:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-linux"]') || 'ubuntu-latest' }}
+            steps:
+              - run: echo partial
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+    assert result.self_hosted_jobs == 0
+
+
+def test_hybrid_runs_on_linux_swap_to_lean_is_rejected(tmp_path):
+    """Negative control : the LEAN set shares coursia-ephemeral but
+    lands on a different image (elan + toolchain baked). The
+    LINUX_RUNNER_LABELS form must not accept a swap to coursia-lean --
+    routing a pure-Python guard to a lean slot would star a Lean build
+    behind a 10-second scan."""
+    write_workflow(tmp_path, "kernel-drift-canonical-env-hint", """
+        name: kernel-drift
+        on: workflow_dispatch
+        jobs:
+          guard:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-ephemeral","coursia-lean"]') || 'ubuntu-latest' }}
+            steps:
+              - run: echo swap
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+    assert result.self_hosted_jobs == 0
+
+
+def test_hybrid_runs_on_linux_in_non_allowlisted_workflow_is_rejected(tmp_path):
+    """Positive form, wrong workflow : the same hybrid Linux form inside
+    a workflow that is not on the SELF_HOSTED_WORKFLOW_ALLOWLIST is
+    rejected with WORKFLOW_NOT_ALLOWED. The audit gates the form AND
+    the carrier -- widening one does not widen the other."""
+    write_workflow(tmp_path, "ad-hoc-guard", """
+        name: ad-hoc
+        on:
+          pull_request:
+            branches: [main]
+          workflow_dispatch:
+        jobs:
+          guard:
+            runs-on: RUNSON
+            steps:
+              - run: echo unlisted
+        """)
+    (tmp_path / "ad-hoc-guard.yml").write_text(
+        (tmp_path / "ad-hoc-guard.yml").read_text(encoding="utf-8").replace(
+            "RUNSON", HYBRID_RUNS_ON_LINUX
+        ),
+        encoding="utf-8",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"WORKFLOW_NOT_ALLOWED"}
+
+
+def test_hybrid_runs_on_linux_wrong_fallback_is_rejected(tmp_path):
+    """Same fallback rule as the waiter form : the github-hosted
+    fallback must be the exact string 'ubuntu-latest'. A version pin
+    (ubuntu-24.04) or a windows runner (windows-latest) keeps the
+    DYNAMIC_RUNS_ON rejection -- only the exact literal is audited."""
+    write_workflow(tmp_path, "kernel-drift-canonical-env-hint", """
+        name: kernel-drift
+        on: workflow_dispatch
+        jobs:
+          guard:
+            runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-24.04' }}
+            steps:
+              - run: echo bad-fallback
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+
+
 def test_pull_request_job_without_guard_is_rejected(tmp_path):
     write_workflow(tmp_path, "unguarded", """
         name: unguarded

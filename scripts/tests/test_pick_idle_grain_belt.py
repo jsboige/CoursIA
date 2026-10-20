@@ -586,7 +586,9 @@ def _patch_belt_network(monkeypatch, prs, red_state):
                         lambda **k: ([], None))
     monkeypatch.setattr(pig, "fetch_pr_states",
                         lambda nums: {n: red_state for n in nums if n in {p["number"] for p in prs}})
-    monkeypatch.setattr(pig, "unaddressed_review_points", lambda nums: {18844: 1} if prs else {})
+    monkeypatch.setattr(pig, "unaddressed_review_points_detail",
+                        lambda nums: {18844: {"count": 1, "authors": [],
+                                              "verdict": None, "verdict_surface": None}} if prs else {})
     monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **k: ([], None))
     monkeypatch.setattr(pig, "fetch_main_head_probe", lambda *a, **k: None)
     # Le tapis fait un check_claims : on rend toujours FREE.

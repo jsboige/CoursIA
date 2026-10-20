@@ -95,7 +95,8 @@ jobs:
     # aucun secret cote job, permissions contenu/lecture scopees). Routage
     # #14283 inverse, retour sur ubuntu-latest et sortie de
     # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
