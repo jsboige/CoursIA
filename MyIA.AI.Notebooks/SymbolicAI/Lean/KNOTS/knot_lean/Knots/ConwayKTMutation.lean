@@ -13,12 +13,16 @@
      11n42), avec `wf` prouvé et `AreMutantDiagrams` par construction.
   2. Des lemmes de normalisation des fenêtres (`mutateWindow_empty_window`,
      `mutateWindow_take`, `mutateWindow_ge_length_right`), réutilisables pour
-     toute preuve négative `¬ AreMutantDiagrams` future.
+     toute preuve négative `¬ AreWindowMutantDiagrams` future.
   3. Le théorème d'impossibilité one-shot
-     `not_areMutantDiagrams_conway_kt` : AUCUNE fenêtre et AUCUNE rotation de
-     Klein n'envoie le code PD désigné de Conway sur celui de
-     Kinoshita-Terasaka — la NOTE informelle de `Knots.Mutation` devient une
-     preuve par énumération exhaustive vérifiée par le noyau.
+     `not_areWindowMutantDiagrams_conway_kt` : AUCUNE fenêtre et AUCUNE
+     rotation de Klein n'envoie le code PD désigné de Conway sur celui de
+     Kinoshita-Terasaka, au sens de la fenêtre nue (`AreWindowMutantDiagrams`)
+     — la NOTE informelle de `Knots.Mutation` devient une preuve par
+     énumération exhaustive vérifiée par le noyau. La version avec recollement
+     σ (`AreMutantDiagrams`, amendement sigma de `Knots.Mutation`) reste
+     ouverte : l'énumération par le noyau ne couvre pas les involutions
+     `Nat → Nat`, c'est un sous-grain ultérieur du chantier.
 
   Limite assumée du modèle (héritée de `Knots.Mutation`) : la « fenêtre » est
   combinatoire (une plage d'indices de la liste de croisements), pas une
@@ -125,18 +129,25 @@ theorem conwayMutantR13_wf : conwayMutantR13Diagram.wf = true := by decide
 theorem conwayMutantR14_wf : conwayMutantR14Diagram.wf = true := by decide
 
 /-- Chaque mutant est mutant de Conway par construction (fenêtre 5-11,
-rotation désignée) — le témoin `rfl` est la définition même. -/
+rotation désignée, recollement trivial `σ = id`) — le témoin est la définition
+même : `reattachWindow_id` réduit `sphereMutate` à `mutateWindow`. -/
 theorem areMutantDiagrams_conway_conwayMutantR12 :
     AreMutantDiagrams conwayKnotDiagram conwayMutantR12Diagram :=
-  ⟨5, 11, .r12, rfl⟩
+  ⟨5, 11, .r12, id, fun _ => rfl, by
+    simp only [sphereMutate, reattachWindow_id]
+    rfl⟩
 
 theorem areMutantDiagrams_conway_conwayMutantR13 :
     AreMutantDiagrams conwayKnotDiagram conwayMutantR13Diagram :=
-  ⟨5, 11, .r13, rfl⟩
+  ⟨5, 11, .r13, id, fun _ => rfl, by
+    simp only [sphereMutate, reattachWindow_id]
+    rfl⟩
 
 theorem areMutantDiagrams_conway_conwayMutantR14 :
     AreMutantDiagrams conwayKnotDiagram conwayMutantR14Diagram :=
-  ⟨5, 11, .r14, rfl⟩
+  ⟨5, 11, .r14, id, fun _ => rfl, by
+    simp only [sphereMutate, reattachWindow_id]
+    rfl⟩
 
 /-- Les trois mutants comme nœuds (diagramme désigné = le mutant). -/
 def conwayMutantR12 : Knot where diagram := conwayMutantR12Diagram
@@ -173,10 +184,13 @@ littérales). La borne `i ≤ 5` vient du croisement 6 : les codes divergent dè
 l'index 5 (`⟨16, 9, 15, 8⟩` contre `⟨17, 9, 18, 8⟩`), toute fenêtre
 commençant après laisse les six premières positions inchangées.
 
-Conséquence pour le chantier : la jonction `AreMutants conwayKnot
-kinoshitaTerasakaKnot` passe nécessairement par un diagramme intermédiaire
-dans la classe de Reidemeister de l'un des deux — c'est le sous-grain
-ultérieur. -/
+Portée : l'impossibilité vise la fenêtre nue (`AreWindowMutantDiagrams`) ;
+la version avec recollement σ (`AreMutantDiagrams`) reste ouverte —
+l'énumération par le noyau ne couvre pas les involutions `Nat → Nat`.
+Conséquence pour le chantier, au sens de la fenêtre nue : la jonction
+`AreMutants conwayKnot kinoshitaTerasakaKnot` passe nécessairement par un
+diagramme intermédiaire dans la classe de Reidemeister de l'un des deux —
+c'est le sous-grain ultérieur. -/
 
 /-- Les codes PD désignés de Conway et Kinoshita-Terasaka diffèrent (contrôle
 par le noyau). -/
@@ -190,10 +204,12 @@ theorem conway_designated_take6_ne_kt :
       kinoshitaTerasakaDiagram.crossings.take 6 := by
   decide
 
-/-- **Impossibilité one-shot** : aucune fenêtre ni rotation de Klein n'envoie
-le code PD désigné du nœud de Conway sur celui de Kinoshita-Terasaka. -/
-theorem not_areMutantDiagrams_conway_kt :
-    ¬ AreMutantDiagrams conwayKnotDiagram kinoshitaTerasakaDiagram := by
+/-- **Impossibilité one-shot** (fenêtre nue) : aucune fenêtre ni rotation de
+Klein n'envoie le code PD désigné du nœud de Conway sur celui de
+Kinoshita-Terasaka. La version avec recollement σ (`AreMutantDiagrams`)
+reste ouverte. -/
+theorem not_areWindowMutantDiagrams_conway_kt :
+    ¬ AreWindowMutantDiagrams conwayKnotDiagram kinoshitaTerasakaDiagram := by
   rintro ⟨i, j, ρ, h⟩
   by_cases hij : j ≤ i
   · rw [mutateWindow_empty_window _ i j ρ hij] at h
