@@ -8,8 +8,21 @@ mainteneur pouvait rester sans reponse indefiniment — le merge-gate ne le voit
 (ce n'est pas une PR), le tapis sert l'issue selon ses propres criteres (le grain,
 pas le fil), et la condensation du dashboard emporte le signalement.
 
-Cette premiere livraison couvre la classe ``user-concern`` de la campagne #20185.
-Les cinq autres classes viendront chacune par sa propre PR.
+Cette livraison couvre la classe ``user-concern`` de la campagne #20185 (defaut)
+et, en opt-in (``--classes remark``), la classe ``user-remark``. Les quatre
+autres classes viendront chacune par sa propre PR.
+
+Classe ``user-remark`` — le discriminant est la FORME, pas le compte. Sous le
+login partage ``jsboige``, une remarque du mainteneur et un rapport de lane
+s'ecrivent sous le meme nom : le tri porte donc sur ce que le commentaire
+**est** — demande en tete, et absence de forme de rapport (titre de section,
+table, auto-identification de lane, numero de cycle). Un candidat de forme
+« rapport de lane » est **compte separement**, jamais rejete en silence : le
+motif reste mesurable et la phase 1 tranche en lecture. Enfin, un commentaire
+ulterieur quelconque, meme un simple geste, fait passer une remarque de
+``NON REPONDU`` a ``MANUAL_REVIEW`` — la campagne exclut du recensement les
+remarques auxquelles un commentaire a repondu sur le fond sans reprendre les mots
+(#18601).
 
 Deux pieges mesures, et la raison pour laquelle ce n'est pas un ``grep`` :
 
@@ -55,7 +68,7 @@ import json
 import re
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 REPO = "jsboige/CoursIA"
@@ -102,6 +115,48 @@ GESTURE_PATTERN = re.compile(
 #: et elle est nommee ici pour ne pas etre decouverte par surprise (#20186).
 GESTURE_WINDOW = 400
 
+#: Classe 2 de la campagne (#20185) : ``user-remark``. Un commentaire du compte du
+#: mainteneur qui appelle une reponse sans etre un Concern — question, consigne,
+#: correction, demande d'arbitrage. Sous le login partage, le seul discriminant
+#: disponible est la **forme** : un post de lane porte un tag de protocole ou une
+#: signature ``lane myia-…`` (``GESTURE_PATTERN``), et les sieges ``myia-*``
+#: ecrivent sous leur propre compte. Un remark user est donc un ``other`` du seul
+#: compte ``jsboige`` qui porte une demande explicite.
+#:
+#: Le predicat est volontairement large : le plancher de la campagne est
+#: ``MANUAL_REVIEW`` (sur-signaler plutot que manquer), et l'arbitrage fin revient
+#: a la lecture. Ce qui n'est PAS un remark : une preference sans question posee,
+#: et tout post de lane deja ecarte par ``classify``.
+REMARK_ASK = re.compile(
+    r"\?\s*$"
+    r"|\b(?:peux-tu|peut-on|pourrais-tu|faut-il|il faut|il reste|il faudrait"
+    r"|reste a|a faire|a traiter|a verifier|a confirmer|je propose"
+    r"|ma proposition|je prefere)\b",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+#: Fenetre ou la demande d'une remarque est cherchee. Un remark user **enonce sa
+#: demande en tete** ; un rapport de lane de plusieurs milliers de caracteres qui
+#: contient « a verifier » dans son corps n'appelle pas de reponse. Sans cette
+#: borne, un inventaire de 187 cellules se classait en remarque (mesure du
+#: 2026-10-20, c6271482844 sur #21424).
+REMARK_WINDOW = 600
+
+#: Forme d'un **rapport de lane** ecrit sous le login partage. Ce n'est pas un
+#: rejet : c'est une **separation mesuree**. Trois formes observees le 2026-10-20
+#: portaient une demande sans etre des remarques user — un titre de section
+#: (`## T3 — inventaire…`, #21424), une auto-identification de lane
+#: (`lane \`myia-po-2024:CoursIA\``, #19578), une table de chronologie (#18601).
+#: Les ecarter en silence rendrait le motif invérifiable ; les compter a part
+#: laisse la classe mesurable, et la phase 1 de la campagne tranche en lecture.
+REPORT_SHAPE = re.compile(
+    r"^\s{0,3}#{1,4}\s"          # un titre de section
+    r"|\|\s*:?-{3,}"             # une table markdown
+    r"|\blane\s*[:`]"            # auto-identification de lane
+    r"|\bc\.\d{2,}\b",           # numero de cycle
+    re.IGNORECASE | re.MULTILINE,
+)
+
 _WS = re.compile(r"\s+")
 _DECORATION = re.compile(r"^[\s*_#>`]+")
 _LINK = re.compile(r"https?://\S+")
@@ -144,6 +199,8 @@ class ConcernFinding:
     status: str
     proof: int | None
     gesture_after: bool
+    #: ``remark`` ou ``lane-report`` (classe 2 seulement). Voir ``REPORT_SHAPE``.
+    shape: str = "remark"
 
     def as_dict(self) -> dict:
         return {
@@ -153,6 +210,7 @@ class ConcernFinding:
             "status": self.status,
             "proof": self.proof,
             "gesture_after": self.gesture_after,
+            "shape": self.shape,
         }
 
 
@@ -160,20 +218,36 @@ class ConcernFinding:
 class IssueReport:
     number: int
     concerns: list[ConcernFinding]
+    remarks: list[ConcernFinding] = field(default_factory=list)
 
     @property
     def unresolved(self) -> list[ConcernFinding]:
         return [c for c in self.concerns if c.status != "REPONDU"]
 
     @property
+    def unresolved_remarks(self) -> list[ConcernFinding]:
+        """Remarques de forme ``remark`` non resolues — le produit de la classe 2."""
+        return [
+            r
+            for r in self.remarks
+            if r.status != "REPONDU" and r.shape == "remark"
+        ]
+
+    @property
+    def lane_report_candidates(self) -> list[ConcernFinding]:
+        """Candidats ecartes pour leur **forme** : rapports de lane non tages."""
+        return [r for r in self.remarks if r.shape == "lane-report"]
+
+    @property
     def gesture_after(self) -> bool:
-        return any(c.gesture_after for c in self.concerns)
+        return any(c.gesture_after for c in self.concerns + self.remarks)
 
     def as_dict(self) -> dict:
         return {
             "number": self.number,
             "gesture_after": self.gesture_after,
             "concerns": [c.as_dict() for c in self.concerns],
+            "remarks": [r.as_dict() for r in self.remarks],
         }
 
 
@@ -308,7 +382,86 @@ def is_response_candidate(kind: str, comment: Comment) -> bool:
     return True
 
 
-def analyse_comments(number: int, comments: list[Comment]) -> IssueReport:
+def is_user_remark(comment: Comment, kind: str) -> bool:
+    """Classe 2 (#20185) : un ``other`` du compte du mainteneur portant une demande.
+
+    Les sieges ``myia-*`` sont ecartes par l'auteur : ils ecrivent des posts de
+    lane sous leur propre compte, jamais sous celui du mainteneur. Les posts du
+    compte partage qui portent un tag de protocole sont deja ``gesture``.
+    """
+    if (comment.author or "") != CONCERN_AUTHOR:
+        return False
+    if kind != "other":
+        return False
+    head = normalise(comment.body or "")[:REMARK_WINDOW]
+    return bool(REMARK_ASK.search(head))
+
+
+def remark_shape(comment: Comment) -> str:
+    """``remark`` | ``lane-report`` — la forme est mesuree, pas supposee."""
+    head = normalise(comment.body or "")[:REMARK_WINDOW]
+    return "lane-report" if REPORT_SHAPE.search(head) else "remark"
+
+
+def analyse_remarks(
+    comments: list[Comment], kinds: list[str] | None = None
+) -> list[ConcernFinding]:
+    """Remarques du mainteneur restees sans reponse, meme resolution que les Concerns.
+
+    Ce qui referme une remarque est ``proves`` : une citation forte (horodatage ou
+    extrait du texte), ou le mot porte par un acquittement de lane qui franchit le
+    plancher de substance. Un fil qui porte des candidats sans qu'aucun ne prouve
+    reste ``MANUAL_REVIEW`` — plancher de la campagne, fail-closed.
+    """
+    kinds = kinds if kinds is not None else [classify(c) for c in comments]
+    findings: list[ConcernFinding] = []
+    for i, comment in enumerate(comments):
+        if not is_user_remark(comment, kinds[i]):
+            continue
+        later = list(zip(comments[i + 1 :], kinds[i + 1 :]))
+        candidates = [
+            (other, kind) for other, kind in later if is_response_candidate(kind, other)
+        ]
+        proof = None
+        for other, kind in candidates:
+            if proves(comment, other, kind):
+                proof = other.id
+                break
+        if proof is not None:
+            status = "REPONDU"
+        elif later:
+            # Un geste de lane n'est pas une reponse, mais il n'est pas rien non
+            # plus : la campagne exclut du recensement les remarques auxquelles un
+            # commentaire ulterieur a repondu sur le fond sans reprendre les mots
+            # (#18601). Seule la lecture tranche — plancher fail-closed.
+            # Cas mesure (#20135) : correction user du 09/10 16:25Z, puis
+            # `[CLAIMED]` et `[DELIVERED]` neuf jours plus tard, aucun des deux ne
+            # citant la correction.
+            status = "MANUAL_REVIEW"
+        else:
+            status = "NON REPONDU"
+        findings.append(
+            ConcernFinding(
+                comment_id=comment.id,
+                created_at=comment.created_at,
+                excerpt=excerpt(comment.body),
+                status=status,
+                proof=proof,
+                gesture_after=any(kind == "gesture" for _, kind in later),
+                shape=remark_shape(comment),
+            )
+        )
+    return findings
+
+
+def analyse_comments(
+    number: int, comments: list[Comment], classes: tuple[str, ...] = ("concern",)
+) -> IssueReport:
+    """Classe 1 par defaut ; ``classes=("concern", "remark")`` ajoute la classe 2.
+
+    Le defaut est inchange : l'organe est un garde CI, et un elargissement par
+    defaut changerait son verdict sans qu'aucun appelant ne l'ait demande.
+    """
     kinds = [classify(c) for c in comments]
     findings: list[ConcernFinding] = []
     for i, comment in enumerate(comments):
@@ -341,7 +494,8 @@ def analyse_comments(number: int, comments: list[Comment]) -> IssueReport:
                 gesture_after=any(kind == "gesture" for _, kind in later),
             )
         )
-    return IssueReport(number=number, concerns=findings)
+    remarks = analyse_remarks(comments, kinds) if "remark" in classes else []
+    return IssueReport(number=number, concerns=findings, remarks=remarks)
 
 
 # --------------------------------------------------------------------------- #
@@ -404,7 +558,13 @@ def fetch_comments(number: int) -> list[Comment]:
 # --------------------------------------------------------------------------- #
 
 
-def render_text(reports: list[IssueReport], since: str, state: str, scanned: int) -> str:
+def render_text(
+    reports: list[IssueReport],
+    since: str,
+    state: str,
+    scanned: int,
+    with_remarks: bool = False,
+) -> str:
     unresolved = [(r, c) for r in reports for c in r.unresolved]
     total = sum(len(r.concerns) for r in reports)
     lines = [
@@ -413,7 +573,7 @@ def render_text(reports: list[IssueReport], since: str, state: str, scanned: int
         f"dans {len({r.number for r, _ in unresolved})} issue(s) — "
         f"{scanned} issue(s) lue(s).",
     ]
-    if not unresolved:
+    if not unresolved and not with_remarks:
         lines.append("Aucun — le fil est propre sur la fenetre.")
         return "\n".join(lines)
     grouped: dict[int, IssueReport] = {}
@@ -434,6 +594,31 @@ def render_text(reports: list[IssueReport], since: str, state: str, scanned: int
                 f"{finding.status}{proof}"
             )
             lines.append(f"      {finding.excerpt}")
+    if with_remarks:
+        open_remarks = [(r, f) for r in reports for f in r.unresolved_remarks]
+        total_remarks = sum(len(r.remarks) for r in reports)
+        shaped = sum(len(r.lane_report_candidates) for r in reports)
+        lines.append("")
+        lines.append(
+            f"=== Remarques du mainteneur sans reponse (classe user-remark) ===\n"
+            f"{len(open_remarks)} non resolue(s) sur {total_remarks} recensee(s), "
+            f"dans {len({r.number for r, _ in open_remarks})} issue(s).\n"
+            f"{shaped} candidat(s) ecarte(s) pour leur forme (rapport de lane non "
+            f"tague) — comptes, non listes ici."
+        )
+        if not open_remarks:
+            lines.append("Aucune — le fil est propre sur la fenetre.")
+        for report, finding in sorted(
+            open_remarks,
+            key=lambda rf: (not rf[0].gesture_after, rf[1].created_at),
+        ):
+            flag = "  [gesture-after]" if report.gesture_after else ""
+            proof = f" (piste c{finding.proof})" if finding.proof else ""
+            lines.append(
+                f"#{report.number} — {finding.created_at} c{finding.comment_id}  "
+                f"{finding.status}{proof}{flag}"
+            )
+            lines.append(f"      {finding.excerpt}")
     return "\n".join(lines)
 
 
@@ -441,6 +626,13 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--since", default="2026-09-25", help="issues mises a jour depuis (AAAA-MM-JJ)")
     parser.add_argument("--state", choices=["open", "closed", "all"], default="open")
+    parser.add_argument(
+        "--classes",
+        nargs="*",
+        choices=["concern", "remark"],
+        default=["concern"],
+        help="classes recensees : concern (defaut), remark (classe 2 de #20185)",
+    )
     parser.add_argument("--issues", type=int, nargs="*", help="issues explicites (controles)")
     parser.add_argument("--as-of", help="figer le fil a cet instant (ISO, ex 2026-10-08T23:59:59Z)")
     parser.add_argument("--limit", type=int, default=0, help="ne lire que N issues (0 = toutes)")
@@ -464,16 +656,18 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"lecture de {len(numbers)} issue(s)…", file=sys.stderr)
 
+    classes = list(dict.fromkeys(args.classes))
+
     def work(number: int) -> IssueReport:
         comments = fetch_comments(number)
         if cutoff is not None:
             comments = [c for c in comments if c.when <= cutoff]
-        return analyse_comments(number, comments)
+        return analyse_comments(number, comments, classes=tuple(classes))
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as pool:
         reports = list(pool.map(work, numbers))
 
-    reports = [r for r in reports if r.concerns]
+    reports = [r for r in reports if r.concerns or r.remarks]
 
     if args.json:
         unresolved = sum(len(r.unresolved) for r in reports)
@@ -482,22 +676,38 @@ def main(argv: list[str] | None = None) -> int:
             "state": args.state,
             "as_of": args.as_of,
             "issues_scanned": len(numbers),
+            "classes": classes,
             "concerns_total": sum(len(r.concerns) for r in reports),
             "concerns_unresolved": unresolved,
+            "remarks_total": sum(len(r.remarks) for r in reports),
+            "remarks_unresolved": sum(len(r.unresolved_remarks) for r in reports),
+            "remarks_lane_report_shape": sum(
+                len(r.lane_report_candidates) for r in reports
+            ),
             "issues": [
                 r.as_dict()
                 for r in sorted(
                     reports,
                     key=lambda r: (not r.gesture_after, r.number),
                 )
-                if r.unresolved
+                if r.unresolved or r.unresolved_remarks or r.lane_report_candidates
             ],
         }
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
-        print(render_text(reports, args.since, args.state, len(numbers)))
+        print(
+            render_text(
+                reports,
+                args.since,
+                args.state,
+                len(numbers),
+                with_remarks="remark" in classes,
+            )
+        )
 
     unresolved = sum(len(r.unresolved) for r in reports)
+    if "remark" in classes:
+        unresolved += sum(len(r.unresolved_remarks) for r in reports)
     if args.fail_on_open and unresolved:
         return 1
     return 0

@@ -374,5 +374,130 @@ class RenderTests(unittest.TestCase):
         self.assertIn("gesture-after", text)
 
 
+class RemarkClassTests(unittest.TestCase):
+    """Classe 2 de #20185 (``user-remark``) — opt-in, defaut inchange.
+
+    Les controles negatifs de la campagne (#16757, #17889, #18601) sont rejoues
+    ici sous l'angle de la classe 2 : un ACK ou une reponse de lane ne doit pas
+    devenir une « remarque du mainteneur ».
+    """
+
+    REMARK = "Est-ce que le renvoi vers le chapitre 6 merite une note de bas de page ?"
+
+    def test_default_classes_ignore_remarks(self):
+        report = mod.analyse_comments(900, [c(1, "2026-10-05T10:00:00Z", self.REMARK)])
+        self.assertEqual(report.concerns, [])
+        self.assertEqual(report.remarks, [])
+
+    def test_user_remark_is_detected(self):
+        report = mod.analyse_comments(
+            901,
+            [c(1, "2026-10-05T10:00:00Z", self.REMARK)],
+            classes=("concern", "remark"),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "NON REPONDU")
+
+    def test_lane_seat_is_not_a_remark(self):
+        # Un siege ecrit sous son propre compte : ce n'est pas une remarque user.
+        report = mod.analyse_comments(
+            902,
+            [c(1, "2026-10-05T10:00:00Z", self.REMARK, author="myia-po-2024")],
+            classes=("remark",),
+        )
+        self.assertEqual(report.remarks, [])
+
+    def test_lane_gesture_with_a_question_is_not_a_remark(self):
+        body = "[CLAIMED] lane myia-po-2024:CoursIA-2 -- pli 1. Faut-il verifier ?"
+        report = mod.analyse_comments(
+            903, [c(1, "2026-10-05T10:00:00Z", body)], classes=("remark",)
+        )
+        self.assertEqual(report.remarks, [])
+
+    def test_ack_of_control_thread_is_not_a_remark(self):
+        body = "Concern pris en compte — oui, les transcripts portent plus que la premiere vague."
+        report = mod.analyse_comments(
+            904, [c(1, "2026-09-26T15:51:15Z", body)], classes=("remark",)
+        )
+        self.assertEqual(report.remarks, [])
+
+    def test_backticked_lane_signature_is_not_a_remark(self):
+        # Mesure du 2026-10-20 : `lane \`myia-po-2024:CoursIA\`` echappait au
+        # motif de geste (le backtick s'intercale), et un rapport de lane non
+        # tague se classait donc en remarque user.
+        body = (
+            "> **Etat mesure au 2026-10-20T04:15Z** (lane `myia-po-2024:CoursIA`) "
+            "-- inventaire des cellules. Faut-il poursuivre ?"
+        )
+        report = mod.analyse_comments(
+            910, [c(1, "2026-10-20T04:15:00Z", body)], classes=("remark",)
+        )
+        # Le candidat est vu, mais sa FORME le range hors du produit : il est
+        # compte, pas liste comme remarque user.
+        self.assertEqual(report.unresolved_remarks, [])
+        self.assertEqual(len(report.lane_report_candidates), 1)
+        self.assertEqual(report.remarks[0].shape, "lane-report")
+
+    def test_ask_beyond_the_window_is_not_a_remark(self):
+        body = "## T3 -- inventaire des degrades\n\n" + ("mesure " * 120) + " Faut-il poursuivre ?"
+        report = mod.analyse_comments(
+            911, [c(1, "2026-10-20T04:15:00Z", body)], classes=("remark",)
+        )
+        self.assertEqual(report.remarks, [])
+
+    def test_statement_without_ask_is_not_a_remark(self):
+        report = mod.analyse_comments(
+            905,
+            [c(1, "2026-10-05T10:00:00Z", "Le rendu est correct sur les quatre axes.")],
+            classes=("remark",),
+        )
+        self.assertEqual(report.remarks, [])
+
+    def test_remark_closed_by_timestamp_citation(self):
+        reply = "Reponse : la question du 10:00Z est traitee, la note est ajoutee."
+        report = mod.analyse_comments(
+            906,
+            [
+                c(1, "2026-10-05T10:00:00Z", self.REMARK),
+                c(2, "2026-10-06T08:00:00Z", reply),
+            ],
+            classes=("remark",),
+        )
+        self.assertEqual(report.remarks[0].status, "REPONDU")
+        self.assertEqual(report.remarks[0].proof, 2)
+
+    def test_remark_with_unproven_reply_is_manual_review(self):
+        reply = "Suite donnee dans la PR #1234, qui ajoute la note."
+        report = mod.analyse_comments(
+            907,
+            [
+                c(1, "2026-10-05T10:00:00Z", self.REMARK),
+                c(2, "2026-10-06T08:00:00Z", reply),
+            ],
+            classes=("remark",),
+        )
+        self.assertEqual(report.remarks[0].status, "MANUAL_REVIEW")
+
+    def test_remark_flags_gesture_after(self):
+        report = mod.analyse_comments(
+            908,
+            [c(1, "2026-10-05T10:00:00Z", self.REMARK), c(2, "2026-10-05T11:00:00Z", CLAIM)],
+            classes=("remark",),
+        )
+        self.assertTrue(report.gesture_after)
+        self.assertTrue(report.remarks[0].gesture_after)
+        # Un geste n'est pas une reponse, mais il n'est pas rien : plancher
+        # MANUAL_REVIEW, la lecture tranche (mesure #20135).
+        self.assertEqual(report.remarks[0].status, "MANUAL_REVIEW")
+
+    def test_rendered_remarks_section(self):
+        report = mod.analyse_comments(
+            909, [c(1, "2026-10-05T10:00:00Z", self.REMARK)], classes=("remark",)
+        )
+        text = mod.render_text([report], "2026-09-25", "open", 1, with_remarks=True)
+        self.assertIn("user-remark", text)
+        self.assertIn("#909", text)
+
+
 if __name__ == "__main__":
     unittest.main()
