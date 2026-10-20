@@ -16,24 +16,43 @@ lean backtest --algorithm Cloud-VolTargeting/main.py
 ```
 
 ### QC Cloud
-Projet 30823587. Téléverser `main.py`, compiler et lancer un backtest. Période codée en dur : **2018-01-01 → 2025-01-01** (alignée sur la baseline cross-stratégie #1630). La variante par défaut (`version=1`, SPY seul) est backtestée ci-dessous ; passer `version=2` ou `3` pour les variantes multi-actifs.
+Projet 30823587. Téléverser `main.py`, compiler et lancer un backtest. Période par défaut : **2018-01-01 → 2025-01-01** (alignée sur la baseline cross-stratégie #1630), surchargeable par les paramètres `start` / `end` (l'expérience #18921 tourne sur 2007-01-01 → 2026-08-31). La variante par défaut (`version=1`, SPY seul) est backtestée ci-dessous ; passer `version=2` ou `3` pour les variantes multi-actifs.
 
 ## Métriques de backtest
 
-Backtest frais via QC Cloud MCP, 2026-08-07 (`VolTargeting-v1-honest-read-2026-08`, projet 30823587, compile `BuildSuccess`, 1761 dates négociables, 54 ordres) :
+Re-backtest de la variante v1 après les deux correctifs de code déjà fusionnés, 2026-10-20 — run QC `18941-v1-after-2018-2025` (projet 30823587, compile `BuildSuccess`, fenêtre **2018-01-01 → 2025-01-01** — la fenêtre publiée, 1761 dates négociables, 83 ordres, paramètres `version=1`) :
 
 | Indicateur | Valeur | Lecture |
 |---|---|---|
-| Ratio de Sharpe | **0,207** | faible positif |
-| CAGR | **6,717 %** | sous le buy-hold SPY (~13-15 % sur la période) |
-| Drawdown max | **38,200 %** | élevé (proche de SPY ~34 %, sans le rendement) |
-| Profit net total | **57,671 %** (+32 854 $) | sur la période |
-| PSR (Probabilistic Sharpe Ratio) | **0,557 %** | non distinguable du bruit |
-| Ordres | 54 | turnover très faible (mensuel) |
+| Ratio de Sharpe | **0,382** | faible positif, non significatif face au benchmark |
+| CAGR | **9,761 %** | sous le buy-hold SPY (~13-15 % sur la période) |
+| Drawdown max | **20,900 %** | nettement sous SPY (~34 %) |
+| Profit net total | **92,011 %** (+92 010,66 $) | sur la période |
+| PSR (Probabilistic Sharpe Ratio) | **2,227 %** | ~2 % de chance de battre le benchmark |
+| Ordres | 83 | un rééquilibrage par mois (84 mois, le premier rejeté — voir « limite connue ») |
 
-**Verdict : NO-BEATS.** Le vol targeting sur SPY seul sous-performe le buy-and-hold SPY : CAGR 6,7 % pour un drawdown de 38,2 %, Sharpe 0,207.
+**Ce que les correctifs ont changé**, comparaison au run publié du 2026-08-07 (`VolTargeting-v1-honest-read-2026-08`, **même fenêtre**, 54 ordres) :
 
-Ces métriques précèdent la correction du calendrier de rééquilibrage (#18941). `date_rules.month_start()` sans symbole sautait les mois dont le 1er n'est pas un jour de bourse ; le code actuel rééquilibre à la première séance de chaque mois (`month_start("SPY")`). L'effet du correctif est mesuré sur la variante v2 dans #18921 (expérience 5a-bis) ; la v1 n'a pas été rebacktestée depuis.
+| Indicateur | 2026-08-07 (publié) | 2026-10-20 (re-backtest) | Écart |
+|---|---|---|---|
+| Ratio de Sharpe | 0,207 | **0,382** | ×1,85 |
+| CAGR | 6,717 % | **9,761 %** | +3,04 pts |
+| Drawdown max | 38,200 % | **20,900 %** | −17,30 pts |
+| Profit net total | 57,671 % (+57 671,45 $) | **92,011 %** (+92 010,66 $) | +34,34 pts |
+| PSR | 0,557 % | **2,227 %** | ×4 |
+| Ordres | 54 | **83** | +29 rééquilibrages |
+| p-value (excédent face au benchmark) | 0,0706 | **0,0594** | > 0,05 dans les deux cas |
+
+Les deux causes sont des correctifs de code fusionnés, pas un réglage de paramètres :
+
+- **calendrier de rééquilibrage (#18967)** — `date_rules.month_start()` sans symbole vise le 1er du mois **calendaire** ; les mois dont le 1er n'est pas un jour de bourse (week-ends, jours fériés) ne déclenchaient rien. Le code cible désormais la première séance du mois (`month_start("SPY")`), d'où 83 ordres contre 54.
+- **fenêtre d'historique (#20286)** — sur une demi-séance (clôture à 13:00), `history(symbol, 21, Resolution.DAILY)` rend moins de barres que demandé et le titre était écarté. La stratégie demande le double et garde les 21 dernières barres.
+
+**Verdict : NO-BEATS (inchangé).** QC compare la stratégie au benchmark SPY : « the strategy has a lower Sharpe ratio than the benchmark », et le test de significativité des rendements excédentaires donne **p = 0,0594 > 0,05** — l'hypothèse nulle (excédent moyen nul ou négatif face au benchmark) n'est pas rejetée. La probabilité de battre le benchmark reste de **2,2 %**. Le vol targeting sur SPY seul reste sous le buy-and-hold : CAGR 9,8 % pour un drawdown de 20,9 %.
+
+**Hors échantillon (2007-01-01 → 2026-08-31)** — run QC `18941-v1-after-oos`, même code, même variante `version=1`, 4946 dates négociables, 234 ordres : Sharpe **0,478** · CAGR **10,448 %** · drawdown max **31,200 %** · profit net **606,809 %** (+606 809,12 $) · PSR **0,197 %** · p-value **0,298**. Sur 19,7 ans le Sharpe 0,478 se distingue de zéro (t ≈ 2,1, p ≈ 0,03) mais **pas** du benchmark (p = 0,298, PSR 0,2 %) : la constance du profil ne se transforme pas en edge.
+
+**Limite connue, mesurée et non cachée.** Le re-backtest a fait apparaître un défaut de bord : le premier rééquilibrage de chaque run (2018-01-02, 2007-01-03) est **rejeté** par QuantConnect, SPY n'ayant pas encore reçu de barre de prix sur la toute première séance (`SecurityPriceZeroOrderResponseErrorAnalysis`) ; la courbe d'équité reste plate pendant les ~21 premières séances. Un rééquilibrage sur 83 est donc perdu dans la fenêtre publiée. Le correctif (warm-up de 21 barres) et les re-backtests qu'il imposera font l'objet de #21585 ; les chiffres ci-dessus incluent ce défaut, tel que mesuré.
 
 ## Lecture honnête (variante v1)
 
@@ -42,7 +61,8 @@ Le v1 ajuste l'allocation SPY en fonction de la volatilité réalisée : `alloca
 - **Signal retardé (lag de volatilité).** La volatilité réalisée augmente typiquement **après** le début d'un drawdown (krach COVID 2020, bear 2022). La réduction d'allocation arrive donc trop tard pour éviter la queue de perte, mais à temps pour rater le rebond qui suit.
 - **Plancher d'exposition à 30 %.** Même en forte volatilité, la stratégie reste au moins 30 % investie — la protection à la baisse est donc partielle, tandis que le rendement est amputé côté hausse.
 - **Levier en période calme.** `max_allocation = 1,50` ajoute du levier quand la vol est basse (bull markets), ce qui accrît le risque sans amélioration proportionnelle du Sharpe.
-- **PSR ≈ 0.** Le Sharpe 0,207 n'est pas statistiquement significatif : indistinguable du bruit. Tout claim de bord serait trompeur (règle C, PR-review-discipline §C).
+- **PSR ≈ 2 %.** La probabilité de battre le benchmark est de 2,2 %, et le test de significativité des rendements excédentaires face au benchmark donne p = 0,0594 : le Sharpe 0,382 reste indistinguable du benchmark. Le re-backtest a amélioré le profil de risque, pas le verdict — tout claim de bord serait trompeur (règle C, PR-review-discipline §C).
+- **Premier rééquilibrage rejeté (défaut de bord).** Sur la toute première séance du backtest, SPY n'a pas encore de barre de prix : l'ordre de rééquilibrage est rejeté par QC et la courbe d'équité reste plate pendant ~21 séances. Le warm-up de 21 barres — la même longueur que la fenêtre de volatilité — est le correctif attendu ; il est suivi en #21585, car il touche l'algorithme et impose de nouveaux backtests.
 
 Les variants v2 (diversification multi-actifs + contribution en risque égale) et v3 (+ momentum + défensif IEF) visent à corriger ces faiblesses (diversifier réduit le drawdown, le momentum filtre les actifs en baisse), mais ne sont pas backtestés ici : un honest-read documente le variant baseline et son verdict honnête, sans re-tuning. Ré-optimiser la cible de vol, le lookback ou les bornes d'allocation pour récupérer un Sharpe positif sur cette seule fenêtre serait du surapprentissage jusqu'à preuve du contraire (EPIC #9768, D2 « fenêtre non figée »). La stratégie est livrée avec ses paramètres codés tels quels, verdict honnête rendu.
 
