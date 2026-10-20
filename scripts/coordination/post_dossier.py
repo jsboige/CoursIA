@@ -126,7 +126,12 @@ CLOSURE = Family(
 
 def gh_json(args: list[str], env: dict[str, str] | None = None) -> Any:
     proc = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, encoding="utf-8", env=env
+        ["gh", *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
     )
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or "gh command failed")
@@ -140,6 +145,7 @@ def run_gate(family: Family, repo: str, target: int) -> tuple[int, str]:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        errors="replace",
     )
     return proc.returncode, proc.stdout
 
@@ -266,6 +272,10 @@ def emit_body(pr: int, lane: str) -> tuple[int, str, str]:
     L'appelant peut exporter un GH_TOKEN de lecture alternatif -- le
     sous-processus herite de l'env, l'emission ne fait qu'agir des lectures.
     """
+    # Console Windows cp1252 : le WARN GH-IDENTITY du gate porte un tiret 0x97 ;
+    # le decode UTF-8 strict fait lever le reader thread (UnicodeDecodeError),
+    # stderr devient None et l'appelant crashe sur .strip() -- aucun dossier
+    # emis (mesure 2026-10-18, PR 20654). errors="replace" garde le texte.
     proc = subprocess.run(
         [
             sys.executable,
@@ -278,6 +288,7 @@ def emit_body(pr: int, lane: str) -> tuple[int, str, str]:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        errors="replace",
     )
     return proc.returncode, proc.stdout, proc.stderr
 
@@ -311,6 +322,7 @@ def resolve_write_token() -> str:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        errors="replace",
         env=env,
     )
     if proc.returncode != 0 or not proc.stdout.strip():
