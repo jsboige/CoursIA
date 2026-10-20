@@ -1,6 +1,7 @@
 """Lean file utilities: sorry extraction, goal probing, sorry replacement verification."""
 
 import re
+import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -99,6 +100,60 @@ def probe_relative_path(filepath, project_dir, tmp_name: str) -> str:
         return tmp_path.resolve().relative_to(Path(project_dir).resolve()).as_posix()
     except ValueError:
         return f"{Path(filepath).parent.name}/{tmp_name}"
+
+
+def sweep_execution_leftovers(target, keep_sandboxes: bool = False) -> list:
+    """C4 (#1453 calibration forensic, po-2024 2026-09-19): remove the
+    execution leftovers a run leaves next to its target when an early-exit
+    path skips the in-place cleanup.
+
+    Measured founders (calibration passes on DEMOS 45/41/52): the GoalExtract
+    probe ``_GoalExtract.lean`` (written next to the target by
+    ``is_true_placeholder_goal`` / ``get_goal_state``) and the
+    SizeGuard snapshots ``<target>.<random>.sandbox`` (``tempfile.mkstemp``)
+    survived runs the launcher considered complete — untracked files the
+    operator had to remove by hand. The launcher's ``finally`` calls this so
+    the sweep runs on every exit path, under the tree lock.
+
+    Scope is deliberately narrow: only the sibling probe of THIS target and
+    sandboxes whose name is anchored on THIS target's filename — never a
+    blind ``*.sandbox`` glob over the directory (a sibling target's sandbox
+    may be another crash's evidence).
+
+    ``keep_sandboxes=True`` keeps the ``.sandbox`` copies (a harness crash is
+    propagating: the snapshots are the crash investigator's evidence, cf
+    SizeGuard.snapshot docstring) while still removing the probe — a stale
+    ``_GoalExtract.lean`` is always garbage, it is regenerated per call.
+
+    Returns the list of removed paths (empty when nothing leaked). Never
+    raises: a cleanup failure is reported on stderr and swallowed — the
+    launcher's ``finally`` must not mask the run result or the restore error
+    that precedes it.
+    """
+    target = Path(_require_str("target", target))
+    removed = []
+    probe = target.parent / "_GoalExtract.lean"
+    candidates = [probe]
+    if not keep_sandboxes:
+        candidates.extend(sorted(target.parent.glob(f"{target.name}.*.sandbox")))
+    for leftover in candidates:
+        try:
+            if leftover.is_file():
+                leftover.unlink()
+                removed.append(leftover)
+        except OSError as exc:
+            print(
+                f"  [LEFTOVER-SWEEP] could not remove {leftover}: {exc}",
+                file=sys.stderr,
+            )
+    if removed:
+        kind = "probe+sandbox" if len(removed) > 1 else "leftover"
+        print(
+            f"  [LEFTOVER-SWEEP] removed {len(removed)} {kind}(s) next to "
+            f"{target.name}"
+            + (" (sandboxes kept: crash evidence)" if keep_sandboxes else "")
+        )
+    return removed
 
 
 def strip_lean_comments(content: str) -> str:
@@ -954,107 +1009,115 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
         "exact 42",    # Last resort: almost always type-mismatches
     ]
 
-    for probe in probes:
-        new_lines = _probe_replaced_lines(lines, sorry_line, probe)
-        new_content = "\n".join(new_lines)
-        tmp_path.write_text(new_content, encoding="utf-8")
-
-        result = verifier.verify_project_file(relative_path)
-
-        raw_output = result.get("raw_output", "")
-
-        # Accept errors within ±3 lines of the sorry — nested tactic blocks
-        # can shift error reporting to adjacent lines.
-        # For unsolved goals (bullet-point sorrys), allow much wider tolerance
-        # since the unsolved case can be far from the sorry line.
-        LINE_TOLERANCE = 3
-        UNSOLVED_GOAL_TOLERANCE = 25
-        target_errors = []
-        collecting = False
-        for line in raw_output.split("\n"):
-            # Match both "file:line:col: error: msg" and "error: file:line:col: msg"
-            m_err = re.match(r".*?(\d+):\d+: error: (.*)", line)
-            if not m_err:
-                m_err = re.match(r"error: .*?(\d+):\d+: (.*)", line)
-            if m_err:
-                err_line = int(m_err.group(1))
-                if abs(err_line - sorry_line) <= LINE_TOLERANCE:
-                    target_errors.append(line)
-                    collecting = True
-                else:
-                    collecting = False
-            elif collecting:
-                if line.strip() == "" or re.match(r".*?\d+:\d+: ", line):
-                    collecting = False
-                else:
-                    target_errors.append(line)
-
-        if not target_errors:
-            print(f"  [GoalExtract] Probe '{probe}': no error at exact line {sorry_line}")
-            # Check for unsolved goals errors — use wider tolerance for bullet-point sorrys
-            # where the unsolved case may be far from the actual sorry line.
-            unsolved_matches = list(re.finditer(
-                r"(\d+):\d+: error: unsolved goals", raw_output))
-            if not unsolved_matches:
-                unsolved_matches = list(re.finditer(
-                    r"error: .*?(\d+):\d+: unsolved goals", raw_output))
-            # Pick the best unsolved goals match: prefer one at or after sorry_line,
-            # within UNSOLVED_GOAL_TOLERANCE
-            best_unsolved = None
-            best_dist = UNSOLVED_GOAL_TOLERANCE + 1
-            for um in unsolved_matches:
-                uline = int(um.group(1))
-                dist = abs(uline - sorry_line)
-                if dist <= UNSOLVED_GOAL_TOLERANCE:
-                    # Prefer matches at or after sorry_line (bullet-point cases)
-                    if uline >= sorry_line or dist < best_dist:
-                        if best_unsolved is None or dist < best_dist:
-                            best_unsolved = um
-                            best_dist = dist
-            if best_unsolved:
-                unsolved_line = int(best_unsolved.group(1))
-                # Probe was accepted but left open goals — the goal type IS compatible
-                # Try to extract the goal from the unsolved goals error context
-                after_idx = raw_output.find(best_unsolved.group(0))
-                after_text = raw_output[after_idx:after_idx+1000]
-                goal_match = re.search(r"⊢ (.*?)(?:\n\n|\n\d+:)", after_text, re.DOTALL)
-                if goal_match:
-                    goal = goal_match.group(1).strip()
-                    print(f"  [GoalExtract] Extracted from unsolved goals: {goal[:200]}")
-                    try:
-                        tmp_path.unlink()
-                    except OSError:
-                        pass
-                    return goal
-            else:
-                if unsolved_matches:
-                    closest = int(unsolved_matches[0].group(1))
-                    print(f"  [GoalExtract] Unsolved goals at line {closest}, "
-                          f"too far from sorry at {sorry_line} "
-                          f"(tolerance={UNSOLVED_GOAL_TOLERANCE})")
-            # Check for ANY error in the output (not just near sorry line)
-            any_error = re.search(r"error:", raw_output)
-            if any_error:
-                print(f"  [GoalExtract] Errors found but not at line {sorry_line}. "
-                      f"First error: {raw_output[any_error.start():any_error.start()+300]}")
-            continue
-
-        target_error_text = "\n".join(target_errors)
-        print(f"  [GoalExtract] Probe '{probe}': {target_error_text[:300]}")
-
-        goal = _parse_goal_from_error(target_error_text)
-        if goal:
-            try:
-                tmp_path.unlink()
-            except OSError:
-                pass
-            return goal
-
-    # Cleanup
+    # C4 root-cause hardening (#1453 forensic, 2026-09-19): any exception in
+    # the probe loop (verifier crash, subprocess error) used to unwind past
+    # every inline unlink, leaving `_GoalExtract.lean` next to the target
+    # (founders: DEMOS 45/41/52 calibration passes). try/finally makes the
+    # probe file's removal unconditional; the inline unlinks above stay
+    # (idempotent, harmless double-unlink).
     try:
-        tmp_path.unlink()
-    except OSError:
-        pass
+        for probe in probes:
+            new_lines = _probe_replaced_lines(lines, sorry_line, probe)
+            new_content = "\n".join(new_lines)
+            tmp_path.write_text(new_content, encoding="utf-8")
+
+            result = verifier.verify_project_file(relative_path)
+
+            raw_output = result.get("raw_output", "")
+
+            # Accept errors within ±3 lines of the sorry — nested tactic blocks
+            # can shift error reporting to adjacent lines.
+            # For unsolved goals (bullet-point sorrys), allow much wider tolerance
+            # since the unsolved case can be far from the sorry line.
+            LINE_TOLERANCE = 3
+            UNSOLVED_GOAL_TOLERANCE = 25
+            target_errors = []
+            collecting = False
+            for line in raw_output.split("\n"):
+                # Match both "file:line:col: error: msg" and "error: file:line:col: msg"
+                m_err = re.match(r".*?(\d+):\d+: error: (.*)", line)
+                if not m_err:
+                    m_err = re.match(r"error: .*?(\d+):\d+: (.*)", line)
+                if m_err:
+                    err_line = int(m_err.group(1))
+                    if abs(err_line - sorry_line) <= LINE_TOLERANCE:
+                        target_errors.append(line)
+                        collecting = True
+                    else:
+                        collecting = False
+                elif collecting:
+                    if line.strip() == "" or re.match(r".*?\d+:\d+: ", line):
+                        collecting = False
+                    else:
+                        target_errors.append(line)
+
+            if not target_errors:
+                print(f"  [GoalExtract] Probe '{probe}': no error at exact line {sorry_line}")
+                # Check for unsolved goals errors — use wider tolerance for bullet-point sorrys
+                # where the unsolved case may be far from the actual sorry line.
+                unsolved_matches = list(re.finditer(
+                    r"(\d+):\d+: error: unsolved goals", raw_output))
+                if not unsolved_matches:
+                    unsolved_matches = list(re.finditer(
+                        r"error: .*?(\d+):\d+: unsolved goals", raw_output))
+                # Pick the best unsolved goals match: prefer one at or after sorry_line,
+                # within UNSOLVED_GOAL_TOLERANCE
+                best_unsolved = None
+                best_dist = UNSOLVED_GOAL_TOLERANCE + 1
+                for um in unsolved_matches:
+                    uline = int(um.group(1))
+                    dist = abs(uline - sorry_line)
+                    if dist <= UNSOLVED_GOAL_TOLERANCE:
+                        # Prefer matches at or after sorry_line (bullet-point cases)
+                        if uline >= sorry_line or dist < best_dist:
+                            if best_unsolved is None or dist < best_dist:
+                                best_unsolved = um
+                                best_dist = dist
+                if best_unsolved:
+                    unsolved_line = int(best_unsolved.group(1))
+                    # Probe was accepted but left open goals — the goal type IS compatible
+                    # Try to extract the goal from the unsolved goals error context
+                    after_idx = raw_output.find(best_unsolved.group(0))
+                    after_text = raw_output[after_idx:after_idx+1000]
+                    goal_match = re.search(r"⊢ (.*?)(?:\n\n|\n\d+:)", after_text, re.DOTALL)
+                    if goal_match:
+                        goal = goal_match.group(1).strip()
+                        print(f"  [GoalExtract] Extracted from unsolved goals: {goal[:200]}")
+                        try:
+                            tmp_path.unlink()
+                        except OSError:
+                            pass
+                        return goal
+                else:
+                    if unsolved_matches:
+                        closest = int(unsolved_matches[0].group(1))
+                        print(f"  [GoalExtract] Unsolved goals at line {closest}, "
+                              f"too far from sorry at {sorry_line} "
+                              f"(tolerance={UNSOLVED_GOAL_TOLERANCE})")
+                # Check for ANY error in the output (not just near sorry line)
+                any_error = re.search(r"error:", raw_output)
+                if any_error:
+                    print(f"  [GoalExtract] Errors found but not at line {sorry_line}. "
+                          f"First error: {raw_output[any_error.start():any_error.start()+300]}")
+                continue
+
+            target_error_text = "\n".join(target_errors)
+            print(f"  [GoalExtract] Probe '{probe}': {target_error_text[:300]}")
+
+            goal = _parse_goal_from_error(target_error_text)
+            if goal:
+                try:
+                    tmp_path.unlink()
+                except OSError:
+                    pass
+                return goal
+
+    finally:
+        # Cleanup — also reached on the exception path now
+        try:
+            tmp_path.unlink()
+        except OSError:
+            pass
 
     # All probes failed to produce parseable goal — try heuristic from context
     return _heuristic_goal_extract(lines, sorry_line)

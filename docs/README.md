@@ -114,6 +114,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [transients/2026-06-14-genai-service-security-audit.md](transients/2026-06-14-genai-service-security-audit.md) | Audit de sécurisation des services IA auto-hébergés (po-2023) |
 | [genai/audio-fading-remediation.md](genai/audio-fading-remediation.md) | Remédiation FADING audio et verdicts SOTA associés (#11719) — référence opérationnelle ; le détecteur vit dans les scripts, ce document porte le raisonnement |
 | [genai/audio-onset-chunk-detection.md](genai/audio-onset-chunk-detection.md) | Détection onset/mid/end/spread des spans d'omission audio (classifier déterministe CPU, #19739) — convention de hiérarchie et tests verts |
+| [genai/audio-attack-guard.md](genai/audio-attack-guard.md) | Garde d'attaque par chunk — détection positionnelle de l'onset-drop et re-roll ciblé (#19739) — l'organe, son plan de re-roll et leur mesure sur corpus réel |
 | [genai/audio-bakeoff-bank.md](genai/audio-bakeoff-bank.md) | Format de banc bakeoff audio (schema v1 : `bank_schema_v1.json`, `bake_append.py`, `bake_report.py`, `test_bake_bank.py`) — référence pour les comparaisons inter-modèles ASR/TTS/prosodie (#19695) |
 | [genai/decision-models.md](genai/decision-models.md) | Modèles de décision — relevé et shortlist |
 | [genai/model-mapping-openai.md](genai/model-mapping-openai.md) | Mapping des modèles OpenAI — génération courante |
@@ -163,6 +164,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/life-components-schema.md](lean/life-components-schema.md) | Schéma de motifs et de réactions de Game of Life — tranches 1-4 de #15635 |
 | [lean/origami-reconnaissance.md](lean/origami-reconnaissance.md) | Origami géométrie différentielle — Pli 1 reconnaissance |
 | [lean/18430-volet-b-leandojo-v2-bench.md](lean/18430-volet-b-leandojo-v2-bench.md) | Volet B #18430 — banc comparatif LeanDojo-v2 (Pantograph) vs harnais maison, rung 52 CONWAY, écarts de protocole mesurés |
+| [lean/darksnail/pli1-2-occlusion-triad-verif.md](lean/darksnail/pli1-2-occlusion-triad-verif.md) | Pli 1.2 — vérification first-hand d'OcclusionTriad.lean (verdict INSUFFICISANT, #21310) |
 
 > Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
 
@@ -338,6 +340,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/12204-ict-chantier-1-a6.md](ledgers/12204-ict-chantier-1-a6.md) | Chantier 1 — tranche A6 : statuation des opérations 11-13 (promotions TABLE) et de la file d'attente |
 | [ledgers/12204-ict-chantier-1-a7.md](ledgers/12204-ict-chantier-1-a7.md) | Chantier 1 — tranche A7 : relecture froide — statuation des opérations 2 et 6, verdict « la table est-elle un catalogue ? », quatrième loi |
 | [ledgers/12204-ict-chantier-1-a8.md](ledgers/12204-ict-chantier-1-a8.md) | Chantier 1 — tranche A8 : rétro-équipement des conditions de rétrogradation — une condition de sortie exécutable par entrée TABLE (12 écrites, aucune entrée non falsifiable) |
+| [ledgers/12204-ict-chantier-1-a9.md](ledgers/12204-ict-chantier-1-a9.md) | Chantier 1 — tranche A9 : seconde attestation in-repo de l'op 2 « Abstraire à dette bornée » (Frontieres-11, plus court chemin) — promotion proposée |
 | [ledgers/13746-tests-eclates-dissipation.md](ledgers/13746-tests-eclates-dissipation.md) | EPIC #13746 — Ledger dissipation câblage tests éclatés |
 | [ledgers/14169-g1-recouvrement.md](ledgers/14169-g1-recouvrement.md) | Ledger G1 — Recouvrement 28 PRs amont endjin/Z3.Linq vs fork MyIntelligenceAgency/Z3.Linq |
 | [ledgers/14169-z3linq-upstream-overlap.md](ledgers/14169-z3linq-upstream-overlap.md) | Z3.Linq — recouvrement fork / amont |

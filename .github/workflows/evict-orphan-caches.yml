@@ -104,7 +104,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          python scripts/ci/evict_orphan_caches.py \
+          python3 scripts/ci/evict_orphan_caches.py \
             --max-age-hours "${{ inputs.max_age_hours || '168' }}" \
             --json > /tmp/evict_dry.json
           echo "DRY-RUN SUMMARY:"
@@ -115,11 +115,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: |
-          python scripts/ci/evict_orphan_caches.py \
+          python3 scripts/ci/evict_orphan_caches.py \
             --max-age-hours "${{ inputs.max_age_hours || '168' }}" \
             --apply \
             --json | tee /tmp/evict_apply.json
-          EVICTABLE=$(python -c "import json,sys; d=json.load(open('/tmp/evict_apply.json')); print(d['evictable'])")
+          EVICTABLE=$(python3 -c "import json,sys; d=json.load(open('/tmp/evict_apply.json')); print(d['evictable'])")
           if [ "$EVICTABLE" = "0" ]; then
             echo "Aucun cache evictable : sweep termine sans DELETE."
             exit 0
@@ -128,4 +128,4 @@ jobs:
 
       - name: Tests invariants (regex + classification)
         run: |
-          python -m unittest tests.test_evict_orphan_caches -v
+          python3 -m unittest tests.test_evict_orphan_caches -v
