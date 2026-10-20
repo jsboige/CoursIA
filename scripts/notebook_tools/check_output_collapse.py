@@ -1018,20 +1018,35 @@ REFUSED_JUSTIFICATION_RE = re.compile(
 def _load_pr_body(path):
     """Return the PR body markdown, or '' if absent.
 
-    Reads from ``--pr-body-file <path>`` if set, else from the env var
-    ``COLLAPSE_PR_BODY``. An empty string (the literal flag value) means
-    'no body available, do not bypass'. A missing file or read error is
-    treated the same as an empty body.
+    ``--pr-body-file <path>`` names a file and is read as such. Otherwise
+    the env var ``COLLAPSE_PR_BODY`` carries the body **in memory** -- the
+    form the workflows use, since writing ``${{ github.event.pull_request.body }}``
+    to a file trips the CodeQL ``actions/code-injection`` pattern (same
+    channel as ``MD_CONTENT_LOSS_PR_BODY``, #13491).
+
+    The env var is ALSO accepted as a path: a value that names an existing
+    file is read, so a dispatch caller that materialises the body keeps
+    working. Without that fallback the in-memory text was opened as a
+    filename and every caller silently lost its justification (#21552).
+
+    An empty value means 'no body available, do not bypass'.
     """
-    if path is None:
-        path = os.environ.get("COLLAPSE_PR_BODY", "")
-    if not path:
+    if path is not None:
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                return f.read()
+        except OSError:
+            return ""
+    value = os.environ.get("COLLAPSE_PR_BODY", "")
+    if not value:
         return ""
     try:
-        with open(path, "r", encoding="utf-8", errors="replace") as f:
+        with open(value, "r", encoding="utf-8", errors="replace") as f:
             return f.read()
     except OSError:
-        return ""
+        return value
+    except ValueError:  # nom de fichier invalide sur ce systeme : c'est du texte
+        return value
 
 
 def parse_collapse_justification(body):
@@ -1180,7 +1195,9 @@ def main(argv=None):
         print("base " + str(args.base) + " -> merge-base " + base[:12]
               + " | " + str(len(paths)) + " changed notebooks | "
               + str(len(bad)) + " flagged | " + str(len(justified))
-              + " justified in body | " + str(len(unaddressed))
+              + " justified in body (" + ("no body read" if not pr_body
+                                          else str(len(pr_body)) + " chars read")
+              + ") | " + str(len(unaddressed))
               + " unaddressed")
         for r in rows:
             for f in r["cells"]:
@@ -1209,6 +1226,16 @@ def main(argv=None):
                   " (Stop & Repair, NAMING c.595 + c.598). The signature"
                   " signal usually means a re-execution without API keys"
                   " -- re-execute with the keys configured.")
+            if not pr_body:
+                print("La section ne peut pas couvrir ces cellules :"
+                      " AUCUN body de PR n'a ete recu (ni --pr-body-file,"
+                      " ni COLLAPSE_PR_BODY). Verifier le cablage du"
+                      " workflow, ce n'est pas un defaut de la PR.")
+            print("Forme attendue de chaque ligne : le chemin COMPLET du"
+                  " carnet, repo-relative -- pas le basename. Exemple :"
+                  " `- MyIA.AI.Notebooks/Search/Search-11-Metaheuristics.ipynb"
+                  " cellule <id> -- <motif>` ; les lignes FLAGGED ci-dessus"
+                  " donnent deja le chemin et l'id a recopier.")
         elif bad:
             print("\nAll flagged cells are covered by the '## Output-collapse"
                   " justification' section in the body. Gate passes.")
