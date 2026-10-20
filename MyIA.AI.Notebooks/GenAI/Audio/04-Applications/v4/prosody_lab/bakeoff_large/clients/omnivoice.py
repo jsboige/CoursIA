@@ -43,8 +43,12 @@ Interface uniforme (cf. `clients/__init__.py`) :
     synth(text, out_wav, model, language='French', speaker=None, instruct=None,
           ref_audio=None, ref_text=None, **kw) -> dict
 
-CLI :
-    python clients/omnivoice.py --text "..." --out <wav> [--language French]
+CLI (depuis bakeoff_large/, forme module — l'invocation directe
+`python clients/omnivoice.py` casse sur une collision de nom : sys.path[0]
+vaut alors clients/, et `from omnivoice import OmniVoice` résolu par
+load_model trouve le présent fichier au lieu du paquet, défaut de famille
+partagé avec clients/zonos.py) :
+    python -m clients.omnivoice --text "..." --out <wav> [--language French]
         [--instruct "..."] [--ref-audio ref.wav --ref-text "..."]
         [--device cuda] [--dtype fp16] [--num-step 32] [--speed 1.0]
 """
