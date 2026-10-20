@@ -3480,6 +3480,30 @@ b1 /test-prefix-69-backup 4294967296"
   else
     ko "le predicat de nom devrait etre strict : rc=$rc out='$out'"
   fi
+  # (5) BORNE HAUTE (#21494) : `cmd_start` ne relance que `seq 1 n`. Des slots
+  # de numero > n en vol ne sont donc PAS repris. Les compter ferait
+  # sous-compter le garde -- exactement pendant une reduction de slots, quand
+  # la pression memoire est deja haute.
+  #   7 slots 11..17 en vol (28672 Mo), n=10 -> demande 40960 Mo.
+  #   Borne : reprise 0 -> total 69632 Mo > budget 64 Go -> REFUS.
+  #   Sans borne (defaut) : reprise 28672 -> total 40960 Mo -> PASSER A TORT.
+  export STUB_CI_IDS="c1 c2 c3 c4 c5 c6 c7"
+  export STUB_CI_ROWS="c1 /test-prefix-69-11 4294967296
+c2 /test-prefix-69-12 4294967296
+c3 /test-prefix-69-13 4294967296
+c4 /test-prefix-69-14 4294967296
+c5 /test-prefix-69-15 4294967296
+c6 /test-prefix-69-16 4294967296
+c7 /test-prefix-69-17 4294967296"
+  out="$( (assert_memory_budget start 10 4096m test-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] \
+     && echo "$out" | grep -q "budget CI depasse" \
+     && echo "$out" | grep -q "reprise en vol ..... 0 slot(s) de cette famille = 0 Mo" \
+     && echo "$out" | grep -q "total ............... 69632 Mo"; then
+    ok "les slots de numero > n ne sont pas repris : le pic de 17 slots est vu, le demarrage est refuse"
+  else
+    ko "la borne haute devrait refuser (slots 11..17 en vol, n=10) : rc=$rc out='$out'"
+  fi
 )
 echo ""
 

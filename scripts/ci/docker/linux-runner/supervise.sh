@@ -773,18 +773,25 @@ running_ci_mb() {
 # Rend "<nombre> <Mo>" sur stdout. Fail-closed comme running_ci_mb : un demon
 # muet rend rc!=0, jamais 0.
 running_family_mb() {
-  local prefix="$1" rows
+  local prefix="$1" upto="${2:-0}" rows
   [ -n "$prefix" ] || { echo "0 0"; return 0; }
   rows="$(ci_inspect_rows '{{.Name}} {{.HostConfig.Memory}}')" || return 1
-  printf '%s\n' "$rows" | CI_FAMILY_PREFIX="$prefix" awk '
-    BEGIN { p = ENVIRON["CI_FAMILY_PREFIX"] }
-    { n = $1; m = $2; sub(/^\//, "", n);
-      if (index(n, p) == 1) {
+  printf '%s\n' "$rows" | CI_FAMILY_PREFIX="$prefix" CI_FAMILY_UPTO="$upto" awk '
+    BEGIN { p = ENVIRON["CI_FAMILY_PREFIX"]; lim = ENVIRON["CI_FAMILY_UPTO"] + 0 }
+    { nom = $1; mb = $2; sub(/^\//, "", nom);
+      if (index(nom, p) == 1) {
         # Le nom d un slot est <prefixe>-<numero> : le reste commence par le
         # TIRET, pas par le chiffre. Un predicat sur `^[0-9]+$` ne verrait
         # donc AUCUN slot (le reste vaut « -4 »), et la reprise serait nulle.
-        rest = substr(n, length(p) + 1);
-        if (rest ~ /^-[0-9]+$/) { c++; s += m } } }
+        rest = substr(nom, length(p) + 1);
+        if (rest ~ /^-[0-9]+$/) {
+          # Borne haute (#21494) : cmd_start ne relance que `seq 1 n`. Un slot
+          # de numero > n n est JAMAIS repris par le demarrage en cours, et le
+          # compter ferait sous-compter le garde -- exactement pendant une
+          # reduction de slots, quand la pression memoire est deja haute.
+          # Le numero se lit APRES le tiret : `rest + 0` vaudrait -11 pour
+          # « -11 », une valeur negative toujours <= a la borne.
+          if (lim <= 0 || (substr(rest, 2) + 0) <= lim) { c++; s += mb } } } }
     END { printf "%d %d", c + 0, (s + 0) / 1048576 }'
 }
 
@@ -840,9 +847,14 @@ par COURSIA_RUNNER_DISTRESS_IDLE_PCT_MAX / _GAP_S / COURSIA_RUNNER_MAPPED_DROP_M
   # plus juste : le garde REFUSAIT un demarrage qui tenait, Restart=always
   # rejouait, et au cinquieme refus StartLimitBurst faisait tomber le POOL
   # entier (issue #20727, mesure du 2026-10-14).
+  #
+  # La reprise est bornee a `seq 1 n` (#21494) : les slots de numero > n ne
+  # seront pas relances par CE demarrage, les reprendre ferait sous-compter le
+  # pic. Mesure du cas : redemarrage a n=10 pendant que 11..14 finissent leur
+  # job -- le pic reel reste 14 x per, la reprise vaut 10 x per.
   if [ -n "$prefix" ]; then
     local reprise
-    if ! reprise="$(running_family_mb "$prefix")"; then
+    if ! reprise="$(running_family_mb "$prefix" "$n")"; then
       die "budget CI NON MESURABLE -- REFUS. Les slots de la famille '$famille' en vol n'ont pas pu etre mesures (raison ci-dessus) : compter 0 pour eux serait exactement le defaut que ce garde ferme. (#20727)"
     fi
     reprise_n="${reprise%% *}"
