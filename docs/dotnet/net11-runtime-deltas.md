@@ -52,9 +52,10 @@
 
 > **Banc 3 re-mesuré le 20/10** (fenêtre du 20/10, 3 passes × 3 runtimes, protocole BDN
 > identique) : les trois lignes de ce banc sont re-contextualisées dans la section
-> « Re-mesure du banc 3 » — le signal fort du 02/10 sur `Pipeline_EvilRegex` est **réfuté**,
-> la dispersion inter-passes y reste grande et les deltas fins du banc y restent **non
-> concluants**. Les valeurs de ce tableau restent celles de la session du 02/10.
+> « Re-mesure du banc 3 » — le signal fort du 02/10 sur `Pipeline_EvilRegex` n'y est
+> **pas reproduit** (le +27,5 % devient +2,3 % en 9→11), la dispersion inter-passes y
+> reste grande et les deltas fins du banc y restent **non concluants**. Les valeurs de ce
+> tableau restent celles de la session du 02/10.
 
 ## Banc 4 — semantic-fleet (unités : us)
 
@@ -150,7 +151,7 @@ de l'écart instrument (4,4 %).
 | Rule parsing multilingue (Argumentum) | (String.Split via agrégats, hors ratios article) | −13,2 % / −15,7 % | +3,7 % / +25 % (anomalie non confirmée, cf banc 5) | gain 11 réel sur le parsing de règles ; le 9→10 de la variante 50 règles à re-mesurer fenêtre calme |
 | Collections/LINQ (MGS) | FindAll 0,30 · SequenceEqual ×7,7 | ~0 à +17 % (GC-sensible) | −6 à −26 % | **non couvert** (nos bancs n'exercent pas ces API précises) ; côté 11 : nul/inconclusif |
 | Charge native-dominée (Z3.Linq) | (rien de spécifique promis) | −0,3 à −6,7 % | −5 à −10 % | **rattrapage 10 réel (marshaling), gain 11 nul** |
-| Allocation-heavy pipeline (Automata) | (Stores covariants 0,56 etc.) | +4,1 % / INCONCLUSIF EvilRegex — **signal +27,5 % réfuté le 20/10** (re-mesure : +2,3 % 9→11, dispersion inter-passes 47–69 %) | −10,9 % | **rattrapage 10 réel ; 11 non prouvé sur cette charge** (allocs identiques au Ko près — cohérent : nos pipelines allouent par design, pas par défaut runtime) |
+| Allocation-heavy pipeline (Automata) | (Stores covariants 0,56 etc.) | +4,1 % / INCONCLUSIF EvilRegex — **signal +27,5 % non reproduit le 20/10** (re-mesure : +2,3 % 9→11, dispersion inter-passes 47–69 %) | −10,9 % | **rattrapage 10 réel ; 11 non prouvé sur cette charge** (allocs identiques au Ko près — cohérent : nos pipelines allouent par design, pas par défaut runtime) |
 | Kernel notebooks | — | — | — | **le canon 1.0.712001 exige déjà ≥ .NET 10** : le dépôt ne peut pas rester « runtime 9 » pour les carnets même sans migration |
 
 ## Synthèse pour la décision P2 (LTS vs GA, escalade user)
@@ -178,11 +179,11 @@ calme ». Cette section est la réponse mesurée à ce drapeau.
 | Paramètre | Valeur |
 |---|---|
 | Machine | `myia-po-2023` — i7-12700H, X64 RyuJIT AVX2 (14 cœurs) — **même modèle de CPU** que la session du 02/10 (`myia-po-2026`) |
-| Runtimes | .NET **9.0.21** (9.0.2126.50404) · .NET **10.0.13** (10.0.1326.50504) · .NET **11.0.0** (11.0.26.50505, build `11.0.100-rc.2.26504.105`) |
+| Runtimes | .NET **9.0.21** (9.0.2126.50404) · .NET **10.0.13** (10.0.1326.50504) · .NET **11.0.0** (11.0.26.50505 ; SDK `11.0.100-rc.2.26504.105`, distinct du runtime) |
 | Preuve du runtime effectif | header `// Runtime=.NET X.Y.Z` de chaque log, vérifié fichier par fichier (9.0.21 / 10.0.13 / 11.0.0) |
 | Config BDN | `InProcessEmitToolchain`, 5 warmup / 15 itérations / 1 invocation / unroll 1 — **le protocole du 02/10** (#18770) ; `ServerGarbageCollection = false` |
 | Passes | 3 passes complètes, ordre net9 → net10 → net11 ; **médiane des 3 moyennes** par (banc × runtime) |
-| Artefact mesuré | sous-module `Automata` au gitlink épinglé `f0618529fa`, clone depth-1 **hors dépôt** (worktree du sous-module laissé propre) ; build Release `net9.0` unique exécuté tel quel sur les 3 runtimes (`--fx-version`) — le delta mesure le runtime, pas le compilateur |
+| Artefact mesuré | sous-module `Automata` au gitlink épinglé `f0618529fa`, clone depth-1 **hors dépôt** (worktree du sous-module laissé propre) ; build Release `net9.0` unique exécuté tel quel sur les 3 runtimes (`--fx-version`) — les deltas **intra-session** mesurent le runtime, pas le compilateur ; aucun comparatif binaire n'est établi avec le build du 02/10 (les SDK diffèrent : `11.0.100-rc.2` vs `10.0.204`), l'effet éventuel du compilateur n'est pas isolé entre les deux sessions |
 | Journaux | gist secret [64353cf9](https://gist.github.com/jsboige/64353cf993eac7c393611a3edaeff6f1) — 9 logs BDN + `SHA256SUMS.txt` (empreinte du manifeste : `9b7644d7589c6161265614e178db4ded8e5df746d3f51a46be3ea8788379d626`) |
 
 ### Mesures (médiane des 3 moyennes, en µs)
@@ -197,13 +198,18 @@ calme ». Cette section est la réponse mesurée à ce drapeau.
 
 1. **Le signal fort du 02/10 ne se reproduit pas.** Le « .NET 11 pénalise `Pipeline_EvilRegex`
    de +27,5 % » (et le +19,9 % en 10→11) devient **+2,3 %** et **−1,7 %** sur la médiane des 3
-   moyennes de la fenêtre du 20/10. C'est le point le plus net de cette re-mesure : ce n'est
-   **pas** un effet runtime, c'était un artefact de la fenêtre de mesure.
-2. **Le drapeau « StdDev in-passe ≈ mean » ne se reproduit pas non plus** : en net11,
-   StdDev/médiane vaut 18,1 % / 6,4 % / 11,8 % sur les trois passes, contre ≈ 65 % de la
-   médiane dans le relevé du 02/10. BDN signale toujours une distribution multimodale (« the
-   distribution can have several modes », mValue = 3) — c'est **inherent** à la charge
-   (2,13 Mo alloués par opération, pression Gen0), pas un défaut propre à un runtime.
+   moyennes de la fenêtre du 20/10. C'est le point le plus net de cette re-mesure : aucun
+   effet runtime n'y est visible ; la non-reproduction est cohérente avec un artefact de la
+   fenêtre du 02/10, sans le prouver.
+2. **Le drapeau « StdDev in-passe ≈ mean » ne se reproduit pas non plus** : en net11, le
+   rapport StdDev/moyenne vaut 18,1 % sur la passe 1 (19,4 % sur la base médiane), et les
+   rapports StdDev/médiane des passes 2 et 3 valent 6,4 % / 11,8 % — loin du relevé du
+   02/10, où le StdDev in-passe était de l'ordre de la moyenne de la passe (1738 de
+   médiane sur 2685 de moyenne). BDN signale une distribution multimodale (« the
+   distribution can have several modes », mValue = 3) dans 5 des 9 logs de la fenêtre
+   (1 des 3 passes sur `Pipeline_EvilRegex` en net11) — cohérent avec une charge très
+   allouante (2,13 Mo par opération), pas un défaut propre à un runtime ; la pression
+   Gen0 invoquée comme cause n'a **pas** été mesurée dans cette fenêtre.
 3. **La fenêtre du 20/10 n'est pas plus calme que celle du 02/10** : la dispersion **entre
    passes** — écart (max − min) rapporté à la **moyenne des deux bornes** — vaut 47 %
    (`Pipeline_ConvertDeterminizeMinimize` en net10 : 2557 → 4135 µs) et 69 %
@@ -213,8 +219,10 @@ calme ». Cette section est la réponse mesurée à ce drapeau.
    ou dans l'autre. Sur ces deux-là, la re-mesure **ne tranche rien**.
 4. **Les valeurs absolues ne sont pas comparables entre les deux sessions** : net9
    `Pipeline_EvilRegex` vaut 2829 µs ici contre 1931 µs au 02/10 (+46 %), à protocole BDN
-   identique et CPU de même modèle. L'écart vient des versions patch des runtimes
-   (9.0.21 vs 9.0.20, 10.0.13 vs 10.0.12, rc.2 vs rc.1) et de l'état de charge de la machine.
+   identique et CPU de même modèle. L'origine probable de l'écart est les versions patch
+   des runtimes (9.0.21 vs 9.0.20, 10.0.13 vs 10.0.12, rc.2 vs rc.1) et l'état de charge
+   de la machine — hypothèse non isolée : les deux facteurs varient ensemble d'une session
+   à l'autre.
    **Seuls les deltas intra-session sont comparables** — d'où la règle de lecture : on compare
    une session à elle-même, jamais une colonne à l'autre.
 
@@ -223,7 +231,7 @@ calme ». Cette section est la réponse mesurée à ce drapeau.
 | Point | État après le 20/10 |
 |---|---|
 | `Pipeline_EvilRegex` : le runtime .NET 11 est-il plus lent que .NET 9 ? | **non mesuré** — +2,3 % 9→11, −1,7 % 10→11 : aucun écart distinguable du bruit |
-| `Pipeline_EvilRegex` : le drapeau INCONCLUSIF du 02/10 | **réfuté** — le signal +27,5 % et le rapport StdDev/médiane ≈ 65 % ne se reproduisent pas |
+| `Pipeline_EvilRegex` : le drapeau INCONCLUSIF du 02/10 | **non reproduit** — le signal +27,5 % et le rapport StdDev élevé du 02/10 n'apparaissent pas dans la fenêtre du 20/10 ; une non-reproduction affaiblit le drapeau, sans le trancher |
 | `Pipeline_ConvertDeterminizeMinimize`, `Matching_DotNetDelegate` | **toujours non concluants** — dispersion inter-passes 47–69 % (écart max−min rapporté à la moyenne des deux bornes) |
 | Les 3 autres bancs encore marqués INCONCLUSIF (`RandomSearch_Sphere10D_50k` (MGS), `PromptSignature.Matches` et `PromptTransform.InterpolateKeys` (semantic-fleet)) | **non re-mesurés** dans ce cycle : même travail de préparation (clone depth-1 + build Release) sur des sous-modules dont les bancs amont relèvent de la coordination ai-01 |
 | Une fenêtre **calme** (runner CI de la machine au repos) avec n ≥ 5 passes | **non obtenue** sur cette machine ; c'est la condition qui reste pour serrer la dispersion inter-passes |
