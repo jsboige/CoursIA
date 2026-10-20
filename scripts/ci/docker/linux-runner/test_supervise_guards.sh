@@ -1035,6 +1035,23 @@ echo "Test 23 : le plafond CAP borne la file (entries 4+ toutes = CAP)"
 )
 echo ""
 
+# --- Completude du run : le CODE DE SORTIE du producteur (tests 24/38/39) --
+# #21601 : l'oracle porte sur la SEQUENCE des temporisations. Un producteur
+# TUYE par le `timeout` (124) ou par le kill qui suit (137) peut laisser une
+# sequence QUI SATISFAIT DEJA l'oracle : le prefixe complet ne prouve pas que
+# le run s'est termine. Le code de sortie est donc le seul juge de la
+# completude -- il est lu, pas suppose. 143 = SIGTERM externe.
+# La definition est placee ICI (avant le test 24) parce que le test 24 est le
+# PREMIER appelant : en bash, une fonction doit exister avant son premier
+# appel, sinon l'appel porte sur une commande inconnue.
+run_complet() {
+  local rc="$1" seq="$2" prefix="$3" cap="$4"
+  case "$rc" in
+    124|137|143) return 1 ;;
+  esac
+  oracle_backoff "$seq" "$prefix" "$cap"
+}
+
 # --- Test 24 : un cycle sain remet le compteur de backoff a zero -----------
 echo "Test 24 : cycle ayant vecu >= HEALTHY_CYCLE_SECS -> reset + sleep 2"
 (
@@ -1105,12 +1122,20 @@ STUB
   # Oracle invariant : le compteur de cycles courts est REMIS a zero apres un
   # cycle sain -> prefixe 3,6 -> cycle sain (2) -> REPART a 3,6, puis une queue
   # eventuelle qui double strictement (12, 24, ...). Voir oracle_backoff.
-  if [ "$rc14" = "124" ]; then
-    ko "timeout atteint : le superviseur n'a pas rendu la main (sequence [$seq])"
-  elif oracle_backoff "$seq" "3,6,2,3,6" 999; then
+  # La completude est jugee par le CODE DE SORTIE, pas par le seul prefixe
+  # (#21601) : un producteur tue (124 timeout, 137 kill apres le timeout,
+  # 143 SIGTERM) peut laisser une sequence qui satisfait deja l'oracle.
+  if run_complet "$rc14" "$seq" "3,6,2,3,6" 999; then
     ok "reset prouve : 3,6 -> cycle sain (2) -> REPART a 3,6 (invariant, queue [$seq])"
   else
-    ko "invariant attendu (prefixe 3,6,2,3,6 puis queue qui double strictement), obtenu [$seq]"
+    case "$rc14" in
+      124|137|143)
+        ko "run INCOMPLET (rc=$rc14) : le superviseur a ete tue -- un prefixe complet ne prouve pas la completude (sequence [$seq])"
+        ;;
+      *)
+        ko "invariant attendu (prefixe 3,6,2,3,6 puis queue qui double strictement), obtenu [$seq]"
+        ;;
+    esac
   fi
   if grep -q "conteneur termine sainement" "$TEST_DIR/out14.log"; then
     ok "le cycle long est journalise comme sain (pas comme echec)"
@@ -1145,6 +1170,23 @@ STUB
   else
     ok "controle negatif : une sequence tronquee par timeout est rejetee ([$negseq])"
   fi
+)
+echo ""
+
+# --- Test 24b : CONTROLE NEGATIF -- un prefixe complet ne vaut PAS completude
+# Le prefixe qui prouve le reset (3,6,2,3,6) est rejoue avec les codes de
+# sortie d'un producteur TUYE : le lanceur doit REJETER les trois. Sans ces
+# temoins, un assouplissement de l'oracle (accepter une sequence parfaite
+# portee par un run tue) passerait inapercu.
+echo "Test 24b : controle negatif -- une sequence parfaite portee par un run TUEE est REJETEE (rc 124/137/143)"
+(
+  for rc_tue in 124 137 143; do
+    if run_complet "$rc_tue" "3,6,2,3,6" 999; then
+      ko "controle negatif : un run tue (rc=$rc_tue) a ete accepte"
+    else
+      ok "controle negatif : un run tue (rc=$rc_tue) est rejete"
+    fi
+  done
 )
 echo ""
 
@@ -1719,19 +1761,6 @@ STUB
 )
 echo ""
 
-# --- Completude du run : le CODE DE SORTIE du producteur (tests 38/39) -----
-# #21601 : l'oracle porte sur la SEQUENCE des temporisations. Un producteur
-# TUYE par le `timeout` (124) ou par le kill qui suit (137) peut laisser une
-# sequence QUI SATISFAIT DEJA l'oracle : le prefixe complet ne prouve pas que
-# le run s'est termine. Le code de sortie est donc le seul juge de la
-# completude -- il est lu, pas suppose. 143 = SIGTERM externe.
-run_complet() {
-  local rc="$1" seq="$2" prefix="$3" cap="$4"
-  case "$rc" in
-    124|137|143) return 1 ;;
-  esac
-  oracle_backoff "$seq" "$prefix" "$cap"
-}
 
 # --- Test 38 : controle positif -- cycle court AVEC travail reel ------------
 echo "Test 38 : cycle court portant une execution de job -> pas de backoff, compteur remis a zero (review #15166)"
