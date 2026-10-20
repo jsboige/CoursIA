@@ -270,10 +270,15 @@ class MomentumFactorAlpha(AlphaModel):
             symbol = security.symbol
 
             try:
-                history = algorithm.history(symbol, 252, Resolution.DAILY)
+                # Fenetre double (#20286) : sur une demi-seance, history() rend
+                # moins de barres que demandees et le titre est ecarte du
+                # classement. On demande le double puis on re-slice sur les 252
+                # dernieres barres : closes.iloc[0] doit rester la meme barre
+                # d'ancrage, sinon le momentum change au lieu d'etre robuste.
+                history = algorithm.history(symbol, 2 * 252, Resolution.DAILY)
                 if len(history) < 252:
                     continue
-                closes = history['close']
+                closes = history['close'].iloc[-252:]
                 mom = (closes.iloc[-21] / closes.iloc[0]) - 1
                 returns[symbol] = mom
             except:
