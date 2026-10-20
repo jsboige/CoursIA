@@ -1731,3 +1731,113 @@ def test_cli_check_pending_stale_past_expected_end(tmp_path, capsys):
     assert rc == 2
     payload = json.loads(capsys.readouterr().out.strip())
     assert payload["verdict"] == "STALE"
+
+# --- #21580: the machine name is canonical, not free text ---------------------
+#
+# The machine part of a reservation key was free text: "ai-01#gpu2" and
+# "myia-ai-01#gpu2" were two rows that never locked against each other, and the
+# lock is the whole point of a GPU reservation. Canonicalisation happens at
+# PARSING (so every writer gets it), the row identity follows the canonical
+# name, and the observations stamped BEFORE the change keep their digest --
+# they are re-keyed, not discarded.
+
+
+def test_gpu_machine_name_is_canonicalised_at_parsing():
+    """One spelling of a machine, one row: the alias is resolved when the
+    observation is parsed, so the identity never depends on the writer."""
+    aliased = dl.parse_observation(held(machine="ai-01", gpu_index=2), dl.GPU_RESERVATION)
+    canonical = dl.parse_observation(
+        held(machine="myia-ai-01", gpu_index=2), dl.GPU_RESERVATION
+    )
+    assert aliased["entity"] == {"machine": "myia-ai-01", "gpu_index": 2}
+    assert dl.entity_key(aliased["entity"]) == dl.entity_key(canonical["entity"])
+    assert dl.entity_key(aliased["entity"]) == "myia-ai-01#gpu2"
+
+
+def test_gpu_machine_alias_is_case_and_spacing_insensitive():
+    """A copy-paste with a trailing space or a capital A is the same machine:
+    the spelling is not a key."""
+    for spelling in ("AI-01", " ai-01 ", "Ai-01"):
+        observation = dl.parse_observation(
+            held(machine=spelling, gpu_index=2), dl.GPU_RESERVATION
+        )
+        assert observation["entity"]["machine"] == "myia-ai-01"
+
+
+def test_gpu_machine_outside_the_roster_is_refused():
+    """A machine that is not in the roster is a typo, not a new row: it must be
+    refused explicitly, never accepted as a free-text name."""
+    with pytest.raises(dl.ObservationError) as excinfo:
+        dl.parse_observation(held(machine="gpu-box-99"), dl.GPU_RESERVATION)
+    assert excinfo.value.reason == "entity_mismatch"
+    assert "myia-ai-01" in excinfo.value.detail
+
+
+def test_gpu_observation_stamped_before_canonicalisation_is_kept(monkeypatch):
+    """An observation posted before the change carries the digest of its RAW
+    entity. It is not a tampered journal: it must be accepted, re-keyed on the
+    canonical name, and NOT counted as a rejection."""
+    monkeypatch.setattr(dl, "canonical_machine", lambda raw: raw.strip().lower())
+    legacy = dl.parse_observation(held(machine="ai-01", gpu_index=2), dl.GPU_RESERVATION)
+    monkeypatch.undo()
+
+    stamped = dict(held(machine="ai-01", gpu_index=2))
+    stamped["observation_id"] = legacy["observation_id"]
+    accepted = dl.parse_observation(stamped, dl.GPU_RESERVATION)
+
+    assert accepted["entity"] == {"machine": "myia-ai-01", "gpu_index": 2}
+    assert accepted["observation_id"] != legacy["observation_id"]
+
+
+def test_gpu_tampered_id_is_still_refused(monkeypatch):
+    """The fail-closed check survives the canonicalisation: an id that matches
+    neither the canonical nor the legacy digest is still a rejection."""
+    monkeypatch.setattr(dl, "canonical_machine", lambda raw: raw.strip().lower())
+    legacy = dl.parse_observation(held(machine="ai-01", gpu_index=2), dl.GPU_RESERVATION)
+    monkeypatch.undo()
+
+    stamped = dict(held(machine="ai-01", gpu_index=2))
+    stamped["observation_id"] = legacy["observation_id"][:-1] + "0"
+    with pytest.raises(dl.ObservationError) as excinfo:
+        dl.parse_observation(stamped, dl.GPU_RESERVATION)
+    assert excinfo.value.reason == "observation_id_mismatch"
+
+
+def test_gpu_alias_and_canonical_observations_fold_into_one_row(monkeypatch):
+    """The migration criterion: the two spellings converge on ONE row, and the
+    number of reduced observations is unchanged by the alias."""
+    monkeypatch.setattr(dl, "canonical_machine", lambda raw: raw.strip().lower())
+    legacy = dl.parse_observation(held(machine="ai-01", gpu_index=2), dl.GPU_RESERVATION)
+    monkeypatch.undo()
+
+    aliased = dict(held(machine="ai-01", gpu_index=2))
+    aliased["observation_id"] = legacy["observation_id"]
+    canonical = held(machine="myia-ai-01", gpu_index=2, observed_at="2026-09-17T19:30:00Z")
+
+    messages = []
+    for index, observation in enumerate((aliased, canonical)):
+        raw = dict(observation)
+        if "observation_id" in raw:
+            # the envelope keeps the id it was stamped with
+            body = dict(raw)
+        else:
+            body = raw
+        messages.append(
+            {
+                "messageId": f"msg-{index}",
+                "author": body["actor"],
+                "createdAt": body["observed_at"],
+                "content": dl.ENVELOPE_PREFIX + " " + dl.canonical_json(body),
+            }
+        )
+    export = {
+        "schema": dl.EXPORT_SCHEMA,
+        "ledger": dl.GPU_RESERVATION,
+        "window": {"kind": "full", "archives": []},
+        "messages": messages,
+    }
+    folded = dl.reduce_ledger(ledger=dl.GPU_RESERVATION, export=export, now=NOW)
+
+    keys = [row["key"] for row in folded.snapshot["rows"]]
+    assert keys == ["myia-ai-01#gpu2"]
+    assert folded.summary["rows"]["total"] == 1
