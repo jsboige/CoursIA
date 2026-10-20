@@ -16,6 +16,7 @@ Prerequis Mathlib necessaires :
 -/
 
 import Knots.Basic
+import Knots.Tangle
 import Mathlib.Logic.Embedding.Basic
 
 /-
@@ -991,15 +992,6 @@ l'isotopie planaire »). Contrepartie de vérité : chaque invariant transféré
 long de `ReidemeisterEquiv` doit couvrir le nouveau pas (tricoloration :
 `tricolorable_invariant_redraw`, Invariant.lean).
 -/
-
-/-- Renommage d'un croisement par une fonction sur les étiquettes.
-Version par croisement de `relabelCrossings` (Conway.lean, maillon 5) :
-`relabelCrossings f cs = cs.map (PDCrossing.relabel f)`. -/
-def PDCrossing.relabel (f : Nat → Nat) (c : PDCrossing) : PDCrossing where
-  e1 := f c.e1
-  e2 := f c.e2
-  e3 := f c.e3
-  e4 := f c.e4
 
 /-- Redraw : `d₂` s'obtient de `d₁` par un renommage bijectif des étiquettes
 qui échange les fenêtres `edges` (donc `numEdges`), préserve la fenêtre des

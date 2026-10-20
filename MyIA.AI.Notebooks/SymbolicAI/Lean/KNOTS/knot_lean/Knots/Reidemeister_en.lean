@@ -16,6 +16,7 @@
 -/
 
 import Knots.Basic_en
+import Knots.Tangle_en
 import Mathlib.Logic.Embedding.Basic
 
 /-
@@ -960,15 +961,6 @@ isotopy"). Truth counterpart: every invariant transferred along
 `ReidemeisterEquiv` must cover the new step (tricoloring:
 `tricolorable_invariant_redraw`, Invariant.lean).
 -/
-
-/-- Relabel a crossing by a function on edge labels.
-Per-crossing version of `relabelCrossings` (Conway.lean, link 5):
-`relabelCrossings f cs = cs.map (PDCrossing.relabel f)`. -/
-def PDCrossing.relabel (f : Nat → Nat) (c : PDCrossing) : PDCrossing where
-  e1 := f c.e1
-  e2 := f c.e2
-  e3 := f c.e3
-  e4 := f c.e4
 
 /-- Redraw: `d₂` is obtained from `d₁` by a bijective relabeling of the edge
 labels that exchanges the `edges` windows (hence `numEdges`), preserves the
