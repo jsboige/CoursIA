@@ -74,6 +74,8 @@ The protocol was written in #21534 before the first backtest, on the model of #2
 
 In reference mode, `on_data` does nothing.
 
+In reference mode only, `settings.seed_initial_prices` seeds each security's price as soon as it is subscribed: it is a precaution so that a reference's order never leaves on a zero price. The `strategy` mode does not enable it and stays the original code, which the innocuity check below verifies.
+
 The compared series are the portfolio value at each SPY open (`shadow` trace). The tests go through `Paradox46Benchmarks/significance.py`, with a zero risk-free rate:
 
 - Ledoit-Wolf Sharpe difference;

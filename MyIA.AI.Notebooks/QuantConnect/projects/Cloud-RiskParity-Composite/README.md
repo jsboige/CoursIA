@@ -74,6 +74,8 @@ Le protocole a été écrit dans #21534 avant le premier backtest, sur le modèl
 
 En mode référence, `on_data` ne fait rien.
 
+En mode référence seulement, `settings.seed_initial_prices` amorce le prix de chaque titre dès son abonnement : c'est une précaution pour que l'ordre d'une référence ne parte jamais sur un prix nul. Le mode `strategy` ne l'active pas et reste le code d'origine, ce que vérifie le contrôle d'innocuité ci-dessous.
+
 Les séries comparées sont la valeur du portefeuille à chaque ouverture de SPY (trace `shadow`). Les tests passent par `Paradox46Benchmarks/significance.py`, avec un taux sans risque nul :
 
 - écart de Sharpe de Ledoit-Wolf ;
