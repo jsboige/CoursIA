@@ -1,12 +1,12 @@
 # Ledger — Issue #15615 (gradation GameTheory, fournée C : blocs 11 à 15)
 
-> **Bornage strict** : ce ledger couvre les **carnets des blocs 11, 12, 13, 14 et 15** de la série GameTheory sur `origin/main` au 2026-10-11 (head `5e96ffec4cb`). Il poursuit la fournée A (`15615-gradation-fournee-a.md`, PR #20288 — carnets 01/04/05), la fournée B (`15615-gradation-fournee-b.md`, PR #20289 — blocs 06-10) et la strate « Fondations » (`15615-gradation-foundations.md`, carnets 02 + 03).
+> **Bornage strict** : ce ledger couvre les **carnets des blocs 11, 12, 13, 14 et 15** de la série GameTheory sur `origin/main` au 2026-10-10 (head `5e96ffec4cb`). Il poursuit la fournée A (`15615-gradation-fournee-a.md`, PR #20288 — carnets 01/04/05), la fournée B (`15615-gradation-fournee-b.md`, PR #20289 — blocs 06-10) et la strate « Fondations » (`15615-gradation-foundations.md`, carnets 02 + 03).
 
 ## Origine
 
-Issue #15615 — audit de gradation, plan en fournées A-D posté au fil. Fournée C annoncée « ~25 carnets » au cadrage ; **l'arbre au 2026-10-11 en porte 21** (11×3, 12×2, 13×5, 14×2, 15×9) — l'arbre fait foi, même règle qu'en fournées A et B.
+Issue #15615 — audit de gradation, plan en fournées A-D posté au fil. Fournée C annoncée « ~25 carnets » au cadrage ; **l'arbre au 2026-10-10 en porte 21** (11×3, 12×2, 13×5, 14×2, 15×9) — l'arbre fait foi, même règle qu'en fournées A et B.
 
-> **Addendum (2026-10-18)** : `GameTheory-13e-Revision-Croyances-Adversaire-Python` est arrivé sur main via PR #20215 **après** le snapshot `5e96ffec4cb` (2026-10-11) qui bornait la fournée C. Le périmètre blocs 11-15 porte donc en réalité **22 carnets** (11×3, 12×2, 13×6, 14×2, 15×9). L'addendum **ajoute** une ligne 13e au tableau de gradation **sans réécrire** l'instantané historique (cf. ligne « Totaux » ci-dessous et observation dédiée). La gradation du 13e elle-même est un grain séparé.
+> **Addendum (2026-10-18)** : `GameTheory-13e-Revision-Croyances-Adversaire-Python` est arrivé sur main via PR #20215 **après** le snapshot `5e96ffec4cb` (2026-10-10) qui bornait la fournée C. Le périmètre blocs 11-15 porte donc en réalité **22 carnets** (11×3, 12×2, 13×6, 14×2, 15×9). L'addendum **ajoute** une ligne 13e au tableau de gradation **sans réécrire** l'instantané historique (cf. ligne « Totaux » ci-dessous et observation dédiée). La gradation du 13e elle-même est un grain séparé.
 
 ## Méthode
 
@@ -39,7 +39,7 @@ Identique aux ledgers précédents : prérequis déclarés (section dédiée ou 
 | 15f | [GameTheory-15f-Shapley-Groupes-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-15f-Shapley-Groupes-Python.ipynb) | Aucune déclarée — article distillé Flores/Molina/Tejeda 2019 (4OR) | **Shapley de groupe** : jeu fusionné, axiome G-SPB, exemple 1 en arithmétique exacte, profitabilité/complémentarité, mariages florentins (Médicis), club de karaté de Zachary, estimation Monte Carlo quand 2^n explose | 44 (17 code) | Haute | Non |
 | 15g | [GameTheory-15g-AssistanceGames-2026-Python](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/GameTheory/GameTheory-15g-AssistanceGames-2026-Python.ipynb) | Aucune déclarée | Assistance games (résultat 2026) : modèle formel §3, instance jouet, politique jointe optimale oracle, **EXP3** (no-regret) pour l'assistant, bench empirique √T vs T^(3/4) | 15 (8 code) | Haute | Non |
 
-**Totaux** : 21 carnets au snapshot historique `5e96ffec4cb` (2026-10-11), **22 carnets** sur `origin/main` à 2026-10-18 après ajout du 13e (PR #20215, addendum cf. issue #20370). Répartition difficulté (sur 22) : 7 Très haute (11b, 13, 14, 14-cs, 15, 15-cs, 15b), **15 Haute**, aucune Moyenne ni Basse — la série y atteint son plateau maximal.
+**Totaux** : 21 carnets au snapshot historique `5e96ffec4cb` (2026-10-10), **22 carnets** sur `origin/main` à 2026-10-18 après ajout du 13e (PR #20215, addendum cf. issue #20370). Répartition difficulté (sur 22) : 7 Très haute (11b, 13, 14, 14-cs, 15, 15-cs, 15b), **15 Haute**, aucune Moyenne ni Basse — la série y atteint son plateau maximal.
 
 ## Observations
 
@@ -76,7 +76,7 @@ Les carnets 11 à 15 déclarent leurs prérequis en plages (« Notebooks 1-10 »
 
 ## Source des données
 
-- Lecture firsthand des 21 carnets (front-matter + section 1 + navigation) via `git show origin/main:<carnet>` au 2026-10-11, head `5e96ffec4cb`.
+- Lecture firsthand des 21 carnets (front-matter + section 1 + navigation) via `git show origin/main:<carnet>` au 2026-10-10, head `5e96ffec4cb`.
 - Statistiques cellules : extraction JSON par script de session (kernelspec, comptes code/markdown, headers).
 - Comptage de périmètre : `git ls-tree origin/main MyIA.AI.Notebooks/GameTheory/` filtré blocs 11-15 (11×3, 12×2, 13×5, 14×2, 15×9).
 
