@@ -447,7 +447,27 @@ jobs:
         # Measured firsthand 2026-09-04 on origin/main: 455/455 green with the
         # OpenAI key unset (env -u re-run), zero network/gh subprocess, zero
         # dep delta vs this job (pillow arrives transitively with matplotlib).
+        #
+        # Nombre de workers xdist borne par le plafond memoire du conteneur
+        # (1 worker par Gio entier de `memory.max`, entre 1 et 4). Les slots a
+        # 4 Gio (ai-01-wsl-*, po-2024-linux-docker-1) gardent `-n 4` a
+        # l'identique. Les slots `po-2024-linux-persist-*`, plafonnes plus bas,
+        # tuaient leurs workers par OOM du cgroup (`dmesg` : CONSTRAINT_MEMCG,
+        # 2026-10-20 04:44Z et 05:00Z, 4 jobs sur 4 en echec) : ils ont ete
+        # retires de `coursia-linux`, et sept slots sont restes inactifs devant
+        # une file de 800 runs. Borner `-n` leur rend les jobs.
         run: |
+          mem_max=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
+            || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
+            || echo max)
+          if [ "$mem_max" -gt 0 ] 2>/dev/null; then
+            xdist_n=$(( mem_max / 1073741824 ))
+            [ "$xdist_n" -gt 4 ] && xdist_n=4
+            [ "$xdist_n" -lt 1 ] && xdist_n=1
+          else
+            xdist_n=4
+          fi
+          echo "xdist workers: $xdist_n (cgroup memory limit: $mem_max)"
           python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
             pytest \
             scripts/tests \
@@ -472,7 +492,7 @@ jobs:
             scripts/quantconnect/tests \
             MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \
             GradeBookApp \
-            -n 4 --dist loadscope --tb=short -q
+            -n "$xdist_n" --dist loadscope --tb=short -q
         # Chien de garde xdist (#16288) : quand un worker meurt (`[gwN] node
         # down`), le master attend des workers morts SANS qu'aucun test soit en
         # cours -- la jambe reste muette 14 a 17 min apres `[99%]` jusqu'au mur
