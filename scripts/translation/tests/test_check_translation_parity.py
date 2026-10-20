@@ -738,8 +738,16 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # T3+T4) : +1 paire T4 -- Complexity/Complexity-03-TimeHierarchy_en (9 cellules
 # md EN remplies dans le CSV puis rendues --require-translated, 6 cellules code
 # copiees verbatim, 0 orphelin). Premiere paire de la serie Complexity.
-# Total apres fusion : 14 + 1 = 15.
-EXPECTED_PAIR_COUNT = 15
+# 2026-10-20 (PR #19916, #19908 tranche B pli 2): +1 paire -- jumeau _en du
+# carnet Lean natif : SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean_en.
+# Meme classe que #19996/#20392/#19943 : la PR ne touchait pas scripts/**, le
+# Scripts Tests path-filtre n'a pas tourne, et la garde PR-time #21397
+# (check_pair_count_declared.py) n'est cablee dans aucun workflow. Rouge sur main
+# pur a 955360bcf0 (found 15, declared 14).
+# Fusion des deux : chacun annoncait "14 + 1 = 15" depuis sa propre base ; les
+# deux paires coexistent dans l'arbre fusionne, donc 14 + 2 = 16. Compte mesure
+# par discover_pairs(repo_root, ["en","ru"]) sur l'arbre fusionne, pas deduit.
+EXPECTED_PAIR_COUNT = 16
 
 
 def _collect_parity_failures(repo_root: Path,
