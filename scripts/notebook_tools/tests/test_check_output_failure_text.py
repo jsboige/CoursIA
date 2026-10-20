@@ -744,12 +744,63 @@ def test_compare_gates_a_banner_that_replaces_a_render():
     assert rows[0]["classes"]["DECLARED_FALLBACK"]["delta"] == 0
 
 
+# --- ImportError : la forme d'une exception levee, pas le mot nu (#20701) ---
+
+IMPORT_TABLE_CITATION = (
+    "| **Imports plats vs package** : le projet utilise `from utils import ...` "
+    "(pas de package) | `ImportError` si la CLI est lancee depuis un autre "
+    "dossier | Meme pattern que `tests/test_utils.py` |")
+
+
+def test_importerror_raised_forms_fire():
+    """Chaque forme produite par une levee reelle reste un TOOL_FAILURE :
+    derniere ligne de trace, variante coloree IPython, derniere ligne sans
+    message, et gestionnaire imprimant la classe en milieu de ligne."""
+    for raised in ("Traceback (most recent call last):\n"
+                   "ImportError: cannot import name 'X' from 'y'",
+                   "\x1b[0;31mImportError\x1b[0m: cannot import name 'X'",
+                   "Traceback (most recent call last):\nImportError",
+                   "Erreur: ImportError: cannot import name 'X'"):
+        got = scan(nb(cell("print(x)", raised)))["TOOL_FAILURE"]
+        assert len(got) == 1, raised
+
+
+def test_importerror_table_citation_silent():
+    """Ligne citee dans l'issue #20701 : le nom nu dans un tableau de risques."""
+    assert scan(nb(cell("print(x)", IMPORT_TABLE_CITATION)))[
+        "TOOL_FAILURE"] == []
+
+
+def test_importerror_backticked_citation_with_message_silent():
+    """Une citation qui porte un message reste une citation : le backtick
+    place avant le nom l'exclut."""
+    text = "Voir `ImportError: cannot import name 'X'` dans la doc."
+    assert scan(nb(cell("print(x)", text)))["TOOL_FAILURE"] == []
+
+
+def test_importerror_citation_does_not_mask_raise_in_same_stream():
+    text = IMPORT_TABLE_CITATION + "\nImportError: cannot import name 'X'"
+    assert len(scan(nb(cell("print(x)", text)))["TOOL_FAILURE"]) == 1
+
+
+def test_importerror_sample_is_not_ventilated_as_degraded_hint():
+    """Le balayage classe un constat en DEGRADED_HINT si son texte extrait
+    contient un motif mou. Une levee dont le message en porte un doit rester
+    un TOOL_FAILURE."""
+    from check_output_failure_text import _is_degraded_hint
+    hits = scan(nb(cell("print(x)", "ImportError: not available on this "
+                                    "platform")))["TOOL_FAILURE"]
+    assert len(hits) == 1
+    assert not _is_degraded_hint(hits[0][1])
+
+
 # ---------------------------------------------------------------------------
 # #20120 : texte de programme affiche vs chemin emis par le runtime.
 # Calibration de l'issue : deux carnets Aspire affichent le source AppHost
-# qu'ils generent, et le chemin de montage y est un argument litteral d'appel
+# qu'ils generent, et le chemin de montage y ouvre un litteral de chaine
 # (faux positifs, doivent sortir de MACHINE_PATH) ; le carnet Orleans affiche
-# une valeur emise par le runtime (controle positif, doit rester signale).
+# une valeur emise par le runtime, chemin nu (controle positif, doit rester
+# signale). Forme retenue : decision ai-01 c.6262311553 (OPEN_LITERAL).
 # Lignes verbatim des sorties committees.
 # ---------------------------------------------------------------------------
 
@@ -775,23 +826,45 @@ def test_20120_orleans_runtime_control_still_flagged():
     assert got["PROGRAM_LITERAL"] == []
 
 
-def test_20120_runtime_shapes_stay_flagged():
-    # Formes d'emission runtime : jamais exemptees. Chacune porte un chemin
-    # cite (prose, repr, argument nomme, JSON, parenthese, couples, Windows).
+def test_20120_quoted_shapes_are_the_known_bound():
+    # Borne connue, dans le sens faux negatif : sous la forme retenue
+    # (decision ai-01 c.6262311553), tout chemin precede immediatement d'un
+    # guillemet ouvre un litteral et est exempte -- prose citante, repr,
+    # argument nomme, JSON, parenthese, couples. Aucune occurrence de ces
+    # formes dans le corpus au 2026-10-19 (mesure po-2024 c.6086700118,
+    # 0 collaterai sur les hote/env) ; la borne est epinglee pour rester
+    # visible si elle se materialise.
     for line in (
             'Serving from "/home/alice/CoursIA/x"',
             "No such file or directory: '/home/alice/CoursIA/x.csv'",
             'Config(path="/home/alice/CoursIA/x")',
             '{"path": "/home/alice/CoursIA/x", "n": 1}',
             'error: cannot open file ("/home/alice/CoursIA/x")',
-            "[('cwd', \"/home/alice/CoursIA/x\"), ('n', 1)]",
-            "Output written to D:\\dev\\CoursIA\\out.txt"):
+            "[('cwd', \"/home/alice/CoursIA/x\"), ('n', 1)]"):
+        got = scan(nb(cell("print(x)", line)))
+        assert got["MACHINE_PATH"] == [], line
+        assert len(got["PROGRAM_LITERAL"]) == 1, line
+
+
+def test_20120_bare_shapes_stay_flagged():
+    # Formes nues -- aucun guillemet ne precede le chemin : elles restent
+    # signalees. C'est la ligne Orleans (`Content root path: ...`), le
+    # Windows nu, et le commentaire sans guillemets.
+    for line in (
+            "Output written to D:\\dev\\CoursIA\\out.txt",
+            "Content root path: /home/alice/CoursIA/x",
+            "// /home/alice/CoursIA/x"):
         got = scan(nb(cell("print(x)", line)))
         assert len(got["MACHINE_PATH"]) == 1, line
         assert got["PROGRAM_LITERAL"] == [], line
 
 
-def test_20120_traceback_runtime_path_still_flagged():
+def test_20120_traceback_paths_are_the_known_bound():
+    # #21444 inverse la borne : une trace d'erreur cite ses chemins entre
+    # guillemets (`File "..."`, en-tete `<Nom>Error: [Errno ...`) -- c'est la
+    # classe B de la regle 6 (chemin dans une exception), le mecanisme meme
+    # de l'Epic #21424 : ces lignes restent MACHINE_PATH. La ligne citante
+    # HORS trace reste exempte (test quoted_shapes ci-dessus).
     trace = ('Traceback (most recent call last):\n'
              '  File "/home/alice/CoursIA/run.py", line 3, in <module>\n'
              '    main()\n'
@@ -804,11 +877,15 @@ def test_20120_traceback_runtime_path_still_flagged():
 
 
 def test_20120_code_comment_path_stays_flagged():
-    # Borne assumee dans l'autre sens : un chemin dans un commentaire affiche
-    # n'est pas un littéral d'appel. Il reste signale (faux positif conserve).
-    got = scan(nb(cell("print(x)", '# chemin: "/home/alice/CoursIA/x"')))
+    # Borne assumee dans l'autre sens : un chemin nu dans un commentaire
+    # affiche n'ouvre rien, il reste signale (faux positif conserve). La
+    # variante entre guillemets, elle, tombe dans la borne faux negatif.
+    got = scan(nb(cell("print(x)", '# chemin: /home/alice/CoursIA/x')))
 
     assert len(got["MACHINE_PATH"]) == 1
+    quoted = scan(nb(cell("print(x)", '# chemin: "/home/alice/CoursIA/x"')))
+    assert quoted["MACHINE_PATH"] == []
+    assert len(quoted["PROGRAM_LITERAL"]) == 1
 
 
 def test_20120_positional_call_echo_is_known_exempt_bound():
@@ -838,6 +915,32 @@ def test_20120_metadata_is_not_exempted():
 
     assert len(got["MACHINE_PATH"]) == 1
     assert got["PROGRAM_LITERAL"] == []
+
+
+def test_20120_corpus_calibration_lines_at_fixed_cells():
+    # Critere 4 de la decision ai-01 (c.6262311553) : les 7 lignes du jeu de
+    # calibration sont rejouees sur les carnets reels, aux indices du champ
+    # `cell` de l'organe -- qui est 0-based (#19984 ; la plupart des autres
+    # organes notebooks du depot sont 1-based, d'ou l'epinglage explicite,
+    # sinon on compare la cellule voisine). Aspire : 01 cell 3, 02 cell 2
+    # (PROGRAM_LITERAL) ; Orleans : 02 cells 12, 16, 19, 21, 23 (MACHINE_PATH).
+    root = Path(__file__).resolve().parents[3]
+    base = "MyIA.AI.Notebooks/GenAI/Integrations-DotNet"
+    cases = (
+        (f"{base}/Aspire/01-Aspire-Orchestration-GenAi.ipynb",
+         "PROGRAM_LITERAL", [3]),
+        (f"{base}/Aspire/02-Aspire-GenAiStack-Reel.ipynb",
+         "PROGRAM_LITERAL", [2]),
+        (f"{base}/Orleans/02-Orleans-Aspire-CoHost.ipynb",
+         "MACHINE_PATH", [12, 16, 19, 21, 23]),
+    )
+    for rel, cls, cells in cases:
+        with open(root / rel, encoding="utf-8") as fh:
+            doc = json.load(fh)
+        got = scan(doc)
+        assert [i for i, _ in got[cls]] == cells, rel
+        other = "MACHINE_PATH" if cls == "PROGRAM_LITERAL" else "PROGRAM_LITERAL"
+        assert got[other] == [], rel
 
 
 def test_20120_compare_gate_still_fires_on_runtime_path_only():

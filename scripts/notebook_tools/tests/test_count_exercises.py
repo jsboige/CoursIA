@@ -1176,6 +1176,113 @@ class TestGroupedAndPluralHeaders:
         assert result.count == 2
 
 
+# ---------------------------------------------------------------------------
+# #20546 -- grouped header + sibling stubs counted twice (2N-1)
+# ---------------------------------------------------------------------------
+
+class TestGroupedSiblingStubs:
+    """Un en-tête groupé (N instances numérotées) apparie UN stub mais crédite N
+    hits. Ses N-1 stubs frères (`# Exercice k`) restaient non appariés, et la
+    deuxième passe les recomptait : 2N-1 pour N exercices. Search-06 rendait 11
+    pour 6. La passe de revendication absorbe chaque stub frère par son numéro
+    d'exercice (#20546).
+    """
+
+    def test_grouped_header_with_separated_stubs_counts_n(self, tmp_path):
+        """Forme Search-06 : stubs séparés par des cellules `***`, donc hors de la
+        fenêtre avant de 3 cellules de l'en-tête. Doit compter 3, et non 5.
+        """
+        nb = _write_nb(
+            tmp_path / "separated.ipynb",
+            [
+                _md(
+                    "## Exercices\n\n"
+                    "### Exercice 1 : un\n\n### Exercice 2 : deux\n\n"
+                    "### Exercice 3 : trois"
+                ),
+                _code("# Exercice 1 : un\n# TODO etudiant\npass"),
+                _md("***"),
+                _code("# Exercice 2 : deux\n# TODO etudiant\npass"),
+                _md("***"),
+                _code("# Exercice 3 : trois\n# TODO etudiant\npass"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "un en-tête groupé de 3 instances sur 3 stubs séparés doit compter 3"
+        )
+        assert not [
+            h for h in result.exercises if h.detected_by == "code_cell_comment"
+        ], "chaque stub frère est absorbé par son instance d'en-tête"
+
+    def test_tweety_shape_plural_section_and_subsection_counts_n(self, tmp_path):
+        """Forme Tweety-07a : `## 8. Exercices` au pluriel sur quatre instances, le
+        premier stub adjacent, les trois autres plus bas, après un sous-titre `###`
+        qui reste DANS le bloc (niveau 3 sous une section de niveau 2).
+        Doit compter 4, et non 7.
+        """
+        nb = _write_nb(
+            tmp_path / "tweety_shape.ipynb",
+            [
+                _md(
+                    "## 8. Exercices\n\n"
+                    "### Exercice 1 : ADF\n\n### Exercice 2 : SetAF\n\n"
+                    "### Exercice 3 : EAF\n\n### Exercice 4 : VAF"
+                ),
+                _code("// Exercice 1 : ADF\n// TODO etudiant\npass"),
+                _code("// Exercice 2 : SetAF\n// TODO etudiant\npass"),
+                _md("### Sous-partie\n\nTexte."),
+                _code("// Exercice 3 : EAF\n// TODO etudiant\npass"),
+                _code("// Exercice 4 : VAF\n// TODO etudiant\npass"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 4, (
+            "quatre instances sous une section plurielle sur quatre stubs doivent compter 4"
+        )
+
+    def test_claim_stops_at_section_boundary(self, tmp_path):
+        """Garde-fou contre la sur-revendication : une section de niveau 2 après
+        l'en-tête groupé clôt son bloc. Un stub `# Exercice 2` dans la SECTION
+        SUIVANTE est un exercice distinct et doit compter (3 = 2 instances + 1),
+        au lieu d'être absorbé par les deux instances de l'en-tête (ce qui
+        donnerait 2).
+        """
+        nb = _write_nb(
+            tmp_path / "boundary.ipynb",
+            [
+                _md("## 8. Exercices\n\n### Exercice 1 : un\n\n### Exercice 2 : deux"),
+                _code("# Exercice 1 : un\n# TODO etudiant\npass"),
+                _md("## 9. Autre section\n\nTexte."),
+                _code("# Exercice 2 : hors du bloc\n# TODO etudiant\npass"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "un stub au-delà d'une frontière de section n'est pas l'instance de l'en-tête"
+        )
+
+    def test_one_claim_per_instance_number(self, tmp_path):
+        """Garde-fou contre la sur-revendication : chaque numéro d'instance absorbe
+        AU PLUS UN stub frère. Un second stub `# Exercice 2` n'est pas revendiqué :
+        il garde son propre hit de deuxième passe (2 instances + 1 = 3).
+        """
+        nb = _write_nb(
+            tmp_path / "one_claim.ipynb",
+            [
+                _md("## Exercices\n\n### Exercice 1 : un\n\n### Exercice 2 : deux"),
+                _code("# Exercice 1 : un\n# TODO etudiant\npass"),
+                _md("***"),
+                _code("# Exercice 2 : deux\n# TODO etudiant\npass"),
+                _md("***"),
+                _code("# Exercice 2 : deux (variante)\n# TODO etudiant\npass"),
+            ],
+        )
+        result = count_exercises_in_notebook(nb)
+        assert result.count == 3, (
+            "le second stub numéroté 2 ne doit pas être absorbé par la même instance"
+        )
+
 
 class TestCorpusScope:
     """Corpus scope and the #2161 exception table (`classify_notebook`).
