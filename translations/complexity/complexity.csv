@@ -1124,9 +1124,9 @@ de résoudre de nouveaux problèmes, mais il faut le **prouver**, pas seulement 
 programmes. L'approfondissement 03b conserve le théorème de Hartmanis et Stearns (1965).
 
 **Suite** : [Complexity-03 — Plus de temps, plus de problèmes >>](Complexity-03-TimeHierarchy.ipynb)",,,,,,,,0bf93941cb956f66,,,,,,,,
-MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,intro-hierarchy,markdown,fr,eac0279e9c048b04,"# Complexity-03 — Plus de temps, plus de problèmes
+MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,intro-hierarchy,markdown,fr,5fe08b3b342e08c2,"# Complexity-03 — Plus de temps, plus de problèmes
 
-**Navigation** : [Index](README.md) | [02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) | [03c — Zoo navigable](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb)
+**Navigation** : [Index](README.md) | [02 — Vérifier ou trouver](Complexity-02-P-NP-Reduction.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) | [03c — Zoo navigable](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | [English →](Complexity-03-TimeHierarchy_en.ipynb)
 
 > **Public : Licence.** La démonstration historique et sa simulation multitête sont conservées dans l'approfondissement 03b.
 
@@ -1146,7 +1146,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,intro-hierarchy,m
 - [01 — Counting steps](Complexity-01-StepCounting.ipynb): step size and budget;
 - [02 — Verify or find](Complexity-02-P-NP-Reduction.ipynb): decision problem and algorithm.
 
-**Objectives**: distinguish inclusion from strict separation of classes, understand a finite diagonal and explain why a table is not a proof of hierarchy. **Estimated duration**: 35 minutes.",,,,,,,eac0279e9c048b04,396737468f8ffac9,,,,,,,
+**Objectives**: distinguish inclusion from strict separation of classes, understand a finite diagonal and explain why a table is not a proof of hierarchy. **Estimated duration**: 35 minutes.",,,,,,,5fe08b3b342e08c2,396737468f8ffac9,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-intro,markdown,fr,f45d42651b9dbe73,"## 1. Des budgets imbriqués
 
 Si un programme répond en n pas, il répond aussi dans un budget de n² pas. Cela montre une **inclusion** des budgets, pas une séparation des classes de problèmes : deux programmes différents sur un même problème ne prouvent pas qu'aucun programme rapide ne peut le résoudre. Comparons les budgets sur cinq tailles.","## 1. Nested budgets
