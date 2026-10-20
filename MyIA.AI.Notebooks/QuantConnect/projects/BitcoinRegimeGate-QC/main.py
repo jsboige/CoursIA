@@ -303,7 +303,10 @@ class BitcoinRegimeGate(QCAlgorithm):
     def on_data(self, data):
         if self.is_warming_up:
             return
-        if self.mode in REFERENCE_WEIGHTS and self.time.month != self._ref_month:
+        if (self.mode in REFERENCE_WEIGHTS
+                and self.time.month != self._ref_month
+                and any(data.bars.contains_key(symbol)
+                        for symbol in self.ref_symbols.values())):
             # Reference detenue, reequilibree a la premiere barre journaliere du mois.
             self._ref_month = self.time.month
             for ticker, weight in REFERENCE_WEIGHTS[self.mode].items():

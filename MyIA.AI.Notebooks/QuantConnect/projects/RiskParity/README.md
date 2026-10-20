@@ -29,6 +29,61 @@ En résolution journalière, tous les ordres partent en `MarketOnClose` : soumis
 
 Hors échantillon, sans refus, le correctif ne change aucun ordre. Sur la fenêtre codée, l'écart vient du seul mois de février 2015 : il n'a pas de signe à retenir. Ce que le correctif apporte, c'est que le backtest mesure la stratégie décrite.
 
+## Paramètres
+
+| Paramètre | Valeurs | Défaut | Rôle |
+|---|---|---|---|
+| `mode` | `strategy`, `spy`, `6040` | `strategy` | `strategy` garde la décision du code ; `spy` détient SPY à 100 % ; `6040` détient SPY à 60 % et BND à 40 %, rééquilibrés au début de chaque mois, une minute après l'ouverture |
+| `start_date` | date `%Y%m%d` | 2015-01-01 | début de la fenêtre |
+| `end_date` | date `%Y%m%d` | 2024-12-31 | fin de la fenêtre |
+
+Les trois modes tracent chaque jour la valeur du portefeuille à l'ouverture de SPY (graphique `shadow`, séries `e0` à `e4`). En mode référence, le rééquilibrage de la stratégie et le renvoi des achats refusés ne font rien. Sans paramètre, la décision de la stratégie ne change pas : le contrôle ci-dessous le vérifie ordre par ordre.
+
+## Verdict contre références détenues (#21420)
+
+Le protocole a été écrit dans #21420 avant le premier backtest, sur le modèle de #21329. Pour une parité de risque, le 60/40 est la référence naturelle ; SPY détenu fixe le seuil du verdict `NO BEATS`. Les deux références tournent dans le même algorithme que la stratégie, sous le même modèle de courtage et avec le même préchauffage de 280 jours.
+
+Les séries comparées sont la valeur du portefeuille à chaque ouverture de SPY. Les tests passent par `Paradox46Benchmarks/significance.py`, avec un taux sans risque nul :
+
+- écart de Sharpe de Ledoit-Wolf ;
+- bootstrap stationnaire ;
+- écart de moyennes de Newey-West.
+
+Sur chaque fenêtre, la correction de Holm porte sur les six p-valeurs.
+
+Règle de verdict, écrite avant la mesure :
+
+- `BEATS` : écart de Sharpe positif et significatif (Holm < 0,05) contre les deux références ;
+- `NO BEATS` : Sharpe de la stratégie inférieur à celui de SPY détenu ;
+- `INCONCLUSIVE` : tous les autres cas.
+
+**Contrôle d'innocuité : tenu.** En mode `strategy`, sur la fenêtre codée, le code instrumenté (projet 38101154) reproduit le backtest du code d'origine (`6f35c6d89be8a9fd8525acacd14c4a6b`, projet 38101150) :
+
+- 438 ordres sur 438, sans écart de date, de symbole ni de quantité ;
+- 27 statistiques QC sur 27.
+
+Les ordres de la stratégie sont soumis à 10:00 New York et remplis à la clôture, sur les deux fenêtres ; aucun n'est passé à minuit.
+
+| Fenêtre | Séances | Sharpe stratégie (taux nul) | SPY détenu (taux nul) | 60/40 (taux nul) | p Holm (Ledoit-Wolf, SPY / 60/40) | Verdict |
+|---|---|---|---|---|---|---|
+| Codée, 2015-01-02 → 2024-12-31 | 2516 | 0,710 | 0,786 | 0,802 | 1,0 / 1,0 | **NO BEATS** |
+| Hors échantillon, 2025-01-02 → 2026-07-21 | 387 | 1,230 | 1,034 | 1,158 | 1,0 / 1,0 | **INCONCLUSIVE** |
+
+Statistiques QC (calculées par QC avec son propre taux sans risque). Leurs Sharpe ne se comparent pas à ceux de la table du dessus : QC retranche un taux sans risque non nul et part de ses propres séries quotidiennes, alors que le protocole prend un taux nul sur la valeur du portefeuille à l'ouverture. Le classement des portefeuilles peut donc changer d'une table à l'autre, et le verdict se lit sur la table du dessus.
+
+| Fenêtre | Mode | Sharpe QC (taux de QC, autre échelle) | CAGR | Pire baisse | Ordres | Backtest |
+|---|---|---|---|---|---|---|
+| Codée | stratégie | 0,360 | 7,29 % | 18,4 % | 438 | `5475762624cf4a91e21c1e6a6cf24f98` |
+| Codée | SPY détenu | 0,533 | 12,97 % | 33,7 % | 1 | `626f0da67dc03f843c7a48f1eba06a5e` |
+| Codée | 60/40 | 0,442 | 8,41 % | 21,7 % | 201 | `68a3e2b47da02e8dc69f2a6f053ca650` |
+| Hors échantillon | stratégie | 0,721 | 16,26 % | 10,9 % | 80 | `fdcf4ba6a6258b501ab14f079f267862` |
+| Hors échantillon | SPY détenu | 0,651 | 18,49 % | 18,7 % | 2 | `2497915228110d7587d702ca01caf3d7` |
+| Hors échantillon | 60/40 | 0,554 | 12,80 % | 11,2 % | 30 | `52ff8a147efaeb9be1dd305382824769` |
+
+Le backtest hors échantillon a été demandé jusqu'au 2026-10-19, mais il s'arrête le 2026-07-21 : les nœuds QC utilisés coupent les backtests environ 90 jours avant la date du jour. Aucun paramètre n'a été réglé sur cette période.
+
+**Lecture.** Sur la fenêtre codée, la stratégie est sous les deux références en Sharpe. Face au 60/40, à volatilité annuelle presque égale (8,9 % contre 9,0 %), elle rend moins par an pour une pire baisse un peu plus faible. Hors échantillon, son Sharpe est le plus haut des trois, sans écart significatif : sur 387 séances, l'intervalle bootstrap à 95 % de l'écart contre SPY détenu va de −1,27 à +1,57. Son rendement quotidien moyen y reste sous celui de SPY détenu ; c'est sa volatilité plus basse qui porte le Sharpe. Le code actuel ne bat donc aucune des deux références de façon mesurable, et passe sous SPY détenu sur sa propre fenêtre.
+
 ## Figures du notebook de recherche
 
 Le notebook [`research.ipynb`](research.ipynb) documente l'analyse complète de la parité de risque : exploration des actifs, inverse-volatility weighting (H1), backtest (H2), impact de TLT en 2020-2023 (H3), sensibilité au lookback de volatilité (H4) et analyse par régime de marché. La stratégie atteint un plafond structurel (Sharpe 0.544) — contre-exemple pédagogique. Provenance détaillée : [`MANIFEST.md`](assets/readme/MANIFEST.md).

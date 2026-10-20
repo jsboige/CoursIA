@@ -7,16 +7,16 @@
 
 ## Description
 
-Clone de la stratégie 60 de la Strategy Library QuantConnect (*Leveraged ETF Momentum Allocator*, Grant Forman). Chaque jour, en données journalières, `main.py` place 100 % du capital sur un seul ETF :
+Clone de la stratégie 60 de la Strategy Library QuantConnect (*Leveraged ETF Momentum Allocator*, Grant Forman). Chaque jour, en données journalières, `main.py` place le capital sur un seul ETF (98 % de sa valeur depuis le correctif #20388) :
 
 - **SPY au-dessus de sa SMA200** : UVXY si le RSI(10) de QQQ dépasse 81 ou celui de SPY dépasse 80, sinon TQQQ (QQQ ×3) ;
 - **SPY sous sa SMA200** : un arbre de seuils RSI(10) choisit entre TECL et SPXL (×3 haussiers), UVXY, TECS (×3 baissier) et BSV (obligations courtes). Les seuils sont 30, 74, 84, 31 et 34, combinés aux SMA20 de QQQ et de TQQQ.
 
-Le code tourne avec le modèle de frais du courtier choisi par l'auteur (`SetBrokerageModel`), en compte sur marge, sans levier au-delà de 100 % du capital.
+Le code tourne avec le modèle de frais du courtier choisi par l'auteur (`SetBrokerageModel`), en compte sur marge. La règle ne vise pas plus de 100 % du capital, mais un remplissage sur un écart d'ouverture peut porter la ligne détenue au-delà, jusqu'à la rotation suivante (section #20388).
 
 ## Mesure du code de la stratégie (#19587) — verdict INCONCLUSIVE (pas de période hors échantillon)
 
-**Verdict : INCONCLUSIVE, faute de période hors échantillon.** Les seuils RSI de l'auteur ont été publiés le 31 décembre 2025 : toute la fenêtre de la mesure a pu servir à les régler, et les 184 séances qui suivent la publication sont trop courtes pour en tenir lieu. Sur la fenêtre de la mesure, la stratégie dépasse SPY et QQQ détenus et remplit les trois conditions du protocole, pour `base` comme pour `rule`. Ce résultat reste descriptif : sans période hors échantillon distincte, il ne permet pas de conclure (arbitrage c.6092954192 sur la PR #19599).
+**Verdict : INCONCLUSIVE, faute de période hors échantillon.** Les seuils RSI de l'auteur ont été publiés le 31 décembre 2025 : toute la fenêtre de la mesure a pu servir à les régler, et les 184 séances qui suivent la publication sont trop courtes pour en tenir lieu. Sur la fenêtre de la mesure, la stratégie dépasse SPY et QQQ détenus et remplit les trois conditions du protocole, pour `base` comme pour `rule`. Ce résultat reste descriptif : sans période hors échantillon distincte, il ne permet pas de conclure (arbitrage c.6092954192 sur la PR #19599). Les tableaux de cette section ont été mesurés avec le code d'avant le correctif des achats refusés. Recalculé sur le code corrigé, le verdict de `base` ne change pas (section #20388).
 
 **Ce que le dépôt publiait avant.** Le catalogue et ce README reprenaient les chiffres de la Strategy Library (Sharpe 1,80, CAGR 101 %). Le registre `docs/qc/qc-strategies-status.md` citait un backtest QC (Sharpe 1,779, PSR 79,8 %) et demandait une confirmation qui n'a jamais eu lieu. Ce README signalait aussi un « SUSPECT overfit haussier » sur la fenêtre 2015-2024. Aucun de ces chiffres n'était comparé à une référence, et aucune différence n'était testée.
 
@@ -186,7 +186,7 @@ Statistiques de QC (avec taux sans risque) :
 | contre SPY | −0,07 | [−0,48 ; 0,32] | 0,67 | −0,26 | +0,03 | −0,34 |
 
 **Verdicts : NO BEATS pour les deux candidates.**
-- **`ucits`** : ses différences sont positives, mais aucune n'est significative (p Holm 0,33 contre SPY comme contre QQQ). Les deux intervalles de confiance contiennent zéro.
+- **`ucits`** : ses différences sont positives, mais aucune n'est significative (p Holm 0,33 contre SPY comme contre QQQ). Les deux intervalles de confiance contiennent zéro. Recalculé sur le code corrigé des achats refusés, ce verdict est confirmé (section #20388).
 - **`lrs`** : hors échantillon, son Sharpe est inférieur à celui de SPY détenu (p Holm 0,67), et il l'est sur deux sous-périodes sur trois.
 
 Au sens de la règle, NO BEATS veut dire « avantage non démontré », pas « désavantage démontré ». L'intervalle de `lrs` ([−0,48 ; 0,32]) est large : dix ans de séances ne départagent pas des écarts de Sharpe de cet ordre.
@@ -225,6 +225,72 @@ La pire baisse de `lrs` va du 2022-01-03 au 2023-03-14 (−36,5 %), sommet retro
 
 Les traces des runs (graphiques, statistiques, empreinte du code envoyé à QC, résultats du calcul) sont conservées hors dépôt, sous `QC-traces/20141-leveraged-etf-ucits/`.
 
+## Achats refusés (#20388) — correctif mesuré
+
+**Le défaut.** Le code d'origine tournait avec `SetHoldings(cible, 1.0, liquidateExistingHoldings=True)`, qui envoie les ventes et l'achat ensemble. En données journalières, tout ordre devient `MarketOnOpen`. Un achat est alors contrôlé deux fois : à l'envoi, à la clôture, puis au remplissage, à l'ouverture suivante. Or les ventes en attente ne libèrent leur marge qu'à leur remplissage, si bien que l'achat, dimensionné à 100 % de la valeur, était refusé faute de marge. La ligne restait alors en liquide jusqu'à la séance suivante. Sur la fenêtre 2012-01-01 → 2026-06-30, 51 ordres sur 778 étaient refusés en `base` et 49 sur 633 en `ucits`. Tous étaient des achats.
+
+**Le correctif** (`RotateTo` dans `main.py`) :
+- les ventes partent d'abord ;
+- l'achat vise 98 % de la valeur et il est plafonné à la marge libre à l'envoi, frais compris ;
+- la part manquante est complétée à la séance suivante.
+
+Il a été mis au point en deux itérations, chacune avec ses prédictions inscrites sur #20388 avant le backtest.
+- La première itération (ventes d'abord, cible 98 %) laissait 39 et 14 refus, tous à l'envoi. Après une rotation remplie sur un écart d'ouverture, la ligne détenue peut dépasser 100 % de la valeur, et l'achat suivant manque alors de marge.
+- La seconde itération ajoute le plafond.
+
+| Mode | Code | Achats refusés | Ordres | Sharpe (QC) | CAGR | Pire baisse |
+|---|---|---|---|---|---|---|
+| `base` | avant | 51 | 778 | 1,712 | 109,7 % | 52,5 % |
+| `base` | 1re itération | 39 | 629 | 1,726 | 110,2 % | 50,9 % |
+| `base` | correctif | 1 | 628 | 1,650 | 104,3 % | 52,0 % |
+| `ucits` | avant | 49 | 633 | 1,017 | 39,9 % | 46,1 % |
+| `ucits` | 1re itération | 14 | 515 | 1,076 | 42,1 % | 40,7 % |
+| `ucits` | correctif | 0 | 520 | 1,063 | 41,5 % | 40,9 % |
+
+Ces statistiques sont celles de QC. Son Sharpe intègre un taux sans risque, ce qui le rend non comparable aux différences de Sharpe à taux nul des sections précédentes. Le nombre d'ordres refusés est publié dans la statistique d'exécution `refused`.
+
+**Le refus restant.** Il a lieu au remplissage, et non à l'envoi. L'achat d'UVXY, envoyé le vendredi 2020-03-13 à la clôture, est refusé à l'ouverture du lundi 16. La vente de TECL s'y est remplie en forte baisse, ce qui a réduit la marge sur laquelle l'achat avait été plafonné la veille. Aucune réserve calculée à la clôture ne couvre un tel écart sur un ETF ×3. La ligne reste en liquide une séance, puis la règle reprend.
+
+**Ce que le correctif change aux mesures précédentes.** Les tableaux des sections #19587 et #20141 ont été mesurés avec le code d'avant le correctif. Les verdicts de `base` et d'`ucits` ont été recalculés sur le code corrigé (paragraphe suivant).
+- **En `base`, une partie du résultat de 2020 tenait à des refus.** En mars 2020, pendant la chute, le code d'avant voit ses achats de TECL refusés le 12 et le 16, et le portefeuille reste en liquide par accident. Avec le correctif, `base` exécute ces achats. Sur l'année 2020, la valeur est multipliée par 13,6, contre 23,4 en 1re itération, où les mêmes achats étaient encore refusés.
+- **En `ucits`, l'effet sur 2020 est négligeable** (×2,37 contre ×2,39). Les refus d'avant portaient sur SHV (23), QLD (22) et SSO (4).
+
+**Verdicts recalculés sur le code corrigé.** La règle de #19587 est appliquée telle quelle : mêmes conditions, même statistique, mêmes sous-périodes. Le recalcul a été inscrit sur #19587 avant tout calcul (c.6240032874), et ses résultats y sont publiés (c.6240054542, c.6240360809 ; sous-périodes d'`ucits` : c.6249696050). Seule la fenêtre change : 2012-01-01 → 2026-06-30, soit 3642 séances, car les nœuds de backtest utilisés s'arrêtent 90 jours avant la date du jour. Pour séparer l'effet du code de celui de la fenêtre, le run `base` de #19587 a été recalculé sur la même fenêtre. SPY et QQQ détenus sont les références des sections précédentes.
+
+| Run, fenêtre → 2026-06-30 | Sharpe | CAGR | Pire baisse |
+|---|---|---|---|
+| `base`, code d'avant | 1,52 | 109,9 % | −52,5 % |
+| `base`, code corrigé | 1,48 | 104,5 % | −52,0 % |
+| `base` corrigé, frais doublés | 1,45 | 101,1 % | −52,5 % |
+| `ucits`, code d'avant | 1,14 | 40,0 % | −46,1 % |
+| `ucits`, code corrigé | 1,19 | 41,6 % | −41,0 % |
+
+| Différence de Sharpe (code corrigé) | Écart | IC 95 % | p Holm | Frais doublés | 2012-2016 | 2017-2021 | 2022 → 2026-06 |
+|---|---|---|---|---|---|---|---|
+| `base` − SPY | +0,55 | [0,10 ; 0,98] | 0,011 | +0,52 | +0,00 | +0,89 | +0,62 |
+| `base` − QQQ | +0,47 | [0,11 ; 0,85] | 0,011 | +0,44 | −0,02 | +0,65 | +0,62 |
+| `ucits` − SPY | +0,26 | [−0,08 ; 0,58] | 0,13 | — | +0,01 | +0,41 | +0,31 |
+| `ucits` − QQQ | +0,18 | [−0,05 ; 0,43] | 0,13 | — | −0,01 | +0,17 | +0,32 |
+
+| Point de grille de `base` (code corrigé) | Sharpe | Pire baisse | Contre SPY | Contre QQQ | p Holm |
+|---|---|---|---|---|---|
+| RSI 8 | 1,31 | −64,7 % | +0,38 | +0,30 | 0,112 |
+| RSI 14 | 1,36 | −59,8 % | +0,44 | +0,35 | 0,059 |
+| SMA de SPY 150 | 1,37 | −73,7 % | +0,44 | +0,36 | 0,078 |
+| SMA de SPY 250 | 1,22 | −72,7 % | +0,29 | +0,21 | 0,145 |
+| SMA courtes 30 | 1,39 | −57,4 % | +0,46 | +0,38 | 0,045 |
+
+La sous-période 2012-2016 de `base` contre SPY est positive de 0,001. La correction de Holm porte ici sur les deux références. Pour `ucits`, avec la troisième comparaison de #20141 (`lrs`, non relancée), les p Holm montent à 0,20.
+
+- **`base` : INCONCLUSIVE, inchangé.** En échantillon, les trois conditions restent remplies contre les deux références, à titre descriptif. La p Holm vaut 0,011. La différence reste positive à frais doublés et sur au moins deux sous-périodes sur trois. Elle est positive sur les cinq points de la grille. Le motif du verdict ne dépend pas du code : la fenêtre a pu servir à régler les seuils.
+- **La grille renforce ce motif.** Le point publié a le meilleur Sharpe de son voisinage (1,48, contre 1,22 à 1,39 pour les cinq points). Sur ces cinq points, l'écart garde son signe, mais un seul reste sous 0,05 après Holm. Les intervalles de RSI 8, RSI 14 et des deux SMA de SPY contiennent zéro. C'est ce qu'on attend de paramètres choisis sur cette fenêtre. La règle ne demande qu'un écart positif sur la grille : ce constat ne change pas le verdict.
+- **`ucits` : NO BEATS, confirmé.** Le correctif améliore la stratégie : le Sharpe gagne 0,05 et la pire baisse recule de cinq points. Aucune différence n'est pourtant significative, et les deux intervalles contiennent zéro. Comme la règle le prévoit, ni le run à frais doublés ni la grille n'ont été lancés pour `ucits`.
+- **Le refus restant** (UVXY, 2020-03-13) apparaît aussi dans les runs à frais doublés, RSI 14 et SMA courtes 30, et pas dans les trois autres points de la grille.
+
+**Ce qui n'a pas été recalculé.** Le mode `rule`, les contrôles (`sma200`, `tqqq`, `sma1x`, `sso`, `qld`), `lrs`, le run `orig`, la tranche de 184 séances après la publication et les écarts hors 2020. Leurs chiffres, dans les sections #19587 et #20141, restent ceux du code d'avant. La copie de `base` gelée au suivi en ombre (`levetf-base`, SHA `f1a93779`) porte elle aussi le code d'avant le correctif.
+
+Les traces (plan, empreinte du code envoyé, ordres, journal, graphique `shadow`) sont conservées hors dépôt, sous `QC-traces/20388-levetf-fix/`, pour les projets QC 37801405 (`base`, frais doublés et grille) et 37801425 (`ucits`). Les résultats du recalcul des verdicts (`results-remesure.json`, `results-grid.json`) et les deux scripts qui les produisent y sont aussi.
+
 ## Comment exécuter
 
 **Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/LeveragedETFMomentum-QC"`
@@ -239,7 +305,7 @@ Avec les défauts, la règle de trading est celle d'origine.
 
 ## Fichiers
 
-- `main.py` — stratégie (clone de la stratégie 60 de la Strategy Library), instrumentée pour les mesures #19587 et #20141
+- `main.py` — stratégie (clone de la stratégie 60 de la Strategy Library), instrumentée pour les mesures #19587 et #20141, exécution des rotations corrigée par #20388
 
 ## Références
 
@@ -249,4 +315,5 @@ Avec les défauts, la règle de trading est celle d'origine.
 - M. A. Gayed, C. V. Bilello, *Leverage for the Long Run — A Systematic Approach to Managing Risk and Magnifying Returns in Stocks*, SSRN 2741701, 2016 — règle LRS mesurée par #20141
 - #20141 — protocole et résultats de la transposition UCITS et de la règle LRS ; #19821 — ligue de stratégies, protocole commun
 - #18923 — suivi en ombre des stratégies mesurées
+- #20388 — achats refusés faute de marge : recensement, prédictions des deux itérations et résultats du correctif
 - #19450 — même protocole, appliqué à `LongShortHarvest-QC`
