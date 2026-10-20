@@ -42,6 +42,24 @@ L'envelope est un message dashboard d'une ligne, préfixé `[OBS]`, au format JS
 
 Une observation est **terminale** quand son `state` est `released` ou `stale`. Au-delà, le picker doit incrémenter `observed_at` plutôt que ré-écrire l'historique.
 
+### L'`observation_id` se **calcule**, il ne s'écrit pas
+
+`observation_id` est le **digest du contenu** de l'observation (`observation_id_for()`, `scripts/coordination/debt_ledger.py:439`) ; il exclut lui-même et `message_id` du digest. Le fold **recalcule** le digest et le compare à celui que porte l'enveloppe : s'ils diffèrent, l'observation est **rejetée** avec la raison `observation_id_mismatch` (`debt_ledger.py:830-838`).
+
+Conséquence : **un `observation_id` écrit à la main n'est jamais accepté**. Seul `debt_ledger.py append` en produit un valide et le scelle au moment du postage. Un id forgé n'est pas une erreur de forme : c'est le signal que *le journal n'est pas append-only ici*.
+
+Le rejet est **silencieux** du point de vue des lignes réduites — l'observation disparaît du snapshot sans y laisser de trace, et n'apparaît que dans le champ `rejections`. Mesure du premier fold effectif (2026-10-20, c.2249) : **4 observations rejetées sur 81 exportées**, toutes les quatre avec `observation_id_mismatch`, toutes les quatre écrites à la main par la lane tenancière.
+
+**Règle** : un envelope `[OBS]` posté à la main **ne porte pas** de champ `observation_id`. S'il est présent, il vient de `debt_ledger.py append` (sous-commande `append --fields-json`) — jamais d'un copier-coller d'un autre envelope.
+
+### La clé machine est du **texte libre** — pas de raccourci
+
+La clé d'une réservation est `<machine>#gpu<n>`, et la partie machine est **du texte libre** : le parseur ne fait qu'un `strip()` (`debt_ledger.py:534`), sans normalisation ni table d'alias. `ai-01#gpu2` et `myia-ai-01#gpu2` sont donc **deux lignes distinctes** — le même GPU physique, compté deux fois, avec deux `holder` possibles et deux fenêtres qui ne se verrouillent jamais l'une contre l'autre.
+
+Mesure du 2026-10-20 (c.2249) : le premier fold effectif a rendu **3 lignes pour 2 GPU** — `ai-01#gpu2` (historique) et `myia-ai-01#gpu2` (ligne vivante) — pour un seul device.
+
+**Règle** : reprendre le nom de machine du **roster de la flotte** (`myia-ai-01`, `myia-po-2023`, …), c'est-à-dire celui que le CLI rappelle lui-même en exemple (`myia-ai-01#gpu2`). Un raccourci (`ai-01`) n'est pas interdit par le code : il est **interdit par le protocole**, parce qu'il scinde la réservation en deux lignes et désactive le verrouillage croisé.
+
 ## Quand **réduire** (fold)
 
 Le reducer (`python scripts/coordination/debt_ledger.py reduce --ledger gpu-reservation --events <journal>`) agrège les observations en un **snapshot** signé par le tenancier. Fréquence recommandée :
@@ -84,6 +102,18 @@ Le picker (`scripts/pick_idle_grain.py`) croise l'urne `delivered` avec un signa
 
 Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
 
+**Codes de sortie** (promis par la docstring de la sous-commande, `debt_ledger.py:2419`) :
+
+| Verdict | Code | Lecture |
+|---|---|---|
+| `OK_TO_RUN` | 0 | la fenêtre est à nous, le lancement est permis |
+| `NO_OBS` | 0 | aucune observation — le picker **saute** le grain ; ce n'est pas une erreur |
+| `RELEASED` | 0 | GPU libre |
+| `HOLD` | **1** | la gate refuse : tenu par une autre lane, ou par nous hors fenêtre |
+| `STALE` | **2** | `held` dépassé sans release — l'appelant décide (rafraîchir ou bloquer) |
+
+Le code 2 est aussi rendu sur un usage invalide (`--entity` absent, ledger ≠ `gpu-reservation`) : là, il signale une **erreur d'appel**, pas un verdict.
+
 ## Première observation [OBS] — c.257 (2026-10-08T03:25Z)
 
 **Entité** : `myia-ai-01#gpu2`
@@ -115,6 +145,30 @@ Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>
 Le **fold inaugural** du ledger survit en parallèle du chantier de livraison (c.255 premier livrable, c.257 première observation). Aucun snapshot antérieur n'existe (le ledger n'existait pas sous cette forme avant le merge de `debt_ledger.py` kind `gpu-reservation`, c.255 livrable code préexistant par po-2023 #17546).
 
 **Statut du fold inaugural** : **non-applicable**. Les semaines 2026-09-28 → 2026-10-04 sont documentées dans `D:/Runs/ICT-onset-9b-c233/onset_qwen35_9b_base.json` (c.233, c.247-quater) et `D:/Runs/ICT-onset-9b-c246/onset_qwen35_9b_base_seeds23.json` (c.246, seeds 2/3) — ces jobs ont été par rapport à une réservation **hors-ledger** (le ledger n'était pas encore actif). Le fold inaugural commence à partir de c.257 (2026-10-08T03:25Z) et la première fenêtre valide est ouverte pour la prochaine expérience GPU.
+
+## Premier fold effectif (c.2249, 2026-10-20)
+
+Le fold inaugural *calendaire* reste non-applicable (section précédente) : la fenêtre 2026-09-28 → 2026-10-04 n'a aucune observation à réduire. Le **premier fold effectif** a été exécuté le 2026-10-20 (c.2249) sur l'ensemble du journal accumulé depuis c.257.
+
+| Mesure | Valeur |
+|---|---|
+| Observations exportées | 81 — fenêtre `full`, archive `workspace-CoursIA-gpu-reservation-ledger-2026-10-11T16-28-09.md` |
+| Lignes réduites | 3 — 1 vivante, 2 historiques, 0 incomplète, 0 périmée |
+| Rejets | 4 — `observation_id_mismatch` (ids écrits à la main, cf. section précédente) |
+| Ligne vivante | `myia-ai-01#gpu2` — `held`, `holder myia-ai-01:CoursIA-2`, fenêtre jusqu'à 2026-10-22T08:00Z, issues #20560 + #18395 (EOS #13596) |
+
+Le snapshot est publié sur le dashboard `CoursIA-gpu-reservation-ledger` avec le préfixe `[SNAPSHOT]`, **en version compacte** : le snapshot complet (151 Ko, provenance par champ) dépasse la capacité du dashboard (88 % au 2026-10-20). La forme publiée porte les compteurs, les lignes (champs utiles) et les rejets nommés ; le snapshot complet reste dans l'artefact local du ledger, et un snapshot + journal export permet de reconstituer l'historique complet.
+
+### Planification hebdomadaire (acceptance #3 de #16737)
+
+Chaque snapshot publié est **accompagné du plan de la semaine** : une issue par exécution prévue, avec son état et son ETA. Le plan est la partie *éphémère* du ledger (il change chaque semaine) — il vit sur le dashboard, pas dans ce fichier.
+
+| Issue | Exécution | Machine / GPU | État (2026-10-20) |
+|---|---|---|---|
+| #20377 | re-exécution papermill end-to-end ICT-25 (GRPO réel) | myia-ai-01 / gpu2 | en vol, ETA 2026-10-21T16:00Z |
+| #20560 | bras N @120 steps seed 42 + mesure EOS #13596 (2 artefacts) | myia-ai-01 / gpu2 | chaîne armée, en attente de #20377, ETA 2026-10-22T08:00Z |
+| #16760 | G2 — carnet ICT-22c Geometry of Truth, échelle R1-R4 | myia-ai-01 / gpu2 | planifié, derrière la chaîne |
+| #20369 | re-exécution DDP/FSDP de 3 carnets DSWA | po-2023 / gpu0-1 | fenêtre demandée par la lane po-2023 |
 
 ## Liaison cross-machine — récup statut GPU d'autres lanes (c.258)
 
@@ -174,3 +228,4 @@ L'observation `[OBS]` d'un slot gpu0/gpu1 sur ai-01 est **interdite** : ces slot
 - **2e livrable (c.257)** : 1re observation `[OBS]` + corrections paths + section "Liaison picker ↔ file #1454" + heuristique pre-launch + sous-commande `check_pending --entity`.
 - **3e livrable (c.258)** : liaison cross-machine — topologie GPU (ai-01: gpu0/1=vLLM, gpu2=training ; po-* à confirmer), protocole de récupération cross-machine (DM nominatif + dashboard + cache 24h), garde vLLM, trigger de mise à jour.
 - **4e livrable (c.260, PR #19855)** : implémentation de la sous-commande `check_pending` + fonction pure `evaluate_gpu_pending()`. **Ce commit (4e livrable doc)** aligne le protocole sur le schéma réel de `debt_ledger.py` (state/holder/workload/started_at/expected_end/issue) et corrige les noms de verdicts (`RELEASED`/`STALE` au lieu de `EXPIRED`).
+- **5e livrable (c.2249)** : premier **fold effectif** du ledger (81 observations réduites, 3 lignes, 4 rejets `observation_id_mismatch`) + les deux règles qui le rendent fiable — `observation_id` **calculé** et jamais écrit à la main, clé machine prise dans le roster de la flotte (`ai-01` et `myia-ai-01` sont deux lignes pour un GPU) — + la planification hebdomadaire publiée avec chaque snapshot.
