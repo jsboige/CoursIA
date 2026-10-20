@@ -17,6 +17,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import check_lane_claim as clc  # noqa: E402
@@ -7028,3 +7030,348 @@ def test_unwrap_reuses_the_traps_organ_predicate():
     from check_gh_comment_traps import classify_payload_body  # noqa: PLC0415
     assert classify_payload_body(_PAYLOAD_19727) is not None
     assert clc._unwrap_trapped_body(_PAYLOAD_19727) == classify_payload_body(_PAYLOAD_19727)
+
+
+# --- #19643 / c.1753 -- timeout= sur _gh_open_prs_with_files ----------------
+
+def test_gh_open_prs_default_timeout_is_60s():
+    """La constante module _GH_OPEN_PRS_TIMEOUT_S defaut 60s, surchargeable
+    par env CHECK_LANE_CLAIM_GH_TIMEOUT. C'est la borne qui protege le tapis
+    du picker (pick_idle_grain.py:2355) contre un appel `gh` lent (rate
+    limit secondaire, backoff silencieux)."""
+    # Defaut observe = 60s (constante module, surcharge env).
+    assert clc._GH_OPEN_PRS_TIMEOUT_S == 60
+
+
+def test_gh_open_prs_timeout_raises_runtime_error(monkeypatch):
+    """Si subprocess.run leve TimeoutExpired, _gh_open_prs_with_files() doit
+    lever un RuntimeError descriptif (pas un TimeoutExpired nu) -- l'appelant
+    picker traduit ca en CLAIM_CODE_ERROR (verdict 'verification
+    indisponible'), jamais un silence."""
+    def fake_run(*args, **kwargs):
+        # Simule un `gh` qui dort au-dela du timeout : leve TimeoutExpired
+        # comme le vrai subprocess.run quand timeout= est depasse.
+        raise subprocess.TimeoutExpired(cmd=kwargs.get("args", ["gh"]), timeout=60)
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    with pytest.raises(RuntimeError) as excinfo:
+        clc._gh_open_prs_with_files()
+    msg = str(excinfo.value)
+    # Le message doit nommer le timeout, le temps, et la variable d'env
+    # pour qu'un operateur en deballage sache quoi faire.
+    assert "timed out" in msg.lower()
+    assert "60s" in msg
+    assert "CHECK_LANE_CLAIM_GH_TIMEOUT" in msg
+
+
+def test_gh_open_prs_timeout_override_via_env(monkeypatch):
+    """La constante _GH_OPEN_PRS_TIMEOUT_S respecte l'env
+    CHECK_LANE_CLAIM_GH_TIMEOUT (utile pour tests + debug operateur)."""
+    monkeypatch.setenv("CHECK_LANE_CLAIM_GH_TIMEOUT", "5")
+    # Recharger le module n'est pas possible ici, mais on verifie que
+    # l'overrride est implemente dans le code source directement.
+    import importlib
+    importlib.reload(clc)
+    try:
+        assert clc._GH_OPEN_PRS_TIMEOUT_S == 5
+    finally:
+        # Recharger sans l'env pour les tests suivants.
+        monkeypatch.delenv("CHECK_LANE_CLAIM_GH_TIMEOUT", raising=False)
+        importlib.reload(clc)
+
+
+def test_gh_open_prs_no_keyword_timeout_does_not_apply(monkeypatch):
+    """Si subprocess.run est appele SANS timeout= (defaut), on ne leve PAS
+    TimeoutExpired artificiellement -- on verifie juste que le timeout=
+    est passe par _gh_open_prs_with_files() au subprocess.run()."""
+    seen_kwargs = {}
+
+    def fake_run(*args, **kwargs):
+        seen_kwargs.update(kwargs)
+        # Simule un succes : retourne un objet avec stdout JSON vide
+        # pour eviter json.JSONDecodeError et returncode=0.
+        return subprocess.CompletedProcess(
+            args=args[0] if args else ["gh"],
+            returncode=0,
+            stdout="[]",
+            stderr="",
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    clc._gh_open_prs_with_files()
+    # La borne doit etre passee au subprocess.run, surchargeable par env.
+    assert seen_kwargs.get("timeout") == clc._GH_OPEN_PRS_TIMEOUT_S
+
+
+def test_gh_open_prs_cache_path_via_env(monkeypatch, tmp_path):
+    """#19643 -- si env CHECK_LANE_CLAIM_OPEN_PRS_JSON pointe sur un JSON
+    valide, _gh_open_prs_with_files() lit le cache et n'appelle PAS
+    subprocess.run. Test : on pose un fichier JSON, on verifie que la
+    fonction retourne le contenu du fichier sans appel `gh` (subprocess.run
+    n'est pas appele)."""
+    cache = tmp_path / "open_prs.json"
+    cache.write_text(json.dumps([{"number": 1, "title": "cached", "body": "",
+                                    "headRefName": "x", "files": []}]),
+                     encoding="utf-8")
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(cache))
+
+    def fail_run(*args, **kwargs):
+        raise AssertionError("subprocess.run was called; cache should win")
+
+    monkeypatch.setattr(clc.subprocess, "run", fail_run)
+    # Recharger le module pour que l'env soit lue.
+    import importlib
+    importlib.reload(clc)
+    try:
+        out = clc._gh_open_prs_with_files()
+        assert out == [{"number": 1, "title": "cached", "body": "",
+                          "headRefName": "x", "files": []}]
+    finally:
+        monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+        importlib.reload(clc)
+
+
+def test_gh_open_prs_cache_missing_falls_back_to_gh(monkeypatch, tmp_path):
+    """#19643 -- si l'env pointe sur un fichier absent, on retombe sur le
+    subprocess `gh` (avec timeout). Pas de corruption silencieuse."""
+    missing = tmp_path / "absent.json"
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(missing))
+
+    calls = []
+
+    def fake_run(*args, **kwargs):
+        calls.append(kwargs.get("timeout"))
+        return subprocess.CompletedProcess(
+            args=["gh"], returncode=0, stdout="[]", stderr=""
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    import importlib
+    importlib.reload(clc)
+    try:
+        out = clc._gh_open_prs_with_files()
+        assert out == []
+        # Le timeout=_GH_OPEN_PRS_TIMEOUT_S doit avoir ete passe.
+        assert calls == [clc._GH_OPEN_PRS_TIMEOUT_S]
+    finally:
+        monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+        importlib.reload(clc)
+
+
+def test_gh_open_prs_cache_corrupt_falls_back_to_gh(monkeypatch, tmp_path):
+    """#19643 -- si l'env pointe sur un JSON corrompu, on retombe sur le
+    subprocess `gh` (avec timeout). Pas de crash silencieux."""
+    cache = tmp_path / "corrupt.json"
+    cache.write_text("{not valid json", encoding="utf-8")
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(cache))
+
+    calls = []
+
+    def fake_run(*args, **kwargs):
+        calls.append("called")
+        return subprocess.CompletedProcess(
+            args=["gh"], returncode=0, stdout="[]", stderr=""
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    import importlib
+    importlib.reload(clc)
+    try:
+        out = clc._gh_open_prs_with_files()
+        assert out == []
+        # Le fallback a bien eu lieu.
+        assert calls == ["called"]
+    finally:
+        monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+        importlib.reload(clc)
+
+
+def test_gh_open_prs_cache_wrong_type_falls_back_to_gh(monkeypatch, tmp_path):
+    """#19643 -- si l'env pointe sur un JSON valide mais pas une liste
+    (ex: dict), on retombe sur le subprocess `gh`. Pas de corruption."""
+    cache = tmp_path / "wrong_type.json"
+    cache.write_text(json.dumps({"not": "a list"}), encoding="utf-8")
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(cache))
+
+    def fake_run(*args, **kwargs):
+        return subprocess.CompletedProcess(
+            args=["gh"], returncode=0, stdout="[]", stderr=""
+        )
+
+    monkeypatch.setattr(clc.subprocess, "run", fake_run)
+    import importlib
+    importlib.reload(clc)
+    try:
+        out = clc._gh_open_prs_with_files()
+        assert out == []
+    finally:
+        monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+        importlib.reload(clc)
+
+
+# --- #21431 -- creation scope vs neighbouring claim: compare BY PATTERN -----
+#
+# The measured defect: a lane whose scope is entirely in CREATION (the files
+# do not exist yet) was rendered BLOCKED by a neighbouring claim at disjoint
+# paths, with "Do not start". The tracked tree cannot resolve a scope that
+# does not exist -- it matches zero tracked files, the #10958 fail-safe
+# lifted it to epic-wide, and every lane blocked. The issue's own words: an
+# empty intersection between a creation glob and a tracked scope proves no
+# less than an empty intersection between two tracked scopes.
+#
+# The fix: a CREATION scope is compared BY PATTERN (fnmatch in both
+# directions) with the other lane's scope. A scope whose DIRECTORY does not
+# exist is a typo, not a creation, and keeps the #10958 fail-CLOSED -- that
+# discriminator is what leaves every existing fail-safe test green.
+
+_CLAIM_COLLAPSE = (
+    "[CLAIMED] lane myia-ai-01:CoursIA-2 -- paths: "
+    "scripts/notebook_tools/check_output_collapse*.py"
+)
+
+
+def test_run_check_creation_scope_disjoint_claim_is_clear(capsys):
+    """#21431 acceptance 1: the disjoint pair of the issue renders CLEAR.
+
+    Reproduction from the issue body: the caller declares a scope ENTIRELY in
+    creation (`scripts/notebook_tools/check_concession_prose.py`, an organ to
+    be written) while another lane holds a LIVE claim on a different organ
+    (`scripts/notebook_tools/check_output_collapse*`). No pattern overlaps ->
+    CLEAR.
+    """
+    p = payload(comment(_CLAIM_COLLAPSE, "2026-10-19T15:00:00Z"),
+                number=21424, title="t")
+    rc = clc._run_check(
+        p, "myia-po-2023:CoursIA-2",
+        my_paths=["scripts/notebook_tools/check_concession_prose.py"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 0, (
+        f"Expected CLEAR (disjoint creation scope) but got rc={rc}. "
+        f"stderr:\n{captured.err}\naudit:\n{captured.out}"
+    )
+    assert "BLOCKED" not in captured.err
+    assert '"blocking_lanes": []' in captured.out
+
+
+def test_run_check_creation_scope_under_claim_glob_stays_blocked(capsys):
+    """#21431 acceptance 2: a creation UNDER a glob held by the other lane
+    stays BLOCKED.
+
+    `scripts/notebook_tools/check_output_collapse_v2.py` is a file to be
+    created, and it falls under the other lane's glob
+    `scripts/notebook_tools/check_output_collapse*.py` -- the pattern-wise
+    comparison finds the overlap, so the relaxation never opens a disputed
+    scope.
+    """
+    p = payload(comment(_CLAIM_COLLAPSE, "2026-10-19T15:00:00Z"),
+                number=21424, title="t")
+    rc = clc._run_check(
+        p, "myia-po-2023:CoursIA-2",
+        my_paths=["scripts/notebook_tools/check_output_collapse_v2.py"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 1, (
+        f"Expected BLOCKED (creation under the other lane's glob) but got "
+        f"rc={rc}. stderr:\n{captured.err}\naudit:\n{captured.out}"
+    )
+    assert "BLOCKED" in captured.err
+    assert "myia-ai-01:CoursIA-2" in captured.out
+
+
+def test_run_check_creation_scope_clears_a_creation_claim(capsys):
+    """#21431, the symmetric case: the OTHER lane's claim is itself a
+    creation scope.
+
+    A claim whose files do not exist yet is not a broken claim -- it is a
+    tranche in progress -- so it is compared BY PATTERN with the caller's
+    scope instead of being lifted to epic-wide (#10958). Two lanes creating
+    two different organs in the same directory no longer block each other.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- paths: "
+                "scripts/notebook_tools/check_concession_prose.py",
+                "2026-10-19T15:00:00Z"),
+        number=21424, title="t",
+    )
+    rc = clc._run_check(
+        p, "myia-po-2024:CoursIA-2",
+        my_paths=["scripts/notebook_tools/check_output_flood.py"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 0, (
+        f"Expected CLEAR (disjoint creation claim) but got rc={rc}. "
+        f"stderr:\n{captured.err}\naudit:\n{captured.out}"
+    )
+    assert '"blocking_lanes": []' in captured.out
+
+
+def test_run_check_typo_scope_keeps_blockers(capsys):
+    """#21431 non-regression: a scope whose DIRECTORY does not exist is a
+    typo, not a creation -- the #10958 fail-CLOSED stays.
+
+    `scripts/nowhere/typo.py` names a directory that is not in the repo: the
+    lane that wrote it meant something else, so the safe hypothesis is that
+    its claim is broader than it reads. Every other lane is kept and the
+    verdict stays BLOCKED -- the relaxation of #21431 does not open that.
+    """
+    p = payload(
+        comment("[CLAIMED] lane B:CoursIA-2 -- paths: scripts/grain_tag.py",
+                "2026-08-11T04:05:00Z"),
+        number=21424, title="t",
+    )
+    rc = clc._run_check(
+        p, "A:CoursIA",
+        my_paths=["scripts/nowhere/typo.py"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 1, (
+        f"Expected BLOCKED (typo scope keeps the fail-CLOSED) but got "
+        f"rc={rc}. stderr:\n{captured.err}\naudit:\n{captured.out}"
+    )
+    assert "B:CoursIA-2" in captured.out
+
+
+def test_scope_is_creation_criterion():
+    """#21431 -- the discriminator, unit level: a file to be created in an
+    EXISTING directory is a creation scope; the same file in a directory
+    that does not exist is a typo; a live file is neither."""
+    tracked = ["scripts/check_lane_claim.py",
+               "scripts/notebook_tools/check_output_collapse.py"]
+    # Creation: the directory exists, the file does not.
+    assert clc._scope_is_creation(
+        ["scripts/notebook_tools/check_concession_prose.py"], tracked) is True
+    # A glob over a live directory, matching nothing yet -> also a creation.
+    assert clc._scope_is_creation(
+        ["scripts/notebook_tools/check_concession_*.py"], tracked) is True
+    # Typo: the directory does not exist.
+    assert clc._scope_is_creation(["scripts/nowhere/typo.py"], tracked) is False
+    # Live file: not a creation (its scope is already locked by the tree).
+    assert clc._scope_is_creation(["scripts/check_lane_claim.py"], tracked) is False
+    # Prose residue: a typo, never a creation.
+    assert clc._scope_is_creation(["prose sans separateur"], tracked) is False
+    # No walk -> no proof -> False (fail-CLOSED, mirrors `_empty_scope_in`).
+    assert clc._scope_is_creation(
+        ["scripts/notebook_tools/x.py"], None) is False
+    # Empty scope -> False.
+    assert clc._scope_is_creation([], tracked) is False
+    assert clc._scope_is_creation(None, tracked) is False
+
+
+def test_scopes_may_overlap_by_pattern():
+    """#21431 -- the pattern-wise comparison, unit level: a creation under a
+    glob overlaps it, a creation beside it does not."""
+    creation = ["scripts/notebook_tools/check_output_collapse_v2.py"]
+    glob = ["scripts/notebook_tools/check_output_collapse*.py"]
+    other = ["scripts/notebook_tools/check_concession_prose.py"]
+    # The creation falls under the glob -> overlap.
+    assert clc._scopes_may_overlap_by_pattern(creation, glob) is True
+    # ... and the other way round (both directions are tested).
+    assert clc._scopes_may_overlap_by_pattern(glob, creation) is True
+    # Two creations side by side -> disjoint.
+    assert clc._scopes_may_overlap_by_pattern(creation, other) is False
+    assert clc._scopes_may_overlap_by_pattern(other, creation) is False
+    # Two creations with the SAME name -> overlap.
+    assert clc._scopes_may_overlap_by_pattern(creation, creation) is True
+    # An empty side -> no overlap.
+    assert clc._scopes_may_overlap_by_pattern(creation, []) is False

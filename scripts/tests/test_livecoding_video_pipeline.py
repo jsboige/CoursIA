@@ -1198,7 +1198,8 @@ class TestCliCaptureSecondsDefault:
 
         seen = {}
 
-        def _fake_capture(pattern, output_dir, capture_seconds, cycles, headless):
+        def _fake_capture(pattern, output_dir, capture_seconds, cycles, headless,
+                          capture_mode="page"):
             seen["capture_seconds"] = capture_seconds
             return {
                 "video_webm": str(tmp_path / "capture.webm"),
