@@ -916,6 +916,29 @@ TRANCHE2: list[Guard] = [
         absorbed=True,
         warn_rc=(2,),
     ),
+    # Cles (notebook, cell_id) dupliquees dans les CSV translations (#21489) :
+    # la resync T1 ne rafraichit que la premiere occurrence ; les suivantes
+    # conservent un pivot perime (et une traduction d'une autre version de la
+    # cellule). Le garde bloque toute PR qui en ajoute un. Le correcteur est
+    # `scripts/translation/dedup_cells_csv.py --resolve <csv>`.
+    Guard(
+        name="Translation duplicate keys (#21489)",
+        source="check_duplicate_keys.py",
+        paths=[
+            "translations/**/*.csv",
+            "scripts/translation/check_duplicate_keys.py",
+            "scripts/translation/dedup_cells_csv.py",
+        ],
+        pre_argv=[
+            "python", "scripts/translation/check_duplicate_keys.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/translation/check_duplicate_keys.py",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
     # Translation hot-drift ATTRIBUTION, advisory (#15322): a prose-realignment
     # PR that edits the source of a cell carrying a deposited translation
     # without resyncing its CSV row turns the repo-wide hot-subset ratchet
