@@ -1642,7 +1642,10 @@ slot_loop() {
       : "${http:=0}"
       : "${acct:=inconnu}"
       local cause_diag="compte sans droit admin ?"
-      [ "$http" = "AUTH" ] && cause_diag="forme de compte ou jeton invalide (cf #21527)"
+      # #15154 : le diagnostic NOMME la cause structurelle d'origine (compte
+      # epingle introuvable dans le trousseau) ; #21527 y ajoute la forme
+      # invalide du jeton, autre cause du meme marqueur.
+      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh, ou jeton de forme invalide (cf #21527)"
       case "$http" in
         AUTH) terminal=1 ;;
         RATE) cause_diag="quota REST epuise -- transitoire, echeance connue" ;;
@@ -2180,7 +2183,10 @@ waiter_loop() {
       : "${http:=0}"
       : "${acct:=inconnu}"
       local cause_diag="compte sans droit admin ?"
-      [ "$http" = "AUTH" ] && cause_diag="forme de compte ou jeton invalide (cf #21527)"
+      # #15154 : le diagnostic NOMME la cause structurelle d'origine (compte
+      # epingle introuvable dans le trousseau) ; #21527 y ajoute la forme
+      # invalide du jeton, autre cause du meme marqueur.
+      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh, ou jeton de forme invalide (cf #21527)"
       case "$http" in
         AUTH) terminal=1 ;;
         RATE) cause_diag="quota REST epuise -- transitoire, echeance connue" ;;

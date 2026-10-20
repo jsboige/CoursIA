@@ -3207,8 +3207,11 @@ echo "Test 70 : quota REST epuise -- transitoire, jamais STOP_FILE (#21527)"
   mkdir -p "$TEST_DIR/bin70"
   cat > "$TEST_DIR/bin70/gh" <<'STUB'
 #!/usr/bin/env bash
-case "$1" in
-  rate_limit) printf '{"resources":{"core":{"limit":5000,"used":5000,"reset":%s}}}\n' "${STUB_RATE_RESET:-0}"; exit 0 ;;
+case "$*" in
+  # fetch_token appelle `gh api rate_limit --jq .resources.core.reset` : gh
+  # rend alors le NOMBRE, pas le document. Le stub doit rendre la meme chose,
+  # sinon l'attente retombe sur 0 et ne suit plus la remise a zero.
+  *rate_limit*) printf '%s\n' "${STUB_RATE_RESET:-0}"; exit 0 ;;
 esac
 echo "gh: API rate limit exceeded (HTTP 403)" >&2
 exit 1
@@ -3222,6 +3225,10 @@ STUB
   export STUB_RATE_RESET=$(( $(date +%s) + 180 ))
   . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1
   FETCH_TOKEN_STATE_FILE="$TEST_DIR/state-70/token_state"; mkdir -p "$TEST_DIR/state-70"
+  # Sentinelle du TEST, pas celle de l'instance : `supervise.sh` en definit une
+  # a la source, et une sentinelle reelle presente sur l'hote ferait echouer
+  # l'assertion sans qu'aucun quota n'ait ete touche.
+  STOP_FILE="$TEST_DIR/state-70/stop"
   out="$( (GH_TOKEN=dummy fetch_token) 2>&1 )"; rc=$?
   grep -q "HTTP=RATE" "$FETCH_TOKEN_STATE_FILE" && sleep_line=1 || sleep_line=0
   if [ "$rc" != "0" ] && [ "$sleep_line" = "1" ] && [ ! -f "$STOP_FILE" ]; then
@@ -3248,7 +3255,7 @@ STUB
   export STUB_STOP_FILE="$STOP_FILE"; rm -f "$STOP_FILE"
   reset_epoch="$(awk -F= '$1=="RESET"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
   printf 'HTTP=RATE\nACCOUNT=tester\nRESET=%s\nERR=gh: API rate limit exceeded (HTTP 403)\n' "${reset_epoch:-0}" > "$FETCH_TOKEN_STATE_FILE"
-  out="$( (timeout 30 env GH_TOKEN=dummy FETCH_TOKEN_STATE_FILE="$FETCH_TOKEN_STATE_FILE" bash -c '. "$0" status >/dev/null 2>&1; slot_loop 99 gh-quota-test d d 4096m ""' "$SCRIPT_DIR/supervise.sh") 2>&1 )"; rc=$?
+  out="$( (timeout 30 env GH_TOKEN=dummy FETCH_TOKEN_STATE_FILE="$FETCH_TOKEN_STATE_FILE" bash -c '. "$0" status >/dev/null 2>&1; slot_loop 99 gh-quota-test d d 4096m "" 4096' "$SCRIPT_DIR/supervise.sh") 2>&1 )"; rc=$?
   if [ "$rc" = "124" ] && [ ! -f "$STOP_FILE" ] \
      && printf '%s' "$out" | grep -q "HTTP RATE" \
      && ! printf '%s' "$out" | grep -q "ABANDON"; then
@@ -3258,7 +3265,13 @@ STUB
   fi
   unset COURSIA_RUNNER_TEST_SLEEP
 
-  # L'attente suit la remise a zero publiée par GitHub (180 s).
+  # L'attente suit la remise a zero publiee par GitHub (180 s). L'echeance est
+  # RE-ESTAMPEE ici : entre l'ouverture du test et cette ligne, `slot_loop`
+  # consomme ~28 s sous `timeout 30`, et l'assertion mesurait 152 s -- un echec
+  # de chronometre, pas de comportement. La mesure doit porter sur un ecart
+  # fixe, pas sur le temps de paroi du test.
+  printf 'HTTP=RATE\nACCOUNT=tester\nRESET=%s\nERR=gh: API rate limit exceeded (HTTP 403)\n' \
+    "$(( $(date +%s) + 180 ))" > "$FETCH_TOKEN_STATE_FILE"
   wait="$(rate_reset_wait 4)"
   if [ "$wait" -ge 170 ] && [ "$wait" -le 195 ]; then
     ok "l'attente suit X-RateLimit-Reset (180 s attendu, obtenu $wait s)"
