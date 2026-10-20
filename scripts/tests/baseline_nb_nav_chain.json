@@ -307,6 +307,11 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-17-MIR-Classique.ipynb",
+      "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications"
     },
@@ -1503,11 +1508,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-14b-Finiteness-Lean-Companion.ipynb",
-      "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21c-Descente-Budget.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
     },
     {
