@@ -731,7 +731,17 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # 2026-10-14 (#1650 tranche FT-04, T4): +1 paire T4 -- FineTuning/
 # FT-04-RLHF-DPO-Python_en (20 cellules md EN rendues depuis le CSV,
 # 12 cellules code copiees verbatim, 0 orphelin). Total apres fusion : 14.
-EXPECTED_PAIR_COUNT = 14
+# 2026-10-19 (PR #19943, #19898 pli 3 Origami tranches A+B): +1 paire --
+# jumeau _en d'un carnet Lean : SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique_en.
+# Meme classe que #19996/#20392 : la paire est arrivee sur main avec son carnet
+# sans mettre a jour cette ligne, ce qui a rougi test_full_repo_state_passes_parity
+# (found 14, declared 13) sur main pur et sur toute PR path-filtree scripts/**
+# (diagnostic po-2027, dashboard 2026-10-19T06:10Z). Total apres fusion : 13 + 1 = 14.
+# 2026-10-20 (fusion de origin/main dans feature/1650-ft04-en, PR #20711) : les
+# deux entrees ci-dessus sont INDEPENDANTES et s'additionnent -- elles partaient
+# toutes deux de 13, chacune ignorant la paire de l'autre : 13 + 1 (FT-04) +
+# 1 (ANALYSE-07) = 15. Une fusion qui n'aurait garde qu'un cote aurait rendu 14.
+EXPECTED_PAIR_COUNT = 15
 
 
 def _collect_parity_failures(repo_root: Path,

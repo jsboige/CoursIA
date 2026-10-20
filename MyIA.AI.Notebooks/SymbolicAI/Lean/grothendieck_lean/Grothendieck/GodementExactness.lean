@@ -18,8 +18,9 @@ canonique `godementStep f := cokernel.π f ≫ toGodement (coker f)` et la
 différentielle `d⁰ := godementCanonicalDZero` avec sa null-composition
 `μ ≫ d⁰ = 0`. Cette Partie fait deux pas de plus sur le même fil (le troisième
 — la **réduction de l'exactitude** — a été retiré : voir note de l'auteur à
-la fin du namespace). La **Partie 91 y ouvre son pas A** : la séparéité du
-conoyau de l'unité, prouvée en clôture de module.
+la fin du namespace). La **Partie 91 y ouvre son pas A** (la séparéité du
+conoyau de l'unité) **et livre son pas B** (le mono de l'unité du conoyau,
+puis l'exactitude `μ ≫ d⁰`), tous deux prouvés en clôture de module.
 
 ## Deux faits, dans l'ordre du récit
 
@@ -46,12 +47,13 @@ conoyau de l'unité, prouvée en clôture de module.
 tous les degrés), et le mono catégorique de l'unité sur les faisceaux.
 
 **Non posé** — frontière nommée de la Partie 91 : la **réduction de l'exactitude
-en `C⁰F` au mono de l'unité du conoyau** (`exact_toGodement_godementCanonicalDZero_of_mono`),
-dont l'ingrédient — la **séparéité du conoyau** `coker μ` pour `F` faisceau —
-est désormais **prouvé dans ce module** (pas A, ci-dessous : recollement des
-sections locales du quotient par séparéité de `F` et injectivité de `μ`).
-Restent le **pas B** (monter de la séparéité au mono de `toGodement (coker μ)`,
-puis à `Exact μ d⁰`), l'**itération complète** de la réduction aux degrés
+en `C⁰F` au mono de l'unité du conoyau** (`exact_toGodement_godementCanonicalDZero`),
+dont les deux montées — le **pas A** (séparéité du conoyau `coker μ` pour `F`
+faisceau : recollement des sections locales du quotient par séparéité de `F`
+et injectivité de `μ`) et le **pas B** (mono de `toGodement (coker μ)` par
+localité P84 + pas A, puis transfert de l'exactitude du conoyau à `d⁰` par
+`ShortComplex.exact_iff_of_epi_of_isIso_of_mono`) — sont **prouvées dans ce
+module**. Restent l'**itération complète** de la réduction aux degrés
 supérieurs, et l'**acyclicité** `H^n(C⁰F) = 0` pour `n ≥ 1` ([God58] II.5).
 
 ## Références
@@ -117,11 +119,11 @@ de X₂ non réconcilié, instance `IsIso` non inférée), et le gate
 `proof-integrity` du caller workflow a élevé ce `sorry` en `sorryAx`
 transitif à l'import — classe `forbidden` (pr-review-discipline §B).
 L'option honnête était le **retrait**. La Partie 91 reprend ce fil en deux
-pas, **dont le premier est clos ci-dessous** : le pas A (séparéité du conoyau
+pas, **tous deux clos dans ce module** : le pas A (séparéité du conoyau
 `coker μ` pour `F` faisceau) est prouvé intégralement, par le même argument
-de recollement que la Partie 84. Le pas B — monter de la séparéité au mono
-de `toGodement (coker μ)`, puis à l'exactitude de `μ ≫ d⁰` — reste la
-frontière ouverte. Aucun énoncé-stub `True.intro` ni `False` n'est laissé
+de recollement que la Partie 84 ; le pas B — monter de la séparéité au mono
+de `toGodement (coker μ)`, puis à l'exactitude de `μ ≫ d⁰` — est clos en
+clôture de module. Aucun énoncé-stub `True.intro` ni `False` n'est laissé
 dans le module. -/
 
 /-! ## Le pas A de la Partie 91 : la séparéité du conoyau
@@ -367,5 +369,107 @@ theorem eq_zero_of_locally_zero_cokernel_toGodement
   rw [← hσ, ← hfinal, ← ConcreteCategory.comp_apply, ← NatTrans.comp_app,
     cokernel.condition, zero_app]
   rfl
+
+/-! ## Le pas B de la Partie 91 : du séparé au mono, puis à l'exactitude en `C⁰F`
+
+Le pas A (`eq_zero_of_locally_zero_cokernel_toGodement`) établissait que le
+conoyau de l'unité reste **séparé** pour `F` faisceau. Cette section en livre
+la conséquence — l'énoncé retiré du draft r65, frontière nommée depuis la
+Partie 90, désormais **prouvé** :
+
+1. `injective_toGodement_cokernel_of_isSheaf` puis
+   `mono_toGodement_cokernel_of_isSheaf` : l'unité de Godement du conoyau,
+   `toGodement (coker μ)`, est un **monomorphisme catégorique**. La preuve
+   est la localité de la Partie 84 (`Presheaf.germ_eq` : des germes égaux en
+   un point donnent un voisinage où les restrictions coïncident), dont la
+   conclusion — la différence des deux sections est localement nulle dans le
+   conoyau — est confiée au pas A au lieu du recollement : la séparéité du
+   conoyau suffit, aucun gluing n'est requis.
+2. `exact_toGodement_godementCanonicalDZero` : la suite `F → C⁰F → C¹F` est
+   **exacte en `C⁰F`**. La différentielle est le pas canonique
+   `d⁰ = cokernel.π μ ≫ toGodement (coker μ)` (P89) ; l'exactitude de
+   `μ ≫ cokernel.π μ` est celle du conoyau (`ShortComplex.exact_cokernel`),
+   et le transfert `ShortComplex.exact_iff_of_epi_of_isIso_of_mono` —
+   τ₁ = 𝟙, τ₂ = 𝟙, τ₃ = `toGodement (coker μ)`, mono par 1 — la porte de
+   `π` à `π ≫ τ₃ = d⁰`.
+
+Restent l'**itération complète** de la réduction aux degrés supérieurs et
+l'**acyclicité** `H^n(C⁰F) = 0` pour `n ≥ 1` ([God58] II.5).
+-/
+
+/-- **L'unité de Godement du conoyau est injective section par section —
+pas B de la Partie 91 (montée 1/2)** : pour `F` faisceau, deux sections du
+conoyau `coker μ` dont les germes-images par l'unité `toGodement (coker μ)`
+coïncident, sont égales. La preuve transpose la localité de la Partie 84 :
+des germes égaux en chaque point (`Presheaf.germ_eq`) fournissent un
+voisinage par point où les restrictions des deux sections coïncident ; la
+différence, localement nulle dans le conoyau, est nulle par le pas A
+(`eq_zero_of_locally_zero_cokernel_toGodement`) — la séparéité du conoyau
+tient exactement le rôle que le recollement jouait pour l'injectivité de
+l'unité elle-même. -/
+theorem injective_toGodement_cokernel_of_isSheaf (F : X.Presheaf AddCommGrpCat.{u})
+    (hF : TopCat.Presheaf.IsSheaf F) (U : Opens X) :
+    Function.Injective ((toGodement (cokernel (toGodement F))).app (op U)) := by
+  intro s t hst
+  have hgerm : ∀ z : ↥U, (cokernel (toGodement F)).germ U (z : X) z.2 s
+      = (cokernel (toGodement F)).germ U (z : X) z.2 t :=
+    fun z => congrFun hst ⟨(z : X), z.2⟩
+  have hloc : ∀ z : ↥U, ∃ N : Opens X, (z : X) ∈ N ∧ ∃ iNU : N ⟶ U,
+      (cokernel (toGodement F)).map iNU.op s
+        = (cokernel (toGodement F)).map iNU.op t := by
+    intro z
+    obtain ⟨N, hxN, iU', iN', heq⟩ := (cokernel (toGodement F)).germ_eq
+      (z : X) z.2 z.2 s t (hgerm z)
+    refine ⟨N, hxN, iU', ?_⟩
+    rw [Subsingleton.elim iN' iU'] at heq
+    exact heq
+  choose N hN iNU hagree using hloc
+  have hzero : ∀ z : ↥U,
+      (cokernel (toGodement F)).map (iNU z).op (s - t) = 0 := by
+    intro z
+    rw [map_sub, sub_eq_zero]
+    exact hagree z
+  have hcover : ∀ x : X, x ∈ U → ∃ z : ↥U, x ∈ N z :=
+    fun x hxU => ⟨⟨x, hxU⟩, hN ⟨x, hxU⟩⟩
+  have hst0 : s - t = 0 :=
+    eq_zero_of_locally_zero_cokernel_toGodement F hF N iNU hcover _ hzero
+  exact sub_eq_zero.mp hst0
+
+/-- **L'unité de Godement du conoyau est un monomorphisme catégorique —
+pas B de la Partie 91 (montée 2/2)** : la montée catégorique de
+l'injectivité section par section ci-dessus, par `NatTrans.mono_iff_mono_app`
+puis `AddCommGrpCat.mono_iff_injective` — le même geste que
+`mono_toGodement_of_isSheaf` (P90) pour l'unité elle-même. -/
+theorem mono_toGodement_cokernel_of_isSheaf (F : X.Presheaf AddCommGrpCat.{u})
+    (hF : TopCat.Presheaf.IsSheaf F) :
+    Mono (toGodement (cokernel (toGodement F))) := by
+  rw [NatTrans.mono_iff_mono_app]
+  intro W
+  exact (AddCommGrpCat.mono_iff_injective _).mpr
+    (injective_toGodement_cokernel_of_isSheaf F hF W.unop)
+
+/-- **La réduction de l'exactitude en `C⁰F` — l'énoncé retiré du draft r65,
+prouvé (pas B de la Partie 91)** : pour `F` faisceau, la suite
+`F → C⁰F → C¹F` est exacte en `C⁰F`. La preuve est un transfert de complexes
+courts : l'exactitude de `μ ≫ cokernel.π μ` est celle du conoyau
+(`ShortComplex.exact_cokernel`), et le morphisme de complexes
+τ = (𝟙, 𝟙, `toGodement (coker μ)`) — dont la composante τ₃ est mono par
+`mono_toGodement_cokernel_of_isSheaf` — porte cette exactitude de `π` à
+`π ≫ τ₃ = d⁰` par `ShortComplex.exact_iff_of_epi_of_isIso_of_mono`
+([God58] II §4.1). -/
+theorem exact_toGodement_godementCanonicalDZero (F : X.Presheaf AddCommGrpCat.{u})
+    (hF : TopCat.Presheaf.IsSheaf F) :
+    (ShortComplex.mk (toGodement F) (godementCanonicalDZero F)
+      (toGodement_comp_godementCanonicalDZero F)).Exact := by
+  have hmono : Mono (toGodement (cokernel (toGodement F))) :=
+    mono_toGodement_cokernel_of_isSheaf F hF
+  have key : (ShortComplex.mk (toGodement F) (cokernel.π (toGodement F))
+        (cokernel.condition (toGodement F))).Exact ↔
+      (ShortComplex.mk (toGodement F) (godementCanonicalDZero F)
+        (toGodement_comp_godementCanonicalDZero F)).Exact :=
+    ShortComplex.exact_iff_of_epi_of_isIso_of_mono
+      { τ₁ := 𝟙 _, τ₂ := 𝟙 _, τ₃ := toGodement (cokernel (toGodement F)),
+        comm₁₂ := by simp, comm₂₃ := by simp [godementCanonicalDZero, godementStep] }
+  exact key.mp (ShortComplex.exact_cokernel (toGodement F))
 
 end Grothendieck
