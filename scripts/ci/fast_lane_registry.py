@@ -842,22 +842,24 @@ TRANCHE2: list[Guard] = [
         needs_base=True,
         absorbed=True,
     ),
-    # Output-volume COLLAPSE ratchet, advisory (#15327): the two siblings
-    # above watch output GROWTH (flood) and failure banners; nothing watched
-    # contraction -- #15209 lost 72 % of its output chars (11 code cells
-    # executed "successfully", graceful-degradation guards if api_ok:) while
-    # every gate stayed green. Design constraint (ai-01 measurement on the
-    # issue, 2026-09-09): AGGREGATE contraction alone is ~100 % FP (3/3
-    # contractions > 50 % over 14 days were legitimate), so this ratchet
-    # flags per-CELL order-of-magnitude loss and graceful-degradation
-    # signatures (execution sautee / non configure / mode simulation /
-    # skipped), exempting the two mechanically detectable legitimate causes:
-    # content moved to a notebook created by the same diff, and
-    # diagnostic-text purge (CS####/warning lines). Advisory until the
-    # threshold is calibrated further on history (issue point 3).
-    # Source : notebook-output-collapse-ratchet.yml (stub dispatch-only).
+    # Output-volume COLLAPSE ratchet, blocking since #21424 T2 (2026-10-19):
+    # the two siblings above watch output GROWTH (flood) and failure
+    # banners; nothing watched contraction -- #15209 lost 72 % of its output
+    # chars (11 code cells executed "successfully", graceful-degradation
+    # guards if api_ok:) while every gate stayed green. The ratchet
+    # discriminates by CAUSE: signature of degradation gracieuse and
+    # order-of-magnitude loss per cell, exempting the two mechanically
+    # detectable legitimate causes (content moved to a notebook created
+    # by the same diff, and diagnostic-text purge CS####/warning).
+    #
+    # The gate is BLOCKING since T2 -- a flagged cell is a hard failure
+    # UNLESS the PR body carries a `## Output-collapse justification`
+    # section naming the cell and the reason (NAMING c.2193 family, the
+    # kernel-drift guard exemption). T1 brought the `--history` mode
+    # (H.6 audit-history organ) so a contributor can locate the cell's
+    # restore point and the responsible PR before justifying.
     Guard(
-        name="Output-collapse ratchet (base vs PR, advisory)",
+        name="Output-collapse ratchet (base vs PR)",
         source="notebook-output-collapse-ratchet.yml",
         paths=[
             "**.ipynb",
@@ -872,7 +874,7 @@ TRANCHE2: list[Guard] = [
             "python", "scripts/notebook_tools/check_output_collapse.py",
             "{base_ref}",
         ],
-        blocking=False,
+        blocking=True,
         needs_base=True,
         absorbed=True,
     ),
