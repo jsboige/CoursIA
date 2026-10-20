@@ -52,13 +52,21 @@ Le rejet est **silencieux** du point de vue des lignes réduites — l'observati
 
 **Règle** : un envelope `[OBS]` posté à la main **ne porte pas** de champ `observation_id`. S'il est présent, il vient de `debt_ledger.py append` (sous-commande `append --fields-json`) — jamais d'un copier-coller d'un autre envelope.
 
-### La clé machine est du **texte libre** — pas de raccourci
+### La clé machine est **canonicalisée** — un seul nom par machine
 
-La clé d'une réservation est `<machine>#gpu<n>`, et la partie machine est **du texte libre** : le parseur ne fait qu'un `strip()` (`debt_ledger.py:534`), sans normalisation ni table d'alias. `ai-01#gpu2` et `myia-ai-01#gpu2` sont donc **deux lignes distinctes** — le même GPU physique, compté deux fois, avec deux `holder` possibles et deux fenêtres qui ne se verrouillent jamais l'une contre l'autre.
+La clé d'une réservation est `<machine>#gpu<n>`. La partie machine est **normalisée au parsing** par `canonical_machine()` (`scripts/coordination/debt_ledger.py`) : elle est ramenée au nom du **roster de la flotte**, et une machine **hors roster est refusée explicitement** (`entity_mismatch`). Le nom court est déduit mécaniquement du roster (`ai-01` → `myia-ai-01`), les formes sans tiret (`ai01`) sont ajoutées à la main dans `MACHINE_ALIASES`.
+
+Avant cette canonicalisation (implémentation : **PR #21580**), le parseur ne faisait qu'un `strip()` : `ai-01#gpu2` et `myia-ai-01#gpu2` étaient **deux lignes distinctes** — le même GPU physique, compté deux fois, avec deux `holder` possibles et deux fenêtres qui ne se verrouillaient jamais l'une contre l'autre.
 
 Au premier fold effectif (c.2249, 2026-10-20), les deux écritures `ai-01#gpu2` (historique) et `myia-ai-01#gpu2` (ligne vivante) coexistaient — pour un seul device. Les compteurs du fold sont dans le tableau « Premier fold effectif » et dans le snapshot publié.
 
-**Règle** : reprendre le nom de machine du **roster de la flotte** (`myia-ai-01`, `myia-po-2023`, …), c'est-à-dire celui que le CLI rappelle lui-même en exemple (`myia-ai-01#gpu2`). Un raccourci (`ai-01`) n'est pas interdit par le code : il est **interdit par le protocole**, parce qu'il scinde la réservation en deux lignes et désactive le verrouillage croisé.
+**Règle** : reprendre le nom de machine du **roster de la flotte** (`myia-ai-01`, `myia-po-2023`, …), c'est-à-dire celui que le CLI rappelle lui-même en exemple (`myia-ai-01#gpu2`). Un raccourci (`ai-01`) reste **accepté** — il est normalisé vers le nom canonique, et l'observation porte l'entité canonique.
+
+**Migration** : la canonicalisation change l'entité, donc le digest de l'observation. Une observation **postée avant** la canonicalisation porte le digest de son entité **brute** ; le fold l'accepte sur ce digest historique et la re-keye vers la clé canonique (elle n'est donc **pas perdue**). Un identifiant qui ne correspond ni au digest canonique ni au digest brut reste **rejeté** (`observation_id_mismatch`) : le fail-closed du journal est intact.
+
+Au fold suivant, les deux lignes `ai-01#gpu2` et `myia-ai-01#gpu2` **convergent vers une seule ligne** `myia-ai-01#gpu2`, dont l'`history` par champ conserve les valeurs supersédées. Mesure sur les 37 observations de production : 2 lignes → 1, 0 rejet avant comme après, 37 observations consommées dans les deux cas.
+
+**Étendre le roster** : ajouter le nom canonique à `FLEET_MACHINES` (`scripts/coordination/debt_ledger.py`). Le nom court (`<nom sans myia->`) est alors déduit automatiquement ; une forme sans tiret s'ajoute à `MACHINE_ALIASES`. Un roster qui ne contient pas la machine **refuse** ses observations — c'est voulu : une faute de frappe ne doit pas créer une ligne fantôme.
 
 ## Quand **réduire** (fold)
 
@@ -229,3 +237,5 @@ L'observation `[OBS]` d'un slot gpu0/gpu1 sur ai-01 est **interdite** : ces slot
 - **3e livrable (c.258)** : liaison cross-machine — topologie GPU (ai-01: gpu0/1=vLLM, gpu2=training ; po-* à confirmer), protocole de récupération cross-machine (DM nominatif + dashboard + cache 24h), garde vLLM, trigger de mise à jour.
 - **4e livrable (c.260, PR #19855)** : implémentation de la sous-commande `check_pending` + fonction pure `evaluate_gpu_pending()`. **Ce commit (4e livrable doc)** aligne le protocole sur le schéma réel de `debt_ledger.py` (state/holder/workload/started_at/expected_end/issue) et corrige les noms de verdicts (`RELEASED`/`STALE` au lieu de `EXPIRED`).
 - **5e livrable (c.2249)** : premier **fold effectif** du ledger (export large, puis réduction ; rejets `observation_id_mismatch` — compteurs dans le tableau « Premier fold effectif ») + les deux règles qui le rendent fiable — `observation_id` **calculé** et jamais écrit à la main, clé machine prise dans le roster de la flotte (`ai-01` et `myia-ai-01` sont deux écritures pour un GPU) — + la planification hebdomadaire publiée avec chaque snapshot.
+
+- **6e livrable (PR #21580)** : canonicalisation de la clé machine au niveau outil (`canonical_machine()`) -- alias vers le nom canonique du roster, machine hors roster refusée, digest historique accepté pour ne perdre aucune observation ; la règle de protocole correspondante est reprise dans la section « La clé machine est canonicalisée ».
