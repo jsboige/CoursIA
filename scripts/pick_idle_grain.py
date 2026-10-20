@@ -2405,52 +2405,69 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
         # S'assurer que l'env n'est pas heritee d'un run precedent si on
         # est dans un test ou un process qui l'avait posee.
         env.pop("CHECK_LANE_CLAIM_OPEN_PRS_JSON", None)
+
+    def _one_by_one() -> None:
+        # Chemin legacy : un subprocess.run par issue. La sortie mono-issue
+        # de check_lane_claim (un JSON, puis la phrase de verdict) est lue
+        # par `_summarize_claim`, pas par `json.loads`.
+        for n in numbers:
+            try:
+                rr = subprocess.run(
+                    [sys.executable, "scripts/check_lane_claim.py",
+                     "--lane", lane, str(n)],
+                    capture_output=True, text=True, encoding="utf-8",
+                    timeout=60, env=env,
+                )
+                verdicts[n] = _summarize_claim(
+                    rr.stdout or rr.stderr or "", rr.returncode)
+            except Exception as exc:  # noqa: BLE001
+                verdicts[n] = (
+                    CLAIM_CODE_ERROR,
+                    f"(check indisponible: {type(exc).__name__})")
+
     try:
         # 1 seul subprocess.run avec N numeros positionnels (mode
         # batch de check_lane_claim). La sortie est un JSON
         # `{results: {N: {code, human, exit, duration, ...}},
         # total_wall, phases}` -- voir `_summarize_claim_from_batch`
         # pour le remappage.
+        #
+        # Un seul numero n'active PAS le mode batch (check_lane_claim ne
+        # le prend qu'a partir de 2 issues) : la sortie est alors le JSON
+        # mono-issue suivi de la phrase « CLEAR: ... », que `json.loads`
+        # rejette (`Extra data`). C'est le cas de chaque verification au
+        # fil de l'eau du tapis (`check_claims([n])`) : mesure du
+        # 2026-10-20, 30 issues tirees sur 50 rendues en ERROR, donc
+        # servies sans que leur claim soit lu.
         cmd = [sys.executable, "scripts/check_lane_claim.py",
                "--lane", lane]
         cmd.extend(str(n) for n in numbers)
         try:
-            r = subprocess.run(
-                cmd,
-                capture_output=True, text=True, encoding="utf-8",
-                # 60s + N * 1s en budget ; le tapis consomme generalement
-                # 5-15 numeros, donc ~75 s max. Au-dela, on retombe sur le
-                # chemin legacy (N subprocess.run) cycle suivant -- c'est
-                # preferable a un tapis gele.
-                timeout=60 + 10 * len(numbers),
-                env=env,
-            )
-            if r.returncode != 0:
-                # Batch a echoue (probable: check_lane_claim pre-v3, ou
-                # gh down) ; on retombe sur le chemin legacy N
-                # subprocess.run par issue.
-                for n in numbers:
-                    try:
-                        rr = subprocess.run(
-                            [sys.executable, "scripts/check_lane_claim.py",
-                             "--lane", lane, str(n)],
-                            capture_output=True, text=True, encoding="utf-8",
-                            timeout=60, env=env,
-                        )
-                        verdicts[n] = _summarize_claim(
-                            rr.stdout or rr.stderr or "", rr.returncode)
-                    except Exception as exc:  # noqa: BLE001
-                        verdicts[n] = (
-                            CLAIM_CODE_ERROR,
-                            f"(check indisponible: {type(exc).__name__})")
+            r = None
+            if len(numbers) > 1:
+                r = subprocess.run(
+                    cmd,
+                    capture_output=True, text=True, encoding="utf-8",
+                    # 60s + N * 1s en budget ; le tapis consomme
+                    # generalement 5-15 numeros, donc ~75 s max. Au-dela,
+                    # on retombe sur le chemin legacy (N subprocess.run)
+                    # cycle suivant -- c'est preferable a un tapis gele.
+                    timeout=60 + 10 * len(numbers),
+                    env=env,
+                )
+            if r is None or r.returncode != 0:
+                # Un seul numero, ou batch en echec (probable:
+                # check_lane_claim pre-v3, ou gh down) : chemin legacy,
+                # N subprocess.run par issue.
+                _one_by_one()
             else:
                 try:
                     payload = json.loads(r.stdout)
-                except json.JSONDecodeError as exc:
-                    # JSON parse fail -- legacy fallback
-                    for n in numbers:
-                        verdicts[n] = (CLAIM_CODE_ERROR,
-                                      f"(batch JSON: {exc})")
+                except json.JSONDecodeError:
+                    # Sortie batch illisible : on relit issue par issue
+                    # plutot que de rendre ERROR, qui laisse servir le
+                    # grain sans claim lu.
+                    _one_by_one()
                 else:
                     for n in numbers:
                         verdicts[n] = _summarize_claim_from_batch(payload, n)
