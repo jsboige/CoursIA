@@ -73,6 +73,11 @@ Le lanceur commun s'appelle seul :
 Les companions `.sh` (macOS/Linux) ne sont pas concernes : le Job Object est
 une API Windows, l'equivalent Linux etant un cgroup (`memory.max`).
 
+**Regle d'usage** : tout entrainement CoursIA lance sur ai-01 passe par ce
+lanceur commun -- y compris les clones locaux et les bras que d'autres lanes
+confient. Le **code** de l'organe reste dans ce dossier ; c'est la **regle
+d'usage** qui vaut pour tous.
+
 ## Monitoring
 
 ### Windows

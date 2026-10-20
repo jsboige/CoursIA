@@ -29,6 +29,13 @@
     de fin (pic memoire, raison de l'arret) dans le journal. `-Wait` rend la
     main a la fin de l'entrainement.
 
+    Regle d'usage : tout entrainement CoursIA lance sur ai-01 passe par ce
+    lanceur commun -- y compris les clones locaux et les bras que d'autres
+    lanes confient. Le code de l'organe reste dans ce dossier ; c'est la regle
+    d'usage qui vaut pour tous. Le verrou N=1 couvre les processus lances par
+    ce lanceur (marqueur de lock) : les conteneurs, les autres lanes et les
+    python quelconques sont hors perimetre.
+
 .PARAMETER FilePath
     Programme a lancer (typiquement l'interpreteur Python de l'env conda).
 
