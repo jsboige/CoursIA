@@ -308,7 +308,7 @@ Write-Host "`nESTIMATION TEMPS DE RÉPARATION: $RepairTimeMinutes minutes" -Fore
 
 # Export des résultats
 if ($ExportJson) {
-    $Results | ConvertTo-Json -Depth 10 | Out-File -FilePath $ResultsFile -Encoding UTF8
+    [System.IO.File]::WriteAllText($ResultsFile, ($Results | ConvertTo-Json -Depth 10), (New-Object System.Text.UTF8Encoding($false)))
     Write-Host "`nRésultats exportés vers: $ResultsFile" -ForegroundColor Green
 }
 

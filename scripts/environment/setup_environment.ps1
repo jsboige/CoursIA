@@ -56,7 +56,7 @@ function Test-Administrator {
 function Save-Checkpoint {
     param($CheckpointName)
     $Checkpoints[$CheckpointName] = $true
-    $Checkpoints | ConvertTo-Json | Out-File -FilePath $CheckpointFile -Encoding UTF8
+    [System.IO.File]::WriteAllText($CheckpointFile, ($Checkpoints | ConvertTo-Json), (New-Object System.Text.UTF8Encoding($false)))
     Write-Action "Checkpoint: $CheckpointName" "SUCCESS"
 }
 
