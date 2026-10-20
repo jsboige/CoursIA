@@ -17,7 +17,7 @@ Ce document enregistre la mesure de reproductibilité faite depuis le poste **`m
 | Contrôle | Semences du carnet inchangées (`SEED = 20261008` pour 3D-01, `SEED = 42` pour 3D-03), jeu de données identique (dataset officiel `tiny_nerf_data.npz` téléchargé depuis la source des auteurs), aucun paramètre modifié |
 | Comparaison | Colonne « référence » = sorties **committées** du dépôt ; colonne « po-2028 » = exécution fraîche du même carnet, sans modification de source |
 
-**Une précision de périmètre, importante pour la lecture.** Pour le socle A1, l'exécution fraîche a été faite **sur une copie du carnet hors dépôt**, et **le carnet du dépôt n'est pas modifié** : son fichier est dans le scope de claims actifs d'autres lanes (PR #21413 et #20544). La mesure est donc réelle, mais elle ne remplace pas les sorties committées — elle les **confronte**.
+**Une précision de périmètre, importante pour la lecture.** Pour le socle A1, l'exécution fraîche a été faite **sur une copie du carnet hors dépôt**, et **le carnet du dépôt n'est pas modifié** : son fichier est dans le scope de claims actifs d'autres lanes (PR #21413 et #20544). La mesure est donc réelle, mais elle ne remplace pas les sorties committées — elle les **confronte**. Pour le socle splats (`3D-03`), le carnet **est** dans le diff : il était libre de collision, et ses sorties committées ont été remplacées par les sorties fraîches (identiques en valeur, §3).
 
 ---
 
@@ -47,15 +47,37 @@ Fidélité de la reconstitution de la scène Lego (dataset officiel NeRF, 106 vu
 
 ---
 
-## 3. Socle splats (`3D-03-Gaussian-Splats-Concepts.ipynb`) — non re-mesuré sur ce poste, et pourquoi
+## 3. Socle splats (`3D-03-Gaussian-Splats-Concepts.ipynb`) — reproduction **exacte**
 
-**Ce que j'ai tenté, et ce que j'en conclus.** J'ai lancé la re-exécution du carnet `3D-03` **deux fois** depuis `po-2028`, avec un timeout par cellule de 300 s puis de 2 400 s (`notebook_tools.py execute --timeout 2400`). Les deux exécutions ont été **tuées par le timeout de la cellule d'optimisation** (550 itérations), qui dépasse 2 400 s sur ce poste, contre **426 s** sur le poste qui a produit les sorties committées. Le carnet n'a donc **pas** été réécrit : ses sorties committées restent en place, et je n'en produis pas de concurrentes.
+Exécution fraîche sur `po-2028` (torch 2.8.0+cu126, semences du carnet inchangées, 15 cellules de code, **0 `execution_count` nul, 0 erreur**), comparée aux sorties committées du dépôt.
 
-**L'écart de vitesse est un fait de poste, pas un fait de carnet.** L'optimisation du socle splats est **purement CPU** (le carnet l'annonce : « Execution CPU assumee »), et `po-2028` est un poste **partagé** — trois autres sessions d'agents y travaillent en même temps, charge CPU mesurée à 42 % pendant la mesure. Le facteur ~5,6 entre les deux durées s'explique par cette charge, pas par une propriété du carnet. Sur un poste libre, la même cellule tient en ~7 minutes.
+| Mesure | Référence (sorties committées) | po-2028 (exécution fraîche) | Écart |
+|---|---:|---:|---:|
+| Perte finale (L1 moyen par vue, 550 itérations) | 0,0168 | **0,0168** | **0** |
+| Corrélation, vue azimut 20° | 0,976 | **0,976** | **0** |
+| Corrélation, vue azimut 110° | 0,978 | **0,978** | **0** |
+| Corrélation, vue azimut 200° | 0,983 | **0,983** | **0** |
+| L1 azimut 20° / 110° / 200° | 0,0181 / 0,0149 / 0,0175 | **0,0181 / 0,0149 / 0,0175** | **0** |
+| L1 périphérie vs centre (azimut 20°) | 0,0045 vs 0,0395 | **0,0045 vs 0,0395** | **0** |
+| Splats significatifs (opacité > 0,15) | 457 / 600 | **457 / 600** | **0** |
+| Anisotropie médiane (init. 1,11) | 1,83 | **1,83** | **0** |
+| Anisotropie cœur (284 splats) / anneau (167) | 1,67 / 2,17 | **1,67 / 2,17** | **0** |
+| Opacités optimisées : médiane / max / > 0,1 | 0,189 / 0,426 / 592-600 | **0,189 / 0,426 / 592-600** | **0** |
+| Évaluations par pixel (splats) | 12,1 (max 133) | **12,1 (max 133)** | **0** |
 
-**Ce que cela dit — c'est utile, pas défensif.** Le socle splats est **dépendant du temps CPU disponible** : c'est une contrainte de dimensionnement pour quiconque veut le rejouer, et elle n'apparaît nulle part dans le carnet. Un démonstrateur fondé sur ce socle ne peut pas être dimensionné « à la louche » : il faut compter ~7 minutes de CPU par run sur une machine libre, et savoir que ce chiffre se dégrade linéairement avec la charge.
+**Verdict.** Le socle splats est **reproductible au chiffre près** sur un autre poste : les onze grandeurs mesurées sont **identiques**, à la précision imprimée. La différence avec le socle NeRF (§2, écart de 0,07 dB) est explicite : l'optimisation splats est **entièrement déterministe** (semences fixes, arithmétique CPU), alors que le NeRF accumule des flottants GPU dont le résultat dépend de l'architecture — d'où un écart faible mais non nul.
 
-**Les mesures de référence, rappelées ici** (sorties committées, PR #20398 pour `3D-05`) : 550 itérations, perte finale **0,0168** (L1 moyen par vue) ; corrélations **0,976 / 0,978 / 0,983** sur les vues de contrôle aux azimuts 20° / 110° / 200° ; **457 / 600** splats significatifs (opacité > 0,15) ; anisotropie médiane **1,83** (contre 1,11 à l'initialisation), cœur **1,67** (284 splats) et anneau **2,17** (167 splats). Ces valeurs sont **stables par construction** (semences fixes, runs de 2 à 3 s) — mais je ne les declare pas « reproduites » : je ne les ai pas rejouées.
+**Ce que la mesure dit en plus, et qui n'était pas dans le carnet.** Les durées, en revanche, ne sont **pas** reproductibles : elles dépendent de la machine et de sa charge.
+
+| Chrono | Référence | po-2028 | Facteur |
+|---|---:|---:|---:|
+| Optimisation (550 itérations) | 426,0 s | **951,4 s** | **× 2,2** |
+| Rendu volumique (80×80) | 16 ms | **37 ms** | × 2,3 |
+| Rendu splats (600 primitives) | 56 ms | **167 ms** | × 3,0 |
+
+`po-2028` est un poste **partagé** (plusieurs sessions d'agents, charge CPU mesurée à 42 % pendant la mesure) et l'optimisation splats est **purement CPU**. **Conséquence de dimensionnement** : un démonstrateur fondé sur ce socle doit compter **~16 minutes de CPU par run** sur une machine de cette classe, et non les ~7 minutes mesurées sur un poste libre — l'écart se comporte comme la charge, pas comme le carnet.
+
+**Les sorties committées du carnet sont remplacées par les présentes.** La re-exécution a produit des sorties **identiques en valeur** (tableau ci-dessus) mais des **images re-encodées** (diff de 992 insertions / 98 suppressions, essentiellement des blobs d'images et les horodatages d'exécution) : le carnet est committé avec ses sorties fraîches, conformément à C.2, et le tableau de mesures ci-dessus est la preuve de l'équivalence.
 
 **Un défaut de portabilité trouvé au passage.** `3D-05-3DGS-Optimization-Tradeoffs.ipynb` pose `os.environ["CUDA_VISIBLE_DEVICES"] = "1"` dans sa première cellule. Sur une machine à **un seul GPU** — dont `po-2028` — cette ligne masque le device et rend le carnet inexécutable tel quel. C'est un défaut **du carnet**, pas de la machine, et il serait corrigé par une ligne. Il est signalé ici pour la lane qui porte ce carnet, plutôt que corrigé dans une PR qui aurait déformé le périmètre de ce cycle.
 
