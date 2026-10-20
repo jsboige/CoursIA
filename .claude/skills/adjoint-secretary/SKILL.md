@@ -21,7 +21,7 @@ L'organe `scripts/coordination/merge_ready.py` tourne toutes les 20 minutes sur 
 - un dossier `[ADJOINT PREFLIGHT]` **tiers** que le gate accepte (`check_adjoint_prevalidation.py` rc=0) et qui porte `b0: clear` ;
 - B.0 (`check_unaddressed_nits.py`) rc=0 ;
 - aucun fichier sous `.claude/`, aucun `CLAUDE.md`, aucun fichier sous `.github/` ;
-- un tag `Grain:` de tier MED ou LIGHT (DEEP refusé) et aucun parapluie gelé ;
+- un tag `Grain:` de tier DEEP, MED ou LIGHT (une branche hors flotte `claude/*` en est dispensée ; DEEP et hors flotte admis depuis le 2026-10-19, Q131) et aucun parapluie gelé ;
 - `mergeable_state: clean` à la tête même que le gate a évaluée.
 
 Ton READY est donc la moitié du merge ; l'autre est la lecture d'ai-01, qui s'appuie sur ton dossier. L'organe n'est pas une voie de merge sans lecteur : il évite seulement qu'un dossier se périme entre cette lecture et le merge. Du 23 au 28/09, il mergeait sur le seul dossier ; 6 des 211 merges de cette période portaient une approbation d'ai-01, et ce passif est ré-audité. Deux conséquences.
@@ -29,7 +29,7 @@ Ton READY est donc la moitié du merge ; l'autre est la lecture d'ai-01, qui s'a
 1. **Ton dossier est le premier levier de débit de la flotte.** Le goulot est la vitesse d'arrivée des dossiers, pas la capacité de merge d'ai-01. Mesures du 28/09 : au balayage du gate de 13:20Z, 98 des 103 PRs ouvertes n'avaient aucun dossier valide ; au passage de `merge_ready` de 14:02Z, 64 des 76 PRs examinées ont été écartées pour la seule absence de dossier. Du 23 au 28/09, l'organe a mergé 20 à 50 PRs par jour, toutes sur dossier.
 2. **ai-01 lit ton dossier, il ne refait pas ton travail.** Sa lecture porte sur les réserves, sur ce qui a changé depuis la dernière review et sur la preuve centrale ; le reste (qui a levé quoi et quand, checks, scope, domaine) repose sur ton dossier. Le crible de fond (items 9, 11, 14, 16, 23, 28 et 29 ci-dessous) n'est donc pas une option de qualité : un READY faux coûte une lecture d'ai-01 pour rien, ou passe si la lecture le manque. Un BLOCKED honnête (rc=3) reste un livrable complet : il dit à la lane porteuse ce qu'elle doit réparer.
 
-Hors de ce périmètre (PRs de harnais, grains DEEP), le coordinateur merge à la main, et seulement sur gate rc=0 : ton dossier y reste la condition d'entrée. Dans les deux cas, chaque READY se double d'une ligne dans la liste nominative envoyée à ai-01 en fin de cycle : c'est elle qui déclenche sa lecture.
+Hors de ce périmètre (PRs de harnais), le coordinateur merge à la main, et seulement sur gate rc=0 : ton dossier y reste la condition d'entrée. Dans les deux cas, chaque READY se double d'une ligne dans la liste nominative envoyée à ai-01 en fin de cycle : c'est elle qui déclenche sa lecture.
 
 ## Rôle et frontière HARD
 
@@ -58,8 +58,8 @@ Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures, reviews `APP
 3. **Mesurer le quota** sur les en-têtes d'un vrai appel (item 21), GraphQL et REST `core` séparément.
 4. **Lister le pool** en une requête GraphQL paginée (item 2) et en tirer la file : PRs ouvertes, hors brouillon, sans dossier vivant d'une autre lane. Ordre :
    1. les PRs nommées par ai-01 ou par le titulaire ;
-   2. les PRs hors harnais et hors DEEP, du plus ancien au plus récent : une fois approuvées par ai-01, `merge_ready` les merge sans attendre son cycle ;
-   3. les PRs de harnais et DEEP.
+   2. les PRs hors harnais (`DEEP` et hors flotte `claude/*` compris depuis le 2026-10-19, Q131), du plus ancien au plus récent : une fois approuvées par ai-01, `merge_ready` les merge sans attendre son cycle ;
+   3. les PRs de harnais.
 5. **Annoncer le lot** (numéros) sur `workspace-CoursIA-3` avant de le traiter : le titulaire ne stampe pas les mêmes PRs (item 13).
 6. **Pour chaque PR du lot** :
    1. `check_adjoint_prevalidation.py N` : rc=0 ou rc=3 sous une autre lane, passer à la suivante ;
