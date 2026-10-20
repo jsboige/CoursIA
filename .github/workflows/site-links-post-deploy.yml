@@ -1,0 +1,62 @@
+name: Site links post-deploy (advisory)
+
+# Garde post-deploiement des liens du site publie (#21628, fille de l'EPIC
+# #10921). Les gardes de liens du depot (HTML_404, ipynb_links, #18970)
+# verifient le contenu SOURCE -- ils ne testent pas le site DEPLOYE. Le
+# rendu Quarto transforme les chemins (.md -> .html, globs, freeze) : une
+# regression de navigation n'est visible qu'apres publication.
+#
+# Baseline mesuree le 2026-10-20 (lane myia-po-2028:CoursIA, #10921
+# c.6296125400) : 17/17 liens critiques en HTTP 200 sur les 3 pages
+# critiques ; l'extraction dynamique en couvre 36.
+#
+# Advisory PAR CONSTRUCTION : workflow_run + workflow_dispatch seulement --
+# un run rouge ne cree aucun check-run sur une PR et ne peut jamais la
+# bloquer. Il ne teste QUE la resolution des liens : le rendu lui-meme
+# reste l'affaire de l'audit visuel Playwright de #10921 (lanes CoursIA-2).
+#
+# Pourquoi ubuntu-latest : cet observateur surveille le site PUBLIC heberge
+# par GitHub -- il doit survivre a une panne du parc self-hosted (lecon
+# linux-runner-starvation-advisory : un observateur qui tourne sur ce qu'il
+# observe meurt avec lui).
+
+on:
+  workflow_run:
+    workflows: ["Quarto Pages Deploy"]
+    types: [completed]
+  workflow_dispatch:
+
+permissions:
+  contents: read   # checkout du script
+
+concurrency:
+  group: site-links-post-deploy
+  cancel-in-progress: true   # un nouveau deploy remplace le check precedent
+
+jobs:
+  check:
+    name: "Check published site links"
+    # Deploy reussi seulement : tester un ancien site apres un deploy
+    # echoue produirait un verdict qui ne parle pas de la sortie reelle.
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Check published site links
+        run: |
+          python scripts/ci/check_site_links.py --json
+
+      - name: Summary on failure
+        if: failure()
+        run: |
+          echo "::error::Au moins un lien interne du site publie ne resout pas (voir la sortie JSON de l'etape precedente). Ce garde est advisory : il ne bloque aucune PR."
