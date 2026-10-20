@@ -188,7 +188,8 @@ def metrics(dates, net_returns, turnover, fees: float) -> dict:
 
 def _git(repo: Path, *args: str) -> str:
     return subprocess.run(["git", "-C", str(repo), *args], check=True,
-                          capture_output=True, text=True).stdout.strip()
+                          capture_output=True, text=True,
+                          encoding="utf-8", errors="replace").stdout.strip()
 
 
 # Le point d'entree tourne dans un processus a part, dont le seul chemin d'import est le dossier
@@ -231,7 +232,8 @@ def run_frozen(repo: Path, candidate: dict, pass_date: str) -> dict:
                        "params": candidate["params"]}
             proc = subprocess.run([sys.executable, "-c", _DRIVER],
                                   cwd=module_path.parent, input=json.dumps(request),
-                                  capture_output=True, text=True)
+                                  capture_output=True, text=True,
+                                  encoding="utf-8", errors="replace")
             if proc.returncode != 0:
                 raise RuntimeError(f"{candidate['id']}: frozen entrypoint failed:\n{proc.stderr}")
             out = json.loads(proc.stdout)
@@ -341,9 +343,19 @@ def qc_daily_equity(chart: dict) -> tuple[list[str], list[float]]:
 
     La candidate trace la seance k dans `e{k % 5}` : rangees par date, les series doivent
     donc se succeder e0, e1, e2, e3, e4, e0... Un point perdu ou en trop casse ce cycle.
+    Une fenetre de moins de cinq seances ne remplit que le debut du cycle : les series
+    absentes sont tolerees quand elles ferment le cycle (prefixe contigu depuis e0) et
+    refusees quand elles le trouent (telechargement tronque). Une troncature de fin, elle,
+    laisse le cycle intact : `ingest_qc` la attrape en croisant le compte de seances avec
+    `tradeableDates`.
     """
-    points = sorted((t, k, v) for k, key in enumerate(QC_EQUITY_SERIES)
-                    for t, v in _chart_points(chart, key))
+    present = [k for k, key in enumerate(QC_EQUITY_SERIES)
+               if (chart.get("series") or {}).get(key, {}).get("values")]
+    if not present or present != list(range(len(present))):
+        raise ValueError(f"chart {QC_CHART!r}: series e0..e4 must form a contiguous "
+                         f"prefix from e0, present are {present}")
+    points = sorted((t, k, v) for k in present
+                    for t, v in _chart_points(chart, QC_EQUITY_SERIES[k]))
     for i, (t, k, _) in enumerate(points):
         if k != i % 5:
             raise ValueError(f"equity interleaving broken at point {i} ({_session(t)}): "
@@ -368,6 +380,10 @@ def ingest_qc(candidate: dict, plan: dict, backtest: dict, chart: dict,
         raise ValueError(f"{candidate['id']}: backtest {backtest.get('name')!r} is not "
                          f"{plan['backtest_name']!r}")
     dates, equity = qc_daily_equity(chart)
+    expected_days = backtest.get("tradeableDates")
+    if isinstance(expected_days, int) and len(dates) != expected_days:
+        raise ValueError(f"{candidate['id']}: {len(dates)} equity points for "
+                         f"{expected_days} tradeable dates -- chart truncated or incomplete")
     if dates[0] < plan["frozen_on"] or dates[-1] > plan["pass_date"]:
         raise ValueError(f"{candidate['id']}: equity {dates[0]}..{dates[-1]} outside "
                          f"{plan['frozen_on']}..{plan['pass_date']}")

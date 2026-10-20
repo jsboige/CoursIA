@@ -55,7 +55,7 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py",
-        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-PythonForDataScience/tests",
+        "MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests",
         # scripts/quantconnect/tests : dir entier (famille 3 de #14615) —
         # 254 tests / 9 modules, hermétique (mesure firsthand 2026-09-05 :
         # 253 verts + 1 skip de donnée, yfinance absent de l'env).

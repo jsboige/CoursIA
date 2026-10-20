@@ -83,7 +83,7 @@ jobs:
     # debloquer grossit (saturation du 2026-09-22). La garde same-repo
     # ci-dessous est conservee telle quelle -- seul le runner change, aucune
     # semantic de declenchement.
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     outputs:
       action: ${{ steps.resolve.outputs.action }}
@@ -128,9 +128,10 @@ jobs:
   rerun:
     name: Re-run the original PR gate (manual)
     needs: resolve
-    if: needs.resolve.outputs.action == 'rerun'
-    # Q35 etape 2 (#17397) : idem resolve -- agregateur pur, ubuntu-latest.
-    runs-on: ubuntu-latest
+    if: needs.resolve.outputs.action == 'rerun' && (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository)
+    # Q35 etape 2 (#17397) : idem resolve -- agregateur pur, forme hybride
+    # [self-hosted, coursia-ephemeral, coursia-linux] (c.515-N2, c.2180).
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     timeout-minutes: 10
     steps:
       - name: Re-run the original run
@@ -149,9 +150,10 @@ jobs:
   aggregate_absent:
     name: Aggregate a gate-absent PR head (manual)
     needs: resolve
-    if: needs.resolve.outputs.action == 'aggregate_absent'
-    # Q35 etape 2 (#17397) : idem resolve -- agregateur pur, ubuntu-latest.
-    runs-on: ubuntu-latest
+    if: needs.resolve.outputs.action == 'aggregate_absent' && (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository)
+    # Q35 etape 2 (#17397) : idem resolve -- agregateur pur, forme hybride
+    # [self-hosted, coursia-ephemeral, coursia-linux] (c.515-N2, c.2180).
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     timeout-minutes: 15
     steps:
       # The aggregation script + the delivery canary both read the repo:

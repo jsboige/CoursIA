@@ -55,6 +55,7 @@ d'équivalence sont cités dans la PR d'extraction.
 | `Framework_Composite_MomentumRegime` | SectorMomentum 0.60 / RegimeSwitching 0.40 | 31 j |
 | `Framework_Composite_FamaFrenchAllWeather` | FamaFrench 0.20 / AllWeather 0.80 | 31 j |
 | `Framework_Composite_TrendWeather` | TrendStocks 0.75 / AllWeather 0.25 | 31 j |
+| `composite-c1-multiasset` | Momentum 1/3 / MACD 1/3 / RelStrength 1/3 (sous-classe `CappedPouchesPCM`, plafond de 40 % par ligne) | 7 j |
 
 Duplication restante hors périmètre de l'extraction : `TrendWeatherPointInTime`
 conserve son `portfolio_construction.py` **par gel délibéré** — la candidate

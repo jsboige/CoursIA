@@ -28,6 +28,23 @@ baseline.
 | Or | 7.5% | GLD | Inflation, crise |
 | Commodities | 7.5% | DBC | Inflation |
 
+## Mesure au protocole de la ligue (2026-10-16, #21114)
+
+Mesure standalone au protocole commun ([#19821](https://github.com/jsboige/CoursIA/issues/19821)),
+2015-01 → 2026-06, références SPY détenu et 60/40 SPY/IEF :
+
+| Variante | Sharpe (taux sans risque nul) | Verdict |
+|----------|-------------------------------|---------|
+| **v1.0 Dalio** (30/40/15/7.5/7.5, ex-ante) | 0,83 contre 1,01 (SPY) et 1,08 (60/40), p Holm 1,00 | **NO BEATS** |
+| **v5.0** (SPY/IEF/GLD 30-30-30 + XLP 10, poids ajustés sur la fenêtre) | 1,28 — diffs positives, p 0,16 et 0,19, aucune significative | **NO BEATS** (en échantillon) |
+
+La baseline Dalio v1.0 — les seuls poids publiés **avant** la fenêtre de mesure — finit
+sous les deux références. La v5.0 courante (grid search 2015-2026, docstring « iter5 »)
+les devance sur la fenêtre entière, mais celle-ci est entièrement **en échantillon** pour
+ses poids et aucune différence n'est significative. L'écart v5.0 − v1.0 (+0,45 de Sharpe)
+dit ce que l'itération sur la fenêtre a ajouté, à titre descriptif. Détail du protocole et
+des chiffres : issue #21114.
+
 ## Backtest Results (2015-2023)
 
 | Métrique | Valeur |
