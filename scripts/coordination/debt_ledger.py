@@ -201,12 +201,18 @@ _MACHINE_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 _ACTOR_RE = re.compile(r"^[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)?$")
 _ISSUE_REF_RE = re.compile(r"^[\w.-]+/[\w.-]+#\d+$")
 
-#: Roster des machines de la flotte (#21580). La liste est FIGEE ici comme dans
-#: les deux modules qui portent deja la meme liste (``gh_identity.HOST_ACCOUNTS``
-#: et ``secrets/agent_keyring.FLEET_MACHINES``) : un organe appele en CI ne peut
-#: pas deriver une liste de fichiers au runtime. Une machine hors de ce roster
-#: est REFUSEE, jamais acceptee telle quelle -- c'est la seule garantie qu'une
-#: faute de frappe ne cree pas une ligne fantome dans le registre.
+#: Roster des machines de la flotte (#21580). La liste est FIGEE ici : un organe
+#: appele en CI ne peut pas deriver une liste de fichiers au runtime. Une machine
+#: hors de ce roster est REFUSEE, jamais acceptee telle quelle -- c'est la seule
+#: garantie qu'une faute de frappe ne cree pas une ligne fantome dans le registre.
+#:
+#: Contenu = la flotte MyIA entiere (9 machines), et non seulement les sept
+#: machines que portent les deux listes internes (``gh_identity.HOST_ACCOUNTS`` et
+#: ``secrets/agent_keyring.FLEET_MACHINES``, qui n'ont pas encore ``po-2028`` ni
+#: ``web2``) : le ledger doit pouvoir accepter une observation de *n'importe*
+#: machine reelle de la flotte, y compris une lane qui travaille hors CoursIA.
+#: Les listes internes rattraperont ce decalage ; le gesture ici est de ne pas
+#: refuser une machine qui existe.
 FLEET_MACHINES: frozenset[str] = frozenset(
     {
         "myia-ai-01",
@@ -217,6 +223,7 @@ FLEET_MACHINES: frozenset[str] = frozenset(
         "myia-po-2027",
         "myia-po-2028",
         "myia-web1",
+        "myia-web2",
     }
 )
 
@@ -233,6 +240,7 @@ MACHINE_ALIASES: dict[str, str] = {
     "ai01": "myia-ai-01",
     "ai-1": "myia-ai-01",
     "web-1": "myia-web1",
+    "web-2": "myia-web2",
 }
 
 
