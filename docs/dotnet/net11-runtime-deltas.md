@@ -150,7 +150,7 @@ de l'écart instrument (4,4 %).
 | Rule parsing multilingue (Argumentum) | (String.Split via agrégats, hors ratios article) | −13,2 % / −15,7 % | +3,7 % / +25 % (anomalie non confirmée, cf banc 5) | gain 11 réel sur le parsing de règles ; le 9→10 de la variante 50 règles à re-mesurer fenêtre calme |
 | Collections/LINQ (MGS) | FindAll 0,30 · SequenceEqual ×7,7 | ~0 à +17 % (GC-sensible) | −6 à −26 % | **non couvert** (nos bancs n'exercent pas ces API précises) ; côté 11 : nul/inconclusif |
 | Charge native-dominée (Z3.Linq) | (rien de spécifique promis) | −0,3 à −6,7 % | −5 à −10 % | **rattrapage 10 réel (marshaling), gain 11 nul** |
-| Allocation-heavy pipeline (Automata) | (Stores covariants 0,56 etc.) | +4,1 % / INCONCLUSIF EvilRegex — **signal +27,5 % réfuté le 20/10** (re-mesure : +2,3 % 9→11, dispersion inter-passes 17-40 %) | −10,9 % | **rattrapage 10 réel ; 11 non prouvé sur cette charge** (allocs identiques au Ko près — cohérent : nos pipelines allouent par design, pas par défaut runtime) |
+| Allocation-heavy pipeline (Automata) | (Stores covariants 0,56 etc.) | +4,1 % / INCONCLUSIF EvilRegex — **signal +27,5 % réfuté le 20/10** (re-mesure : +2,3 % 9→11, dispersion inter-passes 47–69 %) | −10,9 % | **rattrapage 10 réel ; 11 non prouvé sur cette charge** (allocs identiques au Ko près — cohérent : nos pipelines allouent par design, pas par défaut runtime) |
 | Kernel notebooks | — | — | — | **le canon 1.0.712001 exige déjà ≥ .NET 10** : le dépôt ne peut pas rester « runtime 9 » pour les carnets même sans migration |
 
 ## Synthèse pour la décision P2 (LTS vs GA, escalade user)
@@ -205,8 +205,9 @@ calme ». Cette section est la réponse mesurée à ce drapeau.
    distribution can have several modes », mValue = 3) — c'est **inherent** à la charge
    (2,13 Mo alloués par opération, pression Gen0), pas un défaut propre à un runtime.
 3. **La fenêtre du 20/10 n'est pas plus calme que celle du 02/10** : la dispersion **entre
-   passes** atteint 40 % (`Pipeline_ConvertDeterminizeMinimize` en net10 : 2557 → 4135 µs ;
-   `Matching_DotNetDelegate` en net11 : 603 → 1241 µs, soit 78 %). Sur ces deux autres
+   passes** — écart (max − min) rapporté à la **moyenne des deux bornes** — vaut 47 %
+   (`Pipeline_ConvertDeterminizeMinimize` en net10 : 2557 → 4135 µs) et 69 %
+   (`Matching_DotNetDelegate` en net11 : 603 → 1241 µs). Sur ces deux autres
    benchmarks elle domine les deltas inter-runtime, et les lignes du 02/10 (`−10,9 %` pour
    `Pipeline_ConvertDeterminizeMinimize`) ne sont **pas** reproduites non plus — dans un sens
    ou dans l'autre. Sur ces deux-là, la re-mesure **ne tranche rien**.
@@ -223,7 +224,7 @@ calme ». Cette section est la réponse mesurée à ce drapeau.
 |---|---|
 | `Pipeline_EvilRegex` : le runtime .NET 11 est-il plus lent que .NET 9 ? | **non mesuré** — +2,3 % 9→11, −1,7 % 10→11 : aucun écart distinguable du bruit |
 | `Pipeline_EvilRegex` : le drapeau INCONCLUSIF du 02/10 | **réfuté** — le signal +27,5 % et le rapport StdDev/médiane ≈ 65 % ne se reproduisent pas |
-| `Pipeline_ConvertDeterminizeMinimize`, `Matching_DotNetDelegate` | **toujours non concluants** — dispersion inter-passes 40-78 % |
+| `Pipeline_ConvertDeterminizeMinimize`, `Matching_DotNetDelegate` | **toujours non concluants** — dispersion inter-passes 47–69 % (écart max−min rapporté à la moyenne des deux bornes) |
 | Les 3 autres bancs encore marqués INCONCLUSIF (`RandomSearch_Sphere10D_50k` (MGS), `PromptSignature.Matches` et `PromptTransform.InterpolateKeys` (semantic-fleet)) | **non re-mesurés** dans ce cycle : même travail de préparation (clone depth-1 + build Release) sur des sous-modules dont les bancs amont relèvent de la coordination ai-01 |
 | Une fenêtre **calme** (runner CI de la machine au repos) avec n ≥ 5 passes | **non obtenue** sur cette machine ; c'est la condition qui reste pour serrer la dispersion inter-passes |
 
