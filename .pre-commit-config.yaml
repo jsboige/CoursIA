@@ -209,3 +209,23 @@ repos:
         pass_filenames: true
         files: '\.ipynb$'
         stages: [pre-commit]
+
+      - id: knots-extracts
+        name: '#21007 — refuse stale Lean-path extractions in KNOTS notebooks (class 1)'
+        description: |
+          Implements the (A) arm of the prevention strategy in #21007 (KNOTS):
+          scans staged KNOTS notebooks for cells that cite a Lean file path
+          (``knot_lean/.../*.lean`` or ``MyIA.AI.Notebooks/.../KNOTS/...``)
+          that does not resolve on disk relative to the notebook directory.
+          Catches the "stale path" class measured in KNOTS-01 (post-#20134 V5.3)
+          where a cell cites a module that has moved, been renamed, or never
+          existed at the claimed location. Pre-commit refuses the commit on
+          any mismatch; KNOTS-01 currently passes (paths resolved at head
+          `b73a74cc3f94`). Scope is KNOTS-01 only (filter `Lean/KNOTS/`);
+          generalisation to KNOTS-02+ and other Lean series is the (B) arm
+          (audit NanoClaw, follow-up). See #21007.
+        entry: python scripts/notebook_tools/check_knots_extracts.py
+        language: system
+        pass_filenames: true
+        files: '^MyIA\.AI\.Notebooks/SymbolicAI/Lean/KNOTS/.*\.ipynb$'
+        stages: [pre-commit]
