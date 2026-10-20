@@ -192,6 +192,9 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-7b-Examples.ipynb	MyIA.AI.Notebooks/Symbo
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-8-Agentic-Proving.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08-Agentic-Proving-Python.ipynb	2026-09-28	myia-ai-01:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-8b-Erdos-Formal-Conjectures-Native.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-08b-Erdos-Formal-Conjectures-Lean.ipynb	2026-09-28	myia-ai-01:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-9-SK-Multi-Agents.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-09-SK-Multi-Agents-Lean-Python.ipynb	2026-09-28	myia-ai-01:CoursIA
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21c-Descente-Budget.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-01-Descente-Budget-Lean-Python.ipynb	2026-10-11	myia-po-2024:CoursIA-2
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21-MIMO-Detection-Flips.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-02-Detection-Flips-Lean-Python.ipynb	2026-10-11	myia-po-2024:CoursIA-2
+MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-21b-MIMO-Converse-Native.ipynb	MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/MIMO-03-Converse-Native-Lean.ipynb	2026-10-11	myia-po-2024:CoursIA-2
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-13-UnsatCores.ipynb	MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-13-UnsatCores-Python.ipynb	2026-09-28	myia-po-2023:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-Python-17-Array-Theory.ipynb	MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-17-Array-Theory-Python.ipynb	2026-09-25	myia-po-2026:CoursIA
 MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-0-Cypherpunk-Origins.ipynb	MyIA.AI.Notebooks/SymbolicAI/SmartContracts/00-Foundations/SC-00-Cypherpunk-Origins-Python.ipynb	2026-09-25	myia-po-2025:CoursIA
@@ -310,6 +313,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-17c-Knots-Companion-Formel.ipynb	MyIA.AI.
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-44-GeometryOfTruth-Python.ipynb	MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22c-GeometryOfTruth-Python.ipynb	2026-10-10	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41-SAE-GeometrieFeatures-Python.ipynb	MyIA.AI.Notebooks/GenAI/PostTraining/PT_15b_geometrie_features_sae.ipynb	2026-10-11	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-41b-Crosscoder-Distillation-Python.ipynb	MyIA.AI.Notebooks/GenAI/PostTraining/PT_15c_crosscoder_distillation.ipynb	2026-10-11	myia-po-2027:CoursIA
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22c-GeometryOfTruth-Python.ipynb	MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9g-Geometrie-de-la-Verite.ipynb	2026-10-11	myia-po-2027:CoursIA
 MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb	MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb	MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb	MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
@@ -317,3 +321,26 @@ MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb	MyIA.AI.Notebooks/II
 MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb	MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb	MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/GameTheory/GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb	2026-10-11	myia-po-2023:CoursIA-2
+
+MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement&AutoML.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-4b-ModelComparison-Validity-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-5b-Series-Temporelles-Classiques-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-8-Clustering-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-8-Clustering.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-10-TSAD-Benchmark-Flaws-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-11-MatrixProfile-Multidim-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2

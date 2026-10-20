@@ -67,7 +67,7 @@ Le dépôt `qinz1yang/differential-geometry` est publié sous **licence open sou
 
 - Les autres origami Lean (`#18205` lui-même, `#18204` décision, `#18605` NeRF/Fourier, `#18706` compression) partagent le **format Origami** mais sont sur des thèmes différents (Lean, GenAI, etc.).
 - L'option B préserve la **convention de numérotation Lean** en cours (accrétions et sous-séries, selon `notebook-accretion-numbering`) — un lake d'enveloppe nommé `differential_lean/` (suffixe `_lean` canonique, i18n Pattern A) s'intègre naturellement.
-- Pas de nouveau namespace, pas de renommage (Tell c.11900 strict applicable : on NE renomme JAMAIS un notebook sans argument pédagogique écrit).
+- Pas de nouveau namespace, pas de renommage (applicable, [notebook-accretion-numbering.md](../../.claude/rules/notebook-accretion-numbering.md) : on NE renomme JAMAIS un notebook sans argument pédagogique écrit).
 
 ### 3.4 Nommage proposé
 
@@ -79,7 +79,7 @@ Sous réserve d'arbitrage coordinateur :
 | Dossier racine | `MyIA.AI.Notebooks/SymbolicAI/Lean/differential_lean/` | sous `Lean/` à côté des pairs |
 | Carnets | `differential_lean_<NN>-<topic>.lean` | numérique + topic |
 
-Tell c.970 strict applicable : **rien n'est créé d'avance**. Le coordinateur déplie le Pli 2 par un commentaire `[PLI N+1 DÉPLIÉ]` qui liste les sous-issues créées.
+**Rien n'est créé d'avance**. Le coordinateur déplie le Pli 2 par un commentaire `[PLI N+1 DÉPLIÉ]` qui liste les sous-issues créées.
 
 ## 4. Pli 2 — Reconnaissance étendue (à déplier)
 
@@ -110,7 +110,7 @@ Voir section 2.1.
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/percolation_lean/` — convention `_lean` suffix
 - `MyIA.AI.Notebooks/SymbolicAI/Lean/geometry_lean/` — convention `_lean` suffix (tranche 2 livrée 2026-10-03 po-2027)
 - `.claude/rules/notebook-accretion-numbering.md` — règle de numérotation
-- `docs/lean/i18n-inventory-cycle-38.md` — inventaire i18n Pattern A sibling pair
+- `docs/transients/2026-07-04-lean-i18n-inventory-cycle-38.md` — inventaire i18n Pattern A sibling pair (lane transiente, tranche 3b #14623)
 
 ## 7. Mesure firsthand et conformité
 
@@ -122,12 +122,12 @@ Voir section 2.1.
 
 ### 7.2 Conformité
 
-- Tell c.4 strict fondateur applicable : 3 sources vérifiées firsthand = (1) l'upstream `qinz1yang/differential-geometry` référencé, (2) la convention i18n Pattern A `_lean` suffix vérifiée sur 4 lakes existants, (3) le périmètre Pli 1 **déclaré** dans la PR (sub-grains 3+4 seulement).
-- Tell c.8236 strict applicable : po-2024 Lean toolchain INVOCABLE mais build lake -- volumetrie Mesure c.1422 = `RECOVERABLE-MACHINE` (Pli 2).
-- Tell c.970-L2 ★★ reaffirmed 42e observation : narrow-cache tari, **créer un sous-grain** dans un EPIC libre (#18205 Pli 1 sources tierces + emplacement) est la voie de sortie structurelle.
-- Tell c.11900 strict reaffirmed 18e : aucun claim conflictuel sur #18205.
-- Tell c.1502 strict fondateur : lane ne merge pas, ripe-signal nominatif.
-- Tell c.1359 strict fondateur : pas de push muet.
+- Applicable ([verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md)) : 3 sources vérifiées firsthand = (1) l'upstream `qinz1yang/differential-geometry` référencé, (2) la convention i18n Pattern A `_lean` suffix vérifiée sur 4 lakes existants, (3) le périmètre Pli 1 **déclaré** dans la PR (sub-grains 3+4 seulement).
+- Applicable ([sota-not-workaround.md](../../.claude/rules/sota-not-workaround.md)) : po-2024 Lean toolchain INVOCABLE mais build lake -- volumetrie Mesure c.1422 = `RECOVERABLE-MACHINE` (Pli 2).
+- Observation ([proactive-coordination.md](../../.claude/rules/proactive-coordination.md), urne umbrella) : narrow-cache tari, **créer un sous-grain** dans un EPIC libre (#18205 Pli 1 sources tierces + emplacement) est la voie de sortie structurelle.
+- Applicable ([lane-claim-protocol.md](../../.claude/rules/lane-claim-protocol.md)) : aucun claim conflictuel sur #18205.
+- Rappel ([CLAUDE.md](../../CLAUDE.md) §A) : lane ne merge pas, ripe-signal nominatif.
+- Rappel ([CLAUDE.md](../../CLAUDE.md) §B.0) : pas de push muet.
 
 Refs #18205, Pli 1 sub-grains 3+4, body 4849 chars édition 2026-09-28.
 

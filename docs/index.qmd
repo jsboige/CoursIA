@@ -58,9 +58,9 @@ Setup environnement, validation notebooks, slash commands.
 
 Plans d'apprentissage par école (ECE, ESGF, EPITA, EPF), scope pédagogique.
 
-### [Grothendieckian lens](cadrage/grothendieckian-lens.md)
+### [Documents de cadrage](cadrage/README.md)
 
-Perspective unificatrice sur les séries du dépôt, à la Grothendieck.
+Index des documents épistémiques de cadrage — un document par communauté interlocutrice (Leiden/SAIR, *Magnifica Humanitas*, Singapore Consensus, AIMA), la clé de lecture grothendieckienne du dépôt et la veille explicite.
 
 ### [Lean](lean/coordinator-workflow.md)
 

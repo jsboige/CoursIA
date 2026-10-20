@@ -117,3 +117,66 @@ def test_explain_branch_calls_the_env_hint():
         "le pointeur d'env doit etre produit DANS la branche --explain : "
         "c'est ce que le workflow consomme (--explain --json)"
     )
+
+
+# === #20868 : arbre partiel (sparse-checkout, blob:none) ===
+
+def test_sparse_checkout_falls_back_to_object_store(tmp_path):
+    """#20868 : un fichier absent du disque mais present dans HEAD doit etre
+    lu depuis l'object store, pas laisse pour None en silence.
+
+    Mesure du constat : sur le depot reel, ICT-Series/pyproject.toml est
+    materialise ; le test reproduit la situation d'un sparse-checkout qui
+    detient le blob dans HEAD sans l'avoir pose sur disque. Le verdict doit
+    alors nommer l'env, en le signalant par `from_object_store=True`.
+    """
+    import subprocess
+    # Depot git jetable pour eviter de polluer le working tree reel.
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "config",
+                    "user.email", "test@example.com"], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "config",
+                    "user.name", "Test"], check=True)
+    serie = tmp_path / "SerieSparse"
+    serie.mkdir()
+    pyproject = serie / "pyproject.toml"
+    pyproject.write_text('[project]\nrequires-python = ">=3.11,<3.12"\n',
+                         encoding="utf-8")
+    nb = serie / "nb.ipynb"
+    nb.write_text("{}", encoding="utf-8")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "commit", "-q",
+                    "-m", "sparse fixture"], check=True)
+    # Sparse-checkout simule : on garde le commit, on retire le fichier.
+    pyproject.unlink()
+    assert not pyproject.exists()
+
+    hint = ckd.canonical_env_hint("SerieSparse/nb.ipynb", root=str(tmp_path))
+
+    assert hint is not None, (
+        "l'env epingle existe dans HEAD (commit) : le garde doit le trouver "
+        "via l'object store, pas rendre None en silence sur OSError"
+    )
+    assert hint["artifact"] == "SerieSparse/pyproject.toml"
+    assert hint["requires_python"] == ">=3.11,<3.12"
+    assert hint.get("from_object_store") is True, (
+        "le hint doit signaler qu'il vient de l'object store, pour que le "
+        "lecteur sache que le verdict de drift est sensible a la materialisation"
+    )
+
+
+def test_sparse_checkout_no_artifact_in_head_returns_none(tmp_path):
+    """#20868 contre-test : si l'OSError est lie a un fichier vraiment absent
+    du depot (pas un sparse-checkout, juste pas la), le garde ne doit pas
+    inventer un pointeur. None reste la bonne reponse -- l'absence EST
+    l'information, cf docstring de `canonical_env_hint`.
+
+    Sur un `tmp_path` qui n'est pas un depot git, `_git_show_head` rend None
+    (pas de git, ou git sans objet) ; le `continue` ramene au comportement
+    anterieur a #20868, qui etait correct dans ce cas.
+    """
+    serie = tmp_path / "Serie"
+    serie.mkdir()
+    (serie / "nb.ipynb").write_text("{}", encoding="utf-8")
+    # Pas de pyproject, pas de requirements, pas de .git.
+    assert ckd.canonical_env_hint("Serie/nb.ipynb", root=str(tmp_path)) is None

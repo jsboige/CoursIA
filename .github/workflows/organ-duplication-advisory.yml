@@ -32,6 +32,8 @@ on:
     paths:
       - '**/*.py'
       - '**/*.ipynb'
+      # Lakes Lean (#20210) : declarations + citations de source (index derive a l execution).
+      - '**/*.lean'
       # Self-cover (#8822) : l'organe se liste lui-meme, sinon il ne peut
       # plus se re-evaluer une fois ses paths sortis du diff.
       - 'scripts/audit/detect_organ_duplication.py'
