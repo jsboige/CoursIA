@@ -48,6 +48,31 @@ Prerequisites on Mac/Linux:
 
 The bash launcher resolves the Python interpreter via `CONDA_PREFIX` if set, otherwise via `conda env list`. This matches the PowerShell script's `$CondaEnv = "coursia-ml-training"` + explicit Python path.
 
+## Plafond memoire et exclusion N=1 (Windows)
+
+Les trois lanceurs `.ps1` passent par le lanceur commun `launch_capped.ps1`,
+qui fait tourner l'entrainement sous `scripts/ci/run_guarded.py` :
+
+- **plafond dur de 48 Go** de memoire commitee (Job Object Windows, processus et
+  enfants) : au-dela, les allocations **echouent** au lieu de faire swapper la
+  machine ;
+- **garde d'admission** : le demarrage est refuse si la charge de commit de la
+  machine depasse 85 % ; une mesure illisible refuse aussi (fail-CLOSED) ;
+- **exclusion N=1** : un seul entrainement CoursIA a la fois sur la machine
+  (verrou exclusif) ;
+- **anti-orphelin** : le superviseur tient le Job Object, donc l'entrainement
+  meurt avec lui.
+
+Le lanceur commun s'appelle seul :
+
+```powershell
+.\launch_capped.ps1 -FilePath C:\...\python.exe -ArgumentList @("train_lstm.py") `
+    -LogPath D:\out\train.log -ErrPath D:\out\train.err -PidPath D:\out\PID.txt
+```
+
+Les companions `.sh` (macOS/Linux) ne sont pas concernes : le Job Object est
+une API Windows, l'equivalent Linux etant un cgroup (`memory.max`).
+
 ## Monitoring
 
 ### Windows
@@ -63,8 +88,12 @@ nvidia-smi -i 2 -l 5
 Get-Process -Id (Get-Content outputs\ai01_lstm_run5_<timestamp>\PID.txt)
 
 # Stop training
-Stop-Process -Id (Get-Content outputs\ai01_lstm_run5_<timestamp>\PID.txt)
+Stop-Process -Id (Get-Content outputs\ai01_lstm_run5_<timestamp>\PID.txt.supervisor.txt)
 ```
+
+Le fichier `PID.txt` porte le PID de **l'entrainement**, `PID.txt.supervisor.txt`
+celui du **superviseur** : c'est le superviseur qu'on arrete, et le Job Object
+Tue alors l'entrainement avec lui.
 
 ### macOS / Linux
 
