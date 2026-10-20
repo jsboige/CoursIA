@@ -346,15 +346,67 @@ class TestDiffParity(unittest.TestCase):
         self.assertEqual(keys, base_keys)
 
     def test_new_file_paragraphs_are_added(self):
-        """Statut A : tous les paragraphes sont legitimement neufs."""
-        added, files, incidents = scan_diff("7a0521584^...7a0521584")
+        """Statut A : tous les paragraphes sont legitimement neufs.
+
+        Autonome depuis le 2026-10-21 : le fixture citait un commit REEL
+        (``7a0521584``, SC-09) dont le carnet a ete nettoye ensuite (#20252,
+        ``ed183658161`` -- les corrigenda y ont ete retires), alors que
+        ``scan_diff`` lit la TETE dans l'arbre de travail. Le fixture est
+        mort sans qu'une ligne de ce test change, et le rouge ne disait plus
+        rien de l'organe : il tombait sur ``main`` pour toute PR (mesure du
+        2026-10-21, Scripts Tests (CPU)).
+
+        Un depot temporaire mesure le CONTRAT (statut A -> tous les
+        paragraphes sont neufs) sans dependre de l'histoire du depot ni du
+        contenu courant d'un carnet.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            (repo / "Serie").mkdir()
+            (repo / "Serie" / "01-Demo.ipynb").write_text(
+                json.dumps(
+                    {
+                        "cells": [
+                            {
+                                "cell_type": "markdown",
+                                "source": [
+                                    "## Corrigendum c.1209 (depouillement STV)"
+                                ],
+                            }
+                        ]
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            def git(*argv: str) -> str:
+                return subprocess.run(
+                    ["git", "-c", "user.name=fixture",
+                     "-c", "user.email=fixture@example.invalid", *argv],
+                    cwd=repo, capture_output=True, text=True,
+                    encoding="utf-8", check=True,
+                ).stdout.strip()
+
+            git("init", "-q")
+            # Une base VIDE d'abord : le fixture d'origine comparait
+            # ``<sha>^...<sha>`` et une racine sans parent rend la plage
+            # ambigue ("unknown revision"). Le contrat vise un commit qui
+            # AJOUTE le carnet a une base ou il n'existe pas.
+            git("commit", "-q", "--allow-empty", "-m", "base vide")
+            git("add", ".")
+            git("commit", "-q", "-m", "fixture : carnet neuf")
+            sha = git("rev-parse", "HEAD")
+
+            previous = os.getcwd()
+            os.chdir(repo)
+            try:
+                added, files, incidents = scan_diff(f"{sha}^...{sha}")
+            finally:
+                os.chdir(previous)
+
         self.assertEqual(incidents, [], "un ajout franc ne doit pas etre un incident")
         self.assertTrue(added, "le commit fondateur ajoute un corrigendum dense")
-        self.assertIn(
-            "MyIA.AI.Notebooks/GameTheory/SocialChoice/"
-            "09-Committees-STV-Monroe-ChamberlinCourant.ipynb",
-            files,
-        )
+        self.assertIn("Serie/01-Demo.ipynb", files)
 
     def test_broken_base_is_incident_not_refusal(self):
         """Base illisible : INCONNU (rc=2), jamais un refus fantome.
