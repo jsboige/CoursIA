@@ -395,7 +395,7 @@ jobs:
       - name: Dispatch lakes from manifest
         id: dispatch
         run: |
-          python scripts/lean/lake_matrix_dispatch.py \
+          python3 scripts/lean/lake_matrix_dispatch.py \
             --changed-file "$RUNNER_TEMP/changed.txt" \
             --outputs-file "$GITHUB_OUTPUT"
           echo "--- lake-set ---"
