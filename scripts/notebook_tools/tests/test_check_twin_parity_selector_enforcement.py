@@ -114,6 +114,21 @@ def test_per_pair_unknown_family_returns_rc2(monkeypatch, capsys):
     assert "Familles connues" in err
 
 
+def test_per_pair_unknown_pair_returns_rc2(monkeypatch, capsys):
+    """--check --per-pair --base HEAD --pair Inexistante : rc 2 + liste des
+    noms connus (symetrique du cas famille, point 3 de la review -- la
+    branche la plus neuve du diff etait la seule non epinglee)."""
+    monkeypatch.setattr(sys, "argv",
+                        ["check_twin_parity.py", "--check", "--per-pair",
+                         "--base", "HEAD", "--pair", "Inexistante"])
+    rc = main()
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "--pair" in err
+    assert "inconnue" in err
+    assert "Noms connus" in err
+
+
 # ---------------------------------------------------------------------------
 # Non-regression : --summary-by-verdict --json reste valide
 # ---------------------------------------------------------------------------
