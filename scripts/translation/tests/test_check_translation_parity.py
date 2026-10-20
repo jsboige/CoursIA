@@ -739,11 +739,12 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # sans mettre a jour cette ligne, ce qui a rougi test_full_repo_state_passes_parity
 # (found 14, declared 13) sur main pur et sur toute PR path-filtree scripts/**
 # (diagnostic po-2027, dashboard 2026-10-19T06:10Z). Total apres fusion : 13 + 1 = 14.
-# Resolution du merge origin/main (2026-10-19, PR #21296) : les deux entrees
-# ci-dessus declarent chacune « 13 + 1 = 14 » depuis des bases divergentes --
-# main porte desormais ANALYSE-07_en (perimetre 14), cette branche ajoute
-# research_archive_en. Total apres fusion des deux lignees : 14 + 1 = 15.
-EXPECTED_PAIR_COUNT = 15
+# Perimetre declare apres fusion des deux lignees (merge origin/main du 2026-10-20,
+# PR #21296) : main declare 15 paires (dont le jumeau Lean natif
+# ANALYSE-06-Sensibilite-2026-Lean_en ajoute par #19916, bump 14->15 par #21535),
+# et cette branche ajoute une paire de plus -- research_archive_en (QuantConnect,
+# Crypto-MultiCanal). Le compte mesure sur l'arbre fusionne est donc 16.
+EXPECTED_PAIR_COUNT = 16
 
 
 def _collect_parity_failures(repo_root: Path,
