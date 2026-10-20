@@ -119,7 +119,7 @@ chmod +x "$TEST_DIR/bin/docker"
 
 cat > "$TEST_DIR/bin/gh" <<'STUB'
 #!/usr/bin/env bash
-if echo "$@" | grep -q 'registration-token'; then echo "FAKE_TOKEN"; exit 0; fi
+if echo "$@" | grep -q 'registration-token'; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
 if echo "$@" | grep -q 'actions/runners'; then echo '{"runners":[]}'; exit 0; fi
 exit 0
 STUB
@@ -411,7 +411,7 @@ echo "Test 7 : COURSIA_RUNNER_GH_ACCOUNT epingle le compte (epinglage #14259)"
 #!/usr/bin/env bash
 echo "$@" >> "$GH_CALLS_LOG"
 if echo "$@" | grep -q 'auth token'; then echo "FAKE_ACCOUNT_TOKEN"; exit 0; fi
-if echo "$@" | grep -q 'registration-token'; then echo "FAKE_TOKEN"; exit 0; fi
+if echo "$@" | grep -q 'registration-token'; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
 if echo "$@" | grep -q 'actions/runners'; then echo '{"runners":[]}'; exit 0; fi
 exit 0
 STUB
@@ -454,7 +454,7 @@ echo "Test 8 : status nomme la contradiction conteneurs vs inventaire (Defaut #1
   mkdir -p "$TEST_DIR/bin8" "$TEST_DIR/state-8"
   cat > "$TEST_DIR/bin8/gh" <<'STUB'
 #!/usr/bin/env bash
-if echo "$@" | grep -q 'registration-token'; then echo "FAKE_TOKEN"; exit 0; fi
+if echo "$@" | grep -q 'registration-token'; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
 if echo "$@" | grep -q 'actions/runners'; then echo '{"runners":[]}'; exit 0; fi
 exit 0
 STUB
@@ -881,7 +881,7 @@ STUB
   cat > "$TEST_DIR/bin11/gh" <<'STUB'
 #!/usr/bin/env bash
 echo "$@" >> "$GH_CALLS_LOG"
-if echo "$@" | grep -q 'registration-token'; then echo "FAKE_TOKEN"; exit 0; fi
+if echo "$@" | grep -q 'registration-token'; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
 exit 0
 STUB
   chmod +x "$TEST_DIR/bin11/gh"
