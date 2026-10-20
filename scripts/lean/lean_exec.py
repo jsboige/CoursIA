@@ -1592,6 +1592,7 @@ def run_command(
     cwd: str | None = None,
     stdout_file: str | None = None,
     stderr_file: str | None = None,
+    stdin_file: str | None = None,
 ) -> int:
     cfg = config()
     cap = cap_override if cap_override is not None else cfg["cap"]
@@ -1624,6 +1625,8 @@ def run_command(
     # passe la forme HOTE — l'organe traduit lui-meme vers le dialecte WSL.
     start_dir = Path(cwd).resolve() if cwd else Path.cwd()
     result["cwd"] = str(start_dir)
+    if stdin_file is not None:
+        result["stdin_file"] = str(stdin_file)
     lake_root = find_lake_root(start_dir)
     result["tree"] = str(lake_root) if lake_root else None
 
@@ -1648,6 +1651,7 @@ def run_command(
     budgets: dict = {}
     child_out_fh = None
     child_err_fh = None
+    child_in_fh = None
     queue_file: Path | None = None
     enqueued_at: float | None = None
     wait_deadline = (
@@ -1662,7 +1666,7 @@ def run_command(
         'insufficient' | 'cap' | 'backend' | 'tree' | 'spawn' | 'internal')
         pose dans result['reason']."""
         nonlocal proc, job, confined, tree_lease, granted, budgets
-        nonlocal child_out_fh, child_err_fh
+        nonlocal child_out_fh, child_err_fh, child_in_fh
         with AdmissionLock():
             sweep_stale_runs()
             # NB : pas de sweep des tree leases ici — acquire_tree_lease
@@ -1801,6 +1805,22 @@ def run_command(
             if stderr_file is not None:
                 child_err_fh = open(stderr_file, "wb")
                 popen_kwargs["stderr"] = child_err_fh
+            # Entree standard par fichier (capacite stdin, #15666) : le
+            # mode ``lake env lean --stdin`` de lean_server lit un snippet
+            # — meme mecanisme de handle garanti que la capture par fichier
+            # (un pipe spawn confine herite mal sous Windows, un handle
+            # fichier jamais). Le fichier est lu en binaire et streame tel
+            # quel ; wsl.exe le forwarde vers l'enfant Linux si besoin.
+            if stdin_file is not None:
+                try:
+                    child_in_fh = open(stdin_file, "rb")
+                except OSError as exc:
+                    result.update(
+                        exit_code=EXIT_REFUSED, status="refused",
+                        reason=f"stdin_file illisible: {exc}",
+                    )
+                    return "spawn"
+                popen_kwargs["stdin"] = child_in_fh
             if os.name == "nt":
                 job = WindowsJob(cfg["mem_frac"], cfg["cpu_pct"])
                 # SUSPENDED -> assign -> resume : la racine est dans le job
@@ -1994,7 +2014,7 @@ def run_command(
         job.close()  # kill-on-close : dernier filet, meme sur chemin lent
     # Handles de capture fermes avant le verdict : le contenu est visible
     # pour le demandeur des la sortie de l'organe (flush + close).
-    for fh in (child_out_fh, child_err_fh):
+    for fh in (child_out_fh, child_err_fh, child_in_fh):
         if fh is not None:
             try:
                 fh.close()
@@ -2739,6 +2759,10 @@ def main(argv: list[str] | None = None) -> int:
     p_run.add_argument("--stderr-file", default=None,
                        help="Fichier de capture du stderr de l'enfant "
                             "(memes raisons que --stdout-file).")
+    p_run.add_argument("--stdin-file", default=None,
+                       help="Fichier branche sur l'entree standard de "
+                            "l'enfant (mode stdin : 'lake env lean "
+                            "--stdin' de lean_server lit un snippet).")
     p_run.add_argument("cmd", nargs=argparse.REMAINDER,
                        help="commande apres --")
 
@@ -2827,6 +2851,7 @@ def main(argv: list[str] | None = None) -> int:
                 wait_s=args.wait, caller=args.caller,
                 backend=args.backend, repin=args.repin, cwd=args.cwd,
                 stdout_file=args.stdout_file, stderr_file=args.stderr_file,
+                stdin_file=args.stdin_file,
             )
     except Exception as exc:  # l'organe echoue visiblement, jamais en trace
         print(f"[lean_exec] internal error: {exc}", file=sys.stderr)
