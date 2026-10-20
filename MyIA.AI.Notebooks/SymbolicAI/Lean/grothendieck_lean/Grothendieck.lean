@@ -60,6 +60,7 @@ import Grothendieck.LocalSurjectivitySpectrum
 import Grothendieck.MathlibMap
 import Grothendieck.MayerVietorisSquare
 import Grothendieck.Monads
+import Grothendieck.Monodromie
 import Grothendieck.PlusConstruction
 import Grothendieck.MonoidalCategories
 import Grothendieck.PullbackCoversLaws
