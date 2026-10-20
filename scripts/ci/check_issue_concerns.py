@@ -140,6 +140,13 @@ REMARK_ASK = re.compile(
 #: contient « a verifier » dans son corps n'appelle pas de reponse. Sans cette
 #: borne, un inventaire de 187 cellules se classait en remarque (mesure du
 #: 2026-10-20, c6271482844 sur #21424).
+#:
+#: Cette borne est un **plancher, pas une recall** : une remarque dont la demande
+#: est formulee au-dela de la fenetre n'est pas comptee — faux negatif assume, que
+#: l'arbitrage par lecture rattrape. Le sens a retenir : la fenetre ne garantit
+#: rien sur ce qui se passe apres elle, elle borne seulement ce que l'instrument
+#: pretend voir. C'est la contrepartie de ``remarks_lane_report_shape`` : rien
+#: n'est ecarte en silence, mais tout n'est pas vu non plus.
 REMARK_WINDOW = 600
 
 #: Forme d'un **rapport de lane** ecrit sous le login partage. Ce n'est pas un
