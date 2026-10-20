@@ -12,6 +12,14 @@ Deux sources d'extraction par PDF, par confiance decroissante :
      sert le fichier en streaming non hydrate (pattern herite de
      `check_bibliography_pdf_integrity.py`).
 
+Une **troisieme source** : le **crosswalk A1**. Quand le gisement detient la
+*version publiee* d'un preprint, ni le nom de fichier ni la premiere page ne
+portent l'identifiant arXiv cite par la serie -- le PDF ne porte que le DOI.
+Les CSVs de resolution A1 portent alors la colonne `chemin_gisement` : c'est
+l'autorite qui relie l'identifiant au fichier. Sans ce crosswalk, le controle
+« l'avons-nous deja ? » echoue sur ces cas et l'acquisition fabrique un
+doublon (cas mesure : `2401.05375`).
+
 Aucun fichier du gisement n'est modifie : le catalogue est un CSV additif,
 date, ecrit a la racine du gisement.
 
@@ -19,6 +27,7 @@ Usage:
   python scripts/build_bibliography_identifier_catalog.py
   python scripts/build_bibliography_identifier_catalog.py --root "G:/Mon Drive/MyIA/IA/Bibliographie IA" --out catalogue.csv
   python scripts/build_bibliography_identifier_catalog.py --a1-csv arXiv-A1-resolution.csv --a1-csv DOI-A1-resolution.csv
+  python scripts/build_bibliography_identifier_catalog.py --catalogue-entrant IDENTIFIANTS-catalogue-2026-10-14.csv --a1-csv arXiv-A1-resolution.csv
 
 Options:
   --root PATH        Racine du gisement (defaut G:/Mon Drive/MyIA/IA/Bibliographie IA)
@@ -27,6 +36,8 @@ Options:
   --max-seconds S    Budget global ; arret propre entre deux fichiers (defaut 600)
   --a1-csv PATH      CSV A1 a joindre ; rend pour chaque identifiant son verdict A1
                      et le chemin resolu par le catalogue (repeter pour plusieurs CSVs)
+  --catalogue-entrant PATH  Catalogue existant a recharger au lieu de rescanner
+                     le gisement (le crosswalk A1 y est applique)
   --json PATH        Rapport structure optionnel
 
 Limite connue : pas de delai par fichier (heritage du script d'integrite) ;
@@ -49,6 +60,11 @@ from datetime import date
 from pathlib import Path
 
 DEFAULT_ROOT = "G:/Mon Drive/MyIA/IA/Bibliographie IA"
+
+#: Source d'extraction du crosswalk A1 : l'identifiant ne vient ni du nom de
+#: fichier ni de la premiere page, mais de la **resolution A1** qui relie
+#: l'identifiant cite au fichier canonique (version publiee sans identifiant).
+SOURCE_CROSSWALK = "crosswalk_a1"
 
 CONTEXTE_MAX = 120
 
@@ -290,6 +306,95 @@ def joindre_a1(catalogue: list[dict], chemins_csv: list[str]) -> dict:
     return {"a1": resultats}
 
 
+def _normaliser_chemin(chemin: str) -> str:
+    """Chemin de gisement en forme posix relative.
+
+    Les CSVs de resolution A1 melangent les separateurs (``Automata\\2025 - ...``
+    et ``Automata/2025 - ...``) ; le catalogue, lui, est en posix.
+    """
+    texte = (chemin or "").strip().replace("\\", "/")
+    while texte.startswith("./"):
+        texte = texte[2:]
+    return texte
+
+
+def appliquer_crosswalk_a1(catalogue: list[dict], chemins_csv: list[str],
+                           root: Path) -> dict:
+    """Applique le crosswalk A1 : un identifiant cite -> le chemin canonique.
+
+    Les CSVs de resolution A1 portent une colonne ``chemin_gisement`` : c'est
+    l'autorite humaine qui relie un identifiant a un fichier du gisement quand
+    la **version publiee** ne porte ni l'identifiant dans son nom ni sur sa
+    premiere page (cas mesure : ``2401.05375`` -> Adaptive Behavior 2025,
+    ou le PDF ne porte que le DOI). Sans ce crosswalk, le controle « l'avons-nous
+    deja ? » echoue sur ces cas, et l'acquisition fabrique un doublon.
+
+    Deux garde-fous :
+    - le crosswalk n'est emis que si le fichier **existe** dans le gisement --
+      on ne relie jamais un identifiant a un chemin absent ;
+    - si l'identifiant est deja dans le catalogue (pour un autre chemin), on ne
+      ajoute rien : deux chemins pour un identifiant, ce serait un doublon.
+    """
+    index = {(ligne["type_id"], ligne["id"].lower()) for ligne in catalogue}
+    stats = {"appliques": 0, "deja_presents": 0, "sans_fichier": 0,
+             "sans_chemin": 0, "par_type": {}}
+    for chemin_csv in chemins_csv:
+        with open(chemin_csv, newline="", encoding="utf-8-sig") as fh:
+            lecteur = csv.DictReader(fh)
+            champs = lecteur.fieldnames or []
+            colonne_id = next((c for c in ("id", "doi", "arxiv") if c in champs), None)
+            if colonne_id is None:
+                continue
+            colonne_chemin = "chemin_gisement" if "chemin_gisement" in champs else None
+            for ligne in lecteur:
+                identifiant = (ligne.get(colonne_id) or "").strip()
+                if not identifiant:
+                    continue
+                if colonne_chemin is None:
+                    stats["sans_chemin"] += 1
+                    continue
+                chemin = _normaliser_chemin(ligne.get(colonne_chemin) or "")
+                if not chemin:
+                    stats["sans_chemin"] += 1
+                    continue
+                type_id = "doi" if colonne_id == "doi" else "arxiv"
+                cle = (type_id, identifiant.lower())
+                if cle in index:
+                    stats["deja_presents"] += 1
+                    continue
+                if not (root / chemin).is_file():
+                    stats["sans_fichier"] += 1
+                    continue
+                catalogue.append({
+                    "chemin_gisement": chemin,
+                    "type_id": type_id,
+                    "id": identifiant,
+                    "source": SOURCE_CROSSWALK,
+                    "confiance": "elevee",
+                    "contexte": "resolution A1 : identifiant cite -> chemin canonique",
+                })
+                index.add(cle)
+                stats["appliques"] += 1
+                stats["par_type"][type_id] = stats["par_type"].get(type_id, 0) + 1
+    return stats
+
+
+def lire_catalogue(entree: Path) -> list[dict]:
+    """Relit un catalogue CSV deja ecrit (cle interne ``source``)."""
+    lignes: list[dict] = []
+    with open(entree, newline="", encoding="utf-8-sig") as fh:
+        for ligne in csv.DictReader(fh):
+            lignes.append({
+                "chemin_gisement": ligne["chemin_gisement"],
+                "type_id": ligne["type_id"],
+                "id": ligne["id"],
+                "source": ligne.get("source_extraction") or "",
+                "confiance": ligne.get("confiance") or "",
+                "contexte": ligne.get("contexte") or "",
+            })
+    return lignes
+
+
 def ecrire_csv(catalogue: list[dict], sortie: Path) -> None:
     sortie.parent.mkdir(parents=True, exist_ok=True)
     champs = ["chemin_gisement", "type_id", "id", "source_extraction",
@@ -317,6 +422,10 @@ def main() -> int:
     ap.add_argument("--max-seconds", type=float, default=600.0, help="budget global")
     ap.add_argument("--a1-csv", action="append", default=None,
                     help="CSV A1 a joindre (repeter pour plusieurs)")
+    ap.add_argument("--catalogue-entrant", default=None,
+                    help="CSV de catalogue existant a recharger au lieu de "
+                         "rescanner le gisement (le crosswalk A1 est applique "
+                         "a la sortie)")
     ap.add_argument("--json", default=None, help="rapport structure")
     ap.add_argument("--quiet", action="store_true", help="pas de progres")
     args = ap.parse_args()
@@ -326,8 +435,34 @@ def main() -> int:
         sys.stderr.write("ERREUR: racine introuvable: %s\n" % root)
         return 2
 
-    res = construire_catalogue(root, args.pages, args.max_seconds, args.quiet)
-    catalogue, rapport = res["catalogue"], res["rapport"]
+    if args.catalogue_entrant:
+        catalogue = lire_catalogue(Path(args.catalogue_entrant))
+        rapport = {
+            "gisement": str(root),
+            "catalogue_entrant": str(args.catalogue_entrant),
+            "pdfs_vus": 0,
+            "pdfs_avec_identifiant": 0,
+            "entrees_catalogue": len(catalogue),
+            "identifiants_distincts": len({(l["type_id"], l["id"].lower())
+                                           for l in catalogue}),
+            "par_type": {t: sum(1 for l in catalogue
+                                if l["type_id"] == t) for t in ("arxiv", "doi")},
+            "par_source": {s: sum(1 for l in catalogue if l["source"] == s)
+                           for s in ("nom_fichier", "premiere_page", SOURCE_CROSSWALK)},
+            "illisibles": [],
+            "duree_s": 0.0,
+        }
+    else:
+        res = construire_catalogue(root, args.pages, args.max_seconds, args.quiet)
+        catalogue, rapport = res["catalogue"], res["rapport"]
+
+    # Le crosswalk A1 est applique AVANT l'ecriture : le catalogue produit
+    # relie alors l'identifiant cite au fichier canonique, et la jointure
+    # A1 mesure ensuite le gain.
+    if args.a1_csv:
+        crosswalk = appliquer_crosswalk_a1(catalogue, args.a1_csv, root)
+        rapport["crosswalk_a1"] = crosswalk
+        rapport.setdefault("par_source", {})[SOURCE_CROSSWALK] = crosswalk["appliques"]
 
     sortie = Path(args.out) if args.out else \
         root / ("IDENTIFIANTS-catalogue-%s.csv" % date.today().isoformat())
@@ -340,9 +475,12 @@ def main() -> int:
     print("Entrees : %d ; identifiants distincts : %d (arxiv %d, doi %d)"
           % (rapport["entrees_catalogue"], rapport["identifiants_distincts"],
              rapport["par_type"]["arxiv"], rapport["par_type"]["doi"]))
-    print("Sources : nom_fichier %d, premiere_page %d ; duree %.1fs"
+    print("Sources : nom_fichier %d, premiere_page %d, %s %d ; duree %.1fs"
           % (rapport["par_source"]["nom_fichier"],
-             rapport["par_source"]["premiere_page"], rapport["duree_s"]))
+             rapport["par_source"]["premiere_page"],
+             SOURCE_CROSSWALK,
+             rapport["par_source"].get(SOURCE_CROSSWALK, 0),
+             rapport["duree_s"]))
     for illisible in rapport["illisibles"][:10]:
         print("  ILLISIBLE : %s (%s)" % (illisible["chemin_gisement"],
                                          illisible["erreur"][:100]))
