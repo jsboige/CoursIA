@@ -25,6 +25,32 @@ négatif *mord* — écarts relatifs $1/3$ et $1/2$ — et son point aveugle est
 seul point serait passé). Le carnet porte aussi son **périmètre honnête** (§7) :
 précision ≠ bornes certifiées, identifiée ≠ dérivée.
 
+## Feuille de route
+
+La série n'est pas née d'un carnet isolé : elle est la **veine V3** de la
+distillation [#20428](https://github.com/jsboige/CoursIA/issues/20428), son aînée
+V1 ([Marches](../Marches/README.md)) est déjà fusionnée, et son fil directeur est
+la classification du harnais BootLoops — polylogarithmes → elliptique → K3 →
+Calabi-Yau. Les carnets suivants sont des **candidats bornés**, arbitrés à
+l'usage — aucun n'est promis :
+
+- **Integrales-02 — Le triangle massique, l'entrée dans le monde elliptique**
+  (candidat) : dès qu'une masse interne apparaît, la forme fermée en
+  $\mathrm{Cl}_2$ disparaît — les périodes de l'objet vivent sur une courbe
+  elliptique. Le carnet mesurerait la transition : accord quadrature contre
+  intégration sur la courbe, et échec *honnête* de l'identification de constantes
+  (l'anneau déclaré ne contient plus $\mathrm{Cl}_2$).
+- **Integrales-03 — La bulle et la première divergence** (candidat) : deux
+  propagateurs en $d = 4$, la divergence logarithmique UV, et la régularisation
+  introduite comme le carnet 01 traite ses limites — un paramètre, une échelle,
+  une limite finie exhibée.
+
+Le nom et le toit définitifs de la série restent un **point de décision ouvert**
+(#20428, point de décision 1 : la « série de physique numérique », question
+partagée avec [#19741](https://github.com/jsboige/CoursIA/issues/19741)) ;
+`Probas/Applications/Integrales/` est l'hôte intérimaire, cohérent avec l'aînée
+V1 dans `Applications/Marches/`.
+
 ## Ponts vers le reste du dépôt
 
 - **Marches** ([../Marches/](../Marches/README.md)) : les deux carnets calculent
