@@ -624,7 +624,10 @@ def render_text(reports: list[IssueReport], since: str, state: str, scanned: int
         f"lane ({by_sig or 'aucune'}).",
     ]
     if not unresolved:
-        lines.append("Aucun — le fil est propre sur la fenetre.")
+        if sum(excluded.values()):
+            lines.append("Aucun non resolu — les commentaires ecartes sont comptes en tete.")
+        else:
+            lines.append("Aucun — le fil est propre sur la fenetre.")
         return "\n".join(lines)
     grouped: dict[int, IssueReport] = {}
     for report, _ in unresolved:
@@ -738,7 +741,9 @@ def main(argv: list[str] | None = None) -> int:
                     reports,
                     key=lambda r: (not r.gesture_after, r.number),
                 )
-                if r.unresolved
+                # Les rapports a ecarts seuls gardent leur entree : le total
+                # publie les compte, l'entree montre par quelle signature.
+                if r.unresolved or r.excluded
             ],
         }
         print(json.dumps(payload, ensure_ascii=False, indent=2))
