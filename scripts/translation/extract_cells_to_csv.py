@@ -429,10 +429,13 @@ def main() -> int:
         "--full",
         action="store_true",
         help="Mode plein périmètre (étape 2 #10329). Quand combiné avec --update, "
-        "rafraîchit TOUS les notebooks référencés dans le CSV (et tout nouveau "
-        "notebook FR trouvé sous args.input), même ceux dont la dernière modif "
-        "git est antérieure au dernier run. Sans --full, seuls les notebooks "
-        "passés en input sont rafraîchis.",
+        "rafraîchit TOUS les notebooks référencés dans le CSV, même ceux dont la "
+        "dernière modif git est antérieure au dernier run. Le scan est BORNÉ aux "
+        "répertoires de série dérivés du CSV (#21514) : tout nouveau notebook FR "
+        "trouvé là est appendé, mais aucun notebook d'une autre série ne l'est. "
+        "Les chemins passés en input ne servent que de repli, quand aucune borne "
+        "n'est dérivable du CSV. Sans --full, seuls les notebooks passés en input "
+        "sont rafraîchis.",
     )
     args = parser.parse_args()
 
@@ -495,11 +498,21 @@ def main() -> int:
             if abs_rd.exists() and abs_rd.is_dir() and abs_rd not in bounded_inputs:
                 bounded_inputs.append(abs_rd)
         if bounded_inputs:
-            narrowed = [str(p) for p in existing_inputs if p.resolve() not in bounded_inputs]
-            if narrowed:
+            def _covered_by_bound(p: Path) -> bool:
+                # Un input égal à une borne, ou situé DESSOUS, voit ses carnets
+                # scannés via cette borne : l'annoncer « ignoré » serait faux
+                # (#21518). Seul un input hors de toute borne est réellement
+                # écarté comme racine de scan.
+                rp = p.resolve()
+                return any(rp == b or b in rp.parents for b in bounded_inputs)
+
+            unused_roots = [str(p) for p in existing_inputs if not _covered_by_bound(p)]
+            if unused_roots:
                 print(
                     "NOTE : scan --full borné aux répertoires de série du CSV ; "
-                    "input(s) CLI hors de ces bornes ignoré(s) : " + ", ".join(narrowed),
+                    "input(s) CLI non utilisé(s) comme racine de scan : "
+                    + ", ".join(unused_roots)
+                    + " (leurs carnets ne sont lus que s'ils tombent dans une borne)",
                     file=sys.stderr,
                 )
             existing_inputs = bounded_inputs

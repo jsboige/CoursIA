@@ -248,6 +248,112 @@ def test_full_mode_does_not_absorb_notebooks_outside_series(tmp_path, monkeypatc
     assert rows[0]["src_hash"] != "STALE_IN", "la ligne de la serie doit rester rafraichie"
 
 
+def test_full_mode_falls_back_to_cli_input_without_derivable_bound(tmp_path, monkeypatch):
+    """#21518 reserve 3 : sans borne derivable du CSV, l'input CLI reste la
+    racine de scan (garantie de non-regression du repli).
+
+    Toutes les lignes du CSV pointent un notebook a la RACINE du depot
+    (chemin sans separateur, donc ``len(parts) < 2``) : aucun repertoire de
+    serie n'est derivable. L'input CLI doit alors etre honore exactement
+    comme avant #21514 (scan recursif plein perimetre).
+    """
+    nb_root = tmp_path / "Root.ipynb"
+    _make_notebook(nb_root, "root1", text_fr="## Root")
+    nb_new = tmp_path / "fresh" / "Fresh.ipynb"
+    _make_notebook(nb_new, "fresh1", text_fr="## Fresh")
+
+    csv_path = _make_csv(
+        tmp_path / "synced.csv",
+        PIVOT_HEADER,
+        [
+            {"notebook": nb_root.name, "cell_id": "root1",
+             "cell_type": "markdown", "src_lang": "fr", "src_hash": "STALE_ROOT",
+             "text_fr": "## Root", "hash_fr": "FR_ROOT"},
+        ],
+    )
+
+    monkeypatch.setattr(sys, "argv", [
+        "extract_cells_to_csv.py",
+        "--repo-root", str(tmp_path),
+        str(tmp_path),                  # input = seule racine disponible
+        "--update", str(csv_path),
+        "--full",
+    ])
+    assert e.main() == 0
+
+    with csv_path.open(encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    by_nb = {r["notebook"]: r for r in rows}
+    assert by_nb[nb_root.name]["src_hash"] != "STALE_ROOT", (
+        "sans borne derivable, l'input CLI doit rester la racine de scan"
+    )
+    assert nb_new.relative_to(tmp_path).as_posix() in by_nb, (
+        "le repli doit conserver le comportement plein perimetre de l'input CLI ; "
+        f"got notebooks={set(by_nb)}"
+    )
+
+
+def test_full_mode_note_does_not_report_covered_input_as_ignored(
+    tmp_path, monkeypatch, capsys
+):
+    """#21518 reserve 2 : un input CLI COUVERT par une borne n'est pas « ignore ».
+
+    Le filtre historique testait l'appartenance EXACTE : un input situe
+    SOUS une borne etait annonce « ignore » sur stderr alors que ses carnets
+    etaient bien scannes via la borne. Le log operateur mentait.
+    """
+    nb_a = tmp_path / "series" / "A.ipynb"
+    _make_notebook(nb_a, "a1", text_fr="## A")
+    # Carnet sous le sous-dossier passe en input : il prouve que ce chemin
+    # est reellement scanne (via la borne `series`), donc que l'annoncer
+    # « ignore » serait faux.
+    nb_deep = tmp_path / "series" / "sub" / "Deep.ipynb"
+    _make_notebook(nb_deep, "d1", text_fr="## Deep")
+    csv_path = _make_csv(
+        tmp_path / "synced.csv",
+        PIVOT_HEADER,
+        [
+            {"notebook": nb_a.relative_to(tmp_path).as_posix(), "cell_id": "a1",
+             "cell_type": "markdown", "src_lang": "fr", "src_hash": "STALE_A",
+             "text_fr": "## A", "hash_fr": "FR_A"},
+        ],
+    )
+
+    # Inputs = racine (parent de la borne, reellement ecartee comme racine)
+    # + un SOUS-dossier de la serie (couvert par la borne, donc scanne).
+    sub_input = tmp_path / "series" / "sub"
+    monkeypatch.setattr(sys, "argv", [
+        "extract_cells_to_csv.py",
+        "--repo-root", str(tmp_path),
+        str(tmp_path),
+        str(sub_input),
+        "--update", str(csv_path),
+        "--full",
+    ])
+    assert e.main() == 0
+
+    with csv_path.open(encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    notebooks = {r["notebook"] for r in rows}
+    assert nb_deep.relative_to(tmp_path).as_posix() in notebooks, (
+        "le carnet du sous-dossier est scanne via la borne : "
+        f"got notebooks={notebooks}"
+    )
+
+    err = capsys.readouterr().err
+    assert "non utilisé(s) comme racine de scan" in err, (
+        f"la NOTE doit nommer les racines ecartees ; stderr={err!r}"
+    )
+    note = next(line for line in err.splitlines() if "non utilisé(s)" in line)
+    assert str(sub_input) not in note, (
+        "un input COUVERT par une borne voit ses carnets scannes : il ne doit pas "
+        f"etre annonce ecarte ; note={note!r}"
+    )
+    assert str(tmp_path) in note, (
+        f"la racine (parent de la borne) doit rester annoncee ; note={note!r}"
+    )
+
+
 def test_incremental_mode_does_not_refresh_unrelated_rows(tmp_path, monkeypatch):
     """Mode incremental (sans --full) NE rafraichit QUE les lignes des
     notebooks passes en input. Les autres lignes du CSV restent intactes.
