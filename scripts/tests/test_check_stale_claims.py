@@ -136,3 +136,54 @@ def test_unreadable_notebook_reports_error(tmp_path):
     assert r.returncode == 1
     out = json.loads(r.stdout)
     assert out["findings"] and "error" in out["findings"][0]
+
+
+def _load_module():
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("check_stale_claims", SCRIPT)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def test_huge_digit_run_in_output_does_not_crash(tmp_path):
+    # Regression : une suite d'au moins 309 chiffres dans un output donne
+    # float() = inf ; int(inf) levait OverflowError et tout le lot plantait.
+    big = "9" * 400
+    rc, out = _run(
+        [_code(f"Makespan = 11\nN = {big}\n"),
+         _md(INTERP + "CP-SAT prouve ≈ 12 ici.")],
+        tmp_path,
+    )
+    assert rc == 1
+    assert [f["claimed"] for f in out["findings"]] == ["12"]
+
+
+def test_huge_digit_claim_in_interpretation_does_not_crash(tmp_path):
+    # Meme plantage cote claim : _normalize_num(tok) est appele pour chaque claim.
+    big = "7" * 400
+    rc, out = _run(
+        [_code("makespan = 11\n"),
+         _md(INTERP + f"le compteur atteint ≈ {big} pas.")],
+        tmp_path,
+    )
+    assert rc == 1
+    assert [f["claimed"] for f in out["findings"]] == [big]
+
+
+def test_normalize_num_non_finite_does_not_raise():
+    # Contrat de la fonction : une valeur non finie ne produit que le jeton brut.
+    # NUM_RE ne capture que des suites de chiffres ; inf, 1e999 et nan sont
+    # testes directement sur la fonction (nan : int(nan) levait deja ValueError).
+    mod = _load_module()
+    for tok in ("inf", "1e999", "nan", "7" * 400):
+        assert tok in mod._normalize_num(tok)
+
+
+def test_normalize_num_finite_values_unchanged():
+    # Garde de non-regression : les variantes des valeurs finies ne changent pas.
+    mod = _load_module()
+    assert mod._normalize_num("12") == {"12"}
+    assert mod._normalize_num("12,0") == {"12,0", "12.0", "12"}
+    assert mod._normalize_num("12,5") == {"12,5", "12.5"}

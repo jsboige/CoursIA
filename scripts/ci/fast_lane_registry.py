@@ -358,16 +358,17 @@ PILOT: list[Guard] = [
             "scripts/tests/baseline_nb_navlinks.json",
             ".github/workflows/notebook-navlink-check.yml",
         ],
+        # Portee du workflow d'origine rendue (#21016, symetrique de #20582
+        # pour nav-chain) : `--diff-base {base_ref}` fait calculer au checker
+        # `git diff base...HEAD`, le meme diff que `pr_files.txt`. Sans ce
+        # jeton, tout NEW du graphe global (entree deja presente sur main)
+        # rougissait toute PR touchant un carnet ; avec lui, seul un NEW
+        # imputable au diff bloque. Decision c.5854935546 transposable.
         argv=["python", "scripts/notebook_tools/check_notebook_navlinks.py",
-              "--check"],
-        # #19645 (suite c.1503) : verdict DELTA -- NEW vs baseline committe,
-        # le workflow d'origine scopait au diff (`git diff $BASE...HEAD` ->
-        # `--diff-files`). L'argv absorbe ne porte plus ce drapeau : la borne
-        # se declare ici, lue par le picker (`_diff_bounded_check_names`).
-        # `needs_base` suit l'arbitrage ai-01 du 2026-10-12 (declaration de
-        # coherence : mesure du meme jour, aucun consommateur operationnel ne
-        # lit `needs_base` dans scripts/ ou .github/ ; le canal operant de
-        # l'imputation reste `diff_bounded`).
+              "--check", "--diff-base", "{base_ref}"],
+        # Verdict DELTA (NEW vs baseline), borne au diff par `--diff-base`.
+        # Declaration explicite (#19645 suite c.1503) : elle ne se devine pas
+        # dans l'argv.
         needs_base=True,
         diff_bounded=True,
         blocking=True,
@@ -382,11 +383,16 @@ PILOT: list[Guard] = [
             "scripts/tests/baseline_nb_nav_chain.json",
             ".github/workflows/notebook-nav-chain-guard.yml",
         ],
+        # Portee du workflow d'origine rendue (#20303) : `--diff-base {base_ref}`
+        # fait calculer au checker `git diff base...HEAD`, le meme diff que
+        # `pr_files.txt`. Sans ce jeton, tout NEW du graphe global (entree deja
+        # presente sur main) rougissait toute PR touchant un carnet ou un README
+        # de serie ; avec lui, seul un NEW imputable au diff bloque.
         argv=["python", "scripts/notebook_tools/check_notebook_nav_chain.py",
-              "--check"],
-        # Meme classe que `check-navlinks` ci-dessus : verdict DELTA (NEW vs
-        # baseline), workflow d'origine scope au diff, borne perdue par
-        # l'argv absorbe -- declaration explicite (#19645 suite c.1503).
+              "--check", "--diff-base", "{base_ref}"],
+        # Verdict DELTA (NEW vs baseline), borne au diff par `--diff-base`.
+        # Declaration explicite (#19645 suite c.1503) : elle ne se devine pas
+        # dans l'argv.
         needs_base=True,
         diff_bounded=True,
         blocking=True,
@@ -726,6 +732,7 @@ TRANCHE1: list[Guard] = [
             "MyIA.AI.Notebooks/GenAI/FineTuning/**",
             "MyIA.AI.Notebooks/IIT/**",
             "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/**",
+            "MyIA.AI.Notebooks/Probas/Infer/**",
             "MyIA.AI.Notebooks/Probas/PyMC/**",
             "MyIA.AI.Notebooks/Search/Part1-Foundations/**",
             "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/**",
@@ -835,22 +842,24 @@ TRANCHE2: list[Guard] = [
         needs_base=True,
         absorbed=True,
     ),
-    # Output-volume COLLAPSE ratchet, advisory (#15327): the two siblings
-    # above watch output GROWTH (flood) and failure banners; nothing watched
-    # contraction -- #15209 lost 72 % of its output chars (11 code cells
-    # executed "successfully", graceful-degradation guards if api_ok:) while
-    # every gate stayed green. Design constraint (ai-01 measurement on the
-    # issue, 2026-09-09): AGGREGATE contraction alone is ~100 % FP (3/3
-    # contractions > 50 % over 14 days were legitimate), so this ratchet
-    # flags per-CELL order-of-magnitude loss and graceful-degradation
-    # signatures (execution sautee / non configure / mode simulation /
-    # skipped), exempting the two mechanically detectable legitimate causes:
-    # content moved to a notebook created by the same diff, and
-    # diagnostic-text purge (CS####/warning lines). Advisory until the
-    # threshold is calibrated further on history (issue point 3).
-    # Source : notebook-output-collapse-ratchet.yml (stub dispatch-only).
+    # Output-volume COLLAPSE ratchet, blocking since #21424 T2 (2026-10-19):
+    # the two siblings above watch output GROWTH (flood) and failure
+    # banners; nothing watched contraction -- #15209 lost 72 % of its output
+    # chars (11 code cells executed "successfully", graceful-degradation
+    # guards if api_ok:) while every gate stayed green. The ratchet
+    # discriminates by CAUSE: signature of degradation gracieuse and
+    # order-of-magnitude loss per cell, exempting the two mechanically
+    # detectable legitimate causes (content moved to a notebook created
+    # by the same diff, and diagnostic-text purge CS####/warning).
+    #
+    # The gate is BLOCKING since T2 -- a flagged cell is a hard failure
+    # UNLESS the PR body carries a `## Output-collapse justification`
+    # section naming the cell and the reason (NAMING c.2193 family, the
+    # kernel-drift guard exemption). T1 brought the `--history` mode
+    # (H.6 audit-history organ) so a contributor can locate the cell's
+    # restore point and the responsible PR before justifying.
     Guard(
-        name="Output-collapse ratchet (base vs PR, advisory)",
+        name="Output-collapse ratchet (base vs PR)",
         source="notebook-output-collapse-ratchet.yml",
         paths=[
             "**.ipynb",
@@ -865,7 +874,7 @@ TRANCHE2: list[Guard] = [
             "python", "scripts/notebook_tools/check_output_collapse.py",
             "{base_ref}",
         ],
-        blocking=False,
+        blocking=True,
         needs_base=True,
         absorbed=True,
     ),
@@ -2057,6 +2066,50 @@ TRANCHE21: list[Guard] = [
         blocking=True,           # BLOQUANT sur les AJOUTS seuls
         needs_base=True,
         warn_rc=(2,),
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 22 -- schema des cellules markdown des carnets (#20167, advisory).
+#
+# Garde NATIF : aucun workflow d'origine. Il ferme la classe « une cellule
+# markdown porte execution_count / outputs », cles que le schema nbformat
+# reserve aux cellules de code. Mesure du 2026-10-09 : 37 carnets et 384
+# cellules fautives dans MyIA.AI.Notebooks. Le defaut bloque le MCP
+# jupyter-papermill, qui valide le carnet entier avant d'ecrire et refuse
+# toute edition, meme d'une cellule saine.
+#
+# Forme : iter par carnet modifie (`--check {changed_paths}`). Un carnet
+# modifie qui porte encore la cle fait remonter le defaut sur la PR.
+#
+# ADVISORY (`blocking=False`) : le corpus n'est pas encore entierement corrige
+# (lots B et C de l'issue #20167). La bascule en bloquant se fera quand `main`
+# ne portera plus aucune cellule fautive, comme geste trace.
+#
+# `absorbed=True` : sans absorption, le job always-on lancerait `fast_lane.py
+# --shadow` et la conclusion serait neutre sous le prefixe d'ombre. Meme
+# convention que TRANCHE13 (advisory natif).
+# ---------------------------------------------------------------------------
+TRANCHE22: list[Guard] = [
+    Guard(
+        name="Markdown-cell schema advisory (cles interdites, #20167)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "MyIA.AI.Notebooks/**/*.ipynb",
+            "scripts/notebook_tools/fix_markdown_cell_schema.py",
+            "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        iterate_paths=["MyIA.AI.Notebooks/**/*.ipynb"],
+        argv=[
+            "python", "scripts/notebook_tools/fix_markdown_cell_schema.py",
+            "--check", "{changed_paths}",
+        ],
+        blocking=False,
+        iterates_paths=True,
         absorbed=True,
     ),
 ]

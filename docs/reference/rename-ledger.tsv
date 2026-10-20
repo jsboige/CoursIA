@@ -328,3 +328,27 @@ MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb	MyIA.AI.Notebooks/IIT/
 MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb	MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations.ipynb	MyIA.AI.Notebooks/IIT/IIT-05-Lentilles-et-Dissociations-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT.ipynb	MyIA.AI.Notebooks/IIT/IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
+MyIA.AI.Notebooks/GameTheory/GameTheory-23a-Biens-Publics-Plan-Deformation-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb	2026-10-11	myia-po-2023:CoursIA-2
+
+MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-1-Introduction.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-2-Data&Features.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data&Features.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-3-Entrainement&AutoML.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement&AutoML.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-4-Evaluation.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-4b-ModelComparison-Validity-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-5-TimeSeries.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-5b-Series-Temporelles-Classiques-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-6-ONNX.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-7-Recommendation.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-8-Clustering-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-8-Clustering.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-10-TSAD-Benchmark-Flaws-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/ML/ML.Net/ML-11-MatrixProfile-Multidim-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2

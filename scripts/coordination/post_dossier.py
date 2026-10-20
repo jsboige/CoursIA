@@ -43,12 +43,22 @@ Le POST part par ``gh api ... --input payload.json`` (jamais ``-f body=@``,
 cf gh-posting-hygiene.md), puis le corps publie est relu (ligne 1, longueur,
 predicat PAYLOAD-TRAP, identite byte-a-byte avec la source) et le gate est
 rejoue : son verdict est imprime et le script sort avec SON rc.
+
+Mode ``--emit`` (#19505) -- la sequence trois-jetons en une commande, pour
+les fenetres de quota GraphQL secondaire : emission du dossier par l'organe
+``--emit`` sous le jeton AMBIANT de lecture, remplissage des actes de
+lecture par ``--set KEY=VALUE`` (la lane les declare, le transport ne les
+devine pas, #18933), puis POST sous le jeton d'ecriture ``jsboige`` epingle
+par commande (``gh auth token --user jsboige``, GH_TOKEN retire de la
+resolution, garde auteur ``gh api user``). La sequence manuelle reste
+documentee en repli dans l'issue #19505.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -66,6 +76,9 @@ import check_closure_dossier as closure_gate  # noqa: E402
 import grain_tag  # noqa: E402
 
 REPO = "jsboige/CoursIA"
+# Garde auteur du mode emission (#19505) : le POST part sous le compte
+# attendu par le gate (``comment author must be 'jsboige'``).
+POST_AUTHOR = "jsboige"
 # Hors de l'espace 0-3 du gate : 0 READY/CLOSE, 1 NO-DOSSIER/REFUSED,
 # 2 UNKNOWN, 3 BLOCKED-WITH-SUBSTANCE/KEEP. Un refus du poster ne se lit
 # ainsi jamais comme un verdict du gate.
@@ -111,9 +124,9 @@ CLOSURE = Family(
 )
 
 
-def gh_json(args: list[str]) -> Any:
+def gh_json(args: list[str], env: dict[str, str] | None = None) -> Any:
     proc = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, encoding="utf-8"
+        ["gh", *args], capture_output=True, text=True, encoding="utf-8", env=env
     )
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or "gh command failed")
@@ -214,7 +227,9 @@ def refuse_incoherent(family: Family, dossier: Any, target: int) -> int | None:
     )
 
 
-def post_comment(repo: str, target: int, body: str) -> dict[str, Any]:
+def post_comment(
+    repo: str, target: int, body: str, env: dict[str, str] | None = None
+) -> dict[str, Any]:
     """POST par --input : le payload est ASCII pur (json.dumps echappe),
     aucun shell n'intercalle de backtick, aucune ligne ne peut tronquer."""
     payload = json.dumps({"body": body})
@@ -224,11 +239,111 @@ def post_comment(repo: str, target: int, body: str) -> dict[str, Any]:
         handle.write(payload)
         payload_path = handle.name
     try:
-        return gh_json(
-            ["api", f"repos/{repo}/issues/{target}/comments", "--input", payload_path]
-        )
+        argv = [
+            "api",
+            f"repos/{repo}/issues/{target}/comments",
+            "--input",
+            payload_path,
+        ]
+        # env=None garde l'appel byte-identique au mode historique (les
+        # doubles du test patchent gh_json(args) sans kwarg).
+        if env is None:
+            return gh_json(argv)
+        return gh_json(argv, env=env)
     finally:
         Path(payload_path).unlink(missing_ok=True)
+
+
+# --- mode emission (#19505) : la sequence trois-jetons en une commande ----
+#
+# L'emission laisse les actes de lecture a la lane (#18933) : le wrapper ne
+# les invente jamais, ils arrivent en CLI explicites (--set KEY=VALUE).
+
+
+def emit_body(pr: int, lane: str) -> tuple[int, str, str]:
+    """Etape 1 (#19505) : emission sous l'environnement courant.
+
+    L'appelant peut exporter un GH_TOKEN de lecture alternatif -- le
+    sous-processus herite de l'env, l'emission ne fait qu'agir des lectures.
+    """
+    proc = subprocess.run(
+        [
+            sys.executable,
+            str(ADJOINT.gate_path),
+            str(pr),
+            "--emit",
+            "--lane",
+            lane,
+        ],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+    )
+    return proc.returncode, proc.stdout, proc.stderr
+
+
+def fill_placeholder(block: str, key: str, value: str) -> str:
+    """Remplace la ligne ``key: REPLACE_WITH...`` du bloc emis par la valeur."""
+    prefix = f"{key}: REPLACE_WITH"
+    lines = block.split("\n")
+    hits = 0
+    for i, line in enumerate(lines):
+        if line.startswith(prefix):
+            lines[i] = f"{key}: {value}"
+            hits += 1
+    if hits == 0:
+        raise ValueError(
+            f"field {key!r} has no REPLACE_WITH placeholder "
+            "(already filled, replaced by the emission, or unknown)"
+        )
+    return "\n".join(lines)
+
+
+def resolve_write_token() -> str:
+    """Jeton d'ecriture jsboige epingle par commande, GH_TOKEN retire de l'env.
+
+    gh ignore le trousseau multi-comptes quand GH_TOKEN est exporte : sans ce
+    retrait, la resolution lirait le jeton de lecture de l'etape d'emission.
+    """
+    env = {k: v for k, v in os.environ.items() if k != "GH_TOKEN"}
+    proc = subprocess.run(
+        ["gh", "auth", "token", "--user", POST_AUTHOR, "--hostname", "github.com"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        env=env,
+    )
+    if proc.returncode != 0 or not proc.stdout.strip():
+        raise RuntimeError(
+            "cannot resolve the jsboige write token (gh auth token --user "
+            f"{POST_AUTHOR}): {proc.stderr.strip() or 'empty output'}"
+        )
+    return proc.stdout.strip()
+
+
+def check_post_author(token: str) -> str:
+    """Garde auteur : le compte du jeton d'ecriture doit etre jsboige.
+
+    Mesure #19325 : un POST sous compte etudiant rend ``comment author must
+    be 'jsboige'`` ET perime le stamp calcule avant lui.
+    """
+    # gh --jq imprime une chaîne RESULTAT sans guillemets : `--jq .login`
+    # sort `jsboige`, que json.loads refuse (Expecting value char 0) -- le
+    # garde crasht donc depuis #20881 sur tout POST --emit. On parse la
+    # reponse /user complete (JSON valide) et on lit la cle.
+    user = gh_json(["api", "user"], env=write_env(token))
+    login = user.get("login") if isinstance(user, dict) else None
+    if not isinstance(login, str) or login != POST_AUTHOR:
+        raise RuntimeError(
+            f"author guard: the write token serves {login!r}, not {POST_AUTHOR!r}"
+        )
+    return login
+
+
+def write_env(token: str) -> dict[str, str]:
+    env = {k: v for k, v in os.environ.items() if k != "GH_TOKEN"}
+    env["GH_TOKEN"] = token
+    return env
 
 
 def post_post_guards(family: Family, published: str, body: str) -> list[str]:
@@ -262,18 +377,64 @@ def main(argv: list[str] | None = None) -> int:
     target_group = parser.add_mutually_exclusive_group(required=True)
     target_group.add_argument("--pr", type=int, help="pull request carrying the dossier")
     target_group.add_argument("--issue", type=int, help="issue carrying the dossier")
-    parser.add_argument("--file", required=True, type=Path, help="dossier body file")
+    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument(
+        "--file",
+        type=Path,
+        help="dossier body file (legacy mode: POST under the ambient gh account)",
+    )
+    source_group.add_argument(
+        "--emit",
+        action="store_true",
+        help="#19505 one-command mode: run --emit (ambient read token), apply "
+        "--set fills, then POST under the jsboige write token pinned per "
+        "command (author guard included)",
+    )
     parser.add_argument(
         "--lane",
         required=True,
         help="emitting lane <machine:workspace> (anti-double-stamp, re-stamp licite)",
     )
+    parser.add_argument(
+        "--set",
+        action="append",
+        default=[],
+        metavar="KEY=VALUE",
+        help="fill a reading-act field left by --emit (complete/body/checks/"
+        "b0/scope/domain); repeatable; requires --emit",
+    )
     parser.add_argument("--repo", default=REPO)
     args = parser.parse_args(argv)
 
+    if args.set and not args.emit:
+        return refuse("--set requires --emit (the file mode posts the body as-is)")
+
     family = ADJOINT if args.pr is not None else CLOSURE
     target = args.pr if args.pr is not None else args.issue
-    body = args.file.read_text(encoding="utf-8")
+    write_env_dict: dict[str, str] | None = None
+    if args.emit:
+        if family is not ADJOINT:
+            return refuse("--emit applies to --pr only (adjoint family)")
+        emit_rc, emitted, emit_err = emit_body(target, args.lane)
+        if emit_err.strip():
+            for line in emit_err.strip().splitlines():
+                print(f"[emit] {line}", file=sys.stderr)
+        if emit_rc not in (0, 3):
+            return refuse(
+                f"emission rc={emit_rc}: no dossier block to post "
+                "(0=READY, 3=BLOCKED; 1/2 = nothing to stamp)"
+            )
+        body = emitted
+        for setting in args.set:
+            key, sep, value = setting.partition("=")
+            if not sep or not value:
+                return refuse(f"--set expects KEY=VALUE, got {setting!r}")
+            try:
+                body = fill_placeholder(body, key, value)
+            except ValueError as exc:
+                return refuse(f"fill failed: {exc}")
+    else:
+        body = args.file.read_text(encoding="utf-8")
 
     dossier, rc = preflight(family, body, args.lane)
     if rc != 0:
@@ -344,7 +505,20 @@ def main(argv: list[str] | None = None) -> int:
                     f"lane {existing_lane!r} -- a re-stamp is licite only for its own lane"
                 )
 
-    comment = post_comment(args.repo, target, body)
+    # Choregraphie trois-jetons #19505 (mode --emit uniquement) : le POST
+    # part sous le compte attendu par le gate, epingle par commande -- pas
+    # sous le jeton de lecture ambiant qui a servi aux lectures. Les refus
+    # locaux (preflight) et les lectures (pr view, gate) restent AMONT et
+    # sous env ambiant : aucun appel gh n'entre dans la zone de refus local.
+    if args.emit:
+        try:
+            token = resolve_write_token()
+            check_post_author(token)
+        except RuntimeError as exc:
+            return refuse(str(exc))
+        write_env_dict = write_env(token)
+
+    comment = post_comment(args.repo, target, body, env=write_env_dict)
     comment_id = comment.get("id")
     failures = post_post_guards(family, comment.get("body") or "", body)
     if failures:

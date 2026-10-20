@@ -153,7 +153,7 @@ def test_registre_declare_des_series_qui_existent():
 def test_registre_aujourd_hui_vert_sur_l_arbre_reel(capsys):
     """L'invocation CI (sans argument) doit rendre 0 sur main.
 
-    C'est la preuve d'admission des 8 series declarees : le critere du
+    C'est la preuve d'admission des 9 series declarees : le critere du
     registre affirme "zero violation sur l'arbre entier", et ce test le
     verifie sur l'arbre reel plutot que de faire confiance a la note.
     """
@@ -261,7 +261,7 @@ def test_json_serie_unique_porte_encore_les_cles_historiques(series: Path,
 def test_list_series(capsys):
     assert main(["--list-series"]) == 0
     lines = [l for l in capsys.readouterr().out.splitlines() if l.strip()]
-    assert len(lines) == len(load_registry()) == 8
+    assert len(lines) == len(load_registry()) == 9
     assert any(l.startswith("GameTheory\t") for l in lines)
 
 
@@ -321,7 +321,7 @@ def test_miroir_sans_serie_orpheline(mirror):
 
 def test_fast_lane_garde_nomme_la_portee_reelle():
     """Le nom du check-run ne doit pas mentir sur la portee (une portee
-    'GameTheory serie' pour huit series serait un proxy faux)."""
+    'GameTheory serie' pour neuf series serait un proxy faux)."""
     sys.path.insert(0, str(REPO_ROOT / "scripts/ci"))
     import fast_lane_registry as flr
 

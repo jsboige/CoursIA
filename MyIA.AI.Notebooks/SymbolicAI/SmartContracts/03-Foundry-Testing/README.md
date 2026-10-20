@@ -2,7 +2,7 @@
 
 **Navigation** : [Sommaire de la série](../README.md) | [<< SC-11 LLM-Assisted](../02-Solidity-Advanced/SC-11-LLM-Assisted-Python.ipynb) | [SC-15 Zero-Knowledge Proofs >>](../04-Privacy-Cryptography/SC-15-Zero-Knowledge-Proofs-Python.ipynb)
 
-Cette troisième sous-série (SC-12 a SC-14) introduit le **testing rigoureux** des smart contracts : la suite d'outils Foundry (forge, cast, anvil), le fuzz testing d'invariants, puis la vérification formelle avec Certora Prover et le langage CVL. C'est le passage du « code qui semble marcher » au « code dont on prouve les propriétés ». Ces notebooks ont une signature pédagogique particulière : le code Solidity y est présente comme chaînes de caractères avec les sorties de tests correspondantes ([PASS]/[FAIL]) documentées comme illustration. Une installation locale de Foundry et Certora permet de reproduire les tests pour de vrai.
+Cette troisième sous-série (SC-12 a SC-14) introduit le **testing rigoureux** des smart contracts : la suite d'outils Foundry (forge, cast, anvil), le fuzz testing d'invariants, puis la vérification formelle avec Certora Prover et le langage CVL. C'est le passage du « code qui semble marcher » au « code dont on prouve les propriétés ». Ces notebooks ont une signature pédagogique particulière : le code Solidity y est présenté comme chaînes de caractères. Les sorties de tests (`[PASS]`/`[FAIL]`) de SC-12 sont documentées comme illustration ; SC-13 lance réellement `forge` et committe sa sortie (cf. Points de vigilance). Une installation locale de Foundry et Certora permet de reproduire les tests pour de vrai.
 
 ---
 
@@ -52,7 +52,7 @@ La **vérification formelle** comme niveau au-dessus du testing : **Certora Prov
 
 | Notebook | Fondations requises | Dépendances |
 |----------|---------------------|-------------|
-| SC-12 Foundry-Testing | SC-3 a SC-6 complètes ([01-Solidity-Foundation](../01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb)) ; terminal/bash | Foundry (`forge`, `cast`, `anvil`) |
+| SC-12 Foundry-Testing | SC-1 a SC-4 (syntaxe Solidity, cf. [01-Solidity-Foundation](../01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb)) ; SC-6 (erreurs et événements) pour `vm.expectRevert` et `emit` ; terminal/bash | Foundry (`forge`, `cast`, `anvil`) |
 | SC-13 Fuzz-Invariants | SC-12 complète ; tests unitaires Solidity | Foundry |
 | SC-14 Formal-Verification | SC-12 + SC-13 complètes ; notions de logique formelle | Foundry ; Certora Prover ou Halmos (recommandé) |
 
@@ -79,7 +79,7 @@ La **vérification formelle** comme niveau au-dessus du testing : **Certora Prov
 ## Points de vigilance (exécution Foundry)
 
 - **Foundry doit être installé localement** pour reproduire les tests pour de vrai (`forge`, `cast`, `anvil` sur le PATH). Les notebooks orchestrent les commandes `forge` depuis des cellules Python.
-- **Signature pédagogique** : le code Solidity est présente comme chaînes de caractères avec les sorties de tests ([PASS]/[FAIL]) documentées. **SC-12 et SC-13 exécutent désormais `forge` pour de vrai** : SC-12 re-exécute la suite Foundry avec `forge` sur le PATH (#3765) et SC-13 lance un `forge test --fuzz-runs` qui découvre un contre-exemple d'overflow (la moyenne naïve `(a+b)/2` panique, la version safe résiste, #3921). Les sorties committes sont donc des runs forge authentiques, pas de simples illustrations ; si Foundry n'est pas installé, le notebook affiche honnêtement un message d'install sans sortie fabriquée.
+- **Signature pédagogique** : le code Solidity est présenté comme chaînes de caractères. **SC-13 exécute `forge` pour de vrai** : il lance `forge test --fuzz-runs 512` sur un mini-projet et committe la sortie (#3921), où la moyenne naïve `(a+b)/2` déborde (`panic: arithmetic underflow or overflow`) alors que la version safe passe. **SC-12 ne lance pas `forge test`** : sa cellule vérifie seulement la présence de `forge` (`forge --version`) et affiche les commandes à exécuter. Ses lignes `[PASS]` sont une sortie d'exemple, affichée en repli si `forge` est absent, et le notebook le signale.
 - **SC-14 Certora** : la vérification formelle requiert un accès Certora (commercial) ou Halmos (open-source). Les règles CVL ne sont pas toutes vérifiables sans ces outils.
 - **Audit #3164** : cette sous-série a été auditée (fidélité) — les résultats de tests sont honnêtement documentés comme illustration, pas comme exécution masquée. 1 finding de labeling (SC-12) résolu via #3369.
 
@@ -105,7 +105,7 @@ Cette troisième sous-série introduit le **testing rigoureux** : le passage du 
 - **Le fuzz et les invariants** (SC-13) — passer des paramètres aléatoires aux fonctions de test, vérifier des **invariants** (propriétés qui doivent toujours tenir), filtrer les entrées invalides avec `vm.assume`. Cette étape change la manière de penser les tests : on ne vérifie plus des cas isolés mais des **familles entières** de comportements.
 - **La vérification formelle** (SC-14) — le niveau au-dessus du testing : **Certora Prover** et le langage de spécification **CVL**, écriture de spécifications et de règles, vérification d'invariants mathématiques. Pont naturel avec la série [Lean](../../Lean/) (même paradigme de preuve formelle).
 
-Cette sous-série a une signature pédagogique particulière : le code Solidity y est présenté comme chaînes de caractères avec les sorties de tests (`[PASS]`/`[FAIL]`) documentées comme illustration — une installation locale de Foundry et Certora permet de reproduire les tests pour de vrai.
+Cette sous-série a une signature pédagogique particulière : le code Solidity y est présenté comme chaînes de caractères. Les sorties `[PASS]` de SC-12 sont documentées comme illustration, tandis que SC-13 exécute réellement `forge` — une installation locale de Foundry et Certora permet de reproduire les tests pour de vrai.
 
 ### Prochaines étapes
 

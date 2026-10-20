@@ -175,7 +175,8 @@ def run(start, end, level):
 
 def _git(repo: Path, *args: str) -> str:
     return subprocess.run(["git", "-C", str(repo), *args], check=True,
-                          capture_output=True, text=True).stdout.strip()
+                          capture_output=True, text=True,
+                          encoding="utf-8", errors="replace").stdout.strip()
 
 
 @pytest.fixture
@@ -385,10 +386,28 @@ def test_qc_daily_equity_detects_two_points_on_one_session():
         qc_daily_equity(chart)
 
 
-def test_qc_daily_equity_requires_every_series():
-    days = _sessions("2025-10-01", 3)           # e3 and e4 stay empty
-    with pytest.raises(ValueError, match="missing series 'e3'"):
-        qc_daily_equity(_chart(days, _equity(3)))
+def test_qc_daily_equity_accepts_short_window():
+    days = _sessions("2025-10-01", 3)           # e3 and e4 stay empty: cycle open, not broken
+    dates, values = qc_daily_equity(_chart(days, _equity(3)))
+    assert dates == days
+    assert len(values) == 3
+
+
+def test_qc_daily_equity_refuses_series_gap():
+    days = _sessions("2025-10-01", 12)
+    chart = _chart(days, _equity(12))
+    chart["series"]["e3"]["values"] = []        # a hole inside the cycle
+    with pytest.raises(ValueError, match="contiguous prefix"):
+        qc_daily_equity(chart)
+
+
+def test_ingest_qc_accepts_short_window_with_matching_count():
+    candidate = _qc_candidate()
+    plan = _qc_plan(candidate)
+    days = _sessions("2025-10-01", 3)
+    row = ingest_qc(candidate, plan, _backtest(plan, tradeableDates=3),
+                    _chart(days, _equity(3)))
+    assert row["period_end"] == days[-1]
 
 
 def test_ingest_qc_matches_direct_metrics(tmp_path):
@@ -419,6 +438,7 @@ def test_ingest_qc_matches_direct_metrics(tmp_path):
     (lambda bt, plan, chart: plan.update(pass_date="2025-11-05"), ValueError, "outside"),
     (lambda bt, plan, chart: chart["series"]["fees"]["values"].pop(), ValueError, "last fees"),
     (lambda bt, plan, chart: chart["series"].pop("turnover"), ValueError, "missing series"),
+    (lambda bt, plan, chart: bt.update(tradeableDates=9), ValueError, "9 tradeable dates"),
 ])
 def test_ingest_qc_refuses(change, exc, message):
     candidate = _qc_candidate()

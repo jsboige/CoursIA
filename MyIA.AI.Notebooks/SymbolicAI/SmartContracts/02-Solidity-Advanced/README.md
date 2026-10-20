@@ -11,13 +11,15 @@ Cette deuxième sous-série de code (SC-7 a SC-11) quitte la syntaxe pour les **
 | # | Notebook | Durée | Contenu |
 |---|----------|-------|---------|
 | 7 | [SC-07-Token-Standards-Python](SC-07-Token-Standards-Python.ipynb) | 50 min | ERC-20, ERC-721, ERC-1155, contrats OpenZeppelin |
+| 7b | [SC-7b-ERC20-Lean-Verification-Companion](SC-7b-ERC20-Lean-Verification-Companion.ipynb) | 25 min | Compagnon de SC-7 : invariant `Σ balances = totalSupply` observé en Python, puis confronté à la preuve Lean |
+| 7c | [SC-07c-ERC20-Lean](SC-07c-ERC20-Lean.ipynb) | non déclarée | Compagnon natif Lean (kernel `lean4-wsl`) : `#check`, `#print axioms` et `#eval` sur le lac `erc20_lean` |
 | 8 | [SC-08-DeFi-Primitives-Python](SC-08-DeFi-Primitives-Python.ipynb) | 55 min | AMM, formule x*y=k, liquidity pools, price impact, slippage |
 | 8b | [SC-08b-MEV-LP-Python](SC-08b-MEV-LP-Python.ipynb) | 40 min | Compagnon de SC-8 (hors chaîne) : frais du déposant contre perte non-permanente, sandwich et backrun chiffrés |
 | 9 | [SC-09-DAO-Governance-Python](SC-09-DAO-Governance-Python.ipynb) | 45 min | Vote pondéré, propositions, timelock |
 | 10 | [SC-10-Account-Abstraction-Python](SC-10-Account-Abstraction-Python.ipynb) | 50 min | ERC-4337, UserOperations, Smart Account, Paymasters |
 | 11 | [SC-11-LLM-Assisted-Python](SC-11-LLM-Assisted-Python.ipynb) | 45 min | LLMs (Claude/GPT) pour générer, auditer, documenter du Solidity |
 
-**Total** : 5 notebooks, ~4h05.
+Le décompte des carnets de cette sous-série est tenu par le [catalogue des cours](../../../../COURSE_CATALOG.generated.md), régénéré automatiquement.
 
 ---
 
@@ -26,6 +28,8 @@ Cette deuxième sous-série de code (SC-7 a SC-11) quitte la syntaxe pour les **
 ### Étape 1 : Standards de tokens (SC-7, 50 min)
 
 Implémentation des trois standards fondateurs : **ERC-20** (tokens fongibles), **ERC-721** (NFTs) et **ERC-1155** (multi-tokens), en s'appuyant sur les contrats sécurisés d'OpenZeppelin. Cette étape est le point de passage obligé vers DeFi et la gouvernance.
+
+**Compagnons Lean de SC-7** : [SC-7b](SC-7b-ERC20-Lean-Verification-Companion.ipynb) (25 min, kernel Python) reprend l'invariant de conservation `Σ balances = totalSupply` du contrat de SC-7. Il rejoue des transitions `mint`, `transfer` et `burn` en Python, puis sur une simulation Monte-Carlo de 10 000 transitions, et confronte cette observation à la garantie prouvée dans le lac Lean `erc20_lean` (voir [Lean-23](../../Lean/Lean-23-ERC20-Invariant-Companion.ipynb)). [SC-7c](SC-07c-ERC20-Lean.ipynb) passe au noyau Lean lui-même (kernel `lean4-wsl`) : il évalue les signatures et les théorèmes du lac, et liste les axiomes que ces preuves utilisent. Les exercices de SC-7c demandent de compléter des preuves Lean.
 
 ### Étape 2 : Primitives DeFi (SC-8, 55 min)
 
@@ -54,7 +58,10 @@ Le LLM comme outil de développeur Solidity : **prompting** efficace pour smart 
 | Notebook | Fondations requises | Dépendances |
 |----------|---------------------|-------------|
 | SC-7 Token-Standards | SC-3 a SC-6 complètes ([01-Solidity-Foundation](../01-Solidity-Foundation/SC-03-Solidity-Basics-Python.ipynb)) | `web3`, `py-solc-x`, OpenZeppelin |
+| SC-7b Lean-Verification-Companion | SC-7 complète ; notions d'ERC-20 | Python 3 (kernel `python3`), aucune chaîne locale |
+| SC-7c Lean natif | SC-7b complète ; lac `erc20_lean` | Lean 4 via le kernel `lean4-wsl` (WSL), exécuté depuis le répertoire du lac |
 | SC-8 DeFi-Primitives | SC-7 complète | idem |
+| SC-8b MEV-LP | SC-8 complète (noyau de swap déclaré) | Python 3 (kernel `python3`), aucune chaîne locale |
 | SC-9 DAO-Governance | SC-7 + SC-8 complètes ; ERC-20 et délégation | idem |
 | SC-10 Account-Abstraction | SC-7 a SC-9 complètes ; modèle EOA vs contrat | idem ; ERC-4337 (@account-abstraction) |
 | SC-11 LLM-Assisted | SC-3 a SC-6 complètes | clé API OpenAI/Anthropic (optionnel : Qwen local) |
@@ -84,6 +91,7 @@ Le LLM comme outil de développeur Solidity : **prompting** efficace pour smart 
 
 - **Lancer `anvil` avant l'exécution** de SC-7 a SC-10 : chaque notebook se connecte a un noeud local. Sans `anvil` actif, les cellules de déploiement echouent en `ConnectionRefusedError`.
 - **SC-7 Token-Standards** : utilise les contrats OpenZeppelin (deja vendores dans `foundry-lib/`) ; la compilation se fait via `py-solc-x` avec le compilateur versionne.
+- **SC-7c (Lean natif)** : exige le kernel `lean4-wsl` installé (Lean 4 sous WSL) et le lac `erc20_lean` ; sans ce kernel, le carnet ne s'exécute pas. SC-7b (kernel `python3`) ne dépend pas de Lean : seul SC-7c l'exige.
 - **SC-8 DeFi-Primitives** : les swaps et le price impact sont calcules sur des reserves initiales petites pour rester pédagogiques -- les effets de slippage y sont exageres volontairement.
 - **SC-10 Account-Abstraction** : depend d'`@account-abstraction` et `@openzeppelin` (resolus via `foundry-lib/`). Le déploiement invoque le `EntryPoint` officiel ERC-4337 sur anvil.
 - **SC-11 LLM-Assisted** : les cellules qui appelent l'API Claude/OpenAI s'affranchissent proprement si la clé est absente (mode mock ou skip disclosed) ; les outputs committes refletent un run realiste.

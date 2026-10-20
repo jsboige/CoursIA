@@ -1,6 +1,9 @@
 # Benchmarks de comparaison pour l'evaluation de la strategie 46 (issue #18906,
 # point 4) : SPY detenu et 60/40 (SPY/IEF), meme fenetre 2018-2026, meme modele
 # de frais IBKR que la strategie. Un seul projet, mode par parametre de backtest.
+# Valeur du portefeuille a chaque cloture dans le graphique "shadow" (e0..e4, plus
+# fees et turnover ; contrat de rejeu en ombre, #18923) : c'est la serie journaliere
+# que lit le test de significativite de `significance.py` (#20388).
 
 from AlgorithmImports import *
 
@@ -27,7 +30,8 @@ class Bench46(QCAlgorithm):
         end = self.get_parameter("end_date", "2026-09-25").split("-")
         self.set_start_date(int(start[0]), int(start[1]), int(start[2]))
         self.set_end_date(int(end[0]), int(end[1]), int(end[2]))
-        self.set_cash(100000)
+        self.start_value = 100000.0
+        self.set_cash(self.start_value)
 
         self.set_security_initializer(self._ibkr_fees)
 
@@ -46,6 +50,9 @@ class Bench46(QCAlgorithm):
             self._rebalance,
         )
 
+        self.closes = 0
+        self.traded = 0.0
+
     def _ibkr_fees(self, security):
         security.set_fee_model(_ScaledFeeModel(self.fee_mult))
 
@@ -56,3 +63,16 @@ class Bench46(QCAlgorithm):
             )
         else:
             self.set_holdings([PortfolioTarget(self.spy, 1.0)], True)
+
+    def on_order_event(self, event):
+        if event.status in (OrderStatus.FILLED, OrderStatus.PARTIALLY_FILLED):
+            self.traded += (abs(event.fill_quantity * event.fill_price)
+                            / self.portfolio.total_portfolio_value)
+
+    def on_data(self, data):
+        # Trace seulement, aucune decision : une valeur par seance de SPY.
+        if data.bars.contains_key(self.spy):
+            self.plot("shadow", f"e{self.closes % 5}", self.portfolio.total_portfolio_value)
+            self.plot("shadow", "fees", self.portfolio.total_fees / self.start_value)
+            self.plot("shadow", "turnover", self.traded)
+            self.closes += 1

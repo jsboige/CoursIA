@@ -1059,7 +1059,7 @@ layout: section
 
 
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb">Infer-4-Bayesian-Networks.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb">Infer-04-Bayesian-Networks.ipynb</a>.</p>
 ---
 
 
@@ -1103,7 +1103,7 @@ layout: section
 </div>
 
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb">Infer-1b-Premiers-Modeles.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-01b-Premiers-Modeles.ipynb">Infer-01b-Premiers-Modeles.ipynb</a>.</p>
 ---
 
 

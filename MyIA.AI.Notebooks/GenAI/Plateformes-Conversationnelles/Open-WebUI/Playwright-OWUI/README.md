@@ -9,11 +9,11 @@ maturity:
 
 [← Plateformes conversationnelles](../../README.md) | [← Documentation GenAI](../../../README.md) | [↑ Open-WebUI](../README.md) | [→ Vibe-Coding](../../../Vibe-Coding/README.md)
 
-> **Refonte pédagogique livrée (#4433, fermée 2026-08-12).** Cette série évolue d'un banc de tests vers un **parcours QA narratif** : fil rouge « QA Engineer d'une flotte GenAI multi-tenant », format hybride notebook + tests E2E réels conservés en backend, et projet de certification final. Point d'entrée : **[00-Parcours-QA-OWUI.md](./00-Parcours-QA-OWUI.md)** (cadrage de la mission). La flotte multi-tenant tourne sur **Open WebUI v0.11.0** (depuis le 2026-08-07) ; les modules 01-06 ont été **revalidés contre cette version** (campagne #9854, 2026-08-10 — 37 passed / 1 failed / 4 skipped, l'unique rouge étant un défaut de test, pas de l'application). Le **module [06](06-nouveautes-v0.10/)** démontre les nouveautés v0.10 (mémoire, dossiers d'équipe, raisonnement streamé) ; les pièges v0.11 mesurés (drift DOM, payload chat `chat_id`+`id`) sont documentés dans [WHATS-NEW-v0.11.md](./WHATS-NEW-v0.11.md).
+> **Refonte pédagogique livrée (#4433, fermée 2026-08-12).** Cette série évolue d'un banc de tests vers un **parcours QA narratif** : fil rouge « QA Engineer d'une flotte GenAI multi-tenant », format hybride notebook + tests E2E réels conservés en backend, et projet de certification final. Point d'entrée : le notebook chapeau **[00-Parcours-QA-OWUI.ipynb](./00-Parcours-QA-OWUI.ipynb)** (poste de pilotage du parcours), avec le cadrage de la mission dans **[00-Parcours-QA-OWUI.md](./00-Parcours-QA-OWUI.md)**. La flotte multi-tenant tourne sur **Open WebUI v0.11.0** (depuis le 2026-08-07) ; les modules 01-06 ont été **revalidés contre cette version** (campagne #9854, 2026-08-10 — 37 passed / 1 failed / 4 skipped, l'unique rouge étant un défaut de test, pas de l'application). Le **module [06](06-nouveautes-v0.10/)** démontre les nouveautés v0.10 (mémoire, dossiers d'équipe, raisonnement streamé) ; les pièges v0.11 mesurés (drift DOM, payload chat `chat_id`+`id`) sont documentés dans [WHATS-NEW-v0.11.md](./WHATS-NEW-v0.11.md).
 
 Série pédagogique complète pour apprendre **Playwright** (framework de tests E2E) en testant une application réelle : **Open WebUI**, une plateforme de chat IA générative.
 
-> **Format particulier** : Contrairement aux autres sous-domaines GenAI qui utilisent des Jupyter Notebooks (.ipynb), cette série utilise des **fichiers TypeScript (.spec.ts)** exécutés par Playwright. Chaque module contient un `README.md` avec la théorie et les explications, et un fichier `.spec.ts` avec les tests commentés qui servent d'exercices pratiques. Les tests sont auto-documentés : chaque test contient des commentaires pédagogiques expliquant les concepts, et des exercices supplémentaires à compléter par l'étudiant.
+> **Format hybride** : chaque module combine deux artefacts. Le fichier **TypeScript (`.spec.ts`)**, exécuté par Playwright, reste le **moteur de test** : il contient les tests commentés qui servent d'exercices pratiques. Le **notebook Jupyter (`.ipynb`)** du même module en est la **couche pédagogique** : il raconte le module, lit le `.spec.ts` et en dresse l'inventaire sans lancer les tests, et propose des exercices exécutables. Chaque module contient aussi un `README.md` avec la théorie et les explications. Les tests sont auto-documentés : chaque test contient des commentaires pédagogiques expliquant les concepts, et des exercices supplémentaires à compléter par l'étudiant.
 
 ## Pourquoi cette série ?
 
@@ -26,23 +26,31 @@ Cette série se distingue des tutoriels Playwright classiques par son sujet :
 
 ```
 Playwright-OWUI/
+├── 00-Parcours-QA-OWUI.ipynb         # Notebook chapeau : poste de pilotage du parcours
+├── 00-Parcours-QA-OWUI.md            # Cadrage de la mission (fil rouge, capstone)
 ├── 01-decouverte/                    # Premier contact avec Playwright
 │   ├── README.md                     # Théorie + exercices
+│   ├── 01-Decouverte-QA-OWUI.ipynb   # Couche pédagogique (notebook)
 │   └── 01-decouverte.spec.ts         # 4 tests : navigation, sélecteurs, screenshots
 ├── 02-navigation-authentification/   # Auth & navigation dans OWUI
 │   ├── README.md
+│   ├── 02-Navigation-Auth-QA-OWUI.ipynb   # Couche pédagogique (notebook)
 │   └── 02-navigation-auth.spec.ts    # 8 tests : login, admin, workspace, channels
 ├── 03-chat-streaming/                # Le coeur : tester le chat IA
 │   ├── README.md
+│   ├── 03-Chat-Streaming-QA-OWUI.ipynb   # Couche pédagogique (notebook)
 │   └── 03-chat-streaming.spec.ts     # 7 tests : chat, streaming, markdown, edit
 ├── 04-rag-tools-avances/             # RAG, MCP tools, channels
 │   ├── README.md
+│   ├── 04-RAG-Tools-QA-OWUI.ipynb   # Couche pédagogique (notebook)
 │   └── 04-rag-tools.spec.ts          # 7 tests : KBs, outils MCP, canaux
 ├── 05-multi-tenant-ci/               # API tests, multi-tenant, CI/CD
 │   ├── README.md
+│   ├── 05-Multi-Tenant-CI-QA-OWUI.ipynb   # Couche pédagogique (notebook)
 │   └── 05-api-multi-tenant.spec.ts   # 8 tests : API REST, isolation, partage
 ├── 06-nouveautes-v0.10/              # Nouveautés v0.10 (mémoire, dossiers, raisonnement)
 │   ├── README.md
+│   ├── 06-Nouveautes-v0.10-QA-OWUI.ipynb   # Couche pédagogique (notebook)
 │   └── 06-nouveautes.spec.ts         # 7 tests : mémoire, dossiers, raisonnement, compaction
 ├── helpers/                          # Fonctions utilitaires réutilisables
 │   ├── selectors.ts                  # Sélecteurs CSS centralisés (+ REASONING/FOLDER/MEMORY)
@@ -54,6 +62,7 @@ Playwright-OWUI/
 ├── .env.example                      # Template de configuration
 ├── .gitignore
 ├── package.json
+├── package-lock.json
 ├── tsconfig.json                     # Typecheck CI (tsc --noEmit)
 ├── playwright.config.ts
 ├── WHATS-NEW-v0.9.1.md               # Nouveautés v0.9.1 (historique)
@@ -116,6 +125,8 @@ git ls-files | grep -ciE '\.auth/|storage[-_]?state'
 - [Issue #16](https://github.com/jsboige/CoursIA/issues/16) — provisioning OWUI/auth services (territoire po-2023)
 
 ## Modules
+
+Chaque module associe un fichier `.spec.ts` (le moteur de test) à un notebook Jupyter (la couche pédagogique qui le commente). Le notebook chapeau `00-Parcours-QA-OWUI.ipynb` relie les modules entre eux.
 
 ### Module 01 — Découverte de Playwright & OWUI (2-3h)
 *Niveau Débutant*
@@ -186,7 +197,7 @@ git ls-files | grep -ciE '\.auth/|storage[-_]?state'
 
 ```bash
 # Se placer dans le répertoire
-cd GenAI/Playwright-OWUI
+cd MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/Open-WebUI/Playwright-OWUI
 
 # Installer les dépendances
 npm install
