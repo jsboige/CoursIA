@@ -43,6 +43,12 @@ on:
       - '.github/workflows/source-output-ratchet.yml'
   workflow_dispatch:
 
+# Condition jointe a l'arbitrage #19426 (c.6300191475) : tout workflow
+# touche sans bloc concurrency en recoit un, cle sur la PR.
+concurrency:
+  group: source-output-ratchet-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 
