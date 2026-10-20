@@ -75,6 +75,22 @@ from argumentation_lib._reporting_noop import (
     save_enhanced_pm_report,
 )
 
+# -- Import alias C186d -> C186f (See #4960) --
+# `_af_handler.py` (verbatim upstream copy, SHA1 c8c468e) imports the
+# sibling as ``from .tweety_initializer import TweetyInitializer``, but
+# the module delivered by sub-tranche C186f carries the underscore prefix
+# (``_tweety_initializer``). Since C186f merged, importing the AF layer
+# fails at module load with ``ModuleNotFoundError: No module named
+# 'argumentation_lib.tweety_initializer'`` — the layer the lazy accessor
+# ``get_af_handler_symbol`` promises stays dead on arrival.
+# The DEPENDENCY NOTICE of the verbatim file announces the CoursIA shim
+# as the re-routing point; the alias below IS that route. The verbatim
+# copy stays byte-for-byte intact.
+from argumentation_lib import _tweety_initializer as _tweety_initializer_module
+sys.modules.setdefault(
+    "argumentation_lib.tweety_initializer", _tweety_initializer_module
+)
+
 # -- Runner (requires semantic_kernel) --
 def get_analysis_runner():
     """Lazy import for the analysis runner."""
