@@ -3043,6 +3043,475 @@ theorem hashlife_correct_margin_of_union_periodic_singleton (c : MacroCell) (k :
   rw [hsplit]
   exact hcap_of_union_periodic_singleton hTi g₁ g₂ hfix₁ hcan hg₂ hspan t
 
+/-! ### Maillon 5 — vaisseaux en formation (union de deux vaisseaux synchrones)
+
+Les maillons 1 à 4 couvraient les unions **périodiques** (points fixes de
+`evolve T`). Un vaisseau n'est pas un point fixe : `evolve p g = shift v g`
+le déplace, et `hcap_of_union_periodic` ne s'y applique pas. Mais deux
+vaisseaux de **même période** `p` et de **même déplacement** `v` dont les
+trajectoires restent 3-séparées forment eux-mêmes un vaisseau : l'union
+réapparaît après `p` étapes, translatée de `v`. La capture par la voie
+vaisseau (`hcap_of_spaceship`) s'applique alors à l'union entière — deux
+gliders synchrones séparés par trois cellules sont couverts par la même
+preuve que chacun isolément. -/
+
+/-- **Périodicité dérivée de l'union de deux vaisseaux synchrones.** Deux
+    vaisseaux de même période `p > 0` et même déplacement `v`, dont les
+    trajectoires restent 3-séparées, forment une union qui est elle-même un
+    vaisseau de période `p` et de déplacement `v` — au sens fort de l'égalité
+    de listes exigée par `hcap_of_spaceship`, et **sans hypothèse de
+    canonicalité** (contrairement à `evolve_period_union` : les deux côtés du
+    pont `Canonical.ext` sont canoniques inconditionnellement —
+    `canonical_evolve_of_pos` à gauche, `canonical_shift` à droite). Les
+    membres par `mem_evolve_union_sep` puis les deux jambes vaisseau, la
+    translation absorbée par `mem_shift` des trois côtés. -/
+theorem evolve_ship_union {p : Nat} (hp0 : 0 < p) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (v : Int × Int) (hship₁ : evolve p g₁ = shift v g₁)
+    (hship₂ : evolve p g₂ = shift v g₂) :
+    evolve p (g₁ ++ g₂) = shift v (g₁ ++ g₂) := by
+  apply Canonical.ext (canonical_evolve_of_pos hp0 _) (canonical_shift v _)
+  intro q
+  rw [mem_evolve_union_sep g₁ g₂ hsep p q, hship₁, hship₂,
+    mem_shift v g₁ q, mem_shift v g₂ q, mem_shift v (g₁ ++ g₂) q]
+  exact List.mem_append.symm
+
+/-- **hcap des formations de vaisseaux — le maillon 5.** Pour deux vaisseaux
+    synchrones (même `p > 0`, même `v`), aux trajectoires 3-séparées, dont
+    chaque phase de l'union a un niveau de reconstruction divisible par `p`
+    et dont la vitesse vérifie `2·|v.i| ≤ p`, tout instant `t` de la
+    trajectoire de l'union est capturé : l'union est un vaisseau
+    (`evolve_ship_union`), et la capture par la voie vaisseau
+    (`hcap_of_spaceship`) s'y applique telle quelle. -/
+theorem hcap_of_spaceship_formation {p : Nat} (hp0 : 0 < p) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (v : Int × Int) (hship₁ : evolve p g₁ = shift v g₁)
+    (hship₂ : evolve p g₂ = shift v g₂) (hcan : Canonical (g₁ ++ g₂))
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (g₁ ++ g₂))).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true :=
+  hcap_of_spaceship (g₁ ++ g₂) hcan hp0 v
+    (evolve_ship_union hp0 g₁ g₂ hsep v hship₁ hship₂) hdiv hspd1 hspd2
+
+/-- **L3 clos pour les formations de vaisseaux synchrones.** Corollaire
+    d'assemblage miroir de `hashlife_correct_margin_of_union_periodic` : une
+    MacroCell dont la grille rendue à l'origine se scindle en deux vaisseaux
+    de même période `p > 0` et même déplacement `v`, aux trajectoires
+    3-séparées, satisfait l'égalité Hashlife à tout horizon `2^k` sous
+    `centralCorrect`. Deuxième cas L3 **composé** après les unions
+    périodiques : deux gliders synchrones séparés par trois cellules —
+    chaque vaisseau couvert seul l'était déjà, leur formation ne l'était
+    pas. -/
+theorem hashlife_correct_margin_of_spaceship_formation (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {p : Nat} (hp0 : 0 < p) (v : Int × Int)
+    (g₁ g₂ : Grid) (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (hship₁ : evolve p g₁ = shift v g₁) (hship₂ : evolve p g₂ = shift v g₂)
+    (hcan : Canonical (g₁ ++ g₂))
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (c.toGrid (0, 0)))).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_spaceship_formation hp0 g₁ g₂ hsep v hship₁ hship₂ hcan (hsplit ▸ hdiv) hspd1 hspd2 t
+
+/-! ### Maillon 6 — unions mixtes : oscillateur ∪ vaisseau
+
+Les maillons 1 à 5 couvraient les unions **homogènes** : deux périodiques
+(maillons 2-4, fenêtre par étendue ou par partie vide), deux vaisseaux
+synchrones (maillon 5, l'union est elle-même un vaisseau). Le cas
+hétérogène — un oscillateur `evolve p g₁ = g₁` et un vaisseau
+`evolve p g₂ = shift v g₂` de même période dyadique `p = 2 ^ i` — n'est
+réductible à aucun des deux : l'union n'est ni périodique (le vaisseau
+dérive) ni vaisseau (l'oscillateur reste). La génération finale du saut
+se scinde donc **par membres** : côté oscillateur statique (borné dans la
+boîte du snapshot par `cellWfF_toGrid_bounds`), côté vaisseau translaté de
+`m • v` où `2 ^ level = p · m` — la borne de vitesse `2·|v.i| ≤ p` absorbe
+exactement la dérive dans la marge : la fenêtre du saut `[2^ℓ, 3·2^ℓ)²`
+contient à la fois la boîte statique `[1.5·2^ℓ, 2.5·2^ℓ)` et la boîte
+dérivée `[2^ℓ - 2^(ℓ-1), 2^ℓ + 2^ℓ + 2^(ℓ-1))` translatée du centre
+`3·2^(ℓ-1)`. La fenêtre dyadique se témoigne comme au maillon 3 : la
+séparation `max 3 (2 ^ i)` étale chaque phase sur `2 ^ i` par ses deux
+parties non vides (l'oscillateur par périodicité, le vaisseau par
+`evolve_ne_of_ship_ne`). C'est la première composition L3 entre classes
+distinctes de la décomposition P4.4. -/
+
+/-- **Suffixe droit d'une union canonique.** La canonicalité est le tri
+    lexical pair à pair et l'absence de doublon, toutes deux héréditaires
+    aux sous-listes ; le côté droit d'une append en est une (suffixe). Le
+    maillon 6 en tire la canonicalité du côté vaisseau `g₂` de l'union
+    `g₁ ++ g₂`, exigée par le cas zéro du pli multiplicatif
+    (`shift_zero`). -/
+theorem canonical_of_append_right {g₁ g₂ : Grid} (h : Canonical (g₁ ++ g₂)) :
+    Canonical g₂ :=
+  ⟨List.Pairwise.sublist (List.suffix_append g₁ g₂).sublist h.1,
+   List.Nodup.sublist (List.suffix_append g₁ g₂).sublist h.2⟩
+
+/-- **Pli du vaisseau par multiplication.** Miroir exact de
+    `evolve_mulF_of_period` pour la classe vaisseau : après `m · p` étapes,
+    un vaisseau de période `p` et déplacement `v` est translaté de `m • v`
+    (la multiplication entière du vecteur). Le cas zéro est l'identité par
+    `shift_zero` (grille canonique, comme `evolve_spaceship_mulF` au
+    maillon 5), le cas successeur découpe en `m · p + p`, replie la jambe
+    `p` par `hship`, fait sortir le shift par `evolve_shift` **à rebours**
+    (la jambe pliée est `evolve (m · p) (shift v g)`, le lemme étant énoncé
+    shift-au-dehors) et remonte l'hypothèse d'induction par `shift_shift`. -/
+theorem evolve_mulF_of_ship {p : Nat} (g : Grid) (hg : Canonical g) (v : Int × Int)
+    (hship : evolve p g = shift v g) (m : Nat) :
+    evolve (m * p) g
+      = shift (((m : Nat) : Int) * v.1, ((m : Nat) : Int) * v.2) g := by
+  induction m with
+  | zero =>
+    rw [Nat.zero_mul, evolve_zero, Nat.cast_zero, Int.zero_mul, Int.zero_mul]
+    exact (shift_zero hg).symm
+  | succ m ih =>
+    have hsplit : (m + 1) * p = m * p + p := by ring
+    rw [hsplit, evolve_add, hship, ← evolve_shift, ih, shift_shift]
+    have h1 : v.1 + ((m : Nat) : Int) * v.1
+        = (((m + 1) : Nat) : Int) * v.1 := by
+      rw [Nat.cast_succ]; ring
+    have h2 : v.2 + ((m : Nat) : Int) * v.2
+        = (((m + 1) : Nat) : Int) * v.2 := by
+      rw [Nat.cast_succ]; ring
+    rw [h1, h2]
+
+/-- **La non-vacuité se propage le long d'une trajectoire de vaisseau.**
+    Miroir de `evolve_ne_of_period_ne` pour la classe vaisseau : si `g` est
+    un vaisseau (`p > 0`) non vide, aucune phase n'est vide — une phase vide
+    rendrait toutes les suivantes vides, en particulier le retour
+    `evolve (p · m) g = shift (m • v) g`, et le shift d'un point vivant
+    témoigne (`mem_shift_image`) contre le vide. C'est le second témoin
+    d'étendue du maillon 6 : la partie vaisseau reste non vide à toute
+    phase, comme la partie oscillateur par périodicité. -/
+theorem evolve_ne_of_ship_ne {p : Nat} (hp0 : 0 < p) (g : Grid)
+    (hg : Canonical g) (v : Int × Int) (hship : evolve p g = shift v g)
+    (hne : g ≠ []) (t : Nat) : evolve t g ≠ [] := by
+  intro hnil
+  have hnilEv : ∀ m, evolve m ([] : Grid) = [] := by
+    intro m
+    induction m with
+    | zero => rfl
+    | succ m ih => rw [evolve_succ, ih]; rfl
+  have hmod := Nat.mod_lt t hp0
+  have hsplit : p - t % p + t = (t / p + 1) * p := by
+    have hle : t % p ≤ p := Nat.le_of_lt hmod
+    have hmodle : t % p ≤ t := Nat.mod_le t p
+    have hdiv : t / p * p = t - t % p := by
+      have h := Nat.div_add_mod t p
+      rw [Nat.mul_comm] at h
+      omega
+    rw [Nat.add_mul, Nat.one_mul, hdiv]
+    omega
+  have hstep : evolve (p - t % p + t) g = evolve (p - t % p) (evolve t g) :=
+    evolve_add _ _ _
+  rw [hnil, hnilEv] at hstep
+  rw [hsplit, evolve_mulF_of_ship g hg v hship (t / p + 1)] at hstep
+  obtain ⟨q, hq⟩ := List.exists_mem_of_ne_nil g hne
+  have hmem := mem_shift_image
+    (((t / p + 1 : Nat) : Int) * v.1, ((t / p + 1 : Nat) : Int) * v.2) g q hq
+  rw [hstep] at hmem
+  exact absurd hmem (by simp)
+
+/-- **Invariance par translation de la distance de Tchebychev.** La
+    distance entre deux points ne dépend pas du repère : la soustraction
+    d'un même vecteur aux deux points préserve les écarts des deux
+    composantes, donc le max de leurs valeurs absolues. Le maillon 6 en a
+    besoin pour transporter la séparation des trajectoires du repère de
+    l'union vers le repère rendu à l'origine (cadrage de la
+    reconstruction) ; la preuve est deux `ring` sur les composantes, le
+    `max`/`Int.natAbs` étant préservés syntactiquement. -/
+theorem chebDist_sub_pair (a q r : Int × Int) :
+    chebDist (q.1 - a.1, q.2 - a.2) (r.1 - a.1, r.2 - a.2) = chebDist q r := by
+  unfold chebDist
+  rw [(by ring : (r.1 - a.1) - (q.1 - a.1) = r.1 - q.1),
+    (by ring : (r.2 - a.2) - (q.2 - a.2) = r.2 - q.2)]
+
+/-- **Cœur mixte — capture d'une union oscillateur ∪ vaisseau (niveau
+    membres).** Pour une cellule bien formée dont la grille rendue à
+    l'origine se scinde, **au niveau des membres**, en un côté oscillateur
+    `evolve p g₁ = g₁` et un côté vaisseau `evolve p g₂ = shift v g₂` de
+    même période `p`, trajectoires 3-séparées, avec la fenêtre `p ∣
+    2^level` et la borne de vitesse `2·|v.i| ≤ p`, le saut est capturé.
+    Contrairement aux maillons précédents, la scission n'est pas une
+    égalité de listes : l'évolution commune du saut traverse le pont
+    `evolve_congr` (la génération finale du saut ne liste pas l'union des
+    deux côtés — l'append de deux grilles canoniques n'est pas canonique),
+    puis `mem_evolve_union_sep` scinde les membres. Côté oscillateur, la
+    génération finale est le snapshot lui-même : bornes `[0, 2^ℓ)²` par
+    `cellWfF_toGrid_bounds`. Côté vaisseau, elle est translatée de `m • v`
+    (`2^ℓ = p · m`) : bornes du snapshot translaté, la dérive bornée par
+    `|m • v.i| ≤ 2^(ℓ-1)` (de `m · 2·|v.i| ≤ m · p = 2^ℓ = 2·2^(ℓ-1)`)
+    maintient chaque composante dans la fenêtre `[2^ℓ, 3·2^ℓ)²` du test.
+    C'est la première capture dont les deux côtés vivent dans des classes
+    dynamiques distinctes. -/
+theorem jumpCapturedF_of_period_ship_union (c : MacroCell) (hwf : c.wf = true)
+    (hlvl : 1 ≤ c.level) {p : Nat} (_hp0 : 0 < p) (v : Int × Int)
+    (g₁ g₂ : Grid)
+    (hmem : ∀ q, (q ∈ c.toGrid (0, 0) ↔ (q ∈ g₁ ∨ q ∈ g₂)))
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (hfix₁ : evolve p g₁ = g₁) (hship₂ : evolve p g₂ = shift v g₂)
+    (hg₂ : Canonical g₂) (hdiv : p ∣ 2 ^ c.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    jumpCapturedF c = true := by
+  obtain ⟨hspd1a, hspd1b⟩ := hspd1
+  obtain ⟨hspd2a, hspd2b⟩ := hspd2
+  have hcw : cellWf c := cellWf_of_wf c hwf
+  obtain ⟨m, hm⟩ := hdiv
+  -- La génération finale du saut côté oscillateur : statique.
+  have hstat : evolve (2 ^ c.level) g₁ = g₁ := by
+    rw [hm, Nat.mul_comm]
+    exact evolve_mulF_of_period _ hfix₁ m
+  -- La génération finale du saut côté vaisseau : dérivée de m • v.
+  have hship : evolve (2 ^ c.level) g₂
+      = shift (((m : Nat) : Int) * v.1, ((m : Nat) : Int) * v.2) g₂ := by
+    rw [hm, Nat.mul_comm]
+    exact evolve_mulF_of_ship _ hg₂ v hship₂ m
+  -- Le pont membres : l'évolution du saut de la grille rendue est celle de
+  -- l'union des deux côtés (evolve_congr, aucune canonicalité requise
+  -- pour n ≥ 1), puis mem_evolve_union_sep scinde les membres.
+  rw [jumpCapturedF_iff]
+  intro w hw
+  rw [padCenter2_toGrid_shift c hlvl, ← evolve_shift,
+    evolve_congr (fun q => (hmem q).trans (List.mem_append).symm)
+      (Nat.succ_le_of_lt (pow_pos (by norm_num) c.level)),
+    mem_shift, mem_evolve_union_sep g₁ g₂ hsep (2 ^ c.level)] at hw
+  -- Arithmétique commune des trois atomes 2^(level-1), 2^level, 2^(level+1).
+  have hpow : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    have hsplit : c.level = (c.level - 1) + 1 := by omega
+    conv_lhs => rw [hsplit]
+    rw [pow_succ]
+    ring
+  have hnext : ((2 ^ (c.level + 1) : Nat) : Int)
+      = (2 ^ c.level : Int) + (2 ^ c.level : Int) := by
+    rw [Nat.cast_pow, pow_succ]
+    ring
+  have hy : (0 : Int) ≤ 2 ^ (c.level - 1) := by positivity
+  rcases hw with hq | hq
+  · -- Côté oscillateur : la génération finale est le snapshot.
+    rw [hstat] at hq
+    have hp' : (w.1 - (3 * 2 ^ (c.level - 1) : Int),
+        w.2 - (3 * 2 ^ (c.level - 1) : Int)) ∈ c.toGrid (0, 0) :=
+      (hmem _).mpr (Or.inl hq)
+    obtain ⟨hb1, hb2, hb3, hb4⟩ := cellWfF_toGrid_bounds hcw 0 0 hp'
+    dsimp only at hb1 hb2 hb3 hb4
+    omega
+  · -- Côté vaisseau : la génération finale est le snapshot translaté de m • v.
+    rw [hship, mem_shift] at hq
+    have hp' : ((w.1 - (3 * 2 ^ (c.level - 1) : Int))
+        - ((m : Nat) : Int) * v.1,
+        (w.2 - (3 * 2 ^ (c.level - 1) : Int)) - ((m : Nat) : Int) * v.2)
+        ∈ c.toGrid (0, 0) := (hmem _).mpr (Or.inr hq)
+    obtain ⟨hb1, hb2, hb3, hb4⟩ := cellWfF_toGrid_bounds hcw 0 0 hp'
+    dsimp only at hb1 hb2 hb3 hb4
+    -- La dérive |m • v.i| ≤ 2^(level-1) absorbe la translation dans la marge.
+    have hmI : ((m : Nat) : Int) * ((p : Nat) : Int) = (2 ^ c.level : Int) := by
+      have h2 : ((2 ^ c.level : Nat) : Int) = ((p * m : Nat) : Int) := by rw [hm]
+      rw [Nat.cast_mul] at h2
+      calc ((m : Nat) : Int) * ((p : Nat) : Int)
+          = ((p * m : Nat) : Int) := by rw [Nat.cast_mul]; ring
+        _ = ((2 ^ c.level : Nat) : Int) := h2.symm
+        _ = (2 ^ c.level : Int) := Nat.cast_pow 2 c.level
+    have hmI0 : (0 : Int) ≤ ((m : Nat) : Int) := by positivity
+    have hup1 : ((m : Nat) : Int) * (2 * v.1) ≤ (2 ^ c.level : Int) := by
+      rw [← hmI]
+      exact Int.mul_le_mul_of_nonneg_left hspd1b hmI0
+    have hv1 : 2 * (((m : Nat) : Int) * v.1) ≤ (2 ^ c.level : Int) := by
+      rw [← (show ((m : Nat) : Int) * (2 * v.1)
+        = 2 * (((m : Nat) : Int) * v.1) from by ring)]
+      exact hup1
+    have hlo1 : -(((m : Nat) : Int) * ((p : Nat) : Int))
+        ≤ ((m : Nat) : Int) * (2 * v.1) := by
+      rw [show -(((m : Nat) : Int) * ((p : Nat) : Int))
+        = ((m : Nat) : Int) * -((p : Nat) : Int) from by ring]
+      exact Int.mul_le_mul_of_nonneg_left hspd1a hmI0
+    have hv1' : -(2 ^ c.level : Int) ≤ 2 * (((m : Nat) : Int) * v.1) := by
+      rw [← (show ((m : Nat) : Int) * (2 * v.1)
+        = 2 * (((m : Nat) : Int) * v.1) from by ring), ← hmI]
+      exact hlo1
+    have hup2 : ((m : Nat) : Int) * (2 * v.2) ≤ (2 ^ c.level : Int) := by
+      rw [← hmI]
+      exact Int.mul_le_mul_of_nonneg_left hspd2b hmI0
+    have hv2 : 2 * (((m : Nat) : Int) * v.2) ≤ (2 ^ c.level : Int) := by
+      rw [← (show ((m : Nat) : Int) * (2 * v.2)
+        = 2 * (((m : Nat) : Int) * v.2) from by ring)]
+      exact hup2
+    have hlo2 : -(((m : Nat) : Int) * ((p : Nat) : Int))
+        ≤ ((m : Nat) : Int) * (2 * v.2) := by
+      rw [show -(((m : Nat) : Int) * ((p : Nat) : Int))
+        = ((m : Nat) : Int) * -((p : Nat) : Int) from by ring]
+      exact Int.mul_le_mul_of_nonneg_left hspd2a hmI0
+    have hv2' : -(2 ^ c.level : Int) ≤ 2 * (((m : Nat) : Int) * v.2) := by
+      rw [← (show ((m : Nat) : Int) * (2 * v.2)
+        = 2 * (((m : Nat) : Int) * v.2) from by ring), ← hmI]
+      exact hlo2
+    omega
+
+/-- **hcap des unions mixtes — le maillon 6.** Un oscillateur `g₁` et un
+    vaisseau `g₂` de même période dyadique `p = 2 ^ i`, aux trajectoires
+    séparées d'au moins `max 3 (2 ^ i)` (chebyshevien) à toute phase, sont
+    capturés à tout instant : la séparation ≥ 3 paie la scission, la
+    séparation ≥ `2 ^ i` paie la fenêtre — chaque phase de l'union est
+    étalée sur `2 ^ i` par ses deux parties non vides
+    (`evolve_ne_of_period_ne` côté oscillateur, `evolve_ne_of_ship_ne`
+    côté vaisseau), donc reconstruite à un niveau `≥ i`, et `2 ^ i ∣
+    2 ^ level`. Le cœur consomme les deux côtés **au repère rendu à
+    l'origine** : la reconstruction les y transporte par shift, le point
+    fixe et la loi vaisseau passent par `evolve_shift` (le second avec un
+    `shift_shift` de commutativité), la séparation par l'invariance par
+    translation `chebDist_sub_pair`. -/
+theorem hcap_of_period_ship_union {p i : Nat} (hp : p = 2 ^ i)
+    (g₁ g₂ : Grid) (v : Int × Int)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂,
+      max 3 (2 ^ i) ≤ chebDist q r)
+    (hne₁ : g₁ ≠ []) (hne₂ : g₂ ≠ [])
+    (hfix₁ : evolve p g₁ = g₁) (hship₂ : evolve p g₂ = shift v g₂)
+    (hcan : Canonical (g₁ ++ g₂))
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int))
+    (t : Nat) :
+    jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true := by
+  have hp0 : 0 < p := by rw [hp]; exact pow_pos (by norm_num) i
+  have hsep3 : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r :=
+    fun s q hq r hr => Nat.le_trans (Nat.le_max_left 3 (2 ^ i)) (hsep s q hq r hr)
+  -- Canonicalité du côté vaisseau : suffixe droit de l'union canonique.
+  have hg₂ : Canonical g₂ := canonical_of_append_right hcan
+  -- Les deux côtés à l'instant t, dans le repère de l'union.
+  have hfix₁' : evolve p (evolve t g₁) = evolve t g₁ := by
+    rw [← evolve_add p t g₁, Nat.add_comm p t, evolve_add t p g₁, hfix₁]
+  have hship₂' : evolve p (evolve t g₂) = shift v (evolve t g₂) := by
+    rw [← evolve_add p t g₂, Nat.add_comm p t, evolve_add t p g₂, hship₂,
+      evolve_shift]
+  -- Témoins d'étendue : les deux parties restent non vides à l'instant t.
+  obtain ⟨pw, hpw⟩ : ∃ pw, pw ∈ evolve t g₁ :=
+    List.exists_mem_of_ne_nil _ (evolve_ne_of_period_ne hp0 g₁ hfix₁ hne₁ t)
+  obtain ⟨rw', hrw⟩ : ∃ rw', rw' ∈ evolve t g₂ :=
+    List.exists_mem_of_ne_nil _ (evolve_ne_of_ship_ne hp0 g₂ hg₂ v hship₂ hne₂ t)
+  have hmemU_p : pw ∈ evolve t (g₁ ++ g₂) :=
+    (mem_evolve_union_sep g₁ g₂ hsep3 t pw).mpr (Or.inl hpw)
+  have hmemU_r : rw' ∈ evolve t (g₁ ++ g₂) :=
+    (mem_evolve_union_sep g₁ g₂ hsep3 t rw').mpr (Or.inr hrw)
+  have hspan : 2 ^ i ≤ chebDist pw rw' :=
+    Nat.le_trans (Nat.le_max_right 3 (2 ^ i)) (hsep t pw hpw rw' hrw)
+  have hlvl : i ≤ (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level :=
+    gridToMacroCellWithOffset_level_ge_of_span _ i pw rw' hmemU_p hmemU_r hspan
+  have hdiv : p ∣ 2 ^ (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level := by
+    obtain ⟨j, hj⟩ : ∃ j, (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level
+        = i + j := ⟨(gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level - i,
+          by omega⟩
+    rw [hp, hj, pow_add]
+    exact ⟨2 ^ j, by ring⟩
+  have hneU : evolve t (g₁ ++ g₂) ≠ [] := by
+    intro hnil
+    rw [hnil] at hmemU_p
+    exact absurd hmemU_p (by simp)
+  have hwf : ((gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2).wf = true := by
+    unfold gridToMacroCellWithOffset
+    exact buildFromGrid_wf _ _ _ _
+  have hlvl1 : 1 ≤ (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level := by
+    have hN := gridToMacroCellWithOffsetN_level_gt_n 2 (evolve t (g₁ ++ g₂)) hneU
+    rw [gridToMacroCellWithOffsetN_le_two_eq 2 _ (by omega)] at hN
+    cases hL : (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.level with
+    | zero => rw [hL] at hN; exact absurd hN (by decide)
+    | succ m => omega
+  -- Transport des deux côtés au repère rendu à l'origine (cadrage du cœur).
+  have hframe : (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.toGrid (0, 0)
+      = shift (0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.1,
+               0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.2)
+          ((gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.toGrid
+            (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1) :=
+    toGrid_shift_grid _ 0 0 _ _
+  -- Point fixe transporté : le shift passe à travers evolve.
+  have hfix₁'' : evolve p (shift (0 - (gridToMacroCellWithOffset
+        (evolve t (g₁ ++ g₂))).1.1, 0 - (gridToMacroCellWithOffset
+        (evolve t (g₁ ++ g₂))).1.2) (evolve t g₁))
+      = shift (0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.1,
+               0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.2)
+          (evolve t g₁) := by
+    rw [← evolve_shift, hfix₁']
+  -- Loi vaisseau transportée : les deux shifts se commutent.
+  have hship₂'' : evolve p (shift (0 - (gridToMacroCellWithOffset
+        (evolve t (g₁ ++ g₂))).1.1, 0 - (gridToMacroCellWithOffset
+        (evolve t (g₁ ++ g₂))).1.2) (evolve t g₂))
+      = shift v (shift (0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.1,
+                        0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.2)
+          (evolve t g₂)) := by
+    rw [← evolve_shift, hship₂', shift_shift, shift_shift,
+      Int.add_comm (v.1 : Int)
+        (0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.1),
+      Int.add_comm (v.2 : Int)
+        (0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.2)]
+  -- Séparation transportée : invariance par translation de chebDist.
+  have hsep'' : ∀ s, ∀ q ∈ evolve s (shift (0 - (gridToMacroCellWithOffset
+        (evolve t (g₁ ++ g₂))).1.1, 0 - (gridToMacroCellWithOffset
+        (evolve t (g₁ ++ g₂))).1.2) (evolve t g₁)),
+      ∀ r ∈ evolve s (shift (0 - (gridToMacroCellWithOffset
+        (evolve t (g₁ ++ g₂))).1.1, 0 - (gridToMacroCellWithOffset
+        (evolve t (g₁ ++ g₂))).1.2) (evolve t g₂)),
+      3 ≤ chebDist q r := by
+    intro s q hq r hr
+    rw [← evolve_shift, mem_shift, ← evolve_add s t g₁] at hq
+    rw [← evolve_shift, mem_shift, ← evolve_add s t g₂] at hr
+    rw [← chebDist_sub_pair (0 - (gridToMacroCellWithOffset
+      (evolve t (g₁ ++ g₂))).1.1, 0 - (gridToMacroCellWithOffset
+      (evolve t (g₁ ++ g₂))).1.2) q r]
+    exact hsep3 (s + t) _ hq _ hr
+  -- Scission au niveau des membres, au repère rendu à l'origine.
+  have hmem : ∀ q, (q ∈ (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2.toGrid (0, 0)
+      ↔ (q ∈ shift (0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.1,
+                    0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.2)
+            (evolve t g₁)
+        ∨ q ∈ shift (0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.1,
+                     0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.2)
+            (evolve t g₂))) := by
+    intro q
+    rw [hframe, mem_shift, mem_toGrid_gridToMacroCellWithOffset,
+      mem_evolve_union_sep g₁ g₂ hsep3 t,
+      ← mem_shift (0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.1,
+                   0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.2)
+          (evolve t g₁) q,
+      ← mem_shift (0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.1,
+                   0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.2)
+          (evolve t g₂) q]
+  exact jumpCapturedF_of_period_ship_union _ hwf hlvl1 hp0 v
+    (shift (0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.1,
+            0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.2) (evolve t g₁))
+    (shift (0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.1,
+            0 - (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).1.2) (evolve t g₂))
+    hmem hsep'' hfix₁'' hship₂'' (canonical_shift _ _) hdiv hspd1 hspd2
+
+/-- **L3 clos pour les unions mixtes.** Corollaire d'assemblage miroir des
+    deux précédents : une MacroCell dont la grille rendue à l'origine se
+    scinde en un oscillateur et un vaisseau de même période dyadique
+    `p = 2 ^ i` (bornes de vitesse `2·|v.i| ≤ p`), aux trajectoires
+    séparées d'au moins `max 3 (2 ^ i)`, satisfait l'égalité Hashlife à
+    tout horizon `2^k` sous `centralCorrect`. Troisième cas L3 **composé**
+    et premier **hétérogène** : un blinker et un glider synchrones séparés
+    par quatre cellules — chaque objet couvert seul l'était déjà, leur
+    union ne l'était par aucun maillon précédent. -/
+theorem hashlife_correct_margin_of_period_ship_union (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {p i : Nat} (hp : p = 2 ^ i)
+    (v : Int × Int) (g₁ g₂ : Grid)
+    (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂,
+      max 3 (2 ^ i) ≤ chebDist q r)
+    (hne₁ : g₁ ≠ []) (hne₂ : g₂ ≠ [])
+    (hfix₁ : evolve p g₁ = g₁) (hship₂ : evolve p g₂ = shift v g₂)
+    (hcan : Canonical (g₁ ++ g₂))
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_period_ship_union hp g₁ g₂ v hsep hne₁ hne₂ hfix₁ hship₂ hcan
+    hspd1 hspd2 t
+
 /-! ## Synthèse — le fragment est non vide et l'énoncé-cadre est honnête
 
 `supportInMargin` est décidable et témoigné sur le bestiaire (ci-dessus). L'énoncé-cadre
