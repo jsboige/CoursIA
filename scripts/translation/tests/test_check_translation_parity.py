@@ -734,7 +734,12 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # sans mettre a jour cette ligne, ce qui a rougi test_full_repo_state_passes_parity
 # (found 14, declared 13) sur main pur et sur toute PR path-filtree scripts/**
 # (diagnostic po-2027, dashboard 2026-10-19T06:10Z). Total apres fusion : 13 + 1 = 14.
-EXPECTED_PAIR_COUNT = 14
+# 2026-10-20 (#1650 tranche Complexity-03 TimeHierarchy, serie Complexity axe E,
+# T3+T4) : +1 paire T4 -- Complexity/Complexity-03-TimeHierarchy_en (9 cellules
+# md EN remplies dans le CSV puis rendues --require-translated, 6 cellules code
+# copiees verbatim, 0 orphelin). Premiere paire de la serie Complexity.
+# Total apres fusion : 14 + 1 = 15.
+EXPECTED_PAIR_COUNT = 15
 
 
 def _collect_parity_failures(repo_root: Path,
