@@ -1880,7 +1880,7 @@ project:
     - "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb"
     - "MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb"
-    - "MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb"
+    - "MyIA.AI.Notebooks/Search/App-32-Szpiro-Pasten-2026.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace.ipynb"
     - "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-02-Uninformed-CSharp.ipynb"
