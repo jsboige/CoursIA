@@ -20,8 +20,8 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `hold-runner.ps1` | po-2024 (hote Windows) | tache planifiee | reference |
 | `coursia-lean.service` | **po-2024** | `/etc/systemd/system/coursia-lean.service` | reference |
 | `coursia-lean-start.sh` | **po-2024** | `/usr/local/bin/coursia-lean-start.sh` | reference |
-| `coursia-waiters.service` | **ai-01** | `/etc/systemd/system/coursia-waiters.service` | reference |
-| `coursia-waiters-start.sh` | **ai-01** | `/usr/local/bin/coursia-waiters-start.sh` | reference |
+| `coursia-waiters.service` | **ai-01** | `/etc/systemd/system/coursia-waiters.service` | **DEPRECATED 2026-10-15, #20835, c.500** -- service desactive et fichier detruit sur ai-01 (19:48Z), reference conservee pour reactivation (memo UAC Rule 1) ; NE PAS REDEPLOYER sans avoir verifie qu'un consommateur du label `coursia-waiter` existe a nouveau |
+| `coursia-waiters-start.sh` | **ai-01** | `/usr/local/bin/coursia-waiters-start.sh` | reference (DEPRECATED avec le service, voir ligne ci-dessus) |
 | `coursia-ci.slice` | **ai-01** | `/etc/systemd/system/coursia-ci.slice` | **deploye et vivant** -- 7235 octets, documente, et il etait **en avance sur le depot** : c'est le depot qui a ete synchronise depuis le vivant, pas l'inverse (cf. correction 6) |
 | `daemon.json` | **ai-01** | `/etc/docker/daemon.json` | **deploye et vivant** -- 155 octets, **byte-identique** a la copie du depot (`sha256:1ef80038e470...`, mesure le 2026-09-08) |
 | `ai-01/coursia-runner.service` | **ai-01** | `/etc/systemd/system/coursia-runner.service` | **a deployer** (corrige, cf. correction 3) -- **jamais seul**, cf. correction 4 |
