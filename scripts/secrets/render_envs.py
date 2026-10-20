@@ -28,7 +28,13 @@ MODES
               when already in sync).
   --check     report drift only (any service .env whose value for a
               SECRET key differs from master), exit 1 on drift. Use as a
-              CI / pre-commit gate.
+              CI / pre-commit gate. (#17558 phase 4) --check ALSO compares
+              the MyIA-Keys vault to master.env by fingerprint (never a
+              value): a shared key whose stored fingerprint diverges is
+              drift (exit 1); keys of master.env absent from the vault are
+              NAMED (unmigrated, exit 1 only with --strict); an unreachable
+              vault is UNKNOWN and never fails --check (doctor owns vault
+              state).
   --strict    exit 1 when a SECRET key declared in SECRET_KEYS is absent
               from master.env (so a CI can distinguish "in sync" from
               "in sync on what I watch" -- a declared key that drifts can
@@ -362,6 +368,96 @@ def read_env(path: Path) -> dict[str, str]:
 
 
 # --------------------------------------------------------------------------- #
+# Phase 4 de #17558 : --check compare AUSSI le coffre MyIA-Keys a master.env
+# --------------------------------------------------------------------------- #
+# Angle mort #14373 : des cles declarees dans SECRET_KEYS pouvaient etre hors
+# perimetre de tout .env consommateur, et ``--check`` lisait quand meme
+# ``[OK] No drift`` -- le perimetre de comparaison s'arretait a master.env.
+# Depuis la phase 3 (import des cles partagees au coffre), la question de
+# coherence qui reste ouverte est coffre <-> master.env : la meme cle doit
+# porter la MEME valeur des deux cotes, sinon la "source unique" n'en est pas
+# une. La comparaison se fait par EMPREINTE (meme organe que ``doctor`` :
+# PBKDF2 couteux, deterministe), et AUCUNE empreinte ni valeur n'est affichee
+# -- seule l'egalite ou la divergence des noms de cles sort.
+#
+# Coffre injoignable (GDrive non monte, passphrase absente, pykeepass absent) :
+# UNKNOWN nomme, ni drift ni ecart -- l'etat du coffre reste l'affaire de
+# ``agent_keyring.py doctor`` ; render_envs ne fabrique ni faux vert ni faux
+# rouge sur ce qu'il ne peut pas lire.
+
+
+def _vault_fingerprints():
+    """(title -> empreinte de la valeur stockee, None), ou (None, raison).
+
+    Import paresseux du module sibling : pykeepass est une dependance du
+    coffre, pas de render_envs -- sans coffre, --check doit rester utilisable.
+    """
+    try:
+        import agent_keyring
+    except ImportError as exc:
+        return None, f"agent_keyring import ({type(exc).__name__})"
+    try:
+        kp = agent_keyring.open_vault(quiet=True)
+    except SystemExit as exc:
+        return None, f"coffre injoignable (agent_keyring exit {exc.code})"
+    except Exception as exc:  # pragma: no cover - transport GDrive inattendu
+        return None, f"coffre injoignable ({type(exc).__name__})"
+    fp: dict[str, str] = {}
+    for entry in agent_keyring.iter_entries(kp, None):
+        title = (entry.title or "").strip()
+        if title and entry.password:
+            fp[title] = agent_keyring.fingerprint(entry.password)
+    return fp, None
+
+
+def _master_fingerprints(master: dict[str, str]) -> dict[str, str]:
+    """Empreinte PBKDF2 de chaque valeur de master.env (cf.
+    _vault_fingerprints : meme organe, jamais affiche).
+    ~0,3 s par cle -- n'appeler que coffre lu."""
+    import agent_keyring
+    return {key: agent_keyring.fingerprint(val) for key, val in master.items()}
+
+
+def keyring_master_report(master_fp: dict[str, str],
+                          vault_fp: "dict[str, str] | None",
+                          vault_reason: "str | None" = None):
+    """Rapport coffre <-> master.env, par empreintes pre-calculees.
+
+    Retour (lines, drift_keys, unmigrated) :
+      * lines      -- lignes a afficher (noms de cles seulement, aucune valeur
+                      ni empreinte) ;
+      * drift_keys -- cles presentes des deux cotes dont l'empreinte diverge :
+                      la source unique n'est pas unique, --check sort 1 ;
+      * unmigrated -- cles de master.env absentes du coffre (phase 3 non
+                      terminee pour elles) : nommees par --check, exit 1
+                      seulement en --strict, comme les autres ecarts nommes.
+
+    Pure : les tests fabriquent les empreintes qu'ils veulent.
+    """
+    if vault_fp is None:
+        return ([f"  keyring: UNKNOWN ({vault_reason}) -- coffre non compare, "
+                 f"cf. agent_keyring.py doctor"], [], [])
+    common = sorted(master_fp.keys() & vault_fp.keys())
+    diverging = sorted(k for k in common if master_fp[k] != vault_fp[k])
+    unmigrated = sorted(master_fp.keys() - vault_fp.keys())
+    vault_only = sorted(vault_fp.keys() - master_fp.keys())
+    lines = [f"  keyring: {len(vault_fp)} entree(s) au coffre, "
+             f"{len(common)} commune(s) avec master.env"]
+    if diverging:
+        lines.append(f"  keyring DRIFT: {len(diverging)} cle(s) commune(s) "
+                     f"dont l'empreinte diverge: {diverging}")
+    if unmigrated:
+        lines.append(f"  keyring: {len(unmigrated)} cle(s) de master.env "
+                     f"absentes du coffre (migration #17558 phase 3 "
+                     f"non terminee): {unmigrated}")
+    if vault_only:
+        lines.append(f"  keyring: {len(vault_only)} cle(s) au coffre sans "
+                     f"ligne master.env (post-phase 6 c'est la norme): "
+                     f"{vault_only}")
+    return lines, diverging, unmigrated
+
+
+# --------------------------------------------------------------------------- #
 # Couplage passerelle claudish : l'endpoint implique la cle d'authentification
 # --------------------------------------------------------------------------- #
 # Un .env qui porte l'endpoint de la passerelle (OPENAI_BASE_URL vers
@@ -592,6 +688,24 @@ def sync(check_only: bool, strict: bool = False) -> int:
             env.write_text("\n".join(out_lines) + "\n", encoding="utf-8")
             written.append(env.parent.name)
 
+    # Phase 4 de #17558 : en mode --check uniquement (render_envs n'ecrit
+    # JAMAIS dans le coffre -- un seul ecrivain, cf. l'issue), la comparaison
+    # s'etend au coffre MyIA-Keys. Divergence d'empreinte -> drift (exit 1) ;
+    # cles non migrees -> nommees, exit 1 seulement en --strict.
+    keyring_lines: list[str] = []
+    keyring_unmigrated: list[str] = []
+    if check_only:
+        vault_fp, vault_reason = _vault_fingerprints()
+        master_fp = (_master_fingerprints(master)
+                     if vault_fp is not None else {})
+        keyring_lines, keyring_diverging, keyring_unmigrated = \
+            keyring_master_report(master_fp, vault_fp, vault_reason)
+        for key in keyring_diverging:
+            drift.append(f"  keyring: {key} empreinte coffre != master.env")
+        print("[i] coffre MyIA-Keys vs master.env (#17558 phase 4):")
+        for line in keyring_lines:
+            print(line)
+
     if absent_targets:
         for lbl in absent_targets:
             req = REQUIRED_KEYS.get(lbl)
@@ -641,7 +755,7 @@ def sync(check_only: bool, strict: bool = False) -> int:
     else:
         print(f"[OK] {on_disk}/{len(TARGET_ENVS)} target .env on disk, in sync "
               f"with master.env ({len(master)} secret keys). No drift.")
-    if strict and (missing_in_master or required_gaps):
+    if strict and (missing_in_master or required_gaps or keyring_unmigrated):
         return 1
     return 0
 
