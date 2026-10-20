@@ -378,19 +378,27 @@ function Save-ShareState {
         [array]$Existing,
         [array]$StateMembers,
         [array]$RolledBack,
-        [string]$CacheMathlib
+        [string]$CacheMathlib,
+        [string]$CreatedAt
     )
     $combined = @($Existing) + @($StateMembers)
     $merged = @($combined |
         Group-Object { $_.relPath } | ForEach-Object { $_.Group[-1] } |
         Where-Object { Test-JunctionPointsTo ([string]$_.mathlibDir) $CacheMathlib })
+    # (#21462 review) Elagage de rolledBack : un membre re-junctionne par un
+    # Apply ulterieur est RE-APPROVISIONNE -- son entree rollback survit sinon
+    # indefiniment et le rappel du Rollback affiche un needsProvision=true
+    # perime apres re-provisionnement effectif. Ne survit qu'un rollback dont
+    # le membre n'est pas dans l'etat final conforme au disque.
+    $mergedRel = @($merged | ForEach-Object { $_.relPath })
+    $rolledPruned = @($RolledBack | Where-Object { $mergedRel -notcontains $_.relPath })
     [ordered]@{
         groupId    = $GroupId
         toolchain  = $GroupFirst.Toolchain
         mathlibRev = $GroupFirst.MathlibRev
-        createdAt  = (Get-Date -Format 'o')
+        createdAt  = $CreatedAt
         members    = @($merged)
-        rolledBack = @($RolledBack)
+        rolledBack = $rolledPruned
     } | ConvertTo-Json -Depth 4 |
         Set-Content -LiteralPath $StatePath -Encoding utf8NoBOM
 }
@@ -453,9 +461,23 @@ function Invoke-Apply {
         # Apply interrompu entre la junction et la persistance de l'etat se repare en
         # relancant le meme Apply (incident 2026-06-11, abort PS5.1 sur utf8NoBOM).
         $statePath = Get-ShareStatePath $groupId
-        $existing = if (Test-Path -LiteralPath $statePath) {
-            @((Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json).members)
-        } else { @() }
+        # (#21462 review) L'etat brut est garde : son createdAt est PRESERVE sur
+        # les saves ulterieurs (l'heure de creation du groupe ne glisse pas a
+        # chaque run) ; horodatage courant seulement a la creation du groupe.
+        # Piège PS7 : ConvertFrom-Json COERCE les dates ISO en [datetime] (la
+        # chaine ecrite est perdue, re-rendue au format locale) -- le champ est
+        # donc extrait du TEXTE BRUT par regex, puis canonise en UTC 'o' :
+        # byte-identique de save en save, lisible quelle que soit la zone.
+        $stateRawText = if (Test-Path -LiteralPath $statePath) {
+            Get-Content -LiteralPath $statePath -Raw
+        } else { $null }
+        $stateRaw = if ($stateRawText) { $stateRawText | ConvertFrom-Json } else { $null }
+        $existing = if ($stateRaw) { @($stateRaw.members) } else { @() }
+        $createdRaw = if ($stateRawText -and $stateRawText -match '"createdAt"\s*:\s*"([^"]+)"') { $Matches[1] }
+        $createdAt = if ($createdRaw) {
+            [DateTimeOffset]::Parse($createdRaw,
+                [System.Globalization.CultureInfo]::InvariantCulture).ToUniversalTime().ToString('o')
+        } else { ([DateTimeOffset]::UtcNow).ToString('o') }
         $stateMembers = @()
         $rolledBack = @()
         foreach ($m in @($g.Group)) {
@@ -515,7 +537,7 @@ function Invoke-Apply {
                     # Persistance immediate (#21454) : le `continue` court-circuite
                     # la sauvegarde de fin d'iteration.
                     Save-ShareState -StatePath $statePath -GroupId $groupId -GroupFirst $g.Group[0] `
-                        -Existing $existing -StateMembers $stateMembers -RolledBack $rolledBack -CacheMathlib $cacheMathlib
+                        -Existing $existing -StateMembers $stateMembers -RolledBack $rolledBack -CacheMathlib $cacheMathlib -CreatedAt $createdAt
                     continue
                 }
                 Write-Host "  lake build $($m.RelPath) ..." -NoNewline
@@ -549,7 +571,7 @@ function Invoke-Apply {
             # rollbackes tombent ici aussi (le filtre disque de Save-ShareState
             # les retire, ils ne peuvent plus y etre reintroduits par $existing).
             Save-ShareState -StatePath $statePath -GroupId $groupId -GroupFirst $g.Group[0] `
-                -Existing $existing -StateMembers $stateMembers -RolledBack $rolledBack -CacheMathlib $cacheMathlib
+                -Existing $existing -StateMembers $stateMembers -RolledBack $rolledBack -CacheMathlib $cacheMathlib -CreatedAt $createdAt
         }
         Write-Host "Etat persiste (apres chaque membre) : $statePath"
     }

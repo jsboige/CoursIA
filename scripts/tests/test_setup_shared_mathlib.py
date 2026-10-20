@@ -220,3 +220,55 @@ def test_interrupted_run_preserves_treated_members_trace(
     assert rolled == ["projB"]
     # projB restaure physique depuis son bak.
     assert (root / "projB" / ".lake" / "packages" / "mathlib" / "marker-projB.txt").exists()
+
+
+@requires_windows
+def test_reprovisioned_member_pruned_and_createdat_preserved(
+    fixture_repo: SimpleNamespace,
+) -> None:
+    """Reserves #21462 : elagage de rolledBack + createdAt preserve.
+
+    Un membre rollbacke puis RE-APPROVISIONNE par un Apply ulterieur ne doit
+    plus rester dans rolledBack (le rappel du Rollback affichait un
+    needsProvision perime apres reprovisionnement effectif), et le createdAt
+    du groupe ne doit pas glisser a chaque save.
+    """
+    root, group_dir = fixture_repo.root, fixture_repo.group_dir
+
+    # Phase 1 : tout reussit -> creation du groupe, createdAt de reference.
+    _write_shim(root, ["exit /b 0"])
+    proc1 = _run_apply(root)
+    assert proc1.returncode == 0, f"phase 1 stdout tail:\n{proc1.stdout[-1500:]}"
+    state1 = _read_state(root, group_dir)
+    created_ref = state1["createdAt"]
+    assert state1.get("rolledBack", []) == []
+
+    # Phase 2 : projB seul echoue -> rollback, entre dans rolledBack.
+    _write_shim(root, [
+        'echo %CD% | findstr /C:"projB" >nul && exit /b 1',
+        "exit /b 0",
+    ])
+    proc2 = _run_apply(root)
+    assert proc2.returncode == 0, f"phase 2 stdout tail:\n{proc2.stdout[-1500:]}"
+    state2 = _read_state(root, group_dir)
+    assert sorted(m["relPath"] for m in state2["members"]) == ["projA", "projC"]
+    assert sorted(m["relPath"] for m in state2["rolledBack"]) == ["projB"]
+    # createdAt preserve des le deuxieme save.
+    assert state2["createdAt"] == created_ref
+
+    # Phase 3 : tout reussit -> projB re-junctionne (re-approvisionne).
+    _write_shim(root, ["exit /b 0"])
+    proc3 = _run_apply(root)
+    assert proc3.returncode == 0, f"phase 3 stdout tail:\n{proc3.stdout[-1500:]}"
+    state3 = _read_state(root, group_dir)
+    assert sorted(m["relPath"] for m in state3["members"]) == ["projA", "projB", "projC"]
+    # Le correctif : l'entree rollback de projB est ELAGUEE (membre de nouveau
+    # jonctionne = re-approvisionne ; le rappel du Rollback ne doit plus le
+    # montrer needsProvision).
+    assert state3.get("rolledBack", []) == [], (
+        f"rolledBack apres reprovisionnement : {state3.get('rolledBack')}"
+    )
+    # createdAt toujours celui de la creation du groupe.
+    assert state3["createdAt"] == created_ref
+    # Verite disque : projB jonctionne vers le cache (marqueur du donneur).
+    assert (root / "projB" / ".lake" / "packages" / "mathlib" / "marker-projA.txt").exists()
