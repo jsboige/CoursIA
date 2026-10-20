@@ -49,7 +49,7 @@ Fidélité de la reconstitution de la scène Lego (dataset officiel NeRF, 106 vu
 
 ## 3. Socle splats (`3D-03-Gaussian-Splats-Concepts.ipynb`) — reproduction **exacte**
 
-Exécution fraîche sur `po-2028` (torch 2.8.0+cu126, semences du carnet inchangées, 15 cellules de code, **0 `execution_count` nul, 0 erreur**), comparée aux sorties committées du dépôt.
+Exécution fraîche sur `po-2028` (torch 2.8.0+cu126, semences du carnet inchangées, **0 `execution_count` nul, 0 erreur**), comparée aux sorties committées du dépôt.
 
 | Mesure | Référence (sorties committées) | po-2028 (exécution fraîche) | Écart |
 |---|---:|---:|---:|
