@@ -199,7 +199,6 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 39 | [ICT-21c-SAECatastrophes-Python — forme et dynamique des…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-21c-SAECatastrophes-Python.ipynb) | BETA | Non |
 | 40 | [ICT-22 — LLMSubstrat : le transformer comme quatrième…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22-LLMSubstrat-Python.ipynb) | BETA | Non |
 | 41 | [ICT-22b -- Moteur d'intervention causal : operer,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22b-CausalInterventionEngine-Python.ipynb) | BETA | Non |
-| 42 | [ICT-22c — La géométrie de la vérité : une direction…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22c-GeometryOfTruth-Python.ipynb) | BETA | Non |
 | 43 | [ICT-23 — PersonaCatastrophe : la fronce de Thom…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-23-PersonaCatastrophe-Python.ipynb) | BETA | Oui |
 | 44 | [ICT-24 — WorkspaceIgnition : l'axe Global Workspace et…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-24-WorkspaceIgnition-Python.ipynb) | BETA | Non |
 | 45 | [ICT-25 — InoculationRL : GRPO à récompense *hackable*,…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-25-InoculationRL-Python.ipynb) | BETA | Non |
