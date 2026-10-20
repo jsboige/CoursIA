@@ -34,12 +34,13 @@ la classification du harnais BootLoops — polylogarithmes → elliptique → K3
 Calabi-Yau. Les carnets suivants sont des **candidats bornés**, arbitrés à
 l'usage — aucun n'est promis :
 
-- **Integrales-02 — Le triangle massique, l'entrée dans le monde elliptique**
-  (candidat) : dès qu'une masse interne apparaît, la forme fermée en
-  $\mathrm{Cl}_2$ disparaît — les périodes de l'objet vivent sur une courbe
-  elliptique. Le carnet mesurerait la transition : accord quadrature contre
-  intégration sur la courbe, et échec *honnête* de l'identification de constantes
-  (l'anneau déclaré ne contient plus $\mathrm{Cl}_2$).
+- **Integrales-02 — Le diagramme sunrise à masses égales : la sortie des
+  polylogarithmes** (candidat) : un tour de boucle de plus que le triangle, le
+  même polynôme de Symanzik $U = x_1x_2 + x_1x_3 + x_2x_3$ — et en $d = 2$
+  l'objet devient elliptique. (Le triangle *massif* à une boucle, lui, reste
+  dilogarithmique — 't Hooft–Veltman : le saut de classe se produit ici, pas
+  là.) À $q^2 = 0$ le sunrise retombe exactement sur $J(1,1,1)$ du carnet 01 :
+  l'ancre entre les deux carnets est mathématiquement exacte.
 - **Integrales-03 — La bulle et la première divergence** (candidat) : deux
   propagateurs en $d = 4$, la divergence logarithmique UV, et la régularisation
   introduite comme le carnet 01 traite ses limites — un paramètre, une échelle,
