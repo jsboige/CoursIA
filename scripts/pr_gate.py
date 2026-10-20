@@ -2349,8 +2349,22 @@ def _maybe_post_check_run(args, code: int, message: str) -> None:
     before #10433 item-1), never a false PASS. The exit code already reflects
     the verdict; this only concerns whether the fresh verdict *surfaces* on the
     PR head.
+
+    A DWELL verdict is a merge-floor timer, not a content failure -- POSTing it
+    as ``conclusion=failure`` lands an unliftable red on the PR head (#21543):
+    the POSTed check-run sits in a foreign suite (no workflow run behind it),
+    GitHub ANDs every same-named check, and neither re-run nor PATCH can lift
+    it.  The real ``PR gate`` job leg already surfaces the DWELL message, so
+    skipping the POST loses nothing.
     """
     if not args.post_check_run:
+        return
+    if message.startswith("DWELL"):
+        print(
+            "[pr-gate] DWELL verdict -- skipping check-run POST "
+            "(a timer is not a failure; #21543)",
+            flush=True,
+        )
         return
     try:
         post_check_run(args.repo, args.sha, args.self_name, code, message)
