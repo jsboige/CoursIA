@@ -169,6 +169,9 @@ services:
 
   # Qwen3 TTS - Via vLLM-Omni
   tts-qwen:
+    # Renvoi distillation #19341 (pont 3.3, Sona / arXiv 2608.11015) : ce service
+    # vLLM-Omni est le candidat naturel pour servir le tokenizer semantique figé de
+    # Sona, à reconfigurer en mode extraction plutôt que génération.
     build:
       context: ./qwen
       dockerfile: Dockerfile

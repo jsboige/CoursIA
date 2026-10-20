@@ -88,7 +88,7 @@ Identique à la série parente ([Partie 4 README §Configuration requise](../REA
 
 - Kernel `dotnet-interactive` 1.0.707101+ (hôte .NET moderne, charge net8.0/net9.0/net10).
 - Sous-module `MetaGeneticSharp/` buildé (DLLs `net9.0`).
-- Pont PythonNet pour les comparaisons mealpy (kernel `.NET` charge `mealpy` 3.0.2 via Python.NET).
+- Pont PythonNet pour les comparaisons mealpy (kernel `.NET` charge `mealpy` 3.0.2 via Python.NET) : un CPython qui importe `mealpy`, que trouve [`Config/PythonNetLoader.cs`](../../../Config/PythonNetLoader.cs) (installations standard de Windows, puis `python3` et `python` du `PATH`), ou que désigne `PYTHONNET_PYDLL`.
 - Reproductibilité seedée pour MGS-22 à MGS-31 (graines `{0, 1, 7, 42}` + `FastRandomRandomization.ResetSeed`).
 
 Règle C.2 : notebooks committés **avec leurs outputs** (exécution réelle, kernel .NET).

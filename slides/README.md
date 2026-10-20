@@ -53,6 +53,7 @@ Les images pleine-largeur utilisent le layout **`image-overlay`** (fond d'image 
 | 06 | Apprentissage | `06-apprentissage/` | ~2394 | 140 | EPITA, ECE, EPF |
 | 07 | Elargissements | `07-elargissements/` | ~642 | 9 | EPITA, EPF |
 | 08 | IA Generative | `08-ia-generative/` | ~464 | 36 | EPITA, ECE, EPF |
+| 09 | Traitement automatique des langues | `09-traitement-automatique-langues/` | - | - | - |
 | S1 | Argumentation | `S1-argumentation/` | ~791 | 20 | Sessions avancees |
 | S2 | IA exploratoire/symbolique | `S2-ia-exploratoire-symbolique/` | ~1112 | 54 | Sessions avancees |
 | S3 | Acculturation IA | `S3-acculturation/` | ~2039 | 133 | Sessions avancees |
@@ -136,7 +137,7 @@ Regles de base pour les images et le layout :
 ## Decisions de conception
 
 - **Slidev** (Markdown + Vue) : hot-reload, layouts custom, composants Vue pour interactivite, export HTML/PDF
-- **Theme-ia101 partage** : coherence visuelle entre tous les decks (13 au total)
+- **Theme-ia101 partage** : coherence visuelle entre tous les decks
 - **Images en overlay** : layout `image-overlay` pour les slides image-dominantes, jamais en colonne droite (convention issue #221, confirmee 5+ fois)
 - **Slides "Questions?"** conservees comme pauses respiratoires entre sections
 - **PPTX-reference en `.gitignore` ou committe** selon le deck : les renders PNG servent a l'audit visuel

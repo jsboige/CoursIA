@@ -96,6 +96,7 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 | 7 | MCTS-And-Beyond | Monte Carlo Tree Search et la révolution AlphaGo (MCTS + DQN) |
 | 8 | DancingLinks | Couverture exacte de Knuth : une structure de données transforme un algorithme |
 | 9 | LinearProgramming | Programmation linéaire (PuLP) : relaxer les contraintes entières |
+| 9f | ConvexOptimisation | Du linéaire au convexe (cvxpy) : LP relu comme QP dégénérée, Markowitz en QP exacte (App-10), plafond de risque SOCP |
 | 10 | SymbolicAutomata | Automates finis + Z3 : raisonner sur des alphabets infinis |
 | 11 | Métaheuristiques | PSO, ABC, BRO avec MEALPy : comparer 160+ algorithmes |
 
@@ -292,7 +293,7 @@ Au-delà de la Partie 2, le même marathon a livré les jumeaux C# de la **Parti
 - [Convex Optimization - Boyd & Vandenberghe (Cambridge UP, 2004)](https://web.stanford.edu/~boyd/cvxbook/) - Cadre unificateur LP/QP/SOCP/SDP ; le LP de Search-9 en est le cas linéaire. Archive : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Search\2004 - Convex Optimisation.pdf`
 - [Heuristic Search: Theory and Applications - Edelkamp & Schrödl (Morgan Kaufmann, 2012)](https://www.elsevier.com/books/heuristic-search-theory-and-applications/edelkamp/978-0-12-372512-7) - Le partage de coûts (cost partitioning) qui sous-tend la PDB additive. Ancre page mesurée sur l'index du PDF archivé : *action cost partitioning* / *pattern database partitioning*, **p. 312** (exemplaire tronqué : seule l'index pp. 826-835 est lisible ; chapitre 8 *Combining Heuristic Functions* cohérent avec la TOC de l'édition, à confirmer sur un exemplaire complet).
 - [Constraint Processing - Rina Dechter (Morgan Kaufmann, 2003)](https://shop.elsevier.com/books/constraint-processing/dechter/978-1-55860-890-0)
-- [Handbook of Constraint Programming (2006)](https://www.elsevier.com/books/handbook-of-constraint-programming/)
+- [Handbook of Constraint Programming (Rossi, van Beek, Walsh, 2006, Elsevier)](https://www.elsevier.com/books/handbook-of-constraint-programming/) - Ouvrage-ancrage de la série *Part2-CSP* (26 chapitres, 2 parts : Foundations ch. 1-11 / Extensions & Applications ch. 12-26). Couverture chapitrée : Ch. 1 *Introduction* p. 3 (carte thematique), Ch. 4 *Backtracking Search* p. 83, Ch. 7 *Global Constraints* p. 205, Ch. 9 *Soft Constraints* p. 279, Ch. 15 *Operations Research Methods in Constraint Programming* p. 525, Ch. 19 *Temporal CSPs* (Manolis Koubarakis) p. 663. Gisement : `G:\Mon Drive\MyIA\IA\Bibliographie IA\Constraint Programming\2006 - Handbook of Constraint Programming.pdf` (7,17 Mo, %PDF-1.2).
 - [The CP-SAT Primer (Krupke & Schmitt, 2023, CC-BY)](https://d-krupke.github.io/cpsat-primer/) - Fonctionnement interne de CP-SAT : presolve, LNS, hints de solution, portfolio de workers (lecture en ligne gratuite)
 
 ### Bibliothèques
@@ -323,7 +324,7 @@ Search/
 ├── README.md                              # Ce fichier
 ├── requirements.txt                       # Dependances Python
 ├── search_helpers.py                      # Utilitaires partages
-├── Part1-Foundations/                     # Search Fondamental — jumeaux directs -Csharp Search-1..11/2b/03b..03d + Search-2c QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets + Search-09b/09c discrépance + Search-03e optimalité A* + Search-11c/11d sélection empirique & descente sous budget + Search-12a Composer-Regards + Search-13a Traverser-Murs-Certifies
+├── Part1-Foundations/                     # Search Fondamental — jumeaux directs -Csharp Search-1..11/2b/03b..03d + Search-2c QuikGraph natif + déclinaison Métaheuristiques Search-11b en 4 volets + Search-09b/09c discrépance + Search-09d/09e compagnons Lean + Search-09f optimisation convexe + Search-03e optimalité A* + Search-11c/11d sélection empirique & descente sous budget + Search-12a Composer-Regards + Search-13a Traverser-Murs-Certifies
 │   ├── Search-01-StateSpace.ipynb
 │   ├── Search-02-Uninformed.ipynb
 │   ├── Search-02b-NetworkX.ipynb
@@ -340,6 +341,7 @@ Search/
 │   ├── Search-09c-CombinatorialDiscrepancy.ipynb
 │   ├── Search-09d-BeckFiala-Lean-Python.ipynb   # Beck–Fiala : pont Python vers le lake, sans Lean au runtime
 │   ├── Search-09e-Komlos-Lean.ipynb             # Compagnon formel : lake discrepancy_lean via kernel lean4-wsl (#13868)
+│   ├── Search-09f-ConvexOptimisation-Python.ipynb   # Du linéaire au convexe : LP → QP → SOCP (cvxpy), Markowitz App-10 en QP exacte
 │   ├── Search-10-SymbolicAutomata.ipynb
 │   ├── Search-11-Metaheuristics.ipynb
 │   ├── Search-11c-Empirical-Algorithm-Selection.ipynb
@@ -586,7 +588,7 @@ Le hub Search alignait une riche prose sur la double approche *exploration syst�
 | Search / Part 1 | `search_lean` | A\* consistance d'heuristique (P2) + relaxation pondérée | [Search-03d-WeightedAstar](Part1-Foundations/Search-03d-WeightedAstar.ipynb) (Weighted A\*, Pohl 1970) |
 | Search / Part 1 | `search_lean` | Pattern DB additives (Korf & Felner 2002) | [Search-03b-PatternDatabases](Part1-Foundations/Search-03b-PatternDatabases.ipynb) |
 | ML | `learning_theory_lean` (#5054) | Novikoff perceptron 0 sorry #4140 | [`Perceptron.lean`](../ML/learning_theory_lean/Perceptron/Perceptron.lean) (lake, pas notebook pédagogique) |
-| Probas | `decision_theory_lean` (#5053) | Concentration uniforme + Hoeffding (PAC iter-2) | [Infer-3-Factor-Graphs](../Probas/Infer/Infer-3-Factor-Graphs.ipynb) (factor graphs + PAC) |
+| Probas | `decision_theory_lean` (#5053) | Concentration uniforme + Hoeffding (PAC iter-2) | [Infer-03-Factor-Graphs](../Probas/Infer/Infer-03-Factor-Graphs.ipynb) (factor graphs + PAC) |
 | QC | `kelly_lean` (#5047) | Kelly criterion + mean-variance bound | [QC-Py-10-Risk-Portfolio-Management](../QuantConnect/Python/QC-Py-10-Risk-Portfolio-Management.ipynb) (Kelly sizing) |
 | GameTheory | `game_theory_lean/SocialChoice` (lakes standalone `social_choice_lean` #5050 + `cooperative_games_lean` absorbés post-#4365, contenue dans `game_theory_lean/`) | Arrow + Sen voting | [GameTheory-15-CooperativeGames-Python](../GameTheory/GameTheory-15-CooperativeGames-Python.ipynb) |
 | GameTheory | `game_theory_lean/CooperativeGames/Shapley.lean` (lake `cooperative_games_lean` supprimé post-#4365, contenu absorbé) | Bondareva-Shapley 0 sorry #3954 | [GameTheory-13-ImperfectInfo-CFR-Python](../GameTheory/GameTheory-13-ImperfectInfo-CFR-Python.ipynb) |
@@ -624,7 +626,7 @@ La double culture **simulation + preuve formelle** est précisément ce que la [
 
 Sans cette section, le chainage vers ML (perceptron 0 sorry comme borne duale de la convergence A\* sur graphes pondérés), QC (Kelly, borné inférieurement par l'arbitrage risque/rendement), GameTheory (Arrow, posant les conditions sur les procédures de vote), Probas (PAC iter-2, formalisant pourquoi un échantillon suffit) et SymbolicAI (argumentation, formalisant la sémantique preferred) restait invisible depuis Search.
 
-**Note sur les références notebooks** : six références historiques de cette section ont suivi les renumérotations du dépôt (cf issue #5065) : ML-2.3-Perceptron → `Perceptron.lean` (lake, pas de notebook pédagogique correspondant), Infer-3-ProbabilisticReasoning → Infer-3-Factor-Graphs, QC-Py-10 → QC-Py-10-Risk-Portfolio-Management, GT-15 SocialChoice ↔ CooperativeGames et GT-13 CooperativeGames ↔ ImperfectInfo-CFR (inversions), Tweety-3-PreferredSemantics → Tweety-03-Dung-CSharp.
+**Note sur les références notebooks** : six références historiques de cette section ont suivi les renumérotations du dépôt (cf issue #5065) : ML-2.3-Perceptron → `Perceptron.lean` (lake, pas de notebook pédagogique correspondant), Infer-3-ProbabilisticReasoning → Infer-03-Factor-Graphs, QC-Py-10 → QC-Py-10-Risk-Portfolio-Management, GT-15 SocialChoice ↔ CooperativeGames et GT-13 CooperativeGames ↔ ImperfectInfo-CFR (inversions), Tweety-3-PreferredSemantics → Tweety-03-Dung-CSharp.
 
 Liens : [EPIC #4038](https://github.com/jsboige/CoursIA/issues/4038) (Roadmap Lean) · cross-refs hubs [QC](../QuantConnect/README.md) (#5047) · [central P0](../README.md) (#5049) · [GameTheory](../GameTheory/README.md) (#5050) · [Probas](../Probas/README.md) (#5053) · [ML](../ML/README.md) (#5054) · [SymbolicAI Lean](../SymbolicAI/Lean/README.md) (#5043 MERGED).
 

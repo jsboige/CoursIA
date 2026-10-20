@@ -55,8 +55,8 @@ import torch
 
 from validate_xrp_dt import (
     COIN, CRYPTO_DIR, RESULTS_DIR, COMMISSION_BPS,
-    momentum_naked_positions, dt_positions_on_test,
-    sharpe, net_returns, gross_returns,
+    CAUSAL_EVAL_PROTOCOL, causal_eval_series, dt_causal_positions,
+    train_rtg_per_step, sharpe, net_returns, gross_returns,
 )
 from data_utils import compute_data_hash, load_data
 from features import FeatureEngineer
@@ -100,13 +100,10 @@ def run_one_seed_holdout(seed: int, raw: pd.DataFrame, train_end: str,
     train_trajs = build_trajectories(train_prices, (train_features - mean) / std,
                                      window=window, context_length=context_length,
                                      commission=commission)
-    test_trajs = build_trajectories(test_prices, (test_features - mean) / std,
-                                    window=window, context_length=context_length,
-                                    commission=commission)
     if len(train_trajs["states"]) <= context_length:
         raise RuntimeError(f"train window trop courte ({len(train_trajs['states'])} states)")
-    if len(test_trajs["states"]) <= context_length:
-        raise RuntimeError(f"holdout trop court ({len(test_trajs['states'])} states)")
+    if len(test_prices) <= window + context_length + 1:
+        raise RuntimeError(f"holdout trop court ({len(test_prices)} lignes)")
 
     state_dim = train_trajs["states"].shape[1]
     result = train_dt(train_trajs, state_dim=state_dim, d_model=d_model,
@@ -115,12 +112,13 @@ def run_one_seed_holdout(seed: int, raw: pd.DataFrame, train_end: str,
                       batch_size=batch_size, lr=lr, device=device)
     model = result["model"]
 
-    dt_pos = dt_positions_on_test(model, test_trajs, len(test_prices),
-                                  context_length, batch_size, device)
-    test_returns_full = np.diff(test_prices[:len(dt_pos) + 1]) / \
-        (test_prices[:len(dt_pos) + 1][:-1] + 1e-8)
-    mom_pos = momentum_naked_positions(test_prices[:len(dt_pos) + 1], window=window)[:len(dt_pos)]
-    bh_pos = np.ones(len(dt_pos), dtype=np.float32)
+    # Evaluation causale (#21187) : une decision par pas, RTG du calendrier
+    # d'entrainement ; DT, momentum et BH sur les memes rendements.
+    dt_pos_full, first_k = dt_causal_positions(
+        model, test_prices, (test_features - mean) / std, window, context_length,
+        train_rtg_per_step(train_trajs), batch_size, device)
+    dt_pos, mom_pos, bh_pos, test_returns_full = causal_eval_series(
+        test_prices, dt_pos_full, first_k, window)
 
     dt_n = net_returns(dt_pos, test_returns_full, commission)
     dt_g = gross_returns(dt_pos, test_returns_full)
@@ -158,8 +156,8 @@ def run_one_seed_holdout(seed: int, raw: pd.DataFrame, train_end: str,
         # positionnes restent sign-blind -- (-r)**2 == r**2, cf #10228 -- donc
         # la precision directionnelle est la construction applicable ici.)
         try:
-            # Alignement min_len, meme idiome que net_returns/gross_returns :
-            # dt_positions_on_test peut rendre plus de predictions que de steps.
+            # causal_eval_series rend des series de meme longueur ; le min
+            # reste une garde.
             L = min(len(dt_pos), len(test_returns_full))
             target_sign = np.sign(test_returns_full[:L])
             e_dt = dt_pos[:L] - target_sign
@@ -193,6 +191,8 @@ def run_one_seed_holdout(seed: int, raw: pd.DataFrame, train_end: str,
     # ~300 obs x 3 series x 5 seeds stays small.
     return {
         "seed": seed,
+        "eval_protocol": CAUSAL_EVAL_PROTOCOL,
+        "first_return_index": int(first_k),
         "n_holdout_obs": int(len(dt_n)),
         "dt_net_sharpe": round(sharpe(dt_n), 4),
         "dt_gross_sharpe": round(sharpe(dt_g), 4),

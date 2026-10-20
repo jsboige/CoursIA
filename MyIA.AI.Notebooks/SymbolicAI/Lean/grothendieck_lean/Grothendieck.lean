@@ -39,6 +39,7 @@ import Grothendieck.ExceptionalDirect
 import Grothendieck.ExceptionalTriple
 import Grothendieck.Equivalences
 import Grothendieck.Flasque
+import Grothendieck.FlasqueAcyclic
 import Grothendieck.FlasqueStability
 import Grothendieck.FlasqueRetract
 import Grothendieck.FlasqueExact
@@ -59,6 +60,7 @@ import Grothendieck.LocalSurjectivitySpectrum
 import Grothendieck.MathlibMap
 import Grothendieck.MayerVietorisSquare
 import Grothendieck.Monads
+import Grothendieck.Monodromie
 import Grothendieck.PlusConstruction
 import Grothendieck.MonoidalCategories
 import Grothendieck.PullbackCoversLaws
@@ -245,6 +247,26 @@ Substance réelle :
   (pr-review-discipline §B). La **séparéité du conoyau** par recollement sur
   faisceau, qui ferme la boucle, est la frontière nommée de la Partie 91,
   qui posera l'énoncé ET sa preuve.
+- `Grothendieck.FlasqueAcyclic` (Partie 94) : **l'acyclicité des flasques**
+  ([God58] II.5.1) — et la **correction d'une glose** : la Partie 80
+  créditait Godement d'un « flasque ⇒ injectif (II.5.2) », énoncé **faux**
+  (espace discret à deux points : tous les faisceaux flasques, le constant
+  (ℤ,ℤ) non injectif dans Ab×Ab ; la glose est corrigée dans les deux
+  siblings de `FlasqueStability`). Ce qui est **prouvé** ici : le
+  **degré 1 inconditionnel** `subsingleton_H_one_of_flasque` (suite exacte
+  courte 0→X₁→X₂→X₃ avec X₁ flasque, X₂ injectif ⇒ H¹(X₁)=0 — assemble la
+  suite exacte longue covariante d'Ext de Mathlib, l'identification H⁰=Γ
+  `Sheaf.H.equiv₀`, et la surjectivité Γ de la Partie 82 : c'est là que
+  Zorn travaille), le corollaire **inconditionnel sur présentation
+  injective** (`subsingleton_H_one_of_flasque_presentation`, F flasque ⇒
+  H¹(F)=0), le **décalage** `subsingleton_H_succ_of_flasque_decalage`
+  (Hⁿ(X₃)=0 ⇒ H^{n+1}(X₁)=0), et le **capstone conditionnel**
+  `subsingleton_H_succ_of_flasque_all` : sous l'unique hypothèse
+  « injectif ⇒ flasque » (II.4), tout flasque est Γ-acyclique ∀n —
+  l'induction complète via la Partie 83 (quotient de flasques). La
+  **frontière nommée** est `injectif ⇒ flasque` : sa preuve classique
+  exige l'extension par zéro `j_!` des faisceaux ouverts, absente de
+  Mathlib — Partie 95.
 
 Tous les `sorry`s ne sont pas comblés — la plupart sont des échafaudages
 intentionnels pour le prouveur multi-agent (cf. Epic #1453).
@@ -398,6 +420,25 @@ Substance (English):
   class (pr-review-discipline §B). The **separatedness of the cokernel** by
   gluing on sheaves, which closes the loop, is the named frontier of Part
   91, which will pose the statement AND its proof.
+- `Grothendieck.FlasqueAcyclic` (Part 94) : **acyclicity of flasque
+  sheaves** ([God58] II.5.1) — and the **correction of a gloss** : Part 80
+  credited Godement with "flasque ⇒ injective (II.5.2)", a **false**
+  statement (two-point discrete space : every sheaf flasque, the constant
+  (ℤ,ℤ) not injective in Ab×Ab ; the gloss is corrected in both
+  `FlasqueStability` siblings). What is **proved** here : the
+  **unconditional degree 1** `subsingleton_H_one_of_flasque` (short exact
+  sequence 0→X₁→X₂→X₃ with X₁ flasque, X₂ injective ⇒ H¹(X₁)=0 — assembles
+  Mathlib's covariant long exact sequence of Ext, the H⁰=Γ identification
+  `Sheaf.H.equiv₀`, and Part 82's Γ-surjectivity : this is where Zorn
+  works), the **unconditional corollary on an injective presentation**
+  (`subsingleton_H_one_of_flasque_presentation`, F flasque ⇒ H¹(F)=0), the
+  **shift step** `subsingleton_H_succ_of_flasque_decalage` (Hⁿ(X₃)=0 ⇒
+  H^{n+1}(X₁)=0), and the **conditional capstone**
+  `subsingleton_H_succ_of_flasque_all` : under the single hypothesis
+  "injective ⇒ flasque" (II.4), every flasque sheaf is Γ-acyclic for all n
+  — the full induction via Part 83 (quotients of flasques). The **named
+  frontier** is `injective ⇒ flasque` : its classical proof requires the
+  extension by zero `j_!` of open sheaves, absent from Mathlib — Part 95.
 
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).
