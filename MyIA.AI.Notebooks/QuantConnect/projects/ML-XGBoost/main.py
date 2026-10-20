@@ -173,10 +173,14 @@ class MLXGBoostAlgorithm(QCAlgorithm):
 
         for ticker in self.tickers:
             try:
-                history = self.history(self.symbols[ticker], self.lookback, Resolution.DAILY)
+                # Double window + re-slice: training accumulates rows over the
+                # WHOLE served series, so extra bars would change the model;
+                # keep the last `lookback` bars to preserve semantics (#21471).
+                history = self.history(self.symbols[ticker], 2 * self.lookback, Resolution.DAILY)
 
                 if history.empty or len(history) < self.lookback:
                     continue
+                history = history.tail(self.lookback)
 
                 features = self.calculate_features(history, ticker)
                 closes = history['close']

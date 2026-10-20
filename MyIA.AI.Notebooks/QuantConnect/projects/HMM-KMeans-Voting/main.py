@@ -305,11 +305,14 @@ class HMMKMeansVoting(QCAlgorithm):
         if self.hmm is None or self.kmeans is None:
             return None
 
-        bars = self.history(self.spy, 30, Resolution.DAILY)
+        # Double window + re-slice: the features below consume the series from
+        # index 0 (expanding windows), so extra bars WOULD change the estimate;
+        # keeping the last 30 bars preserves the committed semantics (#21471).
+        bars = self.history(self.spy, 60, Resolution.DAILY)
         if bars is None or bars.empty or len(bars) < 25:
             return None
 
-        close = bars["close"].values.astype(float)
+        close = bars["close"].values.astype(float)[-30:]
         ret = np.diff(np.log(close + 1e-10))
         n = len(ret)
         vol20 = np.array([ret[max(0, i - 19):i + 1].std() for i in range(n)])
@@ -350,7 +353,10 @@ class HMMKMeansVoting(QCAlgorithm):
         if self.is_warming_up:
             return
 
-        bars = self.history(self.spy, 7, Resolution.DAILY)
+        # Robust window: np.diff(...)[-5:] is tail-anchored so extra leading bars
+        # change nothing; 30 requested vs 6 required absorbs the 21-bar
+        # half-session shortfall measured in #20286 (#21471).
+        bars = self.history(self.spy, 30, Resolution.DAILY)
         if bars is None or bars.empty or len(bars) < 6:
             return
 

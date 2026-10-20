@@ -270,10 +270,13 @@ class MomentumFactorAlpha(AlphaModel):
             symbol = security.symbol
 
             try:
-                history = algorithm.history(symbol, 252, Resolution.DAILY)
+                # Double window + re-slice: mom reads iloc[0] (first served
+                # bar), extra bars would change the momentum; keep the last
+                # 252 bars (#21471, shortfall #20286).
+                history = algorithm.history(symbol, 504, Resolution.DAILY)
                 if len(history) < 252:
                     continue
-                closes = history['close']
+                closes = history['close'].iloc[-252:]
                 mom = (closes.iloc[-21] / closes.iloc[0]) - 1
                 returns[symbol] = mom
             except:

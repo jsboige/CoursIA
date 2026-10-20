@@ -85,7 +85,10 @@ class VolTargetMomentum(QCAlgorithm):
             if not holding.invested:
                 continue
             weight = holding.holdings_value / total_value
-            hist = self.history(sym, self.vol_lookback + 5, Resolution.DAILY)
+            # Double window: half-session days serve fewer bars than requested;
+            # pct_change().tail() is tail-anchored so extra bars change nothing
+            # (#21471, shortfall #20286).
+            hist = self.history(sym, 2 * (self.vol_lookback + 5), Resolution.DAILY)
             if len(hist) < self.vol_lookback * 0.8:
                 continue
             returns = hist["close"].pct_change().dropna().tail(self.vol_lookback)

@@ -294,8 +294,11 @@ class CausalEventAlphaAlgorithm(QCAlgorithm):
         scaler = self.sector_scalers[ticker]
 
         symbol = self.symbols[ticker]
-        history = self.history(symbol, 60, Resolution.Daily)
-        spy_history = self.history(self._spy, 60, Resolution.Daily)
+        # Double window: the reads below are tail-anchored (iloc[-50:]), extra
+        # leading bars change nothing; a half-session day can no longer shrink
+        # the served window below the guard (#21471, shortfall #20286).
+        history = self.history(symbol, 120, Resolution.Daily)
+        spy_history = self.history(self._spy, 120, Resolution.Daily)
 
         if history is None or len(history) < 50:
             return 0.5

@@ -82,9 +82,12 @@ class ForexCarryTradeStrategy(QCAlgorithm):
         scores = {}
         for pair in self.pair_names:
             symbol = self.forex_symbols[pair]
-            # Fetch enough history: lookback_mom + vol_lookback days
+            # Fetch enough history: lookback_mom + vol_lookback days.
+            # Double window + tail-anchored reads (iloc[-N]): a half-session
+            # day serves fewer bars than requested without changing the
+            # verdict (#21471, shortfall #20286).
             history_len = self.lookback_mom + self.vol_lookback + 5
-            history = self.history(symbol, history_len, Resolution.DAILY)
+            history = self.history(symbol, 2 * history_len, Resolution.DAILY)
             if len(history) < self.lookback_mom + self.skip_days:
                 continue
 

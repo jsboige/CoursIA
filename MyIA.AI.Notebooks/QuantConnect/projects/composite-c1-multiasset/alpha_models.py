@@ -68,10 +68,13 @@ class MomentumAlpha(AlphaModel):
 
     def _compute_score(self, algorithm, symbol, ticker):
         try:
-            history = algorithm.history(symbol, self.lookback + 5, Resolution.DAILY)
+            # Double window + re-slice: mom reads iloc[0] (first served bar),
+            # so extra leading bars would change the score; keep the
+            # intended lookback+5 window (#21471, shortfall #20286).
+            history = algorithm.history(symbol, 2 * (self.lookback + 5), Resolution.DAILY)
             if len(history) < self.lookback:
                 return None
-            closes = history['close']
+            closes = history['close'].iloc[-(self.lookback + 5):]
             mom = (closes.iloc[-self.skip_days] / closes.iloc[0]) - 1
             vol = closes.iloc[-self.vol_window:].pct_change().std() * np.sqrt(252)
             if vol <= 0:
