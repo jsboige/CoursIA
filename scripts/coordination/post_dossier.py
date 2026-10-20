@@ -88,7 +88,9 @@ EXIT_REFUSED = 4
 # de domaine que cette meme garde exige doit pouvoir REMPLACER un READY du
 # secretariat qui tient le gate. Sans cette porte, le DEEP sur dossier
 # secretariat est impostable (mesure 2026-10-08 sur #19801 et #19838).
-SECRETARIAT_LANES = frozenset({"myia-po-2026:CoursIA-3"})
+# myia-po-2028:CoursIA-3 holds the seat since 2026-10-20 (myia-po-2026 out of
+# service since 2026-10-09) ; the former seat stays for dossiers already posted.
+SECRETARIAT_LANES = frozenset({"myia-po-2026:CoursIA-3", "myia-po-2028:CoursIA-3"})
 # gh-posting-hygiene regle 2, membre metrique : un corps court apres le POST
 # d'un fichier est la signature du piege de transport.
 MIN_PUBLISHED_LEN = 100
