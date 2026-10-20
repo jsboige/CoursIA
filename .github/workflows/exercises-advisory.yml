@@ -36,6 +36,10 @@ on:
 permissions:
   contents: read
   pull-requests: write
+  # #20639 -- la creation de label (gh label create / API labels) releve du
+  # scope issues, pas pull-requests : sans cette ligne le fix serait un
+  # 403 silencieux a chaque nuit (warning pose, label toujours absent).
+  issues: write
 
 concurrency:
   group: exercises-advisory-${{ github.ref }}
@@ -112,7 +116,11 @@ jobs:
           unset_label() { gh pr edit "$PR_NUMBER" --remove-label "$1" 2>/dev/null || true; }
           if [ "$NOCTURNE" -eq 1 ]; then
             # No PR to label at night: the signal stays in the run output.
-            ensure_label() { true; }
+            # #20639: ensure_label stays ACTIVE under nocturne -- the labels
+            # must EXIST for the sweep step's apply_label (gh pr edit
+            # --add-label) to succeed; a missing label made that pose fail
+            # silently, leaving #19101's exit criterion unexercisable. Only
+            # set/unset (which need a PR context) stay noop'd.
             set_label()   { true; }
             unset_label() { true; }
           fi
@@ -279,5 +287,15 @@ jobs:
           # (traceback, crash) -- jamais masque. Sans effet merge : la mesure
           # du body de #19214 vaut aussi pour ce workflow (schedule/dispatch
           # seulement, hors du perimetre `merge_dwell`).
+          # #20639 -- apply_label ne pose le label que s'il EXISTE (gh pr edit
+          # --add-label echoue silencieusement sinon). L'etape advisory ci-dessus
+          # peut sortir en `exit 0` precoce (COUNT=0) avant ses appels
+          # ensure_label : la creation idempotente ici garantit l'existence avant
+          # le sweep, quelle que soit la fenetre. Echec de creation = panne
+          # ATTENDUE -> [WARN], jamais masquee, jamais rouge.
+          gh label create credited-examples-lost \
+            --description "A credited example was lost in this PR without a 'exemples-loss:' declaration (#18740, #18761)" \
+            --color FBCA04 --force \
+            || echo "::warning::[20639] label create credited-examples-lost failed -- apply_label will no-op (see #19101 criterion 1)."
           python scripts/notebook_tools/credited_examples_sweep.py \
             --hours 24 --apply
