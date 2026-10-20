@@ -1,18 +1,20 @@
-# Intégrales de Feynman : le triangle scalaire à une boucle
+# Intégrales de Feynman : du triangle scalaire au sunrise
 
 [← Série Probas](../../README.md) · [← Applications](../README.md)
 
 Le **triangle scalaire** à une boucle — trois propagateurs sans masse, un moment
-externe par sommet — en dimension 4 euclidienne : l'une des briques de base des
-corrections radiatives, et l'un des objets de la famille « 30 intégrales de
-Feynman » du harnais [BootLoops](https://github.com/BootLoops-ai) (MIT), rapportée
-par M. Schwartz dans *Claude-shaped science* (2025). Ce dossier en est la **veine
-V3** de la distillation [issue #20428](https://github.com/jsboige/CoursIA/issues/20428),
+externe par sommet — en dimension 4 euclidienne, puis le **diagramme sunrise** à
+masses égales en dimension 2 : deux briques des corrections radiatives, issues de
+la famille « 30 intégrales de Feynman » du harnais
+[BootLoops](https://github.com/BootLoops-ai) (MIT), rapportée par M. Schwartz dans
+*Claude-shaped science* (2025). Ce dossier en est la **veine V3** de la
+distillation [issue #20428](https://github.com/jsboige/CoursIA/issues/20428),
 après la veine V1 (marches aléatoires).
 
 | Composant | Notebook | Stack | Ce qu'il apporte |
 |-----------|----------|-------|------------------|
 | [Integrales-01-Triangle-Scalaire](Integrales-01-Triangle-Scalaire-Python.ipynb) | 1 (Python) | Python 3 + `mpmath` + `numpy` + `matplotlib` | Représentation de Feynman du triangle ($\Delta = \alpha x_1x_2 + \gamma x_1x_3 + \beta x_2x_3$, $C_0 = J/16\pi^2$) dérivée au §1 ; **trois voies** de calcul de $J$ (quadrature 2D imbriquée, substitution homogène $(u,v)$, intégrale exacte en $v$) accordées à plus de 20 chiffres sur quatre cinématiques, dont un point de stress et un point non isocèle ; forme fermée $J(1,1,2-2\cos\psi) = 2\,\mathrm{Cl}_2(\psi)/\sin\psi$ certifiée à ~38 chiffres sur six angles, avec les cas exacts $2G$ (Catalan) et $\frac{4}{\sqrt{3}}\,\mathrm{Cl}_2(\pi/3)$ |
+| [Integrales-02-Sunrise-Masses-Egales](Integrales-02-Sunrise-Masses-Egales-Python.ipynb) | 2 (Python) | Python 3 + `mpmath` | Le sunrise à masses égales en $d = 2$ — même polynôme $U$ que le triangle, deux boucles : **quatre voies** (simplexe, rectangle $(u,v)$, Cheng–Wu, hyperbolique) accordées (A = B exact, CW à $10^{-20}$, hyperbolique à $10^{-15}$) ; ancre exacte $I(0) = J(1,1,1) = \frac{4}{\sqrt 3}\mathrm{Cl}_2(\pi/3)$ contre le carnet 01 ; intégrande elliptique de troisième espèce exhibée par $t = \cosh\theta$ ; piège du facteur 2 attrapé en direct ; deux identifications fermées **refusées** sur mesure (anneau déclaré avant recherche) |
 
 Trois protocoles du harnais BootLoops y sont pratiqués sur un cas où ils
 mordent : **planted-truth** (l'outil d'identification de constantes est validé
@@ -35,7 +37,8 @@ Calabi-Yau. Les carnets suivants sont des **candidats bornés**, arbitrés à
 l'usage — aucun n'est promis :
 
 - **Integrales-02 — Le diagramme sunrise à masses égales : la sortie des
-  polylogarithmes** (candidat) : un tour de boucle de plus que le triangle, le
+  polylogarithmes** (livré — [carnet 02](Integrales-02-Sunrise-Masses-Egales-Python.ipynb)) :
+  un tour de boucle de plus que le triangle, le
   même polynôme de Symanzik $U = x_1x_2 + x_1x_3 + x_2x_3$ — et en $d = 2$
   l'objet devient elliptique. (Le triangle *massif* à une boucle, lui, reste
   dilogarithmique — 't Hooft–Veltman : le saut de classe se produit ici, pas
@@ -54,11 +57,11 @@ V1 dans `Applications/Marches/`.
 
 ## Ponts vers le reste du dépôt
 
-- **Marches** ([../Marches/](../Marches/README.md)) : les deux carnets calculent
-  des fonctions de Green — l'une sur $\mathbb{Z}^d$ discret, l'autre sur une
-  boucle continue — et les mêmes protocoles les traversent.
+- **Marches** ([../Marches/](../Marches/README.md)) : les deux séries calculent
+  des fonctions de Green — sur $\mathbb{Z}^d$ discret chez Marches, sur des
+  boucles continues ici — et les mêmes protocoles les traversent.
 - **Distillation Schwartz** ([issue #20428](https://github.com/jsboige/CoursIA/issues/20428)) :
-  ce carnet est la veine V3 ; les veines V2 (protocoles `bootloops/skills`) et V4
+  cette série est la veine V3 ; les veines V2 (protocoles `bootloops/skills`) et V4
   (reproductibilité NBER) restent ouvertes sur la même issue.
 
 ## Sources
@@ -69,6 +72,9 @@ V1 dans `Applications/Marches/`.
   $\mu^+\mu^-$ in the Weinberg model*, Nucl. Phys. B **160**, 151 (1979).
 - L. Lewin, *Polylogarithms and Associated Functions*, North-Holland (1981) —
   fonction de Clausen $\mathrm{Cl}_2$.
+- S. Adams, L. Bogner, S. Weinzierl, *The two-loop sunrise graph in two
+  space-time dimensions*, arXiv:1302.7004 — la forme fermée du sunrise en
+  intégrales elliptiques multiples (citée sans être reproduite au carnet 02).
 - M. D. Schwartz, *Vibe physics* et *Claude-shaped science* (Anthropic, 2025),
   arXiv:2601.02484 (2026) — archivés au gisement
   `G:\Mon Drive\MyIA\IA\Bibliographie IA\Physics\`.
