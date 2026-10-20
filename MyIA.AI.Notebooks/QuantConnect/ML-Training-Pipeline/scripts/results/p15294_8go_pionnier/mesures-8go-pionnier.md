@@ -47,7 +47,7 @@ Artefact : `qwen35_seed0_smoke.json` (mode smoke : 3 steps, évaluation réduite
 
 ## 3. Enveloppe VRAM — la mesure qui manquait à l'EPIC
 
-**Série brute committée** : `vram_smoke_seed0.jsonl` — 1 365 lignes, une par échantillon (`t`, `elapsed_s`, `mem_used_MiB`, `util_pct`, `temp_C`), prélevées par `scripts/probe_15099_vram_sampler.py`, **l'instrument est dans le harnais**. Le sidecar `vram_smoke_seed0.meta.json` porte la cadence **déclarée**, la carte et la raison d'arrêt ; `vram_smoke_seed0.aggregats.json` porte les agrégats **dérivés** de la série (rien n'est saisi à la main). La série couvre **l'exécution entière** — évaluation pré, entraînement, évaluation post : 1 364,1 s d'échantillonnage pour 1 355,8 s de run.
+**Série brute committée** : `vram_smoke_seed0.jsonl` — une ligne par échantillon (`t`, `elapsed_s`, `mem_used_MiB`, `util_pct`, `temp_C`), prélevées par `scripts/probe_15099_vram_sampler.py`, **l'instrument est dans le harnais**. Le sidecar `vram_smoke_seed0.meta.json` porte la cadence **déclarée**, la carte et la raison d'arrêt ; `vram_smoke_seed0.aggregats.json` porte les agrégats **dérivés** de la série (rien n'est saisi à la main). La série couvre **l'exécution entière** — évaluation pré, entraînement, évaluation post : 1 364,1 s d'échantillonnage pour 1 355,8 s de run.
 
 | | Valeur |
 |---|---|
