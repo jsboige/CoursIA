@@ -1719,6 +1719,20 @@ STUB
 )
 echo ""
 
+# --- Completude du run : le CODE DE SORTIE du producteur (tests 38/39) -----
+# #21601 : l'oracle porte sur la SEQUENCE des temporisations. Un producteur
+# TUYE par le `timeout` (124) ou par le kill qui suit (137) peut laisser une
+# sequence QUI SATISFAIT DEJA l'oracle : le prefixe complet ne prouve pas que
+# le run s'est termine. Le code de sortie est donc le seul juge de la
+# completude -- il est lu, pas suppose. 143 = SIGTERM externe.
+run_complet() {
+  local rc="$1" seq="$2" prefix="$3" cap="$4"
+  case "$rc" in
+    124|137|143) return 1 ;;
+  esac
+  oracle_backoff "$seq" "$prefix" "$cap"
+}
+
 # --- Test 38 : controle positif -- cycle court AVEC travail reel ------------
 echo "Test 38 : cycle court portant une execution de job -> pas de backoff, compteur remis a zero (review #15166)"
 (
@@ -1777,15 +1791,20 @@ STUB
     export STUB_RUN_COUNT="$TEST_DIR/run26.count"
     export SLEEP_LOG="$TEST_DIR/sleep26.log"
     # #21601 : 30 s ne tenaient pas sur une machine chargee (run tronque).
-    timeout --kill-after=2 120 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err26.log"
+    # Le CODE DE SORTIE est capture : un producteur tue (124 timeout, 137
+    # kill-after) peut laisser une sequence qui satisfait deja l'oracle.
+    rc26=0
+    timeout --kill-after=2 120 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err26.log" || rc26=$?
+    echo "$rc26" > "$TEST_DIR/rc26"
   )
+  rc26="$(cat "$TEST_DIR/rc26")"
   seq="$(paste -sd, "$TEST_DIR/sleep26.log")"
   # Oracle invariant : 5 cycles AVEC travail -> sleep 2 sans backoff, puis
   # boucle vide REPART a 3,6 puis doublement plafonne (CAP=24).
-  if oracle_backoff "$seq" "2,2,2,2,2,3,6" 24; then
-    ok "5 cycles AVEC travail -> sleep 2 sans backoff, puis boucle vide REPART a 3,6,12 (invariant, queue [$seq])"
+  if run_complet "$rc26" "$seq" "2,2,2,2,2,3,6" 24; then
+    ok "5 cycles AVEC travail -> sleep 2 sans backoff, puis boucle vide REPART a 3,6,12 (invariant, queue [$seq], rc=$rc26)"
   else
-    ko "invariant attendu (prefixe 2,2,2,2,2,3,6 puis queue min(prev*2,24)), obtenu [$seq]"
+    ko "invariant attendu (prefixe 2,2,2,2,2,3,6 puis queue min(prev*2,24)) sur un run COMPLET, obtenu [$seq] (rc=$rc26)"
   fi
   if grep -q "cycle court AVEC travail" "$TEST_DIR/err26.log"; then
     ok "le travail reel est journalise comme tel"
@@ -1856,8 +1875,13 @@ STUB
     export STUB_BURN_AT=3
     export STUB_BURN_SECS=8
     export STUB_DOCKER_RC=1
-    timeout --kill-after=2 120 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out27.log" 2>"$TEST_DIR/err27.log"
+    # Code de sortie capture : un producteur tue laisse une sequence qui peut
+    # satisfaire l'oracle -- seul le rc distingue le run complet du run tronque.
+    rc27=0
+    timeout --kill-after=2 120 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out27.log" 2>"$TEST_DIR/err27.log" || rc27=$?
+    echo "$rc27" > "$TEST_DIR/rc27"
   )
+  rc27="$(cat "$TEST_DIR/rc27")"
   seq="$(paste -sd, "$TEST_DIR/sleep27.log")"
   # Cycles 1-2 courts (3,6) ; cycle 3 brule 3s >= HEALTHY=2 mais rc=1 ->
   # respiration MIN 7 SANS remise a zero ; cycle 4 : le compteur etait
@@ -1867,16 +1891,54 @@ STUB
   # seconde et passer pour long par accident.
   # Oracle invariant : prefixe 3,6 -> cycle long rc=1 : 7 (non sain) ->
   # compteur conserve : 12, puis doublement plafonne a CAP=24.
-  if oracle_backoff "$seq" "3,6,7,12" 24; then
-    ok "3,6 -> cycle long rc=1 : 7 (non sain) -> compteur conserve : 12,24,24 (invariant, queue [$seq])"
+  if run_complet "$rc27" "$seq" "3,6,7,12" 24; then
+    ok "3,6 -> cycle long rc=1 : 7 (non sain) -> compteur conserve : 12,24,24 (invariant, queue [$seq], rc=$rc27)"
   else
-    ko "invariant attendu (prefixe 3,6,7,12 puis queue min(prev*2,24)), obtenu [$seq]"
+    ko "invariant attendu (prefixe 3,6,7,12 puis queue min(prev*2,24)) sur un run COMPLET, obtenu [$seq] (rc=$rc27)"
   fi
   if grep -q "non qualifie sain" "$TEST_DIR/err27.log" \
      && ! grep -q "termine sainement" "$TEST_DIR/out27.log"; then
     ok "le cycle long rc!=0 n'est JAMAIS journalise sain"
   else
     ko "qualification saine indue : err=$(grep -c 'non qualifie' "$TEST_DIR/err27.log") out=$(grep -c 'sainement' "$TEST_DIR/out27.log")"
+  fi
+)
+echo ""
+
+# --- Test 39b : controle NEGATIF -- un run TUE ne passe pas, meme quand la
+# sequence est PARFAITE (#21601, completude c.2258) ----------------------------
+echo "Test 39b : controle negatif -- une sequence parfaite issue d'un run TUE est REJETEE (rc 124/137)"
+(
+  cd "$SCRIPT_DIR"
+  # Controle positif : prefixe complet + rc normal -> accepte.
+  if run_complet 0 "2,2,2,2,2,3,6,12,24" "2,2,2,2,2,3,6" 24; then
+    ok "controle positif : prefixe complet + rc normal -> accepte"
+  else
+    ko "controle positif : prefixe complet + rc normal aurait du etre accepte"
+  fi
+  # Controle negatif 1 : MEME sequence, producteur tue par le timeout (124).
+  if run_complet 124 "2,2,2,2,2,3,6,12,24" "2,2,2,2,2,3,6" 24; then
+    ko "controle negatif : un run tue par timeout (rc=124) a ete accepte"
+  else
+    ok "controle negatif : un run tue par timeout (rc=124) est rejete"
+  fi
+  # Controle negatif 2 : MEME sequence, kill apres le timeout (137).
+  if run_complet 137 "2,2,2,2,2,3,6,12,24" "2,2,2,2,2,3,6" 24; then
+    ko "controle negatif : un run tue par kill-after (rc=137) a ete accepte"
+  else
+    ok "controle negatif : un run tue par kill-after (rc=137) est rejete"
+  fi
+  # Controle negatif 3 : prefixe INCOMPLET, rc normal -> rejete par l'oracle.
+  if run_complet 0 "2,2,2,2,2" "2,2,2,2,2,3,6" 24; then
+    ko "controle negatif : un prefixe tronque a ete accepte"
+  else
+    ok "controle negatif : un prefixe tronque est rejete"
+  fi
+  # Controle negatif 4 : queue au-dela du plafond (25 > CAP=24) -> rejete.
+  if run_complet 0 "2,2,2,2,2,3,6,12,25" "2,2,2,2,2,3,6" 24; then
+    ko "controle negatif : une queue au-dela du plafond a ete acceptee"
+  else
+    ok "controle negatif : une queue au-dela du plafond est rejetee"
   fi
 )
 echo ""
