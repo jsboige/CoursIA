@@ -31,7 +31,7 @@ Pour la pédagogie Lean (notebooks étudiants), voir [`MyIA.AI.Notebooks/Symboli
 
 | Document | Sujet |
 |---|---|
-| [i18n-inventory-cycle-38.md](i18n-inventory-cycle-38.md) | Inventaire FR/EN + proposition de convention (cycle 38, décision user 2026-07-02). |
+| [i18n-inventory-cycle-38.md → transients/2026-07-04-…](../transients/2026-07-04-lean-i18n-inventory-cycle-38.md) | Inventaire FR/EN + proposition de convention (cycle 38, décision user 2026-07-02) — déplacé en lane transiente (tranche 3b #14623) |
 | [i18n-sibling-patterns.md](i18n-sibling-patterns.md) | Patterns de paires FR/EN (`Foo.lean` / `Foo_en.lean`) et discipline du checker `check_i18n_siblings.py`. |
 
 ## Origami — géométrie différentielle (EPIC #18205)
