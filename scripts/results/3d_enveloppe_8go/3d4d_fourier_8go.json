@@ -1,0 +1,77 @@
+{
+ "module": "ML/DataScienceWithAgents/03-DeepLearning",
+ "issue": 21626,
+ "epic_parent": 18605,
+ "mesure": "enveloppe du Pli 1 (Fourier features, 3.4d) sur l'etage pionnier 8 Go -- reponse au critere 3 du livrable (compatibilite d'un run conjoint avec la famille NeRF)",
+ "machine": "myia-po-2028",
+ "gpu": "NVIDIA GeForce RTX 3070 Ti Laptop GPU (8192 Mio)",
+ "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb (copie hors depot, non modifie dans le depot)",
+ "env": {
+  "numpy": "2.2.6",
+  "python": "3.13.16",
+  "kernel": "python3",
+  "moteur": "NumPy pur (Adam et gradient ecrits a la main dans le carnet)"
+ },
+ "execution": {
+  "mode": "notebook_tools.py execute (Papermill, kernel python3)",
+  "wallclock_s": 64.18,
+  "nb_steps_adam": 3000,
+  "batch": 16,
+  "n_train": 64,
+  "n_test": 400,
+  "hidden": 64,
+  "n_layers": 3,
+  "n_bands": 64,
+  "entrainements": "1 baseline (4353 parametres) + 3 sigmas (12481 parametres) + 1 temoin negatif (99073 parametres)",
+  "resultat": "SUCCESS, 0 erreur"
+ },
+ "vram": {
+  "idle_avant_run_mib": 427,
+  "pic_observe_mib": 444,
+  "delta_max_mib": 17,
+  "contexte_cuda_cree": false,
+  "lecture": "la carte reste au niveau du repos pendant tout le run ; l'ecart maximal constate (17 Mio) est inferieur d'un ordre de grandeur au plus petit contexte CUDA mesure sur cette carte (les runs NeRF demarrent a 331 Mio au repos et montent a 4318 puis 7740 Mio). Aucun octet de VRAM n'est attribuable au harnais Fourier : il n'importe ni torch ni un moteur CUDA."
+ },
+ "rss_hote_mib": {
+  "pic_arbre_de_processus": 288,
+  "pic_indique": "RSS cumule de l'arbre notebook_tools + kernel (echantillonnage 2 s)"
+ },
+ "fidelite": {
+  "baseline_mse_test": 0.3226,
+  "sigma_1_0_mse_test": 0.01404,
+  "sigma_5_0_mse_test": 0.01012,
+  "sigma_50_0_mse_test": 0.4115,
+  "temoin_negatif_sigma_50_h256": {
+   "mse_entrainement": 1.362e-07,
+   "mse_test": 0.4315,
+   "rapport_train_test": 3.16e-07
+  },
+  "ecart_gradient_check": 2.08e-07,
+  "lecture": "les figures rejouees sont celles du carnet commite (baseline 3,23e-01 ; sigma=5,0 -> 1,01e-02) : le run de mesure reproduit le resultat de reference, il ne le modifie pas."
+ },
+ "comparaison": {
+  "nerf_3d01_entrainement_8go": {
+   "peak_mib": 4318,
+   "peak_pct": 52.7,
+   "issue": 21626
+  },
+  "nerf_3d02_evaluation_8go": {
+   "peak_mib": 7740,
+   "peak_pct": 94.5,
+   "issue": 21626
+  },
+  "famille_0_8B_grpo_qlora_8go": {
+   "peak_mib": 7844,
+   "peak_pct": 95.7,
+   "issue": 21620
+  },
+  "pli_1_fourier_8go": {
+   "peak_vram_mib": 444,
+   "vram_attribuable_mib": 0,
+   "pic_rss_hote_mib": 288,
+   "issue": 21626
+  },
+  "lecture": "le Pli 1 et la famille NeRF ne se disputent pas la meme ressource : Fourier est CPU-borne (288 Mio de RAM hote, 64 s, aucun octet de VRAM attribuable), NeRF est CUDA-borne (52,7 % puis 94,5 % de la carte). Un run conjoint est donc possible du point de vue de la VRAM -- la contrainte n'est pas la memoire video mais le fait que deux jobs CUDA ne se partagent pas la meme carte. Ce qui ne tient pas sur l'etage pionnier, c'est l'evaluation dense de NeRF, pas le Pli 1."
+ },
+ "reserve": "la RAM hote est mesuree par lecture de la RSS de l'arbre de processus (granularite 2 s) : c'est une enveloppe de processus, pas un compteur de memoire allouee du harnais ; le pic d'une allocation transitoire de courte duree peut echapper a l'echantillonnage. La conclusion '0 VRAM attribuable' ne depend pas de cette mesure mais de l'absence d'import CUDA et de la carte restee au niveau du repos."
+}
