@@ -191,6 +191,40 @@ class TestNegativeControls(unittest.TestCase):
         self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
         self.assertFalse(v.dense)
 
+    def test_url_fragment_mask_is_context_free_by_design(self):
+        """Calibrage (revue Hermes #21510) : le masque ne regarde pas l'URL.
+
+        ``_URL_FRAGMENT_RE`` s'applique a tout le passage, pas seulement aux
+        URLs. Une prose qui ecrirait « la ligne #L261 du fichier » est donc
+        masquee comme le serait un fragment de permalien, alors que la forme
+        nue ``L261`` y serait comptee. Aucune occurrence de ``#L<n>`` en prose
+        n'est mesuree sur le corpus au 2026-10-20 : c'est un ecart assume, pas
+        un cas observe. Ce test existe pour que le comportement soit lisible
+        avant d'etre decouvert par surprise -- le commentaire du code annoncait
+        « ancre de permalien » alors que le predicat est « toute forme #Lddd ».
+        """
+        prose_anchor = "Voir la ligne #L261 du fichier pour le detail du calcul."
+        v = judge_passage(0, prose_anchor)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+
+        bare = "La lecon L261 et la lecon L740 decrivent le meme piege."
+        v2 = judge_passage(0, bare)
+        self.assertIn("lesson_tag", {n for n, _, _ in v2.markers})
+
+    def test_mask_is_scoped_to_lesson_tag_only(self):
+        """Calibrage (revue Hermes #21510) : les autres marqueurs restent actifs.
+
+        Le masque ne s'applique qu'a ``lesson_tag``. Un ``iso_ts`` place dans
+        une URL absolue continue donc de compter, la ou un ``#Lddd`` de la meme
+        URL serait masque. C'est coherent avec le body de la PR, qui annonce ne
+        toucher aucun autre marqueur ; ce test fige l'hypothese pour qu'une
+        future extension du masque soit un choix explicite et non un effet de
+        bord silencieux.
+        """
+        url_ts = "Voir https://exemple.org/build?ts=2026-10-20T04:03 pour l'horaire."
+        v = judge_passage(0, url_ts)
+        self.assertIn("iso_ts", {n for n, _, _ in v.markers})
+
     def test_course_prose_clean(self):
         para = (
             "Monroe propose une regle proportionnelle stricte ou chaque elu "

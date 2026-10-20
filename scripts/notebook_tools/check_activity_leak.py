@@ -127,6 +127,13 @@ _LESSON_TAG_RE = re.compile(r"\bL\d{3,4}(?:-L\d)?\b")
 # 2026-10-20 sur 1553 carnets : 30 des 65 occurrences de _LESSON_TAG_RE
 # etaient des fragments d'URL (46 %). Le marqueur etant FORT (poids 2),
 # deux ancres dans un paragraphe suffisaient a le declarer dense.
+#
+# Le predicat est « toute forme #Lddd », PAS « un fragment dans une URL » :
+# le masque s'applique sans regarder le contexte, donc une prose qui ecrirait
+# « la ligne #L261 du fichier » est masquee elle aussi. Aucune occurrence de
+# ce cas n'est mesuree sur le corpus ; l'ecart est assume et fige par
+# test_url_fragment_mask_is_context_free_by_design, pour qu'il ne se
+# decouvre pas par surprise si un carnet se met a ecrire des ancres en prose.
 _URL_FRAGMENT_RE = re.compile(r"#L\d{3,4}(?:-L\d{3,4})?")
 _DM_RE = re.compile(r"\bDM\b")
 
