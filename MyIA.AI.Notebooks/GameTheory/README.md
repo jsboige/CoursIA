@@ -365,6 +365,7 @@ Les notebooks numérotés de 18 à 25 ne prolongent pas le parcours principal. C
 | 18 | [Open games et lentilles](GameTheory-18-Open-Games-et-Lentilles-Python.ipynb) | Une représentation locale qui modifie le contexte global dont elle est issue | Python | Recherche |
 | 18b | [Casser la composition](GameTheory-18b-Casser-la-Composition-Python.ipynb) | Contre-exemples à la compositionnalité des équilibres d'open games | Python | Recherche |
 | 19 | [Abstraction à dette](GameTheory-19-Abstraction-a-Dette-Python.ipynb) | Mesurer ce que perd une représentation simplifiée | Python | Recherche |
+| 19b | [Co-design bilevel](GameTheory-19b-Bilevel-PPO-Python.ipynb) | Stackelberg PPO (Dai et al., ICLR 2026) rejoué à l'échelle pédagogique : le leader apprend la morphologie d'un nageur jouet, le suiveur est un PPO — le co-design bat la morphologie fixée, l'ablation adapté-contre-figé reste non tranchée à cette échelle | Python | Recherche |
 | 20 | [Chemin minimal](GameTheory-20-Chemin-Minimal-Robinson-Goforth-Python.ipynb) | Un témoin de chemin minimal construit par un générateur, vérifié par un composant indépendant | Python | Recherche |
 | 20b | [Témoins d'impossibilité](GameTheory-20b-Chemin-Minimal-Temoins-Impossibilite-Python.ipynb) | Le chemin minimal qui ne peut pas exister, exhibé par le code | Python | Recherche |
 | 20c | [Jeux ordinaux 3×2](GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | Le même théorème testé sur un second substrat | Python | Recherche |
@@ -630,6 +631,7 @@ Le bloc `CATALOG-STATUS` en tête de ce fichier fait foi pour le nombre de noteb
 | Référence | Couverture |
 |-----------|------------|
 | Osborne & Rubinstein, *A Course in Game Theory* (1994) | Manuel de référence, paliers 01 à 12 |
+| Bonanno, *Game Theory* (2015, arXiv 1512.06808, CC BY 4.0) | Manuel pédagogique en complément, 165 exercices résolus — couvre Phase 1 (paliers 02-06) + jeux bayésiens (palier 11) + coopératif (palier 15) |
 | Osborne, *An Introduction to Game Theory* (2004) | Manuel alternatif |
 | Russell & Norvig, *AIMA*, 4e éd., ch. 17-18 | Cadre général des jeux et des mécanismes |
 | Nash, « Non-Cooperative Games » (1951) | Palier 04 |
@@ -667,6 +669,8 @@ Le bloc `CATALOG-STATUS` en tête de ce fichier fait foi pour le nombre de noteb
 Voir la licence du dépôt principal.
 
 ---
+
+*Version 1.5.1 — Octobre 2026 (2026-10-15) — référencement Bonanno (#19461) : ajout de la référence Bonanno, *Game Theory* (2015, arXiv 1512.06808, CC BY 4.0) à la table « Références académiques » comme manuel pédagogique en complément, 165 exercices résolus couvrant Phase 1 + jeux bayésiens + coopératif. La note d'angle-mort reste sur le ticket (#19461, mémo du 2026-10-06) ; les PRs de citation R2 (4 carnets Phase 1 sans référence académique en cellule) restent à mener en cycles ultérieurs.*
 
 *Version 1.5.0 — Septembre 2026 (2026-09-25) — réorganisation en parcours à plusieurs vitesses (#3973) : parcours principal à numéros nus, approfondissements présentés palier par palier, sous-série SocialChoice et extensions 18-25 séparées du parcours, grammaire des noms de fichiers expliquée au lecteur, formalisations Lean réunies en une section. Les sections de statut et de statistiques renvoient désormais au catalogue.*
 
