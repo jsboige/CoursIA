@@ -19,6 +19,7 @@
     equivalent, asymetrie mineure de lib viz n'impactant pas le semantisme). `parity_level: native-both`
     preserve : parite engine.
   known_differences:
+    - "Re-baseline 2026-10-14 (hors-flotte:claude-session-16638, #16638) : restauration des accents de la prose markdown (tranche planners #16638, outil canonique restore_accents_canonical.py, invariance strip_accents a 0 finding), sur les deux jumeaux. Aucune cellule de code, sortie ni execution_count touchee. Parite inchangee : attestation (le blob SHA se deplace), pas reparation. --update en DERNIERE operation (cf #8957)."
     - "#navfix 03-Advanced (PR a venir) : le twin C# n'avait AUCUNE ligne Navigation (orphelin -- 6-C# pointait >> vers lui, il ne pointait nulle part). Ligne posee en miroir du twin Python, cibles chaine C# : << ../02-Classical/Planners-6-Domains-Csharp.ipynb | Index | Planners-8-Temporal-Csharp.ipynb >>. Divergence de liens nav VOLONTAIRE, hors perimetre de comparaison contenu."
     - "Concept : planification orientee satisfaction de contraintes (Job-Shop scheduling, CP-SAT)."
     - "Python : OR-Tools CP-SAT Python bindings (solveur SOTA). C# : deux tranches — Tranche 1 from-scratch BCL .NET (0 NuGet, backtracking + propagation, enseigne les mecanismes) + Tranche 2 Google.OrTools CP-SAT natif .NET (moteur de production, depuis 2026-08-11)."

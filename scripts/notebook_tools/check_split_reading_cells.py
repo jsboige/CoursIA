@@ -189,19 +189,34 @@ EXERCISE_TOKENS = ("TODO", "A completer", "à compléter", "Exercice")
 # titre d'exercice** : un en-tete d'interpretation dissimule dans le corps, et
 # la citation d'une sortie -- le vocabulaire de l'interpretation, pas celui de
 # l'enonce.
-EXERCISE_STATEMENT_TITLE_RE = re.compile(r"^#{1,6}\s*exercice\b", re.IGNORECASE)
+# Extension aux jumeaux derives `_en` (#20777) : les carnets traduits portent
+# la meme forme canonique enonce|stub, mais le titre s'ecrit « Exercise ».
+# Sans le `[cs]`, le re-rendu EN d'un carnet FR dont les enonces vivent deja
+# entre les stubs (forme canonique, grandfathered) rougissait EXERCISE_READING
+# sur chaque enonce -- mesure sur 01-2-GPT-5-Image-Generation_en (cellules 31
+# et 33, miroir exact des cellules 31/33 du FR source sur main).
+EXERCISE_STATEMENT_TITLE_RE = re.compile(r"^#{1,6}\s*exerci[cs]e\b", re.IGNORECASE)
 SECTION_TITLE_AFTER_EXERCISE_RE = re.compile(
     r"^(conclusion|ressources?|plan|references?|bibliographie|synthese|pour aller plus loin)\b",
     re.IGNORECASE,
 )
+# Miroir anglais des deux garde-fous du carve-out (#20777) : le titre s'est
+# ouvert a « Exercise » pour les jumeaux `_en`, les gardes suivent -- ouvrir
+# le titre sans ouvrir les gardes rouvrirait le trou que la decision #17777
+# avait ferme (« une interpretation deguisee sous un titre d'exercice reste
+# signalee »). Ces deux regex ne servent QUE dans is_exercise_statement et
+# is_section_intro ; le detecteur principal INTERPRETATION_RE est intact.
 HIDDEN_INTERPRETATION_HEADING_RE = re.compile(
-    r"^#{1,6}\s*(lecture|interpre|interpret|analyse)", re.IGNORECASE
+    r"^#{1,6}\s*(lecture|reading|interpre|interpret|analys[ei])", re.IGNORECASE
 )
 OUTPUT_CITATION_RE = re.compile(
     r"\b(?:l[ae]s?|une?|cette?)\s+(?:sorties?|outputs?|prints?|affichages?)\b"
     r"|\bl\s*['’]\s*(?:sortie|output|affichage)\b"
     r"|\bcomme\s+le\s+montre\s+(?:la|le|l['’])"
-    r"|\b(?:on\s+observe|on\s+voit|on\s+lit)\b",
+    r"|\b(?:on\s+observe|on\s+voit|on\s+lit)\b"
+    r"|\b(?:the|an?|these|those)\s+(?:outputs?|prints?|displays?)\b"
+    r"|\bas\s+(?:shown|demonstrated)\s+by\s+the\b"
+    r"|\bwe\s+(?:observe|see|read)\b",
     re.IGNORECASE,
 )
 

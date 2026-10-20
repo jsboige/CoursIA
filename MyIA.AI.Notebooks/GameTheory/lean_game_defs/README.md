@@ -5,7 +5,7 @@ Définitions de types partagées en Lean 4, utilisées par plusieurs projets Lea
 ## Statut
 
 - **Type** : Projet Lake autonome (`lakefile.toml`, `lean-toolchain` pinné `v4.32.1`, `lake-manifest.json`)
-- **Fichiers** : 12 `.lean` (6 FR + 6 siblings `_en`, EPIC #4980 Pattern A)
+- **Fichiers** : voir catalogue (FR + siblings `_en`, EPIC #4980 Pattern A)
 - **Compte de `sorry`** : 0 (définitions uniquement, pas de preuves)
 - **Dépendance Mathlib** : aucune — tous les fichiers utilisent le cœur de Lean 4 uniquement
 - **Compilable isolément** : Oui — `lake build` (harnais posé par #2752, review ai-01)
@@ -15,10 +15,10 @@ Définitions de types partagées en Lean 4, utilisées par plusieurs projets Lea
 
 ## Fichiers
 
-- [Basic.lean](Basic.lean) — 107 lignes. Structures `NormalFormGame`, `FiniteGame`, `Game2x2` + paiements espérés. Source : `GameTheory-16-Lean-Definitions.ipynb`.
-- [Nash.lean](Nash.lean) — 139 lignes. Meilleure réponse, équilibre de Nash pur/mixte, dominance stricte. Source : `GameTheory-16-Lean-Definitions.ipynb`.
-- [Combinatorial.lean](Combinatorial.lean) — 113 lignes. `GameTree`, évaluation minimax, détermination victoire/défaite. Source : `GameTheory-18-Lean-CombinatorialGames.ipynb`.
-- [SocialChoice.lean](SocialChoice.lean) — 126 lignes. `Preference`, `StrictPref`, axiomes d'Arrow (énoncés). Source : `GameTheory-19-Lean-SocialChoice.ipynb`.
+- [Basic.lean](Basic.lean) — voir catalogue. Structures `NormalFormGame`, `FiniteGame`, `Game2x2` + paiements espérés. Source : `GameTheory-16-Lean-Definitions.ipynb`.
+- [Nash.lean](Nash.lean) — voir catalogue. Meilleure réponse, équilibre de Nash pur/mixte, dominance stricte. Source : `GameTheory-16-Lean-Definitions.ipynb`.
+- [Combinatorial.lean](Combinatorial.lean) — voir catalogue. `GameTree`, évaluation minimax, détermination victoire/défaite. Source : `GameTheory-18-Lean-CombinatorialGames.ipynb`.
+- [SocialChoice.lean](SocialChoice.lean) — voir catalogue. `Preference`, `StrictPref`, axiomes d'Arrow (énoncés). Source : `GameTheory-19-Lean-SocialChoice.ipynb`.
 - [Bayesian.lean](Bayesian.lean) — Jeux bayésiens à information incomplète : `BayesianGame`, `TypeStrategy`, `BayesianNashEquilibrium`, `InformationSet`, `SignalingGame`, `FirstPriceAuction`, définitions du poker de Kuhn. Source : `GameTheory-11-BayesianGames-Python.ipynb`, `GameTheory-13-ImperfectInfo-CFR-Python.ipynb`.
 - [Regret.lean](Regret.lean) — Minimisation du regret et CFR : `CumulativeRegret`, `regretMatchingStrategy`, `CounterfactualRegret`, `CFRState`, `FictitiousPlayState`. Source : `GameTheory-13-ImperfectInfo-CFR-Python.ipynb`, `GameTheory-17-MultiAgent-RL-Python.ipynb`.
 
@@ -86,7 +86,7 @@ GameTheory : définitions de types partagées en Lean 4 (pas de preuves, 0 `sorr
 utilisées par les notebooks d'enseignement et recopiées par les projets Lake
 adjacents. C'est un projet Lake autonome depuis #2752 — `lakefile.toml`,
 `lean-toolchain` pinné, CI dédiée — sans aucune dépendance Mathlib : chaque fichier
-utilise le cœur de Lean 4 uniquement, et `lake build` vérifie l'ensemble (12 modules,
+utilise le cœur de Lean 4 uniquement, et `lake build` vérifie l'ensemble (modules
 FR + siblings `_en`).
 
 ### Ce qu'elle fournit

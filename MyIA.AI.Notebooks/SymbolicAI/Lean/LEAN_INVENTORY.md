@@ -25,7 +25,12 @@ de `Knots/Invariant.lean`, troisième lake sur la cible #14773), sans refresh co
 des autres lignes. Ajout ponctuel 2026-09-30 : ligne `iit_lean` (#18599, premier
 lake de la série IIT — proxy relationnel de décomposition par coupe, Epic #16781
 veine 5 moitié formelle, **sans Mathlib** comme `tegmark_muh_lean`, 0 sorry,
-jumeau EN `#4980`), sans refresh complet des autres lignes.
+jumeau EN `#4980`), sans refresh complet des autres lignes. Ajout ponctuel
+2026-10-18 : module `Hecke/SzpiroPasten.lean` dans `hecke_lean` (grain 6 de
+#17969 — énoncé formel du théorème 1.1 Szpiro–Pasten 2026 : factorisation
+admissible kernel-prouvée, `szpiroPastenThm11 : Prop` documentée OPEN,
+zéro `sorry`, sibling EN), sans refresh du tableau ni des comptes de la ligne
+`hecke_lean` (périmés depuis #18723 — au prochain refresh complet).
 
 ## Résumé
 

@@ -72,6 +72,16 @@
          `dotnet run apphost.cs`, no .csproj of their own): the `#:` directive
          is only legal under -features:FileBasedProgram, hence CS9298. -->
     <Compile Remove="**\apphost.cs" />
+    <!-- Same class, other name: eval-pilots probes are file-based programs
+         too (`dotnet run csharp_coverage_probe.cs`), CS9298 since #19827. -->
+    <Compile Remove="GenAI\SemanticKernel\eval-pilots\**\*.cs" />
+    <!-- Standalone sub-projects swept in by the implicit glob, previously
+         masked by the CS9298 parse abort above: each carries its own .csproj
+         and references (Orleans hosting, Aspire AppHost, LLamaSharp bakeoff)
+         the parent does not. -->
+    <Compile Remove="GenAI\Integrations-DotNet\Orleans\**\*.cs" />
+    <Compile Remove="GenAI\Texte\tools\llamasharp-bakeoff\**\*.cs" />
+    <Compile Remove="GenAI\Integrations-DotNet\Aspire\CopilotHarness.App\**\*.cs" />
   </ItemGroup>
 
   <ItemGroup>
