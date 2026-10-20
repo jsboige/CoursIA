@@ -123,6 +123,15 @@ DECAY_MIN_DURATION_S = 60.0 # below this, decay_db is masked (noisy on short cli
 # what the same instrument gives on a clip of that length.
 LONG_FORM_WINDOW_S = 180.0
 
+# A file above this size that NEITHER backend can probe is treated as a
+# possible long-form artefact, not as a short clip: ``analyze_file`` would
+# otherwise take the short path silently — the pre-#21485 behaviour, with no
+# signal at all (#21521 reserve 1). 1.44 MB is 180 s at 64 kbit/s mono, the
+# low end for an audiobook delivery, so the threshold means "could plausibly
+# exceed one window". Under it, an unreadable header is an instrument problem
+# the short path already reports on its own metrics.
+UNKNOWN_DURATION_WARN_BYTES = 1_440_000
+
 # Melody verdicts, worst first. FLAT and DRONE are both reject classes
 # (`classify_segment`), so they share the top rank.
 MELODY_SEVERITY = {
@@ -159,6 +168,13 @@ def classify_segment(
     axis fired (``"span"`` / ``"motion"``); it is ``None`` — never ``[]`` — when
     the segment was too short to evaluate, so "not measured" and "measured,
     nothing fired" never share one value.
+
+    ``n_syllables`` is a TOTAL, not a density: on the long-form path it is
+    the sum over windows (``aggregate_window_measurements``), on the short
+    path one clip's count. The name is kept short for the consumers that
+    already read it (#21521 reserve 2) — the contract lives here, at the
+    point of consumption: compare it to ``MIN_SYLLABLES`` only, never against
+    a per-window count, and never as syllables per second.
 
     ``breath_trusted`` (default True) is False when the spectral breath instrument
     returned a verdict but the clip is too short for ``decay_db`` to be reliable
@@ -260,6 +276,13 @@ def aggregate_window_measurements(windows: List[Dict[str, object]]) -> Dict[str,
 
     ``worst_window`` is returned alongside: the window the concentration
     metrics (``effective_notes``, ``motif3_repeat_pct``, ...) are read from.
+    Its tie-break is lexicographic ``(severity, motif3, span)``, so at equal
+    verdict the *most concentrated* window wins — a very wide but low-motif
+    window is never the one reported (the choice is about where concentration
+    is read, not about which window is worst on every axis). The widest span
+    is therefore not carried by ``worst_window``; ``widest_window`` names the
+    window it came from, next to the ``melodic_span_st`` maximum that already
+    feeds the gate (#21521 reserve 3).
     """
     if not windows:
         return {
@@ -269,6 +292,7 @@ def aggregate_window_measurements(windows: List[Dict[str, object]]) -> Dict[str,
             "global_range_st": None,
             "n_syllables": 0,
             "worst_window": None,
+            "widest_window": None,
         }
 
     def _rank(w: Dict[str, object]) -> tuple:
@@ -279,6 +303,7 @@ def aggregate_window_measurements(windows: List[Dict[str, object]]) -> Dict[str,
         )
 
     worst = max(windows, key=_rank)
+    widest = max(windows, key=lambda w: w.get("melodic_span_st") or 0.0)
 
     def _collect(key: str) -> List[float]:
         return [w[key] for w in windows
@@ -295,6 +320,7 @@ def aggregate_window_measurements(windows: List[Dict[str, object]]) -> Dict[str,
         "global_range_st": min(ranges) if ranges else None,
         "n_syllables": sum(w.get("n_syllables") or 0 for w in windows),
         "worst_window": worst,
+        "widest_window": widest,
     }
 
 
@@ -527,6 +553,7 @@ def analyze_long_form(
         "top3_note_pct": worst.get("top3_note_pct"),
         "motif3_repeat_pct": worst.get("motif3_repeat_pct"),
         "melodic_span_p5p95_st": worst.get("melodic_span_p5p95_st"),
+        # SUM over the windows, not a per-window density (#21521 reserve 2).
         "n_syllables": agg["n_syllables"],
         "melodic_span_st": agg["melodic_span_st"],
         "mean_abs_interval_st": agg["mean_abs_interval_st"],
@@ -543,6 +570,10 @@ def analyze_long_form(
         "window_s": window_s,
         "n_windows": len(windows),
         "window_counts": counts,
+        "widest_window": {
+            "label": (agg["widest_window"] or {}).get("label"),
+            "melodic_span_st": (agg["widest_window"] or {}).get("melodic_span_st"),
+        },
         "windows": [
             {
                 "label": w.get("label"),
@@ -573,7 +604,24 @@ def analyze_file(
     duration = _probe_duration_s(path)
     if duration is not None and duration > window_s:
         return analyze_long_form(path, instruments, window_s=window_s)
-    return analyze_segment(path, instruments)
+    result = analyze_segment(path, instruments)
+    if duration is None:
+        # Neither backend could probe the header. On a file large enough to be
+        # several windows, falling through to the short path is exactly the
+        # #21485 defect with no signal (#21521 reserve 1): say so, and never
+        # let it read as PASS-TO-EAR. A REJECT still wins; an INCONCLUSIVE
+        # (nothing measured) stays INCONCLUSIVE.
+        try:
+            size_bytes = os.path.getsize(path)
+        except OSError:
+            size_bytes = 0
+        result["duration_unknown"] = True
+        result["size_bytes"] = size_bytes
+        if size_bytes >= UNKNOWN_DURATION_WARN_BYTES and result.get("gate") == "PASS-TO-EAR":
+            result["gate"] = "WARN"
+            result["reasons"] = list(result.get("reasons") or []) + ["LONG-FORM-UNVERIFIED"]
+            result["reason_kinds"] = list(result.get("reason_kinds") or []) + ["finding"]
+    return result
 
 
 def verify_batch(
