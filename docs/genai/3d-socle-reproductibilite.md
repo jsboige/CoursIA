@@ -71,13 +71,15 @@ Exécution fraîche sur `po-2028` (torch 2.8.0+cu126, semences du carnet inchang
 
 | Chrono | Référence | po-2028 | Facteur |
 |---|---:|---:|---:|
-| Optimisation (550 itérations) | 426,0 s | **951,4 s** | **× 2,2** |
-| Rendu volumique (80×80) | 16 ms | **37 ms** | × 2,3 |
-| Rendu splats (600 primitives) | 56 ms | **167 ms** | × 3,0 |
+| Optimisation (550 itérations) | 426,0 s | **974,2 s** | **× 2,3** |
+| Rendu volumique (80×80) | 16 ms | **38 ms** | × 2,4 |
+| Rendu splats (600 primitives) | 56 ms | **184 ms** | × 3,3 |
 
 `po-2028` est un poste **partagé** (plusieurs sessions d'agents, charge CPU mesurée à 42 % pendant la mesure) et l'optimisation splats est **purement CPU**. **Conséquence de dimensionnement** : un démonstrateur fondé sur ce socle doit compter **~16 minutes de CPU par run** sur une machine de cette classe, et non les ~7 minutes mesurées sur un poste libre — l'écart se comporte comme la charge, pas comme le carnet.
 
-**Les sorties committées du carnet sont remplacées par les présentes.** La re-exécution a produit des sorties **identiques en valeur** (tableau ci-dessus) mais des **images re-encodées** (diff de 992 insertions / 98 suppressions, essentiellement des blobs d'images et les horodatages d'exécution) : le carnet est committé avec ses sorties fraîches, conformément à C.2, et le tableau de mesures ci-dessus est la preuve de l'équivalence.
+**Une correction de source, et pourquoi elle est dans le diff.** La re-exécution a d'abord produit des sorties contenant un **chemin de machine** : la cellule d'optimisation appelle `float(perte)` sur un tenseur gradué, ce qui déclenche un `UserWarning` dont le texte est préfixé du **fichier temporaire de l'ipykernel** (`…\Temp\ipykernel_<pid>\….py`) — un chemin non reproductible, que la garde `check_output_failure_text` refuse (classe `MACHINE_PATH`). Le correctif est sur la **source**, pas sur la sortie : `float(perte.detach())` (avec le commentaire « detach : on lit la valeur, on ne la rétro-propague pas »). Après re-exécution, le carnet **ne contient plus aucun chemin de machine** — 0 occurrence de `C:\Users`, de `ipykernel_<pid>` ou du chemin de build de torch — là où la version committée en contenait un. C'est une **amélioration** du carnet de référence, pas seulement un ajustement de livrable.
+
+**Les sorties committées du carnet sont remplacées par les présentes.** La re-exécution a produit des sorties **identiques en valeur** (tableau ci-dessus) mais des **images re-encodées** et des horodatages d'exécution neufs : le carnet est committé avec ses sorties fraîches, conformément à C.2, et le tableau de mesures ci-dessus est la preuve de l'équivalence.
 
 **Un défaut de portabilité trouvé au passage.** `3D-05-3DGS-Optimization-Tradeoffs.ipynb` pose `os.environ["CUDA_VISIBLE_DEVICES"] = "1"` dans sa première cellule. Sur une machine à **un seul GPU** — dont `po-2028` — cette ligne masque le device et rend le carnet inexécutable tel quel. C'est un défaut **du carnet**, pas de la machine, et il serait corrigé par une ligne. Il est signalé ici pour la lane qui porte ce carnet, plutôt que corrigé dans une PR qui aurait déformé le périmètre de ce cycle.
 
