@@ -1,8 +1,7 @@
 - name: Probas-4 Bayesian-Networks
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb
-  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb
-  numbering_exception: 'Zero-padding cote Python uniquement PyMC-1..9 -> PyMC-01..09 (renommage #13760) ; jumeau C# Infer-1..9 non concerne, contenu pedagogique inchange.'
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
