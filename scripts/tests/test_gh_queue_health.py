@@ -17,6 +17,7 @@ snapshots.
 """
 from __future__ import annotations
 
+import base64
 import datetime as dt
 import json
 import subprocess
@@ -848,3 +849,318 @@ def test_18131_invalid_now_is_broken(tmp_path: Path) -> None:
     snapshot.write_text(_make_snapshot(_floor_runs()), encoding="utf-8")
     proc = _run("--watch", "--input", str(snapshot), "--now", "yesterday")
     assert proc.returncode == 2, proc.stdout + proc.stderr
+
+
+# ---------------------------------------------------------------------------
+# #17397 -- stale-runs-on ghost class. A run was queued against a workflow
+# that requested runners X; main HEAD now requests Y. The API will never
+# admit the run (it waits for X, the workflow asks for Y). Cancellation
+# is safe (no 409 "has not been queued yet" because the run IS queued --
+# it's just queued against the wrong pool). Detection is structural: the
+# (job, runs-on) fingerprint at head_sha vs at main HEAD. The function
+# is pure -- the test injects a fake runs_on_at_ref so the test never
+# touches the API.
+# ---------------------------------------------------------------------------
+
+
+def test_17397_normalize_runs_on_accepts_known_shapes() -> None:
+    """Scalar, list of scalars, selector dict, list of selectors."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod._normalize_runs_on("ubuntu-latest") == ["ubuntu-latest"]
+    assert mod._normalize_runs_on(["self-hosted", "linux", "x64"]) == [
+        "self-hosted", "linux", "x64"]
+    assert mod._normalize_runs_on(
+        {"group": "my-group", "labels": ["self-hosted", "linux"]}) == [
+            "self-hosted", "linux"]
+    # List of selectors -- the typical mixed-OS shape.
+    assert mod._normalize_runs_on([
+        "ubuntu-latest",
+        {"labels": ["self-hosted", "gpu"]},
+    ]) == ["ubuntu-latest", "self-hosted", "gpu"]
+
+
+def test_17397_normalize_runs_on_returns_none_for_unknown_shapes() -> None:
+    """A runs-on of a shape the function doesn't recognize is a hard None.
+
+    The caller treats None as 'skip the comparison' -- never as 'empty list'
+    or 'no runs-on at all'. This is the contract that keeps a malformed
+    workflow from being misclassified as fresh-maintained.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod._normalize_runs_on(42) is None
+    assert mod._normalize_runs_on([{"no-labels-here": True}]) is None
+    # A label of unknown type in a list -> None (caller skips).
+    assert mod._normalize_runs_on([42]) is None
+
+
+def test_17397_workflow_runs_on_fingerprint() -> None:
+    """The fingerprint captures (job, runs-on) pairs, order-independent.
+
+    The same workflow with jobs reordered or with extra whitespace must
+    produce the same fingerprint -- a class is a property of the workflow
+    file, not a property of its serialization.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    yaml_a = """
+jobs:
+  build:
+    runs-on: ubuntu-latest
+  test:
+    runs-on: [self-hosted, linux]
+"""
+    yaml_b = """
+jobs:
+  test:
+    runs-on:
+      - self-hosted
+      - linux
+  build:
+    runs-on: ubuntu-latest
+"""
+    fp_a = mod._workflow_runs_on_fingerprint(yaml_a)
+    fp_b = mod._workflow_runs_on_fingerprint(yaml_b)
+    assert fp_a == fp_b
+    assert ("build", ("ubuntu-latest",)) in fp_a
+    assert ("test", ("self-hosted", "linux")) in fp_a
+
+
+def test_17397_workflow_runs_on_fingerprint_inherits_default() -> None:
+    """Jobs without `runs-on` inherit the workflow top-level default."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    yaml_text = """
+runs-on: ubuntu-latest
+jobs:
+  a:
+  b:
+    runs-on: self-hosted
+"""
+    fp = mod._workflow_runs_on_fingerprint(yaml_text)
+    assert ("a", ("ubuntu-latest",)) in fp
+    assert ("b", ("self-hosted",)) in fp
+
+
+def test_17397_workflow_runs_on_fingerprint_returns_none_on_bad_yaml() -> None:
+    """A workflow file that doesn't parse -> None (caller skips the run)."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod._workflow_runs_on_fingerprint("not: valid: yaml: [") is None
+    assert mod._workflow_runs_on_fingerprint("") == frozenset()
+    assert mod._workflow_runs_on_fingerprint("just a string") == frozenset()
+
+
+def test_17397_detect_stale_runs_on_when_fingerprints_differ() -> None:
+    """The defining case: a run's head_sha fingerprint != main fingerprint."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    head_fp = frozenset({("build", ("self-hosted", "linux"))})
+    main_fp = frozenset({("build", ("ubuntu-latest",))})
+    runs = [
+        {"id": 1, "path": "ci.yml", "head_sha": "abc123"},
+        {"id": 2, "path": "ci.yml", "head_sha": "def456"},
+    ]
+
+    def lookup(path: str, ref: str) -> frozenset | None:
+        if ref == "abc123" or ref == "def456":
+            return head_fp
+        if ref == "main":
+            return main_fp
+        return None
+
+    stale = mod.detect_stale_runs_on(runs, lookup)
+    assert stale == {1, 2}
+
+
+def test_17397_detect_stale_runs_on_when_fingerprints_match() -> None:
+    """Control: same fingerprint on both sides -> empty stale set.
+
+    A run whose workflow was re-pinned to the new runner pool before
+    being queued would not be stale -- the lookup returns the same set
+    on both sides.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    same = frozenset({("build", ("ubuntu-latest",))})
+    runs = [{"id": 1, "path": "ci.yml", "head_sha": "abc123"}]
+
+    def lookup(path: str, ref: str) -> frozenset | None:
+        return same
+
+    assert mod.detect_stale_runs_on(runs, lookup) == set()
+
+
+def test_17397_detect_stale_runs_on_skips_when_either_side_unknown() -> None:
+    """A None on either side skips the run -- never synthesizes a verdict."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    runs = [
+        {"id": 1, "path": "ci.yml", "head_sha": "abc123"},
+        {"id": 2, "path": "ci.yml", "head_sha": "def456"},
+        {"id": 3, "path": "ci.yml", "head_sha": "ghi789"},
+    ]
+
+    def lookup(path: str, ref: str) -> frozenset | None:
+        if ref == "abc123":
+            return None  # head unknown
+        if ref == "def456":
+            return frozenset({("build", ("self-hosted",))})
+        if ref == "main":
+            return frozenset({("build", ("ubuntu-latest",))})  # only id=2 lands
+        return None  # ghi789 unknown
+
+    stale = mod.detect_stale_runs_on(runs, lookup)
+    assert stale == {2}
+
+
+def test_17397_detect_stale_runs_on_skips_runs_without_path_or_sha() -> None:
+    """A run without `path` or `head_sha` is skipped -- it cannot be classified.
+
+    This is the row-shape discipline the live API gives us: pre-cutoff
+    ghosts and older API versions sometimes lack `path` or `head_sha` in
+    the workflow_runs payload. They stay live until the next watch cycle
+    repopulates them -- a measured, non-fatal failure.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    runs = [
+        {"id": 1},  # no path, no head_sha
+        {"id": 2, "path": "ci.yml"},  # no head_sha
+        {"id": 3, "head_sha": "abc"},  # no path
+    ]
+    assert mod.detect_stale_runs_on(runs, lambda p, r: frozenset()) == set()
+
+
+def test_17397_classify_routes_stale_runs_on_to_ghosts() -> None:
+    """The stale_runs_on set moves runs from `live` to `ghosts`.
+
+    The classify_runs integration: a run whose ID is in the stale set
+    becomes a `stale-runs-on` ghost, regardless of cutoff / PR state.
+    The pr-closed and pre-cutoff classes still take precedence -- a
+    closed-PR run is a permanent ghost even if it also happens to be
+    stale-runs-on.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    runs = [
+        {"id": 1, "created_at": "2026-09-15T10:00:00Z"},
+        {"id": 2, "created_at": "2026-09-15T10:00:00Z"},
+        {"id": 3, "created_at": "2026-08-19T03:00:00Z"},  # pre-cutoff
+    ]
+    cutoff = dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    out = mod.classify_runs(runs, cutoff, stale_runs_on={1, 2})
+    reasons = {g["id"]: g["reason"] for g in out["ghosts"]}
+    assert reasons == {1: "stale-runs-on", 2: "stale-runs-on",
+                       3: "pre-cutoff"}
+    assert out["live"] == []
+
+
+def test_17397_cancel_runs_parallel_invokes_per_run(monkeypatch) -> None:
+    """8-worker parallelism: each ID calls cancel_run once.
+
+    Uses a fake cancel_run so the test is hermetic. The test asserts:
+    (1) the per-run result carries its ID; (2) exactly the input IDs are
+    processed; (3) parallel execution is requested (we set max_workers=8
+    to make the contract explicit).
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    seen: list[int] = []
+
+    def fake_cancel(repo: str, run_id: int) -> dict:
+        seen.append(run_id)
+        return {"ok": True, "status": "cancelled", "id": run_id}
+
+    monkeypatch.setattr(mod, "cancel_run", fake_cancel)
+    results = mod.cancel_runs_parallel("jsboige/CoursIA",
+                                       [11, 22, 33, 44, 55],
+                                       max_workers=8)
+    assert sorted(seen) == [11, 22, 33, 44, 55]
+    assert sorted(r["id"] for r in results) == [11, 22, 33, 44, 55]
+    assert all(r["ok"] for r in results)
+
+
+def test_17397_cancel_runs_parallel_handles_empty_list() -> None:
+    """An empty input is a no-op -- no workers spawned, no calls made."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    assert mod.cancel_runs_parallel("jsboige/CoursIA", []) == []
+
+
+def test_17397_fetch_workflow_runs_on_at_ref_handles_bad_payload(monkeypatch) -> None:
+    """The API path returns None on any structural failure -- never raises.
+
+    A non-dict payload, a missing `content` field, an invalid base64
+    string, or a non-UTF-8 decode all flow to None. The caller treats
+    None as 'skip the comparison'.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    class _Proc:
+        def __init__(self, payload):
+            self.returncode, self.stdout, self.stderr = 0, json.dumps(payload), ""
+
+    def fake_run(cmd, **kwargs):
+        endpoint = cmd[-1] if cmd else ""
+        if "non-dict" in endpoint:
+            return _Proc(["not a dict"])
+        if "no-content" in endpoint:
+            return _Proc({"encoding": "base64"})
+        if "bad-b64" in endpoint:
+            return _Proc({"content": "!!!not base64!!!"})
+        return _Proc({"unexpected": "shape"})
+
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    assert mod.fetch_workflow_runs_on_at_ref("o/r", "non-dict", "main") is None
+    assert mod.fetch_workflow_runs_on_at_ref("o/r", "no-content", "main") is None
+    assert mod.fetch_workflow_runs_on_at_ref("o/r", "bad-b64", "main") is None
+
+
+def test_17397_fetch_workflow_runs_on_at_ref_returns_fingerprint(monkeypatch) -> None:
+    """Happy path: a base64-encoded workflow yields its (job, runs-on) pairs."""
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    yaml_text = "jobs:\n  build:\n    runs-on: ubuntu-latest\n"
+    b64 = base64.b64encode(yaml_text.encode("utf-8")).decode("ascii")
+
+    class _Proc:
+        returncode, stdout, stderr = 0, json.dumps({"content": b64}), ""
+
+    def fake_run(cmd, **kwargs):
+        return _Proc()
+
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    fp = mod.fetch_workflow_runs_on_at_ref("o/r", "ci.yml", "main")
+    assert fp == frozenset({("build", ("ubuntu-latest",))})
+
+
+def test_17397_cli_cancel_rejects_input_mode(tmp_path: Path) -> None:
+    """--cancel on a snapshot is rejected -- the fingerprint isn't in the snapshot.
+
+    The fingerprint is computed from `git show` of the workflow at a ref,
+    which requires live API access. Snapshot mode has no channel for it,
+    so the option is rejected with an explicit message.
+    """
+    snapshot = tmp_path / "snap.json"
+    snapshot.write_text(_make_snapshot(_floor_runs()), encoding="utf-8")
+    proc = _run("--cancel", "stale-runs-on", "--input", str(snapshot))
+    assert proc.returncode == 2, (
+        f"expected EXIT_BROKEN=2, got {proc.returncode}; stderr={proc.stderr}"
+    )
+    assert "stale-runs-on requires --repo" in proc.stderr
