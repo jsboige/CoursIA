@@ -95,3 +95,31 @@ def test_file_without_tests_is_named_vacuous(tmp_path):
     assert "aucune assertion" in proc.stdout
     # Un controle vide n'est pas une faute du depot : ne pas le confondre.
     assert "Arbre de checkout incomplet" not in proc.stdout
+
+
+def test_collection_error_is_named_as_collection_and_not_as_a_test_failure(tmp_path):
+    """rc=2 (INTERRUPTED) : la collecte echoue avant execution, ce n'est pas un test rouge.
+
+    Cas mesure #21539 : sur Windows la collecte remontait jusqu'a un point
+    d'analyse protege et rendait rc=2 ; l'appelant lisait 2, puis la suite
+    accusait la PR d'un echec de test qu'aucun test n'avait produit.
+    """
+    broken = _write(tmp_path, "test_import_casse.py", "import module_qui_n_existe_pas_du_tout\n")
+
+    proc = _run(broken)
+
+    assert proc.returncode == 1, proc.stdout
+    assert "Erreur de collecte" in proc.stdout
+    # Ni un test rouge, ni un controle vide : les trois causes restent distinctes.
+    assert "Controle vide" not in proc.stdout
+    assert "Arbre de checkout incomplet" not in proc.stdout
+
+
+def test_pytest_config_is_pinned_so_the_rootdir_never_walks_up(tmp_path):
+    """Le rootdir vient du configfile nomme, pas d'une remontee vers la racine du volume."""
+    ok = _write(tmp_path, "test_ok.py", "def test_pass():\n    assert True\n")
+
+    proc = _run(ok)
+
+    assert proc.returncode == 0, proc.stdout + proc.stderr
+    assert f"rootdir: {ROOT}" in proc.stdout, proc.stdout[:2000]
