@@ -2,9 +2,9 @@
 
 **Question.** L'EPIC Origami #18605 répartit le travail GPU en trois étages. Le premier — *pionnier*, petite carte 8 Go — est le rôle où l'on **défriche** : c'est là qu'on vérifie qu'un pipeline tient, avant de le passer à l'étage moyen. Pour la famille **0,8 B en GRPO+QLoRA**, l'enveloppe est mesurée : **pic 7 844 Mio sur 8 192 (95,7 %)** — 4 % de marge, donc rien de plus lourd n'y passe (mesure #21620, PR #21624).
 
-Ce document mesure **l'autre moitié** de l'EPIC : la famille **NeRF** (`3D-01-NeRF-From-Scratch`), dont le Pli 2 est livré et dont la mesure d'enveloppe n'existait pas.
+Ce document mesure **l'autre moitié** de l'EPIC : la famille **NeRF**, dont le Pli 2 est livré et dont la mesure d'enveloppe n'existait pas. Les **deux volets** de la famille y sont mesurés : l'entraînement (`3D-01-NeRF-From-Scratch`) et l'évaluation (`3D-02-NeRF-Critic`).
 
-**Mesure.** Poste `myia-po-2028`, **NVIDIA GeForce RTX 3070 Ti Laptop GPU, 8 192 Mio**, `torch 2.8.0+cu126`, Python 3.13.16, kernel `python3`. Exécution par `scripts/notebook_tools/notebook_tools.py execute` (Papermill). Sortie `nvidia-smi` échantillonnée **toutes les 5 s** (42 échantillons sur le run). Le notebook a été exécuté **sur une copie hors dépôt** : `3D-01` et `3D-02` sont dans le scope de claims d'autres lanes (PR #21413, #20544) et n'ont pas été touchés.
+**Mesure.** Poste `myia-po-2028`, **NVIDIA GeForce RTX 3070 Ti Laptop GPU, 8 192 Mio**, `torch 2.8.0+cu126`, Python 3.13.16, kernel `python3`. Exécution par `scripts/notebook_tools/notebook_tools.py execute` (Papermill). Sortie `nvidia-smi` échantillonnée **toutes les 5 s** (42 échantillons sur le run). Le notebook a été exécuté **sur une copie hors dépôt** : `3D-01` et `3D-02` sont dans le scope de claims d'autres lanes (PR #21413, #20544) et n'ont pas été touchés. Le volet évaluatif (`3D-02`) a été rejoué sur la même carte avec `torch 2.14.1+cu126`, 242 échantillons à 5 s.
 
 | Mesure | Valeur |
 |---|---|
@@ -23,16 +23,42 @@ Ce document mesure **l'autre moitié** de l'EPIC : la famille **NeRF** (`3D-01-N
 
 | Pipeline | Pic VRAM sur 8 Go | Marge restante | Verdict |
 |---|---:|---:|---|
-| **NeRF** (`3D-01`, 2 000 it. + éval, réseau dense 5D) | 4 318 Mio (52,7 %) | 47 % | **tient largement** — l'étage pionnier peut defriche le socle A1 |
+| **NeRF** (`3D-01`, 2 000 it. + éval, réseau dense 5D) | 4 318 Mio (52,7 %) | 47 % | **tient largement** — l'étage pionnier peut défricher le socle A1 |
+| **NeRF — volet évaluatif** (`3D-02-NeRF-Critic` : critic, bruit de pose, focales, comptage de points) | **7 740 Mio (94,5 %)** | 5,5 % | **au bord** — et le pic n'est pas dans l'entraînement |
 | **0,8 B GRPO + QLoRA** (0,8 B, GRPO, budget 384 tok) | 7 844 Mio (95,7 %) | 4 % | **au bord** — rien de plus lourd ne passe |
 
-La conséquence opérationnelle est nette : **le premier étage n'est pas un « petit GPU » générique, il est un étage à deux vitesses.** La famille NeRF y a de la place ; un entraînement RL, même sur 0,8 B, n'y a que 4 %. Un lead RL ne peut donc pas être défriche sur l'étage pionnier : il part **directement** à l'étage moyen, et le pionnier garde sa vocation (défriche NeRF, Fourier, petits apprentissages).
+La conséquence opérationnelle est nette : **le premier étage n'est pas un « petit GPU » générique, il est un étage à deux vitesses.** La famille NeRF y a de la place ; un entraînement RL, même sur 0,8 B, n'y a que 4 %. Un lead RL ne peut donc pas être défriché sur l'étage pionnier : il part **directement** à l'étage moyen, et le pionnier garde sa vocation (défricher NeRF, Fourier, petits apprentissages).
 
-**Ce que cette mesure ne couvre pas** : le volet **évaluatif** `3D-02-NeRF-Critic` (non rejoué ici) et le pipeline **3DGS/gsplat** du Pli 3, qui exige le moteur CUDA `gsplat` — absent de ce poste (cf. #21614 : `nvcc` non installé, chaîne CUDA à construire). L'enveloppe du 3DGS reste donc à mesurer sur l'eGPU 24 Go désigné par l'EPIC.
+**Ce que cette mesure ne couvre pas** : le pipeline **3DGS/gsplat** du Pli 3, qui exige le moteur CUDA `gsplat` — absent de ce poste (cf. #21614 : `nvcc` non installé, chaîne CUDA à construire). L'enveloppe du 3DGS reste donc à mesurer sur l'eGPU 24 Go désigné par l'EPIC.
+
+## Le volet évaluatif (`3D-02-NeRF-Critic`) : l'enveloppe change de nature
+
+Le second volet de la famille NeRF — celui qui **évalue** (pénalité critic, sensibilité au bruit de pose, transfert entre focales, comptage de points) — a été rejoué en entier sur la même carte, le 20/10 de 23:17Z à 23:38Z.
+
+| Mesure | Valeur |
+|---|---|
+| **Pic VRAM** | **7 740 Mio / 8 192 Mio = 94,5 %** |
+| Mémoire au repos (avant / après) | 428 / 427 Mio |
+| Température max | 72 °C (seuil d'abandon 85 °C non franchi) |
+| Utilisation GPU max | 100 % |
+| Durée du run complet | **1 222,3 s** (20,4 min) |
+| Plateau de l'entraînement (scène jouet, puis Lego 100×100) | 3 001 Mio, puis 4 217 Mio (51 % de la carte) |
+| Fidelity — scène jouet, 1 600 it. | **21,76 dB** (96 s) |
+| Fidélité — Lego, 3 000 it. | 20,15 dB (L=0), **22,45 dB** (L=4), 22,26 dB (L=10) |
+| Fidélité — bruit de pose, 800 it. | 19,84 dB (σ=0°) → 18,01 dB (σ=2°) |
+| Fidélité — transfert de focale (diag. de la matrice) | 19,76 dB (native→native), 18,92 dB (télé→télé), 6,66 dB (grand angle→native) |
+| Coût du comptage de points | 9,4 ms (N=8) → **15 084 ms** (N=256, 1 048 576 points) |
+
+Le point important n'est pas le total : c'est **où** le pic arrive. Le profil échantillonné à 5 s montre un plateau stable à 4 200 Mio pendant les vingt minutes d'entraînement et d'évaluation, puis une **montée de 3 512 Mio dans les vingt dernières secondes** — la cellule de comptage de points `N=256`, qui mobilise 1 048 576 points et met 15 secondes à elle seule. Entraîner un NeRF sur 8 Go n'est pas le problème ; **évaluer un NeRF de façon dense l'est**.
+
+C'est la même arithmétique que le run 0,8 B GRPO+QLoRA (95,7 %) : le pionnier reste un étage pour l'entraînement et l'**évaluation dense doit monter d'un étage**. La réserve « le pionnier garde sa vocation » ne se justifie plus telle quelle : elle se restreint au *socle* NeRF.
+
+**Ce que le volet évaluatif ajoute comme lecture pédagogique** (les valeurs sont dans le manifeste) : sur la scène jouet, la pénalité critic dégrade la PSNR (20,88 → 19,92 → 19,13 dB pour L = 0, 4, 10) alors que sur Lego elle l'améliore (20,15 → 22,45 dB) — la pénalité n'a pas le même sens selon la scène ; le bruit de pose dégrade la qualité de façon monotone (19,84 → 18,01 dB pour σ de 0° à 2°) ; la matrice de transfert entre focales est maximale sur sa diagonale, ce qui veut dire qu'un modèle appris à une focale ne se transpose pas ; le coût du comptage de points explose entre N=128 (144 ms) et N=256 (15 s), soit un facteur 105 pour un doublement du nombre de points.
 
 ## Artefacts
 
-- Manifeste de mesure : `MyIA.AI.Notebooks/GenAI/3D/_measurements/3d01_enveloppe_8go.json` (pic VRAM, température, débit, courbe PSNR complète, comparaison avec la mesure #21620).
+- Manifeste de mesure (entraînement) : `MyIA.AI.Notebooks/GenAI/3D/_measurements/3d01_enveloppe_8go.json` (pic VRAM, température, débit, courbe PSNR complète, comparaison avec la mesure #21620).
+- Manifeste de mesure (volet évaluatif) : `MyIA.AI.Notebooks/GenAI/3D/_measurements/3d02_enveloppe_8go.json` (pic VRAM et son profil par phase, température, débit, grilles critic / pose / focale / comptage de points).
 - Mesure jumelle de l'étage pionnier : `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/results/p15294_8go_pionnier/` (issue #21620, PR #21624).
 
-**Reproductibilité.** Issue #21626 (fille de l'EPIC #18605). GPU réservé au ledger `CoursIA-gpu-reservation-ledger` **avant** tout chargement (`obs-55b043a6b21cc586`, `held`, puis `released`), un seul job à la fois, sortie `nvidia-smi` échantillonnée à 5 s.
+**Reproductibilité.** Issue #21626 (fille de l'EPIC #18605). GPU réservé au ledger `CoursIA-gpu-reservation-ledger` **avant** tout chargement (`obs-55b043a6b21cc586` pour `3D-01`, `obs-12e553f00d6132f3` pour `3D-02` ; `held` puis `released`), un seul job à la fois, sortie `nvidia-smi` échantillonnée à 5 s. Les deux notebooks ont été exécutés **sur une copie hors dépôt** : `3D-01` et `3D-02` sont dans le scope de claims d'autres lanes (PR #21413, #20544) et n'ont pas été touchés. Les deux mesures portent le même siège et la même carte mais deux versions de torch (2.8.0+cu126 pour `3D-01`, 2.14.1+cu126 pour `3D-02`) : l'effet de la version n'est pas isolé comme facteur du pic.

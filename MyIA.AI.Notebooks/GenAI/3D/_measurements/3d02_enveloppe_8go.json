@@ -1,0 +1,144 @@
+{
+ "module": "GenAI/3D",
+ "issue": 21626,
+ "epic_parent": 18605,
+ "mesure": "enveloppe VRAM + fidelite du volet evaluatif NeRF (critic, bruit de pose, focales, comptage de points) sur l'etage pionnier 8 Go",
+ "machine": "myia-po-2028",
+ "gpu": "NVIDIA GeForce RTX 3070 Ti Laptop GPU (8192 Mio)",
+ "notebook": "MyIA.AI.Notebooks/GenAI/3D/3D-02-NeRF-Critic.ipynb (copie hors depot, non modifie dans le depot)",
+ "env": {
+  "torch": "2.14.1+cu126",
+  "python": "3.13.16",
+  "kernel": "python3"
+ },
+ "dataset": "tiny_nerf_data.npz (dataset officiel des auteurs, cache local) + scene jouet synthetique 40x64x64x3",
+ "execution": {
+  "mode": "notebook_tools.py execute (Papermill, kernel python3)",
+  "wallclock_s": 1222.3,
+  "scene_jeu_iters": 1600,
+  "scene_jeu_it_per_s": 16.7,
+  "lego_iters": 3000,
+  "lego_it_per_s": 15.8,
+  "pose_bruit_iters": 800,
+  "focale_iters": 800
+ },
+ "vram": {
+  "peak_mib": 7740,
+  "card_mib": 8192,
+  "peak_pct": 94.5,
+  "idle_mib": 428,
+  "temp_max_c": 72,
+  "util_max_pct": 100,
+  "samples": 242,
+  "sample_period_s": 5,
+  "profil_par_phase_mib": [
+   {
+    "phase": "scene jouet + grille du critic (cellules 7 et 11)",
+    "fenetre_s": "0-300",
+    "plateau_mib": 3001
+   },
+   {
+    "phase": "Lego 100x100, bruit de pose, focales (cellules 12, 16 et 20)",
+    "fenetre_s": "300-1200",
+    "plateau_mib": 4217
+   },
+   {
+    "phase": "comptage de points N=256 (cellule 24)",
+    "fenetre_s": "1200-1226",
+    "plateau_mib": 7740
+   }
+  ],
+  "pic_atteint_par": "l'evaluation par comptage de points (cellule 24, N=256 soit 1048576 points evalues), pas l'entrainement : le pic monte de 4228 a 7740 Mio dans les ~20 dernieres secondes du run, pour 15084 ms de la seule cellule"
+ },
+ "fidelite": {
+  "scene_jeu_psnr_final_db": 21.76,
+  "scene_jeu_mse_final": 0.00666,
+  "scene_jeu_duree_s": 96,
+  "grille_critic_scene_jeu_psnr_db": {
+   "L=0": 20.88,
+   "L=4": 19.92,
+   "L=10": 19.13
+  },
+  "grille_critic_lego_psnr_db_3000it": {
+   "L=0": 20.15,
+   "L=4": 22.45,
+   "L=10": 22.26
+  },
+  "bruit_pose_psnr_db_800it": {
+   "sigma=0.00deg": 19.84,
+   "sigma=0.50deg": 19.68,
+   "sigma=1.00deg": 18.66,
+   "sigma=2.00deg": 18.01
+  },
+  "matrice_focale_psnr_db": {
+   "grand_angle_f35": {
+    "f35": 11.3,
+    "f70": 6.66,
+    "f140": 7.19
+   },
+   "native_f70": {
+    "f35": 19.48,
+    "f70": 19.76,
+    "f140": 17.71
+   },
+   "tele_f140": {
+    "f35": 6.94,
+    "f70": 9.67,
+    "f140": 18.92
+   }
+  },
+  "comptage_points": [
+   {
+    "n": 8,
+    "temps_ms": 9.4,
+    "points": 32768,
+    "psnr_db": 15.03
+   },
+   {
+    "n": 16,
+    "temps_ms": 17.3,
+    "points": 65536,
+    "psnr_db": 20.5
+   },
+   {
+    "n": 32,
+    "temps_ms": 29.2,
+    "points": 131072,
+    "psnr_db": 21.66
+   },
+   {
+    "n": 64,
+    "temps_ms": 72.3,
+    "points": 262144,
+    "psnr_db": 21.83
+   },
+   {
+    "n": 128,
+    "temps_ms": 144.1,
+    "points": 524288,
+    "psnr_db": 21.85
+   },
+   {
+    "n": 256,
+    "temps_ms": 15084.0,
+    "points": 1048576,
+    "psnr_db": 21.87
+   }
+  ],
+  "reproduction": "volet evaluatif execute en entier le 2026-10-20T23:17Z-2026-10-20T23:38Z sur ce siege ; le notebook du depot n'a pas ete modifie (copie hors depot executee)"
+ },
+ "comparaison": {
+  "nerf_3d01_entrainement_8go": {
+   "peak_mib": 4318,
+   "peak_pct": 52.7,
+   "issue": 21626
+  },
+  "famille_0_8B_grpo_qlora_8go": {
+   "peak_mib": 7844,
+   "peak_pct": 95.7,
+   "issue": 21620
+  },
+  "lecture": "l'entrainement NeRF tient a 52,7 % de l'etage 8 Go ; l'evaluation par comptage de points du volet evaluatif monte a 94,5 % -- presque la marge du run 0,8 B GRPO+QLoRA (95,7 %). L'etage pionnier defriche l'entrainement NeRF, mais pas son evaluation dense ; le pic n'est pas dans la boucle d'entrainement, il est dans la cellule d'evaluation (3,4 Go de plus en ~20 s, pour 15 s de cellule)",
+  "reserve": "les deux mesures (3D-01 et 3D-02) ont ete faites sur le meme siege et la meme carte, mais avec deux versions de torch differentes (2.8.0+cu126 pour 3D-01, 2.14.1+cu126 pour 3D-02) ; l'ecart de version n'est pas isole comme facteur du pic VRAM"
+ }
+}
