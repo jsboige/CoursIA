@@ -686,6 +686,90 @@ theorem contention_stability_forces_zero {d n : ℕ} (v : Fin n → (Fin d → �
   have hcoord : (3 • v i) j = 0 := congrFun h3 j
   simpa [Pi.smul_apply] using hcoord
 
+/-! ### The general satisfiability certificate of the #21417 fix
+
+The gate `exists_colouring_aux` no longer carries a stable set `A`: it
+expects a **clause set** `B` containing the sums with coefficients bounded
+by `2` in the generators `3 • v i` — supplied by the caller in the public
+statement (`hclauses`).
+
+This section delivers the **general** instance: for any family
+`v : Fin n → (Fin d → ℤ)`, including a non-zero one, the coefficient box
+`[-2, 2]^n` has a finite image whose cardinal is bounded by `5 ^ n`, and
+that image satisfies the gate hypothesis. This is the "5ⁿ points" of the
+workstream, **measured** here rather than described. The corollary below
+wires this instance into the public statement, and the grid witness of the
+next section consumes it — its particular clause set is the general one at
+`d = 1`. -/
+
+/-- **The explicit clause set**: the image of the coefficient box
+`[-2, 2]^n` under the sum `c ↦ ∑ i, c i • (3 • v i)`.
+
+No stability is required of this set: growth of `S` is enough to satisfy
+`SupportContained S P (clauseSet v)` (`supportContained_biUnion`), which is
+precisely the property the historical form of the contention lacked. -/
+noncomputable def clauseSet {d n : ℕ} (v : Fin n → (Fin d → ℤ)) : Finset (Fin d → ℤ) :=
+  (Fintype.piFinset (fun _ : Fin n => Finset.Icc (-2 : ℤ) 2)).image
+    (fun c => ∑ i, c i • (3 • v i))
+
+/-- The gate hypothesis holds **by construction**: every sum with
+coefficients bounded by `2` belongs to `clauseSet v`. -/
+theorem clauseSet_clauses {d n : ℕ} (v : Fin n → (Fin d → ℤ))
+    (f : Fin n → ℤ) (hf : ∀ i, |f i| ≤ 2) :
+    ∑ i, f i • (3 • v i) ∈ clauseSet v := by
+  refine Finset.mem_image.mpr ⟨f, ?_, rfl⟩
+  rw [Fintype.mem_piFinset]
+  intro i
+  obtain ⟨h1, h2⟩ := abs_le.mp (hf i)
+  exact Finset.mem_Icc.mpr ⟨h1, h2⟩
+
+/-- **Size bound**: the clause set has at most `5 ^ n` points — the box has
+`5 ^ n` coefficients, and the image can only reduce its cardinal. -/
+theorem clauseSet_card_le {d n : ℕ} (v : Fin n → (Fin d → ℤ)) :
+    (clauseSet v).card ≤ 5 ^ n := by
+  calc (clauseSet v).card
+      ≤ (Fintype.piFinset (fun _ : Fin n => Finset.Icc (-2 : ℤ) 2)).card :=
+        Finset.card_image_le
+    _ = (Finset.Icc (-2 : ℤ) 2).card ^ n := Fintype.card_piFinset_const _ n
+    _ = 5 ^ n := by
+        have h5 : (Finset.Icc (-2 : ℤ) 2).card = 5 := by
+          rw [Int.card_Icc]
+          simp
+        rw [h5]
+
+/-- **The non-vacuity certificate of the #21417 fix**: for *any* family
+`v`, including a non-zero one, there exists a finite clause set of cardinal
+`≤ 5 ^ n` satisfying the gate hypothesis. Combined with the witness
+`contention_stability_forces_zero` — the historical form is, for its part,
+unsatisfiable as soon as `v ≠ 0` — this proves that the fix made the
+statement instantiable outside the `v = 0` regime. -/
+theorem exists_clauseSet_of_any_family {d n : ℕ} (v : Fin n → (Fin d → ℤ)) :
+    ∃ B : Finset (Fin d → ℤ),
+      (∀ f : Fin n → ℤ, (∀ i, |f i| ≤ 2) → ∑ i, f i • (3 • v i) ∈ B) ∧
+        B.card ≤ 5 ^ n :=
+  ⟨clauseSet v, clauseSet_clauses v, clauseSet_card_le v⟩
+
+
+/-- **Lemma 1.4 ready to consume**: the public statement instantiated on the
+general clause set `clauseSet v`. The caller no longer builds `B` nor
+proves `hclauses` — both covered by `clauseSet_clauses`; what remains is
+the contention of the distribution (`SupportContained S P (clauseSet v)`,
+satisfiable by a large enough box via `supportContained_biUnion`) and the
+distance bound `hv`. This is the form consumed by the k5.2 assembly
+(GridCase). -/
+theorem exists_isColouring_mean_add_sum_mem_convexHull_of_clauseSet (n d : ℕ)
+    (S : Finset (Fin d → ℤ)) (P : (Fin d → ℤ) → ℝ) (hP0 : ∀ x, 0 ≤ P x)
+    (hmass : ∑ x ∈ S, P x = 1) (hPsupp : ∀ x, P x ≠ 0 → x ∈ S)
+    (v : Fin n → (Fin d → ℤ))
+    (hB : SupportContained S P (clauseSet v))
+    (hv : ∀ i, shiftDistance S P (6 • v i) ≤ 3⁻¹) :
+    ∃ ε : Fin n → ℤ, (∀ i, ε i = 1 ∨ ε i = -1) ∧
+      (fun j => coordMoment P S j + ∑ i, (ε i : ℝ) * (v i j : ℝ)) ∈
+        convexHull ℝ
+          ↑(S.map (⟨⇑toReal, toReal_injective⟩ : (Fin d → ℤ) ↪ (Fin d → ℝ))) :=
+  exists_isColouring_mean_add_sum_mem_convexHull n d S (clauseSet v) P hP0 hmass hPsupp v
+    (clauseSet_clauses v) hB hv
+
 /-! ### k5.2 positive control (overhaul #21417, step P4)
 
 The corrected public statement is not merely non-vacuous by construction:
@@ -807,19 +891,42 @@ theorem gridP_support : ∀ x, gridP x ≠ 0 → x ∈ gridBox := by
     norm_num at hx
   exact gridSupport_subset_gridBox hmem
 
+/-- **The grid witness is the `d = 1` instance of the general set**: the five
+sums `{-6, -3, 0, 3, 6}` are exactly the image of `[-2, 2]^1` under the sum
+of `clauseSet gridV` — the particular coincides with the general, and the
+witness clauses reread on it. -/
+theorem gridClauses_eq_clauseSet : gridClauses = clauseSet gridV := by
+  ext z
+  simp only [gridClauses, clauseSet, Finset.mem_image]
+  constructor
+  · rintro ⟨j, hj, rfl⟩
+    refine ⟨fun _ => j, ?_, ?_⟩
+    · rw [Fintype.mem_piFinset]
+      intro i
+      obtain ⟨h1, h2⟩ := Finset.mem_Ico.mp hj
+      exact Finset.mem_Icc.mpr ⟨h1, by omega⟩
+    · funext q
+      rw [Fin.sum_univ_one]
+      simp only [gridV, gridPoint, Pi.smul_apply]
+      ring
+  · rintro ⟨c, hc, rfl⟩
+    rw [Fintype.mem_piFinset] at hc
+    obtain ⟨h1, h2⟩ := Finset.mem_Icc.mp (hc 0)
+    refine ⟨c 0, ?_, ?_⟩
+    · simp only [Finset.mem_Ico]
+      omega
+    · funext q
+      rw [Fin.sum_univ_one]
+      simp only [gridV, gridPoint, Pi.smul_apply]
+      ring
+
+/-- The witness clause set satisfies the gate — **through the bridge to the
+general**: `gridClauses_eq_clauseSet` then `clauseSet_clauses`. -/
 theorem gridClauses_clauses :
     ∀ f : Fin 1 → ℤ, (∀ i, |f i| ≤ 2) → ∑ i, f i • (3 • gridV i) ∈ gridClauses := by
   intro f hf
-  obtain ⟨h1, h2⟩ := abs_le.mp (hf 0)
-  rw [Fin.sum_univ_one]
-  have hval : f 0 • (3 • gridV 0) = gridPoint (3 * f 0) := by
-    funext j
-    simp only [gridV, gridPoint, Pi.smul_apply]
-    ring
-  rw [hval]
-  refine Finset.mem_image.mpr ⟨f 0, ?_, congrArg gridPoint rfl⟩
-  simp only [Finset.mem_Ico]
-  omega
+  rw [gridClauses_eq_clauseSet]
+  exact clauseSet_clauses gridV f hf
 
 theorem grid_contained : SupportContained gridBox gridP gridClauses := by
   intro z hz w hw
@@ -909,17 +1016,24 @@ theorem gridV_nonzero : gridV 0 ≠ 0 := by
   rw [h] at h0
   simp at h0
 
-/-- **The positive control**: the corrected public statement of Lemma 1.4
-applies to the witness — a **nonzero** family `v` (`gridV 0 = 1`) with
-every hypothesis satisfied (`hmass`, `hclauses`, `hB`, `hv` with
-`Δ = 1/4 < 3⁻¹`). -/
+/-- **The positive control**: the **instantiated** public statement of
+Lemma 1.4 applies to the witness — a **nonzero** family `v` (`gridV 0 = 1`)
+with every hypothesis satisfied: `hmass`, the containment
+`SupportContained gridBox gridP (clauseSet gridV)` (the general one,
+transported from `grid_contained` through the bridge) and `hv` with
+`Δ = 1/4 < 3⁻¹`. The consumed form is
+`exists_isColouring_mean_add_sum_mem_convexHull_of_clauseSet`: the witness
+no longer builds its clause set, it instantiates the general one. -/
 theorem exists_isColouring_grid_nonzero_v :
     ∃ ε : Fin 1 → ℤ, (∀ i, ε i = 1 ∨ ε i = -1) ∧
       (fun j => coordMoment gridP gridBox j + ∑ i, (ε i : ℝ) * (gridV i j : ℝ)) ∈
         convexHull ℝ
           ↑(gridBox.map (⟨⇑toReal, toReal_injective⟩ : (Fin 1 → ℤ) ↪ (Fin 1 → ℝ))) := by
-  refine exists_isColouring_mean_add_sum_mem_convexHull 1 1 gridBox gridClauses gridP
-    gridP_nonneg gridP_mass gridP_support gridV gridClauses_clauses grid_contained ?_
+  have hB : SupportContained gridBox gridP (clauseSet gridV) := by
+    rw [← gridClauses_eq_clauseSet]
+    exact grid_contained
+  refine exists_isColouring_mean_add_sum_mem_convexHull_of_clauseSet 1 1 gridBox gridP
+    gridP_nonneg gridP_mass gridP_support gridV hB ?_
   intro i
   fin_cases i
   exact grid_shiftDistance_le
@@ -935,66 +1049,5 @@ theorem old_form_unsatisfiable_for_gridV :
   rintro ⟨A, hA0, hAstab⟩
   exact gridV_nonzero
     (contention_stability_forces_zero gridV hA0 (fun a ha _ => hAstab a ha) 0)
-
-/-! ### The general satisfiability certificate of the #21417 fix
-
-The gate `exists_colouring_aux` no longer carries a stable set `A`: it
-expects a **clause set** `B` containing the sums with coefficients bounded
-by `2` in the generators `3 • v i`. The controls delivered so far are
-either particular — `gridClauses` (grid witness `d = 1`, P4) — or negative
-(`contention_stability_forces_zero` for the historical form).
-
-This section delivers the **general** instance: for any family
-`v : Fin n → (Fin d → ℤ)`, including a non-zero one, the coefficient box
-`[-2, 2]^n` has a finite image whose cardinal is bounded by `5 ^ n`, and
-that image satisfies the gate hypothesis. This is the "5ⁿ points" of the
-workstream, **measured** here rather than described. -/
-
-/-- **The explicit clause set**: the image of the coefficient box
-`[-2, 2]^n` under the sum `c ↦ ∑ i, c i • (3 • v i)`.
-
-No stability is required of this set: growth of `S` is enough to satisfy
-`SupportContained S P (clauseSet v)` (`supportContained_biUnion`), which is
-precisely the property the historical form of the contention lacked. -/
-noncomputable def clauseSet {d n : ℕ} (v : Fin n → (Fin d → ℤ)) : Finset (Fin d → ℤ) :=
-  (Fintype.piFinset (fun _ : Fin n => Finset.Icc (-2 : ℤ) 2)).image
-    (fun c => ∑ i, c i • (3 • v i))
-
-/-- The gate hypothesis holds **by construction**: every sum with
-coefficients bounded by `2` belongs to `clauseSet v`. -/
-theorem clauseSet_clauses {d n : ℕ} (v : Fin n → (Fin d → ℤ))
-    (f : Fin n → ℤ) (hf : ∀ i, |f i| ≤ 2) :
-    ∑ i, f i • (3 • v i) ∈ clauseSet v := by
-  refine Finset.mem_image.mpr ⟨f, ?_, rfl⟩
-  rw [Fintype.mem_piFinset]
-  intro i
-  obtain ⟨h1, h2⟩ := abs_le.mp (hf i)
-  exact Finset.mem_Icc.mpr ⟨h1, h2⟩
-
-/-- **Size bound**: the clause set has at most `5 ^ n` points — the box has
-`5 ^ n` coefficients, and the image can only reduce its cardinal. -/
-theorem clauseSet_card_le {d n : ℕ} (v : Fin n → (Fin d → ℤ)) :
-    (clauseSet v).card ≤ 5 ^ n := by
-  calc (clauseSet v).card
-      ≤ (Fintype.piFinset (fun _ : Fin n => Finset.Icc (-2 : ℤ) 2)).card :=
-        Finset.card_image_le
-    _ = (Finset.Icc (-2 : ℤ) 2).card ^ n := Fintype.card_piFinset_const _ n
-    _ = 5 ^ n := by
-        have h5 : (Finset.Icc (-2 : ℤ) 2).card = 5 := by
-          rw [Int.card_Icc]
-          simp
-        rw [h5]
-
-/-- **The non-vacuity certificate of the #21417 fix**: for *any* family
-`v`, including a non-zero one, there exists a finite clause set of cardinal
-`≤ 5 ^ n` satisfying the gate hypothesis. Combined with the witness
-`contention_stability_forces_zero` — the historical form is, for its part,
-unsatisfiable as soon as `v ≠ 0` — this proves that the fix made the
-statement instantiable outside the `v = 0` regime. -/
-theorem exists_clauseSet_of_any_family {d n : ℕ} (v : Fin n → (Fin d → ℤ)) :
-    ∃ B : Finset (Fin d → ℤ),
-      (∀ f : Fin n → ℤ, (∀ i, |f i| ≤ 2) → ∑ i, f i • (3 • v i) ∈ B) ∧
-        B.card ≤ 5 ^ n :=
-  ⟨clauseSet v, clauseSet_clauses v, clauseSet_card_le v⟩
 
 end Discrepancy.Komlos_en
