@@ -221,7 +221,7 @@ La variante sous-performe dramatiquement la baseline. Causes profondes :
 
 - main.py - Stratégie (allocation T85/RS15), instrumentée pour la mesure #19759
 - alpha_models.py - Modèles alpha SectorMomentum + RegimeSwitching
-- `Shared_PCM/pouches_pcm.py` (bibliothèque de projet QC) — `MultiStrategyPouchesPCM`, PCM par poches canonique importé par `main.py` (extraction #19821 brique 1, tranche dedup)
+- `SharedPCM/pouches_pcm.py` (bibliothèque de projet QC) — `MultiStrategyPouchesPCM`, PCM par poches canonique importé par `main.py` (extraction #19821 brique 1, tranche dedup)
 
 ## Références
 

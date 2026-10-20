@@ -35,7 +35,7 @@ Source : reproduction QuantBook (`quantbook.ipynb`, Sharpe 0.609 sur 2020-2025).
 
 - `main.py` - Strategy entry point (framework alpha model)
 - `alpha_models.py` - TrendStocksAlpha implementation
-- `Shared_PCM/pouches_pcm.py` (bibliothèque de projet QC) — `MultiStrategyPouchesPCM`, PCM par poches canonique importé par `main.py` (extraction #19821 brique 1, tranche dedup)
+- `SharedPCM/pouches_pcm.py` (bibliothèque de projet QC) — `MultiStrategyPouchesPCM`, PCM par poches canonique importé par `main.py` (extraction #19821 brique 1, tranche dedup)
 - `quantbook.ipynb` - Research notebook
 
 ## References

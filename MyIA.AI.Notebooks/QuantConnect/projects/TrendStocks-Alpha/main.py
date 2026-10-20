@@ -1,7 +1,7 @@
 # region imports
 from AlgorithmImports import *
 from alpha_models import TrendStocksAlpha
-from Shared_PCM.pouches_pcm import MultiStrategyPouchesPCM
+from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM
 # endregion
 
 
