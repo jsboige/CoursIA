@@ -76,6 +76,18 @@ echo "📦 Vérification des dépendances..."
 venv/bin/pip install -r requirements.txt
 venv/bin/pip install einops
 
+# Compat triton 3.x / gemlite 0.4.x
+# gemlite ecrit ses `early_config_prune` sous forme de generateur, alors que
+# triton 3.8 consume le retour comme une collection taillee : le noeud Bonsai
+# meurt alors sur `TypeError: object of type 'generator' has no len()`.
+# Le patch materialise le retour du pruner (une ligne) ; il est idempotent :
+# le rejeu sur un venv deja patche ne change rien.
+if [ -f "patch_triton_gemlite_compat.py" ] && ls venv/lib/python*/site-packages/triton >/dev/null 2>&1; then
+    echo "Patch compat triton/gemlite..."
+    venv/bin/python3 patch_triton_gemlite_compat.py --venv "$(pwd)/venv" \
+        || echo "Patch triton/gemlite NON applique : voir le message ci-dessus"
+fi
+
 # =============================================================================
 # CUSTOM NODES INSTALLATION
 # =============================================================================
@@ -196,6 +208,20 @@ if [ ! -d "$NUNCHAKU_DIR" ]; then
     fi
 else
     echo "ComfyUI-nunchaku deja present"
+fi
+
+# =============================================================================
+# RE-APPLICATION DU PATCH TRITON/GEMLITE (post custom nodes)
+# =============================================================================
+# Un custom node qui installe lui-meme gemlite/triton-windows via son
+# requirements.txt (ex. ComfyUI-Bonsai-4B-2Bit au premier deploiement) peut
+# reecrire triton/runtime/autotuner.py APRES le patch du debut de boot et
+# l'effacer pour ce boot. Le script etant idempotent, ce second passage ne
+# change rien sur un venv sain et retablit le patch sinon.
+if [ -f "patch_triton_gemlite_compat.py" ] && ls venv/lib/python*/site-packages/triton >/dev/null 2>&1; then
+    echo "Re-verification du patch triton/gemlite (post custom nodes)..."
+    venv/bin/python3 patch_triton_gemlite_compat.py --venv "$(pwd)/venv" \
+        || echo "Patch triton/gemlite NON applique : voir le message ci-dessus"
 fi
 
 # =============================================================================
