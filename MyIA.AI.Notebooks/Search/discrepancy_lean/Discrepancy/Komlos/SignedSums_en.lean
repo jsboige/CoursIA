@@ -936,4 +936,65 @@ theorem old_form_unsatisfiable_for_gridV :
   exact gridV_nonzero
     (contention_stability_forces_zero gridV hA0 (fun a ha _ => hAstab a ha) 0)
 
+/-! ### The general satisfiability certificate of the #21417 fix
+
+The gate `exists_colouring_aux` no longer carries a stable set `A`: it
+expects a **clause set** `B` containing the sums with coefficients bounded
+by `2` in the generators `3 • v i`. The controls delivered so far are
+either particular — `gridClauses` (grid witness `d = 1`, P4) — or negative
+(`contention_stability_forces_zero` for the historical form).
+
+This section delivers the **general** instance: for any family
+`v : Fin n → (Fin d → ℤ)`, including a non-zero one, the coefficient box
+`[-2, 2]^n` has a finite image whose cardinal is bounded by `5 ^ n`, and
+that image satisfies the gate hypothesis. This is the "5ⁿ points" of the
+workstream, **measured** here rather than described. -/
+
+/-- **The explicit clause set**: the image of the coefficient box
+`[-2, 2]^n` under the sum `c ↦ ∑ i, c i • (3 • v i)`.
+
+No stability is required of this set: growth of `S` is enough to satisfy
+`SupportContained S P (clauseSet v)` (`supportContained_biUnion`), which is
+precisely the property the historical form of the contention lacked. -/
+noncomputable def clauseSet {d n : ℕ} (v : Fin n → (Fin d → ℤ)) : Finset (Fin d → ℤ) :=
+  (Fintype.piFinset (fun _ : Fin n => Finset.Icc (-2 : ℤ) 2)).image
+    (fun c => ∑ i, c i • (3 • v i))
+
+/-- The gate hypothesis holds **by construction**: every sum with
+coefficients bounded by `2` belongs to `clauseSet v`. -/
+theorem clauseSet_clauses {d n : ℕ} (v : Fin n → (Fin d → ℤ))
+    (f : Fin n → ℤ) (hf : ∀ i, |f i| ≤ 2) :
+    ∑ i, f i • (3 • v i) ∈ clauseSet v := by
+  refine Finset.mem_image.mpr ⟨f, ?_, rfl⟩
+  rw [Fintype.mem_piFinset]
+  intro i
+  obtain ⟨h1, h2⟩ := abs_le.mp (hf i)
+  exact Finset.mem_Icc.mpr ⟨h1, h2⟩
+
+/-- **Size bound**: the clause set has at most `5 ^ n` points — the box has
+`5 ^ n` coefficients, and the image can only reduce its cardinal. -/
+theorem clauseSet_card_le {d n : ℕ} (v : Fin n → (Fin d → ℤ)) :
+    (clauseSet v).card ≤ 5 ^ n := by
+  calc (clauseSet v).card
+      ≤ (Fintype.piFinset (fun _ : Fin n => Finset.Icc (-2 : ℤ) 2)).card :=
+        Finset.card_image_le
+    _ = (Finset.Icc (-2 : ℤ) 2).card ^ n := Fintype.card_piFinset_const _ n
+    _ = 5 ^ n := by
+        have h5 : (Finset.Icc (-2 : ℤ) 2).card = 5 := by
+          rw [Int.card_Icc]
+          simp
+        rw [h5]
+
+/-- **The non-vacuity certificate of the #21417 fix**: for *any* family
+`v`, including a non-zero one, there exists a finite clause set of cardinal
+`≤ 5 ^ n` satisfying the gate hypothesis. Combined with the witness
+`contention_stability_forces_zero` — the historical form is, for its part,
+unsatisfiable as soon as `v ≠ 0` — this proves that the fix made the
+statement instantiable outside the `v = 0` regime. -/
+theorem exists_clauseSet_of_any_family {d n : ℕ} (v : Fin n → (Fin d → ℤ)) :
+    ∃ B : Finset (Fin d → ℤ),
+      (∀ f : Fin n → ℤ, (∀ i, |f i| ≤ 2) → ∑ i, f i • (3 • v i) ∈ B) ∧
+        B.card ≤ 5 ^ n :=
+  ⟨clauseSet v, clauseSet_clauses v, clauseSet_card_le v⟩
+
 end Discrepancy.Komlos_en
