@@ -98,12 +98,32 @@ mesurés puis corrigés dans le shim du banc :
 |---|---|---|---|
 | 1 | **`n` non honoré** | Sonde HTTP 200 sur openrouter avec `"n": 4` : **1 seul choix** rendu (l'API Anthropic n'a pas de sampling `n`). Le générateur v2 attend n échantillons par pas ; à 1 seul, le dédoublonnage `used_tactics` épuise la recherche dès que le modèle réitère. | `_post` émule `n` par requêtes successives, chacune bornée par la deadline résiduelle ; erreur API ou budget épuisé interrompt et rend les choix déjà collectés. |
 | 2 | **Parser upstream une-ligne** | Branche `"claude"` de `external_parser.post_process_output` : `.split("lean")[-1].split("```")[0].split("\n")[1]` — **tronque toute sortie à une ligne**. La preuve entière brute mesurée fait 7 lignes (fence comprise) ; le banc du 12/10 n'en recevait qu'une. La branche `deepseek` du même parser garde la preuve complète — bug copy-paste upstream. | `_extract_whole_proof` (module) : dés-enveloppe le bloc fence, préserve le multi-ligne — sémantique de la branche deepseek, appliquée au shim sans toucher au package. |
+| 3 | **Blocs `<think>` avant la fence** | Run corrigé du 2026-10-20 : claude-opus-4.7 via openrouter peut ouvrir sa sortie d'un bloc de raisonnement `<think>...</think>` **avant** la fence — l'extracteur du correctif 2 ne regardait que le début de chaîne et rendait le bloc entier au `check_compile` (échec de parse de transport, pas un verdict d'organe). | `_extract_whole_proof` retire d'abord les blocs think (regex DOTALL), puis prend le **dernier** bloc fence s'il existe. |
 
-Pins : `scripts/tests/test_leandojo_v2_bench.py` (26 tests) — l'émulation
+Pins : `scripts/tests/test_leandojo_v2_bench.py` (28 tests) — l'émulation
 compte chaque sous-requête (`gen.calls`), ne part jamais `"n": k` dans le
 payload, s'arrête net sur budget épuisé ou erreur ; le parser injecté dans
 les tests **imite la branche claude réelle** et le test exige que la preuve
 entière lui survive.
+
+### Run corrigé (2026-10-20, `results_20261020b/`) — verdicts d'organe sur les deux modes
+
+| Mode | success | appels LLM | durée | terminaison |
+|---|---|---|---|---|
+| pas-à-pas | non | 12 (3 tours × 4 échantillons émulés) | 28,5 s | `generator_exhausted` |
+| preuve entière | non | 1 | 9,5 s | `compile_error` (noyau) |
+
+Les deux verdicts sont cette fois des comportements de l'organe, pas du
+transport : en pas-à-pas le modèle ne produit que **deux familles de
+tactiques** (`simp [Conway.digitsToNat, Conway.natToDigits]` et `induction n
+using Conway.natToDigits.induct <;> simp [...]`), toutes deux rejetées au
+noyau avec l'erreur imbriquée « maximum » dans `simp` — le dédoublonnage
+`used_tactics` épuise alors la recherche. En preuve entière, la sortie
+extraite est une vraie preuve multi-ligne (sans bloc think, sans fence) que
+le noyau rejette. L'écart au verdict maison (FAILED 1 925,1 s / timeout du
+budget) est rapporté dans le fil #1453 : mêmes verdicts FAIL des deux côtés,
+mais des chemins d'effort d'un ordre de grandeur d'écart (recherche soutenue
+plan/revert de 1 925 s contre épuisement du générateur en 28,5 s).
 
 ## 6. Reproduction (machine po-2024)
 
