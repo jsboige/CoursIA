@@ -21,6 +21,6 @@ La série principale garde son tutoriel (numéros 1 à 14) ; le présent dossier
 
 **Prérequis d'entrée** : le tutoriel de la série principale (numéros 1 à 6, tactiques et Mathlib). Le point d'entrée réel documenté du carnet 01 est [Search-03e-AStar-Optimality](../../../Search/Part1-Foundations/Search-03e-AStar-Optimality.ipynb) (heuristique A*, companion `search_lean`) — voir sa cellule d'ouverture.
 
-**Marches nommées, à écrire** (règle 5 de la gradation) : entropie de Shannon avant ANALYSE-03, inégalités de concentration avant le converse MIMO ([Lean-21b](../Lean-21b-MIMO-Converse-Native.ipynb)). Elles vivront dans ce dossier ou la série principale selon la décision de renumérotation.
+**Marches nommées, à écrire** (règle 5 de la gradation) : entropie de Shannon avant ANALYSE-03, inégalités de concentration avant le converse MIMO ([MIMO-03](../MIMO/MIMO-03-Converse-Native-Lean.ipynb)). Elles vivront dans ce dossier ou la série principale selon la décision de renumérotation.
 
 **Marches franchissables** : depuis la série principale, le tutoriel (1-14) suffit pour ANALYSE-01. ANALYSE-02 suppose la lecture d'un lac externe ; ANALYSE-03/04 supposent l'entropie de Shannon (marche nommée ci-dessus) ; ANALYSE-05 ne suppose rien au-delà du tutoriel : son lac est local, posé à côté du carnet.
