@@ -203,6 +203,51 @@ def test_full_mode_appends_new_notebooks_in_scope(tmp_path, monkeypatch):
     )
 
 
+def test_full_mode_does_not_absorb_notebooks_outside_series(tmp_path, monkeypatch):
+    """#21514 : un input CLI large ne doit PAS faire absorber au CSV les
+    carnets d'une autre serie.
+
+    La borne de scan du mode --full est le repertoire de serie derive des
+    lignes du CSV ; l'input CLI n'est qu'un repli quand aucune borne n'est
+    derivable. Mesure fondatrice : `--update <csv> --full` avec
+    "MyIA.AI.Notebooks" faisait passer compression.csv de 31 a 49 978 lignes.
+    """
+    nb_in = tmp_path / "series" / "In.ipynb"
+    nb_out = tmp_path / "other-series" / "Out.ipynb"
+    _make_notebook(nb_in, "in1", text_fr="## In")
+    _make_notebook(nb_out, "out1", text_fr="## Out")
+
+    csv_path = _make_csv(
+        tmp_path / "synced.csv",
+        PIVOT_HEADER,
+        [
+            {"notebook": nb_in.relative_to(tmp_path).as_posix(), "cell_id": "in1",
+             "cell_type": "markdown", "src_lang": "fr", "src_hash": "STALE_IN",
+             "text_fr": "## In", "hash_fr": "FR_IN"},
+        ],
+    )
+
+    # Input = la RACINE qui contient les deux series (forme que le workflow
+    # T1_MODE=full passait reellement : "MyIA.AI.Notebooks").
+    monkeypatch.setattr(sys, "argv", [
+        "extract_cells_to_csv.py",
+        "--repo-root", str(tmp_path),
+        str(tmp_path),
+        "--update", str(csv_path),
+        "--full",
+    ])
+    assert e.main() == 0
+
+    with csv_path.open(encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    notebooks = {r["notebook"] for r in rows}
+    assert notebooks == {nb_in.relative_to(tmp_path).as_posix()}, (
+        f"le mode --full ne doit appender que les carnets de la serie du CSV ; "
+        f"got notebooks={notebooks}"
+    )
+    assert rows[0]["src_hash"] != "STALE_IN", "la ligne de la serie doit rester rafraichie"
+
+
 def test_incremental_mode_does_not_refresh_unrelated_rows(tmp_path, monkeypatch):
     """Mode incremental (sans --full) NE rafraichit QUE les lignes des
     notebooks passes en input. Les autres lignes du CSV restent intactes.

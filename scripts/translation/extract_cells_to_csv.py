@@ -481,14 +481,28 @@ def main() -> int:
             parts = nb_path.split("/")
             if len(parts) >= 2:
                 ref_dirs.add("/".join(parts[:-1]))
-        # On ajoute les chemins input existants (compatibilité historique).
-        # Les ref_dirs serviront de bornes de scan.
-        existing_inputs = list(existing_inputs)  # freeze
-        # On étend existing_inputs par les ref_dirs absolus (résolus vs repo_root).
-        for rd in ref_dirs:
+        # Les ref_dirs sont la BORNE du scan en mode --full (#21514). Les
+        # étendre sans retirer l'input CLI laissait un input large absorber
+        # tout le corpus : `--update <csv> --full` avec "MyIA.AI.Notebooks"
+        # faisait passer un CSV de 31 lignes à 49 978 (mesuré sur
+        # compression.csv, 2026-10-20), parce que update_existing_csv appende
+        # toute ligne fraîche absente de l'index. L'input CLI n'est donc plus
+        # qu'un repli, utilisé seulement quand aucune borne n'est dérivable
+        # (notebook référencé sans répertoire parent).
+        bounded_inputs: list[Path] = []
+        for rd in sorted(ref_dirs):
             abs_rd = (repo_root / rd).resolve() if not Path(rd).is_absolute() else Path(rd)
-            if abs_rd.exists() and abs_rd.is_dir() and abs_rd not in existing_inputs:
-                existing_inputs.append(abs_rd)
+            if abs_rd.exists() and abs_rd.is_dir() and abs_rd not in bounded_inputs:
+                bounded_inputs.append(abs_rd)
+        if bounded_inputs:
+            narrowed = [str(p) for p in existing_inputs if p.resolve() not in bounded_inputs]
+            if narrowed:
+                print(
+                    "NOTE : scan --full borné aux répertoires de série du CSV ; "
+                    "input(s) CLI hors de ces bornes ignoré(s) : " + ", ".join(narrowed),
+                    file=sys.stderr,
+                )
+            existing_inputs = bounded_inputs
 
     notebooks = iter_notebooks(existing_inputs)
     if not notebooks:
