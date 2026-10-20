@@ -3164,6 +3164,18 @@ class TestLockPolicy:
         )
         assert pmw.pid_is_alive(31337) is False
 
+    def test_pid_is_alive_windows_pid_in_other_column_is_not_alive(
+        self, monkeypatch
+    ):
+        # Le pid cherche n'apparait que dans une AUTRE colonne de la ligne
+        # d'un autre processus : un test de sous-chaine le lirait vivant.
+        monkeypatch.setattr(pmw.os, "name", "nt", raising=True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(0, '"python.exe","4242","Console","1","31337 K"'),
+        )
+        assert pmw.pid_is_alive(31337) is False
+
     def test_pid_is_alive_windows_failure_is_alive(self, monkeypatch):
         # Fail-safe : tasklist injoignable = pid vivant -- on ne
         # deverrouille jamais sur une mesure impossible.

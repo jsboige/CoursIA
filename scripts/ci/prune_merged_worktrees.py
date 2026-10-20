@@ -235,6 +235,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import csv
 import dataclasses
 import hashlib
 import json
@@ -704,10 +705,15 @@ def pid_is_alive(pid: int) -> bool:
 
     Sous Windows, `tasklist /FI "PID eq N" /FO CSV /NH` rend une ligne par
     processus trouve ; un pid mort rend la banniere "INFO: no tasks".
-    Sous POSIX, `os.kill(pid, 0)` leve ProcessLookupError si mort.
-    PermissionError (processus d'un autre utilisateur sous POSIX) et tout
-    echec d'execution comptent VIVANT : mieux vaut un worktree verrouille
-    un cycle de trop qu'un deverrouillage sur une mesure impossible.
+    La reponse se lit par COLONNE (`"Image","PID","Session","#","Mem"`), en
+    comparant le champ PID : un test de sous-chaine sur le CSV entier lit
+    vivant un pid qui n'apparait que dans une AUTRE colonne (une memoire en
+    K, un numero de session), donc sur la ligne d'un autre processus. Sous
+    POSIX, `os.kill(pid, 0)` leve ProcessLookupError
+    si mort. PermissionError (processus d'un autre utilisateur sous POSIX) et
+    tout echec d'execution comptent VIVANT : mieux vaut un worktree
+    verrouille un cycle de trop qu'un deverrouillage sur une mesure
+    impossible.
     """
     if os.name == "nt":
         try:
@@ -722,7 +728,11 @@ def pid_is_alive(pid: int) -> bool:
             )
         except (OSError, subprocess.SubprocessError):
             return True
-        return f'"{pid}"' in out.stdout
+        wanted = str(pid)
+        for row in csv.reader(out.stdout.splitlines()):
+            if len(row) > 1 and row[1].strip() == wanted:
+                return True
+        return False
     try:
         os.kill(pid, 0)
     except ProcessLookupError:
@@ -2016,6 +2026,16 @@ def apply_removal(wt: WorktreeStatus) -> tuple[bool, str]:
     ne peut pas executer. Pour tout autre worktree, l'absence de `--force`
     reste le garde-fou : c'est git qui refuse en dernier ressort si la
     classification s'est trompee.
+
+    Effet de bord assume d'un `unlock` reussi suivi d'un `remove` echoue :
+    le worktree survit deverrouille jusqu'au balayage suivant. On ne le
+    re-verrouille pas, parce que le verrou qu'on vient de lever appartenait
+    a un agent au pid MORT (`dead_lock_unlocked` n'est jamais vrai
+    autrement) -- aucun processus vivant ne perd sa protection -- et parce
+    que l'etat laisse est exactement l'entree du retrait legitime : la
+    classification suivante le relit REMOVE-ready deverrouille et rejoue le
+    `remove`. Re-verrouiller ajouterait un second geste dont l'echec
+    laisserait de toute facon le meme etat final.
     """
     if wt.dead_lock_unlocked:
         # v1.3 : lock d'agent a pid mort sur un worktree REMOVE-ready. Le
