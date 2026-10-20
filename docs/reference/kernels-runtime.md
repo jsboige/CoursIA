@@ -433,7 +433,7 @@ C'est une divergence de **plus** dans la flotte, du même type que celles que ce
 #### Exécuteurs et chemins
 
 - Python : `python -m papermill` / `jupyter nbconvert --execute --inplace` — **jamais** le MCP `jupyter-papermill` pour l'exécution (#835) ; chemin canonique du dépôt : `scripts/notebook_tools/notebook_tools.py execute <nb>`.
-- .NET : `scripts/notebook_tools/notebook_tools.py execute <nb> --cell-by-cell --kernel .net-csharp` — **vérifié** : 8 cellules, 0 erreur, 27,5 s.
+- .NET : `scripts/notebook_tools/notebook_tools.py execute <nb> --cell-by-cell --kernel .net-csharp` — **vérifié** : 0 erreur, 27,5 s.
 - Le MCP `jupyter-papermill` est câblé sur ce poste (scope user) pour l'**édition** des carnets (`NotebookEdit` est `deny` au harnais) ; son handicap #835 (stdout bufferisé) reste : `python -u` + `PYTHONUNBUFFERED=1` sont posés.
 
 ### Autres machines (po-2024/26)
