@@ -411,7 +411,18 @@ jobs:
             # Un payload dont l'appel a echoue ne porte pas de nom de check :
             # la carte reste vide, exactement le comportement d'avant.
             if printf '%s' "$BODY" | grep -q '"name":"PR gate"'; then
-              WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:.workflow_id}] | from_entries' 2>/dev/null) || WFMAP=''
+              # #21300 -- WFMAP porte DEUX champs par run : le `workflow_id`
+              # (clef de pliage `_fold_key`, #11808) ET le `conclusion` du
+              # DERNIER run de chaque id (signal `startup_failure` a detecter
+              # ci-dessous). Une seule requete REST, cout inchange par rapport
+              # au WFMAP historique (les DEUX champs sont dans la meme
+              # reponse). L'extension a un double backward-compat :
+              # (1) `_fold_key` accepte encore la forme {run_id: int} des
+              # fixtures de test (cf. `isinstance(v, dict)` plus bas) ;
+              # (2) les tests utilisent un champ separe `run_conclusions`
+              # pour exprimer le verdict par run, ce qui laisse `workflows`
+              # -- la clef de pliage -- inchange.
+              WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:{wf:.workflow_id, c:.conclusion}}] | from_entries' 2>/dev/null) || WFMAP=''
             else
               WFMAP=''
             fi
@@ -598,7 +609,14 @@ jobs:
               if not m:
                   return ("unattributed", c.get("name") or "?")
               run_id = m.group(1)
-              return (str(wfmap.get(run_id, run_id)), c.get("name") or "?")
+              v = wfmap.get(run_id, run_id)
+              # #21300 -- WFMAP peut etre {run_id: int} (fixtures de test
+              # historiques, mode 1 champ) ou {run_id: {wf, c}} (production,
+              # mode 2 champs). Le discriminant preserve les tests anciens
+              # sans leur demander une migration.
+              if isinstance(v, dict):
+                  return (str(v.get("wf", run_id)), c.get("name") or "?")
+              return (str(v), c.get("name") or "?")
 
           def _diag(p, why, blockers):
               print(f'[stale-sweep] #{p["number"]}: red gate, kept out -- {why}: '
@@ -612,6 +630,14 @@ jobs:
               p = json.loads(line)
               latest = {}
               wfmap = {str(k): v for k, v in (p.get("workflows") or {}).items()}
+              # #21300 -- carte run_id -> conclusion du run de workflow (sur
+              # les memes `actions/runs?head_sha=` que la WFMAP, mais
+              # exposee separement pour les tests). En production, les deux
+              # viennent du meme appel et la conclusion est imbriquee dans
+              # wfmap ; la lecture essaie d'abord le champ separe, puis
+              # retombe sur l'imbrication.
+              runmap = {str(k): v for k, v in
+                        (p.get("run_conclusions") or {}).items()}
               for c in (p.get("checks") or []):
                   key = _fold_key(c, wfmap)
                   started = c.get("started_at") or ""
@@ -671,6 +697,58 @@ jobs:
                         + (f' -- reparation depuis le log du run {m.group(1)}'
                            if m else ' -- details_url illisible, ni re-run ni reparation')
                         + ' (re-run inert sur snapshot stale, #15825)',
+                        file=sys.stderr)
+                  continue
+
+              # #21300 -- STARTUP_FAILURE : la jambe de gate est rouge, mais le
+              # run de workflow sous-jacent est en `startup_failure` (le runner
+              # n'a jamais demarre, `steps = []`, `runner_name = null`,
+              # `started_at == completed_at` -- 9 tentatives mesurees sur
+              # #20874, le sweep bouclait en relancant un run inerte et la
+              # gate re-rendait le meme FAIL).
+              #
+              # `gh run rerun` recopie la sortie de la tentative precedente
+              # (le runner n'a jamais execute le script, il n'y a pas de
+              # sortie a ecraser). Detecte ici, le sweep NAMME le geste qui
+              # marche -- une NOUVELLE TETE (`gh pr update-branch`) -- et
+              # n'emet PAS la PR comme candidate re-run, exactement comme
+              # SUITE_UNRERUNNABLE plus bas. Cout d'un faux positif
+              # d'exclusion : une minute de sweep de retard sur la PR ;
+              # cout d'un faux negatif : 8-9 tentatives perdues par
+              # passage, le run reste queued et la PR gele indefiniment
+              # (#20874).
+              def _run_conclusion(c):
+                  m = re.search(r"/runs/(\d+)/", c.get("details_url") or "")
+                  if not m:
+                      return ""
+                  run_id = m.group(1)
+                  # Production : imbrique dans `wfmap[id]["c"]`. Tests :
+                  # carte separee `runmap[id]`. Les deux formes sont
+                  # prises, le repli par defaut etant "" -- comportement
+                  # anterieur (la detection n'a pas lieu, jamais l'inverse).
+                  if run_id in runmap:
+                      return runmap[run_id] or ""
+                  v = wfmap.get(run_id)
+                  if isinstance(v, dict):
+                      return v.get("c") or ""
+                  return ""
+
+              startup_failure_legs = [
+                  c for c in gate_legs
+                  if (c.get("conclusion") or "") in RED
+                  and _run_conclusion(c) == "startup_failure"
+              ]
+              if startup_failure_legs:
+                  newest_sf = max(startup_failure_legs,
+                                  key=lambda c: c.get("started_at") or "")
+                  m = re.search(r"/runs/(\d+)/", newest_sf.get("details_url") or "")
+                  run_id = m.group(1) if m else "?"
+                  print(f'[stale-sweep] #{p["number"]}: STARTUP_FAILURE gate '
+                        f'run {run_id} -- `gh run rerun` INERT (re-run recopie '
+                        f'la sortie de la tentative precedente, runner jamais '
+                        f'demarre, #21300 -- 9 tentatives mesurees sur #20874). '
+                        f'Geste : nouvelle tete (`gh pr update-branch`), '
+                        f'le dossier de prevalidation devient perime.',
                         file=sys.stderr)
                   continue
 
