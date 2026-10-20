@@ -28,7 +28,7 @@ Re-backtest de la variante v1 après les deux correctifs de code déjà fusionn�
 | CAGR | **9,761 %** | sous le buy-hold SPY (~13-15 % sur la période) |
 | Drawdown max | **20,900 %** | nettement sous SPY (~34 %) |
 | Profit net total | **92,011 %** (+92 010,66 $) | sur la période |
-| PSR (Probabilistic Sharpe Ratio) | **2,227 %** | ~2 % de chance que le Sharpe annualisé soit significativement positif (seuil ≈ 1) — **pas** une probabilité de battre SPY |
+| PSR (Probabilistic Sharpe Ratio) | **2,227 %** | ~2 % de chance que le Sharpe annualisé **dépasse le seuil ≈ 1** — **pas** une probabilité de battre SPY |
 | Ordres | 83 | un rééquilibrage par mois (84 mois, le premier rejeté — voir « limite connue ») |
 
 **Ce que les correctifs ont changé**, comparaison au run publié du 2026-08-07 (`VolTargeting-v1-honest-read-2026-08`, **même fenêtre**, 54 ordres) :
@@ -61,7 +61,7 @@ Le v1 ajuste l'allocation SPY en fonction de la volatilité réalisée : `alloca
 - **Signal retardé (lag de volatilité).** La volatilité réalisée augmente typiquement **après** le début d'un drawdown (krach COVID 2020, bear 2022). La réduction d'allocation arrive donc trop tard pour éviter la queue de perte, mais à temps pour rater le rebond qui suit.
 - **Plancher d'exposition à 30 %.** Même en forte volatilité, la stratégie reste au moins 30 % investie — la protection à la baisse est donc partielle, tandis que le rendement est amputé côté hausse.
 - **Levier en période calme.** `max_allocation = 1,50` ajoute du levier quand la vol est basse (bull markets), ce qui accrît le risque sans amélioration proportionnelle du Sharpe.
-- **PSR ≈ 2 %.** Probabilité que le Sharpe annualisé dépasse le seuil (≈ 1) — ce n'est **pas** une probabilité de battre SPY. Le test de significativité des rendements excédentaires face au benchmark donne p = 0,0594 : le Sharpe 0,382 reste indistinguable du benchmark. Le re-backtest a amélioré le profil de risque, pas le verdict — tout claim de bord serait trompeur (règle C, PR-review-discipline §C).
+- **PSR ≈ 2 %.** Probabilité que le Sharpe annualisé dépasse le seuil (≈ 1) — ce n'est **pas** une probabilité de battre SPY. Le test de significativité des rendements excédentaires face au benchmark donne p = 0,0594 > 0,05 : aucun excédent de rendement significatif n'est établi. Le re-backtest a amélioré le profil de risque, pas le verdict — tout claim de bord serait trompeur (règle C, PR-review-discipline §C).
 - **Premier rééquilibrage rejeté (défaut de bord).** Sur la toute première séance du backtest, SPY n'a pas encore de barre de prix : l'ordre de rééquilibrage est rejeté par QC et la courbe d'équité reste plate pendant ~21 séances. Le warm-up de 21 barres — la même longueur que la fenêtre de volatilité — est le correctif attendu ; il est suivi en #21585, car il touche l'algorithme et impose de nouveaux backtests.
 
 Les variants v2 (diversification multi-actifs + contribution en risque égale) et v3 (+ momentum + défensif IEF) visent à corriger ces faiblesses (diversifier réduit le drawdown, le momentum filtre les actifs en baisse), mais ne sont pas backtestés ici : un honest-read documente le variant baseline et son verdict honnête, sans re-tuning. Ré-optimiser la cible de vol, le lookback ou les bornes d'allocation pour récupérer un Sharpe positif sur cette seule fenêtre serait du surapprentissage jusqu'à preuve du contraire (EPIC #9768, D2 « fenêtre non figée »). La stratégie est livrée avec ses paramètres codés tels quels, verdict honnête rendu.
