@@ -305,8 +305,8 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   shell workflow_dispatch-only absorbe par fast-lane TRANCHE2).
     "notebook-output-flood-ratchet.yml",
     # jumeau output-collapse (#15327, owner myia-po-2023:CoursIA) : verdict
-    #   ADVISORY rendu par fast-lane TRANCHE2 (entree 5, check-run
-    #   `Output-collapse ratchet (base vs PR, advisory)`), shell
+    #   BLOQUANT depuis T2 de #21424, rendu par fast-lane TRANCHE2 (entree 5,
+    #   check-run `Output-collapse ratchet (base vs PR)`), shell
     #   workflow_dispatch-ONLY pour re-run manuel -- meme profil que les deux
     #   jumeaux ci-dessus. Detecteur check_output_collapse.py, stdlib-only,
     #   garde same-repo au niveau job, aucun GITHUB_TOKEN cote job. L'organe a

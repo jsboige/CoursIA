@@ -25,9 +25,9 @@ Ce comportement reste disponible sous `mode` = `base` pour reproduire les chiffr
 
 ## Fichiers
 
-- `main.py` : Configuration de l'algorithme avec CompositeAlpha et MultiStrategyPCM
+- `main.py` : Configuration de l'algorithme avec CompositeAlpha et MultiStrategyPouchesPCM
 - `alpha_models.py` : Classes SectorMomentumAlpha et RegimeSwitchingAlpha
-- `portfolio_construction.py` : MultiStrategyPCM pour l'allocation de capital par stratégie
+- `SharedPCM/pouches_pcm.py` (bibliothèque de projet QC) : `MultiStrategyPouchesPCM`, PCM par poches canonique importé par `main.py` (extraction #19821 brique 1)
 - `quantbook.ipynb` : QuantBook de recherche du composite Momentum + RegimeSwitching (données natives QC, pré-backtest)
 
 ## Performance
