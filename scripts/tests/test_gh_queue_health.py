@@ -268,6 +268,63 @@ def test_18215_classify_without_pr_states_keeps_post_cutoff_live() -> None:
     assert len(out["live"]) == 1
 
 
+def test_20249_classify_scheduled_orphan_ghost_class() -> None:
+    """A no-PR-event run queued past SCHEDULED_ORPHAN_HOURS is a ghost.
+
+    The measured shape (issue #20249): 4 "Linux runner starvation advisory"
+    runs created 2026-10-07 15:08-15:11Z stayed queued across 4 consecutive
+    daily snapshots (~12 days), while a 5th run of the same workflow drained
+    on its own -- so the class must be structural (event set + age), never an
+    ID set. The live API measures the event as `workflow_run` (not
+    `schedule`; the workflow name misleads), so both are covered. Non-
+    regression: a young run of that kind stays live, and a non-PR event
+    outside the set (`push`) of the same age stays live too.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    cutoff = dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    now = dt.datetime(2026, 10, 20, 12, 0, tzinfo=dt.timezone.utc)
+    runs = [
+        {"id": 1, "name": "starvation-advisory-old",
+         "created_at": "2026-10-07T15:08:59Z", "event": "schedule",
+         "head_branch": "main"},
+        {"id": 2, "name": "starvation-advisory-fresh",
+         "created_at": "2026-10-19T15:08:59Z", "event": "schedule",
+         "head_branch": "main"},
+        {"id": 3, "name": "old-push-run",
+         "created_at": "2026-10-07T15:08:59Z", "event": "push",
+         "head_branch": "main"},
+        {"id": 4, "name": "starvation-advisory-workflow-run",
+         "created_at": "2026-10-07T15:09:12Z", "event": "workflow_run",
+         "head_branch": "main"},
+    ]
+    out = mod.classify_runs(runs, cutoff, now=now)
+    assert [g["reason"] for g in out["ghosts"]] == ["scheduled-orphan",
+                                                    "scheduled-orphan"]
+    assert [g["id"] for g in out["ghosts"]] == [1, 4]
+    assert {entry["id"] for entry in out["live"]} == {2, 3}
+
+
+def test_20249_classify_without_now_keeps_scheduled_live() -> None:
+    """Control: no `now` passed (raw snapshot replay) -> scheduled stays live.
+
+    Mirrors the pr-closed control: an offline replay has no reference
+    instant, so the age class cannot be derived. The prior-analysis replay
+    (`_ghost_reason`) is the fidelity-preserving path.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    cutoff = dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    runs = [{"id": 1, "name": "would-be-scheduled-orphan",
+             "created_at": "2026-10-07T15:08:59Z", "event": "schedule",
+             "head_branch": "main"}]
+    out = mod.classify_runs(runs, cutoff)
+    assert out["ghosts"] == []
+    assert len(out["live"]) == 1
+
+
 def test_18215_classify_replayed_reason_is_authoritative() -> None:
     """A synthesized ghost entry with `_ghost_reason` replays as that class.
 

@@ -62,6 +62,22 @@ KNOWN_ZOMBIE_RUN_IDS = frozenset({
 # zombie. Below it, a queued run is ordinary pool saturation, not drift.
 DEFAULT_STALE_HOURS = 24.0
 
+# Third permanent class (issue #20249): runs of an event that carries no PR
+# by construction, wedged in `queued`, so the pr-closed class can never
+# claim them. Measured shape: 4 "Linux runner starvation advisory" runs
+# created 2026-10-07 15:08-15:11Z, identical across 4 consecutive daily
+# snapshots (~12 days queued) -- the same day the coursia-linux labels
+# were re-posed (08:04Z), i.e. the pre-labelling admission limbo. The live
+# API measures their `event` as `workflow_run` (NOT `schedule` -- the
+# workflow NAME says "advisory", the chaining event does not), so the
+# event set below covers both chained and cron-triggered runs. A fifth run
+# of the same workflow drained in the meantime, so the class is defined
+# *structurally* (event set + age), never by run IDs: a run of such an
+# event stuck past 7 days is treated as an explained ghost; below it stays
+# live and the watch alarms on it as a candidate new zombie.
+SCHEDULED_ORPHAN_EVENTS = frozenset({"schedule", "workflow_run"})
+SCHEDULED_ORPHAN_HOURS = 168.0
+
 
 class InstrumentError(RuntimeError):
     """The instrument cannot prove that its result is complete or coherent."""
@@ -150,7 +166,8 @@ def fetch_pr_states(repo: str, branches: list[str]) -> dict[str, str]:
 
 
 def classify_runs(runs: list[dict], cutoff: datetime,
-                  pr_states: dict[str, str] | None = None) -> dict:
+                  pr_states: dict[str, str] | None = None,
+                  now: datetime | None = None) -> dict:
     """Split queued runs into explained ghosts and live runs.
 
     A run is a ghost when its class is measured and permanent:
@@ -164,6 +181,15 @@ def classify_runs(runs: list[dict], cutoff: datetime,
       while its runs awaited admission, and the API refuses to cancel a
       run "that has not been queued yet"). Regardless of age: a closed PR
       can never be admitted.
+    * `scheduled-orphan` -- a run of an event that carries no PR by
+      construction (`SCHEDULED_ORPHAN_EVENTS`: `schedule`, `workflow_run`)
+      queued for more than `SCHEDULED_ORPHAN_HOURS` (issue #20249: the
+      2026-10-07 starvation advisories, event measured as `workflow_run`,
+      wedged in the label re-pose window). Structural (event set + age),
+      never by run IDs: a sibling run of the same workflow drained on its
+      own, so an ID set would drift. Only applied when `now` is provided; a
+      raw-shape replay without `now` keeps them live, and the prior-analysis
+      replay carries their `reason` through `_ghost_reason`.
 
     Anything else is live: an undrained live queue is the drift signal, not
     a classification failure. Entries carry `reason` (ghosts only), `event`
@@ -202,6 +228,11 @@ def classify_runs(runs: list[dict], cutoff: datetime,
         elif (run.get("event") == "pull_request"
               and pr_states.get(run.get("head_branch")) == "closed"):
             ghosts.append(entry(run, "pr-closed"))
+        elif (now is not None
+              and run.get("event") in SCHEDULED_ORPHAN_EVENTS
+              and (now - created).total_seconds() / 3600.0
+              > SCHEDULED_ORPHAN_HOURS):
+            ghosts.append(entry(run, "scheduled-orphan"))
         else:
             live.append(entry(run))
     return {"ghosts": ghosts, "live": live, "parse_failures": parse_failures}
@@ -402,7 +433,20 @@ def main(argv: list[str] | None = None) -> int:
                 and run["created_at"] >= args.cutoff
             } - {None})
             pr_states = fetch_pr_states(args.repo, candidates) if candidates else {}
-        classification = classify_runs(raw_runs, cutoff, pr_states)
+        # Resolve the reference instant once, before classification: the
+        # scheduled-orphan class needs it (#20249) and the watch bucket
+        # split below reuses it -- a single source avoids two slightly
+        # different "now" values in one run.
+        if args.now:
+            try:
+                now = datetime.fromisoformat(args.now.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise InstrumentError(f"invalid --now: {args.now!r}") from exc
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=timezone.utc)
+        else:
+            now = datetime.now(timezone.utc)
+        classification = classify_runs(raw_runs, cutoff, pr_states, now=now)
         # When the input was a prior analysis output, `classify_runs` cannot
         # re-derive the parse_failures from the synthesized runs -- they were
         # never serialized into the synthesized list. Merge the preserved
@@ -438,15 +482,7 @@ def main(argv: list[str] | None = None) -> int:
             # The watch alarms on live runs only when they are stale AND
             # unknown (#18131): the 2026-09-13 zombies and a saturated
             # pool's fresh backlog are reported, never alarmed on.
-            if args.now:
-                try:
-                    now = datetime.fromisoformat(args.now.replace("Z", "+00:00"))
-                except ValueError as exc:
-                    raise InstrumentError(f"invalid --now: {args.now!r}") from exc
-                if now.tzinfo is None:
-                    now = now.replace(tzinfo=timezone.utc)
-            else:
-                now = datetime.now(timezone.utc)
+            # `now` was resolved once before classification (see above).
             parts = split_live(classification["live"], now, args.stale_hours)
             result["stale_hours"] = args.stale_hours
             result["counts"].update({
