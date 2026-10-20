@@ -307,6 +307,11 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-17-MIR-Classique.ipynb",
+      "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-6-Audiobook-Pipeline.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications"
     },
@@ -1158,11 +1163,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Search"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Applications/Search"
     },
     {

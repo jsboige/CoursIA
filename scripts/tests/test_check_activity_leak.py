@@ -140,12 +140,91 @@ class TestPositiveControls(unittest.TestCase):
         self.assertFalse(body.dense, "le H1 ne doit pas propager a tout le carnet")
         self.assertFalse(body.inherited)
 
+    def test_prose_lesson_tags_still_dense(self):
+        """Controle positif du fix #21024 : le renvoi en PROSE reste marque.
+
+        Complement du controle negatif jumeau : le masque ne doit retirer que
+        les ancres de permalien, pas le renvoi nomme aux lecons -- sans ce
+        test, un masque trop large eteindrait le marqueur en silence.
+        """
+        para = (
+            "La lecon L721 sur les trackers perimes et la lecon L898 sur les "
+            "collisions d'ecriture ont ete appliquees ici."
+        )
+        v = judge_passage(0, para)
+        self.assertIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertTrue(v.dense)
+
 
 # ---------------------------------------------------------------------------
 # Controles NEGATIFS : prose pedagogique et faux positifs mesures
 # ---------------------------------------------------------------------------
 
 class TestNegativeControls(unittest.TestCase):
+    def test_permalink_line_anchor_is_not_a_lesson_tag(self):
+        """FP mesure #21024 : sept ancres de permalien comptees comme lecons.
+
+        Table des trois canaux du carnet Aspire-07 (md[24]) : les ancres
+        ``#L171``, ``#L217-L236``, ``#L261``, ``#L309``, ``#L911-L934`` sont
+        des references de ligne dans des URLs GitHub -- le carnet cite sa
+        source par permalien, ce qui est du contenu pedagogique, pas un
+        renvoi aux lecons. Le score entier de la cellule (14) venait d'elles.
+        Mesure du 2026-10-20 : 30 des 65 occurrences du marqueur sur le
+        corpus (1553 carnets) sont des fragments d'URL.
+        """
+        para = (
+            "| Niveau | Canal | Ecriture (2023) | Drainage (2023) |\n"
+            "| **Transport** | `Channel<string>` | [`OobaboogaCompletionBase.cs:99`]"
+            "(https://github.com/MyIntelligenceAgency/semantic-fleet/blob/v0.34.3/"
+            "dotnet/src/Connectors/Connectors.AI.Oobabooga/Completion/"
+            "OobaboogaCompletionBase.cs#L99) | [`:171 ProcessWebSocketMessagesAsync`]"
+            "(https://github.com/MyIntelligenceAgency/semantic-fleet/blob/v0.34.3/"
+            "dotnet/src/Connectors/Connectors.AI.Oobabooga/Completion/"
+            "OobaboogaCompletionBase.cs#L171) |\n"
+            "| **Collecte** | `Channel<ConnectorTest>` | [`:261`]"
+            "(https://github.com/MyIntelligenceAgency/semantic-fleet/blob/v0.34.3/"
+            "dotnet/src/Connectors/Connectors.AI.MultiConnector/MultiTextCompletion.cs#L261) | "
+            "[`:217-236`](https://github.com/MyIntelligenceAgency/semantic-fleet/blob/v0.34.3/"
+            "dotnet/src/Connectors/Connectors.AI.MultiConnector/MultiTextCompletion.cs#L217-L236) |"
+        )
+        v = judge_passage(0, para)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertFalse(v.dense)
+
+    def test_url_fragment_mask_is_context_free_by_design(self):
+        """Calibrage (revue Hermes #21510) : le masque ne regarde pas l'URL.
+
+        ``_URL_FRAGMENT_RE`` s'applique a tout le passage, pas seulement aux
+        URLs. Une prose qui ecrirait « la ligne #L261 du fichier » est donc
+        masquee comme le serait un fragment de permalien, alors que la forme
+        nue ``L261`` y serait comptee. Aucune occurrence de ``#L<n>`` en prose
+        n'est mesuree sur le corpus au 2026-10-20 : c'est un ecart assume, pas
+        un cas observe. Ce test existe pour que le comportement soit lisible
+        avant d'etre decouvert par surprise -- le commentaire du code annoncait
+        « ancre de permalien » alors que le predicat est « toute forme #Lddd ».
+        """
+        prose_anchor = "Voir la ligne #L261 du fichier pour le detail du calcul."
+        v = judge_passage(0, prose_anchor)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+
+        bare = "La lecon L261 et la lecon L740 decrivent le meme piege."
+        v2 = judge_passage(0, bare)
+        self.assertIn("lesson_tag", {n for n, _, _ in v2.markers})
+
+    def test_mask_is_scoped_to_lesson_tag_only(self):
+        """Calibrage (revue Hermes #21510) : les autres marqueurs restent actifs.
+
+        Le masque ne s'applique qu'a ``lesson_tag``. Un ``iso_ts`` place dans
+        une URL absolue continue donc de compter, la ou un ``#Lddd`` de la meme
+        URL serait masque. C'est coherent avec le body de la PR, qui annonce ne
+        toucher aucun autre marqueur ; ce test fige l'hypothese pour qu'une
+        future extension du masque soit un choix explicite et non un effet de
+        bord silencieux.
+        """
+        url_ts = "Voir https://exemple.org/build?ts=2026-10-20T04:03 pour l'horaire."
+        v = judge_passage(0, url_ts)
+        self.assertIn("iso_ts", {n for n, _, _ in v.markers})
+
     def test_course_prose_clean(self):
         para = (
             "Monroe propose une regle proportionnelle stricte ou chaque elu "
