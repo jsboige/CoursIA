@@ -315,15 +315,19 @@ class TestDiffParity(unittest.TestCase):
                       "chaque incident s'imprime dans la branche REFUS aussi")
 
     def test_rename_with_modification_is_scanned(self):
-        """R099 reel (ad0142cbb, zero-pad Infer) : le renomme+enrichi est ANALYSE.
+        """R099 reel (f42b5704a3d, suffixe -Python IIT, #20400) : le renomme+modifie est ANALYSE.
 
         Pre-fix, ``--diff-filter=AM`` excluant les renommages, la tranche
         entiere echappait a la garde (trou mesure par l'adjoint, dossier
         c6098782633) : le fichier n'apparaissait meme pas dans les analyses.
+
+        Le commit d'ancrage doit etre joignable depuis ``main`` : l'ancrage
+        precedent (ad0142cbb) vivait sur la branche de la PR ouverte #20246,
+        reecrite le 18/10, et n'etait plus recuperable par un clone neuf.
         """
-        added, files, incidents = scan_diff("ad0142cbb^...ad0142cbb")
+        added, files, incidents = scan_diff("f42b5704a3d^...f42b5704a3d")
         self.assertIn(
-            "MyIA.AI.Notebooks/Probas/Infer/Infer-01-Setup.ipynb",
+            "MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb",
             files,
             "un renommage+modification doit etre analyse (nouveau chemin)",
         )

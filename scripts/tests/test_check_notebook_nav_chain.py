@@ -17,6 +17,7 @@ Faux-negatifs mesures (l'organe DOIT les trouver) :
 - lien dans une rangee de nav sous `## Navigation` vers .ipynb absent.
 - lien avec mot `suivant` / `precedent` dans le texte vers .ipynb absent.
 """
+import subprocess
 import sys
 import textwrap
 from pathlib import Path
@@ -273,6 +274,66 @@ class TestPartitionNewByDiff:
 
     def test_load_diff_files_missing_file_fail_closed(self, tmp_path):
         assert nav_chain._load_diff_files(tmp_path / "absent.txt") == set()
+
+
+class TestDiffBaseScope:
+    """#20303 : la voie rapide n'a pas de fichier de liste. `--diff-base REF`
+    fait calculer au checker `git diff REF...HEAD`, le meme diff que le
+    `pr_files.txt` du workflow d'origine. Sans cette portee, un NEW du graphe
+    global rougissait toute PR touchant un carnet ou un README de serie."""
+
+    def test_changed_since_reads_the_base_head_range(self, monkeypatch):
+        calls = []
+
+        def fake_run(cmd, **kwargs):
+            calls.append(cmd)
+            return subprocess.CompletedProcess(
+                cmd, 0, stdout="MyIA.AI.Notebooks/A/x.ipynb\n\nscripts/y.py\n", stderr="")
+
+        monkeypatch.setattr(nav_chain.subprocess, "run", fake_run)
+        assert nav_chain._changed_since("origin/main") == {
+            "MyIA.AI.Notebooks/A/x.ipynb", "scripts/y.py"}
+        assert calls[0][-1] == "origin/main...HEAD"
+        assert "core.quotePath=false" in calls[0]
+
+    def test_changed_since_git_failure_is_fail_closed(self, monkeypatch, capsys):
+        monkeypatch.setattr(
+            nav_chain.subprocess, "run",
+            lambda cmd, **kwargs: subprocess.CompletedProcess(
+                cmd, 128, stdout="", stderr="fatal: bad revision"))
+        assert nav_chain._changed_since("origin/absent") == set()
+        assert "fail-closed" in capsys.readouterr().err
+
+    def test_diff_base_and_diff_files_are_mutually_exclusive(self):
+        with pytest.raises(SystemExit) as exc:
+            nav_chain.main(["--check", "--diff-base", "origin/main",
+                            "--diff-files", "pr_files.txt"])
+        assert exc.value.code == 2
+
+    def test_diff_base_scope_reaches_the_verdict(self, monkeypatch, capsys):
+        """Controle positif et negatif de bout en bout, par `main` sur le graphe
+        reel. Baseline vide : chaque finding du depot est NEW. Un diff qui ne
+        touche que le registre ne bloque pas ; le meme argv avec le README de la
+        serie ICT (finding present) dans le diff bloque."""
+        seen_bases = []
+
+        def diff_for(paths):
+            def _changed_since(base):
+                seen_bases.append(base)
+                return set(paths)
+            return _changed_since
+
+        monkeypatch.setattr(nav_chain, "_load_baseline", lambda: set())
+        argv = ["--check", "--diff-base", "origin/main"]
+
+        monkeypatch.setattr(nav_chain, "_changed_since",
+                            diff_for({"scripts/ci/fast_lane_registry.py"}))
+        assert nav_chain.main(argv) == 0
+
+        monkeypatch.setattr(nav_chain, "_changed_since",
+                            diff_for({"MyIA.AI.Notebooks/IIT/ICT-Series/README.md"}))
+        assert nav_chain.main(argv) == 1
+        assert seen_bases == ["origin/main", "origin/main"]
 
 
 class TestIntraSeriesEntryStatus:

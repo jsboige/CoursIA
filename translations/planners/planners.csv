@@ -18876,7 +18876,7 @@ Ce notebook a permis d'explorer les aspects essentiels de planners 12 loop. Les 
 - Les résultats obtenus permettent de valider la comprehension
 
 **Pour aller plus loin** : approfondir les aspects avances du sujet et explorer les liens avec d'autres domaines.",,,,,,,,8c5199a38ab39f0c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,d133f4e6,markdown,fr,4a23666f7f5f5a55,"# Introduction a la planification classique
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,d133f4e6,markdown,fr,4a23666f7f5f5a55,"# Introduction a la planification classique
 
 **Navigation** : [Index](../../README.md) | [<< Planners-4](../02-Classical/Planners-4-Fast-Downward.ipynb)
 
@@ -18891,7 +18891,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,d133f4e
 Google OR-Tools est une suite open-source de logiciels d'optimisation qui comprend des solvers pour les problemes de programmation par contraintes (CSP), la satisfaction de contraintes booleennes (SAT), l'optimisation lineaire (LP), l'optimisation en nombres entiers (MIP), l'optimisation de reseau, et la planification de routes.
 Dans le contexte de ce TP, nous nous interessons principalement aux fonctionnalites de planification de OR-Tools, qui fournissent une suite d'algorithmes et de methodes pour resoudre des problemes de planification tels que le probleme du voyageur de commerce, le probleme de sac a dos, et la planification de taches.
 OR-Tools peut etre utilise en C# via le package Nuget officiel. Il fournit une API C# qui permet d'utiliser les solvers et les methodes d'optimisation de OR-Tools dans un projet .NET.",,,,,,,,4a23666f7f5f5a55,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,3e1794e0,markdown,fr,acd5d8b711804fe3,"## B. Problèmes et domaines de planification
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,3e1794e0,markdown,fr,acd5d8b711804fe3,"## B. Problèmes et domaines de planification
 
 ### 1. Qu’est-ce que la planification ?
 
@@ -18998,7 +18998,7 @@ Dans PDDL, chaque action ou opérateur est défini par son nom, ses paramètres,
 
 ### Préparation de l'environnement
 Nous allons créer une méthode en C# pour exécuter des commandes externes comme `fast-downward.py`. Cette méthode utilisera `System.Diagnostics.Process`.",,,,,,,,acd5d8b711804fe3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,033b31bc,code,fr,dfaf04de24d58284,"using System;
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,033b31bc,code,fr,dfaf04de24d58284,"using System;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -19266,7 +19266,7 @@ Console.WriteLine(""Initialisation de Fast Downward..."");
 Console.WriteLine($""Chemin: {FastDownwardRunner.FastDownwardPath}"");
 var runner = new FastDownwardRunner();
 Console.WriteLine(""Runner initialise."");",,,,,,,,dfaf04de24d58284,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,876f1c99,markdown,fr,fde74c15563c9a56,"### Interprétation de l'initialisation
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,876f1c99,markdown,fr,fde74c15563c9a56,"### Interprétation de l'initialisation
 
 **Objectif** : Cette cellule met en place la classe `FastDownwardRunner` qui automatise l'installation, la compilation et l'exécution de Fast Downward.
 
@@ -19277,7 +19277,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,876f1c9
 - **Affichage des fichiers** : Les méthodes permettent d'afficher les fichiers PDDL (domaine et problème) avant l'exécution
 
 > **Note technique** : La compilation peut prendre plusieurs minutes lors de la première exécution. Un timeout de 30 minutes est configuré pour gérer les compilations longues.",,,,,,,,fde74c15563c9a56,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,947c962e,markdown,fr,396d03ef110dc3fb,"## III. Syntaxe de ligne de commande de Fast Downward
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,947c962e,markdown,fr,396d03ef110dc3fb,"## III. Syntaxe de ligne de commande de Fast Downward
 
 Fast Downward propose une interface en ligne de commande flexible pour paramétrer ses différents composants. Les paramètres peuvent être spécifiés par mot-clé ou par position, et certains ont des valeurs par défaut. Voici quelques exemples de commandes et options disponibles.
 
@@ -19291,7 +19291,7 @@ Les options de commande comprennent des options pour sélectionner les composant
 ### Options de traduction
 
 Fast Downward permet une grande flexibilité dans la façon dont le problème de planification est traduit en une tâche de planification abstraite qui peut être résolue par l'algorithme de recherche. Les options de traduction permettent de spécifier des options telles que l'encodage complet et d'autres options spécifiques à la tâche de planification.",,,,,,,,396d03ef110dc3fb,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,0e6fe3d6,markdown,fr,c2928fd5cf55ff79,"### Interprétation de la traduction avec encodage complet
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,0e6fe3d6,markdown,fr,c2928fd5cf55ff79,"### Interprétation de la traduction avec encodage complet
 
 Cette commande exécute Fast Downward sur le problème du **Gripper** avec l'option `--full-encoding`, qui génère une représentation complète de la tâche de planification.
 
@@ -19301,9 +19301,9 @@ Cette commande exécute Fast Downward sur le problème du **Gripper** avec l'opt
 - Affichage des statistiques de traduction (nombre de variables, domaines, opérateurs)
 
 > **Astuce** : L'encodage complet peut augmenter la taille de la représentation mais facilite certains types d'heuristiques.",,,,,,,,c2928fd5cf55ff79,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,7d6f95ca,code,fr,19e5c1fe002a6af6,"runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", 
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,7d6f95ca,code,fr,19e5c1fe002a6af6,"runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", 
     ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--translate-options --full-encoding"");",,,,,,,,19e5c1fe002a6af6,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,76b290db,markdown,fr,235f80900477a1dd,"### Interprétation de la recherche avec l'heuristique FF
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,76b290db,markdown,fr,235f80900477a1dd,"### Interprétation de la recherche avec l'heuristique FF
 
 Cette cellule démontre l'utilisation de **l'heuristique FF (Fast Forward)** combinée avec une recherche **eager greedy**.
 
@@ -19317,13 +19317,13 @@ Cette cellule démontre l'utilisation de **l'heuristique FF (Fast Forward)** com
 | Eager Greedy | FF | Non (mais rapide) |
 
 L'heuristique FF estime le coût en relaxant les effets négatifs (relaxation de suppression). Elle est **non admissible** mais très efficace en pratique.",,,,,,,,235f80900477a1dd,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,35533f6b,markdown,fr,7706a71e4034542c,"### Options de recherche
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,35533f6b,markdown,fr,7706a71e4034542c,"### Options de recherche
 
 Les options de recherche spécifient l'algorithme de recherche à utiliser pour résoudre la tâche de planification. Fast Downward supporte une grande variété d'algorithmes de recherche, y compris A*, chaînage avant, chaînage arrière et planification d'ordre partiel. 
 
 Les options de recherche permettent également de spécifier des options spécifiques à l'algorithme de recherche, telles que les heuristiques à utiliser.
 ",,,,,,,,7706a71e4034542c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,03a466e7,markdown,fr,1c2baa49cbf85cc6,"### Utilisation des limites de ressources
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,03a466e7,markdown,fr,1c2baa49cbf85cc6,"### Utilisation des limites de ressources
 
 Cette cellule exécute Fast Downward avec des contraintes explicites de **temps** et de **mémoire** pour les phases de traduction et de recherche.
 
@@ -19335,26 +19335,26 @@ Cette cellule exécute Fast Downward avec des contraintes explicites de **temps*
 | Recherche | 500s (8.3 min) | 8000 MB |
 
 > **Cas d'usage** : Ces limites sont essentielles pour les compétitions de planification ou pour éviter qu'un problème difficile ne monopolise les ressources indéfiniment.",,,,,,,,1c2baa49cbf85cc6,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,2410032e,code,fr,7807a8c16f6a00f5,"// Exemple d'exécution avec les options de recherche
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,2410032e,code,fr,7807a8c16f6a00f5,"// Exemple d'exécution avec les options de recherche
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", 
 ""misc/tests/benchmarks/gripper/prob01.pddl"", 
 ""--search-options --heuristic \""h=ff()\"" --search \""eager_greedy([h])\"""");
 ",,,,,,,,7807a8c16f6a00f5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,7fe6cc6c,markdown,fr,42d50d3ce0e9353e,"### Pourquoi exécuter deux fois la même commande ?
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,7fe6cc6c,markdown,fr,42d50d3ce0e9353e,"### Pourquoi exécuter deux fois la même commande ?
 
 Cette cellule est identique à la précédente et semble redondante. Dans un contexte pédagogique, on pourrait :
 - **Comparer différentes limites** pour observer l'impact sur les performances
 - **Tester la reproductibilité** des résultats
 
 **Suggestion** : Modifier les limites pour illustrer l'impact sur le temps de résolution ou le nombre de nœuds explorés.",,,,,,,,42d50d3ce0e9353e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,bbc26002,markdown,fr,74714e0daf065d2d,"### Utilisation d'un alias
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,bbc26002,markdown,fr,74714e0daf065d2d,"### Utilisation d'un alias
 
 Fast Downward permet l'utilisation d'alias pour spécifier des configurations de planification prédéfinies. Ces alias peuvent être spécifiés à l'aide de l'option --alias sur la ligne de commande.
 ",,,,,,,,74714e0daf065d2d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,58f3a6c3,code,fr,d69e73c6c3f2f3e4,"// Exemple d'exécution avec des limites de temps et de mémoire
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,58f3a6c3,code,fr,d69e73c6c3f2f3e4,"// Exemple d'exécution avec des limites de temps et de mémoire
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", """", ""--translate-time-limit 300 --translate-memory-limit 4000 --search-time-limit 500 --search-memory-limit 8000"");
 ",,,,,,,,d69e73c6c3f2f3e4,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,edb9f8e1,markdown,fr,1f0b062fd10d4451,"### Interprétation de l'exécution avec portfolio
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,edb9f8e1,markdown,fr,1f0b062fd10d4451,"### Interprétation de l'exécution avec portfolio
 
 Cette commande illustre l'utilisation d'un **portfolio de configurations**, une stratégie avancée utilisée dans les compétitions de planification.
 
@@ -19368,11 +19368,11 @@ Cette commande illustre l'utilisation d'un **portfolio de configurations**, une 
 - **Optimisation** : Combine les forces de multiples heuristiques
 
 > **Note** : Les portfolios sont la stratégie standard des planificateurs performants aux compétitions IPC (International Planning Competition).",,,,,,,,1f0b062fd10d4451,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,54e84017,markdown,fr,7a94213b843b10d3,"### Limites de temps et de mémoire
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,54e84017,markdown,fr,7a94213b843b10d3,"### Limites de temps et de mémoire
 
 Fast Downward permet de spécifier des limites de temps et de mémoire pour les différentes composantes du planificateur. Ces limites peuvent être spécifiées à l'aide des options de ligne de commande --translate-time-limit, --translate-memory-limit, --search-time-limit, et --search-memory-limit.
 ",,,,,,,,7a94213b843b10d3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,28ad73de,markdown,fr,4e102f7d58892c83,"### Résultat avec l'heuristique additive
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,28ad73de,markdown,fr,4e102f7d58892c83,"### Résultat avec l'heuristique additive
 
 **Caractéristiques** :
 - **Non admissible** : Peut surestimer le coût (la solution peut ne pas être optimale)
@@ -19380,7 +19380,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,28ad73d
 - **Opérateurs préférés** : Identifie les actions utiles
 
 L'heuristique additive tend à **surestimer** car elle suppose que tous les sous-buts sont indépendants, ce qui n'est souvent pas le cas (ils peuvent interagir positivement).",,,,,,,,4e102f7d58892c83,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,30237691,markdown,fr,a5a24dc119b4e62f,"### Exploration des heuristiques de Fast Downward
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,30237691,markdown,fr,a5a24dc119b4e62f,"### Exploration des heuristiques de Fast Downward
 
 Dans les cellules suivantes, nous allons explorer systématiquement différentes **heuristiques** implémentées dans Fast Downward. Chaque heuristique possède des propriétés différentes :
 
@@ -19392,7 +19392,7 @@ Dans les cellules suivantes, nous allons explorer systématiquement différentes
 | **Opérateurs préférés** | Identifie des actions prometteuses pour accélérer la recherche |
 
 Nous commençons avec l'**heuristique additive (add)**, qui combine les coûts estimés des sous-buts de manière additive.",,,,,,,,a5a24dc119b4e62f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,bf1bf459,markdown,fr,4e41ff3dc198964c,"### Résultat avec l'heuristique aveugle
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,bf1bf459,markdown,fr,4e41ff3dc198964c,"### Résultat avec l'heuristique aveugle
 
 **Caractéristiques** :
 - **Admissible et cohérente** : Garantit l'optimalité avec A*
@@ -19400,10 +19400,10 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,bf1bf45
 - **Pas d'opérateurs préférés** : Aucune guidance
 
 Cette heuristique est équivalente à une **recherche de Dijkstra** (ou recherche en largeur si tous les coûts sont unitaires). Elle explore exhaustivement sans guidance, ce qui est très lent mais garantit l'optimalité.",,,,,,,,4e41ff3dc198964c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,4da0309d,code,fr,d69e73c6c3f2f3e4,"// Exemple d'exécution avec des limites de temps et de mémoire
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,4da0309d,code,fr,d69e73c6c3f2f3e4,"// Exemple d'exécution avec des limites de temps et de mémoire
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", """", ""--translate-time-limit 300 --translate-memory-limit 4000 --search-time-limit 500 --search-memory-limit 8000"");
 ",,,,,,,,d69e73c6c3f2f3e4,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,a11cea05,markdown,fr,3c3abd59eeae651c,"### Résultat avec l'heuristique context-enhanced additive
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,a11cea05,markdown,fr,3c3abd59eeae651c,"### Résultat avec l'heuristique context-enhanced additive
 
 **Amélioration de l'heuristique additive** :
 - Prend en compte les **interactions entre sous-buts**
@@ -19411,10 +19411,10 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,a11cea0
 - Toujours **non admissible**, mais meilleure guidance en pratique
 
 L'heuristique CEA analyse le contexte dans lequel les actions sont appliquées pour affiner l'estimation des coûts.",,,,,,,,3c3abd59eeae651c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,b1a1b254,markdown,fr,033bea788038eec9,"### Validation de plan
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,b1a1b254,markdown,fr,033bea788038eec9,"### Validation de plan
 
 Fast Downward peut également valider les plans générés en utilisant l'outil de validation VAL.",,,,,,,,033bea788038eec9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,595cff0e,markdown,fr,c69352af1ffdc23f,"### Résultat avec l'heuristique merge-and-shrink
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,595cff0e,markdown,fr,c69352af1ffdc23f,"### Résultat avec l'heuristique merge-and-shrink
 
 **Technique sophistiquée** basée sur l'abstraction :
 - **Merge** : Fusion de variables de planification
@@ -19426,17 +19426,17 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,595cff0
 - **Coûteuse** : Précalcul parfois long mais estimation très précise
 
 Cette heuristique est particulièrement efficace sur les problèmes avec de nombreuses interactions entre variables.",,,,,,,,c69352af1ffdc23f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,16da2813,markdown,fr,1ed54fb89102e946,"### Utilisation d'un portfolio
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,16da2813,markdown,fr,1ed54fb89102e946,"### Utilisation d'un portfolio
 
 Fast Downward supporte l'utilisation de portfolios de configurations de planification. Un portfolio est un ensemble de configurations de planification qui sont exécutées en séquence ou en parallèle pour résoudre une tâche de planification. L'utilisation d'un portfolio peut être spécifiée à l'aide de l'option --portfolio sur la ligne de commande.
 ",,,,,,,,1ed54fb89102e946,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,aa8edb18,markdown,fr,a579f2ca48a710ad,"### Transition vers les heuristiques classiques
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,aa8edb18,markdown,fr,a579f2ca48a710ad,"### Transition vers les heuristiques classiques
 
 Les cellules suivantes explorent des heuristiques plus classiques et largement utilisées dans la littérature de planification automatique. Nous commençons par l'**heuristique de graphe causal (cg)**, qui analyse les dépendances causales entre variables.",,,,,,,,a579f2ca48a710ad,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,df923bb3,code,fr,a9e8e7cdd78b1fb3,"// Exemple d'exécution avec un portfolio
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,df923bb3,code,fr,a9e8e7cdd78b1fb3,"// Exemple d'exécution avec un portfolio
 runner.RunFastDownward("""", """", ""--portfolio driver/portfolios/seq_opt_fdss_1.py --search-time-limit 30m output.sas"");
 ",,,,,,,,a9e8e7cdd78b1fb3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,d009b463,markdown,fr,dc64a2c4157195c1,"### Résultat avec l'heuristique de graphe causal
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,d009b463,markdown,fr,dc64a2c4157195c1,"### Résultat avec l'heuristique de graphe causal
 
 **Analyse des dépendances causales** :
 - Construit un **graphe de causalité** entre variables
@@ -19448,7 +19448,7 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,d009b46
 - **Axiomes** : Support rudimentaire
 
 Cette heuristique est efficace sur les problèmes où les dépendances causales sont structurées.",,,,,,,,dc64a2c4157195c1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,91933d92,markdown,fr,54a2b230ff8716dc,"
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,91933d92,markdown,fr,54a2b230ff8716dc,"
 ### Heuristiques avancées de Fast Downward
 
 L'efficacité de Fast Downward réside dans son usage d'heuristiques de pointe pour guider la recherche de solutions aux problèmes de planification. Quelques-unes de ces heuristiques avancées sont décrites ci-dessous.
@@ -19461,7 +19461,7 @@ Chacune de ces heuristiques possède des avantages et des limites en termes d'ef
 L'heuristique additive (add) est une méthode permettant de combiner les estimations de plusieurs heuristiques pour une meilleure estimation. Elle n'est ni admissible, ni cohérente, mais identifie les opérateurs privilégiés. 
 
 Les options de cette heuristique incluent le niveau de verbosité, la transformation de la tâche, et le cache des estimations.",,,,,,,,54a2b230ff8716dc,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,baf45836,markdown,fr,7024c1f541e479fc,"### Résultat avec l'heuristique FF (Fast Forward)
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,baf45836,markdown,fr,7024c1f541e479fc,"### Résultat avec l'heuristique FF (Fast Forward)
 
 **Une des heuristiques les plus populaires** :
 - Basée sur la **relaxation de suppression** (ignore les effets négatifs)
@@ -19474,10 +19474,10 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,baf4583
 - **Référence** dans les compétitions de planification
 
 L'heuristique FF a révolutionné la planification automatique dans les années 2000 en permettant de résoudre des problèmes auparavant intractables.",,,,,,,,7024c1f541e479fc,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,f27d3306,code,fr,6645021a66f50d88,"// Exemple d'exécution avec l'heuristique additive
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,f27d3306,code,fr,6645021a66f50d88,"// Exemple d'exécution avec l'heuristique additive
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--search \""astar(add ())\"""");
 ",,,,,,,,6645021a66f50d88,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,8bf29b07,markdown,fr,87562f11a927273f,"### Résultat avec l'heuristique goalcount
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,8bf29b07,markdown,fr,87562f11a927273f,"### Résultat avec l'heuristique goalcount
 
 **Heuristique la plus simple** :
 - Compte simplement le **nombre de sous-buts non atteints**
@@ -19489,10 +19489,10 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,8bf29b0
 - Utile pour les problèmes où tous les sous-buts sont également difficiles
 
 Cette heuristique donne essentiellement une borne inférieure triviale sur le nombre d'actions restantes.",,,,,,,,87562f11a927273f,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,63b4a21b,markdown,fr,22bf9e0e90153291,"#### Blind Heuristic
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,63b4a21b,markdown,fr,22bf9e0e90153291,"#### Blind Heuristic
 
 L'heuristique aveugle (blind) retourne le coût de l'action la moins chère pour les états non-cibles et 0 pour les états cibles. Elle supporte les coûts d'action, les effets conditionnels, et les axiomes. C'est une heuristique admissible, cohérente et sûre, mais elle ne permet pas d'identifier des opérateurs privilégiés.",,,,,,,,22bf9e0e90153291,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,35917487,markdown,fr,d3efe9c172087068,"### Résultat avec l'heuristique h^m
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,35917487,markdown,fr,d3efe9c172087068,"### Résultat avec l'heuristique h^m
 
 **Heuristique basée sur les ensembles de faits** :
 - Considère les interactions entre **m faits simultanément**
@@ -19507,10 +19507,10 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,3591748
 | 3+ | Élevée | Exponentielle |
 
 En pratique, m=1 ou m=2 sont les plus utilisés. Pour m → ∞, on obtient l'heuristique h* (optimale).",,,,,,,,d3efe9c172087068,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,c31781a4,code,fr,788bcad17b2f5dc6,"// Exemple d'exécution avec l'heuristique aveugle
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,c31781a4,code,fr,788bcad17b2f5dc6,"// Exemple d'exécution avec l'heuristique aveugle
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--search \""astar(blind())\"""");
 ",,,,,,,,788bcad17b2f5dc6,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,3a23d189,markdown,fr,d90ea7a079c1c26d,"### Résultat avec l'heuristique hmax
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,3a23d189,markdown,fr,d90ea7a079c1c26d,"### Résultat avec l'heuristique hmax
 
 **Variante conservative de l'heuristique additive** :
 - Prend le **maximum** des coûts des sous-buts au lieu de la somme
@@ -19524,11 +19524,11 @@ h_max(s) = max(coût(sous-but_i))  → admissible mais moins informative
 ```
 
 L'heuristique hmax est utile quand on cherche l'optimalité avec une heuristique simple et rapide.",,,,,,,,d90ea7a079c1c26d,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,3753a937,markdown,fr,3ac12f7b94cf35db,"
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,3753a937,markdown,fr,3ac12f7b94cf35db,"
 #### Context-enhanced Additive Heuristic
 
 L'heuristique context-enhanced additive (cea) est une heuristique non admissible, non cohérente et non sûre, mais qui identifie les opérateurs privilégiés. Comme pour les heuristiques précédentes, elle offre des options pour le niveau de verbosité, la transformation de la tâche, et le cache des estimations.",,,,,,,,3ac12f7b94cf35db,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,3113bf47,markdown,fr,9c7ff5325dd4b5de,"### Transition vers les techniques avancées
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,3113bf47,markdown,fr,9c7ff5325dd4b5de,"### Transition vers les techniques avancées
 
 Les sections suivantes explorent des techniques de planification plus sophistiquées qui combinent plusieurs approches :
 - **Relaxations et repères** (landmarks)
@@ -19536,10 +19536,10 @@ Les sections suivantes explorent des techniques de planification plus sophistiqu
 - **Bases de données de motifs** (Pattern Databases)
 
 Ces techniques représentent l'état de l'art en planification classique et sont utilisées dans les planificateurs gagnants des compétitions.",,,,,,,,9c7ff5325dd4b5de,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,c0f8077d,code,fr,5c815bfb173d14a9,"// Exemple d'exécution avec l'heuristique context-enhanced additive
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,c0f8077d,code,fr,5c815bfb173d14a9,"// Exemple d'exécution avec l'heuristique context-enhanced additive
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--search \""astar(cea())\"""");
 ",,,,,,,,5c815bfb173d14a9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,daeb04da,markdown,fr,310562ce8c1d90f6,"### Résultat avec l'heuristique LM-cut
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,daeb04da,markdown,fr,310562ce8c1d90f6,"### Résultat avec l'heuristique LM-cut
 
 **Technique de pointe basée sur les landmarks** :
 - Un **landmark** est un fait qui doit obligatoirement être vrai dans tout plan solution
@@ -19552,10 +19552,10 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,daeb04d
 3. Sommer les coûts minimaux de chaque cut
 
 Cette heuristique est considérée comme l'une des plus précises pour la planification optimale, au prix d'un temps de calcul plus élevé.",,,,,,,,310562ce8c1d90f6,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,8738ad04,markdown,fr,7c0f81516082a1dd,"#### Merge-and-shrink Heuristic
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,8738ad04,markdown,fr,7c0f81516082a1dd,"#### Merge-and-shrink Heuristic
 
 L'heuristique merge-and-shrink (merge_and_shrink) est basée sur l'algorithme décrit dans plusieurs articles scientifiques. Cette heuristique est configurable avec plusieurs stratégies de fusion et de réduction. Elle supporte les coûts d'action et les effets conditionnels, mais pas les axiomes. Elle est admissible, cohérente, sûre, mais ne permet pas d'identifier des opérateurs privilégiés.",,,,,,,,7c0f81516082a1dd,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,8178f2c6,markdown,fr,de46939ade0832b9,"### Résultat avec l'adaptation de coûts
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,8178f2c6,markdown,fr,de46939ade0832b9,"### Résultat avec l'adaptation de coûts
 
 **Transformation de la tâche** : Cette technique modifie dynamiquement les coûts des actions pour améliorer l'heuristique.
 
@@ -19572,10 +19572,10 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,8178f2c
 - `plusone` : Évite les cycles à coût nul dans certains domaines
 
 Cette cellule combine LM-cut avec la transformation `one`, optimisant pour le plan le plus court.",,,,,,,,de46939ade0832b9,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,d2ea10b4,code,fr,f1e6454380092536,"// Exemple d'exécution avec l'heuristique merge-and-shrink
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,d2ea10b4,code,fr,f1e6454380092536,"// Exemple d'exécution avec l'heuristique merge-and-shrink
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--search \""astar(merge_and_shrink ())\"""");
 ",,,,,,,,f1e6454380092536,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,4eaf3d9e,markdown,fr,ab957304d8fd897e,"### Résultat avec les Pattern Databases (iPDB)
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,4eaf3d9e,markdown,fr,ab957304d8fd897e,"### Résultat avec les Pattern Databases (iPDB)
 
 **Concept des Pattern Databases** :
 - Un **pattern** est un sous-ensemble de variables du problème
@@ -19592,10 +19592,10 @@ MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,4eaf3d9
 - **Incrémental** : S'adapte au problème spécifique
 
 Cette technique est particulièrement efficace sur les problèmes avec une structure factorisée.",,,,,,,,ab957304d8fd897e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,dd7d68b2,markdown,fr,afc8ac5bb8d818d4,"#### Operator-counting Heuristic
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,dd7d68b2,markdown,fr,afc8ac5bb8d818d4,"#### Operator-counting Heuristic
 
 L'heuristique operator-counting (operatorcounting) est une heuristique qui calcule un programme linéaire à chaque état. Elle est admissible, cohérente, sûre, mais ne permet pas d'identifier des opérateurs privilégiés. Elle supporte les coûts d'action, mais pas les effets conditionnels ni les axiomes, en raison de la limitation des générateurs de contraintes actuellement implémentés.",,,,,,,,afc8ac5bb8d818d4,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,59170b16,markdown,fr,34d5b07a0d23e669,"### Résultat avec merge-and-shrink avancé
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,59170b16,markdown,fr,34d5b07a0d23e669,"### Résultat avec merge-and-shrink avancé
 
 Cette configuration illustre une utilisation sophistiquée de **merge-and-shrink** avec plusieurs paramètres :
 
@@ -19614,7 +19614,7 @@ Cette configuration illustre une utilisation sophistiquée de **merge-and-shrink
 - **Mémoire** : Peut consommer beaucoup de RAM sur gros problèmes
 
 Cette configuration est typique des planificateurs optimaux dans les compétitions.",,,,,,,,34d5b07a0d23e669,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,29e46d95,markdown,fr,5ab23a805805412e,"## Conclusion et synthèse
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,29e46d95,markdown,fr,5ab23a805805412e,"## Conclusion et synthèse
 
 ### Récapitulatif des heuristiques explorées
 
@@ -19666,67 +19666,67 @@ Ce notebook a présenté un panorama complet des heuristiques de Fast Downward :
 - Articles fondateurs : FF (Hoffmann & Nebel, 2001), LM-cut (Helmert & Domshlak, 2009)
 
 Fast Downward reste l'un des planificateurs les plus performants et flexibles pour la planification classique, grâce à sa riche collection d'heuristiques et de techniques d'optimisation.",,,,,,,,5ab23a805805412e,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,00a5edd6,code,fr,9d3d11078f3235d8,"Console.WriteLine(""Exercice a completer"");
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,00a5edd6,code,fr,9d3d11078f3235d8,"Console.WriteLine(""Exercice a completer"");
 ",,,,,,,,9d3d11078f3235d8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,da02bdda,markdown,fr,a3b5c09389dcaf02,"#### Heuristique de Graphique Causal (cg)
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,da02bdda,markdown,fr,a3b5c09389dcaf02,"#### Heuristique de Graphique Causal (cg)
 
 L'heuristique de Graphique Causal (cg) est configurable avec plusieurs paramètres comme la taille maximale du cache (max_cache_size), la verbosité (verbosity), la transformation de tâche (transform) et la mise en cache des estimations (cache_estimates). Elle supporte les coûts d'action, les effets conditionnels et les axiomes, bien que le traitement des axiomes puisse être rudimentaire. Elle n'est ni admissible, ni cohérente, ni sûre, mais elle prend en charge les opérateurs préférés.",,,,,,,,a3b5c09389dcaf02,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,146ae3a2,code,fr,8b7172458c9b0272,"// Exemple d'exécution avec l'heuristique de Graphique Causal
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,146ae3a2,code,fr,8b7172458c9b0272,"// Exemple d'exécution avec l'heuristique de Graphique Causal
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--search \""astar(cg())\"""");
 ",,,,,,,,8b7172458c9b0272,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,25575013,markdown,fr,96bc2d580bcba9f1,"#### Heuristique FF
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,25575013,markdown,fr,96bc2d580bcba9f1,"#### Heuristique FF
 
 L'heuristique FF partage de nombreuses caractéristiques avec l'heuristique de Graphique Causal, y compris la prise en charge des coûts d'action, des effets conditionnels et des axiomes. Elle est sûre pour les tâches sans axiomes et supporte également les opérateurs préférés. Comme l'heuristique de Graphique Causal, elle n'est ni admissible, ni cohérente.",,,,,,,,96bc2d580bcba9f1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,61a1de85,code,fr,01410232b93e26ea,"// Exemple d'exécution avec l'heuristique FF
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,61a1de85,code,fr,01410232b93e26ea,"// Exemple d'exécution avec l'heuristique FF
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--search \""astar(ff())\"""");
 ",,,,,,,,01410232b93e26ea,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,ced9d863,markdown,fr,b40af033daaee588,"#### Heuristique de Compte d'Objectif (goalcount)
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,ced9d863,markdown,fr,b40af033daaee588,"#### Heuristique de Compte d'Objectif (goalcount)
 
 L'heuristique de Compte d'Objectif ignore les coûts d'action par conception, mais supporte les effets conditionnels et les axiomes. Elle est sûre, mais n'est ni admissible, ni cohérente, et ne supporte pas les opérateurs préférés.",,,,,,,,b40af033daaee588,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,57e5798f,code,fr,85b386b87ff4993c,"// Exemple d'exécution avec l'heuristique de Compte d'Objectif
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,57e5798f,code,fr,85b386b87ff4993c,"// Exemple d'exécution avec l'heuristique de Compte d'Objectif
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--search \""astar(goalcount())\"""");
 ",,,,,,,,85b386b87ff4993c,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,11158a54,markdown,fr,afc7754dff6562a1,"#### Heuristique h^m
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,11158a54,markdown,fr,afc7754dff6562a1,"#### Heuristique h^m
 
 L'heuristique h^m, où 'm' est la taille du sous-ensemble, supporte les coûts d'action mais ignore les effets conditionnels et les axiomes. Elle est admissible, cohérente et sûre pour les tâches sans effets conditionnels ou axiomes, mais ne prend pas en charge les opérateurs préférés.",,,,,,,,afc7754dff6562a1,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,ce4ce5f5,code,fr,0ab41773d0a65773,"// Exemple d'exécution avec l'heuristique h^m
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,ce4ce5f5,code,fr,0ab41773d0a65773,"// Exemple d'exécution avec l'heuristique h^m
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--search \""astar(hm())\"""");
 ",,,,,,,,0ab41773d0a65773,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,bae1f277,markdown,fr,be48c0d4d3b6e7aa,"#### Heuristique Max (hmax)
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,bae1f277,markdown,fr,be48c0d4d3b6e7aa,"#### Heuristique Max (hmax)
 
 L'heuristique Max est similaire à l'heuristique h^m en ce sens qu'elle supporte les coûts d'action et les effets conditionnels, et peut gérer les axiomes à un degré limité. Elle est admissible, cohérente et sûre pour les tâches sans axiomes, mais ne prend pas en charge les opérateurs préférés.",,,,,,,,be48c0d4d3b6e7aa,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,ac439f49,code,fr,68ba4ffd9c09d097,"// Exemple d'exécution avec l'heuristique Max
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,ac439f49,code,fr,68ba4ffd9c09d097,"// Exemple d'exécution avec l'heuristique Max
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--search \""astar(hmax())\"""");
 ",,,,,,,,68ba4ffd9c09d097,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,53fc7ee8,markdown,fr,76d6d3eda8cce479,"#### Heuristique de Partage des Coûts des Points de Repère (landmark_cost_partitioning)
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,53fc7ee8,markdown,fr,76d6d3eda8cce479,"#### Heuristique de Partage des Coûts des Points de Repère (landmark_cost_partitioning)
 
 L'heuristique de Partage des Coûts des Points de Repère est une heuristique admissible qui utilise un ensemble de points de repère pour établir des coûts. Elle supporte les coûts d'action et les effets conditionnels, mais pas les axiomes. Cette heuristique est sûre et peut utiliser des opérateurs préférés si cela est activé.",,,,,,,,76d6d3eda8cce479,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,db01be26,code,fr,9d3d11078f3235d8,"Console.WriteLine(""Exercice a completer"");
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,db01be26,code,fr,9d3d11078f3235d8,"Console.WriteLine(""Exercice a completer"");
 ",,,,,,,,9d3d11078f3235d8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,fa4f983b,markdown,fr,430f62c7ca193ccf,"### Utilisation avancée de Fast Downward
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,fa4f983b,markdown,fr,430f62c7ca193ccf,"### Utilisation avancée de Fast Downward
 
 Fast Downward est un outil de planification classique flexible et puissant qui offre de nombreuses fonctionnalités avancées pour optimiser et personnaliser le processus de planification. Pour tirer pleinement parti de ces fonctionnalités, il est important de comprendre comment elles fonctionnent et comment les utiliser efficacement. Voici une description détaillée de quelques-unes de ces fonctionnalités.
 
 #### Relaxations et repères
 
 Fast Downward propose des fonctionnalités pour travailler avec des relaxations de suppression et des repères. La relaxation de suppression peut être utile pour calculer l'heuristique optimale h+. Fast Downward calcule également un ensemble de repères pour chaque état à l'aide de la méthode LM-cut, qui peut être très utile pour guider la recherche de planification.",,,,,,,,430f62c7ca193ccf,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,fee838f0,code,fr,814bd920635aebe5,"// Exemple d'exécution avec la relaxation LM-cut
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,fee838f0,code,fr,814bd920635aebe5,"// Exemple d'exécution avec la relaxation LM-cut
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--search \""astar(lmcut())\"""");
 ",,,,,,,,814bd920635aebe5,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,320dc5de,markdown,fr,0ac236c022e6ecab,"#### Adaptation des coûts des actions
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,320dc5de,markdown,fr,0ac236c022e6ecab,"#### Adaptation des coûts des actions
 
 Fast Downward offre un moyen de moduler les coûts des actions via la transformation de la tâche racine, nommée ""Cost-adapted task"". Cette fonctionnalité offre trois options d'adaptation des coûts : ""normal"", ""one"" et ""plusone"". La capacité à adapter les coûts des actions peut avoir un impact significatif sur la qualité des plans produits.",,,,,,,,0ac236c022e6ecab,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,15eb23d1,code,fr,1ab4ce045d3d7eb3,"// Exemple d'exécution avec l'adaptation des coûts des actions
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,15eb23d1,code,fr,1ab4ce045d3d7eb3,"// Exemple d'exécution avec l'adaptation des coûts des actions
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--search \""astar(lmcut(transform=adapt_costs(one)))\"""");
 ",,,,,,,,1ab4ce045d3d7eb3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,c38a788c,markdown,fr,2262842c9e9cefc3,"
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,c38a788c,markdown,fr,2262842c9e9cefc3,"
 #### Optimisation post-hoc et équations d'état
 
 Fast Downward peut utiliser des bases de données de motifs (PDB) pour calculer des contraintes d'optimisation post-hoc. Ces contraintes peuvent aider à maximiser l'utilité des PDB pour la planification classique. De plus, Fast Downward ajoute une contrainte permanente pour chaque fait qui tient compte du changement net du fait.",,,,,,,,2262842c9e9cefc3,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,f46891f6,code,fr,df1e60490f2781f8,"// Exemple d'exécution avec l'optimisation post-hoc et les équations d'état
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,f46891f6,code,fr,df1e60490f2781f8,"// Exemple d'exécution avec l'optimisation post-hoc et les équations d'état
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--search \""astar(ipdb())\"""");
 ",,,,,,,,df1e60490f2781f8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,e7fa5aa1,markdown,fr,6f8c946bf1709ec8,"#### Réduction des étiquettes
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,e7fa5aa1,markdown,fr,6f8c946bf1709ec8,"#### Réduction des étiquettes
 
 Fast Downward offre une technique de réduction d'étiquettes, nommée ""Exact Generalized Label Reduction"". Cette technique peut être appliquée avant le rétrécissement et avant la fusion des systèmes de transitions.
 
@@ -19737,10 +19737,10 @@ Fast Downward propose divers types de fabriques de repères et plusieurs fonctio
 #### Stratégies de fusion
 
 Fast Downward propose plusieurs stratégies de fusion, y compris l'utilisation d'un arbre de fusion précalculé, la stratégie de fusion SSCs, et la stratégie de fusion sans état. Ces stratégies peuvent être personnalisées à l'aide de différents sélecteurs de fusion.",,,,,,,,6f8c946bf1709ec8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,e8d02cc2,code,fr,ad997e42ead10a24,"// Exemple d'exécution avec une stratégie de fusion
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,e8d02cc2,code,fr,ad997e42ead10a24,"// Exemple d'exécution avec une stratégie de fusion
 runner.RunFastDownward(""misc/tests/benchmarks/gripper/domain.pddl"", ""misc/tests/benchmarks/gripper/prob01.pddl"", ""--search \""astar(merge_and_shrink(merge_strategy=merge_precomputed(merge_tree=linear(variable_order=reverse_level)),shrink_strategy=shrink_bisimulation(greedy=true),label_reduction=exact(before_shrinking=true,before_merging=false)))\"""");
 ",,,,,,,,ad997e42ead10a24,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,7e70bab5,markdown,fr,df1520bc8fa588c8,"#### Génération de collections de motifs
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,7e70bab5,markdown,fr,df1520bc8fa588c8,"#### Génération de collections de motifs
 
 Fast Downward propose une série d'algorithmes pour la génération de collections de motifs. Ces algorithmes, y compris la Factory for pattern collections, Combo, Disjoint CEGAR, et d'autres, offrent diverses stratégies pour créer des collections de motifs.
 
@@ -19750,7 +19750,7 @@ Fast Downward propose plusieurs usines à motifs, y compris la Factory for singl
 
 En somme, Fast Downward offre une variété d'outils pour personnaliser et optimiser le process
 ",,,,,,,,df1520bc8fa588c8,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Planners/archive/Fast-Downward-Legacy.ipynb,d1b3ec04,markdown,fr,8fced46e300e5df5,"### Soumission aux competitions internationales
+MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/Fast-Downward-Legacy.ipynb,d1b3ec04,markdown,fr,8fced46e300e5df5,"### Soumission aux competitions internationales
 
 Fast Downward est regulierement soumis aux competitions internationales de planification avec un ensemble de configurations complexes a tester sur les problemes des benchmarks, illustrant l'utilisation simultanee de plusieurs fonctionnalites presentees ci-dessus.
 

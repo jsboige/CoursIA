@@ -26,6 +26,7 @@ NUMBERING-DRIFT sont portes.
 """
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -35,6 +36,7 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+import check_twin_parity as ctp  # noqa: E402
 from check_twin_parity import (  # noqa: E402
     _classify_per_pair,
     _git_blob_sha,
@@ -357,10 +359,188 @@ def test_fleet_json_carries_numbering_drift_count(tmp_path, capsys):
     ])
     rc = main(["--registry", str(reg), "--repo-root", str(repo), "--json"])
     out = capsys.readouterr().out
-    import json
     data = json.loads(out)
     assert data["numbering_drift"] == 1, data.get("numbering_drift")
     assert rc == 0  # --json alone does not gate ; only --check exits 1
+
+
+# --- 6. Selecteur --pair et borne de delai git (#20197) -----------------------
+# Avant #20197, --pair etait accepte puis ignore en --check (157 paires
+# parcourues pour une demandee) et _run_git n'avait aucune borne (blocage muet).
+# Les tests comptent les appels git (espion sur _run_git), jamais le temps.
+
+@pytest.fixture
+def espion_git(monkeypatch):
+    """Enregistre les arguments de chaque appel `_run_git`, sans le modifier."""
+    appels: list[list[str]] = []
+    original = ctp._run_git
+
+    def espion(args, **kwargs):
+        appels.append(list(args))
+        return original(args, **kwargs)
+
+    monkeypatch.setattr(ctp, "_run_git", espion)
+    return appels
+
+
+def _deux_paires(tmp_path: Path):
+    """Mini-depot a deux paires alignees + registre file-per-entry."""
+    repo = _make_repo(tmp_path, {
+        "nb/py-10.ipynb": _MINIMAL_NB,
+        "nb/cs-10.ipynb": _MINIMAL_NB,
+        "nb/py-20.ipynb": _MINIMAL_NB,
+        "nb/cs-20.ipynb": _MINIMAL_NB,
+    })
+    reg = _write_registry(tmp_path, [
+        _audited_pair(repo, "Fixture-10", "nb/py-10.ipynb", "nb/cs-10.ipynb"),
+        _audited_pair(repo, "Fixture-20", "nb/py-20.ipynb", "nb/cs-20.ipynb"),
+    ])
+    return repo, reg
+
+
+def _touche_autre_paire(appels: list[list[str]]) -> list[list[str]]:
+    return [a for a in appels if any("py-20" in x or "cs-20" in x for x in a)]
+
+
+def test_check_pair_n_evalue_que_la_paire_nommee(tmp_path, capsys, espion_git):
+    """--check --pair ne traite QUE la paire demandee : aucun appel git ne touche
+    l'autre, et le nombre d'appels est celui d'une paire sur deux (les deux paires
+    du fixture ont la meme structure). Reference = le registre entier, meme mesure."""
+    repo, reg = _deux_paires(tmp_path)
+    espion_git.clear()  # les appels de construction du depot ne comptent pas
+    main(["--registry", str(reg), "--repo-root", str(repo), "--check", "--json"])
+    capsys.readouterr()
+    complet = len(espion_git)
+
+    espion_git.clear()
+    rc = main(["--registry", str(reg), "--repo-root", str(repo),
+               "--check", "--pair", "Fixture-10", "--json"])
+    data = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert [p["name"] for p in data["pairs"]] == ["Fixture-10"]
+    assert data["total"] == 1
+    assert _touche_autre_paire(espion_git) == []
+    assert len(espion_git) > 0
+    assert len(espion_git) * 2 == complet, (len(espion_git), complet)
+
+
+@pytest.mark.parametrize("nom_demande", ["Fixture-99", ""])
+def test_check_pair_inconnu_echoue_sans_rien_parcourir(tmp_path, capsys, espion_git, nom_demande):
+    """Nom inconnu (ou vide) = erreur nommant les noms connus, rc 2, zero appel git.
+    Jamais de repli silencieux sur le registre entier."""
+    repo, reg = _deux_paires(tmp_path)
+    espion_git.clear()  # les appels de construction du depot ne comptent pas
+    rc = main(["--registry", str(reg), "--repo-root", str(repo),
+               "--check", "--pair", nom_demande])
+    err = capsys.readouterr().err
+    assert rc == 2
+    assert f"Aucune paire nommee '{nom_demande}'" in err
+    assert "Fixture-10" in err and "Fixture-20" in err
+    assert espion_git == []
+
+
+def test_check_family_inconnue_nest_pas_un_succes_vide(tmp_path, capsys, espion_git):
+    """--family sans paire = erreur d'usage (rc 2), pas un succes sur zero paire."""
+    repo, reg = _deux_paires(tmp_path)
+    espion_git.clear()  # les appels de construction du depot ne comptent pas
+    rc = main(["--registry", str(reg), "--repo-root", str(repo),
+               "--check", "--family", "Inexistante"])
+    assert rc == 2
+    assert espion_git == []
+
+
+def test_check_family_connue_controle_positif(tmp_path, capsys):
+    """Controle positif du garde-fou precedent : une famille existante passe."""
+    repo, reg = _deux_paires(tmp_path)
+    rc = main(["--registry", str(reg), "--repo-root", str(repo),
+               "--check", "--family", "Fixture", "--json"])
+    data = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert data["total"] == 2
+
+
+def test_verify_recorded_sha_pair_restreint(tmp_path, capsys, espion_git):
+    """--verify-recorded-sha --pair ne verifie que la paire nommee."""
+    repo, reg = _deux_paires(tmp_path)
+    espion_git.clear()  # les appels de construction du depot ne comptent pas
+    rc = main(["--registry", str(reg), "--repo-root", str(repo),
+               "--verify-recorded-sha", "--pair", "Fixture-20", "--json"])
+    data = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert [p["name"] for p in data["pairs"]] == ["Fixture-20"]
+    assert not any("py-10" in x or "cs-10" in x for a in espion_git for x in a)
+
+
+def test_verify_recorded_sha_pair_inconnu_rc2(tmp_path, capsys, espion_git):
+    repo, reg = _deux_paires(tmp_path)
+    espion_git.clear()  # les appels de construction du depot ne comptent pas
+    rc = main(["--registry", str(reg), "--repo-root", str(repo),
+               "--verify-recorded-sha", "--pair", "Fixture-99"])
+    assert rc == 2
+    assert "Aucune paire nommee 'Fixture-99'" in capsys.readouterr().err
+    assert espion_git == []
+
+
+def test_run_git_leve_une_erreur_explicite_au_depassement(monkeypatch):
+    """Un appel git qui depasse la borne leve GitTimeoutError (cause conservee),
+    avec la borne effectivement transmise a subprocess, et sans relance."""
+    vus = {"n": 0, "timeout": None}
+
+    def faux_run(args, **kwargs):
+        vus["n"] += 1
+        vus["timeout"] = kwargs.get("timeout")
+        raise subprocess.TimeoutExpired(args, kwargs.get("timeout"))
+
+    monkeypatch.setattr(subprocess, "run", faux_run)
+    monkeypatch.setattr(ctp.time, "sleep", lambda _s: None)
+
+    assert ctp._GIT_TIMEOUT_S > 0
+    with pytest.raises(ctp.GitTimeoutError, match="mesure interrompue") as info:
+        ctp._run_git(["git", "show", "HEAD:x.ipynb"])
+    assert isinstance(info.value.__cause__, subprocess.TimeoutExpired)
+    assert vus["timeout"] == ctp._GIT_TIMEOUT_S
+    assert vus["n"] == 1, "un depassement de delai ne doit pas etre retente"
+
+
+def test_parcours_historique_a_sa_propre_borne(monkeypatch):
+    """`rev-list --objects` (`_blob_ancestor_in`) recoit la borne d'historique,
+    plus large que la borne par defaut : sur le runner CI ce seul appel depasse
+    300 s, alors que la resolution `rev-parse` du commit (#20717), un `show` ou
+    un `ls-tree` gardent la borne courte."""
+    vus = []
+
+    def faux_run(args, **kwargs):
+        vus.append((args[1], kwargs.get("timeout")))
+        return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
+    monkeypatch.setattr(subprocess, "run", faux_run)
+    # Le parcours est memorise par (depot, commit) : un cache vide garantit
+    # que `rev-list` est bien appele ici, quel que soit l'ordre des tests.
+    monkeypatch.setattr(ctp, "_REACHABLE_OBJECTS", {})
+
+    assert ctp._GIT_HISTORY_TIMEOUT_S > ctp._GIT_TIMEOUT_S
+    ctp._blob_ancestor_in(Path("."), "a" * 40)
+    ctp._run_git(["git", "show", "HEAD:x.ipynb"])
+    assert vus == [("rev-parse", ctp._GIT_TIMEOUT_S),
+                   ("rev-list", ctp._GIT_HISTORY_TIMEOUT_S),
+                   ("show", ctp._GIT_TIMEOUT_S)]
+
+
+def test_main_timeout_git_rend_rc3_sans_verdict(tmp_path, capsys, monkeypatch):
+    """Au depassement, main rend rc 3 + message explicite, sans trace brute et
+    sans aucune sortie (ni verdict vert, ni drift, ni JSON partiel)."""
+    repo, reg = _deux_paires(tmp_path)
+
+    def faux_run(args, **kwargs):
+        raise subprocess.TimeoutExpired(args, kwargs.get("timeout"))
+
+    monkeypatch.setattr(subprocess, "run", faux_run)
+    rc = main(["--registry", str(reg), "--repo-root", str(repo), "--check", "--json"])
+    captured = capsys.readouterr()
+    assert rc == 3
+    assert "mesure interrompue" in captured.err
+    assert "Traceback" not in captured.err
+    assert captured.out == ""
 
 
 if __name__ == "__main__":

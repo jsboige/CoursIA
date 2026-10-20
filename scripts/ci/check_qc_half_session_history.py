@@ -1,0 +1,305 @@
+#!/usr/bin/env python3
+"""Recensement des strategies QC qui dependent du nombre exact de barres rendues.
+
+Contexte (#20286)
+-----------------
+Sur une demi-seance (cloture americaine a 13:00, New York), ``self.history(...)``
+en resolution journaliere rend moins de barres que demandees : 105 pour 126
+demandees le 2019-07-03 (mesure #20286, projet QC ``20286-SectorRotation-diag``).
+Une garde ``len(series) < N`` qui suppose que la demande est servie en entier
+ecarte alors le titre ; quand la garde porte sur l'ensemble des titres, le livre
+part en defensif (SHY sur ``Cloud-SectorRotation-Momentum``, IEF sur
+``Cloud-VolTargeting`` en version 3).
+
+Le correctif est le meme partout : demander une **fenetre double** et garder les
+``N`` dernieres barres. On peut alors perdre la moitie de la fenetre sans que
+la garde ne change de verdict.
+
+Ce script rend le recensement executable et reproductible. Il ne juge pas la
+strategie : il mesure une dependance a la forme du fournisseur de donnees.
+
+Classes
+-------
+``EXPOSE``   la garde suppose que la demande est servie en entier : meme
+             expression de seuil et de demande, ou marge inferieure au
+             raccourcissement mesure (21 barres, ``--shortfall``).
+``RISQUE``   la marge absorbe le raccourcissement mesure, mais la demande
+             reste inferieure au double du seuil : le code depend encore de la
+             forme du fournisseur.
+``PROTEGE``  la demande vaut au moins le double du seuil : perdre la moitie de
+             la fenetre ne change pas le verdict de la garde.
+
+Limite connue
+--------------
+L'outil mesure la dependance a la **longueur** de l'historique. Il ne detecte
+pas le cas ou la serie est consommee sans etrelicee (fenetre qui se raccourcit
+silencieusement sans ecarter le titre) : cela demande une analyse du
+consommateur de la serie, hors perimetre ici.
+
+Usage
+-----
+    python scripts/ci/check_qc_half_session_history.py                # tableau, exit 1 si EXPOSE
+    python scripts/ci/check_qc_half_session_history.py --json         # sortie machine
+    python scripts/ci/check_qc_half_session_history.py --all          # inclut les classes non EXPOSE
+    python scripts/ci/check_qc_half_session_history.py --shortfall 5  # autre seuil de mesure
+"""
+
+from __future__ import annotations
+
+import argparse
+import ast
+import json
+import os
+import sys
+
+DEFAULT_PROJECTS = os.path.join("MyIA.AI.Notebooks", "QuantConnect", "projects")
+
+# Cas justifies : le projet est mesure, mais la dependance est assumee et notee.
+# (vide a ce jour : la reference du modele, Cloud-SectorRotation-Momentum, est
+# protegee par la fenetre double de #20330 et reste donc visible au recensement.)
+EXCEPTIONS = {}
+
+
+def _num(node, consts):
+    """Evalue une expression arithmetique sur des entiers connus, sinon None."""
+    if node is None:
+        return None
+    if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)) \
+            and not isinstance(node.value, bool):
+        return node.value
+    if isinstance(node, ast.Attribute):
+        return consts.get(node.attr)
+    if isinstance(node, ast.Name):
+        return consts.get(node.id)
+    if isinstance(node, ast.UnaryOp) and isinstance(node.op, (ast.UAdd, ast.USub)):
+        val = _num(node.operand, consts)
+        if val is None:
+            return None
+        return -val if isinstance(node.op, ast.USub) else val
+    if isinstance(node, ast.BinOp):
+        left = _num(node.left, consts)
+        right = _num(node.right, consts)
+        if left is None or right is None:
+            return None
+        if isinstance(node.op, ast.Add):
+            return left + right
+        if isinstance(node.op, ast.Sub):
+            return left - right
+        if isinstance(node.op, ast.Mult):
+            return left * right
+        if isinstance(node.op, ast.FloorDiv):
+            return left // right if right else None
+    return None
+
+
+def _over_request(count_node):
+    """Vrai si la demande est explicitement un multiple (>= 2) d'une autre expression."""
+    if isinstance(count_node, ast.BinOp) and isinstance(count_node.op, ast.Mult):
+        factor = _num(count_node.left, {}) or _num(count_node.right, {})
+        if factor is not None and factor >= 2:
+            return True
+    return False
+
+
+def _constants(tree):
+    """Table des constantes numeriques posees sur self (ou en module)."""
+    consts = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        target = node.targets[0]
+        name = None
+        if isinstance(target, ast.Attribute) and isinstance(target.value, ast.Name) \
+                and target.value.id == "self":
+            name = target.attr
+        elif isinstance(target, ast.Name):
+            name = target.id
+        if name is None:
+            continue
+        value = _num(node.value, consts)
+        if value is not None:
+            consts[name] = value
+    return consts
+
+
+def _history_calls(func, consts):
+    """(nom cible, expression de demande, ligne) pour chaque self.history(...)."""
+    out = []
+    for node in ast.walk(func):
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        target = node.targets[0]
+        if not isinstance(target, ast.Name):
+            continue
+        value = node.value
+        if not isinstance(value, ast.Call):
+            continue
+        func = value.func
+        if not (isinstance(func, ast.Attribute) and func.attr == "history"):
+            continue
+        if len(value.args) < 2:
+            continue
+        out.append((target.id, value.args[1], node.lineno))
+    return out
+
+
+def _length_guards(func):
+    """(nom mesure, seuil, operateur, ligne) pour chaque len(x) < N."""
+    out = []
+    for node in ast.walk(func):
+        if not isinstance(node, ast.Compare) or len(node.ops) != 1:
+            continue
+        left = node.left
+        if not (isinstance(left, ast.Call) and isinstance(left.func, ast.Name)
+                and left.func.id == "len" and len(left.args) == 1):
+            continue
+        arg = left.args[0]
+        if not isinstance(arg, ast.Name):
+            continue
+        op = node.ops[0]
+        if not isinstance(op, (ast.Lt, ast.LtE)):
+            continue
+        out.append((arg.id, node.comparators[0], op, node.lineno))
+    return out
+
+
+def analyse_file(path, shortfall):
+    """Renvoie la liste des occurrences mesurees dans un fichier."""
+    with open(path, "r", encoding="utf-8") as handle:
+        source = handle.read()
+    try:
+        tree = ast.parse(source)
+    except SyntaxError as exc:
+        return [{"classe": "ERREUR", "raison": "syntaxe : %s" % exc, "ligne": 0}]
+
+    consts = _constants(tree)
+    findings = []
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            continue
+        histories = _history_calls(node, consts)
+        if not histories:
+            continue
+        guards = _length_guards(node)
+        for name, count_node, line in histories:
+            matched = [g for g in guards if g[0] == name]
+            if not matched:
+                continue
+            guard_name, threshold_node, op, guard_line = matched[0]
+            requested = _num(count_node, consts)
+            threshold = _num(threshold_node, consts)
+            same_expression = ast.dump(count_node) == ast.dump(threshold_node)
+
+            if _over_request(count_node):
+                classe = "PROTEGE"
+                raison = "demande = multiple (>= 2) du seuil"
+            elif same_expression:
+                classe = "EXPOSE"
+                raison = "la garde reprend la demande : elle suppose la fenetre servie en entier"
+            elif requested is not None and threshold is not None:
+                marge = requested - threshold
+                if marge < 0:
+                    classe = "EXPOSE"
+                    raison = "seuil (%s) superieur a la demande (%s)" % (threshold, requested)
+                elif marge < shortfall:
+                    classe = "EXPOSE"
+                    raison = "marge de %s barres, sous le raccourcissement mesure (%s)" % (
+                        marge, shortfall)
+                elif requested >= 2 * threshold:
+                    classe = "PROTEGE"
+                    raison = "demande (%s) >= 2 x seuil (%s)" % (requested, threshold)
+                else:
+                    classe = "RISQUE"
+                    raison = "marge de %s barres, demande (%s) < 2 x seuil (%s)" % (
+                        marge, requested, threshold)
+            else:
+                classe = "INCONNU"
+                raison = "expression non resolue : %s / %s" % (
+                    ast.unparse(count_node), ast.unparse(threshold_node))
+
+            findings.append({
+                "classe": classe,
+                "raison": raison,
+                "fonction": node.name,
+                "ligne": guard_line,
+                "demande": ast.unparse(count_node),
+                "seuil": ast.unparse(threshold_node),
+                "demande_num": requested,
+                "seuil_num": threshold,
+            })
+    return findings
+
+
+def iter_projects(root, projects_dir):
+    base = os.path.join(root, projects_dir)
+    if not os.path.isdir(base):
+        return
+    for project in sorted(os.listdir(base)):
+        project_dir = os.path.join(base, project)
+        if not os.path.isdir(project_dir):
+            continue
+        for name in sorted(os.listdir(project_dir)):
+            if not name.endswith(".py"):
+                continue
+            yield os.path.join(projects_dir, project, name), os.path.join(project_dir, name)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--root", default=".", help="racine du depot")
+    parser.add_argument("--projects-dir", default=DEFAULT_PROJECTS)
+    parser.add_argument("--shortfall", type=int, default=21,
+                        help="raccourcissement mesure sur une demi-seance (barres)")
+    parser.add_argument("--all", action="store_true",
+                        help="affiche aussi les classes non EXPOSE")
+    parser.add_argument("--strict", action="store_true",
+                        help="code de sortie 1 si une occurrence EXPOSE subsiste "
+                             "(mode garde ; par defaut, simple mesure)")
+    parser.add_argument("--json", action="store_true", dest="as_json")
+    args = parser.parse_args(argv)
+
+    rows = []
+    for rel_path, abs_path in iter_projects(args.root, args.projects_dir):
+        if rel_path.replace(os.sep, "/") in EXCEPTIONS:
+            continue
+        for finding in analyse_file(abs_path, args.shortfall):
+            finding["fichier"] = rel_path.replace(os.sep, "/")
+            rows.append(finding)
+
+    exposes = [r for r in rows if r["classe"] == "EXPOSE"]
+    shown = rows if args.all else [r for r in rows if r["classe"] in ("EXPOSE", "ERREUR")]
+
+    if args.as_json:
+        print(json.dumps({
+            "shortfall": args.shortfall,
+            "total": len(rows),
+            "expose": len(exposes),
+            "rows": rows,
+        }, ensure_ascii=False, indent=2))
+    else:
+        print("Recensement #20286 — projects QC, dependance a la longueur de history()")
+        print("Raccourcissement mesure sur une demi-seance : %d barres" % args.shortfall)
+        print()
+        for row in sorted(shown, key=lambda r: (r["fichier"], r["ligne"])):
+            print("%-8s %s:%d  %s()" % (row["classe"], row["fichier"], row["ligne"],
+                                       row.get("fonction", "?")))
+            if row.get("raison"):
+                print("         %s" % row["raison"])
+        print()
+        counts = {}
+        for row in rows:
+            counts[row["classe"]] = counts.get(row["classe"], 0) + 1
+        print("Total : %d occurrence(s) — %s" % (
+            len(rows), ", ".join("%s %d" % (k, counts[k]) for k in sorted(counts)) or "aucune"))
+        print("EXPOSE : %d" % len(exposes))
+        if exposes:
+            print()
+            print("Projets a corriger :")
+            for row in exposes:
+                print("  %s" % row["fichier"])
+
+    return 1 if (exposes and args.strict) else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

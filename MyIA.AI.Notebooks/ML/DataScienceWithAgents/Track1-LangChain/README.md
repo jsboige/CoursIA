@@ -2,7 +2,7 @@
 
 [← DataScienceWithAgents (parent)](../README.md) | [Track2-GoogleADK (Google ADK) →](../Track2-GoogleADK/README.md)
 
-Le track **LangChain** du workshop : 7 labs répartis sur 3 jours qui mènent de la prise en main des outils data science (Journée 1) jusqu'à la construction d'un agent d'analyse de données autonome (Journée 3). C'est le compagnon opérationnel des fondations [`01-PythonForDataScience`](../01-PythonForDataScience/README.md) et [`02-ML-Cours`](../02-ML-Cours/README.md) : on y apprend à orchestrer un LLM pour qu'il accomplisse des tâches data science concrètes — analyser un appel d'offres, pré-qualifier des CVs, nettoyer des données sales, interroger un DataFrame en langage naturel.
+Le track **LangChain** du workshop : 7 labs répartis sur 3 jours qui mènent de la prise en main des outils data science (Journée 1) jusqu'à la construction d'un agent d'analyse de données autonome (Journée 3). C'est le compagnon opérationnel des fondations [`01-Python-For-Data-Science`](../01-Python-For-Data-Science/README.md) et [`02-ML-Cours`](../02-ML-Cours/README.md) : on y apprend à orchestrer un LLM pour qu'il accomplisse des tâches data science concrètes — analyser un appel d'offres, pré-qualifier des CVs, nettoyer des données sales, interroger un DataFrame en langage naturel.
 
 ## Pourquoi cette série
 
@@ -45,7 +45,7 @@ Chaque lab est accompagné de son propre [`README.md`](Day1-Foundations/Labs/REA
 
 ## Prérequis
 
-- Fondations [`01-PythonForDataScience`](../01-PythonForDataScience/README.md) (NumPy/Pandas) et idéalement [`02-ML-Cours`](../02-ML-Cours/README.md) (workflow sklearn).
+- Fondations [`01-Python-For-Data-Science`](../01-Python-For-Data-Science/README.md) (NumPy/Pandas) et idéalement [`02-ML-Cours`](../02-ML-Cours/README.md) (workflow sklearn).
 - **LangChain** + clé API OpenAI (les labs 2, 3, 6, 7 appellent un LLM).
 
 ## Suite logique

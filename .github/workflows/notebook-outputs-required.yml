@@ -55,7 +55,7 @@ concurrency:
 jobs:
   detect-changes:
     name: Detect notebook changes (outputs-required)
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     # Garde anti-fork : un PR depuis un fork externe ne doit pas declencher
     # ce job. Pattern repris de `notebook-execution-required.yml` pour
     # coherence. Le job est GitHub-hosted (ubuntu-latest) -- le detecteur
@@ -103,7 +103,7 @@ jobs:
 
   validate:
     name: Validate 'outputs' key on every code cell
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     needs: detect-changes
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.detect-changes.outputs.has_notebooks > 0
 
