@@ -64,7 +64,7 @@ Au premier fold effectif (c.2249, 2026-10-20), les deux écritures `ai-01#gpu2` 
 
 **Migration** : la canonicalisation change l'entité, donc le digest de l'observation. Une observation **postée avant** la canonicalisation porte le digest de son entité **brute** ; le fold l'accepte sur ce digest historique et la re-keye vers la clé canonique (elle n'est donc **pas perdue**). Un identifiant qui ne correspond ni au digest canonique ni au digest brut reste **rejeté** (`observation_id_mismatch`) : le fail-closed du journal est intact.
 
-Au fold suivant, les deux lignes `ai-01#gpu2` et `myia-ai-01#gpu2` **convergent vers une seule ligne** `myia-ai-01#gpu2`, dont l'`history` par champ conserve les valeurs supersédées. Mesure sur les 37 observations de production : 2 lignes → 1, 0 rejet avant comme après, 37 observations consommées dans les deux cas.
+Au fold suivant, les deux lignes `ai-01#gpu2` et `myia-ai-01#gpu2` **convergent vers une seule ligne** `myia-ai-01#gpu2`, dont l'`history` par champ conserve les valeurs supersédées. Mesure sur les observations de production : la convergence vers la clé canonique ne perd aucune observation et n'introduit aucun rejet — avant comme après, le fold consomme le même ensemble.
 
 **Étendre le roster** : ajouter le nom canonique à `FLEET_MACHINES` (`scripts/coordination/debt_ledger.py`). Le nom court (`<nom sans myia->`) est alors déduit automatiquement ; une forme sans tiret s'ajoute à `MACHINE_ALIASES`. Un roster qui ne contient pas la machine **refuse** ses observations — c'est voulu : une faute de frappe ne doit pas créer une ligne fantôme.
 
