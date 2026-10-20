@@ -16,7 +16,10 @@ lean backtest --algorithm Cloud-RiskParity-Composite/main.py
 ```
 
 ### QC Cloud
-Projet 30820857. Téléverser `main.py`, compiler et lancer un backtest. Période codée en dur : **2018-01-01 → 2025-01-01** (alignée sur la baseline cross-stratégie #1630). Paramètre optionnel `rebalance_days` (défaut 30).
+Projet 30820857. Téléverser `main.py`, compiler et lancer un backtest. Fenêtre par défaut : **2018-01-01 → 2025-01-01** (alignée sur la baseline cross-stratégie #1630), modifiable par les paramètres `start_date` et `end_date` (`%Y%m%d`). Paramètres optionnels :
+
+- `rebalance_days` (défaut 30) ;
+- `mode` : `strategy` par défaut, `spy` et `6040` pour les deux références de la section [Verdict contre références détenues](#verdict-contre-références-détenues-21534).
 
 ## Métriques de backtest
 
@@ -31,7 +34,7 @@ Backtest frais via QC Cloud MCP, 2026-08-14 (`RiskParity-Composite-2018-2025-ali
 | PSR | **0,094 %** | non distinguable du bruit |
 | Ordres | 297 | backtest réel |
 
-**Verdict : NO-BEATS.** Sharpe 0,027, CAGR ~3,5 % : la rotation à double filtre sur cette fenêtre ne bat pas le buy-and-hold SPY (CAGR à deux chiffres 2018-2025). Le plafond structurel du trend-following égal-pondéré sans levier est confirmé (cf catalogue `qc-strategies-status.md` : « contre-exemple pédagogique »).
+**Verdict de cette mesure (2026-08-14) : NO-BEATS.** Il comparait le CAGR de la stratégie (~3,5 %) au CAGR à deux chiffres de SPY sur 2018-2025, sans backtest de SPY ni test. La section [Verdict contre références détenues](#verdict-contre-références-détenues-21534) le remplace par une comparaison testée : `NO BEATS` sur la fenêtre codée, `INCONCLUSIVE` hors échantillon.
 
 | Méthode | Rebalance | Paramètres clés |
 |---------|-----------|-----------------|
@@ -61,11 +64,62 @@ Mesure avant (`main` à `064dc1c732`) et après, sur quatre backtests QC pré-en
 
 Le correctif ne vise pas la performance : il fait partir toutes les décisions à la même heure, sur la clôture du jour de rééquilibrage.
 
+## Verdict contre références détenues (#21534)
+
+Le protocole a été écrit dans #21534 avant le premier backtest, sur le modèle de #21329. Pour un portefeuille multi-actifs, le 60/40 (SPY 60 %, BND 40 %, rééquilibré au début de chaque mois) est la référence naturelle ; SPY détenu fixe le seuil du verdict `NO BEATS`. Les deux références tournent dans le même algorithme que la stratégie :
+
+- avec les mêmes six abonnements ;
+- sous le même modèle de courtage ;
+- avec le même préchauffage de 252 séances.
+
+En mode référence, `on_data` ne fait rien.
+
+Les séries comparées sont la valeur du portefeuille à chaque ouverture de SPY (trace `shadow`). Les tests passent par `Paradox46Benchmarks/significance.py`, avec un taux sans risque nul :
+
+- écart de Sharpe de Ledoit-Wolf ;
+- bootstrap stationnaire ;
+- écart de moyennes de Newey-West.
+
+Sur chaque fenêtre, la correction de Holm porte sur les six p-valeurs.
+
+Règle de verdict, écrite avant la mesure :
+
+- `BEATS` : écart de Sharpe positif et significatif (Holm < 0,05) contre les deux références ;
+- `NO BEATS` : Sharpe de la stratégie inférieur à celui de SPY détenu ;
+- `INCONCLUSIVE` : tous les autres cas.
+
+**Contrôle d'innocuité : tenu.** En mode `strategy`, sur la fenêtre codée, le code instrumenté (projet 38145133) reproduit le backtest du code d'origine (`63302edb192f3ac25750fe0021c1016b`, projet 38145130) :
+
+- 296 ordres sur 296, sans écart de date, de symbole ni de quantité ;
+- 27 statistiques QC sur 27.
+
+Les ordres de la stratégie sont horodatés 16:00 New York, à la clôture de la séance, sur les deux fenêtres ; aucun n'est passé à minuit. La stratégie reste en liquidités pendant ses 30 premiers jours, car le compteur de rééquilibrage part de la date de début ; ces séances comptent dans sa série.
+
+| Fenêtre | Séances | Sharpe stratégie (taux nul) | SPY détenu (taux nul) | 60/40 (taux nul) | p Holm (Ledoit-Wolf, SPY / 60/40) | Verdict |
+|---|---|---|---|---|---|---|
+| Codée, 2018-01-02 → 2024-12-31 | 1761 | 0,350 | 0,758 | 0,751 | 1,0 / 1,0 | **NO BEATS** |
+| Hors échantillon, 2025-01-02 → 2026-07-22 | 388 | 1,500 | 1,063 | 1,180 | 1,0 / 1,0 | **INCONCLUSIVE** |
+
+Statistiques QC (calculées par QC avec son propre taux sans risque). Leurs Sharpe ne se comparent pas à ceux de la table du dessus : QC retranche un taux sans risque non nul et part de ses propres séries quotidiennes, alors que le protocole prend un taux nul sur la valeur du portefeuille à l'ouverture. Le classement des portefeuilles peut donc changer d'une table à l'autre, et le verdict se lit sur la table du dessus.
+
+| Fenêtre | Mode | Sharpe QC (taux de QC, autre échelle) | CAGR | Pire baisse | Ordres | Backtest |
+|---|---|---|---|---|---|---|
+| Codée | stratégie | 0,035 | 3,58 % | 24,4 % | 296 | `612dcc9e67a272b2dafe85a6dc982e8b` |
+| Codée | SPY détenu | 0,496 | 13,58 % | 33,7 % | 3 | `be5102e822d65d785a742dc384db68ab` |
+| Codée | 60/40 | 0,378 | 8,66 % | 21,7 % | 147 | `d82b8a947cadca01d14cb0714f916811` |
+| Hors échantillon | stratégie | 0,989 | 22,47 % | 12,1 % | 76 | `fe725f78b216a529e3dbd78c29772ba2` |
+| Hors échantillon | SPY détenu | 0,647 | 18,40 % | 18,7 % | 2 | `6cd30dea278e0861f1fe727231f53780` |
+| Hors échantillon | 60/40 | 0,548 | 12,71 % | 11,2 % | 30 | `5f210726035d1da458622076e2d9d102` |
+
+Le backtest hors échantillon a été demandé jusqu'au 2026-10-20, mais il s'arrête le 2026-07-22 : les nœuds QC utilisés coupent les backtests environ 90 jours avant la date du jour. Aucun paramètre n'a été réglé sur cette période.
+
+**Lecture.** Sur la fenêtre codée, la stratégie est sous les deux références en Sharpe, sans que l'écart soit significatif : les p brutes de Ledoit-Wolf valent 0,23 contre SPY détenu et 0,25 contre le 60/40. Face au 60/40, à volatilité annuelle presque égale selon QC (10,2 % contre 10,1 %), elle rend 3,6 % par an contre 8,7 %, pour une pire baisse plus forte. Hors échantillon, son Sharpe est le plus haut des trois, sans écart significatif : sur 388 séances, l'intervalle bootstrap à 95 % de l'écart contre SPY détenu va de −0,90 à +1,67. Son rendement quotidien moyen y dépasse à peine celui de SPY détenu (Newey-West, p brute 0,80), avec une volatilité plus basse (11,8 % contre 14,6 %). Le code actuel ne bat donc aucune des deux références de façon mesurable, et passe sous SPY détenu sur sa propre fenêtre.
+
 ## Fichiers
 
 | Fichier | Description |
 |---------|-------------|
-| `main.py` | Rotation parité de risque avec double filtre SMA200 + momentum sur 6 ETF multi-actifs |
+| `main.py` | Rotation à double filtre SMA200 + momentum sur 6 ETF multi-actifs ; paramètres `mode`, `start_date` et `end_date`, trace `shadow` (#21534) |
 
 ## Références
 
