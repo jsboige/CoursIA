@@ -29,7 +29,7 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
-| 1 | [App-32 — Szpiro : Pasten 2026 rend N log log N…](../../MyIA.AI.Notebooks/Search/App-32-Szpiro-Pasten-2026.ipynb) | BETA | Oui |
+| 1 | [App-32 — Szpiro : Pasten 2026 rend N log log N…](../../MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/03-szpiro-pasten-2026.ipynb) | BETA | Oui |
 
 ## Search/Part3-Cas-pratiques (cas pratiques, ex-Applications)
 
