@@ -20,7 +20,7 @@ résultat viendrait s'inscrire au-dessus de son propre dépôt upstream comme
 extension au-dessus de `SocialChoice.*`.
 
 **Source archivée.** Le PDF de référence est déposé au gisement partagé
-depuis le **2026-10-20** (21 pages) ; les renvois « p. N » de ce document
+depuis le **2026-10-20** (20 pages) ; les renvois « p. N » de ce document
 pointent dans ce PDF archivé.
 
 L'option A du périmètre — un carnet Jupyter `07-Committees-Core.ipynb` (PR
@@ -311,4 +311,4 @@ renvoi de page. Table de correspondance :
 - Anti-régression Lean : [anti-regression.md](../../.claude/rules/anti-regression.md)
 - Petersen Tour existant : `SocialChoice/social_choice_lean_peters/PetersTour.lean` + `_en.lean`
 - Submodule upstream : `DominikPeters/SocialChoiceLean` rev `94a4c650b6`
-- PDF archivé : `GameTheory/2026 - Becker Greger Peters - committee elections approval core (arXiv 2609.11912).pdf`, gisement partagé, déposé le 2026-10-20 (21 pages)
+- PDF archivé : `GameTheory/2026 - Becker Greger Peters - committee elections approval core (arXiv 2609.11912).pdf`, gisement partagé, déposé le 2026-10-20 (20 pages)
