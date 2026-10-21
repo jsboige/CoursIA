@@ -26,8 +26,9 @@ La population décrite ici est celle des machines qui portent des grains CoursIA
 | `myia-po-2023` | RTX 3080 + eGPU RTX 3090 (24 Go) | les services GenAI image, audio et vidéo ([genai-services.md](../genai/genai-services.md)) |
 | `myia-po-2024` | RTX 3070 (8 Go) | jeton QuantConnect MCP ; la lane QC isolée |
 | `myia-po-2025` | RTX 3080 Ti laptop (16 Go), sous garde thermique | le titulaire de la coordination ; des workspaces hors CoursIA (claudish, maintenance, workspaces d'école) |
-| `myia-po-2026` | RTX 3080 | le service d'embedding (port `8004`) ; jeton QuantConnect MCP ; le secrétariat ; Hermes |
+| `myia-po-2026` | RTX 3080 | **hors service depuis le 2026-10-09** (panne matérielle). Portait le service d'embedding (port `8004`), un jeton QuantConnect MCP, le secrétariat et Hermes |
 | `myia-po-2027` | RTX 4060 laptop (8 Go) | des lanes worker ; hors du LAN d'ai-01 (voir « Réseau ») |
+| `myia-po-2028` | RTX 3070 Ti laptop (8 Go), 64 Go de RAM ; pas de disque D: (SSD à venir) | remplace `po-2026` depuis le 2026-10-20 : le secrétariat (`CoursIA-3`) et deux lanes worker (`CoursIA`, `CoursIA-2`) en cours d'installation |
 
 La capacité GPU des machines `po-*` est **déclarée** ; elle se confirme par la lane propriétaire avant toute réservation, pas par cette table.
 
@@ -39,7 +40,7 @@ Une lane est un couple `machine:workspace`, animé par un seul agent actif à la
 |---|---|
 | `myia-ai-01:CoursIA` | coordinateur : merges, fermetures, arbitrages, politique de flotte |
 | `myia-po-2025:CoursIA-2` | titulaire : dossiers de prévalidation exact-head, vérifications avant fermeture ; ne merge ni ne ferme |
-| `myia-po-2026:CoursIA-3` | secrétariat : attestations tierces, circulation (DM nominatifs, alertes). Il refuse par contrat les dossiers des PRs `DEEP`, qui reviennent au titulaire |
+| `myia-po-2028:CoursIA-3` | secrétariat (siège de `myia-po-2026:CoursIA-3` jusqu'au 2026-10-20) : attestations tierces, circulation (DM nominatifs, alertes). Il refuse par contrat les dossiers des PRs `DEEP`, qui reviennent au titulaire |
 | `myia-ai-01:CoursIA-2` | worker sur la machine du coordinateur ; régisseur des GPU de la flotte depuis le 2026-10-05. Ne merge ni ne ferme |
 | `myia-po-2024:CoursIA-3` | lane QuantConnect isolée : déploiement des portefeuilles et maintenance de la partie QC, hors du tapis des workers. Elle partage le dashboard `workspace-CoursIA-3` avec le secrétariat : lire l'auteur (`machineId`) avant d'attribuer un message |
 | autres `*:CoursIA` et `*:CoursIA-2` | workers |
