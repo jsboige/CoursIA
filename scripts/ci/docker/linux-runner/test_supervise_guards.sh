@@ -3533,6 +3533,148 @@ STUB
 )
 echo ""
 
+# --- Test 69 : budget -- les slots de la MEME famille en vol sont repris, pas ajoutes (#20727)
+#
+# Mesure ai-01 du 2026-10-14 (#20727) : au redemarrage de coursia-runner.service,
+# `assert_memory_budget` comptait DEUX fois les slots de la generation precedente
+# qui finissaient encore leur job -- une fois dans la somme en vol (running_ci_mb),
+# une fois dans la demande (n x per). Les 3 slots orphelins (4, 6, 10) font
+# PARTIE des 14 demandes : le superviseur attend que le nom soit rendu
+# (reclaim_container_name) avant de relancer le slot, donc un slot ne porte jamais
+# deux conteneurs a la fois, et l'empreinte de la famille reste bornee a n x per.
+#
+# Arithmetique de l'issue (budget 64 Go = 65 536 Mo) :
+#   deja en vol .... 3 x 4096 (orphelins) + 8192 (waiter) = 20 480 Mo
+#   demande ....... 14 x 4096 = 57 344 Mo
+#   AVANT ....... 20 480 + 57 344 = 77 824 > 65 536  -> REFUS (le pool tombe)
+#   APRES ....... 20 480 + (57 344 - 12 288) = 65 536 <= 65 536 -> ACCEPTE
+#
+# Ce test verrouille les quatre proprietes du correctif : la reprise libere le
+# demarrage qui tient, elle ne rend PAS le budget laxiste pour une autre
+# famille, elle n'accepte pas une demande qui deborde reellement, et le
+# predicat de nom reste strict (un conteneur qui porte le prefixe sans etre un
+# slot n'est pas repris).
+echo "Test 69 : budget -- les slots de la meme famille en vol sont repris, pas ajoutes (#20727)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin69"
+  cat > "$TEST_DIR/bin69/docker" <<'STUB'
+#!/usr/bin/env bash
+# Stub dedie : il rend le NOM du conteneur en plus de son cap, pour que le
+# garde puisse distinguer un slot de famille d'un conteneur qui porte le meme
+# prefixe sans etre un slot. STUB_CI_ROWS : lignes "id nom octets".
+if [ "$1" = "-H" ]; then shift 2; fi
+if [ "$1" = "ps" ] && echo "$*" | grep -q 'label=coursia-ci=1'; then
+  printf '%s\n' $STUB_CI_IDS
+  exit 0
+fi
+if [ "$1" = "info" ]; then
+  case "$*" in
+    *'{{.ID}}'*) echo "${STUB_DOCKER_ID:-stub-69}"; exit 0 ;;
+  esac
+  echo ""; exit 0
+fi
+if [ "$1" = "inspect" ]; then
+  fmt="$3"; shift 3
+  for id in "$@"; do
+    row="$(printf '%s\n' "$STUB_CI_ROWS" | awk -v i="$id" '$1 == i { print; exit }')"
+    [ -n "$row" ] || continue
+    name="$(printf '%s' "$row" | awk '{ print $2 }')"
+    bytes="$(printf '%s' "$row" | awk '{ print $3 }')"
+    case "$fmt" in
+      *'{{.Name}}'*) printf '%s %s\n' "$name" "$bytes" ;;
+      *HostConfig.Memory*) echo "$bytes" ;;
+      *) echo "" ;;
+    esac
+  done
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin69/docker"
+  export PATH="$TEST_DIR/bin69:$PATH"
+  # Budget de l'issue : 64 Go, dimensionne au plus juste.
+  export COURSIA_RUNNER_BUDGET_GB=64
+  # 3 slots de la famille `start` (generation precedente, job en cours) a 4096 Mo
+  # + 1 waiter a 8192 Mo.
+  export STUB_CI_IDS="c1 c2 c3 w1"
+  export STUB_CI_ROWS="c1 /test-prefix-69-4 4294967296
+c2 /test-prefix-69-6 4294967296
+c3 /test-prefix-69-10 4294967296
+w1 /test-waiter-1 8589934592"
+  . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1
+
+  # (1) CONTROLE POSITIF : la famille dont des slots sont en vol passe.
+  out="$( (assert_memory_budget start 14 4096m test-prefix-69) 2>&1 )"; rc=$?
+  # Le garde n'affiche le detail du refus que s'il depasse ; ici il passe, donc
+  # la `demande nette` ne s'affiche pas. On verifie la reprise et le total net.
+  if [ "$rc" = "0" ] \
+     && echo "$out" | grep -q "reprise en vol ..... 3 slot(s) de cette famille = 12288 Mo" \
+     && echo "$out" | grep -q "CI en vol 20480 Mo + 45056 Mo demandes"; then
+    ok "les 3 slots deja en vol de la famille sont repris : le demarrage qui tient passe"
+  else
+    ko "la famille avec des slots en vol devrait passer : rc=$rc out='$out'"
+  fi
+
+  # (2) CONTROLE NEGATIF : une AUTRE famille reste refusee au meme etat.
+  out="$( (assert_memory_budget lean 14 4096m test-lean-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && echo "$out" | grep -q "budget CI depasse"; then
+    ok "une autre famille reste refusee : la reprise ne rend pas le budget laxiste"
+  else
+    ko "une autre famille aurait du etre refusee : rc=$rc out='$out'"
+  fi
+
+  # (3) CONTROLE NEGATIF : une demande qui deborde REELLEMENT reste refusee.
+  out="$( (assert_memory_budget start 20 4096m test-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && echo "$out" | grep -q "budget CI depasse"; then
+    ok "une demande qui deborde apres reprise reste refusee"
+  else
+    ko "une demande qui deborde aurait du etre refusee : rc=$rc out='$out'"
+  fi
+
+  # (4) Le predicat de nom est STRICT : un conteneur qui porte le prefixe
+  # sans etre un slot (pas de numero) n'est pas repris.
+  export STUB_CI_IDS="c1 c2 c3 b1"
+  export STUB_CI_ROWS="c1 /test-prefix-69-4 4294967296
+c2 /test-prefix-69-6 4294967296
+c3 /test-prefix-69-10 4294967296
+b1 /test-prefix-69-backup 4294967296"
+  out="$( (assert_memory_budget start 14 4096m test-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" = "0" ] \
+     && echo "$out" | grep -q "reprise en vol ..... 3 slot(s) de cette famille = 12288 Mo" \
+     && echo "$out" | grep -q "CI en vol 16384 Mo + 45056 Mo demandes"; then
+    ok "un conteneur '<prefixe>-backup' n'est pas repris comme un slot de la famille"
+  else
+    ko "le predicat de nom devrait etre strict : rc=$rc out='$out'"
+  fi
+  # (5) BORNE HAUTE (#21494) : `cmd_start` ne relance que `seq 1 n`. Des slots
+  # de numero > n en vol ne sont donc PAS repris. Les compter ferait
+  # sous-compter le garde -- exactement pendant une reduction de slots, quand
+  # la pression memoire est deja haute.
+  #   7 slots 11..17 en vol (28672 Mo), n=10 -> demande 40960 Mo.
+  #   Borne : reprise 0 -> total 69632 Mo > budget 64 Go -> REFUS.
+  #   Sans borne (defaut) : reprise 28672 -> total 40960 Mo -> PASSER A TORT.
+  export STUB_CI_IDS="c1 c2 c3 c4 c5 c6 c7"
+  export STUB_CI_ROWS="c1 /test-prefix-69-11 4294967296
+c2 /test-prefix-69-12 4294967296
+c3 /test-prefix-69-13 4294967296
+c4 /test-prefix-69-14 4294967296
+c5 /test-prefix-69-15 4294967296
+c6 /test-prefix-69-16 4294967296
+c7 /test-prefix-69-17 4294967296"
+  out="$( (assert_memory_budget start 10 4096m test-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] \
+     && echo "$out" | grep -q "budget CI depasse" \
+     && echo "$out" | grep -q "reprise en vol ..... 0 slot(s) de cette famille = 0 Mo" \
+     && echo "$out" | grep -q "total ............... 69632 Mo"; then
+    ok "les slots de numero > n ne sont pas repris : le pic de 17 slots est vu, le demarrage est refuse"
+  else
+    ko "la borne haute devrait refuser (slots 11..17 en vol, n=10) : rc=$rc out='$out'"
+  fi
+)
+echo ""
+
 # --- Verdict agrege ---------------------------------------------------------
 # `|| echo 0` serait un piege ici, et il l'a ete : `grep -c` IMPRIME "0" avant
 # de sortir 1 quand il ne trouve rien, donc le repli SUFFIXE un second zero au
