@@ -27,9 +27,25 @@ answer is usually in the first comment. This organ emits it as an explicit
 manual step rather than guessing at it.
 
 Verdicts:
-    SATURATED   every referenced child issue is CLOSED (exit 1)
-    FRESH       at least one referenced child issue is OPEN (exit 0)
-    UNRESOLVED  the body references no child issue (exit 0, advisory)
+    SATURATED   every referenced issue is CLOSED (exit 1)
+    FRESH       at least one OPEN reference declares a filiation with this
+                umbrella (exit 0)
+    UNRESOLVED  the body references no child issue, the filiation of an OPEN
+                reference could not be read, or every OPEN reference is a
+                cross-reference without declared filiation (exit 0, advisory)
+
+The filiation is read in BOTH directions: the referenced issue may declare
+this umbrella as its parent ("Part of #N", "Fille de #N", ...), and this
+umbrella may declare the referenced issue as its own parent or grand-parent
+("Fille de #17578 ... petite-fille de l'EPIC #10355"). Without that
+distinction, a container whose children are all closed is declared FRESH
+because of an unrelated issue mentioned in prose, and the lane serves a closed
+sub-grain (measured on #4362, c.2266).
+
+The converse is NOT decided here: an umbrella can hold open work that no issue
+declares (a body naming it as a "brique" without a filiation sentence).
+A red would then be forged, so that case stays ADVISORY -- the umbrella's own
+body is the arbiter.
 
 Missing cited paths are reported as `warnings` and never decide the exit code:
 a path may legitimately have moved, and a guard must not fabricate a red on a
@@ -106,8 +122,64 @@ def classify_ref(number: int, raw: dict | None) -> dict:
     }
 
 
-def classify(refs: list[dict], missing_paths: list[str]) -> dict:
-    """Apply the verdict rules. Pure: the caller supplies measured states."""
+# --- relation enfant : l'issue referencee declare-t-elle CET umbrella comme parent ? ---
+#
+# Le corps d'un umbrella cite des numeros qui ne sont pas tous ses enfants : un
+# lien transversal ("voir aussi #4208") se lit comme une reference ouverte et
+# fait dire FRESH a un conteneur vide. Mesure (c.2266) : #4362, umbrella Lean
+# dont les 8 enfants Lean sont CLOSES, etait declare FRESH a cause d'un EPIC
+# sans rapport cite dans son corps -- la lane a donc servi un sous-grain ferme.
+#
+# Le critere mesurable est la declaration faite par l'ENFANT : la convention du
+# depot est que l'issue nomme son parent ("Part of #N"). C'est cette
+# declaration qui fait la relation, et elle se lit sans ambiguite.
+
+def parent_decl_patterns(parent_number: int) -> list[re.Pattern]:
+    """Phrases de declaration de filiation, mesurees sur le corps/titre d'un issue.
+
+    La convention du depot n'a pas une forme unique : un enfant declare son
+    parent ("Part of #N", "Fille de #N", "Sous-issue de #N", "parent: #N") et
+    un petit-enfant declare son grand-parent ("petite-fille de l'EPIC #N",
+    "EPIC grand-mere #N"). Les deux sens sont lus avec le meme jeu de motifs :
+    c'est la FILIATION qui compte, pas le sens ou elle s'exprime.
+    """
+    number = parent_number
+    return [
+        re.compile(rf"part\s+of\s+#{number}\b", re.IGNORECASE),
+        re.compile(rf"child\s+of\s+#{number}\b", re.IGNORECASE),
+        re.compile(rf"fille\s+de\s+#{number}\b", re.IGNORECASE),
+        re.compile(rf"fils\s+de\s+#{number}\b", re.IGNORECASE),
+        re.compile(rf"sous[-\s]issue\s+de\s+#{number}\b", re.IGNORECASE),
+        re.compile(rf"enfant\s+de\s+#{number}\b", re.IGNORECASE),
+        re.compile(rf"issue\s+fille\s+de\s+#{number}\b", re.IGNORECASE),
+        re.compile(rf"parent\s*:?\s+#{number}\b", re.IGNORECASE),
+        re.compile(rf"petite[-\s]fille\s+de\s+(l['’]\s*)?(EPIC\s+)?#{number}\b",
+                   re.IGNORECASE),
+        re.compile(rf"petit[-\s]fils\s+de\s+(l['’]\s*)?(EPIC\s+)?#{number}\b",
+                   re.IGNORECASE),
+        re.compile(rf"grand[-\s]m[eè]re\s+(de\s+)?(l['’]\s*)?(EPIC\s+)?#{number}\b",
+                   re.IGNORECASE),
+        re.compile(rf"anc[eê]tre\s+de\s+#{number}\b", re.IGNORECASE),
+    ]
+
+
+def declares_parent(child_body: str, parent_number: int) -> bool:
+    """Ce corps (ou ce titre) declare-t-il la filiation avec ce numero ?"""
+    body = child_body or ""
+    return any(pattern.search(body) for pattern in parent_decl_patterns(parent_number))
+
+
+def classify(refs: list[dict], missing_paths: list[str],
+             child_flags: dict[int, bool | None] | None = None) -> dict:
+    """Apply the verdict rules. Pure: the caller supplies measured states.
+
+    `child_flags` maps the number of an OPEN referenced issue to the measured
+    FILIATION relation: True (the two issues declare each other as parent /
+    child / grand-parent in one direction or the other), False (no declared
+    filiation -- a cross-reference) or None (unreadable). When it is None the
+    whole mapping is unmeasured, and the verdict keeps its historical reading
+    (any open reference keeps the umbrella FRESH).
+    """
     issues = [r for r in refs if r["kind"] == "issue"]
     open_issues = [r for r in issues if r["state"] == "OPEN"]
 
@@ -128,15 +200,89 @@ def classify(refs: list[dict], missing_paths: list[str]) -> dict:
             "warnings": warnings,
         }
     if open_issues:
+        if child_flags is None:
+            # Relation parent/enfant non mesuree : on garde la lecture
+            # historique (une reference ouverte suffit a dire FRESH).
+            return {
+                "verdict": "FRESH",
+                "reason": (
+                    f"{len(open_issues)} of {len(issues)} referenced child issue(s) "
+                    "are OPEN"
+                ),
+                "child_issues": len(issues),
+                "child_open": len(open_issues),
+                "warnings": warnings,
+            }
+        flags = {r["number"]: child_flags.get(r["number"]) for r in open_issues}
+        declared = sorted(n for n, flag in flags.items() if flag is True)
+        unknown = sorted(n for n, flag in flags.items() if flag is None)
+        cross = sorted(n for n, flag in flags.items() if flag is False)
+        if declared:
+            return {
+                "verdict": "FRESH",
+                "reason": (
+                    f"{len(declared)} referenced child issue(s) declare this "
+                    "umbrella as their parent and are OPEN"
+                ),
+                "child_issues": len(issues),
+                "child_open": len(declared),
+                "warnings": warnings,
+                "children_open": declared,
+                "cross_references": cross,
+            }
+        if unknown:
+            # Fail-CLOSED : une relation qu'on n'a pas pu lire ne fabrique
+            # jamais un rouge.
+            return {
+                "verdict": "UNRESOLVED",
+                "reason": (
+                    "the parent relation of the OPEN referenced issue(s) "
+                    f"{unknown} could not be read -- mechanical verdict "
+                    "unavailable; read the comments for a pending decision "
+                    "(#11900 surface 3)"
+                ),
+                "child_issues": len(issues),
+                "child_open": 0,
+                "warnings": warnings + [
+                    f"relation parent/enfant illisible : #{n}" for n in unknown
+                ],
+                "children_open": [],
+                "cross_references": cross,
+            }
+        # Toutes les references ouvertes sont des liens transversaux : ni elles
+        # ni cet umbrella ne declarent de filiation.
+        #
+        # Le conteneur peut etre vide -- mais ce n'est PAS decidable
+        # mecaniquement, et le verdict rouge reste reserve a la seule lecture non
+        # ambigue (toutes les references fermees).
+        #
+        # Mesure (c.2266, echantillon de 12 EPIC ouverts) : #19821 porte un
+        # travail VIVANT que son corps designe par des "briques" sans issue
+        # fille ("brique 6 -- ombre mensuelle par strategie gelee", "brique 7
+        # -- regles du panier appliquees a une premiere revue", hors-
+        # echantillon de LeveragedETFMomentum #19587, cite sans filiation).
+        # Aucun de ces travaux n'est joignable par une declaration de parent :
+        # un rouge ici aurait fait sauter un conteneur plein.
+        #
+        # Donc : advisory, et le corps de l'umbrella tranche.
         return {
-            "verdict": "FRESH",
+            "verdict": "UNRESOLVED",
             "reason": (
-                f"{len(open_issues)} of {len(issues)} referenced child issue(s) "
-                "are OPEN"
+                f"the {len(cross)} OPEN referenced issue(s) declare no filiation "
+                "with this umbrella (neither they nor it name the other as "
+                "parent/child) -- no declared child is OPEN, but the open work "
+                "may be listed without a filiation declaration: the umbrella's "
+                "own body is the arbiter before picking here"
             ),
             "child_issues": len(issues),
-            "child_open": len(open_issues),
-            "warnings": warnings,
+            "child_open": 0,
+            "warnings": warnings + [
+                f"reference ouverte sans filiation declaree : #{n} "
+                "(ni elle ni cet umbrella ne se nomment parent/enfant)"
+                for n in cross
+            ],
+            "children_open": [],
+            "cross_references": cross,
         }
     return {
         "verdict": "UNRESOLVED",
@@ -184,25 +330,61 @@ def assess(number: int, repo_root: Path, repo: str) -> dict:
 
     body = payload.get("body") or ""
     numbers = extract_refs(body, number)
-    refs = [
-        classify_ref(n, _gh_json(["api", f"repos/{repo}/issues/{n}"]))
-        for n in numbers
-    ]
+    payloads: dict[int, dict | None] = {}
+    refs = []
+    for n in numbers:
+        child_payload = _gh_json(["api", f"repos/{repo}/issues/{n}"])
+        payloads[n] = child_payload
+        refs.append(classify_ref(n, child_payload))
+
+    # Relation de FILIATION, mesuree dans les DEUX sens : l'issue ouverte
+    # referencee declare-t-elle cet umbrella comme son parent (ou grand-
+    # parent), ou cet umbrella declare-t-il cette issue comme son parent ?
+    # Un lien transversal (aucune declaration dans un sens ou dans l'autre)
+    # ne prouve pas que le conteneur est vivant.
+    child_flags: dict[int, bool | None] = {}
+    for ref in refs:
+        if ref["kind"] != "issue" or ref["state"] != "OPEN":
+            continue
+        child_payload = payloads.get(ref["number"])
+        if child_payload is None:
+            child_flags[ref["number"]] = None
+            continue
+        child_body = child_payload.get("body") or ""
+        child_title = child_payload.get("title") or ""
+        kin = (declares_parent(child_body, number)
+               or declares_parent(child_title, number)
+               or declares_parent(body, ref["number"]))
+        child_flags[ref["number"]] = kin
+
     cited = extract_paths(body)
-    result = classify(refs, missing_paths(cited, repo_root))
+    result = classify(refs, missing_paths(cited, repo_root), child_flags)
     result["number"] = number
     result["title"] = payload.get("title") or ""
     result["refs"] = refs
     result["cited_paths"] = cited
+    result["child_flags"] = child_flags
     return result
 
 
 def render_text(result: dict) -> str:
     lines = [f"#{result['number']}  {result['title']}"]
     lines.append(f"  verdict: {result['verdict']} -- {result['reason']}")
+    flags = result.get("child_flags") or {}
     for ref in result.get("refs", []):
         suffix = " (merged)" if ref["merged"] else ""
-        lines.append(f"    #{ref['number']}  {ref['kind']}  {ref['state']}{suffix}")
+        relation = ""
+        if ref["number"] in flags:
+            flag = flags[ref["number"]]
+            if flag is True:
+                relation = "  [enfant declare]"
+            elif flag is False:
+                relation = "  [reference croisee]"
+            else:
+                relation = "  [relation illisible]"
+        lines.append(
+            f"    #{ref['number']}  {ref['kind']}  {ref['state']}{suffix}{relation}"
+        )
     for warning in result.get("warnings", []):
         lines.append(f"    ! {warning}")
     if result["verdict"] == "SATURATED":

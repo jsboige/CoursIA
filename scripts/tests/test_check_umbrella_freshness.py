@@ -21,6 +21,7 @@ from scripts.ci.check_umbrella_freshness import (  # noqa: E402
     assess,
     classify,
     classify_ref,
+    declares_parent,
     extract_paths,
     extract_refs,
     main,
@@ -203,6 +204,93 @@ def test_assess_degrades_to_unknown_without_gh(monkeypatch, tmp_path):
         "scripts.ci.check_umbrella_freshness._gh_json", lambda args: None)
     result = assess(11900, tmp_path, "jsboige/CoursIA")
     assert result["verdict"] == "unknown"
+
+
+# --------------------------------------------------------------------------
+# parent relation (c.2266) -- l'ENFANT declare son parent
+# --------------------------------------------------------------------------
+
+def test_declares_parent_reads_the_child_side_declaration():
+    # La convention du depot : l'issue nomme son parent.
+    assert declares_parent("Part of #4362.\n\nScan + Apply.", 4362) is True
+    assert declares_parent("Enfant de #4362.", 4362) is True
+    assert declares_parent("Sous-issue de #4362", 4362) is True
+    assert declares_parent("parent : #4362", 4362) is True
+
+
+def test_declares_parent_ignores_a_bare_mention():
+    # Un lien transversal dans le corps de l'ENFANT n'est pas une declaration.
+    assert declares_parent("Voir aussi #4362 pour le contexte.", 4362) is False
+    assert declares_parent("Le lac est dans #4362.", 4362) is False
+    assert declares_parent("", 4362) is False
+
+
+def test_declares_parent_is_bounded_to_the_exact_number():
+    # #43620 ne fait pas de #4362 un parent.
+    assert declares_parent("Part of #43620.", 4362) is False
+    assert declares_parent("Part of #4362.", 4362) is True
+
+
+def test_cross_references_only_stay_advisory_not_saturated():
+    """Le cas mesure sur #4362 (c.2266) -- et son correctif.
+
+    Les 8 enfants Lean de l'umbrella sont CLOSES ; la seule reference ouverte
+    (#4208, un EPIC sans rapport cite dans le corps) ne declare PAS #4362
+    comme son parent. L'umbrella est PROBABLEMENT vide, mais ce n'est pas
+    decidable mecaniquement : le conteneur peut porter un travail vivant
+    qu'aucune issue ne declare (mesure : #19821 nomme son reste a faire par
+    des "briques", sans issue fille ni phrase de filiation).
+
+    Un rouge ici ferait sauter un conteneur plein -- donc le verdict rouge
+    reste reserve a la seule lecture non ambigue (toutes les references
+    fermees), et ce cas-ci est ADVISORY.
+    """
+    refs = [_issue(4363, "CLOSED"), _issue(2611, "CLOSED"), _issue(4208, "OPEN")]
+    result = classify(refs, [], {4208: False})
+    assert result["verdict"] == "UNRESOLVED"
+    assert result["child_open"] == 0
+    assert result["cross_references"] == [4208]
+    assert any("#4208" in w for w in result["warnings"])
+
+
+def test_all_issues_closed_is_still_saturated():
+    """Le rouge non ambigu survit : toutes les references fermees."""
+    refs = [_issue(4363, "CLOSED"), _issue(2611, "CLOSED")]
+    result = classify(refs, [], {})
+    assert result["verdict"] == "SATURATED"
+    assert result["child_open"] == 0
+
+
+def test_fresh_when_an_open_reference_declares_the_parent():
+    refs = [_issue(4363, "CLOSED"), _issue(4365, "OPEN")]
+    result = classify(refs, [], {4365: True})
+    assert result["verdict"] == "FRESH"
+    assert result["child_open"] == 1
+    assert result["children_open"] == [4365]
+
+
+def test_unreadable_parent_relation_stays_advisory():
+    """Fail-CLOSED : une relation qu'on n'a pas pu lire ne fabrique pas de rouge."""
+    refs = [_issue(4208, "OPEN")]
+    result = classify(refs, [], {4208: None})
+    assert result["verdict"] == "UNRESOLVED"
+    assert any("#4208" in w for w in result["warnings"])
+
+
+def test_unmeasured_relation_keeps_the_historical_reading():
+    """Sans mesure de la relation, le comportement historique est conserve."""
+    refs = [_issue(15037, "CLOSED"), _issue(15047, "OPEN")]
+    result = classify(refs, [])
+    assert result["verdict"] == "FRESH"
+    assert result["child_open"] == 1
+
+
+def test_render_text_names_the_parent_relation():
+    result = classify([_issue(4208, "OPEN")], [], {4208: False})
+    result.update({"number": 4362, "title": "t", "refs": [_issue(4208, "OPEN")],
+                   "child_flags": {4208: False}})
+    text = render_text(result)
+    assert "reference croisee" in text
 
 
 if __name__ == "__main__":
