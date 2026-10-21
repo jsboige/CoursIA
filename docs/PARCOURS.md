@@ -165,7 +165,7 @@ Cette section donne un **lien direct vers le README de chaque série** depuis `d
 
 Les liens sont relatifs à la racine du dépôt (depuis `docs/`, remonter d'un niveau : `../`).
 
-> **Caveat** : la ligne **Search — Applications / CSP** pointe `../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/README.md` (README parent) — `Search/Applications/CSP/README.md` n'existe pas comme fichier indépendant (vérifié 2026-09-26). Le détecteur considère `Applications/CSP` comme racine de série `independent_chain` ; un README dédié serait une PR séparée, hors du périmètre de ce grain.
+> **Caveat** : la ligne **Search — Applications / CSP** pointe `../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/README.md` (README parent) — l'arborescence historique `Search/Applications/CSP/` n'avait pas de README indépendant (vérifié 2026-09-26), et elle est depuis aplatie dans `Search/Part3-Cas-pratiques/` (#19253, tranche 2). Le détecteur considérait `Applications/CSP` comme racine de série `independent_chain` ; un README dédié resterait une PR séparée, hors du périmètre de ce grain.
 
 | Série | Domaine | Point d'entrée |
 |-------|---------|----------------|
