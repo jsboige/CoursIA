@@ -31,9 +31,11 @@ from check_added_axioms_cliquet import (  # noqa: E402
     NAMELESS_KINDS,
     AnchorHit,
     CliquetReport,
+    declared_line,
     detect_anchors,
     enclosing_declaration,
     parse_declarations,
+    render_text,
     scan_added_lines,
     _git_diff_added_lines,
     _git_rev_list,
@@ -319,3 +321,61 @@ class TestScanAddedLines:
         r = scan_added_lines(base, head, repo_root=repo)
         # Only Init.lean is unchanged; G.lean is gone -- no anchors.
         assert r.hits == []
+
+
+# --------------------------------------------------------------------------- #
+# render_text: la sortie declarative et nominative
+# --------------------------------------------------------------------------- #
+
+
+class TestRenderTextDeclaredLines:
+    """La sortie doit NOMMER l'ancre, pas seulement la compter.
+
+    Mesure du 2026-10-21 : un `ROUGE: 20 anchor(s)` ne dit pas QUELLE
+    declaration rendrait le merge impossible. La ligne
+    `[LEAN-ANCHOR-DECLARED] <fichier>:<decl> -- <motif>` est ce qui rend le
+    diagnostic actionnable sans rejouer le diff.
+    """
+
+    def test_named_anchor_renders_declared_line(self):
+        repo = _make_repo()
+        base = _reset(repo)
+        head = _commit(repo, {"Y.lean": "theorem bar : 1 + 1 = 2 := by native_decide\n"},
+                        "rouge")
+        r = scan_added_lines(base, head, repo_root=repo)
+        text = render_text(r)
+        assert "[LEAN-ANCHOR-DECLARED] Y.lean:theorem bar -- native_decide" in text
+        # Une seule ligne declaree : une ligne par ancre nommee.
+        assert text.count("[LEAN-ANCHOR-DECLARED]") == 1
+
+    def test_example_anchor_renders_no_declared_line(self):
+        repo = _make_repo()
+        base = _reset(repo)
+        head = _commit(repo, {"E.lean": "example : 1 + 1 = 2 := by native_decide\n"},
+                        "green")
+        r = scan_added_lines(base, head, repo_root=repo)
+        text = render_text(r)
+        # Une ancre en `example` est mergeable par conception : rien a declarer.
+        assert "[LEAN-ANCHOR-DECLARED]" not in text
+        assert "GREEN:" in text
+
+    def test_one_declared_line_per_hit_with_its_own_token(self):
+        repo = _make_repo()
+        base = _reset(repo)
+        head = _commit(
+            repo,
+            {
+                "M.lean": (
+                    "theorem a : 1 + 1 = 2 := by native_decide\n"
+                    "lemma b : True := by sorry\n"
+                ),
+            },
+            "rouge",
+        )
+        r = scan_added_lines(base, head, repo_root=repo)
+        text = render_text(r)
+        assert "[LEAN-ANCHOR-DECLARED] M.lean:theorem a -- native_decide" in text
+        assert "[LEAN-ANCHOR-DECLARED] M.lean:lemma b -- sorry" in text
+        assert text.count("[LEAN-ANCHOR-DECLARED]") == 2
+        # L'ordre est celui des hits (deterministe).
+        assert text.index("-- native_decide") < text.index("-- sorry")

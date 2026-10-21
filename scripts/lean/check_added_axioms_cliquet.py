@@ -346,6 +346,17 @@ def scan_added_lines(
 # --------------------------------------------------------------------------- #
 
 
+def declared_line(hit: AnchorHit) -> str:
+    """La ligne declarative et nominative d'une ancre nommee.
+
+    Format : ``[LEAN-ANCHOR-DECLARED] <fichier>:<decl> -- <motif>``. Elle se
+    grep tel quel et se parse sur ``" -- "`` puis sur le premier ``":"`` : le
+    compte seul ne dit pas QUELLE declaration rendrait le merge impossible.
+    """
+    decl = f"{hit.decl_kind} {hit.decl_name}".strip()
+    return f"[LEAN-ANCHOR-DECLARED] {hit.file}:{decl} -- {hit.token}"
+
+
 def render_text(report: CliquetReport) -> str:
     if not report.hits:
         return (
@@ -371,6 +382,12 @@ def render_text(report: CliquetReport) -> str:
             f"ROUGE: {len(named)} anchor(s) in NAMED declarations "
             f"(would be invisible to check_axioms if you re-execute it)."
         )
+        # Une ligne declarative et nominative par ancre nommee : le compte
+        # seul ne dit pas QUELLE declaration rendrait le merge impossible.
+        # Format : `[LEAN-ANCHOR-DECLARED] <fichier>:<decl> -- <motif>` --
+        # se grep tel quel, se parse sur " -- " puis sur le premier ":".
+        for h in named:
+            lines.append(declared_line(h))
     else:
         lines.append("")
         lines.append(
@@ -419,6 +436,7 @@ def main(argv: list[str] | None = None) -> int:
             "lines_added": report.lines_added,
             "hits": [asdict(h) for h in report.hits],
             "hits_in_named": [asdict(h) for h in report.hits_in_named_decls],
+            "declared": [declared_line(h) for h in report.hits_in_named_decls],
         }, indent=2, ensure_ascii=False))
     else:
         print(render_text(report))
