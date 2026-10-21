@@ -1,0 +1,8 @@
+- name: "GameTheory-02c Travelers-Dilemma"
+  family: GameTheory/.NET-Parity
+  python: MyIA.AI.Notebooks/GameTheory/GameTheory-02c-Travelers-Dilemma-Python.ipynb
+  csharp: MyIA.AI.Notebooks/GameTheory/GameTheory-02c-Travelers-Dilemma-CSharp.ipynb
+  parity_level: semantic
+  bridge_verdict: SOTA-OK
+  bridge_verdict_reason: "Paire #8057 jumeau GameTheory-02c (Travelers Dilemma, Presser & Holt 1997) nouvellement enregistree. Census moteur : CS=BCL .NET pur 0 NuGet (modele de jeu + algorithme best-response iterated from-scratch), PY=NumPy + matplotlib pure Python (meme algorithme iterated best-response + viz des trajectoires de claim). Modele solver-free par conception : le dilemme du voyageur EST la lecon (jeu de coordination sur un claim, avec punition pour deviation). Les deux cotes atteignent le SOTA de leur ecosysteme pour cet objectif pedagogique : reimplementation didactique du jeu en information complete. Pair verifiee firsthand (lecture Python + C# : memes equations de gain, meme algorithme best-response iterated, memes etudes de cas). Enregistrement post-strip probeAddresses c.472 (PR #20190) qui avait revele la paire comme UNREGISTERED."
+  known_differences: []
