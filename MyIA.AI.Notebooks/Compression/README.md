@@ -19,7 +19,8 @@ Lean des définitions est prévu par les plis suivants.
 5. **Encoder et décoder** un message avec un code préfixe arbitraire, et détecter les codes ambigus
 6. **Canoniser et décoder par table** : réduire l'en-tête d'un code Huffman à ses seules longueurs (Schwartz-Kallick), puis décoder par table indexée à $2^L$ entrées plutôt que par parcours d'arbre
 7. **Parser et référencer** : remplacer la répétition par un couple (décalage, longueur) dans une fenêtre glissante (LZ77), séparer le parse en flux (littéraux, longueurs, décalages) et mesurer la double couche LZ + entropie
-8. **Arbitrer** entre le coût du modèle et celui des données (principe MDL) : chiffrer la description d'un modèle quantifié, localiser la précision optimale `b*` et vérifier qu'elle croît avec la taille du bloc ; reconnaître ensuite que la complexité de Kolmogorov n'est pas calculable et que trois compresseurs n'en fournissent que des bornes supérieures
+8. **Coder des bits fractionnaires** : briser le plafond du bit entier de Huffman avec ANS — l'état rANS accumule $-\log_2 p$ bits par symbole, tANS fige la machine dans des tables de $2^L$ états, et le cas très déséquilibré (99 %/1 %) montre un facteur onze sur la longueur moyenne
+9. **Arbitrer** entre le coût du modèle et celui des données (principe MDL) : chiffrer la description d'un modèle quantifié, localiser la précision optimale `b*` et vérifier qu'elle croît avec la taille du bloc ; reconnaître ensuite que la complexité de Kolmogorov n'est pas calculable et que trois compresseurs n'en fournissent que des bornes supérieures
 
 ## Carnets
 
@@ -28,6 +29,7 @@ Lean des définitions est prévu par les plis suivants.
 | [Compression-01 — Codes préfixes : de Shannon-Fano à Huffman](Compression-01-ShannonFano-Prefixe-Python.ipynb) | Découverte | codes préfixes, inégalité de Kraft, Shannon-Fano contre Huffman, l'entropie comme borne |
 | [Compression-02 — Huffman canonique : des longueurs aux tables de décodage](Compression-02-HuffmanCanonique-Python.ipynb) | Découverte | forme canonique de Schwartz-Kallick (l'en-tête réduit aux longueurs), table de décodage $2^L$ et son coût mémoire, aller-retour octet-exact sur un extrait réel, débits mesurés contre chiffres cités |
 | [Compression-03 — LZ77 : compresser par références dans une fenêtre glissante](Compression-03-LZ77-Python.ipynb) | Licence | parse LZ77 en littéraux et couples (décalage, longueur), copie chevauchante, structure `LZData` à trois flux sur le modèle zstd, coût d'un triplet et double couche LZ + entropie, débit de la recherche naïve contre un tableau de suffixes |
+| [Compression-04 — ANS : coder des bits fractionnaires par l'état (rANS, tANS)](Compression-04-ANS-Python.ipynb) | Licence | plafond Huffman sur source déséquilibrée, pas rANS et état porteur d'entropie, streaming par blocs avec retour prouvé à M, tables tANS par pavage dyadique et appariement tourné, validation exhaustive des transitions, banc de taux et débits contre Huffman et zlib |
 | [Compression-06 — MDL : décrire le modèle autant que les données](Compression-06-MDL-Kolmogorov-Python.ipynb) | Licence | principe MDL en deux parties, précision optimale `b*` d'un modèle quantifié sur 16 Kio du *Horla*, coût du modèle amorti par `n` mesuré contre la loi en `0,5 log2(n)`, complexité de Kolmogorov non calculable et trois bornes supérieures mesurées |
 
 Compression-02 en une phrase : le récepteur n'a jamais besoin de l'arbre ni
@@ -44,6 +46,17 @@ gratuitement. Le carnet parse 16 Kio du *Horla* en trois flux séparés (le mod�
 de zstd), chiffre la double couche LZ + entropie contre Huffman seul et contre
 zlib, puis mesure le débit de la recherche exhaustive face à un tableau de
 suffixes.
+
+Compression-04 en une phrase : là où chaque mot de code de Huffman paie un bit
+entier, ANS accumule les bits fractionnaires dans un seul état — rANS fait de
+chaque symbole une multiplication réversible d'un entier (le round-trip se
+prouve par le retour exact à l'état initial, par blocs pour borner la mémoire),
+tANS fige la machine dans des tables de $2^L$ états construites par pavage
+dyadique. Le carnet valide chaque codeur par round-trips aléatoires et une
+énumération exhaustive des transitions, puis mesure : sur 16 Kio du *Horla*
+tous les codeurs entropiques collent à l'entropie (écart de 2 à 4 centièmes),
+mais sur une source à 99 %/1 % tANS rend 0,09 bit/symbole là où Huffman rend
+1,0000.
 
 Compression-06 en une phrase : la description d'une donnée se paie en deux fois —
 le modèle, puis les données sous ce modèle — et le bon modèle minimise la somme,
