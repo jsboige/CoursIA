@@ -293,5 +293,33 @@ def test_render_text_names_the_parent_relation():
     assert "reference croisee" in text
 
 
+def test_the_reason_names_the_measured_direction():
+    """Le sens de la filiation est MESURE, pas suppose (revue Hermes #21792).
+
+    Le cas #20233 : c'est l'umbrella qui declare ses references comme ses
+    parents ("Fille de #17578"), l'inverse de ce que le libelle affirmait.
+    """
+    refs = [_issue(17578, "OPEN"), _issue(10355, "OPEN")]
+    result = classify(refs, [], {17578: True, 10355: True},
+                      {17578: "par cet umbrella", 10355: "par cet umbrella"})
+    assert result["verdict"] == "FRESH"
+    assert "par cet umbrella" in result["reason"]
+    assert "declare this umbrella as their parent" not in result["reason"]
+
+
+def test_render_text_announces_the_direction_in_both_senses():
+    for sense, label in (("par eux", "[filiation : par eux]"),
+                         ("par cet umbrella", "[filiation : par cet umbrella]")):
+        result = classify([_issue(4208, "OPEN")], [], {4208: True},
+                          {4208: sense})
+        result.update({"number": 20233, "title": "t",
+                       "refs": [_issue(4208, "OPEN")],
+                       "child_flags": {4208: True},
+                       "child_directions": {4208: sense}})
+        text = render_text(result)
+        assert label in text
+        assert "enfant declare" not in text
+
+
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-v"]))

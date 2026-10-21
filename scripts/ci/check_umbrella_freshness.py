@@ -170,7 +170,8 @@ def declares_parent(child_body: str, parent_number: int) -> bool:
 
 
 def classify(refs: list[dict], missing_paths: list[str],
-             child_flags: dict[int, bool | None] | None = None) -> dict:
+             child_flags: dict[int, bool | None] | None = None,
+             child_directions: dict[int, str] | None = None) -> dict:
     """Apply the verdict rules. Pure: the caller supplies measured states.
 
     `child_flags` maps the number of an OPEN referenced issue to the measured
@@ -179,6 +180,13 @@ def classify(refs: list[dict], missing_paths: list[str],
     filiation -- a cross-reference) or None (unreadable). When it is None the
     whole mapping is unmeasured, and the verdict keeps its historical reading
     (any open reference keeps the umbrella FRESH).
+
+    `child_directions` maps the same numbers to the SENS mesure de la
+    filiation : "par eux" (la reference declare cet umbrella comme son
+    parent) ou "par cet umbrella" (cet umbrella declare la reference comme son
+    parent). Les deux sont des filiations reelles : le rapport ne doit pas
+    pretendre que la reference est un enfant quand c'est l'inverse qui est
+    mesure (revue Hermes sur #21792, cas #20233).
     """
     issues = [r for r in refs if r["kind"] == "issue"]
     open_issues = [r for r in issues if r["state"] == "OPEN"]
@@ -218,17 +226,28 @@ def classify(refs: list[dict], missing_paths: list[str],
         unknown = sorted(n for n, flag in flags.items() if flag is None)
         cross = sorted(n for n, flag in flags.items() if flag is False)
         if declared:
+            # Le SENS de la filiation est mesure, pas suppose : la reference
+            # peut declarer cet umbrella comme son parent ("par eux"), ou
+            # cet umbrella declarer la reference comme son parent ("par cet
+            # umbrella"). Les deux sont des filiations -- le libelle doit
+            # nommer celle qui est mesuree (revue Hermes sur #21792).
+            directions = child_directions or {}
+            senses = sorted({directions.get(n, "") for n in declared} - {""})
+            sense_text = (
+                " (" + ", ".join(senses) + ")" if senses else ""
+            )
             return {
                 "verdict": "FRESH",
                 "reason": (
-                    f"{len(declared)} referenced child issue(s) declare this "
-                    "umbrella as their parent and are OPEN"
+                    f"{len(declared)} referenced issue(s) declare a filiation "
+                    f"with this umbrella{sense_text} and are OPEN"
                 ),
                 "child_issues": len(issues),
                 "child_open": len(declared),
                 "warnings": warnings,
                 "children_open": declared,
                 "cross_references": cross,
+                "filiation_senses": senses,
             }
         if unknown:
             # Fail-CLOSED : une relation qu'on n'a pas pu lire ne fabrique
@@ -343,6 +362,7 @@ def assess(number: int, repo_root: Path, repo: str) -> dict:
     # Un lien transversal (aucune declaration dans un sens ou dans l'autre)
     # ne prouve pas que le conteneur est vivant.
     child_flags: dict[int, bool | None] = {}
+    child_directions: dict[int, str] = {}
     for ref in refs:
         if ref["kind"] != "issue" or ref["state"] != "OPEN":
             continue
@@ -352,18 +372,25 @@ def assess(number: int, repo_root: Path, repo: str) -> dict:
             continue
         child_body = child_payload.get("body") or ""
         child_title = child_payload.get("title") or ""
-        kin = (declares_parent(child_body, number)
-               or declares_parent(child_title, number)
-               or declares_parent(body, ref["number"]))
-        child_flags[ref["number"]] = kin
+        # Le SENS de la filiation est mesure, pas suppose.
+        by_child = (declares_parent(child_body, number)
+                    or declares_parent(child_title, number))
+        by_umbrella = declares_parent(body, ref["number"])
+        if by_child:
+            child_directions[ref["number"]] = "par eux"
+        elif by_umbrella:
+            child_directions[ref["number"]] = "par cet umbrella"
+        child_flags[ref["number"]] = by_child or by_umbrella
 
     cited = extract_paths(body)
-    result = classify(refs, missing_paths(cited, repo_root), child_flags)
+    result = classify(refs, missing_paths(cited, repo_root), child_flags,
+                      child_directions)
     result["number"] = number
     result["title"] = payload.get("title") or ""
     result["refs"] = refs
     result["cited_paths"] = cited
     result["child_flags"] = child_flags
+    result["child_directions"] = child_directions
     return result
 
 
@@ -371,13 +398,24 @@ def render_text(result: dict) -> str:
     lines = [f"#{result['number']}  {result['title']}"]
     lines.append(f"  verdict: {result['verdict']} -- {result['reason']}")
     flags = result.get("child_flags") or {}
+    directions = result.get("child_directions") or {}
     for ref in result.get("refs", []):
         suffix = " (merged)" if ref["merged"] else ""
         relation = ""
         if ref["number"] in flags:
             flag = flags[ref["number"]]
             if flag is True:
-                relation = "  [enfant declare]"
+                # Le sens mesure est nomme : la reference peut etre l'enfant
+                # (elle declare cet umbrella) ou le parent (cet umbrella la
+                # declare). "enfant declare" sans precision serait faux dans
+                # le deuxieme sens.
+                sense = directions.get(ref["number"])
+                if sense == "par eux":
+                    relation = "  [filiation : par eux]"
+                elif sense == "par cet umbrella":
+                    relation = "  [filiation : par cet umbrella]"
+                else:
+                    relation = "  [filiation declaree]"
             elif flag is False:
                 relation = "  [reference croisee]"
             else:
