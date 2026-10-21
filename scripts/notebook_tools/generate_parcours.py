@@ -247,6 +247,7 @@ def generate_parcours_page(
     parcours_id: str,
     entries: list[dict],
     unresolved: list[str] | None = None,
+    notebooks_root: Path | None = None,
 ) -> str:
     """Generate markdown page for a single parcours.
 
@@ -256,7 +257,12 @@ def generate_parcours_page(
     row. A stale catalogue (famine-delayed cron regen merging on ``main`` after
     a rename, #20552) would otherwise re-inject a ghost row on every
     regeneration and drift the page away from the committed tree.
+
+    ``notebooks_root`` (optional) overrides the disk root the existence checks
+    run against (same contract as ``resolve_moved_entries``); tests materialize
+    their fixture entries under a tmp_path instead of relying on the real tree.
     """
+    root = notebooks_root if notebooks_root is not None else REPO_ROOT / "MyIA.AI.Notebooks"
     # #14880 hardened the emission (bare label, no 404ing href); #20552 showed
     # the bare row itself is the non-idempotence: the committed page carries no
     # row for the ghost notebook, so every regen from the stale catalogue
@@ -264,7 +270,7 @@ def generate_parcours_page(
     # and rows stay consistent with what the page actually emits.
     present: list[dict] = []
     for e in entries:
-        if (REPO_ROOT / "MyIA.AI.Notebooks" / e["path"]).exists():
+        if (root / e["path"]).exists():
             present.append(e)
         elif unresolved is not None:
             unresolved.append(e["path"])
@@ -335,7 +341,7 @@ def generate_parcours_page(
             # the stats block (top of function), so this guard should not fire
             # on catalogue entries; it still covers a path vanishing between
             # the partition and the emission.
-            if (REPO_ROOT / "MyIA.AI.Notebooks" / e["path"]).exists():
+            if (root / e["path"]).exists():
                 href = quote(f"../../MyIA.AI.Notebooks/{e['path']}")
                 cell = f"[{label}]({href})"
             else:
