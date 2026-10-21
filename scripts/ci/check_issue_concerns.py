@@ -28,10 +28,11 @@ Ce qui reste apres les signatures n'est PAS un verdict : l'intention declaree
 filtrante** — les marqueurs de vocabulaire sont cites par les lanes elles-memes
 (« décision user », « le user a tranché »), s'en servir comme filtre ecarterait
 de vraies remarques. Le plancher ``MANUAL_REVIEW`` s'applique tel quel : la liste
-est complete, quitte a sur-signaler ; l'arbitrage fin revient a la lecture
-(phase 1 de la campagne).
+est complete **du point de vue de l'inclusion**, quitte a sur-signaler ; l'arbitrage
+fin revient a la lecture (phase 1 de la campagne). L'exclusion, elle, a un trou
+connu et nomme ci-dessous (``cycle-watermark``).
 
-Deux pieges mesures, et la raison pour laquelle ce n'est pas un ``grep`` :
+Trois pieges mesures, et la raison pour laquelle ce n'est pas un ``grep`` :
 
 * **FP classe 1 — l'accuse de reception d'une lane.** Sous le login partage, une
   lane repond « Concern pris en compte » : un ``^Concern`` naif le compte comme un
@@ -40,6 +41,16 @@ Deux pieges mesures, et la raison pour laquelle ce n'est pas un ``grep`` :
 * **La reponse n'est pas garantie de citer le mot.** #18601 : la reponse existe et
   ne dit jamais « Concern » — elle cite l'horodatage du Concern. Exiger le mot
   fabriquerait un faux « sans reponse ».
+* **L'exclusion silencieuse par ``cycle-watermark``.** La cinquieme signature
+  (``c.`` suivi de trois chiffres ou plus) identifie le filigrane de cycle d'une
+  lane — mais le meme motif matche un **identifiant de commentaire** : une
+  remarque du mainteneur qui cite un id de commentaire sort du recensement
+  **sans trace** — elle n'apparait ni comme candidate, ni comme
+  ``MANUAL_REVIEW``. Le census est donc plus large que la population reelle, et
+  « la liste est complete » doit se lire « complete du point de vue de
+  l'inclusion ». La borne est assumee (rendre l'exclusion plus fine=deplacer le
+  chiffre du census) et nommee ici pour ne pas etre decouverte par surprise
+  (#21561, point de revue non leve avant la fermeture de cette PR).
 
 Un geste de lane pose apres le Concern (claim, verification, livraison, dossier de
 cloture) n'est **pas** une reponse : il laisse le Concern ouvert et leve le drapeau
