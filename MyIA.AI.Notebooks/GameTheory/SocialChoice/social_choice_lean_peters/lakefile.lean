@@ -74,3 +74,28 @@ lean_lib «ApprovalCore» where
 @[default_target]
 lean_lib «ApprovalPareto» where
   globs := #[`ApprovalPareto, `ApprovalPareto_en]
+
+/-
+  Residu du plan #17988 — quotas Hare `n/k` et Droop `n/(k+1)`, seuil de
+  coalition entier exact (`IsQuotaLarge`).
+
+  `ApprovalQuota` (FR) et `ApprovalQuota_en` (EN) forment une paire i18n
+  #4980 (sibling byte-identical hors commentaires). Le glob EN est explicite
+  pour éviter l'orphan-trap #6749. Voir `scripts/lean/check_i18n_siblings.py`.
+-/
+@[default_target]
+lean_lib «ApprovalQuota» where
+  globs := #[`ApprovalQuota, `ApprovalQuota_en]
+
+/-
+  Residu du plan #17988 — non-vacuité du core sur les profils de consensus
+  et cas borné explicite (`exists_inCore_of_common_approval`).
+
+  `ApprovalConsensus` (FR) et `ApprovalConsensus_en` (EN) forment une paire
+  i18n #4980 (sibling byte-identical hors commentaires). Le glob EN est
+  explicite pour éviter l'orphan-trap #6749. Voir
+  `scripts/lean/check_i18n_siblings.py`.
+-/
+@[default_target]
+lean_lib «ApprovalConsensus» where
+  globs := #[`ApprovalConsensus, `ApprovalConsensus_en]
