@@ -119,6 +119,7 @@ jobs:
     # 33691615314, runner myia-ai-01-linux-docker-6, success en 34 s.
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retirer le `if:`.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 25
 
@@ -1302,6 +1303,12 @@ jobs:
           # pour le workflow dedie md-content-loss-gate.yml et les tests
           # unitaires (cf PR #13673 follow-up c.715).
           MD_CONTENT_LOSS_PR_BODY: ${{ github.event.pull_request.body }}
+          # #21552 : meme canal in-memory pour le ratchet Output-collapse.
+          # Sans lui, le garde bloquant rendait `0 justified in body` sur
+          # toute PR : l'echappatoire `## Output-collapse justification`
+          # etait structurellement injoignable, et un `MAGNITUDE` justifie
+          # restait un rouge qu'aucun geste de lane ne pouvait lever.
+          COLLAPSE_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           git fetch origin "${{ github.base_ref }}" -q
           python scripts/ci/fast_lane.py --shadow
@@ -1440,6 +1447,22 @@ jobs:
         continue-on-error: true
         run: python scripts/ci/check_secret_paths_ignored.py --repo .
 
+      # #20919 -- garde des valeurs reelles dans les fichiers *.env.example /
+      # *.env.sample / *.env.template. gitleaks reconnait les formats de cles
+      # connus (sk-..., ghp_..., AIza...), il ne voit pas une phrase secrete
+      # faite d'un mot ordinaire (cas fondateur 'Propaganda' sur
+      # TEXT_CONFIG_PASSPHRASE dans SymbolicAI/Argument_Analysis/.env.example).
+      # L'organe verifie 32 fichiers traces git : pour chaque cle dont le nom
+      # matche (?i)(PASS|SECRET|TOKEN|KEY|PWD), la valeur doit etre un marqueur
+      # (vide, your_..._here, <...>, hf_..., sk-..., 0x<...>, URL, chemin,
+      # numerique, modele) ou porter une exemption inline. Sortie : 0 OK,
+      # 1 DEFECT, 2 UNREACHABLE. Substitue aux 32 grep manuels par les reviewers.
+      - name: "Valeurs reelles dans les .env.example (gitleaks ne voit pas les mots ordinaires) (#20919)"
+        id: env_example_secrets
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: python scripts/ci/check_env_example_secrets.py --root .
+
       # #18835 -- detecteur OSS signature (Aliyun presigned URL fragments
       # dans JSON / notebook outputs / prose py-cs-md en mode --strict).
       # Avant ce PR, l'organe etait isole, jamais arme (CR myia-ai-01
@@ -1534,6 +1557,7 @@ jobs:
           check results_weight "${{ steps.results_weight.outcome }}"
           check grothendieck_umbrella "${{ steps.grothendieck_umbrella.outcome }}"
           check secret_paths_ignored "${{ steps.secret_paths_ignored.outcome }}"
+          check env_example_secrets "${{ steps.env_example_secrets.outcome }}"
           check oss_signature "${{ steps.oss_signature.outcome }}"
           if [ -n "$FAILED" ]; then
             echo "::error::Organes bloquants en echec :$FAILED (le detail est dans les steps correspondants ci-dessus)."
