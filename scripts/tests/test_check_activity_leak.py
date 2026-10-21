@@ -345,16 +345,11 @@ class TestDiffParity(unittest.TestCase):
         base_keys = _markdown_paragraphs_of_blob(head)
         self.assertEqual(keys, base_keys)
 
-    def test_new_file_paragraphs_are_added(self):
-        """Statut A : tous les paragraphes sont legitimement neufs."""
-        added, files, incidents = scan_diff("7a0521584^...7a0521584")
-        self.assertEqual(incidents, [], "un ajout franc ne doit pas etre un incident")
-        self.assertTrue(added, "le commit fondateur ajoute un corrigendum dense")
-        self.assertIn(
-            "MyIA.AI.Notebooks/GameTheory/SocialChoice/"
-            "09-Committees-STV-Monroe-ChamberlinCourant.ipynb",
-            files,
-        )
+    # test_new_file_paragraphs_are_added a migre vers
+    # TestHeadAndRenameHermetic : la tete est lue dans l'arbre de TRAVAIL,
+    # donc un ancrage historique (7a0521584, SC-09 #19372) depend d'un
+    # contenu que l'histoire peut retirer -- #20252 a purge les corrigenda
+    # du carnet et le test est devenu rouge sur main, sans defaut du garde.
 
     def test_broken_base_is_incident_not_refusal(self):
         """Base illisible : INCONNU (rc=2), jamais un refus fantome.
@@ -543,6 +538,34 @@ class TestHeadAndRenameHermetic(unittest.TestCase):
         self.assertEqual(incidents, [])
         self.assertIn("serie/renomme.ipynb", files)
         self.assertTrue(added, "le passage dense ajoute au renommage doit etre juge")
+
+    def test_new_file_paragraphs_are_added(self):
+        """Statut A : tous les paragraphes sont legitimement neufs.
+
+        Autoportant : l'ancrage historique precedent (7a0521584, SC-09
+        #19372) a casse quand #20252 a purge les corrigenda du carnet. La
+        tete etant lue dans l'arbre de TRAVAIL, un fixture historique depend
+        d'un contenu que l'histoire peut retirer -- un commit synthetique
+        mesure la meme propriete sans cette dependance.
+        """
+        Path("serie/neuf.ipynb").write_text(
+            json.dumps({"cells": [
+                {"cell_type": "markdown",
+                 "source": ["Un paragraphe de cours ordinaire sur les coalitions."]},
+                {"cell_type": "markdown",
+                 "source": [
+                     "## Corrigendum c.1209\n\n",
+                     "Dossier de domaine de la lane `myia-po-2024:CoursIA-2` "
+                     "avec verdict `domain: fail` et tete `27d7e0541d`.",
+                 ]},
+            ]}),
+            encoding="utf-8",
+        )
+        self._commit_all(Path.cwd(), "nouveau carnet")
+        added, files, incidents = scan_diff("HEAD^...HEAD")
+        self.assertEqual(incidents, [], "un ajout franc ne doit pas etre un incident")
+        self.assertTrue(added, "le commit fondateur ajoute un corrigendum dense")
+        self.assertIn("serie/neuf.ipynb", files)
 
 
 class TestNotebookScan(unittest.TestCase):
