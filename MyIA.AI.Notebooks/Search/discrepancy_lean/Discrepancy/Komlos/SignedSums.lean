@@ -16,6 +16,11 @@ arbitrée en k2.6a), puis l'assemblage final lui-même (k2.6c) : le carré réel
 inductive à deux ensembles `exists_colouring_aux` (fermeture `S` + support
 exact `E` — le prix `Finset` du support canonique du `Finsupp` de l'oracle)
 et l'énoncé public `exists_isColouring_mean_add_sum_mem_convexHull`.
+Réserve k5.2 (défaut mesuré, chantier #21417) : l'énoncé public tel que livré
+le 10-06 était **vacuose** hors famille nulle — le témoin
+`contention_stability_forces_zero` le démontre, et le jeu de clauses
+`clauseSet` (crans P3/P4) le corrige ; ce renvoi partira avec la dernière
+trace de l'ancien énoncé.
 -/
 
 import Discrepancy.Basic
@@ -685,6 +690,90 @@ theorem contention_stability_forces_zero {d n : ℕ} (v : Fin n → (Fin d → �
   have hcoord : (3 • v i) j = 0 := congrFun h3 j
   simpa [Pi.smul_apply] using hcoord
 
+/-! ### Le certificat de satisfiabilité générale du correctif #21417
+
+La porte `exists_colouring_aux` ne porte plus d'ensemble stable `A` : elle
+attend un **jeu de clauses** `B` contenant les sommes à coefficients bornés
+par `2` en les générateurs `3 • v i` — fourni par l'appelant dans l'énoncé
+public (`hclauses`).
+
+Cette section livre l'instance **générale** : pour toute famille
+`v : Fin n → (Fin d → ℤ)`, y compris non nulle, la boîte des coefficients
+`[-2, 2]^n` a une image finie de cardinal majoré par `5 ^ n`, et cette image
+satisfait l'hypothèse de la porte. C'est le « 5ⁿ points » du chantier,
+**mesuré** ici plutôt que décrit. Le corollaire qui suit câble cette
+instance dans l'énoncé public, et le témoin grille de la section d'après
+la consomme — son jeu de clauses particulier est le général en `d = 1`. -/
+
+/-- **Le jeu de clauses explicite** : l'image de la boîte `[-2, 2]^n` des
+coefficients par la somme `c ↦ ∑ i, c i • (3 • v i)`.
+
+Aucune stabilité n'est requise de cet ensemble : la croissance de `S`
+suffit à satisfaire `SupportContained S P (clauseSet v)`
+(`supportContained_biUnion`), ce qui est précisément la propriété que
+l'ancienne forme de la contention n'avait pas. -/
+noncomputable def clauseSet {d n : ℕ} (v : Fin n → (Fin d → ℤ)) : Finset (Fin d → ℤ) :=
+  (Fintype.piFinset (fun _ : Fin n => Finset.Icc (-2 : ℤ) 2)).image
+    (fun c => ∑ i, c i • (3 • v i))
+
+/-- L'hypothèse de la porte est satisfaite **par construction** : toute
+somme à coefficients bornés par `2` est dans `clauseSet v`. -/
+theorem clauseSet_clauses {d n : ℕ} (v : Fin n → (Fin d → ℤ))
+    (f : Fin n → ℤ) (hf : ∀ i, |f i| ≤ 2) :
+    ∑ i, f i • (3 • v i) ∈ clauseSet v := by
+  refine Finset.mem_image.mpr ⟨f, ?_, rfl⟩
+  rw [Fintype.mem_piFinset]
+  intro i
+  obtain ⟨h1, h2⟩ := abs_le.mp (hf i)
+  exact Finset.mem_Icc.mpr ⟨h1, h2⟩
+
+/-- **Borne de taille** : le jeu de clauses a au plus `5 ^ n` points — la
+boîte a `5 ^ n` coefficients, et l'image ne peut qu'en réduire le
+cardinal. -/
+theorem clauseSet_card_le {d n : ℕ} (v : Fin n → (Fin d → ℤ)) :
+    (clauseSet v).card ≤ 5 ^ n := by
+  calc (clauseSet v).card
+      ≤ (Fintype.piFinset (fun _ : Fin n => Finset.Icc (-2 : ℤ) 2)).card :=
+        Finset.card_image_le
+    _ = (Finset.Icc (-2 : ℤ) 2).card ^ n := Fintype.card_piFinset_const _ n
+    _ = 5 ^ n := by
+        have h5 : (Finset.Icc (-2 : ℤ) 2).card = 5 := by
+          rw [Int.card_Icc]
+          simp
+        rw [h5]
+
+/-- **Le certificat de non-vacuité du correctif #21417** : pour *toute*
+famille `v`, y compris non nulle, il existe un jeu de clauses fini de
+cardinal `≤ 5 ^ n` qui satisfait l'hypothèse de la porte. Combiné au témoin
+`contention_stability_forces_zero` — la forme historique, elle,
+insatisfiable dès `v ≠ 0` — c'est la preuve que le correctif a rendu
+l'énoncé instanciable hors du régime `v = 0`. -/
+theorem exists_clauseSet_of_any_family {d n : ℕ} (v : Fin n → (Fin d → ℤ)) :
+    ∃ B : Finset (Fin d → ℤ),
+      (∀ f : Fin n → ℤ, (∀ i, |f i| ≤ 2) → ∑ i, f i • (3 • v i) ∈ B) ∧
+        B.card ≤ 5 ^ n :=
+  ⟨clauseSet v, clauseSet_clauses v, clauseSet_card_le v⟩
+
+
+/-- **Le Lemme 1.4 prêt à consommer** : l'énoncé public instancié sur le jeu
+de clauses général `clauseSet v`. L'appelant ne construit plus ni `B` ni
+`hclauses` — couverts par `clauseSet_clauses` — ; il ne reste que la
+contention de la distribution (`SupportContained S P (clauseSet v)`,
+satisfaisable par grande boîte via `supportContained_biUnion`) et la borne
+de distance `hv`. C'est la forme que consomme l'assemblage k5.2 (GridCase). -/
+theorem exists_isColouring_mean_add_sum_mem_convexHull_of_clauseSet (n d : ℕ)
+    (S : Finset (Fin d → ℤ)) (P : (Fin d → ℤ) → ℝ) (hP0 : ∀ x, 0 ≤ P x)
+    (hmass : ∑ x ∈ S, P x = 1) (hPsupp : ∀ x, P x ≠ 0 → x ∈ S)
+    (v : Fin n → (Fin d → ℤ))
+    (hB : SupportContained S P (clauseSet v))
+    (hv : ∀ i, shiftDistance S P (6 • v i) ≤ 3⁻¹) :
+    ∃ ε : Fin n → ℤ, (∀ i, ε i = 1 ∨ ε i = -1) ∧
+      (fun j => coordMoment P S j + ∑ i, (ε i : ℝ) * (v i j : ℝ)) ∈
+        convexHull ℝ
+          ↑(S.map (⟨⇑toReal, toReal_injective⟩ : (Fin d → ℤ) ↪ (Fin d → ℝ))) :=
+  exists_isColouring_mean_add_sum_mem_convexHull n d S (clauseSet v) P hP0 hmass hPsupp v
+    (clauseSet_clauses v) hB hv
+
 /-! ### Contrôle positif k5.2 (chantier #21417, cran P4)
 
 L'énoncé public corrigé n'est pas seulement non vide par construction : il
@@ -804,19 +893,42 @@ theorem gridP_support : ∀ x, gridP x ≠ 0 → x ∈ gridBox := by
     norm_num at hx
   exact gridSupport_subset_gridBox hmem
 
+/-- **Le témoin grille est l'instance `d = 1` du jeu général** : les cinq
+sommes `{−6, −3, 0, 3, 6}` sont exactement l'image de `[-2, 2]^1` sous la
+somme de `clauseSet gridV` — le particulier coïncide avec le général, et
+les clauses du témoin se relisent sur lui. -/
+theorem gridClauses_eq_clauseSet : gridClauses = clauseSet gridV := by
+  ext z
+  simp only [gridClauses, clauseSet, Finset.mem_image]
+  constructor
+  · rintro ⟨j, hj, rfl⟩
+    refine ⟨fun _ => j, ?_, ?_⟩
+    · rw [Fintype.mem_piFinset]
+      intro i
+      obtain ⟨h1, h2⟩ := Finset.mem_Ico.mp hj
+      exact Finset.mem_Icc.mpr ⟨h1, by omega⟩
+    · funext q
+      rw [Fin.sum_univ_one]
+      simp only [gridV, gridPoint, Pi.smul_apply]
+      ring
+  · rintro ⟨c, hc, rfl⟩
+    rw [Fintype.mem_piFinset] at hc
+    obtain ⟨h1, h2⟩ := Finset.mem_Icc.mp (hc 0)
+    refine ⟨c 0, ?_, ?_⟩
+    · simp only [Finset.mem_Ico]
+      omega
+    · funext q
+      rw [Fin.sum_univ_one]
+      simp only [gridV, gridPoint, Pi.smul_apply]
+      ring
+
+/-- Le jeu de clauses du témoin satisfait la porte — **par le pont vers le
+général** : `gridClauses_eq_clauseSet` puis `clauseSet_clauses`. -/
 theorem gridClauses_clauses :
     ∀ f : Fin 1 → ℤ, (∀ i, |f i| ≤ 2) → ∑ i, f i • (3 • gridV i) ∈ gridClauses := by
   intro f hf
-  obtain ⟨h1, h2⟩ := abs_le.mp (hf 0)
-  rw [Fin.sum_univ_one]
-  have hval : f 0 • (3 • gridV 0) = gridPoint (3 * f 0) := by
-    funext j
-    simp only [gridV, gridPoint, Pi.smul_apply]
-    ring
-  rw [hval]
-  refine Finset.mem_image.mpr ⟨f 0, ?_, congrArg gridPoint rfl⟩
-  simp only [Finset.mem_Ico]
-  omega
+  rw [gridClauses_eq_clauseSet]
+  exact clauseSet_clauses gridV f hf
 
 theorem grid_contained : SupportContained gridBox gridP gridClauses := by
   intro z hz w hw
@@ -906,17 +1018,23 @@ theorem gridV_nonzero : gridV 0 ≠ 0 := by
   rw [h] at h0
   simp at h0
 
-/-- **Le contrôle positif** : l'énoncé public corrigé du Lemme 1.4
-s'applique au témoin — une famille `v` **non nulle** (`gridV 0 = 1`) avec
-toutes ses hypothèses satisfaites (`hmass`, `hclauses`, `hB`, `hv` avec
-`Δ = 1/4 < 3⁻¹`). -/
+/-- **Le contrôle positif** : l'énoncé public **instancié** du Lemme 1.4
+s'applique au témoin — une famille `v` **non nulle** (`gridV 0 = 1`) dont
+toutes ses hypothèses sont satisfaites : `hmass`, la contention
+`SupportContained gridBox gridP (clauseSet gridV)` (le général, transporté
+depuis `grid_contained` par le pont) et `hv` avec `Δ = 1/4 < 3⁻¹`. La forme
+consommée est `exists_isColouring_mean_add_sum_mem_convexHull_of_clauseSet` :
+le témoin ne construit plus son jeu de clauses, il instancie le général. -/
 theorem exists_isColouring_grid_nonzero_v :
     ∃ ε : Fin 1 → ℤ, (∀ i, ε i = 1 ∨ ε i = -1) ∧
       (fun j => coordMoment gridP gridBox j + ∑ i, (ε i : ℝ) * (gridV i j : ℝ)) ∈
         convexHull ℝ
           ↑(gridBox.map (⟨⇑toReal, toReal_injective⟩ : (Fin 1 → ℤ) ↪ (Fin 1 → ℝ))) := by
-  refine exists_isColouring_mean_add_sum_mem_convexHull 1 1 gridBox gridClauses gridP
-    gridP_nonneg gridP_mass gridP_support gridV gridClauses_clauses grid_contained ?_
+  have hB : SupportContained gridBox gridP (clauseSet gridV) := by
+    rw [← gridClauses_eq_clauseSet]
+    exact grid_contained
+  refine exists_isColouring_mean_add_sum_mem_convexHull_of_clauseSet 1 1 gridBox gridP
+    gridP_nonneg gridP_mass gridP_support gridV hB ?_
   intro i
   fin_cases i
   exact grid_shiftDistance_le
@@ -933,68 +1051,5 @@ theorem old_form_unsatisfiable_for_gridV :
   rintro ⟨A, hA0, hAstab⟩
   exact gridV_nonzero
     (contention_stability_forces_zero gridV hA0 (fun a ha _ => hAstab a ha) 0)
-
-/-! ### Le certificat de satisfiabilité générale du correctif #21417
-
-La porte `exists_colouring_aux` ne porte plus d'ensemble stable `A` : elle
-attend un **jeu de clauses** `B` contenant les sommes à coefficients bornés
-par `2` en les générateurs `3 • v i`. Les contrôles livrés jusqu'ici sont
-particuliers — `gridClauses` (témoin grille `d = 1`, P4) — ou négatifs
-(`contention_stability_forces_zero` pour la forme historique).
-
-Cette section livre l'instance **générale** : pour toute famille
-`v : Fin n → (Fin d → ℤ)`, y compris non nulle, la boîte des coefficients
-`[-2, 2]^n` a une image finie de cardinal majoré par `5 ^ n`, et cette image
-satisfait l'hypothèse de la porte. C'est le « 5ⁿ points » du chantier,
-**mesuré** ici plutôt que décrit. -/
-
-/-- **Le jeu de clauses explicite** : l'image de la boîte `[-2, 2]^n` des
-coefficients par la somme `c ↦ ∑ i, c i • (3 • v i)`.
-
-Aucune stabilité n'est requise de cet ensemble : la croissance de `S`
-suffit à satisfaire `SupportContained S P (clauseSet v)`
-(`supportContained_biUnion`), ce qui est précisément la propriété que
-l'ancienne forme de la contention n'avait pas. -/
-noncomputable def clauseSet {d n : ℕ} (v : Fin n → (Fin d → ℤ)) : Finset (Fin d → ℤ) :=
-  (Fintype.piFinset (fun _ : Fin n => Finset.Icc (-2 : ℤ) 2)).image
-    (fun c => ∑ i, c i • (3 • v i))
-
-/-- L'hypothèse de la porte est satisfaite **par construction** : toute
-somme à coefficients bornés par `2` est dans `clauseSet v`. -/
-theorem clauseSet_clauses {d n : ℕ} (v : Fin n → (Fin d → ℤ))
-    (f : Fin n → ℤ) (hf : ∀ i, |f i| ≤ 2) :
-    ∑ i, f i • (3 • v i) ∈ clauseSet v := by
-  refine Finset.mem_image.mpr ⟨f, ?_, rfl⟩
-  rw [Fintype.mem_piFinset]
-  intro i
-  obtain ⟨h1, h2⟩ := abs_le.mp (hf i)
-  exact Finset.mem_Icc.mpr ⟨h1, h2⟩
-
-/-- **Borne de taille** : le jeu de clauses a au plus `5 ^ n` points — la
-boîte a `5 ^ n` coefficients, et l'image ne peut qu'en réduire le
-cardinal. -/
-theorem clauseSet_card_le {d n : ℕ} (v : Fin n → (Fin d → ℤ)) :
-    (clauseSet v).card ≤ 5 ^ n := by
-  calc (clauseSet v).card
-      ≤ (Fintype.piFinset (fun _ : Fin n => Finset.Icc (-2 : ℤ) 2)).card :=
-        Finset.card_image_le
-    _ = (Finset.Icc (-2 : ℤ) 2).card ^ n := Fintype.card_piFinset_const _ n
-    _ = 5 ^ n := by
-        have h5 : (Finset.Icc (-2 : ℤ) 2).card = 5 := by
-          rw [Int.card_Icc]
-          simp
-        rw [h5]
-
-/-- **Le certificat de non-vacuité du correctif #21417** : pour *toute*
-famille `v`, y compris non nulle, il existe un jeu de clauses fini de
-cardinal `≤ 5 ^ n` qui satisfait l'hypothèse de la porte. Combiné au témoin
-`contention_stability_forces_zero` — la forme historique, elle,
-insatisfiable dès `v ≠ 0` — c'est la preuve que le correctif a rendu
-l'énoncé instanciable hors du régime `v = 0`. -/
-theorem exists_clauseSet_of_any_family {d n : ℕ} (v : Fin n → (Fin d → ℤ)) :
-    ∃ B : Finset (Fin d → ℤ),
-      (∀ f : Fin n → ℤ, (∀ i, |f i| ≤ 2) → ∑ i, f i • (3 • v i) ∈ B) ∧
-        B.card ≤ 5 ^ n :=
-  ⟨clauseSet v, clauseSet_clauses v, clauseSet_card_le v⟩
 
 end Discrepancy.Komlos
