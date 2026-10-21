@@ -27,6 +27,8 @@ Sans paramètre, `main.py` exécute la stratégie sur sa fenêtre codée (2018-0
 
 Chaque mode trace aussi `shadow` : la valeur du portefeuille à l'ouverture de chaque séance de SPY, répartie sur les séries e0 à e4 (contrat #18923).
 
+`seed_initial_prices` n'est armé qu'en modes `spy` et `6040`, comme dans les projets voisins, et il est sans effet ici. Dans les quatre modes, `rebalance`, `_rebalance_reference` et `_trace` ne font rien tant que dure le préchauffage de 250 séances, qui donne un prix à chaque titre abonné. Le mode `strategy` garde ainsi le chemin du code d'origine, que le contrôle d'innocuité compare ordre par ordre.
+
 ## Métriques de backtest
 
 | Méthode | Rebalance | Paramètres clés |
@@ -70,6 +72,8 @@ Diagnostic contre `rv21`, même convention.
 |---|---|---|---|---|---|---|
 | 2018-01-02 → 2024-12-31 | 0,809 | 0,787 | 0,998 | +0,021 | 0,339 | 0,678 |
 | 2025-01-02 → 2026-07-23 | 1,580 | 1,666 | 0,999 | −0,086 | 0,021 | 0,059 |
+
+Les trois p brutes du diagnostic (Ledoit-Wolf, bootstrap, écart moyen) valent 0,339, 0,215 et 0,641 sur la fenêtre codée, puis 0,021, 0,051 et 0,020 après elle. Holm les range par ordre croissant, multiplie la plus petite par 3, la suivante par 2 et la dernière par 1, puis reporte à chaque rang le maximum déjà atteint. Sur la fenêtre codée, la p de Ledoit-Wolf est au deuxième rang : 2 × 0,339 = 0,678 dépasse 3 × 0,215 = 0,645. Après elle, la plus petite est celle de l'écart moyen (0,0198) : 3 × 0,0198 = 0,059, et ce maximum s'impose aussi à la p de Ledoit-Wolf, dont le produit seul vaudrait 2 × 0,0207 = 0,041.
 
 Volatilité annualisée, rendement annualisé et drawdown maximal des mêmes traces :
 
