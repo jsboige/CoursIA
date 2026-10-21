@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 from typing import Any, Dict, List, Optional
 
 from semantic_kernel import Kernel
@@ -216,6 +217,14 @@ def create_logic_agent(
     ``add_belief_set`` -- meme avec un contrat d'appel explicite dans le
     prompt (issue #18395, diagnostic instrumente : commentaire 6305563691 ;
     le relais honore ``required`` de facon non deterministe run a run).
+
+    Le repli sans ``function_choice_behavior`` est **reserve au stub de test**,
+    qui se declare explicitement par ``semantic_kernel._coursia_mock`` (pose
+    par ``tests/test_runner.py``). Hors de ce cas, l'``ImportError`` est
+    propagee : une installation de ``semantic_kernel`` cassee ou incompatible
+    perdrait sinon *silencieusement* le levier decisif, et le carnet
+    produirait un run degrade d'apparence normale (revue ai-01 du 21/10,
+    head ``0e020ac12c``).
     """
     try:
         from semantic_kernel.connectors.ai.function_choice_behavior import (
@@ -224,8 +233,12 @@ def create_logic_agent(
 
         fcb = FunctionChoiceBehavior.Required(auto_invoke=True)
     except ImportError:
-        # Environnement de test : semantic_kernel y est un stub plat sans
-        # sous-module connectors -- l'agent se construit sans settings.
+        # Aucun second import ici : `sys.modules` porte deja le paquet en
+        # cours d'evaluation. Absent (paquet reellement introuvable) =>
+        # getattr(None, ...) vaut False => propagation, comportement voulu.
+        sk_module = sys.modules.get("semantic_kernel")
+        if not getattr(sk_module, "_coursia_mock", False):
+            raise
         fcb = None
 
     if "StateManager" not in [p.name for p in kernel.plugins.values()]:
