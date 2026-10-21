@@ -1,20 +1,7 @@
 date: '2026-10-21'
 by: myia-po-2024:CoursIA-2
-reason: 'PR #21662 (#21763) : le cote Python de la paire a change -- la reproductibilite du
-  jumeau C# est desormais portee a l''identique (`Random` porte un `random.Random(42)` par
-  instance et `clone()` rend un generateur neuf a graine identique ; `play_match(..., seed=0)`
-  ne cree le generateur de bruit que si `noise > 0` ; `run_tournament` initialise `rng_seed = 1`
-  et l''incremente a chaque match ; le tournoi de la librairie part avec
-  `axl.Tournament(..., seed=42)`). Consequence mesuree : les deux classements du carnet (avec
-  et sans bruit) sont reproductibles d''une execution a l''autre -- deux executions completes
-  du carnet produisent des sorties byte-identiques. Audit firsthand du carnet Python au head
-  4b8095e84f : meme plan, meme socle theorique (IPD, tournoi d''Axelrod, strategies classiques,
-  processus de Moran), sorties issues des cellules re-executees en session unique, prose
-  realignee sur les valeurs commitees. Le cote C# est inchange (csharp_sha aed25022 identique
-  a l''audit 0028) : la modification rapproche les deux jumeaux de la semantique du jumeau C#,
-  elle n''introduit aucune divergence, niveau de parite `semantic` preserve. Aucune normalisation
-  outillee n''a ete appliquee apres cet audit.'
-python_sha: 2e89a31bca7a1e26efe86e7c3f04e70ab0043c96
+reason: 'PR #21662 (#21763) : le jumeau C# seme ses tirages, le carnet Python non. Les quatre points du contrat C# sont desormais appliques cote Python (`random.Random(42)` par instance, generateur cree seulement si le bruit est actif, `rng_seed = 1` incremente a chaque match, `axl.Tournament(..., seed=42)`). Deux executions completes du carnet (23/23, session unique) produisent des sorties byte-identiques. Audit firsthand du carnet Python au head d609b9ebde ; cote C# inchange (csharp_sha identique a l''audit 0028). Niveau de parite `semantic` preserve.'
+python_sha: 1f47763a057a801890a888465fdbae1fb193b836
 csharp_sha: aed250229ab5503d5939eedae397307807c21c9c
-content_python_sha: e4fb6af4440edfdfe36540dcd1a60fa18f2680a1bd31543bd164e3f1b44e406f
+content_python_sha: da442f684e6db30d8ce4d915bd4771bbfd5f81c12ccc8630207881ca1baa6ce9
 content_csharp_sha: 896d0a9659dd54cff895d1f7632baac528566196de594ed03063f20adc1216fe
