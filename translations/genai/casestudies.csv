@@ -369,7 +369,7 @@ print(""Stratégie de terminaison du débat configurée"")
 print(""Fonction create_kernel definie"")
 print(""Strategie de terminaison du debate configuree"")
 ",,,,,,,,5aca9c25814aee01,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,8514a144,markdown,fr,3a888b601eceb6e0,"## Lancement du débat
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,8514a144,markdown,fr,c3fd0381bfaa30fa,"## Lancement du débat
 
 L'`AgentGroupChat` rassemble les deux agents (`barbie`, `ane`) et la stratégie de terminaison définie plus haut. L'appel `add_chat_message` amorce la conversation — Semantic Kernel exige un historique non vide — puis `group_chat.invoke()` fait tourner le duel :
 
@@ -377,7 +377,7 @@ L'`AgentGroupChat` rassemble les deux agents (`barbie`, `ane`) et la stratégie 
 - **spécificité pédagogique** : à chaque réplique de l'Âne, le code invoque le plugin `image_gen` (`generate_image`) avec le contenu de la réplique en contexte, puis affiche l'image renvoyée par l'instance ComfyUI (`width=320`) ;
 - les répliques sont aussi conservées dans `repliques_du_duel` : les exercices de la section 9 les réutilisent au lieu de relancer un duel.
 
-C'est ici que se matérialise la boucle *parler puis illustrer* : le texte d'un agent devient l'argument d'un appel d'image, reliant le service de conversation et l'instance ComfyUI dans le même débat. La génération d'une illustration prend quelques dizaines de secondes — c'est le poste le plus lent du montage.
+C'est ici que se matérialise la boucle *parler puis illustrer* : le texte d'un agent devient l'argument d'un appel d'image, reliant le service de conversation et l'instance ComfyUI dans le même débat. La génération d'une illustration prend **plusieurs minutes** — le chargement des modèles puis les étapes de diffusion de ComfyUI dominent largement le reste ; c'est de loin le poste le plus lent du montage.
 ","## Launching the debate
 
 The `AgentGroupChat` gathers the two agents (`barbie`, `ane`) and the termination strategy defined above. The `add_chat_message` call primes the conversation — Semantic Kernel requires a non-empty history — then `group_chat.invoke()` runs the duel:
@@ -386,8 +386,8 @@ The `AgentGroupChat` gathers the two agents (`barbie`, `ane`) and the terminatio
 - **pedagogical specificity**: on each of the Donkey's replies, the code invokes the `image_gen` plugin (`generate_image`) with the reply's content as context, then displays the image returned by the ComfyUI instance (`width=320`);
 - the replies are also kept in `repliques_du_duel`: the exercises in section 9 reuse them instead of restarting a duel.
 
-This is where the *speak then illustrate* loop materializes: one agent's text becomes the argument of an image call, linking the conversation service and the ComfyUI instance within the same debate. Generating an illustration takes a few tens of seconds — it is the slowest part of the setup.",,,,,"## Запуск обсуждения
-Выполнение беседы с генерацией изображений",,3a888b601eceb6e0,e947551487729651,,,,,22315379a5ede6d1,,
+This is where the *speak then illustrate* loop materializes: one agent's text becomes the argument of an image call, linking the conversation service and the ComfyUI instance within the same debate. Generating an illustration takes **several minutes** — model loading followed by ComfyUI's diffusion steps dominate the rest by far; it is by far the slowest part of the setup.",,,,,"## Запуск обсуждения
+Выполнение беседы с генерацией изображений",,c3fd0381bfaa30fa,ac8533e2b5ce0d8b,,,,,22315379a5ede6d1,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,83e8879f,code,fr,4827e23af3544bbc,"async def run_debate():
     logger.info(f""Contrainte active : {contrainte_choisie[0]}"")
     
