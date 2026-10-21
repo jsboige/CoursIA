@@ -85,6 +85,13 @@ Trois urnes, parce que le pool n'est pas homogene
                   partagent cet etat ordonne ; le LABEL `candidate-delivered`
                   ne se retracte pas, lui : il est retire par le sweep, pas
                   revoque par un commentaire.
+                  Depuis #20351, une ligne `[RELEASED] ... acceptance deja
+                  couverte` compte elle aussi comme livraison : sans elle, un
+                  item clot par cette forme gardait une derniere visite
+                  ancienne et remontait en tete du tapis indefiniment. Un
+                  `[RELEASED]` sans motif de couverture reste l'autre cas --
+                  une lane qui rend la main sur une barriere reelle -- et
+                  l'item reste servi.
 
 Reprendre ses PRs AVANT de piocher (mandats user 2026-08-22 et 2026-08-24)
 --------------------------------------------------------------------------
@@ -203,6 +210,8 @@ import random
 import re
 import subprocess
 import sys
+import tempfile
+import unicodedata
 from typing import Any, Callable
 
 try:
@@ -298,6 +307,119 @@ _DELIVERED_MARKER_REVOKED_RE = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 
+# #20351 : `[RELEASED]` + « acceptance deja couverte » = LIVRAISON pour le
+# tapis. Le marqueur `[RELEASED]` a deux sens dans la flotte : soit une lane
+# rend la main sur un item qu'elle n'a pas livre (barriere reelle -> l'item
+# DOIT rester servi), soit elle rend la main en constatant que l'acceptance
+# est deja couverte par un travail livre (l'item ne doit PLUS remonter).
+# La sonde pleine ne lisait que `[INFO] candidate-delivered` : un item clot par
+# la seconde forme gardait une « derniere visite » ancienne et revenait en
+# tete du tapis indefiniment (11 tetes de tapis mortes mesurees le 2026-10-11
+# par myia-po-2027:CoursIA).
+#
+# On ne reconnait donc QUE la forme couverte : l'en-tete `[RELEASED]` et le
+# motif de couverture doivent etre sur la MEME ligne (le protocole ecrit
+# `[RELEASED] lane <machine:workspace> -- <motif>`), et le motif doit etre
+# AFFIRMATIF -- « acceptance deja couverte » et non « l'acceptance n'est pas
+# couverte, on rend la main », qui est l'autre cas (barriere) et doit rester
+# servi. La negation est donc cherchee explicitement, et non par un mot
+# generique comme « pas » : une ligne « acceptance deja couverte, pas de
+# travail restant » est une couverture, pas une negation.
+_RELEASED_HEADER_RE = re.compile(r"^\s*\[RELEASED\](?=\s|:|$)")
+# Les motifs sont compares sur une ligne NORMALISEE (accents retires) : la
+# flotte ecrit indifféremment « deja couverte », « déjà couverte », « rien a
+# reparer », « rien à réparer ». Un motif ecrit en ASCII matcherait la
+# forme accentuee, l'inverse non -- la normalisation est donc faite sur la
+# ligne, pas sur le motif.
+#
+# Le motif est ANCRE sur l'ACCEPTANCE de l'item (« acceptance deja couverte »,
+# « l'acceptance est couverte », « acceptance deja livree ») : c'est la forme
+# canonique que la flotte a employee sur la cohorte du dispatch central
+# (#20351), et c'est la seule dont le sens est de niveau ITEM. Les formes
+# « deja livre » / « deja couvert » sans « acceptance » ont ete ecartees sur
+# mesure : sur les 512 issues ouvertes, elles ne matchaient que des
+# livraisons de SOUS-GRAIN (« la Tranche A est deja livree », « le carnet 03
+# est deja livre », « grain deja livre ») -- les ecarter aurait retire du
+# tapis des items encore actionnables (FLEAU, le faux positif d'un detecteur
+# se mesure par ses faux NEGATIFS). Les formes « rien a reparer » /
+# « aucun travail restant » restent, Completees par la garde de perimetre
+# ci-dessous.
+_COVERAGE_MOTIF_RE = re.compile(
+    r"(?:"
+    r"acceptance\s+(?:\w+\s+){0,2}(?:couvert\w*|satisfaite|livr\w+)"
+    r"|scope\s+couvert\w*"
+    r"|rien\s+a\s+repar\w+"
+    r"|aucun\s+travail\s+restant"
+    r"|aucune\s+tranche\s+restante"
+    r"|plus\s+rien\s+a\s+faire"
+    r")",
+    re.IGNORECASE,
+)
+_COVERAGE_NEGATED_RE = re.compile(
+    r"(?:pas|non|jamais)\s+(?:couvert\w*|satisfaite|livr\w+)",
+    re.IGNORECASE,
+)
+# « pour cette lane » : une couverture rapportee a une lane n'est pas une
+# couverture de l'item -- les autres lanes peuvent encore le servir. Mesure :
+# #18767 (« aucune tranche restante POUR CETTE LANE ») garde 4 sous-modules a
+# couvrir ; le traiter comme livre aurait ecarte un item actionnable.
+_LANE_SCOPED_RE = re.compile(r"cette\s+(?:lane|equipe)", re.IGNORECASE)
+# Un substantif de SOUS-ITEM dans la meme clause que le motif : la couverture
+# porte alors sur une tranche, un carnet, un grain -- pas sur l'item.
+_SCOPE_NOUN_RE = re.compile(
+    r"\b(?:tranche|carnet|grain|sous-grain|sous-issue|notebook|pli|palier|"
+    r"lot|portion|partie|etape|exercice|bloc|audit|fichier|script|cellule)\b",
+    re.IGNORECASE,
+)
+# Separateurs de clause : la garde de perimetre et la garde de scope de lane
+# ne regardent que la clause qui porte le motif.
+_CLAUSE_BOUNDARY_RE = re.compile(r"[:;,.—–]")
+
+
+def _strip_accents(text: str) -> str:
+    """Minuscules sans accents : « déjà » -> « deja », « à » -> « a »."""
+    decomposed = unicodedata.normalize("NFKD", text or "")
+    return "".join(c for c in decomposed if not unicodedata.combining(c)).lower()
+
+
+def _clause_window(text: str, start: int, end: int) -> tuple[str, str]:
+    """(avant, apres) la clause qui contient `[start, end)`, sans les bornes."""
+    head = text[:start]
+    tail = text[end:]
+    head_bounds = list(_CLAUSE_BOUNDARY_RE.finditer(head))
+    tail_bounds = list(_CLAUSE_BOUNDARY_RE.finditer(tail))
+    clause_head = head[head_bounds[-1].end():] if head_bounds else head
+    clause_tail = tail[:tail_bounds[0].start()] if tail_bounds else tail
+    return clause_head, clause_tail
+
+
+def _released_covers_acceptance(body: str) -> bool:
+    """Une ligne porte-t-elle `[RELEASED]` ET un motif d'acceptance couverte ?
+
+    Fonction pure, testable sans reseau : c'est le seul point de la
+    correction qui decide d'un nouveau verdict.
+
+    Trois gardes font écran, dans cet ordre :
+    1. la negation (« l'acceptance n'est pas couverte ») ;
+    2. le perimetre de SOUS-ITEM (« la Tranche A est deja livree ») ;
+    3. le scope de LANE (« aucune tranche restante pour cette lane »).
+    """
+    for raw_line in (body or "").splitlines():
+        if not _RELEASED_HEADER_RE.match(raw_line):
+            continue
+        line = _strip_accents(raw_line)
+        if _COVERAGE_NEGATED_RE.search(line):
+            continue
+        for match in _COVERAGE_MOTIF_RE.finditer(line):
+            clause_head, clause_tail = _clause_window(
+                line, match.start(), match.end())
+            if _SCOPE_NOUN_RE.search(clause_head):
+                continue
+            if _LANE_SCOPED_RE.search(clause_tail):
+                continue
+            return True
+    return False
+
 
 def _issue_comment_bodies_rest(issue_number: int) -> list[str] | None:
     """Corps des commentaires lus par REST (`gh api` : bucket de quota distinct).
@@ -344,6 +466,13 @@ def _delivered_state(comment_bodies: list[str]) -> bool:
     deux est contradictoire et la retractation l'emporte (c'est le geste
     delibere, et c'est elle que ce correctif doit rendre effective).
 
+    Trois formes arment l'etat, deux le desarment : `[INFO] candidate-delivered`
+    (canonique), `[RELEASED] ... acceptance deja couverte` (#20351, meme
+    sens pour le tapis), et -- en face -- `[NOT-DELIVERED]` et
+    `[INFO] candidate-delivered-revoked`. Un `[RELEASED]` SANS motif de
+    couverture n'arme rien : c'est une lane qui rend la main sur une barriere
+    reelle, et l'item doit rester servi.
+
     L'ordre des corps est celui du transport, et il est chronologique :
     `gh issue view --comments --json comments` rend les commentaires du plus
     ancien au plus recent (`createdAt` croissant), et
@@ -356,6 +485,12 @@ def _delivered_state(comment_bodies: list[str]) -> bool:
         if _DELIVERED_MARKER_REVOKED_RE.search(body or ""):
             delivered = False
         elif _DELIVERED_MARKER_RE.search(body or ""):
+            delivered = True
+        elif _released_covers_acceptance(body or ""):
+            # #20351 : `[RELEASED]` + « acceptance deja couverte » est une
+            # livraison au sens du tapis. Reste un EVENEMENT comme les autres :
+            # une retractation posterieure la desarme, un marqueur plus
+            # recent la rearme.
             delivered = True
     return delivered
 
@@ -2338,8 +2473,38 @@ def _utf8_child_env() -> dict:
     return {**os.environ, "PYTHONIOENCODING": "utf-8"}
 
 
+def _summarize_claim_from_batch(json_payload: dict, n: int) -> tuple[str, str]:
+    """Remappe un verdict batch (FREE/BLOCKED/IMPLICIT/ERROR) sur les codes
+    internes du picker.
+
+    Le mode batch (#19643 / PR #21373 v3) sort un JSON `{results: {N:
+    {code, human, exit, ...}}}`. Le code est une des 4 valeurs
+    `_summarize_run_check_output` (FREE, BLOCKED, IMPLICIT, ERROR) ;
+    on les remappe sur les codes internes `CLAIM_CODE_*` consommés par
+    `draw_unclaimed`. La nuance OWNED_BY_ME / FREE_STALE est portee par
+    d'autres jambes (comment parser du picker, hors batch) -- le batch
+    est une borne superieure du cout, pas une degradation.
+    """
+    if not isinstance(json_payload, dict):
+        return CLAIM_CODE_ERROR, "(batch: payload non-dict)"
+    res = json_payload.get("results", {}).get(str(n))
+    if not isinstance(res, dict):
+        return CLAIM_CODE_ERROR, f"(batch: pas de verdict pour #{n})"
+    code = res.get("code", "ERROR")
+    human = res.get("human", code) or code
+    if code == "FREE":
+        return CLAIM_CODE_FREE, "libre"
+    if code == "BLOCKED":
+        return CLAIM_CODE_BLOCKED, human
+    if code == "IMPLICIT":
+        return CLAIM_CODE_IMPLICIT, human
+    if code == "ERROR":
+        return CLAIM_CODE_ERROR, human
+    return CLAIM_CODE_ERROR, f"(batch: code {code} inconnu)"
+
+
 def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
-    """Verif claims sur les seuls candidats tires (N appels, pas 140).
+    """Verif claims sur les seuls candidats tires (1 appel batch, pas N).
 
     Retourne ``{n: (code, human)}`` ou ``code`` ∈ {FREE, FREE_STALE,
     OWNED_BY_ME, BLOCKED, ERROR} est consommable par machine, et ``human``
@@ -2348,22 +2513,154 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
     ``--lane`` est **requis** par ``check_lane_claim.py`` : sans lui, l'appel
     sort en erreur d'usage et chaque candidat affichait ``usage: ...`` a la
     place de son verdict -- un check qui ne peut pas rougir, donc pas un check.
+
+    #19643 / c.1753 -- partage du cache des PRs ouvertes via l'env
+    `CHECK_LANE_CLAIM_OPEN_PRS_JSON` : on fetch la liste 1 fois, on ecrit le
+    JSON dans un tempfile, et chaque invocation de check_lane_claim le lit.
+    Sauve N-1 appels `gh pr list` (~6s x N = bottleneck du tapis).
+
+    #19643 / c.1778 -- Piste 2 (review ai-01 5571014393) : 1 seul
+    subprocess.run avec N numeros positionnels. Le mode batch de
+    check_lane_claim sort un JSON `{results, total_wall, phases}` sur
+    stdout et timestamp les phases sur stderr. Cout : O(1) subprocess
+    au lieu de O(N).
     """
     verdicts = {}
-    for n in numbers:
+    if not numbers:
+        return verdicts
+    # #19643 -- 1 fetch partage. Si le fetch echoue, on n'exporte pas
+    # l'env et chaque appel retombe sur son propre `gh pr list` (chemin
+    # legacy, plus lent mais sur). Pas de rejection du tapis pour autant.
+    cache_path = _build_open_prs_cache_for_belt(lane)
+    env = _utf8_child_env()
+    if cache_path is not None:
+        env["CHECK_LANE_CLAIM_OPEN_PRS_JSON"] = cache_path
+    else:
+        # S'assurer que l'env n'est pas heritee d'un run precedent si on
+        # est dans un test ou un process qui l'avait posee.
+        env.pop("CHECK_LANE_CLAIM_OPEN_PRS_JSON", None)
+
+    def _one_by_one() -> None:
+        # Chemin legacy : un subprocess.run par issue. La sortie mono-issue
+        # de check_lane_claim (un JSON, puis la phrase de verdict) est lue
+        # par `_summarize_claim`, pas par `json.loads`.
+        for n in numbers:
+            try:
+                rr = subprocess.run(
+                    [sys.executable, "scripts/check_lane_claim.py",
+                     "--lane", lane, str(n)],
+                    capture_output=True, text=True, encoding="utf-8",
+                    timeout=60, env=env,
+                )
+                verdicts[n] = _summarize_claim(
+                    rr.stdout or rr.stderr or "", rr.returncode)
+            except Exception as exc:  # noqa: BLE001
+                verdicts[n] = (
+                    CLAIM_CODE_ERROR,
+                    f"(check indisponible: {type(exc).__name__})")
+
+    try:
+        # 1 seul subprocess.run avec N numeros positionnels (mode
+        # batch de check_lane_claim). La sortie est un JSON
+        # `{results: {N: {code, human, exit, duration, ...}},
+        # total_wall, phases}` -- voir `_summarize_claim_from_batch`
+        # pour le remappage.
+        #
+        # Un seul numero n'active PAS le mode batch (check_lane_claim ne
+        # le prend qu'a partir de 2 issues) : la sortie est alors le JSON
+        # mono-issue suivi de la phrase « CLEAR: ... », que `json.loads`
+        # rejette (`Extra data`). C'est le cas de chaque verification au
+        # fil de l'eau du tapis (`check_claims([n])`) : mesure du
+        # 2026-10-20, 30 issues tirees sur 50 rendues en ERROR, donc
+        # servies sans que leur claim soit lu.
+        cmd = [sys.executable, "scripts/check_lane_claim.py",
+               "--lane", lane]
+        cmd.extend(str(n) for n in numbers)
         try:
-            r = subprocess.run(
-                [sys.executable, "scripts/check_lane_claim.py",
-                 "--lane", lane, str(n)],
-                capture_output=True, text=True, encoding="utf-8", timeout=60,
-                env=_utf8_child_env(),
-            )
-            verdicts[n] = _summarize_claim(r.stdout or r.stderr or "",
-                                           r.returncode)
+            r = None
+            if len(numbers) > 1:
+                r = subprocess.run(
+                    cmd,
+                    capture_output=True, text=True, encoding="utf-8",
+                    # 60s + N * 1s en budget ; le tapis consomme
+                    # generalement 5-15 numeros, donc ~75 s max. Au-dela,
+                    # on retombe sur le chemin legacy (N subprocess.run)
+                    # cycle suivant -- c'est preferable a un tapis gele.
+                    timeout=60 + 10 * len(numbers),
+                    env=env,
+                )
+            if r is None or r.returncode != 0:
+                # Un seul numero, ou batch en echec (probable:
+                # check_lane_claim pre-v3, ou gh down) : chemin legacy,
+                # N subprocess.run par issue.
+                _one_by_one()
+            else:
+                try:
+                    payload = json.loads(r.stdout)
+                except json.JSONDecodeError:
+                    # Sortie batch illisible : on relit issue par issue
+                    # plutot que de rendre ERROR, qui laisse servir le
+                    # grain sans claim lu.
+                    _one_by_one()
+                else:
+                    for n in numbers:
+                        verdicts[n] = _summarize_claim_from_batch(payload, n)
+        except subprocess.TimeoutExpired:
+            # Le batch a timeout (rare ; depasse 60+10N secondes). On
+            # delivre un verdict UNCHECKED pour les numeros non encore
+            # vus, le tapis pioche ailleurs.
+            for n in numbers:
+                if n not in verdicts:
+                    verdicts[n] = (CLAIM_CODE_UNCHECKED,
+                                   f"batch timeout (>{60 + 10 * len(numbers)}s)")
         except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
-            verdicts[n] = (CLAIM_CODE_ERROR,
-                           f"(check indisponible: {type(exc).__name__})")
+            for n in numbers:
+                verdicts[n] = (CLAIM_CODE_ERROR,
+                               f"(check indisponible: {type(exc).__name__})")
+    finally:
+        # Nettoyer le tempfile, qu'il ait ete utile ou pas.
+        if cache_path is not None:
+            try:
+                os.unlink(cache_path)
+            except OSError:
+                pass
     return verdicts
+
+
+def _build_open_prs_cache_for_belt(lane: str) -> str | None:
+    """#19643 -- fetch 1 fois la liste des PRs ouvertes, ecrit dans un
+    tempfile, retourne le path (None si le fetch a echoue, l'appelant
+    laisse alors chaque appel de check_lane_claimfetcher sa propre liste,
+    chemin legacy)."""
+    try:
+        r = subprocess.run(
+            ["gh", "pr", "list", "--state", "open",
+             "--json", "number,title,headRefName,body,files,additions,deletions",
+             "--limit", "200"],
+            capture_output=True, text=True, encoding="utf-8",
+            # 60s : aligne sur le timeout par defaut de check_lane_claim.
+            # Si le fetch est lent, on laisse l'appelant retomber sur le
+            # chemin legacy (chaque appel fait son propre fetch).
+            timeout=60,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+    if r.returncode != 0:
+        return None
+    try:
+        # Valide que c'est bien une liste JSON.
+        parsed = json.loads(r.stdout)
+    except json.JSONDecodeError:
+        return None
+    if not isinstance(parsed, list):
+        return None
+    try:
+        fd, path = tempfile.mkstemp(prefix="open_prs_", suffix=".json")
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(r.stdout)
+        return path
+    except OSError:
+        return None
 
 
 def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
@@ -7353,8 +7650,19 @@ def main(argv: list[str] | None = None) -> int:
             metrics = belt_report_metrics(pool, closed_7d=None)
             print_belt_report(metrics)
             return 0
+        # Phases tapees sur stderr au fil de l'eau (cf review ai-01
+        # 5571014393, CHANGES_REQUESTED v2). Permettent a un run
+        # interrompu par timeout de dire ou il en etait.
+        import time as _time_belt
+        _belt_t0 = _time_belt.monotonic()
+        def _belt_phase(name: str) -> None:
+            print(f"[t={_time_belt.monotonic() - _belt_t0:.2f}s] belt {name}",
+                  file=sys.stderr, flush=True)
+        _belt_phase(f"start: grains={args.grains} lane={args.lane}")
         belt_pool = belt_filter(admitted, args, urns=selected_urns)
         belt_pool.sort(key=belt_sort_key)
+        _belt_phase(f"pool charge: {len(belt_pool)} candidates "
+                    f"(apres belt_filter)")
         # Verification des claims tenes par une autre lane : on regarde
         # plus large que `args.grains` pour tolerer un remplacement si
         # la tete de file est tenue. Cout borne : au plus `grains + 4`
@@ -7377,7 +7685,7 @@ def main(argv: list[str] | None = None) -> int:
             # Si la voie multiplexee echoue, on retombe sur la sonde unitaire
             # (chemin d'avant patch, lent mais fonctionnel) et on marque le
             # fait en banniere. Cf memo c.1113 §4.
-            bulk_targets = [it["number"] for it in belt_pool[:belt_check_window]]
+            bulk_targets = [it["number"] for it in belt_pool[:belt_check_window * 3 + 12]]
             bulk_stamps, bulk_err = fetch_latest_claim_stamps_bulk(
                 bulk_targets,
                 cache=payload_cache,
@@ -7389,6 +7697,8 @@ def main(argv: list[str] | None = None) -> int:
                 # absents de la map (issue inconnue, rate-limit, ...) tombent
                 # sur la sonde unitaire, comme un repli.
                 fallback_used: list[int] = []
+                _belt_phase(f"bulk fait: {len(bulk_stamps)} stamps "
+                            f"(window={belt_check_window * 3 + 12})")
 
                 def _probe(n: int) -> str | None:
                     if n in bulk_stamps:
@@ -7398,11 +7708,21 @@ def main(argv: list[str] | None = None) -> int:
 
                 settle_belt_head(belt_pool, belt_check_window, _probe,
                                  max_probes=belt_check_window * 3 + 12)
-                if fallback_used and not args.json:
-                    print(f"   Sonde unitaire repli sur {len(fallback_used)} "
-                          f"issue(s) absente(s) du bulk GraphQL : "
-                          f"{', '.join('#'+str(n) for n in fallback_used[:5])}"
-                          f"{'...' if len(fallback_used) > 5 else ''}.")
+                _belt_phase(f"settle_belt_head fait: "
+                            f"{len(fallback_used)} fallback(s) unitaire(s)")
+                if fallback_used:
+                    # ai-01 review 5568273366 : en --json, le silence du
+                    # comptage masquait la cause (cf c.1113). On emet
+                    # toujours la mesure -- sur stderr en mode --json
+                    # pour ne pas polluer le document, en stdout sinon.
+                    msg = (f"   Sonde unitaire repli sur {len(fallback_used)} "
+                           f"issue(s) absente(s) du bulk GraphQL : "
+                           f"{', '.join('#'+str(n) for n in fallback_used[:5])}"
+                           f"{'...' if len(fallback_used) > 5 else ''}.")
+                    if args.json:
+                        print(msg, file=sys.stderr)
+                    else:
+                        print(msg)
             else:
                 # Bulk totalement en echec : on laisse `latest_claim_stamp`
                 # gerer -- lent. On previent le lecteur.
@@ -7411,8 +7731,12 @@ def main(argv: list[str] | None = None) -> int:
                           f"indisponible : {bulk_err or 'cache miss sans refresh'}).")
                 settle_belt_head(belt_pool, belt_check_window, latest_claim_stamp,
                                  max_probes=belt_check_window * 3 + 12)
+                _belt_phase("settle_belt_head fait: chemin unitaire (bulk absent)")
         belt_check_nums = [it["number"] for it in belt_pool[:belt_check_window]]
+        _belt_phase(f"claims start: {len(belt_check_nums)} numeros "
+                    f"(fenetre belt_check_window={belt_check_window})")
         belt_claims = check_claims(belt_check_nums, args.lane)
+        _belt_phase(f"claims faits: {len(belt_claims)} verdicts")
         # Boucle de service extraite (#19390) : claims + sonde de livraison
         # bornee a la fenetre de tete, remplacement dans la meme urne.
         # Epuisement du budget de sondes = fail-OPEN, rapporte en banniere
@@ -7420,6 +7744,7 @@ def main(argv: list[str] | None = None) -> int:
         # sont injectees ICI explicitement : les defauts de la boucle sont
         # inertes (#19913) pour que les tests ne sortent jamais sur le
         # reseau par oubli.
+        _belt_phase("pick_with_replacements start")
         belt_picks, belt_withheld, belt_pick_state = (
             belt_pick_with_replacements(belt_pool, belt_claims, args,
                                         belt_probe_budget(belt_check_window),
@@ -7427,6 +7752,8 @@ def main(argv: list[str] | None = None) -> int:
                                         merged_pr_probe=merged_pr_signal,
                                         recent_marker_probe=(
                                             has_recent_delivery_marker)))
+        _belt_phase(f"pick_with_replacements fait: "
+                    f"{len(belt_picks)} retenu(s), {len(belt_withheld)} witheld")
         belt_delivered_failures = belt_pick_state["failures"]
         belt_probe_budget_hit = [belt_pick_state["budget_hit"]]
         # Geste 5 #18203 : consigner le tirage du tapis -- candidats servis
@@ -7569,6 +7896,23 @@ def main(argv: list[str] | None = None) -> int:
                     "probes_attempted": bool(args.lane),
                     "unread": sorted(set(belt_pick_state.get("claim_unread")
                                          or [])),
+                },
+                # Volet bulk GraphQL (#19643, ai-01 review 5568273366) :
+                # `fallback_count` est le nombre de numeros absents de
+                # la map bulk et qui ont du recourir a la sonde unitaire
+                # (`gh issue view --json comments` ~1.4 s/appel). Une
+                # valeur elevee (>= 1) signale que la fenetre du bulk
+                # est plus etroite que celle de `settle_belt_head` --
+                # la piste 1 a deja ete appliquee (bulk_targets elargi
+                # a `belt_check_window * 3 + 12`), mais le compteur
+                # reste utile comme diagnostic en cas de regression.
+                "bulk_signal": {
+                    "bulk_targets": bulk_targets if "bulk_targets" in locals() else [],
+                    "fallback_count": len(fallback_used) if "fallback_used" in locals() else 0,
+                    "fallback_nums": (sorted(fallback_used)
+                                      if ("fallback_used" in locals()
+                                          and fallback_used) else []),
+                    "bulk_err": bulk_err if "bulk_err" in locals() else None,
                 },
                 "last_delivery_window_days": delivery_window_days,
                 "substance_drought": {"triggered": False, "measured": False,
