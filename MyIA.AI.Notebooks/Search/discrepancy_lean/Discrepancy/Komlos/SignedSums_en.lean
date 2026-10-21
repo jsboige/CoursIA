@@ -17,6 +17,11 @@ assembly itself (k2.6c): the real square `snocReal`, the hull transport
 `exists_colouring_aux` (closure `S` + exact support `E` — the `Finset`
 price of the oracle's canonical `Finsupp` support) and the public statement
 `exists_isColouring_mean_add_sum_mem_convexHull`.
+k5.2 caveat (measured defect, workstream #21417): the public statement as
+shipped on 10-06 was **vacuous** outside the zero family — the witness
+`contention_stability_forces_zero` proves it, and the `clauseSet` clause
+set (steps P3/P4) fixes it; this pointer goes away with the last trace of
+the old statement.
 -/
 
 import Discrepancy.Basic_en

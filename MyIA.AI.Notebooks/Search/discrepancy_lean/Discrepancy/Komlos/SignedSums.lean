@@ -16,6 +16,11 @@ arbitrée en k2.6a), puis l'assemblage final lui-même (k2.6c) : le carré réel
 inductive à deux ensembles `exists_colouring_aux` (fermeture `S` + support
 exact `E` — le prix `Finset` du support canonique du `Finsupp` de l'oracle)
 et l'énoncé public `exists_isColouring_mean_add_sum_mem_convexHull`.
+Réserve k5.2 (défaut mesuré, chantier #21417) : l'énoncé public tel que livré
+le 10-06 était **vacuose** hors famille nulle — le témoin
+`contention_stability_forces_zero` le démontre, et le jeu de clauses
+`clauseSet` (crans P3/P4) le corrige ; ce renvoi partira avec la dernière
+trace de l'ancien énoncé.
 -/
 
 import Discrepancy.Basic
