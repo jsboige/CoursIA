@@ -771,7 +771,7 @@ def run_pipeline(
     playwright_url: str = "https://strudel.cc/",
     ffmpeg_loudnorm_lufs: float = -14.0,
     capture: bool = False,
-    capture_seconds: int = 30,
+    capture_seconds: Optional[int] = None,
     headless: bool = False,
     capture_mode: str = "page",
     narration_engine: str = "template",
@@ -811,6 +811,11 @@ def run_pipeline(
     dicts segments), 'tts', 'browser_capture', 'visualizer',
     'final_mix', 'verdict'.
     """
+    # Defaut coherent : sans --capture-seconds explicite, la capture suit
+    # --duration (mesure c.1528 : le defaut fige 30 tronquait une demo
+    # de 180 s a 30,9 s avec 4/11 segments mixes).
+    capture_seconds = _resolve_capture_seconds(capture_seconds, duration_seconds)
+
     strudel = compose_strudel(
         style_name=style_name,
         duration_seconds=duration_seconds,
@@ -1273,6 +1278,43 @@ def mix_final_ffmpeg(
     return cmd
 
 
+def _resolve_capture_seconds(
+    capture_seconds: Optional[int], duration_seconds: int
+) -> int:
+    """Defaut coherent de la duree de capture (etape 4, #15604).
+
+    Sans valeur explicite, la capture suit ``duration_seconds`` : le
+    defaut fige 30 tronquait silencieusement une demo de 180 s a
+    30,9 s (mesure c.1528, 4/11 segments mixes). Une valeur explicite
+    (capture plus courte que la musique) reste respectee.
+    """
+    if capture_seconds is not None:
+        return capture_seconds
+    return duration_seconds
+
+
+def _click_play(page: object, url: str, attempts: int = 3) -> None:
+    """Clic play robuste : re-navigation entre tentatives (etape 4).
+
+    Mesure c.1528 : le clic play echoue par timeout ~1 run sur 3
+    (``Locator.click: Timeout 10000ms``) — etat de page variable au
+    chargement du hash strudel. Un re-chargement de l'URL de partage
+    recharge le REPL avec le pattern et suffit a retablir le clic.
+    La derniere tentative echouee remonte telle quelle (echec explicite,
+    pas de fallback silencieux). Orchestration pure : le verdict de
+    capture reste porte par le checksum canvas en aval.
+    """
+    for attempt in range(1, attempts + 1):
+        try:
+            page.get_by_role("button", name="play").first.click(timeout=10_000)
+            return
+        except Exception:
+            if attempt == attempts:
+                raise
+            page.goto(url)
+            page.wait_for_timeout(5000)
+
+
 def capture_repl_session(
     pattern: str,
     output_dir: Path,
@@ -1348,7 +1390,7 @@ def capture_repl_session(
         try:
             page.goto(url)
             page.wait_for_timeout(5000)
-            page.get_by_role("button", name="play").first.click(timeout=10_000)
+            _click_play(page, url)
             page.wait_for_timeout(int(warmup_seconds * 1000))
 
             h1 = page.evaluate(_CANVAS_CHECKSUM_JS)
@@ -1495,8 +1537,9 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--capture-seconds",
         type=int,
-        default=30,
-        help="duree de capture video en secondes (default: 30)",
+        default=None,
+        help="duree de capture video en secondes (default: suit --duration "
+             "— le defaut fige 30 tronquait la demo, mesure c.1528)",
     )
     parser.add_argument(
         "--capture-mode",
@@ -1509,8 +1552,9 @@ def _build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--headless",
         action="store_true",
-        help="lancer Chromium headless (DECONSEILLE : le canvas REPL ne "
-             "s'anime pas sans fenetre compositée — mesure c.580)",
+        help="lancer Chromium headless (mesure c.1528 : capture 180 s "
+             "verifiee headless, le checksum canvas en aval reste le "
+             "garde contre un canvas immobile — cf mesure c.580 anterieure)",
     )
     parser.add_argument(
         "--narration-engine",
