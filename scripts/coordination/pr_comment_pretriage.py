@@ -216,7 +216,7 @@ def is_bot(login: str) -> bool:
     return low in BOT_LOGINS or low.endswith("[bot]") or low == "github-actions"
 
 
-def pretriage(pr: int, model: str) -> dict:
+def pretriage(pr: int, model: str, dry_run: bool = False) -> dict:
     data = json.loads(gh(["pr", "view", str(pr), "--json",
                           "title,body,comments,state,headRefOid"]))
     comments = data.get("comments") or []
@@ -232,8 +232,23 @@ def pretriage(pr: int, model: str) -> dict:
         body=(data.get("body") or "")[:MAX_PR_BODY] or "(vide)",
         commentaires="\n\n".join(lines) or "(aucun)",
     )
-    out = TMP / f"fn_threads_{pr}.json"
     TMP.mkdir(parents=True, exist_ok=True)
+    if dry_run:
+        out = TMP / f"fn_threads_{pr}.prompt.txt"
+        out.write_text(prompt, encoding="utf-8")
+        return {
+            "pr": pr,
+            "head": data.get("headRefOid"),
+            "state": data.get("state"),
+            "commentaires": len(comments),
+            "humains": len(humans),
+            "bots": len(comments) - len(humans),
+            "car_prompt": len(prompt),
+            "sortie": str(out),
+            "http": None,
+            "dry_run": True,
+        }
+    out = TMP / f"fn_threads_{pr}.json"
     r = call_model(model, SYSTEM, prompt, out)
     return {
         "pr": pr,
@@ -241,7 +256,7 @@ def pretriage(pr: int, model: str) -> dict:
         "state": data.get("state"),
         "commentaires": len(comments),
         "humains": len(humans),
-        "bots": len(comments) - len(humans),
+        "bots": len(comments) - len(humains),
         "car_prompt": len(prompt),
         "sortie": str(out),
         **r,
@@ -254,20 +269,32 @@ def main() -> int:
     ap.add_argument("--pr", type=int, action="append", default=[],
                     help="meme chose, une PR par option")
     ap.add_argument("--model", default=MODEL_DEFAULT)
+    ap.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="compte les commentaires et ecrit le prompt, sans appel au hub",
+    )
     args = ap.parse_args()
     nums = args.prs + args.pr
     if not nums:
         ap.error("aucun numero de PR")
 
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, OSError):
+        pass
+
     total_in = 0
     for pr in nums:
-        r = pretriage(pr, args.model)
+        r = pretriage(pr, args.model, dry_run=args.dry_run)
         total_in += r.get("tokens_in") or 0
         print(f"[PR #{pr}] commentaires={r['commentaires']} (humains={r['humains']} "
               f"bots={r['bots']}) car_brut={r['car_prompt']} http={r.get('http')} "
               f"latence={r.get('latence')}s tokens_in={r.get('tokens_in')} "
               f"tokens_out={r.get('tokens_out')} car_sortie={r.get('car_sortie')} "
               f"-> {r['sortie']}", flush=True)
+        if args.dry_run:
+            continue
         try:
             parsed = parse_lenient(Path(r["sortie"]).read_text(encoding="utf-8"))
         except (OSError, ValueError) as exc:
