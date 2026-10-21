@@ -49,7 +49,7 @@
 **Améliorer** :
 - Ajouter slide sur l'incertitude dans les LLMs modernes (hallucinations, confidence scores)
 - Intégrer exemple avec calcul bayésien dans un contexte GenAI (prompt engineering avec probabilités)
-- Ajouter références vers `Probas/Infer/Infer-1b-Premiers-Modeles.ipynb` pour exercices interactifs
+- Ajouter références vers `Probas/Infer/Infer-01b-Premiers-Modeles.ipynb` pour exercices interactifs
 
 **Moderniser** :
 - Remplacer exemples abstraits par cas d'usage 2024-2026 (véhicules autonomes, diagnostics médicaux IA)
@@ -69,9 +69,9 @@
 
 | Slide | Concept | Notebook |
 |-------|---------|----------|
-| 36-45 | Inférence bayésienne | `Probas/Infer/Infer-1b-Premiers-Modeles.ipynb` |
+| 36-45 | Inférence bayésienne | `Probas/Infer/Infer-01b-Premiers-Modeles.ipynb` |
 | 46-60 | HMM | `Probas/Infer/Infer-6-HMM.ipynb` |
-| 61-70 | Factor Graphs | `Probas/Infer/Infer-3-Factor-Graphs.ipynb` |
+| 61-70 | Factor Graphs | `Probas/Infer/Infer-03-Factor-Graphs.ipynb` |
 
 ---
 
@@ -99,8 +99,8 @@
 
 | Slide(s) | Concept | Notebooks |
 |-----------|---------|-----------|
-| 1-20 | Probabilités fondamentales | `Probas/Infer/Infer-1b-Premiers-Modeles.ipynb` |
-| 15-30 | Réseaux bayésiens | `Probas/Infer/Infer-3-Factor-Graphs.ipynb`, `Infer-4-Bayes-Nets.ipynb` |
+| 1-20 | Probabilités fondamentales | `Probas/Infer/Infer-01b-Premiers-Modeles.ipynb` |
+| 15-30 | Réseaux bayésiens | `Probas/Infer/Infer-03-Factor-Graphs.ipynb`, `Infer-4-Bayes-Nets.ipynb` |
 | 36-50 | Inférence probabiliste | `Probas/Infer/Infer-5-Inference.ipynb`, `Infer-7-Variable-Elimination.ipynb` |
 | 51-70 | HMM et chaînes de Markov | `Probas/Infer/Infer-6-HMM.ipynb`, `Infer-8-Temporal.ipynb` |
 | 71-90 | MDP et décision | `GameTheory/GameTheory-2b-MDP.ipynb`, `Probas/Infer/Infer-12-Decision.ipynb` |
