@@ -123,8 +123,7 @@ theorem covers_id_iff {C : Type*} [Category C] {D : Type*} [Category D]
     (G : C ⥤ D) (K : GrothendieckTopology D) [G.LocallyCoverDense K]
     [G.IsLocallyFull K] [G.IsLocallyFaithful K] {X : C} (S : Sieve X) :
     (G.restrictedTopology K).Covers S (𝟙 X) ↔ S.functorPushforward G ∈ K (G.obj X) := by
-  rw [GrothendieckTopology.covers_iff, Sieve.pullback_id,
-    Functor.mem_restrictedTopology_iff]
+  rw [covers_id, Functor.mem_restrictedTopology_iff]
 
 /-!
 ## Section 4 : monotonie
