@@ -25,12 +25,14 @@ Usage:
 Epic #2314, Issue #2315.
 """
 
+import json
 import subprocess
 import tempfile
 import platform
 import shutil
 import os
 import re
+import sys
 import textwrap
 from pathlib import Path
 from typing import Optional, Tuple
@@ -70,21 +72,10 @@ def is_windows() -> bool:
     """True on Windows (WSL bridge required for Lean)."""
     return platform.system() == "Windows"
 
-
-def _find_lake() -> str:
-    """Find the lake executable for native execution."""
-    lake = shutil.which("lake")
-    if lake:
-        return lake
-    elan_bin = Path.home() / ".elan" / "bin"
-    for name in ("lake", "lake.exe"):
-        candidate = elan_bin / name
-        if candidate.exists():
-            return str(candidate)
-    raise FileNotFoundError(
-        "lake not found. Install Lean 4 via elan:\n"
-        "  curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh"
-    )
+# NOTE migration #15666 : ``_find_lake()`` (resolution de l'executable lake
+# natif) a ete RETIRE avec l'invocation directe qu'il servait — run_lake et
+# run_lean_snippet passent desormais par l'organe confine lean_exec, qui
+# resout le backend lui-meme (epinglage par lake, sonde de toolchain).
 
 
 # ---------------------------------------------------------------------------
@@ -209,8 +200,178 @@ def _run_capture(cmd, timeout, cwd=None):
 
 
 # ---------------------------------------------------------------------------
-# Lean command execution
+# Lean command execution — migration vers l'organe confine lean_exec (#15666)
 # ---------------------------------------------------------------------------
+# run_lake / run_lean_snippet ne lancent PLUS lake directement : toute
+# execution passe par ``scripts/lean/lean_exec.py run`` (admission
+# machine-wide, budget, kill-tree, backend epingle). Les signatures restent
+# inchangees — les ~10 carnets appelants et agent_tests/prover/tools.py ne
+# changent pas, aucune re-execution due.
+
+_ORGAN_CALLER = "lean_notebook_utils"
+
+# Tete du verdict JSON de l'organe : objet ouvrant dont la premiere cle est
+# run_id (ordre garanti par le dict literal de run_command).
+_ORGAN_JSON_HEAD = re.compile(r'\{\s*"run_id"\s*:')
+
+# Cache forme WSL -> forme hote (une sonde wslpath -w par projet et par
+# session kernel ; les carnets appellent run_lake plusieurs fois par projet).
+_HOST_CWD_CACHE: dict = {}
+
+
+def _find_lean_exec() -> Path:
+    """Locate l'organe canonique ``scripts/lean/lean_exec.py``.
+
+    Marche des parents (meme strategie que ``find_lean_project``) depuis le
+    cwd, le fichier notebook (papermill NB_FILE / VS Code) et le dossier du
+    module : depuis un carnet de la serie Lean comme depuis les tests, la
+    racine du depot est atteinte en <= 8 parents.
+    """
+    starts = [Path.cwd().resolve()]
+    nb_file = os.environ.get("NB_FILE") or globals().get("__vsc_ipynb_file__")
+    if nb_file:
+        starts.append(Path(nb_file).resolve().parent)
+    starts.append(Path(__file__).resolve().parent)
+    for start in starts:
+        current = start
+        for _ in range(14):
+            candidate = current / "scripts" / "lean" / "lean_exec.py"
+            if candidate.exists():
+                return candidate.resolve()
+            current = current.parent
+            if current == current.parent:
+                break
+    raise FileNotFoundError(
+        "scripts/lean/lean_exec.py introuvable — organe d'execution confine "
+        "requis par run_lake/run_lean_snippet (See #15666)"
+    )
+
+
+def _wsl_to_win(wsl_path: str) -> str:
+    """Traduit ``/mnt/<drive>/...`` en forme Windows (``wslpath -w``).
+
+    L'organe attend une forme HOTE pour ``--cwd`` (il re-traduit vers WSL
+    via son ``wsl_path_of``) : les appelants passent la forme WSL rendue par
+    ``get_lean_project_path``. Sonde bornee 10 s ; echec = valeur passee
+    telle quelle (l'organe tranchera et rendra son refus nomme).
+    """
+    cached = _HOST_CWD_CACHE.get(wsl_path)
+    if cached:
+        return cached
+    try:
+        out = subprocess.run(
+            ["wsl", "-d", "Ubuntu", "--exec", "wslpath", "-w", wsl_path],
+            capture_output=True, timeout=10,
+        )
+        if out.returncode == 0:
+            host = out.stdout.decode("utf-8", errors="replace").strip()
+            if host:
+                _HOST_CWD_CACHE[wsl_path] = host
+                return host
+    except (OSError, subprocess.SubprocessError):
+        pass
+    return wsl_path
+
+
+def _host_cwd_of(project_path: str) -> str:
+    """Forme hote du chemin projet (passe-tout en natif, traduction WSL
+    sous Windows — l'organe attend la forme hote, capacite #15666)."""
+    if is_native_platform() or not str(project_path).startswith("/mnt/"):
+        return project_path
+    return _wsl_to_win(str(project_path))
+
+
+def _split_organ_json(stdout: str) -> Tuple[Optional[dict], str]:
+    """Separe le JSON final de l'organe (``run --json``) de la sortie enfant.
+
+    ``_emit`` imprime le JSON APRES l'enfant (stdout herite) : le bloc
+    cherche est le DERNIER objet parsable dont la premiere cle est
+    ``run_id``. Le probe est une regex d'indentation-libre : l'organe emet
+    ``indent=2`` aujourd'hui, verrouiller l'indentation dans le migrant
+    casserait au premier reformatage de l'organe. Rend
+    ``(payload | None, sortie_enfant)``.
+    """
+    for match in reversed(
+            list(_ORGAN_JSON_HEAD.finditer(stdout))):
+        probe = match.start()
+        try:
+            payload = json.loads(stdout[probe:])
+        except ValueError:
+            continue
+        if isinstance(payload, dict) and "run_id" in payload:
+            return payload, stdout[:probe]
+    return None, stdout
+
+
+def _organ_run(
+    project_path: str, cmd_args: list, timeout: int
+) -> Tuple[int, str, str]:
+    """Execute ``cmd_args`` via l'organe confine depuis ``project_path``.
+
+    La sortie de l'enfant passe par ``--stdout-file``/``--stderr-file`` :
+    sous Windows, l'enfant confine (CREATE_NO_WINDOW + job) n'herite pas le
+    stdout pipe du grand-parent — sans capture par fichier, sa sortie est
+    perdue (mesure #15666 case 1, meme famille que la race _readerthread
+    qui a fonde _run_capture). Rend le contrat historique de run_lake :
+    ``(rc_enfant, out, err)`` avec Timeout -> ``(-1, "", "TIMEOUT after Ns")``
+    et organe injoignable / refus -> ``(-2, ..., raison)``. Le ``tail``
+    historique du mode WSL est applique PAR L'APPELANT.
+    """
+    _require_str("project_path", project_path)
+    organ = _find_lean_exec()
+    host_cwd = _host_cwd_of(project_path)
+    out_f = tempfile.NamedTemporaryFile('wb', delete=False, suffix='.out')
+    err_f = tempfile.NamedTemporaryFile('wb', delete=False, suffix='.err')
+    out_path, err_path = out_f.name, err_f.name
+    out_f.close()
+    err_f.close()
+    argv = [
+        sys.executable, str(organ), "run", "--json",
+        "--timeout", str(timeout), "--caller", _ORGAN_CALLER,
+        "--cwd", host_cwd,
+        "--stdout-file", out_path, "--stderr-file", err_path,
+        "--", *cmd_args,
+    ]
+    try:
+        try:
+            _rc, organ_out, organ_err = _run_capture(argv, timeout + 60)
+        except subprocess.TimeoutExpired:
+            return -1, "", f"TIMEOUT after {timeout}s"
+        except FileNotFoundError:
+            return -2, "", f"lean_exec introuvable: {organ}"
+
+        child_out = Path(out_path).read_text(
+            encoding='utf-8', errors='replace')
+        child_err = Path(err_path).read_text(
+            encoding='utf-8', errors='replace')
+        payload, _ = _split_organ_json(organ_out)
+        if payload is None:
+            # L'organe n'a pas rendu son verdict JSON (crash interne 127,
+            # environnement casse) : echec visible, jamais de faux succes.
+            reason = organ_err.strip() or "lean_exec: aucun verdict JSON rendu"
+            return -2, child_out, reason
+        status = payload.get("status")
+        if status == "timeout":
+            return -1, child_out, f"TIMEOUT after {timeout}s"
+        if payload.get("exit_code") == 125 or status == "refused":
+            reason = payload.get("reason") or "refuse par lean_exec (admission)"
+            return -2, child_out, reason
+        rc_child = payload.get("child_exit_code")
+        return (rc_child if rc_child is not None else 0), child_out, child_err
+    finally:
+        for p in (out_path, err_path):
+            try:
+                Path(p).unlink()
+            except OSError:
+                pass
+
+
+def _tail_lines(text: str, tail: int) -> str:
+    """Garde les ``tail`` dernieres lignes (equivalent ``| tail -N``)."""
+    if not text:
+        return text
+    return "\n".join(text.splitlines()[-tail:])
+
 
 def run_lake(
     project_path: str,
@@ -220,44 +381,31 @@ def run_lake(
 ) -> Tuple[int, str, str]:
     """Run a lake command in the specified project directory.
 
-    On Windows: executes via WSL Ubuntu.
-    On Linux/macOS: executes natively.
+    Migre vers l'organe confine ``scripts/lean/lean_exec.py`` (admission
+    machine-wide, budget, kill-tree — See #15666 case 1) : plus AUCUNE
+    invocation directe de lake ici, WSL comme natif.
 
     Args:
         project_path: Path to the Lake project (from get_lean_project_path).
         args: Lake arguments (e.g. "build Grothendieck").
         timeout: Timeout in seconds (default 600).
-        tail: Number of lines to keep from the end of output (WSL mode only).
+        tail: Number of lines to keep from the end of output (WSL mode only,
+            comme avant la migration : le mode natif rend la sortie complete).
 
     Returns:
-        Tuple of (returncode, stdout, stderr).
+        Tuple of (returncode, stdout, stderr). Le returncode est celui de
+        l'enfant lake ; -1 = timeout, -2 = organe refuse/injoignable
+        (raison dans stderr).
     """
     _require_str("args", args)
+    rc, out, err = _organ_run(project_path, ["lake"] + args.split(), timeout)
+    if rc < 0:
+        return rc, out, err
     if is_native_platform():
-        lake = _find_lake()
-        try:
-            return _run_capture([lake] + args.split(), timeout, cwd=project_path)
-        except subprocess.TimeoutExpired:
-            return -1, "", f"TIMEOUT after {timeout}s"
-        except FileNotFoundError:
-            return -2, "", f"lake executable not found: {lake}"
-    else:
-        # set -o pipefail: propage l'exit code de `lake` (premier segment) au lieu
-        # de l'exit code de `tail -N` (toujours 0). Sinon result.returncode ne
-        # reflete PAS l'echec reel du build. Cf audit cross-source c.8106/c.8107.
-        cmd = (
-            f"source ~/.elan/env 2>/dev/null; "
-            f"set -o pipefail; cd {project_path} && lake {args} 2>&1 | tail -{tail}"
-        )
-        try:
-            return _run_capture(["wsl", "-d", "Ubuntu", "--exec", "bash", "-lc", cmd], timeout)
-        except subprocess.TimeoutExpired:
-            return -1, "", f"TIMEOUT after {timeout}s"
-        except FileNotFoundError:
-            return -2, "", (
-                "WSL introuvable. Ce notebook requiert Windows + WSL Ubuntu, "
-                "ou Linux/macOS avec elan installe."
-            )
+        return rc, out, err
+    # Mode WSL historique : out contenait stdout+stderr entrelaces (2>&1) et
+    # err etait vide — on preserve ce que les carnets observent.
+    return rc, _tail_lines((out or "") + (err or ""), tail), ""
 
 
 def run_lean_snippet(
@@ -268,7 +416,11 @@ def run_lean_snippet(
 ) -> str:
     """Run a Lean code snippet against a Lake project.
 
-    Writes the snippet to a temp file and executes it with `lake env lean`.
+    Migre vers l'organe confine ``lean_exec`` (See #15666 case 1). Le
+    snippet est ecrit dans un fichier temporaire DU PROJET : l'ancien
+    ``/tmp/lean_{id}.lean`` se resolait en ``C:\\tmp\\...`` cote natif
+    (bug mesure po-2026) — dans le projet, le chemin existe dans le dialecte
+    du backend (hote en natif, ``/mnt/...`` en WSL).
 
     Args:
         project_path: Path to the Lake project.
@@ -281,30 +433,23 @@ def run_lean_snippet(
     """
     _require_str("snippet", snippet)
     snippet = textwrap.dedent(snippet).strip() + "\n"
-    tmp_file = f"/tmp/lean_{snippet_id}.lean"
 
-    if is_native_platform():
-        lake = _find_lake()
-        tmp_path = Path(tmp_file)
-        tmp_path.write_text(snippet, encoding="utf-8")
-        try:
-            _rc, out, err = _run_capture([lake, "env", "lean", str(tmp_path)], timeout, cwd=project_path)
-            return (out or "") + (err or "")
-        except subprocess.TimeoutExpired:
+    host_cwd = _host_cwd_of(project_path)
+    tmp_path = Path(host_cwd) / f".lean_snippet_{snippet_id}.lean"
+    tmp_path.write_text(snippet, encoding="utf-8")
+    try:
+        # Les arguments passent tels quels au backend : le chemin du fichier
+        # doit etre dans le dialecte d'execution (WSL /mnt/... sous Windows).
+        file_arg = str(tmp_path)
+        if not is_native_platform():
+            file_arg = win_to_wsl(tmp_path)
+        rc, out, err = _organ_run(
+            project_path, ["lake", "env", "lean", file_arg], timeout)
+        if rc == -1:
             return f"TIMEOUT after {timeout}s"
-        finally:
-            tmp_path.unlink(missing_ok=True)
-    else:
-        write_cmd = f"cat > {tmp_file} << 'LEAN_EOF'\n{snippet}LEAN_EOF"
-        lean_cmd = f"cd {project_path} && lake env lean {tmp_file} 2>&1"
-        full_cmd = f"{write_cmd}\n{lean_cmd}"
-        try:
-            _rc, out, err = _run_capture(["wsl", "-d", "Ubuntu", "--exec", "bash", "-lc", full_cmd], timeout)
-            return (out or "") + (err or "")
-        except subprocess.TimeoutExpired:
-            return f"TIMEOUT after {timeout}s"
-        except FileNotFoundError:
-            return "WSL introuvable. Requiert Windows + WSL ou Linux/macOS natif."
+        return (out or "") + (err or "")
+    finally:
+        tmp_path.unlink(missing_ok=True)
 
 
 # ---------------------------------------------------------------------------
