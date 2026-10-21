@@ -212,9 +212,10 @@ def create_logic_agent(
     """Create the Logic Analysis agent.
 
     ``FunctionChoiceBehavior.Required`` force l'emission d'un appel d'outil :
-    sans lui, le mode mesure (issue #18395, sondes c.1763-c.1764) repond en
-    prose sans jamais tenter ``add_belief_set`` -- meme avec un contrat
-    d'appel explicite dans le prompt.
+    sans lui, le modele mesure repond en prose sans jamais tenter
+    ``add_belief_set`` -- meme avec un contrat d'appel explicite dans le
+    prompt (issue #18395, diagnostic instrumente : commentaire 6305563691 ;
+    le relais honore ``required`` de facon non deterministe run a run).
     """
     try:
         from semantic_kernel.connectors.ai.function_choice_behavior import (
