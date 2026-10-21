@@ -3549,13 +3549,112 @@ theorem tricolorable_invariant_r3_connected {d₁ d₂ : KnotDiagram}
   ⟨Reidemeister3Connected.tricolorable_forward h,
    Reidemeister3Connected.tricolorable_backward h⟩
 
+/-! ### Transfer along a redraw (link 8, route 1)
+
+The constructor `ReidemeisterEquiv.redraw` (Reidemeister.lean) extends the
+equivalence by the bookkeeping step `Redraws` — permutation of the crossing
+list + bijective relabeling of the edge labels. Truth counterpart:
+tricolorability must be invariant along THAT step too. The transport is the
+relabeling of the colouring: the label `e k` of `d₂` carries the colour of
+the label `k` of `d₁` (the bijection `e` exchanges the windows
+`[1, numEdges]`, so the transport stays within bounds); the permutation of
+the list is harmless — the Fox condition is a `∀ c ∈ crossings`, unchanged
+by `List.Perm`. The backward direction follows from `Redraws.symm`, as for
+the connected moves (`Iff.symm` of the direct transfer).
+-/
+
+theorem tricolorable_forward_redraw {d₁ d₂ : KnotDiagram} (hred : Redraws d₁ d₂) :
+    IsTricolorable d₁ → IsTricolorable d₂ := by
+  obtain ⟨hne, e, hw₁, hw₂, hw₃, hw₄, hperm⟩ := hred
+  rintro ⟨coloring, hcond, hn2, hused⟩
+  have hpos1 : 0 < d₁.numEdges := by omega
+  have hpos2 : 0 < d₂.numEdges := by omega
+  -- Transported colouring, equipped with its two characteristic equations:
+  -- (hfkey) the colours follow the relabeling label by label;
+  -- (hfval) the value at the transported index is that of the source index.
+  obtain ⟨f, hfkey, hfval⟩ : ∃ f : TriColoring d₂,
+      (∀ l, 1 ≤ l → l ≤ d₁.numEdges →
+        d₂.colorAtNat (↑f) (e l) = d₁.colorAtNat (↑coloring) l) ∧
+      (∀ i : Fin d₁.numEdges,
+        f ⟨(e (i.val + 1) - 1) % d₂.numEdges, Nat.mod_lt _ hpos2⟩ = coloring i) := by
+    refine ⟨fun i => coloring ⟨(e.symm (i.val + 1) - 1) % d₁.numEdges,
+      Nat.mod_lt _ hpos1⟩, ?_, ?_⟩
+    · intro l h1l h2l
+      have he := hw₃ l h1l h2l
+      unfold KnotDiagram.colorAtNat
+      rw [dif_neg (by omega : d₂.numEdges ≠ 0), dif_neg (by omega : d₁.numEdges ≠ 0)]
+      simp only [Nat.mod_eq_of_lt (by omega : e l - 1 < d₂.numEdges)]
+      -- Nat-valued equality proved separately (pure-Nat motive), then lifted to
+      -- a Fin equality by Fin.ext and to colours by congrArg, in term mode:
+      -- TriColoring is a semireducible def, and a rewrite crossing a colouring
+      -- argument fails its motive at the implicit transparency level
+      -- (measured 2026-10-19, Invariant_en.lean:3587).
+      have hval : (e.symm (e l - 1 + 1) - 1) % d₁.numEdges = (l - 1) % d₁.numEdges := by
+        rw [show (e l - 1) + 1 = e l from by omega, Equiv.symm_apply_apply]
+      exact congrArg (coloring : Fin d₁.numEdges → TriColor)
+        (Fin.ext hval : (⟨(e.symm (e l - 1 + 1) - 1) % d₁.numEdges,
+          Nat.mod_lt _ hpos1⟩ : Fin d₁.numEdges)
+          = ⟨(l - 1) % d₁.numEdges, Nat.mod_lt _ hpos1⟩)
+    · intro i
+      have hi1 : 1 ≤ i.val + 1 ∧ i.val + 1 ≤ d₁.numEdges := ⟨by omega, by omega⟩
+      have hei := hw₃ (i.val + 1) hi1.1 hi1.2
+      simp only [Nat.mod_eq_of_lt (by omega : e (i.val + 1) - 1 < d₂.numEdges)]
+      have hval : (e.symm (e (i.val + 1) - 1 + 1) - 1) % d₁.numEdges = i.val := by
+        rw [show (e (i.val + 1) - 1) + 1 = e (i.val + 1) from by omega,
+          Equiv.symm_apply_apply,
+          show i.val + 1 - 1 = i.val from by omega,
+          Nat.mod_eq_of_lt i.isLt]
+      exact congrArg (coloring : Fin d₁.numEdges → TriColor)
+        (Fin.ext hval : (⟨(e.symm (e (i.val + 1) - 1 + 1) - 1) % d₁.numEdges,
+          Nat.mod_lt _ hpos1⟩ : Fin d₁.numEdges) = i)
+  refine ⟨f, ?_, by omega, ?_⟩
+  · intro c' hc'
+    obtain ⟨c, hc, rfl⟩ := List.mem_map.mp (hperm.mem_iff.mp hc')
+    have hcondc : triColorConditionAt d₁ (↑coloring) c := hcond c hc
+    simp only [triColorConditionAt] at hcondc ⊢
+    simp only [PDCrossing.relabel] at ⊢
+    obtain ⟨⟨a1, b1, a2, b2, a3, b3, a4, b4⟩, hc24, hfox⟩ := hcondc
+    have w1 := hw₃ c.e1 a1 b1
+    have w2 := hw₃ c.e2 a2 b2
+    have w3 := hw₃ c.e3 a3 b3
+    have w4 := hw₃ c.e4 a4 b4
+    -- Colour (in)equalities transported in term mode: a rewrite whose motive
+    -- crosses a colouring application fails (TriColoring semireducible) -- the
+    -- hfkey equations are composed through Eq.trans instead.
+    have htr : ∀ l m, 1 ≤ l → l ≤ d₁.numEdges → 1 ≤ m → m ≤ d₁.numEdges →
+        (d₂.colorAtNat (↑f) (e l) = d₂.colorAtNat (↑f) (e m) ↔
+          d₁.colorAtNat (↑coloring) l = d₁.colorAtNat (↑coloring) m) := by
+      intro l m hl1 hl2 hm1 hm2
+      exact ⟨fun h => (hfkey l hl1 hl2).symm.trans (h.trans (hfkey m hm1 hm2)),
+        fun h => (hfkey l hl1 hl2).trans (h.trans (hfkey m hm1 hm2).symm)⟩
+    refine ⟨⟨w1.1, w1.2, w2.1, w2.2, w3.1, w3.2, w4.1, w4.2⟩,
+      (htr c.e2 c.e4 a2 b2 a4 b4).mpr hc24, ?_⟩
+    rcases hfox with ⟨h12, h23⟩ | ⟨h12, h23, h13⟩
+    · exact Or.inl ⟨(htr c.e1 c.e2 a1 b1 a2 b2).mpr h12,
+      (htr c.e2 c.e3 a2 b2 a3 b3).mpr h23⟩
+    · exact Or.inr ⟨fun heq => h12 ((htr c.e1 c.e2 a1 b1 a2 b2).mp heq),
+      fun heq => h23 ((htr c.e2 c.e3 a2 b2 a3 b3).mp heq),
+      fun heq => h13 ((htr c.e1 c.e3 a1 b1 a3 b3).mp heq)⟩
+  · obtain ⟨i, j, hneij⟩ := hused
+    refine ⟨⟨(e (i.val + 1) - 1) % d₂.numEdges, Nat.mod_lt _ hpos2⟩,
+            ⟨(e (j.val + 1) - 1) % d₂.numEdges, Nat.mod_lt _ hpos2⟩, ?_⟩
+    exact fun heq => hneij ((hfval i).symm.trans (heq.trans (hfval j)))
+
+/-- Tricolorability is invariant along a redraw (link 8, route 1): the
+backward direction is the direct transfer along the symmetric redraw. -/
+theorem tricolorable_invariant_redraw {d₁ d₂ : KnotDiagram} (hred : Redraws d₁ d₂) :
+    (IsTricolorable d₁ ↔ IsTricolorable d₂) :=
+  ⟨tricolorable_forward_redraw hred,
+   fun h => tricolorable_forward_redraw (Redraws.symm hred) h⟩
+
 /-! ## 2-Ω. The master theorem: tricolorability is a knot invariant
 
 Induction over the reflexive-transitive closure `ReidemeisterEquiv` composes
-the three connected-move transfers (§3e/§3f/§3g). Each `ReidemeisterStep`
-carries its direction in a `d d' ∨ d' d` disjunction (Stage 2, #2874): the
-`Or.inl` branch is the direct transfer, the `Or.inr` branch its symmetric
-(`Iff.symm`). Transitivity composes via `Iff.trans`.
+the three connected-move transfers (§3e/§3f/§3g) and the bookkeeping `redraw`
+step (link 8, route 1). Each `ReidemeisterStep` carries its direction in a
+`d d' ∨ d' d` disjunction (Stage 2, #2874): the `Or.inl` branch is the
+direct transfer, the `Or.inr` branch its symmetric (`Iff.symm`).
+Transitivity composes via `Iff.trans`.
 -/
 
 theorem tricolorable_invariant :
@@ -3585,6 +3684,7 @@ theorem tricolorable_invariant :
       cases h with
       | inl h => exact tricolorable_invariant_r3_connected h
       | inr h => exact Iff.symm (tricolorable_invariant_r3_connected h)
+  | redraw h => exact tricolorable_invariant_redraw h
   | trans _ _ ih₁ ih₂ => exact Iff.trans ih₁ ih₂
 
 /-! ## 5. Corollary: the trefoil is not the unknot

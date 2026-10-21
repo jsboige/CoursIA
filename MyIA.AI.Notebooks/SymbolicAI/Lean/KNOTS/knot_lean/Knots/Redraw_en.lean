@@ -24,126 +24,47 @@ Reidemeister moves AND planar isotopy" — and notes the latter is not yet
 connected. `Redraws` is its combinatorial building block, and `SameKnot`
 (transitive closure of a redraw or Reidemeister step — route 3, the one
 retained by the coordinator arbitration) composes both into the link 6
-assembly. See the FR canonical file for the full design note.
+assembly. Since link 8 the `Redraws` relation and its equivalence structure
+live in `Reidemeister_en.lean` (import cycle), and route 1 is delivered as a
+definitional bridge: the equivalence admits the redraw as a bookkeeping step
+(`ReidemeisterEquiv.redraw`, `Redraws.reidemeisterEquiv` below). See the FR
+canonical file for the full design note.
 -/
 
 open Knots_en
 
 namespace Knots_en
 
-/-- Relabel a crossing by a function on edge labels.
-Per-crossing version of `relabelCrossings` (Conway.lean, link 5). -/
-def PDCrossing.relabel (f : Nat → Nat) (c : PDCrossing) : PDCrossing where
-  e1 := f c.e1
-  e2 := f c.e2
-  e3 := f c.e3
-  e4 := f c.e4
+/-! ### Route 1: the redraw is a step of the Reidemeister equivalence
 
-/-- Redraw: `d₂` is obtained from `d₁` by a bijective relabeling of the edge
-labels that exchanges the `edges` windows (hence `numEdges`), preserves the
-label window `[1, numEdges]` in both directions, and a permutation of the
-crossing list. This is the direction of the link 5 certificate:
-`relabelCrossings f (ktRedrawOrder d₁.crossings) = d₂.crossings`.
+NOTE MAJ 4 (link 8, route 1 — ai-01 arbitration of 2026-10-19, #2874
+c.6261930038 "2bis first, then route 1"). The obstruction is measured: the
+three connected surgeries all preserve the order of the surviving crossings
+(`Reidemeister.lean`: R1 `set i Y' ++ [kink]`, R2 `set i Y' ++ [pair]`, R3
+in-place rewrite of three consecutive crossings); yet `Redraws` quantifies
+over a permutation of the list (the KT certificate `ktRedrawOrder` swaps
+the blocks 5↔7 and 8↔10 — non trivial) AND a global bijective relabeling
+of the edge labels. The strong congruence `Redraws d₁ d₂ →
+ReidemeisterEquiv d₁ d₂` is therefore not provable in the encoding
+restricted to the three moves: this is a definitional gap, not a missing
+lemma.
 
-Slice 4: the two window clauses `1 ≤ k ≤ numEdges → 1 ≤ e k ≤ numEdges` (and
-the symmetric one) are required for the `wf` transfer — without them it is
-false (counterexample: `d₁` a single well-formed crossing, `e = swap(2,5)`,
-`d₂ = [⟨1,5,1,5⟩]`: the four v2 clauses hold, `d₂.wf = false`). -/
-def Redraws (d₁ d₂ : KnotDiagram) : Prop :=
-  d₁.numEdges = d₂.numEdges ∧
-  ∃ e : Nat ≃ Nat,
-    (∀ k ∈ d₁.edges, e k ∈ d₂.edges) ∧
-    (∀ k ∈ d₂.edges, e.symm k ∈ d₁.edges) ∧
-    (∀ k, 1 ≤ k → k ≤ d₁.numEdges → 1 ≤ e k ∧ e k ≤ d₂.numEdges) ∧
-    (∀ k, 1 ≤ k → k ≤ d₂.numEdges → 1 ≤ e.symm k ∧ e.symm k ≤ d₁.numEdges) ∧
-    d₂.crossings.Perm (d₁.crossings.map (PDCrossing.relabel e))
+Retained bridge: the constructor `ReidemeisterEquiv.redraw`
+(Reidemeister.lean, where the `Redraws` relation and its equivalence
+structure were relocated to avoid the import cycle) admits the redraw as a
+bookkeeping step — faithful to the `Knot` docstring ("modulo Reidemeister
+moves AND planar isotopy", Basic.lean). Truth counterpart: every invariant
+transferred along `ReidemeisterEquiv` must cover the new step — tricoloring
+does (`tricolorable_invariant_redraw`, Invariant.lean, same slice). The
+theorem below is the immediate use of the constructor.
+-/
 
-/-! ### Auxiliary lemmas: relabeling and list structure. -/
-
-/-- Relabeling by the identity is the identity, per crossing. -/
-theorem relabel_equiv_refl (c : PDCrossing) :
-    PDCrossing.relabel (Equiv.refl Nat) c = c := rfl
-
-/-- Relabeling by the identity is the identity, per list. -/
-theorem map_relabel_equiv_refl (cs : List PDCrossing) :
-    cs.map (PDCrossing.relabel (Equiv.refl Nat)) = cs := by
-  induction cs with
-  | nil => rfl
-  | cons c rest ih => rw [List.map_cons, ih, relabel_equiv_refl]
-
-/-- Relabeling composes like functions: `relabel g ∘ relabel f =
-relabel (g ∘ f)`. This is what makes transitivity of redraw immediate. -/
-theorem relabel_comp_apply (g f : Nat → Nat) (c : PDCrossing) :
-    PDCrossing.relabel g (PDCrossing.relabel f c) = PDCrossing.relabel (g ∘ f) c := rfl
-
-/-- Relabeling by the inverse bijection cancels the direct relabeling,
-per crossing. -/
-theorem relabel_symm_apply (e : Nat ≃ Nat) (c : PDCrossing) :
-    PDCrossing.relabel e.symm (PDCrossing.relabel e c) = c := by
-  simp [PDCrossing.relabel, Equiv.symm_apply_apply]
-
-/-- The composed relabeling is written with `Equiv.trans`: `relabel e₂ ∘
-relabel e₁ = relabel (e₁.trans e₂)` (the `Equiv.trans` convention applies
-`e₁` then `e₂`). -/
-theorem relabel_trans_eq (e₁ e₂ : Nat ≃ Nat) :
-    (PDCrossing.relabel e₂) ∘ (PDCrossing.relabel e₁) = PDCrossing.relabel (e₁.trans e₂) := by
-  funext c
-  simp [PDCrossing.relabel, Equiv.trans_apply]
-
-/-! ### Structure: `Redraws` is an equivalence. -/
-
-/-- Reflexivity of redraw: identity bijection, identity permutation. -/
-theorem Redraws.refl (d : KnotDiagram) : Redraws d d := by
-  refine ⟨rfl, Equiv.refl Nat, fun _ hk => hk, fun _ hk => hk,
-    fun _ h1 h2 => ⟨h1, h2⟩, fun _ h1 h2 => ⟨h1, h2⟩, ?_⟩
-  rw [map_relabel_equiv_refl]
-
-/-- Symmetry of redraw: the inverse bijection `e.symm` exchanges the
-windows the other way, and the cancellation `e.symm ∘ e = id` brings the
-relabeled list back to the starting list. -/
-theorem Redraws.symm {d₁ d₂ : KnotDiagram} (h : Redraws d₁ d₂) : Redraws d₂ d₁ := by
-  obtain ⟨hne, e, hw₁, hw₂, hw₃, hw₄, hperm⟩ := h
-  refine ⟨hne.symm, e.symm, fun k hk => hw₂ k hk, fun k hk => hw₁ k hk,
-    fun k h1 h2 => hw₄ k h1 h2, fun k h1 h2 => hw₃ k h1 h2, ?_⟩
-  -- From hperm : d₂ ~ d₁.map (relabel e), map by (relabel e.symm):
-  -- d₂.map (relabel e.symm) ~ (d₁.map (relabel e)).map (relabel e.symm)
-  --   = d₁.map (relabel e.symm ∘ relabel e) = d₁.map id = d₁,
-  -- then symmetry of the permutation.
-  have hmap := List.Perm.map (PDCrossing.relabel e.symm) hperm
-  rw [List.map_map] at hmap
-  have hfn : (PDCrossing.relabel e.symm) ∘ (PDCrossing.relabel e) = id := by
-    funext c
-    simpa using relabel_symm_apply e c
-  rw [hfn, List.map_id] at hmap
-  exact hmap.symm
-
-/-- Transitivity of redraw: the bijections compose by `Equiv.trans` (the
-convention applies `e₁` then `e₂`, which is exactly the composition order
-of the relabelings), and the permutations chain. -/
-theorem Redraws.trans {d₁ d₂ d₃ : KnotDiagram} (h₁ : Redraws d₁ d₂) (h₂ : Redraws d₂ d₃) :
-    Redraws d₁ d₃ := by
-  obtain ⟨hne₁, e₁, hw₁₁, hw₁₂, hw₃₁, hw₄₁, hp₁⟩ := h₁
-  obtain ⟨hne₂, e₂, hw₂₁, hw₂₂, hw₃₂, hw₄₂, hp₂⟩ := h₂
-  refine ⟨hne₁.trans hne₂, e₁.trans e₂, ?_, ?_, ?_, ?_, ?_⟩
-  · intro k hk
-    rw [Equiv.trans_apply]
-    exact hw₂₁ (e₁ k) (hw₁₁ k hk)
-  · intro k hk
-    rw [Equiv.symm_trans_apply]
-    exact hw₁₂ (e₂.symm k) (hw₂₂ k hk)
-  · intro k h1 h2
-    rw [Equiv.trans_apply]
-    obtain ⟨ha, hb⟩ := hw₃₁ k h1 h2
-    exact hw₃₂ (e₁ k) ha hb
-  · intro k h1 h2
-    rw [Equiv.symm_trans_apply]
-    obtain ⟨ha, hb⟩ := hw₄₂ k h1 h2
-    exact hw₄₁ (e₂.symm k) ha hb
-  · -- d₃ ~ d₂.map (relabel e₂) [hp₂] and
-    -- d₂.map (relabel e₂) ~ d₁.map (relabel (e₁.trans e₂)) [mapping hp₁].
-    have hmap := List.Perm.map (PDCrossing.relabel e₂) hp₁
-    rw [List.map_map, relabel_trans_eq] at hmap
-    exact hp₂.trans hmap
+/-- **Route 1**: a redraw relates two presentations of the same planar
+drawing, and the Reidemeister equivalence now admits it as a bookkeeping
+step. -/
+theorem Redraws.reidemeisterEquiv {d₁ d₂ : KnotDiagram} (h : Redraws d₁ d₂) :
+    ReidemeisterEquiv d₁ d₂ :=
+  ReidemeisterEquiv.redraw h
 
 /-! ### Bridge from the link-5 certificate (Conway mutant → KT census). -/
 
