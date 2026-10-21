@@ -23,12 +23,12 @@ This part applies the "arrow form" thread to **cover-preserving functors**.
 Mathlib defines the `CoverPreserving J K G` structure **pointwise**: for any
 covering sieve `S ∈ J U`, the image `S.functorPushforward G` is covering in
 `K (G.obj U)`. This structure sits at the core of site theory (morphisms of
-sites, `inducedTopology_coverPreserving`, sheaf comparison) — but **no law
+sites, `coverPreserving_restrictedTopology`, sheaf comparison) — but **no law
 connects `CoverPreserving` to the arrow form `J.Covers S f`**. We fill the
 gap: the central theorem (`covers_pushforward_of_coverPreserving`,
 transporting a cover along `f` through the functor), its identity
 consequence, and the bridge to the induced topology
-(`covers_inducedTopology`, corollary of `Functor.inducedTopology_coverPreserving`).
+(`covers_restrictedTopology`, corollary of `Functor.coverPreserving_restrictedTopology`).
 
 The pivot lemma is `Sieve.functorPushforward_pullback_le`: the image under
 `G` of the pullback of `S` along `f` is contained in the pullback (along
@@ -95,24 +95,24 @@ theorem covers_id_of_coverPreserving {C : Type u} [Category.{v} C]
 /-!
 ## Section 3: bridge to the induced topology
 
-`Functor.inducedTopology_coverPreserving` asserts that `G` is
-cover-preserving for `G.inducedTopology K` (the topology induced along
+`Functor.coverPreserving_restrictedTopology` asserts that `G` is
+cover-preserving for `G.restrictedTopology K` (the topology induced along
 `G`, part 49). The central theorem specialized then gives the arrow form
 of the bridge: a cover of the induced topology is transported by `G` into
 a cover of `K`. This is the arrow counterpart of the fact that the image
 of an induced-covering sieve is covering in `K`.
 -/
 
-/-- Bridge to the induced topology: `(G.inducedTopology K).Covers S f`
+/-- Bridge to the induced topology: `(G.restrictedTopology K).Covers S f`
     implies `K.Covers (S.functorPushforward G) (G.map f)`.
-    Proof: `Functor.inducedTopology_coverPreserving` provides the
+    Proof: `Functor.coverPreserving_restrictedTopology` provides the
     cover-preserving functor, the central theorem concludes. -/
-theorem covers_inducedTopology {C : Type u} [Category.{v} C]
+theorem covers_restrictedTopology {C : Type u} [Category.{v} C]
     {D : Type u'} [Category.{v'} D] (G : C ⥤ D) (K : GrothendieckTopology D)
     [G.IsLocallyFull K] [G.IsLocallyFaithful K] [G.LocallyCoverDense K]
-    {X Y : C} (f : Y ⟶ X) (S : Sieve X) (hS : (G.inducedTopology K).Covers S f) :
+    {X Y : C} (f : Y ⟶ X) (S : Sieve X) (hS : (G.restrictedTopology K).Covers S f) :
     K.Covers (S.functorPushforward G) (G.map f) :=
   covers_pushforward_of_coverPreserving
-    (Functor.inducedTopology_coverPreserving (G := G) (K := K)) f S hS
+    (Functor.coverPreserving_restrictedTopology (G := G) (K := K)) f S hS
 
 end Grothendieck.CoversCoverPreserving_en

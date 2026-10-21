@@ -24,12 +24,12 @@ Cette partie applique le fil conducteur « forme flèche » aux **foncteurs qui
 préservent les couvertures**. Mathlib définit la structure `CoverPreserving
 J K G` de façon **ponctuelle** (`cover_preserve : S ∈ J U → S.functorPushforward
 G ∈ K (G.obj U)`) — structure au cœur de la théorie des sites
-(`inducedTopology_coverPreserving`, morphismes de sites) — mais **aucune loi
+(`coverPreserving_restrictedTopology`, morphismes de sites) — mais **aucune loi
 ne connecte `CoverPreserving` à la forme flèche `J.Covers S f`**. On comble
 le trou : le théorème central (`covers_pushforward_of_coverPreserving`,
 transport d'une couverture le long de `f` par le foncteur), sa retombée
 sur l'identité, et le pont vers la topologie induite
-(`covers_inducedTopology`, corollaire de `inducedTopology_coverPreserving`).
+(`covers_restrictedTopology`, corollaire de `coverPreserving_restrictedTopology`).
 
 Le lemme pivot est `Sieve.functorPushforward_pullback_le` : l'image par `G`
 du pullback de `S` le long de `f` est contenue dans le pullback (le long de
@@ -95,24 +95,24 @@ theorem covers_id_of_coverPreserving {C : Type u} [Category.{v} C]
 /-!
 ## Section 3 : pont vers la topologie induite
 
-`inducedTopology_coverPreserving` affirme que `G` est cover-preserving pour
-`G.inducedTopology K` (la topologie induite le long de `G`, partie 49). Le
+`coverPreserving_restrictedTopology` affirme que `G` est cover-preserving pour
+`G.restrictedTopology K` (la topologie induite le long de `G`, partie 49). Le
 théorème central spécialisé donne alors la forme flèche du pont : une
 couverture de la topologie induite est transportée par `G` en une
 couverture de `K`. C'est la contrepartie flèche du fait que l'image d'un
 crible induit-couvrant est couvrante dans `K`.
 -/
 
-/-- Pont vers la topologie induite : `(G.inducedTopology K).Covers S f`
+/-- Pont vers la topologie induite : `(G.restrictedTopology K).Covers S f`
     implique `K.Covers (S.functorPushforward G) (G.map f)`.
-    Preuve : `Functor.inducedTopology_coverPreserving` fournit le foncteur
+    Preuve : `Functor.coverPreserving_restrictedTopology` fournit le foncteur
     cover-preserving, le théorème central conclut. -/
-theorem covers_inducedTopology {C : Type u} [Category.{v} C]
+theorem covers_restrictedTopology {C : Type u} [Category.{v} C]
     {D : Type u'} [Category.{v'} D] (G : C ⥤ D) (K : GrothendieckTopology D)
     [G.IsLocallyFull K] [G.IsLocallyFaithful K] [G.LocallyCoverDense K]
-    {X Y : C} (f : Y ⟶ X) (S : Sieve X) (hS : (G.inducedTopology K).Covers S f) :
+    {X Y : C} (f : Y ⟶ X) (S : Sieve X) (hS : (G.restrictedTopology K).Covers S f) :
     K.Covers (S.functorPushforward G) (G.map f) :=
   covers_pushforward_of_coverPreserving
-    (Functor.inducedTopology_coverPreserving (G := G) (K := K)) f S hS
+    (Functor.coverPreserving_restrictedTopology (G := G) (K := K)) f S hS
 
 end Grothendieck.CoversCoverPreserving
