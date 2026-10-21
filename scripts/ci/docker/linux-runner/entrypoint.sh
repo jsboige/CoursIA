@@ -97,30 +97,72 @@ done
 # for-each-ref defaut -> fatal rc=128 ; format '%(refname) %(objectname)'
 # -> liste rc=0. D'ou l'ordre : disarm chirurgical ici, integrite large
 # ensuite.
-# UNE passe batchee par clone (#21557). La version precedente lancait un
-# `git cat-file -e` PAR ref : ~1310 processus a chaque cycle sur les clones de
-# la flotte, et > 300 s de scan mesurees sur un depot sans packfile (3,9 Go
-# d'objets en vrac, slots 8/9/12 d'ai-01 -- le cycle entier y passait, en rc=126
-# muet). `--batch-check` lit les memes 1310 objets en 0,6 s, depots vracs
-# compris : c'est la MEME information, payee une fois.
 for gitdir in "$ACTIONS_RUNNER_INPUT_WORK"/*/*/.git; do
   [ -e "$gitdir" ] || continue
   repo="${gitdir%/.git}"
-  refs="$(git -C "$repo" for-each-ref --format='%(refname) %(objectname)' refs/remotes 2>/dev/null)" || refs=""
-  [ -n "$refs" ] || continue
-  # `--batch-check` rend "<sha> missing" pour un objet absent du depot : c'est
-  # exactement le predicat de `cat-file -e`, sans un processus par ref.
-  missing="$(printf '%s\n' "$refs" | awk '{print $2}' \
-    | git -C "$repo" cat-file --batch-check='%(objectname) %(objecttype)' 2>/dev/null \
-    | awk '$2 == "missing" {print $1}')" || missing=""
-  [ -n "$missing" ] || continue
-  for sha in $missing; do
-    while read -r ref obj; do
-      [ "$obj" = "$sha" ] || continue
-      echo "entrypoint: ref distante dangling $ref -- suppression (objet absent)"
-      git -C "$repo" update-ref -d "$ref" 2>/dev/null || true
-    done <<< "$refs"
-  done
+  # Borne du cout (fix #20697, myia-ai-01-wsl pool down 2 jours) : avec ~4 600
+  # refs distantes et ~21 000 packs par cache, l'ancienne boucle faisait un
+  # `cat-file -e` par ref -- chaque appel parcourt l'index de packs, cout
+  # O(refs * packs) = 23 min sur le slot mesure. La borne est ici O(refs + packs) :
+  # UN seul `cat-file --batch-check` pour toutes les SHAs de la liste, puis
+  # suppression des refs dont le SHA est dans la liste des `missing`. Le
+  # fd de la liste temporaire est ferme par redirection explicite pour eviter
+  # un `lsof` permanent sur le slot (le bloc tourne avant l'enregistrement).
+  _el_refs="$(mktemp -t el-refs.XXXXXX)" && _el_miss="$(mktemp -t el-miss.XXXXXX)" || {
+    # mktemp a echoue (saturation /tmp) : on retombe sur l'ancienne boucle pour
+    # ne pas empecher le slot de s'enregistrer, et on consigne.
+    # Le test d'existence d'un objet (cat-file -e) declenche le fetch paresseux
+    # en clone partiel (promisor=true, partialclonefilter=blob:none -- slot 3
+    # po-2024 en incidence) ; sans garde, git tente un fetch sans timeout et le
+    # 2>/dev/null masque tout. GIT_NO_LAZY_FETCH=1 (git >= 2.46, no-op avant)
+    # desactive le fetch, timeout 10 borne le pire cas. Le de-masquage de stderr
+    # permet de voir la cause d'un timeout (sinon le bloc est muet, et c'est
+    # exactement la panne slot 3).
+    echo "entrypoint: mktemp indisponible -- fallback boucle O(refs*packs)" >&2
+    while read -r ref sha; do
+      if ! GIT_NO_LAZY_FETCH=1 timeout 10 git -C "$repo" cat-file -e "$sha^{object}"; then
+        echo "entrypoint: ref distante dangling $ref -- suppression (objet absent ou timeout cat-file)"
+        git -C "$repo" update-ref -d "$ref" 2>/dev/null || true
+      fi
+    done < <(git -C "$repo" for-each-ref --format='%(refname) %(objectname)' refs/remotes 2>/dev/null)
+    continue
+  }
+  git -C "$repo" for-each-ref --format='%(refname) %(objectname)' refs/remotes 2>/dev/null > "$_el_refs" || true
+  if [ -s "$_el_refs" ]; then
+    # Meme garde que pour le fallback : cat-file --batch-check en clone partiel
+    # declenche un fetch paresseux par objet absent. GIT_NO_LAZY_FETCH=1
+    # (no-op sur git < 2.46) desactive le fetch ; timeout 60 borne le batch
+    # (4 600 refs mesure, batch process unique). Le 2>/dev/null historique
+    # est retire -- un timeout doit etre visible sur stderr (cf. incident slot 3
+    # po-2024 c.327).
+    awk '{print $NF}' "$_el_refs" | sort -u \
+      | GIT_NO_LAZY_FETCH=1 timeout 60 git -C "$repo" cat-file --batch-check \
+      | awk '$2 == "missing" { print $1 }' > "$_el_miss" || true
+    if [ -s "$_el_miss" ]; then
+      while read -r sha; do
+        awk -v s="$sha" '$NF == s { print $1 }' "$_el_refs" | while read -r ref; do
+          [ -n "$ref" ] || continue
+          echo "entrypoint: ref distante dangling $ref -- suppression (objet absent)"
+          git -C "$repo" update-ref -d "$ref" 2>/dev/null || true
+        done
+      done < "$_el_miss"
+    fi
+  fi
+  rm -f "$_el_refs" "$_el_miss"
+
+  # Prune des refs pull/* (fix #20697 point 2) : chaque PR vue depose un
+  # `refs/remotes/{remote}/pull/N/{head,merge}` (fetch --refspec EXPLICITE de
+  # actions/checkout, jamais prune auto, mesure : ~4 600 refs dont la majorite
+  # obsolete apres merge/close). `update-ref --stdin` borne le cout a un
+  # processus par depot (au lieu d'un update-ref par ref) ; les refs seront
+  # recreees au prochain fetch si encore pertinentes.
+  _el_pull="$(mktemp -t el-pull.XXXXXX)" || continue
+  git -C "$repo" for-each-ref --format='delete %(refname)' refs/remotes 2>/dev/null \
+    | grep '^delete .*/pull/' > "$_el_pull" || true
+  if [ -s "$_el_pull" ]; then
+    git -C "$repo" update-ref --stdin < "$_el_pull" 2>/dev/null || true
+  fi
+  rm -f "$_el_pull"
 done
 # TEST-ENTRYPOINT-DANGLING-REFS-END
 
