@@ -37,21 +37,32 @@ FLOOR = "pyarrow>=26"
 # Une installation de pyarrow SANS borne : `pip install ... pyarrow ...`.
 UNBOUNDED_RE = re.compile(r"pip\s+install[^\n]*?(?<![\w>=.-])pyarrow(?![\w>=.-])")
 
+# L'affichage de la version RESOLUE, dans sa forme EXECUTABLE :
+# `python -c "import pyarrow; print('pyarrow resolu:', pyarrow.__version__)"`.
+# La commande et la mention de `pyarrow.__version__` doivent etre sur la MEME
+# ligne : une ligne commentee ne repond pas a l'acceptance #1.
+PRINT_VERSION_RE = re.compile(r"python\s+-c\s+[^\n]*pyarrow\.__version__")
 
-def _code_lines(path: Path) -> str:
-    """Le workflow sans ses lignes de commentaire.
+
+def _without_comment_lines(text: str) -> str:
+    """Le texte sans ses lignes de commentaire.
 
     Un commentaire qui MENTIONNE `pip install pyarrow` (pour expliquer le
     defaut) n'est pas une installation : le scanner ne doit pas le lire comme
     tel. On ne retire donc que les lignes dont le contenu est un commentaire,
-    pas les commentaires de fin de ligne (ceux-ci precede la commande).
+    pas les commentaires de fin de ligne (ceux-ci precedent la commande).
     """
     kept = []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for line in text.splitlines():
         if line.strip().startswith("#"):
             continue
         kept.append(line)
     return "\n".join(kept)
+
+
+def _code_lines(path: Path) -> str:
+    """Le workflow sans ses lignes de commentaire."""
+    return _without_comment_lines(path.read_text(encoding="utf-8"))
 
 
 def test_workflows_install_a_bounded_pyarrow():
@@ -67,14 +78,43 @@ def test_workflows_install_a_bounded_pyarrow():
         )
 
 
+def _prints_resolved_version(text: str) -> bool:
+    """Le texte execute-t-il l'affichage de la version resolue ?
+
+    On ne lit que les lignes EXECUTABLES : une commande commentee n'affiche
+    rien dans le log. Le faux negatif (une commande passee en commentaire
+    laissait la suite verte) a ete mesure par la relecture tierce de #21783.
+    """
+    return bool(PRINT_VERSION_RE.search(_without_comment_lines(text)))
+
+
 def test_workflows_print_the_resolved_version():
     """Chaque workflow affiche la version RESOLUE de pyarrow (acceptance #1)."""
     for wf in WORKFLOWS:
-        text = wf.read_text(encoding="utf-8")
-        assert "pyarrow.__version__" in text, (
-            f"{wf.name}: la version resolue de pyarrow n'est pas affichee -- "
-            f"le log doit la porter, pas seulement la contrainte"
+        assert _prints_resolved_version(wf.read_text(encoding="utf-8")), (
+            f"{wf.name}: la version resolue de pyarrow n'est pas affichee par "
+            f"une ligne EXECUTABLE -- le log doit la porter, pas seulement la "
+            f"contrainte"
         )
+
+
+def test_a_commented_command_does_not_count_as_printing_the_version():
+    """Controle negatif : une commande commentee n'affiche pas la version.
+
+    C'est le faux negatif qui a ete mesure : commenting la commande laissait
+    la suite verte alors que le job n'affichait plus aucune version.
+    """
+    commented = (
+        '        # Version RESOLUE de pyarrow (#21764) : le log doit la porter\n'
+        '        # python -c "import pyarrow; print(pyarrow.__version__)"\n'
+    )
+    assert not _prints_resolved_version(commented), (
+        "une commande commentee ne doit pas satisfaire l'acceptance #1"
+    )
+    executable = '        python -c "import pyarrow; print(pyarrow.__version__)"\n'
+    assert _prints_resolved_version(executable), (
+        "la forme executable doit etre reconnue"
+    )
 
 
 def test_floor_lives_in_a_readable_dependency_file():
@@ -87,17 +127,32 @@ def test_floor_lives_in_a_readable_dependency_file():
 
 
 def test_floor_matches_the_requirement_file():
-    """Le plancher du workflow et celui du fichier de dependances coincident."""
+    """Le plancher du workflow et celui du fichier de dependances coincident.
+
+    La comparaison est REELLE : les versions lues dans les workflows (lignes
+    executables) et celles du requirements sont mises en egale. La version
+    precedente ne lisait aucun workflow -- son nom promettait une comparaison
+    que le corps ne faisait pas (reserve non bloquante de la relecture
+    tierce de #21783).
+    """
     floor_in_file = re.search(r"pyarrow>=(\d+)", FAMILY_REQUIREMENTS.read_text(encoding="utf-8"))
     assert floor_in_file is not None, "plancher illisible dans le requirements"
     version = int(floor_in_file.group(1))
     assert version >= 26, f"plancher pyarrow>={version} sous le seuil mesure (26)"
+    for wf in WORKFLOWS:
+        floors = {int(v) for v in re.findall(r"pyarrow>=(\d+)", _code_lines(wf))}
+        assert floors, f"{wf.name}: plancher illisible dans les lignes executables"
+        assert floors == {version}, (
+            f"{wf.name}: plancher workflow {sorted(floors)} != plancher "
+            f"requirements {version} -- les deux doivent coincider"
+        )
 
 
 if __name__ == "__main__":
     for fn in (
         test_workflows_install_a_bounded_pyarrow,
         test_workflows_print_the_resolved_version,
+        test_a_commented_command_does_not_count_as_printing_the_version,
         test_floor_lives_in_a_readable_dependency_file,
         test_floor_matches_the_requirement_file,
     ):
