@@ -128,6 +128,7 @@ Problèmes du monde réel adaptés de projets étudiants. Chaque application est
 | 1b | [App-14c-ConnectFour-CSharp](Applications/Search/App-14c-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
 | 2 | [App-14-ConnectFour-Adversarial](Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
 | 2b | [App-14-ConnectFour-CSharp](Applications/Search/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 3 | [App-34-15Puzzle-Admissible-Astar-Python](Applications/Search/App-34-15Puzzle-Admissible-Astar-Python.ipynb) | ~45 min | 15-puzzle : A* et heuristiques admissibles **mesurées** (Manhattan vs linear conflict), résolvabilité par parité des inversions, contraste avec un glouton sous-optimal | Nouveau |
 
 ### Applications CSP (`Applications/CSP/`)
 
