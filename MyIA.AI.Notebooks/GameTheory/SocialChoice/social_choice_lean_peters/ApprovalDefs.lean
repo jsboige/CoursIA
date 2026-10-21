@@ -7,7 +7,7 @@
   Peters (2026), arXiv 2609.11912 (p. 1).
 
   Source archivée : le PDF de référence est déposé au gisement partagé
-  depuis le 2026-10-20 (21 pages) ; les renvois « p. N » ci-dessous
+  depuis le 2026-10-20 (20 pages) ; les renvois « p. N » ci-dessous
   pointent dans ce PDF archivé.
 
   Tranche 1 du plan d'exécution de l'issue #17988 :

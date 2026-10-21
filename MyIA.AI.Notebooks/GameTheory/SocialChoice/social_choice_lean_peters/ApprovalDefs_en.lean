@@ -7,7 +7,7 @@
   (2026), arXiv 2609.11912 (p. 1).
 
   Archived source: the reference PDF has been deposited in the shared
-  repository since 2026-10-20 (21 pages); the "p. N" references below
+  repository since 2026-10-20 (20 pages); the "p. N" references below
   point into that archived PDF.
 
   Tranche 1 of the execution plan for issue #17988 :
