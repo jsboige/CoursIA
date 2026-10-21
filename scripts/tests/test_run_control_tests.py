@@ -123,6 +123,42 @@ def test_collection_error_is_named_as_collection_and_not_as_a_test_failure(tmp_p
     assert "Arbre de checkout incomplet" not in proc.stdout
 
 
+def test_unknown_pytest_arg_is_named_as_invocation_not_as_collection(tmp_path):
+    """Un `--pytest-arg` invalide n'est ni une erreur de collecte, ni un controle vide.
+
+    Mesure le 2026-10-21 : pytest rend rc=4 sur une erreur d'usage et affiche
+    "ERROR: usage: python -m pytest ...". Le code de sortie ne suffit donc pas a
+    conclure : c'est la signature de sortie qui nomme la cause.
+    """
+    ok = _write(tmp_path, "test_ok.py", "def test_pass():\n    assert True\n")
+
+    proc = _run(ok, "--pytest-arg=--nonexistent-flag-xyz")
+
+    assert proc.returncode == 1, proc.stdout
+    assert "Erreur d'invocation" in proc.stdout
+    # Les trois autres causes restent distinctes.
+    assert "Erreur de collecte" not in proc.stdout
+    assert "Controle vide" not in proc.stdout
+    assert "Arbre de checkout incomplet" not in proc.stdout
+
+
+def test_missing_plugin_is_not_propagated_as_a_test_failure(tmp_path):
+    """Un plugin introuvable ne doit pas sortir en rc=1 nu, lu comme un test rouge.
+
+    Mesure le 2026-10-21 : pytest rend rc=1 avec une traceback
+    "Error importing plugin". Sans titre, la CI lit "un test a echoue" et accuse
+    la PR d'une casse qu'aucun test n'a produite.
+    """
+    ok = _write(tmp_path, "test_ok.py", "def test_pass():\n    assert True\n")
+
+    proc = _run(ok, "--pytest-arg=-p", "--pytest-arg=no_such_plugin_xyz")
+
+    assert proc.returncode == 1, proc.stdout
+    assert "Erreur d'invocation" in proc.stdout
+    assert "Erreur de collecte" not in proc.stdout
+    assert "Controle vide" not in proc.stdout
+
+
 def test_pytest_config_is_pinned_so_the_rootdir_never_walks_up(tmp_path):
     """Le rootdir vient du configfile nomme, pas d'une remontee vers la racine du volume."""
     ok = _write(tmp_path, "test_ok.py", "def test_pass():\n    assert True\n")

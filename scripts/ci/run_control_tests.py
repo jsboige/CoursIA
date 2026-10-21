@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Run a control organ's own tests, naming the cause when nothing is evaluated.
 
-A raw `pytest <files>` invocation conflates three situations that call for three
+A raw `pytest <files>` invocation conflates four situations that call for four
 different actions, and on 2026-10-10 two of them were observed accusing a pull
 request of a defect it did not have (see #20174, #20200, #18312) :
 
@@ -13,11 +13,15 @@ request of a defect it did not have (see #20174, #20200, #18312) :
   2. **The files are present but collect nothing.** The control reddens without
      having evaluated a single assertion -- the exact vacuity such an organ
      exists to refuse in others.
-  3. **The tests actually ran and one failed.** That is a real finding, and the
+  3. **The command line itself is refused.** pytest never starts: an option it
+     does not know, or a plugin it cannot import. No test ran at all, yet the
+     exit code it returns (4 for a usage error, 1 for a plugin that fails to
+     import) reads exactly like a test failure to the caller.
+  4. **The tests actually ran and one failed.** That is a real finding, and the
      exit code is the one to propagate untouched.
 
-Only (1) and (2) are re-diagnosed. Both still exit non-zero: this script makes a
-red *honest*, it never makes it *green*.
+Only (1), (2) and (3) are re-diagnosed. All still exit non-zero: this script makes
+a red *honest*, it never makes it *green*.
 """
 from __future__ import annotations
 
@@ -32,6 +36,10 @@ EXIT_CAUSE = 1
 CHECKOUT_HINT = "Voir #20174 (cause racine) / #18312 (objets introuvables)."
 VACUITY_HINT = "Voir #20200."
 COLLECTION_HINT = "Voir #21539."
+INVOCATION_HINT = (
+    "Meme famille que #21539 : une cause hors PR ne doit pas etre lue "
+    "comme un echec de test de la PR."
+)
 # Fichiers lus par pytest pour son rootdir/configfile, dans l'ordre de priorite
 # de la decouverte (-c accepte chacun d'eux).
 CONFIG_NAMES = ("pytest.ini", "pyproject.toml", "setup.cfg", "tox.ini")
@@ -68,6 +76,27 @@ def _is_collection_error(returncode: int, output: str) -> bool:
         return True
     lowered = output.lower()
     return "error during collection" in lowered or "interrupted:" in lowered
+
+
+def _is_invocation_error(output: str) -> bool:
+    """pytest n'a pas demarre : la LIGNE DE COMMANDE elle-meme est refusee.
+
+    Distinct d'une collecte interrompue (rc=2) et d'un controle vide : ici aucun
+    test n'a ete collecte, parce que l'option demandee n'existe pas ou que le
+    plugin demande est introuvable. Le code de sortie est PIETGE -- 4 pour une
+    erreur d'usage, 1 pour un plugin qui echoue a l'import -- donc la cause est
+    classee sur sa signature de sortie, jamais sur le code seul : c'est la seule
+    maniere de rester juste si pytest change l'un des deux.
+    """
+    lowered = output.lower()
+    # Bandeau d'usage de pytest ("ERROR: usage: python -m pytest ...").
+    if "error: usage:" in lowered or "python -m pytest: error" in lowered:
+        return True
+    # Plugin demande mais introuvable : traceback "Error importing plugin".
+    if "error importing plugin" in lowered:
+        return True
+    # Erreur interne de pytest (rc=3) : "INTERNALERROR> ...".
+    return "internalerror" in lowered
 
 
 def _pytest_boundary(paths: list[str]) -> list[str]:
@@ -134,6 +163,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     sys.stdout.write(proc.stdout)
     sys.stderr.write(proc.stderr)
+
+    if _is_invocation_error(proc.stdout + proc.stderr):
+        print(
+            f"::error title=Erreur d'invocation::{args.label} n'a pas pu lancer pytest "
+            f"(pytest rc={proc.returncode}). La ligne de commande elle-meme est refusee : "
+            f"option inconnue, valeur invalide ou plugin introuvable. Aucun test n'a "
+            f"ete collecte -- ce n'est ni un echec de test de la PR, ni un controle vide, "
+            f"ni une erreur de collecte. Verifier les arguments de la commande dans le "
+            f"journal ci-dessus. {INVOCATION_HINT}"
+        )
+        return EXIT_CAUSE
 
     if _is_collection_error(proc.returncode, proc.stdout + proc.stderr):
         print(
