@@ -32,7 +32,7 @@ sys.path.insert(0, str(CI_DIR))
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
     FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
-    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, TRANCHE22, TRANCHE24,
+    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, TRANCHE22, TRANCHE25,
     Guard,
 )
 
@@ -1776,8 +1776,8 @@ def test_tranche22_markdown_schema_advisory_guard_is_wired():
     assert rc_good == 0, "le detecteur doit rester muet (rc=0) sur un carnet propre"
 
 
-def test_tranche24_added_axioms_cliquet_guard_is_wired():
-    """Tranche 24 (#21390) = cliquet `native_decide`/`sorry`/`admit` ajoute
+def test_tranche25_added_axioms_cliquet_guard_is_wired():
+    """Tranche 25 (#21390) = cliquet `native_decide`/`sorry`/`admit` ajoute
     dans un diff `*.lean`.
 
     Contrat : garde NATIF (aucun workflow d'origine), BLOQUANT et ABSORBE
@@ -1788,8 +1788,8 @@ def test_tranche24_added_axioms_cliquet_guard_is_wired():
     pas lu comme un vert** : `warn_rc` est vide, donc `conclusion_for` rend
     `failure` et le garde arme `blocking_failed`.
     """
-    assert len(TRANCHE24) == 1, "la tranche 24 porte 1 seul garde (#21390)"
-    guard = TRANCHE24[0]
+    assert len(TRANCHE25) == 1, "la tranche 25 porte 1 seul garde (#21390)"
+    guard = TRANCHE25[0]
     assert guard.source == FAST_LANE_NATIVE
     assert guard.blocking, (
         f"{guard.name} doit bloquer : une ancre ajoutee dans une declaration "
@@ -1825,12 +1825,12 @@ def test_tranche24_added_axioms_cliquet_guard_is_wired():
     # La tranche doit etre branchee dans la liste executee par fast_lane.py.
     root = Path(__file__).resolve().parents[2]
     source = (root / "scripts" / "ci" / "fast_lane.py").read_text(encoding="utf-8")
-    assert "TRANCHE24" in source, (
-        "TRANCHE24 doit etre importee ET agregee par fast_lane.py"
+    assert "TRANCHE25" in source, (
+        "TRANCHE25 doit etre importee ET agregee par fast_lane.py"
     )
 
 
-def test_tranche24_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_un_example(tmp_path):
+def test_tranche25_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_un_example(tmp_path):
     """Controle de bout en bout du detecteur **via sa CLI**, dans les deux
     sens : une ancre `native_decide` ajoutee dans un `theorem` nomme doit
     faire sortir rc=1 (rouge), une ancre dans un `example` rc=0 (vert --
