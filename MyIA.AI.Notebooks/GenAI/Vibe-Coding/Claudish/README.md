@@ -66,7 +66,7 @@ Le pattern réutilisable pour connecter n'importe quel bot au cluster : **lui fa
 |-------|--------------------|--------------|
 | Hub | po-2023, derrière la passerelle IIS | **po-2025** depuis la bascule du 2026-09-05 ; la passerelle pointe directement sur le hub |
 | Relais | un sidecar (ai-01) | un relais sur plusieurs postes, avec détection de boucle par identité de processus |
-| Rôles | 3 tiers (Opus / Sonnet / Haiku) | 4 rôles : **Fable** s'ajoute (servi par Astra, voie OpenAI Codex) ; Haiku en cours de différenciation selon les machines (MiniMax ou modèle vLLM local) |
+| Rôles | 3 tiers (Opus / Sonnet / Haiku) | 4 rôles : **Fable** s'ajoute (servi par Astra, voie OpenAI Codex) ; **Haiku différencié par poste** — MiniMax M3.1-Flash en nominal, deux postes armés en permanence sur le modèle vLLM local par un armement limité à la machine (détail : [§3](docs/Claudish-Proxy.md#3-la-cascade-par-rôle--substitution-ordonnée-bascule-annoncée)) |
 | Cascade | marches ordonnées + délai par marche | + mur **par fournisseur** (pas par rôle), délégation d'une marche à un autre rôle, saut d'une marche qui ne peut pas prendre la requête, maintien d'une session sur sa marche (10 min) |
 | Version servie | le client choisissait la version Anthropic | le `modelMap` **épingle** la version sur la voie native |
 | Accès externes | une seule clé proxy | + **clés scopées** : liste blanche de modèles, plafond de requêtes simultanées, attribution par clé |

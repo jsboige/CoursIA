@@ -86,14 +86,20 @@ Les requêtes `GET` (contrôle de santé, découverte de modèles) passent sans 
 
 C'est le cœur du déploiement MyIA. Claude Code raisonne en **rôles** (`opus`, `sonnet`, `haiku`, `fable`) ; chaque rôle a un modèle **nominal** et une **liste ordonnée de substituts** (la cascade), implémentée dans `packages/cli/src/fork/failover.ts`. Principe de composition : les **forfaits** d'abord, le **paiement à l'usage** en dernière marche — celle qui sert toujours.
 
-| Rôle | Nominal (octobre 2026) |
-|------|------------------------|
-| **Opus** (réflexion lourde) | Anthropic natif, version **épinglée** par le `modelMap` (voir §7.7) |
-| **Sonnet** (usage courant) | z.ai GLM-5.3 (forfait de code) |
-| **Haiku** (rapide, léger) | MiniMax ou un modèle self-hosté vLLM, selon le poste (différenciation en cours) |
-| **Fable** | Astra, via la voie OpenAI Codex (`cx@`) |
+Composition relevée sur le hub le **2026-10-21** (profil de routage + environnement du conteneur lus par valeur, recoupés avec les marqueurs de réponse des captures) :
 
-> **Exemple daté (2026-08-18)** — la cascade Opus était alors `qwen-token-plan@qwen3.8-max > gc@glm-5.3 > ds@deepseek-v4-flash` (direction *degraded*), celle de Haiku `qwen-token-plan@qwen3.8-max > ds@deepseek-v4-flash` (direction *improved*). La composition exacte suit les forfaits souscrits et change plus souvent que ce guide ; ce qui reste stable, ce sont les mécanismes ci-dessous.
+| Rôle | Nominal | Cascade (`>` = ordre) | Direction déclarée |
+|------|---------|-----------------------|--------------------|
+| **Opus** (réflexion lourde) | Anthropic natif, version **épinglée** par le `modelMap` (§7.7) — authentifié par le poste client | `cx@gpt-6.1-sol > role:sonnet` | lateral > degraded |
+| **Sonnet** (usage courant) | `gc@glm-5.3` (forfait de code z.ai) | `mistral@zai-glm-5-3 > kc@k3 > qwen-token-plan@deepseek-v4.1-flash-1017 > ds@deepseek-flash` | degraded > lateral ×3 |
+| **Haiku** (rapide, léger) | `mmc@MiniMax-M3.1-Flash` | `vllm-myia@swift-1.5-27b > role:sonnet` | degraded > improved |
+| **Fable** | `cx@gpt-6-astra` (voie OpenAI Codex) | `cx@gpt-6.1-sol > role:sonnet` | lateral > degraded |
+
+- **Haiku est différencié par poste, sans seconde configuration** : deux postes sont **armés en permanence** sur leur cascade par un armement limité à la machine (`CLAUDISH_FAILOVER_ACTIVE=haiku@<poste>`, claudish#552) — ils sont servis par le modèle vLLM local ; les autres restent sur MiniMax jusqu'à son mur hebdomadaire, où l'armement automatique prend le relais.
+- **L'armement automatique est actif sur tous les rôles** (`CLAUDISH_FAILOVER_AUTO=1`) : la cascade s'arme au **deuxième** refus qualifiant, pas au premier.
+- **Le rôle est reconnu par sous-chaîne** : un `haiku` nu comme un `claude-haiku-4-5` complet atterrissent sur le même nominal. Les sous-agents de Claude Code sont servis par `glm-5.3`.
+
+> **Exemple daté (2026-08-18)** — la cascade Opus était alors `qwen-token-plan@qwen3.8-max > gc@glm-5.3 > ds@deepseek-v4-flash` (direction *degraded*), celle de Haiku `qwen-token-plan@qwen3.8-max > ds@deepseek-v4-flash` (direction *improved*). Deux mois plus tard, aucune marche n'a survécu : la composition suit les forfaits souscrits et change plus souvent que ce guide ; ce qui reste stable, ce sont les mécanismes ci-dessous.
 
 ### Les mécanismes de la cascade
 
@@ -269,6 +275,30 @@ Détail qui compte : le **texte** du refus est porteur. La cascade s'arme sur un
 
 *Leçon : un message d'erreur est une interface — d'autres morceaux de code le lisent, et ses mots ont des conséquences.*
 
+### 7.10 Le port tenu par un mort — l'écoute la plus spécifique gagne (octobre 2026)
+
+Sur un poste, un processus de relais WSL figé tenait encore `127.0.0.1:3000`, pendant que le conteneur publiait le même port sur toutes les interfaces. Pour une connexion vers `localhost:3000`, c'est l'écoute **la plus spécifique** qui l'emporte : les agents du poste ont parlé pendant **9 heures** à un processus mort, alors que le conteneur, sain, répondait normalement sur l'adresse du réseau local — et donc à toutes les sondes qui passaient par là.
+
+*Leçon : un port occupé n'est pas un port servi. Sonder l'entrée par la même adresse que le client, pas par celle qui arrange l'instrument.*
+
+### 7.11 Des suites vertes qui ne regardaient pas (octobre 2026)
+
+Trois cas en trois semaines, sur la même idée :
+
+- **Une suite rouge qui sortait 0** (claudish#519) — sous Windows PowerShell 5.1, un module enregistré en UTF-8 **sans BOM** et contenant un tiret cadratin est lu dans la page de code locale : erreur d'analyse, **416 tests sur 471** en échec, et l'enveloppe rendait quand même un code de sortie nul.
+- **Des tests sautés, pas exécutés** (claudish#533 → #571) — près de trente tests de canaux dépendaient d'un vrai exécutable absent des postes Windows ; ils s'y affichaient « skip », jamais en échec. Un faux exécutable compilé les fait désormais tourner.
+- **Une garde qui acceptait son contournement** (claudish#582) — une règle structurelle vérifiait qu'un bloc `finally` réaffecte `$ErrorActionPreference` ; `= 'Continue'` la satisfaisait, sans rien restaurer. La règle exige maintenant que la cible soit la variable capturée avant le bloc, et chaque règle est accompagnée d'un mutant qui doit la faire rougir.
+
+*Leçon : un vert ne vaut qu'avec son contrôle positif — une suite doit savoir échouer sur le défaut qu'elle prétend garder. En revue, on mute la garde et on regarde le test rougir.*
+
+### 7.12 La durée d'un épisode, c'est d'abord celle du détecteur (octobre 2026)
+
+Un histogramme des passages d'un relais en mode autonome : **31 épisodes**, de 61 à 203 s, médiane **78 s** — pratiquement le plancher imposé par l'hystérésis (deux échecs pour entrer, trois battements sains, un délai de refroidissement et une sonde profonde pour sortir). La durée mesurée était surtout celle de la machine à états, pas celle des pannes.
+
+Le poste soupçonné a été disculpé par le double chemin : le hub mettait jusqu'à **43 s** à renvoyer ses en-têtes sur des corps de plusieurs mégaoctets, la lenteur était de son côté. Et l'enquête a buté sur un angle mort : dans les captures du hub, une requête relayée et une requête directe se ressemblent. La chaîne des sauts, déjà maintenue pour détecter les boucles, sera inscrite dans l'enveloppe de capture (claudish#566 — fusionné le 2026-10-21, en attente du prochain déploiement du hub).
+
+*Leçons : avant d'interpréter une distribution, en soustraire le plancher de l'instrument ; et tout instrument a une fenêtre — ce qu'il ne voit pas ne compte pas comme zéro.*
+
 ---
 
 ## 8. Variables d'environnement clés
@@ -341,7 +371,7 @@ Côté proxy (opérateur) :
 
 ## 10. Mesurer une flotte d'agents — ce que les instruments ont appris
 
-Le fork s'est doté d'instruments parce que plusieurs « évidences » se sont révélées fausses à la mesure (§7.4, §7.5, §7.7). Les principaux : la **capture** des corps de requête et de réponse, l'attribution par machine (`X-Claudish-Machine`), par session et par clé, un **outil MCP de lecture du trafic** (histogrammes datés, sessions planifiées vs interactives, et un `UNKNOWN` déclaré plutôt qu'un chiffre périmé quand le corpus a tourné), et des scripts d'analyse (autopsie de tours, consommation par voie, tendance des condensations).
+Le fork s'est doté d'instruments parce que plusieurs « évidences » se sont révélées fausses à la mesure (§7.4, §7.5, §7.7, §7.12). Les principaux : la **capture** des corps de requête et de réponse, l'attribution par machine (`X-Claudish-Machine`), par session et par clé, un **outil MCP de lecture du trafic** (histogrammes datés, sessions planifiées vs interactives, et un `UNKNOWN` déclaré plutôt qu'un chiffre périmé quand le corpus a tourné), et des scripts d'analyse (autopsie de tours, consommation par voie, tendance des condensations).
 
 Trois résultats d'octobre 2026 sur le coût d'une flotte d'agents :
 
