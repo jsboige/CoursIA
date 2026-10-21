@@ -1216,6 +1216,48 @@ def test_belt_recent_marker_survives_budget_exhaustion():
     assert state["budget_hit"] is True
 
 
+def test_belt_real_probe_serves_item_released_on_barrier(monkeypatch):
+    """#21721, bout en bout : le tapis SERVIT un item dont le dernier
+    commentaire porte `[RELEASED]`.
+
+    Unlike `test_belt_recent_marker_excludes_hors_budget` (sonde INJECTEE),
+    this one uses the REAL probe (`has_recent_delivery_marker`) : only the
+    `gh issue view --json comments` subprocess is intercepted. What is
+    under test is therefore the production wiring -- regex, budget, and
+    loop -- not a stub.
+
+    Before the fix, this item was withheld with the reason
+    « LIVRAISON (recent) » : a lane handing back an item on a real barrier
+    (GPU-only, vision-only) was losing it from the belt for good.
+    """
+    released_body = "[RELEASED] lane myia-po-2023:CoursIA -- barriere GPU-only"
+
+    class _R:
+        pass
+
+    def fake_run(*args, **kwargs):
+        r = _R()
+        r.stdout = json.dumps({"comments": [{"body": released_body}]})
+        r.returncode = 0
+        r.stderr = ""
+        return r
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+    released = _make_item(19010, age_days=40, idle=4, last=None)
+    other = _make_item(19011, age_days=41, idle=5, last=None)
+    pool = [released, other]
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=pig.has_recent_delivery_marker)
+    assert [p["number"] for p in picks] == [19010, 19011], (
+        "un item rendu sur une barriere reelle doit rester servi")
+    assert withheld == []
+    assert state["recent_filtered"] == 0
+
+
 @pytest.mark.parametrize("verdict", [None, False])
 def test_belt_recent_marker_unread_or_absent_falls_through(verdict):
     """Tri-etat du filtre recent : None (lecture en echec) ou False (pas
