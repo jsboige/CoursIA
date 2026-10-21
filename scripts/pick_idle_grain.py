@@ -95,7 +95,7 @@ BARRIERE reelle (GPU-only, vision-only), et l'item redevient alors
 servable par la flotte : « un candidat ne se saute que pour une barriere
 reelle [...] et l'issue sautee reste en tete pour le tirage suivant ». Le
 filer hors du tapis sur un `[RELEASED]` nu revenait a perdre le grain au
-lieu de le servir (17 items du pool ouvert mesures le 2026-10-21, issue
+lieu de le servir (31 items du pool ouvert mesures le 2026-10-21, issue
 #21721). Un `[RELEASED]` qui dit que l'acceptance est deja couverte est
 lui une livraison : c'est la sonde PLEINE, qui lit tous les commentaires,
 qui tranche ce cas (#21720) -- le filtre bon marche ne l'invente pas.
@@ -1337,9 +1337,9 @@ DELIVERED_SIGNAL_UNPROBED = object()
 #     definitivement du tapis, c'est donc perdre le grain, pas le servir.
 #
 # Mesure fondatrice (2026-10-21, `myia-po-2028:CoursIA-2`, issue #21721) :
-# sur le pool ouvert, 17 items portent un en-tete `[RELEASED]` en DERNIER
+# sur le pool ouvert, 31 items portent un en-tete `[RELEASED]` en DERNIER
 # commentaire, et **0** d'entre eux portent un motif de couverture
-# d'acceptance -- l'exclusion etait donc injuste pour les 17. Aucun n'a ete
+# d'acceptance -- l'exclusion etait donc injuste pour les 31. Aucun n'a ete
 # rejoue par la flotte depuis leur `[RELEASED]`.
 #
 # Le cas « `[RELEASED] ... acceptance deja couverte » (une livraison) n'est

@@ -4580,7 +4580,7 @@ def test_recent_delivery_marker_RELEASED_false(monkeypatch):
     « l'issue sautee reste en tete pour le tirage suivant ». L'ecarter
     definitivement, c'etait perdre le grain.
 
-    Mesure fondatrice (issue #21721, 2026-10-21) : sur le pool ouvert, 17
+    Mesure fondatrice (issue #21721, 2026-10-21) : sur le pool ouvert, 31
     items portent un en-tete `[RELEASED]` en dernier commentaire, et 0
     d'entre eux portent un motif de couverture d'acceptance.
 
