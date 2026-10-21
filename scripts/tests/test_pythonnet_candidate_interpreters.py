@@ -64,6 +64,15 @@ def candidate_interpreters_windows(
     return out
 
 
+CS_REL_PATH = "MyIA.AI.Notebooks/Config/PythonNetLoader.cs"
+
+
+def _cs_source() -> str:
+    """Source C# reellement livree (racine du depot = parents[2] de ce fichier)."""
+    repo_root = Path(__file__).resolve().parents[2]
+    return (repo_root / CS_REL_PATH).read_text(encoding="utf-8")
+
+
 def _make_fake_fs(tmp: Path) -> dict[str, Path]:
     """Build a fake filesystem mirroring the measured layout of po-2027."""
     pf = tmp / "Program Files"
@@ -114,6 +123,26 @@ def test_minor_sort_desc():
         expected_312 = str(env["program_files"] / "Python312" / "python.exe")
         assert cands.index(expected_313) < cands.index(expected_312), \
             f"313 not before 312: {cands}"
+
+
+def test_cs_source_pins_the_root_form():
+    """Epingle le FICHIER C# lui-meme, pas seulement son portage Python.
+
+    Le portage ci-dessus reproduit la logique, mais il ne verrait pas une
+    regression du `.cs` : le test resterait vert si la forme feuille (le no-op
+    reproche par la review Hermes du 18/10) revenait dans la source. Ce test
+    lit donc `PythonNetLoader.cs` et exige la forme racine.
+    """
+    src = _cs_source()
+    # la RACINE est passee a l'enumerateur d'enfants
+    assert "PythonDirectories(programFiles)" in src, "forme racine absente (ProgramFiles)"
+    assert "PythonDirectories(programFilesX86)" in src, "forme racine absente (ProgramFilesX86)"
+    # la forme feuille -- le no-op -- ne doit pas revenir
+    assert 'PythonDirectories(Path.Combine(programFiles, "Python313"))' not in src, \
+        "la forme feuille est revenue : l'enumerateur ne trouverait rien"
+    # le consommateur construit root/python.exe : la racine est le dossier Python3xx
+    assert 'Path.Combine(root, "python.exe")' in src, \
+        "le consommateur ne construit plus root/python.exe"
 
 
 def test_legacy_per_user_still_works():
