@@ -194,11 +194,16 @@ def test_20035_lemme_count_contradiction(tmp_path):
         f"finding lemme 9 vs 12 absent : {units!r}")
 
 
-def test_20035_extended_scope_is_default(tmp_path):
-    """Le defaut (sans --units) est `extended`, et attrape le cas carnet.
+def test_20035_core_scope_is_default(tmp_path):
+    """Le defaut (sans --units) est `core` : le cas carnet n'est PAS attrape.
 
-    Pin structurel : si une future PR change le defaut, ce test rougit
-    et force un arbitrage explicite.
+    Pin structurel : l'arbitrage du coordinateur du 2026-10-21 fait du
+    scope `core` le defaut (`extended` devient un opt-in explicite).
+    Sur le corpus mesure, `extended` rend 36 findings pour 0 vrai
+    positif : un defaut qui amplifie le bruit n'est pas un defaut.
+
+    Ce test echoue si une future PR re-bascule le defaut sans un nouvel
+    arbitrage explicite.
     """
     rc, out = _run(
         [_code("Carnets : 15\n"),
@@ -206,9 +211,27 @@ def test_20035_extended_scope_is_default(tmp_path):
         tmp_path,
         # PAS d'argument --units : on teste le defaut.
     )
-    assert rc == 1, (
-        f"le scope par defaut DOIT etre `extended` (cas carnet attrape) : "
+    assert rc == 0, (
+        f"le scope par defaut DOIT etre `core` (cas carnet NON attrape) : "
         f"rc={rc}, out={out!r}")
+    assert out["anomaly_count"] == 0
+
+
+def test_20035_extended_scope_is_still_an_explicit_opt_in(tmp_path):
+    """`--units extended` reste disponible et attrape toujours le cas carnet.
+
+    L'arbitrage change le DEFAUT, pas la capacite : le scope etendu
+    reste jouable explicitement pour un audit qui veut la detection
+    large (et assume son bruit).
+    """
+    rc, out = _run(
+        [_code("Carnets : 15\n"),
+         _md("Les 8 carnets suivants ...")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc == 1, (
+        f"`--units extended` DOIT attraper le cas carnet : rc={rc}, out={out!r}")
 
 
 def test_20956_numbered_list_not_misread_for_etapes(tmp_path):
