@@ -66,14 +66,18 @@ EXEMPT_PREFIXES = (
 # Hors scope par segment de chemin : conventions _archive/ du depot.
 EXEMPT_MARKERS = ("/_archive/",)
 
-# .ps1 Windows par nature : win-acme (certificats Windows), IIS, et les
-# sondes cotE hote Windows qui pilotent le runner Linux depuis Windows.
+# .ps1 Windows par nature : win-acme (certificats Windows), IIS, les
+# sondes cotE hote Windows qui pilotent le runner Linux depuis Windows, et
+# le lanceur a plafond memoire Natif (Job Object Windows, `run_guarded.py`)
+# dont le plafond n'a pas d'equivalent POSIX : un compagnon .sh serait une
+# imitation sans lecture derriere.
 EXEMPT_FILES = {
     "docker-configurations/scripts/setup-win-acme-renewal.ps1",
     "docker-configurations/services/tts-multi/setup-iis-reverse-proxy.ps1",
     "scripts/genai-stack/Configure-IISAuthentication.ps1",
     "scripts/ci/docker/linux-runner/persist/hold-runner.ps1",
     "scripts/ci/docker/linux-runner/persist/host-distress-probe.ps1",
+    "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/launchers/launch_capped.ps1",
 }
 
 # Marqueurs d'invocation OS dans les cellules CODE d'un carnet Setup.
