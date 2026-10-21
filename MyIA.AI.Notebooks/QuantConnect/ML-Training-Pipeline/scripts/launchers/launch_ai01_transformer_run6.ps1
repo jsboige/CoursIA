@@ -175,7 +175,7 @@ $proc = Start-Process -FilePath $PythonExe `
     -PassThru
 
 # Save PID
-$proc.Id | Out-File -FilePath $PidPath -Encoding utf8
+[System.IO.File]::WriteAllText($PidPath, ("$($proc.Id)`r`n"), (New-Object System.Text.UTF8Encoding($false)))
 
 Write-Host "[LAUNCH] PID: $($proc.Id) -> $PidPath"
 Write-Host ""

@@ -513,7 +513,7 @@ Packages échoués: $($FailedRequired -join ', ')
 Tests d'import réussis: $PassedTests/$($TestPackages.Count)
 "@
 
-$LogContent | Out-File -FilePath $LogFile -Encoding UTF8
+[System.IO.File]::WriteAllText($LogFile, ($LogContent + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "`nLog sauvegardé: $LogFile" -ForegroundColor Gray
 
 # Code de sortie

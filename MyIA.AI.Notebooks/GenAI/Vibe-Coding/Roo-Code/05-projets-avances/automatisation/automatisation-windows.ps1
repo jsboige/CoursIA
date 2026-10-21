@@ -207,7 +207,7 @@ function Invoke-WithRetry {
     
     if (-not $success) {
         Write-Log -Message "Échec définitif de $Operation après $MaxRetries tentatives: $lastError" -Level "Error"
-        throw "Échec de $Operation: $lastError"
+        throw "Échec de ${Operation}: $lastError"
     }
     
     return $result
@@ -671,7 +671,7 @@ function Generate-HtmlReport {
 
         # Écriture du fichier HTML
         $reportFilePath = Join-Path $OutputPath "AutomationReport_$(Get-Date -Format 'yyyyMMdd_HHmmss').html"
-        $html | Out-File -FilePath $reportFilePath -Encoding utf8
+        [System.IO.File]::WriteAllText($reportFilePath, ($html + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
         
         Write-Log -Message "Rapport HTML généré: $reportFilePath" -Level "Info"
         return $reportFilePath

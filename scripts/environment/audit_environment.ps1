@@ -322,7 +322,7 @@ Missing Optional Packages: $($MissingOptional -join ', ')
 Repair Time Estimate: $RepairTimeMinutes minutes
 "@
 
-$LogContent | Out-File -FilePath $LogFile -Encoding UTF8
+[System.IO.File]::WriteAllText($LogFile, ($LogContent + "`r`n"), (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "Log sauvegardé: $LogFile" -ForegroundColor Gray
 
 return @{
