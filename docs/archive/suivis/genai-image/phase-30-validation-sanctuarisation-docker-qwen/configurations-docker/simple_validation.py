@@ -13,7 +13,7 @@ from datetime import datetime
 COMFYUI_URL = "http://localhost:8188"
 USERNAME = "admin"
 PASSWORD = os.getenv("COMFYUI_PASSWORD")
-BEARER_TOKEN = "$2b$12$NErya5UooY9bJnscVc/ec.hpVDX.nYM86/88bXIkF/hh2VeKRvU5ka"
+BEARER_TOKEN = os.getenv("COMFYUI_BEARER_TOKEN")
 
 def test_web_access():
     """Test accès web"""
