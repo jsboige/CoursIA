@@ -31,16 +31,22 @@
 # "parmi actives" 0.617 +/- 0.038. numpy <2.5, matplotlib <3.11 et torch <2.12
 # fixent l'environnement avant les breaking changes mesures sur le run fondateur.
 #
-# CORRECTION (re-execution 2026-10-21, PR #21257) : les memes versions de
-# paquets NE reproduisent PAS les memes metriques -- le patch d'interpreteur
-# compte aussi. Mesures sur ce corpus :
-#   run fondateur  (Python 3.13.14) : facteurs dedies 34/40, ablation pos0
-#                                    0.532, dispersion "parmi actives"
-#                                    0.617 +/- 0.038
-#   re-execution   (Python 3.13.16) : facteurs dedies 35/40, ablation pos0
-#                                    0.510, dispersion "parmi actives"
-#                                    0.617 +/- 0.028
-# Les valeurs commitees dans le carnet sont celles de la re-execution 3.13.16.
+# CORRECTION (re-execution 2026-10-21, PR #21257) : les versions de paquets ne
+# suffisent pas -- le nombre de threads de la BLAS change l'ordre de reduction
+# des flottants, donc les metriques. Mesures (meme env, memes versions, meme
+# graine) :
+#   32 threads : facteurs dedies 35/40, ablation pos0 0.510, dispersion
+#                "parmi actives" 0.617 +/- 0.028
+#    1 thread  : facteurs dedies 34/40, ablation pos0 0.537, dispersion
+#                "parmi actives" 0.616 +/- 0.026
+# Le carnet epingle le nombre de threads a 1 (cellule 1, AVANT l'import de
+# numpy) : le compte de facteurs dedies et l'identite des features dediees a
+# pos0 retrouvent alors ceux du run fondateur (34/40, [2, 4, 9, 16, 27, 30,
+# 41, 50]). Les decimales restent legerement differentes du fondateur
+# (0.537 contre 0.532, +/- 0.026 contre +/- 0.038) : residu lie au build BLAS
+# de l'hote, pas aux versions de paquets.
+# Le pin des threads vit dans la cellule 1, pas ici : il doit etre pose avant
+# l'import de numpy, donc il ne peut pas etre une contrainte d'installation.
 # Les bornes de versions restent la garantie utile (elles interdisent les
 # breaking changes) ; elles ne garantissent pas le scalaire.
 numpy>=1.24,<2.5
