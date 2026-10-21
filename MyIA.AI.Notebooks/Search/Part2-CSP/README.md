@@ -28,7 +28,7 @@ Le benchmark de parallélisation de CSP-6 rappelle enfin qu'aucun mécanisme n'e
 
 [![Parallélisation CP-SAT sur N-Queens 12 : temps de résolution et speedup restant sous 1x avec 1, 2 puis 4 workers](assets/readme/csp6-lazy-clause-generation.png)](CSP-6-Hybridization.ipynb)
 
-Les trois derniers notebooks desserrent chacun une hypothèse du cadre classique : et si toutes les contraintes n'avaient pas le même poids (CSP-7, contraintes souples) ? Et si les variables étaient des intervalles de temps (CSP-8, algèbre d'Allen) ? Et si personne ne détenait le problème en entier (CSP-9, résolution distribuée et préservation de la vie privée) ?
+Les trois derniers notebooks desserrent chacun une hypothèse du cadre classique : et si toutes les contraintes n'avaient pas le même poids (CSP-7, contraintes souples) ? Et si les variables étaient des intervalles de temps (CSP-8, algèbre d'Allen) ? Et si personne ne détenait le problème en entier (CSP-9, résolution distribuée et préservation de la vie privée) ? CSP-10, enfin, **change d'organe** : au lieu du solveur CP (CP-SAT/Choco), il met en scène le solveur **SMT Z3** en optimiseur, sur le même type de problème (le plus petit cover), pour faire **voir** la capacité distinctive du solveur SMT.
 
 L'algèbre d'Allen (CSP-8) donne le vocabulaire de ce temps qualitatif : treize relations de base entre deux intervalles. La figure extraite du notebook n'en rend toutefois **que cinq visibles** (before, meets, overlaps, during, equals) — le tracé des huit autres vignettes est défaillant dans la sortie actuelle du notebook ; limitation illustrative assumée, en attendant une correction du tracé et une ré-exécution :
 
@@ -63,10 +63,11 @@ Si la Partie 1 enseigne à chercher, celle-ci enseigne à modéliser — et c'es
 | 7 | [CSP-7-Soft](CSP-7-Soft.ipynb) | Python 3 | Contraintes souples : Fuzzy CSP, Weighted CSP, Semiring-based CSP | ~1h |
 | 8 | [CSP-8-Temporal](CSP-8-Temporal.ipynb) | Python 3 | Algèbre d'intervalles d'Allen, Simple Temporal Problems (STP), TCSP | ~1h |
 | 9 | [CSP-9-Distributed](CSP-9-Distributed.ipynb) | Python 3 | Asynchronous Backtracking (ABT), AWC, Privacy-preserving CSP | ~1h30 |
+| 10 | [CSP-10-Optimisation-Z3](CSP-10-Optimisation-Z3-Python.ipynb) | Python 3 | Optimisation **SMT** (Z3) : minimum set cover, `Optimize` vs force brute, optimum certifié | ~40 min |
 
 ### Parité Python ⇄ .NET
 
-Les neuf notebooks de cette partie existent en **binôme bilingue** : une version Python (OR-Tools CP-SAT) et une version C# / .NET, dans l'esprit de l'Epic de parité #4956. Le port .NET invoque la **vraie lib** — jamais une réimplémentation jouet : Choco-solver bridgé via IKVM (jurisprudence #4667), OR-Tools natif, ou port from-scratch d'un algorithme sans solveur off-the-shelf selon le terrain.
+Les neuf **premiers** notebooks de cette partie existent en **binôme bilingue** : une version Python (OR-Tools CP-SAT) et une version C# / .NET, dans l'esprit de l'Epic de parité #4956. Le port .NET invoque la **vraie lib** — jamais une réimplémentation jouet : Choco-solver bridgé via IKVM (jurisprudence #4667), OR-Tools natif, ou port from-scratch d'un algorithme sans solveur off-the-shelf selon le terrain.
 
 | # | Python (OR-Tools CP-SAT) | .NET (C#) | Solveur .NET |
 |---|--------------------------|-----------|--------------|
@@ -82,13 +83,15 @@ Les neuf notebooks de cette partie existent en **binôme bilingue** : une versio
 
 > **Quel solveur .NET pour quel terrain ?** CSP-4 (ordonnancement `IntervalVar`, `NoOverlap`, `Cumulative`), CSP-6 (Lazy Clause Generation, CP+SAT) et CSP-8 (intervalles temporels) sont routés vers **OR-Tools CP-SAT natif** — le terrain où CP-SAT excelle, cf. *vrai outil SOTA pour le problème* (#3801). Les binômes 1, 2, 3, 5 et 7 illustrent **Choco via IKVM** comme levier de parité .NET pour une lib Java — y compris `binPacking`, contrainte globale dont la propagation surpasse la linéarisation BoolVar manuelle. CSP-9 (DisCSP) n'a pas de solveur off-the-shelf : l'algorithme ABT (Yokoo 1992) y est porté **from scratch** en C# multi-agent.
 
+> **CSP-10, l'organe SMT — carnet Python seul.** Exception au binôme : CSP-10 est le carnet **SMT** de la partie, **Z3** (`z3-solver`) en **optimiseur**, en contrepoint direct de l'optimisation CP-SAT/Choco des binômes 1-9. Il n'a pas de port C# : son pendant .NET naturel est la série [Z3-Linq2Z3](../../SymbolicAI/SMT/Z3-Linq2Z3/README.md) (autre solveur, autre angle).
+
 ## Progression
 
 CSP-1 et CSP-2 sont incontournables : tout le paradigme — un modèle déclaratif, une propagation qui élague — tient dans ces deux notebooks. Au-delà, trois chemins s'offrent selon votre objectif :
 
 - **Applications industrielles** : CSP-3 puis CSP-4 (Scheduling) et/ou CSP-5 (Optimization)
 - **Frontières** : CSP-6 (Hybridization, le notebook le plus avancé), puis CSP-7/8/9 (Soft/Temporal/Distributed)
-- **Indépendants** : CSP-7, CSP-8 et CSP-9 sont accessibles après CSP-1 + CSP-2
+- **Indépendants** : CSP-7, CSP-8, CSP-9 et **CSP-10** (SMT/Z3) sont accessibles après CSP-1 + CSP-2
 
 ```mermaid
 flowchart LR
