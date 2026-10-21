@@ -1,0 +1,62 @@
+{
+  "script": "scripts/repro/ws_probes_repro.py",
+  "seed": 42,
+  "platform": "Windows-11-10.0.26300-SP0",
+  "python": "3.13.3",
+  "numpy": "2.3.5",
+  "scikit_learn": "1.6.1",
+  "cache_root": "C:\\Users\\jsboi\\.cache\\ft00a",
+  "probes": {
+    "WS-00c": {
+      "observed": {
+        "clean": 0.79,
+        "translated": 0.43,
+        "n_train": 600,
+        "n_test": 200,
+        "n_features": 1024,
+        "random_state": null
+      },
+      "comparison": {
+        "clean": {
+          "observed": 0.79,
+          "cited": 0.773,
+          "delta": 0.017,
+          "match": false
+        },
+        "translated": {
+          "observed": 0.43,
+          "cited": 0.431,
+          "delta": -0.001,
+          "match": false
+        },
+        "verdict": "MISMATCH"
+      }
+    },
+    "WS-03": {
+      "observed": {
+        "clean": 0.78,
+        "translated": 0.31066666666666665,
+        "n_train": 1500,
+        "n_test": 750,
+        "n_features": 784,
+        "random_state": 42
+      },
+      "comparison": {
+        "clean": {
+          "observed": 0.78,
+          "cited": 0.78,
+          "delta": 0.0,
+          "match": true
+        },
+        "translated": {
+          "observed": 0.3107,
+          "cited": 0.311,
+          "delta": -0.0003,
+          "match": true
+        },
+        "verdict": "MATCH"
+      }
+    }
+  },
+  "verdict_global": "MISMATCH"
+}
