@@ -34,7 +34,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/subagents-reference.md](reference/subagents-reference.md) | Roster 21 agents + 17 skills |
 | [reference/agents-roster-2026-10-08.md](reference/agents-roster-2026-10-08.md) | Roster daté des `machine:workspace` actifs, mesuré au 2026-10-08 (#14527, doc éphémère) |
 | [reference/catalog_markers.md](reference/catalog_markers.md) | Marqueurs CATALOG-STATUS des READMEs (expansion + vérification CI) |
-| [reference/audit-reassessment-findings.md](reference/audit-reassessment-findings.md) | Items d'audit automatisé déjà reclassés (protocole reassessment) |
+| [reference/audit-reassessment-findings.md → transients/2026-05-17-…](transients/2026-05-17-reference-audit-reassessment-findings.md) | Items d'audit automatisé déjà reclassés (protocole reassessment) — déplacé en lane transiente (tranche 3b #14623) |
 | [reference/student-pr-template.md](reference/student-pr-template.md) | Template PR étudiante |
 | [reference/readme-series-gabarit.md](reference/readme-series-gabarit.md) | Gabarit de référence des READMEs de séries (#2651) |
 | [reference/finition-de-serie.md](reference/finition-de-serie.md) | Critères de sortie du régime de finition de série (#19297) |
@@ -89,7 +89,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/arxiv-attributions.md](reference/arxiv-attributions.md) | Convention et maintenance du registre `arxiv_attributions_registry.yaml` — comment une attribution arXiv entre au registre, comment elle se vérifie. Issue #12853 (acceptance 9.4), parent EPIC #11168 |
 | [reference/ci-aggregator-rollout.md](reference/ci-aggregator-rollout.md) | Rollout de l'agrégateur CI, étape 2 (#9819) — état daté au 2026-08-08, étape 1 livrée par #9822 |
 | [reference/notebook-enricher-guide.md](reference/notebook-enricher-guide.md) | Méthodologie et vocabulaire d'enrichissement par domaine — leçons consolidées depuis `.claude/agent-memory/notebook-enricher/` (relocalisation item-7 de #9535) |
-| [reference/slide-analyzer-sk-agent.md](reference/slide-analyzer-sk-agent.md) | Observabilité sk-agent pour l'analyse de slides (Marp vs PPTX + prompts) — relocalisé depuis `.claude/agent-memory/slide-analyzer/` (EPIC #9535 item 7) |
+| [reference/slide-analyzer-sk-agent.md](reference/slide-analyzer-sk-agent.md) | Observabilité sk-agent pour l'analyse de slides (prompts canoniques vision + grille comparative historique Marp vs PPTX) — relocalisé depuis `.claude/agent-memory/slide-analyzer/` (EPIC #9535 item 7) |
 | [reference/slides-layout-pattern.md](reference/slides-layout-pattern.md) | Motif de mise en page des decks Slidev (campagne #10950) — écrit après qu'un diagnostic « les grilles sont impossibles dans Slidev » ait bloqué trois itérations : le contre-exemple est dans le document |
 | [reference/backtester-e2-cadrage.md](reference/backtester-e2-cadrage.md) | Cadrage Option C du port `MyIA.Trading.Backtester` (E2) et déblocage des préconditions — #7357 (EPIC différée), parent #7265 |
 | [reference/backtester-e2-svm-kernel.md](reference/backtester-e2-svm-kernel.md) | Substitution du SVM à noyau dans le port E2 du Backtester Aricie — grain prescrit par le body de #7357, cadrage #12541 |
@@ -114,6 +114,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [transients/2026-06-14-genai-service-security-audit.md](transients/2026-06-14-genai-service-security-audit.md) | Audit de sécurisation des services IA auto-hébergés (po-2023) |
 | [genai/audio-fading-remediation.md](genai/audio-fading-remediation.md) | Remédiation FADING audio et verdicts SOTA associés (#11719) — référence opérationnelle ; le détecteur vit dans les scripts, ce document porte le raisonnement |
 | [genai/audio-onset-chunk-detection.md](genai/audio-onset-chunk-detection.md) | Détection onset/mid/end/spread des spans d'omission audio (classifier déterministe CPU, #19739) — convention de hiérarchie et tests verts |
+| [genai/audio-attack-guard.md](genai/audio-attack-guard.md) | Garde d'attaque par chunk — détection positionnelle de l'onset-drop et re-roll ciblé (#19739) — l'organe, son plan de re-roll et leur mesure sur corpus réel |
 | [genai/audio-bakeoff-bank.md](genai/audio-bakeoff-bank.md) | Format de banc bakeoff audio (schema v1 : `bank_schema_v1.json`, `bake_append.py`, `bake_report.py`, `test_bake_bank.py`) — référence pour les comparaisons inter-modèles ASR/TTS/prosodie (#19695) |
 | [genai/decision-models.md](genai/decision-models.md) | Modèles de décision — relevé et shortlist |
 | [genai/model-mapping-openai.md](genai/model-mapping-openai.md) | Mapping des modèles OpenAI — génération courante |
@@ -145,7 +146,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/prover_iteration_history.md](lean/prover_iteration_history.md) | Historique itération prover |
 | [lean/sota-2026-analysis.md](lean/sota-2026-analysis.md) | État de l'art preuve automatique Lean 4 (mai 2026) |
 | [lean/ab-methodology.md](lean/ab-methodology.md) | Méthodologie d'A/B pour le harnais prover Lean |
-| [lean/i18n-inventory-cycle-38.md](lean/i18n-inventory-cycle-38.md) | Lean i18n — inventaire FR/EN et proposition de convention (cycle 38, See #4980) |
+| [lean/i18n-inventory-cycle-38.md → transients/2026-07-04-…](transients/2026-07-04-lean-i18n-inventory-cycle-38.md) | Lean i18n — inventaire FR/EN et proposition de convention (cycle 38, See #4980) — déplacé en lane transiente (tranche 3b #14623) |
 | [lean/i18n-sibling-patterns.md](lean/i18n-sibling-patterns.md) | Lean i18n — patterns de paires FR/EN et discipline du checker (#4980) |
 | [lean/iit-lean-escalier.md](lean/iit-lean-escalier.md) | Note de conception de l'escalier du lake `iit_lean` — inventaire, escalier 3 marches, capstone, modules non exposés (Epic #16781, sous-grain #20414) |
 | [lean/mimo-converse-cartography.md](lean/mimo-converse-cartography.md) | Cartographie converse MIMO (#11152) — correspondance brique → source, mesurée le 2026-08-16 sur le Mathlib et le SLT du manifest `mimo_lean` courant |
@@ -163,6 +164,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/life-components-schema.md](lean/life-components-schema.md) | Schéma de motifs et de réactions de Game of Life — tranches 1-4 de #15635 |
 | [lean/origami-reconnaissance.md](lean/origami-reconnaissance.md) | Origami géométrie différentielle — Pli 1 reconnaissance |
 | [lean/18430-volet-b-leandojo-v2-bench.md](lean/18430-volet-b-leandojo-v2-bench.md) | Volet B #18430 — banc comparatif LeanDojo-v2 (Pantograph) vs harnais maison, rung 52 CONWAY, écarts de protocole mesurés |
+| [lean/darksnail/pli1-2-occlusion-triad-verif.md](lean/darksnail/pli1-2-occlusion-triad-verif.md) | Pli 1.2 — vérification first-hand d'OcclusionTriad.lean (verdict INSUFFICISANT, #21310) |
 
 > Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
 
@@ -215,6 +217,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/inoculation-rl-experimental-conditions.md](ict/inoculation-rl-experimental-conditions.md) | Distillation des conditions expérimentales de l'*Inoculation Prompting* (Anthropic, arXiv 2511.18397) confrontée au protocole ICT-25 — source canonique citée et vérifiée en HTML |
 | [ict/strates-as-adjunctions-prototype.md](ict/strates-as-adjunctions-prototype.md) | Prototype **grade C** : les strates ICT comme adjonctions — conjecture du jalon 3 de #8182 (TOE ↔ conscience), explicitement non démontrée |
 | [ict/butlin-indicators-pre-enregistrement.md](ict/butlin-indicators-pre-enregistrement.md) | Case 19 — le mot « using » de RPT-1 (Butlin et al. 2023) : protocole scellé avant écriture du banc, dissociation procédurale entre inspection structurelle et sonde causale |
+| [ict/assembly-theory-pre-enregistrement.md](ict/assembly-theory-pre-enregistrement.md) | Case 20 — l'assembly index mesuré (Sharma et al. 2023) contre la lecture « compression LZ » (Abrahão et al. 2024) : solveur exact à deux implémentations, échelle périodique certifiée `ai = log2 n`, règle de décision scellée par pentes |
 
 ## Curriculum (docs/curriculum/)
 
@@ -338,6 +341,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/12204-ict-chantier-1-a6.md](ledgers/12204-ict-chantier-1-a6.md) | Chantier 1 — tranche A6 : statuation des opérations 11-13 (promotions TABLE) et de la file d'attente |
 | [ledgers/12204-ict-chantier-1-a7.md](ledgers/12204-ict-chantier-1-a7.md) | Chantier 1 — tranche A7 : relecture froide — statuation des opérations 2 et 6, verdict « la table est-elle un catalogue ? », quatrième loi |
 | [ledgers/12204-ict-chantier-1-a8.md](ledgers/12204-ict-chantier-1-a8.md) | Chantier 1 — tranche A8 : rétro-équipement des conditions de rétrogradation — une condition de sortie exécutable par entrée TABLE (12 écrites, aucune entrée non falsifiable) |
+| [ledgers/12204-ict-chantier-1-a9.md](ledgers/12204-ict-chantier-1-a9.md) | Chantier 1 — tranche A9 : seconde attestation in-repo de l'op 2 « Abstraire à dette bornée » (Frontieres-11, plus court chemin) — promotion proposée |
 | [ledgers/13746-tests-eclates-dissipation.md](ledgers/13746-tests-eclates-dissipation.md) | EPIC #13746 — Ledger dissipation câblage tests éclatés |
 | [ledgers/14169-g1-recouvrement.md](ledgers/14169-g1-recouvrement.md) | Ledger G1 — Recouvrement 28 PRs amont endjin/Z3.Linq vs fork MyIntelligenceAgency/Z3.Linq |
 | [ledgers/14169-z3linq-upstream-overlap.md](ledgers/14169-z3linq-upstream-overlap.md) | Z3.Linq — recouvrement fork / amont |
