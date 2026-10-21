@@ -1,5 +1,6 @@
 # region imports
 from AlgorithmImports import *
+from datetime import datetime
 # endregion
 
 class MLRandomForestAlgorithm(QCAlgorithm):
@@ -16,11 +17,34 @@ class MLRandomForestAlgorithm(QCAlgorithm):
     - v1 (2020+, weekly): Sharpe 0.45, CAGR 12%, MaxDD 20.4%
     - v2 (2015+, monthly+SMA200): Sharpe 0.19, CAGR 5.6%, MaxDD 19.2% (too conservative)
     - v3 (2015+, biweekly, no filter): Sharpe 0.68, CAGR 20.1%, MaxDD 36.4%
+
+    Backtest : 2015-01-01 -> 2024-12-31 par defaut (parametres start_date / end_date, %Y%m%d).
+
+    Parametre mode (#21804) :
+    - strategy (defaut) : la strategie ci-dessus ;
+    - spy : SPY detenu ;
+    - 6040 : SPY 60 %, BND 40 % ;
+    - ew10 : les dix titres de l'univers, 10 % chacun.
+    Les trois references se reequilibrent au debut de chaque mois, une minute apres
+    l'ouverture ; dans ces trois modes, train_model() et rebalance() sortent aussitot.
+    SPY n'est abonne qu'en modes spy et 6040, BND qu'en mode 6040. Trace journaliere
+    "shadow" (e0..e4, #18923) : valeur du portefeuille a l'ouverture de chaque seance de SPY.
     """
 
     def Initialize(self):
-        self.SetStartDate(2015, 1, 1)
-        self.set_end_date(2024, 12, 31)
+        self._mode = self.GetParameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040", "ew10"):
+            raise ValueError(f"unknown mode parameter: {self._mode} (strategy | spy | 6040 | ew10)")
+        start_date_param = self._parse_date_param("start_date")
+        end_date_param = self._parse_date_param("end_date")
+        if start_date_param is not None:
+            self.SetStartDate(start_date_param)
+        else:
+            self.SetStartDate(2015, 1, 1)
+        if end_date_param is not None:
+            self.set_end_date(end_date_param)
+        else:
+            self.set_end_date(2024, 12, 31)
         self.SetCash(100000)
         self.SetBrokerageModel(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
@@ -56,6 +80,44 @@ class MLRandomForestAlgorithm(QCAlgorithm):
         self.feature_names = None
 
         self.SetWarmUp(60, Resolution.Daily)
+
+        # Mesure #21804 : references detenues et trace journaliere, hors decision de la strategie
+        self._spy = (self.AddEquity("SPY", Resolution.DAILY).Symbol
+                     if self._mode in ("spy", "6040") else None)
+        self._bnd = (self.AddEquity("BND", Resolution.DAILY).Symbol
+                     if self._mode == "6040" else None)
+        if self._mode != "strategy":
+            self.Schedule.On(self.DateRules.MonthStart("SPY"),
+                             self.TimeRules.AfterMarketOpen("SPY", 1),
+                             self._rebalance_reference)
+        self._closes = 0
+        self.Schedule.On(self.DateRules.EveryDay("SPY"),
+                         self.TimeRules.AfterMarketOpen("SPY", 0),
+                         self._trace)
+
+    def _parse_date_param(self, name):
+        raw = self.GetParameter(name)
+        if raw is None or str(raw).strip() == "":
+            return None
+        return datetime.strptime(str(raw).strip(), "%Y%m%d")
+
+    def _rebalance_reference(self):
+        if self.IsWarmingUp:
+            return
+        if self._mode == "spy":
+            targets = [PortfolioTarget(self._spy, 1.0)]
+        elif self._mode == "6040":
+            targets = [PortfolioTarget(self._spy, 0.6), PortfolioTarget(self._bnd, 0.4)]
+        else:
+            weight = 1.0 / len(self.tickers)
+            targets = [PortfolioTarget(self.symbols[t], weight) for t in self.tickers]
+        self.SetHoldings(targets)
+
+    def _trace(self):
+        if self.IsWarmingUp:
+            return
+        self.Plot("shadow", f"e{self._closes % 5}", self.Portfolio.TotalPortfolioValue)
+        self._closes += 1
 
     def on_monday(self):
         """Bi-weekly rebalance."""
@@ -129,7 +191,7 @@ class MLRandomForestAlgorithm(QCAlgorithm):
 
     def train_model(self):
         """Train Random Forest classifier."""
-        if self.IsWarmingUp:
+        if self.IsWarmingUp or self._mode != "strategy":
             return
 
         from sklearn.ensemble import RandomForestClassifier
@@ -198,7 +260,7 @@ class MLRandomForestAlgorithm(QCAlgorithm):
 
     def rebalance(self):
         """Rebalance based on RF predictions."""
-        if self.IsWarmingUp or self.model is None:
+        if self.IsWarmingUp or self.model is None or self._mode != "strategy":
             return
 
         predictions = {}
