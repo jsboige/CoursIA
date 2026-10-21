@@ -121,7 +121,7 @@ la signature de cette jonction, pas des modifications réelles des paquets.
 
 | Étape | rc | Temps | Jobs |
 |---|---:|---:|---:|
-| `lake build` (défaut : `DifferentialTour` + `_en`, `Poincare` + `_en`) | 0 | **11 233 s (3 h 07 min 33 s)** | 22 909 / 22 909 |
+| `lake build` (défaut : `DifferentialTour` + `_en`, `Poincare` + `_en`) | 0 | **11 253 s (3 h 07 min 33 s)** | 22 909 / 22 909 |
 | `lake env lean Poincare.lean` (`#print axioms`) | 0 | 31 s | — |
 
 Le défaut `lake build` incluait pour la première fois la fermeture
