@@ -3242,11 +3242,24 @@ def test_workspace_root_walks_to_myia_ai_notebooks():
 
 
 def test_workspace_relative_joins_to_workspace_root():
-    """Forward-slash relative strings resolve under the workspace root."""
+    """Forward-slash relative strings resolve under the workspace root.
+
+    The JOIN contract (workspace-root anchoring, no drive letter) holds on
+    every checkout and is always asserted. The EXISTENCE pin requires a
+    complete checkout (submodules initialized): a bare CI clone has no
+    ``game_theory_lean`` gitlink materialized, so existence is skipped
+    with a written motif there (#21331) instead of failing the suite.
+    """
     from prover.config import _workspace_relative, _WORKSPACE_ROOT
 
     p = _workspace_relative("GameTheory/game_theory_lean")
     assert p == _WORKSPACE_ROOT / "GameTheory" / "game_theory_lean"
+    if not p.exists():
+        pytest.skip(
+            "game_theory_lean absent from this checkout (bare CI clone "
+            "without submodules) — join contract asserted above, existence "
+            "pinned on complete checkouts (#21331)"
+        )
     assert p.exists(), (
         "the workspace-relative entry for game_theory_lean must "
         "resolve to a real directory on a normal CoursIA-2 layout"
@@ -3261,6 +3274,27 @@ def test_workspace_relative_returns_none_when_no_root(monkeypatch):
     assert cfg._workspace_relative("GameTheory/cooperative_games_lean") is None
 
 
+def _game_theory_lean_present() -> bool:
+    """Complete-checkout probe: is the game_theory_lean gitlink materialized?
+
+    Bare CI clones (actions/checkout without submodules) leave the gitlink
+    unmaterialized, so the path constants resolve to ``None`` and the
+    existence pins below cannot hold. Stdlib-only walk mirroring
+    ``config._workspace_root()`` — importing ``prover.config`` here would
+    re-drag the LLM stack at module import (#21331).
+    """
+    for ancestor in Path(__file__).resolve().parents:
+        if ancestor.name == "MyIA.AI.Notebooks":
+            return (ancestor / "GameTheory" / "game_theory_lean").exists()
+    return False
+
+
+@pytest.mark.skipif(
+    not _game_theory_lean_present(),
+    reason="game_theory_lean gitlink not materialized (bare CI clone without "
+           "submodules) — the workspace-anchoring contract needs a complete "
+           "checkout; pinned on every full checkout (#21331)",
+)
 def test_path_constants_resolve_to_active_workspace():
     """Every FILE/DIR constant resolves into the active workspace, not a sibling.
 
