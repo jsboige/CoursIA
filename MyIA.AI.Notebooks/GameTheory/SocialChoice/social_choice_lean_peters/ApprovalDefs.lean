@@ -4,7 +4,11 @@
 
   Ce fichier pose les structures et fonctions de base pour la formalisation
   du core d'approbation, conformément au résultat de Becker, Greger et
-  Peters (2026), arXiv 2609.11912.
+  Peters (2026), arXiv 2609.11912 (p. 1).
+
+  Source archivée : le PDF de référence est déposé au gisement partagé
+  depuis le 2026-10-20 (21 pages) ; les renvois « p. N » ci-dessous
+  pointent dans ce PDF archivé.
 
   Tranche 1 du plan d'exécution de l'issue #17988 :
   - `ApprovalBallot`     — sous-ensemble des candidats approuvés par un votant
@@ -65,11 +69,13 @@ structure PaymentFunction (V : Type) [Fintype V] where
 /-- Utilité agrégée d'approbation : somme pondérée des bonheurs individuels,
     où le coefficient de chaque votant est `1 / (1 + p.v)` (interprétation :
     un paiement positif réduit le poids du votant, un paiement négatif
-    l'augmente — c'est la **base** de la fonction objectif de BGP 2026 sans
-    le logarithme).
+    l'augmente — c'est la **base** de la fonction objectif de BGP 2026
+    (entropie harmonique, § 4, p. 6) sans le logarithme).
 
     Cette définition sert de **proxy** à `HarmonicEntropy` (qui introduira le
-    logarithme via `Mathlib.Analysis.SpecialFunctions.Log` à la Tranche 3).
+    logarithme via `Mathlib.Analysis.SpecialFunctions.Log` à la Tranche 3) ;
+    l'entropie harmonique du papier est introduite p. 6 et formalisée
+    Déf. 4.3, p. 8.
     Le proxy est suffisant pour exprimer les lemmes techniques de Tranche 2
     (monotonie en la composition du comité) qui ne dépendent pas du log
     lui-même.
