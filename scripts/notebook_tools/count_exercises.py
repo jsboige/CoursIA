@@ -1400,6 +1400,21 @@ def _exercise_number(source: str) -> str | None:
     return m.group(1).lstrip("+-").lower()
 
 
+#: Titre ATX avec sa séquence de dièses capturée (``## Exercices`` -> ``##``).
+_ATX_MARKER_RE = re.compile(r"^\s{0,3}(#{1,6})\s+\S", re.MULTILINE)
+
+
+def _shallowest_atx_level(source: str) -> int | None:
+    """Niveau ATX le plus haut (le plus petit) des titres d'une source markdown.
+
+    Renvoie None si la source ne porte aucun titre ATX. ``## Exercices`` suivi
+    de ``### Exercice 1`` donne 2 : c'est le niveau de section qui clôt un bloc
+    d'exercices (#20546).
+    """
+    levels = [len(m.group(1)) for m in _ATX_MARKER_RE.finditer(source)]
+    return min(levels) if levels else None
+
+
 def count_exercises_in_notebook(path: Path) -> NotebookCount:
     """Count exercises in one notebook, with per-cell evidence.
 
@@ -1440,6 +1455,13 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
     header_cell_indices: set[int] = set()
     header_instance_counts: dict[int, int] = {}
     header_sources: dict[int, str] = {}
+    #: Numéros des instances nommées par une cellule d'en-tête (``Exercice 1``
+    #: ... ``N``). Lus par la passe de revendication des stubs groupés (#20546).
+    header_instance_numbers: dict[int, set[str]] = {}
+    #: Niveau ATX le plus haut parmi les titres de la cellule (``## Exercices``
+    #: = 2). Il borne le territoire où un en-tête groupé peut revendiquer des
+    #: stubs (#20546).
+    header_title_levels: dict[int, int | None] = {}
     for i, cell in enumerate(cells):
         if cell.get("cell_type") != "markdown":
             continue
@@ -1450,6 +1472,10 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
         header_cell_indices.add(i)
         header_instance_counts[i] = len(instance_lines)
         header_sources[i] = source
+        header_instance_numbers[i] = {
+            n for n in (_exercise_number(t) for t in instance_lines) if n is not None
+        }
+        header_title_levels[i] = _shallowest_atx_level(source)
 
     # Pairing pass: a markdown header is a real exercise ONLY if a stub is
     # found either just below it (forward, within 3 cells) or just above it
@@ -1478,6 +1504,11 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
     # "n'ajouter le ExerciseHit de titre que si la cellule code appariee est un
     # stub au sens de _is_stub_code" -- single gate, not conjunctive.
     paired_code_indices: set[int] = set()
+    #: (#20546) En-têtes groupés (>= 2 instances numérotées) ayant apparié un
+    #: stub, avec les index des stubs appariés. Consommés après la boucle par la
+    #: passe de revendication : une instance d'en-tête = un stub, donc un stub
+    #: couvert par une instance propre n'est plus recompté par la deuxième passe.
+    grouped_commits: list[tuple[int, list[int]]] = []
     #: #18146 deferred-unpaired bookkeeping: a numbered header whose forward
     #: window was cut short by a nearer header cell is orphaned only if that
     #: nearer header (transitively) finds no write-space either. GT-07 c25's
@@ -1611,6 +1642,15 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
             elif forward_generic is not None:
                 forward_stub = forward_generic
                 paired_code_indices.add(forward_generic)
+        # En-tête groupé ayant apparié un stub : son territoire peut contenir les
+        # stubs frères de ses autres instances (revendiqués après la boucle, #20546).
+        if (
+            (backward_stub is not None or forward_stub is not None)
+            and len(header_instance_numbers[idx]) >= 2
+        ):
+            grouped_commits.append(
+                (idx, [s for s in (backward_stub, forward_stub) if s is not None])
+            )
         # Only push markdown_header ExerciseHits when a stub was found in
         # either direction. Header-but-no-stub is the PR #12246 / GT-20 case:
         # we want the title silently dropped, not counted (and the fix also
@@ -1741,6 +1781,52 @@ def count_exercises_in_notebook(path: Path) -> NotebookCount:
                         detected_by=gated_kind[terminal],
                     )
                 )
+
+    # Passe de revendication (#20546). Un en-tête groupé ayant apparié un stub
+    # compte UN hit par instance qu'il nomme (`### Exercice 1` ... `### Exercice
+    # N`), mais l'appariement ci-dessus ne consomme qu'UNE cellule de code. Les
+    # stubs frères (`# Exercice 2` ... `# Exercice N`) tombent alors dans la
+    # deuxième passe et sont recomptés : N + (N-1) = 2N-1 (Search-06 : 11 pour 6).
+    # Chaque stub frère est donc revendiqué ici par son NUMERO d'exercice, dans le
+    # territoire de l'en-tête : de l'en-tête jusqu'au prochain en-tête d'instance,
+    # ou jusqu'au prochain titre markdown de niveau égal ou supérieur (fin de la
+    # section). Au plus un stub par numéro d'instance. Cette passe s'exécute après
+    # toutes les décisions d'en-tête : elle ne retire que des hits de la deuxième
+    # passe et ne change jamais un appariement, donc le compte ne peut que baisser.
+    for idx, anchors in grouped_commits:
+        numbers = header_instance_numbers[idx]
+        covered: set[str] = set()
+        for a in anchors:
+            if a in paired_code_indices:
+                anchor_num = _exercise_number("".join(cells[a].get("source", [])))
+                if anchor_num in numbers:
+                    covered.add(anchor_num)
+        header_level = header_title_levels[idx]
+        for j in range(idx + 1, len(cells)):
+            if covered == numbers:
+                break
+            jcell = cells[j]
+            if jcell.get("cell_type") == "markdown":
+                if j in header_cell_indices:
+                    break  # le prochain en-tête d'instance porte ce qui suit
+                jlevel = _shallowest_atx_level("".join(jcell.get("source", [])))
+                if (
+                    header_level is not None
+                    and jlevel is not None
+                    and jlevel <= header_level
+                ):
+                    break  # frontière de section : le bloc de l'en-tête est clos
+                continue
+            if jcell.get("cell_type") != "code" or j in paired_code_indices:
+                continue
+            jsource = "".join(jcell.get("source", []))
+            if not _is_stub_code(jsource):
+                continue
+            jnum = _exercise_number(jsource)
+            if jnum is None or jnum not in numbers or jnum in covered:
+                continue
+            paired_code_indices.add(j)
+            covered.add(jnum)
 
     # Second pass: code-cell exercises with NO preceding markdown header.
     #
