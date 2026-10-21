@@ -36,6 +36,7 @@ import syllable_pitch as sp  # noqa: E402
 from verify_prosody import (  # noqa: E402
     LONG_FORM_WINDOW_S,
     MELODY_SEVERITY,
+    _plan_window_bounds,
     aggregate_window_measurements,
     classify_segment,
 )
@@ -185,9 +186,14 @@ def test_among_windows_of_equal_verdict_the_more_concentrated_one_is_the_worst()
 
 # --- the fold, on the MEASURED windows of the chapter-1 delivery ------------
 # Frozen values, measured 2026-10-19 by this lane on the delivered chapter
-# (voice B, 1364.96 s cut into 8 windows of 170.67 s). They are the exact
-# data that opened #21485, so the fold is locked against the real case and
-# not only against synthetic ones.
+# (voice B, 1364.96 s). PROVENANCE of the cut (#21521 item 4): these values
+# were measured on an EQUAL 8-window cut (8 x 170.67 s) -- a measurement
+# cut, NOT the one the organ makes. The organ's fixed cut for that duration
+# is 7 x 180 s + a 104.96-s queue (the queue is >= window/2, so #21521's
+# guard keeps it as its own window: also 8 windows, not the same ones). The
+# values are frozen as the data that opened #21485, locking the FOLD against
+# the real case; the organ's real cut is locked by the _plan_window_bounds
+# tests below, not by this table.
 
 MEASURED_WINDOWS = [
     {"label": "w00", "gate": "PASS-TO-EAR", "melody_verdict": "EXPRESSIVE",
@@ -290,6 +296,85 @@ def test_a_voice_swap_on_the_whole_file_still_rejects_a_clean_window_set():
     )
     assert decision["gate"] == "REJECT"
     assert "VOICE-SWAP" in decision["reasons"]
+
+
+# --- the queue-window guard (#21521 item 3) ----------------------------------
+# The cut, not the fold: a closing tail shorter than half a window never
+# becomes a window of its own. Sample arithmetic only (sr = 100/s, so a
+# second is 100 samples) -- no audio, no librosa, same CI constraint as
+# the rest of this file.
+
+_SR = 100  # samples per second, arbitrary: the plan is pure sample math
+
+
+def test_a_queue_shorter_than_half_a_window_merges_into_the_previous_one():
+    """7 x 180 s + a 70-s tail -> 7 windows, the last one 250 s.
+
+    The fold takes the WORST melody verdict and the MINIMUM global range:
+    a tail that short is narrow-range by construction, and read alone it
+    would reject the whole chapter on the monotone floor by duration alone
+    -- the false-REJECT-by-duration class #21486 retired.
+    """
+    step = int(LONG_FORM_WINDOW_S * _SR)
+    n = 7 * step + 70 * _SR
+    bounds = _plan_window_bounds(n, step)
+    assert len(bounds) == 7
+    assert bounds[-1] == (6 * step, n)
+    # every window is at least half a window long
+    assert all(end - start >= step // 2 for start, end in bounds)
+
+
+def test_a_queue_at_least_half_a_window_stays_its_own_window():
+    """The chapter-1 case: 7 x 180 s + a 104.96-s queue -> 8 windows.
+
+    The queue is >= window/2 (104.96 >= 90), long enough to carry a
+    reading of its own: it is NOT merged.
+    """
+    step = int(LONG_FORM_WINDOW_S * _SR)
+    queue = int(104.96 * _SR)
+    n = 7 * step + queue
+    bounds = _plan_window_bounds(n, step)
+    assert len(bounds) == 8
+    assert bounds[-1][1] - bounds[-1][0] == queue
+
+
+def test_a_short_artefact_is_one_window_whatever_its_length():
+    """Under one window there is nothing to merge into: single window as-is."""
+    step = int(LONG_FORM_WINDOW_S * _SR)
+    assert _plan_window_bounds(step // 4, step) == [(0, step // 4)]
+    assert _plan_window_bounds(step, step) == [(0, step)]
+    assert _plan_window_bounds(0, step) == []
+
+
+def test_why_the_guard_lives_in_the_cut_and_not_in_the_fold():
+    """The defect on window dicts: a short narrow tail read FLAT drags the
+    fold to a chapter-wide REJECT.
+
+    Locked here so the next reader sees what the plan guarantees can never
+    be produced: with the pre-#21521 cut, a 7-window chapter plus a 10-s
+    tail (2.1-st range -- narrow BY CONSTRUCTION, not by performance)
+    folds to FLAT + a 2.1-st global range, and the gate rejects the whole
+    chapter on MONOTONE. The plan tests above are what prevents this
+    window set from ever existing.
+    """
+    tail = _window(label="w07", melody_verdict="FLAT",
+                   global_range_st=2.1, n_syllables=40,
+                   motif3_repeat_pct=60.0)
+    windows = [_window(label="w0%d" % i) for i in range(7)] + [tail]
+    agg = aggregate_window_measurements(windows)
+    assert agg["melody_verdict"] == "FLAT"
+    assert agg["global_range_st"] == 2.1
+    decision = classify_segment(
+        melody_verdict=agg["melody_verdict"],
+        global_range_st=agg["global_range_st"],
+        breath_verdict="STEADY",
+        voice_verdict="CONSISTENT",
+        n_syllables=agg["n_syllables"],
+        melodic_span_st=agg["melodic_span_st"],
+        mean_abs_interval_st=agg["mean_abs_interval_st"],
+    )
+    assert decision["gate"] == "REJECT"
+    assert "MONOTONE" in decision["reasons"]
 
 
 # --- the constants the contract rests on -----------------------------------
