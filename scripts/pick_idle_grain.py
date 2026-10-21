@@ -1699,6 +1699,52 @@ def open_cover_signal(issue_number: int) -> str | None:
     return descriptor
 
 
+def open_cover_signal_complete(issue_number: int) -> str | None:
+    """Une PR OUVERTE couvre-t-elle cette issue ? (enumeration COMPLETE)
+
+    Meme REGLE que `open_cover_signal` -- l'ancre `#N` bornee par un mot,
+    lue sur le titre et le body d'une PR OUVERTE -- mais lue sur
+    l'ENUMERATION COMPLETE des PRs ouvertes (#21757, critere 4) au lieu du
+    resultat d'une RECHERCHE serveur plafonnee a 20 resultats. La
+    recherche reste consultee pour le DESCRIPTEUR (mention `[draft]`, PRs
+    suivantes), afin que la phrase produite reste identique a celle
+    d'aujourd'hui ; c'est l'enumeration complete qui DECIDE de la
+    couverture.
+
+    Repli : si l'enumeration complete est indisponible, on rend la sonde
+    d'aujourd'hui -- le fail-OPEN est conserve (le candidat est conserve
+    quand rien n'est trouve), et l'issue est signalee par la sonde.
+
+    Une enumeration incomplete (plafond franchi, delai) n'est PAS une
+    preuve d'absence : dans ce cas on ne tranche pas sur l'enumeration et
+    l'on rend la sonde d'aujourd'hui, qui reste fail-OPEN et dite.
+    """
+    try:
+        prs = _complete_open_prs()
+    except Exception:  # noqa: BLE001 - repli sur la sonde d'aujourd'hui
+        return open_cover_signal(issue_number)
+    anchor = re.compile(rf"#{issue_number}\b")
+    covered = [
+        pr for pr in prs
+        if anchor.search((pr.get("title") or "") + "\n" + (pr.get("body") or ""))
+    ]
+    if not covered:
+        return ""
+    descriptor = open_cover_signal(issue_number)
+    if descriptor:
+        return descriptor
+    # La recherche serveur n'a rien rendu (plafond, quota) : on BATIT le
+    # descripteur sur l'enumeration, qui est complete.
+    first = min(covered, key=lambda pr: pr["number"])
+    others = [pr["number"] for pr in covered
+              if pr["number"] != first["number"]]
+    out = f"PR #{first['number']}"
+    if others:
+        out += " (+{} autre(s) : {})".format(
+            len(others), ", ".join(f"#{x}" for x in others))
+    return out
+
+
 def open_cover_reason(
     item: dict,
     probe=None,
@@ -2493,40 +2539,134 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
     return verdicts
 
 
-def _build_open_prs_cache_for_belt(lane: str) -> str | None:
-    """#19643 -- fetch 1 fois la liste des PRs ouvertes, ecrit dans un
-    tempfile, retourne le path (None si le fetch a echoue, l'appelant
-    laisse alors chaque appel de check_lane_claimfetcher sa propre liste,
-    chemin legacy)."""
-    try:
-        r = subprocess.run(
-            ["gh", "pr", "list", "--state", "open",
-             "--json", "number,title,headRefName,body,files,additions,deletions",
-             "--limit", "200"],
-            capture_output=True, text=True, encoding="utf-8",
-            # 60s : aligne sur le timeout par defaut de check_lane_claim.
-            # Si le fetch est lent, on laisse l'appelant retomber sur le
-            # chemin legacy (chaque appel fait son propre fetch).
-            timeout=60,
+# #21757 -- le format v2 du cache des PRs ouvertes.
+#
+# Le LECTEUR (`check_lane_claim.py`, corrige par #21749) attend une
+# ENVELOPPE qui porte la COMPLETUDE de l'enumeration. Une liste nue -- le
+# format herite, produit par l'ancien `gh pr list --limit 200` -- ne porte
+# AUCUNE preuve de completude et est traitee comme ABSENTE. Les deux moities
+# ne parlaient donc plus la meme langue : le cache ecrit par le tapis
+# n'etait plus lu, et chaque candidat refaisait sa propre enumeration.
+#
+# Le producteur ecrit desormais la meme enveloppe, et il l'ETABLIT :
+#
+#   - `complete: true` n'est ecrit QUE si l'enumeration est COMPLETE
+#     (pagination GraphQL jusqu'a `hasNextPage == false`, refetch REST des
+#     listes de fichiers plafonnees -- l'implementation du lecteur) ;
+#   - une enumeration INCOMPLETE ecrit `complete: false` + son motif : le
+#     lecteur leve alors `OpenPrsIncompleteError` et rend un verdict
+#     UNKNOWN -- jamais un « Path is free » qui ne prouve rien ;
+#   - un echec de TRANSPORT n'ecrit aucun cache : le lecteur refait sa
+#     propre enumeration complete (le repli d'avant) ;
+#   - l'ecriture est ATOMIQUE (fichier temporaire + `os.replace`).
+_OPEN_PRS_CACHE_FORMAT = "open-prs-v2"
+
+# Enumeration complete, MEMOISEE : une passe de tirage n'enumerere qu'une
+# fois, et la sonde de couverture (#16589) consomme la meme enumeration.
+_OPEN_PRS_ENUM_MEMO: list[dict] | None = None
+
+# Le module LECTEUR, importe a la demande (import tardif : le picker est
+# aussi importe par des tests qui ne franchissent jamais le reseau).
+_CLC_MODULE = None
+
+
+def _claim_reader_module():
+    """Le module LECTEUR (`check_lane_claim.py`), importe a la demande."""
+    global _CLC_MODULE
+    if _CLC_MODULE is not None:
+        return _CLC_MODULE
+    scripts_dir = str(pathlib.Path(__file__).resolve().parent)
+    if scripts_dir not in sys.path:
+        sys.path.insert(0, scripts_dir)
+    import check_lane_claim as clc  # noqa: PLC0415 - import tardif assume
+    _CLC_MODULE = clc
+    return clc
+
+
+def _complete_open_prs() -> list[dict]:
+    """Enumeration COMPLETE des PRs ouvertes (une seule par passe).
+
+    La pagination vit dans le LECTEUR (#21749) : la dupliquer ici la
+    ferait deriver des lors que l'un des deux change. On appelle donc
+    `_gh_open_prs_complete()` -- l'enumeration BRUTE : ni lecture de cache,
+    ni ecriture (le cache du lecteur est le fichier du tapis).
+    """
+    global _OPEN_PRS_ENUM_MEMO
+    if _OPEN_PRS_ENUM_MEMO is not None:
+        return _OPEN_PRS_ENUM_MEMO
+    clc = _claim_reader_module()
+    fetch = getattr(clc, "_gh_open_prs_complete", None)
+    if fetch is None:
+        raise RuntimeError(
+            "check_lane_claim._gh_open_prs_complete est absent -- "
+            "l'enumeration complete n'est plus celle du lecteur (#21749)"
         )
-    except (subprocess.TimeoutExpired, OSError):
-        return None
-    if r.returncode != 0:
-        return None
+    prs = fetch()
+    _OPEN_PRS_ENUM_MEMO = prs
+    return prs
+
+
+def _write_open_prs_cache_v2(prs: list[dict], complete: bool,
+                             reason: str = "") -> str | None:
+    """Ecrit le cache v2 (enveloppe + completude) et rend son chemin.
+
+    Ecriture ATOMIQUE : le tapis appelle l'organe en parallele, un lecteur
+    concurrent ne doit jamais lire un fichier a moitie ecrit.
+    """
+    payload = {
+        "format": _OPEN_PRS_CACHE_FORMAT,
+        "complete": bool(complete),
+        "count": len(prs),
+        "prs": prs,
+    }
+    if not complete:
+        payload["reason"] = (reason or "")[:200]
     try:
-        # Valide que c'est bien une liste JSON.
-        parsed = json.loads(r.stdout)
-    except json.JSONDecodeError:
-        return None
-    if not isinstance(parsed, list):
-        return None
-    try:
-        fd, path = tempfile.mkstemp(prefix="open_prs_", suffix=".json")
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(r.stdout)
+        fd, tmp_path = tempfile.mkstemp(prefix="open_prs_", suffix=".json.tmp")
+        path = tmp_path[: -len(".tmp")]
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=False)
+        os.replace(tmp_path, path)
         return path
     except OSError:
+        try:
+            os.unlink(tmp_path)
+        except OSError:
+            pass
         return None
+
+
+def _build_open_prs_cache_for_belt(lane: str) -> str | None:
+    """#21757 -- cache v2 des PRs ouvertes, ecrit par le tapis.
+
+    Renvoie le chemin du cache, ou None si aucune enumeration n'a pu etre
+    produite (echec de transport : le lecteur refait alors sa propre
+    enumeration complete, chemin legacy).
+    """
+    try:
+        clc = _claim_reader_module()
+    except Exception as exc:  # noqa: BLE001 - le lecteur est introuvable
+        print(f"[OPEN-PRS] lecteur indisponible ({exc}) : pas de cache ecrit, "
+              f"chaque candidat reenumerera de son cote.", file=sys.stderr)
+        return None
+    try:
+        prs = _complete_open_prs()
+    except Exception as exc:  # noqa: BLE001 - diagnostic nomme plus bas
+        if not isinstance(exc, getattr(clc, "OpenPrsIncompleteError", ())):
+            # ECHEC DE TRANSPORT : aucun cache. Le lecteur reenumerera de
+            # son cote -- complet (le repli d'avant).
+            print(f"[OPEN-PRS] enumeration impossible ({type(exc).__name__}: "
+                  f"{exc}) : pas de cache ecrit.", file=sys.stderr)
+            return None
+        reason = " ".join(
+            str(getattr(exc, attr, "") or "") for attr in ("reason", "detail")
+        ).strip() or f"{type(exc).__name__}: {exc}"
+        path = _write_open_prs_cache_v2([], complete=False, reason=reason)
+        print(f"[OPEN-PRS] enumeration INCOMPLETE ({reason[:160]}) : cache "
+              f"marque incomplet -- les verdicts de claim seront UNKNOWN, "
+              f"jamais « libre ».", file=sys.stderr)
+        return path
+    return _write_open_prs_cache_v2(prs, complete=True)
 
 
 def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
@@ -7124,10 +7264,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     # Sonde de couverture (#16589) : meme commutateur d'inertie sous pytest --
     # un test qui veut le signal l'injecte explicitement.
+    # #21757 -- la sonde DECIDE sur l'enumeration COMPLETE des PRs ouvertes
+    # (la recherche serveur, plafonnee a 20 resultats, ne fournit plus que
+    # le descripteur).
     cover_probe = (
         open_cover_inert
         if "PYTEST_CURRENT_TEST" in os.environ and args.cache_dir is None
-        else open_cover_signal
+        else open_cover_signal_complete
     )
     delivered_state: dict = {"failures": [], "budget_hit": False,
                               "recent_filtered": 0}

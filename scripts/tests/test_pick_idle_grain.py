@@ -4976,3 +4976,147 @@ def test_merged_pr_signal_anchor_substring_no_false_positive(monkeypatch):
     )
 
 
+
+
+# #21757 -- le PRODUCTEUR du cache des PRs ouvertes (cote tapis).
+#
+# Le LECTEUR (`check_lane_claim.py`, corrige par #21749) refuse une liste
+# NUE (format herite) : le cache ecrit par le tapis etait donc lu comme
+# ABSENT, et chaque candidat refaisait sa propre enumeration complete.
+# Ces tests verrouillent le contrat producteur <-> lecteur, et se valident
+# par leurs faux negatifs : cache tronque, cache incomplet, enumeration
+# dupliquee, ancre sans fin de mot.
+
+
+@pytest.fixture
+def _reset_open_prs_state():
+    """Le memo d'enumeration et le module lecteur repartent a zero."""
+    pig._OPEN_PRS_ENUM_MEMO = None
+    pig._CLC_MODULE = None
+    yield
+    pig._OPEN_PRS_ENUM_MEMO = None
+    pig._CLC_MODULE = None
+
+
+def _reader_with_cache(path):
+    """Recharge le lecteur avec le cache du tapis (env lue a l'import)."""
+    import importlib
+
+    import check_lane_claim as clc
+    return importlib.reload(clc)
+
+
+def test_cache_v2_complete_is_read_by_the_reader_without_network(
+        monkeypatch, tmp_path, _reset_open_prs_state):
+    """Le cache v2 COMPLET est relu par le lecteur, sans fetch reseau."""
+    prs = [{
+        "number": 21742,
+        "title": "check_lane_claim --paths",
+        "headRefName": "fix/21742",
+        "body": "See #21742",
+        "additions": 10,
+        "deletions": 1,
+        "files": [{"path": "scripts/check_lane_claim.py"}],
+    }]
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: prs)
+    path = pig._build_open_prs_cache_for_belt("myia-ai-01:CoursIA-2")
+    assert path is not None
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    assert payload["format"] == "open-prs-v2"
+    assert payload["complete"] is True
+    assert payload["count"] == 1
+
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(path))
+    clc = _reader_with_cache(path)
+    assert clc._read_open_prs_cache() == prs
+    monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+    _reader_with_cache(path)
+
+
+def test_incomplete_enumeration_writes_an_incomplete_cache(
+        monkeypatch, _reset_open_prs_state):
+    """Une enumeration INCOMPLETE ecrit `complete: false` + son motif."""
+    import check_lane_claim as clc
+
+    def boom():
+        raise clc.OpenPrsIncompleteError("liste tronquee", "362 PRs, 200 lues")
+
+    monkeypatch.setattr(pig, "_complete_open_prs", boom)
+    path = pig._build_open_prs_cache_for_belt("lane")
+    assert path is not None
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    assert payload["complete"] is False
+    assert payload["format"] == "open-prs-v2"
+    assert "tronquee" in payload["reason"]
+
+    # Le lecteur refuse ce cache : UNKNOWN, jamais une liste exploitee.
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(path))
+    clc = _reader_with_cache(path)
+    with pytest.raises(clc.OpenPrsIncompleteError):
+        clc._read_open_prs_cache()
+    monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+    _reader_with_cache(path)
+
+
+def test_legacy_bare_list_is_not_a_proof_of_completeness(
+        monkeypatch, tmp_path):
+    """Faux negatif : une liste nue est traitee comme ABSENTE."""
+    legacy = tmp_path / "legacy.json"
+    legacy.write_text(json.dumps([{"number": 1}]), encoding="utf-8")
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(legacy))
+    clc = _reader_with_cache(legacy)
+    assert clc._read_open_prs_cache() is None
+    monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+    _reader_with_cache(legacy)
+
+
+def test_producer_reuses_the_reader_enumeration_and_never_runs_gh(
+        monkeypatch, _reset_open_prs_state):
+    """Une seule enumeration par passe, et aucun `gh` lance par le tapis."""
+    calls = []
+
+    class _FakeReader:
+        OpenPrsIncompleteError = type(
+            "OpenPrsIncompleteError", (RuntimeError,), {})
+
+        @staticmethod
+        def _gh_open_prs_complete():
+            calls.append(1)
+            return [{"number": 1, "title": "t", "body": "", "files": []}]
+
+    monkeypatch.setattr(pig, "_claim_reader_module", lambda: _FakeReader)
+
+    def boom(*args, **kwargs):  # noqa: ANN002, ANN003
+        raise AssertionError(
+            "le producteur ne doit pas lancer gh lui-meme (#21757)")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    first = pig._build_open_prs_cache_for_belt("lane")
+    second = pig._build_open_prs_cache_for_belt("lane")
+    assert first is not None and second is not None
+    assert calls == [1], "l'enumeration doit etre memoisee (une par passe)"
+
+
+def test_cover_probe_decides_on_the_complete_enumeration(
+        monkeypatch, _reset_open_prs_state):
+    """#21757 critere 4 : la couverture est decidee sur l'enumeration."""
+    prs = [
+        {"number": 30001, "title": "couvre #4242", "body": "", "files": []},
+        {"number": 30002, "title": "rien", "body": "aucune ancre",
+         "files": []},
+    ]
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: prs)
+    # La recherche serveur ne rend rien (plafond, quota) : la decision
+    # vient de l'enumeration complete, qui est complete par construction.
+    monkeypatch.setattr(pig, "open_cover_signal", lambda n: None)
+    assert pig.open_cover_signal_complete(4242) == "PR #30001"
+    assert pig.open_cover_signal_complete(9999) == ""
+
+
+def test_cover_probe_keeps_the_anchor_boundary(
+        monkeypatch, _reset_open_prs_state):
+    """Faux negatif : `#42420` ne couvre pas `#4242` (meme regle qu'avant)."""
+    prs = [{"number": 30003, "title": "#42420", "body": "", "files": []}]
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: prs)
+    monkeypatch.setattr(pig, "open_cover_signal", lambda n: None)
+    assert pig.open_cover_signal_complete(4242) == ""
