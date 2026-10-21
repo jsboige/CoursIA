@@ -107,14 +107,14 @@ def test_absent_number_not_flagged_here(tmp_path):
 
 # === #20035 : UNITS_EXTENDED -- la liste etendue ajoute des substantifs
 # de comptage trouves sur les cotes hors-App-5 (carnet, lemme, modele,
-# ...). Le scope par defaut est `extended` ; `core` reste rejouable.
+# ...). Le scope `extended` est un opt-in explicite ; le defaut est `core`.
 
 
 def test_20035_carnet_contradiction_in_extended(tmp_path):
     """Le cas fondateur #19918 : 8 carnets en prose vs 15 dans le stream.
 
-    Le scope `extended` (defaut) doit attraper la contradiction -- la
-    liste UNITS historique (App-5) ne contient pas `carnet`, l'extension
+    Le scope `extended` (opt-in explicite) doit attraper la contradiction --
+    la liste UNITS historique (App-5) ne contient pas `carnet`, l'extension
     l'ajoute. La garde SUBCOUNT_CONTEXT_RE ne filtre pas (pas de mot
     `chacun`/`par`/...).
     """

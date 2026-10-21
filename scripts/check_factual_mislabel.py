@@ -90,12 +90,13 @@ UNITS = (
 # (carnet, lemme, fichier, modele, ...). La voie choisie est une liste
 # fermee, documentee, et couplee a la garde SUBCOUNT_CONTEXT_RE deja
 # en place (chacun, par, au moins, ...) : les faux positifs mesures
-# sur App-5 (3 FP tues) restent la base de reference. La liste est
-# ajoutee par defaut -- c'est elle qui rend l'organe utile aux cotes
-# hors App-5 -- et un drapeau --units=core la desactive pour les usages
-# qui veulent la portee historique (la portee du test de regression
-# documente en haut du fichier : 0 FP / 30 carnets sur le corpus de
-# reference d'avant #20035).
+# sur App-5 (3 FP tues) restent la base de reference. La liste est un
+# **opt-in explicite** (`--units extended`) -- c'est elle qui rend l'organe
+# utile aux cotes hors App-5 -- et le defaut reste `core`, c'est-a-dire la
+# portee historique (la portee du test de regression documente en haut du
+# fichier : 0 FP / 30 carnets sur le corpus de reference d'avant #20035),
+# depuis l'arbitrage du coordinateur qui a mesure 0 vrai positif sur le
+# scope etendu (36 findings sur le corpus).
 UNITS_EXTENDED = (
     # Carnets / notebooks / pages / sections (Serre100, IIT, ICT, ML,
     # SymbolicAI) : substantifs que le stream peut enumerer directement
