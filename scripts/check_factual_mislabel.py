@@ -26,6 +26,34 @@ cible peut rejouer en `core` (les 14 unites historiques d'App-5) via
 `--units core`. Le test de regression documente en haut reste vert
 dans les deux scopes (la garde SUBCOUNT_CONTEXT_RE filtre les
 sous-comptes qui produiraient les FP).
+
+MESURE CORPUS (exigence #20035, relevee le 2026-10-21 sur ai-01) --
+corpus `MyIA.AI.Notebooks`, 1 553 carnets, organe execute sur les
+deux scopes avant et apres la garde compte/valeur :
+
+| scope | avant la garde | apres la garde |
+|---|---|---|
+| `core` | 15 | 15 (inchange) |
+| `extended` | 45 | 38 |
+
+Les 7 findings disparus etaient tous de la classe VALEUR lue comme
+COMPTE (moyennes decimales). Sur les 38 restants, la lecture
+classe par classe donne ~3 vrais (le canon App-5 : « 3 salles » vs
+`Salles : 4`, cellules md 2 et 4, plus la formule-tuple) et ~35
+faux positifs classes : separateur de milliers par espace (2),
+plages de valeurs (« 1-2 iterations », « 4-6 »), comptes partiels
+(Train 382 / Test 164 pour un total de 546), sous-comptes par item
+(« 16 slots a 1 seul », « 8 slots a 2 »), et quantites de nature
+differente (horizon « 5 jours » vs 6 300 lignes, « 40 epochs
+configureses » vs 6 executees).
+
+CONSEQUENCE : le scope `extended` rend un taux de faux positifs de
+~92 % sur le corpus. L'organe reste ADVISORY (patron #11435, jamais
+bloquant seul), donc ce taux ne bloque rien -- mais il produit du
+bruit. L'arbitrage du defaut (`extended` par defaut, ou `core` par
+defaut + `extended` en opt-in explicite) est soumis au coordinateur ;
+le defaut actuel n'est pas change par ce correctif, qui ferme une
+classe de faux positifs et documente la mesure.
 """
 
 from __future__ import annotations
@@ -100,10 +128,28 @@ def _build_count_patterns(units: str) -> tuple[re.Pattern, re.Pattern]:
     `GenAI/Texte/03_Structured_Outputs.ipynb` cellule md 19).
     `[ \t]*` preserve les separateurs en espace/tabulation sur la
     meme ligne et tue la classe FP sur les listes numerotees.
+
+    Les deux motifs refusent un nombre suivi d'une partie decimale
+    (garde `(?!\\d*[.,]\\d)`) : un nombre a virgule ou a point est une VALEUR, pas
+    un compte. Sans cette garde, « Recompense moyenne sur 10 episodes:
+    465.1 » donnait `episodes = 465` dans le stream, contredit par les « 10
+    episodes » de la prose -- faux positif mesure sur
+    `RL/RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb` cellules md 12 et
+    18 (signale par la lane adjointe, cycle c2204).
+
+    LIMITE CONNUE, non couverte par cette garde : le separateur de
+    milliers PAR ESPACE (« 10 000 iterations », « 6 912 variables »). Le
+    motif MD lit alors le dernier groupe (« 000 iterations »), un
+    compte faux -- classe distincte, mesuree a 2 findings sur le corpus
+    (GameTheory-13 c16, SocialChoice-04 c16). Elle n'est pas traitee ici :
+    la corriger exige de distinguer un groupe de milliers d'un compte,
+    ce qui suppose une grammaire de nombre, pas une garde de lookahead.
+    La faute la plus grave (une valeur lue comme un compte, donc une
+    contradiction FABRIQUEE) est, elle, fermee.
     """
     return (
-        re.compile(rf"(?i)\b(\d{{1,5}})\s*({units})\b"),
-        re.compile(rf"(?i)\b({units})[ \t]*[:=][ \t]*(\d{{1,5}})\b"),
+        re.compile(rf"(?i)\b(\d{{1,5}})(?!\d*[.,]\d)\s*({units})\b"),
+        re.compile(rf"(?i)\b({units})[ \t]*[:=][ \t]*(\d{{1,5}})(?!\d*[.,]\d)\b"),
     )
 
 

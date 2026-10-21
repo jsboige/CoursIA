@@ -261,3 +261,77 @@ def test_20956_numbered_list_not_misread_for_etapes(tmp_path):
         f"contradiction reelle meme-ligne `Etapes: 5` vs prose `10 "
         f"etapes` DOIT etre attrapee : rc={rc_contradict}, "
         f"out={out_contradict!r}")
+
+
+# === #20956 : confusion COMPTE / VALEUR -----------------------------------
+#
+# Un nombre suivi d'une partie decimale est une VALEUR, pas un compte.
+# Sans garde, le stream « Recompense moyenne sur 10 episodes: 465.1 »
+# donnait `episodes = 465`, contredit par les « 10 episodes » de la prose
+# -- faux positif mesure sur
+# RL/RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb (cellule md 12),
+# signale par la lane adjointe (cycle c2204).
+
+
+def test_20956_valeur_decimale_nest_pas_un_compte(tmp_path):
+    """LE cas fondateur : la prose dit « 10 episodes », le stream imprime
+    une moyenne decimale. L'organe NE DOIT PAS relever de contradiction.
+
+    Avant fix : le stream pattern lisait `episodes = 465` et l'organe
+    rendait un FACTUAL_MISLABEL (claimed=10, stream=[465]) -- un FP pur,
+    la prose etant la source de verite.
+    """
+    rc, out = _run(
+        [_code("Recompense moyenne sur 10 episodes: 465.1\n"
+               "Entropie finale : 0.82\n"),
+         _md("## Resultats\n\nLa recompense moyenne sur 10 episodes est "
+             "de 465.1 points.")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc == 0, (
+        f"une valeur decimale n'est PAS un compte : rc={rc}, out={out!r}")
+    assert out["anomaly_count"] == 0
+
+
+def test_20956_compte_entier_reste_un_compte(tmp_path):
+    """CONTROLE POSITIF : la garde ne doit pas neutraliser un compte
+    entier reel -- une contradiction reste attrapee."""
+    rc, out = _run(
+        [_code("Episodes: 7\n"),
+         _md("La recompense moyenne est mesuree sur 10 episodes.")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc == 1, (
+        f"un compte entier reel reste un compte : rc={rc}, out={out!r}")
+    units = [f for f in out["findings"] if f["kind"] == "unit-count"]
+    assert any(f["unit"] == "episode" and f["claimed"] == "10"
+               and f["stream"] == [7] for f in units), (
+        f"finding episode 10 vs 7 absent : {units!r}")
+
+
+def test_20956_compte_entier_coherent_ne_donne_rien(tmp_path):
+    """Meme classe, chiffres concordants : aucun finding."""
+    rc, out = _run(
+        [_code("Episodes: 10\n"),
+         _md("La recompense moyenne est mesuree sur 10 episodes.")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc == 0, (
+        f"10 episodes / 10 episodes : aucune contradiction : rc={rc}, "
+        f"out={out!r}")
+
+
+def test_20956_virgule_decimale_nest_pas_un_compte(tmp_path):
+    """La meme garde doit couvrir la virgule decimale (format FR)."""
+    rc, out = _run(
+        [_code("Score moyen sur 12 iterations: 87,4\n"),
+         _md("Le score moyen sur 12 iterations vaut 87,4 points.")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc == 0, (
+        f"virgule decimale : meme traitement que le point : rc={rc}, "
+        f"out={out!r}")
