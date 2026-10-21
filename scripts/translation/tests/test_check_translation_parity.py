@@ -741,7 +741,19 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # deux entrees ci-dessus sont INDEPENDANTES et s'additionnent -- elles partaient
 # toutes deux de 13, chacune ignorant la paire de l'autre : 13 + 1 (FT-04) +
 # 1 (ANALYSE-07) = 15. Une fusion qui n'aurait garde qu'un cote aurait rendu 14.
-EXPECTED_PAIR_COUNT = 15
+# 2026-10-20 (PR #19916, #19908 tranche B pli 2): +1 paire -- jumeau _en du
+# carnet Lean natif : SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean_en.
+# Meme classe que #19996/#20392/#19943 : la PR ne touchait pas scripts/**, le
+# Scripts Tests path-filtre n'a pas tourne, et la garde PR-time #21397
+# (check_pair_count_declared.py) n'est cablee dans aucun workflow. Rouge sur main
+# pur a 955360bcf0 (found 15, declared 14). Total apres fusion : 14 + 1 = 15.
+# 2026-10-21 (re-fusion de origin/main dans feature/1650-ft04-en, PR #20711) :
+# l'entree ANALYSE-06 (main, #19916) est INDEPENDANTE des deux autres -- les
+# trois paires sont distinctes : 13 + 1 (FT-04) + 1 (ANALYSE-07, #19943) +
+# 1 (ANALYSE-06, #19916) = 16. Une resolution qui n'aurait garde qu'un cote
+# (15) aurait rougi test_full_repo_state_passes_parity (found 16, declared 15),
+# classe de rouge deja enregistree trois fois sur main (#19996/#20392/#19943).
+EXPECTED_PAIR_COUNT = 16
 
 
 def _collect_parity_failures(repo_root: Path,
