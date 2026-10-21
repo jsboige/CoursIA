@@ -53,7 +53,11 @@ $kernelJson = @"
 "@
 
 $kernelFile = "$kernelPath\kernel.json"
-$kernelJson | Out-File -Encoding utf8 $kernelFile
+# `Out-File -Encoding utf8` ecrit un BOM sous PowerShell 5.1 : le kernel.json
+# produit est alors refuse par les parseurs JSON stricts, et le wrapper check du
+# depot echoue sur "Unexpected UTF-8 BOM (decode using utf-8-sig)". On ecrit
+# donc en UTF-8 SANS BOM, forme lisible par tous les parseurs.
+[System.IO.File]::WriteAllText($kernelFile, $kernelJson, (New-Object System.Text.UTF8Encoding($false)))
 Write-Host "[OK] Kernel cree: $kernelFile" -ForegroundColor Green
 
 # Verify kernel registration
