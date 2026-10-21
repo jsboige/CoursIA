@@ -1,5 +1,7 @@
 # Curriculum V2 Meta-Analysis — Final Summary
 
+> **Etat mesure au 2026-10-17** (issue #21055, retour lecteur externe re-verifie firsthand). Ce que le document ci-dessous dit : strategies S3/S4 « validees sur strict OOS 2027 ». Ce qui est mesure au source : a la date de redaction (2026-05-16), le dataset s'arrete au 2026-05-01 (`build_dataset_v2.py`, `end = 2026-05-01`) et le script `s3_hmm_regime.py` ne calcule **aucune metrique sur le holdout 2027** — `oos_mask = df.index >= "2027-01-01"` sert uniquement a retirer ces lignes (`is_data = df[~oos_mask]`), puis le backtest KEEPER tourne sur la periode IS complete avec des labels predits en walk-forward (expanding 5-fold). Les delta Sharpe +0.669 / MaxDD -39.1% (S3) et +0.325 / -17.7% (S4) sont donc des resultats **walk-forward intra-IS**, pas des resultats OOS 2027 : l'etiquette « strict OOS 2027 » decrit un engagement prospectif jamais execute a la date de redaction. Les conclusions relatives (S3 > S4 > composites S2/S5/S7/S8) restent valables en intra-IS walk-forward ; toute lecture « validee sur donnees 2027 » du tableau ci-dessous est retiree. Portee du bloc : ligne 5 (Methodology), lignes 16-17 et tableau Executive Summary ; le reste du document (methodologie detaillee, stages, retraction M15 #11395) est inchange. Historique conserve tel quel ci-dessous.
+
 Date: 2026-05-16
 Author: po-2025 (CPU-only, coursia-ml-training env)
 Methodology: Walk-forward 5-fold expanding, OOS 2027 strict, multi-seed block bootstrap (22-day blocks), seeds [0, 1, 7, 42], tx costs 10bps rebalance + 50bps stress.

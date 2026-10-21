@@ -9,9 +9,9 @@ breakdown: root=24, PostTraining=11
 maturity: BETA=30, ALPHA=3, DRAFT=2
 -->
 
-> **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (26 notebooks pédagogiques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 23/09/2026 :
+> **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé. Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 23/09/2026 :
 >
-> **Python 100% = 36/36 fichiers mono-langage ✓** (36 fichiers `*.ipynb` sur disque hors `_output.ipynb` — 32 kernels `python3` + 4 kernels `coursia-ml-training` (`rlpt_0c`, `rlpt_2`, `rlpt_3`, `rlpt_4`), tous `language: python` ; l'écart avec le `pedagogical_count: 26` du marqueur correspond aux fichiers non catalogués ; exécution via MCP Jupyter `nbconvert --execute --to notebook` ou `jupyter nbconvert --execute --inplace`). La table « Notebooks » ci-dessous documente les 36 — les lignes de `rl_1b`, `rl_1c`, `RL-7b` et `rl_14`, absentes depuis leur livraison (dérive pré-existante), y ont été réconciliées à la livraison du notebook 16 ; celles du 17 (k-server WFA), du 18 (matroid secretary), de `rlpt_0c` et de `rlpt_0d` s'y sont ajoutées depuis, puis celle du 19 (reward tampering).
+> **Python 100 % : tous les fichiers sont mono-langage ✓** (tous les `*.ipynb` sur disque hors `_output.ipynb`, dans `RL/` et `RL/PostTraining/`, déclarent `language: python` : kernel `python3`, sauf `coursia-ml-training` pour `rlpt_0c`, `rlpt_2`, `rlpt_3` et `rlpt_4` ; l'écart avec le `pedagogical_count` du marqueur correspond aux fichiers non catalogués ; exécution via MCP Jupyter `nbconvert --execute --to notebook` ou `jupyter nbconvert --execute --inplace`). La table « Notebooks » ci-dessous présente chacun de ces carnets.
 >
 > RL est un cas de **mono-langage Python 100%** : tous les algorithmes (DQN, REINFORCE, A2C, PPO, SAC, GRPO, Dyna-Q, BCQ offline, reward shaping, POMDP belief tracker, C51 distributional, RND curiosity, k-server WFA, matroid secretary, reward tampering) sont implémentés en Python, soit via PyTorch / Stable Baselines3 / Gymnasium, soit from-scratch en NumPy + PyTorch / stdlib pure. C'est une **variante L392 #6 NEW** : contrairement à ML (#5915) qui a des jumeaux C#/Python intra-sous-série, Probas (#5916) qui a une mixité intra-série multi-paradigme (.NET C# + Python), QC (#5917) cloisonnée par sous-série, et Sudoku (#5918 / c.388) qui a une mixité jumeaux dominante + 1 compagnon Lean intra-hub, RL a une **uniformité mono-paradigme** avec 7 moteurs SOTA distincts (PyTorch, NumPy, matplotlib, Stable Baselines3, Gymnasium, highway_env, PettingZoo) — registre EPIC #3801 entry #009 (PR #5922 — collision avec PR canonique utilisateur #5925, await ai-01 decision).
 >
@@ -602,16 +602,18 @@ RL/
 ├── RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb
 ├── RL-16-Dream-RSI-Python.ipynb
 ├── RL-19-Reward-Tampering-Python.ipynb
-├── RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb
-├── RLPT-00b-Biais-Dataset-Preferences-Python.ipynb
-├── RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb
-├── RLPT-00d-Reward-Trainer-TRL-Python.ipynb
-├── RLPT-00e-DPO-TRL-Python.ipynb
-├── RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb
-├── RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb
-├── RLPT-02-GRPO-Minimal-Python.ipynb
-├── RLPT-03-Reward-Hacking-Python.ipynb
-├── RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb
+├── PostTraining/
+│   ├── RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb
+│   ├── RLPT-00b-Biais-Dataset-Preferences-Python.ipynb
+│   ├── RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb
+│   ├── RLPT-00d-Reward-Trainer-TRL-Python.ipynb
+│   ├── RLPT-00e-DPO-TRL-Python.ipynb
+│   ├── RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb
+│   ├── RLPT-00g-PPO-TRL-Experimental-Python.ipynb
+│   ├── RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb
+│   ├── RLPT-02-GRPO-Minimal-Python.ipynb
+│   ├── RLPT-03-Reward-Hacking-Python.ipynb
+│   └── RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb
 └── README.md
 ```
 

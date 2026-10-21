@@ -699,7 +699,166 @@ def test_fetch_closed_issues_in_memory_window_filter():
             datetime(2026, 10, 1, 0, 0, 0, tzinfo=timezone.utc),
             max_pages=1,
         )
-    # Le serveur dit issueCount=1, mais le filtre memoire vide la liste.
-    # Controle positif declenche (read=0 vs issueCount=1).
+    # Le serveur dit issueCount=1, le noeud est lu (read=1) puis ecarte par le
+    # filtre memoire : read=1 = issueCount=1, le controle positif ne se declenche pas.
     assert count == 1
     assert services == []
+
+
+def test_fetch_closed_issues_positive_control_counts_nodes_read_before_window_filter():
+    """Reproduction #19804 : le controle positif compare `issueCount` au
+    nombre de noeuds LUS (avant le filtre memoire `closedAt >= window_start`),
+    et non au nombre de fermetures retenues.
+
+    Trois noeuds lus, dont deux fermes le meme jour que la fenetre mais avant
+    son heure de debut (2026-10-01T02:00Z et 03:00Z, fenetre a 12:00Z). Le
+    serveur, qui tronque `closed:>=YYYY-MM-DD` a la date, les renvoie tous
+    trois. Attendu : aucune RuntimeError, un seul service retenu, count=3.
+    Avant correctif, le controle comparait 1 (retenu) a issueCount=3 et levait.
+    """
+    import unittest.mock as mock
+
+    def _node(number: int, closed_at: str) -> dict:
+        return {
+            "number": number,
+            "createdAt": "2026-09-28T00:00:00Z",
+            "closedAt": closed_at,
+            "comments": {"nodes": []},
+        }
+
+    fake_response = json.dumps({
+        "data": {
+            "search": {
+                "issueCount": 3,
+                "nodes": [
+                    _node(1, "2026-10-01T02:00:00Z"),  # meme jour, avant la fenetre
+                    _node(2, "2026-10-01T03:00:00Z"),  # meme jour, avant la fenetre
+                    _node(3, "2026-10-07T10:00:00Z"),  # dans la fenetre
+                ],
+                "pageInfo": {"hasNextPage": False, "endCursor": None},
+            }
+        }
+    })
+    fake_completed = mock.Mock(returncode=0, stdout=fake_response, stderr="")
+    with mock.patch("subprocess.run", return_value=fake_completed), \
+         mock.patch.dict("os.environ", {"GH_TOKEN": "fake-token"}, clear=False), \
+         mock.patch.object(bsb, "_run_capture", return_value="fake-token"):
+        services, count = bsb.fetch_closed_issues(
+            "jsboige", "CoursIA",
+            datetime(2026, 10, 1, 12, 0, 0, tzinfo=timezone.utc),
+            max_pages=1,
+        )
+    assert count == 3
+    assert [s.issue_number for s in services] == [3]
+
+
+
+# ---------------------------------------------------------------------------
+# Famine de progression (#21067 item 4) — Hermes 🟠 finding sur #21335
+# ---------------------------------------------------------------------------
+
+
+def _issue(num: int, age_days: float, *, naive: bool = False, valid: bool = True) -> dict:
+    """Construit une issue pour les tests count_famine_progression."""
+    d = datetime.now(timezone.utc) - timedelta(days=age_days)
+    if not valid:
+        return {"number": num, "createdAt": "not-a-date"}
+    if naive:
+        # Retirer la tzinfo pour tester le fallback UTC
+        d = d.replace(tzinfo=None)
+        return {"number": num, "createdAt": d.strftime("%Y-%m-%dT%H:%M:%S")}
+    return {"number": num, "createdAt": d.strftime("%Y-%m-%dT%H:%M:%SZ")}
+
+
+def test_count_famine_empty():
+    """Liste vide -> count=0, examples=[]."""
+    assert bsb.count_famine_progression([]) == {"count": 0, "examples": []}
+    assert bsb.count_famine_progression([], threshold_weeks=2) == {"count": 0, "examples": []}
+
+
+def test_count_famine_mixed_ages():
+    """1 fresh (< 4 sem) + 1 old (5 sem) + 1 very old (10 sem) + 1 invalide.
+
+    Au seuil 4 sem par defaut : 2 en famine (old + very old), exemples tries
+    plus vieux d'abord -> [tres vieille, old].
+    """
+    issues = [
+        _issue(101, age_days=1),    # fresh, hors famine
+        _issue(102, age_days=35),   # old, en famine
+        _issue(103, age_days=70),   # very old, en famine
+        _issue(104, age_days=0, valid=False),  # dropped silently
+    ]
+    result = bsb.count_famine_progression(issues)
+    assert result["count"] == 2
+    assert result["examples"] == [103, 102]  # oldest first
+
+
+def test_count_famine_thresholds_2_4_30():
+    """Seuils 2/4/30 semaines sur la meme fixture.
+
+    Issues a 16/35/250 jours : la 1ere depasse 2 sem, la 2eme passe 2 et
+    4 sem, la 3eme passe tous les seuils.
+    """
+    issues = [
+        _issue(200, age_days=16),   # > 2 sem, < 4 sem, < 30 sem
+        _issue(201, age_days=35),   # > 2 sem, > 4 sem, < 30 sem
+        _issue(202, age_days=250),  # tres ancien
+    ]
+    # Seuil 2 sem : 3 en famine
+    r2 = bsb.count_famine_progression(issues, threshold_weeks=2)
+    assert r2["count"] == 3
+    assert r2["examples"] == [202, 201, 200]
+    # Seuil 4 sem : 2 (la 16-jour et la 35-jour ne passent pas)
+    r4 = bsb.count_famine_progression(issues, threshold_weeks=4)
+    assert r4["count"] == 2
+    assert r4["examples"] == [202, 201]
+    # Seuil 30 sem : 1 (seule la 250-jour depasse 210 jours)
+    r30 = bsb.count_famine_progression(issues, threshold_weeks=30)
+    assert r30["count"] == 1
+    assert r30["examples"] == [202]
+
+
+def test_count_famine_naive_datetime():
+    """Timestamps ISO sans tzinfo sont toleres et converts en UTC.
+
+    Reproduction du pattern : `createdAt: 2026-08-01T00:00:00` sans suffixe
+    Z. La fonction ajoute tzinfo=UTC avant de calculer l'age.
+    """
+    issues = [
+        _issue(300, age_days=60, naive=True),  # tres ancienne naive
+    ]
+    result = bsb.count_famine_progression(issues, threshold_weeks=4)
+    assert result["count"] == 1
+    assert result["examples"] == [300]
+
+
+def test_count_famine_invalid_dropped():
+    """Entrees sans createdAt ou avec date invalide sont silencieusement ecartees."""
+    issues = [
+        {"number": 400},  # pas de createdAt
+        {"number": 401, "createdAt": ""},  # vide
+        _issue(402, age_days=0, valid=False),  # date invalide
+        _issue(403, age_days=50),  # valide, en famine
+    ]
+    result = bsb.count_famine_progression(issues)
+    assert result["count"] == 1
+    assert result["examples"] == [403]
+
+
+def test_render_text_famine_line():
+    """render_text inclut la ligne Famine de progression quand famine est fourni."""
+    by_lane = {}
+    famine = {"count": 7, "examples": [103, 102, 99, 80, 50], "threshold_weeks": 4}
+    out = bsb.render_text(by_lane, fleet_total=10, fleet_courant=5, fleet_ancien=2, stock={}, famine=famine)
+    # Libelle : Hermes 🟡 finding sur #21335 : "issues ouvertes creees > N sem. (proxy famine)"
+    assert "Issues ouvertes creees > 4 sem. (proxy famine) : 7" in out
+    assert "plus vieilles : #103, #102, #99, #80, #50" in out
+
+
+def test_render_json_famine_key():
+    """render_json inclut la cle `famine` quand famine est fourni."""
+    famine = {"count": 3, "examples": [200, 100], "threshold_weeks": 4}
+    out = bsb.render_json([], {}, fleet_total=5, fleet_courant=2, fleet_ancien=1, stock={}, famine=famine)
+    parsed = json.loads(out)
+    assert "famine" in parsed
+    assert parsed["famine"] == famine

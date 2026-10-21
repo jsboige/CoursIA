@@ -3242,11 +3242,24 @@ def test_workspace_root_walks_to_myia_ai_notebooks():
 
 
 def test_workspace_relative_joins_to_workspace_root():
-    """Forward-slash relative strings resolve under the workspace root."""
+    """Forward-slash relative strings resolve under the workspace root.
+
+    The JOIN contract (workspace-root anchoring, no drive letter) holds on
+    every checkout and is always asserted. The EXISTENCE pin requires a
+    complete checkout (submodules initialized): a bare CI clone has no
+    ``game_theory_lean`` gitlink materialized, so existence is skipped
+    with a written motif there (#21331) instead of failing the suite.
+    """
     from prover.config import _workspace_relative, _WORKSPACE_ROOT
 
     p = _workspace_relative("GameTheory/game_theory_lean")
     assert p == _WORKSPACE_ROOT / "GameTheory" / "game_theory_lean"
+    if not p.exists():
+        pytest.skip(
+            "game_theory_lean absent from this checkout (bare CI clone "
+            "without submodules) — join contract asserted above, existence "
+            "pinned on complete checkouts (#21331)"
+        )
     assert p.exists(), (
         "the workspace-relative entry for game_theory_lean must "
         "resolve to a real directory on a normal CoursIA-2 layout"
@@ -3261,6 +3274,27 @@ def test_workspace_relative_returns_none_when_no_root(monkeypatch):
     assert cfg._workspace_relative("GameTheory/cooperative_games_lean") is None
 
 
+def _game_theory_lean_present() -> bool:
+    """Complete-checkout probe: is the game_theory_lean gitlink materialized?
+
+    Bare CI clones (actions/checkout without submodules) leave the gitlink
+    unmaterialized, so the path constants resolve to ``None`` and the
+    existence pins below cannot hold. Stdlib-only walk mirroring
+    ``config._workspace_root()`` — importing ``prover.config`` here would
+    re-drag the LLM stack at module import (#21331).
+    """
+    for ancestor in Path(__file__).resolve().parents:
+        if ancestor.name == "MyIA.AI.Notebooks":
+            return (ancestor / "GameTheory" / "game_theory_lean").exists()
+    return False
+
+
+@pytest.mark.skipif(
+    not _game_theory_lean_present(),
+    reason="game_theory_lean gitlink not materialized (bare CI clone without "
+           "submodules) — the workspace-anchoring contract needs a complete "
+           "checkout; pinned on every full checkout (#21331)",
+)
 def test_path_constants_resolve_to_active_workspace():
     """Every FILE/DIR constant resolves into the active workspace, not a sibling.
 
@@ -5442,3 +5476,294 @@ def test_iter3_buildaware_writeguard_recheck_wired():
         "reveals 2->3 and the file must be reverted, not just demoted to "
         "structural_progress=False"
     )
+
+
+# ──────────────────────────────────────────────────────────────────────────
+# #21298 — statement-sorry guard in verify_sorry_replacement (DEMO 65)
+#
+# Shape (knot_lean Slice.lean, DEMO 65): the theorem's STATEMENT unfolds
+# through ``def IsTopologicallySlice ... := sorry``. The hole migrated from
+# the proof into the statement: the goal reduces to sorryAx, ANY tactic
+# closes it, the probe compiles with no error and no ``declaration uses
+# 'sorry'`` warning for the target, and the textual counter sees a genuine
+# drop — the old verify accepted the vain victory. These tests pin BOTH
+# guard stages offline (no lake):
+#   stage 1 — textual: signature references a same-file sorry-defined def
+#   stage 2 — axiomatic: #print axioms on the TARGET declaration only
+# ──────────────────────────────────────────────────────────────────────────
+
+DEMO65_LEAN = (
+    "import Knots.Defs\n"
+    "\n"
+    "def IsTopologicallySlice (k : Knot) : Prop := sorry\n"
+    "\n"
+    "theorem conway_topologically_slice :\n"
+    "    IsTopologicallySlice conwayKnot := by\n"
+    "  intro h\n"
+    "  exact sorry\n"
+)
+
+CLEAN_STM_LEAN = DEMO65_LEAN.replace(
+    "def IsTopologicallySlice (k : Knot) : Prop := sorry",
+    "def IsTopologicallySlice (k : Knot) : Prop := k = k",
+)
+
+
+class _GuardFakeVerifier:
+    """Offline verifier: pinned build verdict + optional check_axioms side."""
+
+    def __init__(self, build_success=True, raw_output="", axioms_result=None,
+                 axioms_raises=None):
+        self._build_success = build_success
+        self._raw_output = raw_output
+        self._axioms_result = axioms_result
+        self._axioms_raises = axioms_raises
+        self.check_axioms_calls = []
+
+    def verify_project_file(self, rel, force=False):
+        return {"success": self._build_success, "errors": "",
+                "raw_output": self._raw_output}
+
+    def check_axioms(self, module_name, **kwargs):
+        self.check_axioms_calls.append((module_name, kwargs))
+        if self._axioms_raises is not None:
+            raise self._axioms_raises
+        return dict(self._axioms_result)
+
+
+def _patch_guard_verifier(monkeypatch, fake):
+    import prover.verifier as vmod
+    monkeypatch.setattr(vmod, "get_verifier", lambda *a, **k: fake)
+    return fake
+
+
+class TestStatementSorryGuard:
+    """#21298: refuse vain victories on sorry-defined statements."""
+
+    def test_stage1_refuses_sorry_defined_statement(self, tmp_path, monkeypatch):
+        """DEMO 65 negative control: guard MUST refuse, naming the def."""
+        import prover.lean_utils as lu
+
+        f = tmp_path / "Slice.lean"
+        f.write_text(DEMO65_LEAN, encoding="utf-8")
+        fake = _patch_guard_verifier(monkeypatch, _GuardFakeVerifier(
+            build_success=True, raw_output=""))
+
+        res = lu.verify_sorry_replacement(str(f), sorry_line=8,
+                                          replacement="trivial")
+
+        assert res["success"] is False, (
+            "a statement unfolding through a sorry-defined def is a vain "
+            "victory — the guard must refuse it (DEMO 65, #21298)"
+        )
+        assert res["error_type"] == "statement_depends_on_sorry"
+        assert res["statement_sorry_defs"] == [
+            {"name": "IsTopologicallySlice", "def_line": 3}]
+        assert "#21298" in res["errors"]
+        assert fake.check_axioms_calls == [], (
+            "stage 1 already refused: stage 2 must not run"
+        )
+
+    def test_stage1_clean_statement_still_succeeds(self, tmp_path, monkeypatch):
+        """Same shape, def proven: guard stays green and stage 2 runs scoped."""
+        import prover.lean_utils as lu
+
+        f = tmp_path / "Slice.lean"
+        f.write_text(CLEAN_STM_LEAN, encoding="utf-8")
+        fake = _patch_guard_verifier(monkeypatch, _GuardFakeVerifier(
+            axioms_result={"success": True, "has_sorry": False,
+                           "axioms": ["propext"]}))
+
+        res = lu.verify_sorry_replacement(str(f), sorry_line=8,
+                                          replacement="trivial")
+
+        assert res["success"] is True
+        assert res["error_type"] is None
+        assert res["statement_sorry_defs"] == []
+        # Stage 2 must probe the TARGET declaration only, on the probe module
+        # (the file's other sorries are workflow-legitimate and out of scope).
+        assert len(fake.check_axioms_calls) == 1
+        module, kwargs = fake.check_axioms_calls[0]
+        assert module.endswith("_SorryVerify") and "/" not in module
+        assert kwargs.get("declarations") == ["conway_topologically_slice"]
+
+    def test_stage2_refuses_transitive_sorry_ax(self, tmp_path, monkeypatch):
+        """Textually clean statement but target depends on sorryAx: refuse."""
+        import prover.lean_utils as lu
+
+        f = tmp_path / "Slice.lean"
+        f.write_text(CLEAN_STM_LEAN, encoding="utf-8")
+        _patch_guard_verifier(monkeypatch, _GuardFakeVerifier(
+            axioms_result={"success": False, "has_sorry": True,
+                           "axioms": ["sorryAx"], "error": None}))
+
+        res = lu.verify_sorry_replacement(str(f), sorry_line=8,
+                                          replacement="trivial")
+
+        assert res["success"] is False
+        assert res["error_type"] == "transitive_sorry_ax"
+        assert "sorryAx" in res["errors"]
+
+    def test_stage2_infra_flake_does_not_veto(self, tmp_path, monkeypatch):
+        """Positive-evidence polarity: a broken axiom probe never vetoes."""
+        import prover.lean_utils as lu
+
+        f = tmp_path / "Slice.lean"
+        f.write_text(CLEAN_STM_LEAN, encoding="utf-8")
+        _patch_guard_verifier(monkeypatch, _GuardFakeVerifier(
+            axioms_raises=RuntimeError("lake unavailable")))
+
+        res = lu.verify_sorry_replacement(str(f), sorry_line=8,
+                                          replacement="trivial")
+
+        assert res["success"] is True, (
+            "stage 2 is an additional veto, not a prerequisite: an infra "
+            "flake must degrade to skip, not block valid proofs (#21298)"
+        )
+        assert res["error_type"] is None
+        assert res["axiom_probe"] is not None
+        assert res["axiom_probe"].startswith("axiom probe skipped")
+
+    def test_def_own_sorry_replacement_still_allowed(self, tmp_path, monkeypatch):
+        """Replacing the DEF's own sorry is the correct attack: keep allowed.
+
+        The real debt in the DEMO 65 shape is ``def ... := sorry`` — the
+        guard must not turn the prover against fixing it.
+        """
+        import prover.lean_utils as lu
+
+        f = tmp_path / "Slice.lean"
+        f.write_text(DEMO65_LEAN, encoding="utf-8")
+        fake = _patch_guard_verifier(monkeypatch, _GuardFakeVerifier(
+            axioms_result={"success": True, "has_sorry": False,
+                           "axioms": []}))
+
+        res = lu.verify_sorry_replacement(str(f), sorry_line=3,
+                                          replacement="(fun _ => rfl)")
+
+        assert res["success"] is True, (
+            "the sorry-def's own signature references no sorry-def: stage 1 "
+            "must stay clean so fixing the def itself remains the move"
+        )
+        assert res["statement_sorry_defs"] == []
+        module, kwargs = fake.check_axioms_calls[0]
+        assert kwargs.get("declarations") == ["IsTopologicallySlice"]
+
+    def test_unnamed_instance_skips_stage2(self, tmp_path, monkeypatch):
+        """Anonymous ``instance :`` — no name to #print axioms: skip stage 2."""
+        import prover.lean_utils as lu
+
+        src = (
+            "class C where\n"
+            "  p : Prop\n"
+            "\n"
+            "instance : C where\n"
+            "  p := by\n"
+            "    sorry\n"
+        )
+        f = tmp_path / "Anon.lean"
+        f.write_text(src, encoding="utf-8")
+        fake = _patch_guard_verifier(monkeypatch, _GuardFakeVerifier())
+
+        res = lu.verify_sorry_replacement(str(f), sorry_line=6,
+                                          replacement="trivial")
+
+        assert res["success"] is True
+        assert fake.check_axioms_calls == [], (
+            "no declaration name to probe: stage 2 must skip, not crash"
+        )
+
+
+class TestFindEnclosingDeclaration:
+    """#21298 helper: enclosing-declaration resolution, offline."""
+
+    def test_one_line_def_is_own_enclosing(self):
+        import prover.lean_utils as lu
+
+        lines = DEMO65_LEAN.split("\n")
+        name, kind, header_line, sig = lu.find_enclosing_declaration(lines, 3)
+        assert (name, kind, header_line) == ("IsTopologicallySlice", "def", 3)
+        assert ":=" not in sig and "sorry" not in sig
+
+    def test_multiline_signature(self):
+        import prover.lean_utils as lu
+
+        lines = DEMO65_LEAN.split("\n")
+        name, kind, header_line, sig = lu.find_enclosing_declaration(lines, 8)
+        assert (name, kind, header_line) == (
+            "conway_topologically_slice", "theorem", 5)
+        assert "IsTopologicallySlice conwayKnot" in sig
+        assert ":=" not in sig
+
+    def test_no_enclosing_returns_empty(self):
+        import prover.lean_utils as lu
+
+        lines = ["import Foo", "", "example : True := trivial"]
+        assert lu.find_enclosing_declaration(lines, 1) == (
+            None, None, None, "")
+
+    def test_namespace_qualified_name(self):
+        import prover.lean_utils as lu
+
+        lines = [
+            "namespace Knots",
+            "theorem t : True := by",
+            "  sorry",
+            "end Knots",
+        ]
+        name, _kind, _hdr, _sig = lu.find_enclosing_declaration(lines, 3)
+        assert name == "Knots.t"
+
+    def test_nested_sibling_not_enclosing(self):
+        import prover.lean_utils as lu
+
+        lines = [
+            "theorem outer : True := by",
+            "  have : True := by",
+            "    sorry",
+            "  trivial",
+        ]
+        # `have` is not a decl header: the enclosing decl is `outer`.
+        name, _kind, _hdr, _sig = lu.find_enclosing_declaration(lines, 3)
+        assert name == "outer"
+
+
+class TestCheckAxiomsPinnedDeclarations:
+    """#21298 additive param: pinned declarations skip enumeration offline."""
+
+    def test_pinned_empty_is_vacuous_pass(self):
+        import lean_server
+
+        ver = lean_server.LeanVerifier(project_dir=".")
+        res = ver.check_axioms("Whatever.Mod", declarations=[])
+        assert res["success"] is True
+        assert res["enumerated"] is False
+        assert res["has_sorry"] is False
+
+    def test_pinned_none_behaves_as_before(self, monkeypatch):
+        import lean_server
+
+        ver = lean_server.LeanVerifier(project_dir=".")
+        called = []
+        monkeypatch.setattr(
+            lean_server, "_enumerate_module_declarations",
+            lambda project, module: called.append(module) or ["t"],
+        )
+        monkeypatch.setattr(
+            lean_server, "_resolve_lake_command",
+            lambda cmd, cwd=None: (["true"], None),
+        )
+
+        class _Proc:
+            returncode = 0
+            stdout = "'t' does not depend on any axioms"
+            stderr = ""
+
+        import subprocess as _sp
+        monkeypatch.setattr(_sp, "run", lambda *a, **k: _Proc())
+        res = ver.check_axioms("Whatever.Mod")
+        assert called == ["Whatever.Mod"], (
+            "declarations=None must keep the historical enumerate-everything "
+            "path (CI gate unchanged)"
+        )
+        assert res["enumerated"] is True
