@@ -42,6 +42,15 @@ from train_rl_dt import (
     evaluate_dt,
 )
 
+from validate_xrp_dt import (
+    CAUSAL_EVAL_PROTOCOL,
+    causal_eval_series,
+    dt_causal_positions,
+    gross_returns,
+    net_returns,
+    train_rtg_per_step,
+)
+
 try:
     from walk_forward import WalkForwardSplitter
 except ImportError:
@@ -112,6 +121,59 @@ def compute_max_drawdown(returns: np.ndarray) -> float:
     if len(returns) < 2:
         return 0.0
     return strategy_metrics.max_drawdown(returns)
+
+
+def dt_trading_metrics(
+    model,
+    prices: np.ndarray,
+    features: np.ndarray,
+    window: int,
+    context_length: int,
+    rtg_per_step: float,
+    commission: float,
+    device: str = "cpu",
+    batch_size: int = 64,
+) -> dict:
+    """Trading metrics of the DT's own decisions (#21187, ``causal-v1``).
+
+    One decision per step, computed on states up to the previous row, with the
+    fixed RTG schedule ``rtg_per_step * (remaining steps)``: no input reads a
+    test reward. Positions are +1 (buy) / -1 (sell) / 0 (hold), each applied to
+    the next return. Costs are ``|delta position| * commission``. Buy-and-hold is
+    scored on the same returns.
+
+    Until #21187 this script reported the Sharpe, drawdown and trade count of
+    ``trajectories["rewards"]``, i.e. of the momentum teacher, not of the
+    model, and deducted the commission a second time from rewards that
+    already carried it.
+    """
+    positions, first_k = dt_causal_positions(
+        model, prices, features, window, context_length, rtg_per_step,
+        batch_size=batch_size, device=device,
+    )
+    dt_pos, _mom, _bh, rets = causal_eval_series(prices, positions, first_k, window)
+    gross = gross_returns(dt_pos, rets)
+    net = net_returns(dt_pos, rets, commission)
+    changes = np.abs(np.diff(dt_pos, prepend=0.0))
+    gross_sharpe = compute_sharpe(gross)
+    net_sharpe = compute_sharpe(net)
+    # Cost drag in basis points of (additive) return, as ``transaction_costs``
+    # reports it. Until #21187 this key held the Sharpe gap times 100.
+    commission_paid = float(np.sum(gross - net))
+    return {
+        "n_returns": int(len(rets)),
+        "sharpe": round(net_sharpe, 4),
+        "max_drawdown": round(compute_max_drawdown(net), 4),
+        "n_trades": int(np.sum(changes > 0)),
+        "exposure": round(float(np.mean(dt_pos != 0)) if len(dt_pos) else 0.0, 4),
+        "total_commission": round(commission_paid, 4),
+        "gross_return": round(float(np.sum(gross)), 4),
+        "net_return": round(float(np.sum(net)), 4),
+        "gross_sharpe": round(gross_sharpe, 4),
+        "net_sharpe": round(net_sharpe, 4),
+        "cost_drag_bps": round(commission_paid * 10_000, 2),
+        "bh_sharpe": round(compute_sharpe(rets), 4),
+    }
 
 
 def evaluate_checkpoint(
@@ -190,54 +252,40 @@ def evaluate_checkpoint(
             "error": "Not enough test data for evaluation",
         }
 
-    # Evaluate
+    # RTG target fixed before the test set: mean teacher reward per step on
+    # the training rows (#21187). The realized test RTG sums future rewards.
+    train_trajs = build_trajectories(
+        prices[:train_end], features_arr[:train_end],
+        window=window,
+        context_length=ctx_len,
+        commission=commission,
+    )
+    rtg_step = train_rtg_per_step(train_trajs)
+
     eval_metrics = evaluate_dt(
         model, test_trajs,
         context_length=ctx_len,
         device=device,
+        rtg_per_step=rtg_step,
     )
-
-    # Compute cumulative returns for Sharpe/MaxDD
-    rewards = test_trajs["rewards"]
-    cum_returns = np.cumsum(rewards)
-    sharpe = compute_sharpe(rewards)
-    max_dd = compute_max_drawdown(rewards)
-
-    # Transaction cost analysis
-    actions = test_trajs["actions"]
-    position_changes = np.abs(np.diff(actions, prepend=0))
-    n_trades = int(np.sum(position_changes > 0))
-    total_commission = n_trades * commission
-    gross_return = float(cum_returns[-1]) if len(cum_returns) > 0 else 0.0
-    net_return = gross_return - total_commission
-
-    # Gross vs net Sharpe
-    gross_sharpe = sharpe
-    cost_adjusted_returns = rewards.copy()
-    # Deduct commission from trades
-    trade_mask = np.zeros(len(rewards), dtype=bool)
-    trade_mask[1:] = position_changes[1:] > 0
-    cost_adjusted_returns[trade_mask] -= commission
-    net_sharpe = compute_sharpe(cost_adjusted_returns)
+    trading = dt_trading_metrics(
+        model, test_prices, test_features, window, ctx_len, rtg_step,
+        commission=commission, device=device,
+    )
 
     results = {
         "checkpoint": str(checkpoint_dir),
         "model_type": "decision_transformer",
         "symbol": symbol,
+        "eval_protocol": CAUSAL_EVAL_PROTOCOL,
+        "rtg_mode": eval_metrics["rtg_mode"],
+        "rtg_per_step": rtg_step,
         "test_accuracy": eval_metrics["test_accuracy"],
         "test_loss": eval_metrics["test_loss"],
         "test_samples": eval_metrics["test_samples"],
         "majority_class_baseline": eval_metrics["majority_class_baseline"],
         "edge_over_majority": eval_metrics["edge_over_majority"],
-        "sharpe": round(sharpe, 4),
-        "max_drawdown": round(max_dd, 4),
-        "n_trades": n_trades,
-        "total_commission": round(total_commission, 4),
-        "gross_return": round(gross_return, 4),
-        "net_return": round(net_return, 4),
-        "gross_sharpe": round(gross_sharpe, 4),
-        "net_sharpe": round(net_sharpe, 4),
-        "cost_drag_bps": round((gross_sharpe - net_sharpe) * 100, 2),
+        **trading,
     }
 
     return results
@@ -277,21 +325,23 @@ def run_dry_run() -> dict:
     )
 
     model = result["model"]
-    eval_metrics = evaluate_dt(model, trajs, context_length=5, device="cpu")
-
-    rewards = trajs["rewards"]
-    sharpe = compute_sharpe(rewards)
-    max_dd = compute_max_drawdown(rewards)
+    rtg_step = train_rtg_per_step(trajs)
+    eval_metrics = evaluate_dt(model, trajs, context_length=5, device="cpu",
+                               rtg_per_step=rtg_step)
+    trading = dt_trading_metrics(model, prices, features_arr, window=10,
+                                 context_length=5, rtg_per_step=rtg_step,
+                                 commission=0.001, device="cpu")
 
     return {
         "dry_run": True,
+        "eval_protocol": CAUSAL_EVAL_PROTOCOL,
+        "rtg_mode": eval_metrics["rtg_mode"],
         "train_samples": len(trajs["states"]),
         "test_accuracy": eval_metrics["test_accuracy"],
         "test_loss": eval_metrics["test_loss"],
         "majority_class_baseline": eval_metrics["majority_class_baseline"],
         "edge_over_majority": eval_metrics["edge_over_majority"],
-        "sharpe": round(sharpe, 4),
-        "max_drawdown": round(max_dd, 4),
+        **trading,
     }
 
 
@@ -314,9 +364,13 @@ def print_summary(results: dict) -> None:
     print(f"    Edge vs BL:     {edge:+.4f} ({'BEATS' if edge > 0 else 'FAILS'})")
     print()
 
-    print("  Risk/Reward:")
+    print(f"  Protocol:         {results.get('eval_protocol', 'N/A')} "
+          f"(RTG {results.get('rtg_mode', 'N/A')})")
+    print("  Risk/Reward (DT decisions, net of costs):")
     print(f"    Sharpe:         {results.get('sharpe', 'N/A'):.4f}")
     print(f"    Max Drawdown:   {results.get('max_drawdown', 'N/A'):.4f}")
+    print(f"    Exposure:       {results.get('exposure', 'N/A')}")
+    print(f"    Buy & hold:     {results.get('bh_sharpe', 'N/A')}")
     print()
 
     print("  Transaction Costs:")
