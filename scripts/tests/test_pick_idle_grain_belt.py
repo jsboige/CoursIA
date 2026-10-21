@@ -1621,3 +1621,68 @@ def test_fetch_latest_claim_stamps_bulk_handles_more_than_100_comments(monkeypat
     assert err is None
     assert out_map == {1234: "2026-10-06T22:00:00Z"}, (
         f"le claim recent doit survivre meme avec >100 commentaires : {out_map!r}")
+
+
+# --- Sonde de claims : un seul numero n'est pas un batch (c2197) -----------
+
+# Sortie REELLE de `check_lane_claim.py --lane L N` pour UN numero (mesure du
+# 2026-10-20 sur #20909) : le JSON mono-issue, une ligne vide, puis la phrase
+# de verdict. `json.loads` la rejette (`Extra data`), `_summarize_claim` la lit.
+_SINGLE_ISSUE_STDOUT = (
+    '{\n  "number": 20909,\n  "blocking_lanes": [],\n'
+    '  "my_active_claim": false,\n  "stale_claims": [],\n'
+    '  "implicit_occupation": []\n}\n\nCLEAR: no other lane claims #20909.\n'
+)
+
+
+def _fake_run_recorder(stdout_for):
+    calls = []
+
+    def fake_run(cmd, **kwargs):
+        calls.append(list(cmd))
+        return subprocess.CompletedProcess(cmd, 0, stdout=stdout_for(cmd),
+                                           stderr="")
+    return calls, fake_run
+
+
+def test_check_claims_single_number_reads_mono_issue_output(monkeypatch):
+    """`check_claims([n])` (verification au fil de l'eau) lit la sortie
+    mono-issue au lieu de la rendre en ERROR.
+
+    Avant le correctif, l'appel passait par le chemin batch, `json.loads`
+    levait `Extra data` sur la phrase « CLEAR: ... », et le verdict valait
+    ERROR : 30 issues sur 50 du tirage du 2026-10-20 ont ete servies sans
+    que leur claim soit lu.
+    """
+    monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt", lambda lane: None)
+    calls, fake_run = _fake_run_recorder(lambda cmd: _SINGLE_ISSUE_STDOUT)
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+    verdicts = pig.check_claims([20909], "myia-ai-01:CoursIA")
+
+    assert verdicts[20909][0] == pig.CLAIM_CODE_FREE
+    # Un seul appel, mono-issue : pas de batch suivi d'un repli.
+    assert len(calls) == 1
+    assert calls[0][-3:] == ["--lane", "myia-ai-01:CoursIA", "20909"]
+
+
+def test_check_claims_unreadable_batch_falls_back_per_issue(monkeypatch):
+    """Une sortie batch illisible ne rend plus ERROR : chaque issue est
+    relue seule, comme le commentaire du code l'annoncait deja."""
+    monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt", lambda lane: None)
+
+    def stdout_for(cmd):
+        if cmd.count("--lane") and len(cmd) > 5:  # batch : 2 numeros ou plus
+            return "pas du JSON\n"
+        n = cmd[-1]
+        return _SINGLE_ISSUE_STDOUT.replace("20909", n)
+
+    calls, fake_run = _fake_run_recorder(stdout_for)
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+    verdicts = pig.check_claims([101, 102], "myia-ai-01:CoursIA")
+
+    assert verdicts == {101: verdicts[101], 102: verdicts[102]}
+    assert all(v[0] == pig.CLAIM_CODE_FREE for v in verdicts.values())
+    # 1 batch + 2 relectures mono-issue.
+    assert len(calls) == 3
