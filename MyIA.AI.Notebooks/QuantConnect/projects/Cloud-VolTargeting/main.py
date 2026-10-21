@@ -73,10 +73,14 @@ class VolTargetingAlgorithm(QCAlgorithm):
 
     def _get_closes(self, symbol, period):
         """Get close prices as numpy array from QC history API."""
-        hist = self.history(symbol, period, Resolution.DAILY)
-        if hist.empty or len(hist) < period:
+        # Fenetre double (#20286) : sur une demi-seance (cloture a 13:00), history()
+        # rend moins de barres que demandees (105 pour 126, mesure #20286) et la
+        # garde ecarte le titre. On demande le double et on garde les `period`
+        # dernieres barres : une seance pleine rend les memes `period` qu'avant.
+        hist = self.history(symbol, 2 * period, Resolution.DAILY)
+        if hist is None or hist.empty or len(hist) < period:
             return None
-        return hist['close'].values
+        return hist['close'].values[-period:]
 
     def rebalance_v1(self):
         spy = self.symbol("SPY")

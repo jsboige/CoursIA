@@ -1369,7 +1369,7 @@ def test_tree_lease_released_when_backend_translation_fails():
                 lambda root, cmd, caller, budget: (sentinel, None))
             le.release_tree_lease = (
                 lambda p: released.append(p))
-            def _boom(cmd, backend, env):
+            def _boom(cmd, backend, env, cwd=None):
                 raise OSError("wslpath a echoue (simulation)")
             le.backend_command = _boom
             os.chdir(proj)
@@ -1937,6 +1937,16 @@ def test_stop_cli_inspect_then_yes_kills_real_process():
 # recover — recuperation apres crash (case 8 volet 2b)
 # ---------------------------------------------------------------------------
 
+# Pid fictif des entrees "-live" : vivant pour les tests in-process
+# (monkeypatch ci-dessous), mort pour le sous-processus CLI (pas de
+# monkeypatch la). Un pid plausible fixe (ex. 111) est une loterie sur
+# la table de processus du runner : flaky mesure run 39124191907 ou
+# pid 111 vivant dans le conteneur -> 1 stale/famille au lieu de 2
+# (#21301). DEAD_PID - 1 : inexistant par construction, le meme pari
+# que DEAD_PID, que ce run demontre mort en CI (runs-dead stale).
+FICTIVE_LIVE_PID = DEAD_PID - 1
+
+
 def _recover_state(state: Path) -> None:
     """Etat residuel post-crash sur les TROIS familles : pour chacune, un
     item mort de notre host (recuperable), un vivant (travail actif), un
@@ -1948,7 +1958,7 @@ def _recover_state(state: Path) -> None:
         (directory / f"{name}-dead.json").write_text(json.dumps(
             {"pid": DEAD_PID, "host": le.host_id()}), encoding="utf-8")
         (directory / f"{name}-live.json").write_text(json.dumps(
-            {"pid": 111, "host": le.host_id()}), encoding="utf-8")
+            {"pid": FICTIVE_LIVE_PID, "host": le.host_id()}), encoding="utf-8")
         (directory / f"{name}-foreign.json").write_text(json.dumps(
             {"pid": 1, "host": "autre-machine/nt"}), encoding="utf-8")
         (directory / f"{name}-corrupt.json").write_text("{illisible",
@@ -1958,7 +1968,7 @@ def _recover_state(state: Path) -> None:
 def _with_recover_env(state: Path, fn):
     saved_env = os.environ.get("LEAN_EXEC_STATE_DIR")
     saved_alive = le.pid_alive
-    le.pid_alive = lambda pid: pid == 111
+    le.pid_alive = lambda pid: pid == FICTIVE_LIVE_PID
     os.environ["LEAN_EXEC_STATE_DIR"] = str(state)
     try:
         return fn()

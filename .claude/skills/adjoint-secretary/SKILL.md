@@ -1,13 +1,15 @@
 ---
 name: adjoint-secretary
-description: Cycle 30 min du secrétaire vérificateur myia-po-2026:CoursIA-3. Atteste en tiers, du plus ancien au plus récent, les PRs ouvertes sans dossier valide (chaque READY, une fois lu et approuvé par ai-01, est mergé sans attendre son cycle), et fait circuler l'information sur workspace-CoursIA-3.
+description: Cycle 30 min du secrétaire vérificateur myia-po-2028:CoursIA-3. Atteste en tiers, du plus ancien au plus récent, les PRs ouvertes sans dossier valide (chaque READY, une fois lu et approuvé par ai-01, est mergé sans attendre son cycle), et fait circuler l'information sur workspace-CoursIA-3.
 ---
 
-# Secrétaire vérificateur — myia-po-2026:CoursIA-3
+# Secrétaire vérificateur — myia-po-2028:CoursIA-3
 
 Cycle court (30 min) du secrétaire de l'adjoint titulaire (`myia-po-2025:CoursIA-2`). Le dashboard `workspace-CoursIA-3` est le lieu d'organisation à trois : titulaire, secrétaire, coordinateur (`myia-ai-01:CoursIA`).
 
-Cette commande est réservée au slot `myia-po-2026:CoursIA-3` et ne doit jamais être remplacée par `/coordinate`, `/coordinate-adjoint` ou `/continue`.
+Le siège est passé de `myia-po-2026:CoursIA-3` (machine hors service depuis le 2026-10-09) à `myia-po-2028:CoursIA-3` le 2026-10-20, par mandat user. Le secrétaire signe sous la lane de la machine qui l'anime, jamais sous celle d'une machine disparue.
+
+Cette commande est réservée au slot `myia-po-2028:CoursIA-3` et ne doit jamais être remplacée par `/coordinate`, `/coordinate-adjoint` ou `/continue`.
 
 ## Mandat fondateur (user 2026-09-21)
 
@@ -21,7 +23,7 @@ L'organe `scripts/coordination/merge_ready.py` tourne toutes les 20 minutes sur 
 - un dossier `[ADJOINT PREFLIGHT]` **tiers** que le gate accepte (`check_adjoint_prevalidation.py` rc=0) et qui porte `b0: clear` ;
 - B.0 (`check_unaddressed_nits.py`) rc=0 ;
 - aucun fichier sous `.claude/`, aucun `CLAUDE.md`, aucun fichier sous `.github/` ;
-- un tag `Grain:` de tier MED ou LIGHT (DEEP refusé) et aucun parapluie gelé ;
+- un tag `Grain:` de tier DEEP, MED ou LIGHT (une branche hors flotte `claude/*` en est dispensée ; DEEP et hors flotte admis depuis le 2026-10-19, Q131) et aucun parapluie gelé ;
 - `mergeable_state: clean` à la tête même que le gate a évaluée.
 
 Ton READY est donc la moitié du merge ; l'autre est la lecture d'ai-01, qui s'appuie sur ton dossier. L'organe n'est pas une voie de merge sans lecteur : il évite seulement qu'un dossier se périme entre cette lecture et le merge. Du 23 au 28/09, il mergeait sur le seul dossier ; 6 des 211 merges de cette période portaient une approbation d'ai-01, et ce passif est ré-audité. Deux conséquences.
@@ -29,7 +31,7 @@ Ton READY est donc la moitié du merge ; l'autre est la lecture d'ai-01, qui s'a
 1. **Ton dossier est le premier levier de débit de la flotte.** Le goulot est la vitesse d'arrivée des dossiers, pas la capacité de merge d'ai-01. Mesures du 28/09 : au balayage du gate de 13:20Z, 98 des 103 PRs ouvertes n'avaient aucun dossier valide ; au passage de `merge_ready` de 14:02Z, 64 des 76 PRs examinées ont été écartées pour la seule absence de dossier. Du 23 au 28/09, l'organe a mergé 20 à 50 PRs par jour, toutes sur dossier.
 2. **ai-01 lit ton dossier, il ne refait pas ton travail.** Sa lecture porte sur les réserves, sur ce qui a changé depuis la dernière review et sur la preuve centrale ; le reste (qui a levé quoi et quand, checks, scope, domaine) repose sur ton dossier. Le crible de fond (items 9, 11, 14, 16, 23, 28 et 29 ci-dessous) n'est donc pas une option de qualité : un READY faux coûte une lecture d'ai-01 pour rien, ou passe si la lecture le manque. Un BLOCKED honnête (rc=3) reste un livrable complet : il dit à la lane porteuse ce qu'elle doit réparer.
 
-Hors de ce périmètre (PRs de harnais, grains DEEP), le coordinateur merge à la main, et seulement sur gate rc=0 : ton dossier y reste la condition d'entrée. Dans les deux cas, chaque READY se double d'une ligne dans la liste nominative envoyée à ai-01 en fin de cycle : c'est elle qui déclenche sa lecture.
+Hors de ce périmètre (PRs de harnais), le coordinateur merge à la main, et seulement sur gate rc=0 : ton dossier y reste la condition d'entrée. Dans les deux cas, chaque READY se double d'une ligne dans la liste nominative envoyée à ai-01 en fin de cycle : c'est elle qui déclenche sa lecture.
 
 ## Rôle et frontière HARD
 
@@ -58,14 +60,14 @@ Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures, reviews `APP
 3. **Mesurer le quota** sur les en-têtes d'un vrai appel (item 21), GraphQL et REST `core` séparément.
 4. **Lister le pool** en une requête GraphQL paginée (item 2) et en tirer la file : PRs ouvertes, hors brouillon, sans dossier vivant d'une autre lane. Ordre :
    1. les PRs nommées par ai-01 ou par le titulaire ;
-   2. les PRs hors harnais et hors DEEP, du plus ancien au plus récent : une fois approuvées par ai-01, `merge_ready` les merge sans attendre son cycle ;
-   3. les PRs de harnais et DEEP.
+   2. les PRs hors harnais (`DEEP` et hors flotte `claude/*` compris depuis le 2026-10-19, Q131), du plus ancien au plus récent : une fois approuvées par ai-01, `merge_ready` les merge sans attendre son cycle ;
+   3. les PRs de harnais.
 5. **Annoncer le lot** (numéros) sur `workspace-CoursIA-3` avant de le traiter : le titulaire ne stampe pas les mêmes PRs (item 13).
 6. **Pour chaque PR du lot** :
    1. `check_adjoint_prevalidation.py N` : rc=0 ou rc=3 sous une autre lane, passer à la suivante ;
    2. classer les rouges, et rejouer ce qui relève de l'infra ou d'un minuteur échu **avant** tout dossier : un job rejoué peut réécrire un commentaire collant, qui périmerait un dossier posté avant lui ;
-   3. crible de fond, puis `--template --lane myia-po-2026:CoursIA-3` généré juste avant le post ;
-   4. un seul post, en dernier, par `python scripts/coordination/post_dossier.py --pr N --file dossier.md --lane myia-po-2026:CoursIA-3` : l'organe rejoue le gate et sort avec son rc. rc=0 ou rc=3 attendu, sinon comprendre pourquoi avant la PR suivante. rc=4 veut dire que rien n'a été posté (forme du bloc, placeholder restant, tête périmée, dossier vivant d'une autre lane, gate illisible) : corriger le fichier, jamais contourner par un `gh api` à la main.
+   3. crible de fond, puis `--template --lane myia-po-2028:CoursIA-3` généré juste avant le post ;
+   4. un seul post, en dernier, par `python scripts/coordination/post_dossier.py --pr N --file dossier.md --lane myia-po-2028:CoursIA-3` : l'organe rejoue le gate et sort avec son rc. rc=0 ou rc=3 attendu, sinon comprendre pourquoi avant la PR suivante. rc=4 veut dire que rien n'a été posté (forme du bloc, placeholder restant, tête périmée, dossier vivant d'une autre lane, gate illisible) : corriger le fichier, jamais contourner par un `gh api` à la main.
 7. **Fin de cycle** : un DM nominatif à ai-01 qui liste tous les READY du cycle, avec numéro, tête et un mot sur le point à lire en priorité, puis un `[DONE][SECRETARY]` court : les dossiers émis (READY, BLOCKED) avec leurs numéros, et ce qui attend qui. Pas de cumul recopié d'un cycle à l'autre.
 
 **Budget : le quota mesuré, pas un compte d'appels.** Le quota GitHub est partagé par toute la flotte (5 000 points par heure et **par utilisateur** `jsboige`, REST et GraphQL comptés à part). Avant chaque PR, relire les en-têtes : sous 1 000 points restants sur l'un des deux, finir la PR en cours, consigner l'heure du reset, et reprendre après. Tant que le quota le permet, un cycle traite autant de PRs que ses 30 minutes le permettent. Repères du 28/09 : le matin, une salve de 11 READY a donné 9 merges ; l'après-midi, un cycle s'est arrêté après 5 dossiers sur le plafond fixe de 40 appels que cette section portait jusque-là.
