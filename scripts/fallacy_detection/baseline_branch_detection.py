@@ -192,6 +192,14 @@ def macro_f1(y_true: list[str], y_pred: list[str]) -> tuple[float, dict[str, flo
     par etiquette etait cubique en pratique -- 1 000 evaluations pour la seule
     baseline aleatoire. Les comptes etant entiers, la formule par etiquette est
     inchangee : `macro_f1_reference` (balayage par etiquette) sert de temoin.
+
+    La somme finale passe par `math.fsum` (arrondi exact) et non par `sum` : depuis
+    CPython 3.12, `sum` cumule les flottants avec une compensation de Neumaier, donc
+    la meme liste rend un dernier bit different en 3.11 et en 3.12+. Quand deux
+    familles sont a egalite de score, cet ecart decide l'etiquette predite : mesure
+    sur le corpus enseignant, 1 item sur 280 change au niveau branche et la macro-F1
+    affichee bouge d'une unite au 4e decimal (0,0328 sur 3.12+, 0,0327 sur 3.11).
+    `math.fsum` rend le meme resultat sur toutes les versions de CPython.
     """
     labels = sorted(set(y_true) | set(y_pred))
     if not labels:
@@ -213,7 +221,7 @@ def macro_f1(y_true: list[str], y_pred: list[str]) -> tuple[float, dict[str, flo
         precision = tp / (tp + fp) if tp + fp else 0.0
         recall = tp / (tp + fn) if tp + fn else 0.0
         per_label[label] = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
-    return sum(per_label.values()) / len(per_label), per_label
+    return math.fsum(per_label.values()) / len(per_label), per_label
 
 
 def macro_f1_reference(y_true: list[str], y_pred: list[str]) -> tuple[float, dict[str, float]]:
@@ -234,7 +242,7 @@ def macro_f1_reference(y_true: list[str], y_pred: list[str]) -> tuple[float, dic
         precision = tp / (tp + fp) if tp + fp else 0.0
         recall = tp / (tp + fn) if tp + fn else 0.0
         per_label[label] = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
-    return sum(per_label.values()) / len(per_label), per_label
+    return math.fsum(per_label.values()) / len(per_label), per_label
 
 
 class TfidfCentroids:
@@ -279,7 +287,7 @@ class TfidfCentroids:
         if not counts:
             return {}
         weights = {i: count * self.idf[i] for i, count in counts.items()}
-        norm = math.sqrt(sum(w * w for w in weights.values()))
+        norm = math.sqrt(math.fsum(w * w for w in weights.values()))
         return {i: w / norm for i, w in weights.items()} if norm else {}
 
     def centroids(self, items: list[dict]) -> dict[str, dict[int, float]]:
@@ -307,7 +315,7 @@ class TfidfCentroids:
         """
         best_label, best_score = None, None
         for label in sorted(centroids):
-            score = sum(weight * centroids[label].get(i, 0.0) for i, weight in vector.items())
+            score = math.fsum(weight * centroids[label].get(i, 0.0) for i, weight in vector.items())
             if best_score is None or score > best_score:
                 best_label, best_score = label, score
         if best_label is None:
@@ -335,8 +343,8 @@ class TfidfCentroids:
         if not centroids:
             raise SystemExit("Aucun centroide : entrainement vide.")
         # Produits regroupes par etiquette, dans l'ordre des features du vecteur,
-        # puis cumules par `sum` : meme somme, meme ordre, meme compensation interne
-        # que le balayage de reference.
+        # puis cumules par `math.fsum` : meme somme, meme ordre, et un arrondi exact
+        # qui ne depend pas de la version de CPython (voir `macro_f1`).
         buckets: dict[str, list[float]] = {}
         for feature, weight in vector.items():
             for label, centroid_weight in index.get(feature, {}).items():
@@ -344,9 +352,9 @@ class TfidfCentroids:
         # L'etiquette alphabetiquement premiere porte le score nul des etiquettes
         # absentes de l'index : elle est le point de depart, comme dans `predict`.
         best_label = min(centroids)
-        best_score = sum(weight * centroids[best_label].get(i, 0.0) for i, weight in vector.items())
+        best_score = math.fsum(weight * centroids[best_label].get(i, 0.0) for i, weight in vector.items())
         for label in sorted(buckets):
-            score = sum(buckets[label])
+            score = math.fsum(buckets[label])
             if score > best_score:
                 best_label, best_score = label, score
         return best_label
@@ -377,10 +385,10 @@ def evaluate(predict, items: list[dict], folds: list[list[int]]) -> dict:
             "worst_labels": sorted(per_label, key=lambda l: (per_label[l], l))[:3],
         })
     scored = [f["macro_f1"] for f in per_fold if f["macro_f1"] is not None]
-    mean = sum(scored) / len(scored) if scored else None
+    mean = math.fsum(scored) / len(scored) if scored else None
     spread = None
     if len(scored) > 1:
-        spread = math.sqrt(sum((s - mean) ** 2 for s in scored) / (len(scored) - 1))
+        spread = math.sqrt(math.fsum((s - mean) ** 2 for s in scored) / (len(scored) - 1))
     return {
         "folds": per_fold,
         "labels_total": len(labelled),
@@ -593,8 +601,9 @@ def make_rules_predictor(lexicon: dict[str, set[str]], weights: dict[str, float]
     def predict_one(text: str) -> str:
         tokens = sorted(set(tokenize(text)))
         # Les poids sont regroupes par etiquette, dans l'ordre des jetons, puis
-        # cumules par `sum` : c'est la meme somme, dans le meme ordre, que celle du
-        # balayage de reference -- y compris sa compensation interne (CPython 3.12).
+        # cumules par `math.fsum` : c'est la meme somme, dans le meme ordre, que celle
+        # du balayage de reference, avec un arrondi exact -- donc independant de la
+        # version de CPython (voir `macro_f1` pour pourquoi `sum` ne convient pas).
         buckets: dict[str, list[float]] = {}
         for term in tokens:
             weight = weights.get(term, 0.0)
@@ -602,7 +611,7 @@ def make_rules_predictor(lexicon: dict[str, set[str]], weights: dict[str, float]
                 continue
             for label in index.get(term, ()):
                 buckets.setdefault(label, []).append(weight)
-        scores = {label: sum(buckets.get(label, ())) for label in labels}
+        scores = {label: math.fsum(buckets.get(label, ())) for label in labels}
         best_label, best_score = None, None
         for label in labels:
             score = scores[label]
@@ -669,11 +678,11 @@ def run(corpus_path: Path, level: str, folds_count: int, random_draws: int, seed
         scores = [f["macro_f1"] for f in evaluate(predictor_random(seed, random_draws, draw), items, grouped)["folds"]
                   if f["macro_f1"] is not None]
         if scores:
-            draw_scores.append(sum(scores) / len(scores))
+            draw_scores.append(math.fsum(scores) / len(scores))
     draw_scores.sort()
     results["random_grouped"] = {
         "draws": random_draws,
-        "macro_f1_mean": round(sum(draw_scores) / len(draw_scores), 4) if draw_scores else None,
+        "macro_f1_mean": round(math.fsum(draw_scores) / len(draw_scores), 4) if draw_scores else None,
         "macro_f1_p2_5": round(quantile(draw_scores, 0.025), 4) if draw_scores else None,
         "macro_f1_p97_5": round(quantile(draw_scores, 0.975), 4) if draw_scores else None,
     }

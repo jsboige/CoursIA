@@ -9,8 +9,10 @@ ignorerait les groupes passerait tous les autres tests et echouerait celui-la.
 
 from __future__ import annotations
 
+import builtins
 import csv
 import json
+import math
 import random
 import sys
 from collections import Counter
@@ -631,3 +633,53 @@ def test_niveau_branche_identique_a_la_reference_commitee(monkeypatch):
     # Le corpus est celui de la reference : un corpus change invalide la comparaison.
     assert rapport["corpus"]["sha256"] == attendu["corpus"]["sha256"]
     assert rapport == attendu
+
+
+# --- Semantique de sommation : le rapport ne doit dependre d'aucune version de CPython --
+
+
+def _somme_sous_semantique(elements, semantique: str):
+    """Somme de flottants sous une semantique imposee (CPython 3.11 / 3.12+ / exacte).
+
+    Les entiers restent exacts dans les trois cas : seule la somme de flottants change.
+    """
+    valeurs = list(elements)
+    if semantique == "fsum" and any(isinstance(valeur, float) for valeur in valeurs):
+        return math.fsum(valeurs)
+    total = 0
+    compensation = 0.0
+    for element in valeurs:
+        if semantique == "neumaier" and isinstance(total, float) and isinstance(element, float):
+            somme = total + element
+            if abs(total) >= abs(element):
+                compensation += (total - somme) + element
+            else:
+                compensation += (element - somme) + total
+            total = somme
+        else:
+            total = total + element
+    return total + compensation if semantique == "neumaier" else total
+
+
+def test_le_rapport_ne_depend_pas_de_la_semantique_de_sum(monkeypatch):
+    """`sum` sur les flottants a change de semantique en CPython 3.12 (compensation).
+
+    Le test rejoue la baseline a regles sous trois semantiques emulees -- naive
+    (3.11), compensee (3.12+), exacte (`math.fsum`) -- et exige le meme rapport.
+    L'instrument ne doit donc dependre d'aucune d'elles : sinon le meme corpus
+    donne un rapport different selon la version de l'interpreteur, et le garde de
+    non-regression ne peut pas passer a la fois en local et en CI.
+    """
+    lexique = {"A": {"t1", "t2", "t3"}, "B": {"t4"}}
+    # 1e16 + 1,0 - 1e16 : la somme naive rend 0,0, la somme exacte rend 1,0.
+    poids = {"t1": 1e16, "t2": 1.0, "t3": -1e16, "t4": 0.5}
+    items = [{"text": "t1 t2 t3 t4", "label": "A", "node_key": "A-0", "scenario_path": "s1"}]
+    rapports = {}
+    for semantique in ("naive", "neumaier", "fsum"):
+        monkeypatch.setattr(
+            builtins, "sum",
+            lambda elements, semantique=semantique: _somme_sous_semantique(elements, semantique),
+        )
+        predicteur = bbd.make_rules_predictor(lexique, poids, ["A", "B"])
+        rapports[semantique] = bbd.evaluate_whole(predicteur, items)
+    assert rapports["naive"] == rapports["neumaier"] == rapports["fsum"]
