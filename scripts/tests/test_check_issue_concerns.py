@@ -394,6 +394,18 @@ class LaneSignatureTests(unittest.TestCase):
             mod.lane_signature("Point de situation (c.278)."), "cycle-watermark"
         )
 
+    def test_cycle_watermark_bounded_does_not_eat_a_comment_id(self):
+        # #21621 : un id de commentaire n'est pas un numero de cycle. Le motif
+        # borne a quatre chiffres prend c.2199 (controle positif) et laisse
+        # c.6280946388 a la classe user-remark (controle negatif) — sinon une
+        # remarque du mainteneur qui cite un id est ecartee en silence.
+        self.assertEqual(
+            mod.lane_signature("Point de situation (c.2199)."), "cycle-watermark"
+        )
+        self.assertEqual(
+            mod.lane_signature("Voir la remarque c.6280946388 sur ce point."), ""
+        )
+
     def test_head_tag_after_decoration(self):
         self.assertEqual(
             mod.lane_signature("**[LIVRAISON] Pli 1 — lecture du depot**"), "head-tag"
@@ -458,6 +470,36 @@ class RemarkAnalysisTests(unittest.TestCase):
                 7, [c(2, "2026-10-18T01:25:00Z", body)], classes=("user-remark",)
             )
             self.assertEqual(report.remarks, [], f"corps signe retenu : {body[:60]}")
+
+    def test_head_tag_is_routed_to_manual_review_not_excluded(self):
+        # #21621 : « [NanoClaw] a raison… » est une vraie remarque du
+        # mainteneur ; le tag entre crochets, sans autre signature de lane, est
+        # ambigu — il est route vers MANUAL_REVIEW au lieu d'etre ecarte.
+        report = mod.analyse_comments(
+            11,
+            [c(20, "2026-10-18T09:00:00Z", "[NanoClaw] a raison de pousser ce point.")],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(report.remarks[0].status, "MANUAL_REVIEW")
+        self.assertEqual(report.excluded, {})
+
+    def test_excluded_comments_are_counted_by_signature(self):
+        # #21621 : l'ecart cesse d'etre silencieux — il est compte et publie,
+        # en texte comme en JSON, pour que le total ne passe pas pour exhaustif.
+        report = mod.analyse_comments(
+            12,
+            [
+                c(30, "2026-10-18T09:00:00Z", "Point de situation (c.278)."),
+                c(31, "2026-10-18T10:00:00Z", self.REMARK),
+            ],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.excluded, {"cycle-watermark": 1})
+        self.assertEqual(len(report.remarks), 1)
+        self.assertEqual(
+            report.as_dict()["excluded_by_signature"], {"cycle-watermark": 1}
+        )
 
     def test_remark_closed_by_a_strong_citation(self):
         report = mod.analyse_comments(
@@ -559,6 +601,20 @@ class RenderTests(unittest.TestCase):
         text = mod.render_text([report], "2026-09-25", "open", 1)
         self.assertIn("[directive]", text)
         self.assertIn("remarque(s)", text)
+
+    def test_exclusions_are_published_in_the_text_output(self):
+        # #21621 : le nombre d'ecartes par signature figure dans la sortie.
+        report = mod.analyse_comments(
+            13,
+            [
+                c(40, "2026-10-18T09:00:00Z", "Point de situation (c.278)."),
+                c(41, "2026-10-18T10:00:00Z", "Le rendu est propre."),
+            ],
+            classes=("user-remark",),
+        )
+        text = mod.render_text([report], "2026-09-25", "open", 1)
+        self.assertIn("1 commentaire(s) ecarte(s) par signature de lane", text)
+        self.assertIn("cycle-watermark 1", text)
 
 
 if __name__ == "__main__":
