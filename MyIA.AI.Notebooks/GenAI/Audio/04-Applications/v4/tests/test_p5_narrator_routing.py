@@ -31,13 +31,33 @@ def _build_seg(*, speaker: str, text: str = "x"):
 
 
 def test_routes_narrator_to_qwen_when_flag_on():
-    """When NARRATOR_QWEN_ROUTING is ON (default), narrator segments route.
-    Default behavior is UNCHANGED by phase 1 (#19692): Qwen VoiceDesign
-    stays the narrator engine."""
-    from v4.p5_tts import _should_route_narrator_to
+    """When NARRATOR_QWEN_ROUTING is forced ON, narrator segments route.
+    The default flipped to "0" (FishAudio narrator) in #19454: the Qwen
+    narrator degrades literary French to ~0.52 WER while the FishAudio
+    clone transcribes at 0.000-0.067 on the same witness segments."""
+    from v4 import p5_tts
 
+    original = p5_tts._NARRATOR_QWEN_ROUTING
+    try:
+        p5_tts._NARRATOR_QWEN_ROUTING = True
+        seg = _build_seg(speaker="narrateur")
+        assert p5_tts._should_route_narrator_to("qwen_voicedesign", seg) is True
+    finally:
+        p5_tts._NARRATOR_QWEN_ROUTING = original
+
+
+def test_qwen_off_by_default_fish_narrator():
+    """Default post-#19454: no narrator engine flag is on, so the narrator
+    falls back to the FishAudio S2-Pro clone (legacy path). The measured
+    WER drove the flip: Qwen narrator ~0.52 on literary French, FishAudio
+    clone 0.000-0.067 on witness segments 19/38/114 (whisper
+    large-v3-turbo fr, methodology of #19453)."""
+    from v4 import p5_tts
+
+    assert p5_tts._NARRATOR_QWEN_ROUTING is False
+    assert p5_tts._selected_narrator_engine() is None
     seg = _build_seg(speaker="narrateur")
-    assert _should_route_narrator_to("qwen_voicedesign", seg) is True
+    assert p5_tts._should_route_narrator_to("qwen_voicedesign", seg) is False
 
 
 def test_does_not_route_non_narrator_speakers():
@@ -305,7 +325,8 @@ def test_compose_tts_text_keeps_full_text_for_cosyvoice3_narrator():
         p5_tts._NARRATOR_QWEN_ROUTING = orig_qwen
         p5_tts._NARRATOR_COSYVOICE3_ROUTING = orig_cv3
 
-    # Default (Qwen narrator): behavior unchanged — cap still applies.
+    # Post-#19454 default (FishAudio narrator): the S2-Pro path keeps the
+    # cap for every speaker, narrator included.
     narrator = _build_seg(speaker="narrateur", text=long_text)
     composed = p5_tts._compose_tts_text(narrator)
     assert len(composed) <= p5_tts._MAX_TTS_CHARS
@@ -345,9 +366,9 @@ def test_customvoice_off_by_default():
     voice B at 09:10Z on 15/10, but the custom-voice route shape on the
     self-hosted TTS gateway (`tts-api.myia.io/v1`, HTTP 200 on /v1/models
     as of c.1672 2026-10-15) is still TBD by ops. The default narrator
-    engine stays Qwen VoiceDesign until ops publishes the route AND the
-    user (or ai-01) flips the flag. No silent engine swap (acceptance #6
-    of #15002)."""
+    engine is the FishAudio clone since #19454; CustomVoice activates only
+    after ops publishes the route AND the user (or ai-01) flips the flag.
+    No silent engine swap (acceptance #6 of #15002)."""
     from v4 import p5_tts
 
     assert p5_tts._NARRATOR_CUSTOMVOICE_ROUTING is False
