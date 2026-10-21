@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: IIT-ICT-Series
-pedagogical_count: 92
-breakdown: ICT-Series=92
-maturity: BETA=75, DRAFT=14, ALPHA=3
+pedagogical_count: 93
+breakdown: ICT-Series=93
+maturity: BETA=75, DRAFT=14, ALPHA=4
 -->
 
 [← IIT](../README.md) | [↑ Notebooks](../../README.md) | [→ Probas](../../Probas/README.md)
@@ -58,7 +58,7 @@ Le package `ict/` (installable en mode editable, issue [#8076](https://github.co
 | Workspace & SAE/J-Lens | `workspace`, `sae_traces`, `jlens_traces`, `jlens_trackP_traces`, `lens_agreement`, `persona_cusp`, `causal_engine`, `humor_pairs` (corpus humour #14035) | 5-6 |
 | Synthèse & triade | `synthesis`, `triade`, `beauty`, `argumentation`, `qbf` (QBF par énumération, strate 6), `truth_maintenance` (strate 6, distillation EPITA JTMS/ATMS), `strategic_morphodynamics` | 3-6 |
 | Dissociations (matrice #7734) | `salience_valence_dissociation`, `phat_self_reference`, `adjonction_saillance_pregnance` (canal s↔π, [#13580](https://github.com/jsboige/CoursIA/issues/13580)), `analog_waves` (cognition analogique, ICT-40b) | 5 |
-| Jouets pré-enregistrés — théories de la conscience (iceberg [#8182](https://github.com/jsboige/CoursIA/issues/8182)) | `attention_schema`, `cemi_field`, `combination_subjects`, `command_following_observers`, `confabulation_broadcast`, `extended_mind_store`, `hoffman_interface_toy`, `hoffman_interface_toy_n8`, `hoffman_interface_toy_n8_relaxed`, `hoffman_interface_toy_n16`, `kuramoto_boundary`, `phat_causal_unlink`, `phat_extended_mind_diag`, `self_model_minimal`, `spekkens_toy`, `strange_loop_selfmodel`, `strange_loop_irreducible`, `strange_loop_scalefree`, `threshold_alignment`, `attention_schema_causal` (case 5bis), `boundary_recollement` (case 14), `confabulation_ignition` (case 15), `tonic_alertness_gain` (case 16), `butlin_indicators` (case 19) | transverse |
+| Jouets pré-enregistrés — théories de la conscience (iceberg [#8182](https://github.com/jsboige/CoursIA/issues/8182)) | `attention_schema`, `cemi_field`, `combination_subjects`, `command_following_observers`, `confabulation_broadcast`, `extended_mind_store`, `hoffman_interface_toy`, `hoffman_interface_toy_n8`, `hoffman_interface_toy_n8_relaxed`, `hoffman_interface_toy_n16`, `kuramoto_boundary`, `phat_causal_unlink`, `phat_extended_mind_diag`, `self_model_minimal`, `spekkens_toy`, `strange_loop_selfmodel`, `strange_loop_irreducible`, `strange_loop_scalefree`, `threshold_alignment`, `attention_schema_causal` (case 5bis), `boundary_recollement` (case 14), `confabulation_ignition` (case 15), `tonic_alertness_gain` (case 16), `butlin_indicators` (case 19), `assembly_index` (case 20) | transverse |
 | Toolkit multi-lentilles & contrat de traces (Epics [#15475](https://github.com/jsboige/CoursIA/issues/15475) / [#15479](https://github.com/jsboige/CoursIA/issues/15479) / [#15480](https://github.com/jsboige/CoursIA/issues/15480), [#8236](https://github.com/jsboige/CoursIA/issues/8236)) | `sae_calibration`, `sae_dictionary`, `sae_scales`, `lens_endpoints`, `lens_gates`, `bench_factorise`, `slens`, `trace_contract`, `intervention_battery` (chaîne état→comportement, critère 3) | 5 |
 | Regards — composition avant/arrière (opération 12, [#12204](https://github.com/jsboige/CoursIA/issues/12204)) | `regards` | 5 |
 
