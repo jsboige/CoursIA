@@ -4535,7 +4535,7 @@ def test_main_idle_since_delivery_falls_back_to_idle_on_fetch_error(monkeypatch)
 # #16372, #14549) le 2026-10-07, parce que le plafond de la sonde pleine
 # (16 unites, partage avec la sonde de PR couvrante) etait deja epuise.
 # Tous quatre portaient pourtant un marqueur de cloture identifiable sur
-# le DERNIER commentaire (`[DELIVERED]`, `[RELEASED]`, gel coordinateur).
+# le DERNIER commentaire (`[DELIVERED]`, gel coordinateur).
 # Le fix ajoute un filtre bon marche qui lit un seul commentaire, n'est
 # PAS couvert par `DELIVERED_SIGNAL_MAX_PROBES`, et ecarte le candidat
 # sans consommer une sonde pleine.
@@ -4570,13 +4570,73 @@ def test_recent_delivery_marker_DELIVERED_true(monkeypatch):
     assert pig.has_recent_delivery_marker(12345) is True
 
 
-def test_recent_delivery_marker_RELEASED_true(monkeypatch):
-    """#19768 : `[RELEASED]` en tete du DERNIER commentaire -> ecarte."""
+def test_recent_delivery_marker_RELEASED_false(monkeypatch):
+    """#21721 : `[RELEASED]` en tete du DERNIER commentaire -> **PAS** ecarte.
+
+    Le test de #19768 affirmait l'inverse : un `[RELEASED]` ecarte l'item
+    du tapis. C'etait le defaut mesure : `[RELEASED]` dit qu'une lane REND
+    LA MAIN, le plus souvent sur une BARRIERE reelle (GPU-only,
+    vision-only), et l'item redevient alors servable par la flotte --
+    « l'issue sautee reste en tete pour le tirage suivant ». L'ecarter
+    definitivement, c'etait perdre le grain.
+
+    Mesure fondatrice (issue #21721, 2026-10-21) : sur le pool ouvert, 31
+    items portent un en-tete `[RELEASED]` en dernier commentaire, et 0
+    d'entre eux portent un motif de couverture d'acceptance.
+
+    Le cas « `[RELEASED] ... acceptance deja couverte » (une livraison) est
+    tranche par la SONDE PLEINE (#21720), qui lit tous les commentaires :
+    ce filtre bon marche ne l'invente pas.
+    """
     monkeypatch.setattr(pig.subprocess, "run",
                         _FakeRecentComments([
                             {"body": "[RELEASED] lane myia-po-2023:CoursIA"},
                         ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_delivery_marker_RELEASED_with_DELIVERED_true(monkeypatch):
+    """#21721 : un dernier commentaire qui pose `[RELEASED]` ET `[DELIVERED]`
+    reste ecarte -- le marqueur de cloture l'emporte sur la main rendue.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "[DELIVERED] lane myia-po-2023:CoursIA\n"
+                                     "[RELEASED] lane myia-po-2023:CoursIA"},
+                        ]).run)
     assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_RELEASED_mention_discursive_false(monkeypatch):
+    """Controle negatif : un `[RELEASED]` cite en milieu de ligne (mention
+    de prose) ne matchait deja pas -- le controle est conserve pour
+    verrouiller le comportement d'ancrage.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "Le voisin a poste [RELEASED] hier, mais "
+                                     "celui-ci n'est pas rendu."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_marker_regex_excludes_only_closure_headers():
+    """#21721 : le filtre bon marche reconnait les en-tetes de CLOTURE
+    (`[DELIVERED]`, `[FROZEN]`) et rien d'autre. `[RELEASED]` n'en est pas un :
+    une main rendue laisse l'item servable.
+
+    Ce test porte sur la REGEX elle-meme (et non sur une sonde injectee) :
+    c'est elle que le tapis appelle en production.
+    """
+    rx = pig._RECENT_DELIVERY_MARKER_RE
+    assert rx.search("[DELIVERED] lane myia-po-2028:CoursIA") is not None
+    assert rx.search("[FROZEN] par coordinateur") is not None
+    assert rx.search("[RELEASED] lane myia-po-2028:CoursIA") is None
+    # `[INFO] candidate-delivered` n'est pas un en-tete de ce filtre : il a
+    # sa propre grammaire (`_DELIVERED_MARKER_RE`), plus large.
+    assert rx.search("[INFO] candidate-delivered -- lane X") is None
+    assert pig._DELIVERED_MARKER_RE.search(
+        "[INFO] candidate-delivered -- lane X") is not None
 
 
 def test_recent_delivery_marker_FROZEN_true(monkeypatch):

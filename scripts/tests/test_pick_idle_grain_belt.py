@@ -1161,9 +1161,13 @@ def test_belt_withdraws_delivered_candidates_and_replaces():
 
 def test_belt_recent_marker_excludes_hors_budget():
     """#19768 perimetre restant : marqueur de cloture sur le DERNIER
-    commentaire ([DELIVERED] / [RELEASED] / [FROZEN]) -- le tapis ecarte
+    commentaire ([DELIVERED] / [FROZEN]) -- le tapis ecarte
     le candidat SANS consommer de sonde de livraison (filtre bon marche,
-    hors budget). La sonde pleine n'est meme pas atteinte pour lui."""
+    hors budget). La sonde pleine n'est meme pas atteinte pour lui.
+
+    Depuis #21721, `[RELEASED]` n'est PAS un marqueur de cloture pour ce
+    filtre : une main rendue sur une barriere reelle laisse l'item
+    servable par la flotte."""
     marked = _make_item(7742, age_days=90, idle=9, last=None)
     clean_a = _make_item(19006, age_days=50, idle=5, last=None)
     clean_b = _make_item(19007, age_days=49, idle=5, last=None)
@@ -1210,6 +1214,48 @@ def test_belt_recent_marker_survives_budget_exhaustion():
     assert causes[7742].startswith("LIVRAISON (recent)")
     assert state["recent_filtered"] == 1
     assert state["budget_hit"] is True
+
+
+def test_belt_real_probe_serves_item_released_on_barrier(monkeypatch):
+    """#21721, bout en bout : le tapis SERVIT un item dont le dernier
+    commentaire porte `[RELEASED]`.
+
+    Unlike `test_belt_recent_marker_excludes_hors_budget` (sonde INJECTEE),
+    this one uses the REAL probe (`has_recent_delivery_marker`) : only the
+    `gh issue view --json comments` subprocess is intercepted. What is
+    under test is therefore the production wiring -- regex, budget, and
+    loop -- not a stub.
+
+    Before the fix, this item was withheld with the reason
+    « LIVRAISON (recent) » : a lane handing back an item on a real barrier
+    (GPU-only, vision-only) was losing it from the belt for good.
+    """
+    released_body = "[RELEASED] lane myia-po-2023:CoursIA -- barriere GPU-only"
+
+    class _R:
+        pass
+
+    def fake_run(*args, **kwargs):
+        r = _R()
+        r.stdout = json.dumps({"comments": [{"body": released_body}]})
+        r.returncode = 0
+        r.stderr = ""
+        return r
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+    released = _make_item(19010, age_days=40, idle=4, last=None)
+    other = _make_item(19011, age_days=41, idle=5, last=None)
+    pool = [released, other]
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=pig.has_recent_delivery_marker)
+    assert [p["number"] for p in picks] == [19010, 19011], (
+        "un item rendu sur une barriere reelle doit rester servi")
+    assert withheld == []
+    assert state["recent_filtered"] == 0
 
 
 @pytest.mark.parametrize("verdict", [None, False])
