@@ -1414,6 +1414,21 @@ backoff_delay() {
   printf '%s\n' "$d"
 }
 
+# Attente jusqu'a la remise a zero du quota REST (#21527). GitHub publie son
+# echeance (`/rate_limit` -> `.resources.core.reset`, epoch) et l'endpoint
+# /rate_limit ne consomme pas le quota qu'il decrit. Rend un nombre de
+# secondes borne a [floor_s, 3900] : au-dela d'une heure, mieux vaut re-tenter
+# que dormir sur une echeance absente ou corrompue.
+rate_reset_wait() {
+  local floor_s="$1" reset_epoch wait_reset
+  reset_epoch="$(awk -F= '$1=="RESET"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+  case "${reset_epoch:-}" in ''|*[!0-9]*) reset_epoch=0 ;; esac
+  wait_reset=$(( reset_epoch - $(date +%s) + 5 ))
+  [ "$wait_reset" -lt "$floor_s" ] && wait_reset="$floor_s"
+  [ "$wait_reset" -gt 3900 ] && wait_reset=3900
+  printf '%s\n' "$wait_reset"
+}
+
 # #14259 Defaut 1+3 : compte et liste les PIDs des superviseurs actifs du
 # meme `NAME_PREFIX`. La cle est `PPID==1` : un superviseur est le parent
 # direct d'un slot_loop fork (mesure : PPID 72469 = LE superviseur ;
@@ -1503,6 +1518,16 @@ fetch_token() {
   # gh ACTIF -- un `gh auth switch` dans une autre session changeait
   # l'identite des registration tokens en silence (incident 2026-09-02).
   if [ -n "${COURSIA_RUNNER_GH_ACCOUNT:-}" ]; then
+    # #21527 : le compte epingle s'ecrit depuis la CONFIGURATION, jamais depuis
+    # une reponse. Un environnement corrompu a deja fourni `{` (corps JSON
+    # d'erreur) comme nom de compte, ce qui a produit un jeton illisible et un
+    # en-tete HTTP invalide. Sa forme se valide avant usage.
+    case "$COURSIA_RUNNER_GH_ACCOUNT" in
+      *[!A-Za-z0-9_-]*)
+        printf 'HTTP=AUTH\nACCOUNT=%s\nERR=forme de compte invalide\n' "$COURSIA_RUNNER_GH_ACCOUNT" > "$FETCH_TOKEN_STATE_FILE"
+        return 1
+        ;;
+    esac
     # #15154 : un compte epingle INTRROUVABLE dans le trousseau gh est une
     # cause structurelle -- `gh auth token --user` n'aboutira jamais par la
     # perseverance. Avant ce changement, le `return 1` partait AVANT toute
@@ -1534,10 +1559,23 @@ fetch_token() {
   # survit au subshell. Format : "HTTP=<code>\nACCOUNT=<compte resolu>"
   # ( ACCOUNT seulement sur les echecs ) "\nERR=<stderr tronque>" ; le code
   # special AUTH designe un compte epingle introuvable (terminal).
-  local err="" http_code="" account="" state_tmp=""
-  err="$(gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>&1 >/dev/null)"
-  if [ -n "$err" ]; then
-    http_code="$(printf '%s\n' "$err" | grep -oE 'HTTP [0-9]+' | awk '{print $2}' | head -n1)"
+  local err="" http_code="" account="" out="" reset=""
+  # #21527 : UN SEUL appel. L'ancienne version appelait l'endpoint DEUX fois --
+  # une pour capter stderr (`2>&1 >/dev/null`), une pour le jeton -- et
+  # doublait la consommation de quota REST, celui-la meme qui a arrete le pool
+  # le 2026-10-20 (5000 appels/h pour toute la flotte).
+  out="$(gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token 2>&1)"
+  # Forme d'un jeton de registration : alphanumerique, sans accolade ni saut de
+  # ligne. Un corps JSON d'erreur a deja ete lu comme nom de compte puis comme
+  # jeton (« ACCOUNT={ », puis « New-line characters are not allowed in header
+  # values ») : la forme se VALIDE ici, elle ne se suppose pas (#21527).
+  if printf '%s' "$out" | grep -qxE '[A-Za-z0-9]{20,}'; then
+    printf 'HTTP=200\nERR=\n' > "$FETCH_TOKEN_STATE_FILE"
+    printf '%s\n' "$out"
+    return 0
+  fi
+  err="$out"
+  http_code="$(printf '%s\n' "$err" | grep -oE 'HTTP [0-9]+' | awk '{print $2}' | head -n1)"
     # #15154 critere 1 : le diagnostic doit nommer le compte RESOLU, pas la
     # variable qui le designe. Epingle -> sa valeur ; sinon le compte ambiant,
     # demande a gh uniquement sur ce chemin d'echec (cout nul sur le chemin
@@ -1549,11 +1587,20 @@ fetch_token() {
       account="$(gh api user --jq .login 2>/dev/null || true)"
       [ -z "$account" ] && account="compte ambiant non resoluble"
     fi
-    printf 'HTTP=%s\nACCOUNT=%s\nERR=%s\n' "${http_code:-0}" "$account" "$err" > "$FETCH_TOKEN_STATE_FILE"
-    return 1
+  # #21527 : 403/429 de QUOTA = TRANSITOIRE, et son echeance est connue. Le
+  # classer structurel faisait poser STOP_FILE au cinquieme echec et tomber le
+  # pool entier (2026-10-20, 01:26Z, 14 slots). On attend la remise a zero.
+  if [ "$http_code" = "403" ] || [ "$http_code" = "429" ]; then
+    case "$err" in
+      *[Rr]ate*limit*)
+        reset="$(gh api rate_limit --jq '.resources.core.reset' 2>/dev/null || true)"
+        printf 'HTTP=RATE\nACCOUNT=%s\nRESET=%s\nERR=%s\n' "$account" "${reset:-0}" "$err" > "$FETCH_TOKEN_STATE_FILE"
+        return 1
+        ;;
+    esac
   fi
-  printf 'HTTP=200\nERR=\n' > "$FETCH_TOKEN_STATE_FILE"
-  gh api --method POST "repos/$REPO/actions/runners/registration-token" --jq .token
+  printf 'HTTP=%s\nACCOUNT=%s\nERR=%s\n' "${http_code:-0}" "$account" "$err" > "$FETCH_TOKEN_STATE_FILE"
+  return 1
 }
 
 # Parametre depuis #14337 : un slot = une boucle, mais nom/labels/image/caps
@@ -1595,11 +1642,21 @@ slot_loop() {
       : "${http:=0}"
       : "${acct:=inconnu}"
       local cause_diag="compte sans droit admin ?"
-      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh"
+      # #15154 : le diagnostic NOMME la cause structurelle d'origine (compte
+      # epingle introuvable dans le trousseau) ; #21527 y ajoute la forme
+      # invalide du jeton, autre cause du meme marqueur.
+      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh, ou jeton de forme invalide (cf #21527)"
       case "$http" in
         AUTH) terminal=1 ;;
+        RATE) cause_diag="quota REST epuise -- transitoire, echeance connue" ;;
         4??) [ "$http" != "408" ] && terminal=1 ;;
       esac
+      # #21527 : un quota epuise n'est PAS structurel. On attend la remise a
+      # zero publiee par GitHub au lieu de bruler des essais et de poser
+      # STOP_FILE au cinquieme (ce qui a arrete les 14 slots le 2026-10-20).
+      if [ "$http" = "RATE" ]; then
+        wait_s="$(rate_reset_wait "$wait_s")"
+      fi
       if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
         echo "[slot $slot] ABANDON : $fails echecs consecutifs HTTP $http sur le compte '$acct' ($cause_diag). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin de '$acct' sur le depot (cf #15154 / voie B)." >&2
         # #15154 : prevenir les AUTRES slots -- ils reproduiraient la meme
@@ -1617,7 +1674,7 @@ slot_loop() {
       else
         echo "[slot $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
       fi
-      sleep "$wait_s"
+      sleep "${COURSIA_RUNNER_TEST_SLEEP:-$wait_s}"
       continue
     fi
     # #15278 : reprendre le nom AVANT de mesurer le cycle -- l'attente due a un
@@ -2126,11 +2183,19 @@ waiter_loop() {
       : "${http:=0}"
       : "${acct:=inconnu}"
       local cause_diag="compte sans droit admin ?"
-      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh"
+      # #15154 : le diagnostic NOMME la cause structurelle d'origine (compte
+      # epingle introuvable dans le trousseau) ; #21527 y ajoute la forme
+      # invalide du jeton, autre cause du meme marqueur.
+      [ "$http" = "AUTH" ] && cause_diag="compte epingle introuvable dans le trousseau gh, ou jeton de forme invalide (cf #21527)"
       case "$http" in
         AUTH) terminal=1 ;;
+        RATE) cause_diag="quota REST epuise -- transitoire, echeance connue" ;;
         4??) [ "$http" != "408" ] && terminal=1 ;;
       esac
+      # #21527 : cf slot_loop -- quota epuise = attente de la remise a zero.
+      if [ "$http" = "RATE" ]; then
+        wait_s="$(rate_reset_wait "$wait_s")"
+      fi
       if [ "$terminal" -eq 1 ] && [ "$fails" -ge "${COURSIA_RUNNER_AUTH_FAIL_MAX:-5}" ]; then
         echo "[waiter $slot] ABANDON : $fails echecs consecutifs HTTP $http sur le compte '$acct' ($cause_diag). Cause structurelle, retry ne resout pas. Verifier COURSIA_RUNNER_GH_ACCOUNT et les droits admin de '$acct' sur le depot (cf #15154 / voie B)." >&2
         # #15154 : cf slot_loop -- le sentinel coordonne l'arret de tous
@@ -2143,7 +2208,7 @@ waiter_loop() {
       else
         echo "[waiter $slot] token indisponible HTTP $http (transitoire) -- echec consecutif #$fails, nouvelle tentative dans ${wait_s}s" >&2
       fi
-      sleep "$wait_s"
+      sleep "${COURSIA_RUNNER_TEST_SLEEP:-$wait_s}"
       continue
     fi
     # #15278 : meme garde que slot_loop -- un waiter orphelin d'un restart
