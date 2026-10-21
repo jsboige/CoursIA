@@ -2224,6 +2224,16 @@ TRANCHE24: list[Guard] = [
 # fail-closed : une base absente fait rougir la PR plutot que de la laisser
 # passer sans controle.
 #
+# ECHAPPEMENT DECLARATIF (#21390, reserve ai-01 du 2026-10-21) : l'organe
+# lit le CORPS de la PR (env `LEAN_CLIQUET_PR_BODY`, canal in-memory comme
+# `MD_CONTENT_LOSS_PR_BODY`) et y cherche les lignes
+# `[LEAN-ANCHOR-DECLARED] <fichier>:<decl> -- <motif>`. Une ancre passe si
+# **SA** declaration est nommee (ni joker par fichier ni global) ; le motif
+# reste juge par le reviewer. Une ligne malformee est ignoree (fail-closed :
+# l'ancre reste rouge). Sans cet echappement, une ancre legitime (squelette
+# `sorry`, `native_decide` documente) ne pouvait etre rendue mergeable que
+# par un admin.
+#
 # BASE : `{base_ref}` vaut `origin/${{ github.base_ref }}` (env
 # `FAST_LANE_BASE` du job `Always-on guards`), c'est-a-dire `origin/main`
 # pour une PR sur `main`. Le workflow fait `git fetch origin

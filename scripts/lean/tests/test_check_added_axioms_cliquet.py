@@ -34,6 +34,8 @@ from check_added_axioms_cliquet import (  # noqa: E402
     declared_line,
     detect_anchors,
     enclosing_declaration,
+    main,
+    parse_declared,
     parse_declarations,
     render_text,
     scan_added_lines,
@@ -379,3 +381,178 @@ class TestRenderTextDeclaredLines:
         assert text.count("[LEAN-ANCHOR-DECLARED]") == 2
         # L'ordre est celui des hits (deterministe).
         assert text.index("-- native_decide") < text.index("-- sorry")
+
+
+# --------------------------------------------------------------------------- #
+# Echappement declaratif (reserve ai-01 du 2026-10-21, tete 01c7dfddde)
+# --------------------------------------------------------------------------- #
+
+
+class TestParseDeclared:
+    def test_ligne_nominale(self):
+        decls = parse_declared(
+            "## Ancres declarees\n"
+            "[LEAN-ANCHOR-DECLARED] Knots/Slice.lean:theorem IsSmoothlySlice -- "
+            "limite connue du fichier, citee dans son en-tete\n"
+        )
+        assert len(decls) == 1
+        assert decls[0].file == "Knots/Slice.lean"
+        assert decls[0].decl == "theorem IsSmoothlySlice"
+        assert "limite connue" in decls[0].motif
+
+    def test_plusieurs_lignes_une_par_declaration(self):
+        decls = parse_declared(
+            "[LEAN-ANCHOR-DECLARED] Conway/Life/Pillars.lean:theorem pulsar_period3 -- "
+            "choix delibere (#20004)\n"
+            "[LEAN-ANCHOR-DECLARED] Conway/Life/Pillars.lean:lemma unitcell_initial_nonempty "
+            "-- cible du prover (#20043)\n"
+        )
+        assert [d.decl for d in decls] == [
+            "theorem pulsar_period3", "lemma unitcell_initial_nonempty",
+        ]
+
+    def test_ligne_malformee_ignoree(self):
+        # Pas de separateur " -- ", pas de nom de fichier, declaration vide :
+        # chaque forme est ignoree, donc fail-closed (l'ancre reste rouge).
+        body = (
+            "[LEAN-ANCHOR-DECLARED] sans separateur\n"
+            "[LEAN-ANCHOR-DECLARED] F.lean:theorem a --\n"
+            "[LEAN-ANCHOR-DECLARED] :theorem b -- motif\n"
+            "[LEAN-ANCHOR-DECLARED] F.lean: -- motif\n"
+            "[LEAN-ANCHOR-DECLARED]\n"
+            "LEAN-ANCHOR-DECLARED F.lean:theorem c -- motif (sans crochets)\n"
+        )
+        assert parse_declared(body) == []
+
+    def test_une_ligne_non_ancree_est_indifferente(self):
+        decls = parse_declared(
+            "# Titre\n\n"
+            "[LEAN-ANCHOR-DECLARED] F.lean:theorem a -- motif\n\n"
+            "| table | valeur |\n|---|---|\n"
+        )
+        assert len(decls) == 1
+
+
+class TestEchappementDeclaratif:
+    """L'ancre ne passe que si SA declaration est nommee dans le corps."""
+
+    def _report(self):
+        repo = _make_repo()
+        base = _reset(repo)
+        head = _commit(
+            repo,
+            {"K.lean": (
+                "theorem alpha : 1 + 1 = 2 := by native_decide\n"
+                "lemma beta : True := by sorry\n"
+            )},
+            "rouge",
+        )
+        return scan_added_lines(base, head, repo_root=repo)
+
+    def test_ancre_non_declaree_reste_rouge(self):
+        r = self._report()
+        assert r.declared == []
+        assert len(r.hits_undeclared) == 2
+        text = render_text(r)
+        assert "ROUGE: 2 anchor(s)" in text
+        assert "A DECLARER DANS LE CORPS" in text
+
+    def test_ancre_declaree_passe_et_est_visible(self):
+        r = self._report()
+        r.declared = parse_declared(
+            "[LEAN-ANCHOR-DECLARED] K.lean:theorem alpha -- choix delibere\n"
+        )
+        assert len(r.hits_declared) == 1
+        assert len(r.hits_undeclared) == 1  # beta n'est pas declaree
+        text = render_text(r)
+        assert "DECLARE: 1 anchor(s)" in text
+        # La ligne declaree est visible par le reviewer, avec son motif.
+        assert "[LEAN-ANCHOR-DECLARED] K.lean:theorem alpha -- native_decide" in text
+        # Et l'ancre non declaree reste nommee.
+        assert "[LEAN-ANCHOR-DECLARED] K.lean:lemma beta -- sorry" in text
+        assert "A DECLARER DANS LE CORPS" in text
+
+    def test_une_declaration_nommee_ne_couvre_pas_une_autre_du_meme_fichier(self):
+        r = self._report()
+        r.declared = parse_declared(
+            "[LEAN-ANCHOR-DECLARED] K.lean:theorem alpha -- motif\n"
+        )
+        undeclared = {(h.file, h.decl_name) for h in r.hits_undeclared}
+        # Pas de joker par fichier : beta reste rouge.
+        assert undeclared == {("K.lean", "beta")}
+
+    def test_une_declaration_d_un_autre_fichier_ne_couvre_pas(self):
+        r = self._report()
+        r.declared = parse_declared(
+            "[LEAN-ANCHOR-DECLARED] Autre.lean:theorem alpha -- motif\n"
+        )
+        assert len(r.hits_undeclared) == 2
+
+    def test_un_joker_global_ne_couvre_rien(self):
+        r = self._report()
+        r.declared = parse_declared(
+            "[LEAN-ANCHOR-DECLARED] *:theorem alpha -- motif\n"
+        )
+        assert len(r.hits_undeclared) == 2
+
+    def test_ancre_en_example_reste_verte_sans_declaration(self):
+        repo = _make_repo()
+        base = _reset(repo)
+        head = _commit(repo, {"E.lean": "example : 1 + 1 = 2 := by native_decide\n"}, "g")
+        r = scan_added_lines(base, head, repo_root=repo)
+        assert r.hits_undeclared == []
+
+
+class TestMainEchappementDeclaratif:
+    """rc du CLI : la declaration bascule le verdict de 1 a 0."""
+
+    def _run(self, repo, body):
+        import os
+        old_env = dict(os.environ)
+        old_cwd = os.getcwd()
+        try:
+            os.environ["LEAN_CLIQUET_PR_BODY"] = body
+            base = _reset(repo)
+            _commit(repo, {"K.lean": "theorem alpha : 1 + 1 = 2 := by native_decide\n"},
+                    "rouge")
+            # `main` resout les SHA et lit le diff dans le cwd : on y entre.
+            os.chdir(repo)
+            return main(["--base", base, "--head", "HEAD"])
+        finally:
+            os.chdir(old_cwd)
+            os.environ.clear()
+            os.environ.update(old_env)
+
+    def test_rc_1_sans_declaration(self):
+        repo = _make_repo()
+        assert self._run(repo, "") == 1
+
+    def test_rc_0_avec_declaration_nominale(self):
+        repo = _make_repo()
+        assert self._run(
+            repo,
+            "[LEAN-ANCHOR-DECLARED] K.lean:theorem alpha -- choix delibere\n",
+        ) == 0
+
+    def test_rc_1_avec_declaration_malformee(self):
+        repo = _make_repo()
+        assert self._run(repo, "[LEAN-ANCHOR-DECLARED] K.lean:theorem alpha\n") == 1
+
+    def test_rc_2_body_file_absent(self):
+        import os
+        repo = _make_repo()
+        old_env = dict(os.environ)
+        old_cwd = os.getcwd()
+        try:
+            os.environ.pop("LEAN_CLIQUET_PR_BODY", None)
+            base = _reset(repo)
+            _commit(repo, {"K.lean": "theorem alpha : 1 + 1 = 2 := by native_decide\n"},
+                    "rouge")
+            os.chdir(repo)
+            rc = main(["--base", base, "--head", "HEAD",
+                       "--body-file", "n_existe_pas.md"])
+            assert rc == 2
+        finally:
+            os.chdir(old_cwd)
+            os.environ.clear()
+            os.environ.update(old_env)

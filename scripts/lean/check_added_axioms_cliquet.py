@@ -43,6 +43,22 @@ Out of scope (matches ``count_code_sorry``): ``.lake/packages/``,
 ``.mathlib-cache``, ``_peters``, ``agent_tests/.../reference_docs/``,
 ``foundry-lib/lib/**``. Only own ``*.lean`` files are measured.
 
+Declarative escape
+------------------
+
+A ``sorry`` skeleton (open statement, target of a prover, definition absent
+from Mathlib) or a documented ``native_decide`` anchor is legitimate; CLAUDE.md
+§D forbids only the **replacement** of an existing proof. The reviewer keeps
+the judgement on the motive, exactly as for a declared pedagogical copy: the
+author writes, one line per declaration, in the **body of the pull request**:
+
+    [LEAN-ANCHOR-DECLARED] <fichier>:<decl> -- <motif>
+
+``<decl>`` is ``<kind> <name>`` exactly as ``declared_line`` renders it. An
+anchor passes only if **its own** declaration is named there -- no per-file or
+global wildcard. A malformed line is ignored (fail-closed: the anchor stays
+rouge). Declared anchors are listed in the output so a reviewer sees them.
+
 Usage
 -----
 
@@ -52,6 +68,9 @@ Usage
     # Explicit SHAs:
     python scripts/lean/check_added_axioms_cliquet.py --base <sha> --head <sha>
 
+    # With the declarative escape of the PR body:
+    python scripts/lean/check_added_axioms_cliquet.py --body-file <corps.md>
+
     # Restrict to specific paths (default: own lakes):
     python scripts/lean/check_added_axioms_cliquet.py --paths 'MyIA.AI.Notebooks/Compression/Compression_lean/*.lean'
 
@@ -59,8 +78,10 @@ Usage
     python scripts/lean/check_added_axioms_cliquet.py --json
 
 Exit codes:
-    0  -- no anchor added, or anchors only inside ``example`` (no action)
-    1  -- at least one anchor added inside a named declaration (rouge)
+    0  -- no anchor added, or anchors only inside ``example`` (no action),
+          or every named-declaration anchor is declared in the body
+    1  -- at least one anchor added inside a named declaration and not
+          declared in the body (rouge)
     2  -- invocation error (bad SHA, no lean files in scope)
 
 Module usage:
@@ -70,6 +91,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import subprocess
 import sys
@@ -146,12 +168,22 @@ class AnchorHit:
 
 
 @dataclass
+class AnchorDeclaration:
+    """One ``[LEAN-ANCHOR-DECLARED]`` line read from a pull request body."""
+    file: str
+    decl: str          # "<kind> <name>" as rendered by declared_line
+    motif: str
+    raw: str
+
+
+@dataclass
 class CliquetReport:
     base: str
     head: str
     hits: list[AnchorHit] = field(default_factory=list)
     files_scanned: int = 0
     lines_added: int = 0
+    declared: list[AnchorDeclaration] = field(default_factory=list)
 
     @property
     def hits_in_named_decls(self) -> list[AnchorHit]:
@@ -160,6 +192,26 @@ class CliquetReport:
         surfaced but do not cause a non-zero exit.
         """
         return [h for h in self.hits if not h.in_example]
+
+    def _declared_keys(self) -> set[tuple[str, str]]:
+        return {(d.file, d.decl) for d in self.declared}
+
+    @property
+    def hits_undeclared(self) -> list[AnchorHit]:
+        """Named-declaration anchors whose OWN declaration is absent from the
+        body's declarative lines. Matching is exact on (file, declaration) --
+        no per-file or global wildcard, so one declared anchor cannot silence
+        its neighbours.
+        """
+        keys = self._declared_keys()
+        return [h for h in self.hits_in_named_decls
+                if (h.file, f"{h.decl_kind} {h.decl_name}".strip()) not in keys]
+
+    @property
+    def hits_declared(self) -> list[AnchorHit]:
+        keys = self._declared_keys()
+        return [h for h in self.hits_in_named_decls
+                if (h.file, f"{h.decl_kind} {h.decl_name}".strip()) in keys]
 
 
 # --------------------------------------------------------------------------- #
@@ -357,6 +409,37 @@ def declared_line(hit: AnchorHit) -> str:
     return f"[LEAN-ANCHOR-DECLARED] {hit.file}:{decl} -- {hit.token}"
 
 
+_DECLARED_RE = re.compile(
+    r"\[LEAN-ANCHOR-DECLARED\]\s+(?P<file>\S+?):(?P<decl>\S.*?)\s+--\s+(?P<motif>\S.*?)\s*$"
+)
+
+
+def parse_declared(body: str) -> list[AnchorDeclaration]:
+    """Lit les lignes ``[LEAN-ANCHOR-DECLARED]`` d'un corps de PR.
+
+    Le separateur est ``" -- "`` et la premiere ``":"`` de ce qui suit
+    decompose ``<fichier>:<decl>``. Une ligne malformee (marqueur seul,
+    separateur absent, fichier vide, declaration vide) est **ignoree** :
+    fail-CLOSED, l'ancre qu'elle pretendait declarer reste rouge.
+    """
+    out: list[AnchorDeclaration] = []
+    for raw in body.splitlines():
+        line = raw.strip().lstrip(">").strip() if raw.strip().startswith(">") else raw.strip()
+        m = _DECLARED_RE.match(line)
+        if not m:
+            continue
+        decl = m.group("decl").strip()
+        if not decl:
+            continue
+        out.append(AnchorDeclaration(
+            file=m.group("file").strip(),
+            decl=decl,
+            motif=m.group("motif").strip(),
+            raw=raw.strip(),
+        ))
+    return out
+
+
 def render_text(report: CliquetReport) -> str:
     if not report.hits:
         return (
@@ -376,24 +459,38 @@ def render_text(report: CliquetReport) -> str:
             f"{h.file:<60} {h.line:>4}  {h.token:<14}  {decl:<24}  {str(h.in_example):>10}"
         )
     named = report.hits_in_named_decls
-    if named:
-        lines.append("")
-        lines.append(
-            f"ROUGE: {len(named)} anchor(s) in NAMED declarations "
-            f"(would be invisible to check_axioms if you re-execute it)."
-        )
-        # Une ligne declarative et nominative par ancre nommee : le compte
-        # seul ne dit pas QUELLE declaration rendrait le merge impossible.
-        # Format : `[LEAN-ANCHOR-DECLARED] <fichier>:<decl> -- <motif>` --
-        # se grep tel quel, se parse sur " -- " puis sur le premier ":".
-        for h in named:
-            lines.append(declared_line(h))
-    else:
+    if not named:
         lines.append("")
         lines.append(
             "GREEN: all anchors inside `example` (visible to humans, "
             "invisible to check_axioms -- by design)."
         )
+        return "\n".join(lines)
+
+    undeclared = report.hits_undeclared
+    if undeclared:
+        lines.append("")
+        lines.append(
+            f"ROUGE: {len(undeclared)} anchor(s) in NAMED declarations, "
+            f"non declaree(s) dans le corps de la PR "
+            f"(would be invisible to check_axioms if you re-execute it)."
+        )
+    if report.hits_declared:
+        lines.append("")
+        lines.append(
+            f"DECLARE: {len(report.hits_declared)} anchor(s) in NAMED declarations "
+            f"couvertes par une ligne [LEAN-ANCHOR-DECLARED] du corps : "
+            f"jugement du motif laisse au reviewer."
+        )
+        for h in report.hits_declared:
+            lines.append(f"  {declared_line(h)}")
+    if undeclared:
+        # Une ligne declarative et nominative par ancre NON declaree : le
+        # compte seul ne dit pas QUELLE declaration rendrait le merge
+        # impossible. A recopier dans le corps de la PR.
+        lines.append("")
+        for h in undeclared:
+            lines.append("  A DECLARER DANS LE CORPS : " + declared_line(h))
     return "\n".join(lines)
 
 
@@ -410,6 +507,14 @@ def main(argv: list[str] | None = None) -> int:
                    help="head SHA (default: HEAD)")
     p.add_argument("--paths", nargs="*", default=None,
                    help="restrict to specific .lean file paths")
+    p.add_argument("--body-file",
+                   help="fichier portant le corps de la PR : source des "
+                        "lignes [LEAN-ANCHOR-DECLARED] (echappement declaratif)")
+    p.add_argument("--body-env", default="LEAN_CLIQUET_PR_BODY",
+                   help="variable d'environnement portant le corps de la PR ; "
+                        "prioritaire sur --body-file (canal in-memory, cf "
+                        "always-on-guards.yml -- pas d'ecriture de fichier sur "
+                        "le runner)")
     p.add_argument("--json", action="store_true",
                    help="emit machine-readable JSON")
     args = p.parse_args(argv)
@@ -428,6 +533,21 @@ def main(argv: list[str] | None = None) -> int:
     paths = [Path(x) for x in args.paths] if args.paths else None
     report = scan_added_lines(args.base, args.head, paths=paths)
 
+    # Source du corps : l'env in-memory d'abord (canal des workflow), le
+    # fichier en repli (usage local).
+    body_text = os.environ.get(args.body_env)
+    body_source = f"env:{args.body_env}"
+    if body_text is None and args.body_file:
+        body_path = Path(args.body_file)
+        if not body_path.is_file():
+            print(f"ERROR: --body-file={args.body_file!r} is not a readable file.",
+                  file=sys.stderr)
+            return 2
+        body_text = body_path.read_text(encoding="utf-8")
+        body_source = f"file:{args.body_file}"
+    if body_text is not None:
+        report.declared = parse_declared(body_text)
+
     if args.json:
         print(json.dumps({
             "base": report.base,
@@ -436,15 +556,19 @@ def main(argv: list[str] | None = None) -> int:
             "lines_added": report.lines_added,
             "hits": [asdict(h) for h in report.hits],
             "hits_in_named": [asdict(h) for h in report.hits_in_named_decls],
-            "declared": [declared_line(h) for h in report.hits_in_named_decls],
+            "declared_in_body": [asdict(d) for d in report.declared],
+            "hits_declared": [declared_line(h) for h in report.hits_declared],
+            "hits_undeclared": [declared_line(h) for h in report.hits_undeclared],
+            "body_source": body_source,
         }, indent=2, ensure_ascii=False))
     else:
         print(render_text(report))
 
-    # Non-zero exit only when an anchor sits in a NAMED declaration -- the
-    # cliquet is informational for example/instance anchors (they are
-    # invisible to check_axioms, not a bug in the proof).
-    return 1 if report.hits_in_named_decls else 0
+    # Non-zero exit only when an anchor sits in a NAMED declaration that the
+    # body does not declare. The cliquet is informational for
+    # example/instance anchors (they are invisible to check_axioms, not a bug
+    # in the proof) and for declared anchors (the reviewer judges the motive).
+    return 1 if report.hits_undeclared else 0
 
 
 if __name__ == "__main__":
