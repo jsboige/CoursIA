@@ -2,20 +2,20 @@
 
 [← Vibe-Coding](../README.md) | [↑ ..](../README.md)
 
-**Claudish** est le proxy/routeur qui rend les assistants de vibe-coding — **Claude Code**, **Roo Code**, les bots autonomes (Hermes, NanoClaw) — **agnostiques du fournisseur de modèles**. Au lieu de parler en dur à `api.anthropic.com`, le client s'adresse à Claudish, qui traduit la requête vers le provider choisi selon le coût, la capacité et le quota : **Anthropic natif**, **MiniMax-M3** (Anthropic-compatible), **z.ai/GLM Coding Plan**, **Qwen self-hosté**, **DeepSeek PAYG**.
+**Claudish** est le proxy/routeur qui rend les assistants de vibe-coding — **Claude Code**, les bots autonomes (Hermes, NanoClaw), les clients **OpenAI** (notebooks, SDK) — **agnostiques du fournisseur de modèles**. Au lieu de parler en dur à `api.anthropic.com`, le client s'adresse à Claudish, qui traduit la requête vers le fournisseur choisi selon le coût, la capacité et le quota : **Anthropic natif**, **z.ai GLM**, **MiniMax**, **Qwen** (forfait et self-hosté), **DeepSeek** (paiement à l'usage), **Kimi**, **Mistral**, **OpenAI Codex**, et des modèles **self-hostés via vLLM**.
 
 > **Sources** : [MadAppGang/claudish](https://github.com/MadAppGang/claudish) (upstream open-source) · [jsboige/claudish](https://github.com/jsboige/claudish) (fork opérationnel du cluster MyIA) · [claudish.com](https://claudish.com)
 
 ## Pourquoi une section Claudish ?
 
-Les assistants de code modernes (Claude Code, Roo Code) parlent le **wire Anthropic** : ils adressent toujours `https://api.anthropic.com`. Quand on veut tirer parti d'autres fournisseurs — un modèle local illimité (Qwen sur GPU maison), un plan coding économique (z.ai GLM), ou garder Anthropic pour le raisonnement lourd — on se heurte à un mur : le client ne sait parler qu'à Anthropic.
+Les assistants de code modernes parlent le **wire Anthropic** : ils adressent toujours `https://api.anthropic.com`. Quand on veut tirer parti d'autres fournisseurs — un modèle local illimité (GPU maison), un forfait de code économique (z.ai GLM), ou garder Anthropic pour le raisonnement lourd — on se heurte à un mur : le client ne sait parler qu'à Anthropic.
 
 | Sans Claudish | Avec Claudish |
 |---------------|---------------|
 | Client bridé à `api.anthropic.com` | Client pointe sur Claudish, qui route |
-| Pas d'accès aux modèles non-Anthropic | GLM, Qwen, Gemini accessibles sans toucher au code |
-| Coût = tarif Anthropic pour tout | Arbitrage coût/capacité **par tier** |
-| Panne Anthropic = agent mort | Provider alternatif, **sans bascule silencieuse** |
+| Pas d'accès aux modèles non-Anthropic | GLM, MiniMax, Qwen, DeepSeek accessibles sans toucher au code |
+| Coût = tarif Anthropic pour tout | Arbitrage coût/capacité **par rôle** (opus, sonnet, haiku, fable) |
+| Forfait épuisé = agent mort | Cascade de substituts, **toujours annoncée** |
 
 Claudish est la **couche routage-provider** du vibe-coding MyIA. Elle complète les autres sections de `Vibe-Coding/` :
 
@@ -23,70 +23,58 @@ Claudish est la **couche routage-provider** du vibe-coding MyIA. Elle complète 
 |---------|------|
 | [Claude-Code/](../Claude-Code/), [Roo-Code/](../Roo-Code/) | Les assistants (front-ends de codage) |
 | [Claw-Systems/](../Claw-Systems/) | Les bots autonomes (front-ends Telegram) |
-| Claudish/ (cette section) | **Le proxy qui route les assistants vers les providers** |
+| Claudish/ (cette section) | **Le proxy qui route les assistants vers les fournisseurs** |
 
-## Écosystème à 3 tiers — cascade ordonnée
+## Ce qu'il faut retenir en 5 points (état au 2026-10-21)
 
-Le déploiement MyIA budgete **un provider nominal par tier** + une **cascade de bascule ordonnée** entre providers de même direction (`degraded>degraded>degraded` ou `improved>improved`). Chaque step de la cascade a un **TTL indépendant** (`[10m, 30m, 1h, 4h, 24h]`) qui survit à l'armement du rôle — un quota wall hebdomadaire (Qwen) n'est pas re-probé toutes les 10 min pendant que la fenêtre GLM 5h se ré-initialise.
-
-| Tier | Provider nominal | Cascade (état au 2026-08-18) | Direction |
-|------|------------------|--------------------------------|-----------|
-| **Opus** | Anthropic natif | `qwen-token-plan@qwen3.8-max > gc@glm-5.3 > ds@deepseek-v4-flash` | degraded |
-| **Sonnet** | z.ai GLM Coding Plan (GLM-5.3) | `ds@deepseek-v4-flash` (PAYG direct, latéral) | lateral |
-| **Haiku** | MiniMax-M3 (Anthropic-compatible) | `qwen-token-plan@qwen3.8-max > ds@deepseek-v4-flash` | improved |
-
-Sur un burst (rate-limit), Claudish **backoff** sur le step courant et passe au suivant quand le TTL expire. Sur une panne franche, le step suivant prend la main **avec notice de dégradation explicite** (3 canaux : log proxy, dashboard `workspace-claudish`, client via en-tête SSE). Le step final (PAYG direct) est **toujours servi** quand tout le reste est épuisé — l'agent ne meurt jamais, il dégrade avec notification.
+1. **Un hub, des relais.** Le service central (le *hub*) tourne sur une machine du cluster ; plusieurs postes font tourner leur propre conteneur Claudish en **relais** (*sidecar*), les autres passent par la passerelle HTTPS. Si le hub tombe, le relais bascule en **mode autonome** et sert localement, puis revient au hub après des preuves de santé répétées. Le hub cesse ainsi d'être un point de panne unique.
+2. **Un rôle, une cascade.** Chaque rôle Claude Code (`opus`, `sonnet`, `haiku`, `fable`) a un modèle **nominal** et une **liste ordonnée de substituts**. Quand un forfait est épuisé, le rôle descend la liste ; chaque marche a son propre délai de remise à l'essai (`10 min → 30 min → 1 h → 4 h → 24 h`), et la dernière marche (paiement à l'usage) sert toujours.
+3. **Jamais de bascule silencieuse.** Chaque substitution est annoncée au client (bloc de texte sur `/v1/messages`, en-tête `x-claudish-failover-notice` sur `/v1/chat/completions`). Une notice décrit des **faits**, jamais des consignes.
+4. **Ne jamais bloquer l'agent.** Le proxy est dans une boucle agentique : un flux se termine *toujours* (`message_stop`), un flux muet est coupé après un délai, un refus de politique est réessayé puis étiqueté, une recherche web ratée devient du texte.
+5. **Mesurer avant de croire.** Le fork s'est doté d'instruments (captures, compteurs par machine et par session, outil MCP de lecture du trafic) parce que plusieurs « évidences » se sont révélées fausses à la mesure — voir les récits du [guide §7](docs/Claudish-Proxy.md#7-war-stories--leçons-du-fork-en-production).
 
 ## Pipeline de production
 
-```
-Client (Claude Code / Roo Code / bot)
+```text
+Client (Claude Code / bot / client OpenAI)
   → parle le wire Anthropic (/v1/messages) OU OpenAI (/v1/chat/completions)
-  → Claudish (proxy, po-2023:3000, derrière IIS models.myia.io)
-    → route selon le modèle demandé (tier + cascade)
-    → authentifie via x-api-key OU x-proxy-key (clé obligatoire depuis fork 2026-08)
-    → traduit vers le wire du provider cible
-    → publie des notices de dégradation sur 3 canaux si bascule
-  → Provider (Anthropic natif / MiniMax-M3 / z.ai GLM / Qwen vLLM / DeepSeek PAYG)
-  → réponse traduite en retour vers le wire Anthropic OU OpenAI
+  → relais Claudish local (sidecar) → hub Claudish   [ou passerelle HTTPS models.myia.io → hub]
+    → authentifie (clé proxy, ou clé « scopée » limitée à une liste de modèles)
+    → résout le rôle → modèle nominal ou marche de cascade
+    → traduit vers le wire du fournisseur cible
+    → annonce toute substitution
+  → Fournisseur (Anthropic natif / GLM / MiniMax / Qwen / DeepSeek / vLLM / …)
+  → réponse retraduite vers le wire du client
 ```
-
-Claudish expose **deux formats wire** côté client :
-- `/v1/messages` — wire Anthropic historique (Claude Code, Roo Code, bots Anthropic-natifs).
-- `/v1/chat/completions` — wire OpenAI (GPT-5, Codex, routeurs tiers).
-
-Côté sortie, il traduit vers le wire du provider cible (Anthropic natif, Anthropic-compatible comme MiniMax-M3, OpenAI-compatible comme z.ai GLM). Le **sidecar ai-01** (`192.168.0.46:3000`) relaie en LAN pour les agents distants.
-
-L'authentification client→Claudish utilise `x-api-key` ou `x-proxy-key` (clé obligatoire, fork 2026-08). Aucune connexion anonyme tolérée.
 
 ## Documentation
 
 | Document | Description |
 |----------|-------------|
-| [Claudish-Proxy.md](docs/Claudish-Proxy.md) | Le proxy en détail : principe wire, topologie de déploiement, router 3 tiers, connecter un agent, avancées du fork, variables d'environnement (**§8 : quel consommateur lit quelle variable** — CLI Claude Code vs notebook vs TP OpenAI vs gabarit étudiant, #15286), troubleshooting |
-| [claudish.env.secrets.example](configs/claudish.env.secrets.example) | Template de configuration (placeholders uniquement — remplir avec vos valeurs) |
+| [Claudish-Proxy.md](docs/Claudish-Proxy.md) | Le proxy en détail : wires, topologie hub/relais, cascade par rôle, connecter un agent ou un bot, avancées du fork, **récits de production et leçons transférables**, mesures de la flotte, variables d'environnement (**§8 : quel consommateur lit quelle variable**), dépannage |
+| [MCP-Capability-Negotiation.md](docs/MCP-Capability-Negotiation.md) | Proposition d'août 2026 : laisser l'agent négocier ses capacités à la condensation — et ce que le fork en a construit depuis (§0) |
+| [claudish.env.secrets.example](configs/claudish.env.secrets.example) | Gabarit de configuration (placeholders uniquement — remplir avec vos valeurs) |
+| [01-claude-code-via-claudish.ipynb](notebooks/01-claude-code-via-claudish.ipynb) | Carnet pédagogique : interroger Claudish depuis Python |
 
 ## Leçon fondatrice — le trick du nom Claude
 
-Le pattern réutilisable pour connecter n'importe quel bot au cluster : **lui faire envoyer un nom de modèle Claude** (ex. `claude-sonnet-4-6`). Claudish remappe ce nom vers le modèle budgeté du tier (`glm-5.2` via le `modelMap` du profil actif). Une seule ligne de config côté bot, **aucun patch de wire**. Voir le détail et la leçon Hermes dans [docs/Claudish-Proxy.md §5](docs/Claudish-Proxy.md).
+Le pattern réutilisable pour connecter n'importe quel bot au cluster : **lui faire envoyer un nom de modèle Claude** (ex. `claude-sonnet-4-6`). Claudish remappe ce nom vers le modèle budgété du rôle via le `modelMap` du profil actif. Une seule ligne de config côté bot, **aucun patch de wire**. Voir le détail et la leçon Hermes dans [docs/Claudish-Proxy.md §5](docs/Claudish-Proxy.md#5-connecter-un-bot--le-trick-du-nom-claude-leçon-hermes).
+
+## Ce qui a changé depuis la refonte d'août 2026
+
+| Sujet | Août 2026 (#11555) | Octobre 2026 |
+|-------|--------------------|--------------|
+| Hub | po-2023, derrière la passerelle IIS | **po-2025** depuis la bascule du 2026-09-05 ; la passerelle pointe directement sur le hub |
+| Relais | un sidecar (ai-01) | un relais sur plusieurs postes, avec détection de boucle par identité de processus |
+| Rôles | 3 tiers (Opus / Sonnet / Haiku) | 4 rôles : **Fable** s'ajoute (servi par Astra, voie OpenAI Codex) ; Haiku en cours de différenciation selon les machines (MiniMax ou modèle vLLM local) |
+| Cascade | marches ordonnées + délai par marche | + mur **par fournisseur** (pas par rôle), délégation d'une marche à un autre rôle, saut d'une marche qui ne peut pas prendre la requête, maintien d'une session sur sa marche (10 min) |
+| Version servie | le client choisissait la version Anthropic | le `modelMap` **épingle** la version sur la voie native |
+| Accès externes | une seule clé proxy | + **clés scopées** : liste blanche de modèles, plafond de requêtes simultanées, attribution par clé |
+| Garde-fous | — | refus étiqueté d'une clé non-Anthropic sur la voie native, plafond de tokens par session (alerte), refus de politique étiqueté |
+| Négociation de capacités | proposition (E0) | vocabulaire câblé côté fork, désactivé par défaut (voir [§0 du ledger](docs/MCP-Capability-Negotiation.md)) |
+
+Historique des refontes : juin 2026 (création de la section, #4453) · 2026-08-18 (état du fork opérationnel, #11555) · 2026-09-10 (réconciliation du guide avec le déploiement, #15418) · 2026-10-21 (cette mise à jour).
 
 ---
 
-*Section Claudish — refonte 2026-08-18 (PR **#11555**). Le proxy multi-provider du cluster MyIA : un format wire en entrée (Anthropic ou OpenAI), trois tiers routés en cascade ordonnée (Anthropic / GLM-5.3 / MiniMax-M3 / Qwen / DeepSeek), bascule **notifiée** plutôt que silencieuse depuis le commit `823e614` (2026-08-12).*
-
-## Écarts avec la version précédente (juin 2026)
-
-Cette refonte corrige 8 écarts entre le README de juin et l'état réel du fork opérationnel au 2026-08-18 :
-
-| Sujet | Ancienne lecture (juin) | État réel (fork 2026-08) |
-|-------|--------------------------|--------------------------|
-| Politique de bascule | « no-fallback », fail-hard | Cascade ordonnée + TTL `[10m,30m,1h,4h,24h]` + notices 3 canaux (commit `823e614`) |
-| Tier Haiku | Qwen vLLM self-hosté | MiniMax-M3 nominal (Anthropic-compatible), cascade Qwen > DeepSeek |
-| Tier Sonnet | z.ai GLM Coding Plan | GLM-5.3 (migration 14/08, commit `7b6db38`), DeepSeek PAYG en step 0 de failover |
-| Tier Opus | Anthropic natif | Inchangé (natif, AUTO), cascade Qwen > GLM > DeepSeek |
-| Auth | Non mentionnée | Clé obligatoire : `x-api-key` OU `x-proxy-key` (fork 2026-08) |
-| Ingress | `/v1/messages` seul | `/v1/messages` ET `/v1/chat/completions` (wire OpenAI en entrée) |
-| Topologie | Hub po-2023 derrière IIS | + sidecar ai-01 (`192.168.0.46:3000`) en relay LAN |
-| Catalogue modèles | `glm-5.2`, Qwen | `MiniMax-M3`, `glm-5.3`, `deepseek-v4-flash`, `qwen3.8-max`, `claude-opus-5` |
-
-Issue de référence : **#11555**.
+*Section Claudish — mise à jour du 2026-10-21. Le proxy multi-provider du cluster MyIA : deux wires en entrée (Anthropic et OpenAI), un hub et des relais par poste, quatre rôles routés en cascade **annoncée**, et un principe directeur : ne jamais bloquer l'agent.*
