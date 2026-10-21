@@ -10,8 +10,8 @@ Trois decisions portent l'instrument, chacune falsifiable :
 1. **Le niveau se mesure ou il se refuse.** Une macro-F1 par etiquette sur un seul
    exemple par etiquette ne mesure pas le corpus, elle mesure le tirage. L'outil
    verifie le support de chaque etiquette et **refuse** le niveau demande en nommant
-   le deficit (nombre d'etiquettes, support maximal, plancher exige) au lieu de rendre
-   un chiffre qui aurait l'air d'un resultat.
+   le deficit (nombre d'etiquettes sous le plancher, support minimal, etiquettes en
+   deca) au lieu de rendre un chiffre qui aurait l'air d'un resultat.
 
 2. **Les plis sont groupes par scenario.** Les paires du corpus partagent leurs
    scenarios (un scenario porte plusieurs paires). Un decoupage naif met le meme
@@ -23,6 +23,12 @@ Trois decisions portent l'instrument, chacune falsifiable :
    groupes et plis naifs ; l'ecart est rapporte comme une grandeur du rapport. Un ecart
    nul dit qu'il n'y avait rien a fuir ; un ecart large dit ce que le chiffre naif
    devait a la fuite.
+
+Les quatre baselines existent a **chaque niveau** : au niveau « branche », le
+dictionnaire de regles est celui de la famille ; au niveau « nœud », c'est celui du
+noeud lui-meme (titre et definition de sa ligne de taxonomie). Un noeud se rattache a
+sa ligne par le couple (famille, cle) : les deux taxonomies ont leurs propres
+numerotations, le chiffre seul ne dit pas de laquelle il vient.
 
 Le modele lexical est un TF-IDF (uni- et bigrammes de mots) suivi d'un plus proche
 centroide, en bibliotheque standard : la place du corpus (280 documents, ~48 mots)
@@ -94,25 +100,39 @@ def load_corpus(path: Path, level: str) -> list[dict]:
                 raise SystemExit(f"Ligne {lineno} de {path} : champs manquants {missing}.")
             if not str(record["text"]).strip():
                 raise SystemExit(f"Ligne {lineno} : texte vide.")
-            items.append({
+            item = {
                 "text": str(record["text"]),
                 "label": str(record[label_field]),
                 "group": str(record["scenario_path"]),
-            })
+                "family": str(record.get("family", "")),
+            }
+            if level == "node":
+                # Le noeud se rattache a sa ligne de taxonomie par (famille, cle).
+                item["node_pk"] = str(record.get("node_pk", ""))
+            items.append(item)
     if not items:
         raise SystemExit(f"{path} : aucun enregistrement charge.")
     return items
 
 
 def require_measurable(support: Counter, level: str, floor: int = MIN_EXAMPLES_PER_LABEL) -> None:
-    """Refuse un niveau dont le support par etiquette est trop faible pour une macro-F1."""
+    """Refuse un niveau dont le support par etiquette est trop faible pour une macro-F1.
+
+    Le refus nomme le **support minimal** et les etiquettes en deca : c'est le
+    deficit qui refuse, pas le support le plus favorable. Annoncer le maximum
+    donnerait un message contradictoire (« support maximal 14, plancher exige 2 »
+    pour un corpus refuse).
+    """
     deficits = {label: n for label, n in support.items() if n < floor}
     if not deficits:
         return
-    worst = max(support.values())
+    minimum = min(support.values())
+    examples = ", ".join(f"{label} ({n})" for label, n in sorted(deficits.items())[:5])
     raise SystemExit(
         f"Niveau '{level}' non mesurable sur ce corpus : {len(support)} etiquettes, "
-        f"support maximal {worst}, plancher exige {floor}. Une macro-F1 par etiquette "
+        f"{len(deficits)} sous le plancher de {floor} paires, support minimal "
+        f"{minimum} (support maximal {max(support.values())}). "
+        f"Etiquettes en deca : {examples}. Une macro-F1 par etiquette "
         "calculee sur un seul exemple mesure le tirage, pas le corpus. "
         "Fournir un corpus ou chaque etiquette porte au moins "
         f"{floor} paires, ou mesurer un niveau plus large."
@@ -165,7 +185,43 @@ def stratified_folds(items: list[dict], n_folds: int) -> list[list[int]]:
 
 
 def macro_f1(y_true: list[str], y_pred: list[str]) -> tuple[float, dict[str, float]]:
-    """Macro-F1 sur l'union des etiquettes vues -- une etiquette inventee dilue la moyenne."""
+    """Macro-F1 sur l'union des etiquettes vues -- une etiquette inventee dilue la moyenne.
+
+    Les compteurs (tp, fp, fn) sont comptes en **un seul passage** sur les paires :
+    au niveau noeud (1 629 etiquettes, 2 800 paires de test par pli) le balayage
+    par etiquette etait cubique en pratique -- 1 000 evaluations pour la seule
+    baseline aleatoire. Les comptes etant entiers, la formule par etiquette est
+    inchangee : `macro_f1_reference` (balayage par etiquette) sert de temoin.
+    """
+    labels = sorted(set(y_true) | set(y_pred))
+    if not labels:
+        raise SystemExit("macro_f1 : aucun label a evaluer.")
+    true_positives: Counter = Counter()
+    false_positives: Counter = Counter()
+    false_negatives: Counter = Counter()
+    for true_label, predicted_label in zip(y_true, y_pred):
+        if true_label == predicted_label:
+            true_positives[true_label] += 1
+        else:
+            false_negatives[true_label] += 1
+            false_positives[predicted_label] += 1
+    per_label: dict[str, float] = {}
+    for label in labels:
+        tp = true_positives.get(label, 0)
+        fp = false_positives.get(label, 0)
+        fn = false_negatives.get(label, 0)
+        precision = tp / (tp + fp) if tp + fp else 0.0
+        recall = tp / (tp + fn) if tp + fn else 0.0
+        per_label[label] = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    return sum(per_label.values()) / len(per_label), per_label
+
+
+def macro_f1_reference(y_true: list[str], y_pred: list[str]) -> tuple[float, dict[str, float]]:
+    """Témoin : le balayage par étiquette (O(étiquettes x paires)).
+
+    C'est la forme d'origine de `macro_f1`, conservée comme référence mesurée :
+    les deux versions doivent rendre le même score, au bit près.
+    """
     labels = sorted(set(y_true) | set(y_pred))
     if not labels:
         raise SystemExit("macro_f1 : aucun label a evaluer.")
@@ -242,6 +298,13 @@ class TfidfCentroids:
 
     @staticmethod
     def predict(vector: dict[int, float], centroids: dict[str, dict[int, float]]) -> str:
+        """Reference : le centroide qui maximise le produit scalaire.
+
+    Cette version parcourt **tous** les centroides pour chaque vecteur : au niveau
+        branche (14 familles) elle est la plus simple ; au niveau noeud (1 629 etiquettes)
+        elle serait trop lente. `predict_indexed` en est l'equivalent mesure, avec un
+        index inverse ; les deux sont comparees par un test d'equivalence.
+        """
         best_label, best_score = None, None
         for label in sorted(centroids):
             score = sum(weight * centroids[label].get(i, 0.0) for i, weight in vector.items())
@@ -249,6 +312,43 @@ class TfidfCentroids:
                 best_label, best_score = label, score
         if best_label is None:
             raise SystemExit("Aucun centroide : entrainement vide.")
+        return best_label
+
+    @staticmethod
+    def index(centroids: dict[str, dict[int, float]]) -> dict[int, dict[str, float]]:
+        """Index inverse : feature -> {etiquette: poids du centroide}."""
+        index: dict[int, dict[str, float]] = {}
+        for label, weights in centroids.items():
+            for feature, weight in weights.items():
+                index.setdefault(feature, {})[label] = weight
+        return index
+
+    @staticmethod
+    def predict_indexed(vector: dict[int, float], centroids: dict[str, dict[int, float]],
+                        index: dict[int, dict[str, float]]) -> str:
+        """Equivalent mesure de `predict`, avec l'index inverse.
+
+        Meme ordre d'accumulation (celui des features du vecteur), meme departage
+        (la premiere etiquette, en ordre alphabetique, qui atteint le maximum reste
+        la meilleure) : les deux versions rendent le meme label, au bit pres.
+        """
+        if not centroids:
+            raise SystemExit("Aucun centroide : entrainement vide.")
+        # Produits regroupes par etiquette, dans l'ordre des features du vecteur,
+        # puis cumules par `sum` : meme somme, meme ordre, meme compensation interne
+        # que le balayage de reference.
+        buckets: dict[str, list[float]] = {}
+        for feature, weight in vector.items():
+            for label, centroid_weight in index.get(feature, {}).items():
+                buckets.setdefault(label, []).append(weight * centroid_weight)
+        # L'etiquette alphabetiquement premiere porte le score nul des etiquettes
+        # absentes de l'index : elle est le point de depart, comme dans `predict`.
+        best_label = min(centroids)
+        best_score = sum(weight * centroids[best_label].get(i, 0.0) for i, weight in vector.items())
+        for label in sorted(buckets):
+            score = sum(buckets[label])
+            if score > best_score:
+                best_label, best_score = label, score
         return best_label
 
 
@@ -315,7 +415,9 @@ def predictor_lexical(train_items: list[dict], test_items: list[dict], _fold: in
     """Baseline lexicale : TF-IDF + plus proche centroide, entraine sur le seul pli d'entrainement."""
     space = TfidfCentroids().fit([item["text"] for item in train_items])
     centroids = space.centroids(train_items)
-    return [TfidfCentroids.predict(space.transform(item["text"]), centroids) for item in test_items]
+    index = TfidfCentroids.index(centroids)
+    return [TfidfCentroids.predict_indexed(space.transform(item["text"]), centroids, index)
+            for item in test_items]
 
 
 def quantile(sorted_values: list[float], fraction: float) -> float:
@@ -357,33 +459,103 @@ def detect_schema(fieldnames: list[str]) -> dict:
     )
 
 
-def load_lexicon(paths: list[Path], labels: set[str]) -> tuple[dict[str, set[str]], dict[str, dict]]:
+def read_taxonomy(path: Path) -> list[dict]:
+    """Lit une taxonomie : une ligne = (famille, titre, description, cle)."""
+    if not path.exists():
+        raise SystemExit(f"Taxonomie introuvable : {path}")
+    with path.open(encoding="utf-8-sig", newline="") as handle:
+        reader = csv.DictReader(handle)
+        schema = detect_schema(reader.fieldnames or [])
+        return [{
+            "family": (row.get(schema["family"]) or "").strip(),
+            "title": (row.get(schema["title"]) or "").strip(),
+            "description": (row.get(schema["description"]) or "").strip(),
+            "key": (row.get(schema["key"]) or "").strip(),
+        } for row in reader]
+
+
+def node_pk_of(label: str, node_pks: dict[str, str] | None = None) -> str:
+    """Cle de taxonomie d'un noeud : celle du corpus, sinon le chiffre de la cle.
+
+    Le corpus enseignant porte la polarite dans la cle du noeud (« F798 » : sophisme
+    798, « V12 » : vertu 12). Les deux taxonomies ont leurs propres numerotations
+    (0-1407 pour les sophismes, 0-222 pour les vertus) : le chiffre seul ne dit pas
+    d'ou vient le noeud, la famille du corpus, si.
+    """
+    if node_pks and label in node_pks and str(node_pks[label]).strip():
+        return str(node_pks[label]).strip()
+    digits = re.search(r"(\d+)$", label)
+    return digits.group(1) if digits else ""
+
+
+def load_node_lexicon(paths: list[Path], labels: set[str], node_families: dict[str, str],
+                      node_pks: dict[str, str] | None = None) -> tuple[dict[str, set[str]], dict[str, dict]]:
+    """Dictionnaires de noeud : titre et definition **du noeud**, jamais `example_*`.
+
+    Un noeud se rattache a sa ligne de taxonomie par le couple (famille, cle) : la
+    famille dit de quelle taxonomie il vient, la cle dit quelle ligne. Sans ce
+    rattachement, la baseline a regles n'existe pas au niveau noeud -- et c'est
+    ce qui rendait ce niveau inatteignable, alors que le corpus, lui, le permet.
+    """
+    tables: list[dict] = []
+    for path in paths:
+        tables.extend(read_taxonomy(path))
+    lexicon: dict[str, set[str]] = {}
+    report: dict[str, dict] = {}
+    for label in sorted(labels):
+        family = node_families.get(label, "")
+        pk = node_pk_of(label, node_pks)
+        # Une taxonomie peut porter la cle du noeud directement dans sa colonne
+        # famille ; sinon, le noeud se rattache a sa ligne par (famille, cle).
+        direct = [row for row in tables if row["family"] == label]
+        matches = direct or [row for row in tables if row["family"] == family and row["key"] == pk]
+        if not matches:
+            raise SystemExit(
+                f"Noeud '{label}' introuvable dans les taxonomies : famille '{family}', "
+                f"cle '{pk}'. Verifier que le corpus et les taxonomies portent la meme "
+                "numerotation de noeuds."
+            )
+        tokens: set[str] = set()
+        for row in matches:
+            tokens |= set(tokenize(f"{row['title']} {row['description']}"))
+        lexicon[label] = tokens
+        report[label] = {"nodes": len(matches), "tokens": len(tokens)}
+    empty = sorted(label for label, tokens in lexicon.items() if not tokens)
+    if empty:
+        raise SystemExit(
+            f"Dictionnaire vide pour {empty} : aucune regle lexicale ne peut etre batie "
+            "pour ces familles. Verifier les colonnes de titre et de definition."
+        )
+    return lexicon, report
+
+
+def load_lexicon(paths: list[Path], labels: set[str], level: str = "branch",
+                 node_families: dict[str, str] | None = None,
+                 node_pks: dict[str, str] | None = None) -> tuple[dict[str, set[str]], dict[str, dict]]:
     """Dictionnaires de famille : titres et definitions des nœuds, **jamais** `example_*`.
 
     Les champs `example_*` sont exclus par la meme regle d'anti-circularite que la
     tranche A applique aux prompts : un dictionnaire bati sur les exemples du nœud
     mesurerait le recouvrement avec les exemples, pas la capacite de la regle.
+
+    Au niveau « noeud », le dictionnaire porte le noeud lui-meme (titre et definition
+    de sa ligne de taxonomie) et non sa famille : voir `load_node_lexicon`.
     """
+    if level == "node":
+        return load_node_lexicon(paths, labels, node_families or {}, node_pks)
     lexicon: dict[str, set[str]] = {label: set() for label in labels}
     report: dict[str, dict] = {}
     for path in paths:
-        if not path.exists():
-            raise SystemExit(f"Taxonomie introuvable : {path}")
-        with path.open(encoding="utf-8-sig", newline="") as handle:
-            reader = csv.DictReader(handle)
-            schema = detect_schema(reader.fieldnames or [])
-            for row in reader:
-                family = (row.get(schema["family"]) or "").strip()
-                if family not in lexicon:
-                    continue
-                title = (row.get(schema["title"]) or "").strip()
-                description = (row.get(schema["description"]) or "").strip()
-                tokens = set(tokenize(f"{title} {description}"))
-                cell = report.setdefault(family, {"nodes": 0, "tokens": 0})
-                cell["nodes"] += 1
-                if tokens:
-                    lexicon[family] |= tokens
-                    cell["tokens"] = len(lexicon[family])
+        for row in read_taxonomy(path):
+            family = row["family"]
+            if family not in lexicon:
+                continue
+            tokens = set(tokenize(f"{row['title']} {row['description']}"))
+            cell = report.setdefault(family, {"nodes": 0, "tokens": 0})
+            cell["nodes"] += 1
+            if tokens:
+                lexicon[family] |= tokens
+                cell["tokens"] = len(lexicon[family])
     empty = sorted(label for label, tokens in lexicon.items() if not tokens)
     if empty:
         raise SystemExit(
@@ -406,12 +578,34 @@ def make_rules_predictor(lexicon: dict[str, set[str]], weights: dict[str, float]
     Aucun entrainement : la regle est une fonction deterministe du texte. Elle est donc
     evaluee sur le corpus entier, sans plis -- un decoupage n'aurait aucun sens pour un
     predicteur qui n'apprend rien des items etiquetes.
+
+    L'index inverse (jeton -> etiquettes qui le portent) remplace le balayage de toutes
+    les etiquettes pour chaque texte : meme ordre d'accumulation (jetons tries), meme
+    departage (la premiere etiquette, dans l'ordre donne, qui atteint le maximum reste
+    la meilleure), donc memes predictions -- mais au niveau noeud, ou les etiquettes se
+    comptent par milliers, la difference de cout est decisive.
     """
+    index: dict[str, list[str]] = {}
+    for label in labels:
+        for term in lexicon[label]:
+            index.setdefault(term, []).append(label)
+
     def predict_one(text: str) -> str:
         tokens = sorted(set(tokenize(text)))
+        # Les poids sont regroupes par etiquette, dans l'ordre des jetons, puis
+        # cumules par `sum` : c'est la meme somme, dans le meme ordre, que celle du
+        # balayage de reference -- y compris sa compensation interne (CPython 3.12).
+        buckets: dict[str, list[float]] = {}
+        for term in tokens:
+            weight = weights.get(term, 0.0)
+            if not weight:
+                continue
+            for label in index.get(term, ()):
+                buckets.setdefault(label, []).append(weight)
+        scores = {label: sum(buckets.get(label, ())) for label in labels}
         best_label, best_score = None, None
         for label in labels:
-            score = sum(weights.get(term, 0.0) for term in tokens if term in lexicon[label])
+            score = scores[label]
             if best_score is None or score > best_score:
                 best_label, best_score = label, score
         if best_label is None:
@@ -487,7 +681,13 @@ def run(corpus_path: Path, level: str, folds_count: int, random_draws: int, seed
     # La baseline a regles n'apprend rien des items etiquetes : regle deterministe sur le
     # texte, evaluee sur le corpus entier. Les plis ne la concernent pas.
     taxonomy_resolved = [Path(p) for p in (taxonomy_paths or TAXONOMY_DEFAULTS)]
-    lexicon, lexicon_report = load_lexicon(taxonomy_resolved, set(support))
+    if level == "node":
+        node_families = {item["label"]: item.get("family", "") for item in items}
+        node_pks = {item["label"]: item.get("node_pk", "") for item in items}
+    else:
+        node_families, node_pks = None, None
+    lexicon, lexicon_report = load_lexicon(taxonomy_resolved, set(support), level,
+                                           node_families, node_pks)
     results["rules_full"] = evaluate_whole(
         make_rules_predictor(lexicon, idf_over_families(lexicon), sorted(support)), items
     )
@@ -544,7 +744,9 @@ def render_report(report: dict) -> str:
         "random_grouped": "Aleatoire (uniforme sur l'entrainement)",
         "lexical_centroid_grouped": "Lexicale (TF-IDF + centroide)",
         "lexical_centroid_naive": "Lexicale, plis naifs (controle de fuite)",
-        "rules_full": "A regles (dictionnaires de famille ponderes IDF)",
+        "rules_full": ("A regles (dictionnaires de noeud ponderes IDF)"
+                       if report["level"] == "node"
+                       else "A regles (dictionnaires de famille ponderes IDF)"),
     }
     protocols = {
         "lexical_centroid_naive": "plis stratifies, sans groupes",
@@ -565,6 +767,9 @@ def render_report(report: dict) -> str:
 
     lexicon = report.get("lexicon", {}).get("families", {})
     if lexicon:
+        # Au niveau noeud, l'unite du dictionnaire est le noeud ; au niveau branche,
+        # c'est la famille. La prose suit l'unite, sinon elle.describe autre chose.
+        unite = "noeuds" if report["level"] == "node" else "familles"
         thin = sorted(lexicon, key=lambda f: (lexicon[f]["nodes"], f))[:3]
         detail = ", ".join(f"{f} ({lexicon[f]['nodes']} nœuds, {lexicon[f]['tokens']} jetons)" for f in thin)
         rules = report["baselines"]["rules_full"]
@@ -595,7 +800,7 @@ def render_report(report: dict) -> str:
         never_detail = f" ({', '.join(never)})" if never else ""
         lines += [
             "",
-            f"Dictionnaires de la baseline a regles : {len(lexicon)} familles bâties sur les "
+            f"Dictionnaires de la baseline a regles : {len(lexicon)} {unite} bâties sur les "
             f"titres et definitions des deux taxonomies Argumentum, **jamais** sur les champs "
             f"`example_*` (meme regle d'anti-circularite que les prompts de la tranche A). "
             f"Les trois plus maigres : {detail}.",
@@ -608,7 +813,7 @@ def render_report(report: dict) -> str:
             "Le canal de l'echo existe, mais un effet structurel le domine : le dictionnaire "
             f"de `{biggest}` ({lexicon[biggest]['tokens']} jetons) couvre plus de texte que "
             f"celui de `{smallest}` ({lexicon[smallest]['tokens']}), donc la regle favorise les "
-            "familles aux dictionnaires larges au detriment des autres. " + conclusion,
+            f"{unite} aux dictionnaires larges au detriment des autres. " + conclusion,
         ]
     leak = report["leakage"]
     if leak.get("gap") is not None:
