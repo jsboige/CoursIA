@@ -97,15 +97,30 @@ done
 # for-each-ref defaut -> fatal rc=128 ; format '%(refname) %(objectname)'
 # -> liste rc=0. D'ou l'ordre : disarm chirurgical ici, integrite large
 # ensuite.
+# UNE passe batchee par clone (#21557). La version precedente lancait un
+# `git cat-file -e` PAR ref : ~1310 processus a chaque cycle sur les clones de
+# la flotte, et > 300 s de scan mesurees sur un depot sans packfile (3,9 Go
+# d'objets en vrac, slots 8/9/12 d'ai-01 -- le cycle entier y passait, en rc=126
+# muet). `--batch-check` lit les memes 1310 objets en 0,6 s, depots vracs
+# compris : c'est la MEME information, payee une fois.
 for gitdir in "$ACTIONS_RUNNER_INPUT_WORK"/*/*/.git; do
   [ -e "$gitdir" ] || continue
   repo="${gitdir%/.git}"
-  while read -r ref sha; do
-    if ! git -C "$repo" cat-file -e "$sha^{object}" 2>/dev/null; then
+  refs="$(git -C "$repo" for-each-ref --format='%(refname) %(objectname)' refs/remotes 2>/dev/null)" || refs=""
+  [ -n "$refs" ] || continue
+  # `--batch-check` rend "<sha> missing" pour un objet absent du depot : c'est
+  # exactement le predicat de `cat-file -e`, sans un processus par ref.
+  missing="$(printf '%s\n' "$refs" | awk '{print $2}' \
+    | git -C "$repo" cat-file --batch-check='%(objectname) %(objecttype)' 2>/dev/null \
+    | awk '$2 == "missing" {print $1}')" || missing=""
+  [ -n "$missing" ] || continue
+  for sha in $missing; do
+    while read -r ref obj; do
+      [ "$obj" = "$sha" ] || continue
       echo "entrypoint: ref distante dangling $ref -- suppression (objet absent)"
       git -C "$repo" update-ref -d "$ref" 2>/dev/null || true
-    fi
-  done < <(git -C "$repo" for-each-ref --format='%(refname) %(objectname)' refs/remotes 2>/dev/null)
+    done <<< "$refs"
+  done
 done
 # TEST-ENTRYPOINT-DANGLING-REFS-END
 

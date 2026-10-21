@@ -556,4 +556,43 @@ theorem exists_isColouring_mean_add_sum_mem_convexHull (n d : ℕ)
     Finset.map_subset_map.mpr (Finset.filter_subset _ _)
   exact convexHull_mono (Finset.coe_subset.2 hsub) hmem
 
+
+/-- **Defect of the public statement of Lemma 1.4, proved** (measurement
+k5.2): the containment hypotheses `hA0 : 0 ∈ A` and
+`hAstab : ∀ a ∈ A, ∀ i, a + 3 • v i ∈ A ∧ a - 3 • v i ∈ A` on a `Finset`
+force `v i = 0` for every `i`. The argument is the orbit of
+`eq_zero_of_image_add_eq_self` (k1.7) transposed from `S` to `A`: stability
+of `A` under `+ 3 • v i` says `A.image (fun x => x + 3 • v i) ⊆ A`, the
+image of a translation has the same cardinal, hence equality, and image
+invariance of a nonempty set forces the shift to vanish in the torsion-free
+group `ℤ^d`.
+
+Measured consequence: `exists_isColouring_mean_add_sum_mem_convexHull` is
+only instantiable at an identically zero family `v` — the regime where
+`shiftDistance S P (6 • v i) ≤ 3⁻¹` is trivial and the conclusion carries no
+sum. This is the same defect class as the one measured in k1.7 on the
+invariance of `S` (stability under a nonzero translation on a finite set),
+reintroduced at the k2.6 summit on `A`: the fix must reify containment on
+the functional side (`shiftDistanceTV`, the k4.2c route) rather than a
+finite stable set. The tracking issue names the work; the k5.2 (GridCase)
+assembly depends on it. -/
+theorem contention_stability_forces_zero {d n : ℕ} (v : Fin n → (Fin d → ℤ))
+    {A : Finset (Fin d → ℤ)} (hA0 : 0 ∈ A)
+    (hAstab : ∀ a ∈ A, ∀ i, a + 3 • v i ∈ A ∧ a - 3 • v i ∈ A) :
+    ∀ i, v i = 0 := by
+  intro i
+  have hsub : A.image (fun x => x + 3 • v i) ⊆ A := by
+    intro y hy
+    obtain ⟨a, ha, rfl⟩ := Finset.mem_image.mp hy
+    exact (hAstab a ha i).1
+  have hcard : (A.image (fun x => x + 3 • v i)).card = A.card :=
+    Finset.card_image_of_injective _ (fun x y h => add_right_cancel h)
+  have hEq : A.image (fun x => x + 3 • v i) = A :=
+    Finset.eq_of_subset_of_card_le hsub (hcard ▸ Nat.le_refl _)
+  have h3 : 3 • v i = 0 :=
+    eq_zero_of_image_add_eq_self hEq ⟨0, hA0⟩
+  funext j
+  have hcoord : (3 • v i) j = 0 := congrFun h3 j
+  simpa [Pi.smul_apply] using hcoord
+
 end Discrepancy.Komlos_en
