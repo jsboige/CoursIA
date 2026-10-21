@@ -227,8 +227,17 @@ jobs:
       # by rule) + 8 entries added by #20004 (tranche 2 of #19989) + 4
       # entries added by the OTCA tranche 3 of #19989 (the 165 KB
       # include_str load), attributed at the Pillars / Pillars_en lines
-      # below. All 77 are decide-kernel
-      # (`._native.native_decide.ax_1_N` = `decide` on finite Fin-typed props).
+      # below. All 77 are `native_decide` reduction axioms
+      # (`._native.native_decide.ax_1_N` is the kernel-side witness emitted
+      # by `native_decide`; these are NOT `decide`-kernel certificates --
+      # `decide` itself emits no anchor, only `native_decide` does).
+      # Note for the operator: one of the 77 entries carries a Lean-4
+      # diagnostic-artifact suffix on the declaration name as reported by
+      # `#print axioms` (`Conway.Life.p4_base_exhaustive._native.native_decide.
+      # ax_1_1` + the `U+2020` dagger `✝`); it is matched here by exact
+      # string equality against the env var `ALLOW`, so a Lean-side glyph
+      # sanitization would silently desync the gate. Inventory and
+      # robustness for that one entry are tracked under issue #21899-fu.
       # The 21 new entries, each annotated with the module that introduces it:
       #   Conway.Life.HashlifeCorrectness (2, grain 3a #11303): p4at_witness_k1,
       #     p4at_witness_k2 -- At-variant witnesses of the p4_wf_witness pair,
