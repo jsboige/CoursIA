@@ -3,6 +3,9 @@
 
 Orchestrates the 3 setup steps:
 1. WSL installation (elan, lean, venv, wrapper) via GameTheory/scripts/setup_wsl_lean4.sh
+1bis. WSL Python venv (~/.python3-wsl-venv + dependances) via
+     SymbolicAI/Lean/scripts/setup_wsl_python.sh -- the venv the validator
+     actually checks (#21614, defect 3)
 2. Windows kernel registration via GameTheory/scripts/setup_lean4_kernel.ps1
 3. Validation via SymbolicAI/Lean/scripts/validate_lean_setup.py
 
@@ -110,6 +113,37 @@ def step_wsl_install():
     return True
 
 
+def step_wsl_python_venv():
+    """Step 1 bis: create the WSL Python venv the validator actually checks.
+
+    The validator checks the packages of ``~/.python3-wsl-venv``
+    (``python-dotenv``, ``openai``, ``anthropic``, ``ipykernel``) and the
+    ``python3-wsl`` kernel points at that same venv.  ``setup_wsl_lean4.sh``
+    creates ANOTHER venv (``~/.lean4-venv``), so the chain never created
+    the one that is validated: the installation was incomplete and the
+    validator reported a component that the setup had never installed
+    (issue #21614, defect 3).
+    """
+    print("=" * 60)
+    print("STEP 1bis: WSL Python venv (~/.python3-wsl-venv) + dependances")
+    print("=" * 60)
+    script = LEAN_SCRIPTS / "setup_wsl_python.sh"
+    if not script.exists():
+        print(f"ERROR: {script} not found")
+        return False
+    wsl_script = _win_to_wsl_path(str(script))
+    print(f"Running: wsl -d {WSL_DISTRO} -- bash {wsl_script}")
+    result = subprocess.run(
+        ["wsl", "-d", WSL_DISTRO, "--", "bash", wsl_script],
+        cwd=str(REPO_ROOT),
+    )
+    if result.returncode != 0:
+        print(f"FAILED: WSL Python venv setup exited with code {result.returncode}")
+        return False
+    print("OK: WSL Python venv ready")
+    return True
+
+
 def step_register_kernel():
     """Step 2: Register lean4-wsl kernel on Windows."""
     print("=" * 60)
@@ -197,6 +231,7 @@ def main():
 
     if args.wsl_only:
         ok = step_wsl_install()
+        ok = step_wsl_python_venv() and ok
         sys.exit(0 if ok else 1)
 
     if args.register:
@@ -214,6 +249,11 @@ def main():
     results.append(("WSL Install", step_wsl_install()))
     if not results[-1][1]:
         print("\nStep 1 FAILED. Fix WSL issues before continuing.")
+        sys.exit(1)
+
+    results.append(("WSL Python venv", step_wsl_python_venv()))
+    if not results[-1][1]:
+        print("\nStep 1bis FAILED. Fix the WSL Python venv before continuing.")
         sys.exit(1)
 
     results.append(("Kernel Registration", step_register_kernel()))
