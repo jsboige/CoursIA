@@ -175,3 +175,122 @@ def test_lire_catalogue_round_trips_the_written_csv(tmp_path):
 
     relu = bcc.lire_catalogue(sortie)
     assert relu == catalogue
+
+
+# === #21688 : le type d'un identifiant se deduit de sa VALEUR ----------------
+#
+# Mesure sur le gisement reel (2026-10-21, reserve 🟡 de la revue) :
+#   arXiv-A1-resolution-2026-10-14.csv -> colonne `id`      (0704.0646)
+#   DOI-A1-resolution-2026-10-02.csv   -> colonne `doi`     (10.1002/...)
+#   DOI-A1-resolution-complement-...csv -> colonne `doi_cite` (10.5281/...)
+# Une regle fondee sur le NOM de la colonne classait le CSV DOI en `arxiv`
+# (colonne `id`), et SAUTAIT le CSV complement : `doi_cite` n'est ni `id` ni
+# `doi` ni `arxiv` -- ses 13 DOI n'etaient jamais lies au gisement.
+
+
+def _write_a1_cols(tmp_path: Path, champs: list[str], rows: list[dict],
+                   name: str = "a1.csv") -> Path:
+    path = tmp_path / name
+    with open(path, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.DictWriter(fh, fieldnames=champs)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+    return path
+
+
+def test_crosswalk_types_a_doi_by_its_value_not_by_the_column_name(tmp_path):
+    """Une colonne `id` qui porte des DOI est typee `doi`, pas `arxiv`."""
+    pdf = tmp_path / "Automata" / "2025 - Shannon.pdf"
+    pdf.parent.mkdir(parents=True)
+    pdf.write_bytes(b"%PDF-1.4\n")
+    a1 = _write_a1_cols(
+        tmp_path,
+        ["id", "verdict", "chemin_gisement"],
+        [{"id": "10.1002/j.1538-7305.1948.tb01338.x", "verdict": "DETENU",
+          "chemin_gisement": "Automata/2025 - Shannon.pdf"}],
+    )
+
+    catalogue = _catalogue()
+    stats = bcc.appliquer_crosswalk_a1(catalogue, [str(a1)], tmp_path)
+
+    assert stats["appliques"] == 1
+    assert catalogue[0]["type_id"] == "doi"
+    assert catalogue[0]["id"] == "10.1002/j.1538-7305.1948.tb01338.x"
+    assert stats["par_type"]["doi"] == 1
+
+
+def test_crosswalk_reads_a_csv_whose_identifier_column_is_doi_cite(tmp_path):
+    """Le CSV complement reel (`doi_cite`) n'est plus saute."""
+    pdf = tmp_path / "IA" / "2025 - Leiden.pdf"
+    pdf.parent.mkdir(parents=True)
+    pdf.write_bytes(b"%PDF-1.4\n")
+    a1 = _write_a1_cols(
+        tmp_path,
+        ["doi_cite", "verdict", "doi_reel", "chemin_gisement"],
+        [{"doi_cite": "10.5281/zenodo.20302944", "verdict": "ABSENT",
+          "doi_reel": "10.5281/zenodo.20302944",
+          "chemin_gisement": "IA/2025 - Leiden.pdf"}],
+    )
+
+    catalogue = _catalogue()
+    stats = bcc.appliquer_crosswalk_a1(catalogue, [str(a1)], tmp_path)
+
+    assert stats["csv_sans_colonne"] == 0
+    assert stats["appliques"] == 1
+    assert catalogue[0]["type_id"] == "doi"
+    assert catalogue[0]["id"] == "10.5281/zenodo.20302944"
+
+
+def test_crosswalk_keeps_an_arxiv_identifier_typed_arxiv(tmp_path):
+    """CONTROLE POSITIF : la derivation par la valeur ne type pas tout en doi."""
+    pdf = tmp_path / "Automata" / "2025 - zhang-et-al.pdf"
+    pdf.parent.mkdir(parents=True)
+    pdf.write_bytes(b"%PDF-1.4\n")
+    a1 = _write_a1(tmp_path, [{
+        "id": "2401.05375", "verdict": "DETENU",
+        "chemin_gisement": "Automata/2025 - zhang-et-al.pdf",
+    }])
+
+    catalogue = _catalogue()
+    stats = bcc.appliquer_crosswalk_a1(catalogue, [str(a1)], tmp_path)
+
+    assert stats["appliques"] == 1
+    assert catalogue[0]["type_id"] == "arxiv"
+    assert stats["par_type"]["arxiv"] == 1
+
+
+def test_crosswalk_counts_a_csv_without_any_identifier_column(tmp_path):
+    """Un CSV sans colonne d'identifiant est SAUTE -- et le compteur le dit."""
+    a1 = _write_a1_cols(tmp_path, ["verdict", "chemin_gisement"],
+                         [{"verdict": "DETENU", "chemin_gisement": "x.pdf"}])
+
+    catalogue = _catalogue()
+    stats = bcc.appliquer_crosswalk_a1(catalogue, [str(a1)], tmp_path)
+
+    assert stats["csv_sans_colonne"] == 1
+    assert stats["appliques"] == 0
+    assert catalogue == []
+
+
+def test_a1_join_types_by_value_like_the_crosswalk(tmp_path):
+    """La jointure doit typer par la valeur comme le crosswalk, sinon le
+    round-trip casse : le catalogue porterait `doi`, la jointure chercherait
+    `arxiv`."""
+    pdf = tmp_path / "Automata" / "2025 - Shannon.pdf"
+    pdf.parent.mkdir(parents=True)
+    pdf.write_bytes(b"%PDF-1.4\n")
+    a1 = _write_a1_cols(
+        tmp_path,
+        ["id", "verdict", "chemin_gisement"],
+        [{"id": "10.1002/j.1538-7305.1948.tb01338.x", "verdict": "DETENU",
+          "chemin_gisement": "Automata/2025 - Shannon.pdf"}],
+    )
+
+    catalogue = _catalogue()
+    bcc.appliquer_crosswalk_a1(catalogue, [str(a1)], tmp_path)
+    jointure = bcc.joindre_a1(catalogue, [str(a1)])["a1"][0]
+
+    assert jointure["total"] == 1
+    assert jointure["resolus"] == 1
+    assert jointure["non_resolus"] == 0

@@ -79,6 +79,43 @@ DOI_MARKED_RE = re.compile(
     r"(?:doi\.org/|doi\s*[:=]\s*|DOI\s*[:=]\s*)(10\.\d{4,9}/[^\s\"'<>,;]+)",
     re.IGNORECASE)
 
+#: Un DOI a la forme `10.<registre>/<suffixe>` ; un identifiant arXiv a la
+#: forme `NNNN.NNNNN` (ou `NNNN.NNNN`).
+DOI_FORME_RE = re.compile(r"^10\.\d{4,9}/\S+$", re.IGNORECASE)
+
+#: Colonnes candidates pour l'identifiant cite, dans l'ordre de preference.
+#: `doi_cite` figure ici parce que le CSV de resolution complement du
+#: gisement reel (14-10) porte cette colonne -- et NON `doi` : la regle
+#: fondee sur le seul nom de colonne le **sautait** silencieusement.
+COLONNES_IDENTIFIANT = ("id", "doi", "doi_cite", "arxiv")
+
+
+def _colonne_identifiant(champs: list[str]) -> str | None:
+    """La colonne qui porte l'identifiant cite, ou ``None``.
+
+    Le nom de colonne ne dit pas QUEL type d'identifiant il porte -- seule
+    la valeur le dit. D'ou la separation : cette fonction trouve la colonne,
+    ``_type_id_depuis_valeur`` dit le type.
+    """
+    for nom in COLONNES_IDENTIFIANT:
+        if nom in champs:
+            return nom
+    return None
+
+
+def _type_id_depuis_valeur(valeur: str) -> str:
+    """Le type d'un identifiant, deduit de sa **valeur** et non du nom de sa colonne.
+
+    Mesure sur le gisement reel (2026-10-21) : le CSV de resolution arXiv
+    porte une colonne `id` (valeurs `0704.0646`), le CSV DOI du 02-10 une
+    colonne `doi` (valeurs `10.1002/...`), le CSV DOI complement du 14-10 une
+    colonne `doi_cite` (valeurs `10.5281/zenodo.20302944`). Une regle fondee
+    sur le nom de la colonne classait le CSV DOI en `arxiv` (colonne `id`),
+    et le CSV complement en `arxiv` aussi -- ses DOI n'etaient donc jamais
+    reliés au gisement.
+    """
+    return "doi" if DOI_FORME_RE.match(valeur.strip()) else "arxiv"
+
 
 def _force_utf8_streams() -> None:
     """Evite le mojibake cp1252 sur les sorties console Windows."""
@@ -284,7 +321,7 @@ def joindre_a1(catalogue: list[dict], chemins_csv: list[str]) -> dict:
         # qui sinon degenere la premiere colonne en «﻿id».
         with open(chemin, newline="", encoding="utf-8-sig") as fh:
             lecteur = csv.DictReader(fh)
-            colonne_id = next((c for c in ("id", "doi", "arxiv") if c in lecteur.fieldnames), None)
+            colonne_id = _colonne_identifiant(lecteur.fieldnames or [])
             if colonne_id is None:
                 resultats.append({"csv": chemin, "erreur": "colonne id/doi absente"})
                 continue
@@ -295,7 +332,7 @@ def joindre_a1(catalogue: list[dict], chemins_csv: list[str]) -> dict:
                 if not identifiant:
                     continue
                 total += 1
-                type_id = "doi" if colonne_id == "doi" else "arxiv"
+                type_id = _type_id_depuis_valeur(identifiant)
                 hit = index.get((type_id, identifiant.lower()))
                 if hit is not None:
                     resolus += 1
@@ -337,13 +374,16 @@ def appliquer_crosswalk_a1(catalogue: list[dict], chemins_csv: list[str],
     """
     index = {(ligne["type_id"], ligne["id"].lower()) for ligne in catalogue}
     stats = {"appliques": 0, "deja_presents": 0, "sans_fichier": 0,
-             "sans_chemin": 0, "par_type": {}}
+             "sans_chemin": 0, "csv_sans_colonne": 0, "par_type": {}}
     for chemin_csv in chemins_csv:
         with open(chemin_csv, newline="", encoding="utf-8-sig") as fh:
             lecteur = csv.DictReader(fh)
             champs = lecteur.fieldnames or []
-            colonne_id = next((c for c in ("id", "doi", "arxiv") if c in champs), None)
+            colonne_id = _colonne_identifiant(champs)
             if colonne_id is None:
+                # Defaut visible : un CSV sans colonne d'identifiant est
+                # SAUTE, et le compteur le dit (il ne l'etait pas).
+                stats["csv_sans_colonne"] += 1
                 continue
             colonne_chemin = "chemin_gisement" if "chemin_gisement" in champs else None
             for ligne in lecteur:
@@ -357,7 +397,7 @@ def appliquer_crosswalk_a1(catalogue: list[dict], chemins_csv: list[str],
                 if not chemin:
                     stats["sans_chemin"] += 1
                     continue
-                type_id = "doi" if colonne_id == "doi" else "arxiv"
+                type_id = _type_id_depuis_valeur(identifiant)
                 cle = (type_id, identifiant.lower())
                 if cle in index:
                     stats["deja_presents"] += 1
