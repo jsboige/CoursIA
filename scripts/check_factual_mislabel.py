@@ -28,28 +28,38 @@ dans les deux scopes (la garde SUBCOUNT_CONTEXT_RE filtre les
 sous-comptes qui produiraient les FP).
 
 MESURE CORPUS (exigence #20035, relevee le 2026-10-21 sur ai-01) --
-corpus `MyIA.AI.Notebooks`, 1 553 carnets, organe execute sur les
+corpus `MyIA.AI.Notebooks`, 1 603 carnets, organe execute sur les
 deux scopes avant et apres la garde compte/valeur :
 
 | scope | avant la garde | apres la garde |
 |---|---|---|
-| `core` | 15 | 15 (inchange) |
-| `extended` | 45 | 38 |
+| `core` | 13 | 13 (inchange) |
+| `extended` | 43 | 36 |
+
+(Une mesure anterieure sur un corpus de 1 553 carnets donnait 15 / 45 ->
+38 : le delta de 7 est stable, seuls les compteurs absolus dependent du
+corpus, qui grossit.)
 
 Les 7 findings disparus etaient tous de la classe VALEUR lue comme
-COMPTE (moyennes decimales). Sur les 38 restants, la lecture
-classe par classe donne ~3 vrais (le canon App-5 : « 3 salles » vs
-`Salles : 4`, cellules md 2 et 4, plus la formule-tuple) et ~35
-faux positifs classes : separateur de milliers par espace (2),
-plages de valeurs (« 1-2 iterations », « 4-6 »), comptes partiels
-(Train 382 / Test 164 pour un total de 546), sous-comptes par item
-(« 16 slots a 1 seul », « 8 slots a 2 »), et quantites de nature
-differente (horizon « 5 jours » vs 6 300 lignes, « 40 epochs
-configureses » vs 6 executees).
+COMPTE (moyennes decimales). Sur les 36 restants, la lecture de la
+source, classe par classe, donne **0 vrai positif** : separateur de
+milliers par espace (2 : « 10 000 iterations » lu comme `000
+iterations`), plages de valeurs (6 : « 1-2 iterations », « 12-18 »),
+comptes partiels de split (2 : Train 382 + Test 164 pour 546),
+sous-comptes par item (5 : « 16 slots a 1 seul », « A 2 agents »), et
+quantites de nature differente (21 : horizon « 5 jours » vs 6 300
+lignes, fonctions differentes dans la meme fenetre, carnet differente).
 
-CONSEQUENCE : le scope `extended` rend un taux de faux positifs de
-~92 % sur le corpus. L'organe reste ADVISORY (patron #11435, jamais
-bloquant seul), donc ce taux ne bloque rien -- mais il produit du
+Aucun vrai positif ne subsiste : le cas fondateur App-5 (« 3 salles »
+contre `Salles : 4`) a ete CORRIGE sur `main` par une autre lane -- la
+prose y dit desormais « 4 salles » -- et l'organe ne le voit plus. Le
+scope `core` (13 findings) est compose des memes classes de faux
+positifs.
+
+CONSEQUENCE : sur le corpus actuel, le scope `extended` rend 36
+findings pour 0 vrai positif. L'organe reste ADVISORY (patron #11435,
+jamais bloquant seul), donc ce taux ne bloque rien -- mais il produit
+du bruit, et l'extension de portee est, en l'etat, un amplificateur de
 bruit. L'arbitrage du defaut (`extended` par defaut, ou `core` par
 defaut + `extended` en opt-in explicite) est soumis au coordinateur ;
 le defaut actuel n'est pas change par ce correctif, qui ferme une
