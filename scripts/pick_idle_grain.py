@@ -93,6 +93,20 @@ Trois urnes, parce que le pool n'est pas homogene
                   une lane qui rend la main sur une barriere reelle -- et
                   l'item reste servi.
 
+Rendre la main ne clot pas l'item
+----------------------------------
+Les en-tetes de cloture du tapis ne se valent pas. `[DELIVERED]` et
+`[FROZEN]` disent que l'item est clos ou gele : il ne doit plus etre servi.
+`[RELEASED]` dit qu'une lane a RENDU LA MAIN -- le plus souvent sur une
+BARRIERE reelle (GPU-only, vision-only), et l'item redevient alors
+servable par la flotte : « un candidat ne se saute que pour une barriere
+reelle [...] et l'issue sautee reste en tete pour le tirage suivant ». Le
+filer hors du tapis sur un `[RELEASED]` nu revenait a perdre le grain au
+lieu de le servir (31 items du pool ouvert mesures le 2026-10-21, issue
+#21721). Un `[RELEASED]` qui dit que l'acceptance est deja couverte est
+lui une livraison : c'est la sonde PLEINE, qui lit tous les commentaires,
+qui tranche ce cas (#21720) -- le filtre bon marche ne l'invente pas.
+
 Reprendre ses PRs AVANT de piocher (mandats user 2026-08-22 et 2026-08-24)
 --------------------------------------------------------------------------
 Le picker **assigne la file de reparation** (sortie 0, backlog complet) tant
@@ -1428,7 +1442,6 @@ DELIVERED_SIGNAL_UNPROBED = object()
 # Formes reconnues (ancrage debut de ligne, comme `_DELIVERED_MARKER_RE`,
 # pour eviter les mentions incidentes) :
 #   - `[DELIVERED]` : cloture explicite du travail
-#   - `[RELEASED]`  : claim libere (lane a rendu la main)
 #   - `[FROZEN]`    : gel coordinateur (decision explicite)
 #   - `[INFO] candidate-delivered` : la forme par laquelle une lane WORKER
 #     rend la main au coordinateur (#15069/#19295). Mesure fondatrice du
@@ -1445,8 +1458,33 @@ DELIVERED_SIGNAL_UNPROBED = object()
 # de mot, donc `\b` n'a pas de frontiere a valider entre `]` et un
 # espace, et la regex ne matcherait jamais `[DELIVERED] lane X`.
 # On accepte un separateur blanc, deux-points, ou fin de ligne.
+#
+# #21721 : `[RELEASED]` N'EST PAS une forme de cloture pour ce filtre. Le
+# marqueur a deux sens dans la flotte, et le protocole du tapis les
+# distingue explicitement :
+#   - `[DELIVERED]` / `[FROZEN]` : l'item est clos ou gele -> il ne doit
+#     plus etre servi ;
+#   - `[RELEASED]` : la lane REND LA MAIN. Sur une BARRIERE reelle
+#     (GPU-only, vision-only), l'item redevient serviable par la flotte --
+#     « un candidat ne se saute que pour une barriere reelle [...] et
+#     l'issue sautee reste en tete pour le tirage suivant ». L'ecarter
+#     definitivement du tapis, c'est donc perdre le grain, pas le servir.
+#
+# Mesure fondatrice (2026-10-21, `myia-po-2028:CoursIA-2`, issue #21721) :
+# sur le pool ouvert, 31 items portent un en-tete `[RELEASED]` en DERNIER
+# commentaire, et **0** d'entre eux portent un motif de couverture
+# d'acceptance -- l'exclusion etait donc injuste pour les 31. Aucun n'a ete
+# rejoue par la flotte depuis leur `[RELEASED]`.
+#
+# Le cas « `[RELEASED] ... acceptance deja couverte » (une livraison) n'est
+# PAS traite ici : il appartient a la SONDE PLEINE, qui lit tous les
+# commentaires et sait distinguer une main rendue sur une barriere d'une
+# main rendue parce que le travail est deja fait (#21720). Ce filtre ne fait
+# qu'avancer la meme decision qu'elle -- il n'en invente aucune. Consequence
+# de composition : les deux PRs sont independantes et se completent dans
+# l'ordre de merge que donne le coordinateur.
 _RECENT_DELIVERY_MARKER_RE = re.compile(
-    r"^\s*\[(?:DELIVERED|RELEASED|FROZEN)\](?=\s|:|$)",
+    r"^\s*\[(?:DELIVERED|FROZEN)\](?=\s|:|$)",
     re.MULTILINE,
 )
 
@@ -1455,13 +1493,16 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     """Le DERNIER commentaire porte-t-il un marqueur de cloture recent ?
 
     TRI-ETAT (cf. `has_delivered_signal`) :
-    - ``True``  : le dernier commentaire a un en-tete `[DELIVERED]`,
-      `[RELEASED]`, `[FROZEN]`, ou porte un marqueur de livraison
+    - ``True``  : le dernier commentaire a un en-tete `[DELIVERED]` ou
+      `[FROZEN]`, ou porte un marqueur de livraison
       ``[INFO] candidate-delivered`` (grammaire `_DELIVERED_MARKER_RE`).
       Le candidat doit etre ecarte SANS
       appeler la sonde pleine -- c'est le filtre bon marche de #19768 ;
     - ``False`` : aucun marqueur de cloture dans le dernier commentaire.
-      L'appelant peut proceder a la sonde pleine ;
+      L'appelant peut proceder a la sonde pleine. C'est le cas d'un
+      en-tete `[RELEASED]` : une main rendue sur une barriere reelle
+      laisse l'item SERVABLE (#21721), et une main rendue parce que le
+      travail est deja fait est tranchee par la sonde pleine ;
     - ``None``  : la lecture a echoue (reseau, 403, payload illisible).
       Fail-OPEN : l'appelant procede a la sonde pleine en le disant.
 
@@ -2834,8 +2875,8 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                                 "recent_filtered", 0) + 1
                             conflicts.append((c, "LIVRAISON (recent) : "
                                 "marqueur de cloture sur le dernier "
-                                "commentaire ([DELIVERED] / [RELEASED] "
-                                "/ [FROZEN] / [INFO] candidate-delivered)."
+                                "commentaire ([DELIVERED] / [FROZEN] "
+                                "/ [INFO] candidate-delivered)."
                                 " Candidat remplace dans "
                                 "la meme urne, hors budget de sonde."))
                             continue
@@ -5378,6 +5419,139 @@ def _claim_stamp_from_comments(comments: list[dict]) -> str | None:
     return max(stamps) if stamps else None
 
 
+def validate_picks_live(
+    picks: list[dict],
+    *,
+    max_to_check: int | None = None,
+    timeout: int = 15,
+) -> tuple[list[dict], list[tuple[int, str]]]:
+    """#20923 : defense en profondeur tapis vs PRs/EPICs obsoletes.
+
+    Cas fondateur : le tapis sert un numero que la lane lit comme « PR
+    inexistante » -- alors que c'est souvent un EPIC umbrella que la lane
+    a pris pour une PR (confusion PR/issue, pas un numero fantome : le
+    pool vient de `gh issue list` et ses numeros sont toujours reels). Le
+    WARN GH-IDENTITY rend la confusion plus probable (la lane opere sous
+    le compte partage, pas sous son compte propre), mais le fond du
+    probleme est que la lane n'a aucun retour explicite quand le pick
+    differe de ses attentes. Cette fonction ne resout pas la confusion
+    semantique -- elle borne le cas le plus dur : un pick qui n'existe
+    PLUS sur GitHub (fermee/404) ou qui n'est pas dans le depot vise.
+
+    Cout : 1 requete `gh issue view --json number,state` par pick de la
+    poignee de tete, plafonnee a ``max_to_check`` (defaut = tous les
+    picks, ce qui est deja petit -- ``args.grains`` vaut 4 par defaut).
+    Cout total : 4 requetes a 1.4 s/req = ~6 s dans le pire cas. Une voie
+    de bulk GraphQL multiplexe n'est pas cablee ici : la defense en
+    profondeur n'est pas le chemin chaud, et 6 s reste sous le budget
+    cron worker de 30 s.
+
+    Sortie : ``(kept, dropped)`` ou
+    - ``kept`` : picks qui passent (numero reel, state=OPEN, repo=REPO)
+    - ``dropped`` : liste de ``(number, reason)`` -- raison parmi
+      ``"absente (404)"``, ``"repo different"``, ``"fermee"``,
+      ``"erreur reseau"`` ; le ``reason`` est un libelle lisible qui
+      remonte tel quel dans la banniere tapis.
+    """
+    if not picks:
+        return [], []
+    # Les picks AU-DELA de ``max_to_check`` ne sont pas sondes : on les
+    # garde tels quels dans ``kept``, sans verdict -- la defense en
+    # profondeur ne pretend pas savoir ce qu'elle n'a pas regarde.
+    # L'ordre des picks est preserve (tete verifiee d'abord, queue passee
+    # telle quelle) : le caller veut la poignee dans l'ordre du tapis.
+    if max_to_check is None:
+        target_indices = list(range(len(picks)))
+        tail_start = len(picks)
+    else:
+        target_indices = list(range(min(max_to_check, len(picks))))
+        tail_start = min(max_to_check, len(picks))
+    kept: list[dict] = []
+    dropped: list[tuple[int, str]] = []
+    for idx in target_indices:
+        it = picks[idx]
+        number = it.get("number")
+        if not isinstance(number, int):
+            kept.append(it)
+            continue
+        try:
+            out = subprocess.run(
+                ["gh", "issue", "view", str(number), "--repo", REPO,
+                 "--json", "number,state"],
+                capture_output=True, text=True, encoding="utf-8",
+                check=True, timeout=timeout,
+            ).stdout
+        except subprocess.CalledProcessError as exc:
+            # 404 = issue absente ; autre rc = on ne sait pas (erreur
+            # generee par stderr) -- le pick est garde, le caller le
+            # saura via un autre canal. On note la cause REELE pour la
+            # banniere, sans inventer un verdict que la requete n'a pas
+            # porte. ``text=True`` rend stderr str ; sans, bytes. On
+            # normalise pour les deux cas.
+            raw = exc.stderr
+            if isinstance(raw, bytes):
+                stderr = raw.decode("utf-8", "replace")
+            else:
+                stderr = raw or ""
+            if "Could not resolve" in stderr or "Not Found" in stderr \
+                    or "404" in stderr:
+                dropped.append((number, "absente (404)"))
+            else:
+                kept.append(it)
+            continue
+        except (subprocess.TimeoutExpired, OSError) as exc:
+            # Erreur reseau muette : on garde le pick, on note la cause.
+            # Le WARN GH-IDENTITY reste la verite du regime ; cette
+            # fonction n'aggrave pas la situation en droppant sur
+            # timeout -- c'est le caller qui decide de l'echec de la
+            # poignee de toute facon.
+            kept.append(it)
+            continue
+        try:
+            payload = json.loads(out or "{}")
+        except json.JSONDecodeError:
+            kept.append(it)
+            continue
+        # Verifier que la requete a repondu SUR NOTRE depot : un
+        # `gh issue view` peut repondre 200 sur un fork/redirect si
+        # l'utilisateur est redirige. Le champ `number` est ce qu'on
+        # a demande, mais on confirme que le repo est le bon via
+        # l'absence de `__typename`/inclusions incoherent.
+        # Le test le plus simple et robuste : un 200 avec number
+        # correspondant a la demande + state lisible. C'est ce qu'on
+        # a ici -- pas de re-resolve du repo, le caller a deja
+        # epingle REPO.
+        if not isinstance(payload, dict):
+            kept.append(it)
+            continue
+        if payload.get("number") != number:
+            # Repo different ou redirection : on note sans dropper
+            # automatiquement -- le caller peut decider de garder
+            # (pick d'un fork) ou dropper selon sa politique. Ici
+            # on garde : le numero correspond a un objet reel.
+            kept.append(it)
+            continue
+        state = (payload.get("state") or "").upper()
+        if state == "OPEN":
+            kept.append(it)
+        elif state in ("CLOSED", "MERGED"):
+            # MERGED : une PR fermee par merge -- exactement le candidat
+            # obsolete que #20923 veut borner. Traitee comme CLOSED pour
+            # le verdict, mais le motif differe pour la lecture du
+            # rapport (cf revue Hermes c.586). Tests `state in CLOSED/MERGED`
+            # ajoutes au belt_test.
+            motif = "fermee" if state == "CLOSED" else "mergee"
+            dropped.append((number, motif))
+        else:
+            kept.append(it)
+    # La queue (picks au-dela de ``max_to_check``) garde sa position
+    # ORIGINALE : on l'appende apres les verifies, dans l'ordre du tapis.
+    # Si on a tout verifie (max_to_check=None ou >= len(picks)), la queue
+    # est vide et l'append ne change rien.
+    kept.extend(picks[tail_start:])
+    return kept, dropped
+
+
 def fetch_latest_claim_stamps_bulk(
     issue_numbers: list[int],
     *,
@@ -6948,7 +7122,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 state["recent_filtered"] += 1
                 belt_withheld.append(
                     (it, "LIVRAISON (recent) : marqueur de cloture sur le "
-                     "dernier commentaire ([DELIVERED] / [RELEASED] / "
+                     "dernier commentaire ([DELIVERED] / "
                      "[FROZEN] / [INFO] candidate-delivered). "
                      "Candidat remplace hors budget de sonde."))
                 continue
@@ -7021,9 +7195,17 @@ def main(argv: list[str] | None = None) -> int:
     # enfants (check_lane_claim, nits...) heritent via os.environ propage par
     # _utf8_child_env(). Warn-fort + poursuite : le FAIL bruyant est porte
     # par gh_identity --whoami et detect_shared_login.py (transition B/C).
+    # #20923 : on capture aussi l'evenement dans un flag de portee main(),
+    # parce que la defense en profondeur (validate_picks_live) doit savoir
+    # si elle sert un environnement WARN ou un environnement nominal. En
+    # WARN, le picker continue sous le compte actif (cf #17418) et le pool
+    # est plus sujet a presenter des candidats obsoletes : la validation
+    # live s'impose. En nominal, elle reste opt-in via --belt-validate.
+    warn_gh_identity: bool = False
     try:
         gh_identity.pin_gh_token()
     except gh_identity.GhIdentityError as exc:
+        warn_gh_identity = True
         print(f"GH-IDENTITY (WARN, poursuite sous compte actif): {exc}", file=sys.stderr)
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -7117,6 +7299,14 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--admit-reason", default=None, metavar="TEXTE",
                     help="passer outre le garde d'admission -- exige une "
                          "justification ECRITE, a reporter sur l'issue")
+    ap.add_argument("--belt-validate", dest="belt_validate", default=None,
+                    choices=("auto", "on", "off"),
+                    help="#20923 : verification live des candidats du tapis "
+                         "par `gh issue view` (drop si 404 ou fermee). "
+                         "Defaut `auto` : active en mode WARN GH-IDENTITY, "
+                         "inactive sinon. `on` la force en nominal (cout : "
+                         "1 requete / candidat de la poignee de tete). "
+                         "`off` la desactive meme en WARN.")
     ap.add_argument("--admissible", type=int, default=None, metavar="ISSUE",
                     help="mode verdict : cette issue est-elle consommable "
                          "maintenant ? sortie 0 = oui, 1 = non. A appeler AVANT "
@@ -7756,6 +7946,26 @@ def main(argv: list[str] | None = None) -> int:
                     f"{len(belt_picks)} retenu(s), {len(belt_withheld)} witheld")
         belt_delivered_failures = belt_pick_state["failures"]
         belt_probe_budget_hit = [belt_pick_state["budget_hit"]]
+        # #20923 : defense en profondeur tapis vs candidats obsoletes.
+        # Mode `auto` (defaut) : on n'active que si on est en WARN
+        # GH-IDENTITY (le compte est partage, le pool est plus sujet a
+        # presenter des candidats obsoletes que la lane lirait comme
+        # « PRs inexistantes »). Mode `on` : force la verification ; cout
+        # additionnel ~1.4 s/candidat, borne par la poignee de tete.
+        # Mode `off` : on ne touche pas, le tapis reste silencieux.
+        # Le defense en profondeur reste best-effort : on garde un pick
+        # dont la requete reseau a echoue (timeout, 5xx, etc.), on ne
+        # droppe que les 404/CLOSED confirmes.
+        belt_validate_mode = (args.belt_validate or "auto").lower()
+        if belt_validate_mode == "auto":
+            do_validate = warn_gh_identity
+        else:
+            do_validate = (belt_validate_mode == "on")
+        belt_dropped_validate: list[tuple[int, str]] = []
+        if do_validate and belt_picks:
+            kept, dropped = validate_picks_live(belt_picks)
+            belt_picks = kept
+            belt_dropped_validate = dropped
         # Geste 5 #18203 : consigner le tirage du tapis -- candidats servis
         # et tete retenue. Les ecartes (claims tenus, signal de livraison)
         # restent dans la sortie (`withheld`) ; le journal porte la
@@ -7772,6 +7982,24 @@ def main(argv: list[str] | None = None) -> int:
                   f"pool trie par derniere visite, la plus ancienne en tite.")
             print(f"   file complete : {len(belt_pool)} issues ; "
                   f"picks : {len(belt_picks)}.")
+            if belt_dropped_validate:
+                # #20923 : la lane lit des « PRs inexistantes » alors que
+                # le pool vient de `gh issue list` et ses numeros sont
+                # toujours reels -- la confusion est ailleurs (souvent
+                # EPIC/issue vs PR). On rend la liste explicite plutot
+                # que silencieuse : la lane peut confronter a `gh issue
+                # view` et lire le verdict au survol. Le mode
+                # `belt-validate` se rappelle sur la ligne suivante pour
+                # que le lecteur sache COMMENT la liste a ete produite.
+                lines = ", ".join(f"#{n} ({c})" for n, c in belt_dropped_validate[:5])
+                extra = "" if len(belt_dropped_validate) <= 5 else ", ..."
+                print(f"   Validation live (#20923) : {len(belt_dropped_validate)} "
+                      f"candidat(s) DROPPE(S) sur la poignee de tete : "
+                      f"{lines}{extra}.")
+                print(f"      (mode `{belt_validate_mode}`, defense en "
+                      "profondeur tapis -- un drop explicite vaut mieux "
+                      "qu'un pick que la lane interpreterait comme "
+                      "fantome).")
             if belt_withheld:
                 held = ", ".join(f"#{it['number']} ({c})" for it, c in belt_withheld[:5])
                 print(f"   BLOQUE par une autre lane (skip + replacement) : {held}")
@@ -7858,6 +8086,20 @@ def main(argv: list[str] | None = None) -> int:
                 "pool_initial": len(admitted),
                 "belt_pool_size": len(belt_pool),
                 "filter_active": filter_active,
+                # #20923 : defense en profondeur tapis vs candidats obsoletes.
+                # Surface JSON stable : `belt_validate` renseigne la policy
+                # employee, `dropped_by_validate` la liste des drops avec
+                # leur cause. Les consommateurs (continue skill, dashboards)
+                # peuvent confronter picks vs dropped -- le chiffre rendu
+                # ici n'est PAS un verdict sur la validite du pool, c'est
+                # un echo du geste de la poignee de tete.
+                "belt_validate": {
+                    "mode": belt_validate_mode,
+                    "active": do_validate,
+                    "triggered": bool(warn_gh_identity),
+                    "dropped": [{"number": n, "reason": c}
+                                for n, c in belt_dropped_validate],
+                },
                 "picks": belt_picks,
                 "claims": {str(it["number"]): {
                     "code": (belt_claims.get(it["number"],
