@@ -24,6 +24,7 @@ Le fil conducteur : chaque notebook introduit un changement de représentation �
 | 8 (C#) | [Planners-8-Temporal-Csharp](Planners-8-Temporal-Csharp.ipynb) | 40 min | Jumeau C# du 8 : tranche 1 from-scratch (algèbre d'Allen, réseau temporel simple STN, RCPSP-lite) ; tranche 2 : RCPSP résolu par Google.OrTools CP-SAT (paquet NuGet `Google.OrTools`) (See #4956) |
 | 9 | [Planners-9-HTN](Planners-9-HTN.ipynb) | 45 min | Planification hiérarchique (Hierarchical Task Networks) : tâches primitives/abstraites, méthodes de décomposition, HDDL, solveur inspiré de SHOP2 |
 | 9 (C#) | [Planners-9-HTN-Csharp](Planners-9-HTN-Csharp.ipynb) | 45 min | Jumeau C# du 9 : tranche 1 from-scratch, solveur HTN inspiré de SHOP2 (décomposition de tâches en .NET 9) ; tranche 2 : le même problème via unified_planning + aries, par pont .NET vers CPython (paquet NuGet `pythonnet` 3.0.5, paquets Python `unified-planning` et `up-aries`) (See #4956) |
+| 13 | [Planners-13-Mesure-Qualite-Plans](Planners-13-Mesure-Qualite-Plans-Python.ipynb) | 40 min | **Mesurer la qualité des plans** : 5 configurations Fast Downward (A* blind/hmax/ff/lmcut admissibles + greedy) sur une tour de 4 blocs — même plan optimal, ordres de grandeur d'écart sur les états évalués ; recherche naïve BFS en Python en contrepoint |
 
 ## Prérequis
 
