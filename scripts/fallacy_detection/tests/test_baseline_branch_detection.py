@@ -610,3 +610,24 @@ def test_macro_f1_etiquette_absente_du_test_comptabilisee():
     assert par_etiquette["B"] == 0.0
     # A : tp=1, fp=0, fn=1 -> F1 = 2/3 ; B : predit mais jamais vrai -> 0.
     assert score == pytest.approx(1 / 3)
+
+
+def test_niveau_branche_identique_a_la_reference_commitee(monkeypatch):
+    """La non-regression du niveau branche est portee par la CI, pas affirmee.
+
+    `data/teacher/baselines_branch.json` est le rapport produit par l'instrument
+    sur le corpus commite, avant la refonte de la macro-F1. Ce test rejoue
+    l'instrument sur ce meme corpus et exige l'egalite stricte des rapports :
+    toute derive du niveau branche (comptage, plis, lexique, fuite) fait
+    echouer la CI au lieu de reposer sur une affirmation de la lane.
+    """
+    racine = Path(__file__).resolve().parents[3]
+    corpus = "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/teacher/val_fr.jsonl"
+    reference = racine / ("MyIA.AI.Notebooks/GenAI/FallacyDetection/data/teacher/"
+                          "baselines_branch.json")
+    monkeypatch.chdir(racine)
+    rapport = bbd.run(Path(corpus), "branch", 5, 200, 42, None)
+    attendu = json.loads(reference.read_text(encoding="utf-8"))
+    # Le corpus est celui de la reference : un corpus change invalide la comparaison.
+    assert rapport["corpus"]["sha256"] == attendu["corpus"]["sha256"]
+    assert rapport == attendu
