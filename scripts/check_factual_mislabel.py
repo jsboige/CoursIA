@@ -21,10 +21,12 @@ Advisory par construction (patron #11435) -- jamais bloquant seul.
 
 #20035 : la portee du vocabulaire d'unites a ete etendue pour couvrir
 les substantifs de comptage trouves sur les cotes hors-App-5 (carnet,
-lemme, modele, ...). Le scope par defaut est `extended` ; un audit
-cible peut rejouer en `core` (les 14 unites historiques d'App-5) via
-`--units core`. Le test de regression documente en haut reste vert
-dans les deux scopes (la garde SUBCOUNT_CONTEXT_RE filtre les
+lemme, modele, ...). Le scope par defaut est `core` (les 14 unites
+historiques d'App-5) ; `extended` est un **opt-in explicite**
+(`--units extended`), depuis l'arbitrage du coordinateur du
+2026-10-21 : un defaut qui rend 36 findings pour 0 vrai positif
+n'est pas un defaut. Le test de regression documente en haut reste
+vert dans les deux scopes (la garde SUBCOUNT_CONTEXT_RE filtre les
 sous-comptes qui produiraient les FP).
 
 MESURE CORPUS (exigence #20035, relevee le 2026-10-21 sur ai-01) --
@@ -60,10 +62,10 @@ CONSEQUENCE : sur le corpus actuel, le scope `extended` rend 36
 findings pour 0 vrai positif. L'organe reste ADVISORY (patron #11435,
 jamais bloquant seul), donc ce taux ne bloque rien -- mais il produit
 du bruit, et l'extension de portee est, en l'etat, un amplificateur de
-bruit. L'arbitrage du defaut (`extended` par defaut, ou `core` par
-defaut + `extended` en opt-in explicite) est soumis au coordinateur ;
-le defaut actuel n'est pas change par ce correctif, qui ferme une
-classe de faux positifs et documente la mesure.
+bruit. L'arbitrage du coordinateur (dispatch c2205, 2026-10-21) tranche :
+**`core` par defaut, `extended` en opt-in explicite**. Le defaut est
+donc change -- dans une PR distincte de celle-ci, qui reste
+dediee a la fermeture d'une classe de faux positifs et a la mesure.
 """
 
 from __future__ import annotations
@@ -88,12 +90,13 @@ UNITS = (
 # (carnet, lemme, fichier, modele, ...). La voie choisie est une liste
 # fermee, documentee, et couplee a la garde SUBCOUNT_CONTEXT_RE deja
 # en place (chacun, par, au moins, ...) : les faux positifs mesures
-# sur App-5 (3 FP tues) restent la base de reference. La liste est
-# ajoutee par defaut -- c'est elle qui rend l'organe utile aux cotes
-# hors App-5 -- et un drapeau --units=core la desactive pour les usages
-# qui veulent la portee historique (la portee du test de regression
-# documente en haut du fichier : 0 FP / 30 carnets sur le corpus de
-# reference d'avant #20035).
+# sur App-5 (3 FP tues) restent la base de reference. La liste est un
+# **opt-in explicite** (`--units extended`) -- c'est elle qui rend l'organe
+# utile aux cotes hors App-5 -- et le defaut reste `core`, c'est-a-dire la
+# portee historique (la portee du test de regression documente en haut du
+# fichier : 0 FP / 30 carnets sur le corpus de reference d'avant #20035),
+# depuis l'arbitrage du coordinateur qui a mesure 0 vrai positif sur le
+# scope etendu (36 findings sur le corpus).
 UNITS_EXTENDED = (
     # Carnets / notebooks / pages / sections (Serre100, IIT, ICT, ML,
     # SymbolicAI) : substantifs que le stream peut enumerer directement
@@ -211,15 +214,17 @@ def _singular(unit: str) -> str:
     return unit.rstrip("s").lower()
 
 
-def scan_notebook(path: Path, *, units_scope: str = "extended") -> list[dict]:
+def scan_notebook(path: Path, *, units_scope: str = "core") -> list[dict]:
     """Scanne un carnet. ``units_scope`` :
-    - ``"core"`` : UNITS seulement (la portee historique, App-5) ;
-    - ``"extended"`` (defaut) : UNITS + UNITS_EXTENDED. La liste etendue
+    - ``"core"`` (**defaut**) : UNITS seulement (la portee historique,
+      App-5) ;
+    - ``"extended"`` : UNITS + UNITS_EXTENDED. La liste etendue
       couvre les substantifs de comptage trouves sur les cotes
-      hors-App-5 (carnet, lemme, modele, ...). Le scope etendu est
-      l'opt-in le plus prudent pour la detection reelle, mais reste
-      un argument du scan : un audit cible (ex. App-5 seul) peut
-      rejouer en ``"core"`` pour comparer la portee historique.
+      hors-App-5 (carnet, lemme, modele, ...). C'est l'opt-in
+      explicite : sur le corpus mesure, elle rend 36 findings pour
+      0 vrai positif (arbitrage coordinateur du 2026-10-21). Un audit
+      cible (ex. App-5 seul) peut rejouer en ``"core"`` pour comparer
+      la portee historique.
     """
     try:
         nb = json.loads(path.read_text(encoding="utf-8"))
@@ -304,14 +309,15 @@ def scan_notebook(path: Path, *, units_scope: str = "extended") -> list[dict]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--json", action="store_true")
-    ap.add_argument("--units", choices=("core", "extended"), default="extended",
+    ap.add_argument("--units", choices=("core", "extended"), default="core",
                     help="#20035 : portee du vocabulaire d'unites. "
-                         "`core` = App-5 (defaut historique, 14 unites), "
-                         "`extended` (defaut depuis #20035) = + substantifs "
-                         "de comptage trouves sur les cotes hors-App-5 "
-                         "(carnet, lemme, modele, ...). Le test de "
-                         "regression historique (0 FP / 30 carnets) reste "
-                         "rejouable via `--units core`.")
+                         "`core` = App-5 (14 unites, **defaut** depuis "
+                         "l'arbitrage coordinateur du 2026-10-21), "
+                         "`extended` = + substantifs de comptage trouves sur "
+                         "les cotes hors-App-5 (carnet, lemme, modele, ...), "
+                         "en opt-in explicite. Le test de regression "
+                         "historique (0 FP / 30 carnets) reste rejouable "
+                         "dans les deux scopes.")
     ap.add_argument("notebooks", nargs="+", type=Path)
     args = ap.parse_args(argv)
 
