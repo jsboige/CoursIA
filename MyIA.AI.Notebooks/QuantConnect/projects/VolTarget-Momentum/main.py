@@ -85,9 +85,14 @@ class VolTargetMomentum(QCAlgorithm):
             if not holding.invested:
                 continue
             weight = holding.holdings_value / total_value
-            hist = self.history(sym, self.vol_lookback + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et le ticker est ecarte de la ponderation
+            # de volatilite. On demande le double puis on re-slice sur la fenetre
+            # d'origine : la vol annualisee est inchangee hors demi-seance.
+            hist = self.history(sym, 2 * (self.vol_lookback + 5), Resolution.DAILY)
             if len(hist) < self.vol_lookback * 0.8:
                 continue
+            hist = hist.iloc[-(self.vol_lookback + 5):]
             returns = hist["close"].pct_change().dropna().tail(self.vol_lookback)
             if len(returns) < 10:
                 continue
