@@ -29,6 +29,20 @@ RESULTS="$TEST_DIR/results"
 ok() { echo "  PASS: $1"; echo "PASS $1" >> "$RESULTS"; }
 ko() { echo "  FAIL: $1"; echo "FAIL $1" >> "$RESULTS"; }
 
+# #21527 : un test interrompu (Ctrl+C, timeout, kill du parent) ne doit laisser
+# AUCUN superviseur ni slot vivant. Le trap EXIT tue TOUTE la descendance,
+# y compris sur interruption. Sans lui, 6-11 h d'orphelins relancaient leurs
+# enfants en boucle et gelaient le redemarrage du pool (2026-10-20). Le kill
+# par PID de process-group (negatif) atteint les fils qu'aucun fichier de PID
+# n'aurait enregistres.
+cleanup_launched() {
+  trap - EXIT INT TERM
+  kill -TERM -- -$$ 2>/dev/null || true
+  sleep 1
+  kill -KILL -- -$$ 2>/dev/null || true
+}
+trap cleanup_launched EXIT INT TERM
+
 # Stubs docker + gh + ps + hostname. Le stub docker simule une image A JOUR
 # pour le garde de fraicheur #14801/#15105 : au probe `run --entrypoint
 # sha256sum`, il rend le sha256 du VRAI sibling du checkout (bake a la
@@ -105,7 +119,7 @@ chmod +x "$TEST_DIR/bin/docker"
 
 cat > "$TEST_DIR/bin/gh" <<'STUB'
 #!/usr/bin/env bash
-if echo "$@" | grep -q 'registration-token'; then echo "FAKE_TOKEN"; exit 0; fi
+if echo "$@" | grep -q 'registration-token'; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
 if echo "$@" | grep -q 'actions/runners'; then echo '{"runners":[]}'; exit 0; fi
 exit 0
 STUB
@@ -397,7 +411,7 @@ echo "Test 7 : COURSIA_RUNNER_GH_ACCOUNT epingle le compte (epinglage #14259)"
 #!/usr/bin/env bash
 echo "$@" >> "$GH_CALLS_LOG"
 if echo "$@" | grep -q 'auth token'; then echo "FAKE_ACCOUNT_TOKEN"; exit 0; fi
-if echo "$@" | grep -q 'registration-token'; then echo "FAKE_TOKEN"; exit 0; fi
+if echo "$@" | grep -q 'registration-token'; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
 if echo "$@" | grep -q 'actions/runners'; then echo '{"runners":[]}'; exit 0; fi
 exit 0
 STUB
@@ -440,7 +454,7 @@ echo "Test 8 : status nomme la contradiction conteneurs vs inventaire (Defaut #1
   mkdir -p "$TEST_DIR/bin8" "$TEST_DIR/state-8"
   cat > "$TEST_DIR/bin8/gh" <<'STUB'
 #!/usr/bin/env bash
-if echo "$@" | grep -q 'registration-token'; then echo "FAKE_TOKEN"; exit 0; fi
+if echo "$@" | grep -q 'registration-token'; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
 if echo "$@" | grep -q 'actions/runners'; then echo '{"runners":[]}'; exit 0; fi
 exit 0
 STUB
@@ -867,7 +881,7 @@ STUB
   cat > "$TEST_DIR/bin11/gh" <<'STUB'
 #!/usr/bin/env bash
 echo "$@" >> "$GH_CALLS_LOG"
-if echo "$@" | grep -q 'registration-token'; then echo "FAKE_TOKEN"; exit 0; fi
+if echo "$@" | grep -q 'registration-token'; then echo "FAKETOKEN0123456789ABCDEF"; exit 0; fi
 exit 0
 STUB
   chmod +x "$TEST_DIR/bin11/gh"
@@ -2263,6 +2277,14 @@ if [ "\$1" = "run" ]; then
   RUNS="\$(cat "\$STUB_RUN_COUNT" 2>/dev/null || echo 0)"
   RUNS=\$(( RUNS + 1 ))
   echo "\$RUNS" > "\$STUB_RUN_COUNT"
+  # #21446 : le stub ecrit le message docker DANS le log du slot -- c'est le
+  # cas que ce test decrit depuis #15278 (« le message docker part dans le log
+  # du slot par la redirection du docker run »). Sans cette ligne, le cycle etait
+  # MUET (le conteneur ne produisait aucune sortie) et le superviseur le
+  # nomme désormais ECHEC MUET au lieu de rappeler le log : le cas muet est
+  # couvert par son propre test (66), et le cas « la cause se lit dans le log »
+  # par celui-ci et par le controle negatif (67).
+  echo "Conflict. The container name is already in use"
   touch "\$STUB_STOP_FILE"
   exit "\${STUB_DOCKER_RC:-1}"
 fi
@@ -3105,6 +3127,244 @@ echo "Test 65 : budget -- socket absent : hors perimetre sans refus (#15164)"
 )
 echo ""
 
+# --- Test 67 : un echec qui n'ecrit RIEN est nomme MUET (#21446) -----------
+# Mesure ai-01 du 19/10 (slot myia-ai-01-wsl-10) : 51 cycles consecutifs en
+# rc=128, et le journal du slot muet depuis le 16/10 -- le conteneur mourait
+# AVANT l'enregistrement du runner, donc avant toute ligne de job, et les
+# mesures de sante de l entrypoint suppriment leur stderr. Le rappel « -- voir
+# <fichier> » (#15278) y renvoyait vers une source incapable de dire quoi que
+# ce soit. Ce test verrouille le diagnostic : un cycle qui n'a rien ecrit est
+# nomme ECHEC MUET, et le rappel muet disparait au profit de la classe de
+# cause.
+echo "Test 67 : un cycle qui n'ecrit rien dans le log du slot est nomme ECHEC MUET (#21446)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin67" "$TEST_DIR/state-67"
+  cat > "$TEST_DIR/bin67/docker" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = "info" ]; then exit 0; fi
+if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
+if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  # Cycle MUET : le conteneur ne produit AUCUNE sortie (la redirection cree le
+  # fichier, vide) et meurt en rc=128, comme le slot wsl-10 mesure le 19/10.
+  touch "\$STUB_STOP_FILE"
+  exit 128
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin67/docker"
+  cat > "$TEST_DIR/bin67/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$TEST_DIR/bin67/sleep"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin67/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin67/ps"
+  rm -f "$TEST_DIR/state-67/stop" "$TEST_DIR/state-67/pids" "$TEST_DIR/run67.count"
+  : > "$TEST_DIR/sleep67.log"
+  (
+    export PATH="$TEST_DIR/bin67:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-67"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-67"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=9999
+    export COURSIA_RUNNER_BACKOFF_BASE=3
+    export COURSIA_RUNNER_BACKOFF_CAP=6
+    export STUB_STOP_FILE="$TEST_DIR/state-67/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run67.count"
+    export SLEEP_LOG="$TEST_DIR/sleep67.log"
+    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err67.log"
+  )
+  if grep -q "ECHEC MUET" "$TEST_DIR/err67.log" \
+     && grep -q -- "test-prefix-67-1.log" "$TEST_DIR/err67.log" \
+     && ! grep -q -- "-- voir " "$TEST_DIR/err67.log"; then
+    ok "un cycle muet est nomme ECHEC MUET, sans renvoyer vers un log incapable de parler"
+  else
+    ko "echec muet non nomme : $(head -3 "$TEST_DIR/err67.log")"
+  fi
+)
+echo ""
+
+# --- Test 70 : quota REST epuise = transitoire, jamais terminal (#21527) ----
+# Mesure ai-01 du 2026-10-20 : un 403 de quota etait classe structurel (4xx),
+# le slot posait STOP_FILE au cinquieme echec, et les 14 slots tombaient
+# (pool a zero de 01:26Z a 03:30Z, 1202 runs en file). GitHub publie son
+# echeance : attendre la remise a zero, ne jamais poser STOP_FILE.
+
+echo "Test 70 : quota REST epuise -- transitoire, jamais STOP_FILE (#21527)"
+(
+  mkdir -p "$TEST_DIR/bin70"
+  cat > "$TEST_DIR/bin70/gh" <<'STUB'
+#!/usr/bin/env bash
+case "$*" in
+  # fetch_token appelle `gh api rate_limit --jq .resources.core.reset` : gh
+  # rend alors le NOMBRE, pas le document. Le stub doit rendre la meme chose,
+  # sinon l'attente retombe sur 0 et ne suit plus la remise a zero.
+  *rate_limit*) printf '%s\n' "${STUB_RATE_RESET:-0}"; exit 0 ;;
+esac
+echo "gh: API rate limit exceeded (HTTP 403)" >&2
+exit 1
+STUB
+  chmod +x "$TEST_DIR/bin70/gh"
+  export PATH="$TEST_DIR/bin70:$PATH"
+  export REPO="test/test"
+  # Marqueur RATE : echeance future -> le delai d'attente suit la remise a zero
+  # (borne 3900 s), et LE NOMBRE D'ESSAIS NE BLOQUE RIEN : aucun ABANDON n'est
+  # prevu sur ce code, donc STOP_FILE n'est jamais touche.
+  export STUB_RATE_RESET=$(( $(date +%s) + 180 ))
+  . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1
+  FETCH_TOKEN_STATE_FILE="$TEST_DIR/state-70/token_state"; mkdir -p "$TEST_DIR/state-70"
+  # Sentinelle du TEST, pas celle de l'instance : `supervise.sh` en definit une
+  # a la source, et une sentinelle reelle presente sur l'hote ferait echouer
+  # l'assertion sans qu'aucun quota n'ait ete touche.
+  STOP_FILE="$TEST_DIR/state-70/stop"
+  out="$( (GH_TOKEN=dummy fetch_token) 2>&1 )"; rc=$?
+  grep -q "HTTP=RATE" "$FETCH_TOKEN_STATE_FILE" && sleep_line=1 || sleep_line=0
+  if [ "$rc" != "0" ] && [ "$sleep_line" = "1" ] && [ ! -f "$STOP_FILE" ]; then
+    ok "fetch_token classe le 403 rate-limit comme HTTP=RATE et ne pose pas STOP_FILE"
+  else
+    ko "fetch_token n'a pas classe le quota comme transitoire : rc=$rc out='$out'"
+  fi
+
+  # La classe RATE n'est pas dans les terminaux : ni slot_loop ni waiter_loop
+  # ne la soumettent a la borne des 5 echecs. Le verrou est le case : s'il
+  # passe terminal=1, ABANDON + STOP_FILE tombe au 5e echec.
+  if ! sed -n '1690,1700p;2225,2232p' "$SCRIPT_DIR/supervise.sh" | grep -q 'RATE) terminal'; then
+    ok "RATE ne passe pas terminal=1 : quota epuise, pas ABANDON"
+  else
+    ko "RATE apparait dans les terminaux -- ABANDON au 5e echec"
+  fi
+
+  # La boucle slot_loop tourne 6 essais sur quota epuise : aucun ABANDON,
+  # STOP_FILE jamais touche, et l'attente suit la remise a zero. Le sleep de
+  # retry est force a 1 s (COURSIA_RUNNER_TEST_SLEEP, #21527). Le marqueur
+  # RATE est pre-ecrit : la boucle relit le state file a chaque echec.
+  export COURSIA_RUNNER_TEST_SLEEP=1
+  export COURSIA_RUNNER_AUTH_FAIL_MAX=5
+  export STUB_STOP_FILE="$STOP_FILE"; rm -f "$STOP_FILE"
+  reset_epoch="$(awk -F= '$1=="RESET"{print $2; exit}' "$FETCH_TOKEN_STATE_FILE" 2>/dev/null)"
+  printf 'HTTP=RATE\nACCOUNT=tester\nRESET=%s\nERR=gh: API rate limit exceeded (HTTP 403)\n' "${reset_epoch:-0}" > "$FETCH_TOKEN_STATE_FILE"
+  out="$( (timeout 30 env GH_TOKEN=dummy FETCH_TOKEN_STATE_FILE="$FETCH_TOKEN_STATE_FILE" bash -c '. "$0" status >/dev/null 2>&1; slot_loop 99 gh-quota-test d d 4096m "" 4096' "$SCRIPT_DIR/supervise.sh") 2>&1 )"; rc=$?
+  if [ "$rc" = "124" ] && [ ! -f "$STOP_FILE" ] \
+     && printf '%s' "$out" | grep -q "HTTP RATE" \
+     && ! printf '%s' "$out" | grep -q "ABANDON"; then
+    ok "slot_loop sur quota epuise : timeout (toujours vivant), 0 ABANDON, STOP_FILE intact"
+  else
+    ko "slot_loop aurait du survivre au quota : rc=$rc stop=$([ -f "$STOP_FILE" ] && echo oui || echo non) out='$out'"
+  fi
+  unset COURSIA_RUNNER_TEST_SLEEP
+
+  # L'attente suit la remise a zero publiee par GitHub (180 s). L'echeance est
+  # RE-ESTAMPEE ici : entre l'ouverture du test et cette ligne, `slot_loop`
+  # consomme ~28 s sous `timeout 30`, et l'assertion mesurait 152 s -- un echec
+  # de chronometre, pas de comportement. La mesure doit porter sur un ecart
+  # fixe, pas sur le temps de paroi du test.
+  printf 'HTTP=RATE\nACCOUNT=tester\nRESET=%s\nERR=gh: API rate limit exceeded (HTTP 403)\n' \
+    "$(( $(date +%s) + 180 ))" > "$FETCH_TOKEN_STATE_FILE"
+  wait="$(rate_reset_wait 4)"
+  if [ "$wait" -ge 170 ] && [ "$wait" -le 195 ]; then
+    ok "l'attente suit X-RateLimit-Reset (180 s attendu, obtenu $wait s)"
+  else
+    ko "l'attente devrait suivre la remise a zero : obtenu $wait s"
+  fi
+
+  # fetch_token refuse les corps JSON : un en-tete invalide ne peut pas
+  # passer pour un jeton.
+  printf '{"token":"foo","message":"API rate limit exceeded"}\n' > "$TEST_DIR/gh-out"
+  mkdir -p "$TEST_DIR/bin70b"
+  cat > "$TEST_DIR/bin70b/gh" <<'STUB2'
+#!/usr/bin/env bash
+cat "$STUB_GH_OUT"
+exit 0
+STUB2
+  chmod +x "$TEST_DIR/bin70b/gh"
+  export PATH="$TEST_DIR/bin70b:$PATH"
+  export STUB_GH_OUT="$TEST_DIR/gh-out"
+  out="$( (fetch_token) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && ! printf '%s' "$out" | grep -q '^{'; then
+    ok "fetch_token refuse un corps JSON comme jeton (validation de forme)"
+  else
+    ko "fetch_token aurait du refuser un corps JSON : rc=$rc out='$out'"
+  fi
+)
+echo ""
+
+# --- Test 68 : CONTROLE NEGATIF -- un cycle qui ECRIT garde le rappel (#21446)
+# Le diagnostic muet ne doit pas swallows le rappel « -- voir » des echecs qui
+# ont, eux, un message docker a lire (image perimee, nom de conteneur pris).
+# Sans ce controle, le correctif du test 67 pourrait faire perdre au
+# superviseur la source de verite de tous les autres echecs.
+echo "Test 68 : controle negatif -- un cycle qui ecrit dans le log garde le rappel #15278 (#21446)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin68" "$TEST_DIR/state-68"
+  cat > "$TEST_DIR/bin68/docker" <<STUB
+#!/usr/bin/env bash
+if [ "\$1" = "info" ]; then exit 0; fi
+if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
+if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  # Cycle PARLANT : le conteneur ecrit dans le log du slot (la redirection du
+  # `docker run`), puis meurt en rc=125 comme un conflit de nom de conteneur.
+  echo "Conflict. The container name is already in use"
+  touch "\$STUB_STOP_FILE"
+  exit 125
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin68/docker"
+  cat > "$TEST_DIR/bin68/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$TEST_DIR/bin68/sleep"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin68/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin68/ps"
+  rm -f "$TEST_DIR/state-68/stop" "$TEST_DIR/state-68/pids" "$TEST_DIR/run68.count"
+  : > "$TEST_DIR/sleep68.log"
+  (
+    export PATH="$TEST_DIR/bin68:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-68"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-68"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=9999
+    export COURSIA_RUNNER_BACKOFF_BASE=3
+    export COURSIA_RUNNER_BACKOFF_CAP=6
+    export STUB_STOP_FILE="$TEST_DIR/state-68/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run68.count"
+    export SLEEP_LOG="$TEST_DIR/sleep68.log"
+    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err68.log"
+  )
+  if grep -q -- "-- voir $TEST_DIR/state-68/test-prefix-68-1.log" "$TEST_DIR/err68.log" \
+     && ! grep -q "ECHEC MUET" "$TEST_DIR/err68.log"; then
+    ok "un cycle qui ecrit garde le rappel du log (le diagnostic muet ne le remplace pas)"
+  else
+    ko "rappel du log perdu sur un cycle parlant : $(head -3 "$TEST_DIR/err68.log")"
+  fi
+)
+echo ""
+
 # --- Verdict agrege ---------------------------------------------------------
 # `|| echo 0` serait un piege ici, et il l'a ete : `grep -c` IMPRIME "0" avant
 # de sortir 1 quand il ne trouve rien, donc le repli SUFFIXE un second zero au
@@ -3132,4 +3392,5 @@ if [ "$n_pass" = "0" ]; then
   exit 2
 fi
 rm -rf "$TEST_DIR"
+trap - EXIT INT TERM
 exit 0

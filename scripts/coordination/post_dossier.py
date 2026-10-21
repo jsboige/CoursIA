@@ -88,7 +88,9 @@ EXIT_REFUSED = 4
 # de domaine que cette meme garde exige doit pouvoir REMPLACER un READY du
 # secretariat qui tient le gate. Sans cette porte, le DEEP sur dossier
 # secretariat est impostable (mesure 2026-10-08 sur #19801 et #19838).
-SECRETARIAT_LANES = frozenset({"myia-po-2026:CoursIA-3"})
+# myia-po-2028:CoursIA-3 holds the seat since 2026-10-20 (myia-po-2026 out of
+# service since 2026-10-09) ; the former seat stays for dossiers already posted.
+SECRETARIAT_LANES = frozenset({"myia-po-2026:CoursIA-3", "myia-po-2028:CoursIA-3"})
 # gh-posting-hygiene regle 2, membre metrique : un corps court apres le POST
 # d'un fichier est la signature du piege de transport.
 MIN_PUBLISHED_LEN = 100
@@ -126,7 +128,12 @@ CLOSURE = Family(
 
 def gh_json(args: list[str], env: dict[str, str] | None = None) -> Any:
     proc = subprocess.run(
-        ["gh", *args], capture_output=True, text=True, encoding="utf-8", env=env
+        ["gh", *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        env=env,
     )
     if proc.returncode != 0:
         raise RuntimeError(proc.stderr.strip() or "gh command failed")
@@ -140,6 +147,7 @@ def run_gate(family: Family, repo: str, target: int) -> tuple[int, str]:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        errors="replace",
     )
     return proc.returncode, proc.stdout
 
@@ -266,6 +274,10 @@ def emit_body(pr: int, lane: str) -> tuple[int, str, str]:
     L'appelant peut exporter un GH_TOKEN de lecture alternatif -- le
     sous-processus herite de l'env, l'emission ne fait qu'agir des lectures.
     """
+    # Console Windows cp1252 : le WARN GH-IDENTITY du gate porte un tiret 0x97 ;
+    # le decode UTF-8 strict fait lever le reader thread (UnicodeDecodeError),
+    # stderr devient None et l'appelant crashe sur .strip() -- aucun dossier
+    # emis (mesure 2026-10-18, PR 20654). errors="replace" garde le texte.
     proc = subprocess.run(
         [
             sys.executable,
@@ -278,6 +290,7 @@ def emit_body(pr: int, lane: str) -> tuple[int, str, str]:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        errors="replace",
     )
     return proc.returncode, proc.stdout, proc.stderr
 
@@ -311,6 +324,7 @@ def resolve_write_token() -> str:
         capture_output=True,
         text=True,
         encoding="utf-8",
+        errors="replace",
         env=env,
     )
     if proc.returncode != 0 or not proc.stdout.strip():
@@ -327,7 +341,12 @@ def check_post_author(token: str) -> str:
     Mesure #19325 : un POST sous compte etudiant rend ``comment author must
     be 'jsboige'`` ET perime le stamp calcule avant lui.
     """
-    login = gh_json(["api", "user", "--jq", ".login"], env=write_env(token))
+    # gh --jq imprime une chaîne RESULTAT sans guillemets : `--jq .login`
+    # sort `jsboige`, que json.loads refuse (Expecting value char 0) -- le
+    # garde crasht donc depuis #20881 sur tout POST --emit. On parse la
+    # reponse /user complete (JSON valide) et on lit la cle.
+    user = gh_json(["api", "user"], env=write_env(token))
+    login = user.get("login") if isinstance(user, dict) else None
     if not isinstance(login, str) or login != POST_AUTHOR:
         raise RuntimeError(
             f"author guard: the write token serves {login!r}, not {POST_AUTHOR!r}"
