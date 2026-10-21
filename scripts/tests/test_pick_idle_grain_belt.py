@@ -1161,9 +1161,13 @@ def test_belt_withdraws_delivered_candidates_and_replaces():
 
 def test_belt_recent_marker_excludes_hors_budget():
     """#19768 perimetre restant : marqueur de cloture sur le DERNIER
-    commentaire ([DELIVERED] / [RELEASED] / [FROZEN]) -- le tapis ecarte
+    commentaire ([DELIVERED] / [FROZEN]) -- le tapis ecarte
     le candidat SANS consommer de sonde de livraison (filtre bon marche,
-    hors budget). La sonde pleine n'est meme pas atteinte pour lui."""
+    hors budget). La sonde pleine n'est meme pas atteinte pour lui.
+
+    Depuis #21721, `[RELEASED]` n'est PAS un marqueur de cloture pour ce
+    filtre : une main rendue sur une barriere reelle laisse l'item
+    servable par la flotte."""
     marked = _make_item(7742, age_days=90, idle=9, last=None)
     clean_a = _make_item(19006, age_days=50, idle=5, last=None)
     clean_b = _make_item(19007, age_days=49, idle=5, last=None)
