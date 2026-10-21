@@ -301,6 +301,50 @@ def stock_open_by_month(open_issues: Iterable[dict]) -> dict[str, int]:
     return dict(sorted(out.items()))
 
 
+def count_famine_progression(
+    open_issues: Iterable[dict],
+    threshold_weeks: int = 4,
+) -> dict[str, int | list[int]]:
+    """Compte les issues en famine de progression (#21067 item 4).
+
+    Une issue en famine = ouverte + creee il y a plus de N semaines.
+    C'est un proxy : la fetcheuse ne ramene pas `updatedAt`, donc on
+    mesure l'age de creation comme signal de stagnation. Une issue
+    mergee (PR qui la ferme) sort de `open_issues` par construction.
+
+    Args:
+        open_issues: liste d'issues ouvertes (sortie de `fetch_open_issues`).
+        threshold_weeks: seuil en semaines (defaut 4).
+
+    Returns:
+        dict avec `count` (int) et `examples` (list[int] -- numeros des
+        5 plus vieilles issues en famine, pour le diagnostic).
+    """
+    if not open_issues:
+        return {"count": 0, "examples": []}
+    threshold_days = threshold_weeks * 7
+    now = datetime.now(timezone.utc)
+    in_famine: list[tuple[int, float]] = []
+    for issue in open_issues:
+        created_str = issue.get("createdAt", "")
+        if not created_str:
+            continue
+        try:
+            d = _parse_iso(created_str)
+        except Exception:
+            continue
+        if d.tzinfo is None:
+            d = d.replace(tzinfo=timezone.utc)
+        age_days = (now - d).total_seconds() / 86400.0
+        if age_days > threshold_days:
+            in_famine.append((int(issue.get("number", 0)), age_days))
+    in_famine.sort(key=lambda x: -x[1])  # oldest first
+    return {
+        "count": len(in_famine),
+        "examples": [n for n, _ in in_famine[:5]],
+    }
+
+
 # ---------------------------------------------------------------------------
 # Network I/O (gh CLI -- paginated, bounded)
 # ---------------------------------------------------------------------------
@@ -704,6 +748,7 @@ def render_text(
     fleet_courant: int,
     fleet_ancien: int,
     stock: dict[str, int],
+    famine: dict[str, int | list[int]] | None = None,
 ) -> str:
     """Tableau texte par lane + ligne flotte + ligne stock."""
     lines = []
@@ -732,6 +777,13 @@ def render_text(
             lines.append(f"  {k} : {stock[k]}")
     else:
         lines.append("  (vide)")
+    if famine:
+        lines.append("")
+        lines.append(
+            f"Issues ouvertes creees > {famine['threshold_weeks']} sem. (proxy famine) : {famine['count']}"
+        )
+        if famine.get("examples"):
+            lines.append(f"  plus vieilles : {', '.join(f'#{n}' for n in famine['examples'])}")
     return "\n".join(lines)
 
 
@@ -742,6 +794,7 @@ def render_json(
     fleet_courant: int,
     fleet_ancien: int,
     stock: dict[str, int],
+    famine: dict[str, int | list[int]] | None = None,
 ) -> str:
     out = {
         "services": [
@@ -764,10 +817,17 @@ def render_json(
         },
         "stock": {"open_by_month": stock},
     }
+    if famine:
+        out["famine"] = famine
     return json.dumps(out, indent=2, ensure_ascii=False)
 
 
-def render_dashboard_line(by_lane: dict[str, LaneStats], fleet_total: int, fleet_courant: int) -> str:
+def render_dashboard_line(
+    by_lane: dict[str, LaneStats],
+    fleet_total: int,
+    fleet_courant: int,
+    famine: dict[str, int | list[int]] | None = None,
+) -> str:
     """Une ligne compacte d'environ 200 chars pour le [DONE] du coordinateur."""
     fleet_pct = (fleet_courant / fleet_total * 100) if fleet_total else 0
     parts = []
@@ -777,7 +837,10 @@ def render_dashboard_line(by_lane: dict[str, LaneStats], fleet_total: int, fleet
             tag = "[WARN] " if st.warn else ""
             parts.append(f"{lane}:{st.courant_pct:.0%}")
     summary = " ".join(parts)
-    line = f"belt-balance[7j]: fleet={fleet_total}s {fleet_pct:.0f}%courant -- {summary}"
+    famine_str = ""
+    if famine and famine.get("count", 0) > 0:
+        famine_str = f" famine={famine['count']}>{famine['threshold_weeks']}w"
+    line = f"belt-balance[7j]: fleet={fleet_total}s {fleet_pct:.0f}%courant{famine_str} -- {summary}"
     return line[:240]
 
 
@@ -790,6 +853,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--days", type=int, default=7,
                         help="Fenetre de service en jours (defaut 7)")
+    parser.add_argument("--famine-weeks", type=int, default=4,
+                        help="Seuil de famine de progression en semaines (defaut 4)")
     parser.add_argument("--owner", default="jsboige",
                         help="Proprietaire du repo (defaut jsboige)")
     parser.add_argument("--repo", default="CoursIA",
@@ -809,6 +874,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.no_fetch:
         services = []
         stock: dict[str, int] = {}
+        open_issues: list[dict] = []
     else:
         try:
             services_pr = fetch_services(args.owner, args.repo, window_start, max_pages=args.max_pages)
@@ -824,13 +890,15 @@ def main(argv: list[str] | None = None) -> int:
     fleet_total = len(services)
     fleet_courant = sum(s.is_courant for s in services)
     fleet_ancien = sum(s.is_ancien for s in services)
+    famine = count_famine_progression(open_issues, threshold_weeks=args.famine_weeks)
+    famine["threshold_weeks"] = args.famine_weeks
 
     if args.json:
-        print(render_json(services, by_lane, fleet_total, fleet_courant, fleet_ancien, stock))
+        print(render_json(services, by_lane, fleet_total, fleet_courant, fleet_ancien, stock, famine))
     elif args.dashboard_line:
-        print(render_dashboard_line(by_lane, fleet_total, fleet_courant))
+        print(render_dashboard_line(by_lane, fleet_total, fleet_courant, famine))
     else:
-        print(render_text(by_lane, fleet_total, fleet_courant, fleet_ancien, stock))
+        print(render_text(by_lane, fleet_total, fleet_courant, fleet_ancien, stock, famine))
     return 0
 
 

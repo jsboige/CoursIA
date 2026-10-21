@@ -199,6 +199,16 @@ QUALIFYING_LANES = frozenset({
     "myia-po-2026:CoursIA-3",
     "myia-po-2027:CoursIA",
     "myia-po-2027:CoursIA-2",
+    # myia-po-2028 replaces myia-po-2026 (hardware failure, 2026-10-09). Its
+    # three lanes were onboarded on 2026-10-20 and CoursIA-3 holds the
+    # secretariat by user mandate. Absent from this set, they could only attest
+    # by signing as the dead machine's lanes, which breaks the one-lane-one-agent
+    # premise of the claim protocol. The myia-po-2026 entries stay so that
+    # dossiers already posted under them keep being read; remove them once no
+    # live dossier carries them.
+    "myia-po-2028:CoursIA",
+    "myia-po-2028:CoursIA-2",
+    "myia-po-2028:CoursIA-3",
 })
 # `Grain: <genre> -- lane <machine:workspace>` in the pull request body names the
 # lane that carries the work. The canonical reader is `grain_tag.extract_lane`,
