@@ -151,6 +151,40 @@ kc.stop_channels(); km.shutdown_kernel()
 \""
 ```
 
+## Kernel `lean4` : toolchain épinglée et couples REPL/toolchain prouvés (#18511)
+
+**Symptôme (mesuré le 2026-09-30 sur ai-01)** : `lake env repl` suivait le
+défaut elan (`leanprover/lean4:stable`, résolu v4.34.1 puis v4.35.0), alors
+que le seul binaire REPL disponible (`~/.elan/bin/repl`) est construit pour
+v4.30.0. Les 34 cellules de `Lean-05-Tactics-Lean.ipynb` rendaient alors des
+**erreurs de parse** — et papermill sortait quand même en **0**.
+
+**Deux causes distinctes, deux corrections** :
+
+| Cause | Correction | Où |
+|---|---|---|
+| le kernel suit `stable`, qui dérive | la toolchain est **épinglée** depuis le `lean-toolchain` le plus proche (celui du lake s'il y en a un) et exportée en `ELAN_TOOLCHAIN` | `lean4-kernel-wrapper.py` (v8) |
+| un REPL construit pour une autre version sert de repli **silencieux** | le REPL est **couplé** à la toolchain : binaire `repl-<tag>` construit contre elle, ou REPL par défaut dont la version **embarquée** (lue dans le binaire : `https://lean-lang.org/doc/reference/<version>/`) est celle de la toolchain | `lean4-kernel-wrapper.py` (v8) + `setup_native_lean4_import.py` (template de la fourche) |
+
+**Échec visible, pas silencieux** : une divergence fait **échouer** le kernel
+(exit 3 côté wrapper, `ReplPairingError` côté fourche), avec un message qui
+nomme les deux versions et le remède (`build-repl <tag>`). Un carnet sans
+sortie d'erreur sous un `exit 0` n'est plus possible.
+
+**Un lake n'est plus indispensable** : `lake env` fonctionne sans `lakefile`
+(mesuré) — l'ancrage de la toolchain suffit. La règle de #16181 tient
+toujours : aucun repli vers un projet étranger.
+
+**Vérification sur ai-01 (2026-10-21)** : `papermill Lean-05-Tactics-Lean.ipynb
+out.ipynb -k lean4` rend **34 cellules sur 34, zéro erreur**, et les 34
+sorties sont **identiques octet pour octet** à celles commitées. La sonde de
+divergence (un `lean-toolchain` en v4.33.0 dans un arbre temporaire) rend
+`exit 3` avec le message nommant v4.33.0 et 4.30.0.
+
+**Conséquence assumée** : un lake **sans** `lean-toolchain` (et sans ancrage
+parent) ne démarre plus le kernel — il échoue au lieu de suivre `stable`.
+Remède : écrire `lean-toolchain` dans le lake.
+
 ## Notes complémentaires
 
 - Cold start .NET Interactive : premier démarrage peut timeout (30-60s), retry une fois

@@ -99,11 +99,52 @@ REPL_PY_PATCH = '''    @staticmethod
             d = p
         return None
 
+    class ReplPairingError(RuntimeError):
+        """Aucune correspondance REPL/toolchain prouvee.
+
+        Le kernel doit ECHOUER : un REPL construit pour une autre version rend
+        chaque cellule en erreur de parse sous un exit 0 (#18511).
+        """
+
+    @staticmethod
+    def _repl_lean_version(repl_path):
+        """Version de Lean EMBARQUEE dans le binaire REPL (mesure, pas annonce).
+
+        Le binaire REPL porte l'URL de documentation de la version qu'il
+        compilee (``https://lean-lang.org/doc/reference/<version>/``). Aucun
+        tag n'est suppose : c'est le binaire qui le dit. Lecture par blocs
+        (le binaire fait ~200 Mo) avec recouvrement.
+        """
+        import re as _re
+        pattern = _re.compile(rb"lean-lang\\.org/doc/reference/(\\d+\\.\\d+\\.\\d+)")
+        try:
+            with open(repl_path, 'rb') as fh:
+                tail = b''
+                while True:
+                    block = fh.read(8 * 1024 * 1024)
+                    if not block:
+                        break
+                    found = pattern.search(tail + block)
+                    if found:
+                        return found.group(1).decode('ascii')
+                    tail = block[-64:]
+        except OSError:
+            return None
+        return None
+
     @staticmethod
     def _repl_for_toolchain(lake_root):
-        """Pick a REPL binary matching the lake's toolchain.
-        ``~/.elan/bin/repl`` is stable-locked; rc1/rc2 lakes need a matched REPL
-        (built via ``setup_native_lean4_import.py build-repl <tag>``)."""
+        """Choisit un REPL PROUVE couple a la toolchain du lake.
+
+        - un binaire ``repl-<tag>`` construit contre cette toolchain
+          (``build-repl <tag>``) ;
+        - sinon le REPL par defaut, mais UNIQUEMENT si la version qu'il
+          embarque est celle de la toolchain.
+
+        Aucun repli silencieux : un REPL construit pour une autre version rend
+        chaque cellule en erreur de parse sous un exit 0 (#18511). Quand aucune
+        correspondance n'est prouvee, on ECHOUE.
+        """
         default = os.path.expanduser('~/.elan/bin/repl')
         # toolchain tag -> canonical matched-REPL name (inlined; keep in sync
         # with REPL_TOOLCHAIN_TAGS in setup_native_lean4_import.py).
@@ -125,6 +166,21 @@ REPL_PY_PATCH = '''    @staticmethod
                 p = os.path.join(elan_bin, name)
                 if os.path.isfile(p):
                     return p
+        # Toolchain inconnue du lake : l'epinglage du wrapper prime
+        # (ELAN_TOOLCHAIN), et c'est lui qui fait foi.
+        tag = tc.split(':')[-1].strip().lstrip('v') if tc else ''
+        if not tag:
+            env_tc = os.environ.get('ELAN_TOOLCHAIN', '')
+            tag = env_tc.split(':')[-1].strip().lstrip('v') if env_tc else ''
+        if tag and os.path.isfile(default):
+            version = Lean4ReplWrapper._repl_lean_version(default)
+            if version == tag:
+                return default
+            raise Lean4ReplWrapper.ReplPairingError(
+                "Lean 4 kernel: no REPL binary matched the toolchain "
+                f"{tag} (the default REPL embeds Lean "
+                f"{version or 'an unknown version'}). Build a matched REPL with: "
+                "setup_native_lean4_import.py build-repl " + tag)
         return default
 
     @classmethod
@@ -175,6 +231,11 @@ REPL_PY_PATCH = '''    @staticmethod
                            'PATH': os.path.expanduser('~/.elan/bin') + ':/usr/local/bin:/usr/bin:/bin'}
                     return pexpect.spawn(repl_bin, echo=False, encoding='utf-8',
                                          codec_errors='replace', env=env)
+        except Lean4ReplWrapper.ReplPairingError:
+            # Une divergence REPL/toolchain ne doit JAMAIS etre rattrapee par le
+            # repli silencieux ci-dessous : c'est lui qui rendait chaque
+            # cellule en erreur de parse sous un exit 0 (#18511).
+            raise
         except Exception:
             pass
         return pexpect.spawn("lake env repl",
