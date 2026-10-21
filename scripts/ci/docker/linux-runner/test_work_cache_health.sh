@@ -246,6 +246,49 @@ echo "Test 6 : seuils inertes -- 0 desactive, sous-le-seil ne repack pas (contro
 )
 echo ""
 
+echo "Test 6b : 0 pack MAIS objets en vrac -- etat anormal, consolide (#21557)"
+(
+  # L'etat mesure sur les slots 8/9/12 d'ai-01 (2026-10-20) : 0 packfile et
+  # 3,9 Go d'objets en vrac. Le compte de packs est SOUS le seuil, donc l'ancien
+  # predicat rendait 0 sans rien faire -- et `gc.auto=0` (actions/checkout) fait
+  # que rien d'autre ne consolide : l'etat est stable et chaque `cat-file` y
+  # coute le parcours des repertoires d'objets (~600 s de scan par cycle).
+  SRC="$TEST_DIR/src6b"; R="$TEST_DIR/clone6b"
+  mk_source "$SRC"
+  git init -q "$R"
+  # transfer.unpackLimit eleve : le fetch DEPOSE les objets en vrac au lieu
+  # d'ecrire un packfile -- c'est la forme anormale, reproduite sans bricolage.
+  git -C "$R" -c transfer.unpackLimit=99999 fetch -q "file://$SRC" \
+    '+refs/heads/main:refs/remotes/origin/main' 2>/dev/null
+  if [ "$(wch_pack_count "$R")" = "0" ] && wch_loose_object_dirs "$R"; then
+    ok "fixture fidèle : 0 pack et objets en vrac"
+  else
+    ko "fixture insuffisante (packs=$(wch_pack_count "$R")) -- le test ne prouve plus rien"
+  fi
+  out="$(wch_maintenance_pass "$R" 16)"
+  after="$(wch_pack_count "$R")"
+  if [ "$after" -ge 1 ]; then
+    ok "repack declenche sur 0 pack + vrac : $after pack(s)"
+  else
+    ko "aucun pack apres passage -- le cycle resterait a ~600 s de scan"
+  fi
+  if echo "$out" | grep -q "repack 0 ->"; then
+    ok "la cause est journalisee (repack 0 -> N, #21557)"
+  else
+    ko "journal de la cause attendu, obtenu: [$out]"
+  fi
+  # Controle negatif : un depot VIDE n'a ni pack ni vrac -- cache frais, muet.
+  E="$TEST_DIR/empty6b"
+  git init -q "$E"
+  out="$(wch_maintenance_pass "$E" 16)"
+  if [ -z "$out" ] && [ "$(wch_pack_count "$E")" = "0" ]; then
+    ok "depot frais (0 pack, 0 vrac) : inerte et muet"
+  else
+    ko "un depot frais ne doit pas declencher de repack, out=[$out]"
+  fi
+)
+echo ""
+
 echo "Test 7 : passe complete sur un _work -- layout <workdir>/<repo>/<repo> (glob entrypoint)"
 (
   W="$TEST_DIR/work"

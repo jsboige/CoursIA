@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Filet des Concerns user sans reponse sur les issues (#20183, phase 0 de #20185).
+"""Filet des remarques user sans reponse sur les issues (#20183, campagne #20185).
 
 Le depot a un filet pour les remarques du user sur les PRs (B.0,
 ``scripts/check_unaddressed_nits.py``, exit 1 au merge). Il n'avait rien pour les
@@ -8,8 +8,28 @@ mainteneur pouvait rester sans reponse indefiniment — le merge-gate ne le voit
 (ce n'est pas une PR), le tapis sert l'issue selon ses propres criteres (le grain,
 pas le fil), et la condensation du dashboard emporte le signalement.
 
-Cette premiere livraison couvre la classe ``user-concern`` de la campagne #20185.
-Les cinq autres classes viendront chacune par sa propre PR.
+La premiere livraison couvrait la classe ``user-concern``. Celle-ci ajoute la
+classe ``user-remark`` : **tout autre commentaire du mainteneur** (question,
+consigne, arbitrage, constat) en attente de reponse (campagne #20185 ; les
+quatre classes restantes viendront chacune par sa propre PR).
+
+Le probleme propre a cette classe est le **login partage** : la flotte ecrit sous
+le compte du mainteneur, et l'auteur ne distingue donc plus un post de lane d'une
+remarque du user. C'est la FORME du corps qui tranche — six signatures mesurees
+(``lane`` + siege, jeton de siege ``myia-x:y``, tag ``Grain:``, en-tete ``Lane``,
+filigrane de cycle ``c.NNN``, tag de tete entre crochets). Mesure canonique du
+2026-10-20 (465 issues ouvertes depuis le 2026-09-25, predicats de ce fichier) :
+1627 commentaires bruts du compte partage, **1071 ecartes** par les signatures
+(deux tiers), 556 candidats — dont 268 en ``MANUAL_REVIEW`` et 52 en
+``NON REPONDU`` a l'etat du jour.
+
+Ce qui reste apres les signatures n'est PAS un verdict : l'intention declaree
+(``question`` | ``directive`` | ``statement``) est **enregistree, pas
+filtrante** — les marqueurs de vocabulaire sont cites par les lanes elles-memes
+(« décision user », « le user a tranché »), s'en servir comme filtre ecarterait
+de vraies remarques. Le plancher ``MANUAL_REVIEW`` s'applique tel quel : la liste
+est complete, quitte a sur-signaler ; l'arbitrage fin revient a la lecture
+(phase 1 de la campagne).
 
 Deux pieges mesures, et la raison pour laquelle ce n'est pas un ``grep`` :
 
@@ -44,6 +64,7 @@ Usage::
     python scripts/ci/check_issue_concerns.py                  # issues ouvertes
     python scripts/ci/check_issue_concerns.py --json
     python scripts/ci/check_issue_concerns.py --issues 19898 16757 17889 18601
+    python scripts/ci/check_issue_concerns.py --classes user-remark --issues 21092
     python scripts/ci/check_issue_concerns.py --as-of 2026-10-08T23:59:59Z
 """
 
@@ -55,15 +76,15 @@ import json
 import re
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timezone
 
 REPO = "jsboige/CoursIA"
 
 #: Le mainteneur ecrit sous ce login. Les lanes ecrivent sous le meme compte
-#: (login partage) : l'auteur ne suffit donc pas a distinguer un Concern user d'un
-#: post de lane — c'est la FORME du corps qui tranche (#20185, classe
-#: ``user-remark``). Pour ``user-concern``, le prefixe reste un signal fort.
+#: (login partage) : l'auteur ne suffit donc pas a distinguer une remarque user
+#: d'un post de lane — c'est la FORME du corps qui tranche (``lane_signature``,
+#: classe ``user-remark``). Pour ``user-concern``, le prefixe reste un signal fort.
 CONCERN_AUTHOR = "jsboige"
 
 #: Les comptes sous lesquels une lane de la flotte ecrit : le compte partage du
@@ -101,6 +122,44 @@ GESTURE_PATTERN = re.compile(
 #: c'est elle qui empeche un long commentaire de lane de compter comme reponse —
 #: et elle est nommee ici pour ne pas etre decouverte par surprise (#20186).
 GESTURE_WINDOW = 400
+
+#: Signatures de lane de la classe ``user-remark`` (#20185, classe 2). Sous le
+#: login partage, l'auteur ne separe plus un post de lane d'une remarque du
+#: mainteneur : c'est la FORME du corps qui tranche. Les formes ci-dessous sont
+#: celles que la flotte utilise, mesurees sur le corpus du 2026-10-20 (465 issues
+#: ouvertes depuis le 2026-09-25) ; elles sont evaluees dans cet ordre et le nom
+#: rendu sert au rapport. Un corps qui en porte une est un post de lane, jamais
+#: un candidat — deux tiers des commentaires du compte partage sont ainsi ecartes.
+_LANE_SIGNATURES: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("lane-near-seat", re.compile(r"\blane\b[^\w\n]{0,12}myia-", re.IGNORECASE)),
+    ("seat-token", re.compile(r"myia-[a-z0-9-]+:[A-Za-z0-9._-]+")),
+    ("grain-tag", re.compile(r"\bGrain\s*:", re.IGNORECASE)),
+    ("lane-header", re.compile(r"(?m)^\s*\*{0,2}Lane\s*[:*]")),
+    #: Borne haute a quatre chiffres (#21621) : ``\d{3,}`` avalait les ids de
+    #: commentaire (``c.6280946388``) et ecartait une remarque du mainteneur qui
+    #: les cite. Les numeros de cycle tiennent en 3-4 chiffres (c.278, c.2199) ;
+    #: le ``\b`` final interdit deja toute coupure en tete d'un id plus long.
+    ("cycle-watermark", re.compile(r"\bc\.\d{3,4}\b")),
+)
+
+#: La sixieme signature, evaluee apres neutralisation de la decoration markdown
+#: (comme ``classify``) : un tag de protocole entre crochets en tete de corps.
+_LANE_HEAD_TAG = re.compile(r"^\[[^\]]{1,80}\]")
+
+#: Intention declaree d'une remarque — **enregistree, pas filtrante** : la mesure
+#: du 2026-10-20 a montre que ces marqueurs de vocabulaire sont cites par les
+#: lanes elles-memes (« décision user », « le user a tranché ») ; s'en servir comme
+#: filtre ecarterait de vraies remarques. Le champ sert a ORDONNER la lecture.
+_ACT_DIRECTIVE_RE = re.compile(
+    r"\bD[ée]cision\b|\btranche\b|\bIl faut\b|\bmerci de\b|\bpeux-tu\b|"
+    r"\bje pr[ée]f[èe]re\b|\bconsigne\b|\bCorrige\b|\bà corriger\b|\bnote pour\b|"
+    r"\bj'attends\b",
+    re.IGNORECASE,
+)
+ACT_QUESTION = "question"
+ACT_DIRECTIVE = "directive"
+ACT_STATEMENT = "statement"
+_ACT_ORDER = {ACT_QUESTION: 0, ACT_DIRECTIVE: 1, ACT_STATEMENT: 2}
 
 _WS = re.compile(r"\s+")
 _DECORATION = re.compile(r"^[\s*_#>`]+")
@@ -145,6 +204,9 @@ class ConcernFinding:
     proof: int | None
     gesture_after: bool
 
+    #: Etiquette de classe — le rendu et les tests scoping lisent ce champ.
+    slug = "user-concern"
+
     def as_dict(self) -> dict:
         return {
             "comment_id": self.comment_id,
@@ -157,23 +219,58 @@ class ConcernFinding:
 
 
 @dataclass
+class RemarkFinding:
+    comment_id: int
+    created_at: str
+    excerpt: str
+    status: str
+    proof: int | None
+    act: str
+    gesture_after: bool
+
+    slug = "user-remark"
+
+    def as_dict(self) -> dict:
+        return {
+            "comment_id": self.comment_id,
+            "created_at": self.created_at,
+            "excerpt": self.excerpt,
+            "status": self.status,
+            "proof": self.proof,
+            "act": self.act,
+            "gesture_after": self.gesture_after,
+        }
+
+
+@dataclass
 class IssueReport:
     number: int
     concerns: list[ConcernFinding]
+    remarks: list[RemarkFinding] = field(default_factory=list)
+    #: Commentaires ecartes par signature de lane, agreges par nom de signature
+    #: (#21621). L'ecart est PUBLIE : un total de candidats ne doit jamais
+    #: passer pour un recensement exhaustif du fil.
+    excluded: dict[str, int] = field(default_factory=dict)
 
     @property
-    def unresolved(self) -> list[ConcernFinding]:
-        return [c for c in self.concerns if c.status != "REPONDU"]
+    def unresolved(self) -> list:
+        return [c for c in self.concerns if c.status != "REPONDU"] + [
+            r for r in self.remarks if r.status != "REPONDU"
+        ]
 
     @property
     def gesture_after(self) -> bool:
-        return any(c.gesture_after for c in self.concerns)
+        return any(c.gesture_after for c in self.concerns) or any(
+            r.gesture_after for r in self.remarks
+        )
 
     def as_dict(self) -> dict:
         return {
             "number": self.number,
             "gesture_after": self.gesture_after,
             "concerns": [c.as_dict() for c in self.concerns],
+            "remarks": [r.as_dict() for r in self.remarks],
+            "excluded_by_signature": dict(self.excluded),
         }
 
 
@@ -207,6 +304,42 @@ def classify(comment: Comment) -> str:
     if GESTURE_PATTERN.search((comment.body or "")[:GESTURE_WINDOW]):
         return "gesture"
     return "other"
+
+
+def lane_signature(body: str | None) -> str:
+    """Signature de lane portee par le corps, ou ``""`` (classe ``user-remark``).
+
+    Sous le login partage, l'auteur ne separe pas un post de lane d'une remarque
+    du mainteneur : un corps qui porte l'une des signatures mesurees est un post
+    de lane, **jamais** un candidat de la classe 2 (#20185). L'ordre d'evaluation
+    est celui de ``_LANE_SIGNATURES`` ; le nom rendu sert au rapport et aux tests.
+    La decoupe tete-crochets s'applique apres neutralisation de la decoration
+    markdown, comme ``classify``.
+    """
+    text = body or ""
+    for name, pattern in _LANE_SIGNATURES:
+        if pattern.search(text):
+            return name
+    if _LANE_HEAD_TAG.match(_DECORATION.sub("", text)):
+        return "head-tag"
+    return ""
+
+
+def remark_act(body: str) -> str:
+    """Intention declaree : ``question`` | ``directive`` | ``statement``.
+
+    **Enregistree, pas filtrante** : la mesure du 2026-10-20 a montre que les
+    marqueurs de vocabulaire (« Décision », « tranche »...) sont cites par les
+    lanes elles-memes (« décision user », « le user a tranché ») — s'en servir
+    comme filtre ecarterait de vraies remarques. Le champ sert a ordonner la
+    lecture, l'arbitrage reste humain.
+    """
+    text = normalise(body)
+    if "?" in text:
+        return ACT_QUESTION
+    if _ACT_DIRECTIVE_RE.search(text):
+        return ACT_DIRECTIVE
+    return ACT_STATEMENT
 
 
 def hhmm_token(created_at: str) -> str:
@@ -308,40 +441,101 @@ def is_response_candidate(kind: str, comment: Comment) -> bool:
     return True
 
 
-def analyse_comments(number: int, comments: list[Comment]) -> IssueReport:
+#: Classes livrees par l'organe (la campagne #20185 en compte six ; les quatre
+#: restantes viendront chacune par sa propre PR). ``analyse_comments`` accepte un
+#: sous-ensemble — les tests s'en servent pour scoper une classe a la fois.
+CLASSES = ("user-concern", "user-remark")
+
+
+def analyse_comments(
+    number: int, comments: list[Comment], classes: tuple[str, ...] = CLASSES
+) -> IssueReport:
     kinds = [classify(c) for c in comments]
     findings: list[ConcernFinding] = []
-    for i, comment in enumerate(comments):
-        if kinds[i] != "concern":
-            continue
-        later = list(zip(comments[i + 1 :], kinds[i + 1 :]))
-        candidates = [
-            (other, kind)
-            for other, kind in later
-            if is_response_candidate(kind, other)
-        ]
-        proof = None
-        for other, kind in candidates:
-            if proves(comment, other, kind):
-                proof = other.id
-                break
-        if proof is not None:
-            status = "REPONDU"
-        elif candidates:
-            status = "MANUAL_REVIEW"
-        else:
-            status = "NON REPONDU"
-        findings.append(
-            ConcernFinding(
-                comment_id=comment.id,
-                created_at=comment.created_at,
-                excerpt=excerpt(comment.body),
-                status=status,
-                proof=proof,
-                gesture_after=any(kind == "gesture" for _, kind in later),
+    remarks: list[RemarkFinding] = []
+    excluded: dict[str, int] = {}
+
+    if "user-concern" in classes:
+        for i, comment in enumerate(comments):
+            if kinds[i] != "concern":
+                continue
+            later = list(zip(comments[i + 1 :], kinds[i + 1 :]))
+            candidates = [
+                (other, kind)
+                for other, kind in later
+                if is_response_candidate(kind, other)
+            ]
+            proof = None
+            for other, kind in candidates:
+                if proves(comment, other, kind):
+                    proof = other.id
+                    break
+            if proof is not None:
+                status = "REPONDU"
+            elif candidates:
+                status = "MANUAL_REVIEW"
+            else:
+                status = "NON REPONDU"
+            findings.append(
+                ConcernFinding(
+                    comment_id=comment.id,
+                    created_at=comment.created_at,
+                    excerpt=excerpt(comment.body),
+                    status=status,
+                    proof=proof,
+                    gesture_after=any(kind == "gesture" for _, kind in later),
+                )
             )
-        )
-    return IssueReport(number=number, concerns=findings)
+
+    if "user-remark" in classes:
+        for i, comment in enumerate(comments):
+            if comment.author != CONCERN_AUTHOR or kinds[i] != "other":
+                continue
+            signature = lane_signature(comment.body)
+            # Le tag de protocole en tete est AMBIGU (#21621) : « [NanoClaw] a
+            # raison de… » est une vraie remarque du mainteneur, tandis qu'un
+            # « [LIVRAISON] … » est un post de lane. Faute de pouvoir trancher,
+            # il est ROUTE vers MANUAL_REVIEW au lieu d'etre ecarte.
+            ambiguous = signature == "head-tag"
+            if signature and not ambiguous:
+                excluded[signature] = excluded.get(signature, 0) + 1
+                continue
+            later = list(zip(comments[i + 1 :], kinds[i + 1 :]))
+            candidates = [
+                (other, kind)
+                for other, kind in later
+                if is_response_candidate(kind, other)
+            ]
+            # Une remarque n'est pas un Concern : seule une citation FORTE
+            # (horodatage, extrait de texte) la referme. Le mot « Concern » n'est
+            # pas une forme de citation d'une remarque — ``proves`` avec
+            # ``kind="other"`` n'accepte deja que la force forte.
+            proof = None
+            for other, _kind in candidates:
+                if proves(comment, other, "other"):
+                    proof = other.id
+                    break
+            if proof is not None:
+                status = "REPONDU"
+            elif candidates or ambiguous:
+                status = "MANUAL_REVIEW"
+            else:
+                status = "NON REPONDU"
+            remarks.append(
+                RemarkFinding(
+                    comment_id=comment.id,
+                    created_at=comment.created_at,
+                    excerpt=excerpt(comment.body),
+                    status=status,
+                    proof=proof,
+                    act=remark_act(comment.body),
+                    gesture_after=any(kind == "gesture" for _, kind in later),
+                )
+            )
+
+    return IssueReport(
+        number=number, concerns=findings, remarks=remarks, excluded=excluded
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -404,17 +598,36 @@ def fetch_comments(number: int) -> list[Comment]:
 # --------------------------------------------------------------------------- #
 
 
+def excluded_by_signature(reports: list[IssueReport]) -> dict[str, int]:
+    """Ecart par signature de lane, agrege sur les rapports (#21621)."""
+    totals: dict[str, int] = {}
+    for report in reports:
+        for name, count in report.excluded.items():
+            totals[name] = totals.get(name, 0) + count
+    return totals
+
+
 def render_text(reports: list[IssueReport], since: str, state: str, scanned: int) -> str:
     unresolved = [(r, c) for r in reports for c in r.unresolved]
-    total = sum(len(r.concerns) for r in reports)
+    total = sum(len(r.concerns) + len(r.remarks) for r in reports)
+    n_conc = sum(1 for _, c in unresolved if c.slug == "user-concern")
+    n_rem = len(unresolved) - n_conc
+    excluded = excluded_by_signature(reports)
+    by_sig = ", ".join(f"{name} {count}" for name, count in sorted(excluded.items()))
     lines = [
-        f"=== Concerns user sans reponse (issues {state}, depuis {since}) ===",
-        f"{len(unresolved)} non resolu(s) sur {total} recense(s), "
-        f"dans {len({r.number for r, _ in unresolved})} issue(s) — "
-        f"{scanned} issue(s) lue(s).",
+        f"=== Remarques user sans reponse (issues {state}, depuis {since}) ===",
+        f"{len(unresolved)} non resolu(s) — {n_conc} concern(s), {n_rem} "
+        f"remarque(s) — sur {total} recense(s), dans "
+        f"{len({r.number for r, _ in unresolved})} issue(s) ; "
+        f"{scanned} issue(s) lue(s) ; "
+        f"{sum(excluded.values())} commentaire(s) ecarte(s) par signature de "
+        f"lane ({by_sig or 'aucune'}).",
     ]
     if not unresolved:
-        lines.append("Aucun — le fil est propre sur la fenetre.")
+        if sum(excluded.values()):
+            lines.append("Aucun non resolu — les commentaires ecartes sont comptes en tete.")
+        else:
+            lines.append("Aucun — le fil est propre sur la fenetre.")
         return "\n".join(lines)
     grouped: dict[int, IssueReport] = {}
     for report, _ in unresolved:
@@ -425,13 +638,22 @@ def render_text(reports: list[IssueReport], since: str, state: str, scanned: int
     )
     for report in ordered:
         flag = "  [gesture-after]" if report.gesture_after else ""
+        open_concerns = [c for c in report.concerns if c.status != "REPONDU"]
+        open_remarks = sorted(
+            (r for r in report.remarks if r.status != "REPONDU"),
+            key=lambda r: (_ACT_ORDER.get(r.act, 9), r.created_at),
+        )
         lines.append("")
-        lines.append(f"#{report.number} — {len(report.unresolved)} concern(s){flag}")
-        for finding in report.unresolved:
+        lines.append(
+            f"#{report.number} — {len(open_concerns)} concern(s), "
+            f"{len(open_remarks)} remarque(s){flag}"
+        )
+        for finding in open_concerns + open_remarks:
             proof = f" (piste c{finding.proof})" if finding.proof else ""
+            label = "" if finding.slug == "user-concern" else f"  [{finding.act}]"
             lines.append(
                 f"  - {finding.created_at} c{finding.comment_id}  "
-                f"{finding.status}{proof}"
+                f"{finding.status}{proof}{label}"
             )
             lines.append(f"      {finding.excerpt}")
     return "\n".join(lines)
@@ -446,8 +668,24 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--limit", type=int, default=0, help="ne lire que N issues (0 = toutes)")
     parser.add_argument("--jobs", type=int, default=8, help="lectures de fils en parallele")
     parser.add_argument("--json", action="store_true", help="sortie JSON")
-    parser.add_argument("--fail-on-open", action="store_true", help="exit 1 si un Concern reste ouvert")
+    parser.add_argument(
+        "--classes",
+        default=",".join(CLASSES),
+        help="classes a recenser, separees par des virgules (defaut : toutes les classes livrees)",
+    )
+    parser.add_argument("--fail-on-open", action="store_true", help="exit 1 si un constat reste ouvert")
     args = parser.parse_args(argv)
+
+    requested = tuple(c.strip() for c in args.classes.split(",") if c.strip())
+    unknown = [c for c in requested if c not in CLASSES]
+    if unknown:
+        print(
+            f"classe(s) non livree(s) : {', '.join(unknown)} — disponibles : "
+            f"{', '.join(CLASSES)} (les autres classes de #20185 viendront "
+            f"chacune par sa PR)",
+            file=sys.stderr,
+        )
+        return 2
 
     if args.issues:
         numbers = list(dict.fromkeys(args.issues))
@@ -468,36 +706,50 @@ def main(argv: list[str] | None = None) -> int:
         comments = fetch_comments(number)
         if cutoff is not None:
             comments = [c for c in comments if c.when <= cutoff]
-        return analyse_comments(number, comments)
+        return analyse_comments(number, comments, requested)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as pool:
         reports = list(pool.map(work, numbers))
 
-    reports = [r for r in reports if r.concerns]
+    # Les rapports qui ne portent QUE des ecarts sont conserves (#21621) : les
+    # retirer ferait disparaitre du total publie les commentaires qu'on ecarte.
+    reports = [r for r in reports if r.concerns or r.remarks or r.excluded]
+    unresolved = sum(len(r.unresolved) for r in reports)
+    excluded = excluded_by_signature(reports)
 
     if args.json:
-        unresolved = sum(len(r.unresolved) for r in reports)
         payload = {
             "since": args.since,
             "state": args.state,
             "as_of": args.as_of,
+            "classes": list(requested),
             "issues_scanned": len(numbers),
             "concerns_total": sum(len(r.concerns) for r in reports),
-            "concerns_unresolved": unresolved,
+            "concerns_unresolved": sum(
+                1 for r in reports for c in r.concerns if c.status != "REPONDU"
+            ),
+            "remarks_total": sum(len(r.remarks) for r in reports),
+            "remarks_unresolved": sum(
+                1 for r in reports for c in r.remarks if c.status != "REPONDU"
+            ),
+            "unresolved": unresolved,
+            "excluded_total": sum(excluded.values()),
+            "excluded_by_signature": excluded,
             "issues": [
                 r.as_dict()
                 for r in sorted(
                     reports,
                     key=lambda r: (not r.gesture_after, r.number),
                 )
-                if r.unresolved
+                # Les rapports a ecarts seuls gardent leur entree : le total
+                # publie les compte, l'entree montre par quelle signature.
+                if r.unresolved or r.excluded
             ],
         }
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         print(render_text(reports, args.since, args.state, len(numbers)))
 
-    unresolved = sum(len(r.unresolved) for r in reports)
     if args.fail_on_open and unresolved:
         return 1
     return 0
