@@ -24,6 +24,13 @@ Les cas sont calques sur les fils de controle mesures le 2026-10-10 :
 Couvre aussi le plancher fail-closed : un acquittement nu ne repond pas, et un
 fil qui ne porte que des gestes laisse le Concern NON REPONDU.
 
+Classe ``user-remark`` (#20185, classe 2) : sous le login partage, l'auteur ne
+separe pas un post de lane d'une remarque du mainteneur — c'est la FORME du corps
+qui tranche (six signatures mesurees, ``lane_signature``). Une reponse non signee
+sans reponse reste ouverte ; un post de lane signe n'est jamais un candidat ; une
+citation forte (horodatage) referme ; le mot « Concern » ne referme pas une
+remarque ; un geste de lane apres la remarque leve ``gesture-after``.
+
 Le module est charge par chemin (`importlib`) : `scripts/ci/` n'est pas un
 paquet importable, et deux organes peuvent partager un nom de module.
 """
@@ -305,7 +312,9 @@ class AnalyseTests(unittest.TestCase):
             c(1, "2026-10-01T10:00:00Z", CONCERN_1),
             c(2, "2026-10-01T11:00:00Z", "Pousse la branche, les tests passent."),
         ]
-        report = mod.analyse_comments(43, comments)
+        # Classe 1 seule : le second commentaire est lui-meme un candidat de la
+        # classe 2 (post non signe du compte partage) — hors scope de ce test.
+        report = mod.analyse_comments(43, comments, classes=("user-concern",))
         self.assertEqual(report.concerns[0].status, "MANUAL_REVIEW")
         self.assertEqual(len(report.unresolved), 1, "fail-closed : MANUAL_REVIEW reste dans la liste")
 
@@ -330,7 +339,7 @@ class AnalyseTests(unittest.TestCase):
                 "je n'ai pas encore eu le temps de regarder le depot annonce. " * 3,
             ),
         ]
-        report = mod.analyse_comments(71, comments)
+        report = mod.analyse_comments(71, comments, classes=("user-concern",))
         self.assertEqual(report.concerns[0].status, "MANUAL_REVIEW")
         self.assertEqual(len(report.unresolved), 1)
 
@@ -358,6 +367,174 @@ class AnalyseTests(unittest.TestCase):
         self.assertLessEqual(len(report.concerns[0].excerpt), 200)
 
 
+class LaneSignatureTests(unittest.TestCase):
+    """Classe 2 : les signatures mesurees qui ecartent un post de lane."""
+
+    def test_lane_near_seat(self):
+        self.assertEqual(
+            mod.lane_signature("[CLAIMED] lane myia-po-2024:CoursIA-2 — reprise du pli"),
+            "lane-near-seat",
+        )
+
+    def test_seat_token_even_backticked(self):
+        # Un jeton de siege encage reste une signature : c'est la lane qui
+        # l'ecrit, l'encagement ne change pas l'auteur.
+        self.assertEqual(
+            mod.lane_signature("Rapport de `myia-po-2024:CoursIA-2`, pousse ce matin."),
+            "seat-token",
+        )
+
+    def test_grain_tag(self):
+        self.assertEqual(
+            mod.lane_signature("Grain: LIGHT/guard — passe de garde"), "grain-tag"
+        )
+
+    def test_cycle_watermark(self):
+        self.assertEqual(
+            mod.lane_signature("Point de situation (c.278)."), "cycle-watermark"
+        )
+
+    def test_head_tag_after_decoration(self):
+        self.assertEqual(
+            mod.lane_signature("**[LIVRAISON] Pli 1 — lecture du depot**"), "head-tag"
+        )
+
+    def test_maintainer_voice_is_unsigned(self):
+        self.assertEqual(
+            mod.lane_signature(
+                "Reponse ecrite qui tranche : option 1 — garder l'indice tel quel. "
+                "La valeur 8 n'est pas un spoiler : c'est un parametre de l'experience."
+            ),
+            "",
+        )
+
+
+class RemarkActTests(unittest.TestCase):
+    """L'intention declaree est enregistree, pas filtrante."""
+
+    def test_question(self):
+        self.assertEqual(mod.remark_act("Est-ce qu'on garde l'indice ?"), mod.ACT_QUESTION)
+
+    def test_directive(self):
+        self.assertEqual(
+            mod.remark_act("Decision : on reste sur l'option 1."), mod.ACT_DIRECTIVE
+        )
+
+    def test_statement(self):
+        self.assertEqual(
+            mod.remark_act("Le rendu est propre sur cette serie."), mod.ACT_STATEMENT
+        )
+
+
+class RemarkAnalysisTests(unittest.TestCase):
+    """Classe 2 : la machinerie de reponse s'applique telle quelle aux remarques."""
+
+    REMARK = (
+        "Reponse ecrite qui tranche : option 1 — garder l'indice tel quel. "
+        "La valeur 8 n'est pas un spoiler : c'est un parametre de l'experience."
+    )
+
+    def test_maintainer_remark_without_answer_is_open(self):
+        report = mod.analyse_comments(
+            21092,
+            [c(6233713025, "2026-10-17T12:09:20Z", self.REMARK)],
+            classes=("user-remark",),
+        )
+        self.assertEqual(len(report.remarks), 1)
+        finding = report.remarks[0]
+        self.assertEqual(finding.status, "NON REPONDU")
+        self.assertEqual(finding.act, mod.ACT_DIRECTIVE)
+        self.assertEqual(finding.slug, "user-remark")
+
+    def test_lane_signed_comment_is_never_a_remark(self):
+        # Aucun de ces corps n'est un geste (le seau les garderait sinon hors
+        # classe par le genre) : c'est bien ``lane_signature`` qui les ecarte.
+        for body in (
+            "Point de situation (c.278), cote myia-po-2024:CoursIA-2 : le pli avance.",
+            "Point de situation (c.278) : rien de neuf sur cette serie.",
+            "Grain: LIGHT/guard -- passe de garde sur les liens.",
+        ):
+            report = mod.analyse_comments(
+                7, [c(2, "2026-10-18T01:25:00Z", body)], classes=("user-remark",)
+            )
+            self.assertEqual(report.remarks, [], f"corps signe retenu : {body[:60]}")
+
+    def test_remark_closed_by_a_strong_citation(self):
+        report = mod.analyse_comments(
+            8,
+            [
+                c(10, "2026-10-17T12:09:20Z", self.REMARK),
+                c(
+                    11,
+                    "2026-10-17T13:00:00Z",
+                    "Sur ta reponse du 12:09Z : option 1 retenue, je la mets en oeuvre.",
+                ),
+            ],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.remarks[0].status, "REPONDU")
+        self.assertEqual(report.remarks[0].proof, 11)
+
+    def test_remark_with_unrelated_later_comment_is_manual_review(self):
+        report = mod.analyse_comments(
+            9,
+            [
+                c(10, "2026-10-17T12:09:20Z", self.REMARK),
+                c(11, "2026-10-17T13:00:00Z", "J'ai pousse la branche, les tests passent."),
+            ],
+            classes=("user-remark",),
+        )
+        statuses = [r.status for r in report.remarks]
+        # Le second commentaire est lui-meme un candidat (meme forme, compte
+        # partage) : le plancher sur-signale au lieu de filtrer — assume (#20185).
+        self.assertEqual(statuses, ["MANUAL_REVIEW", "NON REPONDU"])
+
+    def test_the_word_concern_does_not_close_a_remark(self):
+        report = mod.analyse_comments(
+            10,
+            [
+                c(10, "2026-10-17T12:09:20Z", self.REMARK),
+                c(11, "2026-10-17T13:00:00Z", "Ce Concern est note pour la prochaine passe."),
+            ],
+            classes=("user-remark",),
+        )
+        self.assertNotEqual(report.remarks[0].status, "REPONDU")
+
+    def test_a_foreign_login_is_not_a_maintainer_remark(self):
+        report = mod.analyse_comments(
+            5,
+            [c(1, "2026-10-17T12:09:20Z", self.REMARK, author="un-contributeur")],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.remarks, [])
+
+    def test_lane_gesture_after_a_remark_is_the_aggravating_flag(self):
+        report = mod.analyse_comments(
+            6,
+            [
+                c(1, "2026-10-17T12:09:20Z", self.REMARK),
+                c(2, "2026-10-18T01:25:00Z", CLAIM),
+            ],
+            classes=("user-remark",),
+        )
+        self.assertEqual(report.remarks[0].status, "NON REPONDU")
+        self.assertTrue(report.remarks[0].gesture_after)
+        self.assertTrue(report.gesture_after)
+
+    def test_class_scoping_keeps_the_classes_independent(self):
+        comments = [
+            c(1, "2026-10-01T10:00:00Z", CONCERN_1),
+            c(2, "2026-10-01T11:00:00Z", "Le rendu est propre."),
+        ]
+        only_concerns = mod.analyse_comments(3, comments, classes=("user-concern",))
+        only_remarks = mod.analyse_comments(3, comments, classes=("user-remark",))
+        self.assertEqual(len(only_concerns.concerns), 1)
+        self.assertEqual(only_concerns.remarks, [])
+        self.assertEqual(only_remarks.concerns, [])
+        self.assertEqual(len(only_remarks.remarks), 1)
+        self.assertEqual(only_remarks.remarks[0].status, "NON REPONDU")
+
+
 class RenderTests(unittest.TestCase):
     def test_clean_thread(self):
         text = mod.render_text([], "2026-09-25", "open", 581)
@@ -372,6 +549,16 @@ class RenderTests(unittest.TestCase):
         text = mod.render_text([plain, flagged], "2026-09-25", "open", 2)
         self.assertLess(text.index("#11"), text.index("#10"))
         self.assertIn("gesture-after", text)
+
+    def test_remark_renders_with_its_act(self):
+        report = mod.analyse_comments(
+            12,
+            [c(1, "2026-10-17T12:09:20Z", "Decision : on garde l'option 1.")],
+            classes=("user-remark",),
+        )
+        text = mod.render_text([report], "2026-09-25", "open", 1)
+        self.assertIn("[directive]", text)
+        self.assertIn("remarque(s)", text)
 
 
 if __name__ == "__main__":
