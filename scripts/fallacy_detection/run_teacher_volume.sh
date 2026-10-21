@@ -26,7 +26,12 @@
 #
 # Les memes valeurs sont acceptees en variables d'environnement
 # (REPO_ROOT, MASTER_ENV_PATH, VENV_SCRIPTS, LOG_PATH, HUB_HOST, HUB_PORT,
-# SPLIT, LANG, LIMIT) ; les options de ligne de commande l'emportent.
+# SPLIT, TEACHER_LANG, LIMIT) ; les options de ligne de commande l'emportent.
+#
+# `TEACHER_LANG` et non `LANG` : `LANG` est reserve par POSIX a la locale
+# (`en_US.UTF-8`, `fr_FR.UTF-8`...). Le lire comme langue du corpus rendait
+# `--lang en_US.UTF-8` des que l'environnement posait une locale, ce qu'un
+# service systemd ou un shell interactif font toujours.
 
 set -u
 
@@ -39,7 +44,7 @@ LOG_PATH="${LOG_PATH:-$REPO_ROOT/.tmp/teacher_volume.log}"
 HUB_HOST="${HUB_HOST:-192.168.0.47}"
 HUB_PORT="${HUB_PORT:-5002}"
 SPLIT="${SPLIT:-test}"
-LANG_OPT="${LANG:-fr}"
+LANG_OPT="${TEACHER_LANG:-fr}"
 LIMIT="${LIMIT:-0}"
 
 while [ $# -gt 0 ]; do
