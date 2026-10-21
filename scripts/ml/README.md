@@ -55,8 +55,15 @@ Environnement : numpy 2.2.6, scikit-learn 1.9.1, cache `~/.cache/ft00a`.
 |--------|--------|---------|---------|
 | A — WS-00c §6 (graine 42) | 0,790 / 0,425 | 0,790 / 0,425 (sorties committes, cellule 21) | **reproduit** |
 | B — WS-03 (graine 42) | 0,780 / 0,311 | 0,780 / 0,311 (sorties committes, cellule 8) | **reproduit** |
-| C — WS-00c sans graine, 40 occurrences | enveloppe 0,745–0,850 / 0,380–0,540, σ ≈ 0,029 / 0,031 | — | la paire publiee est dans l'enveloppe (percentiles 25 et 20) |
+| C — WS-00c sans graine, 40 occurrences | enveloppe 0,755–0,835 / 0,385–0,510, σ ≈ 0,016 / 0,030 | — | la paire publiee est dans l'enveloppe (percentiles 2 et 25) |
 | D — 16 variantes | 0 variante reproduisant 0,773 / 0,431 | — | **paire non reproductible** |
+
+Les bornes de la ligne C dependent du tirage (le split de ce protocole est
+volontairement sans graine) : elles sont celles de l'execution datee par
+l'agregat, pas une constante. Ce qui reste stable d'une execution a l'autre —
+et qui porte la lecture ci-dessous — est que A et B reproduisent les valeurs
+committes, et qu'aucune des 40 occurrences de C ni aucune des 16 variantes de D
+ne reproduit exactement la paire publiee.
 
 Lecture : les valeurs **committes** des deux carnets sont reproductibles hors
 carnet au chiffre pres, et le protocole des deux est correctement reconstitue.

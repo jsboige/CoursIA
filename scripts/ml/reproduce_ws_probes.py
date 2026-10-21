@@ -47,8 +47,15 @@ Usage :
 Mesures du 2026-10-21 (numpy 2.2.6, scikit-learn 1.9.1, cache local) :
     A. WS-00c §6 protocole exact    -> 0,790 / 0,425  (committes, reproduit)
     B. WS-03 protocole exact        -> 0,780 / 0,311  (committes, reproduit)
-    C. WS-00c §6 sans graine (x40) -> enveloppe [0,755 ; 0,855] x [0,390 ; 0,490]
+    C. WS-00c §6 sans graine (x40) -> enveloppe [0,755 ; 0,835] x [0,385 ; 0,510]
     D. 16 variantes balayees        -> 0 reproduisant exactement 0,773 / 0,431
+
+L'enveloppe C est la seule ligne qui bouge d'une execution a l'autre : le
+protocole « sans graine » laisse le split au hasard, donc ses bornes dependent
+du tirage. Ce qui est stable, et qui porte la conclusion, est ailleurs : A et B
+reproduisent les valeurs committes, et aucune des 16 variantes nommees (D) ni
+aucune des 40 occurrences de C ne reproduit exactement la paire publiee
+0,773 / 0,431. L'agregat ecrit fait foi pour les bornes d'un run donne.
 """
 
 from __future__ import annotations
@@ -261,8 +268,10 @@ def main() -> int:
     print(f"numpy {np.__version__} | scikit-learn {sklearn.__version__}\n")
 
     res = {
+        # Etiquette non-machine : le chemin absolu du cache n'apporte rien a la
+        # reproductibilite et interdit l'artefact d'etre commite tel quel.
         "environnement": {"numpy": np.__version__, "scikit_learn": sklearn.__version__,
-                          "cache": str(raw)},
+                          "cache": "FashionMNIST/raw (cache IDX local)"},
         "references": {**VALEURS_COMMITTES, "paire_publiee": PAIRE_PUBLIEE},
     }
 
