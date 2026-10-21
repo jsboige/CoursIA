@@ -1369,7 +1369,7 @@ def test_tree_lease_released_when_backend_translation_fails():
                 lambda root, cmd, caller, budget: (sentinel, None))
             le.release_tree_lease = (
                 lambda p: released.append(p))
-            def _boom(cmd, backend, env):
+            def _boom(cmd, backend, env, cwd=None):
                 raise OSError("wslpath a echoue (simulation)")
             le.backend_command = _boom
             os.chdir(proj)
