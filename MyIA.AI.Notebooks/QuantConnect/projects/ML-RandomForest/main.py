@@ -42,9 +42,9 @@ class MLRandomForestAlgorithm(QCAlgorithm):
         else:
             self.SetStartDate(2015, 1, 1)
         if end_date_param is not None:
-            self.set_end_date(end_date_param)
+            self.SetEndDate(end_date_param)
         else:
-            self.set_end_date(2024, 12, 31)
+            self.SetEndDate(2024, 12, 31)
         self.SetCash(100000)
         self.SetBrokerageModel(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 

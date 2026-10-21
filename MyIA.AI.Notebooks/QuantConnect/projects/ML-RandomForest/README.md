@@ -30,6 +30,8 @@ Entraînement mensuel du modèle, rebalancement bimensuel (un lundi sur deux). S
 
 ## Backtest réel (QC Cloud, frais IBKR inclus)
 
+> **Chiffres non reproduits.** Le backtest de contrôle de #21804, même code sur 2015-2024, donne 0,834 / 24,10 % / 49,6 % de drawdown sur 2516 jours tradés. La table ci-dessous correspond à un backtest plus long (2914 jours) et son drawdown ne s'explique pas par la longueur : voir « Écart avec la baseline ci-dessus », dans la section « Mesure contre des références détenues (#21804) ».
+
 | Métrique | Valeur |
 |----------|--------|
 | Sharpe ratio | **0.819** |
