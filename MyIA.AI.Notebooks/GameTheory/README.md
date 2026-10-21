@@ -174,7 +174,7 @@ Les trois figures suivantes échantillonnent cette phase : l'apprentissage d'un 
 
 ## Approfondissements
 
-Une lettre creuse le palier dont elle porte le numéro. On l'ouvre pour aller plus loin sur ce palier, pas pour avancer dans la série : chaque table ci-dessous suppose le notebook du palier déjà lu, et signale les prérequis en plus quand il y en a. Les paliers 01, 07, 10, 12 et 14 n'en portent pas.
+Une lettre creuse le palier dont elle porte le numéro. On l'ouvre pour aller plus loin sur ce palier, pas pour avancer dans la série : chaque table ci-dessous suppose le notebook du palier déjà lu, et signale les prérequis en plus quand il y en a. Les paliers 01, 07, 10 et 12 n'en portent pas.
 
 ### Autour de 02 — forme normale
 
@@ -260,6 +260,12 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | 13e | [Réviser un modèle d'adversaire](GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb) | Révision AGM à noyaux d'une base de croyances sur l'adversaire : Z3 décide la consistance, l'enracinement est mesuré, et le coût du refus d'évidence est payé en gain cumulé | Python | Recherche |
 | 13f | [Ataraxos, le patron en trois briques](GameTheory-13f-Ataraxos-Patron-Python.ipynb) | Distillation du patron de conception Ataraxos (apprendre par auto-jeu, chercher au temps de test) exécutée de bout en bout sur Kuhn Poker : les trois briques du moteur en Python autonome | Python | Recherche |
 | 13g | [Ataraxos, l'organe natif à budget réduit](GameTheory-13g-Ataraxos-Organe-Natif.ipynb) | L'organe réel `AtaraxosAI/doudizhu` (nanopokerlib C++20, MARVEL, Yomi, Kagami) installé, entraîné 2 itérations et invoqué à budget réduit : la non-monotonie mesurée défait le récit « plus de budget = mieux » | Python | Recherche |
+
+### Autour de 14 — jeux spatiaux
+
+| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
+|--------|----------|-----------------|-------|--------|
+| 14c | [Jeux spatiaux, Axelrod-Henricks](GameTheory-14c-Jeux-Spatiaux-Cooperation-Axelrod-Henricks-Python.ipynb) | Le Dilemme du Prisonnier sur grille torique et son pendant bien mélangé : l'îlot de 3 × 3 qui tient et l'îlot de 2 × 2 qui s'éteint, la bordure qui protège l'intérieur, et le même îlot effacé en un pas dès qu'on mélange la population | Python | Licence |
 
 ### Autour de 15 — coalitions et pouvoir
 
