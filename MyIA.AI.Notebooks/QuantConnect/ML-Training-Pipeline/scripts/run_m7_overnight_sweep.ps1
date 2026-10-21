@@ -8,8 +8,9 @@ $LogDir = $OutDir
 $Python = "C:\Users\MYIA\miniconda3\envs\coursia-ml-training\python.exe"
 $Train = Join-Path $ScriptDir "train_multiscale_gnn.py"
 
-# Ecriture sans BOM (PowerShell 5.1) : `Out-File -Encoding utf8` ecrit un BOM
-# sous 5.1 (EF BB BF), visible sur la premiere ligne affichee du fichier. L'append
+# Ecriture sans BOM (PowerShell 5.1) : la forme `Out-File` avec l'encodage
+# `utf8` ecrit un BOM sous 5.1 (EF BB BF), visible sur la premiere ligne affichee
+# du fichier. L'append
 # est preserve : le contenu deja present est relu, puis le fichier est reecrit.
 function Add-LogNoBom {
     param([string]$Path, [string]$Text)
