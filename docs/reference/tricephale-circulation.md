@@ -6,9 +6,9 @@ La coordination CoursIA a **trois têtes**, chacune avec sa lane, sa skill et so
 |---|---|---|---|---|
 | **Coordinateur** | `myia-ai-01:CoursIA` | `coordinate` | merge, clôture, arbitrage, politique de flotte | `workspace-CoursIA` (+ `global`) |
 | **Titulaire** | `myia-po-2025:CoursIA-2` | `coordinate-adjoint` | émet les dossiers `[ADJOINT PREFLIGHT]` exact-head que `merge_ready` et le coordinateur consomment | `workspace-CoursIA-2` |
-| **Secrétaire** | `myia-po-2026:CoursIA-3` | `adjoint-secretary` | attestation tierce du plus ancien au plus récent (dossiers qu'ai-01 lit et approuve, puis que `merge_ready` merge), puis circulation : DMs nominatifs, alertes conflits / quota / runners | `workspace-CoursIA-3` |
+| **Secrétaire** | `myia-po-2028:CoursIA-3` | `adjoint-secretary` | attestation tierce du plus ancien au plus récent (dossiers qu'ai-01 lit et approuve, puis que `merge_ready` merge), puis circulation : DMs nominatifs, alertes conflits / quota / runners | `workspace-CoursIA-3` |
 
-« Le secrétariat », « le secrétaire » et « le troisième dashboard » désignent `myia-po-2026:CoursIA-3` et son artefact `workspace-CoursIA-3`.
+« Le secrétariat », « le secrétaire » et « le troisième dashboard » désignent `myia-po-2028:CoursIA-3` et son artefact `workspace-CoursIA-3`. Le siège était tenu par `myia-po-2026:CoursIA-3` jusqu'à la panne matérielle de cette machine (2026-10-09) ; `myia-po-2028` le reprend depuis le 2026-10-20, par mandat user.
 
 Ces clés sont des **identités**, pas une liste de lecture : le tableau dit qui est qui, jamais quoi lire.
 
