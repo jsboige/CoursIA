@@ -218,7 +218,11 @@ def test_secretary_lane_can_attest_although_it_carries_nothing():
     `myia-po-2023:CoursIA-2` is the mirror case: it carries #16259 but could
     not attest for anyone.
     """
-    for lane in ("myia-po-2026:CoursIA-3", "myia-po-2023:CoursIA-2"):
+    for lane in (
+        "myia-po-2026:CoursIA-3",
+        "myia-po-2028:CoursIA-3",
+        "myia-po-2023:CoursIA-2",
+    ):
         ready, errors = mod.evaluate(_snapshot(_body(lane=lane)))
         assert ready, (lane, errors)
         assert errors == [], lane
