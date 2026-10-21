@@ -39,9 +39,13 @@ bound needs), `half_sum_abs_sq_sub_sq_sq_le` (the **Hellinger bound** :
 **Postponed to k4.2** : the "distribution" version of the bound — replacing
 the weights by the distributions and the factor `2⁻¹` by
 `tvDistance S P Q` in Finset vocabulary — as soon as `Komlos.Cube` fixes
-its call site ; then the chain `Cube` → `NearInvariant` (Lemma 1.5), whose
-`Transport` substrate is under arbitration (#19081). The detailed state
-lives in `FORMAL_STATUS.md`.
+its call site ; then the chain `Cube` → `NearInvariant` (Lemma 1.5). The
+`Transport` substrate is **delivered** (k2.3, PR #19081 **merged** on
+2026-10-08) ; a single one of its statements is still postponed,
+`shiftDist_push`, with its reason measured inside the module itself (the
+re-indexation of `S ∪ (S + u)` under the lake's explicit `Finset`
+convention). It is that statement, and not an open arbitration, that k4.3
+awaits. The detailed state lives in `FORMAL_STATUS.md`.
 -/
 
 import Discrepancy.Basic
