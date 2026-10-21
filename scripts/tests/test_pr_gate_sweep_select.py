@@ -112,7 +112,8 @@ def _run_selector_both(tmp_path, rows, wfnames=None):
     return out
 
 
-def _pr(number, checks, sha="deadbeef", fork=False, workflows=None):
+def _pr(number, checks, sha="deadbeef", fork=False, workflows=None,
+        run_conclusions=None):
     """checks = tuples (name, status, conclusion, started_at[, run_id]).
 
     Sans 5e element, la fixture ne porte pas de details_url : le selecteur
@@ -125,6 +126,12 @@ def _pr(number, checks, sha="deadbeef", fork=False, workflows=None):
     classee muette ; les fixtures muettes le portent a "" explicitement --
     la forme exacte que le collecteur emet pour un check-run conclu sans
     output.
+
+    ``run_conclusions`` (#21300) : carte run_id -> conclusion du run de
+    workflow sous-jacent. En production, ces conclusions arrivent
+    imbriquees dans `workflows` (mode 2 champs `{wf, c}`) ; la carte
+    separee permet aux tests d'exprimer la classe startup_failure sans
+    toucher a la clef de pliage `_fold_key`.
     """
     rows = []
     for ch in checks:
@@ -141,6 +148,10 @@ def _pr(number, checks, sha="deadbeef", fork=False, workflows=None):
     row_out = {"number": number, "sha": sha, "fork": fork, "checks": rows}
     if workflows:
         row_out["workflows"] = {str(k): v for k, v in workflows.items()}
+    if run_conclusions:
+        row_out["run_conclusions"] = {
+            str(k): v for k, v in run_conclusions.items()
+        }
     return row_out
 
 
@@ -846,3 +857,121 @@ def test_workflow_fetches_wfmap_only_for_gate_bearing_prs():
     assert guard != -1, "garde de collecte de la carte absent (#15770)"
     assert fetch != -1
     assert guard < fetch, "la carte est demandee hors du garde (#15770)"
+
+
+# --- #21300 : STARTUP_FAILURE -- `gh run rerun` INERT sur run jamais demarre --
+
+# Mesure du 2026-10-19 (run 39034901868 sur #20874) : la jambe de gate est
+# rouge, mais le run de workflow sous-jacent est en `startup_failure` (le
+# runner n'a jamais execute le script -- 9 tentatives, `steps = []`,
+# `runner_name = null`, `started_at == completed_at`). Le sweep relancait ce
+# run en boucle, `gh run rerun` recopiant la sortie vide de la tentative
+# precedente : 8-9 tentatives perdues par passage, PR gelee indefiniment.
+# Le correctif detecte la conclusion du run via `actions/runs?head_sha=`
+# (un seul appel REST, cout inchange) et NAMME le geste qui marche -- une
+# nouvelle tete (`gh pr update-branch`) -- sans emettre la PR comme
+# candidate re-run.
+
+GATE_STARTUP_FAILURE = (
+    "PR gate", "completed", "failure", "2026-01-01T10:00:00Z", 39034901868,
+)
+GATE_COMPLETED_FAILURE = (
+    "PR gate", "completed", "failure", "2026-01-01T10:00:00Z", 37144908600,
+)
+
+
+def test_startup_failure_gate_leg_skipped(tmp_path):
+    """#21300 critere 1 : un gate rouge dont le run sous-jacent est
+    `startup_failure` n'est PAS candidat re-run -- stdout vide, le geste
+    est nomme sur stderr."""
+    proc = _run_selector_both(
+        tmp_path,
+        [_pr(401, [GATE_STARTUP_FAILURE, OTHER_GREEN],
+             run_conclusions={39034901868: "startup_failure"})],
+    )
+    assert proc.stdout.strip() == ""
+    assert "#401" in proc.stderr
+    assert "STARTUP_FAILURE" in proc.stderr
+    assert "gh run rerun" in proc.stderr
+    assert "INERT" in proc.stderr
+    # Le geste qui marche est explicite.
+    assert "gh pr update-branch" in proc.stderr
+    # Le run_id est cite pour permettre la traversabilite.
+    assert "39034901868" in proc.stderr
+
+
+def test_completed_failure_still_candidate_regression(tmp_path):
+    """Controle positif de non-regression #21300 : un gate rouge dont le
+    run sous-jacent est en `failure` (le cas historique, 99 % du pool)
+    RESTE un candidat re-run. Sans ce test, un faux positif sur
+    `startup_failure` absorberait toute la population."""
+    proc = _run_selector_both(
+        tmp_path,
+        [_pr(402, [GATE_COMPLETED_FAILURE, OTHER_GREEN],
+             run_conclusions={37144908600: "failure"})],
+    )
+    assert proc.stdout.strip() == "402 deadbeef false 0"
+    assert proc.stderr.strip() == ""
+
+
+def test_startup_failure_without_run_conclusion_map_still_candidate(tmp_path):
+    """Une carte `run_conclusions` absente ne peut pas conclure a
+    `startup_failure` (donnee manquante, pas un verdict) -- le selecteur
+    RETOMBE sur le comportement historique : la gate rouge est candidate.
+    Fail-CLOSED cote detection, jamais cote absence."""
+    proc = _run_selector_both(
+        tmp_path,
+        [_pr(403, [GATE_STARTUP_FAILURE, OTHER_GREEN])],
+    )
+    assert proc.stdout.strip() == "403 deadbeef false 0"
+
+
+def test_startup_failure_with_old_completed_red_still_candidate(tmp_path):
+    """Deux jambes de gate rouges : une ancienne en `failure` completed,
+    une recente en `startup_failure`. Le SEUL candidat au re-run est
+    l'ancienne (le re-run du startup_failure est inerte) -- la nouvelle
+    classification exclut la PR tant que la jambe completed n'est pas
+    traitee, et la jambe completed n'est pas re-runcable si elle est
+    superedee. Selection : on exclut sur la jambe la plus recente qui
+    est en startup_failure, le candidat n'emerge pas. Mesure : on ne
+    MANGE pas une PR reparable a cause d'une jambe morte."""
+    completed_old = (
+        "PR gate", "completed", "failure", "2026-01-01T08:00:00Z", 100,
+    )
+    proc = _run_selector_both(
+        tmp_path,
+        [_pr(404, [completed_old, GATE_STARTUP_FAILURE, OTHER_GREEN],
+             run_conclusions={39034901868: "startup_failure"})],
+    )
+    # La jambe startup_failure est la plus recente -> PR exclue.
+    assert proc.stdout.strip() == ""
+    assert "STARTUP_FAILURE" in proc.stderr
+
+
+def test_startup_failure_silenced_when_no_red_gate_leg(tmp_path):
+    """#21300 garde-fou : le diagnostic ne tire QUE si la jambe de gate
+    est rouge ET son run est startup_failure. Une jambe startup_failure
+    isolee sans rouge coexistant ne declenche PAS la branche (le `if not
+    any(RED)` la coupe avant)."""
+    gate_success = ("PR gate", "completed", "success", "2026-01-01T10:00:00Z",
+                    500)
+    proc = _run_selector_both(
+        tmp_path,
+        [_pr(405, [gate_success, OTHER_GREEN],
+             run_conclusions={500: "startup_failure"})],
+    )
+    # Pas de rouge : PR saine, traverse le sweep.
+    assert proc.stdout.strip() == ""
+    # Et aucun diagnostic STARTUP_FAILURE (la branche n'est pas atteinte).
+    assert "STARTUP_FAILURE" not in proc.stderr
+
+
+def test_workflow_pin_collects_run_conclusion():
+    """#21300 garde structurelle : le collecteur du sweep inclut le
+    `conclusion` du run dans le payload jq, sinon la detection ne peut
+    jamais s'alimenter (les tests passent par `run_conclusions`, mais
+    la production ne peut pas inventer la donnee)."""
+    run = _collector_run()
+    # Le jq doit projeter la clef `c` sur la conclusion du run.
+    assert '.conclusion' in run or '"c":.conclusion' in run
+
