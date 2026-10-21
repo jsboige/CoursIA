@@ -13,7 +13,6 @@ name: bi-OS companion coverage
 # _archive/ exclus, .ps1 Windows par nature exemptes (table dans le script).
 on:
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened]
     paths:
       - '**/*.ps1'
