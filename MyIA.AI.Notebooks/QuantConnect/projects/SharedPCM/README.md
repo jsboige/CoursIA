@@ -57,10 +57,10 @@ d'équivalence sont cités dans la PR d'extraction.
 | `Framework_Composite_TrendWeather` | TrendStocks 0.75 / AllWeather 0.25 | 31 j |
 | `composite-c1-multiasset` | Momentum 1/3 / MACD 1/3 / RelStrength 1/3 (sous-classe `CappedPouchesPCM`, plafond de 40 % par ligne) | 7 j |
 
-Duplication restante hors périmètre de l'extraction (copies pédagogiques ou
-projets autonomes, à migrer par tranches séparées) — quatre projets portent
-encore un `portfolio_construction.py` déclarant `MultiStrategyPCM` :
-`TrendWeatherPointInTime`, `TrendStocks-Alpha`, `EMA-Cross-Alpha` et
-`MomentumRegime-AdaptiveWeights` ; s'y ajoutent
+Duplication restante hors périmètre de l'extraction : `TrendWeatherPointInTime`
+conserve son `portfolio_construction.py` **par gel délibéré** — la candidate
+`tw-pit` du suivi en ombre #18923 épingle l'empreinte du fichier
+(`6c325cd73df0`), et le code gelé est le contrat des passages mensuels : la
+déduplication redevient possible à la fin de la campagne d'ombre. S'y ajoutent
 `partner-course-quant-trading/kit-transitoire` et la cellule pédagogique du
 notebook `QC-Py-14` (déclarée copie d'enseignement).
