@@ -324,7 +324,13 @@ jobs:
           # Mirror the ML job's scientific stack where suites reuse it, and add
           # the lightweight deps the scripts/ suites import that the ML job omits
           # (requests, bcrypt, jupyter_client — see #2871 root-cause list).
-          pip install numpy pandas scipy pyarrow pytest
+          # pyarrow >= 26 (#21764) : sous 26, le noyau ipykernel meurt
+          # (Unhandled SIGSEGV) au chargement de pyarrow, sur la chaine
+          # torch -> dask -> xarray -> pandas -> pyarrow. Mesure : 24.0.0
+          # crash, 26.0.0 OK ; l'image CI portait 25.0.1, non mesure. Sans
+          # plancher, `pip install pyarrow` est satisfait par la version
+          # deja presente dans l'image (25.0.1) et n'echange rien.
+          pip install numpy pandas scipy "pyarrow>=26" pytest
           pip install requests bcrypt jupyter_client
           # ipykernel (#18279) : ce job n'enregistrait AUCUN kernelspec
           # `python3`, si bien que les deux tests d'integration de
@@ -353,6 +359,10 @@ jobs:
           # (scripts/genai-stack/requirements.txt). Lets us re-include the
           # genai test suites that were excluded as missing-dep (#2871 part 2).
           pip install papermill nbformat
+          # Version RESOLUE de pyarrow (#21764) : l'acceptance demande que le
+          # log affiche la version installee, pas seulement la contrainte.
+          # Un plancher non affiche est un plancher non prouve.
+          python -c "import pyarrow; print('pyarrow resolu:', pyarrow.__version__)"
           # nbconvert: scripts/notebook_tools/render_oversized_nbconvert.py +
           # scripts/tests/test_render_oversized_nbconvert.py (#10969). The
           # fail_non_notebook test asserts the real nbformat NotJSONError text,
@@ -403,6 +413,25 @@ jobs:
           # sequential suite sitting near the cap is a scheduling lottery, not
           # a timeout that wants raising. See #14598 / #15574.
           pip install pytest-xdist
+
+      - name: GameTheory-06 bout-en-bout sur l'image CI (#21764)
+        # Le carnet GameTheory-06 importe `axelrod` ; sous pyarrow < 26 le
+        # noyau ipykernel mourait (Unhandled SIGSEGV) au chargement de pyarrow
+        # (chaine torch -> dask -> xarray -> pandas -> pyarrow) : le carnet ne
+        # pouvait pas etre reexecute de facon fiable par la flotte, et le
+        # carnet GameTheory-06 de #21662 en faisait les frais. Ce step
+        # re-execute le carnet DANS l'image CI et verifie une seule session,
+        # une suite d'execution_count continue et 0 erreur -- l'acceptance
+        # mesuree sur l'image, pas supposee. Le plancher pyarrow>=26 est pose
+        # plus haut, dans le meme job.
+        run: |
+          pip install "axelrod>=4.0.0"
+          python -m papermill \
+            MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb \
+            /tmp/gt06-ci.ipynb -k python3
+          python scripts/notebook_tools/check_exec_sequence.py /tmp/gt06-ci.ipynb --check
+        env:
+          MPLBACKEND: Agg
 
       - name: Run tests
         # Scope to the scripts/ + notebook_tools/ suites this job is named for.
