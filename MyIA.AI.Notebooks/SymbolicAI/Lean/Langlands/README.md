@@ -11,6 +11,7 @@ Le geste de la série : rendre chaque identité **calculée dans une sortie** �
 | 01 | [01-formes-modulaires-sl2z-hecke.ipynb](01-formes-modulaires-sl2z-hecke.ipynb) | *A Course in Arithmetic* ch. VII ; pont Γ₀(11) courbe 11a1 ↔ η²η₁₁² ; formule `coeffHeckeT` du lake | Python stdlib |
 | 02 | [02-monstrous-moonshine-invariant-j.ipynb](02-monstrous-moonshine-invariant-j.ipynb) | Conway & Norton *Monstrous Moonshine* (1979) ; invariant $j$ et groupe Monstre ; récit cp4space/Wertheim | Python stdlib |
 | 03 | [03-szpiro-pasten-2026.ipynb](03-szpiro-pasten-2026.ipynb) | Pasten, *Improved Bounds for Szpiro's Conjecture* (arXiv 2609.17390, #16549) ; factorisations admissibles `N=DM`, proxy `log\|Δ\|/log rad(\|Δ\|)` des courbes `y²=x³+ax+b` ; arrivé de la série Search (carte #19253, ligne 15) | Python + sympy |
+| 04 | [04-umbral-moonshine-reseaux-niemeier.ipynb](04-umbral-moonshine-reseaux-niemeier.ipynb) | Cheng, Duncan & Harvey *Umbral Moonshine* (2013) — les 24 réseaux de Niemeier et leurs systèmes de racines ADE ; le réseau de Leech, rang 24 et racines nulles ; 10 458 combinaisons ADE de rang 24 énumérées | Python stdlib |
 
 ## Conventions
 
