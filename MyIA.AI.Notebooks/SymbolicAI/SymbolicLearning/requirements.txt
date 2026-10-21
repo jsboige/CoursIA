@@ -30,6 +30,19 @@
 # les metriques : facteurs dedies 34/40, ablation pos0 0.532, dispersion
 # "parmi actives" 0.617 +/- 0.038. numpy <2.5, matplotlib <3.11 et torch <2.12
 # fixent l'environnement avant les breaking changes mesures sur le run fondateur.
+#
+# CORRECTION (re-execution 2026-10-21, PR #21257) : les memes versions de
+# paquets NE reproduisent PAS les memes metriques -- le patch d'interpreteur
+# compte aussi. Mesures sur ce corpus :
+#   run fondateur  (Python 3.13.14) : facteurs dedies 34/40, ablation pos0
+#                                    0.532, dispersion "parmi actives"
+#                                    0.617 +/- 0.038
+#   re-execution   (Python 3.13.16) : facteurs dedies 35/40, ablation pos0
+#                                    0.510, dispersion "parmi actives"
+#                                    0.617 +/- 0.028
+# Les valeurs commitees dans le carnet sont celles de la re-execution 3.13.16.
+# Les bornes de versions restent la garantie utile (elles interdisent les
+# breaking changes) ; elles ne garantissent pas le scalaire.
 numpy>=1.24,<2.5
 scikit-learn>=1.2              # Information mutual comparison (SL-3)
 matplotlib>=3.7,<3.11          # Spectres, cartes Sinkhorn, trajectoires de recherche (SL-12b)
