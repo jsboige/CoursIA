@@ -2155,3 +2155,52 @@ TRANCHE23: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 24 -- verdict de mesure tire sur une reponse vide ou en erreur HTTP
+# (#21750).
+#
+# Garde NATIF : aucun workflow d'origine. L'organe
+# `scripts/notebook_tools/check_empty_verdict.py` detecte un bloc de sortie
+# qui porte un VERDICT de mesure (`=> Coherence verifiee`, `=> Difference
+# detectee`, ...) alors que la mesure qu'il resume est invalide : reponse vide
+# ou statut HTTP non-2xx.
+#
+# Pourquoi ADVISORY et non bloquant : le verdict est **absolu**, pas un
+# ratchet base/head -- le defaut est PRE-EXISTANT (il est deja sur `main`),
+# donc une PR qui re-execute un carnet sans corriger la cause verrait un
+# rouge HERITE de la base. Le correctif de source appartient a la lane qui
+# porte le carnet (#21162 / #21750) ; ce garde publie le signal, il ne
+# confisque pas le merge. C'est la meme separation que le ratchet
+# `check_source_collapse` (TRANCHE11), lui aussi absolu et advisory.
+#
+# `needs_base=True` : l'argv recoit `{base_ref}` et l'organe ne rapporte
+# que les carnets touches par la PR (`--diff-base`). Un diff illisible est
+# FAIL-CLOSED cote organe (rc=2), donc pas de sweep integral silencieux.
+#
+# `diff_bounded=False` (defaut) : le verdict n'est pas un delta, il est
+# absolu sur les carnets touches -- declare explicitement pour que le picker
+# sache qu'un rouge peut heriter de la base.
+# ---------------------------------------------------------------------------
+TRANCHE24: list[Guard] = [
+    Guard(
+        name="Verdict on invalid measurement (empty or HTTP-error response)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_empty_verdict.py",
+            "scripts/tests/test_check_empty_verdict.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_empty_verdict.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_empty_verdict.py",
+            "--diff-base", "{base_ref}", ".",
+        ],
+        blocking=False,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
