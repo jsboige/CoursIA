@@ -15,8 +15,9 @@ CONSTANTE à K variable, donc la signature d'accès est invariante à la
 résolution (proxy pour F2 falsifié sur ce substrat).
 
 Le test direct (K-sweep sur case 4 self/other) requiert les traces des
-bras principaux de self_model_minimal, qui sont GPU-only (#8236
-RECOVERABLE-MACHINE — po-2023/po-2024 GPU 24+ Go). Ce module pose la
+bras principaux de self_model_minimal, qui sont GPU-only (verdict
+RECOVERABLE-MACHINE, cf. .claude/rules/sota-not-workaround.md : po-2023/po-2024
+GPU 24+ Go). Ce module pose la
 méthodologie et un proxy mesurable localement.
 
 **Second volet — test direct A/B/C (issue #19343, reste ouvert après le
@@ -373,7 +374,7 @@ def run(trace_path: str | Path,
         "limits": [
             "PROXY : discrimination inter-categories (code vs prose), pas self/other",
             "Test direct F2 (K-sweep sur case 4 self/other) = GPU-only",
-            "Tell c.8236 RECOVERABLE-MACHINE (po-2023/po-2024 GPU 24+ Go)",
+            "RECOVERABLE-MACHINE (.claude/rules/sota-not-workaround.md ; po-2023/po-2024 GPU 24+ Go)",
             "Témoins nuls (shape_perm, dirichlet) : n=100 permutations chacun, seed fixée pour reproductibilité",
         ],
     }
