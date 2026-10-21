@@ -93,6 +93,20 @@ Trois urnes, parce que le pool n'est pas homogene
                   une lane qui rend la main sur une barriere reelle -- et
                   l'item reste servi.
 
+Rendre la main ne clot pas l'item
+----------------------------------
+Les en-tetes de cloture du tapis ne se valent pas. `[DELIVERED]` et
+`[FROZEN]` disent que l'item est clos ou gele : il ne doit plus etre servi.
+`[RELEASED]` dit qu'une lane a RENDU LA MAIN -- le plus souvent sur une
+BARRIERE reelle (GPU-only, vision-only), et l'item redevient alors
+servable par la flotte : « un candidat ne se saute que pour une barriere
+reelle [...] et l'issue sautee reste en tete pour le tirage suivant ». Le
+filer hors du tapis sur un `[RELEASED]` nu revenait a perdre le grain au
+lieu de le servir (31 items du pool ouvert mesures le 2026-10-21, issue
+#21721). Un `[RELEASED]` qui dit que l'acceptance est deja couverte est
+lui une livraison : c'est la sonde PLEINE, qui lit tous les commentaires,
+qui tranche ce cas (#21720) -- le filtre bon marche ne l'invente pas.
+
 Reprendre ses PRs AVANT de piocher (mandats user 2026-08-22 et 2026-08-24)
 --------------------------------------------------------------------------
 Le picker **assigne la file de reparation** (sortie 0, backlog complet) tant
@@ -1428,7 +1442,6 @@ DELIVERED_SIGNAL_UNPROBED = object()
 # Formes reconnues (ancrage debut de ligne, comme `_DELIVERED_MARKER_RE`,
 # pour eviter les mentions incidentes) :
 #   - `[DELIVERED]` : cloture explicite du travail
-#   - `[RELEASED]`  : claim libere (lane a rendu la main)
 #   - `[FROZEN]`    : gel coordinateur (decision explicite)
 #   - `[INFO] candidate-delivered` : la forme par laquelle une lane WORKER
 #     rend la main au coordinateur (#15069/#19295). Mesure fondatrice du
@@ -1445,8 +1458,33 @@ DELIVERED_SIGNAL_UNPROBED = object()
 # de mot, donc `\b` n'a pas de frontiere a valider entre `]` et un
 # espace, et la regex ne matcherait jamais `[DELIVERED] lane X`.
 # On accepte un separateur blanc, deux-points, ou fin de ligne.
+#
+# #21721 : `[RELEASED]` N'EST PAS une forme de cloture pour ce filtre. Le
+# marqueur a deux sens dans la flotte, et le protocole du tapis les
+# distingue explicitement :
+#   - `[DELIVERED]` / `[FROZEN]` : l'item est clos ou gele -> il ne doit
+#     plus etre servi ;
+#   - `[RELEASED]` : la lane REND LA MAIN. Sur une BARRIERE reelle
+#     (GPU-only, vision-only), l'item redevient serviable par la flotte --
+#     « un candidat ne se saute que pour une barriere reelle [...] et
+#     l'issue sautee reste en tete pour le tirage suivant ». L'ecarter
+#     definitivement du tapis, c'est donc perdre le grain, pas le servir.
+#
+# Mesure fondatrice (2026-10-21, `myia-po-2028:CoursIA-2`, issue #21721) :
+# sur le pool ouvert, 31 items portent un en-tete `[RELEASED]` en DERNIER
+# commentaire, et **0** d'entre eux portent un motif de couverture
+# d'acceptance -- l'exclusion etait donc injuste pour les 31. Aucun n'a ete
+# rejoue par la flotte depuis leur `[RELEASED]`.
+#
+# Le cas « `[RELEASED] ... acceptance deja couverte » (une livraison) n'est
+# PAS traite ici : il appartient a la SONDE PLEINE, qui lit tous les
+# commentaires et sait distinguer une main rendue sur une barriere d'une
+# main rendue parce que le travail est deja fait (#21720). Ce filtre ne fait
+# qu'avancer la meme decision qu'elle -- il n'en invente aucune. Consequence
+# de composition : les deux PRs sont independantes et se completent dans
+# l'ordre de merge que donne le coordinateur.
 _RECENT_DELIVERY_MARKER_RE = re.compile(
-    r"^\s*\[(?:DELIVERED|RELEASED|FROZEN)\](?=\s|:|$)",
+    r"^\s*\[(?:DELIVERED|FROZEN)\](?=\s|:|$)",
     re.MULTILINE,
 )
 
@@ -1455,13 +1493,16 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     """Le DERNIER commentaire porte-t-il un marqueur de cloture recent ?
 
     TRI-ETAT (cf. `has_delivered_signal`) :
-    - ``True``  : le dernier commentaire a un en-tete `[DELIVERED]`,
-      `[RELEASED]`, `[FROZEN]`, ou porte un marqueur de livraison
+    - ``True``  : le dernier commentaire a un en-tete `[DELIVERED]` ou
+      `[FROZEN]`, ou porte un marqueur de livraison
       ``[INFO] candidate-delivered`` (grammaire `_DELIVERED_MARKER_RE`).
       Le candidat doit etre ecarte SANS
       appeler la sonde pleine -- c'est le filtre bon marche de #19768 ;
     - ``False`` : aucun marqueur de cloture dans le dernier commentaire.
-      L'appelant peut proceder a la sonde pleine ;
+      L'appelant peut proceder a la sonde pleine. C'est le cas d'un
+      en-tete `[RELEASED]` : une main rendue sur une barriere reelle
+      laisse l'item SERVABLE (#21721), et une main rendue parce que le
+      travail est deja fait est tranchee par la sonde pleine ;
     - ``None``  : la lecture a echoue (reseau, 403, payload illisible).
       Fail-OPEN : l'appelant procede a la sonde pleine en le disant.
 
@@ -2834,8 +2875,8 @@ def draw_unclaimed(by_class, args, rng, visits, series, issue_to_family,
                                 "recent_filtered", 0) + 1
                             conflicts.append((c, "LIVRAISON (recent) : "
                                 "marqueur de cloture sur le dernier "
-                                "commentaire ([DELIVERED] / [RELEASED] "
-                                "/ [FROZEN] / [INFO] candidate-delivered)."
+                                "commentaire ([DELIVERED] / [FROZEN] "
+                                "/ [INFO] candidate-delivered)."
                                 " Candidat remplace dans "
                                 "la meme urne, hors budget de sonde."))
                             continue
@@ -6948,7 +6989,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 state["recent_filtered"] += 1
                 belt_withheld.append(
                     (it, "LIVRAISON (recent) : marqueur de cloture sur le "
-                     "dernier commentaire ([DELIVERED] / [RELEASED] / "
+                     "dernier commentaire ([DELIVERED] / "
                      "[FROZEN] / [INFO] candidate-delivered). "
                      "Candidat remplace hors budget de sonde."))
                 continue
