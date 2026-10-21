@@ -472,4 +472,388 @@ theorem exact_toGodement_godementCanonicalDZero (F : X.Presheaf AddCommGrpCat.{u
         comm₁₂ := by simp, comm₂₃ := by simp [godementCanonicalDZero, godementStep] }
   exact key.mp (ShortComplex.exact_cokernel (toGodement F))
 
+/-! ## La Partie 93(a) : les ingrédients locaux du transport vers les tiges
+
+La Partie 93(a) (exactitude du complexe canonique **en les tiges**,
+ingrédient de l'isomorphisme d'homologie de la Partie 93(b)) demande de
+transporter en les tiges les deux faces de l'exactitude du niveau
+préfaisceaux : l'épi de la projection de conoyau et le mono de l'unité.
+Cette section en livre les deux ingrédients locaux, valables pour **tout
+préfaisceau** — aucune hypothèse de faisceau :
+
+1. `epi_stalkFunctor_map_of_epi` : le foncteur tige préserve les
+   épimorphismes — gratuit par l'adjonction tige ⊣ gratte-ciel
+   (`skyscraperPresheafStalkAdjunction`, instance
+   `Presheaf.stalkFunctor.IsLeftAdjoint`), un adjoint à gauche préservant
+   les épis (`preservesEpimorphisms_of_isLeftAdjoint`).
+2. `stalkEval` puis `toGodement_stalkEval` : **l'unité de Godement est un
+   monomorphisme scindé en chaque tige**. La rétraction est l'évaluation
+   `ev_x₀ : (C⁰F)ₓ₀ ⟶ Fₓ₀`, `σ ↦ σ(x₀)` — bien définie car une section de
+   Godement est une fonction et les restrictions (`godementMap`) ne font
+   que la restreindre : la composante en `x₀` ne dépend pas du voisinage
+   choisi. C'est l'ingrédient qui **remplace l'argument de
+   faisceification** : pour transporter l'exactitude vers les tiges, on
+   n'a pas besoin que `μ` soit mono en préfaisceaux (cela exigerait `F`
+   séparé — Partie 91), seulement que chaque `μₓ₀` le soit — et le
+   scindage par `ev_x₀` l'établit pour tout préfaisceau.
+
+**Frontière nommée** : reste la brique de transport elle-même — le foncteur
+tige, composé syntaxique `whiskering ⋙ colim` sur la catégorie filtrante
+des voisinages (`Presheaf.stalkFunctor`), préserve aussi les limites finies
+par exactitude des colimites filtrantes de `AddCommGrpCat` (AB5,
+`Mathlib.Algebra.Category.Grp.AB`). Elle est reportée à la livraison
+suivante de la Partie 93(a). -/
+
+/-- **Le foncteur tige préserve les épimorphismes** : le foncteur tige est
+un adjoint à gauche (adjonction tige ⊣ gratte-ciel de
+`skyscraperPresheafStalkAdjunction`), donc préserve les épimorphismes.
+Appliqué à la projection `cokernel.π f` — épimorphe par construction —
+ceci fournit l'ingrédient « épi » du transport d'exactitude vers les
+tiges : `(coker f)ₓ₀` reçoit surjectivement `(C⁰...)ₓ₀`. -/
+theorem epi_stalkFunctor_map_of_epi {A B : X.Presheaf AddCommGrpCat.{u}}
+    (f : A ⟶ B) [Epi f] (x₀ : X) :
+    Epi ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map f) :=
+  inferInstance
+
+/-- **La jambe d'évaluation en `x₀`** : pour `V` un ouvert voisinage de
+`x₀` (objet de `(OpenNhds x₀)ᵒᵖ`), l'application « évaluer la section de
+Godement en `x₀` » : une section de `C⁰F` sur `V` est une fonction
+`σ : ∀ y ∈ V, Fₓ`, on prend sa valeur en `x₀`. Morphisme de groupes
+abstraits : la structure de `C⁰F(V)` est ponctuelle. -/
+noncomputable def stalkEvalLeg (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X)
+    (V : (OpenNhds x₀)ᵒᵖ) :
+    (godementPresheaf F).obj ((OpenNhds.inclusion x₀).op.obj V) ⟶ F.stalk x₀ :=
+  AddCommGrpCat.ofHom
+    { toFun := fun s => s ⟨x₀, V.unop.2⟩
+      map_zero' := rfl
+      map_add' := fun _ _ => rfl }
+
+/-- **Le cocone d'évaluation** : les jambes `stalkEvalLeg` forment un
+cocone sur le diagramme des voisinages `(OpenNhds x₀)ᵒᵖ ⥤ AddCommGrpCat` —
+c'est la bien-définition de l'évaluation : restreindre la section puis
+évaluer en `x₀`, ou l'évaluer directement, donne le même germe, car
+`godementMap` ne fait que restreindre la fonction. -/
+noncomputable def stalkEvalCocone (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) :
+    Cocone ((OpenNhds.inclusion x₀).op ⋙ godementPresheaf F) where
+  pt := F.stalk x₀
+  ι :=
+    { app := fun V => stalkEvalLeg F x₀ V
+      naturality := by
+        intro V W f
+        ext s
+        rfl }
+
+/-- **L'évaluation `ev_x₀ : (C⁰F)ₓ₀ ⟶ Fₓ₀`** : le morphisme de tiges
+induit par le cocone d'évaluation — à un germe de section de Godement
+(représentée par `σ` sur un voisinage `V ∋ x₀`), on associe sa valeur
+`σ(x₀)`. La condition de cocone ci-dessus est exactement la
+bien-définition : la valeur en `x₀` ne dépend pas du représentant. C'est
+la rétraction qui scinde l'unité de Godement en chaque tige.
+
+Le domaine est déclaré en forme **dépliée** (`(stalkFunctor x₀).obj (C⁰F)`
+plutôt que `(C⁰F).stalk x₀`) : les deux sont définitionnellement égales,
+mais la forme dépliée est celle du codomaine de `stalkFunctor.map` —
+elle rend les compositions `map ≫ ev` correctes à la transparence des
+instances, que la réécriture exige. -/
+noncomputable def stalkEval (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) :
+    (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).obj (godementPresheaf F) ⟶
+      F.stalk x₀ :=
+  colimit.desc _ (stalkEvalCocone F x₀)
+
+/-- **L'évaluation d'un germe est la valeur en `x₀`** : sur un germe
+représenté par une section de Godement `σ` sur `U ∋ x₀`, l'évaluation
+donne `σ(x₀)` — la propriété universelle du cocone (`colimit.ι_desc`),
+dépliée en forme appliquée par l'attribut `elementwise`. -/
+@[reassoc, elementwise nosimp]
+theorem germ_stalkEval (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X)
+    (U : Opens X) (hx : x₀ ∈ U) :
+    (godementPresheaf F).germ U x₀ hx ≫ stalkEval F x₀ =
+      stalkEvalLeg F x₀ (op ⟨U, hx⟩) :=
+  colimit.ι_desc _ _
+
+/-- **Le lemme composant du scindage** : composer l'unité avec la jambe
+d'évaluation redonne le germe — sur `s ∈ F(U)`, prendre la section de
+Godement de `s` puis l'évaluer en `x₀` rend le germe de `s` en `x₀`.
+Les deux membres sont la même fonction de `F(U)` : l'égalité est
+définitionnelle (`ext` puis `rfl`), comme la naturalité du cocone
+d'évaluation. -/
+theorem toGodement_app_stalkEvalLeg (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X)
+    (U : Opens X) (hx : x₀ ∈ U) :
+    (toGodement F).app (op U) ≫ stalkEvalLeg F x₀ (op ⟨U, hx⟩) = F.germ U x₀ hx := by
+  ext s
+  rfl
+
+/-- **L'unité de Godement est scindée en chaque tige** — le cœur local de
+la Partie 93(a) : pour **tout préfaisceau** `F` (aucune hypothèse de
+faisceau), le morphisme de tiges `Fₓ₀ ⟶ (C⁰F)ₓ₀` induit par l'unité admet
+`ev_x₀` pour rétraction : prendre les germes de `s` puis évaluer en `x₀`
+redonne le germe de `s` en `x₀`. La preuve reste au niveau des morphismes
+— l'idiome `stalk_hom_ext` de Mathlib : deux flèches sortant d'une tige
+sont égales dès que leurs composées avec chaque germe le sont. Chaque
+jambe se réduit par `stalkFunctor_map_germ` (la tige d'un morphisme
+envoie germe sur germe) puis `germ_stalkEval` (propriété universelle de
+la colimite) au lemme composant ci-dessus. On évite ainsi les formes
+appliquées, dont l'unification entre formes repliée (`F.stalk x₀`) et
+dépliée (`(stalkFunctor x₀).obj F`) échoue à la transparence des
+instances. La chaîne est un `calc` dont chaque étape est un **terme**
+(`assoc`, `congrArg` sur les lemmes de Mathlib), élaboré à transparence
+par défaut, où formes repliée et dépliée s'unifient librement. -/
+theorem toGodement_stalkEval (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) :
+    (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map (toGodement F) ≫
+      stalkEval F x₀ = 𝟙 (F.stalk x₀) := by
+  apply TopCat.Presheaf.stalk_hom_ext F
+  intro U hx
+  rw [Category.comp_id]
+  calc F.germ U x₀ hx ≫ ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (toGodement F) ≫ stalkEval F x₀) =
+      (F.germ U x₀ hx ≫ (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (toGodement F)) ≫ stalkEval F x₀ :=
+        (Category.assoc _ _ _).symm
+    _ = ((toGodement F).app (op U) ≫ (godementPresheaf F).germ U x₀ hx) ≫
+        stalkEval F x₀ :=
+        congrArg (· ≫ stalkEval F x₀)
+          (Presheaf.stalkFunctor_map_germ U x₀ hx (toGodement F))
+    _ = (toGodement F).app (op U) ≫
+        ((godementPresheaf F).germ U x₀ hx ≫ stalkEval F x₀) :=
+        Category.assoc _ _ _
+    _ = (toGodement F).app (op U) ≫ stalkEvalLeg F x₀ (op ⟨U, hx⟩) :=
+        congrArg ((toGodement F).app (op U) ≫ ·) (germ_stalkEval F x₀ U hx)
+    _ = F.germ U x₀ hx := toGodement_app_stalkEvalLeg F x₀ U hx
+
+/-- Forme appliquée du scindage : l'évaluation est inverse à gauche du
+morphisme de tiges de l'unité. La preuve applique l'égalité hom-niveau
+ci-dessus à l'élément `t` (`congrArg` sur `ConcreteCategory.hom`),
+élaborée à transparence par défaut, où les formes repliée et dépliée du
+domaine de `stalkEval` sont interchangeables ; les deux réductions
+restantes (`comp_apply`, `id_apply`) sont définitionnelles. -/
+theorem stalkEval_stalkFunctor_map_toGodement_apply
+    (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X)
+    (t : ToType ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).obj F)) :
+    stalkEval F x₀
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map (toGodement F) t) = t := by
+  have key : (ConcreteCategory.hom
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map (toGodement F) ≫
+        stalkEval F x₀)) t = (ConcreteCategory.hom (𝟙 (F.stalk x₀))) t :=
+    congrArg (fun g : (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).obj F ⟶
+      F.stalk x₀ => ConcreteCategory.hom g t) (toGodement_stalkEval F x₀)
+  exact key
+
+/-- **Le morphisme de tiges de l'unité est un monomorphisme, pour tout
+préfaisceau** : un morphisme scindé à gauche est injectif — la rétraction
+est `stalkEval`. À comparer avec `mono_toGodement_of_isSheaf` (Partie 90) :
+au niveau préfaisceaux, le mono de l'unité exige `F` faisceau ; au niveau
+des tiges, il est **inconditionnel** — c'est ce qui permet au transport
+d'exactitude de la Partie 93(a) de s'affranchir de toute hypothèse de
+séparéité sur les conoyaux intermédiaires. -/
+theorem mono_stalkFunctor_map_toGodement (F : X.Presheaf AddCommGrpCat.{u})
+    (x₀ : X) :
+    Mono ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map (toGodement F)) := by
+  rw [AddCommGrpCat.mono_iff_injective]
+  intro a b h
+  have h2 := congrArg (stalkEval F x₀) h
+  rw [stalkEval_stalkFunctor_map_toGodement_apply,
+    stalkEval_stalkFunctor_map_toGodement_apply] at h2
+  exact h2
+
+/-! ### Partie 93(a), brique (i) — AB5 : le foncteur tige préserve les limites finies
+
+Face « transport d'exactitude » du re-scopage de la Partie 93. Le foncteur
+tige est un adjoint à gauche (`skyscraperPresheafStalkAdjunction`) : il
+préserve les colimites — épimorphismes (`epi_stalkFunctor_map_of_epi`
+ci-dessus) et conoyaux. La préservation des **limites finies** n'est pas
+gratuite : c'est l'axiome AB5 — les colimites filtrantes de groupes
+abéliens sont exactes. Conceptuellement, `Presheaf.stalkFunctor` est le
+composé `whiskering ⋙ colim` sur la catégorie des voisinages (filtrante :
+`OpenNhds x₀` est un demi-treillis pour l'intersection, donc cofiltrante,
+donc d'opposée filtrante), et `colim` préserve les limites finies dans
+`AddCommGrpCat` (`Mathlib.Algebra.Category.Grp.AB`). La voie empruntée
+suit Mathlib (`TopCat.Sheaf` dans `Mathlib.Topology.Sheaves.Abelian`) : la
+face concrète d'AB5 — un morphisme de préfaisceaux injectif composante par
+composante reste injectif sur les tiges
+(`Presheaf.stalkFunctor_map_injective_of_app_injective`) — donne la
+préservation des monomorphismes, et additif + colimites + monos ⇒
+préservation de l'homologie ⇒ des limites finies. -/
+
+/-- Le foncteur tige préserve les monomorphismes : un mono de préfaisceaux
+de groupes abéliens est injectif composante par composante, et cette
+injectivité passe aux tiges — la face concrète d'AB5. -/
+instance stalkFunctor_preservesMono (x₀ : X) :
+    Functor.PreservesMonomorphisms
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀) := by
+  constructor
+  intro F G f hf
+  refine (AddCommGrpCat.mono_iff_injective _).mpr ?_
+  refine TopCat.Presheaf.stalkFunctor_map_injective_of_app_injective
+    (fun U => ?_) x₀
+  exact (AddCommGrpCat.mono_iff_injective (f.app (op U))).mp
+    ((NatTrans.mono_iff_mono_app f).mp hf (op U))
+
+/-- **AB5 pour les tiges, forme homologie** : le foncteur tige préserve
+l'homologie — un mono de préfaisceaux reste mono sur les tiges (face
+concrète d'AB5), un épi reste épi (adjonction tige ⊣ gratte-ciel), et la
+préservation des conoyaux vient de celle des colimites (adjoint à
+gauche). -/
+noncomputable instance stalkFunctor_preservesHomology (x₀ : X) :
+    (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).PreservesHomology := by
+  simp only [(TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).exact_tfae.out 2 0]
+  intro S hS
+  have hcolim :=
+    ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).preservesFiniteColimits_tfae.out 3 0).mp
+      (inferInstance : Limits.PreservesFiniteColimits _)
+  refine ShortComplex.ShortExact.mk' (hcolim S hS).left ?_ (hcolim S hS).right
+  have := hS.2
+  exact Functor.map_mono (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀) _
+
+/-- **AB5 pour les tiges** : le foncteur tige d'un préfaisceau de groupes
+abéliens préserve les limites finies. -/
+noncomputable instance stalkFunctor_preservesFiniteLimits (x₀ : X) :
+    Limits.PreservesFiniteLimits
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀) :=
+  (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).preservesFiniteLimits_of_preservesHomology
+
+/-- Transport d'exactitude vers les tiges : une suite courte exacte de
+préfaisceaux de groupes abéliens reste exacte en chaque tige. Brique (i)
+du re-scopage de la Partie 93 — combinée aux tiges des conoyaux (brique
+ii) et au splicing (brique iii), elle ferme l'exactitude du complexe
+canonique en chaque point. -/
+theorem stalkFunctor_map_exact {S : ShortComplex (X.Presheaf AddCommGrpCat.{u})}
+    (hS : S.Exact) (x₀ : X) :
+    (S.map (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).Exact := by
+  have h :=
+    (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).exact_tfae.out 2 1
+  exact h.mp inferInstance S hS
+
+/-! ### Partie 93(a), briques (ii)+(iii) — le splicing en chaque tige, inconditionnel
+
+Les deux briques restantes du re-scopage de la Partie 93 se combinent en un
+seul énoncé générique plutôt qu'en deux lemmes séparés.
+
+**Brique (ii) — tiges des conoyaux.** La suite `A ⟶ B ⟶ coker f` est exacte
+en `B` (`ShortComplex.exact_cokernel`), et la brique (i)
+(`stalkFunctor_map_exact`) transporte cette exactitude en chaque tige. La
+préservation des conoyaux par le foncteur tige (adjoint à gauche, donc
+colimites) est consommée sous cette forme : aucun isomorphisme explicite
+`(coker f)ₓ₀ ≅ coker (fₓ₀)` n'a besoin d'être construit — l'exactitude de la
+tige de la projection est exactement ce dont le splicing a besoin.
+
+**Brique (iii) — récurrence splicing.** Composer à droite la tige de la
+projection avec la tige de l'unité du conoyau ne change pas le noyau, dès
+que cette dernière est mono — et elle l'est **inconditionnellement**
+(`mono_stalkFunctor_map_toGodement`, valable pour tout préfaisceau, donc
+pour `coker f`). Le transfert `ShortComplex.exact_iff_of_epi_of_isIso_of_mono`
+est le même geste que `exact_toGodement_godementCanonicalDZero` côté
+préfaisceaux (Partie 91 pas B), avec les mêmes τ₁ = τ₂ = 𝟙 et τ₃ = tige de
+l'unité — mais ici τ₃ est mono pour **tout** préfaisceau, là où la version
+préfaisceaux exigeait `F` faisceau (séparéité du conoyau, pas A de la
+Partie 91).
+
+Résultat : pour **toute** flèche `f` de préfaisceaux, sans aucune hypothèse
+de faisceau, la suite de tiges `Aₓ₀ ⟶ Bₓ₀ ⟶ (C⁰(coker f))ₓ₀` est exacte en
+`Bₓ₀`. La récurrence est ce lemme même : chaque degré du complexe canonique
+en est une instance — degré 0 en `f = μ`, degré 1 en `f = d⁰`, chaque degré
+suivant en `f = dⁿ` par le motif uniforme `d^{n+1} = godementStep dⁿ` (P89)
+— sans que rien de nouveau n'apparaisse à aucun degré. -/
+
+/-- **Le pas canonique est exact en chaque tige, pour toute flèche —
+l'énoncé central des briques (ii)+(iii) de la Partie 93(a)** : pour tout
+`f : A ⟶ B` de préfaisceaux de groupes abéliens et tout point `x₀`, la suite
+de tiges `Aₓ₀ ⟶ Bₓ₀ ⟶ (C⁰(coker f))ₓ₀` est exacte en `Bₓ₀`. La preuve
+transfère l'exactitude de la tige de `f ≫ π_f` — brique (i) appliquée à
+`ShortComplex.exact_cokernel` — le long du morphisme de complexes courts
+`(𝟙, 𝟙, tige de l'unité de coker f)` : la composante τ₃ est mono par
+`mono_stalkFunctor_map_toGodement`, **sans aucune hypothèse de faisceau**.
+C'est la brique de récurrence du complexe canonique : chaque degré en est
+une instance. -/
+theorem stalk_exact_godementStep {A B : X.Presheaf AddCommGrpCat.{u}}
+    (f : A ⟶ B) (x₀ : X) :
+    (ShortComplex.mk
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map f)
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map (godementStep f))
+      (by rw [show ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map f ≫
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementStep f)) =
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (f ≫ godementStep f) from
+              (Functor.map_comp _ _ _).symm, comp_godementStep_zero,
+        Functor.map_zero])).Exact := by
+  have hmono : Mono ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+      (toGodement (cokernel f))) :=
+    mono_stalkFunctor_map_toGodement (cokernel f) x₀
+  have key : (ShortComplex.mk
+        ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map f)
+        ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map (cokernel.π f))
+        (by rw [show ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map f ≫
+              (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+                (cokernel.π f)) =
+              (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+                (f ≫ cokernel.π f) from
+              (Functor.map_comp _ _ _).symm, cokernel.condition,
+          Functor.map_zero])).Exact ↔
+      (ShortComplex.mk
+        ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map f)
+        ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map (godementStep f))
+        (by rw [show ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map f ≫
+              (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+                (godementStep f)) =
+              (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+                (f ≫ godementStep f) from
+              (Functor.map_comp _ _ _).symm, comp_godementStep_zero,
+          Functor.map_zero])).Exact :=
+    ShortComplex.exact_iff_of_epi_of_isIso_of_mono
+      { τ₁ := 𝟙 _, τ₂ := 𝟙 _,
+        τ₃ := (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+          (toGodement (cokernel f)),
+        comm₁₂ := by rw [Category.id_comp, Category.comp_id],
+        comm₂₃ := by simp [godementStep] }
+  exact key.mp
+    (stalkFunctor_map_exact (ShortComplex.exact_cokernel f) x₀)
+
+/-- **Exactitude en tige du degré 0, inconditionnelle** : la suite
+`Fₓ₀ ⟶ (C⁰F)ₓ₀ ⟶ (C¹F)ₓ₀` est exacte en `(C⁰F)ₓ₀` pour **tout** préfaisceau
+`F` — là où la version préfaisceaux
+(`exact_toGodement_godementCanonicalDZero`, Partie 91 pas B) exige `F`
+faisceau. Le mono de l'unité, coûteux en préfaisceaux (il fallait la
+séparéité du conoyau, pas A), est gratuit en tige
+(`mono_stalkFunctor_map_toGodement`). Instance du lemme générique en
+`f = μ` : `d⁰ = godementStep μ` par définition. -/
+theorem stalk_exact_toGodement_godementCanonicalDZero
+    (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) :
+    (ShortComplex.mk
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map (toGodement F))
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalDZero F))
+      (by rw [show ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (toGodement F) ≫
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalDZero F)) =
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (toGodement F ≫ godementCanonicalDZero F) from
+              (Functor.map_comp _ _ _).symm,
+        toGodement_comp_godementCanonicalDZero, Functor.map_zero])).Exact :=
+  stalk_exact_godementStep (toGodement F) x₀
+
+/-- **Exactitude en tige du degré 1 — la récurrence en acte** : la suite
+`(C⁰F)ₓ₀ ⟶ (C¹F)ₓ₀ ⟶ (C²F)ₓ₀` est exacte en `(C¹F)ₓ₀`, pour tout préfaisceau
+`F`. C'est le même lemme générique appliqué à `f = d⁰` : chaque degré
+suivant du complexe canonique en est une instance identique, le motif
+`d^{n+1} = godementStep dⁿ` (P89) rendant la récurrence uniforme — la
+preuve ne change pas d'un degré à l'autre. -/
+theorem stalk_exact_godementCanonicalDZero_godementCanonicalDOne
+    (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) :
+    (ShortComplex.mk
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalDZero F))
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalDOne F))
+      (by rw [show ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalDZero F) ≫
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalDOne F)) =
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalDZero F ≫ godementCanonicalDOne F) from
+              (Functor.map_comp _ _ _).symm,
+        godementCanonicalDZero_comp_godementCanonicalDOne,
+        Functor.map_zero])).Exact :=
+  stalk_exact_godementStep (godementCanonicalDZero F) x₀
+
 end Grothendieck
