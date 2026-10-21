@@ -144,6 +144,7 @@ Le gate `notebook-exec-sequence-ratchet.yml` échoue **par design** sur toute s�
 1. Le label `exec-sequence-ack` posé sur la PR.
 2. Un commentaire ou une review sur la PR portant le marker `[EXEC-SEQ-ACK] head=<sha40>` sur sa propre ligne, depuis le **seul login autorisé `myia-ai-01`** (la lane coordinatrice ; `jsboige` ou `clusterManager-Myia` sont des findings, pas des acks).
 3. **Les deux requis** à la tête exacte — un push après l'ack perime le marker et le gate reste rouge (cliquet non désarmé).
+4. **Le geste de sortie** : une fois l'ack posé, **rejouer le job de la garde** (`gh run rerun <run_id> --job <job_id>`) et **ne pas pousser**. Le workflow écoute `labeled` (#21332) : poser le label **après** le commentaire relance la garde d'elle-même, qui lit l'ack en direct — un push, lui, re-perimerait le marker et re-armerait le cliquet.
 
 L'override est **auditable sans être facile** : le marker est journalisé dans le log du job, le verdict ACK est explicite, et un faux ack (label sans marker, marker sans label, marker d'un autre auteur, marker à une tête périmée) échoue toujours.
 
@@ -165,9 +166,15 @@ Le guard est correct — il détecte ce qu'il doit détecter. La re-exécution
 complète est hors scope. Séquence dégradée documentée ici.
 
 **Ack demandé** : un commentaire de `myia-ai-01` à la tête exacte de la PR :
-`[EXEC-SEQ-ACK] head=<sha40>` + label `exec-sequence-ack` posé sur la PR.
+`[EXEC-SEQ-ACK] head=<sha40>` + label `exec-sequence-ack` posé sur la PR
+(**le commentaire d'abord, le label ensuite**).
 Le gate consomme la double clé (label + marker à la tête exacte, #21273) ;
 un push après l'ack perime le marker.
+
+**Geste de sortie** : après l'ack, **rejouer le job de la garde**
+(`gh run rerun <run_id> --job <job_id>`) et **ne pas pousser**. Le workflow
+écoute `labeled` (#21332) : le label posé après le commentaire relance la
+garde, qui lit l'ack en direct.
 ```
 
 ***

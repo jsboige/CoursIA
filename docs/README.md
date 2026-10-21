@@ -164,6 +164,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/life-components-schema.md](lean/life-components-schema.md) | Schéma de motifs et de réactions de Game of Life — tranches 1-4 de #15635 |
 | [lean/origami-reconnaissance.md](lean/origami-reconnaissance.md) | Origami géométrie différentielle — Pli 1 reconnaissance |
 | [lean/18430-volet-b-leandojo-v2-bench.md](lean/18430-volet-b-leandojo-v2-bench.md) | Volet B #18430 — banc comparatif LeanDojo-v2 (Pantograph) vs harnais maison, rung 52 CONWAY, écarts de protocole mesurés |
+| [lean/darksnail/pli1-2-occlusion-triad-verif.md](lean/darksnail/pli1-2-occlusion-triad-verif.md) | Pli 1.2 — vérification first-hand d'OcclusionTriad.lean (verdict INSUFFICISANT, #21310) |
 
 > Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
 
@@ -216,6 +217,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/inoculation-rl-experimental-conditions.md](ict/inoculation-rl-experimental-conditions.md) | Distillation des conditions expérimentales de l'*Inoculation Prompting* (Anthropic, arXiv 2511.18397) confrontée au protocole ICT-25 — source canonique citée et vérifiée en HTML |
 | [ict/strates-as-adjunctions-prototype.md](ict/strates-as-adjunctions-prototype.md) | Prototype **grade C** : les strates ICT comme adjonctions — conjecture du jalon 3 de #8182 (TOE ↔ conscience), explicitement non démontrée |
 | [ict/butlin-indicators-pre-enregistrement.md](ict/butlin-indicators-pre-enregistrement.md) | Case 19 — le mot « using » de RPT-1 (Butlin et al. 2023) : protocole scellé avant écriture du banc, dissociation procédurale entre inspection structurelle et sonde causale |
+| [ict/assembly-theory-pre-enregistrement.md](ict/assembly-theory-pre-enregistrement.md) | Case 20 — l'assembly index mesuré (Sharma et al. 2023) contre la lecture « compression LZ » (Abrahão et al. 2024) : solveur exact à deux implémentations, échelle périodique certifiée `ai = log2 n`, règle de décision scellée par pentes |
 
 ## Curriculum (docs/curriculum/)
 
