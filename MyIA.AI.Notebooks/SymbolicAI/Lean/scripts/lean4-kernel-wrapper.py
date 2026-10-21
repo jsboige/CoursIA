@@ -308,7 +308,16 @@ def main():
             except OSError:
                 pinned = ''
             if pinned:
-                anchor_dir, toolchain = lake_root, pinned
+                # Deux affectations separees : le destructuring
+                # `anchor_dir, toolchain = lake_root, pinned` fait un tuple
+                # dont la tete est le porteur `lake_root`, et la garde
+                # `check_lake_direct_invocation.py` (forme 2bis) le lit comme
+                # un argv `[lake_root, ...]`. Ce n'est pas un argv : le
+                # wrapper ne lance jamais `lake` (il execute le binaire REPL
+                # directement, avec LEAN_PATH de la lake). Forme non
+                # ambiguë pour la garde, meme comportement.
+                anchor_dir = lake_root
+                toolchain = pinned
     if not toolchain:
         message = (
             "Lean 4 kernel startup failed: no lean-toolchain found from execution "

@@ -156,7 +156,7 @@ kc.stop_channels(); km.shutdown_kernel()
 **Symptôme (mesuré le 2026-09-30 sur ai-01)** : `lake env repl` suivait le
 défaut elan (`leanprover/lean4:stable`, résolu v4.34.1 puis v4.35.0), alors
 que le seul binaire REPL disponible (`~/.elan/bin/repl`) est construit pour
-v4.30.0. Les 34 cellules de `Lean-05-Tactics-Lean.ipynb` rendaient alors des
+v4.30.0. Les cellules de `Lean-05-Tactics-Lean.ipynb` rendaient alors des
 **erreurs de parse** — et papermill sortait quand même en **0**.
 
 **Deux causes distinctes, deux corrections** :
@@ -176,7 +176,7 @@ sortie d'erreur sous un `exit 0` n'est plus possible.
 toujours : aucun repli vers un projet étranger.
 
 **Vérification sur ai-01 (2026-10-21)** : `papermill Lean-05-Tactics-Lean.ipynb
-out.ipynb -k lean4` rend **34 cellules sur 34, zéro erreur**, et les 34
+out.ipynb -k lean4` rend **toutes les cellules, zéro erreur**, et les
 sorties sont **identiques octet pour octet** à celles commitées. La sonde de
 divergence (un `lean-toolchain` en v4.33.0 dans un arbre temporaire) rend
 `exit 3` avec le message nommant v4.33.0 et 4.30.0.
