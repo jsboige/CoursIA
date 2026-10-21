@@ -7207,3 +7207,171 @@ def test_gh_open_prs_cache_wrong_type_falls_back_to_gh(monkeypatch, tmp_path):
     finally:
         monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
         importlib.reload(clc)
+
+
+# --- #21431 -- creation scope vs neighbouring claim: compare BY PATTERN -----
+#
+# The measured defect: a lane whose scope is entirely in CREATION (the files
+# do not exist yet) was rendered BLOCKED by a neighbouring claim at disjoint
+# paths, with "Do not start". The tracked tree cannot resolve a scope that
+# does not exist -- it matches zero tracked files, the #10958 fail-safe
+# lifted it to epic-wide, and every lane blocked. The issue's own words: an
+# empty intersection between a creation glob and a tracked scope proves no
+# less than an empty intersection between two tracked scopes.
+#
+# The fix: a CREATION scope is compared BY PATTERN (fnmatch in both
+# directions) with the other lane's scope. A scope whose DIRECTORY does not
+# exist is a typo, not a creation, and keeps the #10958 fail-CLOSED -- that
+# discriminator is what leaves every existing fail-safe test green.
+
+_CLAIM_COLLAPSE = (
+    "[CLAIMED] lane myia-ai-01:CoursIA-2 -- paths: "
+    "scripts/notebook_tools/check_output_collapse*.py"
+)
+
+
+def test_run_check_creation_scope_disjoint_claim_is_clear(capsys):
+    """#21431 acceptance 1: the disjoint pair of the issue renders CLEAR.
+
+    Reproduction from the issue body: the caller declares a scope ENTIRELY in
+    creation (`scripts/notebook_tools/check_concession_prose.py`, an organ to
+    be written) while another lane holds a LIVE claim on a different organ
+    (`scripts/notebook_tools/check_output_collapse*`). No pattern overlaps ->
+    CLEAR.
+    """
+    p = payload(comment(_CLAIM_COLLAPSE, "2026-10-19T15:00:00Z"),
+                number=21424, title="t")
+    rc = clc._run_check(
+        p, "myia-po-2023:CoursIA-2",
+        my_paths=["scripts/notebook_tools/check_concession_prose.py"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 0, (
+        f"Expected CLEAR (disjoint creation scope) but got rc={rc}. "
+        f"stderr:\n{captured.err}\naudit:\n{captured.out}"
+    )
+    assert "BLOCKED" not in captured.err
+    assert '"blocking_lanes": []' in captured.out
+
+
+def test_run_check_creation_scope_under_claim_glob_stays_blocked(capsys):
+    """#21431 acceptance 2: a creation UNDER a glob held by the other lane
+    stays BLOCKED.
+
+    `scripts/notebook_tools/check_output_collapse_v2.py` is a file to be
+    created, and it falls under the other lane's glob
+    `scripts/notebook_tools/check_output_collapse*.py` -- the pattern-wise
+    comparison finds the overlap, so the relaxation never opens a disputed
+    scope.
+    """
+    p = payload(comment(_CLAIM_COLLAPSE, "2026-10-19T15:00:00Z"),
+                number=21424, title="t")
+    rc = clc._run_check(
+        p, "myia-po-2023:CoursIA-2",
+        my_paths=["scripts/notebook_tools/check_output_collapse_v2.py"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 1, (
+        f"Expected BLOCKED (creation under the other lane's glob) but got "
+        f"rc={rc}. stderr:\n{captured.err}\naudit:\n{captured.out}"
+    )
+    assert "BLOCKED" in captured.err
+    assert "myia-ai-01:CoursIA-2" in captured.out
+
+
+def test_run_check_creation_scope_clears_a_creation_claim(capsys):
+    """#21431, the symmetric case: the OTHER lane's claim is itself a
+    creation scope.
+
+    A claim whose files do not exist yet is not a broken claim -- it is a
+    tranche in progress -- so it is compared BY PATTERN with the caller's
+    scope instead of being lifted to epic-wide (#10958). Two lanes creating
+    two different organs in the same directory no longer block each other.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- paths: "
+                "scripts/notebook_tools/check_concession_prose.py",
+                "2026-10-19T15:00:00Z"),
+        number=21424, title="t",
+    )
+    rc = clc._run_check(
+        p, "myia-po-2024:CoursIA-2",
+        my_paths=["scripts/notebook_tools/check_output_flood.py"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 0, (
+        f"Expected CLEAR (disjoint creation claim) but got rc={rc}. "
+        f"stderr:\n{captured.err}\naudit:\n{captured.out}"
+    )
+    assert '"blocking_lanes": []' in captured.out
+
+
+def test_run_check_typo_scope_keeps_blockers(capsys):
+    """#21431 non-regression: a scope whose DIRECTORY does not exist is a
+    typo, not a creation -- the #10958 fail-CLOSED stays.
+
+    `scripts/nowhere/typo.py` names a directory that is not in the repo: the
+    lane that wrote it meant something else, so the safe hypothesis is that
+    its claim is broader than it reads. Every other lane is kept and the
+    verdict stays BLOCKED -- the relaxation of #21431 does not open that.
+    """
+    p = payload(
+        comment("[CLAIMED] lane B:CoursIA-2 -- paths: scripts/grain_tag.py",
+                "2026-08-11T04:05:00Z"),
+        number=21424, title="t",
+    )
+    rc = clc._run_check(
+        p, "A:CoursIA",
+        my_paths=["scripts/nowhere/typo.py"],
+    )
+    captured = capsys.readouterr()
+    assert rc == 1, (
+        f"Expected BLOCKED (typo scope keeps the fail-CLOSED) but got "
+        f"rc={rc}. stderr:\n{captured.err}\naudit:\n{captured.out}"
+    )
+    assert "B:CoursIA-2" in captured.out
+
+
+def test_scope_is_creation_criterion():
+    """#21431 -- the discriminator, unit level: a file to be created in an
+    EXISTING directory is a creation scope; the same file in a directory
+    that does not exist is a typo; a live file is neither."""
+    tracked = ["scripts/check_lane_claim.py",
+               "scripts/notebook_tools/check_output_collapse.py"]
+    # Creation: the directory exists, the file does not.
+    assert clc._scope_is_creation(
+        ["scripts/notebook_tools/check_concession_prose.py"], tracked) is True
+    # A glob over a live directory, matching nothing yet -> also a creation.
+    assert clc._scope_is_creation(
+        ["scripts/notebook_tools/check_concession_*.py"], tracked) is True
+    # Typo: the directory does not exist.
+    assert clc._scope_is_creation(["scripts/nowhere/typo.py"], tracked) is False
+    # Live file: not a creation (its scope is already locked by the tree).
+    assert clc._scope_is_creation(["scripts/check_lane_claim.py"], tracked) is False
+    # Prose residue: a typo, never a creation.
+    assert clc._scope_is_creation(["prose sans separateur"], tracked) is False
+    # No walk -> no proof -> False (fail-CLOSED, mirrors `_empty_scope_in`).
+    assert clc._scope_is_creation(
+        ["scripts/notebook_tools/x.py"], None) is False
+    # Empty scope -> False.
+    assert clc._scope_is_creation([], tracked) is False
+    assert clc._scope_is_creation(None, tracked) is False
+
+
+def test_scopes_may_overlap_by_pattern():
+    """#21431 -- the pattern-wise comparison, unit level: a creation under a
+    glob overlaps it, a creation beside it does not."""
+    creation = ["scripts/notebook_tools/check_output_collapse_v2.py"]
+    glob = ["scripts/notebook_tools/check_output_collapse*.py"]
+    other = ["scripts/notebook_tools/check_concession_prose.py"]
+    # The creation falls under the glob -> overlap.
+    assert clc._scopes_may_overlap_by_pattern(creation, glob) is True
+    # ... and the other way round (both directions are tested).
+    assert clc._scopes_may_overlap_by_pattern(glob, creation) is True
+    # Two creations side by side -> disjoint.
+    assert clc._scopes_may_overlap_by_pattern(creation, other) is False
+    assert clc._scopes_may_overlap_by_pattern(other, creation) is False
+    # Two creations with the SAME name -> overlap.
+    assert clc._scopes_may_overlap_by_pattern(creation, creation) is True
+    # An empty side -> no overlap.
+    assert clc._scopes_may_overlap_by_pattern(creation, []) is False
