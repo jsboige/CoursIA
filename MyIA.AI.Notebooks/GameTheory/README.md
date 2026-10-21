@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory
-pedagogical_count: 113
-breakdown: root=101, SocialChoice=12
-maturity: BETA=102, ALPHA=6, DRAFT=5
+pedagogical_count: 118
+breakdown: root=103, SocialChoice=13, Dynamics=1, gateway=1
+maturity: BETA=105, DRAFT=7, ALPHA=6
 -->
 
 La théorie des jeux est le langage mathématique de la stratégie. Elle modélise les situations où des agents rationnels prennent des décisions dont le résultat dépend des choix des autres : enchères, négociations, élections, poker, allocation de ressources. Cette tension entre coopération et compétition traverse l'économie, les sciences politiques et l'informatique (mécanismes de vote, contrats, réseaux), et le prix Nobel d'économie a récompensé des théoriciens des jeux à sept reprises entre 1994 et 2020.
@@ -631,6 +631,7 @@ Le bloc `CATALOG-STATUS` en tête de ce fichier fait foi pour le nombre de noteb
 | Référence | Couverture |
 |-----------|------------|
 | Osborne & Rubinstein, *A Course in Game Theory* (1994) | Manuel de référence, paliers 01 à 12 |
+| Bonanno, *Game Theory* (2015, arXiv 1512.06808, CC BY 4.0) | Manuel pédagogique en complément, 165 exercices résolus — couvre Phase 1 (paliers 02-06) + jeux bayésiens (palier 11) + coopératif (palier 15) |
 | Osborne, *An Introduction to Game Theory* (2004) | Manuel alternatif |
 | Russell & Norvig, *AIMA*, 4e éd., ch. 17-18 | Cadre général des jeux et des mécanismes |
 | Nash, « Non-Cooperative Games » (1951) | Palier 04 |
@@ -668,6 +669,8 @@ Le bloc `CATALOG-STATUS` en tête de ce fichier fait foi pour le nombre de noteb
 Voir la licence du dépôt principal.
 
 ---
+
+*Version 1.5.1 — Octobre 2026 (2026-10-15) — référencement Bonanno (#19461) : ajout de la référence Bonanno, *Game Theory* (2015, arXiv 1512.06808, CC BY 4.0) à la table « Références académiques » comme manuel pédagogique en complément, 165 exercices résolus couvrant Phase 1 + jeux bayésiens + coopératif. La note d'angle-mort reste sur le ticket (#19461, mémo du 2026-10-06) ; les PRs de citation R2 (4 carnets Phase 1 sans référence académique en cellule) restent à mener en cycles ultérieurs.*
 
 *Version 1.5.0 — Septembre 2026 (2026-09-25) — réorganisation en parcours à plusieurs vitesses (#3973) : parcours principal à numéros nus, approfondissements présentés palier par palier, sous-série SocialChoice et extensions 18-25 séparées du parcours, grammaire des noms de fichiers expliquée au lecteur, formalisations Lean réunies en une section. Les sections de statut et de statistiques renvoient désormais au catalogue.*
 
