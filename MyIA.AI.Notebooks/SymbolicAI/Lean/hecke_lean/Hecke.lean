@@ -4,3 +4,4 @@ import Hecke.ElevenPid
 import Hecke.ThirteenPid
 import Hecke.FltRoute
 import Hecke.DeltaTau
+import Hecke.SzpiroPasten
