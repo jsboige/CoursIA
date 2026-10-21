@@ -265,12 +265,19 @@ def test_several_open_prs_named_with_count(monkeypatch):
 
 
 def _state(*, checks=(), mergeable="MERGEABLE", reviews=()):
-    """Etat GraphQL d'une PR, forme rendue par fetch_pr_states."""
+    """Etat GraphQL d'une PR, forme rendue par fetch_pr_states.
+
+    `reviews` : tuples ``(state, login)`` ou ``(state, login, body)`` -- le
+    3e element, optionnel, sert aux cas #16926 (verdict de corps sous
+    COMMENTED).
+    """
     return {
         "number": 1, "mergeable": mergeable,
         "reviews": {"nodes": [
-            {"state": s, "submittedAt": "2026-08-20T00:00:00Z", "author": {"login": a}}
-            for s, a in reviews
+            {"state": r[0], "submittedAt": "2026-08-20T00:00:00Z",
+             "author": {"login": r[1]},
+             **({"body": r[2]} if len(r) > 2 else {})}
+            for r in reviews
         ]},
         "commits": {"nodes": [{"commit": {"statusCheckRollup": {"contexts": {"nodes": [
             {"name": t[0], "conclusion": t[1], "isRequired": t[2],
@@ -319,6 +326,66 @@ def test_changes_requested_lifted_by_a_third_party_is_not_a_cause():
     """
     state = _state(reviews=[("CHANGES_REQUESTED", "clusterManager-Myia")])
     assert pig.blocking_causes(state, review_points_clear=True) == []
+
+
+def test_body_verdict_concerns_is_a_cause():
+    """#16926 : le verdict CONCERNS vit dans le CORPS d'une review COMMENTED,
+    invisible a reviews[].state -- le picker ouvrait une file de reparation
+    seulement sur l'etat natif.
+
+    Le corps suit la convention du depot (prefixe de verdict, persona Hermes
+    en en-tete) ; la lecture est celle de l'organe pool_review_verdicts,
+    importe par blocking_causes.
+    """
+    state = _state(reviews=[(
+        "COMMENTED", "clusterManager-Myia",
+        "[Hermes] — VERDICT: CONCERNS\n\nReserve sur la validation post-fix.",
+    )])
+    expected = ["verdict de corps non leve : CONCERNS (clusterManager-Myia)"
+                " -- organe pool_review_verdicts (#16926)"]
+    assert pig.blocking_causes(state) == expected
+    assert pig.blocking_causes(state, review_points_clear=False) == expected
+    # Meme regle de primaute que l'etat natif (#18829) : si l'organe B.0 a
+    # evalue les surfaces et n'a rien trouve de non leve, le verdict de corps
+    # est un residu, pas une file a ouvrir.
+    assert pig.blocking_causes(state, review_points_clear=True) == []
+
+
+def test_body_verdict_lgtm_and_plain_body_are_not_causes():
+    """Contre-cas #16926 : un LGTM de corps n'est pas une reserve, et un corps
+    de lane sans marqueur de persona ni VERDICT n'est pas une voix de review.
+    """
+    state = _state(reviews=[
+        ("COMMENTED", "clusterManager-Myia",
+         "**[Hermes]** — VERDICT: LGTM\n\nRien a signaler."),
+        ("COMMENTED", "myia-po-2025",
+         "Nit traite au commit abc1234, reponse postee sur le fil."),
+    ])
+    assert pig.blocking_causes(state) == []
+
+
+def test_body_verdict_latest_wins_per_author():
+    """Latest-wins par auteur, la semantique du triage : la voix la plus
+    recente d'un meme auteur gouverne (CONCERNS puis LGTM -> rien ; LGTM puis
+    CONCERNS -> cause).
+    """
+    state = _state(reviews=[
+        ("COMMENTED", "clusterManager-Myia",
+         "[Hermes] — VERDICT: CONCERNS\n\nAncienne reserve."),
+        ("COMMENTED", "clusterManager-Myia",
+         "[Hermes] — VERDICT: LGTM\n\nLevee par la reponse ecrite."),
+    ])
+    # _state pose le meme submittedAt partout : departager a la main, la
+    # deuxieme review est la plus recente.
+    state["reviews"]["nodes"][0]["submittedAt"] = "2026-08-19T00:00:00Z"
+    state["reviews"]["nodes"][1]["submittedAt"] = "2026-08-20T00:00:00Z"
+    assert pig.blocking_causes(state) == []
+
+    state["reviews"]["nodes"][0]["submittedAt"] = "2026-08-20T00:00:00Z"
+    state["reviews"]["nodes"][1]["submittedAt"] = "2026-08-19T00:00:00Z"
+    expected = ["verdict de corps non leve : CONCERNS (clusterManager-Myia)"
+                " -- organe pool_review_verdicts (#16926)"]
+    assert pig.blocking_causes(state) == expected
 
 
 def test_unaddressed_review_points_records_evaluated_clear_as_zero(monkeypatch):
@@ -4468,7 +4535,7 @@ def test_main_idle_since_delivery_falls_back_to_idle_on_fetch_error(monkeypatch)
 # #16372, #14549) le 2026-10-07, parce que le plafond de la sonde pleine
 # (16 unites, partage avec la sonde de PR couvrante) etait deja epuise.
 # Tous quatre portaient pourtant un marqueur de cloture identifiable sur
-# le DERNIER commentaire (`[DELIVERED]`, `[RELEASED]`, gel coordinateur).
+# le DERNIER commentaire (`[DELIVERED]`, gel coordinateur).
 # Le fix ajoute un filtre bon marche qui lit un seul commentaire, n'est
 # PAS couvert par `DELIVERED_SIGNAL_MAX_PROBES`, et ecarte le candidat
 # sans consommer une sonde pleine.
@@ -4503,13 +4570,73 @@ def test_recent_delivery_marker_DELIVERED_true(monkeypatch):
     assert pig.has_recent_delivery_marker(12345) is True
 
 
-def test_recent_delivery_marker_RELEASED_true(monkeypatch):
-    """#19768 : `[RELEASED]` en tete du DERNIER commentaire -> ecarte."""
+def test_recent_delivery_marker_RELEASED_false(monkeypatch):
+    """#21721 : `[RELEASED]` en tete du DERNIER commentaire -> **PAS** ecarte.
+
+    Le test de #19768 affirmait l'inverse : un `[RELEASED]` ecarte l'item
+    du tapis. C'etait le defaut mesure : `[RELEASED]` dit qu'une lane REND
+    LA MAIN, le plus souvent sur une BARRIERE reelle (GPU-only,
+    vision-only), et l'item redevient alors servable par la flotte --
+    « l'issue sautee reste en tete pour le tirage suivant ». L'ecarter
+    definitivement, c'etait perdre le grain.
+
+    Mesure fondatrice (issue #21721, 2026-10-21) : sur le pool ouvert, 31
+    items portent un en-tete `[RELEASED]` en dernier commentaire, et 0
+    d'entre eux portent un motif de couverture d'acceptance.
+
+    Le cas « `[RELEASED] ... acceptance deja couverte » (une livraison) est
+    tranche par la SONDE PLEINE (#21720), qui lit tous les commentaires :
+    ce filtre bon marche ne l'invente pas.
+    """
     monkeypatch.setattr(pig.subprocess, "run",
                         _FakeRecentComments([
                             {"body": "[RELEASED] lane myia-po-2023:CoursIA"},
                         ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_delivery_marker_RELEASED_with_DELIVERED_true(monkeypatch):
+    """#21721 : un dernier commentaire qui pose `[RELEASED]` ET `[DELIVERED]`
+    reste ecarte -- le marqueur de cloture l'emporte sur la main rendue.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "[DELIVERED] lane myia-po-2023:CoursIA\n"
+                                     "[RELEASED] lane myia-po-2023:CoursIA"},
+                        ]).run)
     assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_RELEASED_mention_discursive_false(monkeypatch):
+    """Controle negatif : un `[RELEASED]` cite en milieu de ligne (mention
+    de prose) ne matchait deja pas -- le controle est conserve pour
+    verrouiller le comportement d'ancrage.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "Le voisin a poste [RELEASED] hier, mais "
+                                     "celui-ci n'est pas rendu."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_marker_regex_excludes_only_closure_headers():
+    """#21721 : le filtre bon marche reconnait les en-tetes de CLOTURE
+    (`[DELIVERED]`, `[FROZEN]`) et rien d'autre. `[RELEASED]` n'en est pas un :
+    une main rendue laisse l'item servable.
+
+    Ce test porte sur la REGEX elle-meme (et non sur une sonde injectee) :
+    c'est elle que le tapis appelle en production.
+    """
+    rx = pig._RECENT_DELIVERY_MARKER_RE
+    assert rx.search("[DELIVERED] lane myia-po-2028:CoursIA") is not None
+    assert rx.search("[FROZEN] par coordinateur") is not None
+    assert rx.search("[RELEASED] lane myia-po-2028:CoursIA") is None
+    # `[INFO] candidate-delivered` n'est pas un en-tete de ce filtre : il a
+    # sa propre grammaire (`_DELIVERED_MARKER_RE`), plus large.
+    assert rx.search("[INFO] candidate-delivered -- lane X") is None
+    assert pig._DELIVERED_MARKER_RE.search(
+        "[INFO] candidate-delivered -- lane X") is not None
 
 
 def test_recent_delivery_marker_FROZEN_true(monkeypatch):
@@ -4520,6 +4647,61 @@ def test_recent_delivery_marker_FROZEN_true(monkeypatch):
                                      "tenir jusqu'au 2026-11-01"},
                         ]).run)
     assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_INFO_candidate_delivered_true(monkeypatch):
+    """2026-10-17 (mesure #10643) : `[INFO] candidate-delivered` en tete du
+    DERNIER commentaire -> ecarte.
+
+    C'est la forme par laquelle une lane WORKER rend la main au
+    coordinateur (#15069/#19295). #10643 a ete servie 3 fois en 3 cycles
+    alors que chaque service reposait ce marqueur en dernier commentaire :
+    la fenetre de sonde de tete (bulk 8 + extension 36) ne l'atteignait
+    pas, la sonde pleine (budget 16) non plus -- le filtre bon marche est
+    le seul rempart qui la lit TOUJOURS, il doit donc reconnaitre la
+    forme. Grammaire reutilisee de `_DELIVERED_MARKER_RE`.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "Confrontation des criteres par une "
+                                     "lane, sans marqueur."},
+                            {"body": "[INFO] candidate-delivered — lane "
+                                     "myia-po-2024:CoursIA (belt c205, "
+                                     "preuves re-verifiees firsthand ce "
+                                     "jour)"},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_INFO_revoked_false(monkeypatch):
+    """Controle negatif : `[INFO] candidate-delivered-revoked` en dernier
+    commentaire -> False. La retractation n'est pas une livraison (le
+    lookahead `(?![-_\\w])` de `_DELIVERED_MARKER_RE` ferme devant
+    `-revoked`) -- le candidat reste servi par la sonde pleine, qui gere
+    l'ORDRE marqueur/retractation, pas ce filtre.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "[INFO] candidate-delivered-revoked : "
+                                     "livraison partielle constatee, "
+                                     "l'item 2 reste ouvert"},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_delivery_marker_INFO_mention_discursive_false(monkeypatch):
+    """Controle negatif : un dernier commentaire qui PARLE du marqueur
+    sans le poser (mention en milieu de ligne) -> False. L'ancrage debut
+    de ligne de `_DELIVERED_MARKER_RE` protege, comme pour les en-tetes.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "Je vois dans le registre que le "
+                                     "ticket voisin est [INFO] "
+                                     "candidate-delivered, mais celui-ci "
+                                     "n'est pas livre."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
 
 
 def test_recent_delivery_marker_absent_false(monkeypatch):

@@ -39,6 +39,26 @@
     diagnosis — the classical designation of the trefoil awaits a spiral
     construction (rest of the Phase 3 programme).
 
+  What link 2 proves (the spiral construction, §5):
+
+  - the closed 2-strand braid with `n` half-twists read as a spiral
+    (annular drawing: crossing `i` carrying the edges `(2i−1, 2i−1+n, 2i,
+    2i+n)` modulo `2n`) yields, for `n = 3`, EXACTLY the lake's
+    `trefoilDiagram` — the spiral reading of `[3]` denotes 3₁ (designated
+    value `t² − t + 1`, that of `alexander_trefoil`);
+  - for `n = 5`, the same reading denotes 5₁ (designated value
+    `t⁴ − t³ + t² − t + 1`, determinant |Δ(−1)| = 5);
+  - no crossing of the spiral carries a reflexive edge: the defect
+    diagnosed above on the vertical chains is resolved by the annular
+    embedding.
+
+  What link 3 proves (the braid closure, §6): the chirality divergence
+  documented on the canonical planar code of 4₁
+  (`alexander_figureEight_not_classical`) is an encoding artifact, not
+  an engine limit — the closure of the braid (σ₁ σ₂⁻¹)², tracked strand
+  by strand, reaches the unit class of the classical under the unsigned
+  engine (`braidFour_classical_unit_class`).
+
   Sign convention: the lake's PD code does not encode crossing chirality
   (docstring of `alexanderEntry`); only |aᵢ| is read, and the mirror of a
   notation shares all its designated values.
@@ -297,7 +317,8 @@ hypotheses of the Wirtinger presentation — the designated value t² is NOT
 significant (it is not a unit times t² − t + 1; the computed minors are
 ±1 and t²). The underlying knot is indeed 3₁ (classical fact: the
 numerator closure of the three-twist tangle); its classical designation
-requires a spiral construction, next step of the Phase 3 programme. -/
+requires a spiral construction, next step of the Phase 3 programme —
+delivered in link 2 (§5: `spiral_three_designates_trefoil`). -/
 theorem conway_three_designated :
     alexanderPolynomialAux (conwayKnotOf trefoilNotation) = Polynomial.X ^ 2 := by
   have hc : conwayKnotOf trefoilNotation =
@@ -314,7 +335,8 @@ theorem conway_three_designated :
   ring
 
 /-- Same diagnosis for `[5]` (5₁ of the tables): pure vertical chain,
-reflexive edges, designated value t⁴ not significant. -/
+reflexive edges, designated value t⁴ not significant — resolved in
+link 2 (§5: `spiral_five_alexander`). -/
 theorem conway_five_designated :
     alexanderPolynomialAux (conwayKnotOf cinquefoilNotation) = Polynomial.X ^ 4 := by
   have hc : conwayKnotOf cinquefoilNotation =
@@ -330,5 +352,206 @@ theorem conway_five_designated :
   simp (config := { decide := true }) [alexanderEntry]
   ring
 
+
+/-! ## 5. The spiral construction (link 2)
+
+The defect of link 1 — the numerator closure as a vertical chain joins
+both outgoing strands of one crossing (reflexive edges) — is not a defect
+of the LANGUAGE but of the DRAWING: the same fraction `[n]` is drawn by
+winding the closed 2-strand braid around a cylinder, each crossing `i`
+carrying the four edges `(2i−1, 2i−1+n, 2i, 2i+n)` read modulo `2n`. For
+`n` odd (`n ≥ 3`), the numerator closure of the tangle `[n]` is the torus
+knot `T(2, n)` (classical fact): `[3]` denotes 3₁, `[5]` denotes 5₁. The
+designated values below are those of the module's Python probe (header),
+validated before the port.
+-/
+
+/-- Spiral label: `k` read modulo `2n`, in `1..2n`. -/
+def spiralLabel (n k : Nat) : Nat := (k - 1) % (2 * n) + 1
+
+/-- Crossing `i` (1-indexed) of the spiral with `n` half-twists: the two
+incoming edges `2i−1` and `2i`, the two outgoing ones shifted by `n` (half
+a cylinder turn further along the coil). -/
+def spiralCross (n i : Nat) : PDCrossing :=
+  ⟨spiralLabel n (2 * i - 1), spiralLabel n (2 * i - 1 + n),
+   spiralLabel n (2 * i), spiralLabel n (2 * i + n)⟩
+
+/-- The closed 2-strand braid with `n` half-twists, wound as a spiral: the
+annular drawing of the fraction `[n]` (for `n` odd ≥ 3, the torus knot
+`T(2, n)`), without reflexive edge. -/
+def spiralDiagram (n : Nat) : KnotDiagram :=
+  ⟨(List.range n).map (fun i => spiralCross n (i + 1)), 2 * n⟩
+
+/-! ### Well-formedness
+
+Each label of `1..2n` appears exactly twice, in two distinct crossings —
+in particular the four labels of a crossing are pairwise distinct: the
+Wirtinger defect of link 1 vanishes.
+-/
+
+theorem spiral_wf_three : (spiralDiagram 3).wf = true := by
+  decide
+
+theorem spiral_wf_five : (spiralDiagram 5).wf = true := by
+  decide
+
+/-- No reflexive edge in the spiral `[3]`: the four labels of each
+crossing are pairwise distinct. -/
+theorem spiral_noReflect_three :
+    (spiralDiagram 3).crossings.all (fun c =>
+      c.e1 ≠ c.e2 ∧ c.e1 ≠ c.e3 ∧ c.e1 ≠ c.e4 ∧
+      c.e2 ≠ c.e3 ∧ c.e2 ≠ c.e4 ∧ c.e3 ≠ c.e4) = true := by
+  decide
+
+/-- Same absence of reflexive edges for the spiral `[5]`. -/
+theorem spiral_noReflect_five :
+    (spiralDiagram 5).crossings.all (fun c =>
+      c.e1 ≠ c.e2 ∧ c.e1 ≠ c.e3 ∧ c.e1 ≠ c.e4 ∧
+      c.e2 ≠ c.e3 ∧ c.e2 ≠ c.e4 ∧ c.e3 ≠ c.e4) = true := by
+  decide
+
+/-! ### The designated values of the spirals
+
+`[3]` denotes the trefoil: the three-half-twist spiral literalises
+EXACTLY the lake's reference diagram (`trefoilDiagram`,
+`Knots/Basic_en.lean`) — the designation follows by `alexander_trefoil`.
+`[5]` denotes 5₁: designated value `t⁴ − t³ + t² − t + 1`, determinant
+|Δ(−1)| = 5.
+-/
+
+/-- The spiral `[3]` IS the lake's trefoil diagram, edge for edge: the
+annular reading of the fraction `[3]` yields the reference PD
+`trefoilDiagram`. -/
+theorem spiral_three_eq_trefoilDiagram :
+    spiralDiagram 3 = trefoilDiagram := by
+  decide
+
+/-- The designated value of the spiral `[3]`: `t² − t + 1`, computed in
+place (the `alexander_trefoil` pattern — literalisation, arc partition,
+2×2 minor). -/
+theorem spiral_three_alexander :
+    alexanderPolynomialAux (spiralDiagram 3) =
+      Polynomial.X ^ 2 - Polynomial.X + 1 := by
+  have hc : spiralDiagram 3 =
+      ⟨[⟨1, 4, 2, 5⟩, ⟨3, 6, 4, 1⟩, ⟨5, 2, 6, 3⟩], 6⟩ := by
+    decide
+  simp only [alexanderPolynomialAux, hc]
+  simp (config := { decide := true })
+  rw [det_two_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-- Designation corollary: the spiral `[3]` carries exactly the Alexander
+polynomial of the lake's trefoil — the notation denotes 3₁, and link 1's
+reflexive diagnosis is resolved by the annular embedding. -/
+theorem spiral_three_designates_trefoil :
+    alexanderPolynomialAux (spiralDiagram 3) = alexanderPolynomial trefoil := by
+  rw [spiral_three_alexander, alexander_trefoil]
+
+/-- The designated value of the spiral `[5]`: `t⁴ − t³ + t² − t + 1`, the
+Alexander polynomial of 5₁ (determinant |Δ(−1)| = 5). The 4×4 minor is
+unfolded by `conway_det_four_aux`. -/
+theorem spiral_five_alexander :
+    alexanderPolynomialAux (spiralDiagram 5) =
+      Polynomial.X ^ 4 - Polynomial.X ^ 3 + Polynomial.X ^ 2
+        - Polynomial.X + 1 := by
+  have hc : spiralDiagram 5 =
+      ⟨[⟨1, 6, 2, 7⟩, ⟨3, 8, 4, 9⟩, ⟨5, 10, 6, 1⟩, ⟨7, 2, 8, 3⟩,
+        ⟨9, 4, 10, 5⟩], 10⟩ := by
+    decide
+  simp only [alexanderPolynomialAux, hc]
+  simp (config := { decide := true })
+  rw [conway_det_four_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-! ### Link 3: the figure-eight knot via braid closure (§6)
+
+The annular construction of link 2 settled the all-positive T(2,n)
+families. The figure-eight knot 4₁ eluded the engine: on the canonical
+planar code, the unsigned minor returns `t³ − 2t² + 2t`, outside the unit
+class of the classical `t² − 3t + 1`
+(`alexander_figureEight_not_classical`), and the repair went through the
+signed variant (`alexander_figureEight_signed`). This link establishes
+that the divergence was an **encoding artifact, not an engine limit**:
+the closure of the 3-strand braid `(σ₁ σ₂⁻¹)²` — the standard
+representation of 4₁ — encoded by tracking the **strands** through the
+crossings (not the tracks), yields a PD on which the UNSIGNED engine
+reaches the unit class of the classical directly
+(`braidFour_classical_unit_class` below: the exact positive counterpart
+of `alexander_figureEight_not_classical`, same shape, proven where the
+other is refuted).
+
+Encoding derivation (each strand followed top to bottom, a braid
+swapping tracks at each crossing): strands S1, S2, S3 start in tracks
+1, 2, 3; S1 passes c1 (over, σ₁), c2 (under, σ₂⁻¹), c4 (over, σ₂⁻¹);
+S2 passes c1 (under), c3 (over, σ₁), c4 (under); S3 passes c2 (over,
+σ₂⁻¹), c3 (under, σ₁). The 8 edges are the inter-crossing segments, the
+closure gluing the bottom of track k to the top of track k (E1 = S1-head
+∪ S3-tail, E4 = S1-tail ∪ S2-head, E7 = S2-tail ∪ S3-head, E2 E3 E5 E6
+E8 = proper segments). The retained PD code lives in the family of
+coherent readings — every crossing carries its two over-strand edges in
+positions e1/e3 — and it is this coherence that makes the classical unit
+class reachable, not a uniqueness of reading: on the braid incidence
+structure (8 plausible alternating readings per crossing), the
+under-strand orientation is neutral for the designated value, and among
+the 16 over-strand orientations exactly 4 reach the classical unit class
+(the retained one, −t² + 3t − 1, and t³ − 3t² + t); the other 12 fall
+back into the planar-code classes (t³ − 2t² + 2t in particular), and an
+incoherent reading — an over-strand in e2/e4 — recovers the class only
+by coincidence (64 out of 3 840). This is the orientation coherence
+that the canonical planar encoding does not carry.
+-/
+
+/-- PD of the closure of the braid `(σ₁ σ₂⁻¹)²`: crossing c1 =
+(1, 4, 2, 5) — literally the first crossing of the lake's
+`trefoilDiagram` —, c2 = (7, 2, 8, 3), c3 = (6, 1, 5, 8), c4 =
+(3, 6, 4, 7), over 8 edges. -/
+def braidFourDiagram : KnotDiagram :=
+  ⟨[⟨1, 4, 2, 5⟩, ⟨7, 2, 8, 3⟩, ⟨6, 1, 5, 8⟩, ⟨3, 6, 4, 7⟩], 8⟩
+
+theorem braidFour_wf : braidFourDiagram.wf = true := by
+  decide
+
+/-- No reflexive edge in the braid closure: the four labels of each
+crossing are pairwise distinct. -/
+theorem braidFour_noReflect :
+    braidFourDiagram.crossings.all (fun c =>
+      c.e1 ≠ c.e2 ∧ c.e1 ≠ c.e3 ∧ c.e1 ≠ c.e4 ∧
+      c.e2 ≠ c.e3 ∧ c.e2 ≠ c.e4 ∧ c.e3 ≠ c.e4) = true := by
+  decide
+
+/-- The designated value of the braid closure: `−t² + 3t − 1`, the
+classical of 4₁ within its unit class — reached by the UNSIGNED engine
+(pattern of `alexander_figureEight`: literalisation, 3×3 minor by
+`det_three_aux`). -/
+theorem braidFour_alexander :
+    alexanderPolynomialAux braidFourDiagram =
+      -(Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+  have hc : braidFourDiagram =
+      ⟨[⟨1, 4, 2, 5⟩, ⟨7, 2, 8, 3⟩, ⟨6, 1, 5, 8⟩, ⟨3, 6, 4, 7⟩], 8⟩ := by
+    decide
+  simp only [alexanderPolynomialAux, hc]
+  simp (config := { decide := true })
+  rw [det_three_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-- Positive counterpart of `alexander_figureEight_not_classical`:
+where the canonical planar code fails (no unit `ε = ±1`, no exponent
+`k`), the braid encoding reaches the unit class of the classical with
+`ε = −1`, `k = 0`. The determinant |Δ(−1)| = 5 = det(4₁) is preserved —
+and this time the shape of the polynomial with it. -/
+theorem braidFour_classical_unit_class :
+    ∃ (k : ℕ) (ε : ℤ), ε * ε = 1 ∧
+      alexanderPolynomialAux braidFourDiagram =
+        Polynomial.C ε * Polynomial.X ^ k *
+          (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+  refine ⟨0, -1, by norm_num, ?_⟩
+  rw [braidFour_alexander]
+  norm_num
 
 end Knots_en

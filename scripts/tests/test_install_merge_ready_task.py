@@ -251,3 +251,20 @@ def test_tache_lance_l_installateur_du_depot_cible(tmp_path):
     # checkout d'ou l'installation a ete lancee.
     cmd = imod.task_command(tmp_path)
     assert cmd[1] == str(tmp_path / "scripts" / "coordination" / "install_merge_ready_task.py")
+
+
+def test_run_lance_l_organe_depuis_le_depot(tmp_path, monkeypatch):
+    # La tache planifiee demarre hors depot ; les organes appeles par
+    # merge_ready lisent git sans -C. L'organe doit donc tourner avec
+    # cwd=depot, sinon check_slot_reservation sort en rc=2.
+    _redirect_cablage(monkeypatch, tmp_path)
+    monkeypatch.setattr(imod, "sync_repo", lambda repo: (True, "origin/main"))
+    seen = {}
+
+    def fake_run(cmd, **kw):
+        seen.update(kw)
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(imod.subprocess, "run", fake_run)
+    assert imod.cmd_run(tmp_path) == 0
+    assert seen.get("cwd") == str(tmp_path)
