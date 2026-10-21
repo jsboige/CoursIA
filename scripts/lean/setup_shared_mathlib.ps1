@@ -296,6 +296,10 @@ function Get-PairMap([object[]]$Details) {
 
 function Format-Package([object]$Pkg) {
     if (-not $Pkg) { return '<inconnu>' }
+    # Une dependance LOCALE (type "path") n'a ni revision ni URL dans le
+    # manifest : les afficher en "<vide>" / "<url absente>" produisait un
+    # leurre (revue Hermes sur #21790). On ne nomme que ce qui existe.
+    if ($Pkg.Type -eq 'path') { return "$($Pkg.Name) (path)" }
     $url = if ($Pkg.Url) { $Pkg.Url } else { '<url absente>' }
     return "$($Pkg.Name) [$(Get-ShortRev $Pkg.Rev)] ($($Pkg.Type), $url)"
 }

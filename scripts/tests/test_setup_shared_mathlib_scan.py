@@ -138,6 +138,22 @@ def test_scan_names_the_fragments_and_the_divergent_dependencies(fragmented_repo
 
 
 @requires_pwsh
+def test_local_dependency_is_not_rendered_with_empty_rev_and_url(fragmented_repo: Path) -> None:
+    """Une dependance LOCALE n'a ni revision ni URL : le rapport ne doit pas
+    laisser croire le contraire (revue Hermes sur #21790)."""
+    out = _run_scan(fragmented_repo)
+
+    # La dependance path est nommee telle quelle, sans marqueur de champ vide.
+    assert "sibling_lean (path)" in out
+    assert "<vide>" not in out
+    assert "<url absente>" not in out
+
+    # La dependance EXTERNE, elle, porte toujours revision et URL.
+    assert "extra_git" in out
+    assert "example.invalid" in out
+
+
+@requires_pwsh
 def test_scan_does_not_report_fragmentation_when_groups_are_identical(tmp_path: Path) -> None:
     """Controle NEGATIF : sans divergence, le diagnostic ne doit rien signaler."""
     root = tmp_path / "repo"
