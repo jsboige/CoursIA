@@ -52,7 +52,7 @@ prouve par le retour exact à l'état initial, par blocs pour borner la mémoire
 tANS fige la machine dans des tables de $2^L$ états construites par pavage
 dyadique. Le carnet valide chaque codeur par round-trips aléatoires et une
 énumération exhaustive des transitions, puis mesure : sur 16 Kio du *Horla*
-tous les codeurs entropiques collent à l'entropie (écart de 2 à 4 centièmes),
+tous les codeurs entropiques collent à l'entropie (écart de 2 à 5 centièmes),
 mais sur une source à 99 %/1 % tANS rend 0,09 bit/symbole là où Huffman rend
 1,0000.
 
