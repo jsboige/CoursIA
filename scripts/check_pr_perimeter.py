@@ -1163,10 +1163,24 @@ def _count_is_provenance_sha(line: str, m: re.Match) -> bool:
 # verbes de PERIMETRE, et « Cette PR couvre N fichiers » est la phrase la plus
 # courante d'un body qui annonce son perimetre : l'exemption la blanchissait.
 # Le fondateur #20076 n'utilise que « atteste ».
+#
+# Verbes de denombrement a l'IMPARFAIT (founder #21154, body avant
+# reformulation : « le bandeau du 02/09 comptait 11 fichiers `_REPORT...` a
+# trier ») : l'imparfait decrit un etat ANTERIEUR (un inventaire, un bandeau,
+# une mesure d'une autre date), jamais le diff courant -- une PR n'annonce pas
+# son perimetre au passe. Le present « compte » reste HORS liste : « Cette PR
+# compte 3 fichiers » est une annonce de perimetre (meme raison que le retrait
+# de `couvre` en review #20125). Asymetrie assumee : le passe anglais
+# (`counted`, `listed`) n'est PAS exempte, faute d'instance mesuree ; si la
+# classe reparait cote EN, l'ajouter ici avec son fondateur (liste fermee, le
+# faux negatif reste du cote bloquant).
 DESCRIPTIVE_VERB = re.compile(
     r"\b(?:atteste|attestent|constate|constatent|lit|lisent|"
     r"[ée]num[èe]re|[ée]num[èe]rent|r[ée]cense|r[ée]censent|"
     r"d[ée]nombre|d[ée]nombrent|"
+    r"comptait|comptaient|r[ée]censait|r[ée]censaient|"
+    r"d[ée]nombrait|d[ée]nombraient|[ée]num[ée]rait|[ée]num[ée]raient|"
+    r"listait|listaient|"
     r"attests?|reads?|counts?|enumerates?)\b",
     re.IGNORECASE,
 )
