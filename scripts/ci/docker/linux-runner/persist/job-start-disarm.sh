@@ -12,10 +12,22 @@
 # crochet est la condition du retour au pool -- SANS lui, remettre le label
 # referait le cycle de rouges en quelques heures.
 #
-# SEMANTIQUE IDENTIQUE aux blocs de l'entrypoint (source de verite :
+# SEMANTIQUE DERIVEE des blocs de l'entrypoint (source de verite :
 # entrypoint.sh, « desarmement de l'etat sparse-checkout residuel » et
-# « desarmement des refs distantes dangling ») -- deux cas, deux couts :
-#   drapeau arme    = purge du clone (le checkout suivant reclonera) ;
+# « desarmement des refs distantes dangling »), avec une divergence
+# ASSUMEE sur le cas « drapeau arme » -- l'entrypoint purge au BOOT du
+# conteneur (sans job en vol, donc sans course) ; ce crochet purgeait
+# AUSSI, mais il tourne entre le prepare du job et son premier step :
+# purger le clone supprime le CWD du step checkout, et le runner ne peut
+# alors PAS DEMARRER le process (ENOENT .NET attribue a tort a
+# « externals/node24/bin/node », erreur « No such file or directory » au
+# checkout -- mesure 2026-10-20 sur les 7 slots persist, 22-54 occurrences
+# par slot, chaque job suivant un job sparse-arme tué en paire
+# step/post-step ; diagnostic croise ai-01:CoursIA-2 sur #20921
+# c.6298429793). Deux cas, deux couts :
+#   drapeau arme    = desarmement EN PLACE (git sparse-checkout disable :
+#                     drapeau retire + arbre complet rematerialise depuis
+#                     les objets locaux, sans reseau, clone conserve) ;
 #   motifs seuls    = retrait du fichier, cache incremental conserve
 #                     (~40-51 s/job, #14285).
 #
@@ -37,8 +49,20 @@ WORK="${ACTIONS_RUNNER_INPUT_WORK:-/home/runner/_work}"
 disarm_one() {  # <chemin-du-clone>
   local repo="$1" gitdir="$1/.git" ref sha
   if [ -n "$(git -C "$repo" config --local --get core.sparseCheckout 2>/dev/null || true)" ]; then
-    echo "job-start-disarm: sparse ARME dans $repo -- purge du clone (le checkout suivant reclonera)" >&2
-    rm -rf "$repo" || echo "job-start-disarm: purge impossible de $repo -- signale, job poursuivi" >&2
+    echo "job-start-disarm: sparse ARME dans $repo -- desarmement en place (sparse-checkout disable)" >&2
+    if git -C "$repo" sparse-checkout disable >/dev/null 2>&1; then
+      # Ceinture obligatoire : selon la version de git, disable peut laisser
+      # core.sparseCheckout=true sans fichier de motifs -- le checkout suivant
+      # amputerait alors TOUT l'arbre (motifs vides). Le drapeau est leve
+      # explicitement quoi qu'il arrive.
+      git -C "$repo" config --local --unset core.sparseCheckout 2>/dev/null || true
+      return 0
+    fi
+    # Repli (fail-open) : retirer drapeau et motifs SANS toucher au repertoire
+    # de travail -- le CWD du job suivant doit exister au demarrage du step.
+    git -C "$repo" config --local --unset core.sparseCheckout 2>/dev/null || true
+    rm -f "$gitdir/info/sparse-checkout" 2>/dev/null || true
+    echo "job-start-disarm: sparse-checkout disable a echoue dans $repo -- drapeau et motifs retires, arbre partiel assume (le checkout suivant le reparera)" >&2
     return 0
   fi
   if [ -f "$gitdir/info/sparse-checkout" ]; then
@@ -46,8 +70,14 @@ disarm_one() {  # <chemin-du-clone>
     rm -f "$gitdir/info/sparse-checkout" || true
   fi
   while read -r ref sha; do
-    if ! git -C "$repo" cat-file -e "$sha^{object}" 2>/dev/null; then
-      echo "job-start-disarm: ref distante dangling $ref -- suppression (objet absent)" >&2
+    # Meme garde que l'entrypoint (#20699 / c.327 slot 3 po-2024) :
+    # cat-file -e en clone partiel declenche un fetch paresseux sans timeout.
+    # GIT_NO_LAZY_FETCH=1 (git >= 2.46, no-op avant) desactive le fetch ;
+    # timeout 10 borne le pire cas. stderr de-masque pour qu'un timeout reste
+    # diagnosticable (la trace du slot 3 etait silencieuse a cause du
+    # 2>/dev/null).
+    if ! GIT_NO_LAZY_FETCH=1 timeout 10 git -C "$repo" cat-file -e "$sha^{object}"; then
+      echo "job-start-disarm: ref distante dangling $ref -- suppression (objet absent ou timeout cat-file)" >&2
       git -C "$repo" update-ref -d "$ref" 2>/dev/null || true
     fi
   done < <(git -C "$repo" for-each-ref --format='%(refname) %(objectname)' refs/remotes 2>/dev/null)

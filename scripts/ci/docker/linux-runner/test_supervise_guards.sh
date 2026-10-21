@@ -42,6 +42,35 @@ cleanup_launched() {
   kill -KILL -- -$$ 2>/dev/null || true
 }
 trap cleanup_launched EXIT INT TERM
+# --- Oracle des sequences de temporisations (#21601) -----------------------
+# Un oracle qui exige une SEQUENCE EXACTE de temporisations est instable sous
+# charge : la duree reelle des cycles, le seuil de classification et l'ordre
+# entre la detection du sentinel d'arret et l'emission de la temporisation
+# suivante sont exterieurs a l'entree du test. On teste donc une PROPRIETE :
+#   - un prefixe impose (le comportement que le test veut prouver) ;
+#   - une queue eventuelle dont chaque valeur suit min(precedente x 2, CAP),
+#     c'est-a-dire le doublement plafonne que le superviseur applique.
+# Le prefixe et la queue se disent en un seul parametre : le predicat doit
+# rester lisible et le cas tolere (queue vide = run tronque par le timeout)
+# doit rester ROUGE.
+oracle_backoff() {
+  local got="$1" prefix="$2" cap="$3" reste prev cur attendu
+  case "$got" in
+    "$prefix") return 0 ;;
+    "$prefix",*) ;;
+    *) return 1 ;;
+  esac
+  reste="${got#"$prefix"}"
+  prev="${prefix##*,}"
+  for cur in $(echo "${reste#,}" | tr ',' ' '); do
+    attendu=$(( prev * 2 ))
+    [ "$attendu" -gt "$cap" ] && attendu="$cap"
+    [ "$cur" -eq "$attendu" ] || return 1
+    prev="$cur"
+  done
+  return 0
+}
+
 
 # Stubs docker + gh + ps + hostname. Le stub docker simule une image A JOUR
 # pour le garde de fraicheur #14801/#15105 : au probe `run --entrypoint
@@ -1006,6 +1035,23 @@ echo "Test 23 : le plafond CAP borne la file (entries 4+ toutes = CAP)"
 )
 echo ""
 
+# --- Completude du run : le CODE DE SORTIE du producteur (tests 24/38/39) --
+# #21601 : l'oracle porte sur la SEQUENCE des temporisations. Un producteur
+# TUYE par le `timeout` (124) ou par le kill qui suit (137) peut laisser une
+# sequence QUI SATISFAIT DEJA l'oracle : le prefixe complet ne prouve pas que
+# le run s'est termine. Le code de sortie est donc le seul juge de la
+# completude -- il est lu, pas suppose. 143 = SIGTERM externe.
+# La definition est placee ICI (avant le test 24) parce que le test 24 est le
+# PREMIER appelant : en bash, une fonction doit exister avant son premier
+# appel, sinon l'appel porte sur une commande inconnue.
+run_complet() {
+  local rc="$1" seq="$2" prefix="$3" cap="$4"
+  case "$rc" in
+    124|137|143) return 1 ;;
+  esac
+  oracle_backoff "$seq" "$prefix" "$cap"
+}
+
 # --- Test 24 : un cycle sain remet le compteur de backoff a zero -----------
 echo "Test 24 : cycle ayant vecu >= HEALTHY_CYCLE_SECS -> reset + sleep 2"
 (
@@ -1056,27 +1102,91 @@ STUB
     export PATH="$TEST_DIR/bin14:$PATH"
     export COURSIA_RUNNER_NAME_PREFIX="test-prefix-14"
     export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-14"
-    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=2
+    # #21601 : le seuil de cycle sain passe de 2 s a 5 s et le burn de 3 s a 8 s.
+    # L'ecart de 1 s (burn 3 s contre seuil 2 s) ne tenait pas sous charge : un
+    # cycle rapide qui deborde le seuil change de classification et la sequence
+    # entiere decale. Marge actuelle : 3 s de part et d'autre du seuil.
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=5
     export COURSIA_RUNNER_BACKOFF_BASE=3
     export COURSIA_RUNNER_BACKOFF_CAP=999
     export STUB_STOP_FILE="$TEST_DIR/state-14/stop"
     export STUB_RUN_COUNT="$TEST_DIR/run14.count"
     export SLEEP_LOG="$TEST_DIR/sleep14.log"
     export STUB_BURN_AT=3
-    export STUB_BURN_SECS=3
-    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out14.log" 2>"$TEST_DIR/err14.log"
+    export STUB_BURN_SECS=8
+    # 120 s : le burn seul coute 8 s, la suite doit survivre a une machine chargee.
+    timeout --kill-after=2 120 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out14.log" 2>"$TEST_DIR/err14.log"
   )
+  rc14=$?
   seq="$(paste -sd, "$TEST_DIR/sleep14.log")"
-  if [ "$seq" = "3,6,2,3,6,12" ]; then
-    ok "reset prouve : 3,6 -> cycle sain (2) -> REPART a 3,6 (le 3e cycle de 2s a vecu >= HEALTHY=1)"
+  # Oracle invariant : le compteur de cycles courts est REMIS a zero apres un
+  # cycle sain -> prefixe 3,6 -> cycle sain (2) -> REPART a 3,6, puis une queue
+  # eventuelle qui double strictement (12, 24, ...). Voir oracle_backoff.
+  # La completude est jugee par le CODE DE SORTIE, pas par le seul prefixe
+  # (#21601) : un producteur tue (124 timeout, 137 kill apres le timeout,
+  # 143 SIGTERM) peut laisser une sequence qui satisfait deja l'oracle.
+  if run_complet "$rc14" "$seq" "3,6,2,3,6" 999; then
+    ok "reset prouve : 3,6 -> cycle sain (2) -> REPART a 3,6 (invariant, queue [$seq])"
   else
-    ko "attendu 3,6,2,3,6,12, obtenu [$seq]"
+    case "$rc14" in
+      124|137|143)
+        ko "run INCOMPLET (rc=$rc14) : le superviseur a ete tue -- un prefixe complet ne prouve pas la completude (sequence [$seq])"
+        ;;
+      *)
+        ko "invariant attendu (prefixe 3,6,2,3,6 puis queue qui double strictement), obtenu [$seq]"
+        ;;
+    esac
   fi
   if grep -q "conteneur termine sainement" "$TEST_DIR/out14.log"; then
     ok "le cycle long est journalise comme sain (pas comme echec)"
   else
     ko "ligne 'termine sainement' absente : $(head -3 "$TEST_DIR/out14.log")"
   fi
+  # --- Controle NEGATIF (#21601) : un timeout atteint doit rester ROUGE -----
+  # Le meme harnais est relance avec un timeout de 1 s : le superviseur se
+  # fait tuer pendant le burn, la sequence est tronquee, et l'oracle doit la
+  # REJETER. C'est le garde-fou qui empeche l'assouplissement de masquer un
+  # timeout reel.
+  mkdir -p "$TEST_DIR/state-14neg"
+  rm -f "$TEST_DIR/state-14neg/stop" "$TEST_DIR/state-14neg/pids" "$TEST_DIR/run14neg.count"
+  : > "$TEST_DIR/sleep14neg.log"
+  (
+    export PATH="$TEST_DIR/bin14:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-14neg"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-14neg"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=5
+    export COURSIA_RUNNER_BACKOFF_BASE=3
+    export COURSIA_RUNNER_BACKOFF_CAP=999
+    export STUB_STOP_FILE="$TEST_DIR/state-14neg/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run14neg.count"
+    export SLEEP_LOG="$TEST_DIR/sleep14neg.log"
+    export STUB_BURN_AT=3
+    export STUB_BURN_SECS=8
+    timeout --kill-after=1 1 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out14neg.log" 2>&1
+  )
+  negseq="$(paste -sd, "$TEST_DIR/sleep14neg.log")"
+  if oracle_backoff "$negseq" "3,6,2,3,6" 999; then
+    ko "controle negatif FAUX : une sequence tronquee par timeout a ete acceptee [$negseq]"
+  else
+    ok "controle negatif : une sequence tronquee par timeout est rejetee ([$negseq])"
+  fi
+)
+echo ""
+
+# --- Test 24b : CONTROLE NEGATIF -- un prefixe complet ne vaut PAS completude
+# Le prefixe qui prouve le reset (3,6,2,3,6) est rejoue avec les codes de
+# sortie d'un producteur TUYE : le lanceur doit REJETER les trois. Sans ces
+# temoins, un assouplissement de l'oracle (accepter une sequence parfaite
+# portee par un run tue) passerait inapercu.
+echo "Test 24b : controle negatif -- une sequence parfaite portee par un run TUEE est REJETEE (rc 124/137/143)"
+(
+  for rc_tue in 124 137 143; do
+    if run_complet "$rc_tue" "3,6,2,3,6" 999; then
+      ko "controle negatif : un run tue (rc=$rc_tue) a ete accepte"
+    else
+      ok "controle negatif : un run tue (rc=$rc_tue) est rejete"
+    fi
+  done
 )
 echo ""
 
@@ -1438,7 +1548,10 @@ STUB
   : > "$ARGV_LOG"
   export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-17b"
   export COURSIA_RUNNER_WAITER_TOOLCACHE=0
-  timeout --kill-after=1 3 bash "$SCRIPT_DIR/supervise.sh" waiters 1 >/dev/null 2>&1
+  # #21601 : 3 s ne suffisaient pas sur une machine chargee -- le sous-processus
+  # n'atteignait pas l'appel docker et l'argv restait vide (echec a l'identique
+  # sur la base, mesure le 2026-10-20).
+  timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" waiters 1 >/dev/null 2>&1
   touch "$TEST_DIR/state-17b/stop"
   argv="$(cat "$ARGV_LOG" 2>/dev/null)"
   if [ -n "$argv" ] && ! echo "$argv" | grep -q -- "coursia-runner-toolcache"; then
@@ -1648,6 +1761,7 @@ STUB
 )
 echo ""
 
+
 # --- Test 38 : controle positif -- cycle court AVEC travail reel ------------
 echo "Test 38 : cycle court portant une execution de job -> pas de backoff, compteur remis a zero (review #15166)"
 (
@@ -1705,13 +1819,21 @@ STUB
     export STUB_STOP_FILE="$TEST_DIR/state-26/stop"
     export STUB_RUN_COUNT="$TEST_DIR/run26.count"
     export SLEEP_LOG="$TEST_DIR/sleep26.log"
-    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err26.log"
+    # #21601 : 30 s ne tenaient pas sur une machine chargee (run tronque).
+    # Le CODE DE SORTIE est capture : un producteur tue (124 timeout, 137
+    # kill-after) peut laisser une sequence qui satisfait deja l'oracle.
+    rc26=0
+    timeout --kill-after=2 120 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err26.log" || rc26=$?
+    echo "$rc26" > "$TEST_DIR/rc26"
   )
+  rc26="$(cat "$TEST_DIR/rc26")"
   seq="$(paste -sd, "$TEST_DIR/sleep26.log")"
-  if [ "$seq" = "2,2,2,2,2,3,6,12" ]; then
-    ok "5 cycles AVEC travail -> sleep 2 sans backoff, puis boucle vide REPART a 3,6,12 (compteur remis a zero par le travail)"
+  # Oracle invariant : 5 cycles AVEC travail -> sleep 2 sans backoff, puis
+  # boucle vide REPART a 3,6 puis doublement plafonne (CAP=24).
+  if run_complet "$rc26" "$seq" "2,2,2,2,2,3,6" 24; then
+    ok "5 cycles AVEC travail -> sleep 2 sans backoff, puis boucle vide REPART a 3,6,12 (invariant, queue [$seq], rc=$rc26)"
   else
-    ko "attendu 2,2,2,2,2,3,6,12, obtenu [$seq]"
+    ko "invariant attendu (prefixe 2,2,2,2,2,3,6 puis queue min(prev*2,24)) sur un run COMPLET, obtenu [$seq] (rc=$rc26)"
   fi
   if grep -q "cycle court AVEC travail" "$TEST_DIR/err26.log"; then
     ok "le travail reel est journalise comme tel"
@@ -1771,7 +1893,8 @@ STUB
     export PATH="$TEST_DIR/bin27:$PATH"
     export COURSIA_RUNNER_NAME_PREFIX="test-prefix-27"
     export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-27"
-    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=2
+    # #21601 : marge de classification portee de 1 s a 3 s (seuil 5 s, burn 8 s).
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=5
     export COURSIA_RUNNER_BACKOFF_BASE=3
     export COURSIA_RUNNER_BACKOFF_CAP=24
     export COURSIA_RUNNER_BACKOFF_MIN_SEC=7
@@ -1779,10 +1902,15 @@ STUB
     export STUB_RUN_COUNT="$TEST_DIR/run27.count"
     export SLEEP_LOG="$TEST_DIR/sleep27.log"
     export STUB_BURN_AT=3
-    export STUB_BURN_SECS=3
+    export STUB_BURN_SECS=8
     export STUB_DOCKER_RC=1
-    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out27.log" 2>"$TEST_DIR/err27.log"
+    # Code de sortie capture : un producteur tue laisse une sequence qui peut
+    # satisfaire l'oracle -- seul le rc distingue le run complet du run tronque.
+    rc27=0
+    timeout --kill-after=2 120 bash "$SCRIPT_DIR/supervise.sh" start 1 >"$TEST_DIR/out27.log" 2>"$TEST_DIR/err27.log" || rc27=$?
+    echo "$rc27" > "$TEST_DIR/rc27"
   )
+  rc27="$(cat "$TEST_DIR/rc27")"
   seq="$(paste -sd, "$TEST_DIR/sleep27.log")"
   # Cycles 1-2 courts (3,6) ; cycle 3 brule 3s >= HEALTHY=2 mais rc=1 ->
   # respiration MIN 7 SANS remise a zero ; cycle 4 : le compteur etait
@@ -1790,16 +1918,56 @@ STUB
   # reset inconditionnel on aurait vu 3,6,2,3,6,12.) HEALTHY=2 + burn 3s
   # pour qu'un cycle instantane ne puisse pas chevaucher un tick de
   # seconde et passer pour long par accident.
-  if [ "$seq" = "3,6,7,12,24,24" ]; then
-    ok "3,6 -> cycle long rc=1 : 7 (non sain) -> compteur conserve : 12,24,24"
+  # Oracle invariant : prefixe 3,6 -> cycle long rc=1 : 7 (non sain) ->
+  # compteur conserve : 12, puis doublement plafonne a CAP=24.
+  if run_complet "$rc27" "$seq" "3,6,7,12" 24; then
+    ok "3,6 -> cycle long rc=1 : 7 (non sain) -> compteur conserve : 12,24,24 (invariant, queue [$seq], rc=$rc27)"
   else
-    ko "attendu 3,6,7,12,24,24, obtenu [$seq]"
+    ko "invariant attendu (prefixe 3,6,7,12 puis queue min(prev*2,24)) sur un run COMPLET, obtenu [$seq] (rc=$rc27)"
   fi
   if grep -q "non qualifie sain" "$TEST_DIR/err27.log" \
      && ! grep -q "termine sainement" "$TEST_DIR/out27.log"; then
     ok "le cycle long rc!=0 n'est JAMAIS journalise sain"
   else
     ko "qualification saine indue : err=$(grep -c 'non qualifie' "$TEST_DIR/err27.log") out=$(grep -c 'sainement' "$TEST_DIR/out27.log")"
+  fi
+)
+echo ""
+
+# --- Test 39b : controle NEGATIF -- un run TUE ne passe pas, meme quand la
+# sequence est PARFAITE (#21601, completude c.2258) ----------------------------
+echo "Test 39b : controle negatif -- une sequence parfaite issue d'un run TUE est REJETEE (rc 124/137)"
+(
+  cd "$SCRIPT_DIR"
+  # Controle positif : prefixe complet + rc normal -> accepte.
+  if run_complet 0 "2,2,2,2,2,3,6,12,24" "2,2,2,2,2,3,6" 24; then
+    ok "controle positif : prefixe complet + rc normal -> accepte"
+  else
+    ko "controle positif : prefixe complet + rc normal aurait du etre accepte"
+  fi
+  # Controle negatif 1 : MEME sequence, producteur tue par le timeout (124).
+  if run_complet 124 "2,2,2,2,2,3,6,12,24" "2,2,2,2,2,3,6" 24; then
+    ko "controle negatif : un run tue par timeout (rc=124) a ete accepte"
+  else
+    ok "controle negatif : un run tue par timeout (rc=124) est rejete"
+  fi
+  # Controle negatif 2 : MEME sequence, kill apres le timeout (137).
+  if run_complet 137 "2,2,2,2,2,3,6,12,24" "2,2,2,2,2,3,6" 24; then
+    ko "controle negatif : un run tue par kill-after (rc=137) a ete accepte"
+  else
+    ok "controle negatif : un run tue par kill-after (rc=137) est rejete"
+  fi
+  # Controle negatif 3 : prefixe INCOMPLET, rc normal -> rejete par l'oracle.
+  if run_complet 0 "2,2,2,2,2" "2,2,2,2,2,3,6" 24; then
+    ko "controle negatif : un prefixe tronque a ete accepte"
+  else
+    ok "controle negatif : un prefixe tronque est rejete"
+  fi
+  # Controle negatif 4 : queue au-dela du plafond (25 > CAP=24) -> rejete.
+  if run_complet 0 "2,2,2,2,2,3,6,12,25" "2,2,2,2,2,3,6" 24; then
+    ko "controle negatif : une queue au-dela du plafond a ete acceptee"
+  else
+    ok "controle negatif : une queue au-dela du plafond est rejetee"
   fi
 )
 echo ""
@@ -3361,6 +3529,148 @@ STUB
     ok "un cycle qui ecrit garde le rappel du log (le diagnostic muet ne le remplace pas)"
   else
     ko "rappel du log perdu sur un cycle parlant : $(head -3 "$TEST_DIR/err68.log")"
+  fi
+)
+echo ""
+
+# --- Test 69 : budget -- les slots de la MEME famille en vol sont repris, pas ajoutes (#20727)
+#
+# Mesure ai-01 du 2026-10-14 (#20727) : au redemarrage de coursia-runner.service,
+# `assert_memory_budget` comptait DEUX fois les slots de la generation precedente
+# qui finissaient encore leur job -- une fois dans la somme en vol (running_ci_mb),
+# une fois dans la demande (n x per). Les 3 slots orphelins (4, 6, 10) font
+# PARTIE des 14 demandes : le superviseur attend que le nom soit rendu
+# (reclaim_container_name) avant de relancer le slot, donc un slot ne porte jamais
+# deux conteneurs a la fois, et l'empreinte de la famille reste bornee a n x per.
+#
+# Arithmetique de l'issue (budget 64 Go = 65 536 Mo) :
+#   deja en vol .... 3 x 4096 (orphelins) + 8192 (waiter) = 20 480 Mo
+#   demande ....... 14 x 4096 = 57 344 Mo
+#   AVANT ....... 20 480 + 57 344 = 77 824 > 65 536  -> REFUS (le pool tombe)
+#   APRES ....... 20 480 + (57 344 - 12 288) = 65 536 <= 65 536 -> ACCEPTE
+#
+# Ce test verrouille les quatre proprietes du correctif : la reprise libere le
+# demarrage qui tient, elle ne rend PAS le budget laxiste pour une autre
+# famille, elle n'accepte pas une demande qui deborde reellement, et le
+# predicat de nom reste strict (un conteneur qui porte le prefixe sans etre un
+# slot n'est pas repris).
+echo "Test 69 : budget -- les slots de la meme famille en vol sont repris, pas ajoutes (#20727)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin69"
+  cat > "$TEST_DIR/bin69/docker" <<'STUB'
+#!/usr/bin/env bash
+# Stub dedie : il rend le NOM du conteneur en plus de son cap, pour que le
+# garde puisse distinguer un slot de famille d'un conteneur qui porte le meme
+# prefixe sans etre un slot. STUB_CI_ROWS : lignes "id nom octets".
+if [ "$1" = "-H" ]; then shift 2; fi
+if [ "$1" = "ps" ] && echo "$*" | grep -q 'label=coursia-ci=1'; then
+  printf '%s\n' $STUB_CI_IDS
+  exit 0
+fi
+if [ "$1" = "info" ]; then
+  case "$*" in
+    *'{{.ID}}'*) echo "${STUB_DOCKER_ID:-stub-69}"; exit 0 ;;
+  esac
+  echo ""; exit 0
+fi
+if [ "$1" = "inspect" ]; then
+  fmt="$3"; shift 3
+  for id in "$@"; do
+    row="$(printf '%s\n' "$STUB_CI_ROWS" | awk -v i="$id" '$1 == i { print; exit }')"
+    [ -n "$row" ] || continue
+    name="$(printf '%s' "$row" | awk '{ print $2 }')"
+    bytes="$(printf '%s' "$row" | awk '{ print $3 }')"
+    case "$fmt" in
+      *'{{.Name}}'*) printf '%s %s\n' "$name" "$bytes" ;;
+      *HostConfig.Memory*) echo "$bytes" ;;
+      *) echo "" ;;
+    esac
+  done
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin69/docker"
+  export PATH="$TEST_DIR/bin69:$PATH"
+  # Budget de l'issue : 64 Go, dimensionne au plus juste.
+  export COURSIA_RUNNER_BUDGET_GB=64
+  # 3 slots de la famille `start` (generation precedente, job en cours) a 4096 Mo
+  # + 1 waiter a 8192 Mo.
+  export STUB_CI_IDS="c1 c2 c3 w1"
+  export STUB_CI_ROWS="c1 /test-prefix-69-4 4294967296
+c2 /test-prefix-69-6 4294967296
+c3 /test-prefix-69-10 4294967296
+w1 /test-waiter-1 8589934592"
+  . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1
+
+  # (1) CONTROLE POSITIF : la famille dont des slots sont en vol passe.
+  out="$( (assert_memory_budget start 14 4096m test-prefix-69) 2>&1 )"; rc=$?
+  # Le garde n'affiche le detail du refus que s'il depasse ; ici il passe, donc
+  # la `demande nette` ne s'affiche pas. On verifie la reprise et le total net.
+  if [ "$rc" = "0" ] \
+     && echo "$out" | grep -q "reprise en vol ..... 3 slot(s) de cette famille = 12288 Mo" \
+     && echo "$out" | grep -q "CI en vol 20480 Mo + 45056 Mo demandes"; then
+    ok "les 3 slots deja en vol de la famille sont repris : le demarrage qui tient passe"
+  else
+    ko "la famille avec des slots en vol devrait passer : rc=$rc out='$out'"
+  fi
+
+  # (2) CONTROLE NEGATIF : une AUTRE famille reste refusee au meme etat.
+  out="$( (assert_memory_budget lean 14 4096m test-lean-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && echo "$out" | grep -q "budget CI depasse"; then
+    ok "une autre famille reste refusee : la reprise ne rend pas le budget laxiste"
+  else
+    ko "une autre famille aurait du etre refusee : rc=$rc out='$out'"
+  fi
+
+  # (3) CONTROLE NEGATIF : une demande qui deborde REELLEMENT reste refusee.
+  out="$( (assert_memory_budget start 20 4096m test-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && echo "$out" | grep -q "budget CI depasse"; then
+    ok "une demande qui deborde apres reprise reste refusee"
+  else
+    ko "une demande qui deborde aurait du etre refusee : rc=$rc out='$out'"
+  fi
+
+  # (4) Le predicat de nom est STRICT : un conteneur qui porte le prefixe
+  # sans etre un slot (pas de numero) n'est pas repris.
+  export STUB_CI_IDS="c1 c2 c3 b1"
+  export STUB_CI_ROWS="c1 /test-prefix-69-4 4294967296
+c2 /test-prefix-69-6 4294967296
+c3 /test-prefix-69-10 4294967296
+b1 /test-prefix-69-backup 4294967296"
+  out="$( (assert_memory_budget start 14 4096m test-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" = "0" ] \
+     && echo "$out" | grep -q "reprise en vol ..... 3 slot(s) de cette famille = 12288 Mo" \
+     && echo "$out" | grep -q "CI en vol 16384 Mo + 45056 Mo demandes"; then
+    ok "un conteneur '<prefixe>-backup' n'est pas repris comme un slot de la famille"
+  else
+    ko "le predicat de nom devrait etre strict : rc=$rc out='$out'"
+  fi
+  # (5) BORNE HAUTE (#21494) : `cmd_start` ne relance que `seq 1 n`. Des slots
+  # de numero > n en vol ne sont donc PAS repris. Les compter ferait
+  # sous-compter le garde -- exactement pendant une reduction de slots, quand
+  # la pression memoire est deja haute.
+  #   7 slots 11..17 en vol (28672 Mo), n=10 -> demande 40960 Mo.
+  #   Borne : reprise 0 -> total 69632 Mo > budget 64 Go -> REFUS.
+  #   Sans borne (defaut) : reprise 28672 -> total 40960 Mo -> PASSER A TORT.
+  export STUB_CI_IDS="c1 c2 c3 c4 c5 c6 c7"
+  export STUB_CI_ROWS="c1 /test-prefix-69-11 4294967296
+c2 /test-prefix-69-12 4294967296
+c3 /test-prefix-69-13 4294967296
+c4 /test-prefix-69-14 4294967296
+c5 /test-prefix-69-15 4294967296
+c6 /test-prefix-69-16 4294967296
+c7 /test-prefix-69-17 4294967296"
+  out="$( (assert_memory_budget start 10 4096m test-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] \
+     && echo "$out" | grep -q "budget CI depasse" \
+     && echo "$out" | grep -q "reprise en vol ..... 0 slot(s) de cette famille = 0 Mo" \
+     && echo "$out" | grep -q "total ............... 69632 Mo"; then
+    ok "les slots de numero > n ne sont pas repris : le pic de 17 slots est vu, le demarrage est refuse"
+  else
+    ko "la borne haute devrait refuser (slots 11..17 en vol, n=10) : rc=$rc out='$out'"
   fi
 )
 echo ""

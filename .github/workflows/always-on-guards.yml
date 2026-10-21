@@ -1303,6 +1303,12 @@ jobs:
           # pour le workflow dedie md-content-loss-gate.yml et les tests
           # unitaires (cf PR #13673 follow-up c.715).
           MD_CONTENT_LOSS_PR_BODY: ${{ github.event.pull_request.body }}
+          # #21552 : meme canal in-memory pour le ratchet Output-collapse.
+          # Sans lui, le garde bloquant rendait `0 justified in body` sur
+          # toute PR : l'echappatoire `## Output-collapse justification`
+          # etait structurellement injoignable, et un `MAGNITUDE` justifie
+          # restait un rouge qu'aucun geste de lane ne pouvait lever.
+          COLLAPSE_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           git fetch origin "${{ github.base_ref }}" -q
           python scripts/ci/fast_lane.py --shadow
