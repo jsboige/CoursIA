@@ -19,6 +19,8 @@
   {"id": "adaptive-momentum-775", "role": "candidate", "trace": "20168-adaptive-momentum-775/base", "issue": 20168, "pr": 20171},
   {"id": "btc-eth-rotation", "role": "candidate", "trace": "20189-btc-eth-rotation/base", "issue": 20189, "pr": 20192},
   {"id": "crypto-momentum-topn", "role": "candidate", "trace": "20214-crypto-momentum-topn/L14N2", "issue": 20214, "pr": 20216},
+  {"id": "crypto-short-reversion", "role": "candidate", "trace": "21129-crypto-shortterm-reversion/base", "issue": 21129, "pr": 21130},
+  {"id": "btc-voltarget", "role": "candidate", "trace": "21143-btc-voltarget/base", "issue": 21143, "pr": 21144},
   {"id": "ema-cross-stocks", "role": "candidate", "trace": "20258-ema-cross-stocks/pit-ema", "issue": 20258, "pr": 20261},
   {"id": "core-equity", "role": "core", "kind": "local", "trace": "20365-league-core/core-equity", "issue": 20365},
   {"id": "spy", "role": "reference", "trace": "19587-leveraged-etf-momentum/spy", "issue": 19587, "pr": 19599},

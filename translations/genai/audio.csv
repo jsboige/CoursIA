@@ -10444,7 +10444,7 @@ Composer une piece MIDI multi-instruments en utilisant les prompts musicaux et c
 ---
 
 **Soumission** : PR avec titre ""Exercice MIDI - [Votre Nom]"", fichiers générés et tableau comparatif",,,,,,,,bc08f06425375044,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,1749c38e,markdown,fr,9d2a2882e610def8,"# Generation de Chansons Completes : YuE vs SongGeneration 2
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,1749c38e,markdown,fr,9d2a2882e610def8,"# Generation de Chansons Completes : YuE vs SongGeneration 2
 
 **Module :** 02-Audio-Advanced  
 **Niveau :** Avance  
@@ -10474,7 +10474,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,1749c38e,ma
 **Valeurs quantitatives :** les chiffres cites (PER 8.55%, RTF 0.82, temps de generation) proviennent de benchmarks publies par les auteurs des modeles -- ils ne sont pas mesures dans ce notebook (aucune generation n'est executee sans modele installe).
 
 **Navigation :** [<< 02-6](02-6-MIDI-Generation.ipynb) | [Index](../README.md) | [03-1 >>](../03-Orchestration/03-1-Multi-Model-Audio-Comparison.ipynb)",,,,,,,,9d2a2882e610def8,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,75e87992,code,fr,74daf23b20421a88,"# Parametres Papermill - JAMAIS modifier ce commentaire
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,75e87992,code,fr,74daf23b20421a88,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
 notebook_mode = ""interactive""        # ""interactive"" ou ""batch""
@@ -10499,8 +10499,8 @@ songgen_separate = True            # Pistes separees vocal/bgm
 device = ""cuda""                    # ""cuda"" ou ""cpu""
 save_results = True                # Sauvegarder les fichiers
 compare_models = True              # Generer le tableau comparatif",,,,,,,,74daf23b20421a88,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,8ed5db51,markdown,fr,5b538af4e0b42228,"Les paramètres Papermill configurent les modèles a tester (YuE et SongGeneration 2), le device GPU/CPU et les options de generation. La cellule suivante initialise l'environnement Python et verifie la disponibilite du GPU.",,,,,,,,5b538af4e0b42228,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,65355945,code,fr,0ba22f81bc9ead13,"# Setup environnement et imports
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,8ed5db51,markdown,fr,5b538af4e0b42228,"Les paramètres Papermill configurent les modèles a tester (YuE et SongGeneration 2), le device GPU/CPU et les options de generation. La cellule suivante initialise l'environnement Python et verifie la disponibilite du GPU.",,,,,,,,5b538af4e0b42228,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,65355945,code,fr,0ba22f81bc9ead13,"# Setup environnement et imports
 import os
 import sys
 import time
@@ -10566,8 +10566,8 @@ print(f""Mode : {notebook_mode}, Device : {device}"")
 print(f""YuE : {'actif' if test_yue else 'desactive'}"")
 print(f""SongGeneration 2 : {'actif' if test_songgen else 'desactive'}"")
 print(f""Sortie : {OUTPUT_DIR}"")",,,,,,,,0ba22f81bc9ead13,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,afb99f55,markdown,fr,e1e4964308af759a,L'environnement Python est pret et les repertoires de sortie sont crees. La cellule suivante charge le fichier `.env` pour recuperer le token HuggingFace requis pour telecharger les poids de YuE (7B+1B) et SongGeneration 2.,,,,,,,,e1e4964308af759a,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,17e3e569,code,fr,50b477f6795553b4,"# Chargement robuste de la configuration .env
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,afb99f55,markdown,fr,e1e4964308af759a,L'environnement Python est pret et les repertoires de sortie sont crees. La cellule suivante charge le fichier `.env` pour recuperer le token HuggingFace requis pour telecharger les poids de YuE (7B+1B) et SongGeneration 2.,,,,,,,,e1e4964308af759a,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,17e3e569,code,fr,50b477f6795553b4,"# Chargement robuste de la configuration .env
 from dotenv import load_dotenv
 import os
 
@@ -10591,14 +10591,14 @@ if hf_token:
     print(""Token HuggingFace disponible"")
 else:
     print(""Token HuggingFace non disponible (modeles publics uniquement)"")",,,,,,,,50b477f6795553b4,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,bd3b8220,markdown,fr,05fec93f10784d4a,"## Dependances GPU Optionnelles
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,bd3b8220,markdown,fr,05fec93f10784d4a,"## Dependances GPU Optionnelles
 
 Ce notebook requiert un GPU pour la generation. Sans GPU, seule l'analyse architecturale est disponible.
 
 - **SongGeneration 2 base** : 10 GB VRAM minimum
 - **YuE (bf16 + FlashAttn)** : 24 GB VRAM
 - **YuE quantise (exllamav2)** : 6 GB VRAM",,,,,,,,05fec93f10784d4a,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,d0346bb8,markdown,fr,d3676bceea04103f,"## Section 1 : Text-to-Song vs Text-to-Music
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,d0346bb8,markdown,fr,d3676bceea04103f,"## Section 1 : Text-to-Song vs Text-to-Music
 
 La generation de chansons completes (text-to-song) est fondamentalement différente de la generation musicale (text-to-music) vue dans les notebooks précédents :
 
@@ -10622,7 +10622,7 @@ La generation de chansons completes (text-to-song) est fondamentalement différe
 | ACE-Song | ACE Studio | ? | Non | Commerciale |
 
 YuE et SongGeneration 2 sont les deux principaux modèles open-source. Ce notebook les compare en pratique.",,,,,,,,d3676bceea04103f,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,0dd22880,markdown,fr,d3b3de1b714d43b8,"## Section 2 : Architectures comparees
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,0dd22880,markdown,fr,d3b3de1b714d43b8,"## Section 2 : Architectures comparees
 
 ### YuE : Autoregressive 2 Stages
 
@@ -10668,7 +10668,7 @@ Paroles + Description --> [LeLM] --> plan musical structure
 | Sortie | 44.1kHz MP3 | 48kHz FLAC |
 | Vitesse (30s) | *runtime machine-dep* : ~6 min (RTX 4090) | ~25s (RTF 0.82) |
 | Duree max | Illimitee (avec VRAM) | 4m30 |",,,,,,,,d3b3de1b714d43b8,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,50ng02a7,markdown,fr,67c7d0d7bec8a20e,"Les diagrammes ci-dessous rendent les **deux familles d'architecture** comparees dans
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,50ng02a7,markdown,fr,67c7d0d7bec8a20e,"Les diagrammes ci-dessous rendent les **deux familles d'architecture** comparees dans
 cette section : YuE (autoregressif pur, 2 etages) et SongGeneration 2 / LeVo 2 (hybride
 LLM + diffusion).
 
@@ -10703,10 +10703,10 @@ flowchart LR
 > passe -- nettement plus rapide (RTF 0.82) au prix d'une longueur de sortie moins
 > flexible.
 ",,,,,,,,67c7d0d7bec8a20e,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,cc17ccf4,markdown,fr,09956fa6fc578ecc,"## Section 3 : Installation et configuration
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,cc17ccf4,markdown,fr,09956fa6fc578ecc,"## Section 3 : Installation et configuration
 
 Les deux modèles necessitent le clonage de leurs repositories et le telechargement de checkpoints volumineux. Cette section verifie les prerequis et prepare l'environnement.",,,,,,,,09956fa6fc578ecc,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,686c95e7,code,fr,e36dcd48f26a5737,"# Verification des prerequis et installation
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,686c95e7,code,fr,e36dcd48f26a5737,"# Verification des prerequis et installation
 print(""VERIFICATION DES PREREQUIS"")
 print(""="" * 45)
 
@@ -10763,7 +10763,7 @@ if gpu_available:
         print(f""  VRAM insuffisante pour la generation de chansons"")
 else:
     print(f""  Pas de GPU - demonstration architecturale uniquement"")",,,,,,,,e36dcd48f26a5737,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,005607a5,markdown,fr,357e5cd094e333cc,"### Interpretation : Verification de l'environnement
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,005607a5,markdown,fr,357e5cd094e333cc,"### Interpretation : Verification de l'environnement
 
 Le script confirme que les dependances de base sont presentes (`torch`, `torchaudio`, `transformers`) mais identique deux manquants (`einops`, `sentencepiece`) critiques pour les modèles de generation audio.
 
@@ -10790,8 +10790,8 @@ Le script confirme que les dependances de base sont presentes (`torch`, `torchau
 
 > **Note stratégique** : Si FlashAttention echoue a compiler, utiliser YuE en version quantize (exllamav2) qui reduit la VRAM a 6 GB sans sacrifier la qualite de maniere significative.
 |",,,,,,,,357e5cd094e333cc,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,ffdd1a31,markdown,fr,425fad3672999904,Les prerequis Python sont verifies et les instructions d'installation sont affichees. La cellule suivante configure les chemins d'acces aux depots YuE et SongGeneration clones localement.,,,,,,,,425fad3672999904,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,8d6c0ab2,code,fr,20b434d415a39575,"# Configuration des repositories et modeles
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,ffdd1a31,markdown,fr,425fad3672999904,Les prerequis Python sont verifies et les instructions d'installation sont affichees. La cellule suivante configure les chemins d'acces aux depots YuE et SongGeneration clones localement.,,,,,,,,425fad3672999904,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,8d6c0ab2,code,fr,20b434d415a39575,"# Configuration des repositories et modeles
 print(""CONFIGURATION DES MODELES"")
 print(""="" * 45)
 
@@ -10833,7 +10833,7 @@ if test_songgen:
 
 if not yue_ready and not songgen_ready:
     print(f""\nAucun modele installe - le notebook continuera en mode demonstration"")",,,,,,,,20b434d415a39575,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,23d8d623,markdown,fr,48f9784a58b7f094,"### Interpretation : Verification des modèles et installation
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,23d8d623,markdown,fr,48f9784a58b7f094,"### Interpretation : Verification des modèles et installation
 
 Le script verifie la presence des repositories YuE et SongGeneration 2 dans le repertoire local. Cette étape est critique car les deux modèles ne sont pas distribuables via `pip install`.
 
@@ -10866,7 +10866,7 @@ Le script verifie la presence des repositories YuE et SongGeneration 2 dans le r
 1. Les deux modèles necessitent le clonage de repositories entiers (pas de simple `pip install`)
 2. FlashAttention 2 est critique pour YuE sur 24 GB (OOM sans)
 3. SongGeneration 2 est plus simple a installer et plus leger",,,,,,,,48f9784a58b7f094,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,613922e3,markdown,fr,bc72af33dfe0ce2d,"## Section 4 : Preparation des paroles
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,613922e3,markdown,fr,bc72af33dfe0ce2d,"## Section 4 : Preparation des paroles
 
 Les deux modèles necessitent des paroles structurees avec des marqueurs de section. Le formatage est crucial pour la qualite du résultat.
 
@@ -10894,7 +10894,7 @@ This is where I want to be
 | Separateur phrases | Retour a la ligne | `. ` (point) |
 | Marqueurs | `[verse]`, `[chorus]`, `[bridge]` | + `[intro-short/medium]`, `[outro-short/medium]`, `[inst-short/medium]` |
 | Langues | EN, ZH, JA, KO | EN, ZH, ES, JA |",,,,,,,,bc72af33dfe0ce2d,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,897587ab,code,fr,5d335fa5a29e2532,"# Preparation des paroles de test
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,897587ab,code,fr,5d335fa5a29e2532,"# Preparation des paroles de test
 print(""PREPARATION DES PAROLES"")
 print(""="" * 45)
 
@@ -10970,7 +10970,7 @@ if save_results:
         f.write(json.dumps(songgen_input, ensure_ascii=False) + ""\n"")
 
     print(f""\nFichiers sauvegardes dans {lyrics_dir}"")",,,,,,,,5d335fa5a29e2532,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,51b1e764,markdown,fr,87a23cab029261a3,"### Interpretation : Formattage des paroles
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,51b1e764,markdown,fr,87a23cab029261a3,"### Interpretation : Formattage des paroles
 
 Les deux fonctions illustrent les différences fondamentales de formatage entre YuE et SongGeneration 2.
 
@@ -10995,7 +10995,7 @@ Les deux fonctions illustrent les différences fondamentales de formatage entre 
 
 > **Note technique** : Les marqueurs `[intro-short]` et `[outro-short]` de SongGeneration 2 permettent de generer des sections instrumentales, utiles pour les transitions.
 |",,,,,,,,87a23cab029261a3,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,83c79b0b,markdown,fr,d3186f00d76a52e2,"### Exercice 1 : Formatage de paroles multi-modèles
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,83c79b0b,markdown,fr,d3186f00d76a52e2,"### Exercice 1 : Formatage de paroles multi-modèles
 
 **Objectif** : Implementer une fonction qui convertit des paroles brutes (format libre) en formats YuE et SongGeneration 2, en respectant les conventions de chaque modèle.
 
@@ -11010,7 +11010,7 @@ Les deux modèles utilisent des formats très différents pour les paroles (voir
 - # Étape 3 : Implementer la conversion vers le format SongGeneration 2
 - # Étape 4 : Verifier que les deux conversions produisent un résultat valide
 - # Indice : Inspirez-vous des fonctions `format_lyrics_yue()` et `format_lyrics_songgen()` existantes",,,,,,,,d3186f00d76a52e2,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,52fee563,code,fr,c1e298a9e18c1108,"# Exercice 3 : Formatage de paroles multi-modeles
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,52fee563,code,fr,c1e298a9e18c1108,"# Exercice 3 : Formatage de paroles multi-modeles
 # TODO etudiant : Implementer un convertisseur de paroles universel
 
 def convert_lyrics(raw_lyrics, target_model=""yue""):
@@ -11067,7 +11067,7 @@ if songgen_format:
     print(songgen_format)
 if not yue_format and not songgen_format:
     print(""Exercice a completer"")",,,,,,,,c1e298a9e18c1108,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,1a2b88da,markdown,fr,7d986cf721f9695f,"## Section 5 : Generation avec YuE
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,1a2b88da,markdown,fr,7d986cf721f9695f,"## Section 5 : Generation avec YuE
 
 YuE genere des chansons en deux étapes. Le stage 1 (7B) comprend les paroles et planifie la musique. Le stage 2 (1B) affine la qualite audio.
 
@@ -11078,7 +11078,7 @@ YuE genere des chansons en deux étapes. Le stage 1 (7B) comprend les paroles et
 | `--stage2_batch_size` | 4 | Batch size du stage 2 |
 | `--repetition_penalty` | 1.1 | Penalite de repetition (1.0-2.0) |
 | `--seed` | 42 | Graine aleatoire |",,,,,,,,7d986cf721f9695f,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,cf76a9c9,code,fr,28fa7fbce3b1dac3,"# Generation avec YuE
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,cf76a9c9,code,fr,28fa7fbce3b1dac3,"# Generation avec YuE
 print(""GENERATION AVEC YUE"")
 print(""="" * 45)
 
@@ -11169,7 +11169,7 @@ elif not test_yue:
     print(""Test YuE desactive"")
 else:
     print(""GPU non disponible"")",,,,,,,,28fa7fbce3b1dac3,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,c38e6a4f,markdown,fr,b978cc89bf675120,"### Analyse de la generation YuE
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,c38e6a4f,markdown,fr,b978cc89bf675120,"### Analyse de la generation YuE
 
 La tentative de generation a echoue car le modèle YuE n'est pas installe localement. Le code montre cependant l'approche autoregressive en deux étapes de YuE.
 
@@ -11196,7 +11196,7 @@ La tentative de generation a echoue car le modèle YuE n'est pas installe locale
 - **CoT (Chain-of-Thought)** : Le modèle raisonne sur la structure musicale avant de generer
 - **ICL (In-Context Learning)** : Style transfer a partir d'un audio de reference (~30s)
 |",,,,,,,,b978cc89bf675120,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,882fb32c,markdown,fr,2c9ff69136b7abbd,"### Interpretation : YuE
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,882fb32c,markdown,fr,2c9ff69136b7abbd,"### Interpretation : YuE
 
 | Aspect | Observation typique |
 |--------|--------------------|
@@ -11210,7 +11210,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,882fb32c,ma
 2. Commencer par `[verse]` ou `[chorus]`, jamais `[intro]` (instable)
 3. Limiter le nombre de mots par segment (~30s max par segment)
 4. FlashAttention 2 est obligatoire pour 24 GB",,,,,,,,2c9ff69136b7abbd,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,4909abae,markdown,fr,73024a7049c79fb1,"## Section 6 : Generation avec SongGeneration 2
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,4909abae,markdown,fr,73024a7049c79fb1,"## Section 6 : Generation avec SongGeneration 2
 
 SongGeneration 2 utilise une approche hybride LLM-Diffusion qui produit des résultats plus rapides et de meilleure fidelite audio.
 
@@ -11221,7 +11221,7 @@ SongGeneration 2 utilise une approche hybride LLM-Diffusion qui produit des rés
 | `--separate` | Generer pistes vocale et instrumentale separees |
 | `--low_mem` | Mode economie memoire (CPU offloading) |
 | `auto_prompt_audio_type` | Style auto : Pop, Rock, Jazz, Electronic, etc. |",,,,,,,,73024a7049c79fb1,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,e322c14c,code,fr,3390609c6a189604,"# Generation avec SongGeneration 2
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,e322c14c,code,fr,3390609c6a189604,"# Generation avec SongGeneration 2
 print(""GENERATION AVEC SONGGENERATION 2"")
 print(""="" * 45)
 
@@ -11328,7 +11328,7 @@ elif not test_songgen:
     print(""Test SongGeneration 2 desactive"")
 else:
     print(""GPU non disponible"")",,,,,,,,3390609c6a189604,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,006a8d0f,markdown,fr,1d9514a8fb94af81,"### Analyse de la generation SongGeneration 2
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,006a8d0f,markdown,fr,1d9514a8fb94af81,"### Analyse de la generation SongGeneration 2
 
 La tentative de generation a echoue car le modèle n'est pas installe localement. Cependant, le code illustre l'approche hybride LLM-Diffusion de SongGeneration 2.
 
@@ -11350,7 +11350,7 @@ La tentative de generation a echoue car le modèle n'est pas installe localement
 - Separation native des pistes (pas besoin de Demucs)
 - Meilleure fidelite des paroles (benchmark publie : PER 8.55% vs Suno v5)
 |",,,,,,,,1d9514a8fb94af81,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,2cd56c9b,markdown,fr,6237bb2dc1f62d09,"### Interpretation : SongGeneration 2
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,2cd56c9b,markdown,fr,6237bb2dc1f62d09,"### Interpretation : SongGeneration 2
 
 | Aspect | Observation typique |
 |--------|--------------------|
@@ -11364,10 +11364,10 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,2cd56c9b,ma
 2. La separation vocale/accompagnement est native
 3. Sortie en FLAC 48kHz (meilleure qualite que le MP3 de YuE)
 4. Les descriptions doivent etre des tags, pas des phrases",,,,,,,,6237bb2dc1f62d09,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,82ca2524,markdown,fr,0f038305493d1b37,"## Section 7 : Comparaison et evaluation
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,82ca2524,markdown,fr,0f038305493d1b37,"## Section 7 : Comparaison et evaluation
 
 Grille d'evaluation pour comparer les deux modèles sur les mêmes paroles.",,,,,,,,0f038305493d1b37,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,930dce15,code,fr,59f11aa72d44653d,"# Tableau comparatif
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,930dce15,code,fr,59f11aa72d44653d,"# Tableau comparatif
 print(""COMPARAISON YUE vs SONGGENERATION 2"")
 print(""="" * 55)
 
@@ -11454,7 +11454,7 @@ if yue_result or songgen_result:
     print(f""{'Sample rate':<25} {yue_sr:<30} {sg_sr:<30}"")
 else:
     print(f""\nAucun modele execute - tableau base sur les specifications"")",,,,,,,,59f11aa72d44653d,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,390e8c36,markdown,fr,533f6dd8fe01d9f2,"### Synthese des comparaisons
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,390e8c36,markdown,fr,533f6dd8fe01d9f2,"### Synthese des comparaisons
 
 Le tableau comparatif met en evidence les forces respectives des deux modèles. **YuE excelle en flexibilite** (duree illimitee, quantization, licence Apache 2.0) tandis que **SongGeneration 2 domine en qualite brute** (48kHz FLAC, fidelite vocale, vitesse 10x).
 
@@ -11468,7 +11468,7 @@ Le tableau comparatif met en evidence les forces respectives des deux modèles. 
 | **Ecosysteme** | Outils tiers (Gradio) | CLI officielle seulement |
 
 > **Note stratégique** : Pour un projet de production, evaluer la licence (Apache 2.0 vs custom) en plus des critères techniques. SongGeneration 2 offre une meilleure qualite mais YuE est plus adapte aux use-cases commerciaux.",,,,,,,,533f6dd8fe01d9f2,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,494e8fae,markdown,fr,ff7375e3f49407df,"### Interpretation : Comparaison
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,494e8fae,markdown,fr,ff7375e3f49407df,"### Interpretation : Comparaison
 
 | Critere | Gagnant | Raison |
 |---------|---------|--------|
@@ -11491,7 +11491,7 @@ MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,494e8fae,ma
 | Usage commercial | YuE (Apache 2.0) |
 | Style transfer | Les deux (ICL/audio prompt) |
 | Education / recherche | Les deux |",,,,,,,,ff7375e3f49407df,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,a9d1e55b,markdown,fr,41082d5aa11bdbf3,"### Exercice 2 : Analyse comparative des architectures
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,a9d1e55b,markdown,fr,41082d5aa11bdbf3,"### Exercice 2 : Analyse comparative des architectures
 
 **Objectif** : Construire un tableau d'analyse detaille comparant les architectures autoregressive (YuE) et hybride LLM-Diffusion (SongGeneration 2), en identifiant les avantages et inconvenients de chaque approche pour différents cas d'usage.
 
@@ -11506,7 +11506,7 @@ A partir des sections 2 et 7 du notebook, vous disposez des specifications techn
 - # Étape 3 : Ponderez les critères selon un cas d'usage (demo rapide vs production studio)
 - # Étape 4 : Conclure sur le modèle optimal pour votre cas d'usage
 - # Indice : Le tableau comparatif de la Section 7 contient toutes les données necessaires",,,,,,,,41082d5aa11bdbf3,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,2ba1ea24,code,fr,c27897febad3cfe3,"# Exercice 2 : Analyse comparative des architectures
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,2ba1ea24,code,fr,c27897febad3cfe3,"# Exercice 2 : Analyse comparative des architectures
 # TODO etudiant : Construire une grille decisionnelle YuE vs SongGeneration 2
 
 def build_decision_matrix(use_case=""demo_rapide""):
@@ -11548,7 +11548,7 @@ if result[""recommendation""]:
     print(f""Justification : {result['justification']}"")
 else:
     print(""Exercice a completer"")",,,,,,,,c27897febad3cfe3,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,6649dd43,markdown,fr,8d75bac3b8f51ea5,"### Exercice 3 : Analyse de la structure d'une chanson
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,6649dd43,markdown,fr,8d75bac3b8f51ea5,"### Exercice 3 : Analyse de la structure d'une chanson
 
 **Objectif** : Créer une fonction qui analyse les paroles formatees pour un modèle de generation de chansons et en extrait une fiche structurelle (nombre de sections, types, comptage syllabique, rapport couplet/refrain).
 
@@ -11564,7 +11564,7 @@ Les modèles text-to-song comme YuE et SongGeneration 2 utilisent des structures
 - # Étape 3 : Calculer le rapport couplet/refrain (nombre de sections de chaque type)
 - # Étape 4 : Detecter les anomalies (refrain absent, section trop longue)
 - # Indice : `re.findall(r""\[([a-z-]+)\]"", text)` extrait les marqueurs de section",,,,,,,,8d75bac3b8f51ea5,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,06a38da5,code,fr,105ee00fce5e5fc7,"# Exercice 1 : Analyse de la structure d'une chanson
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,06a38da5,code,fr,105ee00fce5e5fc7,"# Exercice 1 : Analyse de la structure d'une chanson
 # TODO etudiant : Analyser la structure de paroles formatees
 
 def analyze_song_structure(lyrics_text, model_format=""yue""):
@@ -11610,7 +11610,7 @@ if analysis[""sections""]:
         print(f""  {s[0]} : {len(s[1])} lignes"")
 else:
     print(""Exercice a completer"")",,,,,,,,105ee00fce5e5fc7,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,a4de9c89,code,fr,e180675f83e72576,"# Mode interactif
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,a4de9c89,code,fr,e180675f83e72576,"# Mode interactif
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""MODE INTERACTIF"")
     print(""="" * 45)
@@ -11651,8 +11651,8 @@ if notebook_mode == ""interactive"" and not skip_widgets:
             print(f""Erreur : {error_type} - {str(e)[:100]}"")
 else:
     print(""Mode batch - Interface interactive desactivee"")",,,,,,,,e180675f83e72576,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,36463ee1,markdown,fr,bbe85ef86e53f5f0,La section interactive permet de saisir ses propres paroles pour la generation. La cellule suivante compile les statistiques de session et libere les ressources GPU occupees par les modèles de generation musicale.,,,,,,,,bbe85ef86e53f5f0,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,0c8aa8eb,code,fr,c2ec020c781c5b0a,"# Statistiques de session
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,36463ee1,markdown,fr,bbe85ef86e53f5f0,La section interactive permet de saisir ses propres paroles pour la generation. La cellule suivante compile les statistiques de session et libere les ressources GPU occupees par les modèles de generation musicale.,,,,,,,,bbe85ef86e53f5f0,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,0c8aa8eb,code,fr,c2ec020c781c5b0a,"# Statistiques de session
 print(""STATISTIQUES DE SESSION"")
 print(""="" * 45)
 
@@ -11684,7 +11684,7 @@ print(f""3. Utiliser la separation de pistes avec Demucs (02-4)"")
 print(f""4. Explorer le style transfer avec un audio de reference"")
 
 print(f""\nNotebook Generation de Chansons termine - {datetime.now().strftime('%H:%M:%S')}"")",,,,,,,,c2ec020c781c5b0a,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,17a4391f,markdown,fr,0cc0658dcc013080,"---
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,17a4391f,markdown,fr,0cc0658dcc013080,"---
 
 ## EXERCICE - Chanson personnalisee
 
@@ -11729,7 +11729,7 @@ Generer une chanson courte avec l'un des deux modèles et evaluer le résultat.
 ---
 
 **Soumission** : PR avec titre ""Exercice Song - [Votre Nom]"", paroles, fichier audio et evaluation",,,,,,,,0cc0658dcc013080,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-Song-Generation.ipynb,03f72dcc,markdown,fr,ac78d21a22c392ed,"## Conclusion : Perspectives de la generation de chansons
+MyIA.AI.Notebooks/GenAI/Audio/02-Advanced/02-7-YuE2-Song-Generation.ipynb,03f72dcc,markdown,fr,ac78d21a22c392ed,"## Conclusion : Perspectives de la generation de chansons
 
 Ce notebook a presente les deux modèles open-source les plus avances pour la generation de chansons completes : **YuE** (autoregressive 2 stages) et **SongGeneration 2** (hybride LLM-Diffusion).
 

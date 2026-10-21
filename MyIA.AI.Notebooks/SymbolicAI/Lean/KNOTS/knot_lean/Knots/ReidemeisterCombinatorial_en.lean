@@ -63,10 +63,10 @@ witness `Lidman:81` (`unknotting_11n102_upper`) remains the target of the
 following passes, and the inverse of the R3 move is documented future work.
 -/
 
-import Knots.Reidemeister
-import Knots.Invariant
+import Knots.Reidemeister_en
+import Knots.Invariant_en
 
-namespace Knots
+namespace Knots_en.Combinatorial
 
 /-! ## 1. Sequence of moves — indexed inductive
 
@@ -148,6 +148,10 @@ useful in practice (n ≤ 4), the branching factor stays dominated by
 trivial symmetries (`ReidemeisterEquiv.symm`, `trans`).
 -/
 
+end Knots_en.Combinatorial
+
+namespace Knots_en
+
 /-- A view of `ReidemeisterStep` as a pure constructor (without existential
 `d₂`). Used by the algorithm to reconstruct the target diagram at each step. -/
 def ReidemeisterStep.toWitness (d₁ : KnotDiagram) (d₂ : KnotDiagram)
@@ -195,6 +199,10 @@ proof-carrying: each slot option is emitted WITH the disjunction that
 justifies it in `isRenameOf` / `isDoubleRenameOf`, which avoids any
 a-posteriori membership lemma.
 -/
+
+end Knots_en
+
+namespace Knots_en.Combinatorial
 
 /-- A witness of a move: the target diagram and the proof of the
 `ReidemeisterStep`, built at the same enumeration site. -/
@@ -268,6 +276,11 @@ def unRename2Opts (y o₁ o₂ a : Nat) :
   else
     [⟨y, Or.inl rfl⟩]
 
+end Knots_en.Combinatorial
+
+namespace Knots_en
+open Knots_en.Combinatorial (renameOptsWith rename2OptsWith unRenameOptsWith unRename2Opts)
+
 /-- All R1 renames of `c`, with the `isRenameOf` proof attached. -/
 def PDCrossing.allRenamesWith (c : PDCrossing) (a b : Nat) :
     List { Y : PDCrossing // Y.isRenameOf c a b } :=
@@ -304,6 +317,10 @@ def PDCrossing.allUnDoubleRenamesWith (Y' : PDCrossing) (a o₁ o₂ : Nat) :
       (unRename2Opts Y'.e3 o₁ o₂ a).flatMap fun e3 =>
         (unRename2Opts Y'.e4 o₁ o₂ a).map fun e4 =>
           ⟨⟨e1.1, e2.1, e3.1, e4.1⟩, ⟨e1.2, e2.2, e3.2, e4.2⟩⟩
+
+end Knots_en
+
+namespace Knots_en.Combinatorial
 
 /-- Candidate arcs of `d` (bounds and membership proved). -/
 def arcCandidatesWith (d : KnotDiagram) :
@@ -696,13 +713,16 @@ The module only depends on `Knots.Reidemeister` and `Knots.Invariant` — not
 on `Knots.ReidemeisterInvariance` (which would import `Knots.Conway` and
 spin the lake needlessly for passes that only attack the combinatorial side).
 
-The lake does **not** import this module yet: `Knots.lean` (root aggregator)
-lists `Knots.ReidemeisterMoves` but not `Knots.ReidemeisterCombinatorial`
-(checked 2026-10-09). Wiring it in first requires resolving the API collision
-with `Knots.ReidemeisterMoves`, which already defines `movesConnects`,
-`verifyMoves` and `verifyMoves_sound` (ReidemeisterMoves.lean:303/295/501) —
-two `movesConnects` with different signatures in the same `Knots` namespace
-cannot be imported together.
+Wired in as of 2026-10-15: `Knots.lean` imports
+`Knots.ReidemeisterCombinatorial` (and `Knots_en.lean` its `_en` mirror).
+The API collision with `Knots.ReidemeisterMoves` (`movesConnects`,
+`verifyMoves`, `verifyMoves_sound`, ReidemeisterMoves.lean:303/295/501) is
+resolved through a sub-namespace: this module's definitions live under
+`Knots_en.Combinatorial.*`, leaving the `ReidemeisterMoves_en` API
+(`Knots_en.movesConnects`, …) untouched — with one exception: dot-extensions
+of imported types (`ReidemeisterStep.toWitness`, `PDCrossing.all*With`)
+stay in `namespace Knots_en`, since dot notation on an imported type only
+resolves in the type's own namespace.
 -/
 
-end Knots
+end Knots_en.Combinatorial

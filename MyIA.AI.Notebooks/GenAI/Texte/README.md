@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 42
-breakdown: Texte=42
-maturity: BETA=37, DRAFT=3, ALPHA=2
+pedagogical_count: 44
+breakdown: Texte=44
+maturity: BETA=37, DRAFT=4, ALPHA=3
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -37,7 +37,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
 | 3 | `3_Structured_Outputs.ipynb` | JSON Schema, Pydantic, mode strict, extraction de données | 55 min |
-| 3b | `3b_Typed_Decisions_System1.ipynb` | Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits et tête d'attention fine-tunée (jevlike) contre témoin classique, calibration (NLL, Brier, ECE, température), escalade, banc tiers CC0 hors domaine (v1/v2, chute mesurée) | 55 min |
+| 3b | `3b_Typed_Decisions_System1.ipynb` | Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits, tête d'attention fine-tunée (jevlike) et moteur de décision pré-entraîné (laya : zéro-shot puis fine-tuné) contre témoin classique, calibration (NLL, Brier, ECE, température), escalade, banc tiers CC0 hors domaine (v1/v2, chute mesurée) | 60 min |
 | 3c | `3c_Constrained_Decoding_Python.ipynb` | Décodage contraint au niveau du token : automate fini (DFA) codé à la main pour le format date ISO `\d{4}-\d{2}-\d{2}`, dérivation du masque de logits depuis les états de l'automate, génération pas à pas d'une date valide — le complément token-level du 3 (JSON Schema agit au niveau API, le masque agit sur la distribution elle-même) | — |
 | 4 | `4_Function_Calling.ipynb` | Tools API, appels parallèles, boucle agentique | 60 min |
 
@@ -126,6 +126,14 @@ Le notebook **22c** ferme la boucle ouverte par le 22 : après avoir *mesuré* l
 ### Tier 7 : Analyse linguistique (TAL)
 
 Les notebooks TAL classiques (23–26 : pipeline spaCy, n-grammes, CRF, PCFG/CYK) ont migré vers leur série dédiée : [`MyIA.AI.Notebooks/NLP/`](../../NLP/README.md) (EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271)). Cette série-ci reste centrée sur l'ingénierie des LLM — prompts, RAG, fine-tuning, scaling — et renvoie à la série NLP pour la tradition symbolique/probabiliste du traitement des langues.
+
+### Tier 8 : Du notebook à l'application
+
+Le notebook **23** franchit le dernier mur : le pipeline qui vivait dans des cellules devient un **service**. Le RAG du `05_RAG_Modern` (même corpus, même chunking, mêmes fonctions — extraction fidèle, chaque cellule citant son origine) est servi par une API **FastAPI** locale sur un port dynamique, testée par des appels `httpx` réels, puis exposé par une UI **Gradio** qui ne connaît que l'URL de l'API — jamais le pipeline. La leçon centrale est mesurée, pas affirmée : le transport pur HTTP coûte quelques millisecondes (médiane 2.0 ms sur 20 appels de `GET /health` au run commis), et sur `/query` le surcout de l'API est noyé dans la variance de génération — parfois négatif. Servir est une décision d'usage (qui peut appeler), pas de performance. Tous les services s'arrêtent proprement en fin de carnet. Le numéro 23 est réutilisé — les TAL historiques qui le portaient ont migré en série NLP (tier 7 ci-dessus).
+
+| # | Notebook | Description | Durée |
+|---|----------|-------------|-------|
+| 23 | `23_Du_Notebook_A_L_Application.ipynb` | **Servir le RAG du 05** : extraction fidèle du pipeline (corpus Lincoln-Douglas, chunking, embeddings, k-NN, génération citée) puis passage au service — API **FastAPI** (`/health`, `/query`) sur port dynamique testée par appels `httpx` réels, UI **Gradio** passant uniquement par l'API (test des sources déterministes : deux canaux, mêmes chunks), mesure du coût par couche (transport pur de l'ordre de la milliseconde, surcout `/query` noyé dans la variance de génération — négatif sur 2 questions sur 3 au run commis), normalisation des scalaires numpy pour le contrat JSON, arrêt propre des services, 3 exercices C.1 | — |
 
 ## Prérequis
 

@@ -160,7 +160,16 @@ jobs:
     # rouge CI, alors que la cause etait la saturation du parc local.
     # Les PRs de fork y allaient deja : la condition ne faisait que priver les
     # PRs internes de cette immunite.
-    runs-on: ubuntu-latest
+    # Retour a la forme hybride le 2026-10-16 : la premisse s'est inversee une
+    # seconde fois. Mesure a 03:30Z : 816 runs en file, tous les jobs en file
+    # sur `ubuntu-latest`, ~85 min d'attente avant demarrage d'un job heberge,
+    # 11 jobs heberges en cours dont 5 `PR gate` occupes a attendre leurs
+    # constituants -- eux-memes en file derriere eux sur le meme quota. Au meme
+    # instant les 29 runners self-hosted etaient en ligne et inactifs, dont les
+    # 6 `coursia-waiter`. Un agregateur qui attend sur le quota heberge prend la
+    # place des jobs qu'il attend ; sur le pool d'attente, il ne la prend a
+    # personne. Les forks restent sur `ubuntu-latest` (garde same-repo).
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository) && fromJSON('["self-hosted","coursia-waiter"]') || 'ubuntu-latest' }}
     # Above the script's own budget, so the script prints its verdict
     # instead of the runner killing it mid-poll (a runner-killed job reports
     # `cancelled`, which is far less legible than "timed out waiting for X").

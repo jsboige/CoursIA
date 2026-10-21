@@ -66,7 +66,7 @@ suivantes, et l'inverse du move R3 est un travail futur documenté.
 import Knots.Reidemeister
 import Knots.Invariant
 
-namespace Knots
+namespace Knots.Combinatorial
 
 /-! ## 1. Suite de mouvements — inductive indexé
 
@@ -149,6 +149,10 @@ bornes utiles en pratique (n ≤ 4), le branching factor reste dominé par
 évitant les symétries triviales (`ReidemeisterEquiv.symm`, `trans`).
 -/
 
+end Knots.Combinatorial
+
+namespace Knots
+
 /-- Vue d'un `ReidemeisterStep` sous forme de constructeur pur (sans `d₂`
 existentiel). Utilisée par l'algorithme pour reconstruire le diagramme cible
 à chaque pas. -/
@@ -198,6 +202,10 @@ porteurs de preuve : chaque option de slot est émise AVEC la disjonction qui
 la justifie dans `isRenameOf` / `isDoubleRenameOf`, ce qui évite tout lemme
 d'appartenance a posteriori.
 -/
+
+end Knots
+
+namespace Knots.Combinatorial
 
 /-- Un témoin d'un mouvement : le diagramme cible et la preuve du
 `ReidemeisterStep`, construits au même site d'énumération. -/
@@ -272,6 +280,11 @@ def unRename2Opts (y o₁ o₂ a : Nat) :
   else
     [⟨y, Or.inl rfl⟩]
 
+end Knots.Combinatorial
+
+namespace Knots
+open Knots.Combinatorial (renameOptsWith rename2OptsWith unRenameOptsWith unRename2Opts)
+
 /-- Tous les renommés R1 de `c`, preuve `isRenameOf` attachée. -/
 def PDCrossing.allRenamesWith (c : PDCrossing) (a b : Nat) :
     List { Y : PDCrossing // Y.isRenameOf c a b } :=
@@ -308,6 +321,10 @@ def PDCrossing.allUnDoubleRenamesWith (Y' : PDCrossing) (a o₁ o₂ : Nat) :
       (unRename2Opts Y'.e3 o₁ o₂ a).flatMap fun e3 =>
         (unRename2Opts Y'.e4 o₁ o₂ a).map fun e4 =>
           ⟨⟨e1.1, e2.1, e3.1, e4.1⟩, ⟨e1.2, e2.2, e3.2, e4.2⟩⟩
+
+end Knots
+
+namespace Knots.Combinatorial
 
 /-- Arcs candidats de `d` (bornes et appartenance prouvées). -/
 def arcCandidatesWith (d : KnotDiagram) :
@@ -703,13 +720,16 @@ tourner le lac inutilement pour les passes qui n'attaquent que la
 combinatoire). Le sibling `_en` porte le miroir anglais des docstrings,
 corps byte-identique (convention i18n EPIC #4980).
 
-Le lac n'importe **pas** encore ce module : `Knots.lean` (agrégateur racine)
-liste `Knots.ReidemeisterMoves` mais pas `Knots.ReidemeisterCombinatorial`
-(vérifié le 2026-10-09). Le brancher suppose de résoudre d'abord la collision
-d'API avec `Knots.ReidemeisterMoves`, qui définit déjà `movesConnects`,
-`verifyMoves` et `verifyMoves_sound` (ReidemeisterMoves.lean:303/295/501) —
-deux `movesConnects` de signatures différentes dans le même namespace `Knots`
-ne peuvent pas être importés ensemble.
+Branché depuis le 2026-10-15 : `Knots.lean` importe
+`Knots.ReidemeisterCombinatorial` (et `Knots_en.lean` son miroir `_en`). La
+collision d'API avec `Knots.ReidemeisterMoves` (`movesConnects`,
+`verifyMoves`, `verifyMoves_sound`, ReidemeisterMoves.lean:303/295/501) est
+résolue par un sous-namespace : les définitions de ce module vivent sous
+`Knots.Combinatorial.*`, l'API de `ReidemeisterMoves` (`Knots.movesConnects`,
+…) restant inchangée — à une exception près : les extensions de types
+importés (`ReidemeisterStep.toWitness`, `PDCrossing.all*With`) restent dans
+`namespace Knots`, car la dot-notation d'un type importé ne résout que
+dans le namespace du type.
 -/
 
-end Knots
+end Knots.Combinatorial
