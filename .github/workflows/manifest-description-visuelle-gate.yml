@@ -38,7 +38,6 @@ name: Manifest description_visuelle gate
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/**/assets/readme/MANIFEST.md'
       - 'scripts/notebook_tools/detect_manifest_field.py'
