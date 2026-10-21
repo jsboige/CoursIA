@@ -11,6 +11,7 @@ Le geste de la série : rendre chaque identité **calculée dans une sortie** �
 | 01 | [01-formes-modulaires-sl2z-hecke.ipynb](01-formes-modulaires-sl2z-hecke.ipynb) | *A Course in Arithmetic* ch. VII ; pont Γ₀(11) courbe 11a1 ↔ η²η₁₁² ; formule `coeffHeckeT` du lake | Python stdlib |
 | 02 | [02-monstrous-moonshine-invariant-j.ipynb](02-monstrous-moonshine-invariant-j.ipynb) | Conway & Norton *Monstrous Moonshine* (1979) ; invariant $j$ et groupe Monstre ; récit cp4space/Wertheim | Python stdlib |
 | 03 | [03-chaine-de-modularite-vers-fermat.ipynb](03-chaine-de-modularite-vers-fermat.ipynb) | Frey, Serre–Ribet, Wiles — la chaîne de modularité qui prouve Fermat ; miroir calculé de [`hecke_lean/Hecke/FltRoute.lean`](../hecke_lean/Hecke/FltRoute.lean) | Python stdlib |
+| 04 | [04-umbral-moonshine-reseaux-niemeier.ipynb](04-umbral-moonshine-reseaux-niemeier.ipynb) | Cheng, Duncan & Harvey *Umbral Moonshine* (2013) — les 24 réseaux de Niemeier et leurs systèmes de racines ADE ; le réseau de Leech, rang 24 et racines nulles ; 10 458 combinaisons ADE de rang 24 énumérées | Python stdlib |
 
 ## Conventions
 
