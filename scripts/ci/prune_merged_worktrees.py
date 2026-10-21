@@ -71,11 +71,18 @@ Critères de retrait (cf issue #14195 acceptance) :
    classification/execution. Les fichiers SOURCE untracked non toleres
    et les tracked modifies refusent en amont
    (`reason=uncommitted_source_changes`).
-6. **Worktree avec submodules initialisés** : REFUSE
+6. **Worktree que git refusera à cause des sous-modules** : REFUSE
    (`reason=contains_submodules`). `git worktree remove` refuse
    structurellement ces worktrees ("working trees containing submodules
    cannot be moved or removed") : le prononcer REFUSE evite un FAILED a
-   chaque passe --apply. Les gitignorés **non-cache** (`.env` laissé, ...)
+   chaque passe --apply. Deux états comptent, et le second est invisible
+   dans `git submodule status` : le sous-module **initialisé** (peuplé, ou
+   `git submodule status` le montre sans préfixe '-') et le sous-module
+   **enregistré mais désinitialisé** (son gitdir reste dans
+   `<gitdir-du-worktree>/modules/` après un `git submodule deinit --all`).
+   Mesuré sur #21710 : le second état manquait au prédicat, et 18
+   worktrees étaient annoncés REMOVE au dry-run puis refusés à l'apply.
+   Les gitignorés **non-cache** (`.env` laissé, ...)
    sont signalés (`ignored=...`) sans bloquer le retrait.
 7. **Fenetre « agent vivant » sur content_on_main (#18494)** : le retrait
    par contenu deja integre (`HEAD` ancetre de `origin/main`, predicat 5
@@ -538,12 +545,15 @@ def parse_porcelain(stdout: str) -> dict:
 def worktree_has_initialized_submodules(wt_path: str) -> bool:
     """True si le worktree contient un submodule initialise (#14509).
 
-    `git worktree remove` refuse structurellement les worktrees a
-    submodules initialises ("working trees containing submodules cannot be
-    moved or removed"). Detecte via `git submodule status` : une entree
-    non vide qui ne commence pas par '-' denote un submodule dont le .git
-    embarque existe (initialise, eventuellement a un sha different de
-    l'index, marque '+').
+    Detecte via `git submodule status` : une entree non vide qui ne commence
+    pas par '-' denote un submodule dont le .git embarque existe (initialise,
+    eventuellement a un sha different de l'index, marque '+').
+
+    Predicat INCOMPLET pour la question "git retirera-t-il ce worktree ?" :
+    un sous-module peut etre ENREGISTRE dans le worktree tout en etant
+    affiche '-' par `git submodule status` (voir
+    `worktree_has_registered_submodules`). L'union des deux etats est
+    `worktree_blocks_removal_for_submodules`.
     """
     proc = run_git(wt_path, "submodule", "status", check=False)
     if proc.returncode != 0:
@@ -551,10 +561,68 @@ def worktree_has_initialized_submodules(wt_path: str) -> bool:
         # ne REFUSE pas sur un etat qu'on ne peut pas lire ; le pire cas
         # est un FAILED git, etat d'avant-fix non regresse.
         return False
-    return any(
-        line.strip() and not line.startswith("-")
-        for line in proc.stdout.splitlines()
-    )
+    return has_initialized_submodule(proc.stdout)
+
+
+def worktree_has_registered_submodules(wt_path: str) -> bool:
+    """True si des sous-modules sont ENREGISTRES dans ce worktree (#21710).
+
+    `git worktree remove` refuse un worktree des que son repertoire admin
+    porte un `modules/` : le gitdir du sous-module enregistre dans CE
+    worktree. L'etat PERSISTE apres un `git submodule deinit --all` -- le
+    deinit vide la copie de travail et desenregistre le sous-module, mais
+    laisse le gitdir enregistre -- et il ne se voit PAS dans
+    `git submodule status`, qui signale alors le sous-module par une ligne
+    prefixee par '-' ("non initialise").
+
+    C'est l'etat que le seul predicat `git submodule status` manquait, et
+    l'origine mesuree de la divergence dry-run/apply de #21710 : 18
+    worktrees annonces REMOVE au dry-run, refuses a l'apply par
+    "fatal: working trees containing submodules cannot be moved or removed".
+
+    Protocole de mesure (git 2.50.1, etats controles sur un depot jetable,
+    sous-module local ; chaque etat = un worktree distinct) :
+
+    | etat du worktree                            | `git worktree remove` |
+    |---------------------------------------------|-----------------------|
+    | `modules/` absent (jamais initialise)       | accepte               |
+    | `modules/` present                          | refuse                |
+    | apres `deinit --all` (`status` = '-')        | refuse                |
+    | apres `git rm --cached <gitlink>`            | refuse                |
+    | apres deplacement de `modules/`              | accepte               |
+
+    Le discriminant est le repertoire `modules/` du worktree -- ni l'index
+    (le gitlink retire ne change rien) ni le statut affiche.
+    """
+    proc = run_git(wt_path, "rev-parse", "--absolute-git-dir", check=False)
+    if proc.returncode != 0:
+        # Worktree illisible : pas de preuve, on ne REFUSE pas sur un etat
+        # qu'on ne peut pas lire.
+        return False
+    git_dir = proc.stdout.strip()
+    if not git_dir:
+        return False
+    return (Path(git_dir) / "modules").is_dir()
+
+
+def worktree_blocks_removal_for_submodules(wt_path: str) -> bool:
+    """True si `git worktree remove` REFUSERA ce worktree (sous-modules).
+
+    Union des deux etats que git refuse, que `git submodule status` ne
+    confond pas :
+
+    - sous-module initialise (popule) : `git submodule status` le montre
+      sans prefixe '-' ;
+    - sous-module ENREGISTRE mais deinitialise : `git submodule status` le
+      montre avec un prefixe '-', mais le gitdir reste enregistre dans le
+      repertoire admin du worktree -- et git refuse quand meme le retrait.
+
+    Le predicat doit couvrir les DEUX : annoncer REMOVE ce que git refuse
+    produit un FAILED a chaque passe --apply et un rapport qui ment sur ce
+    qui a quitte le disque (#14619 point 4, #21710).
+    """
+    return (worktree_has_initialized_submodules(wt_path)
+            or worktree_has_registered_submodules(wt_path))
 
 
 def is_source_dirty(path: str) -> bool:
@@ -772,10 +840,13 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
     # Sous-modules : `git worktree remove` les refuse categoriquement
     # ("working trees containing submodules cannot be moved or removed"),
     # meme avec --force sur certains etats. #14619 : l'organe ne doit pas
-    # annoncer REMOVE ce que git interdit par construction. Seuls les
-    # sous-modules INITIALISÉS comptent (cf has_initialized_submodule).
-    subm_proc = run_git(wt_path, "submodule", "status", check=False)
-    has_submodules = has_initialized_submodule(subm_proc.stdout)
+    # annoncer REMOVE ce que git interdit par construction. Le predicat
+    # couvre les DEUX etats que git refuse : le sous-module initialise
+    # (popule) ET le sous-module ENREGISTRE mais deinitialise -- ce dernier
+    # etant invisible dans `git submodule status` (ligne prefixee par '-'),
+    # et a l'origine de la divergence dry-run/apply mesuree sur #21710
+    # (18 worktrees annonces REMOVE, refuses a l'apply).
+    has_submodules = worktree_blocks_removal_for_submodules(wt_path)
 
     # Enregistrement mort (#14195) : le checkout a disparu du disque alors
     # que `.git/worktrees/<nom>` subsiste. Cas mesure le 2026-09-05 : 26
@@ -1368,6 +1439,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
     if info.get("has_submodules"):
         return WorktreeStatus(
             path=wt_path,
+            has_submodules=True,
             branch=info["branch"],
             is_current=False,
             pr_state=None,
