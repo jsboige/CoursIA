@@ -44,7 +44,7 @@ from fast_lane_registry import (  # noqa: E402
     PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4, TRANCHE5, TRANCHE6,
     TRANCHE7, TRANCHE8, TRANCHE9, TRANCHE10, TRANCHE11, TRANCHE12, TRANCHE13,
     TRANCHE14, TRANCHE15, TRANCHE16, TRANCHE17, TRANCHE18, TRANCHE19,
-    TRANCHE20, TRANCHE21, TRANCHE22, TRANCHE23, TRANCHE24, Guard,
+    TRANCHE20, TRANCHE21, TRANCHE22, TRANCHE23, TRANCHE24, TRANCHE25, Guard,
 )
 
 SHADOW_PREFIX = "fast-lane (ombre): "
@@ -390,8 +390,7 @@ def main(argv: list[str] | None = None) -> int:
               + TRANCHE5 + TRANCHE6 + TRANCHE7 + TRANCHE8 + TRANCHE9
               + TRANCHE10 + TRANCHE11 + TRANCHE12 + TRANCHE13 + TRANCHE14
               + TRANCHE15 + TRANCHE16 + TRANCHE17 + TRANCHE18 + TRANCHE19
-              + TRANCHE20 + TRANCHE21 + TRANCHE22 + TRANCHE23
-              + TRANCHE24
+              + TRANCHE20 + TRANCHE21 + TRANCHE22 + TRANCHE23 + TRANCHE24 + TRANCHE25
               if not args.only or g.name == args.only]
     selected = [g for g in guards if guard_applies(g, changed)]
     for guard in guards:
