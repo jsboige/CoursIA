@@ -2155,3 +2155,54 @@ TRANCHE23: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 24 (#21390) -- cliquet sur les ANCHES `native_decide` / `sorry` /
+# `admit` ajoutees dans un diff `*.lean`.
+#
+# Garde NATIF : aucun workflow d'origine. L'organe
+# `scripts/lean/check_added_axioms_cliquet.py` lit le DIFF base/head et
+# signale les lignes ajoutees qui introduisent un de ces tokens dans une
+# declaration nommee (`theorem`/`lemma`/`def`). Les ancres en `example`
+# restent vertes : elles sont invisibles a `check_axioms` par construction,
+# ce n'est pas un defaut de preuve.
+#
+# Codes de retour : 0 = propre, 1 = ancre dans une declaration nommee
+# (BLOQUANT), 2 = la base ou la tete ne resout pas (incident d'entree).
+# Le rc=2 n'est PAS lu comme un vert : `warn_rc` est vide, donc tout rc non
+# nul produit une conclusion `failure` et `blocking_failed` (cf
+# `conclusion_for` et la ligne `guard.blocking and rc != 0`). C'est
+# fail-closed : une base absente fait rougir la PR plutot que de la laisser
+# passer sans controle.
+#
+# BASE : `{base_ref}` vaut `origin/${{ github.base_ref }}` (env
+# `FAST_LANE_BASE` du job `Always-on guards`), c'est-a-dire `origin/main`
+# pour une PR sur `main`. Le workflow fait `git fetch origin
+# "${{ github.base_ref }}"` avant `fast_lane.py`, et le checkout est en
+# `fetch-depth: 0` : la base est donc presente dans le checkout du job.
+#
+# `absorbed=True` : sans lui le garde emettrait sous le prefixe d'ombre avec
+# une conclusion neutre, et son `blocking=True` ne bloquerait rien
+# (incident #19168, cf TRANCHE15).
+# ---------------------------------------------------------------------------
+TRANCHE24: list[Guard] = [
+    Guard(
+        name="lean-added-axioms-cliquet",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.lean",
+            "scripts/lean/check_added_axioms_cliquet.py",
+            "scripts/lean/tests/test_check_added_axioms_cliquet.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/lean/check_added_axioms_cliquet.py",
+            "--base", "{base_ref}", "--head", "HEAD",
+        ],
+        needs_base=True,
+        blocking=True,
+        absorbed=True,
+    ),
+]

@@ -32,7 +32,8 @@ sys.path.insert(0, str(CI_DIR))
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
     FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
-    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, TRANCHE22, Guard,
+    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, TRANCHE22, TRANCHE24,
+    Guard,
 )
 
 # Lot PILOTE absorbe a l'etape 3 de #12856 (programme #12567) : comparaison
@@ -1773,3 +1774,109 @@ def test_tranche22_markdown_schema_advisory_guard_is_wired():
         ).returncode
     assert rc_bad == 1, "le detecteur doit tirer (rc=1) sur un carnet fautif"
     assert rc_good == 0, "le detecteur doit rester muet (rc=0) sur un carnet propre"
+
+
+def test_tranche24_added_axioms_cliquet_guard_is_wired():
+    """Tranche 24 (#21390) = cliquet `native_decide`/`sorry`/`admit` ajoute
+    dans un diff `*.lean`.
+
+    Contrat : garde NATIF (aucun workflow d'origine), BLOQUANT et ABSORBE
+    (sans `absorbed`, un `blocking=True` ne bloque rien -- incident #19168),
+    base resolue par `{base_ref}` (`origin/<base_ref>` dans le job
+    `Always-on guards`, qui fait `git fetch origin "<base_ref>"` avec un
+    checkout en `fetch-depth: 0`), et **rc=2 (incident d'entree) qui n'est
+    pas lu comme un vert** : `warn_rc` est vide, donc `conclusion_for` rend
+    `failure` et le garde arme `blocking_failed`.
+    """
+    assert len(TRANCHE24) == 1, "la tranche 24 porte 1 seul garde (#21390)"
+    guard = TRANCHE24[0]
+    assert guard.source == FAST_LANE_NATIVE
+    assert guard.blocking, (
+        f"{guard.name} doit bloquer : une ancre ajoutee dans une declaration "
+        "nommee est deja interdite par pr-review-discipline §B"
+    )
+    assert guard.absorbed, (
+        f"{guard.name} doit porter absorbed=True, sans quoi blocking=True ne "
+        "bloque rien (incident #19168)"
+    )
+    assert guard.needs_base, "le garde compare HEAD a la base"
+    assert guard.warn_rc == (), (
+        "warn_rc vide : un rc=2 (base/tete non resolue) doit rester un rouge, "
+        "pas etre lu comme un vert"
+    )
+    assert "**/*.lean" in guard.paths, "le cliquet doit porter sur les .lean modifies"
+    for needle in (
+        "scripts/lean/check_added_axioms_cliquet.py",
+        "scripts/lean/tests/test_check_added_axioms_cliquet.py",
+        "scripts/ci/fast_lane.py",
+        "scripts/ci/fast_lane_registry.py",
+    ):
+        assert needle in guard.paths, f"{needle} doit figurer dans les paths"
+    assert guard.argv[0] == "python"
+    assert "scripts/lean/check_added_axioms_cliquet.py" in guard.argv
+    assert "--base" in guard.argv and "{base_ref}" in guard.argv
+    assert "--head" in guard.argv and "HEAD" in guard.argv
+
+    # Le rc=2 ne doit pas produire un vert : conclusion reelle du moteur.
+    assert fast_lane.conclusion_for(guard, 2) == "failure"
+    assert fast_lane.conclusion_for(guard, 1) == "failure"
+    assert fast_lane.conclusion_for(guard, 0) == "success"
+
+    # La tranche doit etre branchee dans la liste executee par fast_lane.py.
+    root = Path(__file__).resolve().parents[2]
+    source = (root / "scripts" / "ci" / "fast_lane.py").read_text(encoding="utf-8")
+    assert "TRANCHE24" in source, (
+        "TRANCHE24 doit etre importee ET agregee par fast_lane.py"
+    )
+
+
+def test_tranche24_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_un_example(tmp_path):
+    """Controle de bout en bout du detecteur **via sa CLI**, dans les deux
+    sens : une ancre `native_decide` ajoutee dans un `theorem` nomme doit
+    faire sortir rc=1 (rouge), une ancre dans un `example` rc=0 (vert --
+    la pile #18706 ne doit pas rougir), et une base qui ne resout pas rc=2
+    (incident d'entree, fail-closed)."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def _git(*args):
+        return subprocess.run(
+            ["git", *args], cwd=repo, capture_output=True, text=True,
+            encoding="utf-8", check=True,
+        )
+
+    _git("init", "-q", "-b", "main")
+    _git("config", "user.email", "test@test")
+    _git("config", "user.name", "test")
+    (repo / "Base.lean").write_text(
+        "theorem base_ok : True := by trivial" + chr(10), encoding="utf-8")
+    _git("add", "-A")
+    _git("commit", "-q", "-m", "base")
+
+    detector = (Path(__file__).resolve().parents[2] / "scripts" / "lean"
+                / "check_added_axioms_cliquet.py")
+
+    def _run(base):
+        return subprocess.run(
+            ["python", str(detector), "--base", base, "--head", "HEAD"],
+            cwd=repo, capture_output=True, text=True, encoding="utf-8",
+        ).returncode
+
+    # 1. ancre dans une declaration NOMMEE -> rc=1 (rouge)
+    (repo / "Base.lean").write_text(
+        "theorem base_ok : True := by trivial" + chr(10)
+        + "theoremAdded : True := by native_decide" + chr(10), encoding="utf-8")
+    _git("add", "-A")
+    _git("commit", "-q", "-m", "named anchor")
+    assert _run("HEAD~1") == 1, "une ancre dans un theorem nomme doit rougir"
+
+    # 2. ancre dans un `example` -> rc=0 (vert) : la pile #18706 ne rougit pas
+    (repo / "Base.lean").write_text(
+        "theorem base_ok : True := by trivial" + chr(10)
+        + "example : True := by native_decide" + chr(10), encoding="utf-8")
+    _git("add", "-A")
+    _git("commit", "-q", "-m", "example anchor")
+    assert _run("HEAD~1") == 0, "une ancre dans un example doit rester verte"
+
+    # 3. base qui ne resout pas -> rc=2 (fail-closed, jamais un vert)
+    assert _run("ref-qui-nexiste-pas") == 2, "une base non resolue doit sortir 2"
