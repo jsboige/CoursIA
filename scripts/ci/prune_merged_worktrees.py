@@ -728,6 +728,8 @@ def pid_is_alive(pid: int) -> bool:
             )
         except (OSError, subprocess.SubprocessError):
             return True
+        if out.returncode != 0:
+            return True
         wanted = str(pid)
         for row in csv.reader(out.stdout.splitlines()):
             if len(row) > 1 and row[1].strip() == wanted:

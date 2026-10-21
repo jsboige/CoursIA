@@ -3187,6 +3187,21 @@ class TestLockPolicy:
         monkeypatch.setattr(pmw.subprocess, "run", _boom)
         assert pmw.pid_is_alive(31337) is True
 
+    @pytest.mark.parametrize("stdout", ["", "ERROR: The remote procedure call failed."])
+    def test_pid_is_alive_windows_nonzero_exit_is_alive(self, monkeypatch, stdout):
+        monkeypatch.setattr(pmw.os, "name", "nt", raising=True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(1, stdout),
+        )
+        assert pmw.pid_is_alive(31337) is True
+        status = pmw.enforce_lock_policy(
+            _make_status(), "claude agent agent-deadbeef (pid 31337)"
+        )
+        assert status.decision == "REFUSE"
+        assert status.refusal_reason == "live_agent_lock:31337"
+        assert status.dead_lock_unlocked is False
+
     def test_pid_is_alive_posix_lookup_error(self, monkeypatch):
         monkeypatch.setattr(pmw.os, "name", "posix", raising=True)
 
