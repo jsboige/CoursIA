@@ -22,7 +22,7 @@ import argparse
 
 class ComfyUIBenchmark:
     def __init__(self, server_address="127.0.0.1:8188", workflow_file="workflow_benchmark.json",
-                 username="admin", password="rZDS3XQa/8!v9L"):
+                 username="admin", password=os.getenv("FORGE_PASSWORD")):
         self.server_address = server_address
         self.client_id = str(uuid.uuid4())
         self.workflow_file = workflow_file
