@@ -42,7 +42,7 @@ L'objectif fil rouge de la série est de **comprendre NeRF de l'intérieur** —
 
 ## Les plis de la série (Epic #18605)
 
-- **Pli 1 — Fourier features** : [`3.4d-Fourier-Features-Biais-Spectral-Python`](../../ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.html) (ML/DataScienceWithAgents) — le socle spectral commun.
+- **Pli 1 — Fourier features** : [`3.4d-Fourier-Features-Biais-Spectral-Python`](../../ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb) (ML/DataScienceWithAgents) — le socle spectral commun.
 - **Pli 2 — NeRF from scratch** : 3D-01 (pipeline complet), 3D-02 (limitations mesurées).
 - **Pli 3 — R-gsplat** : la transition NeRF → 3D Gaussian Splatting (Kerbl et al., SIGGRAPH 2023) avec `nerfstudio-project/gsplat` comme moteur CUDA — concepts et tri (3D-03), entraînement from scratch (3D-04), leviers d'optimisation (3D-05), annexe application réelle (3D-06).
 
