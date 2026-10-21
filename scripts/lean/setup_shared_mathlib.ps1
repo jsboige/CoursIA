@@ -29,11 +29,20 @@
     refusé (isolation git du repo parent). Le Rollback purge les restes de
     cache invalides au lieu de les laisser empoisonner le Apply suivant.
 
+    Conformite au disque de share-state.json (#21454) : l'etat est persiste apres
+    CHAQUE membre (un run interrompu laisse un etat conforme aux membres traites,
+    et les membres non traites conservent leur entree anterieure), et seuls les
+    membres dont la jonction pointe vers le cache du groupe y survivent -- un
+    membre rollbacke par -Build n'est plus reintroduit par la fusion avec l'etat
+    anterieur. Il est consigne dans `rolledBack`, marque needsProvision quand le
+    rollback a laisse .lake/packages/mathlib ABSENT (a re-approvisionner par le
+    prochain lake build).
+
 .PARAMETER Mode
     Scan     : inventaire des projets, groupes mutualisables, economies estimees. Aucune modification.
-    Apply    : cree le cache partage + junctions pour les groupes eligibles. Reversible (backups .bak-2611 + share-state.json).
+    Apply    : cree le cache partage + junctions pour les groupes eligibles. Reversible (backups .bak-2611 + share-state.json, conforme au disque #21454).
     Verify   : compare distinct_code_sorry avant/apres sur les lacs jonctionnes (via count_code_sorry.py --json). Echoue si regression.
-    Rollback : restaure les checkouts physiques depuis les backups (lit share-state.json).
+    Rollback : restaure les checkouts physiques depuis les backups (lit share-state.json) ; signale les membres absents a re-approvisionner (#21454).
 
 .PARAMETER Group
     (Apply/Rollback) Restreint aux groupes dont la cle contient cette chaine
@@ -323,6 +332,77 @@ function Restore-Member([object]$Member) {
     }
 }
 
+function Register-RollbackMember {
+    # (#21454) Consigne un membre rollbacke dans $rolledBack et le retire de
+    # $stateMembers (passes par reference). Le rollback n'est PAS un retour a
+    # l'etat anterieur pour un membre sans backup : Restore-Member n'a rien a
+    # restaurer et laisse .lake/packages/mathlib ABSENT -- le membre est marque
+    # needsProvision (a re-approvisionner par le prochain lake build).
+    param(
+        [object]$Member,
+        [string]$Reason,
+        [ref]$StateMembers,
+        [ref]$RolledBack
+    )
+    $entry = @($StateMembers.Value | Where-Object { $_.relPath -eq $Member.RelPath })
+    $hadBackup = [bool]($entry.Count -and $entry[-1].hadBackup)
+    $RolledBack.Value += [ordered]@{
+        relPath        = $Member.RelPath
+        mathlibDir     = $Member.MathlibDir
+        reason         = $Reason
+        at             = (Get-Date -Format 'o')
+        needsProvision = (-not $hadBackup)
+    }
+    if (-not $hadBackup) {
+        Write-Warning "$($Member.RelPath) : rollback SANS backup -- .lake/packages/mathlib ABSENT, membre a re-approvisionner (le prochain lake build re-telechargera Mathlib)."
+    }
+    $StateMembers.Value = @($StateMembers.Value | Where-Object { $_.relPath -ne $Member.RelPath })
+}
+
+# --- Persistance de l'etat (#21454) ---
+# Ecrit share-state.json CONFORME AU DISQUE : la fusion existing + stateMembers
+# (l'entree du run courant gagne, Group[-1]) est ensuite FILTREE -- ne survit
+# qu'un membre dont la jonction pointe vers le cache de CE groupe. Correctif du
+# defaut #21454 : un membre rollbacke par -Build etait retire de $stateMembers
+# mais restait present dans $existing charge avant la boucle, et la fusion le
+# reintroduisait -- l'etat declarait 24 membres pour 18 jonctions reelles
+# (mesure po-2027, 2026-10-19). Le filtre disque tranche sans dependre de la
+# tenue des listes : ce qui n'est pas jonctionne vers ce groupe n'est pas un
+# membre mutuelise.
+
+function Save-ShareState {
+    param(
+        [string]$StatePath,
+        [string]$GroupId,
+        [object]$GroupFirst,
+        [array]$Existing,
+        [array]$StateMembers,
+        [array]$RolledBack,
+        [string]$CacheMathlib,
+        [string]$CreatedAt
+    )
+    $combined = @($Existing) + @($StateMembers)
+    $merged = @($combined |
+        Group-Object { $_.relPath } | ForEach-Object { $_.Group[-1] } |
+        Where-Object { Test-JunctionPointsTo ([string]$_.mathlibDir) $CacheMathlib })
+    # (#21462 review) Elagage de rolledBack : un membre re-junctionne par un
+    # Apply ulterieur est RE-APPROVISIONNE -- son entree rollback survit sinon
+    # indefiniment et le rappel du Rollback affiche un needsProvision=true
+    # perime apres re-provisionnement effectif. Ne survit qu'un rollback dont
+    # le membre n'est pas dans l'etat final conforme au disque.
+    $mergedRel = @($merged | ForEach-Object { $_.relPath })
+    $rolledPruned = @($RolledBack | Where-Object { $mergedRel -notcontains $_.relPath })
+    [ordered]@{
+        groupId    = $GroupId
+        toolchain  = $GroupFirst.Toolchain
+        mathlibRev = $GroupFirst.MathlibRev
+        createdAt  = $CreatedAt
+        members    = @($merged)
+        rolledBack = $rolledPruned
+    } | ConvertTo-Json -Depth 4 |
+        Set-Content -LiteralPath $StatePath -Encoding utf8NoBOM
+}
+
 function Invoke-Apply {
     $projects = Get-LeanProjects
     $groups = $projects | Group-Object GroupKey | Where-Object { $_.Count -ge 2 }
@@ -381,10 +461,25 @@ function Invoke-Apply {
         # Apply interrompu entre la junction et la persistance de l'etat se repare en
         # relancant le meme Apply (incident 2026-06-11, abort PS5.1 sur utf8NoBOM).
         $statePath = Get-ShareStatePath $groupId
-        $existing = if (Test-Path -LiteralPath $statePath) {
-            @((Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json).members)
-        } else { @() }
+        # (#21462 review) L'etat brut est garde : son createdAt est PRESERVE sur
+        # les saves ulterieurs (l'heure de creation du groupe ne glisse pas a
+        # chaque run) ; horodatage courant seulement a la creation du groupe.
+        # Piège PS7 : ConvertFrom-Json COERCE les dates ISO en [datetime] (la
+        # chaine ecrite est perdue, re-rendue au format locale) -- le champ est
+        # donc extrait du TEXTE BRUT par regex, puis canonise en UTC 'o' :
+        # byte-identique de save en save, lisible quelle que soit la zone.
+        $stateRawText = if (Test-Path -LiteralPath $statePath) {
+            Get-Content -LiteralPath $statePath -Raw
+        } else { $null }
+        $stateRaw = if ($stateRawText) { $stateRawText | ConvertFrom-Json } else { $null }
+        $existing = if ($stateRaw) { @($stateRaw.members) } else { @() }
+        $createdRaw = if ($stateRawText -and $stateRawText -match '"createdAt"\s*:\s*"([^"]+)"') { $Matches[1] }
+        $createdAt = if ($createdRaw) {
+            [DateTimeOffset]::Parse($createdRaw,
+                [System.Globalization.CultureInfo]::InvariantCulture).ToUniversalTime().ToString('o')
+        } else { ([DateTimeOffset]::UtcNow).ToString('o') }
         $stateMembers = @()
+        $rolledBack = @()
         foreach ($m in @($g.Group)) {
             if ($m.IsJunction) {
                 $hadBackup = Test-Path -LiteralPath "$($m.MathlibDir)$BackupSuffix"
@@ -437,7 +532,12 @@ function Invoke-Apply {
                 if (-not (Test-Path -LiteralPath (Join-Path $m.MathlibDir '.git'))) {
                     Write-Host " FAILED — pas de .git dans $($m.MathlibDir) : lake build refuse (isolation git, #18584), rollback de ce membre"
                     Restore-Member $m
-                    $stateMembers = @($stateMembers | Where-Object { $_.relPath -ne $m.RelPath })
+                    Register-RollbackMember -Member $m -Reason 'pas de .git dans le checkout partage (isolation #18584)' `
+                        -StateMembers ([ref]$stateMembers) -RolledBack ([ref]$rolledBack)
+                    # Persistance immediate (#21454) : le `continue` court-circuite
+                    # la sauvegarde de fin d'iteration.
+                    Save-ShareState -StatePath $statePath -GroupId $groupId -GroupFirst $g.Group[0] `
+                        -Existing $existing -StateMembers $stateMembers -RolledBack $rolledBack -CacheMathlib $cacheMathlib -CreatedAt $createdAt
                     continue
                 }
                 Write-Host "  lake build $($m.RelPath) ..." -NoNewline
@@ -457,26 +557,23 @@ function Invoke-Apply {
                     Write-Host " FAILED — rollback de ce membre"
                     ($out | Select-Object -Last 15) | ForEach-Object { Write-Host "    $_" }
                     Restore-Member $m
-                    # @(...) obligatoire : un pipeline a 0/1 element degraderait $stateMembers
-                    # en $null/scalaire, et `+= [ordered]@{}` sur un dictionnaire fusionne les
-                    # cles au lieu d'appender -> "Item has already been added: 'relPath'".
-                    $stateMembers = @($stateMembers | Where-Object { $_.relPath -ne $m.RelPath })
+                    Register-RollbackMember -Member $m -Reason 'lake build FAILED a travers la jonction' `
+                        -StateMembers ([ref]$stateMembers) -RolledBack ([ref]$rolledBack)
+                    # @(...) obligatoire (applique dans Register-RollbackMember) : un pipeline
+                    # a 0/1 element degraderait $stateMembers en $null/scalaire.
                 }
             }
-        }
 
-        # 4. Persistance de l'etat pour Rollback ($statePath/$existing charges avant la boucle).
-        $merged = @($existing) + @($stateMembers) |
-            Group-Object { $_.relPath } | ForEach-Object { $_.Group[-1] }
-        [ordered]@{
-            groupId   = $groupId
-            toolchain = $g.Group[0].Toolchain
-            mathlibRev = $g.Group[0].MathlibRev
-            createdAt = (Get-Date -Format 'o')
-            members   = @($merged)
-        } | ConvertTo-Json -Depth 4 |
-            Set-Content -LiteralPath $statePath -Encoding utf8NoBOM
-        Write-Host "Etat persiste : $statePath"
+            # 4. Persistance IMMEDIATE apres chaque membre (#21454) : un run
+            # interrompu (exit != 0 au milieu) laisse un etat conforme au disque
+            # pour les membres traites, et les membres non traites conservent leur
+            # entree d'etat anterieur -- la trace n'est pas effacee. Les membres
+            # rollbackes tombent ici aussi (le filtre disque de Save-ShareState
+            # les retire, ils ne peuvent plus y etre reintroduits par $existing).
+            Save-ShareState -StatePath $statePath -GroupId $groupId -GroupFirst $g.Group[0] `
+                -Existing $existing -StateMembers $stateMembers -RolledBack $rolledBack -CacheMathlib $cacheMathlib -CreatedAt $createdAt
+        }
+        Write-Host "Etat persiste (apres chaque membre) : $statePath"
     }
 }
 
@@ -570,6 +667,15 @@ function Invoke-Rollback {
         Write-Host "`n=== Rollback groupe $($state.groupId) ==="
         $cacheMathlib = Join-Path $sf.Directory.FullName 'mathlib'
         $remaining = @()
+        # (#21454) Les membres rollbackes par un Apply anterieur ne sont plus dans
+        # members : ils sont rappeles ici sans etre "restaures" (il n'y a rien a
+        # restaurer -- leur mathlib est deja absent ou physique). Garde obligatoire :
+        # @($null) compte 1 element quand la cle manque (etats pre-#21454).
+        $rolledBackPrior = @()
+        if ($state.rolledBack) { $rolledBackPrior = @($state.rolledBack) }
+        foreach ($rb in $rolledBackPrior) {
+            Write-Host "  rollback anterieur : $($rb.relPath) -- $($rb.reason) (needsProvision=$($rb.needsProvision))"
+        }
         # Non-donneurs d'abord : le cache doit rester en place tant qu'un membre
         # sans backup pourrait devoir copier depuis lui. Le donneur en dernier :
         # son rollback DEPLACE le cache (qui est son checkout d'origine).
@@ -596,7 +702,18 @@ function Invoke-Rollback {
                     $remaining += $m
                 }
             } else {
-                Write-Host "  deja physique : $($m.relPath)"
+                # (#21454) Verite disque : un membre de l'etat SANS jonction n'est
+                # pas forcement physique -- un rollback sans backup l'a laisse
+                # ABSENT. Le signaler plutot que de declarer "deja physique", et
+                # garder le fichier d'etat ($remaining) tant qu'il n'est pas
+                # reconcile (re-Apply qui re-jonctionne, ou lake build qui
+                # re-approvisionne).
+                if (Test-Path -LiteralPath $m.mathlibDir) {
+                    Write-Host "  deja physique : $($m.relPath)"
+                } else {
+                    Write-Warning "$($m.relPath) : mathlib ABSENT (rollback sans backup ?) -- a re-approvisionner : le prochain lake build re-telechargera Mathlib."
+                    $remaining += $m
+                }
             }
         }
         if (-not $remaining) {

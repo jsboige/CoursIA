@@ -303,10 +303,17 @@ def cmd_run(repo: Path) -> int:
             return 2
         fh.write(f"depot synchronise sur {msg}\n")
         fh.flush()
+        # cwd=repo : la tache planifiee demarre hors depot (System32), et les
+        # organes que merge_ready lance appellent `git` sans `-C`. Sans ce
+        # cwd, check_slot_reservation.py sortait en rc=2 a chaque tour et
+        # chaque PR touchant un notebook etait sautee en
+        # `slot-collision-unreadable` (mesure du 20/10 : #20434, #21008,
+        # #21470, ~20 sauts par heure).
         proc = subprocess.run(
             [sys.executable, str(organ_path(repo)), "--apply"],
             stdout=fh,
             stderr=subprocess.STDOUT,
+            cwd=str(repo),
         )
         fh.write(
             f"=== {_dt.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')} "
