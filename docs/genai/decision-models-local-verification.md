@@ -89,14 +89,16 @@ Cout de la mesure (par checkpoint) : chargement **13,2 s** (`v1`) et **5,1 s** (
 
 L'ordre **ne se retrouve pas** sur la tranche reconstruite : l'ecart mesure (0,22 point) est de signe oppose a l'ecart publie (0,86 point).
 
-**Ce que cela ne dit pas** : l'ordre publie porte sur la suite gelee de l'index, l'ordre mesure sur une tranche reconstruite de 900 items QCM publics. Ce sont deux mesures de deux **jeux d'items differents**. Cette observation **ne refute donc pas** l'ordre publie de l'index ; elle etablit que, sur des QCM de connaissance et de sens commun, les deux versions sont indiscernables, lao que l'index les separe de 0,86 point.
+**Ce que cela ne dit pas** : l'ordre publie porte sur la suite gelee de l'index, l'ordre mesure sur une tranche reconstruite de 900 items QCM publics. Ce sont deux mesures de deux **jeux d'items differents**. Cette observation **ne refute donc pas** l'ordre publie de l'index ; elle etablit que, sur des QCM de connaissance et de sens commun, les deux versions sont indiscernables, la ou l'index les separe de 0,86 point.
 
 ### Profil d'aires
 
-| Modele | Aire la plus faible mesuree | Aire la plus faible publiee | Aire la plus forte mesuree | Aire la plus forte publiee | Forme |
+| Modele | Aire la plus faible mesuree | Aire la plus faible publiee | Aire la plus forte mesuree | Aire la plus forte publiee | Verdict de l'artefact |
 |---|---|---|---|---|---|
-| `@v1` | language (67,0 %) | knowledge (10,3) | knowledge (71,2 %) | language (32,3) | **inversee** |
-| `@v2` | language (67,7 %) | knowledge (10,9) | knowledge (70,5 %) | language (36,1) | **inversee** |
+| `@v1` | language (67,0 %) | knowledge (10,3) | knowledge (71,2 %) | language (32,3) | **non conforme** |
+| `@v2` | language (67,7 %) | knowledge (10,9) | knowledge (70,5 %) | language (36,1) | **non conforme** |
+
+La colonne de droite est le **verdict de l'artefact** (`scripts/results/decision_local_2026-10-22.json`, section `profil_aires.formes`), pas une reformulation du tableau : le vocabulaire du script est `conforme` / `indetermine` / `non conforme`, et les deux modeles y sont en `non conforme`.
 
 Les scores d'aire publies sont des **scores de skill x100**, pas des exactitudes : la comparaison porte sur la **forme** du profil, pas sur les valeurs. La forme mesuree (knowledge fort, language faible) est **inverse** de la forme publiee (knowledge faible, language fort). Deux reserves s'imposent, et elles sont fortes : (a) le mapping jeu -> aire est une reconstruction ; (b) l'index agrege des items d'une nature que les trois jeux publics ne reproduisent pas (le « language » de l'index passe par des items d'outils et de raisonnement multi-etapes, absents ici). Cette inversion est donc un **signal a investiguer**, pas une refutation.
 
