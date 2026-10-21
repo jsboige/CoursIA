@@ -1,6 +1,6 @@
 # Search — Partie 5 : Frontières
 
-[<- Applications (cas pratiques)](../Applications/README.md) | [Partie 4 : Métaheuristiques](../Part4-Metaheuristics/README.md) | [Retour à la série Search](../README.md)
+[<- Partie 3 : Cas pratiques](../Part3-Cas-pratiques/README.md) | [Partie 4 : Métaheuristiques](../Part4-Metaheuristics/README.md) | [Retour à la série Search](../README.md)
 
 La frontière entre le cours et la recherche : des carnets qui ne traitent pas un problème classique pour l'apprendre — ils **auditent une garantie** (vérifier empiriquement ce qu'un solveur ou un théorème récent autorise réellement à affirmer) ou **distillent un preprint** (rendre opérable un résultat publié). Chaque carnet confronte une affirmation récente à un oracle indépendant, un certificat ou un témoin vérifiable à la main.
 
@@ -99,4 +99,4 @@ Le [Frontieres-11-Abstraction-Dette-ShortestPath-Python](Frontieres-11-Abstracti
 
 ## Navigation
 
-[<- Applications (cas pratiques)](../Applications/README.md) | [Partie 4 : Métaheuristiques](../Part4-Metaheuristics/README.md) | [Retour à la série Search](../README.md)
+[<- Partie 3 : Cas pratiques](../Part3-Cas-pratiques/README.md) | [Partie 4 : Métaheuristiques](../Part4-Metaheuristics/README.md) | [Retour à la série Search](../README.md)

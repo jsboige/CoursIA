@@ -29,8 +29,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "scripts/notebook_tools/check_split_reading_cells.py"
 
-NQ_BASE_PATH = "MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb"
-C4_BASE_PATH = "MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb"
+NQ_BASE_PATH = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens.ipynb"
+C4_BASE_PATH = "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour.ipynb"
 
 NQ_EXPECTED = 26
 C4_EXPECTED = 16

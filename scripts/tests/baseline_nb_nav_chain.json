@@ -27,11 +27,6 @@
     },
     {
       "kind": "independent_chain",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "independent_chain",
       "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations",
       "series": "MyIA.AI.Notebooks/Search/Part1-Foundations"
     },
@@ -1077,96 +1072,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-19-ProceduralGeneration-WFC.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-1b-NQueens-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-2-GraphColoring-Statistical-Validity-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-20b-SudokuBenchmark-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-5-Timetabling-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-6-Minesweeper-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-7b-Wordle-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/CSP/App-8-MiniZinc-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/CSP"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-22-AlgorithmSelection-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Hybrid/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Hybrid"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Search"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Search"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part1-Foundations"
     },
@@ -1734,6 +1639,101 @@
       "kind": "unreachable",
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-12c-Tensor-Product-Representations-Lean.ipynb",
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean"
+    },
+    {
+      "kind": "independent_chain",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11b-Picross-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1b-NQueens-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2-GraphColoring-Statistical-Validity-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20b-SudokuBenchmark-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-5-Timetabling-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-6-Minesweeper-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-7b-Wordle-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-8-MiniZinc-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13b-TSP-Metaheuristics-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18b-HyperparameterTuning-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     }
   ],
   "wrapped": [
