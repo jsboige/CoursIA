@@ -107,7 +107,11 @@ make_dist "$DIST_DIR"
 
 # --- Test 6 : mode par defaut = ephemeral (retro-compatible) -----------------
 (
-  out="$(bash -c '
+  # Le DEFAUT se mesure sur un environnement ou RUNNER_MODE est ABSENT :
+  # un runner persistant l'exporte (myia-po-2024-linux-persist-*), et
+  # l'heritage faisait echouer cette assertion sur un runner legitime.
+  # Controle : le meme test echoue a l'identique sur origin/main.
+  out="$(env -u RUNNER_MODE bash -c '
     . "'"$TEST_DIR"'/block.sh"
     runner_mode
   ' 2>&1)"
