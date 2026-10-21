@@ -403,20 +403,20 @@ jobs:
     - name: Certified modules contract (${{ matrix.display-name }})
       if: matrix.certified-subdir != ''
       run: |
-        python -m pip install --quiet pytest
+        python3 -m pip install --quiet pytest
         # Rapport honnete lake-wide (advisory) : le lecteur du log voit le
         # total REEL du lake (dont le stretch sorry de RepeatedGames/Folk.lean,
         # hors du sous-dossier certifie), pas seulement le zero certifie.
-        python "scripts/lean/count_code_sorry.py" \
+        python3 "scripts/lean/count_code_sorry.py" \
           --lake "${{ matrix.project-path }}" --no-vacuous || true
-        python "scripts/lean/check_certified_sorry.py" \
+        python3 "scripts/lean/check_certified_sorry.py" \
           --repo "$GITHUB_WORKSPACE" \
           --lake "${{ matrix.project-path }}" \
           --subdir "${{ matrix.certified-subdir }}"
         # Controles positifs du gate lui-meme : un lot entier qui passe est
         # aussi ce que produit un gate de-branche -- la difference se fait sur
         # les controles positifs, pas sur le vert.
-        python -m pytest "scripts/tests/test_check_certified_sorry.py" -q
+        python3 -m pytest "scripts/tests/test_check_certified_sorry.py" -q
     - name: Drop Mathlib oleans before the cache save
       # actions/cache saves `.lake` in its post step, at the end of this job
       # (success only). Mathlib's own oleans make up most of that archive:

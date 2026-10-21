@@ -734,7 +734,13 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # sans mettre a jour cette ligne, ce qui a rougi test_full_repo_state_passes_parity
 # (found 14, declared 13) sur main pur et sur toute PR path-filtree scripts/**
 # (diagnostic po-2027, dashboard 2026-10-19T06:10Z). Total apres fusion : 13 + 1 = 14.
-EXPECTED_PAIR_COUNT = 14
+# 2026-10-20 (PR #19916, #19908 tranche B pli 2): +1 paire -- jumeau _en du
+# carnet Lean natif : SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean_en.
+# Meme classe que #19996/#20392/#19943 : la PR ne touchait pas scripts/**, le
+# Scripts Tests path-filtre n'a pas tourne, et la garde PR-time #21397
+# (check_pair_count_declared.py) n'est cablee dans aucun workflow. Rouge sur main
+# pur a 955360bcf0 (found 15, declared 14). Total apres fusion : 14 + 1 = 15.
+EXPECTED_PAIR_COUNT = 15
 
 
 def _collect_parity_failures(repo_root: Path,
