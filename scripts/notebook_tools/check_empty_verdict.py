@@ -54,6 +54,25 @@ A finding is one BLOCK (a section of one cell's output, delimited by a
 The organ does not adjudicate WHICH verdict is wrong: it makes the
 co-presence visible, and a human (or the notebook's own guard) decides.
 
+KNOWN BLIND SPOT (measured, deliberately conservative)
+------------------------------------------------------
+``RESPONSE_RE`` matches a single line: ``Reponse ...: <corps>``. A response
+whose body is printed on the NEXT line (``Reponse :`` alone, then the body)
+is therefore counted as an EMPTY response -- a false POSITIVE, never a false
+negative on that motif. The repository's convention is single-line
+(``INFO ... Reponse X: <corps>``), so the cost is low; the trade-off is
+deliberate, because the opposite reading (guess whether the next line is the
+body or the next measurement) would let a genuinely empty response hide
+behind an unrelated following line. The behaviour is pinned by a unit test
+(``test_multiline_response_body_is_counted_empty``) so it stays a documented
+choice rather than an accident.
+
+``--diff-base`` is FAIL-CLOSED: if the git diff cannot be read (not a git
+repository, unknown ref, ...), the organ does NOT fall back to scanning
+everything it was given -- it reports "could not measure" and exits 2. A
+silent fallback would turn a broken diff into a full sweep: noise, and a
+verdict on notebooks the PR never touched.
+
 Usage:
     python scripts/notebook_tools/check_empty_verdict.py <notebook|dir> ...
     python scripts/notebook_tools/check_empty_verdict.py --diff-base origin/main <repo>
@@ -87,6 +106,10 @@ STATUS_RE = re.compile(r"(?i)\bstatut http\b[^:]*:\s*(?P<code>\d{3})")
 
 # Un bloc : un en-tete de section "=== ... ===" ouvre un bloc.
 BLOCK_HEADER_RE = re.compile(r"===.*===")
+
+
+class MeasurementError(RuntimeError):
+    """La mesure n'a pas pu etre faite (diff illisible, cible absente)."""
 
 
 def _strip_ansi(text: str) -> str:
@@ -200,14 +223,44 @@ def analyse_notebook(path: Path) -> list[dict]:
     return findings
 
 
-def _changed_notebooks(base: str, root: Path) -> set[str]:
+def _git(root: Path, args: list[str]) -> str:
+    """Un appel git dont l'echec est une MESURE IMPOSSIBLE, pas un ensemble vide."""
     try:
-        out = subprocess.run(
-            ["git", "-C", str(root), "diff", "--name-only", base, "--", "*.ipynb"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", check=True,
-        ).stdout
-    except Exception:
-        return set()
+        proc = subprocess.run(
+            ["git", "-C", str(root), *args],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            check=True,
+        )
+    except subprocess.CalledProcessError as exc:
+        raise MeasurementError(
+            f"git {' '.join(args)} a rendu {exc.returncode} : "
+            f"{(exc.stderr or '').strip()[:200]}"
+        ) from exc
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise MeasurementError(f"git {' '.join(args)} : {exc}") from exc
+    return proc.stdout
+
+
+def _changed_notebooks(base: str, root: Path) -> set[str]:
+    """Les carnets modifies par la PR, de la BASE DE FUSION a HEAD.
+
+    La base est resolue en `merge-base(base, HEAD)` -- meme convention que
+    les organes freres (`check_output_collapse.py`, `check_source_collapse.py`)
+    et que la voie rapide (`git diff base...HEAD`). Sans cette resolution, un
+    diff a deux points comparerait HEAD a la pointe de `main` et remonterait
+    les carnets modifies sur `main` depuis le point de depart de la branche :
+    des carnets que la PR n'a pas touches.
+
+    FAIL-CLOSED : une lecture de diff impossible leve `MeasurementError`. Un
+    repli silencieux (un ensemble vide) ferait scanner par l'organe tout ce
+    qu'on lui donne au lieu des seuls carnets touches -- un sweep integral
+    sur une panne git. Le bruit n'est pas un trou, mais c'est un verdict porte
+    sur des carnets que la PR n'a pas touches.
+    """
+    merge_base = _git(root, ["merge-base", base, "HEAD"]).strip()
+    if not merge_base:
+        raise MeasurementError(f"merge-base illisible entre {base!r} et HEAD")
+    out = _git(root, ["diff", "--name-only", merge_base, "HEAD", "--", "*.ipynb"])
     return {line.strip().replace("\\", "/") for line in out.splitlines() if line.strip()}
 
 
@@ -304,7 +357,13 @@ def main(argv: list[str] | None = None) -> int:
 
     notebooks = iter_notebooks(args.targets)
     if args.diff_base:
-        changed = _changed_notebooks(args.diff_base, Path(args.targets[0]))
+        try:
+            changed = _changed_notebooks(args.diff_base, Path(args.targets[0]))
+        except MeasurementError as exc:
+            print(f"::warning::mesure impossible : {exc}", file=sys.stderr)
+            print(f"carnets scannes : 0 (diff illisible contre {args.diff_base})")
+            print("finding(s) : 0 (non mesurable)")
+            return 2
         kept = []
         for nb_path in notebooks:
             try:
