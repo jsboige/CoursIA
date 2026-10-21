@@ -358,3 +358,62 @@ def test_20956_virgule_decimale_nest_pas_un_compte(tmp_path):
     assert rc == 0, (
         f"virgule decimale : meme traitement que le point : rc={rc}, "
         f"out={out!r}")
+
+
+# === #20956 (suite) : la reprise APRES le separateur ----------------------
+#
+# Le lookahead `(?!\d*[.,]\d)` refusait le nombre decimal, mais le moteur
+# REPRENAIT apres le separateur : le `\b` entre « . » et « 1 » est une
+# frontiere de mot. Mesure du 2026-10-21 (reserve du coordinateur sur
+# #20956, point 2) :
+#     '465.1 episodes'   -> ('1', 'episodes')
+#     '87,4 iterations'  -> ('4', 'iterations')
+# Le motif MD relisait donc un compte FABRIQUE a partir de la partie
+# decimale d'une valeur. La borne gauche `(?<![\d.,])` le ferme.
+
+
+def test_20956_reprise_apres_separateur_point_nest_pas_un_compte(tmp_path):
+    """« 465.1 episodes » cote PROSE ne doit pas produire le compte 1.
+
+    Avant fix : le motif MD relisait `(1, episodes)`, contredit par le
+    « Episodes: 10 » du stream -- une contradiction FABRIQUEE.
+    """
+    rc, out = _run(
+        [_code("Episodes: 10\n"),
+         _md("La recompense moyenne sur 465.1 episodes vaut 465.1 points.")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc == 0, (
+        f"une valeur decimale relue comme un compte : rc={rc}, out={out!r}")
+    assert out["anomaly_count"] == 0
+
+
+def test_20956_reprise_apres_separateur_virgule_nest_pas_un_compte(tmp_path):
+    """Meme cas avec la virgule decimale (format FR)."""
+    rc, out = _run(
+        [_code("Iterations: 12\n"),
+         _md("Le score moyen sur 87,4 iterations vaut 87,4 points.")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc == 0, (
+        f"virgule decimale relue comme un compte : rc={rc}, out={out!r}")
+    assert out["anomaly_count"] == 0
+
+
+def test_20956_borne_gauche_ne_neutralise_pas_le_compte_entier(tmp_path):
+    """CONTROLE POSITIF : la borne gauche ne doit pas neutraliser un
+    compte entier reel cote prose -- une contradiction reste attrapee."""
+    rc, out = _run(
+        [_code("Episodes: 7\n"),
+         _md("La recompense moyenne est mesuree sur 10 episodes.")],
+        tmp_path,
+        units="extended",
+    )
+    assert rc == 1, (
+        f"un compte entier reel reste un compte : rc={rc}, out={out!r}")
+    units = [f for f in out["findings"] if f["kind"] == "unit-count"]
+    assert any(f["unit"] == "episode" and f["claimed"] == "10"
+               and f["stream"] == [7] for f in units), (
+        f"finding episode 10 vs 7 absent : {units!r}")

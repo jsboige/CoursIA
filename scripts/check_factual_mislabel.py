@@ -150,6 +150,20 @@ def _build_count_patterns(units: str) -> tuple[re.Pattern, re.Pattern]:
     `RL/RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb` cellules md 12 et
     18 (signale par la lane adjointe, cycle c2204).
 
+    La meme garde, seule, ne suffit pas : le lookahead arretait le match au
+    bon nombre, mais le MOTEUR reprenait APRES le separateur. Sur « 465.1
+    episodes » (cote prose), le `\b` entre « . » et « 1 » est une frontiere
+    de mot : le motif MD relisait donc `(1, episodes)` -- un compte fabrique
+    a partir de la partie decimale d'une valeur. Idem « 87,4 iterations » ->
+    `(4, iterations)`. Mesure du 2026-10-21 (reserve du coordinateur,
+    3 points sur #20956) :
+        '465.1 episodes'   -> ('1', 'episodes')
+        '87,4 iterations'  -> ('4', 'iterations')
+    D'ou la **borne gauche** `(?<![\\d.,])` sur le motif MD : un match ne peut
+    plus commencer sur un chiffre precede d'un chiffre, d'un point ou d'une
+    virgule. Les deux gardes sont complementaires -- le lookahead refuse le
+    nombre lui-meme, la borne gauche refuse la reprise apres separateur.
+
     LIMITE CONNUE, non couverte par cette garde : le separateur de
     milliers PAR ESPACE (« 10 000 iterations », « 6 912 variables »). Le
     motif MD lit alors le dernier groupe (« 000 iterations »), un
@@ -159,9 +173,18 @@ def _build_count_patterns(units: str) -> tuple[re.Pattern, re.Pattern]:
     ce qui suppose une grammaire de nombre, pas une garde de lookahead.
     La faute la plus grave (une valeur lue comme un compte, donc une
     contradiction FABRIQUEE) est, elle, fermee.
+
+    LIMITE CONNUE, cote stream : une enumeration sur la MEME LIGNE
+    (« Etapes: 1) Re-SFT ») est encore lue comme un compte par le motif
+    stream -- le separateur `[:=][ \t]*` autorise le chiffre qui suit
+    directement « 1) ». Le cas « Etapes:\\n  1. Preparer » (liste sur la
+    ligne suivante) est deja ecarte par le `[ \t]*` entre l'unite et le
+    separateur. Traiter l' enumeration sur la meme ligne suppose une
+    grammaire de liste, pas une garde de lookahead : c'est une suite, pas
+    un correctif de ce cycle.
     """
     return (
-        re.compile(rf"(?i)\b(\d{{1,5}})(?!\d*[.,]\d)\s*({units})\b"),
+        re.compile(rf"(?i)(?<![\d.,])\b(\d{{1,5}})(?!\d*[.,]\d)\s*({units})\b"),
         re.compile(rf"(?i)\b({units})[ \t]*[:=][ \t]*(\d{{1,5}})(?!\d*[.,]\d)\b"),
     )
 
