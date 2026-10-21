@@ -272,7 +272,7 @@ Usage dans la CI et la coordination — chaque site candidat passe d'abord en **
 - Applicable ([verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md)) : 3 sources vérifiées firsthand = (1) l'index source **référencé** ; (2) le périmètre du Pli 1 **déclaré** dans la PR ; (3) la **mesure locale** hors périmètre. Une vérification effective du SHA et de la licence de chaque modèle viendra au Pli 2.
 - Applicable ([proactive-coordination.md](../../.claude/rules/proactive-coordination.md), leçons L898 et L1356) : pas de doublon PR, pas de claim conflictuel.
 - Rappel ([CLAUDE.md](../../CLAUDE.md) §A) : lane ne merge pas, ripe-signal nominatif.
-- Applicable ([sota-not-workaround.md](../../.claude/rules/sota-not-workaround.md)) : RTX 3070 8GB = `RECOVERABLE-MACHINE`, pas `INTRINSIC`.
+- Applicable ([sota-not-workaround.md](../../.claude/rules/sota-not-workaround.md)) : pour la liste courte `0.8b`, la carte 8 Go suffit (mesure po-2028, PR #21921 : pic VRAM 1,47 Go, ~0,23 s/item) ; l'obstacle reel est la non-publication des charges utiles (`decision-index-suite-0.3` -> 401), pas la carte. Le besoin 24 Go reste non refute pour `4b` (non mesure).
 - Applicable ([lane-claim-protocol.md](../../.claude/rules/lane-claim-protocol.md)) : pas de claim conflictuel sur #18204.
 - Applicable ([variation-protocol.md](../../.claude/rules/variation-protocol.md)) : narrow-cache tari — Pli 1 EPIC est un DEEP/genai* viable.
 
