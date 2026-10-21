@@ -37,6 +37,12 @@ pyemd==0.5.1                 # EMD backend de pyphi (wheel numpy1-compatible)
 # Scientific
 numpy>=1.21,<2.0             # Numerical computing (numpy<2 for pyemd/pyphi compat)
 scipy>=0.13.3                # Scientific computing
+antropy                      # entropies non lineaires (Higuchi, Lempel-Ziv) --
+                             # importe par ICT-36c-FLens-HiguchiBridge et
+                             # ICT-36d-FLens-DecorrelationTemporelle
+                             # (`import antropy as ent` -> ent.higuchi_fd,
+                             # ent.lziv_complexity). Non epingle : aucune borne
+                             # basse mesuree, meme convention que matplotlib.
 
 # Visualisation (massivement utilisee par les notebooks ICT : trajectoires, heatmaps, EWS)
 matplotlib
