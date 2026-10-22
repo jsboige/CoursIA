@@ -9,8 +9,11 @@ ignorerait les groupes passerait tous les autres tests et echouerait celui-la.
 
 from __future__ import annotations
 
+import builtins
 import csv
 import json
+import math
+import random
 import sys
 from collections import Counter
 from pathlib import Path
@@ -131,8 +134,26 @@ def test_refuse_niveau_non_mesurable_en_nommant_le_deficit():
     message = str(excinfo.value)
     assert "non mesurable" in message
     assert "280 etiquettes" in message
-    assert "support maximal 1" in message
-    assert "plancher exige 2" in message
+    assert "280 sous le plancher de 2 paires" in message
+    assert "support minimal 1" in message
+    assert "Etiquettes en deca" in message
+    assert "noeud-0 (1)" in message
+
+
+def test_refus_nomme_le_support_minimal_et_non_le_maximal():
+    """Un corpus refuse pour une etiquette pauvre ne doit pas annoncer un support eleve.
+
+    Le message d'origine annoncait le support *maximal* : pour un corpus dont
+    une etiquette porte 1 paire et dont les autres en portent 14, il lisait
+    « support maximal 14, plancher exige 2 » -- un refus qui se contredit.
+    """
+    support = Counter({"noeud-riche": 14, "noeud-pauvre": 1})
+    with pytest.raises(SystemExit) as excinfo:
+        bbd.require_measurable(support, "node")
+    message = str(excinfo.value)
+    assert "support minimal 1" in message
+    assert "support maximal 14" in message
+    assert "noeud-pauvre (1)" in message
 
 
 def test_accepte_niveau_au_support_suffisant():
@@ -477,3 +498,188 @@ def test_rendu_en_tete_dit_le_niveau_reel():
 
     report["level"] = "node"
     assert "nœud" in bbd.render_report(report).splitlines()[0]
+
+
+# --- Equivalence des versions indexees ----------------------------------------------
+# Les deux chemins predits par l'instrument ont une version de reference (balayage de
+# toutes les etiquettes) et une version indexee (index inverse). Elles doivent rendre
+# le meme label, au bit pres : sinon les chiffres publies ne sont pas reproductibles.
+
+
+def _reference_rules(lexicon, weights, labels):
+    """Reference de la baseline a regles : balayage de toutes les etiquettes."""
+    def predict_one(text: str) -> str:
+        tokens = sorted(set(bbd.tokenize(text)))
+        best_label, best_score = None, None
+        for label in labels:
+            score = sum(weights.get(term, 0.0) for term in tokens if term in lexicon[label])
+            if best_score is None or score > best_score:
+                best_label, best_score = label, score
+        return best_label
+    return predict_one
+
+
+def test_regles_indexees_equivalent_au_balayage():
+    """L'index inverse ne change aucune prediction, y compris sur les ex aequo."""
+    lexicon = {"A": {"alpha", "beta"}, "B": {"beta", "gamma"}, "C": {"gamma"}}
+    weights = {"alpha": 2.0, "beta": 1.0, "gamma": 1.0}
+    labels = ["A", "B", "C"]
+    rapide = bbd.make_rules_predictor(lexicon, weights, labels)
+    reference = _reference_rules(lexicon, weights, labels)
+    for text in ("alpha", "beta", "gamma", "alpha beta", "gamma gamma", "rien du tout",
+                 "beta gamma", "alpha gamma"):
+        assert rapide(text) == reference(text), text
+
+
+def test_regles_indexees_equivalence_avec_ordre_d_etiquettes_non_trie():
+    """Le departage suit l'ordre donne des etiquettes, pas l'ordre alphabétique."""
+    lexicon = {"A": {"alpha"}, "B": {"alpha"}}
+    weights = {"alpha": 1.0}
+    for labels in (["A", "B"], ["B", "A"]):
+        rapide = bbd.make_rules_predictor(lexicon, weights, labels)
+        reference = _reference_rules(lexicon, weights, labels)
+        assert rapide("alpha") == reference("alpha") == labels[0]
+
+
+def test_centroide_indexe_equivalent_a_la_reference():
+    """`predict_indexed` rend le meme label que `predict`, au bit pres."""
+    rng = random.Random(7)
+    centroids = {
+        label: {feature: rng.random() for feature in range(rng.randint(1, 6))}
+        for label in ("A", "B", "C", "D")
+    }
+    index = bbd.TfidfCentroids.index(centroids)
+    for _ in range(200):
+        vector = {feature: rng.random()
+                  for feature in range(10) if rng.random() < 0.4}
+        assert (bbd.TfidfCentroids.predict_indexed(vector, centroids, index)
+                == bbd.TfidfCentroids.predict(vector, centroids))
+
+
+def test_centroide_indexe_ex_aequo_garde_la_premiere_etiquette():
+    """A score egal, la premiere etiquette en ordre alphabetique reste la meilleure."""
+    centroids = {"A": {0: 1.0}, "B": {0: 1.0}, "C": {1: 1.0}}
+    index = bbd.TfidfCentroids.index(centroids)
+    assert bbd.TfidfCentroids.predict_indexed({0: 1.0}, centroids, index) == "A"
+    assert bbd.TfidfCentroids.predict({0: 1.0}, centroids) == "A"
+
+
+def test_dictionnaire_de_noeud_joint_par_famille_et_cle(tmp_path):
+    """Un noeud se rattache a sa ligne de taxonomie par (famille, cle)."""
+    taxo = write_taxonomy(tmp_path, [
+        {"PK": "798", "Famille": "Abus de langage", "nom_vulgarisé": "Appel au Emotionnel",
+         "desc_fr": "Vous validez une affirmation par son ton", "example_fr": "zorglub"},
+        {"PK": "12", "Famille": "Influence", "nom_vulgarisé": "Appel a l'autorite",
+         "desc_fr": "Vous invoquez une autorite", "example_fr": "zorglub"},
+    ])
+    lexicon, report = bbd.load_lexicon(
+        [taxo], {"F798", "V12"}, "node",
+        {"F798": "Abus de langage", "V12": "Influence"},
+        {"F798": "798", "V12": "12"},
+    )
+    assert "emotionnel" in lexicon["F798"]
+    assert "autorite" in lexicon["V12"]
+    assert "zorglub" not in lexicon["F798"] and "zorglub" not in lexicon["V12"]
+    assert report["F798"]["nodes"] == 1
+
+
+def test_dictionnaire_de_noeud_introuvable_refuse_en_nommant_le_noeud(tmp_path):
+    """Un noeud absent des taxonomies est nomme, il ne passe pas inapercu."""
+    taxo = write_taxonomy(tmp_path, [
+        {"PK": "1", "Famille": "A", "nom_vulgarisé": "Titre A", "desc_fr": "Definition A"},
+    ])
+    with pytest.raises(SystemExit) as excinfo:
+        bbd.load_lexicon([taxo], {"F999"}, "node", {"F999": "A"}, {"F999": "999"})
+    assert "F999" in str(excinfo.value)
+
+
+def test_macro_f1_un_passage_equivalent_au_temoin():
+    """Le comptage en un passage rend le meme score, au bit pres, que le temoin."""
+    rng = random.Random(7)
+    for taille, etiquettes in ((40, 5), (300, 37)):
+        vrais = [f"L{i % etiquettes}" for i in range(taille)]
+        predits = [rng.choice([f"L{i % etiquettes}" for i in range(etiquettes)] + ["L999"])
+                   for _ in range(taille)]
+        score, par_etiquette = bbd.macro_f1(vrais, predits)
+        score_ref, par_etiquette_ref = bbd.macro_f1_reference(vrais, predits)
+        assert score == score_ref
+        assert par_etiquette == par_etiquette_ref
+
+
+def test_macro_f1_etiquette_absente_du_test_comptabilisee():
+    """Une etiquette predite mais jamais vraie dilue la moyenne (par convention)."""
+    score, par_etiquette = bbd.macro_f1(["A", "A"], ["A", "B"])
+    assert par_etiquette["B"] == 0.0
+    # A : tp=1, fp=0, fn=1 -> F1 = 2/3 ; B : predit mais jamais vrai -> 0.
+    assert score == pytest.approx(1 / 3)
+
+
+def test_niveau_branche_identique_a_la_reference_commitee(monkeypatch):
+    """La non-regression du niveau branche est portee par la CI, pas affirmee.
+
+    `data/teacher/baselines_branch.json` est le rapport produit par l'instrument
+    sur le corpus commite, avant la refonte de la macro-F1. Ce test rejoue
+    l'instrument sur ce meme corpus et exige l'egalite stricte des rapports :
+    toute derive du niveau branche (comptage, plis, lexique, fuite) fait
+    echouer la CI au lieu de reposer sur une affirmation de la lane.
+    """
+    racine = Path(__file__).resolve().parents[3]
+    corpus = "MyIA.AI.Notebooks/GenAI/FallacyDetection/data/teacher/val_fr.jsonl"
+    reference = racine / ("MyIA.AI.Notebooks/GenAI/FallacyDetection/data/teacher/"
+                          "baselines_branch.json")
+    monkeypatch.chdir(racine)
+    rapport = bbd.run(Path(corpus), "branch", 5, 200, 42, None)
+    attendu = json.loads(reference.read_text(encoding="utf-8"))
+    # Le corpus est celui de la reference : un corpus change invalide la comparaison.
+    assert rapport["corpus"]["sha256"] == attendu["corpus"]["sha256"]
+    assert rapport == attendu
+
+
+# --- Semantique de sommation : le rapport ne doit dependre d'aucune version de CPython --
+
+
+def _somme_sous_semantique(elements, semantique: str):
+    """Somme de flottants sous une semantique imposee (CPython 3.11 / 3.12+ / exacte).
+
+    Les entiers restent exacts dans les trois cas : seule la somme de flottants change.
+    """
+    valeurs = list(elements)
+    if semantique == "fsum" and any(isinstance(valeur, float) for valeur in valeurs):
+        return math.fsum(valeurs)
+    total = 0
+    compensation = 0.0
+    for element in valeurs:
+        if semantique == "neumaier" and isinstance(total, float) and isinstance(element, float):
+            somme = total + element
+            if abs(total) >= abs(element):
+                compensation += (total - somme) + element
+            else:
+                compensation += (element - somme) + total
+            total = somme
+        else:
+            total = total + element
+    return total + compensation if semantique == "neumaier" else total
+
+
+def test_le_rapport_ne_depend_pas_de_la_semantique_de_sum(monkeypatch):
+    """`sum` sur les flottants a change de semantique en CPython 3.12 (compensation).
+
+    Le test rejoue la baseline a regles sous trois semantiques emulees -- naive
+    (3.11), compensee (3.12+), exacte (`math.fsum`) -- et exige le meme rapport.
+    L'instrument ne doit donc dependre d'aucune d'elles : sinon le meme corpus
+    donne un rapport different selon la version de l'interpreteur, et le garde de
+    non-regression ne peut pas passer a la fois en local et en CI.
+    """
+    lexique = {"A": {"t1", "t2", "t3"}, "B": {"t4"}}
+    # 1e16 + 1,0 - 1e16 : la somme naive rend 0,0, la somme exacte rend 1,0.
+    poids = {"t1": 1e16, "t2": 1.0, "t3": -1e16, "t4": 0.5}
+    items = [{"text": "t1 t2 t3 t4", "label": "A", "node_key": "A-0", "scenario_path": "s1"}]
+    rapports = {}
+    for semantique in ("naive", "neumaier", "fsum"):
+        monkeypatch.setattr(
+            builtins, "sum",
+            lambda elements, semantique=semantique: _somme_sous_semantique(elements, semantique),
+        )
+        predicteur = bbd.make_rules_predictor(lexique, poids, ["A", "B"])
+        rapports[semantique] = bbd.evaluate_whole(predicteur, items)
+    assert rapports["naive"] == rapports["neumaier"] == rapports["fsum"]

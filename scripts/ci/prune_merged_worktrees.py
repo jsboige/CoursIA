@@ -71,11 +71,18 @@ Critères de retrait (cf issue #14195 acceptance) :
    classification/execution. Les fichiers SOURCE untracked non toleres
    et les tracked modifies refusent en amont
    (`reason=uncommitted_source_changes`).
-6. **Worktree avec submodules initialisés** : REFUSE
+6. **Worktree que git refusera à cause des sous-modules** : REFUSE
    (`reason=contains_submodules`). `git worktree remove` refuse
    structurellement ces worktrees ("working trees containing submodules
    cannot be moved or removed") : le prononcer REFUSE evite un FAILED a
-   chaque passe --apply. Les gitignorés **non-cache** (`.env` laissé, ...)
+   chaque passe --apply. Deux états comptent, et le second est invisible
+   dans `git submodule status` : le sous-module **initialisé** (peuplé, ou
+   `git submodule status` le montre sans préfixe '-') et le sous-module
+   **enregistré mais désinitialisé** (son gitdir reste dans
+   `<gitdir-du-worktree>/modules/` après un `git submodule deinit --all`).
+   Mesuré sur #21710 : le second état manquait au prédicat, et 18
+   worktrees étaient annoncés REMOVE au dry-run puis refusés à l'apply.
+   Les gitignorés **non-cache** (`.env` laissé, ...)
    sont signalés (`ignored=...`) sans bloquer le retrait.
 7. **Fenetre « agent vivant » sur content_on_main (#18494)** : le retrait
    par contenu deja integre (`HEAD` ancetre de `origin/main`, predicat 5
@@ -235,6 +242,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import csv
 import dataclasses
 import hashlib
 import json
@@ -339,6 +347,19 @@ class WorktreeStatus:
     # `.lane-owner` a la racine du worktree (None si absent). Attribue les
     # refus pour le rapport -- jamais une autorite de decision.
     lane_owner: Optional[str] = None
+    # Champs v1.3 (protocole Maintenance #113, dae338b, arbitrage 19/10) :
+    # verrou `git worktree lock`. `locked_reason` = raison brute lue au
+    # porcelain (None = pas de verrou, "" = verrou sans raison) ;
+    # `lock_class` = "agent" (forme PURE `claude agent agent-<hex> (pid N)`)
+    # ou "optout" (raison libre, honoree indefiniment) ou "unclassified"
+    # (verrou nu sans raison : REFUSE, F2 de la revue #21503) ; `lock_pid` =
+    # pid capture pour un lock d'agent. `dead_lock_unlocked` porte la
+    # decision v1.3 : lock d'agent a pid MORT sur un worktree REMOVE-ready --
+    # l'apply execute `git worktree unlock` puis `remove` (jamais -f -f).
+    locked_reason: Optional[str] = None
+    lock_class: Optional[str] = None
+    lock_pid: Optional[int] = None
+    dead_lock_unlocked: bool = False
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
@@ -451,16 +472,76 @@ def _repo_root_for_worktree(wt_path: str) -> str:
     return current_repo_root()
 
 
+GH_TIMEOUT_SECONDS = 30
+
+
 def run_gh(*args: str, check: bool = True) -> subprocess.CompletedProcess:
-    """Lance une commande gh avec capture stricte. cwd = CWD courant."""
-    return subprocess.run(
-        ["gh", *args],
-        capture_output=True,
-        text=True,
-        check=check,
-        encoding="utf-8",
-        errors="replace",
-    )
+    """Lance une commande gh avec capture stricte. cwd = CWD courant.
+
+    #21753 : borne a GH_TIMEOUT_SECONDS. Un gh muet (quota epuise au point
+    de ne plus repondre, reseau mort, binaires bloques) devenait une passe
+    interminable et silencieuse -- mesure 21/10 : `--apply` pendu ~2 h, 0
+    octet de sortie. Un timeout devient un echec DETECTE (rc=124, stderr
+    explicite), jamais une attente infinie : l'appelant tranche.
+    """
+    try:
+        return subprocess.run(
+            ["gh", *args],
+            capture_output=True,
+            text=True,
+            check=check,
+            encoding="utf-8",
+            errors="replace",
+            timeout=GH_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        # CompletedProcess manuel : on ne veut PAS lever (check n'a plus de
+        # sens sur un timeout), on veut un echec nomme que les appelants
+        # check=False traduisent deja en degradation / RuntimeError.
+        return subprocess.CompletedProcess(
+            args=list(args),
+            returncode=124,
+            stdout="",
+            stderr=(
+                f"gh timeout after {GH_TIMEOUT_SECONDS}s: gh "
+                + " ".join(str(a) for a in args)
+            ),
+        )
+
+
+def probe_gh_availability() -> Optional[str]:
+    """Sonde d'identite gh locale (#21753). Rend None si gh est pret.
+
+    `gh auth token` est purement local (lecture de hosts.yml) : pas de
+    reseau, pas de quota, ~50 ms. Rend une RAISON lisible sinon. Le stdout
+    de la sonde est un JETON : il est jete sans jamais etre affiche ni
+    logge -- le detail ne vient que du stderr (derniere ligne, 120 chars).
+    """
+    try:
+        proc = subprocess.run(
+            ["gh", "auth", "token"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=GH_TIMEOUT_SECONDS,
+        )
+    except FileNotFoundError:
+        return "gh introuvable sur ce siege"
+    except subprocess.TimeoutExpired:
+        return f"gh auth token muet apres {GH_TIMEOUT_SECONDS}s"
+    except OSError as e:
+        return f"gh auth token injoignable ({e.__class__.__name__})"
+    if proc.returncode != 0:
+        stderr_lines = (proc.stderr or "").strip().splitlines()
+        detail = (
+            stderr_lines[-1][:120] if stderr_lines
+            else f"rc={proc.returncode}"
+        )
+        return f"gh auth token rc={proc.returncode} ({detail})"
+    if not (proc.stdout or "").strip():
+        return "gh auth token vide (aucun jeton actif)"
+    return None
 
 
 def is_untracked_artifact(path: str) -> bool:
@@ -538,12 +619,15 @@ def parse_porcelain(stdout: str) -> dict:
 def worktree_has_initialized_submodules(wt_path: str) -> bool:
     """True si le worktree contient un submodule initialise (#14509).
 
-    `git worktree remove` refuse structurellement les worktrees a
-    submodules initialises ("working trees containing submodules cannot be
-    moved or removed"). Detecte via `git submodule status` : une entree
-    non vide qui ne commence pas par '-' denote un submodule dont le .git
-    embarque existe (initialise, eventuellement a un sha different de
-    l'index, marque '+').
+    Detecte via `git submodule status` : une entree non vide qui ne commence
+    pas par '-' denote un submodule dont le .git embarque existe (initialise,
+    eventuellement a un sha different de l'index, marque '+').
+
+    Predicat INCOMPLET pour la question "git retirera-t-il ce worktree ?" :
+    un sous-module peut etre ENREGISTRE dans le worktree tout en etant
+    affiche '-' par `git submodule status` (voir
+    `worktree_has_registered_submodules`). L'union des deux etats est
+    `worktree_blocks_removal_for_submodules`.
     """
     proc = run_git(wt_path, "submodule", "status", check=False)
     if proc.returncode != 0:
@@ -551,10 +635,68 @@ def worktree_has_initialized_submodules(wt_path: str) -> bool:
         # ne REFUSE pas sur un etat qu'on ne peut pas lire ; le pire cas
         # est un FAILED git, etat d'avant-fix non regresse.
         return False
-    return any(
-        line.strip() and not line.startswith("-")
-        for line in proc.stdout.splitlines()
-    )
+    return has_initialized_submodule(proc.stdout)
+
+
+def worktree_has_registered_submodules(wt_path: str) -> bool:
+    """True si des sous-modules sont ENREGISTRES dans ce worktree (#21710).
+
+    `git worktree remove` refuse un worktree des que son repertoire admin
+    porte un `modules/` : le gitdir du sous-module enregistre dans CE
+    worktree. L'etat PERSISTE apres un `git submodule deinit --all` -- le
+    deinit vide la copie de travail et desenregistre le sous-module, mais
+    laisse le gitdir enregistre -- et il ne se voit PAS dans
+    `git submodule status`, qui signale alors le sous-module par une ligne
+    prefixee par '-' ("non initialise").
+
+    C'est l'etat que le seul predicat `git submodule status` manquait, et
+    l'origine mesuree de la divergence dry-run/apply de #21710 : 18
+    worktrees annonces REMOVE au dry-run, refuses a l'apply par
+    "fatal: working trees containing submodules cannot be moved or removed".
+
+    Protocole de mesure (git 2.50.1, etats controles sur un depot jetable,
+    sous-module local ; chaque etat = un worktree distinct) :
+
+    | etat du worktree                            | `git worktree remove` |
+    |---------------------------------------------|-----------------------|
+    | `modules/` absent (jamais initialise)       | accepte               |
+    | `modules/` present                          | refuse                |
+    | apres `deinit --all` (`status` = '-')        | refuse                |
+    | apres `git rm --cached <gitlink>`            | refuse                |
+    | apres deplacement de `modules/`              | accepte               |
+
+    Le discriminant est le repertoire `modules/` du worktree -- ni l'index
+    (le gitlink retire ne change rien) ni le statut affiche.
+    """
+    proc = run_git(wt_path, "rev-parse", "--absolute-git-dir", check=False)
+    if proc.returncode != 0:
+        # Worktree illisible : pas de preuve, on ne REFUSE pas sur un etat
+        # qu'on ne peut pas lire.
+        return False
+    git_dir = proc.stdout.strip()
+    if not git_dir:
+        return False
+    return (Path(git_dir) / "modules").is_dir()
+
+
+def worktree_blocks_removal_for_submodules(wt_path: str) -> bool:
+    """True si `git worktree remove` REFUSERA ce worktree (sous-modules).
+
+    Union des deux etats que git refuse, que `git submodule status` ne
+    confond pas :
+
+    - sous-module initialise (popule) : `git submodule status` le montre
+      sans prefixe '-' ;
+    - sous-module ENREGISTRE mais deinitialise : `git submodule status` le
+      montre avec un prefixe '-', mais le gitdir reste enregistre dans le
+      repertoire admin du worktree -- et git refuse quand meme le retrait.
+
+    Le predicat doit couvrir les DEUX : annoncer REMOVE ce que git refuse
+    produit un FAILED a chaque passe --apply et un rapport qui ment sur ce
+    qui a quitte le disque (#14619 point 4, #21710).
+    """
+    return (worktree_has_initialized_submodules(wt_path)
+            or worktree_has_registered_submodules(wt_path))
 
 
 def is_source_dirty(path: str) -> bool:
@@ -618,6 +760,168 @@ def recent_activity_age_hours(wt_path: str,
     if not candidates:
         return float("inf")
     return (now - max(candidates)) / 3600.0
+
+
+# --- Protocole v1.3 : verrous `git worktree lock` (Maintenance #113, dae338b) ---
+#
+# Deux classes de verrous, discriminees par la FORME de la raison lue au
+# porcelain (`locked <raison>`) :
+#
+# - **lock d'agent** : raison de la forme `claude agent agent-<hex> (pid N)`.
+#   Pose par le harnais d'un agent dont la session est morte ; le pid N est
+#   celui du processclaude au moment du lock. Si ce pid a disparu ET que le
+#   worktree est REMOVE-ready par tous les autres criteres, le verrou est un
+#   cadenas sur une porte ouverte : l'apply execute `git worktree unlock`
+#   puis `git worktree remove` -- JAMAIS `remove -f -f` (contourner le
+#   verrou par la force est interdit par le protocole ; on l'annule
+#   nommement apres avoir prouve la mort du pid).
+# - **opt-out de lane** : toute autre raison (libre). Verrouillage humain
+#   ou inter-lane, honore INDEFINIMENT : jamais deverrouille, et la
+#   presence seule du verrou fait REFUSER le retrait.
+#
+# Fail-safe dans les deux sens : une raison incomprise est un opt-out (on
+# ne deverrouille jamais ce qu'on n'a pas classifie), et un pid
+# indeterminable est un pid vivant (on ne deverrouille jamais sur une
+# mesure impossible).
+
+AGENT_LOCK_RE = re.compile(r"claude agent \S+ \(pid (\d+)\)")
+
+
+def classify_worktree_lock(reason: Optional[str]) -> tuple[Optional[str], Optional[int]]:
+    """Classe la raison d'un verrou porcelain en (classe, pid).
+
+    Retourne ("agent", pid) pour un lock d'agent reconnu a sa **forme
+    pure** (`fullmatch` : `claude agent <nom> (pid N)` et rien d'autre),
+    ("optout", None) pour toute autre raison non vide, et
+    ("unclassified", None) pour un verrou REEL dont la raison est vide ou
+    blanche (`git worktree lock` sans `--reason` : l'invocation par
+    defaut). (None, None) uniquement quand il n'y a pas de verrou du tout
+    (raison None).
+
+    Deux fail-safes distincts, tous deux mesures en revue (F1/F2, Hermes
+    du 2026-10-20 sur #21503) :
+
+    - **F1 -- forme pure exigee** : `search()` laissait passer une raison
+      humaine qui *cite* la forme agent, par exemple
+      `'claude agent agent-7f3a11 (pid 999999) -- NE PAS TOUCHER'`
+      (`git worktree lock --reason` ecrase la raison precedente, donc
+      completer une raison d'agent est le geste naturel d'un humain qui
+      garde la tracabilite du pid). Un tel lock etait classe `agent` et
+      pouvait etre deverrouille : une garde humaine honoree comme un
+      cadavre. `fullmatch` rend `optout` des qu'autre chose entoure la
+      forme -- incompris = opt-out, jamais deverrouille.
+    - **F2 -- verrou nu non confondu avec l'absence de verrou** : rendre
+      `(None, None)` pour une raison vide faisait sortir la politique en
+      REMOVE, puis `git worktree remove` echouait (`fatal: cannot remove a
+      locked working tree`) -- exactement la classe de mensonge corrigee
+      en #14693. Une raison vide est une raison qu'on ne comprend pas,
+      pas une absence de verrou.
+    """
+    if reason is None:
+        return (None, None)
+    stripped = reason.strip()
+    if not stripped:
+        return ("unclassified", None)
+    m = AGENT_LOCK_RE.fullmatch(stripped)
+    if m:
+        return ("agent", int(m.group(1)))
+    return ("optout", None)
+
+
+def pid_is_alive(pid: int) -> bool:
+    """Le pid est-il vivant ? Fail-safe : indeterminable = vivant.
+
+    Sous Windows, `tasklist /FI "PID eq N" /FO CSV /NH` rend une ligne par
+    processus trouve ; un pid mort rend la banniere "INFO: no tasks".
+    La reponse se lit par COLONNE (`"Image","PID","Session","#","Mem"`), en
+    comparant le champ PID : un test de sous-chaine sur le CSV entier lit
+    vivant un pid qui n'apparait que dans une AUTRE colonne (une memoire en
+    K, un numero de session), donc sur la ligne d'un autre processus. Sous
+    POSIX, `os.kill(pid, 0)` leve ProcessLookupError
+    si mort. PermissionError (processus d'un autre utilisateur sous POSIX) et
+    tout echec d'execution comptent VIVANT : mieux vaut un worktree
+    verrouille un cycle de trop qu'un deverrouillage sur une mesure
+    impossible.
+    """
+    if os.name == "nt":
+        try:
+            out = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=10,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return True
+        if out.returncode != 0:
+            return True
+        wanted = str(pid)
+        for row in csv.reader(out.stdout.splitlines()):
+            if len(row) > 1 and row[1].strip() == wanted:
+                return True
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return True
+    return True
+
+
+def enforce_lock_policy(status: "WorktreeStatus", locked_reason: Optional[str]) -> "WorktreeStatus":
+    """Applique la politique v1.3 sur un statut diagnostique.
+
+    Renseigne d'abord les champs de visibilite (locked_reason, lock_class,
+    lock_pid) sur TOUT statut verrouille -- un REFUSE pour lock porte sa
+    raison dans le rapport. Puis, decision :
+
+    - pas de verrou : statut intact, rien a faire ;
+    - decision != REMOVE : decision inchangee (un verrou ne cree jamais un
+      REMOVE ; il n'ajoute qu'un REFUSE sur un statut qui aurait ete
+      retirable) ;
+    - opt-out : REFUSE "lane_optout_lock", honore indefiniment ;
+    - verrou non classifie (raison vide) : REFUSE "unclassified_lock" --
+      `git worktree lock` sans `--reason` est l'invocation par defaut, et
+      une raison vide est une raison qu'on ne comprend pas (F2 de la revue
+      #21503) ;
+    - agent + pid vivant : REFUSE "live_agent_lock:<pid>" ;
+    - agent + pid mort : le statut reste REMOVE et porte
+      dead_lock_unlocked=True -- l'apply deverrouillera puis retirera.
+
+    Le champ `refusal_reason` n'est ecrase que si le statut n'en portait
+    pas deja un : un worktree sale ET verrouille refuse sur sa premiere
+    cause, le lock est cite dans les champs de visibilite.
+    """
+    status.locked_reason = locked_reason
+    if locked_reason is None:
+        return status
+    status.lock_class, status.lock_pid = classify_worktree_lock(locked_reason)
+    if status.decision != "REMOVE":
+        return status
+    if status.lock_class == "unclassified":
+        status.decision = "REFUSE"
+        if not status.refusal_reason:
+            status.refusal_reason = "unclassified_lock"
+        return status
+    if status.lock_class == "optout":
+        status.decision = "REFUSE"
+        if not status.refusal_reason:
+            status.refusal_reason = "lane_optout_lock"
+        return status
+    # lock_class == "agent" (classify ne rend "agent" que pour une raison matchee)
+    if pid_is_alive(status.lock_pid):
+        status.decision = "REFUSE"
+        if not status.refusal_reason:
+            status.refusal_reason = f"live_agent_lock:{status.lock_pid}"
+        return status
+    status.dead_lock_unlocked = True
+    return status
 
 
 def same_worktree_path(a: str, b: str) -> bool:
@@ -772,10 +1076,13 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
     # Sous-modules : `git worktree remove` les refuse categoriquement
     # ("working trees containing submodules cannot be moved or removed"),
     # meme avec --force sur certains etats. #14619 : l'organe ne doit pas
-    # annoncer REMOVE ce que git interdit par construction. Seuls les
-    # sous-modules INITIALISÉS comptent (cf has_initialized_submodule).
-    subm_proc = run_git(wt_path, "submodule", "status", check=False)
-    has_submodules = has_initialized_submodule(subm_proc.stdout)
+    # annoncer REMOVE ce que git interdit par construction. Le predicat
+    # couvre les DEUX etats que git refuse : le sous-module initialise
+    # (popule) ET le sous-module ENREGISTRE mais deinitialise -- ce dernier
+    # etant invisible dans `git submodule status` (ligne prefixee par '-'),
+    # et a l'origine de la divergence dry-run/apply mesuree sur #21710
+    # (18 worktrees annonces REMOVE, refuses a l'apply).
+    has_submodules = worktree_blocks_removal_for_submodules(wt_path)
 
     # Enregistrement mort (#14195) : le checkout a disparu du disque alors
     # que `.git/worktrees/<nom>` subsiste. Cas mesure le 2026-09-05 : 26
@@ -859,6 +1166,10 @@ class PrResolution:
         self._entries: dict = {}
         self._cache_dirty = False
         self._index: Optional[dict] = None
+        # #21753 : pose par main() quand la sonde d'identite gh echoue.
+        # Non-None => mode degrade : le cache disque (git-independant)
+        # repond encore, tout etage gh est saute.
+        self.unavailable_reason: Optional[str] = None
         self.stats = {
             "cache_hits": 0,
             "listing_calls": 0,
@@ -966,6 +1277,11 @@ class PrResolution:
         if cached is not None:
             self.stats["cache_hits"] += 1
             return cached
+        if self.unavailable_reason is not None:
+            # #21753 mode degrade : aucun etage gh n'est tente. Le cache
+            # disque reste lu (il ne depend pas de gh), le reste rend
+            # None -- le fail-CLOSED downstream produit no_gh_unverifiable.
+            return None
         index = self._build_index()
         if branch in index:
             row = index[branch]
@@ -1308,7 +1624,8 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
 
 def diagnose_worktree(wt_path: str, current_path: str,
                       head_sha: Optional[str] = None,
-                      activity_window_h: float = 6.0) -> WorktreeStatus:
+                      activity_window_h: float = 6.0,
+                      gh_unavailable_reason: Optional[str] = None) -> WorktreeStatus:
     """Diagnostic complet d'un worktree.
 
     `head_sha` (fourni par `list_worktrees`, porcelain) sert uniquement a
@@ -1317,6 +1634,13 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
     `activity_window_h` : fenetre de la garde « agent vivant » (#18494),
     appliquee au retrait par contenu deja integre (predicat content_on_main).
+
+    `gh_unavailable_reason` (#21753) : raison de degradation posee par
+    main() quand la sonde d'identite gh echoue. Non-None => aucun appel gh
+    n'est tente depuis ce diagnostic : la resolution PR rend None (le
+    singleton court-circuite aussi), les predicats git-only (ascendance,
+    patch-id) decident seuls, et le refus conservateur terminal se nomme
+    `no_gh_unverifiable` -- jamais confondu avec « pas de PR ».
     """
     info = get_worktree_info(wt_path, current_path)
 
@@ -1368,6 +1692,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
     if info.get("has_submodules"):
         return WorktreeStatus(
             path=wt_path,
+            has_submodules=True,
             branch=info["branch"],
             is_current=False,
             pr_state=None,
@@ -1487,17 +1812,21 @@ def diagnose_worktree(wt_path: str, current_path: str,
         )
 
     # Resolution PR
+    # #21753 : en mode degrade, aucune recherche n'est tentée -- le
+    # singleton court-circuite aussi (main() lui a pose la raison), ce
+    # garde evite l'appel depuis tout diagnose direct.
     pr = None
     if info["branch"]:
-        pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
-        if pr is None:
-            # #17771 predicat 1 : la branche locale porte un nom different
-            # de la tete de PR. On resout la PR par la branche distante qui
-            # porte exactement HEAD (upstream explicite, puis tip exact
-            # origin/*). Pas de PR de ce cote non plus -> on continue.
-            remote_head = remote_head_for_head(wt_path, info["branch"], head_sha)
-            if remote_head:
-                pr = lookup_pr_for_branch(remote_head, head_sha=head_sha)
+        if gh_unavailable_reason is None:
+            pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
+            if pr is None:
+                # #17771 predicat 1 : la branche locale porte un nom different
+                # de la tete de PR. On resout la PR par la branche distante qui
+                # porte exactement HEAD (upstream explicite, puis tip exact
+                # origin/*). Pas de PR de ce cote non plus -> on continue.
+                remote_head = remote_head_for_head(wt_path, info["branch"], head_sha)
+                if remote_head:
+                    pr = lookup_pr_for_branch(remote_head, head_sha=head_sha)
     elif detached_head_is_on_main(wt_path):
         # Extraction de main (demeure d'organe, lecture de review) : aucune
         # PR ne la porte, le critere « PR MERGED » ne s'y applique pas.
@@ -1519,7 +1848,13 @@ def diagnose_worktree(wt_path: str, current_path: str,
             lane_owner=info.get("lane_owner"),
         )
     else:
-        pr = lookup_pr_for_detached_head(wt_path)
+        # #21753 : en mode degrade, la resolution par sujet de HEAD est
+        # gh par construction (voie 1 = pr view, voie 2 = pr list) -- on
+        # ne la tente meme pas.
+        if gh_unavailable_reason is None:
+            pr = lookup_pr_for_detached_head(wt_path)
+        else:
+            pr = None
 
     pr_state = pr.get("state") if pr else None
     pr_number = pr.get("number") if pr else None
@@ -1704,6 +2039,13 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
     # Pas de PR trouvee : HEAD detaché sans correspondance, ou branche
     # non pushée qu'on ne peut pas relier. REFUSE conservatrice.
+    # #21753 : en mode degrade, ce refus ne dit pas « pas de PR » (non
+    # mesure) mais « non verifiable faute de gh » -- la classe
+    # no_gh_unverifiable est aggree comme les autres au breakdown.
+    if gh_unavailable_reason is not None:
+        final_reason = "no_gh_unverifiable"
+    else:
+        final_reason = "no_pr_match" if info["branch"] else "detached_no_match"
     return WorktreeStatus(
         path=wt_path,
         branch=info["branch"],
@@ -1715,7 +2057,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
         has_source_dirty=info["has_source_dirty"],
         untracked_paths=info["untracked"],
         decision="REFUSE",
-        refusal_reason="no_pr_match" if info["branch"] else "detached_no_match",
+        refusal_reason=final_reason,
         has_submodules=info["has_submodules"],
         blocking_untracked=info.get("blocking_untracked", []),
         ignored_extra=info.get("ignored_extra", []),
@@ -1724,7 +2066,12 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
 
 def list_worktrees() -> list[dict]:
-    """Retourne les worktrees sous forme [{path, head_sha}, ...]."""
+    """Retourne les worktrees sous forme [{path, head_sha, locked_reason?}, ...].
+
+    v1.3 : la ligne porcelain `locked <raison>` est captee telle quelle dans
+    `locked_reason` (chaine vide pour un verrou sans raison). La
+    classification agent/opt-out se fait dans `enforce_lock_policy`, pas ici.
+    """
     proc = run_git(current_repo_root(), "worktree", "list", "--porcelain", check=False)
     if proc.returncode != 0:
         raise RuntimeError(f"git worktree list failed: {proc.stderr.strip()}")
@@ -1739,6 +2086,8 @@ def list_worktrees() -> list[dict]:
             cur["head_sha"] = line[len("HEAD "):].strip()
         elif line.startswith("branch "):
             cur["branch"] = line[len("branch "):].strip()
+        elif line.startswith("locked"):
+            cur["locked_reason"] = line[len("locked"):].strip()
     if cur:
         out.append(cur)
     return out
@@ -1845,7 +2194,28 @@ def apply_removal(wt: WorktreeStatus) -> tuple[bool, str]:
     ne peut pas executer. Pour tout autre worktree, l'absence de `--force`
     reste le garde-fou : c'est git qui refuse en dernier ressort si la
     classification s'est trompee.
+
+    Effet de bord assume d'un `unlock` reussi suivi d'un `remove` echoue :
+    le worktree survit deverrouille jusqu'au balayage suivant. On ne le
+    re-verrouille pas, parce que le verrou qu'on vient de lever appartenait
+    a un agent au pid MORT (`dead_lock_unlocked` n'est jamais vrai
+    autrement) -- aucun processus vivant ne perd sa protection -- et parce
+    que l'etat laisse est exactement l'entree du retrait legitime : la
+    classification suivante le relit REMOVE-ready deverrouille et rejoue le
+    `remove`. Re-verrouiller ajouterait un second geste dont l'echec
+    laisserait de toute facon le meme etat final.
     """
+    if wt.dead_lock_unlocked:
+        # v1.3 : lock d'agent a pid mort sur un worktree REMOVE-ready. Le
+        # protocole exige l'unlock NOMME -- jamais `remove -f -f` pour
+        # forcer le passage. Un unlock qui echoue arrete AVANT le remove :
+        # git refuserait de toute facon, autant le dire avec son stderr.
+        unlock = run_git(
+            _repo_root_for_worktree(wt.path),
+            "worktree", "unlock", wt.path, check=False,
+        )
+        if unlock.returncode != 0:
+            return False, unlock.stderr.strip()
     args = ["worktree", "remove"]
     if wt.dead_registration:
         args.append("--force")
@@ -1860,6 +2230,7 @@ def render_text(
     statuses: list[WorktreeStatus],
     dry_run: bool,
     apply_results: Optional[list[dict]] = None,
+    gh_unavailable_reason: Optional[str] = None,
 ) -> str:
     """Rendu texte canonique (lisible humain) (#14476).
 
@@ -1869,6 +2240,10 @@ def render_text(
     Si `git worktree remove` a echoue (worktree sale par exemple), on
     imprime `FAILED` avec le stderr -- c'est lisible, factuel, et JAMAIS
     mensonger sur ce qui a effectivement quitte le disque.
+
+    `gh_unavailable_reason` (#21753) : quand la sonde d'identite gh a
+    echoue, la premiere ligne est une banniere explicite -- une passe
+    degradee ne doit JAMAIS se lire comme un constat de PRs ouvertes.
     """
     # Indexation par path pour une reconciliation O(1)
     applied_by_path = {}
@@ -1877,6 +2252,16 @@ def render_text(
             applied_by_path[r["path"]] = r
 
     lines: list[str] = []
+    if gh_unavailable_reason is not None:
+        degraded_n = sum(
+            1 for s in statuses
+            if s.refusal_reason == "no_gh_unverifiable"
+        )
+        lines.append(
+            f"gh unavailable on this seat — PR lookups skipped, "
+            f"{degraded_n} worktrees in degraded mode "
+            f"({gh_unavailable_reason})"
+        )
     counts = {"REMOVE": 0, "REFUSE": 0, "SKIP_CURRENT": 0, "FAILED": 0}
     for s in statuses:
         counts[s.decision] = counts.get(s.decision, 0) + 1
@@ -1901,10 +2286,16 @@ def render_text(
                 # confond lit un squash-merge comme une ascendance.
                 leg = s.content_on_main_by or "?"
                 pr_part = f"content_on_main({leg})"
+            # v1.3 : suffixe de visibilite quand le retrait passera par un
+            # deverrouillage (lock d'agent a pid mort).
+            lock_part = (
+                f"  dead_lock_unlocked(pid={s.lock_pid})"
+                if s.dead_lock_unlocked else ""
+            )
             if dry_run:
                 lines.append(
                     f"WOULD REMOVE {s.path}  {branch_part}  {pr_part}"
-                    f"{ignored_part}".rstrip()
+                    f"{ignored_part}{lock_part}".rstrip()
                 )
             else:
                 # Mode --apply : vraie realite du disque.
@@ -1912,7 +2303,7 @@ def render_text(
                 if result is None or result.get("applied"):
                     lines.append(
                         f"REMOVED     {s.path}  {branch_part}  {pr_part}"
-                        f"{ignored_part}".rstrip()
+                        f"{ignored_part}{lock_part}".rstrip()
                     )
                 else:
                     # `git worktree remove` a echoue : on dit FAILED + cause.
@@ -2115,13 +2506,25 @@ def main() -> int:
         print(f"ERROR: {e}", file=sys.stderr)
         return 2
 
+    # #21753 : sonde d'identite gh AVANT toute resolution PR. Locale et
+    # gratuite (~50 ms, pas de quota). Echec => mode degrade declare :
+    # banniere en tete du rapport, `degraded: true` dans le JSON, refus
+    # terminaux nommes no_gh_unverifiable -- la passe ne se tait jamais.
+    gh_unavailable_reason = probe_gh_availability()
+    if gh_unavailable_reason is not None:
+        get_pr_resolution().unavailable_reason = gh_unavailable_reason
+
     statuses: list[WorktreeStatus] = []
     for wt in worktrees:
         try:
             statuses.append(
-                diagnose_worktree(
-                    wt["path"], current_path, head_sha=wt.get("head_sha"),
-                    activity_window_h=args.activity_window_h,
+enforce_lock_policy(
+                    diagnose_worktree(
+                        wt["path"], current_path, head_sha=wt.get("head_sha"),
+                        activity_window_h=args.activity_window_h,
+                        gh_unavailable_reason=gh_unavailable_reason,
+                    ),
+                    wt.get("locked_reason"),
                 )
             )
         except RuntimeError as e:
@@ -2174,7 +2577,16 @@ def main() -> int:
                 1 for s in statuses if s.decision == "SKIP_CURRENT"
             ),
             "dry_run": not args.apply,
+            "degraded": gh_unavailable_reason is not None,
+            "gh_unavailable_reason": gh_unavailable_reason,
             "api_stats": get_pr_resolution().stats,
+            # v1.3 : chemins des worktrees REMOVE-ready dont le lock
+            # d'agent a ete reconnu mort (l'apply les deverrouille puis
+            # les retire). Toujours present, vide si rien -- un champ
+            # absent se lirait "non mesure".
+            "dead_lock_unlocked": [
+                s.path for s in statuses if s.dead_lock_unlocked
+            ],
             "statuses": [s.to_dict() for s in statuses],
         }
         if args.apply:
@@ -2185,11 +2597,14 @@ def main() -> int:
     else:
         # Texte
         if args.apply:
-            print(render_text(statuses, dry_run=False, apply_results=apply_results))
+            print(render_text(statuses, dry_run=False,
+                              apply_results=apply_results,
+                              gh_unavailable_reason=gh_unavailable_reason))
             print()
             print(f"applied={removal_count}  errors={error_count}")
         else:
-            print(render_text(statuses, dry_run=True))
+            print(render_text(statuses, dry_run=True,
+                              gh_unavailable_reason=gh_unavailable_reason))
         # Budget API de la passe (#15369) : la mesure est un livrable, pas
         # un side-effect silencieux.
         st = get_pr_resolution().stats
