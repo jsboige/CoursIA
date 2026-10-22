@@ -9,7 +9,11 @@ last ``--window-days``? If not, which recette issue goes first? The tests pin:
   * the weekly window (a visit on ANY recette issue counts as the turn);
   * the service order (held by another lane last, ball first, never served next,
     then oldest fleet visit);
-  * the rc contract (0 OK/NONE, 1 DUE, 2 organ unreachable -> fail-open).
+  * the ball with the validator (#21279): when the fleet spoke last on EVERY
+    recette issue, the organ does not name an issue to serve -- it reports the
+    wait (rc 0, ``WAITING-VALIDATOR #N``) instead of pushing silent validators;
+  * the rc contract (0 OK/NONE/WAITING-VALIDATOR, 1 DUE, 2 organ unreachable ->
+    fail-open).
 
 The live ``gh`` path is replayed in the PR body; these tests never call ``gh``.
 Run: python -m pytest scripts/tests/test_recette_due.py
@@ -126,7 +130,9 @@ def test_ok_when_any_recette_issue_visited_this_week():
 
 
 def test_due_when_last_visit_older_than_window():
-    res = rd.decide(_states(_issue(1, [_claim(LANE, "2026-09-25T12:00:00Z")])), 7)
+    # la balle est chez la flotte (le validateur a repondu en dernier) -> le tour est du
+    res = rd.decide(_states(_issue(1, [_claim(LANE, "2026-09-25T12:00:00Z"),
+                                       _c("fmomo-ai", "2026-09-26T12:00:00Z")])), 7)
     assert res["verdict"] == "DUE" and res["issue"] == 1
 
 
@@ -139,8 +145,8 @@ def test_due_order_ball_first_then_never_served():
 
 
 def test_due_order_oldest_fleet_visit_last_criterion():
-    a = _issue(1, [_claim(LANE, "2026-09-20T12:00:00Z")])
-    b = _issue(2, [_claim(LANE, "2026-09-10T12:00:00Z")])
+    a = _issue(1, [_claim(LANE, "2026-09-20T12:00:00Z"), _c("fmomo-ai", "2026-09-21T12:00:00Z")])
+    b = _issue(2, [_claim(LANE, "2026-09-10T12:00:00Z"), _c("fmomo-ai", "2026-09-11T12:00:00Z")])
     assert rd.decide(_states(a, b), 7)["issue"] == 2
 
 
@@ -149,6 +155,54 @@ def test_held_issue_goes_last():
     free = _issue(2, [])
     res = rd.decide(_states(held, free), 7)
     assert res["issue"] == 2
+
+
+# --- balle chez le validateur (#21279) ----------------------------------------------
+
+def test_waiting_validator_when_fleet_spoke_last_on_every_issue():
+    fleet_last = [
+        _issue(1, [_c("jsboige", "2026-09-20T10:00:00Z")]),
+        _issue(2, [_c("jsboige", "2026-09-21T10:00:00Z")]),
+        _issue(3, [_c("jsboige", "2026-09-22T10:00:00Z")]),
+    ]
+    res = rd.decide(_states(*fleet_last), 7)
+    assert res["verdict"] == "WAITING-VALIDATOR"
+    # l'attente la plus longue : le dernier message de flotte le plus ancien
+    assert res["issue"] == 1
+
+
+def test_waiting_validator_wins_over_a_due_window():
+    # le tour de la lane est echu, mais la balle est chez le validateur muet
+    res = rd.decide(_states(_issue(1, [_claim(LANE, "2026-09-25T12:00:00Z")])), 7)
+    assert res["verdict"] == "WAITING-VALIDATOR"
+
+
+def test_never_served_issue_is_due_even_without_any_comment():
+    # ni flotte ni validateur n'ont parle : la balle est libre, la lane sert
+    res = rd.decide(_states(_issue(1, [])), 7)
+    assert res["verdict"] == "DUE" and res["issue"] == 1
+
+
+def test_due_kept_when_validator_spoke_last_on_one_issue():
+    fleet_last = [
+        _issue(1, [_c("jsboige", "2026-09-20T10:00:00Z")]),
+        _issue(2, [_c("jsboige", "2026-09-21T10:00:00Z")]),
+        _issue(3, [_c("jsboige", "2026-09-22T10:00:00Z"), _c("fmomo-ai", "2026-09-23T10:00:00Z")]),
+    ]
+    res = rd.decide(_states(*fleet_last), 7)
+    assert res["verdict"] == "DUE" and res["issue"] == 3
+
+
+def test_waiting_since_is_the_last_fleet_comment():
+    st = rd.assess_issue(_issue(1, [_c("jsboige", "2026-09-20T10:00:00Z")]), LANE, NOW)
+    assert st["waiting_since"] == "2026-09-20T10:00:00Z"
+
+
+def test_waiting_since_falls_back_to_creation_when_fleet_never_spoke():
+    payload = _issue(1, [_c("fmomo-ai", "2026-09-20T10:00:00Z")])
+    payload["createdAt"] = "2026-09-01T08:00:00Z"
+    st = rd.assess_issue(payload, LANE, NOW)
+    assert st["waiting_since"] == "2026-09-01T08:00:00Z"
 
 
 # --- run / main ----------------------------------------------------------------------
@@ -170,3 +224,16 @@ def test_main_rc_contract(monkeypatch, capsys):
     monkeypatch.setattr(rd, "run", boom)
     assert rd.main(["--lane", LANE]) == 2
     assert "UNKNOWN" in capsys.readouterr().out
+
+
+def test_main_rc_zero_and_wait_line_while_validator_is_silent(monkeypatch, capsys):
+    payload = {"verdict": "WAITING-VALIDATOR", "issue": 7, "reason": "r",
+               "issues": [{"number": 7, "title": "recette 7", "validator": "fmomo-ai",
+                           "waiting_since": "2026-10-01T10:00:00Z",
+                           "lane_visit_age_days": None, "ball_in_fleet_court": False,
+                           "held_by": []}]}
+    monkeypatch.setattr(rd, "run", lambda *a, **k: payload)
+    assert rd.main(["--lane", LANE]) == 0
+    out = capsys.readouterr().out
+    assert "WAITING-VALIDATOR #7 depuis 2026-10-01T10:00:00Z" in out
+    assert "DUE" not in out  # le verdict ne nomme pas d'issue a servir
