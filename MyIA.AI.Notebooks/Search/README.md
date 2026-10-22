@@ -170,6 +170,14 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 | 11 | [App-18b-HyperparameterTuning-Python](Applications/Hybrid/App-18b-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
 | 12 | [App-22-AlgorithmSelection-Python](Applications/Hybrid/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux, 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité + Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 
+### Applications de recherche d'états (`Applications/Search/`)
+
+Ces applications mettent A\* au travail sur un espace d'états dont la structure se démontre : le jeu de taquin, dont la moitié des configurations est **inatteignable**, et dont la distance au but sert de vérité terrain pour juger les heuristiques.
+
+| # | Notebook | Durée | Contenu | Source |
+|---|----------|-------|---------|--------|
+| 1 | [App-34-15Puzzle-Admissible-Astar-Python](Applications/Search/App-34-15Puzzle-Admissible-Astar-Python.ipynb) | ~50 min | Jeu de taquin 4×4 : espace d'états et critère de parité, A\* face à la recherche gloutonne, Manhattan face aux conflits linéaires. Admissibilité vérifiée contre une table de vérité obtenue par parcours en largeur ; nœuds développés, optimalité et sous-optimalité mesurés sur des instances à distance exacte connue | Nouveau |
+
 ---
 
 ## Navigation entre sous-séries
