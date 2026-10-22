@@ -550,10 +550,9 @@ def main() -> int:
     # hors trigger push, ou série non couverte par un CSV).
     if args.report_out_of_scope:
         notebooks_root = args.notebooks_root or (repo_root / "MyIA.AI.Notebooks")
-        oos = find_out_of_scope_notebooks(notebooks_root, known_notebooks)
-        # Normalisation : les chemins retournés sont relatifs à
-        # ``notebooks_root``, mais les consommateurs (dashboard, audit)
-        # s'attendent à des chemins relatifs au repo root. On préfixe.
+        # Normalisation : les chemins scannés sont relatifs à ``notebooks_root``,
+        # mais les consommateurs (dashboard, audit) s'attendent à des chemins
+        # relatifs au repo root. On préfixe.
         if notebooks_root.is_absolute():
             try:
                 rel_root = notebooks_root.relative_to(repo_root).as_posix()
@@ -561,7 +560,21 @@ def main() -> int:
                 rel_root = None
         else:
             rel_root = notebooks_root.as_posix()
-        if rel_root and rel_root not in (".", ""):
+        # Bug #4208 (mesuré 2026-10-22) : ``find_out_of_scope_notebooks``
+        # compare ses chemins (relatifs à ``notebooks_root``) contre
+        # ``known_notebooks`` (relatifs au repo root). Sans alignement, la
+        # comparaison ne matche jamais et TOUT pivot FR était rapporté
+        # MISSING_FROM_CSV — 1591/1591 sur main@5d177839f90b, chiffre
+        # structurellement inutilisable. On retire le préfixe de ``known``
+        # AVANT l'appel (le docstring de la fonction délègue déjà cette mise
+        # en correspondance au caller).
+        prefix = f"{rel_root}/" if rel_root and rel_root not in (".", "") else ""
+        known_rel = {
+            p[len(prefix):] if prefix and p.startswith(prefix) else p
+            for p in known_notebooks
+        }
+        oos = find_out_of_scope_notebooks(notebooks_root, known_rel)
+        if prefix:
             for entry in oos:
                 entry["notebook"] = f"{rel_root}/{entry['notebook']}"
         report["out_of_scope"] = oos
