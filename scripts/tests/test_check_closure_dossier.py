@@ -717,3 +717,104 @@ def test_delivering_lanes_refuse_le_point_final_de_phrase():
     assert "myia-po-2023:CoursIA-2" in lanes
     assert "myia-po-2024:CoursIA" in lanes
     assert not any(ln.endswith(".") for ln in lanes), sorted(lanes)
+
+
+# --- #21818 : l'auteur d'un dossier lu en GraphQL, compare en orthographe REST
+
+
+def test_normalisation_rend_une_app_graphql_en_orthographe_rest():
+    """GraphQL rend le login d'un acteur de type `Bot` SANS le suffixe
+    `[bot]` ; REST le rend AVEC. La normalisation unique remet les deux
+    surfaces d'accord sur la forme canonique."""
+    gh = ccd.gh_identity
+    assert gh.normalize_author_login(
+        {"login": "coursia-lane-po-2026", "__typename": "Bot"}
+    ) == "coursia-lane-po-2026[bot]"
+    assert gh.normalize_author_login(
+        {"login": "coursia-lane-po-2026[bot]", "type": "Bot"}
+    ) == "coursia-lane-po-2026[bot]"
+    assert gh.normalize_author_login(
+        {"login": "jsboige", "__typename": "User"}
+    ) == "jsboige"
+    # Un auteur dont le type est inconnu n'est pas un bot : le doute profite
+    # au refus, pas a l'acceptation.
+    assert gh.normalize_author_login({"login": "coursia-lane-po-2026"}) == (
+        "coursia-lane-po-2026")
+    assert gh.author_is_bot({"login": "x"}) is False
+    assert gh.author_is_bot({"login": "x", "__typename": "Bot"}) is True
+    assert gh.author_is_bot({"login": "x", "type": "Bot"}) is True
+    assert gh.author_is_bot({"login": "x", "__typename": "User"}) is False
+
+
+def test_un_compte_utilisateur_homonyme_est_refuse():
+    """Le suffixe n'est reconstruit que si le TYPE de l'acteur est `Bot`.
+    Un compte UTILISATEUR nomme comme le slug de l'App
+    ("coursia-lane-po-2026", sans suffixe) doit donc rester refuse : c'est
+    le controle negatif du correctif."""
+    gh = ccd.gh_identity
+    assert gh.normalize_author_login(
+        {"login": "coursia-lane-po-2026", "__typename": "User"}
+    ) == "coursia-lane-po-2026"
+    assert gh.is_accepted_dossier_author(
+        {"login": "coursia-lane-po-2026", "__typename": "User"}) is False
+    assert gh.is_accepted_dossier_author(
+        {"login": "coursia-lane-po-2026", "__typename": "Bot"}) is True
+    assert gh.is_accepted_dossier_author(
+        {"login": "coursia-lane-po-2026[bot]", "type": "Bot"}) is True
+
+
+def test_comptes_humains_non_regresses():
+    """Non-regression : le login partage reste accepte, un compte humain
+    quelconque reste refuse."""
+    gh = ccd.gh_identity
+    assert gh.is_accepted_dossier_author(
+        {"login": "jsboige", "type": "User"}) is True
+    assert gh.is_accepted_dossier_author(
+        {"login": "quelquun-dautre", "type": "User"}) is False
+    assert gh.is_accepted_dossier_author(
+        {"login": "coursia-lane-po-2099[bot]", "type": "Bot"}) is False
+
+
+def test_le_gate_accepte_un_dossier_signe_par_une_app_lue_en_rest(monkeypatch):
+    """Chemin de lecture reel : `_issue_comments` (REST) normalise l'auteur,
+    et le gate accepte ensuite le dossier signe sous une App de lane."""
+    rows = [{
+        "user": {"login": "coursia-lane-po-2026[bot]", "type": "Bot"},
+        "created_at": "2026-09-20T10:00:00Z",
+        "body": _dossier_body(),
+    }]
+    monkeypatch.setattr(ccd, "gh_json", lambda args: rows)
+    comments = ccd._issue_comments("o/r", 17900)
+    assert comments[0]["author"]["login"] == "coursia-lane-po-2026[bot]"
+    snap = _snapshot(comments=comments)
+    verdict, errors, _ = evaluate(snap)
+    assert verdict == "CLOSE", errors
+    assert errors == [], errors
+
+
+def test_le_gate_refuse_un_compte_utilisateur_homonyme(monkeypatch):
+    """Meme chemin de lecture, mais l'acteur est un `User` : le suffixe n'est
+    PAS reconstruit, donc le dossier est refuse."""
+    rows = [{
+        "user": {"login": "coursia-lane-po-2026", "type": "User"},
+        "created_at": "2026-09-20T10:00:00Z",
+        "body": _dossier_body(),
+    }]
+    monkeypatch.setattr(ccd, "gh_json", lambda args: rows)
+    comments = ccd._issue_comments("o/r", 17900)
+    assert comments[0]["author"]["login"] == "coursia-lane-po-2026"
+    snap = _snapshot(comments=comments)
+    _, errors, _ = evaluate(snap)
+    assert any(
+        "is not an accepted dossier author" in e for e in errors
+    ), errors
+
+
+def test_les_deux_gates_partagent_le_meme_point_de_normalisation():
+    """Les deux gates comparent l'auteur au meme ensemble : une seule
+    definition de la forme canonique, sinon l'un accepterait un dossier que
+    l'autre refuse (la demi-migration dont #17437 dit le risque)."""
+    import check_adjoint_prevalidation as cap
+    assert cap.gh_identity is ccd.gh_identity
+    assert cap.gh_identity.ACCEPTED_DOSSIER_AUTHORS is (
+        ccd.gh_identity.ACCEPTED_DOSSIER_AUTHORS)

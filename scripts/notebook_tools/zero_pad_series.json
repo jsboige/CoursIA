@@ -7,7 +7,7 @@
   "_not_declared": {
     "_why": "Cartographie de la meme mesure, conservee ici pour que personne ne les ajoute 'pour elargir la couverture' : chacune de ces familles fabriquerait aujourd'hui le mur rouge que l'issue interdit. Les declarer demande d'abord de les MIGRER.",
     "unproven_no_leading_zero": [
-      "App -- Search/Applications/Search (4 numeros, tous >= 10 : aucun zero de tete, donc aucune preuve d'adoption)",
+      "App -- Search/Applications/Adversarial (4 numeros, tous >= 10 : aucun zero de tete, donc aucune preuve d'adoption)",
       "MGS -- Search/Part4-Metaheuristics/MGS-vs-mealpy (10, tous >= 10)",
       "Planners -- SymbolicAI/Planners/04-NeuroSymbolic (4, tous >= 10)",
       "SC -- SymbolicAI/SmartContracts/03-Foundry-Testing (3, tous >= 10)",
