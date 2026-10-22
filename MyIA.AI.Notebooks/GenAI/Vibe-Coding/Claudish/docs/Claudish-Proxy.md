@@ -34,7 +34,7 @@ client ────────────────────────�
 | **Wires d'entrée** | Anthropic | Anthropic **et** OpenAI |
 | **Ops** | — | Capture, instruments de trafic, watchdog, drain avant redémarrage, concurrence plafonnée (voir §6 et §10) |
 
-**La dérive fork/upstream, mesurée le 2026-10-21** : la base commune date du 2026-05-09 (v7.1.2). Depuis, le fork a ajouté 626 commits et l'upstream 1 475 (v13.3.0) ; une fusion directe produirait 111 fichiers en conflit, concentrés dans les handlers, les providers et les adaptateurs. Le mainteneur upstream demande des contributions **étroites, une modification par PR**. *Leçon : un fork opérationnel qui accumule du code de production s'éloigne vite de son amont ; isoler le code propre au déploiement (ici sous `fork/`) et remonter tôt les correctifs génériques est ce qui garde la resynchronisation possible.*
+**La dérive fork/upstream, mesurée le 2026-10-21** : la base commune date du 2026-05-09 (v7.1.2). Depuis, le fork a ajouté 626 commits et l'upstream 1 475 (v13.3.0) ; une fusion directe produirait plus d'une centaine de fichiers en conflit, concentrés dans les handlers, les providers et les adaptateurs. Le mainteneur upstream demande des contributions **étroites, une modification par PR**. *Leçon : un fork opérationnel qui accumule du code de production s'éloigne vite de son amont ; isoler le code propre au déploiement (ici sous `fork/`) et remonter tôt les correctifs génériques est ce qui garde la resynchronisation possible.*
 
 ---
 
