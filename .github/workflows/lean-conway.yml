@@ -234,10 +234,11 @@ jobs:
       # Note for the operator: one of the 77 entries carries a Lean-4
       # diagnostic-artifact suffix on the declaration name as reported by
       # `#print axioms` (`Conway.Life.p4_base_exhaustive._native.native_decide.
-      # ax_1_1` + the `U+2020` dagger `✝`); it is matched here by exact
-      # string equality against the env var `ALLOW`, so a Lean-side glyph
-      # sanitization would silently desync the gate. Inventory and
-      # robustness for that one entry are tracked under issue #21899-fu.
+      # ax_1_1` + the `U+2020` dagger `✝`). The comparison against the env
+      # var `ALLOW` normalizes BOTH sides (trailing diagnostic decoration
+      # removed) so a Lean-side glyph change cannot desync the gate; the
+      # allow-list itself stays explicit -- a NEW `native_decide` still
+      # reds the gate. See issue #21947.
       # The 21 new entries, each annotated with the module that introduces it:
       #   Conway.Life.HashlifeCorrectness (2, grain 3a #11303): p4at_witness_k1,
       #     p4at_witness_k2 -- At-variant witnesses of the p4_wf_witness pair,
