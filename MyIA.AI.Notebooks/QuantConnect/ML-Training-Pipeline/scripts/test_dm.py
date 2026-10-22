@@ -10,8 +10,10 @@ from dm_test import (
     DMResult,
     _newey_west_variance,
     _optimal_lag,
+    bonferroni_dm,
     diebold_mariano_test,
     dm_verdict,
+    newey_west_variance,
 )
 
 rng = np.random.default_rng(42)
@@ -180,3 +182,82 @@ class TestDmVerdict:
         e_b = rng.normal(0, 1.0, 200)
         v = dm_verdict(e_a, e_b)
         assert v["verdict"] == "INCONCLUSIVE"
+
+
+class TestTruncationRule:
+    """Freeze the n^(1/3) default lag vs the legacy h-1 rule (#21945)."""
+
+    def test_optimal_lag_exact_values(self):
+        assert _optimal_lag(100) == 4
+        assert _optimal_lag(400) == 7
+        assert _optimal_lag(1000) == 9
+
+    def test_default_lag_diverges_from_legacy_h_minus_one(self):
+        # Seed 21945, n=400 (run_volatility_dm_verdict consumer shape):
+        # default lag 7 vs forced legacy-style lag 4 give measurably
+        # different statistics. Values frozen 2026-10-22; if this breaks,
+        # the truncation rule changed -- update the consumers' divergence
+        # notes in #21945, not just the numbers.
+        rng2 = np.random.default_rng(21945)
+        e_model = rng2.standard_normal(400) * 0.6
+        e_base = rng2.standard_normal(400)
+        r_default = diebold_mariano_test(e_model, e_base, loss_fn="mse")
+        r_legacy_lag = diebold_mariano_test(e_model, e_base, loss_fn="mse", max_lag=4)
+        assert r_default.lag_truncation == 7
+        assert r_legacy_lag.lag_truncation == 4
+        assert r_default.dm_statistic == pytest.approx(-9.237278, abs=1e-4)
+        assert r_legacy_lag.dm_statistic == pytest.approx(-9.350142, abs=1e-4)
+
+
+class TestPublicSurface:
+    """#21945: public newey_west_variance + alias, alternative, bonferroni."""
+
+    def test_public_name_and_alias_are_same_function(self):
+        assert _newey_west_variance is newey_west_variance
+        x = np.random.default_rng(3).standard_normal(50)
+        assert newey_west_variance(x, 3) == _newey_west_variance(x, 3)
+
+    def test_alternative_less_more_powerful_when_model_better(self):
+        rng2 = np.random.default_rng(4)
+        base = rng2.standard_normal(200)
+        model = base * 0.3
+        r_less = diebold_mariano_test(model, base, alternative="less")
+        r_two = diebold_mariano_test(model, base)
+        assert r_less.p_value < 0.05
+        assert r_less.p_value <= r_two.p_value
+
+    def test_alternative_greater(self):
+        rng2 = np.random.default_rng(5)
+        model = rng2.standard_normal(200)
+        base = model * 0.3
+        r = diebold_mariano_test(model, base, alternative="greater")
+        assert r.p_value < 0.05
+
+    def test_alternative_invalid_raises(self):
+        rng2 = np.random.default_rng(6)
+        with pytest.raises(ValueError, match="alternative"):
+            diebold_mariano_test(
+                rng2.standard_normal(20), rng2.standard_normal(20),
+                alternative="better",
+            )
+
+    def test_bonferroni_dm_keys_and_arithmetic(self):
+        rng2 = np.random.default_rng(7)
+        model = rng2.standard_normal(100) * 0.5
+        base = rng2.standard_normal(100)
+        result = bonferroni_dm(model, base, n_tests=3)
+        for key in ("p_value_adjusted", "significant_05_bonferroni", "n_tests",
+                    "dm_stat", "p_value", "dm_statistic", "mean_loss_diff",
+                    "hac_variance", "lag"):
+            assert key in result
+        assert result["n_tests"] == 3
+        assert result["p_value_adjusted"] == pytest.approx(
+            min(result["p_value"] * 3, 1.0)
+        )
+
+    def test_bonferroni_dm_n_capped_at_one(self):
+        rng2 = np.random.default_rng(8)
+        model = rng2.standard_normal(200) * 0.1
+        base = rng2.standard_normal(200) * 2.0
+        result = bonferroni_dm(model, base, n_tests=10_000)
+        assert result["p_value_adjusted"] <= 1.0
