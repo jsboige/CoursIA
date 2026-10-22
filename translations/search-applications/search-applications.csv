@@ -21256,7 +21256,7 @@ Search/Part3-Cas-pratiques/
 ├── tileset_cave.json — tileset cave (plus complexe)
 └── App-19-ProceduralGeneration-WFC.ipynb — ce fichier
 ```",,,,,,,,2d01c6f28a32a068,,,,,,,,
-MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb,a6f90f7d,markdown,fr,6e8379f034d54fad,"## Hommage a un travail etudiant
+MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb,92351c23,markdown,fr,6e8379f034d54fad,"## Hommage a un travail etudiant
 
 Ce notebook prolonge le projet **Timothe-Le-Bronec-H2_WFC_CPSAT** du cours EPITA SCIA *Programmation par Contraintes* 2026, realise en solo par **Timothe Le Bronec** ([Timothe Le Bronec](https://github.com/thorgal27)) : [repertoire source](https://github.com/jsboigeEpita/2026-Epita-Programmation-par-Contraintes/tree/main/Timothe-Le-Bronec-H2_WFC_CPSAT), commit de livraison `08dfe96` (login `thorgal27` verifie firsthand), cherry-pick `621f1cc` (par `jsboigeEpita`), licence **MIT** (LICENSE globale du depot parent `jsboigeEpita/2026-Epita-Programmation-par-Contraintes`, verifiee 2026-09-17 ; pas de LICENSE locale dans le sous-projet, statut herite du parent).
 
