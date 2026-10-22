@@ -80,8 +80,10 @@ quand il reconstruit un code depuis une table de longueurs :
 `Compression-01b-Kraft-McMillan-Lean.ipynb` (kernel `lean4-wsl`) importe les
 trois modules **réels** du lake et les fait travailler : ancres `#eval` de
 Kraft (`sf4`, `full k`), round-trip de décodage, construction `canon` /
-`mass`, `#print axioms` des quatre théorèmes piliers (propext,
-Classical.choice, Quot.sound — aucun `sorryAx`, aucun `native_decide`).
+`mass`, `#print axioms` des quatre théorèmes piliers : `mcmillan_converse`,
+`canon_spec` et `kraft_le_one` dépendent de `propext`, `Classical.choice` et
+`Quot.sound` ; `decode_encode` de `propext` et `Quot.sound` seulement — aucun
+`sorryAx`, aucun `native_decide`.
 Placé dans `Compression_lean/` car le kernel détecte le `lakefile.lean`
 ancêtre : son répertoire est son environnement. Exécution depuis la racine
 du lake (`papermill -k lean4-wsl`).
