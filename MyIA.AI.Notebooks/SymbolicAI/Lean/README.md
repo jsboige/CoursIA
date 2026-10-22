@@ -17,7 +17,7 @@ Six visualisations extraites des notebooks illustrent l'arc de la série : de l'
 
 ### Assistance aux preuves et vérification formelle
 
-L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-07b-Examples-Python.ipynb)), puis [Lean-11b](Lean-11b-TorchLean-Python.ipynb) **borne numériquement** la robustesse d'un petit MLP via IBP et CROWN en Python ; [Lean-11](Lean-11-TorchLean.ipynb) présente la formalisation Lean **illustrative** de TorchLean (architecture cible, types locaux, code `#eval`-able, preuves `#sorry` signalées) — la chaîne « implémentation numérique vérifiable → certificats formels » n'est pas tenue bout-en-bout dans la série.
+L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-07b-Examples-Python.ipynb)), puis [Lean-11b](Lean-11b-TorchLean-Python.ipynb) **borne numériquement** la robustesse d'un petit MLP via IBP et CROWN en Python ; [Lean-11](Lean-11-TorchLean.ipynb) importe le **vrai paquet [TorchLean](https://github.com/lean-dojo/TorchLean)** (public, MIT) via le lake `torchlean_lean/` de la série — tenseurs, `nn.Sequential!`, chaîne IBP prouvée (`runIBP_encloses_evalGraphRec`), export/import PyTorch — et la boucle est close bout-en-bout : Lean-11b exporte son `state_dict`, le CLI `lake exe torchlean_serie` le recharge et le recertifie côté Lean (bornes coïncidantes).
 
 <p align="center">
   <a href="Lean-07b-Examples-Python.ipynb"><img src="assets/readme/lean-llm-examples.png" width="420" alt="Génération de preuves par LLM sur dix théorèmes Lean : 0 succès / 10 échecs — itérations, temps d'exécution et tokens consommés par théorème."></a>
@@ -399,9 +399,9 @@ cp .env.example .env
 
 ### TorchLean
 
-- [TorchLean Documentation](https://leandojo.org/torchlean.html)
-- [TorchLean GitHub](https://github.com/lean-dojo/TorchLean)
+- [TorchLean GitHub](https://github.com/lean-dojo/TorchLean) (public, MIT, toolchain Lean `v4.35.0`)
 - [Papers: IBP, CROWN, LiRPA](https://github.com/lean-dojo/TorchLean#references)
+- Lake de la série : `torchlean_lean/` (dépendance git épinglée, sibling des carnets 11/11b)
 
 ### Références académiques
 

@@ -31,7 +31,7 @@ from merge_dwell import evaluate as _md_evaluate  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _no_shell_escape(forbid_shell_escape):
+def _no_shell_escape(forbid_shell_escape, monkeypatch):
     """Sentinelle armee pour tout le module (#20021).
 
     Un test qui lance un processus ici n'a pas simule une de ses sources :
@@ -40,6 +40,13 @@ def _no_shell_escape(forbid_shell_escape):
     ont besoin d'un faux `gh` patchent `pig.subprocess.run` eux-memes
     (`_patch_gh`, `_patch_gh_annotations`) et surchargent la sentinelle.
     """
+    # Identite posee par le test lui-meme (#21994) : `main()` epingle un
+    # jeton AVANT argparse, et sans `GH_TOKEN` dans l'environnement cette
+    # resolution lance un VRAI `gh auth token --user <compte de l'hote>` --
+    # processus refuse par la sentinelle. Le jeton ci-dessous est donc pose
+    # par le test, jamais resolu par le code sous test : le module ne depend
+    # ni de l'environnement ambiant, ni de l'ORDRE de ses fichiers.
+    monkeypatch.setenv("GH_TOKEN", "tok-fake-picker-test")
     return forbid_shell_escape
 
 
@@ -415,6 +422,21 @@ def test_unaddressed_review_points_leaves_an_unreadable_pr_absent(monkeypatch):
         raise RuntimeError("reseau")
 
     monkeypatch.setattr(check_unaddressed_nits, "analyse_pr", _boom)
+    assert pig.unaddressed_review_points([18829]) == {}
+
+
+def test_unaddressed_review_points_budget_exhausted_is_absent_not_zero(monkeypatch):
+    """#21882/#21964 : une passe a budget epuise rend la PR ABSENTE, jamais un
+    0 « evaluee claire ». Le marqueur `budget_exhausted` du dict `analyse_pr`
+    doit propager ici et basculer en None (fail-closed) : sinon le 0 autoritaire
+    de `elif not info["blocked"]` figeait le tirage de toute la flotte."""
+    import check_unaddressed_nits
+    monkeypatch.setattr(
+        check_unaddressed_nits, "analyse_pr",
+        lambda n: {"pr": n, "blocked": False, "blocking": [],
+                   "unevaluated": [], "unevaluated_total": 0,
+                   "budget_exhausted": True},
+    )
     assert pig.unaddressed_review_points([18829]) == {}
 
 
@@ -4405,6 +4427,76 @@ def test_marker_no_match_discursive_mention(monkeypatch):
     # sur la meme ligne que [INFO]).
     assert notes == {}
     assert picks[0]["klass"] == "grain"
+
+
+# --- #21949 : marqueur de cloture prefixe d'un TITRE markdown --------------
+# Mesure (draw c354 du 2026-10-22) : #20445 portait son `[INFO]
+# candidate-delivered` en DERNIER commentaire, mais sous un titre
+# (`## [INFO] candidate-delivered -- lane ...`). L'ancre `^\s*` n'accepte pas
+# `#`, aucune alternative ne matchait, et le grain mort revenait en tete du
+# tapis. Le prefixe de titre est une forme COURANTE de redaction (commentaire
+# structure en sections), pas une forme exotique.
+
+
+def test_delivered_state_heading_prefixed_marker():
+    """`## [INFO] candidate-delivered` est un marqueur, pas une citation.
+
+    Forme relevee sur #20445 (dernier commentaire, 2026-10-21T08:14:44Z) :
+    c'est elle qui a fait resservir une issue deja livree."""
+    assert pig._delivered_state([
+        "Voici mon rapport.\n\n## [INFO] candidate-delivered — lane "
+        "myia-po-2023:CoursIA\n\nDetails ci-dessous.",
+    ]) is True
+
+
+def test_delivered_state_heading_prefixed_revocation():
+    """Une retractation TITREE retracte : sans ca elle ne defaisait rien.
+
+    Le sens est porte par l'ORDRE (`_delivered_state`), pas par la forme :
+    une retractation titree doit donc desarmer un marqueur anterieur."""
+    assert pig._delivered_state([
+        "[INFO] candidate-delivered — livraison complete.",
+        "## [NOT-DELIVERED] — verification ulterieure : livraison partielle.",
+    ]) is False
+
+
+def test_recent_marker_heading_prefixed_closure_is_seen(monkeypatch):
+    """Le filtre bon marche (#19768) voit aussi un en-tete titre.
+
+    `_RECENT_DELIVERY_MARKER_RE` est la grammaire qui ecarte SANS consommer
+    le budget de sonde de livraison : un `### [DELIVERED]` non vu coutait une
+    sonde pleine, voire laissait passer le candidat."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            _delivered_marker_comment(
+                body="### [DELIVERED] lane myia-po-2025:CoursIA — PR #21999"),
+        ]})
+    assert pig.has_recent_delivery_marker(20445) is True
+
+
+def test_released_heading_prefixed_is_recognised():
+    """`## [RELEASED] ... acceptance deja couverte` : 3e grammaire de la meme
+    famille (`_RELEASED_HEADER_RE`, #20351)."""
+    assert pig._released_covers_acceptance(
+        "## [RELEASED] lane myia-po-2025:CoursIA — acceptance deja couverte "
+        "par la PR #21888."
+    ) is True
+
+
+def test_heading_prefix_tolerance_is_bounded():
+    """La tolerance s'arrete a 1-6 dieses, et une prose reste hors du filet.
+
+    Sans cette borne, autoriser un prefixe reviendrait a retirer l'ancre de
+    debut de ligne -- le temoin negatif ci-dessous le mesure."""
+    assert pig._DELIVERED_MARKER_RE.search("# [INFO] candidate-delivered — x")
+    assert pig._DELIVERED_MARKER_RE.search(
+        "###### [INFO] candidate-delivered — x")
+    assert not pig._DELIVERED_MARKER_RE.search(
+        "####### [INFO] candidate-delivered — x")
+    assert not pig._DELIVERED_MARKER_RE.search(
+        "Le mot ### [INFO] candidate-delivered apparait ici en pleine phrase.")
 
 
 # --- Geste 3 #18203 : `weight()` mesure le delaissement sur la DERNIERE ----
