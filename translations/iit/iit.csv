@@ -37740,7 +37740,7 @@ Verdict tri-etat (analogue au protocole d'ICT-12e pour l'EVSI) :
 - **AGREEMENT** : estimateurs dans la tolerance declaree.
 - **DESACCORD** : ecart superieur a la tolerance, les deux valeurs sont rapportees.
 - **NON_IDENTIFIABLE** : l'estimand n'est pas identifiable sous le graphe causal pose (instrument non pertinent). Resultat **legitime**, pas un echec.",,,,,,,,a7a8a3fe4efb1cb7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,db61f72e,markdown,fr,9f3d707c7d313a55,"## Plan experimental
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,db61f72e,markdown,fr,6ff26362032c8350,"## Plan experimental
 
 On imite le domaine STRIPS de Greffe 2 sur un **grillage reduit** $3 \times 3$ (3 colonnes, 3 rangs) avec un seul objet `cle` et un seul but $g$ = tenir la cle. Quatre vocabulaires d'operateurs :
 
@@ -37749,13 +37749,13 @@ On imite le domaine STRIPS de Greffe 2 sur un **grillage reduit** $3 \times 3$ (
 - `A_t1 (+raft)` : `A_t` + un operateur `teleport` qui ouvre une cellule supplementaire.
 - `A_t1+discard` : `A_t1` + le meme `discard` sterile.
 
-Pour chaque vocabulaire, on tire $n_{seeds} = 30$ positions initiales aleatoires de l'objet `cle`, on mesure le **taux d'atteignabilite** (forward-search budget $B = 2$) et le **taux d'etats atteignables** depuis l'initial. Le panel experimental est $(X, Z, Y)$ avec :
+Pour chaque vocabulaire, on tire $n_{seeds} = 30$ positions initiales aleatoires de l'objet `cle`, on mesure le **taux de but atteignable** (booleen par graine, forward-search budget $B = 2$) et le **nombre d'etats atteignables** $|F_B|$ depuis l'initial. Le panel experimental est $(X, Z, Y)$ avec :
 
 - $X = 1$ si le vocabulaire contient `teleport` (analogue `+raft`), $X = 0$ sinon.
 - $Z = 1$ si le vocabulaire contient `discard` (analogue `+discard`).
-- $Y$ = taux d'atteignabilite du but (moyenne sur les 30 graines).
+- $Y = |F_B|$ = nombre d'etats atteignables (outcome continu ; le taux de but, plat a 0.233 sur les quatre vocabulaires, sert de signal auxiliaire -- cf. Lecture 2).
 
-Controle negatif : a B = 2, le `teleport` elargit |F| (+48 %) mais **ne change pas** le taux de reussite du but (0.233 sur les quatre vocabulaires) -- l'ATE naif ressort donc nul, et c'est le signal auxiliaire |F_B| qui porte la discrimination de Greffe 2, pas Y. L'IV (instrument = `discard` ajoutee) reste NON_IDENTIFIABLE, l'instrument etant orthogonal au traitement ; sur `A_t1+discard`, le `discard` devait rendre l'elargissement `+raft` moins utile (l'agent perd la cle si elle l'attrape et jette sa prise), ce que la mesure ne confirme pas a ce budget.",,,,,,,,9f3d707c7d313a55,,,,,,,,
+Controle negatif : sur `A_t1+discard`, le `discard` est cense rendre l'elargissement `+raft` moins utile (l'agent perd la cle si elle l'attrape et jette sa prise) -- la mesure naive doit montrer un ATE positif (X=1 elargit) mais l'IV (instrument = `discard` ajoutee) doit signaler l'effet heterogene.",,,,,,,,6ff26362032c8350,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,ae36541d,code,fr,6826b3db09f3ac71,"from __future__ import annotations
 
 import os
@@ -37775,12 +37775,12 @@ from ict import causal_attribution as ca
 
 print(""ict.causal_attribution OK :"", ca.AttributionVerdict.__members__.keys())
 ",,,,,,,,6826b3db09f3ac71,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,03e98acc,markdown,fr,9c226bf1cd8a513b,"### Mini-domaine STRIPS imite de Greffe 2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,03e98acc,markdown,fr,3d96c58a646c2e3c,"### Mini-domaine STRIPS imite de Greffe 2
 
 On construit un domaine **clos** sur un grillage $3 \times 3$ (sans gouffre -- simplification du domaine Greffe 2 qui en avait un). Le `Operateur` STRIPS est importe comme un tuple `(nom, pre, add, del)` (forme minimale). La mesure est :
 
 - **forward-reachable** : nombre d'etats atteignables depuis `INITIAL` par BFS dans le graphe d'operateurs, avec budget $B = 2$ expansions.
-- **but_atteint** : 1 si le but est satisfait par **au moins un etat** de `F_B(INITIAL)` (test applique etat par etat), 0 sinon.",,,,,,,,9c226bf1cd8a513b,,,,,,,,
+- **but_atteint** : 1 si au moins un etat de `F_B(INITIAL)` satisfait le but (test par etat, pas sur l'union), 0 sinon.",,,,,,,,3d96c58a646c2e3c,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,4512e65c,code,fr,964a19217f36b6ad,"# Operateur STRIPS minimal (consomme, jamais re-derive : voir CLAUDE.md section D).
 @dataclass(frozen=True)
 class Operateur:
@@ -37861,15 +37861,15 @@ VOCABS = {
 for nom, V in VOCABS.items():
     print(f""{nom:32s} |V| = {len(V)} operateurs"")
 ",,,,,,,,964a19217f36b6ad,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,6cad3b10,markdown,fr,c2cb75280d07c9b7,"### Mesure du forward-search budget $B$
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,6cad3b10,markdown,fr,d1ee387e4f75185a,"### Mesure du forward-search budget $B$
 
 Pour chaque vocabulaire, on lance un BFS depuis `INITIAL` avec budget $B = 2$ expansions. On rapporte :
 
 - $|F_B(\text{INITIAL})|$ : nombre d'etats atteignables.
-- `but_atteint` : 1 si le but est satisfait par **au moins un etat** de $F_B(\text{INITIAL})$ (test applique etat par etat), 0 sinon.
+- `but_atteint` : 1 si au moins un etat de $F_B(\text{INITIAL})$ satisfait $\text{BUT}$ (test par etat : $\exists e \in F_B, \text{BUT} \subseteq e$), 0 sinon.
 
-On fait varier la **graine** de la position initiale alternative (l'initial est fixe, mais on mesure aussi le forward-search depuis 30 positions alternatives pour avoir un panel).",,,,,,,,c2cb75280d07c9b7,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,94153637,code,fr,1658dba230618e3c,"def forward_reachable(ops: List[Operateur], initial: FrozenSet[str],
+On fait varier la **graine** de la position initiale alternative (l'initial est fixe, mais on mesure aussi le forward-search depuis 30 positions alternatives pour avoir un panel).",,,,,,,,d1ee387e4f75185a,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,94153637,code,fr,a108c3f7ced695dc,"def forward_reachable(ops: List[Operateur], initial: FrozenSet[str],
                       budget: int) -> set:
     """"""BFS budget-stricted : ensemble des etats atteignables en <= budget expansions.""""""
     visited = {initial}
@@ -37902,10 +37902,11 @@ def taux_but_atteint(BUT_set: FrozenSet[str], F: set) -> int:
     Note : BUT_set est un frozenset de chaines (le but a satisfaire),
     F est l'ensemble des etats atteignables (chaque etat est un frozenset
     de chaines). Le test BUT_set <= e pour un etat e determine si l'etat
-    e satisfait le but. La sortie est 0 ou 1 par seed (cf. plan
-    experimental c8 : Y = taux d'atteignabilite du but, booleen par seed).
-    Le `taux_but` rapporte dans c9 est la moyenne de ces booleens sur les
-    SEEDS, soit la proportion de seeds ou le but est atteignable.
+    e satisfait le but -- tester BUT_set <= F (sur l'union des etats)
+    serait faux : un but reparti sur plusieurs etats n'est pas atteint.
+    La sortie est 0 ou 1 par seed : le taux_but rapporte dans cette
+    cellule est la moyenne de ces booleens sur les SEEDS, soit la
+    proportion de graines ou le but est atteignable.
     """"""
     if not F:
         return 0
@@ -37935,27 +37936,25 @@ panneaux = {nom: mesurer_vocabulaire(V, SEEDS, budget=BUDGET)
 
 for nom, panneau in panneaux.items():
     taille_moy = np.mean([o[""taille_F""] for o in panneau])
-    taux_moy = np.mean([o[""but_atteint""] for o in panneau])
-    print(f""{nom:20s} |F|_moyen = {taille_moy:6.2f}  taux_but = {taux_moy:.3f}"")
-",,,,,,,,1658dba230618e3c,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,4991e094,code,fr,c5fac2ea9e07045b,"# Construction du panel experimental (X, Z, Y) pour chaque seed.
+    taux_but = np.mean([o[""but_atteint""] for o in panneau])
+    print(f""{nom:20s} |F|_moyen = {taille_moy:6.2f}  taux_but = {taux_but:.3f}"")",,,,,,,,a108c3f7ced695dc,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,4991e094,code,fr,250adea980a4530a,"# Construction du panel experimental (X, Z, Y) pour chaque seed.
 # X = 1 si le vocab contient teleport (= +raft)
 # Z = 1 si le vocab contient discard (= +discard)
-# Y = taux d'atteignabilite du but (outcome binaire par seed : 0 ou 1).
-# Conformement au plan experimental de la cellule 8, Y = 1 si BUT <= F_B
-# (au moins un etat de l'espace atteignable satisfait le but), 0 sinon.
-# L'ancien code c9 (proportion d'etats de F_B qui contiennent le but)
-# contredisait ce plan et les outputs (0.033 = 1/30 n'est pas une moyenne
-# de fractions 0..1/|F|). Le fix c9 (int(any(...))) retablit la
-# coherence code <-> plan <-> outputs. |F_B| reste un signal auxiliaire.
+# Y = |F_B| moyen (outcome continu -- discrimine les vocabulaires).
+# Le taux de but corrige (test par etat, cf. taux_but_atteint) est plat
+# a 0.233 sur les quatre vocabulaires : sous Y = taux de but, ATE
+# naif = backdoor = 0 et le biais de l exercice 2 disparaitrait. On
+# prend la taille du forward-reachable, ou le +teleport (+3.0 etats)
+# et le confondant de l exercice 2 (biais du naif) existent bel et bien.
 X = []  # 1 si teleport, 0 sinon
 Z = []  # 1 si discard, 0 sinon
-Y = []  # taux_but (binaire par seed)
+Y = []  # taille_F (continue)
 for seed in SEEDS:
     for nom, panneau in panneaux.items():
         x_val = 1 if ""teleport"" in nom else 0  # sans ""+"" pour eviter collision
         z_val = 1 if ""+discard"" in nom else 0
-        y_val = panneau[seed][""but_atteint""]  # taux_but par seed
+        y_val = panneau[seed][""taille_F""]  # |F_B|, continu
         X.append(x_val)
         Z.append(z_val)
         Y.append(y_val)
@@ -37965,21 +37964,18 @@ Z = np.asarray(Z, dtype=int)
 Y = np.asarray(Y, dtype=float)
 print(f""N observations = {len(Y)}"")
 print(f""P(X=1) = {X.mean():.3f}, P(Z=1) = {Z.mean():.3f}"")
-print(f""E[Y | X=1] = {Y[X == 1].mean():.3f}, E[Y | X=0] = {Y[X == 0].mean():.3f}"")
-print(f""E[Y | Z=1] = {Y[Z == 1].mean():.3f}, E[Y | Z=0] = {Y[Z == 0].mean():.3f}"")
+print(f""E[Y | X=1] = {Y[X == 1].mean():.2f}, E[Y | X=0] = {Y[X == 0].mean():.2f}"")
+print(f""E[Y | Z=1] = {Y[Z == 1].mean():.2f}, E[Y | Z=0] = {Y[Z == 0].mean():.2f}"")
 print(f""Cross-tab : Z=0,X=0={((Z==0)&(X==0)).sum()}, Z=0,X=1={((Z==0)&(X==1)).sum()}, Z=1,X=0={((Z==1)&(X==0)).sum()}, Z=1,X=1={((Z==1)&(X==1)).sum()}"")
-",,,,,,,,c5fac2ea9e07045b,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,4900f5d2,code,fr,fb2456612b97a9d9,"# Estimateur 1 : naive_difference (baseline).
-# ATE_naif = E[Y | X=1] - E[Y | X=0]. Biaise par confondants. Baseline pour montrer la limite.
-# Y est ici le taux_but binaire (cf. cellule 11), donc l'ATE est dans [-1, +1].
+",,,,,,,,250adea980a4530a,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,4900f5d2,code,fr,dfb18b92af5c1fe2,"# Estimateur 1 : naive_difference (baseline).
+# ATE_naif = E[Y | X=1] - E[Y | X=0]. Biaise par confondant Z = discard.
 outcome_by_x = {0: Y[X == 0].tolist(), 1: Y[X == 1].tolist()}
 ate_naif = ca.naive_difference(outcome_by_x)
 print(f""ATE_naif = E[Y|X=1] - E[Y|X=0] = {ate_naif:+.4f}"")
-print(f""  -> Le +teleport ajoute ~{ate_naif * 100:+.1f} graines de but sur 30 en moyenne."")
-print(f""     Mais ce delta est biaise : Z=discard peut etre un confondant."")
-print(f""     NB : Y est un booleen par seed (0 ou 1), donc l'ATE est borne par +-1."")
-",,,,,,,,fb2456612b97a9d9,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,54226633,code,fr,1659fa278b46ecc3,"# Estimateur 2 : backdoor_adjustment sur le confondu Z = discard.
+print(f""  -> Le +teleport ajoute ~{ate_naif:.1f} etats atteignables en moyenne."")
+print(f""     Mais ce delta est biaise : Z=discard peut etre un confondant."")",,,,,,,,dfb18b92af5c1fe2,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,54226633,code,fr,1a4e3d1f15ce2488,"# Estimateur 2 : backdoor_adjustment sur le confondu Z = discard.
 # ATE_backdoor = sum_z [ E[Y | X=1, Z=z] - E[Y | X=0, Z=z] ] * P(Z=z)
 ate_backdoor = ca.backdoor_adjustment(
     outcome_table=Y,
@@ -37996,13 +37992,13 @@ print(f""Verdict naif vs backdoor (tol 0.10) : {verdict.value}"")
 
 effet_discard = Y[Z == 1].mean() - Y[Z == 0].mean()
 effet_teleport = Y[X == 1].mean() - Y[X == 0].mean()
-print(f""Effet marginal +discard (Z=1 vs Z=0) : {effet_discard:+.2f} points de taux_but"")
-print(f""Effet marginal +teleport (X=1 vs X=0) : {effet_teleport:+.2f} points de taux_but"")
+print(f""Effet marginal +discard (Z=1 vs Z=0) : {effet_discard:+.2f} etats"")
+print(f""Effet marginal +teleport (X=1 vs X=0) : {effet_teleport:+.2f} etats"")
 
 # Note : +teleport est causal, +discard est confondu (orthogonal au traitement).
 # Le backdoor ajuste le naif par la moyenne ponderee de l effet dans chaque strate
 # de Z -- comme le design est orthogonal (X, Z), l ajustement laisse l ATE inchange.
-",,,,,,,,1659fa278b46ecc3,,,,,,,,
+",,,,,,,,1a4e3d1f15ce2488,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,fb1ae1d9,code,fr,8401a3302b60a2dd,"# Estimateur 3 : iv_estimate avec instrument Z = discard (pertinence ?).
 # Question causale : si Z=discard est pertinent (Cov(X, Z) eleve), alors
 # la variation de Z force X a varier -- on peut extraire un ATE instrumental.
@@ -38044,17 +38040,17 @@ VOCABS_EX1 = None  # TODO etudiant : sous-ensemble des VOCABS ou design alternat
 panneaux_EX1 = None  # TODO etudiant : mesurer si VOCABS_EX1 defini
 result_iv = None  # TODO etudiant : resultat de iv_estimate (ou ValueError releve)
 print(""Exercice 1 : a completer"")",,,,,,,,cceb9311da3d31f4,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,46adc0f9,markdown,fr,294b7b519f431108,"### Exercice 2 : controle negatif avec un confoundant reellement actif
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,46adc0f9,markdown,fr,a567997a575e92d4,"### Exercice 2 : controle negatif avec un confoundant reellement actif
 
 Pour verifier que le backdoor ajuste bien le biais, construire un panel avec un **vrai confondant** : par exemple, ajouter un operateur `noise` (pickup aleatoire d'un objet non-cle) qui augmente $|F|$ mais sans aider a tenir le but. Mesurer le biais du naif (qui ne distingue pas `noise` de `teleport`) et montrer que le backdoor sur `noise` corrige.
 
-**Indice** : `noise` = `Operateur(""noise-pickup"", {prop(c, r)}, {""holding-noise""}, set())` ajoute pour 30% des cases. Le naif surestime l'effet de `teleport` car il confond `noise` (qui ouvre $|F|$) avec `teleport` (qui elargit $|F|$) -- les deux agissent sur la taille de l'espace atteignable, un seul sur le but.
+**Indice** : `noise` = `Operateur(""noise-pickup"", {prop(c, r)}, {""holding-noise""}, set())` ajoute pour 30% des cases. Le naif surestime l'effet de `teleport` car il confond `noise` (qui ouvre $|F|$) avec `teleport` (qui aide le but).
 
 ```python
 # Exercice 2 a completer : definir un Operateur `noise` actif et mesurer le biais.
 # TODO etudiant :
 def ops_avec_noise(base, proba=0.3, seed=0): ...
-```",,,,,,,,294b7b519f431108,,,,,,,,
+```",,,,,,,,a567997a575e92d4,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,72ba5bf3,code,fr,3c74355a7a62205d,"# Exercice 2 a completer : Operateur `noise` actif
 # Stubs conformes C.1.
 def ops_avec_noise(base, proba=0.3, seed=0):
@@ -41027,28 +41023,26 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,ad80374b,m
 La cellule de construction affiche les tailles brutes des quatre vocabulaires : `A_t` = 25 operateurs (deplacements entre cases adjacentes du grillage 3x3, plus `pickup-key`), `A_t +discard` = 26, `A_t1 (+teleport)` = 26, `A_t1 (+teleport) +discard` = 27. Chaque ajout est une addition STRIPS minimale (pre, add, del) : `teleport-diag` quitte (0,0) pour (2,2) en un pas, `discard-key` retire `holding-key` sans add -- un etat-piege.
 
 La lecture a retenir : la **taille ne discrimine pas** les deux ajouts (26 contre 26) -- c'est la structure des preconditions qui jouera. Le panel experimental (cellule 9) separe teleport (X) de discard (Z) par mots-cles dans les noms, pas par la taille. Le protocole de Greffe 2 est imite, jamais re-derive : la relaxation STRIPS consommee est celle de `ict.causal_attribution`, la construction des operateurs est locale au notebook.",,,,,,,,f4229ff9c1c1c844,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,6b69656a,markdown,fr,6607f27e0098b320,"## Lecture 2 -- Budget B = 2 : le teleport elargit (+48 %), le discard reste inerte
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,6b69656a,markdown,fr,e9e63ef48456c28b,"## Lecture 2 -- Budget B = 2 : le teleport elargit (+48 %), le discard reste inerte
 
 A budget B = 2, le pattern de Greffe 2 est reconstitue de maniere discriminante : `A_t` a un |F| moyen de **6.23** et `A_t1 (+teleport)` de **9.23** -- delta +3.00, soit +48 % d'etats atteignables. Le `teleport-diag` ouvre la diagonale en une expansion, ce que les quatre directions ne font pas en deux pas depuis l'initial.
 
-Le `taux_but` -- conforme au docstring de la cellule de mesure -- est **binaire par graine** : 1 si le `BUT` (`holding-key`) apparait dans F_2 pour au moins un etat de cette graine, 0 sinon (ce n'est PAS la proportion d'etats de F_2 qui contiennent le but -- l'ancienne definition contredisait le plan experimental et les outputs). Sa moyenne sur les 30 graines : **7/30 = 0.233**, identique sur les quatre vocabulaires.
+Le `taux_but` est **binaire par graine** : 1 si au moins un etat de `F_2` de cette graine satisfait le but (`holding-key`), 0 sinon (ce n'est pas la proportion d'etats de `F_2` qui contiennent le but -- l'ancien test d'inclusion porte sur l'union des etats et rendait 0 partout). Sa moyenne sur les 30 graines : **7/30 = 0.233, identique sur les quatre vocabulaires** -- les 7 graines qui reussissent sans `teleport` sont exactement celles qui reussissent avec, et le `discard` n'y change rien. L'outcome binaire est donc **plat sur tout le design 2x2** : sous Y = taux de but, ATE naif = backdoor = 0 et le confondant de l'exercice 2 n'aurait plus de biais a corriger. C'est pourquoi la cellule suivante prend `Y = |F_B|` comme outcome continu, le taux de but comme signal auxiliaire.
 
-Les ajouts ne modifient pas ce taux a B = 2 : les 7 graines qui reussissent sans `teleport` sont exactement celles qui reussissent avec (la cle doit etre en (1,0), en (2,0)/(0,0) avec l'agent en mesure d'atteindre (1,0) en 1 pas, ou en (1,1)/(1,-1) -- hors grille --, etc., et le `teleport-diag` (0,0) -> (2,2) ne rapproche pas la cle d'une case ou `pickup-key` est applicable en 2 pas). Le `discard` reste inerte sur ce outcome (son application necessite de tenir la cle, ce qui est le but lui-meme -- circularite). On prend donc `Y = taux_but` comme outcome principal (conforme au plan experimental), `|F_B|` comme signal auxiliaire.
-",,,,,,,,6607f27e0098b320,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,fde413a5,markdown,fr,d137a0c2d0e89f22,"## Lecture 3 -- Un design orthogonal : 120 observations, 30 par cellule
+Le `discard`, lui, est **inerte sur |F|** a B = 2 (6.23 sans et 6.23 avec) -- non par circularite mais par budget : sa precondition est de tenir la cle, et les etats `holding-key` n'apparaissent eux-memes qu'a la deuxieme expansion (l'agent part de (0,0) et le `pickup-key` exige la case (1,0)) ; les 7 graines qui atteignent le but a B = 2 tiennent donc bien la cle, mais la branche du `discard` (l'objet lache) serait une troisieme expansion, hors budget.
+",,,,,,,,e9e63ef48456c28b,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,fde413a5,markdown,fr,dbfd386ae081e086,"## Lecture 3 -- Un design orthogonal : 120 observations, 30 par cellule
 
 Le panel empile les quatre vocabulaires sur les 30 graines : N = **120** observations, P(X = 1) = 0.500 et P(Z = 1) = 0.500, et le cross-tab l'affiche sans ambiguite : (Z = 0, X = 0) = 30, (Z = 0, X = 1) = 30, (Z = 1, X = 0) = 30, (Z = 1, X = 1) = 30 -- chaque cellule du design contient exactement 30 observations, aucun cas vide.
 
-Le traitement `teleport` et le confondu `discard` sont **orthogonaux par construction** : Cov(X, Z) = 0, ce qui se lit aussi dans les moyennes -- E[Y | Z = 1] = 0.233 = E[Y | Z = 0] = 0.233 : le discard est marginalement neutre en moyenne. Cote traitement, E[Y | X = 1] = 0.233 contre E[Y | X = 0] = 0.233 : le contraste brut fait **+0.00** sur le taux de reussite du but -- a B = 2, le `teleport` elargit |F| (9.23 contre 6.23, soit +3.00 et +48 %) sans changer le taux (0.233 des deux cotes). C'est donc le signal auxiliaire |F_B| qui porte la discrimination de Greffe 2, pas Y. La consequence pour la suite : le design garantit que la moyenne par strate de Z ne cache aucune interaction -- la cellule 11 pourra verifier que le backdoor ne corrige rien, parce qu'il n'y a rien a corriger.",,,,,,,,d137a0c2d0e89f22,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,d0fceb9e,markdown,fr,2f68a9795735e14d,"## Lecture 4 -- Naif vs backdoor : AGREEMENT a la tolerance 0.10
+Le traitement `teleport` et le confondu `discard` sont **orthogonaux par construction** : Cov(X, Z) = 0, ce qui se lit aussi dans les moyennes -- E[Y | Z = 1] = 7.73 = E[Y | Z = 0] = 7.73 : le discard est marginalement neutre en moyenne. Cote traitement, E[Y | X = 1] = 9.23 contre E[Y | X = 0] = 6.23 : le contraste brut fait +3.00, exactement le delta de la lecture 2. La consequence pour la suite : le design garantit que la moyenne par strate de Z ne cache aucune interaction -- la cellule 11 pourra verifier que le backdoor ne corrige rien, parce qu'il n'y a rien a corriger.",,,,,,,,dbfd386ae081e086,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,d0fceb9e,markdown,fr,e3bd93058e7f54ce,"## Lecture 4 -- Naif vs backdoor : AGREEMENT a la tolerance 0.10
 
-L'estimateur naif donne ATE = **+0.0000** : sur 30 graines, le +teleport n'ajoute ni ne retire aucune graine au but -- les 7 graines qui reussissent sans `teleport` reussissent aussi avec, et les 23 autres echouent des deux cotes. C'est la consequence directe de la lecture 2 : a B = 2, le `teleport` elargit |F| (+48 %) mais ne change pas le taux de realisation du but (0.233 uniforme). L'ajustement backdoor sur Z donne ATE_backdoor = **+0.0000** (meme valeur, parce que le design est orthogonal), et la comparaison des deux a tolerance 0.10 declare **AGREEMENT**.
+L'estimateur naif donne ATE = **+3.0000** (la cellule le reformule : le +teleport ajoute +3.0 etats atteignables en moyenne, chiffre aussitot relativise -- ce delta brut peut etre confondu par `discard`). L'ajustement backdoor sur Z donne ATE_backdoor = **+3.0000**, et la comparaison des deux a tolerance 0.10 declare **AGREEMENT**.
 
-Ce n'est pas un hasard : parce que le design est orthogonal (lecture 3), la moyenne ponderee de l'effet dans chaque strate de Z reproduit exactement le contraste brut -- l'ajustement laisse l'ATE inchange, comme le commentaire de la cellule le note. Les effets marginaux le confirment : +discard = +0.00 et +teleport = +0.00 (les deux ajouts sont orthogonaux au traitement et a l'outcome sur ce budget). La lecture pedagogique : le backdoor ne corrige un biais que s'il y en a un ; sur ce design, naif et ajuste s'accordent a la tolerance pres -- AGREEMENT est le verdict honnete, pas une coincidence. A noter : a B = 2 le `teleport` n'a pas d'effet causal sur le but (|F| elargi, Y identique) -- c'est le signal auxiliaire |F| qui porte l'information discriminante de Greffe 2, pas Y.
-",,,,,,,,2f68a9795735e14d,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,892c905a,markdown,fr,f7386b14c352c36e,"## Lecture 5 -- iv_estimate : NON_IDENTIFIABLE, le garde-fou au bon endroit
+Ce n'est pas un hasard : parce que le design est orthogonal (lecture 3), la moyenne ponderee de l'effet dans chaque strate de Z reproduit exactement le contraste brut -- l'ajustement laisse l'ATE inchange, comme le commentaire de la cellule le note. Les effets marginaux le confirment : +discard = +0.00 etats (Z orthogonal au traitement) contre +teleport = +3.00 etats. La lecture pedagogique : le backdoor ne corrige un biais que s'il y en a un ; sur ce design, naif et ajuste s'accordent a la tolerance pres -- AGREEMENT est le verdict honeste, pas une coincidence.",,,,,,,,e3bd93058e7f54ce,,,,,,,,
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb,892c905a,markdown,fr,cd5aca38a13d1ce3,"## Lecture 5 -- iv_estimate : NON_IDENTIFIABLE, le garde-fou au bon endroit
 
 L'instrument Z = `discard` est orthogonal a X = `teleport` (lecture 3), donc Cov(X, Z) = 0 : `iv_estimate` leve un ValueError immediat -- la sortie affiche |Cov(X, Z)| = 0.000000, sous le seuil de pertinence 5/sqrt(n) = 0.456435. La cellule intercepte l'exception et traduit : verdict logique **NON_IDENTIFIABLE**, qualifie de **resultat legitime**, pas un echec.
 
-C'est le comportement voulu du garde-fou (Pearl 2009 chap. 3.3 + Angrist-Krueger 2001, seuil 5-sigma) : avec un instrument non pertinent, aucune formule ne peut identifier l'effet causal de X sur Y -- la methode refuse de produire un nombre plutot que d'en fabriquer un. Mise en perspective avec la lecture 4 : naif et backdoor s'accordent a +0.0000 -- le backdoor ajuste le delta naif pour la presence de `+discard`, et l'ecart sous la tolerance 0.10 declare **AGREEMENT** (l'IV, lui, ne conclut pas) -- les trois estimateurs couvrent ainsi les trois etats du verdict tri-etat (AGREEMENT, DESACCORD, NON_IDENTIFIABLE). L'exercice 1 invite justement l'etudiant a modifier le design pour rendre Z pertinent et faire parler l'IV : la tolerance du notebook a l'ambiguite est la lecon de cette cellule.
-",,,,,,,,f7386b14c352c36e,,,,,,,,
+C'est le comportement voulu du garde-fou (Pearl 2009 chap. 3.3 + Angrist-Krueger 2001, seuil 5-sigma) : avec un instrument non pertinent, aucune formule ne peut identifier l'effet causal de X sur Y -- la methode refuse de produire un nombre plutot que d'en fabriquer un. Mise en perspective avec la lecture 4 : naif et backdoor s'accordent a +3.0000 -- le backdoor ajuste le delta naif pour la presence de `+discard`, et l'ecart sous la tolerance 0.10 declare **AGREEMENT** (l'IV, lui, ne conclut pas) -- les trois estimateurs couvrent ainsi les trois etats du verdict tri-etat (AGREEMENT, DESACCORD, NON_IDENTIFIABLE). L'exercice 1 invite justement l'etudiant a modifier le design pour rendre Z pertinent et faire parler l'IV : la tolerance du notebook a l'ambiguite est la lecon de cette cellule.",,,,,,,,cd5aca38a13d1ce3,,,,,,,,
