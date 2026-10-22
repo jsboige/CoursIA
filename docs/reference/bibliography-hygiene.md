@@ -12,7 +12,7 @@ Son fichier `README.md` est l'autorité opérationnelle pour la nomenclature, le
 
 Un agent archive une publication dès qu'il la récupère pour une lecture substantielle, l'utilise comme source ou la cite dans un notebook, une issue, une PR ou un dispatch. Une publication ne doit pas rester uniquement dans Downloads, un scratchpad ou le cache d'un outil.
 
-Si la récupération échoue ou si l'accès est payant, l'agent le dit explicitement et indique le titre exact ainsi que le rayon de destination. Il ne fabrique ni présence locale ni preuve de lecture.
+Si la récupération échoue ou si l'accès est payant, l'agent le dit explicitement et indique le titre exact ainsi que le rayon de destination. Il ne fabrique ni présence locale ni preuve de lecture. Ce qu'il attribuerait à la publication ne s'écrit pas tant qu'elle n'a pas été lue : voir la clause « Lire avant d'attribuer » de la règle [bibliography-hygiene.md](../../.claude/rules/bibliography-hygiene.md).
 
 ## Procédure minimale
 
