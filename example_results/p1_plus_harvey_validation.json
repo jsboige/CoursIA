@@ -1,0 +1,483 @@
+{
+  "utc_started": "2026-10-22T15:59:51.560886+00:00",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "python": "3.13.7",
+  "executable": "D:\\Dev\\tools\\harvey\\harvey_adapter.exe",
+  "executable_sha256": "2ce5d768b430102c5efff804d08e3048be69066a746a240ce257b927668357cb",
+  "harvey_version": {
+    "ntl": "11.6.0",
+    "compiler": "16.2.0",
+    "ntl_threads": 1
+  },
+  "validation": {
+    "all_stopping_indices": 10809,
+    "stopping_index_mismatches": 0,
+    "primes_all_indices": 92,
+    "forced_big_cross_checks": 43,
+    "forced_big_mismatches": 0,
+    "invalid_input_checks": 3,
+    "status": "passed"
+  },
+  "per_prime": [
+    {
+      "p": 7,
+      "stopping_indices": 4,
+      "mismatches": 0
+    },
+    {
+      "p": 11,
+      "stopping_indices": 6,
+      "mismatches": 0
+    },
+    {
+      "p": 13,
+      "stopping_indices": 7,
+      "mismatches": 0
+    },
+    {
+      "p": 17,
+      "stopping_indices": 9,
+      "mismatches": 0
+    },
+    {
+      "p": 19,
+      "stopping_indices": 10,
+      "mismatches": 0
+    },
+    {
+      "p": 23,
+      "stopping_indices": 12,
+      "mismatches": 0
+    },
+    {
+      "p": 29,
+      "stopping_indices": 15,
+      "mismatches": 0
+    },
+    {
+      "p": 31,
+      "stopping_indices": 16,
+      "mismatches": 0
+    },
+    {
+      "p": 37,
+      "stopping_indices": 19,
+      "mismatches": 0
+    },
+    {
+      "p": 41,
+      "stopping_indices": 21,
+      "mismatches": 0
+    },
+    {
+      "p": 43,
+      "stopping_indices": 22,
+      "mismatches": 0
+    },
+    {
+      "p": 47,
+      "stopping_indices": 24,
+      "mismatches": 0
+    },
+    {
+      "p": 53,
+      "stopping_indices": 27,
+      "mismatches": 0
+    },
+    {
+      "p": 59,
+      "stopping_indices": 30,
+      "mismatches": 0
+    },
+    {
+      "p": 61,
+      "stopping_indices": 31,
+      "mismatches": 0
+    },
+    {
+      "p": 67,
+      "stopping_indices": 34,
+      "mismatches": 0
+    },
+    {
+      "p": 71,
+      "stopping_indices": 36,
+      "mismatches": 0
+    },
+    {
+      "p": 73,
+      "stopping_indices": 37,
+      "mismatches": 0
+    },
+    {
+      "p": 79,
+      "stopping_indices": 40,
+      "mismatches": 0
+    },
+    {
+      "p": 83,
+      "stopping_indices": 42,
+      "mismatches": 0
+    },
+    {
+      "p": 89,
+      "stopping_indices": 45,
+      "mismatches": 0
+    },
+    {
+      "p": 97,
+      "stopping_indices": 49,
+      "mismatches": 0
+    },
+    {
+      "p": 101,
+      "stopping_indices": 51,
+      "mismatches": 0
+    },
+    {
+      "p": 103,
+      "stopping_indices": 52,
+      "mismatches": 0
+    },
+    {
+      "p": 107,
+      "stopping_indices": 54,
+      "mismatches": 0
+    },
+    {
+      "p": 109,
+      "stopping_indices": 55,
+      "mismatches": 0
+    },
+    {
+      "p": 113,
+      "stopping_indices": 57,
+      "mismatches": 0
+    },
+    {
+      "p": 127,
+      "stopping_indices": 64,
+      "mismatches": 0
+    },
+    {
+      "p": 131,
+      "stopping_indices": 66,
+      "mismatches": 0
+    },
+    {
+      "p": 137,
+      "stopping_indices": 69,
+      "mismatches": 0
+    },
+    {
+      "p": 139,
+      "stopping_indices": 70,
+      "mismatches": 0
+    },
+    {
+      "p": 149,
+      "stopping_indices": 75,
+      "mismatches": 0
+    },
+    {
+      "p": 151,
+      "stopping_indices": 76,
+      "mismatches": 0
+    },
+    {
+      "p": 157,
+      "stopping_indices": 79,
+      "mismatches": 0
+    },
+    {
+      "p": 163,
+      "stopping_indices": 82,
+      "mismatches": 0
+    },
+    {
+      "p": 167,
+      "stopping_indices": 84,
+      "mismatches": 0
+    },
+    {
+      "p": 173,
+      "stopping_indices": 87,
+      "mismatches": 0
+    },
+    {
+      "p": 179,
+      "stopping_indices": 90,
+      "mismatches": 0
+    },
+    {
+      "p": 181,
+      "stopping_indices": 91,
+      "mismatches": 0
+    },
+    {
+      "p": 191,
+      "stopping_indices": 96,
+      "mismatches": 0
+    },
+    {
+      "p": 193,
+      "stopping_indices": 97,
+      "mismatches": 0
+    },
+    {
+      "p": 197,
+      "stopping_indices": 99,
+      "mismatches": 0
+    },
+    {
+      "p": 199,
+      "stopping_indices": 100,
+      "mismatches": 0
+    },
+    {
+      "p": 211,
+      "stopping_indices": 106,
+      "mismatches": 0
+    },
+    {
+      "p": 223,
+      "stopping_indices": 112,
+      "mismatches": 0
+    },
+    {
+      "p": 227,
+      "stopping_indices": 114,
+      "mismatches": 0
+    },
+    {
+      "p": 229,
+      "stopping_indices": 115,
+      "mismatches": 0
+    },
+    {
+      "p": 233,
+      "stopping_indices": 117,
+      "mismatches": 0
+    },
+    {
+      "p": 239,
+      "stopping_indices": 120,
+      "mismatches": 0
+    },
+    {
+      "p": 241,
+      "stopping_indices": 121,
+      "mismatches": 0
+    },
+    {
+      "p": 251,
+      "stopping_indices": 126,
+      "mismatches": 0
+    },
+    {
+      "p": 257,
+      "stopping_indices": 129,
+      "mismatches": 0
+    },
+    {
+      "p": 263,
+      "stopping_indices": 132,
+      "mismatches": 0
+    },
+    {
+      "p": 269,
+      "stopping_indices": 135,
+      "mismatches": 0
+    },
+    {
+      "p": 271,
+      "stopping_indices": 136,
+      "mismatches": 0
+    },
+    {
+      "p": 277,
+      "stopping_indices": 139,
+      "mismatches": 0
+    },
+    {
+      "p": 281,
+      "stopping_indices": 141,
+      "mismatches": 0
+    },
+    {
+      "p": 283,
+      "stopping_indices": 142,
+      "mismatches": 0
+    },
+    {
+      "p": 293,
+      "stopping_indices": 147,
+      "mismatches": 0
+    },
+    {
+      "p": 307,
+      "stopping_indices": 154,
+      "mismatches": 0
+    },
+    {
+      "p": 311,
+      "stopping_indices": 156,
+      "mismatches": 0
+    },
+    {
+      "p": 313,
+      "stopping_indices": 157,
+      "mismatches": 0
+    },
+    {
+      "p": 317,
+      "stopping_indices": 159,
+      "mismatches": 0
+    },
+    {
+      "p": 331,
+      "stopping_indices": 166,
+      "mismatches": 0
+    },
+    {
+      "p": 337,
+      "stopping_indices": 169,
+      "mismatches": 0
+    },
+    {
+      "p": 347,
+      "stopping_indices": 174,
+      "mismatches": 0
+    },
+    {
+      "p": 349,
+      "stopping_indices": 175,
+      "mismatches": 0
+    },
+    {
+      "p": 353,
+      "stopping_indices": 177,
+      "mismatches": 0
+    },
+    {
+      "p": 359,
+      "stopping_indices": 180,
+      "mismatches": 0
+    },
+    {
+      "p": 367,
+      "stopping_indices": 184,
+      "mismatches": 0
+    },
+    {
+      "p": 373,
+      "stopping_indices": 187,
+      "mismatches": 0
+    },
+    {
+      "p": 379,
+      "stopping_indices": 190,
+      "mismatches": 0
+    },
+    {
+      "p": 383,
+      "stopping_indices": 192,
+      "mismatches": 0
+    },
+    {
+      "p": 389,
+      "stopping_indices": 195,
+      "mismatches": 0
+    },
+    {
+      "p": 397,
+      "stopping_indices": 199,
+      "mismatches": 0
+    },
+    {
+      "p": 401,
+      "stopping_indices": 201,
+      "mismatches": 0
+    },
+    {
+      "p": 409,
+      "stopping_indices": 205,
+      "mismatches": 0
+    },
+    {
+      "p": 419,
+      "stopping_indices": 210,
+      "mismatches": 0
+    },
+    {
+      "p": 421,
+      "stopping_indices": 211,
+      "mismatches": 0
+    },
+    {
+      "p": 431,
+      "stopping_indices": 216,
+      "mismatches": 0
+    },
+    {
+      "p": 433,
+      "stopping_indices": 217,
+      "mismatches": 0
+    },
+    {
+      "p": 439,
+      "stopping_indices": 220,
+      "mismatches": 0
+    },
+    {
+      "p": 443,
+      "stopping_indices": 222,
+      "mismatches": 0
+    },
+    {
+      "p": 449,
+      "stopping_indices": 225,
+      "mismatches": 0
+    },
+    {
+      "p": 457,
+      "stopping_indices": 229,
+      "mismatches": 0
+    },
+    {
+      "p": 461,
+      "stopping_indices": 231,
+      "mismatches": 0
+    },
+    {
+      "p": 463,
+      "stopping_indices": 232,
+      "mismatches": 0
+    },
+    {
+      "p": 467,
+      "stopping_indices": 234,
+      "mismatches": 0
+    },
+    {
+      "p": 479,
+      "stopping_indices": 240,
+      "mismatches": 0
+    },
+    {
+      "p": 487,
+      "stopping_indices": 244,
+      "mismatches": 0
+    },
+    {
+      "p": 491,
+      "stopping_indices": 246,
+      "mismatches": 0
+    },
+    {
+      "p": 499,
+      "stopping_indices": 250,
+      "mismatches": 0
+    }
+  ]
+}

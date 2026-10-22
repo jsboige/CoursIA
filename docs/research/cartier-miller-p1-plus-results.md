@@ -185,3 +185,36 @@ Le script est **auto-suffisant** : il n'importe ni `pilot.py` ni `elliptic_prefi
 Tranche Python-only **PASS** : 92 premiers dérivés, 10809 stopping indices calculés, 2130 exact_binomial_checks vérifiés, 43 quarter_cross_checks validés, **0 désaccord** entre les deux implémentations Python indépendantes. Harvey C++ (passe 2) doit confirmer la cohérence 4-voies avec les backends Python + BSGS.
 
 — Rapport rédigé par `myia-po-2023:CoursIA-2`, c.1101, lane worker, 2026-10-06.
+---
+
+## 7. Passe 2 Harvey C++ — PASS (2026-10-22, lane myia-po-2024:CoursIA, claim c.6344755635)
+
+**Tranche** : backend Harvey C++/NTL du P1+ ground truth 92, exécuté **sur Windows natif** via la voie documentée par l'auteur (`run_windows.py` : MSYS2 UCRT64) — le verdict RECOVERABLE-MACHINE du scoping est réduit à une installation locale (règle F).
+
+### 7.1 Outillage (reproductible)
+
+- MSYS2 UCRT64 installé **user-scope sans UAC** : `msys2-base-x86_64-latest.tar.xz` extrait vers `D:\Dev\tools\msys64`, puis `pacman -S mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-ntl`.
+- Toolchain mesurée : GCC **16.2.0** (Rev6), NTL **11.6.0**, 1 thread (`--version` : `{"ntl":"11.6.0","compiler":"16.2.0","ntl_threads":1}`).
+- Build : mêmes flags que `run_windows.py` (`-O3 -std=c++17 -pthread -I<ucrt64>/include -L<ucrt64>/lib`), sources = `harvey_adapter.cpp` + `upstream/recurrences_ntl.cpp` + `upstream/hypellfrob.cpp` **vendorisées au pin `37a9b72`** (aucun accès `/opt/sage` requis — le dépôt embarque les deux sources Sage hypellfrob avec leur provenance). Binaire 288 127 octets, SHA-256 `2ce5d768b430102c5efff804d08e3048be69066a746a240ce257b927668357cb` (consigné dans le JSON).
+- **Piège reproductibilité (muet)** : sans `ucrt64/bin` dans le `PATH`, `cc1plus` meurt au chargement de ses DLL (libgmp/libmpfr/libisl) **sans écrire un seul octet d'erreur** — le driver g++ rend rc=1 silencieux, y compris sur erreur de syntaxe triviale. Le diagnostic passe par l'export du PATH avant tout appel.
+
+### 7.2 Résultats (`example_results/p1_plus_harvey_validation.json`, driver `scripts/cartier_miller/run_harvey_p1_plus.py`)
+
+| Critère | Attendu (upstream) | Mesuré | Verdict |
+|---|---|---|---|
+| Stopping-point queries | 10 809 (92 premiers) | **10 809, 92 premiers** | ✓ |
+| Mismatches Harvey ↔ récurrences Python | 0 | **0** (`B`, `a`, `U` par L, tous stopping indices) | ✓ |
+| Forced arbitrary-precision | 26 | **43** (quarter-points de tous les p ≤ 199, sur-ensemble), 0 mismatch | ✓ |
+| Invalid inputs | 3 | **3/3** fail-closed (module composé, L > (p−1)/2, reps < 1) | ✓ |
+| `status` | passed | **passed** | ✓ |
+
+Comparaison : pour **chaque** stopping index L ∈ [0, (p−1)/2] de **chacun** des 92 premiers, la sortie Harvey `calculate(p, L)` est confrontée aux récurrences Python indépendantes `prefix_values`/`original_values` vendorigées (passe 1, #19523) — la même croisée que `benchmark_engine.py` (clé `Harvey/Miller answer mismatch`), généralisée du seul quarter-point à tous les indices.
+
+### 7.3 Périmètre et résiduel
+
+- **Large-modulus (p ≈ 10⁸)** : non rejoués ici — déjà livrés par P1 integration #19510 côté Python ; la référence Python des récurrences coûte ~1 min/premier à cette taille. À prendre en note pour une éventuelle passe Harvey large-modulus.
+- **Schoof + BSGS (§5)** : restent « à exécuter passe 2 » — backends Python purs, sans dépendance outillage ; le present document ne couvre que le backend C++.
+
+### 7.4 Ce que ça établit
+
+La cohérence **identité ↔ code ↔ validation** du manuscript est désormais croisée sur ce siège par le **backend C++/NTL de Harvey** contre les récurrences Python indépendantes, sur l'intégralité du ground truth 92 (10 809 requêtes). Rappel des gardes de l'issue : corroboration computationnelle, pas démonstration — le statut *unrefereed draft* du manuscript est inchangé.
