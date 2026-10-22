@@ -17,6 +17,20 @@ class NetworkError(Exception):
     """Erreur réseau transitoire (connexion reset, timeout) — retryable."""
 
 
+class HTTPStatusError(Exception):
+    """Réponse HTTP en erreur (4xx/5xx) — porte code, url et corps de réponse."""
+
+    def __init__(self, code: int, url: str, reason: str, body: str):
+        super().__init__(f"HTTP {code} Error calling {url}: {reason}\nBody: {body}")
+        self.code = code
+        self.url = url
+        self.body = body
+
+
+class WorkflowExecutionError(Exception):
+    """Le serveur ComfyUI a rejeté ou fait échouer l'exécution du workflow."""
+
+
 class ComfyUIConfig:
     """Configuration pour le client ComfyUI."""
     
@@ -72,7 +86,8 @@ class ComfyUIClient:
             Réponse JSON de l'API
 
         Raises:
-            Exception: Si la requête échoue
+            HTTPStatusError: Si le serveur répond un statut 4xx/5xx
+            NetworkError: Si la requête échoue au niveau réseau (URL Error)
         """
         # S'assurer que server_url ne se termine pas par / et endpoint commence par /
         server_url = self.server_url.rstrip("/")
@@ -105,9 +120,7 @@ class ComfyUIClient:
                 return json.loads(response.read().decode())
         except error.HTTPError as e:
             error_body = e.read().decode() if e.fp else "No error body"
-            raise Exception(
-                f"HTTP {e.code} Error calling {url}: {e.reason}\nBody: {error_body}"
-            )
+            raise HTTPStatusError(e.code, url, str(e.reason), error_body) from e
         except error.URLError as e:
             raise NetworkError(f"URL Error calling {url}: {e.reason}") from e
 
@@ -128,7 +141,7 @@ class ComfyUIClient:
         response = self._make_request("/prompt", method="POST", data=payload)
 
         if "prompt_id" not in response:
-            raise Exception(f"Prompt queue failed: {response}")
+            raise WorkflowExecutionError(f"Prompt queue failed: {response}")
 
         return response["prompt_id"]
 
@@ -216,7 +229,7 @@ class ComfyUIClient:
                 if isinstance(status, dict) and status.get("status_str") == "error":
                     messages = status.get("messages") or []
                     detail = json.dumps(messages, indent=2)[:2000] if messages else "(aucun detail serveur)"
-                    raise Exception(
+                    raise WorkflowExecutionError(
                         f"Workflow execution failed (server reported error): {detail}"
                     )
 
@@ -226,7 +239,7 @@ class ComfyUIClient:
 
                 # Vérifier les erreurs
                 if "errors" in result and result["errors"]:
-                    raise Exception(
+                    raise WorkflowExecutionError(
                         f"Workflow execution failed: {json.dumps(result['errors'], indent=2)}"
                     )
 
@@ -266,9 +279,7 @@ class ComfyUIClient:
                 return response.read()
         except error.HTTPError as e:
             error_body = e.read().decode() if e.fp else "No error body"
-            raise Exception(
-                f"HTTP {e.code} Error calling {url}: {e.reason}\nBody: {error_body}"
-            )
+            raise HTTPStatusError(e.code, url, str(e.reason), error_body) from e
         except error.URLError as e:
             raise NetworkError(f"URL Error calling {url}: {e.reason}") from e
 
@@ -989,9 +1000,15 @@ def load_from_env(env_path: Optional[Path] = None) -> ComfyUIClient:
     server_url = env_vars.get("COMFYUI_API_URL")
     api_token = env_vars.get("COMFYUI_API_TOKEN")
 
-    # Tenter de récupérer le token depuis le fichier .secrets/qwen-api-user.token
-    # On cherche le répertoire .secrets à la racine du projet (en remontant depuis env_path)
-    if env_path:
+    # Le token API est celui du .env, provisionné par
+    # scripts/secrets/render_envs.py depuis .secrets/master.env.
+    # Le fichier .secrets/qwen-api-user.token contient le HACHAGE bcrypt du
+    # mot de passe de l'interface web : ce n'est pas un credential Bearer, et
+    # il ne doit donc JAMAIS écraser le token du .env. Mesuré : avec cet
+    # écrasement, /system_stats répondait 401 pour tous les carnets Image
+    # (T4 de l'Epic #21424). Il ne sert que de repli, quand le .env ne
+    # fournit aucun COMFYUI_API_TOKEN.
+    if env_path and not api_token:
         project_root = env_path.parent
         # Remonter jusqu'à trouver .secrets ou atteindre la racine
         for _ in range(5): # Max 5 niveaux
@@ -1000,7 +1017,13 @@ def load_from_env(env_path: Optional[Path] = None) -> ComfyUIClient:
                 try:
                     file_token = secrets_file.read_text(encoding='utf-8').strip()
                     if file_token:
-                        print(f"✅ Token chargé depuis {secrets_file}")
+                        # Chemin relatif seulement : le chemin absolu fuiterait la machine dans les outputs
+                        print(
+                            "⚠️  COMFYUI_API_TOKEN absent du .env - repli sur "
+                            f".secrets/{secrets_file.name} (hachage bcrypt du mot de passe "
+                            "web : ce n'est pas un credential Bearer, l'authentification "
+                            "peut echouer en 401)"
+                        )
                         api_token = file_token
                         break
                 except Exception as e:
@@ -1038,3 +1061,97 @@ def create_client(config: Optional[ComfyUIConfig] = None) -> ComfyUIClient:
         base_url=config.base_url,
         api_token=config.api_token
     )
+
+
+# --- Workflows Qwen-Image 2.1 versionnes (fichiers au format UI) -------------
+# Les fichiers de scripts/genai-stack/workflows/qwen_image_2_1/ sont la source de
+# verite des graphes (palier INT8 versionne). L'API /prompt attend le format
+# "API" (dict node_id -> {class_type, inputs}) : ces fonctions font la conversion
+# pour les noeuds natifs utilises par ces workflows.
+
+WIDGETS_NOMMES_QWEN_IMAGE = {
+    "UNETLoader": ["unet_name", "weight_dtype"],
+    "CLIPLoader": ["clip_name", "type", "device"],
+    "VAELoader": ["vae_name"],
+    "CLIPTextEncode": ["text"],
+    "KSampler": ["seed", "control_after_generate", "steps", "cfg",
+                 "sampler_name", "scheduler", "denoise"],
+    "EmptyLatentImage": ["width", "height", "batch_size"],
+    "SaveImage": ["filename_prefix"],
+    "ResolutionSelector": ["aspect_ratio", "megapixels", "multiple"],
+    "VAEDecode": [],
+    "ConditioningZeroOut": [],
+    "PreviewImage": [],
+}
+
+
+def dossier_workflows_qwen_image_2_1(depuis: Optional[Path] = None) -> Path:
+    """Localise scripts/genai-stack/workflows/qwen_image_2_1 en remontant depuis `depuis`.
+
+    Args:
+        depuis: point de depart (defaut: repertoire courant)
+
+    Returns:
+        Chemin absolu du dossier des workflows
+
+    Raises:
+        FileNotFoundError: si le dossier n'est pas trouve dans les 6 niveaux parents
+    """
+    depart = Path(depuis or Path.cwd()).resolve()
+    courant = depart
+    for _ in range(6):
+        candidat = courant / "scripts" / "genai-stack" / "workflows" / "qwen_image_2_1"
+        if candidat.is_dir():
+            return candidat
+        courant = courant.parent
+    raise FileNotFoundError(
+        "scripts/genai-stack/workflows/qwen_image_2_1 introuvable depuis " + str(depart)
+    )
+
+
+def charger_workflow_ui(chemin) -> Dict[str, Any]:
+    """Charge un workflow ComfyUI au format UI (celui des fichiers versionnes)."""
+    return json.loads(Path(chemin).read_text(encoding="utf-8"))
+
+
+def ui_vers_api(workflow_ui: Dict[str, Any]) -> Dict[str, Any]:
+    """Convertit un workflow au format UI en prompt au format API (/prompt).
+
+    Les valeurs des widgets suivent l'ordre declare dans WIDGETS_NOMMES_QWEN_IMAGE ;
+    une entree reliee a un lien est remplacee par [node_id_source, slot].
+
+    Raises:
+        KeyError: si un noeud du graphe n'est pas couvert par la table des widgets.
+    """
+    noeuds = {n["id"]: n for n in workflow_ui["nodes"]}
+    liens = {l[0]: (l[1], l[2]) for l in workflow_ui["links"]}
+    prompt: Dict[str, Any] = {}
+    for nid, noeud in noeuds.items():
+        classe = noeud["type"]
+        if classe in ("MarkdownNote", "Note"):
+            continue
+        if classe not in WIDGETS_NOMMES_QWEN_IMAGE:
+            raise KeyError(f"Classe non couverte par le convertisseur : {classe}")
+        entrees: Dict[str, Any] = {}
+        widgets = list(noeud.get("widgets_values") or [])
+        for nom, valeur in zip(WIDGETS_NOMMES_QWEN_IMAGE[classe], widgets):
+            entrees[nom] = valeur
+        for entree in noeud.get("inputs", []):
+            lid = entree.get("link")
+            if lid is not None:
+                source, slot = liens[lid]
+                entrees[entree["name"]] = [str(source), slot]
+        prompt[str(nid)] = {"class_type": classe, "inputs": entrees}
+    return prompt
+
+
+def noeud_de_classe(prompt_api: Dict[str, Any], classe: str) -> Dict[str, Any]:
+    """Retourne le premier noeud du prompt API portant cette classe.
+
+    Raises:
+        KeyError: si aucun noeud du prompt ne porte cette classe.
+    """
+    for spec in prompt_api.values():
+        if spec["class_type"] == classe:
+            return spec
+    raise KeyError(classe)

@@ -8,6 +8,8 @@
 > baseline .NET 9.0.20 / 10.0.12 /
 > 11.0.0-rc.1.26425.128 sur notre matériel.
 > **Mesure** : myia-po-2026, 2026-10-02.
+> **Complément** : re-mesure du banc 3 (Automata) par `myia-po-2023` le 2026-10-20 — voir la
+> section « Re-mesure du banc 3 ».
 
 ## Conditions (reproductibles)
 
@@ -46,7 +48,14 @@
 |---|---:|---:|---:|---:|---:|---:|---|
 | Matching_DotNetDelegate | 587.1 | 578.8 | 573.3 | −1.4 % | −2.4 % | −1.0 % | 222.32 / 222.33 / 222.48 KB |
 | Pipeline_ConvertDeterminizeMinimize | 2290.4 | 2039.7 | 2122.7 | **−10.9 %** | −7.3 % | +4.1 % | 2710.23 / 2709.52 / 2709.59 KB |
-| Pipeline_EvilRegex | 1930.8 | 2053.8 | 2462.6 | +6.4 % | +27.5 % | +19.9 % | 2128.37 KB (identique) — StdDev in-passe ≈ mean (1738 de médiane sur 2685 de moyenne en net11) : **INCONCLUSIF**, à re-mesurer fenêtre CI calme |
+| Pipeline_EvilRegex | 1930.8 | 2053.8 | 2462.6 | +6.4 % | +27.5 % | +19.9 % | 2128.37 KB (identique) — StdDev in-passe ≈ mean (1738 de médiane sur 2685 de moyenne en net11) : **INCONCLUSIF**, à re-mesurer fenêtre CI calme — **re-mesuré le 20/10 : le signal +27,5 % ne se reproduit pas (+2,3 % en 9→11), cf. « Re-mesure du banc 3 »** |
+
+> **Banc 3 re-mesuré le 20/10** (fenêtre du 20/10, 3 passes × 3 runtimes, protocole BDN
+> identique) : les trois lignes de ce banc sont re-contextualisées dans la section
+> « Re-mesure du banc 3 » — le signal fort du 02/10 sur `Pipeline_EvilRegex` n'y est
+> **pas reproduit** (le +27,5 % devient +2,3 % en 9→11), la dispersion inter-passes y
+> reste grande et les deltas fins du banc y restent **non concluants**. Les valeurs de ce
+> tableau restent celles de la session du 02/10.
 
 ## Banc 4 — semantic-fleet (unités : us)
 
@@ -83,10 +92,15 @@ exécutées dans leur dossier de série (chemins de données relatifs), aucune c
 
 | Carnet | net10 | net11 (RC) | Delta | État |
 |---|---:|---:|---:|---|
-| ML-5-TimeSeries | 16.7 s | 16.2 s | −3 % | **27 OK / 0 erreur des deux côtés** — compat .NET 11 prouvée, delta < bruit wall-clock (n=1) : **nul mesuré** |
-| Infer-2-Gaussian-Mixtures | 24.4 s | 23.5 s | −3.7 % | idem — compat prouvée, pas de régression |
+| ML-05-TimeSeries | 16.7 s | 16.2 s | −3 % | **27 OK / 0 erreur des deux côtés** — compat .NET 11 prouvée, delta < bruit wall-clock (n=1) : **nul mesuré** |
+| Infer-02-Gaussian-Mixtures | 24.4 s | 23.5 s | −3.7 % | idem — compat prouvée, pas de régression |
 
-**Re-mesure calme du 02/10 soir (#18878, artefacts préservés au gist)** : ML-5-TimeSeries 13,0 s (net10) → **9,4 s** (net11) ; Infer-2-Gaussian-Mixtures 21,0 s → 21,2 s. Les deux séries (charge CI du matin : −3 %/−3,7 % ; calme du soir : −28 %/+1 %) divergent plus entre elles qu'entre runtimes — la dispersion inter-séances domine, ce qui **confirme** la lecture ci-dessous : le wall-clock carnet mesure le lancement kernel + Roslyn, pas le delta runtime. Ce que la re-mesure prouve et préserve : compatibilité complète sous 11.0.0-rc.1 (cellules code toutes exécutées, aucune erreur, runtime imprimé dans l'artefact ; comptes exacts au manifeste du gist).
+Chemins exacts (les noms de fichiers ont été renommés après ces mesures : `ML-5-TimeSeries` →
+`ML-05-TimeSeries` le 10/10, `Infer-2-Gaussian-Mixtures` → `Infer-02-Gaussian-Mixtures` le
+19/10) : `MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries.ipynb` et
+`MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb`.
+
+**Re-mesure calme du 02/10 soir (#18878, artefacts préservés au gist)** : ML-05-TimeSeries 13,0 s (net10) → **9,4 s** (net11) ; Infer-02-Gaussian-Mixtures 21,0 s → 21,2 s. Les deux séries (charge CI du matin : −3 %/−3,7 % ; calme du soir : −28 %/+1 %) divergent plus entre elles qu'entre runtimes — la dispersion inter-séances domine, ce qui **confirme** la lecture ci-dessous : le wall-clock carnet mesure le lancement kernel + Roslyn, pas le delta runtime. Ce que la re-mesure prouve et préserve : compatibilité complète sous 11.0.0-rc.1 (cellules code toutes exécutées, aucune erreur, runtime imprimé dans l'artefact ; comptes exacts au manifeste du gist).
 
 Lecture honnête : le wall-clock carnet est dominé par le démarrage kernel + Roslyn ; un gain
 runtime de −10 % sur les seules cellules de calcul serait invisible ici. Les bancs ci-dessus
@@ -119,12 +133,12 @@ pour le RC). Build de kernel identique partout — la seule variable est le runt
 
 | Carnet | .NET 9 | .NET 10 | .NET 11 (rc.1) | Contrôle canon* |
 |---|---:|---:|---:|---:|
-| ML-5-TimeSeries | 11,37 s | 11,65 s (+2,5 %) | 12,48 s (+9,8 %) | 11,14 s |
-| Infer-2-Gaussian-Mixtures | 23,98 s | 25,79 s (+7,6 %) | 26,52 s (+10,6 %) | — |
+| ML-05-TimeSeries | 11,37 s | 11,65 s (+2,5 %) | 12,48 s (+9,8 %) | 11,14 s |
+| Infer-02-Gaussian-Mixtures | 23,98 s | 25,79 s (+7,6 %) | 26,52 s (+10,6 %) | — |
 
 \* contrôle = canon 1.0.712001 sous .NET 10, contre 11,65 s pour l'instrument 617701 même
 runtime : écart instrument **4,4 %** — même ordre que les deltas inter-runtime. Dispersion
-intra-runtime ±10-15 % (ex. Infer-2 r11 : 24,29-30,66 s).
+intra-runtime ±10-15 % (ex. Infer-02 r11 : 24,29-30,66 s).
 
 **Lecture** : aucun delta 9 → 10 → 11 distinguable du bruit au wall-clock carnet —
 convergent avec la lecture po-2026 ci-dessus (kernel + Roslyn dominent), et le levier
@@ -132,6 +146,39 @@ bancs 9 → 10 (−5 à −43 %) **ne se transfère pas au format carnet** : les
 égales ou plus courtes que r10/r11 aux bruits près. Ce complément ajoute : la donnée carnet
 .NET 9 (absente du volet po-2026), la médiane alternée n=3 (vs n=1/2 séances), et le bornage
 de l'écart instrument (4,4 %).
+
+## Volet carnets — axe 1 (awaits profonds / Runtime Async) — ai-01, 2026-10-19
+
+Le volet carnets ci-dessus couvre deux axes : ML.NET numérique et allocations Infer.
+L'axe 1 de l'EPIC — **awaits profonds / Runtime Async opt-in**, cas de grep CA2027 — n'y
+était pas couvert. La sélection des 3 carnets types est arbitrée sur [#18769] ; ce qu'il en
+reste ici est le **volet mesuré** de l'axe 1.
+
+**Les deux porteurs de l'axe 1, et pourquoi ils ne se confondent pas** (mesures first-hand
+sur `origin/main` @ `63a8207db`, 2026-10-19) :
+
+| Porteur | Chemin exact | Rôle sur l'axe 1 | Rejouable sur une machine stock ? |
+|---|---|---|---|
+| Cas de grep CA2027 | `MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/01-GitHub-Copilot-SDK-Binding.ipynb` | **seul** `Task.WhenAny` des carnets du dépôt (1 hit : `await Task.WhenAny(tcs.Task, Task.Delay(TimeSpan.FromSeconds(180)))` ; hors sous-module `semantic-fleet`, qui en porte un second en cellule 34 de `02-oobabooga-chat-capabilities.ipynb`) ; **23 `await`** — quatrième carnet le plus asynchrone du dépôt (trois carnets Aspire et Semantic-Kernel-MCP le précèdent) | **non** — exige `CopilotAgent.App` construit (`copilot.exe`) **et** un abonnement GitHub Copilot ; sans le binaire, la cellule **dégrade en silence** (« Copilot CLI introuvable », 0 erreur, aucune mesure) |
+| Porteur hors ligne | `MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/08-Aspire-AsyncFFI-Dotnet.ipynb` | async **aux frontières natives** (P/Invoke, `UnmanagedCallersOnly`, `TaskCompletionSource`, `GCHandle`) ; sa §4 est l'instrument de la famine du pool étranger — le temps de blocage du thread natif dans `SetResult` (instrumentée par #21479) | **oui** — entièrement hors ligne, **0 erreur** |
+
+**Mesure du porteur hors ligne** — noyau `.net-csharp` canon 1.0.712001, .NET 10 machine-wide,
+2026-10-19 : **11,0 s** de wall-clock rapporté par `notebook_tools.py execute`, **0 erreur**.
+La même exécution chronométrée par l'exécuteur .NET `dotnet_executor.py` (via son wrapper
+`exec_dotnet_persist.py`) donne 7,9 s et 8,9 s sur deux passages : la dispersion du wall-clock
+carnet est celle décrite plus haut (kernel + Roslyn dominent).
+
+| Carnet (axe 1) | net10 (canon) | net11 (RC) | Delta | État |
+|---|---:|---:|---:|---|
+| `08-Aspire-AsyncFFI-Dotnet.ipynb` | 11,0 s | — | **non mesuré** | rejouable hors ligne ; compat .NET 11 **à établir** par l'instrument non-canon `1.0.617701` décrit plus haut (aucun runtime isolé .NET 9/11 sur la machine de mesure) |
+| `01-GitHub-Copilot-SDK-Binding.ipynb` | 39,7 s (po-2023, 14/10) | — | **non mesuré** | **non rejouable hors machine équilibrée** ; quand le CLI manque, l'exécution « passe » (0 erreur) sans produire la moindre mesure — un vert qui ne prouve rien |
+
+**Commande de rejeu** (depuis la racine d'un checkout à jour ; le `--cwd` par défaut est le
+dossier du carnet, ce qui résout les chemins de données relatifs) :
+
+```bash
+python scripts/notebook_tools/notebook_tools.py execute MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Aspire/08-Aspire-AsyncFFI-Dotnet.ipynb --cell-by-cell --dotnet-only --timeout 300
+```
 
 ## Verdicts par axe (gain net mesuré vs chiffre attendu du digest)
 
@@ -142,7 +189,7 @@ de l'écart instrument (4,4 %).
 | Rule parsing multilingue (Argumentum) | (String.Split via agrégats, hors ratios article) | −13,2 % / −15,7 % | +3,7 % / +25 % (anomalie non confirmée, cf banc 5) | gain 11 réel sur le parsing de règles ; le 9→10 de la variante 50 règles à re-mesurer fenêtre calme |
 | Collections/LINQ (MGS) | FindAll 0,30 · SequenceEqual ×7,7 | ~0 à +17 % (GC-sensible) | −6 à −26 % | **non couvert** (nos bancs n'exercent pas ces API précises) ; côté 11 : nul/inconclusif |
 | Charge native-dominée (Z3.Linq) | (rien de spécifique promis) | −0,3 à −6,7 % | −5 à −10 % | **rattrapage 10 réel (marshaling), gain 11 nul** |
-| Allocation-heavy pipeline (Automata) | (Stores covariants 0,56 etc.) | +4,1 % / INCONCLUSIF EvilRegex | −10,9 % | **rattrapage 10 réel ; 11 non prouvé sur cette charge** (allocs identiques au Ko près — cohérent : nos pipelines allouent par design, pas par défaut runtime) |
+| Allocation-heavy pipeline (Automata) | (Stores covariants 0,56 etc.) | +4,1 % / INCONCLUSIF EvilRegex — **signal +27,5 % non reproduit le 20/10** (re-mesure : +2,3 % 9→11, dispersion inter-passes 47–69 %) | −10,9 % | **rattrapage 10 réel ; 11 non prouvé sur cette charge** (allocs identiques au Ko près — cohérent : nos pipelines allouent par design, pas par défaut runtime) |
 | Kernel notebooks | — | — | — | **le canon 1.0.712001 exige déjà ≥ .NET 10** : le dépôt ne peut pas rester « runtime 9 » pour les carnets même sans migration |
 
 ## Synthèse pour la décision P2 (LTS vs GA, escalade user)
@@ -159,11 +206,81 @@ de l'écart instrument (4,4 %).
 4. Conditions : RC1, machine partagée avec CI — les deltas < ±10 % sur ces bancs ne sont pas
    séparables du bruit ; à re-mesurer fenêtre calme avant toute décision définitive.
 
+## Re-mesure du banc 3 — fenêtre du 20/10 (myia-po-2023)
+
+Objet : le drapeau **INCONCLUSIF** posé le 02/10 sur `Pipeline_EvilRegex` (banc 3) — « StdDev
+in-passe ≈ mean (1738 de médiane sur 2685 de moyenne en net11) : à re-mesurer fenêtre CI
+calme ». Cette section est la réponse mesurée à ce drapeau.
+
+### Protocole (identique à celui du 02/10, cf. #18770)
+
+| Paramètre | Valeur |
+|---|---|
+| Machine | `myia-po-2023` — i7-12700H, X64 RyuJIT AVX2 (14 cœurs) — **même modèle de CPU** que la session du 02/10 (`myia-po-2026`) |
+| Runtimes | .NET **9.0.21** (9.0.2126.50404) · .NET **10.0.13** (10.0.1326.50504) · .NET **11.0.0** (11.0.26.50505 ; SDK `11.0.100-rc.2.26504.105`, distinct du runtime) |
+| Preuve du runtime effectif | header `// Runtime=.NET X.Y.Z` de chaque log, vérifié fichier par fichier (9.0.21 / 10.0.13 / 11.0.0) |
+| Config BDN | `InProcessEmitToolchain`, 5 warmup / 15 itérations / 1 invocation / unroll 1 — **le protocole du 02/10** (#18770) ; `ServerGarbageCollection = false` |
+| Passes | 3 passes complètes, ordre net9 → net10 → net11 ; **médiane des 3 moyennes** par (banc × runtime) |
+| Artefact mesuré | sous-module `Automata` au gitlink épinglé `f0618529fa`, clone depth-1 **hors dépôt** (worktree du sous-module laissé propre) ; build Release `net9.0` unique exécuté tel quel sur les 3 runtimes (`--fx-version`) — les deltas **intra-session** mesurent le runtime, pas le compilateur ; aucun comparatif binaire n'est établi avec le build du 02/10 (les SDK diffèrent : `11.0.100-rc.2` vs `10.0.204`), l'effet éventuel du compilateur n'est pas isolé entre les deux sessions |
+| Journaux | gist secret [64353cf9](https://gist.github.com/jsboige/64353cf993eac7c393611a3edaeff6f1) — 9 logs BDN + `SHA256SUMS.txt` (empreinte du manifeste : `9b7644d7589c6161265614e178db4ded8e5df746d3f51a46be3ea8788379d626`) |
+
+### Mesures (médiane des 3 moyennes, en µs)
+
+| Benchmark | net9 | net10 | net11 | 9→10 | 9→11 | 10→11 |
+|---|---:|---:|---:|---:|---:|---:|
+| Pipeline_EvilRegex | 2829.4 | 2944.0 | 2894.6 | +4.1 % | **+2.3 %** | **−1.7 %** |
+| Pipeline_ConvertDeterminizeMinimize | 3080.3 | 3937.0 | 3170.7 | +27.8 % | +2.9 % | −19.5 % |
+| Matching_DotNetDelegate | 956.6 | 1058.0 | 815.2 | +10.6 % | −14.8 % | −22.9 % |
+
+### Lecture (quatre points, sans arrondi favorable)
+
+1. **Le signal fort du 02/10 ne se reproduit pas.** Le « .NET 11 pénalise `Pipeline_EvilRegex`
+   de +27,5 % » (et le +19,9 % en 10→11) devient **+2,3 %** et **−1,7 %** sur la médiane des 3
+   moyennes de la fenêtre du 20/10. C'est le point le plus net de cette re-mesure : aucun
+   effet runtime n'y est visible ; la non-reproduction est cohérente avec un artefact de la
+   fenêtre du 02/10, sans le prouver.
+2. **Le drapeau « StdDev in-passe ≈ mean » ne se reproduit pas non plus** : en net11, le
+   rapport StdDev/moyenne vaut 18,1 % sur la passe 1 (19,4 % sur la base médiane), le
+   rapport StdDev/médiane de la passe 2 vaut 6,4 %, et la passe 3 vaut 11,8 % en
+   StdDev/moyenne (11,9 % en StdDev/médiane) — loin du relevé du
+   02/10, où le StdDev in-passe était de l'ordre de la moyenne de la passe (1738 de
+   médiane sur 2685 de moyenne). BDN signale une distribution multimodale dans 5 des
+   9 logs de la fenêtre — mValue 3,25 (net10) et 3,33 (net9) sur
+   `Pipeline_ConvertDeterminizeMinimize`, 3 sur `Pipeline_EvilRegex` (net10 et net11,
+   passe 3) et 3,25 (net9) sur `Matching_DotNetDelegate` — cohérent avec une charge très
+   allouante (2,13 Mo par opération), pas un défaut propre à un runtime ; la pression
+   Gen0 invoquée comme cause n'a **pas** été mesurée dans cette fenêtre.
+3. **La fenêtre du 20/10 n'est pas plus calme que celle du 02/10** : la dispersion **entre
+   passes** — écart (max − min) rapporté à la **moyenne des deux bornes** — vaut 47 %
+   (`Pipeline_ConvertDeterminizeMinimize` en net10 : 2557 → 4135 µs) et 69 %
+   (`Matching_DotNetDelegate` en net11 : 603 → 1241 µs). Sur ces deux autres
+   benchmarks elle domine les deltas inter-runtime, et les lignes du 02/10 (`−10,9 %` pour
+   `Pipeline_ConvertDeterminizeMinimize`) ne sont **pas** reproduites non plus — dans un sens
+   ou dans l'autre. Sur ces deux-là, la re-mesure **ne tranche rien**.
+4. **Les valeurs absolues ne sont pas comparables entre les deux sessions** : net9
+   `Pipeline_EvilRegex` vaut 2829 µs ici contre 1931 µs au 02/10 (+46 %), à protocole BDN
+   identique et CPU de même modèle. L'origine probable de l'écart est les versions patch
+   des runtimes (9.0.21 vs 9.0.20, 10.0.13 vs 10.0.12, rc.2 vs rc.1) et l'état de charge
+   de la machine — hypothèse non isolée : les deux facteurs varient ensemble d'une session
+   à l'autre.
+   **Seuls les deltas intra-session sont comparables** — d'où la règle de lecture : on compare
+   une session à elle-même, jamais une colonne à l'autre.
+
+### Ce que cette re-mesure règle, et ce qu'elle ne règle pas
+
+| Point | État après le 20/10 |
+|---|---|
+| `Pipeline_EvilRegex` : le runtime .NET 11 est-il plus lent que .NET 9 ? | **non mesuré** — +2,3 % 9→11, −1,7 % 10→11 : aucun écart distinguable du bruit |
+| `Pipeline_EvilRegex` : le drapeau INCONCLUSIF du 02/10 | **non reproduit** — le signal +27,5 % et le rapport StdDev élevé du 02/10 n'apparaissent pas dans la fenêtre du 20/10 ; une non-reproduction affaiblit le drapeau, sans le trancher |
+| `Pipeline_ConvertDeterminizeMinimize`, `Matching_DotNetDelegate` | **toujours non concluants** — dispersion inter-passes 47–69 % (écart max−min rapporté à la moyenne des deux bornes) |
+| Les 3 autres bancs encore marqués INCONCLUSIF (`RandomSearch_Sphere10D_50k` (MGS), `PromptSignature.Matches` et `PromptTransform.InterpolateKeys` (semantic-fleet)) | **non re-mesurés** dans ce cycle : même travail de préparation (clone depth-1 + build Release) sur des sous-modules dont les bancs amont relèvent de la coordination ai-01 |
+| Une fenêtre **calme** (runner CI de la machine au repos) avec n ≥ 5 passes | **non obtenue** sur cette machine ; c'est la condition qui reste pour serrer la dispersion inter-passes |
+
 ## Provenance des journaux
 
 - **Logs BDN — 45 = 5 bancs × 3 passes × 3 runtimes** : gist [d434d4dc](https://gist.github.com/jsboige/d434d4dc48db03a37bab05259921d4be) (secret, accessible par lien), manifeste `SHA256SUMS.txt` inclus, empreinte SHA-256 du manifeste `47951d824eccec4e0974142405734623c332b2ae79dd74bd9a234bbc3514c052`. Chaque log porte son header `// Runtime=.NET X.Y.Z` (9.0.20 / 10.0.12 / 11.0.0) ; l'interleave des passes se lit sur les timestamps consécutifs — ex. MGS : passe 1 à 12:23:05/08/11, passe 2 à 12:24:18/21/23, passe 3 à 12:24:48/51/53.
 - **SHA exacts des bancs mesurés** (branche `feature/benchmarkdotnet-baseline`, clones depth-1) : MetaGeneticSharp `365a4fb2384f` · Z3.Linq `b804c30859e9` · Automata `abaabd1b6518` · semantic-fleet `ff0dfb47c052` · Argumentum `709e6d05f6c2`.
-- **Traces carnets (volet wall-clock) — re-mesurées et préservées (#18878, 02/10 soir, machine calme)** : 4 artefacts exécutés versés dans le même gist [d434d4dc](https://gist.github.com/jsboige/d434d4dc48db03a37bab05259921d4be). Chaque artefact porte une **cellule probe** qui imprime le runtime effectif (`.NET 10.0.12` / `.NET 11.0.0-rc.1.26425.128` — les versions exactes des Conditions), toutes ses cellules code exécutées (ML-5 : **17/17** ; Infer-2 : **28/28**) et **0 erreur**. Empreintes SHA-256 : ML-5 net10 `8bf83441ef846b7e` · net11 `acf51fa1c1e4ff81` · Infer-2 net10 `e755acaadb67fe1c` · net11 `fb832217406e6bfa` (complets dans `SHA256SUMS-notebooks.txt` du gist).
+- **Traces carnets (volet wall-clock) — re-mesurées et préservées (#18878, 02/10 soir, machine calme)** : 4 artefacts exécutés versés dans le même gist [d434d4dc](https://gist.github.com/jsboige/d434d4dc48db03a37bab05259921d4be). Chaque artefact porte une **cellule probe** qui imprime le runtime effectif (`.NET 10.0.12` / `.NET 11.0.0-rc.1.26425.128` — les versions exactes des Conditions), toutes ses cellules code exécutées (ML-5 : **17/17** ; Infer-2 : **28/28**) et **0 erreur**. Empreintes SHA-256 : ML-5 net10 `8bf83441ef846b7e` · net11 `acf51fa1c1e4ff81` · Infer-2 net10 `e755acaadb67fe1c` · net11 `fb832217406e6bfa` (complets dans `SHA256SUMS-notebooks.txt` du gist). Les identifiants d'artefact `ML-5` / `Infer-2` sont ceux du dépôt du 02/10, **antérieur** aux renommages de fichiers du 10/10 et du 19/10 : ils désignent les mêmes deux carnets que `ML-05-TimeSeries` et `Infer-02-Gaussian-Mixtures` dans le tableau ci-dessus.
 
 ## Reproduire
 

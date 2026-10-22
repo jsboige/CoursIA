@@ -1,12 +1,12 @@
 - name: Probas-1 Setup
   family: Probas/Infer.NET-PyMC
   python: MyIA.AI.Notebooks/Probas/PyMC/PyMC-01-Setup.ipynb
-  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-1-Setup.ipynb
-  numbering_exception: 'Zero-padding cote Python uniquement PyMC-1..9 -> PyMC-01..09 (renommage #13760) ; jumeau C# Infer-1..9 non concerne, contenu pedagogique inchange.'
+  csharp: MyIA.AI.Notebooks/Probas/Infer/Infer-01-Setup.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Modele nominal lib-vs-lib cite par owner #10382 (\"PyMC vs Infer, 2 moteurs qui brillent\") : C# = Microsoft Infer.NET (Microsoft.ML.Probabilistic, NuGet officiel, native .NET, inférence variationnelle EP/VMP) et Python = PyMC (pip pymc, native Python, NUTS/HMC + ADVI). Chaque cote atteint le moteur SOTA de son ecosysteme probabiliste -- ni pont intermediaire ni reimplementation. Aucune asymetrie de machinerie a corriger. Verifie firsthand : C# Microsoft.ML.Probabilistic refs + execution_count, Python pymc imports."
   known_differences:
+  - '2026-10-21 (PR #21727, myia-po-2028:CoursIA) : REBASELINE cote C# -- tranche famille A #14122 (avertissement CS1701). Fix causal : `display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml()))` devient `FactorGraphHelper.GetLatestFactorGraphHtml().DisplayAs("text/html")` -- meme HTML rendu sans lier `IHtmlContent` (Microsoft.AspNetCore.Html.Abstractions 2.2 vs hote 8.0) ; 2 sites de code (cellules 23 et 31) + 3 mentions didactiques alignees (docstring cellule 35, WriteLine cellule 10, markdown cellule 36 -- les eleves ne doivent pas recopier la forme qui declenche le warning). CS1701 en sortie : 1 -> 0. Re-execution complete du carnet (12/12 cellules de code, 0 erreur, 0 execution_count null, kernel .net-csharp, metadata.papermill 27,72 s) ; SVG factor-graph conserve (aucun repli viz-js, #15209 evite). Cote Python byte-identique a main. Attestation = nouveau blob SHA + content_csharp_sha du cote C#.'
   - '2026-10-07 (myia-po-2027:CoursIA) #19778 : csharp_sha rebaseline -- table Navigation cellule 0,
     colonne Suivant : Infer-2-Gaussian-Mixtures -> Infer-1b-Premiers-Modeles (raccord de la chaine
     1 -> 1b -> 2, entree orpheline 1b). Infer-1b n a pas de jumeau Python enregistre -- chaine nav

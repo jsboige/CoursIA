@@ -1,8 +1,8 @@
 <!-- CATALOG-STATUS
 series: QuantConnect-Python
-pedagogical_count: 62
-breakdown: Python=62
-maturity: DRAFT=34, BETA=21, ALPHA=7
+pedagogical_count: 63
+breakdown: Python=63
+maturity: DRAFT=34, BETA=22, ALPHA=7
 -->
 
 # QuantConnect Python Notebooks
@@ -47,7 +47,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-05-Universe-Selection | NON EXÉCUTÉ | |
 | QC-Py-05b-FScore-Piotroski | EXÉCUTÉ | CPU local (yfinance/numpy/scipy), cellules code exécutées, données réelles 14 titres |
 | QC-Py-06-Options-Trading | NON EXÉCUTÉ | |
-| QC-Py-06b-Derivatives-Valuation-From-Scratch | EXÉCUTÉ | CPU local (numpy/scipy), 13/13 cellules code, 3 figures |
+| QC-Py-06b-Derivatives-Valuation-From-Scratch | EXÉCUTÉ | CPU local (numpy/scipy), cellules code exécutées |
 | QC-Py-07-Futures-Forex | NON EXÉCUTÉ | |
 | QC-Py-08-Multi-Asset-Strategies | NON EXÉCUTÉ | |
 | QC-Py-09-Order-Types | NON EXÉCUTÉ | |
@@ -82,7 +82,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-32-RL-DQN-Trading | EXÉCUTÉ | |
 | QC-Py-40-PaperTrading-Binance | EXÉCUTÉ | |
 | QC-Py-41-PaperTrading-IBKR | EXÉCUTÉ | |
-| QC-Py-42-Alpha-Mining-Evolution | EXÉCUTÉ | cellules exécutées sur le panier crypto local (10 actifs ; fenêtre effective 2020-09 → 2025-03) — verdict hors-échantillon `INCONCLUSIVE` |
+| QC-Py-42-Alpha-Mining-Evolution | EXÉCUTÉ | cellules exécutées sur le panier crypto local (10 actifs ; fenêtre effective 2020-09 → 2025-03) — verdict nets de frais (10 bps) trois bras : évolution `BEATS`, bras LLM `INCONCLUSIVE` |
 | QC-Py-Cloud-01-FinBERT-Sentiment | EXÉCUTÉ | |
 | QC-Py-Cloud-02-ML-Classification | EXÉCUTÉ | |
 | QC-Py-Cloud-12-SectorRotation-Momentum | doc cloud | markdown-only — backtest sur QC Cloud |
@@ -138,7 +138,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 
 **[19 — La validation walk-forward, ou l'honnêteté temporelle.](QC-Py-19-ML-Supervised-Classification.ipynb)** Un modèle entraîné une fois puis testé sur tout l'échantillon triche avec le temps. La validation walk-forward décale une fenêtre d'entraînement puis re-teste, fold après fold, en mimant le retrain périodique qu'exige un trading réel. L'accuracy par fold révèle la robustesse — ou l'effondrement — hors échantillon.
 
-<p align="center"><a href="QC-Py-19-ML-Supervised-Classification.ipynb"><img src="assets/readme/quantpy19-walkforward.png" width="540" alt="Validation walk-forward d'un classifieur supervisé : deux sous-graphiques empilés sur 14 mois (2023-03 → 2024-05). Haut — accuracy par fold (bar chart bleu, axe Y = 0.0 → 1.0, axe X = 1 → 14) avec 2 lignes horizontales : Mean Accuracy = 0.874 (rouge pointillés, performance moyenne élevée) et Random Baseline = 0.5 (gris pointillés, baseline 50/50). Distribution hétérogène : folds 5/6/10/11 ≈ 1.0 (excellents), folds 7 ≈ 0.50 (le plus mauvais, à peine au-dessus du random), folds 3/9 ≈ 0.65 (sous-performances ponctuelles). Bas — accuracy cumulée au fil du temps (courbe bleue pleine, aire bleu clair sous la courbe), démarrant à 1.0 puis convergeant vers ~0.87 sur 14 mois malgré les folds médiocres. Démontre la stabilité OOS du modèle (accuracy cumulée reste > 0.85)."></a></p>
+<p align="center"><a href="QC-Py-19-ML-Supervised-Classification.ipynb"><img src="assets/readme/quantpy19-walkforward.png" width="540" alt="Validation walk-forward d'un classifieur supervisé : deux sous-graphiques empilés sur 14 mois (2023-03 → 2024-05). Haut — accuracy par fold (bar chart bleu, axe Y = 0.0 → 1.0, axe X = 1 → 14) avec des lignes horizontales de référence : Mean Accuracy = 0.874 (rouge pointillés, performance moyenne élevée) et Random Baseline = 0.5 (gris pointillés, baseline 50/50). Distribution hétérogène : folds 5/6/10/11 ≈ 1.0 (excellents), folds 7 ≈ 0.50 (le plus mauvais, à peine au-dessus du random), folds 3/9 ≈ 0.65 (sous-performances ponctuelles). Bas — accuracy cumulée au fil du temps (courbe bleue pleine, aire bleu clair sous la courbe), démarrant à 1.0 puis convergeant vers ~0.87 sur 14 mois malgré les folds médiocres. Démontre la stabilité OOS du modèle (accuracy cumulée reste > 0.85)."></a></p>
 
 **[32 — L'agent qui apprend à trader.](QC-Py-32-RL-DQN-Trading.ipynb)** Le deep reinforcement learning entraîne un agent par essais et erreurs : chaque épisode ajuste sa politique pour maximiser la récompense cumulée. La courbe des récompenses par épisode montre la transition de l'exploration vers l'exploitation — le moment où l'agent cesse de tâtonner et commence à exploiter ce qu'il a appris.
 
@@ -186,7 +186,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 |----------|---------|
 | [QC-Py-18-ML-Features-Engineering](QC-Py-18-ML-Features-Engineering.ipynb) | Feature engineering pour trading |
 | [QC-Py-19-ML-Supervised-Classification](QC-Py-19-ML-Supervised-Classification.ipynb) | Classification, signaux d'achat/vente |
-| [QC-Py-20-ML-Regression-Prediction](QC-Py-20-ML-Regression-Prediction.ipynb) | Régression, prédiction de prix |
+| [QC-Py-20-ML-Regression-Prediction](QC-Py-20-ML-Regression-Prediction.ipynb) | Régression, prédiction de prix ; ancrage canonique ML-factor (linéaire vs arbres vs réseau sous multi-graines + Diebold-Mariano) |
 | [QC-Py-21-Portfolio-Optimization-ML](QC-Py-21-Portfolio-Optimization-ML.ipynb) | Optimisation ML de portefeuille |
 | [QC-Py-22-Deep-Learning-LSTM](QC-Py-22-Deep-Learning-LSTM.ipynb) | Réseaux LSTM pour séries temporelles |
 | [QC-Py-23-State-Space-Models](QC-Py-23-State-Space-Models.ipynb) | State Space Models (S4/Mamba) pour séries temporelles |
@@ -228,21 +228,25 @@ Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, application p
 | [QC-Py-40-PaperTrading-Binance](QC-Py-40-PaperTrading-Binance.ipynb) | Binance |
 | [QC-Py-41-PaperTrading-IBKR](QC-Py-41-PaperTrading-IBKR.ipynb) | Interactive Brokers |
 
-## Recherche — alpha mining par évolution (QC-Py-42)
+## Recherche — alpha mining par évolution et LLM (QC-Py-42)
 
 Recherche *from scratch* : plutôt que de coder un facteur à la main, on **fait évoluer des
 expressions alpha** (arbres d'opérateurs sur des features de base) avec `deap`, puis on les
-confronte à une baseline de facteurs fixes. C'est le pont entre la série `Search/`
-(algorithmes évolutionnaires) et la série `QuantConnect` (validation financière).
+confronte à une baseline de facteurs fixes. Un **bras LLM** ajoute la comparaison : un modèle
+de langage propose des expressions dans la même grammaire, au même budget d'évaluations, avec
+la même fitness. C'est le pont entre la série `Search/` (algorithmes évolutionnaires), les
+carnets LLM (proposer / exécuter / apprendre) et la série `QuantConnect` (validation financière).
 
 | Notebook | Méthode | Ce qu'il démontre |
 |----------|---------|-------------------|
-| [QC-Py-42-Alpha-Mining-Evolution](QC-Py-42-Alpha-Mining-Evolution.ipynb) | Évolution génétique d'expressions (`deap`), walk-forward 5 blocs, 4 seeds, Diebold-Mariano à critère directionnel | Un moteur de recherche peut **produire** des alphas plausibles — et le verdict hors-échantillon dit s'il bat la baseline. Ici : non (`INCONCLUSIVE`), ce qui est le résultat, pas l'échec |
+| [QC-Py-42-Alpha-Mining-Evolution](QC-Py-42-Alpha-Mining-Evolution.ipynb) | Évolution génétique d'expressions (`deap`) et bras LLM au même budget, walk-forward 5 blocs, 4 seeds, coûts de transaction 10 bps, Diebold-Mariano à critère directionnel | Un moteur de recherche peut **produire** des alphas plausibles — et le verdict hors-échantillon **nets de frais** dit s'il bat la baseline. Ici : l'évolution passe la conjonction (`BEATS`) — le passage aux Sharpe nets renverse le verdict brut d'avant-coûts — et le bras LLM, plus précis au quotidien mais quatre fois plus dispersé entre seeds, reste `INCONCLUSIVE` |
 
-Le carnet tourne sur les données **locales** du dépôt (panier crypto, 10 actifs) : aucune
-dépendance réseau, exécution reproductible. Sa fonction de fitness applique la doctrine de
-validation du dépôt (walk-forward, multi-seed, Diebold-Mariano sur une perte de précision) —
-l'objectif pédagogique est autant la **méthode de validation** que le résultat.
+Le carnet tourne sur les données **locales** du dépôt (panier crypto, 10 actifs). Le bras
+évolution est entièrement reproductible hors ligne ; le bras LLM, lui, fait de **vrais appels
+API** (clé OpenAI requise, seed passé au modèle). La fitness applique la doctrine de
+validation du dépôt (walk-forward, multi-seed, Diebold-Mariano sur une perte de précision,
+Sharpe nets des coûts de transaction) — l'objectif pédagogique est autant la **méthode de
+validation** que le résultat.
 
 ## Stratégies Cloud (QC-Py-Cloud-*)
 

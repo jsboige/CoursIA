@@ -21,10 +21,15 @@ import Grothendieck.CoversArrow
 import Grothendieck.CoversAtomicArrow
 import Grothendieck.CoversBind
 import Grothendieck.CoversCoherentArrow
+import Grothendieck.CoversCoverPreserving
+import Grothendieck.CoversCoverPreservingLaws
 import Grothendieck.CoversCoverageArrow
 import Grothendieck.CoversEtaleArrow
 import Grothendieck.CoversExtensiveArrow
+import Grothendieck.CoversExtremal
+import Grothendieck.CoversInducedTopology
 import Grothendieck.CoversLattice
+import Grothendieck.CoversOfPretopology
 import Grothendieck.CoversOrder
 import Grothendieck.CoversPrecoverageArrow
 import Grothendieck.CoversPretopologyArrow
@@ -39,6 +44,7 @@ import Grothendieck.ExceptionalDirect
 import Grothendieck.ExceptionalTriple
 import Grothendieck.Equivalences
 import Grothendieck.Flasque
+import Grothendieck.FlasqueAcyclic
 import Grothendieck.FlasqueStability
 import Grothendieck.FlasqueRetract
 import Grothendieck.FlasqueExact
@@ -51,6 +57,7 @@ import Grothendieck.GodementAcyclicity
 import Grothendieck.GodementResolution
 import Grothendieck.GodementCanonicalDiff
 import Grothendieck.GodementExactness
+import Grothendieck.GodementComplex
 import Grothendieck.KanExtensions
 import Grothendieck.LawvereTierney
 import Grothendieck.LeftExact
@@ -59,6 +66,7 @@ import Grothendieck.LocalSurjectivitySpectrum
 import Grothendieck.MathlibMap
 import Grothendieck.MayerVietorisSquare
 import Grothendieck.Monads
+import Grothendieck.Monodromie
 import Grothendieck.PlusConstruction
 import Grothendieck.MonoidalCategories
 import Grothendieck.PullbackCoversLaws
@@ -245,6 +253,41 @@ Substance réelle :
   (pr-review-discipline §B). La **séparéité du conoyau** par recollement sur
   faisceau, qui ferme la boucle, est la frontière nommée de la Partie 91,
   qui posera l'énoncé ET sa preuve.
+- `Grothendieck.GodementComplex` (Partie 92) : le **complexe de Godement
+  comme objet** — l'itération du pas canonique à tous les degrés. La chaîne
+  `godementDChain` est définie par récursion (`d^{n+1} = godementStep dⁿ`,
+  chaque flèche passant par le conoyau de la précédente), la
+  **null-composition** `dⁿ ≫ d^{n+1} = 0` vaut à tout degré
+  (`godementCanonicalD_comp_zero`, instance de `comp_godementStep_zero` P89),
+  et l'assemblage en `CochainComplex … ℕ` passe par le constructeur canonique
+  `CochainComplex.of` de Mathlib (`godementCanonicalComplex`, avec lemmes
+  d'interface `godementCanonicalComplex_d_zero/_one` recalant sur les `d⁰`/`d¹`
+  de P89/P90). La résolution canonique existe maintenant **comme objet
+  complexe** — le contraste définitif avec la Partie 87 (itération de l'unité :
+  pas un complexe, témoin injectif). L'**acyclicité** `Hⁿ(C⁰F) = 0` pour
+  `n ≥ 1` ([God58] II Th. 5.2.1), qui exigera l'itération de l'exactitude de
+  la Partie 91 le long de la chaîne, reste la frontière nommée de la
+  Partie 93.
+- `Grothendieck.FlasqueAcyclic` (Partie 94) : **l'acyclicité des flasques**
+  ([God58] II.5.1) — et la **correction d'une glose** : la Partie 80
+  créditait Godement d'un « flasque ⇒ injectif (II.5.2) », énoncé **faux**
+  (espace discret à deux points : tous les faisceaux flasques, le constant
+  (ℤ,ℤ) non injectif dans Ab×Ab ; la glose est corrigée dans les deux
+  siblings de `FlasqueStability`). Ce qui est **prouvé** ici : le
+  **degré 1 inconditionnel** `subsingleton_H_one_of_flasque` (suite exacte
+  courte 0→X₁→X₂→X₃ avec X₁ flasque, X₂ injectif ⇒ H¹(X₁)=0 — assemble la
+  suite exacte longue covariante d'Ext de Mathlib, l'identification H⁰=Γ
+  `Sheaf.H.equiv₀`, et la surjectivité Γ de la Partie 82 : c'est là que
+  Zorn travaille), le corollaire **inconditionnel sur présentation
+  injective** (`subsingleton_H_one_of_flasque_presentation`, F flasque ⇒
+  H¹(F)=0), le **décalage** `subsingleton_H_succ_of_flasque_decalage`
+  (Hⁿ(X₃)=0 ⇒ H^{n+1}(X₁)=0), et le **capstone conditionnel**
+  `subsingleton_H_succ_of_flasque_all` : sous l'unique hypothèse
+  « injectif ⇒ flasque » (II.4), tout flasque est Γ-acyclique ∀n —
+  l'induction complète via la Partie 83 (quotient de flasques). La
+  **frontière nommée** est `injectif ⇒ flasque` : sa preuve classique
+  exige l'extension par zéro `j_!` des faisceaux ouverts, absente de
+  Mathlib — Partie 95.
 
 Tous les `sorry`s ne sont pas comblés — la plupart sont des échafaudages
 intentionnels pour le prouveur multi-agent (cf. Epic #1453).
@@ -398,6 +441,39 @@ Substance (English):
   class (pr-review-discipline §B). The **separatedness of the cokernel** by
   gluing on sheaves, which closes the loop, is the named frontier of Part
   91, which will pose the statement AND its proof.
+- `Grothendieck.GodementComplex` (Part 92) : the **Godement complex as an
+  object** — iterating the canonical step at all degrees. The chain
+  `godementDChain` is defined by recursion (`d^{n+1} = godementStep dⁿ`, each
+  arrow passing through the cokernel of the previous one), **null-composition**
+  `dⁿ ≫ d^{n+1} = 0` holds at every degree
+  (`godementCanonicalD_comp_zero`, an instance of `comp_godementStep_zero`
+  P89), and the assembly as a `CochainComplex … ℕ` goes through Mathlib's
+  canonical constructor `CochainComplex.of` (`godementCanonicalComplex`, with
+  interface lemmas `godementCanonicalComplex_d_zero/_one` calibrating on the
+  `d⁰`/`d¹` of P89/P90). The canonical resolution now exists **as a complex
+  object** — the definitive contrast with Part 87 (unit iteration: not a
+  complex, injective witness). **Acyclicity** `H^n(C⁰F) = 0` for `n ≥ 1`
+  ([God58] II Th. 5.2.1), which will require iterating Part 91's exactness
+  along the chain, remains the named frontier of Part 93.
+- `Grothendieck.FlasqueAcyclic` (Part 94) : **acyclicity of flasque
+  sheaves** ([God58] II.5.1) — and the **correction of a gloss** : Part 80
+  credited Godement with "flasque ⇒ injective (II.5.2)", a **false**
+  statement (two-point discrete space : every sheaf flasque, the constant
+  (ℤ,ℤ) not injective in Ab×Ab ; the gloss is corrected in both
+  `FlasqueStability` siblings). What is **proved** here : the
+  **unconditional degree 1** `subsingleton_H_one_of_flasque` (short exact
+  sequence 0→X₁→X₂→X₃ with X₁ flasque, X₂ injective ⇒ H¹(X₁)=0 — assembles
+  Mathlib's covariant long exact sequence of Ext, the H⁰=Γ identification
+  `Sheaf.H.equiv₀`, and Part 82's Γ-surjectivity : this is where Zorn
+  works), the **unconditional corollary on an injective presentation**
+  (`subsingleton_H_one_of_flasque_presentation`, F flasque ⇒ H¹(F)=0), the
+  **shift step** `subsingleton_H_succ_of_flasque_decalage` (Hⁿ(X₃)=0 ⇒
+  H^{n+1}(X₁)=0), and the **conditional capstone**
+  `subsingleton_H_succ_of_flasque_all` : under the single hypothesis
+  "injective ⇒ flasque" (II.4), every flasque sheaf is Γ-acyclic for all n
+  — the full induction via Part 83 (quotients of flasques). The **named
+  frontier** is `injective ⇒ flasque` : its classical proof requires the
+  extension by zero `j_!` of open sheaves, absent from Mathlib — Part 95.
 
 Not all `sorry`s are filled — most are intentional scaffolds for the
 multi-agent prover (cf. Epic #1453).
