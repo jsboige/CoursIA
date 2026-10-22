@@ -1,9 +1,10 @@
 # Pli 2.0 — Lake d'enveloppe OcclusionTriad : verdict `INSUFFICISANT_BLOQUANT`
 
 > **Statut** : investigation first-hand c.487, Pli 2.0 CLOSE.
-> **Date** : 2026-10-18.
+> **Date** : 2026-10-18 (verdict révisé le 2026-10-22).
 > **Lane** : myia-po-2024:CoursIA-2 (Lean toolchain dispo Tell c.320-N1, Lean 4.35.0, Lake 5.0.0).
 > **EPIC parent** : #21310 (Project DarkSnail Origami).
+> **Arbitrage coordinateur** : option (c) retenue — arrêt de Pli 2 et pivot `so(M)` par d'autres sources (revue ai-01 du 2026-10-21 sur la PR de ce document, réserve de fond reprise ici).
 
 ---
 
@@ -26,10 +27,22 @@ Le verdict Pli 1.2 de po-2027 (`INSUFFICISANT`) est **confirmé et sa cause est 
 - Lake version : 5.0.0-src+eb6cafb.
 - Dossier `DarkSnailLake/` créé à la racine du worktree.
 
-### 1.2 Clone du fichier source
-Le fichier `formalization/OcclusionTriad.lean` (25 476 chars) est cloné via API GitHub dans `DarkSnailLake/DarkSnail/OcclusionTriad.lean` (arborescence standard Lake : `DarkSnail/OcclusionTriad.lean`).
+### 1.2 Clone du fichier source et provenance
+Le fichier amont `formalization/OcclusionTriad.lean` est cloné via API GitHub dans `DarkSnailLake/DarkSnail/OcclusionTriad.lean` (arborescence standard Lake : `DarkSnail/OcclusionTriad.lean`).
 
-### 1.3 Création du lake d'enveloppe
+Provenance du contenu lu : l'identité de blob (`git hash-object` sur la copie locale = blob amont au commit lu) prouve que la copie examinée est **exactement** la version upstream de ce commit, et non une reconstruction. Le détail figure au §8.
+
+### 1.3 Ce qui est livré, ce qui ne l'est pas
+**Livré** : ce document de verdict, seul.
+
+**Non livré** : le lake d'enveloppe (`DarkSnailLake/`). Trois raisons, toutes vérifiées :
+- il ne compile pas (§1.6) — il ne prouve donc rien que le présent document ne dise déjà ;
+- il est posé à la racine du dépôt, hors de toute série, et son `defaultTargets` ne vise que ce seul fichier ;
+- une copie de code amont n'a pas sa place dans ce dépôt public : elle est remplacée ici par sa **provenance citée** (URL, commit, blob, licence).
+
+**Preuve de conservation** : rien n'est perdu. Le code amont reste publié sous `https://github.com/sneed-and-feed/projectdarksnail` au commit `90ef5bdfabc2f01bb4ae1218ffce659ef47ace6b`, sous licence `CC0-1.0`, et le document le cite ; le dépôt amont en conserve l'historique complet. Le retrait porte sur la copie locale, pas sur la source.
+
+### 1.4 Création du lake d'enveloppe
 - `lean-toolchain` : `leanprover/lean4:v4.35.0`.
 - `lakefile.toml` (Lake 5.0 syntaxe TOML) :
   ```toml
@@ -44,14 +57,32 @@ Le fichier `formalization/OcclusionTriad.lean` (25 476 chars) est cloné via API
   roots = ["DarkSnail.OcclusionTriad"]
   ```
 
-### 1.4 Premier essai `lake build`
+### 1.5 Premier essai `lake build`
 L'erreur initiale était syntaxique (Lake 5.0 utilise TOML, pas Lean DSL). Corrigé.
 
-### 1.5 Deuxième essai `lake build DarkSnail.OcclusionTriad`
+### 1.6 Deuxième essai `lake build DarkSnail.OcclusionTriad`
 - Mathlib materializing : OK (v4.35.0 épinglé)
 - Batteries, Aesop, ProofWidgets, Qq, LeanSearchClient, ImportGraph, Plausible, Cli, Cache, etc. : tous materializing OK
-- Build en cours au moment de la rédaction de ce document (ETA de quelques minutes sur po-2024)
-- Le **résultat final attendu est `FAILED`** : les imports `Formalization.Analysis.{TriadConservation,RoPECoherence}` ne peuvent pas être résolus (modules absents du dépôt).
+- Build relancé sur la même machine le 2026-10-22 pour remplacer l'attente annoncée par une **mesure** ; résultat reproduit en §1.7.
+
+### 1.7 Résultat réel de la compilation — `FAILED`, code de sortie 1
+
+Compilation directe du fichier cible dans l'environnement du lake (`lake env lean DarkSnail/OcclusionTriad.lean`, Lean 4.35.0), sortie verbatim :
+
+```
+DarkSnail/OcclusionTriad.lean:1:0: error: unknown module prefix 'Formalization'
+
+No directory 'Formalization' or file 'Formalization.olean' in the search path entries:
+DarkSnailLake/.lake/packages/mathlib/.lake/build/lib/lean
+DarkSnailLake/.lake/build/lib/lean
+...
+```
+
+Code de sortie : **1**. L'échec est **antérieur à toute élaboration** : c'est le premier import du fichier qui ne se résout pas. Le `lake build` complet, relancé le même jour, engageait la construction de la fermeture de dépendances de Mathlib alors que cette erreur était déjà acquise ; il a été arrêté sur ce constat, la cible ne pouvant pas aboutir.
+
+Le verdict ne repose donc **pas** sur une attente, mais sur un code de sortie mesuré.
+
+**Ce qui est établi** : le fichier amont, tel que publié, ne compile pas — et son premier import est précisément l'un des deux modules absents du dépôt amont (§2.1, §2.2).
 
 ## 2. Cause identifiée first-hand
 
@@ -60,6 +91,8 @@ Via `gh api repos/sneed-and-feed/projectdarksnail/git/trees/HEAD?recursive=0` :
 - `formalization/OcclusionTriad.lean` — **seul fichier** du dossier.
 
 C'est-à-dire : le dossier `formalization/` ne contient **QUE** `OcclusionTriad.lean`. Aucun `Analysis/TriadConservation.lean`, aucun `Analysis/RoPECoherence.lean`, aucun sous-dossier `Analysis/`.
+
+**Re-vérification** : le dépôt amont a avancé (`985a3185` du 2026-10-21, qui a modifié `OcclusionTriad.lean` lui-même). L'inventaire a été refait sur cette tête plus récente (`git/trees/985a3185...?recursive=1`) : `formalization/` ne contient **toujours** que `OcclusionTriad.lean`. Le constat du §2.2 tient donc sur le code amont courant, pas sur une version périmée.
 
 ### 2.2 Les 2 imports non résolus
 Premières lignes d'`OcclusionTriad.lean` :
@@ -97,10 +130,10 @@ Contrairement à l'hypothèse initiale (manque de lakefile), le problème n'est 
 **Pli 2 — `INSUFFICISANT_BLOQUANT`** :
 - 0 sorry réel (4 patterns) — **vérifié** par po-2027 c.1728.
 - 0 axiome piégeant (`sorryAx`, `native_decide.*`) — **vérifié** par po-2027 c.1728.
-- **MAIS** : modules référencés mais absents du dépôt → **non compilable** → **non vérifiable** par tiers.
-- Reconstruction lakefile (cette PR) : OK, mais **insuffisante** pour résoudre le problème.
+- **MAIS** : modules référencés mais absents du dépôt → **non compilable** (code de sortie 1, §1.7) → **non vérifiable** par tiers.
+- Le lake d'enveloppe a été construit et a échoué comme prévu : il est **insuffisant** pour résoudre le problème. Il n'est pas livré (§1.3).
 
-**Recommandation au coordinateur** : trancher Pli 2 selon l'option (c) « arrêt + pivot `so(M)` via autres sources ». Geler Pli 2 en attendant que l'algèbre de Lie `so(M)` soit re-dérivée d'une source vérifiable.
+**Arbitrage rendu** : option (c) retenue — arrêt de Pli 2 et pivot `so(M)` par d'autres sources. Pli 2 est gelé ; l'algèbre de Lie `so(M)` reste à re-dériver d'une source vérifiable.
 
 ## 5. Implications pour l'EPIC
 
@@ -116,10 +149,25 @@ L'EPIC n'est **pas terminée** par l'échec de Pli 2. Pli 3 (et indirectement Pl
 - **Grain** : **DEEP/lean** — investigation first-hand, élimination d'options, verdict documenté.
 - **G-VAR-1** : **TENU** si PR mergée (premier DEEP depuis #21305 c.1720 sur po-2027, ou depuis... — vérifier).
 - **Coût** : ~25 min budget c.487.
-- **Livrable** : PR `feature/darksnail-pli2-lake-enveloppe` (en cours) + ce document.
+- **Livrable** : ce document de verdict ; la branche `feature/darksnail-pli2-lake-enveloppe` ne porte plus que lui (lake retiré, §1.3).
 
 ## 7. Suite recommandée
 
-- **Court terme** : PR DEEP/lean avec ce document, demande coordinateur trancher Pli 2 option (c).
-- **Moyen terme** : si Pli 2 arrêté, basculer ressources sur Pli 3 (PostTraining), spécifiquement la mesure de **Cloudflare Clef** sur `jabr/classifier-benchmark` (#17883, #327 benchmark dans le dépôt).
-- **Action user attendue** : arbitrage Pli 2 (option c). Pas d'urgence.
+- **Court terme** : PR DEEP/lean portant ce document ; l'arbitrage option (c) est rendu (§4).
+- **Moyen terme** : Pli 2 arrêté, basculer les ressources sur Pli 3 (PostTraining), spécifiquement la mesure de **Cloudflare Clef** sur `jabr/classifier-benchmark` (#17883, #327 benchmark dans le dépôt).
+- **Action user** : **aucune attendue**. L'option (d) — écrire sur le dépôt amont sous notre identité — resterait subordonnée à un accord explicite du user ; elle n'est pas engagée et ne l'est pas dans ce cycle.
+
+---
+
+## 8. Provenance de la lecture
+
+| Élément | Valeur |
+|---|---|
+| Dépôt amont | `https://github.com/sneed-and-feed/projectdarksnail` |
+| Fichier lu | `formalization/OcclusionTriad.lean` |
+| Commit lu | `90ef5bdfabc2f01bb4ae1218ffce659ef47ace6b` (2026-10-15) |
+| Blob SHA amont = blob local | `72b0b67672e812f6102841cf71cdb295432318fc` |
+| Tête amont re-vérifiée | `985a3185dfea9d3391659d47c87a79f30f147520` (2026-10-21) |
+| Licence amont | `CC0-1.0` — `LICENSE` à la racine du dépôt |
+
+Aucune copie du code amont n'est livrée dans ce dépôt : le document le cite et le laisse à sa source.
