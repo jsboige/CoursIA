@@ -199,6 +199,16 @@ QUALIFYING_LANES = frozenset({
     "myia-po-2026:CoursIA-3",
     "myia-po-2027:CoursIA",
     "myia-po-2027:CoursIA-2",
+    # myia-po-2028 replaces myia-po-2026 (hardware failure, 2026-10-09). Its
+    # three lanes were onboarded on 2026-10-20 and CoursIA-3 holds the
+    # secretariat by user mandate. Absent from this set, they could only attest
+    # by signing as the dead machine's lanes, which breaks the one-lane-one-agent
+    # premise of the claim protocol. The myia-po-2026 entries stay so that
+    # dossiers already posted under them keep being read; remove them once no
+    # live dossier carries them.
+    "myia-po-2028:CoursIA",
+    "myia-po-2028:CoursIA-2",
+    "myia-po-2028:CoursIA-3",
 })
 # `Grain: <genre> -- lane <machine:workspace>` in the pull request body names the
 # lane that carries the work. The canonical reader is `grain_tag.extract_lane`,
@@ -941,9 +951,21 @@ def probe_b0(pr: int) -> dict[str, Any]:
         except ImportError:  # charge via importlib dans les tests (hors scripts/)
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
             import check_unaddressed_nits
-        return check_unaddressed_nits.analyse_pr(pr)
     except Exception as exc:  # noqa: BLE001 -- any failure means "not measured"
         raise RuntimeError(f"B.0 organ could not measure PR #{pr}: {exc}") from exc
+    try:
+        result = check_unaddressed_nits.analyse_pr(pr)
+    except Exception as exc:  # noqa: BLE001 -- any failure means "not measured"
+        raise RuntimeError(f"B.0 organ could not measure PR #{pr}: {exc}") from exc
+    # #21882/#21964 : budget de passe epuise = « non mesure », jamais un resultat
+    # qui laisserait `b0_claim_contradictions` lacher un dossier READY `b0: clear`
+    # sans aucune mesure. Meme fail-closed que la panne d'organe ci-dessus
+    # (RuntimeError -> UNKNOWN, exit 2 dans main).
+    if result.get("budget_exhausted"):
+        raise RuntimeError(
+            f"B.0 organ budget exhausted measuring PR #{pr} (not a clean result)"
+        )
+    return result
 
 
 def refute_ready_b0(
@@ -2736,10 +2758,18 @@ def _issue_comments(pr: int) -> list[dict[str, Any]]:
     ])
     if not isinstance(rows, list):
         raise RuntimeError("issue comments response is not a list")
+    # #21818 : l'auteur est lu en REST ici, donc deja en orthographe REST --
+    # mais la normalisation passe par le point de passage UNIQUE
+    # (`gh_identity.normalize_author_login`), pour que les deux gates
+    # comparent la MEME forme quelle que soit la surface qui a lu l'auteur
+    # (GraphQL rend le login d'un `Bot` SANS le suffixe `[bot]`).
     return [
         {
             "id": row.get("node_id") or row.get("id"),
-            "author": {"login": (row.get("user") or {}).get("login", "")},
+            "author": {
+                "login": gh_identity.normalize_author_login(row.get("user") or {}),
+                "type": (row.get("user") or {}).get("type") or "",
+            },
             "createdAt": row.get("created_at"),
             "body": row.get("body") or "",
         }
@@ -2756,7 +2786,10 @@ def _reviews(pr: int) -> list[dict[str, Any]]:
     return [
         {
             "id": row.get("node_id") or row.get("id"),
-            "author": {"login": (row.get("user") or {}).get("login", "")},
+            "author": {
+                "login": gh_identity.normalize_author_login(row.get("user") or {}),
+                "type": (row.get("user") or {}).get("type") or "",
+            },
             "submittedAt": row.get("submitted_at"),
             "state": row.get("state"),
             "commit": {"oid": row.get("commit_id")},

@@ -21,7 +21,14 @@ name: Notebook Exec Sequence Ratchet
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, edited, reopened]
+    # `labeled` (#21332) : l'ack de l'echec fail-by-design se pose par le
+    # LABEL `exec-sequence-ack` (double cle : label + marker
+    # `[EXEC-SEQ-ACK] head=<sha40>`, cf scripts/ci/exec_sequence_ack_required.py).
+    # Sans `labeled`, poser le label ne relanceait rien : la garde attendait
+    # l'evenement suivant et le gate restait rouge malgre l'ack. Le
+    # COMMENTAIRE doit preceder le LABEL : au moment ou `labeled` declenche,
+    # l'organe lit les deux surfaces en direct.
+    types: [opened, synchronize, edited, reopened, labeled]
     paths:
       - '**.ipynb'
       - 'scripts/notebook_tools/check_exec_sequence.py'

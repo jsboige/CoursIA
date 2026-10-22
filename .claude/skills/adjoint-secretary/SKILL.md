@@ -1,13 +1,15 @@
 ---
 name: adjoint-secretary
-description: Cycle 30 min du secrétaire vérificateur myia-po-2026:CoursIA-3. Atteste en tiers, du plus ancien au plus récent, les PRs ouvertes sans dossier valide (chaque READY, une fois lu et approuvé par ai-01, est mergé sans attendre son cycle), et fait circuler l'information sur workspace-CoursIA-3.
+description: Cycle 30 min du secrétaire vérificateur myia-po-2028:CoursIA-3. Atteste en tiers, du plus ancien au plus récent, les PRs ouvertes sans dossier valide (chaque READY, une fois lu et approuvé par ai-01, est mergé sans attendre son cycle), et fait circuler l'information sur workspace-CoursIA-3.
 ---
 
-# Secrétaire vérificateur — myia-po-2026:CoursIA-3
+# Secrétaire vérificateur — myia-po-2028:CoursIA-3
 
 Cycle court (30 min) du secrétaire de l'adjoint titulaire (`myia-po-2025:CoursIA-2`). Le dashboard `workspace-CoursIA-3` est le lieu d'organisation à trois : titulaire, secrétaire, coordinateur (`myia-ai-01:CoursIA`).
 
-Cette commande est réservée au slot `myia-po-2026:CoursIA-3` et ne doit jamais être remplacée par `/coordinate`, `/coordinate-adjoint` ou `/continue`.
+Le siège est passé de `myia-po-2026:CoursIA-3` (machine hors service depuis le 2026-10-09) à `myia-po-2028:CoursIA-3` le 2026-10-20, par mandat user. Le secrétaire signe sous la lane de la machine qui l'anime, jamais sous celle d'une machine disparue.
+
+Cette commande est réservée au slot `myia-po-2028:CoursIA-3` et ne doit jamais être remplacée par `/coordinate`, `/coordinate-adjoint` ou `/continue`.
 
 ## Mandat fondateur (user 2026-09-21)
 
@@ -64,8 +66,8 @@ Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures, reviews `APP
 6. **Pour chaque PR du lot** :
    1. `check_adjoint_prevalidation.py N` : rc=0 ou rc=3 sous une autre lane, passer à la suivante ;
    2. classer les rouges, et rejouer ce qui relève de l'infra ou d'un minuteur échu **avant** tout dossier : un job rejoué peut réécrire un commentaire collant, qui périmerait un dossier posté avant lui ;
-   3. crible de fond, puis `--template --lane myia-po-2026:CoursIA-3` généré juste avant le post ;
-   4. un seul post, en dernier, par `python scripts/coordination/post_dossier.py --pr N --file dossier.md --lane myia-po-2026:CoursIA-3` : l'organe rejoue le gate et sort avec son rc. rc=0 ou rc=3 attendu, sinon comprendre pourquoi avant la PR suivante. rc=4 veut dire que rien n'a été posté (forme du bloc, placeholder restant, tête périmée, dossier vivant d'une autre lane, gate illisible) : corriger le fichier, jamais contourner par un `gh api` à la main.
+   3. crible de fond, puis `--template --lane myia-po-2028:CoursIA-3` généré juste avant le post ;
+   4. un seul post, en dernier, par `python scripts/coordination/post_dossier.py --pr N --file dossier.md --lane myia-po-2028:CoursIA-3` : l'organe rejoue le gate et sort avec son rc. rc=0 ou rc=3 attendu, sinon comprendre pourquoi avant la PR suivante. rc=4 veut dire que rien n'a été posté (forme du bloc, placeholder restant, tête périmée, dossier vivant d'une autre lane, gate illisible) : corriger le fichier, jamais contourner par un `gh api` à la main.
 7. **Fin de cycle** : un DM nominatif à ai-01 qui liste tous les READY du cycle, avec numéro, tête et un mot sur le point à lire en priorité, puis un `[DONE][SECRETARY]` court : les dossiers émis (READY, BLOCKED) avec leurs numéros, et ce qui attend qui. Pas de cumul recopié d'un cycle à l'autre.
 
 **Budget : le quota mesuré, pas un compte d'appels.** Le quota GitHub est partagé par toute la flotte (5 000 points par heure et **par utilisateur** `jsboige`, REST et GraphQL comptés à part). Avant chaque PR, relire les en-têtes : sous 1 000 points restants sur l'un des deux, finir la PR en cours, consigner l'heure du reset, et reprendre après. Tant que le quota le permet, un cycle traite autant de PRs que ses 30 minutes le permettent. Repères du 28/09 : le matin, une salve de 11 READY a donné 9 merges ; l'après-midi, un cycle s'est arrêté après 5 dossiers sur le plafond fixe de 40 appels que cette section portait jusque-là.
@@ -82,6 +84,7 @@ Restent au coordinateur (`myia-ai-01:CoursIA`) : merges, clôtures, reviews `APP
 - **verdict** : `verdict: CLOSE` ou `verdict: KEEP` dans le bloc `[CLOSURE PREFLIGHT]` (gabarit `--template` de `scripts/check_closure_dossier.py`) ; un dossier KEEP nomme ce qui manque et un éventuel `followup: #<M>` ;
 - **lot affiché** : annoncer les numéros sur `workspace-CoursIA-3` avant de commencer, comme pour les PRs (item 5) ; l'adjoint ne stampe pas les mêmes (item 13 transposé) ;
 - **KEEP honnête** : un dossier KEEP est un livrable complet — il dit à la lane porteuse ce qu'il manque. Ne jamais écrire `CLOSE` pour être visible ;
+- **Périmètre d'un organe** : quand un critère de fermeture s'appuie sur un organe, le dossier cite **ce que l'organe ne voit pas** — pas seulement son verdict — et ce périmètre restant a soit une issue, soit un arbitrage écrit. La section « périmètre restant » est donc la liste de ce que l'organe n'a pas couvert (formes, jeux de fichiers, branches), chaque entrée portant une issue ou un arbitrage. Un `residue: none` affirmatif ferme davantage que ce qui a été mesuré. Instance fondatrice : dossier #9768 (« classes D2 éteinte » et `residue: none`, alors que `scan_d2_window_openness.py` ne capte que la forme S, les formes N/L/T relevant de `scan_window_drift.py` #10235) → le résidu a été parenté par #21836 (ACK ai-01 du 21/10) ;
 - **Epics** : ne ferment pas sur une PR (Phase 4bis point 4). Le secrétaire pose `verdict: KEEP` sur l'Epic avec un `followup: #<M>` qui pointe les PRs atomiques restantes, ou consigne dans le ledger `issue-debt` (cf [coordinate-adjoint §Ledger de dette](../coordinate-adjoint/SKILL.md)).
 
 **Mesure 7j** : l'acceptance de #17956 demande un delta `issues fermées par semaine / taille du pool` avant et après. Le secrétaire consigne dans son rapport `[DONE][SECRETARY]` : compte de dossiers `[CLOSURE PREFLIGHT]` émis dans la journée (verdict CLOSE vs KEEP), et compte d'issues fermées par ai-01 sur la foi de ces dossiers, pour la fenêtre de 7 j glissants. Les fermetures de l'urne d'aujourd'hui (lots 4 à 8) comptent. **Référence pré-mesure** : semaine du 21/09, 266 créées / 133 fermées (fondatrice #17956).

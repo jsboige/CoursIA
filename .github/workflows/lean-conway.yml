@@ -227,8 +227,18 @@ jobs:
       # by rule) + 8 entries added by #20004 (tranche 2 of #19989) + 4
       # entries added by the OTCA tranche 3 of #19989 (the 165 KB
       # include_str load), attributed at the Pillars / Pillars_en lines
-      # below. All 81 are decide-kernel
-      # (`._native.native_decide.ax_1_N` = `decide` on finite Fin-typed props).
+      # below. All 77 are `native_decide` reduction axioms
+      # (`._native.native_decide.ax_1_N` is the kernel-side witness emitted
+      # by `native_decide`; these are NOT `decide`-kernel certificates --
+      # `decide` itself emits no anchor, only `native_decide` does).
+      # Note for the operator: one of the 77 entries carries a Lean-4
+      # diagnostic-artifact suffix on the declaration name as reported by
+      # `#print axioms` (`Conway.Life.p4_base_exhaustive._native.native_decide.
+      # ax_1_1` + the `U+2020` dagger `✝`). The comparison against the env
+      # var `ALLOW` normalizes BOTH sides (trailing diagnostic decoration
+      # removed) so a Lean-side glyph change cannot desync the gate; the
+      # allow-list itself stays explicit -- a NEW `native_decide` still
+      # reds the gate. See issue #21947.
       # The 21 new entries, each annotated with the module that introduces it:
       #   Conway.Life.HashlifeCorrectness (2, grain 3a #11303): p4at_witness_k1,
       #     p4at_witness_k2 -- At-variant witnesses of the p4_wf_witness pair,
@@ -241,19 +251,26 @@ jobs:
       #     jumpCaptured_of_period_divides (structurel, axiom-clean); the
       #     native_decide axioms sit on the level/period side-conditions only.
       #   Conway.Life.PatternTour (1): pulsar_is_oscillator
-      #   Conway.Life.Pillars (7): Pillars.pulsar_period3 (pre-existing) + the
-      #     4 added by #20004, tranche 2 of #19989 -- unitcell_initial_population
-      #     (unitcellInitial.length = 4761) and unitcell_initial_nonempty
-      #     (unitcellInitial ≠ []) witness that the RLE-loaded grid is REAL,
+      #   Conway.Life.Pillars (5, was 7 before #21833): Pillars.pulsar_period3
+      #     (pre-existing) + the 3 added by #20004, tranche 2 of #19989 --
+      #     unitcell_initial_population
+      #     (unitcellInitial.length = 4761) witnesses that the RLE-loaded grid
+      #     is REAL,
       #     which is exactly what closed the evolveHashlifeFastMemo_empty route
       #     the three other witnesses relied on; pulsar_period1_negative /
       #     pulsar_period2_negative are the paired negatives that pin the
       #     Pulsar period to EXACTLY 3 (pulsar_period3 alone only pinned a
-      #     divisor of 3) -- plus the 2 added by the OTCA tranche 3 of #19989:
-      #     otca_initial_population (otcaInitial.length = 64691) and
-      #     otca_initial_nonempty, same state-witness shape on the 165 KB RLE
+      #     divisor of 3) -- plus the 1 added by the OTCA tranche 3 of #19989:
+      #     otca_initial_population (otcaInitial.length = 64691), same
+      #     state-witness shape on the 165 KB RLE
       #     (the largest include_str load in the lake; the former vacuous
       #     otca_metapixel_witness is retired by that same tranche).
+      #     #21833 : the two `_initial_nonempty` twins (unitcell, otca) are
+      #     no longer native_decide -- their statements are now DERIVED from
+      #     the population theorems (`List.length` + `omega`), so they carry
+      #     no anchor of their own and their 4 names (FR + _en) are removed
+      #     from this list. Measured with `#print axioms`: the footprint of
+      #     each file drops from 7 to 5 anchors.
       #     Criterion of this ratchet (attributable AND
       #     non-hollowing): each is a concrete finite `decide` proposition,
       #     `git grep` finds ZERO references outside its own declaration, and
@@ -264,15 +281,18 @@ jobs:
       #   Conway.Life.Oscillators_en (2): Conway_en.Life_en.pulsar_period_three,
       #     pentadecathlon_period_15 (_en twins of 2 of the 38)
       #   Conway.Life.PatternTour_en (1): Conway_en.Life_en.pulsar_is_oscillator
-      #   Conway.Life.Pillars_en (7): Conway.Life.Pillars_en.pulsar_period3 +
-      #     the 4 _en twins added by #20004 (unitcell_initial_population,
-      #     unitcell_initial_nonempty, pulsar_period1_negative,
-      #     pulsar_period2_negative) + the 2 _en twins of the OTCA tranche 3
-      #     (otca_initial_population, otca_initial_nonempty) -- namespace
+      #   Conway.Life.Pillars_en (5, was 7 before #21833): Conway.Life.Pillars_en.pulsar_period3 +
+      #     the 3 _en twins added by #20004 (unitcell_initial_population,
+      #     pulsar_period1_negative,
+      #     pulsar_period2_negative) + the 1 _en twin of the OTCA tranche 3
+      #     (otca_initial_population) -- namespace
       #     keeps the FR Conway.Life path
       #     here while other _en twins live under Conway_en.*: this
       #     heterogeneity is exactly why names are ENUMERATED from the build,
       #     never derived by rule.
+      #     #21833 : the two _en `_initial_nonempty` twins are derived like
+      #     their FR siblings and lose their anchors (5 per file, 10 for the
+      #     pair, down from 14).
       #   Conway.Life.RLE_en (8): Conway_en.Life_en.RLE_en.* (_en twins of
       #     the 8 RLE entries of the 38)
       #   Conway.LookAndSayLemmas_en (2): Conway_en.digitsToNat_example,
@@ -280,7 +300,7 @@ jobs:
       # Names stay explicit -- no wildcard entry in allow-axioms: a NEW
       # native_decide anywhere in the lake = a new red ("new native_decide =
       # new red"), the property the no-wildcard rule preserves.
-      allow-axioms: "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_glider_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_blinker_h_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_beacon_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_2,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_3,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_3._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_block_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_glider_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_block_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_glider_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_3_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_8_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_not_vacuous._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4at_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4at_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝,Conway.Life.p4_base_blinker._native.native_decide.ax_1_1,Conway.Life.p4_base_block._native.native_decide.ax_1_1,Conway.Life.p4_base_glider._native.native_decide.ax_1_1,Conway.Life.p4_base_dead._native.native_decide.ax_1_1,Conway.Life.p4_unrestricted_counterexample._native.native_decide.ax_1_1,Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1,Conway.Life.pulsar_period_three._native.native_decide.ax_1_1,Conway.Life.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_glider._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_not_trivial._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_2,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_3,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_4,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_2,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_3,Conway.Life.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period3._native.native_decide.ax_1_1,Conway.Life.Pillars.unitcell_initial_population._native.native_decide.ax_1_1,Conway.Life.Pillars.unitcell_initial_nonempty._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period1_negative._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period2_negative._native.native_decide.ax_1_1,Conway.Life.Pillars.otca_initial_population._native.native_decide.ax_1_1,Conway.Life.Pillars.otca_initial_nonempty._native.native_decide.ax_1_1,Conway.digitsToNat_example._native.native_decide.ax_1_1,Conway.lookAndSay_4._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_period_three._native.native_decide.ax_1_1,Conway_en.Life_en.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period3._native.native_decide.ax_1_1,Conway.Life.Pillars_en.unitcell_initial_population._native.native_decide.ax_1_1,Conway.Life.Pillars_en.unitcell_initial_nonempty._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period1_negative._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period2_negative._native.native_decide.ax_1_1,Conway.Life.Pillars_en.otca_initial_population._native.native_decide.ax_1_1,Conway.Life.Pillars_en.otca_initial_nonempty._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway_en.digitsToNat_example._native.native_decide.ax_1_1,Conway_en.lookAndSay_4._native.native_decide.ax_1_1"
+      allow-axioms: "Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_toad_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_glider_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_blinker_h_2._native.native_decide.ax_1_1,Conway.Life.hashlife_correct_implies_beacon_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_2,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_3,Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_single_cell_3._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_block_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grandN_glider_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_block_8._native.native_decide.ax_1_1,Conway.Life.boxAssezGrandN_glider_8._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_3_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_8_false._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_single_cell_2._native.native_decide.ax_1_1,Conway.Life.box_assez_grand_not_vacuous._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_wf_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4at_witness_k1._native.native_decide.ax_1_1,Conway.Life.p4at_witness_k2._native.native_decide.ax_1_1,Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝,Conway.Life.p4_base_blinker._native.native_decide.ax_1_1,Conway.Life.p4_base_block._native.native_decide.ax_1_1,Conway.Life.p4_base_glider._native.native_decide.ax_1_1,Conway.Life.p4_base_dead._native.native_decide.ax_1_1,Conway.Life.p4_unrestricted_counterexample._native.native_decide.ax_1_1,Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1,Conway.Life.pulsar_period_three._native.native_decide.ax_1_1,Conway.Life.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway.Life.RLE.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway.Life.RLE.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway.Life.RLE.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_glider._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_not_trivial._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_2,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_3,Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_4,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_1,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_2,Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_3,Conway.Life.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period3._native.native_decide.ax_1_1,Conway.Life.Pillars.unitcell_initial_population._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period1_negative._native.native_decide.ax_1_1,Conway.Life.Pillars.pulsar_period2_negative._native.native_decide.ax_1_1,Conway.Life.Pillars.otca_initial_population._native.native_decide.ax_1_1,Conway.digitsToNat_example._native.native_decide.ax_1_1,Conway.lookAndSay_4._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_period_three._native.native_decide.ax_1_1,Conway_en.Life_en.pentadecathlon_period_15._native.native_decide.ax_1_1,Conway_en.Life_en.pulsar_is_oscillator._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period3._native.native_decide.ax_1_1,Conway.Life.Pillars_en.unitcell_initial_population._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period1_negative._native.native_decide.ax_1_1,Conway.Life.Pillars_en.pulsar_period2_negative._native.native_decide.ax_1_1,Conway.Life.Pillars_en.otca_initial_population._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_parse_ok._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.lwss_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.pulsar_rle_roundtrip._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.gosper_gun_cell_count._native.native_decide.ax_1_1,Conway_en.Life_en.RLE_en.glider_parsed_cell_count._native.native_decide.ax_1_1,Conway_en.digitsToNat_example._native.native_decide.ax_1_1,Conway_en.lookAndSay_4._native.native_decide.ax_1_1"
       fail-on-sorry: false
 
   # Advisory proof-integrity coverage (See #8782). The `target-modules` lists

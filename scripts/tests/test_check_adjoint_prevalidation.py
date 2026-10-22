@@ -218,7 +218,11 @@ def test_secretary_lane_can_attest_although_it_carries_nothing():
     `myia-po-2023:CoursIA-2` is the mirror case: it carries #16259 but could
     not attest for anyone.
     """
-    for lane in ("myia-po-2026:CoursIA-3", "myia-po-2023:CoursIA-2"):
+    for lane in (
+        "myia-po-2026:CoursIA-3",
+        "myia-po-2028:CoursIA-3",
+        "myia-po-2023:CoursIA-2",
+    ):
         ready, errors = mod.evaluate(_snapshot(_body(lane=lane)))
         assert ready, (lane, errors)
         assert errors == [], lane
@@ -1920,6 +1924,20 @@ def test_b0_probe_failure_is_fail_closed(monkeypatch):
 
     monkeypatch.setitem(sys.modules, "check_unaddressed_nits", Broken)
     with pytest.raises(RuntimeError, match="B.0 organ could not measure PR #123"):
+        mod.probe_b0(123)
+
+
+def test_b0_probe_budget_exhausted_is_fail_closed(monkeypatch):
+    """#21882/#21964 : un organe a budget epuise rend « non mesure » (RuntimeError
+    -> UNKNOWN), jamais un dict qui lacherait la contre-verification b0: clear."""
+    class Exhausted:
+        @staticmethod
+        def analyse_pr(pr):
+            return {"pr": pr, "blocked": False, "blocking": [],
+                    "budget_exhausted": True}
+
+    monkeypatch.setitem(sys.modules, "check_unaddressed_nits", Exhausted)
+    with pytest.raises(RuntimeError, match="budget exhausted"):
         mod.probe_b0(123)
 
 
