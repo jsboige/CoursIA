@@ -20,8 +20,8 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `hold-runner.ps1` | po-2024 (hote Windows) | tache planifiee | reference |
 | `coursia-lean.service` | **po-2024** | `/etc/systemd/system/coursia-lean.service` | reference |
 | `coursia-lean-start.sh` | **po-2024** | `/usr/local/bin/coursia-lean-start.sh` | reference |
-| `coursia-waiters.service` | **ai-01** | `/etc/systemd/system/coursia-waiters.service` | reference |
-| `coursia-waiters-start.sh` | **ai-01** | `/usr/local/bin/coursia-waiters-start.sh` | reference |
+| `coursia-waiters.service` | **ai-01** | `/etc/systemd/system/coursia-waiters.service` | **DEPRECATED 2026-10-15, #20835, c.500** -- service desactive et fichier detruit sur ai-01 (19:48Z), reference conservee pour reactivation (memo UAC Rule 1) ; NE PAS REDEPLOYER sans avoir verifie qu'un consommateur du label `coursia-waiter` existe a nouveau |
+| `coursia-waiters-start.sh` | **ai-01** | `/usr/local/bin/coursia-waiters-start.sh` | reference (DEPRECATED avec le service, voir ligne ci-dessus) |
 | `coursia-ci.slice` | **ai-01** | `/etc/systemd/system/coursia-ci.slice` | **deploye et vivant** -- 7235 octets, documente, et il etait **en avance sur le depot** : c'est le depot qui a ete synchronise depuis le vivant, pas l'inverse (cf. correction 6) |
 | `daemon.json` | **ai-01** | `/etc/docker/daemon.json` | **deploye et vivant** -- 155 octets, **byte-identique** a la copie du depot (`sha256:1ef80038e470...`, mesure le 2026-09-08) |
 | `ai-01/coursia-runner.service` | **ai-01** | `/etc/systemd/system/coursia-runner.service` | **a deployer** (corrige, cf. correction 3) -- **jamais seul**, cf. correction 4 |
@@ -32,6 +32,10 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `po-2026/README.md` | -- | -- | **document** : architecture, dimensionnement, piege du verrou |
 | `po-2024/coursia-ci.slice` | **po-2024** | `/etc/systemd/system/coursia-ci.slice` | **a deployer** (2026-10-12, arbitrage c2153 : 14G/16G -> **20G/22G**, budget 15 -> **21** apres #20174 -- la composition vive 8x1536 + 6x512 + 1x6144 = 21 504 Mo n'avait pas ete comptee depuis le J+7) -- le mur kernel de cette machine : `MemoryHigh=20G`, `MemoryMax=22G`, `MemorySwapMax=0`. Homonyme de la slice ai-01, valeurs differentes (cf. section `po-2024/`) |
 | `po-2024/coursia-waiters.service.d/10-sizing.conf` | **po-2024** | `/etc/systemd/system/coursia-waiters.service.d/10-sizing.conf` | **a deployer** (2026-10-12, arbitrage c2153 : budget 15 -> **21**, meme nombre que les wrappers) -- 12 -> 6 slots waiters pour po-2024 seulement, par drop-in, parce que `coursia-waiters.service` est le fichier d'**ai-01** que les deux machines executent |
+| `po-2028/coursia-ci.slice` | **po-2028** | `/etc/systemd/system/coursia-ci.slice` | **deploye et vivant** (2026-10-20) -- mur kernel pour une VM WSL de 31 Go : `MemoryHigh=12G`, `MemoryMax=14G`, `MemorySwapMax=0`, io.max 8:80 rbps=400M/wbps=200M. Homonyme des slices ai-01/po-2024, valeurs differentes |
+| `po-2028/coursia-socket.conf` | **po-2028** | `/etc/systemd/system/docker.service.d/coursia-socket.conf` | **deploye et vivant** (2026-10-20) -- PREMIERE copie depotiee du drop-in socket (la doc citait `coursia-socket.conf` sans que persist/ le porte). Differe des deploiements historiques : il VIDE aussi `Requires=docker.socket` -- piege mesure sur po-2028, l'unite stock porte `Requires=docker.socket`, qui recreerait `/var/run/docker.sock` (socket du proxy Docker Desktop) a chaque boot ; et l'arret de docker.socket CASCADE l'arret du service via son `Service=` |
+| `po-2028/coursia-runner-start.sh` | **po-2028** | `/usr/local/bin/coursia-runner-start.sh` | **deploye et vivant** (2026-10-20) -- wrapper, 3 slots x (cpus=3, memory=4g, pids=512), BUDGET_GB=12, CPU_BUDGET=9, device bps 40M/80M. DELTA token : pas de master.env sur cette machine -- le token est relu a chaque invocation depuis `gh.exe auth token` cote Windows via interop |
+| `po-2028/coursia-runner.service` | **po-2028** | `/etc/systemd/system/coursia-runner.service` | **deploye et vivant** (2026-10-20) -- unite, `start 3`, structure conforme au modele po-2024 (#15095 fail-closed, IOWeight, sentinel) |
 
 Le sous-repertoire `ai-01/` existe parce que les deux machines ont des fichiers
 **homonymes et incompatibles**. Les melanger a plat, comme c'etait le cas, revient
@@ -46,6 +50,13 @@ waiters est l'autre moitie du meme probleme : l'unite `coursia-waiters.service`
 appartient a ai-01 et po-2024 l'execute **telle quelle**, donc editer l'unite
 pour descendre po-2024 descendrait aussi ai-01 -- le drop-in rend le perimetre
 explicite.
+
+Le sous-repertoire `po-2028/` suit la meme regle, avec une addition : il porte
+`coursia-socket.conf`, le drop-in `docker.service.d` qui epingle le daemon
+docker-ce sur `/var/run/docker-ce.sock`. La doc le citait (section
+Persistance) sans que `persist/` n'en garde copie -- le deploiement po-2028 est
+l'occasion de combler le trou. Sa copie differe des vivants historiques sur un
+point documente dans le fichier meme : le vidage de `Requires=docker.socket`.
 
 Les fichiers po-2024 anterieurs (wrappers `runner-start`, `lean-start`, unites
 `runner` et `lean`) restent a la racine de `persist/` : ce sont eux qui ont
