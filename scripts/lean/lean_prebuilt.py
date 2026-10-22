@@ -26,7 +26,14 @@ Contrat
 2. `stamp` — ecrit `.lake/prebuilt-stamp.json` apres un build **reussi**
    (l'appelant est le build hors carnet : operateur, CI, script de siege).
    Refuse de marquer quand aucun build n'est present : jamais de stamp sur du
-   vide.
+   vide. Le stamp est une **declaration sur les sources, pas une preuve
+   d'artefact** : `build_present` teste la presence de fichiers sous
+   `.lake/build`, et un build interrompu y laisse des fichiers — un `PREBUILT`
+   ne garantit pas un build complet. Quand `--module` est fourni, un **temoin
+   d'artefact** (chemin, taille, mtime, sha256 du `.olean` vise) est enregistre
+   puis re-verse par `status` avec son etat (`MATCH` / `CHANGED` / `MISSING`,
+   compare par stat, sans re-hacher) : le consommateur voit ce que l'arbre
+   contenait au marquage, et ce qu'il contient maintenant.
 3. `status` — compare l'empreinte du stamp a l'empreinte courante :
    `PREBUILT` / `STALE` / `UNSTAMPED` / `ABSENT`.
 4. `resolve` — cherche sous des racines donnees un AUTRE checkout du meme lac
@@ -175,6 +182,49 @@ def read_stamp(project: Path) -> dict | None:
     return data
 
 
+def _artifact_witness(project: Path, module: str) -> dict:
+    """Temoin d'artefact du module annonce par le build (declaration, pas preuve).
+
+    `stamp` n'a jamais execute le build : le temoin enregistre ce que l'arbre
+    contient au moment du marquage — chemin attendu du `.olean`, taille, mtime,
+    sha256. C'est ce qui distingue « le module vise existe » de « des fichiers
+    existent sous `.lake/build` » (un build interrompu laisse des fichiers).
+    """
+    rel = module.replace(".", "/") + ".olean"
+    olean = Path(project) / ".lake" / "build" / "lib" / rel
+    if not olean.is_file():
+        return {"module": module, "olean": rel, "present": False}
+    stat = olean.stat()
+    hasher = hashlib.sha256()
+    with olean.open("rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            hasher.update(chunk)
+    return {
+        "module": module,
+        "olean": rel,
+        "present": True,
+        "size": stat.st_size,
+        "mtime": stat.st_mtime,
+        "sha256": hasher.hexdigest(),
+    }
+
+
+def _artifact_state(project: Path, witness: dict) -> dict:
+    """Re-verse le temoin et le compare a l'arbre courant (stat, pas re-hash)."""
+    result = dict(witness)
+    olean = Path(project) / ".lake" / "build" / "lib" / witness.get("olean", "")
+    if not witness.get("present") or not olean.is_file():
+        result["state"] = "MISSING"
+        return result
+    stat = olean.stat()
+    result["state"] = (
+        "MATCH"
+        if stat.st_size == witness.get("size") and stat.st_mtime == witness.get("mtime")
+        else "CHANGED"
+    )
+    return result
+
+
 def stamp_project(project: Path, module: str | None = None) -> dict:
     """Marque un build present. Leve ValueError s'il n'y a rien a marquer."""
     project = Path(project).resolve()
@@ -194,6 +244,8 @@ def stamp_project(project: Path, module: str | None = None) -> dict:
         "module": module or "",
         "stamped_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
+    if module:
+        stamp["artifact"] = _artifact_witness(project, module)
     stamp_path = project / ".lake" / STAMP_NAME
     stamp_path.parent.mkdir(parents=True, exist_ok=True)
     stamp_path.write_text(
@@ -228,7 +280,7 @@ def project_status(project: Path) -> dict:
             "stamp_fingerprint": stamp["fingerprint"],
         }
 
-    return {
+    payload = {
         "status": STATUS_PREBUILT,
         "project": str(project),
         "fingerprint": fp["fingerprint"],
@@ -236,6 +288,9 @@ def project_status(project: Path) -> dict:
         "stamped_at": stamp.get("stamped_at", ""),
         "module": stamp.get("module", ""),
     }
+    if isinstance(stamp.get("artifact"), dict):
+        payload["artifact"] = _artifact_state(project, stamp["artifact"])
+    return payload
 
 
 # ---------------------------------------------------------------------------
@@ -275,6 +330,13 @@ def resolve_prebuilt(project: Path, search_roots: list[Path]) -> dict:
         for lake in find_lakes(root):
             if lake.name == target_name:
                 candidates.append(lake)
+            else:
+                # Ecarte par nom de repertoire : jamais candidat, mais CONSIGNE —
+                # un resolve en echec doit montrer ce qu'il n'a pas regarde,
+                # sinon l'operateur rebuild des heures en croyant qu'aucun etat
+                # equivalent n'existait.
+                checked.append({"path": str(lake), "status": "NAME_MISMATCH",
+                                "name": lake.name})
 
     for candidate in candidates:
         key = str(candidate.resolve()).lower()
@@ -294,14 +356,19 @@ def resolve_prebuilt(project: Path, search_roots: list[Path]) -> dict:
         verdict = project_status(candidate)
         checked.append({"path": str(candidate), "status": verdict["status"]})
         if verdict["status"] == STATUS_PREBUILT:
-            return {
+            payload = {
                 "status": STATUS_PREBUILT,
                 "path": str(candidate.resolve()),
                 "requested": str(project),
                 "fingerprint": requested["fingerprint"],
                 "toolchain": requested["toolchain"],
+                "stamped_at": verdict.get("stamped_at", ""),
+                "module": verdict.get("module", ""),
                 "checked": checked,
             }
+            if "artifact" in verdict:
+                payload["artifact"] = verdict["artifact"]
+            return payload
 
     return {
         "status": STATUS_ABSENT,
@@ -332,7 +399,10 @@ def _status_human(payload: dict) -> str:
                 f"  empreinte  {payload['fingerprint']}\n"
                 f"  toolchain  {payload.get('toolchain', '')}\n"
                 f"  marque     {payload.get('stamped_at', '')}"
-                + (f" (module {payload['module']})" if payload.get("module") else ""))
+                + (f" (module {payload['module']})" if payload.get("module") else "")
+                + (f"\n  artefact   {payload['artifact']['state']}"
+                   f" ({payload['artifact']['olean']})"
+                   if payload.get("artifact") else ""))
     lines = [f"{status}  {payload.get('project') or payload.get('requested', '')}"]
     if payload.get("reason"):
         lines.append(f"  raison     {payload['reason']}")

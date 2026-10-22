@@ -15,7 +15,7 @@ Outils pour le cycle de vie des projets Lean 4 du dépôt.
 | `count_code_sorry.py` | Compte les `sorry` **hors commentaires** (la vraie dette) et liste les theoremes vacuous (`: True`) — ce que `grep -c sorry` surestime de ~11x (voir ci-dessous) |
 | `lean_exec.py` | Organe canonique d'execution Lean : cap de population machine-wide, confinement de l'arbre (Job Object `kill-on-close` / scope POSIX), backend epingle par lake, postcondition zero-orphelin, procedure operateur (`doctor` / `dry-run` / `stop` / `recover`) (voir ci-dessous, #15666) |
 | `rle_to_lean_grid.py` | Convertit un motif RLE Golly en litteral `Grid` (`List (Int × Int)`) — tranche 1 de #19989 (temoins non-vacuous de `Pillars.lean`) |
-| `lean_prebuilt.py` | Etat pre-build d'un lake : empreinte deterministe (sources + toolchain + manifeste, hors `.lake/`), stamp apres build reussi, verdicts `PREBUILT`/`STALE`/`UNSTAMPED`/`ABSENT`, resolution d'un checkout equivalent deja buildé — voie 2 tranche 1 de #21410 (voir ci-dessous) |
+| `lean_prebuilt.py` | Etat pre-build d'un lake : empreinte deterministe (sources + toolchain + manifeste, hors `.lake/`), stamp apres build reussi, verdicts `PREBUILT`/`STALE`/`UNSTAMPED`/`ABSENT`, resolution d'un checkout equivalent deja buildé — voie 2 tranche 1 de #21410 |
 
 Tests unitaires dans `tests/`.
 

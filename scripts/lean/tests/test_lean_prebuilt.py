@@ -43,7 +43,9 @@ def _make_lake(root: Path, name: str = "conway_lean",
 
 
 def _mark_built(lake: Path) -> None:
-    _write(lake / ".lake" / "build" / "lib" / "lean" / "Conway" / "A.olean", "olean")
+    # Layout canonique de Lake : `.lake/build/lib/<Module>.olean` (points du
+    # module en slashs) — le temoin d'artefact de `stamp --module` le recoupe.
+    _write(lake / ".lake" / "build" / "lib" / "Conway" / "A.olean", "olean")
 
 
 # ---------------------------------------------------------------------------
@@ -130,6 +132,34 @@ def test_stamp_roundtrip_gives_prebuilt(tmp_path: Path) -> None:
     assert verdict["module"] == "Conway"
 
 
+def test_stamp_records_artifact_witness(tmp_path: Path) -> None:
+    """Le stamp est une declaration : le temoin dit ce que l'arbre contenait."""
+    lake = _make_lake(tmp_path)
+    _mark_built(lake)
+    stamped = lp.stamp_project(lake, module="Conway.A")
+    art = stamped["stamp"]["artifact"]
+    assert art["present"] is True
+    assert art["olean"] == "Conway/A.olean"
+    assert len(art["sha256"]) == 64
+    verdict = lp.project_status(lake)
+    assert verdict["artifact"]["state"] == "MATCH"
+
+    # Build interrompu : d'autres artefacts existent, le module vise manque —
+    # le verdict reste PREBUILT (sources intactes) mais le temoin le DIT.
+    _write(lake / ".lake" / "build" / "lib" / "Conway" / "B.olean", "x")
+    (lake / ".lake" / "build" / "lib" / "Conway" / "A.olean").unlink()
+    verdict = lp.project_status(lake)
+    assert verdict["status"] == lp.STATUS_PREBUILT
+    assert verdict["artifact"]["state"] == "MISSING"
+
+
+def test_stamp_without_module_has_no_witness(tmp_path: Path) -> None:
+    lake = _make_lake(tmp_path)
+    _mark_built(lake)
+    stamped = lp.stamp_project(lake)
+    assert "artifact" not in stamped["stamp"]
+
+
 def test_status_stale_after_source_edit(tmp_path: Path) -> None:
     lake = _make_lake(tmp_path)
     _mark_built(lake)
@@ -176,6 +206,10 @@ def test_resolve_finds_equivalent_prebuilt_clone(tmp_path: Path) -> None:
     payload = lp.resolve_prebuilt(worktree, [tmp_path])
     assert payload["status"] == lp.STATUS_PREBUILT
     assert Path(payload["path"]) == clone.resolve()
+    # La marque du checkout resolu remonte dans le verdict de resolve — sans
+    # elle, l'affichage humain imprime une ligne `marque` vide (reserve 3).
+    assert payload["module"] == "Conway"
+    assert payload["stamped_at"]
     statuses = {str(Path(item["path"])): item["status"] for item in payload["checked"]}
     assert statuses[str(worktree.resolve())] == lp.STATUS_ABSENT
 
@@ -199,7 +233,12 @@ def test_resolve_ignores_other_lake_names(tmp_path: Path) -> None:
     _mark_built(other)
     lp.stamp_project(other)
 
-    assert lp.resolve_prebuilt(worktree, [tmp_path])["status"] == lp.STATUS_ABSENT
+    payload = lp.resolve_prebuilt(worktree, [tmp_path])
+    assert payload["status"] == lp.STATUS_ABSENT
+    # Ecarte par nom, mais CONSIGNE : un resolve en echec doit montrer ce
+    # qu'il n'a pas regarde (reserve 2 de la revue Hermes).
+    statuses = {item["path"]: item["status"] for item in payload["checked"]}
+    assert statuses[str(other.resolve())] == "NAME_MISMATCH"
 
 
 def test_resolve_prefers_requested_when_prebuilt(tmp_path: Path) -> None:
