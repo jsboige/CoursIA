@@ -201,6 +201,48 @@ _MACHINE_RE = re.compile(r"^[A-Za-z0-9._-]+$")
 _ACTOR_RE = re.compile(r"^[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)?$")
 _ISSUE_REF_RE = re.compile(r"^[\w.-]+/[\w.-]+#\d+$")
 
+#: Roster des machines de la flotte (#21580). La liste est FIGEE ici : un organe
+#: appele en CI ne peut pas deriver une liste de fichiers au runtime. Une machine
+#: hors de ce roster est REFUSEE, jamais acceptee telle quelle -- c'est la seule
+#: garantie qu'une faute de frappe ne cree pas une ligne fantome dans le registre.
+#:
+#: Contenu = la flotte MyIA entiere (9 machines), et non seulement les sept
+#: machines que portent les deux listes internes (``gh_identity.HOST_ACCOUNTS`` et
+#: ``secrets/agent_keyring.FLEET_MACHINES``, qui n'ont pas encore ``po-2028`` ni
+#: ``web2``) : le ledger doit pouvoir accepter une observation de *n'importe*
+#: machine reelle de la flotte, y compris une lane qui travaille hors CoursIA.
+#: Les listes internes rattraperont ce decalage ; le gesture ici est de ne pas
+#: refuser une machine qui existe.
+FLEET_MACHINES: frozenset[str] = frozenset(
+    {
+        "myia-ai-01",
+        "myia-po-2023",
+        "myia-po-2024",
+        "myia-po-2025",
+        "myia-po-2026",
+        "myia-po-2027",
+        "myia-po-2028",
+        "myia-web1",
+        "myia-web2",
+    }
+)
+
+#: Alias acceptes -> nom canonique. Le nom court (prefixe ``myia-`` retire) est
+#: derive MECANIQUEMENT du roster : c'est la seule forme d'alias verifiable, et
+#: c'est celle que la regle de protocole demande ("le nom du roster"). Les
+#: formes sans tiret sont ajoutees a la main.
+MACHINE_ALIASES: dict[str, str] = {
+    **{
+        name[len("myia-") :]: name
+        for name in FLEET_MACHINES
+        if name.startswith("myia-")
+    },
+    "ai01": "myia-ai-01",
+    "ai-1": "myia-ai-01",
+    "web-1": "myia-web1",
+    "web-2": "myia-web2",
+}
+
 
 @dataclass(frozen=True)
 class FieldSpec:
@@ -521,6 +563,30 @@ def _validate_issue_entity(raw: dict[str, Any]) -> dict[str, Any]:
     return entity
 
 
+def canonical_machine(raw: Any) -> str:
+    """The canonical machine name of the fleet, or an explicit refusal (#21580).
+
+    The machine part of a reservation key was free text: two spellings of the
+    same machine (``ai-01`` and ``myia-ai-01``) produced two rows that never
+    locked against each other -- and the lock is the whole point of a GPU
+    reservation. The refusal is explicit rather than lenient: a name outside
+    the roster is a typo, not a new machine.
+    """
+    if not isinstance(raw, str):
+        raise ObservationError("entity_mismatch", f"machine={raw!r} is not a machine name")
+    name = raw.strip().lower()
+    if name in FLEET_MACHINES:
+        return name
+    canonical = MACHINE_ALIASES.get(name)
+    if canonical is not None:
+        return canonical
+    raise ObservationError(
+        "entity_mismatch",
+        f"machine={raw!r} is not a fleet machine "
+        f"(known: {', '.join(sorted(FLEET_MACHINES))})",
+    )
+
+
 def _validate_gpu_entity(raw: dict[str, Any]) -> dict[str, Any]:
     machine = raw["machine"]
     if not isinstance(machine, str) or not _MACHINE_RE.match(machine.strip()):
@@ -531,7 +597,9 @@ def _validate_gpu_entity(raw: dict[str, Any]) -> dict[str, Any]:
         raise ObservationError(
             "entity_mismatch", f"gpu_index={index!r} is not a non-negative int"
         )
-    return {"machine": machine.strip(), "gpu_index": index}
+    # Canonical machine name (#21580): the row identity must not depend on the
+    # spelling, or two lanes reserve the same card without ever colliding.
+    return {"machine": canonical_machine(machine), "gpu_index": index}
 
 
 #: One entity validator per ledger -- the entity IS the row identity, so a kind
@@ -830,14 +898,47 @@ def parse_observation(
     declared_id = raw.get("observation_id")
     computed = observation_id_for(observation)
     if declared_id is not None and declared_id != computed:
-        # The id is content-derived; a mismatch means the content was edited
-        # after the id was stamped, i.e. the journal is not append-only here.
+        # An observation posted BEFORE the machine-name canonicalisation (#21580)
+        # carries the digest of its RAW entity ("ai-01#gpu2"); the canonical
+        # entity now digests differently. That is not a tampered journal -- it
+        # is the same content, re-keyed -- so the raw digest is accepted and
+        # the CANONICAL entity is kept: the row identity converges and the
+        # historical observation is not silently discarded by the fail-closed
+        # check below.
+        legacy = _legacy_observation_id(observation, raw.get("entity"), ledger)
+        if legacy is not None and declared_id == legacy:
+            observation["observation_id"] = computed
+            return observation
+        # Otherwise the id really does not match the content: the journal is
+        # not append-only here.
         raise ObservationError(
             "observation_id_mismatch",
             f"declared {declared_id!r} but content digests to {computed!r}",
         )
     observation["observation_id"] = computed
     return observation
+
+
+def _legacy_observation_id(
+    observation: dict[str, Any], raw_entity: Any, ledger: str
+) -> str | None:
+    """The digest an observation would have had BEFORE canonicalisation (#21580).
+
+    Only the GPU ledger has a canonicalised field (the machine name); for every
+    other ledger the answer is ``None`` -- there is no legacy form to accept, so
+    the fail-closed check stays exactly as strict as it was.
+    """
+    if ledger != GPU_RESERVATION or not isinstance(raw_entity, dict):
+        return None
+    machine = raw_entity.get("machine")
+    index = raw_entity.get("gpu_index")
+    if not isinstance(machine, str) or not isinstance(index, int) or isinstance(index, bool):
+        return None
+    legacy = dict(observation)
+    legacy["entity"] = {"machine": machine.strip(), "gpu_index": index}
+    if legacy["entity"] == observation["entity"]:
+        return None
+    return observation_id_for(legacy)
 
 
 # ---------------------------------------------------------------------------

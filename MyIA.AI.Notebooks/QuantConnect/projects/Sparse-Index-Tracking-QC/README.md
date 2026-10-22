@@ -93,7 +93,7 @@ en moyenne). Le classement (full > sparse sur Sharpe et drawdown) est le même d
 et dans le cloud.
 
 **Verdict honnête : la sélection sparse ne domine pas la réplication complète ici.** Le sparse
-échange moitié moins d'ordres (703 vs 1414) mais concentre le portefeuille sur 5-10 lignes :
+échange moitié moins d'ordres (703 vs 1414) mais concentre le portefeuille sur un petit nombre de lignes :
 drawdown plus profond (34.7 % vs 30.7 %) et Sharpe plus faible (0.611 vs 0.698). **L'hypothèse de
 compression des coûts par la cardinalité est réfutée sur ces données** : la simulation révèle que
 la concentration fait migrer **plus de poids** par rebalance (139.5 vs 58.0 bps cumulés), donc la
@@ -101,7 +101,7 @@ contrainte économise des *ordres*, pas du *turnover*. Les PSR QC (3.749 % et 7.
 chaque Sharpe contre le benchmark probabiliste de la plateforme ; ils ne constituent pas un test
 pairé de la différence sparse–full. La hiérarchie observée reste donc descriptive, pas une preuve
 de séparation statistique entre les deux modes. Leçon pédagogique : la sparse tracking ne paie que si les coûts par ligne sont élevés,
-si l'univers de départ est large et bruité (500 lignes, pas 40 déjà corrélatées au marché), ou si
+si l'univers de départ est large et bruité, pas déjà réduit et corrélaté au marché, ou si
 la contrainte est exogène (budget, mandat).
 
 ## Compteur de séances et historique de demi-séance

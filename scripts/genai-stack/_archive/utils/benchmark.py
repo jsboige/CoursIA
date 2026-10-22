@@ -22,7 +22,7 @@ import argparse
 
 class ComfyUIBenchmark:
     def __init__(self, server_address="127.0.0.1:8188", workflow_file="workflow_benchmark.json",
-                 username="admin", password="rZDS3XQa/8!v9L"):
+                 username="admin", password=os.getenv("FORGE_PASSWORD")):
         self.server_address = server_address
         self.client_id = str(uuid.uuid4())
         self.workflow_file = workflow_file
@@ -356,20 +356,27 @@ def main():
     parser.add_argument('--output', help='Fichier de sortie JSON')
     parser.add_argument('--username', default='admin',
                        help='Nom d utilisateur ComfyUI (défaut: admin)')
-    parser.add_argument('--password', default='rZDS3XQa/8!v9L',
-                       help='Mot de passe ComfyUI (défaut: celui du .env)')
-    
+    parser.add_argument('--password', default=None,
+                       help='Mot de passe ComfyUI (défaut: variable FORGE_PASSWORD de l env)')
+
     args = parser.parse_args()
-    
+
     # Vérifier si nvidia-smi est disponible
     try:
         subprocess.run(['nvidia-smi'], capture_output=True, check=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
         print("❌ nvidia-smi n'est pas disponible. Le monitoring GPU ne fonctionnera pas.")
         return
-    
+
+    # Le default argparse écraserait le os.getenv du constructeur : résoudre
+    # ici pour que l'env reste la vraie source par défaut (review #21844).
+    password = args.password or os.getenv("FORGE_PASSWORD")
+    if not password:
+        print("ERREUR: FORGE_PASSWORD absente de l'environnement et --password non fourni.")
+        return
+
     # Créer et exécuter le benchmark
-    benchmark = ComfyUIBenchmark(args.server, args.workflow, args.username, args.password)
+    benchmark = ComfyUIBenchmark(args.server, args.workflow, args.username, password)
     
     if benchmark.run_benchmark(args.iterations):
         benchmark.analyze_results()

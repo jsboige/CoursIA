@@ -302,7 +302,7 @@ Ce cours partenaire est une **plateforme de démarrage structurée** vers le tra
 - **Les templates progressifs** : trois points de départ (`starter` → `intermediate` → `advanced`) calibrés par difficulté croissante. Le `starter` (EMA crossover sur BTCUSDT) enseigne le `QCAlgorithm` lifecycle ; l'`intermediate` introduit l'Algorithm Framework modulaire ; l'`advanced` ajoute le machine learning. On apprend qu'**un bon template est un échafaudage** : il code les bonnes pratiques (Initialize, Risk Management, execution) pour que l'étudiant itère sur l'alpha, pas sur la plomberie.
 - **Les exemples de projets** (`Sector-Momentum`, `Trend-Following`, `BTC-MachineLearning`, `Sector-ML-Classification`) montrent des stratégies *achevées* à étudier puis adapter. On apprend que **lire du code qui marche** est aussi formateur que d'en écrire.
 
-Le fil rouge : la **progression pédagogique** — les 28 notebooks compagnons (`../Python/`, QC-Py-01 à 28) fournissent la théorie, et ce cours fournit la *pratique guidée* via templates et exemples. Les deux sont conçus pour avancer ensemble.
+Le fil rouge : la **progression pédagogique** — les notebooks compagnons (`../Python/`, QC-Py-01 à 28) fournissent la théorie, et ce cours fournit la *pratique guidée* via templates et exemples. Les deux sont conçus pour avancer ensemble.
 
 ### Prochaines étapes
 

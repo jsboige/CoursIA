@@ -237,10 +237,23 @@ wch_maintenance_pass() {
     echo "work_cache: $repo repack 0 -> $after packs (0 pack mais objets en vrac, #21557)"
     return 0
   fi
-  if ! wch_git -C "$repo" repack -ad >/dev/null 2>&1; then
+  # Stderr du repack : avant #20697, il partait dans `>/dev/null 2>&1` et
+  # les 223 'repack ECHEC' du journal du slot 1 (myia-ai-01-wsl) restaient
+  # sans cause nommee. On capture stderr vers un tmpfile et on le CAT-a-la-ligne
+  # sur le journal du slot. Le rc du repack reste 0 en sortie -- un garde de
+  # sante ne doit jamais etre la raison pour laquelle un slot meurt.
+  _wch_rep_err="$(mktemp -t wch-rep.XXXXXX 2>/dev/null)" || _wch_rep_err=""
+  if ! wch_git -C "$repo" repack -ad >/dev/null 2>"${_wch_rep_err:-/dev/null}"; then
     echo "work_cache: repack ECHEC dans $repo ($before packs) -- cache conserve tel quel, nouvelle tentative au prochain passage" >&2
+    if [ -n "$_wch_rep_err" ] && [ -s "$_wch_rep_err" ]; then
+      while IFS= read -r line; do
+        echo "work_cache: repack stderr: $line" >&2
+      done < "$_wch_rep_err"
+    fi
+    [ -n "$_wch_rep_err" ] && rm -f "$_wch_rep_err"
     return 0
   fi
+  [ -n "$_wch_rep_err" ] && rm -f "$_wch_rep_err"
   after="$(wch_pack_count "$repo")"
   echo "work_cache: $repo repack $before -> $after packs (seuil $threshold)"
   return 0

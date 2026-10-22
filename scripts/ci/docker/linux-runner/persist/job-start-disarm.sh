@@ -70,8 +70,14 @@ disarm_one() {  # <chemin-du-clone>
     rm -f "$gitdir/info/sparse-checkout" || true
   fi
   while read -r ref sha; do
-    if ! git -C "$repo" cat-file -e "$sha^{object}" 2>/dev/null; then
-      echo "job-start-disarm: ref distante dangling $ref -- suppression (objet absent)" >&2
+    # Meme garde que l'entrypoint (#20699 / c.327 slot 3 po-2024) :
+    # cat-file -e en clone partiel declenche un fetch paresseux sans timeout.
+    # GIT_NO_LAZY_FETCH=1 (git >= 2.46, no-op avant) desactive le fetch ;
+    # timeout 10 borne le pire cas. stderr de-masque pour qu'un timeout reste
+    # diagnosticable (la trace du slot 3 etait silencieuse a cause du
+    # 2>/dev/null).
+    if ! GIT_NO_LAZY_FETCH=1 timeout 10 git -C "$repo" cat-file -e "$sha^{object}"; then
+      echo "job-start-disarm: ref distante dangling $ref -- suppression (objet absent ou timeout cat-file)" >&2
       git -C "$repo" update-ref -d "$ref" 2>/dev/null || true
     fi
   done < <(git -C "$repo" for-each-ref --format='%(refname) %(objectname)' refs/remotes 2>/dev/null)
