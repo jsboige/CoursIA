@@ -35,11 +35,14 @@ dependencies = [
     "pyphi==1.2.0",          # IIT computation -- epinglera l'env sur Py3.9 + NumPy<2
     "numpy>=1.21,<2.0",      # numpy<2.0 (compat pyemd / pyphi)
     "scipy>=0.13.3",         # calcul scientifique
-    "antropy",               # entropies non lineaires (Higuchi, Lempel-Ziv) :
+    "antropy<0.2",           # entropies non lineaires (Higuchi, Lempel-Ziv) :
                              # importe par ICT-36c-FLens-HiguchiBridge et
                              # ICT-36d-FLens-DecorrelationTemporelle
-                             # (ent.higuchi_fd, ent.lziv_complexity) ; non
-                             # epingle (cf. ../../requirements.txt)
+                             # (ent.higuchi_fd, ent.lziv_complexity). Borne haute
+                             # 0.2 : cet env est epingle Python >=3.9,<3.10 (pyphi)
+                             # et antropy >=0.2.0 exige >=3.10 -- sans borne, pip
+                             # resout 0.1.9 et la version validee diverge (cf.
+                             # ../../requirements.txt, meme borne)
     "matplotlib",            # visualisation (notebooks)
     "pandas",                # ict.bridges.make_panel_did retourne un DataFrame
                              # (utilise par ict/tests/test_bridges.py et par
