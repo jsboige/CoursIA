@@ -401,6 +401,53 @@ def test_iter_csvs_directory_sorted(tmp_path):
 
 
 # --------------------------------------------------------------------------- #
+#  Out-of-scope scan (étape 5 de #10329, --report-out-of-scope)                #
+# --------------------------------------------------------------------------- #
+
+
+def test_find_out_of_scope_known_in_notebooks_root_form(tmp_path):
+    """Contrat de la fonction : known au format relatif a notebooks_root."""
+    nb_root = tmp_path / "MyIA.AI.Notebooks" / "S"
+    _write_notebook(nb_root / "S-01-A.ipynb", [_make_cell("c1", "markdown", "# Titre")])
+    _write_notebook(nb_root / "S-02-B.ipynb", [_make_cell("c2", "markdown", "# Autre")])
+    known = {"S/S-01-A.ipynb"}
+    oos = t2.find_out_of_scope_notebooks(nb_root.parent, known)
+    assert [e["notebook"] for e in oos] == ["S/S-02-B.ipynb"]
+    assert all(e["verdict"] == "MISSING_FROM_CSV" for e in oos)
+
+
+def test_main_out_of_scope_only_reports_uncovered(tmp_path, capsys, monkeypatch):
+    """Régression #4208 : known collecté au format repo-root doit matcher.
+
+    Avant le fix, main() passait a find_out_of_scope_notebooks des chemins
+    ``MyIA.AI.Notebooks/...`` compares a des chemins relatifs au notebooks
+    root : la comparaison ne matchait jamais et TOUT pivot FR etait rapporte
+    MISSING_FROM_CSV (1591/1591 sur main@5d177839f90b).
+    """
+    repo = tmp_path / "repo"
+    nb_dir = repo / "MyIA.AI.Notebooks" / "S"
+    _write_notebook(nb_dir / "S-01-A.ipynb", [_make_cell("c1", "markdown", "# Titre")])
+    _write_notebook(nb_dir / "S-02-B.ipynb", [_make_cell("c2", "markdown", "# Autre")])
+    csv_path = repo / "translations" / "s" / "s.csv"
+    _write_csv(csv_path, [{
+        "notebook": "MyIA.AI.Notebooks/S/S-01-A.ipynb",
+        "cell_id": "c1", "cell_type": "markdown", "src_lang": "fr",
+        "src_hash": t2.cell_hash("# Titre"), "text_fr": "# Titre",
+    }])
+    monkeypatch.setattr(sys, "argv", [
+        "check_translation_sync.py", str(repo / "translations"),
+        "--check", "--report-out-of-scope", "--repo-root", str(repo),
+    ])
+    rc = t2.main()
+    assert rc == 0  # --check : non-bloquant meme avec drift
+    report = json.loads(capsys.readouterr().out)
+    assert report["out_of_scope_count"] == 1
+    assert report["out_of_scope"] == [
+        {"notebook": "MyIA.AI.Notebooks/S/S-02-B.ipynb", "verdict": "MISSING_FROM_CSV"}
+    ]
+
+
+# --------------------------------------------------------------------------- #
 #  Roundtrip determinisme (T1 write -> T2 check) — anti-regression global      #
 # --------------------------------------------------------------------------- #
 

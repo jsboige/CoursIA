@@ -60,7 +60,7 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 
 ## Règles modulaires `.claude/rules/`
 
-**Les règles sans frontmatter `paths:` sont auto-chargées** : leur contenu est déjà en contexte, les ré-énumérer ici le dupliquerait. **Celles qui portent un frontmatter `paths:`** ne se chargent que si la session touche les fichiers visés. Le protocole `audit-reassessment` reste toujours chargé car il s’applique à tout fix fondé sur un audit automatisé, quel que soit le type de fichier :
+**Les règles sans frontmatter `paths:` sont auto-chargées** : leur contenu est déjà en contexte, les ré-énumérer ici le dupliquerait. **Celles qui portent un frontmatter `paths:`** ne se chargent que si la session touche les fichiers visés. Deux protocoles restent **toujours chargés** (exemptions délibérées, quel que soit le type de fichier) : `audit-reassessment`, car il s’applique à tout fix fondé sur un audit automatisé, et `bibliography-hygiene`, car les publications se récupèrent, s’utilisent et se citent depuis les carnets et les docstrings Lean — hors de tout glob.
 
 | Domaine | Règles path-gatées | Ce qu'un lecteur doit savoir sans les avoir chargées |
 |---|---|---|

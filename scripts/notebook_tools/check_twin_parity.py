@@ -1756,9 +1756,10 @@ def _main(argv=None) -> int:
                         "Distingue erreur d'outil vs constat de drift (cf L948/L949, c.1240).")
     p.add_argument("--pair", default=None,
                    help="Restreindre a une paire nommee (ex. 'Search-9-LP') : applique par "
-                        "--update, --migrate-audits, --check et --verify-recorded-sha (#20197) ; "
-                        "ignore par --per-pair, --coverage et --summary-by-verdict. Nom inconnu "
-                        "= rc 2. Impossible a combiner avec --family.")
+                        "--update, --migrate-audits, --check et --verify-recorded-sha "
+                        "(#20197), ainsi qu'en --per-pair --base <ref> (#21281) ; refuse par "
+                        "--coverage et --summary-by-verdict (modes de recensement integral). "
+                        "Nom inconnu = rc 2. Impossible a combiner avec --family.")
     p.add_argument("--yes-all-pairs", action="store_true",
                    help="Opt-in explicite pour rebaseline TOUTES les paires du registre "
                         "avec --update. Sans ce flag (ou --family/--pair), --update refuse.")
@@ -1825,6 +1826,20 @@ def _main(argv=None) -> int:
         p.error("--migrate-audits est un mode exclusif : incompatible avec "
                 "--update / --per-pair / --base / --verify-recorded-sha / "
                 "--coverage / --summary-by-verdict / --ci-strict.")
+    # Selecteurs sans portee pour les modes de recensement seul (#21281,
+    # reliquat #20578) : un --pair/--family sur --coverage ou
+    # --summary-by-verdict etait silencieusement ignore -- un selecteur
+    # inconnu rendait rc 0 sur le recensement integral. On refuse a
+    # l'analyse (p.error) plutot que d'evaluer un selecteur qui n'a aucun
+    # sens pour ces deux modes.
+    if args.coverage and (args.pair or args.family):
+        p.error("--coverage est un mode de recensement integral : --pair/--family "
+                "n'y designent rien (recense justement les notebooks ABSENTS du "
+                "registre). Retirer le selecteur.")
+    if args.summary_by_verdict and (args.pair or args.family):
+        p.error("--summary-by-verdict est un mode de recensement integral : "
+                "--pair/--family n'y designent rien (compte les paires par "
+                "bridge_verdict). Retirer le selecteur.")
     # Garde anti-derive MERGE_HEAD / REBASE_HEAD (#11732) : pendant un merge non
     # commite, `git ls-tree HEAD` lit l'ANCIENNE tete de branche (pas le resultat
     # du merge). --update atteste alors des blob SHAs qui ne refletent pas l'etat
@@ -1952,14 +1967,37 @@ def _main(argv=None) -> int:
         # #8542) -> _load_registry_at_ref essaie le repertoire puis retombe sur
         # le fichier legacy.
         pairs_head = load_registry(reg_path)
+
+        # Application stricte des selecteurs (#21281, reliquat #20578) :
+        # un nom ou une famille inconnue -> rc 2 avec la liste des noms
+        # connus, comme --check --update le fait deja depuis #20578.
+        # On check AVANT le load du base-ref (qui fait un git ls-tree par
+        # paire et est dispendieux) : un selecteur inconnu ne doit jamais
+        # payer le cout d'un parcours integral.
+        if args.family:
+            known_families = sorted({pp.get("family", "?") for pp in pairs_head})
+            if args.family not in known_families:
+                print(
+                    f"--family {args.family!r} inconnue. Familles connues : "
+                    f"{known_families}",
+                    file=sys.stderr,
+                )
+                return 2
+            pairs_head = [pp for pp in pairs_head if pp.get("family") == args.family]
+        elif args.pair:
+            known_names = sorted({pp.get("name", "?") for pp in pairs_head})
+            if args.pair not in known_names:
+                print(
+                    f"--pair {args.pair!r} inconnue. Noms connus ({len(known_names)}) : "
+                    f"{known_names}",
+                    file=sys.stderr,
+                )
+                return 2
+            pairs_head = [pp for pp in pairs_head if pp.get("name") == args.pair]
+
         pairs_base = _load_registry_at_ref(repo_root, args.base, reg_path)
         # Index par nom (au cas ou l'ordre ou les ajouts/suppressions different)
         base_by_name = {pp.get("name", "?"): pp for pp in pairs_base}
-
-        if args.family:
-            pairs_head = [pp for pp in pairs_head if pp.get("family") == args.family]
-            if not pairs_head:
-                print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
 
         results = []
         for pp in pairs_head:
