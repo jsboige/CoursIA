@@ -668,10 +668,10 @@ fera se périmer dès que le code de la série bougera.
   notes: "Recherche active — appréciation posée au sign-off du schéma."
 - notebook_path: IIT/ICT-Series/ICT-Greffe5-AttributionCausale.ipynb
   confidence: research
-  reviewed_code_sha: 6ef1311a445a54eeef856fc56eef75217a142954764a26402abf35e7e585ed7a
-  review_date: "2026-10-21"
+  reviewed_code_sha: 161cf134c9f70cb8710bbc49336c0cf11efa298c6d0ed787f3da4c31437fbc63
+  review_date: "2026-10-22"
   evidence_pr: "#14831"
-  notes: "Recherche active — appréciation posée au sign-off du schéma. Ancre ré-actualisée après le correctif du test du but et de l'outcome Y (#20886) : l'appréciation porte sur la méthode, pas sur l'implémentation corrigée."
+  notes: "Recherche active — appréciation posée au sign-off du schéma. Ancre ré-actualisée après le correctif du test du but et de l'outcome Y (#20886) : l'appréciation porte sur la méthode, pas sur l'implémentation corrigée. L'ancre désigne le code effectivement livré, retenu par l'arbitrage de #20886 (voie a, Y = |F_B|, PR #21502) ; le carnet de cette PR est identique à celui de main."
 - notebook_path: IIT/ICT-Series/ICT-Life-SubstratCertifie.ipynb
   confidence: research
   reviewed_code_sha: 7fb220ae9e5e5a4cbfa098e570695ad6fcc5e1b52d8b45babf791ae7c8257d98
