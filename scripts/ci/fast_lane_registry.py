@@ -20,11 +20,56 @@ de review B.0), seule l'infrastructure est mutualisee.
 
 Ce module ne contient QUE des donnees : la mecanique est dans `fast_lane.py`,
 ce qui rend le registre lisible et testable sans executer quoi que ce soit.
+
+Exception documentee (#22001) : les `paths` du garde Live-read (TRANCHE20)
+sont DERIVES du registre `live_read_registry.json` -- les sources lues par
+les cellules sont des DONNEES, pas des motifs recopies a la main. La
+derivation est une lecture de donnees, pas de la mecanique : elle reste ici
+parce que c'est le registre lui-meme qui porte les `paths`.
 """
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass, field
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+LIVE_READ_REGISTRY = REPO_ROOT / "scripts" / "notebook_tools" / "live_read_registry.json"
+
+
+def live_read_source_paths(registry_path: Path | None = None) -> list[str]:
+    """Chemins des fichiers LUS par les cellules live-read, d'apres le registre.
+
+    Une cellule live-read lit un fichier du depot et en committent la sortie
+    (compte de lignes, citations ``L<n>``). Si la source change, la sortie
+    committée devient un temoignage du passe -- et le garde qui le verifie
+    doit etre SELECTIONNE par la revision qui touche la source. Jusque-là
+    (avant #22001), les `paths` du garde ne portaient que ``**.ipynb`` et ses
+    propres fichiers : une PR qui ne touchait que la source ne declenchait
+    rien, et la revision #21899 (`Pillars.lean` 364 -> 414 lignes) a ete
+    mergee verte.
+
+    Les sources sont donc lues dans le registre, jamais recopiees : ajouter
+    une entree au registre suffit a elargir le declencheur.
+
+    Fail-closed : un registre illisible ou une entree sans `source` leve
+    plutot que de rendre un garde muet (un garde eteint en silence est le
+    defaut que ce correctif vient corriger).
+    """
+    path = Path(registry_path) if registry_path is not None else LIVE_READ_REGISTRY
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise RuntimeError(f"registre live-read illisible : {path} ({exc})") from exc
+    sources: list[str] = []
+    for cell in data.get("cells", []):
+        source = cell.get("source")
+        if not source:
+            raise RuntimeError(
+                f"registre live-read : entree sans champ 'source' : {cell}")
+        sources.append(source)
+    return sources
 
 
 @dataclass(frozen=True)
@@ -2013,6 +2058,13 @@ TRANCHE20: list[Guard] = [
             "scripts/notebook_tools/tests/test_live_read_freshness.py",
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
+            "scripts/tests/test_fast_lane.py",
+            # Les SOURCES lues par les cellules live-read : derivees du
+            # registre (#22001). Sans elles, le garde ne se selectionne que
+            # sur une revision qui touche le CARNET -- la revision qui
+            # reecrit la SOURCE passe sans controle, et la sortie committée
+            # de la cellule devient un temoignage du passe (#21899).
+            *live_read_source_paths(),
         ],
         pre_argv=[
             "python", "scripts/notebook_tools/check_live_read_freshness.py",
