@@ -50,7 +50,7 @@ Lecture directe de l'amont, sans téléchargement du dépôt (2,2 Go) : `NOTICE`
 
 **Deux écarts d'attribution, à signaler à l'amont** (ils ne bloquent pas l'enveloppe, mais ils sont des faits mesurés) :
 
-1. **`DeGiorgi/` n'est pas dans le `NOTICE` racine** : sa provenance n'est déclarée que dans `DifferentialGeometry/External/README.md`. L'upstream respecte donc l'obligation d'attribution (§4(d) d'Apache-2.0) via un fichier annexe, mais pas via le NOTICE lui-même.
+1. **`DeGiorgi/` n'est pas dans le `NOTICE` racine** : sa provenance n'est déclarée que dans `DifferentialGeometry/External/README.md`. **Fait observé** : l'attribution de `DeGiorgi/` figure dans un fichier annexe, et n'apparaît pas dans le `NOTICE` racine. **Ce que ce fait ne prouve pas** : la présence d'une mention de provenance dans un `README`/`UPSTREAM` ne vaut pas, à elle seule, preuve que les conditions applicables de l'Apache-2.0 sont satisfaites (§4(d) : conservation de la `LICENSE`/`NOTICE`, mention des modifications) — cette vérification reste **à faire au cas par cas**, et aucune conclusion de conformité globale n'est tirée ici.
 2. **`RiemannMapping/` n'est dans ni le `NOTICE` racine ni le `External/README.md`** : son attribution ne vit que dans son propre `UPSTREAM.json` (avec SHA-256 par fichier). La provenance est traçable et vérifiable ; l'omission au niveau racine est un défaut d'annonce, à signaler en upstream.
 
 ### 2.2 Conformité de redistribution
@@ -63,7 +63,7 @@ Lecture directe de l'amont, sans téléchargement du dépôt (2,2 Go) : `NOTICE`
 
 **Mesure du 2026-10-22** : le `LICENSE` racine est le texte **Apache License 2.0** intégral (11 357 o, blob `261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64`), et la GitHub API renvoie la SPDX `Apache-2.0` pour le dépôt. Le `NOTICE` racine (1 791 o, blob `264ca83de5638b06033196bbb8b2da4cca7aba1c`) est présent. **Les six arbres vendorisés sont sous Apache-2.0**, chacun avec son `LICENSE` (blob `8dada3ed…` pour quatre d'entre eux, `261eeb9e…` pour CanonicalTopology, `ae20225f…` pour DeGiorgi) et son `MODIFICATIONS.md`.
 
-**Droits de redistribution mesurés** : Apache-2.0 **autorise** la redistribution, à condition de conserver `LICENSE` et `NOTICE` et de signaler les modifications (§4). Aucune des six sources n'est sous licence restrictive (non-redistribuable ou non commerciale). Aucun PDF n'est concerné : les sources vendorisées sont du **code Lean**, pas des publications.
+**Faits mesurés** : les six sources sont sous **Apache-2.0** — aucune n'est sous licence restrictive (non-redistribuable ou non commerciale) ; aucun PDF n'est concerné, les sources vendorisées sont du **code Lean**, pas des publications. **Permission, sous conditions** : Apache-2.0 **autorise** la redistribution, à condition de conserver `LICENSE` et `NOTICE` et de signaler les modifications (§4). **Vérification des conditions applicables** : ce document mesure les licences et les fichiers de provenance ; il ne conclut **pas** à la conformité de l'amont, et la satisfaction effective des conditions de redistribution reste à vérifier par l'entité qui redistribue.
 
 ### 2.3 Verdict mesuré (2026-10-22)
 
@@ -78,8 +78,8 @@ Lecture directe de l'amont, sans téléchargement du dépôt (2,2 Go) : `NOTICE`
 **Réponse mesurée** :
 
 1. **License-by-license : fait** — tableau 2.1 bis (six arbres, pas quatre : `ClassificationOfSurfaces/` et `RiemannMapping/` étaient absents du relevé du 2026-10-03). Chaque ligne porte sa provenance (amont + révision), ses droits et le SHA de blob de ses fichiers de licence et de modification.
-2. **Décision binaire : redistribution OK.** Aucune source restrictive ; la redistribution est possible **en amont** sous condition de conservation des `LICENSE`/`NOTICE` et de mention des modifications.
-3. **Conséquence pour nous : l'enveloppe lake est possible**, et **notre dépôt ne redistribue rien**. Le seul artefact que nous versionnons est le lake d'enveloppe, qui déclare l'amont en `[[require]]` sur une **révision épinglée** (tag `v0.1.3`, commit `7a48598d`) ; les sources tierces et leurs licences restent **chez l'amont** et sont téléchargées par le gestionnaire de dépendances, pas recopiées dans CoursIA. La citation se fait dans le body des carnets et dans `docs/lean/`, comme le voulait le relevé initial.
+2. **Décision binaire : redistribution possible SOUS CONDITIONS.** Aucune source restrictive : la licence est Apache-2.0 pour les six sources, qui autorise la redistribution **sous condition** de conservation des `LICENSE`/`NOTICE` et de mention des modifications. Cette décision porte sur la **licence** ; elle ne vaut pas conclusion de conformité de l'amont.
+3. **Conséquence proposée pour nous : l'enveloppe lake serait possible**, et **notre dépôt ne redistribuerait rien**. **Cette PR ne livre aucun lake** (périmètre : sub-grains 3 et 4) : l'architecture décrite ci-dessous est **proposée** pour le Pli 2, pas un artefact existant. Dans cette architecture, le seul artefact versionné serait le lake d'enveloppe, qui déclarerait l'amont en `[[require]]` sur une **révision épinglée** (tag `v0.1.3`, commit `7a48598d`) ; les sources tierces et leurs licences resteraient **chez l'amont** et seraient téléchargées par le gestionnaire de dépendances, pas recopiées dans CoursIA. La citation se ferait dans le body des carnets et dans `docs/lean/`, comme le voulait le relevé initial.
 
 **Ce qui reste à faire, et par qui** : signaler à l'amont les deux écarts d'attribution du § 2.1 bis (DeGiorgi et RiemannMapping absents du `NOTICE` racine) — sous la forme d'une **issue proposée**, sans PR à leur place sans invitation (règle du Pli 1 : « aucune PR chez eux sans y être invités »). Le **Pli 2** (builds) n'est pas ouvert par ce document : il reste un dépli du coordinateur.
 
@@ -151,7 +151,7 @@ Voir section 2.1 bis (six arbres, provenance + droits + SHA de blob). En amont, 
 ### 7.1 Mesure
 
 - **Source primaire** : `qinz1yang/differential-geometry` v0.1.3 — **pin `7a48598d` lu firsthand le 2026-10-22** pour les fichiers de licence et de provenance (`NOTICE` blob `264ca83de5638b06033196bbb8b2da4cca7aba1c`, 1 791 o ; `LICENSE` blob `261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64`, 11 357 o ; `External/README.md`). Le dépôt complet n'est **pas** téléchargé (2,2 Go) ; le reste (sources Lean) sera mesuré au Pli 2 par téléchargement effectif, si le coordinateur déplie ce pli.
-- **Sources tierces** (NOTICE) : **vérifiées firsthand le 2026-10-22** — six arbres vendorisés, tous **Apache-2.0**, avec provenance et SHA de blob dans le tableau 2.1 bis. Deux écarts d'attribution relevés (DeGiorgi et RiemannMapping absents du `NOTICE` racine) : à signaler en upstream, **ne bloquent pas** l'enveloppe.
+- **Sources tierces** (NOTICE) : **vérifiées firsthand le 2026-10-22** — six arbres vendorisés, tous **Apache-2.0**, avec provenance et SHA de blob dans le tableau 2.1 bis. Deux écarts d'attribution relevés (DeGiorgi et RiemannMapping absents du `NOTICE` racine) : à signaler en upstream ; ils ne bloquent pas la décision de licence (redistribution possible sous conditions), et aucune conclusion de conformité de l'amont n'est tirée.
 - **Emplacement proposé** : argumentaire fondé sur la **convention i18n en place** (Pattern A `_lean` suffix, déjà adopté par 4 lakes existants).
 
 ### 7.2 Conformité
