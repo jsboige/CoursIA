@@ -58,6 +58,7 @@ import json
 import math
 import re
 import sys
+from collections import Counter
 from pathlib import Path
 
 # Doit rester coherent avec extract_cells_to_csv.py (T1) ET check_perimeter.py
@@ -183,10 +184,31 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
     anomalies: list[dict] = []
     with csv_path.open(encoding="utf-8") as f:
         reader = csv.DictReader(f)
+        rows = list(reader)
         source_cache: dict[str, dict[str, str] | None] = {}
         source_text_cache: dict[str, dict[str, str] | None] = {}
         trad_text_cache: dict[str, dict[str, str] | None] = {}
-        for row in reader:
+
+        # DUPLICATE_KEY (#21489) : la resync T1 ne rafraichit que la PREMIERE
+        # occurrence d'une cle (notebook, cell_id) -- les suivantes conservent
+        # un pivot d'une autre version de la cellule, et chaque ligne reste
+        # "valide" isolee : le doublon ne se revele que par cette passe par
+        # fichier, avant les verifications par ligne.
+        key_counts: Counter[tuple[str, str]] = Counter(
+            (row.get("notebook", ""), row.get("cell_id", ""))
+            for row in rows
+            if row.get("notebook") and row.get("cell_id")
+        )
+        for (nb_dup, cid_dup), n_dup in sorted(key_counts.items()):
+            if n_dup > 1:
+                anomalies.append(
+                    {"csv": str(csv_path), "notebook": nb_dup, "cell_id": cid_dup,
+                     "verdict": "DUPLICATE_KEY",
+                     "detail": f"{n_dup} occurrences de la cle -- la resync T1 ne rafraichit "
+                               f"que la premiere, les autres gardent un pivot perime (#21489)"}
+                )
+
+        for row in rows:
             nb_rel = row.get("notebook", "")
             cell_id = row.get("cell_id", "")
             if not nb_rel or not cell_id:

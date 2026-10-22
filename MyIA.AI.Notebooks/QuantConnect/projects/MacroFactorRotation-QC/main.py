@@ -52,6 +52,18 @@ import asg_helpers
 # bras baseline n'echange pas. Periode OOS 2018-01 -> 2025-01
 # ou les deux bras echangent. Sans ces parametres, le comportement par
 # defaut reproduit la baseline d'origine.
+#
+# References detenues (mode="spy" | "6040") : SPY detenu, et 60/40 SPY/BND
+# reequilibre chaque debut de mois a la meme minute que la baseline. Memes
+# parametres de fenetre, meme brokerage par defaut : la seule difference avec
+# les bras est la regle de decision.
+#
+# Trace "shadow" (tous les modes, aucune decision) : a l'ouverture de chaque
+# seance de SPY a partir de trading_start, la valeur du portefeuille, c'est-a-
+# dire sa valeur a la cloture precedente, dans e0..e4 (contrat de rejeu en
+# ombre #18923, lu par Paradox46Benchmarks/significance.py). L'ouverture est
+# le seul instant ou les bras minute et les bras journaliers voient la meme
+# cloture : une trace a 15:59 lirait la veille pour les donnees journalieres.
 # ============================================================================
 
 
@@ -59,9 +71,10 @@ class MacroFactorRotationAlgorithm(QCAlgorithm):
 
     def initialize(self):
         self._mode = self.get_parameter("mode", "baseline").lower()
-        if self._mode not in ("baseline", "asg"):
+        if self._mode not in ("baseline", "asg", "spy", "6040"):
             raise ValueError(
-                f"parametre mode inconnu : {self._mode} (baseline | asg)"
+                f"parametre mode inconnu : {self._mode} "
+                "(baseline | asg | spy | 6040)"
             )
         self._trading_start = self._parse_date_param("trading_start")
 
@@ -92,8 +105,18 @@ class MacroFactorRotationAlgorithm(QCAlgorithm):
 
         if self._mode == "asg":
             self._initialize_asg()
+        elif self._mode in ("spy", "6040"):
+            self._initialize_reference()
         else:
             self._initialize_baseline()
+
+        self._closes = 0
+        self._trace_symbol = Symbol.create("SPY", SecurityType.EQUITY, Market.USA)
+        self.schedule.on(
+            self.date_rules.every_day(self._trace_symbol),
+            self.time_rules.after_market_open(self._trace_symbol, 0),
+            self._trace,
+        )
 
     def _parse_date_param(self, name):
         raw = self.get_parameter(name)
@@ -104,6 +127,37 @@ class MacroFactorRotationAlgorithm(QCAlgorithm):
     def _may_trade(self):
         """Porte d'alignement #14722 : avant trading_start, on n'echange pas."""
         return self._trading_start is None or self.time >= self._trading_start
+
+    def _trace(self):
+        """Valeur du portefeuille a l'ouverture (= cloture precedente), sans decision."""
+        if self.is_warming_up or not self._may_trade():
+            return
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
+
+    # ------------------------------------------------------------------
+    # References detenues : SPY seul, ou 60/40 SPY/BND reequilibre
+    # ------------------------------------------------------------------
+    def _initialize_reference(self):
+        self._ref_spy = self.add_equity("SPY").symbol
+        self._ref_bnd = self.add_equity("BND").symbol if self._mode == "6040" else None
+        self.schedule.on(
+            self.date_rules.month_start(self._ref_spy),
+            self.time_rules.after_market_open(self._ref_spy, 1),
+            self._rebalance_reference,
+        )
+        self.set_warm_up(timedelta(35))
+
+    def _rebalance_reference(self):
+        if self.is_warming_up or not self._may_trade():
+            return
+        if self._ref_bnd is None:
+            self.set_holdings([PortfolioTarget(self._ref_spy, 1.0)])
+        else:
+            self.set_holdings([
+                PortfolioTarget(self._ref_spy, 0.6),
+                PortfolioTarget(self._ref_bnd, 0.4),
+            ])
 
     # ------------------------------------------------------------------
     # Bras baseline : rotation macro DecisionTree (logique d'origine #72)
@@ -135,6 +189,9 @@ class MacroFactorRotationAlgorithm(QCAlgorithm):
             self._rebalance_baseline
         )
         self.set_warm_up(timedelta(35))
+        self._fred_rebalances = 0
+        self._fred_same_day = 0
+        self._max_gross_target = 0.0
 
     def _rebalance_baseline(self):
         if self.is_warming_up:
@@ -155,6 +212,7 @@ class MacroFactorRotationAlgorithm(QCAlgorithm):
             Resolution.DAILY,
             data_normalization_mode=DataNormalizationMode.TOTAL_RETURN
         )["close"].unstack(0).dropna().pct_change(21).shift(-21).dropna()
+        self._probe_fred(factors, labels)
 
         # Train model and make predictions
         prediction_by_symbol = pd.Series()
@@ -199,7 +257,36 @@ class MacroFactorRotationAlgorithm(QCAlgorithm):
             PortfolioTarget(symbol, weight)
             for symbol, weight in weight_by_symbol.items()
         ]
+        self._max_gross_target = max(
+            self._max_gross_target, float(weight_by_symbol.abs().sum())
+        )
+        self.set_runtime_statistic("Max gross target", f"{self._max_gross_target:.3f}")
         self.set_holdings(targets, True)
+
+    def _probe_fred(self, factors, labels):
+        """Sonde sans effet sur la decision : quelle ligne FRED la decision lit-elle ?
+
+        Compte les reequilibrages dont la derniere ligne de facteurs porte la date
+        du jour de decision, et note pour trois mois temoins la date, la valeur
+        de VIXCLS lue et la date de la derniere etiquette d'entrainement.
+        """
+        if len(factors) == 0:
+            return
+        self._fred_rebalances += 1
+        last = factors.index[-1]
+        if last.date() >= self.time.date():
+            self._fred_same_day += 1
+        self.set_runtime_statistic(
+            "FRED same-day", f"{self._fred_same_day}/{self._fred_rebalances}"
+        )
+        month = self.time.strftime("%Y-%m")
+        if month in ("2018-02", "2020-03", "2020-04"):
+            vix = [c for c in factors.columns if "VIXCLS" in str(c)]
+            value = float(factors[vix[0]].iloc[-1]) if vix else float("nan")
+            lab = labels.index[-1].date() if len(labels) else None
+            self.set_runtime_statistic(
+                f"FRED {month}", f"idx={last.date()} vix={value:.2f} lab={lab}"
+            )
 
     def on_warmup_finished(self):
         if self._mode == "baseline":

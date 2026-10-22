@@ -29,6 +29,7 @@ from semantic_kernel.functions.kernel_arguments import KernelArguments
 
 from argumentation_lib._shared_state import RhetoricalAnalysisState
 from argumentation_lib._state_manager_plugin import StateManagerPlugin
+from argumentation_lib._llm_settings import apply_reasoning_none_for_function_tools
 
 _logger = logging.getLogger("argumentation_lib.runner")
 
@@ -136,18 +137,49 @@ def _resolve_service(kernel: Kernel, llm_service_id: str):
     return kernel.get_service(llm_service_id)
 
 
-def _state_arguments(state: RhetoricalAnalysisState) -> KernelArguments:
+def _state_arguments(
+    state: RhetoricalAnalysisState,
+    execution_settings: Optional[Dict[str, Any]] = None,
+) -> KernelArguments:
     """Render the state snapshot for the prompts' ``{{$analysis_state}}`` token.
 
     ``AgentGroupChat.invoke`` (SK 1.44) ne transporte pas de KernelArguments :
     le token des prompts vendangés restait non résolu. Les agents portent la
     snapshot à leur construction (état de début de phase).
+
+    ``execution_settings`` (#20135) : sans elles, ``AIServiceSelector`` fabrique
+    des réglages par défaut (``reasoning_effort`` absent) et la famille 5.6
+    refuse les outils de fonction sur ``/v1/chat/completions`` (400).
     """
     return KernelArguments(
+        settings=execution_settings,
         analysis_state=json.dumps(
             state.get_state_snapshot(summarize=True), ensure_ascii=False
-        )
+        ),
     )
+
+
+def _execution_settings_for(kernel: Kernel, llm_service_id: str) -> Dict[str, Any]:
+    """Réglages d'exécution des agents, indexés par identifiant de service.
+
+    Le helper partagé force ``reasoning_effort="none"`` pour les modèles qui
+    l'exigent (famille 5.6) et laisse les autres inchangés. Un service qui
+    n'expose pas ``get_prompt_execution_settings_class`` (doublon de test,
+    service hors connecteur SK) ne reçoit aucun réglage explicite : les agents
+    retombent alors sur les réglages par défaut, comme avant ce helper.
+    """
+    service = _resolve_service(kernel, llm_service_id)
+    factory = getattr(service, "get_prompt_execution_settings_class", None)
+    if factory is None:
+        return {}
+    # get_prompt_execution_settings_class rend la CLASSE, pas une instance :
+    # le second appel construit l'instance attendue par from_prompt_execution_settings.
+    settings = factory()()
+    return {
+        llm_service_id: apply_reasoning_none_for_function_tools(
+            settings, getattr(service, "ai_model_id", None)
+        )
+    }
 
 
 def create_pm_agent(
@@ -164,7 +196,9 @@ def create_pm_agent(
         name="ProjectManagerAgent",
         instructions=PROMPT_DEFINE_TASKS,
         service=_resolve_service(kernel, llm_service_id),
-        arguments=_state_arguments(state),
+        arguments=_state_arguments(
+            state, _execution_settings_for(kernel, llm_service_id)
+        ),
     )
     _logger.info("PM agent created with StateManagerPlugin.")
     return agent
@@ -186,7 +220,9 @@ def create_informal_agent(
         name="InformalAgent",
         instructions=PROMPT_INFORMAL_ANALYSIS,
         service=_resolve_service(kernel, llm_service_id),
-        arguments=_state_arguments(state),
+        arguments=_state_arguments(
+            state, _execution_settings_for(kernel, llm_service_id)
+        ),
     )
     _logger.info("Informal agent created.")
     return agent
@@ -207,7 +243,9 @@ def create_logic_agent(
         name="LogicAgent",
         instructions=PROMPT_LOGIC_ANALYSIS,
         service=_resolve_service(kernel, llm_service_id),
-        arguments=_state_arguments(state),
+        arguments=_state_arguments(
+            state, _execution_settings_for(kernel, llm_service_id)
+        ),
     )
     _logger.info("Logic agent created.")
     return agent
@@ -368,7 +406,9 @@ class AnalysisRunner:
             name="SynthesisAgent",
             instructions=PROMPT_SYNTHESIS,
             service=_resolve_service(self.kernel, self.llm_service_id),
-            arguments=_state_arguments(self.state),
+            arguments=_state_arguments(
+                self.state, _execution_settings_for(self.kernel, self.llm_service_id)
+            ),
         )
 
         phase3_history = ChatHistory()
