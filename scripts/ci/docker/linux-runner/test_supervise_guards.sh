@@ -3792,16 +3792,20 @@ if [ "\$1" = "inspect" ]; then
   N=\$(( N + 1 ))
   echo "\$N" > "\$STUB_INSPECT_COUNT"
   if [ -f "\$STUB_REMOVED" ]; then
-    # Le residu a ete retire : le nom est libre.
+    # Le residu a ete retire : le nom est libre. container_state rend alors
+    # une CHAINE VIDE -- c'est ce qui rend le nom reutilisable.
     echo "poll:free" >> "\$STUB_ORDER_LOG"
   elif [ "\$N" -le "\${STUB_ORPHAN_POLLS:-3}" ]; then
-    # Le job orphelin tient le nom.
+    # Le job orphelin tient le nom : l'etat lu par container_state est
+    # 'running', et le superviseur doit alors ATTENDRE (jamais retirer).
     echo "poll:running" >> "\$STUB_ORDER_LOG"
     echo "running" > "\$STUB_LAST_STATE"
+    echo "running"
   else
     # Le conteneur est sorti : etat PROUVE inactif.
     echo "poll:exited" >> "\$STUB_ORDER_LOG"
     echo "exited" > "\$STUB_LAST_STATE"
+    echo "exited"
   fi
   exit 0
 fi
@@ -3814,10 +3818,10 @@ fi
 if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
   case "\$*" in
     *work_cache_health.sh*)
-      echo "\${STUB_IMG_HEALTH_SHA:-\$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
       ;;
     *)
-      echo "\${STUB_IMG_ENTRYPOINT_SHA:-\$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
       ;;
   esac
   exit 0
@@ -3881,13 +3885,15 @@ run"
   else
     ko "un conteneur EN COURS a ete retire : le job legitime aurait ete tue"
   fi
-  # (3) La fenetre de liberation vaut UN intervalle de sondage : 3 sondages
-  # pendant que le job tient le nom, puis la sortie du conteneur, puis UN
-  # sondage qui voit le nom libre.
-  polls="$(head -4 "$TEST_DIR/sleep71.log" | paste -sd,)"
+  # (3) La fenetre de liberation vaut UN intervalle de sondage par tentative :
+  # TROIS sondages de 5 s pendant que le job orphelin tient le nom, puis la
+  # sortie du conteneur, puis UN sondage qui voit le nom libre. On lit les
+  # TROIS PREMIERS appels a sleep -- le suivants (le backoff de cycle) n'a
+  # rien a voir avec la liberation du nom.
+  polls="$(head -3 "$TEST_DIR/sleep71.log" | paste -sd,)"
   inspects="$(cat "$TEST_DIR/inspect71.count" 2>/dev/null || echo 0)"
   if [ "$polls" = "5,5,5" ] && [ "$inspects" = "5" ]; then
-    ok "fenetre de liberation mesuree : 3 sondages de 5 s pendant le job, puis 1 sondage apres la sortie (5 au total)"
+    ok "fenetre de liberation mesuree : 3 sondages de 5 s pendant le job, puis 1 sondage apres la sortie (5 inspects au total)"
   else
     ko "fenetre de liberation inattendue : polls=[$polls] inspects=$inspects (attendu 5,5,5 et 5)"
   fi
