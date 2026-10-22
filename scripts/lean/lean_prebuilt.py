@@ -182,18 +182,35 @@ def read_stamp(project: Path) -> dict | None:
     return data
 
 
+def _resolve_olean(project: Path, module: str) -> Path | None:
+    """Cherche le `.olean` du module sous les deux layouts observes de Lake.
+
+    Mesure sur conway_lean (Lake v4.33.0) : les modules du paquet racine vivent
+    sous `.lake/build/lib/lean/<Module>.olean` ; d'autres lacs les posent sous
+    `.lake/build/lib/<Module>.olean`. Les deux sont essayes, lib/ d'abord.
+    """
+    rel = module.replace(".", "/") + ".olean"
+    for prefix in ("lib", os.path.join("lib", "lean")):
+        candidate = Path(project) / ".lake" / "build" / prefix / rel
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def _artifact_witness(project: Path, module: str) -> dict:
     """Temoin d'artefact du module annonce par le build (declaration, pas preuve).
 
     `stamp` n'a jamais execute le build : le temoin enregistre ce que l'arbre
-    contient au moment du marquage — chemin attendu du `.olean`, taille, mtime,
-    sha256. C'est ce qui distingue « le module vise existe » de « des fichiers
-    existent sous `.lake/build` » (un build interrompu laisse des fichiers).
+    contient au moment du marquage — chemin du `.olean` (relatif a
+    `.lake/build`), taille, mtime, sha256. C'est ce qui distingue « le module
+    vise existe » de « des fichiers existent sous `.lake/build` » (un build
+    interrompu laisse des fichiers, et un module racine peut n'avoir jamais
+    ete construit — mesure : Conway.lean existe, Conway.olean non).
     """
-    rel = module.replace(".", "/") + ".olean"
-    olean = Path(project) / ".lake" / "build" / "lib" / rel
-    if not olean.is_file():
-        return {"module": module, "olean": rel, "present": False}
+    olean = _resolve_olean(project, module)
+    if olean is None:
+        expected = os.path.join("lib", "lean", module.replace(".", "/")) + ".olean"
+        return {"module": module, "olean": expected, "present": False}
     stat = olean.stat()
     hasher = hashlib.sha256()
     with olean.open("rb") as fh:
@@ -201,7 +218,7 @@ def _artifact_witness(project: Path, module: str) -> dict:
             hasher.update(chunk)
     return {
         "module": module,
-        "olean": rel,
+        "olean": olean.relative_to(Path(project) / ".lake" / "build").as_posix(),
         "present": True,
         "size": stat.st_size,
         "mtime": stat.st_mtime,
@@ -212,7 +229,7 @@ def _artifact_witness(project: Path, module: str) -> dict:
 def _artifact_state(project: Path, witness: dict) -> dict:
     """Re-verse le temoin et le compare a l'arbre courant (stat, pas re-hash)."""
     result = dict(witness)
-    olean = Path(project) / ".lake" / "build" / "lib" / witness.get("olean", "")
+    olean = Path(project) / ".lake" / "build" / witness.get("olean", "")
     if not witness.get("present") or not olean.is_file():
         result["state"] = "MISSING"
         return result

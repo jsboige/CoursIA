@@ -43,9 +43,10 @@ def _make_lake(root: Path, name: str = "conway_lean",
 
 
 def _mark_built(lake: Path) -> None:
-    # Layout canonique de Lake : `.lake/build/lib/<Module>.olean` (points du
-    # module en slashs) — le temoin d'artefact de `stamp --module` le recoupe.
-    _write(lake / ".lake" / "build" / "lib" / "Conway" / "A.olean", "olean")
+    # Layout mesure sur conway_lean (Lake v4.33.0) : modules du paquet racine
+    # sous `.lake/build/lib/lean/<Module>.olean` — le temoin d'artefact essaye
+    # ce layout puis `lib/<Module>.olean` (l'autre layout observe).
+    _write(lake / ".lake" / "build" / "lib" / "lean" / "Conway" / "A.olean", "olean")
 
 
 # ---------------------------------------------------------------------------
@@ -139,18 +140,31 @@ def test_stamp_records_artifact_witness(tmp_path: Path) -> None:
     stamped = lp.stamp_project(lake, module="Conway.A")
     art = stamped["stamp"]["artifact"]
     assert art["present"] is True
-    assert art["olean"] == "Conway/A.olean"
+    assert art["olean"] == "lib/lean/Conway/A.olean"
     assert len(art["sha256"]) == 64
     verdict = lp.project_status(lake)
     assert verdict["artifact"]["state"] == "MATCH"
 
     # Build interrompu : d'autres artefacts existent, le module vise manque —
     # le verdict reste PREBUILT (sources intactes) mais le temoin le DIT.
-    _write(lake / ".lake" / "build" / "lib" / "Conway" / "B.olean", "x")
-    (lake / ".lake" / "build" / "lib" / "Conway" / "A.olean").unlink()
+    _write(lake / ".lake" / "build" / "lib" / "lean" / "Conway" / "B.olean", "x")
+    (lake / ".lake" / "build" / "lib" / "lean" / "Conway" / "A.olean").unlink()
     verdict = lp.project_status(lake)
     assert verdict["status"] == lp.STATUS_PREBUILT
     assert verdict["artifact"]["state"] == "MISSING"
+
+
+def test_stamp_witness_finds_both_layouts(tmp_path: Path) -> None:
+    """Deux layouts observes : lib/lean/<Module> (conway_lean v4.33.0) et lib/<Module>."""
+    lake = _make_lake(tmp_path)
+    _mark_built(lake)
+    _write(lake / ".lake" / "build" / "lib" / "Root.olean", "x")
+    lean_layout = lp.stamp_project(lake, module="Conway.A")["stamp"]["artifact"]
+    assert lean_layout["present"] is True
+    assert lean_layout["olean"] == "lib/lean/Conway/A.olean"
+    bare = lp.stamp_project(lake, module="Root")["stamp"]["artifact"]
+    assert bare["present"] is True
+    assert bare["olean"] == "lib/Root.olean"
 
 
 def test_stamp_without_module_has_no_witness(tmp_path: Path) -> None:
