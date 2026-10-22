@@ -156,7 +156,11 @@ theorem ritt_double_degenerate (a1 a2 b1 b2 c1 c2 d1 d2 : ℚ)
 `A = (−2,1)`, `D = (2,1)`, `C = (2,1)`, `B = (2/5, −1/5)` — sur le bord
 `d₂ = a₂` (corde `(AD)` parallèle à `(PQ)`, `X` à l'infini), avec `b₂ ≠ c₂`
 et **`g₂ = 24/5 ≠ 0`**. Géométriquement : `X` n'existe pas, l'énoncé est
-muet — rien à réfuter ; algébriquement : `g₂` ne s'y annule pas. -/
+muet — rien à réfuter ; algébriquement : `g₂` ne s'y annule pas. Le témoin
+**cumule deux dégénérescences** : le bord `d₂ = a₂` (corde `(CD)` parallèle à
+`(PQ)`) **et** `C = D` (la corde `(CD)` est un point) — sans effet sur la
+réfutation, une seule configuration de `V(H₂)` suffisant, mais il ne faut pas
+y lire un point de bord générique. -/
 theorem ritt_border_point_exists :
     ∃ (cc a1 a2 b1 b2 c1 c2 d1 d2 : ℚ),
       rittHA cc a1 a2 = 0 ∧ rittHB cc b1 b2 = 0 ∧ rittHAB a1 a2 b1 b2 = 0 ∧
