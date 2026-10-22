@@ -1162,13 +1162,13 @@ jobs:
               # de texte serait devinee, donc fausse un jour sans prevenir).
               if ! gh run rerun "$RUN_ID" --repo "$REPO"; then
                 RUN_STATUS=$(printf '%s' "${RUN:-}" | jq -r '.status // empty' 2>/dev/null)
-                # #21463 -- `queued` est structurel comme `completed` : le run
-                # fige dans `queued` (variante mesuree 2026-10-22, hors d'atteinte
-                # de l'API, ni annulable ni relancable) ne l'accordera jamais.
-                # Le sweep NOMME la PR et dit le geste manuel (nouvelle tete /
-                # close+reopen), il ne dispatche PAS un revive inerte qui
-                # echouerait sur le meme run fige.
                 if [ "${RUN_STATUS:-}" = "completed" ] || [ "${RUN_STATUS:-}" = "queued" ]; then
+                  # #21463 -- `queued` est structurel comme `completed` : le run
+                  # fige dans `queued` (variante mesuree 2026-10-22, hors d'atteinte
+                  # de l'API, ni annulable ni relancable) ne l'accordera jamais.
+                  # Le sweep NOMME la PR et dit le geste manuel (nouvelle tete /
+                  # close+reopen), il ne dispatche PAS un revive inerte qui
+                  # echouerait sur le meme run fige.
                   # Un run TERMINE qui refuse la relance ne l'accordera jamais :
                   # sous-cas mesure sur #18985, ou la jambe rouge `PR gate` vit
                   # dans la suite d'une analyse CodeQL en `default setup`
