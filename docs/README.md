@@ -455,7 +455,7 @@ Critère de classement (#19283), opposable pour tout nouveau fichier : est **tra
 |---|---|
 | Une règle, une procédure, une référence durable | les foyers thématiques (`reference/`, `lean/`, `genai/`, `qc/`, `ci/`, `curriculum/`, …) |
 | Le positionnement du dépôt face à un texte externe | `cadrage/` (index par communauté interlocutrice) |
-| L'état d'un chantier à une date donnée | `transients/` (en-tête gelé, convention #14623) ou `suivis/` (transitions de série) |
+| L'état d'un chantier à une date donnée | `transients/` (en-tête gelé, convention #14623) |
 | Un document inactif, remplacé ou périmé | `archive/` (figée à dessein, jamais purge) |
 
 ## Carte rapide
@@ -479,7 +479,6 @@ docs/
   ict/               Synthèses transversales IIT → ICT (#4588)
                      + pré-enregistrements grade T (protocoles scellés avant mesure)
   ledgers/           Ledgers d'audit cumulatifs par Epic (#3801, #10466, #10678, #11690, #12204)
-  suivis/            Suivis de cycle (transitions de série)
   transients/        Rapports transients datés (en-tête gelé) — convention + organe (#14623)
   cadrage/           Documents épistémiques de cadrage — index par communauté interlocutrice (#17525)
   PARCOURS.md        Schéma maturité 3 axes (éditorial / reproductibilité / revue) — #8051
