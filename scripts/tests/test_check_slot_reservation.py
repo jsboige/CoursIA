@@ -321,12 +321,19 @@ class TestDistinctStates(unittest.TestCase):
     """Rien regarde n'est pas rien trouve, et une source absente doit se dire."""
 
     def test_slotless_target_is_reported_not_silent(self):
+        """Une cible qui ne porte NI serie NI index doit se dire telle.
+
+        Le nom employe ici ne porte volontairement aucun chiffre de tete :
+        depuis #21959, `MGS-27` (prefixe de serie alphabetique) PORTE une
+        position, et l'echantillon qui portait ce nom verifiait le cas
+        inverse -- il ne verifiait plus rien.
+        """
         with tempfile.TemporaryDirectory() as td:
             repo = Path(td)
             base = _init_repo(repo, ["MyIA.AI.Notebooks/Sudoku/MGS-26-Equilibrium.ipynb"])
             _commit(repo, "vide")
 
-            r = _run(repo, base, "--target", "MyIA.AI.Notebooks/Sudoku/MGS-27-Forensic.ipynb")
+            r = _run(repo, base, "--target", "MyIA.AI.Notebooks/Sudoku/notes-Sans-Position.ipynb")
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             self.assertIn("sans slot", r.stdout)
 
@@ -765,6 +772,133 @@ class TestAccretionOnRealHistory(unittest.TestCase):
             self.skipTest("historique absent")
         self.assertEqual(self._findings(sha), [],
                          "le reclassement 42 -> 41b (#18986) est propre")
+
+
+# ---------------------------------------------------------------- series alphabetiques (#21959)
+
+Z3 = "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
+GT = "MyIA.AI.Notebooks/GameTheory"
+
+
+class TestAlphabeticSeriesSlots(unittest.TestCase):
+    """#21959 -- le verdict par PR voit enfin les series a prefixe alphabetique.
+
+    Le chemin de verdict passait par `slot_of(index_key)`, qui ne produit
+    d'index que pour un stem COMMENCANT PAR UN CHIFFRE : tout carnet de serie
+    alphabetique (`Z3-19`, `GameTheory-04c`, `ICT-48`) sortait `no_slot`, et
+    deux PRs qui revendiquaient le meme numero ne se voyaient qu'au conflit de
+    merge (#20664 contre #20922, sur `Z3-19`).
+
+    Les controles positifs reprennent les formes nommees dans l'issue ; les
+    controles negatifs prouvent que la cle ne confond ni `3D-01`/`3D-02` (que
+    `index_key` mettait sous `3d`) ni deux rendus du meme item.
+    """
+
+    def test_two_additions_sharing_a_series_number_are_flagged(self):
+        """Controle positif de l'issue : `Z3-19` x2 dans la meme revision."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [Z3 + "/Z3-18-Ancien-Sujet-Python.ipynb"])
+            _write(repo, Z3 + "/Z3-19-Machine-de-Goedel-Python.ipynb")
+            _write(repo, Z3 + "/Z3-19-Optimization-Lexicographic-Python.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 1,
+                             "deux ajouts du meme numero de serie doivent rougir\n"
+                             + r.stdout + r.stderr)
+            self.assertEqual(r.stdout.count("duplicate_within_revision"), 2, r.stdout)
+
+    def test_a_series_number_taken_on_base_reddens(self):
+        """Controle positif : le numero est deja sur la base, sous un autre titre."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [Z3 + "/Z3-19-Optimization-Lexicographic-Python.ipynb"])
+            _write(repo, Z3 + "/Z3-19-Machine-de-Goedel-Python.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("taken_on_base", r.stdout)
+
+    def test_a_series_number_reserved_by_an_open_pr_reddens(self):
+        """Controle positif : la source `open_prs` voit les series aussi."""
+        claims = csr.pr_claims([{"number": 20664, "files": [
+            {"path": Z3 + "/Z3-19-Optimization-Lexicographic-Python.ipynb",
+             "additions": 4, "deletions": 0}]}])
+        self.assertTrue(claims, "la serie alphabetique doit tenir un slot")
+        slot = csr._scan_slot(Z3 + "/Z3-19-Machine-de-Goedel-Python.ipynb")
+        self.assertIn(slot, claims, "les deux notebooks visent le meme slot")
+
+    def test_an_accretion_letter_is_part_of_the_series_slot(self):
+        """`GameTheory-04c` contre `GameTheory-04c` : meme position, sujets
+        differents -- c'est le second controle positif de l'issue."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [GT + "/GameTheory-04b-Twins-Python.ipynb"])
+            _write(repo, GT + "/GameTheory-04c-NashExistence-Python.ipynb")
+            _write(repo, GT + "/GameTheory-04c-NashEquilibrium-Python.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertEqual(r.stdout.count("duplicate_within_revision"), 2, r.stdout)
+
+    def test_two_different_series_numbers_stay_green(self):
+        """Controle negatif : `Z3-19` et `Z3-20` sont deux positions."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [Z3 + "/Z3-19-Optimization-Lexicographic-Python.ipynb"])
+            _write(repo, Z3 + "/Z3-20-Autre-Sujet-Python.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("free", r.stdout)
+
+    def test_digit_leading_numbers_do_not_collide(self):
+        """Controle negatif de l'issue : `3D-01` et `3D-02` sont DEUX
+        positions -- `index_key` les confondait sous `3d`."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, ["MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-From-Scratch.ipynb"])
+            _write(repo, "MyIA.AI.Notebooks/GenAI/3D/3D-02-NeRF-Critic.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("free", r.stdout)
+
+    def test_language_siblings_in_a_series_stay_green(self):
+        """Controle negatif de l'issue : deux rendus du meme item restent non
+        concurrents (le suffixe de langue seul differe)."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [GT + "/GameTheory-04c-NashExistence-Python.ipynb"])
+            _write(repo, GT + "/GameTheory-04c-NashExistence-CSharp.ipynb")
+            _commit(repo)
+
+            r = _run(repo, base)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("exempt_sibling", r.stdout)
+
+    def test_a_series_target_is_no_longer_slotless(self):
+        """La non-regression directe du defaut : la cible porte une position."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [Z3 + "/Z3-18-Ancien-Sujet-Python.ipynb"])
+            _commit(repo, "vide")
+
+            r = _run(repo, base, "--target", Z3 + "/Z3-19-Machine-de-Goedel-Python.ipynb")
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertNotIn("sans slot", r.stdout)
+            self.assertIn("Z3-19", r.stdout)
+
+    def test_slot_of_keeps_its_historical_behaviour(self):
+        """`slot_of` reste l'API historique : une serie alphabetique n'y porte
+        AUCUN index. C'est ce que les autres gardes qui l'importent attendent."""
+        self.assertIsNone(csr.slot_of("MGS-26-Equilibrium.ipynb"))
+        self.assertEqual(csr.slot_of("04-2-Alpha.ipynb"), ("", "4.2"))
 
 
 # ---------------------------------------------------------------- scan-main (#20774)
