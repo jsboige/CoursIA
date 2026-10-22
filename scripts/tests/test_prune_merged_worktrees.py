@@ -3248,3 +3248,350 @@ class TestRegisteredSubmoduleFatal21710E2E:
             # registre proprement.
             for path in (wt, wt_clean):
                 self._git(main, "worktree", "remove", "--force", str(path))
+class TestLockPolicy:
+    """Protocole v1.3 (Maintenance #113, dae338b) : verrous `git worktree lock`.
+
+    Deux classes discriminatees par la forme de la raison -- lock d'agent
+    (`claude agent agent-<hex> (pid N)`, deverrouillable si pid mort ET
+    REMOVE-ready) vs opt-out de lane (raison libre, honore indefiniment).
+    Fail-safe dans les deux sens : raison incomprise = opt-out, pid
+    indeterminable = vivant.
+    """
+
+    # --- classify_worktree_lock ---
+
+    def test_classify_agent_lock(self):
+        assert pmw.classify_worktree_lock(
+            "claude agent agent-1a2b3c (pid 4242)"
+        ) == ("agent", 4242)
+
+    def test_classify_optout_lock(self):
+        assert pmw.classify_worktree_lock(
+            "reserve pour la revue de semaine"
+        ) == ("optout", None)
+
+    def test_classify_unparsed_reason_is_optout(self):
+        # Fail-safe : une raison qu'on ne comprend pas n'est JAMAIS un
+        # lock d'agent -- on ne deverrouille pas ce qu'on n'a pas classe.
+        assert pmw.classify_worktree_lock("n'importe quoi (pid 1)") == ("optout", None)
+
+    def test_classify_agent_reason_with_human_suffix_is_optout(self):
+        # F1 (revue #21503) : `git worktree lock --reason` ECRASE la raison
+        # precedente, donc un humain qui garde la tracabilite du pid ecrit
+        # la forme agent SUIVIE d'une consigne. `search()` classait ce
+        # verrou `agent` et pouvait le deverrouiller -- une garde humaine
+        # honoree comme un cadavre. La forme doit etre PURE (fullmatch).
+        assert pmw.classify_worktree_lock(
+            "claude agent agent-7f3a11 (pid 999999) -- NE PAS TOUCHER, revue en cours"
+        ) == ("optout", None)
+
+    def test_classify_none_is_no_lock(self):
+        # None = aucune ligne "locked" dans le porcelain : pas de verrou.
+        assert pmw.classify_worktree_lock(None) == (None, None)
+
+    def test_classify_bare_lock_reason_is_unclassified(self):
+        # F2 (revue #21503) : `git worktree lock` SANS `--reason` est
+        # l'invocation par defaut ; le porcelain rend une ligne "locked"
+        # vide. Une raison vide est une raison qu'on ne comprend pas, PAS
+        # une absence de verrou : la rendre (None, None) faisait sortir la
+        # politique en REMOVE, puis le remove echouait sur un worktree
+        # verrouille -- la classe de mensonge corrigee en #14693.
+        assert pmw.classify_worktree_lock("") == ("unclassified", None)
+        assert pmw.classify_worktree_lock("   ") == ("unclassified", None)
+
+    # --- enforce_lock_policy : opt-out ---
+
+    def test_optout_refuses_remove(self):
+        s = pmw.enforce_lock_policy(_make_status(), "garde humaine")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "lane_optout_lock"
+        assert s.lock_class == "optout"
+        assert s.lock_pid is None
+        assert s.dead_lock_unlocked is False
+
+    def test_bare_locked_refuses_remove(self):
+        # F2 (revue #21503) : un verrou nu REFUSE le retrait au lieu de le
+        # laisser partir en REMOVE pour echouer cote git a l'apply. Le
+        # garde-fou git reste la derniere ressource ; l'organe, lui, ne
+        # plus annoncer un REMOVE qui ne passera pas.
+        s = pmw.enforce_lock_policy(_make_status(), "")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "unclassified_lock"
+        assert s.lock_class == "unclassified"
+        assert s.lock_pid is None
+        assert s.dead_lock_unlocked is False
+
+    # --- enforce_lock_policy : lock d'agent ---
+
+    def test_live_agent_lock_refuses(self, monkeypatch):
+        monkeypatch.setattr(pmw, "pid_is_alive", lambda pid: True)
+        s = pmw.enforce_lock_policy(
+            _make_status(), "claude agent agent-deadbeef (pid 777)"
+        )
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "live_agent_lock:777"
+        assert s.lock_class == "agent"
+        assert s.lock_pid == 777
+        assert s.dead_lock_unlocked is False
+
+    def test_dead_agent_lock_flags_remove(self, monkeypatch):
+        monkeypatch.setattr(pmw, "pid_is_alive", lambda pid: False)
+        s = pmw.enforce_lock_policy(
+            _make_status(), "claude agent agent-deadbeef (pid 777)"
+        )
+        # Le statut RESTE REMOVE : le retrait passera par l'unlock nomme
+        # (apply_removal), jamais par remove -f -f.
+        assert s.decision == "REMOVE"
+        assert s.dead_lock_unlocked is True
+        assert s.lock_pid == 777
+
+    # --- enforce_lock_policy : statuts non-retirables ---
+
+    def test_no_lock_leaves_status_intact(self):
+        s = _make_status()
+        out = pmw.enforce_lock_policy(s, None)
+        assert out.decision == "REMOVE"
+        assert out.locked_reason is None
+        assert out.lock_class is None
+        assert out.lock_pid is None
+        assert out.dead_lock_unlocked is False
+
+    def test_lock_never_overrides_existing_refuse(self, monkeypatch):
+        # Un worktree sale (REFUSE avant la politique) verrouille :
+        # la premiere cause reste LA cause citee, le lock n'ecrit pas
+        # la sienne par-dessus.
+        monkeypatch.setattr(pmw, "pid_is_alive", lambda pid: False)
+        s = _make_status(decision="REFUSE", refusal_reason="unpushed_commits")
+        out = pmw.enforce_lock_policy(s, "claude agent agent-aa (pid 9)")
+        assert out.decision == "REFUSE"
+        assert out.refusal_reason == "unpushed_commits"
+        # Visibilite quand meme : le rapport sait qu'un verrou existe.
+        assert out.lock_class == "agent"
+        assert out.dead_lock_unlocked is False
+
+    def test_lock_never_creates_remove(self):
+        # Meme un opt-out sur un SKIP_CURRENT reste SKIP_CURRENT : la
+        # politique ajoute des REFUSE, jamais des REMOVE.
+        s = _make_status(decision="SKIP_CURRENT", refusal_reason=None)
+        out = pmw.enforce_lock_policy(s, "garde")
+        assert out.decision == "SKIP_CURRENT"
+
+    # --- parse porcelain de la ligne locked ---
+
+    def test_list_worktrees_parses_locked_reason(self, monkeypatch):
+        porcelain = (
+            "worktree D:/farm/principal\n"
+            "HEAD abc123\n"
+            "branch refs/heads/main\n"
+            "\n"
+            "worktree D:/farm/agent-42\n"
+            "HEAD def456\n"
+            "branch refs/heads/fix/x\n"
+            "locked claude agent agent-42ab (pid 31337)\n"
+            "\n"
+            "worktree D:/farm/garde\n"
+            "HEAD 789aaa\n"
+            "branch refs/heads/fix/y\n"
+            "locked\n"
+        )
+        monkeypatch.setattr(
+            pmw, "run_git", lambda *a, **k: _fake_proc(0, porcelain)
+        )
+        monkeypatch.setattr(
+            pmw, "current_repo_root", lambda: "D:/farm/principal"
+        )
+        wts = pmw.list_worktrees()
+        by_path = {w["path"]: w for w in wts}
+        assert by_path["D:/farm/principal"].get("locked_reason") is None
+        assert by_path["D:/farm/agent-42"]["locked_reason"] == (
+            "claude agent agent-42ab (pid 31337)"
+        )
+        # Verrou nu : la ligne "locked" seule rend une raison vide.
+        assert by_path["D:/farm/garde"]["locked_reason"] == ""
+
+    # --- pid_is_alive : fail-safe ---
+
+    def test_pid_is_alive_windows_found(self, monkeypatch):
+        monkeypatch.setattr(pmw.os, "name", "nt", raising=True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(0, '"python.exe","31337"'),
+        )
+        assert pmw.pid_is_alive(31337) is True
+
+    def test_pid_is_alive_windows_not_found(self, monkeypatch):
+        monkeypatch.setattr(pmw.os, "name", "nt", raising=True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(0, "INFO: No tasks are running"),
+        )
+        assert pmw.pid_is_alive(31337) is False
+
+    def test_pid_is_alive_windows_pid_in_other_column_is_not_alive(
+        self, monkeypatch
+    ):
+        # Le pid cherche n'apparait que dans une AUTRE colonne de la ligne
+        # d'un autre processus : un test de sous-chaine le lirait vivant.
+        monkeypatch.setattr(pmw.os, "name", "nt", raising=True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(0, '"python.exe","4242","Console","1","31337 K"'),
+        )
+        assert pmw.pid_is_alive(31337) is False
+
+    def test_pid_is_alive_windows_failure_is_alive(self, monkeypatch):
+        # Fail-safe : tasklist injoignable = pid vivant -- on ne
+        # deverrouille jamais sur une mesure impossible.
+        monkeypatch.setattr(pmw.os, "name", "nt", raising=True)
+
+        def _boom(*a, **k):
+            raise OSError("tasklist absent")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _boom)
+        assert pmw.pid_is_alive(31337) is True
+
+    @pytest.mark.parametrize("stdout", ["", "ERROR: The remote procedure call failed."])
+    def test_pid_is_alive_windows_nonzero_exit_is_alive(self, monkeypatch, stdout):
+        monkeypatch.setattr(pmw.os, "name", "nt", raising=True)
+        monkeypatch.setattr(
+            pmw.subprocess, "run",
+            lambda *a, **k: _fake_proc(1, stdout),
+        )
+        assert pmw.pid_is_alive(31337) is True
+        status = pmw.enforce_lock_policy(
+            _make_status(), "claude agent agent-deadbeef (pid 31337)"
+        )
+        assert status.decision == "REFUSE"
+        assert status.refusal_reason == "live_agent_lock:31337"
+        assert status.dead_lock_unlocked is False
+
+    def test_pid_is_alive_posix_lookup_error(self, monkeypatch):
+        monkeypatch.setattr(pmw.os, "name", "posix", raising=True)
+
+        def _lookup(pid, sig):
+            raise ProcessLookupError()
+
+        monkeypatch.setattr(pmw.os, "kill", _lookup)
+        assert pmw.pid_is_alive(31337) is False
+
+    def test_pid_is_alive_posix_permission_is_alive(self, monkeypatch):
+        monkeypatch.setattr(pmw.os, "name", "posix", raising=True)
+
+        def _denied(pid, sig):
+            raise PermissionError()
+
+        monkeypatch.setattr(pmw.os, "kill", _denied)
+        assert pmw.pid_is_alive(31337) is True
+
+
+class TestLockPolicyEndToEnd:
+    """v1.3 -- vrais verrous `git worktree lock` sur une vraie ferme.
+
+    Controle positif du protocole complet, dans l'esprit hermetique de
+    TestEndToEndHermetic14693 : seul l'ancre PR est stubbee (MERGED), et
+    la MORT du pid est stubbee dans le cas mort (determinisme CI -- un
+    vrai pid mort se recycle). Le cas vivant, lui, utilise le pid REEL
+    du process pytest : le vrai `tasklist` tranche. L'unlock + remove
+    sont de vrais appels git sur une vraie ferme.
+    """
+
+    MERGED_PR = {
+        "number": 424243,
+        "state": "MERGED",
+        "url": "https://example/pr/424243",
+        "headRefName": "feature/e2e",
+    }
+
+    def _anchor(self, monkeypatch):
+        monkeypatch.setattr(
+            pmw, "lookup_pr_for_branch",
+            lambda branch, head_sha=None: dict(
+                self.MERGED_PR, headRefName=branch),
+        )
+
+    def _lock(self, super, wt, reason):
+        _git_ok(str(super), "worktree", "lock", str(wt), "--reason", reason)
+
+    def test_dead_agent_lock_unlocked_and_removed(self, tmp_path, monkeypatch):
+        """Le chemin nominal v1.3 : REMOVE-ready + lock d'agent a pid mort
+        -> l'unlock NOMME passe, le remove suit, le disque est vide."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        self._anchor(monkeypatch)
+        monkeypatch.chdir(super)
+        reason = "claude agent agent-testv13 (pid 31337)"
+        self._lock(super, wt, reason)
+        monkeypatch.setattr(pmw, "pid_is_alive", lambda pid: False)
+
+        s = pmw.enforce_lock_policy(
+            pmw.diagnose_worktree(str(wt), str(super)), reason)
+        assert s.decision == "REMOVE", s.refusal_reason
+        assert s.dead_lock_unlocked is True
+
+        # Sequence exacte du apply de main() : clean des toleres, puis
+        # unlock + remove sans force.
+        pmw.clean_tolerated_artifacts(s)
+        ok, stderr = pmw.apply_removal(s)
+        assert ok, f"REMOVE annonce mais unlock+remove echoue: {stderr}"
+        assert not wt.exists(), "le worktree doit avoir quitte le disque"
+        # Vrai retrait, pas juste deverrouillage : le porcelain ne liste
+        # plus le chemin (normalise en slash pour comparer a git).
+        listing = pmw.run_git(str(super), "worktree", "list", "--porcelain")
+        assert str(wt).replace("\\", "/") not in listing.stdout
+
+    def test_locked_remove_fails_without_unlock(self, tmp_path, monkeypatch):
+        """Preuve que le garde-fou est REEL : un remove direct (sans le
+        passage par l'unlock v1.3) echoue sur un worktree verrouille --
+        git tranche en dernier ressort, l'organe ne force jamais."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        self._anchor(monkeypatch)
+        monkeypatch.chdir(super)
+        self._lock(super, wt, "claude agent agent-x (pid 31337)")
+
+        # Statut diagnostique SANS la politique : REMOVE, mais
+        # dead_lock_unlocked reste False -> apply_removal ne tente pas
+        # l'unlock et git refuse le remove verrouille.
+        s = pmw.diagnose_worktree(str(wt), str(super))
+        assert s.decision == "REMOVE"
+        assert s.dead_lock_unlocked is False
+        ok, stderr = pmw.apply_removal(s)
+        assert not ok, "git n'aurait pas du retirer un worktree verrouille"
+        assert "lock" in stderr.lower(), stderr
+        assert wt.exists(), "le worktree verrouille reste sur disque"
+
+    def test_live_agent_lock_refuses_real_pid(self, tmp_path, monkeypatch):
+        """Contre-test avec un pid REELLEMENT vivant (le process pytest) :
+        le vrai tasklist tranche, la politique refuse, rien ne bouge."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        self._anchor(monkeypatch)
+        monkeypatch.chdir(super)
+        reason = f"claude agent agent-live (pid {os.getpid()})"
+        self._lock(super, wt, reason)
+
+        s = pmw.enforce_lock_policy(
+            pmw.diagnose_worktree(str(wt), str(super)), reason)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == f"live_agent_lock:{os.getpid()}"
+        assert wt.exists(), "un lock vivant ne bouge pas d'un cheveu"
+
+    def test_optout_lock_refuses_and_survives(self, tmp_path, monkeypatch):
+        """Opt-out de lane : honore indefiniment, aucune mesure de pid
+        n'est meme tentee, le worktree reste."""
+        super, wt = _make_repo_with_feature_worktree(tmp_path)
+        self._anchor(monkeypatch)
+        monkeypatch.chdir(super)
+        reason = "reserve pour la revue de semaine"
+        self._lock(super, wt, reason)
+
+        called = []
+
+        def _spy(pid):
+            called.append(pid)
+            return False
+
+        monkeypatch.setattr(pmw, "pid_is_alive", _spy)
+        s = pmw.enforce_lock_policy(
+            pmw.diagnose_worktree(str(wt), str(super)), reason)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "lane_optout_lock"
+        assert called == [], "un opt-out ne mesure jamais le pid"
+        assert wt.exists()

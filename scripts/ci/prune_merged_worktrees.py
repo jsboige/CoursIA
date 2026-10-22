@@ -242,6 +242,7 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import csv
 import dataclasses
 import hashlib
 import json
@@ -346,6 +347,19 @@ class WorktreeStatus:
     # `.lane-owner` a la racine du worktree (None si absent). Attribue les
     # refus pour le rapport -- jamais une autorite de decision.
     lane_owner: Optional[str] = None
+    # Champs v1.3 (protocole Maintenance #113, dae338b, arbitrage 19/10) :
+    # verrou `git worktree lock`. `locked_reason` = raison brute lue au
+    # porcelain (None = pas de verrou, "" = verrou sans raison) ;
+    # `lock_class` = "agent" (forme PURE `claude agent agent-<hex> (pid N)`)
+    # ou "optout" (raison libre, honoree indefiniment) ou "unclassified"
+    # (verrou nu sans raison : REFUSE, F2 de la revue #21503) ; `lock_pid` =
+    # pid capture pour un lock d'agent. `dead_lock_unlocked` porte la
+    # decision v1.3 : lock d'agent a pid MORT sur un worktree REMOVE-ready --
+    # l'apply execute `git worktree unlock` puis `remove` (jamais -f -f).
+    locked_reason: Optional[str] = None
+    lock_class: Optional[str] = None
+    lock_pid: Optional[int] = None
+    dead_lock_unlocked: bool = False
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
@@ -686,6 +700,168 @@ def recent_activity_age_hours(wt_path: str,
     if not candidates:
         return float("inf")
     return (now - max(candidates)) / 3600.0
+
+
+# --- Protocole v1.3 : verrous `git worktree lock` (Maintenance #113, dae338b) ---
+#
+# Deux classes de verrous, discriminees par la FORME de la raison lue au
+# porcelain (`locked <raison>`) :
+#
+# - **lock d'agent** : raison de la forme `claude agent agent-<hex> (pid N)`.
+#   Pose par le harnais d'un agent dont la session est morte ; le pid N est
+#   celui du processclaude au moment du lock. Si ce pid a disparu ET que le
+#   worktree est REMOVE-ready par tous les autres criteres, le verrou est un
+#   cadenas sur une porte ouverte : l'apply execute `git worktree unlock`
+#   puis `git worktree remove` -- JAMAIS `remove -f -f` (contourner le
+#   verrou par la force est interdit par le protocole ; on l'annule
+#   nommement apres avoir prouve la mort du pid).
+# - **opt-out de lane** : toute autre raison (libre). Verrouillage humain
+#   ou inter-lane, honore INDEFINIMENT : jamais deverrouille, et la
+#   presence seule du verrou fait REFUSER le retrait.
+#
+# Fail-safe dans les deux sens : une raison incomprise est un opt-out (on
+# ne deverrouille jamais ce qu'on n'a pas classifie), et un pid
+# indeterminable est un pid vivant (on ne deverrouille jamais sur une
+# mesure impossible).
+
+AGENT_LOCK_RE = re.compile(r"claude agent \S+ \(pid (\d+)\)")
+
+
+def classify_worktree_lock(reason: Optional[str]) -> tuple[Optional[str], Optional[int]]:
+    """Classe la raison d'un verrou porcelain en (classe, pid).
+
+    Retourne ("agent", pid) pour un lock d'agent reconnu a sa **forme
+    pure** (`fullmatch` : `claude agent <nom> (pid N)` et rien d'autre),
+    ("optout", None) pour toute autre raison non vide, et
+    ("unclassified", None) pour un verrou REEL dont la raison est vide ou
+    blanche (`git worktree lock` sans `--reason` : l'invocation par
+    defaut). (None, None) uniquement quand il n'y a pas de verrou du tout
+    (raison None).
+
+    Deux fail-safes distincts, tous deux mesures en revue (F1/F2, Hermes
+    du 2026-10-20 sur #21503) :
+
+    - **F1 -- forme pure exigee** : `search()` laissait passer une raison
+      humaine qui *cite* la forme agent, par exemple
+      `'claude agent agent-7f3a11 (pid 999999) -- NE PAS TOUCHER'`
+      (`git worktree lock --reason` ecrase la raison precedente, donc
+      completer une raison d'agent est le geste naturel d'un humain qui
+      garde la tracabilite du pid). Un tel lock etait classe `agent` et
+      pouvait etre deverrouille : une garde humaine honoree comme un
+      cadavre. `fullmatch` rend `optout` des qu'autre chose entoure la
+      forme -- incompris = opt-out, jamais deverrouille.
+    - **F2 -- verrou nu non confondu avec l'absence de verrou** : rendre
+      `(None, None)` pour une raison vide faisait sortir la politique en
+      REMOVE, puis `git worktree remove` echouait (`fatal: cannot remove a
+      locked working tree`) -- exactement la classe de mensonge corrigee
+      en #14693. Une raison vide est une raison qu'on ne comprend pas,
+      pas une absence de verrou.
+    """
+    if reason is None:
+        return (None, None)
+    stripped = reason.strip()
+    if not stripped:
+        return ("unclassified", None)
+    m = AGENT_LOCK_RE.fullmatch(stripped)
+    if m:
+        return ("agent", int(m.group(1)))
+    return ("optout", None)
+
+
+def pid_is_alive(pid: int) -> bool:
+    """Le pid est-il vivant ? Fail-safe : indeterminable = vivant.
+
+    Sous Windows, `tasklist /FI "PID eq N" /FO CSV /NH` rend une ligne par
+    processus trouve ; un pid mort rend la banniere "INFO: no tasks".
+    La reponse se lit par COLONNE (`"Image","PID","Session","#","Mem"`), en
+    comparant le champ PID : un test de sous-chaine sur le CSV entier lit
+    vivant un pid qui n'apparait que dans une AUTRE colonne (une memoire en
+    K, un numero de session), donc sur la ligne d'un autre processus. Sous
+    POSIX, `os.kill(pid, 0)` leve ProcessLookupError
+    si mort. PermissionError (processus d'un autre utilisateur sous POSIX) et
+    tout echec d'execution comptent VIVANT : mieux vaut un worktree
+    verrouille un cycle de trop qu'un deverrouillage sur une mesure
+    impossible.
+    """
+    if os.name == "nt":
+        try:
+            out = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=10,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            return True
+        if out.returncode != 0:
+            return True
+        wanted = str(pid)
+        for row in csv.reader(out.stdout.splitlines()):
+            if len(row) > 1 and row[1].strip() == wanted:
+                return True
+        return False
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return True
+    return True
+
+
+def enforce_lock_policy(status: "WorktreeStatus", locked_reason: Optional[str]) -> "WorktreeStatus":
+    """Applique la politique v1.3 sur un statut diagnostique.
+
+    Renseigne d'abord les champs de visibilite (locked_reason, lock_class,
+    lock_pid) sur TOUT statut verrouille -- un REFUSE pour lock porte sa
+    raison dans le rapport. Puis, decision :
+
+    - pas de verrou : statut intact, rien a faire ;
+    - decision != REMOVE : decision inchangee (un verrou ne cree jamais un
+      REMOVE ; il n'ajoute qu'un REFUSE sur un statut qui aurait ete
+      retirable) ;
+    - opt-out : REFUSE "lane_optout_lock", honore indefiniment ;
+    - verrou non classifie (raison vide) : REFUSE "unclassified_lock" --
+      `git worktree lock` sans `--reason` est l'invocation par defaut, et
+      une raison vide est une raison qu'on ne comprend pas (F2 de la revue
+      #21503) ;
+    - agent + pid vivant : REFUSE "live_agent_lock:<pid>" ;
+    - agent + pid mort : le statut reste REMOVE et porte
+      dead_lock_unlocked=True -- l'apply deverrouillera puis retirera.
+
+    Le champ `refusal_reason` n'est ecrase que si le statut n'en portait
+    pas deja un : un worktree sale ET verrouille refuse sur sa premiere
+    cause, le lock est cite dans les champs de visibilite.
+    """
+    status.locked_reason = locked_reason
+    if locked_reason is None:
+        return status
+    status.lock_class, status.lock_pid = classify_worktree_lock(locked_reason)
+    if status.decision != "REMOVE":
+        return status
+    if status.lock_class == "unclassified":
+        status.decision = "REFUSE"
+        if not status.refusal_reason:
+            status.refusal_reason = "unclassified_lock"
+        return status
+    if status.lock_class == "optout":
+        status.decision = "REFUSE"
+        if not status.refusal_reason:
+            status.refusal_reason = "lane_optout_lock"
+        return status
+    # lock_class == "agent" (classify ne rend "agent" que pour une raison matchee)
+    if pid_is_alive(status.lock_pid):
+        status.decision = "REFUSE"
+        if not status.refusal_reason:
+            status.refusal_reason = f"live_agent_lock:{status.lock_pid}"
+        return status
+    status.dead_lock_unlocked = True
+    return status
 
 
 def same_worktree_path(a: str, b: str) -> bool:
@@ -1796,7 +1972,12 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
 
 def list_worktrees() -> list[dict]:
-    """Retourne les worktrees sous forme [{path, head_sha}, ...]."""
+    """Retourne les worktrees sous forme [{path, head_sha, locked_reason?}, ...].
+
+    v1.3 : la ligne porcelain `locked <raison>` est captee telle quelle dans
+    `locked_reason` (chaine vide pour un verrou sans raison). La
+    classification agent/opt-out se fait dans `enforce_lock_policy`, pas ici.
+    """
     proc = run_git(current_repo_root(), "worktree", "list", "--porcelain", check=False)
     if proc.returncode != 0:
         raise RuntimeError(f"git worktree list failed: {proc.stderr.strip()}")
@@ -1811,6 +1992,8 @@ def list_worktrees() -> list[dict]:
             cur["head_sha"] = line[len("HEAD "):].strip()
         elif line.startswith("branch "):
             cur["branch"] = line[len("branch "):].strip()
+        elif line.startswith("locked"):
+            cur["locked_reason"] = line[len("locked"):].strip()
     if cur:
         out.append(cur)
     return out
@@ -1917,7 +2100,28 @@ def apply_removal(wt: WorktreeStatus) -> tuple[bool, str]:
     ne peut pas executer. Pour tout autre worktree, l'absence de `--force`
     reste le garde-fou : c'est git qui refuse en dernier ressort si la
     classification s'est trompee.
+
+    Effet de bord assume d'un `unlock` reussi suivi d'un `remove` echoue :
+    le worktree survit deverrouille jusqu'au balayage suivant. On ne le
+    re-verrouille pas, parce que le verrou qu'on vient de lever appartenait
+    a un agent au pid MORT (`dead_lock_unlocked` n'est jamais vrai
+    autrement) -- aucun processus vivant ne perd sa protection -- et parce
+    que l'etat laisse est exactement l'entree du retrait legitime : la
+    classification suivante le relit REMOVE-ready deverrouille et rejoue le
+    `remove`. Re-verrouiller ajouterait un second geste dont l'echec
+    laisserait de toute facon le meme etat final.
     """
+    if wt.dead_lock_unlocked:
+        # v1.3 : lock d'agent a pid mort sur un worktree REMOVE-ready. Le
+        # protocole exige l'unlock NOMME -- jamais `remove -f -f` pour
+        # forcer le passage. Un unlock qui echoue arrete AVANT le remove :
+        # git refuserait de toute facon, autant le dire avec son stderr.
+        unlock = run_git(
+            _repo_root_for_worktree(wt.path),
+            "worktree", "unlock", wt.path, check=False,
+        )
+        if unlock.returncode != 0:
+            return False, unlock.stderr.strip()
     args = ["worktree", "remove"]
     if wt.dead_registration:
         args.append("--force")
@@ -1973,10 +2177,16 @@ def render_text(
                 # confond lit un squash-merge comme une ascendance.
                 leg = s.content_on_main_by or "?"
                 pr_part = f"content_on_main({leg})"
+            # v1.3 : suffixe de visibilite quand le retrait passera par un
+            # deverrouillage (lock d'agent a pid mort).
+            lock_part = (
+                f"  dead_lock_unlocked(pid={s.lock_pid})"
+                if s.dead_lock_unlocked else ""
+            )
             if dry_run:
                 lines.append(
                     f"WOULD REMOVE {s.path}  {branch_part}  {pr_part}"
-                    f"{ignored_part}".rstrip()
+                    f"{ignored_part}{lock_part}".rstrip()
                 )
             else:
                 # Mode --apply : vraie realite du disque.
@@ -1984,7 +2194,7 @@ def render_text(
                 if result is None or result.get("applied"):
                     lines.append(
                         f"REMOVED     {s.path}  {branch_part}  {pr_part}"
-                        f"{ignored_part}".rstrip()
+                        f"{ignored_part}{lock_part}".rstrip()
                     )
                 else:
                     # `git worktree remove` a echoue : on dit FAILED + cause.
@@ -2191,9 +2401,12 @@ def main() -> int:
     for wt in worktrees:
         try:
             statuses.append(
-                diagnose_worktree(
-                    wt["path"], current_path, head_sha=wt.get("head_sha"),
-                    activity_window_h=args.activity_window_h,
+                enforce_lock_policy(
+                    diagnose_worktree(
+                        wt["path"], current_path, head_sha=wt.get("head_sha"),
+                        activity_window_h=args.activity_window_h,
+                    ),
+                    wt.get("locked_reason"),
                 )
             )
         except RuntimeError as e:
@@ -2247,6 +2460,13 @@ def main() -> int:
             ),
             "dry_run": not args.apply,
             "api_stats": get_pr_resolution().stats,
+            # v1.3 : chemins des worktrees REMOVE-ready dont le lock
+            # d'agent a ete reconnu mort (l'apply les deverrouille puis
+            # les retire). Toujours present, vide si rien -- un champ
+            # absent se lirait "non mesure".
+            "dead_lock_unlocked": [
+                s.path for s in statuses if s.dead_lock_unlocked
+            ],
             "statuses": [s.to_dict() for s in statuses],
         }
         if args.apply:
