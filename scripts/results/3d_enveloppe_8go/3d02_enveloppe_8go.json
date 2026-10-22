@@ -48,7 +48,7 @@
     "plateau_mib": 7740
    }
   ],
-  "pic_atteint_par": "l'evaluation par comptage de points (cellule 24, N=256 soit 1048576 points evalues), pas l'entrainement : le pic monte de 4228 a 7740 Mio dans les ~20 dernieres secondes du run, pour 15084 ms de la seule cellule"
+  "pic_atteint_par": "l'evaluation par comptage de points (cellule 24, N=256 soit 1048576 points evalues), pas l'entrainement : le pic monte de 4217 a 7740 Mio (plateau de la phase precedente : vram.profil_par_phase_mib[1]) dans les ~20 dernieres secondes du run, pour 15084 ms de la seule cellule"
  },
  "fidelite": {
   "scene_jeu_psnr_final_db": 21.76,

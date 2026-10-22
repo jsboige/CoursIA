@@ -9,7 +9,7 @@ Ce document mesure **l'autre moitié** de l'EPIC : la famille **NeRF**, dont le 
 | Mesure | Valeur |
 |---|---|
 | **Pic VRAM** | **4 318 Mio / 8 192 Mio = 52,7 %** |
-| Mémoire au repos (modèle déchargé) | 331 Mio |
+| Mémoire au repos (modèle déchargé) | 322 Mio |
 | Température max | 73 °C (seuil d'abandon 85 °C non franchi) |
 | Utilisation GPU max | 97 % |
 | Durée du run complet | **207,6 s** (3,5 min) |
@@ -39,7 +39,7 @@ Le second volet de la famille NeRF — celui qui **évalue** (pénalité critic,
 | Mesure | Valeur |
 |---|---|
 | **Pic VRAM** | **7 740 Mio / 8 192 Mio = 94,5 %** |
-| Mémoire au repos (avant / après) | 428 / 427 Mio |
+| Mémoire au repos (avant le run) | 428 Mio |
 | Température max | 72 °C (seuil d'abandon 85 °C non franchi) |
 | Utilisation GPU max | 100 % |
 | Durée du run complet | **1 222,3 s** (20,4 min) |
@@ -49,6 +49,8 @@ Le second volet de la famille NeRF — celui qui **évalue** (pénalité critic,
 | Fidélité — bruit de pose, 800 it. | 19,84 dB (σ=0°) → 18,01 dB (σ=2°) |
 | Fidélité — transfert de focale (diag. de la matrice) | 19,76 dB (native→native), 18,92 dB (télé→télé), 6,66 dB (grand angle→native) |
 | Coût du comptage de points | 9,4 ms (N=8) → **15 084 ms** (N=256, 1 048 576 points) |
+
+**Traçabilité de ce tableau.** Chaque valeur est un champ du manifeste `3d02_enveloppe_8go.json`, et le chemin est donné parce qu'une relecture doit pouvoir remonter jusqu'au chiffre sans refaire le run : `vram.peak_mib` et `vram.peak_pct` pour le pic, `vram.idle_mib` pour le repos, `vram.temp_max_c`, `vram.util_max_pct`, `execution.wallclock_s`, `fidelite.scene_jeu_psnr_final_db` et `fidelite.grille_critic_*` pour les fidelités, `fidelite.bruit_pose_psnr_db_800it`, `fidelite.matrice_focale_psnr_db`, `fidelite.comptage_points` pour les temps de comptage ; les deux plateaux de la ligne « plateau de l'entraînement » sont `vram.profil_par_phase_mib[0].plateau_mib` (3 001) et `[1].plateau_mib` (4 217). Le temps de 144 ms pour `N=128` est `fidelite.comptage_points[4].temps_ms`. **Un seul chiffre de cette section n'a pas de champ** : la mémoire au repos *après* le run, qui n'était pas relevée par la sonde — la ligne ne cite donc plus que la valeur d'avant, celle que le manifeste porte.
 
 Le point important n'est pas le total : c'est **où** le pic arrive. Le profil échantillonné à 5 s montre un plateau stable à 4 200 Mio pendant les vingt minutes d'entraînement et d'évaluation, puis une **montée de 3 512 Mio dans les vingt dernières secondes** — la cellule de comptage de points `N=256`, qui mobilise 1 048 576 points et met 15 secondes à elle seule. Entraîner un NeRF sur 8 Go n'est pas le problème ; **évaluer un NeRF de façon dense l'est**.
 

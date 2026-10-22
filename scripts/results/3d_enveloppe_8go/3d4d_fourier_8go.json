@@ -30,7 +30,7 @@
   "pic_observe_mib": 444,
   "delta_max_mib": 17,
   "contexte_cuda_cree": false,
-  "lecture": "la carte reste au niveau du repos pendant tout le run ; l'ecart maximal constate (17 Mio) est inferieur d'un ordre de grandeur au plus petit contexte CUDA mesure sur cette carte (les runs NeRF demarrent a 331 Mio au repos et montent a 4318 puis 7740 Mio). Aucun octet de VRAM n'est attribuable au harnais Fourier : il n'importe ni torch ni un moteur CUDA."
+  "lecture": "la carte reste au niveau du repos pendant tout le run ; l'ecart maximal constate (17 Mio) est inferieur d'un ordre de grandeur au plus petit contexte CUDA mesure sur cette carte (les runs NeRF demarrent a 322 Mio (3D-01, champ idle_mib de son manifeste) et 428 Mio (3D-02) au repos, et montent a 4318 puis 7740 Mio). Aucun octet de VRAM n'est attribuable au harnais Fourier : il n'importe ni torch ni un moteur CUDA."
  },
  "rss_hote_mib": {
   "pic_arbre_de_processus": 288,
