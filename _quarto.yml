@@ -787,7 +787,7 @@ project:
     - "docs/research/fallacy-detection-survey.md"
     - "docs/research/quant-prose-residual-machine-dep.md"
     - "docs/research/slide-agents-marptoslidev-scoping.md"
-    - "docs/suivis/iit-ict-transition.md"
+    - "docs/reference/iit-ict-transition.md"
     - "docs/test-fixtures/md-table-guard/fixture-17306.md"
     - "docs/transients/2026-05-17-reference-audit-reassessment-findings.md"
     - "docs/transients/2026-06-14-genai-service-security-audit.md"
