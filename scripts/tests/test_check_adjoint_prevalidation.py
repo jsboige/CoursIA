@@ -1927,6 +1927,20 @@ def test_b0_probe_failure_is_fail_closed(monkeypatch):
         mod.probe_b0(123)
 
 
+def test_b0_probe_budget_exhausted_is_fail_closed(monkeypatch):
+    """#21882/#21964 : un organe a budget epuise rend « non mesure » (RuntimeError
+    -> UNKNOWN), jamais un dict qui lacherait la contre-verification b0: clear."""
+    class Exhausted:
+        @staticmethod
+        def analyse_pr(pr):
+            return {"pr": pr, "blocked": False, "blocking": [],
+                    "budget_exhausted": True}
+
+    monkeypatch.setitem(sys.modules, "check_unaddressed_nits", Exhausted)
+    with pytest.raises(RuntimeError, match="budget exhausted"):
+        mod.probe_b0(123)
+
+
 
 def test_b0_probe_import_failure_is_fail_closed(monkeypatch):
     """An organ that cannot even be imported is 'not measured' (UNKNOWN), not a traceback."""

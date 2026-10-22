@@ -951,9 +951,21 @@ def probe_b0(pr: int) -> dict[str, Any]:
         except ImportError:  # charge via importlib dans les tests (hors scripts/)
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
             import check_unaddressed_nits
-        return check_unaddressed_nits.analyse_pr(pr)
     except Exception as exc:  # noqa: BLE001 -- any failure means "not measured"
         raise RuntimeError(f"B.0 organ could not measure PR #{pr}: {exc}") from exc
+    try:
+        result = check_unaddressed_nits.analyse_pr(pr)
+    except Exception as exc:  # noqa: BLE001 -- any failure means "not measured"
+        raise RuntimeError(f"B.0 organ could not measure PR #{pr}: {exc}") from exc
+    # #21882/#21964 : budget de passe epuise = « non mesure », jamais un resultat
+    # qui laisserait `b0_claim_contradictions` lacher un dossier READY `b0: clear`
+    # sans aucune mesure. Meme fail-closed que la panne d'organe ci-dessus
+    # (RuntimeError -> UNKNOWN, exit 2 dans main).
+    if result.get("budget_exhausted"):
+        raise RuntimeError(
+            f"B.0 organ budget exhausted measuring PR #{pr} (not a clean result)"
+        )
+    return result
 
 
 def refute_ready_b0(
