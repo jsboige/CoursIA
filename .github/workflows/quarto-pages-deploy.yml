@@ -60,13 +60,27 @@ on:
       - "scripts/quarto_render_scope.py"
   workflow_dispatch:
 
-# Annule les runs obsolètes pour économiser des minutes CI (mêmes pushes en rafale)
+# Concurrence par evenement : une PR repoussee n'a pas besoin de l'ancien
+# build, un push sur main si (voir ci-dessous).
 concurrency:
   # Cle portee par github.ref pour eviter qu'un push sur main n'annule un run
   # PR en cours (hazard de production : sans la reference, les runs push et PR
   # partagent la meme cle et s'annulent entre eux). #11616 rouge 2.
   group: pages-deploy-${{ github.event_name }}-${{ github.ref }}
-  cancel-in-progress: true
+  # #22088 : la voie push sur main ne s'annule PLUS. Mesure du 22/10 sur les
+  # 40 derniers commits de main : 19 d'entre eux portaient une croix rouge
+  # dont les SEULES jambes fautives etaient `Build Quarto site` et
+  # `Deploy to GitHub Pages` en conclusion `cancelled` -- tuees par le push
+  # suivant pendant une rafale de merges. GitHub compte une annulation comme
+  # un echec dans le rollup du commit : un vrai rouge devenait
+  # indiscernable d'une annulation, et les organes qui lisent la couleur de
+  # main devaient ecarter les `cancelled` a la main (#22085).
+  #
+  # Sur push, les builds se SERIALISENT : l'en cours se termine, le dernier
+  # en attente s'execute ensuite, et le site deploye reste celui du dernier
+  # commit. La voie PR garde l'annulation : une PR repoussee n'a pas besoin
+  # de son build precedent.
+  cancel-in-progress: ${{ github.event_name != 'push' }}
 
 permissions:
   contents: read
