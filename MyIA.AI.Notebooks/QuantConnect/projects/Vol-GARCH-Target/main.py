@@ -17,11 +17,33 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
     filter for direction (long only, no shorts).
 
     Assets: SPY, EFA, EEM, TLT, GLD, DBC (AQR-style multi-asset).
+    Backtest: 2018-01-01 -> 2025-01-01 par defaut (parametres start_date / end_date, %Y%m%d)
+
+    Parametre mode (#21778) :
+    - strategy (defaut) : la strategie ci-dessus ;
+    - spy : SPY detenu ;
+    - 6040 : SPY 60 %, BND 40 % ;
+    - rv21 : la strategie, avec pour seule difference la variance des 21 derniers
+      rendements journaliers a la place de la prevision GARCH.
+    Les references spy et 6040 se reequilibrent au debut de chaque mois, une minute apres
+    l'ouverture ; dans ces deux modes, rebalance() sort aussitot. Trace journaliere "shadow"
+    (e0..e4, #18923) : valeur du portefeuille a l'ouverture de chaque seance de SPY.
     """
 
     def initialize(self):
-        self.set_start_date(2018, 1, 1)
-        self.set_end_date(2025, 1, 1)
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040", "rv21"):
+            raise ValueError(f"unknown mode parameter: {self._mode} (strategy | spy | 6040 | rv21)")
+        start_date_param = self._parse_date_param("start_date")
+        end_date_param = self._parse_date_param("end_date")
+        if start_date_param is not None:
+            self.set_start_date(start_date_param)
+        else:
+            self.set_start_date(2018, 1, 1)
+        if end_date_param is not None:
+            self.set_end_date(end_date_param)
+        else:
+            self.set_end_date(2025, 1, 1)
         self.set_cash(100000)
 
         self.set_brokerage_model(
@@ -68,6 +90,45 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
 
         self.set_warm_up(250, Resolution.DAILY)
 
+        # Mesure #21778 : references detenues et trace journaliere, hors decision de la strategie
+        spy = self.symbols["SPY"]
+        self._bnd = (self.add_equity("BND", Resolution.DAILY).symbol
+                     if self._mode == "6040" else None)
+        if self._mode in ("spy", "6040"):
+            self.settings.seed_initial_prices = True
+            self.schedule.on(
+                self.date_rules.month_start(spy),
+                self.time_rules.after_market_open(spy, 1),
+                self._rebalance_reference,
+            )
+        self._closes = 0
+        self.schedule.on(
+            self.date_rules.every_day(spy),
+            self.time_rules.after_market_open(spy, 0),
+            self._trace,
+        )
+
+    def _parse_date_param(self, name):
+        raw = self.get_parameter(name)
+        if raw is None or str(raw).strip() == "":
+            return None
+        return datetime.strptime(str(raw).strip(), "%Y%m%d")
+
+    def _rebalance_reference(self):
+        if self.is_warming_up:
+            return
+        if self._mode == "spy":
+            self.set_holdings([PortfolioTarget(self.symbols["SPY"], 1.0)])
+        else:
+            self.set_holdings([PortfolioTarget(self.symbols["SPY"], 0.6),
+                               PortfolioTarget(self._bnd, 0.4)])
+
+    def _trace(self):
+        if self.is_warming_up:
+            return
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
+
     def on_data(self, data: Slice):
         for ticker, sym in self.symbols.items():
             if not data.ContainsKey(sym):
@@ -84,7 +145,7 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
         self.day_count += 1
 
     def rebalance(self):
-        if self.is_warming_up:
+        if self.is_warming_up or self._mode in ("spy", "6040"):
             return
 
         weights = {}
@@ -95,7 +156,10 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
             if not self.sma_ind[ticker].IsReady:
                 continue
 
-            var_forecast = self._garch_forecast(ticker)
+            if self._mode == "rv21":
+                var_forecast = float(np.var(np.array(self.returns[ticker])[-21:]))
+            else:
+                var_forecast = self._garch_forecast(ticker)
             if var_forecast is None or var_forecast <= 0:
                 continue
 

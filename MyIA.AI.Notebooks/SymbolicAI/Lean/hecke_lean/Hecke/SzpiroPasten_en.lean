@@ -11,7 +11,7 @@ This module delivers grain 6 of the Langlands Epic (#17969): the formal Lean
 statement of Theorem 1.1 in Hector Pasten's preprint, *Improved Bounds for
 Szpiro's Conjecture* (arXiv 2609.17390, September 16, 2026), whose
 computational playground is the notebook
-`Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb`.
+`Search/App-32-Szpiro-Pasten-2026.ipynb`.
 
 * `omega n`: the number ω(n) of distinct prime factors of `n`;
 * `IsAdmissibleFactorization N D M`: the key definition of the preprint —
