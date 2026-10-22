@@ -170,6 +170,13 @@ on:
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/lake-manifest.json'
+      # riemann200_lean (lake dedie de la serie Riemann200, EPIC #20403
+      # critere 2 -- 0 sorry verifie, axiom target-modules "*", Mathlib
+      # epingle db584cd6d4 -- parametres au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
@@ -320,6 +327,13 @@ on:
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/lakefile.toml'
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/lean-toolchain'
       - 'MyIA.AI.Notebooks/Compression/Compression_lean/lake-manifest.json'
+      # riemann200_lean (lake dedie de la serie Riemann200, EPIC #20403
+      # critere 2 -- 0 sorry verifie, axiom target-modules "*", Mathlib
+      # epingle db584cd6d4 -- parametres au manifeste)
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/**.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lake-manifest.json'
       # Self-cover B.3 herite du wrapper lean-serre.yml supprime (#17336) :
       # le moteur d'axiomes change -> le gate axiom de serre100 rejoue.
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
@@ -395,7 +409,7 @@ jobs:
       - name: Dispatch lakes from manifest
         id: dispatch
         run: |
-          python scripts/lean/lake_matrix_dispatch.py \
+          python3 scripts/lean/lake_matrix_dispatch.py \
             --changed-file "$RUNNER_TEMP/changed.txt" \
             --outputs-file "$GITHUB_OUTPUT"
           echo "--- lake-set ---"

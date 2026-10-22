@@ -31,7 +31,7 @@ from merge_dwell import evaluate as _md_evaluate  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _no_shell_escape(forbid_shell_escape):
+def _no_shell_escape(forbid_shell_escape, monkeypatch):
     """Sentinelle armee pour tout le module (#20021).
 
     Un test qui lance un processus ici n'a pas simule une de ses sources :
@@ -40,6 +40,13 @@ def _no_shell_escape(forbid_shell_escape):
     ont besoin d'un faux `gh` patchent `pig.subprocess.run` eux-memes
     (`_patch_gh`, `_patch_gh_annotations`) et surchargent la sentinelle.
     """
+    # Identite posee par le test lui-meme (#21994) : `main()` epingle un
+    # jeton AVANT argparse, et sans `GH_TOKEN` dans l'environnement cette
+    # resolution lance un VRAI `gh auth token --user <compte de l'hote>` --
+    # processus refuse par la sentinelle. Le jeton ci-dessous est donc pose
+    # par le test, jamais resolu par le code sous test : le module ne depend
+    # ni de l'environnement ambiant, ni de l'ORDRE de ses fichiers.
+    monkeypatch.setenv("GH_TOKEN", "tok-fake-picker-test")
     return forbid_shell_escape
 
 
@@ -415,6 +422,21 @@ def test_unaddressed_review_points_leaves_an_unreadable_pr_absent(monkeypatch):
         raise RuntimeError("reseau")
 
     monkeypatch.setattr(check_unaddressed_nits, "analyse_pr", _boom)
+    assert pig.unaddressed_review_points([18829]) == {}
+
+
+def test_unaddressed_review_points_budget_exhausted_is_absent_not_zero(monkeypatch):
+    """#21882/#21964 : une passe a budget epuise rend la PR ABSENTE, jamais un
+    0 « evaluee claire ». Le marqueur `budget_exhausted` du dict `analyse_pr`
+    doit propager ici et basculer en None (fail-closed) : sinon le 0 autoritaire
+    de `elif not info["blocked"]` figeait le tirage de toute la flotte."""
+    import check_unaddressed_nits
+    monkeypatch.setattr(
+        check_unaddressed_nits, "analyse_pr",
+        lambda n: {"pr": n, "blocked": False, "blocking": [],
+                   "unevaluated": [], "unevaluated_total": 0,
+                   "budget_exhausted": True},
+    )
     assert pig.unaddressed_review_points([18829]) == {}
 
 
@@ -4499,6 +4521,76 @@ def test_marker_no_match_discursive_mention(monkeypatch):
     assert picks[0]["klass"] == "grain"
 
 
+# --- #21949 : marqueur de cloture prefixe d'un TITRE markdown --------------
+# Mesure (draw c354 du 2026-10-22) : #20445 portait son `[INFO]
+# candidate-delivered` en DERNIER commentaire, mais sous un titre
+# (`## [INFO] candidate-delivered -- lane ...`). L'ancre `^\s*` n'accepte pas
+# `#`, aucune alternative ne matchait, et le grain mort revenait en tete du
+# tapis. Le prefixe de titre est une forme COURANTE de redaction (commentaire
+# structure en sections), pas une forme exotique.
+
+
+def test_delivered_state_heading_prefixed_marker():
+    """`## [INFO] candidate-delivered` est un marqueur, pas une citation.
+
+    Forme relevee sur #20445 (dernier commentaire, 2026-10-21T08:14:44Z) :
+    c'est elle qui a fait resservir une issue deja livree."""
+    assert pig._delivered_state([
+        "Voici mon rapport.\n\n## [INFO] candidate-delivered — lane "
+        "myia-po-2023:CoursIA\n\nDetails ci-dessous.",
+    ]) is True
+
+
+def test_delivered_state_heading_prefixed_revocation():
+    """Une retractation TITREE retracte : sans ca elle ne defaisait rien.
+
+    Le sens est porte par l'ORDRE (`_delivered_state`), pas par la forme :
+    une retractation titree doit donc desarmer un marqueur anterieur."""
+    assert pig._delivered_state([
+        "[INFO] candidate-delivered — livraison complete.",
+        "## [NOT-DELIVERED] — verification ulterieure : livraison partielle.",
+    ]) is False
+
+
+def test_recent_marker_heading_prefixed_closure_is_seen(monkeypatch):
+    """Le filtre bon marche (#19768) voit aussi un en-tete titre.
+
+    `_RECENT_DELIVERY_MARKER_RE` est la grammaire qui ecarte SANS consommer
+    le budget de sonde de livraison : un `### [DELIVERED]` non vu coutait une
+    sonde pleine, voire laissait passer le candidat."""
+    calls = []
+    _patch_gh_dispatch(
+        calls, monkeypatch, pr_payload=[],
+        comments_payload={"comments": [
+            _delivered_marker_comment(
+                body="### [DELIVERED] lane myia-po-2025:CoursIA — PR #21999"),
+        ]})
+    assert pig.has_recent_delivery_marker(20445) is True
+
+
+def test_released_heading_prefixed_is_recognised():
+    """`## [RELEASED] ... acceptance deja couverte` : 3e grammaire de la meme
+    famille (`_RELEASED_HEADER_RE`, #20351)."""
+    assert pig._released_covers_acceptance(
+        "## [RELEASED] lane myia-po-2025:CoursIA — acceptance deja couverte "
+        "par la PR #21888."
+    ) is True
+
+
+def test_heading_prefix_tolerance_is_bounded():
+    """La tolerance s'arrete a 1-6 dieses, et une prose reste hors du filet.
+
+    Sans cette borne, autoriser un prefixe reviendrait a retirer l'ancre de
+    debut de ligne -- le temoin negatif ci-dessous le mesure."""
+    assert pig._DELIVERED_MARKER_RE.search("# [INFO] candidate-delivered — x")
+    assert pig._DELIVERED_MARKER_RE.search(
+        "###### [INFO] candidate-delivered — x")
+    assert not pig._DELIVERED_MARKER_RE.search(
+        "####### [INFO] candidate-delivered — x")
+    assert not pig._DELIVERED_MARKER_RE.search(
+        "Le mot ### [INFO] candidate-delivered apparait ici en pleine phrase.")
+
+
 # --- Geste 3 #18203 : `weight()` mesure le delaissement sur la DERNIERE ----
 # livraison reelle (PR mergée qui cite l'issue), pas sur `updatedAt`.
 # -----------------------------------------------------------------------------
@@ -4627,7 +4719,7 @@ def test_main_idle_since_delivery_falls_back_to_idle_on_fetch_error(monkeypatch)
 # #16372, #14549) le 2026-10-07, parce que le plafond de la sonde pleine
 # (16 unites, partage avec la sonde de PR couvrante) etait deja epuise.
 # Tous quatre portaient pourtant un marqueur de cloture identifiable sur
-# le DERNIER commentaire (`[DELIVERED]`, `[RELEASED]`, gel coordinateur).
+# le DERNIER commentaire (`[DELIVERED]`, gel coordinateur).
 # Le fix ajoute un filtre bon marche qui lit un seul commentaire, n'est
 # PAS couvert par `DELIVERED_SIGNAL_MAX_PROBES`, et ecarte le candidat
 # sans consommer une sonde pleine.
@@ -4662,13 +4754,73 @@ def test_recent_delivery_marker_DELIVERED_true(monkeypatch):
     assert pig.has_recent_delivery_marker(12345) is True
 
 
-def test_recent_delivery_marker_RELEASED_true(monkeypatch):
-    """#19768 : `[RELEASED]` en tete du DERNIER commentaire -> ecarte."""
+def test_recent_delivery_marker_RELEASED_false(monkeypatch):
+    """#21721 : `[RELEASED]` en tete du DERNIER commentaire -> **PAS** ecarte.
+
+    Le test de #19768 affirmait l'inverse : un `[RELEASED]` ecarte l'item
+    du tapis. C'etait le defaut mesure : `[RELEASED]` dit qu'une lane REND
+    LA MAIN, le plus souvent sur une BARRIERE reelle (GPU-only,
+    vision-only), et l'item redevient alors servable par la flotte --
+    « l'issue sautee reste en tete pour le tirage suivant ». L'ecarter
+    definitivement, c'etait perdre le grain.
+
+    Mesure fondatrice (issue #21721, 2026-10-21) : sur le pool ouvert, 31
+    items portent un en-tete `[RELEASED]` en dernier commentaire, et 0
+    d'entre eux portent un motif de couverture d'acceptance.
+
+    Le cas « `[RELEASED] ... acceptance deja couverte » (une livraison) est
+    tranche par la SONDE PLEINE (#21720), qui lit tous les commentaires :
+    ce filtre bon marche ne l'invente pas.
+    """
     monkeypatch.setattr(pig.subprocess, "run",
                         _FakeRecentComments([
                             {"body": "[RELEASED] lane myia-po-2023:CoursIA"},
                         ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_delivery_marker_RELEASED_with_DELIVERED_true(monkeypatch):
+    """#21721 : un dernier commentaire qui pose `[RELEASED]` ET `[DELIVERED]`
+    reste ecarte -- le marqueur de cloture l'emporte sur la main rendue.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "[DELIVERED] lane myia-po-2023:CoursIA\n"
+                                     "[RELEASED] lane myia-po-2023:CoursIA"},
+                        ]).run)
     assert pig.has_recent_delivery_marker(12345) is True
+
+
+def test_recent_delivery_marker_RELEASED_mention_discursive_false(monkeypatch):
+    """Controle negatif : un `[RELEASED]` cite en milieu de ligne (mention
+    de prose) ne matchait deja pas -- le controle est conserve pour
+    verrouiller le comportement d'ancrage.
+    """
+    monkeypatch.setattr(pig.subprocess, "run",
+                        _FakeRecentComments([
+                            {"body": "Le voisin a poste [RELEASED] hier, mais "
+                                     "celui-ci n'est pas rendu."},
+                        ]).run)
+    assert pig.has_recent_delivery_marker(12345) is False
+
+
+def test_recent_marker_regex_excludes_only_closure_headers():
+    """#21721 : le filtre bon marche reconnait les en-tetes de CLOTURE
+    (`[DELIVERED]`, `[FROZEN]`) et rien d'autre. `[RELEASED]` n'en est pas un :
+    une main rendue laisse l'item servable.
+
+    Ce test porte sur la REGEX elle-meme (et non sur une sonde injectee) :
+    c'est elle que le tapis appelle en production.
+    """
+    rx = pig._RECENT_DELIVERY_MARKER_RE
+    assert rx.search("[DELIVERED] lane myia-po-2028:CoursIA") is not None
+    assert rx.search("[FROZEN] par coordinateur") is not None
+    assert rx.search("[RELEASED] lane myia-po-2028:CoursIA") is None
+    # `[INFO] candidate-delivered` n'est pas un en-tete de ce filtre : il a
+    # sa propre grammaire (`_DELIVERED_MARKER_RE`), plus large.
+    assert rx.search("[INFO] candidate-delivered -- lane X") is None
+    assert pig._DELIVERED_MARKER_RE.search(
+        "[INFO] candidate-delivered -- lane X") is not None
 
 
 def test_recent_delivery_marker_FROZEN_true(monkeypatch):
@@ -5068,3 +5220,147 @@ def test_merged_pr_signal_anchor_substring_no_false_positive(monkeypatch):
     )
 
 
+
+
+# #21757 -- le PRODUCTEUR du cache des PRs ouvertes (cote tapis).
+#
+# Le LECTEUR (`check_lane_claim.py`, corrige par #21749) refuse une liste
+# NUE (format herite) : le cache ecrit par le tapis etait donc lu comme
+# ABSENT, et chaque candidat refaisait sa propre enumeration complete.
+# Ces tests verrouillent le contrat producteur <-> lecteur, et se valident
+# par leurs faux negatifs : cache tronque, cache incomplet, enumeration
+# dupliquee, ancre sans fin de mot.
+
+
+@pytest.fixture
+def _reset_open_prs_state():
+    """Le memo d'enumeration et le module lecteur repartent a zero."""
+    pig._OPEN_PRS_ENUM_MEMO = None
+    pig._CLC_MODULE = None
+    yield
+    pig._OPEN_PRS_ENUM_MEMO = None
+    pig._CLC_MODULE = None
+
+
+def _reader_with_cache(path):
+    """Recharge le lecteur avec le cache du tapis (env lue a l'import)."""
+    import importlib
+
+    import check_lane_claim as clc
+    return importlib.reload(clc)
+
+
+def test_cache_v2_complete_is_read_by_the_reader_without_network(
+        monkeypatch, tmp_path, _reset_open_prs_state):
+    """Le cache v2 COMPLET est relu par le lecteur, sans fetch reseau."""
+    prs = [{
+        "number": 21742,
+        "title": "check_lane_claim --paths",
+        "headRefName": "fix/21742",
+        "body": "See #21742",
+        "additions": 10,
+        "deletions": 1,
+        "files": [{"path": "scripts/check_lane_claim.py"}],
+    }]
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: prs)
+    path = pig._build_open_prs_cache_for_belt("myia-ai-01:CoursIA-2")
+    assert path is not None
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    assert payload["format"] == "open-prs-v2"
+    assert payload["complete"] is True
+    assert payload["count"] == 1
+
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(path))
+    clc = _reader_with_cache(path)
+    assert clc._read_open_prs_cache() == prs
+    monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+    _reader_with_cache(path)
+
+
+def test_incomplete_enumeration_writes_an_incomplete_cache(
+        monkeypatch, _reset_open_prs_state):
+    """Une enumeration INCOMPLETE ecrit `complete: false` + son motif."""
+    import check_lane_claim as clc
+
+    def boom():
+        raise clc.OpenPrsIncompleteError("liste tronquee", "362 PRs, 200 lues")
+
+    monkeypatch.setattr(pig, "_complete_open_prs", boom)
+    path = pig._build_open_prs_cache_for_belt("lane")
+    assert path is not None
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    assert payload["complete"] is False
+    assert payload["format"] == "open-prs-v2"
+    assert "tronquee" in payload["reason"]
+
+    # Le lecteur refuse ce cache : UNKNOWN, jamais une liste exploitee.
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(path))
+    clc = _reader_with_cache(path)
+    with pytest.raises(clc.OpenPrsIncompleteError):
+        clc._read_open_prs_cache()
+    monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+    _reader_with_cache(path)
+
+
+def test_legacy_bare_list_is_not_a_proof_of_completeness(
+        monkeypatch, tmp_path):
+    """Faux negatif : une liste nue est traitee comme ABSENTE."""
+    legacy = tmp_path / "legacy.json"
+    legacy.write_text(json.dumps([{"number": 1}]), encoding="utf-8")
+    monkeypatch.setenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", str(legacy))
+    clc = _reader_with_cache(legacy)
+    assert clc._read_open_prs_cache() is None
+    monkeypatch.delenv("CHECK_LANE_CLAIM_OPEN_PRS_JSON", raising=False)
+    _reader_with_cache(legacy)
+
+
+def test_producer_reuses_the_reader_enumeration_and_never_runs_gh(
+        monkeypatch, _reset_open_prs_state):
+    """Une seule enumeration par passe, et aucun `gh` lance par le tapis."""
+    calls = []
+
+    class _FakeReader:
+        OpenPrsIncompleteError = type(
+            "OpenPrsIncompleteError", (RuntimeError,), {})
+
+        @staticmethod
+        def _gh_open_prs_complete():
+            calls.append(1)
+            return [{"number": 1, "title": "t", "body": "", "files": []}]
+
+    monkeypatch.setattr(pig, "_claim_reader_module", lambda: _FakeReader)
+
+    def boom(*args, **kwargs):  # noqa: ANN002, ANN003
+        raise AssertionError(
+            "le producteur ne doit pas lancer gh lui-meme (#21757)")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    first = pig._build_open_prs_cache_for_belt("lane")
+    second = pig._build_open_prs_cache_for_belt("lane")
+    assert first is not None and second is not None
+    assert calls == [1], "l'enumeration doit etre memoisee (une par passe)"
+
+
+def test_cover_probe_decides_on_the_complete_enumeration(
+        monkeypatch, _reset_open_prs_state):
+    """#21757 critere 4 : la couverture est decidee sur l'enumeration."""
+    prs = [
+        {"number": 30001, "title": "couvre #4242", "body": "", "files": []},
+        {"number": 30002, "title": "rien", "body": "aucune ancre",
+         "files": []},
+    ]
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: prs)
+    # La recherche serveur ne rend rien (plafond, quota) : la decision
+    # vient de l'enumeration complete, qui est complete par construction.
+    monkeypatch.setattr(pig, "open_cover_signal", lambda n: None)
+    assert pig.open_cover_signal_complete(4242) == "PR #30001"
+    assert pig.open_cover_signal_complete(9999) == ""
+
+
+def test_cover_probe_keeps_the_anchor_boundary(
+        monkeypatch, _reset_open_prs_state):
+    """Faux negatif : `#42420` ne couvre pas `#4242` (meme regle qu'avant)."""
+    prs = [{"number": 30003, "title": "#42420", "body": "", "files": []}]
+    monkeypatch.setattr(pig, "_complete_open_prs", lambda: prs)
+    monkeypatch.setattr(pig, "open_cover_signal", lambda n: None)
+    assert pig.open_cover_signal_complete(4242) == ""

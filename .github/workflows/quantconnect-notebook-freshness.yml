@@ -21,7 +21,6 @@ name: QuantConnect notebook freshness
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/**/*.ipynb'
       - 'scripts/check_quantconnect_notebook_freshness.py'
