@@ -148,6 +148,11 @@ def test_per_pair_selector_reads_only_target_at_base(tmp_path, monkeypatch):
         "--repo-root", str(repo),
     ])
     # Un verdict a ete rendu (pas une erreur rc 2) : la paire a ete evaluee.
+    # Borne `<= 3` : le chargement au base-ref est borne a la paire visee —
+    # 1 `git show` pour le fichier de registre de la paire, + au plus 2 si la
+    # paire porte des fichiers d'audit lis au base-ref. La borne est
+    # CONSTANTE, independante de n : c'est elle qui distingue « ciblee » de
+    # « integral » (qui croitrait avec n).
     assert rc in (0, 1)
     assert counts["show"] <= 3, (
         f"--per-pair --pair doit ne `git show` que la paire visee (+ ses audits) "
@@ -173,9 +178,12 @@ def test_per_pair_no_selector_still_reads_all(tmp_path, monkeypatch):
         "--repo-root", str(repo),
     ])
     assert rc in (0, 1)
-    assert counts["show"] >= n - 1, (
+    # `== n` : l'invariant « chargement integral » est EPIPILE exact — un
+    # `git show` par fichier de registre, pas un seuil lache (`>= n - 1`) qui
+    # laisserait passer une paire en moins sans rougir.
+    assert counts["show"] == n, (
         f"le mode plein (sans selecteur) doit rester integral : "
-        f"{counts['show']} `git show` pour {n} paires au base-ref"
+        f"{counts['show']} `git show` pour {n} paires au base-ref (attendu : {n})"
     )
 
 
