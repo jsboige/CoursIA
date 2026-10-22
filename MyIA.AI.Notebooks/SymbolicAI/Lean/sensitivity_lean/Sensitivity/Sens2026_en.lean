@@ -15,8 +15,9 @@ the disjunction of three size-two conjunctions over `Q 6`.
 
 Family 132 of the openai/math repository (2026) — "total Boolean functions
 with `bs(f) ≥ s(f)^α` for a fixed `α > 2`" — **refutes** the quadratic
-strengthening of the sensitivity conjecture: the ratio `bs/s²` is not
-polynomially bounded in `s`. That result is quoted **with its status**
+strengthening of the sensitivity conjecture: the ratio `bs/s²` is unbounded —
+that is, it admits **no constant bound** in `s`. That result is quoted
+**with its status**
 (formalized upstream, skeleton `lean/docs/132.md` of the openai/math
 repository; not re-proved by us): re-proving it is out of scale for this lake.
 
@@ -28,15 +29,17 @@ repository, Scope section) reads, verbatim:
 > formalization also gives a fixed exponent $\alpha>2$ and a sequence with
 > $s(f)^\alpha\le\mathrm{bs}(f,0)$ while the latter tends to infinity.
 
-So it is `bs/s²` that is unbounded — the refutation concerns `bs = O(s²)` —
-and not `bs/s`.
+So it is `bs/s²` that is unbounded (no constant bound) — the refutation
+concerns `bs = O(s²)` — and not `bs/s`.
 
 The bound that closes the exponent from above is Huang's **Theorem 1.5**
 (*Induced subgraphs of hypercubes and a proof of the Sensitivity Conjecture*,
 arXiv 1907.00847): `bs(f) ≤ s(f)^4` for every Boolean function `f`. The
-exponent of family 132 is therefore squeezed by `2 < α ≤ 4`: Theorem 1.5
-gives `bs/s ≤ s³`, so `bs/s` is bounded by a polynomial in `s` — only the
-power `bs/s²` escapes a polynomial bound.
+exponent of family 132 is therefore squeezed by `2 < α ≤ 4`. Mind the notion
+used here: that Theorem gives `bs ≤ s⁴`, hence `bs/s² ≤ s²` — the ratio
+`bs/s²` **is** polynomially bounded in `s`. What fails is the **constant**
+bound: `bs/s²` admits no majorant independent of `s` (the quotient tends to
+infinity), which is enough to refute `bs = O(s²)`.
 
 `tribes32` is the **computable echo** of this neighbourhood — and it teaches
 two things, one of them counterintuitive:
