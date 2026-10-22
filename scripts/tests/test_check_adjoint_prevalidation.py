@@ -4295,6 +4295,33 @@ def test_stack_unfetchable_refs_are_an_incident_not_a_refusal(monkeypatch):
     assert incidents
 
 
+def test_stack_pr_head_refspec_is_forced(monkeypatch):
+    """Une tete de PR qui bouge ne doit pas desactiver la porte STACK.
+
+    Sans le `+` du refspec, git rejette la ref locale non fast-forward, le
+    fetch du lot entier echoue, et la porte STACK se desactive pour toutes les
+    PRs -- pendant que le gate rend son verdict quand meme.
+    """
+    seen = {}
+
+    def fake(args, check=True):
+        if args[0] == "fetch":
+            seen["args"] = args
+            return subprocess.CompletedProcess(["git", *args], 0, "", "")
+        raise AssertionError(f"appel git inattendu : {args}")
+
+    monkeypatch.setattr(mod, "_git", fake)
+    remaining, incidents = mod._fetch_pr_heads([19548, 19556])
+    assert remaining == [19548, 19556], remaining
+    assert incidents == []
+
+    specs = [a for a in seen["args"] if a.startswith(("pull/", "+pull/"))]
+    assert specs, seen["args"]
+    for spec in specs:
+        assert spec.startswith("+pull/"), spec
+        assert spec.split(":", 1)[0] == f"+pull/{spec.split('/')[1]}/head", spec
+
+
 def test_stack_index_cache_is_built_once(monkeypatch):
     """#20251 -- la passe est payee une fois par processus, pas par PR.
 

@@ -1141,11 +1141,19 @@ def _fetch_pr_heads(numbers: list[int]) -> tuple[list[int], list[str]]:
     comme « propres » des commits deja merges -- la porte inventerait des piles.
     Une passe qui rafraichit sa reference ne depend pas de la fraicheur de
     l'appelant.
+
+    Le refspec des tetes de PR est **force** (`+`). Une tete de PR qui bouge
+    (rebase, force-push) rend la ref locale non fast-forward : sans le `+`,
+    git rejette le refspec, le LOT entier echoue, et la porte STACK -- celle qui
+    detecte une base morte ou une pile -- se desactive pour tout le depot
+    pendant que le gate rend quand meme son verdict. Mesure du 2026-10-22 :
+    21 rejets `non-fast-forward` sur 272 PRs ouvertes, porte STACK inactivable
+    sur tout le pool ; avec le `+`, le meme fetch rend rc=0.
     """
     remaining = list(numbers)
     for _ in range(STACK_FETCH_TRIES):
         specs = ["main:refs/remotes/origin/main"]
-        specs += [f"pull/{p}/head:{STACK_REF_PREFIX}{p}" for p in remaining]
+        specs += [f"+pull/{p}/head:{STACK_REF_PREFIX}{p}" for p in remaining]
         proc = _git(["fetch", "-q", "origin", *specs], check=False)
         if proc.returncode == 0:
             return remaining, []
