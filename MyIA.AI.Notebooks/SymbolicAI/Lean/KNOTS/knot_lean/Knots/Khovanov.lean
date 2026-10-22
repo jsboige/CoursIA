@@ -40,10 +40,19 @@
   - **`d ∘ d = 0`** aux deux étages composables ;
   - rangs des différentielles : **2, 4, 7** ;
   - dimensions de l'homologie par étage : **2, 0, 1, 1** ;
-  - table graduée de l'homologie : `H^{0,1}`, `H^{0,3}`, `H^{2,5}`, `H^{3,9}`
-    de dimension 1, tout le reste nul, soit `q + q³ + q⁵t² + q⁹t³` — la
-    table publiée par Bar-Natan §4.1 pour son trèfle de démonstration ;
+  - table graduée de l'homologie (sur ℚ) : `H^{0,1}`, `H^{0,3}`, `H^{2,5}`,
+    `H^{3,9}` de dimension 1, tout le reste nul, soit `q + q³ + q⁵t² + q⁹t³`
+    — la table publiée par Bar-Natan §4.1 pour son trèfle de démonstration ;
   - caractéristique d'Euler graduée en `q = −1` : **χ|_{q=−1} = −2**.
+
+  ## Portée : rangs sur ℚ, torsion invisible
+
+  `matRank` élimine sur `ℤ` et rend le rang **sur ℚ** : c'est ce qu'il faut
+  pour les dimensions, mais la table obtenue est celle de
+  `H^r(L; ℚ)`. La torsion entière (par exemple la part ℤ₂ que porte le trèfle
+  dans la table du Knot Atlas) n'apparaît nulle part ici et n'est pas
+  revendiquée. Les théorèmes ci-dessous disent donc des dimensions de
+  `H^r(L; ℚ)` graduées, jamais l'invariant entier sur `ℤ`.
 
   ## Divergences consignées par rapport au pré-enregistrement (#12208)
 
@@ -72,8 +81,10 @@ import Knots.Jones
 
 /-- Accès indexé avec valeur par défaut. Le noyau de cette version de Lean ne
 fournit pas `List.get!` ; ce shim le rétablit sur `List.getD`, qui est présent,
-de sorte que les définitions restent réductibles par `decide`. -/
-def List.get! {α : Type} [Inhabited α] (l : List α) (i : Nat) : α := l.getD i default
+de sorte que les définitions restent réductibles par `decide`. Déclaré
+`private` : le compagnon `Khovanov_en` en porte un jumeau, et un module qui
+importerait les deux verrait sinon deux déclarations du même nom. -/
+private def List.get! {α : Type} [Inhabited α] (l : List α) (i : Nat) : α := l.getD i default
 
 namespace Knots
 
@@ -262,6 +273,15 @@ def qDeg (d : KnotDiagram) (g : List Bool × List Bool) : ℤ :=
   ((g.2.count true : ℤ) - (g.2.count false : ℤ)) + (g.1.count false : ℤ)
     + (nPlus d : ℤ) - 2 * (nMinus d : ℤ)
 
+/-- La différentielle préserve le degré quantique : toute entrée non nulle
+`d^{r,j}` relie deux générateurs de même `qDeg`. C'est la prémisse de
+`homGradedDim` — sans elle, les matrices de bloc ne décrivent pas la
+différentielle graduée. -/
+def khDiffPreservesQDeg (d : KnotDiagram) (r : Nat) : Bool :=
+  (khChainGens d (r + 1)).all (fun t =>
+    (khChainGens d r).all (fun s =>
+      khDiffEntry d t s == 0 || qDeg d t == qDeg d s))
+
 /-- Insertion triée d'un entier relatif. -/
 def insertInt (x : ℤ) : List ℤ → List ℤ
   | [] => [x]
@@ -366,8 +386,18 @@ theorem gradedDim_trefoil :
     gradedDim trefoilDiagram 2 = [(3, 3), (5, 6), (7, 3)] ∧
     gradedDim trefoilDiagram 3 = [(3, 1), (5, 3), (7, 3), (9, 1)] := by decide
 
-/-- La table graduée de l'homologie : `q + q³ + q⁵t² + q⁹t³`, identique à
-la table publiée par Bar-Natan §4.1 pour son trèfle de démonstration. -/
+/-- La différentielle préserve `qDeg` aux trois étages composables du trèfle :
+le bloc de degré `j` est bien un sous-complexe, ce dont `homGradedDim` a
+besoin pour que sa table graduée soit celle de l'homologie et non un simple
+assemblage de rangs. -/
+theorem qDeg_step_trefoil :
+    khDiffPreservesQDeg trefoilDiagram 0 = true ∧
+    khDiffPreservesQDeg trefoilDiagram 1 = true ∧
+    khDiffPreservesQDeg trefoilDiagram 2 = true := by decide
+
+/-- La table graduée de l'homologie (sur ℚ) : `q + q³ + q⁵t² + q⁹t³`,
+identique à la table publiée par Bar-Natan §4.1 pour son trèfle de
+démonstration. -/
 theorem homGradedDim_trefoil :
     homGradedDim trefoilDiagram 0 1 = 1 ∧
     homGradedDim trefoilDiagram 0 3 = 1 ∧
