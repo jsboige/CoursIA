@@ -68,6 +68,14 @@ from transformers import (  # noqa: E402
 from trl import GRPOTrainer, GRPOConfig  # noqa: E402
 from peft import LoraConfig, TaskType  # noqa: E402
 
+# Fenetres d'echantillon (tete + queue) : module pur, sans dependance lourde,
+# pour que le contrat de l'artefact soit testable meme en CI sans GPU.
+try:
+    from ict25_records import record_windows  # noqa: E402
+except ImportError:  # execution depuis un autre repertoire
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from ict25_records import record_windows  # noqa: E402
+
 
 # === Constantes partagees (verbatim cell[17] / cell[23] / cell[26] d'ICT-25) ===
 
@@ -317,12 +325,17 @@ def make_reward_for_arm(arm: str, holder: dict):
 
 # === Runner ===
 
-def run_seed(arm: str, seed: int, steps: int, model_name: str = MODEL, gpu: int = 0):
+def run_seed(arm: str, seed: int, steps: int, model_name: str = MODEL, gpu: int = 0,
+             max_records: int = 64):
     """Execute un seed d'un bras et retourne un dict agrege (metriques + records).
 
     Lit la config complete depuis ARM_CONFIGS[arm] (system_prompt, signal,
     learning_rate, num_generations, reward kind). L'unicite de source evite
     la divergence entre reward_fn et hyperparams quand un bras evolue.
+
+    `max_records` dimensionne les deux fenetres d'echantillon (tete et queue)
+    portees par l'artefact ; avant cette correction, l'echantillon etait
+    fige a 64 et le drapeau `--max-records` de la CLI n'etait pas utilise.
     """
     if arm not in ARM_CONFIGS:
         raise NotImplementedError(
@@ -398,7 +411,7 @@ def run_seed(arm: str, seed: int, steps: int, model_name: str = MODEL, gpu: int 
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
-    return {"metrics": metrics, "records_sample": records[:64]}
+    return {"metrics": metrics, **record_windows(records, max_records)}
 
 
 # === CLI ===
@@ -415,14 +428,16 @@ def main(argv=None):
                    help="Index GPU (CUDA_VISIBLE_DEVICES, defaut 0 = 1er GPU visible)")
     p.add_argument("--out", required=True, help="Chemin de sortie JSON (artefact agrege)")
     p.add_argument("--max-records", type=int, default=64,
-                   help="Nombre max de records par seed dans l'artefact (defaut 64)")
+                   help="Taille de chaque fenetre d'echantillon (tete et queue) par seed "
+                        "dans l'artefact (defaut 64)")
     args = p.parse_args(argv)
 
     seeds = [int(s.strip()) for s in args.seeds.split(",") if s.strip()]
     all_metrics = []
     for seed in seeds:
         print(f"\n[ict25_arms] === arm={args.arm} seed={seed} steps={args.steps} ===", flush=True)
-        out = run_seed(args.arm, seed, args.steps, args.model, args.gpu)
+        out = run_seed(args.arm, seed, args.steps, args.model, args.gpu,
+                       max_records=args.max_records)
         all_metrics.append(out)
         print(f"[ict25_arms]   metrics: {out['metrics']}", flush=True)
 
