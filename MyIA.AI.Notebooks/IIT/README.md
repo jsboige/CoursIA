@@ -36,7 +36,7 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 | 6 | [IIT-06-L-Objet-qui-a-Mordu-IIT-Python](IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb) | L'échange Aaronson/Tononi (2014) exécuté : Vandermonde et le hack W en Φ_DM sur F_p, grille/ligne/feedforward en Φ 3.0 (PyPhi), les deux positions citées avec leurs grades | 75-90 min |
 | 7 | [IIT-07-Integration-Par-Coupes-Lean](IIT-07-Integration-Par-Coupes-Lean.ipynb) | Marche 1 de l'escalier Lean du lake `iit_lean` : coupe et motifs (`projT`/`projF`), verdict relationnel `cutIndep`/`decomposable`/`integrated`, `product_decomposable` instancié sur un système concret, la butée du broadcast | 45-60 min |
 | 8 | [IIT-08-Parite-De-Bout-En-Bout-Lean](IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb) | Marche 2 de l'escalier Lean du lake `iit_lean` : la parité comme outil calculé (récurrence tête + queue, cas `n = 0`), les faits tout-faux / tout-vrai généralisés par les lemmes du lake, le bit unique et l'état constant — puis le système `broadcast` et ses orbites sur les 8 états de n = 3 (point fixe en un pas) | 45-60 min |
-| 8b | [IIT-08b-Parite-et-Broadcast-Lean](IIT-08b-Parite-et-Broadcast-Lean.ipynb) | Marche 2 de l'escalier Lean du lake `iit_lean` : l'outil `parity`, le système `broadcast`, oracle d'orbites par énumération (point fixe en au plus deux pas), théorème B (`broadcast_integrated`) et théorème C (`broadcast_two_cycle`) — le couple qui a mordu IIT | 45-60 min |
+| 8b | [IIT-08b-Parite-et-Broadcast-Lean](IIT-08b-Parite-et-Broadcast-Lean.ipynb) | **Variante optionnelle de la marche 2**, hors du parcours linéaire : c'est elle qui porte les théorèmes — l'outil `parity`, le système `broadcast`, oracle d'orbites par énumération (point fixe en au plus deux pas), théorème B (`broadcast_integrated`) et théorème C (`broadcast_two_cycle`) — le couple qui a mordu IIT | 45-60 min |
 | 9 | [IIT-09-Capstone-Integre-et-Trivial-Lean](IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb) | Marche 3, capstone de l'escalier Lean du lake `iit_lean` : le défaut cardinal mesuré par énumération (2 pour le broadcast, 0 pour l'identité), le mécanisme du théorème B compté sur les 8 états, le couple B + C réuni en théorèmes, et la mise en regard bornée avec les Φ de IIT-06-L — le grade honnête du proxy | 45-60 min |
 
 ## Parcours recommandés
@@ -66,11 +66,12 @@ Notebook 7 (La coupe et le verdict — Lean)
 Notebook 8 (La parité, de bout en bout — Lean)
     |
     v
-Notebook 8b (Parité et broadcast — Lean)
-    |
-    v
 Notebook 9 (Le capstone — intégré pour toute coupe, trivial en deux pas)
 ```
+
+Le parcours linéaire va donc 7 → 8 → 9. **Notebook 8b n'en fait pas partie** : c'est une
+variante optionnelle de la marche 2, qui porte les théorèmes B et C. Il se lit à la place de 8
+pour qui veut le couple énoncé formellement, et ne s'intercale pas entre 8 et 9.
 
 | Objectif | Parcours |
 |----------|----------|
@@ -82,8 +83,8 @@ Notebook 9 (Le capstone — intégré pour toute coupe, trivial en deux pas)
 | Focus théories rivales | Notebook 1 + Notebook 5 (six lentilles, contre-claims exécutés) |
 | Focus controverse fondatrice | Notebook 1 + Notebook 6 (l'objection Aaronson exécutée, la réponse assumée mesurée) |
 | Focus moitié formelle | Notebook 6 puis 7 (l'objection Aaronson : mesurée en Φ_DM/PyPhi, puis énoncée en Lean — première marche de l'escalier du lake `iit_lean`) |
-| Focus le couple qui a mordu IIT | Notebook 7 puis 8b (la coupe et le verdict, puis le broadcast : B intégré pour toute coupe + C à dynamique triviale, l'artefact du proxy mis en équation) |
-| Focus escalier Lean complet | Notebook 7 puis 8 (ou 8b), puis 9 — les trois marches assemblées : le verdict, l'outil parité et son système, puis le capstone qui mesure le défaut cardinal et réunit B et C |
+| Focus le couple qui a mordu IIT | Notebook 7 puis 8b — la variante qui porte les théorèmes (la coupe et le verdict, puis le broadcast : B intégré pour toute coupe + C à dynamique triviale, l'artefact du proxy mis en équation) |
+| Focus escalier Lean complet | Notebook 7 puis 8, puis 9 — les trois marches assemblées : le verdict, l'outil parité et son système, puis le capstone qui mesure le défaut cardinal et réunit B et C. 8b peut tenir la place de 8 (variante optionnelle) sans changer la suite |
 
 ### Parcours d'apprentissage
 
@@ -298,7 +299,7 @@ Marche 2 de l'escalier du lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.m
 
 ### IIT-08b-Parite-et-Broadcast-Lean.ipynb
 
-Marche 2 de l'escalier du lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.md) (issue #20649, moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
+Variante optionnelle de la marche 2 de l'escalier du lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.md) (issue #20649, moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib. Elle porte les théorèmes B et C, là où le carnet 8 prépare le système et ses orbites ; elle se lit à la place de 8, jamais entre 8 et 9.
 
 | Section | Contenu |
 |---------|---------|
