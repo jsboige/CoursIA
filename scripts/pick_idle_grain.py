@@ -4633,8 +4633,17 @@ def _nits_blocking_entries(n: int) -> dict | None:
         raise
     except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
         return None
+    # #21882/#21964 : l'organe a son budget de passe epuise -- ce n'est PAS
+    # « evaluee, claire ». Projeter {blocking, blocked} seulement perdait le
+    # marqueur, et `elif not info["blocked"]` en dessous fabriquait un 0
+    # autoritaire qui figeait le tirage de toute la flotte : propager
+    # `budget_exhausted` et rendre None (fail-closed, comme la panne d'organe
+    # ci-dessus), jamais un 0.
+    if result.get("budget_exhausted"):
+        return None
     return {"blocking": result.get("blocking") or [],
-            "blocked": bool(result.get("blocked"))}
+            "blocked": bool(result.get("blocked")),
+            "budget_exhausted": bool(result.get("budget_exhausted"))}
 
 
 def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:

@@ -418,6 +418,21 @@ def test_unaddressed_review_points_leaves_an_unreadable_pr_absent(monkeypatch):
     assert pig.unaddressed_review_points([18829]) == {}
 
 
+def test_unaddressed_review_points_budget_exhausted_is_absent_not_zero(monkeypatch):
+    """#21882/#21964 : une passe a budget epuise rend la PR ABSENTE, jamais un
+    0 « evaluee claire ». Le marqueur `budget_exhausted` du dict `analyse_pr`
+    doit propager ici et basculer en None (fail-closed) : sinon le 0 autoritaire
+    de `elif not info["blocked"]` figeait le tirage de toute la flotte."""
+    import check_unaddressed_nits
+    monkeypatch.setattr(
+        check_unaddressed_nits, "analyse_pr",
+        lambda n: {"pr": n, "blocked": False, "blocking": [],
+                   "unevaluated": [], "unevaluated_total": 0,
+                   "budget_exhausted": True},
+    )
+    assert pig.unaddressed_review_points([18829]) == {}
+
+
 def test_failing_required_check_is_a_red_and_names_the_advisory_as_diagnostic():
     state = _state(checks=[
         ("PR gate", "FAILURE", True),
