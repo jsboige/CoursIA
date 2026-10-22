@@ -41,6 +41,23 @@
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical"
     },
     {
+      "kind": "independent_chain",
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API",
+      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API"
+    },
+    {
+      "kind": "link_404",
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/Adversarial/App-12b-ConnectFour.ipynb",
+      "target": "App-14c-ConnectFour-CSharp.ipynb",
+      "text": "Jumeau C# : App-14c →"
+    },
+    {
+      "kind": "link_404",
+      "notebook": "MyIA.AI.Notebooks/Search/Applications/Adversarial/App-12b-ConnectFour.ipynb",
+      "target": "App-14c-ConnectFour-CSharp.ipynb",
+      "text": "Jumeau C# : App-14c →"
+    },
+    {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-02-NormalForm-Part2-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
@@ -87,32 +104,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames-Lean-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06d-Sympathie-vs-Engagement-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Lean.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06h-Transparent-Institutions-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -173,16 +170,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -299,26 +286,6 @@
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-8-Lecture-Analytique.ipynb",
       "series": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python_en.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python_en.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python_en.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python_en.ipynb",
-      "series": "MyIA.AI.Notebooks/GenAI/FineTuning"
     },
     {
       "kind": "orphan_entry",
@@ -1037,16 +1004,6 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-12c-ConnectFour.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Search"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb",
-      "series": "MyIA.AI.Notebooks/Search/Applications/Search"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-01-StateSpace-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part1-Foundations"
     },
@@ -1595,6 +1552,10 @@
       "notebooks": 3
     },
     {
+      "series": "MyIA.AI.Notebooks/GenAI/FineTuning",
+      "notebooks": 14
+    },
+    {
       "series": "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration",
       "notebooks": 4
     },
@@ -1664,7 +1625,7 @@
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS",
-      "notebooks": 3
+      "notebooks": 4
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO",
@@ -1676,15 +1637,11 @@
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced",
-      "notebooks": 6
+      "notebooks": 7
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic",
       "notebooks": 4
-    },
-    {
-      "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API",
-      "notebooks": 29
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation",

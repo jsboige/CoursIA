@@ -17,7 +17,7 @@ Le projet consolide l'article de recherche QuantConnect [#19465](https://www.qua
 
 **Mécanisme** : le même outil que le régime principal (`MarkovRegression`, `k_regimes=2`) est ajusté sur l'historique glissant de l'indice Fear & Greed, et l'exposition SPY est **réduite de moitié** quand le régime SPY demande du risque mais que le régime de l'indice est dans son état « greedy » (le reste demeure en cash — jamais en TLT, qui mélangerait deux signaux de régime). Le régime « greedy » est identifié par sa **moyenne ajustée** plus élevée, jamais par un numéro de régime codé en dur, pour qu'un renumérotage entre ajustements ne puisse pas inverser silencieusement le filtre.
 
-**Dataset** : `FearGreedIndex`, exposé par le wildcard `AlgorithmImports` (aucun import explicite), ticker `"FG"`. Sonde de disponibilité mesurée sur QC Cloud le 2026-09-11 : ≥ 2500 lignes quotidiennes livrées jusqu'à déc. 2025, couverture depuis juillet 2014, non gated.
+**Dataset** : `FearGreedIndex`, exposé par le wildcard `AlgorithmImports` (aucun import explicite), ticker `"FG"`. Sonde de disponibilité mesurée sur QC Cloud le 2026-09-11 : historique quotidien livré jusqu'à déc. 2025, couverture depuis juillet 2014, non gated.
 
 **Seeds** : le balayage de seeds de l'article (30-50) n'a pas d'objet ici — l'article tirait des trades aléatoires, alors que cette stratégie est un arbitrage mensuel déterministe dont l'ajustement `MarkovRegression` ne dépend d'aucune graine. La robustesse est donc testée par **sous-périodes de marché** à la place.
 
