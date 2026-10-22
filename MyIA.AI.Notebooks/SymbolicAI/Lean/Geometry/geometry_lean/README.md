@@ -13,6 +13,7 @@ du programme gradué #17544 (« que garantit "prouvé par Gröbner" ? »).
 | `Geometry.MidpointHypotenuse` | Théorème du milieu de l'hypoténuse : équidistance du milieu aux trois sommets, rayon = hypoténuse/2 | `Geometry-01-From-Figure-To-Equation.ipynb` (fil rouge) |
 | `Geometry.FromFigureToEquation` | La traduction figure → équations : encodage 6 variables, `C₂ ≡ 0`, famille paramétrique des triangles rectangles, témoin négatif (`C′ + AC² − H = 0`), tirage biaisé, instance de Schwartz–Zippel (`4s+1` zéros, borne `d/\|S\|`) | `Geometry-01-From-Figure-To-Equation.ipynb` (protocole numérique) |
 | `Geometry.WuMethod` | Ce que le test de Wu garantit : certificat idéal T1 (milieu de l'hypoténuse, `MvPolynomial`), théorème de Ceva T3 par identité maîtresse (deux directions), témoin négatif et piège des rapports dirigés réfutés | `Geometry-03-Wu-Method-Python.ipynb` |
+| `Geometry.GroebnerBridge` | Ce que « prouvé par Gröbner » garantit : `C1 = 1 • H` (quotient 1, appartenance `Ideal.span`), trois équidistances dont une identiquement nulle, isocélité réfutée (3-4-5), théorème faux du §6 réfuté (`B = A`), identité maîtresse de Ritt et encodage Rabinowitsch en sept variables (`Submodule.mem_span_triple`) | `Geometry-02-From-Equation-To-Proof.ipynb` |
 
 L'escalier d'entrée de la sous-série — [`Lean-38-Capstone-Geometry-Lean-Python.ipynb`](../../Lean-38-Capstone-Geometry-Lean-Python.ipynb), carnet de la série parente — est le consommateur pédagogique de ce premier module : il part de la figure du 01, calcule avec `sympy`, puis monte jusqu'à la preuve formelle ci-dessus.
 
@@ -31,8 +32,5 @@ sur chaque PR touchant le lac.
 
 ## Feuille de route
 
-- Companion du 02 (bases de Gröbner) : interroger ce que Mathlib sait des
-  idéaux et de l'appartenance (`Ideal` membership) — c'est précisément la
-  question pédagogique de la position 05.
 - Notebook escalier d'entrée (volet C de #18601) : figure du 01 → calcul
   sympy → montée Lean pas à pas jusqu'au premier théorème du lac.
