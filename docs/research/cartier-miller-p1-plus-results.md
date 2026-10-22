@@ -198,6 +198,16 @@ Tranche Python-only **PASS** : 92 premiers dérivés, 10809 stopping indices cal
 - Build : mêmes flags que `run_windows.py` (`-O3 -std=c++17 -pthread -I<ucrt64>/include -L<ucrt64>/lib`), sources = `harvey_adapter.cpp` + `upstream/recurrences_ntl.cpp` + `upstream/hypellfrob.cpp` **vendorisées au pin `37a9b72`** (aucun accès `/opt/sage` requis — le dépôt embarque les deux sources Sage hypellfrob avec leur provenance). Binaire 288 127 octets, SHA-256 `2ce5d768b430102c5efff804d08e3048be69066a746a240ce257b927668357cb` (consigné dans le JSON).
 - **Piège reproductibilité (muet)** : sans `ucrt64/bin` dans le `PATH`, `cc1plus` meurt au chargement de ses DLL (libgmp/libmpfr/libisl) **sans écrire un seul octet d'erreur** — le driver g++ rend rc=1 silencieux, y compris sur erreur de syntaxe triviale. Le diagnostic passe par l'export du PATH avant tout appel.
 
+#### 7.1.1 Ce que l'empreinte du binaire ancre, et ce qu'elle n'ancre pas
+
+Le binaire n'est **pas** committé : il est construit localement, hors dépôt. La SHA-256 consignée n'est donc pas re-dérivable depuis le seul arbre Git — elle sert d'**ancre de comparaison** pour l'artefact exact qui a produit le JSON, pas d'une preuve de reproductibilité au bit près. Ce que la chaîne permet effectivement de refaire :
+
+1. **Reconstruire fonctionnellement** depuis les sources vendorisées au pin `37a9b72`, avec la commande exacte consignée ci-dessus — `build.sh` du dépôt amont émet en outre `bin/build_metadata.json` (version compilateur, commande, horodatage UTC), garde de reproductibilité que cette passe a reproduite à la main.
+2. **Comparer l'empreinte** : `sha256sum harvey_adapter.exe` doit rendre `2ce5d768b430102c5efff804d08e3048be69066a746a240ce257b927668357cb` et `stat -c %s` rendre 288 127 octets. Re-mesuré firsthand sur le siège de build **le 2026-10-22** : identique au chiffre du JSON.
+3. **Rejouer la validation** si l'empreinte diffère : `run_harvey_p1_plus.py` recroise les 10 809 stopping indices contre les récurrences Python indépendantes ; c'est cette croisée comportementale, et non l'empreinte, qui porte le résultat.
+
+Une reconstruction avec un autre jeu de correctifs GCC/MSYS2 ne sera **pas** bit-identique — c'est la raison pour laquelle l'empreinte est présentée comme une ancre et non comme un critère de reproduction.
+
 ### 7.2 Résultats (`example_results/p1_plus_harvey_validation.json`, driver `scripts/cartier_miller/run_harvey_p1_plus.py`)
 
 | Critère | Attendu (upstream) | Mesuré | Verdict |
