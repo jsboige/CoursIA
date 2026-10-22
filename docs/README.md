@@ -2,6 +2,8 @@
 
 Ce répertoire centralise la documentation projet déportée du CLAUDE.md. Chaque fichier documente un aspect précis du projet CoursIA (infrastructure, procédures, règles, état des séries).
 
+**Où chercher** : le **pérenne** vit dans les foyers thématiques (`reference/`, `cadrage/`, `lean/`, `genai/`, …) ; le **transient** — rapports, audits et instantanés datés — vit dans [`transients/`](transients/README.md), daté et figé ; `archive/` est un stock à résorber, jamais une destination. **Critère transient / pérenne** (#19283) : est *transient* un document dont la valeur meurt avec son contexte (suivi de chantier terminé, état daté, compte rendu) ; est *pérenne* un document qu'un lecteur d'ici un an ouvre encore pour comprendre le dépôt — y compris l'**état vivant d'une série**, tenu à jour au fil des livraisons. Un document qui doit évoluer est pérenne : il change de foyer, jamais de contrat.
+
 ## Racine (docs/)
 
 Fichiers présents directement à la racine du répertoire `docs/`. Triage initial #7422 (c.805, po-2024 — audité par lecture disque + cross-check liens).
@@ -38,6 +40,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/student-pr-template.md](reference/student-pr-template.md) | Template PR étudiante |
 | [reference/readme-series-gabarit.md](reference/readme-series-gabarit.md) | Gabarit de référence des READMEs de séries (#2651) |
 | [reference/finition-de-serie.md](reference/finition-de-serie.md) | Critères de sortie du régime de finition de série (#19297) |
+| [reference/iit-ict-transition.md](reference/iit-ict-transition.md) | Transition IIT → ICT — état narratif et architectural de la série ICT-Series (#4588, plan de partition #5081), tenue à jour au fil des livraisons ; reclassée pérenne depuis `suivis/` (tranche 2 #19283) |
 | [reference/agentic-engines-deep-eval.md](reference/agentic-engines-deep-eval.md) | Évaluation en profondeur des moteurs agentiques (Semantic Kernel, Google ADK, Microsoft Agent Framework) sur la série DataScienceWithAgents — couverture réelle du corpus, pilotes reproductibles, faits d'API mesurés |
 
 ### Règles détaillées (docs/reference/)
@@ -117,6 +120,8 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [genai/audio-attack-guard.md](genai/audio-attack-guard.md) | Garde d'attaque par chunk — détection positionnelle de l'onset-drop et re-roll ciblé (#19739) — l'organe, son plan de re-roll et leur mesure sur corpus réel |
 | [genai/audio-bakeoff-bank.md](genai/audio-bakeoff-bank.md) | Format de banc bakeoff audio (schema v1 : `bank_schema_v1.json`, `bake_append.py`, `bake_report.py`, `test_bake_bank.py`) — référence pour les comparaisons inter-modèles ASR/TTS/prosodie (#19695) |
 | [genai/decision-models.md](genai/decision-models.md) | Modèles de décision — relevé et shortlist |
+| [genai/decision-models-local-verification.md](genai/decision-models-local-verification.md) | Vérification locale du Decision Index — mesure sur carte 8 Go, obstacle de données (charges utiles non publiées) et limites (#21910) |
+| [genai/dm-jepa-local-validation.md](genai/dm-jepa-local-validation.md) | Validation locale du moteur DM-JEPA 1.7 — rang contre tri aléatoire, entrées adverses, latence et findings de l'artefact (#21997) |
 | [genai/model-mapping-openai.md](genai/model-mapping-openai.md) | Mapping des modèles OpenAI — génération courante |
 | [genai/model-mapping.md](genai/model-mapping.md) | Inventaire et table de correspondance — modèles GenAI/OpenAI |
 | [genai/vibe-coding-workspace-map.md](genai/vibe-coding-workspace-map.md) | Vibe-Coding — Carte des workspaces GenAI |
@@ -159,11 +164,13 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/junctions-scan-po-2024.md](lean/junctions-scan-po-2024.md) | Junctions Mathlib — scan po-2024 : 22 jonctions vivantes vers un store VIDE |
 | [lean/junctions-scan-po-2027-CoursIA2.md](lean/junctions-scan-po-2027-CoursIA2.md) | Mathlib NTFS Junctions — Scan po-2027 |
 | [lean/junctions-scan-po-2027.md](lean/junctions-scan-po-2027.md) | Junctions Mathlib — scan po-2027 |
+| [lean/junctions-apply-po-2027-c1731.md](lean/junctions-apply-po-2027-c1731.md) | Apply V5 Mathlib NTFS junctions po-2027 (c.1731) — donneur knot_lean, 7 PERIMEE re-pointées vers db584cd6, anti-régression `distinct_code_sorry` 12→12 |
 | [lean/knot-4.33-investigation.md](lean/knot-4.33-investigation.md) | Lean 4 — knot_lean 4.33.0 bloquée par synthèse Decidable |
 | [lean/l750-pivot-scope-discipline.md](lean/l750-pivot-scope-discipline.md) | L750 ★★ — Pivot Lean specialist, discipline de scope, remédiation OOM |
 | [lean/life-components-schema.md](lean/life-components-schema.md) | Schéma de motifs et de réactions de Game of Life — tranches 1-4 de #15635 |
 | [lean/origami-reconnaissance.md](lean/origami-reconnaissance.md) | Origami géométrie différentielle — Pli 1 reconnaissance |
 | [lean/18430-volet-b-leandojo-v2-bench.md](lean/18430-volet-b-leandojo-v2-bench.md) | Volet B #18430 — banc comparatif LeanDojo-v2 (Pantograph) vs harnais maison, rung 52 CONWAY, écarts de protocole mesurés |
+| [lean/darksnail/pli1-2-occlusion-triad-verif.md](lean/darksnail/pli1-2-occlusion-triad-verif.md) | Pli 1.2 — vérification first-hand d'OcclusionTriad.lean (verdict INSUFFICISANT, #21310) |
 
 > Note : `lean/stable_marriage_intractable_diagnosis.md` a été déplacé vers [archive/lean-intractable-diagnosis/stable-marriage.md](archive/lean-intractable-diagnosis/stable-marriage.md) (archivé c.696).
 
@@ -216,6 +223,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/inoculation-rl-experimental-conditions.md](ict/inoculation-rl-experimental-conditions.md) | Distillation des conditions expérimentales de l'*Inoculation Prompting* (Anthropic, arXiv 2511.18397) confrontée au protocole ICT-25 — source canonique citée et vérifiée en HTML |
 | [ict/strates-as-adjunctions-prototype.md](ict/strates-as-adjunctions-prototype.md) | Prototype **grade C** : les strates ICT comme adjonctions — conjecture du jalon 3 de #8182 (TOE ↔ conscience), explicitement non démontrée |
 | [ict/butlin-indicators-pre-enregistrement.md](ict/butlin-indicators-pre-enregistrement.md) | Case 19 — le mot « using » de RPT-1 (Butlin et al. 2023) : protocole scellé avant écriture du banc, dissociation procédurale entre inspection structurelle et sonde causale |
+| [ict/assembly-theory-pre-enregistrement.md](ict/assembly-theory-pre-enregistrement.md) | Case 20 — l'assembly index mesuré (Sharma et al. 2023) contre la lecture « compression LZ » (Abrahão et al. 2024) : solveur exact à deux implémentations, échelle périodique certifiée `ai = log2 n`, règle de décision scellée par pentes |
 
 ## Curriculum (docs/curriculum/)
 
@@ -358,14 +366,6 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/18493-counter-scan-classification.md](ledgers/18493-counter-scan-classification.md) | Issue #18493 — Scan des compteurs littéraux dans commentaires code |
 | [ledgers/18741-qualification-14-notebooks.md](ledgers/18741-qualification-14-notebooks.md) | Qualification des notebooks GenAI sous le seuil du compteur canonique |
 
-## Suivis de cycle (docs/suivis/)
-
-Notes de suivi de cycle par série (transitions architecturales et narratives).
-
-| Fichier | Description |
-|---------|-------------|
-| [suivis/iit-ict-transition.md](suivis/iit-ict-transition.md) | Transition IIT → ICT, pivot série ICT-Series (#4588, #5081) |
-
 ## Coordination runtime (docs/coordination/)
 
 Protocoles opérationnels de la coordination flotte (registres, tenanciers, liaisons cross-machine).
@@ -398,6 +398,7 @@ Migration par tranches close (#17525) : Grothendieck lens et Leiden position (tr
 | Fichier | Description |
 |---------|-------------|
 | [harness/global-rules-detail.md](harness/global-rules-detail.md) | **Stub de redirection** : le détail des règles globales machine vit désormais dans `roo-extensions`, à côté du harnais global dont il porte le détail. Le fichier reste ici parce qu'il est cité depuis le `~/.claude/CLAUDE.md` **global** — un lien entrant qu'aucun parcours limité à ce dépôt ne peut voir |
+| [harness/backup-plan.md](harness/backup-plan.md) | Plan de sauvegarde des données **hors git** du workspace `CoursIA-2` — familles, canal, cadence, rétention et tests de restauration datés ([jsboige/Maintenance#126](https://github.com/jsboige/Maintenance/issues/126)) |
 
 ## ML (docs/ml/)
 
@@ -459,7 +460,7 @@ Critère de classement (#19283), opposable pour tout nouveau fichier : est **tra
 |---|---|
 | Une règle, une procédure, une référence durable | les foyers thématiques (`reference/`, `lean/`, `genai/`, `qc/`, `ci/`, `curriculum/`, …) |
 | Le positionnement du dépôt face à un texte externe | `cadrage/` (index par communauté interlocutrice) |
-| L'état d'un chantier à une date donnée | `transients/` (en-tête gelé, convention #14623) ou `suivis/` (transitions de série) |
+| L'état d'un chantier à une date donnée | `transients/` (en-tête gelé, convention #14623) |
 | Un document inactif, remplacé ou périmé | `archive/` (figée à dessein, jamais purge) |
 
 ## Carte rapide
@@ -483,7 +484,6 @@ docs/
   ict/               Synthèses transversales IIT → ICT (#4588)
                      + pré-enregistrements grade T (protocoles scellés avant mesure)
   ledgers/           Ledgers d'audit cumulatifs par Epic (#3801, #10466, #10678, #11690, #12204)
-  suivis/            Suivis de cycle (transitions de série)
   transients/        Rapports transients datés (en-tête gelé) — convention + organe (#14623)
   cadrage/           Documents épistémiques de cadrage — index par communauté interlocutrice (#17525)
   PARCOURS.md        Schéma maturité 3 axes (éditorial / reproductibilité / revue) — #8051

@@ -38,7 +38,6 @@ name: arXiv attributions guard
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'arxiv_attributions_registry.yaml'
       - 'scripts/check_arxiv_attributions.py'
