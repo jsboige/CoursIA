@@ -256,8 +256,15 @@ class TestPublicSurface:
         )
 
     def test_bonferroni_dm_n_capped_at_one(self):
+        # Same-distribution errors: p stays large (0.690748 at seed 8), so
+        # p * 10_000 >> 1 and the min(..., 1.0) cap is what produces the 1.0.
+        # The previous inputs (sigma 0.1 vs 2.0) gave p = 5.9e-22: the cap
+        # never bound and `<= 1.0` passed trivially (adjoint dossier, #21989).
         rng2 = np.random.default_rng(8)
-        model = rng2.standard_normal(200) * 0.1
-        base = rng2.standard_normal(200) * 2.0
+        model = rng2.standard_normal(200)
+        base = rng2.standard_normal(200)
         result = bonferroni_dm(model, base, n_tests=10_000)
-        assert result["p_value_adjusted"] <= 1.0
+        assert result["p_value"] < 1.0
+        assert result["p_value"] * 10_000 > 1.0
+        assert result["p_value_adjusted"] == 1.0
+        assert not result["significant_05_bonferroni"]
