@@ -1941,3 +1941,73 @@ def test_check_claims_unreadable_batch_falls_back_per_issue(monkeypatch):
     assert all(v[0] == pig.CLAIM_CODE_FREE for v in verdicts.values())
     # 1 batch + 2 relectures mono-issue.
     assert len(calls) == 3
+
+
+# --- #19969 : la banniere d'epuisement du budget reste IMPRIMEE -------------
+#
+# L'issue demande que « la mesure ne doit pas devenir silencieuse en se
+# repariant » : quand le budget de sondes de livraison tombe, la lane doit
+# lire que les candidats au-dela n'ont PAS ete verifies. Le texte est donc
+# un contrat, verifie ici SANS reseau (appeler `main()` de bout en bout
+# payerait une minute de `gh` pour verifier trois lignes de `print`).
+
+
+def test_belt_budget_banner_is_printed_when_the_budget_is_exhausted(capsys):
+    """Le fail-OPEN du budget est assume, son SILENCE ne l'est pas."""
+    pig.print_belt_budget_report(True)
+    out = capsys.readouterr().out
+    assert "Plafond de sondes de livraison atteint" in out
+    assert "fail-OPEN" in out
+    assert "check_unaddressed_nits" in out
+
+
+def test_belt_budget_banner_is_silent_when_the_budget_is_not_exhausted(capsys):
+    """Pas de budget epuise = pas de banniere : une alerte permanente
+    serait lue comme un etat du depot, pas comme un etat du tirage."""
+    pig.print_belt_budget_report(False)
+    assert capsys.readouterr().out == ""
+
+
+def test_belt_delivery_probe_cost_is_bounded_by_the_budget():
+    """#19969, critere 3 : le cout en requetes du tirage est borne par le
+    budget de sondes -- une requete `gh issue view --json comments` par
+    candidat sonde. La mesure joue la valeur d'AVANT (fenetre seule = 8)
+    et celle d'apres (fenetre * 3 + 12 = 36) sur le MEME pool : la
+    difference de requetes est exactement l'ecart de plafond.
+
+    C'est le cout assume du correctif de #19977 : +28 requetes au pire sur
+    un tirage charge, pour ne plus servir un candidat livre comme un grain
+    neuf. Le second terme du cout -- le filtre de marqueur recent, une
+    requete par candidat, HORS budget -- est inchange par ce correctif."""
+    delivered = set(range(19200, 19230))          # 30 livres, fenetre de 8
+    items = [_make_item(n, age_days=200 - i, idle=2, last=None)
+             for i, n in enumerate(sorted(delivered, reverse=True))]
+    pool = items
+
+    def run_with(budget):
+        calls = []
+
+        def probe(n, lane=None):
+            calls.append(n)
+            return n in delivered
+
+        picks, _, state = pig.belt_pick_with_replacements(
+            list(pool), _free_claims(pool), _belt_args(grains=40),
+            probe_budget=budget, delivered_probe=probe,
+            merged_pr_probe=lambda n, lane=None: False)
+        return len(calls), len(picks), state
+
+    old_calls, old_picks, old_state = run_with(8)
+    new_calls, new_picks, new_state = run_with(pig.belt_probe_budget(8))
+
+    # Une requete par candidat sonde, dans les deux cas.
+    assert old_calls == 8
+    assert new_calls == 30
+    # Budget d'AVANT : 22 livres servis en fail-OPEN (le contrat), et
+    # l'epuisement REPORTE -- la banniere l'annonce.
+    assert old_state["budget_hit"] is True
+    assert old_picks == 22
+    # Budget aligne : 30 sondes suffisent, aucun livre servi, aucun
+    # epuisement.
+    assert new_state["budget_hit"] is False
+    assert new_picks == 0
