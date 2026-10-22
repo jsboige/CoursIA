@@ -17,6 +17,16 @@ python scripts/lean/axiom_coverage.py --json     # pour dossier/CI
 
 Elle vérifie de surcroît que chaque module **explicitement** nommé existe sur disque (notation pointée du manifeste ↔ chemin `.lean`) — un `WIRED-DEAD` dénonce un vert hors-cible (cas #8782). L'état vivant est celui de la commande (le compte des wired/bare dérive à chaque câblage, il ne se recopie pas en prose — #9377) ; au 2026-09-27 il était de **2 wired** (`gametheory` à liste explicite vérifiée sur disque, `serre100` passe-partout `*`) et **18 bare** — gap de naissance constaté par #17097, câblage progressif suivi par #18038. Le triage statique §2-3 ci-dessous date de la pré-matrice (22 lakes sur disque, grep-firsthand) et reste valable comme exposition *par lake* ; la colonne « câblé » qu'il portait est supplantée par la commande.
 
+### 0.1 Câblage tranche par tranche (critère 2 de #18038)
+
+Une PR par lake. Chaque tranche rend le verdict **de son** lake ; un lake laissé nu doit porter une décision écrite (§critère 3).
+
+**`finiteness_lean` — câblé.** Le lake porte quatre fichiers `.lean` (`Finiteness.lean` + `Finiteness/`, plus le frère `.en`) ; mesure grep-firsthand sur `origin/main` : **0 `native_decide`, 0 `sorry`, 0 mention `Classical.choice`**. Verdict : **vert sans whitelist ni `allow-axioms`**, lu sur la PR de câblage.
+
+**Où le verdict se lit — et l'endroit où on le cherche en vain.** Sur un lake **matriciel**, la passe d'axiomes n'est pas un check-run : c'est une **étape** du job `lean-matrix / Lean CI (<lake>)` (`lean-build.yml`, composite `lean-axiom`, gardée par `if: matrix.axiom-target-modules != ''`). Chercher un check-run nommé `Proof integrity` ne rend rien et laisse croire à un gate absent. Les workflows mono-lake (`lean-knot.yml`, `lean-galois.yml`, …) ont eux un vrai job `proof-integrity` ; les deux formes coexistent, et c'est le nom du lake dans le manifeste qui décide laquelle s'applique.
+
+Un rouge éventuel part en **issue nommée** plutôt qu'en whitelist.
+
 ## 1. Portée et méthode
 
 **Axiomes cibles** (ce que `LeanVerifier.check_axioms` flagge désormais comme `forbidden` après le fix parser multiline #8740) :

@@ -7311,3 +7311,44 @@ def test_19810_no_regression_on_existing_crlf_positive_verdict():
     court-circuite le CRLF proxy."""
     body = "**Verdict** : OK (post-rebase, 11/11 CI).\r\nDecision ai-01 REQUISE : merge."
     assert mod.classify("jsboige", body) is None
+
+
+# ---------------------------------------------------------------------------
+# #21882 (Option C) : budget de temps de passe nits
+# ---------------------------------------------------------------------------
+
+def test_21882_budget_arms_on_first_call():
+    """Premier appel : arme la deadline (now + budget), ne rend pas « exhauste ».
+    L'armement est idempotent (une deadline deja posee n'est pas sur-ecrite)."""
+    import time
+    mod._NITS_PASS_DEADLINE = None
+    try:
+        assert mod._nits_budget_exhausted() is False
+        assert mod._NITS_PASS_DEADLINE is not None
+        assert mod._NITS_PASS_DEADLINE >= time.monotonic()
+    finally:
+        mod._NITS_PASS_DEADLINE = None
+
+
+def test_21882_gh_json_raises_when_past_deadline(monkeypatch):
+    """Deadline forcee dans le passe : gh_json leve NitsBudgetExhausted AVANT
+    de lancer le sous-processus (aucun appel reseau)."""
+    import time
+    monkeypatch.setattr(mod, "_NITS_PASS_DEADLINE", time.monotonic() - 1.0)
+    with pytest.raises(mod.NitsBudgetExhausted):
+        mod.gh_json(["pr", "view", "1"])
+
+
+def test_21882_analyse_pr_rend_absent_quand_budget_depasse(monkeypatch):
+    """La PR non evaluee est rendue ABSENTE (non evaluee, #18829) : blocked faux,
+    aucun point. Le picker la lit comme absente (.get('blocking')/['blocked']).
+    Jamais un verdict « claire » fabrique a partir d'un budget depasse."""
+    import time
+    monkeypatch.setattr(mod, "_NITS_PASS_DEADLINE", time.monotonic() - 1.0)
+    res = mod.analyse_pr(4242)
+    assert res == {"pr": 4242, "blocked": False, "blocking": [],
+                   "unevaluated": [], "unevaluated_total": 0,
+                   "budget_exhausted": True}
+    # Contrat picker : absente, non bloquee.
+    assert (res.get("blocking") or []) == []
+    assert bool(res.get("blocked")) is False
