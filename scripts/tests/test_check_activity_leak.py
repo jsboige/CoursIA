@@ -140,12 +140,91 @@ class TestPositiveControls(unittest.TestCase):
         self.assertFalse(body.dense, "le H1 ne doit pas propager a tout le carnet")
         self.assertFalse(body.inherited)
 
+    def test_prose_lesson_tags_still_dense(self):
+        """Controle positif du fix #21024 : le renvoi en PROSE reste marque.
+
+        Complement du controle negatif jumeau : le masque ne doit retirer que
+        les ancres de permalien, pas le renvoi nomme aux lecons -- sans ce
+        test, un masque trop large eteindrait le marqueur en silence.
+        """
+        para = (
+            "La lecon L721 sur les trackers perimes et la lecon L898 sur les "
+            "collisions d'ecriture ont ete appliquees ici."
+        )
+        v = judge_passage(0, para)
+        self.assertIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertTrue(v.dense)
+
 
 # ---------------------------------------------------------------------------
 # Controles NEGATIFS : prose pedagogique et faux positifs mesures
 # ---------------------------------------------------------------------------
 
 class TestNegativeControls(unittest.TestCase):
+    def test_permalink_line_anchor_is_not_a_lesson_tag(self):
+        """FP mesure #21024 : sept ancres de permalien comptees comme lecons.
+
+        Table des trois canaux du carnet Aspire-07 (md[24]) : les ancres
+        ``#L171``, ``#L217-L236``, ``#L261``, ``#L309``, ``#L911-L934`` sont
+        des references de ligne dans des URLs GitHub -- le carnet cite sa
+        source par permalien, ce qui est du contenu pedagogique, pas un
+        renvoi aux lecons. Le score entier de la cellule (14) venait d'elles.
+        Mesure du 2026-10-20 : 30 des 65 occurrences du marqueur sur le
+        corpus (1553 carnets) sont des fragments d'URL.
+        """
+        para = (
+            "| Niveau | Canal | Ecriture (2023) | Drainage (2023) |\n"
+            "| **Transport** | `Channel<string>` | [`OobaboogaCompletionBase.cs:99`]"
+            "(https://github.com/MyIntelligenceAgency/semantic-fleet/blob/v0.34.3/"
+            "dotnet/src/Connectors/Connectors.AI.Oobabooga/Completion/"
+            "OobaboogaCompletionBase.cs#L99) | [`:171 ProcessWebSocketMessagesAsync`]"
+            "(https://github.com/MyIntelligenceAgency/semantic-fleet/blob/v0.34.3/"
+            "dotnet/src/Connectors/Connectors.AI.Oobabooga/Completion/"
+            "OobaboogaCompletionBase.cs#L171) |\n"
+            "| **Collecte** | `Channel<ConnectorTest>` | [`:261`]"
+            "(https://github.com/MyIntelligenceAgency/semantic-fleet/blob/v0.34.3/"
+            "dotnet/src/Connectors/Connectors.AI.MultiConnector/MultiTextCompletion.cs#L261) | "
+            "[`:217-236`](https://github.com/MyIntelligenceAgency/semantic-fleet/blob/v0.34.3/"
+            "dotnet/src/Connectors/Connectors.AI.MultiConnector/MultiTextCompletion.cs#L217-L236) |"
+        )
+        v = judge_passage(0, para)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertFalse(v.dense)
+
+    def test_url_fragment_mask_is_context_free_by_design(self):
+        """Calibrage (revue Hermes #21510) : le masque ne regarde pas l'URL.
+
+        ``_URL_FRAGMENT_RE`` s'applique a tout le passage, pas seulement aux
+        URLs. Une prose qui ecrirait « la ligne #L261 du fichier » est donc
+        masquee comme le serait un fragment de permalien, alors que la forme
+        nue ``L261`` y serait comptee. Aucune occurrence de ``#L<n>`` en prose
+        n'est mesuree sur le corpus au 2026-10-20 : c'est un ecart assume, pas
+        un cas observe. Ce test existe pour que le comportement soit lisible
+        avant d'etre decouvert par surprise -- le commentaire du code annoncait
+        « ancre de permalien » alors que le predicat est « toute forme #Lddd ».
+        """
+        prose_anchor = "Voir la ligne #L261 du fichier pour le detail du calcul."
+        v = judge_passage(0, prose_anchor)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+
+        bare = "La lecon L261 et la lecon L740 decrivent le meme piege."
+        v2 = judge_passage(0, bare)
+        self.assertIn("lesson_tag", {n for n, _, _ in v2.markers})
+
+    def test_mask_is_scoped_to_lesson_tag_only(self):
+        """Calibrage (revue Hermes #21510) : les autres marqueurs restent actifs.
+
+        Le masque ne s'applique qu'a ``lesson_tag``. Un ``iso_ts`` place dans
+        une URL absolue continue donc de compter, la ou un ``#Lddd`` de la meme
+        URL serait masque. C'est coherent avec le body de la PR, qui annonce ne
+        toucher aucun autre marqueur ; ce test fige l'hypothese pour qu'une
+        future extension du masque soit un choix explicite et non un effet de
+        bord silencieux.
+        """
+        url_ts = "Voir https://exemple.org/build?ts=2026-10-20T04:03 pour l'horaire."
+        v = judge_passage(0, url_ts)
+        self.assertIn("iso_ts", {n for n, _, _ in v.markers})
+
     def test_course_prose_clean(self):
         para = (
             "Monroe propose une regle proportionnelle stricte ou chaque elu "
@@ -266,16 +345,11 @@ class TestDiffParity(unittest.TestCase):
         base_keys = _markdown_paragraphs_of_blob(head)
         self.assertEqual(keys, base_keys)
 
-    def test_new_file_paragraphs_are_added(self):
-        """Statut A : tous les paragraphes sont legitimement neufs."""
-        added, files, incidents = scan_diff("7a0521584^...7a0521584")
-        self.assertEqual(incidents, [], "un ajout franc ne doit pas etre un incident")
-        self.assertTrue(added, "le commit fondateur ajoute un corrigendum dense")
-        self.assertIn(
-            "MyIA.AI.Notebooks/GameTheory/SocialChoice/"
-            "09-Committees-STV-Monroe-ChamberlinCourant.ipynb",
-            files,
-        )
+    # test_new_file_paragraphs_are_added a migre vers
+    # TestHeadAndRenameHermetic : la tete est lue dans l'arbre de TRAVAIL,
+    # donc un ancrage historique (7a0521584, SC-09 #19372) depend d'un
+    # contenu que l'histoire peut retirer -- #20252 a purge les corrigenda
+    # du carnet et le test est devenu rouge sur main, sans defaut du garde.
 
     def test_broken_base_is_incident_not_refusal(self):
         """Base illisible : INCONNU (rc=2), jamais un refus fantome.
@@ -464,6 +538,34 @@ class TestHeadAndRenameHermetic(unittest.TestCase):
         self.assertEqual(incidents, [])
         self.assertIn("serie/renomme.ipynb", files)
         self.assertTrue(added, "le passage dense ajoute au renommage doit etre juge")
+
+    def test_new_file_paragraphs_are_added(self):
+        """Statut A : tous les paragraphes sont legitimement neufs.
+
+        Autoportant : l'ancrage historique precedent (7a0521584, SC-09
+        #19372) a casse quand #20252 a purge les corrigenda du carnet. La
+        tete etant lue dans l'arbre de TRAVAIL, un fixture historique depend
+        d'un contenu que l'histoire peut retirer -- un commit synthetique
+        mesure la meme propriete sans cette dependance.
+        """
+        Path("serie/neuf.ipynb").write_text(
+            json.dumps({"cells": [
+                {"cell_type": "markdown",
+                 "source": ["Un paragraphe de cours ordinaire sur les coalitions."]},
+                {"cell_type": "markdown",
+                 "source": [
+                     "## Corrigendum c.1209\n\n",
+                     "Dossier de domaine de la lane `myia-po-2024:CoursIA-2` "
+                     "avec verdict `domain: fail` et tete `27d7e0541d`.",
+                 ]},
+            ]}),
+            encoding="utf-8",
+        )
+        self._commit_all(Path.cwd(), "nouveau carnet")
+        added, files, incidents = scan_diff("HEAD^...HEAD")
+        self.assertEqual(incidents, [], "un ajout franc ne doit pas etre un incident")
+        self.assertTrue(added, "le commit fondateur ajoute un corrigendum dense")
+        self.assertIn("serie/neuf.ipynb", files)
 
 
 class TestNotebookScan(unittest.TestCase):

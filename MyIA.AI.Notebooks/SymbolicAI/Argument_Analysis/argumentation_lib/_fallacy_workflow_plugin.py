@@ -62,6 +62,7 @@ from semantic_kernel.contents import (
     FunctionResultContent,
 )
 
+from ._llm_settings import apply_reasoning_none_for_function_tools
 from argumentation_analysis.agents.utils.taxonomy_navigator import TaxonomyNavigator
 from argumentation_analysis.core.plaintext_destination import (
     PlaintextDestinationError,
@@ -357,6 +358,11 @@ class FallacyWorkflowPlugin:
 
         slave_settings = OpenAIPromptExecutionSettings(
             function_choice_behavior=FunctionChoiceBehavior.Auto(auto_invoke=False)
+        )
+        # #20135 : la famille 5.6 exige reasoning_effort explicite pour les
+        # outils de fonction sur /v1/chat/completions (400 sinon).
+        apply_reasoning_none_for_function_tools(
+            slave_settings, getattr(self.llm_service, "ai_model_id", None)
         )
         return slave_kernel, slave_settings
 

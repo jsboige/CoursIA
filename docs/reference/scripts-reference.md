@@ -148,6 +148,7 @@ La migration Plotly-CDN → SVG inline `text/html` (canon ai-01 `svg-6927-canon.
 | `fix_audio_dependencies.py` | Dépendances audio ; `optimize_dvs.py` **archivé** 2026-10-01 (palier 1 #18153) |
 | `learner_preflight.py` | Preflight apprenant #18208 (#18765) : vérifie le profil de parcours (`--parcours local\|dotnet\|genai`, `--json` pour #10921) par paliers — kernels, SDK, GPU, clés (présence seule), services Docker ; rc 0 si le palier courant est prêt |
 | `_alpha_diag.py`, `generate_16e.py` | Diagnostics ponctuels |
+| `knot_diagram.py` | Diagrammes de nœuds 2D depuis un PD-code SnapPy (#21908) : Python pur (numpy + matplotlib), faces par système de rotation + plongement de Tutte + arcs Bezier + halo sur/sous ; substitut portable au rendu POSIX `draw`+`mpost` de Spherogram. Vérification géométrique `geometric_crossings == 0` (37/37 sur Rolfsen ≤ 8 croisements + K11n34/K11n42) |
 
 ## Audit, coûts & fidélité — `scripts/audit/`
 

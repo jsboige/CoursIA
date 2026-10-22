@@ -728,13 +728,23 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # depuis le CSV, 11 cellules code copiees verbatim, 0 orphelin). Rouge mesure
 # a tete constante avant cet enregistrement (1 failed / 34 passed, found 12
 # declared 11), meme classe que #19996/#20392. Total apres fusion : 12 + 1 = 13.
+# 2026-10-18 (#1650 tranche research_archive EN, T4): +1 paire T4 --
+# QuantConnect/partner-course/examples/Crypto-MultiCanal/research_archive_en
+# (35 cellules md EN rendues depuis le CSV, 33 cellules code copiees verbatim,
+# 0 orphelin, 0 fallback ; serie non jugee par le nav-chain, aucune entree
+# baseline requise -- sortie guard byte-identique a main). Total : 13 + 1 = 14.
 # 2026-10-19 (PR #19943, #19898 pli 3 Origami tranches A+B): +1 paire --
 # jumeau _en d'un carnet Lean : SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique_en.
 # Meme classe que #19996/#20392 : la paire est arrivee sur main avec son carnet
 # sans mettre a jour cette ligne, ce qui a rougi test_full_repo_state_passes_parity
 # (found 14, declared 13) sur main pur et sur toute PR path-filtree scripts/**
 # (diagnostic po-2027, dashboard 2026-10-19T06:10Z). Total apres fusion : 13 + 1 = 14.
-EXPECTED_PAIR_COUNT = 14
+# Perimetre declare apres fusion des deux lignees (merge origin/main du 2026-10-20,
+# PR #21296) : main declare 15 paires (dont le jumeau Lean natif
+# ANALYSE-06-Sensibilite-2026-Lean_en ajoute par #19916, bump 14->15 par #21535),
+# et cette branche ajoute une paire de plus -- research_archive_en (QuantConnect,
+# Crypto-MultiCanal). Le compte mesure sur l'arbre fusionne est donc 16.
+EXPECTED_PAIR_COUNT = 16
 
 
 def _collect_parity_failures(repo_root: Path,
