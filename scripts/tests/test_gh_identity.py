@@ -55,12 +55,35 @@ def test_pin_respecte_gh_token_deja_pose(monkeypatch):
     assert gh_identity.resolve_gh_token() == "tok-deja-pose"
 
 
-def test_pin_epingle_le_jeton_resolu(monkeypatch):
+def test_pin_epingle_le_jeton_resolu(monkeypatch, gh_token_env):
+    """Le jeton resolu est epingle dans l'environnement du processus.
+
+    Le fixture `gh_token_env` porte la restauration : `pin_gh_token()` ecrit
+    `os.environ["GH_TOKEN"]` DIRECTEMENT, et le `monkeypatch.delenv` du
+    debut n'a rien enregistre (la variable etait absente) -- l'ecriture
+    survivait donc au test, laissait un jeton fictif pose pour toute la
+    session pytest et masquait 12 echecs REELS du picker (#21994).
+    """
     monkeypatch.delenv("GH_TOKEN", raising=False)
     monkeypatch.delenv("COURSIA_GH_PINNING", raising=False)
     monkeypatch.setattr(gh_identity, "resolve_gh_token", lambda: "tok-machine")
     assert gh_identity.pin_gh_token() == "tok-machine"
     assert os.environ["GH_TOKEN"] == "tok-machine"
+
+
+def test_le_pin_ne_laisse_pas_de_jeton_derriere_lui(monkeypatch, gh_token_env):
+    """Non-regression #21994 : un pin reussi se restaure.
+
+    Le jeton ecrit par `pin_gh_token()` doit disparaitre de l'environnement
+    une fois le test fini -- sinon le verdict des modules suivants depend de
+    l'ordre de leurs fichiers.
+    """
+    monkeypatch.delenv("GH_TOKEN", raising=False)
+    monkeypatch.setattr(gh_identity, "resolve_gh_token", lambda: "tok-machine")
+    assert gh_identity.pin_gh_token() == "tok-machine"
+    assert os.environ["GH_TOKEN"] == "tok-machine"  # le pin ecrit bien
+    assert gh_token_env.restore() is None  # la restauration l'efface
+    assert os.environ.get("GH_TOKEN") is None
 
 
 def test_pin_pinning_off_avertit_et_ne_epingle_pas(monkeypatch, capsys):

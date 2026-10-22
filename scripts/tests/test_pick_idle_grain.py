@@ -31,7 +31,7 @@ from merge_dwell import evaluate as _md_evaluate  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _no_shell_escape(forbid_shell_escape):
+def _no_shell_escape(forbid_shell_escape, monkeypatch):
     """Sentinelle armee pour tout le module (#20021).
 
     Un test qui lance un processus ici n'a pas simule une de ses sources :
@@ -40,6 +40,13 @@ def _no_shell_escape(forbid_shell_escape):
     ont besoin d'un faux `gh` patchent `pig.subprocess.run` eux-memes
     (`_patch_gh`, `_patch_gh_annotations`) et surchargent la sentinelle.
     """
+    # Identite posee par le test lui-meme (#21994) : `main()` epingle un
+    # jeton AVANT argparse, et sans `GH_TOKEN` dans l'environnement cette
+    # resolution lance un VRAI `gh auth token --user <compte de l'hote>` --
+    # processus refuse par la sentinelle. Le jeton ci-dessous est donc pose
+    # par le test, jamais resolu par le code sous test : le module ne depend
+    # ni de l'environnement ambiant, ni de l'ORDRE de ses fichiers.
+    monkeypatch.setenv("GH_TOKEN", "tok-fake-picker-test")
     return forbid_shell_escape
 
 
