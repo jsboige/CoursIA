@@ -21,7 +21,11 @@ Elle vérifie de surcroît que chaque module **explicitement** nommé existe sur
 
 Une PR par lake. Chaque tranche rend le verdict **de son** lake ; un lake laissé nu doit porter une décision écrite (§critère 3).
 
-**`finiteness_lean` — câblé.** Le lake porte quatre fichiers `.lean` (`Finiteness.lean` + `Finiteness/`, plus le frère `.en`) ; mesure grep-firsthand sur `origin/main` : **0 `native_decide`, 0 `sorry`, 0 mention `Classical.choice`**. Prédiction : vert sans whitelist ni `allow-axioms`. La passe ne se déclare pas ici — elle se lit au check-run `Proof integrity (finiteness_lean)` de la PR de câblage, et un rouge éventuel part en issue nommée plutôt qu'en whitelist.
+**`finiteness_lean` — câblé.** Le lake porte quatre fichiers `.lean` (`Finiteness.lean` + `Finiteness/`, plus le frère `.en`) ; mesure grep-firsthand sur `origin/main` : **0 `native_decide`, 0 `sorry`, 0 mention `Classical.choice`**. Verdict : **vert sans whitelist ni `allow-axioms`**, lu sur la PR de câblage.
+
+**Où le verdict se lit — et l'endroit où on le cherche en vain.** Sur un lake **matriciel**, la passe d'axiomes n'est pas un check-run : c'est une **étape** du job `lean-matrix / Lean CI (<lake>)` (`lean-build.yml`, composite `lean-axiom`, gardée par `if: matrix.axiom-target-modules != ''`). Chercher un check-run nommé `Proof integrity` ne rend rien et laisse croire à un gate absent. Les workflows mono-lake (`lean-knot.yml`, `lean-galois.yml`, …) ont eux un vrai job `proof-integrity` ; les deux formes coexistent, et c'est le nom du lake dans le manifeste qui décide laquelle s'applique.
+
+Un rouge éventuel part en **issue nommée** plutôt qu'en whitelist.
 
 ## 1. Portée et méthode
 
