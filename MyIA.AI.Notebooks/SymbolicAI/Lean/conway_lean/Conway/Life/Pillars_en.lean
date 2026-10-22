@@ -102,6 +102,35 @@ the published Gemini self-replication completes in 33 699 586).
 - **Future** : the CPU (once its RLE is loaded by the same mechanism) — its
   border question remains to be settled by the same measurement method.
 
+### `native_decide` anchoring policy (#21833)
+
+Every `native_decide` declaration creates a **named** axiom
+(`<thm>._native.native_decide.ax_1_1`): the `proof-integrity-audit` gate
+lists them **by name**, never by a wildcard.
+
+| File | Anchors before #21833 | Anchors after | Declarations turned back into derivations |
+|---|---|---|---|
+| `Conway.Life.Pillars` | 7 | 5 | `otca_initial_nonempty`, `unitcell_initial_nonempty` |
+| `Conway.Life.Pillars_en` | 7 | 5 | the two `_en` siblings |
+
+The 5 anchors **kept** per file are the **independent** kernel
+certifications: `pulsar_period3` (positive — period 3),
+`pulsar_period1_negative` and `pulsar_period2_negative` (paired
+negatives), `otca_initial_population` (64 691 cells) and
+`unitcell_initial_population` (4 761 cells) — each one carries a claim
+nothing else carries.
+
+The 2 removed declarations lose nothing: `otca_initial_nonempty` and
+`unitcell_initial_nonempty` are now **derived** from the measured
+population (`omega` over the length). A theorem that depends on another
+anchor creates no new one — `#print axioms` is the authority, not the
+presence of a `native_decide` in the text.
+
+Measurement: 7 declarations per file before, **5 anchors measured by
+`#print axioms`** after (14 → 10 for the FR/`_en` pair), build
+`Build completed successfully (3014 jobs)` (`Conway.Life.Pillars`: 804 s,
+`Conway.Life.Pillars_en`: 803 s), pinned toolchain `v4.33.0`.
+
 ### Why a separate file ?
 
 These theorems exercise `native_decide` on large patterns; compile
@@ -285,9 +314,20 @@ theorem otca_initial_population : otcaInitial.length = 64691 := by
 
 /-- The loaded OTCA grid is not empty. Independent cross-check: the same
     population (64 691) is measured by direct Python counting of the `o`
-    runs in the source RLE. -/
+    runs in the source RLE.
+
+    **The proof is derived, not re-evaluated**: non-emptiness follows from
+    the population measured by `otca_initial_population` — a non-zero
+    population excludes the empty list. This theorem therefore no longer
+    carries its own `native_decide` anchor: it inherits the one used on the
+    population, and the module loses one independent native certification in
+    favor of an arithmetic deduction on the kernel. -/
 theorem otca_initial_nonempty : otcaInitial ≠ ([] : Grid) := by
-  native_decide
+  intro h
+  have hpop := otca_initial_population
+  have hl := congrArg List.length h
+  simp only [List.length_nil] at hl
+  omega
 
 /-- **UnitCell** — Nicolay Beluchenko 2011.
 
@@ -320,9 +360,20 @@ theorem unitcell_initial_population : unitcellInitial.length = 4761 := by
     `evolveHashlifeFastMemo_empty` route is therefore **closed** for this
     pattern, which makes the period witness impossible *a fortiori*.
     Independent cross-check: the same population (4 761) is measured by
-    `scripts/lean/rle_to_lean_grid.py`. -/
+    `scripts/lean/rle_to_lean_grid.py`.
+
+    **The proof is derived, not re-evaluated**: non-emptiness follows from
+    the population measured by `unitcell_initial_population` — a non-zero
+    population excludes the empty list. This theorem therefore no longer
+    carries its own `native_decide` anchor: it inherits the one used on the
+    population, and the module loses one independent native certification in
+    favor of an arithmetic deduction on the kernel. -/
 theorem unitcell_initial_nonempty : unitcellInitial ≠ ([] : Grid) := by
-  native_decide
+  intro h
+  have hpop := unitcell_initial_population
+  have hl := congrArg List.length h
+  simp only [List.length_nil] at hl
+  omega
 
 /-- **Gemini witness** — Andrew Wade 2010.
 
