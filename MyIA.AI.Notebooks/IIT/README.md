@@ -284,7 +284,7 @@ Marche 1 de l'escalier qui expose le lake [`iit_lean`](../SymbolicAI/Lean/iit_le
 
 ### IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb
 
-Marche 2 de l'escalier du lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.md) (issue #20414, moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
+Marche 2 de l'escalier du lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.md) (issue #20414, moitié formelle de l'objection Aaronson, Epic #16781 ; l'issue #20649 couvre la variante 8b ci-dessous) — kernel `lean4-wsl`, sans Mathlib.
 
 | Section | Contenu |
 |---------|---------|
@@ -299,7 +299,7 @@ Marche 2 de l'escalier du lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.m
 
 ### IIT-08b-Parite-et-Broadcast-Lean.ipynb
 
-Variante optionnelle de la marche 2 de l'escalier du lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.md) (issue #20649, moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib. Elle porte les théorèmes B et C, là où le carnet 8 prépare le système et ses orbites ; elle se lit à la place de 8, jamais entre 8 et 9.
+Variante optionnelle de la marche 2 de l'escalier du lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.md) (issue #20649 — ouverte sous le titre « IIT-08 » avant l'arbitrage de nommage qui a fixé 08 = parité de bout en bout et 08b = Parite-et-Broadcast ; moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib. Elle porte les théorèmes B et C, là où le carnet 8 prépare le système et ses orbites ; elle se lit à la place de 8, jamais entre 8 et 9.
 
 | Section | Contenu |
 |---------|---------|
