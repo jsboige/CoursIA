@@ -209,14 +209,33 @@ jobs:
       - name: Restore kernel language (hygiene)
         # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
         # garde le worktree coherent si un step futur relit les notebooks sources.
-        run: python3 scripts/quarto_csharp_kernel_fix.py restore
+        # #20174 : sur un slot PERSISTANT le work dir SURVIT au job. Un job mort
+        # entre l'apply et ce restore (timeout du render, annulation) laissait 265
+        # notebooks modifies + le manifeste de l'apply -- et l'apply suivant
+        # REFUSAIT alors (manifeste deja present), empoisonnant le slot. D'ou :
+        # `if: always()` (le restore tourne meme sur job annule) + `--force`
+        # (revert du jeton sur les seuls fichiers que git declare modifies).
+        if: always()
+        run: python3 scripts/quarto_csharp_kernel_fix.py restore --force
 
       - name: Restore YAML-safe separators
         # Restore les `***` en `---` dans les notebooks sources pour ne pas laisser
         # le worktree dans un etat different de la branche. Le checkout CI est
         # ephemere (meme remarque que ci-dessus), mais le restore garde les
         # outputs `git diff` propres pour les etapes suivantes.
+        # #20174 : meme condition `always()` que le restore C# -- un job annule
+        # entre l'apply et ce restore laissait les separateurs patches.
+        if: always()
         run: python3 scripts/quarto_yaml_safe.py restore
+
+      - name: Restore tracked render list (_quarto.yml)
+        # #20174 : `regen_quarto_render.py` (et la jambe de scope PR) REECRITENT
+        # `_quarto.yml` -- le fichier SUIVI du depot perd sa liste de rendu
+        # (2392 lignes -> 9 sur le slot mesure). Aucun restore ne le ramenait :
+        # le work dir de tout slot persistant portait cette salete la. On rend
+        # la version SUIVIE (le rendu a deja eu lieu, le fichier n'est plus lu).
+        if: always()
+        run: git checkout -- _quarto.yml
 
       - name: Check output
         # Sécurité : vérifie que _site/ existe (sinon le deploy échouera avec une
@@ -377,12 +396,23 @@ jobs:
         run: python scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
 
       - name: Restore kernel language (hygiene)
-        if: steps.scope.outputs.mode != 'empty'
-        run: python scripts/quarto_csharp_kernel_fix.py restore
+        # #20174 : `always()` + `--force` -- un job annule (le rendu PR scope
+        # plafonne a 60 min) entre l'apply et ce restore laissait le work dir
+        # du slot PERSISTANT sale (265 notebooks + manifeste) et empoisonnait
+        # l'apply suivant, qui refusait de s'executer.
+        if: always()
+        run: python scripts/quarto_csharp_kernel_fix.py restore --force
 
       - name: Restore YAML-safe separators
-        if: steps.scope.outputs.mode != 'empty'
+        if: always()
         run: python scripts/quarto_yaml_safe.py restore
+
+      - name: Restore tracked render list (_quarto.yml)
+        # #20174 : la jambe de scope REECRIT `_quarto.yml` (liste de rendu
+        # complete -> liste scopee de la PR). Le rendu a deja eu lieu : on rend
+        # la version SUIVIE du depot, sinon le slot persistant garde la salete.
+        if: always()
+        run: git checkout -- _quarto.yml
 
       - name: Check output
         run: |
