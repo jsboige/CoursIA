@@ -16,7 +16,7 @@
 # ---------------------
 #   1. cree les slots PERSIST (mode `RUNNER_MODE=persistent` : un conteneur
 #      par slot, vivant entre les jobs, volume de config par slot) ;
-#   2. pose les CAPS explicites : `--memory 4g --pids-limit 512` ;
+#   2. pose les CAPS explicites : `--cpus 3 --memory 4g --pids-limit 512` ;
 #   3. pose des LABELS DISJOINTS par famille : un slot persist porte
 #      `coursia-persistent` et NE porte PAS `coursia-ephemeral` ;
 #   4. ne supprime JAMAIS un slot, et ne touche JAMAIS un slot occupe ;
@@ -59,6 +59,7 @@ PREFIX="${COURSIA_PERSIST_PREFIX:-myia-po-2024-linux-persist}"
 SLOTS="${COURSIA_PERSIST_SLOTS:-2}"
 MEMORY="${COURSIA_PERSIST_MEMORY:-4g}"
 PIDS="${COURSIA_PERSIST_PIDS:-512}"
+CPUS="${COURSIA_PERSIST_CPUS:-3}"
 IMAGE="${COURSIA_PERSIST_IMAGE:-ghcr.io/jsboige/coursia-runner:latest}"
 LABELS="${COURSIA_PERSIST_LABELS:-self-hosted,coursia-persistent,coursia-linux}"
 CGROUP_PARENT="${COURSIA_CGROUP_PARENT:-coursia-ci.slice}"
@@ -88,11 +89,6 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-case "$MODE" in
-  dry-run|check) ;;
-  apply) ;;
-esac
-
 # --- garde : la version du script doit etre lisible -------------------------
 command -v docker >/dev/null 2>&1 || { err "docker absent de ce PATH"; exit 2; }
 
@@ -110,7 +106,7 @@ run_cmd() {
 
   cat <<EOF
 docker run -d --name ${name} \\
-  --cpus=${COURSIA_PERSIST_CPUS:-3} --memory=${MEMORY} --pids-limit=${PIDS} \\
+  --cpus=${CPUS} --memory=${MEMORY} --pids-limit=${PIDS} \\
   --label coursia-ci=1 --label coursia-family=persistent \\
   ${CGROUP_PARENT:+--cgroup-parent=${CGROUP_PARENT}} \\
   --security-opt=no-new-privileges \\
@@ -134,7 +130,7 @@ slot_state() {
     printf 'ABSENT'
     return
   fi
-  docker inspect --format '{{.HostConfig.Memory}} {{.HostConfig.PidsLimit}} {{.State.Running}}' "$name" 2>/dev/null
+  docker inspect --format '{{.HostConfig.Memory}} {{.HostConfig.PidsLimit}} {{.HostConfig.NanoCpus}} {{.State.Running}}' "$name" 2>/dev/null
 }
 
 expected_memory_bytes() {
@@ -145,11 +141,22 @@ expected_memory_bytes() {
   esac
 }
 
+# `--cpus=N` est materialise par docker en `NanoCpus` (N * 1e9). La valeur
+# attendue est un ENTIER de cpus (defaut 3) : une valeur decimale n'est pas
+# supportee ici et serait refusee explicitement plutot que tronquee.
+expected_nano_cpus() {
+  case "$1" in
+    ''|*[!0-9]*) err "COURSIA_PERSIST_CPUS doit etre un entier (mesure : '$1')" ; return 1 ;;
+  esac
+  printf '%s' "$(( $1 * 1000000000 ))"
+}
+
 # --- mode --check : derive entre l'etat vivant et la specification ---------
 mode_check() {
-  local rc=0 idx name state mem pids running want_mem
+  local rc=0 idx name state mem pids nano running want_mem want_nano
   want_mem="$(expected_memory_bytes "$MEMORY")"
-  log "Specification : slots=${SLOTS} memory=${MEMORY} pids=${PIDS} labels=${LABELS}"
+  want_nano="$(expected_nano_cpus "$CPUS")" || return 2
+  log "Specification : slots=${SLOTS} cpus=${CPUS} memory=${MEMORY} pids=${PIDS} labels=${LABELS}"
   log ""
   for idx in $(seq 1 "$SLOTS"); do
     name="$(slot_name "$idx")"
@@ -161,14 +168,19 @@ mode_check() {
     fi
     mem="$(printf '%s' "$state" | cut -d' ' -f1)"
     pids="$(printf '%s' "$state" | cut -d' ' -f2)"
-    running="$(printf '%s' "$state" | cut -d' ' -f3)"
-    log "[PRESENT] ${name} memory=${mem} pids=${pids} running=${running}"
+    nano="$(printf '%s' "$state" | cut -d' ' -f3)"
+    running="$(printf '%s' "$state" | cut -d' ' -f4)"
+    log "[PRESENT] ${name} memory=${mem} pids=${pids} cpus=${nano} running=${running}"
     if [ "$mem" != "$want_mem" ]; then
       log "  DERIVE : cap memoire attendu ${want_mem} (${MEMORY}), mesure ${mem}"
       rc=1
     fi
     if [ "$pids" != "$PIDS" ]; then
       log "  DERIVE : cap pids attendu ${PIDS}, mesure ${pids}"
+      rc=1
+    fi
+    if [ "$nano" != "$want_nano" ]; then
+      log "  DERIVE : cap cpus attendu ${want_nano} (${CPUS}), mesure ${nano}"
       rc=1
     fi
     if ! docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$name" 2>/dev/null \

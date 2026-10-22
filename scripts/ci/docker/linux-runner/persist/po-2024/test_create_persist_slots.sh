@@ -4,16 +4,20 @@
 # CE QUE CE TEST PROUVE
 # ---------------------
 #  1. Le mode `--dry-run` n'execute AUCUNE creation et imprime les caps et
-#     les labels attendus (4g / 512 / `coursia-persistent` sans
+#     les labels attendus (cpus 3 / 4g / 512 / `coursia-persistent` sans
 #     `coursia-ephemeral`).
 #  2. Le script NE SUPPRIME JAMAIS un slot : ni `docker rm`, ni `docker stop`,
-#     ni `docker kill` dans sa source (contrainte de l'issue : « aucune
-#     suppression de slot en cours de job »).
+#     ni `docker kill`, ni les formes `docker container rm|stop|kill`, dans sa
+#     source (contrainte de l'issue : « aucune suppression de slot en cours de
+#     job »).
 #  3. Le mode `--check` signale un slot absent (code 1) et nomme la derive,
 #     au lieu de la tolerer en silence.
+#  4. Le mode `--check` accepte un slot CONFORME (caps et labels exacts) et
+#     signale une derive de cap cpus.
 #
 # Le test utilise un `docker` STUB (un script qui fait comme si aucun
-# conteneur n'existait) : il ne touche ni la machine ni ses runners.
+# conteneur n'existait, puis un second qui simule un slot conforme) : il ne
+# touche ni la machine ni ses runners.
 set -u
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -36,6 +40,27 @@ exit 0
 STUB
 chmod +x "$TMP/docker"
 
+# --- stub docker : un slot conforme existe (memoire 4g, pids 512, cpus 3) --
+TMP2="${TMP}/with-slot"
+mkdir -p "$TMP2"
+cat > "$TMP2/docker" <<'STUB'
+#!/usr/bin/env bash
+# stub : un slot existe ; son etat (memoire/pids/cpus/running) est pilote par
+# `PERSIST_STUB_STATE`, ses labels par `PERSIST_STUB_LABELS`.
+fmt=""
+prev=""
+for arg in "$@"; do
+  if [ "$prev" = "--format" ]; then fmt="$arg"; fi
+  prev="$arg"
+done
+case "$fmt" in
+  *NanoCpus*) printf '%s\n' "${PERSIST_STUB_STATE:-4294967296 512 3000000000 true}" ;;
+  *Config.Env*) printf '%s\n' "ACTIONS_RUNNER_INPUT_LABELS=${PERSIST_STUB_LABELS:-self-hosted,coursia-persistent,coursia-linux}" ;;
+esac
+exit 0
+STUB
+chmod +x "$TMP2/docker"
+
 # --- 1. le mode dry-run imprime la specification, sans creer ---------------
 out="$(PATH="$TMP:$PATH" "$SCRIPT" --dry-run 2>&1)"
 rc=$?
@@ -46,7 +71,7 @@ else
   ko "--dry-run se termine en $rc (attendu 0)"
 fi
 
-for attendu in "--memory=4g" "--pids-limit=512" "coursia-persistent" "RUNNER_MODE=persistent" \
+for attendu in "--cpus=3" "--memory=4g" "--pids-limit=512" "coursia-persistent" "RUNNER_MODE=persistent" \
                "myia-po-2024-linux-persist-1" "myia-po-2024-linux-persist-2" "coursia-ci.slice"; do
   if printf '%s' "$out" | grep -qF -- "$attendu"; then
     ok "--dry-run contient '$attendu'"
@@ -68,11 +93,13 @@ else
 fi
 
 # --- 2. le script ne supprime jamais un slot -------------------------------
-if grep -nE "docker[[:space:]]+(rm|stop|kill)" "$SCRIPT" >/dev/null 2>&1; then
-  ko "la source du script contient une suppression de slot (docker rm/stop/kill)"
-  grep -nE "docker[[:space:]]+(rm|stop|kill)" "$SCRIPT" | sed 's/^/    /'
+# Le garde couvre les formes directes (`docker rm|stop|kill`) ET les formes
+# avec le sous-commande `container` (`docker container rm|stop|kill`).
+if grep -nE "docker[[:space:]]+(container[[:space:]]+)?(rm|stop|kill)" "$SCRIPT" >/dev/null 2>&1; then
+  ko "la source du script contient une suppression de slot (docker rm/stop/kill, docker container rm/stop/kill)"
+  grep -nE "docker[[:space:]]+(container[[:space:]]+)?(rm|stop|kill)" "$SCRIPT" | sed 's/^/    /'
 else
-  ok "la source du script ne contient aucune suppression de slot"
+  ok "la source du script ne contient aucune suppression de slot (ni docker rm/stop/kill, ni docker container rm/stop/kill)"
 fi
 
 # --- 3. le mode check signale un slot absent -------------------------------
@@ -94,7 +121,37 @@ else
   ko "--check ne nomme pas la derive"
 fi
 
-# --- 4. le nombre de slots est parametrable --------------------------------
+# --- 4. le mode check accepte un slot conforme et detecte une derive cpus --
+out_ok="$(PATH="$TMP2:$PATH" "$SCRIPT" --check 2>&1)"
+rc_ok=$?
+if [ "$rc_ok" -eq 0 ]; then
+  ok "--check sort en 0 sur un slot conforme (caps et labels exacts)"
+else
+  ko "--check sort en $rc_ok sur un slot conforme (attendu 0)"
+  printf '%s\n' "$out_ok" | sed 's/^/    /'
+fi
+if printf '%s' "$out_ok" | grep -qF "OK : les 2 slots persist sont conformes"; then
+  ok "--check annonce la conformite quand tout est exact"
+else
+  ko "--check n'annonce pas la conformite"
+  printf '%s\n' "$out_ok" | sed 's/^/    /'
+fi
+
+out_cpus="$(PATH="$TMP2:$PATH" PERSIST_STUB_STATE="4294967296 512 0 true" "$SCRIPT" --check 2>&1)"
+rc_cpus=$?
+if [ "$rc_cpus" -eq 1 ]; then
+  ok "--check sort en 1 quand le cap cpus derive"
+else
+  ko "--check sort en $rc_cpus (attendu 1 : cap cpus non conforme)"
+fi
+if printf '%s' "$out_cpus" | grep -q "cap cpus attendu"; then
+  ok "--check nomme la derive du cap cpus"
+else
+  ko "--check ne nomme pas la derive du cap cpus"
+  printf '%s\n' "$out_cpus" | sed 's/^/    /'
+fi
+
+# --- 5. le nombre de slots est parametrable --------------------------------
 out2="$(PATH="$TMP:$PATH" COURSIA_PERSIST_SLOTS=3 "$SCRIPT" --dry-run 2>&1)"
 if printf '%s' "$out2" | grep -qF "myia-po-2024-linux-persist-3"; then
   ok "COURSIA_PERSIST_SLOTS=3 cree un troisieme slot prevu"
