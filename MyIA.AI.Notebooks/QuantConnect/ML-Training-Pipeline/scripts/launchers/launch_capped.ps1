@@ -152,7 +152,7 @@ $proc = Start-Process -FilePath $PythonExe -ArgumentList $quotedArgs -NoNewWindo
 # Object tue alors l'entrainement avec lui. Le PID de l'entrainement, lui, est
 # ecrit par le superviseur dans -PidPath.
 $supPidPath = "$PidPath.supervisor.txt"
-$proc.Id | Out-File -FilePath $supPidPath -Encoding utf8
+[System.IO.File]::WriteAllText($supPidPath, ("$($proc.Id)`r`n"), (New-Object System.Text.UTF8Encoding($false)))
 
 Write-Host "[CAP] superviseur lance : PID $($proc.Id) -> $supPidPath"
 Write-Host "[CAP] l'entrainement demarre en detaché ; son PID sera ecrit dans $PidPath"
