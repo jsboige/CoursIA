@@ -45,6 +45,15 @@ REQUIRED_UNFILTERED_WORKFLOWS: set[str] = {
     # lane-claim-guard -- tous dormant) en un seul workflow non filtre qui
     # porte leurs organes metadata + le moteur fast-lane.
     "always-on-guards.yml",
+    # #21922 : le garde perimeter a retrouve son declencheur `pull_request`
+    # (restaure dans perimeter-review-guard.yml -- le levier du garde est le
+    # nom de check-run que CE fichier publie, cf. son en-tete).
+    # Un filtre `paths:` le desarmerait : il lit une METADONNEE (assertion
+    # de perimetre dans le body ou dans une review) et la confronte au
+    # diff -- une PR qui ne touche QUE son body porte pourtant l'assertion a
+    # surveiller. Meme contrat que le verrou
+    # `test_13246_metadata_dependent_guard_has_no_paths_filter`.
+    "perimeter-review-guard.yml",
     "translation-guard.yml",
     # #14057 (Vague 2 tranche 1) : fusion des trois gardes metadata always-on
     # (base-not-main-advisory, stale-base-warning, concurrency-conj-guard --
