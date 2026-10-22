@@ -732,6 +732,7 @@ TRANCHE1: list[Guard] = [
             "MyIA.AI.Notebooks/GenAI/FineTuning/**",
             "MyIA.AI.Notebooks/IIT/**",
             "MyIA.AI.Notebooks/Probas/DecisionTheory/DecInfer/**",
+            "MyIA.AI.Notebooks/Probas/Infer/**",
             "MyIA.AI.Notebooks/Probas/PyMC/**",
             "MyIA.AI.Notebooks/Search/Part1-Foundations/**",
             "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/**",
@@ -841,22 +842,24 @@ TRANCHE2: list[Guard] = [
         needs_base=True,
         absorbed=True,
     ),
-    # Output-volume COLLAPSE ratchet, advisory (#15327): the two siblings
-    # above watch output GROWTH (flood) and failure banners; nothing watched
-    # contraction -- #15209 lost 72 % of its output chars (11 code cells
-    # executed "successfully", graceful-degradation guards if api_ok:) while
-    # every gate stayed green. Design constraint (ai-01 measurement on the
-    # issue, 2026-09-09): AGGREGATE contraction alone is ~100 % FP (3/3
-    # contractions > 50 % over 14 days were legitimate), so this ratchet
-    # flags per-CELL order-of-magnitude loss and graceful-degradation
-    # signatures (execution sautee / non configure / mode simulation /
-    # skipped), exempting the two mechanically detectable legitimate causes:
-    # content moved to a notebook created by the same diff, and
-    # diagnostic-text purge (CS####/warning lines). Advisory until the
-    # threshold is calibrated further on history (issue point 3).
-    # Source : notebook-output-collapse-ratchet.yml (stub dispatch-only).
+    # Output-volume COLLAPSE ratchet, blocking since #21424 T2 (2026-10-19):
+    # the two siblings above watch output GROWTH (flood) and failure
+    # banners; nothing watched contraction -- #15209 lost 72 % of its output
+    # chars (11 code cells executed "successfully", graceful-degradation
+    # guards if api_ok:) while every gate stayed green. The ratchet
+    # discriminates by CAUSE: signature of degradation gracieuse and
+    # order-of-magnitude loss per cell, exempting the two mechanically
+    # detectable legitimate causes (content moved to a notebook created
+    # by the same diff, and diagnostic-text purge CS####/warning).
+    #
+    # The gate is BLOCKING since T2 -- a flagged cell is a hard failure
+    # UNLESS the PR body carries a `## Output-collapse justification`
+    # section naming the cell and the reason (NAMING c.2193 family, the
+    # kernel-drift guard exemption). T1 brought the `--history` mode
+    # (H.6 audit-history organ) so a contributor can locate the cell's
+    # restore point and the responsible PR before justifying.
     Guard(
-        name="Output-collapse ratchet (base vs PR, advisory)",
+        name="Output-collapse ratchet (base vs PR)",
         source="notebook-output-collapse-ratchet.yml",
         paths=[
             "**.ipynb",
@@ -871,7 +874,7 @@ TRANCHE2: list[Guard] = [
             "python", "scripts/notebook_tools/check_output_collapse.py",
             "{base_ref}",
         ],
-        blocking=False,
+        blocking=True,
         needs_base=True,
         absorbed=True,
     ),
@@ -2107,6 +2110,97 @@ TRANCHE22: list[Guard] = [
         ],
         blocking=False,
         iterates_paths=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 23 -- cles (notebook, cell_id) dupliquees dans les CSV translations
+# (#21489).
+#
+# Garde NATIF : aucun workflow d'origine (nee dans la PR #21547, qui porte le
+# detecteur et son correcteur). La resync T1 ne rafraichit que la PREMIERE
+# occurrence d'une cle ; les suivantes conservent un pivot perime (et une
+# traduction d'une autre version de la cellule). Le garde refuse toute PR qui
+# ajoute une cle dupliquee -- les occurrences deja presentes sur la base
+# restent couvertes par le correcteur, pas par ce filtre de diff.
+#
+# Forme : `check_duplicate_keys.py` rend 0 (propre) / 1 (cle dupliquee) / 2
+# (instrument casse). Le correcteur est
+# `scripts/translation/dedup_cells_csv.py --resolve <csv>` : il garde la
+# derniere occurrence (pivot le plus recent) et retire les autres.
+#
+# `absorbed=True` : meme convention que TRANCHE22 et TRANCHE13 (le job
+# always-on emet la conclusion reelle sous le nom canonique au lieu du
+# prefixe d'ombre).
+# ---------------------------------------------------------------------------
+TRANCHE23: list[Guard] = [
+    Guard(
+        name="Translation duplicate keys (#21489)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "translations/**/*.csv",
+            "scripts/translation/check_duplicate_keys.py",
+            "scripts/translation/dedup_cells_csv.py",
+        ],
+        pre_argv=[
+            "python", "scripts/translation/check_duplicate_keys.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/translation/check_duplicate_keys.py",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 24 -- verdict de mesure tire sur une reponse vide ou en erreur HTTP
+# (#21750).
+#
+# Garde NATIF : aucun workflow d'origine. L'organe
+# `scripts/notebook_tools/check_empty_verdict.py` detecte un bloc de sortie
+# qui porte un VERDICT de mesure (`=> Coherence verifiee`, `=> Difference
+# detectee`, ...) alors que la mesure qu'il resume est invalide : reponse vide
+# ou statut HTTP non-2xx.
+#
+# Pourquoi ADVISORY et non bloquant : le verdict est **absolu**, pas un
+# ratchet base/head -- le defaut est PRE-EXISTANT (il est deja sur `main`),
+# donc une PR qui re-execute un carnet sans corriger la cause verrait un
+# rouge HERITE de la base. Le correctif de source appartient a la lane qui
+# porte le carnet (#21162 / #21750) ; ce garde publie le signal, il ne
+# confisque pas le merge. C'est la meme separation que le ratchet
+# `check_source_collapse` (TRANCHE11), lui aussi absolu et advisory.
+#
+# `needs_base=True` : l'argv recoit `{base_ref}` et l'organe ne rapporte
+# que les carnets touches par la PR (`--diff-base`). Un diff illisible est
+# FAIL-CLOSED cote organe (rc=2), donc pas de sweep integral silencieux.
+#
+# `diff_bounded=False` (defaut) : le verdict n'est pas un delta, il est
+# absolu sur les carnets touches -- declare explicitement pour que le picker
+# sache qu'un rouge peut heriter de la base.
+# ---------------------------------------------------------------------------
+TRANCHE24: list[Guard] = [
+    Guard(
+        name="Verdict on invalid measurement (empty or HTTP-error response)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_empty_verdict.py",
+            "scripts/tests/test_check_empty_verdict.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_empty_verdict.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_empty_verdict.py",
+            "--diff-base", "{base_ref}", ".",
+        ],
+        blocking=False,
+        needs_base=True,
         absorbed=True,
     ),
 ]
