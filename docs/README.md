@@ -160,6 +160,7 @@ Iteration history prover, intractable diagnosis, LLM endpoints. **Index du sous-
 | [lean/junctions-scan-po-2024.md](lean/junctions-scan-po-2024.md) | Junctions Mathlib — scan po-2024 : 22 jonctions vivantes vers un store VIDE |
 | [lean/junctions-scan-po-2027-CoursIA2.md](lean/junctions-scan-po-2027-CoursIA2.md) | Mathlib NTFS Junctions — Scan po-2027 |
 | [lean/junctions-scan-po-2027.md](lean/junctions-scan-po-2027.md) | Junctions Mathlib — scan po-2027 |
+| [lean/junctions-apply-po-2027-c1731.md](lean/junctions-apply-po-2027-c1731.md) | Apply V5 Mathlib NTFS junctions po-2027 (c.1731) — donneur knot_lean, 7 PERIMEE re-pointées vers db584cd6, anti-régression `distinct_code_sorry` 12→12 |
 | [lean/knot-4.33-investigation.md](lean/knot-4.33-investigation.md) | Lean 4 — knot_lean 4.33.0 bloquée par synthèse Decidable |
 | [lean/l750-pivot-scope-discipline.md](lean/l750-pivot-scope-discipline.md) | L750 ★★ — Pivot Lean specialist, discipline de scope, remédiation OOM |
 | [lean/life-components-schema.md](lean/life-components-schema.md) | Schéma de motifs et de réactions de Game of Life — tranches 1-4 de #15635 |
