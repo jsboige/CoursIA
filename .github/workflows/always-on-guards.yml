@@ -1309,6 +1309,11 @@ jobs:
           # etait structurellement injoignable, et un `MAGNITUDE` justifie
           # restait un rouge qu'aucun geste de lane ne pouvait lever.
           COLLAPSE_PR_BODY: ${{ github.event.pull_request.body }}
+          # #21390 : meme canal in-memory pour l'echappement declaratif du
+          # cliquet Lean (`[LEAN-ANCHOR-DECLARED]`). Sans lui, une ancre
+          # legitime (squelette `sorry`, `native_decide` documente) restait
+          # rouge faute de moyen de la declarer.
+          LEAN_CLIQUET_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           git fetch origin "${{ github.base_ref }}" -q
           python scripts/ci/fast_lane.py --shadow

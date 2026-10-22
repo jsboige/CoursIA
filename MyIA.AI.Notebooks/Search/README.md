@@ -120,14 +120,14 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 
 Problèmes du monde réel adaptés de projets étudiants. Chaque application est un **binôme Python ⇄ C#** (parité complète depuis le marathon #4956) ; les jumeaux C# suivent la convention `App-Nb-...-CSharp.ipynb`.
 
-### Applications Search (`Applications/Search/`)
+### Applications Adversarial (`Applications/Adversarial/`)
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-12b-ConnectFour](Applications/Search/App-12b-ConnectFour.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
-| 1b | [App-12c-ConnectFour](Applications/Search/App-12c-ConnectFour.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
-| 2 | [App-14-ConnectFour-Adversarial](Applications/Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
-| 2b | [App-14-ConnectFour-CSharp](Applications/Search/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 1 | [App-12b-ConnectFour](Applications/Adversarial/App-12b-ConnectFour.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
+| 1b | [App-12c-ConnectFour](Applications/Adversarial/App-12c-ConnectFour.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 2 | [App-14-ConnectFour-Adversarial](Applications/Adversarial/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
+| 2b | [App-14-ConnectFour-CSharp](Applications/Adversarial/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
 ### Applications CSP (`Applications/CSP/`)
 
@@ -364,7 +364,7 @@ Search/
 │   └── CSP-9-Distributed.ipynb
 │
 ├── Applications/
-│   ├── Search/                            # Applications Search (4 notebooks)
+│   ├── Adversarial/                       # Recherche adversariale
 │   │   ├── App-12b-ConnectFour.ipynb
 │   │   ├── App-12c-ConnectFour.ipynb
 │   │   ├── App-14-ConnectFour-Adversarial.ipynb

@@ -1,8 +1,10 @@
 # Search - Applications
 
-C'est ici que la série Search se confronte au réel. Les notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Search pur** (jeux combinatoires), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-CSharp, App-7b, App-8-CSharp, App-9b, App-10b, App-11b, App-13b, App-14-CSharp, App-12c, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
+C'est ici que la série Search se confronte au réel. Les notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Adversarial** (jeux combinatoires à deux joueurs), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-CSharp, App-7b, App-8-CSharp, App-9b, App-10b, App-11b, App-13b, App-14-CSharp, App-12c, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
 
 Sous-série d'applications | Python 3.10+ (`ortools`, `python-sat`, `deap`, `mealpy`, `minizinc`, `optuna`, `rustuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#. Les volumes (notebooks par sous-série, maturité) sont portés par le marqueur `CATALOG-STATUS` du [README de la série](../README.md) — aucun chiffre n'est maintenu ici en prose.
+
+**Règle d'admission** : un notebook entre dans `Applications/` s'il applique un paradigme de la série (recherche adversariale, contraintes, hybridation) à un cas réel ; s'il porte un théorème ou un concept formalisé, il rejoint la partie qui porte ce concept — compagnons de `Part1-Foundations/` (slots lettrés `Search-09x`).
 
 ## Pourquoi cette sous-série
 
@@ -31,7 +33,7 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 
 ```text
 Applications/
-├── Search/     # Applications purement Search (Puissance 4 + jumeaux C#)
+├── Adversarial/     # Recherche adversariale (Puissance 4 + jumeaux C#)
 ├── CSP/        # Applications CSP (problèmes classiques + jumeaux C#)
 └── Hybrid/     # Méthodes hybrides / métaheuristiques (+ jumeaux C#)
 ```
@@ -41,30 +43,30 @@ flowchart LR
     P1["<b>Partie 1 — Search</b><br/>exploration, jeux adversariaux"]
     P2["<b>Partie 2 — CSP</b><br/>modélisation déclarative<br/>(X, D, C) + propagation"]
     P4["<b>Partie 4 — Métaheuristiques</b><br/>SA, GA, ACO, recuit"]
-    S["<b>Applications Search</b> (5)<br/>3 Python + 2 C# :<br/>ConnectFour, Minimax, MCTS, AIMA,<br/>distillation Szpiro (arithmétique)"]
+    A["<b>Applications Adversarial</b> (4)<br/>2 Python + 2 C# :<br/>ConnectFour — Minimax, Alpha-Beta, MCTS, AIMA"]
     C["<b>Applications CSP</b><br/>N-Queens, GraphColoring,<br/>Nurse/JobShop, Minesweeper,<br/>Wordle, Picross, WFC..."]
     H["<b>Applications Hybrides</b><br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT..."]
-    P1 --> S
+    P1 --> A
     P2 --> C
     P4 --> H
     P2 --> R
     P4 --> R
-    S -.->|"benchmark croisé"| H
+    A -.->|"benchmark croisé"| H
     C -.->|"quand l'espace explose"| H
 ```
 
 ---
 
-## Applications Search (`Search/`)
+## Applications Adversarial (`Adversarial/`)
 
-Quatre notebooks autour du Puissance 4 — deux Python et deux C# — forment un banc d'essai de la recherche adversariale : assez simple pour être résolu, assez riche pour départager les approches. Un premier binôme construit les joueurs (aléatoire, Minimax α-β, MCTS, glouton, puis le framework AIMA de Russell & Norvig) ; le second compare systématiquement Minimax, Alpha-Beta et MCTS. S'y ajoute une distillation de théorie algorithmique des nombres : le théorème de Szpiro rendu opérable, où le « solveur » est le choix combinatoire optimal d'une factorisation admissible.
+Quatre notebooks autour du Puissance 4 — deux Python et deux C# — forment un banc d'essai de la recherche adversariale : assez simple pour être résolu, assez riche pour départager les approches. Un premier binôme construit les joueurs (aléatoire, Minimax α-β, MCTS, glouton, puis le framework AIMA de Russell & Norvig) ; le second compare systématiquement Minimax, Alpha-Beta et MCTS. La distillation Szpiro (théorie algorithmique des nombres) n'est plus ici : elle a rejoint sa série d'accueil canonique, à la racine de la série ([`App-32-Szpiro-Pasten-2026`](../App-32-Szpiro-Pasten-2026.ipynb), #18256 étape 3A).
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-12b-ConnectFour](Search/App-12b-ConnectFour.ipynb) | ~50 min | Puissance 4 : aléatoire, Minimax α-β, MCTS, glouton, framework AIMA (Russell & Norvig), tournoi round-robin | Projet étudiant |
-| 1b | [App-12c-ConnectFour](Search/App-12c-ConnectFour.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
-| 2 | [App-14-ConnectFour-Adversarial](Search/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
-| 2b | [App-14-ConnectFour-CSharp](Search/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 1 | [App-12b-ConnectFour](Adversarial/App-12b-ConnectFour.ipynb) | ~50 min | Puissance 4 : aléatoire, Minimax α-β, MCTS, glouton, framework AIMA (Russell & Norvig), tournoi round-robin | Projet étudiant |
+| 1b | [App-12c-ConnectFour](Adversarial/App-12c-ConnectFour.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 2 | [App-14-ConnectFour-Adversarial](Adversarial/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
+| 2b | [App-14-ConnectFour-CSharp](Adversarial/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 | 3 | [App-32-Szpiro-Pasten-2026](../App-32-Szpiro-Pasten-2026.ipynb) | ~25 min | Szpiro rendu opérable : factorisations admissibles `N=DM` (parité paire de `D`), balayage de `M·φ(D)` sur N = 6…30030, proxy `log\|Δ\|/log rad(\|Δ\|)` des courbes `y²=x³+ax+b` — théorème 1.1 et corollaires 1.2/1.3 rendus calculables, 3 exercices | Distillation arXiv 2609.17390 (Pasten 2026, #16549) |
 
 ---
@@ -159,7 +161,7 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 
 ## Prérequis par notebook
 
-### Applications Search
+### Applications Adversarial
 
 | Notebook | Fondations requises |
 |----------|--------------------|
