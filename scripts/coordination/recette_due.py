@@ -31,6 +31,17 @@ dont l'attente est la plus longue) au lieu de nommer une issue a servir.
 Le validateur se declare dans le body de l'issue par une ligne
 ``Validateur : @login`` ; a defaut, tout auteur hors flotte compte comme validateur.
 
+LIMITE CONNUE -- CLAIM ABANDONNE (#21279, revue Hermes du 2026-10-22) : l'etat
+« balle chez le validateur » se lit sur l'ORDRE DES MESSAGES, pas sur l'etat du
+claim. Un ``[CLAIMED]`` de flotte pose puis abandonne (sans ``[DELIVERED]``,
+``[RELEASED]`` ni ``[DONE]``) reste le dernier message de flotte : la balle
+reste donc chez le validateur, alors que personne n'attend reellement de
+reponse. Remede immediat : RELACHER le claim
+(``[RELEASED] lane <machine:workspace> -- <motif>``). Le correctif durable
+-- expirer un claim de flotte sans suite au-dela du seuil de peremption (48 h),
+ou exclure les marqueurs de claim du calcul « la flotte a parle en dernier » --
+est suivi dans l'issue de suivi nommee au dos de la PR.
+
 Sorties : rc 0 = rien a faire (tour fait, aucune issue ``recette``, ou balle chez
 le validateur sur toutes les issues) ;
 rc 1 = tour du, l'issue est nommee ; rc 2 = organe injoignable (fail-open : le
