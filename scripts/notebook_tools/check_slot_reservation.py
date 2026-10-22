@@ -472,12 +472,15 @@ def load_removed_paths(numbers, repo, status):
 def declared_claims(doc):
     """Slots declares reserves par une table publiee (`slot_reservations.json`).
 
-    L'index declare est pris TEL QU'ECRIT : la convention de la table est
-    l'index normalise de `naming_canon.index_key` (zero-pad resorbe), qui est
-    deja en minuscules, et une entree qui nomme une serie (`GameTheory-04c`)
-    doit pouvoir designer le slot de cette serie. La normalisation en
-    minuscules qu'elle subissait ici rendait ces entrees-la inatteignables
-    (une table de slots declares qui ne declare rien en silence).
+    L'index declare est compare SANS EGARD A LA CASSE, des deux cotes : la
+    convention de la table est l'index normalise de `naming_canon.index_key`
+    (zero-pad resorbe) pour un index numerique, et le nom de serie
+    (`GameTheory-04c`) pour une entree qui nomme une serie -- or la position
+    d'un carnet de serie conserve la casse de son nom de fichier (`SL-12b`).
+    Comparer une entree de table a un slot par egalite STRICTE rendait la
+    reservation invisible des que les deux graphies differeient : une table de
+    slots declares qui ne declare rien en silence. La forme ECRITE est
+    conservee dans le chemin de l'occupant affiche.
     """
     claims: dict[tuple[str, str], list[Occupant]] = {}
     for entry in (doc or {}).get("reserved") or []:
@@ -488,7 +491,7 @@ def declared_claims(doc):
         holder = (entry.get("holder") or "").strip() or "sans detenteur nomme"
         note = (entry.get("note") or "").strip()
         detail = "%s%s" % (holder, (" -- %s" % note) if note else "")
-        claims.setdefault((d, key), []).append(
+        claims.setdefault((d.casefold(), key.casefold()), []).append(
             Occupant("%s/%s" % (d, entry.get("index")), SOURCE_DECLARED, detail))
     return claims
 
@@ -516,7 +519,16 @@ def verdict_for(target, occupants, releases):
     conflicts = []
     exempt = False
     t_base = split_dir(target)[1].lower()
-    for occ in occupants.get(slot, []):
+    # Deux lectures : la forme EXACTE d'abord (c'est elle qui porte les
+    # occupants de la base et de la revision, dont la cle est la position
+    # analysee), puis la forme repliee -- la table declaree est indexee sans
+    # egard a la casse, une entree qui ecrit `sl-12b` doit reserver le slot
+    # `SL-12b` d'un carnet de serie, et l'inverse aussi.
+    occ_list = list(occupants.get(slot, []))
+    folded = (slot[0].casefold(), slot[1].casefold())
+    if folded != slot:
+        occ_list.extend(occupants.get(folded, []))
+    for occ in occ_list:
         # La cible se reconnait elle-meme UNIQUEMENT parmi les cibles de la
         # revision : en mode revision les deux ensembles sont le meme, et se
         # compter comme occupant de soi-meme ferait rougir chaque ligne. Un

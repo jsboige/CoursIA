@@ -830,6 +830,53 @@ class TestAlphabeticSeriesSlots(unittest.TestCase):
         slot = csr._scan_slot(Z3 + "/Z3-19-Machine-de-Goedel-Python.ipynb")
         self.assertIn(slot, claims, "les deux notebooks visent le meme slot")
 
+    def test_a_declared_series_reservation_reddens(self):
+        """Controle positif de la table DECLAREE sur une serie : une entree qui
+        nomme la position d'un carnet de serie doit le reserver.
+
+        C'est le mode de panne mesure par la revue du 2026-10-22 : la cle de la
+        table etait comparée par egalite stricte a la position analysee, dont
+        la casse est celle du nom de fichier. Une entree qui ecrit la position
+        autrement ne declarait RIEN, sans erreur -- une table de slots declares
+        qui ne declare rien en silence.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [Z3 + "/Z3-18-Ancien-Sujet-Python.ipynb"])
+            _commit(repo, "vide")
+            cfg = repo / "reservations.test.json"
+            cfg.write_text(json.dumps({"reserved": [
+                {"dir": Z3, "index": "Z3-19", "holder": "lane X",
+                 "note": "serie complete", "since": "2026-09-11"}]}), encoding="utf-8")
+
+            r = _run(repo, base, "--target", Z3 + "/Z3-19-Machine-de-Goedel-Python.ipynb",
+                     reservations=str(cfg))
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("declared_reserved", r.stdout)
+            self.assertIn("lane X", r.stdout)
+
+    def test_a_declared_series_reservation_ignores_the_case(self):
+        """Le meme slot, ecrit autrement : la reservation tient quand meme.
+
+        C'est la decision explicite (comparaison sans egard a la casse, des
+        deux cotes) -- l'autre voie, une convention documentee, laissait le
+        mode de panne muet intact.
+        """
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo, [Z3 + "/Z3-18-Ancien-Sujet-Python.ipynb"])
+            _commit(repo, "vide")
+            cfg = repo / "reservations.test.json"
+            cfg.write_text(json.dumps({"reserved": [
+                {"dir": Z3.lower(), "index": "z3-19", "holder": "lane X",
+                 "note": "serie complete", "since": "2026-09-11"}]}), encoding="utf-8")
+
+            r = _run(repo, base, "--target", Z3 + "/Z3-19-Machine-de-Goedel-Python.ipynb",
+                     reservations=str(cfg))
+            self.assertEqual(r.returncode, 1, r.stdout + r.stderr)
+            self.assertIn("declared_reserved", r.stdout)
+            self.assertIn("lane X", r.stdout)
+
     def test_an_accretion_letter_is_part_of_the_series_slot(self):
         """`GameTheory-04c` contre `GameTheory-04c` : meme position, sujets
         differents -- c'est le second controle positif de l'issue."""
