@@ -26,9 +26,15 @@
       « prouvé par Gröbner » garantit (appartenance à l'idéal `C1 = 1 • H`,
       théorème faux du §6 réfuté, saturation de Ritt et encodage
       Rabinowitsch en sept variables).
+    - `Geometry.Ritt` — companion du `Geometry-03b` : ce que la
+      décomposition de Ritt garantit quand le test de Wu global est NON
+      CONCLUANT (équivalence sur le lieu non dégénéré, strate au zéro
+      trivial, témoin du bord réfutant l'énoncé global, branches vides de
+      la scission, témoins rationnels positif et négatif).
 -/
 
 import Geometry.MidpointHypotenuse
 import Geometry.FromFigureToEquation
 import Geometry.WuMethod
 import Geometry.GroebnerBridge
+import Geometry.Ritt
