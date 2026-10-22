@@ -927,34 +927,73 @@ Let's compare the generation before and after fine-tuning.
 
 **Reading criterion before running**: compare the three committed generations along two distinct axes -- the **lexicon** (proper nouns, literary register: expect Jean Valjean, Cosette, dark streets) and the **syntax** (agreements, clause construction: expect fractures). The three prompts are different openings on the same universe; the question is not ""is it beautiful?"" but ""what has been learned (lexicon) and what has not (grammar)?"". The detailed reading follows the outputs.
 ",,,,,,,183e5fec31b4982b,f130b0822a90df64,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ca2a65b6,code,fr,9e41989ba3e5e6d1,"# Generer avec le modele fine-tune
-model_qlora.eval()
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ca2a65b6,code,fr,5975b0529665b0ff,"# Comparaison avant/apres fine-tuning : base NF4 (sans adaptateur) vs QLoRA fine-tune
+# Le meme prompt, le meme decodage, le meme seed -- seule change l'application de l'adaptateur LoRA.
 
-def generate_qlora(prompt, max_new_tokens=100, temperature=0.8):
-    inputs = tokenizer(prompt, return_tensors=""pt"").to(model_qlora.device)
+torch.manual_seed(0)  # Graine globale pour reproductibilite
+
+# Mode inference. Le `Trainer` laisse le modele en mode `train` : le dropout LoRA
+# (lora_dropout=0.05) reste alors actif pendant l'echantillonnage, et les
+# generations des deux cotes devenaient du bruit (mesure : ""a a a a a"" avant et
+# apres). On repasse donc le modele en mode inference.
+# Le cache KV reste celui de `prepare_model_for_kbit_training` (desactive) : la
+# generation se fait ici sans cache, voie mesuree stable sur ce siege
+# (torch 2.14.0+cu126 / bitsandbytes 0.50.2 / RTX 3070 Laptop 8 Go).
+model_qlora.eval()
+model_4bit.eval()
+
+def generate_comparatif(prompt, max_new_tokens=100, temperature=0.8, do_sample=True, top_p=0.9):
+    """"""Genere la suite d'un prompt avec la base NF4 (avant) puis avec QLoRA (apres).
+    Vide la VRAM entre les deux appels pour eviter un pic cumule sur les sessions 8 Go.
+
+    Note F3 -- **valide par execution le 2026-10-21** (lane `myia-po-2024`,
+    RTX 3070 Laptop 8 Go) : `model_4bit` partage ses parametres avec `model_qlora`
+    (PEFT mute in-place), et `with model_qlora.disable_adapter():` redonne bien un
+    forward path sans adaptateur -- les deux cotes divergent des la premiere
+    re-execution. Hermes l'avait signale dans la review du head `72f5e864` (F3).""""""
+    inputs = tokenizer(prompt, return_tensors=""pt"").to(model_4bit.device)
+    pad_id = tokenizer.eos_token_id
     with torch.no_grad():
-        outputs = model_qlora.generate(
-            **inputs,
-            max_new_tokens=max_new_tokens,
-            temperature=temperature,
-            do_sample=True,
-            top_p=0.9,
-            pad_token_id=tokenizer.eos_token_id,
+        # AVANT : base quantisee 4-bit, adaptateur desactive (cf. F3, a valider GPU)
+        torch.manual_seed(0)
+        with model_qlora.disable_adapter():
+            out_avant = model_qlora.generate(
+                **inputs, max_new_tokens=max_new_tokens, temperature=temperature,
+                do_sample=do_sample, top_p=top_p, pad_token_id=pad_id,
+            )
+        text_avant = tokenizer.decode(out_avant[0], skip_special_tokens=True)
+        # Liberation VRAM entre les deux generations (sessions 8 Go)
+        del out_avant
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+        # APRES : QLoRA -- meme base + adaptateur fine-tune actif
+        torch.manual_seed(0)
+        out_apres = model_qlora.generate(
+            **inputs, max_new_tokens=max_new_tokens, temperature=temperature,
+            do_sample=do_sample, top_p=top_p, pad_token_id=pad_id,
         )
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+        text_apres = tokenizer.decode(out_apres[0], skip_special_tokens=True)
+    return (text_avant, text_apres)
 
 prompts = [
     ""Dans les rues sombres de Paris,"",
     ""Jean Valjean regardait la nuit"",
     ""Cosette marchait dans le jardin"",
+    # Prompt hors-corpus : l'adaptateur a-t-il gele le reste du modele ou l'a-t-il contamine ?
+    ""Les etoiles brillaient au-dessus de la montagne"",
 ]
 
+print(""="" * 70)
+print(""COMPARAISON AVANT / APRES FINE-TUNING (memes prompts, meme seed)"")
+print(""="" * 70)
 for p in prompts:
-    print(f""\n{'='*60}"")
-    print(f""Prompt : \""{p}\"""")
-    print(f""{'='*60}"")
-    output = generate_qlora(p)
-    print(output)",,,,,,,,9e41989ba3e5e6d1,,,,,,,,
+    avant, apres = generate_comparatif(p)
+    print(f""\n>>> Prompt : {p!r}"")
+    print(f""\n[AVANT -- base NF4, aucun adaptateur]\n  {avant}"")
+    print(f""\n[APRES -- QLoRA fine-tune (r=16, 15ep)]\n  {apres}"")
+    print()
+",,,,,,,,5975b0529665b0ff,,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,acf6d40f,markdown,fr,2404a27bf92b5a4e,"## 8. Comparaison LoRA vs QLoRA
 
 Chargeons le même modèle en FP16 (sans quantization) pour comparer l'empreinte memoire.
@@ -3365,16 +3404,112 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,a7b8c
 ***
 
 **Navigation**: [FT-01](./FT-01-Introduction-FineTuning-Python.ipynb) | [FT-02](./FT-02-QLoRA-Quantization-Python.ipynb) | [FT-03](./FT-03-Supervised-FineTuning-SFT-Python.ipynb) | [FT-04](./FT-04-RLHF-DPO-Python.ipynb) | **FT-05**",,,,,,,8c516df6d85df896,38eb18359981410d,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ift02-gen,markdown,fr,c408efbb42e46d7b,"### Lecture du résultat : la greffe stylistique du fine-tuning
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ift02-gen,markdown,fr,fd022af0a5221710,"### Lecture du resultat : la greffe stylistique, vue avant / apres
 
-La génération `« Dans les rues sombres de Paris, Jean Valjean restait dans son bain de boulon… »` prouve que le fine-tuning QLoRA a **modifié le comportement** du modèle. L'OPT-1.3B de base, entraîné sur un corpus anglophone générique, produit désormais du français qui réemploie le **lexique des *Misérables*** (`Jean Valjean`, `rues sombres de Paris`) — la greffe du dataset de classiques français a pris. Mais observez aussi les **limites** : `« son bain de boulon »` (image absurde assemblée sur des noms réels), `« il dormait sur le floor »` (anglicisme — le lexique anglais du pré-entraîné ressort sous le vernis français) sont des fragments grammaticalement incohérents. C'est le compromis attendu d'un modèle de **1,3 Md paramètres** fine-tuné sur **seulement 10 extraits** : l'imprégnation stylistique prend, la cohérence syntaxique profonde ne suit pas. C'est précisément ce déséquilibre que la cellule de comparaison suivante résume (qualité `~97-99%` du full fine-tuning : estimation théorique, non mesurée ici -- cf. sa cellule de lecture).
+La comparaison ci-dessus repond a la question que les generations precedentes laissaient
+ouverte : **qu'est-ce que le fine-tuning a change, et qu'a-t-il laisse tel quel ?** Les deux
+colonnes sont produites par la **meme** cellule, dans le **meme** noyau, avec la meme graine
+(`torch.manual_seed(0)`) reinitialisee entre les deux appels : la seule variable qui change
+est l'activation de l'adaptateur LoRA (`with model_qlora.disable_adapter():`). Les sorties
+ci-dessus sont **reelles** -- la version precedente de cette cellule n'en produisait aucune.
 
+Quatre observations, sur ces sorties :
 
-**Lecture ancrée des 2e et 3e générations** : le prompt « Jean Valjean regardait la nuit » produit « *comme une espoir* » (faute de genre sur un nom réel) puis dérive en boucle : les deux mêmes phrases (« Cosette dormait dans un logis, il dormait sur le floor ») se répètent jusqu'à la coupure — la signature d'un petit modèle mémo-stylisé. La troisième génération est la plus révélatrice : « *où elle avait bien connu le sujet de la veille* » (formule creuse montée sur des mots courants) et « *Cosette avait lu celui qu'elle ne viendra pas* » aussitôt suivi de « *qu'elle ne viendrait pas* » — la même phrase re-conjuguée, fautive puis correcte, comme si le modèle hésitait entre deux temps verbaux. Diagnostic : vocabulaire et atmosphère empruntés au corpus, morphologie et cohérence intrinsèques au modèle de base. Quinze époques sur 10 extraits greffent un lexique, pas une grammaire.","### Reading the result: the stylistic graft of fine-tuning
+- **Le lexique est emprunte au corpus, la phrase ne l'est pas.** Sur `Dans les rues sombres de
+  Paris,`, la colonne AVANT continue en **francais administratif generique** -- « des gens
+  sont dépêchés à la police pour se rendre à la gare du Nord », « La police a interpellé un
+  homme pour dénoncer le mariage gay » -- sans un seul mot du corpus. La colonne APRES, elle,
+  tire son vocabulaire du corpus : « le mouvement de la barricade », « Les gavrons, ils avaient
+  besoin de leur joueur », « Jean Valjean regardait la nuit dans un bateau de marin ». Sur
+  `Jean Valjean regardait la nuit`, l'AVANT s'arrete en trois mots (« Voyeur, le n'est pas le
+  même. ») tandis que l'APRES construit une scene hugolienne (« Cosette lui regardait comme
+  un homme qui regardait son amour »). La greffe prend -- et elle prend sur le **vocabulaire**,
+  pas sur la phrase.
+- **L'orthographe suit le meme chemin.** La colonne AVANT ecrit « dépêchés », « l'Est »,
+  « interpellé », « décidée » : la base garde ses accents. La colonne APRES ecrit « etait »,
+  « etaient », « n'enchaient », « santite » : **sans accents**, exactement comme les dix
+  extraits du corpus (eux-memes sans accents). Le contraste de lexique se prolonge donc sur
+  l'orthographe : ce n'est pas seulement le vocabulaire qui a change de registre.
+- **Coherence grammaticale : pas de progres mesurable.** L'APRES reste incertain -- « Les
+  pincelles de l'homme de la planquette sont beaucoup plus longues que les murs de l'homme de
+  la santite », « elle ne parlais pas parler » -- et repete ses constructions (« Cosette
+  regardait le comportement de Jean Valjean » quatre fois de suite). Dix exemples x 15 epoques
+  n'apprennent pas une grammaire : ils memorisent un vocabulaire. Un detail le confirme : la
+  phrase du corpus « L'amour est timide, meme pour les coeurs les plus courageux » ressort
+  deformee en « L'amour est loi et le respect est bien loi » -- la memorisation recopie la
+  **forme** de la phrase d'origine, pas son sens. C'est le compromis attendu d'un modele de
+  1.3B fine-tune sur 10 extraits (cf. section 4 sur la grille rank x alpha).
+- **Prompt hors corpus : le style est devenu un biais, pas une option.** Sur `Les etoiles
+  brillaient au-dessus de la montagne`, la base boucle sur son propre prompt (« Les etoiles
+  brillaient au-dessus de la montagne. » repete six fois) ; l'adaptateur derive vers un
+  pastiche hugolien repetitif (« Les perelles de neige n'enchaient jamais la nature »).
+  Hors corpus, le fine-tuning n'a pas gele le reste du modele : il a deplace son style.
 
-The generation `« Dans les rues sombres de Paris, Jean Valjean… »` proves that QLoRA fine-tuning has **modified the model's behavior**. The base OPT-1.3B, trained on a generic English-language corpus, now produces French that reuses the **vocabulary of *Les Misérables*** (`Jean Valjean`, `rues sombres de Paris`) — the graft of the French classics dataset has taken. But also observe the **limits**: `« la figure de la sachant »` (repeated in a loop), `« Cosette lui donneait »` are grammatically incoherent fragments. This is the expected trade-off of a model of **1.3B parameters** fine-tuned on **only 10 excerpts**: the stylistic imprint takes, deep syntactic coherence does not follow. This very imbalance is what the next comparison cell quantifies (quality `~97-99%` of full fine-tuning).
+**Conclusion** : la section 7 a prouve que le fine-tuning modifie le modele ; cette
+comparaison avant/apres, desormais re-executee, precise **quoi** (le lexique, l'orthographe)
+et **combien** (pas la grammaire). Le prochain pas serait la mesure chiffree (perplexite
+retenue, voir critere 2 de #20689) et le balayage d'hyperparametres (critere 4 de #20689) qui
+distingue effet et bruit d'entrainement.
 
-**Close reading of the 2nd and 3rd generations**: the prompt « Jean Valjean regardait la nuit » produces « *Cosette lui donneait ses cartes de mariage* » — « donneait » is an invented conjugation on a real root — then drifts into a loop (« *Cosette regardait Jean Valjean et regardait la table* », repeated): the signature of a small memo-stylized model. The third generation is the most revealing: « *elle continuait le moulinette* » (faulty article on a real noun) and « *Jean Valjean resterait dans la lune* » — an image absurd in semantics, Hugo-like in register. Diagnosis: vocabulary and atmosphere borrowed from the corpus, morphology and coherence intrinsic to the base model. Fifteen epochs on 10 excerpts graft a lexicon, not a grammar.",,,,,,,c408efbb42e46d7b,10903e04f644a2f1,,,,,,,
+**Note methodologique** : la generation se fait avec `do_sample=True, temperature=0.8,
+top_p=0.9` sous `torch.manual_seed(0)` reinitialise entre les deux appels -- la
+reproductibilite est conditionnelle a la version de CUDA, de transformers et de
+bitsandbytes, mais le decodage est identique entre les deux cotes, ce que la comparaison
+reclame. Une precaution n'apparait pas dans le resultat mais le conditionne entierement :
+`model_qlora.eval()` -- sans lui, le dropout LoRA reste actif pendant l'echantillonnage et
+les deux colonnes se reduisent a du bruit repetitif (« a a a a a a a »).","### Reading the result: the stylistic graft of fine-tuning
+
+The comparison above answers the question the previous generations left open: **what did
+fine-tuning change, and what did it leave alone?** Both columns come from the **same** cell,
+in the **same** kernel, with the same seed (`torch.manual_seed(0)`) reset between the two
+calls: the only variable that changes is the activation of the LoRA adapter
+(`with model_qlora.disable_adapter():`). The outputs above are **real** -- the previous
+version of this cell produced none at all.
+
+Four observations, on these outputs:
+
+- **The lexicon is borrowed from the corpus, the sentence is not.** On `Dans les rues sombres
+  de Paris,`, the BEFORE column continues in **generic administrative French** -- ""des gens
+  sont dépêchés à la police pour se rendre à la gare du Nord"", ""La police a interpellé un
+  homme pour dénoncer le mariage gay"" -- without a single word of the corpus. The AFTER
+  column draws its vocabulary from the corpus: ""le mouvement de la barricade"", ""Les gavrons,
+  ils avaient besoin de leur joueur"", ""Jean Valjean regardait la nuit dans un bateau de
+  marin"". On `Jean Valjean regardait la nuit`, BEFORE stops after three words (""Voyeur, le
+  n'est pas le même."") while AFTER builds a Hugo-like scene (""Cosette lui regardait comme un
+  homme qui regardait son amour""). The graft takes -- and it takes on the **vocabulary**, not
+  on the sentence.
+- **The spelling follows the same path.** The BEFORE column writes ""dépêchés"", ""l'Est"",
+  ""interpellé"", ""décidée"": the base keeps its accents. The AFTER column writes ""etait"",
+  ""etaient"", ""n'enchaient"", ""santite"": **without accents**, exactly like the ten excerpts of
+  the corpus (themselves unaccented). The lexical contrast therefore extends to the
+  orthography: it is not only the vocabulary that changed register.
+- **Grammatical coherence: no measurable gain.** AFTER remains uncertain -- ""Les pincelles de
+  l'homme de la planquette sont beaucoup plus longues que les murs de l'homme de la
+  santite"", ""elle ne parlais pas parler"" -- and repeats its constructions (""Cosette
+  regardait le comportement de Jean Valjean"" four times in a row). Ten examples x 15 epochs
+  do not learn a grammar: they memorize a vocabulary. One detail confirms it: the corpus
+  sentence ""L'amour est timide, meme pour les coeurs les plus courageux"" comes back deformed
+  as ""L'amour est loi et le respect est bien loi"" -- memorization copies the **shape** of the
+  original sentence, not its meaning. This is the expected trade-off of a 1.3B model
+  fine-tuned on 10 excerpts (see section 4 on the rank x alpha grid).
+- **Out-of-corpus prompt: the style became a bias, not an option.** On `Les etoiles
+  brillaient au-dessus de la montagne`, the base loops on its own prompt (""Les etoiles
+  brillaient au-dessus de la montagne."" repeated six times); the adapter drifts into a
+  repetitive Hugo-like pastiche (""Les perelles de neige n'enchaient jamais la nature""). Off-
+  corpus, fine-tuning did not freeze the rest of the model: it displaced its style.
+
+**Conclusion**: section 7 proved that fine-tuning modifies the model; this before/after
+comparison, now actually executed, specifies **what** (the lexicon, the orthography) and
+**how much** (not the grammar). The next step would be the numeric measurement (retained
+perplexity, see criterion 2 of #20689) and the hyper-parameter sweep (criterion 4 of #20689)
+that separates effect from training noise.
+
+**Methodological note**: generation uses `do_sample=True, temperature=0.8, top_p=0.9` under
+`torch.manual_seed(0)` reset between the two calls -- reproducibility is conditional on the
+CUDA, transformers and bitsandbytes versions, but the decoding is identical on both sides,
+which is what the comparison demands. One precaution does not appear in the result yet
+conditions it entirely: `model_qlora.eval()` -- without it, LoRA dropout stays active during
+sampling and both columns collapse into repetitive noise (""a a a a a a a"").",,,,,,,fd022af0a5221710,97f7333766d3df5f,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,ift02-cmp,markdown,fr,74c2ad49b71634da,"### Lecture du résultat : le triptyque VRAM / qualité / vitesse
 
 Le tableau récapitulatif condense la **promesse et le coût** de QLoRA sur trois axes :
