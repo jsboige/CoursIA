@@ -205,7 +205,7 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | 04e | [Oracles réflexifs](GameTheory-04e-Reflective-Oracles-Python.ipynb) | Fallenstein, Taylor et Christiano (2015) : un agent qui raisonne sur un modèle de lui-même, l'écart CDT/EDT, un Nash réflexivement cohérent | Python | Recherche |
 | 04f | [Théories de la décision face à un prédicteur](GameTheory-04f-Theories-Decision-Predicteur-Python.ipynb) | EDT, CDT et UDT sur Newcomb, la lésion de Fisher et d'autres problèmes dans un seul cadre générique ; 2TDT-1CDT ; inattention rationnelle | Python | Recherche |
 | 04g | [Supermodularité et treillis des équilibres](GameTheory-04g-Supermodularite-Python.ipynb) | Complémentarité stratégique : tests de supermodularité et de différences croissantes sur un treillis produit, meilleure réponse monotone, ensemble des équilibres purs de Nash comme treillis complet (Topkis, Milgrom-Roberts, Zhou), comparaison monotone et bande d'hystérésis ; ce que ce treillis doit aux gains et non aux préférences | Python | Licence |
-| 04h | [Jeux de routage & price of anarchy](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) | Le price of anarchy **mesuré** : équilibre de Wardrop vs optimum social sur l'instance de Pigou (PoA = 4/3), la borne 2× de Roughgarden–Tardos et sa frontière de validité | Python | Recherche |
+| 04h | [Jeux de routage & price of anarchy](GameTheory-04h-Routing-PriceOfAnarchy-Python.ipynb) | Le price of anarchy **mesuré** : équilibre de Wardrop vs optimum social sur l'instance de Pigou (PoA = 4/3), la borne 4/3 de Roughgarden–Tardos pour les latences linéaires, et la frontière de validité du chiffre | Python | Recherche |
 
 ### Autour de 05 — minimax
 
