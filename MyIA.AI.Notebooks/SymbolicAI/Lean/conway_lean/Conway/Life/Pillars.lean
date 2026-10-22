@@ -426,9 +426,8 @@ theorem turingmachine_facts :
   native_decide
 
 /-- La grille Turing chargée a bien **36 549 cellules vivantes**.
-    Contrôle croisé indépendant : la même population est mesurée par le
-    moteur Hashlife Python du lac (`scripts/hashlife.py`), dont le tableau
-    de mesures (`scripts/README.md`) porte la même valeur pour ce motif. -/
+    Contrôle croisé indépendant : la table de mesures du lac
+    (`scripts/README.md`) porte la même valeur pour ce motif. -/
 theorem turingmachine_initial_population : turingmachineInitial.length = 36549 :=
   turingmachine_facts.1
 

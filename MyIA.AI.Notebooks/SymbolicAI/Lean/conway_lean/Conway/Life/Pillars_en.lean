@@ -424,10 +424,8 @@ theorem turingmachine_facts :
   native_decide
 
 /-- The loaded Turing grid has exactly **36 549 live cells**.
-    Independent cross-check: the same population is measured by the
-    lake's Python Hashlife engine (`scripts/hashlife.py`), whose
-    measurement table (`scripts/README.md`) carries the same value for
-    this pattern. -/
+    Independent cross-check: the lake's measurement table
+    (`scripts/README.md`) carries the same value for this pattern. -/
 theorem turingmachine_initial_population : turingmachineInitial.length = 36549 :=
   turingmachine_facts.1
 

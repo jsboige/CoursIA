@@ -254,7 +254,8 @@ def test_audit_allowlists_native_decide_axioms():
     # come with the module-attribution argument, as #9341's did.
     names = [a.strip() for a in allow.split(",") if a.strip()]
     assert len(names) == 79, (
-        f"audit allow-list must carry the 79 native_decide axioms of the whole "        f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
+        f"audit allow-list must carry the 79 native_decide axioms of the whole "
+        f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
         f"footprint + 21 build-enumerated entries of the newly covered "
         f"modules + 2 P4-At standalone witnesses from grain 3a #11303 + 8 "
         f"class-witness entries from the #6724 criterion-3 characterization "
@@ -264,7 +265,8 @@ def test_audit_allowlists_native_decide_axioms():
         f"by #21833, "
         f"+ 2 Turing-machine entries from #17465 (the FR + _en twins of "
         f"turingmachine_facts, the single anchor of the Turing-machine "
-        f"witness), "        f"each attributed in the workflow comment); got {len(names)}")
+        f"witness), "
+        f"each attributed in the workflow comment); got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges, plus one
     # #10889-widening family: the _en twins under Conway_en.*).

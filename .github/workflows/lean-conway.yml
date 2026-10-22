@@ -301,9 +301,9 @@ jobs:
       #   Conway.LookAndSayLemmas_en (2): Conway_en.digitsToNat_example,
       #     Conway_en.lookAndSay_4
       #   Conway.Life.Pillars (1): Conway.Life.Pillars.turingmachine_facts --
-      #     the single anchor of the Turing-machine witness (#17465): the five
+      #     the single anchor of the Turing-machine witness (#17465): the four
       #     measured facts are grouped in ONE conjunction, so the RLE parse +
-      #     sort of the 36 549 cells is evaluated once instead of five times.
+      #     sort of the 36 549 cells is evaluated once instead of four times.
       #   Conway.Life.Pillars_en (1): Conway.Life.Pillars_en.turingmachine_facts
       #     -- the _en twin of the above (the EN module keeps the FR namespace
       #     path, like the other Pillars_en entries).
