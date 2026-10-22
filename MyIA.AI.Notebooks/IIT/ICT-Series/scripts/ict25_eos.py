@@ -67,6 +67,27 @@ def git_commit() -> str:
         return "unknown"
 
 
+def eos_token_ids(model, tok) -> list[int]:
+    """Jetons de fin de sequence reconnus par le modele.
+
+    `generation_config.eos_token_id` peut porter UN id ou une LISTE : pour
+    Qwen2.5-Instruct il en porte deux (`` et ``). Ne reconnaitre que
+    `tokenizer.eos_token_id` classait une completion arretee par le second
+    comme « censuree » -- donc une generation qui s'est arretee naturellement
+    comptait comme garde-fou atteint, avec sa vraie longueur (#20560, revue
+    ai-01 du 2026-10-22).
+    """
+    ids: set[int] = set()
+    raw = getattr(getattr(model, "generation_config", None), "eos_token_id", None)
+    if isinstance(raw, int):
+        ids.add(raw)
+    elif isinstance(raw, (list, tuple, set)):
+        ids.update(int(i) for i in raw if isinstance(i, int))
+    if tok.eos_token_id is not None:
+        ids.add(int(tok.eos_token_id))
+    return sorted(ids)
+
+
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     p = argparse.ArgumentParser(description="Mesure EOS ICT-25 bras-N (issue #13596)")
     p.add_argument("--gpu", type=int, default=0,
@@ -113,6 +134,9 @@ def main(argv: list[str] | None = None) -> int:
     if tok.pad_token_id is None:
         tok.pad_token_id = tok.eos_token_id
 
+    eos_ids = eos_token_ids(model, tok)
+    print(f"[eos-measure] jetons de fin reconnus : {eos_ids}")
+
     prompts = [f"{FEWSHOT}\nCombien font {q} ?" for q, _ in PAIRS] * 3
     lengths: list[int] = []
     censored = 0
@@ -124,9 +148,15 @@ def main(argv: list[str] | None = None) -> int:
                 pad_token_id=tok.eos_token_id,
             )
         completion_ids = out[0, inputs["input_ids"].shape[1]:]
-        if tok.eos_token_id in completion_ids:
-            eos_pos = (completion_ids == tok.eos_token_id).nonzero(as_tuple=True)[0][0].item()
-            natural_len = eos_pos + 1
+        # Position du PREMIER jeton de fin, quel que soit son id : une
+        # completion qui s'est arretee sur l'un d'eux est une fin naturelle.
+        positions = []
+        for eid in eos_ids:
+            hit = (completion_ids == eid).nonzero(as_tuple=True)[0]
+            if hit.numel():
+                positions.append(hit[0].item())
+        if positions:
+            natural_len = min(positions) + 1
         else:
             natural_len = len(completion_ids)
             censored += 1
@@ -146,7 +176,9 @@ def main(argv: list[str] | None = None) -> int:
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "max_new_tokens": MAX_NEW_TOKENS,
         "do_sample": False,
+        "eos_token_ids": eos_ids,
         "n": len(lengths),
+        "n_distinct_prompts": len(set(prompts)),
         "p50": p50,
         "p95": p95,
         "min": min(ordered),
