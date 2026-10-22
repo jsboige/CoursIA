@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -4320,6 +4321,144 @@ def test_stack_pr_head_refspec_is_forced(monkeypatch):
     for spec in specs:
         assert spec.startswith("+pull/"), spec
         assert spec.split(":", 1)[0] == f"+pull/{spec.split('/')[1]}/head", spec
+
+
+def _git_run(cwd, *args):
+    """`git` reel dans un depot jetable : identite fixe, pas de signature."""
+    env = dict(os.environ)
+    env.update(
+        {
+            "GIT_AUTHOR_NAME": "Pile",
+            "GIT_AUTHOR_EMAIL": "pile@example.invalid",
+            "GIT_COMMITTER_NAME": "Pile",
+            "GIT_COMMITTER_EMAIL": "pile@example.invalid",
+            "GIT_AUTHOR_DATE": "2026-10-22T00:00:00+00:00",
+            "GIT_COMMITTER_DATE": "2026-10-22T00:00:00+00:00",
+        }
+    )
+    proc = subprocess.run(
+        ["git", "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false", *args],
+        cwd=str(cwd), capture_output=True, text=True, encoding="utf-8",
+        errors="replace", env=env,
+    )
+    assert proc.returncode == 0, f"git {' '.join(args)} -> {proc.stderr}"
+    return proc.stdout.strip()
+
+
+def _stack_fixture(tmp_path):
+    """Un `origin` dont la tete de PR a ete REECRITE, et son clone de gate.
+
+    L'ancienne tete et la nouvelle sont deux commits freres au-dessus de
+    `main` : la nouvelle n'est pas descendante de l'ancienne, donc la ref
+    locale du clone devient non fast-forward -- c'est exactement le rejet que
+    le refspec forcee doit contourner.
+
+    L'ordre est essentiel : le clone emporte l'ANCIENNE tete, et la
+    reecriture vient apres. Sans cela le fetch initial rapporterait deja la
+    nouvelle tete, et le rejet n'existerait pas.
+    """
+    origin = tmp_path / "origin"
+    _git_run(tmp_path, "init", "-b", "main", str(origin))
+    (origin / "base.txt").write_text("base\n", encoding="utf-8")
+    _git_run(origin, "add", "base.txt")
+    _git_run(origin, "commit", "-m", "base")
+    main_sha = _git_run(origin, "rev-parse", "HEAD")
+
+    _git_run(origin, "checkout", "-b", "pr42")
+    (origin / "work.txt").write_text("version 1\n", encoding="utf-8")
+    _git_run(origin, "add", "work.txt")
+    _git_run(origin, "commit", "-m", "tete v1")
+    old_sha = _git_run(origin, "rev-parse", "HEAD")
+    _git_run(origin, "update-ref", "refs/pull/42/head", old_sha)
+    _git_run(origin, "checkout", "main")
+
+    gate = tmp_path / "gate"
+    _git_run(tmp_path, "clone", str(origin), str(gate))
+    _git_run(gate, "fetch", "origin", "+pull/42/head:refs/remotes/prh/42")
+
+    # La tete est reecrite cote origin : un commit jumeau de `main`, pas un
+    # descendant de l'ancienne tete.
+    _git_run(origin, "checkout", "-b", "pr42-rewrite", main_sha)
+    (origin / "work.txt").write_text("version 2\n", encoding="utf-8")
+    _git_run(origin, "add", "work.txt")
+    _git_run(origin, "commit", "-m", "tete v2")
+    new_sha = _git_run(origin, "rev-parse", "HEAD")
+    _git_run(origin, "update-ref", "refs/pull/42/head", new_sha)
+    _git_run(origin, "checkout", "main")
+    return gate, old_sha, new_sha
+
+
+def test_stack_door_is_measured_after_a_rewritten_pr_head(tmp_path, monkeypatch):
+    """Une tete de PR reecrite ne doit pas desactiver la porte STACK.
+
+    Scenario du 2026-10-22 : la tete d'une PR bouge (rebase, force-push), la
+    ref locale du clone de gate devient non fast-forward, et le fetch du LOT
+    echouait entierement -- ce qui desactivait la porte STACK pour tout le
+    depot pendant que le gate rendait son verdict quand meme.
+    """
+    gate, old_sha, new_sha = _stack_fixture(tmp_path)
+
+    # Controle NEGATIF : sans le `+`, git refuse la ref locale.
+    refused = subprocess.run(
+        ["git", "fetch", "origin", "pull/42/head:refs/remotes/prh/42"],
+        cwd=str(gate), capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
+    )
+    assert refused.returncode != 0, refused.stdout
+    assert "non-fast-forward" in refused.stderr, refused.stderr
+
+    # Le gate, lui, force le refspec : la mesure aboutit.
+    monkeypatch.chdir(gate)
+    remaining, incidents = mod._fetch_pr_heads([42])
+    assert remaining == [42], remaining
+    assert incidents == [], incidents
+    head = subprocess.run(
+        ["git", "rev-parse", "refs/remotes/prh/42"],
+        cwd=str(gate), capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
+    ).stdout.strip()
+    assert head == new_sha, (head, new_sha)
+    assert head != old_sha
+
+    # Et la porte STACK est MESUREE, pas desactivee.
+    monkeypatch.setattr(mod, "gh_lines", lambda args: ["42"])
+    monkeypatch.setattr(mod, "default_stack_index", _REAL_DEFAULT_STACK_INDEX)
+    monkeypatch.setattr(
+        mod, "_STACK_INDEX_CACHE",
+        {"built": False, "index": None, "incidents": []},
+    )
+    index = mod.default_stack_index()
+    assert index is not None, mod._STACK_INDEX_CACHE
+    assert 42 in index
+    assert index[42].commits == [new_sha], index[42].commits
+    assert mod.stack_measurement_state() == "measured"
+
+
+def test_stack_measurement_state_separates_not_run_from_unmeasured(monkeypatch):
+    """#22005 -- l'incompletude se nomme dans le verdict, sans refuser.
+
+    Trois etats distincts : la porte n'a pas ete exercee (`not-run`), elle a
+    ete exercee et la mesure a echoue (`unmeasured`), elle a ete exercee et
+    a reussi (`measured`). Un READY sans STACK ne doit pas se lire comme un
+    READY complet.
+    """
+    monkeypatch.setattr(mod, "_STACK_INDEX_CACHE",
+                        {"built": False, "index": None, "incidents": []})
+    assert mod.stack_measurement_state() == "not-run"
+
+    def boom(args, check=True):
+        return subprocess.CompletedProcess(["git", *args], 1, "", "boom")
+
+    monkeypatch.setattr(mod, "_git", boom)
+    monkeypatch.setattr(mod, "gh_lines", lambda args: ["42"])
+    monkeypatch.setattr(mod, "default_stack_index", _REAL_DEFAULT_STACK_INDEX)
+    monkeypatch.setattr(
+        mod, "_STACK_INDEX_CACHE",
+        {"built": False, "index": None, "incidents": []},
+    )
+    assert mod.default_stack_index() is None
+    assert mod.stack_measurement_state() == "unmeasured"
+    assert mod._STACK_INDEX_CACHE["incidents"]
 
 
 def test_stack_index_cache_is_built_once(monkeypatch):
