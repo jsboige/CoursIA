@@ -35,7 +35,8 @@ Un algorithme compris sur un exemple jouet n'est pas encore un algorithme maîtr
 Applications/
 ├── Adversarial/     # Recherche adversariale (Puissance 4 + jumeaux C#)
 ├── CSP/        # Applications CSP (problèmes classiques + jumeaux C#)
-└── Hybrid/     # Méthodes hybrides / métaheuristiques (+ jumeaux C#)
+├── Hybrid/     # Méthodes hybrides / métaheuristiques (+ jumeaux C#)
+└── Search/     # Recherche en espace d'états (puzzles : Rush Hour, A* admissible)
 ```
 
 ```mermaid
@@ -159,6 +160,16 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 
 ---
 
+## Applications Search (`Search/`)
+
+Le terrain d'application le plus pur de la [Partie 1](../Part1-Foundations/README.md) : un puzzle en espace d'états où la recherche s'applique directement, sans solveur industriel en contrepoint. Le Rush Hour (Quindene) y confronte les trois stratégies de base — BFS, A* avec heuristique admissible, et recherche gloutonne — à l'état près, sur des instances générées et contrôlées, pour rendre **mesurable** le rendement de l'heuristique (A* explore environ trois fois moins d'états que le BFS à solution optimale égale) et le prix de l'abandon de l'optimalité (le glouton s'égare).
+
+| # | Notebook | Durée | Contenu | Source |
+|---|----------|-------|---------|--------|
+| 1 | [App-33-RushHour-Admissible-Astar-Python](Search/App-33-RushHour-Admissible-Astar-Python.ipynb) | ~40 min | Rush Hour 6×6 : BFS, A* (heuristique admissible) et recherche gloutonne *from-scratch* (stdlib Python seule), instances générées par scramble, benchmark sur 6 instances (A* ≈ 3× moins d'états que le BFS à solution égale, glouton sous-optimal), 3 exercices | Série Search (Partie 1) |
+
+---
+
 ## Prérequis par notebook
 
 ### Applications Adversarial
@@ -223,6 +234,12 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 | App-22 AlgorithmSelection-Python | MGS-16 (Rice / No Free Lunch) | pandas, numpy, matplotlib |
 | App-23 PRESENT Differential Cryptanalysis | SAT, CNF, bit-vectors | python-sat, numpy, matplotlib |
 | App-27 Sparse Index Tracking Walk-Forward | CSP-3 (CP-SAT), CSP-5 (optimisation), App-10 (portefeuille) | ortools, pandas, numpy |
+
+### Applications Search
+
+| Notebook | Fondations requises | Dépendances |
+|----------|--------------------|-------------|
+| App-33 RushHour | Search-1 (Espace d'états), Search-2 (BFS), Search-3 (A*) | Python 3.10+ (stdlib seule) |
 
 ## Origine des projets
 
