@@ -22,8 +22,13 @@
     - `Geometry.WuMethod` — companion du `Geometry-03` : ce que le test de
       Wu garantit (certificats d'appartenance idéale T1, identité maîtresse
       de Ceva T3, témoins négatifs).
+    - `Geometry.GroebnerBridge` — companion du `Geometry-02` : ce que
+      « prouvé par Gröbner » garantit (appartenance à l'idéal `C1 = 1 • H`,
+      théorème faux du §6 réfuté, saturation de Ritt et encodage
+      Rabinowitsch en sept variables).
 -/
 
 import Geometry.MidpointHypotenuse
 import Geometry.FromFigureToEquation
 import Geometry.WuMethod
+import Geometry.GroebnerBridge
