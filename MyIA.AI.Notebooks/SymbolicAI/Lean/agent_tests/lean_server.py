@@ -195,7 +195,13 @@ _LEAN_NS = r"[^\W\d][\w'.]*"
 # (#21947). Normalizing BOTH sides of the comparison removes the decoration
 # instead of widening the allow-list: a new `native_decide` still has to be
 # listed explicitly.
-_AXIOM_NAME_DECORATION_RE = re.compile(r"[^\w.'!]+$")
+# The preserved set is the identifier alphabet itself (`_LEAN_ID` above):
+# `?` and `!` are legal trailing characters of a Lean name, not decorations
+# -- Lean 4.35 emits a distinct axiom ending in `?` (adjoint dossier on
+# #21955), and stripping it fused that axiom with a DIFFERENT allow-listed
+# name, a false PASS. Only characters outside the alphabet (the dagger,
+# whitespace) are decorations.
+_AXIOM_NAME_DECORATION_RE = re.compile(r"[^\w.'!?]+$")
 
 
 def normalize_axiom_name(name: str) -> str:

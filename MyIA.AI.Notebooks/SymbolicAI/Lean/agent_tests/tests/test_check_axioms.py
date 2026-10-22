@@ -457,6 +457,34 @@ def test_unknown_anchor_with_diagnostic_glyph_stays_forbidden():
     assert r["forbidden"] == [f"{anchor}✝"]
 
 
+def test_question_mark_is_part_of_the_name_not_a_decoration():
+    """#21955 (dossier adjoint) : ``?`` est un caractere legal d'identifiant
+    Lean (il vit dans ``_LEAN_ID``), pas une decoration.
+
+    Contre-exemple mesure sur Lean 4.35 : un axiome distinct dont le nom
+    finit par ``?``. Avec le jeu preserve ``[\\w.'!]`` la normalisation
+    stripped le ``?`` et fusionnait l'axiome avec un nom allow-liste
+    DIFFERENT -- un faux PASS. L'ancre dague reste depouillee (temoin du
+    dossier), l'ancre en ``?`` ne l'est plus.
+    """
+    assert lean_server.normalize_axiom_name("Foo.allowed?") == "Foo.allowed?"
+    assert lean_server.normalize_axiom_name("Foo.allowed!") == "Foo.allowed!"
+    # temoin dagger du dossier : toujours depouille
+    assert lean_server.normalize_axiom_name("Foo.ax_1_1✝") == "Foo.ax_1_1"
+
+
+def test_question_mark_axiom_does_not_fuse_with_a_different_allow_listed_name():
+    """#21955, CONTROLE NEGATIF : ``Foo.allowed?`` non liste doit rester
+    interdit meme si ``Foo.allowed`` (nom distinct) est allow-liste."""
+    out = _axiom_line("Mod.t1", ["Foo.allowed?"])
+    r = _check_with_output(
+        ["Mod.t1"], out, fail_on_sorry=True,
+        whitelist=["Foo.allowed"],
+    )
+    assert r["success"] is False
+    assert r["forbidden"] == ["Foo.allowed?"]
+
+
 def test_no_declarations_ci_gate_fails_loud(tmp_path):
     """CI gate: an empty enumeration the gate cannot explain still fails loud.
 
