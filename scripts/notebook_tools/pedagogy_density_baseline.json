@@ -1,7 +1,7 @@
 {
   "_comment": "Pedagogy-density baseline (#10479). Burn down, do not grow. One float per TRACKED pedagogical notebook: chars of markdown prose per code cell (continuous metric). Population: `git ls-files 'MyIA.AI.Notebooks/**/*.ipynb'` minus EXCLUDE_DIRS minus setup/out-of-corpus kinds. Regenerate with: python scripts/notebook_tools/pedagogy_density.py --update-baseline",
   "metric": "prose_chars / code_cells",
-  "count": 1356,
+  "count": 1405,
   "notebooks": {
     "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb": 1205.125,
     "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb": 1237.667,
@@ -175,7 +175,7 @@
     "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-11-Generation-TTS.ipynb": 1589.65,
     "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-12-Compilation-Audio.ipynb": 1450.462,
     "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-13-Audiobook-FishAudio-S2Pro.ipynb": 1347.25,
-    "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb": 1087.154,
+    "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-14-VoiceLeading-Rendu-GenAI.ipynb": 1087.846,
     "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-15-MERT2-Music-Understanding.ipynb": 1275.333,
     "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-16-SheetSage2-Audio-To-Score.ipynb": 2328.846,
     "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/04-17-Basic-Pitch-Transcription.ipynb": 947.143,
@@ -886,34 +886,34 @@
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond-CSharp.ipynb": 1722.412,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-07-MCTS-And-Beyond.ipynb": 1814.438,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks-CSharp.ipynb": 1327.1,
-    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb": 1472.857,
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks.ipynb": 1473.143,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming-CSharp.ipynb": 1561.0,
-    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb": 2119.944,
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09-LinearProgramming.ipynb": 2120.111,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09b-SpuriousMinima.ipynb": 1846.429,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09c-CombinatorialDiscrepancy.ipynb": 2472.429,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09d-BeckFiala-Lean-Python.ipynb": 1923.0,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09e-Komlos-Lean.ipynb": 1636.235,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-09f-ConvexOptimisation-Python.ipynb": 1212.727,
-    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb": 1458.4,
-    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb": 1850.167,
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata-CSharp.ipynb": 1458.6,
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-10-SymbolicAutomata.ipynb": 1850.667,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics-CSharp.ipynb": 1264.222,
-    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb": 1471.048,
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11-Metaheuristics.ipynb": 1471.476,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part2.ipynb": 1462.444,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part3.ipynb": 1224.333,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep-Part4.ipynb": 1588.778,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11b-Metaheuristiques-Deep.ipynb": 1241.0,
-    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb": 1364.815,
+    "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11c-Empirical-Algorithm-Selection.ipynb": 1363.926,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-11d-Descente-Sous-Budget.ipynb": 1496.375,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-12a-Composer-Regards.ipynb": 1333.444,
     "MyIA.AI.Notebooks/Search/Part1-Foundations/Search-13a-Traverser-Murs-Certifies.ipynb": 618.8,
     "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals-CSharp.ipynb": 1576.526,
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb": 1168.606,
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb": 1168.697,
     "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency-CSharp.ipynb": 999.783,
     "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-2-Consistency.ipynb": 1122.857,
     "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced-CSharp.ipynb": 910.583,
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb": 1458.2,
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-3-Advanced.ipynb": 1459.04,
     "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling-CSharp.ipynb": 1649.5,
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb": 894.652,
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-4-Scheduling.ipynb": 894.783,
     "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization-CSharp.ipynb": 1259.818,
     "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-5-Optimization.ipynb": 1385.16,
     "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-6-Hybridization-CSharp.ipynb": 1004.6,
@@ -922,8 +922,56 @@
     "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-7-Soft.ipynb": 1079.8,
     "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal-CSharp.ipynb": 2699.5,
     "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-8-Temporal.ipynb": 1007.412,
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb": 1233.526,
-    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb": 1546.579,
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed-CSharp.ipynb": 1233.684,
+    "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-9-Distributed.ipynb": 1546.737,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1-NQueens.ipynb": 1191.071,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10-Portfolio.ipynb": 1123.708,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-10b-Portfolio-CSharp.ipynb": 2035.273,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross.ipynb": 931.667,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11b-Picross-CSharp.ipynb": 849.25,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12-ConnectFour.ipynb": 1042.0,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb": 1499.938,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb": 1494.182,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13b-TSP-Metaheuristics-CSharp.ipynb": 1123.909,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb": 1642.0,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-14-ConnectFour-CSharp.ipynb": 860.4,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-15-SportsScheduling.ipynb": 1181.412,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-15b-SportsScheduling-CSharp.ipynb": 1475.733,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-16-Crossword-CSP-CSharp.ipynb": 787.417,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-16-Crossword-CSP.ipynb": 3038.417,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17-VRP-Logistics.ipynb": 1139.533,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17b-VRP-Logistics-CSharp.ipynb": 1247.643,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-17b-VRP-Logistics-Python.ipynb": 1158.357,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18-HyperparameterTuning.ipynb": 636.286,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18b-HyperparameterTuning-CSharp.ipynb": 978.0,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18b-HyperparameterTuning-Python.ipynb": 657.846,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb": 1147.083,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb": 796.25,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb": 1456.062,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-1b-NQueens-CSharp.ipynb": 869.429,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2-GraphColoring-Statistical-Validity-Python.ipynb": 1319.909,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2-GraphColoring.ipynb": 1585.138,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20-SudokuBenchmark-Python.ipynb": 1849.917,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-20b-SudokuBenchmark-CSharp.ipynb": 1439.167,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-21-VoiceLeading.ipynb": 1682.733,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb": 2195.0,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb": 1067.1,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-27-Sparse-Index-Tracking-Walk-Forward.ipynb": 2945.818,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-2b-GraphColoring-CSharp.ipynb": 819.846,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-3-NurseScheduling.ipynb": 798.72,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-3b-NurseScheduling-CSharp.ipynb": 1789.727,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-4-JobShopScheduling.ipynb": 1058.75,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-4b-JobShopScheduling-CSharp.ipynb": 1189.7,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-5-Timetabling-CSharp.ipynb": 1303.7,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-5-Timetabling.ipynb": 888.0,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-6-Minesweeper-CSharp.ipynb": 1083.364,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-6-Minesweeper.ipynb": 1062.13,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-7-Wordle.ipynb": 1434.619,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-7b-Wordle-CSharp.ipynb": 697.368,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-8-MiniZinc-CSharp.ipynb": 1210.643,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-8-MiniZinc.ipynb": 1170.947,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9-EdgeDetection.ipynb": 1047.353,
+    "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-9b-EdgeDetection-CSharp.ipynb": 1241.0,
     "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-01-Introduction.ipynb": 1819.0,
     "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-02-Composition.ipynb": 2275.273,
     "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-03-Eukaryote.ipynb": 2024.5,
@@ -944,7 +992,7 @@
     "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-15-LandscapeAnalysis.ipynb": 1216.0,
     "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-16-AlgorithmSelection.ipynb": 1082.214,
     "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17-ParameterControl.ipynb": 1340.727,
-    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17b-Empirical-Algorithm-Selection.ipynb": 1278.444,
+    "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-17b-Empirical-Algorithm-Selection.ipynb": 1279.0,
     "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-18-CecBanc.ipynb": 1504.636,
     "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-19-MetropolisReinsertion.ipynb": 1790.111,
     "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-20-Langage-de-Composition.ipynb": 3001.0,
@@ -959,11 +1007,11 @@
     "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-29-GA-vs-Mealpy.ipynb": 1708.875,
     "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-30-ScatterSearch-Decomposition.ipynb": 1474.9,
     "MyIA.AI.Notebooks/Search/Part4-Metaheuristics/MGS-vs-mealpy/MGS-31-Synthese-Croisee.ipynb": 1946.25,
-    "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-01-EdgeColoring-Tutte-Python.ipynb": 1254.917,
+    "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-01-EdgeColoring-Tutte-Python.ipynb": 1255.667,
     "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-02-Factorio-Balancer-Python.ipynb": 991.632,
     "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-03-MAPF-Guarantee-Audit-Python.ipynb": 854.077,
     "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-04-CombinatorialAuctions-WDP-VCG-Python.ipynb": 1525.5,
-    "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb": 1167.0,
+    "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb": 1167.25,
     "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-06-LearningToBranch-Generalization-Audit-Python.ipynb": 1954.417,
     "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-07-SALBP-AssemblyLineBalancing-Audit-Python.ipynb": 3425.273,
     "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-08-OrbitalAssembly-Certificate-Audit-Python.ipynb": 2731.0,
@@ -972,7 +1020,7 @@
     "MyIA.AI.Notebooks/Search/Part5-Frontieres/Frontieres-11-Abstraction-Dette-ShortestPath-Python.ipynb": 1193.333,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-CSharp.ipynb": 1172.0,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-01-Backtracking-Python.ipynb": 1462.462,
-    "MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-CSharp.ipynb": 1336.3,
+    "MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-CSharp.ipynb": 1336.9,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Python.ipynb": 1493.0,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-CSharp.ipynb": 1207.154,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-03-Genetic-Python.ipynb": 1563.25,
@@ -988,7 +1036,7 @@
     "MyIA.AI.Notebooks/Sudoku/Sudoku-08-HumanStrategies-Python.ipynb": 1400.227,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-CSharp.ipynb": 1100.267,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-09-GraphColoring-Python.ipynb": 1274.455,
-    "MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb": 1497.071,
+    "MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb": 1497.286,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-Python.ipynb": 1322.846,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-CSharp.ipynb": 1236.5,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-Python.ipynb": 2044.846,
@@ -999,12 +1047,12 @@
     "MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-Python.ipynb": 1595.2,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-CSharp.ipynb": 1516.533,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-14-BDD-Python.ipynb": 1267.857,
-    "MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-CSharp.ipynb": 1280.074,
+    "MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-CSharp.ipynb": 1280.185,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-Python.ipynb": 1444.35,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-16-NeuralNetwork-Python.ipynb": 1784.864,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-17-LLM-Python.ipynb": 1534.5,
-    "MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb": 1616.88,
-    "MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb": 1502.44,
+    "MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-CSharp.ipynb": 1617.16,
+    "MyIA.AI.Notebooks/Sudoku/Sudoku-18-Comparison-Python.ipynb": 1502.72,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-18b-Statistical-Comparison-Python.ipynb": 1593.111,
     "MyIA.AI.Notebooks/Sudoku/Sudoku-19-Lean-Propagation-Lean.ipynb": 2048.8,
     "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argument_Analysis_Fallacy_Rules_Symboliques.ipynb": 1510.125,
@@ -1074,7 +1122,8 @@
     "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-03-Companion-Formel-Lean-Python.ipynb": 1027.643,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/KNOTS-04-Geometrie-Hyperbolique-Python.ipynb": 661.857,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/01-formes-modulaires-sl2z-hecke.ipynb": 917.667,
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/02-monstrous-moonshine-invariant-j.ipynb": 1692.111,
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/02-monstrous-moonshine-invariant-j.ipynb": 1706.667,
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/03-szpiro-pasten-2026.ipynb": 1425.286,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/04-umbral-moonshine-reseaux-niemeier.ipynb": 1887.375,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-02-Dependent-Types-Lean.ipynb": 1560.103,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-03-Propositions-Proofs-Lean.ipynb": 2222.16,
@@ -1120,7 +1169,7 @@
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24-Calibration-Native-Companion.ipynb": 2842.071,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-24b-Confiance-Preuves-Native.ipynb": 1135.8,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-25-Coherence-et-Temoin.ipynb": 1872.0,
-    "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-26-Munkres-Tribute.ipynb": 1503.889,
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-26-Munkres-Tribute.ipynb": 1504.556,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-27-EdgeColoring-Tutte-Companion.ipynb": 2215.75,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-28-Complex-Structure-S6.ipynb": 1598.083,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-29-Hecke-Operators-Native.ipynb": 2836.316,
@@ -1169,7 +1218,7 @@
     "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-2-PDDL-Basics.ipynb": 1959.692,
     "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space-Csharp.ipynb": 1422.692,
     "MyIA.AI.Notebooks/SymbolicAI/Planners/01-Foundation/Planners-3-State-Space.ipynb": 926.565,
-    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward-Csharp.ipynb": 1686.923,
+    "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward-Csharp.ipynb": 1687.154,
     "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-4-Fast-Downward.ipynb": 1007.632,
     "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics-Csharp.ipynb": 930.562,
     "MyIA.AI.Notebooks/SymbolicAI/Planners/02-Classical/Planners-5-Heuristics.ipynb": 1343.182,
@@ -1359,203 +1408,5 @@
     "MyIA.AI.Notebooks/SymbolicAI/Tweety/Tweety-12-Grounded-Via-TweetyProject-Python.ipynb": 1665.0,
     "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-ExplorerPattern-Csharp.ipynb": 812.125,
     "MyIA.AI.Notebooks/cross-series/socle-metadata-driven/Socle-MetadataDriven-Csharp.ipynb": 1564.0
-  },
-  "unmeasured": [
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-1-NQueens.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-1-NQueens.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-10-Portfolio.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-10-Portfolio.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-10b-Portfolio-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-10b-Portfolio-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-11-Picross.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-11-Picross.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-11b-Picross-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-11b-Picross-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-12-ConnectFour.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-12-ConnectFour.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-12b-ConnectFour-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-12b-ConnectFour-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-13-TSP-Metaheuristics.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-13-TSP-Metaheuristics.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-13b-TSP-Metaheuristics-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-13b-TSP-Metaheuristics-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-14-ConnectFour-Adversarial.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-14-ConnectFour-Adversarial.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-14-ConnectFour-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-14-ConnectFour-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-15-SportsScheduling.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-15-SportsScheduling.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-15b-SportsScheduling-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-15b-SportsScheduling-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-16-Crossword-CSP-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-16-Crossword-CSP-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-16-Crossword-CSP.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-16-Crossword-CSP.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-17-VRP-Logistics.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-17-VRP-Logistics.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-17b-VRP-Logistics-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-17b-VRP-Logistics-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-17b-VRP-Logistics-Python.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-17b-VRP-Logistics-Python.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-18-HyperparameterTuning.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-18-HyperparameterTuning.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-18b-HyperparameterTuning-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-18b-HyperparameterTuning-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-18b-HyperparameterTuning-Python.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-18b-HyperparameterTuning-Python.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-18c-HyperparameterTuning-Rustuna-vs-Optuna.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-19-ProceduralGeneration-WFC-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-19-ProceduralGeneration-WFC-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-19-ProceduralGeneration-WFC.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-19-ProceduralGeneration-WFC.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-1b-NQueens-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-1b-NQueens-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-2-GraphColoring-Statistical-Validity-Python.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-2-GraphColoring-Statistical-Validity-Python.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-2-GraphColoring.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-2-GraphColoring.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-20-SudokuBenchmark-Python.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-20-SudokuBenchmark-Python.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-20b-SudokuBenchmark-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-20b-SudokuBenchmark-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-21-VoiceLeading.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-21-VoiceLeading.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-22-AlgorithmSelection-Python.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-22-AlgorithmSelection-Python.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-27-Sparse-Index-Tracking-Walk-Forward.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-27-Sparse-Index-Tracking-Walk-Forward.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-2b-GraphColoring-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-2b-GraphColoring-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-3-NurseScheduling.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-3-NurseScheduling.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-3b-NurseScheduling-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-3b-NurseScheduling-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-4-JobShopScheduling.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-4-JobShopScheduling.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-4b-JobShopScheduling-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-4b-JobShopScheduling-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-5-Timetabling-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-5-Timetabling-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-5-Timetabling.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-5-Timetabling.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-6-Minesweeper-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-6-Minesweeper-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-6-Minesweeper.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-6-Minesweeper.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-7-Wordle.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-7-Wordle.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-7b-Wordle-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-7b-Wordle-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-8-MiniZinc-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-8-MiniZinc-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-8-MiniZinc.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-8-MiniZinc.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-9-EdgeDetection.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-9-EdgeDetection.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\Search\\Part3-Cas-pratiques\\App-9b-EdgeDetection-CSharp.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\Search\\\\Part3-Cas-pratiques\\\\App-9b-EdgeDetection-CSharp.ipynb'"
-    },
-    {
-      "path": "MyIA.AI.Notebooks\\SymbolicAI\\Lean\\Langlands\\03-szpiro-pasten-2026.ipynb",
-      "detail": "cannot parse: [Errno 2] No such file or directory: 'MyIA.AI.Notebooks\\\\SymbolicAI\\\\Lean\\\\Langlands\\\\03-szpiro-pasten-2026.ipynb'"
-    }
-  ]
+  }
 }
