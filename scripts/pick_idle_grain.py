@@ -8092,16 +8092,6 @@ def main(argv: list[str] | None = None) -> int:
             print(f"[t={_time_belt.monotonic() - _belt_t0:.2f}s] belt {name}",
                   file=sys.stderr, flush=True)
         _belt_phase(f"start: grains={args.grains} lane={args.lane}")
-        # #21436 — mur de temps du tapis, mesure depuis `_belt_t0` et pas par
-        # etape : la fenetre de claims initiale (44 verdicts, 170 s mesures sur
-        # ai-01) mange deja une part du budget, et c'est le RUN entier que
-        # l'acceptance borne (< 300 s).
-        belt_time_remaining = None
-        if args.belt_time_budget and args.belt_time_budget > 0:
-            belt_time_remaining = max(
-                0.0, args.belt_time_budget - (_time_belt.monotonic() - _belt_t0))
-            _belt_phase(f"mur de temps: {args.belt_time_budget:.0f}s de run, "
-                        f"{belt_time_remaining:.0f}s restants a l'entree de la boucle")
         belt_pool = belt_filter(admitted, args, urns=selected_urns)
         belt_pool.sort(key=belt_sort_key)
         _belt_phase(f"pool charge: {len(belt_pool)} candidates "
@@ -8187,6 +8177,21 @@ def main(argv: list[str] | None = None) -> int:
         # sont injectees ICI explicitement : les defauts de la boucle sont
         # inertes (#19913) pour que les tests ne sortent jamais sur le
         # reseau par oubli.
+        # #21436 — mur de temps du tapis, mesure contre le RUN entier
+        # (`_belt_t0`) et pas contre l'entree de la boucle : la fenetre de
+        # claims initiale (8 verdicts = 49 s au dernier releve ; 44 verdicts =
+        # 170 s mesures sur ai-01) mange deja une part du budget, et c'est le
+        # RUN entier que l'acceptance borne. Calcule ICI, au plus pres de
+        # l'appel, pour que la partie pre-boucle soit effectivement deduite --
+        # mesure au premier run : calcule en t=0, il rendait la boucle a
+        # t=51 s avec "120 s restants", soit une echeance reelle a t=171 s.
+        belt_time_remaining = None
+        if args.belt_time_budget and args.belt_time_budget > 0:
+            belt_time_remaining = max(
+                0.0, args.belt_time_budget
+                - (_time_belt.monotonic() - _belt_t0))
+            _belt_phase(f"mur de temps: {args.belt_time_budget:.0f}s de run, "
+                        f"{belt_time_remaining:.0f}s restants au moment de la boucle")
         _belt_phase("pick_with_replacements start")
         belt_picks, belt_withheld, belt_pick_state = (
             belt_pick_with_replacements(belt_pool, belt_claims, args,
