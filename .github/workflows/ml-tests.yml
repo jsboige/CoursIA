@@ -86,6 +86,24 @@ jobs:
           pip install numpy pandas scipy scikit-learn arch pytest pyarrow xgboost joblib hmmlearn
           pip install torch --index-url https://download.pytorch.org/whl/cpu
 
+      - name: Borner les threads au quota CPU du conteneur
+        # Le conteneur runner porte un quota CFS (`docker run --cpus`), mais
+        # `nproc` et `os.cpu_count()` y voient tous les coeurs de l'hote :
+        # mesure du 2026-10-20 sur myia-ai-01-wsl-6, `cpu.max` = 200000 100000
+        # (2 CPU) pour nproc = 32. torch, OpenMP et BLAS dimensionnent leurs
+        # pools sur 32 threads, que le noyau etrangle sous un quota de 2 :
+        # c'est la traine lente mesuree sur la famille ai-01-wsl (succes
+        # jusqu'a 42 min et murs a 45 min, main compris), absente des slots
+        # po-2024-docker (3,9-13,6 min) dont la tranche n'a pas de CPUQuota.
+        # Sans quota lisible (`max` ou fichier absent), on laisse nproc.
+        run: |
+          q=$(awk '$1 != "max" && $2 > 0 { n = int(($1 + $2 - 1) / $2); print (n < 1 ? 1 : n) }' /sys/fs/cgroup/cpu.max 2>/dev/null)
+          [ -n "$q" ] || q=$(nproc)
+          for v in OMP_NUM_THREADS MKL_NUM_THREADS OPENBLAS_NUM_THREADS NUMEXPR_NUM_THREADS; do
+            echo "$v=$q" >> "$GITHUB_ENV"
+          done
+          echo "threads bornes a $q (cpu.max: $(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo absent), nproc: $(nproc))"
+
       - name: Run tests
         # Scope to the ML pipeline suite this job is named for. The repo-wide
         # pytest.ini testpaths pull in scripts/ suites (genai, wsl, catalog)
