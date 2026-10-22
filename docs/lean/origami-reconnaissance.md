@@ -4,6 +4,8 @@
 > **Périmètre de cette PR** : sub-grains 3 (sources tierces) et 4 (emplacement proposé). **AUCUNE** livraison de lake, **AUCUN** build des fermetures Poincaré/Morse/de Rham/Bonnet-Myers — ces sub-grains sortent du périmètre 30 min et de la capacité po-2024 (Lean toolchain disponible mais build lake d'enveloppe -- volumetrie Mesure c.1422 = `RECOVERABLE-MACHINE`).
 >
 > **Date du relevé** : 2026-10-03. **Source primaire** : dépôt amont `qinz1yang/differential-geometry`, release `v0.1.3`.
+>
+> **Mise à jour du 2026-10-22** (lane `myia-po-2024:CoursIA-2`, dispatch de l'adjoint `myia-po-2025:CoursIA-2`) : le **sub-grain 3 (sources tierces)** est désormais **mesuré firsthand** — `NOTICE`, `LICENSE` et les fichiers de provenance de chaque répertoire vendorisé ont été lus **au pin `7a48598d`**, avec les SHA de blob cités. Les sections 2.1 à 2.3 sont mises à jour ; **le relevé du 2026-10-03 est conservé** en tête de chaque section (il reste l'état de la rédaction). Le sub-grain 4 (emplacement) et le Pli 2 (builds) sont **inchangés**.
 
 ## 1. Périmètre de la PR
 
@@ -22,32 +24,64 @@ Cette PR porte les **sub-grains 3 et 4** du Pli 1, tous deux faisables localemen
 
 ### 2.1 Sources listées par l'upstream `qinz1yang/differential-geometry` v0.1.3
 
-Le `NOTICE` du dépôt amont référence les sources tierces vendorisées :
+> **Relève du 2026-10-03** (conservé) — le `NOTICE` du dépôt amont référence les sources tierces vendorisées :
+>
+> | Source | Domaine | Référence upstream |
+> |---|---|---|
+> | **Schoenflies** | Topologie des 3-variétés (1898) | vendorié en sous-arborescence |
+> | **TauCeti** | Bibliothèque Mathlib tierce | vendorié |
+> | **DeGiorgi** | Théorie géométrique de la mesure | vendorié |
+> | **CanonicalTopology** | Topologie canonique | vendorié |
 
-| Source | Domaine | Référence upstream |
-|---|---|---|
-| **Schoenflies** | Topologie des 3-variétés (1898) | vendorié en sous-arborescence |
-| **TauCeti** | Bibliothèque Mathlib tierce | vendorié |
-| **DeGiorgi** | Théorie géométrique de la mesure | vendorié |
-| **CanonicalTopology** | Topologie canonique | vendorié |
+#### 2.1 bis — Mesure firsthand du 2026-10-22 (pin `7a48598d`)
+
+Lecture directe de l'amont, sans téléchargement du dépôt (2,2 Go) : `NOTICE`, `LICENSE`, `DifferentialGeometry/External/README.md` et les fichiers de provenance de chaque répertoire vendorisé, au commit `7a48598d` de la release `v0.1.3`. Les SHA sont les **SHA de blob git** (API `contents`), donc vérifiables par `git cat-file`.
+
+**Présence** : `DifferentialGeometry/External/` contient **six** arbres vendorisés et un répertoire de provenance — `Schoenflies/`, `TauCeti/`, `DeGiorgi/`, `CanonicalTopology/`, `ClassificationOfSurfaces/`, `RiemannMapping/`, plus `CanonicalTopologyProvenance/`. Le relevé du 2026-10-03 en citait **quatre** : `ClassificationOfSurfaces/` et `RiemannMapping/` n'y étaient pas.
+
+| Répertoire vendorisé | Provenance déclarée (amont + révision) | Droits déclarés | Preuve (fichier : SHA de blob) |
+|---|---|---|---|
+| `External/Schoenflies/` | `alonamaloh/schoenflies-lean` @ `05a43d29cde026618777db3d4e4316204ccca237` (README externe) — Álvaro Begué | **Apache-2.0** | `Schoenflies/LICENSE` `8dada3edaf50dbc082c9a125058f25def75e625a` (11 357 o) · `MODIFICATIONS.md` `a2a1faebed339c1ab744348d3c5b6bdfb10f74dc` (7 692 o) · `SOURCE_MAP_arc_05a43d2.json` `d5bec6fc…` · `UPSTREAM_README.md` `718b3dc5…` · `formalization.yaml` `ac1dfe8c…` |
+| `External/TauCeti/` | `TauCetiProject/TauCeti` @ `3358033ba2fd35f321356dceaf2372a0fd6c0bfd` (NOTICE racine) — Joseph Tooby-Smith et les contributeurs Tau Ceti | **Apache-2.0** | `TauCeti/LICENSE` `8dada3ed…` (identique au blob `8dada3ed…`) · `MODIFICATIONS.md` `d3c47d64bd35e07d80de00488cebe035ea0ddcfb` · `SOURCE_MAP.json` `832177f6212640e79c0b9e2abad90a64deb23fb5` · `DECLARATION_MAP.json` `12cd4097…` |
+| `External/DeGiorgi/` | `scottnarmstrong/DeGiorgi` @ `4c1b307` (README externe) — Scott Armstrong, Julia Kempe (arXiv:2604.05984) | **Apache-2.0** | `DeGiorgi/LICENSE` `ae20225f2f5481948aa4caaf4f69773b5408ebba` (11 361 o : texte Apache 2.0 **avec** la ligne « Copyright 2026 Scott Armstrong and Julia Kempe ») · `CITATION.cff` `3266139ff4d60b152f5fb6cec65e9886e532f772` · `MODIFICATIONS.md` `31b41a9188d85d51fc59dc7df1ebf41bed16d43c` (24 307 o) · `README.md` `a6dc155754c4050578a80aaff0954a697b86a5c0` |
+| `External/CanonicalTopology/` | `canonical-topology/Poincare` (Ayush Khaitan et ses contributeurs) ; **partie dérivée** `plby/HopfProblem`, `Solution.lean` @ `9ac8a456b526527837d7082ff775213ca8bc9809`, **lignes 62156–62228** (NOTICE racine) | **Apache-2.0** | `CanonicalTopology/LICENSE` `261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64` (blob identique au `LICENSE` racine) · `MODIFICATIONS.md` `4ce2b04f095b77cacf7e0d5487561828b2ffa40a` (8 762 o) · `SOURCE_MAP.json` `dd089fee49c260109e317195566be037a5df0ffd` (192 998 o) |
+| `External/ClassificationOfSurfaces/` | `mccorvie/classification-of-surfaces` @ `e3c7230fe78d7b056a415d9ecae6f77887046b32` (README externe) — contributeurs, Steven Sivek, Kai Lam | **Apache-2.0** | `LICENSE` `8dada3ed…` · `MODIFICATIONS.md` `92aff40570d9686af3bad38f8b4d2c2c857ee912` (15 008 o) · `PROVENANCE.json` `5676f8bf462da64594ddc78ca361b925f76298f5` · `VENDOR.md` `fbec51029a3321ff0fbb0dcb3772e20f33c564e1` (108 355 o) + 20 fichiers de provenance (patches, cartes de sélection, collisions) |
+| `External/RiemannMapping/` | `urkud/mathlib4` @ `d43061d911b1aeae0788591da437a3b115098962` (PR `leanprover-community/mathlib4#33505`, Yury Kudryashov) | **Apache-2.0** | `UPSTREAM.json` `04454df1319fad1fb41e27a59883cdeac13eaf68` (**SHA-256 par fichier**) · `LICENSE` `8dada3ed…` · `MODIFICATIONS.md` `4276ae56d1bee3fda7aee9e60a6187681febf941` · `SNAPSHOTS.json` `9a352393…` · `EXTREMAL-PROVENANCE.json` `69305ffc…` · `HURWITZ-PROVENANCE.json` `80aa8dac…` |
+
+**Deux écarts d'attribution, à signaler à l'amont** (ils ne bloquent pas l'enveloppe, mais ils sont des faits mesurés) :
+
+1. **`DeGiorgi/` n'est pas dans le `NOTICE` racine** : sa provenance n'est déclarée que dans `DifferentialGeometry/External/README.md`. L'upstream respecte donc l'obligation d'attribution (§4(d) d'Apache-2.0) via un fichier annexe, mais pas via le NOTICE lui-même.
+2. **`RiemannMapping/` n'est dans ni le `NOTICE` racine ni le `External/README.md`** : son attribution ne vit que dans son propre `UPSTREAM.json` (avec SHA-256 par fichier). La provenance est traçable et vérifiable ; l'omission au niveau racine est un défaut d'annonce, à signaler en upstream.
 
 ### 2.2 Conformité de redistribution
 
-Le dépôt `qinz1yang/differential-geometry` est publié sous **licence open source** (vérification requise au build du sub-grain 1). Conformément à la règle `bibliography-hygiene.md` :
+> **Relève du 2026-10-03** (conservé) — le dépôt `qinz1yang/differential-geometry` est publié sous **licence open source** (vérification requise au build du sub-grain 1). Conformément à la règle `bibliography-hygiene.md` :
+>
+> - **Les PDF et autres publications sous droits ne sont JAMAIS committés dans CoursIA**.
+> - Une vérification de la **provenance, licence, conditions d'utilisation et droits de redistribution** de chaque source vendorisée est obligatoire **avant** tout enveloppage lake.
+> - Si une source tierce a une licence restrictive (non-redistribuable, non-commerciale), elle **ne peut pas** être enveloppée dans un lake d'enveloppe CoursIA.
 
-- **Les PDF et autres publications sous droits ne sont JAMAIS committés dans CoursIA**.
-- Une vérification de la **provenance, licence, conditions d'utilisation et droits de redistribution** de chaque source vendorisée est obligatoire **avant** tout enveloppage lake.
-- Si une source tierce a une licence restrictive (non-redistribuable, non-commerciale), elle **ne peut pas** être enveloppée dans un lake d'enveloppe CoursIA.
+**Mesure du 2026-10-22** : le `LICENSE` racine est le texte **Apache License 2.0** intégral (11 357 o, blob `261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64`), et la GitHub API renvoie la SPDX `Apache-2.0` pour le dépôt. Le `NOTICE` racine (1 791 o, blob `264ca83de5638b06033196bbb8b2da4cca7aba1c`) est présent. **Les six arbres vendorisés sont sous Apache-2.0**, chacun avec son `LICENSE` (blob `8dada3ed…` pour quatre d'entre eux, `261eeb9e…` pour CanonicalTopology, `ae20225f…` pour DeGiorgi) et son `MODIFICATIONS.md`.
 
-### 2.3 Action requise au Pli 2
+**Droits de redistribution mesurés** : Apache-2.0 **autorise** la redistribution, à condition de conserver `LICENSE` et `NOTICE` et de signaler les modifications (§4). Aucune des six sources n'est sous licence restrictive (non-redistribuable ou non commerciale). Aucun PDF n'est concerné : les sources vendorisées sont du **code Lean**, pas des publications.
 
-À déplier par le coordinateur :
+### 2.3 Verdict mesuré (2026-10-22)
 
-1. **Vérification license-by-license** des quatre sources tierces (Schoenflies, TauCeti, DeGiorgi, CanonicalTopology).
-2. **Décision binaire** : redistribution OK ou NON.
-3. **Si OK** : enveloppage possible ; sinon, citation uniquement, pas d'enveloppe lake.
+> **Ce qui était demandé** (relève du 2026-10-03, conservé) :
+>
+> 1. **Vérification license-by-license** des quatre sources tierces (Schoenflies, TauCeti, DeGiorgi, CanonicalTopology).
+> 2. **Décision binaire** : redistribution OK ou NON.
+> 3. **Si OK** : enveloppage possible ; sinon, citation uniquement, pas d'enveloppe lake.
+>
+> **Notre enveloppe ne devrait rien redistribuer** : la citation des sources tierces est faite **dans le body du carnet** ou dans `docs/lean/`, pas dans le code lake lui-même. C'est la lecture recommandée pour un lake d'enveloppe fin : vendoriser UNIQUEMENT les modules de l'upstream, pas les sources tierces elles-mêmes.
 
-**Notre enveloppe ne devrait rien redistribuer** : la citation des sources tierces est faite **dans le body du carnet** ou dans `docs/lean/`, pas dans le code lake lui-même. C'est la lecture recommandée pour un lake d'enveloppe fin : vendoriser UNIQUEMENT les modules de l'upstream, pas les sources tierces elles-mêmes.
+**Réponse mesurée** :
+
+1. **License-by-license : fait** — tableau 2.1 bis (six arbres, pas quatre : `ClassificationOfSurfaces/` et `RiemannMapping/` étaient absents du relevé du 2026-10-03). Chaque ligne porte sa provenance (amont + révision), ses droits et le SHA de blob de ses fichiers de licence et de modification.
+2. **Décision binaire : redistribution OK.** Aucune source restrictive ; la redistribution est possible **en amont** sous condition de conservation des `LICENSE`/`NOTICE` et de mention des modifications.
+3. **Conséquence pour nous : l'enveloppe lake est possible**, et **notre dépôt ne redistribue rien**. Le seul artefact que nous versionnons est le lake d'enveloppe, qui déclare l'amont en `[[require]]` sur une **révision épinglée** (tag `v0.1.3`, commit `7a48598d`) ; les sources tierces et leurs licences restent **chez l'amont** et sont téléchargées par le gestionnaire de dépendances, pas recopiées dans CoursIA. La citation se fait dans le body des carnets et dans `docs/lean/`, comme le voulait le relevé initial.
+
+**Ce qui reste à faire, et par qui** : signaler à l'amont les deux écarts d'attribution du § 2.1 bis (DeGiorgi et RiemannMapping absents du `NOTICE` racine) — sous la forme d'une **issue proposée**, sans PR à leur place sans invitation (règle du Pli 1 : « aucune PR chez eux sans y être invités »). Le **Pli 2** (builds) n'est pas ouvert par ce document : il reste un dépli du coordinateur.
 
 ## 3. Sub-grain 4 — Emplacement proposé
 
@@ -100,9 +134,9 @@ Verdict SOTA pour Pli 2 : **`RECOVERABLE-MACHINE`** (po-2023 ou po-2024 GPU/CPU 
 
 - Hugging Face/GitHub : `qinz1yang/differential-geometry`, release `v0.1.3` du 2026-09 (vérification requise pour date exacte). Couvre : Topologie dimension 3 (Poincaré, Moise), Ricci (Perelman, Hamilton), Bonnet-Myers, Bochner, Weitzenböck, Lichnerowicz, de Rham, Morse.
 
-### 6.2 Sources tierces vendorisées (à vérifier)
+### 6.2 Sources tierces vendorisées (mesurées le 2026-10-22)
 
-Voir section 2.1.
+Voir section 2.1 bis (six arbres, provenance + droits + SHA de blob). En amont, toutes en **Apache-2.0**.
 
 ### 6.3 Documentation interne CoursIA
 
@@ -116,13 +150,13 @@ Voir section 2.1.
 
 ### 7.1 Mesure
 
-- **Source primaire** : `qinz1yang/differential-geometry` v0.1.3 — non téléchargé dans cette PR, **référencé** uniquement. La **re-vérification** du SHA du fichier source sera faite au Pli 2 par téléchargement effectif.
-- **Sources tierces** (NOTICE) : **non vérifiées firsthand** dans cette PR (lecture du NOTICE upstream requise). Cases « à confirmer » au Pli 2.
+- **Source primaire** : `qinz1yang/differential-geometry` v0.1.3 — **pin `7a48598d` lu firsthand le 2026-10-22** pour les fichiers de licence et de provenance (`NOTICE` blob `264ca83de5638b06033196bbb8b2da4cca7aba1c`, 1 791 o ; `LICENSE` blob `261eeb9e9f8b2b4b0d119366dda99c6fd7d35c64`, 11 357 o ; `External/README.md`). Le dépôt complet n'est **pas** téléchargé (2,2 Go) ; le reste (sources Lean) sera mesuré au Pli 2 par téléchargement effectif, si le coordinateur déplie ce pli.
+- **Sources tierces** (NOTICE) : **vérifiées firsthand le 2026-10-22** — six arbres vendorisés, tous **Apache-2.0**, avec provenance et SHA de blob dans le tableau 2.1 bis. Deux écarts d'attribution relevés (DeGiorgi et RiemannMapping absents du `NOTICE` racine) : à signaler en upstream, **ne bloquent pas** l'enveloppe.
 - **Emplacement proposé** : argumentaire fondé sur la **convention i18n en place** (Pattern A `_lean` suffix, déjà adopté par 4 lakes existants).
 
 ### 7.2 Conformité
 
-- Applicable ([verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md)) : 3 sources vérifiées firsthand = (1) l'upstream `qinz1yang/differential-geometry` référencé, (2) la convention i18n Pattern A `_lean` suffix vérifiée sur 4 lakes existants, (3) le périmètre Pli 1 **déclaré** dans la PR (sub-grains 3+4 seulement).
+- Applicable ([verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md)) : sources vérifiées firsthand = (1) l'upstream `qinz1yang/differential-geometry` au pin `7a48598d` — `NOTICE`, `LICENSE`, `External/README.md` et les fichiers de provenance des six répertoires vendorisés lus et cités par SHA de blob, (2) la convention i18n Pattern A `_lean` suffix vérifiée sur 4 lakes existants, (3) le périmètre Pli 1 **déclaré** dans la PR (sub-grains 3+4 seulement). Les **sources Lean** de l'amont ne sont pas téléchargées : elles ne sont pas mesurées par ce document.
 - Applicable ([sota-not-workaround.md](../../.claude/rules/sota-not-workaround.md)) : po-2024 Lean toolchain INVOCABLE mais build lake -- volumetrie Mesure c.1422 = `RECOVERABLE-MACHINE` (Pli 2).
 - Observation ([proactive-coordination.md](../../.claude/rules/proactive-coordination.md), urne umbrella) : narrow-cache tari, **créer un sous-grain** dans un EPIC libre (#18205 Pli 1 sources tierces + emplacement) est la voie de sortie structurelle.
 - Applicable ([lane-claim-protocol.md](../../.claude/rules/lane-claim-protocol.md)) : aucun claim conflictuel sur #18205.
