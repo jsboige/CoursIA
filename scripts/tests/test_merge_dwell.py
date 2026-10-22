@@ -988,7 +988,8 @@ def test_q67_date_et_sha_suivent_la_meme_remontee():
 # --- 8. #18686 -- le label merge-dwell-waived ne joue que si main est rouge --
 
 def _pr_with_label_fetch(workflow_runs=None, red_read_fails=False,
-                          workflow_runs_by_yml=None):
+                          workflow_runs_by_yml=None, main_check_runs=None,
+                          head_check_runs=None):
     """Fetch fake pour une PR JEUNE (tete a 11:55, NOW=12:00) portant le label.
 
     `workflow_runs` : liste de dict workflow-runs sur `main` pour le workflow
@@ -997,6 +998,11 @@ def _pr_with_label_fetch(workflow_runs=None, red_read_fails=False,
 
     `red_read_fails` : la lecture de la couleur de main leve DwellError
     (API muette) pour le workflow canonique.
+
+    `main_check_runs` / `head_check_runs` (#22085) : check-runs de la tete de
+    `main` et de la tete de la PR. Defaut vide = aucune preuve de reparation,
+    donc la seconde voie reste fermee : les tests de #18686/#18790 gardent
+    exactement le verdict qu'ils mesuraient.
     """
     by_yml = dict(workflow_runs_by_yml or {})
     if workflow_runs is not None and "scripts-tests.yml" not in by_yml:
@@ -1010,6 +1016,10 @@ def _pr_with_label_fetch(workflow_runs=None, red_read_fails=False,
             }
         if path == "repos/o/r/commits/abc":
             return {"commit": {"committer": {"date": "2026-09-07T11:55:00Z"}}}
+        if path == "repos/o/r/commits/main/check-runs?per_page=100":
+            return {"check_runs": list(main_check_runs or [])}
+        if path == "repos/o/r/commits/abc/check-runs?per_page=100":
+            return {"check_runs": list(head_check_runs or [])}
         if path == "repos/o/r":
             if red_read_fails:
                 raise merge_dwell.DwellError("repos muet")
@@ -1244,6 +1254,10 @@ def test_18796_workflow_direct_run_success_ne_leve_pas():
             return {"commit": {"committer": {"date": head_at}}}
         if path == "repos/o/r":
             return {"default_branch": "main"}
+        if path == "repos/o/r/commits/main/check-runs?per_page=100":
+            return {"check_runs": []}
+        if path == "repos/o/r/commits/abc/check-runs?per_page=100":
+            return {"check_runs": []}
         if path == (
             "repos/o/r/actions/workflows/scripts-tests.yml/runs"
             "?branch=main&event=push&status=completed&per_page=10"
@@ -1271,5 +1285,145 @@ def test_18796_workflow_direct_aucun_run_ne_leve_pas():
             "scripts-tests.yml": [],
         }),
     )
+    assert ok is False
+    assert "condition non remplie" in msg
+
+
+# --- 9. #22085 -- la PR qui REPARE un rouge de main derive son plancher ----
+#
+# Le cas fondateur est #22018 : `Live-read freshness` rouge sur main bloquait
+# toutes les PRs de carnet, et la PR qui le reparait a quand meme du attendre
+# 120 min -- `MAIN_RED_WORKFLOWS` ne contient que `scripts-tests.yml`.
+#
+# La seconde voie n'ouvre PAS la derogation au label seul : elle exige la
+# preuve, a la tete de la PR, que l'organe rouge sur main y est vert.
+
+_MAIN_RED_LIVE_READ = {
+    "id": 90001,
+    "name": "Live-read freshness",
+    "conclusion": "failure",
+    "started_at": "2026-10-22T08:20:00Z",
+}
+_HEAD_GREEN_LIVE_READ = {
+    "id": 90002,
+    "name": "Live-read freshness",
+    "conclusion": "success",
+    "started_at": "2026-10-22T11:00:00Z",
+}
+
+
+def test_22085_cas_22018_la_pr_qui_repare_le_rouge_est_derogee():
+    """Cas #22018 rejoue : main rouge sur un organe hors `MAIN_RED_WORKFLOWS`,
+    PR qui rend cet organe vert a sa tete -> derogation acceptee."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[_MAIN_RED_LIVE_READ],
+            head_check_runs=[_HEAD_GREEN_LIVE_READ],
+        ),
+    )
+    assert ok is True, "la PR repare le rouge de main : le plancher doit lever"
+    assert "dwell leve par le label" in msg
+    assert "Live-read freshness" in msg, (
+        "le motif doit nommer l'organe repare, pas une couleur globale"
+    )
+
+
+def test_22085_temoin_negatif_pr_non_reparatrice_refusee():
+    """Meme label, meme main rouge, mais la PR ne repare rien (l'organe est
+    encore rouge a sa tete) -> plancher applique. C'est ce temoin qui
+    interdit d'ouvrir la derogation a n'importe quelle PR quand main est
+    rouge quelque part."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[_MAIN_RED_LIVE_READ],
+            head_check_runs=[dict(_MAIN_RED_LIVE_READ,
+                                  id=90003,
+                                  started_at="2026-10-22T11:00:00Z")],
+        ),
+    )
+    assert ok is False
+    assert "condition non remplie" in msg
+    assert msg.startswith("tete du 2026-09-07T11:55:00Z")
+
+
+def test_22085_organe_absent_a_la_tete_de_la_pr_ne_prouve_rien():
+    """Fail-closed : un organe rouge sur main qui n'a AUCUN check-run a la
+    tete de la PR (workflow path-filtre, PR qui ne le declenche pas) n'est
+    pas une preuve de reparation."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[_MAIN_RED_LIVE_READ],
+            head_check_runs=[],
+        ),
+    )
+    assert ok is False
+    assert "condition non remplie" in msg
+
+
+def test_22085_main_vert_les_check_runs_ne_derogent_pas():
+    """Controle negatif : aucun organe rouge sur main -> la seconde voie ne
+    peut rien ouvrir, meme si la tete de la PR est entierement verte."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[dict(_MAIN_RED_LIVE_READ, conclusion="success")],
+            head_check_runs=[_HEAD_GREEN_LIVE_READ],
+        ),
+    )
+    assert ok is False
+    assert "condition non remplie" in msg
+
+
+def test_22085_pli_latest_wins_sur_les_check_runs():
+    """Un rouge PERIME (supersede par un vert plus recent) sur la tete de la
+    PR ne doit pas fermer la derogation, et un rouge perime sur main ne doit
+    pas l'ouvrir : le pli se fait par `started_at`, comme #16765."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[
+                dict(_MAIN_RED_LIVE_READ, id=90010,
+                     started_at="2026-10-22T09:00:00Z"),
+                dict(_MAIN_RED_LIVE_READ, id=90011,
+                     started_at="2026-10-22T07:00:00Z"),
+            ],
+            head_check_runs=[
+                dict(_HEAD_GREEN_LIVE_READ, id=90020,
+                     started_at="2026-10-22T10:00:00Z"),
+                # tentative rouge SUPERSEDEE par le vert ci-dessus
+                dict(_MAIN_RED_LIVE_READ, id=90021,
+                     started_at="2026-10-22T09:30:00Z"),
+            ],
+        ),
+    )
+    assert ok is True
+    assert "Live-read freshness" in msg
+
+
+def test_22085_couleur_illisible_ne_deroge_pas():
+    """Fail-closed conserve : une lecture de check-runs qui leve laisse le
+    plancher en place -- une couleur illisible ne vaut pas vert."""
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [{"name": merge_dwell.WAIVER_LABEL}],
+                    "base": {"sha": "ba5e0000"}}
+        if path == "repos/o/r/commits/abc":
+            return {"commit": {"committer": {"date": "2026-09-07T11:55:00Z"}}}
+        if path == "repos/o/r":
+            return {"default_branch": "main"}
+        if path.startswith("repos/o/r/actions/workflows/"):
+            return {"workflow_runs": []}
+        raise merge_dwell.DwellError("check-runs muets")
+
+    ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW,
+                                fetch=fetch)
     assert ok is False
     assert "condition non remplie" in msg

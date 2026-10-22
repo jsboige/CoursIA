@@ -766,6 +766,105 @@ def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
     )
 
 
+def _latest_check_runs(repo: str, ref: str, fetch=_gh_json):
+    """Dernier check-run par NOM sur `ref`, ou None si la couleur est illisible.
+
+    Pli latest-wins par `started_at` : la liste rendue par l'API contient
+    aussi les tentatives supersedees. Lire la premiere entree est le defaut
+    que #16765 a mesure (six rouges tous supersedes sur un meme head) : un
+    rouge perime rouvrirait la derogation sur un organe deja vert, et un
+    vert perime l'ouvrirait sur un organe encore rouge.
+
+    Fail-closed : payload illisible -> None, jamais un dictionnaire vide qui
+    se lirait « aucun organe rouge » (une couleur illisible ne vaut pas vert,
+    cf #18686).
+    """
+    try:
+        payload = fetch(
+            "repos/{}/commits/{}/check-runs?per_page=100".format(repo, ref)
+        )
+    except DwellError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    runs = payload.get("check_runs")
+    if not isinstance(runs, list):
+        return None
+    latest: "dict[str, dict]" = {}
+    for run in runs:
+        if not isinstance(run, dict):
+            continue
+        name = run.get("name")
+        if not name:
+            continue
+        previous = latest.get(name)
+        if previous is None or (
+            (run.get("started_at") or "") >= (previous.get("started_at") or "")
+        ):
+            latest[name] = run
+    return latest
+
+
+def _repair_motif(repo: str, head_sha: "str | None", fetch=_gh_json):
+    """#22085 : motif de derogation quand la PR REPARE un rouge de `main`.
+
+    Le rouge de #22018 (`Live-read freshness`) n'est pas visible « depuis la
+    PR » au sens de #18686 : l'organe tourne aussi sur `pull_request`, donc
+    toutes les PRs le voient -- mais la PR qui le repare devait attendre son
+    plancher de 120 min comme les autres, et `MAIN_RED_WORKFLOWS` ne le
+    couvrait pas.
+
+    Deux lectures, toutes deux fail-closed :
+
+    1. les organes ROUGES a la tete de la branche par defaut (tous noms,
+       pli latest-wins -- #22085 piste (a)) ;
+    2. pour chacun, le dernier check-run de **meme nom** a la tete de la PR
+       (piste (b)).
+
+    La derogation s'ouvre sur le premier organe que la PR rend `success` a
+    sa tete. Le label seul ne suffit donc jamais, et la preuve porte sur
+    l'organe precis qui est rouge sur main -- pas sur une couleur globale :
+    une PR sans rapport avec le rouge ne prouve rien et garde son plancher.
+
+    Limite assumee : l'API ne dit pas quels organes sont BLOQUANTS. Un
+    organe advisory rouge sur main peut donc ouvrir la voie -- mais
+    seulement pour une PR qui le fait passer au vert, ce qui reste une
+    reparation reelle.
+    """
+    if not head_sha:
+        return None
+    try:
+        branch = _default_branch(repo, fetch)
+    except DwellError:
+        return None
+    main_latest = _latest_check_runs(repo, branch, fetch)
+    if not main_latest:
+        return None
+    red = {
+        name: run
+        for name, run in main_latest.items()
+        if run.get("conclusion") in MAIN_RED_CONCLUSIONS
+    }
+    if not red:
+        return None
+    head_latest = _latest_check_runs(repo, head_sha, fetch)
+    if not head_latest:
+        return None
+    for name in sorted(red):
+        head_run = head_latest.get(name)
+        if isinstance(head_run, dict) and head_run.get("conclusion") == "success":
+            return (
+                "main rouge: organe `{}` en echec sur {} (check-run {}) -- "
+                "repare a la tete de la PR (check-run {})".format(
+                    name,
+                    branch,
+                    red[name].get("id") or "?",
+                    head_run.get("id") or "?",
+                )
+            )
+    return None
+
+
 def check(
     repo: str,
     sha: str,
@@ -796,12 +895,16 @@ def check(
     if waived:
         motif = _main_red_motif(repo, fetch)
         if motif is None:
+            # #22085 : seconde voie. Le rouge que toutes les PRs voient (un
+            # organe qui tourne aussi sur `pull_request`) n'ouvre la
+            # derogation que si CETTE PR prouve qu'elle le repare a sa tete.
+            motif = _repair_motif(repo, sha, fetch)
+        if motif is None:
             waived = False
             unmet_note = (
                 " -- label `{}` present mais condition non remplie "
-                "(main vert ou couleur illisible) : plancher applique".format(
-                    WAIVER_LABEL
-                )
+                "(main vert, rouge non repare par cette PR, ou couleur "
+                "illisible) : plancher applique".format(WAIVER_LABEL)
             )
         else:
             waiver_motif = motif
