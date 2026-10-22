@@ -151,7 +151,25 @@ else
   printf '%s\n' "$out_cpus" | sed 's/^/    /'
 fi
 
-# --- 5. le nombre de slots est parametrable --------------------------------
+# --- 5. un slot ARRETE est une derive (point 1 du crible #21985) ------------
+# `running=false` : les caps et les labels sont conformes, mais le slot ne peut
+# pas executer de job. `--check` doit donc sortir en 1 et nommer la derive.
+out_stopped="$(PATH="$TMP2:$PATH" PERSIST_STUB_STATE="4294967296 512 3000000000 false" "$SCRIPT" --check 2>&1)"
+rc_stopped=$?
+if [ "$rc_stopped" -eq 1 ]; then
+  ok "--check sort en 1 quand un slot present est arrete"
+else
+  ko "--check sort en $rc_stopped (attendu 1 : slot arrete = derive)"
+  printf '%s\n' "$out_stopped" | sed 's/^/    /'
+fi
+if printf '%s' "$out_stopped" | grep -q "slot attendu en marche"; then
+  ok "--check nomme la derive de l'etat de marche"
+else
+  ko "--check ne nomme pas la derive de l'etat de marche"
+  printf '%s\n' "$out_stopped" | sed 's/^/    /'
+fi
+
+# --- 6. le nombre de slots est parametrable --------------------------------
 out2="$(PATH="$TMP:$PATH" COURSIA_PERSIST_SLOTS=3 "$SCRIPT" --dry-run 2>&1)"
 if printf '%s' "$out2" | grep -qF "myia-po-2024-linux-persist-3"; then
   ok "COURSIA_PERSIST_SLOTS=3 cree un troisieme slot prevu"

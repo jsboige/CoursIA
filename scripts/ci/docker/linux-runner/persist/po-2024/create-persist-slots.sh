@@ -183,6 +183,16 @@ mode_check() {
       log "  DERIVE : cap cpus attendu ${want_nano} (${CPUS}), mesure ${nano}"
       rc=1
     fi
+    # Reserve de la revue tierce (point 1 du crible #21985) : un slot ARRETE
+    # dont les caps et les labels sont conformes sortait de `--check` avec
+    # rc=0 -- l'etat de marche etait journalise mais jamais teste. `--check`
+    # est fail-closed : un slot present mais arrete est une derive, au meme
+    # titre qu'un cap ou un label non conforme (le slot ne peut pas executer
+    # de job dans cet etat).
+    if [ "$running" != "true" ]; then
+      log "  DERIVE : slot attendu en marche (running=true), mesure '${running}'"
+      rc=1
+    fi
     if ! docker inspect --format '{{range .Config.Env}}{{println .}}{{end}}' "$name" 2>/dev/null \
         | grep -qx "ACTIONS_RUNNER_INPUT_LABELS=${LABELS}"; then
       log "  DERIVE : labels attendus '${LABELS}', mesure :"
