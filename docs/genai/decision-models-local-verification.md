@@ -160,11 +160,12 @@ La mesure a ete rejouee telle quelle sur un second siege — machine `myia-po-20
 | `v2` exactitude globale | 69,56 % | 69,89 % | +3 items / 900 |
 | `v1` verdicts par item | — | 899/900 identiques | 1 divergence |
 | `v2` verdicts par item | — | 895/900 identiques | 5 divergences |
-| \|Δ p_gold\| par item | — | mediane 1,9e-3, max 2,4e-2 | derive numerique |
+| \|Δ p_gold\| par item, `eljiwo/jiwo-0.8b@v1` | — | mediane 1,85e-3, p90 9,60e-3, max 2,43e-2 | derive numerique |
+| \|Δ p_gold\| par item, `eljiwo/jiwo-0.8b@v2` | — | mediane 2,31e-3, p90 8,45e-3, max 2,95e-2 | derive numerique |
 
 L'ordre mesure `v1` > `v2` de la reference **n'est pas tranche par le second siege** : les deux exactitudes y sont egales a 0,1 % pres (0,6989 chacune), la difference reference (0,22 %) etant du meme ordre que la derive inter-GPU. C'est un constat, pas une invalidation : la conclusion robuste des deux sieges est que **la tranche reconstruite ne reproduit pas l'ordre publie de l'index**, dans les deux sens.
 
-L'ecart numerique est attendu : memes versions de torch et de jiwo, mais GPU different (les ordres de reduction des kernels dependent du decoupage materiel). Les six items en desaccord portent tous une `p_gold` entre 0,32 et 0,46 — des distributions plates entre options, ou la derive observee (mediane 2e-3, p90 9e-3) suffit a faire basculer l'argmax. Les items divergents sont listes dans les deux agregats, la comparaison champ a champ est rejouable par difference des deux JSON.
+L'ecart numerique est attendu : memes versions de torch et de jiwo, mais GPU different (les ordres de reduction des kernels dependent du decoupage materiel). Les six items en desaccord portent tous une `p_gold` entre 0,32 et 0,46 — des distributions plates entre options, ou la derive observee (mediane 1,9e-3 pour `v1` et 2,3e-3 pour `v2`, p90 9,6e-3 et 8,5e-3) suffit a faire basculer l'argmax. Les items divergents sont listes dans les deux agregats, la comparaison champ a champ est rejouable par difference des deux JSON.
 
 ## 7. Sources
 
