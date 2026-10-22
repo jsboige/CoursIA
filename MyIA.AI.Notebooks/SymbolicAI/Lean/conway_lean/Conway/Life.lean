@@ -249,5 +249,64 @@ theorem beacon_period_two : isOscillator beacon 2 = true := by decide
 /-- Le Glider est un vaisseau de periode 4, deplacement `(1, -1)`. -/
 theorem glider_spaceship : isSpaceship glider 4 (1, -1) = true := by decide
 
+/-! ## Site de naissance : un fait local suffit a certifier la non-inertie
+
+Une grille est un point fixe de l'evolution (« vie immobile ») quand
+aucune cellule ne change d'etat. Pour prouver qu'un motif **charge**
+n'est pas inerte, il n'est pas necessaire de faire tourner l'evolution :
+il suffit d'exhiber un **site de naissance**, c'est-a-dire une cellule
+morte ayant exactement trois voisins de Moore vivants (regle B3). Cette
+cellule est voisine d'une cellule vivante — elle est donc candidate pour
+l'etape suivante — et la regle B3 la fait naitre : elle appartient a
+`step g` sans appartenir a `g`, ce qui refute `step g = g`.
+
+Ce lemme est **general** : il vaut pour toute grille du lac, et sa
+preuve est **locale** (aucune evolution n'est calculee). C'est ce qui le
+rend applicable aux grands motifs, dont l'evolution complete n'est pas
+calculable par le moteur de reference. -/
+
+/-- Un **site de naissance** refute l'inertie de la grille : `step g ≠ g`.
+
+    Hypotheses :
+    - `hpabsent` : la cellule `p` est **morte** dans `g` ;
+    - `hadj` : `p` est voisine de Moore d'au moins une cellule de `g`,
+      donc candidate pour l'etape suivante ;
+    - `hcount` : `p` a exactement trois voisins de Moore vivants.
+
+    La regle B3 fait naitre `p` ; la regle S23 la laisse vivante. Les
+    deux branches de `aliveNext` donnent donc `true` : la preuve ne
+    demande pas de savoir si `p` est vivante ou morte, seulement le
+    compte de ses voisins. -/
+theorem birthSiteNotFixed {g : Grid} {p : Int × Int}
+    (hpabsent : p ∉ g)
+    (hadj : p ∈ g.flatMap mooreNeighbors)
+    (hcount : liveNeighborCount g p = 3) :
+    step g ≠ g := by
+  intro hstep
+  -- `p` est candidate pour l'etape suivante.
+  have hpCand : p ∈ candidates g := by
+    simp only [candidates, List.mem_append]
+    exact Or.inr hadj
+  -- La regle B3 (ou S23) fait naitre `p` : trois voisins vivants
+  -- suffisent dans les deux cas.
+  have hpAlive : aliveNext g p = true := by
+    simp only [aliveNext]
+    split <;> simp [hcount]
+  -- Donc `p ∈ step g` ...
+  have hpStep : p ∈ step g := by
+    rw [step, mem_sortDedup, List.mem_filter]
+    exact ⟨hpCand, hpAlive⟩
+  -- ... alors que `p ∉ g` : contradiction.
+  exact hpabsent (hstep ▸ hpStep)
+
+/-- **Temoin negatif apparie** de `birthSiteNotFixed` : la grille vide —
+    le placeholder qui remplacerait un motif non charge — est, elle, un
+    point fixe de l'evolution. Sans ce controle, un temoin
+    « la grille n'est pas un point fixe » ne dirait rien du motif
+    charge : il serait satisfait par tout motif dynamique, y compris
+    par une grille vide Replacee. -/
+theorem emptyGridIsStillLife : step ([] : Grid) = ([] : Grid) := by
+  rfl
+
 end Life
 end Conway
