@@ -76,7 +76,7 @@ Le socle DSP et statistique sous les approches neuronales de la famille YuE2 : l
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 17 | [04-17-MIR-Classique](04-17-MIR-Classique.ipynb) | MIR classique librosa : beat tracking + tempo (enveloppe d'onsets, dynamic programming), tonalité Krumhansl–Schmuckler sur chroma CQT, grille d'accords par templates triades — validés sur vérité terrain synthétique (100 BPM, Do majeur, C–Am–F–G) puis vraie musique (exemples librosa brahms/nutcracker), 3 exercices (tempo 140 BPM, tonalité en mode mineur, banque étendue aux accords de septième) | librosa (CPU local) | 0 |
+| 18 | [04-18-MIR-Classique](04-18-MIR-Classique.ipynb) | MIR classique librosa : beat tracking + tempo (enveloppe d'onsets, dynamic programming), tonalité Krumhansl–Schmuckler sur chroma CQT, grille d'accords par templates triades — validés sur vérité terrain synthétique (100 BPM, Do majeur, C–Am–F–G) puis vraie musique (exemples librosa brahms/nutcracker), 3 exercices (tempo 140 BPM, tonalité en mode mineur, banque étendue aux accords de septième) | librosa (CPU local) | 0 |
 
 **Flux du pipeline audiobook** :
 
