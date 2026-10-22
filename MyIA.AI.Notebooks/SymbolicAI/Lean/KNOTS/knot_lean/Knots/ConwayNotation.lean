@@ -36,6 +36,26 @@
     telles quelles, avec ce diagnostic — la désignation classique du trèfle
     attend une construction en spirale (suite du programme Phase 3).
 
+  Ce que le maillon 2 prouve (la construction en spirale, §5) :
+
+  - la fermeture du 2-brin à `n` demi-twists lue en spirale (dessin
+    annulaire : croisement `i` portant les arêtes `(2i−1, 2i−1+n, 2i, 2i+n)`
+    modulo `2n`) produit pour `n = 3` EXACTEMENT le `trefoilDiagram` du
+    lake — la lecture spirale de `[3]` désigne 3₁ (valeur désignée
+    `t² − t + 1`, celle d'`alexander_trefoil`) ;
+  - pour `n = 5`, la même lecture désigne 5₁ (valeur désignée
+    `t⁴ − t³ + t² − t + 1`, déterminant |Δ(−1)| = 5) ;
+  - aucun croisement de la spirale ne porte d'arête réflexive : le défaut
+    diagnostiqué sur les chaînes verticales ci-dessus est résolu par
+    l'embedding annulaire.
+
+  Ce que le maillon 3 prouve (la fermeture de tresse, §6) : la divergence
+  chirale documentée sur le code planaire canonique de 4₁
+  (`alexander_figureEight_not_classical`) est un artefact d'encodage, pas
+  une limite du moteur — la fermeture de la tresse (σ₁ σ₂⁻¹)², suivie
+  brin par brin, atteint la classe d'unités du classique sous le moteur
+  non signé (`braidFour_classical_unit_class`).
+
   Convention de signe : le code PD du lake ne code pas la chiralité des
   croisements (docstring d'`alexanderEntry`) ; seul |aᵢ| est lu, et le
   miroir d'une notation partage toutes ses valeurs désignées.
@@ -296,7 +316,8 @@ t² N'EST PAS significative (ce n'est pas une unité fois t² − t + 1 ; les
 mineurs calculés valent ±1 et t²). Le nœud sous-jacent est bien 3₁ (fait
 classique : la fermeture numerator du tangle à trois twists) ; sa
 désignation classique exige une construction en spirale, suite du
-programme de la Phase 3. -/
+programme de la Phase 3 — livrée au maillon 2 (§5 :
+`spiral_three_designates_trefoil`). -/
 theorem conway_three_designated :
     alexanderPolynomialAux (conwayKnotOf trefoilNotation) = Polynomial.X ^ 2 := by
   have hc : conwayKnotOf trefoilNotation =
@@ -313,7 +334,8 @@ theorem conway_three_designated :
   ring
 
 /-- Même diagnostic pour `[5]` (5₁ des tables) : chaîne verticale pure,
-arêtes réflexives, valeur désignée t⁴ non significative. -/
+arêtes réflexives, valeur désignée t⁴ non significative — résolu au
+maillon 2 (§5 : `spiral_five_alexander`). -/
 theorem conway_five_designated :
     alexanderPolynomialAux (conwayKnotOf cinquefoilNotation) = Polynomial.X ^ 4 := by
   have hc : conwayKnotOf cinquefoilNotation =
@@ -329,5 +351,208 @@ theorem conway_five_designated :
   simp (config := { decide := true }) [alexanderEntry]
   ring
 
+
+/-! ## 5. La construction en spirale (maillon 2)
+
+Le défaut du maillon 1 — la fermeture numerator en chaîne verticale joint
+les deux sortants d'un même croisement (arêtes réflexives) — n'est pas un
+défaut du LANGAGE mais du DESSIN : la même fraction `[n]` se dessine en
+enroulant le 2-brin fermé autour d'un cylindre, chaque croisement `i`
+portant les quatre arêtes `(2i−1, 2i−1+n, 2i, 2i+n)` lues modulo `2n`.
+Pour `n` impair (`n ≥ 3`), la fermeture numerator du tangle `[n]` est le
+nœud torique `T(2, n)` (fait classique) : `[3]` désigne 3₁, `[5]` désigne
+5₁. Les valeurs désignées ci-dessous sont celles de la sonde Python du
+module (header), validées avant le port.
+-/
+
+/-- Étiquette spirale : `k` lu modulo `2n`, dans `1..2n`. -/
+def spiralLabel (n k : Nat) : Nat := (k - 1) % (2 * n) + 1
+
+/-- Le croisement `i` (1-indexé) de la spirale à `n` demi-twists : les
+deux arêtes entrantes `2i−1` et `2i`, les deux sortantes décalées de `n`
+(un demi-tour de cylindre plus loin sur la spire). -/
+def spiralCross (n i : Nat) : PDCrossing :=
+  ⟨spiralLabel n (2 * i - 1), spiralLabel n (2 * i - 1 + n),
+   spiralLabel n (2 * i), spiralLabel n (2 * i + n)⟩
+
+/-- La fermeture du 2-brin à `n` demi-twists, enroulée en spirale : le
+dessin annulaire de la fraction `[n]` (pour `n` impair ≥ 3, le nœud
+torique `T(2, n)`), sans arête réflexive. -/
+def spiralDiagram (n : Nat) : KnotDiagram :=
+  ⟨(List.range n).map (fun i => spiralCross n (i + 1)), 2 * n⟩
+
+/-! ### Bonne formation
+
+Chaque étiquette de `1..2n` apparaît exactement deux fois, dans deux
+croisements distincts — en particulier les quatre étiquettes d'un
+croisement sont deux à deux distinctes : le défaut Wirtinger du maillon 1
+disparaît.
+-/
+
+theorem spiral_wf_three : (spiralDiagram 3).wf = true := by
+  decide
+
+theorem spiral_wf_five : (spiralDiagram 5).wf = true := by
+  decide
+
+/-- Aucune arête réflexive dans la spirale `[3]` : les quatre étiquettes de
+chaque croisement sont deux à deux distinctes. -/
+theorem spiral_noReflect_three :
+    (spiralDiagram 3).crossings.all (fun c =>
+      c.e1 ≠ c.e2 ∧ c.e1 ≠ c.e3 ∧ c.e1 ≠ c.e4 ∧
+      c.e2 ≠ c.e3 ∧ c.e2 ≠ c.e4 ∧ c.e3 ≠ c.e4) = true := by
+  decide
+
+/-- Même absence d'arête réflexive pour la spirale `[5]`. -/
+theorem spiral_noReflect_five :
+    (spiralDiagram 5).crossings.all (fun c =>
+      c.e1 ≠ c.e2 ∧ c.e1 ≠ c.e3 ∧ c.e1 ≠ c.e4 ∧
+      c.e2 ≠ c.e3 ∧ c.e2 ≠ c.e4 ∧ c.e3 ≠ c.e4) = true := by
+  decide
+
+/-! ### Les valeurs désignées des spirales
+
+`[3]` désigne le trèfle : la spirale à trois demi-twists littéralise
+EXACTEMENT le diagramme de référence du lake (`trefoilDiagram`,
+`Knots/Basic.lean`) — la désignation suit par `alexander_trefoil`. `[5]`
+désigne 5₁ : valeur désignée `t⁴ − t³ + t² − t + 1`, déterminant
+|Δ(−1)| = 5.
+-/
+
+/-- La spirale `[3]` EST le diagramme du trèfle du lake, arête pour
+arête : la lecture annulaire de la fraction `[3]` produit le PD de
+référence `trefoilDiagram`. -/
+theorem spiral_three_eq_trefoilDiagram :
+    spiralDiagram 3 = trefoilDiagram := by
+  decide
+
+/-- La valeur désignée de la spirale `[3]` : `t² − t + 1`, calculée sur
+place (motif d'`alexander_trefoil` — littéralisation, partition d'arcs,
+mineur 2×2). -/
+theorem spiral_three_alexander :
+    alexanderPolynomialAux (spiralDiagram 3) =
+      Polynomial.X ^ 2 - Polynomial.X + 1 := by
+  have hc : spiralDiagram 3 =
+      ⟨[⟨1, 4, 2, 5⟩, ⟨3, 6, 4, 1⟩, ⟨5, 2, 6, 3⟩], 6⟩ := by
+    decide
+  simp only [alexanderPolynomialAux, hc]
+  simp (config := { decide := true })
+  rw [det_two_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-- Corollaire de désignation : la spirale `[3]` porte exactement le
+polynôme d'Alexander du trèfle du lake — la notation désigne 3₁, le
+diagnostic réflexif du maillon 1 est résolu par l'embedding annulaire. -/
+theorem spiral_three_designates_trefoil :
+    alexanderPolynomialAux (spiralDiagram 3) = alexanderPolynomial trefoil := by
+  rw [spiral_three_alexander, alexander_trefoil]
+
+/-- La valeur désignée de la spirale `[5]` : `t⁴ − t³ + t² − t + 1`, le
+polynôme d'Alexander de 5₁ (déterminant |Δ(−1)| = 5). Le mineur 4×4 est
+déplié par `conway_det_four_aux`. -/
+theorem spiral_five_alexander :
+    alexanderPolynomialAux (spiralDiagram 5) =
+      Polynomial.X ^ 4 - Polynomial.X ^ 3 + Polynomial.X ^ 2
+        - Polynomial.X + 1 := by
+  have hc : spiralDiagram 5 =
+      ⟨[⟨1, 6, 2, 7⟩, ⟨3, 8, 4, 9⟩, ⟨5, 10, 6, 1⟩, ⟨7, 2, 8, 3⟩,
+        ⟨9, 4, 10, 5⟩], 10⟩ := by
+    decide
+  simp only [alexanderPolynomialAux, hc]
+  simp (config := { decide := true })
+  rw [conway_det_four_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-! ### Maillon 3 : le nœud en huit par fermeture de tresse (§6)
+
+La construction annulaire du maillon 2 résolvait les familles T(2,n)
+tout-positives. Le nœud en huit 4₁ échappait au moteur : sur le code
+planaire canonique, le mineur non signé rend `t³ − 2t² + 2t`, hors de la
+classe d'unités du classique `t² − 3t + 1`
+(`alexander_figureEight_not_classical`), et la réparation passait par la
+variante signée (`alexander_figureEight_signed`). Ce maillon établit que
+la divergence était un **artefact d'encodage, pas une limite du moteur** :
+la fermeture de la tresse à 3 brins `(σ₁ σ₂⁻¹)²` — représentation standard
+de 4₁ — encodée en suivant les **brins** à travers les croisements (et non
+les pistes), donne un PD sur lequel le moteur NON signé atteint
+directement la classe d'unités du classique (`braidFour_classical_unit_class`
+ci-dessous : la contrepartie positive exacte de
+`alexander_figureEight_not_classical`, même forme, prouvée là où l'autre
+est réfutée).
+
+Dérivation de l'encodage (chaque brin suivi de haut en bas, une tresse
+échangeant les pistes à chaque croisement) : les brins S1, S2, S3 partent
+des pistes 1, 2, 3 ; S1 passe c1 (dessus, σ₁), c2 (dessous, σ₂⁻¹), c4
+(dessus, σ₂⁻¹) ; S2 passe c1 (dessous), c3 (dessus, σ₁), c4 (dessous) ;
+S3 passe c2 (dessus, σ₂⁻¹), c3 (dessous, σ₁). Les 8 arêtes sont les
+segments inter-croisements, la fermeture recollant le bas de la piste k au
+haut de la piste k (E1 = S1-tête ∪ S3-queue, E4 = S1-queue ∪ S2-tête,
+E7 = S2-queue ∪ S3-tête, E2 E3 E5 E6 E8 = segments propres). Le code PD
+retenu vit dans la famille des lectures cohérentes — chaque croisement y
+porte ses deux arêtes de brin-dessus en positions e1/e3 — et c'est cette
+cohérence qui rend la classe du classique atteignable, pas une unicité de
+lecture : sur la structure d'incidence de la tresse (8 lectures
+alternantes plausibles par croisement), l'orientation du brin-dessous est
+neutre pour la valeur désignée, et parmi les 16 orientations du
+brin-dessus exactement 4 rendent la classe d'unités du classique (celle
+retenue −t² + 3t − 1, et t³ − 3t² + t) ; les 12 autres retombent dans
+les classes du code planaire (t³ − 2t² + 2t notamment), et une lecture
+incohérente — un brin-dessus en e2/e4 — ne retrouve la classe que par
+coïncidence (64 sur 3 840). C'est la cohérence d'orientation que
+l'encodage canonique du planaire ne transporte pas.
+-/
+
+/-- PD de la fermeture de la tresse `(σ₁ σ₂⁻¹)²` : croisement c1 =
+(1, 4, 2, 5) — littéralement le premier croisement du `trefoilDiagram`
+du lake —, c2 = (7, 2, 8, 3), c3 = (6, 1, 5, 8), c4 = (3, 6, 4, 7),
+sur 8 arêtes. -/
+def braidFourDiagram : KnotDiagram :=
+  ⟨[⟨1, 4, 2, 5⟩, ⟨7, 2, 8, 3⟩, ⟨6, 1, 5, 8⟩, ⟨3, 6, 4, 7⟩], 8⟩
+
+theorem braidFour_wf : braidFourDiagram.wf = true := by
+  decide
+
+/-- Aucune arête réflexive dans la fermeture de tresse : les quatre
+étiquettes de chaque croisement sont deux à deux distinctes. -/
+theorem braidFour_noReflect :
+    braidFourDiagram.crossings.all (fun c =>
+      c.e1 ≠ c.e2 ∧ c.e1 ≠ c.e3 ∧ c.e1 ≠ c.e4 ∧
+      c.e2 ≠ c.e3 ∧ c.e2 ≠ c.e4 ∧ c.e3 ≠ c.e4) = true := by
+  decide
+
+/-- La valeur désignée de la fermeture de tresse : `−t² + 3t − 1`, le
+classique de 4₁ en sa classe d'unités — atteint par le moteur NON signé
+(motif d'`alexander_figureEight` : littéralisation, mineur 3×3 par
+`det_three_aux`). -/
+theorem braidFour_alexander :
+    alexanderPolynomialAux braidFourDiagram =
+      -(Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+  have hc : braidFourDiagram =
+      ⟨[⟨1, 4, 2, 5⟩, ⟨7, 2, 8, 3⟩, ⟨6, 1, 5, 8⟩, ⟨3, 6, 4, 7⟩], 8⟩ := by
+    decide
+  simp only [alexanderPolynomialAux, hc]
+  simp (config := { decide := true })
+  rw [det_three_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-- Contrepartie positive de `alexander_figureEight_not_classical` : là
+ où le code planaire canonique échoue (aucune unité `ε = ±1`, aucun
+ exposant `k`), l'encodage bresse atteint la classe d'unités du classique
+ avec `ε = −1`, `k = 0`. Le déterminant |Δ(−1)| = 5 = det(4₁) est
+ préservé, et la forme du polynôme cette fois avec. -/
+theorem braidFour_classical_unit_class :
+    ∃ (k : ℕ) (ε : ℤ), ε * ε = 1 ∧
+      alexanderPolynomialAux braidFourDiagram =
+        Polynomial.C ε * Polynomial.X ^ k *
+          (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+  refine ⟨0, -1, by norm_num, ?_⟩
+  rw [braidFour_alexander]
+  norm_num
 
 end Knots

@@ -541,6 +541,45 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
     return lines
 
 
+def _parse_block_entries(yml_text: str) -> set[str]:
+    """Return the set of render-list paths currently present in ``yml_text``.
+
+    The block is the ``project:`` top-level section; we scan for any line
+    of the form ``    - "path"`` (the comment lines are skipped by the regex
+    because they don't match the entry pattern). Used by ``--check`` to name
+    the missing/stale entries on rouge, not just say "stale" (#19895).
+    """
+    out: set[str] = set()
+    in_block = False
+    for line in yml_text.splitlines():
+        if line.startswith("project:"):
+            in_block = True
+            continue
+        if in_block:
+            if line and not line.startswith((" ", "\t", "#", "-")):
+                # A new top-level key ends the project block.
+                break
+            m = re.match(r'\s*-\s+"([^"]+)"\s*$', line)
+            if m:
+                out.add(m.group(1))
+    return out
+
+
+def _section_of(entry: str) -> str:
+    """Return the section a render-list entry belongs to.
+
+    Used by ``--check`` to label each named diff with its section, so the
+    reviewer doesn't have to re-derive it from NOTEBOOK_SUBTREES by hand.
+    """
+    if entry in LANDING_PAGES:
+        return "landing"
+    if entry.endswith("README.md") or entry == "README.md":
+        return "readmes"
+    if entry.startswith("docs/") and entry.endswith(".md"):
+        return "docs"
+    return "notebooks"
+
+
 def replace_render_block(yml_text: str, new_block_lines: list[str]) -> str:
     """Replace the project: {...} block at the top of _quarto.yml.
 
@@ -757,9 +796,41 @@ def main() -> int:
     proposed = replace_render_block(current, new_block)
 
     if args.check:
-        if proposed != current:
-            print("::error::_quarto.yml render list is stale. "
-                  "Run: python scripts/regen_quarto_render.py", file=sys.stderr)
+        new_entries = _parse_block_entries(proposed)
+        cur_entries = _parse_block_entries(current)
+        added = sorted(new_entries - cur_entries, key=str.lower)
+        removed = sorted(cur_entries - new_entries, key=str.lower)
+        if added or removed:
+            lines: list[str] = ["::error::_quarto.yml render list is stale (#19895):"]
+            if added:
+                lines.append(
+                    f"::error::  +{len(added)} added (in tree, missing from "
+                    f"_quarto.yml) :"
+                )
+                for p in added[:20]:
+                    lines.append(f"::error::    + [{_section_of(p)}] {p}")
+                if len(added) > 20:
+                    lines.append(
+                        f"::error::    ... and {len(added) - 20} more"
+                    )
+            if removed:
+                lines.append(
+                    f"::error::  -{len(removed)} removed (listed in _quarto.yml, "
+                    f"absent from tree) :"
+                )
+                for p in removed[:20]:
+                    lines.append(f"::error::    - [{_section_of(p)}] {p}")
+                if len(removed) > 20:
+                    lines.append(
+                        f"::error::    ... and {len(removed) - 20} more"
+                    )
+            lines.append(
+                "::error::Run: python scripts/regen_quarto_render.py "
+                "(regen re-ecrit le bloc). Sur conflit de merge, garder la "
+                "version de main et re-regen (la liste est un artefact genere, "
+                "cf. issue #19895)."
+            )
+            print("\n".join(lines), file=sys.stderr)
             return 1
         n = len(sections["readmes"])
         n_docs = len(sections["docs"])

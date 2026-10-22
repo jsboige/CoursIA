@@ -542,7 +542,7 @@ Famille `MyIA.AI.Notebooks/Probas/Infer/` = 19 notebooks `Infer-{1..19}-*.ipynb`
 
 ### Disclosures honnêtes vérifiées
 
-- (a) `Infer-5-Causal-Inference.ipynb` cellules 0/13/36/37 (markdown) = commentaires pédagogiques "cross-check avec PyMC-4" pointant `../PyMC/PyMC-04-Bayesian-Networks.ipynb`. Cellule 14 (code) contient côte à côte une comparaison `pm.sample()` PyMC et `Variable<bool> cloudySpr = Variable.Bernoulli(0.5)` Infer.NET sur le même réseau bayésien `Cloudy → Sprinkler → WetGrass`. **Le moteur primaire reste Infer.NET** (9 appels `.Infer<>()` avec outputs réels dans ce notebook). Ce n'est **pas** un fallback, c'est une **validation croisée cross-family** — force pédagogique, à discloser honnêtement dans le ledger mais **SOTA-OK (Infer.NET autonome)**.
+- (a) `Infer-05-Causal-Inference.ipynb` cellules 0/13/36/37 (markdown) = commentaires pédagogiques "cross-check avec PyMC-4" pointant `../PyMC/PyMC-04-Bayesian-Networks.ipynb`. Cellule 14 (code) contient côte à côte une comparaison `pm.sample()` PyMC et `Variable<bool> cloudySpr = Variable.Bernoulli(0.5)` Infer.NET sur le même réseau bayésien `Cloudy → Sprinkler → WetGrass`. **Le moteur primaire reste Infer.NET** (9 appels `.Infer<>()` avec outputs réels dans ce notebook). Ce n'est **pas** un fallback, c'est une **validation croisée cross-family** — force pédagogique, à discloser honnêtement dans le ledger mais **SOTA-OK (Infer.NET autonome)**.
 
 **Cross-check double-vérifié** : (1) audit sub-agent a identifié la présence de `PyMC` dans 4 markdown cells + 1 code cell mixt ; (2) vérification firsthand worker via `python -c` confirme ces 5 cellules — claim confirmée.
 
@@ -552,15 +552,15 @@ Chaque notebook pose un problème de **probabilistic programming** avancé qui e
 
 | Notebook | Problème posé (cellule-clef) | Capacité Infer.NET distinctive |
 |----------|------------------------------|--------------------------------|
-| Infer-1-Setup | Installation + sanity-check import | Setup — exception légitime Prong B |
-| Infer-2-Gaussian-Mixtures | Mélange de Gaussiennes, inférence de composantes | EP sur modèle mixte + BIC |
-| Infer-3-Factor-Graphs | Affaire Auburn/Grey, `Variable.Bernoulli(0.7)` | Marginal inference sur factor graph explicite |
-| Infer-4-Bayesian-Networks | Explaining-away diagnostic médical | Réseau bayésien, inférence causale |
-| Infer-5-Causal-Inference | **do-calculus Pearl** : observationnel vs interventionnel | Observationnel vs interventionnel — discriminant net |
-| Infer-2b-Debugging-Bonnes-Pratiques | Pédagogie debug "Model has no support" | Debugging — exception légitime Prong B |
-| Infer-7-Skills-IRT | IRT 2-PL, capacité par étudiant | EP sur modèle de traits latents |
-| Infer-8-TrueSkill | TrueSkill (Xbox Live), inférence de skill | Application canonique Microsoft Infer.NET |
-| Infer-9-Classification | Régression logistique bayésienne + multi-features | Posterior sur poids avec incertitude |
+| Infer-01-Setup | Installation + sanity-check import | Setup — exception légitime Prong B |
+| Infer-02-Gaussian-Mixtures | Mélange de Gaussiennes, inférence de composantes | EP sur modèle mixte + BIC |
+| Infer-03-Factor-Graphs | Affaire Auburn/Grey, `Variable.Bernoulli(0.7)` | Marginal inference sur factor graph explicite |
+| Infer-04-Bayesian-Networks | Explaining-away diagnostic médical | Réseau bayésien, inférence causale |
+| Infer-05-Causal-Inference | **do-calculus Pearl** : observationnel vs interventionnel | Observationnel vs interventionnel — discriminant net |
+| Infer-02b-Debugging-Bonnes-Pratiques | Pédagogie debug "Model has no support" | Debugging — exception légitime Prong B |
+| Infer-07-Skills-IRT | IRT 2-PL, capacité par étudiant | EP sur modèle de traits latents |
+| Infer-08-TrueSkill | TrueSkill (Xbox Live), inférence de skill | Application canonique Microsoft Infer.NET |
+| Infer-09-Classification | Régression logistique bayésienne + multi-features | Posterior sur poids avec incertitude |
 | Infer-10-Model-Selection | **Model evidence** : log evidence comparé | Evidence de modèle — capacité signature Infer.NET |
 | Infer-11-Topic-Models | LDA asymétrique, theta par doc | VMP sur modèle à composantes |
 | Infer-12-Modeles-Hierarchiques | Pooling partiel `theta[c] ~ N(mu, tau)` | Shrinkage hiérarchique |
@@ -2722,7 +2722,7 @@ Part of #3801, #1385
 
 | Métrique | Valeur |
 |----------|--------|
-| Famille | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb` (1 .ipynb — causalité bayésienne + do-calculus, parité Infer-5-Causal-Inference entry #006) |
+| Famille | `MyIA.AI.Notebooks/Probas/PyMC/PyMC-05-Causal-Inference.ipynb` (1 .ipynb — causalité bayésienne + do-calculus, parité Infer-05-Causal-Inference entry #006) |
 | Kernel | `python3` |
 | Owner-lane | **po-2025 strict** (lane Python bayésienne native ; entry #028 PyMC 1-15 c.411 + Infer-extension #018 PyMC-16..19) |
 | Date audit | 2026-07-16 (c.538) |

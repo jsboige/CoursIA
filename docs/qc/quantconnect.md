@@ -241,20 +241,21 @@ https://www.quantconnect.com/organization/<org_id>/assistants
 - Validation algos QC Cloud avant import dans projects/
 - Debugging multi-aller-retour des strategies en iteration
 
-## Architecture composites (AlphaModel + MultiStrategyPCM)
+## Architecture composites (AlphaModel + MultiStrategyPouchesPCM)
 
 Pattern standardise pour combiner plusieurs strategies dans un même algo QC :
 
-### Structure de fichiers (3 fichiers obligatoires)
+### Structure de fichiers (par composite + module partage)
 
-- `main.py` : `QCAlgorithm` avec `set_alpha(CompositeAlphaModel(...))` + `set_portfolio_construction(MultiStrategyPCM(...))`
+- `main.py` : `QCAlgorithm` avec `set_alpha(CompositeAlphaModel(...))` + `set_portfolio_construction(MultiStrategyPouchesPCM(...))`
 - `alpha_models.py` : une classe par alpha, chaque avec `self.name` et `source_model=self.name`
-- `portfolio_construction.py` : `MultiStrategyPCM` avec `determine_target_percent` (PAS `create_targets`)
+- `SharedPCM/pouches_pcm.py` : `MultiStrategyPouchesPCM`, le PCM par poches canonique avec `determine_target_percent` (PAS `create_targets`) — une seule copie importee par tous les composites (extraction #19821 brique 1). Sur QC Cloud : attacher le projet `SharedPCM` en bibliotheque du consommateur (geste "Add Library"), puis `from SharedPCM.pouches_pcm import MultiStrategyPouchesPCM`
 
-### MultiStrategyPCM — design
+### MultiStrategyPouchesPCM — design
 
 - Groupe les insights par `source_model`
-- Alloue une slice de capital par stratégie via dict `alpha_allocations`
+- Alloue une poche de capital par strategie via dict `alpha_allocations`
+- Mode intent par defaut (`additive=True`, exige `algorithm=self`) : dernier insight actif par couple (symbole, source_model), somme des poches par symbole, sans levier (#19740, #19759)
 - Supporte branches weight-hint ET equal-weight
 - Utilise `set_rebalancing_func` pour le rebalance timing
 
