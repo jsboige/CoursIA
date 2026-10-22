@@ -1959,6 +1959,15 @@ def test_belt_budget_banner_is_printed_when_the_budget_is_exhausted(capsys):
     assert "Plafond de sondes de livraison atteint" in out
     assert "fail-OPEN" in out
     assert "check_unaddressed_nits" in out
+    # Verrou d'egalite sur le texte entier : trois sous-chaines
+    # laisseraient passer une reecriture du milieu des phrases, ou la perte
+    # d'une ligne dont les trois marqueurs survivraient (reserve NanoClaw
+    # du 2026-10-22).
+    assert out == (
+        "   Plafond de sondes de livraison atteint : les candidats\n"
+        "   au-dela ne sont pas sondes (fail-OPEN) -- la verification\n"
+        "   de livraison leur revient, cf check_unaddressed_nits.\n"
+    )
 
 
 def test_belt_budget_banner_is_silent_when_the_budget_is_not_exhausted(capsys):
@@ -1975,10 +1984,14 @@ def test_belt_delivery_probe_cost_is_bounded_by_the_budget():
     et celle d'apres (fenetre * 3 + 12 = 36) sur le MEME pool : la
     difference de requetes est exactement l'ecart de plafond.
 
-    C'est le cout assume du correctif de #19977 : +28 requetes au pire sur
-    un tirage charge, pour ne plus servir un candidat livre comme un grain
-    neuf. Le second terme du cout -- le filtre de marqueur recent, une
-    requete par candidat, HORS budget -- est inchange par ce correctif."""
+    C'est le cout assume du correctif de #19977 : le budget de sondes passe
+    de 8 a 36 (+28 de BUDGET), mais le surcout EN REQUETES est de +22 au
+    pire sur un tirage charge (30 sondes - 8), pour ne plus servir un
+    candidat livre comme un grain neuf. Les deux grandeurs ne se confondent
+    pas : +28 est l'ecart de PLAFOND, +22 l'ecart de requetes mesure par
+    les asserts ci-dessous (reserve NanoClaw du 2026-10-22). Le second
+    terme du cout -- le filtre de marqueur recent, une requete par
+    candidat, HORS budget -- est inchange par ce correctif."""
     delivered = set(range(19200, 19230))          # 30 livres, fenetre de 8
     items = [_make_item(n, age_days=200 - i, idle=2, last=None)
              for i, n in enumerate(sorted(delivered, reverse=True))]
