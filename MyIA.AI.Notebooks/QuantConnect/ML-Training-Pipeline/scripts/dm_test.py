@@ -4,6 +4,13 @@ Compares two sets of forecast errors and tests the null hypothesis that
 both methods have the same accuracy. Uses the Harvey-Leybourne-Newbold
 (HLN) small-sample correction by default.
 
+Truncation rule (frozen since #21945): the default HAC lag is n^(1/3)
+(see _optimal_lag), NOT the h-1 rule of the legacy diebold_mariano
+module. On the consumer shapes measured for #21945 the two rules diverge
+by 0.3-7.7% on the DM statistic (sign never flipped on the measured
+shapes); the divergence is frozen by test_dm.py::TestTruncationRule.
+Pass max_lag explicitly to reproduce a legacy lag.
+
 References:
 - Diebold & Mariano (1995) "Comparing Predictive Accuracy", JBES 13, 253-263.
 - Newey & West (1987) "A Simple, Positive Semi-Definite, Heteroskedasticity
@@ -22,7 +29,11 @@ from scipy import stats
 
 @dataclass(frozen=True)
 class DMResult:
-    """Result of a Diebold-Mariano test."""
+    """Result of a Diebold-Mariano test.
+
+    p_value follows the ``alternative`` selected on the call: two-sided
+    (default), "less" or "greater".
+    """
     dm_statistic: float
     p_value: float
     mean_loss_diff: float
@@ -31,7 +42,7 @@ class DMResult:
     lag_truncation: int
 
 
-def _newey_west_variance(x: np.ndarray, max_lag: int) -> float:
+def newey_west_variance(x: np.ndarray, max_lag: int) -> float:
     """Compute HAC (Newey-West) variance estimator for a univariate series.
 
     Uses Bartlett kernel weights: w_j = 1 - j / (max_lag + 1).
@@ -53,11 +64,19 @@ def _newey_west_variance(x: np.ndarray, max_lag: int) -> float:
         return float(np.var(x, ddof=1))
     gamma_0 = np.mean(x ** 2) - np.mean(x) ** 2
     total = gamma_0
-    for j in range(1, max_lag + 1):
+    # Lags >= n have no paired products; np.mean of an empty slice is
+    # nan, so cap the loop there (the legacy estimator returned 0.0 for
+    # those lags via np.dot on empty arrays).
+    for j in range(1, min(max_lag, n - 1) + 1):
         weight = 1.0 - j / (max_lag + 1)
         gamma_j = np.mean(x[j:] * x[:-j]) - np.mean(x) ** 2
         total += 2.0 * weight * gamma_j
     return max(total, 0.0)
+
+
+# Retro-compat alias: historical private name kept for existing imports
+# (test_dm.py imports _newey_west_variance).
+_newey_west_variance = newey_west_variance
 
 
 def _optimal_lag(n: int) -> int:
@@ -72,6 +91,7 @@ def diebold_mariano_test(
     hln_correction: bool = True,
     max_lag: int | None = None,
     horizon: int = 1,
+    alternative: str = "two-sided",
 ) -> DMResult:
     """Diebold-Mariano test for equal predictive accuracy.
 
@@ -99,6 +119,10 @@ def diebold_mariano_test(
         HAC truncation lag. If None, uses n^(1/3).
     horizon : int
         Forecast horizon h (used in HLN correction). Default 1.
+    alternative : str
+        "two-sided" (default), "less" (H1: E[d] < 0, model better) or
+        "greater" (H1: E[d] > 0, baseline better). Selects the p-value
+        tail; Student-t under HLN, normal otherwise.
 
     Returns
     -------
@@ -115,6 +139,10 @@ def diebold_mariano_test(
     n = len(errors_a)
     if n < 10:
         raise ValueError(f"Need >=10 paired observations for DM test, got {n}")
+    if alternative not in ("two-sided", "less", "greater"):
+        raise ValueError(
+            f"alternative must be 'two-sided', 'less' or 'greater', got '{alternative}'"
+        )
 
     if loss_fn == "mse":
         loss_a = errors_a ** 2
@@ -154,10 +182,22 @@ def diebold_mariano_test(
     if hln_correction:
         correction = np.sqrt((n + 1 - 2 * horizon + horizon * (horizon - 1) / n) / n)
         dm_stat_corrected = dm_stat * correction
-        p_value = 2.0 * (1.0 - stats.t.cdf(np.abs(dm_stat_corrected), df=n - 1))
+        if alternative == "two-sided":
+            # sf (survival function) instead of 1 - cdf: no catastrophic
+            # cancellation in the far tail (#21945).
+            p_value = float(2.0 * stats.t.sf(np.abs(dm_stat_corrected), df=n - 1))
+        elif alternative == "less":
+            p_value = float(stats.t.cdf(dm_stat_corrected, df=n - 1))
+        else:  # greater
+            p_value = float(stats.t.sf(dm_stat_corrected, df=n - 1))
         reported_stat = dm_stat_corrected
     else:
-        p_value = 2.0 * (1.0 - stats.norm.cdf(np.abs(dm_stat)))
+        if alternative == "two-sided":
+            p_value = float(2.0 * stats.norm.sf(np.abs(dm_stat)))
+        elif alternative == "less":
+            p_value = float(stats.norm.cdf(dm_stat))
+        else:  # greater
+            p_value = float(stats.norm.sf(dm_stat))
         reported_stat = dm_stat
 
     return DMResult(
@@ -205,4 +245,43 @@ def dm_verdict(
         "lag": result.lag_truncation,
         "verdict": verdict,
         "significant_at": alpha,
+    }
+
+
+def bonferroni_dm(
+    errors_model: np.ndarray,
+    errors_baseline: np.ndarray,
+    n_tests: int,
+    loss_fn: str = "mse",
+    horizon: int = 1,
+    alternative: str = "two-sided",
+) -> dict:
+    """DM test with Bonferroni correction for multiple comparisons.
+
+    Runs diebold_mariano_test then adjusts p_value by n_tests. The dict
+    carries both key families so consumers of the legacy
+    diebold_mariano.bonferroni_dm (p_value_adjusted,
+    significant_05_bonferroni, n_tests, dm_stat, p_value, significant_05,
+    significant_01, n_obs) migrate without key changes, plus the
+    canonical diagnostics (dm_statistic, mean_loss_diff, hac_variance,
+    lag).
+    """
+    result = diebold_mariano_test(
+        errors_model, errors_baseline,
+        loss_fn=loss_fn, horizon=horizon, alternative=alternative,
+    )
+    adjusted_p = min(result.p_value * n_tests, 1.0)
+    return {
+        "dm_stat": result.dm_statistic,
+        "p_value": result.p_value,
+        "significant_05": result.p_value < 0.05,
+        "significant_01": result.p_value < 0.01,
+        "n_obs": result.n_observations,
+        "dm_statistic": result.dm_statistic,
+        "mean_loss_diff": result.mean_loss_diff,
+        "hac_variance": result.hac_variance,
+        "lag": result.lag_truncation,
+        "p_value_adjusted": float(adjusted_p),
+        "significant_05_bonferroni": adjusted_p < 0.05,
+        "n_tests": n_tests,
     }
