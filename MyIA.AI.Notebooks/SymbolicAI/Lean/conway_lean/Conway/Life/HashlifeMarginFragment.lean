@@ -274,6 +274,54 @@ theorem jumpCapturedF_of_dilation (c : MacroCell) (a b : Int × Int)
     exact (Nat.cast_pow 2 c.level).symm
   omega
 
+/-! ### Tranche 17 — le corridor dilaté ne peut capturer que du vide
+
+`jumpCapturedF_of_dilation` transforme une hypothèse géométrique (`h₀` : le
+support paddé vit dans une boîte `[a, b)`) en une capture, à condition que la
+boîte **contienne le corridor de test** : `hwin1`/`hwin3` demandent
+`2 · 2^lvl ≤ a₁` (resp. `a₂`), `hwin2`/`hwin4` demandent
+`b₁ ≤ 2^lvl + 2^(lvl+1)` (resp. `b₂`). Ces quatre bornes sont **conjointement
+contradictoires** : elles forcent `2 · 2^lvl ≤ a₁ ≤ p₁ < b₁ ≤ 2 · 2^lvl` pour
+tout point `p` du support. La route géométrique ne s'applique donc qu'à une
+grille paddée **vide** — et sur le vide la capture est triviale, donc le
+théorème ne dit rien de la classe L3.
+
+C'est un résultat d'**impossibilité**, et il documente une impasse : toute
+classe close du fragment doit passer par l'**invariance temporelle exacte**
+(`hcap_of_period_mod`, tranches 8b/15/16) ou par l'argument de boîte, jamais
+par un élargissement géométrique du corridor. La tranche ne fait pas avancer
+L3 ; elle évite qu'un cycle futur rouvre cette route. -/
+
+/-- **Le corridor dilaté ne capture que du vide.** Si le support paddé vérifie
+    `h₀` et si les quatre bornes de corridor de `jumpCapturedF_of_dilation`
+    tiennent, alors la grille paddée n'a **aucun** point vivant. La preuve est
+    l'arithmétique du corridor : `hwin1`/`hwin2` donnent
+    `b₁ ≤ 2^(lvl+1) = 2 · 2^lvl ≤ a₁`, alors que `h₀` exigerait `a₁ ≤ p₁ < b₁`. -/
+theorem dilation_window_forces_empty (c : MacroCell) (a b : Int × Int)
+    (h₀ : ∀ p, isAlive ((padCenter2 c).toGrid (0, 0)) p = true →
+      a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2)
+    (hwin1 : ((2 ^ c.level : Nat) : Int) ≤ a.1 - ((2 ^ c.level : Nat) : Int))
+    (hwin2 : b.1 + ((2 ^ c.level : Nat) : Int) ≤
+      ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int))
+    (hwin3 : ((2 ^ c.level : Nat) : Int) ≤ a.2 - ((2 ^ c.level : Nat) : Int))
+    (hwin4 : b.2 + ((2 ^ c.level : Nat) : Int) ≤
+      ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int)) :
+    ∀ p, isAlive ((padCenter2 c).toGrid (0, 0)) p = false := by
+  intro p
+  cases h : isAlive ((padCenter2 c).toGrid (0, 0)) p with
+  | false => rfl
+  | true =>
+    exfalso
+    obtain ⟨h1, h2, _, _⟩ := h₀ p h
+    -- le corridor lie `2^(lvl+1)` à `2 · 2^lvl` : c'est le seul fait non
+    -- linéaire, fourni explicitement avant de laisser `omega` conclure.
+    have h2L : ((2 ^ (c.level + 1) : Nat) : Int)
+        = ((2 ^ c.level : Nat) : Int) + ((2 ^ c.level : Nat) : Int) := by
+      rw [pow_succ]
+      push_cast
+      ring
+    omega
+
 /-- **Une période se répète** (copie locale byte-identical de
     `evolve_mul_of_period`, JumpCapture L518 — ce module ne peut pas
     l'importer, cycle A↔B, cf docstring de `jumpCapturedF`) : si `g` est de

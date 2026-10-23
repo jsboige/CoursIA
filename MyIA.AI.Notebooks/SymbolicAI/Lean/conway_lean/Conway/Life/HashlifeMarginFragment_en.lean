@@ -275,6 +275,54 @@ theorem jumpCapturedF_of_dilation (c : MacroCell) (a b : Int × Int)
     exact (Nat.cast_pow 2 c.level).symm
   omega
 
+/-! ### Slice 17 — the dilated corridor can only capture emptiness
+
+`jumpCapturedF_of_dilation` turns a geometric hypothesis (`h₀`: the padded
+support lives in a box `[a, b)`) into a capture, provided the box **contains
+the test corridor**: `hwin1`/`hwin3` require `2 · 2^lvl ≤ a₁` (resp. `a₂`),
+`hwin2`/`hwin4` require `b₁ ≤ 2^lvl + 2^(lvl+1)` (resp. `b₂`). These four
+bounds are **jointly contradictory**: they force `2 · 2^lvl ≤ a₁ ≤ p₁ < b₁ ≤
+2 · 2^lvl` for every point `p` of the support. The geometric route therefore
+only applies to an **empty** padded grid — and on the empty grid the capture is
+trivial, so the theorem says nothing about the L3 class.
+
+This is an **impossibility** result, and it documents a dead end: every closed
+class of the fragment must go through **exact temporal invariance**
+(`hcap_of_period_mod`, slices 8b/15/16) or through the box argument, never
+through a geometric widening of the corridor. The slice does not advance L3;
+it keeps a future cycle from reopening that route. -/
+
+/-- **The dilated corridor only captures emptiness.** If the padded support
+    satisfies `h₀` and if the four corridor bounds of
+    `jumpCapturedF_of_dilation` hold, then the padded grid has **no** alive
+    point. The proof is the arithmetic of the corridor: `hwin1`/`hwin2` give
+    `b₁ ≤ 2^(lvl+1) = 2 · 2^lvl ≤ a₁`, whereas `h₀` would require
+    `a₁ ≤ p₁ < b₁`. -/
+theorem dilation_window_forces_empty (c : MacroCell) (a b : Int × Int)
+    (h₀ : ∀ p, isAlive ((padCenter2 c).toGrid (0, 0)) p = true →
+      a.1 ≤ p.1 ∧ p.1 < b.1 ∧ a.2 ≤ p.2 ∧ p.2 < b.2)
+    (hwin1 : ((2 ^ c.level : Nat) : Int) ≤ a.1 - ((2 ^ c.level : Nat) : Int))
+    (hwin2 : b.1 + ((2 ^ c.level : Nat) : Int) ≤
+      ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int))
+    (hwin3 : ((2 ^ c.level : Nat) : Int) ≤ a.2 - ((2 ^ c.level : Nat) : Int))
+    (hwin4 : b.2 + ((2 ^ c.level : Nat) : Int) ≤
+      ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int)) :
+    ∀ p, isAlive ((padCenter2 c).toGrid (0, 0)) p = false := by
+  intro p
+  cases h : isAlive ((padCenter2 c).toGrid (0, 0)) p with
+  | false => rfl
+  | true =>
+    exfalso
+    obtain ⟨h1, h2, _, _⟩ := h₀ p h
+    -- the corridor links `2^(lvl+1)` to `2 · 2^lvl`: the only non-linear
+    -- fact, supplied explicitly before letting `omega` conclude.
+    have h2L : ((2 ^ (c.level + 1) : Nat) : Int)
+        = ((2 ^ c.level : Nat) : Int) + ((2 ^ c.level : Nat) : Int) := by
+      rw [pow_succ]
+      push_cast
+      ring
+    omega
+
 /-- **A period repeats itself** (local byte-identical copy of
     `evolve_mul_of_period`, JumpCapture L518 — this module cannot import it,
     import cycle A↔B, cf docstring of `jumpCapturedF`): if `g` has period
