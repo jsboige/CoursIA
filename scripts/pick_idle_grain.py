@@ -7462,12 +7462,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--grains", type=int, default=4, help="candidats urne 'grain' (defaut 4)")
     ap.add_argument("--belt-time-budget", dest="belt_time_budget", type=float,
                     default=float(os.environ.get("PICK_BELT_TIME_BUDGET_S") or 240),
-                    help="#21436 mur de temps du mode --belt, en SECONDES de run "
-                         "(pas par etape) : passe l'echeance, la boucle cesse de "
-                         "sonder et sert le reliquat en fail-OPEN en le rapportant "
-                         "(`time_budget_hit`). Defaut : PICK_BELT_TIME_BUDGET_S, "
-                         "ou 240 s (l'acceptance borne le tapis sous 300 s). "
-                         "0 desactive le mur.")
+                    help="#21436 mur de temps du mode --belt, en SECONDES pour la "
+                         "BOUCLE de sondage (pas par etape) : passe l'echeance, "
+                         "la boucle cesse de sonder et sert le reliquat en "
+                         "fail-OPEN en le rapportant (`time_budget_hit`). "
+                         "Portee : les phases qui precedent la boucle (claims, "
+                         "settle) consomment l'echeance mais ne sont pas "
+                         "tronquees, et `validate_picks_live` s'execute apres "
+                         "elle sans borne -- la valeur ne borne donc pas une "
+                         "duree totale de run. Defaut : PICK_BELT_TIME_BUDGET_S, "
+                         "ou 240 s. 0 desactive le mur.")
     ap.add_argument("--umbrellas", type=int, default=2, help="candidats urne 'umbrella' (defaut 2)")
     ap.add_argument("--delivered", type=int, default=2, help="candidats urne 'delivered' (defaut 2)")
     ap.add_argument("--reroll", type=int, default=0, help="decale la graine pour un nouveau tirage")
@@ -8190,8 +8194,10 @@ def main(argv: list[str] | None = None) -> int:
             belt_time_remaining = max(
                 0.0, args.belt_time_budget
                 - (_time_belt.monotonic() - _belt_t0))
-            _belt_phase(f"mur de temps: {args.belt_time_budget:.0f}s de run, "
-                        f"{belt_time_remaining:.0f}s restants au moment de la boucle")
+            _belt_phase(f"mur de temps: {args.belt_time_budget:.0f}s pour la "
+                        f"boucle, {belt_time_remaining:.0f}s restants a son "
+                        f"entree (claims/settle deduits ; "
+                        f"validate_picks_live hors echeance)")
         _belt_phase("pick_with_replacements start")
         belt_picks, belt_withheld, belt_pick_state = (
             belt_pick_with_replacements(belt_pool, belt_claims, args,
