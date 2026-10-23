@@ -22,6 +22,7 @@ Lean des définitions est prévu par les plis suivants.
 5. **Encoder et décoder** un message avec un code préfixe arbitraire, et détecter les codes ambigus
 6. **Canoniser et décoder par table** : réduire l'en-tête d'un code Huffman à ses seules longueurs (Schwartz-Kallick), puis décoder par table indexée à $2^L$ entrées plutôt que par parcours d'arbre
 7. **Parser et référencer** : remplacer la répétition par un couple (décalage, longueur) dans une fenêtre glissante (LZ77), séparer le parse en flux (littéraux, longueurs, décalages) et mesurer la double couche LZ + entropie
+8. **Quantifier, élaguer et distiller** un modèle entraîné — et lire le prix en exactitude : comparer FP32/FP16/INT8, choisir entre per-tensor et per-channel, mesurer la falaise du pruning one-shot, puis montrer ce que la distillation transfère que l'étiquette seule ne dit pas
 
 ## Carnets
 
