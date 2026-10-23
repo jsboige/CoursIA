@@ -228,4 +228,8 @@ fi
 # DEMARRAGE
 # =============================================================================
 echo "Demarrage du serveur ComfyUI..."
-exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention
+# --disable-pinned-memory : sans ce drapeau, le buffer epingle vaut 40 % de la
+# RAM vue (~12 Go) et porte le RSS au repos a ~16 Go ; le chargement du UNET
+# 7,25 Go + CLIP 9,35 Go depasse alors le plafond cgroup de 28 Gio et les
+# lectures de poids echouent (HostBuffer.read_file_slice failed, pread ENOMEM).
+exec venv/bin/python3 main.py --listen 0.0.0.0 --port 8188 --preview-method auto --use-split-cross-attention --disable-pinned-memory

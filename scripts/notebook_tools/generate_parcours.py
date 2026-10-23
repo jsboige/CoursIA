@@ -247,13 +247,35 @@ def generate_parcours_page(
     parcours_id: str,
     entries: list[dict],
     unresolved: list[str] | None = None,
+    notebooks_root: Path | None = None,
 ) -> str:
     """Generate markdown page for a single parcours.
 
     ``unresolved`` (optional) collects the ``path`` of every catalog entry whose
-    notebook is absent from disk; such entries get a BARE label (no markdown
-    link) rather than an href that 404s until the next catalogue regeneration.
+    notebook is absent from disk even after resolve_moved_entries(); such stale
+    entries are SKIPPED entirely -- not counted in the stats, not emitted as a
+    row. A stale catalogue (famine-delayed cron regen merging on ``main`` after
+    a rename, #20552) would otherwise re-inject a ghost row on every
+    regeneration and drift the page away from the committed tree.
+
+    ``notebooks_root`` (optional) overrides the disk root the existence checks
+    run against (same contract as ``resolve_moved_entries``); tests materialize
+    their fixture entries under a tmp_path instead of relying on the real tree.
     """
+    root = notebooks_root if notebooks_root is not None else REPO_ROOT / "MyIA.AI.Notebooks"
+    # #14880 hardened the emission (bare label, no 404ing href); #20552 showed
+    # the bare row itself is the non-idempotence: the committed page carries no
+    # row for the ghost notebook, so every regen from the stale catalogue
+    # produces a +1 diff. Skip absent entries BEFORE the stats block so counts
+    # and rows stay consistent with what the page actually emits.
+    present: list[dict] = []
+    for e in entries:
+        if (root / e["path"]).exists():
+            present.append(e)
+        elif unresolved is not None:
+            unresolved.append(e["path"])
+    entries = present
+
     config = PARCOURS[parcours_id]
     lines = [
         "<!--",
@@ -315,11 +337,11 @@ def generate_parcours_page(
             label = name.replace("[", "\\[").replace("]", "\\]")
             maturity = e.get("maturity", "?")
             exe = "Oui" if e.get("executable_locally") else "Non"
-            # Harden against the regen window (#14880): between a rename landing
-            # on `main` and the next catalogue regeneration, an entry's path can
-            # be absent from disk. Emit a BARE label (no href) rather than a
-            # link that 404s, and collect it for the stderr report.
-            if (REPO_ROOT / "MyIA.AI.Notebooks" / e["path"]).exists():
+            # Defense in depth (#14880): absent-path entries are skipped before
+            # the stats block (top of function), so this guard should not fire
+            # on catalogue entries; it still covers a path vanishing between
+            # the partition and the emission.
+            if (root / e["path"]).exists():
                 href = quote(f"../../MyIA.AI.Notebooks/{e['path']}")
                 cell = f"[{label}]({href})"
             else:
@@ -571,7 +593,7 @@ def main():
     if unresolved:
         print(
             "WARNING: catalog entries whose notebook path is absent from disk "
-            f"(emitted as bare label, {len(set(unresolved))} unique):",
+            f"(skipped from pages and stats, {len(set(unresolved))} unique):",
             file=sys.stderr,
         )
         for p in sorted(set(unresolved)):
