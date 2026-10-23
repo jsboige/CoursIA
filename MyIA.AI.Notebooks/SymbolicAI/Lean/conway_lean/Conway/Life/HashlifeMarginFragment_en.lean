@@ -490,6 +490,56 @@ theorem centralCorrect_free_of_wf (c : MacroCell) (k : Nat)
     centralCorrect c k :=
   hashlifeResult_central_correct c k hwf hlvl
 
+/-! ### Slice 19 — the initial support already lies in the test window
+
+Any proof of `jumpCapturedF c = true` is a **constancy** statement: the
+support of `evolve (2^lvl) ((padCenter2 c).toGrid (0, 0))` must stay inside
+the window `[2^lvl, 2^lvl + 2^(lvl+1))²` of the predicate. The lemma below
+establishes the starting point: **at `t = 0` the support is already there** —
+the double padding centers the content of `c` inside `[3·2^(k-1), 5·2^(k-1))²`,
+itself contained in the window as soon as `1 ≤ k`. Capture is thus exactly
+"nothing leaves it during `2^lvl` steps": every closed class of this fragment
+(still lifes, periodic patterns, spaceships) shows that the trajectory brings
+the support back inside it; the P4 assembly (iterating the walls) will have to
+show that it **stays there** at every jump. The L3 residual is now a purely
+relative confinement statement about a window that initially contains the
+support. -/
+
+/-- **The padded support lives in the test window (the `t = 0` diagonal of
+    capture).** Composes the geometry of the central padding
+    (`padCenter2_toGrid_shift`: content translated by `3·2^(k-1)` on each
+    axis) with the support bound of a wf cell (`cellWfF_toGrid_bounds`:
+    support inside `[0, 2^k)²`): the support of `(padCenter2 c).toGrid (0, 0)`
+    lives in `[3·2^(k-1), 5·2^(k-1))²`, contained in the window
+    `[2^k, 2^k + 2^(k+1))²` of the `jumpCapturedF` predicate as soon as
+    `1 ≤ c.level`. Common geometric brick of the capture proofs — at the
+    initial instant the window contains the support; capturing the jump means
+    showing that it does not leave it by the horizon `2^lvl`. -/
+theorem padCenter2_support_in_window (c : MacroCell) (hc : cellWf c)
+    (hk : 1 ≤ c.level) {p : Int × Int}
+    (hp : p ∈ (padCenter2 c).toGrid (0, 0)) :
+    ((2 ^ c.level : Nat) : Int) ≤ p.1 ∧
+      p.1 < ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int) ∧
+      ((2 ^ c.level : Nat) : Int) ≤ p.2 ∧
+      p.2 < ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int) := by
+  rw [padCenter2_toGrid_shift c hk, mem_shift] at hp
+  obtain ⟨b1, b2, b3, b4⟩ := cellWfF_toGrid_bounds hc 0 0 hp
+  -- powers tied to a single atom `s = 2^(k-1)` for omega
+  have hkl : c.level - 1 + 1 = c.level := Nat.sub_add_cancel hk
+  have h2 : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    conv_lhs => rw [← hkl]
+    rw [pow_succ]
+    ring
+  have hcast : ((2 ^ c.level : Nat) : Int) = (2 ^ c.level : Int) :=
+    (Nat.cast_pow 2 c.level).symm
+  have h4 : ((2 ^ (c.level + 1) : Nat) : Int) = 4 * (2 ^ (c.level - 1) : Int) := by
+    rw [Nat.cast_pow]
+    conv_lhs => rw [show c.level + 1 = c.level - 1 + 2 from by omega]
+    rw [pow_add, pow_two]
+    ring
+  dsimp only at b1 b2 b3 b4
+  omega
+
 /-! ## L3 class `T = 1` — hcap of still lifes (step 3, slice 4)
 
 First **entirely closed** L3 link: for the class of still lifes

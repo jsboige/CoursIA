@@ -489,6 +489,55 @@ theorem centralCorrect_free_of_wf (c : MacroCell) (k : Nat)
     centralCorrect c k :=
   hashlifeResult_central_correct c k hwf hlvl
 
+/-! ### Tranche 19 — le support initial est déjà dans la fenêtre du test
+
+Toute preuve de `jumpCapturedF c = true` est un énoncé de **constance** : le
+support de `evolve (2^lvl) ((padCenter2 c).toGrid (0, 0))` doit rester dans la
+fenêtre `[2^lvl, 2^lvl + 2^(lvl+1))²` du prédicat. Le lemme ci-dessous établit
+le point de départ : **à `t = 0`, le support y est déjà** — le double
+rembourrage centre le contenu de `c` dans `[3·2^(k-1), 5·2^(k-1))²`, inclus
+dans la fenêtre dès `1 ≤ k`. La capture est donc exactement « rien n'en sort
+pendant `2^lvl` pas » : chaque classe close du fragment (natures mortes,
+périodiques, vaisseaux) montre que la trajectoire y ramène le support ;
+l'assemblage P4 (itération des murs) devra montrer qu'il **y reste** à chaque
+saut. Le résidu L3 est désormais un pur énoncé de confinement relatif à une
+fenêtre qui, initialement, contient le support. -/
+
+/-- **Le support paddé vit dans la fenêtre du test (diagonale `t = 0` de la
+    capture).** Compose la géométrie du rembourrage central
+    (`padCenter2_toGrid_shift` : contenu translaté de `3·2^(k-1)` sur chaque
+    axe) avec la borne de support d'une cellule wf (`cellWfF_toGrid_bounds` :
+    support dans `[0, 2^k)²`) : le support de `(padCenter2 c).toGrid (0, 0)`
+    vit dans `[3·2^(k-1), 5·2^(k-1))²`, inclus dans la fenêtre
+    `[2^k, 2^k + 2^(k+1))²` du prédicat `jumpCapturedF` dès `1 ≤ c.level`.
+    Brique géométrique commune des preuves de capture — à l'instant initial
+    la fenêtre contient le support ; capturer le saut, c'est montrer qu'il
+    n'en sort pas à l'horizon `2^lvl`. -/
+theorem padCenter2_support_in_window (c : MacroCell) (hc : cellWf c)
+    (hk : 1 ≤ c.level) {p : Int × Int}
+    (hp : p ∈ (padCenter2 c).toGrid (0, 0)) :
+    ((2 ^ c.level : Nat) : Int) ≤ p.1 ∧
+      p.1 < ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int) ∧
+      ((2 ^ c.level : Nat) : Int) ≤ p.2 ∧
+      p.2 < ((2 ^ c.level : Nat) : Int) + ((2 ^ (c.level + 1) : Nat) : Int) := by
+  rw [padCenter2_toGrid_shift c hk, mem_shift] at hp
+  obtain ⟨b1, b2, b3, b4⟩ := cellWfF_toGrid_bounds hc 0 0 hp
+  -- puissances reliées en un seul atome `s = 2^(k-1)` pour omega
+  have hkl : c.level - 1 + 1 = c.level := Nat.sub_add_cancel hk
+  have h2 : (2 ^ c.level : Int) = 2 * (2 ^ (c.level - 1) : Int) := by
+    conv_lhs => rw [← hkl]
+    rw [pow_succ]
+    ring
+  have hcast : ((2 ^ c.level : Nat) : Int) = (2 ^ c.level : Int) :=
+    (Nat.cast_pow 2 c.level).symm
+  have h4 : ((2 ^ (c.level + 1) : Nat) : Int) = 4 * (2 ^ (c.level - 1) : Int) := by
+    rw [Nat.cast_pow]
+    conv_lhs => rw [show c.level + 1 = c.level - 1 + 2 from by omega]
+    rw [pow_add, pow_two]
+    ring
+  dsimp only at b1 b2 b3 b4
+  omega
+
 /-! ## L3 classe `T = 1` — hcap des natures mortes (tranche 3, étape 4)
 
 Premier maillon L3 **entièrement clos** : pour la classe des natures mortes
