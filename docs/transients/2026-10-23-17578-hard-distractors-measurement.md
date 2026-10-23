@@ -1,3 +1,5 @@
+> RAPPORT — 2026-10-23 — mesure deux-taux du contrôle aller-retour à distracteurs difficiles (#17578, PR #22220) — figé
+
 # 17578 — Mesure deux-taux du contrôle aller-retour (distracteurs difficiles)
 
 **Date** : 2026-10-23 · **Lane** : `myia-po-2024:CoursIA` · **Grain** : `DEEP/research-code`
