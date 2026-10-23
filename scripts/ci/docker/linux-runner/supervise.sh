@@ -101,7 +101,7 @@
 set -uo pipefail
 
 REPO="${COURSIA_RUNNER_REPO:-jsboige/CoursIA}"
-IMAGE="${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.337.0}"
+IMAGE="${COURSIA_RUNNER_IMAGE:-coursia-linux-runner:2.338.0}"
 LABELS="${COURSIA_RUNNER_LABELS:-self-hosted,coursia-ephemeral,coursia-linux}"
 # #15152 : le prefixe de nom derive de la MACHINE, pas d'un hote code en dur.
 # L'ancien defaut `myia-po-2024-*` faisait enregistrer les runners de toute
@@ -197,7 +197,7 @@ WAITER_TOOLCACHE="${COURSIA_RUNNER_WAITER_TOOLCACHE:-1}"
 # Le .lake chaud vit dans le volume _work PAR SLOT au prefixe dedie
 # coursia-runner-work-lean-{N} (pattern #14285) : .lake/packages et .lake/build
 # survivent aux conteneurs, lake build devient incremental.
-LEAN_IMAGE="${COURSIA_LEAN_RUNNER_IMAGE:-coursia-lean-runner:2.337.0}"
+LEAN_IMAGE="${COURSIA_LEAN_RUNNER_IMAGE:-coursia-lean-runner:2.338.0}"
 LEAN_LABELS="${COURSIA_LEAN_RUNNER_LABELS:-self-hosted,coursia-ephemeral,coursia-lean}"
 LEAN_NAME_PREFIX="${COURSIA_LEAN_RUNNER_NAME_PREFIX:-${MACHINE_ID}-lean-docker}"
 LEAN_WORK_VOLUME_PREFIX="${COURSIA_LEAN_RUNNER_WORK_VOLUME_PREFIX:-coursia-runner-work-lean}"
@@ -852,6 +852,19 @@ par COURSIA_RUNNER_DISTRESS_IDLE_PCT_MAX / _GAP_S / COURSIA_RUNNER_MAPPED_DROP_M
   # seront pas relances par CE demarrage, les reprendre ferait sous-compter le
   # pic. Mesure du cas : redemarrage a n=10 pendant que 11..14 finissent leur
   # job -- le pic reel reste 14 x per, la reprise vaut 10 x per.
+  #
+  # La SERIALISATION slot<->conteneur, elle, est MESUREE (Test 71, #21522) :
+  # reclaim_container_name rend le nom AVANT que le conteneur suivant soit
+  # lance (l'ordre se lit dans le code : le reclaim precede le `docker run`),
+  # et il ne retire JAMAIS un conteneur en cours -- un conteneur `running`,
+  # `paused` ou d'etat non qualifie est CONSIDERE DETENU (fail-closed), donc
+  # le nom ne peut pas etre libere avant la fin du job qu'il porte. La fenetre
+  # entre la fin du job et l'observation de la liberation vaut UN intervalle de
+  # sondage (COURSIA_RUNNER_NAME_RECLAIM_POLL_SECS) ; pendant cette fenetre,
+  # l'ancien conteneur est deja sorti, donc le pied de la famille DECROIT --
+  # il ne peut pas etre sous-compte par la somme en vol. Un slot ne porte donc
+  # jamais deux conteneurs a la fois, et l'empreinte de la famille reste
+  # bornee a n x per.
   if [ -n "$prefix" ]; then
     local reprise
     if ! reprise="$(running_family_mb "$prefix" "$n")"; then
@@ -861,6 +874,16 @@ par COURSIA_RUNNER_DISTRESS_IDLE_PCT_MAX / _GAP_S / COURSIA_RUNNER_MAPPED_DROP_M
     reprise_mb="${reprise##* }"
   fi
   add_mb=$(( want_mb - reprise_mb ))
+  # Le repli `add_mb < 0` est DEFENSIF : il n'atteint que si la famille porte
+  # des slots de MEME NOM et de MEMOIRE HETEROGENE (mesure sur la famille ad
+  # hoc de po-2024 : des slots a 4 Gio et d'autres a 1,5 Gio sous le meme
+  # prefixe). La reprise vaut alors PLUS que la demande, et une demande nette
+  # negative ne veut pas dire « de la place en plus » : elle veut dire que
+  # l'hypothese `n x per` ne decrit pas cette famille. Le repli ne rend pas le
+  # garde laxiste : la famille reste comptee par `used_mb` (la somme en vol,
+  # qui voit les slots heterogenes a leur MEMOIRE REELLE), et le total compare
+  # au budget reste `used_mb + 0`. Les controles (8) et (8b) du Test 69
+  # verrouillent les deux moities de cette phrase (#21522).
   [ "$add_mb" -lt 0 ] && add_mb=0
 
   if [ $(( used_mb + add_mb )) -gt "$budget_mb" ]; then
