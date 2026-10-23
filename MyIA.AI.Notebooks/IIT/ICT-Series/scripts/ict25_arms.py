@@ -71,10 +71,18 @@ from peft import LoraConfig, TaskType  # noqa: E402
 # Fenetres d'echantillon (tete + queue) : module pur, sans dependance lourde,
 # pour que le contrat de l'artefact soit testable meme en CI sans GPU.
 try:
-    from ict25_records import record_windows  # noqa: E402
+    from ict25_records import (  # noqa: E402
+        DEFAULT_MAX_COMPLETION_LENGTH,
+        protocol_block,
+        record_windows,
+    )
 except ImportError:  # execution depuis un autre repertoire
     sys.path.insert(0, str(Path(__file__).resolve().parent))
-    from ict25_records import record_windows  # noqa: E402
+    from ict25_records import (  # noqa: E402
+        DEFAULT_MAX_COMPLETION_LENGTH,
+        protocol_block,
+        record_windows,
+    )
 
 
 # === Constantes partagees (verbatim cell[17] / cell[23] / cell[26] d'ICT-25) ===
@@ -326,7 +334,8 @@ def make_reward_for_arm(arm: str, holder: dict):
 # === Runner ===
 
 def run_seed(arm: str, seed: int, steps: int, model_name: str = MODEL, gpu: int = 0,
-             max_records: int = 64):
+             max_records: int = 64,
+             max_completion_length: int = DEFAULT_MAX_COMPLETION_LENGTH):
     """Execute un seed d'un bras et retourne un dict agrege (metriques + records).
 
     Lit la config complete depuis ARM_CONFIGS[arm] (system_prompt, signal,
@@ -336,6 +345,11 @@ def run_seed(arm: str, seed: int, steps: int, model_name: str = MODEL, gpu: int 
     `max_records` dimensionne les deux fenetres d'echantillon (tete et queue)
     portees par l'artefact ; avant cette correction, l'echantillon etait
     fige a 64 et le drapeau `--max-records` de la CLI n'etait pas utilise.
+
+    `max_completion_length` est le budget de completion effectivement passe a
+    `GRPOConfig`, et il est recopie dans les metriques du seed (#21998) : un
+    run au cap 80 et un run au cap 1024 ne sont pas au meme regime, et
+    l'artefact ne permettait pas de les distinguer.
     """
     if arm not in ARM_CONFIGS:
         raise NotImplementedError(
@@ -364,7 +378,7 @@ def run_seed(arm: str, seed: int, steps: int, model_name: str = MODEL, gpu: int 
         report_to="none",
         seed=seed,
         num_generations=num_gen,
-        max_completion_length=1024,
+        max_completion_length=max_completion_length,
     )
     trainer = GRPOTrainer(
         model=model,
@@ -391,6 +405,7 @@ def run_seed(arm: str, seed: int, steps: int, model_name: str = MODEL, gpu: int 
         "hack_rate": round(float(np.mean([r.get("hack", 0) for r in records])), 4),
         "learning_rate": cfg_arm["learning_rate"],
         "num_generations": cfg_arm["num_generations"],
+        "max_completion_length": max_completion_length,
         "system_prompt_kind": (
             "NEUTRAL" if cfg_arm["system_prompt"] == SYSTEM_NEUTRAL
             else "PERMITTED" if cfg_arm["system_prompt"] == SYSTEM_PERMITTED
@@ -430,6 +445,9 @@ def main(argv=None):
     p.add_argument("--max-records", type=int, default=64,
                    help="Taille de chaque fenetre d'echantillon (tete et queue) par seed "
                         "dans l'artefact (defaut 64)")
+    p.add_argument("--max-completion-length", type=int, default=DEFAULT_MAX_COMPLETION_LENGTH,
+                   help="Budget de completion du run, passe a GRPOConfig et recopie dans "
+                        f"l'artefact (#21998, defaut {DEFAULT_MAX_COMPLETION_LENGTH})")
     args = p.parse_args(argv)
 
     seeds = [int(s.strip()) for s in args.seeds.split(",") if s.strip()]
@@ -437,7 +455,8 @@ def main(argv=None):
     for seed in seeds:
         print(f"\n[ict25_arms] === arm={args.arm} seed={seed} steps={args.steps} ===", flush=True)
         out = run_seed(args.arm, seed, args.steps, args.model, args.gpu,
-                       max_records=args.max_records)
+                       max_records=args.max_records,
+                       max_completion_length=args.max_completion_length)
         all_metrics.append(out)
         print(f"[ict25_arms]   metrics: {out['metrics']}", flush=True)
 
@@ -446,8 +465,11 @@ def main(argv=None):
         "script": "ict25_arms.py",
         "arm": args.arm,
         "model": args.model,
-        "steps": args.steps,
-        "seeds": seeds,
+        **protocol_block(
+            max_completion_length=args.max_completion_length,
+            seeds=seeds,
+            steps=args.steps,
+        ),
         "gpu": args.gpu,
         "git_commit": subprocess.check_output(
             ["git", "-C", str(Path(__file__).resolve().parents[2]),

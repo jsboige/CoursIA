@@ -37,9 +37,10 @@ l'agregat recalcule.
 
 from __future__ import annotations
 
-__all__ = ["record_windows", "window_stats"]
+__all__ = ["record_windows", "window_stats", "protocol_block"]
 
 DEFAULT_MAX_RECORDS = 64
+DEFAULT_MAX_COMPLETION_LENGTH = 1024
 
 
 def record_windows(records, max_records: int = DEFAULT_MAX_RECORDS) -> dict:
@@ -88,4 +89,55 @@ def window_stats(records) -> dict:
         "mean_reward": round(sum(float(r.get("reward", 0.0)) for r in records) / len(records), 4),
         "mean_math_correct": round(sum(float(r.get("mc", 0.0)) for r in records) / len(records), 4),
         "hack_rate": round(sum(float(r.get("hack", 0)) for r in records) / len(records), 4),
+    }
+
+
+def protocol_block(*, max_completion_length: int, seeds, steps: int) -> dict:
+    """Protocole d'un run, tel que l'artefact doit le porter (#21998).
+
+    Pourquoi ce bloc existe : deux bras produits sous des budgets de
+    completion differents (`cap 80` et `cap 1024`) ne sont pas au meme
+    regime, et l'artefact ne permettait pas de les distinguer -- il ne
+    portait pas le cap. Une comparaison entre bras de regimes differents se
+    lisait donc comme une comparaison a protocole egal.
+
+    Parameters
+    ----------
+    max_completion_length : int
+        Budget de completion effectivement passe a `GRPOConfig`. Entier
+        strictement positif.
+    seeds : iterable d'entiers
+        Les seeds du run, tels que la CLI les a resolus (pas le texte brut).
+    steps : int
+        Nombre de steps GRPO du run, entier strictement positif.
+
+    Returns
+    -------
+    dict
+        ``max_completion_length``, ``seeds`` et ``steps`` -- les trois
+        champs sans lesquels la re-derivation du regime est impossible.
+    """
+    if not isinstance(max_completion_length, int) or isinstance(max_completion_length, bool):
+        raise TypeError(
+            "max_completion_length doit etre un entier, "
+            f"recu {type(max_completion_length).__name__}"
+        )
+    if max_completion_length <= 0:
+        raise ValueError(f"max_completion_length doit etre positif, recu {max_completion_length}")
+    if not isinstance(steps, int) or isinstance(steps, bool):
+        raise TypeError(f"steps doit etre un entier, recu {type(steps).__name__}")
+    if steps <= 0:
+        raise ValueError(f"steps doit etre positif, recu {steps}")
+
+    seeds_list = list(seeds)
+    if not seeds_list:
+        raise ValueError("seeds ne doit pas etre vide : un run sans seed n'est pas re-derivable")
+    for seed in seeds_list:
+        if not isinstance(seed, int) or isinstance(seed, bool):
+            raise TypeError(f"chaque seed doit etre un entier, recu {type(seed).__name__}")
+
+    return {
+        "max_completion_length": max_completion_length,
+        "seeds": seeds_list,
+        "steps": steps,
     }
