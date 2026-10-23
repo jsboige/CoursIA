@@ -67,14 +67,21 @@ concurrency:
   # PR en cours (hazard de production : sans la reference, les runs push et PR
   # partagent la meme cle et s'annulent entre eux). #11616 rouge 2.
   group: pages-deploy-${{ github.event_name }}-${{ github.ref }}
-  # #22088 : la voie push sur main ne s'annule PLUS. Mesure du 22/10 sur les
-  # 40 derniers commits de main : 19 d'entre eux portaient une croix rouge
-  # dont les SEULES jambes fautives etaient `Build Quarto site` et
-  # `Deploy to GitHub Pages` en conclusion `cancelled` -- tuees par le push
-  # suivant pendant une rafale de merges. GitHub compte une annulation comme
-  # un echec dans le rollup du commit : un vrai rouge devenait
+  # #22088 : la voie push sur main ne s'annule PLUS. Pendant une rafale de
+  # merges, le push suivant annulait `Build Quarto site` et `Deploy to GitHub
+  # Pages` du push precedent (jambes `cancelled`), et GitHub compte une
+  # annulation comme un echec dans le rollup du commit : un vrai rouge devenait
   # indiscernable d'une annulation, et les organes qui lisent la couleur de
   # main devaient ecarter les `cancelled` a la main (#22085).
+  #
+  # Pas de compte fige ici : il depend de la fenetre de commits lue, et les
+  # jambes Quarto ne sont pas seules en cause -- les memes rafales annulaient
+  # aussi des jambes CodeQL `Analyze (*)` par leur propre concurrence, et les
+  # advisories sont `cancelled` par conception. Instantane du 23/10 sur les
+  # 40 derniers commits de main, advisories exclues : 24 portaient au moins une
+  # jambe Quarto `cancelled`, 12 n'avaient QUE ces jambes en non-vert, et 35
+  # portaient au moins une jambe non verte. `scripts/ci/check_concurrency_conj.py`
+  # rejoue la lecture ; c'est lui qui fait foi, pas ce commentaire.
   #
   # Sur push, les builds se SERIALISENT : l'en cours se termine, le dernier
   # en attente s'execute ensuite, et le site deploye reste celui du dernier
