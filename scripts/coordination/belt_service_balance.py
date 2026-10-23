@@ -743,7 +743,8 @@ def deduplicate_services(services: list[Service]) -> list[Service]:
 
 
 MANUEL_RESIDUAL_MOTIVE = (
-    "aucune visite lisible (aucun marqueur de lane dans les commentaires lus)"
+    "aucune visite lisible "
+    "(aucun marqueur de la famille claim portant une lane dans les commentaires lus)"
 )
 
 
@@ -923,6 +924,7 @@ def explain_attribution(issue_number: int, owner: str, repo: str) -> int:
     if lane is None:
         print(
             f"explain #{issue_number} : aucune visite lisible "
+            f"-- aucun marqueur de la famille claim portant une lane "
             f"({len(comments)} commentaire(s) lus) -> _manuel"
         )
         return 0
