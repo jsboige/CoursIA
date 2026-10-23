@@ -296,7 +296,7 @@ Pas de `--gpus` (aucun passthrough GPU, par design). Le runner `--ephemeral` tra
 
 ```bash
 scripts/ci/docker/linux-runner/supervise.sh pin        # epingle le contexte hors arbre (#16134)
-docker build -t coursia-linux-runner:2.337.0 "$COURSIA_RUNNER_PINNED_CTX"
+docker build -t coursia-linux-runner:2.338.0 "$COURSIA_RUNNER_PINNED_CTX"
 scripts/ci/docker/linux-runner/supervise.sh start 2   # 2 slots concurrents
 scripts/ci/docker/linux-runner/supervise.sh status
 scripts/ci/docker/linux-runner/supervise.sh stop      # gracieux : les jobs en cours finissent
@@ -396,7 +396,7 @@ Un job qui meurt sur `Set up job` **avant le moindre checkout** porte un rouge r
 
 Ces archives sont par construction **identiques à chaque run**. Le runner sait les lire depuis un répertoire de cache : l'image les embarque donc une fois, au build, au lieu de les re-télécharger à chaque job.
 
-**La convention de nommage se lit dans le source du runner, elle ne se devine pas** — `src/Runner.Worker/ActionManager.cs`, `PrepareRepositoryAsync`, vérifié au pin `v2.337.0` (celui du `RUNNER_VERSION`) et sur `main` :
+**La convention de nommage se lit dans le source du runner, elle ne se devine pas** — `src/Runner.Worker/ActionManager.cs`, `PrepareRepositoryAsync`, vérifié au pin `v2.337.0` (prédécesseur du `RUNNER_VERSION` courant) et sur `main` :
 
 ```
 $ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE/<owner>_<repo>/<sha_resolu>.tar.gz
@@ -479,6 +479,33 @@ Docker relance le conteneur à chaque démarrage du daemon (donc de la distro) ;
 3. **Un slot offline consomme son inscription.** Un runner non-éphémère arrêté reste enregistré « idle/offline » sur GitHub jusqu'à son retour — contrairement à l'éphémère qui se désenregistre seul. Sans incident tant que le conteneur revient ; c'est le compteur GitHub à lire après un long arrêt.
 
 **Validation au déploiement (po-2024 uniquement, jamais ai-01)** : la preuve du mode est un `systemctl restart docker` qui voit les slots revenir **sans intervention** — geste destructif réservé à la machine qui ne porte ni vLLM, ni Qdrant, ni ComfyUI. La mesure avant/après du temps de checkout se prend au même moment (volumes `_work` + config combinés).
+
+## Pools spécialisés par labels — la règle (#14337)
+
+**La règle : on ajoute un pool, on n'épaissit plus l'image commune.** Mandat user du 2026-09-02 : *« avoir des runners spécialisés avec par exemple certains qui ont des cache mathlib prêt à l'emploi, tandis que d'autres font du quarto ou je ne sais quoi, sans obliger tous les workers à avoir tous les outils »*. La raison est mécanique : chaque outil ajouté à l'image commune est payé par **tous** les jobs au `docker run`, pour satisfaire le plus exigeant — l'image unique ne passe pas à l'échelle (quatre instances de la même classe en deux jours ont fondé #14337 : `python` nu inexistant, `gh` absent — organe muet sous `|| true` —, `lsb_release` manquant tuant `setup-python` avec `cache: pip`).
+
+La primitive de routage est le **jeu de labels dédié** : `DEDICATED_LABEL_SETS` dans `scripts/ci/check_self_hosted_runner_policy.py` porte un jeu par pool, et c'est le label distinct qui garantit le routage — jamais une convention de nommage.
+
+### Inventaire des pools (mesuré sur `main`, octobre 2026)
+
+| Pool | Jeu de labels | Support | Rôle |
+|---|---|---|---|
+| `coursia-fast-guards` | `REQUIRED_LABELS` | hôte Windows | gardes Windows (po-2024) |
+| `coursia-linux` | `LINUX_RUNNER_LABELS` | conteneur, image minimale + python/gh/jq | gardes PR pure-Python |
+| `coursia-waiter` | `WAITER_LABELS` | label distinct sans slot de travail | laisser un gate **attendre** sans consommer de CPU (arbitrage ai-01 2026-09-02 : « attendre ne coûte pas de CPU ») |
+| `coursia-lean` | `LEAN_RUNNER_LABELS` | conteneur, image `Dockerfile.lean` (elan + toolchain), `.lake` tenu chaud dans le volume par slot | scans et builds Lean ; un slot lean ne porte **jamais** `coursia-linux` |
+
+Les pools `coursia-docs` (quarto/pandoc) et `coursia-browser` (npm + navigateurs Playwright) restent des **candidats non livrés** : leur déploiement touche le conteneur runner porté par po-2024 — l'infra d'un autre workspace se demande au workspace qui la porte, elle ne s'applique pas depuis l'extérieur.
+
+### La gate mémoire de la migration des builds Lean
+
+La ligne de migration qui déplace le coût réel est le `runs-on` de `lean-build.yml` / `lean-axiom.yml` (workflows réutilisables : leurs builds s'exécutent **chez les callers**, une seule bascule déplace tout le monde). Elle est **gated sur l'arbitrage mémoire** : le pic d'élaboration de `HashlifeCorrectness.lean` dépasse 16 GB alors que le pool est budgété à 12 GB/slot (VM 24 GB max) — migrer avant l'arbitrage garantit l'OOM sur les gros modules, une régression CI pour gagner du temps de file. Chiffres mesurés (2026-09-21, cf #14337) : builds 9 224–12 302 s sur GitHub-hosted à `.lake` froid, contre 10–83 s pour les scans sur pool à `.lake` chaud. Un pool lean à slots ≥ 32 GB débloque la migration et fait de ces chiffres le « avant » de la mesure avant/après.
+
+### Ajouter un pool — la procédure
+
+1. un nouveau jeu de labels dans `DEDICATED_LABEL_SETS` ;
+2. une image dédiée — jamais un ajout à l'image commune ;
+3. l'entrée correspondante dans `scripts/tests/test_check_self_hosted_runner_policy.py`.
 
 ## Tranches suivantes, activation partielle
 

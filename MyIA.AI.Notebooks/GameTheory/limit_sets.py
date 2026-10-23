@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Ensembles limites de l'apprentissage — Poincare-Bendixson (GameTheory-26).
+"""Ensembles limites de l'apprentissage — Poincare-Bendixson (GameTheory-06i).
 
 Backing notebook : GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb.
 Source : Czechowski & Piliouras 2021, *Poincare-Bendixson Limit Sets in
