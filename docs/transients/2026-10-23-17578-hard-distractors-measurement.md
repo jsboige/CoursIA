@@ -1,7 +1,7 @@
 # 17578 — Mesure deux-taux du contrôle aller-retour (distracteurs difficiles)
 
 **Date** : 2026-10-23 · **Lane** : `myia-po-2024:CoursIA` · **Grain** : `DEEP/research-code`
-**Référence** : point 2 de la revue amont du 2026-10-21 ([c.6327388489](https://github.com/jsboige/CoursIA/issues/17578#issuecomment-6327388489)) — PR `<PR-NUMBER>`, claim c.6369139377.
+**Référence** : point 2 de la revue amont du 2026-10-21 ([c.6327388489](https://github.com/jsboige/CoursIA/issues/17578#issuecomment-6327388489)) — PR #22220, claim c.6369139377.
 
 ## Question
 
