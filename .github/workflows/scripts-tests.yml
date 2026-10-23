@@ -147,6 +147,12 @@ on:
       # distinct) -- meme classe que #18392/#13746 : sans cette entree, une PR
       # qui ne touche que le service n'executerait AUCUNE jambe pytest.
       - 'MyIA.AI.Notebooks/GameTheory/gateway/**'
+      # #21764 : le step bout-en-bout execute CE carnet en papermill ; sans
+      # cette entree, le garde ne declenche que sur les PR suivantes qui
+      # touchent scripts/** et jamais sur la PR du carnet lui-meme (angle mort
+      # mesure par la relecture tierce de #21783). Miroir sous pull_request:
+      # ci-dessous.
+      - 'MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb'
       # #21100 pli 0 Origami (Kernel Gateway) : le coeur du service Z3 Sudoku
       # vit hors scripts/** (Z3-API/gateway/) ; sans entree, une PR qui ne
       # touche que lui n'executerait AUCUNE jambe pytest (#10416 pattern, cf.
@@ -214,6 +220,8 @@ on:
       - 'GradeBookApp/**'
       # #21104 pli 0 Origami (mirror of the push path above).
       - 'MyIA.AI.Notebooks/GameTheory/gateway/**'
+      # #21764 (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb'
       # #21100 pli 0 Origami (Kernel Gateway) (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
   workflow_dispatch:
