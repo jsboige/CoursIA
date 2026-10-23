@@ -13,8 +13,9 @@ param(
 # Configuration UTF-8
 $OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-$PSDefaultParameterValues['Out-File:Encoding'] = 'utf8'
-$PSDefaultParameterValues['Set-Content:Encoding'] = 'utf8'
+# Aucun Out-File / Set-Content dans ce script : les defauts d'encodage posaient
+# un BOM global pour rien (et 'utf8NoBOM' n'existe pas sous PowerShell 5.1).
+# Les ecritures reelles vivent dans Convert-TraceToSummary-Optimized.ps1 (#21896).
 Write-Host "Configuration UTF-8 chargee automatiquement" -ForegroundColor Green
 
 Write-Host "=== GENERATION AUTOMATISEE DES RESUMES ===" -ForegroundColor Cyan
