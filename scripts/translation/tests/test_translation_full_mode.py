@@ -293,6 +293,59 @@ def test_full_mode_falls_back_to_cli_input_without_derivable_bound(tmp_path, mon
     )
 
 
+def test_full_mode_fails_closed_when_no_derivable_bound_exists_on_disk(
+    tmp_path, monkeypatch, capsys
+):
+    """#22212 : des bornes sont DERIVABLES, mais aucune n'existe sur disque.
+
+    C'est le cas d'une serie deplacee ou renommee : le CSV pointe encore
+    ``old-series/X.ipynb`` alors que le repertoire a bouge. Avant ce garde, le
+    code retombait sur l'input CLI (ici la racine, qui contient ``new-series``)
+    et le CSV perime absorbait tout le corpus -- le defaut de #21514 (31 ->
+    49 978 lignes) par un autre chemin que celui ferme en #21518.
+
+    Contrat : rc=2, l'erreur nomme le repertoire introuvable, et AUCUNE ligne
+    de la serie vivante n'est ajoutee au CSV.
+    """
+    # La serie vivante, sous l'input CLI (racine) : elle ne doit PAS etre vue.
+    nb_live = tmp_path / "new-series" / "Live.ipynb"
+    _make_notebook(nb_live, "cellLive", text_fr="## Live")
+
+    # Le CSV pointe une serie qui n'existe plus sur disque.
+    csv_path = _make_csv(
+        tmp_path / "stale.csv",
+        PIVOT_HEADER,
+        [
+            {"notebook": "old-series/X.ipynb", "cell_id": "cellX",
+             "cell_type": "markdown", "src_lang": "fr", "src_hash": "STALE_X",
+             "text_fr": "## X", "hash_fr": "FR_X"},
+        ],
+    )
+
+    monkeypatch.setattr(sys, "argv", [
+        "extract_cells_to_csv.py",
+        "--repo-root", str(tmp_path),
+        str(tmp_path),                  # input large : la racine entiere
+        "--update", str(csv_path),
+        "--full",
+    ])
+    rc = e.main()
+    assert rc == 2, f"une serie deplacee doit echouer ferme, got rc={rc}"
+
+    err = capsys.readouterr().err
+    assert "old-series" in err, (
+        "l'erreur doit nommer le repertoire de serie introuvable ; "
+        f"stderr={err!r}"
+    )
+
+    with csv_path.open(encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert [r["notebook"] for r in rows] == ["old-series/X.ipynb"], (
+        "aucune ligne de la serie vivante ne doit etre absorbee par un CSV perime ; "
+        f"got={[r['notebook'] for r in rows]}"
+    )
+
+
 def test_full_mode_note_does_not_report_covered_input_as_ignored(
     tmp_path, monkeypatch, capsys
 ):
