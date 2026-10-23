@@ -147,6 +147,11 @@ class ScriptedRunner:
         prs: tuple[int, ...] = (123,),
         views: dict[int, dict] | None = None,
         gate_rc: int = 0,
+        # #22066 : etat de la porte STACK tel que le gate le publie
+        # (#22005) : measured | unmeasured | not-run. Plus les incidents de
+        # mesure, quand la porte a ete exercee sans aboutir.
+        stack: str = "measured",
+        stack_incidents: list[str] | None = None,
         comments: list[dict] | None = None,
         nits_rc: int = 0,
         pulls: list[dict] | None = None,
@@ -169,6 +174,8 @@ class ScriptedRunner:
         self.prs = list(prs)
         self.views = views or {}
         self.gate_rc = gate_rc
+        self.stack = stack
+        self.stack_incidents = stack_incidents
         self.comments = comments
         self.nits_rc = nits_rc
         self.pulls = pulls or [{"mergeable_state": "clean", "head": {"sha": HEAD}}]
@@ -259,16 +266,18 @@ class ScriptedRunner:
             row = self.pulls.pop(0) if len(self.pulls) > 1 else self.pulls[0]
             return mr.RunResult(0, json.dumps(row), "")
         if len(c) > 1 and "check_adjoint_prevalidation.py" in c[1]:
-            payload = json.dumps(
-                {
-                    "pr": int(c[2]),
-                    "head": HEAD,
-                    "ready": self.gate_rc == 0,
-                    "verdict": "READY" if self.gate_rc == 0 else "NO_DOSSIER",
-                    "errors": [],
-                }
-            )
-            return mr.RunResult(self.gate_rc, payload, self.gate_stderr)
+            payload = {
+                "pr": int(c[2]),
+                "head": HEAD,
+                "ready": self.gate_rc == 0,
+                "verdict": "READY" if self.gate_rc == 0 else "NO_DOSSIER",
+                "errors": [],
+                # #22005 : la porte STACK nommee dans le verdict du gate.
+                "stack": self.stack,
+            }
+            if self.stack_incidents:
+                payload["stack_incidents"] = list(self.stack_incidents)
+            return mr.RunResult(self.gate_rc, json.dumps(payload), self.gate_stderr)
         if len(c) > 1 and "check_unaddressed_nits.py" in c[1]:
             return mr.RunResult(self.nits_rc, "", "")
         if c[:1] == ["git"] and "fetch" in c:
@@ -658,7 +667,8 @@ def test_journal_ligne_par_pr(tmp_path):
     for row in lines:
         assert set(row.keys()) == {
             "ts", "pr", "head", "verdict", "reason", "merged", "review",
-        }
+            "stack",
+        } | ({"stack_incidents"} if row.get("stack_incidents") else set())
         assert re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", row["ts"])
         assert isinstance(row["pr"], int)
         assert row["merged"] is True and row["verdict"] == "merged"
@@ -668,6 +678,65 @@ def test_journal_ligne_par_pr(tmp_path):
         # la classification faite avant.
         assert row["review"] == mr.APPROVED_EXACT_HEAD
     assert [row["pr"] for row in lines] == [401, 402]  # ancienne d'abord
+
+
+# --- porte STACK (#22066) ----------------------------------------------------------
+#
+# Le gate nomme l'etat de sa porte STACK depuis #22005 : `measured` |
+# `unmeasured` | `not-run`. La porte est fail-open -- un incident de mesure
+# ne fabrique aucun refus -- mais l'absence de mesure doit etre VISIBLE
+# la ou l'on lit les merges. Ces tests verrouillent les trois etats.
+
+
+def test_stack_measured_est_journalise(tmp_path):
+    runner = ScriptedRunner(prs=(601,), stack="measured")
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    assert rc == 0
+    assert lines[-1]["stack"] == "measured"
+    assert "stack_incidents" not in lines[-1]
+    assert lines[-1]["merged"] is True
+
+
+def test_stack_unmeasured_est_journalise_sans_changer_la_decision(tmp_path, capsys):
+    """La porte STACK n'a pas pu etre mesuree : la ligne de journal le dit,
+    le resume humain le dit, et le merge a lieu quand meme (fail-open)."""
+    runner = ScriptedRunner(
+        prs=(602,), stack="unmeasured",
+        stack_incidents=["tete de PR inatteignable: #9999"],
+    )
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert lines[-1]["stack"] == "unmeasured"
+    assert lines[-1]["stack_incidents"] == ["tete de PR inatteignable: #9999"]
+    # la decision de merge ne change pas : la porte est fail-open
+    assert lines[-1]["merged"] is True and lines[-1]["verdict"] == "merged"
+    # mais le resume humain le signale
+    assert "STACK non mesure" in out
+    assert "tete de PR inatteignable: #9999" in out
+
+
+def test_stack_not_run_est_journalise_sans_mention(tmp_path, capsys):
+    """Porte non exercee : elle ne s'est pas exercee, elle n'a pas echoue --
+    aucune mention d'incident dans le resume."""
+    runner = ScriptedRunner(prs=(603,), stack="not-run")
+    rc, lines, _ = run_organ(tmp_path, runner, extra=("--apply",))
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert lines[-1]["stack"] == "not-run"
+    assert "stack_incidents" not in lines[-1]
+    assert "STACK non mesure" not in out
+
+
+def test_le_skip_avant_le_gate_ne_porte_pas_d_etat_stack(tmp_path):
+    """Un skip decide avant le gate ne sait rien de la porte STACK : la
+    ligne porte ``null``, elle n'invente pas un etat."""
+    runner = ScriptedRunner(views={123: default_view(draft=True)})
+    rc, lines, _ = run_organ(tmp_path, runner)
+    assert rc == 0
+    assert lines[-1]["verdict"] == "skipped"
+    assert lines[-1]["stack"] is None
+    assert "stack_incidents" not in lines[-1]
 
 
 # --- jeton --------------------------------------------------------------------------

@@ -109,10 +109,44 @@ Statistiques QC des mêmes backtests. Le Sharpe QC déduit un taux sans risque, 
 
 **Écart avec la baseline ci-dessus.** Le backtest de contrôle donne un Sharpe QC de 0,329 et un PSR de 1,5 %, là où la baseline publie 0,325 et 14,9 % pour le même code et la même fenêtre. Le Sharpe, le CAGR et le drawdown concordent, pas le PSR. Le PSR de 14,9 % n'est pas reproduit.
 
-**Propriétés du code, gardées telles quelles dans cette mesure.**
+**Propriétés du code, gardées telles quelles dans cette mesure.** Les deux défauts ci-dessous sont ceux du code que #21778 a mesuré ; ils sont corrigés depuis #21782, et la correction est mesurée dans la section suivante.
 
 - **Récursion GARCH.** Entre deux ré-estimations, `_garch_forecast` met à jour la variance conditionnelle avec le seul dernier rendement, puis la prévision applique ce même rendement une seconde fois. Le rendement de la veille du rééquilibrage compte donc deux fois, et ceux des quatre séances précédentes ne comptent pas.
 - **Rendement journalier.** Il est calculé dans `on_data` à partir de `self.history(sym, 2, Resolution.DAILY)`. Cette mesure n'a pas vérifié si l'avant-dernière barre de cette requête est la veille de la barre courante. Un éventuel décalage toucherait `strategy` et `rv21` de la même façon.
+
+## Correction de la récursion GARCH (#21782)
+
+Les deux propriétés ci-dessus sont corrigées ; la correction est mesurée sur les mêmes fenêtres et contre les mêmes références.
+
+- **Récursion.** `cond_var` tient désormais la prévision du prochain rendement non observé. Entre deux ré-estimations, la variance avance d'un pas par rendement reçu depuis le dernier appel — les compteurs absolus `return_count` / `folded_count` portent cette position, la fenêtre glissante du `deque` ne permettant pas d'indexer un rendement de façon stable — et la prévision n'est appliquée qu'une fois.
+- **Rendement journalier.** `_daily_log_return` aligne la paire de clôtures sur `bar.end_time` (un historique LEAN inclut ou non la séance courante selon l'heure de l'appel), et écarte une paire non finie, non positive, ou séparée de plus de quatre jours calendaires. Sur 2023-11 → 2026-07-23, le filtre calendaire a écarté 24 rendements en 129 rééquilibrages sans changer une seule statistique publiée ci-dessous, et les garde-fous de finitude n'ont rien écarté : cette partie est une robustesse, pas un correctif de performance.
+
+### Ce que la correction change
+
+Backtests QC Cloud, mêmes paramètres que #21778 (projet 38215259, copie instrumentée).
+
+| Fenêtre | Version | Ordres | Sharpe QC | CAGR | Drawdown max |
+|---|---|---|---|---|---|
+| 2018-01 → 2025-01 | #21781 (publiée) | 825 | 0,329 | 6,977 % | 10,80 % |
+| 2018-01 → 2025-01 | corrigée | 831 | 0,325 | 6,939 % | 10,60 % |
+| 2023-11 → 2026-07-23 | #21781 (publiée) | 291 | 0,238 | 9,057 % | 10,30 % |
+| 2023-11 → 2026-07-23 | corrigée | 276 | 0,269 | 9,418 % | 10,30 % |
+| 2023-11 → 2026-07-23 | `rv21` | 274 | 0,299 | 9,766 % | 10,30 % |
+
+Sharpe annualisé à taux nul, sur les traces `shadow` coupées à la première séance de 2025, soit 388 séances du 2025-01-02 au 2026-07-23 :
+
+| Version | Sharpe à taux nul | Rendement annualisé | Volatilité | Corrélation à `rv21` |
+|---|---|---|---|---|
+| #21781 (publiée) | 1,575 | 19,4 % | 11,8 % | 0,999 |
+| corrigée | 1,617 | 20,1 % | 11,8 % | 0,999 |
+| `rv21` | 1,661 | 20,8 % | 11,8 % | — |
+
+La ligne #21781 reproduit le 1,580 publié et la ligne `rv21` le 1,666 publié, aux arrondis et à la convention de découpe près.
+
+**Prédiction et verdict.** La prédiction écrite avant la mesure annonçait moins de 5 % d'écart sur le nombre d'ordres, un mouvement de Sharpe inférieur à ±0,05, et un `rv21` qui garde l'avantage en voyant l'écart se réduire sans changer de signe. Il en va ainsi, sauf sur le premier point, dépassé de peu : 291 → 276 ordres, soit −5,2 % sur la seconde fenêtre, et +0,7 % sur la fenêtre codée. Le Sharpe à taux nul gagne 0,042, l'écart à `rv21` passe de 0,086 à 0,044 sans changer de signe : la correction rapproche GARCH de la volatilité réalisée, elle ne le fait pas passer devant.
+
+**Ce que cette passe ne reproduit pas.** Les tests de significativité de #21778 (Ledoit-Wolf, bootstrap stationnaire, correction de Holm) ne sont pas rejoués : ils ne sont pas outillés dans le dépôt. Les écarts ci-dessus sont des points de mesure, pas des écarts testés, et aucune conclusion de significativité n'en est tirée.
+
 
 ## Fichiers
 
