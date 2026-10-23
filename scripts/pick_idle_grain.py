@@ -8314,11 +8314,12 @@ def main(argv: list[str] | None = None) -> int:
             print_belt_budget_report(belt_probe_budget_hit[0])
             if belt_time_budget_hit[0]:
                 print("   Mur de temps du tapis atteint (#21436) : la boucle a")
-                print("   cesse de sonder pour rendre la main sous la borne, et les")
-                print("   candidats servis au-dela ne sont pas tous verifies")
-                print("   (livraison ET claim). Relancer avec un budget plus large")
-                print("   (--belt-time-budget) sur une fenetre longue si un doute")
-                print("   subsiste sur la tete rendue.")
+                print("   cesse de sonder a l'echeance ; les phases hors boucle")
+                print("   (validate_picks_live, journal) s'executent ensuite sans")
+                print("   borne. Les candidats servis au-dela ne sont pas tous")
+                print("   verifies (livraison ET claim). Relancer avec un budget")
+                print("   plus large (--belt-time-budget) sur une fenetre longue")
+                print("   si un doute subsiste sur la tete rendue.")
             # #18832 spec : la fenetre collision entre tirage et pose du
             # [CLAIMED] reste ouverte tant que la lane n'a pas poste le
             # claim. On rappelle ici que la lane doit poser le claim
