@@ -408,4 +408,91 @@ theorem homGradedDim_trefoil :
 discriminator; the KNOTS-02 notebook printed −8). -/
 theorem chi_trefoil : chiAtMinusOne trefoilDiagram = -2 := by decide
 
+/-! ## Evaluations on the figure-eight knot (decided by the kernel)
+
+Case 22 of bench #8182, sealed by a five-field pre-registration BEFORE the
+run (comment of 2026-10-22 on the issue): every value below was predicted
+by the Python mirror validated on the trefoil, then decided by the kernel —
+none was adjusted after the fact. The figure-eight has `n₊ = n₋ = 2`
+(per-crossing signs [−1, −1, +1, +1]): the two diagonals
+`j − 2r ∈ {−5, −3}` expected of an alternating knot with `s = 0` are read
+directly off the graded table. Amphichirality `V(4₁)(t) = V(4₁)(t⁻¹)` shows
+up as `χ|_{q=−1} = −2`, i.e. `Ĵ(4₁)|_{t=−1} = q⁻⁵ + q⁵`. -/
+
+/-- The lake's figure-eight has two positive crossings. -/
+theorem nPlus_figureEight : nPlus figureEightPlanarDiagram = 2 := by decide
+
+/-- … and two negative crossings (writhe 0, already decided in `Jones`). -/
+theorem nMinus_figureEight : nMinus figureEightPlanarDiagram = 2 := by decide
+
+/-- Loops of the all-A state: 3. -/
+theorem loops_allA_figureEight :
+    stateLoops figureEightPlanarDiagram [true, true, true, true] = 3 := by decide
+
+/-- Loops of the all-B state: 3. -/
+theorem loops_allB_figureEight :
+    stateLoops figureEightPlanarDiagram [false, false, false, false] = 3 := by decide
+
+/-- Chain group dimensions: 8, 16, 18, 16, 8 (66 generators). -/
+theorem dim_chain_figureEight :
+    (khChainGens figureEightPlanarDiagram 0).length = 8 ∧
+    (khChainGens figureEightPlanarDiagram 1).length = 16 ∧
+    (khChainGens figureEightPlanarDiagram 2).length = 18 ∧
+    (khChainGens figureEightPlanarDiagram 3).length = 16 ∧
+    (khChainGens figureEightPlanarDiagram 4).length = 8 := by decide
+
+/-- `d¹ ∘ d⁰ = 0`. -/
+theorem khovanov_f8_d0_square_zero :
+    (matMul (khDiff figureEightPlanarDiagram 1) (khDiff figureEightPlanarDiagram 0)).all
+      (fun row => row.all (fun x => x == 0)) = true := by decide
+
+/-- `d² ∘ d¹ = 0`. -/
+theorem khovanov_f8_d1_square_zero :
+    (matMul (khDiff figureEightPlanarDiagram 2) (khDiff figureEightPlanarDiagram 1)).all
+      (fun row => row.all (fun x => x == 0)) = true := by decide
+
+/-- `d³ ∘ d² = 0`. -/
+theorem khovanov_f8_d2_square_zero :
+    (matMul (khDiff figureEightPlanarDiagram 3) (khDiff figureEightPlanarDiagram 2)).all
+      (fun row => row.all (fun x => x == 0)) = true := by decide
+
+/-- Differential ranks: 7, 8, 8, 7. -/
+theorem ranks_figureEight :
+    matRank (khDiff figureEightPlanarDiagram 0) = 7 ∧
+    matRank (khDiff figureEightPlanarDiagram 1) = 8 ∧
+    matRank (khDiff figureEightPlanarDiagram 2) = 8 ∧
+    matRank (khDiff figureEightPlanarDiagram 3) = 7 := by decide
+
+/-- Homology dimensions per stage: 1, 1, 2, 1, 1 (total 6). -/
+theorem homDim_figureEight :
+    homDim figureEightPlanarDiagram 0 = 1 ∧
+    homDim figureEightPlanarDiagram 1 = 1 ∧
+    homDim figureEightPlanarDiagram 2 = 2 ∧
+    homDim figureEightPlanarDiagram 3 = 1 ∧
+    homDim figureEightPlanarDiagram 4 = 1 := by decide
+
+/-- The differential preserves `qDeg` at the figure-eight's four stages. -/
+theorem qDeg_step_figureEight :
+    khDiffPreservesQDeg figureEightPlanarDiagram 0 = true ∧
+    khDiffPreservesQDeg figureEightPlanarDiagram 1 = true ∧
+    khDiffPreservesQDeg figureEightPlanarDiagram 2 = true ∧
+    khDiffPreservesQDeg figureEightPlanarDiagram 3 = true := by decide
+
+/-- The graded homology table: six dimension-1 points on the two diagonals
+`j − 2r ∈ {−5, −3}`, and two off-diagonal control zeros (`H^{1,1}`,
+`H^{2,3}`) — the support predicted by the thin conjecture. -/
+theorem homGradedDim_figureEight :
+    homGradedDim figureEightPlanarDiagram 0 (-5) = 1 ∧
+    homGradedDim figureEightPlanarDiagram 1 (-1) = 1 ∧
+    homGradedDim figureEightPlanarDiagram 2 (-1) = 1 ∧
+    homGradedDim figureEightPlanarDiagram 2 1 = 1 ∧
+    homGradedDim figureEightPlanarDiagram 3 1 = 1 ∧
+    homGradedDim figureEightPlanarDiagram 4 5 = 1 ∧
+    homGradedDim figureEightPlanarDiagram 1 1 = 0 ∧
+    homGradedDim figureEightPlanarDiagram 2 3 = 0 := by decide
+
+/-- Graded Euler characteristic at `q = −1`: −2, i.e.
+`Ĵ(4₁)|_{t=−1} = q⁻⁵ + q⁵` — consistent with amphichirality. -/
+theorem chi_figureEight : chiAtMinusOne figureEightPlanarDiagram = -2 := by decide
+
 end Knots_en
