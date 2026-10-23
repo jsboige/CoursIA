@@ -20,3 +20,13 @@
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+  - '2026-10-23 (myia-po-2024) #14122 tranche famille A : REBASELINE cote C# -- purge CS1701. Fix causal
+    (cf #21727) : display(HTML(FactorGraphHelper.GetLatestFactorGraphHtml())) devient
+    FactorGraphHelper.GetLatestFactorGraphHtml().DisplayAs("text/html") sur 2 sites de code (cellules 16 et 23) --
+    meme HTML rendu sans lier IHtmlContent (Microsoft.AspNetCore.Html.Abstractions 2.2 vs hote 8.0). CS1701 en
+    sortie : 2 -> 0. Re-execution complete du carnet (15/15 cellules de code, 0 erreur, execution_count 1..15
+    sans trou, kernel .net-csharp, metadata.papermill 20,4 s) ; rendus HTML des graphes de facteurs conserves
+    (13317 et 7736 caracteres, identiques a la base) ; 9 bannieres probeAddresses retirees par l''outil canonique
+    post-re-exec. Churn de re-exec declare : les lignes de progression Infer.NET (Compiling model, Iterating) et
+    Installed Packages, vides dans la base, reviennent en stream (cells 2/11/14/29). Cote Python byte-identique
+    a main. Attestation 0010 = nouveau blob SHA + content_csharp_sha du cote C#.'
