@@ -55,6 +55,16 @@ séries (RL, PostTraining, ML-Training-Pipeline). L'entraînement final du 2.9 e
 | [3.14-Debug-Entrainement-N-Apprend-Pas](3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb) | Diagnostiquer un entrainement qui boucle sans faire baisser la perte : loss qui stagne, oscille, explose ou plafonne. Cinq controles systematiques appliques dans l ordre -- data pipeline (shape/range/NaN), loss adaptee a la tache, gradient (norme non-NaN et raisonnable), learning rate (ni trop petit ni trop grand), initialisation (poids pas tous a zero). Le carnet utilise `SGDClassifier` de scikit-learn (CPU strict) sur une classification binaire jouet, la perte mesuree explicitement par `log_loss` a chaque passe -- un diagnostic **avant** l installation de la pile GPU | **Tout entrainement qui tourne sans apprendre releve d un des cinq controles casse** -- lr trop petit (stagne a la perte initiale), lr trop grand (oscille puis explose), data pipeline (X et y de shapes incompatibles ou normalisation absente), initialisation (matrices de poids a zero), ou loss non adaptee a la tache (`squared_loss` sur classification, par exemple). Les checks 1 et 4 sont outilles dans le carnet (les trois autres dependent du framework) ; le diagnostic tient en moins de cinq minutes sur CPU, avant de bruler du budget GPU | mesure a graine fixe (random_state=42) -- lr=1e-6 : la perte reste au niveau du hasard, 0.6931 a 0.6896 en 50 passes -- lr=10.0 : la perte oscille (0.66, 0.24, 0.53) sans converger -- lr=50.0 : la perte depasse 1, le modele se trompe avec confiance -- lr=0.01 : 0.69 des la premiere passe a 0.38, puis 0.11 en 30 passes. Le diagnostic tranche les six taux testes (stagne / converge / oscille / explose). Exercices C.1 : reproduire les deux patterns symptomatiques, puis appliquer le diagnostic a un modele lineaire malade |
 
 
+## Voir aussi : la compression des modèles
+
+La famille `3.9-*` est recomposée en **vue d'ensemble** dans la série Compression :
+[Compression-05 — Compression des modèles : quantifier, élaguer, distiller](../../../Compression/Compression-05-MLCompression-Python.ipynb)
+reprend ses cellules essentielles (quantification FP16/INT8, élagage par
+magnitude, distillation) sur un terrain synthétique léger, mesure chaque
+technique avant/après sur une même référence CPU, et relie la boucle au
+compression-progress de Schmidhuber (ICT-17b). Les carnets `3.9-*` restent la
+version complète — ResNet-20/CIFAR-10, from scratch puis écosystème.
+
 ## Feuille de route
 
 Les deux chantiers annoncés par cette feuille de route sont livrés : théorie de l'information

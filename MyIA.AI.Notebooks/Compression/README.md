@@ -4,6 +4,9 @@ La compression de données **sans perte**, du premier principe (le code préfixe
 jusqu'aux codecs réels et au compromis description/données (MDL). La série se
 déploie au format **Origami** : un pli à la fois, chaque pli s'ouvrant à la
 livraison du précédent ([EPIC #18706](https://github.com/jsboige/CoursIA/issues/18706)).
+Le pli 7 change d'objet : la compression des **modèles** entraînés
+(quantification, élagage, distillation), qui est, elle, une compression avec
+pertes contrôlées.
 
 Chaque carnet porte le suffixe de son noyau (`-Python`, `-Lean`) — le jumeau
 Lean des définitions est prévu par les plis suivants.
@@ -27,6 +30,7 @@ Lean des définitions est prévu par les plis suivants.
 | [Compression-01 — Codes préfixes : de Shannon-Fano à Huffman](Compression-01-ShannonFano-Prefixe-Python.ipynb) | Découverte | codes préfixes, inégalité de Kraft, Shannon-Fano contre Huffman, l'entropie comme borne |
 | [Compression-02 — Huffman canonique : des longueurs aux tables de décodage](Compression-02-HuffmanCanonique-Python.ipynb) | Découverte | forme canonique de Schwartz-Kallick (l'en-tête réduit aux longueurs), table de décodage $2^L$ et son coût mémoire, aller-retour octet-exact sur un extrait réel, débits mesurés contre chiffres cités |
 | [Compression-03 — LZ77 : compresser par références dans une fenêtre glissante](Compression-03-LZ77-Python.ipynb) | Licence | parse LZ77 en littéraux et couples (décalage, longueur), copie chevauchante, structure `LZData` à trois flux sur le modèle zstd, coût d'un triplet et double couche LZ + entropie, débit de la recherche naïve contre un tableau de suffixes |
+| [Compression-05 — Compression des modèles : quantifier, élaguer, distiller](Compression-05-MLCompression-Python.ipynb) | Licence | vue d'ensemble des trois familles appliquées à un réseau entraîné — quantification FP16/INT8, élagage par magnitude, distillation maître-élève — sur un terrain synthétique CPU ; cellules reprises verbatim des `3.9-*` de la série ML, mesures avant/après sur une même référence et pont vers le compression-progress (ICT-17b) |
 
 Compression-02 en une phrase : le récepteur n'a jamais besoin de l'arbre ni
 des mots — les longueurs suffisent, et une table de $2^L$ entrées transforme
@@ -42,6 +46,15 @@ gratuitement. Le carnet parse 16 Kio du *Horla* en trois flux séparés (le mod�
 de zstd), chiffre la double couche LZ + entropie contre Huffman seul et contre
 zlib, puis mesure le débit de la recherche exhaustive face à un tableau de
 suffixes.
+
+Compression-05 en une phrase : un réseau entraîné est un fichier de poids à
+4 octets qui se comprime de trois façons complémentaires — **quantifier**
+(÷2 en FP16, ÷4 en INT8, sans perte mesurable sur le terrain du carnet),
+**élaguer** (zéroer les petits poids, que le codage monétise : la sparsité est
+de la redondance), **distiller** (un petit réseau imite les sorties adoucies
+d'un grand). Le carnet mesure chaque famille avant/après sur une même
+référence CPU, puis relie la boucle au compression-progress de Schmidhuber :
+apprendre est déjà compresser.
 
 ## Position dans le dépôt
 
