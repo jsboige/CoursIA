@@ -91,7 +91,7 @@ NOTEBOOK_MAP: dict[str, str] = {
     "02-ML-Cours/2.7b-SMO-From-Scratch.ipynb": "02-ML-Cours/MLPy-07b-SMO-From-Scratch-Python.ipynb",
     "02-ML-Cours/2.7c-SVM-SOTA-Comparison.ipynb": "02-ML-Cours/MLPy-07c-SVM-SOTA-Comparison-Python.ipynb",
     "02-ML-Cours/2.8-Theorie-PAC.ipynb": "02-ML-Cours/MLPy-08-Theorie-PAC-Python.ipynb",
-    "02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb": "02-ML-Cours/MLPy-08b-Theorie-PAC-Lean-Lean.ipynb",
+    "02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb": "02-ML-Cours/MLPy-08b-Theorie-PAC-Lean.ipynb",
     "02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb": "02-ML-Cours/MLPy-08c-Borne-Temoin-Concentration-Python.ipynb",
     "02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb": "02-ML-Cours/MLPy-08d-Lean-Novikoff-Convergence-Lean.ipynb",
     "02-ML-Cours/2.9-Grokking-Generalisation.ipynb": "02-ML-Cours/MLPy-09-Grokking-Generalisation-Python.ipynb",
@@ -102,11 +102,11 @@ NOTEBOOK_MAP: dict[str, str] = {
     "02-ML-Cours/2.4b-AdaBoost-From-Scratch.ipynb": "02-ML-Cours/MLPy-04b-AdaBoost-From-Scratch-Python.ipynb",
     "02-ML-Cours/2.5d-Derive-Distribution-Deploiement.ipynb": "02-ML-Cours/MLPy-05d-Derive-Distribution-Deploiement-Python.ipynb",
     "02-ML-Cours/2.9c-Grokking-Diagrammes-Phases.ipynb": "02-ML-Cours/MLPy-09c-Grokking-Diagrammes-Phases-Python.ipynb",
-    "02-ML-Cours/2.9f-Grokking-Theorie-Effective-Lean.ipynb": "02-ML-Cours/MLPy-09f-Grokking-Theorie-Effective-Lean-Lean.ipynb",
+    "02-ML-Cours/2.9f-Grokking-Theorie-Effective-Lean.ipynb": "02-ML-Cours/MLPy-09f-Grokking-Theorie-Effective-Lean.ipynb",
     "02-ML-Cours/2.9g-Geometrie-de-la-Verite.ipynb": "02-ML-Cours/MLPy-09g-Geometrie-de-la-Verite-Python.ipynb",
     "02-ML-Cours/2.11e-CVXPY-Optimisation.ipynb": "02-ML-Cours/MLPy-11e-CVXPY-Optimisation-Python.ipynb",
     "02-ML-Cours/2.11f-Comparaison-Optimisation-Convexe.ipynb": "02-ML-Cours/MLPy-11f-Comparaison-Optimisation-Convexe-Python.ipynb",
-    "02-ML-Cours/2.15-Donnee-Comme-Responsabilite-Python.ipynb": "02-ML-Cours/MLPy-15-Donnee-Comme-Responsabilite-Python-Python.ipynb",
+    "02-ML-Cours/2.15-Donnee-Comme-Responsabilite-Python.ipynb": "02-ML-Cours/MLPy-15-Donnee-Comme-Responsabilite-Python.ipynb",
     "03-DeepLearning/3.0-Theorie-Information.ipynb": "03-DeepLearning/DL-00-Theorie-Information-Python.ipynb",
     "03-DeepLearning/3.1-Retropropagation.ipynb": "03-DeepLearning/DL-01-Retropropagation-Python.ipynb",
     "03-DeepLearning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb": "03-DeepLearning/DL-10-Modeles-Generatifs-Diffusion-SOTA-Python.ipynb",
@@ -129,14 +129,14 @@ NOTEBOOK_MAP: dict[str, str] = {
     "03-DeepLearning/3.9e-Compression-Quantization-SOTA.ipynb": "03-DeepLearning/DL-09e-Compression-Quantization-SOTA-Python.ipynb",
     "03-DeepLearning/3.9f-Compression-Pruning-SOTA.ipynb": "03-DeepLearning/DL-09f-Compression-Pruning-SOTA-Python.ipynb",
     # T2-a -- les 8 carnets de 03-DeepLearning que le dry-run refusait (fail-closed mesure c.2294).
-    "03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb": "03-DeepLearning/DL-04d-Fourier-Features-Biais-Spectral-Python-Python.ipynb",
+    "03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb": "03-DeepLearning/DL-04d-Fourier-Features-Biais-Spectral-Python.ipynb",
     "03-DeepLearning/3.9d-Compression-Distillation-from-scratch.ipynb": "03-DeepLearning/DL-09d-Compression-Distillation-from-scratch-Python.ipynb",
     "03-DeepLearning/3.9g-Compression-Comparatif-A-vs-B.ipynb": "03-DeepLearning/DL-09g-Compression-Comparatif-A-vs-B-Python.ipynb",
     "03-DeepLearning/3.11-Budget-Memoire-Entrainement.ipynb": "03-DeepLearning/DL-11-Budget-Memoire-Entrainement-Python.ipynb",
     "03-DeepLearning/3.12-Les-Collectives.ipynb": "03-DeepLearning/DL-12-Les-Collectives-Python.ipynb",
     "03-DeepLearning/3.13-Decouper-le-Modele-DDP-ZeRO-FSDP.ipynb": "03-DeepLearning/DL-13-Decouper-le-Modele-DDP-ZeRO-FSDP-Python.ipynb",
     "03-DeepLearning/3.13b-Deux-Cartes-Reelles-DDP-FSDP-nccl.ipynb": "03-DeepLearning/DL-13b-Deux-Cartes-Reelles-DDP-FSDP-nccl-Python.ipynb",
-    "03-DeepLearning/3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb": "03-DeepLearning/DL-14-Debug-Entrainement-N-Apprend-Pas-Python-Python.ipynb",
+    "03-DeepLearning/3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb": "03-DeepLearning/DL-14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb",
     "04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb": "04-Vision/Vision-01-Conv-NumPy-Torch-Allclose-Python.ipynb",
     "04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb": "04-Vision/Vision-02-ConvNet-Profonde-Residuelles-Python.ipynb",
     "04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb": "04-Vision/Vision-02b-Lean-GradientFlow-Vanishing-Lean.ipynb",
@@ -164,9 +164,11 @@ NOTEBOOK_MAP: dict[str, str] = {
 }
 
 # Histogramme des noyaux du hub, etendu par T2-a a deux noyaux mesures sur main
-# (c.2294) : "coursia-drift" (2.5d, language=python, language_info=Python 3.11.16)
-# et "py310-gpu" (4.6c, language=python, language_info=Python 3.13.15). Tous deux
-# sont des noyaux Python : suffixe "-Python", mesure et non suppose.
+# (c.2294) : "coursia-drift" (2.5d -- `kernelspec.language` = "python",
+# `language_info.name` = "python" 3.11.16) et "py310-gpu" (4.6c --
+# `kernelspec.language` vaut LITTERALEMENT "py310-gpu", c'est `language_info.name`
+# qui vaut "python" 3.13.15 : le suffixe se lit la, pas dans `kernelspec.language`).
+# Tous deux sont des noyaux Python : suffixe "-Python", mesure et non suppose.
 KERNEL_SUFFIX = {
     "python3": "-Python",
     "coursia-ml-training": "-Python",
@@ -244,6 +246,20 @@ def check_plan(plan: list[tuple[str, str]]) -> list[str]:
     for key in sorted(NOTEBOOK_MAP):
         if key not in tracked:
             errors.append(f"cle de table sans fichier dans le hub (cle morte): {key}")
+    # Forme des VALEURS : le suffixe noyau ne se double pas. Le garde des cles
+    # mortes ci-dessus controle les cles contre l'arbre, pas la forme des cibles --
+    # il ne pouvait donc pas voir une source dont le titre porte deja le suffixe
+    # (`...-Lean`, `...-Python`) et qui le recoit une seconde fois. Mesure
+    # 2026-10-23 (revue NanoClaw sur #22195) : cinq cibles sortaient en
+    # `...-Lean-Lean` / `...-Python-Python`, figees dans l'arbre ET dans les
+    # renvois reecrits par build_replacements. On couvre la classe, sans
+    # dependre de la vigilance au prochain carnet ajoute.
+    kernel_suffixes = sorted(set(KERNEL_SUFFIX.values()))
+    for t in sorted(set(targets)):
+        stem = Path(t).stem
+        for sfx in kernel_suffixes:
+            if stem.endswith(sfx + sfx):
+                errors.append(f"suffixe noyau double ({sfx}{sfx}): {t}")
     # kernelspec re-lu vs suffixe noyau de la table
     for old, new in plan:
         rel = old[len(HUB_OLD) + 1:]
