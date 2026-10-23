@@ -33,7 +33,9 @@ HERE = Path(__file__).resolve().parent
 SCRIPTS = HERE.parent
 sys.path.insert(0, str(SCRIPTS))
 
-from ict25_records import record_windows, window_stats  # noqa: E402
+import pytest
+
+from ict25_records import hack_late_by_seed, record_windows, window_stats  # noqa: E402
 
 ARMS_SOURCE = (SCRIPTS / "ict25_arms.py").read_text(encoding="utf-8")
 
@@ -109,6 +111,55 @@ def test_arms_script_writes_the_windows():
         "l'echantillon fige a 64 records est toujours present : la fenetre "
         "late du run resterait non attestable"
     )
+
+
+def _artifact(seed_entries):
+    return {"schema": 1, "arm": "test", "per_seed": seed_entries}
+
+
+def _entry(seed, records, max_records=4):
+    return {"metrics": {"seed": seed}, **record_windows(records, max_records)}
+
+
+def test_hack_late_is_read_from_the_tail_window():
+    """7. `hack_late` est recalcule sur la QUEUE, pas sur la tete."""
+    # tete 100 % hack, queue 0 % hack : lire la tete donnerait 1.0, la queue 0.0
+    head = [{"hack": 1, "reward": 2.0, "mc": 0.0} for _ in range(4)]
+    tail = [{"hack": 0, "reward": 0.0, "mc": 1.0} for _ in range(4)]
+    art = _artifact([_entry(7, head + tail, max_records=4)])
+    assert hack_late_by_seed(art) == {7: 0.0}
+
+
+def test_hack_late_is_per_seed():
+    """8. Chaque graine garde sa propre fenetre tardive."""
+    art = _artifact([
+        _entry(0, [{"hack": 0, "reward": 0, "mc": 1}] * 4 + [{"hack": 1, "reward": 2, "mc": 0}] * 4),
+        _entry(1, [{"hack": 0, "reward": 0, "mc": 1}] * 8),
+    ])
+    assert hack_late_by_seed(art) == {0: 1.0, 1: 0.0}
+
+
+def test_hack_late_falls_back_to_head_only_when_head_covers_the_run():
+    """9. Repli sur la tete legitime UNIQUEMENT si elle couvre tout le run."""
+    art = _artifact([_entry(42, [{"hack": 1, "reward": 2.0, "mc": 0.0}] * 3, max_records=64)])
+    # records_total = 3 <= 64 : la tete est tout le run, donc aussi sa fin
+    assert hack_late_by_seed(art) == {42: 1.0}
+
+
+def test_hack_late_refuses_a_head_only_artifact():
+    """10. Un artefact sans queue echoue bruyamment au lieu de mentir."""
+    entry = {"metrics": {"seed": 42},
+             "records_sample": [{"hack": 1, "reward": 2.0, "mc": 0.0}] * 64,
+             "records_total": 960,
+             "records_sample_window": "head"}
+    with pytest.raises(ValueError, match="pas de records_sample_tail"):
+        hack_late_by_seed(_artifact([entry]))
+
+
+def test_hack_late_refuses_an_artifact_without_per_seed():
+    """11. Sans `per_seed`, il n'y a rien a recalculer."""
+    with pytest.raises(ValueError, match="sans per_seed"):
+        hack_late_by_seed({"schema": 1, "arm": "test"})
 
 
 if __name__ == "__main__":
