@@ -1,4 +1,4 @@
-name: Runner starvation advisory (lean)
+name: Runner starvation advisory (ephemeral)
 
 # Sonde d'extinction d'un pool de runners self-hosted (issue #14846, grain c.1063
 # myia-po-2027) -- vise `coursia-ephemeral` depuis le 2026-10-23 (le label
