@@ -167,7 +167,7 @@ class TestAggregation(unittest.TestCase):
         self.assertEqual(report.rejected_judges, [])
 
     def test_confidence_interval_brackets_the_mos(self):
-        base = {"A": 4.0, "B": 3.0, "C": 2.0, "D": 5.0}
+        base = {"A": 4.0, "B": 3.0, "C": 2.0, "D": 4.0}
         records = _records(self.rubric, {"j1": 0.0, "j2": 0.3, "j3": -0.2}, base)
         report = aggregate_mos(records, rubric=self.rubric)
         self.assertLessEqual(report.ci_low, report.mos)
@@ -227,6 +227,29 @@ class TestAggregation(unittest.TestCase):
         ]
         with self.assertRaises(ValueError):
             aggregate_mos(records, rubric=self.rubric)
+
+    def test_out_of_scale_note_is_refused(self):
+        records = _records(self.rubric, {"j1": 0.0}, {"A": 4.0})
+        _, hi = self.rubric.scale
+        records[0]["scores"] = {c: hi + 40.0 for c in self.rubric.criteria}
+        with self.assertRaises(ValueError):
+            aggregate_mos(records, rubric=self.rubric)
+
+    def test_non_finite_note_is_refused(self):
+        records = _records(self.rubric, {"j1": 0.0}, {"A": 4.0})
+        records[0]["scores"] = {c: float("nan") for c in self.rubric.criteria}
+        with self.assertRaises(ValueError):
+            aggregate_mos(records, rubric=self.rubric)
+
+    def test_single_item_has_no_confidence_interval(self):
+        # Un seul essai : aucun degre de liberte, donc pas d'IC calculable.
+        # L'organe le dit au lieu de rendre un intervalle degenere trompeur.
+        records = _records(self.rubric, {"j1": -2.0, "j2": 2.0}, {"A": 3.0})
+        report = aggregate_mos(records, rubric=self.rubric)
+        self.assertEqual(report.n_items, 1)
+        self.assertIsNone(report.ci_low)
+        self.assertIsNone(report.ci_high)
+        self.assertIn("indisponible", format_report(report))
 
     def test_report_is_readable(self):
         base = {"A": 4.0, "B": 3.0}

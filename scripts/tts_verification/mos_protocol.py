@@ -96,8 +96,8 @@ class MosReport:
     """
 
     mos: float
-    ci_low: float
-    ci_high: float
+    ci_low: float | None
+    ci_high: float | None
     confidence: float
     n_items: int
     n_judges: int
@@ -430,6 +430,9 @@ def aggregate_mos(
         raise ValueError("aucun critere de note")
     if not 0.0 < confidence < 1.0:
         raise ValueError(f"niveau de confiance hors bornes : {confidence}")
+    scale: tuple[int, int] | None = (
+        (rubric.scale_min, rubric.scale_max) if rubric is not None else None
+    )
 
     materialised = list(records)
     if not materialised:
@@ -448,7 +451,21 @@ def aggregate_mos(
         key = (item_id, judge_id)
         if key in item_judge:
             raise ValueError(f"note dupliquee pour {key}")
-        item_judge[key] = float(np.mean(_scores_of(record, criteria)))
+        scores = _scores_of(record, criteria)
+        for value in scores:
+            if not np.isfinite(value):
+                raise ValueError(
+                    f"note non finie (essai {item_id!r}, auditeur {judge_id!r})"
+                )
+        if scale is not None:
+            lo, hi = scale
+            for name, value in zip(criteria, scores):
+                if not lo <= value <= hi:
+                    raise ValueError(
+                        f"note {value} hors echelle [{lo}, {hi}] pour le critere "
+                        f"{name!r} (essai {item_id!r}, auditeur {judge_id!r})"
+                    )
+        item_judge[key] = float(np.mean(scores))
 
     def _per_item(judges: Sequence[str]) -> dict[str, float]:
         out: dict[str, float] = {}
@@ -498,13 +515,14 @@ def aggregate_mos(
     if n > 1:
         sem = float(stats.sem(values))
         margin = float(stats.t.ppf(0.5 + confidence / 2.0, df=n - 1)) * sem
+        ci_low, ci_high = mos - margin, mos + margin
     else:
-        margin = 0.0
+        ci_low = ci_high = None
 
     return MosReport(
         mos=mos,
-        ci_low=mos - margin,
-        ci_high=mos + margin,
+        ci_low=ci_low,
+        ci_high=ci_high,
         confidence=confidence,
         n_items=len(per_item),
         n_judges=len(kept),
@@ -521,8 +539,12 @@ def format_report(report: MosReport) -> str:
         f"MOS global : {report.mos:.3f}",
         (
             f"IC {report.confidence * 100:.0f} % : "
-            f"[{report.ci_low:.3f}, {report.ci_high:.3f}] "
-            f"(+/- {(report.ci_high - report.ci_low) / 2:.3f})"
+            + (
+                f"[{report.ci_low:.3f}, {report.ci_high:.3f}] "
+                f"(+/- {(report.ci_high - report.ci_low) / 2:.3f})"
+                if report.ci_low is not None and report.ci_high is not None
+                else "indisponible (un seul essai : pas de degre de liberte)"
+            )
         ),
         f"Essais : {report.n_items} | Auditeurs retenus : {report.n_judges}",
         f"Rejet P.808 : {', '.join(report.rejected_judges) if report.rejected_judges else 'aucun'}",
