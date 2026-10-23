@@ -2,6 +2,8 @@
 
 Ce répertoire centralise la documentation projet déportée du CLAUDE.md. Chaque fichier documente un aspect précis du projet CoursIA (infrastructure, procédures, règles, état des séries).
 
+**Où chercher** : le **pérenne** vit dans les foyers thématiques (`reference/`, `cadrage/`, `lean/`, `genai/`, …) ; le **transient** — rapports, audits et instantanés datés — vit dans [`transients/`](transients/README.md), daté et figé ; `archive/` est un stock à résorber, jamais une destination. **Critère transient / pérenne** (#19283) : est *transient* un document dont la valeur meurt avec son contexte (suivi de chantier terminé, état daté, compte rendu) ; est *pérenne* un document qu'un lecteur d'ici un an ouvre encore pour comprendre le dépôt — y compris l'**état vivant d'une série**, tenu à jour au fil des livraisons. Un document qui doit évoluer est pérenne : il change de foyer, jamais de contrat.
+
 ## Racine (docs/)
 
 Fichiers présents directement à la racine du répertoire `docs/`. Triage initial #7422 (c.805, po-2024 — audité par lecture disque + cross-check liens).
@@ -38,6 +40,7 @@ Documentation vivante, active et liée depuis CLAUDE.md / `.claude/rules/`.
 | [reference/student-pr-template.md](reference/student-pr-template.md) | Template PR étudiante |
 | [reference/readme-series-gabarit.md](reference/readme-series-gabarit.md) | Gabarit de référence des READMEs de séries (#2651) |
 | [reference/finition-de-serie.md](reference/finition-de-serie.md) | Critères de sortie du régime de finition de série (#19297) |
+| [reference/iit-ict-transition.md](reference/iit-ict-transition.md) | Transition IIT → ICT — état narratif et architectural de la série ICT-Series (#4588, plan de partition #5081), tenue à jour au fil des livraisons ; reclassée pérenne depuis `suivis/` (tranche 2 #19283) |
 | [reference/agentic-engines-deep-eval.md](reference/agentic-engines-deep-eval.md) | Évaluation en profondeur des moteurs agentiques (Semantic Kernel, Google ADK, Microsoft Agent Framework) sur la série DataScienceWithAgents — couverture réelle du corpus, pilotes reproductibles, faits d'API mesurés |
 
 ### Règles détaillées (docs/reference/)
@@ -363,14 +366,6 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/18493-counter-scan-classification.md](ledgers/18493-counter-scan-classification.md) | Issue #18493 — Scan des compteurs littéraux dans commentaires code |
 | [ledgers/18741-qualification-14-notebooks.md](ledgers/18741-qualification-14-notebooks.md) | Qualification des notebooks GenAI sous le seuil du compteur canonique |
 
-## Suivis de cycle (docs/suivis/)
-
-Notes de suivi de cycle par série (transitions architecturales et narratives).
-
-| Fichier | Description |
-|---------|-------------|
-| [suivis/iit-ict-transition.md](suivis/iit-ict-transition.md) | Transition IIT → ICT, pivot série ICT-Series (#4588, #5081) |
-
 ## Coordination runtime (docs/coordination/)
 
 Protocoles opérationnels de la coordination flotte (registres, tenanciers, liaisons cross-machine).
@@ -465,7 +460,7 @@ Critère de classement (#19283), opposable pour tout nouveau fichier : est **tra
 |---|---|
 | Une règle, une procédure, une référence durable | les foyers thématiques (`reference/`, `lean/`, `genai/`, `qc/`, `ci/`, `curriculum/`, …) |
 | Le positionnement du dépôt face à un texte externe | `cadrage/` (index par communauté interlocutrice) |
-| L'état d'un chantier à une date donnée | `transients/` (en-tête gelé, convention #14623) ou `suivis/` (transitions de série) |
+| L'état d'un chantier à une date donnée | `transients/` (en-tête gelé, convention #14623) |
 | Un document inactif, remplacé ou périmé | `archive/` (figée à dessein, jamais purge) |
 
 ## Carte rapide
@@ -489,7 +484,6 @@ docs/
   ict/               Synthèses transversales IIT → ICT (#4588)
                      + pré-enregistrements grade T (protocoles scellés avant mesure)
   ledgers/           Ledgers d'audit cumulatifs par Epic (#3801, #10466, #10678, #11690, #12204)
-  suivis/            Suivis de cycle (transitions de série)
   transients/        Rapports transients datés (en-tête gelé) — convention + organe (#14623)
   cadrage/           Documents épistémiques de cadrage — index par communauté interlocutrice (#17525)
   PARCOURS.md        Schéma maturité 3 axes (éditorial / reproductibilité / revue) — #8051
