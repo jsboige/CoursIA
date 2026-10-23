@@ -766,7 +766,7 @@ def _main_red_motif(repo: str, fetch=_gh_json) -> "str | None":
     )
 
 
-def _latest_check_runs(repo: str, ref: str, fetch=_gh_json):
+def _latest_check_runs(repo: str, ref: str, fetch=_gh_json, max_pages: int = 5):
     """Dernier check-run par NOM sur `ref`, ou None si la couleur est illisible.
 
     Pli latest-wins par `started_at` : la liste rendue par l'API contient
@@ -775,25 +775,37 @@ def _latest_check_runs(repo: str, ref: str, fetch=_gh_json):
     rouge perime rouvrirait la derogation sur un organe deja vert, et un
     vert perime l'ouvrirait sur un organe encore rouge.
 
+    Pagination : une tete de PR de carnets porte 129 check-runs mesures
+    (review 5622234166) -- au-dela de `per_page=100`, le nom-preuve peut
+    vivre en page 2 et la voie se fermer a tort, precisement sur la
+    population visee. On suit les pages tant qu'une page est pleine,
+    bornees a `max_pages` (500 check-runs).
+
     Fail-closed : payload illisible -> None, jamais un dictionnaire vide qui
     se lirait « aucun organe rouge » (une couleur illisible ne vaut pas vert,
     cf #18686).
     """
-    try:
-        payload = fetch(
-            "repos/{}/commits/{}/check-runs?per_page=100".format(repo, ref)
-        )
-    except DwellError:
-        return None
-    if not isinstance(payload, dict):
-        return None
-    runs = payload.get("check_runs")
-    if not isinstance(runs, list):
-        return None
+    all_runs: "list[dict]" = []
+    page = 1
+    while page <= max_pages:
+        url = "repos/{}/commits/{}/check-runs?per_page=100".format(repo, ref)
+        if page > 1:
+            url += "&page={}".format(page)
+        try:
+            payload = fetch(url)
+        except DwellError:
+            return None
+        if not isinstance(payload, dict):
+            return None
+        runs = payload.get("check_runs")
+        if not isinstance(runs, list):
+            return None
+        all_runs.extend(run for run in runs if isinstance(run, dict))
+        if len(runs) < 100:
+            break
+        page += 1
     latest: "dict[str, dict]" = {}
-    for run in runs:
-        if not isinstance(run, dict):
-            continue
+    for run in all_runs:
         name = run.get("name")
         if not name:
             continue
@@ -805,8 +817,51 @@ def _latest_check_runs(repo: str, ref: str, fetch=_gh_json):
     return latest
 
 
-def _repair_motif(repo: str, head_sha: "str | None", fetch=_gh_json):
-    """#22085 : motif de derogation quand la PR REPARE un rouge de `main`.
+def _pr_earlier_red_organs(repo: str, pr_number: int, head_sha: str,
+                           fetch=_gh_json, max_commits: int = 10):
+    """Organes rouges a des commits ANTERIEURS de la PR (#22085, review).
+
+    Un organe qui ne tourne que sur `pull_request` n'a AUCUN check-run a la
+    tete de la branche par defaut : sa couleur « de main » n'existe pas la
+    ou une lecture des check-runs de main la cherchait (mesure review
+    5622234166 : 12 check-runs push sur la tete de main -- Pages, Quarto,
+    CodeQL -- aucun `Live-read freshness`). Le rouge se voit sur les PRs ;
+    la mesure reelle de ce que CETTE PR a repare est donc son propre
+    passe : chaque push re-poste les check-runs sur la nouvelle tete, les
+    commits anterieurs gardent les leurs.
+
+    Retourne {nom: check-run rouge} (premier rouge rencontre par commit,
+    base -> tete). Une lecture impossible rend un dict vide : ce segment
+    ne prouve rien, il ne deroge pas -- fail-closed.
+    """
+    try:
+        payload = fetch("repos/{}/pulls/{}/commits?per_page={}".format(
+            repo, pr_number, max_commits))
+    except DwellError:
+        return {}
+    if not isinstance(payload, list):
+        return {}
+    shas: "list[str]" = []
+    for entry in payload:
+        if isinstance(entry, dict) and entry.get("sha"):
+            shas.append(entry["sha"])
+    red: "dict[str, dict]" = {}
+    for sha in shas:
+        if sha == head_sha:
+            continue
+        runs = _latest_check_runs(repo, sha, fetch)
+        if not runs:
+            continue
+        for name, run in runs.items():
+            if (run.get("conclusion") in MAIN_RED_CONCLUSIONS
+                    and name not in red):
+                red[name] = run
+    return red
+
+
+def _repair_motif(repo: str, head_sha: "str | None", pr_number: "int | None",
+                  fetch=_gh_json):
+    """#22085 : motif de derogation quand la PR REPARE un rouge.
 
     Le rouge de #22018 (`Live-read freshness`) n'est pas visible « depuis la
     PR » au sens de #18686 : l'organe tourne aussi sur `pull_request`, donc
@@ -814,54 +869,68 @@ def _repair_motif(repo: str, head_sha: "str | None", fetch=_gh_json):
     plancher de 120 min comme les autres, et `MAIN_RED_WORKFLOWS` ne le
     couvrait pas.
 
-    Deux lectures, toutes deux fail-closed :
+    Deux sources de rouge, toutes deux reelles et fail-closed :
 
-    1. les organes ROUGES a la tete de la branche par defaut (tous noms,
-       pli latest-wins -- #22085 piste (a)) ;
-    2. pour chacun, le dernier check-run de **meme nom** a la tete de la PR
-       (piste (b)).
+    1. les organes ROUGES a la tete de la branche par defaut, pli
+       latest-wins -- mesure reelle pour les organes `push` (Pages, Quarto,
+       CodeQL...) ;
+    2. les organes rouges a des commits ANTERIEURS de cette PR
+       (`_pr_earlier_red_organs`) -- mesure reelle pour les organes qui ne
+       tournent que sur `pull_request` : jamais presents sur main, leur
+       rouge ne se lit que sur les PRs.
 
     La derogation s'ouvre sur le premier organe que la PR rend `success` a
-    sa tete. Le label seul ne suffit donc jamais, et la preuve porte sur
-    l'organe precis qui est rouge sur main -- pas sur une couleur globale :
-    une PR sans rapport avec le rouge ne prouve rien et garde son plancher.
+    sa tete, A CONDITION que ce vert soit POSTERIEUR au rouge (review,
+    point 2 : un vert anterieur au rouge ne prouve aucune reparation --
+    une PR sans rapport garde son plancher). Le label seul ne suffit donc
+    jamais, et la preuve porte sur l'organe precis -- pas sur une couleur
+    globale.
 
     Limite assumee : l'API ne dit pas quels organes sont BLOQUANTS. Un
-    organe advisory rouge sur main peut donc ouvrir la voie -- mais
-    seulement pour une PR qui le fait passer au vert, ce qui reste une
-    reparation reelle.
+    organe advisory rouge peut donc ouvrir la voie -- mais seulement pour
+    une PR qui le fait passer au vert, ce qui reste une reparation reelle.
     """
-    if not head_sha:
+    if not head_sha or pr_number is None:
         return None
     try:
         branch = _default_branch(repo, fetch)
     except DwellError:
         return None
     main_latest = _latest_check_runs(repo, branch, fetch)
-    if not main_latest:
+    if main_latest is None:
         return None
-    red = {
-        name: run
-        for name, run in main_latest.items()
-        if run.get("conclusion") in MAIN_RED_CONCLUSIONS
-    }
-    if not red:
+    reds: "dict[str, tuple[dict, str]]" = {}
+    for name, run in main_latest.items():
+        if run.get("conclusion") in MAIN_RED_CONCLUSIONS:
+            reds[name] = (run, "tete de {}".format(branch))
+    for name, run in _pr_earlier_red_organs(
+            repo, pr_number, head_sha, fetch).items():
+        if name not in reds:
+            reds[name] = (run, "commit anterieur de la PR")
+    if not reds:
         return None
     head_latest = _latest_check_runs(repo, head_sha, fetch)
     if not head_latest:
         return None
-    for name in sorted(red):
+    for name in sorted(reds):
         head_run = head_latest.get(name)
-        if isinstance(head_run, dict) and head_run.get("conclusion") == "success":
-            return (
-                "main rouge: organe `{}` en echec sur {} (check-run {}) -- "
-                "repare a la tete de la PR (check-run {})".format(
-                    name,
-                    branch,
-                    red[name].get("id") or "?",
-                    head_run.get("id") or "?",
-                )
+        if not (isinstance(head_run, dict)
+                and head_run.get("conclusion") == "success"):
+            continue
+        red_run, where = reds[name]
+        if (head_run.get("started_at") or "") <= (red_run.get("started_at") or ""):
+            # Vert ANTÉRIEUR au rouge : la PR a verdi avant que le rouge
+            # n'arrive -- ce n'est pas elle qui l'a repare.
+            continue
+        return (
+            "organe `{}` en echec ({}, check-run {}) -- repare a la tete "
+            "de la PR (check-run {} poste apres le rouge)".format(
+                name,
+                where,
+                red_run.get("id") or "?",
+                head_run.get("id") or "?",
             )
+        )
     return None
 
 
@@ -898,7 +967,7 @@ def check(
             # #22085 : seconde voie. Le rouge que toutes les PRs voient (un
             # organe qui tourne aussi sur `pull_request`) n'ouvre la
             # derogation que si CETTE PR prouve qu'elle le repare a sa tete.
-            motif = _repair_motif(repo, sha, fetch)
+            motif = _repair_motif(repo, sha, pr_number, fetch)
         if motif is None:
             waived = False
             unmet_note = (

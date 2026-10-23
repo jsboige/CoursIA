@@ -989,7 +989,8 @@ def test_q67_date_et_sha_suivent_la_meme_remontee():
 
 def _pr_with_label_fetch(workflow_runs=None, red_read_fails=False,
                           workflow_runs_by_yml=None, main_check_runs=None,
-                          head_check_runs=None):
+                          head_check_runs=None, earlier_commits=None,
+                          earlier_check_runs=None):
     """Fetch fake pour une PR JEUNE (tete a 11:55, NOW=12:00) portant le label.
 
     `workflow_runs` : liste de dict workflow-runs sur `main` pour le workflow
@@ -1003,6 +1004,10 @@ def _pr_with_label_fetch(workflow_runs=None, red_read_fails=False,
     `main` et de la tete de la PR. Defaut vide = aucune preuve de reparation,
     donc la seconde voie reste fermee : les tests de #18686/#18790 gardent
     exactement le verdict qu'ils mesuraient.
+
+    `earlier_commits` / `earlier_check_runs` (review 5622234166) : commits
+    anterieurs de la PR et leurs check-runs par sha -- la mesure reelle des
+    organes PR-only, qui n'ont AUCUN check-run sur main. Defaut vide.
     """
     by_yml = dict(workflow_runs_by_yml or {})
     if workflow_runs is not None and "scripts-tests.yml" not in by_yml:
@@ -1020,6 +1025,11 @@ def _pr_with_label_fetch(workflow_runs=None, red_read_fails=False,
             return {"check_runs": list(main_check_runs or [])}
         if path == "repos/o/r/commits/abc/check-runs?per_page=100":
             return {"check_runs": list(head_check_runs or [])}
+        if path == "repos/o/r/pulls/42/commits?per_page=10":
+            return [{"sha": s} for s in (earlier_commits or [])]
+        for sha, runs in (earlier_check_runs or {}).items():
+            if path == "repos/o/r/commits/{}/check-runs?per_page=100".format(sha):
+                return {"check_runs": list(runs)}
         if path == "repos/o/r":
             if red_read_fails:
                 raise merge_dwell.DwellError("repos muet")
@@ -1258,6 +1268,8 @@ def test_18796_workflow_direct_run_success_ne_leve_pas():
             return {"check_runs": []}
         if path == "repos/o/r/commits/abc/check-runs?per_page=100":
             return {"check_runs": []}
+        if path == "repos/o/r/pulls/42/commits?per_page=10":
+            return []
         if path == (
             "repos/o/r/actions/workflows/scripts-tests.yml/runs"
             "?branch=main&event=push&status=completed&per_page=10"
@@ -1291,21 +1303,39 @@ def test_18796_workflow_direct_aucun_run_ne_leve_pas():
 
 # --- 9. #22085 -- la PR qui REPARE un rouge de main derive son plancher ----
 #
-# Le cas fondateur est #22018 : `Live-read freshness` rouge sur main bloquait
-# toutes les PRs de carnet, et la PR qui le reparait a quand meme du attendre
-# 120 min -- `MAIN_RED_WORKFLOWS` ne contient que `scripts-tests.yml`.
+# Le cas fondateur est #22018 : `Live-read freshness` rouge (organe qui ne
+# tourne que sur pull_request) bloquait toutes les PRs de carnet, et la PR qui
+# le reparait a quand meme du attendre 120 min -- `MAIN_RED_WORKFLOWS` ne le
+# couvrait pas.
+#
+# Review 5622234166 : un organe PR-only n'a AUCUN check-run a la tete de main
+# (12 push-organs mesures, aucun Live-read freshness). Les fixtures de main ne
+# portent donc QUE des organes push ; le rouge d'un organe PR-only se mesure
+# aux commits ANTERIEURS de la PR qui l'a repare.
 #
 # La seconde voie n'ouvre PAS la derogation au label seul : elle exige la
-# preuve, a la tete de la PR, que l'organe rouge sur main y est vert.
+# preuve, a la tete de la PR et POSTERIEURE au rouge.
 
-_MAIN_RED_LIVE_READ = {
+_MAIN_RED_PUSH = {
     "id": 90001,
+    "name": "Build Quarto site",
+    "conclusion": "failure",
+    "started_at": "2026-10-22T08:20:00Z",
+}
+_HEAD_GREEN_PUSH = {
+    "id": 90002,
+    "name": "Build Quarto site",
+    "conclusion": "success",
+    "started_at": "2026-10-22T11:00:00Z",
+}
+_MAIN_RED_LIVE_READ = {
+    "id": 90051,
     "name": "Live-read freshness",
     "conclusion": "failure",
     "started_at": "2026-10-22T08:20:00Z",
 }
 _HEAD_GREEN_LIVE_READ = {
-    "id": 90002,
+    "id": 90052,
     "name": "Live-read freshness",
     "conclusion": "success",
     "started_at": "2026-10-22T11:00:00Z",
@@ -1313,21 +1343,130 @@ _HEAD_GREEN_LIVE_READ = {
 
 
 def test_22085_cas_22018_la_pr_qui_repare_le_rouge_est_derogee():
-    """Cas #22018 rejoue : main rouge sur un organe hors `MAIN_RED_WORKFLOWS`,
-    PR qui rend cet organe vert a sa tete -> derogation acceptee."""
+    """Cas #22018 rejoue en forme REELLE (review 5622234166, point 1) : la
+    tete de main ne porte QUE des organes push, tous verts -- le rouge de
+    `Live-read freshness` (organe PR-only) se voit au commit ANTERIEUR de la
+    PR ; la tete le rend vert, posterieurement -> derogation acceptee."""
     ok, msg = merge_dwell.check(
         "o/r", "abc", 42, 120.0, now=NOW,
         fetch=_pr_with_label_fetch(
             workflow_runs_by_yml={"scripts-tests.yml": []},
-            main_check_runs=[_MAIN_RED_LIVE_READ],
+            main_check_runs=[dict(_HEAD_GREEN_PUSH, id=90061)],
             head_check_runs=[_HEAD_GREEN_LIVE_READ],
+            earlier_commits=["0ld5ha0"],
+            earlier_check_runs={"0ld5ha0": [_MAIN_RED_LIVE_READ]},
         ),
     )
-    assert ok is True, "la PR repare le rouge de main : le plancher doit lever"
+    assert ok is True, "la PR repare le rouge : le plancher doit lever"
     assert "dwell leve par le label" in msg
     assert "Live-read freshness" in msg, (
         "le motif doit nommer l'organe repare, pas une couleur globale"
     )
+    assert "commit anterieur de la PR" in msg, (
+        "la provenance du rouge doit etre nommee : organe PR-only, mesure "
+        "au passe de la PR -- pas une couleur de main inexistante"
+    )
+
+
+def test_22085_organe_push_rouge_sur_main_repare_a_la_tete():
+    """Segment push : un organe qui tourne sur `push` est bien rouge a la
+    tete de main (il y existe), la PR le rend vert posterieurement."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[_MAIN_RED_PUSH],
+            head_check_runs=[_HEAD_GREEN_PUSH],
+        ),
+    )
+    assert ok is True
+    assert "Build Quarto site" in msg
+    assert "tete de main" in msg
+
+
+def test_22085_vert_anterieur_au_rouge_ne_prouve_rien():
+    """Review 5622234166, point 2 : une PR dont la jambe a tourne AVANT le
+    rouge porte un success anterieur -- ce n'est pas une reparation."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[dict(_MAIN_RED_PUSH,
+                                  started_at="2026-10-22T11:30:00Z")],
+            head_check_runs=[dict(_HEAD_GREEN_PUSH,
+                                  started_at="2026-10-22T11:00:00Z")],
+        ),
+    )
+    assert ok is False, (
+        "le vert de la tete (11:00) est ANTERIEUR au rouge de main (11:30) : "
+        "la derogation ne doit pas s'ouvrir"
+    )
+    assert "condition non remplie" in msg
+
+
+def test_22085_rouge_pr_only_sans_vert_a_la_tete_refuse():
+    """Organe PR-only rouge au passe de la PR, mais la tete ne le rend pas
+    vert (encore rouge) -> plancher garde."""
+    ok, msg = merge_dwell.check(
+        "o/r", "abc", 42, 120.0, now=NOW,
+        fetch=_pr_with_label_fetch(
+            workflow_runs_by_yml={"scripts-tests.yml": []},
+            main_check_runs=[],
+            head_check_runs=[dict(_MAIN_RED_LIVE_READ, id=90053,
+                                  started_at="2026-10-22T11:00:00Z")],
+            earlier_commits=["0ld5ha0"],
+            earlier_check_runs={"0ld5ha0": [_MAIN_RED_LIVE_READ]},
+        ),
+    )
+    assert ok is False
+    assert "condition non remplie" in msg
+
+
+def test_22085_pagination_le_nom_preuve_en_page_2_est_lu():
+    """Review 5622234166, point 3 : la tete d'une PR de carnets porte 129
+    check-runs ; sans pagination, le nom-preuve en page 2 fermait la voie
+    a tort, precisement sur la population visee."""
+    filler = [
+        {"id": 91000 + i, "name": "jambe-{}".format(i),
+         "conclusion": "success", "started_at": "2026-10-22T10:00:00Z"}
+        for i in range(128)
+    ]
+    pages = {
+        "repos/o/r/commits/abc/check-runs?per_page=100": {
+            "check_runs": filler[:100],
+        },
+        "repos/o/r/commits/abc/check-runs?per_page=100&page=2": {
+            "check_runs": filler[100:] + [_HEAD_GREEN_PUSH],
+        },
+        "repos/o/r/commits/main/check-runs?per_page=100": {
+            "check_runs": [_MAIN_RED_PUSH],
+        },
+    }
+
+    def fetch(path):
+        if path == "repos/o/r/pulls/42":
+            return {"labels": [{"name": merge_dwell.WAIVER_LABEL}],
+                    "base": {"sha": "ba5e0000"}}
+        if path == "repos/o/r/commits/abc":
+            return {"commit": {"committer": {"date": "2026-09-07T11:55:00Z"}}}
+        if path == "repos/o/r":
+            return {"default_branch": "main"}
+        if path == "repos/o/r/pulls/42/commits?per_page=10":
+            return []
+        if path in pages:
+            return pages[path]
+        if path == (
+            "repos/o/r/actions/workflows/scripts-tests.yml/runs"
+            "?branch=main&event=push&status=completed&per_page=10"
+        ):
+            return {"workflow_runs": []}
+        raise AssertionError("chemin inattendu: " + path)
+
+    ok, msg = merge_dwell.check("o/r", "abc", 42, 120.0, now=NOW, fetch=fetch)
+    assert ok is True, (
+        "le nom-preuve vit en page 2 (129e check-run) : la voie doit s'ouvrir"
+    )
+    assert "Build Quarto site" in msg
 
 
 def test_22085_temoin_negatif_pr_non_reparatrice_refusee():
@@ -1339,8 +1478,8 @@ def test_22085_temoin_negatif_pr_non_reparatrice_refusee():
         "o/r", "abc", 42, 120.0, now=NOW,
         fetch=_pr_with_label_fetch(
             workflow_runs_by_yml={"scripts-tests.yml": []},
-            main_check_runs=[_MAIN_RED_LIVE_READ],
-            head_check_runs=[dict(_MAIN_RED_LIVE_READ,
+            main_check_runs=[_MAIN_RED_PUSH],
+            head_check_runs=[dict(_MAIN_RED_PUSH,
                                   id=90003,
                                   started_at="2026-10-22T11:00:00Z")],
         ),
@@ -1358,7 +1497,7 @@ def test_22085_organe_absent_a_la_tete_de_la_pr_ne_prouve_rien():
         "o/r", "abc", 42, 120.0, now=NOW,
         fetch=_pr_with_label_fetch(
             workflow_runs_by_yml={"scripts-tests.yml": []},
-            main_check_runs=[_MAIN_RED_LIVE_READ],
+            main_check_runs=[_MAIN_RED_PUSH],
             head_check_runs=[],
         ),
     )
@@ -1373,7 +1512,7 @@ def test_22085_main_vert_les_check_runs_ne_derogent_pas():
         "o/r", "abc", 42, 120.0, now=NOW,
         fetch=_pr_with_label_fetch(
             workflow_runs_by_yml={"scripts-tests.yml": []},
-            main_check_runs=[dict(_MAIN_RED_LIVE_READ, conclusion="success")],
+            main_check_runs=[dict(_MAIN_RED_PUSH, conclusion="success")],
             head_check_runs=[_HEAD_GREEN_LIVE_READ],
         ),
     )
@@ -1390,22 +1529,22 @@ def test_22085_pli_latest_wins_sur_les_check_runs():
         fetch=_pr_with_label_fetch(
             workflow_runs_by_yml={"scripts-tests.yml": []},
             main_check_runs=[
-                dict(_MAIN_RED_LIVE_READ, id=90010,
+                dict(_MAIN_RED_PUSH, id=90010,
                      started_at="2026-10-22T09:00:00Z"),
-                dict(_MAIN_RED_LIVE_READ, id=90011,
+                dict(_MAIN_RED_PUSH, id=90011,
                      started_at="2026-10-22T07:00:00Z"),
             ],
             head_check_runs=[
-                dict(_HEAD_GREEN_LIVE_READ, id=90020,
+                dict(_HEAD_GREEN_PUSH, id=90020,
                      started_at="2026-10-22T10:00:00Z"),
                 # tentative rouge SUPERSEDEE par le vert ci-dessus
-                dict(_MAIN_RED_LIVE_READ, id=90021,
+                dict(_MAIN_RED_PUSH, id=90021,
                      started_at="2026-10-22T09:30:00Z"),
             ],
         ),
     )
     assert ok is True
-    assert "Live-read freshness" in msg
+    assert "Build Quarto site" in msg
 
 
 def test_22085_couleur_illisible_ne_deroge_pas():
