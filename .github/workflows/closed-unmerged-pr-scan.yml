@@ -39,11 +39,21 @@ concurrency:
 jobs:
   sweep:
     name: "Scan closed-without-merge PRs (advisory)"
-    # Routage #14283 tranche 4 (ai-01 2026-09-02) : balayage cron pur-Python.
+    # GitHub-hosted, et c'est MESURE, pas un choix par defaut : un job
+    # self-hosted exige une entree dans SELF_HOSTED_WORKFLOW_ALLOWLIST
+    # (`scripts/ci/check_self_hosted_runner_policy.py`). Sans elle,
+    # `Scripts Tests (CPU)` rend WORKFLOW_NOT_ALLOWED sur ce workflow (test
+    # test_current_repository_self_hosted_jobs_satisfy_isolation_policy,
+    # mesure a f8a6d41e66). L'allowlist etait l'autre voie ; le fichier est
+    # touche par une PR OUVERTE d'une autre lane (#21413), donc l'y ajouter
+    # exposerait ce merge a un conflit -- pour un tir QUOTIDIEN qui ne pese
+    # rien sur le pool. Repasser en self-hosted = ajouter l'entree d'allowlist
+    # dans le meme commit, sinon la garde rougit.
+    #
     # Declencheur `schedule` uniquement -- il ne tourne que sur la branche par
     # defaut, donc aucun code de fork ne peut l'atteindre et aucune garde
-    # same-repo n'est requise. Retour arriere = `runs-on: ubuntu-latest`.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # same-repo n'est requise.
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout (full history)
         uses: actions/checkout@v4
