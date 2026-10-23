@@ -55,8 +55,8 @@ commit pinné.
 > MIT (© Microsoft Corporation). Ne pas se fier au seul badge de l'API GitHub ici.
 >
 > **‡ Argumentum — double licence depuis le 2026-09-21.** `LICENSE-CONTENT.md`
-> (commit amont `956384ac`) place le **corpus éditorial** — 5 fichiers de texte
-> des cartes + 2 ontologies OWL — sous **CC BY-SA 4.0**, attribution
+> (commit amont `956384ac`) place le **corpus éditorial** — les textes des cartes
+> et les ontologies OWL qu'il énumère — sous **CC BY-SA 4.0**, attribution
 > « Argumentum » ; le code reste sous LGPL-3.0. Le commit pinné ci-dessus est
 > postérieur à `956384ac`. Les dérivés du texte (datasets Phase 2 de
 > FallacyDetection, cf. `data/NOTICE-SCENARII` et le champ `licence` du
