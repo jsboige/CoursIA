@@ -460,6 +460,35 @@ theorem hashlife_correct_margin_of_hcap (c : MacroCell) (k : Nat)
     evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
   hashlife_correctN (2^k) (c.toGrid (0, 0)) hcap
 
+/-! ### Tranche 18 — l'hypothèse `h_central` est gratuite (inventaire P4.4)
+
+`hashlifeResult_central_correct` (HashlifeCorrectness, **prouvé** : induction forte
+sur `k`, base `hashlifeResult_central_correct_base` + pas inductif
+`p4_succ_membership` nourri par les deux vagues `p4_wave1_ih`/`p4_wave2_ih` et les
+murs bornés) énonce exactement le corps de `centralCorrect`. Donc **`centralCorrect
+c k` vaut pour toute cellule bien formée de niveau `k + 2`** : à l'indexation
+naturelle, l'hypothèse `h_central` du cadre ne coûte rien — au même titre que
+`h_margin` (L1, `supportInMargin` tautologique). L'énoncé effectif de
+`hashlife_correct_margin` se réduit donc **exactement à L3** : relever
+`centralCorrect` en `hcap` (capture de la trajectoire entière `∀ t ≤ 2^k`).
+
+La brique de traversée existe déjà, prouvée : les murs
+`p4_{nw,ne,se,sw}_overlap_wall` (Walls/, privés, sorry-free) donnent l'accord
+**pointwise** entre la trajectoire de référence `evolve (2^(k-1))` de la grille
+parent et la reconstruction `node R1 R2 R4 R5` du second flot, sur chaque
+sous-fenêtre `[2^k, 2^k + 2^((k-1)+1))²` et sa boîte Chebyshev `2^(k-1)`, sous
+`centralCorrect` des quatre nœuds de recombinaison. Le résidu L3 est
+l'itération de cet accord le long de la décomposition dyadique de `t`. -/
+
+/-- **`centralCorrect` est un théorème à l'indexation naturelle.** Pour toute
+    cellule bien formée de niveau `k + 2`, l'hypothèse `h_central` du cadre
+    `hashlife_correct_margin` s'obtient gratuitement — le contenu du cadre se
+    reporte tout entier sur L3 (`hcap`). -/
+theorem centralCorrect_free_of_wf (c : MacroCell) (k : Nat)
+    (hwf : c.wf = true) (hlvl : c.level = k + 2) :
+    centralCorrect c k :=
+  hashlifeResult_central_correct c k hwf hlvl
+
 /-! ## L3 classe `T = 1` — hcap des natures mortes (tranche 3, étape 4)
 
 Premier maillon L3 **entièrement clos** : pour la classe des natures mortes

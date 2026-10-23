@@ -460,6 +460,36 @@ theorem hashlife_correct_margin_of_hcap (c : MacroCell) (k : Nat)
     evolveHashlifeFast (2^k) (c.toGrid (0, 0)) = evolve (2^k) (c.toGrid (0, 0)) :=
   hashlife_correctN (2^k) (c.toGrid (0, 0)) hcap
 
+/-! ### Slice 18 — the `h_central` hypothesis is free (P4.4 inventory)
+
+`hashlifeResult_central_correct` (HashlifeCorrectness, **proved**: strong
+induction on `k`, base `hashlifeResult_central_correct_base` + inductive step
+`p4_succ_membership` fed by the two waves `p4_wave1_ih`/`p4_wave2_ih` and the
+bounded walls) states exactly the body of `centralCorrect`. Hence
+**`centralCorrect c k` holds for every well-formed cell of level `k + 2`**: at
+the natural indexing, the `h_central` hypothesis of the frame costs nothing —
+just like `h_margin` (L1, `supportInMargin` tautological). The effective
+content of `hashlife_correct_margin` therefore reduces **exactly to L3**:
+lifting `centralCorrect` to `hcap` (capture of the whole trajectory
+`∀ t ≤ 2^k`).
+
+The crossing brick already exists, proved: the walls
+`p4_{nw,ne,se,sw}_overlap_wall` (Walls/, private, sorry-free) give the
+**pointwise** agreement between the reference trajectory `evolve (2^(k-1))` of
+the parent grid and the second-wave reconstruction `node R1 R2 R4 R5`, on each
+sub-window `[2^k, 2^k + 2^((k-1)+1))²` and its Chebyshev box `2^(k-1)`, under
+`centralCorrect` of the four recombination nodes. The L3 residual is the
+iteration of this agreement along the dyadic decomposition of `t`. -/
+
+/-- **`centralCorrect` is a theorem at the natural indexing.** For every
+    well-formed cell of level `k + 2`, the `h_central` hypothesis of the
+    `hashlife_correct_margin` frame is obtained for free — the frame's content
+    shifts entirely onto L3 (`hcap`). -/
+theorem centralCorrect_free_of_wf (c : MacroCell) (k : Nat)
+    (hwf : c.wf = true) (hlvl : c.level = k + 2) :
+    centralCorrect c k :=
+  hashlifeResult_central_correct c k hwf hlvl
+
 /-! ## L3 class `T = 1` — hcap of still lifes (step 3, slice 4)
 
 First **entirely closed** L3 link: for the class of still lifes
