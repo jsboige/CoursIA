@@ -286,3 +286,31 @@ def test_le_payload_json_expose_les_compteurs(monkeypatch, capsys):
     assert "appels gh" in " ".join(v.notes)
     assert st.stats.calls > 0
     assert st.skipped_young == 1
+
+
+# --- 5. Label inconnu != extinction (#22215, mesure du 2026-10-23) ---------
+
+def test_un_label_absent_de_tout_runner_est_un_warning_pas_une_extinction(
+    monkeypatch,
+):
+    """`coursia-lean` a rougi « superviseur(s) mort(s) ? » pendant 24 h.
+
+    Mesure du 2026-10-23 : 40 runners online, aucun ne porte `coursia-lean`,
+    et plus aucun workflow de main ne route vers ce label. Le pool a ete
+    migre, la sonde est restee -- le rouge permanent que la garde anti-FP
+    du predicat STARVATION interdit ailleurs.
+    """
+    api = _patch(monkeypatch, FakeApi(queued=[], in_progress=[]))
+    st = _fetch(api)
+    v = mod.evaluate(mod.RunnerInventory(), st, 1, label="coursia-lean")
+    assert v.errors == [], v.errors
+    assert any(w.startswith("LABEL INCONNU") for w in v.warnings), v.warnings
+    assert v.status == "OK"
+
+
+def test_un_label_dont_les_runners_sont_tous_offline_reste_une_extinction():
+    v = mod.evaluate(mod.RunnerInventory(offline=["host-1", "host-2"]),
+                     mod.Starvation(), 1, label="coursia-linux")
+    assert any(e.startswith("EXTINCTION") for e in v.errors), v.errors
+    assert not any(w.startswith("LABEL INCONNU") for w in v.warnings)
+    assert v.status == "ERROR"

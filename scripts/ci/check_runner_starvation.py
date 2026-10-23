@@ -559,11 +559,30 @@ class Verdict:
     notes: list[str] = field(default_factory=list)
 
 
-def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int) -> Verdict:
+def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
+             label: str = DEFAULT_LABEL) -> Verdict:
     v = Verdict()
 
     if inv.available:
-        if not inv.online:
+        if not inv.online and not inv.offline:
+            # Aucun runner enregistre ne porte le label : c'est un LABEL
+            # INCONNU, pas une extinction. Mesure du 2026-10-23 : la sonde
+            # `coursia-lean` rougissait « superviseur(s) mort(s) ? (offline:
+            # aucun) » a chaque passage depuis la veille alors que 40 runners
+            # etaient online et qu'aucun workflow de `main` ne routait plus
+            # vers ce label -- le pool a ete migre, la sonde est restee. Le
+            # rouge permanent est exactement ce que la garde anti-FP du
+            # predicat STARVATION interdit ailleurs : il apprend a etre
+            # ignore. Le symptome reste mesure independamment (jobs queued
+            # sans in_progress) : si un workflow route encore vers ce label,
+            # STARVATION rougira pour la bonne raison.
+            v.warnings.append(
+                f"LABEL INCONNU: aucun runner enregistre ne porte le label "
+                f"« {label} » -- label retire de la flotte, ou sonde obsolete ? "
+                f"Si un workflow route encore vers lui, ses jobs ne demarreront "
+                f"jamais ; sinon retirer cette sonde."
+            )
+        elif not inv.online:
             v.errors.append(
                 f"EXTINCTION: aucun runner online ne porte le label -- superviseur(s) mort(s) ? "
                 f"(offline: {', '.join(inv.offline) or 'aucun'})"
@@ -757,7 +776,7 @@ def main() -> int:
         job_read_budget=args.job_read_budget,
         in_progress_sample=args.in_progress_sample,
     )
-    v = evaluate(inv, st, args.warn_floor)
+    v = evaluate(inv, st, args.warn_floor, label=args.label)
     if args.self_workflow:
         cad = evaluate_cadence(
             fetch_scheduled_runs(args.repo, args.self_workflow),
