@@ -13,7 +13,7 @@ module-set réel du disque (issue #13138). Ligne `conway_cgt_lean` re-synchronis
 
 | Répertoire | Toolchain | sorry (production) | Modules | Statut |
 |-----------|-----------|--------------------|---------|--------|
-| `game_theory_lean` | v4.33.0 | 1 (stretch Folk, #4880) | StableMarriage + CooperativeGames + SocialChoice + RepeatedGames + Swaps (49 `.lean` FR+EN) | COMPLET (EPIC #4365) |
+| `game_theory_lean` | v4.33.0 | 1 (stretch Folk, #4880) | StableMarriage + CooperativeGames + SocialChoice + RepeatedGames + Swaps (`.lean` FR+EN) | COMPLET (EPIC #4365) |
 | `lean_game_defs` | v4.33.0 | 0 | 12 (6 FR + 6 `_en`) | COMPLET (defs partagés) |
 | `lean_game_defs_ext` | v4.33.0 | 0 | Bayesian/* 24 (12 FR + 12 `_en`) + 2 umbrellas | COMPLET |
 | `minimax_lean` | v4.33.0 | 0 | ZeroSum + Concavity + SionApplication (+ `_en`) | COMPLET |

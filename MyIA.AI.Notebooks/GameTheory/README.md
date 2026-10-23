@@ -98,7 +98,7 @@ On apprend à représenter un jeu sous forme normale, puis à le résoudre : dom
 | 03 | Topologie des jeux 2×2 — [Python](GameTheory-03-Topology2x2-Python.ipynb) · [C#](GameTheory-03-Topology2x2-CSharp.ipynb) | La table périodique de Robinson-Goforth : classer tous les jeux 2×2 ordinaux et dériver leur quotient | 80 min | Licence | [03a](GameTheory-03b-Chemins-de-Swaps-Lean-Python.ipynb) · [03b](GameTheory-03c-Chambres-et-Murs-Python.ipynb) · [03c](GameTheory-03d-Le-Joueur-LLM-Python.ipynb) · [03e](GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb) · [03h](GameTheory-03g-Deux-Especes-de-Fleches-Python.ipynb) |
 | 04 | Équilibre de Nash — [Python](GameTheory-04-NashEquilibrium-Python.ipynb) · [C#](GameTheory-04-NashEquilibrium-CSharp.ipynb) | Nash pur et mixte, Lemke-Howson, analyse paramétrique | 60 min | Découverte | [04b](GameTheory-04b-Lean-NashExistence-Lean.ipynb) · [04c](GameTheory-04c-NashExistence-Python.ipynb) · [04d](GameTheory-04d-Marchandage-Asymetrique-Python.ipynb) · [04e](GameTheory-04e-Reflective-Oracles-Python.ipynb) · [04f](GameTheory-04f-Theories-Decision-Predicteur-Python.ipynb) · [04g](GameTheory-04g-Supermodularite-Python.ipynb) |
 | 05 | Jeux à somme nulle — [Python](GameTheory-05-ZeroSum-Minimax-Python.ipynb) · [C#](GameTheory-05-ZeroSum-Minimax-CSharp.ipynb) | Théorème minimax de von Neumann, programmation linéaire primal/dual | 40 min | Découverte | [05b](GameTheory-05b-Lean-Minimax-Lean.ipynb) |
-| 06 | Évolution de la confiance — [Python](GameTheory-06-EvolutionTrust-Python.ipynb) · [C#](GameTheory-06-EvolutionTrust-CSharp.ipynb) | Tournoi d'Axelrod, tit-for-tat, dynamique du réplicateur, processus de Moran en population finie | 65 min | Découverte | [06b](GameTheory-06b-Lean-RepeatedGames-Lean-Python.ipynb) · [06c](GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb) · [06d](GameTheory-06d-Sympathie-vs-Engagement-Python.ipynb) · [06e](GameTheory-06e-Open-Source-Game-Theory-Python.ipynb) · [06f](GameTheory-06f-Bounded-Agents-Python.ipynb) · [06f bis](GameTheory-06j-Bounded-Proofs-Reasoning-Costs-Python.ipynb) · [06g](GameTheory-06f-Bounded-Agents-Lean.ipynb) · [06g bis](GameTheory-06g-Simulation-Based-Program-Equilibria-Python.ipynb) · [06h](GameTheory-06h-Transparent-Institutions-Python.ipynb) · [06k](GameTheory-06k-FairBot-Loeb-Lean.ipynb) |
+| 06 | Évolution de la confiance — [Python](GameTheory-06-EvolutionTrust-Python.ipynb) · [C#](GameTheory-06-EvolutionTrust-CSharp.ipynb) | Tournoi d'Axelrod, tit-for-tat, dynamique du réplicateur, processus de Moran en population finie | 65 min | Découverte | [Escalier Dynamics](Dynamics/README.md) — [D01](Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) à [D08](Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb) · [06k](GameTheory-06k-FairBot-Loeb-Lean.ipynb) |
 
 Les deux figures suivantes, bâties sur le Dilemme du Prisonnier, illustrent les deux gestes fondateurs de cette phase : **représenter** un jeu, puis le **résoudre**.
 
@@ -212,22 +212,13 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 |--------|----------|-----------------|-------|--------|
 | 05b | [Minimax en Lean](GameTheory-05b-Lean-Minimax-Lean.ipynb) | Le théorème de von Neumann prouvé sans `sorry` dans le lake `minimax_lean` (via Sion), vérifié dans le noyau Lean | Lean | Licence |
 
-### Autour de 06 — jeux répétés, agents transparents et bornés
+### Autour de 06 — évolution de la confiance
 
-06c est le prolongement naturel du 06. Les lettres 06e à 06h forment un chantier sur les agents dont le programme est lisible ou le calcul borné, à lire dans l'ordre. Les lettres 06f et 06g sont chacune portées par deux notebooks ; la passe de renommage leur donnera des lettres distinctes. Le 06k prolonge le chantier côté formel : le vrai FairBot du lake `game_theory_lean` — coopération mutuelle par le théorème de Löb, là où les `_toy` du 06e restaient des heuristiques déclarées et où le 06g (agents bornés) s'arrête explicitement avant Löb.
+Les anciennes pistes `06b` à `06j` (jeux répétés, agents transparents et bornés, biens publics N-personnes) sont descendues dans l'**[Escalier Dynamics](Dynamics/README.md)**, le sous-dossier de la série : la porte reste [GameTheory-06 nu](GameTheory-06-EvolutionTrust-Python.ipynb), le capstone [06i — Ensembles limites](GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) reste en racine comme dernière lettre du palier (Poincaré-Bendixson : où finit une trajectoire d'apprentissage), et les onze carnets des marches `Dynamics-01` à `Dynamics-09` vivent désormais dans [leur README](Dynamics/README.md), avec la gradation #15615 en colonne.
 
-| Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
-|--------|----------|-----------------|-------|--------|
-| 06c | Folk Theorem — [Python](GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb) · [C#](GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb) | Horizon fini et effondrement par induction arrière, horizon infini et grim trigger, condition δ ≥ (T−R)/(T−P), Folk Theorem | Python · C# | Licence |
-| 06b | [Jeux répétés en Lean](GameTheory-06b-Lean-RepeatedGames-Lean-Python.ipynb) | Compagnon formel du 06c : les modules du lake `game_theory_lean/RepeatedGames` lus et exécutés, dont `grim_trigger_sustains_iff` prouvé sans `sorry` | Python, lit Lean | Licence |
-| 06d | [Sympathie contre engagement](GameTheory-06d-Sympathie-vs-Engagement-Python.ipynb) | Séparer empiriquement sympathie et engagement par statique comparative sur les gains d'autrui (prérequis en plus : 06c) | Python | Recherche |
-| 06e | [Open-source game theory](GameTheory-06e-Open-Source-Game-Theory-Python.ipynb) | Des programmes lisibles l'un par l'autre : l'engagement vérifiable change l'équilibre du dilemme | Python | Recherche |
-| 06f | [Agents bornés](GameTheory-06f-Bounded-Agents-Python.ipynb) | Agents-programmes à budget de calcul explicite : ce que le plafond fait aux équilibres atteignables | Python | Recherche |
-| 06f bis | [Preuves bornées](GameTheory-06j-Bounded-Proofs-Reasoning-Costs-Python.ipynb) | À borne de calcul donnée, quelles propriétés restent prouvables : le coût du raisonnement comme paramètre du jeu | Python | Recherche |
-| 06g | [Agents bornés en Lean](GameTheory-06f-Bounded-Agents-Lean.ipynb) | La borne de raisonnement formalisée et exécutée en Lean | Lean | Recherche |
-| 06g bis | [Équilibres par simulation](GameTheory-06g-Simulation-Based-Program-Equilibria-Python.ipynb) | Équilibres de programmes qui se simulent mutuellement | Python | Recherche |
-| 06h | [Institutions transparentes](GameTheory-06h-Transparent-Institutions-Python.ipynb) | La transparence du code comme mécanisme d'engagement institutionnel | Python | Recherche |
-| 06k | [FairBot par Löb](GameTheory-06k-FairBot-Loeb-Lean.ipynb) | Le module `ProgramGames.FairBot` du lake exécuté : coopération mutuelle FairBot × FairBot par le théorème de Löb, inexploitabilité sous fiabilité, le contraste L1/L2 avec `probeBot` | Lean | Recherche |
+La lettre `06i` ne descend pas : elle est la théorie des issues de tout l'escalier — c'est elle qui reçoit, en fin de lecture, les deux vols (jeux répétés ; agents transparents et bornés) et la greffe N-personnes.
+
+La lettre `06k` reste également en racine : ajoutée après la réorganisation, elle prolonge le chantier côté formel — [FairBot par Löb](GameTheory-06k-FairBot-Loeb-Lean.ipynb) exécute le module `ProgramGames.FairBot` du lake `game_theory_lean` (coopération mutuelle FairBot × FairBot par le théorème de Löb, inexploitabilité sous fiabilité, contraste L1/L2 avec `probeBot`), là où les `_toy` du 06e restaient des heuristiques déclarées et où le 06g s'arrête explicitement avant Löb. Noyau Lean, public Recherche — il ne se lit pas comme un support de cours mais comme un carnet de recherche.
 
 ### Autour de 08 — jeux combinatoires
 
@@ -299,13 +290,23 @@ L'agrégation des préférences (Arrow, vote, manipulation) se poursuit dans la 
 
 La lettre 17c est portée par deux notebooks ; la passe de renommage leur donnera des lettres distinctes.
 
-### Escalier Dynamics — biens publics et dilemmes N-personnes
+### Escalier Dynamics — de la répétition aux institutions
 
-Palier extrait de la série 3 (accretion `03e-Plan-de-deformation` d'avant la renumérotation) : la table périodique de Robinson-Goforth reste l'épigraphe, mais le passage à N agents et à des fonctions de bénéfice non-linéaires constitue un objet mathématique distinct — il ne varie plus la géométrie de l'espace des jeux 2×2, il en sort.
+Escalier descendu du palier 06 (note de conception : commentaire `6108947569` sur #20316) : la **porte** reste [GameTheory-06 nu](GameTheory-06-EvolutionTrust-Python.ipynb) en racine, et les marches se lisent en **deux vols et une greffe** — jeux répétés (01-03), agents transparents et bornés (04-08), biens publics N-personnes (09). Le **capstone [06i](GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) reste en racine** : c'est la théorie des issues de tout l'escalier. La table complète — ce que chaque marche ajoute à la précédente, et la gradation #15615 en colonne — vit dans [le README du dossier](Dynamics/README.md).
 
-| Carnet | Notebook | Ce qu'il ajoute | Noyau | Public |
-|--------|----------|-----------------|-------|--------|
-| Dynamics-09 | [Biens publics non-linéaires](Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) | Archetti-Scheuring 2012 (JTB 299 : 9-20) : sans assortiment, un équilibre polymorphe stable coexiste ; les 78 profils 2×2 de Rapoport-Guyer servent de carte d'entrée, le plan `(k, s)` de déformation porte la dynamique N-personnes. | Python | Licence |
+| Carnet | Notebook | Vol | Gradation |
+|--------|----------|-----|-----------|
+| Dynamics-01 | [Jeux répétés et Folk Theorem](Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb) · [C#](Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb) | Jeux répétés | Moyenne |
+| Dynamics-02 | [Jeux répétés en Lean](Dynamics/Dynamics-02-Jeux-Repetes-Lean-Python.ipynb) | Jeux répétés | Haute |
+| Dynamics-03 | [Sympathie contre engagement](Dynamics/Dynamics-03-Sympathie-vs-Engagement-Python.ipynb) | Jeux répétés | Haute |
+| Dynamics-04 | [Open-source game theory](Dynamics/Dynamics-04-Open-Source-Game-Theory-Python.ipynb) | Agents transparents | Haute |
+| Dynamics-05 | [Agents bornés](Dynamics/Dynamics-05-Agents-Bornes-Python.ipynb) · [Lean](Dynamics/Dynamics-05-Agents-Bornes-Lean.ipynb) | Agents bornés | Haute / Très haute |
+| Dynamics-06 | [Preuves bornées et coût du raisonnement](Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb) | Agents bornés | Haute |
+| Dynamics-07 | [Équilibres par simulation](Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb) | Agents transparents | Haute |
+| Dynamics-08 | [Institutions transparentes](Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb) | Agents transparents | Très haute |
+| Dynamics-09 | [Biens publics non-linéaires](Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) | Greffe N-personnes | Haute |
+
+Palier extrait de la série 3 (accrétion `03e-Plan-de-deformation` d'avant la renumérotation) pour la marche 09 : la table périodique de Robinson-Goforth reste l'épigraphe, mais le passage à N agents et à des fonctions de bénéfice non-linéaires constitue un objet mathématique distinct — il ne varie plus la géométrie de l'espace des jeux 2×2, il en sort.
 ## Parcours transverses
 
 Quatre itinéraires qui traversent paliers et lettres pour un public précis.
@@ -569,7 +570,9 @@ La série aligne simulation numérique et preuve formelle : les notebooks motive
 | `game_theory_lean` (module SocialChoice) | Impossibilité d'Arrow, caractérisation de Sen | SocialChoice 01b |
 | `game_theory_lean` (module CooperativeGames) | Bondareva-Shapley sans `sorry` (#3954), Core non vide sous équilibrage | 15, 15b |
 | `game_theory_lean` (module StableMarriage) | Gale-Shapley : existence et optimalité côté proposant | 15b, 16 |
-| `game_theory_lean` (module RepeatedGames) | Grim trigger certifié sans `sorry` (#4880) ; le Folk Theorem complet reste ouvert (`Folk.lean`) | 06b, 06c |
+| `game_theory_lean` (module RepeatedGames) | Grim trigger certifié sans `sorry` (#4880) ; le Folk Theorem complet reste ouvert (`Folk.lean`) | Dynamics 01, 02 |
+| `game_theory_lean` (module ProgramGames) | Bornes sur les agents à programme (Bounded) ; FairBot (sans consommateur — See #20379) | Dynamics 05, 06 |
+| `game_theory_lean` (module Abstraction) | Hiérarchie d'abstraction des jeux — module orphelin, consommateur naturel : Metajeux-03 (See #20380) | — |
 | `game_theory_lean` (module Swaps) | Certificat du plus court chemin de swaps | 03a |
 | `minimax_lean` | Théorème minimax de von Neumann, via Sion | 05b |
 | `lean_game_defs`, `lean_game_defs_ext` | Types de jeux partagés ; Vickrey sans `sorry` | 02b, 08b, 11b, 17d |
