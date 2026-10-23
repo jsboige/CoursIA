@@ -1,6 +1,8 @@
 name: Runner starvation advisory (lean)
 
-# Sonde d'extinction du label `coursia-lean` (issue #14846, grain c.1063 myia-po-2027).
+# Sonde d'extinction d'un pool de runners self-hosted (issue #14846, grain c.1063
+# myia-po-2027) -- vise `coursia-ephemeral` depuis le 2026-10-23 (le label
+# `coursia-lean` qu'elle mesurait n'existe plus, cf plus bas).
 #
 # Correction #22183 (2026-10-23) : le paragraphe qui etait ici affirmait que
 # le label `coursia-waiter` n'etait « plus couvert depuis #20835 / #17436,
@@ -19,8 +21,21 @@ name: Runner starvation advisory (lean)
 # draine pas), parametre par `--label`. `coursia-linux` est couvert par son
 # workflow dedie (`linux-runner-starvation-advisory.yml`, cron 19,49) et
 # `coursia-waiter` par le sien (`coursia-waiter-starvation-advisory.yml`,
-# cron 11,41, livre par #22183) ; `coursia-lean` est le seul label sous
-# surveillance par CETTE sonde -- les builds Lean restent un goulet serieux.
+# cron 11,41, livre par #22183).
+#
+# LE LABEL `coursia-lean` N'EXISTE PLUS (mesure 2026-10-23T18:45Z) :
+# `gh api .../actions/runners` rend 40 runners tous online, repartis en
+# `coursia-ephemeral` (24), `coursia-linux` (23), `coursia-waiter` (16),
+# `coursia-persistent` (7), `coursia-fast-guards` (1) -- et ZERO porteur de
+# `coursia-lean`. Aucun `runs-on` de main ne route plus vers lui : les jambes
+# Lean sont passees a `[self-hosted, coursia-ephemeral, coursia-linux]`.
+# Cette sonde le mesurait encore et rougissait donc a chaque passage depuis
+# le 2026-10-22 (succes 17:20Z, echec 20:37Z) avec
+# `EXTINCTION ... (offline: aucun)` -- le rouge permanent que la garde anti-FP
+# du predicat STARVATION interdit ailleurs. Elle vise desormais
+# `coursia-ephemeral`, le pool qui sert effectivement les jobs Lean ; son
+# seul membre hors `coursia-linux` est `myia-po-2024-fast-guards`, qu'aucune
+# autre sonde ne surveille.
 #
 # Pourquoi une sonde et pas un check bloquant : un seul cron centralise
 # l'observabilite, la sonde partage la fenetre STARVATION et le secret
@@ -34,7 +49,7 @@ name: Runner starvation advisory (lean)
 #   - predicat STARVATION : si jobs queued > seuil SANS aucun in_progress ->
 #     ::error:: (symptome distinct de l'extinction -- file profonde qui ne
 #     draine pas)
-#   - WARN floor configurable par label (lean = 1)
+#   - WARN floor configurable par label (ephemeral = 2)
 #
 # Acceptance A2 (persistance systemd) deja livree par PR #15401 (lean).
 # Acceptance A3 (verification systemctl is-enabled po-2024) -> DM coord,
@@ -65,7 +80,7 @@ jobs:
     # Ce job portait ce commentaire : « un observateur qui tourne sur le label
     # qu'il observe mourrait avec lui ». Le raisonnement est juste, la
     # conclusion ne l'etait pas -- `coursia-linux` n'est pas un abri, c'est une
-    # deuxieme jambe du MEME parc que `coursia-lean`.
+    # deuxieme jambe du MEME parc que l'ancien `coursia-lean`.
     # Changer de label ne change pas de risque : une reconstruction d'image
     # invalide les deux ensembles (le garde de fraicheur de #14801 est
     # fail-closed et compare le checkout vivant a l'image), et plus aucune des
@@ -85,8 +100,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - label: coursia-lean
-            warn_floor: 1
+          - label: coursia-ephemeral
+            warn_floor: 2
             starve_minutes: "15"
     steps:
       - uses: actions/checkout@v4
