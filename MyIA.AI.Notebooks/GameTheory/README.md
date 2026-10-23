@@ -249,7 +249,7 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
 | 11b | [Vickrey en Lean](GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) | Le théorème de Vickrey (enchère au second prix : dire la vérité est dominant) prouvé sans `sorry` dans le lake `lean_game_defs_ext` | Lean | Licence |
-| 11c | [Jeux globaux (Kay-Perry)](GameTheory-11c-Global-Games-Python.ipynb) | La coordination à information incomplète : un signal bruité du fondamental commun **détruit la multiplicité de Nash** (équilibre unique à probabilité interne) et **sélectionne de façon robuste** l'accord efficace quand le bruit s'amenuise | Python | Licence |
+| 11c | [Jeux globaux (Kay-Perry)](GameTheory-11c-Global-Games-Python.ipynb) | La coordination à information incomplète : un signal bruité du fondamental commun **expulse les équilibres de coordination aveugle vers les queues du prior** (mesurés : `±12.2` à `σ = 0.05`, disparus à `σ ≥ 0.8` ; l'unique `k* = 0` reste exact par symétrie) et **sélectionne de façon robuste** l'accord efficace quand le bruit s'amenuise (efficacité `0.973` à `σ = 0.05`) | Python | Licence |
 
 ### Autour de 13 — information imparfaite
 
