@@ -616,6 +616,112 @@ def test_scrub_outputs_repo_regex_does_not_span_newlines(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# --outputs mode: machine-local paths inside data["text/html"] payloads.
+# .NET Interactive ranges its exception payloads as display_data with a
+# text/html body, so a checkout-root path can sit in a COMMITTED output
+# while every text/plain stays clean (issue #21735: Sudoku-15-Infer-CSharp
+# passed ``--scan --outputs`` with 0 finding while carrying
+# ``D:\\Dev\\CoursIA-19240-abis\\...`` twice in cell 51's html payload).
+# ---------------------------------------------------------------------------
+
+def _write_nb_with_html_output(path, source_line, html_text, plain_text=None):
+    """Write a 1-cell notebook whose display_data output carries `html_text`
+    in data["text/html"] (the .NET Interactive exception channel)."""
+    data = {"text/html": [html_text]}
+    if plain_text is not None:
+        data["text/plain"] = [plain_text]
+    nb = {
+        "cells": [
+            {
+                "cell_type": "code",
+                "source": [source_line],
+                "outputs": [
+                    {"output_type": "display_data", "data": data, "metadata": {}}
+                ],
+                "execution_count": 51,
+                "metadata": {},
+            }
+        ],
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+    path.write_text(json.dumps(nb, indent=1, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
+def test_find_output_defects_counts_html_leak_with_clean_plain(tmp_path):
+    """A machine path in data["text/html"] is DETECTED even when text/plain
+    is clean -- the exact #21735 defect shape (base Sudoku-15-Infer-CSharp
+    passed the canonical scan with 0 finding because only text/plain was
+    inspected)."""
+    p = _write_nb_with_html_output(
+        tmp_path / "nb.ipynb",
+        "var solve = new SudokuSolver();",
+        '<table class="netisi-ErrorTable"><tr><td>Unhandled exception. '
+        "System.IO.FileNotFoundException: Could not load file or assembly. "
+        "Path: D:\\Dev\\CoursIA-19240-abis\\MyIA.AI.Notebooks\\Sudoku\\"
+        "CompiledModels\\SudokuSolve.dll</td></tr></table>",
+        plain_text="System.IO.FileNotFoundException: file not found",
+    )
+    assert find_output_path_defects(str(p)) == 1
+
+
+def test_scrub_outputs_anonymizes_html_exception_payload(tmp_path):
+    """--outputs --apply replaces the checkout-root path inside the html
+    payload with <repo> and touches NOTHING else: the table markup, the
+    exception type, the repo-relative tail and the source cell all survive."""
+    p = _write_nb_with_html_output(
+        tmp_path / "nb.ipynb",
+        "var solve = new SudokuSolver();",
+        '<table class="netisi-ErrorTable"><tr><td>Unhandled exception. '
+        "System.IO.FileNotFoundException: Could not load file or assembly. "
+        "Path: D:\\Dev\\CoursIA-19240-abis\\MyIA.AI.Notebooks\\Sudoku\\"
+        "CompiledModels\\SudokuSolve.dll</td></tr></table>",
+    )
+    before = p.read_text(encoding="utf-8")
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 1
+    assert fixed >= 1
+
+    after = p.read_text(encoding="utf-8")
+    # parsed html payload: machine-local checkout root gone, tail + markup kept
+    html_after = "".join(
+        json.loads(after)["cells"][0]["outputs"][0]["data"]["text/html"]
+    )
+    assert "D:\\Dev\\CoursIA-19240-abis" not in html_after
+    assert "<repo>MyIA.AI.Notebooks\\Sudoku\\CompiledModels\\SudokuSolve.dll" in html_after
+    assert '<table class="netisi-ErrorTable">' in html_after
+    assert "System.IO.FileNotFoundException" in html_after
+    # source cell byte-identical
+    assert json.loads(after)["cells"][0]["source"] == ["var solve = new SudokuSolver();"]
+    # the ONLY change on disk is the checkout-root substring (JSON-doubled
+    # backslashes) -> <repo>
+    assert before.replace("D:\\\\Dev\\\\CoursIA-19240-abis\\\\", "<repo>") == after
+
+
+def test_scrub_outputs_html_ignores_docs_and_program_files_urls(tmp_path):
+    """Legit .NET URLs inside an html payload must NOT be touched: the
+    patterns require a home segment (Users/home) or a CoursIA checkout
+    segment, so docs.microsoft.com links and file:///C:/Program Files/...
+    runtime paths survive byte-identical (#21735 acceptance: lock it)."""
+    html = (
+        '<div>See <a href="https://docs.microsoft.com/en-us/dotnet/api/'
+        'system.io.filenotfoundexception">the docs</a>. Runtime resolved to '
+        '<code>file:///C:/Program Files/dotnet/shared/Microsoft.NETCore.App/'
+        '8.0.11/System.Private.CoreLib.dll</code></div>'
+    )
+    p = _write_nb_with_html_output(tmp_path / "nb.ipynb", "show()", html)
+    before = p.read_text(encoding="utf-8")
+
+    found, fixed = scrub_output_paths(str(p), apply=True)
+    assert found == 0
+    assert fixed == 0
+    assert p.read_text(encoding="utf-8") == before
+
+
+# ---------------------------------------------------------------------------
 # CLI contract: --apply accepts a LIST of paths (the pre-commit-hook wiring).
 # pre-commit runs `... scrub_papermill_paths.py --apply <file1> <file2> ...`
 # with pass_filenames: true, so the tool must fix every staged notebook in a
