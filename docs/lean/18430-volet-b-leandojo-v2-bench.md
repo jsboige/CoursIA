@@ -100,13 +100,22 @@ mesurés puis corrigés dans le shim du banc :
 | 2 | **Parser upstream une-ligne** | Branche `"claude"` de `external_parser.post_process_output` : `.split("lean")[-1].split("```")[0].split("\n")[1]` — **tronque toute sortie à une ligne**. La preuve entière brute est multi-ligne (fence comprise) ; le banc du 12/10 n'en recevait qu'une. La branche `deepseek` du même parser garde la preuve complète — bug copy-paste upstream. | `_extract_whole_proof` (module) : dés-enveloppe le bloc fence, préserve le multi-ligne — sémantique de la branche deepseek, appliquée au shim sans toucher au package. |
 | 3 | **Blocs `<think>` avant la fence** | Run corrigé du 2026-10-20 : claude-opus-4.7 via openrouter peut ouvrir sa sortie d'un bloc de raisonnement `<think>...</think>` **avant** la fence — l'extracteur du correctif 2 ne regardait que le début de chaîne et rendait le bloc entier au `check_compile` (échec de parse de transport, pas un verdict d'organe). | `_extract_whole_proof` retire d'abord les blocs think (regex DOTALL), puis prend le **dernier** bloc fence s'il existe. |
 
-Pins : `scripts/tests/test_leandojo_v2_bench.py` (28 tests) — l'émulation
-compte chaque sous-requête (`gen.calls`), ne part jamais `"n": k` dans le
-payload, s'arrête net sur budget épuisé ou erreur ; le parser injecté dans
-les tests **imite la branche claude réelle** et le test exige que la preuve
-entière lui survive.
+Pins : `scripts/tests/test_leandojo_v2_bench.py` — l'émulation compte chaque
+sous-requête **partie** (`gen.calls`, réponse en erreur et échec de transport
+compris), ne part jamais avec `"n": k` dans le payload, et s'arrête net sur
+budget épuisé ou erreur ; le parser injecté dans les tests **imite la branche
+claude réelle** — le test exige que la preuve entière lui survive, et que le
+**dernier** bloc fence gagne même lorsqu'une phrase finale le suit ou qu'un
+bloc le précède.
 
-### Run corrigé (2026-10-20, `results_20261020b/`) — verdicts d'organe sur les deux modes
+### Run corrigé (2026-10-20) — verdicts d'organe sur les deux modes
+
+Provenance : chiffres publiés le 2026-10-20 dans le fil de référence,
+[#1453, commentaire 6300672049](https://github.com/jsboige/CoursIA/issues/1453#issuecomment-6300672049).
+Le répertoire de sortie de ce run était un scratch local, **non préservé** (il
+n'a jamais existé dans l'arbre) : les chiffres restent tracés par ce
+commentaire, et le run se rejoue par la commande du §6 — le rejeu daté du
+2026-10-23 est versé ci-dessous en agrégé committé.
 
 | Mode | success | appels LLM | durée | terminaison |
 |---|---|---|---|---|
@@ -124,6 +133,21 @@ le noyau rejette. L'écart au verdict maison (FAILED 1 925,1 s / timeout du
 budget) est rapporté dans le fil #1453 : mêmes verdicts FAIL des deux côtés,
 mais des chemins d'effort d'un ordre de grandeur d'écart (recherche soutenue
 plan/revert de 1 925 s contre épuisement du générateur en 28,5 s).
+
+### Rejeu du 2026-10-23 (parser corrigé) — agrégé committé
+
+Agrégé vérifiable : `scripts/results/leandojo_v2_bench_rung52_2026-10-23.json`
+(même rung, même modèle, mêmes budgets, commande du §6).
+
+| Mode | success | appels LLM | durée | terminaison |
+|---|---|---|---|---|
+| pas-à-pas | non | 12 | 38,8 s | `generator_exhausted` |
+| preuve entière | non | 1 | 18,6 s | `compile_error` (noyau) |
+
+Verdicts et terminaisons identiques à ceux du 2026-10-20 ; seules les durées
+diffèrent (échantillonnage LLM). En preuve entière, la sortie extraite est
+multi-ligne — la troncature une-ligne ne se reproduit pas sur le parser
+corrigé.
 
 ## 6. Reproduction (machine po-2024)
 

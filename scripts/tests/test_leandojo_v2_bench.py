@@ -565,3 +565,76 @@ def test_generate_whole_proof_returns_full_proof(monkeypatch, bench):
     proof = gen.generate_whole_proof("theorem t : True := by")
     assert proof.count("\n") == 1  # deux lignes : pas de troncature une-ligne
     assert "case1 => rfl" in proof
+
+
+def test_extract_whole_proof_trailing_prose_takes_block(bench):
+    # Contre-exemple reproduit par l'adjoint le 2026-10-23 (crible de
+    # 23ce570697) : un bloc fence FERME suivi d'une phrase finale rendait la
+    # fence de cloture ET la phrase. La branche ``startswith`` ne retirait la
+    # derniere ligne que si c'etait une fence, donc le contrat annonce dans
+    # la docstring (<< on prend le DERNIER bloc fence >>) n'etait pas tenu
+    # des que la sortie ne finissait pas sur la fence.
+    raw = "```lean\n  rfl\n```\nCette preuve est correcte."
+    assert bench._extract_whole_proof(raw) == "rfl"
+
+
+def test_extract_whole_proof_two_blocks_takes_last(bench):
+    # Second contre-exemple du meme crible : deux blocs fences successifs
+    # rendaient le PREMIER bloc et les fences intermediaires, au lieu du
+    # dernier bloc.
+    raw = "```lean\n  simp\n```\n```lean\n  rfl\n```"
+    assert bench._extract_whole_proof(raw) == "rfl"
+
+
+def test_post_counts_error_response_in_calls(monkeypatch, bench):
+    # << Chaque sous-requete compte dans gen.calls >> (body #21672, comptabilite
+    # honnete) : une reponse API en erreur est une sous-requete PARTIE, donc
+    # comptee. Le compteur restait a 1 pour 2 requetes emises.
+    _inject_factory_deps(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "cle-de-test")
+    gen = bench._make_openrouter_generator(deadline=time.monotonic() + 60.0)
+
+    state = {"n": 0}
+
+    class _OkResp:
+        @staticmethod
+        def json():
+            return {"choices": [{"message": {"content": "rfl"}}]}
+
+    class _ErrResp:
+        @staticmethod
+        def json():
+            return {"error": {"message": "rate limited"}}
+
+    def fake_post(_url, headers=None, json=None, timeout=None):
+        state["n"] += 1
+        return _OkResp() if state["n"] == 1 else _ErrResp()
+
+    import requests as _requests
+
+    monkeypatch.setattr(_requests, "post", fake_post)
+    outs = gen._post("prompt", n=4, max_tokens=256)
+    assert outs == ["rfl"]
+    assert gen.calls == 2  # 1 succes + 1 erreur API : deux requetes parties
+
+
+def test_post_counts_transport_failure_in_calls(monkeypatch, bench):
+    # Une sous-requete dont le transport echoue est partie aussi : elle
+    # compte, et l'exception remonte inchangee.
+    _inject_factory_deps(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "cle-de-test")
+    gen = bench._make_openrouter_generator(deadline=time.monotonic() + 60.0)
+
+    def fake_post(_url, headers=None, json=None, timeout=None):
+        raise ConnectionError("transport down")
+
+    import requests as _requests
+
+    monkeypatch.setattr(_requests, "post", fake_post)
+    try:
+        gen._post("prompt", n=1, max_tokens=256)
+    except ConnectionError:
+        pass
+    else:  # pragma: no cover - la remontee est le comportement attendu
+        raise AssertionError("l'exception de transport doit remonter")
+    assert gen.calls == 1

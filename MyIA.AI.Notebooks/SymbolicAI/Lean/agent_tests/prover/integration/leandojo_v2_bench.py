@@ -182,27 +182,32 @@ def _extract_whole_proof(output: str) -> str:
 
     Les formes observees passent : bloc fence ferme, bloc non termine,
     sortie nue, think + fence (mesure 2026-10-20).
+
+    Correction du 2026-10-23 (crible adjoint de ``23ce570697``, #21672) : la
+    branche ``startswith`` court-circuitait le contrat ci-dessus des que la
+    sortie ne finissait PAS sur la fence. Deux contre-exemples reproduits :
+    une fence fermee suivie d'une phrase finale rendait la fence ET la
+    phrase ; deux blocs successifs rendaient le PREMIER bloc et les fences
+    intermediaires. Le contrat vaut desormais pour toutes les formes -- le
+    dernier bloc FERME gagne, et seule une fence non terminee (aucun bloc
+    ferme dans le texte) est des-envelopee ligne a ligne.
     """
     import re
 
     text = output.strip()
     # blocs de raisonnement retires (un ou plusieurs, non imbriques)
-    text = re.sub(r"<think>.*?</think>\s*", "", text, flags=re.DOTALL)
-    if text.startswith("```"):
-        lines = text.splitlines()
-        # ligne d'ouverture (``` ou ```lean) retiree
-        if lines and lines[0].startswith("```"):
-            lines = lines[1:]
-        # derniere ligne de fermeture retiree si presente
-        if lines and lines[-1].strip().startswith("```"):
-            lines = lines[:-1]
-        text = "\n".join(lines)
-        return text.strip()
-    # pas de fence a l'ouverture : derniere fence du texte, sinon brute
+    text = re.sub(r"<think>.*?</think>\s*", "", text, flags=re.DOTALL).strip()
+    # dernier bloc fence FERME, qu'il ouvre le texte ou qu'il le suive : ni
+    # une phrase finale ni un bloc precedent ne doit l'emporter.
     fenced = re.findall(r"```(?:lean)?\s*\n(.*?)```", text, flags=re.DOTALL)
     if fenced:
         return fenced[-1].strip()
-    return text.strip()
+    # aucun bloc ferme : fence NON TERMINEE (le modele s'est arrete dans le
+    # bloc). On retire la ligne d'ouverture et on rend le reste.
+    lines = text.splitlines()
+    if lines and lines[0].lstrip().startswith("```"):
+        return "\n".join(lines[1:]).strip()
+    return text
 
 
 def _make_openrouter_generator(deadline: Optional[float] = None):
@@ -252,8 +257,9 @@ def _make_openrouter_generator(deadline: Optional[float] = None):
             # choix pour les modeles Anthropic malgre "n": k -- le generateur
             # v2 attend n echantillons par pas. On repete la requete jusqu'a
             # n choix, chaque sous-requete bornee par la deadline residuelle
-            # (jamais de rafale hors budget). Une erreur API ou une reponse
-            # vide interrompt : on rend les choix deja collectes.
+            # (jamais de rafale hors budget) ET comptee dans self.calls des
+            # qu'elle est partie, erreur API comprise. Une erreur API ou une
+            # reponse vide interrompt : on rend les choix deja collectes.
             collected: list[str] = []
             while len(collected) < n:
                 timeout = transport_timeout_s(deadline_remaining(self.deadline))
@@ -271,13 +277,21 @@ def _make_openrouter_generator(deadline: Optional[float] = None):
                     "top_p": 0.9,
                     "n": 1,
                 }
-                data = requests.post(
-                    self.API_URL, headers=headers, json=payload, timeout=timeout
-                ).json()
+                try:
+                    response = requests.post(
+                        self.API_URL, headers=headers, json=payload, timeout=timeout
+                    )
+                finally:
+                    # Comptee des que la sous-requete est PARTIE, quel que
+                    # soit le sort du transport (comptabilite honnete du
+                    # body #21672 ; crible adjoint du 2026-10-23 : le
+                    # compteur restait a 1 pour 2 requetes emises, parce que
+                    # la reponse en erreur sortait avant l'increment).
+                    self.calls += 1
+                data = response.json()
                 if data.get("error"):
                     logger.error(f"erreur openrouter: {data['error']}")
                     break
-                self.calls += 1
                 choices = [c["message"]["content"] for c in data.get("choices", [])]
                 if not choices:
                     break
