@@ -2092,6 +2092,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/groupe-I2-contre-arguments-aspic/I2_Contre_arguments_ASPIC.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-01-Sendov-Lean-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02-Tao-Lean-Python.ipynb"
+    - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-02b-Entropie-Shannon-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-04-PFR-Primitives-Python.ipynb"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-05-KLS-Lean-Python.ipynb"
