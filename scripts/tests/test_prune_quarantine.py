@@ -208,17 +208,29 @@ class TestQuarantineWorktreeModules:
         assert (pmw.worktree_gitdir(str(wt)) / "modules" / "A").is_dir(), (
             "un refus ne deplace rien")
 
-    def test_modules_vide_refuse(self, tmp_path):
-        """Un `modules/` sans sous-gitdir ne preserve rien : on le dit."""
+    def test_modules_vide_refuse_et_restaure(self, tmp_path):
+        """Un `modules/` sans sous-gitdir ne preserve rien : on le dit, et
+        le deplacement est ANNULE -- un refus laisse le depot dans l'etat
+        ou la passe l'a trouve (review #22094, point 2)."""
         wt = _real_worktree(tmp_path)
-        (pmw.worktree_gitdir(str(wt)) / "modules").mkdir()
+        modules = pmw.worktree_gitdir(str(wt)) / "modules"
+        modules.mkdir()
         ok, msg, info = pmw.quarantine_worktree_modules(
             str(wt), tmp_path / "q", "dest")
         assert ok is False
         assert msg == "quarantine-empty-modules"
         assert info["preserved"] is False
+        assert info["restored"] is True
+        assert modules.is_dir(), "le modules/ vide est de retour au worktree"
+        assert not (tmp_path / "q" / "dest").exists(), (
+            "la destination vide ne reste pas en quarantaine"
+        )
 
-    def test_submodule_en_alternates_refuse_et_rien_ne_bouge(self, tmp_path):
+    def test_submodule_en_alternates_refuse_et_restaure(self, tmp_path):
+        """Preuve non tenue (alternates) : retrait annule ET modules/
+        retourne au worktree. Sans restauration, une passe ulterieure
+        sans le drapeau retirerait le worktree puis la purge detruirait
+        les seuls objets restants (review #22094, point 2)."""
         wt = _real_worktree(tmp_path)
         modules = _bare_submodules(wt, ["A"])
         (modules / "A" / "objects" / "info" / "alternates").write_text(
@@ -228,6 +240,30 @@ class TestQuarantineWorktreeModules:
         assert ok is False
         assert msg == "quarantine-unreadable:objects-alternates"
         assert info["preserved"] is False
+        assert info["restored"] is True
+        assert (modules / "A").is_dir(), "le gitdir du sous-module est rendu"
+        assert not (tmp_path / "q" / "dest").exists()
+
+    def test_restauration_echouee_est_une_panne_nommee(self, tmp_path,
+                                                       monkeypatch):
+        """Si le deplacement inverse echoue, l'etat est incoherent (objets
+        en quarantaine, worktree non decontamine) : le message le nomme,
+        c'est le seul refus de quarantaine qui sortira en erreur."""
+        wt = _real_worktree(tmp_path)
+        modules = _bare_submodules(wt, ["A"])
+        # La preuve doit echouer (alternates) pour atteindre la branche de
+        # restauration ; c'est elle qu'on fait echouer a son tour.
+        (modules / "A" / "objects" / "info" / "alternates").write_text(
+            "/ailleurs\n", encoding="utf-8")
+        monkeypatch.setattr(
+            pmw, "_restore_modules_from_quarantine",
+            lambda dest_root, modules_dir: (False, "restore-move-failed:x"),
+        )
+        ok, msg, info = pmw.quarantine_worktree_modules(
+            str(wt), tmp_path / "q", "dest")
+        assert ok is False
+        assert msg == "quarantine-restore-failed:restore-move-failed:x"
+        assert info is None
 
     def test_racine_dans_le_worktree_refusee_avant_tout_deplacement(
             self, tmp_path):
@@ -238,6 +274,70 @@ class TestQuarantineWorktreeModules:
         assert ok is False
         assert msg == "quarantine-root-inside-worktree"
         assert (pmw.worktree_gitdir(str(wt)) / "modules" / "A").is_dir()
+
+
+# ---------------------------------------------------------------------------
+# Refus de quarantaine a l'apply : decision (exit 0 + decompte), panne
+# nommee seulement si la restauration echoue (review #22094, point 3)
+# ---------------------------------------------------------------------------
+
+
+class TestQuarantineRefusalExitCode:
+    def _run_main(self, monkeypatch, q_result, capsys):
+        """main() in-process : un statut REMOVE a sous-modules dont la
+        decontamination est bouchonnee, resolution PR hors disque."""
+        status = _make_status_apply()
+        monkeypatch.setattr(pmw, "list_worktrees", lambda: [
+            {"path": status.path, "branch": status.branch}])
+        monkeypatch.setattr(pmw, "probe_gh_availability", lambda: None)
+        monkeypatch.setattr(
+            pmw, "diagnose_worktree",
+            lambda path, cur, **kwargs: status)
+        monkeypatch.setattr(
+            pmw, "get_pr_resolution",
+            lambda: pmw.PrResolution(cache_path=None))
+        monkeypatch.setattr(
+            pmw, "quarantine_worktree_modules", lambda *a, **k: q_result)
+        monkeypatch.setattr(
+            sys, "argv",
+            ["prune_merged_worktrees.py", "--apply", "--json"])
+        rc = pmw.main()
+        out = json.loads(capsys.readouterr().out)
+        return rc, out
+
+    def test_refus_de_quarantaine_sort_en_0_avec_son_decompte(
+            self, monkeypatch, capsys):
+        rc, out = self._run_main(monkeypatch, (
+            False, "quarantine-empty-modules",
+            {"quarantine": None, "modules": [], "preserved": False,
+             "restored": True},
+        ), capsys)
+        assert rc == 0, "un refus est une decision, pas une panne (#3895)"
+        assert out["applied"] == 0
+        assert out["apply_errors"] == 0
+        assert out["apply_quarantine_refusals"] == 1
+        assert out["apply_results"][0]["applied"] is False
+        assert "quarantine-refused:quarantine-empty-modules" == \
+            out["apply_results"][0]["stderr"]
+
+    def test_restauration_echouee_sort_en_2(self, monkeypatch, capsys):
+        """Seul cas d'erreur : le modules/ n'a pas pu etre rendu, l'etat
+        est incoherent -- la tache planifiee doit le voir."""
+        rc, out = self._run_main(monkeypatch, (
+            False, "quarantine-restore-failed:restore-move-failed:x", None,
+        ), capsys)
+        assert rc == 2
+        assert out["apply_errors"] == 1
+        assert out["apply_quarantine_refusals"] == 0
+
+
+def _make_status_apply():
+    return pmw.WorktreeStatus(
+        path="C:/fake/apply0", branch="fix/X", is_current=False,
+        pr_state="MERGED", pr_number=999, pr_url=None, ahead_count=0,
+        has_source_dirty=False, untracked_paths=[], decision="REMOVE",
+        refusal_reason=None, has_submodules=True,
+    )
 
 
 # ---------------------------------------------------------------------------

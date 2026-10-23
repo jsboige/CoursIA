@@ -813,6 +813,39 @@ def _gitdir_is_readable(gitdir: Path) -> tuple[bool, str]:
     return True, ""
 
 
+def _restore_modules_from_quarantine(
+    dest_root: Path,
+    modules_dir: Path,
+) -> tuple[bool, str]:
+    """Remet le `modules/` deplace a sa place, apres un refus post-deplacement.
+
+    Un refus qui laisse le `modules/` en quarantaine casse la chaine de
+    surete : une passe suivante, meme SANS le drapeau, ne verrait plus le
+    garde `contains_submodules` (le gitdir n'a plus de `modules/`),
+    retirerait le worktree -- et `--purge-quarantine` detruirait alors les
+    seuls objets restants. Le refus doit rendre le depot dans l'etat ou
+    la passe l'a trouve. Retourne (ok, message).
+    """
+    dest_modules = dest_root / "modules"
+    if not dest_modules.is_dir():
+        return False, "restore-source-absent"
+    if modules_dir.exists():
+        return False, "restore-target-exists"
+    try:
+        shutil.move(str(dest_modules), str(modules_dir))
+    except (OSError, shutil.Error) as exc:
+        return False, f"restore-move-failed:{exc}"
+    # Deplacement inverse VERIFIE : le repertoire est de retour et rien ne
+    # reste cote quarantaine.
+    if not modules_dir.is_dir() or dest_modules.exists():
+        return False, "restore-unverified"
+    try:
+        dest_root.rmdir()
+    except OSError:
+        pass  # la racine porte le marqueur ; le reste eventuel se purge par la voie nommee
+    return True, ""
+
+
 def quarantine_worktree_modules(
     wt_path: str,
     quarantine_root: Path,
@@ -824,7 +857,11 @@ def quarantine_worktree_modules(
     Retourne (ok, message, infos). Les infos portent le chemin de
     quarantaine et la preuve de preservation par sous-module. En cas
     d'echec, AUCUN retrait ne doit suivre : l'appelant traite l'echec
-    comme un refus de retrait.
+    comme un refus de retrait. Un echec POST-deplacement (modules vide,
+    preuve non tenue) RESTAURE le modules/ au worktree -- un refus laisse
+    le depot dans l'etat ou la passe l'a trouve ; seul un echec de cette
+    restauration (`quarantine-restore-failed`, etat incoherent) est une
+    panne pour l'appelant.
     """
     gitdir = worktree_gitdir(wt_path)
     if gitdir is None:
@@ -860,25 +897,47 @@ def quarantine_worktree_modules(
     try:
         shutil.move(str(modules_dir), str(dest_modules))
     except (OSError, shutil.Error) as exc:
+        # Un deplacement echoue peut laisser une copie partielle en
+        # quarantaine : si le modules/ source n'est plus la, on rend ce qui
+        # a bouge avant de refuser.
+        if dest_modules.is_dir() and not modules_dir.exists():
+            restored, r_why = _restore_modules_from_quarantine(
+                dest_root, modules_dir)
+            if not restored:
+                return False, f"quarantine-restore-failed:{r_why}", None
         return False, f"quarantine-move-failed:{exc}", None
 
     # Preuve de preservation, sous-module par sous-module.
     moved = _submodule_gitdirs(dest_modules)
     if not moved:
         # Le modules/ etait vide : rien a preserver, on le signale plutot
-        # que de pretendre avoir preserve des objets.
+        # que de pretendre avoir preserve des objets. Le deplacement est
+        # ANNULE : un refus laisse le depot dans l'etat ou la passe l'a trouve.
+        restored, r_why = _restore_modules_from_quarantine(
+            dest_root, modules_dir)
+        if not restored:
+            return False, f"quarantine-restore-failed:{r_why}", None
         return False, "quarantine-empty-modules", {
-            "quarantine": str(dest_root), "modules": [], "preserved": False,
+            "quarantine": None, "modules": [], "preserved": False,
+            "restored": True,
         }
     proofs: list[dict] = []
     for sub in moved:
         ok, why = _gitdir_is_readable(sub)
         proofs.append({"gitdir": str(sub), "readable": ok, "reason": why})
         if not ok:
+            # Preuve non tenue : le retrait n'aura pas lieu ET le modules/
+            # retourne au worktree (sinon une passe ulterieure sans le
+            # drapeau retirerait le worktree puis la purge perdrait les objets).
+            restored, r_why = _restore_modules_from_quarantine(
+                dest_root, modules_dir)
+            if not restored:
+                return False, f"quarantine-restore-failed:{r_why}", None
             return False, f"quarantine-unreadable:{why}", {
-                "quarantine": str(dest_root),
+                "quarantine": None,
                 "modules": proofs,
                 "preserved": False,
+                "restored": True,
             }
     return True, "", {
         "quarantine": str(dest_root),
@@ -2828,6 +2887,7 @@ def main() -> int:
     apply_results: list[dict] = []
     refused_count = 0
     removal_count = 0
+    quarantine_refused_count = 0
     error_count = 0
     if args.apply:
         for s in statuses:
@@ -2863,7 +2923,15 @@ def main() -> int:
                         "cleaned_artifacts": cleaned,
                         "quarantine": quarantine_info or {"error": q_msg},
                     })
-                    error_count += 1
+                    # Un refus de quarantaine (modules/ rendu au worktree,
+                    # retrait annule) est une DECISION de l'organe : exit 0,
+                    # avec son decompte -- pas une panne. Seul l'echec de la
+                    # restauration, qui laisse un etat incoherent (objets
+                    # en quarantaine, worktree non decontamine), sort en 2.
+                    if q_msg.startswith("quarantine-restore-failed"):
+                        error_count += 1
+                    else:
+                        quarantine_refused_count += 1
                     continue
             ok, stderr = apply_removal(s)
             apply_results.append({
@@ -2910,6 +2978,7 @@ def main() -> int:
             out["apply_results"] = apply_results
             out["applied"] = removal_count
             out["apply_errors"] = error_count
+            out["apply_quarantine_refusals"] = quarantine_refused_count
         print(json.dumps(out, indent=2, ensure_ascii=False))
     else:
         # Texte
@@ -2918,7 +2987,8 @@ def main() -> int:
                               apply_results=apply_results,
                               gh_unavailable_reason=gh_unavailable_reason))
             print()
-            print(f"applied={removal_count}  errors={error_count}")
+            print(f"applied={removal_count}  errors={error_count}"
+                  f"  quarantine_refusals={quarantine_refused_count}")
         else:
             print(render_text(statuses, dry_run=True,
                               gh_unavailable_reason=gh_unavailable_reason))
