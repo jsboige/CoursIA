@@ -209,8 +209,18 @@ def _run_json(args: list[str]) -> "dict | None":
     text = (proc.stdout or "").strip()
     if not text:
         return None
-    # Certains organes prependent une ligne d'usage API : on prend la
-    # derniere ligne qui parse comme objet JSON.
+    # Les organes delegues sortent soit un JSON sur une ligne, soit un
+    # bloc indent unique (check_unaddressed_nits et check_run_state
+    # impriment indent=1, multi-lignes par construction) : on tente le
+    # texte entier d'abord, sinon ces blocs ne sont jamais lus.
+    try:
+        whole = json.loads(text)
+        if isinstance(whole, dict):
+            return whole
+    except json.JSONDecodeError:
+        pass
+    # Repli : certains organes prependent une ligne d'usage API ; on prend
+    # la derniere ligne qui parse comme objet JSON.
     for line in reversed(text.splitlines()):
         line = line.strip()
         if not line.startswith("{"):

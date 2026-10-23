@@ -18,6 +18,8 @@ Run : python -m pytest scripts/tests/test_approved_without_dossier.py
 """
 from __future__ import annotations
 
+import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -192,3 +194,52 @@ def test_l_aplatissement_conserve_head_et_merge_state():
     assert parsed[0]["head"] == HEAD
     assert parsed[0]["merge_state"] == "UNKNOWN"
     assert awd.approval_verdict(parsed[0]) == "at_head"
+
+
+# --- _run_json contre les sorties REELLES des organes delegues (review #22102) ---
+#
+# Hermes a prouve que le scan « derniere ligne commencant par { » ne lit
+# JAMAIS check_unaddressed_nits (31 lignes, indent=1) ni check_run_state
+# (483 lignes, indent=1) : seule la premiere ligne commence par « { » (elle
+# est seule), json.loads("{") echoue, _run_json rend None et les probes
+# b0/checks fail-close en « unreadable » sur CHAQUE run. Ces temoins
+# nourrissent _run_json avec ces formes reelles.
+
+
+def _fake_subprocess(stdout: str):
+    def fake_run(cmd, **kwargs):
+        return subprocess.CompletedProcess(cmd, 0, stdout=stdout, stderr="")
+
+    return fake_run
+
+
+def test_run_json_lit_un_bloc_indent_multi_lignes(monkeypatch):
+    # Forme reelle de check_run_state.py --json : json.dumps(..., indent=1).
+    payload = {
+        "head": HEAD,
+        "latest": {"Build": {"conclusion": "success"}},
+        "residual_reds": [],
+    }
+    bloc = json.dumps(payload, indent=1, ensure_ascii=False)
+    assert len(bloc.splitlines()) >= 4  # bien un bloc multi-lignes
+    monkeypatch.setattr(awd.subprocess, "run", _fake_subprocess(bloc))
+    assert awd._run_json(["organe", "--pr", "7"]) == payload
+
+
+def test_run_json_garde_le_repli_ligne_d_usage_prependee(monkeypatch):
+    # Cas documente du repli : une ligne d'usage PUIS un JSON sur une ligne.
+    out = "usage: organe --pr N --json\n" + json.dumps({"blocked": False})
+    monkeypatch.setattr(awd.subprocess, "run", _fake_subprocess(out))
+    assert awd._run_json(["organe"]) == {"blocked": False}
+
+
+def test_run_json_ligne_unique_sans_usage(monkeypatch):
+    # Forme reelle de check_adjoint_prevalidation.py --json : une seule ligne.
+    out = json.dumps({"ready": False, "verdict": "NO_DOSSIER"})
+    monkeypatch.setattr(awd.subprocess, "run", _fake_subprocess(out))
+    assert awd._run_json(["organe"]) == {"ready": False, "verdict": "NO_DOSSIER"}
+
+
+def test_run_json_sortie_illisible_rend_none(monkeypatch):
+    monkeypatch.setattr(awd.subprocess, "run", _fake_subprocess("panic: boom"))
+    assert awd._run_json(["organe"]) is None
