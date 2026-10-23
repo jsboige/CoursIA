@@ -20,7 +20,6 @@ name: Slides Composition PR Relay
 
 on:
   pull_request:
-    branches: [ main ]
     types: [ opened, synchronize, reopened ]
     paths: [ "slides/**" ]
   workflow_dispatch:
