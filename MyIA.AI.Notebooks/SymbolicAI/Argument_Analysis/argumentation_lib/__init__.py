@@ -86,10 +86,21 @@ from argumentation_lib._reporting_noop import (
 # The DEPENDENCY NOTICE of the verbatim file announces the CoursIA shim
 # as the re-routing point; the alias below IS that route. The verbatim
 # copy stays byte-for-byte intact.
-from argumentation_lib import _tweety_initializer as _tweety_initializer_module
-sys.modules.setdefault(
-    "argumentation_lib.tweety_initializer", _tweety_initializer_module
-)
+# The alias must not make the PACKAGE jpype-mandatory: `_tweety_initializer`
+# imports jpype at module load, and the CPU-only jobs do not install it. The
+# eager registration below therefore degrades gracefully — without jpype the
+# AF layer is already unavailable, but the rest of the package (and the test
+# modules that import it) must stay importable. Regression observed on
+# `Scripts Tests (CPU)`: six Argument_Analysis modules failed at collection
+# with `ModuleNotFoundError: No module named 'jpype'`.
+try:
+    from argumentation_lib import _tweety_initializer as _tweety_initializer_module
+except ImportError:  # pragma: no cover - depends on the jpype availability
+    _tweety_initializer_module = None
+else:
+    sys.modules.setdefault(
+        "argumentation_lib.tweety_initializer", _tweety_initializer_module
+    )
 
 # -- Runner (requires semantic_kernel) --
 def get_analysis_runner():
