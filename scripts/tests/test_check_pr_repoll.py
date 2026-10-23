@@ -147,3 +147,23 @@ def test_10_build_parser_format_help_does_not_crash() -> None:
         "le help= doit etre ecrit sans % non echappe susceptible d'etre "
         "interprete par argparse comme un format"
     )
+
+
+def test_11_cli_record_signal_trace_le_signal_dans_le_registre(
+        ledger: Path, capsys: pytest.CaptureFixture) -> None:
+    """Point 2 Hermes (#21249) : la surface CLI `record --signal` doit etre testee.
+
+    Seuls `evaluate()` et un registre ecrit a la main couvraient les signaux
+    arbitraires : un signal trace PAR LA CLI (monitor, notification, ...) ne
+    passait par aucun test, alors que c'est la voie dont l'aide en ligne
+    parle. Le test couvre le round-trip complet : la CLI ecrit, le registre
+    porte le signal, et la relecture est liberee par ce signal.
+    """
+    assert main(["--ledger", str(ledger), "record", "1234", "--signal", "monitor"]) == 0
+    assert "+signal:monitor" in capsys.readouterr().out
+    data = json.loads(ledger.read_text(encoding="utf-8"))
+    kinds = [s["kind"] for s in data["1234"]["signals"]]
+    assert kinds == ["monitor"], kinds
+    # le signal trace par la CLI libere la relecture (frais : at >= last_read)
+    assert main(["--ledger", str(ledger), "check", "1234"]) == 0
+    assert "changement d'etat" in capsys.readouterr().out
