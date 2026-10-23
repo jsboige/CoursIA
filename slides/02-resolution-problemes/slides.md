@@ -842,11 +842,17 @@ algorithme génétique (selection, reproduction, mutation, retour meilleur indiv
 
 ---
 
+<style scoped>
+.slidev-layout { font-size: 0.85em; }
+.slidev-layout img { height: 230px !important; width: auto !important; }
+h2 { margin-top: 0.2em !important; margin-bottom: 0.1em !important; }
+</style>
+
 # Algorithme génétique pour les 8 reines
 
-<img src="./images/img_031.png" style="display:block; margin:8px auto; max-height:35vh;" alt="Algorithme génétique: population, fitness, sélection, crossover, mutation" />
+<img src="./images/img_031.png" style="display:block; margin:4px auto;" alt="Algorithme génétique: population, fitness, sélection, crossover, mutation" />
 
-<img src="./images/img_032.png" style="display:block; margin:8px auto; max-height:20vh;" alt="Croisement 8 reines" />
+<img src="./images/img_032.png" style="display:block; margin:4px auto;" alt="Croisement 8 reines" />
 
 ## Phenotype
 
@@ -1308,6 +1314,12 @@ Go, Échecs (AlphaZero), planification en jeux partiellement observables.
 
 ---
 
+<style scoped>
+.slidev-layout { font-size: 0.8em; }
+h2 { font-size: 1.05em !important; margin-top: 0.25em !important; margin-bottom: 0.1em !important; }
+li { margin: 0.1em 0; }
+</style>
+
 # Résumé -- Jeux
 
 ## Décisions optimales
@@ -1714,6 +1726,13 @@ layout: section
 Le TP de fin de semestre propose de coder un service web de résolution de CSPs — l'étudiant choisit une variante (backtracking, propagation, exploration locale) et la branche sur un problème de son choix. Le corpus fournit **plusieurs points d'entrée documentés** (cf. ancres in-slide dans les sections ci-dessus) : exploration informée, exploration locale, CSPs et Sudoku. Pour un démarrage rapide, [`App-1-NQueens.ipynb`](https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb) implémente déjà trois solveurs (backtracking, min-conflicts, CP-SAT via OR-Tools) et compare leur passage à l'échelle N=8, 10, 12.
 
 ---
+
+<style scoped>
+.slidev-layout { font-size: 0.78em; }
+h2 { font-size: 1.05em !important; margin-top: 0.2em !important; margin-bottom: 0.1em !important; }
+li { margin: 0.15em 0; }
+p { margin: 0.3em 0; }
+</style>
 
 # N-Queens : ce que le corpus démontre
 
