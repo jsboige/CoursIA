@@ -53,7 +53,7 @@ $kernelJson = @"
 "@
 
 $kernelFile = "$kernelPath\kernel.json"
-# `Out-File -Encoding utf8` ecrit un BOM sous PowerShell 5.1 : le kernel.json
+# `Out-File` avec l'encodage `utf8` ecrit un BOM sous PowerShell 5.1 : le kernel.json
 # produit est alors refuse par les parseurs JSON stricts, et le wrapper check du
 # depot echoue sur "Unexpected UTF-8 BOM (decode using utf-8-sig)". On ecrit
 # donc en UTF-8 SANS BOM, forme lisible par tous les parseurs.
