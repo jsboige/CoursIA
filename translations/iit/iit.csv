@@ -1436,7 +1436,7 @@ morphodynamique centrale : une forme stable occupe un large bassin (seuil
 d'invasion eleve).
 
 La théorie (grim trigger, seuil $\delta \ge (T-R)/(T-P)$, Folk theorem) est
-traitée **par renvoi** a [GameTheory-6c](../../GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb)
+traitée **par renvoi** a [GameTheory-6c](../../GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb)
 (merge `182bf33cc`) et au lake formel `game_theory_lean/RepeatedGames`
 ([#4880](https://github.com/jsboige/CoursIA/issues/4880)). Ce notebook **verifie
 numériquement** ses prévisions au lieu de re-dériver la théorie.
