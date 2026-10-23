@@ -44,7 +44,6 @@ name: solution-leak-guard
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - '**.ipynb'
       - 'scripts/notebook_tools/audit_solution_leaks.py'
