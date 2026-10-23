@@ -59,4 +59,4 @@ jobs:
       - name: Summary on failure
         if: failure()
         run: |
-          echo "::error::Au moins un lien interne du site publie ne resout pas (voir la sortie JSON de l'etape precedente). Ce garde est advisory : il ne bloque aucune PR."
+          echo "::error::Garde des liens du site publie en echec. Deux causes possibles (voir la sortie de l'etape precedente) : un lien interne ne resout pas (rc 1, lignes BROKEN), ou l'instrument n'a pas pu sonder (rc 2, lignes INSTRUMENT — timeout/DNS/reseau en cours de sonde, ou troncature max_links : verdict incomplet). Une erreur reseau n'est pas un lien casse. Ce garde est advisory : il ne bloque aucune PR."

@@ -144,12 +144,27 @@ def run_check(base_url: str = DEFAULT_BASE_URL,
         return result
 
     for url in sorted(links)[:max_links]:
+        # Symetrie avec fetch_text : une erreur reseau en cours de sonde
+        # (timeout, reset, DNS) est un defaut d'instrument, jamais un lien
+        # casse — sinon le traceback ferait sortir le process en rc 1.
+        try:
+            status = probe_status(url, timeout)
+        except (urllib.error.URLError, OSError) as exc:
+            result.instrument_errors.append(f"probe failed: {url} ({exc})")
+            continue
         result.checked += 1
-        status = probe_status(url, timeout)
         if 200 <= status < 400:
             result.ok += 1
         else:
             result.broken.append({"url": url, "status": status})
+
+    if len(links) > max_links:
+        # Troncature signalee, pas silencieuse : le verdict ne couvre alors
+        # pas tout le site, ce qui est par definition un verdict d'instrument
+        # incomplet (rc 2), pas un vert.
+        result.instrument_errors.append(
+            f"truncated: {len(links)} liens extraits, borne max_links="
+            f"{max_links} — verdict incomplet, augmenter la borne")
     return result
 
 

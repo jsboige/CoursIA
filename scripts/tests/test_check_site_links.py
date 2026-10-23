@@ -91,6 +91,38 @@ def test_run_check_instrument_error_when_critical_page_unreachable(monkeypatch) 
     assert result.checked == 0
 
 
+def test_run_check_instrument_error_when_probe_network_fails(monkeypatch) -> None:
+    """A network error mid-probe is an instrument failure, never a broken link."""
+    import urllib.error
+
+    mod = _load()
+    monkeypatch.setattr(mod, "fetch_text",
+                        lambda url, timeout=None: '<a href="a.html">a</a>')
+
+    def boom(url, timeout=None):
+        raise urllib.error.URLError("timed out")
+
+    monkeypatch.setattr(mod, "probe_status", boom)
+    result = mod.run_check(BASE, ("/",))
+    assert len(result.instrument_errors) == 1
+    assert "probe failed" in result.instrument_errors[0]
+    assert result.checked == 0
+    assert result.broken == []
+
+
+def test_run_check_signals_truncation_beyond_max_links(monkeypatch) -> None:
+    """Beyond max_links the verdict is incomplete: signalled, not silent."""
+    mod = _load()
+    monkeypatch.setattr(mod, "fetch_text",
+                        lambda url, timeout=None: '<a href="a.html">a</a>'
+                                                  '<a href="b.html">b</a>')
+    monkeypatch.setattr(mod, "probe_status", lambda url, timeout=None: 200)
+    result = mod.run_check(BASE, ("/",), max_links=1)
+    assert any(err.startswith("truncated:") for err in result.instrument_errors)
+    assert result.checked == 1
+    assert result.broken == []
+
+
 def test_main_exit_codes(monkeypatch) -> None:
     """main() maps the three states to 0 / 1 / 2."""
     mod = _load()
