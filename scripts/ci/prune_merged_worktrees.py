@@ -472,16 +472,76 @@ def _repo_root_for_worktree(wt_path: str) -> str:
     return current_repo_root()
 
 
+GH_TIMEOUT_SECONDS = 30
+
+
 def run_gh(*args: str, check: bool = True) -> subprocess.CompletedProcess:
-    """Lance une commande gh avec capture stricte. cwd = CWD courant."""
-    return subprocess.run(
-        ["gh", *args],
-        capture_output=True,
-        text=True,
-        check=check,
-        encoding="utf-8",
-        errors="replace",
-    )
+    """Lance une commande gh avec capture stricte. cwd = CWD courant.
+
+    #21753 : borne a GH_TIMEOUT_SECONDS. Un gh muet (quota epuise au point
+    de ne plus repondre, reseau mort, binaires bloques) devenait une passe
+    interminable et silencieuse -- mesure 21/10 : `--apply` pendu ~2 h, 0
+    octet de sortie. Un timeout devient un echec DETECTE (rc=124, stderr
+    explicite), jamais une attente infinie : l'appelant tranche.
+    """
+    try:
+        return subprocess.run(
+            ["gh", *args],
+            capture_output=True,
+            text=True,
+            check=check,
+            encoding="utf-8",
+            errors="replace",
+            timeout=GH_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        # CompletedProcess manuel : on ne veut PAS lever (check n'a plus de
+        # sens sur un timeout), on veut un echec nomme que les appelants
+        # check=False traduisent deja en degradation / RuntimeError.
+        return subprocess.CompletedProcess(
+            args=list(args),
+            returncode=124,
+            stdout="",
+            stderr=(
+                f"gh timeout after {GH_TIMEOUT_SECONDS}s: gh "
+                + " ".join(str(a) for a in args)
+            ),
+        )
+
+
+def probe_gh_availability() -> Optional[str]:
+    """Sonde d'identite gh locale (#21753). Rend None si gh est pret.
+
+    `gh auth token` est purement local (lecture de hosts.yml) : pas de
+    reseau, pas de quota, ~50 ms. Rend une RAISON lisible sinon. Le stdout
+    de la sonde est un JETON : il est jete sans jamais etre affiche ni
+    logge -- le detail ne vient que du stderr (derniere ligne, 120 chars).
+    """
+    try:
+        proc = subprocess.run(
+            ["gh", "auth", "token"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=GH_TIMEOUT_SECONDS,
+        )
+    except FileNotFoundError:
+        return "gh introuvable sur ce siege"
+    except subprocess.TimeoutExpired:
+        return f"gh auth token muet apres {GH_TIMEOUT_SECONDS}s"
+    except OSError as e:
+        return f"gh auth token injoignable ({e.__class__.__name__})"
+    if proc.returncode != 0:
+        stderr_lines = (proc.stderr or "").strip().splitlines()
+        detail = (
+            stderr_lines[-1][:120] if stderr_lines
+            else f"rc={proc.returncode}"
+        )
+        return f"gh auth token rc={proc.returncode} ({detail})"
+    if not (proc.stdout or "").strip():
+        return "gh auth token vide (aucun jeton actif)"
+    return None
 
 
 def is_untracked_artifact(path: str) -> bool:
@@ -1106,6 +1166,10 @@ class PrResolution:
         self._entries: dict = {}
         self._cache_dirty = False
         self._index: Optional[dict] = None
+        # #21753 : pose par main() quand la sonde d'identite gh echoue.
+        # Non-None => mode degrade : le cache disque (git-independant)
+        # repond encore, tout etage gh est saute.
+        self.unavailable_reason: Optional[str] = None
         self.stats = {
             "cache_hits": 0,
             "listing_calls": 0,
@@ -1213,6 +1277,11 @@ class PrResolution:
         if cached is not None:
             self.stats["cache_hits"] += 1
             return cached
+        if self.unavailable_reason is not None:
+            # #21753 mode degrade : aucun etage gh n'est tente. Le cache
+            # disque reste lu (il ne depend pas de gh), le reste rend
+            # None -- le fail-CLOSED downstream produit no_gh_unverifiable.
+            return None
         index = self._build_index()
         if branch in index:
             row = index[branch]
@@ -1555,7 +1624,8 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
 
 def diagnose_worktree(wt_path: str, current_path: str,
                       head_sha: Optional[str] = None,
-                      activity_window_h: float = 6.0) -> WorktreeStatus:
+                      activity_window_h: float = 6.0,
+                      gh_unavailable_reason: Optional[str] = None) -> WorktreeStatus:
     """Diagnostic complet d'un worktree.
 
     `head_sha` (fourni par `list_worktrees`, porcelain) sert uniquement a
@@ -1564,6 +1634,13 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
     `activity_window_h` : fenetre de la garde « agent vivant » (#18494),
     appliquee au retrait par contenu deja integre (predicat content_on_main).
+
+    `gh_unavailable_reason` (#21753) : raison de degradation posee par
+    main() quand la sonde d'identite gh echoue. Non-None => aucun appel gh
+    n'est tente depuis ce diagnostic : la resolution PR rend None (le
+    singleton court-circuite aussi), les predicats git-only (ascendance,
+    patch-id) decident seuls, et le refus conservateur terminal se nomme
+    `no_gh_unverifiable` -- jamais confondu avec « pas de PR ».
     """
     info = get_worktree_info(wt_path, current_path)
 
@@ -1735,17 +1812,21 @@ def diagnose_worktree(wt_path: str, current_path: str,
         )
 
     # Resolution PR
+    # #21753 : en mode degrade, aucune recherche n'est tentée -- le
+    # singleton court-circuite aussi (main() lui a pose la raison), ce
+    # garde evite l'appel depuis tout diagnose direct.
     pr = None
     if info["branch"]:
-        pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
-        if pr is None:
-            # #17771 predicat 1 : la branche locale porte un nom different
-            # de la tete de PR. On resout la PR par la branche distante qui
-            # porte exactement HEAD (upstream explicite, puis tip exact
-            # origin/*). Pas de PR de ce cote non plus -> on continue.
-            remote_head = remote_head_for_head(wt_path, info["branch"], head_sha)
-            if remote_head:
-                pr = lookup_pr_for_branch(remote_head, head_sha=head_sha)
+        if gh_unavailable_reason is None:
+            pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
+            if pr is None:
+                # #17771 predicat 1 : la branche locale porte un nom different
+                # de la tete de PR. On resout la PR par la branche distante qui
+                # porte exactement HEAD (upstream explicite, puis tip exact
+                # origin/*). Pas de PR de ce cote non plus -> on continue.
+                remote_head = remote_head_for_head(wt_path, info["branch"], head_sha)
+                if remote_head:
+                    pr = lookup_pr_for_branch(remote_head, head_sha=head_sha)
     elif detached_head_is_on_main(wt_path):
         # Extraction de main (demeure d'organe, lecture de review) : aucune
         # PR ne la porte, le critere « PR MERGED » ne s'y applique pas.
@@ -1767,7 +1848,13 @@ def diagnose_worktree(wt_path: str, current_path: str,
             lane_owner=info.get("lane_owner"),
         )
     else:
-        pr = lookup_pr_for_detached_head(wt_path)
+        # #21753 : en mode degrade, la resolution par sujet de HEAD est
+        # gh par construction (voie 1 = pr view, voie 2 = pr list) -- on
+        # ne la tente meme pas.
+        if gh_unavailable_reason is None:
+            pr = lookup_pr_for_detached_head(wt_path)
+        else:
+            pr = None
 
     pr_state = pr.get("state") if pr else None
     pr_number = pr.get("number") if pr else None
@@ -1952,6 +2039,13 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
     # Pas de PR trouvee : HEAD detaché sans correspondance, ou branche
     # non pushée qu'on ne peut pas relier. REFUSE conservatrice.
+    # #21753 : en mode degrade, ce refus ne dit pas « pas de PR » (non
+    # mesure) mais « non verifiable faute de gh » -- la classe
+    # no_gh_unverifiable est aggree comme les autres au breakdown.
+    if gh_unavailable_reason is not None:
+        final_reason = "no_gh_unverifiable"
+    else:
+        final_reason = "no_pr_match" if info["branch"] else "detached_no_match"
     return WorktreeStatus(
         path=wt_path,
         branch=info["branch"],
@@ -1963,7 +2057,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
         has_source_dirty=info["has_source_dirty"],
         untracked_paths=info["untracked"],
         decision="REFUSE",
-        refusal_reason="no_pr_match" if info["branch"] else "detached_no_match",
+        refusal_reason=final_reason,
         has_submodules=info["has_submodules"],
         blocking_untracked=info.get("blocking_untracked", []),
         ignored_extra=info.get("ignored_extra", []),
@@ -2136,6 +2230,7 @@ def render_text(
     statuses: list[WorktreeStatus],
     dry_run: bool,
     apply_results: Optional[list[dict]] = None,
+    gh_unavailable_reason: Optional[str] = None,
 ) -> str:
     """Rendu texte canonique (lisible humain) (#14476).
 
@@ -2145,6 +2240,10 @@ def render_text(
     Si `git worktree remove` a echoue (worktree sale par exemple), on
     imprime `FAILED` avec le stderr -- c'est lisible, factuel, et JAMAIS
     mensonger sur ce qui a effectivement quitte le disque.
+
+    `gh_unavailable_reason` (#21753) : quand la sonde d'identite gh a
+    echoue, la premiere ligne est une banniere explicite -- une passe
+    degradee ne doit JAMAIS se lire comme un constat de PRs ouvertes.
     """
     # Indexation par path pour une reconciliation O(1)
     applied_by_path = {}
@@ -2153,6 +2252,16 @@ def render_text(
             applied_by_path[r["path"]] = r
 
     lines: list[str] = []
+    if gh_unavailable_reason is not None:
+        degraded_n = sum(
+            1 for s in statuses
+            if s.refusal_reason == "no_gh_unverifiable"
+        )
+        lines.append(
+            f"gh unavailable on this seat — PR lookups skipped, "
+            f"{degraded_n} worktrees in degraded mode "
+            f"({gh_unavailable_reason})"
+        )
     counts = {"REMOVE": 0, "REFUSE": 0, "SKIP_CURRENT": 0, "FAILED": 0}
     for s in statuses:
         counts[s.decision] = counts.get(s.decision, 0) + 1
@@ -2397,14 +2506,23 @@ def main() -> int:
         print(f"ERROR: {e}", file=sys.stderr)
         return 2
 
+    # #21753 : sonde d'identite gh AVANT toute resolution PR. Locale et
+    # gratuite (~50 ms, pas de quota). Echec => mode degrade declare :
+    # banniere en tete du rapport, `degraded: true` dans le JSON, refus
+    # terminaux nommes no_gh_unverifiable -- la passe ne se tait jamais.
+    gh_unavailable_reason = probe_gh_availability()
+    if gh_unavailable_reason is not None:
+        get_pr_resolution().unavailable_reason = gh_unavailable_reason
+
     statuses: list[WorktreeStatus] = []
     for wt in worktrees:
         try:
             statuses.append(
-                enforce_lock_policy(
+enforce_lock_policy(
                     diagnose_worktree(
                         wt["path"], current_path, head_sha=wt.get("head_sha"),
                         activity_window_h=args.activity_window_h,
+                        gh_unavailable_reason=gh_unavailable_reason,
                     ),
                     wt.get("locked_reason"),
                 )
@@ -2459,6 +2577,8 @@ def main() -> int:
                 1 for s in statuses if s.decision == "SKIP_CURRENT"
             ),
             "dry_run": not args.apply,
+            "degraded": gh_unavailable_reason is not None,
+            "gh_unavailable_reason": gh_unavailable_reason,
             "api_stats": get_pr_resolution().stats,
             # v1.3 : chemins des worktrees REMOVE-ready dont le lock
             # d'agent a ete reconnu mort (l'apply les deverrouille puis
@@ -2477,11 +2597,14 @@ def main() -> int:
     else:
         # Texte
         if args.apply:
-            print(render_text(statuses, dry_run=False, apply_results=apply_results))
+            print(render_text(statuses, dry_run=False,
+                              apply_results=apply_results,
+                              gh_unavailable_reason=gh_unavailable_reason))
             print()
             print(f"applied={removal_count}  errors={error_count}")
         else:
-            print(render_text(statuses, dry_run=True))
+            print(render_text(statuses, dry_run=True,
+                              gh_unavailable_reason=gh_unavailable_reason))
         # Budget API de la passe (#15369) : la mesure est un livrable, pas
         # un side-effect silencieux.
         st = get_pr_resolution().stats

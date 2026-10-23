@@ -143,6 +143,7 @@
       "display-name": "finiteness_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
       "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lakefile.lean",

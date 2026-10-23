@@ -8,7 +8,7 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 
 | # | Notebook | Source / écho | Outil |
 |---|----------|---------------|-------|
-| 01 | *(à venir)* | Le mémoire de 1859 : zeta et l'hypothèse — produit eulérien, prolongement, premiers zéros sur la ligne critique | mpmath (`zetazero`) |
+| 01 | [01-zeta-1859.ipynb](01-zeta-1859.ipynb) | Le mémoire de 1859 : zeta et l'hypothèse — produit eulérien **mesuré** (somme vs produit au même seuil, vitesses comparées), prolongement et équation fonctionnelle vérifiée (~1e-31), les dix premiers zéros calculés et **vérifiés comme zéros** (\|ζ(ρₖ)\| ~ 1e-30, symétrie s↔1-s mesurée), hypothèses pré-enregistrées (H1 vitesse du produit CONFIRMÉE, H2 comptage Riemann–von Mangoldt CONFIRMÉ, H3 écarts GUE : moyenne CONFIRMÉE, version forte REFUTÉE) | mpmath (`zetazero`) |
 | 02 | *(à venir)* | La formule explicite — ψ(x) = x − Σ ρ⁻ˣ/ρ : les zéros font « la musique des premiers » | mpmath |
 | 03 | [03-series-rearrangement.ipynb](03-series-rearrangement.ipynb) | Thèse d'habilitation (1854) : séries de Riemann et théorème de réarrangement — convergence conditionnelle mesurée, preuve gloutonne exécutable, hypothèses pré-enregistrées (H1 vitesse, H2 proportion, H3 fini vs infini et série harmonique aléatoire) | Python stdlib + matplotlib |
 | 04 | [04-integrale-riemann.ipynb](04-integrale-riemann.ipynb) | L'intégrale de Riemann — née de la même thèse d'habilitation ; sommes de Darboux et **loi de fermeture de l'écart** mesurée (hypothèse pré-enregistrée : écart × n → (b−a)·V), témoins de Dirichlet (écart constant = 1) et de Thomae (écart → 0 malgré des discontinuités denses), fonction R(x) = Σ sin(n²x)/n² de 1854 (continue, dérivable en certains rationnels seulement — Hardy 1916, Gerver 1970) | Python stdlib + matplotlib |
@@ -23,7 +23,7 @@ Le versant **preuves** vit dans le lake compagnon [`riemann200_lean/`](riemann20
 
 ## Conventions
 
-- Français d'abord, calcul en stdlib pur (aucune dépendance au-delà de matplotlib pour les figures) — mêmes conventions que Serre 100.
+- Français d'abord, calcul en stdlib pur (aucune dépendance au-delà de matplotlib pour les figures) — mêmes conventions que Serre 100. Exception déclarée par la ligne d'outils de l'EPIC : les grains R-01/R-02 utilisent **mpmath** (`zetazero`), seul recours au-delà de la stdlib dans la série.
 - ≥ 3 exercices C.1 par notebook (convention [#2161](https://github.com/jsboige/CoursIA/issues/2161)), exécution complète commitée (C.2).
 - Chaque hypothèse quantitative est **pré-enregistrée** avant sa mesure, et le verdict — y compris REFUTÉ — reste dans la sortie.
 - Verdict SOTA écrit au body de chaque PR ([#3801](https://github.com/jsboige/CoursIA/issues/3801)).
