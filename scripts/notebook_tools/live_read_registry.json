@@ -97,6 +97,24 @@
       "cell_id": "cell-17",
       "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/FltRoute.lean",
       "note": "Compte de lignes et table des declarations de FltRoute.lean ; trouvee par l'invariant inverse apres fusion de main"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-15b-Lean-Grothendieck.ipynb",
+      "cell_id": "lean13b-project-overview",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck.lean",
+      "note": "Vue d'ensemble du projet -- compte des lignes du module racine Grothendieck.lean (#22129)"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb",
+      "cell_id": "chsh-code-inv",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSH.lean",
+      "note": "Inventaire des declarations reelles de CHSH.lean et CHSHRandomized.lean -- comptes de lignes et numeros L<n> (#22129)"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-16c-Conway-Free-Will-Theorem.ipynb",
+      "cell_id": "chsh-code-inv",
+      "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSHRandomized.lean",
+      "note": "Seconde source lue par la meme cellule : ses citations L43-L167 sont celles de CHSHRandomized.lean, pas de CHSH.lean (#22129)"
     }
   ]
 }
