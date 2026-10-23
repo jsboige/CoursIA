@@ -326,6 +326,45 @@ def test_20249_classify_without_now_keeps_scheduled_live() -> None:
     assert len(out["live"]) == 1
 
 
+def test_20249_cli_replay_without_now_keeps_scheduled_live(tmp_path: Path) -> None:
+    """#20249 review -- the CLI replay path, not just classify_runs.
+
+    main() used to resolve `now` unconditionally (wall clock) and pass it
+    to classify_runs on every path, `--input` included: replaying the same
+    prior-analysis snapshot at D+0 and at D+10 rendered different verdicts
+    once a scheduled/workflow_run live entry crossed SCHEDULED_ORPHAN_HOURS.
+    The fix keeps the classification instant None on a replay without an
+    explicit --now, so the verdict survives replay unchanged (#13966).
+    """
+    analysis = {
+        "cutoff": "2026-08-20",
+        "verdict": "CLEAN",
+        "counts": {"total": 1, "ghosts": 0, "live": 1, "parse_failures": 0},
+        "snapshot_size": 1,
+        "ghosts": [],
+        "live": [
+            {"id": 1, "name": "starvation-advisory",
+             "created_at": "2026-10-07T15:08:59Z", "event": "workflow_run",
+             "head_branch": "main", "html_url": "https://gh/live/1"},
+        ],
+        "parse_failures": [],
+    }
+    snapshot = tmp_path / "replay.json"
+    snapshot.write_text(json.dumps(analysis), encoding="utf-8")
+    proc = _run("--input", str(snapshot))
+    # created_at is fixed and already > 168 h old at any wall clock after
+    # 2026-10-14: with a wall-clock classification instant this flips to
+    # scheduled-orphan -> STALE_FLOOR / exit 1. The frozen replay stays
+    # CLEAN / exit 0.
+    assert proc.returncode == 0, (
+        f"expected EXIT_OK=0 (CLEAN), got {proc.returncode}; stderr={proc.stderr}"
+    )
+    body = json.loads(proc.stdout)
+    assert body["verdict"] == "CLEAN"
+    assert body["counts"]["live"] == 1
+    assert body["counts"]["ghosts"] == 0
+
+
 def test_18215_classify_replayed_reason_is_authoritative() -> None:
     """A synthesized ghost entry with `_ghost_reason` replays as that class.
 

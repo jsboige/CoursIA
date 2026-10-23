@@ -680,10 +680,13 @@ def main(argv: list[str] | None = None) -> int:
                 and run["created_at"] >= args.cutoff
             } - {None})
             pr_states = fetch_pr_states(args.repo, candidates) if candidates else {}
-        # Resolve the reference instant once, before classification: the
-        # scheduled-orphan class needs it (#20249) and the watch bucket
-        # split below reuses it -- a single source avoids two slightly
-        # different "now" values in one run.
+        # Resolve the reference instant once, before classification. An
+        # explicit --now always wins (deterministic replay by instant). A
+        # live run resolves the wall clock. A snapshot replay without --now
+        # keeps now=None for classification: the scheduled-orphan age class
+        # (#20249) is inert offline, so the same snapshot renders the same
+        # verdict at D+0 and at D+10 -- the replay-fidelity property already
+        # guaranteed for parse_failures and _ghost_reason (#13966, #18215).
         if args.now:
             try:
                 now = datetime.fromisoformat(args.now.replace("Z", "+00:00"))
@@ -692,7 +695,7 @@ def main(argv: list[str] | None = None) -> int:
             if now.tzinfo is None:
                 now = now.replace(tzinfo=timezone.utc)
         else:
-            now = datetime.now(timezone.utc)
+            now = None if args.input else datetime.now(timezone.utc)
 
         # stale-runs-on detection: requires --repo (live API), and only
         # for runs whose `path` (the workflow file) and `head_sha` are
@@ -770,8 +773,13 @@ def main(argv: list[str] | None = None) -> int:
             # The watch alarms on live runs only when they are stale AND
             # unknown (#18131): the 2026-09-13 zombies and a saturated
             # pool's fresh backlog are reported, never alarmed on.
-            # `now` was resolved once before classification (see above).
-            parts = split_live(classification["live"], now, args.stale_hours)
+            # The watch split measures report time: on a replay without an
+            # explicit --now the classification instant is None (frozen
+            # verdict above), so split_live ages runs against this
+            # rendering's wall clock.
+            parts = split_live(classification["live"],
+                               now or datetime.now(timezone.utc),
+                               args.stale_hours)
             result["stale_hours"] = args.stale_hours
             result["counts"].update({
                 "known_zombies": len(parts["known_zombies"]),
