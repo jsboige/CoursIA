@@ -586,6 +586,23 @@ def test_extract_whole_proof_two_blocks_takes_last(bench):
     assert bench._extract_whole_proof(raw) == "rfl"
 
 
+def test_extract_whole_proof_accepts_language_tags(bench):
+    # Contre-exemple reproduit par la verification independante du 2026-10-23
+    # (tete 990179f6948) : une fence etiquetee autrement que ``lean`` n'etait
+    # pas reconnue, donc sa ligne de cloture entrait dans la preuve rendue
+    # ("rfl\n```"). L'etiquette est libre, seule la LIGNE fait foi.
+    for tag in ("lean", "lean4", "Lean", "lean4 "):
+        assert bench._extract_whole_proof(f"```{tag}\n  rfl\n```") == "rfl"
+
+
+def test_extract_whole_proof_ignores_backticks_inside_a_lean_string(bench):
+    # Second contre-exemple independant du meme jour : une chaine Lean peut
+    # contenir des backticks. Les prendre pour une cloture tronquait la
+    # preuve a ``have s := "``. Seule une ligne exactement ``` ferme le bloc.
+    raw = "```lean\n" '  have s := "```"\n' "  exact rfl\n" "```"
+    assert bench._extract_whole_proof(raw) == 'have s := "```"\n  exact rfl'
+
+
 def test_post_counts_error_response_in_calls(monkeypatch, bench):
     # << Chaque sous-requete compte dans gen.calls >> (body #21672, comptabilite
     # honnete) : une reponse API en erreur est une sous-requete PARTIE, donc

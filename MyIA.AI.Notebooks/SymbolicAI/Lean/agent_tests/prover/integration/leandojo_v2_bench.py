@@ -191,22 +191,48 @@ def _extract_whole_proof(output: str) -> str:
     intermediaires. Le contrat vaut desormais pour toutes les formes -- le
     dernier bloc FERME gagne, et seule une fence non terminee (aucun bloc
     ferme dans le texte) est des-envelopee ligne a ligne.
+
+    Seconde correction du 2026-10-23 (verification independante de la meme
+    tete, #21672) : la reconnaissance des fences passe du texte brut a la
+    LIGNE. Deux contre-exemples reproduits : `` ```lean4 `` (etiquette autre
+    que ``lean``) n'etait pas reconnue, donc sa cloture entrait dans la
+    preuve rendue ; ``have s := "```"`` etait pris pour une cloture et
+    tronquait la preuve a ``have s := "``.
     """
     import re
 
     text = output.strip()
     # blocs de raisonnement retires (un ou plusieurs, non imbriques)
     text = re.sub(r"<think>.*?</think>\s*", "", text, flags=re.DOTALL).strip()
-    # dernier bloc fence FERME, qu'il ouvre le texte ou qu'il le suive : ni
-    # une phrase finale ni un bloc precedent ne doit l'emporter.
-    fenced = re.findall(r"```(?:lean)?\s*\n(.*?)```", text, flags=re.DOTALL)
-    if fenced:
-        return fenced[-1].strip()
+    # Fences reconnues PAR LIGNE, jamais par regex sur le texte brut
+    # (mesure 2026-10-23, verification independante de #21672). Une regex
+    # `` ```(?:lean)?\n(.*?)``` `` prend les backticks d'une chaine Lean pour
+    # une cloture -- ``have s := "```"`` tronquait la preuve a ``have s := "``
+    # -- et ignore toute etiquette autre que ``lean`` : `` ```lean4 `` n'etait
+    # pas reconnue, donc la cloture etait rendue dans la preuve.
+    #
+    # Ouverture = ligne dont la forme decapee COMMENCE par ``` (l'etiquette
+    # est libre) ; fermeture = ligne exactement ```. Une fence non terminee
+    # (aucune fermeture avant la fin) s'ouvre au dernier ouvreur rencontre.
+    lines = text.splitlines()
+    blocks: list[list[str]] = []
+    open_at: Optional[int] = None
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if open_at is None:
+            if stripped.startswith("```"):
+                open_at = i
+        elif stripped == "```":
+            blocks.append(lines[open_at + 1:i])
+            open_at = None
+    # dernier bloc FERME, qu'il ouvre le texte ou qu'il le suive : ni une
+    # phrase finale ni un bloc precedent ne doit l'emporter.
+    if blocks:
+        return "\n".join(blocks[-1]).strip()
     # aucun bloc ferme : fence NON TERMINEE (le modele s'est arrete dans le
     # bloc). On retire la ligne d'ouverture et on rend le reste.
-    lines = text.splitlines()
-    if lines and lines[0].lstrip().startswith("```"):
-        return "\n".join(lines[1:]).strip()
+    if open_at is not None:
+        return "\n".join(lines[open_at + 1:]).strip()
     return text
 
 
@@ -258,8 +284,12 @@ def _make_openrouter_generator(deadline: Optional[float] = None):
             # v2 attend n echantillons par pas. On repete la requete jusqu'a
             # n choix, chaque sous-requete bornee par la deadline residuelle
             # (jamais de rafale hors budget) ET comptee dans self.calls des
-            # qu'elle est partie, erreur API comprise. Une erreur API ou une
-            # reponse vide interrompt : on rend les choix deja collectes.
+            # qu'une TENTATIVE de POST est engagee, erreur API comprise. Une
+            # erreur API ou une reponse vide interrompt : on rend les choix
+            # deja collectes. ``calls`` compte des tentatives, pas des
+            # requetes prouvees parties sur le reseau (une resolution DNS ou
+            # un refus de connexion incremente aussi) -- ne pas le lire comme
+            # une mesure de trafic (verification independante #21672).
             collected: list[str] = []
             while len(collected) < n:
                 timeout = transport_timeout_s(deadline_remaining(self.deadline))
@@ -282,11 +312,13 @@ def _make_openrouter_generator(deadline: Optional[float] = None):
                         self.API_URL, headers=headers, json=payload, timeout=timeout
                     )
                 finally:
-                    # Comptee des que la sous-requete est PARTIE, quel que
-                    # soit le sort du transport (comptabilite honnete du
-                    # body #21672 ; crible adjoint du 2026-10-23 : le
-                    # compteur restait a 1 pour 2 requetes emises, parce que
-                    # la reponse en erreur sortait avant l'increment).
+                    # Comptee des que la TENTATIVE de POST est engagee, quel
+                    # que soit le sort du transport (crible adjoint du
+                    # 2026-10-23 : le compteur restait a 1 pour 2 requetes
+                    # emises, parce que la reponse en erreur sortait avant
+                    # l'increment). Une tentative qui echoue avant tout envoi
+                    # (DNS, connexion refusee) compte aussi : c'est un
+                    # compteur de tentatives, pas une mesure de trafic.
                     self.calls += 1
                 data = response.json()
                 if data.get("error"):
