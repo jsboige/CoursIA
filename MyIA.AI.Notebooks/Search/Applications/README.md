@@ -1,10 +1,10 @@
 # Search - Applications
 
-C'est ici que la série Search se confronte au réel. Les notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Trois catégories les organisent — **Adversarial** (jeux combinatoires à deux joueurs), **CSP** (satisfaction de contraintes) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-CSharp, App-7b, App-8-CSharp, App-9b, App-10b, App-11b, App-13b, App-14-CSharp, App-14c, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
+C'est ici que la série Search se confronte au réel. Les notebooks d'application, pour la plupart adaptés de projets étudiants, prennent les algorithmes des Parties 1 et 2 et les mettent face à des problèmes qui ne se laissent pas faire : planifier les gardes d'un service hospitalier, ordonnancer un atelier, construire un calendrier sportif équitable, router une flotte de véhicules. Quatre catégories les organisent — **Adversarial** (jeux combinatoires à deux joueurs), **CSP** (satisfaction de contraintes), **Informed** (recherche informée mono-agent : un espace d'états, des heuristiques admissibles) et **Hybride** (combinaisons de solveurs, modèles exacts et métaheuristiques) — et la plupart sont autonomes, avec des pointeurs vers les prérequis pertinents. À cela s'ajoutent les **jumeaux C#** (App-1b, App-2b, App-3b, App-4b, App-5b, App-6-CSharp, App-7b, App-8-CSharp, App-9b, App-10b, App-11b, App-13b, App-14-CSharp, App-14c, App-15b, App-16-CSharp, App-17b, App-18b, App-19-CSharp, App-20b) qui déroulent les mêmes algorithmes *from-scratch* en .NET, en complément des versions Python qui invoquent des solveurs industriels.
 
 Sous-série d'applications | Python 3.10+ (`ortools`, `python-sat`, `deap`, `mealpy`, `minizinc`, `optuna`, `rustuna`) ; .NET 9 (`dotnet-interactive`) pour les jumeaux C#. Les volumes (notebooks par sous-série, maturité) sont portés par le marqueur `CATALOG-STATUS` du [README de la série](../README.md) — aucun chiffre n'est maintenu ici en prose.
 
-**Règle d'admission** : un notebook entre dans `Applications/` s'il applique un paradigme de la série (recherche adversariale, contraintes, hybridation) à un cas réel ; s'il porte un théorème ou un concept formalisé, il rejoint la partie qui porte ce concept — compagnons de `Part1-Foundations/` (slots lettrés `Search-09x`).
+**Règle d'admission** : un notebook entre dans `Applications/` s'il applique un paradigme de la série (recherche adversariale, contraintes, recherche informée mono-agent, hybridation) à un cas réel ; s'il porte un théorème ou un concept formalisé, il rejoint la partie qui porte ce concept — compagnons de `Part1-Foundations/` (slots lettrés `Search-09x`).
 
 ## Pourquoi cette sous-série
 
@@ -36,7 +36,7 @@ Applications/
 ├── Adversarial/     # Recherche adversariale (Puissance 4 + jumeaux C#)
 ├── CSP/        # Applications CSP (problèmes classiques + jumeaux C#)
 ├── Hybrid/     # Méthodes hybrides / métaheuristiques (+ jumeaux C#)
-└── Search/     # Recherche en espace d'états (puzzles : Rush Hour, A* admissible)
+└── Informed/    # Recherche informée mono-agent (puzzles en espace d'états : Rush Hour, A* admissible)
 ```
 
 ```mermaid
@@ -47,11 +47,11 @@ flowchart LR
     A["<b>Applications Adversarial</b> (4)<br/>2 Python + 2 C# :<br/>ConnectFour — Minimax, Alpha-Beta, MCTS, AIMA"]
     C["<b>Applications CSP</b><br/>N-Queens, GraphColoring,<br/>Nurse/JobShop, Minesweeper,<br/>Wordle, Picross, WFC..."]
     H["<b>Applications Hybrides</b><br/>EdgeDetection, Portfolio,<br/>TSP, VRP, Hyperparameter,<br/>AlgorithmSelection, PRESENT/SAT..."]
+    I["<b>Applications Informed</b> (mono-agent)<br/>Rush Hour : BFS vs A* admissible<br/>vs glouton, à l'état près"]
     P1 --> A
+    P1 --> I
     P2 --> C
     P4 --> H
-    P2 --> R
-    P4 --> R
     A -.->|"benchmark croisé"| H
     C -.->|"quand l'espace explose"| H
 ```
@@ -160,13 +160,13 @@ Quand l'espace est trop vaste ou l'objectif trop irrégulier pour les méthodes 
 
 ---
 
-## Applications Search (`Search/`)
+## Applications de recherche informée mono-agent (`Informed/`)
 
-Le terrain d'application le plus pur de la [Partie 1](../Part1-Foundations/README.md) : un puzzle en espace d'états où la recherche s'applique directement, sans solveur industriel en contrepoint. Le Rush Hour (Quindene) y confronte les trois stratégies de base — BFS, A* avec heuristique admissible, et recherche gloutonne — à l'état près, sur des instances générées et contrôlées, pour rendre **mesurable** le rendement de l'heuristique (A* explore environ trois fois moins d'états que le BFS à solution optimale égale) et le prix de l'abandon de l'optimalité (le glouton s'égare).
+Le terrain d'application le plus pur de la [Partie 1](../Part1-Foundations/README.md) : un puzzle en espace d'états où la recherche mono-agent s'applique directement, sans solveur industriel en contrepoint — la stratégie non informée (BFS) servant de baseline dans le même carnet. Le Rush Hour (Quindene) y confronte les trois stratégies de base — BFS, A* avec heuristique admissible, et recherche gloutonne — à l'état près, sur des instances générées et contrôlées, pour rendre **mesurable** le rendement de l'heuristique (A* explore environ trois fois moins d'états que le BFS à solution optimale égale) et le prix de l'abandon de l'optimalité (le glouton s'égare).
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-33-RushHour-Admissible-Astar-Python](Search/App-33-RushHour-Admissible-Astar-Python.ipynb) | ~40 min | Rush Hour 6×6 : BFS, A* (heuristique admissible) et recherche gloutonne *from-scratch* (stdlib Python seule), instances générées par scramble, benchmark sur 6 instances (A* ≈ 3× moins d'états que le BFS à solution égale, glouton sous-optimal), 3 exercices | Série Search (Partie 1) |
+| 1 | [App-33-RushHour-Admissible-Astar-Python](Informed/App-33-RushHour-Admissible-Astar-Python.ipynb) | ~40 min | Rush Hour 6×6 : BFS, A* (heuristique admissible) et recherche gloutonne *from-scratch* (stdlib Python seule), instances générées par scramble, benchmark sur 6 instances (A* ≈ 3× moins d'états que le BFS à solution égale, glouton sous-optimal), 3 exercices | Série Search (Partie 1) |
 
 ---
 
@@ -235,7 +235,7 @@ Le terrain d'application le plus pur de la [Partie 1](../Part1-Foundations/READM
 | App-23 PRESENT Differential Cryptanalysis | SAT, CNF, bit-vectors | python-sat, numpy, matplotlib |
 | App-27 Sparse Index Tracking Walk-Forward | CSP-3 (CP-SAT), CSP-5 (optimisation), App-10 (portefeuille) | ortools, pandas, numpy |
 
-### Applications Search
+### Applications de recherche informée mono-agent
 
 | Notebook | Fondations requises | Dépendances |
 |----------|--------------------|-------------|
