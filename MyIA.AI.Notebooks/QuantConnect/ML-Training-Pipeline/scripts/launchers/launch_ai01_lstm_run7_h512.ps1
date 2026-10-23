@@ -154,26 +154,23 @@ $metadata = @{
     log_file    = "train.log"
     pid_file    = "PID.txt"
 }
-$metadata | ConvertTo-Json -Depth 3 | Out-File -FilePath $MetaPath -Encoding utf8
+[System.IO.File]::WriteAllText($MetaPath, ($metadata | ConvertTo-Json -Depth 3), (New-Object System.Text.UTF8Encoding($false)))
 
 # --- Launch detached process ---
 Write-Host "[LAUNCH] Starting LSTM training..."
 Write-Host "[LAUNCH] Hidden=$HiddenSize Layers=$NumLayers Epochs=$Epochs Batch=$BatchSize Advanced=19"
 Write-Host "[LAUNCH] Log: $LogPath"
 
-$proc = Start-Process -FilePath $PythonExe `
-    -ArgumentList $trainArgs `
-    -RedirectStandardOutput $LogPath `
-    -RedirectStandardError $ErrPath `
-    -NoNewWindow `
-    -PassThru
+# --- Launch through the common capped launcher ---
+# The training runs under scripts/ci/run_guarded.py: hard 48 Go memory ceiling
+# (Windows Job Object), commit-charge admission guard, N = 1 exclusion (#21661).
+$Capped = Join-Path $PSScriptRoot "launch_capped.ps1"
+& $Capped -FilePath $PythonExe -ArgumentList $trainArgs `
+    -LogPath $LogPath -ErrPath $ErrPath -PidPath $PidPath -PythonExe $PythonExe
 
-# Save PID
-$proc.Id | Out-File -FilePath $PidPath -Encoding utf8
-
-Write-Host "[LAUNCH] PID: $($proc.Id) -> $PidPath"
+Write-Host "[LAUNCH] training PID -> $PidPath"
 Write-Host ""
 Write-Host "Monitor log:   Get-Content $LogPath -Wait"
 Write-Host "GPU monitor:   nvidia-smi -i 2 -l 5"
-Write-Host "Check status:  Get-Process -Id $($proc.Id)"
-Write-Host "Stop:          Stop-Process -Id $($proc.Id)"
+Write-Host "Check status:  Get-Process -Id (Get-Content $PidPath)"
+Write-Host "Stop:          Stop-Process -Id (Get-Content '$PidPath.supervisor.txt')"

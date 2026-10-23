@@ -1491,6 +1491,42 @@ def test_post_check_run_payload_on_fail():
     assert captured["fields"]["conclusion"] == "failure"
 
 
+def test_post_check_run_warns_on_foreign_suite(capsys):
+    """#21505 : une `details_url` qui ne pointe PAS vers `/actions/runs/`
+    signifie une suite ETRANGERE (run non relancable, classe #18985) :
+    `post_check_run` emet un avertissement qui NOMME la suite (`check_suite.id`)."""
+    def foreign_poster(_path, _fields):
+        return {
+            "id": 111294508181,
+            "name": "PR gate",
+            "details_url": "https://github.com/o/r/runs/37144908600",
+            "check_suite": {"id": 100614928346},
+        }
+
+    pr_gate.post_check_run("o/r", "abc1234", "PR gate", 1, "FAIL",
+                           poster=foreign_poster)
+    out = capsys.readouterr().out
+    assert "suite ETRANGERE" in out
+    assert "100614928346" in out
+
+
+def test_post_check_run_no_warning_in_actions_suite(capsys):
+    """#21505 controle : une `details_url` NORMALE (porte `/actions/runs/`)
+    ne declenche AUCUN avertissement -- la suite d'origine est relancable."""
+    def actions_poster(_path, _fields):
+        return {
+            "id": 42,
+            "name": "PR gate",
+            "details_url": "https://github.com/o/r/actions/runs/999/job/1",
+            "check_suite": {"id": 555},
+        }
+
+    pr_gate.post_check_run("o/r", "abc1234", "PR gate", 0, "PASS",
+                           poster=actions_poster)
+    out = capsys.readouterr().out
+    assert "suite ETRANGERE" not in out
+
+
 def test_main_posts_on_pass_when_flag_set(monkeypatch):
     """--post-check-run POSTs the success verdict onto the head SHA."""
     monkeypatch.setattr(

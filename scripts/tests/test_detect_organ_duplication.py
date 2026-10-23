@@ -457,10 +457,14 @@ def test_lean_git_mode_masks_whole_file(tmp_path, capsys):
     subprocess.run([*git, "add", "MyIA.AI.Notebooks"], check=True)
     subprocess.run([*git, "commit", "-q", "-m", "base"], check=True)
     # Prose ajoutee DANS la docstring (nom de l'index) + vraie declaration apres.
+    # newline="\n" est obligatoire : sans lui, Path.write_text traduit en CRLF sur
+    # Windows, le fichier de tete differe alors de la base sur TOUTES ses lignes,
+    # et le diff devient un remplacement fichier entier dont les hunks portent
+    # l'ouverture de docstring -- la limite du mode --patch n'est plus exercee.
     (repo / PROBE).write_text(
         "/-!\n# Sonde\nligne initiale\nstructure IsAutomorphism en prose\n-/\n"
         "def probeBase := 1\ndef sheffer (x : Nat) : Nat := x\n",
-        encoding="utf-8")
+        encoding="utf-8", newline="\n")
     subprocess.run([*git, "add", PROBE], check=True)
     subprocess.run([*git, "commit", "-q", "-m", "head"], check=True)
     rc = mod.main(["--base", "HEAD~1", "--head", "HEAD", "--cwd", str(repo),
@@ -474,7 +478,17 @@ def test_lean_git_mode_masks_whole_file(tmp_path, capsys):
     # Limite documentee du mode --patch : le hunk n'a pas l'ouverture de la
     # docstring, la prose est lue comme du code (faux positif connu).
     diff = subprocess.run(["git", "-C", str(repo), "diff", "HEAD~1", "HEAD", "--unified=0"],
-                          capture_output=True, text=True, check=True).stdout
+                          capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", check=True).stdout
+    # Garde : le diff doit rester minimal (2 hunks, 2 lignes ajoutees). Un hunk
+    # unique couvrant tout le fichier signifie que les deux ecritures different
+    # par leurs fins de ligne (CRLF vs LF) et que le mode --patch voit alors la
+    # docstring ouverte : l'assertion suivante ne testerait plus sa limite.
+    hunk_headers = [line for line in diff.splitlines() if line.startswith("@@")]
+    added = [line for line in diff.splitlines() if line.startswith("+")
+             and not line.startswith("+++")]
+    assert len(hunk_headers) == 2, f"diff non minimal (hunks) :\n{diff}"
+    assert len(added) == 2, f"diff non minimal (lignes ajoutees) :\n{diff}"
     patch = _write(tmp_path, "hunk.diff", diff)
     mod.main(["--patch", str(patch), "--index", str(INDEX), "--lean-root", str(_lean_tree(tmp_path))])
     assert "(IsAutomorphism)" in capsys.readouterr().out
