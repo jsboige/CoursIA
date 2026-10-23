@@ -28651,29 +28651,29 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb,700085e9,
 
 **Notebook précédent**: [GameTheory-05-ZeroSum-Minimax-Python](GameTheory-05-ZeroSum-Minimax-Python.ipynb)  
 **Notebook suivant**: [GameTheory-07-ExtensiveForm-Python](GameTheory-07-ExtensiveForm-Python.ipynb)",,,,,,,,29d4c7f7862f3eab,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,515c1c05,markdown,fr,c95ffc4a63f14ca1,"<< [GameTheory-06-EvolutionTrust-Python](GameTheory-06-EvolutionTrust-Python.ipynb) | [Index GameTheory](README.md) | [GameTheory-07-ExtensiveForm-Python](GameTheory-07-ExtensiveForm-Python.ipynb) >>
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,515c1c05,markdown,fr,c95ffc4a63f14ca1,"<< [GameTheory-06-EvolutionTrust-Python](GameTheory-06-EvolutionTrust-Python.ipynb) | [Index GameTheory](README.md) | [GameTheory-07-ExtensiveForm-Python](GameTheory-07-ExtensiveForm-Python.ipynb) >>
 
 # GameTheory-6c (C#) : Jeux Répétés et Théorème Folk
 
-**Série** : GameTheory / approfondissement `c` (jumeau .NET du notebook Python [GameTheory-6c](GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb)).
+**Série** : GameTheory / approfondissement `c` (jumeau .NET du notebook Python [GameTheory-6c](Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb)).
 
 **Durée estimée** : ~1h
 
 **Prérequis** : [GameTheory-02-NormalForm-Python](GameTheory-02-NormalForm-Python.ipynb) (forme normale, équilibre de Nash), [GameTheory-04-NashEquilibrium-Python](GameTheory-04-NashEquilibrium-Python.ipynb), notions de C# / .NET.
 
 **Pourquoi un jumeau C# ?** Le socle répété est réimplémenté en C# avec la BCL : dilemme du prisonnier, série géométrique actualisée, stratégies `grim trigger` et `tit-for-tat`, théorème Folk et rendu ASCII de la région faisable. La section de statique comparative porte ensuite l'estimation SciPy du jumeau Python vers le vrai moteur .NET `MathNet.Numerics.Optimization.NelderMeadSimplex`. Les deux notebooks dérivent les mêmes seuils analytiques et confrontent séparément sympathie et engagement sur plusieurs jeux où seuls les gains d'autrui varient.",,,,,,,,c95ffc4a63f14ca1,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,88b009e0,markdown,fr,c52a851934fbc8b7,"## Objectifs d'apprentissage
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,88b009e0,markdown,fr,c52a851934fbc8b7,"## Objectifs d'apprentissage
 
 1. **Formaliser** un jeu repete comme la repetition d'un jeu étape (le dilemme du prisonnier) avec un facteur d'escompte `delta`.
 2. **Comprendre** pourquoi l'horizon fini detruit la cooperation (backward induction vers la defection perpetuelle), alors qu'un horizon infini la rend soutenable.
 3. **Deriver** la condition de credibilite d'une stratégie de punition (`grim trigger`) et la comparer a une punition plus legere (`tit-for-tat`).
 4. **Illustrer** le theoreme Folk : l'ensemble des paiements soutenables comme equilibres sous-game-parfaits coincide, pour `delta` assez proche de 1, avec la region faisable et individuellement rationnelle.
 ",,,,,,,,c52a851934fbc8b7,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,41ebe5c4,markdown,fr,bdcada0dd73900c1,"## 1. Le jeu étape : Dilemme du Prisonnier
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,41ebe5c4,markdown,fr,bdcada0dd73900c1,"## 1. Le jeu étape : Dilemme du Prisonnier
 
 On encode la matrice de gains du dilemme du prisonnier (convention d'Axelrod) : `T` (tentation), `R` (recompense de la cooperation), `P` (punition mutuelle), `S` (sucker). Les inegalites canoniques `T > R > P > S` et `2R > T+S` garantissent que `(D,D)` est l'unique equilibre de Nash, bien que `(C,C)` soit Pareto-optimal.
 ",,,,,,,,bdcada0dd73900c1,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,255f59f2,code,fr,fe5660fb8a053df6,"// Matrice des gains du Dilemme du Prisonnier (convention d'Axelrod).
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,255f59f2,code,fr,fe5660fb8a053df6,"// Matrice des gains du Dilemme du Prisonnier (convention d'Axelrod).
 // Lignes = joueur 1 (Cooperer=0, Defecter=1), colonnes = joueur 2 (Cooperer=0, Defecter=1).
 double T = 5.0, R = 3.0, P = 1.0, S = 0.0;
 
@@ -28697,11 +28697,11 @@ Console.WriteLine($""Verif 2R > T+S : {2*R > T+S} (2R={2*R}, T+S={T+S})"");
 Console.WriteLine($""Equilibre de Nash du jeu etape : (D,D) -> paiement P = {P}"");
 Console.WriteLine($""Pareto-optimum cooperatif : (C,C) -> paiement R = {R}"");
 ",,,,,,,,fe5660fb8a053df6,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,235636b2,markdown,fr,bcb6ce36fc6d2847,"## 2. Horizon fini : l'effondrement inevitable
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,235636b2,markdown,fr,bcb6ce36fc6d2847,"## 2. Horizon fini : l'effondrement inevitable
 
 Sur un horizon fini de `N` tours (sans escompte, `delta = 1`), la cooperation est **non credible**. Par backward induction, le dernier tour est un jeu étape unique ou la defection domine ; sachant cela, l'avant-dernier tour aussi ; et ainsi de suite jusqu'au premier tour. L'unique equilibre sous-game-parfait (SPNE) est donc la defection perpetuelle, avec un paiement total `P * N`.
 ",,,,,,,,bcb6ce36fc6d2847,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,6cfca773,code,fr,f240c7f76e99750c,"// Horizon fini : la defection perpetuelle est l'unique SPNE.
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,6cfca773,code,fr,f240c7f76e99750c,"// Horizon fini : la defection perpetuelle est l'unique SPNE.
 int N = 10;
 double payoffDefectAlways = P * N;       // (D,D) chaque tour
 double payoffCoopFictif   = R * N;       // (C,C) chaque tour, irrealiste en horizon fini
@@ -28713,11 +28713,11 @@ Console.WriteLine();
 Console.WriteLine($""Conclusion : en horizon fini, le SPNE = defaction, paiement total = P*N = {payoffDefectAlways:F1}"");
 Console.WriteLine($""La cooperation (R={R:F1} > P={P:F1}) exige un horizon INFINI."");
 ",,,,,,,,f240c7f76e99750c,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,a22548f6,markdown,fr,6472b2eeab0895a0,"## 3. Horizon infini et facteur d'escompte
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,a22548f6,markdown,fr,6472b2eeab0895a0,"## 3. Horizon infini et facteur d'escompte
 
 Avec un horizon infini et un facteur d'escompte `delta in (0,1)`, la valeur actualisee d'un flux constant `g` est la serie geometrique `g / (1 - delta)`. On verifie numeriquement que la somme tronquee converge vers cette formule close, pour plusieurs valeurs de `delta`.
 ",,,,,,,,6472b2eeab0895a0,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,d57d8413,code,fr,4442dec8f0fb267e,"// Verif numerique de la serie geometrique g/(1-delta).
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,d57d8413,code,fr,4442dec8f0fb267e,"// Verif numerique de la serie geometrique g/(1-delta).
 static double FluxGeom(double g, double delta, int terms = 2000)
 {
     // Somme actualisee d'un flux constant g sur 'terms' tours.
@@ -28741,7 +28741,7 @@ foreach (double d in deltas)
 Console.WriteLine();
 Console.WriteLine(""Les deux colonnes coincident : la serie converge vers g/(1-delta)."");
 ",,,,,,,,4442dec8f0fb267e,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,e605fdbb,markdown,fr,c5a847ad6a67356b,"## 4. Le grim trigger et sa condition de credibilite
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,e605fdbb,markdown,fr,c5a847ad6a67356b,"## 4. Le grim trigger et sa condition de credibilite
 
 La stratégie `grim trigger` (déclenchement implacable) : cooperer tant que l'adversaire cooperate, mais le punir en defectant pour toujours des la première defection. Soit :
 
@@ -28750,7 +28750,7 @@ La stratégie `grim trigger` (déclenchement implacable) : cooperer tant que l'a
 
 La cooperation est soutenable si `V_C >= V_D`, soit `delta >= (T-R)/(T-P)`. C'est le **seuil de credibilite**.
 ",,,,,,,,c5a847ad6a67356b,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,b1fe2a86,code,fr,c0aaf0e4666f3105,"// Derivation numerique de la condition de credibilite du grim trigger.
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,b1fe2a86,code,fr,c0aaf0e4666f3105,"// Derivation numerique de la condition de credibilite du grim trigger.
 // Les constantes T,R,P,S (top-level) sont passees en parametres aux helpers statiques.
 static double VC(double delta, double r) => r / (1 - delta);
 static double VD(double delta, double t, double p) => t + delta * p / (1 - delta);
@@ -28769,7 +28769,7 @@ foreach (double d in new[] { 0.30, 0.40, 0.50, 0.60, 0.70 })
 Console.WriteLine();
 Console.WriteLine($""Verification au seuil delta*={deltaStar:F1} : V_C={VC(deltaStar, R):F4}, V_D={VD(deltaStar, T, P):F4} (indifference)"");
 ",,,,,,,,c0aaf0e4666f3105,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,4795f47a,markdown,fr,df3662c6a301281b,"## 5. Tit-for-tat vs grim trigger
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,4795f47a,markdown,fr,df3662c6a301281b,"## 5. Tit-for-tat vs grim trigger
 
 Le `tit-for-tat` (TFT) punit plus legerement : il reprend la cooperation des que l'adversaire coopere de nouveau. Après une defection, le deviateur recoit `T` (gain de trahison), puis `S` au tour suivant (punition d'un tour), puis la cooperation reprend a `R`. La valeur de deviation est donc :
 
@@ -28777,7 +28777,7 @@ Le `tit-for-tat` (TFT) punit plus legerement : il reprend la cooperation des que
 
 Une punition plus legere exige un joueur **plus patient** (seuil `delta` plus eleve). Le grim trigger, punition la plus dure, soutient la cooperation pour le `delta` le plus faible — c'est l'intuition centrale du theoreme Folk.
 ",,,,,,,,df3662c6a301281b,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,1e4687c4,code,fr,723c5aa0e5b3e4f2,"// Comparaison des seuils : grim trigger (punition dure) vs tit-for-tat (punition legere).
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,1e4687c4,code,fr,723c5aa0e5b3e4f2,"// Comparaison des seuils : grim trigger (punition dure) vs tit-for-tat (punition legere).
 static double VDgrim(double delta, double t, double p) => t + delta * p / (1 - delta);
 static double VDtft(double delta, double t, double s, double r) => t + delta * s + (delta * delta) * r / (1 - delta);
 
@@ -28799,7 +28799,7 @@ Console.WriteLine($""Conclusion : grim trigger soutient la cooperation pour delt
 Console.WriteLine($""             tit-for-tat exige  delta >= {deltaTft:F3} (PLUS patient requis)"");
 Console.WriteLine(""Punition plus dure => cooperation plus facile a soutenir (folk theorem intuition)."");
 ",,,,,,,,723c5aa0e5b3e4f2,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,dea61fe5,markdown,fr,edf138e88ffeb963,"## 6. Le theoreme Folk
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,dea61fe5,markdown,fr,edf138e88ffeb963,"## 6. Le theoreme Folk
 
 Le theoreme Folk (des annees 1950, ""folk"" car de provenance populaire non attribuee) etablit que **tout paiement faisable et individuellement rationnel (IR)** peut etre soutenu comme equilibre sous-game-parfait d'un jeu repete infiniment, des lors que le facteur d'escompte `delta` est assez proche de 1.
 
@@ -28808,7 +28808,7 @@ Le theoreme Folk (des annees 1950, ""folk"" car de provenance populaire non attr
 
 La region faisable & IR est donc l'intersection du quadrilatere des issues avec le quart-dent `{x >= P, y >= P}`. C'est l'ensemble des paiements soutenables.
 ",,,,,,,,edf138e88ffeb963,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,4190187c,code,fr,71a62c4432e83580,"// Illustration ASCII : ensemble des paiements faisables et individuellement rationnels (IR).
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,4190187c,code,fr,71a62c4432e83580,"// Illustration ASCII : ensemble des paiements faisables et individuellement rationnels (IR).
 // Les 4 sommets du quadrilatere des issues, ordonnes dans le sens direct (CCW).
 double[][] issues = {
     new[] { R, R },   // (C,C)
@@ -28872,26 +28872,26 @@ Console.WriteLine(""Sommets : (C,C)=(3,3)  (C,D)=(0,5)  (D,C)=(5,0)  (D,D)=(1,1)
 Console.WriteLine($""La region '#' (faisable & IR, au-dessus et a droite du seuil minimax={minimax}) = ensemble des"");
 Console.WriteLine(""paiements soutenables comme SPNE pour delta assez proche de 1 (theoreme Folk)."");
 ",,,,,,,,71a62c4432e83580,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,d980394b,markdown,fr,1d5350789cc28a23,"### Interpretation : la cooperation comme cas particulier
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,d980394b,markdown,fr,1d5350789cc28a23,"### Interpretation : la cooperation comme cas particulier
 
 Le paiement cooperatif `(R,R) = (3,3)` n'est qu'un point de la region faisable & IR. Le theoreme Folk dit que **n'importe quel** point de cette region — y compris des paiements asymetriques ou punitifs — peut emerger comme equilibre pour une stratégie de punition credible et un `delta` suffisamment eleve. La cooperation n'est donc pas un miracle : c'est un cas particulier d'un ensemble beaucoup plus large d'equilibres possibles, et c'est la durete de la punition (grim trigger) qui la soutient au seuil `delta*` le plus bas.
 ",,,,,,,,1d5350789cc28a23,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,0063e7a3,markdown,fr,d957808d448e4dd9,"## Exercice 1 : Sensibilite au facteur d'escompte
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,0063e7a3,markdown,fr,d957808d448e4dd9,"## Exercice 1 : Sensibilite au facteur d'escompte
 
 Calculez le seuil de credibilite `delta* = (T-R)/(T-P)` pour un nouveau dilemme du prisonnier ou `T=6, R=4, P=2, S=0`. La cooperation est-elle plus ou moins facile a soutenir que dans le cas standard `(5,3,1,0)` ?
 ",,,,,,,,d957808d448e4dd9,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,654eb7b8,code,fr,e2e135f772d2ef16,"// Exercice 1 a completer
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,654eb7b8,code,fr,e2e135f772d2ef16,"// Exercice 1 a completer
 double Te = 6.0, Re = 4.0, Pe = 2.0, Se = 0.0;
 double deltaStarE = 0.0;  // TODO etudiant : calculer le seuil (Te-Re)/(Te-Pe)
 Console.WriteLine($""Seuil a determiner pour T={Te},R={Re},P={Pe},S={Se} : {deltaStarE} (a completer)"");
 ",,,,,,,,e2e135f772d2ef16,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,451f33d1,markdown,fr,e8774b866fd2491f,"## Exercice 2 : Une punition limitee (N-periodes)
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,451f33d1,markdown,fr,e8774b866fd2491f,"## Exercice 2 : Une punition limitee (N-periodes)
 
 On remplace le grim trigger par une punition limitee a `N` periodes : après une defection, les deux joueurs reçoivent `P` pendant `N` tours, puis la cooperation reprend. Exprimez la valeur de deviation :
 
 `VD_limited = T + sum_{k=1}^{N} delta^k * P + delta^{N+1} * R / (1 - delta)`
 ",,,,,,,,e8774b866fd2491f,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,3caa4399,code,fr,1adb21539ec6c8a9,"// Exercice 2 a completer
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,3caa4399,code,fr,1adb21539ec6c8a9,"// Exercice 2 a completer
 static double VDLimited(double delta, int N)
 {
     double result = 0.0;  // TODO etudiant : T + sum_{k=1}^{N} delta^k * P + delta^{N+1} * R/(1-delta)
@@ -28899,18 +28899,18 @@ static double VDLimited(double delta, int N)
 }
 Console.WriteLine($""A completer pour delta=0.5, N=2 : {VDLimited(0.5, 2)} (a completer)"");
 ",,,,,,,,1adb21539ec6c8a9,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,86c7968f,markdown,fr,aee62d2ee24fa2d7,"## Exercice 3 : Au-dela du DP - jeu de la poule (Chicken)
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,86c7968f,markdown,fr,aee62d2ee24fa2d7,"## Exercice 3 : Au-dela du DP - jeu de la poule (Chicken)
 
 Le jeu de la poule n'est **pas** un dilemme du prisonnier (l'inegalite `T > R > P > S` echoue). Identifiez les equilibres de Nash en stratégies pures de sa matrice. Combien y en a-t-il, et le theoreme Folk s'applique-t-il differemment ?
 ",,,,,,,,aee62d2ee24fa2d7,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,f637c966,code,fr,5f9ce79ab3ae8aeb,"// Exercice 3 a completer
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,f637c966,code,fr,5f9ce79ab3ae8aeb,"// Exercice 3 a completer
 // Matrice du jeu de la poule (Chicken) : a analyser.
 // A1_chicken = [[3, 1], [4, 0]] ; A2_chicken = [[3, 4], [1, 0]]
 // TODO etudiant : identifier les equilibres de Nash purs (et eventuellement mixte).
 int equilibresPursIdentifies = 0;  // a completer (attendu : 2 purs + 1 mixte)
 Console.WriteLine($""Equilibres de Nash purs a identifier (0 = a completer) : {equilibresPursIdentifies}"");
 ",,,,,,,,5f9ce79ab3ae8aeb,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,5ec7218b,markdown,fr,5c12fdf757e3af1a,"## Conclusion et perspectives
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,5ec7218b,markdown,fr,5c12fdf757e3af1a,"## Conclusion et perspectives
 
 Ce jumeau C# réimplémente les objets mathématiques du notebook Python et confie l'estimation non convexe au moteur .NET MathNet :
 
@@ -28944,13 +28944,13 @@ Les deux notebooks expriment la même intuition : **la coopération émergente d
 ***
 
 *Part of #4956 (marathon parité .NET <-> Python).*",,,,,,,,5c12fdf757e3af1a,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,94287c96,markdown,fr,b3e96c0fc7edc35c,"# GameTheory-6c : Jeux Répétés et Théorème Folk (Folk Theorem)
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,94287c96,markdown,fr,b3e96c0fc7edc35c,"# GameTheory-6c : Jeux Répétés et Théorème Folk (Folk Theorem)
 
 **Navigation** : [<< 6-EvolutionTrust](GameTheory-06-EvolutionTrust-Python.ipynb) | [Index](README.md) | [7-ExtensiveForm >>](GameTheory-07-ExtensiveForm-Python.ipynb)
 
 Ce notebook est le compagnon **formel** de [GameTheory-06-EvolutionTrust-Python](GameTheory-06-EvolutionTrust-Python.ipynb). Là, GT-6 étudiait de façon **empirique** comment la coopération émerge dans des tournois itérés (Axelrod, dynamique du réplicateur). Ici, nous établissons le résultat **théorique** qui l'explique : pourquoi et à quelles conditions la coopération est un équilibre crédible dans un jeu répété infini.
 ",,,,,,,,b3e96c0fc7edc35c,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,82e05178,markdown,fr,878674c1682d9000,"## Objectifs d'apprentissage
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,82e05178,markdown,fr,878674c1682d9000,"## Objectifs d'apprentissage
 
 À l'issue de ce notebook, vous saurez :
 1. Distinguer un jeu répété **fini** (où la coopération s'effondre par induction vers l'arrière) d'un jeu répété **infini** (où elle peut être soutenable).
@@ -28964,7 +28964,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipy
 
 ### Durée estimée : 45 minutes
 ",,,,,,,,878674c1682d9000,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,39c4bb7b,markdown,fr,5a75543e2f9eaf36,"## 1. Le jeu étape (Dilemme du Prisonnier)
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,39c4bb7b,markdown,fr,5a75543e2f9eaf36,"## 1. Le jeu étape (Dilemme du Prisonnier)
 
 On reprend le Dilemme du Prisonnier de GT-6 (convention Axelrod) :
 
@@ -28975,7 +28975,7 @@ On reprend le Dilemme du Prisonnier de GT-6 (convention Axelrod) :
 
 avec **T** (tentation) > **R** (récompense) > **P** (punition) > **S** (dupe), et la condition $2R > T+S$. L'unique équilibre de Nash du jeu étape est **(D, D)** (paiement P=1), alors que la coopération mutuelle (R=3) est strictement Pareto-supérieure : c'est le dilemme.
 ",,,,,,,,5a75543e2f9eaf36,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,c299183b,code,fr,424f10207174fce7,"import numpy as np
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,c299183b,code,fr,424f10207174fce7,"import numpy as np
 
 # Matrice des gains du Dilemme du Prisonnier (lignes = joueur 1, colonnes = joueur 2)
 # Ordre des actions : Cooperer (0), Defecter (1)
@@ -28993,7 +28993,7 @@ print('Verif 2R > T+S :', 2*R > T+S, '(2R=%g, T+S=%g)' % (2*R, T+S))
 print('Equilibre de Nash du jeu etape : (D,D) -> paiement P =', P)
 print('Pareto-optimum cooperatif : (C,C) -> paiement R =', R)
 ",,,,,,,,424f10207174fce7,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,091bdfe7,markdown,fr,c6d8bfe6bc77d4e0,"## 2. Horizon fini : l'effondrement inévitable
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,091bdfe7,markdown,fr,c6d8bfe6bc77d4e0,"## 2. Horizon fini : l'effondrement inévitable
 
 Considérons une répétition **finie** de N tours. On résout par **induction vers l'arrière** : au dernier tour N, il n'y a pas d'avenir à menacer, donc chaque joueur défecte (c'est l'équilibre du jeu étape). Sachant cela au tour N-1, aucune menace future n'est crédible, donc on défecte aussi. Et ainsi de suite jusqu'au tour 1 : **(D, D) à chaque tour**.
 
@@ -29001,7 +29001,7 @@ Considérons une répétition **finie** de N tours. On résout par **induction v
 
 La coopération exige donc un horizon **infini** (ou une probabilité positive de continuer à chaque tour).
 ",,,,,,,,c6d8bfe6bc77d4e0,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,07f3ed2b,code,fr,1430117b0e272741,"# Illustration : dans un jeu fini, la defection perpetuelle est l'unique SPNE.
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,07f3ed2b,code,fr,1430117b0e272741,"# Illustration : dans un jeu fini, la defection perpetuelle est l'unique SPNE.
 # Valeurs actualisees (delta=1, pas d'escompte) sur N tours :
 
 N = 10
@@ -29014,7 +29014,7 @@ print()
 print('Conclusion : en horizon fini, le SPNE = defaction, paiement total = P*N = %.1f' % payoff_defect_always)
 print('La cooperation (R=%.1f > P=%.1f) exige un horizon INFINI.' % (R, P))
 ",,,,,,,,1430117b0e272741,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,15e2d771,markdown,fr,a54347c5a4cfb5ed,"## 3. Horizon infini et facteur d'escompte
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,15e2d771,markdown,fr,a54347c5a4cfb5ed,"## 3. Horizon infini et facteur d'escompte
 
 On suppose maintenant que le jeu se répète **infiniment**, avec un facteur d'escompte $\delta \in [0,1[$ ($1$ unité de gain demain vaut $\delta$ aujourd'hui ; $\delta$ proche de 1 = joueur patient). Le paiement total d'un joueur est la **somme actualisée** :
 
@@ -29026,7 +29026,7 @@ $$ V(g) = \frac{g}{1 - \delta} $$
 
 ($\delta < 1$ garantit la convergence). C'est cette forme fermée qui rend l'analyse des jeux répétés infinis tractable.
 ",,,,,,,,a54347c5a4cfb5ed,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,66520d09,code,fr,4ea08555a64d35f6,"# Verif numerique de la serie geometrique g/(1-delta)
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,66520d09,code,fr,4ea08555a64d35f6,"# Verif numerique de la serie geometrique g/(1-delta)
 def flux_geom(g, delta, terms=2000):
     """"""Somme actualisee d'un flux constant g sur 'terms' tours.""""""
     return sum((delta**t) * g for t in range(terms))
@@ -29038,7 +29038,7 @@ for delta in [0.3, 0.5, 0.7, 0.9, 0.99]:
 print()
 print('Les deux colonnes coincident : la serie converge vers g/(1-delta).')
 ",,,,,,,,4ea08555a64d35f6,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,e18c2ad3,markdown,fr,45606cfcf0864126,"## 4. Le grim trigger et sa condition de crédibilité
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,e18c2ad3,markdown,fr,45606cfcf0864126,"## 4. Le grim trigger et sa condition de crédibilité
 
 La stratégie du **grim trigger** (le vengeur implacable) est : *coopérer tant que l'autre a coopéré, mais si l'autre défecte une seule fois, défecter pour toujours*. C'est une menace maximale, **irréversible**.
 
@@ -29053,7 +29053,7 @@ $$ \frac{R}{1-\delta} \ge T + \frac{\delta P}{1-\delta} \quad\Longleftrightarrow
 
 **Application numérique** (cellule suivante) : pour le DP canonique $T=5, R=3, P=1$, le seuil vaut $\delta^* = (5-3)/(5-1) = 0{,}5$. En dessous (ex. $\delta=0{,}3$ : $V_C \approx 4{,}29 < V_D \approx 5{,}43$), la tentation l'emporte et la défection est rationnelle ; au-dessus (ex. $\delta=0{,}7$ : $V_C = 10 > V_D \approx 7{,}33$), la coopération est crédible. Exactement au seuil $\delta^*=0{,}5$, les joueurs sont indifférents ($V_C = V_D = 6$).
 ",,,,,,,,45606cfcf0864126,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,dd76c5e2,code,fr,8541f329ad19848f,"# Derivation numerique de la condition de credibilite
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,dd76c5e2,code,fr,8541f329ad19848f,"# Derivation numerique de la condition de credibilite
 # V_C = R/(1-d), V_D = T + d*P/(1-d). Cooperation soutenable si V_C >= V_D.
 
 def VC(delta): return R / (1 - delta)
@@ -29072,7 +29072,7 @@ for delta in [0.30, 0.40, 0.50, 0.60, 0.70]:
 print()
 print('Verification au seuil delta*=0.5 : V_C=%.4f, V_D=%.4f (indifference)' % (VC(delta_star), VD(delta_star)))
 ",,,,,,,,8541f329ad19848f,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,6b388931,markdown,fr,f035f34573181003,"## 5. Tit-for-tat vs grim trigger
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,6b388931,markdown,fr,f035f34573181003,"## 5. Tit-for-tat vs grim trigger
 
 Le **tit-for-tat** (TFT, œil pour œil : coopérer au tour 1, puis copier le coup précédent de l'adversaire) est plus **clément** que le grim trigger : il pardonne après une seule coopération revenue. Mais sa clémence a un coût : la condition de crédibilité est plus stricte.
 
@@ -29081,7 +29081,7 @@ Le **tit-for-tat** (TFT, œil pour œil : coopérer au tour 1, puis copier le co
 
 La coopération sous TFT est soutenable ssi $R/(1-\delta) \ge T + \delta S + \delta^2 R/(1-\delta)$, soit un seuil plus élevé car la punition est plus légère.
 ",,,,,,,,f035f34573181003,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,48502ced,code,fr,95bac47327cf4117,"# Comparaison des seuils : grim trigger (punition dure) vs tit-for-tat (punition legere)
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,48502ced,code,fr,95bac47327cf4117,"# Comparaison des seuils : grim trigger (punition dure) vs tit-for-tat (punition legere)
 def VC2(delta): return R / (1 - delta)
 def VD_grim(delta): return T + delta * P / (1 - delta)
 def VD_tft(delta):  return T + delta * S + (delta**2) * R / (1 - delta)  # TFT punit 1 tour puis pardonne
@@ -29099,7 +29099,7 @@ print('Conclusion : grim trigger soutient la cooperation pour delta >= %.3f' % d
 print('             tit-for-tat exige  delta >= %.3f (PLUS patient requis)' % delta_tft)
 print('Punition plus dure => cooperation plus facile a soutenir (folk theorem intuition).')
 ",,,,,,,,95bac47327cf4117,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,ee2dc364,markdown,fr,d2eae7508d03befe,"## 6. Le Folk Theorem
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,ee2dc364,markdown,fr,d2eae7508d03befe,"## 6. Le Folk Theorem
 
 Le grim trigger montre qu'**une** paire de paiements coopératifs $(R,R)$ est soutenable. Le **Folk Theorem** généralise considérablement ce résultat.
 
@@ -29109,7 +29109,7 @@ Le grim trigger montre qu'**une** paire de paiements coopératifs $(R,R)$ est so
 
 Le **paiement de minimax** $\underline{v}_i$ est le pire que les autres puissent infliger au joueur $i$ (dans le DP symétrique, c'est $P=1$).
 ",,,,,,,,d2eae7508d03befe,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,3a6f13cf,code,fr,8ab63ba78a136ee0,"# Illustration : ensemble des paiements faisables et individuellement rationnels (IR)
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,3a6f13cf,code,fr,8ab63ba78a136ee0,"# Illustration : ensemble des paiements faisables et individuellement rationnels (IR)
 # du DP. Les 4 paiements d'issues : (C,C)=(R,R), (C,D)=(S,T), (D,C)=(T,S), (D,D)=(P,P).
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
@@ -29134,13 +29134,13 @@ plt.show()
 print('La region faisable & IR (au-dessus et a droite des pointilles) = ensemble des paiements')
 print('soutenables comme SPNE pour delta assez proche de 1 (Folk Theorem).')
 ",,,,,,,,8ab63ba78a136ee0,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,c83550ad,markdown,fr,9dcf5a81837e6858,"### Interprétation : la coopération comme cas particulier
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,c83550ad,markdown,fr,9dcf5a81837e6858,"### Interprétation : la coopération comme cas particulier
 
 Le paiement coopératif $(R,R)=(3,3)$ n'est qu'**un point** dans l'ensemble faisable & IR. Le Folk Theorem dit qu'il est soutenable (ce que le grim trigger démontre explicitement), mais aussi que beaucoup d'autres conventions le sont. C'est pourquoi, dans les tournois d'Axelrod de GT-6, plusieurs stratégies co-existent et performent bien : la théorie n'en exclut aucune par avance dès que $\delta$ est assez grand.
 
 La cellule de comparaison l'illustre : le **grim trigger** (punition irréversible) soutient la coopération dès $\delta \ge 0{,}5$, alors que le **tit-for-tat** (punition légère d'un tour, qui pardonne) exige $\delta \ge 0{,}667$. Plus la punition est dure, plus le seuil de patience requis est bas : c'est l'intuition centrale qui se généralise dans le Folk Theorem.
 ",,,,,,,,9dcf5a81837e6858,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,05bc3879,markdown,fr,a8b7d46be99bc0a0,"## Exercice 1 : Sensibilité au facteur d'escompte
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,05bc3879,markdown,fr,a8b7d46be99bc0a0,"## Exercice 1 : Sensibilité au facteur d'escompte
 
 Reprenez le grim trigger avec un DP modifié : $T=6, R=4, P=2, S=0$.
 
@@ -29149,12 +29149,12 @@ Reprenez le grim trigger avec un DP modifié : $T=6, R=4, P=2, S=0$.
 **Étape 1 :** vérifier les inégalités du DP et 2R > T+S.
 **Étape 2 :** calculer le seuil analytiquement.
 ",,,,,,,,a8b7d46be99bc0a0,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,14b6cd76,code,fr,9b9068678d05e6c8,"# Exercice 1 a completer
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,14b6cd76,code,fr,9b9068678d05e6c8,"# Exercice 1 a completer
 T_e, R_e, P_e, S_e = 6.0, 4.0, 2.0, 0.0
 delta_star_e = None  # TODO etudiant : calculer le seuil (T-R)/(T-P)
 print('Seuil a determiner :', delta_star_e)
 ",,,,,,,,9b9068678d05e6c8,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,0bed58b7,markdown,fr,4a0d1fa358a0f328,"## Exercice 2 : Une punition limitée (N-périodes)
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,0bed58b7,markdown,fr,4a0d1fa358a0f328,"## Exercice 2 : Une punition limitée (N-périodes)
 
 Considérons une stratégie **punition limitée** : si l'autre défecte, on le punit en défectant pendant exactement $N$ tours, puis on revient à la coopération (à la différence du grim trigger qui est irréversible).
 
@@ -29163,13 +29163,13 @@ Considérons une stratégie **punition limitée** : si l'autre défecte, on le p
 **Étape 1 :** exprimer le paiement de déviation (T, puis N tours à P, puis retour à R/(1-d)).
 **Étape 2 :** pour N=2, trouver numériquement le seuil et le comparer au grim trigger.
 ",,,,,,,,4a0d1fa358a0f328,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,d3030f4c,code,fr,6be3109f01894373,"# Exercice 2 a completer
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,d3030f4c,code,fr,6be3109f01894373,"# Exercice 2 a completer
 def VD_limited(delta, N):
     result = None  # TODO etudiant : T + sum_{k=1}^{N} delta^k * P + delta^{N+1} * R/(1-delta)
     return result
 print('A completer pour N=2 :', VD_limited(0.5, 2))
 ",,,,,,,,6be3109f01894373,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,0b8a91fe,markdown,fr,e8ce9eb11a825413,"## Exercice 3 : Au-delà du DP - jeu de la poule (Chicken)
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,0b8a91fe,markdown,fr,e8ce9eb11a825413,"## Exercice 3 : Au-delà du DP - jeu de la poule (Chicken)
 
 Le **jeu de la poule** a pour gains $T=4, R=3, P=0, S=1$ (notez $P < S$ : s'écraser contre un dur est pire que les deux s'écrasent). Ce n'est PAS un DP.
 
@@ -29178,13 +29178,13 @@ Le **jeu de la poule** a pour gains $T=4, R=3, P=0, S=1$ (notez $P < S$ : s'écr
 **Étape 1 :** trouver les équilibres de Nash purs (matrice 2x2).
 **Étape 2 :** calculer le paiement de minimax et l'ensemble faisable & IR.
 ",,,,,,,,e8ce9eb11a825413,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,ef48bd0d,code,fr,cf28b8d05e0f5b3a,"# Exercice 3 a completer
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,ef48bd0d,code,fr,cf28b8d05e0f5b3a,"# Exercice 3 a completer
 # Matrice du jeu de la poule : a analyser
 A1_chicken = np.array([[3, 1], [4, 0]])  # TODO etudiant : identifier les equilibres de Nash
 A2_chicken = np.array([[3, 4], [1, 0]])
 print('Equilibres de Nash pures a identifier (None = a completer) :', None)
 ",,,,,,,,cf28b8d05e0f5b3a,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,fb275714,markdown,fr,48ee89f79a5773c4,"## Conclusion et perspectives
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,fb275714,markdown,fr,48ee89f79a5773c4,"## Conclusion et perspectives
 
 Nous avons établi le pilier théorique que GT-6 illustrait empiriquement :
 
@@ -45819,7 +45819,7 @@ bon outil pour poser la question, et le seul moyen de ne pas attribuer au hasard
 vertu stabilisatrice qu'il n'a pas.
 
 **Miroir avec le jumeau C#.** Le jumeau C# de cette paire conclut `AlwaysDefect = NSS` — pas ESS — sur son pool de **7** stratégies : là-bas, `SuspiciousTFT` fait exactement 1.00 contre elle ($u(STFT,AD) = 1.00 = u(AD,AD)$, égalité parfaite sur les deux axes du critère), et le verdict d'`AlwaysDefect` tombe d'ESS stricte à NSS. Ici, sur **3** stratégies, `AlwaysDefect` **est** une ESS stricte ($u(AD,AD) = 1.00 > u(TFT,AD) = 0.99$). Les deux verdicts sont vrais simultanément : **le statut ESS est relatif à l'ensemble des mutants disponibles, pas une propriété intrinsèque de la stratégie**. Un étudiant qui compare les deux notebooks voit le même objet recevoir deux verdicts — c'est la leçon, pas une incohérence.",,,,,,,,c7154a2dcc89a272,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,b40c8109,markdown,fr,011a02ae8f735184,"## 7. Statique comparative : mesurer la sympathie avec MathNet
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,b40c8109,markdown,fr,011a02ae8f735184,"## 7. Statique comparative : mesurer la sympathie avec MathNet
 
 Le classifieur du jumeau Python laisse `alpha` libre dans l'utilité transformée `u = u_mien + alpha * u_autrui`. Une trajectoire de coopération isolée ne permet donc pas de distinguer sympathie et engagement. La statique comparative fournit l'observation discriminante : faire varier **uniquement** le gain d'autrui à `(C,C)`, en gardant tous les gains propres fixes, puis mesurer la réponse du taux de coopération.
 
@@ -45828,7 +45828,7 @@ Le classifieur du jumeau Python laisse `alpha` libre dans l'utilité transformé
 - pour un mélange, une MLE binomiale estime séparément la part plate `q` et la sensibilité `alpha`.
 
 Le jumeau Python emploie `scipy.optimize.minimize(method=""Nelder-Mead"")`. Ici, le même problème non convexe est confié au moteur .NET `MathNet.Numerics.Optimization.NelderMeadSimplex`. Deux contrôles précèdent l'agent sous test : un `alpha` connu à retrouver et une pente nulle à ne pas surinterpréter.",,,,,,,,011a02ae8f735184,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,dc1de6d5,code,fr,6064d2710e05c83e,"// Section 7 : statique comparative et MLE avec le moteur MathNet.Numerics.
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,dc1de6d5,code,fr,6064d2710e05c83e,"// Section 7 : statique comparative et MLE avec le moteur MathNet.Numerics.
 #r ""nuget: MathNet.Numerics, 5.0.0""
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.Optimization;
@@ -45973,12 +45973,12 @@ Console.WriteLine($""  MathNet NelderMead : q_hat = {fitMelangeSc.Q:F3}, alpha_h
 Console.WriteLine($""  ecarts absolus : |q_hat - 0.5| = {Math.Abs(fitMelangeSc.Q - 0.5):F3}, "" +
                   $""|alpha_hat - 0.6| = {Math.Abs(fitMelangeSc.Alpha - 0.6):F3}"");
 Console.WriteLine(""  verdict : masse plate et composante sensible separees par le moteur .NET."");",,,,,,,,6064d2710e05c83e,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb,f7f8d6a1,markdown,fr,767f81cf959b50b7,"### Lecture de la sortie : ce que la statique identifie
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-CSharp.ipynb,f7f8d6a1,markdown,fr,767f81cf959b50b7,"### Lecture de la sortie : ce que la statique identifie
 
 Les deux contrôles rendent l'interprétation falsifiable : l'estimateur doit retrouver un `alpha` connu pour un agent de sympathie pure, puis une pente compatible avec zéro pour une règle d'engagement insensible aux gains d'autrui. Le même moteur estime ensuite séparément la masse plate `q` et la sensibilité `alpha` d'un agent mélangeant les deux mécanismes.
 
 `alpha` ne devient donc mesurable qu'en observant **le même agent sur plusieurs jeux où seuls les gains d'autrui varient**. Sur une trajectoire de coopération isolée, l'équivalence observationnelle de la section 7d du jumeau Python subsiste : l'engagement reste un candidat, jamais un verdict imposé par un paramètre choisi après coup.",,,,,,,,767f81cf959b50b7,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,f8fd96fd,markdown,fr,627c12d174970eae,"## 7. Retirer la capacité de punir — coopération folk, sympathie, engagement
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,f8fd96fd,markdown,fr,627c12d174970eae,"## 7. Retirer la capacité de punir — coopération folk, sympathie, engagement
 
 Le folk theorem de la section 6 soutient la coopération par la **menace crédible de punition** :
 c'est un résultat solide, et c'est le contraire de ce dont il s'agit ici. La littérature
@@ -45999,7 +45999,7 @@ jamais dans un identifiant. L'expérience décisive est immédiate :
 
 Ce qui s'effondre était folk. Ce qui persiste demande une autre explication — et la question
 devient une mesure, pas une métaphysique.",,,,,,,,627c12d174970eae,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,f1f966ba,code,fr,3b053be3f17ae659,"# === Section 7a : l'experience de retrait — ce qui s'effondre quand punir devient impossible ===
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,f1f966ba,code,fr,3b053be3f17ae659,"# === Section 7a : l'experience de retrait — ce qui s'effondre quand punir devient impossible ===
 # Punir suppose de la MEMOIRE (conditionner son coup au passe d'autrui) et une MENACE executable.
 # On retire les deux : l'adversaire devient sans memoire — son coup ne depend plus de nos actions.
 # Plus aucune sequence de nos coups ne peut etre punie.
@@ -46027,14 +46027,14 @@ print(f""SANS punition (sans memoire) : V_coop = {V_coop_sans_menace:.2f}, V_dev
 print(f""  ecart d'interet = V_dev - V_coop = {ecart_interet:.2f} > 0 : toute cooperation observee est CONTRE-interet"")
 print()
 print(""Ce qui s'effondre etait folk. Ce qui persiste ne peut plus etre explique par la peur."")",,,,,,,,3b053be3f17ae659,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,6cf98027,markdown,fr,b834614b21fea91a,"**Lecture de la sortie committée** : avec la menace (grim trigger, delta = 0.6 > delta* = 0.5),
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,6cf98027,markdown,fr,b834614b21fea91a,"**Lecture de la sortie committée** : avec la menace (grim trigger, delta = 0.6 > delta* = 0.5),
 coopérer est une meilleure réponse — la coopération est un équilibre. Retirons la capacité de
 punir : l'écart d'intérêt devient (T−R)/(1−δ) = +5.00, strictement positif. **Tout C observé
 dans ce régime est contre-intérêt** — la peur des représailles ne peut plus l'expliquer. La
 question « pourquoi coopère-t-il ? » vient de devenir une mesure : un écart calculé, positif,
 affiché. C'est le statut exact recherché pour cette pierre : le sentiment pose des questions,
 la mécanique y répond en nombres.",,,,,,,,b834614b21fea91a,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,0d6c21ca,code,fr,351dbb362de34bd5,"# === Section 7b : le temoin de retenue, applique a des trajectoires PRODUITES ===
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,0d6c21ca,code,fr,351dbb362de34bd5,"# === Section 7b : le temoin de retenue, applique a des trajectoires PRODUITES ===
 # Temoins de retenue (GT-20) : une deviation strictement profitable EST disponible
 # (enumeree, gain calcule au bareme courant) et n'est PAS jouee. La trajectoire n'est
 # plus un litteral : elle est PRODUITE par un agent d'interet -- meilleure reponse a
@@ -46102,13 +46102,13 @@ print(""L'agent d'interet ne s'abstient jamais sans menace : le temoin de retenu
 print(""(l'engagement de Sen) n'est pas demontrable sur un agent d'interet. La source d'une"")
 print(""abstention observee contre-interet est le bras Np d'ICT-25a : un modele informe du"")
 print(""raccourci, a qui il est interdit, et qui ne le prend pas (lecture croisee, cellule suivante)."")",,,,,,,,351dbb362de34bd5,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,be143188,markdown,fr,6fc3435635585045,"**Lecture de la sortie committée** : les trajectoires ne sont plus posées, elles sont **produites** par un agent d'intérêt (argmax, à chaque période, sur les valeurs de continuation stationnaires — l'horizon infini de la section 2). Deux régimes, deux verdicts :
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,be143188,markdown,fr,6fc3435635585045,"**Lecture de la sortie committée** : les trajectoires ne sont plus posées, elles sont **produites** par un agent d'intérêt (argmax, à chaque période, sur les valeurs de continuation stationnaires — l'horizon infini de la section 2). Deux régimes, deux verdicts :
 
 - **Avec punition** (grim, δ = 0.6 > δ* = 0.5) : l'agent coopère sur tout l'horizon. Le certificat calcule la disponibilité (+2.0 au barème courant) et lit l'abstention — verdict **RETENUE**. Mais cette retenue est **explicable par la menace** : c'est la coopération folk de la section 6, le témoin ambigu que GT-20 devait trier.
 - **Sans punition** : l'agent d'intérêt **prend le coup disponible** — dix déviations, verdict **PAS DE RETENUE**. Ce cas négatif est ce qui valide le certificat : un détecteur qui ne rendrait jamais « pas de retenue » ne mesurerait rien.
 
 **Ce que ce dispositif démontre, et ne démontre pas** : l'abstention contre-intérêt (l'engagement de Sen) n'est pas atteignable par un agent d'intérêt — dès que la menace disparaît, il prend ce que le barème offre. La source d'une abstention **observée** contre-intérêt est ailleurs : le bras `Np` d'ICT-25a (`scripts/ict25a_scaleup_grpo.py`), un modèle informé du raccourci, à qui il est interdit, et qui ne le prend pas — `certificat_disponibilite` est exactement la lecture à appliquer à ses trajectoires. Reste la mémoire commune : ce qui demeure jouable quand plus rien n'oblige à jouer — la trajectoire elle-même, lue comme un bien commun plutôt qu'un enchaînement de meilleures réponses.",,,,,,,,6fc3435635585045,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,2d950604,code,fr,3018fa9701e0db3c,"# === Section 7c : l'operateur a quatre actions — 'renentrer' change le statut d'une menace ===
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,2d950604,code,fr,3018fa9701e0db3c,"# === Section 7c : l'operateur a quatre actions — 'renentrer' change le statut d'une menace ===
 # Operateur : rester | se retirer | renegocier | renentrer. La quatrieme est la seule qui
 # rende le retrait REVERSIBLE. Sans elle, une menace peut etre parfaite en sous-jeux
 # uniquement parce que la partie lesee ne peut pas revenir — la credibilite est alors un
@@ -46134,14 +46134,14 @@ print(f""[renentrer PRESENT, k={k}]  {statut_menace(True)}"")
 print()
 print(""Le statut de la menace CHANGE avec l'existence d'une action de retour :"")
 print(""cette credibilite etait une propriete de la modelisation, pas du joueur."")",,,,,,,,3018fa9701e0db3c,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,78d94316,markdown,fr,8fc39712b0046c98,"**Lecture de la sortie committée** : sans action de retour, la menace de sortie définitive
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,78d94316,markdown,fr,8fc39712b0046c98,"**Lecture de la sortie committée** : sans action de retour, la menace de sortie définitive
 est parfaite en sous-jeux — précisément parce que la partie lésée ne peut pas revenir. Donner
 l'action `réentrer` au coût k = 1 renverse le statut : au sous-jeu de punition, le punisseur
 lui-même préfère revenir (3.0 − 1.0 = 2.0 > 0), et le déviateur l'anticipe. La crédibilité
 était un artefact de modélisation, pas une propriété du joueur — même leçon que la menace
 *choisie* vs *programmée* de GT-24 : c'est la structure de l'ensemble d'actions qui décide,
 pas l'intensité de l'annonce.",,,,,,,,8fc39712b0046c98,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,5e2dcd79,markdown,fr,98fd67aee96337bb,"**Statut canonique du classifieur 7d — `alpha` paramètre libre.** La forme
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,5e2dcd79,markdown,fr,98fd67aee96337bb,"**Statut canonique du classifieur 7d — `alpha` paramètre libre.** La forme
 `u = u_mien + alpha * u_autrui` est une **hypothèse de modélisation**, pas une
 mesure : rien dans la trajectoire de coopération observée ne révèle la valeur
 de `alpha`. Le **frontière d'indiscernabilité** est
@@ -46158,7 +46158,7 @@ coopération bouge — elle doit bouger sous sympathie et pas sous engagement. C
 expérience est une **issue de suivi** ouverte, pas une exigence de cette PR
 (le retrait de punition, les quatre actions, et le résultat de non-créabilité
 par réentrée restent à merger ; la statique comparative est un grain séparé).",,,,,,,,98fd67aee96337bb,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,1c68b88c,code,fr,db359445fa2b9d15,"# === Section 7d : sympathie vs engagement — ce que l'utilite explique SOUS UN ALPHA DONNE ===
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,1c68b88c,code,fr,db359445fa2b9d15,"# === Section 7d : sympathie vs engagement — ce que l'utilite explique SOUS UN ALPHA DONNE ===
 # Sen 1977 : SYMPATHIE = le bien-etre d'autrui entre dans mon utilite (U = u_mien + alpha*u_autrui)
 # — cela reste de l'interet, sur une utilite transformee. ENGAGEMENT = agir CONTRE mon propre
 # classement de bien-etre — par construction, aucune transformation ne le rend optimale.
@@ -46213,7 +46213,7 @@ V_nous_DC = gain_actualise(T + S)
 print()
 print(f""Raisonnement d'equipe : (C,C) rapporte {V_nous_CC:.2f} a l'equipe vs (D,C) {V_nous_DC:.2f}""
       f"" (2R > T+S verifie en section 1) : l'agent 'nous' coopere sans menacer personne"")",,,,,,,,db359445fa2b9d15,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,49594636,markdown,fr,07dd638888b0c818,"**Lecture de la sortie committée** : le classifieur rend **trois verdicts distincts** — la
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,49594636,markdown,fr,07dd638888b0c818,"**Lecture de la sortie committée** : le classifieur rend **trois verdicts distincts** — la
 menace explique (folk), l'utilité transformée explique (sympathie : l'écart passe de +5.00 à
 −2.50 dès que le bien-être d'autrui compte), et le résidu : une coopération contre-intérêt
 sous utilité propre, que Sen appelle engagement et qu'aucune transformation de préférence ne
@@ -46224,7 +46224,7 @@ classifieur marque ce que **l'intérêt ne peut pas expliquer** — l'engagement
 candidat de Sen, pas la seule lecture possible. Rien n'exige enfin que l'engagement soit
 réciproque, simultané, ni symétrique : le classifieur s'applique un agent à la fois, et un
 modèle qui ne produirait de la coopération qu'en régime symétrique aurait manqué son objet.",,,,,,,,07dd638888b0c818,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,gt06c-stat-intro,markdown,fr,7d9cc96d26152558,"## 7e. Statique comparative : mesurer alpha au lieu de le poser
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,gt06c-stat-intro,markdown,fr,7d9cc96d26152558,"## 7e. Statique comparative : mesurer alpha au lieu de le poser
 
 Le classifieur 7d laisse un parametre libre : pour une meme trajectoire observee,
 `alpha = 1` rend la cooperation expliquee par la sympathie, `alpha = 0` en fait un
@@ -46244,7 +46244,7 @@ strictement fixes**, puis mesurer la pente du taux de cooperation. Une pente
 positive est compatible avec la sympathie et incompatible avec l'engagement pur ;
 une pente nulle est compatible avec l'engagement et refute la sympathie. La pente
 transforme alpha d'un choix d'analyste en **quantite mesuree**.",,,,,,,,7d9cc96d26152558,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,gt06c-stat,code,fr,3114afe130c74b1a,"# === Section 7e : statique comparative sur les gains d'autrui ===
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,gt06c-stat,code,fr,3114afe130c74b1a,"# === Section 7e : statique comparative sur les gains d'autrui ===
 # Grille : SEULS les gains du partenaire (R_autre a (C,C), S_autre fixe a (D,C)) varient.
 # Les gains du joueur observe (T, R, P, S) restent byte-identiques d'une cellule a l'autre.
 from scipy import optimize
@@ -46441,7 +46441,7 @@ ax.legend(loc='center right', fontsize=9)
 ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()",,,,,,,,3114afe130c74b1a,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,gt06c-stat-interp,markdown,fr,07788fd1d5eeef99,"**Lecture de la sortie committee** : les deux controles negatifs passent —
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,gt06c-stat-interp,markdown,fr,07788fd1d5eeef99,"**Lecture de la sortie committee** : les deux controles negatifs passent —
 l'estimateur rend `alpha_hat ~ 0.80` a l'agent construit en sympathie pure
 (vrai 0.8), et une pente dont l'intervalle bootstrap couvre 0 a l'agent construit
 en engagement pur. Sans ces temoins, une pente mesuree ne prouverait pas que
@@ -46463,7 +46463,7 @@ honnete admis : si la pente etait indiscernable de zero avec des controles qui
 fonctionnent, le banc aurait montre l'engagement ; une pente ambigue se publie
 comme « non identifie a ce niveau de bruit », jamais tranchee par le choix
 d'un alpha.",,,,,,,,07788fd1d5eeef99,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-Python.ipynb,018b05f4,markdown,fr,1cfb2329296d78bc,"### Questions ouvertes — ce que ce dispositif ne modélise pas
+MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-01-Jeux-Repetes-Folk-Theorem-Python.ipynb,018b05f4,markdown,fr,1cfb2329296d78bc,"### Questions ouvertes — ce que ce dispositif ne modélise pas
 
 > *Winnicott soutient que l'objet devient réel en survivant à la destruction fantasmée —
 > c'est cette survie qui le rend réel. Notre dispositif ne modélise que des déviations
