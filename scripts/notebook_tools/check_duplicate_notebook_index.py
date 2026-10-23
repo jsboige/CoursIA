@@ -39,6 +39,14 @@ de #15489) et le couvre en PREFLIGHT ; un preflight ne remplace pas un gate, par
 qu'il se saute. Le garde de merge doit voir la meme chose que lui, sinon le defaut
 arrive jusqu'a `main` -- ou il n'a plus aucun organe pour le rattraper.
 
+Cette comparaison a fait remonter un TROISIERME faux positif, cette fois cote index :
+`GenAI/3D` porte `3D-01-NeRF-From-Scratch` et `3D-02-NeRF-Critic`, deux items
+distincts (01 et 02) que la revue independante de #22118 (lane po-2025, temoin
+f46403eb25b) a vus retomber sur la meme cle `3d`. Le `D` de `3D` n'est pas une
+variante d'index mais la queue d'un prefixe de serie mixte ; la borne du canon
+(`INDEX_RE`, lookahead negatif) rend ces noms `None` au lieu de les faire
+collider. Le controle negatif ci-dessous le verrouille.
+
 PORTEE DE LECTURE -- un vert ne dit pas « aucune collision dans cette serie » (#16040)
 --------------------------------------------------------------------------------------
 La portee ci-dessus borne les fichiers EXAMINES ; elle ne dit rien de ceux que le
@@ -257,6 +265,11 @@ _CASES = [
     ("22_Evaluating_Generated_Text.ipynb", "22"),
     ("22_TensorSharp_DotNet_Inference.ipynb", "22"),
     ("01-Arrow-Impossibility-Theorem.ipynb", "1"),
+    # Prefixe de serie mixte (chiffre + lettre) : `3D` est un prefixe, `01`/`02` le
+    # vrai index. Le lookahead de INDEX_RE rend ces noms None (hors portee) au lieu
+    # de les faire retomber sur une cle `3d` commune -- le faux positif #22118.
+    ("3D-01-NeRF-From-Scratch.ipynb", None),
+    ("3D-02-NeRF-Critic.ipynb", None),
     # Variantes a suffixe de lettre (serie 02-ML-Cours). Trouvees par le balayage
     # repo-wide, pas par ce jeu de cas : c'est pourquoi le balayage existe.
     ("2.3b-Naive-Bayes-Generatif.ipynb", "2.3b"),
@@ -311,6 +324,14 @@ _SCENARIOS = [
     ("VRAI POSITIF  deux ajouts, meme index, la base en tient deja un troisieme",
      ["a/03-DL/3.1-From-Scratch.ipynb", "a/03-DL/3.1-Autre.ipynb"],
      ["a/03-DL/3.1-Retropropagation.ipynb"], 3),
+    # Controle negatif #22118 (revue independante po-2025, temoin f46403eb25b) :
+    # deux ajouts de la MEME fenetre, meme repertoire, prefixe mixte 3D -- indices
+    # reels 01 et 02 distincts. Sans la borne du canon, les deux retombaient sur la
+    # cle `3d` et cette comparaison les faisait rougir. Attendu : 0.
+    ("FAUX POSITIF  deux ajouts, prefixe mixte 3D-01 vs 3D-02",
+     ["g/3D/3D-01-NeRF-From-Scratch.ipynb",
+      "g/3D/3D-02-NeRF-Critic.ipynb"],
+     [], 0),
 ]
 
 
