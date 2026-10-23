@@ -1,0 +1,86 @@
+# allow-axioms du job proof-integrity-audit de .github/workflows/lean-conway.yml
+# (source de verite deplacee depuis le workflow, #21905 -- une entree par ligne,
+#  lignes vides et commentaires # ignores par scripts/lean/allow_list.py).
+# Aucune entree joker : un nouveau native_decide dans le lake = un nouveau rouge
+# (regle no-wildcard du gate, Conway). L'entree Conway.Life.p4_base_exhaustive
+# porte le suffixe croix latine U+271D (✝) emis par Lean : il fait partie du
+# nom, ne pas le retirer (matching exact-string, docs/lean/lean-anchor-naming.md).
+# 77 entrees mesurees au move (le commentaire workflow disait 81 : derive
+# posterieure a #21833, jamais suivie).
+Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1
+Conway.Life.hashlife_correct_implies_toad_2._native.native_decide.ax_1_1
+Conway.Life.hashlife_correct_implies_glider_2._native.native_decide.ax_1_1
+Conway.Life.hashlife_correct_implies_blinker_h_2._native.native_decide.ax_1_1
+Conway.Life.hashlife_correct_implies_beacon_2._native.native_decide.ax_1_1
+Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_4
+Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_2
+Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_3
+Conway.Life.box_assez_grandN_single_cell._native.native_decide.ax_1_1
+Conway.Life.box_assez_grandN_single_cell_8._native.native_decide.ax_1_1
+Conway.Life.box_assez_grandN_single_cell_3._native.native_decide.ax_1_1
+Conway.Life.box_assez_grandN_block_8._native.native_decide.ax_1_1
+Conway.Life.box_assez_grandN_glider_8._native.native_decide.ax_1_1
+Conway.Life.boxAssezGrandN_block_8._native.native_decide.ax_1_1
+Conway.Life.boxAssezGrandN_glider_8._native.native_decide.ax_1_1
+Conway.Life.box_assez_grand_single_cell_3_false._native.native_decide.ax_1_1
+Conway.Life.box_assez_grand_single_cell_8_false._native.native_decide.ax_1_1
+Conway.Life.box_assez_grand_single_cell_2._native.native_decide.ax_1_1
+Conway.Life.box_assez_grand_not_vacuous._native.native_decide.ax_1_1
+Conway.Life.p4_wf_witness_k2._native.native_decide.ax_1_1
+Conway.Life.p4_wf_witness_k1._native.native_decide.ax_1_1
+Conway.Life.p4at_witness_k1._native.native_decide.ax_1_1
+Conway.Life.p4at_witness_k2._native.native_decide.ax_1_1
+Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝
+Conway.Life.p4_base_blinker._native.native_decide.ax_1_1
+Conway.Life.p4_base_block._native.native_decide.ax_1_1
+Conway.Life.p4_base_glider._native.native_decide.ax_1_1
+Conway.Life.p4_base_dead._native.native_decide.ax_1_1
+Conway.Life.p4_unrestricted_counterexample._native.native_decide.ax_1_1
+Conway.Life.padCenter2_correct_block_level1._native.native_decide.ax_1_1
+Conway.Life.pulsar_period_three._native.native_decide.ax_1_1
+Conway.Life.pentadecathlon_period_15._native.native_decide.ax_1_1
+Conway.Life.RLE.glider_parse_ok._native.native_decide.ax_1_1
+Conway.Life.RLE.lwss_parse_ok._native.native_decide.ax_1_1
+Conway.Life.RLE.pulsar_parse_ok._native.native_decide.ax_1_1
+Conway.Life.RLE.gosper_gun_parse_ok._native.native_decide.ax_1_1
+Conway.Life.RLE.lwss_rle_roundtrip._native.native_decide.ax_1_1
+Conway.Life.RLE.pulsar_rle_roundtrip._native.native_decide.ax_1_1
+Conway.Life.RLE.gosper_gun_cell_count._native.native_decide.ax_1_1
+Conway.Life.RLE.glider_parsed_cell_count._native.native_decide.ax_1_1
+Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1
+Conway.Life.jumpCaptured_glider._native.native_decide.ax_1_1
+Conway.Life.jumpCaptured_not_trivial._native.native_decide.ax_1_1
+Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_1
+Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_2
+Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_1
+Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_3
+Conway.Life.jumpCaptured_blinker._native.native_decide.ax_1_4
+Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_1
+Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_2
+Conway.Life.jumpCaptured_block_of_class._native.native_decide.ax_1_3
+Conway.Life.pulsar_is_oscillator._native.native_decide.ax_1_1
+Conway.Life.Pillars.pulsar_period3._native.native_decide.ax_1_1
+Conway.Life.Pillars.unitcell_initial_population._native.native_decide.ax_1_1
+Conway.Life.Pillars.pulsar_period1_negative._native.native_decide.ax_1_1
+Conway.Life.Pillars.pulsar_period2_negative._native.native_decide.ax_1_1
+Conway.Life.Pillars.otca_initial_population._native.native_decide.ax_1_1
+Conway.digitsToNat_example._native.native_decide.ax_1_1
+Conway.lookAndSay_4._native.native_decide.ax_1_1
+Conway_en.Life_en.pulsar_period_three._native.native_decide.ax_1_1
+Conway_en.Life_en.pentadecathlon_period_15._native.native_decide.ax_1_1
+Conway_en.Life_en.pulsar_is_oscillator._native.native_decide.ax_1_1
+Conway.Life.Pillars_en.pulsar_period3._native.native_decide.ax_1_1
+Conway.Life.Pillars_en.unitcell_initial_population._native.native_decide.ax_1_1
+Conway.Life.Pillars_en.pulsar_period1_negative._native.native_decide.ax_1_1
+Conway.Life.Pillars_en.pulsar_period2_negative._native.native_decide.ax_1_1
+Conway.Life.Pillars_en.otca_initial_population._native.native_decide.ax_1_1
+Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1
+Conway_en.Life_en.RLE_en.lwss_parse_ok._native.native_decide.ax_1_1
+Conway_en.Life_en.RLE_en.pulsar_parse_ok._native.native_decide.ax_1_1
+Conway_en.Life_en.RLE_en.gosper_gun_parse_ok._native.native_decide.ax_1_1
+Conway_en.Life_en.RLE_en.lwss_rle_roundtrip._native.native_decide.ax_1_1
+Conway_en.Life_en.RLE_en.pulsar_rle_roundtrip._native.native_decide.ax_1_1
+Conway_en.Life_en.RLE_en.gosper_gun_cell_count._native.native_decide.ax_1_1
+Conway_en.Life_en.RLE_en.glider_parsed_cell_count._native.native_decide.ax_1_1
+Conway_en.digitsToNat_example._native.native_decide.ax_1_1
+Conway_en.lookAndSay_4._native.native_decide.ax_1_1
