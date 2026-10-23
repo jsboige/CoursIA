@@ -291,11 +291,12 @@ theorem birthSiteNotFixed {g : Grid} {p : Int × Int}
   exact hpabsent (hstep ▸ hpStep)
 
 /-- **Paired negative witness** for `birthSiteNotFixed`: the empty grid —
-    the placeholder that would stand in for an unloaded pattern — is,
-    itself, a fixed point of the evolution. Without this control, a
-    "the grid is not a fixed point" witness would say nothing about the
-    loaded pattern: any dynamic pattern would satisfy it, including an
-    empty grid swapped in. -/
+    the placeholder that would stand in for an unloaded pattern — is a
+    fixed point of the evolution (`step [] = []`). It therefore **does
+    not satisfy** a "the grid is not a fixed point" witness. The pair
+    shows that the witness discriminates, rather than holding of every
+    grid: without this control, nothing would indicate that
+    `birthSiteNotFixed` tells a loaded pattern apart from a static grid. -/
 theorem emptyGridIsStillLife : step ([] : Grid) = ([] : Grid) := by
   rfl
 

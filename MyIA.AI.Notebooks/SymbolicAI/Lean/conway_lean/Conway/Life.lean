@@ -300,11 +300,12 @@ theorem birthSiteNotFixed {g : Grid} {p : Int × Int}
   exact hpabsent (hstep ▸ hpStep)
 
 /-- **Temoin negatif apparie** de `birthSiteNotFixed` : la grille vide —
-    le placeholder qui remplacerait un motif non charge — est, elle, un
-    point fixe de l'evolution. Sans ce controle, un temoin
-    « la grille n'est pas un point fixe » ne dirait rien du motif
-    charge : il serait satisfait par tout motif dynamique, y compris
-    par une grille vide Replacee. -/
+    le placeholder qui remplacerait un motif non charge — est un point
+    fixe de l'evolution (`step [] = []`). Elle **ne satisfait donc pas**
+    le temoin « la grille n'est pas un point fixe ». Ce couple montre que
+    le temoin mord, au lieu d'etre vrai de toute grille : sans ce
+    controle, rien n'indiquerait que `birthSiteNotFixed` distingue un
+    motif charge d'une grille statique. -/
 theorem emptyGridIsStillLife : step ([] : Grid) = ([] : Grid) := by
   rfl
 
