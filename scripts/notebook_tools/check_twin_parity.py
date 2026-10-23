@@ -607,7 +607,8 @@ def _git_show_file(repo_root: Path, git_ref: str, rel_path: str) -> str | None:
     return r.stdout.decode("utf-8", errors="replace")
 
 
-def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list:
+def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path,
+                          names: set[str] | None = None) -> list:
     """Charge le registre a un ref git arbitraire (HEAD, origin/main, <sha>...).
 
     Robuste a la frontiere de migration #8542 : le base-ref peut etre l'ANCIEN
@@ -617,6 +618,11 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
 
     Indispensable au mode `--per-pair --base origin/main` en CI : sur la PR de
     migration elle-meme, origin/main porte encore l'ancien format.
+
+    `names` (#21972) : quand un selecteur `--pair`/`--family` est pose, on ne
+    `git show` que les fichiers des paires visees (et leurs audits), pas les
+    2374 fichiers du registre. `names=None` (mode plein, sans selecteur) ne
+    filtre rien : le parcours integral reste strictement identique.
     """
     if yaml is None:
         raise SystemExit("PyYAML requis pour --per-pair.")
@@ -648,6 +654,13 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
                     pair_lines.append((fname[:-5], line))
             elif len(parts) == 2 and parts[1].endswith(".yaml"):
                 audit_lines.setdefault(parts[0], []).append(line)
+        # Filtre AVANT lecture (#21972) : avec un selecteur, ne `git show` que
+        # les fichiers de paire des noms demandes (+ leurs audits), pas les 2374
+        # fichiers du registre. Le slug d'un fichier de paire EST `_slug(name)`
+        # (un fichier = une paire, #8542), donc le filtre sur slug == sur name.
+        if names is not None:
+            wanted_slugs = {_slug(n) for n in names}
+            pair_lines = [(s, l) for (s, l) in pair_lines if s in wanted_slugs]
         for slug, line in sorted(pair_lines):
             txt = _git_show_file(repo_root, git_ref, line)
             if txt is None:
@@ -1995,7 +2008,14 @@ def _main(argv=None) -> int:
                 return 2
             pairs_head = [pp for pp in pairs_head if pp.get("name") == args.pair]
 
-        pairs_base = _load_registry_at_ref(repo_root, args.base, reg_path)
+        # #21972 : ne charger au base-ref que les paires selectionnees. `pairs_head`
+        # est deja filtre par --pair/--family (juste dessus) ; sans selecteur il
+        # porte tout le registre -> `names` = tous les noms -> chargement integral,
+        # comportement strictement inchange.
+        pairs_base = _load_registry_at_ref(
+            repo_root, args.base, reg_path,
+            names={pp.get("name", "?") for pp in pairs_head},
+        )
         # Index par nom (au cas ou l'ordre ou les ajouts/suppressions different)
         base_by_name = {pp.get("name", "?"): pp for pp in pairs_base}
 
