@@ -114,40 +114,67 @@ class TestFilterForParcours:
 # generate_parcours_page
 # ---------------------------------------------------------------------------
 
+@pytest.fixture()
+def nb_root(tmp_path):
+    """Materialise les carnets de SAMPLE_ENTRIES (chemins fictifs) sur disque.
+
+    generate_parcours_page ne partitionne que sur l'EXISTENCE du fichier ;
+    le contenu "{}" suffit (JSON valide, jamais ouvert ici).
+    """
+    for e in SAMPLE_ENTRIES:
+        p = tmp_path / e["path"]
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("{}", encoding="utf-8")
+    return tmp_path
+
+
 class TestGenerateParcoursPage:
-    def test_has_title(self):
+    def test_has_title(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
-        page = generate_parcours_page("ia-classique", entries)
+        page = generate_parcours_page("ia-classique", entries, notebooks_root=nb_root)
         assert "# IA Classique" in page
 
-    def test_has_subtitle(self):
+    def test_has_subtitle(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
-        page = generate_parcours_page("ia-classique", entries)
+        page = generate_parcours_page("ia-classique", entries, notebooks_root=nb_root)
         assert "Recherche, CSP et résolution" in page
 
-    def test_has_statistics(self):
+    def test_has_statistics(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
-        page = generate_parcours_page("ia-classique", entries)
+        page = generate_parcours_page("ia-classique", entries, notebooks_root=nb_root)
         assert "## Statistiques" in page
         assert "| Notebooks |" in page
         assert "| PRODUCTION |" in page
 
-    def test_notebook_count_matches(self):
+    def test_notebook_count_matches(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
-        page = generate_parcours_page("ia-classique", entries)
+        page = generate_parcours_page("ia-classique", entries, notebooks_root=nb_root)
         assert f"| Notebooks | {len(entries)} |" in page
 
-    def test_has_table_rows(self):
+    def test_has_table_rows(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "genai")
-        page = generate_parcours_page("genai", entries)
+        page = generate_parcours_page("genai", entries, notebooks_root=nb_root)
         assert "| Notebook |" in page
         assert "Maturité" in page
 
-    def test_executable_column(self):
+    def test_executable_column(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "genai")
-        page = generate_parcours_page("genai", entries)
+        page = generate_parcours_page("genai", entries, notebooks_root=nb_root)
         assert "Oui" in page
         assert "Non" in page
+
+    def test_absent_entry_skipped_not_counted(self, nb_root):
+        """#20552 : entree absente du disque -> pas comptee, pas emise, signalee."""
+        entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
+        ghost = dict(entries[0], path="Search/Part1/Search-1-Renamed.ipynb", title="Ghost Renamed")
+        unresolved: list[str] = []
+        page = generate_parcours_page(
+            "ia-classique", entries + [ghost],
+            unresolved=unresolved, notebooks_root=nb_root,
+        )
+        assert f"| Notebooks | {len(entries)} |" in page
+        assert "Ghost Renamed" not in page
+        assert unresolved == [ghost["path"]]
 
     def test_empty_entries(self):
         page = generate_parcours_page("ia-classique", [])

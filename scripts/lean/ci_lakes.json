@@ -143,6 +143,7 @@
       "display-name": "finiteness_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
       "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/lakefile.lean",
@@ -354,6 +355,20 @@
         "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lakefile.toml",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/lean-toolchain"
+      ]
+    },
+    {
+      "lake": "riemann200",
+      "project-path": "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean",
+      "display-name": "riemann200_lean",
+      "sorry-baseline": "0",
+      "sorry-filter-mode": "real",
+      "axiom-target-modules": "*",
+      "paths": [
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/**.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lakefile.lean",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lean-toolchain",
+        "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/riemann200_lean/lake-manifest.json"
       ]
     }
   ]
