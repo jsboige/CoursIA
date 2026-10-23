@@ -37,12 +37,13 @@ commit pinné.
 | MetaGeneticSharp | <https://github.com/jsboige/MetaGeneticSharp> | `0433fad0c` | **MIT** | © 2020-2026 Jean-Sylvain Boige & contributors |
 | Z3.Linq | <https://github.com/MyIntelligenceAgency/Z3.Linq> | `b68438c89` | **MIT** | © Bart De Smet, Ricardo Niepel, Jean-Sylvain Boige, Karel Frajtak, endjin |
 | Automata | <https://github.com/MyIntelligenceAgency/Automata> | `cfbf436af` | **MIT** † | © Microsoft Corporation |
-| Argumentum ⚠️ | <https://github.com/ArgumentumGames/Argumentum> | `7e72f3e5d` | **LGPL-3.0-only** | GNU LGPL v3.0 |
+| Argumentum ⚠️ | <https://github.com/ArgumentumGames/Argumentum> | `c5fb8237c4` | **LGPL-3.0-only** (code) + **CC-BY-SA-4.0** (corpus éditorial ‡) | GNU LGPL v3.0 (code) · CC BY-SA 4.0 (corpus) |
 | semantic-fleet | <https://github.com/MyIntelligenceAgency/semantic-fleet> | `0468481f5` (branche `stable-from-v0343`) | **MIT** | © 2023 MyIA |
 
 > **⚠️ Copyleft (à vérifier avant publication open-courseware, epic #4208).**
-> `account-abstraction` est sous **GPL-3.0-only** et `Argumentum` sous
-> **LGPL-3.0-only**. Ces licences copyleft imposent des obligations de
+> `account-abstraction` est sous **GPL-3.0-only** et le **code** d'`Argumentum`
+> sous **LGPL-3.0-only** (son corpus éditorial est sous CC BY-SA 4.0, cf. ‡).
+> Ces licences copyleft imposent des obligations de
 > redistribution (notamment la GPL-3.0, virale sur la distribution). Si le
 > projet publie ou distribue le code de ces sous-modules, une revue
 > licence-compatibilité est requise. En usage interne / build-time / sous-module
@@ -52,6 +53,15 @@ commit pinné.
 > ligne-titre `Automata.NET` qui fait que l'API GitHub classifie la licence comme
 > `NOASSERTION`, mais le corps est **verbatim** le texte standard de la licence
 > MIT (© Microsoft Corporation). Ne pas se fier au seul badge de l'API GitHub ici.
+>
+> **‡ Argumentum — double licence depuis le 2026-09-21.** `LICENSE-CONTENT.md`
+> (commit amont `956384ac`) place le **corpus éditorial** — 5 fichiers de texte
+> des cartes + 2 ontologies OWL — sous **CC BY-SA 4.0**, attribution
+> « Argumentum » ; le code reste sous LGPL-3.0. Le commit pinné ci-dessus est
+> postérieur à `956384ac`. Les dérivés du texte (datasets Phase 2 de
+> FallacyDetection, cf. `data/NOTICE-SCENARII` et le champ `licence` du
+> manifeste) sont donc sous CC BY-SA 4.0 — sans restriction supplémentaire
+> possible (§ 3(b) de BY-SA 4.0).
 
 ## 3. Bibliothèques vendored (copiées dans l'arbre)
 
