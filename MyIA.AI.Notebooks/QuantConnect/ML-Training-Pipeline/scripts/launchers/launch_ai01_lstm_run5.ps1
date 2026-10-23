@@ -156,7 +156,7 @@ $metadata = @{
     log_file    = "train.log"
     pid_file    = "PID.txt"
 }
-$metadata | ConvertTo-Json -Depth 3 | Out-File -FilePath $MetaPath -Encoding utf8
+[System.IO.File]::WriteAllText($MetaPath, ($metadata | ConvertTo-Json -Depth 3), (New-Object System.Text.UTF8Encoding($false)))
 
 # --- Launch detached process ---
 Write-Host "[LAUNCH] Starting LSTM training..."
