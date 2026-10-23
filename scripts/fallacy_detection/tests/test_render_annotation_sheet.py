@@ -85,7 +85,7 @@ def test_render_emits_document_template_and_manifest(tmp_path: Path) -> None:
 
     document = (out_dir / "annotation_reviewer-1.md").read_text(encoding="utf-8")
     answers = (out_dir / "answers_reviewer-1.csv").read_text(encoding="utf-8")
-    manifest = json.loads((out_dir / "render_manifest.json").read_text(encoding="utf-8"))
+    manifest = json.loads((out_dir / "render_manifest_reviewer-1.json").read_text(encoding="utf-8"))
 
     assert manifest["items"] == 3
     assert manifest["families"] == 3
@@ -96,6 +96,26 @@ def test_render_emits_document_template_and_manifest(tmp_path: Path) -> None:
     rows = list(csv.DictReader(answers.splitlines()))
     assert [row["item_id"] for row in rows] == ["eval-0000", "eval-0001", "eval-0002"]
     assert all(row["node"] == "" for row in rows)
+
+
+def test_manifest_is_label_named_and_refuses_overwrite(tmp_path: Path) -> None:
+    """Deux evaluateurs dans le meme dossier ne s'ecrasent pas ; le meme label refuse (review #22233)."""
+    sheet, vocab = make_sheet(tmp_path), make_vocab(tmp_path)
+    shared = tmp_path / "pass1"
+
+    for label in ("reviewer-1", "reviewer-2"):
+        code = renderer.main(
+            ["render", "--sheet", str(sheet), "--vocab", str(vocab), "--out-dir", str(shared), "--label", label]
+        )
+        assert code == 0
+    manifests = sorted(p.name for p in shared.glob("render_manifest_*.json"))
+    assert manifests == ["render_manifest_reviewer-1.json", "render_manifest_reviewer-2.json"]
+
+    # Un second rendu du meme label ne peut pas ecraser silencieusement le manifeste pinne.
+    with pytest.raises(SystemExit, match="existe deja"):
+        renderer.main(
+            ["render", "--sheet", str(sheet), "--vocab", str(vocab), "--out-dir", str(shared), "--label", "reviewer-1"]
+        )
 
 
 def test_answer_space_is_closed_and_complete(tmp_path: Path) -> None:

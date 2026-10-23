@@ -277,7 +277,13 @@ def cmd_render(args: argparse.Namespace) -> int:
     args.out_dir.mkdir(parents=True, exist_ok=True)
     document_path = args.out_dir / f"annotation_{label}.md"
     answers_path = args.out_dir / f"answers_{label}.csv"
-    manifest_path = args.out_dir / "render_manifest.json"
+    manifest_path = args.out_dir / f"render_manifest_{label}.json"
+    if manifest_path.exists():
+        raise SystemExit(
+            f"{manifest_path} existe deja -- un rendu porte ce label dans ce dossier ; "
+            f"changer --label ou --out-dir plutot que d'ecraser un manifeste qui pinne "
+            f"les empreintes de son rendu."
+        )
 
     document_path.write_text(
         render_markdown(sheet, vocabulary, label, args.title, args.family_separator),
