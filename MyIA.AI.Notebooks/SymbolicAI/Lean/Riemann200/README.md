@@ -8,28 +8,29 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 
 | # | Notebook | Source / écho | Outil |
 |---|----------|---------------|-------|
-| 01 | *(à venir)* | Le mémoire de 1859 : zeta et l'hypothèse — produit eulérien, prolongement, premiers zéros sur la ligne critique | mpmath (`zetazero`) |
+| 01 | [01-zeta-1859.ipynb](01-zeta-1859.ipynb) | Le mémoire de 1859 : zeta et l'hypothèse — produit eulérien **mesuré** (somme vs produit au même seuil, vitesses comparées), prolongement et équation fonctionnelle vérifiée (~1e-31), les dix premiers zéros calculés et **vérifiés comme zéros** (\|ζ(ρₖ)\| ~ 1e-30, symétrie s↔1-s mesurée), hypothèses pré-enregistrées (H1 vitesse du produit CONFIRMÉE, H2 comptage Riemann–von Mangoldt CONFIRMÉ, H3 écarts GUE : moyenne CONFIRMÉE, version forte REFUTÉE) | mpmath (`zetazero`) |
 | 02 | *(à venir)* | La formule explicite — ψ(x) = x − Σ ρ⁻ˣ/ρ : les zéros font « la musique des premiers » | mpmath |
 | 03 | [03-series-rearrangement.ipynb](03-series-rearrangement.ipynb) | Thèse d'habilitation (1854) : séries de Riemann et théorème de réarrangement — convergence conditionnelle mesurée, preuve gloutonne exécutable, hypothèses pré-enregistrées (H1 vitesse, H2 proportion, H3 fini vs infini et série harmonique aléatoire) | Python stdlib + matplotlib |
-| 04 | *(à venir)* | L'intégrale de Riemann — née de la même thèse d'habilitation ; sommes de Darboux, passage à la limite mesuré | Python stdlib |
+| 04 | [04-integrale-riemann.ipynb](04-integrale-riemann.ipynb) | L'intégrale de Riemann — née de la même thèse d'habilitation ; sommes de Darboux et **loi de fermeture de l'écart** mesurée (hypothèse pré-enregistrée : écart × n → (b−a)·V), témoins de Dirichlet (écart constant = 1) et de Thomae (écart → 0 malgré des discontinuités denses), fonction R(x) = Σ sin(n²x)/n² de 1854 (continue, dérivable en certains rationnels seulement — Hardy 1916, Gerver 1970) | Python stdlib + matplotlib |
 | 05 | *(à venir)* | Sphère de Riemann et Möbius — compactification, transformations conformes | matplotlib ; `RiemannSphere` existe dans Mathlib |
 | 06 | *(à venir)* | Surfaces de Riemann — sqrt(z), log(z) : la monodromie rendue visible | Python stdlib |
-| 07 | *(à venir)* | Géométrie riemannienne — l'habilitation de 1854 : distances, géodésiques (désendroit [#19333](https://github.com/jsboige/CoursIA/issues/19333)) | Python stdlib |
+| 07 | [07-geometrie-riemannienne.ipynb](07-geometrie-riemannienne.ipynb) | Géométrie riemannienne — l'habilitation de 1854 : anisotropie de la métrique (cos² lat), grand cercle vs loxodromie (+16,63 %), géodésiques RK4 à accélération normale (retour 10⁻¹²R, plan du grand cercle invariant), excès angulaire Gauss-Bonnet = L'Huilier (65,40°, K = 1/R²), loi d'échelle 1/R², Pythagore sphérique (désendroit [#19333](https://github.com/jsboige/CoursIA/issues/19333)) ; hypothèses H1/H2 pré-enregistrées | Python stdlib |
 | 08 | *(à venir)* | Riemann mapping — toute région simplement connexe ≠ ℂ est conforme au disque | Python stdlib |
-| 09 | *(à venir)* | Riemann–Lebesgue et Fourier — noyau de Dirichlet, phénomène de Gibbs | Python stdlib + matplotlib |
+| 09 | [09-riemann-lebesgue-fourier.ipynb](09-riemann-lebesgue-fourier.ipynb) | Riemann–Lebesgue et Fourier — coefficients en 1/n mesurés (produit n·c_n borné), noyau de Dirichlet (identité + intégrale 2π), phénomène de Gibbs (overshoot 1.17898 → 2Si(π)/π, position π/(N+1/2)), contre-témoin triangle (erreur en 1/N), régularité contre décroissance ; hypothèses H1/H2 pré-enregistrées | Python stdlib |
+| 10 | [10-ondes-riemann.ipynb](10-ondes-riemann.ipynb) | Le mémoire de 1860 : propagation des ondes d'amplitude finie — invariants de Riemann, onde simple exacte, formation géométrique du choc (t\*), solveur exact du problème de Riemann isotherme (Sod : raréfaction + choc) | Python stdlib + matplotlib |
 
-Le versant **preuves** vivra dans le lake compagnon `riemann200_lean/`, à créer au premier grain Lean de la série (même maison que [`serre100_lean/`](../Serre100/serre100_lean/)).
+Le versant **preuves** vit dans le lake compagnon [`riemann200_lean/`](riemann200_lean/) — premier module [`Riemann200/Memoire1859.lean`](riemann200_lean/Riemann200/Memoire1859.lean) : le pôle en s = 1 et la divergence des inverses des premiers, face à Mathlib (`lake build SUCCESS`, `distinct_code_sorry` 0). Même maison que [`serre100_lean/`](../Serre100/serre100_lean/).
 
 ## Conventions
 
-- Français d'abord, calcul en stdlib pur (aucune dépendance au-delà de matplotlib pour les figures) — mêmes conventions que Serre 100.
+- Français d'abord, calcul en stdlib pur (aucune dépendance au-delà de matplotlib pour les figures) — mêmes conventions que Serre 100. Exception déclarée par la ligne d'outils de l'EPIC : les grains R-01/R-02 utilisent **mpmath** (`zetazero`), seul recours au-delà de la stdlib dans la série.
 - ≥ 3 exercices C.1 par notebook (convention [#2161](https://github.com/jsboige/CoursIA/issues/2161)), exécution complète commitée (C.2).
 - Chaque hypothèse quantitative est **pré-enregistrée** avant sa mesure, et le verdict — y compris REFUTÉ — reste dans la sortie.
 - Verdict SOTA écrit au body de chaque PR ([#3801](https://github.com/jsboige/CoursIA/issues/3801)).
-- Grounding Mathlib par grain : ce qui existe dans Mathlib est cité avec son fichier ; ce qui n'existe pas est dit tel quel (le carnet 03 mesure cette frontière pour le théorème de réarrangement).
+- Grounding Mathlib par grain : ce qui existe dans Mathlib est cité avec son fichier ; ce qui n'existe pas est dit tel quel (les carnets 03 et 04 mesurent cette frontière — théorème de réarrangement, sommes de Darboux ; le carnet 04 relève au passage que `Analysis/Calculus/Darboux.lean` est le théorème de Darboux **sur les dérivées**, homonyme et sans rapport avec les sommes de Darboux).
 
 ## Raccords au dépôt
 
 - [Serre 100](../Serre100/README.md) — carnets 11–15 : le monde pré-analytique que 1854/1859 ont prolongé.
-- [ANALYSE](../ANALYSE/) — l'intégrale de Riemann y est un sol (ANALYSE-02 Tao) ; R-04 fera pont, pas doublon.
+- [ANALYSE](../ANALYSE/) — l'intégrale de Riemann y est un sol (ANALYSE-02 Tao) ; R-04 fait pont, pas doublon : ses objets propres sont les **sommes de Darboux** et les témoins de non-intégrabilité (Dirichlet, Thomae), que la série ANALYSE ne construit pas.
 - [#19333](https://github.com/jsboige/CoursIA/issues/19333) (géométrie différentielle Sheydvasser) et [#18286](https://github.com/jsboige/CoursIA/issues/18286) (formes modulaires Borcherds) — périmètres cités par R-07 et R-01/R-02, frontière vérifiée à chaque grain.

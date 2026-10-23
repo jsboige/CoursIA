@@ -32,7 +32,8 @@ sys.path.insert(0, str(CI_DIR))
 import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
     FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
-    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, Guard,
+    TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, TRANCHE22, TRANCHE25,
+    Guard,
 )
 
 # Lot PILOTE absorbe a l'etape 3 de #12856 (programme #12567) : comparaison
@@ -1715,3 +1716,167 @@ def test_check_hr_substitution_gh_failure_exits_two(monkeypatch):
     assert excinfo.value.code == 2, (
         "l'echec gh doit sortir rc=2 (incident), pas rc=1 (verdict)"
     )
+
+
+def test_tranche22_markdown_schema_advisory_guard_is_wired():
+    """Tranche 22 = schema des cellules markdown (#20167), advisory. Contrat :
+    native, absorbe, non bloquant (calibration avant bascule), iteration par
+    carnet modifie. Le detecteur DOIT tirer sur un carnet fautif et rester
+    muet sur un carnet propre : un organe qui ne dit jamais rien est
+    indiscernable d'un organe debranche (lecon #11685).
+    """
+    import json
+    import tempfile
+
+    assert len(TRANCHE22) == 1, "la tranche 22 documente 1 seul garde (#20167)"
+    guard = TRANCHE22[0]
+    assert guard.source == FAST_LANE_NATIVE
+    assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+    assert not guard.blocking, (
+        f"{guard.name} est advisory : bascule en bloquant seulement quand main "
+        f"ne porte plus aucune cellule markdown fautive"
+    )
+    assert guard.iterates_paths and "{changed_paths}" in guard.argv
+    assert "--check" in guard.argv
+    assert "MyIA.AI.Notebooks/**/*.ipynb" in guard.iterate_paths
+    for needle in (
+        "scripts/notebook_tools/fix_markdown_cell_schema.py",
+        "scripts/notebook_tools/tests/test_fix_markdown_cell_schema.py",
+        "scripts/ci/fast_lane_registry.py",
+    ):
+        assert needle in guard.paths, f"{needle} doit figurer dans les paths"
+
+    # Controle positif et negatif du detecteur, sur de vrais fichiers.
+    root = Path(__file__).resolve().parents[2]
+    script = root / "scripts" / "notebook_tools" / "fix_markdown_cell_schema.py"
+    nb_defect = {
+        "cells": [{"cell_type": "markdown", "id": "a", "metadata": {},
+                   "source": ["x\n"], "outputs": []}],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    nb_clean = {
+        "cells": [{"cell_type": "markdown", "id": "a", "metadata": {},
+                   "source": ["x\n"]}],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    with tempfile.TemporaryDirectory() as tmp:
+        bad = Path(tmp) / "bad.ipynb"
+        good = Path(tmp) / "good.ipynb"
+        bad.write_text(json.dumps(nb_defect), encoding="utf-8")
+        good.write_text(json.dumps(nb_clean), encoding="utf-8")
+        rc_bad = subprocess.run(
+            ["python", str(script), "--check", str(bad)],
+            capture_output=True, text=True, encoding="utf-8",
+        ).returncode
+        rc_good = subprocess.run(
+            ["python", str(script), "--check", str(good)],
+            capture_output=True, text=True, encoding="utf-8",
+        ).returncode
+    assert rc_bad == 1, "le detecteur doit tirer (rc=1) sur un carnet fautif"
+    assert rc_good == 0, "le detecteur doit rester muet (rc=0) sur un carnet propre"
+
+
+def test_tranche25_added_axioms_cliquet_guard_is_wired():
+    """Tranche 25 (#21390) = cliquet `native_decide`/`sorry`/`admit` ajoute
+    dans un diff `*.lean`.
+
+    Contrat : garde NATIF (aucun workflow d'origine), BLOQUANT et ABSORBE
+    (sans `absorbed`, un `blocking=True` ne bloque rien -- incident #19168),
+    base resolue par `{base_ref}` (`origin/<base_ref>` dans le job
+    `Always-on guards`, qui fait `git fetch origin "<base_ref>"` avec un
+    checkout en `fetch-depth: 0`), et **rc=2 (incident d'entree) qui n'est
+    pas lu comme un vert** : `warn_rc` est vide, donc `conclusion_for` rend
+    `failure` et le garde arme `blocking_failed`.
+    """
+    assert len(TRANCHE25) == 1, "la tranche 25 porte 1 seul garde (#21390)"
+    guard = TRANCHE25[0]
+    assert guard.source == FAST_LANE_NATIVE
+    assert guard.blocking, (
+        f"{guard.name} doit bloquer : une ancre ajoutee dans une declaration "
+        "nommee est deja interdite par pr-review-discipline §B"
+    )
+    assert guard.absorbed, (
+        f"{guard.name} doit porter absorbed=True, sans quoi blocking=True ne "
+        "bloque rien (incident #19168)"
+    )
+    assert guard.needs_base, "le garde compare HEAD a la base"
+    assert guard.warn_rc == (), (
+        "warn_rc vide : un rc=2 (base/tete non resolue) doit rester un rouge, "
+        "pas etre lu comme un vert"
+    )
+    assert "**/*.lean" in guard.paths, "le cliquet doit porter sur les .lean modifies"
+    for needle in (
+        "scripts/lean/check_added_axioms_cliquet.py",
+        "scripts/lean/tests/test_check_added_axioms_cliquet.py",
+        "scripts/ci/fast_lane.py",
+        "scripts/ci/fast_lane_registry.py",
+    ):
+        assert needle in guard.paths, f"{needle} doit figurer dans les paths"
+    assert guard.argv[0] == "python"
+    assert "scripts/lean/check_added_axioms_cliquet.py" in guard.argv
+    assert "--base" in guard.argv and "{base_ref}" in guard.argv
+    assert "--head" in guard.argv and "HEAD" in guard.argv
+
+    # Le rc=2 ne doit pas produire un vert : conclusion reelle du moteur.
+    assert fast_lane.conclusion_for(guard, 2) == "failure"
+    assert fast_lane.conclusion_for(guard, 1) == "failure"
+    assert fast_lane.conclusion_for(guard, 0) == "success"
+
+    # La tranche doit etre branchee dans la liste executee par fast_lane.py.
+    root = Path(__file__).resolve().parents[2]
+    source = (root / "scripts" / "ci" / "fast_lane.py").read_text(encoding="utf-8")
+    assert "TRANCHE25" in source, (
+        "TRANCHE25 doit etre importee ET agregee par fast_lane.py"
+    )
+
+
+def test_tranche25_cliquet_detector_tire_sur_une_ancre_nommee_et_rie_tient_sur_un_example(tmp_path):
+    """Controle de bout en bout du detecteur **via sa CLI**, dans les deux
+    sens : une ancre `native_decide` ajoutee dans un `theorem` nomme doit
+    faire sortir rc=1 (rouge), une ancre dans un `example` rc=0 (vert --
+    la pile #18706 ne doit pas rougir), et une base qui ne resout pas rc=2
+    (incident d'entree, fail-closed)."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+
+    def _git(*args):
+        return subprocess.run(
+            ["git", *args], cwd=repo, capture_output=True, text=True,
+            encoding="utf-8", check=True,
+        )
+
+    _git("init", "-q", "-b", "main")
+    _git("config", "user.email", "test@test")
+    _git("config", "user.name", "test")
+    (repo / "Base.lean").write_text(
+        "theorem base_ok : True := by trivial" + chr(10), encoding="utf-8")
+    _git("add", "-A")
+    _git("commit", "-q", "-m", "base")
+
+    detector = (Path(__file__).resolve().parents[2] / "scripts" / "lean"
+                / "check_added_axioms_cliquet.py")
+
+    def _run(base):
+        return subprocess.run(
+            ["python", str(detector), "--base", base, "--head", "HEAD"],
+            cwd=repo, capture_output=True, text=True, encoding="utf-8",
+        ).returncode
+
+    # 1. ancre dans une declaration NOMMEE -> rc=1 (rouge)
+    (repo / "Base.lean").write_text(
+        "theorem base_ok : True := by trivial" + chr(10)
+        + "theoremAdded : True := by native_decide" + chr(10), encoding="utf-8")
+    _git("add", "-A")
+    _git("commit", "-q", "-m", "named anchor")
+    assert _run("HEAD~1") == 1, "une ancre dans un theorem nomme doit rougir"
+
+    # 2. ancre dans un `example` -> rc=0 (vert) : la pile #18706 ne rougit pas
+    (repo / "Base.lean").write_text(
+        "theorem base_ok : True := by trivial" + chr(10)
+        + "example : True := by native_decide" + chr(10), encoding="utf-8")
+    _git("add", "-A")
+    _git("commit", "-q", "-m", "example anchor")
+    assert _run("HEAD~1") == 0, "une ancre dans un example doit rester verte"
+
+    # 3. base qui ne resout pas -> rc=2 (fail-closed, jamais un vert)
+    assert _run("ref-qui-nexiste-pas") == 2, "une base non resolue doit sortir 2"

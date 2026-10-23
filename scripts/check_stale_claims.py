@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 import unicodedata
@@ -65,15 +66,22 @@ def _unaccent(s: str) -> str:
 
 
 def _normalize_num(tok: str) -> set[str]:
-    """Variantes acceptables d'un nombre côté outputs (12 vs 12,0 vs 12.0)."""
+    """Variantes acceptables d'un nombre côté outputs (12 vs 12,0 vs 12.0).
+
+    Une valeur non finie (suite d'environ 309 chiffres ou plus selon ses
+    premiers chiffres, float() = inf, ou nan) ne donne que le jeton brut :
+    int(inf) lève OverflowError.
+    """
     raw = tok.replace(",", ".")
     out = {tok, raw}
     try:
         f = float(raw)
-        out.add(str(int(f)) if f == int(f) else str(f))
-        out.add(f"{f:g}")
     except ValueError:
-        pass
+        return out
+    if not math.isfinite(f):
+        return out
+    out.add(str(int(f)) if f == int(f) else str(f))
+    out.add(f"{f:g}")
     return out
 
 

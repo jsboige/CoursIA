@@ -32,7 +32,6 @@ name: Dry-run sizing control (ai-01 reference copies)
 on:
   pull_request:
     types: [opened, synchronize, reopened]
-    branches: [main]
     paths:
       - 'scripts/ci/docker/linux-runner/persist/ai-01/**'
       # Self-cover (#8822) : un workflow filtre par chemins doit lister son

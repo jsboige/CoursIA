@@ -231,6 +231,7 @@ claude
 | `Authentication failed` | Vérifier `ANTHROPIC_AUTH_TOKEN` et `ANTHROPIC_BASE_URL` |
 | Extension ne se connecte pas | Activer "Disable Login Prompt" dans les settings |
 | MCP timeout | Augmenter la variable `MCP_TIMEOUT` |
+| Les carnets répondent en décrivant votre configuration (serveurs MCP, « scratchpad ») | Les exécuter hors de la session Claude Code, en mode sûr : [procédure](notebooks/README.md#réponses-qui-décrivent-votre-propre-configuration-claude-code) |
 
 **Guide complet** : [INSTALLATION-CLAUDE-CODE.md](docs/INSTALLATION-CLAUDE-CODE.md#résolution-de-problèmes)
 

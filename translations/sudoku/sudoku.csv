@@ -1642,7 +1642,7 @@ L'heuristique MRV illustre le principe ""fail-first"" fondamental en recherche :
 Le notebook suivant, [Sudoku-02-DancingLinks-Python](Sudoku-02-DancingLinks-Python.ipynb), aborde une approche radicalement différente : la reformulation du Sudoku comme problème de couverture exacte, resolue par l'algorithme X de Knuth et la technique des Dancing Links (DLX).",,,,,,,,7289d82850e05473,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb,9987f17e,markdown,fr,9af2edcce3da94ff,"# Sudoku-10 : Résolution avec OR-Tools (C#)
 
-**Navigation** : [<< Sudoku-9 Graph Coloring C#](Sudoku-9-GraphColoring-Csharp.ipynb) | [Index](README.md) | [Sudoku-11 Choco C# >>](Sudoku-11-Choco-CSharp.ipynb)
+**Navigation** : [<< Sudoku-9 Graph Coloring C#](Sudoku-09-GraphColoring-CSharp.ipynb) | [Index](README.md) | [Sudoku-11 Choco C# >>](Sudoku-11-Choco-CSharp.ipynb)
 
 ## Objectifs d'apprentissage
 
@@ -1653,7 +1653,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb,9987f17e,markdown,fr,9af
 4. Comparer les performances de différentes approches de résolution de contraintes
 
 ### Prérequis
-- [Sudoku-1-Backtracking-Csharp](Sudoku-1-Backtracking-Csharp.ipynb) - résolution de base
+- [Sudoku-01-Backtracking-CSharp](Sudoku-01-Backtracking-CSharp.ipynb) - résolution de base
 - Notions de programmation par contraintes (variables, domaines, contraintes)
 
 ### Durée estimée : 50 minutes
@@ -1687,7 +1687,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb,58f7ac86,markdown,fr,03b
 
 Nous allons importer les classes de base définies dans le notebook précédent, fournissant notamment la représentation, le chargement et l'affichage de Sudokus, et l'infrastructure de résolution.
 ",,,,,,,,03bf47fc69a84cef,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb,56afc953,code,fr,eb3d945ae449b902,#!import Sudoku-0-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb,56afc953,code,fr,eb3d945ae449b902,#!import Sudoku-00-Environment-CSharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb,e8d2c3e6,markdown,fr,092f9f7f06129dd6,"## Implémentations des Solveurs
 
 ### Solveur par contraintes classique (ConstraintSolver legacy)
@@ -2428,7 +2428,7 @@ OR-Tools propose **trois paradigmes** pour modéliser Sudoku :
 4. La modélisation **N-Reines** (N=8, 92 solutions) généralise les mêmes techniques CSP.",,,,,,,,0bb5bce1bfb50d61,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-10-ORTools-CSharp.ipynb,4b8e695f,markdown,fr,423169cb29a19105,"---
 
-**Navigation** : [<< Sudoku-9 Graph Coloring C#](Sudoku-9-GraphColoring-Csharp.ipynb) | [Index](README.md) | [Sudoku-11 Choco C# >>](Sudoku-11-Choco-CSharp.ipynb)
+**Navigation** : [<< Sudoku-9 Graph Coloring C#](Sudoku-09-GraphColoring-CSharp.ipynb) | [Index](README.md) | [Sudoku-11 Choco C# >>](Sudoku-11-Choco-CSharp.ipynb)
 
 **Voir aussi** : 
 - [CSP-1-Fondamentaux](../Search/Part2-CSP/CSP-1-Fundamentals.ipynb) - Fondamentaux CSP
@@ -2446,7 +2446,7 @@ A la fin de ce notebook, vous saurez :
 3. Comparer les performances d'un solveur industriel avec le backtracking
 4. Utiliser la contrainte AllDifferent pour modéliser des problèmes combinatoires
 
-**Duree estimee** : ~10 min | **Prerequis** : [Sudoku-0 Environment](Sudoku-0-Environment-Csharp.ipynb) | **Lien** : Voir [CSP-3-Avance](../Search/Part2-CSP/CSP-3-Advanced.ipynb)
+**Duree estimee** : ~10 min | **Prerequis** : [Sudoku-0 Environment](Sudoku-00-Environment-CSharp.ipynb) | **Lien** : Voir [CSP-3-Avance](../Search/Part2-CSP/CSP-3-Advanced.ipynb)
 
 ---
 
@@ -3002,7 +3002,7 @@ A la fin de ce notebook, vous saurez :
 3. **Configurer** différentes stratégies de recherche (FirstFail, DomOverWDeg)
 4. **Comparer** Choco avec d'autrès solveurs de contraintes
 
-**Durée estimée** : ~30 min | **Prérequis** : [Sudoku-0 Environment](Sudoku-0-Environment-Csharp.ipynb)
+**Durée estimée** : ~30 min | **Prérequis** : [Sudoku-0 Environment](Sudoku-00-Environment-CSharp.ipynb)
 
 ---
 
@@ -3054,11 +3054,11 @@ string FindSudokuDir()
     while (dir != null)
     {
         // Check if we're in the Sudoku directory
-        if (File.Exists(Path.Combine(dir.FullName, ""Sudoku-0-Environment-Csharp.ipynb"")))
+        if (File.Exists(Path.Combine(dir.FullName, ""Sudoku-00-Environment-CSharp.ipynb"")))
             return dir.FullName;
         // Check if Sudoku is a subdirectory
         var candidate = Path.Combine(dir.FullName, ""MyIA.AI.Notebooks"", ""Sudoku"");
-        if (Directory.Exists(candidate) && File.Exists(Path.Combine(candidate, ""Sudoku-0-Environment-Csharp.ipynb"")))
+        if (Directory.Exists(candidate) && File.Exists(Path.Combine(candidate, ""Sudoku-00-Environment-CSharp.ipynb"")))
             return candidate;
         dir = dir.Parent;
     }
@@ -3160,7 +3160,7 @@ using Task = System.Threading.Tasks.Task;
 Console.WriteLine(""Choco-solver via IKVM 8.15.0 - Pret pour resolution Sudoku"");",,,,,,,,76a6fbe0cfa909e5,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-CSharp.ipynb,dd052198,markdown,fr,bf7ea9906dc9a3ca,Import des classes de base depuis le notebook d'environnement.,,,,,,,,bf7ea9906dc9a3ca,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-CSharp.ipynb,d7aa0870,code,fr,56f3a5006e69ef4a,"// Importer les classes de base depuis le notebook d'environnement
-#!import Sudoku-0-Environment-Csharp.ipynb
+#!import Sudoku-00-Environment-CSharp.ipynb
 ",,,,,,,,56f3a5006e69ef4a,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-11-Choco-CSharp.ipynb,39592b3b,markdown,fr,224061d5a4da858e,"## 1. Implémentation Simple : ChocoSimpleSolver
 
@@ -4623,7 +4623,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-CSharp.ipynb,5f811f2c,markdown,fr,03bf47fc
 
 Nous allons importer les classes de base définies dans le notebook précédent, fournissant notamment la représentation, le chargement et l'affichage de Sudokus, et l'infrastructure de résolution.
 ",,,,,,,,03bf47fc69a84cef,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-CSharp.ipynb,15096401,code,fr,eb3d945ae449b902,#!import Sudoku-0-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-CSharp.ipynb,15096401,code,fr,eb3d945ae449b902,#!import Sudoku-00-Environment-CSharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-12-Z3-CSharp.ipynb,f93d667a,markdown,fr,370912d6432127a9,"### 1. Implémentation de base avec des entiers
 
 Comme nous allons tester plusieurs stratégies de résolution, nous commencerons par implémenter un solver simple utilisant des entiers pour représenter les cellules du Sudoku et fournissant les méthodes pour construire les contraintes.
@@ -5408,7 +5408,7 @@ A la fin de ce notebook, vous saurez :
 3. Utiliser des BitVectors pour optimiser les representations
 4. Comparer Z3 Int avec Z3 BitVector
 
-**Duree estimee** : ~10 min | **Prerequis** : [Sudoku-0 Environment](Sudoku-0-Environment-Csharp.ipynb)
+**Duree estimee** : ~10 min | **Prerequis** : [Sudoku-0 Environment](Sudoku-00-Environment-CSharp.ipynb)
 
 ---
 
@@ -6866,7 +6866,7 @@ public int[,] ResoudreSudokuXZ3(Context ctx, int[,] puzzle)
 Console.WriteLine(""Exercice a completer : implementer les deux contraintes de diagonale."");",,,,,,,,7a21579fd93c8de4,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb,bench00md1,markdown,fr,ec71d3977d18caa7,"## 8. Résoudre par toutes les voies - le banc d'essai
 
-Jusqu'ici chaque barreau a été illustré isolément. Cette section les **exécute côte à côte** sur les mêmes grilles : la canonique (30 indices), la grille vide (0 indice) et une grille B à 26 indices. L'objectif n'est PAS de battre le résolveur optimal - l'optimum algorithmique du Sudoku, c'est **Dancing Links (DLX)**, traité en détail dans les notebooks voisins de la série ([Sudoku-2-DancingLinks](Sudoku-2-DancingLinks-Csharp.ipynb) en C#, et sa version Python ; cf. aussi le backtracking de [Sudoku-1](Sudoku-1-Backtracking-Csharp.ipynb) et le Z3 dédié de [Sudoku-12](Sudoku-12-Z3-CSharp.ipynb)). Ici, l'objectif est que **la discussion soit fertile** : on tente toutes les résolutions, les bonnes comme les moins bonnes, et un échec honnête (timeout, faux négatif) en dit autant qu'une réussite.
+Jusqu'ici chaque barreau a été illustré isolément. Cette section les **exécute côte à côte** sur les mêmes grilles : la canonique (30 indices), la grille vide (0 indice) et une grille B à 26 indices. L'objectif n'est PAS de battre le résolveur optimal - l'optimum algorithmique du Sudoku, c'est **Dancing Links (DLX)**, traité en détail dans les notebooks voisins de la série ([Sudoku-2-DancingLinks](Sudoku-02-DancingLinks-CSharp.ipynb) en C#, et sa version Python ; cf. aussi le backtracking de [Sudoku-1](Sudoku-01-Backtracking-CSharp.ipynb) et le Z3 dédié de [Sudoku-12](Sudoku-12-Z3-CSharp.ipynb)). Ici, l'objectif est que **la discussion soit fertile** : on tente toutes les résolutions, les bonnes comme les moins bonnes, et un échec honnête (timeout, faux négatif) en dit autant qu'une réussite.
 
 ### Conway : deux artefacts à ne pas confondre
 
@@ -7045,7 +7045,7 @@ Toutes les voies, mesurées (kernel `.net-csharp` pour les lignes C#/.NET ; z3-p
 | P2 DFA -> SMT | .NET (fork) | OOM à 81 (mur 1, cf. section 6b) | - | - |
 | RE# | .NET | reconnaissance seule, **aucun témoin** | - | - |
 | Monstre Conway `(?R)` | PCRE / Python `regex` | non régulier, **absent de .NET** | - | - |
-| Dancing Links (DLX) | - | l'optimum (ordre de la microseconde) - cf [Sudoku-2](Sudoku-2-DancingLinks-Csharp.ipynb) | - | - |
+| Dancing Links (DLX) | - | l'optimum (ordre de la microseconde) - cf [Sudoku-2](Sudoku-02-DancingLinks-CSharp.ipynb) | - | - |
 
 *Lecture : une valeur en ms/s = résolu ; TIMEOUT / faux négatif / unknown / OOM = échec honnête. P3, P3'' et P3' partagent le **même substrat chaîne** ; seule la **forme d'émission** du tous-distincts change : appartenance fondue en `re.inter` -> unknown ; **même** appartenance éclatée en `str.contains` -> SAT (mesure en section 6c) ; inégalités 2 à 2 -> (mesure, voir cellule precedente, aussi en z3-py sur les trois grilles). Pour Z3 `Distinct`, la ligne est mesurée en z3-py ; le même encodage tourne en C# à la section 6 (~38 ms sur la canonique - rétablie par ré-exécution, valeur ponctuelle indicative).*
 
@@ -7061,7 +7061,7 @@ Toutes les voies, mesurées (kernel `.net-csharp` pour les lignes C#/.NET ; z3-p
 
 4. **La voie symbolique atterrit - le 9x9 inclus - à condition de la bonne forme d'émission.** Ce n'est pas ""les voies élégantes explosent toujours"" : c'est plus fin. P2 (DFA -> SMT) explose en états (mur 1, section 6b) ; P3 (appartenance **fondue** en `re.inter`) ne termine pas (`unknown`) ; mais la **même** appartenance **éclatée** en `str.contains` (P3'', le regex qui se suffit) **atterrit la grille 9x9 complète**, et les inégalités 2 à 2 (P3') aussi - `Distinct` sur 81 entiers, qui n'en est que le sucre, est un résolveur de production encore plus rapide. Le critère décisif n'est ni le moteur ni le substrat (chaîne vs entier), c'est **la forme d'émission de l'intersection** : produit d'automates fondu (sature) vs primitive native éclatée (atterrit).
 
-> **Synthèse du banc.** Reconnaître (RE#) est linéaire et portable ; résoudre par appartenance **fondue** sature à l'échelle ; mais la **même** appartenance **éclatée** en `str.contains` - en restant un regex, 0 inégalité - **atterrit** le 9x9 ; les inégalités (chaînes P3' ou entiers `Distinct`), et même un simple backtracking C#, atterrissent plus vite encore. La leçon transversale : choisir la **bonne forme d'émission**, pas le substrat le plus spectaculaire. Le DLX serait l'optimum ([Sudoku-2](Sudoku-2-DancingLinks-Csharp.ipynb)), mais on ne cherchait pas l'optimum : on cherchait à comprendre *pourquoi* chaque voie réussit ou échoue. Voir les sections 6 et 6b (Z3 et le fork Automata) et 4-5 (RE# reconnaissance).",,,,,,,,2f657f09163709c8,,,,,,,,
+> **Synthèse du banc.** Reconnaître (RE#) est linéaire et portable ; résoudre par appartenance **fondue** sature à l'échelle ; mais la **même** appartenance **éclatée** en `str.contains` - en restant un regex, 0 inégalité - **atterrit** le 9x9 ; les inégalités (chaînes P3' ou entiers `Distinct`), et même un simple backtracking C#, atterrissent plus vite encore. La leçon transversale : choisir la **bonne forme d'émission**, pas le substrat le plus spectaculaire. Le DLX serait l'optimum ([Sudoku-2](Sudoku-02-DancingLinks-CSharp.ipynb)), mais on ne cherchait pas l'optimum : on cherchait à comprendre *pourquoi* chaque voie réussit ou échoue. Voir les sections 6 et 6b (Z3 et le fork Automata) et 4-5 (RE# reconnaissance).",,,,,,,,2f657f09163709c8,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb,bench00cons,markdown,fr,ffb91536c5868f91,"### Tableau consolidant - le regex n'est PAS le mauvais outil
 
 En croisant **forme d'émission** et **moteur**, le verdict est net : la voie symbolique *atterrit* réellement une grille de Sudoku - 4x4 **et** 9x9. Ce qui décide la réussite n'est ni le moteur, ni le substrat (chaîne vs entier), mais (a) la **forme d'émission** du tous-distincts et (b) la **portabilité du dialecte**.
@@ -7112,7 +7112,7 @@ Les deux murs de 2020 étaient des murs **de l'automate** ; ils tombent ensemble
 
 La **chaîne moderne** (section 6b, et notebook [10](../SymbolicAI/SMT/Z3-Linq2Z3/10_Witness_Generation_Automata.ipynb) de la série Z3) fait tomber **les deux murs** de 2020 : `&`/`~` compile vers la théorie des chaînes de Z3, qui ne cape aucun témoin et ne construit aucun produit d'automates. Le revers n'est donc pas ""Z3 string-theory ne sait pas faire le Sudoku"" - il le fait, le 9x9 inclus (cf section 6c) - mais ""il faut émettre l'appartenance dans la bonne forme : `str.contains` natif, pas `re.inter` fondu"".
 
-Le **banc d'essai** (section 8 ci-dessus) confirme empiriquement chaque case de ce tableau : le regex déroulé s'effondre (timeout, faux négatif), la voie chaînes-en-appartenance-fondue fait `unknown`, la **même** appartenance éclatée en `str.contains` (P3'') et les inégalités (P3') et `Distinct` atterrissent, et le backtracking C# naïf est le vainqueur discret. Le DLX, lui, est l'optimum dédié : cf [Sudoku-2-DancingLinks](Sudoku-2-DancingLinks-Csharp.ipynb).
+Le **banc d'essai** (section 8 ci-dessus) confirme empiriquement chaque case de ce tableau : le regex déroulé s'effondre (timeout, faux négatif), la voie chaînes-en-appartenance-fondue fait `unknown`, la **même** appartenance éclatée en `str.contains` (P3'') et les inégalités (P3') et `Distinct` atterrissent, et le backtracking C# naïf est le vainqueur discret. Le DLX, lui, est l'optimum dédié : cf [Sudoku-2-DancingLinks](Sudoku-02-DancingLinks-CSharp.ipynb).
 
 > **Footnote d'homonymie** : **Damian** Conway (luminaire des regex Perl, dont relève le folklore du barreau 1) n'est pas **John** Conway (le Game of Life, hero de notre série Lean #2162). Les deux Conway se croisent dans ce notebook.",,,,,,,,9251b622d3207e9b,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-13-SymbolicAutomata-CSharp.ipynb,b71a1c63,markdown,fr,ada5968d6ca4dee0,"## Exercice 3 : classifier recognition vs solving (conceptuel)
@@ -7509,7 +7509,7 @@ Un **MDD** généralise le BDD aux domaines finis (comme {1,2,...,9} pour Sudoku
 
 ### Prérequis
 
-- [Sudoku-0-Environment](Sudoku-0-Environment-Csharp.ipynb) - Classes de base Sudoku
+- [Sudoku-0-Environment](Sudoku-00-Environment-CSharp.ipynb) - Classes de base Sudoku
 - [Sudoku-13-SymbolicAutomata](Sudoku-13-SymbolicAutomata-CSharp.ipynb) - Théorie des automates (recommandée)
 - Connaissance de base des graphes et arbres
 
@@ -9438,7 +9438,7 @@ MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-CSharp.ipynb,e7eef7c2,code,fr,8173d7fc0
 MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-CSharp.ipynb,c1519e7d,markdown,fr,2d7cee553e792e57,"### 3. Importation des Classes de Base
 
 Nous allons importer les classes de base définies dans le notebook précédent, fournissant notamment la représentation, le chargement et l'affichage de Sudokus, et l'infrastructure de résolution.",,,,,,,,2d7cee553e792e57,,,,,,,,
-MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-CSharp.ipynb,43960a6f,code,fr,eb3d945ae449b902,#!import Sudoku-0-Environment-Csharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
+MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-CSharp.ipynb,43960a6f,code,fr,eb3d945ae449b902,#!import Sudoku-00-Environment-CSharp.ipynb,,,,,,,,eb3d945ae449b902,,,,,,,,
 MyIA.AI.Notebooks/Sudoku/Sudoku-15-Infer-CSharp.ipynb,3b1ef3eb,markdown,fr,1edcaf04fb9ffca1,"### 4. Implémentation du Solver Naïf
 
 Nous commencerons par implémenter un solver naïf en utilisant `Infer.NET`.

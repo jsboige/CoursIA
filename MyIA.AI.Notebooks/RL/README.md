@@ -9,9 +9,9 @@ breakdown: root=24, PostTraining=11
 maturity: BETA=30, ALPHA=3, DRAFT=2
 -->
 
-> **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé (26 notebooks pédagogiques). Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 23/09/2026 :
+> **Note éditoriale (counts)** : Le marqueur `CATALOG-STATUS` ci-dessus est autoritatif pour le compte agrégé. Pour la **décomposition langagière par kernel** (`metadata.kernelspec.language`), ce README reste autoritatif car la granularité kernel n'est pas dans le marqueur agrégé ; elle est documentée ici par lecture directe des kernelspecs au 23/09/2026 :
 >
-> **Python 100% = 36/36 fichiers mono-langage ✓** (36 fichiers `*.ipynb` sur disque hors `_output.ipynb` — 32 kernels `python3` + 4 kernels `coursia-ml-training` (`rlpt_0c`, `rlpt_2`, `rlpt_3`, `rlpt_4`), tous `language: python` ; l'écart avec le `pedagogical_count: 26` du marqueur correspond aux fichiers non catalogués ; exécution via MCP Jupyter `nbconvert --execute --to notebook` ou `jupyter nbconvert --execute --inplace`). La table « Notebooks » ci-dessous documente les 36 — les lignes de `rl_1b`, `rl_1c`, `RL-7b` et `rl_14`, absentes depuis leur livraison (dérive pré-existante), y ont été réconciliées à la livraison du notebook 16 ; celles du 17 (k-server WFA), du 18 (matroid secretary), de `rlpt_0c` et de `rlpt_0d` s'y sont ajoutées depuis, puis celle du 19 (reward tampering).
+> **Python 100 % : tous les fichiers sont mono-langage ✓** (tous les `*.ipynb` sur disque hors `_output.ipynb`, dans `RL/` et `RL/PostTraining/`, déclarent `language: python` : kernel `python3`, sauf `coursia-ml-training` pour `rlpt_0c`, `rlpt_2`, `rlpt_3` et `rlpt_4` ; l'écart avec le `pedagogical_count` du marqueur correspond aux fichiers non catalogués ; exécution via MCP Jupyter `nbconvert --execute --to notebook` ou `jupyter nbconvert --execute --inplace`). La table « Notebooks » ci-dessous présente chacun de ces carnets.
 >
 > RL est un cas de **mono-langage Python 100%** : tous les algorithmes (DQN, REINFORCE, A2C, PPO, SAC, GRPO, Dyna-Q, BCQ offline, reward shaping, POMDP belief tracker, C51 distributional, RND curiosity, k-server WFA, matroid secretary, reward tampering) sont implémentés en Python, soit via PyTorch / Stable Baselines3 / Gymnasium, soit from-scratch en NumPy + PyTorch / stdlib pure. C'est une **variante L392 #6 NEW** : contrairement à ML (#5915) qui a des jumeaux C#/Python intra-sous-série, Probas (#5916) qui a une mixité intra-série multi-paradigme (.NET C# + Python), QC (#5917) cloisonnée par sous-série, et Sudoku (#5918 / c.388) qui a une mixité jumeaux dominante + 1 compagnon Lean intra-hub, RL a une **uniformité mono-paradigme** avec 7 moteurs SOTA distincts (PyTorch, NumPy, matplotlib, Stable Baselines3, Gymnasium, highway_env, PettingZoo) — registre EPIC #3801 entry #009 (PR #5922 — collision avec PR canonique utilisateur #5925, await ai-01 decision).
 >
@@ -64,7 +64,7 @@ Le RL se comprend mieux en voyant l'agent apprendre. Six visualisations suivent 
 | 12 | [RL-12-Distributional-RL-C51-Python](RL-12-Distributional-RL-C51-Python.ipynb) | RL distributionnel : C51 (Categorical DQN) depuis zéro, projection catégorielle, politique CVaR | 50-55 min |
 | 13 | [RL-13-Curiosite-RND-Python](RL-13-Curiosite-RND-Python.ipynb) | Exploration par curiosité (RND), motivation intrinsèque, piège d'exploitation | 35-40 min |
 | 14 | [RL-14-RL-Hierarchique-Options-Python](RL-14-RL-Hierarchique-Options-Python.ipynb) | Hierarchical RL — l'Option framework de Sutton, Precup & Singh : abstraction temporelle, options `(I, π, β)`, gridworld quatre-pièces, crédit sur longue horizon | ~50 min |
-| 15 | [RL-15-GRPO-Comparatif-Multi-Graines-Python](RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | GRPO (Group Relative Policy Optimization) vs PPO sur CartPole-v1 — avantage relatif intra-groupe (sans critic) vs GAE bootstrapé, multi-seed 6 (0/1/7/42/99/123), Wilcoxon signed-rank + IC95% bootstrap. Prong B discrimination moteur. Sous-grain #13436 de l'EPIC #1454. **Verdict v3 (REPAIR c.644) : INCONCLUSIVE** (le claim initial v1 « GRPO BEATS PPO » souffrait de défauts done-mask + pad-mask — c.642 a corrigé en INCONCLUSIVE, puis c.644 a détecté 4 post-fix incohérences résolues : Wilcoxon n=4 inatteignable, verdict tri-state asymmétrique, hypothèse descriptive fausse réfutée, titre PR ré-aligné — verdict v3 INCONCLUSIVE maintenu, moyennes v3 = 299.36 vs 197.65, std = 55.26 vs 104.99) | 40-45 min |
+| 15 | [RL-15-GRPO-Comparatif-Multi-Graines-Python](RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb) | GRPO (Group Relative Policy Optimization) vs PPO sur CartPole-v1 — avantage relatif intra-groupe (sans critic) vs GAE bootstrapé, six graines appariées (0/1/7/42/99/123), verdict tri-conditionnel (|edge| ≥ 2σ, Wilcoxon apparié, IC95 % bootstrap des différences). Prong B discrimination moteur. Sous-grain #13436 de l'EPIC #1454. **Verdict du run committé : PPO BEATS GRPO** — PPO mène 6/6 graines (edge −3,43σ, p = 0,0312, IC95 % [−237,07 ; −106,16]) ; portée et limites documentées dans le carnet (plancher Wilcoxon à six paires, CartPole-v1 ≠ post-training de LLM, probe GPU synthétique) | 40-45 min |
 | 16 | [RL-16-Dream-RSI-Python](RL-16-Dream-RSI-Python.ipynb) | Dream-RSI (arXiv 2609.14858, preprint 14/09/2026) : exploration explicite **programmable** (politique = code), historique de découverte = simulateur-replay, **dreaming** = évaluation off-policy à coût zéro, boucle RSI avec incumbent (garantie non-régression replay-only) — monde jouet circle-packing stdlib (16 cercles), ablation replay brut vs guidance sémantique mesurée (3/2/7), chiffres du papier rapportés non canonisés. Distillation #16417 | 40-45 min |
 | 19 | [RL-19-Reward-Tampering-Python](RL-19-Reward-Tampering-Python.ipynb) | Reward tampering : l'agent qui peut **réécrire** sa récompense — *Rocks and Diamonds* à paramètre θ modifiable (exemple 2 d'Everitt et al., Synthese 2021), quatre agents résolus par **induction arrière exacte** sur 32 252 états (standard, oracle, *current-RF* TI-ignoring et TI-considering) : les trois prédictions du papier mesurées `conforme`. Au-delà du diagramme : **l'indifférence n'est pas la protection** — valeur de l'option de manipuler +16 (standard) contre +0 (TI-ignoring), mais départage aléatoire des égalités → manipulation 33/200 (H = 30) et 68/200 (H = 60), toujours après la tâche ; Q-learning standard 0/5 graines en initialisation nulle, 5/5 en optimiste. RF-input tampering (autocollants sur la caméra) : 88 observé / 0 réel contre 20 / 20 sous récompense sur croyance. Distillation #14468 | 35-40 min |
 | pt-0 | [RLPT-00-Reward-Model-Bradley-Terry-Python](PostTraining/RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb) | Reward model from scratch (Bradley-Terry) : apprendre r(x, y) depuis des paires de préférences sur le monde de RLPT-01 — MLE BT sans `trl.RewardTrainer`, évaluation honnête vs plafond de Bayes, calibration (ECE), identification affine, multi-seed 4 | 35-40 min |
@@ -602,16 +602,18 @@ RL/
 ├── RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb
 ├── RL-16-Dream-RSI-Python.ipynb
 ├── RL-19-Reward-Tampering-Python.ipynb
-├── RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb
-├── RLPT-00b-Biais-Dataset-Preferences-Python.ipynb
-├── RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb
-├── RLPT-00d-Reward-Trainer-TRL-Python.ipynb
-├── RLPT-00e-DPO-TRL-Python.ipynb
-├── RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb
-├── RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb
-├── RLPT-02-GRPO-Minimal-Python.ipynb
-├── RLPT-03-Reward-Hacking-Python.ipynb
-├── RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb
+├── PostTraining/
+│   ├── RLPT-00-Reward-Model-Bradley-Terry-Python.ipynb
+│   ├── RLPT-00b-Biais-Dataset-Preferences-Python.ipynb
+│   ├── RLPT-00c-Anatomie-Reward-Hacking-Python.ipynb
+│   ├── RLPT-00d-Reward-Trainer-TRL-Python.ipynb
+│   ├── RLPT-00e-DPO-TRL-Python.ipynb
+│   ├── RLPT-00f-GRPO-TRL-contre-PPO-Maison-Python.ipynb
+│   ├── RLPT-00g-PPO-TRL-Experimental-Python.ipynb
+│   ├── RLPT-01-PPO-RLHF-Petit-Modele-Python.ipynb
+│   ├── RLPT-02-GRPO-Minimal-Python.ipynb
+│   ├── RLPT-03-Reward-Hacking-Python.ipynb
+│   └── RLPT-04-DPO-Offline-contre-GRPO-Online-Python.ipynb
 └── README.md
 ```
 

@@ -1,6 +1,7 @@
 """Lean file utilities: sorry extraction, goal probing, sorry replacement verification."""
 
 import re
+import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -101,6 +102,60 @@ def probe_relative_path(filepath, project_dir, tmp_name: str) -> str:
         return f"{Path(filepath).parent.name}/{tmp_name}"
 
 
+def sweep_execution_leftovers(target, keep_sandboxes: bool = False) -> list:
+    """C4 (#1453 calibration forensic, po-2024 2026-09-19): remove the
+    execution leftovers a run leaves next to its target when an early-exit
+    path skips the in-place cleanup.
+
+    Measured founders (calibration passes on DEMOS 45/41/52): the GoalExtract
+    probe ``_GoalExtract.lean`` (written next to the target by
+    ``is_true_placeholder_goal`` / ``get_goal_state``) and the
+    SizeGuard snapshots ``<target>.<random>.sandbox`` (``tempfile.mkstemp``)
+    survived runs the launcher considered complete — untracked files the
+    operator had to remove by hand. The launcher's ``finally`` calls this so
+    the sweep runs on every exit path, under the tree lock.
+
+    Scope is deliberately narrow: only the sibling probe of THIS target and
+    sandboxes whose name is anchored on THIS target's filename — never a
+    blind ``*.sandbox`` glob over the directory (a sibling target's sandbox
+    may be another crash's evidence).
+
+    ``keep_sandboxes=True`` keeps the ``.sandbox`` copies (a harness crash is
+    propagating: the snapshots are the crash investigator's evidence, cf
+    SizeGuard.snapshot docstring) while still removing the probe — a stale
+    ``_GoalExtract.lean`` is always garbage, it is regenerated per call.
+
+    Returns the list of removed paths (empty when nothing leaked). Never
+    raises: a cleanup failure is reported on stderr and swallowed — the
+    launcher's ``finally`` must not mask the run result or the restore error
+    that precedes it.
+    """
+    target = Path(_require_str("target", target))
+    removed = []
+    probe = target.parent / "_GoalExtract.lean"
+    candidates = [probe]
+    if not keep_sandboxes:
+        candidates.extend(sorted(target.parent.glob(f"{target.name}.*.sandbox")))
+    for leftover in candidates:
+        try:
+            if leftover.is_file():
+                leftover.unlink()
+                removed.append(leftover)
+        except OSError as exc:
+            print(
+                f"  [LEFTOVER-SWEEP] could not remove {leftover}: {exc}",
+                file=sys.stderr,
+            )
+    if removed:
+        kind = "probe+sandbox" if len(removed) > 1 else "leftover"
+        print(
+            f"  [LEFTOVER-SWEEP] removed {len(removed)} {kind}(s) next to "
+            f"{target.name}"
+            + (" (sandboxes kept: crash evidence)" if keep_sandboxes else "")
+        )
+    return removed
+
+
 def strip_lean_comments(content: str) -> str:
     """Strip Lean line comments (``--``) and nested block comments (``/- -/``).
 
@@ -157,6 +212,121 @@ _TOP_LEVEL_DECL_RE = re.compile(
     r"private|protected|partial|noncomputable|namespace|end|section|open|"
     r"attribute|@\[|#eval|#check|#print|/--|/-|--|set_option)\b"
 )
+
+_DECL_HEADER_RE = re.compile(
+    r"^(\s*)(?:@\[[^\]]*\]\s*)?"
+    r"(?:(?:private|protected|noncomputable|partial)\s+)*"
+    r"(theorem|lemma|def|abbrev|instance)\s+"
+    r"([A-Za-z_][A-Za-z0-9_'.]*)?"
+)
+
+
+def find_enclosing_declaration(lines, target_line):
+    """Locate the declaration enclosing ``target_line`` (1-based) in ``lines``.
+
+    Returns ``(name, kind, header_line, signature)`` — ``name``/``kind``/
+    ``header_line`` are None when no enclosing declaration is found, and
+    ``signature`` is the declaration's header text up to (excluding) the first
+    ``:=``: the part of a declaration that a proof replacement cannot change.
+
+    The enclosing declaration is the nearest ``theorem|lemma|def|abbrev|
+    instance`` header ABOVE the target at a strictly smaller indentation
+    (Lean convention: bodies are indented under their header); the target's
+    own line counts when it IS the header (a one-line ``def P := sorry``).
+    Anonymous ``instance :`` headers yield ``name=None``, and a found name is
+    namespace-qualified (``Foo.bar``) so ``#print axioms`` resolves it. Used
+    by the #21298 statement-sorry guard in ``verify_sorry_replacement``.
+    """
+    target_idx = min(max(int(target_line) - 1, 0), len(lines) - 1)
+    target_indent = len(lines[target_idx]) - len(lines[target_idx].lstrip())
+    for idx in range(target_idx, -1, -1):
+        m = _DECL_HEADER_RE.match(lines[idx])
+        if not m:
+            continue
+        indent = len(m.group(1))
+        if indent >= target_indent and idx != target_idx:
+            # Same-or-deeper indent above the target: a nested sibling
+            # declaration, not the enclosing one.
+            continue
+        kind = m.group(2)
+        name = m.group(3)
+        # Namespace-qualify for ``#print axioms`` (stage 2, #21298): track
+        # column-0 namespace/end pairs above the header. A bare ``end`` that
+        # actually closes a section can over-pop here — worst case the
+        # qualified name does not resolve, the axiom probe comes back
+        # inconclusive and stage 2 skips (no veto), never a false refusal.
+        ns_stack = []
+        for line in lines[:idx]:
+            m_ns = re.match(r"^namespace\s+([A-Za-z_][\w.']*)", line)
+            if m_ns:
+                ns_stack.append(m_ns.group(1))
+                continue
+            m_end = re.match(r"^end\s+([A-Za-z_][\w.']*)", line)
+            if m_end:
+                if m_end.group(1) in ns_stack:
+                    ns_stack.remove(m_end.group(1))
+                continue
+            if re.match(r"^end\s*$", line) and ns_stack:
+                ns_stack.pop()
+        if name and ns_stack:
+            name = ".".join(ns_stack) + "." + name
+        sig_parts = []
+        for j in range(idx, min(idx + 60, len(lines))):
+            # Bounded: real signatures never reach 60 lines of binders.
+            line_j = strip_lean_comments(lines[j])
+            if ":=" in line_j:
+                sig_parts.append(line_j.split(":=", 1)[0])
+                break
+            if j > idx and _TOP_LEVEL_DECL_RE.match(lines[j]):
+                break  # ran into the next construct without a ':='
+            sig_parts.append(line_j)
+        return name, kind, idx + 1, "\n".join(sig_parts).strip()
+    return None, None, None, ""
+
+
+def _statement_sorry_defs_in_signature(lines, signature, owner_name=None):
+    """Same-file ``def``/``abbrev`` names referenced by ``signature`` whose
+    body carries a real sorry — the DEMO 65 shape (#21298).
+
+    Returns a list of ``{"name", "def_line"}`` dicts (1-based ``def_line``),
+    file order. A definition whose body contains ``sorry`` makes any proof of
+    a statement referencing it vain: the goal unfolds to ``sorryAx`` and any
+    tactic closes it. ``owner_name`` (the signature's own declaration, short
+    name) is excluded: a ``def``'s signature names itself, and replacing the
+    sorry in THAT def is the correct attack, never a refusal. Only DIRECT
+    references are caught here; transitive chains through sorry-free defs
+    are the axiom stage's job in ``verify_sorry_replacement`` (stage 2).
+    """
+    if not signature:
+        return []
+    defs = {}
+    for i, line in enumerate(lines):
+        m = _DECL_HEADER_RE.match(line)
+        if m and m.group(2) in ("def", "abbrev") and m.group(3):
+            defs.setdefault(m.group(3), i)
+    if not defs:
+        return []
+    referenced = set(re.findall(r"[A-Za-z_][A-Za-z0-9_']*", signature))
+    offenders = []
+    for def_name in sorted(referenced & set(defs), key=lambda n: defs[n]):
+        if owner_name and def_name == owner_name:
+            continue
+        start = defs[def_name]
+        body_parts = []
+        seen_assign = False
+        for j in range(start, len(lines)):
+            clean = strip_lean_comments(lines[j])
+            if j > start and _TOP_LEVEL_DECL_RE.match(lines[j]):
+                break
+            if not seen_assign:
+                if ":=" in clean:
+                    body_parts.append(clean.split(":=", 1)[1])
+                    seen_assign = True
+                continue
+            body_parts.append(clean)
+        if count_real_sorries("\n".join(body_parts)) > 0:
+            offenders.append({"name": def_name, "def_line": start + 1})
+    return offenders
 
 
 def stub_theorem_proof(source: str, theorem_name: str) -> str:
@@ -236,10 +406,11 @@ def stub_theorem_proof(source: str, theorem_name: str) -> str:
 # Both are matched by a SINGLE regex with an optional ``declaration``
 # prefix; this avoids double-counting when both patterns would match the
 # same substring.
-_IMPLICIT_SORRY_RE = re.compile(r"(?:declaration )?uses ['\"]?sorry['\"]?")
+_IMPLICIT_SORRY_RE = re.compile(r"(?:declaration )?uses ['\"`]?sorry['\"`]?")
 
 
-def count_implicit_sorries(build_output: Optional[str]) -> int:
+def count_implicit_sorries(build_output: Optional[str],
+                           only_file: Optional[str] = None) -> int:
     """Count implicit-sorry warnings emitted by ``lake build`` (Epic #1500).
 
     A "real" sorry dropped by ``count_real_sorries`` is paired with an
@@ -251,6 +422,13 @@ def count_implicit_sorries(build_output: Optional[str]) -> int:
     Args:
         build_output: Raw ``lake build`` output (stdout/stderr captured).
             ``None`` or empty string yields 0 (no build ran → no warning).
+        only_file: Optional filename filter (#21298). Lake REPLAYS cached
+            warnings from imported modules when rebuilding a probe — a
+            warning-free probe importing a sorry-carrying module (legitimate
+            in the multi-sorry workflow) would otherwise count those
+            imports' warnings as its own. When given, only warning lines
+            whose ``path:line:col:`` prefix mentions this filename
+            (e.g. ``_SorryVerify.lean``) are counted.
 
     Returns:
         Number of ``(declaration )?uses 'sorry'`` warnings found. Each
@@ -264,7 +442,12 @@ def count_implicit_sorries(build_output: Optional[str]) -> int:
     """
     if not build_output:
         return 0
-    return len(_IMPLICIT_SORRY_RE.findall(build_output))
+    if only_file is None:
+        return len(_IMPLICIT_SORRY_RE.findall(build_output))
+    return sum(
+        1 for line in build_output.split("\n")
+        if only_file in line and _IMPLICIT_SORRY_RE.search(line)
+    )
 
 
 def count_sorries_combined(content: str, build_output: Optional[str]) -> int:
@@ -826,107 +1009,115 @@ def get_goal_state(filepath: str, sorry_line: int) -> Optional[str]:
         "exact 42",    # Last resort: almost always type-mismatches
     ]
 
-    for probe in probes:
-        new_lines = _probe_replaced_lines(lines, sorry_line, probe)
-        new_content = "\n".join(new_lines)
-        tmp_path.write_text(new_content, encoding="utf-8")
-
-        result = verifier.verify_project_file(relative_path)
-
-        raw_output = result.get("raw_output", "")
-
-        # Accept errors within ±3 lines of the sorry — nested tactic blocks
-        # can shift error reporting to adjacent lines.
-        # For unsolved goals (bullet-point sorrys), allow much wider tolerance
-        # since the unsolved case can be far from the sorry line.
-        LINE_TOLERANCE = 3
-        UNSOLVED_GOAL_TOLERANCE = 25
-        target_errors = []
-        collecting = False
-        for line in raw_output.split("\n"):
-            # Match both "file:line:col: error: msg" and "error: file:line:col: msg"
-            m_err = re.match(r".*?(\d+):\d+: error: (.*)", line)
-            if not m_err:
-                m_err = re.match(r"error: .*?(\d+):\d+: (.*)", line)
-            if m_err:
-                err_line = int(m_err.group(1))
-                if abs(err_line - sorry_line) <= LINE_TOLERANCE:
-                    target_errors.append(line)
-                    collecting = True
-                else:
-                    collecting = False
-            elif collecting:
-                if line.strip() == "" or re.match(r".*?\d+:\d+: ", line):
-                    collecting = False
-                else:
-                    target_errors.append(line)
-
-        if not target_errors:
-            print(f"  [GoalExtract] Probe '{probe}': no error at exact line {sorry_line}")
-            # Check for unsolved goals errors — use wider tolerance for bullet-point sorrys
-            # where the unsolved case may be far from the actual sorry line.
-            unsolved_matches = list(re.finditer(
-                r"(\d+):\d+: error: unsolved goals", raw_output))
-            if not unsolved_matches:
-                unsolved_matches = list(re.finditer(
-                    r"error: .*?(\d+):\d+: unsolved goals", raw_output))
-            # Pick the best unsolved goals match: prefer one at or after sorry_line,
-            # within UNSOLVED_GOAL_TOLERANCE
-            best_unsolved = None
-            best_dist = UNSOLVED_GOAL_TOLERANCE + 1
-            for um in unsolved_matches:
-                uline = int(um.group(1))
-                dist = abs(uline - sorry_line)
-                if dist <= UNSOLVED_GOAL_TOLERANCE:
-                    # Prefer matches at or after sorry_line (bullet-point cases)
-                    if uline >= sorry_line or dist < best_dist:
-                        if best_unsolved is None or dist < best_dist:
-                            best_unsolved = um
-                            best_dist = dist
-            if best_unsolved:
-                unsolved_line = int(best_unsolved.group(1))
-                # Probe was accepted but left open goals — the goal type IS compatible
-                # Try to extract the goal from the unsolved goals error context
-                after_idx = raw_output.find(best_unsolved.group(0))
-                after_text = raw_output[after_idx:after_idx+1000]
-                goal_match = re.search(r"⊢ (.*?)(?:\n\n|\n\d+:)", after_text, re.DOTALL)
-                if goal_match:
-                    goal = goal_match.group(1).strip()
-                    print(f"  [GoalExtract] Extracted from unsolved goals: {goal[:200]}")
-                    try:
-                        tmp_path.unlink()
-                    except OSError:
-                        pass
-                    return goal
-            else:
-                if unsolved_matches:
-                    closest = int(unsolved_matches[0].group(1))
-                    print(f"  [GoalExtract] Unsolved goals at line {closest}, "
-                          f"too far from sorry at {sorry_line} "
-                          f"(tolerance={UNSOLVED_GOAL_TOLERANCE})")
-            # Check for ANY error in the output (not just near sorry line)
-            any_error = re.search(r"error:", raw_output)
-            if any_error:
-                print(f"  [GoalExtract] Errors found but not at line {sorry_line}. "
-                      f"First error: {raw_output[any_error.start():any_error.start()+300]}")
-            continue
-
-        target_error_text = "\n".join(target_errors)
-        print(f"  [GoalExtract] Probe '{probe}': {target_error_text[:300]}")
-
-        goal = _parse_goal_from_error(target_error_text)
-        if goal:
-            try:
-                tmp_path.unlink()
-            except OSError:
-                pass
-            return goal
-
-    # Cleanup
+    # C4 root-cause hardening (#1453 forensic, 2026-09-19): any exception in
+    # the probe loop (verifier crash, subprocess error) used to unwind past
+    # every inline unlink, leaving `_GoalExtract.lean` next to the target
+    # (founders: DEMOS 45/41/52 calibration passes). try/finally makes the
+    # probe file's removal unconditional; the inline unlinks above stay
+    # (idempotent, harmless double-unlink).
     try:
-        tmp_path.unlink()
-    except OSError:
-        pass
+        for probe in probes:
+            new_lines = _probe_replaced_lines(lines, sorry_line, probe)
+            new_content = "\n".join(new_lines)
+            tmp_path.write_text(new_content, encoding="utf-8")
+
+            result = verifier.verify_project_file(relative_path)
+
+            raw_output = result.get("raw_output", "")
+
+            # Accept errors within ±3 lines of the sorry — nested tactic blocks
+            # can shift error reporting to adjacent lines.
+            # For unsolved goals (bullet-point sorrys), allow much wider tolerance
+            # since the unsolved case can be far from the sorry line.
+            LINE_TOLERANCE = 3
+            UNSOLVED_GOAL_TOLERANCE = 25
+            target_errors = []
+            collecting = False
+            for line in raw_output.split("\n"):
+                # Match both "file:line:col: error: msg" and "error: file:line:col: msg"
+                m_err = re.match(r".*?(\d+):\d+: error: (.*)", line)
+                if not m_err:
+                    m_err = re.match(r"error: .*?(\d+):\d+: (.*)", line)
+                if m_err:
+                    err_line = int(m_err.group(1))
+                    if abs(err_line - sorry_line) <= LINE_TOLERANCE:
+                        target_errors.append(line)
+                        collecting = True
+                    else:
+                        collecting = False
+                elif collecting:
+                    if line.strip() == "" or re.match(r".*?\d+:\d+: ", line):
+                        collecting = False
+                    else:
+                        target_errors.append(line)
+
+            if not target_errors:
+                print(f"  [GoalExtract] Probe '{probe}': no error at exact line {sorry_line}")
+                # Check for unsolved goals errors — use wider tolerance for bullet-point sorrys
+                # where the unsolved case may be far from the actual sorry line.
+                unsolved_matches = list(re.finditer(
+                    r"(\d+):\d+: error: unsolved goals", raw_output))
+                if not unsolved_matches:
+                    unsolved_matches = list(re.finditer(
+                        r"error: .*?(\d+):\d+: unsolved goals", raw_output))
+                # Pick the best unsolved goals match: prefer one at or after sorry_line,
+                # within UNSOLVED_GOAL_TOLERANCE
+                best_unsolved = None
+                best_dist = UNSOLVED_GOAL_TOLERANCE + 1
+                for um in unsolved_matches:
+                    uline = int(um.group(1))
+                    dist = abs(uline - sorry_line)
+                    if dist <= UNSOLVED_GOAL_TOLERANCE:
+                        # Prefer matches at or after sorry_line (bullet-point cases)
+                        if uline >= sorry_line or dist < best_dist:
+                            if best_unsolved is None or dist < best_dist:
+                                best_unsolved = um
+                                best_dist = dist
+                if best_unsolved:
+                    unsolved_line = int(best_unsolved.group(1))
+                    # Probe was accepted but left open goals — the goal type IS compatible
+                    # Try to extract the goal from the unsolved goals error context
+                    after_idx = raw_output.find(best_unsolved.group(0))
+                    after_text = raw_output[after_idx:after_idx+1000]
+                    goal_match = re.search(r"⊢ (.*?)(?:\n\n|\n\d+:)", after_text, re.DOTALL)
+                    if goal_match:
+                        goal = goal_match.group(1).strip()
+                        print(f"  [GoalExtract] Extracted from unsolved goals: {goal[:200]}")
+                        try:
+                            tmp_path.unlink()
+                        except OSError:
+                            pass
+                        return goal
+                else:
+                    if unsolved_matches:
+                        closest = int(unsolved_matches[0].group(1))
+                        print(f"  [GoalExtract] Unsolved goals at line {closest}, "
+                              f"too far from sorry at {sorry_line} "
+                              f"(tolerance={UNSOLVED_GOAL_TOLERANCE})")
+                # Check for ANY error in the output (not just near sorry line)
+                any_error = re.search(r"error:", raw_output)
+                if any_error:
+                    print(f"  [GoalExtract] Errors found but not at line {sorry_line}. "
+                          f"First error: {raw_output[any_error.start():any_error.start()+300]}")
+                continue
+
+            target_error_text = "\n".join(target_errors)
+            print(f"  [GoalExtract] Probe '{probe}': {target_error_text[:300]}")
+
+            goal = _parse_goal_from_error(target_error_text)
+            if goal:
+                try:
+                    tmp_path.unlink()
+                except OSError:
+                    pass
+                return goal
+
+    finally:
+        # Cleanup — also reached on the exception path now
+        try:
+            tmp_path.unlink()
+        except OSError:
+            pass
 
     # All probes failed to produce parseable goal — try heuristic from context
     return _heuristic_goal_extract(lines, sorry_line)
@@ -1426,9 +1617,64 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
     # where the textual sorry is gone from the source but the proof is still
     # compiled as ``sorry``. Founding incident: BG2 GaleShapley L98
     # (2026-05-23) — counter reported 1→0, real sorry still present.
-    implicit_sorry_in_probe = count_implicit_sorries(raw_output) > 0
+    implicit_sorry_in_probe = (
+        count_implicit_sorries(raw_output, only_file=tmp_path.name) > 0)
     is_success = (not has_direct_error and not has_cascade_error
                   and not has_distant_error and not implicit_sorry_in_probe)
+
+    # Guard #21298 (DEMO 65, 2026-10-17): a probe can compile clean — no
+    # error, no implicit-sorry warning, textual sorry count dropped — while
+    # the target's STATEMENT itself depends on a ``def ... := sorry``
+    # definition. The hole has migrated from the proof into the statement:
+    # the goal reduces to ``sorryAx``, any tactic closes it, and every check
+    # above stays green. Two stages, both scoped so the file's OTHER sorries
+    # (legitimate in the multi-sorry workflow) never false-positive:
+    #   1. textual — same-file defs referenced by the enclosing declaration's
+    #      signature whose body carries a real sorry. Runs UNCONDITIONALLY
+    #      (pure text scan): its verdict is the more specific diagnosis than
+    #      P3's generic implicit-sorry warning, so the DEMO 65 shape reports
+    #      ``statement_depends_on_sorry`` even when the probe build also
+    #      carries the def's own backticked warning.
+    #   2. axiomatic — ``#print axioms <target>`` on the probe module, for
+    #      the enclosing declaration ONLY (a whole-module check would flag
+    #      the file's other sorries). Positive-evidence polarity: an infra
+    #      failure here skips the stage instead of vetoing a valid proof.
+    statement_sorry_defs = []
+    target_sorry_ax = None  # None = not run; False/True = verdict
+    axiom_probe_note = ""
+    decl_name, _decl_kind, _decl_hdr, decl_sig = find_enclosing_declaration(
+        lines, sorry_line)
+    if decl_sig:
+        # Short (unqualified) owner name: the defs index is keyed by
+        # short names, and a def's own signature names itself — that
+        # self-reference is the correct attack target, never a refusal.
+        owner_short = decl_name.rsplit(".", 1)[-1] if decl_name else None
+        statement_sorry_defs = _statement_sorry_defs_in_signature(
+            lines, decl_sig, owner_name=owner_short)
+    if statement_sorry_defs:
+        is_success = False
+    elif is_success and decl_name:
+        probe_module = (str(Path(relative_path).with_suffix(""))
+                        .replace("/", ".").replace("\\", "."))
+        try:
+            ax = verifier.check_axioms(
+                probe_module, fail_on_sorry=True, timeout=180,
+                declarations=[decl_name])
+            if ax.get("has_sorry"):
+                target_sorry_ax = True
+                is_success = False
+                axiom_probe_note = (
+                    f"#print axioms {decl_name} -> "
+                    + ", ".join(ax.get("axioms") or ["sorryAx"]))
+            elif not ax.get("success"):
+                axiom_probe_note = (
+                    "axiom probe inconclusive ("
+                    + str(ax.get("error", "no_axiom_output")) + ")")
+        except Exception as _ax_err:
+            # A flaky/unavailable axiom probe must not flip a valid
+            # verification to failure: stage 2 refuses on positive
+            # sorryAx evidence only (#21298).
+            axiom_probe_note = f"axiom probe skipped ({_ax_err})"
 
     # Extract residual goals from cascade errors (lines starting with ⊢)
     residual_goals = []
@@ -1460,12 +1706,29 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             + "\n".join(distant_errors[:2])
         )
         error_type = "distant_errors"
+    elif statement_sorry_defs:
+        # #21298: diagnosed BEFORE implicit_sorry — a sorry-defined statement
+        # is the more specific reading of a warning-carrying probe (the def's
+        # own ``declaration uses `sorry` `` warning), and the message that
+        # redirects the prover at the real debt (the def, not the theorem).
+        names = ", ".join(
+            f"{d['name']} (def at line {d['def_line']})"
+            for d in statement_sorry_defs)
+        error_msg = (
+            f"Tactic at line {sorry_line} compiles, but the STATEMENT of the "
+            f"enclosing declaration unfolds through a sorry-defined def: "
+            f"{names}. The hole lives in the statement (``def ... := sorry``), "
+            f"not the proof: any tactic closes a sorryAx goal and the real "
+            f"debt is the def itself. Treat as FALSE POSITIVE "
+            f"(DEMO 65, #21298)."
+        )
+        error_type = "statement_depends_on_sorry"
     elif implicit_sorry_in_probe:
         # P3 (Epic #1500): the probe compiled with no error but Lean emitted
         # ``declaration uses 'sorry'`` — the replacement tactic fell back to
         # an implicit sorry (``apply?`` / ``exact?`` / ``solve_by_elim``).
         # This is a FALSE POSITIVE on success; the real sorry count is flat.
-        n_implicit = count_implicit_sorries(raw_output)
+        n_implicit = count_implicit_sorries(raw_output, only_file=tmp_path.name)
         error_msg = (
             f"Tactic at line {sorry_line} compiled but emitted "
             f"{n_implicit} 'declaration uses sorry' warning(s) — likely "
@@ -1473,6 +1736,14 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             f"(see Epic #1500)."
         )
         error_type = "implicit_sorry"
+    elif target_sorry_ax:
+        error_msg = (
+            f"Tactic at line {sorry_line} compiles, but the target "
+            f"declaration transitively depends on sorryAx ({axiom_probe_note}). "
+            f"The proof is vain — the debt sits in the statement's "
+            f"dependencies (#21298)."
+        )
+        error_type = "transitive_sorry_ax"
     else:
         error_msg = ""
         error_type = None
@@ -1489,8 +1760,14 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
     real_build_ok = None
     if is_success and persist_on_success:
         original_content = content
-        real_relative = f"{subdir}/{Path(filepath).name}"
         try:
+            # #21323: `subdir` was never assigned in this scope — the write-back
+            # raised NameError BEFORE touching the real file, so persist_on_success
+            # never worked (and crashed its caller, workflow.py's verify loop).
+            # Derive the project-relative path from project_dir, the same re-rooting
+            # probe_relative_path applies to the probe (see its docstring).
+            real_relative = (Path(filepath).resolve()
+                             .relative_to(Path(project_dir).resolve()).as_posix())
             Path(filepath).write_text(new_content, encoding="utf-8", newline="")
             real_result = verifier.verify_project_file(real_relative, force=True)
             real_output = real_result.get("raw_output", "") or ""
@@ -1499,7 +1776,11 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             # genuinely removed a sorry rather than compiling around it or
             # re-introducing one, e.g. a returned `simp; sorry`).
             real_has_error = bool(re.search(r"\berror:", real_output))
-            implicit_sorry = "declaration uses 'sorry'" in real_output
+            # Delegate to the organ instead of a divergent substring copy —
+            # count_implicit_sorries is the single parser for implicit-sorry
+            # warnings (its quote-class regex is widened by #21324 for the
+            # v4.33 backticked wording).
+            implicit_sorry = count_implicit_sorries(real_output) > 0
             sorry_dropped = (count_real_sorries(new_content)
                              < count_real_sorries(original_content))
             if real_has_error or implicit_sorry or not sorry_dropped:
@@ -1527,6 +1808,18 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
             real_build_ok = False
             error_type = "persist_io_error"
             error_msg = f"Failed to persist replacement to real file: {_persist_err}"
+        except ValueError as _persist_err:
+            # filepath outside project_dir: relative_to raised BEFORE any
+            # write, so the real file was never touched — nothing to restore.
+            # Handled inside the persist contract instead of crashing the
+            # caller (the same escape class the #21323 NameError had).
+            is_success = False
+            real_build_ok = False
+            error_type = "persist_path_outside_project"
+            error_msg = (
+                "Cannot persist: filepath is outside project_dir "
+                f"({_persist_err}); real file untouched."
+            )
 
     return {
         "success": is_success,
@@ -1540,6 +1833,10 @@ def verify_sorry_replacement(filepath: str, sorry_line: int, replacement: str,
         "backend": result.get("backend", ""),
         "persisted": persisted,  # #1453: real file now holds the replacement
         "real_build_ok": real_build_ok,  # real-module rebuild verdict (or None)
+        # #21298 guard: stage 1 (statement sorry-defs) and stage 2 (target
+        # axiom probe) evidence, for caller-side reporting/telemetry.
+        "statement_sorry_defs": statement_sorry_defs,
+        "axiom_probe": axiom_probe_note or None,
     }
 
 
