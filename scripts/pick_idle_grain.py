@@ -276,6 +276,15 @@ REPO = "jsboige/CoursIA"
 # incidentes du type "sans [INFO] candidate-delivered" ou "[INFO] absent
 # dans ce fil", ou la sous-chaîne `[INFO] candidate-delivered` est presente
 # mais n'est pas l'en-tête du commentaire.
+# #21949 : l'ancre tolere un prefixe de TITRE markdown (`#{1,6}` + espaces
+# optionnels). Un commentaire structure en sections ecrit couramment
+# `## [INFO] candidate-delivered -- lane ...` ; `#` n'est pas `\s`, la ligne
+# n'etait donc reconnue par aucune alternative et le grain mort repassait en
+# tete du tapis (mesure du 22/10 : #20445, marqueur en DERNIER commentaire,
+# servi comme grain neuf). La tolerance reste BORNEE a 1-6 dieses suivis
+# d'espaces : une prose qui cite le marqueur au milieu d'une phrase ne
+# commence par aucun titre, elle reste hors du filet (cf. temoin negatif
+# `test_marker_no_match_discursive_mention`).
 # #20008 : la fermeture est un LOOKAHEAD `(?![-_\w])`, jamais un `\b`. Un `\b`
 # pose apres `delivered` ne separe PAS `candidate-delivered` de
 # `candidate-delivered-partial` : le tiret est un non-mot, donc il FORME une
@@ -289,11 +298,11 @@ REPO = "jsboige/CoursIA"
 #     immediatement apres le mot.
 _DELIVERED_MARKER_RE = re.compile(
     r"(?:"
-    r"^\s*\[INFO\]\s+candidate-delivered(?![-_\w])"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
     r"|"
-    r"^\s*\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
     r"|"
-    r"^\s*\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
     r"verification first-hand)[^\n]*\bcandidate-delivered(?![-_\w])"
     r")",
     re.IGNORECASE | re.MULTILINE,
@@ -314,9 +323,9 @@ _DELIVERED_MARKER_RE = re.compile(
 # a elle, un marqueur repose apres elle rearme (cf `_delivered_state`).
 _DELIVERED_MARKER_REVOKED_RE = re.compile(
     r"(?:"
-    r"^\s*\[NOT-DELIVERED\]"
+    r"^\s*(?:#{1,6}\s*)?\[NOT-DELIVERED\]"
     r"|"
-    r"^\s*\[INFO\]\s+candidate-delivered-revoked"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered-revoked"
     r")",
     re.IGNORECASE | re.MULTILINE,
 )
@@ -339,7 +348,7 @@ _DELIVERED_MARKER_REVOKED_RE = re.compile(
 # servi. La negation est donc cherchee explicitement, et non par un mot
 # generique comme « pas » : une ligne « acceptance deja couverte, pas de
 # travail restant » est une couverture, pas une negation.
-_RELEASED_HEADER_RE = re.compile(r"^\s*\[RELEASED\](?=\s|:|$)")
+_RELEASED_HEADER_RE = re.compile(r"^\s*(?:#{1,6}\s*)?\[RELEASED\](?=\s|:|$)")
 # Les motifs sont compares sur une ligne NORMALISEE (accents retires) : la
 # flotte ecrit indifféremment « deja couverte », « déjà couverte », « rien a
 # reparer », « rien à réparer ». Un motif ecrit en ASCII matcherait la
@@ -1484,7 +1493,7 @@ DELIVERED_SIGNAL_UNPROBED = object()
 # de composition : les deux PRs sont independantes et se completent dans
 # l'ordre de merge que donne le coordinateur.
 _RECENT_DELIVERY_MARKER_RE = re.compile(
-    r"^\s*\[(?:DELIVERED|FROZEN)\](?=\s|:|$)",
+    r"^\s*(?:#{1,6}\s*)?\[(?:DELIVERED|FROZEN)\](?=\s|:|$)",
     re.MULTILINE,
 )
 
@@ -2074,6 +2083,33 @@ def print_claim_unread_report(unread, lane: str | None = None) -> None:
     print("   pas libre : verifier avant d'editer")
     hint = ("--lane " + lane if lane else "--lane <machine:workspace>")
     print(f"   (`python scripts/check_lane_claim.py <N> {hint}`).")
+
+
+def print_belt_budget_report(budget_hit: bool) -> None:
+    """Rend compte de l'epuisement du budget de sondes de livraison (#19969).
+
+    Le fail-OPEN du budget est assume : au-dela du plafond, la sonde de
+    livraison rend UNPROBED et le candidat est servi sans avoir ete verifie.
+    Ce qui n'est PAS assume, c'est le **silence** : une mesure qui echoue
+    doit se dire, sinon la lane lit un « pas de signal » la ou la sonde n'a
+    simplement pas eu lieu. L'issue #19969 demande explicitement que la
+    banniere reste imprimee quand le budget tombe -- « la mesure ne doit
+    pas devenir silencieuse en se repariant ».
+
+    La banniere est un helper (comme `print_claim_unread_report`) pour que
+    ce contrat soit **verifiable sans reseau** : un test appelle la fonction
+    avec True et False, et le texte rendu est compare. Un test qui
+    appellerait `main()` de bout en bout payerait une minute de reseau
+    pour verifier trois lignes de `print`.
+
+    Texte inchange depuis l'origine du contrat (#19969) : le comparatif de
+    chaine est un test de non-regression sur la banniere elle-meme.
+    """
+    if not budget_hit:
+        return
+    print("   Plafond de sondes de livraison atteint : les candidats")
+    print("   au-dela ne sont pas sondes (fail-OPEN) -- la verification")
+    print("   de livraison leur revient, cf check_unaddressed_nits.")
 
 
 def draw_verdict(pool_error: str | None) -> str:
@@ -4633,8 +4669,17 @@ def _nits_blocking_entries(n: int) -> dict | None:
         raise
     except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
         return None
+    # #21882/#21964 : l'organe a son budget de passe epuise -- ce n'est PAS
+    # « evaluee, claire ». Projeter {blocking, blocked} seulement perdait le
+    # marqueur, et `elif not info["blocked"]` en dessous fabriquait un 0
+    # autoritaire qui figeait le tirage de toute la flotte : propager
+    # `budget_exhausted` et rendre None (fail-closed, comme la panne d'organe
+    # ci-dessus), jamais un 0.
+    if result.get("budget_exhausted"):
+        return None
     return {"blocking": result.get("blocking") or [],
-            "blocked": bool(result.get("blocked"))}
+            "blocked": bool(result.get("blocked")),
+            "budget_exhausted": bool(result.get("budget_exhausted"))}
 
 
 def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
@@ -8182,10 +8227,7 @@ def main(argv: list[str] | None = None) -> int:
             # ci-dessus -- les deux lectures ratees se lisent ensemble.
             print_claim_unread_report(belt_pick_state.get("claim_unread"),
                                       args.lane)
-            if belt_probe_budget_hit[0]:
-                print("   Plafond de sondes de livraison atteint : les candidats")
-                print("   au-dela ne sont pas sondes (fail-OPEN) -- la verification")
-                print("   de livraison leur revient, cf check_unaddressed_nits.")
+            print_belt_budget_report(belt_probe_budget_hit[0])
             # #18832 spec : la fenetre collision entre tirage et pose du
             # [CLAIMED] reste ouverte tant que la lane n'a pas poste le
             # claim. On rappelle ici que la lane doit poser le claim
