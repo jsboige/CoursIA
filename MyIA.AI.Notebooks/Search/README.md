@@ -169,7 +169,14 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 | 10 | [App-18b-HyperparameterTuning-CSharp](Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
 | 11 | [App-18b-HyperparameterTuning-Python](Applications/Hybrid/App-18b-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
 | 12 | [App-22-AlgorithmSelection-Python](Applications/Hybrid/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux, 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité + Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
-| 13 | [App-34-15Puzzle-Admissible-Astar-Python](Applications/Hybrid/App-34-15Puzzle-Admissible-Astar-Python.ipynb) | ~45 min | 15-puzzle : A* et heuristiques admissibles **mesurées** (Manhattan vs linear conflict), résolvabilité par parité des inversions, contraste avec un glouton sous-optimal | Nouveau |
+
+### Applications de recherche informée mono-agent (`Applications/Informed/`)
+
+Un problème formalisé `(S, s0, A, T, G)`, un état initial, des opérateurs — et l'on compare des **stratégies d'exploration d'un même espace d'états** : heuristiques admissibles et optimalité de l'A*, baseline non informée, comportement d'un glouton sous-optimal. Ces carnets ne sont ni adversariaux, ni des applications CSP, ni des hybridations de solveurs : comparer des stratégies de recherche n'est pas combiner des solveurs.
+
+| # | Notebook | Durée | Contenu | Source |
+|---|----------|-------|---------|--------|
+| 1 | [App-34-15Puzzle-Admissible-Astar-Python](Applications/Informed/App-34-15Puzzle-Admissible-Astar-Python.ipynb) | ~45 min | 15-puzzle : A* et heuristiques admissibles **mesurées** (Manhattan vs linear conflict), résolvabilité par parité des inversions, contraste avec un glouton sous-optimal | Nouveau |
 
 ---
 
@@ -191,6 +198,7 @@ Search-4  LocalSearch           CSP-5  Optimization  ───>  App-10 Portfoli
     └──> Search-5 (Genetic)    CSP-6  Hybridization ───>  LLM+CSP
             │                       │
             └──> Search-11 (Meta)   └──> Applications/Hybrid/ App-9 EdgeDetection
+                                        Applications/Informed/ App-34 15-puzzle
 
 Search-8  Dancing Links    ───>  App-11 Picross, Sudoku-05 DLX
 Search-9  Linear Programming ─>  CSP-5 Optimization   ───>  App-10 Portfolio
