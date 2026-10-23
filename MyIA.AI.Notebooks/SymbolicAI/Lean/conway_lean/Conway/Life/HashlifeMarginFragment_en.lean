@@ -595,10 +595,6 @@ theorem wall_nw_agreement
     (hn5_w : (node nw_se ne_sw sw_ne se_nw).wf = true)
     (hR1_l : R1.level = k) (hR2_l : R2.level = k)
     (hR4_l : R4.level = k) (hR5_l : R5.level = k)
-    (hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1))
-    (hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1))
-    (hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1))
-    (hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1))
     (p : Int × Int)
     (hp : (2^k : Int) ≤ p.1 ∧ p.1 < (2^k : Int) + 2^((k - 1) + 1) ∧
           (2^k : Int) ≤ p.2 ∧ p.2 < (2^k : Int) + 2^((k - 1) + 1)) :
@@ -609,6 +605,14 @@ theorem wall_nw_agreement
             (0, 0))) q
         = isAlive ((node R1 R2 R4 R5).toGrid (0, 0))
             (q.1 - (2^(k - 1) : Int), q.2 - (2^(k - 1) : Int)) := by
+  have hcc1 : centralCorrect (node nw_nw nw_ne nw_sw nw_se) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn1_w (by rw [hn1_l]; omega)
+  have hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn2_w (by rw [hn2_l]; omega)
+  have hcc4 : centralCorrect (node nw_sw nw_se sw_nw sw_ne) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn4_w (by rw [hn4_l]; omega)
+  have hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn5_w (by rw [hn5_l]; omega)
   -- Assembly (steps 3-5 of the c.94 plan): window → quadrant → Chebyshev
   -- locality (`evolve_box_agree_local`) on the quadrant's recombination node
   -- → `p4_nw_rside_char_*` characterization of the result supernode.
@@ -735,6 +739,7 @@ side: `p4_ne_parent_agree_n3` (Foundation.lean:3453) and
 `p4_ne_parent_agree_n6` (:3491), both public. Statement and proof are a
 faithful copy of the original wall; no deprivatisation, no i18n impact. -/
 
+set_option maxHeartbeats 4000000 in
 /-- **NE wall (public restitution of `p4_ne_overlap_wall`).** On the Chebyshev
     box of radius `2^(k-1)` around a point `p` of the shifted central window
     `[2^k, 2^k + 2^((k-1)+1)) × [2·2^k, 2·2^k + 2^((k-1)+1))`, the reference
@@ -771,10 +776,6 @@ theorem wall_ne_agreement
     (hn7_w : (node sw_nw sw_ne sw_sw sw_se).wf = true)
     (hR2_l : R2.level = k) (hR3_l : R3.level = k)
     (hR5_l : R5.level = k) (hR6_l : R6.level = k)
-    (hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1))
-    (hcc3 : centralCorrect (node ne_nw ne_ne ne_sw ne_se) (k - 1))
-    (hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1))
-    (hcc6 : centralCorrect (node ne_sw ne_se se_nw se_ne) (k - 1))
     (p : Int × Int)
     (hp : (2^k : Int) ≤ p.1 ∧ p.1 < (2^k : Int) + 2^((k - 1) + 1) ∧
           ((2^k + (2^k : Int))) ≤ p.2 ∧
@@ -786,6 +787,14 @@ theorem wall_ne_agreement
             (0, 0))) q
         = isAlive ((node R2 R3 R5 R6).toGrid (0, 0))
             (q.1 - (2^(k - 1) : Int), q.2 - ((2^k : Int) + (2^(k - 1) : Int))) := by
+  have hcc2 : centralCorrect (node nw_ne ne_nw nw_se ne_sw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn2_w (by rw [hn2_l]; omega)
+  have hcc3 : centralCorrect (node ne_nw ne_ne ne_sw ne_se) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn3_w (by rw [hn3_l]; omega)
+  have hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn5_w (by rw [hn5_l]; omega)
+  have hcc6 : centralCorrect (node ne_sw ne_se se_nw se_ne) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn6_w (by rw [hn6_l]; omega)
   -- Mirror assembly of the NW wall: window → quadrant → Chebyshev locality
   -- (`evolve_box_agree_local`) on the quadrant's recombination node →
   -- (parametric) `p4_nw_rside_char_*` characterisation of the result supernode.
@@ -1006,12 +1015,9 @@ theorem wall_se_agreement
     (hn6_w : (node ne_sw ne_se se_nw se_ne).wf = true)
     (hn7_w : (node sw_nw sw_ne sw_sw sw_se).wf = true)
     (hn8_w : (node sw_ne se_nw sw_se se_sw).wf = true)
+    (hcc9 : centralCorrect (node se_nw se_ne se_sw se_se) (k - 1))
     (hR5_l : R5.level = k) (hR6_l : R6.level = k)
     (hR8_l : R8.level = k) (hR9_l : R9.level = k)
-    (hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1))
-    (hcc6 : centralCorrect (node ne_sw ne_se se_nw se_ne) (k - 1))
-    (hcc8 : centralCorrect (node sw_ne se_nw sw_se se_sw) (k - 1))
-    (hcc9 : centralCorrect (node se_nw se_ne se_sw se_se) (k - 1))
     (p : Int × Int)
     (hp : ((2^k + (2^k : Int))) ≤ p.1 ∧
           p.1 < ((2^k + (2^k : Int))) + 2^((k - 1) + 1) ∧
@@ -1025,6 +1031,12 @@ theorem wall_se_agreement
         = isAlive ((node R5 R6 R8 R9).toGrid (0, 0))
             (q.1 - ((2^k : Int) + (2^(k - 1) : Int)),
              q.2 - ((2^k : Int) + (2^(k - 1) : Int))) := by
+  have hcc5 : centralCorrect (node nw_se ne_sw sw_ne se_nw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn5_w (by rw [hn5_l]; omega)
+  have hcc6 : centralCorrect (node ne_sw ne_se se_nw se_ne) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn6_w (by rw [hn6_l]; omega)
+  have hcc8 : centralCorrect (node sw_ne se_nw sw_se se_sw) (k - 1) :=
+    centralCorrect_free_of_wf _ (k - 1) hn8_w (by rw [hn8_l]; omega)
   -- Same assembly as the NW/NE walls, with the diagonal shift of the window.
   intro q hq
   obtain ⟨hp1, hp2, hp3, hp4⟩ := hp
