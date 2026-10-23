@@ -48,7 +48,7 @@ suffixes.
 Compression-06 en une phrase : la description d'une donnée se paie en deux fois —
 le modèle, puis les données sous ce modèle — et le bon modèle minimise la somme,
 pas l'un des deux termes. Le carnet mesure la précision optimale sur 16 Kio du
-*Horla* (`b* = 11` bits, 9 583,5 octets pour 16 384), montre qu'elle croît avec la
+*Horla* (`b* = 11` bits, 9 483,1 octets pour 16 384), montre qu'elle croît avec la
 taille du bloc sans suivre exactement la pente en `0,5 log2(n)`, puis établit le
 résultat le plus inconfortable de la série : 12 000 décimales de pi et 12 000
 chiffres tirés au hasard se compressent à 18 octets près, alors que la première a
