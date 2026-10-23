@@ -299,12 +299,13 @@ L'agrégation des préférences (Arrow, vote, manipulation) se poursuit dans la 
 
 La lettre 17c est portée par deux notebooks ; la passe de renommage leur donnera des lettres distinctes.
 
-### Escalier Dynamics — biens publics et dilemmes N-personnes
+### Escalier Dynamics — du palier 06 aux institutions
 
-Palier extrait de la série 3 (accretion `03e-Plan-de-deformation` d'avant la renumérotation) : la table périodique de Robinson-Goforth reste l'épigraphe, mais le passage à N agents et à des fonctions de bénéfice non-linéaires constitue un objet mathématique distinct — il ne varie plus la géométrie de l'espace des jeux 2×2, il en sort.
+Le palier 06 est descendu dans le sous-dossier [`Dynamics/`](Dynamics/README.md) : l'escalier **01 → 08** (avec le compagnon formel **04b**) y déroule deux vols — *jeux répétés* (01-03) puis *agents transparents et bornés* (04-08) — que la [page du sous-dossier](Dynamics/README.md) expose marche par marche, colonne de gradation comprise. La **porte** 06 nu et le **capstone** 06i restent en racine. Le même dossier porte la **greffe N-personnes** 09, extraite de la série 3 (accretion `03e-Plan-de-deformation` d'avant la renumérotation) : la table périodique de Robinson-Goforth y reste l'épigraphe, mais le passage à N agents et à des fonctions de bénéfice non-linéaires en sort.
 
 | Carnet | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
+| Dynamics-01 → 08 (+ 04b) | [l'escalier complet](Dynamics/README.md) | Deux vols : jeux répétés (Folk, preuve Lean) puis agents à programme lisible et au calcul borné — le marchepied est l'écart de lisibilité/câblage, pas le sujet. | Python · Lean | Moyenne → Très haute |
 | Dynamics-09 | [Biens publics non-linéaires](Dynamics/Dynamics-09-Biens-Publics-N-Personnes-Python.ipynb) | Archetti-Scheuring 2012 (JTB 299 : 9-20) : sans assortiment, un équilibre polymorphe stable coexiste ; les 78 profils 2×2 de Rapoport-Guyer servent de carte d'entrée, le plan `(k, s)` de déformation porte la dynamique N-personnes. | Python | Licence |
 ## Parcours transverses
 
