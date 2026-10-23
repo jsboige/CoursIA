@@ -27,7 +27,6 @@ name: Translation Guard
 
 on:
   pull_request:
-    branches: [ main ]
     # #12773 tranche 1b + amend. #13196 Hermes : paths-filter pour limiter
     # les declenchements aux PR touchant la surface reelle du garde
     # (`translation_override_required.py` qui interroge l'API `gh pr`). La

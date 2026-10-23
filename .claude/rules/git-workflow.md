@@ -79,9 +79,7 @@ GitHub auto-closes issues on `Refs #N`, `Fixes #N`, `Closes #N`. Use safe syntax
 
 ## Orphan-branch scan (L576 ★★)
 
-**S'applique quand** un worker voit une branche distante `jsboige/*` et **envisage de la self-pick**. Les ancres `pulls` **peuvent mentir** : REST `commits/<oid>/pulls` renvoie un faux négatif pour une branche pourtant attachée à une PR OPEN, et une branche squash-mergée n'est jamais ancêtre de `main`. Conclure « orpheline » sur une seule ancre = auto-pick d'un travail en cours, ou re-livraison d'un travail déjà sur `main`.
-
-**Quatre ancres, toutes à passer** — matrice de décision complète, faux positifs mesurés et incident fondateur (c.576, branches attachées à #7086-#7091) : [orphan-branch-scan-l576.md](../../docs/reference/orphan-branch-scan-l576.md).
+**S'applique quand** un worker voit une branche distante `jsboige/*` et **envisage de la self-pick**. Les ancres `pulls` **peuvent mentir** (faux négatif REST sur une branche pourtant attachée à une PR OPEN ; une branche squash-mergée n'est jamais ancêtre de `main`) — **quatre ancres, toutes à passer** : matrice de décision complète, faux positifs mesurés et incident fondateur (c.576, #7086-#7091) : [orphan-branch-scan-l576.md](../../docs/reference/orphan-branch-scan-l576.md).
 
 ```bash
 git merge-base --is-ancestor <sha> origin/main          # 1. intégrée upstream ? (muette si squash)
@@ -90,11 +88,11 @@ gh pr list --state all --search "head:<branch>"         # 3. autoritatif sur les
 git log origin/main --oneline --grep "<sujet>"          # 4. identité de CONTENU (squash → sujet préservé)
 ```
 
-**Anti-pattern** : ne JAMAIS conclure « orpheline » sur `git fetch` + REST seul. Coût de l'investigation : ~10 s. Coût de son omission : un cycle dupliqué, ou l'écrasement d'un travail en cours.
+**Anti-pattern** : ne JAMAIS conclure « orpheline » sur `git fetch` + REST seul (coût ~10 s ; omission = cycle dupliqué ou écrasement d'un travail en cours).
 
 ## Worktree cleanup en fin de cycle (#14195)
 
-**Problème** : chaque review de PR notebook / build Lean crée un worktree ; sans organe de retrait, ces worktrees s'accumulent (mesure 2026-09-02 : 265 sur po-2026 en 36 h, 103 sur ai-01 ; précédent #8924). Le mécanisme est nommé depuis le 2026-08-05 mais l'organe n'avait jamais été construit.
+**Problème** : chaque review de PR notebook / build Lean crée un worktree ; sans organe de retrait, ces worktrees s'accumulent (mesures datées : [détail §5](../../docs/reference/git-workflow-detail.md)).
 
 **Solution** : `scripts/ci/prune_merged_worktrees.py`, dry-run par défaut, `--apply` explicite. À exécuter en fin de cycle worker (ou via cron) :
 
@@ -120,17 +118,9 @@ python scripts/ci/install_prune_task.py --install --dry-run  # afficher argv sch
 
 **Ancre PR autoritative** : `gh pr list --state all --search "head:<branch>"` (pas `--is-ancestor` seul, ni `commits/<oid>/pulls` REST — cf §Orphan-branch scan ci-dessus pour les faux négatifs mesurés).
 
-**Refus ≠ échec + observabilité (roo-extensions #3895, 27/09)** : mesuré sur 3 machines, 86-100 % des worktrees vus sont REFUSE (worktrees de cycle nés HEAD-détachés ou sales par construction — po-2023 a saturé ses disques dessus). Un REFUS est une **décision** de l'organe : exit 0, le rapport porte le décompte par classe (`refusals:` en texte, `refusal_reasons` en JSON) ; rc≠0 = panne gh/git ou échec d'application, uniquement. La tâche planifiée relaie `--warn-threshold 20` : au-delà, une ligne `[WARN][prune-task]` vit dans le journal (`%LOCALAPPDATA%\CoursIA\prune_task\logs\`). Attribution lane : un spawn peut poser `.lane-owner` (une ligne : `machine:workspace`) à la racine du worktree — l'organe l'affiche (`lane=...`) et l'agrège (`lane_refusals`) ; le fichier est toléré au nettoyage et n'influence AUCUNE décision.
+**Refus ≠ échec + observabilité** : un REFUS est une **décision** de l'organe : exit 0, le rapport porte le décompte par classe (`refusals:` en texte, `refusal_reasons` en JSON) ; rc≠0 = panne gh/git ou échec d'application, uniquement. La tâche planifiée relaie `--warn-threshold 20` : au-delà, une ligne `[WARN][prune-task]` vit dans le journal (`%LOCALAPPDATA%\CoursIA\prune_task\logs\`). Attribution lane : un spawn peut poser `.lane-owner` (une ligne : `machine:workspace`) à la racine du worktree — l'organe l'affiche (`lane=...`) et l'agrège (`lane_refusals`) ; le fichier est toléré au nettoyage et n'influence AUCUNE décision (mesure : [détail §5](../../docs/reference/git-workflow-detail.md)).
 
-**Mesure 2026-09-03 (po-2027, cycle #14195)** :
-
-| | Avant | Après `--apply` |
-|---|---:|---:|
-| Worktrees enregistrés | 5 | 4 |
-| … REMOVE | 1 (test-prune-merged, PR #14403 MERGED) | — |
-| … REFUSE | 4 (main + 3 PR OPEN) | 4 |
-
-Le worktree de test créé sur `fix/14142-qc40-followup-state` (PR #14403 mergée par squash 2026-09-02) a été retiré — c'est le **contrôle positif** manquant à tout prédicat d'ascendance : un squash-merge efface l'ascendance, mais `gh pr list --state all --search` retrouve la PR par le nom de branche.
+**Mesure datée et contrôle positif** (po-2027, cycle #14195 ; tableau avant/après et contrôle positif du squash-merge) : [détail §5](../../docs/reference/git-workflow-detail.md).
 
 ## PR Body Generation
 
