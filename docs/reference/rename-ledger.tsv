@@ -325,7 +325,7 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Lean.ipynb	MyIA.AI.No
 MyIA.AI.Notebooks/GameTheory/GameTheory-06j-Bounded-Proofs-Reasoning-Costs-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-06-Preuves-Bornees-Cout-du-Raisonnement-Python.ipynb	2026-10-11	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/GameTheory/GameTheory-06g-Simulation-Based-Program-Equilibria-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-07-Equilibres-par-Simulation-Python.ipynb	2026-10-11	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/GameTheory/GameTheory-06h-Transparent-Institutions-Python.ipynb	MyIA.AI.Notebooks/GameTheory/Dynamics/Dynamics-08-Institutions-Transparentes-Python.ipynb	2026-10-11	myia-po-2023:CoursIA-2
-MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb	MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-22c-GeometryOfTruth-Python.ipynb	MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9g-Geometrie-de-la-Verite.ipynb	2026-10-11	myia-po-2027:CoursIAMyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi.ipynb	MyIA.AI.Notebooks/IIT/IIT-01-IntroToPyPhi-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics.ipynb	MyIA.AI.Notebooks/IIT/IIT-02-AdvancedTopics-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi.ipynb	MyIA.AI.Notebooks/IIT/IIT-03-CoarseGrainingMacroPhi-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
 MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere.ipynb	MyIA.AI.Notebooks/IIT/IIT-04-Le-Probleme-de-Frontiere-Python.ipynb	2026-10-12	myia-ai-01:CoursIA-2
@@ -355,3 +355,8 @@ MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection-Python.ipynb	MyIA.AI.Notebook
 MyIA.AI.Notebooks/ML/ML.Net/ML-9-Anomaly-Detection.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection.ipynb	2026-10-10	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-10-TSAD-Benchmark-Flaws-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
 MyIA.AI.Notebooks/ML/ML.Net/ML-11-MatrixProfile-Multidim-Python.ipynb	MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb	2026-10-10	myia-po-2023:CoursIA-2
+MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-Adversarial.ipynb	MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14-ConnectFour-Adversarial.ipynb	2026-10-17	myia-po-2023:CoursIA
+MyIA.AI.Notebooks/Search/Applications/Search/App-14-ConnectFour-CSharp.ipynb	MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14-ConnectFour-CSharp.ipynb	2026-10-17	myia-po-2023:CoursIA
+MyIA.AI.Notebooks/Search/Applications/Search/App-14b-ConnectFour.ipynb	MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14b-ConnectFour.ipynb	2026-10-17	myia-po-2023:CoursIA
+MyIA.AI.Notebooks/Search/Applications/Search/App-14c-ConnectFour-CSharp.ipynb	MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14c-ConnectFour-CSharp.ipynb	2026-10-17	myia-po-2023:CoursIA
+MyIA.AI.Notebooks/Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb	MyIA.AI.Notebooks/Search/App-32-Szpiro-Pasten-2026.ipynb	2026-10-20	myia-po-2023:CoursIA-2

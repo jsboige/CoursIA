@@ -292,6 +292,20 @@ class MacroFactorRotationAlgorithm(QCAlgorithm):
         if self._mode == "baseline":
             self._rebalance_baseline()
 
+    def on_end_of_algorithm(self):
+        # Garde de couverture #21336 : le taux minimal de titres a
+        # capitalisation exploitable sur toute la fenetre, statue en fin
+        # d'execution (statistique d'execution + journal).
+        if self._mode != "asg" or not self._universe_seen:
+            return
+        self.set_runtime_statistic(
+            "Cap coverage (min)", f"{self._min_coverage:.1%}"
+        )
+        self.debug(
+            f"[#21336] couverture capitalisation minimale sur la fenetre : "
+            f"{self._min_coverage:.1%}"
+        )
+
     # ------------------------------------------------------------------
     # Bras ASG : sizing d'exposition par Aggregate Sales Growth (#21132)
     # ------------------------------------------------------------------
@@ -304,6 +318,11 @@ class MacroFactorRotationAlgorithm(QCAlgorithm):
         self._excess_returns = pd.Series(dtype=float)
         self._prev_event_price = None
         self._gamma = asg_helpers.GAMMA
+        # Garde de couverture #21336 : taux minimal, sur toute la fenetre,
+        # de titres de l'univers portant une capitalisation exploitable
+        # (directe ou reconstruite par le repli). Statistique d'execution.
+        self._universe_seen = False
+        self._min_coverage = 1.0
         # Selection d'univers programmee au debut de chaque mois (00:00),
         # rebalance programme le meme jour a 08:00 : la coupe fondamentale
         # est donc toujours fraiche et connue avant la decision.
@@ -318,16 +337,43 @@ class MacroFactorRotationAlgorithm(QCAlgorithm):
         # Financial Services et Real Estate exclus. L'univers ne selectionne
         # aucun titre (retour vide) : il sert uniquement a collecter la coupe
         # fondamentale point-in-time du mois.
-        self._firm_data = {
-            f.symbol: (f.operation_ratios.revenue_growth.one_year, f.market_cap)
-            for f in fundamentals
-            if (f.company_reference.country_id == "USA"
-                and f.security_reference.is_primary_share
-                and f.security_reference.security_type == "ST00000001"
-                and f.asset_classification.morningstar_sector_code
-                    not in (MorningstarSectorCode.FINANCIAL_SERVICES,
-                            MorningstarSectorCode.REAL_ESTATE))
-        }
+        #
+        # Capitalisation effective (#21336) : avant mi-2009, f.market_cap est
+        # vide sur une large part de l'univers Morningstar (#21333) ; le
+        # repli price * split_factor * shares_outstanding reconstruit la
+        # capitalisation de ponderation de l'ASG (sonde QC 38066227 :
+        # couverture 5,1 % -> 98,9 % en 2007). La garde de couverture mesure,
+        # pour chaque coupe, la part de l'univers effectivement ponderee.
+        firm_data = {}
+        covered = 0
+        for f in fundamentals:
+            if not (f.company_reference.country_id == "USA"
+                    and f.security_reference.is_primary_share
+                    and f.security_reference.security_type == "ST00000001"
+                    and f.asset_classification.morningstar_sector_code
+                        not in (MorningstarSectorCode.FINANCIAL_SERVICES,
+                                MorningstarSectorCode.REAL_ESTATE)):
+                continue
+            cap = asg_helpers.effective_market_cap(
+                f.market_cap,
+                f.price,
+                f.split_factor,
+                f.company_profile.shares_outstanding,
+            )
+            if cap is not None:
+                covered += 1
+            firm_data[f.symbol] = (
+                f.operation_ratios.revenue_growth.one_year, cap
+            )
+        self._firm_data = firm_data
+        if firm_data:
+            self._universe_seen = True
+            self._min_coverage = min(
+                self._min_coverage, covered / len(firm_data)
+            )
+            self.set_runtime_statistic(
+                "Cap coverage (min)", f"{self._min_coverage:.1%}"
+            )
         return []
 
     def _rebalance_asg(self):
