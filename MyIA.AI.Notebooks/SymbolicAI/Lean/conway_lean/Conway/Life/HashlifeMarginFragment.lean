@@ -3843,7 +3843,8 @@ theorem evolve_period_union_mul {T T₁ T₂ : Nat} (hT : 0 < T)
     (by rw [hm₂, Nat.mul_comm T₂ m₂]; exact evolve_mulF_of_period g₂ hfix₂ m₂) hcan
 
 /-- **hcap des unions de périodes mixtes.** Une union de deux oscillateurs de
-    périodes **distinctes** `T₁`, `T₂` (multiples d'un commun `T`), aux
+    périodes `T₁`, `T₂` **divisant une période commune `T`** (c'est `T` qui est
+    le multiple commun), aux
     trajectoires 3-séparées, est capturée à tout instant : l'union est
     `T`-périodique (`evolve_period_union_mul`) et la voie mod s'applique —
     contre le containment `hwin` des phases de l'union dans le cadre de la
@@ -3869,7 +3870,8 @@ theorem hcap_of_union_mixed {T T₁ T₂ : Nat} (hT : 0 < T)
 /-- **L2 assemblée pour les unions de périodes mixtes.** Miroir des trois
     corollaires d'assemblage des unions (basses, dyadiques hautes, dégénérée) :
     une MacroCell dont la grille rendue à l'origine se scinde en deux
-    oscillateurs de périodes distinctes multiples d'un commun `T`, séparés de
+    oscillateurs de périodes `T₁`, `T₂` divisant une période commune `T`
+    (distinctes dans le cas d'usage), séparés de
     trois cellules à toute phase et dont les phases de l'union vérifient le
     containment `hwin`, satisfait l'égalité Hashlife à tout horizon `2^k` sous
     `centralCorrect`. La classe clignotant + pulsar — deux oscillateurs réels

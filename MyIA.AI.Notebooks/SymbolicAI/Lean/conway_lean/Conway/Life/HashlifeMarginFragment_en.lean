@@ -3845,8 +3845,9 @@ theorem evolve_period_union_mul {T T₁ T₂ : Nat} (hT : 0 < T)
     (by rw [hm₁, Nat.mul_comm T₁ m₁]; exact evolve_mulF_of_period g₁ hfix₁ m₁)
     (by rw [hm₂, Nat.mul_comm T₂ m₂]; exact evolve_mulF_of_period g₂ hfix₂ m₂) hcan
 
-/-- **hcap of mixed-period unions.** A union of two oscillators of **distinct**
-    periods `T₁`, `T₂` (multiples of a common `T`), with 3-separated
+/-- **hcap of mixed-period unions.** A union of two oscillators of periods
+    `T₁`, `T₂` **dividing a common period `T`** (it is `T` that is the common
+    multiple), with 3-separated
     trajectories, is captured at every instant: the union is `T`-periodic
     (`evolve_period_union_mul`) and the mod route applies — under the
     containment `hwin` of the union's phases within the carrying phase's frame,
@@ -3871,8 +3872,9 @@ theorem hcap_of_union_mixed {T T₁ T₂ : Nat} (hT : 0 < T)
 
 /-- **Assembled L2 for mixed-period unions.** Mirror of the three union assembly
     corollaries (low, dyadic-high, degenerate): a MacroCell whose grid rendered
-    at the origin splits into two oscillators of distinct periods multiples of a
-    common `T`, separated by three cells at every phase and whose union phases
+    at the origin splits into two oscillators of periods `T₁`, `T₂` dividing a
+    common `T` (distinct in the use case), separated by three cells at every
+    phase and whose union phases
     satisfy the containment `hwin`, satisfies the Hashlife equality at every
     horizon `2^k` under `centralCorrect`. The blinker + pulsar class — two real
     oscillators of the bestiary, periods 2 and 3 — is now in the fragment. -/
