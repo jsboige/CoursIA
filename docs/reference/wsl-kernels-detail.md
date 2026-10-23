@@ -185,6 +185,32 @@ divergence (un `lean-toolchain` en v4.33.0 dans un arbre temporaire) rend
 parent) ne démarre plus le kernel — il échoue au lieu de suivre `stable`.
 Remède : écrire `lean-toolchain` dans le lake.
 
+**Ré-application sur une machine déjà installée** : le correctif côté fourche
+vit dans le template `REPL_PY_PATCH`, mais `PATCH_MARKER` reste
+`"_find_lake_root"`, marqueur que la fourche épinglée `v0.0.1-native-import`
+porte **déjà**. Conséquences mesurées :
+
+- `setup_native_lean4_import.py install` réinstalle la fourche puis teste le
+  marqueur : il affiche `PATCHED` **sans avoir appliqué le nouveau template** ;
+- `setup_native_lean4_import.py patch` est idempotent sur ce même marqueur et
+  répond « already patched — nothing to do ».
+
+Le `ReplPairingError` du template ne s'applique donc pas au seul `install`.
+Sur une machine déjà installée, restaurer la sauvegarde puis rejouer le patch :
+
+```bash
+cp <chemin>/lean4_jupyter/repl.py.bak.native <chemin>/lean4_jupyter/repl.py
+python scripts/lean/setup_native_lean4_import.py patch
+```
+
+C'est la mécanique déjà décrite dans le commentaire du code pour le précédent
+`REPL_PY_PATCH` évolué (#12061), pas un défaut de cette correction. La moitié
+**wrapper**, elle, est redéployée par `setup_wsl_lean4.sh` (`cp` de la source
+canonique vers `~/.lean4-kernel-wrapper.py`, comparaison octet-à-octet par
+`lean_kernel_check.py`) : seule la moitié fourche demande le geste manuel.
+Sans lui, un opérateur croit la protection active alors que **seule la moitié
+wrapper l'est**.
+
 ## Notes complémentaires
 
 - Cold start .NET Interactive : premier démarrage peut timeout (30-60s), retry une fois
