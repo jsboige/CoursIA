@@ -74,3 +74,17 @@ Toutes portent sur les graines d'étude `(0, 1, 7, 42, 99)` ; les bandes sont **
 - Aucun ajustement de bande après lecture des graines d'étude. Un ajustement post-pilote est possible **avant** l'étude et se commit séparément (v2), en nommant la valeur v1 et la raison.
 - Aucune généralisation à la thèse de non-formalisabilité de l'article.
 - Aucun terrain choisi pour favoriser l'allocateur adverse : le terrain, les heuristiques et les seuils sont écrits avant le module et ne dépendent pas des résultats.
+
+---
+
+## 5. Révision v2 (2026-10-23, après pilote graine 1000, AVANT l'étude)
+
+Le pilote (graine `1000`, disjointe des graines d'étude, jamais comptée dans un verdict) a exposé deux défauts **mécaniques** et une prédiction mal posée. Révision unique, les bandes de P1–P4 restent **inchangées**.
+
+1. **Sémantique des événements (bug).** v1 comptait comme « bascule » tout changement d'ensemble engagé ; l'heuristique d'exploit proposant un échange à presque chaque pas, cela produisait 141 « bascules » sur 240 pas — l'événement que P3/P4 mesurent (un **re-commitment de stratégie** exploit ↔ explore) y était noyé. v2 mesure séparément `switches` (changement de stratégie) et `set_changes` (changement d'ensemble). P3/P4 portent sur `switches`.
+
+2. **Crédit des heuristiques (bug de traduction).** v1 créditait l'exploit par la marge sur papier de son meilleur échange (estimations périmées) : après une bascule de terrain, les estimations périmées maintiennent des marges artificielles et le crédit ne s'effondre pas — contredisant le « iteratively evaluates progress » de la citation 2. v2 crédite chaque heuristique par son **score réalisé pendant son usage** (moyenne des récompenses observées sous son conseil, EMA α = 0,2), l'heuristique inactive régressant lentement vers le neutre (0,5, taux 0,02/pas) — la traduction directe de la ligne 270 de la source : scénarios « played against each other while monitoring the streams of discrepancies they generate to prioritize between them ». L'allocateur reste en stratégies incumbente/challenger avec hystérésis `theta = 0,15`.
+
+3. **P5 re-formulée.** P5 v1 (« pas de supériorité en terrain stationnaire ») est **mal posée** : le pilote montre que l'adverse y **gagne** (0,99 contre 0,63), et c'est cohérent avec la source — cesser d'explorer quand rien ne bouge EST le re-commitment par évaluation à l'œuvre. Une prédiction « pas d'avantage » n'y est pas réfutable dans le bon sens. **P5 v2 (mécanisme, pas avantage)** : en terrain stationnaire, l'adverse **réduit son exploration sous la moitié de celle du mélange fixe** — bande : `part_explore(opponent, stationnaire) ≤ 0,10` (contre 0,20 par construction pour le mélange fixe) sur chaque graine d'étude. Le texte v1 reste cité ici : « `grip(opponent) − grip(static) ≤ 0,02` en terrain stationnaire sur chaque graine ».
+
+**Ce qui n'a PAS changé** : terrain, bras, heuristiques, seuil θ, bandes de P1–P4, graines, verdict (SUPPORTED/PARTIAL/REFUTED), contre-régime. En particulier, le pilote v3 (graine 1000) donne `opponent 0,61 < static 0,69 < sham 0,70` : si l'étude confirme, **P1 et P2 seront réfutées et le verdict sera REFUTED** — publié tel quel, conformément au contre-régime du §3. Aucun paramètre n'a été ajusté pour éviter cette issue.
