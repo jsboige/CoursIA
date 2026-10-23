@@ -2903,11 +2903,11 @@ La brique `evaluations` (matches complets) exige le bootstrap externe PerfectDou
 
 ### Ce que le carnet mesure
 
-Ablation à **budget égal** de quatre régimes de mise à jour (gap de Nash exact de la politique moyenne, six jalons) : `plain` (témoin négatif), `cfrplus`, `linavg`, `sched` (coordination planifiée des deux leviers). Les quatre convergent vers `-1/18` ; ils diffèrent par le chemin. Mesures committées : à 200 itérations `linavg` 0,00900 contre `plain` 0,01225 (−26,5 %) ; à 2000 itérations `linavg` 0,00303 (−29,7 %), `sched` 0,03899 (+804 %).
+Ablation à **budget égal** de quatre régimes de mise à jour (gap de Nash exact de la politique moyenne, six jalons) : `plain` (témoin négatif), `cfrplus`, `linavg`, `sched` (coordination planifiée des deux leviers). **Trois convergent** vers `-1/18` à `4e-4` près (`plain` et `linavg` à `6e-6`, `cfrplus` à `3,6e-4`) ; `sched` **n'y converge pas dans ce budget** — valeur finale `-0.05331`, écart `2,2e-3`, meilleur jalon à 400 : c'est une valeur de **budget fini**, pas un point fixe atteint. Mesures committées : à 200 itérations `linavg` 0,00900 contre `plain` 0,01225 (−26,5 %) ; à 2000 itérations `linavg` 0,00303 (−29,7 %), `sched` 0,03899 (+804 %). Reproductibilité : tous les chiffres se rejouent à l'identique, sauf le dernier jalon de `sched`, sensible aux ulp de plateforme au 4ᵉ décimale (0,03899 committé / 0,03895 en rejeu indépendant) — aucun verdict n'en dépend.
 
 ### Témoin négatif (Prong B — honnêteté mesurée)
 
-Le régime « coordination planifiée » mène **très tôt** (25 itérations : 0,01755 contre 0,04494 pour `plain`), puis **perd** en fin de budget : l'actualisation des regrets détruit l'accumulation qui fait converger le CFR. Le carnet enseigne ce résultat négatif au lieu du récit « coordination = mieux » ; `cfrplus` (agressivité constante) est le plus lent à 2000 itérations (+12,3 %).
+Le régime « coordination planifiée » mène **très tôt** (25 itérations : 0,01755 contre 0,04494 pour `plain`), puis **perd** en fin de budget : son gap descend jusqu'à 0,00647 à 400 itérations, puis **remonte** à 0,03899 à 2000 — l'actualisation des regrets détruit l'accumulation qui fait converger le CFR. Le carnet enseigne ce résultat négatif au lieu du récit « coordination = mieux » ; `cfrplus` (agressivité constante) est le plus lent à 2000 itérations (+12,3 %).
 
 ### Organe natif nommé (organ-first)
 
