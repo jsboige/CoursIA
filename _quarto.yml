@@ -454,7 +454,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/README.md"
-    - "MyIA.AI.Notebooks/SymbolicAI/Lean/mimo_lean/README.md"
+    - "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO/mimo_lean/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Riemann200/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/_archive/README.md"
