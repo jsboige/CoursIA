@@ -3156,6 +3156,102 @@ theorem hashlife_correct_margin_of_union_mixed (c : MacroCell) (k : Nat)
   rw [hsplit]
   exact hcap_of_union_mixed hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan hwin t
 
+/-! ### Tranche 16 — décharge de `hwin` par boîte statique d'orbite
+
+Le containment `hwin` de la voie mod (tranches 8b, 15) est un énoncé en `T × T`
+paires de phases : « toute phase `r` a son cadre de reconstruction qui contient
+le support de toute phase `r + i` ». Pour un motif réel, vérifier cela paire par
+paire est fastidieux ; ce qui est vrai — et suffisant — est plus simple :
+**l'orbite entière vit dans une boîte statique**, et **le cadre de chaque phase
+contient cette boîte**. Deux conditions indépendantes du couple `(r, i)`, donc
+vérifiées une fois chacune. La présente tranche fait la réduction : tout témoin
+de la paire (boîte, cadres) décharge intégralement `hwin`.
+
+Pour un oscillateur borné (pulsar, clignotant), l'orbite est un ensemble fini
+de phases au support borné : la boîte existe toujours — le travail concret
+restant est l'inclusion boîte-dans-cadre (le cadre est un arrondi dyadique
+margé du support de SA phase, donc l'inclusion demande un peu de marge, pas
+une coïncidence exacte). La brique géométrique `frame_contains_support`
+(tranche 15) est la diagonale `i = 0` : cadre de `r` contient le support de
+`r` — il ne reste que les `T - 1` autres phases à couvrir par la boîte. -/
+
+/-- **`hwin` déchargé par une boîte statique.** Si le support de chacune des
+    `T` phases d'un motif `T`-périodique vit dans une boîte fixe
+    `[a₁, a₂) × [b₁, b₂)`, et si le cadre de reconstruction de chaque phase
+    contient cette boîte, alors le containment `hwin` (toute phase dans le
+    cadre de toute autre) tient. Preuve : `evolve i (evolve r g)` se replie
+    sur `evolve ((i + r) % T) g` (`evolve_add` + `evolve_mod_period`), dont
+    le support est dans la boîte ; la boîte est dans le cadre de `r` ; les
+    bornes se composent par `omega`. -/
+theorem hwin_of_orbit_box {T : Nat} (hT0 : 0 < T) (g : Grid)
+    (hper : evolve T g = g) (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ j, j < T → ∀ p ∈ evolve j g,
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r, r < T →
+      (gridToMacroCellWithOffset (evolve r g)).1.1 ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2 ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int)) :
+    ∀ r, r < T → ∀ i, i < T → ∀ p ∈ evolve i (evolve r g),
+      (gridToMacroCellWithOffset (evolve r g)).1.1 ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) := by
+  intro r hr i hi p hp
+  rw [← evolve_add, evolve_mod_period g hper (i + r)] at hp
+  obtain ⟨q1, q2, q3, q4⟩ := hbox ((i + r) % T) (Nat.mod_lt _ hT0) _ hp
+  obtain ⟨f1, f2, f3, f4⟩ := hframe r hr
+  exact ⟨by omega, by omega, by omega, by omega⟩
+
+/-- **hcap par boîte statique, motif seul.** Application directe : la capture
+    de la voie mod pour un motif `T`-périodique se déduit d'une boîte d'orbite
+    et de l'inclusion boîte-dans-cadre pour chaque phase — sans énoncer le
+    containment paire-par-paire. -/
+theorem hcap_of_period_mod_of_box (g : Grid) (hg : Canonical g) {T : Nat}
+    (hT0 : 0 < T) (hper : evolve T g = g) (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ j, j < T → ∀ p ∈ evolve j g,
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r, r < T →
+      (gridToMacroCellWithOffset (evolve r g)).1.1 ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2 ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true :=
+  hcap_of_period_mod g hg hT0 hper
+    (hwin_of_orbit_box hT0 g hper a₁ a₂ b₁ b₂ hbox hframe)
+
+/-- **hcap des unions mixtes par boîte statique.** La même décharge pour la
+    classe hétérogène de la tranche 15 : une union `T`-périodique de deux
+    oscillateurs de périodes distinctes est capturée dès que l'orbite de
+    l'union vit dans une boîte que contient le cadre de chaque phase de
+    l'union. Le témoin concret clignotant + pulsar (2, 3) n'a plus qu'à
+    exhiber la boîte commune et les inclusions de cadre. -/
+theorem hcap_of_union_mixed_of_box {T T₁ T₂ : Nat} (hT : 0 < T)
+    (hdv₁ : T₁ ∣ T) (hdv₂ : T₂ ∣ T) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T₁ g₁ = g₁) (hfix₂ : evolve T₂ g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ j, j < T → ∀ p ∈ evolve j (g₁ ++ g₂),
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r, r < T →
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1 ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2 ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true := by
+  have hperU : evolve T (g₁ ++ g₂) = g₁ ++ g₂ :=
+    evolve_period_union_mul hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan
+  exact hcap_of_union_mixed hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan
+    (hwin_of_orbit_box hT (g₁ ++ g₂) hperU a₁ a₂ b₁ b₂ hbox hframe)
+
 /-! ## Synthèse — le fragment est non vide et l'énoncé-cadre est honnête
 
 `supportInMargin` est décidable et témoigné sur le bestiaire (ci-dessus). L'énoncé-cadre

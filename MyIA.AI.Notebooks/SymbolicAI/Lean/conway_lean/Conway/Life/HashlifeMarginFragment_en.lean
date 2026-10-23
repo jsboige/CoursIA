@@ -3151,6 +3151,100 @@ theorem hashlife_correct_margin_of_union_mixed (c : MacroCell) (k : Nat)
   rw [hsplit]
   exact hcap_of_union_mixed hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan hwin t
 
+/-! ### Slice 16 — discharging `hwin` by a static orbit box
+
+The containment `hwin` of the mod route (slices 8b, 15) is a `T × T`
+phase-pair statement: "every phase `r` has its reconstruction frame containing
+the support of every phase `r + i`". For a real pattern, checking this pair by
+pair is tedious; what is true — and sufficient — is simpler: **the whole orbit
+lives in a static box**, and **every phase's frame contains that box**. Two
+conditions independent of the pair `(r, i)`, each verified once. This slice
+performs the reduction: any witness of the (box, frames) pair fully discharges
+`hwin`.
+
+For a bounded oscillator (pulsar, blinker), the orbit is a finite set of
+phases with bounded support: the box always exists — the remaining concrete
+work is the box-in-frame inclusion (the frame is a dyadic rounding with margin
+of ITS OWN phase's support, so the inclusion asks for some slack, not an
+exact coincidence). The geometric brick `frame_contains_support` (slice 15) is
+the `i = 0` diagonal: frame of `r` contains the support of `r` — only the
+other `T - 1` phases remain to be covered by the box. -/
+
+/-- **`hwin` discharged by a static box.** If the support of each of the `T`
+    phases of a `T`-periodic pattern lives in a fixed box `[a₁, a₂) × [b₁, b₂)`,
+    and the reconstruction frame of each phase contains that box, then the
+    containment `hwin` (every phase in every other's frame) holds. Proof:
+    `evolve i (evolve r g)` folds onto `evolve ((i + r) % T) g`
+    (`evolve_add` + `evolve_mod_period`), whose support is in the box; the box
+    is in the frame of `r`; the bounds compose by `omega`. -/
+theorem hwin_of_orbit_box {T : Nat} (hT0 : 0 < T) (g : Grid)
+    (hper : evolve T g = g) (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ j, j < T → ∀ p ∈ evolve j g,
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r, r < T →
+      (gridToMacroCellWithOffset (evolve r g)).1.1 ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2 ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int)) :
+    ∀ r, r < T → ∀ i, i < T → ∀ p ∈ evolve i (evolve r g),
+      (gridToMacroCellWithOffset (evolve r g)).1.1 ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) := by
+  intro r hr i hi p hp
+  rw [← evolve_add, evolve_mod_period g hper (i + r)] at hp
+  obtain ⟨q1, q2, q3, q4⟩ := hbox ((i + r) % T) (Nat.mod_lt _ hT0) _ hp
+  obtain ⟨f1, f2, f3, f4⟩ := hframe r hr
+  exact ⟨by omega, by omega, by omega, by omega⟩
+
+/-- **hcap by static box, single pattern.** Direct application: the mod-route
+    capture of a `T`-periodic pattern follows from an orbit box and the
+    box-in-frame inclusion for each phase — without stating the containment
+    pair by pair. -/
+theorem hcap_of_period_mod_of_box (g : Grid) (hg : Canonical g) {T : Nat}
+    (hT0 : 0 < T) (hper : evolve T g = g) (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ j, j < T → ∀ p ∈ evolve j g,
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r, r < T →
+      (gridToMacroCellWithOffset (evolve r g)).1.1 ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r g)).1.2 ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r g)).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r g)).2.level : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t g)).2 = true :=
+  hcap_of_period_mod g hg hT0 hper
+    (hwin_of_orbit_box hT0 g hper a₁ a₂ b₁ b₂ hbox hframe)
+
+/-- **hcap of mixed unions by static box.** The same discharge for the
+    heterogeneous class of slice 15: a `T`-periodic union of two oscillators
+    of distinct periods is captured as soon as the union's orbit lives in a
+    box that every phase's frame contains. The concrete blinker + pulsar (2, 3)
+    witness now only has to exhibit the common box and the frame inclusions. -/
+theorem hcap_of_union_mixed_of_box {T T₁ T₂ : Nat} (hT : 0 < T)
+    (hdv₁ : T₁ ∣ T) (hdv₂ : T₂ ∣ T) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T₁ g₁ = g₁) (hfix₂ : evolve T₂ g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) (a₁ a₂ b₁ b₂ : Int)
+    (hbox : ∀ j, j < T → ∀ p ∈ evolve j (g₁ ++ g₂),
+      a₁ ≤ p.1 ∧ p.1 < a₂ ∧ b₁ ≤ p.2 ∧ p.2 < b₂)
+    (hframe : ∀ r, r < T →
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1 ≤ a₁ ∧
+        a₂ ≤ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2 ≤ b₁ ∧
+        b₂ ≤ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true := by
+  have hperU : evolve T (g₁ ++ g₂) = g₁ ++ g₂ :=
+    evolve_period_union_mul hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan
+  exact hcap_of_union_mixed hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan
+    (hwin_of_orbit_box hT (g₁ ++ g₂) hperU a₁ a₂ b₁ b₂ hbox hframe)
+
 /-! ## Synthesis — the fragment is non-empty and the framework statement is honest
 
 `supportInMargin` is decidable and witnessed on the bestiary (above). The framework
