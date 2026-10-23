@@ -98,7 +98,7 @@ flowchart LR
     SOCLE["<b>Socle du paradigme</b><br/>CSP-1 — Modèle (X, D, C)<br/>&amp; backtracking + MRV/LCV<br/>CSP-2 — Propagation<br/>(AC-3, Forward Checking, MAC)"]
     APP["<b>Applications industrielles</b><br/>CSP-3 — Contraintes globales<br/>→ CSP-4 Scheduling<br/>→ CSP-5 Optimization"]
     FRO["<b>Frontières</b><br/>CSP-6 — Hybridization<br/>(LCG, CP+SAT/ML/LLM)<br/>→ CSP-7 Soft<br/>→ CSP-8 Temporal<br/>→ CSP-9 Distributed"]
-    IND["<b>Indépendants</b><br/>CSP-7 / CSP-8 / CSP-9<br/>(accessibles dès<br/>CSP-1 + CSP-2)"]
+    IND["<b>Indépendants</b><br/>CSP-7 / CSP-8 / CSP-9 / CSP-10<br/>(accessibles dès<br/>CSP-1 + CSP-2)"]
     SOCLE --> APP
     SOCLE --> FRO
     SOCLE --> IND
