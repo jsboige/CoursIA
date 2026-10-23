@@ -200,7 +200,7 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,bb73824e
 print(""Fonction create_kernel définie"")
 print(""Fonction create_kernel definie"")
 ",,,,,,,,e6a88241a34f1f64,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,6a189386,markdown,fr,afb22df8c744516d,"## Plugin de génération d'images
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,6a189386,markdown,fr,4d30322ee87023cb,"## Plugin de génération d'images
 
 `ImagePlugin` encapsule l'appel à l'instance **ComfyUI** de la série sous forme de **fonction invocable** Semantic Kernel. Le décorateur `@kernel_function(name=""generate_image"", description=""..."")` expose la méthode `generate` comme une capacité que le kernel peut invoquer par nom.
 
@@ -208,7 +208,8 @@ Détails de l'implémentation :
 
 - **transport et authentification** : le client partagé `shared/helpers/comfyui_client.py` lit `COMFYUI_API_URL` et le jeton dans le `.env` de la série — le jeton n'apparaît **jamais** dans une cellule ;
 - **graphe** : le workflow `qwen_image_2_1_text2image.json` (dossier `scripts/genai-stack/workflows/qwen_image_2_1/`) est chargé puis converti du format *UI* au format *API*. C'est ce fichier versionné qui décrit les modèles employés, pas une copie recopiée dans le notebook ;
-- **style appliqué** : chaque image part du préfixe `""Style cartoon comique - ""` suivi de la réplique de l'Âne ;
+- **style appliqué** : chaque image part d'un gabarit qui **nomme le sujet** (un âne gris à quatre pattes, sur ses sabots, longues oreilles, museau allongé, crinière courte) et **écarte explicitement** ce qui a dérivé sans lui — cornes, bois de cervidé, silhouette humaine, bipède — avant d'ajouter la **description visuelle de la scène** en `Scène illustrée : …`. Le gabarit est la constante `GABARIT_ILLUSTRATION` de la cellule suivante ;
+- **séparation texte/image** : Qwen-Image rend en lettrage tout texte cité dans le prompt (mesuré le 2026-10-22 : deux lectures visuelles croisées ont vu les paroles dessinées dans l'image) ; la réplique n'est donc **jamais** passée telle quelle au générateur — `decrire_scene_visuelle` la paraphrase en termes visuels via le LLM du kernel, et le plugin ne reçoit que cette description ; la description est en outre **contrainte à l'âne seul** (quatre pattes, quatre sabots au sol, aucun personnage humain, aucun public) — une scène librement décrite dérive vers la posture cabrée ou l'adversaire du duel (round 3 du 2026-10-22), et la scène retenue est affichée avant chaque image ;
 - **robustesse** : en cas d'échec (instance injoignable, erreur d'exécution côté serveur), l'exception est journalisée (`logger.error`) et la méthode retourne `None` — le débat continue sans illustration plutôt que de s'arrêter.
 
 L'image reçue est écrite dans un fichier temporaire, et c'est son **chemin** que la méthode retourne : la cellule de duel l'affiche ensuite.
@@ -220,11 +221,12 @@ Implementation details:
 
 - **transport and authentication**: the shared client `shared/helpers/comfyui_client.py` reads `COMFYUI_API_URL` and the token from the series' `.env` — the token **never** appears in a cell;
 - **graph**: the workflow `qwen_image_2_1_text2image.json` (folder `scripts/genai-stack/workflows/qwen_image_2_1/`) is loaded then converted from the *UI* format to the *API* format. It is this versioned file that describes the models used, not a copy pasted into the notebook;
-- **applied style**: each image starts from the prefix `""Style cartoon comique - ""` followed by the Donkey's reply;
+- **applied template**: each image starts from a template that **names the subject** (a grey donkey on four legs, standing on its hooves, long ears, elongated muzzle, short mane) and **explicitly rules out** what drifted in without it — horns, antlers, a human silhouette, a biped — before appending the **visual description of the scene** as `Scène illustrée: …`. The template is the `GABARIT_ILLUSTRATION` constant of the next cell;
+- **text/image separation**: Qwen-Image renders as lettering any text quoted in the prompt (measured on 2026-10-22: two cross-checked visual readings saw the lines drawn inside the image); the reply is therefore **never** passed as-is to the generator — `decrire_scene_visuelle` paraphrases it into visual terms through the kernel's LLM, and the plugin only receives that description; the description is further **constrained to the donkey alone** (four legs, four hooves on the ground, no human character, no audience) — a freely described scene drifts towards the rearing posture or the duel's opponent (round 3 of 2026-10-22), and the retained scene is displayed before each image;
 - **robustness**: on failure (unreachable instance, server-side execution error), the exception is logged (`logger.error`) and the method returns `None` — the debate continues without an illustration rather than stopping.
 
 The received image is written to a temporary file, and it is its **path** that the method returns: the duel cell then displays it.",,,,,"## Плагин генерации изображений
-Реализация функциональности создания иллюстраций",,afb22df8c744516d,fc78248b4cd6045f,,,,,1008e444c53f68eb,,
+Реализация иллюстраций: шаблон с явным описанием субъекта, текст отделён от изображения",,4d30322ee87023cb,12c991c122a86188,,,,,144920b2e9ad4a03,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,644aac65,code,fr,f33dcf65e3174201,"class ImagePlugin:
     def __init__(self, kernel):
         self.text_to_image = kernel.get_service(""dalle"", OpenAITextToImage)
@@ -369,25 +371,25 @@ print(""Stratégie de terminaison du débat configurée"")
 print(""Fonction create_kernel definie"")
 print(""Strategie de terminaison du debate configuree"")
 ",,,,,,,,5aca9c25814aee01,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,8514a144,markdown,fr,c3fd0381bfaa30fa,"## Lancement du débat
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,8514a144,markdown,fr,dabfa0e3fe6d293f,"## Lancement du débat
 
 L'`AgentGroupChat` rassemble les deux agents (`barbie`, `ane`) et la stratégie de terminaison définie plus haut. L'appel `add_chat_message` amorce la conversation — Semantic Kernel exige un historique non vide — puis `group_chat.invoke()` fait tourner le duel :
 
 - chaque agent produit sa réplique à tour de rôle, conformément à la stratégie de sélection séquentielle ;
-- **spécificité pédagogique** : à chaque réplique de l'Âne, le code invoque le plugin `image_gen` (`generate_image`) avec le contenu de la réplique en contexte, puis affiche l'image renvoyée par l'instance ComfyUI (`width=320`) ;
+- **spécificité pédagogique** : à chaque réplique de l'Âne, le code fait d'abord paraphraser la réplique en **description visuelle** par `decrire_scene_visuelle`, contrainte à l'âne seul à quatre pattes (une scène librement décrite dérive vers la posture cabrée ou l'adversaire du duel) — le générateur rend en lettrage tout texte cité dans le prompt, la réplique ne lui est donc jamais passée telle quelle — puis invoque le plugin `image_gen` (`generate_image`) avec cette description en contexte et affiche l'image renvoyée par l'instance ComfyUI (`width=320`) ;
 - les répliques sont aussi conservées dans `repliques_du_duel` : les exercices de la section 9 les réutilisent au lieu de relancer un duel.
 
-C'est ici que se matérialise la boucle *parler puis illustrer* : le texte d'un agent devient l'argument d'un appel d'image, reliant le service de conversation et l'instance ComfyUI dans le même débat. La génération d'une illustration prend **plusieurs minutes** — le chargement des modèles puis les étapes de diffusion de ComfyUI dominent largement le reste ; c'est de loin le poste le plus lent du montage.
+C'est ici que se matérialise la boucle *parler puis illustrer* : la réplique d'un agent est d'abord résumée en scène visuelle, qui devient l'argument de l'appel d'image, reliant le service de conversation et l'instance ComfyUI dans le même débat. La génération d'une illustration prend **plusieurs minutes** — le chargement des modèles puis les étapes de diffusion de ComfyUI dominent largement le reste ; c'est de loin le poste le plus lent du montage.
 ","## Launching the debate
 
 The `AgentGroupChat` gathers the two agents (`barbie`, `ane`) and the termination strategy defined above. The `add_chat_message` call primes the conversation — Semantic Kernel requires a non-empty history — then `group_chat.invoke()` runs the duel:
 
 - each agent produces its reply in turn, in accordance with the sequential selection strategy;
-- **pedagogical specificity**: on each of the Donkey's replies, the code invokes the `image_gen` plugin (`generate_image`) with the reply's content as context, then displays the image returned by the ComfyUI instance (`width=320`);
+- **pedagogical specificity**: on each of the Donkey's replies, the code first has the reply paraphrased into a **visual description** by `decrire_scene_visuelle`, constrained to the donkey alone on four legs (a freely described scene drifts towards the rearing posture or the duel's opponent) — the generator renders as lettering any text quoted in the prompt, so the reply is never passed to it as-is — then invokes the `image_gen` plugin (`generate_image`) with that description as context and displays the image returned by the ComfyUI instance (`width=320`);
 - the replies are also kept in `repliques_du_duel`: the exercises in section 9 reuse them instead of restarting a duel.
 
-This is where the *speak then illustrate* loop materializes: one agent's text becomes the argument of an image call, linking the conversation service and the ComfyUI instance within the same debate. Generating an illustration takes **several minutes** — model loading followed by ComfyUI's diffusion steps dominate the rest by far; it is by far the slowest part of the setup.",,,,,"## Запуск обсуждения
-Выполнение беседы с генерацией изображений",,c3fd0381bfaa30fa,ac8533e2b5ce0d8b,,,,,22315379a5ede6d1,,
+This is where the *speak then illustrate* loop materializes: an agent's reply is first summarized into a visual scene, which becomes the argument of the image call, linking the conversation service and the ComfyUI instance within the same debate. Generating an illustration takes **several minutes** — model loading followed by ComfyUI's diffusion steps dominate the rest by far; it is by far the slowest part of the setup.",,,,,"## Запуск обсуждения
+Беседа с иллюстрированием: реплика сначала пересказывается как визуальная сцена, затем генерируется изображение",,dabfa0e3fe6d293f,9a0802749e5e6642,,,,,6e89da073ecbc401,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,83e8879f,code,fr,4827e23af3544bbc,"async def run_debate():
     logger.info(f""Contrainte active : {contrainte_choisie[0]}"")
     
