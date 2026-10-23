@@ -953,7 +953,7 @@ layout: default
 
 </TeachingStep>
 
-<TeachingStep v-click="2" placement="below" size="sm">
+<TeachingStep v-click="2" placement="below" size="md">
 
 **Ingénierie de connaissances**
 
@@ -963,7 +963,10 @@ layout: default
 - Linked Data
 
 <template #visual>
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center; width:100%; height:100%;">
 <img src="./images/img_048.png" alt="Nuage Linked Open Data : les jeux de données publiques interconnectées du web des données" />
+<img src="./images/img_049.png" alt="Pile des standards du Web sémantique en huit couches : URI et Unicode, XML, RDF, ontologie, règles, logique, preuve, confiance, avec signature et chiffrement" />
+</div>
 </template>
 
 </TeachingStep>
