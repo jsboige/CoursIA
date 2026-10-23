@@ -314,3 +314,86 @@ def test_un_label_dont_les_runners_sont_tous_offline_reste_une_extinction():
     assert any(e.startswith("EXTINCTION") for e in v.errors), v.errors
     assert not any(w.startswith("LABEL INCONNU") for w in v.warnings)
     assert v.status == "ERROR"
+
+
+# --- 6. Predicat EXTINCTION/STARVATION sur les etats mesures -----------------
+#
+# Ces cinq cas viennent de PR #22200 (#22183), qui les portait dans son propre
+# exemplaire de ce fichier. Deux PR ouvertes de la meme lane sur le meme
+# nouveau fichier se seraient affrontees au merge : le fichier appartient a la
+# PR qui modifie l'organe, et #22200 en garde la sonde (le workflow).
+
+_WAITER = "coursia-waiter"
+_HOST = "myia-ai-01-wsl"
+
+
+def _online(n: int) -> list[str]:
+    return [f"{_HOST}-{i}" for i in range(1, n + 1)]
+
+
+def _pr_gate_job(run_id: int, age_min: float, status: str = "queued") -> mod.JobRow:
+    return mod.JobRow(
+        workflow="PR gate",
+        run_number=run_id,
+        run_id=run_id,
+        job_name="gate",
+        status=status,
+        age_min=age_min,
+    )
+
+
+def test_cas_2026_10_23_extinction_et_starvation():
+    """0 online + 126 jobs PR gate queued > 2 h + 0 in_progress -> 2 erreurs."""
+    inv = mod.RunnerInventory(online=[], offline=_online(16))
+    st = mod.Starvation(
+        starved=[_pr_gate_job(90000 + i, 130.0 + (i % 400)) for i in range(126)],
+        in_progress=[],
+    )
+    v = mod.evaluate(inv, st, warn_floor=2, label=_WAITER)
+    assert v.status == "ERROR"
+    assert any("EXTINCTION" in e for e in v.errors)
+    starv = [e for e in v.errors if "STARVATION" in e]
+    assert starv, "STARVATION doit tirer : file qui ne draine pas"
+    assert "126" in starv[0] and "PR gate" in starv[0]
+
+
+def test_pool_vivant_file_profonde_ok():
+    """16 slots online, queue > seuil MAIS des jobs in_progress -> OK."""
+    inv = mod.RunnerInventory(online=_online(16), offline=[])
+    st = mod.Starvation(
+        starved=[_pr_gate_job(90000 + i, 200.0) for i in range(126)],
+        in_progress=[_pr_gate_job(90126, 10.0, status="in_progress")],
+    )
+    v = mod.evaluate(inv, st, warn_floor=2, label=_WAITER)
+    assert v.status == "OK"
+    assert not v.errors, f"une file qui draine ne rougit pas : {v.errors}"
+
+
+def test_pool_vivant_queue_vide_ok():
+    inv = mod.RunnerInventory(online=_online(16), offline=[])
+    v = mod.evaluate(inv, mod.Starvation(), warn_floor=2, label=_WAITER)
+    assert v.status == "OK"
+    assert not v.errors
+
+
+def test_perte_partielle_warning_pas_erreur():
+    """15 des 16 slots online avec un floor au-dessus -> warning, pas d'erreur.
+
+    (Le floor est une borne : 15 online passe sans avertissement au floor 2 --
+    c'est le cas nominal du pool de 16 avec un slot en redemarrage.)
+    """
+    inv = mod.RunnerInventory(online=_online(15), offline=[f"{_HOST}-16"])
+    v = mod.evaluate(inv, mod.Starvation(), warn_floor=16, label=_WAITER)
+    assert v.status == "OK"
+    assert any("perte partielle" in w for w in v.warnings)
+
+
+def test_sans_pat_pas_extinction_mais_starvation_gardee():
+    """Inventaire non lisible : pas d'EXTINCTION (on ne sait pas), mais le
+    symptome STARVATION tire quand meme -- degradation propre du docstring."""
+    inv = mod.InventoryUnavailable(reason="RUNNERS_READ_PAT absent (test)")
+    st = mod.Starvation(starved=[_pr_gate_job(90000, 300.0)], in_progress=[])
+    v = mod.evaluate(inv, st, warn_floor=2, label=_WAITER)
+    assert v.status == "ERROR"
+    assert not any("EXTINCTION" in e for e in v.errors)
+    assert any("STARVATION" in e for e in v.errors)
