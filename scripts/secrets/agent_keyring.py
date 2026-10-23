@@ -63,6 +63,12 @@ DEFAULT_GROUP = "Agents"
 # trousseau -- la population pertinente est « les machines qui doivent ouvrir le
 # coffre », et web1 en est une (compte GitHub cree le 2026-04-17, entree
 # `github web1` dans le coffre, dashboard machine actif).
+#
+# Une machine n'entre ici que lorsque son compte GitHub EXISTE : la table est
+# faite de logins reels, et une entree fantome rendrait `verify` rouge pour un
+# compte que personne ne peut encore creer. `myia-po-2028` et `myia-web2`
+# n'ont pas de login mesure le 2026-10-20 (gh api users -> 404) -- ils y
+# entreront avec leur compte.
 EXPECTED_GH = {
     "myia-ai-01": "myia-ai-01",
     "myia-po-2023": "myia-po-2023",
@@ -73,6 +79,24 @@ EXPECTED_GH = {
     "MyIA-Web1": "MyIA-Web1",
 }
 
+# Roster de reference de la flotte : le meme que ROO_FLEET_ROSTER (propage a 9
+# machines le 2026-10-20, msg po-2024 `msg-20261020T204450-rpjwdn`). Il vit
+# ici plutot que lu a distance : un gate CI ne depend pas du stockage
+# partage, et l'elargissement est une edition consciente -- jamais une
+# correspondance de forme. `scripts/gh_identity.py` et ce fichier le
+# partagent par test croise (#21687).
+FLEET_ROSTER = (
+    "myia-ai-01",
+    "myia-po-2023",
+    "myia-po-2024",
+    "myia-po-2025",
+    "myia-po-2026",
+    "myia-po-2027",
+    "myia-po-2028",
+    "myia-web1",
+    "myia-web2",
+)
+
 # Les machines qui doivent BOOTSTRAPPER, c'est-a-dire detenir la passphrase dans
 # leur propre gestionnaire d'identifiants. Distinct de EXPECTED_GH : une machine
 # doit ouvrir le coffre meme si son compte GitHub n'existe pas encore.
@@ -81,15 +105,12 @@ EXPECTED_GH = {
 # N machines n'ont pas bootstrappe, le PDF est leur SEULE source -- le supprimer
 # rendrait le coffre inouvrable chez elles (DPAPI n'est ni exportable, ni
 # transferable d'une machine a l'autre).
-FLEET_MACHINES = (
-    "myia-ai-01",
-    "myia-po-2023",
-    "myia-po-2024",
-    "myia-po-2025",
-    "myia-po-2026",
-    "myia-po-2027",
-    "myia-web1",
-)
+#
+# Alignee sur FLEET_ROSTER (#21687) : une machine qui n'y est pas n'a pas de
+# reference d'empreinte dans `doctor`, et son absence du coffre resterait
+# invisible. Les deux constantes disent la meme chose ; un alias les tient
+# ensemble au lieu d'une seconde liste qui deriverait.
+FLEET_MACHINES = FLEET_ROSTER
 
 
 def machine_id() -> str:
@@ -965,6 +986,20 @@ def cmd_doctor(args) -> int:
         print(f"empreinte : {fingerprint(stored)}")
         print(f"            a comparer aux {len(FLEET_MACHINES)} machines : "
               + ", ".join(FLEET_MACHINES))
+        # Roster -> comptes : les machines sans compte mappable sont NOMMEES
+        # au lieu de rester un ecart silencieux entre les 9 machines de
+        # FLEET_MACHINES et les 7 comptes d'HOST_ACCOUNTS (#21687). Une
+        # machine listee ici attend son compte GitHub ; le test croise rougit
+        # si quelqu'un elargit l'un sans l'autre.
+        try:
+            sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+            import gh_identity
+            unmapped = sorted(set(FLEET_MACHINES) - set(gh_identity.HOST_ACCOUNTS))
+        except Exception:
+            unmapped = []
+        if unmapped:
+            print("            sans compte GitHub mappable (a creer, cf "
+                  "scripts/gh_identity.py) : " + ", ".join(unmapped))
     if not has:
         defects += 1
 
