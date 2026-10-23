@@ -126,6 +126,12 @@ def collect() -> dict:
             entry["sources_sha1_en"] = _notebook_source_sha1(p)
         pairs.append(entry)
 
+    # Tri par chemin FR (cle stable) : un deplacement de chemin ne decale que
+    # ses propres lignes, pas toute la table. L'ordre precedent (par chemin EN,
+    # via l'iteration sorted(by_rel)) brassait 459/460 paires pour deux chemins
+    # deplaces (iit_lean, PR #22008) : le diff rendu etait du bruit, pas du travail.
+    pairs.sort(key=lambda e: (e["fr"], e["en"]))
+
     return {
         "pairs": pairs,
         "counts": {k: sum(1 for e in pairs if e["kind"] == k)
