@@ -107,6 +107,56 @@ def test_breadth_zero_when_the_citing_pr_is_already_recorded():
     assert findings[0].citation_breadth == 0
 
 
+def test_citation_wrapped_in_inline_code_is_not_a_citation():
+    """#13906: a number in inline code is not a mention, so it is not a citation.
+
+    Measured on PR #18300, whose only mention of #4208 was the escaped
+    template literal ``axe A `#4208` `` -- it delivered nothing of that EPIC.
+    """
+    epic = Epic(4208, "[EPIC] Reference publique", "## Livré\n- #4209 — axe A")
+
+    findings = analyze_epics(
+        [epic],
+        [_pr(18300, "axe A `#4208` echappe en code inline")],
+    )
+
+    assert findings == []
+
+
+def test_citation_inside_a_fenced_block_is_not_a_citation():
+    """A template shown in a fenced block is quoted text, not a mention."""
+    epic = Epic(4208, "[EPIC] Reference publique", "## Livré\n- #4209 — axe A")
+
+    findings = analyze_epics(
+        [epic],
+        [_pr(18300, "```yaml\nrationale: #4208\n```")],
+    )
+
+    assert findings == []
+
+
+def test_citation_inside_a_blockquote_is_not_a_citation():
+    """A quoted passage reproduces the EPIC body, it does not deliver it."""
+    epic = Epic(4208, "[EPIC] Reference publique", "## Livré\n- #4209 — axe A")
+
+    findings = analyze_epics(
+        [epic],
+        [_pr(18300, "> reliquat du corps : #4208")],
+    )
+
+    assert findings == []
+
+
+def test_prose_citation_still_counts_after_the_quoting_filter():
+    """Positive control: an ordinary prose mention is still a citation."""
+    epic = Epic(4208, "[EPIC] Reference publique", "## Livré\n- #4209 — axe A")
+
+    findings = analyze_epics([epic], [_pr(18301, "Delivers the axis A of #4208")])
+
+    assert len(findings) == 1
+    assert findings[0].unrecorded_merged == (18301,)
+
+
 def test_payload_exposes_citation_breadth():
     """The additive field survives serialization for downstream triage."""
     epics = [
