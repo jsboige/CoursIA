@@ -115,6 +115,66 @@ def test_only_the_closest_force_push_is_reported():
     assert lcu.force_push_to_close_seconds(events, datetime(2026, 10, 12, 10, 20, 14, tzinfo=timezone.utc)) == 33.0
 
 
+# --- 2b. pagination : arret sur updated_at, pas sur closed_at (grain 1) -----------
+
+def _p(closed, updated, number=1, merged=False):
+    return {"number": number, "closed_at": closed, "updated_at": updated,
+            "merged_at": "2026-10-01T00:00:00Z" if merged else None,
+            "head": {"ref": f"b{number}"}, "base": {"ref": "main"},
+            "title": f"pr {number}", "body": "", "html_url": "u"}
+
+
+def test_pagination_stops_on_updated_at_not_closed_at():
+    """Une PR fermee il y a 40 j mais mise a jour aujourd'hui reste en page 1 :
+    couper sur son closed_at perdrait les orphelines de la page 2 en silence."""
+    since = datetime(2026, 10, 9, tzinfo=timezone.utc)
+    # page 1 : 100 elements, dont une vieille fermeture commentee aujourd'hui.
+    # Le DERNIER element a un updated_at recent -> la page 2 doit etre lue.
+    p1 = [_p("2026-08-01T00:00:00Z", "2026-10-23T10:00:00Z", number=1)]  # fermee 40+ j, maj aujourd'hui
+    p1 += [_p("2026-10-01T00:00:00Z", "2026-10-01T00:00:00Z", number=i, merged=True) for i in range(2, 100)]
+    p1.append(_p("2026-10-01T00:00:00Z", "2026-10-23T09:00:00Z", number=100, merged=True))
+    # page 2 : une fermeture DANS la fenetre, seule orpheline reelle
+    p2 = [_p("2026-10-20T10:00:00Z", "2026-10-20T10:00:00Z", number=200)]
+    pages = {1: p1, 2: p2}
+    seen = []
+
+    def fetch(n):
+        seen.append(n)
+        return pages.get(n, [])
+
+    out = lcu.closed_unmerged(REPO, since, fetch_page=fetch)
+    assert seen == [1, 2], "la page 2 doit etre lue"
+    assert [pr["number"] for pr in out] == [200]
+
+
+def test_pagination_stops_when_last_updated_is_older_than_the_window():
+    since = datetime(2026, 10, 9, tzinfo=timezone.utc)
+    p1 = [_p("2026-09-01T00:00:00Z", "2026-09-01T00:00:00Z", number=i, merged=True) for i in range(1, 100)]
+    p1.append(_p("2026-09-02T00:00:00Z", "2026-09-02T00:00:00Z", number=100, merged=True))
+    seen = []
+
+    def fetch(n):
+        seen.append(n)
+        return {1: p1}.get(n, [])
+
+    out = lcu.closed_unmerged(REPO, since, fetch_page=fetch)
+    assert seen == [1] and out == []
+
+
+# --- 2c. pas d'evenement closed = pas de signature (grain 2) -----------------------
+
+def test_no_closed_event_yields_no_accident_signature():
+    events = [_ev("head_ref_force_pushed", "2026-10-12T10:19:41Z")]
+    assert lcu.force_push_to_close_seconds(
+        events, datetime(2026, 10, 12, 10, 20, 14, tzinfo=timezone.utc)) is None
+
+
+def test_no_closed_event_falls_back_to_orphaned():
+    v, _ = lcu.verdict_of(integrated=False, force_push_to_close_s=None,
+                          branch_present=True, content_lost=3)
+    assert v == lcu.ORPHANED
+
+
 # --- 3. successeur : formes explicites seulement ----------------------------------
 
 CLOSED = datetime(2026, 10, 12, 10, 20, 14, tzinfo=timezone.utc)

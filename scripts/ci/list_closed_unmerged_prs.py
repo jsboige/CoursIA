@@ -185,33 +185,44 @@ def _parse_ts(value: str | None) -> datetime | None:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
 
 
-def closed_unmerged(repo: str, since: datetime) -> list[dict]:
+def closed_unmerged(repo: str, since: datetime, fetch_page=None) -> list[dict]:
     """PRs fermees sans merge dont ``closed_at`` tombe apres ``since``.
 
-    Pagine ``pulls?state=closed&sort=updated&direction=desc`` et s'arrete des que
-    la page depasse la fenetre (le tri par date de mise a jour garantit qu'aucune
-    PR plus recente ne suit).
+    Le tri de l'API est ``updated_at`` decroissant, pas ``closed_at``. Comme
+    ``updated_at >= closed_at`` pour toute PR, l'``updated_at`` du **dernier**
+    element d'une page borne toutes les pages suivantes : s'il est anterieur a
+    ``since``, aucune fermeture de la fenetre ne peut s'y trouver.
+
+    S'arreter sur le ``closed_at`` d'un element quelconque serait faux : une PR
+    fermee il y a quarante jours mais commentee aujourd'hui figure en page 1, et
+    couper la dessus perdrait en silence les orphelines des pages suivantes --
+    exactement la classe de defaut que cet organe doit attraper (#22166, grain 1
+    de la revue NanoClaw).
+
+    ``fetch_page`` est injectable : les tests passent des pages fixes sans reseau.
     """
+    def _page(p: int) -> list:
+        return _gh_json([
+            "api",
+            f"repos/{repo}/pulls?state=closed&sort=updated&direction=desc"
+            f"&per_page=100&page={p}",
+        ]) or []
+
+    fetch = fetch_page or _page
     out: list[dict] = []
     page = 1
     while page <= 50:
-        data = _gh_json([
-            "api",
-            f"repos/{repo}/pulls?state=closed&sort=updated&direction=desc"
-            f"&per_page=100&page={page}",
-        ]) or []
+        data = fetch(page)
         if not data:
             break
-        oldest = None
         for pr in data:
             closed = _parse_ts(pr.get("closed_at"))
-            if closed is not None and (oldest is None or closed < oldest):
-                oldest = closed
             if pr.get("merged_at") or closed is None:
                 continue
             if closed >= since:
                 out.append(pr)
-        if len(data) < 100 or (oldest is not None and oldest < since):
+        last_updated = _parse_ts(data[-1].get("updated_at"))
+        if len(data) < 100 or (last_updated is not None and last_updated < since):
             break
         page += 1
     return out
@@ -231,7 +242,12 @@ def force_push_to_close_seconds(events: list[dict], closed_at: datetime) -> floa
     L'acteur compte : un force-push d'une autre lane suivi d'une fermeture n'est
     pas la signature d'un ``reset --hard`` malheureux.
     """
-    closer = next((e.get("actor") or {} for e in events if e.get("event") == "closed"), {})
+    closer = next((e.get("actor") or {} for e in events if e.get("event") == "closed"), None)
+    if closer is None:
+        # Timeline sans evenement `closed` : on ne sait pas qui a ferme, donc on
+        # ne peut pas attribuer le force-push. Pas de signature d'accident -- la
+        # PR retombe en ORPHANED, qui reste nommee (#22166, grain 2).
+        return None
     closer_login = closer.get("login")
     best: float | None = None
     for ev in events:
