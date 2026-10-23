@@ -46,7 +46,7 @@ lean backtest --project .
 
 - `main.py` - Strategy entry point (framework alpha model)
 - `alpha_models.py` - EMACrossAlpha implementation
-- `portfolio_construction.py` - MultiStrategyPCM module
+- `SharedPCM/pouches_pcm.py` (bibliothèque de projet QC) — `MultiStrategyPouchesPCM`, PCM par poches canonique importé par `main.py` (extraction #19821 brique 1, tranche dedup)
 - `quantbook.ipynb` - Research notebook
 
 ## References
