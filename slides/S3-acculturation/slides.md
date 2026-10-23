@@ -953,7 +953,7 @@ layout: default
 
 </TeachingStep>
 
-<TeachingStep v-click="2" placement="below" size="md">
+<TeachingStep v-click="2" placement="below" size="lg">
 
 **Ingénierie de connaissances**
 
