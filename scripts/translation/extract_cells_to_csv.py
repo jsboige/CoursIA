@@ -507,10 +507,29 @@ def main() -> int:
         # qu'un repli, utilisé seulement quand aucune borne n'est dérivable
         # (notebook référencé sans répertoire parent).
         bounded_inputs: list[Path] = []
+        missing_bound_dirs: list[str] = []
         for rd in sorted(ref_dirs):
             abs_rd = (repo_root / rd).resolve() if not Path(rd).is_absolute() else Path(rd)
-            if abs_rd.exists() and abs_rd.is_dir() and abs_rd not in bounded_inputs:
-                bounded_inputs.append(abs_rd)
+            if abs_rd.exists() and abs_rd.is_dir():
+                if abs_rd not in bounded_inputs:
+                    bounded_inputs.append(abs_rd)
+            else:
+                missing_bound_dirs.append(rd)
+        # Cas 2 (#22212) : des bornes de série sont dérivées du CSV mais aucune
+        # n'existe sur disque (série déplacée/renommée). Le repli sur l'input
+        # CLI re-scannerait tout le corpus et le CSV de la série déplacée
+        # absorberait tout (#21514, 31 -> 49 978 lignes). Le repli CLI n'est
+        # légitime QUE quand AUCUNE borne n'est dérivable (ref_dirs vide, cas 1).
+        if ref_dirs and not bounded_inputs:
+            print(
+                "ERROR (--full --update) : bornes de série dérivées du CSV mais "
+                "aucune n'existe sur disque (série déplacée/renommée ?) : "
+                + ", ".join(sorted(missing_bound_dirs))
+                + " — repli sur l'input CLI refusé (échec fermé, #22212). "
+                "Mettre à jour la correspondance du CSV vers les nouveaux chemins.",
+                file=sys.stderr,
+            )
+            return 2
         if bounded_inputs:
             def _covered_by_bound(p: Path) -> bool:
                 # Un input égal à une borne, ou situé DESSOUS, voit ses carnets

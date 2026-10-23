@@ -293,6 +293,59 @@ def test_full_mode_falls_back_to_cli_input_without_derivable_bound(tmp_path, mon
     )
 
 
+def test_full_mode_fails_closed_when_all_bounds_missing(tmp_path, monkeypatch, capsys):
+    """#22212 : des bornes de série SONT dérivées du CSV mais AUCUNE n'existe
+    sur disque (série déplacée/renommée) : échec fermé, pas de repli sur
+    l'input CLI.
+
+    Cas 2, distinct du repli légitime (cas 1, borne non dérivable) : le CSV
+    pointe ``old-series/X.ipynb`` mais ``old-series/`` n'existe plus. Sans le
+    fix, le repli sur l'input CLI (la racine) re-scannerait tout le corpus et
+    le CSV absorberait la série vivante ``live-series/`` — le défaut #21514
+    (31 -> 49 978 lignes) par un autre chemin.
+    """
+    # Série vivante sous la racine : elle ne doit PAS être absorbée.
+    nb_live = tmp_path / "live-series" / "Live.ipynb"
+    _make_notebook(nb_live, "live1", text_fr="## Live")
+
+    # CSV pointant une série DÉPLACÉE : ``old-series/`` n'existe pas sur disque.
+    csv_path = _make_csv(
+        tmp_path / "synced.csv",
+        PIVOT_HEADER,
+        [
+            {"notebook": "old-series/X.ipynb", "cell_id": "x1",
+             "cell_type": "markdown", "src_lang": "fr", "src_hash": "STALE_X",
+             "text_fr": "## X", "hash_fr": "FR_X"},
+        ],
+    )
+
+    monkeypatch.setattr(sys, "argv", [
+        "extract_cells_to_csv.py",
+        "--repo-root", str(tmp_path),
+        str(tmp_path),                  # input = racine (forme workflow T1_MODE=full)
+        "--update", str(csv_path),
+        "--full",
+    ])
+    rc = e.main()
+
+    # Échec fermé : pas de scan de l'input CLI.
+    assert rc == 2, f"attendu rc=2 (échec fermé), got {rc}"
+
+    # La série vivante n'a PAS été absorbée dans le CSV.
+    with csv_path.open(encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    notebooks = {r["notebook"] for r in rows}
+    assert nb_live.relative_to(tmp_path).as_posix() not in notebooks, (
+        f"la série vivante ne doit pas être absorbée ; got notebooks={notebooks}"
+    )
+
+    # L'erreur nomme le répertoire de série introuvable.
+    err = capsys.readouterr().err
+    assert "old-series" in err, (
+        f"l'erreur doit nommer le répertoire manquant ; stderr={err!r}"
+    )
+
+
 def test_full_mode_note_does_not_report_covered_input_as_ignored(
     tmp_path, monkeypatch, capsys
 ):
