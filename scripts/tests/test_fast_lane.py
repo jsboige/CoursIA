@@ -35,8 +35,10 @@ import fast_lane  # noqa: E402
 from fast_lane_registry import (  # noqa: E402
     FAST_LANE_NATIVE, PILOT, TRANCHE1, TRANCHE2, TRANCHE3, TRANCHE4,
     TRANCHE5, TRANCHE8, TRANCHE12, TRANCHE13, TRANCHE14, TRANCHE20, TRANCHE22,
-    TRANCHE25, Guard, live_read_source_paths,
+    TRANCHE25, Guard, LIVE_READ_WILDCARD, live_read_guard_paths,
+    live_read_source_paths,
 )
+import fast_lane_registry  # noqa: E402
 
 # Lot PILOTE absorbe a l'etape 3 de #12856 (programme #12567) : comparaison
 # conclue pour ces neuf gardes -- job renomme byte-identique au `guard.name`
@@ -193,6 +195,51 @@ def test_un_registre_illisible_echoue_ferme(tmp_path):
     """Fail-closed : un registre illisible ne doit pas rendre le garde muet."""
     with pytest.raises(RuntimeError):
         live_read_source_paths(tmp_path / "absent.json")
+
+
+def test_un_registre_illisible_ne_rend_que_le_garde_live_read_bavard(tmp_path, monkeypatch, capsys):
+    """Reserve 1 de #22041 : la panne est LOCALISEE, pas silencieuse.
+
+    `TRANCHE20` porte ces chemins au chargement du module : laisser filer
+    l'exception rendait `fast_lane_registry` inimportable, donc les 30+ gardes
+    avec lui (mesure : registre absent -> `import fast_lane` meurt sur
+    RuntimeError, aucun check-run emis). Le repli elargit a tous les carnets --
+    un SUPERSET -- et le dit sur stderr ; le rouge vient ensuite du garde
+    lui-meme, qui ne peut pas lire le registre manquant.
+    """
+    monkeypatch.setattr(fast_lane_registry, "LIVE_READ_REGISTRY",
+                        tmp_path / "absent.json")
+    assert live_read_guard_paths() == [LIVE_READ_WILDCARD]
+    assert "registre live-read illisible" in capsys.readouterr().err
+    assert fast_lane.guard_applies(
+        LIVE_READ_GUARD, ["MyIA.AI.Notebooks/Serie/Carnet.ipynb"])
+
+
+def test_registre_absent_le_module_reste_importable(tmp_path):
+    """Preuve de bout en bout, sur un arbre copie : l'import ne meurt pas.
+
+    Le test ci-dessus mesure le repli ; celui-ci mesure ce qu'il achete -- un
+    registre absent ne rend plus TOUT le registre inimportable. Le module est
+    copie dans un arbre temporaire ou `scripts/notebook_tools/` existe mais ou
+    le registre est absent : c'est l'etat exact qui tuait `fast_lane.py`.
+    """
+    import shutil
+
+    ci = tmp_path / "scripts" / "ci"
+    ci.mkdir(parents=True)
+    (tmp_path / "scripts" / "notebook_tools").mkdir()
+    shutil.copyfile(CI_DIR / "fast_lane_registry.py", ci / "fast_lane_registry.py")
+    code = (
+        "import json, sys\n"
+        f"sys.path.insert(0, {str(ci)!r})\n"
+        "import fast_lane_registry as r\n"
+        "print(json.dumps(r.TRANCHE20[0].paths))\n"
+    )
+    proc = subprocess.run([sys.executable, "-c", code],
+                          capture_output=True, text=True, encoding="utf-8")
+    assert proc.returncode == 0, proc.stderr
+    assert LIVE_READ_WILDCARD in json.loads(proc.stdout)
+    assert "registre live-read illisible" in proc.stderr
 
 
 # ---------------------------------------------------------------------------

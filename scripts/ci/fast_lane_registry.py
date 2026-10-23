@@ -31,11 +31,15 @@ parce que c'est le registre lui-meme qui porte les `paths`.
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 LIVE_READ_REGISTRY = REPO_ROOT / "scripts" / "notebook_tools" / "live_read_registry.json"
+# Repli du garde Live-read quand le registre est illisible : tous les carnets,
+# c'est-a-dire un SUPERSET de ce que le registre declarerait aujourd'hui.
+LIVE_READ_WILDCARD = "MyIA.AI.Notebooks/**/*.ipynb"
 
 
 def live_read_source_paths(registry_path: Path | None = None) -> list[str]:
@@ -55,7 +59,8 @@ def live_read_source_paths(registry_path: Path | None = None) -> list[str]:
 
     Fail-closed : un registre illisible ou une entree sans `source` leve
     plutot que de rendre un garde muet (un garde eteint en silence est le
-    defaut que ce correctif vient corriger).
+    defaut que ce correctif vient corriger). Les `paths` du garde passent par
+    `live_read_guard_paths()`, qui LOCALISE cette panne (cf sa docstring).
     """
     path = Path(registry_path) if registry_path is not None else LIVE_READ_REGISTRY
     try:
@@ -70,6 +75,31 @@ def live_read_source_paths(registry_path: Path | None = None) -> list[str]:
                 f"registre live-read : entree sans champ 'source' : {cell}")
         sources.append(source)
     return sources
+
+
+def live_read_guard_paths() -> list[str]:
+    """`paths` du garde Live-read, sans emporter le registre entier en cas de panne.
+
+    `TRANCHE20` porte ces chemins au CHARGEMENT du module : une exception
+    laissee filer rendrait `fast_lane_registry` inimportable, donc les 30+
+    gardes avec lui (mesure #22041 : registre absent -> `python scripts/ci/
+    fast_lane.py` meurt sur `RuntimeError` a l'import, aucun check-run n'est
+    emis). La panne est donc LOCALISEE au garde concerne : on retombe sur un
+    motif large -- tous les carnets -- qui reste un SUPERSET des sources
+    declarees. Le garde reste ainsi SELECTIONNE, et son propre argv
+    (`check_live_read_freshness.py`) rend le rouge en lisant le registre
+    manquant : bruyamment, jamais en silence.
+    """
+    try:
+        return live_read_source_paths()
+    except RuntimeError as exc:
+        print(
+            f"[fast-lane] registre live-read illisible : {exc} -- le garde "
+            f"Live-read reste selectionne sur {LIVE_READ_WILDCARD} au lieu de "
+            "rendre tout le registre inimportable (#22041).",
+            file=sys.stderr,
+        )
+        return [LIVE_READ_WILDCARD]
 
 
 @dataclass(frozen=True)
@@ -2063,8 +2093,10 @@ TRANCHE20: list[Guard] = [
             # registre (#22001). Sans elles, le garde ne se selectionne que
             # sur une revision qui touche le CARNET -- la revision qui
             # reecrit la SOURCE passe sans controle, et la sortie committée
-            # de la cellule devient un temoignage du passe (#21899).
-            *live_read_source_paths(),
+            # de la cellule devient un temoignage du passe (#21899). La
+            # derivation est LOCALISEE : un registre illisible ne rend pas le
+            # module inimportable, il elargit ce seul garde (#22041).
+            *live_read_guard_paths(),
         ],
         pre_argv=[
             "python", "scripts/notebook_tools/check_live_read_freshness.py",
