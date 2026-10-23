@@ -37,6 +37,16 @@ l'horizon T demande une simulation T pas. Ce module ne *verifie* pas la these
 de mesure. La verification se fait au carnet, par confrontation a
 ``time_arrow.compare_real_reversed_reversibilized`` (cf. ICT-18).
 
+**Consolidation -- une seule implementation (issue #22178, sortie (1))** :
+depuis la tranche « une seule implementation de l'automate », ce module est
+l'unique implementation de l'automate dans le depot. Carnets consommateurs :
+``ICT-18-ArrowOfTimeReversibilization`` ,
+``ICT-MUH-FibreTegmark`` et ``ICT-48-WolframClasses-ThermoSignature`` --
+chacun importe l'organe (``rule_table``, ``wolfram_step`` ,
+``wolfram_trajectory`` selon ses besoins). Un nouveau carnet qui voudrait
+l'automate fait de meme : recopier ``wolfram_step`` ou ``rule_table``
+localement est l'anti-pattern que la consolidation a retire du depot.
+
 Usage :
 
     >>> from ict.wolfram_step import wolfram_step, wolfram_trajectory, classify_rule
