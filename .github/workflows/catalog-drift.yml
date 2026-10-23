@@ -26,7 +26,6 @@ name: Catalog Drift Check
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/**/*.ipynb'
       - 'MyIA.AI.Notebooks/**/README.md'

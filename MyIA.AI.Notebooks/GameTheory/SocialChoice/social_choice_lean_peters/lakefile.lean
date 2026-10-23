@@ -41,7 +41,7 @@ lean_lib «PetersTour» where
 
 /-
   Tranche 1 du plan #17988 (issue parente) — socle de définitions du core
-  d'approbation (Becker-Greger-Peters 2026, arXiv 2609.11912).
+  d'approbation (Becker-Greger-Peters 2026, arXiv 2609.11912, p. 1).
 
   `ApprovalDefs` (FR) et `ApprovalDefs_en` (EN) forment une paire i18n #4980
   (sibling byte-identical hors commentaires). Le glob EN est explicite pour

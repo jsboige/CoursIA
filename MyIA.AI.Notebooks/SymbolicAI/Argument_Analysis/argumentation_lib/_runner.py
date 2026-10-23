@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import logging
+import sys
 from typing import Any, Dict, List, Optional
 
 from semantic_kernel import Kernel
@@ -29,6 +30,7 @@ from semantic_kernel.functions.kernel_arguments import KernelArguments
 
 from argumentation_lib._shared_state import RhetoricalAnalysisState
 from argumentation_lib._state_manager_plugin import StateManagerPlugin
+from argumentation_lib._llm_settings import apply_reasoning_none_for_function_tools
 
 _logger = logging.getLogger("argumentation_lib.runner")
 
@@ -87,6 +89,11 @@ Répondez en utilisant les fonctions kernel disponibles pour:
 - Ajouter les arguments identifiés
 - Ajouter les sophismes détectés
 - Marquer la tâche comme répondue
+
+Contrat d'appel OBLIGATOIRE : pour CHAQUE argument identifié, appelez
+`StateManager-add_identified_argument` avec la phrase complète de l'argument
+comme description (jamais un nom de champ comme "analysis_state"). Répondre
+en prose sans appeler les fonctions kernel = tâche non accomplie.
 """
 
 PROMPT_LOGIC_ANALYSIS = """Vous êtes un agent spécialisé dans l'analyse logique formelle.
@@ -103,6 +110,13 @@ Répondez en utilisant les fonctions kernel disponibles pour:
 - Ajouter des belief sets
 - Logger les résultats de requêtes
 - Marquer la tâche comme répondue
+
+Contrat d'appel OBLIGATOIRE : avant toute réponse en prose, appelez au moins
+une fois `StateManager-add_belief_set` (logic_type="propositional") pour
+encoder un argument du texte en formule, puis `StateManager-log_query_result`
+pour consigner un verdict de requête. Le texte source figure dans la
+conversation : encodez directement depuis lui, même si l'état ne recense pas
+encore d'arguments. Répondre en prose sans appel kernel = tâche non accomplie.
 """
 
 PROMPT_SYNTHESIS = """Vous êtes l'agent de synthèse.
@@ -136,18 +150,49 @@ def _resolve_service(kernel: Kernel, llm_service_id: str):
     return kernel.get_service(llm_service_id)
 
 
-def _state_arguments(state: RhetoricalAnalysisState) -> KernelArguments:
+def _state_arguments(
+    state: RhetoricalAnalysisState,
+    execution_settings: Optional[Dict[str, Any]] = None,
+) -> KernelArguments:
     """Render the state snapshot for the prompts' ``{{$analysis_state}}`` token.
 
     ``AgentGroupChat.invoke`` (SK 1.44) ne transporte pas de KernelArguments :
     le token des prompts vendangés restait non résolu. Les agents portent la
     snapshot à leur construction (état de début de phase).
+
+    ``execution_settings`` (#20135) : sans elles, ``AIServiceSelector`` fabrique
+    des réglages par défaut (``reasoning_effort`` absent) et la famille 5.6
+    refuse les outils de fonction sur ``/v1/chat/completions`` (400).
     """
     return KernelArguments(
+        settings=execution_settings,
         analysis_state=json.dumps(
             state.get_state_snapshot(summarize=True), ensure_ascii=False
-        )
+        ),
     )
+
+
+def _execution_settings_for(kernel: Kernel, llm_service_id: str) -> Dict[str, Any]:
+    """Réglages d'exécution des agents, indexés par identifiant de service.
+
+    Le helper partagé force ``reasoning_effort="none"`` pour les modèles qui
+    l'exigent (famille 5.6) et laisse les autres inchangés. Un service qui
+    n'expose pas ``get_prompt_execution_settings_class`` (doublon de test,
+    service hors connecteur SK) ne reçoit aucun réglage explicite : les agents
+    retombent alors sur les réglages par défaut, comme avant ce helper.
+    """
+    service = _resolve_service(kernel, llm_service_id)
+    factory = getattr(service, "get_prompt_execution_settings_class", None)
+    if factory is None:
+        return {}
+    # get_prompt_execution_settings_class rend la CLASSE, pas une instance :
+    # le second appel construit l'instance attendue par from_prompt_execution_settings.
+    settings = factory()()
+    return {
+        llm_service_id: apply_reasoning_none_for_function_tools(
+            settings, getattr(service, "ai_model_id", None)
+        )
+    }
 
 
 def create_pm_agent(
@@ -164,7 +209,9 @@ def create_pm_agent(
         name="ProjectManagerAgent",
         instructions=PROMPT_DEFINE_TASKS,
         service=_resolve_service(kernel, llm_service_id),
-        arguments=_state_arguments(state),
+        arguments=_state_arguments(
+            state, _execution_settings_for(kernel, llm_service_id)
+        ),
     )
     _logger.info("PM agent created with StateManagerPlugin.")
     return agent
@@ -186,7 +233,9 @@ def create_informal_agent(
         name="InformalAgent",
         instructions=PROMPT_INFORMAL_ANALYSIS,
         service=_resolve_service(kernel, llm_service_id),
-        arguments=_state_arguments(state),
+        arguments=_state_arguments(
+            state, _execution_settings_for(kernel, llm_service_id)
+        ),
     )
     _logger.info("Informal agent created.")
     return agent
@@ -197,18 +246,53 @@ def create_logic_agent(
     llm_service_id: str,
     state: RhetoricalAnalysisState,
 ) -> ChatCompletionAgent:
-    """Create the Logic Analysis agent."""
+    """Create the Logic Analysis agent.
+
+    ``FunctionChoiceBehavior.Required`` force l'emission d'un appel d'outil :
+    sans lui, le modele mesure repond en prose sans jamais tenter
+    ``add_belief_set`` -- meme avec un contrat d'appel explicite dans le
+    prompt (issue #18395, diagnostic instrumente : commentaire 6305563691 ;
+    le relais honore ``required`` de facon non deterministe run a run).
+
+    Le repli sans ``function_choice_behavior`` est **reserve au stub de test**,
+    qui se declare explicitement par ``semantic_kernel._coursia_mock`` (pose
+    par ``tests/test_runner.py``). Hors de ce cas, l'``ImportError`` est
+    propagee : une installation de ``semantic_kernel`` cassee ou incompatible
+    perdrait sinon *silencieusement* le levier decisif, et le carnet
+    produirait un run degrade d'apparence normale (revue ai-01 du 21/10,
+    head ``0e020ac12c``).
+    """
+    try:
+        from semantic_kernel.connectors.ai.function_choice_behavior import (
+            FunctionChoiceBehavior,
+        )
+
+        fcb = FunctionChoiceBehavior.Required(auto_invoke=True)
+    except ImportError:
+        # Aucun second import ici : `sys.modules` porte deja le paquet en
+        # cours d'evaluation. Absent (paquet reellement introuvable) =>
+        # getattr(None, ...) vaut False => propagation, comportement voulu.
+        sk_module = sys.modules.get("semantic_kernel")
+        if not getattr(sk_module, "_coursia_mock", False):
+            raise
+        fcb = None
+
     if "StateManager" not in [p.name for p in kernel.plugins.values()]:
         smp = StateManagerPlugin(state)
         kernel.add_plugin(smp, plugin_name="StateManager")
 
-    agent = ChatCompletionAgent(
+    agent_kwargs = dict(
         kernel=kernel,
         name="LogicAgent",
         instructions=PROMPT_LOGIC_ANALYSIS,
         service=_resolve_service(kernel, llm_service_id),
-        arguments=_state_arguments(state),
+        arguments=_state_arguments(
+            state, _execution_settings_for(kernel, llm_service_id)
+        ),
     )
+    if fcb is not None:
+        agent_kwargs["function_choice_behavior"] = fcb
+    agent = ChatCompletionAgent(**agent_kwargs)
     _logger.info("Logic agent created.")
     return agent
 
@@ -326,6 +410,25 @@ class AnalysisRunner:
             self.kernel, self.llm_service_id, self.state
         )
 
+        # Le PM réutilisé tel quel entre phases garde ses instructions
+        # statiques de la phase 1 : il désigne 'InformalAgent' (absent de
+        # ce chat) et re-crée des tâches d'identification d'arguments au
+        # lieu d'exiger l'encodage formel (mesuré issue #18395). Un PM
+        # dédié porte le contexte de la phase courante.
+        pm_formal = create_pm_agent(
+            self.kernel, self.llm_service_id, self.state
+        )
+        pm_formal.instructions = PROMPT_DEFINE_TASKS + """
+
+[Phase courante : Analyse FORMELLE]
+Les agents disponibles sont UNIQUEMENT ProjectManagerAgent et LogicAgent :
+désignez toujours 'LogicAgent'. La tâche de cette phase : encoder les
+arguments en belief sets propositionnels (StateManager-add_belief_set) et
+consigner des verdicts de requêtes (StateManager-log_query_result).
+N'ajoutez PAS de tâche d'identification d'arguments : c'est le travail de
+la phase 1, déjà passée.
+"""
+
         phase2_history = ChatHistory()
         phase2_history.add_message(
             ChatMessageContent(
@@ -339,7 +442,7 @@ class AnalysisRunner:
 
         try:
             group_chat2 = AgentGroupChat(
-                agents=[pm, logic],
+                agents=[pm_formal, logic],
                 chat_history=phase2_history,
             )
             turn_count = 0
@@ -368,7 +471,9 @@ class AnalysisRunner:
             name="SynthesisAgent",
             instructions=PROMPT_SYNTHESIS,
             service=_resolve_service(self.kernel, self.llm_service_id),
-            arguments=_state_arguments(self.state),
+            arguments=_state_arguments(
+                self.state, _execution_settings_for(self.kernel, self.llm_service_id)
+            ),
         )
 
         phase3_history = ChatHistory()

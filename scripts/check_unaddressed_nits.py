@@ -98,6 +98,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import unicodedata
 from datetime import datetime, timezone
 
@@ -3361,7 +3362,53 @@ def ts(value: str | None) -> datetime | None:
 GH_CALL_TIMEOUT_S = 90
 
 
+# #21882 (Option C) -- budget CUMULATIF de la passe nits. `GH_CALL_TIMEOUT_S`
+# borne un APPEL ; le cout mesure (issue, 2026-10-21) est la SOMME : 284
+# processus `gh` = 211 s pour 41 PRs, 101 % en sous-processus. Une borne par
+# appel ne ramene pas la chaine sous le budget. Ce budget de passe, verifie
+# avant chaque `gh_json`, rend les PRs non evaluees ABSENTES (semantique
+# #18829 : "absente = non evaluee", pas "evaluee claire") au lieu de laisser
+# le picker faire deriver la flotte entiere. C'est le filet de securite de
+# l'issue : il BORNE le pire cas (nombre de PRs croissant, reseau lent) sans
+# pretendre rendre la passe rapide -- c'est le role de l'Option A (parallelisme)
+# / B (requete GraphQL unique), differes tant que `pick_idle_grain.py` est en
+# contention 4 PRs ouvertes. Configurable (env), defaut 300 s (seuil de
+# l'issue).
+NITS_PASS_BUDGET_S = float(os.environ.get("NITS_PASS_BUDGET_S", "300"))
+# Deadline absolue (monotone) de la passe ; None tant que le premier `gh_json`
+# de la passe ne l'a pas arme. L'armement est idempotent (jamais sur-ecrit).
+_NITS_PASS_DEADLINE: float | None = None
+
+
+class NitsBudgetExhausted(Exception):
+    """#21882 (Option C) : la passe nits a depasse son budget de temps.
+
+    Le picker rend les PRs restantes ABSENTES (non evaluees, #18829) ; le
+    gate / l'audit standalone fail-closed (rc=1). Aucun verdict "evaluee
+    claire" n'est jamais fabrique a partir d'un budget depasse.
+    """
+
+
+def _nits_budget_exhausted() -> bool:
+    """Arme le budget de passe au premier `gh_json`, verifie au suivant.
+
+    Monotone et idempotent a l'armement : la premiere appel fixe la deadline a
+    `now + NITS_PASS_BUDGET_S` ; tout appel suivant rend True une fois la
+    deadline franchie.
+    """
+    global _NITS_PASS_DEADLINE
+    now = time.monotonic()
+    if _NITS_PASS_DEADLINE is None:
+        _NITS_PASS_DEADLINE = now + NITS_PASS_BUDGET_S
+        return False
+    return now > _NITS_PASS_DEADLINE
+
+
 def gh_json(args: list[str]) -> object:
+    if _nits_budget_exhausted():
+        raise NitsBudgetExhausted(
+            f"budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s depasse -- "
+            "PR rendue absente (non evaluee, #18829), #21882 Option C")
     out = subprocess.run(
         ["gh", *args], capture_output=True, text=True, encoding="utf-8", check=True,
         timeout=GH_CALL_TIMEOUT_S,
@@ -5561,13 +5608,22 @@ def analyse_pr(pr: int) -> dict:
     assemblage : ce qui diverge ici casse le merge-gate lui-meme et devient
     visible immediatement.
     """
-    data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
-    # #13639 + #15556 : resolution serveur du contexte SHA (messages,
-    # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
-    _attach_absent_sha_context(data)
-    return analyse(data, review_threads(pr), datetime.now(timezone.utc),
-                   issue_info=gh_issue_info,
-                   dismissed_improperly=improper_dismissals(pr))
+    try:
+        data = gh_json(["pr", "view", str(pr), "--repo", REPO, "--json", FIELDS])
+        # #13639 + #15556 : resolution serveur du contexte SHA (messages,
+        # arbres rembobines, arbre de tete), AVANT analyse (qui reste pure).
+        _attach_absent_sha_context(data)
+        return analyse(data, review_threads(pr), datetime.now(timezone.utc),
+                       issue_info=gh_issue_info,
+                       dismissed_improperly=improper_dismissals(pr))
+    except NitsBudgetExhausted:
+        # #21882 (Option C) : budget de passe depasse. La PR est rendue ABSENTE
+        # (non evaluee, #18829) : `blocked` faux, aucun point. Le picker la lit
+        # comme absente (.get("blocking")/["blocked"] -> vide/faux) et ne la
+        # met pas dans la file de reparation. Jamais un verdict "claire".
+        return {"pr": pr, "blocked": False, "blocking": [],
+                "unevaluated": [], "unevaluated_total": 0,
+                "budget_exhausted": True}
 
 
 def _ensure_utf8_stdout() -> None:
@@ -5698,6 +5754,15 @@ def main() -> int:
         # ASCII seul : stderr peut etre une console cp1252 (cf #16103).
         print(f"NON MESURE : gh n'a pas repondu en {exc.timeout}s "
               f"({' '.join(map(str, exc.cmd))[:120]}) -- aucun verdict, rc=1 (fail-closed)",
+              file=sys.stderr)
+        return 1
+    except NitsBudgetExhausted as exc:
+        # #21882 (Option C) : budget de passe nits depasse (gate/audit
+        # standalone). Fail-closed : rc=1, jamais un rc=0 "claire" fabrique.
+        # Borde aussi un `--audit` de grande taille (arret au budget au lieu
+        # de deriver pendant des dizaines de minutes).
+        print(f"NON MESURE : budget de passe nits de {NITS_PASS_BUDGET_S:.0f} s "
+              f"depasse ({exc}) -- aucun verdict, rc=1 (fail-closed)",
               file=sys.stderr)
         return 1
 
