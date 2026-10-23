@@ -1,30 +1,33 @@
 name: Runner starvation advisory (lean)
 
 # Sonde d'extinction du label `coursia-lean` (issue #14846, grain c.1063 myia-po-2027).
-# Le label `coursia-waiter` n'est plus couvert depuis #20835 / #17436 :
-# depuis 46df1d691f (PR #17436, 2026-09-23), la jambe `pull_request` du
-# `pr-gate.yml` tourne sur `ubuntu-latest` (ligne 163) et n'a plus aucun
-# consommateur du label. Le pool est vide par construction ; le signaler
-# comme famine fabriquerait un bruit regulier sans cause. Le retrait systeme
-# du pool (service systemd, desinscription des 16 runners sur ai-01) est
-# porte par le point 1 de #20835 et reste a po-2024 (jambe A) -- voir le
-# commentaire de la matrice ci-dessous pour la liste des labels encore
-# surveilles.
 #
-# L'organe `scripts/ci/check_runner_starvation.py` mesurait deja le predicat
-# EXTINCTION (zero runner online sur le label). `coursia-linux` reste
-# couvert par son workflow dedie
-# (`linux-runner-starvation-advisory.yml`, cron 19,49). `coursia-lean` est
-# le seul label encore sous surveillance ici -- les builds Lean restent un
-# goulet serieux, le retrait du waiter n'ouvre pas la couverture de cette
-# sonde.
+# Correction #22183 (2026-10-23) : le paragraphe qui etait ici affirmait que
+# le label `coursia-waiter` n'etait « plus couvert depuis #20835 / #17436,
+# le pool etant vide par construction ». Cette premisse etait vraie jusqu'a
+# #21063 et FAUSSE depuis : la jambe `pull_request` du `pr-gate.yml` est
+# re-routee sur `coursia-waiter` (pr-gate.yml ligne 172) et le pool de
+# 16 slots est consomme a pleine charge. L'extinction du 2026-10-23
+# (0 runner online au label, 126 runs `PR gate` en file, ~10 h sans signal)
+# n'a ete mesuree par aucun organe, justement parce que ce header le
+# declarait sans consommateur. Le label est a nouveau couvert par son
+# workflow dedie `coursia-waiter-starvation-advisory.yml` (livre par la
+# meme PR).
+#
+# L'organe `scripts/ci/check_runner_starvation.py` mesure le predicat
+# EXTINCTION (zero runner online sur le label) et la STARVATION (file qui ne
+# draine pas), parametre par `--label`. `coursia-linux` est couvert par son
+# workflow dedie (`linux-runner-starvation-advisory.yml`, cron 19,49) et
+# `coursia-waiter` par le sien (`coursia-waiter-starvation-advisory.yml`,
+# cron 11,41, livre par #22183) ; `coursia-lean` est le seul label sous
+# surveillance par CETTE sonde -- les builds Lean restent un goulet serieux.
 #
 # Pourquoi une sonde et pas un check bloquant : un seul cron centralise
 # l'observabilite, la sonde partage la fenetre STARVATION et le secret
 # RUNNERS_READ_PAT, et la matrice GitHub Actions parallellise les mesures
-# sans collision de rate-limit. Schedule dediee (cron offset 19,49 pour
-# coursia-linux + 23,53 pour lean -- l'offset disjoint evite de charger le
-# meme runner sur 2 vagues consecutives).
+# sans collision de rate-limit. Schedule dediee (cron offset 11,41 pour
+# coursia-waiter, 19,49 pour coursia-linux + 23,53 pour lean -- l'offset
+# disjoint evite de charger le meme runner sur 2 vagues consecutives).
 #
 # Acceptance #14846 A1 verifiee par construction :
 #   - predicat EXTINCTION : si 0 runner online sur un label -> ::error::
