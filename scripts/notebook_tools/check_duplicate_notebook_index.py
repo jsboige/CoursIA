@@ -23,6 +23,15 @@ machine peut trancher sans se tromper. La redondance de CONTENU reste un jugemen
 humain, et ce garde ne la certifie pas -- un vert dit « aucun index en conflit », il
 ne dit jamais « aucun doublon ».
 
+AJOUTES CONTRE AJOUTES (#22059)
+-------------------------------
+Les ajouts sont confrontees a la base **et entre eux**. Le premier jet ne faisait
+que la premiere comparaison : deux notebooks introduisant le meme index dans la
+meme fenetre de diff etaient tous deux absents de la base, donc tous deux
+legitimes -- et passaient. La collision `04-17` de
+`GenAI/Audio/04-Applications` (#22056) a traverse ainsi tous les organes du
+depot, l'instrument lisant correctement les index sans jamais en comparer deux.
+
 Portee : **uniquement les fichiers AJOUTES** par la revision examinee, confrontes a
 la base. Les collisions deja presentes sur `main` ne le font pas rougir -- sinon il
 serait rouge des sa naissance et chaque PR echouerait sur une dette qu'elle n'a pas
@@ -169,8 +178,41 @@ def collisions(added, base_files):
             # Chemin de depot : separateur POSIX, jamais os.sep (backslash sous
             # Windows). La sortie est lue par des humains ET comparee a des chemins
             # git, qui n'utilisent que "/".
-            found.append({"added": p, "index": key,
+            found.append({"added": p, "index": key, "kind": "added-vs-base",
                           "conflicts_with": "%s/%s" % (d, other) if d else other})
+    return found
+
+
+def added_vs_added(added):
+    """Collisions ENTRE notebooks ajoutes par le MEME diff (#22059).
+
+    `collisions` confronte chaque ajout a la BASE. Deux notebooks qui prennent
+    le meme index dans la meme fenetre de diff ne s'y rencontrent jamais : ni
+    l'un ni l'autre n'est dans la base, donc tous deux passent. C'est ce trou
+    qui a laisse survivre la collision `04-17` de
+    `GenAI/Audio/04-Applications` (#22056) : l'organe lisait bien les index des
+    ajouts (`+ .../04-18-MIR-Classique.ipynb  index=4.18`) et rendait `OK`,
+    parce que la comparaison manquait, pas la lecture.
+
+    Les deux faux positifs que `collisions` neutralise valent ici aussi, et pour
+    la meme raison : un repertoire different n'est pas une position commune, et
+    deux rendus du meme item (`-Csharp`, `_en`) sont legitimes.
+    """
+    found = []
+    for i, p in enumerate(added):
+        d, b = os.path.split(p)
+        key = index_key(b)
+        if key is None:
+            continue
+        mine = strip_lang(b).lower()
+        for q in added[i + 1:]:
+            dq, bq = os.path.split(q)
+            if dq != d or index_key(bq) != key:
+                continue
+            if strip_lang(bq).lower() == mine:
+                continue  # rendu alternatif du meme item : legitime
+            found.append({"added": p, "index": key, "kind": "added-vs-added",
+                          "conflicts_with": q})
     return found
 
 
@@ -265,6 +307,24 @@ _SCENARIOS = [
 ]
 
 
+# Ajouts confrontes ENTRE EUX (#22059). Les quatre cas reprennent la collision
+# 04-17 mesuree sur #22056 et les deux classes de faux positif deja connues, sur
+# la meme forme de nom -- un motif ne se valide pas sur des hits.
+_ADDED_VS_ADDED_CASES = [
+    ("VRAI POSITIF  les deux 04-17 de #22056",
+     ["g/Audio/04-Applications/04-17-MIR-Classique.ipynb",
+      "g/Audio/04-Applications/04-17-Basic-Pitch-Transcription.ipynb"], 1),
+    ("FAUX POSITIF  prefixes de serie differents",
+     ["g/Audio/04-Applications/04-17-MIR-Classique.ipynb",
+      "g/Audio/04-Capture/04-17-Basic-Pitch-Transcription.ipynb"], 0),
+    ("FAUX POSITIF  paire de langue du meme item",
+     ["g/Audio/04-Applications/04-17-MIR-Classique.ipynb",
+      "g/Audio/04-Applications/04-17-MIR-Classique-Csharp.ipynb"], 0),
+    ("NEGATIF       deux ajouts d'index differents",
+     ["g/Audio/04-Applications/04-17-MIR-Classique.ipynb",
+      "g/Audio/04-Applications/04-18-Basic-Pitch-Transcription.ipynb"], 0),
+]
+
 _PERIMETER_CASES = [
     # Un denombrement d'absence se valide par controles positif ET negatif : le
     # positif prouve que le compteur TIRE, le negatif qu'il ne compte pas n'importe
@@ -305,6 +365,15 @@ def self_test():
               % ("OK" if ok else "KO", label, got, want))
 
     print("")
+    print("--- ajoutes contre ajoutes (#22059) ---")
+    for label, added, want in _ADDED_VS_ADDED_CASES:
+        got = len(added_vs_added(added))
+        ok = got == want
+        ko += 0 if ok else 1
+        print("  %-4s %-48s -> %d (attendu %d)"
+              % ("OK" if ok else "KO", label, got, want))
+
+    print("")
     print("--- perimetre du lecteur d'index (#16040) ---")
     for label, files, want in _PERIMETER_CASES:
         per = perimeter(files)
@@ -317,7 +386,8 @@ def self_test():
         # La ligne doit s'afficher sur les quatre cas, population vide comprise.
         print("        %s" % perimeter_line(per))
 
-    total = len(_CASES) + len(_SCENARIOS) + len(_PERIMETER_CASES)
+    total = (len(_CASES) + len(_SCENARIOS) + len(_ADDED_VS_ADDED_CASES)
+             + len(_PERIMETER_CASES))
     print("")
     print("%s : %d cas, %d echec(s)" % ("ECHEC" if ko else "SUCCES", total, ko))
     return 1 if ko else 0
@@ -342,7 +412,7 @@ def main():
         print("ERREUR git : %s" % e, file=sys.stderr)
         return 2
 
-    hits = collisions(added, base_files)
+    hits = collisions(added, base_files) + added_vs_added(added)
     per = perimeter(base_files)
 
     if a.json:
@@ -371,7 +441,9 @@ def main():
     print("VERDICT: COLLISION D'INDEX (%d)" % len(hits))
     for h in hits:
         print("   %s" % h["added"])
-        print("      index %s deja tenu par %s" % (h["index"], h["conflicts_with"]))
+        where = ("ajoute par le MEME diff" if h["kind"] == "added-vs-added"
+                 else "deja tenu")
+        print("      index %s %s : %s" % (h["index"], where, h["conflicts_with"]))
     print("")
     print("Un index de serie designe une position, et deux notebooks ne peuvent pas")
     print("occuper la meme. Renommer l'ajout vers un index libre, OU -- si les deux")
