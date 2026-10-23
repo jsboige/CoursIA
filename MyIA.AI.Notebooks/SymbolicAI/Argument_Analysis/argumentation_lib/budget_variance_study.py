@@ -96,17 +96,28 @@ STATE_KEYS_BLACKLIST: Set[str] = {
 MIN_ARGUMENT_WORDS: int = 4
 MIN_ARGUMENT_TEXT_OVERLAP: int = 12
 
+# Cibles = generation courante verifiee (docs/genai/model-mapping-openai.md) :
+# famille mini/nano -> gpt-5.6-luna, principal -> gpt-5.6-sol. Les cibles
+# d'origine (gpt-4o-mini, gpt-4o) sont elles-memes d'une generation
+# remplacee -- substituer l'une par l'autre deplacait l'echec (#20135).
+# Port verbatim de la cellule de validation du carnet 08b : ne pas diverger.
 OBSOLETE_MODEL_SUBSTITUTIONS = {
-    "gpt-5-mini": "gpt-4o-mini",
-    "gpt-5": "gpt-4o",
-    "gpt-5-nano": "gpt-4o-mini",
+    "gpt-5-mini": "gpt-5.6-luna",
+    "gpt-5": "gpt-5.6-sol",
+    "gpt-5-nano": "gpt-5.6-luna",
 }
 
 
 def _resolve_chat_model_id() -> str:
     _load_env()
-    configured = os.getenv("OPENAI_CHAT_MODEL_ID", "<unset>")
-    return OBSOLETE_MODEL_SUBSTITUTIONS.get(configured, configured)
+    configured = os.getenv("OPENAI_CHAT_MODEL_ID")
+    if not configured:
+        raise RuntimeError(
+            "OPENAI_CHAT_MODEL_ID absent : aucun modele n'est configure. "
+            "Renseigner la variable (voir Argument_Analysis/.env.example) "
+            "plutot que de laisser la serie appeler un identifiant par defaut."
+        )
+    return OBSOLETE_MODEL_SUBSTITUTIONS.get(configured.strip(), configured)
 
 
 def _text_overlap(text: str, candidate: str) -> int:
