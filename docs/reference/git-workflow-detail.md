@@ -62,6 +62,22 @@ Le défaut était donc **documentaire** : la règle contredisait un organe corre
 
 Une règle du harnais est **datée de sa rédaction, pas de sa lecture**. Quand une règle interdit un geste et que l'organe qui l'implémente est lisible, lire l'organe coûte trente secondes — c'est [verify-before-claiming.md](../../.claude/rules/verify-before-claiming.md) appliqué au harnais lui-même : **une règle est une claim comme une autre**.
 
+## 5. Worktree cleanup (#14195) — problème, mesures datées et contrôle positif
+
+**Problème mesuré (2026-09-02)** : chaque review de PR notebook / build Lean crée un worktree ; sans organe de retrait, ces worktrees s'accumulent — **265 sur po-2026 en 36 h**, **103 sur ai-01** (précédent #8924). Le mécanisme est nommé depuis le 2026-08-05, mais l'organe n'avait jamais été construit (`scripts/ci/prune_merged_worktrees.py`).
+
+**Refus ≠ échec — mesure (roo-extensions #3895, 27/09)** : sur 3 machines, **86-100 %** des worktrees vus sont REFUSE (worktrees de cycle nés HEAD-détachés ou sales par construction — po-2023 a saturé ses disques dessus). Un REFUS est une **décision** de l'organe (exit 0), pas une panne : la règle qui en découle reste dans `.claude/rules/git-workflow.md`.
+
+**Mesure 2026-09-03 (po-2027, cycle #14195)** :
+
+| | Avant | Après `--apply` |
+|---|---:|---:|
+| Worktrees enregistrés | 5 | 4 |
+| … REMOVE | 1 (test-prune-merged, PR #14403 MERGED) | — |
+| … REFUSE | 4 (main + 3 PR OPEN) | 4 |
+
+Le worktree de test créé sur `fix/14142-qc40-followup-state` (PR #14403 mergée par squash 2026-09-02) a été retiré — c'est le **contrôle positif** manquant à tout prédicat d'ascendance : un squash-merge efface l'ascendance, mais `gh pr list --state all --search` retrouve la PR par le nom de branche.
+
 ## Voir aussi
 
 - [`.claude/rules/git-workflow.md`](../../.claude/rules/git-workflow.md) — la règle
