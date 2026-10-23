@@ -1153,11 +1153,19 @@ def _fetch_pr_heads(numbers: list[int]) -> tuple[list[int], list[str]]:
     comme « propres » des commits deja merges -- la porte inventerait des piles.
     Une passe qui rafraichit sa reference ne depend pas de la fraicheur de
     l'appelant.
+
+    Le refspec des tetes de PR est **force** (`+`). Une tete de PR qui bouge
+    (rebase, force-push) rend la ref locale non fast-forward : sans le `+`,
+    git rejette le refspec, le LOT entier echoue, et la porte STACK -- celle qui
+    detecte une base morte ou une pile -- se desactive pour tout le depot
+    pendant que le gate rend quand meme son verdict. Mesure du 2026-10-22 :
+    21 rejets `non-fast-forward` sur 272 PRs ouvertes, porte STACK inactivable
+    sur tout le pool ; avec le `+`, le meme fetch rend rc=0.
     """
     remaining = list(numbers)
     for _ in range(STACK_FETCH_TRIES):
         specs = ["main:refs/remotes/origin/main"]
-        specs += [f"pull/{p}/head:{STACK_REF_PREFIX}{p}" for p in remaining]
+        specs += [f"+pull/{p}/head:{STACK_REF_PREFIX}{p}" for p in remaining]
         proc = _git(["fetch", "-q", "origin", *specs], check=False)
         if proc.returncode == 0:
             return remaining, []
@@ -1387,7 +1395,7 @@ def stack_reasons(target: int, index: dict[int, StackEntry]) -> list[str]:
     return reasons
 
 
-_STACK_INDEX_CACHE: dict[str, Any] = {"built": False, "index": None}
+_STACK_INDEX_CACHE: dict[str, Any] = {"built": False, "index": None, "incidents": []}
 # Sentinelle : distingue « pas d'argument » (mesure live, mise en cache) de
 # ``stack=None`` (desactivee explicitement, usage des tests).
 _STACK_AUTO = object()
@@ -1396,13 +1404,36 @@ _STACK_AUTO = object()
 def default_stack_index() -> dict[int, StackEntry] | None:
     if not _STACK_INDEX_CACHE["built"]:
         index, incidents = build_stack_index()
-        _STACK_INDEX_CACHE.update(built=True, index=index)
+        _STACK_INDEX_CACHE.update(built=True, index=index, incidents=list(incidents))
         for incident in incidents:
             # Un incident se DIT et ne bloque pas : sortie stderr, verdict
             # inchange. C'est la meme frontiere que l'organe #20250, ou une
             # base illisible ne fabrique aucun finding.
             print(f"STACK (WARN, mesure incomplete): {incident}", file=sys.stderr)
     return _STACK_INDEX_CACHE["index"]
+
+
+def stack_measurement_state() -> str:
+    """Etat de la porte STACK au moment du verdict : trois etats distincts.
+
+    - ``not-run`` : la porte n'a pas ete exercee (aucun dossier READY a
+      evaluer) -- la mesure n'a pas eu lieu, elle n'a pas echoue.
+    - ``unmeasured`` : la porte a ete exercee et la mesure a echoue (tetes de
+      PR inatteignables, enumeration impossible). La porte est alors
+      **desactivee** : elle ne fabrique aucun refus (fail-open assume,
+      convention UNKNOWN != rouge forge), mais l'absence de mesure doit
+      etre visible.
+    - ``measured`` : la porte a ete exercee et l'index a ete construit.
+
+    L'incompletude ne vit plus seulement sur stderr (#22005) : le verdict
+    JSON la nomme, pour qu'un READY sans STACK ne se lise pas comme un READY
+    complet.
+    """
+    if not _STACK_INDEX_CACHE.get("built"):
+        return "not-run"
+    if (_STACK_INDEX_CACHE.get("incidents") or []) or _STACK_INDEX_CACHE.get("index") is None:
+        return "unmeasured"
+    return "measured"
 
 
 def derive_verdict(
@@ -2643,7 +2674,14 @@ def build_result(
         "verdict": verdict or "NO_DOSSIER",
         "errors": errors,
         "out_of_fleet": is_out_of_fleet(snapshot),
+        # #22005 : l'etat de la porte STACK. Une porte non mesuree ne
+        # fabrique aucun refus (fail-open assume) mais elle ne doit pas se
+        # lire comme une porte mesuree -- le champ la nomme.
+        "stack": stack_measurement_state(),
     }
+    stack_incidents = _STACK_INDEX_CACHE.get("incidents") or []
+    if stack_incidents:
+        result["stack_incidents"] = list(stack_incidents)
     if dossier is not None and verdict:
         result["dossier"] = dossier_payload(dossier)
         result["blocking_fields"] = blocking_fields(dossier)
@@ -3330,6 +3368,7 @@ def main() -> int:
             "ready": False,
             "verdict": "UNKNOWN",
             "errors": errors,
+            "stack": stack_measurement_state(),
         }
         print(json.dumps(result, ensure_ascii=False) if args.json else f"UNKNOWN -- {exc}")
         return EXIT_UNKNOWN
