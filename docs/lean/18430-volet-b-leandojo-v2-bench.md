@@ -101,12 +101,15 @@ mesurés puis corrigés dans le shim du banc :
 | 3 | **Blocs `<think>` avant la fence** | Run corrigé du 2026-10-20 : claude-opus-4.7 via openrouter peut ouvrir sa sortie d'un bloc de raisonnement `<think>...</think>` **avant** la fence — l'extracteur du correctif 2 ne regardait que le début de chaîne et rendait le bloc entier au `check_compile` (échec de parse de transport, pas un verdict d'organe). | `_extract_whole_proof` retire d'abord les blocs think (regex DOTALL), puis prend le **dernier** bloc fence s'il existe. |
 
 Pins : `scripts/tests/test_leandojo_v2_bench.py` — l'émulation compte chaque
-sous-requête **partie** (`gen.calls`, réponse en erreur et échec de transport
-compris), ne part jamais avec `"n": k` dans le payload, et s'arrête net sur
-budget épuisé ou erreur ; le parser injecté dans les tests **imite la branche
-claude réelle** — le test exige que la preuve entière lui survive, et que le
-**dernier** bloc fence gagne même lorsqu'une phrase finale le suit ou qu'un
-bloc le précède.
+**tentative** de sous-requête (`gen.calls`, réponse en erreur et échec de
+transport compris) : le compteur borne les **tentatives** de POST, il ne
+prouve pas qu'un socket soit parti ; elle ne part jamais avec `"n": k` dans le
+payload, et s'arrête net sur budget épuisé ou erreur ; le parser injecté dans
+les tests **imite la branche claude réelle** — le test exige que la preuve
+entière lui survive, et que le **dernier** bloc fence gagne même lorsqu'une
+phrase finale le suit ou qu'un bloc le précède, que l'étiquette soit libre
+(`lean4`), que la preuve contienne des backticks, et que la fermeture soit
+compatible avec la longueur de l'ouvreur (fence de quatre backticks).
 
 ### Run corrigé (2026-10-20) — verdicts d'organe sur les deux modes
 

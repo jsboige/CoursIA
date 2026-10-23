@@ -198,6 +198,17 @@ def _extract_whole_proof(output: str) -> str:
     que ``lean``) n'etait pas reconnue, donc sa cloture entrait dans la
     preuve rendue ; ``have s := "```"`` etait pris pour une cloture et
     tronquait la preuve a ``have s := "``.
+
+    Troisieme correction du 2026-10-23 (verification adjointe de la tete
+    ``20ba1bb2fc4``, #21672) : la fermeture est desormais COMPATIBLE avec la
+    longueur de l'ouvreur. L'ouverture acceptait toute longueur (au moins
+    trois backticks) mais la fermeture exigeait une ligne exactement
+    `` ``` `` : un bloc ouvert a quatre backticks n'etait donc jamais ferme,
+    et sa cloture comme la phrase qui suivait entraient dans la preuve rendue
+    (``exact rfl``, cloture, puis ``Done.``). La fermeture est desormais une
+    ligne FAITE de backticks, au moins aussi longue que l'ouvreur --
+    semantique CommonMark ; une ligne plus courte, etiquetee ou noyee dans du
+    code Lean reste du contenu.
     """
     import re
 
@@ -211,20 +222,28 @@ def _extract_whole_proof(output: str) -> str:
     # -- et ignore toute etiquette autre que ``lean`` : `` ```lean4 `` n'etait
     # pas reconnue, donc la cloture etait rendue dans la preuve.
     #
-    # Ouverture = ligne dont la forme decapee COMMENCE par ``` (l'etiquette
-    # est libre) ; fermeture = ligne exactement ```. Une fence non terminee
-    # (aucune fermeture avant la fin) s'ouvre au dernier ouvreur rencontre.
+    # Ouverture = ligne dont la forme decapee COMMENCE par au moins trois
+    # backticks (l'etiquette est libre) ; fermeture = ligne FAITE de
+    # backticks, au moins aussi longue que l'ouvreur (compatibilite de
+    # longueur, 2026-10-23 : un ouvreur a quatre backticks n'etait ferme que
+    # par une ligne exactement ```, et la cloture entrait dans la preuve).
+    # Une fence non terminee (aucune fermeture avant la fin) s'ouvre au
+    # dernier ouvreur rencontre.
     lines = text.splitlines()
     blocks: list[list[str]] = []
     open_at: Optional[int] = None
+    open_ticks = 0
     for i, line in enumerate(lines):
         stripped = line.strip()
+        ticks = len(stripped) - len(stripped.lstrip("`"))
         if open_at is None:
-            if stripped.startswith("```"):
+            if ticks >= 3:
                 open_at = i
-        elif stripped == "```":
+                open_ticks = ticks
+        elif stripped.strip("`") == "" and ticks >= open_ticks:
             blocks.append(lines[open_at + 1:i])
             open_at = None
+            open_ticks = 0
     # dernier bloc FERME, qu'il ouvre le texte ou qu'il le suive : ni une
     # phrase finale ni un bloc precedent ne doit l'emporter.
     if blocks:

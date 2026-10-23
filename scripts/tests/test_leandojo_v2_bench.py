@@ -603,6 +603,26 @@ def test_extract_whole_proof_ignores_backticks_inside_a_lean_string(bench):
     assert bench._extract_whole_proof(raw) == 'have s := "```"\n  exact rfl'
 
 
+def test_extract_whole_proof_four_backticks_opener_closes_at_same_length(bench):
+    # Contre-exemple du crible adjoint du 2026-10-23 (tete 20ba1bb2fc4) :
+    # l'ouvreur acceptait toute longueur >= 3 backticks mais la fermeture
+    # exigeait une ligne exactement ```. Un bloc ouvert a QUATRE backticks
+    # n'etait donc jamais ferme : la cloture et la phrase finale entraient
+    # dans la preuve rendue. La fermeture est desormais une ligne faite de
+    # backticks, au moins aussi longue que l'ouvreur.
+    raw = "````lean\n  exact rfl\n````\nDone."
+    assert bench._extract_whole_proof(raw) == "exact rfl"
+
+
+def test_extract_whole_proof_short_fence_inside_long_fence_is_content(bench):
+    # Corollaire de la fermeture compatible : dans un bloc ouvert a quatre
+    # backticks, une ligne de trois backticks (chaine Lean, pas une cloture)
+    # reste du CONTENU -- elle est plus courte que l'ouvreur. La protection
+    # des backticks internes du test precedent vaut a longueur egale aussi.
+    raw = '````\n  have s := "```"\n  exact rfl\n````'
+    assert bench._extract_whole_proof(raw) == 'have s := "```"\n  exact rfl'
+
+
 def test_post_counts_error_response_in_calls(monkeypatch, bench):
     # << Chaque sous-requete compte dans gen.calls >> (body #21672, comptabilite
     # honnete) : une reponse API en erreur est une sous-requete PARTIE, donc
