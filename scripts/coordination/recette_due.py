@@ -19,7 +19,16 @@ Ordre de service quand le tour est du :
      en dernier : la lane qui la tient fait deja le tour du validateur ;
   1. l'issue ou le validateur a parle en dernier (la balle est chez la flotte) ;
   2. puis celle que cette lane n'a jamais servie ;
-  3. puis celle dont la derniere visite de flotte est la plus ancienne.
+  3. puis celle dont la derniere communication de flotte est la plus ancienne.
+
+Un marqueur d'ouverture de claim (``[CLAIMED]``, ``[CLAIMED-AMEND]``) n'est pas
+une communication adressee au validateur : un commentaire de flotte qui ne porte
+QUE de tels marqueurs ne compte pas dans la derniere communication de flotte
+(#21988, voie b). Une lane qui pose un ``[CLAIMED]`` puis l'abandonne ne rend
+donc pas la balle au validateur -- l'issue reste servable, la balle reste chez
+la flotte tant qu'aucune livraison (``[DELIVERED]``, reponse en prose) ou
+cloture (``[DONE]``) n'est postee. Relacher proprement reste le geste recommande
+(``[RELEASED]``), mais l'organe ne deserte plus l'issue en son absence.
 
 BALLE CHEZ LE VALIDATEUR (#21279) : quand le dernier message de TOUTES les issues
 ``recette`` vient de la flotte, le validateur est muet et la balle est chez lui --
@@ -31,16 +40,13 @@ dont l'attente est la plus longue) au lieu de nommer une issue a servir.
 Le validateur se declare dans le body de l'issue par une ligne
 ``Validateur : @login`` ; a defaut, tout auteur hors flotte compte comme validateur.
 
-LIMITE CONNUE -- CLAIM ABANDONNE (#21279, revue Hermes du 2026-10-22) : l'etat
-« balle chez le validateur » se lit sur l'ORDRE DES MESSAGES, pas sur l'etat du
-claim. Un ``[CLAIMED]`` de flotte pose puis abandonne (sans ``[DELIVERED]``,
-``[RELEASED]`` ni ``[DONE]``) reste le dernier message de flotte : la balle
-reste donc chez le validateur, alors que personne n'attend reellement de
-reponse. Remede immediat : RELACHER le claim
-(``[RELEASED] lane <machine:workspace> -- <motif>``). Le correctif durable
--- expirer un claim de flotte sans suite au-dela du seuil de peremption (48 h),
-ou exclure les marqueurs de claim du calcul « la flotte a parle en dernier » --
-est suivi dans l'issue de suivi nommee au dos de la PR.
+LIMITE CLOSE (#21279, revue Hermes du 2026-10-22) : l'etat « balle chez le
+validateur » se lisait sur l'ORDRE DES MESSAGES, pas sur l'etat du claim, donc un
+``[CLAIMED]`` de flotte pose puis abandonne restait le dernier message de flotte
+et la balle demeurait chez le validateur alors que personne n'attendait. #22105 a
+livre le correctif durable : les marqueurs d'ouverture de claim sont exclus du
+calcul « la flotte a parle en dernier ». La resolution de ce merge a retire le
+paragraphe de limite et le test qui l'encodait.
 
 Sorties : rc 0 = rien a faire (tour fait, aucune issue ``recette``, ou balle chez
 le validateur sur toutes les issues) ;
@@ -91,6 +97,20 @@ def declared_validator(body: str) -> str | None:
     return m.group(1) if m else None
 
 
+def is_claim_only_fleet_comment(comment: dict) -> bool:
+    """Vrai si le commentaire ne porte QUE des marqueurs d'ouverture de claim.
+
+    Un ``[CLAIMED]`` / ``[CLAIMED-AMEND]`` s'adresse au plan de coordination de
+    la flotte, pas au validateur : il ne lui donne rien a ecouter. Le commentaire
+    de flotte qui n'en porte que de tels marqueurs n'est donc pas une
+    communication (#21988, voie b). Grammaire reutilisee de
+    ``check_lane_claim`` (ancrage ligne, blocs fences masques, payload depiege) :
+    aucun parseur parallele.
+    """
+    events = clc._parse_claim_events(comment)
+    return bool(events) and all(ev.get("action") == "open" for ev in events)
+
+
 def _age_days(iso: str | None, now: datetime) -> float | None:
     if not iso:
         return None
@@ -108,9 +128,13 @@ def assess_issue(payload: dict, lane: str, now: datetime) -> dict:
         return login == validator if validator else not is_fleet(login)
 
     last_validator = max((c.get("createdAt") or "" for c in comments if spoke_as_validator(c)), default="")
+    # #21988 voie b : un claim n'est pas une communication adressee au
+    # validateur -- il ne compte pas dans last_fleet, la balle ne lui revient
+    # que sur une livraison, une reponse ou une cloture.
     last_fleet = max(
         (c.get("createdAt") or "" for c in comments
-         if is_fleet((c.get("author") or {}).get("login"))),
+         if is_fleet((c.get("author") or {}).get("login"))
+         and not is_claim_only_fleet_comment(c)),
         default="",
     )
     events = clc._sort_events(payload)

@@ -6,9 +6,12 @@ last ``--window-days``? If not, which recette issue goes first? The tests pin:
 
   * the validator declaration (body line) and the fleet/non-fleet fallback;
   * "ball in the fleet's court" = the validator spoke after the last fleet comment;
+  * a claim-only fleet comment is NOT a communication to the validator (#21988,
+    voie b): [CLAIMED]/[CLAIMED-AMEND] alone never hands the ball back, a
+    delivery or plain-prose answer does;
   * the weekly window (a visit on ANY recette issue counts as the turn);
   * the service order (held by another lane last, ball first, never served next,
-    then oldest fleet visit);
+    then oldest fleet communication);
   * the ball with the validator (#21279): when the fleet spoke last on EVERY
     recette issue, the organ does not name an issue to serve -- it reports the
     wait (rc 0, ``WAITING-VALIDATOR #N``) instead of pushing silent validators;
@@ -97,6 +100,47 @@ def test_lane_visit_read_from_claim_markers():
     assert abs(st["lane_visit_age_days"] - 2.0) < 1e-9
 
 
+# --- a claim is not a communication to the validator (#21988, voie b) -------------
+
+def test_fleet_claim_without_followup_keeps_ball_in_fleet_court():
+    st = rd.assess_issue(_issue(1, [_c("fmomo-ai", "2026-10-01T10:00:00Z"),
+                                    _claim(LANE, "2026-10-02T10:00:00Z")]), LANE, NOW)
+    assert st["ball_in_fleet_court"] is True
+    assert st["last_fleet_comment"] is None
+
+
+def test_claimed_amend_alone_is_not_a_communication():
+    st = rd.assess_issue(_issue(1, [_c("fmomo-ai", "2026-10-01T10:00:00Z"),
+                                    _claim(LANE, "2026-09-25T10:00:00Z"),
+                                    _claim(LANE, "2026-10-02T10:00:00Z", "CLAIMED-AMEND")]), LANE, NOW)
+    assert st["ball_in_fleet_court"] is True
+    assert st["last_fleet_comment"] is None
+
+
+def test_fleet_delivery_returns_the_ball_to_validator():
+    st = rd.assess_issue(_issue(1, [_c("fmomo-ai", "2026-10-01T10:00:00Z"),
+                                    _claim(LANE, "2026-10-02T10:00:00Z"),
+                                    _claim(LANE, "2026-10-03T10:00:00Z", "DELIVERED")]), LANE, NOW)
+    assert st["ball_in_fleet_court"] is False
+    assert st["last_fleet_comment"] == "2026-10-03T10:00:00Z"
+
+
+def test_dispatch_comment_claim_plus_delivered_counts_as_communication():
+    body = f"[CLAIMED] lane {LANE} -- tour de recette\n[DELIVERED] lane {LANE} -- PR #21279"
+    st = rd.assess_issue(_issue(1, [_c("fmomo-ai", "2026-10-01T10:00:00Z"),
+                                    _c("jsboige", "2026-10-02T10:00:00Z", body)]), LANE, NOW)
+    assert st["ball_in_fleet_court"] is False
+
+
+def test_cited_claim_marker_in_fence_is_not_an_event():
+    # Un claim cite verbatim dans un bloc de code n'enacte rien (clc #12072) :
+    # le commentaire reste une communication de flotte ordinaire.
+    body = "```text\n[CLAIMED] lane myia-po-2023:CoursIA -- citation\n```\nReponse au validateur."
+    st = rd.assess_issue(_issue(1, [_c("fmomo-ai", "2026-10-01T10:00:00Z"),
+                                    _c("jsboige", "2026-10-02T10:00:00Z", body)]), LANE, NOW)
+    assert st["ball_in_fleet_court"] is False
+
+
 def test_live_claim_of_other_lane_holds_the_issue():
     st = rd.assess_issue(_issue(1, [_claim(OTHER, "2026-10-06T08:00:00Z")]), LANE, NOW)
     assert st["held_by"] == [OTHER]
@@ -144,10 +188,25 @@ def test_due_order_ball_first_then_never_served():
     assert rd.decide(_states(old_visit, never), 7)["issue"] == 2
 
 
-def test_due_order_oldest_fleet_visit_last_criterion():
-    a = _issue(1, [_claim(LANE, "2026-09-20T12:00:00Z"), _c("fmomo-ai", "2026-09-21T12:00:00Z")])
-    b = _issue(2, [_claim(LANE, "2026-09-10T12:00:00Z"), _c("fmomo-ai", "2026-09-11T12:00:00Z")])
+def test_due_order_oldest_fleet_communication_last_criterion():
+    # #21988 : un claim n'est pas une communication -- le critere de recence ne
+    # lit que les communications (prose, livraisons). Les deux issues portent un
+    # claim de la lane (visite recentes identiques), la prose de flotte tranche.
+    a = _issue(1, [_claim(LANE, "2026-09-05T12:00:00Z"), _c("jsboige", "2026-09-20T12:00:00Z")])
+    b = _issue(2, [_claim(LANE, "2026-09-05T12:00:00Z"), _c("jsboige", "2026-09-10T12:00:00Z")])
     assert rd.decide(_states(a, b), 7)["issue"] == 2
+
+
+def test_abandoned_claim_issue_comes_back_into_service():
+    # Pathologie #21988 mesuree : un claim pose puis abandonne laissait l'issue
+    # en WAITING-VALIDATOR alors que personne n'attend de reponse. Voie b : la
+    # balle reste chez la flotte, l'issue redevient servable et passe en tete.
+    starved = _issue(2, [_claim(LANE, "2026-09-20T10:00:00Z")])
+    pathology = _issue(1, [_c("fmomo-ai", "2026-10-01T10:00:00Z"),
+                           _claim(OTHER, "2026-10-02T10:00:00Z")])
+    res = rd.decide(_states(starved, pathology), 7)
+    assert res["verdict"] == "DUE" and res["issue"] == 1
+    assert "balle est chez la flotte" in res["reason"]
 
 
 def test_held_issue_goes_last():
@@ -172,8 +231,14 @@ def test_waiting_validator_when_fleet_spoke_last_on_every_issue():
 
 
 def test_waiting_validator_wins_over_a_due_window():
-    # le tour de la lane est echu, mais la balle est chez le validateur muet
-    res = rd.decide(_states(_issue(1, [_claim(LANE, "2026-09-25T12:00:00Z")])), 7)
+    # le tour de la lane est echu, mais la balle est chez le validateur muet.
+    # La communication de flotte doit etre une LIVRAISON : depuis #21988/#22105
+    # un [CLAIMED] seul ne compte pas, il ne rend donc pas la balle au validateur
+    # (cf test_abandoned_claim_issue_comes_back_into_service).
+    res = rd.decide(_states(_issue(1, [
+        _claim(LANE, "2026-09-20T12:00:00Z"),
+        _c("jsboige", "2026-09-25T12:00:00Z", "[DELIVERED] lane x -- PR #1"),
+    ])), 7)
     assert res["verdict"] == "WAITING-VALIDATOR"
 
 

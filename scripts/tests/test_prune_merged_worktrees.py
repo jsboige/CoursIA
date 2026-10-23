@@ -773,6 +773,190 @@ class TestContentOnMainRemove:
         assert s.refusal_reason == "detached_no_match"
 
 
+class TestGhDegradedMode:
+    """#21753 : gh indisponible (sonde identite rc!=0 / pas de jeton) n'est
+    pas « toutes les PRs ouvertes ». La passe reste audible : aucun appel gh
+    n'est tente, les predicats git-only (ascendance, patch-id) decident
+    seuls, le refus terminal se nomme no_gh_unverifiable, la sortie n'est
+    JAMAIS vide."""
+
+    _GH_DOWN = "gh auth token rc=1 (no oauth token)"
+
+    def _info(self, **over):
+        base = dict(
+            branch="fix/unverifiable", ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[], tracked_modified=[],
+            has_source_dirty=False, has_submodules=False, is_current=False,
+        )
+        base.update(over)
+        return base
+
+    def _no_gh(self, *a, **k):
+        raise AssertionError(
+            "mode degrade : aucun appel gh ne doit etre tente"
+        )
+
+    def test_degraded_refuses_unverifiable_branch(self, monkeypatch):
+        # Branche propre, ni PR connue (gh muet) ni ascendance : REFUSE
+        # nommee no_gh_unverifiable -- pas no_pr_match, qui lirait « pas de
+        # PR » la ou la verite est « non verifiable ».
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", self._no_gh)
+        monkeypatch.setattr(pmw, "remote_head_for_head", lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main", lambda *a: False)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other",
+                                  gh_unavailable_reason=self._GH_DOWN)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_gh_unverifiable"
+
+    def test_degraded_ancestor_still_removes(self, monkeypatch):
+        # Point 2 de l'issue : la degradation ne desserre PAS le critere
+        # git-only d'ascendance -- un worktree dont la tete est ancetre de
+        # origin/main reste retirable sans aucun gh.
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", self._no_gh)
+        monkeypatch.setattr(pmw, "remote_head_for_head", lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main", lambda *a: True)
+        monkeypatch.setattr(pmw, "recent_activity_age_hours",
+                            lambda *a, **k: 99.0)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other",
+                                  gh_unavailable_reason=self._GH_DOWN)
+        assert s.decision == "REMOVE"
+        assert s.content_on_main is True
+        assert s.content_on_main_by == "ancestor"
+
+    def test_degraded_detached_skips_gh_and_refuses(self, monkeypatch):
+        # HEAD detache hors main : la resolution par sujet est gh par
+        # construction (pr view / pr list) -- jamais tentee en degrade.
+        info = self._info(branch=None)
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "detached_head_is_on_main", lambda *a: False)
+        monkeypatch.setattr(pmw, "lookup_pr_for_detached_head", self._no_gh)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other",
+                                  gh_unavailable_reason=self._GH_DOWN)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_gh_unverifiable"
+
+    def test_no_reason_keeps_no_pr_match(self, monkeypatch):
+        # Controle de discrimination : sans raison de degradation, le refus
+        # conservateur garde son nom historique -- le nouveau nom ne doit
+        # pas fuir hors du mode degrade.
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch",
+                            lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "remote_head_for_head", lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main", lambda *a: False)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+
+    def test_resolve_short_circuits_when_unavailable(self, tmp_path,
+                                                     monkeypatch):
+        # Aucun etage gh (lot, ancre) n'est tente en degrade.
+        res = pmw.PrResolution(cache_path=None)
+        res.unavailable_reason = self._GH_DOWN
+        monkeypatch.setattr(pmw, "run_gh", self._no_gh)
+        assert res.resolve("feature/anything") is None
+        assert res.stats["listing_calls"] == 0
+        assert res.stats["anchor_calls"] == 0
+
+    def test_resolve_cache_still_answers_when_unavailable(self, tmp_path,
+                                                          monkeypatch):
+        # Le cache disque ne depend pas de gh : un MERGED deja etabli (garde
+        # oid satisfaite) continue de retirer des worktrees sans jeton.
+        cache = tmp_path / "cache.json"
+        _seed_cache_file(cache, {
+            "feature/cached": {
+                "number": 42, "state": "MERGED",
+                "url": "https://example/pr/42",
+                "headRefOid": _PR_OID_A,
+            },
+        })
+        res = pmw.PrResolution(cache_path=cache)
+        res.unavailable_reason = self._GH_DOWN
+        monkeypatch.setattr(pmw, "run_gh", self._no_gh)
+        row = res.resolve("feature/cached", head_sha=_PR_OID_A)
+        assert row is not None and row["state"] == "MERGED"
+        assert res.stats["cache_hits"] == 1
+
+    def test_run_gh_timeout_returns_124(self, monkeypatch):
+        # Mesure fondatrice : un `--apply` pendu ~2 h, 0 octet de sortie.
+        # Un gh muet doit devenir un echec DETECTE (rc=124, stderr nomme),
+        # jamais une attente infinie.
+        import subprocess as _sp
+
+        def _hang(*a, **k):
+            raise _sp.TimeoutExpired(cmd=["gh"], timeout=30)
+
+        monkeypatch.setattr(pmw.subprocess, "run", _hang)
+        proc = pmw.run_gh("pr", "list", check=False)
+        assert proc.returncode == 124
+        assert "timeout" in proc.stderr
+
+    def test_probe_reports_reason_not_token(self, monkeypatch):
+        # La sonde rend une RAISON ; son stdout (un jeton) n'y figure
+        # jamais -- le detail vient du stderr seul.
+        import subprocess as _sp
+
+        def _rc1(*a, **k):
+            return _fake_proc(1, stderr="no oauth token found")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _rc1)
+        reason = pmw.probe_gh_availability()
+        assert reason is not None
+        assert "rc=1" in reason
+        assert "no oauth token" in reason
+
+        def _ok(*a, **k):
+            # stdout = jeton bidon : ne doit JAMAIS se retrouver dans la
+            # sortie de la sonde (ici : la sonde rend None, silencieuse).
+            return _fake_proc(0, stdout="gho_not_a_real_token")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _ok)
+        assert pmw.probe_gh_availability() is None
+
+    def test_probe_gh_missing(self, monkeypatch):
+        import subprocess as _sp
+
+        def _missing(*a, **k):
+            raise FileNotFoundError("gh")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _missing)
+        reason = pmw.probe_gh_availability()
+        assert reason is not None
+        assert "introuvable" in reason
+
+    def test_render_text_banner_in_degraded_mode(self):
+        # La banniere est la PREMIERE ligne : une passe degradee ne doit
+        # jamais se lire comme un constat de PRs ouvertes.
+        statuses = [
+            _make_status(decision="REFUSE",
+                         refusal_reason="no_gh_unverifiable",
+                         pr_state=None, pr_number=None, pr_url=None),
+            _make_status(decision="REFUSE", refusal_reason="pr_open:#7",
+                         pr_state="OPEN", pr_number=7),
+        ]
+        text = pmw.render_text(statuses, dry_run=True,
+                               gh_unavailable_reason=self._GH_DOWN)
+        first = text.splitlines()[0]
+        assert "gh unavailable on this seat" in first
+        assert "1 worktrees in degraded mode" in first
+        assert self._GH_DOWN in first
+        # Les lignes de statut suivent, la sortie n'est jamais vide.
+        assert "no_gh_unverifiable" in text
+
+    def test_render_text_no_banner_when_gh_fine(self):
+        statuses = [
+            _make_status(decision="REFUSE", refusal_reason="pr_open:#7",
+                         pr_state="OPEN", pr_number=7),
+        ]
+        text = pmw.render_text(statuses, dry_run=True)
+        assert "gh unavailable" not in text
+
+
 class TestContentOnMainByPatchId:
     """#20067 : seconde jambe du contenu sur main, par patch-id.
 
@@ -1513,14 +1697,15 @@ class TestDetachedHeadOnMain17684:
         assert pmw.lookup_pr_for_detached_head("/tmp/fake") is None
 
 
-def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None):
+def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None,
+               stderr: str = ""):
     """Construit un subprocess.CompletedProcess minimal pour stubbing."""
     import subprocess
     out = stdout
     if json_payload is not None:
         out = json.dumps(json_payload)
     return subprocess.CompletedProcess(
-        args=[], returncode=returncode, stdout=out, stderr=""
+        args=[], returncode=returncode, stdout=out, stderr=stderr
     )
 
 
@@ -2418,9 +2603,15 @@ class TestRefusalReport3895:
         PR detachee du disque (aucun appel gh possible dans ces tests)."""
         monkeypatch.setattr(pmw, "list_worktrees", lambda: [
             {"path": s.path, "branch": s.branch} for s in statuses])
+        # #21753 : la sonde d'identite est bouchonnee verte -- ces tests
+        # verifient le contrat de sortie du nominal, pas le mode degrade
+        # (couvert par TestGhDegradedMode). Sans ce stub, le verdict de la
+        # passe dependrait de la presence reelle de gh sur le siège.
+        monkeypatch.setattr(pmw, "probe_gh_availability", lambda: None)
         monkeypatch.setattr(
             pmw, "diagnose_worktree",
-            lambda path, cur, head_sha=None, activity_window_h=6.0:
+            lambda path, cur, head_sha=None, activity_window_h=6.0,
+                   gh_unavailable_reason=None, quarantine_submodules=False:
                 next(s for s in statuses if s.path == path),
         )
         monkeypatch.setattr(
@@ -2866,6 +3057,9 @@ class TestScanRootMultiFarms:
 
         monkeypatch.setattr(pmw, "_SCAN_ROOT_OVERRIDE", None)
         monkeypatch.setattr(pmw, "list_worktrees", spy)
+        # #21753 : sonde d'identite bouchonnee verte (hermeticite -- le
+        # nominal de ces tests ne depend pas de la presence de gh).
+        monkeypatch.setattr(pmw, "probe_gh_availability", lambda: None)
         monkeypatch.setattr(pmw, "diagnose_worktree", lambda *a, **k: None)
         monkeypatch.setattr(
             pmw, "get_pr_resolution",
