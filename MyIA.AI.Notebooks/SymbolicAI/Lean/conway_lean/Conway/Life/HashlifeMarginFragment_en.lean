@@ -3040,6 +3040,117 @@ theorem hashlife_correct_margin_of_union_periodic_singleton (c : MacroCell) (k :
   rw [hsplit]
   exact hcap_of_union_periodic_singleton hTi g₁ g₂ hfix₁ hcan hg₂ hspan t
 
+/-! ### Slice 15 — mixed-period unions (mod route, containment)
+
+Links 2-4 of the union chain require both parts to share the **same** period `T`
+(`evolve_period_union`). This is a genuine restriction: the natural juxtaposition
+— a blinker (`T₁ = 2`) next to a pulsar (`T₂ = 3`) — does not satisfy it, and the
+union is neither an oscillator (period 6, non-dyadic) nor a spaceship: **none** of
+the single-pattern chains reaches it. This slice opens it through the mod route
+(`hcap_of_period_mod`, phase containment): as soon as `T` is a common multiple of
+both periods (`T₁ ∣ T`, `T₂ ∣ T` — the lcm without computing it), the union is
+`T`-periodic (`evolve_period_union_mul`), and capture follows under the
+containment hypothesis `hwin` on the union's phases — the same price the mod
+route has always charged (pulsar, slice 8b), here on the `T` phases of the union
+instead of the `T` phases of a single pattern.
+
+The geometric brick `frame_contains_support` — the reconstruction frame always
+contains the support of the reconstructed grid, up to margin and dyadic rounding
+— is the **`i = 0` diagonal** of any `hwin` hypothesis (the starting phase lives
+in its own frame): it comes for free for any witness, and it is the seed of
+future partial discharges (cross-phase containment via static boxes of the
+parts). -/
+
+/-- **The reconstruction frame contains the support.** Any live cell of `g` lives
+    in the square `[o, o + 2^level)²` where `(o, level)` is the frame of its
+    reconstruction `gridToMacroCellWithOffset g`. Proof by the MEMBERSHIP
+    round-trip (no canonicity hypothesis, `mem_toGrid_gridToMacroCellWithOffset`)
+    then the domain bounds of a well-formed cell (`cellWfF_toGrid_bounds`, wf by
+    `buildFromGrid_wf`). This is the `i = 0` diagonal of any `hwin` hypothesis of
+    the mod route: the starting phase always lives in its own frame. -/
+theorem frame_contains_support (g : Grid) (p : Int × Int) (hp : p ∈ g) :
+    (gridToMacroCellWithOffset g).1.1 ≤ p.1 ∧
+      p.1 < (gridToMacroCellWithOffset g).1.1
+        + (2 ^ (gridToMacroCellWithOffset g).2.level : Int) ∧
+      (gridToMacroCellWithOffset g).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset g).1.2
+          + (2 ^ (gridToMacroCellWithOffset g).2.level : Int) := by
+  have hwf : ((gridToMacroCellWithOffset g).2).wf = true := by
+    unfold gridToMacroCellWithOffset
+    exact buildFromGrid_wf g _ _ _
+  exact cellWfF_toGrid_bounds (cellWf_of_wf _ hwf) _ _
+    ((mem_toGrid_gridToMacroCellWithOffset g p).mpr hp)
+
+/-- **Union periodicity at mixed periods.** If `T` is a common multiple of the
+    periods `T₁` (of `g₁`) and `T₂` (of `g₂`) and the trajectories stay
+    3-separated, the union is `T`-periodic. Each part regains its fixed point at
+    the multiple `mᵢ · Tᵢ = T` (`evolve_mulF_of_period`), and the split
+    `evolve_period_union` closes the union. Divisibility interface (`T₁ ∣ T`,
+    `T₂ ∣ T`): the reader picks the lcm or any multiple — the common period
+    required by links 2-4 is no longer a constraint. -/
+theorem evolve_period_union_mul {T T₁ T₂ : Nat} (hT : 0 < T)
+    (hdv₁ : T₁ ∣ T) (hdv₂ : T₂ ∣ T) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T₁ g₁ = g₁) (hfix₂ : evolve T₂ g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂)) :
+    evolve T (g₁ ++ g₂) = g₁ ++ g₂ := by
+  obtain ⟨m₁, hm₁⟩ := hdv₁
+  obtain ⟨m₂, hm₂⟩ := hdv₂
+  exact evolve_period_union hT g₁ g₂ hsep
+    (by rw [hm₁, Nat.mul_comm T₁ m₁]; exact evolve_mulF_of_period g₁ hfix₁ m₁)
+    (by rw [hm₂, Nat.mul_comm T₂ m₂]; exact evolve_mulF_of_period g₂ hfix₂ m₂) hcan
+
+/-- **hcap of mixed-period unions.** A union of two oscillators of **distinct**
+    periods `T₁`, `T₂` (multiples of a common `T`), with 3-separated
+    trajectories, is captured at every instant: the union is `T`-periodic
+    (`evolve_period_union_mul`) and the mod route applies — under the
+    containment `hwin` of the union's phases within the carrying phase's frame,
+    the constant price of this route since slice 8b. First **heterogeneous
+    composite** class: blinker + pulsar (2, 3) was reached by no existing
+    chain. -/
+theorem hcap_of_union_mixed {T T₁ T₂ : Nat} (hT : 0 < T)
+    (hdv₁ : T₁ ∣ T) (hdv₂ : T₂ ∣ T) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T₁ g₁ = g₁) (hfix₂ : evolve T₂ g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂))
+    (hwin : ∀ r, r < T → ∀ i, i < T → ∀ p ∈ evolve i (evolve r (g₁ ++ g₂)),
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1 ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true :=
+  hcap_of_period_mod (g₁ ++ g₂) hcan hT
+    (evolve_period_union_mul hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan) hwin
+
+/-- **Assembled L2 for mixed-period unions.** Mirror of the three union assembly
+    corollaries (low, dyadic-high, degenerate): a MacroCell whose grid rendered
+    at the origin splits into two oscillators of distinct periods multiples of a
+    common `T`, separated by three cells at every phase and whose union phases
+    satisfy the containment `hwin`, satisfies the Hashlife equality at every
+    horizon `2^k` under `centralCorrect`. The blinker + pulsar class — two real
+    oscillators of the bestiary, periods 2 and 3 — is now in the fragment. -/
+theorem hashlife_correct_margin_of_union_mixed (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {T T₁ T₂ : Nat} (hT : 0 < T)
+    (hdv₁ : T₁ ∣ T) (hdv₂ : T₂ ∣ T) (g₁ g₂ : Grid)
+    (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ p ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist p r)
+    (hfix₁ : evolve T₁ g₁ = g₁) (hfix₂ : evolve T₂ g₂ = g₂)
+    (hcan : Canonical (g₁ ++ g₂))
+    (hwin : ∀ r, r < T → ∀ i, i < T → ∀ p ∈ evolve i (evolve r (g₁ ++ g₂)),
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1 ≤ p.1 ∧
+        p.1 < (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.1
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int) ∧
+      (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2 ≤ p.2 ∧
+        p.2 < (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).1.2
+          + (2 ^ (gridToMacroCellWithOffset (evolve r (g₁ ++ g₂))).2.level : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_union_mixed hT hdv₁ hdv₂ g₁ g₂ hsep hfix₁ hfix₂ hcan hwin t
+
 /-! ## Synthesis — the fragment is non-empty and the framework statement is honest
 
 `supportInMargin` is decidable and witnessed on the bestiary (above). The framework
