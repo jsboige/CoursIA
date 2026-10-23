@@ -87,7 +87,7 @@ P0 Benchmark voix → P1 Analyse littéraire → P2 Casting vocal
 
 ### Évaluation subjective — protocole MOS
 
-Un rating subjectif n'est interprétable qu'accompagné de son protocole : dans quel ordre présenter les échantillons, comment repérer un auditeur qui note à l'envers du groupe, et quelle incertitude attacher au score. Le carnet ci-dessous importe l'organe `scripts/tts_verification/mos_protocol.py`, lit la rubrique **depuis** `04-7-TTS-Voice-Benchmark` (source de vérité unique), puis exerce l'agrégateur sur une campagne de notes **fictives** : la grille du `04-7` reste vide, c'est l'auditeur qui la remplit. Les proxies automatiques (SNR, SI-SDR, distance spectrique, STOI) sont mesurés sur une référence de laboratoire synthétique, pour montrer ce qu'ils capent — et ce qu'ils ne captent pas.
+Un rating subjectif n'est interprétable qu'accompagné de son protocole : dans quel ordre présenter les échantillons, comment repérer un auditeur qui note à l'envers du groupe, et quelle incertitude attacher au score. Le carnet ci-dessous importe l'organe `scripts/tts_verification/mos_protocol.py`, lit la rubrique **depuis** `04-7-TTS-Voice-Benchmark` (source de vérité unique), puis exerce l'agrégateur sur une campagne de notes **fictives** : la grille du `04-7` reste vide, c'est l'auditeur qui la remplit. Les proxies automatiques (SNR, SI-SDR, distance log-spectrale, STOI) sont mesurés sur une référence de laboratoire synthétique, pour montrer ce qu'ils capent — et ce qu'ils ne captent pas.
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
