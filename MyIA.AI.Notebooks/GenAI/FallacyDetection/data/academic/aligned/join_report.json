@@ -2,9 +2,10 @@
   "issue": 20222,
   "gold": "MyIA.AI.Notebooks\\GenAI\\FallacyDetection\\data\\academic\\MAFALDA\\gold_standard_dataset.jsonl",
   "table": "MyIA.AI.Notebooks\\GenAI\\FallacyDetection\\data\\academic\\logic_mafalda_to_argumentum.csv",
-  "pairs_total": 228,
+  "pairs_total": 225,
+  "merged_duplicate_pairs": 3,
   "joined_exact": 128,
-  "joined_bridge": 100,
+  "joined_bridge": 97,
   "excluded_total": 44,
   "excluded_by_label": {
     "appeal to worse problems": 8,
@@ -250,8 +251,8 @@
     "Erreur mathématique": 64,
     "Influence": 50,
     "Insuffisance": 30,
-    "Obstruction": 41,
+    "Obstruction": 38,
     "Tricherie": 0
   },
-  "note": "Ponts declares = subsumptions documentees (DECLARED_BRIDGES) ; rayer un pont et relancer retire ses paires sans toucher au reste."
+  "note": "Ponts declares = subsumptions documentees (DECLARED_BRIDGES) ; rayer un pont et relancer retire ses paires sans toucher au reste. Unicite (texte, noeud) garantie a l'emission : les libelles fusionnes d'une paire demultipliee vivent dans source_labels."
 }

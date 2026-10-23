@@ -157,6 +157,25 @@ def main(argv: list[str] | None = None) -> int:
         else:
             entry["joined_exact"] += 1
 
+    # Unicite (texte, noeud) : deux libelles d'un meme span peuvent rouler vers
+    # le meme noeud (ex. 'ad hominem' exact + 'guilt by association' pont) --
+    # l'evaluateur juge une fois par noeud, la paire ne sort qu'une fois. Les
+    # libelles sources fusionnent dans source_labels pour conserver le double
+    # etiquetage ; les stats par label ci-dessus restent au niveau du span.
+    merged: dict[tuple[str, str], dict] = {}
+    merged_duplicates = 0
+    for pair in pairs:
+        key = (pair["text"], pair["node"])
+        if key in merged:
+            existing = merged[key]
+            existing.setdefault("source_labels", [existing["source_label"]])
+            if pair["source_label"] not in existing["source_labels"]:
+                existing["source_labels"].append(pair["source_label"])
+            merged_duplicates += 1
+        else:
+            merged[key] = pair
+    pairs = list(merged.values())
+
     with corpus_path.open("w", encoding="utf-8") as handle:
         for pair in pairs:
             handle.write(json.dumps(pair, ensure_ascii=False) + "\n")
@@ -172,13 +191,14 @@ def main(argv: list[str] | None = None) -> int:
         "gold": str(args.gold),
         "table": str(args.table),
         "pairs_total": len(pairs),
+        "merged_duplicate_pairs": merged_duplicates,
         "joined_exact": sum(1 for p in pairs if p["match"] == "exact"),
         "joined_bridge": sum(1 for p in pairs if p["match"].startswith("bridge:")),
         "excluded_total": sum(excluded.values()),
         "excluded_by_label": dict(sorted(excluded.items())),
         "label_stats": {k: label_stats[k] for k in sorted(label_stats)},
         "family_counts": dict(sorted(family_counts.items())),
-        "note": "Ponts declares = subsumptions documentees (DECLARED_BRIDGES) ; rayer un pont et relancer retire ses paires sans toucher au reste.",
+        "note": "Ponts declares = subsumptions documentees (DECLARED_BRIDGES) ; rayer un pont et relancer retire ses paires sans toucher au reste. Unicite (texte, noeud) garantie a l'emission : les libelles fusionnes d'une paire demultipliee vivent dans source_labels.",
     }
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 

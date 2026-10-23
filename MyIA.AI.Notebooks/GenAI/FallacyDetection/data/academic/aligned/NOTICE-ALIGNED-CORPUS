@@ -13,10 +13,17 @@ Provenance
 
 Construction (join_report.json porte les effectifs)
 ---------------------------------------------------
-228 paires : 128 exactes (egalite insensible a la casse label du span /
-academic_label de la table), 100 par pont declare (subsumption documentee,
+225 paires : 128 exactes (egalite insensible a la casse label du span /
+academic_label de la table), 97 par pont declare (subsumption documentee,
 un rationale par pont dans DECLARED_BRIDGES du builder), 44 exclues avec
 motif (nothing, to clean, labels sans entree L2 honnete).
+
+Unicite (texte, noeud) garantie a l'emission : trois spans du gold portent
+deux libelles roulant vers le meme noeud Obstruction/Ad hominem ("ad hominem"
+exact + "guilt by association" pont) ; la paire ne sort qu'une fois et les
+libelles fusionnes vivent dans source_labels (regressee par
+test_duplicate_labels_same_node_merged_once apres la campagne run1 livree
+avec 2 item_id en double, c.6373865101).
 
 Famille Tricherie : 0 paire source, mesure sur le gold entier — aucun span
 MAFALDA ne porte le label L2 "Fallacy of proportion". L'echantillon run1

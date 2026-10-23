@@ -128,6 +128,42 @@ def test_zero_family_measured_not_omitted(tmp_path):
     assert report["family_counts"]["Erreur mathematique"] == 1
 
 
+def test_duplicate_labels_same_node_merged_once(tmp_path):
+    """Regressrun1 (c.6373865101) : deux libelles d'un meme span roulant vers le
+    meme noeud ('ad hominem' exact + 'guilt by association' pont) ne produisent
+    qu'UNE paire -- la campagne run1 livree portait 2 item_id en double (le
+    contenu adresse l'id) et etait refusee par le render comme par le mesureur."""
+    record = {
+        "text": "Delores defends equal pay, coming from someone disagreeable.",
+        "labels": [
+            [0, 60, "ad hominem"],
+            [0, 60, "guilt by association"],
+        ],
+    }
+    corpus_path, report = _run(tmp_path, [record])
+    pairs = [json.loads(l) for l in corpus_path.read_text(encoding="utf-8").splitlines()]
+    assert len(pairs) == 1
+    assert pairs[0]["node"] == "Obstruction/Ad hominem"
+    assert pairs[0]["source_labels"] == ["ad hominem", "guilt by association"]
+    assert report["pairs_total"] == 1
+    assert report["merged_duplicate_pairs"] == 1
+    # Les stats par label restent au niveau du span : chaque libelle a joine.
+    assert report["label_stats"]["ad hominem"]["joined_exact"] == 1
+    assert report["label_stats"]["guilt by association"]["joined_bridge"] == 1
+
+
+def test_distinct_pairs_never_touched_by_merge(tmp_path):
+    """Deux libelles differents vers deux noeuds differents : aucune fusion."""
+    corpus_path, report = _run(tmp_path, [
+        _gold_with("Cas A pente glissante.", "slippery slope"),
+        _gold_with("Cas B appel a la bande.", "ad populum"),
+    ])
+    pairs = [json.loads(l) for l in corpus_path.read_text(encoding="utf-8").splitlines()]
+    assert len(pairs) == 2
+    assert report["merged_duplicate_pairs"] == 0
+    assert all("source_labels" not in p for p in pairs)
+
+
 def test_sampler_loads_corpus(tmp_path):
     corpus_path, _ = _run(tmp_path, [
         _gold_with("Cas A pente glissante.", "slippery slope"),
