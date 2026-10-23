@@ -2264,3 +2264,54 @@ TRANCHE25: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 26 (#22009) -- le golden set de traduction ne derive plus en silence.
+#
+# `scripts/translation/build_golden_set.py --check` compare le JSON commite
+# (`translations/translation_golden_set.json`) a ce que l'arbre produit. Le
+# mode existait depuis l'origine et **aucun workflow ne l'appelait** : mesure
+# du 2026-10-22 sur un worktree detache de `origin/main`, `--check` rendait
+# deja rc=1 (57 paires du JSON absentes de l'arbre, 79 de l'arbre absentes du
+# JSON). Chaque merge qui ajoute ou retire une paire FR/EN laissait donc
+# deriver le fichier, et la derive ne se voyait qu'au moment ou une PR le
+# regenerait -- en l'absorbant dans un diff sans rapport (#22008, 22 paires).
+#
+# Garde NATIF : aucun workflow d'origine, c'est precisement le defaut.
+#
+# Codes de retour : 0 = a jour, 1 = derive (BLOQUANT).
+#
+# Cout mesure : **~1,0 s** sur l'arbre complet (483 paires, 3 familles), donc
+# la voie rapide -- qui paie deja son checkout -- le porte sans surcout
+# appreciable. C'est ce qui tranche la question laissee ouverte par l'issue
+# (« registre si le cout le permet, sinon job dedie »).
+#
+# `paths` : ce sont les fichiers dont la presence ou le contenu deplace une
+# paire. Les trois extensions appariables sont la (un `Foo.ipynb` ajoute a
+# cote d'un `Foo_en.ipynb` existant CREE une paire), plus le JSON lui-meme,
+# le script et son registre.
+#
+# Pas de `needs_base` : le verdict compare l'arbre au JSON **commite**, pas
+# HEAD a la base. `diff_bounded` reste False -- une derive peut entrer par
+# n'importe quel merge et heriter d'un rouge, donc un rouge ne s'attribue
+# pas d'office a la PR qui le porte (c'est l'issue #22009 elle-meme : la
+# derive etait anterieure a la PR qui l'a constatee).
+# ---------------------------------------------------------------------------
+TRANCHE26: list[Guard] = [
+    Guard(
+        name="translation-golden-set-drift",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "**/*.lean",
+            "**/*.md",
+            "translations/translation_golden_set.json",
+            "scripts/translation/build_golden_set.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=["python", "scripts/translation/build_golden_set.py", "--check"],
+        blocking=True,
+        absorbed=True,
+    ),
+]
