@@ -210,11 +210,16 @@ avertissement `[budget] AVERTISSEMENT` dans le journal du service veut dire que
 cette machine n'a pas declare son budget, pas que quelque chose est casse.
 
 
-Le budget agrege est **applique par defaut du daemon** (`cgroup-parent` dans
-`daemon.json`), pas par un drapeau du superviseur -- et le superviseur le
-**verifie** plutot que de le re-imposer. La distinction n'est pas cosmetique :
-passer `--cgroup-parent` sur une machine ou la slice n'existe pas **cree** un
-cgroup vide, qui a l'apparence exacte d'un garde et ne borne rien.
+Le budget agrege est applique a **deux endroits distincts**, et la distinction n'est pas
+cosmetique. Le **defaut du daemon** (`cgroup-parent` dans `daemon.json`) ne vaut que pour
+le daemon qui porte ce fichier -- c'est la seule cible du fichier, objet de la section
+suivante. Le **drapeau du superviseur** est ce qui place reellement les conteneurs de la
+flotte : `supervise.sh` passe `--cgroup-parent` sur ses deux chemins de lancement, avec le
+nom que chaque pilote attend (nom plat sous `systemd`, chemin imbrique sous `cgroupfs`).
+Ce qui reste vrai de l'avertissement d'origine : passer ce drapeau sur une machine ou la
+slice n'existe pas **cree** un cgroup vide, qui a l'apparence exacte d'un garde et ne borne
+rien -- d'ou la neutralisation (`CI_CGROUP_PARENT=""`) quand la slice manque, et le
+controle d'appartenance apres demarrage (`EVASION`).
 
 ### Le nom plat de `cgroup-parent` n'est correct que sous le pilote `systemd` (#15157)
 
@@ -232,17 +237,27 @@ feuille que le vrai mur, un niveau au-dessus : un conteneur qui y atterrit fait 
 pour un daemon `cgroupfs` est le **chemin imbrique complet**,
 `"coursia.slice/coursia-ci.slice"`.
 
-Le raisonnement et la mesure du 2026-09-08 vivent a **un seul endroit**, l'en-tete de
-`coursia-ci.slice` (bloc `PIEGE DE RECOPIE`) : ce paragraphe existe pour qu'un lecteur du
-tableau ci-dessus ne l'ignore pas, pas pour le redire.
+Trois surfaces portent ce sujet, chacune avec son role : **ce paragraphe** est la regle
+actionnable (ne pas recopier le fichier, et quelle valeur mettre a la place) ; l'en-tete de
+`coursia-ci.slice` (bloc `PIEGE DE RECOPIE`) porte le mecanisme et sa conclusion ; la
+**mesure chiffree du 2026-09-08** (`memory.peak`, sous-groupes, `max` sur le leurre) vit
+dans le corps de #15157, et nulle part ailleurs dans le depot.
 
 Le `daemon.json` du daemon Docker Desktop, lui, **ne vit pas dans ce depot** : ce sont
-`~/.docker/daemon.json` et `settings-store.json` de l'hote. Au 2026-10-23, le leurre plat
-a ete retire de la machine ; la presence d'un `cgroup-parent` par defaut sur ce daemon
-n'est en revanche **pas confirmee**. Tant qu'elle ne l'est pas, les conteneurs de la
-flotte entrent dans le mur par le drapeau explicite que pose `supervise.sh`, et un
-conteneur lance a la main y echappe -- `report_slice_membership()` rend cette evasion
-**visible** (`EVASION`), il ne la corrige pas.
+`~/.docker/daemon.json` et `settings-store.json` de l'hote. Au 2026-10-23, le leurre plat a
+ete retire de la machine -- reproductible par `ls -d /sys/fs/cgroup/coursia-ci.slice`,
+attendu **absent** ; la presence d'un `cgroup-parent` par defaut sur ce daemon n'est en
+revanche **pas confirmee**. Tant qu'elle ne l'est pas, les conteneurs de la flotte entrent
+dans le mur par le drapeau explicite que pose `supervise.sh`, et un conteneur lance a la
+main y echappe -- `report_slice_membership()` rend cette evasion **visible** (`EVASION`),
+il ne la corrige pas.
+
+**Ce que la recopie produirait n'est pas ce qui a ete observe.** Le leurre plat constate le
+2026-09-08 existait alors qu'**aucun** `cgroup-parent` par defaut n'etait pose sur Docker
+Desktop : il ne peut donc pas venir d'une recopie de ce fichier, mais d'un
+`--cgroup-parent` passe a la main ou d'une configuration anterieure. Le piege decrit
+ci-dessus est ce qu'une recopie **creerait** ; l'observation de septembre ne l'illustre
+pas, elle en montre seulement le resultat possible.
 
 Mesure du 2026-09-07, trois conteneurs ecrivant en parallele sur `/dev/sde` :
 
