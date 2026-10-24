@@ -204,6 +204,13 @@ TOOL_FAILURE_PATTERNS = (
     # SUR CETTE INSTANCE (les deux rendent les memes 2 flux) ; il est garde
     # parce que la cellule journalise ce prefixe quelle que soit l'exception :
     # un delai d'attente produit le meme message sans la levee du client.
+    # Ce troisieme motif est EPINGLE A L'INSTANCE : il porte l'orthographe de
+    # cette cellule, sans accents. La forme PORTEUSE est la premiere
+    # (`workflow execution failed`), independante de l'orthographe -- c'est elle
+    # qui couvre tout autre carnet. Un carnet ecrivant « Erreur generation
+    # image » avec ses accents demanderait son propre motif mesure : aucune
+    # occurrence accentuee n'existe dans les sorties commitees (recherche du
+    # 2026-10-24), donc rien n'est devine ici.
     re.compile(r"workflow execution failed", re.IGNORECASE),
     re.compile(r"erreur generation image", re.IGNORECASE),
     re.compile(r"illustration indisponible", re.IGNORECASE),
@@ -419,6 +426,14 @@ CAPABILITY_WITNESS_PATTERNS = (
 # cells verbatim, never read from git objects that may not be there.
 DOWNGRADE_REPLAY_FIXTURE = "demucs_downgrade_pair_14603.json"
 SELF_TEST_MIN_DOWNGRADE = 2
+
+# #21816 : la mesure du blob degrade de Barbie-Schreck (0dbdd963ec) est 4 hits
+# en dur, stable et reproduite hors du harnais (cellule 24, flux 17/20/36/39).
+# Le plancher du controle positif epingle cette mesure : un `>= 2` laissait
+# passer une regression qui perdrait deux des quatre motifs et resterait verte,
+# alors que la valeur attendue est connue. `--self-test` imprime la mesure, donc
+# une re-serialisation du carnet qui la deplacerait se lit dans la sortie.
+SELF_TEST_MIN_COMFY_HITS = 4
 
 
 def _cell_output_text(cell):
@@ -1405,9 +1420,11 @@ def self_test(cwd=None):
         n_fix = len(fix["TOOL_FAILURE"])
         print("replay #21816: ComfyUI TOOL_FAILURE " + str(n_deg) + " -> "
               + str(n_fix))
-        if n_deg < 2:
+        if n_deg < SELF_TEST_MIN_COMFY_HITS:
             failures.append("#21816 replay: ComfyUI fallback not seen in the "
-                            "degraded blob (" + repr(deg["TOOL_FAILURE"]) + ")")
+                            "degraded blob (" + str(n_deg) + " < "
+                            + str(SELF_TEST_MIN_COMFY_HITS) + " measured; "
+                            + repr(deg["TOOL_FAILURE"]) + ")")
         if n_fix:
             failures.append("#21816 replay: ComfyUI failure still reported "
                             "after the restoration (" + repr(fix["TOOL_FAILURE"])
@@ -1417,16 +1434,31 @@ def self_test(cwd=None):
         # son delta doit etre positif -- c'est le trou que #21816 ferme, et
         # un replay qui ne vaudrait que pour la restauration ne prouverait
         # rien de ce trou.
+        #
+        # Le PARENT est garde comme les deux blobs, et la ligne `added` est
+        # refusee. Sans ces deux bornes l'assertion est satisfiable a vide :
+        # `compare()` ne rend pas d'erreur quand la base est illisible, il lit
+        # base_nb = None, marque la ligne `added`, scanne une base VIDE et
+        # calcule delta = 4 -- vert exactement comme sur un clone complet. Un
+        # clone superficiel dont la frontiere tombe sur ce commit produirait
+        # donc le vert que ce controle existe pour empecher (meme famille que
+        # #22277, « chercher OMIT_SHA partout est satisfiable a vide »).
         c_21816_intro = "133ffac5071e255c7d594e601ba6b71a54104c3f"
-        if git("cat-file", "-e", c_21816_intro, cwd=cwd) is None:
-            print("SKIP #21816 intro replay: 133ffac507 not in this clone")
+        if (git("cat-file", "-e", c_21816_intro, cwd=cwd) is None
+                or git("cat-file", "-e", c_21816_intro + "^", cwd=cwd) is None):
+            print("SKIP #21816 intro replay: 133ffac507 (or its parent) not "
+                  "in this clone")
         else:
             rows = compare(c_21816_intro + "^", c_21816_intro, [nb_21816],
                            cwd=cwd)
             delta = rows[0]["classes"]["TOOL_FAILURE"]["delta"]
             print("replay #21816 intro: delta TOOL_FAILURE " + str(delta)
                   + " (attendu > 0)")
-            if delta <= 0:
+            if rows[0].get("added"):
+                failures.append("#21816 intro replay: the base carnet is "
+                                "unreadable (row marked added) -- delta "
+                                + str(delta) + " compares an empty base")
+            elif delta <= 0:
                 failures.append("#21816 intro replay: the entering commit is "
                                 "still green (delta " + str(delta) + ")")
 
