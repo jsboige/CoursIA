@@ -1057,6 +1057,11 @@
     },
     {
       "kind": "orphan_entry",
+      "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-34b-15Puzzle-Admissible-Astar-CSharp.ipynb",
+      "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
+    },
+    {
+      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-5-Timetabling-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques"
     },
