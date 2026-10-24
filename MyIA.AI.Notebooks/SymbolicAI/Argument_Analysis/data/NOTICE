@@ -29,10 +29,13 @@ No CoursIA modifications.
 gitlink de `main` (5cb4a759), qui avait avancé de deux crans depuis la
 copie en place (6bc573f73). Delta mesuré vs la copie 6bc573f73 : en-tête
 identique, forme inchangée (1,408 lignes de données × 104 colonnes),
-**182 lignes de données modifiées**, toutes sur des colonnes de contenu
-traduit (`desc_es` 76, `example_ru` 47, `desc_en` 20, `desc_pt` 19,
-`example_pt` 14, `desc_ru` 11, `example_ar` 7, `link_es` 7). Aucun ajout
-ni retrait de ligne. Le manifeste `data/argumentum_snapshot.json` a été
+**182 lignes de données modifiées** : **226 cellules** sur des colonnes de
+contenu traduit (19 colonnes touchées ; principales : `desc_es` 76,
+`example_ru` 47, `desc_en` 20, `desc_pt` 19, `example_pt` 14, `desc_ru` 11)
+et **23 cellules** sur des renvois inter-cartes (6 colonnes, dont `link_es`
+7 et `link_zh` 6). Au niveau ligne : 171 lignes ne portent que du contenu,
+5 portent les deux, 6 ne portent que des renvois. Aucun ajout ni retrait de
+ligne. Le manifeste `data/argumentum_snapshot.json` a été
 régénéré **après** la recopie, au même pin.
 
 **Resync 2026-09-04 (#4960 Volet B, étape 1)** : re-copie verbatim depuis
