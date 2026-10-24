@@ -11,15 +11,30 @@ name: perimeter-review-guard
 # false file count, or an exclusivity claim that does not name a touched
 # .github/workflows/** file, fails the check on the PR itself.
 #
-# Triggers: pull_request (opened/synchronize/edited/reopened -- catches the
-# PR body, INCLUDING body edits: without an explicit `types:` list GitHub's
-# default excludes `edited`, so a false assertion corrected by editing the
-# body would never re-trigger the check -- nit named by ai-01 on #11635;
-# `reopened` restores full parity with the default, which the explicit list
-# drops -- a body edited while the PR was closed would otherwise go
-# unchecked until the next review -- nit Hermes on #11654) and
-# pull_request_review (submitted/edited -- re-runs the SAME check name on
-# the same head SHA the moment a review is posted).
+# Triggers (etat mesure au 2026-10-22, #21922) :
+#
+#   pull_request         (opened/synchronize/edited/reopened -- catches the
+#     PR body, INCLUDING body edits: without an explicit `types:` list GitHub's
+#     default excludes `edited`, so a false assertion corrected by editing the
+#     body would never re-trigger the check -- nit named by ai-01 on #11635;
+#     `reopened` restores full parity with the default, which the explicit list
+#     drops -- a body edited while the PR was closed would otherwise go
+#     unchecked until the next review -- nit Hermes on #11654).
+#   pull_request_review  (submitted/edited -- re-runs the SAME check name on
+#     the same head SHA the moment a review is posted).
+#   workflow_dispatch    (input `pr_number` -- re-mesure manuelle d'une PR).
+#
+# Pourquoi `pull_request` est revenu sur CE fichier (#21922) : le levier du
+# garde est le NOM de check-run "perimeter review guard (#11268)". C'est le
+# run de CE fichier qui le publie -- une re-mesure faite par un autre
+# workflow porte un AUTRE nom et ne supersede pas le rouge de la surface
+# review. Entre #13389 (trigger retire) et #21922, une correction de body
+# (le remede canonique d'une assertion fausse) ne remesurait que dans
+# l'umbrella : le rouge de la surface review survivait jusqu'au prochain
+# evenement de review, et le check-run rouge a disparu de la tete par un
+# mecanisme NON etabli (pruning de suite) -- l'etat bloquant se dissolvait
+# donc de facon non deterministe (mesure #21922, PR #21893 : rouge a
+# 20:50:57Z, body corrige a ~21:15Z, aucun run de ce fichier sur cette tete).
 # Baseline moves are reported with direction (issue criterion 3) but do not
 # hard-fail here: the output names the move and the reviewer applies
 # CHANGES_REQUESTED on unjustified loosening.
@@ -53,35 +68,90 @@ name: perimeter-review-guard
 # "fix" a future false-positive by narrowing the detection -- that loses both
 # properties at once (#11648, point 2).
 
-# PARTIELLEMENT RAVIVE (#14283) : ce fichier reprend la surface
-# `pull_request_review`, et ELLE SEULE. `pull_request` reste absorbe par
-# always-on-guards.yml (organe `perimeter`, desormais `if:`-gate sur
-# `pull_request` uniquement) -- la condition posee par la note de dormance
-# d'origine est donc tenue : les deux surfaces se PARTAGENT les evenements,
-# aucune ne les duplique.
+# SURFACES (#14283, puis #21922) : ce fichier porte les DEUX surfaces du
+# garde -- `pull_request` (restaure par #21922) et `pull_request_review`
+# (#14283) -- et always-on-guards.yml conserve sa jambe `perimeter` sur
+# `pull_request`.
 #
-#   pull_request        -> always-on-guards.yml :: perimeter   (self-hosted)
-#   pull_request_review -> ce fichier                          (ubuntu-latest)
+#   pull_request         -> ce fichier                          (ubuntu-latest)
+#                           + always-on-guards.yml :: perimeter (self-hosted)
+#   pull_request_review  -> ce fichier                          (ubuntu-latest)
 #
-# Pourquoi ce partage : `pull_request_review` est un declencheur
-# fork-reachable (FORK_REACHABLE_TRIGGERS, #14201 tranche 2). Le laisser sur
-# always-on-guards interdisait a CE workflow-la le pool auto-heberge --
-# check_self_hosted_runner_policy.py evalue les declencheurs au niveau
-# WORKFLOW, pas par job. always-on-guards etant le premier consommateur
-# GitHub-hosted du depot (2650 runs same-repo en 5 jours, timeout 25 min),
-# c'est lui qu'il fallait pouvoir router ; le garde perimeter revient donc
-# ici pour la seule surface qui l'empechait.
+# La jambe de l'umbrella n'est PAS redondante : elle couvre les PRs que CE
+# fichier saute par construction (le job est `if:`-gate sur
+# `head.repo.full_name == github.repository`, donc une PR de fork n'y passe
+# pas). Sur une PR same-repo, l'organe est donc mesure deux fois -- memes
+# arguments, meme tete, meme verdict : la mesure est idempotente, elle ne
+# peut pas diverger. Ce que la seconde mesURE achete n'est pas une regle de
+# plus, c'est le RAFRAICHISSEMENT du nom de check-run "perimeter review guard
+# (#11268)" : seul le run de ce fichier le publie, et c'est ce nom que
+# l'agrégat du PR gate replie (latest-wins par nom). Sans lui, une
+# correction de body laissait le rouge de la surface review en place.
 #
-# Ce job repasse sur ubuntu-latest POUR LA MEME RAISON : un declencheur
+# Pourquoi ce fichier vit sur ubuntu-latest : `pull_request_review` est un
+# declencheur fork-reachable (FORK_REACHABLE_TRIGGERS, #14201 tranche 2),
+# et `pull_request` l'est aussi. Le laisser sur always-on-guards interdisait
+# a CE workflow-la le pool auto-heberge -- check_self_hosted_runner_policy.py
+# evalue les declencheurs au niveau WORKFLOW, pas par job. always-on-guards
+# etant le premier consommateur GitHub-hosted du depot (2650 runs same-repo
+# en 5 jours, timeout 25 min), c'est lui qu'il fallait pouvoir router.
+# Cout du trigger `pull_request` ajoute ici : un job GitHub-hosted par
+# evenement de PR (mesure #21922 : 93 evenements sur le 2026-10-21, 228 par
+# jour sur les trois derniers jours) -- le meme organe, en plus.
+#
+# Ce job reste sur ubuntu-latest POUR LA MEME RAISON : un declencheur
 # fork-reachable ne doit jamais atteindre un runner auto-heberge (volume de
 # travail persistant par slot, #14285). Le `runs-on` self-hosted precedent
 # datait de la periode dormante, ou aucun evenement ne l'atteignait.
 
 on:
+  # `pull_request` restaure par #21922 : sans lui, une correction de body
+  # (le remede canonique d'une assertion de perimetre fausse) ne
+  # re-mesurait PAS ce nom de check-run -- le rouge de la surface review
+  # survivait jusqu'a un evenement de review, et sa dissolution etait
+  # non deterministe (mesure #21922, PR #21893).
+  # `edited` est explicite : sans liste `types:`, GitHub l'exclut du
+  # defaut (nit ai-01, #11635). `reopened` restaure la parite avec le
+  # defaut, que la liste explicite perd (nit Hermes, #11654).
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, edited, reopened ]
   pull_request_review:
     branches: [ main ]
     types: [ submitted, edited ]
+  # Re-mesure manuelle d'une PR (#21922) : le declencheur etait MORT --
+  # le job resolvait la PR par `github.event.pull_request.number`, vide sous
+  # `workflow_dispatch`, donc l'organe aurait ete appele sur une PR vide.
+  # Meme forme que `pr-gate-rerun.yml` : une entree `pr_number`.
   workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number whose perimeter assertions must be re-measured'
+        required: false
+        default: ''
+
+# Une tete, un run (#21991). Trois declencheurs pour un meme levier (le nom de
+# check-run "perimeter review guard (#11268)"), donc une paire d'evenements
+# rapproches -- edition de body juste apres un push, review postee pendant que
+# le run du push tourne -- derivait deux runs complets sur la meme tete.
+#
+# Le fold du merge gate est concu pour l'annulation, et le dit dans son
+# docstring (pr_gate.py, regles 2 et 3) : dedupe_latest ne garde que le run le
+# plus recent par nom, donc un `cancelled` SUPERSEDE est ecarte du pli et
+# n'entrave pas une tete reverdie ; seul un `cancelled` sur le run LE PLUS
+# RECENT echoue (fail-closed -- le gate n'affirme rien qu'il n'a pas mesure).
+# Comportement teste par test_superseded_cancelled_run_does_not_block_a_green_sha
+# (#11869, cas Quarto Pages Deploy 401a68cd8) et
+# test_cancelled_on_the_newest_run_still_fails.
+#
+# La cle porte la TETE, pas le numero de PR : un push frais (synchronize) cree
+# une tete differente, donc les runs de l'ancienne tete ne sont pas annules --
+# ils restent la surface d'audit de cette tete. Repli `run_id` sous
+# `workflow_dispatch` : pas d'objet pull_request dans le contexte, un groupe
+# unique par run signifie "jamais d'annulation" pour la re-mesure manuelle.
+concurrency:
+  group: perimeter-review-guard-${{ github.event.pull_request.head.sha || github.run_id }}
+  cancel-in-progress: true
 
 # Moindre privilege (#16185, CodeQL `actions/missing-workflow-permissions`) :
 # ce workflow n'avait AUCUN bloc `permissions:` -- ni au niveau workflow, ni au
@@ -124,7 +194,15 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          PR="${{ github.event.pull_request.number }}"
+          PR="${{ github.event.inputs.pr_number || github.event.pull_request.number }}"
+          # Sous `workflow_dispatch`, `github.event.pull_request` n'existe pas
+          # : la PR vient de l'entree `pr_number`. Sans PR resolue, la mesure
+          # est IMPOSSIBLE -- elle ne vaut pas vert (fail-closed, meme
+          # convention que le rc=2 de l'organe, #17273).
+          if [ -z "$PR" ]; then
+            echo "::error::aucune PR resolue (entree \`pr_number\` vide sous workflow_dispatch) -- le perimetre n'a pas ete mesure, ce n'est pas un vert."
+            exit 2
+          fi
           # The organ has THREE outcomes, and the wrapper used to collapse
           # them into one (`|| { echo <contradiction>; exit 1; }`): any
           # non-zero code, exit 2 included, was spelled as a perimeter

@@ -30,7 +30,6 @@ name: Twin attestation name guard
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'scripts/notebook_tools/twin_pairs.d/**'
   workflow_dispatch:
