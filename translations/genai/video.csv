@@ -2594,7 +2594,7 @@ if run_analysis:
 else:
     print(""Analyse desactivee"")
     result_global = {""success"": False}",,,,,,,,13e5e64353503354,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,88n8gc1cpru,markdown,fr,9aaefa3f518b8e2a,"Deux analyses ciblées portent ensuite sur la même vidéo. **OCR** : le modèle doit lire les textes visibles et donner le moment où chacun apparaît. **Temporal grounding** : il doit donner l'intervalle de trois événements, à comparer à la vérité terrain enregistrée à la cellule 14. La lecture de leurs sorties suit la cellule de code.",,,,,,,,9aaefa3f518b8e2a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,88n8gc1cpru,markdown,fr,ad51cb35c5724664,"Deux analyses ciblées portent ensuite sur la même vidéo. **OCR** : le modèle doit lire les textes visibles et donner le moment où chacun apparaît. **Temporal grounding** : il doit donner l'intervalle de trois événements, à comparer à la vérité terrain enregistrée à la cellule 13. La lecture de leurs sorties suit la cellule de code.",,,,,,,,ad51cb35c5724664,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,cell-9,code,fr,01b626d098b2f2b5,"# OCR video et temporal grounding
 results_ocr = {""success"": False}
 results_grounding = {""success"": False}
@@ -2640,15 +2640,15 @@ if run_temporal_grounding and run_analysis:
             print(f""  {event} : t={ts:.1f}s"")
     else:
         print(f""  Erreur grounding : {results_grounding['error']}"")",,,,,,,,01b626d098b2f2b5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,vme03uwrbws,markdown,fr,3173ca22b0cad305,"### Lecture du résultat : OCR et temporal grounding face à la vérité terrain
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,vme03uwrbws,markdown,fr,33914dc11e999dd7,"### Lecture du résultat : OCR et temporal grounding face à la vérité terrain
 
-Les sorties de la cellule 20 se lisent contre les instants enregistrés à la cellule 14 : `titre_apparait` 0.0 s, `chapitre_ml` 2.0 s, `formule_visible` 4.0 s, `resultat_affiche` 6.0 s, `fin_presentation` 8.0 s.
+Les sorties de la cellule 20 se lisent contre les instants enregistrés à la cellule 13 : `titre_apparait` 0.0 s, `chapitre_ml` 2.0 s, `formule_visible` 4.0 s, `resultat_affiche` 6.0 s, `fin_presentation` 8.0 s.
 
 **OCR.** Le modèle donne cinq moments d'apparition, 0, 3, 6, 9 et 12 s, pour des scènes qui commencent à 0, 2, 4, 6 et 8 s. L'écart passe de 0 à 4 s, et les horodatages forment une progression régulière de 3 s là où les scènes sont espacées de 2 s. Le dernier, 12 s, dépasse la durée de la vidéo (10.0 s) : un horodatage hors de l'intervalle de la vidéo doit être rejeté.
 
 **Temporal grounding.** Le titre est localisé à 0.0-0.5 s (vérité 0.0 s, écart nul). La formule est située à 2.5-3.0 s, soit 1.5 s avant son instant réel (4.0 s) ; cette fenêtre tombe dans la scène « Chapitre 1 » (2.0 à 4.0 s). Le résultat est situé à 8.5-9.0 s, soit 2.5 s après son instant réel (6.0 s) ; cette fenêtre tombe dans la scène « Conclusion » (8.0 à 10.0 s). Les écarts ont des signes opposés : ce n'est pas un biais systématique, mais une localisation fausse sur deux événements sur trois.
 
-**Retenir** : un horodatage produit par un modèle se vérifie contre la durée de la vidéo et contre une vérité terrain, jamais sur sa seule forme. L'exercice 2 (cellule 25) reprend cette comparaison pour les formulations de prompt.",,,,,,,,3173ca22b0cad305,,,,,,,,,,,,,,,
+**Retenir** : un horodatage produit par un modèle se vérifie contre la durée de la vidéo et contre une vérité terrain, jamais sur sa seule forme. L'exercice 2 (cellule 25) reprend cette comparaison pour les formulations de prompt.",,,,,,,,33914dc11e999dd7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,cell-10,code,fr,be6a971abc179386,"# Mode interactif
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""\n--- MODE INTERACTIF ---"")
@@ -2681,9 +2681,9 @@ if notebook_mode == ""interactive"" and not skip_widgets:
             print(""Passage a la suite du notebook"")
 else:
     print(""\nMode batch - Interface interactive desactivee"")",,,,,,,,be6a971abc179386,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,cell-11,markdown,fr,7f555c0ef1771d58,"## Comparaison GPT-5 vs Qwen2.5-VL
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,cell-11,markdown,fr,ff8ca7a7cce76855,"## Comparaison GPT-5 vs Qwen2.5-VL
 
-### Contexte d'exécution (mesuré sur ce notebook, cellules 8 et 24)
+### Contexte d'exécution (mesuré sur ce notebook, cellules 7 et 24)
 
 | Composant | Valeur |
 |---|---|
@@ -2692,13 +2692,13 @@ MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,ce
 | **CUDA toolkit** | 12.6 |
 | **PyTorch** | 2.13.0+cu126 |
 | **Modèle chargé** | Qwen/Qwen2.5-VL-7B-Instruct (bf16, `device_map=""auto""`) |
-| **Mode de chargement** | Hybride GPU+CPU (`device_map=""auto""`) : l'avertissement `accelerate` de la cellule 12 signale des poids déchargés sur CPU |
+| **Mode de chargement** | Hybride GPU+CPU (`device_map=""auto""`) : l'avertissement `accelerate` de la cellule 10 signale des poids déchargés sur CPU |
 | **VRAM pic (forward pass)** | 6.0 GB (cellule 24, `torch.cuda.max_memory_allocated`) |
 | **VRAM résident post-analyses** | 4.9 GB (modèle non libéré entre les 3 appels) |
 | **Frames vidéo max** | pas de borne effective : `max_frames` (cellule 1) n'influence aucun calcul |
 | **FPS échantillonnage** | 1.0 (1 frame par seconde) |
 
-La VRAM disponible (8.0 GB) est **inférieure au seuil recommandé** (18 GB) — la cellule 8 émet un avertissement `Attention : VRAM (8 GB) < 18 GB recommandes`. Le notebook a néanmoins **réussi les 3 analyses** sans OOM (cellule 24 confirme `Analyses reussies : 3/3`) : `device_map=""auto""` décharge les couches en excédent sur le CPU (avertissement `accelerate`, cellule 12) ; le temps mesuré est d'environ 2 s par token (992.3 + 544.7 + 160.0 = 1697.0 s, pour 512 + 256 + 76 = 844 tokens, cellules 24 et 26).
+La VRAM disponible (8.0 GB) est **inférieure au seuil recommandé** (18 GB) — la cellule 7 émet un avertissement `Attention : VRAM (8 GB) < 18 GB recommandes`. Le notebook a néanmoins **réussi les 3 analyses** sans OOM (cellule 24 confirme `Analyses reussies : 3/3`) : `device_map=""auto""` décharge les couches en excédent sur le CPU (avertissement `accelerate`, cellule 10) ; le temps mesuré est d'environ 2 s par token (992.3 + 544.7 + 160.0 = 1697.0 s, pour 512 + 256 + 76 = 844 tokens, cellules 24 et 30).
 
 ### Comparaison mesurée (ce run) vs API publique
 
@@ -2717,7 +2717,7 @@ Le tableau ci-dessous sépare explicitement **les colonnes mesurées** (Qwen2.5-
 
 **Mise en garde sur les durées Qwen2.5-VL :** les chiffres `992.3 / 544.7 / 160.0 s` sont mesurés sur **GPU laptop** (RTX 3070 8 GB) en mode **hybride GPU+CPU** (`device_map=""auto""`) avec `fps = 1.0` — le temps par token (environ 2 s : 1697.0 s / 844 tokens sur ce run) suggère que l'offload CPU pèse lourd, hypothèse non testée ici. Ce carnet ne contient aucune mesure sur une carte **RTX 3090/4090 24 GB** où le modèle tiendrait entier en VRAM : ces sorties ne permettent pas de quantifier l'écart avec une telle carte, qui exigerait une exécution dédiée.
 
-### Code pour reproduire (équivalent de la cellule 12)
+### Code pour reproduire (équivalent de la cellule 10)
 
 ```python
 import torch
@@ -2764,7 +2764,7 @@ La prose de cette cellule avait été réalignée une première fois après exé
 
 Le notebook a été ré-exécuté le 2026-08-28 sur RTX 3070 Laptop 8 GB. Le seuil de repli CPU pur de la cellule de vérification GPU a été calibré à 4 Go : un GPU de 8 Go retient la voie hybride `device_map=""auto""` (mesurée fonctionnelle : 8 blocs GPU / 25 blocs CPU, VRAM pic 6.0 GB). Les valeurs de cette cellule reflètent ce run (`992.3 / 544.7 / 160.0 s`).
 
-Les détails du run (timestamps, JSON `qwen_vl_analysis_20260828_132051.json`, comparaisons cellule 24) sont préservés dans la cellule *Statistiques* (30) et la cellule *Lecture* (26).",,,,,,,,7f555c0ef1771d58,,,,,,,,,,,,,,,
+Les détails du run (timestamps, JSON `qwen_vl_analysis_20260828_132051.json`, comparaisons cellule 24) sont préservés dans la cellule *Statistiques* (29) et la cellule *Lecture* (30).",,,,,,,,ff8ca7a7cce76855,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,7578be04,markdown,fr,613453c93394b6b7,"### Exercice 2 : Prompt engineering pour le temporal grounding
 
 La comparaison GPT-5 vs Qwen2.5-VL montre que le temporal grounding depend fortement de la formulation du prompt. L'objectif est d'implementer un **benchmark de prompts** qui teste systematiquement différentes formulations pour une même question.
@@ -3064,9 +3064,14 @@ MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,
 - GPU avec 4+ GB VRAM
 - Notebook 01-1 (Video Opérations Basics) complete
 - Packages : `realesrgan`, `basicsr`, `torch`, `imageio`, `imageio-ffmpeg`, `scikit-image`",,,,,,,,f94297a69bffe64a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,cell-1,code,fr,d88d957676dc4105,"# Parametres Papermill - JAMAIS modifier ce commentaire
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,cell-1,code,fr,63c3d171a8fcd3e8,"# Parametres Papermill - JAMAIS modifier ce commentaire
 
 # Configuration notebook
+# notebook_mode decrit le mode d'execution du carnet (interactive ou batch).
+# skip_widgets commande uniquement la saisie interactive de la cellule Mode interactif :
+# il ne modifie pas notebook_mode. Les commentaires qui explicitent ce role sont
+# volontairement ecrits sur des lignes seules : papermill n'analyse que les lignes
+# d'assignation, et un deuxieme signe egal dans leur commentaire les ferait echouer.
 notebook_mode = ""interactive""        # ""interactive"" ou ""batch""
 skip_widgets = False               # True pour mode batch MCP
 debug_level = ""INFO""
@@ -3086,9 +3091,9 @@ test_duration = 3                  # Duree en secondes
 run_upscaling = True               # Executer l'upscaling
 compute_metrics = True             # Calculer PSNR/SSIM
 save_results = True
-",,,,,,,,d88d957676dc4105,,,,,,,,,,,,,,,
+",,,,,,,,63c3d171a8fcd3e8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,b4cau229bbs,markdown,fr,cea5b03871acef7d,"Les paramètres sont définis. La cellule suivante configure l'environnement Python : imports, detection du chemin GenAI, chargement du `.env` et verification de la disponibilite de Real-ESRGAN.",,,,,,,,cea5b03871acef7d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,cell-2,code,fr,2b121f34d364833c,"# Import guards - verification des dependances
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,cell-2,code,fr,037048542a680730,"# Import guards - verification des dependances
 try:
     import openai
     OPENAI_AVAILABLE = True
@@ -3264,7 +3269,7 @@ except ImportError:
 
 print(f""Video Enhancement - Real-ESRGAN"")
 print(f""Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
-print(f""Mode : {notebook_mode}, Scale : {scale_factor}x, Modele : {model_name}"")",,,,,,,,2b121f34d364833c,,,,,,,,,,,,,,,
+print(f""Mode d'execution : {notebook_mode}, Scale : {scale_factor}x, Modele : {model_name}"")",,,,,,,,037048542a680730,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,gi44g00di5,markdown,fr,30ae8f6ce46ad086,"L'environnement est initialise. La cellule suivante verifie la disponibilite du GPU, la VRAM, et la presence des librairies requises (Real-ESRGAN, scikit-image pour les metriques).",,,,,,,,30ae8f6ce46ad086,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,cell-3,code,fr,1664d2ca6555aa5e,"# Verification GPU et dependances
 print(""\n--- VERIFICATION GPU ET DEPENDANCES ---"")
@@ -3731,7 +3736,7 @@ La cellule de démonstration « Concept d'interpolation de frames », plus haut 
 - Pour la monotonicite, comparez `|interp[i] - frame_a|` pour i croissant : doit augmenter regulierement
 - Le ghosting se detecte quand un pixel revient vers sa valeur de frame_a après s'en etre eloigne
 - Un score de 1.0 signifie une transition parfaitement fluide et monotone",,,,,,,,6d4581222ce92657,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,fb3ce144,code,fr,e80c65d35106fa65,"# Exercice 2 : Evaluateur de qualite d'interpolation
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,fb3ce144,code,fr,ec0ba59994ab0fd0,"# Exercice 2 : Evaluateur de qualite d'interpolation
 
 def evaluate_interpolation(frame_a: np.ndarray, frame_b: np.ndarray,
                             interpolated: List[np.ndarray]) -> Dict[str, float]:
@@ -3771,12 +3776,12 @@ def evaluate_interpolation(frame_a: np.ndarray, frame_b: np.ndarray,
     }
 
 
-# TODO etudiant : Tester sur l'interpolation lineaire de la Section 3
+# TODO etudiant : Tester sur l'interpolation lineaire de la cellule ""Concept d'interpolation de frames""
 # quality = evaluate_interpolation(frame_a, frame_b, interpolated)
 # print(f""Qualite interpolation : {quality}"")
-print(""Exercice a completer"")",,,,,,,,e80c65d35106fa65,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,obxlnft3im,markdown,fr,69f0e0dc1e41d8c7,"Le principe de l'interpolation de frames est illustre. La cellule suivante propose un mode interactif : elle demande le chemin d'une vidéo à upscaler (laisser vide pour passer). Ce mode n'est actif que si `notebook_mode` vaut `interactive` et `skip_widgets` vaut `False` ; dans l'exécution enregistrée, la cellule affiche « Mode batch - Interface interactive desactivee », le mode n'a donc pas été exercé.",,,,,,,,69f0e0dc1e41d8c7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,cell-11,code,fr,51f65fc76da6e476,"# Mode interactif
+print(""Exercice a completer"")",,,,,,,,ec0ba59994ab0fd0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,obxlnft3im,markdown,fr,72e3c52a22b6e3b5,"Le principe de l'interpolation de frames est illustre. La cellule suivante propose un mode interactif : elle demande le chemin d'une vidéo à upscaler (laisser vide pour passer). Ce mode n'est actif que si `notebook_mode` vaut `interactive` et `skip_widgets` vaut `False` ; dans l'exécution enregistrée, la cellule affiche « Interface interactive desactivee (skip_widgets=True) - aucune saisie demandee », le mode n'a donc pas été exercé. `skip_widgets` commande uniquement cette saisie interactive : il ne modifie pas `notebook_mode`, qui décrit le mode d'exécution du carnet.",,,,,,,,72e3c52a22b6e3b5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,cell-11,code,fr,b56679547e1bea14,"# Mode interactif
 if notebook_mode == ""interactive"" and not skip_widgets:
     print(""\n--- MODE INTERACTIF ---"")
     print(""="" * 40)
@@ -3818,7 +3823,10 @@ if notebook_mode == ""interactive"" and not skip_widgets:
             print(f""\nErreur inattendue : {error_type} - {str(e)[:100]}"")
             print(""Passage a la suite du notebook"")
 else:
-    print(""\nMode batch - Interface interactive desactivee"")",,,,,,,,51f65fc76da6e476,,,,,,,,,,,,,,,
+    if skip_widgets:
+        print(""\nInterface interactive desactivee (skip_widgets=True) - aucune saisie demandee"")
+    else:
+        print(f""\nInterface interactive desactivee (notebook_mode={notebook_mode}) - aucune saisie demandee"")",,,,,,,,b56679547e1bea14,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,cell-12,markdown,fr,3975140e9af336ec,"## Bonnes pratiques et conseils d'optimisation
 
 | Aspect | Recommandation | Raison |
@@ -21468,26 +21476,26 @@ L'échantillonnage uniforme répartit les 8 frames régulièrement de `0.0s` à 
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-2-GPT-5-Video-Understanding.ipynb,interp-interactive-c11e47,markdown,fr,f65f5c5d10425f5f,"### Lecture du résultat : mode interactif indisponible en batch
 
 La sortie affiche `Mode interactif non disponible (execution automatisee)` : le notebook s'exécute via Papermill en mode batch, sans `input()` clavier disponible. En mode interactif (`notebook_mode = ""interactive""`), cette cellule aurait permis de saisir une question libre et d'obtenir la réponse de GPT-5 sur la vidéo de test, avec le budget `max_tokens` de la cellule de paramètres (8000).",,,,,,,,f65f5c5d10425f5f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,408034c1,markdown,fr,f4d338ad594fb57c,"### Lecture du résultat : inventaire des dépendances
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,408034c1,markdown,fr,a9c923eaec3a506e,"### Lecture du résultat : inventaire des dépendances
 
 La cellule d'import guards ci-dessus établit l'inventaire complet des dépendances de la section 1 : **11/13 dépendances disponibles**, les deux manquantes (`anthropic`, `cv2`) étant hors du chemin d'exécution de ce notebook — aucun appel Anthropic n'est effectué et la lecture vidéo passe par decord — ce que l'exécution end-to-end de ce run confirme (3/3 analyses réussies sans elles). Les bibliothèques effectivement requises pour piloter Qwen2.5-VL en local (openai, transformers, torch, imageio, etc.) sont présentes. Le helper GenAI est importé sans erreur, et le bloc qui suit charge le fichier `.env` depuis `MyIA.AI.Notebooks/GenAI/.env` — le chemin canonique dans la convention Papermill-safe du dépôt, pas un chemin absolu de machine. Les en-têtes du notebook sont rendus : titre `Qwen2.5-VL Video Analysis`, date du jour, mode `interactive`, modèle déclaré `Qwen/Qwen2.5-VL-7B-Instruct`, paramètre `max_frames = 16` (compromis mémoire / couverture temporelle) et device `cuda` (le GPU RTX 3070 hôte a été sélectionné). Aucune dépendance n'a été installée en mode dégradé : le pipeline accède directement au moteur réel, sans contournement.
 
-**Trois points à noter pour la suite :** (1) le paramètre `max_frames = 16` (cellule 1) n'influence aucun calcul : la cellule 4 se contente de l'afficher, et `analyze_video_qwen` (cellule 18) le reçoit sans l'utiliser ; l'échantillonnage est fixé par `fps: 1.0`. Ce réglage ne borne donc pas le nombre d'images. (2) Le modèle chargé est le 7B Instruct, pas la version 3B ni 72B — taille intermédiaire, suffisante pour du question-answering vidéo ; en bf16 ses poids dépassent les 8 Go de la RTX 3070 hôte, le chargement sera donc hybride GPU+CPU (détail en cellule 8). (3) Le device `cuda` est déclaré en paramètre puis vérifié en cellule 8 en fonction du GPU détecté et de la VRAM disponible — une étape de verification.",,,,,,,,f4d338ad594fb57c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,00283bc7,markdown,fr,747335bfcb9fa8d8,"### Lecture du résultat : profil GPU et mode de chargement
+**Trois points à noter pour la suite :** (1) le paramètre `max_frames = 16` (cellule 1) n'influence aucun calcul : la cellule 4 se contente de l'afficher, et `analyze_video_qwen` (cellule 18) le reçoit sans l'utiliser ; l'échantillonnage est fixé par `fps: 1.0`. Ce réglage ne borne donc pas le nombre d'images. (2) Le modèle chargé est le 7B Instruct, pas la version 3B ni 72B — taille intermédiaire, suffisante pour du question-answering vidéo ; en bf16 ses poids dépassent les 8 Go de la RTX 3070 hôte, le chargement sera donc hybride GPU+CPU (détail en cellule 7). (3) Le device `cuda` est déclaré en paramètre puis vérifié en cellule 7 en fonction du GPU détecté et de la VRAM disponible — une étape de verification.",,,,,,,,a9c923eaec3a506e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,00283bc7,markdown,fr,be4b2f5f52fe5bb2,"### Lecture du résultat : profil GPU et mode de chargement
 
-La cellule de chargement `.env` charge aussi le profil GPU — la trace rendue par le bloc `--- VERIFICATION GPU ---` confirme le profil matériel du contexte d'exécution : carte **NVIDIA GeForce RTX 3070 Laptop GPU**, mémoire **8.0 GB** totale, **8.0 GB** libres au moment de la requête, version CUDA **12.6**, et PyTorch compilé avec `2.13.0+cu126` (build cohérent avec le CUDA 12.6 affiché). Le device final sélectionné est `cuda` : le seuil de repli CPU pur de cette cellule (VRAM < 4 GB) n'est pas franchi, donc pas de fallback silencieux — mais la carte étant à 8 GB, le chargement qui suit est **hybride** : `device_map=""auto""` répartit les blocs du modèle entre GPU et RAM CPU (l'avertissement `accelerate` de la cellule 12 confirme qu'une partie des poids est déchargée sur CPU). La précision de calcul est `bfloat16` — le format natif du modèle Qwen2.5-VL, qui divise la taille des tenseurs par deux par rapport à fp32.
+La cellule de chargement `.env` charge aussi le profil GPU — la trace rendue par le bloc `--- VERIFICATION GPU ---` confirme le profil matériel du contexte d'exécution : carte **NVIDIA GeForce RTX 3070 Laptop GPU**, mémoire **8.0 GB** totale, **8.0 GB** libres au moment de la requête, version CUDA **12.6**, et PyTorch compilé avec `2.13.0+cu126` (build cohérent avec le CUDA 12.6 affiché). Le device final sélectionné est `cuda` : le seuil de repli CPU pur de cette cellule (VRAM < 4 GB) n'est pas franchi, donc pas de fallback silencieux — mais la carte étant à 8 GB, le chargement qui suit est **hybride** : `device_map=""auto""` répartit les blocs du modèle entre GPU et RAM CPU (l'avertissement `accelerate` de la cellule 10 confirme qu'une partie des poids est déchargée sur CPU). La précision de calcul est `bfloat16` — le format natif du modèle Qwen2.5-VL, qui divise la taille des tenseurs par deux par rapport à fp32.
 
-**Pourquoi cette cellule précède le chargement du modèle :** les seuls poids d'un vision-language 7B en bf16 valent 7 milliards de paramètres × 2 octets, soit environ 13 GB, plus que les 8.0 GB disponibles ici — sans compter les activations forward et le cache KV sur les frames. C'est le rôle du seuil calibré de cette cellule : au-dessus de 4 GB, la voie hybride `device_map=""auto""` est retenue (l'excédent des poids vit en RAM CPU, mesuré fonctionnel sur ce run : VRAM pic 6.0 GB, cellule 24) ; en dessous, l'offload ne rapporte plus et le repli CPU pur s'applique. La cellule de chargement effectif du modèle est la cellule 12 ; sa trace ne contient aucun avertissement de validation de docstring (voir plus bas la lecture de cette cellule).",,,,,,,,747335bfcb9fa8d8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,a9c2a733,markdown,fr,4b4077f1f73964c5,"### Lecture du résultat : trace de chargement du modèle
+**Pourquoi cette cellule précède le chargement du modèle :** les seuls poids d'un vision-language 7B en bf16 valent 7 milliards de paramètres × 2 octets, soit environ 13 GB, plus que les 8.0 GB disponibles ici — sans compter les activations forward et le cache KV sur les frames. C'est le rôle du seuil calibré de cette cellule : au-dessus de 4 GB, la voie hybride `device_map=""auto""` est retenue (l'excédent des poids vit en RAM CPU, mesuré fonctionnel sur ce run : VRAM pic 6.0 GB, cellule 24) ; en dessous, l'offload ne rapporte plus et le repli CPU pur s'applique. La cellule de chargement effectif du modèle est la cellule 10 ; sa trace ne contient aucun avertissement de validation de docstring (voir plus bas la lecture de cette cellule).",,,,,,,,be4b2f5f52fe5bb2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,a9c2a733,markdown,fr,0d7697309aee7f52,"### Lecture du résultat : trace de chargement du modèle
 
-La trace de la cellule 12 ne contient aucune ligne `[ERROR]`, et aucune erreur n'est levée : la ligne `Modele charge en 8.2s` le confirme. On y lit trois familles de messages. **Accès au Hub** : les lignes `INFO:httpx` (requêtes `HEAD` vers le cache de résolution de Hugging Face) et un avertissement `huggingface_hub` sur les requêtes non authentifiées (pas de `HF_TOKEN` défini) ; ils signalent des limites de débit plus strictes, sans empêcher le chargement. **Poids** : la barre `Fetching` est complète et la barre `Loading weights` atteint 729/729. **Mode hybride** : l'avertissement `accelerate` « Some parameters are on the meta device because they were offloaded to the cpu » confirme qu'une partie des poids est déchargée sur le CPU, conséquence du réglage `device_map=""auto""` de l'appel `from_pretrained`. La VRAM utilisée après chargement est de 4.9 GB.
+La trace de la cellule 10 ne contient aucune ligne `[ERROR]`, et aucune erreur n'est levée : la ligne `Modele charge en 8.2s` le confirme. On y lit trois familles de messages. **Accès au Hub** : les lignes `INFO:httpx` (requêtes `HEAD` vers le cache de résolution de Hugging Face) et un avertissement `huggingface_hub` sur les requêtes non authentifiées (pas de `HF_TOKEN` défini) ; ils signalent des limites de débit plus strictes, sans empêcher le chargement. **Poids** : la barre `Fetching` est complète et la barre `Loading weights` atteint 729/729. **Mode hybride** : l'avertissement `accelerate` « Some parameters are on the meta device because they were offloaded to the cpu » confirme qu'une partie des poids est déchargée sur le CPU, conséquence du réglage `device_map=""auto""` de l'appel `from_pretrained`. La VRAM utilisée après chargement est de 4.9 GB.
 
-Si le chargement échoue, la cellule n'écrit pas de `[ERROR]` : son bloc `except` relève une `RuntimeError` qui nomme l'exception d'origine (`type(e).__name__`). C'est ce message qu'il faut lire pour diagnostiquer une VRAM insuffisante ou un checkpoint absent.",,,,,,,,4b4077f1f73964c5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,bb0b9d7e,markdown,fr,634cbf994996372e,"### Lecture du résultat : vidéo de test et vérité terrain
+Si le chargement échoue, la cellule n'écrit pas de `[ERROR]` : son bloc `except` relève une `RuntimeError` qui nomme l'exception d'origine (`type(e).__name__`). C'est ce message qu'il faut lire pour diagnostiquer une VRAM insuffisante ou un checkpoint absent.",,,,,,,,0d7697309aee7f52,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,bb0b9d7e,markdown,fr,00f2b3c1fd7fb6c3,"### Lecture du résultat : vidéo de test et vérité terrain
 
 La cellule de création de la vidéo de test produit un fichier `test_qwen_analysis.mp4` avec les caractéristiques suivantes : **5 scènes**, **240 frames** au total, **durée totale 10.0 secondes** (à 24 fps implicite). C'est une vidéo pédagogique courte, conçue pour exercer la capacité de Qwen2.5-VL à comprendre une séquence temporelle orchestrée. Les vérités terrain enregistrées explicitement sont cinq événements temporels : `titre_apparait` à t=0.0s, `chapitre_ml` à t=2.0s, `formule_visible` à t=4.0s, `resultat_affiche` à t=6.0s, et `fin_presentation` à t=8.0s. Chacune de ces cinq positions est un *temporal anchor* que Qwen-VL devra localiser quand on lui demandera : « à quelle seconde apparaît la formule ? » ou « que se passe-t-il à t=4.0s ? ».
 
-La figure rendue par la cellule 14 montre une frame centrale par scène (`frames_per_scene // 2` dans la boucle d'affichage) : c'est une prévisualisation. Le modèle ne reçoit pas cette figure, il reçoit le fichier `test_qwen_analysis.mp4`, dont le chemin est passé à `analyze_video_qwen` (cellule 18). **L'enjeu pédagogique** : la convention de nommage (`titre_apparait`, `chapitre_ml`, etc.) donne un identifiant à chaque événement vrai ; le dictionnaire `event_timestamps` relie chaque identifiant à son instant, et les exercices 1 à 3 (cellules 15 à 29) s'appuient sur ce dictionnaire.",,,,,,,,634cbf994996372e,,,,,,,,,,,,,,,
+La figure rendue par la cellule 13 montre une frame centrale par scène (`frames_per_scene // 2` dans la boucle d'affichage) : c'est une prévisualisation. Le modèle ne reçoit pas cette figure, il reçoit le fichier `test_qwen_analysis.mp4`, dont le chemin est passé à `analyze_video_qwen` (cellule 18). **L'enjeu pédagogique** : la convention de nommage (`titre_apparait`, `chapitre_ml`, etc.) donne un identifiant à chaque événement vrai ; le dictionnaire `event_timestamps` relie chaque identifiant à son instant, et les exercices 1 à 3 (cellules 15 à 28) s'appuient sur ce dictionnaire.",,,,,,,,00f2b3c1fd7fb6c3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,1af17f79,code,fr,a5e181bca633563c,"# Tableau de comparaison DERIVE DES MESURES DE CE RUN (aucune constante transcrite)
 _rows = []
 _label = {""global"": ""Description globale"", ""ocr"": ""OCR video"", ""grounding"": ""Temporal grounding""}
@@ -21531,11 +21539,11 @@ print()
 print(""Lecture : la colonne de gauche est mesuree dans ce run (timestamps, tokens, VRAM"")
 print(""pic via torch.cuda.max_memory_allocated) ; celle de droite ESTIMEE, etiquetee"")
 print(""prospectif car aucun appel API n'est facture ici."")",,,,,,,,a5e181bca633563c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,295a8320,markdown,fr,74c7f9551df48134,"### Lecture du résultat : trace de session et artefact
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-3-Qwen-VL-Video-Analysis.ipynb,295a8320,markdown,fr,c042ef482cad714a,"### Lecture du résultat : trace de session et artefact
 
-La cellule de statistiques en fin de notebook enregistre la trace complète de cette exécution : date `2026-08-28 13:20:51`, modèle effectivement instancié `Qwen/Qwen2.5-VL-7B-Instruct`, device utilisé `cuda` en mode hybride (le checkpoint bf16 dépasse les 8 Go de la RTX 3070 Laptop : `device_map=""auto""` décharge une partie des couches sur CPU, avertissement de la cellule 12), VRAM actuelle `4.9 GB` (modèle encore résident au moment de la mesure, après les 3 analyses), VRAM pic `6.0 GB` (`torch.cuda.max_memory_allocated`, cellule 24). Le compteur `Analyses reussies : 3/3` correspond aux trois passes mesurées en cellule 24 (Description globale `992.3 s` / 512 tokens, OCR video `544.7 s` / 256 tokens, Temporal grounding `160.0 s` / 76 tokens — total `1697.0 s` et `844 tokens`). Les résultats sont sauvegardés dans `qwen_vl_analysis_20260828_132051.json` — c'est l'artefact d'export qui permet à des notebooks en aval de recharger les analyses sans relancer l'inférence.
+La cellule de statistiques ci-dessus enregistre la trace complète de cette exécution : date `2026-08-28 13:20:51`, modèle effectivement instancié `Qwen/Qwen2.5-VL-7B-Instruct`, device utilisé `cuda` en mode hybride (le checkpoint bf16 dépasse les 8 Go de la RTX 3070 Laptop : `device_map=""auto""` décharge une partie des couches sur CPU, avertissement de la cellule 10), VRAM actuelle `4.9 GB` (modèle encore résident au moment de la mesure, après les 3 analyses), VRAM pic `6.0 GB` (`torch.cuda.max_memory_allocated`, cellule 24). Le compteur `Analyses reussies : 3/3` correspond aux trois passes mesurées en cellule 24 (Description globale `992.3 s` / 512 tokens, OCR video `544.7 s` / 256 tokens, Temporal grounding `160.0 s` / 76 tokens — total `1697.0 s` et `844 tokens`). Les résultats sont sauvegardés dans `qwen_vl_analysis_20260828_132051.json` — c'est l'artefact d'export qui permet à des notebooks en aval de recharger les analyses sans relancer l'inférence.
 
-Les trois *next steps* listés en bas de la cellule tracent le parcours pédagogique de la sous-série Video : notebook 01-4 (Real-ESRGAN upscaling + interpolation de frames pour améliorer la qualité), notebook 01-5 (AnimateDiff introduction à la génération text-to-video), puis module 02 (modèles génératifs avancés : HunyuanVideo, LTX-Video). Trois directions complémentaires : **amélioration** (01-4, lecture), **génération** (01-5, écriture), **génération haute-fidélité** (02, génération conditionnée). Le parcours est conçu pour qu'un étudiant ayant suivi 01-1 à 01-3 sache ce qu'il peut faire ensuite — sans promesse en l'air, chaque étape ouvre un notebook ultérieur précis.",,,,,,,,74c7f9551df48134,,,,,,,,,,,,,,,
+Les trois *next steps* listés en bas de cette même cellule tracent le parcours pédagogique de la sous-série Video : notebook 01-4 (Real-ESRGAN upscaling + interpolation de frames pour améliorer la qualité), notebook 01-5 (AnimateDiff introduction à la génération text-to-video), puis module 02 (modèles génératifs avancés : HunyuanVideo, LTX-Video). Trois directions complémentaires : **amélioration** (01-4, lecture), **génération** (01-5, écriture), **génération haute-fidélité** (02, génération conditionnée). Le parcours est conçu pour qu'un étudiant ayant suivi 01-1 à 01-3 sache ce qu'il peut faire ensuite — sans promesse en l'air, chaque étape ouvre un notebook ultérieur précis.",,,,,,,,c042ef482cad714a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-5-AnimateDiff-Introduction.ipynb,5cfbd218,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,,,,,,,,
@@ -21966,3 +21974,371 @@ print(f""  mesures sur échantillons (source PCM) : {stats_pcm(sig)}"")
 print(""  -> identiques quel que soit le rendu : la mesure ne lit jamais le dessin."")",,,,,,,,e5e2a5ec99198876,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Video/04-Applications/04-5b-MiniMax-video-01-v1-Cloud-Video.ipynb,6db27ef8,markdown,fr,796a380885ebe465,"**Lecture chiffree — le verdict OK atteste une generation reelle, pas une extrapolation.** Le JSON commite rend `""actual_status"": 200`, un task_id `""431137218855159""`, `""status_code"": 0` et `""verdict"": ""OK""` : la sonde a debite exactement une generation sur le quota journalier consenti — la cle etait disponible au setup et le parametre de depense leve la garde no_post. La section precedente decrit le regime sans cle (verdict structurel, rien de debite) ; cette sortie-ci est l'autre regime, execute : le verdict est firsthand, c'est la reponse du service, pas une lecture de sa documentation.
 ",,,,,,,,796a380885ebe465,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,a9897507,markdown,fr,d48b9c35e4e9eacb,"# Bonus Slideshow Vidéo - Générateur de Slideshow (Optionnel)
+
+**Navigation** : [<< Précédent (01-1)](01-1-Video-Operations-Basics.ipynb) | [Index](../../README.md) | [Suivant >> (01-2)](01-2-GPT-5-Video-Understanding.ipynb)
+
+**Module :** 01-Video-Foundation  
+**Niveau :** Debutant  
+**Type :** Accrétion bonus (optionnelle)  
+**Duree estimee :** 15 minutes  
+**VRAM :** 0 (CPU uniquement)
+
+> **Ce notebook est une accrétion optionnelle**, extraite de la conclusion de
+> [01-1-Video-Opérations-Basics](01-1-Video-Operations-Basics.ipynb) pour rendre la
+> lane principale plus claire. Il reprend intégralement le challenge qui figurait en
+> fin du 01-1, sans modification du fond ni de la forme. Les étudiants qui veulent
+> transformer les manipulations moviepy/imageio du 01-1 en **produit livrable**
+> trouvent ici le terrain de jeu ; les autres passent directement au 01-2.
+
+## Contexte pédagogique
+
+Le 01-1 a posé les fondamentaux :
+
+- **Section 1** : création d'une vidéo de test à partir de frames générées avec PIL
+  (`Image.new`, `ImageDraw`) et assemblage avec `imageio.get_writer().append_data()`.
+- **Sections 2-4** : manipulations moviepy (trim, concaténation, overlay texte),
+  sonde ffmpeg-python, extraction rapide de frames avec decord.
+
+Le challenge ci-dessous remet ces primitives au service d'un **livrable fini** : un
+slideshow 5 secondes @ 1 FPS avec cinq messages sur cinq fonds colorés différents.
+C'est la transition entre « savoir manipuler une vidéo » et « savoir produire un
+objet vidéo autonome ».
+
+## Prérequis
+
+- Avoir complété (ou parcouru) le notebook 01-1.
+- Packages : `Pillow`, `imageio`, `imageio-ffmpeg` (déjà listés dans
+  `requirements-video.txt` à la racine de `GenAI/`).
+- FFmpeg installé sur le système (`winget install FFmpeg` ou `apt install ffmpeg`).
+",,,,,,,,d48b9c35e4e9eacb,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,5f7f3e6b,markdown,fr,0c140c4a2b5c504a,"***
+
+## CHALLENGE BONUS - Générateur de Slideshow Vidéo
+
+**Points : 0.5 pts**
+
+## Objectif
+
+Créer une vidéo **slideshow** à partir de frames générées programmatiquement.
+
+## Ce que vous avez appris
+
+La Section 1 montre:
+- Génération de frames avec PIL (`Image.new`, `ImageDraw`)
+- Assemblage avec imageio (`get_writer`, `append_data`)
+
+## Critères de succes
+
+- [ ] Générer **5 frames** affichant un message différent chacune:
+  - Frame 1: ""Bienvenue""
+  - Frame 2: ""Voici le sujet""
+  - Frame 3: ""Point important""
+  - Frame 4: ""Conclusion""
+  - Frame 5: ""Merci""
+- [ ] Chaque frame doit avoir:
+  - Une couleur de fond différente (gradient ou palette cohérente)
+  - Le texte centré
+- [ ] Assembler en vidéo **5 secondes @ 1 FPS**
+- [ ] Sauvegarder dans `OUTPUT_DIR`
+
+## Contraintes techniques
+
+- Résolution: 640x480
+- Utiliser PIL pour les frames, imageio pour l'assemblage
+- FPS = 1 signifie chaque frame dure 1 seconde
+
+***
+
+**Soumission** : PR avec titre ""Challenge #7 - [Votre Nom]"", aperçu des frames et vidéo générée
+",,,,,,,,0c140c4a2b5c504a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,86706582,markdown,fr,44ed5f55511a5558,"## Espace de travail du challenge
+
+Le challenge ci-dessus était resté **sans endroit où répondre** : ce notebook est l'espace de travail. Deux **exemples guidés** rappellent les primitives posées dans [01-1](01-1-Video-Operations-Basics.ipynb) (une frame PIL centrée, un mini assemblage imageio). Trois autres exemples guidés — **crédités au Groupe G15 (PR #21040)**, rendu de TP — portent le livrable complet du challenge : les exercices 1 à 3 qu'ils résolvent deviennent des exemples, et trois **exercices neufs** (4 à 6) reprennent la même mécanique sur des variantes (fonds en dégradé, carte de titre en préambule, vérification au pixel près). Tout tourne sur CPU (VRAM 0, conformément à l'en-tête) : `Pillow` pour les frames, `imageio` + `imageio-ffmpeg` (binaire ffmpeg embarqué) pour l'assemblage. Les artefacts sont écrits dans `outputs/video_01_1b_slideshow/` (non versionné).
+",,,,,,,,44ed5f55511a5558,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,bb2b1543,markdown,fr,827930c0e87aa87a,"### Exemple guidé 1 — Une frame PIL : fond coloré, message centré
+
+La brique de base du slideshow. La fonction `frame_demo` crée une image RGB 640x480, remplit le fond, puis centre le texte en calculant sa boîte englobante.
+
+Le centrage se calcule, il ne se devine pas : on mesure d'abord la boîte du texte (`draw.textbbox`), on obtient sa largeur et sa hauteur réelles pour la police choisie, puis on place le coin en `((largeur_frame - largeur_texte) / 2, (hauteur_frame - hauteur_texte) / 2)`. Toute autre approche — une marge fixe, un nombre de caractères — se décale dès que la police ou le message change.
+",,,,,,,,827930c0e87aa87a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,dcacad19,code,fr,ea1cf68d6e17a66d,"from pathlib import Path
+from PIL import Image, ImageDraw
+
+OUTPUT_DIR = Path(""outputs"") / ""video_01_1b_slideshow""
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def frame_demo(message, couleur, taille=(640, 480), chemin=None):
+    """"""Genere une frame PIL : fond colore uniforme, message centre, texte blanc.""""""
+    img = Image.new(""RGB"", taille, couleur)
+    dessin = ImageDraw.Draw(img)
+    bbox = dessin.textbbox((0, 0), message)
+    x = (taille[0] - (bbox[2] - bbox[0])) // 2
+    y = (taille[1] - (bbox[3] - bbox[1])) // 2
+    dessin.text((x, y), message, fill=""white"")
+    if chemin is not None:
+        img.save(chemin)
+    return img
+
+
+frame_exemple = frame_demo(""Demo A"", (40, 60, 120), chemin=OUTPUT_DIR / ""frame_demo.png"")
+print(f""Frame exemple sauvegardee : {OUTPUT_DIR / 'frame_demo.png'} ({frame_exemple.size})"")
+",,,,,,,,ea1cf68d6e17a66d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,282e9efd,markdown,fr,6569962a64d721c9,"### Exemple guidé 2 — Mini assemblage : 2 frames @ 1 FPS
+
+Le montage minimal : à 1 FPS, chaque frame dure une seconde. Deux frames donnent donc une vidéo de 2 secondes — le livrable du challenge est la même mécanique répétée 5 fois.
+
+**Ce que `fps` signifie exactement ici.** À 1 image par seconde, chaque frame dure une seconde, donc N frames donnent N secondes : la durée d'un slideshow est un choix de `fps`, pas une propriété des images. Les mêmes cinq frames écrites à 24 fps dureraient 0,21 s ; et le writer exige des frames de même forme, ce qui impose de fixer la taille une fois pour toutes.
+",,,,,,,,6569962a64d721c9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,42707f8e,code,fr,7e5f46555f4b38e5,"import numpy as np
+import imageio.v2 as imageio
+
+frames_exemple = [
+    frame_demo(""Demo A"", (40, 60, 120)),
+    frame_demo(""Demo B"", (120, 60, 40)),
+]
+video_exemple = OUTPUT_DIR / ""mini_slideshow_exemple.mp4""
+with imageio.get_writer(video_exemple, fps=1) as writer:
+    for f in frames_exemple:
+        writer.append_data(np.asarray(f))
+print(f""Video exemple : {video_exemple.name} ({video_exemple.stat().st_size} octets, ""
+      f""{len(frames_exemple)} frames @ 1 FPS = {len(frames_exemple)} s)"")
+",,,,,,,,7e5f46555f4b38e5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,cb29f1ad,markdown,fr,38ee96816b3d4092,"### Exemple guidé 3 — Les 5 frames du challenge *(crédité : Groupe G15, PR #21040)*
+
+Produire la liste des 5 frames imposées par les critères de succès : une par message, chacune sur un fond **distinct** (palette cohérente de votre choix), texte centré, résolution 640x480.
+
+La solution créditée ci-dessous est conservée telle que rendue. Elle montre deux raffinements par rapport à l'exemple guidé 1 : le centrage utilise la **boîte englobante réelle** du texte (en compensant son décalage vertical, surtout perceptible avec une vraie police), et une **garde d'entrée** refuse un message vide — un livrable se protège aussi de ses entrées.
+",,,,,,,,38ee96816b3d4092,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,0ed0b36c,code,fr,ba177ac717934b72,"# Exemple guide 3, solution creditée (Groupe G15, PR #21040)
+# Ecart declare : robustesse du chargement de police ajoute (sur machine sans
+# DejaVuSans systeme, le fallback initial produisait la police bitmap par defaut) ;
+# tout le reste est conserve tel que rendu.
+from PIL import ImageFont
+
+MESSAGES = [""Bienvenue"", ""Voici le sujet"", ""Point important"", ""Conclusion"", ""Merci""]
+PALETTE = [(75, 22, 55), (105, 30, 65), (135, 38, 75), (165, 46, 85), (195, 54, 95)]
+
+def creer_frame(message, couleur, taille=(640, 480)):
+    """"""Centre la boite reelle du texte, y compris son decalage vertical.""""""
+    if not message.strip():
+        raise ValueError(""Le message doit contenir du texte"")
+    image = Image.new(""RGB"", taille, couleur)
+    dessin = ImageDraw.Draw(image)
+    try:
+        police = ImageFont.truetype(""DejaVuSans.ttf"", 36)
+    except OSError:
+        try:
+            import matplotlib
+            police = ImageFont.truetype(
+                Path(matplotlib.get_data_path()) / ""fonts"" / ""ttf"" / ""DejaVuSans.ttf"", 36)
+        except OSError:
+            police = ImageFont.load_default()
+    gauche, haut, droite, bas = dessin.textbbox((0, 0), message, font=police)
+    position = ((taille[0] - (droite-gauche))/2 - gauche,
+                (taille[1] - (bas-haut))/2 - haut)
+    dessin.text(position, message, font=police, fill=""white"")
+    return image
+
+frames_challenge = [creer_frame(m, c) for m, c in zip(MESSAGES, PALETTE)]
+assert len(frames_challenge) == 5 and len(set(PALETTE)) == 5
+assert all(f.size == (640, 480) and f.mode == ""RGB"" for f in frames_challenge)
+for i, frame in enumerate(frames_challenge, 1):
+    frame.save(OUTPUT_DIR / f""frame_{i}.png"")
+try:
+    creer_frame("""", PALETTE[0])
+except ValueError:
+    print(""Cas limite : message vide refuse"")
+else:
+    raise AssertionError(""Un message vide devrait etre refuse"")
+print(""5 images 640x480 generees, couleurs distinctes et texte centre"")
+",,,,,,,,ba177ac717934b72,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,2efdd67c,markdown,fr,773478ab898227e0,"## Exercice 4 — Variante : cinq frames en dégradé vertical
+
+Même livrable que l'exemple guidé 3, mais les fonds ne sont plus des aplats : chaque frame porte un **dégradé vertical** entre deux couleurs de votre palette — la première couleur en haut de frame, la seconde en bas. Les cinq frames restent en 640x480, une par message de `MESSAGES`, texte centré.
+
+- `creer_frame` ne réutilise pas telle quelle (elle remplit un aplat) : écrire `frame_degrade(message, haut, bas, taille=(640, 480))` qui construit le fond ligne par ligne puis centre le texte comme l'exemple guidé 3.
+- **Indice** : le fond se construit en une passe avec `np.linspace(0, 1, taille[1])` broadcasté sur les trois canaux, puis `Image.fromarray`.
+- **Etape 1** : interpoler chaque canal entre `haut` et `bas`. **Etape 2** : convertir en image PIL. **Etape 3** : centrer le texte (boîte englobante réelle).
+",,,,,,,,773478ab898227e0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,4a3eb66c,code,fr,8bd474ed7e759366,"# Exercice 4 (a completer) : cinq frames en degrade vertical
+# TODO Etudiant : definir frame_degrade(message, haut, bas, taille=(640, 480))
+# puis construire frames_defile = liste de 5 PIL Images 640x480, une par message
+# de MESSAGES, chacune sur un degrade vertical (couleur haut -> couleur bas).
+frames_defile = None  # TODO etudiant : liste de 5 PIL.Image en degrade
+print(""Exercice 4 a completer :"",
+      None if frames_defile is None else f""{len(frames_defile)} frames en degrade"")
+",,,,,,,,8bd474ed7e759366,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,7c662492,markdown,fr,9fd495c1857385b0,"### Exemple guidé 4 — L'assemblage : 5 secondes @ 1 FPS *(crédité : Groupe G15, PR #21040)*
+
+Assembler `frames_challenge` en vidéo **slideshow 5 s @ 1 FPS** (5 frames, une seconde chacune), et sauvegarder dans `OUTPUT_DIR` sous le nom `slideshow_5s.mp4`.
+
+La solution créditée reprend le mini-assemblage de l'exemple guidé 2 en ajoutant les deux options de production qui rendent le fichier lisible partout : `codec=""libx264""` et `pixelformat=""yuv420p""`.
+",,,,,,,,9fd495c1857385b0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,96ee517d,code,fr,9a4d4046ab7a91ab,"# Exemple guide 4, solution creditée telle que rendue (Groupe G15, PR #21040)
+video_challenge = OUTPUT_DIR / ""slideshow_5s.mp4""
+with imageio.get_writer(video_challenge, fps=1, codec=""libx264"", pixelformat=""yuv420p"") as writer:
+    for frame in frames_challenge:
+        writer.append_data(np.asarray(frame))
+print(""Video creee :"", video_challenge, video_challenge.stat().st_size, ""octets"")
+",,,,,,,,9a4d4046ab7a91ab,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,89e525de,markdown,fr,0e9e3ca61b475b6c,"## Exercice 5 — Variante : carte de titre en préambule
+
+Le livrable gagne une carte de titre : produire `slideshow_titre.mp4`, **6 frames @ 1 FPS** (6 secondes) — une frame de titre générée avec `frame_demo` (message de votre choix, couleur neutre distincte des cinq), suivie des cinq frames en dégradé de l'exercice 4.
+
+- Écrire la séquence dans `OUTPUT_DIR / ""slideshow_titre.mp4""` avec les mêmes options de codec que l'exemple guidé 4 (`fps=1`, `codec=""libx264""`, `pixelformat=""yuv420p""`).
+- **Indice** : la carte de titre est une `PIL.Image` comme les autres — la séquence finale est une simple concaténation de listes.
+",,,,,,,,0e9e3ca61b475b6c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,238e85a4,code,fr,b0224a4ab2efd6a6,"# Exercice 5 (a completer) : carte de titre en preambule
+# TODO Etudiant : construire slideshow_titre.mp4 = 6 frames @ 1 FPS :
+# 1 frame de titre (frame_demo) + les 5 frames_defile de l'exercice 4,
+# sauvegardees dans OUTPUT_DIR comme l'exemple guide 4.
+video_titre = None  # TODO etudiant : Path du fichier slideshow_titre.mp4 produit
+print(""Exercice 5 a completer :"", video_titre)
+",,,,,,,,b0224a4ab2efd6a6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,ad3d8da3,markdown,fr,58e26e198e7cb219,"### Exemple guidé 5 — Vérifier le livrable *(crédité : Groupe G15, PR #21040)*
+
+Un livrable se vérifie avant de se soumettre. La solution créditée en fait une **fonction réutilisable** : elle refuse un fichier absent ou vide, relit les métadonnées (`fps`, `duration`, `size`) **et** compte les frames, et n'accepte le verdict `ok` que si les attendus sont tous réunis — 5 frames, 5,0 s, 1 FPS, 640x480. Indices : `imageio.get_reader(...)` expose `count_frames()` et `get_meta_data()`.
+",,,,,,,,58e26e198e7cb219,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,64cb0707,code,fr,913c17594a921b29,"# Exemple guide 5, solution creditée telle que rendue (Groupe G15, PR #21040)
+def verifier_video(chemin):
+    verdict = {""existe"": chemin.is_file(), ""nframes"": None, ""duree_s"": None, ""ok"": False}
+    if not verdict[""existe""] or chemin.stat().st_size == 0:
+        return verdict
+    try:
+        with imageio.get_reader(chemin) as lecteur:
+            meta = lecteur.get_meta_data()
+            verdict[""nframes""] = lecteur.count_frames()
+            verdict[""duree_s""] = meta.get(""duration"")
+            verdict[""ok""] = (verdict[""nframes""] == 5
+                and verdict[""duree_s""] is not None
+                and abs(verdict[""duree_s""] - 5.0) < 0.05
+                and abs(meta.get(""fps"", 0) - 1.0) < 0.001
+                and tuple(meta.get(""size"", ())) == (640, 480))
+    except (OSError, ValueError, RuntimeError) as erreur:
+        verdict[""erreur""] = str(erreur)
+    return verdict
+
+verdict_livrable = verifier_video(video_challenge)
+assert verdict_livrable[""ok""], verdict_livrable
+assert not verifier_video(OUTPUT_DIR / ""absent_test.mp4"")[""ok""]
+print(verdict_livrable)
+",,,,,,,,913c17594a921b29,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,6ab9fa97,markdown,fr,29e4b4845068d480,"## Exercice 6 — Variante : vérification au pixel près
+
+Les métadonnées ne disent pas ce que **montre** la vidéo. Étendre la vérification de l'exemple guidé 5 à `slideshow_titre.mp4` : relire les frames une à une (`imageio.get_reader(...)` puis `get_data(i)`), et construire `verdict_pixels = {""nframes"": int|None, ""coin_haut_gauche_titre"": tuple|None, ""coin_bas_droit_dernier"": tuple|None, ""ok"": bool}` où `ok` exige 6 frames, le coin haut-gauche de la première frame proche de la couleur de la carte de titre, et le coin bas-droit de la dernière frame proche de la couleur basse du dernier dégradé.
+
+- **Indice 1** : `reader.get_data(0)` donne la première frame ; son pixel `[0, 0]` est le coin haut-gauche.
+- **Indice 2** : comparer à tolérance près (écart absolu ≤ 10 par canal, par exemple), jamais à l'égalité stricte — les encodages vidéo perturbent légèrement les valeurs.
+- **Etape 1** : compter les frames. **Etape 2** : extraire les deux coins. **Etape 3** : comparer aux couleurs attendues et conclure.
+",,,,,,,,29e4b4845068d480,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,ebb70437,code,fr,ae8dc61d0208873c,"# Exercice 6 (a completer) : verification au pixel pres
+# TODO Etudiant : construire verdict_pixels pour slideshow_titre.mp4 :
+# relire les 6 frames, extraire le coin haut-gauche de la frame 1 et le coin
+# bas-droit de la frame 6, et valider ok = 6 frames ET coins coherents aux
+# couleurs attendues (tolerance par canal).
+verdict_pixels = None  # TODO etudiant
+print(""Exercice 6 a completer :"", verdict_pixels)
+",,,,,,,,ae8dc61d0208873c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-1b-Video-Slideshow-Bonus.ipynb,d5bdce45,markdown,fr,68ec230687357070,"## Conclusion
+
+Les trois exemples crédités s'enchaînent en une chaîne de production complète : des frames aux fonds distincts et au texte réellement centré, un assemblage 5 frames @ 1 FPS que la vérification relit depuis le fichier produit (`nframes` = 5, `duree_s` = 5.0, verdict `ok`), et un garde-fou qui refuse tout aussi bien un fichier absent qu'un message vide. La solution de vérification teste aussi le cas d'erreur — c'est ce qui distingue une démo d'un livrable. Les exercices 4 à 6 reprennent exactement ces primitives en changeant un seul paramètre à la fois : la nature du fond (dégradé), la longueur de la séquence (carte de titre), la profondeur de la vérification (pixel plutôt que métadonnée).
+",,,,,,,,68ec230687357070,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,c3ab0e91,code,fr,3b5c8d53e65cf9d0,"# Parameters
+skip_widgets = True
+",,,,,,,,3b5c8d53e65cf9d0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,a076cf86,markdown,fr,d3d516f2ebf98eb3,"### Lecture du résultat : Vérification GPU et dépendances
+
+La cellule de vérification GPU a retourné trois informations structurantes pour la suite du notebook :
+
+- **GPU détecté :** NVIDIA GeForce RTX 3070 Laptop GPU — la version portable de la RTX 3070, avec 8 Go de VRAM GDDR6 et 5120 cœurs CUDA (caractéristiques constructeur ; la cellule ne mesure que le nom du GPU et la VRAM). Architecture Ampere : le support natif FP16, activé par le paramètre `half=True` de la cellule d'upscaling, s'applique ici. Cette carte convient à Real-ESRGAN (réseau convolutif à blocs RRDB) : le temps moyen par frame mesuré plus bas le confirme.
+- **VRAM disponible :** 8.0 GB — c'est la moitié de la VRAM d'une carte de bureau haut de gamme. Pour un upscaling 2× sur des frames 160×120, la consommation VRAM reste marginale (quelques centaines de mégaoctets par tile). Le mode `tile=256` découpé par la cellule d'upscaling évite tout débordement.
+- **Mode d'exécution :** `cuda` confirmé — les tenseurs sont placés sur GPU, l'accélération attendue pour cette tâche convolutive est d'un ordre de grandeur par rapport au CPU.
+
+**Point d'attention :** Sans GPU, la cellule Real-ESRGAN plus bas passera automatiquement en mode CPU (ralenti ×30 à ×50) ou lèvera un message « mode dégradé ». Les métriques PSNR/SSIM restent calculables ; seul l'upscaling réel prendrait un temps prohibitif sur CPU pour des frames 4K.
+
+**Pourquoi cette vérification est pédagogique :** Elle illustre le protocole *fail-fast* appliqué aux pipelines GenAI visuels — un notebook qui suppose la disponibilité du GPU sans le tester fait perdre 10 minutes à l'étudiant avant de découvrir que `torch.cuda.is_available()` renvoie `False`. Le test GPU en amont fait gagner du temps et signale explicitement le mode dégradé avant que l'étudiant n'engage des minutes d'exécution inutiles.",,,,,,,,d3d516f2ebf98eb3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,66c45ea7,markdown,fr,27d735bc8ae6a7e9,"### Lecture du résultat : Création des vidéos de test
+
+La cellule de génération a construit deux vidéos symétriques pour permettre une comparaison objective :
+
+- **Résolution basse :** 160×120 pixels — définition volontairement très faible (format QQVGA) pour amplifier l'effet de l'upscaling. À 12 FPS sur 3 secondes, on obtient 36 frames (`test_fps` × `test_duration`, cellule de paramètres), ce qui reste représentatif d'une scène courte.
+- **Résolution haute (référence) :** 320×240 pixels — soit exactement 2× la résolution basse, le facteur d'upscaling cible du notebook (le paramètre `scale_factor=2` est défini en cellule 1). Cette relation 1:2 fait que la sortie de l'upscaling a exactement la taille de la référence : le calcul PSNR et SSIM compare donc les images sans redimensionnement (`if sr_f.shape != hr_f.shape`, ligne 46 de la cellule de métriques).
+- **Frames :** 36 frames sur 3 secondes à 12 FPS — séquence volontairement animée (cercle qui se déplace, grille de fond, petits cercles décoratifs) pour que la différence entre LR (floue, pixellisée) et SR (nettes, restaurée) soit visible sur la séquence.
+
+**Artefact noté dans les logs :** La cellule signale un warning `IMAGEIO FFMPEG_WRITER` indiquant que `160×120` n'est pas divisible par le `macro_block_size=16`, et que `imageio` redimensionne à la volée à `160×128` pour la compatibilité codec. C'est un piège classique du traitement vidéo : tous les codecs H.264 exigent des dimensions multiples de 16 (ou 8 selon le profil). Pour un pipeline de production, on choisirait `160×128` directement comme résolution source.
+
+**Deux fichiers générés par cette cellule :**
+- `reference_hr.mp4` (36.4 KB) — la vérité-terrain HR (320×240).
+- `input_lr.mp4` (17.1 KB) — la version dégradée (160×120 → ré-encodée 160×128).
+- Le fichier HR pèse 2.1× le fichier LR (36.4 / 17.1 = 2.13), alors qu'il a 3.75× plus de pixels (76800 contre 20480 pour 160×128) : la compression H.264 réduit l'écart entre les deux tailles, sans que cette cellule le mesure séparément.
+",,,,,,,,27d735bc8ae6a7e9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,20f2e6c3,markdown,fr,dca783e69d20f2b0,"### Lecture du résultat : Upscaling Real-ESRGAN
+
+La cellule d'upscaling a traité les 36 frames de la vidéo LR et a livré quatre indicateurs de performance directement exploitables :
+
+- **Temps moyen par frame :** 85 ms. C'est une moyenne arithmétique sur les 36 frames, première frame incluse (`avg_time = np.mean(frame_times)`, ligne 57 de la cellule d'upscaling) : la première frame, à 238 ms, la tire vers le haut. Les frames 10, 20 et 30 affichées prennent 68, 149 et 69 ms, soit une première frame environ 1,5 à 3,5 fois plus lente que les frames intermédiaires. Le chargement du modèle n'entre pas dans ce chiffre : il se fait avant le chronomètre (`start_time`, ligne 37 de la même cellule). Le carnet ne décompose pas le surcoût de ce premier passage.
+- **Temps total :** 3.1 secondes pour 36 frames — débit réel 36 / 3.1 = 11.6 FPS sur RTX 3070 Laptop (GPU détecté par la cellule de vérification), suffisant pour de l'upscaling hors ligne mais en-deçà du temps réel pour une vidéo 24 FPS.
+- **Résolution de sortie :** 320×240 — exactement 2× la résolution d'entrée, conformément au paramètre `scale_factor=2`.
+- **Taille du fichier upscalé :** 53.0 KB, contre 36.4 KB pour la HR de référence (53.0 / 36.4 = 1.46×). Explication plausible, non mesurée dans ce carnet : la SR contient des hautes fréquences restaurées que le codec H.264 compresse moins bien que l'image HR synthétique, qui a des aplats et une grille régulière.
+
+**Pourquoi le tile=256 est important :** Real-ESRGAN fonctionne par tuiles pour limiter la consommation VRAM. Chaque frame LR (160×120) tient en une seule tuile de 256 : la cellule affiche `Tile 1/1` pour chaque frame. Une image 4K (3840×2160) demanderait en revanche 8×5=40 tuiles de 512×512 (ceil(3840/512)=8, ceil(2160/512)=5), ou 15×9=135 tuiles de 256×256 avec le `tile=256` du carnet (ceil(3840/256)=15, ceil(2160/256)=9), pour rester sous la limite VRAM. Le coût est minime sur GPU moderne grâce au overlap (`tile_pad=10`), mais on perd un peu de cohérence aux frontières de tuiles — c'est l'origine des artefacts de blocs que l'exercice 1 demande à l'étudiant de détecter.
+
+**Cohérence avec la commande :** `scale=2`, `model_path=RealESRGAN_x2plus.pth`, `tile=256`, `device=cuda`, `half=True` (FP16) — tous les paramètres définis en cellule 1 ont été pris en compte sans surprise. C'est une bonne pratique : un notebook reproductible doit utiliser les paramètres globaux plutôt que des constantes hardcodées dans la cellule d'exécution.",,,,,,,,dca783e69d20f2b0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,8b3a5ffc,markdown,fr,7cc433ac1ee8a6b9,"### Lecture du résultat : Métriques de qualité PSNR et SSIM
+
+La cellule « Comparaison visuelle et metriques de qualite » calcule les deux métriques sur les 36 frames et imprime les résultats suivants :
+
+| Métrique | Moyenne | Min | Max |
+|----------|---------|-----|-----|
+| **PSNR (dB)** | 26.38 | 26.17 | 26.69 |
+| **SSIM** | 0.8593 | 0.8497 | 0.8725 |
+
+- **PSNR (Peak Signal-to-Noise Ratio)** : la cellule imprime `PSNR 26.4 dB : Qualite acceptable`. Le libellé vient du seuil `avg_psnr > 25` ; les seuils sont codés aux lignes 66 à 71 de la cellule (`> 30` : « Bonne qualite de reconstruction », `> 25` : « Qualite acceptable », sinon « Qualite a ameliorer »).
+- **SSIM (Structural Similarity Index)** : la cellule imprime `SSIM 0.8593 : Bonne similarite`, libellé du seuil `avg_ssim > 0.8` (lignes 73 à 75 : `> 0.9` « Excellente similarite structurelle », `> 0.8` « Bonne similarite »).
+- La variation min/max est faible (SSIM entre 0.85 et 0.87) : aucune frame isolée ne tire la moyenne.
+
+**Repère de littérature, non mesuré dans ce carnet :** un ordre de grandeur souvent cité pour ce type de modèle est de 28 à 33 dB sur du contenu naturel. C'est un repère indicatif : le carnet ne le calcule pas et ne le vérifie pas. La valeur mesurée, 26.38 dB, est en dessous. Une explication plausible, non mesurée ici, tient au contenu : la vidéo source est faite d'aplats colorés et de formes géométriques simples, et Real-ESRGAN y ajoute des micro-textures qui augmentent l'écart pixel à pixel avec une référence lisse. Le PSNR seul ne suffit donc pas à juger la qualité perçue sur cette séquence.
+
+**Lecture critique :** ces deux métriques sont *avec référence* : elles comparent chaque frame SR à la frame HR de même indice (boucle de la cellule, lignes 43 et 50). En production, la HR n'est souvent pas disponible ; on utilise alors des métriques sans référence comme NIQE ou BRISQUE, dont l'exercice 1 propose une version simplifiée. Enfin, un PSNR de 26 dB sur une animation géométrique simple n'a pas la même signification qu'un PSNR de 26 dB sur un portrait : l'œil tolère plus de bruit sur les aplats colorés que sur les visages.
+",,,,,,,,7cc433ac1ee8a6b9,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,84c591f8,markdown,fr,de8029df7225b8e5,"### Lecture du résultat : Interpolation de frames
+
+La cellule de démonstration illustre trois méthodes d'interpolation, classées par qualité/vitesse :
+
+- **Linéaire (blend)** — qualité faible, instantanée, 0 MB VRAM. Mélange pixel par pixel : `interp[i] = (1-α) × frame_a + α × frame_b`. L'output de la cellule montre le résultat sur 3 frames intermédiaires entre `frame_a` (frame 0) et `frame_b` (frame 5). L'effet visible est un *ghosting* : les contours du cercle en mouvement apparaissent dédoublés pendant la transition, parce que la moyenne de deux positions distinctes du cercle donne une position intermédiaire fictive.
+- **RIFE (Real-Time Intermediate Flow Estimation)** — qualité excellente, ~50 ms/frame, ~2 GB VRAM. Réseau convolutif qui estime le *flux optique* entre deux frames (vecteurs de mouvement par pixel) et génère les frames intermédiaires en propageant les pixels selon ce flux. Élimine le ghosting en plaçant chaque pixel à la position physiquement correcte au temps `t`.
+- **Frame duplication** — qualité nulle, instantanée, 0 MB. Copie binaire d'une frame pour atteindre le FPS cible (par exemple 24→60 FPS en dupliquant chaque frame 2.5 fois, soit 60 / 24 = 2.5). Acceptable pour les transitions rapides, visible sur les mouvements lents.
+
+**Application typique :** convertir une source 24 FPS (cinéma) en 60 FPS (écrans modernes) — la fluidité perçue augmente sans coût de captation additionnel. Les films en streaming (Netflix, Disney+) appliquent souvent une variante propriétaire de cette technique (motion interpolation TV).
+
+**Limite pédagogique :** la cellule démontre l'interpolation sur une transition de seulement 5 frames. En pratique, pour une séquence continue, RIFE traite les frames par paires consécutives et accumule les erreurs sur les longues séquences. Pour un film complet, on utilise des modèles comme DAIN (Depth-Aware Video Frame Interpolation) qui intègrent une estimation de profondeur pour gérer les occlusions.
+
+**Lien avec la section précédente :** l'upscaling et l'interpolation sont deux techniques complémentaires pour la restauration de vidéos anciennes — l'upscaling améliore la définition spatiale, l'interpolation améliore la fluidité temporelle. Les pipelines modernes (DAIN + Real-ESRGAN) les combinent en un seul modèle pour éviter les erreurs composées.
+",,,,,,,,de8029df7225b8e5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Video/01-Foundation/01-4-Video-Enhancement-ESRGAN.ipynb,7695ab06,code,fr,909a287275bf352e,"# Statistiques de session et prochaines etapes
+print(""\n--- STATISTIQUES DE SESSION ---"")
+print(""="" * 40)
+
+print(f""Date : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"")
+print(f""Mode d'execution : {notebook_mode}"")
+print(f""Interface interactive : {'activee' if not skip_widgets else 'desactivee (skip_widgets=True)'}"")
+print(f""Scale factor : {scale_factor}x"")
+print(f""Modele : {model_name}"")
+print(f""Device : {device}"")
+print(f""Frames traitees : {len(sr_frames)}"")
+
+if save_results and OUTPUT_DIR.exists():
+    generated_files = list(OUTPUT_DIR.glob('*'))
+    print(f""\nFichiers generes ({len(generated_files)}) :"")
+    for f in sorted(generated_files):
+        size_kb = f.stat().st_size / 1024
+        print(f""  {f.name} ({size_kb:.1f} KB)"")
+
+print(f""\n--- PROCHAINES ETAPES ---"")
+print(f""1. Notebook 01-5 : Introduction a AnimateDiff (generation text-to-video)"")
+print(f""2. Combiner upscaling + generation pour des videos haute qualite"")
+print(f""3. Module 02 : Modeles generatifs video avances"")
+
+print(f""\nNotebook 01-4 Video Enhancement termine - {datetime.now().strftime('%H:%M:%S')}"")",,,,,,,,909a287275bf352e,,,,,,,,,,,,,,,
