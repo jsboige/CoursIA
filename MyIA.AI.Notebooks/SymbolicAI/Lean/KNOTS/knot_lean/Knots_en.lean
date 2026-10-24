@@ -26,6 +26,9 @@
       smooth/topological dichotomy (extracted from Conway, #18397)
     - `Knots.Jones` — Kauffman bracket on PD codes (state sum,
       trefoil / figure eight / unknot evaluations)
+    - `Knots.Khovanov` — Khovanov complex of the trefoil (smoothing
+      cube, m/Δ, d∘d = 0, graded table `q + q³ + q⁵t² + q⁹t³`,
+      χ|_{q=−1} = −2)
     - `Knots.FigureEight` — invariants of the figure-eight knot on its
       planar PD code (signed Alexander classical up to a unit, determinant
       5, non-tricolorability, 4 crossings — provisional definition)
@@ -55,6 +58,7 @@ import Knots.ReidemeisterInvariance_en
 import Knots.ReidemeisterMoves_en
 import Knots.ReidemeisterCombinatorial_en
 import Knots.Jones_en
+import Knots.Khovanov_en
 import Knots.FigureEight_en
 import Knots.Lidman_en
 import Knots.MathlibPrerequisites_en
