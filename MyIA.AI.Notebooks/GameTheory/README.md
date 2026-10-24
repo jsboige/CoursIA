@@ -120,7 +120,7 @@ Le modèle s'enrichit du temps et de l'incertitude : arbres de jeu et ensembles 
 | 08 | Jeux combinatoires — [Python](GameTheory-08-CombinatorialGames-Python.ipynb) · [C#](GameTheory-08-CombinatorialGames-CSharp.ipynb) | Positions P/N, Nim, valeurs de Grundy, théorème de Sprague-Grundy | 55 min | Licence | [08b](GameTheory-08b-Lean-CombinatorialGames-Lean.ipynb) · [08c](GameTheory-08c-CombinatorialGames-Python.ipynb) · [08d](GameTheory-08d-Lean-CGT-Lean.ipynb) |
 | 09 | Induction arrière — [Python](GameTheory-09-BackwardInduction-Python.ipynb) · [C#](GameTheory-09-BackwardInduction-CSharp.ipynb) | Induction arrière, mille-pattes, escalade, engagement | 55 min | Licence | [09b](GameTheory-09b-Commitment-Stackelberg-Python.ipynb) · [09c](GameTheory-09c-Stackelberg-SecurityGame-Python.ipynb) · [09d](GameTheory-09d-Stackelberg-PPO-Co-Design-Python.ipynb) |
 | 10 | Induction avant et SPE — [Python](GameTheory-10-ForwardInduction-SPE-Python.ipynb) · [C#](GameTheory-10-ForwardInduction-SPE-CSharp.ipynb) | Équilibre parfait en sous-jeux, menaces crédibles, induction avant | 60 min | Licence | — |
-| 11 | Jeux bayésiens — [Python](GameTheory-11-BayesianGames-Python.ipynb) · [C#](GameTheory-11-BayesianGames-CSharp.ipynb) | Types privés, croyances, équilibre bayésien | 55 min | Licence | [11b](GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) |
+| 11 | Jeux bayésiens — [Python](GameTheory-11-BayesianGames-Python.ipynb) · [C#](GameTheory-11-BayesianGames-CSharp.ipynb) | Types privés, croyances, équilibre bayésien | 55 min | Licence | [11b](GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) · [11d](GameTheory-11d-Raffinements-Sequentiels-Python.ipynb) |
 | 12 | Jeux de réputation — [Python](GameTheory-12-ReputationGames-Python.ipynb) · [C#](GameTheory-12-ReputationGames-CSharp.ipynb) | Signaling, cheap talk, réputation (Kreps-Wilson) | 50 min | Licence | — |
 
 ![Arbre d'un jeu séquentiel (choix Out/In puis Stag/Hare) et raisonnement d'induction avant menant au SPE (In, Stag, Stag) → (4, 4).](assets/readme/gt10-spe.png)
@@ -252,6 +252,7 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
 | 11b | [Vickrey en Lean](GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) | Le théorème de Vickrey (enchère au second prix : dire la vérité est dominant) prouvé sans `sorry` dans le lake `lean_game_defs_ext` | Lean | Licence |
+| 11d | [Raffinements séquentiels](GameTheory-11d-Raffinements-Sequentiels-Python.ipynb) | Un moteur Python calcule les trois notions sur un même arbre à information imparfaite : l'équilibre séquentiel faible accepte un assessment que l'équilibre séquentiel rejette (croyance inatteignable), et l'équilibre bayésien parfait le rejette pour une autre raison — un cycle de plausibilité, non une limite | Python | Licence |
 
 ### Autour de 13 — information imparfaite
 
@@ -637,7 +638,7 @@ Le bloc `CATALOG-STATUS` en tête de ce fichier fait foi pour le nombre de noteb
 | Référence | Couverture |
 |-----------|------------|
 | Osborne & Rubinstein, *A Course in Game Theory* (1994) | Manuel de référence, paliers 01 à 12 |
-| Bonanno, *Game Theory* (2015, arXiv 1512.06808, CC BY 4.0) | Manuel pédagogique en complément, 165 exercices résolus — couvre Phase 1 (paliers 02-06) + jeux bayésiens (palier 11) + coopératif (palier 15) |
+| Bonanno, *Game Theory* (2015, arXiv 1512.06808, CC BY-NC-ND 4.0) | Manuel pédagogique en complément, 165 exercices résolus (chiffre de l'éditeur) — couvre les jeux ordinaux et cardinalistes (ch. 1-6), les jeux bayésiens (ch. 13-15), et deux pans que les carnets citent sans leur consacrer de palier : connaissance commune et croyances (ch. 7-9), raffinements de l'équilibre — séquentiel faible, séquentiel, parfait bayésien (ch. 10-12). Ne couvre ni les jeux coopératifs (palier 15), ni les jeux répétés (palier 06), ni les jeux combinatoires (palier 08) |
 | Osborne, *An Introduction to Game Theory* (2004) | Manuel alternatif |
 | Russell & Norvig, *AIMA*, 4e éd., ch. 17-18 | Cadre général des jeux et des mécanismes |
 | Nash, « Non-Cooperative Games » (1951) | Palier 04 |
@@ -675,6 +676,8 @@ Le bloc `CATALOG-STATUS` en tête de ce fichier fait foi pour le nombre de noteb
 Voir la licence du dépôt principal.
 
 ---
+
+*Version 1.5.2 — Octobre 2026 (2026-10-22) — licence et couverture Bonanno corrigées sur mesure (#19461, volet 3). L'entrée 1.5.1 annonçait « CC BY 4.0 » et une couverture « Phase 1 (paliers 02-06) + coopératif (palier 15) ». La page de copyright du PDF archivé porte **CC BY-NC-ND 4.0** — la métadonnée arXiv annonce CC BY 4.0, la page du document prime — et la table des matières du manuel ne comporte ni chapitre de jeux coopératifs, ni chapitre de jeux répétés ou combinatoires. La ligne de la table « Références académiques » donne désormais les chapitres réellement présents. Les carnets citaient déjà la licence exacte depuis le 2026-10-18 ; le README était la seule surface restée en retard.*
 
 *Version 1.5.1 — Octobre 2026 (2026-10-15) — référencement Bonanno (#19461) : ajout de la référence Bonanno, *Game Theory* (2015, arXiv 1512.06808, CC BY 4.0) à la table « Références académiques » comme manuel pédagogique en complément, 165 exercices résolus couvrant Phase 1 + jeux bayésiens + coopératif. La note d'angle-mort reste sur le ticket (#19461, mémo du 2026-10-06) ; les PRs de citation R2 (4 carnets Phase 1 sans référence académique en cellule) restent à mener en cycles ultérieurs.*
 
