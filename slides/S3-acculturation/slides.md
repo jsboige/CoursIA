@@ -84,25 +84,33 @@ layout: section
 
 # Qu'est-ce que l'intelligence artificielle?
 
-<div class="grid grid-cols-2 gap-x-10 -mt-1">
+<div class="grid grid-cols-2 gap-x-10 items-start">
 
-- Définitions multiples
-- Notre angle :
-  - « Agir de façon rationnelle »
+<div v-click>
+
+**Définitions multiples**
+
+- Notre angle : « Agir de façon rationnelle »
 - Conception d'agents
+
+</div>
+
+<div v-click>
 
 **Fondements**
 
 - Philosophie · Maths · Économie
 - Biologie · Neurosciences
+
+<img src="./images/img_005.png" class="max-h-[150px] w-auto object-contain mx-auto my-2" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
+
 - Psychologie · Informatique
 - Théorie du contrôle · Linguistique
 
 </div>
 
-<div class="flex justify-center mt-2">
-  <img src="./images/img_005.png" class="max-h-[190px] w-auto object-contain" alt="Neurone biologique : dendrites, soma, axone, synapse — l'inspiration des réseaux de neurones artificiels" />
 </div>
+
 <div class="text-xs text-slate-500 italic text-center mt-1 px-10">
   Modèle biologique (neurone de McCulloch & Pitts, 1943) — source d'inspiration directe pour le perceptron de Rosenblatt (1958).
 </div>
@@ -115,6 +123,9 @@ layout: section
 - 1940-70 : Enthousiasme des débuts
   - Turing, Dartmouth, Lisp
   - Samuel, Newell & Simon
+
+<img src="./images/img_006.png" class="max-h-[120px] w-auto object-contain mx-auto my-2" alt="Test de Turing : interrogateur humain, sujet humain et système IA" />
+
 - 1970s : Complexité calculatoire
   - Réseaux de neurones en pause
   - Systèmes experts
@@ -123,17 +134,6 @@ layout: section
 - 1990s : L'IA devient une science
 
 > **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
-
-<div class="flex justify-between items-end gap-6 mt-2 px-6">
-  <img src="./images/img_006.png" class="max-h-[104px] w-[52%] object-contain" alt="Repères historiques" />
-  <div class="flex gap-5 items-center pb-2">
-    <img src="./images/img_007.jpg" class="h-12 object-contain" alt="Logo DARPA" />
-    <img src="./images/img_008.jpg" class="h-10 object-contain" alt="Logo ImageNet" />
-  </div>
-</div>
-<div class="text-xs text-slate-500 italic text-center mt-0.5 px-10">
-  Repères fondateurs de l'IA moderne — financement (DARPA) et benchmark (ImageNet) qui ont catalysé l'apprentissage profond.
-</div>
 
 ---
 
@@ -146,6 +146,15 @@ layout: section
   - 2017 : Transformers ("Attention is All You Need")
   - 2018 : AlphaZero (échecs, Go, shogi sans connaissances humaines)
   - 2019 : Pluribus (poker), AlphaStar (Starcraft 2)
+
+<div v-click class="flex gap-5 items-center justify-center my-1">
+  <img src="./images/img_007.jpg" class="h-8 object-contain" alt="Logo DARPA" />
+  <img src="./images/img_008.jpg" class="h-7 object-contain" alt="Logo ImageNet" />
+</div>
+<div class="text-xs text-slate-500 italic text-center">
+  Financement (DARPA) et benchmark (ImageNet) qui ont catalysé l'apprentissage profond.
+</div>
+
 - **2020s** : LLMs et IA générative deviennent grand public
   - GPT-3 (2020), ChatGPT (2022), GPT-4 (2023), Claude 3 (2024), GPT-4o (2024), Claude 3.5 Sonnet (2024), Gemini 1.5/2 (2024-2025)
   - Stable Diffusion, Midjourney, DALL-E : génération d'images
