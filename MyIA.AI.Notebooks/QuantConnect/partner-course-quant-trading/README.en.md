@@ -173,32 +173,40 @@ These notebooks illustrate the QuantBook -> QCAlgorithm workflow : idea -> resea
 
 ---
 
-## ML Research 2026 - Validated Models (Pipeline V2)
+## ML Research 2026 - Modèles du pipeline V2 et leur revalidation
 
-The ML research pipeline (`ML-Training-Pipeline/`) follows a 7-stage curriculum
-based on *Hands-On AI Trading* (Broad/QuantConnect, 2025). Models below passed
-the **S1 (vol-forecasting)** gate with significant Diebold-Mariano test
-(p < 0.05, >= 4 seeds, walk-forward 5-fold).
+Le pipeline de recherche ML (`ML-Training-Pipeline/`) suit un curriculum en 7 étapes
+basé sur *Hands-On AI Trading* (Broad/QuantConnect, 2025). Les modèles ci-dessous avaient passé
+la gate du 2026-05-16 (walk-forward 5-fold, 4 seeds). Aucun n'a tenu sa revalidation : les
+p-values de la gate venaient d'un sign-test sur 84 combinaisons, pas du test de Diebold-Mariano
+qu'annonçait cette section, et
+l'étiquette « OOS strict 2027 » ne correspondait à aucune mesure (#21055). Le détail et les
+dates de retrait sont dans le [README du pipeline](../ML-Training-Pipeline/README.md).
 
-### S1 KEEPERS - Multi-coin crypto volatility forecasting (BEATS)
+### S1 — Prévision de volatilité multi-coin (keepers retirés)
 
-| Model | Task | Verdict | DM p-value | Architecture |
+| Model | Task | Verdict | p de la gate (sign-test) | Architecture |
 |-------|------|---------|-----------|--------------|
-| **M12 HAR-RV-J** | 5-day vol forecast | BEATS RW + GARCH | **0.0015** | Heterogeneous Autoregressive + Jump component (Corsi 2009) |
-| **M15 LSTM h=32** | Short-scale vol forecast | BEATS RW | **0.0107** | LSTM hidden=32, 53/84 combos BEAT cross-coin (BTC/XRP/DOT/ADA) |
+| **M12 HAR-RV-J** | 5-day vol forecast | Gate : BEATS RW + GARCH. Revalidation : **NO BEATS** (0/7, #16004) | 0.0015 | Heterogeneous Autoregressive + Jump component (Corsi 2009) |
+| **M15 LSTM h=32** | Short-scale vol forecast | Gate : BEATS RW. Re-run §C : **NO BEATS** (44/84, p=0.372, #11395) | 0.0107 | LSTM hidden=32, 53/84 combos BEAT cross-coin (BTC/XRP/DOT/ADA) |
 
-Complementarity observed : M12 captures ETH/SOL better, M15 captures DOT better.
+La complémentarité annoncée à la gate (M12 sur ETH/SOL, M15 sur DOT) reposait sur ces mesures
+retirées.
 
-### S3 - HMM Regime daily (delivered, feeds S5 sizing)
+### S3 - HMM Regime daily (retiré le 2026-10-20)
 
 Hidden Markov Model 2-regime (calm vs stress) on daily returns SPY+VIX+BTC.
 Discrete output used as switch in vol-target strategies (reduce exposure in stress regime).
+Re-mesuré en causal (fit sur le passé strict, décalage d'un jour), S3 est **NO BEATS** (#21633) :
+son avantage venait d'un HMM lissé qui lisait le futur de son propre bloc.
 
-### S4 v2 - Inverse-Vol Ridge + HMM Regime (BEATS EqW)
+### S4 v2 - Inverse-Vol Ridge + HMM Regime (retiré le 2026-10-20)
 
 Inverse-vol weighted allocation with Ridge regression on features
-(momentum + M12 vol forecast) and HMM switch. Delta Sharpe **+0.325 vs EqW**
-(Equal Weight baseline) on QC Cloud backtest.
+(momentum + M12 vol forecast) and HMM switch. Le Delta Sharpe **+0.325 vs EqW**
+(baseline Equal Weight) était une mesure intra-échantillon du script `s4_inverse_vol_ridge_v2.py`
+(HMM ajusté sur le bloc qu'il étiquette), pas un backtest QC Cloud ; re-mesuré en causal, il
+devient **INCONCLUSIVE** (Δ+0.24, Holm p=0.38, #21633).
 
 ### L4 Decision Transformer - Action-based trading (BEATS)
 
@@ -213,7 +221,9 @@ massively outperforms forecast-based approaches (PatchTST). Median AUC 0.5582, 1
 | **Vol-GARCH-Target** | 31456084 | GARCH(1,1) baseline | Vol-targeting 15% annualized (reference for M12) |
 | **Vol-Ensemble-Conservative** | 31456204 | Ensemble M12+M15 | Inverse-vol weighting + leverage cap |
 
-These projects are available in `../projects/`.
+These projects are available in `../projects/`. Ils reprennent des modèles retirés depuis
+(M12, M15) : ce sont des exemples de branchement d'une prévision de volatilité dans un
+`QCAlgorithm`, pas des stratégies validées.
 
 ---
 
