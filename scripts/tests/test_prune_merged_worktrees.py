@@ -16,9 +16,13 @@ Pinent le contrat de sûreté (issues #14195 + #14509 acceptance) :
 3. `parse_porcelain` separe untracked / gitignores non-cache / tracks
    modifies (`--ignored=matching`, jamais de `!!` compte comme source
    sale).
-4. `worktree_has_initialized_submodules` detecte les worktrees que git ne
-   retirera jamais ("working trees containing submodules cannot be moved
-   or removed") -> REFUSE contains_submodules.
+4. `worktree_blocks_removal_for_submodules` detecte les worktrees que git
+   ne retirera jamais ("working trees containing submodules cannot be
+   moved or removed") -> REFUSE contains_submodules. Union de deux etats
+   que git refuse : sous-module INITIALISE (`git submodule status` sans
+   prefixe '-') et sous-module ENREGISTRE mais deinitialise -- le gitdir
+   du sous-module persiste dans `<gitdir-du-worktree>/modules/` alors que
+   le status affiche pourtant '-' (#21710).
 5. `WorktreeStatus.decision` = `REMOVE` quand pr_state=MERGED ou CLOSED
    et pas d'unpushed, de submodule, ni de untracked bloquant (contrôle
    positif manquant aux prédicats d'ascendance, cf squashed-merge).
@@ -46,6 +50,7 @@ Run : python -m pytest scripts/tests/test_prune_merged_worktrees.py
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -276,6 +281,149 @@ class TestSubmoduleDetection:
         # Pas de preuve de submodule initialise : ne REFUSE pas sur un
         # etat qu'on ne peut pas lire (pire cas = FAILED git, avant-fix).
         assert self._stub(monkeypatch, 128, "") is False
+
+
+class TestRegisteredSubmodules21710:
+    """#21710 : un sous-module ENREGISTRE mais deinitialise bloque git.
+
+    `git submodule status` montre alors une ligne prefixee '-' (« non
+    initialise »), mais le gitdir du sous-module persiste dans
+    `<gitdir-du-worktree>/modules/` et `git worktree remove` refuse
+    TOUJOURS. L'ancien predicat (status seul) annoncait REMOVE, l'apply
+    echouait -- 18 worktrees mesures chez le rapporteur de l'issue.
+
+    Constat mesure sur git 2.50.1 : apres `submodule update --init` puis
+    `submodule deinit --all -f` dans le worktree, le status rend
+    `-<sha> sub` et le retrait rend "fatal: working trees containing
+    submodules cannot be moved or removed". La classe E2E en fin de
+    fichier fige ce constat sur de vrais objets git ; ici on pinne les
+    predicats et leur cablage.
+    """
+
+    @staticmethod
+    def _git_dir(tmp_path, with_modules: bool) -> str:
+        """Gitdir de worktree factice, avec ou sans `modules/` (#21710)."""
+        git_dir = tmp_path / ("gd-modules" if with_modules else "gd-nu")
+        git_dir.mkdir(exist_ok=True)
+        if with_modules:
+            (git_dir / "modules" / "sub").mkdir(parents=True)
+        return str(git_dir)
+
+    @staticmethod
+    def _stub_git(monkeypatch, status_stdout: str, git_dir_stdout: str,
+                  revparse_rc: int = 0):
+        """Route run_git : `submodule status` et
+        `rev-parse --absolute-git-dir`. Toute autre commande rend rc=128
+        (etat illisible), jamais un feu vert."""
+        def fake_run_git(*args, **kwargs):
+            cmd = list(args)
+            if "submodule" in cmd:
+                return _fake_proc(0, status_stdout)
+            if "--absolute-git-dir" in cmd:
+                return _fake_proc(revparse_rc, git_dir_stdout)
+            return _fake_proc(128, "")
+        monkeypatch.setattr(pmw, "run_git", fake_run_git)
+
+    @staticmethod
+    def _router(git_dir: str, status_stdout: str = "-abc123 sub\n",
+                branch: str = "fix/X"):
+        """Router run_git complet pour `get_worktree_info` : worktree
+        propre sur une branche feature, au sous-module enregistre-seul."""
+        def fake_run_git(*args, **kwargs):
+            cmd = list(args)
+            if "submodule" in cmd:
+                return _fake_proc(0, status_stdout)
+            if "--absolute-git-dir" in cmd:
+                return _fake_proc(0, git_dir)
+            if "--abbrev-ref" in cmd and "HEAD" in cmd:
+                return _fake_proc(0, f"{branch}\n")
+            if "status" in cmd:
+                return _fake_proc(0, "")
+            return _fake_proc(128, "")
+        return fake_run_git
+
+    # -- worktree_has_registered_submodules ------------------------------
+
+    def test_modules_dir_present_is_true(self, tmp_path, monkeypatch):
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir)
+        assert pmw.worktree_has_registered_submodules("C:/fake") is True
+
+    def test_modules_dir_absent_is_false(self, tmp_path, monkeypatch):
+        git_dir = self._git_dir(tmp_path, with_modules=False)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir)
+        assert pmw.worktree_has_registered_submodules("C:/fake") is False
+
+    def test_unreadable_revparse_is_false(self, tmp_path, monkeypatch):
+        # Gitdir avec modules/ sur disque, mais rev-parse echoue : pas de
+        # preuve lisible, on ne REFUSE pas sur un etat qu'on ne peut pas
+        # lire (pire cas = FAILED git, etat d'avant-fix non regresse).
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir,
+                       revparse_rc=128)
+        assert pmw.worktree_has_registered_submodules("C:/fake") is False
+
+    def test_empty_revparse_stdout_is_false(self, tmp_path, monkeypatch):
+        self._stub_git(monkeypatch, "-abc123 sub\n", "")
+        assert pmw.worktree_has_registered_submodules("C:/fake") is False
+
+    # -- worktree_blocks_removal_for_submodules (l'union) ----------------
+
+    def test_blocks_removal_initialized_without_modules_dir(
+            self, tmp_path, monkeypatch):
+        # Cas #14509 : sous-module initialise (ligne sans '-') -> bloque
+        # MEME sans modules/ -- l'union ne doit pas perdre ce cas.
+        git_dir = self._git_dir(tmp_path, with_modules=False)
+        self._stub_git(monkeypatch, " abc123 sub\n", git_dir)
+        assert pmw.worktree_blocks_removal_for_submodules("C:/fake") is True
+
+    def test_blocks_removal_registered_only_is_the_21710_regression(
+            self, tmp_path, monkeypatch):
+        # LE cas de regression #21710 : le status affiche '-<sha> sub'
+        # (semble non initialise) MAIS modules/ est present -> git refuse.
+        # L'ancien predicat (status seul) rendait False ici : REMOVE
+        # annonce au dry-run, echec fatal a l'apply.
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir)
+        assert pmw.worktree_blocks_removal_for_submodules("C:/fake") is True
+
+    def test_blocks_removal_never_initialized_is_false(
+            self, tmp_path, monkeypatch):
+        # Controle negatif (#14619) : sous-module CONFIGURE mais jamais
+        # materialise dans CE worktree (status '-', aucun modules/) ->
+        # git le retire sans protester, le predicat ne doit pas sur-refuser.
+        git_dir = self._git_dir(tmp_path, with_modules=False)
+        self._stub_git(monkeypatch, "-abc123 sub\n", git_dir)
+        assert pmw.worktree_blocks_removal_for_submodules("C:/fake") is False
+
+    # -- aval : get_worktree_info porte le drapeau, diagnose le verdict --
+
+    def test_get_worktree_info_reports_registered_only_state(
+            self, tmp_path, monkeypatch):
+        """Le statut '-' ressemble a « non initialise », pourtant git
+        refusera : get_worktree_info doit porter has_submodules=True."""
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        monkeypatch.setattr(pmw, "run_git", self._router(git_dir))
+        info = pmw.get_worktree_info("C:/fake", "C:/other")
+        assert info["has_submodules"] is True
+
+    def test_diagnose_refuses_registered_only_without_gh_call(
+            self, tmp_path, monkeypatch):
+        """Etat enregistre-seul -> REFUSE contains_submodules AVANT toute
+        resolution PR (le verdict est structurel, aucun appel gh)."""
+        git_dir = self._git_dir(tmp_path, with_modules=True)
+        monkeypatch.setattr(pmw, "run_git", self._router(git_dir))
+
+        def _no_gh(*a, **k):
+            raise AssertionError(
+                "lookup_pr_for_branch ne doit pas etre appele : le "
+                "verdict submodule est structurel et ne demande aucun gh"
+            )
+
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", _no_gh)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "contains_submodules"
 
 
 # ---------------------------------------------------------------------------
@@ -623,6 +771,190 @@ class TestContentOnMainRemove:
         s = pmw.diagnose_worktree("C:/fake", "C:/other")
         assert s.decision == "REFUSE"
         assert s.refusal_reason == "detached_no_match"
+
+
+class TestGhDegradedMode:
+    """#21753 : gh indisponible (sonde identite rc!=0 / pas de jeton) n'est
+    pas « toutes les PRs ouvertes ». La passe reste audible : aucun appel gh
+    n'est tente, les predicats git-only (ascendance, patch-id) decident
+    seuls, le refus terminal se nomme no_gh_unverifiable, la sortie n'est
+    JAMAIS vide."""
+
+    _GH_DOWN = "gh auth token rc=1 (no oauth token)"
+
+    def _info(self, **over):
+        base = dict(
+            branch="fix/unverifiable", ahead_count=0, untracked=[],
+            blocking_untracked=[], ignored_extra=[], tracked_modified=[],
+            has_source_dirty=False, has_submodules=False, is_current=False,
+        )
+        base.update(over)
+        return base
+
+    def _no_gh(self, *a, **k):
+        raise AssertionError(
+            "mode degrade : aucun appel gh ne doit etre tente"
+        )
+
+    def test_degraded_refuses_unverifiable_branch(self, monkeypatch):
+        # Branche propre, ni PR connue (gh muet) ni ascendance : REFUSE
+        # nommee no_gh_unverifiable -- pas no_pr_match, qui lirait « pas de
+        # PR » la ou la verite est « non verifiable ».
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", self._no_gh)
+        monkeypatch.setattr(pmw, "remote_head_for_head", lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main", lambda *a: False)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other",
+                                  gh_unavailable_reason=self._GH_DOWN)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_gh_unverifiable"
+
+    def test_degraded_ancestor_still_removes(self, monkeypatch):
+        # Point 2 de l'issue : la degradation ne desserre PAS le critere
+        # git-only d'ascendance -- un worktree dont la tete est ancetre de
+        # origin/main reste retirable sans aucun gh.
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch", self._no_gh)
+        monkeypatch.setattr(pmw, "remote_head_for_head", lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main", lambda *a: True)
+        monkeypatch.setattr(pmw, "recent_activity_age_hours",
+                            lambda *a, **k: 99.0)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other",
+                                  gh_unavailable_reason=self._GH_DOWN)
+        assert s.decision == "REMOVE"
+        assert s.content_on_main is True
+        assert s.content_on_main_by == "ancestor"
+
+    def test_degraded_detached_skips_gh_and_refuses(self, monkeypatch):
+        # HEAD detache hors main : la resolution par sujet est gh par
+        # construction (pr view / pr list) -- jamais tentee en degrade.
+        info = self._info(branch=None)
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "detached_head_is_on_main", lambda *a: False)
+        monkeypatch.setattr(pmw, "lookup_pr_for_detached_head", self._no_gh)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other",
+                                  gh_unavailable_reason=self._GH_DOWN)
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_gh_unverifiable"
+
+    def test_no_reason_keeps_no_pr_match(self, monkeypatch):
+        # Controle de discrimination : sans raison de degradation, le refus
+        # conservateur garde son nom historique -- le nouveau nom ne doit
+        # pas fuir hors du mode degrade.
+        info = self._info()
+        monkeypatch.setattr(pmw, "get_worktree_info", lambda *a: info)
+        monkeypatch.setattr(pmw, "lookup_pr_for_branch",
+                            lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "remote_head_for_head", lambda *a, **k: None)
+        monkeypatch.setattr(pmw, "head_is_ancestor_of_main", lambda *a: False)
+        s = pmw.diagnose_worktree("C:/fake", "C:/other")
+        assert s.decision == "REFUSE"
+        assert s.refusal_reason == "no_pr_match"
+
+    def test_resolve_short_circuits_when_unavailable(self, tmp_path,
+                                                     monkeypatch):
+        # Aucun etage gh (lot, ancre) n'est tente en degrade.
+        res = pmw.PrResolution(cache_path=None)
+        res.unavailable_reason = self._GH_DOWN
+        monkeypatch.setattr(pmw, "run_gh", self._no_gh)
+        assert res.resolve("feature/anything") is None
+        assert res.stats["listing_calls"] == 0
+        assert res.stats["anchor_calls"] == 0
+
+    def test_resolve_cache_still_answers_when_unavailable(self, tmp_path,
+                                                          monkeypatch):
+        # Le cache disque ne depend pas de gh : un MERGED deja etabli (garde
+        # oid satisfaite) continue de retirer des worktrees sans jeton.
+        cache = tmp_path / "cache.json"
+        _seed_cache_file(cache, {
+            "feature/cached": {
+                "number": 42, "state": "MERGED",
+                "url": "https://example/pr/42",
+                "headRefOid": _PR_OID_A,
+            },
+        })
+        res = pmw.PrResolution(cache_path=cache)
+        res.unavailable_reason = self._GH_DOWN
+        monkeypatch.setattr(pmw, "run_gh", self._no_gh)
+        row = res.resolve("feature/cached", head_sha=_PR_OID_A)
+        assert row is not None and row["state"] == "MERGED"
+        assert res.stats["cache_hits"] == 1
+
+    def test_run_gh_timeout_returns_124(self, monkeypatch):
+        # Mesure fondatrice : un `--apply` pendu ~2 h, 0 octet de sortie.
+        # Un gh muet doit devenir un echec DETECTE (rc=124, stderr nomme),
+        # jamais une attente infinie.
+        import subprocess as _sp
+
+        def _hang(*a, **k):
+            raise _sp.TimeoutExpired(cmd=["gh"], timeout=30)
+
+        monkeypatch.setattr(pmw.subprocess, "run", _hang)
+        proc = pmw.run_gh("pr", "list", check=False)
+        assert proc.returncode == 124
+        assert "timeout" in proc.stderr
+
+    def test_probe_reports_reason_not_token(self, monkeypatch):
+        # La sonde rend une RAISON ; son stdout (un jeton) n'y figure
+        # jamais -- le detail vient du stderr seul.
+        import subprocess as _sp
+
+        def _rc1(*a, **k):
+            return _fake_proc(1, stderr="no oauth token found")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _rc1)
+        reason = pmw.probe_gh_availability()
+        assert reason is not None
+        assert "rc=1" in reason
+        assert "no oauth token" in reason
+
+        def _ok(*a, **k):
+            # stdout = jeton bidon : ne doit JAMAIS se retrouver dans la
+            # sortie de la sonde (ici : la sonde rend None, silencieuse).
+            return _fake_proc(0, stdout="gho_not_a_real_token")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _ok)
+        assert pmw.probe_gh_availability() is None
+
+    def test_probe_gh_missing(self, monkeypatch):
+        import subprocess as _sp
+
+        def _missing(*a, **k):
+            raise FileNotFoundError("gh")
+
+        monkeypatch.setattr(pmw.subprocess, "run", _missing)
+        reason = pmw.probe_gh_availability()
+        assert reason is not None
+        assert "introuvable" in reason
+
+    def test_render_text_banner_in_degraded_mode(self):
+        # La banniere est la PREMIERE ligne : une passe degradee ne doit
+        # jamais se lire comme un constat de PRs ouvertes.
+        statuses = [
+            _make_status(decision="REFUSE",
+                         refusal_reason="no_gh_unverifiable",
+                         pr_state=None, pr_number=None, pr_url=None),
+            _make_status(decision="REFUSE", refusal_reason="pr_open:#7",
+                         pr_state="OPEN", pr_number=7),
+        ]
+        text = pmw.render_text(statuses, dry_run=True,
+                               gh_unavailable_reason=self._GH_DOWN)
+        first = text.splitlines()[0]
+        assert "gh unavailable on this seat" in first
+        assert "1 worktrees in degraded mode" in first
+        assert self._GH_DOWN in first
+        # Les lignes de statut suivent, la sortie n'est jamais vide.
+        assert "no_gh_unverifiable" in text
+
+    def test_render_text_no_banner_when_gh_fine(self):
+        statuses = [
+            _make_status(decision="REFUSE", refusal_reason="pr_open:#7",
+                         pr_state="OPEN", pr_number=7),
+        ]
+        text = pmw.render_text(statuses, dry_run=True)
+        assert "gh unavailable" not in text
 
 
 class TestContentOnMainByPatchId:
@@ -1365,14 +1697,15 @@ class TestDetachedHeadOnMain17684:
         assert pmw.lookup_pr_for_detached_head("/tmp/fake") is None
 
 
-def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None):
+def _fake_proc(returncode: int = 0, stdout: str = "", json_payload=None,
+               stderr: str = ""):
     """Construit un subprocess.CompletedProcess minimal pour stubbing."""
     import subprocess
     out = stdout
     if json_payload is not None:
         out = json.dumps(json_payload)
     return subprocess.CompletedProcess(
-        args=[], returncode=returncode, stdout=out, stderr=""
+        args=[], returncode=returncode, stdout=out, stderr=stderr
     )
 
 
@@ -2270,9 +2603,15 @@ class TestRefusalReport3895:
         PR detachee du disque (aucun appel gh possible dans ces tests)."""
         monkeypatch.setattr(pmw, "list_worktrees", lambda: [
             {"path": s.path, "branch": s.branch} for s in statuses])
+        # #21753 : la sonde d'identite est bouchonnee verte -- ces tests
+        # verifient le contrat de sortie du nominal, pas le mode degrade
+        # (couvert par TestGhDegradedMode). Sans ce stub, le verdict de la
+        # passe dependrait de la presence reelle de gh sur le siège.
+        monkeypatch.setattr(pmw, "probe_gh_availability", lambda: None)
         monkeypatch.setattr(
             pmw, "diagnose_worktree",
-            lambda path, cur, head_sha=None, activity_window_h=6.0:
+            lambda path, cur, head_sha=None, activity_window_h=6.0,
+                   gh_unavailable_reason=None, quarantine_submodules=False:
                 next(s for s in statuses if s.path == path),
         )
         monkeypatch.setattr(
@@ -2718,6 +3057,9 @@ class TestScanRootMultiFarms:
 
         monkeypatch.setattr(pmw, "_SCAN_ROOT_OVERRIDE", None)
         monkeypatch.setattr(pmw, "list_worktrees", spy)
+        # #21753 : sonde d'identite bouchonnee verte (hermeticite -- le
+        # nominal de ces tests ne depend pas de la presence de gh).
+        monkeypatch.setattr(pmw, "probe_gh_availability", lambda: None)
         monkeypatch.setattr(pmw, "diagnose_worktree", lambda *a, **k: None)
         monkeypatch.setattr(
             pmw, "get_pr_resolution",
@@ -2985,6 +3327,121 @@ class TestBranchPatchIdOnRealGit:
         )
 
 
+class TestRegisteredSubmoduleFatal21710E2E:
+    """Test pinne sur worktree MERGED a gitlinks : le fatal de #21710.
+
+    Aucun stub : un vrai depot, un vrai sous-module local, un vrai
+    `deinit --all -f`. Le constat mesure (git 2.50.1) que ce test fige :
+
+    - apres `submodule update --init` puis `deinit --all -f` dans le
+      worktree, `git submodule status` ne montre qu'une ligne
+      `-<sha> sub` (« non initialise ») ;
+    - le gitdir du worktree porte pourtant `modules/`, et
+      `git worktree remove` echoue structurellement sur
+      "working trees containing submodules cannot be moved or removed" ;
+    - `worktree_blocks_removal_for_submodules` predit ce refus, et ne
+      sur-refuse pas un worktree voisin qui n'a jamais materialise de
+      sous-module.
+
+    Skips nommes : git absent du PATH, ou `submodule add` local refuse
+    (git ancien sans `protocol.file.allow`) -- le test reste vert sur un
+    runner contraint sans redevenir muet sur le defaut.
+    """
+
+    @staticmethod
+    def _git(cwd, *args):
+        """git tolerant : les assertions de refus ont besoin du rc/stderr."""
+        return subprocess.run(
+            ["git", "-C", str(cwd), "-c", "user.email=e2e@test",
+             "-c", "user.name=e2e", "-c", "core.autocrlf=false",
+             "-c", "protocol.file.allow=always", *args],
+            capture_output=True, text=True, encoding="utf-8",
+            errors="replace",
+        )
+
+    @classmethod
+    def _ok(cls, proc, what: str):
+        assert proc.returncode == 0, (
+            f"git {what} a echoue: {proc.stderr.strip()}")
+
+    def test_deinitialized_submodule_still_blocks_git_removal(self, tmp_path):
+        if shutil.which("git") is None:
+            pytest.skip("git absent du PATH")
+
+        # Depots temoins : source (le futur sous-module) et hote.
+        src = tmp_path / "src"
+        src.mkdir()
+        self._ok(self._git(src, "init", "-b", "main"), "init src")
+        (src / "lib.txt").write_text("s\n", encoding="utf-8")
+        self._ok(self._git(src, "add", "lib.txt"), "add src")
+        self._ok(self._git(src, "commit", "-m", "src init"), "commit src")
+
+        main = tmp_path / "main"
+        main.mkdir()
+        self._ok(self._git(main, "init", "-b", "main"), "init main")
+        (main / "README.md").write_text("m\n", encoding="utf-8")
+        self._ok(self._git(main, "add", "README.md"), "add main")
+        self._ok(self._git(main, "commit", "-m", "main init"),
+                 "commit main")
+
+        # Sous-module LOCAL (URL = chemin) : un git recent exige
+        # protocol.file.allow=always ; un git qui refuse encore le skippe
+        # au lieu de rougir (le skip est nomme).
+        proc = self._git(main, "submodule", "add",
+                         str(src).replace("\\", "/"), "sub")
+        if proc.returncode != 0:
+            pytest.skip(
+                "submodule add local a echoue (git sans "
+                f"protocol.file.allow ?) : {proc.stderr.strip()[:300]}")
+        self._ok(self._git(main, "commit", "-m", "add submodule"),
+                 "commit submodule")
+
+        wt = tmp_path / "wt"
+        wt_clean = tmp_path / "wt-clean"
+        self._ok(self._git(main, "worktree", "add", str(wt), "HEAD"),
+                 "worktree add wt")
+        self._ok(self._git(main, "worktree", "add", str(wt_clean), "HEAD"),
+                 "worktree add wt-clean")
+
+        try:
+            # Materialise le sous-module DANS le worktree, puis deinit :
+            # le gitdir du sous-module persiste dans
+            # `<gitdir-du-worktree>/modules/` -- c'est LUI que git lit,
+            # ni l'index (git rm --cached ne leve pas le refus) ni le
+            # statut affiche.
+            self._ok(self._git(wt, "submodule", "update", "--init"),
+                     "submodule update --init")
+            self._ok(self._git(wt, "submodule", "deinit", "--all", "-f"),
+                     "submodule deinit")
+
+            # Le statut « ment » (ligne '-') : c'est le piege de #21710.
+            status = self._git(wt, "submodule", "status")
+            self._ok(status, "submodule status")
+            assert status.stdout.strip().startswith("-"), (
+                "le fixture doit produire l'etat enregistre-seul "
+                f"(status '-') : {status.stdout.strip()!r}")
+
+            # Reproduction du fatal : git refuse le retrait.
+            proc = self._git(main, "worktree", "remove", str(wt))
+            assert proc.returncode != 0, (
+                "git doit refuser le retrait d'un worktree dont le gitdir "
+                "porte modules/ (meme apres deinit)")
+            assert "working trees containing submodules" in proc.stderr, (
+                f"stderr inattendu: {proc.stderr.strip()}")
+
+            # Le predicat corrige predit le refus...
+            assert pmw.worktree_blocks_removal_for_submodules(str(wt)) is True
+            # ...et ne sur-refuse pas le voisin vierge (jamais de
+            # `submodule update --init` chez lui : pas de modules/).
+            assert pmw.worktree_blocks_removal_for_submodules(
+                str(wt_clean)) is False
+        finally:
+            # Nettoyage : `tmp_path` efface le disque mais PAS le registre
+            # du depot hote -- deux `worktree remove --force` (le --force
+            # passe la garde sous-module, mesure au-dessus) referment le
+            # registre proprement.
+            for path in (wt, wt_clean):
+                self._git(main, "worktree", "remove", "--force", str(path))
 class TestLockPolicy:
     """Protocole v1.3 (Maintenance #113, dae338b) : verrous `git worktree lock`.
 
