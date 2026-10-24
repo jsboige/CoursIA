@@ -273,15 +273,62 @@ layout: section
 
 # Intelligences
 
-- **Procédurale** : automates et algorithmes déterministes (instructions pas à pas)
-- **Exploratoire** : recherche dans un espace d'états (parcours de graphes, A*)
-- **Symbolique** : raisonnement logique, bases de connaissances, planification
-- **Probabiliste** : gestion de l'incertitude, réseaux bayésiens, décision
-- **Apprentissage** : amélioration par l'expérience (supervisé, renforcement, deep learning)
+<div class="flex flex-col gap-2 text-sm mt-2">
 
-<div class="flex justify-center items-center gap-12 mt-8">
-  <img src="./images/img_015.jpg" class="h-[190px] max-w-[42%] object-contain" alt="Recherche de chemin dans un réseau : intelligence exploratoire" />
-  <img src="./images/img_014.png" class="h-[190px] max-w-[42%] object-contain" alt="Processus de décision markovien : intelligence probabiliste" />
+<div v-click class="flex items-center gap-5">
+
+<div class="flex-1">
+
+**Procédurale** : automates et algorithmes déterministes (instructions pas à pas)
+
+</div>
+
+</div>
+
+<div v-click class="flex items-center gap-5">
+
+<div class="flex-1">
+
+**Exploratoire** : recherche dans un espace d'états (parcours de graphes, A*)
+
+</div>
+
+<img src="./images/img_015.jpg" class="h-[135px] w-auto object-contain" alt="Recherche de chemin dans un réseau : intelligence exploratoire" />
+
+</div>
+
+<div v-click class="flex items-center gap-5">
+
+<div class="flex-1">
+
+**Symbolique** : raisonnement logique, bases de connaissances, planification
+
+</div>
+
+</div>
+
+<div v-click class="flex items-center gap-5">
+
+<div class="flex-1">
+
+**Probabiliste** : gestion de l'incertitude, réseaux bayésiens, décision
+
+</div>
+
+<img src="./images/img_014.png" class="h-[135px] w-auto object-contain" alt="Processus de décision markovien : intelligence probabiliste" />
+
+</div>
+
+<div v-click class="flex items-center gap-5">
+
+<div class="flex-1">
+
+**Apprentissage** : amélioration par l'expérience (supervisé, renforcement, deep learning)
+
+</div>
+
+</div>
+
 </div>
 
 
