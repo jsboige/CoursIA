@@ -98,6 +98,10 @@ def generate_regime_labels(
     valid_index : pd.Index, dates corresponding to valid labels
     """
     mean_price = closes.mean(axis=1)
+    # CAUTION (#21054): default HMM decode is Viterbi = retrospective
+    # (label at t depends on observations after t) — training a classifier
+    # on these labels carries look-ahead into the training set; decode_mode
+    # ="filter" gives causal known-at-t labels.
     result = detect_regimes_hmm(mean_price, n_states=n_states)
 
     # Align: HMM labels may have leading zeros for warmup
