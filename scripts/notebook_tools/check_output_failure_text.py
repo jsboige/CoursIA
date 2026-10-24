@@ -163,6 +163,15 @@ TOOL_FAILURE_PATTERNS = (
     re.compile(r"no such file or directory", re.IGNORECASE),
     # inherited from check_render_volume_delta._UNAVAILABLE_PATTERNS
     *DEGRADED_HINT_PATTERNS,
+    # Interpreteur Lean (#21578) : un `@[extern]` de la Storage TorchLean n'est
+    # resolu que par le binaire lie ; dans l'interpreteur, l'evaluation meurt sur
+    # ce message, qui atterrit tel quel dans les outputs committes du carnet. La
+    # classe est OUTIL (le runtime ne fournit pas la primitive), pas MACHINE : le
+    # message ne nomme ni OS, ni repertoire, ni binaire externe. Meme regime que
+    # le motif ImportError ci-dessous — la FORME de l'erreur, pas le symbole
+    # TorchLean particulier : tout paquet a `@[extern]` produit la meme classe.
+    re.compile(r"could not find native implementation of external declaration",
+               re.IGNORECASE),
     # ImportError (#20701) : la FORME d'une exception levee (le nom, son
     # deux-points et un message), et non le mot nu. Une reponse de LLM cite la
     # classe dans sa prose (« `ImportError` si la CLI est lancee ... ») : une
@@ -192,6 +201,8 @@ _PATTERN_WITNESSES = (
     "bash: dot: command not found",
     "simanneal non disponible",
     "ImportError: cannot import name 'X' from 'y'",
+    "Could not find native implementation of external declaration "
+    "'TorchLean.Storage.Internal.floatBufferAppendSliceNative'",
 )
 
 # --- benign banners: matched above, and NOT a tool failure -----------------
@@ -291,12 +302,21 @@ _PATH_WITNESSES = (
 # Bornes assumees, epinglees par --self-test (le comportement EST la limite,
 # dite plutot que cachee) :
 #   - faux negatif : une ligne runtime qui CITE le chemin entre guillemets
-#     (`Serving from "/home/u/x"`, une trace `File "..."`, un repr Python)
-#     ouvre un littéral et est exemptee ;
+#     (`Serving from "/home/u/x"`, un repr Python) ouvre un littéral et est
+#     exemptee ;
 #   - faux positif : un chemin nu dans un commentaire de code affiche
 #     (`// /home/u/x`) n'ouvre rien et reste signale.
 # Les occurrences exemptees sont comptees dans la classe PROGRAM_LITERAL de
 # --all : jamais un silence.
+#
+# #21444 resserre la borne faux negatif sur les lignes de TRACE ou
+# D'EXCEPTION : la forme la plus frequente de la fuite de chemin machine
+# (secrets-hygiene regle 6, classe B -- le chemin dans une exception, le
+# mecanisme meme de l'Epic #21424) est un runtime qui cite son chemin entre
+# guillemets dans une traceback. Sur une telle ligne, OPEN_LITERAL n'exempte
+# plus : le chemin reste MACHINE_PATH. La limite conservee : une ligne runtime
+# citante HORS trace (`Serving from "/home/u/x"`, `Exception message: ...
+# 'D:\...'` au style .NET) reste exempte -- epinglee par --self-test.
 
 
 def _is_program_literal(probe, start, end):
@@ -304,6 +324,36 @@ def _is_program_literal(probe, start, end):
     le caractere immediatement a sa gauche est un guillemet (forme OPEN_LITERAL
     de la decision ai-01 c.6262311553)."""
     return start > 0 and probe[start - 1] in ('"', "'")
+
+
+# --- #21444 : lignes de trace/exception, non-exemptibles ---------------------
+# Une traceback Python cite ses chemins entre guillemets (`File "/home/u/x"`,
+# `FileNotFoundError: [Errno 2] No such file or directory: '/home/u/x'`) : la
+# forme OPEN_LITERAL les exempterait, aveuglant le ratchet sur la classe de
+# fuite la plus frequente. Sur ces lignes le chemin reste MACHINE_PATH :
+#   - ligne de frame de traceback : commence par `File "` (indentation toleree) ;
+#   - message errno du runtime : porte `[Errno ` ;
+#   - en-tete d'exception : `<Nom>Error: ` / `<Nom>Exception: ` (nom CamelCase
+#     colle au deux-points -- `Exception message:` au style .NET ne matche pas,
+#     epingle comme borne conservée) ;
+#   - en-tete d'avertissement : contient `Warning: `.
+_TRACE_LINE_MARKERS = (
+    re.compile(r'^\s*File\s+"'),
+    re.compile(r'\[Errno '),
+    re.compile(r'\b[A-Za-z_][A-Za-z0-9_]*(?:Error|Exception)\s*:'),
+    re.compile(r'Warning\s*:'),
+)
+
+
+def _is_trace_line(probe, start):
+    """True si la ligne de ``probe`` contenant la position ``start`` est une
+    ligne de trace ou d'exception (#21444) -- non exemptible OPEN_LITERAL."""
+    line_start = probe.rfind("\n", 0, start) + 1
+    line_end = probe.find("\n", start)
+    if line_end == -1:
+        line_end = len(probe)
+    line = probe[line_start:line_end]
+    return any(marker.search(line) for marker in _TRACE_LINE_MARKERS)
 
 # --- class 3 (ADVISORY, never gates): capability downgrade -------------------
 # #14603. Each half of the couple alone is legitimate: a value can move on a
@@ -583,7 +633,11 @@ def scan(nb, base_nb=None):
             for m in pat.finditer(path_probe):
                 # #20120: program text the cell prints is not a runtime path.
                 # Exempted hits stay visible in their own class (never silent).
-                if _is_program_literal(path_probe, m.start(), m.end()):
+                # #21444: a trace/exception line never qualifies -- the
+                # runtime citing its own path between quotes is the leak,
+                # not program text.
+                if (_is_program_literal(path_probe, m.start(), m.end())
+                        and not _is_trace_line(path_probe, m.start())):
                     found["PROGRAM_LITERAL"].append((idx, m.group(0)[:120]))
                 else:
                     found["MACHINE_PATH"].append((idx, m.group(0)[:120]))
@@ -963,6 +1017,20 @@ def self_test(cwd=None):
     if _founder["MACHINE_PATH"] or len(_founder["PROGRAM_LITERAL"]) != 1:
         failures.append("quoted founding witness moved -- known "
                         "false-negative bound moved: " + repr(_founder))
+
+    # #21444 : sur une ligne de trace ou d'exception, OPEN_LITERAL n'exempte
+    # plus -- chacune des quatre formes epinglees dans le sens bloquant, la
+    # borne .NET conservée reste exempte (pinned ci-dessus).
+    for _trace_line in (
+            '  File "/home/user/wt-aspire/run.py", line 3, in <module>',
+            "FileNotFoundError: [Errno 2] No such file or directory: "
+            "'/home/user/wt-aspire/data.csv'",
+            "RuntimeError: cannot read '/home/user/wt-aspire/x'",
+            "UserWarning: config not found at '/home/user/wt-aspire/x'"):
+        _t = _pathonly(_trace_line)
+        if len(_t["MACHINE_PATH"]) != 1 or _t["PROGRAM_LITERAL"]:
+            failures.append("trace/exception line exempted (#21444): "
+                            + repr(_trace_line))
 
 
     # Benign banner: matched by "not available", neutralised by

@@ -750,3 +750,240 @@ def test_fetch_closed_issues_positive_control_counts_nodes_read_before_window_fi
         )
     assert count == 3
     assert [s.issue_number for s in services] == [3]
+
+
+
+# ---------------------------------------------------------------------------
+# Famine de progression (#21067 item 4) — Hermes 🟠 finding sur #21335
+# ---------------------------------------------------------------------------
+
+
+def _issue(num: int, age_days: float, *, naive: bool = False, valid: bool = True) -> dict:
+    """Construit une issue pour les tests count_famine_progression."""
+    d = datetime.now(timezone.utc) - timedelta(days=age_days)
+    if not valid:
+        return {"number": num, "createdAt": "not-a-date"}
+    if naive:
+        # Retirer la tzinfo pour tester le fallback UTC
+        d = d.replace(tzinfo=None)
+        return {"number": num, "createdAt": d.strftime("%Y-%m-%dT%H:%M:%S")}
+    return {"number": num, "createdAt": d.strftime("%Y-%m-%dT%H:%M:%SZ")}
+
+
+def test_count_famine_empty():
+    """Liste vide -> count=0, examples=[]."""
+    assert bsb.count_famine_progression([]) == {"count": 0, "examples": []}
+    assert bsb.count_famine_progression([], threshold_weeks=2) == {"count": 0, "examples": []}
+
+
+def test_count_famine_mixed_ages():
+    """1 fresh (< 4 sem) + 1 old (5 sem) + 1 very old (10 sem) + 1 invalide.
+
+    Au seuil 4 sem par defaut : 2 en famine (old + very old), exemples tries
+    plus vieux d'abord -> [tres vieille, old].
+    """
+    issues = [
+        _issue(101, age_days=1),    # fresh, hors famine
+        _issue(102, age_days=35),   # old, en famine
+        _issue(103, age_days=70),   # very old, en famine
+        _issue(104, age_days=0, valid=False),  # dropped silently
+    ]
+    result = bsb.count_famine_progression(issues)
+    assert result["count"] == 2
+    assert result["examples"] == [103, 102]  # oldest first
+
+
+def test_count_famine_thresholds_2_4_30():
+    """Seuils 2/4/30 semaines sur la meme fixture.
+
+    Issues a 16/35/250 jours : la 1ere depasse 2 sem, la 2eme passe 2 et
+    4 sem, la 3eme passe tous les seuils.
+    """
+    issues = [
+        _issue(200, age_days=16),   # > 2 sem, < 4 sem, < 30 sem
+        _issue(201, age_days=35),   # > 2 sem, > 4 sem, < 30 sem
+        _issue(202, age_days=250),  # tres ancien
+    ]
+    # Seuil 2 sem : 3 en famine
+    r2 = bsb.count_famine_progression(issues, threshold_weeks=2)
+    assert r2["count"] == 3
+    assert r2["examples"] == [202, 201, 200]
+    # Seuil 4 sem : 2 (la 16-jour et la 35-jour ne passent pas)
+    r4 = bsb.count_famine_progression(issues, threshold_weeks=4)
+    assert r4["count"] == 2
+    assert r4["examples"] == [202, 201]
+    # Seuil 30 sem : 1 (seule la 250-jour depasse 210 jours)
+    r30 = bsb.count_famine_progression(issues, threshold_weeks=30)
+    assert r30["count"] == 1
+    assert r30["examples"] == [202]
+
+
+def test_count_famine_naive_datetime():
+    """Timestamps ISO sans tzinfo sont toleres et converts en UTC.
+
+    Reproduction du pattern : `createdAt: 2026-08-01T00:00:00` sans suffixe
+    Z. La fonction ajoute tzinfo=UTC avant de calculer l'age.
+    """
+    issues = [
+        _issue(300, age_days=60, naive=True),  # tres ancienne naive
+    ]
+    result = bsb.count_famine_progression(issues, threshold_weeks=4)
+    assert result["count"] == 1
+    assert result["examples"] == [300]
+
+
+def test_count_famine_invalid_dropped():
+    """Entrees sans createdAt ou avec date invalide sont silencieusement ecartees."""
+    issues = [
+        {"number": 400},  # pas de createdAt
+        {"number": 401, "createdAt": ""},  # vide
+        _issue(402, age_days=0, valid=False),  # date invalide
+        _issue(403, age_days=50),  # valide, en famine
+    ]
+    result = bsb.count_famine_progression(issues)
+    assert result["count"] == 1
+    assert result["examples"] == [403]
+
+
+def test_render_text_famine_line():
+    """render_text inclut la ligne Famine de progression quand famine est fourni."""
+    by_lane = {}
+    famine = {"count": 7, "examples": [103, 102, 99, 80, 50], "threshold_weeks": 4}
+    out = bsb.render_text(by_lane, fleet_total=10, fleet_courant=5, fleet_ancien=2, stock={}, famine=famine)
+    # Libelle : Hermes 🟡 finding sur #21335 : "issues ouvertes creees > N sem. (proxy famine)"
+    assert "Issues ouvertes creees > 4 sem. (proxy famine) : 7" in out
+    assert "plus vieilles : #103, #102, #99, #80, #50" in out
+
+
+def test_render_json_famine_key():
+    """render_json inclut la cle `famine` quand famine est fourni."""
+    famine = {"count": 3, "examples": [200, 100], "threshold_weeks": 4}
+    out = bsb.render_json([], {}, fleet_total=5, fleet_courant=2, fleet_ancien=1, stock={}, famine=famine)
+    parsed = json.loads(out)
+    assert "famine" in parsed
+    assert parsed["famine"] == famine
+
+
+# ---------------------------------------------------------------------------
+# #19804 acceptance 1 (complement) : residuel `_manuel` avec compte ET motif
+# ---------------------------------------------------------------------------
+
+
+def _manuel_service(num: int) -> bsb.Service:
+    return bsb.Service(
+        issue_number=num,
+        issue_created_at=_iso(datetime(2026, 10, 1, tzinfo=timezone.utc)),
+        service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+        service_kind="manuel",
+        pr_number=None,
+        pr_body=None,
+        attribution_kind="manuel",
+    )
+
+
+def test_manuel_residual_section_count_motive_and_issues():
+    """Le residuel sort avec son compte, son motif et ses numeros."""
+    lines = bsb.manuel_residual_section([_manuel_service(7), _manuel_service(3)])
+    text = "\n".join(lines)
+    assert "restant en _manuel : 2" in text
+    assert bsb.MANUEL_RESIDUAL_MOTIVE in text
+    assert "#3" in text and "#7" in text
+
+
+def test_manuel_residual_section_empty_says_sans_objet():
+    text = "\n".join(bsb.manuel_residual_section([]))
+    assert "restant en _manuel : 0" in text
+    assert "sans objet" in text
+    assert bsb.MANUEL_RESIDUAL_MOTIVE not in text
+
+
+def test_render_text_includes_manuel_residual_only_when_passed():
+    """Absent sans le parametre (compat), present avec (#19804 acc.1)."""
+    base = bsb.render_text({}, 0, 0, 0, {})
+    assert "restant en _manuel" not in base
+    with_res = bsb.render_text({}, 0, 0, 0, {}, manuel_services=[_manuel_service(11)])
+    assert "restant en _manuel : 1" in with_res
+    assert "#11" in with_res
+
+
+def test_render_json_includes_manuel_closure_block():
+    out = json.loads(bsb.render_json(
+        [], {}, fleet_total=0, fleet_courant=0, fleet_ancien=0, stock={},
+        manuel_services=[_manuel_service(5), _manuel_service(9)],
+    ))
+    assert out["manuel_closure"]["count"] == 2
+    assert out["manuel_closure"]["issues"] == [5, 9]
+    assert out["manuel_closure"]["motive"] == bsb.MANUEL_RESIDUAL_MOTIVE
+
+
+def test_render_json_manuel_closure_empty_has_null_motive():
+    out = json.loads(bsb.render_json(
+        [], {}, fleet_total=0, fleet_courant=0, fleet_ancien=0, stock={},
+        manuel_services=[],
+    ))
+    assert out["manuel_closure"] == {"count": 0, "motive": None, "issues": []}
+
+
+# ---------------------------------------------------------------------------
+# #19804 acceptance 3 : temoin positif rejouable (--explain)
+# ---------------------------------------------------------------------------
+
+
+class _FakeProc:
+    def __init__(self, stdout: str) -> None:
+        self.stdout = stdout
+
+
+def _patch_gh(monkeypatch, comments: list[dict]) -> None:
+    class _SP:
+        @staticmethod
+        def run(*_a, **_k):
+            return _FakeProc(json.dumps({"comments": comments}))
+    monkeypatch.setattr(bsb, "subprocess", _SP())
+
+
+def test_explain_attribution_delivered_marker_credits_delivering_lane(
+    monkeypatch, capsys,
+):
+    """Temoin acc.3 : issue fermee apres `[DELIVERED]` -> attribuee a la lane
+    qui a livre, avec le marqueur retenu en preuve.
+
+    Le marqueur lu est celui de la famille claim (`_MARKER_RE`) : un
+    `[INFO] candidate-delivered` seul ne renseigne pas la lane pour cet
+    organe -- c'est precisement le residuel `_manuel`, et le temoin doit
+    montrer le cas ou l'attribution ABOUTIT."""
+    comments = [
+        {"createdAt": "2026-10-04T12:00:00Z",
+         "body": "[CLAIMED] lane myia-po-2024:CoursIA -- tranche X",
+         "author": {"login": "jsboige"}},
+        {"createdAt": "2026-10-05T08:00:00Z",
+         "body": "[DELIVERED] lane myia-po-2024:CoursIA -- PR #22147",
+         "author": {"login": "jsboige"}},
+    ]
+    _patch_gh(monkeypatch, comments)
+    rc = bsb.explain_attribution(42, "jsboige", "CoursIA")
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "lane=myia-po-2024:CoursIA" in out
+    assert "marqueur=DELIVERED" in out
+
+
+def test_explain_attribution_info_delivered_alone_stays_manuel(monkeypatch, capsys):
+    """Un `[INFO] candidate-delivered` sans marqueur de claim ne suffit pas :
+    le temoin doit nommer ce cas plutot que de le passer sous silence."""
+    _patch_gh(monkeypatch, [
+        {"createdAt": "2026-10-05T08:00:00Z",
+         "body": "[INFO] candidate-delivered -- lane myia-po-2024:CoursIA -- PR #22147",
+         "author": {"login": "jsboige"}},
+    ])
+    bsb.explain_attribution(43, "jsboige", "CoursIA")
+    out = capsys.readouterr().out
+    assert "aucune visite lisible" in out and "_manuel" in out
+
+
+def test_explain_attribution_no_visit_says_manuel(monkeypatch, capsys):
+    _patch_gh(monkeypatch, [{"createdAt": "2026-10-05T08:00:00Z", "body": "merci"}])
+    rc = bsb.explain_attribution(77, "jsboige", "CoursIA")
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "aucune visite lisible" in out and "_manuel" in out

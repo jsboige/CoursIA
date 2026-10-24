@@ -49,6 +49,13 @@
     diagnostiqué sur les chaînes verticales ci-dessus est résolu par
     l'embedding annulaire.
 
+  Ce que le maillon 3 prouve (la fermeture de tresse, §6) : la divergence
+  chirale documentée sur le code planaire canonique de 4₁
+  (`alexander_figureEight_not_classical`) est un artefact d'encodage, pas
+  une limite du moteur — la fermeture de la tresse (σ₁ σ₂⁻¹)², suivie
+  brin par brin, atteint la classe d'unités du classique sous le moteur
+  non signé (`braidFour_classical_unit_class`).
+
   Convention de signe : le code PD du lake ne code pas la chiralité des
   croisements (docstring d'`alexanderEntry`) ; seul |aᵢ| est lu, et le
   miroir d'une notation partage toutes ses valeurs désignées.
@@ -459,5 +466,93 @@ theorem spiral_five_alexander :
   simp only [Matrix.of_apply]
   simp (config := { decide := true }) [alexanderEntry]
   ring
+
+/-! ### Maillon 3 : le nœud en huit par fermeture de tresse (§6)
+
+La construction annulaire du maillon 2 résolvait les familles T(2,n)
+tout-positives. Le nœud en huit 4₁ échappait au moteur : sur le code
+planaire canonique, le mineur non signé rend `t³ − 2t² + 2t`, hors de la
+classe d'unités du classique `t² − 3t + 1`
+(`alexander_figureEight_not_classical`), et la réparation passait par la
+variante signée (`alexander_figureEight_signed`). Ce maillon établit que
+la divergence était un **artefact d'encodage, pas une limite du moteur** :
+la fermeture de la tresse à 3 brins `(σ₁ σ₂⁻¹)²` — représentation standard
+de 4₁ — encodée en suivant les **brins** à travers les croisements (et non
+les pistes), donne un PD sur lequel le moteur NON signé atteint
+directement la classe d'unités du classique (`braidFour_classical_unit_class`
+ci-dessous : la contrepartie positive exacte de
+`alexander_figureEight_not_classical`, même forme, prouvée là où l'autre
+est réfutée).
+
+Dérivation de l'encodage (chaque brin suivi de haut en bas, une tresse
+échangeant les pistes à chaque croisement) : les brins S1, S2, S3 partent
+des pistes 1, 2, 3 ; S1 passe c1 (dessus, σ₁), c2 (dessous, σ₂⁻¹), c4
+(dessus, σ₂⁻¹) ; S2 passe c1 (dessous), c3 (dessus, σ₁), c4 (dessous) ;
+S3 passe c2 (dessus, σ₂⁻¹), c3 (dessous, σ₁). Les 8 arêtes sont les
+segments inter-croisements, la fermeture recollant le bas de la piste k au
+haut de la piste k (E1 = S1-tête ∪ S3-queue, E4 = S1-queue ∪ S2-tête,
+E7 = S2-queue ∪ S3-tête, E2 E3 E5 E6 E8 = segments propres). Le code PD
+retenu vit dans la famille des lectures cohérentes — chaque croisement y
+porte ses deux arêtes de brin-dessus en positions e1/e3 — et c'est cette
+cohérence qui rend la classe du classique atteignable, pas une unicité de
+lecture : sur la structure d'incidence de la tresse (8 lectures
+alternantes plausibles par croisement), l'orientation du brin-dessous est
+neutre pour la valeur désignée, et parmi les 16 orientations du
+brin-dessus exactement 4 rendent la classe d'unités du classique (celle
+retenue −t² + 3t − 1, et t³ − 3t² + t) ; les 12 autres retombent dans
+les classes du code planaire (t³ − 2t² + 2t notamment), et une lecture
+incohérente — un brin-dessus en e2/e4 — ne retrouve la classe que par
+coïncidence (64 sur 3 840). C'est la cohérence d'orientation que
+l'encodage canonique du planaire ne transporte pas.
+-/
+
+/-- PD de la fermeture de la tresse `(σ₁ σ₂⁻¹)²` : croisement c1 =
+(1, 4, 2, 5) — littéralement le premier croisement du `trefoilDiagram`
+du lake —, c2 = (7, 2, 8, 3), c3 = (6, 1, 5, 8), c4 = (3, 6, 4, 7),
+sur 8 arêtes. -/
+def braidFourDiagram : KnotDiagram :=
+  ⟨[⟨1, 4, 2, 5⟩, ⟨7, 2, 8, 3⟩, ⟨6, 1, 5, 8⟩, ⟨3, 6, 4, 7⟩], 8⟩
+
+theorem braidFour_wf : braidFourDiagram.wf = true := by
+  decide
+
+/-- Aucune arête réflexive dans la fermeture de tresse : les quatre
+étiquettes de chaque croisement sont deux à deux distinctes. -/
+theorem braidFour_noReflect :
+    braidFourDiagram.crossings.all (fun c =>
+      c.e1 ≠ c.e2 ∧ c.e1 ≠ c.e3 ∧ c.e1 ≠ c.e4 ∧
+      c.e2 ≠ c.e3 ∧ c.e2 ≠ c.e4 ∧ c.e3 ≠ c.e4) = true := by
+  decide
+
+/-- La valeur désignée de la fermeture de tresse : `−t² + 3t − 1`, le
+classique de 4₁ en sa classe d'unités — atteint par le moteur NON signé
+(motif d'`alexander_figureEight` : littéralisation, mineur 3×3 par
+`det_three_aux`). -/
+theorem braidFour_alexander :
+    alexanderPolynomialAux braidFourDiagram =
+      -(Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+  have hc : braidFourDiagram =
+      ⟨[⟨1, 4, 2, 5⟩, ⟨7, 2, 8, 3⟩, ⟨6, 1, 5, 8⟩, ⟨3, 6, 4, 7⟩], 8⟩ := by
+    decide
+  simp only [alexanderPolynomialAux, hc]
+  simp (config := { decide := true })
+  rw [det_three_aux]
+  simp only [Matrix.of_apply]
+  simp (config := { decide := true }) [alexanderEntry]
+  ring
+
+/-- Contrepartie positive de `alexander_figureEight_not_classical` : là
+ où le code planaire canonique échoue (aucune unité `ε = ±1`, aucun
+ exposant `k`), l'encodage bresse atteint la classe d'unités du classique
+ avec `ε = −1`, `k = 0`. Le déterminant |Δ(−1)| = 5 = det(4₁) est
+ préservé, et la forme du polynôme cette fois avec. -/
+theorem braidFour_classical_unit_class :
+    ∃ (k : ℕ) (ε : ℤ), ε * ε = 1 ∧
+      alexanderPolynomialAux braidFourDiagram =
+        Polynomial.C ε * Polynomial.X ^ k *
+          (Polynomial.X ^ 2 - 3 * Polynomial.X + 1) := by
+  refine ⟨0, -1, by norm_num, ?_⟩
+  rw [braidFour_alexander]
+  norm_num
 
 end Knots

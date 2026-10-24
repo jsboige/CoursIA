@@ -20,12 +20,17 @@ name: Enrich-quality gate
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/**/*.ipynb'
       - 'scripts/notebook_tools/scan_enrich_quality.py'
       - 'scripts/notebook_tools/enrich_quality_ci.py'
   workflow_dispatch:
+
+# Condition jointe à l'arbitrage #19426 (c.6300191475) : tout workflow
+# touché sans bloc concurrency en reçoit un, clé sur la PR.
+concurrency:
+  group: enrich-quality-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read

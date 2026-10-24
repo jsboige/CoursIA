@@ -47,10 +47,15 @@ import sys
 
 SHARED_LOGIN = "jsboige"
 
-# Comptes machine meses le 2026-09-22 (#17418) : ai-01, po-2023 et Web1
+# Comptes machine mesures le 2026-09-22 (#17418) : ai-01, po-2023 et Web1
 # existent ; po-2024..2027 sont 404 jusqu'a la Phase B. Ils figurent deja ici
 # pour que la Phase C ne demande AUCUN changement de code : des que le jeton
 # est dans le trousseau, les organes l'epinglent.
+#
+# Roster de la flotte = FLEET_ROSTER dans ``scripts/secrets/agent_keyring.py``
+# (9 machines au 2026-10-20, roster RooSync propage le meme jour -- #21687).
+# Les deux listes se croisent par test ; une divergence rougit au lieu de se
+# decouvrir a la premiere observation refusee.
 HOST_ACCOUNTS = {
     "myia-ai-01": "myia-ai-01",
     "myia-po-2023": "myia-po-2023",
@@ -59,6 +64,11 @@ HOST_ACCOUNTS = {
     "myia-po-2026": "myia-po-2026",
     "myia-po-2027": "myia-po-2027",
     "myia-web1": "MyIA-Web1",
+    # Compte GitHub a creer aupres du siege concerne : myia-po-2028 et
+    # myia-web2 n'ont pas encore de login mesure (gh api users -> 404 le
+    # 2026-10-20). Ils restent hors de cette table tant que le login n'existe
+    # pas -- la table n'accepte que des comptes reels, sinon le message
+    # d'erreur en cite de faux.
 }
 
 # --- Identites d'auteur des dossiers (#17437) -------------------------------
@@ -92,6 +102,77 @@ ACCEPTED_DOSSIER_AUTHORS = frozenset(
     (SHARED_LOGIN,)
     + tuple(f"{APP_LOGIN_PREFIX}{lane}[bot]" for lane in APP_DOSSIER_LANES)
 )
+
+# --- Normalisation de l'auteur lu sur une surface GraphQL ou REST ----------
+#
+# Les deux surfaces ne rendent pas le MEME login pour un acteur de type
+# `Bot`. Mesure firsthand (2026-10-21, ai-01, commentaire `github-actions`
+# sur #21390) :
+#
+#   GraphQL  `author { __typename login }` : login = "github-actions"
+#                                              (SANS suffixe), __typename = "Bot"
+#   REST     `user`                        : login = "github-actions[bot]"
+#                                              (AVEC suffixe), type = "Bot"
+#
+# `ACCEPTED_DOSSIER_AUTHORS` est ecrit en orthographe REST : toute lecture
+# doit donc etre normalisee AVANT la comparaison. Le gate de fermeture lit
+# en GraphQL, le gate de prevalidation adjointe en REST : sans normalisation,
+# le premier refuse une App de lane que le second accepte (issue #21818,
+# symptome mesure par la lane secretaire : "comment author
+# 'coursia-lane-po-2026' is not an accepted dossier author").
+#
+# La reconstruction du suffixe s'appuie sur le TYPE de l'acteur, jamais sur la
+# forme du login : sans cette exigence, un compte UTILISATEUR nomme comme le
+# slug de l'App ("coursia-lane-po-2026", sans suffixe) passerait le gate.
+# ---------------------------------------------------------------------------
+
+
+def author_is_bot(author: dict) -> bool:
+    """L'acteur est-il une App (type `Bot`) ?
+
+    Accepte les deux formes rencontrees : `__typename` (GraphQL) et `type`
+    (REST). Un auteur dont le type est inconnu n'est PAS un bot : le doute
+    profite au refus.
+    """
+    if not isinstance(author, dict):
+        return False
+    typename = str(author.get("__typename") or "").strip()
+    if typename:
+        return typename == "Bot"
+    atype = str(author.get("type") or "").strip()
+    if atype:
+        return atype == "Bot"
+    return False
+
+
+def normalize_author_login(author: dict) -> str:
+    """Login d'auteur en orthographe REST (suffixe `[bot]` pour une App).
+
+    Point de passage UNIQUE : les deux gates qui comparent l'auteur d'un
+    dossier passent par ici, donc une seule definition de la forme canonique.
+    Un login deja suffixe est renvoye tel quel (idempotent) : la lecture REST
+    ne change rien, la lecture GraphQL est corrigee.
+    """
+    if not isinstance(author, dict):
+        return ""
+    login = str(author.get("login") or "").strip()
+    if not login:
+        return ""
+    if login.endswith("[bot]"):
+        return login
+    if author_is_bot(author):
+        return login + "[bot]"
+    return login
+
+
+def is_accepted_dossier_author(author: dict) -> bool:
+    """L'auteur est-il un signataire de dossier accepte ?
+
+    La comparaison se fait sur le login NORMALISE : un dossier signe sous une
+    App de lane est accepte quelle que soit la surface qui a lu l'auteur.
+    """
+    return normalize_author_login(author) in ACCEPTED_DOSSIER_AUTHORS
+
 
 RATE_LIMIT_RE = re.compile(r"rate limit", re.IGNORECASE)
 

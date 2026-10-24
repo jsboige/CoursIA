@@ -23,6 +23,7 @@ from check_output_collapse import (
     SIGNATURE_FACTOR,
     _apply_moved_content,
     _diagnostic_fraction,
+    _load_pr_body,
     _normalize,
     analyze,
 )
@@ -503,3 +504,42 @@ def test_magnitude_keeps_its_own_floor():
     # bien jugee : le plancher est la seule difference.
     got2 = analyze(base([("a", "x" * BASE_FLOOR)]), nb([("a", head)]))
     assert [c["kind"] for c in got2["cells"]] == ["magnitude"], got2["cells"]
+
+
+# --- #21552 : le body de la PR arrive par l'environnement, en memoire -----
+#
+# Le canal par-PR publie le corps en variable d'environnement (meme motif
+# que MD_CONTENT_LOSS_PR_BODY, #13491 : ecrire le corps dans un fichier
+# declenche le motif CodeQL actions/code-injection). Le lecteur traitait
+# cette valeur comme un CHEMIN : il ouvrait un fichier nomme comme le
+# corps, echouait, et rendait une chaine vide. L'echappatoire etait donc
+# injoignable et un MAGNITUDE justifie restait bloquant (#21552).
+
+
+def test_body_in_memory_from_env_is_read(monkeypatch):
+    body = ("## Output-collapse justification\n"
+            "- MyIA.AI.Notebooks/Search/Search-11-Metaheuristics.ipynb"
+            " cellule 7a064277 -- allegement declare\n")
+    monkeypatch.setenv("COLLAPSE_PR_BODY", body)
+    assert _load_pr_body(None) == body
+
+
+def test_env_naming_an_existing_file_is_still_read_as_a_file(
+        tmp_path, monkeypatch):
+    """Un appelant dispatch qui materialise le corps garde son canal."""
+    path = tmp_path / "body.md"
+    path.write_text("## Output-collapse justification\n", encoding="utf-8")
+    monkeypatch.setenv("COLLAPSE_PR_BODY", str(path))
+    assert _load_pr_body(None) == "## Output-collapse justification\n"
+
+
+def test_body_file_flag_wins_over_the_env(tmp_path, monkeypatch):
+    flag = tmp_path / "flag.md"
+    flag.write_text("depuis le drapeau", encoding="utf-8")
+    monkeypatch.setenv("COLLAPSE_PR_BODY", "depuis l'environnement")
+    assert _load_pr_body(str(flag)) == "depuis le drapeau"
+
+
+def test_empty_body_stays_empty_and_justifies_nothing(monkeypatch):
+    monkeypatch.delenv("COLLAPSE_PR_BODY", raising=False)
+    assert _load_pr_body(None) == ""
