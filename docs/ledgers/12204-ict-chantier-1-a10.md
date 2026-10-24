@@ -48,7 +48,7 @@ Une statuation ne s'appuie pas sur la mesure d'un autre sans relire (G.1). Toute
 ## État de la table après A10
 
 - **TABLE (13 entrées)** : ops **1, 2, 4, 6, 7, 8, 9, 10, 11, 12, 13, 14** + `point fixe`.
-- **FILE D'ATTENTE** : ops 3 et 5 (secondes attestations portées par le claim `myia-ai-01:CoursIA-2`, Search-14a/03g/03h — aucune PR mergée identifiée à date) · `institutionnaliser` (DAO seulement) · `inhiber` (pas de banc) · `réviser une croyance` (Tweety, non branché).
+- **FILE D'ATTENTE** : ops 3 et 5 (secondes attestations livrées et fondues — #19109 « op 3 Quotienter/Fibrer loge dans Search-03b » et #19112 « op 5 recoller loge dans Search-03f », mergées le 05/10, [DELIVERED] c.5980587552/c.5981067379 ; carnets dédiés 03g/03h retirés au profit du logement dans 03b/03f — statuation pas encore faite) · `institutionnaliser` (DAO seulement) · `inhiber` (pas de banc) · `réviser une croyance` (Tweety, non branché).
 
 La table numérotée est **complète pour les dix opérations du premier jet** (§2 du body) : les quatre absentes du premier jet (11-14) avaient été promues par A6, il ne manquait que l'op 2 — c'est fait. Ce qui reste en file d'attente numérotée (3, 5) sont des promotions en cours d'instruction ailleurs, pas des dossiers dormants de ce chantier.
 
