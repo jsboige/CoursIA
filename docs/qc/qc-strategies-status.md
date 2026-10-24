@@ -59,6 +59,7 @@ Projets créés à partir d'une issue de lecture d'article, sous les garde-fous 
 | Stratégie | Type | Classe d'actifs | Statut | Évidence |
 |-----------|------|-----------------|--------|----------|
 | `OpeningRangeBreakout` | Momentum intraday (cassure du range d'ouverture, « stocks in play ») | Actions US | **Ignore — NO BEATS après frais** | #16355. Paramètres de l'article (range de 5 min, univers de 1000) : CAGR +4,10 % sur 2016-2019 puis −5,23 % sur 2020-2023, frais d'environ 32 % du capital de départ sur chaque fenêtre. Variante communautaire (range d'une minute) : arrêtée par les limites de temps de QC Cloud, mesurée sur sa portion exécutée seulement, et de signe opposé selon la taille de l'univers. Piste famille refermée. Détail : [README](../../MyIA.AI.Notebooks/QuantConnect/projects/OpeningRangeBreakout/) |
+| `MAXEffect-VIXLeverage-QC` | Facteur MAX(5) + overlay de levier VIX | Actions US (univers liquide) | **Mesure 1/3 — candidat mesuré, ablation et référence SPY en vol** | #22290. QC Cloud 2026-10-24, projet 38366686, 2015-01 → 2026-06 (4 199 séances), 100 000 $, frais IBKR : candidat `max-vix` (levier 1,5×/1,0× via VIX) **Sharpe 0,181**, CAGR 5,40 %, MaxDD 26,4 %, 32 697 ordres, frais 10 524 $. Ablation `max-only` (backtest `3158bd54…`) et référence SPY non encore mesurés. L'article annonce « Sharpe 0,57 depuis 1998 » : la confrontation porte sur le verdict, pas sur le niveau. Détail : [README](../../MyIA.AI.Notebooks/QuantConnect/projects/MAXEffect-VIXLeverage-QC/) |
 
 ## Régimes de performance (connaissance cluster firsthand)
 
