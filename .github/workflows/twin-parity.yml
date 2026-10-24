@@ -43,7 +43,6 @@ name: Twin Parity Check
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'scripts/notebook_tools/twin_pairs.d/**'
       - 'scripts/notebook_tools/check_twin_parity.py'

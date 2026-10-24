@@ -49,7 +49,7 @@ des mouvements, dans les deux sens.
 marché (rendements implicites CAPM) et de vues momentum multi-fenêtres (1M/3M/6M/12M)
 avec calibration He & Litterman de l'incertitude — ne génère pas d'alpha au-delà
 de l'exposition actions US large-caps. Il offre une **diversification disciplinée**
-(5 secteurs, 15 lignes, poids bornés 1-20 %) plutôt qu'un edge prédictif. Pas de
+(5 secteurs, poids bornés 1-20 %) plutôt qu'un edge prédictif. Pas de
 re-tuning des paramètres (TAU, SIGMOID_STEEPNESS, TARGET_VOL) : ajuster
 rétrospectivement serait du surapprentissage (EPIC #9768). Le main.py est livré
 tel quel, le verdict porte sur la stratégie en l'état.

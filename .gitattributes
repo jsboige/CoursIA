@@ -147,3 +147,23 @@ MyIA.AI.Notebooks/GenAI/FallacyDetection/data/academic/MAFALDA/*.jsonl -text
 # les 41 LF nus. La preuve de verbatim est l'EGALITE DES SHA DE BLOB (consignee
 # dans argumentum_snapshot.json), et elle n'est atteignable qu'avec `-text`.
 MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/argumentum_*.owl -text
+
+# Banc Phase 2 de FallacyDetection : les deux CSV sont le PRODUIT du constructeur
+# (cartesian_dataset_builder), pas une recopie d'amont ; leur forme canonique est
+# le LF pur (les trois blobs du dossier mesures a 0 octet CR). Le manifeste
+# `phase2/manifest.json` epingle leur SHA256 et
+# `test_real_build_matches_committed_manifest` compare les OCTETS de la copie de
+# travail a la reconstruction : la copie de travail DOIT donc etre en LF, comme
+# le blob. Ce n'est donc pas un `-text` de verbatim, mais un `text eol=lf`.
+#
+# Mesure 2026-10-21 (#21862) : sur un poste dont le `core.autocrlf` GLOBAL vaut
+# `true` (et le local `false`), la premiere copie de travail etait en CRLF
+# (1630 CR sur val.csv, 3259 sur test.csv) alors que les blobs sont en LF -- et
+# l'index conservait une entree de STAT perime (taille 91958, mtime du 30/09),
+# si bien que `git status` comme `git checkout` ne voyaient RIEN : le fichier
+# etait modifie sur le disque sans que git ne le signale, et le test echouait
+# sur l'octet 65. `text eol=lf` ferme la classe : le checkout restitue le LF quel
+# que soit l'autocrlf local, et le filtre "clean" renormalise en LF une edition
+# CRLF -- le blob stocke ne peut plus diverger de la forme canonique.
+MyIA.AI.Notebooks/GenAI/FallacyDetection/data/phase2/*.csv text eol=lf
+MyIA.AI.Notebooks/GenAI/FallacyDetection/data/phase2/manifest.json text eol=lf

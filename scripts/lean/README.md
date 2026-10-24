@@ -13,8 +13,9 @@ Outils pour le cycle de vie des projets Lean 4 du dépôt.
 | `smoke_test_epita_is.py` | Smoke tests du parcours EPITA-IS (notebooks + preuves) |
 | `check_public_anchor.py` | Detecte les `sorry` qu'aucune declaration publique n'atteint — l'angle mort residuel du gate `proof-integrity` (voir ci-dessous) |
 | `count_code_sorry.py` | Compte les `sorry` **hors commentaires** (la vraie dette) et liste les theoremes vacuous (`: True`) — ce que `grep -c sorry` surestime de ~11x (voir ci-dessous) |
-| `lean_exec.py` | Organe canonique d'execution Lean : cap de population machine-wide, confinement de l'arbre (Job Object `kill-on-close` / scope POSIX), backend epingle par lake, postcondition zero-orphelin (voir ci-dessous, #15666) |
+| `lean_exec.py` | Organe canonique d'execution Lean : cap de population machine-wide, confinement de l'arbre (Job Object `kill-on-close` / scope POSIX), backend epingle par lake, postcondition zero-orphelin, procedure operateur (`doctor` / `dry-run` / `stop` / `recover`) (voir ci-dessous, #15666) |
 | `rle_to_lean_grid.py` | Convertit un motif RLE Golly en litteral `Grid` (`List (Int × Int)`) — tranche 1 de #19989 (temoins non-vacuous de `Pillars.lean`) |
+| `lean_prebuilt.py` | Etat pre-build d'un lake : empreinte deterministe (sources + toolchain + manifeste, hors `.lake/`), stamp apres build reussi, verdicts `PREBUILT`/`STALE`/`UNSTAMPED`/`ABSENT`, resolution d'un checkout equivalent deja buildé — voie 2 tranche 1 de #21410 |
 
 Tests unitaires dans `tests/`.
 
@@ -108,8 +109,107 @@ preflight des sondes (WSL : `wsl.exe -- bash -lc 'command -v lake'`, timeout
 10 s, memoise) tourne **hors** du verrou d'admission, qui timeout lui-meme a
 10 s ; un lake deja epingle conforme ne sonde rien.
 
+### Procedure operateur — diagnostic, arret d'urgence, recuperation apres crash
+
+Quatre sous-commandes **en lecture seule par defaut** completent `status` : elles
+repondent aux questions que pose un operateur quand un run Lean part longtemps,
+quand la machine s'etouffe, ou quand le superviseur a crash.
+
+| Commande | Question a laquelle elle repond | Agit ? |
+|---|---|---|
+| `doctor` | L'organe est-il sain ? | non — lecture seule, ne balaie rien |
+| `dry-run` | Que ferait un run ici : quel backend, quel budget, serait-il admis ? | non — n'ecrit aucun epinglage |
+| `stop` | Quels runs de CET hote sont en vie, et que tuerait-il ? | `--yes` seulement |
+| `recover` | Que reste-t-il apres un crash du superviseur ? | `--yes` seulement |
+
+**`doctor`** — etat de sante en une passe : configuration, repertoire d'etat,
+population, cap, telemetrie, registre de backends, runs vivants, file, leases
+d'arbre, sondes. Contrairement a `status`, il **ne balaie pas** : il rapporte
+l'etat tel qu'il est, sans supprimer les records perimes. Le verdict est
+**nomme** : `OK` ou `DEGRADE`. Les `problems` sont des degradations reelles
+(repertoire d'etat non inscriptible, telemetrie illisible, registre illisible,
+aucun backend, admission a zero, cap atteint) ; un etat simplement incomplet —
+aucun lake encore epingle — part dans les `notes`, ce n'est pas une degradation :
+un diagnostic qui crie au loup sur une installation neuve ne sert a rien.
+
+**`dry-run`** — previsualisation d'un run : backend qui serait choisi,
+ressources mesurees, budget qui serait accorde, verdict d'admission. **N'ecrit
+aucune decision** : pas d'epinglage de registre, pas de lease d'arbre, pas
+d'entree de file, pas de verrou d'admission. La chaine de refusal est
+reproduite **dans l'ordre** du run reel, donc le premier refus rencontre est
+celui que le run produirait ; un ordre different rendrait un verdict plausible
+et faux. C'est la question a poser **avant** un run qui peut se faire refuser,
+ou couter 1 a 2 h de recompilation Mathlib (bascule de backend).
+
+**`stop`** — arret d'urgence des runs **possedes par l'organe sur CET hote**.
+Par defaut il **inspecte** et ne tue rien ; `--yes` agit. Un run d'un **host
+etranger** n'est jamais tue : les pids ne sont pas comparables entre
+namespaces.
+
+**`recover`** — ce qui survit a un crash du superviseur. Le confinement fait
+deja mourir l'arbre avec le superviseur (Job Object `kill-on-close` sous
+Windows, `setsid` + kill du groupe sous POSIX) : ce qui reste apres un crash,
+c'est **l'etat** — run records, leases d'arbre et entrees de file dont le pid
+est mort. `recover` rend cet etat residuel visible, puis le balaie sur `--yes`
+**en reutilisant les balayages existants** : la recuperation n'invente pas une
+seconde semantique de peremption.
+
+**Le piege du code de sortie.** `doctor`, `dry-run` et `recover` rendent
+**toujours `0`** : ce sont des commandes de diagnostic, leur **verdict est dans
+la sortie** (`verdict: OK` / `verdict: DEGRADE` / `verdict: ADMIS`), pas dans
+le code de retour. Un script ou une CI qui teste seulement `rc == 0` passe
+donc sur un organe `DEGRADE` — il faut lire la sortie. `stop` fait exception :
+`125` si l'arret est refuse, `1` si un run n'a pas pu etre arrete.
+
+```bash
+python scripts/lean/lean_exec.py doctor                       # etat de sante
+python scripts/lean/lean_exec.py dry-run --cwd <racine-lake>   # ce que ferait un run
+python scripts/lean/lean_exec.py stop                          # inspection
+python scripts/lean/lean_exec.py stop --yes                    # arret d'urgence
+python scripts/lean/lean_exec.py recover                       # etat residuel
+python scripts/lean/lean_exec.py recover --yes                 # balayage
+```
+
+Sorties reelles mesurees sur `myia-po-2028` le 2026-10-20 (20 coeurs
+logiques, 36 Go RAM disponibles, 673 Go libres, aucun run en cours) :
+
+```text
+$ python scripts/lean/lean_exec.py dry-run --cwd MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean
+start dir: MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean
+lake root: C:\dev\CoursIA-2\MyIA.AI.Notebooks\SymbolicAI\Lean\conway_lean
+backend: demande=auto epingle=None disponibles=['native']
+backend choisi: native
+  default-policy -> native (dry-run : NON epingle)
+  (un run reel ecrirait l'epinglage ; dry-run ne l'ecrit pas)
+population: native=0 (tasklist) cap=8 budget=2 headroom=8
+parallelisme: demande=5 accorde=5 (binding=None)
+verdict: ADMIS (parallelisme accorde=5)
+
+$ python scripts/lean/lean_exec.py stop
+stop [INSPECTION (ajouter --yes pour agir)] host=myia-po-2028/nt
+a arreter sous --yes : 0
+
+$ python scripts/lean/lean_exec.py recover
+recover [INSPECTION (ajouter --yes pour agir)] host=myia-po-2028/nt
+  runs: 0 vivant(s), 0 recuperable(s), 0 etranger(s) (jamais touches), 0 illisible(s)
+  tree_leases: 0 vivant(s), 0 recuperable(s), 0 etranger(s) (jamais touches), 0 illisible(s)
+  queue: 0 vivant(s), 0 recuperable(s), 0 etranger(s) (jamais touches), 0 illisible(s)
+```
+
+**Caveat mesure sur la sonde WSL.** La sonde de toolchain passe par
+`wsl.exe -- bash -lc 'command -v lake'`, donc par la **distro par defaut** de
+`wsl.exe`. Si la toolchain Lean vit dans une autre distro, la sonde la declare
+absente et le backend WSL devient invisible — mesure le 2026-10-20 sur
+`myia-po-2028`, ou la distro par defaut est `docker-desktop` (sans `bash`) et la
+toolchain est dans `Ubuntu` : la sonde rend `probe wsl: ABSENT`, et la commande
+exacte de la sonde echoue sur `/bin/sh: bash: not found` (rc 127), la ou
+`wsl.exe -d Ubuntu -- bash -lc 'command -v lake'` reussit. Le meme ecart vaut
+pour `backend_command`, qui executerait le build dans la mauvaise distro. Ce
+point est ouvert sur #15666 ; en attendant, `LEAN_EXEC_WSL=off` (kill-switch)
+ou le backend natif sont les contournements.
+
 **Hors T1/T3** (autres tranches de l'EPIC) : garde CI + migration des 35 appels
-directs (T4), procedure operateur et validation de charge bornee (T5).
+directs (T4), validation de charge bornee (T5a, livree).
 
 ---
 
