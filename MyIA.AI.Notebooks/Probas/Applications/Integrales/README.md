@@ -3,8 +3,9 @@
 [← Série Probas](../../README.md) · [← Applications](../README.md)
 
 Le **triangle scalaire** à une boucle — trois propagateurs sans masse, un moment
-externe par sommet — en dimension 4 euclidienne, puis le **diagramme sunrise** à
-masses égales en dimension 2 : deux briques des corrections radiatives, issues de
+externe par sommet — en dimension 4 euclidienne, le **diagramme sunrise** à
+masses égales en dimension 2, puis la **bulle** — deux propagateurs en $d = 4$,
+la première divergence de la série : trois briques des corrections radiatives, issues de
 la famille « 30 intégrales de Feynman » du harnais
 [BootLoops](https://github.com/BootLoops-ai) (MIT), rapportée par M. Schwartz dans
 *Claude-shaped science* (2025). Ce dossier en est la **veine V3** de la
@@ -15,6 +16,7 @@ après la veine V1 (marches aléatoires).
 |-----------|----------|-------|------------------|
 | [Integrales-01-Triangle-Scalaire](Integrales-01-Triangle-Scalaire-Python.ipynb) | 1 (Python) | Python 3 + `mpmath` + `numpy` + `matplotlib` | Représentation de Feynman du triangle ($\Delta = \alpha x_1x_2 + \gamma x_1x_3 + \beta x_2x_3$, $C_0 = J/16\pi^2$) dérivée au §1 ; **trois voies** de calcul de $J$ (quadrature 2D imbriquée, substitution homogène $(u,v)$, intégrale exacte en $v$) accordées à plus de 20 chiffres sur quatre cinématiques, dont un point de stress et un point non isocèle ; forme fermée $J(1,1,2-2\cos\psi) = 2\,\mathrm{Cl}_2(\psi)/\sin\psi$ certifiée à ~38 chiffres sur six angles, avec les cas exacts $2G$ (Catalan) et $\frac{4}{\sqrt{3}}\,\mathrm{Cl}_2(\pi/3)$ |
 | [Integrales-02-Sunrise-Masses-Egales](Integrales-02-Sunrise-Masses-Egales-Python.ipynb) | 2 (Python) | Python 3 + `mpmath` | Le sunrise à masses égales en $d = 2$ — même polynôme $U$ que le triangle, deux boucles : **quatre voies** (simplexe, rectangle $(u,v)$, Cheng–Wu, hyperbolique) accordées (A = B exact, CW à $10^{-20}$, hyperbolique à $10^{-15}$) ; ancre exacte $I(0) = J(1,1,1) = \frac{4}{\sqrt 3}\mathrm{Cl}_2(\pi/3)$ contre le carnet 01 ; intégrande elliptique de troisième espèce exhibée par $t = \cosh\theta$ ; piège du facteur 2 attrapé en direct ; deux identifications fermées **refusées** sur mesure (anneau déclaré avant recherche) |
+| [Integrales-03-Bulle-Premiere-Divergence](Integrales-03-Bulle-Premiere-Divergence-Python.ipynb) | 3 (Python) | Python 3 + `mpmath` | La première divergence de la série : $B(\Lambda) = \pi^2(\ln\Lambda^2 + 1) + o(1)$, **coefficient $\pi^2$ mesuré à $7\times10^{-14}$** (différence $B(10\Lambda)-B(\Lambda)$, planted truth n° 1) et **constante finie $F = \pi^2$ ancrée dans $\int_0^1\ln\frac{1}{x(1-x)}dx = 2$** — calculable à la main, mesurée à $3\times10^{-25}$ (n° 2) ; mesure de $S^3$ vérifiée avant usage (une première écriture rendait la moitié de l'intégrale) ; écart $O(p/\Lambda)$ boule dure vs décalage **mesuré, pas masqué** (3,3 % à $\Lambda = 2$, décroissant) ; régularisation soustractive $B_R(\mu^2) = \pi^2(1+\ln\mu^2)$, premier « running » de la série ; refus documentés (pas de $\gamma_E$ ni $\ln 4\pi$ dans la boule dure — différence de schème, pas contradiction) |
 
 Trois protocoles du harnais BootLoops y sont pratiqués sur un cas où ils
 mordent : **planted-truth** (l'outil d'identification de constantes est validé
@@ -44,10 +46,19 @@ l'usage — aucun n'est promis :
   dilogarithmique — 't Hooft–Veltman : le saut de classe se produit ici, pas
   là.) À $q^2 = 0$ le sunrise retombe exactement sur $J(1,1,1)$ du carnet 01 :
   l'ancre entre les deux carnets est mathématiquement exacte.
-- **Integrales-03 — La bulle et la première divergence** (candidat) : deux
+- **Integrales-03 — La bulle et la première divergence** (livré —
+  [carnet 03](Integrales-03-Bulle-Premiere-Divergence-Python.ipynb)) : deux
   propagateurs en $d = 4$, la divergence logarithmique UV, et la régularisation
   introduite comme le carnet 01 traite ses limites — un paramètre, une échelle,
-  une limite finie exhibée.
+  une limite finie exhibée. La constante finie $F = \pi^2$ y est ancrée dans une
+  intégrale calculable à la main, et deux leçons de méthode (la mesure $S^3$
+  vérifiée avant usage ; l'écart $O(p/\Lambda)$ mesuré, pas masqué) restent
+  exposées dans le carnet.
+- **Integrales-04 — Le rung elliptique du sunrise** (candidat) : la structure de
+  double période entrevue au carnet 02 ($t = \cosh\theta$, intégrande de
+  troisième espèce) reprise depuis la courbe elliptique elle-même — périodes
+  mesurées, comparaison à la forme fermée d'Adams–Bogner–Weinzierl citée sans
+  être reproduite.
 
 Le nom et le toit définitifs de la série restent un **point de décision ouvert**
 (#20428, point de décision 1 : la « série de physique numérique », question
