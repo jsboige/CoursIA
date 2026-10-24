@@ -2155,3 +2155,220 @@ TRANCHE23: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 24 -- verdict de mesure tire sur une reponse vide ou en erreur HTTP
+# (#21750).
+#
+# Garde NATIF : aucun workflow d'origine. L'organe
+# `scripts/notebook_tools/check_empty_verdict.py` detecte un bloc de sortie
+# qui porte un VERDICT de mesure (`=> Coherence verifiee`, `=> Difference
+# detectee`, ...) alors que la mesure qu'il resume est invalide : reponse vide
+# ou statut HTTP non-2xx.
+#
+# Pourquoi ADVISORY et non bloquant : le verdict est **absolu**, pas un
+# ratchet base/head -- le defaut est PRE-EXISTANT (il est deja sur `main`),
+# donc une PR qui re-execute un carnet sans corriger la cause verrait un
+# rouge HERITE de la base. Le correctif de source appartient a la lane qui
+# porte le carnet (#21162 / #21750) ; ce garde publie le signal, il ne
+# confisque pas le merge. C'est la meme separation que le ratchet
+# `check_source_collapse` (TRANCHE11), lui aussi absolu et advisory.
+#
+# `needs_base=True` : l'argv recoit `{base_ref}` et l'organe ne rapporte
+# que les carnets touches par la PR (`--diff-base`). Un diff illisible est
+# FAIL-CLOSED cote organe (rc=2), donc pas de sweep integral silencieux.
+#
+# `diff_bounded=False` (defaut) : le verdict n'est pas un delta, il est
+# absolu sur les carnets touches -- declare explicitement pour que le picker
+# sache qu'un rouge peut heriter de la base.
+# ---------------------------------------------------------------------------
+TRANCHE24: list[Guard] = [
+    Guard(
+        name="Verdict on invalid measurement (empty or HTTP-error response)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_empty_verdict.py",
+            "scripts/tests/test_check_empty_verdict.py",
+        ],
+        pre_argv=[
+            "python", "scripts/notebook_tools/check_empty_verdict.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_empty_verdict.py",
+            "--diff-base", "{base_ref}", ".",
+        ],
+        blocking=False,
+        needs_base=True,
+        absorbed=True,
+    ),
+]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 25 (#21390) -- cliquet sur les ANCHES `native_decide` / `sorry` /
+# `admit` ajoutees dans un diff `*.lean`.
+#
+# Garde NATIF : aucun workflow d'origine. L'organe
+# `scripts/lean/check_added_axioms_cliquet.py` lit le DIFF base/head et
+# signale les lignes ajoutees qui introduisent un de ces tokens dans une
+# declaration nommee (`theorem`/`lemma`/`def`). Les ancres en `example`
+# restent vertes : elles sont invisibles a `check_axioms` par construction,
+# ce n'est pas un defaut de preuve.
+#
+# Codes de retour : 0 = propre, 1 = ancre dans une declaration nommee
+# (BLOQUANT), 2 = la base ou la tete ne resout pas (incident d'entree).
+# Le rc=2 n'est PAS lu comme un vert : `warn_rc` est vide, donc tout rc non
+# nul produit une conclusion `failure` et `blocking_failed` (cf
+# `conclusion_for` et la ligne `guard.blocking and rc != 0`). C'est
+# fail-closed : une base absente fait rougir la PR plutot que de la laisser
+# passer sans controle.
+#
+# ECHAPPEMENT DECLARATIF (#21390, reserve ai-01 du 2026-10-21) : l'organe
+# lit le CORPS de la PR (env `LEAN_CLIQUET_PR_BODY`, canal in-memory comme
+# `MD_CONTENT_LOSS_PR_BODY`) et y cherche les lignes
+# `[LEAN-ANCHOR-DECLARED] <fichier>:<decl> -- <motif>`. Une ancre passe si
+# **SA** declaration est nommee (ni joker par fichier ni global) ; le motif
+# reste juge par le reviewer. Une ligne malformee est ignoree (fail-closed :
+# l'ancre reste rouge). Sans cet echappement, une ancre legitime (squelette
+# `sorry`, `native_decide` documente) ne pouvait etre rendue mergeable que
+# par un admin.
+#
+# BASE : `{base_ref}` vaut `origin/${{ github.base_ref }}` (env
+# `FAST_LANE_BASE` du job `Always-on guards`), c'est-a-dire `origin/main`
+# pour une PR sur `main`. Le workflow fait `git fetch origin
+# "${{ github.base_ref }}"` avant `fast_lane.py`, et le checkout est en
+# `fetch-depth: 0` : la base est donc presente dans le checkout du job.
+#
+# `absorbed=True` : sans lui le garde emettrait sous le prefixe d'ombre avec
+# une conclusion neutre, et son `blocking=True` ne bloquerait rien
+# (incident #19168, cf TRANCHE15).
+# ---------------------------------------------------------------------------
+TRANCHE25: list[Guard] = [
+    Guard(
+        name="lean-added-axioms-cliquet",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.lean",
+            "scripts/lean/check_added_axioms_cliquet.py",
+            "scripts/lean/tests/test_check_added_axioms_cliquet.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "scripts/lean/check_added_axioms_cliquet.py",
+            "--base", "{base_ref}", "--head", "HEAD",
+        ],
+        needs_base=True,
+        blocking=True,
+        absorbed=True,
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 27 -- absorption des advisories label-posers de la tranche 1 #22209
+# (volet 1a : les TROIS gardes dont la payload PR-time est un LABEL).
+#
+# Contexte : la file CI ne se vide plus (1 060 runs en file, 24 slots
+# ephemereraires occupes, mesure au dispatch du 2026-10-23). Chacun de ces
+# trois workflows paie un checkout `fetch-depth: 0` du depot (2,1 Go) pour
+# ~1 s de scan reel : 1 023 runs sur 24 h mesures au cablage
+# (consecutive-code-cells 339, mermaid-fill-color 384, markdown-table-guard
+# 300, dont la jambe nocturne SURVIT -- seul le trigger `pull_request` est
+# retire pour ce dernier).
+#
+# Précédent : TRANCHE6/TRANCHE7 (deaccent, repeated-prose) ont deja absorbe
+# des label-posers advisory -- la payload demenage du label vers le CORPS du
+# check-run (le JSON du detecteur), le workflow d'origine garde
+# `workflow_dispatch` pour la re-mesure manuelle, et son trigger
+# `pull_request` est retire. Le contrat d'identite
+# (`check_absorbed_check_run_identity.py`) exige que chaque `guard.name`
+# soit byte-identique au `job.name` du workflow source : les trois noms
+# ci-dessous sont copies tels quels.
+#
+# Les labels eux-memes disparaissent des PRs (comme pour deaccent) : aucun
+# consommateur aval ne les lit (verifie par grep au cablage -- uniquement
+# des docstrings et l'allowlist par NOM DE FICHIER de
+# check_self_hosted_runner_policy.py, qui reste valide car les fichiers
+# restent). La mesure non-mesuree (#8819) reste distinguee DANS le JSON
+# (champ unmeasured / error_count), la ou le workflow la distinguait par un
+# second label.
+#
+# Les TROIS autres workflows de la tranche 1 #22209 (markdown-claims-output,
+# organ-duplication, scan-md-hierarchy-drift) portent une payload
+# COMMENTAIRE sticky + artefact sans precedent d'absorption : leur sort
+# attend l'arbitrage A/B/C pose sur l'issue (c.6369056672) et ils ne sont
+# PAS touches ici.
+#
+# Forme : iter par fichier change (`--json {changed_paths}`), MEME INVOCATION
+# que le workflow d'origine (pas de --check/--fail-on-findings : le verdict
+# advisory demerne vert, la payload est le JSON). `warn_rc=(2,)` sur mermaid
+# et table : leurs detecteurs rendent rc=2 sur cible introuvable / rien a
+# scanner -- l'agreger en echec rendrait la lane plus stricte que ce
+# qu'elle absorbe (cf run_iter).
+# ---------------------------------------------------------------------------
+TRANCHE27: list[Guard] = [
+    Guard(
+        name="Consecutive code cells >= 2 advisory (label, non-blocking)",
+        source="consecutive-code-cells-advisory.yml",
+        paths=[
+            "**/*.ipynb",
+            ".github/workflows/consecutive-code-cells-advisory.yml",
+        ],
+        iterate_paths=["**/*.ipynb"],
+        argv=[
+            "python", "scripts/notebook_tools/detect_consecutive_code_cells.py",
+            "--json", "{changed_paths}",
+        ],
+        blocking=False,
+        iterates_paths=True,
+        absorbed=True,
+    ),
+    Guard(
+        name="Mermaid fill-without-color advisory (label, non-blocking)",
+        source="mermaid-fill-color-advisory.yml",
+        paths=[
+            "**/*.md",
+            "**/*.ipynb",
+            "scripts/notebook_tools/detect_mermaid_fill_without_color.py",
+            "scripts/notebook_tools/tests/test_detect_mermaid_fill_without_color.py",
+            "scripts/notebook_tools/tests/fixtures/mermaid_fill_no_color.md",
+            ".github/workflows/mermaid-fill-color-advisory.yml",
+        ],
+        iterate_paths=["**/*.md", "**/*.ipynb"],
+        pre_argv=[
+            "python", "scripts/notebook_tools/detect_mermaid_fill_without_color.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_mermaid_fill_without_color.py",
+            "--json", "--root", ".", "{changed_paths}",
+        ],
+        blocking=False,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+    Guard(
+        name="Markdown table syntax advisory (label, non-blocking)",
+        source="markdown-table-guard.yml",
+        paths=[
+            "**/*.ipynb",
+            "**/*.md",
+            "**/*README*",
+            ".github/workflows/markdown-table-guard.yml",
+            "scripts/notebook_tools/scan_md_table_syntax.py",
+            "scripts/notebook_tools/md_table_sweep_comment.py",
+        ],
+        iterate_paths=["**/*.ipynb", "**/*.md", "**/*README*"],
+        argv=[
+            "python", "scripts/notebook_tools/scan_md_table_syntax.py",
+            "--json", "{changed_paths}",
+        ],
+        blocking=False,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+]

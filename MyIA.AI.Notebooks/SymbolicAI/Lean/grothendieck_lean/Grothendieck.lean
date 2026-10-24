@@ -21,10 +21,15 @@ import Grothendieck.CoversArrow
 import Grothendieck.CoversAtomicArrow
 import Grothendieck.CoversBind
 import Grothendieck.CoversCoherentArrow
+import Grothendieck.CoversCoverPreserving
+import Grothendieck.CoversCoverPreservingLaws
 import Grothendieck.CoversCoverageArrow
 import Grothendieck.CoversEtaleArrow
 import Grothendieck.CoversExtensiveArrow
+import Grothendieck.CoversExtremal
+import Grothendieck.CoversInducedTopology
 import Grothendieck.CoversLattice
+import Grothendieck.CoversOfPretopology
 import Grothendieck.CoversOrder
 import Grothendieck.CoversPrecoverageArrow
 import Grothendieck.CoversPretopologyArrow

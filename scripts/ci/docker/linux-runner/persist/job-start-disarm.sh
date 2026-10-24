@@ -45,6 +45,48 @@ set -uo pipefail   # PAS -e : chaque clone est traite independamment, un echec
                    # local ne doit couvrir ni les autres clones ni le rc final.
 
 WORK="${ACTIONS_RUNNER_INPUT_WORK:-/home/runner/_work}"
+RUNNER_HOME="${RUNNER_HOME:-/opt/runner}"
+# Externals dont l'absence tue le job AVANT sa premiere commande (#21745,
+# limb C : `externals/node24/bin/node` absent -> actions/checkout ne demarre
+# meme pas, log de 45 lignes, aucune signature de clone). La liste est un
+# knob : un parc qui n'embarque pas node24 pourra la reduire sans patcher
+# ce fichier. Ce crochet ne peut pas empecher le dispatch (il tourne APRES
+# le prepare du job) : il NOMME la cause sur le canal que lit
+# `scripts/ci/classify_infra_leg.py`, pour que la jambe soit classee infra
+# et non imputee au diff. Le refus de dispatch, lui, est porte par
+# entrypoint.sh (avant config.sh).
+RUNNER_REQUIRED_EXTERNALS="${RUNNER_REQUIRED_EXTERNALS:-node24}"
+
+signal_missing_externals() {
+  local name missing=""
+  for name in $RUNNER_REQUIRED_EXTERNALS; do
+    [ -e "$RUNNER_HOME/externals/$name/bin/node" ] || missing="$missing $name"
+  done
+  [ -n "$missing" ] || return 0
+  for name in $missing; do
+    echo "job-start-disarm: INFRA_EXTERNALS_MISSING externals/$name/bin/node absent sous $RUNNER_HOME -- la jambe ne peut pas demarrer (cause infra, pas diff de PR)" >&2
+  done
+  return 0
+}
+
+# Supprime les refs `pull/*` sans LIRE AUCUN objet : `update-ref --stdin`
+# ne touche que les fichiers de ref, donc aucun fetch paresseux n'est
+# declenche (contraste avec `cat-file -e`, qui materialise l'objet et cache
+# le dangling -- piege mesure du limb A). Chaque PR vue depose un
+# `refs/remotes/{remote}/pull/N/{head,merge}` que le refspec explicite de
+# actions/checkout ne purge jamais : mesure 4 600 refs dont la majorite
+# obsolete. Les refs encore pertinentes sont recreees au prochain fetch.
+prune_pull_refs() {  # <repo>
+  local repo="$1" list
+  list="$(mktemp -t jsd-pull.XXXXXX 2>/dev/null)" || return 0
+  git -C "$repo" for-each-ref --format='delete %(refname)' refs/remotes 2>/dev/null \
+    | grep '^delete .*/pull/' > "$list" 2>/dev/null || true
+  if [ -s "$list" ]; then
+    git -C "$repo" update-ref --stdin < "$list" 2>/dev/null || true
+  fi
+  rm -f "$list" 2>/dev/null || true
+  return 0
+}
 
 disarm_one() {  # <chemin-du-clone>
   local repo="$1" gitdir="$1/.git" ref sha
@@ -69,13 +111,42 @@ disarm_one() {  # <chemin-du-clone>
     echo "job-start-disarm: motifs sparse inertes dans $repo -- retrait du fichier, clone conserve" >&2
     rm -f "$gitdir/info/sparse-checkout" || true
   fi
-  while read -r ref sha; do
-    if ! git -C "$repo" cat-file -e "$sha^{object}" 2>/dev/null; then
-      echo "job-start-disarm: ref distante dangling $ref -- suppression (objet absent)" >&2
-      git -C "$repo" update-ref -d "$ref" 2>/dev/null || true
+  # Les refs pull/* partent d'abord : aucune lecture d'objet, donc aucun
+  # fetch paresseux possible, et cela retire d'un coup la majorite du parc
+  # de refs (mesure : ~4 600 dont la majorite obsolete).
+  prune_pull_refs "$repo"
+
+  # Reste des refs distantes : detection par LOT, bornee. Le `cat-file -e`
+  # par ref de la version precedente coutait O(refs * packs) -- ~23 min sur
+  # un cache a 21 000 packs (fix #20697) -- et chaque appel pouvait
+  # declencher un fetch paresseux sans plafond sur un clone partiel.
+  # Ici : UN seul `--batch-check` pour toutes les SHAs, GIT_NO_LAZY_FETCH=1
+  # (no-op avant git 2.46) pour interdire le fetch, timeout 60 en borne
+  # haute. stderr reste visible : un timeout doit etre diagnosticable
+  # (l'incident du slot 3 po-2024 etait muet a cause du 2>/dev/null).
+  local refs_list miss_list
+  refs_list="$(mktemp -t jsd-refs.XXXXXX 2>/dev/null)" || return 0
+  miss_list="$(mktemp -t jsd-miss.XXXXXX 2>/dev/null)" || { rm -f "$refs_list"; return 0; }
+  git -C "$repo" for-each-ref --format='%(refname) %(objectname)' refs/remotes 2>/dev/null > "$refs_list" || true
+  if [ -s "$refs_list" ]; then
+    awk '{print $NF}' "$refs_list" | sort -u \
+      | GIT_NO_LAZY_FETCH=1 timeout 60 git -C "$repo" cat-file --batch-check 2>/dev/null \
+      | awk '$2 == "missing" { print $1 }' > "$miss_list" || true
+    if [ -s "$miss_list" ]; then
+      while read -r sha; do
+        [ -n "$sha" ] || continue
+        awk -v s="$sha" '$NF == s { print $1 }' "$refs_list" | while read -r ref; do
+          [ -n "$ref" ] || continue
+          echo "job-start-disarm: ref distante dangling $ref -- suppression (objet absent)" >&2
+          git -C "$repo" update-ref -d "$ref" 2>/dev/null || true
+        done
+      done < "$miss_list"
     fi
-  done < <(git -C "$repo" for-each-ref --format='%(refname) %(objectname)' refs/remotes 2>/dev/null)
+  fi
+  rm -f "$refs_list" "$miss_list" 2>/dev/null || true
 }
+
+signal_missing_externals
 
 for gitdir in "$WORK"/*/*/.git; do
   [ -e "$gitdir" ] || continue

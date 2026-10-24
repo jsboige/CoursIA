@@ -88,7 +88,19 @@ variable {X : TopCat.{u}}
 -- **The canonical complex**: with `d^{n+1} = godementStep dⁿ` at every
 -- degree, the null-composition `dⁿ ≫ d^{n+1} = 0` (P89) makes the sequence of
 -- canonical steps an actual `CochainComplex` — the condition the iterated
--- unit sequence of P87 provably fails. Acyclicity `Hⁿ(C⁰) = 0` for `n ≥ 1`
--- is the named frontier of Part 93.
+-- unit sequence of P87 provably fails.
+--
+-- **Part 93(b), assembly landed in the FR twin of this module**:
+-- `Grothendieck.stalk_exact_godementCanonicalD` — the canonical complex is
+-- exact at every stalk, at every degree: for every `n`, the stalk sequence
+-- `CⁿFₓ₀ ⟶ C^{n+1}Fₓ₀ ⟶ C^{n+2}Fₓ₀` is exact at `C^{n+1}Fₓ₀`, with **no
+-- sheaf hypothesis**. Every degree is the generic lemma
+-- `stalk_exact_godementStep` at `f = dⁿ`, both assembly patterns —
+-- `d^{n+1} = godementStep dⁿ` and `C^{n+2} = C⁰(coker dⁿ)` — being
+-- definitional (`rfl`): the recurrence promised by Part 93(a) is the lemma
+-- itself, no induction over `n` is needed. Acyclicity `Hⁿ(C⁰) = 0` for
+-- `n ≥ 1` — the homological reading, which the
+-- `stalkFunctor_preservesHomology` instance already transports — is the
+-- remaining named frontier of Part 93.
 
 end Grothendieck_en

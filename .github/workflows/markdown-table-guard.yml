@@ -51,18 +51,24 @@ name: Markdown table syntax advisory
 # radius: coupling an advisory labeler into the critical-path gate organs
 # changes their failure surface for a signal that must stay advisory.
 
+# ABSORPTION PARTIELLE PAR LA VOIE RAPIDE (#22209 tranche 1, registre
+# TRANCHE27) : seule la jambe PER-PR est absorbee -- le declencheur
+# `pull_request` est retire ci-dessous et la payload label
+# (`markdown-table-syntax`) demenage dans le CORPS du check-run absorbe
+# (precedent TRANCHE6 deaccent). La jambe NOCTURNE (schedule 03:15, sweep
+# 24 h de main + commentaire marker-garde sur #13660) RESTE ICI : elle est
+# post-merge par nature et n'a pas d'equivalent PR-triggered dans la voie
+# rapide. Le nom de job reste inchanger (contrat d'identite
+# `check_absorbed_check_run_identity.py`) et le `workflow_dispatch` reste
+# pour la re-mesure manuelle. Le bloc `paths:` PR d'origine est conserve en
+# commentaire pour tracabilite :
+#   pull_request:
+#     paths: ['**/*.ipynb', '**/*.md', '**/*README*',
+#             '.github/workflows/markdown-table-guard.yml',
+#             'scripts/notebook_tools/scan_md_table_syntax.py',
+#             'scripts/notebook_tools/md_table_sweep_comment.py']
+
 on:
-  pull_request:
-    # #16207 : le signal PR-time. Filtre paths = les seuls arbres que la
-    # garde scanne (elle ne scanne jamais le reste -- voir "Per-PR scope"
-    # ci-dessus) + son propre câblage + les deux scripts qu'elle exécute.
-    paths:
-      - '**/*.ipynb'
-      - '**/*.md'
-      - '**/*README*'
-      - '.github/workflows/markdown-table-guard.yml'
-      - 'scripts/notebook_tools/scan_md_table_syntax.py'
-      - 'scripts/notebook_tools/md_table_sweep_comment.py'
   schedule:
     # Nocturnal sweep -- post-merge main verification.
     # Tranche 1 #12817 : sortir les advisory lourds de pull_request
