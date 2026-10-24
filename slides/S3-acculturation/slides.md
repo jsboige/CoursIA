@@ -216,26 +216,33 @@ layout: section
 
 # Les agents
 
-<div class="grid grid-cols-[1fr_300px] gap-6 items-start">
+<div class="grid grid-cols-2 gap-6 items-start mt-1">
 
 <div v-click="1">
 
 **Définition**
 
-- L'agent rationnel
-  - Entité qui perçoit par des capteurs
+- Entité qui
+  - perçoit par des capteurs
   - agit par des effecteurs.
-- Dans un environnement
-  - Fait la bonne action
+  - Dans un environnement
+
+<img src="./images/img_009.png" class="w-full max-h-[225px] object-contain mt-2" alt="Boucle perception-action : l'agent perçoit par des capteurs et agit sur l'environnement par des effecteurs" />
+
+</div>
+
+<div v-click="2">
+
+**L'agent rationnel**
+
+- Fait la bonne action
   - Maximise son succès.
-  - Pas omniscient
+- Pas omniscient
   - Réactif, proactif, interactif, autonome
 - Limitations
   - ressources disponibles
 
 </div>
-
-<img v-click="1" src="./images/img_009.png" class="w-full max-h-[190px] object-contain mt-2" alt="Les agents" />
 
 </div>
 ---
