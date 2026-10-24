@@ -382,6 +382,83 @@ a {
 }
 
 /* ------------------------------------------------------------------ */
+/* #22286 -- listes denses et image bornee (port Marp, second volet)   */
+/*                                                                     */
+/* `dense-list`, `xl-dense` et `img-fit` sont nommees dans le markdown  */
+/* de QUATRE decks (mesure 2026-10-24 : 02 = 9, 06 = 37, S3 = 2,        */
+/* S8 = 9 usages). Deux d'entre eux (02, 06) portaient une definition    */
+/* locale dans leur `style.css`, les deux autres aucune : selon le deck, */
+/* la classe compressait la liste ou ne faisait rien. Un troisieme jeu  */
+/* existait dans `06-apprentissage/styles/index.css` (0.86em), domine   */
+/* par celui du `style.css` du meme deck — jamais effectif, supprime.   */
+/*                                                                       */
+/* Les valeurs ci-dessous sont celles que 02 et 06 rendaient deja,       */
+/* relevees au DOM (`getComputedStyle`, 2026-10-24) et non choisies :    */
+/* deplacer la definition vers le theme ne doit rien changer pour eux.   */
+/* S3 et S8 recoivent donc la meme regle, qu'ils n'avaient pas.          */
+/*                                                                       */
+/* Les `style.css` de deck sont bien charges par Slidev (convention de   */
+/* projet) : ce n'est pas une raison de les garder, c'est une raison de  */
+/* les retirer APRES avoir reproduit leurs valeurs ici — un `!important` */
+/* ou une specificite divergente aurait sinon rendu la nouvelle          */
+/* definition morte.                                                     */
+/* ------------------------------------------------------------------ */
+
+.slidev-layout .dense-list ul,
+.slidev-layout .dense-list ol {
+  font-size: 0.82em;
+  line-height: 1.22;
+}
+
+.slidev-layout .dense-list li {
+  margin: 0.02em 0;
+}
+
+.slidev-layout .dense-list h2 {
+  margin-top: 0.3em;
+}
+
+.slidev-layout .dense-list p {
+  margin: 0.2em 0;
+  font-size: 0.85em;
+  line-height: 1.2;
+}
+
+/* Variante encore plus dense, pour les listes longues. La forme composee
+   `dense-list xl-dense` est celle employee dans le markdown (5 usages). */
+.slidev-layout .dense-list.xl-dense ul {
+  font-size: 0.72em;
+  line-height: 1.12;
+}
+
+.slidev-layout .dense-list.xl-dense li {
+  margin: 0;
+}
+
+/* Image unique a faire tenir sous un bloc de texte : sans borne explicite
+   elle prend sa hauteur naturelle et pousse la slide hors champ.
+
+   Le plafond de 100 px est mesure, pas choisi : `max-width: 100%` seul
+   laisse l'image a sa hauteur naturelle et rogne le bas de la slide (le
+   clip du conteneur est invisible a la bbox DOM — vu a l'export PNG, lot
+   L3 #11508) ; 190 px puis 140 px laissaient la derniere tranche de la
+   grille de visages GAN coupee sous la liste xl-dense (47, deficit mesure
+   de 31 px a 140 px).
+
+   Ne PAS generaliser ce plafond a toute image posee directement dans le
+   layout : la regle globale a ete essayee sur le deck 06 et REFUSEE, elle
+   faisait remonter le compte de debordements de 15 a 16. La geometrie de
+   chaque diapo demande son propre budget (les cas au milieu d'un bloc de
+   texte portent un `<style scoped>` dans `slides.md`). */
+.slidev-layout .img-fit {
+  display: block;
+  margin: 8px auto;
+  max-width: 100%;
+  max-height: 100px;
+  object-fit: contain;
+}
+
+/* ------------------------------------------------------------------ */
 /* Pile d'images pleine largeur                                        */
 /*                                                                     */
 /* Meme cause, autre symptome : le port avait recopie les coordonnees   */

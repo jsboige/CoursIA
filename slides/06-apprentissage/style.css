@@ -35,23 +35,11 @@
   margin: 0.35em 0;
 }
 
-/* 4. Utilitaire densité maximale : <div class="dense-list">. */
-.slidev-layout .dense-list ul,
-.slidev-layout .dense-list ol {
-  font-size: 0.82em;
-  line-height: 1.22;
-}
-.slidev-layout .dense-list li {
-  margin: 0.02em 0;
-}
-.slidev-layout .dense-list h2 {
-  margin-top: 0.3em;
-}
-.slidev-layout .dense-list p {
-  margin: 0.2em 0;
-  font-size: 0.85em;
-  line-height: 1.2;
-}
+/* 4. Utilitaire densité maximale : <div class="dense-list">. Définition
+ *    portée par le thème (`theme-ia101/styles/index.css`, #22286) avec les
+ *    valeurs qui étaient rendues ici (0.82em / 1.22 / item 0.02em / H2
+ *    0.3em / p 0.85em), pour que S3 et S8 — qui nomment la classe sans la
+ *    définir — rendent la même chose que ce deck. */
 
 /* 5. Grilles d'images (pattern S3 §4) : compressibles. */
 .slidev-layout .img-grid {
@@ -88,27 +76,11 @@
   max-height: 90px;
 }
 
-/* 5c. Image isolee sous du texte : budget de hauteur explicite.
- *     max-width:100% seul laisse l'image prendre sa hauteur naturelle
- *     et rogner le bas de la slide (clip par le conteneur, invisible
- *     a la bbox DOM -- mesure export PNG, lot L3 #11508). 100 px :
- *     190 puis 140 laissaient la derniere tranche de la grille de
- *     visages GAN coupee sous la liste xl-dense (47, deficit mesure
- *     31 px a 140). */
-.slidev-layout .img-fit {
-  display: block;
-  margin: 8px auto;
-  max-width: 100%;
-  max-height: 100px;
-  object-fit: contain;
-}
+/* 5c. Image isolée sous du texte (`.img-fit`) : budget de hauteur porté
+ *     par le thème (`theme-ia101/styles/index.css`, #22286), avec la
+ *     justification mesurée du plafond de 100 px (cf le commentaire du
+ *     thème). */
 
-/* 6. Variante ultra-dense pour la slide « Généralisation et
- *    surapprentissage » (longues lignes qui se replient deux fois). */
-.slidev-layout .dense-list.xl-dense ul {
-  font-size: 0.72em;
-  line-height: 1.12;
-}
-.slidev-layout .dense-list.xl-dense li {
-  margin: 0;
-}
+/* 6. Variante ultra-dense (`.dense-list.xl-dense`) : définition portée par
+ *    le thème. Elle sert toujours la slide « Généralisation et
+ *    surapprentissage », dont les longues lignes se replient deux fois. */
