@@ -23,6 +23,8 @@ The day-D VIX close is only delivered at D+1 (`CBOE.lag_days = 1`), the reposito
 
 Window 2015-01-01 -> 2026-06-30 (daily series of 4,199 points, 2,847 effective trading days for the candidate), three modes from a single project. The Sharpe column is **QC's own statistic, computed with a non-zero risk-free rate** — verified below, and a correction to what the neighbouring ports of this collection state:
 
+**Correction in flight (review #22330, 2026-10-24) — the `max-vix` row measures a compounding exposure path.** The leverage rescale of the measured version divided by `total_portfolio_value`: each line's weight was recomputed on the **current** exposure (already rescaled the previous time), so exposure **compounded** at every leverage change — 1.50 -> 1.45 yielded 2.17x instead of 1.45x, and returning to 1.0x de-risked nothing. The code is fixed in this PR (denominator = sum of held positions: target weights sum to exactly the requested leverage, so exposure = leverage x equity; verified on the sequence 1.50 -> 1.45 -> 1.50 -> 1.27 -> 1.27 -> 1.00, which yields 1.500 / 1.450 / 1.500 / 1.270 / 1.270 / 1.000). The `max-vix` figures below are therefore those of the **compounded** path, not of the strategy the prose describes; a control backtest on the corrected code will replace them, starting with 2019-2022 — the sub-window where compounding bites hardest. **The `max-only` ablation is unaffected** (fixed 1.0x leverage, the rescale is never reached), as is the `spy` reference (no overlay).
+
 | Mode | Description | Sharpe | CAGR | Max drawdown | Backtest |
 |---|---|---|---|---|---|
 | `max-vix` | candidate (factor + VIX overlay) | 0.181 | 5.402% | 26.400% | `47d6ad9479ee72e8d8fda2e6fd6d8cd7` |

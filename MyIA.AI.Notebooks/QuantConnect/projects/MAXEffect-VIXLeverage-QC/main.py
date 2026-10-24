@@ -153,16 +153,25 @@ class MAXEffectVIXLeverage(QCAlgorithm):
         if abs(leverage - self.current_leverage) < 1e-6:
             return
         self.current_leverage = leverage
-        # Rescale chaque position du meme facteur : les poids relatifs ne
-        # changent pas (regle de l'article). La quantite vit sur le holding du
-        # portfolio (SecurityHolding : .symbol/.quantity/.invested) et le prix
-        # sur la Security (self.securities[symbol].price) -- ni portfolio.values()
-        # ni securities.values() ne portent les deux (mesures v4 et v5 :
-        # "EquityHolding has no attribute 'holding'", puis "Equity object has no
-        # attribute 'holding'"). SetHoldings par symbole : pas d'overload de
-        # liste a resoudre.
-        total = self.portfolio.total_portfolio_value
-        if total <= 0:
+        # Rescale : la somme des poids cibles vaut exactement le levier
+        # demande, donc l'exposition resultante = levier x equity, quel que
+        # soit l'etat precedent. Le denominateur est la SOMME DES POSITIONS
+        # DETENUES, pas total_portfolio_value : avec ce dernier, le poids de
+        # chaque ligne se calcule sur l'exposition courante (deja rescalee la
+        # fois precedente) et l'exposition se COMPOSE a chaque changement de
+        # levier (simulation Hermes : 1.50 -> 1.45 -> 2.17 ; revue #22330).
+        # La quantite vit sur le holding du portfolio (SecurityHolding :
+        # .symbol/.quantity/.invested) et le prix sur la Security
+        # (self.securities[symbol].price) -- ni portfolio.values() ni
+        # securities.values() ne portent les deux (mesures v4 et v5 :
+        # "EquityHolding has no attribute 'holding'", puis "Equity object has
+        # no attribute 'holding'"). SetHoldings par symbole : pas d'overload
+        # de liste a resoudre.
+        invested = sum(
+            float(h.quantity) * self.securities[h.symbol].price
+            for h in self.portfolio.values()
+            if h.invested and self.securities[h.symbol].price)
+        if invested <= 0:
             return
         for holding in list(self.portfolio.values()):
             if not holding.invested:
@@ -170,7 +179,7 @@ class MAXEffectVIXLeverage(QCAlgorithm):
             price = self.securities[holding.symbol].price
             if not price:
                 continue
-            weight = leverage * float(holding.quantity) * price / total
+            weight = leverage * float(holding.quantity) * price / invested
             self.SetHoldings(holding.symbol, float(weight))
 
 
