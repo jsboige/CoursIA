@@ -171,19 +171,37 @@ def test_bullet_names_the_branch_freeze_as_the_condition():
     assert "silencieuse" in bullet, "la raison du gel (branche silencieuse) a disparu"
 
 
-def test_bullet_cites_the_founding_measurement():
-    """Sans la mesure, la regle se relit comme une precaution theorique.
+def _measurement_reachable(bullet: str, detail: str) -> bool:
+    """La mesure fondatrice est-elle lisible DEPUIS la puce ?
 
-    #21808 a deporte le recit de la boucle vers DETAIL : la regle ne garde que
-    la forme operationnelle, et c'est le detail qui porte la mesure. Le test
-    garde donc deux temoins -- la mesure dans DETAIL, et le lien vers ce detail
-    dans la section, sans lequel la regle ne renvoie plus a sa preuve.
+    #21808 (f2833def99) a deporte le recit vers le doc de detail : la puce
+    porte desormais le LIEN, la mesure vit dans le doc. L'epingle suit le
+    contenu la ou il est -- mais elle exige le lien, sans quoi la mesure serait
+    enterree dans un doc que le lecteur de la regle n'a aucun moyen d'atteindre.
     """
-    section = _norm(_order_section())
-    assert "prevalidation-dossier-order-detail.md" in section, (
-        "la section de la regle ne lie plus le detail qui porte la mesure")
-    assert "17 candidates sur 17" in _norm(DETAIL.read_text(encoding="utf-8")), (
-        "la mesure fondatrice n'est plus nulle part (ni regle, ni detail)")
+    if "17 candidates sur 17" in _norm(bullet):
+        return True
+    return ("prevalidation-dossier-order-detail.md" in bullet
+            and "17 candidates sur 17" in _norm(detail))
+
+
+def test_bullet_cites_the_founding_measurement():
+    """Sans la mesure, la regle se relit comme une precaution theorique."""
+    detail = DETAIL.read_text(encoding="utf-8") if DETAIL.exists() else ""
+    assert _measurement_reachable(_order_section(), detail), (
+        "la mesure fondatrice n'est atteignable ni dans la puce ni dans le "
+        "detail qu'elle cite"
+    )
+
+
+def test_negative_control_measurement_needs_the_link_to_count():
+    """Controle negatif : une mesure presente dans le detail mais NON citee par
+    la puce reste invisible pour le lecteur de la regle -- l'epingle doit mordre."""
+    bullet = "- **`update-branch` tue AUSSI le dossier de prevalidation** : voir le skill."
+    detail = "La boucle a refuse 17 candidates sur 17."
+    assert _measurement_reachable(bullet, detail) is False
+    linked = bullet + " ([detail](../../docs/reference/prevalidation-dossier-order-detail.md))"
+    assert _measurement_reachable(linked, detail) is True
 
 
 # ------------------------------------------------- 5. le detail porte les preuves
