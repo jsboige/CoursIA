@@ -170,7 +170,7 @@ de l'archive communautaire LifeWiki :
 |------------------------|---------------|-------------|------------------------|
 | `otcametapixel.rle`    | 2058 × 2058  | 165         | `otca_initial_population` |
 | `p5760unitlifecell.rle`| 499 × 499    | 15          | `unitcell_initial_population` |
-| `turingmachine.rle`    | variable     | 104         | (récit : Acte II)      |
+| `turingmachine.rle`    | 1714 × 1647  | 104         | `turingmachine_initial_population` |
 | `gemini.rle`           | énorme       | 5 300       | `gemini_witness`       |
 
 `gemini.rle` (5,3 Mo) est gitignoré pour cause de taille ; la
@@ -375,6 +375,107 @@ theorem unitcell_initial_nonempty : unitcellInitial ≠ ([] : Grid) := by
   have hl := congrArg List.length h
   simp only [List.length_nil] at hl
   omega
+
+/-! ## Témoin de la machine de Turing
+
+La machine de Turing de Paul Rendell (avril 2000) est le motif le plus
+célèbre de la communauté après les quatre piliers : une machine de
+Turing dont le programme est écrit dans une grille de Conway. Le
+fichier `turingmachine.rle` (104 Ko, boîte 1714 × 1647) est **déjà dans
+l'arbre** ; jusqu'ici il n'était qu'un récit dans le tableau de
+l'archive de motifs.
+
+Ce qui manquait : un témoin **prouvé**. Le motif est chargé pour de
+vrai (`include_str` + `RLE.parseRLE!`, comme l'OTCA et l'UnitCell), et
+il reçoit la paire de témoins de chargement (population, non-vacuité)
+**plus** un témoin de **dynamisme** : la machine n'est pas inerte.
+
+Le témoin de dynamisme ne peut pas être un témoin de période : une
+période exigerait de faire tourner l'évolution complète du motif, et le
+moteur de référence `Conway.Life.evolve` est **quadratique** — le test
+d'appartenance `isAlive g p = g.elem p` est une recherche linéaire dans
+la liste triée, répétée pour chaque cellule candidate, soit environ
+`9 × 36 549` cellules candidates à coût `O(n)` chacune. On utilise donc
+`Conway.Life.birthSiteNotFixed` : un **site de naissance** — une cellule
+morte avec exactement trois voisins de Moore vivants — suffit à prouver
+que la grille n'est pas un point fixe, et cette preuve est **locale**. -/
+
+/-- Source RLE de la machine de Turing de Paul Rendell, embarquée à la
+    compilation par `include_str` (104 Ko, boîte 1714 × 1647). Le chemin
+    est relatif à CE fichier (`Conway/Life/`). -/
+def turingmachineRLE : String := include_str "../../patterns/turingmachine.rle"
+
+/-- État initial de la machine de Turing, décodé du RLE par l'analyseur
+    **prouvé** du dépôt (`Conway.Life.RLE.parseRLE`). Population mesurée :
+    36 549 cellules vivantes. -/
+def turingmachineInitial : Grid := RLE.parseRLE! turingmachineRLE
+
+/-- **Faits mesurés** sur la grille Turing chargée, établis par **une seule**
+    évaluation `native_decide`.
+
+    Le regroupement n'est pas cosmétique : chaque site `native_decide`
+    réévalue `RLE.parseRLE!`, donc reparse la source RLE et retrie les
+    36 549 cellules de la grille. Un seul passage suffit à établir les
+    quatre faits ; les théorèmes ci-dessous n'en sont que des projections,
+    gratuites au niveau du noyau. -/
+theorem turingmachine_facts :
+    turingmachineInitial.length = 36549 ∧
+    (9, 256) ∉ turingmachineInitial ∧
+    (9, 256) ∈ turingmachineInitial.flatMap mooreNeighbors ∧
+    liveNeighborCount turingmachineInitial (9, 256) = 3 := by
+  native_decide
+
+/-- La grille Turing chargée a bien **36 549 cellules vivantes**.
+    Contrôle croisé indépendant : la table de mesures du lac
+    (`scripts/README.md`) porte la même valeur pour ce motif. -/
+theorem turingmachine_initial_population : turingmachineInitial.length = 36549 :=
+  turingmachine_facts.1
+
+/-- La grille Turing chargée n'est pas vide : la route du placeholder
+    `([] : Grid)` est **fermée** pour ce motif. -/
+theorem turingmachine_initial_nonempty : turingmachineInitial ≠ ([] : Grid) := by
+  intro h
+  have hlen : turingmachineInitial.length = 0 := by rw [h, List.length_nil]
+  have hpop : turingmachineInitial.length = 36549 := turingmachine_facts.1
+  rw [hlen] at hpop
+  exact absurd hpop (by decide)
+
+/-- La cellule `(9, 256)` est **morte** dans la grille Turing chargée. -/
+theorem turingmachine_birth_site_absent : (9, 256) ∉ turingmachineInitial :=
+  turingmachine_facts.2.1
+
+/-- La cellule `(9, 256)` est voisine de Moore d'au moins une cellule
+    vivante de la grille Turing : elle est donc **candidate** pour
+    l'étape suivante. Ses trois voisins vivants sont `(9, 257)`,
+    `(10, 256)` et `(10, 257)`. -/
+theorem turingmachine_birth_site_adjacent :
+    (9, 256) ∈ turingmachineInitial.flatMap mooreNeighbors :=
+  turingmachine_facts.2.2.1
+
+/-- La cellule `(9, 256)` a **exactement trois** voisins de Moore vivants
+    dans la grille Turing : c'est un **site de naissance** (règle B3). -/
+theorem turingmachine_birth_site_count :
+    liveNeighborCount turingmachineInitial (9, 256) = 3 :=
+  turingmachine_facts.2.2.2
+
+/-- **Témoin de dynamisme de la machine de Turing** : la grille chargée
+    n'est pas un point fixe de l'évolution — la machine **exécute** au
+    moins une transition de la règle B3/S23 (une cellule naît en
+    `(9, 256)`).
+
+    La preuve est locale (un site de naissance), donc applicable à un
+    motif de 36 549 cellules dont l'évolution complète n'est pas
+    calculable par le moteur de référence.
+
+    **Témoin négatif apparié** : `Conway.Life.emptyGridIsStillLife`
+    montre que la grille vide — le placeholder qui remplacerait le motif
+    non chargé — est, elle, un point fixe. Sans ce contrôle, le témoin
+    ci-dessus ne distinguerait pas le motif chargé d'une grille vide
+    remplacée. -/
+theorem turingmachine_not_stilllife :
+    step turingmachineInitial ≠ turingmachineInitial :=
+  birthSiteNotFixed turingmachine_birth_site_absent
+    turingmachine_birth_site_adjacent turingmachine_birth_site_count
 
 /-- **Témoin Gemini** — Andrew Wade 2010.
 

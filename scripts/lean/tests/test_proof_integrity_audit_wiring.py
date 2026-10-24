@@ -253,8 +253,8 @@ def test_audit_allowlists_native_decide_axioms():
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
     names = [a.strip() for a in allow.split(",") if a.strip()]
-    assert len(names) == 77, (
-        f"audit allow-list must carry the 77 native_decide axioms of the whole "
+    assert len(names) == 79, (
+        f"audit allow-list must carry the 79 native_decide axioms of the whole "
         f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
         f"footprint + 21 build-enumerated entries of the newly covered "
         f"modules + 2 P4-At standalone witnesses from grain 3a #11303 + 8 "
@@ -263,6 +263,9 @@ def test_audit_allowlists_native_decide_axioms():
         f"+ 4 Pillars entries from the OTCA tranche 3 of #19989 "
         f"- 4 Pillars `_initial_nonempty` entries derived (not native_decide) "
         f"by #21833, "
+        f"+ 2 Turing-machine entries from #17465 (the FR + _en twins of "
+        f"turingmachine_facts, the single anchor of the Turing-machine "
+        f"witness), "
         f"each attributed in the workflow comment); got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges, plus one
@@ -275,6 +278,8 @@ def test_audit_allowlists_native_decide_axioms():
         "Conway.Life.jumpCaptured_block._native.native_decide.ax_1_1",
         "Conway.Life.jumpCaptured_beehive._native.native_decide.ax_1_1",
         "Conway_en.Life_en.RLE_en.glider_parse_ok._native.native_decide.ax_1_1",
+        "Conway.Life.Pillars.turingmachine_facts._native.native_decide.ax_1_1",
+        "Conway.Life.Pillars_en.turingmachine_facts._native.native_decide.ax_1_1",
     ]:
         assert sample in names, (
             f"audit allow-list missing revealed axiom {sample!r}")
