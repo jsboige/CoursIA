@@ -2,6 +2,8 @@ import Mathlib
 import PrefixCodes
 import Decode
 import Huffman
+import Optimalite
+import HuffmanOptimal
 
 /-!
 # SymbolCodec — codec etiquete : le symbole, pas seulement son poids (EPIC #18706)
@@ -40,11 +42,26 @@ theorie du decodage — il l'**appelle**.
 5. **Controles negatifs** : un arbre **n'est pas** un mecanisme d'integrite.
    `Nodup` (unicite des etiquettes) et `pairs_fst_inj` disent ce qu'un codec
    garantit — un mot ne code qu'un symbole, un symbole n'a qu'un mot — et rien
-   de plus : une permutation d'etiquettes de meme poids conserve cout et Kraft
-   tout en changeant le message (`swap_labels_message`).
+   de plus : deux arbres de meme multiensemble de longueurs (meme Kraft) peuvent
+   encoder le meme message differemment (`same_multiset_different_message`,
+   jalon 2).
+6. **Canonisation par etiquette** (jalon 2) : `canonPairs` porte la paire
+   (longueur, symbole) — l'ordre total explicite du carnet 02 — avec la
+   longueur qui suit le symbole (`canonPairs_fst`), la completude
+   (`mem_canonOrder`) et le round-trip canonique prouve par le decodeur du
+   jalon 1.
+7. **Cout etiquete et optimalite par oubli** (jalon 3) : `costL` lit le cout
+   dans `pairs`, `costL_eq_costW` le relie au cout pondere du pli 5 apres
+   oubli, et `costL_ge_huffman` obtient l'optimalite en appelant
+   `huffman_optimal` — sans redemontrer un pli. **Cas limites** (jalon 4) :
+   alphabet vide sans aucun arbre (`no_LTree_zero`), singleton en deux
+   conventions mesurees — mot vide a cout nul (Huffman,
+   `costL_singleton_empty_word`) contre un bit a deux fois le poids (Python,
+   `pythonSingleton`).
 
-Sibling EN : `SymbolCodec_en.lean` (namespace `CompressionLean_en`), memes
-enonces et preuves, docstrings traduites — convention i18n #4980 pattern A.
+Sibling EN : `SymbolCodec_en.lean`, miroir auto-contenu dans le meme
+namespace `CompressionLean` (il n'importe pas le fichier FR) — memes enonces
+et preuves, docstrings traduites — convention i18n #4980 pattern A.
 
 Voir #22377 (part of #18706).
 -/
@@ -537,6 +554,183 @@ theorem mem_canonOrder {n : Nat} (len : Fin n → Nat) (s : Fin n) :
     exact Nat.lt_succ_of_le (len_le_maxLen len s)
   · rw [List.mem_map]
     exact ⟨s, (mem_ofLength len (len s) s).mpr rfl, rfl⟩
+
+/-! ## Jalon 3 : cout etiquete et cout pondere
+
+Le cout etiquete lit le poids de chaque symbole dans le parcours (`pairs`) :
+chaque feuille paie le poids de son symbole fois la longueur de son mot. Le
+lien avec le cout pondere du pli 5 est une **egalite apres oubli**
+(`costL_eq_costW`), jamais une bijection de symboles : elle compare l'arbre
+etiquete a l'arbre pondere qu'il oublie. L'optimalite de Huffman s'obtient
+alors **par oubli** (`costL_ge_huffman`) : le trie de `huffman` sur les poids
+des etiquettes bat tout arbre etiquete, sans redemontrer un seul pli de la
+serie. La terminaison de l'encodeur est structurelle sur le message, celle du
+decodeur herite de `Decode.decode` ; le rejet d'un symbole absent est un
+echec explicite (`encodeMsg_none_of_absent`). -/
+
+/-- Congruence ponctuelle de `List.map`, prouvee ici pour ne pas dependre
+d'un nom de Mathlib. -/
+theorem map_congr_pointwise {α β : Type} {f g : α → β} {l : List α}
+    (h : ∀ x ∈ l, f x = g x) : l.map f = l.map g := by
+  induction l with
+  | nil => rfl
+  | cons x t ih =>
+      have hx : f x = g x := h x (by simp)
+      have hrest : List.map f t = List.map g t := ih (fun y hy => h y (by simp [hy]))
+      simp only [List.map_cons, hx, hrest]
+
+/-- La somme d'une somme de fonctions se scinde en deux sommes. -/
+theorem sum_map_add {α : Type} (l : List α) (f g : α → Nat) :
+    (l.map (fun x => f x + g x)).sum = (l.map f).sum + (l.map g).sum := by
+  induction l with
+  | nil => rfl
+  | cons x t ih => simp only [List.map_cons, List.sum_cons, ih]; omega
+
+/-- Preparer un bit devant chaque mot d'un parcours facture exactement une
+unite de longueur par feuille : la part du cout par longueur de mot passe
+telle quelle, la part par feuille ajoute le poids de chaque etiquette. -/
+theorem sum_cost_prefix {n : Nat} (wt : Fin n → Nat) (b : Bool)
+    (ls : List (List Bool × Fin n)) :
+    ((ls.map (fun p => (b :: p.1, p.2))).map (fun p => wt p.2 * p.1.length)).sum
+      = ((ls.map (fun p => wt p.2 * p.1.length)).sum
+          + ((ls.map Prod.snd).map wt).sum) := by
+  have hcomp : (ls.map (fun p => (b :: p.1, p.2))).map (fun p => wt p.2 * p.1.length)
+      = ls.map (fun p => wt p.2 * (b :: p.1).length) := by
+    rw [List.map_map]; rfl
+  have hcongr : ls.map (fun p => wt p.2 * (b :: p.1).length)
+      = ls.map (fun p => wt p.2 * p.1.length + wt p.2) :=
+    map_congr_pointwise (fun p _ => by simp only [List.length_cons]; ring)
+  have hmap : ls.map (fun p => wt p.2) = ls.map (wt ∘ Prod.snd) :=
+    map_congr_pointwise (fun p _ => rfl)
+  rw [hcomp, hcongr, sum_map_add, hmap, List.map_map]
+
+/-- **Cout etiquete** : chaque feuille paie le poids de son symbole fois la
+longueur de son mot — lu dans `pairs`, donc sur l'association
+symbole / mot effectivement portee par l'arbre. -/
+def costL {n : Nat} (wt : Fin n → Nat) (t : LTree n) : Nat :=
+  ((pairs t).map (fun p => wt p.2 * p.1.length)).sum
+
+/-- Un noeud facture ses deux sous-arbres plus, pour chacun, une unite de
+longueur par symbole : descendre d'un cran allonge tous les mots de la
+branche. -/
+theorem costL_node {n : Nat} (wt : Fin n → Nat) (l r : LTree n) :
+    costL wt (.node l r)
+      = costL wt l + ((labels l).map wt).sum + costL wt r + ((labels r).map wt).sum := by
+  simp only [costL, pairs, labels, List.map_append, List.sum_append]
+  rw [sum_cost_prefix wt true (pairs l), sum_cost_prefix wt false (pairs r)]
+  omega
+
+/-- **Le cout etiquete est le cout pondere de l'arbre oublie.** Egalite
+exacte, pas une borne : le pli 5 (`Optimalite.lean`) definit `costW` par les
+fusions, le codec etiquete le lit par les mots — meme nombre, deux lectures. -/
+theorem costL_eq_costW {n : Nat} (t : LTree n) (wt : Fin n → Nat) :
+    costL wt t = costW (toWTree wt t) := by
+  induction t with
+  | leaf s => simp [costL, pairs, toWTree, costW]
+  | node l r ihl ihr =>
+      rw [costL_node, ihl, ihr]
+      simp only [toWTree, costW]
+      rw [weight_toWTree, weight_toWTree]
+
+/-- Les feuilles ponderees de l'arbre oublie sont les poids des etiquettes,
+dans l'ordre du parcours. -/
+theorem leafWeights_toWTree {n : Nat} (t : LTree n) (wt : Fin n → Nat) :
+    List.Perm (leafWeights (toWTree wt t)) ((labels t).map wt) := by
+  induction t with
+  | leaf s => simp [toWTree, leafWeights, labels, pairs]
+  | node l r ihl ihr =>
+      simp only [labels, pairs, map_snd_prefix, toWTree, leafWeights,
+                 List.map_append]
+      exact List.Perm.append ihl ihr
+
+/-- **Optimalite par oubli** : le trie de `huffman` sur les poids des
+etiquettes coute moins que tout arbre etiquete portant ces etiquettes. La
+preuve est un appel a `huffman_optimal` apres oubli — ce module n'ajoute
+AUCUN argument d'optimalite. Et l'inegalite compare des **couts**, pas des
+codes : elle ne dit pas que le trie de Huffman realise la meme bijection de
+symboles. -/
+theorem costL_ge_huffman {n : Nat} (wt : Fin n → Nat) (t : LTree n) :
+    costW (huffman ((labels t).map wt)) ≤ costL wt t := by
+  rw [costL_eq_costW]
+  exact huffman_optimal ((labels t).map wt).length ((labels t).map wt)
+    (Nat.le_refl _) (toWTree wt t) (leafWeights_toWTree t wt)
+
+/-- **Le rejet d'une etiquette absente est explicite** : encoder un message
+qui contient un symbole sans chemin dans l'arbre echoue sur `none` — jamais
+un mot par defaut, jamais un message tronque. -/
+theorem encodeMsg_none_of_absent {n : Nat} (t : LTree n) (s : Fin n)
+    (habs : pathTo t s = none) :
+    ∀ {msg : List (Fin n)}, s ∈ msg → encodeMsg t msg = none := by
+  intro msg hmem
+  induction msg with
+  | nil => simp at hmem
+  | cons m rest ih =>
+      rcases List.mem_cons.mp hmem with rfl | hmem'
+      · simp only [encodeMsg]
+        rw [habs]
+      · simp only [encodeMsg]
+        cases hp : pathTo t m with
+        | none => rfl
+        | some p =>
+            rw [ih hmem']
+            rfl
+
+/-! ## Jalon 4 : alphabet vide et singleton
+
+Les deux cas limites que le carnet Python tranche par convention sont
+tranches ici par theoreme. Sur l'alphabet vide, la question ne se pose pas :
+aucun arbre n'existe. Sur le singleton, les DEUX conventions coexistent avec
+leurs couts mesures : le code prefixe injectif (feuille-racine, mot vide,
+cout nul — celui de `huffman` et de `leaf_root_contract`) et la convention
+Python a un bit, qui n'est PAS un code injectif et paie deux fois le poids. -/
+
+/-- **Alphabet vide : aucun arbre etiquete n'existe.** La feuille exigerait
+un symbole de `Fin 0` (type vide) et le noeud herite de l'impossible sur son
+fils gauche. La question d'un code sur alphabet vide est vide de contenu. -/
+theorem no_LTree_zero : ∀ t : LTree 0, False
+  | .leaf s => s.elim0
+  | .node l _ => no_LTree_zero l
+
+/-- **Convention Huffman du singleton** : le code prefixe injectif d'un
+alphabet a un symbole est la feuille-racine — mot vide, cout nul. C'est le
+cas `ws = [w]` de la preuve d'optimalite (le trie est la feuille, cout
+nul), et le contrat que `Decode.decode` rejette (`leaf_root_contract`). -/
+theorem costL_singleton_empty_word (wt : Fin 1 → Nat) :
+    costL wt (.leaf 0) = 0 := by
+  simp [costL, pairs]
+
+/-- **Convention Python du singleton, realisee** : un bit par symbole. Sa
+seule realisation arborescente met le symbole sur les DEUX fils — chaque bit
+decode vers 0. -/
+def pythonSingleton : LTree 1 := .node (.leaf 0) (.leaf 0)
+
+/-- La convention Python a un bit n'est pas un code injectif : le meme
+symbole y a deux mots. -/
+theorem pythonSingleton_not_nodup : ¬ Nodup pythonSingleton := fun h =>
+  absurd (h [true] [false] 0
+    (by simp [pythonSingleton, pairs]) (by simp [pythonSingleton, pairs]))
+    (by simp)
+
+/-- Et son cout etiquete paie chaque bit : deux fois le poids du symbole,
+contre zero pour la convention Huffman. La difference est mesuree, pas
+gommee : ce module ne reclame ni l'une ni l'autre comme « la » convention —
+il expose les deux. -/
+theorem costL_pythonSingleton (wt : Fin 1 → Nat) :
+    costL wt pythonSingleton = 2 * wt 0 := by
+  rw [pythonSingleton, costL_node, costL_singleton_empty_word]
+  simp [labels, pairs]
+  omega
+
+#print axioms map_congr_pointwise
+#print axioms sum_cost_prefix
+#print axioms costL_eq_costW
+#print axioms leafWeights_toWTree
+#print axioms costL_ge_huffman
+#print axioms encodeMsg_none_of_absent
+#print axioms no_LTree_zero
+#print axioms costL_singleton_empty_word
+#print axioms pythonSingleton_not_nodup
+#print axioms costL_pythonSingleton
 
 /-! ## Ancres d'execution -/
 
