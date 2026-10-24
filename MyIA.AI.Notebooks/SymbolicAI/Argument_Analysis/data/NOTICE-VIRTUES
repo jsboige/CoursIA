@@ -3,12 +3,12 @@ NOTICE — CoursIA `data/argumentum_virtues_taxonomy.csv`
 
 This file is a verbatim copy of upstream Argumentum's
 `Cards/Fallacies/Argumentum Virtues - Taxonomy.csv` at submodule commit
-**ae84c91ce8b04a0eaa01f418ed08926fbb6a51bb** (bump #14418, 2026-09-03;
-previously ac33f607).
+**5cb4a75929cbb19acdecb7853ca03820bbdb261d** (resync #21849, 2026-10-24; previously 6bc573f73, 2026-10-04,
+and ae84c91c, 2026-09-03).
 
-Source repository : https://github.com/Argumentum/Argumentum
+Source repository : https://github.com/ArgumentumGames/Argumentum
 Source path       : `Cards/Fallacies/Argumentum Virtues - Taxonomy.csv`
-Source SHA1       : 9ff35b599e3eb6ba9c2b4563bf3ff52419def1b9
+Source SHA1       : 74c0bcc12e7c53ef58cb76f5c2b01f497eb27caf
 Upstream LICENSE  : GNU Lesser General Public License v3 (LGPL-3.0)
                     See https://www.gnu.org/licenses/lgpl-3.0.html
                     See Argumentum `LICENSE` file at the pinned commit.
@@ -20,9 +20,19 @@ Per LGPL v3 section 5 (Conveying Modified Source Versions), this file is
 distributed under the same LGPL-3.0 terms as the upstream source.
 
 **Verbatim copy**: this CoursIA data file is byte-for-byte identical to
-the upstream file at the pinned commit ae84c91c — same content, same
-encoding (UTF-8 with BOM), same line endings, 224 lines as upstream.
-No CoursIA modifications.
+the upstream file at the pinned commit 5cb4a759 — same content, same
+encoding (UTF-8 with BOM), 224 CRLF record terminators, header + 223
+data rows, 82 columns. No CoursIA modifications.
+
+**Resync 2026-10-24 (#21849)** : re-copie verbatim depuis le pin du
+gitlink de `main` (5cb4a759), qui avait avancé de deux crans depuis la
+copie en place (6bc573f73). Delta mesuré vs la copie 6bc573f73 : en-tête
+identique, forme inchangée (223 lignes de données × 82 colonnes),
+**161 lignes de données modifiées**, toutes sur des colonnes de
+renvoi inter-cartes (`link_ar` 90, `link_fa` 77, `link_zh` 75,
+`link_fr` 74, `link_es` 63, `link_ru` 56). Aucun ajout ni retrait de
+ligne. Le manifeste `data/argumentum_snapshot.json` a été régénéré
+**après** la recopie, au même pin.
 
 **Resync 2026-09-04 (#4960 Volet B, étape 1)** : re-copie verbatim depuis
 le pin ae84c91c (bump #14418) après les pins intercalaires 7e72f3e5 et
@@ -48,7 +58,7 @@ Schema note — Vertues vs Fallacies
 ----------------------------------
 
 The Vertues CSV schema is **deliberately different** from the Fallacies
-CSV schema (both upstream, pinned at ac33f607):
+CSV schema (both upstream, pinned at 5cb4a759):
 
 | Aspect | Fallacies | Vertues |
 |--------|-----------|---------|
@@ -57,8 +67,8 @@ CSV schema (both upstream, pinned at ac33f607):
 | Multilingual | 8 langs FR/EN/RU/PT/AR/ES/ZH/FA | same 8 langs |
 | Cross-link columns | `crossLink_PredatesOn` ... `crossLink_IsRelatedTo` | same set |
 | AIF columns | `AIF_skosDirectRef/ExceptionRef/Other/MappingType` | same set |
-| Rows | 1,408 data rows (PK 0..1407) | 222 data rows (PK 0..222) |
-| Columns | 106 | 78 |
+| Rows | 1,408 data rows (PK 0..1407) | 223 data rows (PK 0..222) |
+| Columns | 104 | 82 |
 
 Both schemas coexist upstream in the same directory (`Cards/Fallacies/`),
 so consumers must NOT assume a unified schema across the two CSVs. This
@@ -74,13 +84,13 @@ work, you must:
    (the upstream Argumentum LICENSE file applies — see submodule).
 2. **Prominently note** that this file is a verbatim copy of the
    upstream Argumentum Vertues taxonomy, with source path, source SHA,
-   and source commit ac33f607 cited above.
+   and source commit 5cb4a759 cited above.
 3. **Do not impose further restrictions** on the recipients' exercise
    of rights granted by the LGPL-3.0.
 
 Verbatim copies are not "modified source versions" within the meaning
 of LGPL-3.0 section 5 (no modification occurred). The upstream commit
-SHA ac33f607 is the authoritative reference; any future CoursIA edit
+SHA 5cb4a759 is the authoritative reference; any future CoursIA edit
 to this file must be accompanied by an update to the source SHA +
 attribution notice in this file, and the file will then become a
 "modified source version" subject to LGPL-3.0 section 5 obligations
@@ -116,7 +126,7 @@ See also
   remontées moteur + landing essence multidimensionnelle EPITA-IS`
 - PR (this verbatim copy): see `See #4960` reference in PR body
 - Sister NOTICE: `data/NOTICE` (Fallacies verbatim copy, PR #5183)
-- Argumentum LICENSE (LGPL-3.0) at pinned commit ac33f607
+- Argumentum LICENSE (LGPL-3.0) at pinned commit 5cb4a759
 - Cards/Fallacies/Argumentum_Virtues_Face_fr.json (front face, FR)
 - Cards/Fallacies/Mindmaps/{en,fr,pt,ru}/Argumentum_Virtues_MindMap_*.*
   (mindmap renderings in 4 languages)
