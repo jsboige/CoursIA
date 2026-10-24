@@ -87,6 +87,16 @@ echo "Test 1 : miroir absent + bootstrap desactive -- aucun geste (fail-open)"
   else
     ko "T1 no-op silencieux : $out"
   fi
+  # Le throttle s'applique AVANT la lecture de l'existence du miroir : sans cet
+  # ordre, une machine sans miroir relancerait un conteneur a chaque tick pour
+  # relire le meme constat. Le second appel doit donc etre MUET (sorti sur le
+  # stamp), pas repeter le message.
+  out2="$(run_mirror refresh)"; rc2=$?
+  if [ "$rc2" -eq 0 ] && [ -z "$out2" ]; then
+    ok "T1 second refresh throttled : aucun conteneur relance, aucune trace"
+  else
+    ko "T1 second refresh non throttled (rc=$rc2, sortie=[$out2])"
+  fi
 )
 echo ""
 

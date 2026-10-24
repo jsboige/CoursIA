@@ -1799,6 +1799,22 @@ LOCKF="$PARENT/.objects-mirror.lock"
 
 mkdir -p "$PARENT" 2>/dev/null || true
 
+now="$(date +%s)"
+last=0
+if [ -f "$STAMP" ]; then
+  last="$(stat -c %Y "$STAMP" 2>/dev/null || echo 0)"
+  case "$last" in ''|*[!0-9]*) last=0 ;; esac
+fi
+
+# THROTTLE EN PREMIER, et avant meme de regarder si le miroir existe. L'ordre
+# n'est pas cosmetique : quand le miroir est absent et le bootstrap desactive,
+# sortir avant le throttle faisait relancer un conteneur a CHAQUE tick (une
+# boucle de superviseur = un conteneur toutes les 5 min, pour rien). Un
+# `bootstrap` explicite n'est jamais throttle : c'est un geste d'operateur.
+if [ "$ACTION" = "refresh" ] && [ $(( now - last )) -lt "$EVERY" ]; then
+  exit 0
+fi
+
 if [ ! -d "$MIRROR/objects" ]; then
   if [ "$ACTION" = "bootstrap" ] || [ "$COURSIA_RUNNER_MIRROR_BOOTSTRAP" = "1" ]; then
     free="$(df -Pm "$PARENT" 2>/dev/null | awk 'NR==2{print $4}')"
@@ -1821,6 +1837,7 @@ if [ ! -d "$MIRROR/objects" ]; then
       || git --git-dir="$MIRROR" remote set-url origin "$REMOTE" 2>/dev/null
     if git --git-dir="$MIRROR" fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'; then
       git --git-dir="$MIRROR" symbolic-ref HEAD "$HEADREF" 2>/dev/null || true
+      touch "$STAMP" 2>/dev/null || true
       echo "miroir: bootstrap OK en $(( $(date +%s) - t0 ))s"
     else
       echo "miroir: bootstrap ECHOUE -- le parc reste sur son comportement d'avant #18225"
@@ -1828,6 +1845,9 @@ if [ ! -d "$MIRROR/objects" ]; then
       exit 0
     fi
   else
+    # L'horodatage est pose MEME ici : sans lui, une machine sans miroir
+    # relancerait un conteneur a chaque tick uniquement pour relire ce constat.
+    touch "$STAMP" 2>/dev/null || true
     echo "miroir: absent ($MIRROR) et bootstrap desactive -- comportement d'avant #18225"
     exit 0
   fi
@@ -1845,15 +1865,6 @@ if [ "$ACTION" = "status" ]; then
   exit 0
 fi
 
-now="$(date +%s)"
-last=0
-if [ -f "$STAMP" ]; then
-  last="$(stat -c %Y "$STAMP" 2>/dev/null || echo 0)"
-  case "$last" in ''|*[!0-9]*) last=0 ;; esac
-fi
-if [ $(( now - last )) -lt "$EVERY" ]; then
-  exit 0
-fi
 # flock non bloquant : une refresh concurrente (autre boucle, relance
 # interactive) est SAUTEE, pas attendue. Le verrou vit dans le volume, donc il
 # est partage par tous les conteneurs de la machine -- et par l'hote si un
