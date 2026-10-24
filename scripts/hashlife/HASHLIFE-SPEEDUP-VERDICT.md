@@ -40,7 +40,7 @@ generations sans calculer les etats intermediaires.
   moteurs doit etre **egale**. Un desaccord invalide la mesure (le script sort en
   code 1). Mesure du run canonique : accord sur **36 points sur 36**.
 - **Temoin d'etat final** : la population seule ne prouve rien -- deux ensembles
-  de 96 cellules peuvent differer entierement. Chaque point porte donc une
+  de meme cardinal peuvent differer entierement. Chaque point porte donc une
   **empreinte sha256 de l'ensemble final des cellules vivantes**, calculee sur
   les deux voies apres normalisation par translation (l'organe reconstruit son
   quadtree depuis l'origine et `crop` decale le cadre : comparer des coordonnees
@@ -219,10 +219,10 @@ un indicateur de complexite comparable d'une famille de motifs a l'autre.
 Les quatre empreintes sont **identiques** parce que les quatre points tombent sur
 des generations toutes congrues a 1 modulo 3 (256, 1024, 4096, 16384) : pour un
 oscillateur de periode 3, l'etat y est le meme par construction. C'est le
-temoin qui compte ici, et il est decisif : le motif precedent, qui ne portait que
-36 cellules sur les 48 canoniques, produisait **quatre empreintes differentes** a
+temoin qui compte ici, et il est decisif : le motif precedent, ampute d'une partie
+de ses cellules canoniques, produisait **quatre empreintes differentes** a
 ces memes generations. Un emetteur ne revient pas sur son etat ; un oscillateur,
-si. La population constante de 56 cellules et la croissance reguliere du rapport
+si. La population constante et la croissance reguliere du rapport
 (4,5x, 17x, 61x, 227x) confirment la lecture.
 
 Quatre points seulement, et l'ajustement est pauvre (R2 0,477) parce que le temps
@@ -304,7 +304,7 @@ G = 65 536 : 0,4348 s contre 0,2019 s), et l'interpreteur differe (Python 3.13.7
 ici, 3.14.3 pour le run precedent) -- les deux sont enregistres dans le JSON.
 
 **Note sur `pulsar`** : son ecart ne mesure pas la seule derive de run. Le motif
-precedent ne portait que 36 des 48 cellules canoniques et se comportait en
+precedent etait ampute d'une partie de ses cellules canoniques et se comportait en
 emetteur ; la valeur de ce run vient du motif corrige. L'ecart de `pulsar` n'est
 donc pas comparable aux sept autres, qui mesurent, eux, la derive a motif
 identique.
