@@ -38,6 +38,21 @@ def _load_jobs():
     return doc.get("jobs", {})
 
 
+def _resolve_allow(raw):
+    """Resout la valeur ``allow-axioms`` du workflow en liste de noms.
+
+    Depuis #21905 la source de verite de l'allow-list est un fichier
+    (``@scripts/lean/allow_axioms_conway.txt``) : lire la valeur brute ne
+    dirait plus rien du contenu. On passe par le module du gate
+    (``scripts/lean/allow_list.py``), donc ces pins portent sur ce que le
+    job resout reellement -- pas sur la forme de transport.
+    """
+    sys.path.insert(0, str(REPO / "scripts" / "lean"))
+    from allow_list import parse_allow  # noqa: PLC0415 (import tardif: sys.path)
+
+    return parse_allow(raw, REPO)
+
+
 def test_workflow_exists():
     assert CONWAY_WF.is_file(), f"missing {CONWAY_WF}"
 
@@ -247,12 +262,12 @@ def test_audit_allowlists_native_decide_axioms():
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
-    assert "native_decide" in allow, (
+    names = _resolve_allow(allow)
+    assert any("native_decide" in n for n in names), (
         "audit must allow-list the native_decide axioms or it false-fails")
     # Pin the empirical footprint so a silent re-shrink (or accidental copy of
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
-    names = [a.strip() for a in allow.split(",") if a.strip()]
     assert len(names) == 77, (
         f"audit allow-list must carry the 77 native_decide axioms of the whole "
         f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
@@ -287,9 +302,8 @@ def test_audit_allowlist_is_distinct_from_blocking_gate():
     a future copy-paste of the blocking gate's 19 into the audit (which would
     re-open the vert-hors-cible the audit exists to close)."""
     jobs = _load_jobs()
-    audit_set = {a.strip() for a in
-                 jobs["proof-integrity-audit"].get("with", {}).get("allow-axioms", "").split(",")
-                 if a.strip()}
+    audit_set = set(_resolve_allow(
+        jobs["proof-integrity-audit"].get("with", {}).get("allow-axioms", "")))
     blocking_set = {a.strip() for a in
                     jobs["proof-integrity"].get("with", {}).get("allow-axioms", "").split(",")
                     if a.strip()}
