@@ -81,7 +81,7 @@ Le [Frontieres-11-Abstraction-Dette-ShortestPath-Python](Frontieres-11-Abstracti
 | [Partie 4 : Métaheuristiques](../Part4-Metaheuristics/README.md) | Sélection d'algorithmes | MGS-16 : Rice, No Free Lunch (Frontieres-06, Frontieres-10) |
 | [GameTheory](../../GameTheory/README.md) | GameTheory-16 (VCG), GameTheory-19 (abstraction à dette) | Paiements VCG et garanties d'enchères (Frontieres-04) ; même loi d'abstraction attestée sur un terrain indépendant (Frontieres-11) |
 | [SymbolicAI — Planners](../../SymbolicAI/Planners/README.md) | Planners-8 (temporel) | Réseaux de contraintes temporelles (Frontieres-09) |
-| [Langlands](../../SymbolicAI/Lean/Langlands/) | Szpiro–Pasten 2026 | La distillation arithmétique `03-szpiro-pasten-2026.ipynb` vit désormais dans la sous-série Langlands (#18368, carte #19253) |
+| [Langlands](../../SymbolicAI/Lean/Langlands/) | Szpiro–Pasten 2026 | La distillation arithmétique `05-szpiro-pasten-2026.ipynb` vit désormais dans la sous-série Langlands (#18368, carte #19253) |
 
 ## Références
 
