@@ -2,6 +2,7 @@
 
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -218,7 +219,11 @@ def test_secretary_lane_can_attest_although_it_carries_nothing():
     `myia-po-2023:CoursIA-2` is the mirror case: it carries #16259 but could
     not attest for anyone.
     """
-    for lane in ("myia-po-2026:CoursIA-3", "myia-po-2023:CoursIA-2"):
+    for lane in (
+        "myia-po-2026:CoursIA-3",
+        "myia-po-2028:CoursIA-3",
+        "myia-po-2023:CoursIA-2",
+    ):
         ready, errors = mod.evaluate(_snapshot(_body(lane=lane)))
         assert ready, (lane, errors)
         assert errors == [], lane
@@ -1920,6 +1925,20 @@ def test_b0_probe_failure_is_fail_closed(monkeypatch):
 
     monkeypatch.setitem(sys.modules, "check_unaddressed_nits", Broken)
     with pytest.raises(RuntimeError, match="B.0 organ could not measure PR #123"):
+        mod.probe_b0(123)
+
+
+def test_b0_probe_budget_exhausted_is_fail_closed(monkeypatch):
+    """#21882/#21964 : un organe a budget epuise rend « non mesure » (RuntimeError
+    -> UNKNOWN), jamais un dict qui lacherait la contre-verification b0: clear."""
+    class Exhausted:
+        @staticmethod
+        def analyse_pr(pr):
+            return {"pr": pr, "blocked": False, "blocking": [],
+                    "budget_exhausted": True}
+
+    monkeypatch.setitem(sys.modules, "check_unaddressed_nits", Exhausted)
+    with pytest.raises(RuntimeError, match="budget exhausted"):
         mod.probe_b0(123)
 
 
@@ -3847,11 +3866,16 @@ def _synthetic_git(ancestor_pairs=()):
 
 
 def _stack_entry(pr, subjects):
+    # #20641 -- `author_ref` est rendu egal a `ref` par defaut : les
+    # tests qui n'ont pas besoin d'exercer le saut content-free
+    # preservent l'ancien comportement sans modifier chaque call site.
+    ref = f"{mod.STACK_REF_PREFIX}{pr}"
     return mod.StackEntry(
         number=pr,
-        ref=f"{mod.STACK_REF_PREFIX}{pr}",
+        ref=ref,
         commits=list(subjects),
         subjects=dict(subjects),
+        author_ref=ref,
     )
 
 
@@ -3905,6 +3929,7 @@ def test_stack_bottom_linear_stays_ready(monkeypatch):
     bottom = mod.STACK_REF_PREFIX + "19548"
     top = mod.STACK_REF_PREFIX + "19556"
     monkeypatch.setattr(mod, "_git", _synthetic_git({(bottom, top)}))
+    monkeypatch.setattr(mod, "_author_ref", lambda ref, base_ref=None: ref)
     index = _stack_index(
         _stack_entry(19548, {"a": "A", "b": "B"}),
         _stack_entry(19556, {"a": "A", "b": "B", "c": "C"}),
@@ -3916,6 +3941,133 @@ def test_stack_bottom_linear_stays_ready(monkeypatch):
     )
     assert verdict == mod.VERDICT_READY, reasons
     assert reasons == []
+
+
+# --- #20641 : rafraichissement content-free de la base d'une pile ----------
+# Un ``gh pr update-branch`` sans conflit prepende une fusion de
+# rafraichissement a la tete de la base : pre-fix, la porte comparait
+# la tete brute et rejetait a tort la base lineaire. Le predicat
+# doit utiliser le SHA d'auteur (au-dela des fusions content-free),
+# pas la tete brute. Les tests suivants verifient les trois cas
+# nommes dans l'acceptance #20641.
+
+
+def test_stack_bottom_content_free_update_stays_silent(monkeypatch):
+    """#20641 (controle positif) -- base rafraichie content-free, bas de pile lineaire.
+
+    ``#20521`` a sa tete = fusion depuis main (``author_ref = b59ae``),
+    et ``#20525`` est construite sur ``b59ae``. La comparaison brute
+    ``entry.ref -> other.ref`` echouait ; la comparaison
+    ``author_ref -> author_ref`` reussit. La porte se tait.
+    """
+    bottom_ref = mod.STACK_REF_PREFIX + "20521"
+    top_ref = mod.STACK_REF_PREFIX + "20525"
+    bottom_author = "b59ae3257b1111111111111111111111111111"
+    top_author = "b59ae3257b1111111111111111111111111111"
+    monkeypatch.setattr(
+        mod, "_git", _synthetic_git({(bottom_author, top_author)})
+    )
+    # L'index n'a que les deux PR de la pile : aucune autre PR ne doit
+    # apparaitre comme "sommet" (ce qui ferait ecraser le verdict).
+    index = _stack_index(
+        _stack_entry(20521, {"a": "A", "b": "B"}),
+        _stack_entry(20525, {"a": "A", "b": "B", "c": "C"}),
+    )
+    index[20521].ref = bottom_ref
+    index[20521].author_ref = bottom_author
+    index[20525].ref = top_ref
+    index[20525].author_ref = top_author
+    snapshot = _base_snapshot()
+    snapshot["number"] = 20521
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_READY, reasons
+    assert reasons == []
+
+
+def test_stack_top_rebuilt_is_still_detected(monkeypatch):
+    """#20641 (controle negatif 1, cas fondateur #20251) -- sommet de pile rebati.
+
+    Le sommet REBATI reste un sommet : ``author_ref`` du sommet n'est
+    pas un ancetre de l'``author_ref`` de la base. Le fix #20641 n'a
+    pas regresse le cas fondateur.
+    """
+    bottom_ref = mod.STACK_REF_PREFIX + "19548"
+    top_ref = mod.STACK_REF_PREFIX + "19556"
+    # Bottom = ancetre, top = divergent. La comparaison author_ref->author_ref
+    # doit echouer (top pas ancetre de bottom).
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod,
+        "_author_ref",
+        lambda ref, base_ref=None: {
+            bottom_ref: "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1",
+            top_ref: "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+        }[ref],
+    )
+    index = _stack_index(
+        _stack_entry(19548, {"a": "A", "b": "B"}),
+        _stack_entry(19556, {"a": "A", "b": "B", "c": "C"}),
+    )
+    index[19548].author_ref = "a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1"
+    index[19556].author_ref = "b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2"
+    snapshot = _base_snapshot()
+    snapshot["number"] = 19548
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#19556" in r for r in reasons), reasons
+
+
+def test_stack_bottom_with_conflict_resolution_stays_measured(monkeypatch):
+    """#20641 (controle negatif 2) -- base avec resolution de conflit.
+
+    Quand l'update-branch a exige une resolution manuelle, l'arbre du
+    merge differe de l'auto-merge : ``_author_ref`` ne saute pas la
+    fusion et la compare brute. Le gate reste fail-closed sur ce cas :
+    le test verifie que la mesure de l'ancetre est faite sur le SHA
+    de la fusion (avec resolution), pas sur l'auto-merge.
+    """
+    bottom_ref = mod.STACK_REF_PREFIX + "20521"
+    top_ref = mod.STACK_REF_PREFIX + "20525"
+    # Cas : ``_author_ref`` rend la tete brute (pas de saut content-free
+    # parce que la resolution a change l'arbre). La comparaison
+    # author_ref = entry.ref pour la base, et top author_ref != bas
+    # author_ref. La porte detecte un sommet de pile (correctement --
+    # la base n'est pas un bas lineaire quand sa tete porte un
+    # conflit resolu).
+    bottom_author = "cccccccccccccccccccccccccccccccccccccccc"  # = entry.ref apres resolution
+    top_author = "dddddddddddddddddddddddddddddddddddd"
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    monkeypatch.setattr(
+        mod,
+        "_author_ref",
+        lambda ref, base_ref=None: {
+            bottom_ref: bottom_author,
+            top_ref: top_author,
+        }[ref],
+    )
+    index = _stack_index(
+        _stack_entry(20521, {"a": "A", "b": "B"}),
+        _stack_entry(20525, {"a": "A", "b": "B", "c": "C"}),
+    )
+    index[20521].ref = bottom_ref
+    index[20521].author_ref = bottom_author
+    index[20525].ref = top_ref
+    index[20525].author_ref = top_author
+    snapshot = _base_snapshot()
+    snapshot["number"] = 20521
+    verdict, reasons = mod.derive_verdict(
+        snapshot, lambda pr: {"blocked": False, "blocking": []}, stack=index
+    )
+    # L'ancetre author_ref -> author_ref echoue (top pas ancetre de
+    # bottom), donc la porte rapporte un stack top -- c'est le bon
+    # verdict : la fusion avec resolution a change la base, et le
+    # sommet porte des corrections distinctes.
+    assert verdict == mod.VERDICT_BLOCKED, reasons
+    assert any("stack top" in r and "#20525" in r for r in reasons), reasons
 
 
 def test_stack_without_shared_commit_is_unchanged(monkeypatch):
@@ -4158,6 +4310,171 @@ def test_stack_unfetchable_refs_are_an_incident_not_a_refusal(monkeypatch):
     assert incidents
 
 
+def test_stack_pr_head_refspec_is_forced(monkeypatch):
+    """Une tete de PR qui bouge ne doit pas desactiver la porte STACK.
+
+    Sans le `+` du refspec, git rejette la ref locale non fast-forward, le
+    fetch du lot entier echoue, et la porte STACK se desactive pour toutes les
+    PRs -- pendant que le gate rend son verdict quand meme.
+    """
+    seen = {}
+
+    def fake(args, check=True):
+        if args[0] == "fetch":
+            seen["args"] = args
+            return subprocess.CompletedProcess(["git", *args], 0, "", "")
+        raise AssertionError(f"appel git inattendu : {args}")
+
+    monkeypatch.setattr(mod, "_git", fake)
+    remaining, incidents = mod._fetch_pr_heads([19548, 19556])
+    assert remaining == [19548, 19556], remaining
+    assert incidents == []
+
+    specs = [a for a in seen["args"] if a.startswith(("pull/", "+pull/"))]
+    assert specs, seen["args"]
+    for spec in specs:
+        assert spec.startswith("+pull/"), spec
+        assert spec.split(":", 1)[0] == f"+pull/{spec.split('/')[1]}/head", spec
+
+
+def _git_run(cwd, *args):
+    """`git` reel dans un depot jetable : identite fixe, pas de signature."""
+    env = dict(os.environ)
+    env.update(
+        {
+            "GIT_AUTHOR_NAME": "Pile",
+            "GIT_AUTHOR_EMAIL": "pile@example.invalid",
+            "GIT_COMMITTER_NAME": "Pile",
+            "GIT_COMMITTER_EMAIL": "pile@example.invalid",
+            "GIT_AUTHOR_DATE": "2026-10-22T00:00:00+00:00",
+            "GIT_COMMITTER_DATE": "2026-10-22T00:00:00+00:00",
+        }
+    )
+    proc = subprocess.run(
+        ["git", "-c", "commit.gpgsign=false", "-c", "core.autocrlf=false", *args],
+        cwd=str(cwd), capture_output=True, text=True, encoding="utf-8",
+        errors="replace", env=env,
+    )
+    assert proc.returncode == 0, f"git {' '.join(args)} -> {proc.stderr}"
+    return proc.stdout.strip()
+
+
+def _stack_fixture(tmp_path):
+    """Un `origin` dont la tete de PR a ete REECRITE, et son clone de gate.
+
+    L'ancienne tete et la nouvelle sont deux commits freres au-dessus de
+    `main` : la nouvelle n'est pas descendante de l'ancienne, donc la ref
+    locale du clone devient non fast-forward -- c'est exactement le rejet que
+    le refspec forcee doit contourner.
+
+    L'ordre est essentiel : le clone emporte l'ANCIENNE tete, et la
+    reecriture vient apres. Sans cela le fetch initial rapporterait deja la
+    nouvelle tete, et le rejet n'existerait pas.
+    """
+    origin = tmp_path / "origin"
+    _git_run(tmp_path, "init", "-b", "main", str(origin))
+    (origin / "base.txt").write_text("base\n", encoding="utf-8")
+    _git_run(origin, "add", "base.txt")
+    _git_run(origin, "commit", "-m", "base")
+    main_sha = _git_run(origin, "rev-parse", "HEAD")
+
+    _git_run(origin, "checkout", "-b", "pr42")
+    (origin / "work.txt").write_text("version 1\n", encoding="utf-8")
+    _git_run(origin, "add", "work.txt")
+    _git_run(origin, "commit", "-m", "tete v1")
+    old_sha = _git_run(origin, "rev-parse", "HEAD")
+    _git_run(origin, "update-ref", "refs/pull/42/head", old_sha)
+    _git_run(origin, "checkout", "main")
+
+    gate = tmp_path / "gate"
+    _git_run(tmp_path, "clone", str(origin), str(gate))
+    _git_run(gate, "fetch", "origin", "+pull/42/head:refs/remotes/prh/42")
+
+    # La tete est reecrite cote origin : un commit jumeau de `main`, pas un
+    # descendant de l'ancienne tete.
+    _git_run(origin, "checkout", "-b", "pr42-rewrite", main_sha)
+    (origin / "work.txt").write_text("version 2\n", encoding="utf-8")
+    _git_run(origin, "add", "work.txt")
+    _git_run(origin, "commit", "-m", "tete v2")
+    new_sha = _git_run(origin, "rev-parse", "HEAD")
+    _git_run(origin, "update-ref", "refs/pull/42/head", new_sha)
+    _git_run(origin, "checkout", "main")
+    return gate, old_sha, new_sha
+
+
+def test_stack_door_is_measured_after_a_rewritten_pr_head(tmp_path, monkeypatch):
+    """Une tete de PR reecrite ne doit pas desactiver la porte STACK.
+
+    Scenario du 2026-10-22 : la tete d'une PR bouge (rebase, force-push), la
+    ref locale du clone de gate devient non fast-forward, et le fetch du LOT
+    echouait entierement -- ce qui desactivait la porte STACK pour tout le
+    depot pendant que le gate rendait son verdict quand meme.
+    """
+    gate, old_sha, new_sha = _stack_fixture(tmp_path)
+
+    # Controle NEGATIF : sans le `+`, git refuse la ref locale.
+    refused = subprocess.run(
+        ["git", "fetch", "origin", "pull/42/head:refs/remotes/prh/42"],
+        cwd=str(gate), capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
+    )
+    assert refused.returncode != 0, refused.stdout
+    assert "non-fast-forward" in refused.stderr, refused.stderr
+
+    # Le gate, lui, force le refspec : la mesure aboutit.
+    monkeypatch.chdir(gate)
+    remaining, incidents = mod._fetch_pr_heads([42])
+    assert remaining == [42], remaining
+    assert incidents == [], incidents
+    head = subprocess.run(
+        ["git", "rev-parse", "refs/remotes/prh/42"],
+        cwd=str(gate), capture_output=True, text=True, encoding="utf-8",
+        errors="replace",
+    ).stdout.strip()
+    assert head == new_sha, (head, new_sha)
+    assert head != old_sha
+
+    # Et la porte STACK est MESUREE, pas desactivee.
+    monkeypatch.setattr(mod, "gh_lines", lambda args: ["42"])
+    monkeypatch.setattr(mod, "default_stack_index", _REAL_DEFAULT_STACK_INDEX)
+    monkeypatch.setattr(
+        mod, "_STACK_INDEX_CACHE",
+        {"built": False, "index": None, "incidents": []},
+    )
+    index = mod.default_stack_index()
+    assert index is not None, mod._STACK_INDEX_CACHE
+    assert 42 in index
+    assert index[42].commits == [new_sha], index[42].commits
+    assert mod.stack_measurement_state() == "measured"
+
+
+def test_stack_measurement_state_separates_not_run_from_unmeasured(monkeypatch):
+    """#22005 -- l'incompletude se nomme dans le verdict, sans refuser.
+
+    Trois etats distincts : la porte n'a pas ete exercee (`not-run`), elle a
+    ete exercee et la mesure a echoue (`unmeasured`), elle a ete exercee et
+    a reussi (`measured`). Un READY sans STACK ne doit pas se lire comme un
+    READY complet.
+    """
+    monkeypatch.setattr(mod, "_STACK_INDEX_CACHE",
+                        {"built": False, "index": None, "incidents": []})
+    assert mod.stack_measurement_state() == "not-run"
+
+    def boom(args, check=True):
+        return subprocess.CompletedProcess(["git", *args], 1, "", "boom")
+
+    monkeypatch.setattr(mod, "_git", boom)
+    monkeypatch.setattr(mod, "gh_lines", lambda args: ["42"])
+    monkeypatch.setattr(mod, "default_stack_index", _REAL_DEFAULT_STACK_INDEX)
+    monkeypatch.setattr(
+        mod, "_STACK_INDEX_CACHE",
+        {"built": False, "index": None, "incidents": []},
+    )
+    assert mod.default_stack_index() is None
+    assert mod.stack_measurement_state() == "unmeasured"
+    assert mod._STACK_INDEX_CACHE["incidents"]
+
+
 def test_stack_index_cache_is_built_once(monkeypatch):
     """#20251 -- la passe est payee une fois par processus, pas par PR.
 
@@ -4271,3 +4588,137 @@ def test_stack_door_is_silent_on_the_merge_path_when_not_a_stack_top(monkeypatch
 
     assert verdict == mod.VERDICT_READY, errors
     assert errors == [] and dossier is not None
+
+
+# --- #20641 : test direct du mecanisme `_author_ref` (NanoClaw review 5503...) --
+# La review NanoClaw (c.469) a releve que les trois tests #20641 posaient
+# `author_ref` manuellement sur l'index et patchaient le test preexistant
+# l.3743 en identite : `_synthetic_git` ne repond qu'aux questions
+# `merge-base`, et la logique de saut content-free (4eme bloc de
+# `_author_ref` : derive du premier parent, et uniquement quand la fusion
+# est content-free) n'avait aucun test direct. Le couple auto-coherent
+# par construction, c'est precisement ce qu'il faut fermer.
+
+
+def _author_ref_synthetic_git(*, parents=(), ancestors=(), trees=(), auto_merges=()):
+    """`git` simule repondant aux 4 questions de `_author_ref`.
+
+    `parents` : sha -> "<first> <second>" (sortie de `log -1 --format=%P`).
+    `ancestors` : paires (second, base) pour lesquelles merge-base rc=0.
+    `trees` : sha -> tree_sha (sortie de `log -1 --format=%T`).
+    `auto_merges` : (first, second) -> tree_sha (sortie de
+    `merge-tree --write-tree`).
+    """
+    anc = set(ancestors)
+    par = dict(parents)
+    tre = dict(trees)
+    auto = dict(auto_merges)
+
+    def fake(args, check=True):
+        if args[:3] == ["log", "-1", "--format=%P"]:
+            return subprocess.CompletedProcess(
+                ["git", *args], 0, par.get(args[3], ""), ""
+            )
+        if args[:2] == ["merge-base", "--is-ancestor"]:
+            rc = 0 if (args[2], args[3]) in anc else 1
+            return subprocess.CompletedProcess(["git", *args], rc, "", "")
+        if args[:3] == ["log", "-1", "--format=%T"]:
+            return subprocess.CompletedProcess(
+                ["git", *args], 0, tre.get(args[3], ""), ""
+            )
+        if args[:2] == ["merge-tree", "--write-tree"]:
+            tree = auto.get((args[2], args[3]), "")
+            return subprocess.CompletedProcess(["git", *args], 0, tree, "")
+        return subprocess.CompletedProcess(["git", *args], 1, "", "")
+
+    return fake
+
+
+def test_author_ref_skips_content_free_merge(monkeypatch):
+    """#20641 (controle direct positif) -- une fusion content-free est sautee.
+
+    `top` est un commit de fusion : `parents[0]` = la branche ou on
+    etait (feature), `parents[1]` = la branche mergee (main). C'est la
+    disposition de `gh pr update-branch` (merge main dans la branche
+    de la PR). Le second parent est donc l'ancetre de la base, et
+    l'arbre de `top` est identique a l'arbre de l'auto-merge des
+    parents : `_author_ref` doit deriver sur `feature` (le premier
+    parent). C'est le saut qui rend muette la porte pile dans le cas
+    fondateur #20521/#20525 (base rafraichie content-free).
+    """
+    base = "refs/remotes/origin/main"
+    main_sha = "1" * 40
+    feature_sha = "2" * 40
+    top = "3" * 40
+    monkeypatch.setattr(
+        mod,
+        "_git",
+        _author_ref_synthetic_git(
+            parents={top: f"{feature_sha} {main_sha}"},
+            ancestors={(main_sha, base)},
+            trees={top: "tree_top"},
+            auto_merges={(feature_sha, main_sha): "tree_top"},
+        ),
+    )
+    assert mod._author_ref(top, base_ref=base) == feature_sha
+
+
+def test_author_ref_stops_at_conflict_resolution(monkeypatch):
+    """#20641 (controle direct negatif) -- une fusion avec conflit N'EST PAS sautee.
+
+    Meme forme que le test positif, mais l'arbre de `top` differe de
+    l'arbre de l'auto-merge : c'est une resolution manuelle de conflit
+    (contenu d'auteur). `_author_ref` doit rendre `top` inchange, et la
+    remontee first-parent ne deriver pas. Le predicat du
+    `last_authoritative_sha` de `merge_dwell.py` est ici transpose :
+    le contenu d'auteur se mesure, et il bloque la remontee.
+    """
+    base = "refs/remotes/origin/main"
+    main_sha = "1" * 40
+    feature_sha = "2" * 40
+    top = "3" * 40
+    monkeypatch.setattr(
+        mod,
+        "_git",
+        _author_ref_synthetic_git(
+            parents={top: f"{feature_sha} {main_sha}"},
+            ancestors={(main_sha, base)},
+            trees={top: "tree_resolved"},
+            auto_merges={(feature_sha, main_sha): "tree_auto"},
+        ),
+    )
+    assert mod._author_ref(top, base_ref=base) == top
+
+
+def test_author_ref_returns_on_non_merge_commit(monkeypatch):
+    """#20641 (controle direct) -- un commit non-fusion n'est pas une cible de saut.
+
+    `top` n'a qu'un seul parent : `_author_ref` rend `top` inchange
+    (la remontee n'a rien a sauter). Le test ferme le trou des
+    4 conditions de la remontee (parents != 2, second non-ancetre,
+    arbre vide, arbre != auto-merge) : ce sont les sorties de
+    remontee que le code tient.
+    """
+    base = "refs/remotes/origin/main"
+    top = "3" * 40
+    monkeypatch.setattr(
+        mod,
+        "_git",
+        _author_ref_synthetic_git(
+            parents={top: "1" * 40},
+            trees={top: "tree_top"},
+        ),
+    )
+    assert mod._author_ref(top, base_ref=base) == top
+
+
+def test_author_ref_returns_on_git_failure(monkeypatch):
+    """#20641 (controle direct) -- un echec de mesure ne leve pas d'exception.
+
+    Le `_git` synthetique minimal rend rc=1 sur tout (defaut de la
+    derniere branche) : `_author_ref` doit rendre `ref` inchange
+    (fail-closed). Une mesure impossible ne fabrique jamais de refus.
+    """
+    monkeypatch.setattr(mod, "_git", _synthetic_git())
+    ref = "refs/pull/12345/head"
+    assert mod._author_ref(ref) == ref

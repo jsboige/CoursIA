@@ -119,6 +119,7 @@ jobs:
     # 33691615314, runner myia-ai-01-linux-docker-6, success en 34 s.
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retirer le `if:`.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 25
 
@@ -1302,6 +1303,17 @@ jobs:
           # pour le workflow dedie md-content-loss-gate.yml et les tests
           # unitaires (cf PR #13673 follow-up c.715).
           MD_CONTENT_LOSS_PR_BODY: ${{ github.event.pull_request.body }}
+          # #21552 : meme canal in-memory pour le ratchet Output-collapse.
+          # Sans lui, le garde bloquant rendait `0 justified in body` sur
+          # toute PR : l'echappatoire `## Output-collapse justification`
+          # etait structurellement injoignable, et un `MAGNITUDE` justifie
+          # restait un rouge qu'aucun geste de lane ne pouvait lever.
+          COLLAPSE_PR_BODY: ${{ github.event.pull_request.body }}
+          # #21390 : meme canal in-memory pour l'echappement declaratif du
+          # cliquet Lean (`[LEAN-ANCHOR-DECLARED]`). Sans lui, une ancre
+          # legitime (squelette `sorry`, `native_decide` documente) restait
+          # rouge faute de moyen de la declarer.
+          LEAN_CLIQUET_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           git fetch origin "${{ github.base_ref }}" -q
           python scripts/ci/fast_lane.py --shadow
@@ -1362,6 +1374,71 @@ jobs:
             exit 1
           fi
           exit 0
+
+      # #21391 :: le compte de paires de traduction, au moment de la PR.
+      # Cinquieme occurrence du motif #10416 -- un cliquet aveugle a son
+      # MOMENT. Le test qui compare le compte
+      # (`test_full_repo_state_passes_parity`) vit dans `Scripts Tests (CPU)`,
+      # filtre sur `scripts/**` : une PR de carnet qui ajoute un
+      # `*_en.ipynb` ne le declenche pas, et `translation-parity.yml` ne
+      # tourne qu'en cron nocturne. La paire est donc arrivee sur main sans
+      # releve de `EXPECTED_PAIR_COUNT` cinq fois (#19996, #20392, #20453,
+      # #19943, #19916), rougissant main PUR et toute PR touchant
+      # `scripts/**` jusqu'au merge de la reparation.
+      #
+      # #21397 a livre l'organe (`scripts/translation/
+      # check_pair_count_declared.py`) et ses tests, mais AUCUN appelant :
+      # `git grep -l check_pair_count_declared` ne rendait que le script et
+      # son test. Ce step est le porteur.
+      #
+      # Purement local (git diff + git show, aucun appel gh, aucun jeton) :
+      # meme posture que hot_subset ci-dessus, donc pas de skip bot/fork --
+      # une paire ajoutee par un fork rougira main de la meme facon apres
+      # merge.
+      #
+      # `--no-disk-count` est un CHOIX, mesure : l'organe lit le DIFF, pas le
+      # disque (acceptance 4 de #21391). `discover_pairs` ne filtre pas
+      # `.tmp/` -- verifie le 2026-10-20, une paire parasite dans `.tmp/`
+      # fait passer le compte de 15 a 16 -- et ce pool REUTILISE le work dir
+      # entre jobs (cf HEAL #15387 ci-dessus) : un compte lu sur le disque
+      # rougirait la PR suivante pour un fichier qu'elle n'a pas touche.
+      # La verification de la VALEUR du releve (acceptance 3) n'est pas
+      # perdue : elle exige de toucher
+      # `scripts/translation/tests/test_check_translation_parity.py`, donc
+      # `Scripts Tests (CPU)` -- filtre sur `scripts/**` -- tourne sur la
+      # meme PR et porte deja `test_full_repo_state_passes_parity`. Le trou
+      # que ce step comble est l'AUTRE chemin : une PR de carnet qui ajoute
+      # un `*_en.ipynb` SANS toucher `scripts/**`.
+      - name: "Pair count declared at PR time (#21391)"
+        id: pair_count_declared
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          git fetch origin "${{ github.base_ref }}" -q
+          python3 scripts/translation/check_pair_count_declared.py \
+            --base "origin/${{ github.base_ref }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --no-disk-count \
+            > /tmp/pair_count.out 2>/tmp/pair_count.err && RC=0 || RC=$?
+
+          if [ -s /tmp/pair_count.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/pair_count.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/pair_count.out 2>/dev/null || true
+
+          if [ "$RC" -eq 0 ]; then
+            echo "Aucune paire ajoutee/retiree sans releve du compte -- organe vert."
+            exit 0
+          fi
+          if [ "$RC" -eq 1 ]; then
+            echo "::error::Paire de traduction ajoutee/retiree sans relever EXPECTED_PAIR_COUNT dans la meme PR (#21391). Le verdict ci-dessus nomme la paire, le fichier, la ligne et le total attendu."
+            exit 1
+          fi
+          echo "::error::Organe inutilisable (rc=$RC) -- instrument casse, PAS un constat de paire : base ou tete illisible. Ne pas acquitter ce rouge comme une offense de la PR."
+          exit 1
 
       # #15890 :: results artifact weight -- BLOQUANT sur les artefacts
       # NOUVEAUX. 7,43 Mo de JSON de resultats sont entres sur main
@@ -1439,6 +1516,22 @@ jobs:
         if: github.event_name == 'pull_request'
         continue-on-error: true
         run: python scripts/ci/check_secret_paths_ignored.py --repo .
+
+      # #20919 -- garde des valeurs reelles dans les fichiers *.env.example /
+      # *.env.sample / *.env.template. gitleaks reconnait les formats de cles
+      # connus (sk-..., ghp_..., AIza...), il ne voit pas une phrase secrete
+      # faite d'un mot ordinaire (cas fondateur 'Propaganda' sur
+      # TEXT_CONFIG_PASSPHRASE dans SymbolicAI/Argument_Analysis/.env.example).
+      # L'organe verifie 32 fichiers traces git : pour chaque cle dont le nom
+      # matche (?i)(PASS|SECRET|TOKEN|KEY|PWD), la valeur doit etre un marqueur
+      # (vide, your_..._here, <...>, hf_..., sk-..., 0x<...>, URL, chemin,
+      # numerique, modele) ou porter une exemption inline. Sortie : 0 OK,
+      # 1 DEFECT, 2 UNREACHABLE. Substitue aux 32 grep manuels par les reviewers.
+      - name: "Valeurs reelles dans les .env.example (gitleaks ne voit pas les mots ordinaires) (#20919)"
+        id: env_example_secrets
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: python scripts/ci/check_env_example_secrets.py --root .
 
       # #18835 -- detecteur OSS signature (Aliyun presigned URL fragments
       # dans JSON / notebook outputs / prose py-cs-md en mode --strict).
@@ -1531,9 +1624,11 @@ jobs:
           check fastlane     "${{ steps.fastlane.outcome }}"
           check identity     "${{ steps.identity.outcome }}"
           check hot_subset   "${{ steps.hot_subset.outcome }}"
+          check pair_count_declared "${{ steps.pair_count_declared.outcome }}"
           check results_weight "${{ steps.results_weight.outcome }}"
           check grothendieck_umbrella "${{ steps.grothendieck_umbrella.outcome }}"
           check secret_paths_ignored "${{ steps.secret_paths_ignored.outcome }}"
+          check env_example_secrets "${{ steps.env_example_secrets.outcome }}"
           check oss_signature "${{ steps.oss_signature.outcome }}"
           if [ -n "$FAILED" ]; then
             echo "::error::Organes bloquants en echec :$FAILED (le detail est dans les steps correspondants ci-dessus)."

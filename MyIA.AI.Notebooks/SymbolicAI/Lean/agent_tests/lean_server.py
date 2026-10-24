@@ -187,6 +187,33 @@ def _find_lake_root(start: Path) -> Optional[Path]:
 _LEAN_ID = r"[^\W\d][\w'.!?]*"
 _LEAN_NS = r"[^\W\d][\w'.]*"
 
+# Lean may append a diagnostic decoration to a declaration name in the
+# `#print axioms` output -- e.g. the U+2020 dagger on
+# `Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝`. The
+# allow-list spells that anchor without the glyph, so an exact string
+# comparison reports an already-recounted `native_decide` as forbidden
+# (#21947). Normalizing BOTH sides of the comparison removes the decoration
+# instead of widening the allow-list: a new `native_decide` still has to be
+# listed explicitly.
+# The preserved set is the identifier alphabet itself (`_LEAN_ID` above):
+# `?` and `!` are legal trailing characters of a Lean name, not decorations
+# -- Lean 4.35 emits a distinct axiom ending in `?` (adjoint dossier on
+# #21955), and stripping it fused that axiom with a DIFFERENT allow-listed
+# name, a false PASS. Only characters outside the alphabet (the dagger,
+# whitespace) are decorations.
+_AXIOM_NAME_DECORATION_RE = re.compile(r"[^\w.'!?]+$")
+
+
+def normalize_axiom_name(name: str) -> str:
+    """Return the comparable form of an axiom / anchor name.
+
+    Strips the surrounding whitespace, the trailing dot the extractor drops,
+    and any trailing decoration Lean appended to the name. Applied to the
+    extracted names AND to the allow-list entries, so the two sides are
+    compared on the anchor itself.
+    """
+    return _AXIOM_NAME_DECORATION_RE.sub("", name.strip().rstrip("."))
+
 _DECL_HEAD_RE = re.compile(
     r"^(?:@\[[^\]]*\]\s*)*"                                     # attributes (zero or more)
     r"(?P<mods>(?:(?:private|protected|noncomputable|unsafe|partial|abstract)\s+)*)"
@@ -696,6 +723,7 @@ class LeanVerifier:
         whitelist: list = None,
         fail_on_sorry: bool = False,
         timeout: int = 300,
+        declarations: list = None,
     ) -> dict:
         """Check axioms used by a module via ``#print axioms``.
 
@@ -731,6 +759,14 @@ class LeanVerifier:
                 on a cold Mathlib cache can exceed the previous hard-coded 60 s
                 (issue #8677). Callers -- e.g. the CI review gate -- can raise it
                 without re-editing this module.
+            declarations: Optional pinned declaration list (namespace-qualified
+                names). When given, enumeration is skipped entirely and ONLY
+                these declarations are probed — a scoped check for callers that
+                need the axioms of ONE target, not the whole module (#21298:
+                ``verify_sorry_replacement`` probes the single declaration it
+                just proved, so the file's other — workflow-legitimate —
+                sorries never false-positive). Default None = enumerate the
+                module as before.
 
         Returns:
             dict with 'success', 'axioms', 'forbidden', 'has_sorry',
@@ -763,7 +799,23 @@ class LeanVerifier:
             if root is not None:
                 project = root
 
-        declarations = _enumerate_module_declarations(project, module_name)
+        if declarations is not None:
+            # Pinned list (#21298): caller-scoped check — skip both the module
+            # enumeration and the empty-enumeration classification below (the
+            # caller named what it wants probed; the module's OTHER
+            # declarations, including its other sorries, are out of scope).
+            declarations = list(declarations)
+            if not declarations:
+                # Pinned-empty: the caller scoped the check to nothing —
+                # vacuously clean, not a parse gap to classify.
+                return {
+                    "success": True, "axioms": [], "forbidden": [],
+                    "whitelist": whitelist, "has_sorry": False,
+                    "fail_on_sorry": fail_on_sorry, "declarations": [],
+                    "enumerated": False, "raw_output": "",
+                }
+        else:
+            declarations = _enumerate_module_declarations(project, module_name)
         if not declarations:
             # An empty enumeration is not one situation but two (see
             # ``_classify_empty_enumeration``): the gate could not run, or the
@@ -847,7 +899,11 @@ class LeanVerifier:
                 }
 
             axioms = self._extract_axioms(output)
-            forbidden = [a for a in axioms if a not in whitelist and a != "sorryAx"]
+            normalized_whitelist = {normalize_axiom_name(a) for a in whitelist}
+            forbidden = [
+                a for a in axioms
+                if normalize_axiom_name(a) not in normalized_whitelist and a != "sorryAx"
+            ]
             has_sorry = "sorryAx" in axioms
             success = len(forbidden) == 0 and not (fail_on_sorry and has_sorry)
 

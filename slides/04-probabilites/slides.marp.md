@@ -1744,9 +1744,9 @@ Intelligence Artificielle - IV
 
 # Pour aller plus loin: Notebooks
 
-- **Infer.NET prise en main**: `Probas/Infer/Infer-1b-Premiers-Modeles.ipynb`
-- **Réseaux bayésiens**: `Probas/Infer/Infer-4-Bayesian-Networks.ipynb`, `Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb`
-- **Inférence**: `Probas/Infer/Infer-3-Factor-Graphs.ipynb`, `Probas/PyMC/PyMC-03-Factor-Graphs.ipynb`
+- **Infer.NET prise en main**: `Probas/Infer/Infer-01b-Premiers-Modeles.ipynb`
+- **Réseaux bayésiens**: `Probas/Infer/Infer-04-Bayesian-Networks.ipynb`, `Probas/PyMC/PyMC-04-Bayesian-Networks.ipynb`
+- **Inférence**: `Probas/Infer/Infer-03-Factor-Graphs.ipynb`, `Probas/PyMC/PyMC-03-Factor-Graphs.ipynb`
 - **HMM et séries temporelles**: `Probas/Infer/Infer-14-Sequences.ipynb`, `Probas/PyMC/PyMC-14-Sequences.ipynb`, `Probas/Infer/Infer-17-Kalman-Filter.ipynb`
 - **Décision et utilité**: `Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb`, `DecInfer-05-Decision-Networks.ipynb`, `DecInfer-06-Value-Information.ipynb`
 - **MDP, bandits et POMDP**: `Probas/DecisionTheory/DecInfer/DecInfer-08-Sequential.ipynb`, `DecInfer-08b-Lean-Gittins.ipynb`, `DecInfer-10-Thompson-Sampling.ipynb`

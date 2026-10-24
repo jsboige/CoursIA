@@ -35,6 +35,7 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 | 5 | [IIT-05-Lentilles-et-Dissociations-Python](IIT-05-Lentilles-et-Dissociations-Python.ipynb) | Six théories de la conscience (GWT, GNW, FEP, AST, SMT, HOT) comme mesures exécutables sur un même substrat : dissociation accès vs autoréférence, orthogonalité AST/SMT, contre-claim FEP | 60-75 min |
 | 6 | [IIT-06-L-Objet-qui-a-Mordu-IIT-Python](IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb) | L'échange Aaronson/Tononi (2014) exécuté : Vandermonde et le hack W en Φ_DM sur F_p, grille/ligne/feedforward en Φ 3.0 (PyPhi), les deux positions citées avec leurs grades | 75-90 min |
 | 7 | [IIT-07-Integration-Par-Coupes-Lean](IIT-07-Integration-Par-Coupes-Lean.ipynb) | Marche 1 de l'escalier Lean du lake `iit_lean` : coupe et motifs (`projT`/`projF`), verdict relationnel `cutIndep`/`decomposable`/`integrated`, `product_decomposable` instancié sur un système concret, la butée du broadcast | 45-60 min |
+| 8b | [IIT-08b-Parite-et-Broadcast-Lean](IIT-08b-Parite-et-Broadcast-Lean.ipynb) | Marche 2 de l'escalier Lean du lake `iit_lean` : l'outil `parity`, le système `broadcast`, oracle d'orbites par énumération (point fixe en au plus deux pas), théorème B (`broadcast_integrated`) et théorème C (`broadcast_two_cycle`) — le couple qui a mordu IIT | 45-60 min |
 
 ## Parcours recommandés
 
@@ -58,6 +59,9 @@ Notebook 6 (L'objet qui a mordu IIT)
     |
     v
 Notebook 7 (La coupe et le verdict — Lean)
+    |
+    v
+Notebook 8b (Parité et broadcast — Lean)
 ```
 
 | Objectif | Parcours |
@@ -70,6 +74,7 @@ Notebook 7 (La coupe et le verdict — Lean)
 | Focus théories rivales | Notebook 1 + Notebook 5 (six lentilles, contre-claims exécutés) |
 | Focus controverse fondatrice | Notebook 1 + Notebook 6 (l'objection Aaronson exécutée, la réponse assumée mesurée) |
 | Focus moitié formelle | Notebook 6 puis 7 (l'objection Aaronson : mesurée en Φ_DM/PyPhi, puis énoncée en Lean — première marche de l'escalier du lake `iit_lean`) |
+| Focus le couple qui a mordu IIT | Notebook 7 puis 8b (la coupe et le verdict, puis le broadcast : B intégré pour toute coupe + C à dynamique triviale, l'artefact du proxy mis en équation) |
 
 ### Parcours d'apprentissage
 
@@ -254,7 +259,7 @@ flowchart TD
 
 ### IIT-07-Integration-Par-Coupes-Lean.ipynb
 
-Marche 1 de l'escalier qui expose le lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.md) (moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
+Marche 1 de l'escalier qui expose le lake [`iit_lean`](iit_lean/README.md) (moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
 
 | Section | Contenu |
 |---------|---------|
@@ -266,6 +271,21 @@ Marche 1 de l'escalier qui expose le lake [`iit_lean`](../SymbolicAI/Lean/iit_le
 | Butée du broadcast | `parity`/`broadcast` sur les 8 états de n=3, table des couples de motifs : (A=vrai, B=faux) réalisable séparément, jamais ensemble — prépare la marche 3 |
 | Grade | le proxy relationnel contre Φ (MIP, perturbation, valeur numérique) — ce que le carnet ne claim pas |
 | Exercices | écrire une coupe (`selPairs`), reconstruire le motif d'un côté (`motifA`), reconstruire la parité (`pariteA4`) |
+
+### IIT-08b-Parite-et-Broadcast-Lean.ipynb
+
+Marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (issue #20649, moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
+
+| Section | Contenu |
+|---------|---------|
+| Environnement | `import IIT.Integration`, contrat du carnet par `#check` (`parity`, `broadcast`, théorèmes B et C) |
+| Outil parité | `parity : (n : Nat) → State n → Bool` par récurrence sur la taille, trois états témoins en n=3, tuples de bits pour voir les états |
+| Système broadcast | `broadcast : System n` — chaque bit de l'état suivant vaut la parité de l'état courant |
+| Oracle | les orbites par énumération : point fixe atteint en au plus deux pas, la troisième itération égale toujours la deuxième |
+| Théorème C | `broadcast_two_cycle` — la dynamique est triviale, rendue visible par l'oracle |
+| Théorème B | `broadcast_integrated` — le broadcast est intégré pour toute coupe |
+| La critique | B et C sous le même toit : intégration universelle et dynamique triviale ensemble — ce qu'un proxy d'intégration récompense vs ce qu'il devrait récompenser |
+| Exercices | la parité à la main (`sExo1`), le rôle de la taille dans le point fixe (`parity_const`, le rôle de 6 % 2), l'orbite complète d'un état en n=2 |
 
 ## Théorie IIT
 
@@ -375,6 +395,8 @@ IIT/
 ├── IIT-05-Lentilles-et-Dissociations-Python.ipynb # Notebook 5 : six théories de la conscience comme bancs de dissociation
 ├── IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb # Notebook 6 : l'échange Aaronson/Tononi exécuté (Φ_DM + PyPhi)
 ├── IIT-07-Integration-Par-Coupes-Lean.ipynb # Notebook 7 : la coupe et le verdict — lake iit_lean (Lean 4)
+├── IIT-08b-Parite-et-Broadcast-Lean.ipynb # Notebook 8b : parité et broadcast — théorèmes B et C, lake iit_lean (Lean 4)
+├── iit_lean/                   # Lake Lean 4 de l'escalier — namespace `IIT`, sans Mathlib (voir son README)
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
@@ -480,7 +502,7 @@ les arcs entrants de `X`, brisant les chemins de confusion — de sorte que
 | Paradigme | Notebook | Instanciation de `do(·)` | Résultat-signature |
 |-----------|----------|---------------------------|--------------------|
 | **Symbolique** (logique propositionnelle, Java/Tweety) | [Tweety-11-Causal-Python](../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb) | `scm.intervene(p, b)` → nouveau SCM dont l'équation de `p` devient une constante | `P(rain\|drops)=True ≠ P(rain\|do(drops))=False` (baromètre) |
-| **Bayésien par message passing** (Infer.NET, EP/VMP — Gibbs disponible) | [Infer-5](../Probas/Infer/Infer-5-Causal-Inference.ipynb) | mutilation de graphe `Variable.Bernoulli(1.0)` ; backdoor / front-door | paradoxe de Simpson résolu, identifiabilité par ajustement |
+| **Bayésien par message passing** (Infer.NET, EP/VMP — Gibbs disponible) | [Infer-5](../Probas/Infer/Infer-05-Causal-Inference.ipynb) | mutilation de graphe `Variable.Bernoulli(1.0)` ; backdoor / front-door | paradoxe de Simpson résolu, identifiabilité par ajustement |
 | **Bayésien MCMC** (PyMC) | [PyMC-5](../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) | opérateur natif `pm.do(model, {X:x})` ; backdoor / front-door | contrefactuel par abduction (postérieur sur les exogènes) |
 | **Théorie de l'information / émergence** (ICT) | [ICT-05-CausalEmergence-Python](ICT-Series/ICT-05-CausalEmergence-Python.ipynb) | distribution d'intervention `p(C)` **uniforme** sur les états = `do(X_t = x)` appliqué à tout le micro-état | quelle **échelle** « fait » le plus de travail causal (EI / CP) |
 
@@ -497,7 +519,7 @@ causal que le micro — l'`effectiveness` monte sous coarse-graining.
 
 **Parcours de lecture conseillé** : commencer par le **symbolique qualitatif**
 ([Tweety-11](../SymbolicAI/Tweety/Tweety-11-Causal-Python.ipynb)) pour *voir* `observe` vs `do` sans
-nombres ; passer au **quantitatif distributionnel** ([Infer-5](../Probas/Infer/Infer-5-Causal-Inference.ipynb)
+nombres ; passer au **quantitatif distributionnel** ([Infer-5](../Probas/Infer/Infer-05-Causal-Inference.ipynb)
 message passing, [PyMC-5](../Probas/PyMC/PyMC-05-Causal-Inference.ipynb) MCMC) pour *calculer* les effets
 et lever le paradoxe de Simpson ; finir par l'**information-théorique**
 ([ICT-5](ICT-Series/ICT-05-CausalEmergence-Python.ipynb)) où le même `do` mesure le travail causal **à travers les
@@ -514,11 +536,11 @@ Voir la licence du repository principal.
 
 ---
 
-*Version 1.4.0 — Octobre 2026*
+*Version 1.5.0 — Octobre 2026*
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 98
-breakdown: ICT-Series=92, root=6
-maturity: BETA=81, DRAFT=14, ALPHA=3
+pedagogical_count: 105
+breakdown: ICT-Series=95, root=10
+maturity: BETA=85, DRAFT=16, ALPHA=4
 -->

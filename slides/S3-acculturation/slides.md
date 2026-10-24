@@ -975,6 +975,17 @@ layout: default
 <p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb">Z3-06-Advanced-Optimization-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb">SW-2b-Python-RDFBasics.ipynb</a> (triplets RDF).</p>
 ---
 
+# Zoom : la pile du Web sémantique (W3C)
+
+- **Unicode, URI/IRI** : nommer toute ressource — **XML, Namespaces, XML Schema** : syntaxe et structure
+- **RDF Model & Syntax** : le triplet sujet-prédicat-objet — **Ontologie** : classes, propriétés, inférence
+- **Rules / Query** : interroger et raisonner — **Logic, Proof, Trust** : la confiance se démontre
+- **Signature, Encryption** : les deux flancs verticaux de la pile
+
+<img src="./images/img_049.png" style="display:block; width:auto; height:auto; max-width:100%; max-height:320px; object-fit:contain; margin:8px auto;" alt="Pile des couches du Web sémantique (W3C) : à la base Unicode et URI/IRI, puis XML, Namespaces, XML Query et XML Schema, puis RDF Model &amp; Syntax, une Ontologie, Rules/Query, Logic, Proof et Trust au sommet ; Signature et Encryption forment deux colonnes verticales sur le flanc droit" />
+
+---
+
 
 # Autres Applications (2/2)
 
@@ -1059,7 +1070,7 @@ layout: section
 
 
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-4-Bayesian-Networks.ipynb">Infer-4-Bayesian-Networks.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-04-Bayesian-Networks.ipynb">Infer-04-Bayesian-Networks.ipynb</a>.</p>
 ---
 
 
@@ -1103,7 +1114,7 @@ layout: section
 </div>
 
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-1b-Premiers-Modeles.ipynb">Infer-1b-Premiers-Modeles.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/Probas/Infer/Infer-01b-Premiers-Modeles.ipynb">Infer-01b-Premiers-Modeles.ipynb</a>.</p>
 ---
 
 

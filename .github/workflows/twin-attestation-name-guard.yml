@@ -30,7 +30,6 @@ name: Twin attestation name guard
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'scripts/notebook_tools/twin_pairs.d/**'
   workflow_dispatch:
@@ -62,7 +61,7 @@ jobs:
           # `git ls-tree` independant de la materialisation (un checkout Windows
           # echoue silencieusement a materialiser un composant long, `git ls-files`
           # le montrerait absent).
-          python - <<'PY'
+          python3 - <<'PY'
           import subprocess
           import sys
 
