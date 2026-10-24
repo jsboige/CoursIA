@@ -22,6 +22,16 @@ class VolTargetingAlgorithm(QCAlgorithm):
         self.set_start_date(start.year, start.month, start.day)
         self.set_end_date(end.year, end.month, end.day)
 
+        # Warm-up (#21585) : sans lui, la premiere seance du run declenche le
+        # rebalancement mensuel (date_rules.month_start("SPY"), correctif #18967)
+        # avant que SPY n'ait recu sa premiere barre. L'ordre part alors a un prix
+        # nul et QuantConnect le rejette (SecurityPriceZeroOrderResponseErrorAnalysis,
+        # 1 rebalancement perdu sur 83 en 2018-2025 et sur 234 en 2007-2026) ; la
+        # courbe reste plate jusqu'au mois suivant (FlatEquityCurveAnalysis, ~21
+        # seances). 21 = la fenetre de volatilite : les titres sont seedes avec un
+        # prix reel avant le premier tick du run.
+        self.set_warm_up(21, Resolution.DAILY)
+
         self.version = self.get_parameter("version", "1")
 
         # Experiment #18921 (pre-registered in the issue, comment 5964767205):
@@ -64,6 +74,17 @@ class VolTargetingAlgorithm(QCAlgorithm):
         )
 
     def rebalance(self):
+        # Garde de prix (#21585) : aucun ordre ne part tant qu'un titre n'a pas de
+        # prix. Le warm-up seede les titres ; cette garde rend le mode d'echec
+        # impossible meme si le calendrier ou la resolution changent -- un ordre a
+        # 0 est rejete par QC et coute le rebalancement du mois.
+        if self.is_warming_up:
+            return
+        missing = [t for t in self.tickers
+                   if self.securities[self.symbol(t)].price <= 0]
+        if missing:
+            self.debug(f"rebalance skipped: no price yet for {missing}")
+            return
         if self.version == "1":
             self.rebalance_v1()
         elif self.version == "2":

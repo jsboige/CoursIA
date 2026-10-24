@@ -34,7 +34,6 @@ name: quarto-render-list-freshness
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/**/README.md'
       - 'MyIA.AI.Notebooks/**/*.ipynb'
