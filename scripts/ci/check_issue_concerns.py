@@ -135,7 +135,11 @@ _LANE_SIGNATURES: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("seat-token", re.compile(r"myia-[a-z0-9-]+:[A-Za-z0-9._-]+")),
     ("grain-tag", re.compile(r"\bGrain\s*:", re.IGNORECASE)),
     ("lane-header", re.compile(r"(?m)^\s*\*{0,2}Lane\s*[:*]")),
-    ("cycle-watermark", re.compile(r"\bc\.\d{3,}\b")),
+    #: Borne haute a quatre chiffres (#21621) : ``\d{3,}`` avalait les ids de
+    #: commentaire (``c.6280946388``) et ecartait une remarque du mainteneur qui
+    #: les cite. Les numeros de cycle tiennent en 3-4 chiffres (c.278, c.2199) ;
+    #: le ``\b`` final interdit deja toute coupure en tete d'un id plus long.
+    ("cycle-watermark", re.compile(r"\bc\.\d{3,4}\b")),
 )
 
 #: La sixieme signature, evaluee apres neutralisation de la decoration markdown
@@ -243,6 +247,10 @@ class IssueReport:
     number: int
     concerns: list[ConcernFinding]
     remarks: list[RemarkFinding] = field(default_factory=list)
+    #: Commentaires ecartes par signature de lane, agreges par nom de signature
+    #: (#21621). L'ecart est PUBLIE : un total de candidats ne doit jamais
+    #: passer pour un recensement exhaustif du fil.
+    excluded: dict[str, int] = field(default_factory=dict)
 
     @property
     def unresolved(self) -> list:
@@ -262,6 +270,7 @@ class IssueReport:
             "gesture_after": self.gesture_after,
             "concerns": [c.as_dict() for c in self.concerns],
             "remarks": [r.as_dict() for r in self.remarks],
+            "excluded_by_signature": dict(self.excluded),
         }
 
 
@@ -444,6 +453,7 @@ def analyse_comments(
     kinds = [classify(c) for c in comments]
     findings: list[ConcernFinding] = []
     remarks: list[RemarkFinding] = []
+    excluded: dict[str, int] = {}
 
     if "user-concern" in classes:
         for i, comment in enumerate(comments):
@@ -481,7 +491,14 @@ def analyse_comments(
         for i, comment in enumerate(comments):
             if comment.author != CONCERN_AUTHOR or kinds[i] != "other":
                 continue
-            if lane_signature(comment.body):
+            signature = lane_signature(comment.body)
+            # Le tag de protocole en tete est AMBIGU (#21621) : « [NanoClaw] a
+            # raison de… » est une vraie remarque du mainteneur, tandis qu'un
+            # « [LIVRAISON] … » est un post de lane. Faute de pouvoir trancher,
+            # il est ROUTE vers MANUAL_REVIEW au lieu d'etre ecarte.
+            ambiguous = signature == "head-tag"
+            if signature and not ambiguous:
+                excluded[signature] = excluded.get(signature, 0) + 1
                 continue
             later = list(zip(comments[i + 1 :], kinds[i + 1 :]))
             candidates = [
@@ -500,7 +517,7 @@ def analyse_comments(
                     break
             if proof is not None:
                 status = "REPONDU"
-            elif candidates:
+            elif candidates or ambiguous:
                 status = "MANUAL_REVIEW"
             else:
                 status = "NON REPONDU"
@@ -516,7 +533,9 @@ def analyse_comments(
                 )
             )
 
-    return IssueReport(number=number, concerns=findings, remarks=remarks)
+    return IssueReport(
+        number=number, concerns=findings, remarks=remarks, excluded=excluded
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -579,20 +598,36 @@ def fetch_comments(number: int) -> list[Comment]:
 # --------------------------------------------------------------------------- #
 
 
+def excluded_by_signature(reports: list[IssueReport]) -> dict[str, int]:
+    """Ecart par signature de lane, agrege sur les rapports (#21621)."""
+    totals: dict[str, int] = {}
+    for report in reports:
+        for name, count in report.excluded.items():
+            totals[name] = totals.get(name, 0) + count
+    return totals
+
+
 def render_text(reports: list[IssueReport], since: str, state: str, scanned: int) -> str:
     unresolved = [(r, c) for r in reports for c in r.unresolved]
     total = sum(len(r.concerns) + len(r.remarks) for r in reports)
     n_conc = sum(1 for _, c in unresolved if c.slug == "user-concern")
     n_rem = len(unresolved) - n_conc
+    excluded = excluded_by_signature(reports)
+    by_sig = ", ".join(f"{name} {count}" for name, count in sorted(excluded.items()))
     lines = [
         f"=== Remarques user sans reponse (issues {state}, depuis {since}) ===",
         f"{len(unresolved)} non resolu(s) — {n_conc} concern(s), {n_rem} "
         f"remarque(s) — sur {total} recense(s), dans "
         f"{len({r.number for r, _ in unresolved})} issue(s) ; "
-        f"{scanned} issue(s) lue(s).",
+        f"{scanned} issue(s) lue(s) ; "
+        f"{sum(excluded.values())} commentaire(s) ecarte(s) par signature de "
+        f"lane ({by_sig or 'aucune'}).",
     ]
     if not unresolved:
-        lines.append("Aucun — le fil est propre sur la fenetre.")
+        if sum(excluded.values()):
+            lines.append("Aucun non resolu — les commentaires ecartes sont comptes en tete.")
+        else:
+            lines.append("Aucun — le fil est propre sur la fenetre.")
         return "\n".join(lines)
     grouped: dict[int, IssueReport] = {}
     for report, _ in unresolved:
@@ -676,8 +711,11 @@ def main(argv: list[str] | None = None) -> int:
     with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, args.jobs)) as pool:
         reports = list(pool.map(work, numbers))
 
-    reports = [r for r in reports if r.concerns or r.remarks]
+    # Les rapports qui ne portent QUE des ecarts sont conserves (#21621) : les
+    # retirer ferait disparaitre du total publie les commentaires qu'on ecarte.
+    reports = [r for r in reports if r.concerns or r.remarks or r.excluded]
     unresolved = sum(len(r.unresolved) for r in reports)
+    excluded = excluded_by_signature(reports)
 
     if args.json:
         payload = {
@@ -695,13 +733,17 @@ def main(argv: list[str] | None = None) -> int:
                 1 for r in reports for c in r.remarks if c.status != "REPONDU"
             ),
             "unresolved": unresolved,
+            "excluded_total": sum(excluded.values()),
+            "excluded_by_signature": excluded,
             "issues": [
                 r.as_dict()
                 for r in sorted(
                     reports,
                     key=lambda r: (not r.gesture_after, r.number),
                 )
-                if r.unresolved
+                # Les rapports a ecarts seuls gardent leur entree : le total
+                # publie les compte, l'entree montre par quelle signature.
+                if r.unresolved or r.excluded
             ],
         }
         print(json.dumps(payload, ensure_ascii=False, indent=2))

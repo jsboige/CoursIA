@@ -19,6 +19,7 @@ Run: python -m pytest scripts/tests/test_pr_gate.py
 """
 import itertools
 import sys
+import types
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -1491,6 +1492,42 @@ def test_post_check_run_payload_on_fail():
     assert captured["fields"]["conclusion"] == "failure"
 
 
+def test_post_check_run_warns_on_foreign_suite(capsys):
+    """#21505 : une `details_url` qui ne pointe PAS vers `/actions/runs/`
+    signifie une suite ETRANGERE (run non relancable, classe #18985) :
+    `post_check_run` emet un avertissement qui NOMME la suite (`check_suite.id`)."""
+    def foreign_poster(_path, _fields):
+        return {
+            "id": 111294508181,
+            "name": "PR gate",
+            "details_url": "https://github.com/o/r/runs/37144908600",
+            "check_suite": {"id": 100614928346},
+        }
+
+    pr_gate.post_check_run("o/r", "abc1234", "PR gate", 1, "FAIL",
+                           poster=foreign_poster)
+    out = capsys.readouterr().out
+    assert "suite ETRANGERE" in out
+    assert "100614928346" in out
+
+
+def test_post_check_run_no_warning_in_actions_suite(capsys):
+    """#21505 controle : une `details_url` NORMALE (porte `/actions/runs/`)
+    ne declenche AUCUN avertissement -- la suite d'origine est relancable."""
+    def actions_poster(_path, _fields):
+        return {
+            "id": 42,
+            "name": "PR gate",
+            "details_url": "https://github.com/o/r/actions/runs/999/job/1",
+            "check_suite": {"id": 555},
+        }
+
+    pr_gate.post_check_run("o/r", "abc1234", "PR gate", 0, "PASS",
+                           poster=actions_poster)
+    out = capsys.readouterr().out
+    assert "suite ETRANGERE" not in out
+
+
 def test_main_posts_on_pass_when_flag_set(monkeypatch):
     """--post-check-run POSTs the success verdict onto the head SHA."""
     monkeypatch.setattr(
@@ -2271,6 +2308,39 @@ def test_post_check_run_mode_keeps_its_own_contract(monkeypatch):
         ["--repo", "o/r", "--sha", "deadbeef", "--post-check-run"]
     )
     assert code == 1
+
+
+def test_post_check_run_skipped_on_dwell_verdict(monkeypatch):
+    """#21543 -- a DWELL verdict is a merge-floor timer, not a content failure.
+
+    POSTing it as ``conclusion=failure`` lands an unliftable red on the PR
+    head (foreign suite, no run behind it, GitHub ANDs same-named checks).
+    The harness must skip the POST entirely when the verdict starts with
+    ``DWELL``."""
+    posted = []
+    monkeypatch.setattr(
+        pr_gate, "post_check_run",
+        lambda *a, **k: posted.append((a, k)),
+    )
+    args = types.SimpleNamespace(
+        post_check_run=True, repo="o/r", sha="deadbeef", self_name="PR gate",
+    )
+    pr_gate._maybe_post_check_run(args, 1, "DWELL -- plancher 120 min, reste 18 min")
+    assert posted == [], "DWELL verdict must never be POSTed as a check-run"
+
+
+def test_post_check_run_still_posts_on_real_failure(monkeypatch):
+    """#21543 regression guard, other side: a real FAIL verdict still POSTs."""
+    posted = []
+    monkeypatch.setattr(
+        pr_gate, "post_check_run",
+        lambda *a, **k: posted.append((a, k)),
+    )
+    args = types.SimpleNamespace(
+        post_check_run=True, repo="o/r", sha="deadbeef", self_name="PR gate",
+    )
+    pr_gate._maybe_post_check_run(args, 1, "FAIL -- failing checks: Lean CI")
+    assert len(posted) == 1, "a real FAIL verdict must still be POSTed"
 
 
 def test_the_two_surfaces_render_the_same_text(tmp_path, monkeypatch):

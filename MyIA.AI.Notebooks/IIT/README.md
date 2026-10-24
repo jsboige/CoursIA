@@ -259,7 +259,7 @@ flowchart TD
 
 ### IIT-07-Integration-Par-Coupes-Lean.ipynb
 
-Marche 1 de l'escalier qui expose le lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.md) (moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
+Marche 1 de l'escalier qui expose le lake [`iit_lean`](iit_lean/README.md) (moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
 
 | Section | Contenu |
 |---------|---------|
@@ -274,7 +274,7 @@ Marche 1 de l'escalier qui expose le lake [`iit_lean`](../SymbolicAI/Lean/iit_le
 
 ### IIT-08b-Parite-et-Broadcast-Lean.ipynb
 
-Marche 2 de l'escalier du lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.md) (issue #20649, moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
+Marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (issue #20649, moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
 
 | Section | Contenu |
 |---------|---------|
@@ -396,6 +396,7 @@ IIT/
 ├── IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb # Notebook 6 : l'échange Aaronson/Tononi exécuté (Φ_DM + PyPhi)
 ├── IIT-07-Integration-Par-Coupes-Lean.ipynb # Notebook 7 : la coupe et le verdict — lake iit_lean (Lean 4)
 ├── IIT-08b-Parite-et-Broadcast-Lean.ipynb # Notebook 8b : parité et broadcast — théorèmes B et C, lake iit_lean (Lean 4)
+├── iit_lean/                   # Lake Lean 4 de l'escalier — namespace `IIT`, sans Mathlib (voir son README)
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
@@ -539,7 +540,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 98
-breakdown: ICT-Series=92, root=6
-maturity: BETA=81, DRAFT=14, ALPHA=3
+pedagogical_count: 105
+breakdown: ICT-Series=95, root=10
+maturity: BETA=85, DRAFT=16, ALPHA=4
 -->
