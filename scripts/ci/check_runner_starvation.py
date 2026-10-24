@@ -77,6 +77,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -132,6 +133,22 @@ class CallStats:
         )
 
 
+# Reserve NanoClaw #22234 : un 5xx/429 isole ne doit pas aveugler le passage
+# au rythme du heartbeat -- reprise bornee a UNE tentative de plus avant de
+# declarer la lecture impossible. Les indices transitoires sont lus dans le
+# message de gh (le code retour seul ne distingue pas 503 de 404).
+TRANSIENT_HINTS = (
+    "rate limit", "service unavailable", "bad gateway",
+    "server error", "try again", "timed out",
+)
+GH_RETRY_ATTEMPTS = 2
+
+
+def _is_transient(message: str) -> bool:
+    low = message.lower()
+    return any(h in low for h in TRANSIENT_HINTS)
+
+
 def _gh_json(
     args: list[str],
     token: str | None = None,
@@ -144,32 +161,42 @@ def _gh_json(
     qui distingue une file vide d'une lecture impossible (#22215). Sans
     `stats`, l'appel reste silencieux -- reserve aux lectures dont l'echec est
     deja modelise ailleurs (inventaire des runners sans droit admin).
+
+    Un echec TRANSITOIRE (5xx, rate limit) est rejoue une fois avant d'etre
+    declare : chaque tentative compte dans `stats.calls`, seul le resultat
+    FINAL est enregistre -- une reussite apres reprise n'est pas un echec.
     """
     env = dict(os.environ)
     if token:
         env["GH_TOKEN"] = token
-    proc = subprocess.run(
-        ["gh", "api", *args], capture_output=True, text=True,
-        check=False, encoding="utf-8", errors="replace", env=env,
-    )
     endpoint = args[0] if args else "?"
-    if stats is not None:
-        stats.calls += 1
-    if proc.returncode != 0:
+    for attempt in range(GH_RETRY_ATTEMPTS):
+        proc = subprocess.run(
+            ["gh", "api", *args], capture_output=True, text=True,
+            check=False, encoding="utf-8", errors="replace", env=env,
+        )
         if stats is not None:
-            stats.record(endpoint, proc.returncode,
-                         proc.stderr or proc.stdout or "")
-        return None
-    if not proc.stdout.strip():
-        if stats is not None:
-            stats.record(endpoint, 0, "stdout vide")
-        return None
-    try:
-        return json.loads(proc.stdout)
-    except json.JSONDecodeError:
-        if stats is not None:
-            stats.record(endpoint, 0, "stdout non-JSON")
-        return None
+            stats.calls += 1
+        if proc.returncode != 0:
+            message = proc.stderr or proc.stdout or ""
+            if (_is_transient(message)
+                    and attempt + 1 < GH_RETRY_ATTEMPTS):
+                time.sleep(1.0)
+                continue
+            if stats is not None:
+                stats.record(endpoint, proc.returncode, message)
+            return None
+        if not proc.stdout.strip():
+            if stats is not None:
+                stats.record(endpoint, 0, "stdout vide")
+            return None
+        try:
+            return json.loads(proc.stdout)
+        except json.JSONDecodeError:
+            if stats is not None:
+                stats.record(endpoint, 0, "stdout non-JSON")
+            return None
+    return None
 
 
 def _parse_iso(value: str | None) -> datetime | None:
@@ -234,11 +261,18 @@ class Starvation:
 
 
 def fetch_inventory(repo: str, label: str, token: str | None) -> RunnerInventory:
-    # Echec attendu sans droit admin : compteur jetable, jamais un rouge.
+    # Echec attendu sans droit admin : les echecs d'appel ne comptent PAS
+    # dans le stats du passage (ce n'est pas la file qu'on accuse), mais le
+    # motif se rend dans la raison au lieu de mourir dans un compteur que
+    # personne ne lit (reserve NanoClaw #22234 : stats jetable illisible).
+    inv_stats = CallStats()
     data = _gh_json([f"repos/{repo}/actions/runners?per_page=100"], token=token,
-                    stats=CallStats())
+                    stats=inv_stats)
     if not isinstance(data, dict) or "runners" not in data:
-        return InventoryUnavailable(reason="gh api actions/runners a echoue (droit admin ou RUNNERS_READ_PAT absent)")
+        motif = inv_stats.examples() if inv_stats.failed else "reponse inattendue"
+        return InventoryUnavailable(
+            reason=f"gh api actions/runners a echoue (droit admin ou "
+                   f"RUNNERS_READ_PAT absent) -- {motif}")
     inv = RunnerInventory()
     for r in data.get("runners", []):
         names = [l.get("name") for l in r.get("labels", [])]

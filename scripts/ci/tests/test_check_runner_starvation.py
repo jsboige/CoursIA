@@ -124,10 +124,13 @@ def test_gh_json_compte_et_nomme_un_echec(monkeypatch):
         return subprocess.CompletedProcess(
             cmd, 1, stdout="", stderr="API rate limit exceeded for installation\n")
 
+    monkeypatch.setattr(mod.time, "sleep", lambda s: None)
     monkeypatch.setattr(mod.subprocess, "run", fake_run)
     stats = mod.CallStats()
     assert mod._gh_json(["repos/o/r/actions/runs?status=queued"], stats=stats) is None
-    assert stats.calls == 1
+    # Message TRANSITOIRE : une reprise est tentee (#22234 reserve 4) -- les
+    # deux tentatives comptent, seul le resultat final est enregistre.
+    assert stats.calls == 2
     assert stats.failed == 1
     endpoint, code, message = stats.failures[0]
     assert "actions/runs" in endpoint
@@ -152,6 +155,77 @@ def test_gh_json_compte_aussi_une_sortie_vide_ou_non_json(monkeypatch):
     stats = mod.CallStats()
     assert mod._gh_json(["x"], stats=stats) is None
     assert stats.failures[0][2] == "stdout non-JSON"
+
+
+# --- 1bis. Reprise bornee sur transitoire (#22234 reserve 4) ---------------
+
+def test_un_503_transitoire_est_rejoue_et_recupere(monkeypatch):
+    """Un seul 5xx isole ne doit pas aveugler le passage : reprise UNE fois,
+    la reussite n'est pas un echec (stats.failed == 0)."""
+    essais = []
+
+    def fake_run(cmd, **kwargs):
+        essais.append(1)
+        if len(essais) == 1:
+            return subprocess.CompletedProcess(
+                cmd, 1, stdout="", stderr="gh: Server Error (HTTP 503)")
+        return subprocess.CompletedProcess(cmd, 0, stdout='{"ok": 1}', stderr="")
+
+    monkeypatch.setattr(mod.time, "sleep", lambda s: None)
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    stats = mod.CallStats()
+    out = mod._gh_json(["repos/o/r/actions/runs"], stats=stats)
+    assert out == {"ok": 1}
+    assert stats.calls == 2
+    assert stats.failed == 0
+
+
+def test_un_503_persistant_est_declare_apres_sa_reprise(monkeypatch):
+    """Reprise epuisee : l'echec est declare (une seule entree), le passage
+    reste fail-closed -- et un echec NON transitoire n'est pas rejoue."""
+    monkeypatch.setattr(mod.time, "sleep", lambda s: None)
+
+    def toujours_503(cmd, **kwargs):
+        return subprocess.CompletedProcess(
+            cmd, 1, stdout="", stderr="gh: Service Unavailable (HTTP 503)")
+
+    monkeypatch.setattr(mod.subprocess, "run", toujours_503)
+    stats = mod.CallStats()
+    assert mod._gh_json(["x"], stats=stats) is None
+    assert stats.calls == 2
+    assert stats.failed == 1
+
+    def pas_transitoire(cmd, **kwargs):
+        return subprocess.CompletedProcess(
+            cmd, 1, stdout="", stderr="gh: Not Found (HTTP 404)")
+
+    monkeypatch.setattr(mod.subprocess, "run", pas_transitoire)
+    stats = mod.CallStats()
+    assert mod._gh_json(["x"], stats=stats) is None
+    assert stats.calls == 1
+    assert stats.failed == 1
+
+
+def test_le_motif_d_echec_de_l_inventaire_est_rendu(monkeypatch):
+    """Reserve #22234 : le stats jetable de l'inventaire etait lu par
+    personne -- son motif se rend maintenant dans la raison."""
+    def fake_gh(args, token=None, stats=None):
+        if stats is not None:
+            stats.calls += 1
+            stats.record(args[0], 1, "403 Forbidden")
+        return None
+
+    _patch(monkeypatch, fake_gh)
+    inv = mod.fetch_inventory("o/r", "coursia-linux", token=None)
+    assert isinstance(inv, mod.InventoryUnavailable)
+    assert "403 Forbidden" in inv.reason, inv.reason
+
+    def inattendu(args, token=None, stats=None):
+        return {"pas": "de runners"}
+
+    _patch(monkeypatch, inattendu)
+    inv = mod.fetch_inventory("o/r", "coursia-linux", token=None)
+    assert "reponse inattendue" in inv.reason, inv.reason
 
 
 def test_un_passage_troue_ne_conclut_pas_starvation(monkeypatch):
