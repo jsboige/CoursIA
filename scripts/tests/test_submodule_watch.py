@@ -36,14 +36,17 @@ def _leg(name: str, verdict: str) -> dict:
 
 
 def _pr(number: int, created: str, *, bot: bool = False, draft: bool = False, comments: int = 0,
-        reviews: int = 0, rollup: str | None = "SUCCESS", legs: dict | None = None) -> dict:
+        reviews: int = 0, rollup: str | None = "SUCCESS", legs: dict | None = None,
+        legs_total: int | None = None) -> dict:
     commit: dict = {}
     if rollup is not None or legs is not None:
         check: dict = {}
         if rollup is not None:
             check["state"] = rollup
         if legs is not None:
-            check["contexts"] = {"nodes": [_leg(n, v) for n, v in legs.items()]}
+            nodes = [_leg(n, v) for n, v in legs.items()]
+            check["contexts"] = {"nodes": nodes,
+                                 "totalCount": len(nodes) if legs_total is None else legs_total}
         commit["statusCheckRollup"] = check
     return {
         "number": number, "title": f"pr {number}", "isDraft": draft, "createdAt": created,
@@ -315,12 +318,50 @@ def test_rollup_sans_jambes_retombe_sur_l_agregat_sans_rien_masquer():
 
 def test_status_context_lu_comme_une_jambe():
     node = _pr(41, "2026-10-18T12:00:00Z", rollup="FAILURE")
-    node["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"] = {"nodes": [
-        {"__typename": "StatusContext", "context": "ci/legacy", "state": "ERROR"},
-        {"__typename": "StatusContext", "context": "ci/pending", "state": "PENDING"},
-        {"__typename": "StatusContext", "context": "ci/ok", "state": "SUCCESS"},
-    ]}
+    node["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"] = {
+        "totalCount": 3, "nodes": [
+            {"__typename": "StatusContext", "context": "ci/legacy", "state": "ERROR"},
+            {"__typename": "StatusContext", "context": "ci/pending", "state": "PENDING"},
+            {"__typename": "StatusContext", "context": "ci/ok", "state": "SUCCESS"},
+        ]}
     assert sw.pr_legs(node) == {"ci/legacy": "FAILURE", "ci/pending": "PENDING", "ci/ok": "OK"}
+
+
+def test_status_context_expected_attend_au_lieu_de_verdir():
+    # ``EXPECTED`` = statut cree, pas encore traite : le lire ``OK`` afficherait vert
+    # un commit qui n'a rien rendu. ``STALE`` reste ``OK`` sciemment (GitHub l'affiche
+    # neutre) : ce test fixe les deux choix.
+    node = _pr(41, "2026-10-18T12:00:00Z", rollup="PENDING")
+    node["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"] = {
+        "totalCount": 2, "nodes": [
+            {"__typename": "StatusContext", "context": "ci/exp", "state": "EXPECTED"},
+            {"__typename": "StatusContext", "context": "ci/stale", "state": "STALE"},
+        ]}
+    assert sw.pr_legs(node) == {"ci/exp": "PENDING", "ci/stale": "OK"}
+
+
+def test_jambes_tronquees_ne_blanchissent_jamais_une_pr():
+    # Au-dela du cap ``contexts(first: 100)`` une jambe rouge propre a la PR peut
+    # disparaitre de la liste ; la PR perdrait son ``own_failing`` et passerait INFRA.
+    # Une lecture partielle (compte lu != totalCount) doit donc etre ecartee, et la PR
+    # retombe sur son agregat -- rouge.
+    tronquee = _pr(41, "2026-10-18T12:00:00Z", rollup="FAILURE",
+                   legs={"Automerge & Label": "FAILURE"}, legs_total=101)
+    assert sw.pr_legs(tronquee) == {}
+    report = _mgs_report([
+        tronquee,
+        _pr(42, "2026-10-18T12:00:00Z", rollup="FAILURE",
+            legs={"Automerge & Label": "FAILURE"}),
+    ])
+    mgs = next(r for r in report["repos"] if r["path"] == "A/MGS")
+    rows = {p["number"]: p for p in mgs["prs"]}
+    # Une seule jambe lisible => un seul porteur => jamais infra (fail-closed).
+    assert mgs["infra"] == {}
+    # La PR tronquee garde son agregat rouge ; ``own_failing`` vide dit seulement
+    # qu'aucune jambe n'a pu lui etre attribuee -- le couple reste distinguable de
+    # ``checks=INFRA``, qui est le seul blanchiment possible.
+    assert rows[41]["checks"] == "FAILURE" and rows[41]["own_failing"] == []
+    assert rows[42]["checks"] == "FAILURE"
 
 
 def test_checkrun_non_termine_est_pending_quoi_que_dise_sa_conclusion():

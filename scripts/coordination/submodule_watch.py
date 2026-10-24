@@ -26,7 +26,10 @@ Cet organe repond a deux questions, pour chaque depot declare dans ``.gitmodules
    **toutes** les PRs qui la portent, et portee par **au moins deux** PRs, est
    classee ``INFRA`` : affichee avec sa liste de PRs, elle ne se confond plus avec
    ``FAILURE``. Une jambe rouge sur une seule PR reste ``FAILURE`` — le
-   classement est *fail-closed*, il ne masque jamais un rouge propre.
+   classement est *fail-closed*, il ne masque jamais un rouge propre. Une lecture
+   de jambes **tronquee** (plus de 100 contextes, compte lu different de
+   ``totalCount``) ne sert jamais a blanchir : elle est ecartee et la PR retombe
+   sur son agregat.
 2. **Le gitlink de CoursIA suit-il sa branche ?** Meme mesure que la Regle 2 :
    ``git ls-tree <ref> <chemin>`` contre ``git ls-remote <url> <branche declaree>``
    (``HEAD`` quand ``.gitmodules`` ne declare pas de branche). Un ``ls-remote``
@@ -64,6 +67,8 @@ _URL_RE = re.compile(r"github\.com[:/]+([^/]+)/([^/]+?)(?:\.git)?/?$")
 # Conclusions de ``CheckRun`` qui comptent comme un echec, et etats de ``StatusContext``.
 _FAILING_CHECKRUN = {"FAILURE", "TIMED_OUT", "CANCELLED", "ACTION_REQUIRED", "STARTUP_FAILURE"}
 _FAILING_STATUS = {"FAILURE", "ERROR"}
+# ``EXPECTED`` = statut cree, pas encore traite : plus proche d'attendre que d'etre vert.
+_PENDING_STATUS = {"PENDING", "EXPECTED"}
 
 _PRS_QUERY = """
 query($owner: String!, $name: String!, $after: String) {
@@ -79,6 +84,7 @@ query($owner: String!, $name: String!, $after: String) {
         commits(last: 1) { nodes { commit { statusCheckRollup {
           state
           contexts(first: 100) {
+            totalCount
             nodes {
               __typename
               ... on CheckRun { name status conclusion }
@@ -134,19 +140,35 @@ def pr_legs(node: dict) -> dict:
     """Verdict par jambe : ``{nom: FAILURE|PENDING|OK}``.
 
     Un ``CheckRun`` non termine est ``PENDING`` quoi que dise sa conclusion (elle est
-    nulle tant qu'il tourne). Les jambes ne sont lues que si l'API les rend : un
-    rollup sans ``contexts`` rend ``{}``, et l'appelant retombe sur l'agregat plutot
-    que d'inventer un vert."""
+    nulle tant qu'il tourne). Un ``StatusContext`` ``EXPECTED`` (statut cree, pas
+    encore traite) est ``PENDING``, pas ``OK`` ; une conclusion ``STALE`` est lue
+    ``OK`` sciemment, GitHub l'affichant neutre.
+
+    Les jambes ne sont lues que si l'API les rend **en entier** : un rollup sans
+    ``contexts``, ou dont le nombre de noeuds differt de ``totalCount`` (plus de 100
+    jambes), rend ``{}`` et l'appelant retombe sur l'agregat. C'est le sens
+    fail-closed de la troncature : une jambe rouge situee au-dela du cap et portee
+    par une seule PR disparaitrait de la liste, la PR perdrait son ``own_failing``
+    et pourrait passer ``INFRA`` sur ses jambes partagees — une lecture partielle
+    ne doit donc jamais servir a blanchir."""
     rollup = check_rollup(node)
+    contexts = rollup.get("contexts") or {}
+    raw = contexts.get("nodes") or []
+    total = contexts.get("totalCount")
+    if isinstance(total, int) and len(raw) != total:
+        return {}
     legs: dict[str, str] = {}
-    for ctx in ((rollup.get("contexts") or {}).get("nodes") or []):
+    for ctx in raw:
         if not isinstance(ctx, dict):
             continue
         if ctx.get("__typename") == "StatusContext" or "context" in ctx:
             state = (ctx.get("state") or "").upper()
-            legs[ctx.get("context") or "?"] = (
-                "FAILURE" if state in _FAILING_STATUS else ("PENDING" if state == "PENDING" else "OK")
-            )
+            if state in _FAILING_STATUS:
+                legs[ctx.get("context") or "?"] = "FAILURE"
+            elif state in _PENDING_STATUS:
+                legs[ctx.get("context") or "?"] = "PENDING"
+            else:
+                legs[ctx.get("context") or "?"] = "OK"
             continue
         name = ctx.get("name") or "?"
         status = (ctx.get("status") or "").upper()
