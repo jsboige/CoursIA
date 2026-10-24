@@ -34,12 +34,21 @@ workflows with `cancel-in-progress: true` and no `push: main` are harmless.
 
 ## Allowlist
 
-Some workflows deliberately use literal `true` because they supersede
-concurrent deploys of the same artefact -- e.g. `quarto-pages-deploy.yml`,
-which wants the new deploy to win. The allowlist is **by file name**, never
-a glob, with a comment in the script citing the reason. The cliquet that
-makes the gate rough on every new file is the whole value of the organ --
-same discipline as `Classical.choice` whitelisting in the Lean axiom gate.
+Some workflows may deliberately use literal `true` because they supersede
+concurrent deploys of the same artefact. The allowlist is **by file name**,
+never a glob, with a comment in the script citing the reason. The cliquet
+that makes the gate rough on every new file is the whole value of the organ
+-- same discipline as `Classical.choice` whitelisting in the Lean axiom gate.
+
+**It is empty since #22088**, and the one entry it ever held is the reason
+to keep it that way: `quarto-pages-deploy.yml` was allowlisted because "the
+new deploy must win" -- true of the result, false of the cost. On a merge
+burst every push killed the previous build, GitHub counts a `cancelled` leg
+as a failure, and 19 of the last 40 commits of `main` showed a red cross
+with no failing test. The workflow now carries
+`cancel-in-progress: ${{ github.event_name != 'push' }}` (push serialises,
+PR still cancels), so the conjunction is gone -- and an allowlist entry
+would have made this guard blind to a revert.
 
 ## Modes
 
@@ -68,9 +77,19 @@ DEFAULT_WORKFLOWS_DIR = str(
 # new name is the entire value of the organ. Add a name ONLY with a one-line
 # reason; never wildcard.
 ALLOWLIST: dict[str, str] = {
-    # pages-deploy supersedes concurrent deploys of the same Quarto artifact:
-    # the new deploy must win. Comment in quarto-pages-deploy.yml confirms.
-    "quarto-pages-deploy.yml": "Quarto pages deploy supersedes prior in-flight deploy",
+    # Vide depuis #22088 : l'entree `quarto-pages-deploy.yml` y figurait au
+    # motif que « le nouveau deploiement doit gagner ». C'etait vrai du
+    # RESULTAT, faux du COUT -- chaque push annulait le build precedent, et
+    # GitHub compte une annulation comme un echec : 19 commits de main sur 40
+    # portaient une croix rouge sans aucun test en echec.
+    #
+    # Le workflow porte desormais `cancel-in-progress: ${{ github.event_name
+    # != 'push' }}` : la voie push ne s'annule plus (serialisation), la voie
+    # PR conserve l'annulation. La conjonction n'y est donc plus, et l'entree
+    # d'allowlist serait devenue un angle mort : si quelqu'un remettait
+    # `cancel-in-progress: true`, le garde devrait rougir -- l'allowlist le
+    # lui interdirait. Le garde est maintenant un detecteur de regression sur
+    # ce fichier.
 }
 
 
