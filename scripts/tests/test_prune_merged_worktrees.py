@@ -2611,7 +2611,7 @@ class TestRefusalReport3895:
         monkeypatch.setattr(
             pmw, "diagnose_worktree",
             lambda path, cur, head_sha=None, activity_window_h=6.0,
-                   gh_unavailable_reason=None:
+                   gh_unavailable_reason=None, quarantine_submodules=False:
                 next(s for s in statuses if s.path == path),
         )
         monkeypatch.setattr(

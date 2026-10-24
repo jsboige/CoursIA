@@ -163,7 +163,14 @@ def build_features_for_symbol(
 
     if regime_method in ("hmm", "both"):
         try:
-            regimes_hmm = detect_regimes(prices_aligned, method="hmm", n_states=3)
+            # CAUTION (#21054): default HMM decode is Viterbi = retrospective
+            # (label at t depends on observations after t). Keep "viterbi" for
+            # backward compatibility of existing datasets; pass
+            # decode_mode="filter" when regime_hmm feeds a walk-forward or
+            # live signal.
+            regimes_hmm = detect_regimes(
+                prices_aligned, method="hmm", n_states=3
+            )
             features["regime_hmm"] = regimes_hmm.values
         except Exception as e:
             log.warning(f"  {symbol}: HMM failed ({e}), using price-only")
