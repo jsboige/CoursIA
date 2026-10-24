@@ -144,6 +144,57 @@ def test_now_marker_round_trips_through_append_marker():
     assert out.count("<!-- refresh-adj:") == 1
 
 
+# --- #22403 : le nom du job se lit dans le workflow, il ne se code pas -------
+
+
+def test_workflow_carries_a_content_guard_job():
+    """Le contrat de lecture: un job de contenu prefixe existe dans le workflow.
+
+    Ce test est le garde du garde: si le job est renomme au point de ne plus
+    commencer par `Always-on guards --`, l'organe redeviendrait muet (#22403)
+    -- ici, on rougit.
+    """
+    names = rsa.content_guard_names()
+    assert names, (
+        f"aucun job '{rsa.GUARD_PREFIX}...' dans {rsa.GUARD_WORKFLOW.name} : "
+        "refresh_stale_adjacency.py ne trouverait plus la jambe a rafraichir"
+    )
+    assert rsa.content_guard_name() is not None, (
+        "tous les jobs prefixes portent la marque de body : aucun job de contenu"
+    )
+    assert rsa.BODY_JOB_MARK not in rsa.content_guard_name()
+
+
+def test_expected_name_is_the_workflow_name():
+    """Le nom attendu est celui du fichier, pas un litteral fidele a un compte."""
+    expected = rsa.content_guard_name()
+    text = rsa.GUARD_WORKFLOW.read_text(encoding="utf-8")
+    assert expected in text
+
+
+def test_renamed_counter_is_still_detected(monkeypatch):
+    """Un renommage du compte d'organes ne doit plus rendre l'organe muet."""
+    monkeypatch.setattr(
+        rsa, "get_pr_checks",
+        lambda pr: {"Always-on guards -- 99 organes, 1 checkout": "fail"},
+    )
+    assert rsa.is_always_on_guards_failing(1) is True
+
+
+def test_body_leg_red_does_not_trigger_a_refresh(monkeypatch):
+    """Le job de body (#22333) est exclu: son rouge ne dit rien de l'adjacence."""
+    monkeypatch.setattr(
+        rsa, "get_pr_checks",
+        lambda pr: {"Always-on guards -- body": "fail"},
+    )
+    assert rsa.is_always_on_guards_failing(1) is False
+
+
+def test_absent_leg_is_not_failing(monkeypatch):
+    monkeypatch.setattr(rsa, "get_pr_checks", lambda pr: {"PR gate": "pass"})
+    assert rsa.is_always_on_guards_failing(1) is False
+
+
 # --- verdict-routing tests (refresh_one logic, mocked subprocess) ------------
 
 
@@ -163,7 +214,7 @@ def _setup_fake_for_pr(fake_run: FakeRun, pr: int, body: str,
                     "--jq")] = (
         0, "[]", "")
     checks = [
-        ["Always-on guards -- 13 organes, 1 checkout",
+        ["Always-on guards -- 16 organes, 1 checkout",
          "fail" if always_on_failing else "success", "0s", "https://x"],
     ]
     checks_text = "\n".join("\t".join(row) for row in checks) + "\n"

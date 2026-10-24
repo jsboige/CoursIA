@@ -15,7 +15,7 @@ name: Adjacency stale-verdict sweep
 #
 # Ce que fait ce sweep (simuler, jamais outrepasser) :
 #   1. Énumérer les PR ouvertes non-fork (REST) et ne garder que celles dont
-#      le check "Always-on guards -- 13 organes, 1 checkout" est ROUGE.
+#      la jambe de contenu "Always-on guards -- ..." est ROUGE.
 #   2. Lancer refresh_stale_adjacency.py dessus : il re-simule le garde contre
 #      la séquence de merges COURANTE (le même calcul que la CI).
 #   3. Si la simulation PASSE alors que la CI échoue, le script appose le
@@ -32,13 +32,16 @@ name: Adjacency stale-verdict sweep
 # Le sweep sort TOUJOURS 0 (organe réparateur, jamais un gate) ; rc=2 (erreur
 # d'appelant) est loggé ::warning:: et ne rougit pas la CI.
 #
-# Couplage au nom de check, déclaré : le script lit le nom exact
-# "Always-on guards -- 13 organes, 1 checkout" via `gh pr checks` ; le
-# pré-filtre ci-dessous matche tout nom commençant par "Always-on guards"
-# pour qu'un changement de compte d'organes (12 -> 13) ne débranche PAS le
-# sweep en silence. Si AUCUNE PR ouverte ne porte de jambe "Always-on
-# guards*", le sweep émet ::warning:: -- c'est le cas rename-to-nothing
-# qu'un organe muet cacherait.
+# Couplage au nom de check, déclaré : le nom de la jambe de contenu porte un
+# COMPTE d'organes ("-- N organes, 1 checkout") qui change à chaque ajout.
+# Aucun littéral ne le recopie plus : le script lit ce nom dans
+# `always-on-guards.yml` et matche par préfixe (#22403 -- le littéral "13
+# organes" avait survécu à la 16e jambe et rendait l'organe muet, un état
+# indiscernable de "rien à rafraîchir"). La jambe de body (#22333) est
+# exclue : son rouge ne dit rien de l'adjacence. Le pré-filtre ci-dessous
+# matche lui aussi le préfixe. Si AUCUNE PR ouverte ne porte de jambe
+# "Always-on guards*", le sweep émet ::warning:: -- c'est le cas
+# rename-to-nothing qu'un organe muet cacherait.
 
 on:
   schedule:
@@ -130,7 +133,7 @@ jobs:
           set -uo pipefail
 
           # Plafond d'éditions de body par sweep : chaque edit re-déclenche le
-          # workflow always-on-guards complet (~13 organes) pour CETTE PR. Sous
+          # workflow always-on-guards complet pour CETTE PR. Sous
           # péremption massive (cas fondateur : 7 PRs) le sweep suivant draine
           # le reste -- jamais une cascade sous congestion (#12728).
           MAX_REFRESH=8
@@ -149,8 +152,12 @@ jobs:
           GUARD_LEG_COUNT=0
           while read -r NUM SHA; do
             [ -z "${NUM:-}" ] && continue
+            # Jambe de CONTENU seulement : la jambe de body (#22333) porte le
+            # meme prefixe, et son rouge ne dit rien de l'adjacence -- le
+            # script l'exclut deja, le pre-filtre s'aligne pour ne pas
+            # presenter de faux candidats.
             LEGS=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
-                     --jq '[.check_runs[] | select(.name | startswith("Always-on guards")) | .conclusion]' 2>/dev/null) || continue
+                     --jq '[.check_runs[] | select((.name | startswith("Always-on guards")) and (.name | contains("-- body") | not)) | .conclusion]' 2>/dev/null) || continue
             if [ -z "${LEGS:-}" ] || [ "$LEGS" = "[]" ]; then
               continue
             fi
@@ -169,10 +176,11 @@ jobs:
 
           # #11808 : un filtre déconnecté et un filtre vide sont
           # indistinguables. Zéro jambe "Always-on guards*" sur TOUT le pool
-          # = rename du check (ou organe mort) -- le script lit le nom exact,
-          # le sweep rendrait le silence visible.
+          # = rename du check (ou organe mort) -- le script lit ce nom dans
+          # `always-on-guards.yml` et matche par préfixe, le sweep rend le
+          # silence visible.
           if [ "$GUARD_LEG_COUNT" -eq 0 ]; then
-            echo "::warning::[adjacency-sweep] no open PR carries an 'Always-on guards*' check -- if that check was renamed, refresh_stale_adjacency.py (which reads the exact name) is silently inert."
+            echo "::warning::[adjacency-sweep] no open PR carries an 'Always-on guards*' check -- if that check was renamed, refresh_stale_adjacency.py (which reads the name from always-on-guards.yml) is silently inert."
           fi
 
           if [ "$RED_COUNT" -eq 0 ]; then
