@@ -564,39 +564,17 @@ def scan_diff(diff_range: str) -> tuple[list[AddedPassage], list[str], list[str]
                 continue
             base_blob = proc.stdout
         base_keys = _markdown_paragraphs_of_blob(base_blob)
-        # Quand la tete de la plage est un commit explicite (cas des tests
-        # unitaires rejouant un commit historique), la mesure doit porter le
-        # blob du COMMIT, pas l'arbre de travail : un carnet nettoye par un
-        # commit ulterieur ferait retomber les findings du commit d'origine
-        # (mesure 2026-10-20 : le test du commit fondateur 7a0521584 est passe
-        # au rouge le jour ou #20252 a purge les corrigenda de SC-09).
-        head_ref = diff_range.split("...")[-1].strip() or "HEAD"
-        if re.fullmatch(r"[0-9a-f]{7,40}", head_ref):
-            proc_head = subprocess.run(
-                ["git", "show", f"{head_ref}:{rel}"],
-                capture_output=True, text=True, encoding="utf-8", errors="replace",
-                timeout=60, check=False,
-            )
-            if proc_head.returncode != 0:
-                incidents.append(f"{rel} : tete illisible au commit ({proc_head.stderr.strip()[:80]})")
-                continue
-            try:
-                head_nb = json.loads(proc_head.stdout)
-            except json.JSONDecodeError as exc:
-                incidents.append(f"{rel} : tete illisible au commit ({str(exc)[:80]})")
-                continue
-        else:
-            head_path = Path(rel)
-            if not head_path.is_file():
-                # Tete absente : la mesure n'a pas eu lieu -- un vert muet ici
-                # annoncerait « N carnets analyses » en n'en analysant aucun.
-                incidents.append(f"{rel} : tete absente de l'arbre de travail")
-                continue
-            try:
-                head_nb = json.loads(head_path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError) as exc:
-                incidents.append(f"{rel} : tete illisible ({str(exc)[:80]})")
-                continue
+        head_path = Path(rel)
+        if not head_path.is_file():
+            # Tete absente : la mesure n'a pas eu lieu -- un vert muet ici
+            # annoncerait « N carnets analyses » en n'en analysant aucun.
+            incidents.append(f"{rel} : tete absente de l'arbre de travail")
+            continue
+        try:
+            head_nb = json.loads(head_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            incidents.append(f"{rel} : tete illisible ({str(exc)[:80]})")
+            continue
         for idx, cell in enumerate(head_nb.get("cells", [])):
             if cell.get("cell_type") != "markdown":
                 continue
