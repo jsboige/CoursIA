@@ -511,6 +511,9 @@ def train_moe_regimes_pipeline(
     log.info(f"Sequences: {len(X)} samples, shape={X.shape}")
 
     # Regime detection on aligned price series
+    # CAUTION (#21054): default HMM decode is Viterbi = retrospective;
+    # for regime-routed MoE evaluated walk-forward, decode_mode="filter"
+    # (via method="hmm" kwargs) gives causal labels.
     aligned_prices = raw["Close"].iloc[lookback:lookback + len(y)]
     regime_series = detect_regimes(aligned_prices, method=regime_method)
 
