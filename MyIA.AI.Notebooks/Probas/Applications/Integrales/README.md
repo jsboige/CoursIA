@@ -72,11 +72,16 @@ V1 dans `Applications/Marches/`.
   $\mu^+\mu^-$ in the Weinberg model*, Nucl. Phys. B **160**, 151 (1979).
 - L. Lewin, *Polylogarithms and Associated Functions*, North-Holland (1981) —
   fonction de Clausen $\mathrm{Cl}_2$.
-- S. Adams, L. Bogner, S. Weinzierl, *The two-loop sunrise graph in two
-  space-time dimensions*, arXiv:1302.7004 — la forme fermée du sunrise en
-  intégrales elliptiques multiples (citée sans être reproduite au carnet 02).
-- M. D. Schwartz, *Vibe physics* et *Claude-shaped science* (Anthropic, 2025),
-  arXiv:2601.02484 (2026) — archivés au gisement
+- L. Adams, C. Bogner, S. Weinzierl, *The two-loop sunrise graph with arbitrary
+  masses*, arXiv:1302.7004 (v1 seule) ; *The two-loop sunrise graph in two
+  space-time dimensions with arbitrary masses in terms of elliptic dilogarithms*,
+  arXiv:1405.5640 — la forme fermée du sunrise en intégrales elliptiques multiples
+  (citée sans être reproduite au carnet 02).
+- M. D. Schwartz, *Vibe physics* (Anthropic, 2025) — le livrable de la
+  collaboration qu'il raconte est arXiv:2601.02484 (2026), *Resummation of the
+  C-Parameter Sudakov Shoulder Using Effective Field Theory* ; *Claude-shaped
+  science* (Anthropic, 2025) — la thèse des problèmes « claude-formes », d'où sort
+  le harnais BootLoops. Les trois pièces sont archivées au gisement
   `G:\Mon Drive\MyIA\IA\Bibliographie IA\Physics\`.
 - *BootLoops* (MIT / CC-BY-4.0) — harnais d'intégrales certifiées et protocoles ;
   `kira` (GPL-3.0) cité sans réutilisation.
