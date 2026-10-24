@@ -57,24 +57,31 @@ export COURSIA_RUNNER_STATE_DIR="/var/lib/coursia-runner"
 export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 
 # --- DIMENSIONNEMENT (l'hote prime : c'est aussi un poste GPU interactif) ----
-# N = 4 slots, caps 3 vCPU / 4 Go / 512 pids. Pourquoi ces caps et pas les
+# N = 4 slots, caps 2 vCPU / 4 Go / 512 pids. Pourquoi ces caps et pas les
 # 1536 Mo du defaut du superviseur : la classe « Scripts Tests » culmine a
 # 3,5 Gio (mesure po-2028 du 2026-10-20, #16643) ; a 1536 Mo elle meurt sur
 # KeyError xdist, c'est-a-dire sur des workers tues par le cap, pas sur un test
 # rouge. On reduit donc le NOMBRE de slots, jamais le cap unitaire.
 #
 # ARITHMETIQUE DECLAREE (regle #19802 : le budget est la somme des caps) :
-#     4 slots x 4 Go   = 16 384 Mo            -> COURSIA_RUNNER_BUDGET_GB=16
-#     4 slots x 3 vCPU = 12 vCPU sur 20       -> COURSIA_RUNNER_CPU_BUDGET=12
+#     4 slots x 4 Go   = 16 384 Mo                -> COURSIA_RUNNER_BUDGET_GB=16
+#     4 slots x 2 vCPU = 8 vCPU sur 20 (40 %)     -> COURSIA_RUNNER_CPU_BUDGET=10
 #     slice : MemoryHigh=16G, MemoryMax=18G, MemorySwapMax=0 (mur kernel)
 # La VM WSL est plafonnee a 32 Go (.wslconfig) et l'hote a 63,6 Go : 18 Go de
 # CI laissent 13 Go dans la VM aux lanes interactives, et >= 45 Go a Windows.
+#
+# Pourquoi 2 vCPU et un budget de 10 : la garde d'addendum ai-01 du 2026-10-24
+# (c1843, garde 1) definit COURSIA_RUNNER_CPU_BUDGET comme la MOITIE des coeurs
+# logiques de la VM -- 20 nproc -> 10 -- et « l'hote doit primer ». Un premier
+# demarrage a 4 x 3 = 12 vCPU (60 %) depassait cette borne : le cap unitaire a
+# ete ramene a 2, en gardant les 4 slots (plus de jobs simultanes, moins de
+# coeurs chacun ; le pool voisin n'a pas de mal a absorber la latence).
 # Aucune jambe coursia-waiter n'est installee sur cette machine (dispatch
 # ai-01 du 2026-10-24) : la famine se traite par des slots d'execution, pas
 # par des places dans la file.
 export COURSIA_RUNNER_BUDGET_GB=16
-export COURSIA_RUNNER_CPU_BUDGET=12
-export COURSIA_RUNNER_CPUS=3
+export COURSIA_RUNNER_CPU_BUDGET=10
+export COURSIA_RUNNER_CPUS=2
 export COURSIA_RUNNER_MEMORY=4g
 export COURSIA_RUNNER_PIDS=512
 
