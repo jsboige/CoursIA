@@ -1,0 +1,101 @@
+name: Waiter runner starvation advisory
+
+# Sonde d'extinction du label `coursia-waiter` (#22183, dispatch ai-01
+# 2026-10-23). Le 2026-10-23, le pool de 16 slots a ete mesure a 0 runner
+# ONLINE au label alors que 126 runs `PR gate` s'accumulaient en file (dernier
+# succes 04:01:30Z, ~10 h sans aucun signal) : la jambe `pull_request` du
+# `pr-gate.yml` est re-routee sur `coursia-waiter` depuis #21063
+# (pr-gate.yml ligne 172 : `["self-hosted","coursia-waiter"]`), le pool est
+# consomme a pleine charge, et AUCUN observateur ne le couvrait.
+#
+# La cause est ecrite : le header de `runner-starvation-advisory.yml` (sonde
+# `coursia-lean`) documentait le label comme « plus couvert depuis
+# #20835 / #17436 -- le pool est vide par construction ». Cette premisse
+# etait vraie jusqu'a #21063 et FAUSSE depuis : l'extinction du 23/10 n'a ete
+# signalee par aucun organe, exactement parce que le header le declarait
+# inexistants. Ce workflow restaure la couverture et le header est corrige
+# dans la meme PR.
+#
+# Pourquoi un schedule DEDIE et ubuntu-latest : il doit survivre a ce qu'il
+# observe -- un observateur qui tournerait sur le label garde mourrait avec
+# lui. Meme forme que `linux-runner-starvation-advisory.yml` : le predicat
+# (scripts/ci/check_runner_starvation.py, partage, parametre `--label`) mesure
+# le SYMPTOME (jobs libelles queued > seuil SANS aucun in_progress) avec le
+# seul GITHUB_TOKEN, et l'EXTINCTION directe (zero runner online au label,
+# via le secret read-only RUNNERS_READ_PAT, Administration:read -- incapable
+# de minter un registration-token, par design). Sans PAT, l'organe degrade
+# proprement sur le seul symptome.
+#
+# Seuils : STARVE_MINUTES=120 -- le spec de l'issue est « PR gate en queued
+# > 2 h », et c'est l'echelle de l'incident mesure (126 runs, ~10 h), pas
+# celle d'un pic de PRs : la garde anti-FP (aucun in_progress) suffit a
+# ne pas rougir sur une file profonde qui draine, et 120 min place le rouge
+# de ce cote la. Cadence 30 min (cron 11,41) : l'offset evite les vagues
+# 13,43 (sweeps), 19,49 (coursia-linux) et 23,53 (coursia-lean) sur le
+# meme runner.
+#
+# Advisory PAR CONSTRUCTION : schedule + workflow_dispatch + un heartbeat
+# workflow_run, jamais pull_request/push -- un run rouge ne peut jamais
+# bloquer une PR (workflow_run ne cree pas de check-run sur une PR). Le nom
+# porte "advisory" (ADVISORY_MARKER, cf pr-gate-sweep-health-advisory.yml).
+#
+# #15332 : le scheduler GitHub a cesse de livrer l'evenement schedule le
+# 2026-09-09 (4 h sans AUCUN declenchement planifie, depot entier) -- un
+# organe porte par schedule seul meurt de la panne qu'il observe. Le
+# heartbeat workflow_run s'ancre sur DEUX workflows, par jambe :
+#   - "Secret Scan" : chaque push et pull_request, jobs sur le parc
+#     self-hosted (coursia-ephemeral) -- jambe vivante quand le scheduler
+#     se tait et que le parc vit.
+#   - "Notebook outputs required (H.4 schema)" : push/PR touchant un
+#     notebook et jobs ubuntu-latest -- jambe GitHub-hosted de bout en bout :
+#     ce job tourne sur ubuntu-latest, donc le heartbeat survit AUSSI au parc
+#     eteint tant que le flux notebook pousse.
+# La cadence SERVIE est mesuree par le script lui-meme (runs event=schedule
+# uniquement -- les runs workflow_run ne faussent pas la mesure).
+
+on:
+  schedule:
+    - cron: '11,41 * * * *'
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Secret Scan", "Notebook outputs required (H.4 schema)"]
+    types: [completed]
+
+permissions:
+  contents: read   # checkout du script
+  actions: read    # lecture des runs/jobs (predicat STARVATION)
+
+jobs:
+  starve:
+    name: Waiter runner starvation advisory
+    # Heartbeat workflow_run declenche par une PR de fork : job saute (mesure
+    # du 2026-10-16, cf linux-runner-starvation-advisory.yml) -- les runs
+    # internes, le schedule et le dispatch continuent d'alimenter l'observateur.
+    # La concurrence vit au niveau du JOB, plus du workflow.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_repository.full_name == github.repository
+    concurrency:
+      group: coursia-waiter-starvation-advisory
+      cancel-in-progress: false
+    # ubuntu-latest : l'observateur ne doit pas mourir avec le parc qu'il
+    # mesure (meme principe que la jambe linux, #16134) ; l'organe est sans
+    # dependance a l'hote, tout passe par l'API GitHub.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Measure starvation on coursia-waiter
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
+          LABEL: coursia-waiter
+          # Spec #22183 : « PR gate en queued > 2 h » -- echelle de
+          # l'incident mesure du 2026-10-23 (126 runs, ~10 h), pas d'un
+          # pic de PRs ; la garde « aucun in_progress » fait le reste.
+          STARVE_MINUTES: "120"
+          WINDOW_MAX_MINUTES: "360"
+          # #15332 : mesurer la cadence SERVIE (runs event=schedule de CE
+          # workflow uniquement) contre la cadence declaree du cron.
+          SELF_WORKFLOW: coursia-waiter-starvation-advisory.yml
+          DECLARED_CADENCE_MINUTES: "30"
+          CADENCE_WARN_MINUTES: "360"
+        run: python3 scripts/ci/check_runner_starvation.py

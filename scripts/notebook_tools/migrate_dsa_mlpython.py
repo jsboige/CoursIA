@@ -6,8 +6,8 @@ amendement WS retenu par ai-01, DM ai01-dispatch-17417-table-20260923) :
 
   T5  MyIA.AI.Notebooks/ML/DataScienceWithAgents/  -> MyIA.AI.Notebooks/ML/ML.Python/
   T2  sous-repertoires (04b -> 05, Track1 -> 06-Agents-LangChain, Track2 -> 07-Agents-GoogleADK,
-      aplanissement de 01-PythonForDataScience/notebooks/)
-  T3  notebooks N.M<acc>-Titre -> <Prefixe>-<NN><acc>-<Titre>-<Noyau> (70 mappages ci-dessous)
+      aplanissement de 01-Python-For-Data-Science/notebooks/)
+  T3  notebooks N.M<acc>-Titre -> <Prefixe>-<NN><acc>-<Titre>-<Noyau> (94 mappages ci-dessous)
 
 L'EXECUTION REELLE (git mv + reecritures) EST GEELEE tant que les PRs ouvertes
 tenant des lignes du hub ne sont pas tombees (gate de sequenceement #5.4 de
@@ -36,8 +36,11 @@ HUB_OLD = "MyIA.AI.Notebooks/ML/DataScienceWithAgents"
 HUB_NEW = "MyIA.AI.Notebooks/ML/ML.Python"
 
 # T2 -- sous-repertoires (ancien -> nouveau), appliques au chemin relatif au hub.
+# T2-01 (PR #20274, mergee le 2026-10-17) a deja renomme le dossier 01 sur main :
+# la cle de la table suit le nom reel du hub, sinon la branche 01 sort de la table
+# en silence (mesure c.2294 : plus aucune entree de la table ne s'appliquait a 01).
 DIR_MAP = {
-    "01-PythonForDataScience": "01-PythonForDataScience",
+    "01-Python-For-Data-Science": "01-Python-For-Data-Science",
     "02-ML-Cours": "02-ML-Cours",
     "03-DeepLearning": "03-DeepLearning",
     "04-Vision": "04-Vision",
@@ -47,15 +50,23 @@ DIR_MAP = {
 }
 
 # Niveau a aplatir : ces prefixes voient leur segment "notebooks/" retire.
-FLATTEN_PREFIX = "01-PythonForDataScience/notebooks/"
+FLATTEN_PREFIX = "01-Python-For-Data-Science/notebooks/"
 
 # T3 -- notebooks mappes (chemin relatif au hub -> chemin relatif a ML.Python).
 # Suffixe noyau d'apres kernelspec LU dans chaque notebook (mesure c.5786704244).
 NOTEBOOK_MAP: dict[str, str] = {
-    "01-PythonForDataScience/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb":
-        "01-PythonForDataScience/PyDS-02-Manipulation-de-Donnees-avec-NumPy-Python.ipynb",
-    "01-PythonForDataScience/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb":
-        "01-PythonForDataScience/PyDS-03-Analyse-de-Donnees-avec-Pandas-Python.ipynb",
+    "01-Python-For-Data-Science/notebooks/1.1-Python_pour_la_Data_Science.ipynb":
+        "01-Python-For-Data-Science/PyDS-01-Python-pour-la-Data-Science-Python.ipynb",
+    "01-Python-For-Data-Science/notebooks/1.2-Manipulation_de_Donnees_avec_NumPy.ipynb":
+        "01-Python-For-Data-Science/PyDS-02-Manipulation-de-Donnees-avec-NumPy-Python.ipynb",
+    "01-Python-For-Data-Science/notebooks/1.3-Analyse_de_Donnees_avec_Pandas.ipynb":
+        "01-Python-For-Data-Science/PyDS-03-Analyse-de-Donnees-avec-Pandas-Python.ipynb",
+    "01-Python-For-Data-Science/notebooks/1.4-Visualisation_Matplotlib_Seaborn.ipynb":
+        "01-Python-For-Data-Science/PyDS-04-Visualisation-Matplotlib-Seaborn-Python.ipynb",
+    "01-Python-For-Data-Science/notebooks/1.5-Exploration_Nettoyage_Donnees_Reelles.ipynb":
+        "01-Python-For-Data-Science/PyDS-05-Exploration-Nettoyage-Donnees-Reelles-Python.ipynb",
+    "01-Python-For-Data-Science/notebooks/1.6-Statistiques_Descriptives.ipynb":
+        "01-Python-For-Data-Science/PyDS-06-Statistiques-Descriptives-Python.ipynb",
     "02-ML-Cours/2.1-Workflow-ML.ipynb": "02-ML-Cours/MLPy-01-Workflow-ML-Python.ipynb",
     "02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb": "02-ML-Cours/MLPy-10-Optimisation-Hyperparametres-Python.ipynb",
     "02-ML-Cours/2.11-Regularisation-Sparse-LASSO.ipynb": "02-ML-Cours/MLPy-11-Regularisation-Sparse-LASSO-Python.ipynb",
@@ -80,13 +91,22 @@ NOTEBOOK_MAP: dict[str, str] = {
     "02-ML-Cours/2.7b-SMO-From-Scratch.ipynb": "02-ML-Cours/MLPy-07b-SMO-From-Scratch-Python.ipynb",
     "02-ML-Cours/2.7c-SVM-SOTA-Comparison.ipynb": "02-ML-Cours/MLPy-07c-SVM-SOTA-Comparison-Python.ipynb",
     "02-ML-Cours/2.8-Theorie-PAC.ipynb": "02-ML-Cours/MLPy-08-Theorie-PAC-Python.ipynb",
-    "02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb": "02-ML-Cours/MLPy-08b-Theorie-PAC-Lean-Lean.ipynb",
+    "02-ML-Cours/2.8b-Theorie-PAC-Lean.ipynb": "02-ML-Cours/MLPy-08b-Theorie-PAC-Lean.ipynb",
     "02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb": "02-ML-Cours/MLPy-08c-Borne-Temoin-Concentration-Python.ipynb",
     "02-ML-Cours/2.8d-Lean-Novikoff-Convergence.ipynb": "02-ML-Cours/MLPy-08d-Lean-Novikoff-Convergence-Lean.ipynb",
     "02-ML-Cours/2.9-Grokking-Generalisation.ipynb": "02-ML-Cours/MLPy-09-Grokking-Generalisation-Python.ipynb",
     "02-ML-Cours/2.9b-GenEFT-Theorie-Effective.ipynb": "02-ML-Cours/MLPy-09b-GenEFT-Theorie-Effective-Python.ipynb",
     "02-ML-Cours/2.9d-Features-Circulaires-Helice-Nombres.ipynb": "02-ML-Cours/MLPy-09d-Features-Circulaires-Helice-Nombres-Python.ipynb",
     "02-ML-Cours/2.9e-MIPS-Extraction-Programme.ipynb": "02-ML-Cours/MLPy-09e-MIPS-Extraction-Programme-Python.ipynb",
+    # T2-a -- les 8 carnets de 02-ML-Cours que le dry-run refusait (fail-closed mesure c.2294).
+    "02-ML-Cours/2.4b-AdaBoost-From-Scratch.ipynb": "02-ML-Cours/MLPy-04b-AdaBoost-From-Scratch-Python.ipynb",
+    "02-ML-Cours/2.5d-Derive-Distribution-Deploiement.ipynb": "02-ML-Cours/MLPy-05d-Derive-Distribution-Deploiement-Python.ipynb",
+    "02-ML-Cours/2.9c-Grokking-Diagrammes-Phases.ipynb": "02-ML-Cours/MLPy-09c-Grokking-Diagrammes-Phases-Python.ipynb",
+    "02-ML-Cours/2.9f-Grokking-Theorie-Effective-Lean.ipynb": "02-ML-Cours/MLPy-09f-Grokking-Theorie-Effective-Lean.ipynb",
+    "02-ML-Cours/2.9g-Geometrie-de-la-Verite.ipynb": "02-ML-Cours/MLPy-09g-Geometrie-de-la-Verite-Python.ipynb",
+    "02-ML-Cours/2.11e-CVXPY-Optimisation.ipynb": "02-ML-Cours/MLPy-11e-CVXPY-Optimisation-Python.ipynb",
+    "02-ML-Cours/2.11f-Comparaison-Optimisation-Convexe.ipynb": "02-ML-Cours/MLPy-11f-Comparaison-Optimisation-Convexe-Python.ipynb",
+    "02-ML-Cours/2.15-Donnee-Comme-Responsabilite-Python.ipynb": "02-ML-Cours/MLPy-15-Donnee-Comme-Responsabilite-Python.ipynb",
     "03-DeepLearning/3.0-Theorie-Information.ipynb": "03-DeepLearning/DL-00-Theorie-Information-Python.ipynb",
     "03-DeepLearning/3.1-Retropropagation.ipynb": "03-DeepLearning/DL-01-Retropropagation-Python.ipynb",
     "03-DeepLearning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb": "03-DeepLearning/DL-10-Modeles-Generatifs-Diffusion-SOTA-Python.ipynb",
@@ -108,20 +128,33 @@ NOTEBOOK_MAP: dict[str, str] = {
     "03-DeepLearning/3.9c-Pruning-From-Scratch.ipynb": "03-DeepLearning/DL-09c-Pruning-From-Scratch-Python.ipynb",
     "03-DeepLearning/3.9e-Compression-Quantization-SOTA.ipynb": "03-DeepLearning/DL-09e-Compression-Quantization-SOTA-Python.ipynb",
     "03-DeepLearning/3.9f-Compression-Pruning-SOTA.ipynb": "03-DeepLearning/DL-09f-Compression-Pruning-SOTA-Python.ipynb",
+    # T2-a -- les 8 carnets de 03-DeepLearning que le dry-run refusait (fail-closed mesure c.2294).
+    "03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb": "03-DeepLearning/DL-04d-Fourier-Features-Biais-Spectral-Python.ipynb",
+    "03-DeepLearning/3.9d-Compression-Distillation-from-scratch.ipynb": "03-DeepLearning/DL-09d-Compression-Distillation-from-scratch-Python.ipynb",
+    "03-DeepLearning/3.9g-Compression-Comparatif-A-vs-B.ipynb": "03-DeepLearning/DL-09g-Compression-Comparatif-A-vs-B-Python.ipynb",
+    "03-DeepLearning/3.11-Budget-Memoire-Entrainement.ipynb": "03-DeepLearning/DL-11-Budget-Memoire-Entrainement-Python.ipynb",
+    "03-DeepLearning/3.12-Les-Collectives.ipynb": "03-DeepLearning/DL-12-Les-Collectives-Python.ipynb",
+    "03-DeepLearning/3.13-Decouper-le-Modele-DDP-ZeRO-FSDP.ipynb": "03-DeepLearning/DL-13-Decouper-le-Modele-DDP-ZeRO-FSDP-Python.ipynb",
+    "03-DeepLearning/3.13b-Deux-Cartes-Reelles-DDP-FSDP-nccl.ipynb": "03-DeepLearning/DL-13b-Deux-Cartes-Reelles-DDP-FSDP-nccl-Python.ipynb",
+    "03-DeepLearning/3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb": "03-DeepLearning/DL-14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb",
     "04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb": "04-Vision/Vision-01-Conv-NumPy-Torch-Allclose-Python.ipynb",
     "04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb": "04-Vision/Vision-02-ConvNet-Profonde-Residuelles-Python.ipynb",
     "04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb": "04-Vision/Vision-02b-Lean-GradientFlow-Vanishing-Lean.ipynb",
-    "04-Vision/4.2c-Detection-Anchor-From-Scratch.ipynb": "04-Vision/Vision-02c-Detection-Anchor-From-Scratch-Python.ipynb",
-    "04-Vision/4.2d-Detection-AnchorFree-From-Scratch.ipynb": "04-Vision/Vision-02d-Detection-AnchorFree-From-Scratch-Python.ipynb",
-    "04-Vision/4.2e-Detection-FocalLoss-From-Scratch.ipynb": "04-Vision/Vision-02e-Detection-FocalLoss-From-Scratch-Python.ipynb",
-    "04-Vision/4.2f-Detection-SOTA-Torchvision.ipynb": "04-Vision/Vision-02f-Detection-SOTA-Torchvision-Python.ipynb",
-    "04-Vision/4.2g-Detection-SOTA-Ultralytics.ipynb": "04-Vision/Vision-02g-Detection-SOTA-Ultralytics-Python.ipynb",
-    "04-Vision/4.2h-YOLOv5-Bench-Ultralytics.ipynb": "04-Vision/Vision-02h-YOLOv5-Bench-Ultralytics-Python.ipynb",
     "04-Vision/4.3-TransferLearning-ResNet.ipynb": "04-Vision/Vision-03-TransferLearning-ResNet-Python.ipynb",
-    # Amendement post-mesure : 4.2i merge via #16663 APRES la mesure de la table
-    # (c.5786704244, origin/main @ 1536f2e4b33a) -- re-mesure main @ 341577b1afdd,
-    # pattern T3 mecanique (minor 2i, titre inchange, kernelspec python3 lu).
-    "04-Vision/4.2i-Detection-Ultralytics-Difficult-Scenes.ipynb": "04-Vision/Vision-02i-Detection-Ultralytics-Difficult-Scenes-Python.ipynb",
+    # T2-a -- les 10 carnets de 04-Vision que le dry-run refusait (fail-closed mesure
+    # c.2294). Les blocs Detection 4.2c..4.2k ont ete renumerotes 4.4/4.5/4.6 par
+    # #19468 (renum 04-Vision, preuve git log --diff-filter=R) : les sept entrees
+    # 4.2c..4.2i de la table pointaient des fichiers disparus et sont retirees ici.
+    "04-Vision/4.4-Detection-Anchor-From-Scratch.ipynb": "04-Vision/Vision-04-Detection-Anchor-From-Scratch-Python.ipynb",
+    "04-Vision/4.4b-Detection-AnchorFree-From-Scratch.ipynb": "04-Vision/Vision-04b-Detection-AnchorFree-From-Scratch-Python.ipynb",
+    "04-Vision/4.4c-Detection-FocalLoss-From-Scratch.ipynb": "04-Vision/Vision-04c-Detection-FocalLoss-From-Scratch-Python.ipynb",
+    "04-Vision/4.5-Detection-SOTA-Torchvision.ipynb": "04-Vision/Vision-05-Detection-SOTA-Torchvision-Python.ipynb",
+    "04-Vision/4.5b-Detection-SOTA-Ultralytics.ipynb": "04-Vision/Vision-05b-Detection-SOTA-Ultralytics-Python.ipynb",
+    "04-Vision/4.5c-YOLOv5-Bench-Ultralytics.ipynb": "04-Vision/Vision-05c-YOLOv5-Bench-Ultralytics-Python.ipynb",
+    "04-Vision/4.5d-Detection-SOTA-LibreYOLO.ipynb": "04-Vision/Vision-05d-Detection-SOTA-LibreYOLO-Python.ipynb",
+    "04-Vision/4.6-Detection-Ultralytics-Difficult-Scenes.ipynb": "04-Vision/Vision-06-Detection-Ultralytics-Difficult-Scenes-Python.ipynb",
+    "04-Vision/4.6b-Detection-Adversarial-Camouflage.ipynb": "04-Vision/Vision-06b-Detection-Adversarial-Camouflage-Python.ipynb",
+    "04-Vision/4.6c-Detection-Dazzle-Garment-StyleTransfer.ipynb": "04-Vision/Vision-06c-Detection-Dazzle-Garment-StyleTransfer-Python.ipynb",
     "04b-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00a-Ondelettes-1D-from-scratch-Python.ipynb",
     "04b-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00b-Ondelettes-2D-from-scratch-Python.ipynb",
     "04b-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb": "05-Wavelet-Scattering/WS-00c-Scattering-from-scratch-Python.ipynb",
@@ -130,7 +163,20 @@ NOTEBOOK_MAP: dict[str, str] = {
     "04b-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet.ipynb": "05-Wavelet-Scattering/WS-03-Synthese-Scattering-vs-ResNet-Python.ipynb",
 }
 
-KERNEL_SUFFIX = {"python3": "-Python", "coursia-ml-training": "-Python", "python3-coursia2": "-Python", "lean4-wsl": "-Lean"}
+# Histogramme des noyaux du hub, etendu par T2-a a deux noyaux mesures sur main
+# (c.2294) : "coursia-drift" (2.5d -- `kernelspec.language` = "python",
+# `language_info.name` = "python" 3.11.16) et "py310-gpu" (4.6c --
+# `kernelspec.language` vaut LITTERALEMENT "py310-gpu", c'est `language_info.name`
+# qui vaut "python" 3.13.15 : le suffixe se lit la, pas dans `kernelspec.language`).
+# Tous deux sont des noyaux Python : suffixe "-Python", mesure et non suppose.
+KERNEL_SUFFIX = {
+    "python3": "-Python",
+    "coursia-ml-training": "-Python",
+    "python3-coursia2": "-Python",
+    "coursia-drift": "-Python",
+    "py310-gpu": "-Python",
+    "lean4-wsl": "-Lean",
+}
 
 # Suffixes texte balayes pour la reecriture des referents (binaire exclu).
 TEXT_SUFFIXES = {".md", ".ipynb", ".yml", ".yaml", ".json", ".csv", ".py", ".txt", ".html", ".qml", ".toml", ".cfg", ".rst"}
@@ -192,6 +238,28 @@ def check_plan(plan: list[tuple[str, str]]) -> list[str]:
     for t in targets:
         if t in existing:
             errors.append(f"cible deja trackee sur le depot: {t}")
+    # cle de table sans fichier dans l'arbre : build_plan ignore silencieusement une
+    # cle morte, donc une table qui derive reste verte. Mesure c.2294 : les sept
+    # entrees 4.2c..4.2i ont survecu au renumerotage 4.2x -> 4.4/4.5/4.6 (PR #19468)
+    # sans qu'aucune verification ne rougisse -- fail-closed ici.
+    tracked = {l[len(HUB_OLD) + 1:] for l in git("ls-files", HUB_OLD).splitlines() if l.strip()}
+    for key in sorted(NOTEBOOK_MAP):
+        if key not in tracked:
+            errors.append(f"cle de table sans fichier dans le hub (cle morte): {key}")
+    # Forme des VALEURS : le suffixe noyau ne se double pas. Le garde des cles
+    # mortes ci-dessus controle les cles contre l'arbre, pas la forme des cibles --
+    # il ne pouvait donc pas voir une source dont le titre porte deja le suffixe
+    # (`...-Lean`, `...-Python`) et qui le recoit une seconde fois. Mesure
+    # 2026-10-23 (revue NanoClaw sur #22195) : cinq cibles sortaient en
+    # `...-Lean-Lean` / `...-Python-Python`, figees dans l'arbre ET dans les
+    # renvois reecrits par build_replacements. On couvre la classe, sans
+    # dependre de la vigilance au prochain carnet ajoute.
+    kernel_suffixes = sorted(set(KERNEL_SUFFIX.values()))
+    for t in sorted(set(targets)):
+        stem = Path(t).stem
+        for sfx in kernel_suffixes:
+            if stem.endswith(sfx + sfx):
+                errors.append(f"suffixe noyau double ({sfx}{sfx}): {t}")
     # kernelspec re-lu vs suffixe noyau de la table
     for old, new in plan:
         rel = old[len(HUB_OLD) + 1:]

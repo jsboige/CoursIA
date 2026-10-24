@@ -124,8 +124,8 @@ Problèmes du monde réel adaptés de projets étudiants, en dossier plat. Chaqu
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-12-ConnectFour](Part3-Cas-pratiques/App-12-ConnectFour.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
-| 1b | [App-12b-ConnectFour-CSharp](Part3-Cas-pratiques/App-12b-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 1 | [App-12b-ConnectFour](Part3-Cas-pratiques/App-12b-ConnectFour.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
+| 1b | [App-12c-ConnectFour](Part3-Cas-pratiques/App-12c-ConnectFour.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
 | 2 | [App-14-ConnectFour-Adversarial](Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
 | 2b | [App-14-ConnectFour-CSharp](Part3-Cas-pratiques/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
 
@@ -178,7 +178,7 @@ Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseSched
 Part1-Foundations/              Part2-CSP/                  Part3-Cas-pratiques/
 Search-1  StateSpace     ───>  CSP-1  Fundamentals   ───>  App-1 NQueens, App-2 GraphColoring
 Search-2  Uninformed     ───>  CSP-2  Consistency    ───>  App-6 Minesweeper, App-7 Wordle
-Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-12 ConnectFour
+Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-12b ConnectFour
        │                        CSP-3  Advanced      ───>  App-3 NurseScheduling, App-4 JobShop
        │                        CSP-4  Scheduling    ───>  App-3, App-4, App-5 Timetabling
        └──> Search-6 (Adversarial)
@@ -375,7 +375,7 @@ Search/
 │   ├── App-9-EdgeDetection.ipynb
 │   ├── App-10-Portfolio.ipynb
 │   ├── App-11-Picross.ipynb
-│   ├── App-12-ConnectFour.ipynb                     # ex-App-14b (alignement id logique app-12, #19253)
+│   ├── App-12b-ConnectFour.ipynb                     # ex-App-14b (alignement id logique app-12, #19253)
 │   ├── App-13-TSP-Metaheuristics.ipynb
 │   ├── App-15-SportsScheduling.ipynb
 │   ├── App-16-Crossword-CSP.ipynb
@@ -385,7 +385,7 @@ Search/
 │   ├── App-20-SudokuBenchmark-Python.ipynb          # Benchmark 4 solveurs Sudoku, synthèse de la série
 │   ├── App-22-AlgorithmSelection-Python.ipynb       # Sélection empirique : 3 jeux, 13 familles / 14 étiquettes, Pareto + préférences (PR IS #42)
 │   ├── App-27-Sparse-Index-Tracking-Walk-Forward.ipynb
-│   └── (+ jumeaux C# App-1b/2b/3b/4b/6-CSharp/7b/8-CSharp/11b/12b/15b/16-CSharp/19-CSharp/20b et jumeaux C#/Python App-9b/10b/13b/17b/18b, marathon #4956)
+│   └── (+ jumeaux C# App-1b/2b/3b/4b/6-CSharp/7b/8-CSharp/11b/12c/15b/16-CSharp/19-CSharp/20b et jumeaux C#/Python App-9b/10b/13b/17b/18b, marathon #4956)
 │
 │
 ├── Part5-Frontieres/                     # Partie 5 — frontières : audits de garanties et distillations de preprints (Frontieres-01..10, carte #19253)

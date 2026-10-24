@@ -443,10 +443,13 @@ def main() -> int:
         "--full",
         action="store_true",
         help="Mode plein périmètre (étape 2 #10329). Quand combiné avec --update, "
-        "rafraîchit TOUS les notebooks référencés dans le CSV (et tout nouveau "
-        "notebook FR trouvé sous args.input), même ceux dont la dernière modif "
-        "git est antérieure au dernier run. Sans --full, seuls les notebooks "
-        "passés en input sont rafraîchis.",
+        "rafraîchit TOUS les notebooks référencés dans le CSV, même ceux dont la "
+        "dernière modif git est antérieure au dernier run. Le scan est BORNÉ aux "
+        "répertoires de série dérivés du CSV (#21514) : tout nouveau notebook FR "
+        "trouvé là est appendé, mais aucun notebook d'une autre série ne l'est. "
+        "Les chemins passés en input ne servent que de repli, quand aucune borne "
+        "n'est dérivable du CSV. Sans --full, seuls les notebooks passés en input "
+        "sont rafraîchis.",
     )
     args = parser.parse_args()
 
@@ -495,14 +498,38 @@ def main() -> int:
             parts = nb_path.split("/")
             if len(parts) >= 2:
                 ref_dirs.add("/".join(parts[:-1]))
-        # On ajoute les chemins input existants (compatibilité historique).
-        # Les ref_dirs serviront de bornes de scan.
-        existing_inputs = list(existing_inputs)  # freeze
-        # On étend existing_inputs par les ref_dirs absolus (résolus vs repo_root).
-        for rd in ref_dirs:
+        # Les ref_dirs sont la BORNE du scan en mode --full (#21514). Les
+        # étendre sans retirer l'input CLI laissait un input large absorber
+        # tout le corpus : `--update <csv> --full` avec "MyIA.AI.Notebooks"
+        # faisait passer un CSV de 31 lignes à 49 978 (mesuré sur
+        # compression.csv, 2026-10-20), parce que update_existing_csv appende
+        # toute ligne fraîche absente de l'index. L'input CLI n'est donc plus
+        # qu'un repli, utilisé seulement quand aucune borne n'est dérivable
+        # (notebook référencé sans répertoire parent).
+        bounded_inputs: list[Path] = []
+        for rd in sorted(ref_dirs):
             abs_rd = (repo_root / rd).resolve() if not Path(rd).is_absolute() else Path(rd)
-            if abs_rd.exists() and abs_rd.is_dir() and abs_rd not in existing_inputs:
-                existing_inputs.append(abs_rd)
+            if abs_rd.exists() and abs_rd.is_dir() and abs_rd not in bounded_inputs:
+                bounded_inputs.append(abs_rd)
+        if bounded_inputs:
+            def _covered_by_bound(p: Path) -> bool:
+                # Un input égal à une borne, ou situé DESSOUS, voit ses carnets
+                # scannés via cette borne : l'annoncer « ignoré » serait faux
+                # (#21518). Seul un input hors de toute borne est réellement
+                # écarté comme racine de scan.
+                rp = p.resolve()
+                return any(rp == b or b in rp.parents for b in bounded_inputs)
+
+            unused_roots = [str(p) for p in existing_inputs if not _covered_by_bound(p)]
+            if unused_roots:
+                print(
+                    "NOTE : scan --full borné aux répertoires de série du CSV ; "
+                    "input(s) CLI non utilisé(s) comme racine de scan : "
+                    + ", ".join(unused_roots)
+                    + " (leurs carnets ne sont lus que s'ils tombent dans une borne)",
+                    file=sys.stderr,
+                )
+            existing_inputs = bounded_inputs
 
     notebooks = iter_notebooks(existing_inputs)
     if not notebooks:
