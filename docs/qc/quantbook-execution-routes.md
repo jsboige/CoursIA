@@ -11,7 +11,7 @@ Plusieurs lanes ont buté sur le même point : faire tourner le carnet sur QC Cl
 | **A** — LEAN Research local (Docker) | machine de la lane | dossier `data/` local | oui (`nbconvert --inplace`) | aucun | les titres du carnet sont couverts par les données locales |
 | **B** — exécution directe dans l'IDE QC Cloud | serveur Research QC | toutes les données QC | oui, après un enregistrement explicite (24/10/2026) ; perdues le 30/09/2026 (#18623) | minutes de nœud incluses | **route par défaut** pour un carnet à committer |
 | **C** — exécuteur côté noyau | serveur Research QC | toutes les données QC | rendues comme valeur d'une cellule | minutes de nœud incluses | quand « Run All » ne persiste pas les sorties |
-| **D** — Research Assistant | serveur Research QC | toutes les données QC | non persistées le 16/05/2026 (#1177) | environ 800 à 1200 QCC par session de 14 cellules (estimation, #1195) | explorer, déboguer, reconstruire un carnet |
+| **D** — Research Assistant | serveur Research QC | toutes les données QC | non persistées le 16/05/2026 (#1177) | environ 800 à 1200 QCC par session (estimation, #1195) | explorer, déboguer, reconstruire un carnet |
 
 Les routes se combinent. L'assistant (D) corrige le code d'un carnet qui ne tourne pas ; la route B l'exécute ensuite pour produire les sorties à committer.
 
@@ -64,7 +64,7 @@ Une capture limitée à stdout et stderr perd les figures : pour un carnet qui e
 
 Accès et précautions : section « QC Cloud Assistants » de [quantconnect.md](quantconnect.md) et [QC_CLOUD_ASSISTANTS_WORKFLOW.md](../../MyIA.AI.Notebooks/QuantConnect/docs/QC_CLOUD_ASSISTANTS_WORKFLOW.md).
 
-- **Ce qu'il fait bien.** Le 2026-05-16, il a reconstruit un carnet de 14 cellules (105 variables, 5 modèles) et corrigé seul les colonnes `NaN`, les longueurs incohérentes et les paramètres d'`adfuller` (#1195, déploiement A-8ad2fb).
+- **Ce qu'il fait bien.** Le 2026-05-16, il a reconstruit un carnet d'apprentissage automatique (une centaine de variables, plusieurs modèles) et corrigé seul les colonnes `NaN`, les longueurs incohérentes et les paramètres d'`adfuller` (#1195, déploiement A-8ad2fb).
 - **Ce qu'il ne fait pas.** Le même jour, sur un autre déploiement (A-e22ad0, #1177), il a exécuté les cellules 0 à 5 avec de vraies sorties, mais les sorties n'ont pas été persistées dans le fichier `.ipynb`. Il a aussi modifié les cellules au lieu de seulement les exécuter, et la session a expiré au bout d'une quinzaine de minutes (« No Coding Session Available »).
 - **Ses métriques ne se reprennent pas telles quelles.** Il annonçait un Sharpe de 3,50 ; la revalidation du cluster a donné 0,971, sans frais de transaction ni walk-forward dans son calcul (#1195).
 - **Coût.** Il consomme des crédits QC. Annoncer le déploiement sur le dashboard et relever le solde de crédits avant de le lancer.
