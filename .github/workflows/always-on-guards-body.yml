@@ -2,8 +2,11 @@ name: Always-on guards -- body
 
 # #22331 -- les organes qui lisent le BODY de la PR ont leur workflow propre.
 #
-# CONSTAT (mesure 2026-10-24, coordinateur ai-01) : `always-on-guards.yml`
-# n'avait rendu aucun succes depuis 04:18Z. Sur 268 re-declenchements d'une
+# CONSTAT (mesure 2026-10-24, coordinateur ai-01 ; formulation par date de
+# CREATION apres review Hermes : aucun run `pull_request` cree apres
+# 05:00:16Z n'avait rendu de succes -- dernier succes cree : bba8683b a
+# 05:00:16Z, conclu 10:22:19Z ; conclure par date de conclusion masquait des
+# verts rendus tard dans la fenetre). Sur 268 re-declenchements d'une
 # meme PR, 113 arrivent a TETE EGALE (evenements `edited`/`reopened`) : avec
 # `concurrency ... cancel-in-progress: true`, chaque edition de body annulait
 # le run en file et le renvoyait en fin d'une file de ~2 100 runs. Une PR dont
@@ -21,22 +24,33 @@ name: Always-on guards -- body
 # tout sur l'evenement, laisse le verdict de contenu intact.
 #
 # Repartition :
-#   always-on-guards.yml       `opened, synchronize, reopened` -- contenu ET
-#                              organes de body (via le meme script) ;
-#   always-on-guards-body.yml  CE fichier : `opened, edited, reopened` --
-#                              organes de body seuls, job nomme a part.
+#   always-on-guards.yml       `opened, synchronize, reopened` -- contenu
+#                              seul, AUCUN organe de body ;
+#   always-on-guards-body.yml  CE fichier : `opened, synchronize, edited,
+#                              reopened` -- organes de body seuls, job nomme
+#                              a part.
+# Pourquoi le contenu n'en juge plus aucun (coordinateur, review #22333) :
+# ce job ne se declenchant pas sur `edited`, un rouge de body juge par lui
+# survivait a la correction du corps jusqu'au push suivant -- seule une
+# edition devait pouvoir le lever. Pourquoi `synchronize` ici : le verdict
+# de body doit exister a CHAQUE tete (le fold du gate garde, par nom, le
+# `started_at` le plus recent ; un verdict de body perime d'une tete
+# ancienne ne doit jamais rester le plus recent pour ce nom).
 # Les deux noms sont exiges par le gate (`derive_always_on_jobs` les derive du
 # repertoire, aucun nom n'est code en dur).
 #
-# CAS D'ESSAI (exigence de l'issue, garde automatisee) : un rouge de contenu
-# suivi d'une edition de body reste rouge. Il est encode par
-# `scripts/ci/tests/test_always_on_body_split.py`, qui verifie que le workflow
-# de contenu ne se declenche sur AUCUN evenement `edited`.
+# CAS D'ESSAI (exigence de l'issue + review #22333, garde automatisee) :
+# (1) un rouge de contenu suivi d'une edition de body reste rouge ;
+# (2) un rouge de body leve par une edition seule, sans push, laisse le gate
+#     vert (le job de contenu ne juge plus les organes de body).
+# Ils sont encodes par `scripts/ci/tests/test_always_on_body_split.py`, qui
+# verifie que le workflow de contenu ne se declenche sur AUCUN evenement
+# `edited` et ne reference plus `always_on_body_organs.sh` nulle part.
 
 on:
   pull_request:
     branches: [ main ]
-    types: [ opened, edited, reopened ]
+    types: [ opened, synchronize, edited, reopened ]
     # PAS de `paths:` -- meme raison que dans always-on-guards.yml (regle 2
     # d'#10045 : un check filtre par chemins rapporte `pending` a vie).
 
@@ -125,7 +139,8 @@ jobs:
           delim="BODY_LIVE_EOF_$$"
           printf 'PR_BODY<<%s\n%s\n%s\n' "$delim" "$BODY" "$delim" >> "$GITHUB_ENV"
 
-      # Les cinq organes bloquants qui lisent le body. Meme script que dans
-      # always-on-guards.yml -- une seule source de verite, deux declencheurs.
+      # Les cinq organes bloquants qui lisent le body. Le script est appele
+      # par CE workflow seul (review #22333) : une seule implantation, une
+      # seule execution par evenement.
       - name: "Organes de body (Grain, prev:, close-keyword, genre, claim, #22331)"
         run: bash scripts/ci/always_on_body_organs.sh

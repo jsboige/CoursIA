@@ -66,6 +66,16 @@ if [ "$OVERRIDDEN" = "True" ]; then
 fi
 
 if [ "$RC" -eq 0 ]; then
+  # #15372 : un run vert LEVE le commentaire bloquant precedent en place
+  # (s'il existe). No-op silencieux sinon -- un vert sur une PR jamais
+  # bloquee ne fabrique pas de bruit.
+  if ! GH_TOKEN="${GH_TOKEN}" python3 scripts/ci/guard_comment_upsert.py \
+    --pr "$PR_NUMBER" \
+    --marker '<!-- vtr-required-block -->' \
+    --lift --note "Grain tag + lane presents au re-passage." \
+    >/dev/null 2>&1; then
+    echo "::warning::tag_required lift failed (commentaire bloquant possiblement perime)"
+  fi
   echo "Grain tag + lane present -- job passes."
   exit 0
 fi
@@ -73,7 +83,10 @@ fi
 REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
 echo "::error::Grain tag ou lane manquant : $REASON"
 
-GH_TOKEN="${GH_TOKEN}" gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+# #15372 : upsert -- EDITE le commentaire bot existant (marqueur + auteur
+# github-actions) au lieu d'en cumuler un nouveau par run rouge : un re-run
+# du workflow (recuperation #9858) ne doit pas doubler le poste.
+cat > /tmp/tag_required_blocked.md <<EOF
 <!-- vtr-required-block -->
 **Grain tag obligatoire (#10045, bloquant).**
 
@@ -87,7 +100,16 @@ Grain: <DEEP|MED|LIGHT>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<GEN
 
 Le \`<genre>\` doit figurer dans l'enumeration §1 de \`variation-protocol.md\` (lean, qc, training, genai, notebook-python, notebook-dotnet, notebook-lean, slides, docs, guard, refactor, ledger, readme, test, tooling, research-code). Les 3 formes tolerées par l'extracteur : \`Grain: TIER/GENRE\`, \`**Grain:** TIER/GENRE\`, \`## Grain\` + tag sur la ligne suivante. La lane doit suivre le format \`<machine>:<workspace>\` (cf. \`lane-claim-protocol.md\`).
 EOF
-)" 2>/dev/null || true
+if ! GH_TOKEN="${GH_TOKEN}" python3 scripts/ci/guard_comment_upsert.py \
+  --pr "$PR_NUMBER" \
+  --marker '<!-- vtr-required-block -->' \
+  --body-file /tmp/tag_required_blocked.md \
+  >/dev/null 2>&1; then
+  # #15374 : le gate est deja rouge (exit 1 ensuite), mais l'echec d'upsert
+  # ne doit pas passer inapercu -- il ne sera jamais presente comme une
+  # ecriture reussie.
+  echo "::warning::tag_required upsert failed (commentaire bloquant non pose)"
+fi
 
 exit 1
 )
@@ -233,6 +255,14 @@ cat /tmp/verdict.json
 python3 -c "import json; [print('::warning::'+w) for w in json.load(open('/tmp/verdict.json')).get('warnings',[])]" 2>/dev/null || true
 
 if [ "$RC" -eq 0 ]; then
+  # #15372 : un run vert LEVE le commentaire bloquant precedent en place.
+  if ! GH_TOKEN="${GH_TOKEN}" python3 scripts/ci/guard_comment_upsert.py \
+    --pr "$PR_NUMBER" \
+    --marker '<!-- vtr-close-keyword-pr-ref -->' \
+    --lift --note "aucun mot-cle fermant sur un numero de PR au re-passage." \
+    >/dev/null 2>&1; then
+    echo "::warning::close_keyword lift failed (commentaire bloquant possiblement perime)"
+  fi
   echo "No closing-keyword + PR-number reference in body or commits -- job passes."
   exit 0
 fi
@@ -240,7 +270,8 @@ fi
 REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
 echo "::error::closing-keyword + PR-number reference detected: $REASON"
 
-gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+# #15372 : upsert -- pas de mur de verdicts perimes (re-run compris).
+cat > /tmp/close_keyword_blocked.md <<EOF
 <!-- vtr-close-keyword-pr-ref -->
 **\`<mot-clé fermant> #N\` où N est une PR -- bloquant (#10101).**
 
@@ -254,7 +285,13 @@ Pour passer ce gate :
 - **retirez le mot-clé fermant** devant le numéro, ou
 - **écrivez le numéro SANS le \`#\`** (un nombre nu n'est pas un auto-close).
 EOF
-)" 2>/dev/null || true
+if ! GH_TOKEN="${GH_TOKEN}" python3 scripts/ci/guard_comment_upsert.py \
+  --pr "$PR_NUMBER" \
+  --marker '<!-- vtr-close-keyword-pr-ref -->' \
+  --body-file /tmp/close_keyword_blocked.md \
+  >/dev/null 2>&1; then
+  echo "::warning::close_keyword upsert failed (commentaire bloquant non pose)"
+fi
 
 exit 1
 )
@@ -335,6 +372,14 @@ else
 fi
 
 if [ "$RC" -eq 0 ]; then
+  # #15372 : un run vert LEVE le commentaire bloquant precedent en place.
+  if ! GH_TOKEN="${GH_TOKEN}" python3 scripts/ci/guard_comment_upsert.py \
+    --pr "$PR_NUMBER" \
+    --marker '<!-- vtr-adjacency-block -->' \
+    --lift --note "pas d'adjacence LIGHT de meme genre au re-passage." \
+    >/dev/null 2>&1; then
+    echo "::warning::adjacency lift failed (commentaire bloquant possiblement perime)"
+  fi
   echo "No LIGHT-genre adjacency vs prev: -- job passes."
   exit 0
 fi
@@ -356,7 +401,8 @@ PREV_GENRE=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json'))
 SEQ_AS_OF=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('sequence_as_of') or 'n/a')" 2>/dev/null || echo "n/a")
 echo "::error::G-VAR-3 LIGHT-genre adjacency [prev: #${PREV_PR} ${PREV_GENRE} via ${PREV_SRC} ; sequence de merges au ${SEQ_AS_OF}]: $REASON"
 
-gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+# #15372 : upsert -- pas de mur de verdicts perimes (re-run compris).
+cat > /tmp/adjacency_blocked.md <<EOF
 <!-- vtr-adjacency-block -->
 **G-VAR-3 : deux grains LIGHT du meme genre consecutifs -- bloquant (#11170).**
 
@@ -376,7 +422,13 @@ Pour passer ce gate, remplacez la \`prev:\` par un grain precedent d'un genre di
 Grain: <TIER>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<genre-different> #<PR>
 \`\`\`
 EOF
-)" 2>/dev/null || true
+if ! GH_TOKEN="${GH_TOKEN}" python3 scripts/ci/guard_comment_upsert.py \
+  --pr "$PR_NUMBER" \
+  --marker '<!-- vtr-adjacency-block -->' \
+  --body-file /tmp/adjacency_blocked.md \
+  >/dev/null 2>&1; then
+  echo "::warning::adjacency upsert failed (commentaire bloquant non pose)"
+fi
 
 exit 1
 )
@@ -429,6 +481,14 @@ cat /tmp/verdict.json
 python3 -c "import json; [print('::warning::'+w) for w in json.load(open('/tmp/verdict.json')).get('warnings',[])]" 2>/dev/null || true
 
 if [ "$RC" -eq 0 ]; then
+  # #15372 : un run vert LEVE le commentaire bloquant precedent en place.
+  if ! GH_TOKEN="${GH_TOKEN}" python3 scripts/ci/guard_comment_upsert.py \
+    --pr "$PR_NUMBER" \
+    --marker '<!-- lane-claim-conflict -->' \
+    --lift --note "aucun claim frais d'une autre lane sur un renvoi fermant au re-passage." \
+    >/dev/null 2>&1; then
+    echo "::warning::lane_claim lift failed (commentaire bloquant possiblement perime)"
+  fi
   echo "Aucun claim frais d'une autre lane sur un renvoi fermant -- job passes."
   exit 0
 fi
@@ -436,7 +496,8 @@ fi
 REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
 echo "::error::collision de lane sur une reference fermante: $REASON"
 
-gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
+# #15372 : upsert -- pas de mur de verdicts perimes (re-run compris).
+cat > /tmp/lane_claim_blocked.md <<EOF
 <!-- lane-claim-conflict -->
 **Collision de lane sur une reference fermante (#10223).**
 
@@ -451,7 +512,13 @@ Les **trois sorties** pour passer ce gate :
 
 Voir #10223 et \`lane-claim-protocol.md\`.
 EOF
-)" 2>/dev/null || true
+if ! GH_TOKEN="${GH_TOKEN}" python3 scripts/ci/guard_comment_upsert.py \
+  --pr "$PR_NUMBER" \
+  --marker '<!-- lane-claim-conflict -->' \
+  --body-file /tmp/lane_claim_blocked.md \
+  >/dev/null 2>&1; then
+  echo "::warning::lane_claim upsert failed (commentaire bloquant non pose)"
+fi
 
 exit 1
 )

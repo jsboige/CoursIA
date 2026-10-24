@@ -57,7 +57,9 @@ on:
     # `edited` est ABSENT volontairement (#22331) : une edition de body annulait le
     # run de contenu en file et le renvoyait en fin de file (113/268 re-declenchements
     # a tete egale). Les organes qui lisent le body vivent desormais dans
-    # always-on-guards-body.yml ; les remettre ici pour `edited` re-creerait le defaut.
+    # always-on-guards-body.yml, et ne doivent plus revenir ici sur AUCUN
+    # evenement : un rouge de body leve par une edition seule (sans push) doit
+    # laisser le verdict de contenu intact (coordinateur, review #22333).
     types: [ opened, synchronize, reopened ]
     # PAS de `paths:` ici -- cf en-tete + regle 2 d'#10045 + #13232.
   # PAS de `pull_request_review` ici : c'est un declencheur fork-reachable
@@ -809,16 +811,12 @@ jobs:
       # -----------------------------------------------------------------
 
       # #22331 -- les cinq organes de BODY (Grain:, prev:, close-keyword, genre
-      # diversity, closing-ref vs claim) vivent maintenant dans
-      # scripts/ci/always_on_body_organs.sh, appele ici ET par le workflow
-      # `Always-on guards -- body` (evenement `edited`). Le corps de chaque
-      # organe y est repris VERBATIM (extraction programmee, pas reecriture) :
-      # ce job garde donc exactement la logique d'avant, et l'agregat ci-dessous
-      # la juge par un id unique.
-      - name: 'Organes de body (Grain, prev:, close-keyword, genre, claim, #22331)'
-        id: body_organs
-        continue-on-error: true
-        run: bash scripts/ci/always_on_body_organs.sh
+      # diversity, closing-ref vs claim) ne tournent PLUS dans ce job : ils
+      # sont juges par le SEUL workflow `Always-on guards -- body`. Les garder
+      # ici aussi laissait un rouge de body unlevable par une edition seule
+      # (ce job ne se declenche pas sur `edited`, le rouge y survivait a la
+      # correction du corps jusqu'au push suivant -- coordinateur, review
+      # #22333) et doublait chaque poste bloquant sur `opened`/`reopened`.
 
       # Porte de perimeter-review-guard.yml :: perimeter, sur `pull_request`
       # SEULEMENT. La surface `pull_request_review` est revenue au fichier
@@ -1193,7 +1191,6 @@ jobs:
               FAILED="$FAILED $1"
             fi
           }
-          check body_organs "${{ steps.body_organs.outcome }}"
           check perimeter    "${{ steps.perimeter.outcome }}"
           check fastlane     "${{ steps.fastlane.outcome }}"
           check identity     "${{ steps.identity.outcome }}"
