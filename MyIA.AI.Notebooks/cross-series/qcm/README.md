@@ -82,7 +82,7 @@ Chaque thème pointe vers les notebooks qui enseignent la notion :
 | Thème | Série d'accueil | Notebooks d'ancrage |
 |---|---|---|
 | `ia-1-introduction-agents` | [`Search/`](../../Search/) | [`Search-01-StateSpace.ipynb`](../../Search/Part1-Foundations/Search-01-StateSpace.ipynb) (agents, environnements) |
-| `ia-2-resolution-problemes` | [`Search/`](../../Search/) | [`Search-02-Uninformed.ipynb`](../../Search/Part1-Foundations/Search-02-Uninformed.ipynb) ; CSP : [`Part2-CSP/`](../../Search/Part2-CSP/) et [`Applications/CSP/`](../../Search/Applications/CSP/) |
+| `ia-2-resolution-problemes` | [`Search/`](../../Search/) | [`Search-02-Uninformed.ipynb`](../../Search/Part1-Foundations/Search-02-Uninformed.ipynb) ; CSP : [`Part2-CSP/`](../../Search/Part2-CSP/) et [`Part3-Cas-pratiques/`](../../Search/Part3-Cas-pratiques/) |
 | `ia-3-logique-bases-connaissances` | [`SymbolicAI/`](../../SymbolicAI/) | [`SMT/`](../../SymbolicAI/SMT/), [`Tweety/`](../../SymbolicAI/Tweety/), [`SemanticWeb/`](../../SymbolicAI/SemanticWeb/) |
 | `ia-4-systemes-probabilistes` | [`Probas/`](../../Probas/) | [`DecInfer-01-Utility-Foundations.ipynb`](../../Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) (utilité, axiomes) ; réseaux bayésiens Infer.NET de la série |
 | `ia-5-apprentissage` | [`ML/`](../../ML/) | [`2.1-Workflow-ML.ipynb`](../../ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) |
