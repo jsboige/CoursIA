@@ -47,10 +47,15 @@ import sys
 
 SHARED_LOGIN = "jsboige"
 
-# Comptes machine meses le 2026-09-22 (#17418) : ai-01, po-2023 et Web1
+# Comptes machine mesures le 2026-09-22 (#17418) : ai-01, po-2023 et Web1
 # existent ; po-2024..2027 sont 404 jusqu'a la Phase B. Ils figurent deja ici
 # pour que la Phase C ne demande AUCUN changement de code : des que le jeton
 # est dans le trousseau, les organes l'epinglent.
+#
+# Roster de la flotte = FLEET_ROSTER dans ``scripts/secrets/agent_keyring.py``
+# (9 machines au 2026-10-20, roster RooSync propage le meme jour -- #21687).
+# Les deux listes se croisent par test ; une divergence rougit au lieu de se
+# decouvrir a la premiere observation refusee.
 HOST_ACCOUNTS = {
     "myia-ai-01": "myia-ai-01",
     "myia-po-2023": "myia-po-2023",
@@ -59,6 +64,11 @@ HOST_ACCOUNTS = {
     "myia-po-2026": "myia-po-2026",
     "myia-po-2027": "myia-po-2027",
     "myia-web1": "MyIA-Web1",
+    # Compte GitHub a creer aupres du siege concerne : myia-po-2028 et
+    # myia-web2 n'ont pas encore de login mesure (gh api users -> 404 le
+    # 2026-10-20). Ils restent hors de cette table tant que le login n'existe
+    # pas -- la table n'accepte que des comptes reels, sinon le message
+    # d'erreur en cite de faux.
 }
 
 # --- Identites d'auteur des dossiers (#17437) -------------------------------
