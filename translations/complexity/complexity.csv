@@ -1137,7 +1137,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,intro-hierarchy,m
 
 **Objectifs** : distinguer inclusion et séparation stricte de classes, comprendre une diagonale finie et expliquer pourquoi une table n'est pas une preuve de hiérarchie. **Durée estimée** : 35 minutes.","# Complexity-03 — More time, more problems
 
-**Navigation**: [Index](README.md) | [02 — Verify or find](Complexity-02-P-NP-Reduction.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) | [03c — Navigable zoo](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb)
+**Navigation**: [Index](README.md) | [02 — Verify or find](Complexity-02-P-NP-Reduction.ipynb) | [03b — Hartmanis–Stearns](Complexity-03b-HartmanisStearns-TimeHierarchy.ipynb) | [03c — Navigable zoo](Complexity-03c-ComplexityZoo-Navigation-Python.ipynb) | [Français →](Complexity-03-TimeHierarchy.ipynb)
 
 > **Audience: Licence.** The historical demonstration and its multi-tape simulation are kept in the 03b deep dive.
 
@@ -1146,7 +1146,7 @@ MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,intro-hierarchy,m
 - [01 — Counting steps](Complexity-01-StepCounting.ipynb): step size and budget;
 - [02 — Verify or find](Complexity-02-P-NP-Reduction.ipynb): decision problem and algorithm.
 
-**Objectives**: distinguish inclusion from strict separation of classes, understand a finite diagonal and explain why a table is not a proof of hierarchy. **Estimated duration**: 35 minutes.",,,,,,,5fe08b3b342e08c2,396737468f8ffac9,,,,,,,
+**Objectives**: distinguish inclusion from strict separation of classes, understand a finite diagonal and explain why a table is not a proof of hierarchy. **Estimated duration**: 35 minutes.",,,,,,,5fe08b3b342e08c2,5d266732234d6711,,,,,,,
 MyIA.AI.Notebooks/Complexity/Complexity-03-TimeHierarchy.ipynb,budgets-intro,markdown,fr,f45d42651b9dbe73,"## 1. Des budgets imbriqués
 
 Si un programme répond en n pas, il répond aussi dans un budget de n² pas. Cela montre une **inclusion** des budgets, pas une séparation des classes de problèmes : deux programmes différents sur un même problème ne prouvent pas qu'aucun programme rapide ne peut le résoudre. Comparons les budgets sur cinq tailles.","## 1. Nested budgets
