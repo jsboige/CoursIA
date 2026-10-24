@@ -29,6 +29,11 @@ mecanique sans reseau, et la mesure de tete n'appelle jamais le hub depuis la CI
 Usage::
 
     python -m fallacy_detection.generate_teacher_corpus --out <dossier> --split val --limit 24
+
+En mode ``--hard-distractors`` (opt-in, defaut inchange), chaque tour de vote
+pose **deux** questions : l'une a distracteurs tires d'abord parmi les noeuds
+difficiles (freres, parent, homonymes), l'autre a distracteurs aleatoires
+**exclusivement** — le rapport publie alors deux taux separes.
 """
 from __future__ import annotations
 
@@ -167,17 +172,92 @@ def node_key(pair: B.Pair) -> str:
     return ("F" if pair.polarity == "fallacy" else "V") + str(pair.node_pk)
 
 
+def build_hard_peers(texts: dict,
+                     fallacies: Optional[Sequence[B.Node]] = None,
+                     virtues: Optional[Sequence[B.Node]] = None) -> dict[str, list[str]]:
+    """Noeuds difficiles par cle : freres, parent, homonymes de titre FR.
+
+    Tout se derive de la taxonomie elle-meme — le ``path`` de chaque noeud
+    (freres = meme parent, le noeud parent lui-meme, et les enfants en
+    reciproque) et le titre FR partage (homonymes) — sans aucune colonne
+    editoriale. La revue amont du 2026-10-21 l'a mesure : a 5 distracteurs
+    tires au hasard parmi ~1 400
+    sophismes, la probabilite d'attraper un noeud difficile est de ~2,8 % par
+    paire, donc le taux d'aller-retour mesure « plus proche que 5 tires au
+    hasard », pas la discrimination fine dans la taxonomie.
+
+    La polarite est respectee (un sophisme difficile pour un sophisme) et la
+    cle elle-meme jamais listee parmi ses pairs.
+    """
+    nodes = [*(fallacies if fallacies is not None else B.load_fallacies()),
+             *(virtues if virtues is not None else B.load_virtues())]
+    paths = {n.key: n.path for n in nodes}
+    by_path = {(key[0], path): key for key, path in paths.items()}
+    by_parent: dict[tuple[str, str], list[str]] = {}
+    for key, path in paths.items():
+        parent = path.rsplit(".", 1)[0] if "." in path else ""
+        if parent:
+            by_parent.setdefault((key[0], parent), []).append(key)
+    titles: dict[str, list[str]] = {}
+    for key in paths:
+        title = texts["nodes"].get(key, {}).get("fr", ("",))[0]
+        if title:
+            titles.setdefault(title.strip().casefold(), []).append(key)
+    hard: dict[str, list[str]] = {}
+    for key, path in paths.items():
+        parent = path.rsplit(".", 1)[0] if "." in path else ""
+        peers: list[str] = []
+        if parent:
+            # Freres (meme parent) puis le noeud parent lui-meme, s'il existe.
+            peers.extend(k for k in by_parent.get((key[0], parent), []) if k != key)
+            parent_key = by_path.get((key[0], parent))
+            if parent_key is not None:
+                peers.append(parent_key)
+        # Enfants : la reciproque du parent — un noeud interne se reconnait
+        # aussi parmi ceux qu'il subsume, sinon le parent serait difficile pour
+        # l'enfant sans que l'enfant le soit pour lui.
+        peers.extend(k for k in by_parent.get((key[0], path), []) if k != key)
+        title = texts["nodes"].get(key, {}).get("fr", ("",))[0]
+        if title:
+            peers.extend(k for k in titles.get(title.strip().casefold(), []) if k != key)
+        dedup: list[str] = []
+        for peer in peers:
+            if peer != key and peer not in dedup:
+                dedup.append(peer)
+        hard[key] = dedup
+    return hard
+
+
 def pick_distractors(key: str, node_keys: Sequence[str], k: int,
-                     rng: random.Random) -> list[str]:
+                     rng: random.Random, hard_peers: Optional[dict] = None,
+                     exclude: Iterable[str] = ()) -> list[str]:
     """``k`` noeuds de meme polarite que ``key``, hors ``key`` lui-meme.
 
     La polarite est respectee : opposer un sophisme a une vertu rendrait le
     controle trivial et ne mesurerait plus la discrimination reelle.
+
+    Sans ``hard_peers``, le tirage est purement aleatoire (comportement
+    historique, consommation de ``rng`` identique). Avec ``hard_peers`` (index
+    rendu par :func:`build_hard_peers`), les noeuds difficiles sont tires
+    **d'abord**, puis completes au hasard. ``exclude`` retire des candidats les
+    cles listees — c'est ce qui rend le controle aleatoire *propre* en mode
+    difficile : ses distracteurs ne doivent contenir aucun noeud difficile,
+    sinon les deux taux mesures ne seraient pas attribuables.
     """
-    same = [other for other in node_keys if other[0] == key[0] and other != key]
+    excluded = set(exclude)
+    same = [other for other in node_keys
+            if other[0] == key[0] and other != key and other not in excluded]
     if len(same) < k:
         raise ValueError(f"pas assez de noeuds de polarite {key[0]!r} pour {k} distracteurs")
-    return rng.sample(same, k)
+    if hard_peers is None:
+        return rng.sample(same, k)
+    hard = [p for p in hard_peers.get(key, []) if p in same]
+    n_hard = min(k, len(hard))
+    chosen = rng.sample(hard, n_hard) if n_hard else []
+    if n_hard < k:
+        rest = [other for other in same if other not in chosen]
+        chosen += rng.sample(rest, k - n_hard)
+    return chosen
 
 
 def build_choice_question(text: str, candidates: Sequence[str], texts: dict,
@@ -273,6 +353,9 @@ class Record:
     finish_reason: str
     attempts: int
     examples: list[str] = field(default_factory=list)
+    # Verdict du controle a distracteurs difficiles (mode opt-in). ``None``
+    # quand le mode est inactif ou qu'aucun tour difficile n'a rendu de lettre.
+    roundtrip_hard: Optional[bool] = None
 
     def example_overlap(self, min_len: int = B.EXAMPLE_MIN_LEN) -> bool:
         """Vrai si le texte rendu contient un champ exemple du noeud.
@@ -288,7 +371,8 @@ def generate_one(pair: B.Pair, texts: dict, teacher: Teacher, *, lang: str,
                  distractors: int = DEFAULT_DISTRACTORS,
                  max_tokens: int = DEFAULT_MAX_TOKENS,
                  min_tokens: int = MIN_COMPLETION_TOKENS,
-                 retries: int = DEFAULT_RETRIES) -> tuple[Record, Optional[bool], list[Optional[str]]]:
+                 retries: int = DEFAULT_RETRIES,
+                 hard_peers: Optional[dict] = None) -> tuple[Record, Optional[bool], list[Optional[str]]]:
     """Genere le texte d'une paire, puis le fait reclasser par le meme maitre.
 
     Rend ``(record, verdict_aller_retour, votes_bruts)``. Le verdict est ``None``
@@ -299,6 +383,15 @@ def generate_one(pair: B.Pair, texts: dict, teacher: Teacher, *, lang: str,
     **accepte** et entre dans le corpus. Ces cas sont rendus visibles par
     ``n_below_floor`` dans le rapport -- ``n_empty`` ne les compte pas, un
     texte court n'etant pas un texte vide.
+
+    Avec ``hard_peers`` (mode mesure, opt-in), chaque tour pose **deux**
+    questions : la question difficile (distracteurs tires d'abord parmi les
+    pairs difficiles) puis la question aleatoire (distracteurs **exclus** de
+    ces pairs). Le verdict rendu reste celui de la question aleatoire — la
+    semantique du corpus ne change pas ; le verdict difficile est porte par
+    ``record.roundtrip_hard``. La consommation de ``rng`` differe du mode par
+    defaut : deux run a ``seed`` egale, un par mode, ne tirent pas les memes
+    distracteurs.
     """
     prompt = B.render_prompt(pair, texts, lang=lang)
     reply = teacher.complete(prompt, max_tokens=max_tokens, temperature=0.8)
@@ -320,14 +413,29 @@ def generate_one(pair: B.Pair, texts: dict, teacher: Teacher, *, lang: str,
     if not reply.text:
         return record, None, []
 
-    picks: list[Optional[str]] = []
-    for _ in range(votes):
-        candidates = [key] + pick_distractors(key, list(texts["nodes"]), distractors, rng)
+    keys = list(texts["nodes"])
+    hard_set = frozenset(hard_peers.get(key, [])) if hard_peers is not None else None
+
+    def ask(distractor_set: Sequence[str]) -> Optional[str]:
+        candidates = [key] + list(distractor_set)
         rng.shuffle(candidates)
         answer = teacher.complete(
             build_choice_question(reply.text, candidates, texts, lang),
             max_tokens=400, temperature=0.0).text
-        picks.append(parse_choice(answer, candidates))
+        return parse_choice(answer, candidates)
+
+    picks: list[Optional[str]] = []
+    hard_picks: list[Optional[str]] = []
+    for _ in range(votes):
+        if hard_peers is None:
+            picks.append(ask(pick_distractors(key, keys, distractors, rng)))
+        else:
+            hard_picks.append(
+                ask(pick_distractors(key, keys, distractors, rng, hard_peers=hard_peers)))
+            picks.append(
+                ask(pick_distractors(key, keys, distractors, rng, exclude=hard_set)))
+    if hard_peers is not None:
+        record.roundtrip_hard = majority(hard_picks, key)
     return record, majority(picks, key), picks
 
 
@@ -399,6 +507,7 @@ def summarise(records: Sequence[Record], verdicts: Sequence[Optional[bool]], *,
     generated = [r for r in records if r.text]
     below_floor = [r for r in generated if r.completion_tokens < min_tokens]
     voted = [v for v in verdicts if v is not None]
+    hard_voted = [r.roundtrip_hard for r in records if r.roundtrip_hard is not None]
     by_family: dict[str, dict[str, int]] = {}
     for record, verdict in zip(records, verdicts):
         cell = by_family.setdefault(record.family, {"n": 0, "hit": 0, "measured": 0})
@@ -420,6 +529,14 @@ def summarise(records: Sequence[Record], verdicts: Sequence[Optional[bool]], *,
         "roundtrip_measured": len(voted),
         "roundtrip_hits": sum(1 for v in voted if v),
         "roundtrip_rate": (round(sum(1 for v in voted if v) / len(voted), 4) if voted else None),
+        # Deuxieme taux, uniquement mesure en mode --hard-distractors : les
+        # MEMES textes, reclasses parmi des distracteurs difficiles. L'ecart
+        # entre les deux taux est la discrimination fine que le tir aleatoire
+        # ne mesure pas (~2,8 % de chances d'attraper un noeud difficile).
+        "roundtrip_hard_measured": len(hard_voted),
+        "roundtrip_hard_hits": sum(1 for v in hard_voted if v),
+        "roundtrip_hard_rate": (round(sum(1 for v in hard_voted if v) / len(hard_voted), 4)
+                                if hard_voted else None),
         "by_family": by_family,
     }
 
@@ -430,6 +547,7 @@ def run(pairs: Sequence[B.Pair], texts: dict, teacher: Teacher, *, lang: str,
         max_tokens: int = DEFAULT_MAX_TOKENS,
         min_tokens: int = MIN_COMPLETION_TOKENS,
         retries: int = DEFAULT_RETRIES,
+        hard_peers: Optional[dict] = None,
         checkpoint: Optional[Path] = None,
         progress: Optional[Callable[[int, int], None]] = None,
         stats: Optional[dict] = None) -> tuple[list[Record], list[Optional[bool]]]:
@@ -473,7 +591,7 @@ def run(pairs: Sequence[B.Pair], texts: dict, teacher: Teacher, *, lang: str,
             record, verdict, _picks = generate_one(
                 pair, texts, teacher, lang=lang, rng=rng, votes=votes,
                 distractors=distractors, max_tokens=max_tokens,
-                min_tokens=min_tokens, retries=retries)
+                min_tokens=min_tokens, retries=retries, hard_peers=hard_peers)
             records.append(record)
             verdicts.append(verdict)
             if handle:
@@ -509,6 +627,9 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     parser.add_argument("--max-tokens", type=int, default=DEFAULT_MAX_TOKENS)
     parser.add_argument("--min-tokens", type=int, default=MIN_COMPLETION_TOKENS)
     parser.add_argument("--retries", type=int, default=DEFAULT_RETRIES)
+    parser.add_argument("--hard-distractors", action="store_true",
+                        help="mesure en plus un controle a distracteurs difficiles "
+                             "(freres, parent, homonymes) et publie deux taux separes")
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--hub-url", default=DEFAULT_HUB_URL)
     parser.add_argument("--model", default=DEFAULT_MODEL)
@@ -516,6 +637,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     texts = B.load_texts()
+    hard_peers = build_hard_peers(texts) if args.hard_distractors else None
     pairs = load_pairs(args.split, args.phase2_dir)
     if args.limit:
         pairs = stratified_sample(pairs, args.limit, random.Random(args.seed))
@@ -533,13 +655,14 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     records, verdicts = run(
         pairs, texts, teacher, lang=args.lang, seed=args.seed, votes=args.votes,
         distractors=args.distractors, max_tokens=args.max_tokens,
-        min_tokens=args.min_tokens, retries=args.retries,
+        min_tokens=args.min_tokens, retries=args.retries, hard_peers=hard_peers,
         checkpoint=checkpoint, progress=progress, stats=resume)
 
     report = {
         "model": args.model, "hub_url": args.hub_url, "split": args.split,
         "lang": args.lang, "seed": args.seed, "votes": args.votes,
-        "distractors": args.distractors, "max_tokens": args.max_tokens,
+        "distractors": args.distractors, "hard_distractors": args.hard_distractors,
+        "max_tokens": args.max_tokens,
         "min_tokens": args.min_tokens, "retries": args.retries,
         "checkpoint": checkpoint.name,
         "seconds": round(time.time() - started, 1),
