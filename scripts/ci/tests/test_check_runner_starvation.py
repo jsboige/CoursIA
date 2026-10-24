@@ -55,12 +55,16 @@ class FakeApi:
     """Routeur d'API : rend les listings, les jobs et les runs directs."""
 
     def __init__(self, queued=(), in_progress=(), jobs=None,
-                 direct=None, fail_on=()):
+                 direct=None, fail_on=(), malformed=()):
         self.queued = list(queued)
         self.in_progress = list(in_progress)
         self.jobs = jobs or {}          # run_id -> list[job]
         self.direct = direct or {}      # run_id -> status
         self.fail_on = set(fail_on)     # "queued" | "in_progress" | "jobs"
+        # Statuts dont le listing revient en TABLEAU (JSON valide, non-dict) :
+        # `_gh_json` ne le compte PAS comme echec -- seul listing_failed le
+        # trace (temoin #22234).
+        self.malformed = set(malformed)
         self.calls: list[str] = []
         self.job_reads: list[int] = []
 
@@ -84,12 +88,16 @@ class FakeApi:
         if "status=queued" in url:
             if "queued" in self.fail_on:
                 return fail("503 Service Unavailable")
+            if "queued" in self.malformed:
+                return [{"id": 1, "created_at": _iso(40)}]
             page = 1 if "page=1" in url else 2
             runs = self.queued if page == 1 else []
             return {"total_count": len(self.queued), "workflow_runs": runs}
         if "status=in_progress" in url:
             if "in_progress" in self.fail_on:
                 return fail("502 Bad Gateway")
+            if "in_progress" in self.malformed:
+                return [{"id": 2, "created_at": _iso(5)}]
             page = 1 if "page=1" in url else 2
             runs = self.in_progress if page == 1 else []
             return {"total_count": len(self.in_progress), "workflow_runs": runs}
@@ -249,6 +257,101 @@ def test_le_budget_global_couvre_aussi_l_echantillon_in_progress(monkeypatch):
     st = _fetch(api, job_read_budget=2, in_progress_sample=20)
     assert st.job_reads == 2
     assert len(api.job_reads) == 2
+
+
+# --- 2bis. Budget epuise / listing illisible : jamais de conclusion
+#            fabriquee sur un angle mort (#22234) ---------------------------
+
+def test_budget_epuise_par_la_file_queued_ne_fabrique_pas_un_starvation(
+    monkeypatch,
+):
+    """Temoin du dossier #22234 : 3 affames lus (budget 3 entierement consomme
+    par la passe queued), 2 runs in_progress sains JAMAIS regardes (sample=0).
+    L'ancien evaluate lisait ce silence comme « AUCUN job in_progress » et
+    rendait ERROR STARVATION sur une file en train de drainer."""
+    api = _patch(monkeypatch, FakeApi(
+        queued=[_run(i, 40 + i) for i in range(1, 4)],
+        in_progress=[_run(1000 + i, 5) for i in range(2)],
+        jobs={**{i: [_job(100 + i, "queued", 39 + i)] for i in range(1, 4)},
+              **{1000 + i: [_job(9000 + i, "in_progress", 4)] for i in range(2)}},
+    ))
+    st = _fetch(api, job_read_budget=3, in_progress_sample=20)
+    assert len(st.starved) == 3
+    assert st.in_progress == []           # sample=0 : jamais lus...
+    assert st.in_progress_unread == 2     # ...mais traces comme tels
+
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    assert not any(e.startswith("STARVATION") for e in v.errors), v.errors
+    assert any("NON CONCLU" in w and "hors echantillon" in w
+               for w in v.warnings), v.warnings
+    assert v.status == "OK"
+
+
+def test_budget_epuise_sans_run_in_progress_conclut_starvation(monkeypatch):
+    """Controle negatif : le NON CONCLU ne protege que l'absence NON LUE.
+    Listing in_progress lu et VIDE (aucun run dans la fenetre) -> l'absence
+    est etablie, le vrai positif reste un rouge."""
+    api = _patch(monkeypatch, FakeApi(
+        queued=[_run(i, 40 + i) for i in range(1, 4)],
+        in_progress=[],
+        jobs={i: [_job(100 + i, "queued", 39 + i)] for i in range(1, 4)},
+    ))
+    st = _fetch(api, job_read_budget=3)
+    assert len(st.starved) == 3
+    assert st.in_progress_unread == 0
+    assert st.complete is True
+
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    assert v.status == "ERROR"
+    assert any(e.startswith("STARVATION") for e in v.errors), v.errors
+
+
+def test_listing_rendu_en_tableau_ne_rend_pas_ok(monkeypatch):
+    """Temoin #22234 : le listing queued revient en TABLEAU -- JSON valide,
+    donc aucun echec d'appel compte (`stats.failed == 0`), seul
+    `listing_failed` le trace. L'ancien evaluate rendait OK sur une file
+    jamais lue (fail-open)."""
+    api = _patch(monkeypatch, FakeApi(
+        queued=[_run(1, 40)],
+        in_progress=[],
+        jobs={1: [_job(11, "queued", 39)]},
+        malformed={"queued"},
+    ))
+    st = _fetch(api)
+    assert st.listing_failed == {"queued"}
+    assert st.stats.failed == 0
+    assert st.complete is False
+    assert st.starved == []
+
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    assert any(e.startswith("LISTING INCOMPLET") for e in v.errors), v.errors
+    assert v.status == "ERROR"
+
+
+def test_listing_in_progress_illisible_ne_fabrique_pas_un_starvation(
+    monkeypatch,
+):
+    """Meme famille, sens STARVATION : des affames lus + le listing
+    in_progress illisible (tableau) -- l'absence de job en cours n'est pas
+    etablie, le rouge STARVATION ne doit pas partir sur cet angle mort."""
+    api = _patch(monkeypatch, FakeApi(
+        queued=[_run(1, 40)],
+        in_progress=[_run(1000, 5)],
+        jobs={1: [_job(11, "queued", 39)],
+              1000: [_job(9000, "in_progress", 4)]},
+        malformed={"in_progress"},
+    ))
+    st = _fetch(api)
+    assert len(st.starved) == 1
+    assert st.in_progress == []
+    assert st.listing_failed == {"in_progress"}
+    assert st.stats.failed == 0
+
+    v = mod.evaluate(mod.RunnerInventory(online=["a", "b"]), st, 2)
+    assert not any(e.startswith("STARVATION") for e in v.errors), v.errors
+    assert any("NON CONCLU" in w and "illisible" in w
+               for w in v.warnings), v.warnings
+    assert any(e.startswith("LISTING INCOMPLET") for e in v.errors), v.errors
 
 
 # --- 3. Restriction a un workflow -----------------------------------------

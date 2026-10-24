@@ -633,6 +633,16 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
             f"sur {st.stats.calls} -- le passage ne prouve ni file saine ni "
             f"famine. Exemples: {st.stats.examples()}"
         )
+    if st.listing_failed:
+        # #22234 (dossier adjoint c.6378853422) : un listing qui revient en
+        # TABLEAU est du JSON valide -- `_gh_json` ne le compte pas comme un
+        # echec d'appel, seul `listing_failed` le trace. Sans cette jambe, le
+        # passage rendait OK sur une file jamais lue (fail-open).
+        v.errors.append(
+            f"LISTING INCOMPLET: listing(s) {sorted(st.listing_failed)} "
+            f"illisible(s) (reponse non-dict) -- le passage ne prouve ni "
+            f"file saine ni famine."
+        )
 
     if st.starved and not st.in_progress:
         oldest = max(r.age_min or 0 for r in st.starved)
@@ -641,13 +651,29 @@ def evaluate(inv: RunnerInventory, st: Starvation, warn_floor: int,
             f"et AUCUN job in_progress -- la file ne drainne pas. Exemples: "
             + "; ".join(f"{r.workflow} #{r.run_number} ({r.job_name}, {r.age_min:.0f} min)" for r in st.starved[:5])
         )
+        # L'absence d'in_progress n'est PROUVEE que par une lecture complete.
+        # Trois angles morts la rendent NON ETABLIE : des appels en echec (run
+        # 39976669812 : « AUCUN job in_progress » annonce sur 34 runs en
+        # cours), des runs in_progress DELIBEREMENT non lus -- budget epuise
+        # par la passe queued, dossier #22234 : 3 affames lus, 2 en cours
+        # jamais regardes, evaluate lisait ce silence comme une absence -- et
+        # un listing illisible. Un STARVATION en plus accuserait la file sur
+        # un angle mort ; les erreurs LECTURE API INCOMPLETE / LISTING
+        # INCOMPLET portent deja le constat de lecture.
+        reasons = []
         if st.stats.failed:
-            # L'absence d'in_progress n'est pas PROUVEE quand des lectures ont
-            # echoue : l'erreur LECTURE API INCOMPLETE porte deja le constat,
-            # et un STARVATION en plus accuserait la file sur un angle mort.
+            reasons.append("des appels ont echoue")
+        if st.in_progress_unread:
+            reasons.append(
+                f"{st.in_progress_unread} run(s) in_progress hors echantillon, "
+                f"non lus")
+        if st.listing_failed:
+            reasons.append(
+                f"listing(s) {sorted(st.listing_failed)} illisible(s)")
+        if reasons:
             v.warnings.append(
-                f"{message} -- NON CONCLU : des appels ont echoue, "
-                f"l'absence de job in_progress n'est pas etablie."
+                f"{message} -- NON CONCLU : l'absence de job in_progress "
+                f"n'est pas etablie ({' ; '.join(reasons)})."
             )
         else:
             v.errors.append(message)
