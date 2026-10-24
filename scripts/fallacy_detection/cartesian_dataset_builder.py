@@ -474,6 +474,20 @@ def write_splits(pairs: list[Pair], out_dir: Path) -> dict[str, Path]:
     return paths
 
 
+# Licence du dataset derive : le texte editorial Argumentum est sous CC BY-SA
+# 4.0 (LICENSE-CONTENT.md amont, decision owner du 2026-09-21, commit amont
+# 956384ac). Bloc statique par construction -- il ne depend d'aucun commit
+# courant (cf. la garde du manifeste commit-independant ci-dessus).
+DATASET_LICENCE = {
+    "dataset": "CC-BY-SA-4.0",
+    "attribution": "Argumentum",
+    "base": "texte editorial Argumentum (LICENSE-CONTENT.md, commit amont "
+            "956384ac, decision owner 2026-09-21)",
+    "note": "BY-SA 4.0 section 3(b) : un jeu derive ne peut pas ajouter de "
+            "restriction (NC) au-dela de la licence amont",
+}
+
+
 def build_manifest(pairs: list[Pair], nodes: list[Node], params: dict, sources: dict) -> dict:
     """Parametres, sources (SHA de blob) et comptes : ce qui rend le dataset rejouable.
 
@@ -494,6 +508,7 @@ def build_manifest(pairs: list[Pair], nodes: list[Node], params: dict, sources: 
     return {
         "params": params,
         "sources": sources,
+        "licence": DATASET_LICENCE,
         "files": files,
         "counts": {s: counts[s] for s in SPLITS},
         "nodes": dict(Counter(n.polarity for n in nodes)),
