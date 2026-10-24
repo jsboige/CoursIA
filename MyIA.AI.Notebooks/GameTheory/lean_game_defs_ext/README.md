@@ -140,5 +140,7 @@ l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04) — pilote
 2026-10-24), pas une liste tenue à la main.
 
 Un module **neuf** arrive en français d'abord ; son sibling `_en` est dû dans
-une tranche ultérieure, et c'est le checker qui le dit. Une fois doublé, le
-module évolue en symétrie : les deux fichiers ensemble, ou aucun des deux.
+une tranche ultérieure. Le checker ne signale pas un sibling **manquant** : il
+compare les paires qui existent, et une absence ne lui est pas visible. Une
+fois doublé, le module évolue en symétrie : les deux fichiers ensemble, ou
+aucun des deux.

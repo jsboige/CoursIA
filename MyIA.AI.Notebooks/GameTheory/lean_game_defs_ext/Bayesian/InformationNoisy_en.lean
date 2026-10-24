@@ -330,9 +330,10 @@ theorem valueNoisySignal_le_valueNoisyPerfect (D : NoisyProblem) :
 The three values of this module are **raw**, and nothing in `NoisyProblem`
 constrains the sign of the payoffs `u : Fin nS → Fin (nA + 1) → Int`. A
 well-formed instance can therefore be worth strictly less than zero: with
-`nS = 1`, `nA = 1`, `nX = 1`, `p ≡ 1`, `u ≡ -1`, we have `priorMass = 1`,
-each realization has mass 1, the best action is worth -1 in each state, and
-`valueNoisySignal = -2`.
+`nS = 1`, `nA = 1`, `nX = 1`, `p ≡ 1`, `u ≡ -1` (two realizations, each of
+mass 1 and marginal 2), the best action is worth -1 in each state and the
+three values are -2; the raw gain of the signal is then zero, nonnegative but
+not strictly positive.
 
 Nonnegativity is therefore **not** a property of the type: it is a property
 under hypothesis. It is stated and proved here, rather than left implicit in

@@ -43,7 +43,8 @@ import Bayesian.FictitiousPlay
                           maker: signals as partitions, Blackwell
                           monotonicity, no-info ≤ signal ≤ perfect (phase 4)
   - `Bayesian.InformationNoisy` — noisy signals: finite joint table over
-                          state × realization, raw value non-negative,
+                          state × realization, no-info ≤ signal ≤ perfect,
+                          raw values non-negative under nonnegative payoffs,
                           strictly positive gain example (phase 4, #22374)
   - `Bayesian.InfoGames` — counterexample: in a *game*, more information
                           can strictly hurt the informed player (unique

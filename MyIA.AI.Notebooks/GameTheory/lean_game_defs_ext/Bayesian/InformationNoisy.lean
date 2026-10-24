@@ -334,9 +334,10 @@ theorem valueNoisySignal_le_valueNoisyPerfect (D : NoisyProblem) :
 Les trois valeurs de ce module sont **brutes**, et rien dans `NoisyProblem`
 ne contraint le signe des paiements `u : Fin nS → Fin (nA + 1) → Int`. Une
 instance bien formee peut donc valoir strictement moins que zero : avec
-`nS = 1`, `nA = 1`, `nX = 1`, `p ≡ 1`, `u ≡ -1`, on a `priorMass = 1`,
-chaque realisation a une masse de 1, la meilleure action vaut -1 dans
-chaque etat, et `valueNoisySignal = -2`.
+`nS = 1`, `nA = 1`, `nX = 1`, `p ≡ 1`, `u ≡ -1` (deux realisations, chacune
+de masse 1 et de marginal 2), la meilleure action vaut -1 dans chaque etat et
+les trois valeurs valent -2 ; le gain brut du signal est alors nul, non
+negatif mais pas strictement positif.
 
 La non-negativite n'est donc **pas** une propriete du type : c'est une
 propriete sous hypothese. Elle est enoncee et prouvee ici, plutot que
