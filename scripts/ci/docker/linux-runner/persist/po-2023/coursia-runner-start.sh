@@ -28,28 +28,61 @@ TOKEN_FILE="${COURSIA_MASTER_ENV:-$REPO_DIR/.secrets/master.env}"
 # relu a CHAQUE invocation, et meurt avec ce processus.
 TOKEN=""
 TOKEN_SOURCE=""
+# Un jeton PRESENT n'est pas un jeton VALIDE. Mesure du 2026-10-25 sur cette
+# machine : GITHUB_ACCESS_TOKEN et GITHUB_TOKEN existaient dans master.env
+# (40 caracteres chacun) mais l'API les refusait -- « Bad credentials », 401.
+# La cascade s'arretait sur le premier nom NON VIDE, le service demarrait,
+# chaque enregistrement echouait en 401, et `Restart=always` rendait l'unite
+# « active » : la panne se lisait comme un demarrage reussi. On VALIDE donc
+# chaque candidat avant de l'accepter, et un candidat mort ne coupe plus la
+# cascade.
+#
+# `gh api user` est le test le moins couteux qui distingue un jeton mort d'un
+# jeton vivant, et il ne consomme aucun droit particulier.
+_token_alive() {
+    [ -n "${1:-}" ] || return 1
+    command -v gh >/dev/null 2>&1 || return 1
+    GH_TOKEN="$1" gh api user --jq .login >/dev/null 2>&1
+}
+
+# supervise.sh s'arrete sur « gh introuvable » -- autant le dire ici, avec le
+# remede, plutot que de laisser l'unite echouer sur un message qui ne dit pas
+# quoi installer.
+if ! command -v gh >/dev/null 2>&1; then
+    echo "FATAL: gh introuvable dans la distro -- supervise.sh en a besoin pour le registration-token. Installer le binaire (voir persist/po-2023/README.md)." >&2
+    exit 1
+fi
+
 for _var in GH_RUNNERS_ADMIN_TOKEN GITHUB_ACCESS_TOKEN GITHUB_TOKEN; do
     if [ -f "$TOKEN_FILE" ]; then
         _v="$(sed -n "s/^${_var}=//p" "$TOKEN_FILE" | head -1 | tr -d '\r"')"
         if [ -n "$_v" ]; then
-            TOKEN="$_v"
-            TOKEN_SOURCE="master.env:$_var"
-            break
+            if _token_alive "$_v"; then
+                TOKEN="$_v"
+                TOKEN_SOURCE="master.env:$_var"
+                break
+            fi
+            echo "jeton mort ignore : master.env:$_var refuse par l'API (401) -- candidat suivant" >&2
         fi
     fi
 done
 if [ -z "$TOKEN" ]; then
     _GH_WIN="/mnt/c/Program Files/GitHub CLI/gh.exe"
     if [ -x "$_GH_WIN" ]; then
-        TOKEN="$("$_GH_WIN" auth token 2>/dev/null | tr -d '\r\n')"
-        [ -n "$TOKEN" ] && TOKEN_SOURCE="gh.exe auth token"
+        _v="$("$_GH_WIN" auth token 2>/dev/null | tr -d '\r\n')"
+        if _token_alive "$_v"; then
+            TOKEN="$_v"
+            TOKEN_SOURCE="gh.exe auth token"
+        elif [ -n "$_v" ]; then
+            echo "jeton mort ignore : gh.exe auth token refuse par l'API (401)" >&2
+        fi
     fi
 fi
 if [ -z "$TOKEN" ]; then
-    echo "FATAL: aucun jeton d'enregistrement -- GH_RUNNERS_ADMIN_TOKEN / GITHUB_ACCESS_TOKEN / GITHUB_TOKEN absents de $TOKEN_FILE, et gh.exe n'a rien rendu" >&2
+    echo "FATAL: aucun jeton d'enregistrement VALIDE -- GH_RUNNERS_ADMIN_TOKEN / GITHUB_ACCESS_TOKEN / GITHUB_TOKEN de $TOKEN_FILE sont absents ou refuses (401), et gh.exe n'a rien rendu de valide" >&2
     exit 1
 fi
-echo "jeton d'enregistrement lu depuis $TOKEN_SOURCE" >&2
+echo "jeton d'enregistrement lu depuis $TOKEN_SOURCE (valide)" >&2
 
 export DOCKER_HOST="unix:///var/run/docker-ce.sock"
 export GH_TOKEN="$TOKEN"

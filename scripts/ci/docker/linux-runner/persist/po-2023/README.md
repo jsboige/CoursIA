@@ -43,11 +43,50 @@ jeton dédié de la doctrine flotte), puis `GITHUB_ACCESS_TOKEN`, puis
 `GITHUB_TOKEN` dans `master.env`, puis `gh.exe auth token` par interop Windows.
 
 Le jeton dédié est essayé **en premier** pour que la machine se range d'elle-même
-dans la doctrine dès qu'il sera provisionné, sans retoucher le wrapper. Les trois
-voies ont été mesurées `admin=true` sur `jsboige/CoursIA` le 2026-10-24.
+dans la doctrine dès qu'il sera provisionné, sans retoucher le wrapper.
 
 Le jeton n'apparaît jamais dans `argv`, dans un commit, dans une PR ni sur un
 dashboard : il est relu à chaque invocation et meurt avec le processus.
+
+### Un jeton PRÉSENT n'est pas un jeton VALIDE (mesuré le 2026-10-25)
+
+La première mise en service a échoué **en silence**, et c'est cette forme-là qui
+mérite d'être retenue. `GITHUB_ACCESS_TOKEN` et `GITHUB_TOKEN` existaient bien
+dans `master.env` (40 caractères chacun) mais l'API les refusait : `Bad
+credentials`, HTTP 401. La cascade s'arrêtait sur le premier nom **non vide**,
+`systemctl` rendait `active` (le processus superviseur vivait, `Restart=always`
+en prime), et **aucun slot n'était enregistré** — les trois boucles échouaient en
+401 à chaque tentative. `systemctl is-active` **ne pouvait pas** voir la panne.
+
+La cascade **valide** donc chaque candidat (`gh api user`, le test le moins
+coûteux qui distingue un jeton mort d'un vivant) et **passe au suivant** quand il
+est refusé. Sur cette machine l'ordre effectif est donc devenu :
+
+```
+GH_RUNNERS_ADMIN_TOKEN   absent
+GITHUB_ACCESS_TOKEN      present  -> 401 (mort), ignore
+GITHUB_TOKEN             present  -> 401 (mort), ignore
+gh.exe auth token        present  -> valide, retenu
+```
+
+La leçon dépasse les runners : **une cascade de secrets qui s'arrête sur une
+présence au lieu d'une validité fabrique une panne qui se lit comme un succès.**
+Les deux jetons morts de `master.env` sont un sujet de rotation à part entière,
+pas un détail de cette machine.
+
+### Prérequis `gh` dans la distro
+
+`supervise.sh` s'arrête sur `gh introuvable` : le binaire doit être installé
+**dans la distro**, pas seulement côté Windows. Installé ici en 2.99.0 (la
+version du pin `GH_VERSION` du `Dockerfile`, l.73), binaire officiel posé dans
+`/usr/local/bin/gh` — le premier plantage de la mise en service venait de là, et
+le wrapper le dit maintenant explicitement avec le remède.
+
+```bash
+curl -fL -o /tmp/gh.tgz https://github.com/cli/cli/releases/download/v2.99.0/gh_2.99.0_linux_amd64.tar.gz
+tar -C /tmp -xzf /tmp/gh.tgz
+sudo install -m 755 /tmp/gh_2.99.0_linux_amd64/bin/gh /usr/local/bin/gh
+```
 
 ## L'incident `docker.socket` (mesuré le 2026-10-24) — la leçon de cette machine
 
