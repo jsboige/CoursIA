@@ -742,6 +742,39 @@ def deduplicate_services(services: list[Service]) -> list[Service]:
 # ---------------------------------------------------------------------------
 
 
+MANUEL_RESIDUAL_MOTIVE = (
+    "aucune visite lisible "
+    "(aucun marqueur de la famille claim portant une lane dans les commentaires lus)"
+)
+
+
+def manuel_residual_section(manuel_services: list[Service]) -> list[str]:
+    """Lignes de sortie du residuel `_manuel`, compte ET motif (#19804 acc. 1).
+
+    Une fermeture reste en `_manuel` quand aucun marqueur de la famille
+    claim (`CLAIMED`, `DELIVERED`, `RELEASED`, `DONE` ...) ne porte de lane
+    dans le fil : c'est un seul motif par construction, mais il doit etre
+    ECRIT dans la sortie -- un compte sans motif se lit comme une mesure
+    inachevee (cf. contrainte du coordinateur du 12/10 sur #19804).
+
+    Un `[INFO] candidate-delivered` SEUL ne suffit pas a attribuer : ce
+    marqueur ne nomme pas de lane pour le lecteur de l'organe
+    (`check_lane_claim._MARKER_RE`), il documente l'etat de l'issue, pas la
+    visite. Les deux temoins vivent dans `--explain`.
+    """
+    lines = []
+    n = len(manuel_services)
+    lines.append("")
+    lines.append(f"Fermetures sans PR restant en _manuel : {n}")
+    if n:
+        lines.append(f"  motif : {MANUEL_RESIDUAL_MOTIVE}")
+        nums = sorted(s.issue_number for s in manuel_services)
+        lines.append(f"  issues : {', '.join(f'#{x}' for x in nums)}")
+    else:
+        lines.append("  motif : sans objet (toute fermeture sans PR est attribuee)")
+    return lines
+
+
 def render_text(
     by_lane: dict[str, LaneStats],
     fleet_total: int,
@@ -749,6 +782,7 @@ def render_text(
     fleet_ancien: int,
     stock: dict[str, int],
     famine: dict[str, int | list[int]] | None = None,
+    manuel_services: list[Service] | None = None,
 ) -> str:
     """Tableau texte par lane + ligne flotte + ligne stock."""
     lines = []
@@ -770,6 +804,8 @@ def render_text(
         f"{'FLEET':<32} {fleet_total:>4} {fleet_courant_pct:>7.0%} "
         f"{'':>6} {fleet_ancien_pct:>6.0%} {fleet_warn:>5}"
     )
+    if manuel_services is not None:
+        lines.extend(manuel_residual_section(manuel_services))
     lines.append("")
     lines.append("Stock (issues ouvertes par mois de creation) :")
     if stock:
@@ -795,6 +831,7 @@ def render_json(
     fleet_ancien: int,
     stock: dict[str, int],
     famine: dict[str, int | list[int]] | None = None,
+    manuel_services: list[Service] | None = None,
 ) -> str:
     out = {
         "services": [
@@ -817,6 +854,12 @@ def render_json(
         },
         "stock": {"open_by_month": stock},
     }
+    if manuel_services is not None:
+        out["manuel_closure"] = {
+            "count": len(manuel_services),
+            "motive": MANUEL_RESIDUAL_MOTIVE if manuel_services else None,
+            "issues": sorted(s.issue_number for s in manuel_services),
+        }
     if famine:
         out["famine"] = famine
     return json.dumps(out, indent=2, ensure_ascii=False)
@@ -849,6 +892,54 @@ def render_dashboard_line(
 # ---------------------------------------------------------------------------
 
 
+def explain_attribution(issue_number: int, owner: str, repo: str) -> int:
+    """Rejoue a la main l'attribution d'une fermeture (#19804 acceptance 3).
+
+    Lit les commentaires de l'issue et applique le MEME lecteur que l'organe
+    (`pick_idle_grain.latest_claim_lane_from_payload`, organ-first : pas de
+    second parseur), puis imprime la lane retenue AVEC le marqueur qui la
+    porte. Une issue fermee apres un `[DELIVERED] lane <m:w> -- PR #N` est
+    donc attribuee a la lane qui a livre ; une issue dont le fil ne porte
+    aucun marqueur de la famille claim reste `_manuel`, et le temoin le dit
+    explicitement plutot que de rendre un silence.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "view", str(issue_number), "--repo", f"{owner}/{repo}",
+             "--json", "comments"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            check=True, timeout=30,
+        ).stdout
+        comments = [
+            c for c in (json.loads(out) or {}).get("comments") or []
+            if isinstance(c, dict)
+        ]
+    except Exception as e:  # noqa: BLE001 - sonde CLI best-effort
+        print(
+            f"UNKNOWN: lecture des commentaires de #{issue_number} impossible: {e}",
+            file=sys.stderr,
+        )
+        return 2
+    lane = pig.latest_claim_lane_from_payload(comments)
+    if lane is None:
+        print(
+            f"explain #{issue_number} : aucune visite lisible "
+            f"-- aucun marqueur de la famille claim portant une lane "
+            f"({len(comments)} commentaire(s) lus) -> _manuel"
+        )
+        return 0
+    from check_lane_claim import _sort_events
+
+    events = [ev for ev in _sort_events({"comments": comments}) if ev.lane and ev.created_at]
+    last = events[-1]
+    print(
+        f"explain #{issue_number} : lane={lane} | marqueur={last.get('marker')} "
+        f"@ {last.get('created_at')} par {last.get('author')} "
+        f"({len(comments)} commentaire(s) lus)"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--days", type=int, default=7,
@@ -867,7 +958,13 @@ def main(argv: list[str] | None = None) -> int:
                         help="Une ligne ~200 chars pour dashboard [DONE]")
     parser.add_argument("--no-fetch", action="store_true",
                         help="Skip la lecture reseau (utile pour debug fixtures)")
+    parser.add_argument("--explain", type=int, metavar="ISSUE",
+                        help="#19804 acc.3 : rejoue l'attribution d'une issue "
+                             "(lecteur de l'organe + marqueur qui porte la lane)")
     args = parser.parse_args(argv)
+
+    if args.explain is not None:
+        return explain_attribution(args.explain, args.owner, args.repo)
 
     window_start = datetime.now(timezone.utc) - timedelta(days=args.days)
 
@@ -893,12 +990,17 @@ def main(argv: list[str] | None = None) -> int:
     famine = count_famine_progression(open_issues, threshold_weeks=args.famine_weeks)
     famine["threshold_weeks"] = args.famine_weeks
 
+    # #19804 acc.1 : le residuel `_manuel` sort avec son compte ET son motif.
+    manuel_residual = [s for s in services if s.attribution_kind == "manuel"]
+
     if args.json:
-        print(render_json(services, by_lane, fleet_total, fleet_courant, fleet_ancien, stock, famine))
+        print(render_json(services, by_lane, fleet_total, fleet_courant, fleet_ancien, stock, famine,
+                          manuel_services=manuel_residual))
     elif args.dashboard_line:
         print(render_dashboard_line(by_lane, fleet_total, fleet_courant, famine))
     else:
-        print(render_text(by_lane, fleet_total, fleet_courant, fleet_ancien, stock, famine))
+        print(render_text(by_lane, fleet_total, fleet_courant, fleet_ancien, stock, famine,
+                          manuel_services=manuel_residual))
     return 0
 
 
