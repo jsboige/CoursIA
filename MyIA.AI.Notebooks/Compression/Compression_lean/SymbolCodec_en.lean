@@ -1,6 +1,7 @@
-import SymbolCodec
-
-open CompressionLean
+import Mathlib
+import PrefixCodes
+import Decode
+import Huffman
 
 /-!
 # SymbolCodec — labelled codec: the symbol, not only its weight (EPIC #18706)
@@ -51,7 +52,7 @@ i18n #4980.
 See #22377 (part of #18706).
 -/
 
-namespace CompressionLean_en
+namespace CompressionLean
 
 /-! ## Labelled tree and aligned walk -/
 
@@ -456,6 +457,81 @@ theorem decodeL_encode {n : Nat} {t : LTree n} (hf : forget t ≠ .leaf)
           rw [← hbits, decodeL_cons hf hp r]
           exact congrArg (fun x => (s :: ·) <$> x) (ih r hr)
 
+/-! ## Milestone 2: canonicalization by label
+
+Notebook 02 sorts symbols by `(length, symbol)` before assigning words. A
+multiset of lengths does not suffice: it does not say **which** symbol gets
+which length. The objects below carry the pair, and the theorems say what the
+pair guarantees. -/
+
+/-- Maximum length over the alphabet: bound of the sweep that builds the
+canonical order. -/
+def maxLen {n : Nat} (len : Fin n → Nat) : Nat :=
+  (List.finRange n).foldr (fun s acc => max (len s) acc) 0
+
+/-- The symbols of length `L`, in alphabet order. -/
+def ofLength {n : Nat} (len : Fin n → Nat) (L : Nat) : List (Fin n) :=
+  (List.finRange n).filter (fun s => len s == L)
+
+/-- **Canonical order**: length increasing, then symbol index increasing for
+length ties. This is the explicit total order without which two symbols of
+the same length could be exchanged. -/
+def canonPairs {n : Nat} (len : Fin n → Nat) : List (Nat × Fin n) :=
+  (List.range (maxLen len + 1)).flatMap
+    (fun L => (ofLength len L).map (fun s => (L, s)))
+
+/-- The symbols in canonical order, lengths nondecreasing. -/
+def canonOrder {n : Nat} (len : Fin n → Nat) : List (Fin n) :=
+  (canonPairs len).map Prod.snd
+
+/-- The image of every element of a list is bounded by the fold that takes
+the maximum of the images. -/
+theorem le_foldr_max {α : Type} (f : α → Nat) :
+    ∀ (l : List α) (a : Nat) (x : α), x ∈ l →
+      f x ≤ l.foldr (fun y acc => max (f y) acc) a
+  | [], _, _, hx => by simp at hx
+  | y :: t, a, x, hx => by
+      show f x ≤ max (f y) (List.foldr (fun y acc => max (f y) acc) a t)
+      rcases List.mem_cons.mp hx with rfl | hx
+      · exact le_max_left _ _
+      · exact le_trans (le_foldr_max f t a x hx) (le_max_right _ _)
+
+/-- Every length is bounded by `maxLen`. -/
+theorem len_le_maxLen {n : Nat} (len : Fin n → Nat) (s : Fin n) :
+    len s ≤ maxLen len :=
+  le_foldr_max len (List.finRange n) 0 s (List.mem_finRange s)
+
+/-- A symbol is in the length class `L` if and only if its length is `L`. -/
+theorem mem_ofLength {n : Nat} (len : Fin n → Nat) (L : Nat) (s : Fin n) :
+    s ∈ ofLength len L ↔ len s = L := by
+  unfold ofLength
+  simp only [List.mem_filter, beq_iff_eq]
+  exact ⟨fun h => h.2, fun h => ⟨List.mem_finRange s, h⟩⟩
+
+/-- **The length follows the symbol.** In the canonical order, the length
+carried by an entry is that of its symbol: this is the contract a multiset
+of lengths does not establish. -/
+theorem canonPairs_fst {n : Nat} {len : Fin n → Nat} {L : Nat} {s : Fin n}
+    (h : (L, s) ∈ canonPairs len) : len s = L := by
+  unfold canonPairs at h
+  simp only [List.mem_flatMap, List.mem_map] at h
+  obtain ⟨L', _, s', hs', heq⟩ := h
+  cases heq
+  exact (mem_ofLength len L s).mp hs'
+
+/-- No symbol of the alphabet is missing from the canonical order. -/
+theorem mem_canonOrder {n : Nat} (len : Fin n → Nat) (s : Fin n) :
+    s ∈ canonOrder len := by
+  unfold canonOrder canonPairs
+  rw [List.mem_map]
+  refine ⟨(len s, s), ?_, rfl⟩
+  rw [List.mem_flatMap]
+  refine ⟨len s, ?_, ?_⟩
+  · rw [List.mem_range]
+    exact Nat.lt_succ_of_le (len_le_maxLen len s)
+  · rw [List.mem_map]
+    exact ⟨s, (mem_ofLength len (len s) s).mpr rfl, rfl⟩
+
 /-! ## Execution anchors -/
 
 /- The canonical four-symbol code of notebook 02, as a labelled tree: lengths
@@ -482,4 +558,55 @@ is an internal prefix. -/
 #eval labelAt demoTree [false]
 -- none
 
-end CompressionLean_en
+/-! ## Milestone 2: executions and anchors -/
+
+/-- The four-symbol canonical code of notebook 02: symbol 0 on one bit,
+1 on two, 2 and 3 on three. The tree `demoTree` above is exactly this
+code. -/
+def demoLengths : Fin 4 → Nat := ![1, 2, 3, 3]
+
+/-- Same lengths, but symbol 0 is longer than 1: the canonical order must
+separate them by length, not by index. -/
+def demoLengthsSwapped : Fin 4 → Nat := ![2, 1, 3, 3]
+
+#eval canonOrder demoLengths
+-- [0, 1, 2, 3]
+
+/- The order sorts by length, not by index: symbol 1, being shorter, comes
+before 0. Length ties (2 and 3) stay in alphabet order. -/
+#eval canonOrder demoLengthsSwapped
+-- [1, 0, 2, 3]
+
+#eval (canonPairs demoLengthsSwapped).map Prod.fst
+-- [1, 2, 3, 3]
+
+/-- **Canonical round-trip**: the full message reads back after encoding by
+the canonical tree. -/
+theorem demoTree_roundtrip :
+    decodeL demoTree [true, false, true, false, false, true, false, false, false]
+      = some [0, 1, 2, 3] :=
+  decodeL_encode (by intro h; exact CodeTree.noConfusion h) [0, 1, 2, 3]
+    [true, false, true, false, false, true, false, false, false] (by rfl)
+
+/-- **Negative control: a multiset of lengths does not fix the codec.**
+`swapTree` has the same shape as `demoTree` — same words at the same
+positions, hence the same length list and the same Kraft — but symbols 1
+and 2 are exchanged, and the encoded message changes. A prefix code is not
+an integrity mechanism: it does not detect this permutation. -/
+def swapTree : LTree 4 :=
+  .node (.leaf 0) (.node (.leaf 2) (.node (.leaf 1) (.leaf 3)))
+
+theorem same_multiset_different_message :
+    (wordsOf swapTree).map List.length = (wordsOf demoTree).map List.length
+      ∧ encodeMsg swapTree [1, 2] ≠ encodeMsg demoTree [1, 2] := by
+  decide
+
+#print axioms le_foldr_max
+#print axioms len_le_maxLen
+#print axioms mem_ofLength
+#print axioms canonPairs_fst
+#print axioms mem_canonOrder
+#print axioms demoTree_roundtrip
+#print axioms same_multiset_different_message
+
+end CompressionLean

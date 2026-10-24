@@ -462,6 +462,82 @@ theorem decodeL_encode {n : Nat} {t : LTree n} (hf : forget t ≠ .leaf)
           rw [← hbits, decodeL_cons hf hp r]
           exact congrArg (fun x => (s :: ·) <$> x) (ih r hr)
 
+/-! ## Jalon 2 : canonisation par etiquette
+
+Le carnet 02 trie les symboles par `(longueur, symbole)` avant d'attribuer les
+mots. Un multiensemble de longueurs ne suffit pas : il ne dit pas **quel**
+symbole recoit quelle longueur. Les objets ci-dessous portent la paire, et les
+theoremes disent ce que la paire garantit. -/
+
+/-- Longueur maximale sur l'alphabet : borne du balayage qui construit l'ordre
+canonique. -/
+def maxLen {n : Nat} (len : Fin n → Nat) : Nat :=
+  (List.finRange n).foldr (fun s acc => max (len s) acc) 0
+
+/-- Les symboles de longueur `L`, dans l'ordre de l'alphabet. -/
+def ofLength {n : Nat} (len : Fin n → Nat) (L : Nat) : List (Fin n) :=
+  (List.finRange n).filter (fun s => len s == L)
+
+/-- **Ordre canonique** : longueur croissante, puis indice de symbole croissant
+pour les egalites de longueur. C'est l'ordre total explicite sans lequel deux
+symboles de meme longueur pourraient etre echanges. -/
+def canonPairs {n : Nat} (len : Fin n → Nat) : List (Nat × Fin n) :=
+  (List.range (maxLen len + 1)).flatMap
+    (fun L => (ofLength len L).map (fun s => (L, s)))
+
+/-- Les symboles dans l'ordre canonique, longueurs croissantes. -/
+def canonOrder {n : Nat} (len : Fin n → Nat) : List (Fin n) :=
+  (canonPairs len).map Prod.snd
+
+/-- L'image de tout element d'une liste est majoree par le pliage qui prend
+le maximum des images. -/
+theorem le_foldr_max {α : Type} (f : α → Nat) :
+    ∀ (l : List α) (a : Nat) (x : α), x ∈ l →
+      f x ≤ l.foldr (fun y acc => max (f y) acc) a
+  | [], _, _, hx => by simp at hx
+  | y :: t, a, x, hx => by
+      show f x ≤ max (f y) (List.foldr (fun y acc => max (f y) acc) a t)
+      rcases List.mem_cons.mp hx with rfl | hx
+      · exact le_max_left _ _
+      · exact le_trans (le_foldr_max f t a x hx) (le_max_right _ _)
+
+/-- Toute longueur est majoree par `maxLen`. -/
+theorem len_le_maxLen {n : Nat} (len : Fin n → Nat) (s : Fin n) :
+    len s ≤ maxLen len :=
+  le_foldr_max len (List.finRange n) 0 s (List.mem_finRange s)
+
+/-- Un symbole est dans la classe de longueur `L` si et seulement si sa
+longueur est `L`. -/
+theorem mem_ofLength {n : Nat} (len : Fin n → Nat) (L : Nat) (s : Fin n) :
+    s ∈ ofLength len L ↔ len s = L := by
+  unfold ofLength
+  simp only [List.mem_filter, beq_iff_eq]
+  exact ⟨fun h => h.2, fun h => ⟨List.mem_finRange s, h⟩⟩
+
+/-- **La longueur suit le symbole.** Dans l'ordre canonique, la longueur portee
+par une entree est celle de son symbole : c'est le contrat qu'un multiensemble
+de longueurs n'etablit pas. -/
+theorem canonPairs_fst {n : Nat} {len : Fin n → Nat} {L : Nat} {s : Fin n}
+    (h : (L, s) ∈ canonPairs len) : len s = L := by
+  unfold canonPairs at h
+  simp only [List.mem_flatMap, List.mem_map] at h
+  obtain ⟨L', _, s', hs', heq⟩ := h
+  cases heq
+  exact (mem_ofLength len L s).mp hs'
+
+/-- Aucun symbole de l'alphabet ne manque a l'ordre canonique. -/
+theorem mem_canonOrder {n : Nat} (len : Fin n → Nat) (s : Fin n) :
+    s ∈ canonOrder len := by
+  unfold canonOrder canonPairs
+  rw [List.mem_map]
+  refine ⟨(len s, s), ?_, rfl⟩
+  rw [List.mem_flatMap]
+  refine ⟨len s, ?_, ?_⟩
+  · rw [List.mem_range]
+    exact Nat.lt_succ_of_le (len_le_maxLen len s)
+  · rw [List.mem_map]
+    exact ⟨s, (mem_ofLength len (len s) s).mpr rfl, rfl⟩
+
 /-! ## Ancres d'execution -/
 
 /- Le code canonique a quatre symboles du carnet 02, en arbre etiquete :
@@ -488,5 +564,57 @@ sur un arbre etiquete, execute. -/
 mot, `0` seul est un prefixe interne. -/
 #eval labelAt demoTree [false]
 -- none
+
+/-! ## Jalon 2 : executions et ancres -/
+
+/-- Le code canonique a quatre symboles du carnet 02 : symbole 0 sur un bit,
+1 sur deux, 2 et 3 sur trois. L'arbre `demoTree` ci-dessus est exactement ce
+code. -/
+def demoLengths : Fin 4 → Nat := ![1, 2, 3, 3]
+
+/-- Memes longueurs, mais le symbole 0 est plus long que le 1 : l'ordre
+canonique doit les departager par la longueur, pas par l'indice. -/
+def demoLengthsSwapped : Fin 4 → Nat := ![2, 1, 3, 3]
+
+#eval canonOrder demoLengths
+-- [0, 1, 2, 3]
+
+/- L'ordre trie par longueur, pas par indice : le symbole 1, plus court,
+passe devant le 0. Les egalites de longueur (2 et 3) restent dans l'ordre de
+l'alphabet. -/
+#eval canonOrder demoLengthsSwapped
+-- [1, 0, 2, 3]
+
+#eval (canonPairs demoLengthsSwapped).map Prod.fst
+-- [1, 2, 3, 3]
+
+/-- **Round-trip canonique** : le message integral se relit apres encodage par
+l'arbre canonique. -/
+theorem demoTree_roundtrip :
+    decodeL demoTree [true, false, true, false, false, true, false, false, false]
+      = some [0, 1, 2, 3] :=
+  decodeL_encode (by intro h; exact CodeTree.noConfusion h) [0, 1, 2, 3]
+    [true, false, true, false, false, true, false, false, false] (by rfl)
+
+/-- **Controle negatif : un multiensemble de longueurs ne fixe pas le codec.**
+`swapTree` a la meme forme que `demoTree` — memes mots aux memes positions,
+donc meme liste de longueurs et meme Kraft — mais les symboles 1 et 2 sont
+echanges, et le message encode change. Un code prefixe n'est pas un mecanisme
+d'integrite : il ne detecte pas cette permutation. -/
+def swapTree : LTree 4 :=
+  .node (.leaf 0) (.node (.leaf 2) (.node (.leaf 1) (.leaf 3)))
+
+theorem same_multiset_different_message :
+    (wordsOf swapTree).map List.length = (wordsOf demoTree).map List.length
+      ∧ encodeMsg swapTree [1, 2] ≠ encodeMsg demoTree [1, 2] := by
+  decide
+
+#print axioms le_foldr_max
+#print axioms len_le_maxLen
+#print axioms mem_ofLength
+#print axioms canonPairs_fst
+#print axioms mem_canonOrder
+#print axioms demoTree_roundtrip
+#print axioms same_multiset_different_message
 
 end CompressionLean
