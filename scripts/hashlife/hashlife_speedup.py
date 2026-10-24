@@ -95,12 +95,28 @@ BLINKER = {(0, 0), (1, 0), (2, 0)}
 BLOCK = {(0, 0), (1, 0), (0, 1), (1, 1)}
 GLIDER = {(1, 0), (2, 1), (0, 2), (1, 2), (2, 2)}
 ACORN = {(1, 0), (3, 1), (0, 2), (1, 2), (4, 2), (5, 2), (6, 2)}
+# Pulsar canonique (periode 3), 48 cellules. La version anterieure n'en portait
+# que 36 : les trois barres horizontales de la moitie droite (x = 8, 9, 10)
+# manquaient sur les rangees 0, 5, 7 et 12, ce qui cassait la symetrie du motif
+# et en faisait un emetteur de planeur au lieu d'un oscillateur (cf. #22294).
+PULSAR_ROWS = [
+    "..OOO...OOO..",
+    ".............",
+    "O....O.O....O",
+    "O....O.O....O",
+    "O....O.O....O",
+    "..OOO...OOO..",
+    ".............",
+    "..OOO...OOO..",
+    "O....O.O....O",
+    "O....O.O....O",
+    "O....O.O....O",
+    ".............",
+    "..OOO...OOO..",
+]
 PULSAR = {
-    (2, 0), (3, 0), (4, 0), (0, 2), (5, 2), (0, 3), (5, 3), (0, 4), (5, 4),
-    (2, 5), (3, 5), (4, 5), (2, 7), (3, 7), (4, 7), (0, 8), (5, 8), (0, 9),
-    (5, 9), (0, 10), (5, 10), (2, 12), (3, 12), (4, 12), (7, 2), (7, 3),
-    (7, 4), (7, 8), (7, 9), (7, 10), (10, 2), (10, 3), (10, 4), (10, 8),
-    (10, 9), (10, 10),
+    (x, y) for y, row in enumerate(PULSAR_ROWS)
+    for x, ch in enumerate(row) if ch == "O"
 }
 GOSPER_GUN_ROWS = [
     "........................O...........",

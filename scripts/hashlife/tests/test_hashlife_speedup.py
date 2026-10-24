@@ -57,7 +57,22 @@ def test_la_ligne_de_base_conserve_les_motifs_stables():
     assert hs.naive_run(hs.build_motif("blinker"), 2) == hs.build_motif("blinker")
 
 
-@pytest.mark.parametrize("name", ["blinker", "glider", "acorn"])
+def test_le_pulsar_est_bien_un_oscillateur_de_periode_3():
+    """Le pulsar revient exactement sur lui-meme a la generation 3, et seulement la.
+
+    Ce temoin manquait : le motif n'etait declare « periodique p3 » que par son
+    etiquette d'anatomie. La version a 36 cellules sur 48 se comportait en
+    emetteur, ses quatre points de mesure tombaient sur des etats tous differents
+    et l'alpha ajuste decrivait autre chose que ce que la colonne annoncait.
+    """
+    pulsar = hs.build_motif("pulsar")
+    assert hs.naive_run(pulsar, 3) == pulsar
+    assert hs.naive_run(pulsar, 1) != pulsar
+    assert hs.naive_run(pulsar, 2) != pulsar
+    assert len(pulsar) == 48
+
+
+@pytest.mark.parametrize("name", ["blinker", "glider", "acorn", "pulsar"])
 def test_accord_de_population_naive_et_hashlife(name):
     """Controle de correction : les deux moteurs doivent rendre la meme population."""
     point = hs.measure_point(name, 64)
@@ -65,7 +80,7 @@ def test_accord_de_population_naive_et_hashlife(name):
     assert point["naive_population"] == point["hashlife_population"] > 0
 
 
-@pytest.mark.parametrize("name", ["blinker", "glider", "acorn"])
+@pytest.mark.parametrize("name", ["blinker", "glider", "acorn", "pulsar"])
 def test_accord_d_etat_final_naive_et_hashlife(name):
     """Le cardinal ne suffit pas : c'est la configuration qui doit coincider."""
     point = hs.measure_point(name, 64)

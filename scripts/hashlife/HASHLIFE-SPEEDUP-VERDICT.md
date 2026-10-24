@@ -101,7 +101,7 @@ Organe mesure : sha256 `233303a1354a1d27...`, Python 3.13.7 (commits dans le JSO
 | blinker | periodique p2 | 0,042 | 0,162 | 0,947 | [0,014; 0,106] | 188,20x | REDUCIBLE | non robuste |
 | block | immuable | 0,094 | 0,834 | 0,974 | [-0,027; 0,226] | 125,17x | REDUCIBLE | non robuste |
 | gosper-gun | croissance reguliere | -0,189 | 0,851 | 1,615 | [-0,233; -0,096] | 2040,19x | REDUCIBLE | non robuste |
-| pulsar | periodique p3 | 0,179 | 0,846 | 0,978 | [0,095; 0,178] | 10,43x | REDUCIBLE | non robuste |
+| pulsar | periodique p3 | 0,065 | 0,477 | 1,003 | [-0,013; 0,137] | 226,83x | REDUCIBLE | non robuste |
 | soup-64-d30 | soupe chaotique | 0,532 | 0,954 | 0,900 | [0,486; 0,531] | 2,78x | AMBIGUOUS | non robuste |
 
 L'acceleration est le rapport des medianes au plus grand G mesure pour le motif.
@@ -207,18 +207,30 @@ lineairement, donc le cout naif croit plus vite que G. Le verdict `REDUCIBLE` es
 porte par le rapport 2040x, massif et sans ambiguite ; l'exposant, lui, n'est pas
 un indicateur de complexite comparable d'une famille de motifs a l'autre.
 
-**pulsar** -- periodique p3, alpha_hash = 0,179, REDUCIBLE non robuste
+**pulsar** -- periodique p3, alpha_hash = 0,065, REDUCIBLE non robuste
 
 | G | naif (s) | HashLife (s) | acceleration | population | empreinte d'etat final |
 |---:|---:|---:|---:|---:|---|
-| 256 | 0,0763 | 0,1914 | 0,40x | 206 | `f1cc8bb6b0e4f77a` |
-| 1024 | 0,2288 | 0,2135 | 1,07x | 96 | `ed7b49127e87da58` |
-| 4096 | 0,9489 | 0,2424 | 3,91x | 96 | `4326d78c99f44754` |
-| 16384 | 4,3688 | 0,4190 | 10,43x | 96 | `b41b3023094861b6` |
+| 256 | 0,0338 | 0,0075 | 4,53x | 56 | `b16e8d30e9fda826` |
+| 1024 | 0,1745 | 0,0102 | 17,16x | 56 | `b16e8d30e9fda826` |
+| 4096 | 0,5094 | 0,0084 | 60,55x | 56 | `b16e8d30e9fda826` |
+| 16384 | 2,4330 | 0,0107 | 226,83x | 56 | `b16e8d30e9fda826` |
 
-Quatre points seulement, et le premier paie la construction initiale (population
-206 avant stabilisation a 96) : l'ajustement porte sur peu de points et un
-premier point atypique, d'ou R2 0,846 malgre une progression claire du rapport.
+Les quatre empreintes sont **identiques** parce que les quatre points tombent sur
+des generations toutes congrues a 1 modulo 3 (256, 1024, 4096, 16384) : pour un
+oscillateur de periode 3, l'etat y est le meme par construction. C'est le
+temoin qui compte ici, et il est decisif : le motif precedent, qui ne portait que
+36 cellules sur les 48 canoniques, produisait **quatre empreintes differentes** a
+ces memes generations. Un emetteur ne revient pas sur son etat ; un oscillateur,
+si. La population constante de 56 cellules et la croissance reguliere du rapport
+(4,5x, 17x, 61x, 227x) confirment la lecture.
+
+Quatre points seulement, et l'ajustement est pauvre (R2 0,477) parce que le temps
+HashLife est essentiellement **plat** (7,5 a 10,7 ms sur un facteur 64 de
+generations) : l'exposant 0,065 decrit mal une serie que domine une constante,
+et la robustesse n'est donc pas revendiquee. Le `REDUCIBLE` est porte par le
+rapport 227x, pas par l'exposant -- meme lecture que pour `blinker`, `block` et
+`gosper-gun`.
 
 **soup-64-d30** -- soupe chaotique, alpha_hash = 0,532, AMBIGUOUS non robuste
 
@@ -256,7 +268,7 @@ d'un cote.
 
 ### Ce qui ne resiste pas, et pourquoi
 
-- **`blinker` (R2 0,162), `block` (0,834), `pulsar` (0,846), `gosper-gun`
+- **`blinker` (R2 0,162), `block` (0,834), `pulsar` (0,477), `gosper-gun`
   (0,851)** : la bande du verdict est tenue, mais la loi de puissance ne decrit
   pas la serie mesuree. Pour les trois motifs periodiques ou immuables, le temps
   HashLife est essentiellement **plat** ; un exposant ajuste la est un artefact,
@@ -276,24 +288,35 @@ d'un cote.
 L'enveloppe mesure la dispersion des repetitions **d'un meme run**. Deux runs
 canoniques du meme organe (sha256 identique) different pourtant :
 
-| Motif | alpha (run precedent) | alpha (ce run) |
-|---|---:|---:|
-| acorn | 1,352 | 1,235 |
-| glider | 0,160 | 0,141 |
-| block | 0,158 | 0,094 |
-| pulsar | 0,117 | 0,179 |
-| gosper-gun | 0,289 | -0,189 |
-| soup-128-d35 | 0,675 | 0,609 |
-| soup-64-d30 | 0,571 | 0,532 |
-| blinker | 0,106 | 0,042 |
+| Motif | alpha (run precedent) | alpha (ce run) | ecart relatif |
+|---|---:|---:|---:|
+| acorn | 1,352 | 1,235 | -8,6 % |
+| glider | 0,160 | 0,141 | -11,7 % |
+| block | 0,158 | 0,094 | -40,6 % |
+| pulsar | 0,117 | 0,065 | -44,2 % (voir note) |
+| gosper-gun | 0,289 | -0,189 | changement de signe |
+| soup-128-d35 | 0,675 | 0,609 | -9,8 % |
+| soup-64-d30 | 0,571 | 0,532 | -6,9 % |
+| blinker | 0,106 | 0,042 | -59,9 % |
 
 Les temps absolus sont environ deux fois plus lents dans ce run (blinker a
 G = 65 536 : 0,4348 s contre 0,2019 s), et l'interpreteur differe (Python 3.13.7
 ici, 3.14.3 pour le run precedent) -- les deux sont enregistres dans le JSON.
-Consequence a retenir : **la liste des verdicts robustes est plus stable que les
-valeurs d'alpha qui la fondent**. `acorn` reste `IRREDUCIBLE` et `glider` reste
-`REDUCIBLE` dans les deux runs, avec des exposants qui ont pourtant bouge de 8 a
-12 %. Un pli ulterieur qui voudrait comparer des `alpha` entre machines doit
+
+**Note sur `pulsar`** : son ecart ne mesure pas la seule derive de run. Le motif
+precedent ne portait que 36 des 48 cellules canoniques et se comportait en
+emetteur ; la valeur de ce run vient du motif corrige. L'ecart de `pulsar` n'est
+donc pas comparable aux sept autres, qui mesurent, eux, la derive a motif
+identique.
+
+Consequence a retenir : **la liste des verdicts est plus stable que les valeurs
+d'alpha qui la fondent**. Les huit verdicts sont identiques dans les deux runs,
+alors que les exposants ont tous baisse et de facon tres inegale : de **-6,9 %**
+(`soup-64-d30`) a **-59,9 %** (`blinker`), en passant par -40,6 % (`block`), et
+jusqu'a un **changement de signe** pour `gosper-gun` (+0,289 -> -0,189). Un ecart
+de cet ordre sur une grandeur qui peut changer de signe n'est pas une petite
+imprecision de mesure : l'exposant n'est pas une grandeur transportable d'un run
+a l'autre. Un pli ulterieur qui voudrait comparer des `alpha` entre machines doit
 d'abord mesurer un motif de reference sur les deux, pas supposer l'invariance.
 
 ### Ce que ce verdict ne dit pas
