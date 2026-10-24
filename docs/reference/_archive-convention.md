@@ -1,6 +1,6 @@
 # Convention `_archive/` — modèle ML-Training-Pipeline généralisé
 
-**S'applique à :** tout dossier `_archive/` du dépôt (11 emplacements recensés en 2026-08).
+**S'applique à :** tout dossier `_archive/` du dépôt. Le recensement est une **mesure**, pas un littéral : il se recalcule avec la commande du §« Recenser, ne pas recopier ».
 **Référence :** `MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/scripts/_archive/` (consolidation #1409, 2026-06-12).
 **Discipline parente :** CLAUDE.md global — « Consolider != Archiver » (préserver avant de réduire, citer la cible comme preuve).
 
@@ -8,7 +8,7 @@
 
 Un dossier `_archive/` sans convention devient un **puits de code mort** : on y dépose des scripts superseded, mais sans en-tête de disposition, personne ne sait s'ils sont **encore vivants mal étiquettés** ou **réellement abandonnés**. Le bilan mesuré sur le dépôt en 2026-08 :
 
-- 11 emplacements `_archive/` dispersés (125 fichiers au total au 2026-08), conventions hétérogènes.
+- Les emplacements `_archive/` sont dispersés dans le dépôt (11 emplacements et 125 fichiers mesurés en 2026-08), avec des conventions hétérogènes. Ce chiffre est **daté** ; le compte courant se recalcule, il ne se recopie pas (voir le §« Recenser, ne pas recopier »).
 - `scripts/genai-stack/_archive/` (constat empirique au 2026-08) : le plus gros stock du dépôt — code mort, certains cassés auto-admis. **Tranche 3 livrée le 2026-10-04** (cf table ci-dessous).
 - `scripts/_archive/one_shot_fixes/` + `one_shots_post_463/` + `recycle_csp/` (constat empirique au 2026-08) : ~30 fichiers dont les README de disposition n'appliquaient pas encore tous le standard. **Cible de la tranche 2** (cf table lignes 73-85).
 
@@ -65,6 +65,17 @@ Un script qui ne satisfait pas les 4 critères **ne va pas dans `_archive/`** �
 **Garder les `_archive/` près de leur domaine.** Les scripts archivés référencent des chemins relatifs (`Path(__file__).parent / ...`) — unifier briserait leur capacité à être ressuscités sans réécriture. Le standard uniformise la **convention** (README + headers), pas la **localisation**.
 
 Exception : si un dossier `_archive/` ne contient que des **données** (pas de scripts) — par exemple `_output.ipynb` sans sources — il peut être centralisé après vérif `execution_count`/consommateurs (cf cas `DSA AgenticDataScience/` + `PythonAgentsForDataScience/` signalés dans #13749 body).
+
+## Recenser, ne pas recopier
+
+Un compte d'emplacements écrit dans la prose périme sans que personne ne le remarque : il est vrai le jour où il est écrit, puis il se propage — une review ne peut ni le confirmer ni le contredire sans recompter. Le recensement se **recalcule** donc, il ne se recopie pas. Deux commandes indépendantes, qui doivent concorder :
+
+```bash
+git ls-tree -r -d --name-only origin/main | grep '/_archive$'
+git ls-tree -r --name-only origin/main | grep '/_archive/' | wc -l
+```
+
+Une phrase de prose qui cite un total doit porter **sa date**. Une règle, une docstring d'organe ou un pointeur de documentation qui en cite un **sans date** est un défaut de prose quantitative : il se remplace par la commande, jamais par un chiffre plus récent.
 
 ## Application — les emplacements recensés
 
