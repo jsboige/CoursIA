@@ -240,6 +240,16 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Cold Start | Gérer nouveaux utilisateurs/items |
 | Métriques | Precision@K, Recall@K, NDCG |
 
+### ML-07b-SemanticIDs-Recommandation-Python
+
+| Section | Contenu |
+|---------|---------|
+| Objet | Tokeniser un item en **identifiants sémantiques** : plongement de contenu puis quantification résiduelle (3 niveaux × 32 codes, soit 15 bits par item contre 1024 bits en float32) |
+| Démarrage à froid | Les colonnes des items froids sont vides : populaire et collaboratif rendent un score constant et un rappel exactement nul, le contenu voit tous les items |
+| Tests appariés | Quatre contrastes, bootstrap sur les utilisateurs et McNemar : **un seul** franchit le seuil (populaire contre contenu sur le chaud, +2,62 pts, p = 0,0038) |
+| Ce que la mesure refuse de dire | Que la quantification vaille mieux que le contenu direct : les deux écarts de signe opposé sont non concluants, et le balayage des tailles de dictionnaire ne montre pas de tendance monotone |
+| Exercices | Trois stubs sans erreur volontaire : deux niveaux suffisent-ils, le partage du premier code aide-t-il, et lequel des deux modèles résiste à un contenu bruité |
+
 ### ML-08-Clustering
 
 | Section | Contenu |
