@@ -187,3 +187,109 @@ series:
       - add_score_claim
       - slugify
     # Mesure : 36 notebooks, 19 symboles .ipynb.
+
+submodules:
+  # Contrat de retour amont (#13902, item 4) : une collision avec un organe de
+  # cette section n'est PAS blanchie par la seule « copie declaree » -- le body
+  # doit porter la section « ce que cette extraction rend a l'amont » (ou
+  # declarer explicitement ne rien rendre). Ces depots sont des sous-modules =
+  # geste de perennite (mandat user 2026-09-01) : extraire leur ame sans nommer
+  # le contrat de retour est le mecanisme d'affaiblissement que l'EPIC interdit.
+  #
+  # Source des symboles : MESURE au 2026-10-23 sur les arbres GitHub des cinq
+  # depots AUX GITLINKS EPINGLES d'origin/main (git ls-tree), convention C# une
+  # classe publique par fichier, spot-checks Fallacy.cs (« public class
+  # Fallacy ») et VettingLevel.cs (« public enum VettingLevel »). Curation :
+  # noms distinctifs seulement -- les noms d'algorithmes standards (Differential
+  # Evolution, Simulated Annealing...) sont exclus : reimplementer un algorithme
+  # de manuel n'est pas extraire l'organe. Borne connue : DEF_RE ne voit que
+  # def/class -- un « record », « enum » ou « type » F# ajoute hors du
+  # sous-module n'est pas attrape.
+  semantic-fleet:
+    owner_path: MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet
+    remote: MyIntelligenceAgency/semantic-fleet
+    pin: 2a9d48b4a899
+    organ: "Connectors.AI.MultiConnector (fork SK v0.34.3) -- vetting, analyse multi-completion, couts par appel"
+    symbols:
+      - MultiCompletionAnalysis
+      - MultiCompletionAnalysisSettings
+      - ConnectorPromptEvaluation
+      - VettingLevel
+      - CallRequestCostCreditor
+      - CompletionJob
+      - MultiConnectorConfiguration
+      - MultiOpenAICompatibleConnectorConfiguration
+
+  Argumentum:
+    owner_path: MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum
+    remote: ArgumentumGames/Argumentum
+    pin: e62787eaaecd
+    organ: "AssetConverter + entites du corpus (fallacies, vertus, scenarios) -- la surface C# mesuree au pin"
+    symbols:
+      - Fallacy
+      - Virtue
+      - ArgumentVirtue
+      - Scenario
+      - SexyContentData
+      - DatasetUpdater
+      - DatasetUpdaterRootConfig
+      - RecordsUpdater
+      - AssetConverterConfig
+      - BatchImageConverterConfig
+      - PromptExample
+
+  MetaGeneticSharp:
+    owner_path: MyIA.AI.Notebooks/Search/MetaGeneticSharp
+    remote: jsboige/MetaGeneticSharp
+    pin: 3a7d91e57b63
+    organ: "meta-genetique : MetaGeneticAlgorithm + crossovers geometriques (Domain)"
+    symbols:
+      - MetaGeneticAlgorithm
+      - EukaryoteChromosome
+      - GeometricCrossover
+      - GeometricConverter
+      - TypedGeometricConverter
+      - KendallTauEmbedding
+      - OrderedEmbedding
+      - InsertionEmbedding
+      - EdgeEmbedding
+      - IdentityEmbedding
+      - KnownCompoundMetaheuristics
+      - SubEvolutionContext
+
+  Z3.Linq:
+    owner_path: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3.Linq
+    remote: MyIntelligenceAgency/Z3.Linq
+    pin: 8a2562dba761
+    organ: "binding LINQ->Z3 : Theorem<S>, rewriters d'attributs, exemples Sudoku/RiverCrossing"
+    symbols:
+      - Theorem
+      - SudokuTheorem
+      - SudokuGridTheorem
+      - SudokuTheoremRewriter
+      - TheoremGlobalRewriterAttribute
+      - TheoremPredicateRewriterAttribute
+      - BitVecWidthAttribute
+      - SolverKind
+      - MissionariesAndCannibals
+
+  Automata:
+    owner_path: MyIA.AI.Notebooks/SymbolicAI/SMT/Automata
+    remote: MyIntelligenceAgency/Automata
+    pin: b1335eebafac
+    organ: "automates symboliques (Microsoft) : CharSetSolver, tree algebra, BDD algebras"
+    symbols:
+      - Automaton
+      - CharSetSolver
+      - TreeTheory
+      - TreeRule
+      - TreeTransducer
+      - BooleanAlgebraZ3
+      - Z3Provider
+      - RankedAlphabet
+      - ValueTerm
+      - BREX
+      - BREXManager
+      - BDDAlgebra
+      - ConditionalDerivative
+      - BasicCountingSet
