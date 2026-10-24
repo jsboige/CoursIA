@@ -72,7 +72,6 @@ name: Slides Build Advisory
 
 on:
   pull_request:
-    branches: [ main ]
     types: [ opened, synchronize, reopened ]
     # #15835 -- the build was cron-only, so a PR could break a deck and stay
     # green end to end. #15808 wrote it down: "slidev build NOT RUN this cycle

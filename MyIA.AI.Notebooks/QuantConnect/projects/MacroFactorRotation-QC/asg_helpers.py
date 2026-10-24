@@ -75,6 +75,35 @@ def aggregate_sales_growth(
     return float(np.average(firms["growth"], weights=firms["market_cap"]))
 
 
+def effective_market_cap(
+    market_cap: Optional[float],
+    price: Optional[float],
+    split_factor: Optional[float],
+    shares_outstanding: Optional[float],
+) -> Optional[float]:
+    """Capitalisation effective, repli #21336 quand market_cap est vide.
+
+    Avant mi-2009, la coupe fondamentale Morningstar porte une
+    capitalisation vide ou non positive sur une large part de l'univers
+    (#21333) : l'ASG du mois se retrouve alors ponderee sur une fraction
+    infime de l'univers (sonde QC 38066227 : 5,1 % de couverture en 2007
+    au lieu de 98,9 % avec le repli). Le repli reconstruit la
+    capitalisation comme price * split_factor * shares_outstanding -
+    expression validee par compilation et execution dans le projet sonde.
+
+    Renvoie la capitalisation strictement positive exploitable pour la
+    ponderation, None si ni la donnee directe ni le produit du repli
+    n'en produisent une.
+    """
+    if market_cap is not None and np.isfinite(market_cap) and market_cap > 0:
+        return float(market_cap)
+    factors = (price, split_factor, shares_outstanding)
+    if any(f is None or not np.isfinite(f) for f in factors):
+        return None
+    fallback = float(price) * float(split_factor) * float(shares_outstanding)
+    return fallback if fallback > 0 else None
+
+
 def fit_expanding_ols(
     asg: pd.Series,
     excess_returns: pd.Series,
