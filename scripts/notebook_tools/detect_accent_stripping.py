@@ -305,6 +305,19 @@ ACCENT_PAIRS = {
     "complementaires": "complémentaires",
     "reperer": "repérer",
     "entrainer": "entraîner",
+    # #21277 -- formes hors table relevees par le rollout accents (review
+    # NanoClaw de #20781, puis #20782). SEULES les formes qui ne sont pas des
+    # mots anglais valides entrent ici : ce dictionnaire sert aussi a la
+    # DETECTION, ou `representation`/`decomposition`/`precedence`/`evaluation`
+    # produiraient des faux positifs sur l'anglais (garde
+    # `test_excludes_en_valid_words`). Les quatre cognats vivent dans
+    # `restore_accents_canonical.CONTEXTUAL_PAIRS`, applique sur preuve de
+    # contexte francais seulement.
+    "entrainable": "entraînable",
+    "entrainables": "entraînables",
+    "francais": "français",
+    "francaise": "française",
+    "francaises": "françaises",
 }
 
 
