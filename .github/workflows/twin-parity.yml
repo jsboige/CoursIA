@@ -16,8 +16,9 @@ name: Twin Parity Check
 # way to make the auditable promise real.
 #
 # Per-pair semantics (#8264): the workflow runs in `--per-pair --base
-# origin/main` mode, comparing the registry + blob SHAs at the PR's HEAD vs
-# at origin/main (the base ref). The gate FAILS only on pairs that the PR
+# <ref>` mode, comparing the registry + blob SHAs at the PR's HEAD vs
+# at the base ref -- the merge ref's first parent, `origin/main` only when the
+# checkout is not a merge (#22292). The gate FAILS only on pairs that the PR
 # itself has moved (base=OK, head=DRIFT/MISSING) or introduced/removed
 # without rebaseline. Drift already present at origin/main is reported as
 # `drift_pre_existing` but does NOT fail the gate -- it belongs to a
@@ -91,7 +92,14 @@ jobs:
           # so json.load crashed with "Extra data" and the gate failed with a raw traceback on
           # any PR where a warning fired -- masking the real drift verdict. Direct redirection
           # captures python's exit code correctly AND keeps the report pure JSON.
-          python scripts/notebook_tools/check_twin_parity.py --json --check --per-pair --base origin/main > twin_parity_report.json 2>twin_parity_stderr.log
+          # Base = the first parent of the checked-out merge ref (#22292): the main that GitHub
+          # built the merge on. `origin/main` is re-fetched when the job STARTS; after hours in the
+          # queue it is newer than the merge ref, and every pair rebaselined on main in between
+          # reads DRIFT here and OK there -- a DRIFT_INTRODUCED on a PR that never touched it
+          # (#22218, 2026-10-24: 11 pairs, 117 main commits between the two reads).
+          if git rev-parse -q --verify HEAD^2 >/dev/null; then BASE=HEAD^1; else BASE=origin/main; fi
+          echo "Twin parity base: $BASE ($(git rev-parse --short "$BASE"))"
+          python scripts/notebook_tools/check_twin_parity.py --json --check --per-pair --base "$BASE" > twin_parity_report.json 2>twin_parity_stderr.log
           EXIT=$?
           set -e
           if [ -s twin_parity_stderr.log ]; then
