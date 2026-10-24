@@ -19,6 +19,7 @@ Run: python -m pytest scripts/tests/test_pr_gate.py
 """
 import itertools
 import sys
+import types
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -2307,6 +2308,39 @@ def test_post_check_run_mode_keeps_its_own_contract(monkeypatch):
         ["--repo", "o/r", "--sha", "deadbeef", "--post-check-run"]
     )
     assert code == 1
+
+
+def test_post_check_run_skipped_on_dwell_verdict(monkeypatch):
+    """#21543 -- a DWELL verdict is a merge-floor timer, not a content failure.
+
+    POSTing it as ``conclusion=failure`` lands an unliftable red on the PR
+    head (foreign suite, no run behind it, GitHub ANDs same-named checks).
+    The harness must skip the POST entirely when the verdict starts with
+    ``DWELL``."""
+    posted = []
+    monkeypatch.setattr(
+        pr_gate, "post_check_run",
+        lambda *a, **k: posted.append((a, k)),
+    )
+    args = types.SimpleNamespace(
+        post_check_run=True, repo="o/r", sha="deadbeef", self_name="PR gate",
+    )
+    pr_gate._maybe_post_check_run(args, 1, "DWELL -- plancher 120 min, reste 18 min")
+    assert posted == [], "DWELL verdict must never be POSTed as a check-run"
+
+
+def test_post_check_run_still_posts_on_real_failure(monkeypatch):
+    """#21543 regression guard, other side: a real FAIL verdict still POSTs."""
+    posted = []
+    monkeypatch.setattr(
+        pr_gate, "post_check_run",
+        lambda *a, **k: posted.append((a, k)),
+    )
+    args = types.SimpleNamespace(
+        post_check_run=True, repo="o/r", sha="deadbeef", self_name="PR gate",
+    )
+    pr_gate._maybe_post_check_run(args, 1, "FAIL -- failing checks: Lean CI")
+    assert len(posted) == 1, "a real FAIL verdict must still be POSTed"
 
 
 def test_the_two_surfaces_render_the_same_text(tmp_path, monkeypatch):

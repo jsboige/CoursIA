@@ -975,6 +975,17 @@ layout: default
 <p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb">Z3-06-Advanced-Optimization-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb">SW-2b-Python-RDFBasics.ipynb</a> (triplets RDF).</p>
 ---
 
+# Zoom : la pile du Web sémantique (W3C)
+
+- **Unicode, URI/IRI** : nommer toute ressource — **XML, Namespaces, XML Schema** : syntaxe et structure
+- **RDF Model & Syntax** : le triplet sujet-prédicat-objet — **Ontologie** : classes, propriétés, inférence
+- **Rules / Query** : interroger et raisonner — **Logic, Proof, Trust** : la confiance se démontre
+- **Signature, Encryption** : les deux flancs verticaux de la pile
+
+<img src="./images/img_049.png" style="display:block; width:auto; height:auto; max-width:100%; max-height:320px; object-fit:contain; margin:8px auto;" alt="Pile des couches du Web sémantique (W3C) : à la base Unicode et URI/IRI, puis XML, Namespaces, XML Query et XML Schema, puis RDF Model &amp; Syntax, une Ontologie, Rules/Query, Logic, Proof et Trust au sommet ; Signature et Encryption forment deux colonnes verticales sur le flanc droit" />
+
+---
+
 
 # Autres Applications (2/2)
 
