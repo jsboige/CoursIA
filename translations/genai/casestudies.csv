@@ -506,6 +506,11 @@ print(""Exercice a completer : SurrenderTerminationStrategy"")",,,,,,,,c652ac2f7
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,3dbb1aca,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,8bd04e78,markdown,fr,6276e7cdf3ab5b76,"### Note : mode batch
+
+`BATCH_MODE = True` active l'exécution sans interaction (pour Papermill). Les variables d'environnement (`OPENAI_API_KEY`, `OPENAI_CHAT_MODEL_ID`) sont lues par `create_kernel()` — jamais codées en dur.","### Note: batch mode
+
+`BATCH_MODE = True` enables non-interactive execution (for Papermill). Environment variables (`OPENAI_API_KEY`, `OPENAI_CHAT_MODEL_ID`) are read by `create_kernel()` — never hard-coded.",,,,,,,6276e7cdf3ab5b76,b96db99fef0301d1,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,12da34db,markdown,fr,7509a6590bbec424,"### Vue d'ensemble : un duel d'agents Père Fouras vs Laurent Jalabert
 
 Ce notebook implémente une simulation multi-agent du jeu télévisé **Fort Boyard** : le Père Fouras pose des énigmes à un personnage célèbre (ici, le cycliste **Laurent Jalabert**), et l'agent doit résoudre l'énigme en mobilisant un **mot à deviner** (par défaut `""anticonstitutionnellement""`, l'un des plus longs mots français). L'orchestration repose sur un `AgentGroupChat` Semantic Kernel avec une **stratégie de terminaison métier** : la partie s'arrête dès que le mot secret apparaît dans le dernier message du devineur — le **renoncement** (exercice 2) et le **système de score** (exercice 3) sont laissés à l'étudiant en exercices. Le notebook couvre les patterns : kernel partagé, `ChatCompletionAgent`, persona engineering via prompts structurés, et termination strategy custom. C'est un cas d'usage type pour les **game-theoretic agent simulations** où deux LLM agents s'affrontent dans un dialogue structuré.
@@ -576,6 +581,11 @@ if os.path.exists(env_path):
 else:
     load_dotenv()
 ",,,,,,,,dded437c58383e68,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,35a43dd0,markdown,fr,01cb1efac8803053,"### Note : dépendances importées
+
+Les imports couvrent `dotenv` (chargement des variables d'environnement), `logging` (traces structurées horodatées) et les composants Semantic Kernel : `Kernel`, `OpenAIChatCompletion`, `ChatCompletionAgent`, `AgentGroupChat`. Les drapeaux `DOTENV_AVAILABLE`, `SK_AVAILABLE` et `OPENAI_AVAILABLE` permettent de détecter les dépendances manquantes sans faire échouer le notebook.","### Note: imported dependencies
+
+The imports cover `dotenv` (loading environment variables), `logging` (timestamped structured traces) and the Semantic Kernel components: `Kernel`, `OpenAIChatCompletion`, `ChatCompletionAgent`, `AgentGroupChat`. The flags `DOTENV_AVAILABLE`, `SK_AVAILABLE` and `OPENAI_AVAILABLE` make it possible to detect missing dependencies without failing the notebook.",,,,,,,01cb1efac8803053,696fe965d1a02225,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,48b0b793,markdown,fr,eaafd847b50fbf9f,"## Configuration des agents
 
 Le **Kernel** est le cœur de Semantic Kernel : un conteneur d'injection de dépendances qui regroupe les services d'IA et les fonctions (plugins) qu'un agent peut invoquer. Avant de créer un agent, il faut donc lui brancher un service de complétion de chat — ici `OpenAIChatCompletion`, paramétré par le modèle et la clé API lus depuis l'environnement (jamais codés en dur, cf. règle secrets-hygiene).
@@ -600,23 +610,11 @@ def create_kernel():
     ))
     return kernel
 ",,,,,,,,f831efcb9bbeae84,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,2adf4585,markdown,fr,c6aca173601faf40,"### Lecture du résultat : pourquoi ce choix de mot est pédagogique
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,a3996d75,markdown,fr,7ef5b2f54029c699,"### Lecture du résultat : kernel instancié et choix pédagogique du mot
 
-Le mot `""anticonstitutionnellement""` (25 lettres, Grand Robert) cumule plusieurs difficultés : longueur (force des indices progressifs), composition morphologique (`anti-+constitution+nelle+ment` — l'agent peut deviner par décomposition), et rareté (vocabulaire juridique peu courant). Pour un **jeu d'énigmes LLM**, c'est un excellent stress-test : si l'agent devine ce mot en moins de 10 essais, le prompt Père Fouras est bien calibré. L'étudiant peut **mesurer le taux de réussite** sur 100 parties avec `evaluer_partie()` (implémentée dans l'exemple guidé 3) puis comparer avec un mot plus simple (ex. `""kayak""`, 5 lettres) pour isoler l'effet longueur du mot.
-","### Reading the result: why this word choice is pedagogical
+La cellule 6 instancie le **kernel Semantic Kernel** — le conteneur de services IA qui hébergera le modèle de chat — et fixe la constante `MOT_A_DEVINER = ""anticonstitutionnellement""`, le mot que **l'agent devra deviner** au cours du duel via les énigmes du Père Fouras. Ce choix de 25 lettres (Grand Robert, l'un des plus longs mots français) cumule plusieurs difficultés pédagogiques : longueur (force des indices progressifs), composition morphologique (`anti-+constitution+nelle+ment` — l'agent peut deviner par décomposition), et rareté (vocabulaire juridique peu courant). Pour un **jeu d'énigmes LLM**, c'est un excellent stress-test : si l'agent devine ce mot en moins de 10 essais, le prompt Père Fouras est bien calibré. L'étudiant peut **mesurer le taux de réussite** sur 100 parties avec `evaluer_partie()` (exemple guidé 3), puis comparer avec un mot plus simple (ex. `""kayak""`, 5 lettres) pour isoler l'effet longueur — ou substituer un mot plus court pour des parties plus rapides (`""kayak""` pour un palindrome).","### Reading the result: kernel instantiated and the pedagogical word choice
 
-The word `""anticonstitutionnellement""` (25 letters, Grand Robert) combines several difficulties: length (strength of the progressive hints), morphological composition (`anti-+constitution+nelle+ment` — the agent can guess by decomposition), and rarity (an uncommon legal vocabulary). For an **LLM riddle game**, it is an excellent stress test: if the agent guesses this word in fewer than 10 attempts, the Père Fouras prompt is well calibrated. The student can **measure the success rate** over 100 games with `evaluer_partie()` and then compare with a simpler word (e.g. `""kayak""`, 5 letters) to isolate the effect of the word's length.
- The contract must be tested.
- Grand Robert reference.
- Reference.
-",,,,,,,c6aca173601faf40,8f5af9edc3274d33,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,fdc6262b,markdown,fr,e811182b5c647dff,"### Lecture du résultat : kernel Semantic Kernel instancié
-
-La cellule 6 crée le kernel et stocke `MOT_A_DEVINER = ""anticonstitutionnellement""` (25 lettres, l'un des plus longs mots français standards). Cette constante est ce que **l'agent va devoir deviner** au cours du duel via une stratégie d'énigmes posée par le Père Fouras. Le choix du mot est pédagogique : sa longueur force l'agent à mobiliser des **stratégies d'indice indirect** (rime, contexte, longueur) plutôt qu'une description directe. L'étudiant peut substituer un mot plus court pour des parties plus rapides (`""kayak""` pour un palindrome).
-","### Reading the result: Semantic Kernel kernel instantiated
-
-Cell 6 creates the kernel and stores `MOT_A_DEVINER = ""anticonstitutionnellement""` (25 letters, one of the longest standard French words). This constant is what **the agent will have to guess** during the duel through a riddle strategy set by Père Fouras. The choice of word is pedagogical: its length forces the agent to mobilize **indirect hint strategies** (rhyme, context, length) rather than a direct description. The student can substitute a shorter word for faster games (`""kayak""` for a palindrome).
-",,,,,,,e811182b5c647dff,a5cfb088a38ab4c8,,,,,,,
+Cell 6 instantiates the **Semantic Kernel kernel** — the AI services container that will host the chat model — and sets the constant `MOT_A_DEVINER = ""anticonstitutionnellement""`, the word **the agent will have to guess** during the duel through Père Fouras' riddles. This 25-letter choice (*Grand Robert*, one of the longest French words) stacks several pedagogical difficulties: length (forces progressive hints), morphological composition (`anti-+constitution+nelle+ment` — the agent can guess by decomposition), and rarity (uncommon legal vocabulary). For an **LLM riddle game**, it is an excellent stress test: if the agent guesses this word in fewer than 10 attempts, the Père Fouras prompt is well calibrated. The student can **measure the success rate** over a hundred games with `evaluer_partie()` (guided example 3), then compare with a simpler word (e.g. `""kayak""`, 5 letters) to isolate the length effect — or substitute a shorter word for faster games (`""kayak""` as a palindrome).",,,,,,,7ef5b2f54029c699,314758b4a1c6b50b,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,f0496c5b,markdown,fr,d11675550b6a8613,"## Définition des prompts
 
 Chaque agent conversationnel est piloté par un **prompt système** (ses *instructions*) qui définit son rôle, sa personnalité et les règles qu'il doit respecter. Ces instructions conditionnent tout le comportement de l'agent au fil du dialogue : un même Kernel peut produire deux interlocuteurs radicalement différents selon le prompt qu'on lui donne.
@@ -650,6 +648,11 @@ La cellule 10 définit `PERE_FOURAS_PROMPT` et `LAURENT_JALABERT_PROMPT` structu
 Cell 10 defines `PERE_FOURAS_PROMPT` and `LAURENT_JALABERT_PROMPT` structured via `f""""""...""""""` — only the Père Fouras f-string interpolates `MOT_A_DEVINER`. The Père Fouras prompt encodes the **persona + the mechanics**: pose a riddle, wait for an answer, validate, offer the next hint. The cyclist prompt encodes the **guessing strategy**: extract letters, length, context, ask for a hint. This persona/mechanics separation is crucial — without an explicit persona, the LLM would answer in generic Q&A mode without the **Fort Boyard narrative frame**. Guided example 1 (contribution from PR #21009) replaces the duo with two new characters — a **Detective** (deductive questions) and a **Witness** (evasive answers) — a classic extension of the **multi-agent cast**.
  The `f""""""...""""""` format allows the interpolation of runtime variables (word to guess, current score).
 ",,,,,,,e147f1f8a80c8b9c,082c8047eede866a,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ad32add7,markdown,fr,e4d36f4bed1eddf8,"### Complément : anatomie d'un prompt système
+
+Un prompt système se décompose en quatre blocs : **rôle** (« Tu es le Père Fouras »), **règles** (« Ne révèle jamais le mot »), **stratégie** (« Pose des charades, attends la réponse »), et **format de sortie** (structure attendue du message). Cette structure en quatre blocs est la base du *persona engineering* : un même modèle produit des comportements radicalement différents selon le prompt. L'interpolation f-string injecte le mot secret dans les instructions du Père Fouras — le modèle « connaît » le mot sans le révéler.","### Complement: anatomy of a system prompt
+
+A system prompt breaks down into four blocks: **role** (""You are Père Fouras""), **rules** (""Never reveal the word""), **strategy** (""Pose riddles, wait for the answer""), and **output format** (expected message structure). This four-block structure is the basis of *persona engineering*: the same model produces radically different behaviors depending on the prompt. The f-string interpolation injects the secret word into Père Fouras' instructions — the model ""knows"" the word without revealing it.",,,,,,,e4d36f4bed1eddf8,f492b00d4140dcad,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,649ac34e,markdown,fr,7562414dd8da085d,"### Exemple guidé 1 : Personnaliser les personnages du duel
 
 *Contribution du groupe de la PR #21009, intégrée comme exemple guidé.*
@@ -710,6 +713,13 @@ detective = ChatCompletionAgent(
 
 print(""Les agents Detective et Temoin ont ete crees avec succes !"")
 ",,,,,,,,f1637b412a0513d1,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,0672c52a,markdown,fr,67d1cdcf62db5170,"### Lecture du résultat : deux nouveaux personnages configurés
+
+Les deux agents du groupe sont créés sans erreur. Deux choix méritent l'œil : le prompt du **Témoin** est une f-string qui interpole `MOT_A_DEVINER` — le témoin « connaît » le mot parce qu'il est injecté dans ses instructions, mais l'interdiction « Ne révèle jamais directement le mot secret » maintient l'écart entre savoir et dire. Le prompt du **Detective** impose des questions fermées (oui/non) : ce format contraint la conversation à converger, comme la sélection round-robin du groupe contraint l'ordre des tours (section suivante). Chaque agent reçoit son propre `create_kernel()` — le même motif que le duo Père Fouras / Laurent Jalabert de la cellule précédente.
+","### Reading the result: two new characters configured
+
+The group's two agents are created without error. Two choices deserve attention: the **Witness** prompt is an f-string that interpolates `MOT_A_DEVINER` — the witness ""knows"" the word because it is injected into its instructions, but the rule ""Ne révèle jamais directement le mot secret"" (never reveal the secret word directly) maintains the gap between knowing and telling. The **Detective** prompt imposes closed-ended (yes/no) questions: this format forces the conversation to converge, just as the group's round-robin selection forces the order of turns (next section). Each agent receives its own `create_kernel()` — the same pattern as the Père Fouras / Laurent Jalabert duo of the previous cell.
+",,,,,,,67d1cdcf62db5170,3ca16b33fe6b815d,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,6a8dbe2b,markdown,fr,8dce0df794c9d197,"## Création des agents avec stratégies personnalisées
 
 Un `ChatCompletionAgent` concrétise l'association entre un Kernel (le moteur), un `name` (son identité dans le dialogue) et des `instructions` (son prompt système). Une fois instanciés, les deux agents peuvent produire des messages, mais ils ne savent pas encore *quand* parler ni *quand* s'arrêter — c'est le groupe de discussion qui le décidera (voir plus bas).
@@ -740,6 +750,11 @@ La cellule 16 instancie `pere_fouras` et `laurent_jalabert` via `ChatCompletionA
 
 Cell 16 instantiates `pere_fouras` and `laurent_jalabert` via `ChatCompletionAgent(kernel=..., name=..., instructions=...)` — without a `description` parameter here. Each agent receives its own kernel via `create_kernel()`: agents use the kernel but do not own it, and each carries a different prompt. Without an explicit selection, the group simply alternates the agents in list order (round-robin); the `description` parameter would only come into play with a semantic `selection_strategy`, which chooses the next speaker by comparing descriptions to the context of the last message. Cell 19 (after the agents) imports `TerminationStrategy` — the base class for custom termination strategies.
 ",,,,,,,c6e805e08460483e,914497b0e74ff40a,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,066e0edb,markdown,fr,b5f69706788bd45b,"### Complément : indépendance des agents
+
+Chaque agent reçoit son propre `create_kernel()` : ils partagent le même service OpenAI (même modèle, même clé API) mais restent des entités indépendantes. Cette indépendance permet de les reconfigurer séparément — changer le modèle d'un agent, lui ajouter un plugin, ou modifier son prompt — sans affecter l'autre. C'est le pattern **kernel partagé, agents indépendants**, central dans Semantic Kernel.","### Complement: agent independence
+
+Each agent gets its own `create_kernel()`: they share the same OpenAI service (same model, same API key) but remain independent entities. This independence lets you reconfigure them separately — change one agent's model, add a plugin to it, or edit its prompt — without affecting the other. This is the **shared kernel, independent agents** pattern, central to Semantic Kernel.",,,,,,,b5f69706788bd45b,5967e7c4043e81d0,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,4a00c813,markdown,fr,02b7ed50c96b72d7,"## Stratégie de terminaison personnalisée
 
 Dans un dialogue multi-agent, il faut décider **quand s'arrêter**. Semantic Kernel délègue cette décision à une `TerminationStrategy` : après chaque tour, la méthode asynchrone `should_agent_terminate` est invoquée et renvoie un booléen qui détermine si la boucle se clôt.
@@ -769,6 +784,11 @@ class FortBoyardTerminationStrategy(TerminationStrategy):
         
         last_message = str(history[-1].content).lower()
         return MOT_A_DEVINER in last_message",,,,,,,,c41a211f227072d5,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,48e85b50,markdown,fr,5c763ef7a44baaae,"### Note : import de la stratégie de terminaison
+
+Cette cellule importe `TerminationStrategy` (classe de base) et `AgentChatMessage` (type de message échangé). La stratégie métier `FortBoyardTerminationStrategy` sera définie dans l'exemple guidé 2 ; elle hérite de `TerminationStrategy` et redéfinit `should_agent_terminate` pour arrêter la partie quand le mot est deviné ou après 20 itérations.","### Note: importing the termination strategy
+
+This cell imports `TerminationStrategy` (base class) and `AgentChatMessage` (message type exchanged). The business strategy `FortBoyardTerminationStrategy` will be defined in guided example 2; it inherits from `TerminationStrategy` and overrides `should_agent_terminate` to stop the game when the word is guessed or after 20 iterations.",,,,,,,5c763ef7a44baaae,48e2d86bec8331ba,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,81de6677,markdown,fr,1f53a1cd6b269484,"### Exemple guidé 2 : Terminaison avec détection de renoncement
 
 *Contribution du groupe de la PR #21009, intégrée comme exemple guidé.*
@@ -829,6 +849,50 @@ class RenoncementTerminationStrategy(TerminationStrategy):
 
 print(""Strategie de renoncement configuree !"")
 ",,,,,,,,eff1056d8e1a114b,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,260c1aed,markdown,fr,17b853a4ede2a35c,"### Lecture du résultat : stratégie de renoncement configurée
+
+La sortie `Strategie de renoncement configuree !` confirme que la stratégie hybride — arrêt si le mot est trouvé **ou** si le devineur abandonne — est correctement enregistrée et prête à l'emploi.","### Reading the result: forfeit strategy configured
+
+The output `Strategie de renoncement configuree !` confirms that the hybrid strategy — stop if the word is found **or** if the guesser gives up — is properly registered and ready to use.",,,,,,,17b853a4ede2a35c,b41aff47f3ee930c,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,6b1b975c,code,fr,a2d6d3387925ba62,"
+# Tests de l'exemple guide 2 : trois situations (groupe de la PR #21009)
+
+from semantic_kernel.contents import AuthorRole, ChatMessageContent
+
+strategie = RenoncementTerminationStrategy(
+    agents=[laurent_jalabert],
+    maximum_iterations=20
+)
+
+# Trois situations a tester
+tests = [
+    (""Abandon"", ""J'abandonne"", True),
+    (""Mot trouve"", f""Ma reponse est {MOT_A_DEVINER}"", True),
+    (""Mauvaise reponse"", ""Je pense que c'est un objet"", False)
+]
+
+for nom, reponse, attendu in tests:
+
+    message = ChatMessageContent(
+        role=AuthorRole.ASSISTANT,
+        content=reponse,
+        name=""Laurent_Jalabert""
+    )
+
+    resultat = await strategie.should_agent_terminate(
+        agent=laurent_jalabert,
+        history=[message]
+    )
+
+    print(f""{nom} : {resultat} (attendu : {attendu})"")
+",,,,,,,,a2d6d3387925ba62,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,0ed41dbe,markdown,fr,3abac3ed7dbb0382,"### Lecture du résultat : la stratégie hybride passe ses trois tests
+
+Les trois situations renvoient le verdict attendu : un « J'abandonne » arrête la partie, un message qui contient `MOT_A_DEVINER` aussi, et une réponse neutre laisse le duel continuer. La mécanique tient en deux gestes : tout est comparé en minuscules (le modèle peut écrire « J'ABANDONNE »), et la condition finale est un `or` — il suffit que le mot soit trouvé **ou** qu'une phrase d'abandon apparaisse dans le **dernier** message de l'historique. La stratégie est attachée à `laurent_jalabert` : c'est bien au tour du devineur que la question « continuer ? » se pose.
+","### Reading the result: the hybrid strategy passes its three tests
+
+The three situations return the expected verdict: a ""J'abandonne"" (I give up) stops the game, a message containing `MOT_A_DEVINER` does too, and a neutral answer lets the duel continue. The mechanics boil down to two gestures: everything is compared in lowercase (the model may write ""J'ABANDONNE""), and the final condition is an `or` — it is enough that the word is found **or** that a give-up phrase appears in the **last** message of the history. The strategy is attached to `laurent_jalabert`: it is indeed on the guesser's turn that the question ""continue?"" arises.
+",,,,,,,3abac3ed7dbb0382,8a9e95e2287fcb28,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,c61e7f51,markdown,fr,9270af3e7f1c1541,"## Configuration du groupe de discussion
 
 `AgentGroupChat` est l'orchestrateur multi-agent : il fait tourner les agents à tour de rôle selon une **stratégie de sélection** (quel agent parle ensuite) et s'arrête selon une **stratégie de terminaison** (quand arrêter). Par défaut, la sélection alterne simplement les agents dans l'ordre de la liste.
@@ -856,6 +920,11 @@ La cellule 25 construit `AgentGroupChat(agents=[pere_fouras, laurent_jalabert], 
 
 Cell 25 builds `AgentGroupChat(agents=[pere_fouras, laurent_jalabert], termination_strategy=...)` — without an explicit `selection_strategy`. This is the **central object** that orchestrates the duel: at each turn, the next agent speaks in list order (round-robin — the default selection, visible in the alternating `Selected agent at index 0` / `at index 1` lines of the output), and the `termination_strategy` detects the end — here, the guessed word: the output evaluates `should terminate` after each Laurent_Jalabert turn, and the game stops on the first `True` — or when the iterations run out if the word is never named. Without this wrapper, both agents would speak in parallel. The **Fort Boyard specificity** is the give-up: guided example 2 shows the hybrid strategy that also lets the agent abandon (""je donne ma langue au chat"") — an emulation of the TV stress.
 ",,,,,,,4401434e76ef9378,b612effd767f05cf,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,f448e328,markdown,fr,f7cc900e68302a87,"### Complément : stratégies de sélection avancées
+
+Semantic Kernel propose plusieurs stratégies de sélection pour `AgentGroupChat` : **round-robin** (par défaut, alterne dans l'ordre), **random** (sélection aléatoire), et **semantic** (choisit l'agent dont la `description` est la plus proche du contexte). La stratégie sémantique nécessite que chaque agent ait une `description` — ce raffinement est laissé en exercice (exemple guidé 1).","### Complement: advanced selection strategies
+
+Semantic Kernel offers several selection strategies for `AgentGroupChat`: **round-robin** (default, alternates in order), **random** (random selection), and **semantic** (picks the agent whose `description` is closest to the context). The semantic strategy requires each agent to have a `description` — this refinement is left as an exercise (guided example 1).",,,,,,,f7cc900e68302a87,7f123d591a60fe9c,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ada98689,markdown,fr,9894be02bbc84b15,"## Lancement de la partie !
 
 Le groupe est configuré, on peut lancer la partie. On sème le dialogue avec un **message utilisateur initial** (`add_chat_message`) — sinon les agents n'ont rien à quoi réagir — puis on itère asynchronement sur `chat.invoke()`, qui produit chaque message tour à tour.
@@ -886,20 +955,11 @@ async def jouer_partie():
     logger.info(""Partie terminee !"")
 
 await jouer_partie()",,,,,,,,62bb9d8c5d80b76b,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,3aa490d9,markdown,fr,1de2992d517e2cc7,"### Lecture du résultat : déroulé du duel Père Fouras vs Jalabert
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,91714cc0,markdown,fr,0229c6bc757a29ad,"### Lecture du résultat : déroulé du duel et sélection des locuteurs
 
-Le log `""Depart du duel Pere Fouras vs Laurent Jalabert""` marque l'entrée dans la boucle asynchrone. À partir de cette cellule, **l'étudiant observe** : (1) l'alternance Père Fouras (énigme) ↔ Jalabert (réponse), (2) la boucle d'arrêt — `should terminate` évalué après chaque tour de Laurent_Jalabert : la partie s'arrête sur le premier `True`, ou à l'épuisement des itérations (ce run : le mot est trouvé en 3 tentatives, la cellule de score affiche 70/100), puis `Partie terminee !` ; la variante renoncement (exemple guidé 2) et l'évaluation par `evaluer_partie()` (exemple guidé 3) prolongent ce socle. Le **logging structuré** (timestamp + niveau INFO + préfixe événement) est essentiel dans un chat asynchrone multi-agent : sans lui, l'étudiant ne peut pas distinguer **qui parle** dans la sortie, ni **quand une étape se termine**. C'est ce logging qui rend le notebook pédagogique — rejouable.
-","### Reading the result: start of the duel Père Fouras vs Jalabert
+Le log `""Depart du duel Pere Fouras vs Laurent Jalabert""` marque l'entrée dans la boucle asynchrone. La sortie committée montre l'alternance stricte **Père Fouras (énigme) ↔ Jalabert (réponse)** : les lignes `Selected agent at index 0 (Pere_Fouras)` et `Selected agent at index 1 (Laurent_Jalabert)` s'alternent tour après tour — la sélection par défaut (round-robin) suffit ici car le duel est à deux voix. La partie s'arrête sur `should terminate: True` après 3 tentatives (mot trouvé, score 70/100 affiché dans la cellule suivante), puis `Partie terminee !`. Le **logging structuré** (timestamp + niveau INFO + préfixe événement) est essentiel dans un chat asynchrone multi-agent : sans lui, l'étudiant ne peut pas distinguer **qui parle** dans la sortie, ni **quand une étape se termine**. Pour des casts plus larges, on raffinerait avec une `selection_strategy` sémantique et des `description` d'agents, qui choisissent le prochain locuteur en comparant les descriptions au contexte du dernier message — le pattern **role-based selection**, utile dès que le cast dépasse deux agents (l'exemple guidé 1, avec son Détective et son Témoin, en est l'occasion).","### Reading the result: duel sequence and speaker selection
 
-The log `""Depart du duel Pere Fouras vs Laurent Jalabert""` marks the entry into the asynchronous loop. From this cell on, **the student observes**: (1) the alternation Père Fouras (riddle) ↔ Jalabert (answer), (2) the stopping loop — `should terminate` evaluated after each Laurent_Jalabert turn: the game stops on the first `True`, or when the iterations run out (this run: the word is found in 3 attempts, the score cell shows 70/100), then `Partie terminee !` (game over); the give-up variant (guided example 2) and the evaluation by `evaluer_partie()` (guided example 3) extend this foundation. **Structured logging** (timestamp + INFO level + event prefix) is essential in an asynchronous multi-agent chat: without it, the student cannot distinguish **who speaks** in the output, nor **when a step ends**. It is this logging that makes the notebook pedagogical — replayable.
-",,,,,,,1de2992d517e2cc7,2e9cb0ee85198483,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,5306a243,markdown,fr,bb70b6d3b0c9fe08,"### Lecture du résultat : qui parle, et quand ?
-
-Dans le run committé, aucun paramètre `description` ni `selection_strategy` n'est passé au groupe : la sélection est celle par défaut, et la sortie le montre — les lignes `Selected agent at index 0` (Pere_Fouras) et `Selected agent at index 1` (Laurent_Jalabert) s'alternent strictement tour après tour. Ce round-robin suffit ici : le duel est à deux voix, et l'ordre des tours est l'essence du jeu. Le raffinement, pour des casts plus larges : donner à chaque agent une `description` et au groupe une `selection_strategy` sémantique, qui choisit le prochain locuteur en comparant les descriptions au contexte du dernier message au lieu d'alterner mécaniquement — le pattern **role-based selection**, utile dès que le cast dépasse deux agents (l'exemple guidé 1, avec son Détective et son Témoin, en est l'occasion).
-","### Reading the result: who speaks, and when?
-
-In the committed run, no `description` parameter nor `selection_strategy` is passed to the group: the selection is the default one, and the output shows it — the `Selected agent at index 0` (Pere_Fouras) and `at index 1` (Laurent_Jalabert) lines alternate strictly turn after turn. This round-robin is enough here: the duel has two voices, and the order of turns is the essence of the game. The refinement, for larger casts: give each agent a `description` and the group a semantic `selection_strategy`, which chooses the next speaker by comparing descriptions to the context of the last message instead of alternating mechanically — the **role-based selection** pattern, useful as soon as the cast exceeds two agents (guided example 1, with its Detective and its Witness, is the occasion).
-",,,,,,,bb70b6d3b0c9fe08,6d22a0ed648506d7,,,,,,,
+The log `""Depart du duel Pere Fouras vs Laurent Jalabert""` marks the entry into the async loop. The committed output shows the strict alternation **Père Fouras (riddle) ↔ Jalabert (answer)**: the lines `Selected agent at index 0 (Pere_Fouras)` and `Selected agent at index 1 (Laurent_Jalabert)` alternate turn after turn — the default selection (round-robin) is enough here because the duel has two voices. The game stops on `should terminate: True` after 3 attempts (word found, score 70/100 shown in the next cell), then `Partie terminee !`. **Structured logging** (timestamp + INFO level + event prefix) is essential in a multi-agent async chat: without it, the student cannot tell **who is speaking** in the output, nor **when a step ends**. For larger casts, one would refine with a semantic `selection_strategy` and agent `description`s, which choose the next speaker by comparing descriptions to the context of the last message — the **role-based selection** pattern, useful as soon as the cast exceeds two agents (guided example 1, with its Detective and its Witness, is the occasion).",,,,,,,0229c6bc757a29ad,426fc493ae09783e,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,9c2a66c0,markdown,fr,6c11a06299c4c744,"### Exemple guidé 3 : Système de score pour la partie
 
 *Contribution du groupe de la PR #21009, intégrée comme exemple guidé.*
@@ -959,6 +1019,24 @@ def evaluer_partie(history_messages: list) -> dict:
 
 print(""Systeme de score configure avec succes !"")
 ",,,,,,,,883f3dfb294eb8fe,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,f7219965,markdown,fr,81e282f7d1155824,"### Lecture du résultat : système de score configuré
+
+La sortie `Systeme de score configure avec succes !` confirme que la fonction `evaluer_partie` est définie et prête à mesurer les performances du devineur sur l'historique de la partie.","### Reading the result: scoring system configured
+
+The output `Systeme de score configure avec succes !` confirms that the `evaluer_partie` function is defined and ready to measure the guesser's performance on the game history.",,,,,,,81e282f7d1155824,429ca9c907468c32,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,2a2f46fe,code,fr,24c9e0be41d45852,"
+# Recuperer l'historique de la partie
+historique = chat.history.messages
+
+# Calculer le score
+resultat = evaluer_partie(historique)
+
+# Afficher les resultats
+print(""===== RESULTATS DE LA PARTIE ====="")
+print(""Nombre de tentatives :"", resultat[""nb_questions""])
+print(""Mot trouve :"", resultat[""mot_trouve""])
+print(""Score final :"", resultat[""score""], ""/ 100"")
+",,,,,,,,24c9e0be41d45852,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,d2a4bdca,markdown,fr,dad3f8c0b183d4ea,"### Lecture du résultat : système de score en fin de partie
 
 La fonction du groupe compte les messages signés `Laurent_Jalabert` dans l'historique réel du groupe de chat, vérifie si le mot secret apparaît dans son **dernier** message, et applique la règle `max(0, 100 - 10 × questions)` : une victoire à la première question vaut 90, chaque question supplémentaire coûte 10 points, et un échec vaut 0 — quelle que soit la longueur de la partie. Si le mot n'est pas trouvé, le score rendu est 0 et le nombre de questions reste affiché pour le diagnostic. Ce scoring transforme le duel en **jeu à issue mesurable** : en rejouant la partie avec deux configurations de prompts, on peut comparer des scores moyens — la porte d'entrée des expériences reproductibles.
@@ -966,6 +1044,96 @@ La fonction du groupe compte les messages signés `Laurent_Jalabert` dans l'hist
 
 The group's function counts the messages signed `Laurent_Jalabert` in the chat group's real history, checks whether the secret word appears in his **last** message, and applies the rule `max(0, 100 - 10 × questions)`: a first-question win is worth 90, each additional question costs 10 points, and a failure is worth 0 — regardless of the length of the game. If the word is not found, the returned score is 0 and the number of questions remains displayed for diagnosis. This scoring turns the duel into a **game with a measurable outcome**: by replaying the game with two prompt configurations, one can compare average scores — the gateway to reproducible experiments.
 ",,,,,,,dad3f8c0b183d4ea,7b2008242d4c0452,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ae952339,markdown,fr,ec51388ae7d115a1,"## Exercices
+
+Trois nouveaux défis, un par compétence travaillée dans les exemples guidés ci-dessus : rédiger des prompts qui contraignent un comportement, composer une condition de terminaison, mesurer une partie jouée. Les stubs sont incomplets par conception — le carnet s'exécute de bout en bout sans eux.
+","## Exercises
+
+Three new challenges, one per skill practiced in the guided examples above: writing prompts that constrain a behavior, composing a termination condition, measuring a played game. The stubs are incomplete by design — the notebook runs end to end without them.
+",,,,,,,ec51388ae7d115a1,85897e2c7a0023b6,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,5b19df38,markdown,fr,7a379d68d77f6379,"### Exercice 1 : Un duel au protocole binaire
+
+Les personnages de l'exemple guidé 1 laissent le Témoin répondre par des phrases entières. Variante plus stricte : un **Indicateur** qui ne répond **que** par « oui », « non » ou « peut-être » — jamais une phrase — et un **Enquêteur méthodique** qui annonce son hypothèse d'élimination (« Je cherche un mot de plus de 15 lettres ») avant chaque question.
+
+**Objectif** : rédiger les deux prompts et configurer les deux agents correspondants.
+
+**Indices** :
+- `# Étape 1` : rédiger le prompt de l'Indicateur (rôle + liste fermée des trois réponses autorisées)
+- `# Étape 2` : rédiger le prompt de l'Enquêteur (stratégie d'élimination annoncée avant chaque question)
+- `# Indice` : un prompt peut interdire (« jamais de phrase ») autant qu'il peut prescrire (« réponds uniquement par »)
+","### Exercise 1: A binary-protocol duel
+
+The characters of guided example 1 let the Witness answer with full sentences. A stricter variant: an **Informer** who answers **only** with ""yes"", ""no"" or ""maybe"" — never a sentence — and a **Methodical Investigator** who announces the elimination hypothesis (""I am looking for a word longer than 15 letters"") before each question.
+
+**Objective**: write both prompts and configure the two corresponding agents.
+
+**Hints**:
+- `# Step 1`: write the Informer's prompt (role + closed list of the three allowed answers)
+- `# Step 2`: write the Investigator's prompt (elimination strategy announced before each question)
+- `# Hint`: a prompt can forbid (""never a sentence"") as much as it can prescribe (""answer only with"")
+",,,,,,,7a379d68d77f6379,c05e1b2f9f633ae1,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ec943b8d,code,fr,f45b7e07fede6ace,"# Exercice 1 : un duel au protocole binaire
+# TODO etudiant : definir les prompts et creer les agents
+INDICATEUR_PROMPT = """"  # Etape 1 : instructions de l'Indicateur (oui / non / peut-etre, jamais une phrase)
+ENQUETEUR_PROMPT = """"   # Etape 2 : instructions de l'Enqueteur (hypothese annoncee avant chaque question)
+indicateur = None  # TODO etudiant : ChatCompletionAgent(kernel=create_kernel(), ...)
+enqueteur = None   # TODO etudiant
+print(""Exercice 1 a completer"")
+",,,,,,,,f45b7e07fede6ace,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,08f0cfb2,markdown,fr,c54287f8d4241448,"### Exercice 2 : Terminaison sur question répétée
+
+Un devineur qui répète la même question trois fois de suite ne progresse plus : la partie est perdue. L'objectif est d'implémenter `RepetitionTerminationStrategy`, une variante qui arrête la partie si le mot est deviné **ou** si les trois derniers messages de Laurent Jalabert sont identiques (comparaison en minuscules).
+
+**Indices** :
+- `# Étape 1` : extraire les messages de Laurent de l'historique (s'il y en a moins de trois, la partie continue)
+- `# Étape 2` : comparer les trois derniers en minuscules, et combiner avec la détection du mot par un `or`
+","### Exercise 2: Termination on a repeated question
+
+A guesser who repeats the same question three times in a row is no longer progressing: the game is lost. The objective is to implement `RepetitionTerminationStrategy`, a variant that stops the game if the word is guessed **or** if Laurent Jalabert's last three messages are identical (lowercase comparison).
+
+**Hints**:
+- `# Step 1`: extract Laurent's messages from the history (if there are fewer than three, the game continues)
+- `# Step 2`: compare the last three in lowercase, and combine with word detection using an `or`
+",,,,,,,c54287f8d4241448,d8b4b17808ea4616,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,3610348b,code,fr,cb9ca5e26624dc68,"# Exercice 2 : terminaison sur question repetee
+# TODO etudiant
+from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
+from semantic_kernel.contents.chat_message_content import ChatMessageContent
+
+class RepetitionTerminationStrategy(TerminationStrategy):
+    # TODO etudiant : implementer la strategie de detection de repetition
+    SEUIL_REPETITION: int = 3  # Etape 1 : nombre de questions identiques consecutives
+
+    async def should_agent_terminate(self, agent, history: list[ChatMessageContent], cancellation_token=None) -> bool:
+        result = False  # TODO etudiant : remplacer par la logique (mot trouve OU repetition)
+        return result
+
+print(""Exercice 2 a completer"")
+",,,,,,,,cb9ca5e26624dc68,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,edb7a025,markdown,fr,f4fd10e340a1f368,"### Exercice 3 : Mesurer la concision des indices du Père Fouras
+
+`evaluer_partie` (exemple guidé 3) mesure le devineur. L'autre moitié du duel mérite sa mesure : des indices trop longs facilitent la tâche. **Objectif** : écrire `mesurer_indices` qui prend l'historique des messages et retourne la longueur moyenne des messages du Père Fouras, et un booléen `indices_concis` vrai si cette moyenne reste sous 200 caractères.
+
+**Indices** :
+- `# Étape 1` : filtrer l'historique sur les messages signés `Pere_Fouras` (même filtre que l'exemple guidé 3)
+- `# Étape 2` : moyenner les longueurs (`len(str(message.content))`) et comparer au seuil
+","### Exercise 3: Measuring the concision of Père Fouras's hints
+
+`evaluer_partie` (guided example 3) measures the guesser. The other half of the duel deserves its own measurement: overly long hints make the task easier. **Objective**: write `mesurer_indices` which takes the message history and returns the average length of Père Fouras's messages, and a boolean `indices_concis` true if this average stays under 200 characters.
+
+**Hints**:
+- `# Step 1`: filter the history on messages signed `Pere_Fouras` (same filter as guided example 3)
+- `# Step 2`: average the lengths (`len(str(message.content))`) and compare to the threshold
+",,,,,,,f4fd10e340a1f368,4f277e5e0b156580,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,a85748ad,code,fr,d474392d7bce72b4,"# Exercice 3 : mesurer la concision des indices du Pere Fouras
+# TODO etudiant
+def mesurer_indices(history_messages: list) -> dict:
+    longueur_moyenne = 0.0  # TODO etudiant : moyenne des longueurs des messages du Pere Fouras
+    indices_concis = False  # TODO etudiant : True si longueur_moyenne < 200
+    return {""longueur_moyenne"": longueur_moyenne, ""indices_concis"": indices_concis}
+
+print(""Exercice 3 a completer"")
+",,,,,,,,d474392d7bce72b4,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Medical-Chatbot/medical_chatbot.ipynb,068a6d38,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
@@ -2158,152 +2326,3 @@ BATCH_MODE = True
 MyIA.AI.Notebooks/GenAI/CaseStudies/Recipe-Maker/receipe_maker.ipynb,ceeeb248,code,fr,d7a1ea74a47bcb51,"# Parameters
 BATCH_MODE = True
 ",,,,,,,,d7a1ea74a47bcb51,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,0672c52a,markdown,fr,67d1cdcf62db5170,"### Lecture du résultat : deux nouveaux personnages configurés
-
-Les deux agents du groupe sont créés sans erreur. Deux choix méritent l'œil : le prompt du **Témoin** est une f-string qui interpole `MOT_A_DEVINER` — le témoin « connaît » le mot parce qu'il est injecté dans ses instructions, mais l'interdiction « Ne révèle jamais directement le mot secret » maintient l'écart entre savoir et dire. Le prompt du **Detective** impose des questions fermées (oui/non) : ce format contraint la conversation à converger, comme la sélection round-robin du groupe contraint l'ordre des tours (section suivante). Chaque agent reçoit son propre `create_kernel()` — le même motif que le duo Père Fouras / Laurent Jalabert de la cellule précédente.
-","### Reading the result: two new characters configured
-
-The group's two agents are created without error. Two choices deserve attention: the **Witness** prompt is an f-string that interpolates `MOT_A_DEVINER` — the witness ""knows"" the word because it is injected into its instructions, but the rule ""Ne révèle jamais directement le mot secret"" (never reveal the secret word directly) maintains the gap between knowing and telling. The **Detective** prompt imposes closed-ended (yes/no) questions: this format forces the conversation to converge, just as the group's round-robin selection forces the order of turns (next section). Each agent receives its own `create_kernel()` — the same pattern as the Père Fouras / Laurent Jalabert duo of the previous cell.
-",,,,,,,67d1cdcf62db5170,3ca16b33fe6b815d,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,6b1b975c,code,fr,a2d6d3387925ba62,"
-# Tests de l'exemple guide 2 : trois situations (groupe de la PR #21009)
-
-from semantic_kernel.contents import AuthorRole, ChatMessageContent
-
-strategie = RenoncementTerminationStrategy(
-    agents=[laurent_jalabert],
-    maximum_iterations=20
-)
-
-# Trois situations a tester
-tests = [
-    (""Abandon"", ""J'abandonne"", True),
-    (""Mot trouve"", f""Ma reponse est {MOT_A_DEVINER}"", True),
-    (""Mauvaise reponse"", ""Je pense que c'est un objet"", False)
-]
-
-for nom, reponse, attendu in tests:
-
-    message = ChatMessageContent(
-        role=AuthorRole.ASSISTANT,
-        content=reponse,
-        name=""Laurent_Jalabert""
-    )
-
-    resultat = await strategie.should_agent_terminate(
-        agent=laurent_jalabert,
-        history=[message]
-    )
-
-    print(f""{nom} : {resultat} (attendu : {attendu})"")
-",,,,,,,,a2d6d3387925ba62,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,0ed41dbe,markdown,fr,3abac3ed7dbb0382,"### Lecture du résultat : la stratégie hybride passe ses trois tests
-
-Les trois situations renvoient le verdict attendu : un « J'abandonne » arrête la partie, un message qui contient `MOT_A_DEVINER` aussi, et une réponse neutre laisse le duel continuer. La mécanique tient en deux gestes : tout est comparé en minuscules (le modèle peut écrire « J'ABANDONNE »), et la condition finale est un `or` — il suffit que le mot soit trouvé **ou** qu'une phrase d'abandon apparaisse dans le **dernier** message de l'historique. La stratégie est attachée à `laurent_jalabert` : c'est bien au tour du devineur que la question « continuer ? » se pose.
-","### Reading the result: the hybrid strategy passes its three tests
-
-The three situations return the expected verdict: a ""J'abandonne"" (I give up) stops the game, a message containing `MOT_A_DEVINER` does too, and a neutral answer lets the duel continue. The mechanics boil down to two gestures: everything is compared in lowercase (the model may write ""J'ABANDONNE""), and the final condition is an `or` — it is enough that the word is found **or** that a give-up phrase appears in the **last** message of the history. The strategy is attached to `laurent_jalabert`: it is indeed on the guesser's turn that the question ""continue?"" arises.
-",,,,,,,3abac3ed7dbb0382,8a9e95e2287fcb28,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,2a2f46fe,code,fr,24c9e0be41d45852,"
-# Recuperer l'historique de la partie
-historique = chat.history.messages
-
-# Calculer le score
-resultat = evaluer_partie(historique)
-
-# Afficher les resultats
-print(""===== RESULTATS DE LA PARTIE ====="")
-print(""Nombre de tentatives :"", resultat[""nb_questions""])
-print(""Mot trouve :"", resultat[""mot_trouve""])
-print(""Score final :"", resultat[""score""], ""/ 100"")
-",,,,,,,,24c9e0be41d45852,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ae952339,markdown,fr,ec51388ae7d115a1,"## Exercices
-
-Trois nouveaux défis, un par compétence travaillée dans les exemples guidés ci-dessus : rédiger des prompts qui contraignent un comportement, composer une condition de terminaison, mesurer une partie jouée. Les stubs sont incomplets par conception — le carnet s'exécute de bout en bout sans eux.
-","## Exercises
-
-Three new challenges, one per skill practiced in the guided examples above: writing prompts that constrain a behavior, composing a termination condition, measuring a played game. The stubs are incomplete by design — the notebook runs end to end without them.
-",,,,,,,ec51388ae7d115a1,85897e2c7a0023b6,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,5b19df38,markdown,fr,7a379d68d77f6379,"### Exercice 1 : Un duel au protocole binaire
-
-Les personnages de l'exemple guidé 1 laissent le Témoin répondre par des phrases entières. Variante plus stricte : un **Indicateur** qui ne répond **que** par « oui », « non » ou « peut-être » — jamais une phrase — et un **Enquêteur méthodique** qui annonce son hypothèse d'élimination (« Je cherche un mot de plus de 15 lettres ») avant chaque question.
-
-**Objectif** : rédiger les deux prompts et configurer les deux agents correspondants.
-
-**Indices** :
-- `# Étape 1` : rédiger le prompt de l'Indicateur (rôle + liste fermée des trois réponses autorisées)
-- `# Étape 2` : rédiger le prompt de l'Enquêteur (stratégie d'élimination annoncée avant chaque question)
-- `# Indice` : un prompt peut interdire (« jamais de phrase ») autant qu'il peut prescrire (« réponds uniquement par »)
-","### Exercise 1: A binary-protocol duel
-
-The characters of guided example 1 let the Witness answer with full sentences. A stricter variant: an **Informer** who answers **only** with ""yes"", ""no"" or ""maybe"" — never a sentence — and a **Methodical Investigator** who announces the elimination hypothesis (""I am looking for a word longer than 15 letters"") before each question.
-
-**Objective**: write both prompts and configure the two corresponding agents.
-
-**Hints**:
-- `# Step 1`: write the Informer's prompt (role + closed list of the three allowed answers)
-- `# Step 2`: write the Investigator's prompt (elimination strategy announced before each question)
-- `# Hint`: a prompt can forbid (""never a sentence"") as much as it can prescribe (""answer only with"")
-",,,,,,,7a379d68d77f6379,c05e1b2f9f633ae1,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,ec943b8d,code,fr,f45b7e07fede6ace,"# Exercice 1 : un duel au protocole binaire
-# TODO etudiant : definir les prompts et creer les agents
-INDICATEUR_PROMPT = """"  # Etape 1 : instructions de l'Indicateur (oui / non / peut-etre, jamais une phrase)
-ENQUETEUR_PROMPT = """"   # Etape 2 : instructions de l'Enqueteur (hypothese annoncee avant chaque question)
-indicateur = None  # TODO etudiant : ChatCompletionAgent(kernel=create_kernel(), ...)
-enqueteur = None   # TODO etudiant
-print(""Exercice 1 a completer"")
-",,,,,,,,f45b7e07fede6ace,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,08f0cfb2,markdown,fr,c54287f8d4241448,"### Exercice 2 : Terminaison sur question répétée
-
-Un devineur qui répète la même question trois fois de suite ne progresse plus : la partie est perdue. L'objectif est d'implémenter `RepetitionTerminationStrategy`, une variante qui arrête la partie si le mot est deviné **ou** si les trois derniers messages de Laurent Jalabert sont identiques (comparaison en minuscules).
-
-**Indices** :
-- `# Étape 1` : extraire les messages de Laurent de l'historique (s'il y en a moins de trois, la partie continue)
-- `# Étape 2` : comparer les trois derniers en minuscules, et combiner avec la détection du mot par un `or`
-","### Exercise 2: Termination on a repeated question
-
-A guesser who repeats the same question three times in a row is no longer progressing: the game is lost. The objective is to implement `RepetitionTerminationStrategy`, a variant that stops the game if the word is guessed **or** if Laurent Jalabert's last three messages are identical (lowercase comparison).
-
-**Hints**:
-- `# Step 1`: extract Laurent's messages from the history (if there are fewer than three, the game continues)
-- `# Step 2`: compare the last three in lowercase, and combine with word detection using an `or`
-",,,,,,,c54287f8d4241448,d8b4b17808ea4616,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,3610348b,code,fr,cb9ca5e26624dc68,"# Exercice 2 : terminaison sur question repetee
-# TODO etudiant
-from semantic_kernel.agents.strategies.termination.termination_strategy import TerminationStrategy
-from semantic_kernel.contents.chat_message_content import ChatMessageContent
-
-class RepetitionTerminationStrategy(TerminationStrategy):
-    # TODO etudiant : implementer la strategie de detection de repetition
-    SEUIL_REPETITION: int = 3  # Etape 1 : nombre de questions identiques consecutives
-
-    async def should_agent_terminate(self, agent, history: list[ChatMessageContent], cancellation_token=None) -> bool:
-        result = False  # TODO etudiant : remplacer par la logique (mot trouve OU repetition)
-        return result
-
-print(""Exercice 2 a completer"")
-",,,,,,,,cb9ca5e26624dc68,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,edb7a025,markdown,fr,f4fd10e340a1f368,"### Exercice 3 : Mesurer la concision des indices du Père Fouras
-
-`evaluer_partie` (exemple guidé 3) mesure le devineur. L'autre moitié du duel mérite sa mesure : des indices trop longs facilitent la tâche. **Objectif** : écrire `mesurer_indices` qui prend l'historique des messages et retourne la longueur moyenne des messages du Père Fouras, et un booléen `indices_concis` vrai si cette moyenne reste sous 200 caractères.
-
-**Indices** :
-- `# Étape 1` : filtrer l'historique sur les messages signés `Pere_Fouras` (même filtre que l'exemple guidé 3)
-- `# Étape 2` : moyenner les longueurs (`len(str(message.content))`) et comparer au seuil
-","### Exercise 3: Measuring the concision of Père Fouras's hints
-
-`evaluer_partie` (guided example 3) measures the guesser. The other half of the duel deserves its own measurement: overly long hints make the task easier. **Objective**: write `mesurer_indices` which takes the message history and returns the average length of Père Fouras's messages, and a boolean `indices_concis` true if this average stays under 200 characters.
-
-**Hints**:
-- `# Step 1`: filter the history on messages signed `Pere_Fouras` (same filter as guided example 3)
-- `# Step 2`: average the lengths (`len(str(message.content))`) and compare to the threshold
-",,,,,,,f4fd10e340a1f368,4f277e5e0b156580,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,a85748ad,code,fr,d474392d7bce72b4,"# Exercice 3 : mesurer la concision des indices du Pere Fouras
-# TODO etudiant
-def mesurer_indices(history_messages: list) -> dict:
-    longueur_moyenne = 0.0  # TODO etudiant : moyenne des longueurs des messages du Pere Fouras
-    indices_concis = False  # TODO etudiant : True si longueur_moyenne < 200
-    return {""longueur_moyenne"": longueur_moyenne, ""indices_concis"": indices_concis}
-
-print(""Exercice 3 a completer"")
-",,,,,,,,d474392d7bce72b4,,,,,,,,
