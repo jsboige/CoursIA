@@ -74,7 +74,9 @@ def load_fashion_mnist(cache_root: str, source: str = "auto"):
 
 
 def alternating_shift(images: np.ndarray) -> np.ndarray:
-    """Decalage +-2 px alterne, periodique aux bords: la recette commune WS-00c/WS-03."""
+    """Decalage +-2 px alterne, periodique aux bords: la convention de WS-03, parite
+    LOCALE (enumerate sur le test). WS-00c alterne selon la parite GLOBALE de te_i
+    (indices dans le corpus entier) : meme decalage, index different — voir probe_ws00c."""
     return np.stack(
         [
             np.roll(img, (2 if i % 2 else -2, -2 if i % 2 else 2), axis=(0, 1))

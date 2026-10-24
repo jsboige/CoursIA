@@ -17,8 +17,17 @@ autonome, graine fixe, imprime les versions, sort en `1` en cas d'écart.
 | WS-00c | `WS-00c-Scattering-from-scratch.ipynb`, cellules 20-21 (§6) | Fashion-MNIST **train**, **80 premières** images de chaque classe (`np.where(labs == c)[0][:80]`) | pad 28→32, split 75/25 stratifié | `LogisticRegression(max_iter=3000, C=1.0)`, **sans** `random_state` |
 | WS-03 | `WS-03-Synthese-Scattering-vs-ResNet.ipynb`, cellule 8 | Fashion-MNIST **train et test**, 150 / 75 par classe tirées par `default_rng(42)` | 28×28 brut, `StandardScaler` ajusté sur le **train seul** | `LogisticRegression(max_iter=3000, C=1.0, random_state=42)` |
 
-Le test translaté est la même recette dans les deux carnets : décalage ±2 px alterné selon
-la parité de l'index, périodique aux bords (`np.roll`).
+Le test translaté a le même **geste** dans les deux carnets (décalage ±2 px alterné, périodique
+aux bords, `np.roll`) mais **pas le même index de parité** — et c'est un finding de série, pas
+un détail d'implémentation :
+
+- WS-00c alterne sur la parité **globale** (`for i in te_i`, où `te_i` indexe le corpus entier) ;
+- WS-03 alterne sur la parité **locale** (`enumerate(X_te)`, donc `0..n-1`).
+
+Sur un même jeu de test, les images des deux parités ne sont donc pas les mêmes : deux carnets
+qui se présentent comme comparables appliquent deux tests translatés différents. Le script
+respecte chacune (`probe_ws00c` itère `te_i` ; `alternating_shift` prend la parité locale, pour
+WS-03).
 
 ## Résultat mesuré
 
