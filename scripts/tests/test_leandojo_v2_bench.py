@@ -293,7 +293,12 @@ def _inject_factory_deps(monkeypatch):
     parser = types.ModuleType(
         "lean_dojo_v2.external_api.python.external_models.external_parser")
     parser.pre_process_input = lambda _model, s: s
-    parser.post_process_output = lambda _model, s: s
+    # Fidele a la branche "claude" REELLE d'external_parser.py (mesure
+    # 2026-10-20) : tronque toute sortie a une ligne. Le shim du banc doit
+    # etre IMMUNISE contre ce comportement sur les preuves entieres.
+    parser.post_process_output = (
+        lambda _model, s: s.split("lean")[-1].split("```")[0].split("\n")[1]
+    )
     loguru = types.ModuleType("loguru")
 
     class _Logger:
@@ -368,3 +373,305 @@ def test_factory_without_deadline_keeps_none(monkeypatch, bench):
     _inject_factory_deps(monkeypatch)
     gen = bench._make_openrouter_generator()
     assert gen.deadline is None
+
+
+# --- Defauts de transport mesures le 2026-10-20 (run 2026-10-12 degenere) ---
+#
+# Sonde HTTP 200 sur openrouter : "n": 4 rend 1 SEUL choix (l'API Anthropic
+# n'a pas de sampling n). Le generateur v2 attend n echantillons par pas ;
+# sans emulation, le dedoublonnage used_tactics epuise la recherche en 3
+# appels (5,9 s contre 1 925 s maison). Second defaut : la branche claude
+# de post_process_output tronque a UNE ligne -- fatal aux preuves entieres.
+
+
+def test_extract_whole_proof_fenced_block(bench):
+    # Sortie brute mesuree le 2026-10-20 (7 lignes fence comprise) : la
+    # preuve doit resister ENTIERE, pas une ligne.
+    raw = (
+        "```lean\n"
+        "  induction n using Conway.natToDigits.induct with\n"
+        "  | case1 => rfl\n"
+        "  | case2 n h ih =>\n"
+        "    unfold Conway.natToDigits\n"
+        "    simp [h, Conway.digitsToNat, ih]\n"
+        "```"
+    )
+    assert bench._extract_whole_proof(raw) == (
+        "induction n using Conway.natToDigits.induct with\n"
+        "  | case1 => rfl\n"
+        "  | case2 n h ih =>\n"
+        "    unfold Conway.natToDigits\n"
+        "    simp [h, Conway.digitsToNat, ih]"
+    )
+
+
+def test_extract_whole_proof_unterminated_and_raw(bench):
+    # bloc non termine (pas de fermeture) et sortie nue : passes tels quels
+    assert bench._extract_whole_proof("```lean\n  rfl") == "rfl"
+    assert bench._extract_whole_proof("  induction n\n  rfl") == (
+        "induction n\n  rfl"
+    )
+
+
+def test_extract_whole_proof_strips_think_block(bench):
+    # Sortie MESUREE le 2026-10-20 (run corrige) : claude-opus-4.7 ouvre
+    # d'un bloc <think>...</think> AVANT la fence. L'extrateur doit rendre
+    # la preuve seule -- jamais le raisonnement au check_compile.
+    measured = (
+        "<think>\n"
+        "I need to prove this theorem but I don't know the definitions.\n"
+        "Likely `natToDigits` produces digits and `digitsToNat` reverses it.\n"
+        "</think>\n\n"
+        "```lean\n"
+        "  induction n using Nat.strong_induction_on with\n"
+        "  | _ n ih =>\n"
+        "    unfold Conway.natToDigits Conway.digitsToNat\n"
+        "    simp_all\n"
+        "    split <;> simp_all <;> omega\n"
+        "```"
+    )
+    assert bench._extract_whole_proof(measured) == (
+        "induction n using Nat.strong_induction_on with\n"
+        "  | _ n ih =>\n"
+        "    unfold Conway.natToDigits Conway.digitsToNat\n"
+        "    simp_all\n"
+        "    split <;> simp_all <;> omega"
+    )
+
+
+def test_extract_whole_proof_think_without_fence(bench):
+    # think retire meme sans fence derriere : reste rendu nu.
+    assert bench._extract_whole_proof(
+        "<think>\nreasoning\n</think>\n  rfl"
+    ) == "rfl"
+
+
+def test_post_emulates_n_with_successive_requests(monkeypatch, bench):
+    # openrouter rend 1 choix par requete : _post doit repeter la requete
+    # jusqu'a n choix collectes, chaque payload demandant n=1.
+    _inject_factory_deps(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "cle-de-test")
+    gen = bench._make_openrouter_generator(deadline=time.monotonic() + 60.0)
+
+    payloads = []
+
+    class _Resp:
+        @staticmethod
+        def json():
+            return {"choices": [{"message": {"content": "exact rfl"}}]}
+
+    def fake_post(_url, headers=None, json=None, timeout=None):
+        payloads.append(json)
+        return _Resp()
+
+    import requests as _requests
+
+    monkeypatch.setattr(_requests, "post", fake_post)
+    outs = gen._post("prompt", n=4, max_tokens=256)
+    assert outs == ["exact rfl"] * 4  # 4 choix collectes
+    assert len(payloads) == 4  # ...par 4 requetes successives
+    assert all(p["n"] == 1 for p in payloads)  # jamais "n": k dans le payload
+    assert gen.calls == 4  # chaque sous-requete compte
+
+
+def test_post_emulation_stops_when_budget_expires(monkeypatch, bench):
+    # Budget epuise en pleine emulation : les sous-requetes suivantes ne
+    # partent pas, budget_hit monte, les choix deja collectes sont rendus.
+    _inject_factory_deps(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "cle-de-test")
+    # deadline courte : la 1re sous-requete (60 ms) la consomme presque toute
+    gen = bench._make_openrouter_generator(
+        deadline=time.monotonic() + 0.03
+    )
+
+    class _Resp:
+        @staticmethod
+        def json():
+            return {"choices": [{"message": {"content": "simp"}}]}
+
+    def fake_post(_url, headers=None, json=None, timeout=None):
+        time.sleep(0.06)
+        return _Resp()
+
+    import requests as _requests
+
+    monkeypatch.setattr(_requests, "post", fake_post)
+    outs = gen._post("prompt", n=4, max_tokens=256)
+    assert gen.budget_hit is True
+    assert len(outs) < 4  # emulation coupee avant n choix
+
+
+def test_post_error_midway_returns_collected(monkeypatch, bench):
+    # Erreur API en pleine emulation : on rend ce qui est deja collecte,
+    # sans hammer le serveur -- et budget_hit reste faux (erreur != budget).
+    _inject_factory_deps(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "cle-de-test")
+    gen = bench._make_openrouter_generator(deadline=time.monotonic() + 60.0)
+
+    state = {"n": 0}
+
+    class _OkResp:
+        @staticmethod
+        def json():
+            return {"choices": [{"message": {"content": "rfl"}}]}
+
+    class _ErrResp:
+        @staticmethod
+        def json():
+            return {"error": {"message": "rate limited"}}
+
+    def fake_post(_url, headers=None, json=None, timeout=None):
+        state["n"] += 1
+        return _OkResp() if state["n"] == 1 else _ErrResp()
+
+    import requests as _requests
+
+    monkeypatch.setattr(_requests, "post", fake_post)
+    outs = gen._post("prompt", n=4, max_tokens=256)
+    assert outs == ["rfl"]
+    assert state["n"] == 2  # erreur arrete l'emulation
+    assert gen.budget_hit is False
+
+
+def test_generate_whole_proof_returns_full_proof(monkeypatch, bench):
+    # Pin fonctionnel du second defaut : generate_whole_proof rend la preuve
+    # COMPLETE extraite du bloc, jamais la premiere ligne (le run 2026-10-12
+    # avait "induction n using Nat.strong_induction_on with" -- une ligne).
+    _inject_factory_deps(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "cle-de-test")
+    gen = bench._make_openrouter_generator(deadline=time.monotonic() + 60.0)
+
+    class _Resp:
+        @staticmethod
+        def json():
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": (
+                                "```lean\n"
+                                "  induction n using Conway.natToDigits.induct with\n"
+                                "  | case1 => rfl\n"
+                                "```"
+                            )
+                        }
+                    }
+                ]
+            }
+
+    import requests as _requests
+
+    monkeypatch.setattr(_requests, "post", lambda *a, **k: _Resp())
+    proof = gen.generate_whole_proof("theorem t : True := by")
+    assert proof.count("\n") == 1  # deux lignes : pas de troncature une-ligne
+    assert "case1 => rfl" in proof
+
+
+def test_extract_whole_proof_trailing_prose_takes_block(bench):
+    # Contre-exemple reproduit par l'adjoint le 2026-10-23 (crible de
+    # 23ce570697) : un bloc fence FERME suivi d'une phrase finale rendait la
+    # fence de cloture ET la phrase. La branche ``startswith`` ne retirait la
+    # derniere ligne que si c'etait une fence, donc le contrat annonce dans
+    # la docstring (<< on prend le DERNIER bloc fence >>) n'etait pas tenu
+    # des que la sortie ne finissait pas sur la fence.
+    raw = "```lean\n  rfl\n```\nCette preuve est correcte."
+    assert bench._extract_whole_proof(raw) == "rfl"
+
+
+def test_extract_whole_proof_two_blocks_takes_last(bench):
+    # Second contre-exemple du meme crible : deux blocs fences successifs
+    # rendaient le PREMIER bloc et les fences intermediaires, au lieu du
+    # dernier bloc.
+    raw = "```lean\n  simp\n```\n```lean\n  rfl\n```"
+    assert bench._extract_whole_proof(raw) == "rfl"
+
+
+def test_extract_whole_proof_accepts_language_tags(bench):
+    # Contre-exemple reproduit par la verification independante du 2026-10-23
+    # (tete 990179f6948) : une fence etiquetee autrement que ``lean`` n'etait
+    # pas reconnue, donc sa ligne de cloture entrait dans la preuve rendue
+    # ("rfl\n```"). L'etiquette est libre, seule la LIGNE fait foi.
+    for tag in ("lean", "lean4", "Lean", "lean4 "):
+        assert bench._extract_whole_proof(f"```{tag}\n  rfl\n```") == "rfl"
+
+
+def test_extract_whole_proof_ignores_backticks_inside_a_lean_string(bench):
+    # Second contre-exemple independant du meme jour : une chaine Lean peut
+    # contenir des backticks. Les prendre pour une cloture tronquait la
+    # preuve a ``have s := "``. Seule une ligne exactement ``` ferme le bloc.
+    raw = "```lean\n" '  have s := "```"\n' "  exact rfl\n" "```"
+    assert bench._extract_whole_proof(raw) == 'have s := "```"\n  exact rfl'
+
+
+def test_extract_whole_proof_four_backticks_opener_closes_at_same_length(bench):
+    # Contre-exemple du crible adjoint du 2026-10-23 (tete 20ba1bb2fc4) :
+    # l'ouvreur acceptait toute longueur >= 3 backticks mais la fermeture
+    # exigeait une ligne exactement ```. Un bloc ouvert a QUATRE backticks
+    # n'etait donc jamais ferme : la cloture et la phrase finale entraient
+    # dans la preuve rendue. La fermeture est desormais une ligne faite de
+    # backticks, au moins aussi longue que l'ouvreur.
+    raw = "````lean\n  exact rfl\n````\nDone."
+    assert bench._extract_whole_proof(raw) == "exact rfl"
+
+
+def test_extract_whole_proof_short_fence_inside_long_fence_is_content(bench):
+    # Corollaire de la fermeture compatible : dans un bloc ouvert a quatre
+    # backticks, une ligne de trois backticks (chaine Lean, pas une cloture)
+    # reste du CONTENU -- elle est plus courte que l'ouvreur. La protection
+    # des backticks internes du test precedent vaut a longueur egale aussi.
+    raw = '````\n  have s := "```"\n  exact rfl\n````'
+    assert bench._extract_whole_proof(raw) == 'have s := "```"\n  exact rfl'
+
+
+def test_post_counts_error_response_in_calls(monkeypatch, bench):
+    # << Chaque sous-requete compte dans gen.calls >> (body #21672, comptabilite
+    # honnete) : une reponse API en erreur est une sous-requete PARTIE, donc
+    # comptee. Le compteur restait a 1 pour 2 requetes emises.
+    _inject_factory_deps(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "cle-de-test")
+    gen = bench._make_openrouter_generator(deadline=time.monotonic() + 60.0)
+
+    state = {"n": 0}
+
+    class _OkResp:
+        @staticmethod
+        def json():
+            return {"choices": [{"message": {"content": "rfl"}}]}
+
+    class _ErrResp:
+        @staticmethod
+        def json():
+            return {"error": {"message": "rate limited"}}
+
+    def fake_post(_url, headers=None, json=None, timeout=None):
+        state["n"] += 1
+        return _OkResp() if state["n"] == 1 else _ErrResp()
+
+    import requests as _requests
+
+    monkeypatch.setattr(_requests, "post", fake_post)
+    outs = gen._post("prompt", n=4, max_tokens=256)
+    assert outs == ["rfl"]
+    assert gen.calls == 2  # 1 succes + 1 erreur API : deux requetes parties
+
+
+def test_post_counts_transport_failure_in_calls(monkeypatch, bench):
+    # Une sous-requete dont le transport echoue est partie aussi : elle
+    # compte, et l'exception remonte inchangee.
+    _inject_factory_deps(monkeypatch)
+    monkeypatch.setenv("OPENROUTER_API_KEY", "cle-de-test")
+    gen = bench._make_openrouter_generator(deadline=time.monotonic() + 60.0)
+
+    def fake_post(_url, headers=None, json=None, timeout=None):
+        raise ConnectionError("transport down")
+
+    import requests as _requests
+
+    monkeypatch.setattr(_requests, "post", fake_post)
+    try:
+        gen._post("prompt", n=1, max_tokens=256)
+    except ConnectionError:
+        pass
+    else:  # pragma: no cover - la remontee est le comportement attendu
+        raise AssertionError("l'exception de transport doit remonter")
+    assert gen.calls == 1
