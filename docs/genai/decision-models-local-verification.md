@@ -76,9 +76,9 @@ Graine de melange **42**, limite **300 items par jeu**, melange **identique** po
 | | commonsense_qa | 300 | 67,67 % | 0,556 | 0,128 | 0,468 |
 | | **global** | **900** | **69,56 %** | 0,564 | 0,131 | 0,422 |
 
-Lecture : les deux versions sont **quasi equivalentes** sur cette tranche (0,22 point d'ecart global, dans le bruit d'un echantillon de 900 items). v2 est **mieux calibre** sur `arc_easy` (ECE 0,157 contre 0,109, Brier 0,240 contre 0,209 pour une exactitude inferieure de 2,3 points : la confiance y est moins surestimee) et **moins bien calibre** globalement (ECE 0,131 contre 0,089).
+Lecture : les deux versions sont **quasi equivalentes** sur cette tranche (0,22 point d'ecart global, dans le bruit d'un echantillon de 900 items). v2 est **moins bien calibre** sur `arc_easy` (ECE 0,157 contre 0,109, Brier 0,240 contre 0,209) et **egalement moins bien calibre** globalement (ECE 0,131 contre 0,089, Brier 0,422 contre 0,419). Sur `arc_easy`, l'ecart entre exactitude et confiance moyenne est plus grand chez v2 (0,683 de confiance moyenne pour 84,00 % d'exactitude, contre 0,755 pour 86,33 % chez v1) : la confiance y est **sous-estimee**, et davantage que chez v1.
 
-Cout de la mesure (par checkpoint) : chargement **13,2 s** (`v1`) et **5,1 s** (`v2`), evaluation **210,4 s** et **209,5 s** pour 900 items (~0,23 s/item), pic VRAM **1,47 Go** dans les deux cas — les deux checkpoints tiennent dans le huitieme de la carte. La mesure a ete rejouee a l'identique (meme graine, memes empreintes de tranche) : les valeurs d'exactitude et de calibration sont **reproductibles**, seuls les temps varient.
+Cout de la mesure (par checkpoint) : chargement **13,2 s** (`v1`) et **5,1 s** (`v2`), evaluation **210,4 s** et **209,5 s** pour 900 items (~0,23 s/item), pic VRAM **1,47 Go** dans les deux cas — les deux checkpoints tiennent dans les 8 Go de la carte. La mesure a ete rejouee a l'identique (meme graine, memes empreintes de tranche) : les valeurs d'exactitude et de calibration sont **reproductibles**, seuls les temps varient.
 
 ### Ordre mesure contre ordre publie
 
