@@ -6,7 +6,7 @@ Stratégie momentum avec indicateurs custom avancés en C#.
 
 - **Période**: 2021-01-01 → Now
 - **Sharpe**: 0.507
-- **Recommandation recherche**: Étendre a 2015-01-01 (Sharpe attendu: 1.05)
+- **Période étendue**: `Main.cs` démarre en 2015-01-01. Sur 2015-2025, le proxy Python du carnet de recherche mesure un Sharpe de 1,106 (30 grandes capitalisations, sans frais) ; le Sharpe du backtest C# sur cette période n'est pas reporté ici.
 
 ## Fichiers
 
@@ -24,7 +24,7 @@ Stratégie momentum avec indicateurs custom avancés en C#.
 - `research_robustness_simple.py` - Script Python backtest étendu
 - `research_robustness_charts.png` - Visualisations régime filter + walk-forward
 - `research_results.txt` - Output complet backtest
-- `research_robustness.ipynb` - Notebook Jupyter (QuantBook, non execute)
+- `research_robustness.ipynb` - Notebook Jupyter exécuté (yfinance, fenêtre figée 2015-2025) : régime SMA(200), backtest proxy, sensibilité de la SMA, stabilité par semestre
 
 ## Concepts enseignes
 
@@ -32,7 +32,7 @@ Stratégie momentum avec indicateurs custom avancés en C#.
 - MathNet.Numerics (régression linéaire, R-squared)
 - Market régime filtering (SMA 200)
 - ATR-based position sizing
-- Walk-forward validation
+- Stabilité par sous-périodes (découpage semestriel à règles fixes)
 - Robustness testing sur 10+ ans
 
 ## Bugfix Important (Feb 2026)
@@ -43,7 +43,7 @@ Stratégie momentum avec indicateurs custom avancés en C#.
 
 ## Prochaines Étapes
 
-1. Modifier `Main.cs`: `SetStartDate(2015, 1, 1)`
+1. Figer la date de fin de `Main.cs` (`SetEndDate(DateTime.Now)` fait bouger les chiffres d'une exécution à l'autre ; le début est déjà en 2015-01-01)
 2. Compiler via QC cloud
 3. Lancer backtest via web UI
 4. Valider Sharpe >= 0.4 sur période étendue
