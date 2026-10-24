@@ -87,32 +87,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06b-Lean-RepeatedGames-Lean-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06c-RepeatedGames-FolkTheorem-CSharp.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06d-Sympathie-vs-Engagement-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Lean.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06f-Bounded-Agents-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-06h-Transparent-Institutions-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -177,22 +157,7 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16b-Automated-Mechanism-Design-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16d-Echange-de-Reins-Lean-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/GameTheory"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-16e-LLM-Players-Othman-Sandholm-Python.ipynb",
       "series": "MyIA.AI.Notebooks/GameTheory"
     },
     {
@@ -692,12 +657,12 @@
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb",
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-00c-Scattering-from-scratch.ipynb",
       "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering"
     },
     {
       "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-02-Scattering-SOTA.ipynb",
+      "notebook": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering/WS-01-Denoising-SOTA.ipynb",
       "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/04b-Wavelet-Scattering"
     },
     {
@@ -933,11 +898,6 @@
     {
       "kind": "orphan_entry",
       "notebook": "MyIA.AI.Notebooks/RL/RL-11-POMDP-Croyances-Python.ipynb",
-      "series": "MyIA.AI.Notebooks/RL"
-    },
-    {
-      "kind": "orphan_entry",
-      "notebook": "MyIA.AI.Notebooks/RL/RL-19-Reward-Tampering-Python.ipynb",
       "series": "MyIA.AI.Notebooks/RL"
     },
     {
@@ -1570,16 +1530,16 @@
       "notebooks": 3
     },
     {
-      "series": "MyIA.AI.Notebooks/GenAI/FineTuning",
-      "notebooks": 14
-    },
-    {
       "series": "MyIA.AI.Notebooks/GenAI/Image/03-Orchestration",
       "notebooks": 4
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/Image/examples",
       "notebooks": 3
+    },
+    {
+      "series": "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique",
+      "notebooks": 14
     },
     {
       "series": "MyIA.AI.Notebooks/GenAI/Texte",
@@ -1603,7 +1563,7 @@
     },
     {
       "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours",
-      "notebooks": 38
+      "notebooks": 39
     },
     {
       "series": "MyIA.AI.Notebooks/ML/DataScienceWithAgents/Track2-GoogleADK/Day4-Foundations",
@@ -1634,10 +1594,6 @@
       "notebooks": 19
     },
     {
-      "series": "MyIA.AI.Notebooks/Search/Applications/Adversarial",
-      "notebooks": 4
-    },
-    {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE",
       "notebooks": 16
     },
@@ -1647,7 +1603,7 @@
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS",
-      "notebooks": 3
+      "notebooks": 4
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Lean/MIMO",
@@ -1659,7 +1615,7 @@
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/03-Advanced",
-      "notebooks": 6
+      "notebooks": 7
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/Planners/04-NeuroSymbolic",
@@ -1667,7 +1623,7 @@
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API",
-      "notebooks": 29
+      "notebooks": 30
     },
     {
       "series": "MyIA.AI.Notebooks/SymbolicAI/SmartContracts/01-Solidity-Foundation",
