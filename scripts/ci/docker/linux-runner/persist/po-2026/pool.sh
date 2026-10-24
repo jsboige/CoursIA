@@ -12,7 +12,7 @@ BASE="$HOME/CoursIA-runners-p0"
 # confinement 3 decide le 28/09. Le fichier conf survit aux redemarrages ;
 # l'ENV garde la priorite (un lancement explicite POOL_SIZE=x gagne toujours).
 # Bornes 1..8 : le scope MemoryMax=20G a ete dimensionne pour 8 slots — une
-# valeur saisisse hors bornes est ecartee au profit du defaut, jamais silencieusement
+# valeur saisie hors bornes est ecartee au profit du defaut, jamais silencieusement
 # acceptee.
 if [ -z "$POOL_SIZE" ] && [ -s "$BASE/pool-size.conf" ]; then
   # `|| true` : read rend 1 sur un fichier sans newline final APRES avoir
