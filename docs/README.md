@@ -224,6 +224,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/strates-as-adjunctions-prototype.md](ict/strates-as-adjunctions-prototype.md) | Prototype **grade C** : les strates ICT comme adjonctions — conjecture du jalon 3 de #8182 (TOE ↔ conscience), explicitement non démontrée |
 | [ict/butlin-indicators-pre-enregistrement.md](ict/butlin-indicators-pre-enregistrement.md) | Case 19 — le mot « using » de RPT-1 (Butlin et al. 2023) : protocole scellé avant écriture du banc, dissociation procédurale entre inspection structurelle et sonde causale |
 | [ict/assembly-theory-pre-enregistrement.md](ict/assembly-theory-pre-enregistrement.md) | Case 20 — l'assembly index mesuré (Sharma et al. 2023) contre la lecture « compression LZ » (Abrahão et al. 2024) : solveur exact à deux implémentations, échelle périodique certifiée `ai = log2 n`, règle de décision scellée par pentes |
+| [ict/vervaeke-insight-pre-enregistrement.md](ict/vervaeke-insight-pre-enregistrement.md) | Réalisation de pertinence (Jaeger, Riedl, Djedovic, Vervaeke, Walsh 2024, *Front Psychol* 15:1362658) — protocole scellé avant codage du module : engagement adverse, heuristiques antagonistes, re-commitment ; opérationnalisation déclarée grade C, thèse de non-formalisabilité de l'article non testée |
 
 ## Curriculum (docs/curriculum/)
 
