@@ -19,6 +19,7 @@ Requires:
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from dataclasses import dataclass, field, asdict
@@ -236,6 +237,63 @@ def check_image_refs(deck_path: str) -> dict:
     return result
 
 
+def count_slidev_slides(content: str) -> int:
+    """Count the slides Slidev actually renders in a deck source.
+
+    A bare ``---`` line is not a slide boundary in two cases: it belongs to a
+    fenced code block, or it opens/closes a per-slide frontmatter block
+    (``---`` / ``layout: section`` / ``---``), which Slidev attaches to the
+    slide that follows. Counting every ``---`` therefore over-reports — 236
+    against the 134 slides Slidev really renders on ``03-logique``.
+
+    Args:
+        content: Raw markdown of the deck.
+
+    Returns:
+        Number of slides, frontmatter blocks excluded.
+    """
+    chunks = []
+    current = []
+    fence = None
+    in_frontmatter = False
+    for i, line in enumerate(content.split("\n")):
+        stripped = line.strip()
+        marker = stripped[:3]
+        if marker in ("```", "~~~"):
+            if fence is None:
+                fence = marker
+            elif fence == marker:
+                fence = None
+            current.append(line)
+            continue
+        if fence is not None:
+            current.append(line)
+            continue
+        if i == 0 and stripped == "---":
+            in_frontmatter = True
+            continue
+        if in_frontmatter and stripped == "---":
+            in_frontmatter = False
+            continue
+        if not in_frontmatter and stripped == "---":
+            chunks.append(current)
+            current = []
+            continue
+        current.append(line)
+    chunks.append(current)
+
+    yaml_key = re.compile(r"^[A-Za-z_][A-Za-z0-9_-]*:")
+    slides = 0
+    for chunk in chunks:
+        body = [line.strip() for line in chunk if line.strip()]
+        is_frontmatter = bool(body) and len(body) <= 12 and all(
+            yaml_key.match(line) for line in body
+        )
+        if not is_frontmatter:
+            slides += 1
+    return slides
+
+
 def compare_slide_counts(deck_path: str) -> dict:
     """Compare PPTX vs Slidev slide counts for a deck.
 
@@ -251,24 +309,11 @@ def compare_slide_counts(deck_path: str) -> dict:
     pptx_renders = sorted((deck_path / "extracted" / "renders").glob("slide_*.png"))
     pptx_count = len(pptx_renders)
 
-    # Count Slidev slides (by --- separators)
+    # Count Slidev slides
     slides_md = deck_path / "slides.md"
     slidev_count = 0
     if slides_md.exists():
-        content = slides_md.read_text(encoding="utf-8")
-        # Count slide separators (--- at start of line, not in frontmatter)
-        lines = content.split("\n")
-        in_frontmatter = False
-        for i, line in enumerate(lines):
-            if i == 0 and line.strip() == "---":
-                in_frontmatter = True
-                continue
-            if in_frontmatter and line.strip() == "---":
-                in_frontmatter = False
-                continue
-            if not in_frontmatter and line.strip() == "---":
-                slidev_count += 1
-        slidev_count += 1  # First slide (before any ---)
+        slidev_count = count_slidev_slides(slides_md.read_text(encoding="utf-8"))
 
     result = {
         "deck": deck_path.name,
