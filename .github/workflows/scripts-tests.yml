@@ -92,6 +92,18 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bank_schema_v1.json'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bootstrap_bank.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py'
+      # #17586 narrateur CustomVoice (Qwen3-TTS, opt-in, defaut OFF). Hermes
+      # Finding 1 (review sur 69de2cdf) : sans ces 3 entrees, une PR qui ne
+      # touche QUE le routage narrateur ne declenche aucun run CI (#10416
+      # pattern) -- les tests de routage invisibles jusqu'au prochain innocent
+      # qui touche scripts/**. Le fichier de tests est celui de la suite v4
+      # (v4/tests/) : c'est le seul qui portait deja le contrat Phase 2 sur
+      # main, et il n'etait pas collecte. Mirrored under pull_request: below.
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p5_tts.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/qwen_tts_client.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py'
       # #11835 no-op guard: scripts/tests/test_pr_gate_rerun_noop_guard.py pins
       # the job-level if: of pr-gate-rerun.yml. Without this entry a PR touching
       # ONLY the workflow fires no scripts-tests run -- the guard is blind to
@@ -197,6 +209,12 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bank_schema_v1.json'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bootstrap_bank.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py'
+      # #17586 narrateur CustomVoice (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p5_tts.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/qwen_tts_client.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py'
       # #11835 no-op guard (mirror of the push path above).
       - '.github/workflows/pr-gate-rerun.yml'
       # Mirror the push path above so fork workflow-only PRs execute the policy.
@@ -484,7 +502,27 @@ jobs:
         # Measured firsthand 2026-09-04 on origin/main: 455/455 green with the
         # OpenAI key unset (env -u re-run), zero network/gh subprocess, zero
         # dep delta vs this job (pillow arrives transitively with matplotlib).
+        #
+        # Nombre de workers xdist borne par le plafond memoire du conteneur
+        # (1 worker par Gio entier de `memory.max`, entre 1 et 4). Les slots a
+        # 4 Gio (ai-01-wsl-*, po-2024-linux-docker-1) gardent `-n 4` a
+        # l'identique. Les slots `po-2024-linux-persist-*`, plafonnes plus bas,
+        # tuaient leurs workers par OOM du cgroup (`dmesg` : CONSTRAINT_MEMCG,
+        # 2026-10-20 04:44Z et 05:00Z, 4 jobs sur 4 en echec) : ils ont ete
+        # retires de `coursia-linux`, et sept slots sont restes inactifs devant
+        # une file de 800 runs. Borner `-n` leur rend les jobs.
         run: |
+          mem_max=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
+            || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
+            || echo max)
+          if [ "$mem_max" -gt 0 ] 2>/dev/null; then
+            xdist_n=$(( mem_max / 1073741824 ))
+            [ "$xdist_n" -gt 4 ] && xdist_n=4
+            [ "$xdist_n" -lt 1 ] && xdist_n=1
+          else
+            xdist_n=4
+          fi
+          echo "xdist workers: $xdist_n (cgroup memory limit: $mem_max)"
           python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
             pytest \
             scripts/tests \
@@ -505,11 +543,14 @@ jobs:
             MyIA.AI.Notebooks/GameTheory/gateway/test_openspiel_cfr_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
+            MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
+            MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
+            MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
             MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \
             GradeBookApp \
-            -n 4 --dist loadscope --tb=short -q
+            -n "$xdist_n" --dist loadscope --tb=short -q
         # Chien de garde xdist (#16288) : quand un worker meurt (`[gwN] node
         # down`), le master attend des workers morts SANS qu'aucun test soit en
         # cours -- la jambe reste muette 14 a 17 min apres `[99%]` jusqu'au mur
