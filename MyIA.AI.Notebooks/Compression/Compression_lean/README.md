@@ -62,7 +62,7 @@ quand il reconstruit un code depuis une table de longueurs :
    la construction : compteur + masse restante ≤ `2 ^ L` (`inv_fits` : le
    compteur tient dans sa bande ; `inv_step` : le saut de compteur préserve
    l'invariant).
-3. **`canon`** — le **code canonique** (Schwartz–Miller) : longueurs triées
+3. **`canon`** — le **code canonique** (Schwartz-Kallick) : longueurs triées
    croissantes, compteur initial `0`, et à chaque passage de `ℓᵢ` à `ℓᵢ₊₁`
    le saut `(c + 1) * 2 ^ (ℓᵢ₊₁ - ℓᵢ)` — on passe au-delà de tous les
    prolongements du mot précédent.
