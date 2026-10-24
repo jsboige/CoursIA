@@ -1134,6 +1134,187 @@ def test_stale_threshold_unblocks_old_claim(capsys):
     assert '"blocked": false' in captured.out
 
 
+# --- #22408 : l'age ne suffit pas, la lane peut livrer ------------------------
+# Instance fondatrice #21881 : claim po-2023 du 2026-10-21T18:39Z, PR #21884
+# ouverte a 18:59Z, dernier commit le 2026-10-23T06:29Z. A 73,8 h l'organe a
+# rendu STALE et po-2024 a repris le grain (#22251) : deux carnets DEEP pour un
+# seul grain. Le claim n'est perime que si la lane ne donne plus signe de vie.
+
+CSP10_PATH = "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-*.ipynb"
+
+
+class _ActivityProc:
+    def __init__(self, stdout: str, returncode: int = 0):
+        self.stdout = stdout
+        self.returncode = returncode
+        self.stderr = ""
+
+
+def _lane_pr(number: int, lane: str, issue: int) -> dict:
+    return {
+        "number": number,
+        "title": "CSP-10",
+        "headRefName": "feature/csp10",
+        "body": (f"Grain: DEEP/notebook-python -- lane {lane} "
+                 f"-- prev: DEEP/docs #1\n\nCloses #{issue}\n"),
+        "files": [{"path": "MyIA.AI.Notebooks/Search/Part2-CSP/CSP-10-Optimisation.ipynb"}],
+    }
+
+
+def _fake_gh_pr_view(payload_json: str, returncode: int = 0):
+    """`subprocess.run` stub for the ONE call `_pr_last_lane_activity` makes.
+
+    Scoped to that helper by construction: every wiring test below patches
+    `_pr_last_lane_activity` itself instead, so a stub never has to share the
+    process with `git ls-files` or any other caller.
+    """
+    def fake_run(argv, *args, **kwargs):
+        assert list(argv[:3]) == ["gh", "pr", "view"], argv
+        return _ActivityProc(payload_json, returncode)
+    return fake_run
+
+
+def _patch_last_activity(monkeypatch, value):
+    """Inject the measured activity instant (None = NOT MEASURED)."""
+    monkeypatch.setattr(clc, "_pr_last_lane_activity",
+                        lambda pr_number, lane: value)
+
+
+def test_pr_last_lane_activity_takes_the_latest_lane_signal(monkeypatch):
+    """Parsing : le commit le plus recent OU un commentaire porte par la lane."""
+    fixture = json.dumps({
+        "commits": [{"committedDate": "2026-08-01T00:00:00Z"},
+                    {"committedDate": "2026-08-06T23:00:00Z"}],
+        "comments": [
+            # une AUTRE lane commente : ne compte pas (login partage partout)
+            {"body": "[INFO] lane myia-po-2024:CoursIA-2 -- relecture",
+             "createdAt": "2026-08-07T11:00:00Z"},
+        ],
+    })
+    monkeypatch.setattr(clc.subprocess, "run", _fake_gh_pr_view(fixture))
+    assert clc._pr_last_lane_activity(
+        21884, "myia-po-2023:CoursIA-2") == datetime(
+            2026, 8, 6, 23, 0, tzinfo=timezone.utc)
+
+
+def test_pr_last_lane_activity_counts_a_lane_tagged_comment(monkeypatch):
+    """Un commentaire de la lane titulaire compte comme une activite."""
+    fixture = json.dumps({
+        "commits": [{"committedDate": "2026-08-01T00:00:00Z"}],
+        "comments": [
+            {"body": "[INFO] lane myia-po-2023:CoursIA-2 -- 12/18 cellules",
+             "createdAt": "2026-08-07T09:00:00Z"},
+        ],
+    })
+    monkeypatch.setattr(clc.subprocess, "run", _fake_gh_pr_view(fixture))
+    assert clc._pr_last_lane_activity(
+        21884, "myia-po-2023:CoursIA-2") == datetime(
+            2026, 8, 7, 9, 0, tzinfo=timezone.utc)
+
+
+def test_pr_last_lane_activity_none_on_gh_failure(monkeypatch):
+    """Une lecture morte n'est pas une mesure d'inactivite."""
+    monkeypatch.setattr(clc.subprocess, "run",
+                        _fake_gh_pr_view("", returncode=1))
+    assert clc._pr_last_lane_activity(21884, "myia-po-2023:CoursIA-2") is None
+
+
+def test_aged_claim_with_live_lane_pr_blocks(monkeypatch, capsys):
+    """73 h de claim + PR ouverte de la meme lane + commit de 13 h => BLOCKED.
+
+    C'est le test cible de #22408 : sans lui, l'organe autorisait une reprise
+    sur un grain en cours de livraison.
+    """
+    p = payload(comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- CSP-10",
+                        "2026-08-04T11:00:00Z"), number=21881)
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [_lane_pr(21884, "myia-po-2023:CoursIA-2", 21881)])
+    _patch_last_activity(monkeypatch,
+                         datetime(2026, 8, 6, 23, 0, tzinfo=timezone.utc))
+
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", stale_threshold=48.0,
+                        now=NOW, my_paths=[CSP10_PATH])
+    captured = capsys.readouterr()
+    assert rc == 1, captured.out + captured.err
+    assert '"myia-po-2023:CoursIA-2"' in captured.out
+    assert '"stale_claims": []' in captured.out
+    assert '"pr": 21884' in captured.out
+    assert "N'EST PAS perime (#22408)" in captured.err
+
+
+def test_aged_claim_without_open_pr_stays_stale(monkeypatch, capsys):
+    """Controle negatif : le meme claim, sans PR ouverte, reste STALE."""
+    p = payload(comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- CSP-10",
+                        "2026-08-04T11:00:00Z"), number=21881)
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [])
+
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", stale_threshold=48.0,
+                        now=NOW, my_paths=[CSP10_PATH])
+    captured = capsys.readouterr()
+    assert rc == 0, captured.out + captured.err
+    assert '"stale_claims": [\n    "myia-po-2023:CoursIA-2"\n  ]' in captured.out
+    assert '"revived_claims": []' in captured.out
+    assert "STALE_CLAIM myia-po-2023:CoursIA-2" in captured.err
+
+
+def test_aged_claim_with_silent_pr_is_still_stale(monkeypatch, capsys):
+    """PR ouverte mais derniere touche a 61 h (> seuil 48 h) : STALE."""
+    p = payload(comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- CSP-10",
+                        "2026-08-04T11:00:00Z"), number=21881)
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [_lane_pr(21884, "myia-po-2023:CoursIA-2", 21881)])
+    _patch_last_activity(monkeypatch,
+                         datetime(2026, 8, 4, 23, 0, tzinfo=timezone.utc))
+
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", stale_threshold=48.0,
+                        now=NOW, my_paths=[CSP10_PATH])
+    captured = capsys.readouterr()
+    assert rc == 0, captured.out + captured.err
+    assert '"stale_claims": [\n    "myia-po-2023:CoursIA-2"\n  ]' in captured.out
+
+
+def test_unreadable_activity_keeps_the_old_verdict(monkeypatch, capsys):
+    """gh indisponible : on garde STALE (une lecture morte n'est pas une preuve)."""
+    p = payload(comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- CSP-10",
+                        "2026-08-04T11:00:00Z"), number=21881)
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [_lane_pr(21884, "myia-po-2023:CoursIA-2", 21881)])
+    _patch_last_activity(monkeypatch, None)
+
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", stale_threshold=48.0,
+                        now=NOW, my_paths=[CSP10_PATH])
+    captured = capsys.readouterr()
+    assert rc == 0, captured.out + captured.err
+    assert '"stale_claims": [\n    "myia-po-2023:CoursIA-2"\n  ]' in captured.out
+
+
+def test_implicit_occupation_is_not_measured_when_a_claim_blocks(capsys):
+    """#22408 item 3 : `[]` ne doit plus se lire « mesure, personne ».
+
+    A l'instant du rapport #21881, le registre portait un claim actif : la
+    jambe IMPLICIT est lazy by outcome, elle n'a pas tourne, et `[]` se
+    lisait comme un resultat. Le booleen porte la difference.
+    """
+    p = payload(comment("[CLAIMED] lane myia-po-2025:CoursIA -- working here",
+                        "2026-08-07T10:00:00Z"), number=21881)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=48.0, now=NOW, check_open_pr_paths=True)
+    captured = capsys.readouterr()
+    assert rc in (1, 2), captured.out
+    assert '"implicit_occupation": []' in captured.out
+    assert '"implicit_occupation_measured": false' in captured.out
+
+
+def test_implicit_occupation_is_measured_on_a_free_grain(monkeypatch, capsys):
+    p = payload(comment("rien", "2026-08-07T10:00:00Z"), number=21881)
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", lambda: [])
+    rc = clc._run_check(p, "myia-po-2024:CoursIA",
+                        stale_threshold=48.0, now=NOW, check_open_pr_paths=True)
+    captured = capsys.readouterr()
+    assert rc == 0, captured.out
+    assert '"implicit_occupation_measured": true' in captured.out
+
+
 def test_stale_threshold_fresh_claim_returns_exit_2_not_scoped(capsys):
     # Other lane claimed 2h ago; threshold 24h -> NOT_SCOPED at exit 2 (#12322).
     # Pre-#12322 this returned `exit 1` + `BLOCKED`, conflating a non-scoped
