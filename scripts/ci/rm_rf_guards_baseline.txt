@@ -5,6 +5,13 @@
 scripts/ci/docker/linux-runner/persist/ai-01/test-dryrun-sizing-control.sh:"$TMP/_aclprobe"
 scripts/ci/docker/linux-runner/persist/ai-01/test-dryrun-sizing-control.sh:"$TMP/_probe"
 scripts/ci/docker/linux-runner/persist/ai-01/test-dryrun-sizing-control.sh:"$TMP/fxr/etc/systemd/system/coursia-runner.service.d"
+# Sites po-2026 arrives apres la baseline fondatrice (mesure du 2026-10-19,
+# `check_rm_rf_guards.py` : 12 sites, 10 en baseline, 2 nouveaux). Meme
+# famille que les sites ci-dessus : la variable est posee en tete de script
+# (`BASE="$HOME/CoursIA-runners-p0"` ; `TEST_DIR="/tmp/pool-alternates-test-$$"`),
+# jamais vide -- `pool.sh` tourne en plus sous `set -u`.
+scripts/ci/docker/linux-runner/persist/po-2026/pool.sh:"$BASE/slot-$1/_work"
+scripts/ci/docker/linux-runner/persist/po-2026/test_pool_alternates.sh:"$TEST_DIR/home2"
 scripts/ci/docker/linux-runner/test_supervise_guards.sh:"$TEST_DIR/pin-43"
 scripts/ci/docker/linux-runner/test_supervise_guards.sh:"$TEST_DIR/pin-44"
 scripts/ci/docker/linux-runner/test_supervise_guards.sh:"$TEST_DIR/pin-44-absente"
