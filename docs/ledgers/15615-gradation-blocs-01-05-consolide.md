@@ -73,7 +73,7 @@ Le décalage d'une lettre que le ledger fournée A signalait (« 03a → 03b, 03
 
 Le carnet Plan-de-déformation **n'est pas perdu** : il a changé de série. Une table qui le compte encore dans le bloc 03 pointe un fichier absent — c'est le seul point où les deux ledgers induisaient en erreur, et non des moindres.
 
-Conséquence arithmétique, vérifiée : 15 (Fondations) + 12 (fournée A) = **27** lignes ; moins 1 carnet sorti = **26** présents ; plus 3 carnets entrés = **29**, exactement le compte de l'arbre.
+Conséquence arithmétique, vérifiée contre l'arbre : le solde des entrées et des sorties de la période redonne exactement ce que `git ls-tree` dénombre, et c'est ce contrôle qui a validé la fusion Fondations + fournée A. Le détail des mouvements est dans les deux tables ci-dessus ; les totaux, eux, appartiennent au catalogue.
 
 ## Méthode
 
@@ -128,7 +128,7 @@ Les deux ledgers décrivaient chacun leurs paliers localement ; recoupés sur 29
 2. **Cadre formel (Basse)** — `02-Python` et son twin C#. Le jumeau ne s'ajoute pas à la théorie, il la re-dérive : pour une audience Python-first, lire le Python d'abord ; la réciproque vaut pour .NET-first.
 3. **Application (Moyenne)** — `02-Part2*` (équilibres mixtes), `02b` (formalisation), `02c*` (cas empirique), **`02d`** (épistémique), `03`/`03-cs` (classification des 576 jeux), `04` (Nash), **`04h`** (PoA), `05` (minimax et dualité). Onze carnets — tous ceux gradés Moyenne : c'est le plateau le plus large de la série, et le seul où un lecteur peut s'arrêter sans manquer une marche.
 4. **Twins enrichis et géométrie ordinale (Haute)** — `03b`, `03c`, `03d`, `04-cs`, `04c`/`04c-cs`, `04d`, **`04g`**, `05-cs`. Le constat du ledger fournée A se confirme et s'élargit : **en 04/05 le twin C# dépasse son Python** (`04-cs` ajoute Gauss + Gambit + `nashpy`, `05-cs` arbitre trois moteurs LP), alors qu'en 02/03 il le re-dérive.
-5. **Murs (Très haute)** — `03f`, `03g`, `04b`, `04e`, `04f`, `05b`. Ces six carnets supposent le track principal acquis **et** un bagage externe (tactiques Lean, topologie, littérature MIRI/decision theory, catégories). `03f` est le plus dense en code de la série (27 cellules de code sur 70 au total — `03-Topology2x2` reste le plus long en cellules toutes catégories, 82) et le seul à faire changer les règles par l'agent lui-même.
+5. **Murs (Très haute)** — `03f`, `03g`, `04b`, `04e`, `04f`, `05b`. Ces six carnets supposent le track principal acquis **et** un bagage externe (tactiques Lean, topologie, littérature MIRI/decision theory, catégories). `03f` est le plus dense en code de la série et le seul à faire changer les règles par l'agent lui-même ; `03-Topology2x2` reste le plus long toutes catégories.
 
 ## Ordre cible proposé (scope 2 de l'acceptance)
 
@@ -155,7 +155,7 @@ L'acceptance de #15615 demande un « ordre cible validé (user ou coordinateur) 
 
 ### Ce que l'ordre cible ne demande pas
 
-**Aucun renommage.** #18001 vient de renuméroter 93 carnets ; renuméroter une seconde fois pour déplacer `03b` avant `03c` coûterait une vague équivalente pour un gain de lecture marginal. La part documentaire de l'option B du ledger Fondations est **déjà en place** : `03b` porte sa ligne de prérequis dès l'introduction (« **Prérequis** : GameTheory-3 (générateurs), GameTheory-3b (codimension, murs, facettes), GameTheory-03h (deux espèces de flèches) »). Ce qui reste à corriger est autre chose, et chiffré : cette ligne **nomme les ordinaux d'avant #18001** — `GameTheory-3b` est le `03c` actuel, `GameTheory-03h` le `03g` actuel — et **5 carnets sur 29** gardent leur ordinal périmé en H1 : `03b` titré « GameTheory-3a », `03c` « GameTheory 3b », `03d` « GameTheory-3c », `03f` « GameTheory 3e », `03g` « GameTheory-03h ». Le résiduel exécutable est donc **5 titres H1 + 1 ligne de prérequis**, un balayage markdown-only sans renommage de fichier — les ordinaux des **fichiers**, eux, sont corrects depuis #18001.
+**Aucun renommage.** #18001 vient de renuméroter 93 carnets ; renuméroter une seconde fois pour déplacer `03b` avant `03c` coûterait une vague équivalente pour un gain de lecture marginal. La part documentaire de l'option B du ledger Fondations est **déjà en place** : `03b` porte sa ligne de prérequis dès l'introduction (« **Prérequis** : GameTheory-3 (générateurs), GameTheory-3b (codimension, murs, facettes), GameTheory-03h (deux espèces de flèches) »). Ce qui reste à corriger est autre chose, et chiffré : cette ligne **nomme les ordinaux d'avant #18001** — `GameTheory-3b` est le `03c` actuel, `GameTheory-03h` le `03g` actuel — et **5 carnets sur 29** gardent leur ordinal périmé en H1 : `03b` titré « GameTheory-3a », `03c` « GameTheory 3b », `03d` « GameTheory-3c », `03f` « GameTheory 3e », `03g` « GameTheory-03h ». Le résiduel exécutable est donc exactement le balayage des titres H1 listés ci-dessus plus la ligne de prérequis de `03b`, un balayage markdown-only sans renommage de fichier — les ordinaux des **fichiers**, eux, sont corrects depuis #18001.
 
 **Aucun remplissage de trou.** Le bloc 03 porte désormais deux ordinaux libres : `03a` (jamais réattribué après le relettrage) et `03e` (libéré par la sortie du carnet Plan-de-déformation vers Dynamics). Ils **restent libres** : sur une série à numérotation par accrétion, un trou est une trace, pas un défaut — le combler imposerait de renuméroter les carnets postérieurs.
 
