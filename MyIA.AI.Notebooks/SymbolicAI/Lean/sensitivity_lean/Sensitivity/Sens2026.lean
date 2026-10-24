@@ -15,10 +15,32 @@ disjonction de trois conjonctions de taille deux sur `Q 6`.
 
 La famille 132 du dépôt openai/math (2026) — « fonctions booléennes totales
 avec `bs(f) ≥ s(f)^α` pour un `α > 2` fixé » — **réfute** le renforcement
-quadratique de la conjecture de sensibilité : le gap `bs/s` peut dépasser
-tout polynôme fixé en `s`. Ce résultat est cité **avec son statut**
-(formalisé en amont, `lean/docs/132.md` du dépôt ; non re-prouvé par nous) :
-sa re-preuve est hors d'échelle du lac.
+quadratique de la conjecture de sensibilité : le rapport `bs/s²` n'est pas
+borné — au sens où il n'admet **aucune borne constante** en `s`. Ce résultat
+est cité **avec son statut**
+(formalisé en amont, squelette `lean/docs/132.md` du dépôt openai/math ;
+non re-prouvé par nous) : sa re-preuve est hors d'échelle du lac.
+
+Le paragraphe « Scope » de `lean/docs/132.md` (source : dépôt `openai/math`,
+section Scope) dit, mot pour mot :
+
+> For every integer $d\ge1$, it constructs a nonconstant function with
+> $\mathrm{bs}(f)/s(f)^2\ge2^d/(4(d+2)^2)$, making the ratio unbounded. The
+> formalization also gives a fixed exponent $\alpha>2$ and a sequence with
+> $s(f)^\alpha\le\mathrm{bs}(f,0)$ while the latter tends to infinity.
+
+C'est donc `bs/s²` qui est non borné (pas de borne constante) — la réfutation
+porte sur `bs = O(s²)` — et non `bs/s`.
+
+La borne qui referme l'exposant par le haut est le **Théorème 1.5** de
+Huang (*Induced subgraphs of hypercubes and a proof of the Sensitivity
+Conjecture*, arXiv 1907.00847) : `bs(f) ≤ s(f)^4` pour toute fonction
+booléenne `f`. L'exposant de la famille 132 est donc coincé par
+`2 < α ≤ 4`. Attention à la notion employée : ce Théorème donne `bs ≤ s⁴`,
+donc `bs/s² ≤ s²` — le rapport `bs/s²` **est** borné polynomialement en `s`.
+Ce qui échoue, c'est la borne **constante** : `bs/s²` n'admet pas de
+majorant indépendant de `s` (le quotient tend vers l'infini), ce qui suffit
+à réfuter `bs = O(s²)`.
 
 `tribes32` est l'**écho calculable** de ce voisinage — et il enseigne deux
 choses, dont une contre-intuitive :
