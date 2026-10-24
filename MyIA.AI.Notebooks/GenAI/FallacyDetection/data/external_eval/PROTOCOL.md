@@ -30,6 +30,36 @@ L'outil garantit, par construction et par tests (`tests/test_sample_external_eva
 - **aveugle structurel** : `sheet.jsonl` (feuille évaluateur) ne contient jamais le nœud cible **ni sa famille de premier niveau** (la liste fermée des familles reste connue des évaluateurs — c'est l'espace de réponse du passage 1 — mais la famille correcte d'un item est la première moitié de la réponse : la porter sur la feuille rendrait le seuil « branche » du §4 circulaire) ; `key.jsonl` (correction, qui porte la famille pour la stratification) est un fichier séparé ;
 - **reproductibilité** : même graine = même échantillon (SHA-256 de la feuille consigné dans `manifest.json` avec empreintes de la source et de la clé).
 
+### 2 bis. Rendu de la feuille et conversion des réponses
+
+`sheet.jsonl` est un fichier aveugle, pas un document : il ne s'ouvre pas avec
+une consigne. `render_annotation_sheet.py` le rend lisible et referme la chaîne
+entre l'échantillonneur (§2) et le mesureur (`score_external_eval.py`) :
+
+```bash
+# document Markdown + gabarit de réponses CSV, pour un évaluateur
+python scripts/fallacy_detection/render_annotation_sheet.py render \
+    --sheet .../run1/sheet.jsonl \
+    --vocab <corpus_aligne.jsonl> \
+    --out-dir .../run1/pass1/<pseudonyme> --label <pseudonyme>
+
+# gabarit rempli -> forme consommée par le mesureur
+python scripts/fallacy_detection/render_annotation_sheet.py convert \
+    --answers .../pass1/<pseudonyme>/answers_<pseudonyme>.csv \
+    --vocab <corpus_aligne.jsonl> \
+    --out .../pass1/<pseudonyme>.jsonl
+```
+
+Trois points que le rendu tient par construction (`tests/test_render_annotation_sheet.py`) :
+
+- **l'aveuglement est vérifié à l'entrée** : une feuille portant un champ autre que `item_id` et `text` est refusée — passer `key.jsonl` par erreur échoue au lieu de publier les étiquettes ;
+- **l'espace de réponse est la liste des nœuds**, groupée par famille, sans définition ni exemple : c'est exactement ce que le passage 1 du §3 autorise à montrer ;
+- **une faute de frappe est refusée à la conversion**, avec son numéro de ligne, plutôt que de devenir une note vide au calcul d'alpha ; une feuille partiellement remplie est refusée par défaut (`--allow-partial` la convertit en annonçant les lignes écartées).
+
+Le document et le gabarit ne dérivent que de la feuille aveugle : aucune
+étiquette cible ne s'y trouve. La clé, le manifeste et les feuilles remplies
+restent soumis au §6.
+
 ## 3. Évaluateurs
 
 - **≥ 3 évaluateurs indépendants** (l'arbitrage du panel — qui sont les humains, et sous quelle modalité — est l'objet de la question user Q25, registre de la lane).
