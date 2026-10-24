@@ -637,7 +637,7 @@ Le bloc `CATALOG-STATUS` en tête de ce fichier fait foi pour le nombre de noteb
 | Référence | Couverture |
 |-----------|------------|
 | Osborne & Rubinstein, *A Course in Game Theory* (1994) | Manuel de référence, paliers 01 à 12 |
-| Bonanno, *Game Theory* (2015, arXiv 1512.06808, CC BY 4.0) | Manuel pédagogique en complément, 165 exercices résolus — couvre Phase 1 (paliers 02-06) + jeux bayésiens (palier 11) + coopératif (palier 15) |
+| Bonanno, *Game Theory* (2015, arXiv 1512.06808, CC BY-NC-ND 4.0) | Manuel pédagogique en complément, 165 exercices résolus (chiffre de l'éditeur) — couvre les jeux ordinaux et cardinalistes (ch. 1-6), les jeux bayésiens (ch. 13-15), et deux pans que les carnets citent sans leur consacrer de palier : connaissance commune et croyances (ch. 7-9), raffinements de l'équilibre — séquentiel faible, séquentiel, parfait bayésien (ch. 10-12). Ne couvre ni les jeux coopératifs (palier 15), ni les jeux répétés (palier 06), ni les jeux combinatoires (palier 08) |
 | Osborne, *An Introduction to Game Theory* (2004) | Manuel alternatif |
 | Russell & Norvig, *AIMA*, 4e éd., ch. 17-18 | Cadre général des jeux et des mécanismes |
 | Nash, « Non-Cooperative Games » (1951) | Palier 04 |
@@ -675,6 +675,8 @@ Le bloc `CATALOG-STATUS` en tête de ce fichier fait foi pour le nombre de noteb
 Voir la licence du dépôt principal.
 
 ---
+
+*Version 1.5.2 — Octobre 2026 (2026-10-22) — licence et couverture Bonanno corrigées sur mesure (#19461, volet 3). L'entrée 1.5.1 annonçait « CC BY 4.0 » et une couverture « Phase 1 (paliers 02-06) + coopératif (palier 15) ». La page de copyright du PDF archivé porte **CC BY-NC-ND 4.0** — la métadonnée arXiv annonce CC BY 4.0, la page du document prime — et la table des matières du manuel ne comporte ni chapitre de jeux coopératifs, ni chapitre de jeux répétés ou combinatoires. La ligne de la table « Références académiques » donne désormais les chapitres réellement présents. Les carnets citaient déjà la licence exacte depuis le 2026-10-18 ; le README était la seule surface restée en retard.*
 
 *Version 1.5.1 — Octobre 2026 (2026-10-15) — référencement Bonanno (#19461) : ajout de la référence Bonanno, *Game Theory* (2015, arXiv 1512.06808, CC BY 4.0) à la table « Références académiques » comme manuel pédagogique en complément, 165 exercices résolus couvrant Phase 1 + jeux bayésiens + coopératif. La note d'angle-mort reste sur le ticket (#19461, mémo du 2026-10-06) ; les PRs de citation R2 (4 carnets Phase 1 sans référence académique en cellule) restent à mener en cycles ultérieurs.*
 
