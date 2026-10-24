@@ -18,12 +18,32 @@ class AdaptiveAssetAllocation(QCAlgorithm):
     - Top 4 (was 5) to concentrate on best assets
 
     Universe: SPY, EFA, EEM, VNQ, GLD, DBC, TLT, IEF, TIP, HYG
-    Backtest: 2008-2026
+    Backtest: 2015-01-01 -> 2024-12-31 par defaut (parametres start_date / end_date, %Y%m%d)
+
+    Parametre mode (#21747) :
+    - strategy (defaut) : la strategie ci-dessus ;
+    - spy : SPY detenu ;
+    - 6040 : SPY 60 %, BND 40 % ;
+    - ew10 : les dix titres de l'univers a poids egal.
+    Les references se reequilibrent au debut de chaque mois, une minute apres l'ouverture ;
+    en mode reference, rebalance() sort aussitot. Trace journaliere "shadow" (e0..e4, #18923) :
+    valeur du portefeuille a l'ouverture de chaque seance de SPY.
     """
 
     def initialize(self):
-        self.set_start_date(2015, 1, 1)
-        self.set_end_date(2024, 12, 31)
+        self._mode = self.get_parameter("mode", "strategy").lower()
+        if self._mode not in ("strategy", "spy", "6040", "ew10"):
+            raise ValueError(f"unknown mode parameter: {self._mode} (strategy | spy | 6040 | ew10)")
+        start_date_param = self._parse_date_param("start_date")
+        end_date_param = self._parse_date_param("end_date")
+        if start_date_param is not None:
+            self.set_start_date(start_date_param)
+        else:
+            self.set_start_date(2015, 1, 1)
+        if end_date_param is not None:
+            self.set_end_date(end_date_param)
+        else:
+            self.set_end_date(2024, 12, 31)
         self.set_cash(100000)
         self.set_brokerage_model(BrokerageName.INTERACTIVE_BROKERS_BROKERAGE, AccountType.MARGIN)
 
@@ -53,8 +73,50 @@ class AdaptiveAssetAllocation(QCAlgorithm):
 
         self.set_warmup(self.warmup_days, Resolution.DAILY)
 
-    def rebalance(self):
+        # Mesure #21747 : references detenues et trace journaliere, hors decision de la strategie
+        spy = self.symbols["SPY"]
+        self._bnd = (self.add_equity("BND", Resolution.DAILY).symbol
+                     if self._mode == "6040" else None)
+        if self._mode != "strategy":
+            self.settings.seed_initial_prices = True
+            self.schedule.on(
+                self.date_rules.month_start(spy),
+                self.time_rules.after_market_open(spy, 1),
+                self._rebalance_reference
+            )
+        self._closes = 0
+        self.schedule.on(
+            self.date_rules.every_day(spy),
+            self.time_rules.after_market_open(spy, 0),
+            self._trace
+        )
+
+    def _parse_date_param(self, name):
+        raw = self.get_parameter(name)
+        if raw is None or str(raw).strip() == "":
+            return None
+        return datetime.strptime(str(raw).strip(), "%Y%m%d")
+
+    def _rebalance_reference(self):
         if self.is_warming_up:
+            return
+        if self._mode == "spy":
+            self.set_holdings([PortfolioTarget(self.symbols["SPY"], 1.0)])
+        elif self._mode == "6040":
+            self.set_holdings([PortfolioTarget(self.symbols["SPY"], 0.6),
+                               PortfolioTarget(self._bnd, 0.4)])
+        else:
+            weight = 1.0 / len(self.tickers)
+            self.set_holdings([PortfolioTarget(self.symbols[t], weight) for t in self.tickers])
+
+    def _trace(self):
+        if self.is_warming_up:
+            return
+        self.plot("shadow", f"e{self._closes % 5}", self.portfolio.total_portfolio_value)
+        self._closes += 1
+
+    def rebalance(self):
+        if self.is_warming_up or self._mode != "strategy":
             return
 
         # Get historical prices
