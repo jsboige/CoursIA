@@ -58,6 +58,14 @@ theorie du decodage — il l'**appelle**.
    conventions mesurees — mot vide a cout nul (Huffman,
    `costL_singleton_empty_word`) contre un bit a deux fois le poids (Python,
    `pythonSingleton`).
+8. **Reconstruction canonique** (jalon 5) : `buildCanon` remonte le chemin
+   inverse — d'un vecteur de longueurs par symbole vers l'arbre. La
+   construction passe par un arbre a trous (`PTree`) et **refuse** les trous a
+   la conversion : `LTree` etant total, un code incomplet (Kraft < 1) ne s'y
+   represente pas sans etiquette factice. Le compteur est celui du carnet 02
+   (`canonWords`), et les deux refus — collision (`buildCanon_refuses_nonKraft`)
+   et trou (`buildCanon_refuses_incomplete`) — sont des theoremes, pas des
+   commentaires.
 
 Sibling EN : `SymbolCodec_en.lean`, miroir auto-contenu dans le meme
 namespace `CompressionLean` (il n'importe pas le fichier FR) — memes enonces
@@ -810,5 +818,163 @@ theorem same_multiset_different_message :
 #print axioms mem_canonOrder
 #print axioms demoTree_roundtrip
 #print axioms same_multiset_different_message
+
+/-! ## Jalon 5 : reconstruction d'un arbre canonique
+
+Les jalons precedents partent d'un arbre pour en lire les longueurs. Celui-ci
+remonte le chemin : etant donne un **vecteur de longueurs par symbole**, il
+reconstruit le code canonique du carnet 02.
+
+Une limite de representation gouverne la construction : `LTree` est **total**
+(chaque feuille porte un symbole), donc il ne peut representer qu'un code
+**complet** — Kraft exactement 1. Un vecteur incomplet ne s'y ecrit pas sans
+inventer des etiquettes factices. La reconstruction passe donc par un arbre a
+trous, et la conversion finale **refuse** les trous au lieu de les combler. -/
+
+/-- Arbre d'insertion : une feuille est soit un symbole, soit un trou encore
+inoccupe. -/
+inductive PTree (n : Nat) where
+  /-- Feuille : un symbole, ou un trou. -/
+  | tip : Option (Fin n) → PTree n
+  /-- Noeud interne. -/
+  | node : PTree n → PTree n → PTree n
+  deriving DecidableEq, Repr
+
+/-- Insertion d'un mot dans l'arbre a trous. Chaque collision est un echec
+**explicite** : un mot deja pris (`tip (some _)`) comme un mot qui prefixe un
+noeud (`node`, mot vide) rendent `none` — jamais un ecrasement silencieux. Le
+bit `true` descend a gauche, la convention de `pairs`. -/
+def pinsert {n : Nat} : PTree n → List Bool → Fin n → Option (PTree n)
+  | .tip none, [], s => some (.tip (some s))
+  | .tip none, b :: rest, s =>
+      (pinsert (.tip none) rest s).map fun t =>
+        if b then .node t (.tip none) else .node (.tip none) t
+  | .tip (some _), _, _ => none
+  | .node _ _, [], _ => none
+  | .node l r, b :: rest, s =>
+      if b then (pinsert l rest s).map fun l' => .node l' r
+      else (pinsert r rest s).map fun r' => .node l r'
+
+/-- Conversion finale : un trou est un **refus**. C'est ici qu'un code
+incomplet echoue, et non plus loin sous une feuille inventee. -/
+def toLTree {n : Nat} : PTree n → Option (LTree n)
+  | .tip none => none
+  | .tip (some s) => some (.leaf s)
+  | .node l r => (toLTree l).bind fun l' => (toLTree r).map fun r' => .node l' r'
+
+/-- Les `width` bits de `mot`, poids fort en tete ; une largeur superieure a la
+taille binaire du nombre complete a gauche par des zeros. C'est la convention
+du carnet 02 (`format(mot, "0{length}b")`). -/
+def bitsOfNat : (width : Nat) → Nat → List Bool
+  | 0, _ => []
+  | width + 1, mot => bitsOfNat width (mot >>> 1) ++ [mot % 2 == 1]
+
+/-- Le compteur canonique du carnet 02, applique dans l'ordre `canonOrder` :
+chaque symbole decale le compteur de `longueur - longueurPrecedente`, prend la
+fenetre basse comme mot, puis incremente. -/
+def canonWordsAux {n : Nat} (len : Fin n → Nat) :
+    Nat → Nat → List (Fin n) → List (List Bool)
+  | _, _, [] => []
+  | mot, prevLen, s :: rest =>
+      let m := mot <<< (len s - prevLen)
+      bitsOfNat (len s) m :: canonWordsAux len (m + 1) (len s) rest
+
+/-- Les mots canoniques d'un vecteur de longueurs, dans l'ordre des symboles
+de `canonOrder`. -/
+def canonWords {n : Nat} (len : Fin n → Nat) : List (List Bool) :=
+  canonWordsAux len 0 0 (canonOrder len)
+
+/-- **Reconstruction canonique** : etant donne un vecteur de longueurs par
+symbole, rend l'arbre du code canonique, ou `none` des qu'une insertion
+collisionne ou qu'un trou subsiste — c'est-a-dire des que le vecteur n'est pas
+complet. -/
+def buildCanon {n : Nat} (len : Fin n → Nat) : Option (LTree n) :=
+  let step (acc : Option (PTree n)) (p : Fin n × List Bool) : Option (PTree n) :=
+    acc.bind fun t => pinsert t p.2 p.1
+  (((canonOrder len).zip (canonWords len)).foldl step (some (.tip none))).bind
+    toLTree
+
+/-- L'arbre que la reconstruction doit rendre pour `demoLengths` : le code
+canonique du carnet, ecrit a la main pour que la preuve ait une cible. `true`
+descend a gauche, donc le mot « 0 » du carnet (faux) est le fils **droit**. -/
+def demoCanonTree : LTree 4 :=
+  .node (.node (.node (.leaf 3) (.leaf 2)) (.leaf 1)) (.leaf 0)
+
+/-- **La reconstruction retrouve le code du carnet** : pour les longueurs
+1-2-3-3, le symbole 0 prend « 0 », 1 prend « 10 », 2 prend « 110 » et 3 prend
+« 111 ». Prouve par evaluation complete du compteur et des insertions — c'est
+l'arbre entier qui est fige, pas seulement ses longueurs. -/
+theorem buildCanon_demo : buildCanon demoLengths = some demoCanonTree := by
+  decide
+
+/-- **Controle positif minimal** : deux symboles de longueur 1 (Kraft = 1) se
+reconstruisent en un noeud a deux feuilles, dans l'ordre du compteur. -/
+theorem buildCanon_two : buildCanon ![1, 1] = some (.node (.leaf 1) (.leaf 0)) := by
+  decide
+
+/-- **Le singleton retombe sur la convention Huffman** : longueur 0, mot vide,
+feuille-racine — la meme que `costL_singleton_empty_word`, et non le bit
+double de `pythonSingleton`. -/
+theorem buildCanon_singleton : buildCanon ![0] = some (.leaf 0) := by
+  decide
+
+/-- **Refus par collision** : trois symboles de longueur 1 reclament
+3/2 > 1 ; le troisieme mot retombe sur un mot deja pose et la reconstruction
+rend `none`. -/
+theorem buildCanon_refuses_nonKraft : buildCanon ![1, 1, 1] = none := by
+  decide
+
+/-- **Refus par trou** : `![1, 2, 3]` a Kraft 7/8 — aucun mot ne collisionne,
+mais une feuille manque, et `LTree` ne sait pas la representer. La
+reconstruction refuse plutot que de fabriquer une etiquette. -/
+theorem buildCanon_refuses_incomplete : buildCanon ![1, 2, 3] = none := by
+  decide
+
+/-- Coherent avec `no_LTree_zero` : sur l'alphabet vide, il n'y a rien a
+reconstruire et la reconstruction refuse. -/
+theorem buildCanon_zero_alphabet :
+    buildCanon (fun _ : Fin 0 => 0) = none := by
+  decide
+
+/-- **Longueurs preservees** : relues dans l'arbre reconstruit, les longueurs
+sont celles du vecteur, symbole par symbole. La preuve porte sur l'instance
+concrete — le cas general « tout vecteur complet » n'est pas reclame ici. -/
+theorem demoCanon_lengths :
+    ((pairs demoCanonTree).map fun p => (p.2, p.1.length))
+      = [(3, 3), (2, 3), (1, 2), (0, 1)] := by
+  decide
+
+/-- **Round-trip apres reconstruction** : le message encode par l'arbre
+reconstruit se relit, avec le moteur du jalon 1 (`decodeL_encode`) et non par
+evaluation ; le message couvre les quatre feuilles. -/
+theorem demoCanon_roundtrip :
+    decodeL demoCanonTree [true, true, true, true, true, false, true, false, false]
+      = some [3, 2, 1, 0] :=
+  decodeL_encode (by intro h; exact CodeTree.noConfusion h) [3, 2, 1, 0]
+    [true, true, true, true, true, false, true, false, false] (by rfl)
+
+/-! ### Ancres de la reconstruction -/
+
+/- Les mots du compteur canonique pour les longueurs 1-2-3-3 : c'est
+exactement la table du carnet 02 (`code_canonique`), ecrite en bits. -/
+#eval canonWords demoLengths
+
+/- L'arbre reconstruit, puis ses mots relus par le parcours du jalon 1. -/
+#eval buildCanon demoLengths
+#eval wordsOf demoCanonTree
+
+/- Les trois refus, a l'execution : collision, trou, alphabet vide. -/
+#eval buildCanon ![1, 1, 1]
+#eval buildCanon ![1, 2, 3]
+#eval buildCanon (fun _ : Fin 0 => 0)
+
+#print axioms buildCanon_demo
+#print axioms buildCanon_two
+#print axioms buildCanon_singleton
+#print axioms buildCanon_refuses_nonKraft
+#print axioms buildCanon_refuses_incomplete
+#print axioms buildCanon_zero_alphabet
+#print axioms demoCanon_lengths
+#print axioms demoCanon_roundtrip
 
 end CompressionLean
