@@ -209,14 +209,34 @@ done
 # apres, le premier passage sur un slot seme copierait les objets du miroir dans
 # le volume du slot (cf wch_repack_flags).
 #
-# FAIL-OPEN PAR CONSTRUCTION : miroir absent => les deux gestes rendent 0 sans
-# rien ecrire, et le slot se comporte exactement comme avant ce bloc.
+# FAIL-OPEN : miroir absent => le bloc rend 0, n'ajoute rien, et RETIRE les
+# lignes d'alternates qui designent un miroir disparu. Sans ce retrait, un slot
+# seme AVANT la disparition gardait un alternates pendant et git rendait rc=128
+# sur log/status/fetch : le garde work_cache ne le voit pas (il lit les refs,
+# pas la resolvabilite des objets) et son repack -adl rend rc=0. Alternates
+# vide => le slot est exactement dans l'etat d'avant ce bloc.
 # TEST-ENTRYPOINT-MIRROR-START
 MIRROR_PATH="${COURSIA_RUNNER_MIRROR_PATH:-/opt/hostedtoolcache/coursia-mirror.git}"
 MIRROR_REMOTE="${COURSIA_RUNNER_MIRROR_REMOTE:-https://github.com/jsboige/CoursIA.git}"
 MIRROR_SLUG="${COURSIA_RUNNER_MIRROR_SLUG:-}"
 
 mirror_present() { [ -d "$MIRROR_PATH/objects" ]; }
+
+# Cle de comparaison d'un chemin. Dans le conteneur, elle vaut le chemin
+# lui-meme : aucune dependance ajoutee. Sur un hote MSYS (Git Bash), le meme
+# repertoire s'ecrit `C:/Users/.../x` quand c'est GIT qui l'ecrit et
+# `/tmp/x` quand c'est le shell : mesure -- `realpath -m` rend chaque forme
+# verbatim, donc une egalite normalisee ne mord jamais sur cet hote, et le
+# moindre des degats est un alternates duplique a chaque boot. `cygpath -m`
+# ramene les deux formes a la meme chaine ; absent du conteneur, ou les formes
+# coincident de toute facon.
+mirror_path_key() {
+  if command -v cygpath >/dev/null 2>&1; then
+    cygpath -m -- "$1" 2>/dev/null || printf '%s' "$1"
+  else
+    printf '%s' "$1"
+  fi
+}
 
 # Un depot de slot emprunte-t-il les objets du miroir ? Idempotent par
 # construction : la ligne n'est ajoutee que si le fichier ne la porte pas deja,
@@ -232,12 +252,15 @@ mirror_present() { [ -d "$MIRROR_PATH/objects" ]; }
 # textuelle (jamais sur « considere comme present »).
 mirror_ensure_alternates() {  # $1 = repo de slot (avec .git)
   local repo="$1" alt="$1/.git/objects/info/alternates" needle="$MIRROR_PATH/objects"
-  local line a b have=0
+  local line a b have=0 key
+  key="$(mirror_path_key "$needle")"
   mkdir -p "$(dirname "$alt")" 2>/dev/null || return 0
   if [ -s "$alt" ]; then
     while IFS= read -r line; do
       [ -n "$line" ] || continue
-      if [ "$line" = "$needle" ]; then have=1; break; fi
+      if [ "$line" = "$needle" ] || [ "$(mirror_path_key "$line")" = "$key" ]; then
+        have=1; break
+      fi
       if command -v realpath >/dev/null 2>&1; then
         a="$(realpath -- "$line" 2>/dev/null || true)"
         b="$(realpath -- "$needle" 2>/dev/null || true)"
@@ -251,6 +274,52 @@ mirror_ensure_alternates() {  # $1 = repo de slot (avec .git)
   # conteneur avant l'enregistrement du runner (meme classe que #16938).
   printf '%s\n' "$needle" >> "$alt" 2>/dev/null || return 0
   echo "entrypoint: alternates pose sur $repo -> $needle"
+  return 0
+}
+
+# Retrait symetrique, pour le cas que le fail-open ne couvrait pas : le miroir
+# disparait APRES qu'un slot ait ete seme. Une ligne d'alternates qui designe
+# un repertoire absent rend le clone inutilisable -- `git log`, `status`,
+# `fetch` rendent rc=128 avec `unable to normalize alternate object path` --
+# alors que le bloc se contentait de journaliser « miroir absent ». Le garde
+# work_cache ne le repere pas : il lit les refs (lisibles) et jamais la
+# resolvabilite des objets, et son repack -adl rend rc=0. Retirer la ligne
+# ramene le slot a l'etat d'avant #18225 (alternates vide => wch_repack_flags
+# retombe sur -ad).
+#
+# Meme normalisation que mirror_ensure_alternates : la cle de l'hote d'abord
+# (elle seule rapproche les deux formes d'ecriture du meme chemin), puis
+# `realpath -m` quand il existe -- le chemin du miroir n'existe PLUS, donc un
+# `realpath` strict echouerait. Repli textuel sinon, jamais « considere comme
+# absent ».
+mirror_drop_alternates() {  # $1 = repo de slot (avec .git)
+  local repo="$1" alt="$1/.git/objects/info/alternates" needle="$MIRROR_PATH/objects"
+  local line a b tmp dropped=0 key
+  [ -s "$alt" ] || return 0
+  key="$(mirror_path_key "$needle")"
+  tmp="$alt.tmp.$$"
+  : > "$tmp" 2>/dev/null || return 0
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    if [ "$line" = "$needle" ] || [ "$(mirror_path_key "$line")" = "$key" ]; then
+      dropped=1; continue
+    fi
+    if command -v realpath >/dev/null 2>&1; then
+      a="$(realpath -m -- "$line" 2>/dev/null || realpath -- "$line" 2>/dev/null || true)"
+      b="$(realpath -m -- "$needle" 2>/dev/null || realpath -- "$needle" 2>/dev/null || true)"
+      if [ -n "$a" ] && [ -n "$b" ] && [ "$a" = "$b" ]; then dropped=1; continue; fi
+    fi
+    printf '%s\n' "$line" >> "$tmp" 2>/dev/null || true
+  done < "$alt"
+  if [ "$dropped" -eq 1 ]; then
+    if mv -- "$tmp" "$alt" 2>/dev/null; then
+      echo "entrypoint: alternates pendant retire de $repo -> $needle (miroir disparu)"
+    else
+      rm -f -- "$tmp" 2>/dev/null || true
+    fi
+  else
+    rm -f -- "$tmp" 2>/dev/null || true
+  fi
   return 0
 }
 
@@ -292,8 +361,17 @@ if mirror_present; then
     mirror_ensure_alternates "${gitdir%/.git}"
   done
   mirror_seed_work
-elif [ -n "${MIRROR_VERBOSE:-}" ]; then
-  echo "entrypoint: miroir absent ($MIRROR_PATH) -- comportement d'avant #18225"
+else
+  # Miroir absent : retirer les lignes qui le designent (slot seme avant sa
+  # disparition). Les autres lignes d'alternates, si un slot en porte, sont
+  # conservees telles quelles.
+  for gitdir in "$ACTIONS_RUNNER_INPUT_WORK"/*/*/.git; do
+    [ -e "$gitdir" ] || continue
+    mirror_drop_alternates "${gitdir%/.git}"
+  done
+  if [ -n "${MIRROR_VERBOSE:-}" ]; then
+    echo "entrypoint: miroir absent ($MIRROR_PATH) -- comportement d'avant #18225"
+  fi
 fi
 # TEST-ENTRYPOINT-MIRROR-END
 # ---------------------------------------------------------------------------

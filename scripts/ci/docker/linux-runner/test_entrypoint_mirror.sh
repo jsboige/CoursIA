@@ -55,9 +55,13 @@ run_block() { bash "$TEST_DIR/block.sh" 2>&1; }
 # deux formes coincident -- donc le test compte ce qui est vrai partout : une
 # seule ligne designe le miroir, quelle que soit la forme.
 mirror_lines() {
-  local f="$1/.git/objects/info/alternates"
+  local f="$1/.git/objects/info/alternates" n
   [ -f "$f" ] || { printf '%s\n' 0; return 0; }
-  grep -c '/coursia-mirror\.git/objects$' "$f" 2>/dev/null || printf '%s\n' 0
+  # `grep -c` IMPRIME 0 quand il ne trouve rien, et rend 1 : un `|| printf 0`
+  # ajouterait un second 0 et la comparaison echouerait sur "0\n0". Le repli
+  # porte donc sur une sortie VIDE, pas sur le code de retour.
+  n="$(grep -c '/coursia-mirror\.git/objects$' "$f" 2>/dev/null)"
+  printf '%s\n' "${n:-0}"
 }
 
 # Miroir bare de fixture : trois commits sur main, plus un blob temoin dont le
@@ -134,17 +138,31 @@ echo ""
 # --- Test 3 : alternates idempotents ---------------------------------------
 echo "Test 3 : alternates idempotent -- une ligne, quel que soit le nombre de boots"
 (
+  R="$WORK/CoursIA/CoursIA"
+  # Sequence REELLE : T2 vient de semer, donc l'alternates porte la forme ecrite
+  # par GIT, qui n'est pas celle que le bloc passe (mesure de cet hote :
+  # `C:/Users/.../x/objects` cote git, `/tmp/.../x/objects` cote bash). Un bloc
+  # qui compare les chaines brutes ne reconnait pas sa propre ligne et en ajoute
+  # une SECONDE : le fichier grossit a chaque boot. Le test compte les deux
+  # formes (cf mirror_lines), donc il voit ce doublon.
+  run_block >/dev/null 2>&1
+  n="$(mirror_lines "$R")"
+  if [ "$n" = "1" ]; then
+    ok "T3a une seule ligne apres un boot sur un slot seme (les deux formes du chemin coincident)"
+  else
+    ko "T3a $n ligne(s) apres un boot sur un slot seme -- le bloc reecrit la ligne ecrite par git"
+  fi
   # Etat de depart FIXE (alternates absent) : c'est l'idempotence du geste du
   # bloc qui est mesuree ici, pas la forme du chemin ecrit par git au semis.
-  rm -f "$WORK/CoursIA/CoursIA/.git/objects/info/alternates"
+  rm -f "$R/.git/objects/info/alternates"
   run_block >/dev/null 2>&1
   run_block >/dev/null 2>&1
   run_block >/dev/null 2>&1
-  n="$(mirror_lines "$WORK/CoursIA/CoursIA")"
+  n="$(mirror_lines "$R")"
   if [ "$n" = "1" ]; then
-    ok "T3 une seule ligne apres trois passages"
+    ok "T3b une seule ligne apres trois passages"
   else
-    ko "T3 $n lignes dans alternates (attendu 1) -- un fichier qui grossit a chaque boot"
+    ko "T3b $n lignes dans alternates (attendu 1) -- un fichier qui grossit a chaque boot"
   fi
 )
 echo ""
@@ -210,6 +228,61 @@ echo "Test 6 : repertoire sans .git -- ecarte avec preuve de preservation"
     ok "T6 le residu survit dans un repertoire .stale- (preservation prouvee)"
   else
     ko "T6 le residu a disparu -- suppression sans preuve de preservation"
+  fi
+)
+echo ""
+
+# --- Test 7 : miroir disparu APRES semis -- alternates pendants retires -----
+echo "Test 7 : miroir disparu apres semis -- le boot suivant retire l'alternates pendant"
+(
+  R="$WORK/CoursIA/CoursIA"
+  rm -rf "$R" "$MIRROR"
+  make_mirror
+  run_block > /dev/null
+  # Le slot a fetche une fois (cas nominal d'un job) : il tient ses propres
+  # objets, ce qui rend la mesure de `git log` concluante apres la disparition.
+  git -C "$R" remote set-url origin "$TEST_DIR/src"
+  git -C "$R" fetch -q origin main
+  # Une ligne etrangere au miroir, pour mesurer qu'on ne retire pas tout. Elle
+  # doit etre ecrite dans la forme que GIT lit sur cet hote : `git.exe` ne
+  # convertit pas le contenu d'alternates, donc un `/tmp/...` y designe
+  # `C:/tmp/...` et rend rc=128 a lui seul -- le test mesurerait alors sa
+  # propre ecriture, pas le retrait.
+  foreign="$TEST_DIR/src/.git/objects"
+  if command -v cygpath >/dev/null 2>&1; then
+    foreign="$(cygpath -m -- "$foreign")"
+  fi
+  printf '%s\n' "$foreign" >> "$R/.git/objects/info/alternates"
+  before="$(mirror_lines "$R")"
+  if [ "$before" = "1" ]; then
+    ok "T7a alternates du miroir pose apres le semis"
+  else
+    ko "T7a $before ligne(s) designant le miroir"
+  fi
+  rm -rf "$MIRROR"
+  out="$(run_block 2>&1)"
+  echo "$out" >> "$LOG"
+  after="$(mirror_lines "$R")"
+  if [ "$after" = "0" ]; then
+    ok "T7b alternates pendant retire"
+  else
+    ko "T7b $after ligne(s) designant le miroir disparu"
+  fi
+  total="$(grep -c . "$R/.git/objects/info/alternates" 2>/dev/null || printf 0)"
+  if [ "$total" = "1" ]; then
+    ok "T7c l'alternates etranger est conserve"
+  else
+    ko "T7c $total ligne(s) restantes (attendu 1, l'etrangere)"
+  fi
+  if git -C "$R" log --oneline -1 >/dev/null 2>&1; then
+    ok "T7d git log rc=0 apres retrait"
+  else
+    ko "T7d git log encore casse apres retrait"
+  fi
+  if echo "$out" | grep -q "alternates pendant retire"; then
+    ok "T7e le retrait est journalise"
+  else
+    ko "T7e retrait silencieux -- l'operateur ne saurait pas ce qui a change"
   fi
 )
 echo ""
