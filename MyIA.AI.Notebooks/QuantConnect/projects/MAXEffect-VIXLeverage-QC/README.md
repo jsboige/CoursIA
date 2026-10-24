@@ -57,26 +57,28 @@ Fenêtre principale du **2015-01-01 au 2026-06-30** (4 199 séances) : la conven
 
 ### Résultats
 
-**État de la mesure (livrée à 1/3) :** le candidat est mesuré ; l'ablation est en vol (backtest `3158bd546830303dc013f8763faf3b98`, lancé le 2026-10-24 08:24 UTC, runtime ~4 h sur un seul nœud QC Cloud) ; la référence SPY n'est pas encore lancée. Les deux lignes seront complétées au cycle suivant.
+**État de la mesure (livrée à 2/3) :** le candidat et la référence SPY sont mesurés ; l'ablation `max-only` est en vol (backtest `3158bd546830303dc013f8763faf3b98`, lancé le 2026-10-24 08:24 UTC, à 70 % en fin de matinée, runtime ~4 h sur un seul nœud QC Cloud). La ligne d'ablation sera complétée et la décomposition écrite au cycle suivant.
 
 | Passage | ID backtest | Sharpe (QC) | CAGR | Drawdown max | Frais cumulés | Rotation |
 |---|---|---|---|---|---|---|
 | `max-vix` (candidat, v6) | `47d6ad9479ee72e8d8fda2e6fd6d8cd7` | 0,181 | 5,40 % | 26,40 % | −10 524,36 $ | 32 697 ordres / 42,94 M$ |
 | `max-only` (ablation) | `3158bd546830303dc013f8763faf3b98` | **en cours** | — | — | — | — |
-| `spy` (référence) | **non lancé** | — | — | — | 0 | 0 |
+| `spy` (référence) | `b36253509d96547fb0b98baf8a1187eb` | 0,551 | 13,74 % | 33,50 % | −2,95 $ | 1 ordre |
 
-Total candidat : +83,16 % (capital 100 000 $ → 183 163,72 $).
+Total candidat : +83,16 % (capital 100 000 $ → 183 163,72 $) ; total SPY détenu : +339,68 % (100 000 $ → 439 682,65 $).
+
+**Compteur de séances.** QC rapporte 4 199 « dates négociables » pour les deux runs à univers (candidat et ablation) contre 2 889 pour SPY. La fenêtre 2015-01-01 → 2026-06-30 compte ~2 890 séances de bourse, ce qui rend 2 889 cohérent et 4 199 ininterprétable comme un nombre de séances calendaires : le compteur des runs à univers n'a donc pas la même sémantique (univers multi-titres). Les chiffres comparés ici sont les CAGR et Sharpe publiés par QC sur la même fenêtre calendaire ; une comparaison de Sharpe à nombre de séances déclaré inégal n'est pas une comparaison à fenêtre prouvée identique, et cette limite est portée au crédit de la prudence, pas du résultat.
 
 **Sous-fenêtres** (candidat, calculées localement sur la courbe d'équité journalière du backtest v6) :
 
 | Passage | 2015–2018 | 2019–2022 | 2023–2026-06 |
 |---|---|---|---|
 | `max-vix` | CAGR 0,79 % · Sharpe 0,105 | CAGR 12,19 % · Sharpe 0,733 | CAGR 3,22 % · Sharpe 0,427 |
-| `spy` | en attente du run | en attente du run | en attente du run |
+| `spy` | non dérivées — la courbe d'équité de ce run n'est pas retournée par l'outil de lecture employé | idem | idem |
 
 ### Verdict
 
-**1/3 runs mesurés — verdict final en attente.** Le candidat `max-vix` rend un Sharpe 0,181 et un CAGR 5,40 % sur 2015-01 → 2026-06, contre un SPY qui battra probablement ce CAGR sur la même fenêtre (le run SPY est en attente du nœud). La performance est **portée par une seule sous-fenêtre** : 2019-2022 (CAGR 12,19 %), avec 2015-2018 quasi neutre (0,79 %) et 2023-2026-06 faible (3,22 %). L'ablation `max-only` (en vol, ID `3158bd54…`) décomposera l'edge en facteur MAX seul vs overlay VIX. À l'instant de cette livraison, rien ne permet de conclure que la règle bat la référence : **verdict provisoire = NO BEATS attendu, à confirmer avec les deux runs restants**.
+**2/3 runs mesurés — le verdict contre la référence est acquis, la décomposition ne l'est pas.** Le candidat `max-vix` rend un Sharpe 0,181 et un CAGR 5,40 % sur 2015-01 → 2026-06, contre **0,551 et 13,74 % pour SPY détenu** sur la même fenêtre : sur les deux statistiques la référence gagne, et l'écart est du même ordre que celui que l'article revendique en sens inverse (0,57 contre 0,335). La performance du candidat est de plus **portée par une seule sous-fenêtre** (2019-2022 : CAGR 12,19 %), avec 2015-2018 quasi neutre (0,79 %) et 2023-2026-06 faible (3,22 %). Un point va dans l'autre sens et doit être dit : le drawdown du candidat est plus faible que celui de SPY (26,40 % contre 33,50 %), effet attendu de l'overlay de levier — moins de perte, mais aussi moins de rendement. **Verdict : NO BEATS** — le candidat ne bat pas la référence détenue sur la fenêtre mesurée, ni en Sharpe ni en CAGR. Reste à décomposer l'absence d'edge : l'ablation `max-only` (en vol, ID `3158bd54…`, levier fixe 1,0×) dira si le facteur MAX seul porte quelque chose et si l'overlay VIX ajoute ou retire. L'écart de Sharpe journalier avec bootstrap circulaire par blocs et correction de Holm se calcule quand les trois passages sont mesurés ; il ne peut pas changer le signe d'un écart de 0,37 de Sharpe, il en précisera l'incertitude.
 
 ### Confrontation à l'article
 
