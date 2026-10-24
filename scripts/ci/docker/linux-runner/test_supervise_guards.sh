@@ -3533,6 +3533,373 @@ STUB
 )
 echo ""
 
+# --- Test 69 : budget -- les slots de la MEME famille en vol sont repris, pas ajoutes (#20727)
+#
+# Mesure ai-01 du 2026-10-14 (#20727) : au redemarrage de coursia-runner.service,
+# `assert_memory_budget` comptait DEUX fois les slots de la generation precedente
+# qui finissaient encore leur job -- une fois dans la somme en vol (running_ci_mb),
+# une fois dans la demande (n x per). Les 3 slots orphelins (4, 6, 10) font
+# PARTIE des 14 demandes : le superviseur attend que le nom soit rendu
+# (reclaim_container_name) avant de relancer le slot, donc un slot ne porte jamais
+# deux conteneurs a la fois, et l'empreinte de la famille reste bornee a n x per.
+#
+# Arithmetique de l'issue (budget 64 Go = 65 536 Mo) :
+#   deja en vol .... 3 x 4096 (orphelins) + 8192 (waiter) = 20 480 Mo
+#   demande ....... 14 x 4096 = 57 344 Mo
+#   AVANT ....... 20 480 + 57 344 = 77 824 > 65 536  -> REFUS (le pool tombe)
+#   APRES ....... 20 480 + (57 344 - 12 288) = 65 536 <= 65 536 -> ACCEPTE
+#
+# Ce test verrouille les quatre proprietes du correctif : la reprise libere le
+# demarrage qui tient, elle ne rend PAS le budget laxiste pour une autre
+# famille, elle n'accepte pas une demande qui deborde reellement, et le
+# predicat de nom reste strict (un conteneur qui porte le prefixe sans etre un
+# slot n'est pas repris).
+echo "Test 69 : budget -- les slots de la meme famille en vol sont repris, pas ajoutes (#20727)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin69"
+  cat > "$TEST_DIR/bin69/docker" <<'STUB'
+#!/usr/bin/env bash
+# Stub dedie : il rend le NOM du conteneur en plus de son cap, pour que le
+# garde puisse distinguer un slot de famille d'un conteneur qui porte le meme
+# prefixe sans etre un slot. STUB_CI_ROWS : lignes "id nom octets".
+if [ "$1" = "-H" ]; then shift 2; fi
+if [ "$1" = "ps" ] && echo "$*" | grep -q 'label=coursia-ci=1'; then
+  printf '%s\n' $STUB_CI_IDS
+  exit 0
+fi
+if [ "$1" = "info" ]; then
+  case "$*" in
+    *'{{.ID}}'*) echo "${STUB_DOCKER_ID:-stub-69}"; exit 0 ;;
+  esac
+  echo ""; exit 0
+fi
+if [ "$1" = "inspect" ]; then
+  fmt="$3"; shift 3
+  for id in "$@"; do
+    row="$(printf '%s\n' "$STUB_CI_ROWS" | awk -v i="$id" '$1 == i { print; exit }')"
+    [ -n "$row" ] || continue
+    name="$(printf '%s' "$row" | awk '{ print $2 }')"
+    bytes="$(printf '%s' "$row" | awk '{ print $3 }')"
+    case "$fmt" in
+      *'{{.Name}}'*) printf '%s %s\n' "$name" "$bytes" ;;
+      *HostConfig.Memory*) echo "$bytes" ;;
+      *) echo "" ;;
+    esac
+  done
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin69/docker"
+  export PATH="$TEST_DIR/bin69:$PATH"
+  # Budget de l'issue : 64 Go, dimensionne au plus juste.
+  export COURSIA_RUNNER_BUDGET_GB=64
+  # 3 slots de la famille `start` (generation precedente, job en cours) a 4096 Mo
+  # + 1 waiter a 8192 Mo.
+  export STUB_CI_IDS="c1 c2 c3 w1"
+  export STUB_CI_ROWS="c1 /test-prefix-69-4 4294967296
+c2 /test-prefix-69-6 4294967296
+c3 /test-prefix-69-10 4294967296
+w1 /test-waiter-1 8589934592"
+  . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1
+
+  # (1) CONTROLE POSITIF : la famille dont des slots sont en vol passe.
+  out="$( (assert_memory_budget start 14 4096m test-prefix-69) 2>&1 )"; rc=$?
+  # Le garde n'affiche le detail du refus que s'il depasse ; ici il passe, donc
+  # la `demande nette` ne s'affiche pas. On verifie la reprise et le total net.
+  if [ "$rc" = "0" ] \
+     && echo "$out" | grep -q "reprise en vol ..... 3 slot(s) de cette famille = 12288 Mo" \
+     && echo "$out" | grep -q "CI en vol 20480 Mo + 45056 Mo demandes"; then
+    ok "les 3 slots deja en vol de la famille sont repris : le demarrage qui tient passe"
+  else
+    ko "la famille avec des slots en vol devrait passer : rc=$rc out='$out'"
+  fi
+
+  # (2) CONTROLE NEGATIF : une AUTRE famille reste refusee au meme etat.
+  out="$( (assert_memory_budget lean 14 4096m test-lean-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && echo "$out" | grep -q "budget CI depasse"; then
+    ok "une autre famille reste refusee : la reprise ne rend pas le budget laxiste"
+  else
+    ko "une autre famille aurait du etre refusee : rc=$rc out='$out'"
+  fi
+
+  # (3) CONTROLE NEGATIF : une demande qui deborde REELLEMENT reste refusee.
+  out="$( (assert_memory_budget start 20 4096m test-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] && echo "$out" | grep -q "budget CI depasse"; then
+    ok "une demande qui deborde apres reprise reste refusee"
+  else
+    ko "une demande qui deborde aurait du etre refusee : rc=$rc out='$out'"
+  fi
+
+  # (4) Le predicat de nom est STRICT : un conteneur qui porte le prefixe
+  # sans etre un slot (pas de numero) n'est pas repris.
+  export STUB_CI_IDS="c1 c2 c3 b1"
+  export STUB_CI_ROWS="c1 /test-prefix-69-4 4294967296
+c2 /test-prefix-69-6 4294967296
+c3 /test-prefix-69-10 4294967296
+b1 /test-prefix-69-backup 4294967296"
+  out="$( (assert_memory_budget start 14 4096m test-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" = "0" ] \
+     && echo "$out" | grep -q "reprise en vol ..... 3 slot(s) de cette famille = 12288 Mo" \
+     && echo "$out" | grep -q "CI en vol 16384 Mo + 45056 Mo demandes"; then
+    ok "un conteneur '<prefixe>-backup' n'est pas repris comme un slot de la famille"
+  else
+    ko "le predicat de nom devrait etre strict : rc=$rc out='$out'"
+  fi
+  # (5) BORNE HAUTE (#21494) : `cmd_start` ne relance que `seq 1 n`. Des slots
+  # de numero > n en vol ne sont donc PAS repris. Les compter ferait
+  # sous-compter le garde -- exactement pendant une reduction de slots, quand
+  # la pression memoire est deja haute.
+  #   7 slots 11..17 en vol (28672 Mo), n=10 -> demande 40960 Mo.
+  #   Borne : reprise 0 -> total 69632 Mo > budget 64 Go -> REFUS.
+  #   Sans borne (defaut) : reprise 28672 -> total 40960 Mo -> PASSER A TORT.
+  export STUB_CI_IDS="c1 c2 c3 c4 c5 c6 c7"
+  export STUB_CI_ROWS="c1 /test-prefix-69-11 4294967296
+c2 /test-prefix-69-12 4294967296
+c3 /test-prefix-69-13 4294967296
+c4 /test-prefix-69-14 4294967296
+c5 /test-prefix-69-15 4294967296
+c6 /test-prefix-69-16 4294967296
+c7 /test-prefix-69-17 4294967296"
+  out="$( (assert_memory_budget start 10 4096m test-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] \
+     && echo "$out" | grep -q "budget CI depasse" \
+     && echo "$out" | grep -q "reprise en vol ..... 0 slot(s) de cette famille = 0 Mo" \
+     && echo "$out" | grep -q "total ............... 69632 Mo"; then
+    ok "les slots de numero > n ne sont pas repris : le pic de 17 slots est vu, le demarrage est refuse"
+  else
+    ko "la borne haute devrait refuser (slots 11..17 en vol, n=10) : rc=$rc out='$out'"
+  fi
+
+  # (6) EMPREINTE TRANSITOIRE (#21522) : 5 slots en vol pour 3 demandes.
+  # Au redemarrage, la generation precedente peut laisser PLUS de slots en vol
+  # que le demarrage n'en demande. La reprise ne porte que sur les slots de
+  # numero <= n (ceux que cmd_start va relancer) ; les slots 4 et 5 restent en
+  # vol jusqu'a la fin de leur job. Le pied REEL de la famille est donc
+  # 5 x per, pas 3 x per -- et c'est `used_mb` (la somme en vol) qui le compte,
+  # jamais la demande nette.
+  # Ce controle verrouille que ce pied transitoire n'est pas LAXISTE : les
+  # 5 x per sont dans le total, et la demande nette est nulle.
+  export STUB_CI_IDS="c1 c2 c3 c4 c5"
+  export STUB_CI_ROWS="c1 /test-prefix-69-1 4294967296
+c2 /test-prefix-69-2 4294967296
+c3 /test-prefix-69-3 4294967296
+c4 /test-prefix-69-4 4294967296
+c5 /test-prefix-69-5 4294967296"
+  out="$( (assert_memory_budget start 3 4096m test-prefix-69) 2>&1 )"; rc=$?
+  if [ "$rc" = "0" ] \
+     && echo "$out" | grep -q "reprise en vol ..... 3 slot(s) de cette famille = 12288 Mo" \
+     && echo "$out" | grep -q "CI en vol 20480 Mo + 0 Mo demandes"; then
+    ok "empreinte transitoire : 5 slots en vol pour 3 demandes, le pied reel (5 x per) est compte, demande nette nulle"
+  else
+    ko "l'empreinte transitoire (5 slots en vol, 3 demandes) devrait etre comptee : rc=$rc out='$out'"
+  fi
+
+  # (7) MEME PIED, BUDGET SERRE : le garde doit REFUSER, car 5 x per ne tient
+  # pas dans 16 Go. Controle DISCRIMINANT : si le garde ne comptait que les
+  # 3 slots repris (12 288 Mo), il passerait -- c'est exactement le laxisme
+  # que le controle (6) interdit. Le budget change, donc le script est
+  # re-source (BUDGET_GB est lu au chargement).
+  out="$( ( export COURSIA_RUNNER_BUDGET_GB=16; . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1; assert_memory_budget start 3 4096m test-prefix-69 ) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] \
+     && echo "$out" | grep -q "budget CI depasse" \
+     && echo "$out" | grep -q "demande nette ...... 0 Mo" \
+     && echo "$out" | grep -q "total ............... 20480 Mo" \
+     && echo "$out" | grep -q "budget .............. 16384 Mo"; then
+    ok "pied transitoire de 5 slots refuse quand le budget ne le tient pas (l'empreinte n'est pas laxiste)"
+  else
+    ko "le pied transitoire de 5 slots (20480 Mo) aurait du etre refuse sous 16 Go : rc=$rc out='$out'"
+  fi
+
+  # (8) LE REPLI `add_mb < 0 -> 0` (#21522) : il n'atteint que sur une famille
+  # de MEMOIRE HETEROGENE (slots de meme nom, caps differents -- mesure sur la
+  # famille ad hoc de po-2024 : 4 Gio et 1,5 Gio sous le meme prefixe). La
+  # reprise y vaut PLUS que la demande :
+  #   slot 1 = 8192 Mo, slots 2 et 3 = 4096 Mo -> reprise 16 384 Mo
+  #   demande 3 x 4096 = 12 288 Mo -> add_mb = -4096 -> repli a 0
+  # (8a) le repli est visible : la demande nette affichee vaut 0 Mo, et non
+  # -4096 Mo (une demande nette negative n'est pas « de la place en plus »).
+  export STUB_CI_IDS="c1 c2 c3"
+  export STUB_CI_ROWS="c1 /test-prefix-69-1 8589934592
+c2 /test-prefix-69-2 4294967296
+c3 /test-prefix-69-3 4294967296"
+  out="$( ( export COURSIA_RUNNER_BUDGET_GB=16; . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1; assert_memory_budget start 3 4096m test-prefix-69 ) 2>&1 )"; rc=$?
+  if [ "$rc" = "0" ] \
+     && echo "$out" | grep -q "reprise en vol ..... 3 slot(s) de cette famille = 16384 Mo" \
+     && echo "$out" | grep -q "CI en vol 16384 Mo + 0 Mo demandes"; then
+    ok "reprise > demande (memoire heterogene) : la demande nette est repliee a 0, pas comptee negative"
+  else
+    ko "le repli add_mb < 0 devrait replier la demande nette a 0 : rc=$rc out='$out'"
+  fi
+  # (8b) ET le repli ne rend PAS le garde laxiste : sous 12 Go, le pied reel
+  # (16 384 Mo) deborde et le demarrage est refuse. Controle DISCRIMINANT :
+  # sans le repli, le total vaudrait 16 384 - 4 096 = 12 288 Mo, soit
+  # exactement le budget -- le garde passerait. Le repli rend le verdict
+  # STRICT, il ne l'assouplit pas.
+  out="$( ( export COURSIA_RUNNER_BUDGET_GB=12; . "$SCRIPT_DIR/supervise.sh" status >/dev/null 2>&1; assert_memory_budget start 3 4096m test-prefix-69 ) 2>&1 )"; rc=$?
+  if [ "$rc" != "0" ] \
+     && echo "$out" | grep -q "budget CI depasse" \
+     && echo "$out" | grep -q "demande nette ...... 0 Mo" \
+     && echo "$out" | grep -q "total ............... 16384 Mo" \
+     && echo "$out" | grep -q "budget .............. 12288 Mo"; then
+    ok "le repli de la demande nette ne rend pas le garde laxiste : le pied heterogene est refuse"
+  else
+    ko "un pied heterogene de 16384 Mo aurait du etre refuse sous 12 Go : rc=$rc out='$out'"
+  fi
+)
+echo ""
+
+# --- Test 71 : la SERIALISATION slot<->conteneur, MESUREE (#21522) ---------
+#
+# La reprise (#20727) repose sur une hypothese : un slot ne porte jamais deux
+# conteneurs a la fois, parce que le superviseur attend que le nom soit rendu
+# (reclaim_container_name) AVANT de lancer le conteneur suivant. Cette
+# hypothese n'etait verifiee que par la LECTURE du code -- une inversion de
+# l'ordre (run avant reclaim) ferait passer a 2 x n x per sans qu'aucun test
+# rougisse, et l'arithmetique de la reprise deviendrait fausse sans bruit.
+#
+# Ce test mesure la FENETRE de liberation du nom et verrouille l'ordre, par
+# une trace ordonnee des evenements :
+#   poll:running x3  le job orphelin tient le nom (3 sondages de 5 s)
+#   poll:exited     le conteneur est sorti : plus aucun job dedans
+#   rm:exited        le residu est retire -- SUR UN ETAT PROUVE INACTIF
+#   poll:free        le nom est observe libre
+#   run              le conteneur NEUF est lance
+#
+# Ce que la trace etablit, point par point :
+#   - le nom n'est JAMAIS repris sur un conteneur en cours (`rm:running`
+#     n'apparait jamais) : il ne peut donc pas preceder la fin du job ;
+#   - le conteneur neuf est lance APRES la liberation, jamais avant ;
+#   - la fenetre entre la sortie du conteneur et l'observation de la liberation
+#     vaut UN intervalle de sondage (COURSIA_RUNNER_NAME_RECLAIM_POLL_SECS).
+#     Pendant cette fenetre, le pied de la famille DECROIT (l'ancien
+#     conteneur est deja sorti) : il ne peut pas etre sous-compte.
+echo "Test 71 : serialisation slot<->conteneur -- nom repris AVANT le run, jamais sur un conteneur en cours (#21522)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin71" "$TEST_DIR/state-71"
+  cat > "$TEST_DIR/bin71/docker" <<STUB
+#!/usr/bin/env bash
+# Trace ORDONNEE des evenements : poll:<etat> a chaque sondage d'etat,
+# rm:<etat> a chaque retrait, run a chaque lancement de conteneur.
+if [ "\$1" = "info" ]; then exit 0; fi
+if [ "\$1" = "image" ] || [ "\$1" = "volume" ]; then exit 0; fi
+if [ "\$1" = "inspect" ]; then
+  N="\$(cat "\$STUB_INSPECT_COUNT" 2>/dev/null || echo 0)"
+  N=\$(( N + 1 ))
+  echo "\$N" > "\$STUB_INSPECT_COUNT"
+  if [ -f "\$STUB_REMOVED" ]; then
+    # Le residu a ete retire : le nom est libre. container_state rend alors
+    # une CHAINE VIDE -- c'est ce qui rend le nom reutilisable.
+    echo "poll:free" >> "\$STUB_ORDER_LOG"
+  elif [ "\$N" -le "\${STUB_ORPHAN_POLLS:-3}" ]; then
+    # Le job orphelin tient le nom : l'etat lu par container_state est
+    # 'running', et le superviseur doit alors ATTENDRE (jamais retirer).
+    echo "poll:running" >> "\$STUB_ORDER_LOG"
+    echo "running" > "\$STUB_LAST_STATE"
+    echo "running"
+  else
+    # Le conteneur est sorti : etat PROUVE inactif.
+    echo "poll:exited" >> "\$STUB_ORDER_LOG"
+    echo "exited" > "\$STUB_LAST_STATE"
+    echo "exited"
+  fi
+  exit 0
+fi
+if [ "\$1" = "rm" ]; then
+  ST="\$(cat "\$STUB_LAST_STATE" 2>/dev/null || echo unknown)"
+  echo "rm:\$ST" >> "\$STUB_ORDER_LOG"
+  touch "\$STUB_REMOVED"
+  exit 0
+fi
+if [ "\$1" = "run" ] && [ "\$3" = "--entrypoint" ]; then
+  case "\$*" in
+    *work_cache_health.sh*)
+      echo "\${STUB_IMG_HEALTH_SHA:-$REPO_HEALTH_SHA}  /opt/runner/work_cache_health.sh"
+      ;;
+    *)
+      echo "\${STUB_IMG_ENTRYPOINT_SHA:-$REPO_ENTRYPOINT_SHA}  /opt/runner/entrypoint.sh"
+      ;;
+  esac
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  echo "run" >> "\$STUB_ORDER_LOG"
+  touch "\$STUB_STOP_FILE"
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin71/docker"
+  cat > "$TEST_DIR/bin71/sleep" <<'STUB'
+#!/usr/bin/env bash
+echo "$@" >> "$SLEEP_LOG"
+STUB
+  chmod +x "$TEST_DIR/bin71/sleep"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin71/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin71/ps"
+  rm -f "$TEST_DIR/state-71/stop" "$TEST_DIR/state-71/pids" \
+        "$TEST_DIR/run71.count" "$TEST_DIR/inspect71.count" \
+        "$TEST_DIR/removed71.flag"
+  : > "$TEST_DIR/sleep71.log"; : > "$TEST_DIR/order71.log"
+  (
+    export PATH="$TEST_DIR/bin71:$PATH"
+    export COURSIA_RUNNER_NAME_PREFIX="test-prefix-71"
+    export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-71"
+    export COURSIA_RUNNER_HEALTHY_CYCLE_SECS=9999
+    export COURSIA_RUNNER_BACKOFF_BASE=3
+    export COURSIA_RUNNER_BACKOFF_CAP=6
+    export COURSIA_RUNNER_NAME_RECLAIM_POLL_SECS=5
+    export COURSIA_RUNNER_NAME_RECLAIM_WARN_SECS=60
+    export STUB_STOP_FILE="$TEST_DIR/state-71/stop"
+    export STUB_RUN_COUNT="$TEST_DIR/run71.count"
+    export STUB_INSPECT_COUNT="$TEST_DIR/inspect71.count"
+    export STUB_ORDER_LOG="$TEST_DIR/order71.log"
+    export STUB_LAST_STATE="$TEST_DIR/laststate71"
+    export STUB_REMOVED="$TEST_DIR/removed71.flag"
+    export SLEEP_LOG="$TEST_DIR/sleep71.log"
+    timeout --kill-after=2 30 bash "$SCRIPT_DIR/supervise.sh" start 1 >/dev/null 2>"$TEST_DIR/err71.log"
+  )
+  # (1) LA TRACE, exactement. Elle dit l'ordre (reclaim PUIS run), l'etat du
+  # retrait (jamais 'running'), et la fenetre de liberation (un sondage).
+  expected="poll:running
+poll:running
+poll:running
+poll:exited
+rm:exited
+poll:free
+run"
+  got="$(cat "$TEST_DIR/order71.log" 2>/dev/null)"
+  if [ "$got" = "$expected" ]; then
+    ok "la trace de serialisation est exacte : le nom est repris sur un conteneur sorti, puis le conteneur neuf est lance"
+  else
+    ko "trace de serialisation inattendue -- attendu: [$(echo "$expected" | paste -sd,)] obtenu: [$(echo "$got" | paste -sd,)]"
+  fi
+  # (2) Le nom n'est JAMAIS repris sur un conteneur en cours : c'est ce qui
+  # rend la liberation IMPOSSIBLE avant la fin du job qu'elle porte.
+  if ! grep -q "^rm:running" "$TEST_DIR/order71.log" 2>/dev/null; then
+    ok "le nom n'est jamais repris sur un conteneur en cours (la liberation ne peut pas preceder la fin du job)"
+  else
+    ko "un conteneur EN COURS a ete retire : le job legitime aurait ete tue"
+  fi
+  # (3) La fenetre de liberation vaut UN intervalle de sondage par tentative :
+  # TROIS sondages de 5 s pendant que le job orphelin tient le nom, puis la
+  # sortie du conteneur, puis UN sondage qui voit le nom libre. On lit les
+  # TROIS PREMIERS appels a sleep -- le suivants (le backoff de cycle) n'a
+  # rien a voir avec la liberation du nom.
+  polls="$(head -3 "$TEST_DIR/sleep71.log" | paste -sd,)"
+  inspects="$(cat "$TEST_DIR/inspect71.count" 2>/dev/null || echo 0)"
+  if [ "$polls" = "5,5,5" ] && [ "$inspects" = "5" ]; then
+    ok "fenetre de liberation mesuree : 3 sondages de 5 s pendant le job, puis 1 sondage apres la sortie (5 inspects au total)"
+  else
+    ko "fenetre de liberation inattendue : polls=[$polls] inspects=$inspects (attendu 5,5,5 et 5)"
+  fi
+)
+echo ""
+
 # --- Verdict agrege ---------------------------------------------------------
 # `|| echo 0` serait un piege ici, et il l'a ete : `grep -c` IMPRIME "0" avant
 # de sortir 1 quand il ne trouve rien, donc le repli SUFFIXE un second zero au

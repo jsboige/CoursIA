@@ -14,7 +14,6 @@ name: Cell-order gate
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/**/*.ipynb'
       - 'scripts/notebook_tools/scan_cell_ordering.py'

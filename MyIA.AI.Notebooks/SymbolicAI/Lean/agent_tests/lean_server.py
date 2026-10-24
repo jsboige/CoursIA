@@ -187,6 +187,33 @@ def _find_lake_root(start: Path) -> Optional[Path]:
 _LEAN_ID = r"[^\W\d][\w'.!?]*"
 _LEAN_NS = r"[^\W\d][\w'.]*"
 
+# Lean may append a diagnostic decoration to a declaration name in the
+# `#print axioms` output -- e.g. the U+2020 dagger on
+# `Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝`. The
+# allow-list spells that anchor without the glyph, so an exact string
+# comparison reports an already-recounted `native_decide` as forbidden
+# (#21947). Normalizing BOTH sides of the comparison removes the decoration
+# instead of widening the allow-list: a new `native_decide` still has to be
+# listed explicitly.
+# The preserved set is the identifier alphabet itself (`_LEAN_ID` above):
+# `?` and `!` are legal trailing characters of a Lean name, not decorations
+# -- Lean 4.35 emits a distinct axiom ending in `?` (adjoint dossier on
+# #21955), and stripping it fused that axiom with a DIFFERENT allow-listed
+# name, a false PASS. Only characters outside the alphabet (the dagger,
+# whitespace) are decorations.
+_AXIOM_NAME_DECORATION_RE = re.compile(r"[^\w.'!?]+$")
+
+
+def normalize_axiom_name(name: str) -> str:
+    """Return the comparable form of an axiom / anchor name.
+
+    Strips the surrounding whitespace, the trailing dot the extractor drops,
+    and any trailing decoration Lean appended to the name. Applied to the
+    extracted names AND to the allow-list entries, so the two sides are
+    compared on the anchor itself.
+    """
+    return _AXIOM_NAME_DECORATION_RE.sub("", name.strip().rstrip("."))
+
 _DECL_HEAD_RE = re.compile(
     r"^(?:@\[[^\]]*\]\s*)*"                                     # attributes (zero or more)
     r"(?P<mods>(?:(?:private|protected|noncomputable|unsafe|partial|abstract)\s+)*)"
@@ -872,7 +899,11 @@ class LeanVerifier:
                 }
 
             axioms = self._extract_axioms(output)
-            forbidden = [a for a in axioms if a not in whitelist and a != "sorryAx"]
+            normalized_whitelist = {normalize_axiom_name(a) for a in whitelist}
+            forbidden = [
+                a for a in axioms
+                if normalize_axiom_name(a) not in normalized_whitelist and a != "sorryAx"
+            ]
             has_sorry = "sorryAx" in axioms
             success = len(forbidden) == 0 and not (fail_on_sorry and has_sorry)
 

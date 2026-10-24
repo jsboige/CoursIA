@@ -581,7 +581,7 @@ a volontairement sondé le bras qui a couru.
   du piege day-advance (cf [[qc-backtest-dataset-day-advance-confound]]) ;
   le chemin sonde n'ecrit ni dans `_roll_cache` ni dans les orders.
 - **Decouverte instrumentale (run 1)** : le stockage logs QC (free tier)
-  plafonne a **100 kb/backtest**, consomme des le 2016-02-18 par ~550 lignes
+  plafonne a **100 kb/backtest**, consomme des le 2016-02-18 par un flot massif de lignes
   engine-level « Order Error : Insufficient buying power » (non
   supprimables depuis l'algo). Toutes les lignes `PROBE16652` (2016-2026)
   ont ete dropees serveur-side — l'onglet Logs du rapport ne retient que la

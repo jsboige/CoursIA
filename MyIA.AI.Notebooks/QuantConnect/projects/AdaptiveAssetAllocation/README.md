@@ -12,6 +12,13 @@ Top-4 ETFs par momentum 6 mois avec optimisation de portefeuille à variance min
 **Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/AdaptiveAssetAllocation"`
 **QC Cloud :** Pas encore déployé. Copier les fichiers dans un nouveau projet QC Cloud pour exécuter.
 
+**Paramètres de `main.py` (#21747).** Sans paramètre, `main.py` exécute la stratégie sur sa fenêtre codée (2015-01-01 → 2024-12-31). Trois paramètres de backtest servent à la mesurer contre des références détenues, sans toucher à sa décision :
+
+- `mode` : `strategy` (défaut), `spy` (SPY détenu), `6040` (SPY 60 %, BND 40 %) ou `ew10` (les dix titres de l'univers à poids égal). Les références se rééquilibrent le premier jour de cotation de chaque mois, une minute après l'ouverture ; BND n'est abonné qu'en mode `6040` ;
+- `start_date` et `end_date` (format `%Y%m%d`) : remplacent les bornes de la fenêtre.
+
+Chaque mode trace aussi `shadow` : la valeur du portefeuille à l'ouverture de chaque séance de SPY, répartie sur les séries e0 à e4 (contrat #18923).
+
 ## Métriques du backtest
 
 | Métrique | Valeur |
@@ -19,6 +26,41 @@ Top-4 ETFs par momentum 6 mois avec optimisation de portefeuille à variance min
 | Méthode | Momentum 6M + variance min. |
 | Univers | 10 ETFs (top 4) |
 | Rebalancement | Mensuel |
+
+## Mesure contre des références détenues (#21747)
+
+`main.py` est mesuré contre trois références détenues, avec les paramètres décrits plus haut. Les références sont SPY détenu, le 60/40 (SPY 60 %, BND 40 %) et `ew10`, les dix titres de l'univers à poids égal. Le protocole est écrit dans #21747 avant le premier backtest. Chaque backtest tourne sur les nœuds QC. Les tests viennent de `Paradox46Benchmarks/significance.py` (taux sans risque nul) : écart de Sharpe de Ledoit-Wolf, bootstrap stationnaire et écart de moyennes de Newey-West.
+
+- **Verdict.** Il compare la stratégie à SPY détenu et au 60/40, avec une correction de Holm sur six p-valeurs. `BEATS` exige un écart de Sharpe positif et une p de Holm (Ledoit-Wolf) inférieure à 0,05 contre les deux références. `NO BEATS` signifie un Sharpe inférieur à celui de SPY détenu. Tous les autres cas sont `INCONCLUSIVE`.
+- **Diagnostic.** `ew10` passe dans une exécution séparée, avec Holm sur trois p-valeurs. Il demande si la sélection ajoute quelque chose à la détention des mêmes dix titres, et ne change pas le verdict.
+
+**Contrôle d'innocuité : tenu.** En mode `strategy`, sur la fenêtre codée, le code instrumenté reproduit le backtest du `main.py` d'origine : 443 ordres sur 443 identiques (date, symbole, quantité) et 27 statistiques QC sur 27. Tous les ordres sont remplis, aucun n'est refusé : il n'y a pas d'emprunt involontaire. Tous sont créés à 10:00, heure de New York, 30 minutes après l'ouverture ; aucun ne l'est à minuit.
+
+Sharpe annualisé de la trace `shadow`, taux sans risque nul. L'écart est celui de la stratégie moins la référence. La fenêtre « après » s'arrête au 2026-07-23 : les nœuds QC ont coupé le backtest demandé jusqu'au 2026-10-21, et la fin a été lue sur la trace.
+
+| Fenêtre | Séances | Stratégie | SPY détenu (écart, p LW, p Holm) | 60/40 (écart, p LW, p Holm) | `ew10`, diagnostic (écart, p LW, p Holm) | Verdict |
+|---|---|---|---|---|---|---|
+| 2015-01-02 → 2024-12-31 | 2516 | 0,809 | 0,786 (+0,023 ; 0,944 ; 1,0) | 0,802 (+0,007 ; 0,983 ; 1,0) | 0,562 (+0,247 ; 0,404 ; 1,0) | `INCONCLUSIVE` |
+| 2025-01-02 → 2026-07-23 | 389 | 1,974 | 1,057 (+0,916 ; 0,191 ; 1,0) | 1,171 (+0,803 ; 0,236 ; 1,0) | 1,816 (+0,158 ; 0,780 ; 1,0) | `INCONCLUSIVE` |
+
+Statistiques QC des mêmes backtests. Le Sharpe QC déduit un taux sans risque, celui de la trace non : les deux tableaux ne se comparent pas colonne à colonne.
+
+| Mode | Fenêtre | Sharpe QC | CAGR | Drawdown max | Ordres |
+|---|---|---|---|---|---|
+| stratégie | 2015-2024 | 0,379 | 6,73 % | 18,7 % | 443 |
+| SPY détenu | 2015-2024 | 0,533 | 12,97 % | 33,7 % | 1 |
+| 60/40 | 2015-2024 | 0,442 | 8,41 % | 21,7 % | 201 |
+| `ew10` | 2015-2024 | 0,179 | 4,70 % | 19,1 % | 574 |
+| stratégie | 2025-01 → 2026-07-23 | 1,225 | 20,42 % | 7,1 % | 62 |
+| SPY détenu | 2025-01 → 2026-07-23 | 0,601 | 17,39 % | 18,7 % | 2 |
+| 60/40 | 2025-01 → 2026-07-23 | 0,499 | 12,06 % | 11,2 % | 30 |
+| `ew10` | 2025-01 → 2026-07-23 | 0,976 | 16,24 % | 7,1 % | 90 |
+
+**Lecture.** Sur la décennie codée, la stratégie rend environ deux fois moins que SPY détenu (6,7 % contre 13,0 % par an), avec un drawdown presque deux fois plus faible (18,7 % contre 33,7 %). Par unité de risque, à taux nul, elle fait jeu égal avec SPY détenu et le 60/40 ; aucun écart n'est mesurable. Après la fenêtre codée, ses écarts de Sharpe sont larges en point, mais 389 séances ne suffisent pas à les distinguer de zéro. Contre `ew10`, la sélection par momentum suivie de la variance minimale fait mieux en point sur les deux fenêtres, sans écart significatif : la question reste ouverte.
+
+**La convention de Sharpe change le classement.** Sous la convention QC, la stratégie reste derrière SPY détenu (0,379 contre 0,533) ; à taux nul, elle le rejoint (0,809 contre 0,786). La stratégie est deux fois moins volatile (écart-type annuel 0,071 contre 0,146) : la même déduction du taux sans risque pèse près de deux fois plus sur son Sharpe. La prédiction `NO BEATS` écrite dans #21747 comparait ces deux conventions, et la mesure l'a réfutée.
+
+La ligne `main.py` 2025-01 → 2026-06 du tableau de la variante Framework (plus bas) est une mesure distincte, sur une fenêtre plus courte.
 
 ## Variante Framework
 
