@@ -226,6 +226,9 @@ def test_resolve_finds_equivalent_prebuilt_clone(tmp_path: Path) -> None:
     assert payload["stamped_at"]
     statuses = {str(Path(item["path"])): item["status"] for item in payload["checked"]}
     assert statuses[str(worktree.resolve())] == lp.STATUS_ABSENT
+    # L'attestation voyage avec le chemin : le consommateur affiche la date du
+    # stamp du checkout resolu, il ne peut pas la deviner.
+    assert payload["stamped_at"] == lp.project_status(clone)["stamped_at"]
 
 
 def test_resolve_rejects_clone_with_different_sources(tmp_path: Path) -> None:
