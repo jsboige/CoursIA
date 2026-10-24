@@ -88,11 +88,8 @@ def test_real_workflow_still_matches():
 
 def test_drifted_real_workflow_fails_loud(tmp_path, capsys, monkeypatch):
     """Cas 1 de l'issue : le vrai workflow prive de son `-n ` => rc=2 + message PYTEST_BLOCK_RE."""
-    # Le `-n` du workflow reel est devenu dynamique (#21802) : la mutation vise
-    # la forme courante, sinon elle ne retirerait rien et le test passerait a
-    # vide -- exactement l'aveuglement que ce test existe pour attraper.
     drifted = REAL_WORKFLOW.read_text(encoding="utf-8").replace(
-        ' -n "$xdist_n" --dist loadscope', " --dist loadscope")
+        " -n 4 --dist loadscope", " --dist loadscope")
     assert " -n " not in drifted, "mutation de test sans effet"
     wf = tmp_path / "drifted.yml"
     wf.write_text(drifted, encoding="utf-8")

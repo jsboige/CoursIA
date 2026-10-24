@@ -20,9 +20,7 @@ from cgroup_worker_budget import (  # noqa: E402
     DEFAULT_WORKERS,
     MAX_WORKERS,
     RSS_BUDGET_PAR_WORKER_MIB,
-    RSS_BUDGET_PAR_WORKER_MIB_ICT,
     RSS_RESERVE_MASTER_MIB,
-    budget_for,
     compute_workers,
     describe,
     read_memory_limit_bytes,
@@ -98,69 +96,51 @@ def test_limite_max_rend_la_valeur_nominale(tmp_path):
 
 def test_plafond_1_5_gio_ne_tue_plus_les_workers():
     # C'est le cas des slots `myia-po-2024-linux-persist-*` (OOM exit 137).
-    # 1,5 Gio moins la reserve master, divise par le budget mesure : un seul
-    # worker tient dans le conteneur, donc plus de kill groupe.
-    n = compute_workers(int(1.5 * GIB))
-    attendu = max(1, min(MAX_WORKERS, int((1536 - RSS_RESERVE_MASTER_MIB) // RSS_BUDGET_PAR_WORKER_MIB)))
-    assert n == attendu
-    assert n == 1
+    # 1,5 Gio moins la reserve master, divise par le budget mesure (1 181 MiB,
+    # le worker le plus lourd sous `--dist loadscope`) : un seul worker tient
+    # dans le conteneur, donc plus de kill groupe.
+    attendu = max(
+        1,
+        min(
+            MAX_WORKERS,
+            int((1536 - RSS_RESERVE_MASTER_MIB) // RSS_BUDGET_PAR_WORKER_MIB),
+        ),
+    )
+    assert compute_workers(int(1.5 * GIB)) == attendu
+    assert compute_workers(int(1.5 * GIB)) == 1
 
 
 def test_plafond_4_gio_tient_le_budget_mesure():
     # C'est le cas des slots `ai-01-wsl-*` et `po-2024-linux-docker-1`.
-    # Mesure : 4 workers ont peaks a 4 605 MiB (arbre complet), soit plus que
-    # les 4 Go du conteneur -- le budget par worker (charge CONCURRENTE mesuree)
-    # donne donc 3 workers, pas 4. Le passage a 4 demanderait un budget
-    # <= 960 MiB, que la mesure ne soutient pas.
-    attendu = max(1, min(MAX_WORKERS, int((4096 - RSS_RESERVE_MASTER_MIB) // RSS_BUDGET_PAR_WORKER_MIB)))
+    # (4096 - 256) // 1181 = 3 workers, pas 4 : le plafond du conteneur ne
+    # couvre pas quatre workers a la charge mesuree.
+    attendu = max(
+        1,
+        min(
+            MAX_WORKERS,
+            int((4096 - RSS_RESERVE_MASTER_MIB) // RSS_BUDGET_PAR_WORKER_MIB),
+        ),
+    )
     assert compute_workers(4 * GIB) == attendu
     assert compute_workers(4 * GIB) == 3
 
 
-def test_le_budget_mesure_tient_le_reserve_master():
-    """Le budget par worker vient de la charge mesuree par worker au pic de
-    l'arbre (4 605,1 MiB / 4 = 1 151,3 MiB) : il ne doit pas descendre sous la
-    valeur mesuree, sinon le garde sous-dimensionne le conteneur."""
-    assert RSS_BUDGET_PAR_WORKER_MIB >= 1152
+def test_le_budget_vient_du_worker_le_plus_lourd():
+    """Sous `--dist loadscope`, un module epingle garde son worker : le
+    conteneur doit tenir ce worker la charge, pas sa moyenne.
+
+    Mesure du 2026-10-21 (ai-01, `-n 4 --dist loadscope`, 292 s) : pic du
+    worker le plus lourd 1 181,4 MiB, moyenne par worker 545,7 MiB. Le budget
+    ne doit pas descendre sous le pic mesure, sinon le garde sous-dimensionne
+    le conteneur -- et il ne doit pas etre la moyenne, qui aurait donne deux
+    workers a un conteneur de 1,5 Gio pour une charge de 1 561 MiB.
+    """
+    assert RSS_BUDGET_PAR_WORKER_MIB == 1181
+    assert RSS_BUDGET_PAR_WORKER_MIB > 546
 
 
 def test_plafond_superieur_au_nominal_est_plafonne():
     assert compute_workers(16 * GIB) == MAX_WORKERS
-
-
-# --- suite ICT (budget propre, mesure le 2026-10-21) ---------------------
-
-
-def test_ict_utilise_son_propre_budget():
-    assert budget_for("ict") == RSS_BUDGET_PAR_WORKER_MIB_ICT
-    assert budget_for("scripts") == RSS_BUDGET_PAR_WORKER_MIB
-    # Une suite inconnue retombe sur le budget de la suite `scripts`.
-    assert budget_for("inconnue") == RSS_BUDGET_PAR_WORKER_MIB
-
-
-def test_le_budget_ict_vient_du_worker_le_plus_lourd():
-    """Sous `--dist loadscope`, un module epingle garde son worker : le
-    conteneur doit tenir ce worker la charge, pas sa moyenne. La base
-    mesuree de la suite ICT est donc le pic du worker le plus lourd
-    (1 181,4 MiB), et elle est plus lourde que la moyenne par worker
-    (545,7 MiB)."""
-    assert RSS_BUDGET_PAR_WORKER_MIB_ICT == 1181
-    assert RSS_BUDGET_PAR_WORKER_MIB_ICT > RSS_BUDGET_PAR_WORKER_MIB
-
-
-def test_ict_plafond_1_5_gio_ne_tue_plus_les_workers():
-    # Meme slots persistants que la suite `scripts` : un seul worker doit
-    # tenir, sinon le cgroup tue le job (exit 137).
-    assert compute_workers(int(1.5 * GIB), budget_mib=budget_for("ict")) == 1
-
-
-def test_ict_plafond_4_gio_tient_le_budget_mesure():
-    # 4 Gio : (4096 - 256) // 1181 = 3 workers.
-    assert compute_workers(4 * GIB, budget_mib=budget_for("ict")) == 3
-
-
-def test_ict_sans_plafond_rend_la_valeur_nominale():
-    assert compute_workers(None, budget_mib=budget_for("ict")) == DEFAULT_WORKERS
 
 
 def test_plafond_inferieur_au_budget_rend_un_worker():

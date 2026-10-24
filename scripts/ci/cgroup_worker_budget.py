@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 """Nombre de workers xdist borne par le plafond memoire du cgroup (#21802).
 
-Le job `Scripts Tests (CPU)` lancait `-n 4` workers quel que soit le runner qui
-le recoit. Sur les slots persistants `myia-po-2024-linux-persist-*`, plafonnes
-a 1,5 Gio (`docker run --memory=1610612736`), quatre workers ont ete tues par
-le cgroup : `dmesg` porte `Memory cgroup out of memory: Killed process
-(python)` a `CONSTRAINT_MEMCG`, et le job sortait en 137.
+La jambe `tests/ (58)` de `ict-tests.yml` lancait `-n 4` workers quel que soit
+le runner qui la recoit. Elle porte les memes etiquettes que `Scripts Tests
+(CPU)` (`self-hosted, coursia-ephemeral, coursia-linux`), donc elle peut
+atterrir sur les slots persistants plafonnes a 1,5 Gio
+(`docker run --memory=1610612736`), ou quatre workers ont ete tues par le
+cgroup : `dmesg` porte `Memory cgroup out of memory: Killed process (python)`
+a `CONSTRAINT_MEMCG`, et le job sortait en 137.
 
 La regle : le nombre de workers se calcule a l'execution d'apres la limite
 memoire lue dans le cgroup du conteneur, divisee par le **budget memoire
@@ -14,11 +16,15 @@ mesure** d'un worker. Sans plafond lisible (`max`, fichier absent, cgroup v1
 "illimite"), on retombe sur la valeur nominale.
 
 Le budget n'est pas pose au jugement : c'est le RSS de pointe mesure sur la
-suite reelle du job (voir `RSS_BUDGET_PAR_WORKER_MIB` et la mesure citee dans
-le corps de la PR).
+suite reelle du job (voir `RSS_BUDGET_PAR_WORKER_MIB`).
 
-Ce module est l'organe natif du calcul : il est appele par les workflows et
-couvre les tests dans `scripts/tests/test_cgroup_worker_budget.py`.
+Perimetre : cet organe sert la suite ICT. Le nombre de workers de la suite
+`scripts` est borne dans son propre workflow, ou la regle est un worker par
+Gio entier de plafond (#21554) ; les deux suites n'ont pas le meme profil
+memoire, et les melanger ferait porter a l'une la calibration de l'autre.
+
+Ce module est l'organe natif du calcul : il est appele par le workflow et
+couvert par les tests dans `scripts/tests/test_cgroup_worker_budget.py`.
 """
 
 from __future__ import annotations
@@ -26,38 +32,15 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-# Valeur nominale, inchangee pour les slots a 4 Gio.
+# Valeur nominale : celle des slots sans plafond lisible.
 DEFAULT_WORKERS = 4
 # Plafond haut : la suite ne gagne rien au-dela (le chemin critique est un
 # module unique sous `--dist loadscope`).
 MAX_WORKERS = 4
 
-# RSS de pointe mesure d'un worker xdist sur la suite du job
-# `Scripts Tests (CPU)` (liste de chemins identique a celle du workflow).
-#
-# Mesure (poste ai-01, 2026-10-21, echantillonnage de l'arbre de processus
-# toutes les 0,5 s, `-n 4 --dist loadscope`, 3 028 s) :
-#   - pic de l'arbre complet (4 workers + master) : 4 605,1 MiB, atteint a 219 s
-#   - pic du master xdist                            :   199,1 MiB
-#   - charge CONCURRENTE par worker au pic de l'arbre : 4 605,1 / 4 = 1 151,3 MiB
-# C'est cette derniere valeur qui dimensionne un worker : c'est ce que le
-# conteneur doit tenir pour faire tourner N workers. Le pic ABSOLU d'un worker
-# isole (2 130,7 MiB) vient d'un sous-processus transitoire (`git merge-base`,
-# 828 MiB) et ne doit pas dimensionner un runner de 4 Go.
-# Les valeurs locales (Windows) sont un majorant de la CI Linux : le garde
-# errer du cote sur.
-#
-# Base retenue pour cette suite : la CHARGE CONCURRENTE moyenne au pic de
-# l'arbre (4 605,1 / 4). La suite `scripts` a un profil reparti (le pic d'un
-# worker isole vient d'un sous-processus transitoire, `git merge-base`, pas
-# d'un module epingle), donc la moyenne est la bonne base. La suite `ICT`,
-# elle, a un module epingle sous `--dist loadscope` : la base y est le worker
-# le plus lourd (voir `RSS_BUDGET_PAR_WORKER_MIB_ICT`).
-RSS_BUDGET_PAR_WORKER_MIB = 1152
-
-# Suite ICT (`ict/tests/`, job `ICT tests/ (58)`) : budget propre, MESURE le
-# 2026-10-21 sur ai-01 (meme methode : echantillonnage de l'arbre toutes les
-# 0,5 s, `-n 4 --dist loadscope`, 292 s, meme chemin de tests que le job) :
+# Suite ICT (`ict/tests/`, job `ICT tests/ (58)`) : budget MESURE le 2026-10-21
+# sur ai-01 (echantillonnage de l'arbre de processus toutes les 0,5 s,
+# `-n 4 --dist loadscope`, 292 s, meme chemin de tests que le job) :
 #   - pic de l'arbre complet (4 workers + master) : 2 182,6 MiB a 155 s
 #   - pic du master xdist                       :     54,8 MiB
 #   - pic du worker le plus lourd               : 1 181,4 MiB
@@ -67,14 +50,7 @@ RSS_BUDGET_PAR_WORKER_MIB = 1152
 # la charge, pas sa moyenne. Avec la moyenne, un conteneur a 1,5 Gio aurait
 # recu 2 workers pour une charge reelle de 1 181 + 326 + 55 = 1 561 MiB --
 # au-dela du plafond : le kill par cgroup qu'on cherche a eviter.
-RSS_BUDGET_PAR_WORKER_MIB_ICT = 1181
-
-# Budget par suite. Une suite inconnue retombe sur le budget de la suite
-# `scripts` (la plus exigeante).
-BUDGETS_PAR_SUITE = {
-    "scripts": RSS_BUDGET_PAR_WORKER_MIB,
-    "ict": RSS_BUDGET_PAR_WORKER_MIB_ICT,
-}
+RSS_BUDGET_PAR_WORKER_MIB = 1181
 
 # RSS de pointe du master xdist (processus pytest de l'etat), reserve en plus
 # du budget des workers : le plafond doit couvrir le master ET les workers.
@@ -148,44 +124,29 @@ def compute_workers(
     return min(workers, maximum)
 
 
-def budget_for(suite: str) -> int:
-    """Budget memoire par worker de la suite nommee, en MiB."""
-    return BUDGETS_PAR_SUITE.get(suite, RSS_BUDGET_PAR_WORKER_MIB)
-
-
-def describe(limit_bytes: int | None, suite: str = "scripts") -> str:
+def describe(limit_bytes: int | None) -> str:
     """Phrase de diagnostic : plafond lu et workers retenus."""
-    budget = budget_for(suite)
     if limit_bytes is None:
         limit_text = "absent ou illimite"
     else:
         limit_text = "%.2f Gio (%d octets)" % (limit_bytes / (1024 ** 3), limit_bytes)
-    return "xdist workers: %d (cgroup memory limit: %s ; suite: %s ; budget par worker: %d MiB ; reserve master: %d MiB)" % (
-        compute_workers(limit_bytes, budget_mib=budget),
+    return "xdist workers: %d (cgroup memory limit: %s ; budget par worker: %d MiB ; reserve master: %d MiB)" % (
+        compute_workers(limit_bytes),
         limit_text,
-        suite,
-        budget,
+        RSS_BUDGET_PAR_WORKER_MIB,
         RSS_RESERVE_MASTER_MIB,
     )
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Ecrit le diagnostic sur stderr et le nombre de workers sur stdout.
-
-    `--suite <nom>` selectionne le budget mesure de la suite concernee.
-    """
+    """Ecrit le diagnostic sur stderr et le nombre de workers sur stdout."""
     args = list(sys.argv[1:] if argv is None else argv)
-    suite = "scripts"
-    if "--suite" in args:
-        index = args.index("--suite")
-        try:
-            suite = args[index + 1]
-        except IndexError:
-            print("--suite exige un nom de suite", file=sys.stderr)
-            return 2
+    if args:
+        print("aucun argument attendu : %s" % " ".join(args), file=sys.stderr)
+        return 2
     limit = read_memory_limit_bytes()
-    print(describe(limit, suite), file=sys.stderr)
-    print(compute_workers(limit, budget_mib=budget_for(suite)))
+    print(describe(limit), file=sys.stderr)
+    print(compute_workers(limit))
     return 0
 
 

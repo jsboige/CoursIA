@@ -489,9 +489,10 @@ jobs:
       # soit le runner : le job porte les memes etiquettes que `Scripts Tests
       # (CPU)` (`self-hosted, coursia-ephemeral, coursia-linux`), donc les
       # memes slots persistants plafonnes a 1,5 Gio, ou quatre workers ont
-      # ete tues par le cgroup (exit 137). Le budget applique ici est celui
-      # MESURE sur la suite ICT, pas celui de la suite `scripts` : les deux
-      # suites n'ont pas le meme profil memoire.
+      # ete tues par le cgroup (exit 137). Le budget applique est celui MESURE
+      # sur la suite ICT (1 181 MiB par worker, le plus lourd sous
+      # `--dist loadscope`) ; la suite `scripts` est bornee dans son propre
+      # workflow (#21554), les deux suites n'ayant pas le meme profil memoire.
       # Le calcul est porte par `scripts/ci/cgroup_worker_budget.py` (lecture
       # de `memory.max` / `memory.limit_in_bytes`, repli sur la valeur
       # nominale si le plafond est absent ou illimite). Le diagnostic est ecrit
@@ -503,7 +504,7 @@ jobs:
       # job ne soit construit).
       - name: Borner les workers xdist au plafond memoire du conteneur
         run: |
-          xdist_n=$(python scripts/ci/cgroup_worker_budget.py --suite ict)
+          xdist_n=$(python scripts/ci/cgroup_worker_budget.py)
           xdist_n=${xdist_n:-4}
           echo "xdist workers: $xdist_n"
           echo "XDIST_N=$xdist_n" >> "$GITHUB_ENV"
