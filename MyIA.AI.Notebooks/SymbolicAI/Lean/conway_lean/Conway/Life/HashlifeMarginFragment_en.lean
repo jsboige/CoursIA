@@ -281,7 +281,7 @@ theorem jumpCapturedF_of_dilation (c : MacroCell) (a b : Int × Int)
 `jumpCapturedF_of_dilation` turns a geometric hypothesis (`h₀`: the padded
 support lives in a box `[a, b)`) into a capture, provided the box **contains
 the test corridor**: `hwin1`/`hwin3` require `2 · 2^lvl ≤ a₁` (resp. `a₂`),
-`hwin2`/`hwin4` require `b₁ ≤ 2^lvl + 2^(lvl+1)` (resp. `b₂`). These four
+`hwin2`/`hwin4` require `b₁ ≤ 2^(lvl+1)` (resp. `b₂`). These four
 bounds are **jointly contradictory**: they force `2 · 2^lvl ≤ a₁ ≤ p₁ < b₁ ≤
 2 · 2^lvl` for every point `p` of the support. The geometric route therefore
 only applies to an **empty** padded grid — and on the empty grid the capture is

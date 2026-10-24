@@ -281,7 +281,7 @@ theorem jumpCapturedF_of_dilation (c : MacroCell) (a b : Int × Int)
 support paddé vit dans une boîte `[a, b)`) en une capture, à condition que la
 boîte **contienne le corridor de test** : `hwin1`/`hwin3` demandent
 `2 · 2^lvl ≤ a₁` (resp. `a₂`), `hwin2`/`hwin4` demandent
-`b₁ ≤ 2^lvl + 2^(lvl+1)` (resp. `b₂`). Ces quatre bornes sont **conjointement
+`b₁ ≤ 2^(lvl+1)` (resp. `b₂`). Ces quatre bornes sont **conjointement
 contradictoires** : elles forcent `2 · 2^lvl ≤ a₁ ≤ p₁ < b₁ ≤ 2 · 2^lvl` pour
 tout point `p` du support. La route géométrique ne s'applique donc qu'à une
 grille paddée **vide** — et sur le vide la capture est triviale, donc le
