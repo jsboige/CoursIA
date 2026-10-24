@@ -2,6 +2,15 @@
 
 > **Bornage strict** : ce ledger couvre **la strate "Fondations" de la série GameTheory** (carnets 02 et 03) sur `origin/main` au 2026-09-28. Les carnets 04-Nash, 05-ZeroSum et au-delà font l'objet d'un ledger suivant si l'arbitrage du tableau consolidé le demande.
 
+> **Resynchronisation (2026-10-24) — lire ceci avant la table.** Cette mesure est datée du **2026-09-28**, soit **la veille** du merge de #18001 (`09e96fa5eaf`, 2026-09-29, « passage unique GameTheory -- 93 carnets »). Les noms de carnets du tableau ci-dessous sont donc **ceux d'avant le relettrage** et n'existent plus sous cette forme. Quatre écarts, tous mesurés :
+>
+> 1. **décalage d'une lettre** sur le bloc 03 — `03a`→`03b`, `03b`→`03c`, `03c`→`03d`, `03e`→`03f`, `03h`→`03g`, plus le suffixe noyau (`-Python` / `-CSharp` / `-Lean`) partout ;
+> 2. **`03d-Plan-de-deformation` a quitté la série** le 2026-10-13 (`c6258b90627`, → `Dynamics-09-Biens-Publics`, #19484) : la ligne correspondante du tableau pointe un carnet absent de l'arbre ;
+> 3. **`02d-Epistemique-Connaissance-Commune-Python` est entré** dans le bloc 02 (#22048) et n'a pas de ligne ici ;
+> 4. les comptes de cellules ont dérivé de quelques unités.
+>
+> Le tableau est **conservé tel quel** : c'est la trace de ce qui a été mesuré ce jour-là, et le réécrire effacerait la mesure. Pour la lecture courante, le tableau de référence est **[15615-gradation-blocs-01-05-consolide.md](15615-gradation-blocs-01-05-consolide.md)** (29 carnets, tête `8957d81ad44`), qui porte la table de renommage complète et l'ordre cible.
+
 ## Origine
 
 Issue #15615 — audit de gradation demandé en réponse au nit user du 2026-09-11 sur la renumérotation mécanique #15586/#15613 : « remettre un peu de cohérence dans la gradation ». Le présent ledger applique le scope 1 de l'acceptance (« tableau de gradation ») sur la **strate des fondations** (carnets 02 + 03), pas sur l'ensemble de la série (voir `ls MyIA.AI.Notebooks/GameTheory/ | grep -E '\.ipynb$' | wc -l` au 2026-09-28).
