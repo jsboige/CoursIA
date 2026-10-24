@@ -8,8 +8,8 @@ Le geste « distillation » : prendre un énoncé ou une construction centrale d
 
 | # | Notebook | Source / écho | Outil |
 |---|----------|---------------|-------|
-| 01 | *(à venir)* | Le mémoire de 1859 : zeta et l'hypothèse — produit eulérien, prolongement, premiers zéros sur la ligne critique | mpmath (`zetazero`) |
-| 02 | *(à venir)* | La formule explicite — ψ(x) = x − Σ ρ⁻ˣ/ρ : les zéros font « la musique des premiers » | mpmath |
+| 01 | [01-zeta-1859.ipynb](01-zeta-1859.ipynb) | Le mémoire de 1859 : zeta et l'hypothèse — produit eulérien **mesuré** (somme vs produit au même seuil, vitesses comparées), prolongement et équation fonctionnelle vérifiée (~1e-31), les dix premiers zéros calculés et **vérifiés comme zéros** (\|ζ(ρₖ)\| ~ 1e-30, symétrie s↔1-s mesurée), hypothèses pré-enregistrées (H1 vitesse du produit CONFIRMÉE, H2 comptage Riemann–von Mangoldt CONFIRMÉ, H3 écarts GUE : moyenne CONFIRMÉE, version forte REFUTÉE) | mpmath (`zetazero`) |
+| 02 | [02-formule-explicite.ipynb](02-formule-explicite.ipynb) | La formule explicite — Λ et ψ **mesurés** (19 valeurs de Λ pour n ≤ 40, escalier de ψ, écart oscillant qui change de signe à x = 200), formule tronquée à K zéros (écart à ψ de 0,002 à 2,04 sur [1,5 ; 39,75] à K = 30, moyenne 0,28 ; figure de la « musique des premiers »), anatomie des trois termes, RH comme **énoncé d'erreur** (rapport de Schoenfeld mesuré sous 1/(8π)), hypothèses pré-enregistrées (H2 échelle CONFIRMÉE ; H1 convergence à point fixé REFUTÉE — somme conditionnelle, K = 0 bat K = 10 à x = 25 ; H3 première onde REFUTÉE — 58,5 % d'accord de signe, l'onde secondaire pèse 1,5× moins) | mpmath (`zetazero`) |
 | 03 | [03-series-rearrangement.ipynb](03-series-rearrangement.ipynb) | Thèse d'habilitation (1854) : séries de Riemann et théorème de réarrangement — convergence conditionnelle mesurée, preuve gloutonne exécutable, hypothèses pré-enregistrées (H1 vitesse, H2 proportion, H3 fini vs infini et série harmonique aléatoire) | Python stdlib + matplotlib |
 | 04 | [04-integrale-riemann.ipynb](04-integrale-riemann.ipynb) | L'intégrale de Riemann — née de la même thèse d'habilitation ; sommes de Darboux et **loi de fermeture de l'écart** mesurée (hypothèse pré-enregistrée : écart × n → (b−a)·V), témoins de Dirichlet (écart constant = 1) et de Thomae (écart → 0 malgré des discontinuités denses), fonction R(x) = Σ sin(n²x)/n² de 1854 (continue, dérivable en certains rationnels seulement — Hardy 1916, Gerver 1970) | Python stdlib + matplotlib |
 | 05 | *(à venir)* | Sphère de Riemann et Möbius — compactification, transformations conformes | matplotlib ; `RiemannSphere` existe dans Mathlib |
@@ -23,7 +23,7 @@ Le versant **preuves** vit dans le lake compagnon [`riemann200_lean/`](riemann20
 
 ## Conventions
 
-- Français d'abord, calcul en stdlib pur (aucune dépendance au-delà de matplotlib pour les figures) — mêmes conventions que Serre 100.
+- Français d'abord, calcul en stdlib pur (aucune dépendance au-delà de matplotlib pour les figures) — mêmes conventions que Serre 100. Exception déclarée par la ligne d'outils de l'EPIC : les grains R-01/R-02 utilisent **mpmath** (`zetazero`), seul recours au-delà de la stdlib dans la série.
 - ≥ 3 exercices C.1 par notebook (convention [#2161](https://github.com/jsboige/CoursIA/issues/2161)), exécution complète commitée (C.2).
 - Chaque hypothèse quantitative est **pré-enregistrée** avant sa mesure, et le verdict — y compris REFUTÉ — reste dans la sortie.
 - Verdict SOTA écrit au body de chaque PR ([#3801](https://github.com/jsboige/CoursIA/issues/3801)).
