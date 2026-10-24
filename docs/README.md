@@ -109,6 +109,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 
 | Fichier | Description |
 |---------|-------------|
+| [genai/3d-socle-reproductibilite.md](genai/3d-socle-reproductibilite.md) | Reproductibilité des socles 3D (NeRF, splats) — mesure sur deux postes : écart 0,07 dB et reproduction exacte |
 | [genai/genai-services.md](genai/genai-services.md) | Architectures Qwen/Lumina, mapping notebooks |
 | [genai/audio-embed-pattern.md](genai/audio-embed-pattern.md) | Pattern d'embed audio GenAI + leçons de réparation |
 | [genai/auth-flip-runbook.md](genai/auth-flip-runbook.md) | Runbook — flip d'authentification des services exposés (#16 P2) |
@@ -349,6 +350,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/12204-ict-chantier-1-a7.md](ledgers/12204-ict-chantier-1-a7.md) | Chantier 1 — tranche A7 : relecture froide — statuation des opérations 2 et 6, verdict « la table est-elle un catalogue ? », quatrième loi |
 | [ledgers/12204-ict-chantier-1-a8.md](ledgers/12204-ict-chantier-1-a8.md) | Chantier 1 — tranche A8 : rétro-équipement des conditions de rétrogradation — une condition de sortie exécutable par entrée TABLE (12 écrites, aucune entrée non falsifiable) |
 | [ledgers/12204-ict-chantier-1-a9.md](ledgers/12204-ict-chantier-1-a9.md) | Chantier 1 — tranche A9 : seconde attestation in-repo de l'op 2 « Abstraire à dette bornée » (Frontieres-11, plus court chemin) — promotion proposée |
+| [ledgers/12204-ict-chantier-1-a10.md](ledgers/12204-ict-chantier-1-a10.md) | Chantier 1 — tranche A10 : statuation de la promotion de l'op 2 « Abstraire à dette bornée » au format d'admission (deux témoins re-mesurés + condition de rétrogradation) — verdict TABLE |
 | [ledgers/13746-tests-eclates-dissipation.md](ledgers/13746-tests-eclates-dissipation.md) | EPIC #13746 — Ledger dissipation câblage tests éclatés |
 | [ledgers/14169-g1-recouvrement.md](ledgers/14169-g1-recouvrement.md) | Ledger G1 — Recouvrement 28 PRs amont endjin/Z3.Linq vs fork MyIntelligenceAgency/Z3.Linq |
 | [ledgers/14169-z3linq-upstream-overlap.md](ledgers/14169-z3linq-upstream-overlap.md) | Z3.Linq — recouvrement fork / amont |
