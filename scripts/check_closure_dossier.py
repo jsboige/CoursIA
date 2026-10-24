@@ -275,22 +275,47 @@ def _open_pr_refs(repo: str, number: int) -> list[int]:
     return [int(item["number"]) for item in out if item.get("number")]
 
 
+def _issue_comments(repo: str, number: int) -> list[dict[str, Any]]:
+    """Commentaires de l'issue, avec un auteur NORMALISE (#21818).
+
+    La lecture se fait en REST (`user`), pas via `gh issue view --json
+    comments` (GraphQL) : GraphQL rend le login d'un acteur de type `Bot`
+    SANS le suffixe `[bot]` (`"github-actions"`), REST le rend AVEC
+    (`"github-actions[bot]"`) et fournit en plus le type de l'acteur
+    (`user.type`). `ACCEPTED_DOSSIER_AUTHORS` est ecrit en orthographe REST :
+    sans cette normalisation, une App de lane signe un dossier que le gate
+    refuse -- symptome mesure : "comment author 'coursia-lane-po-2026' is not
+    an accepted dossier author" (issue #21818).
+
+    La normalisation passe par `gh_identity.normalize_author_login` : c'est le
+    point de passage UNIQUE, partage avec le gate de prevalidation adjointe.
+    """
+    rows = gh_json([
+        "api", f"repos/{repo}/issues/{number}/comments", "--paginate",
+    ]) or []
+    out = []
+    for row in rows:
+        user = row.get("user") or {}
+        out.append({
+            "author": {
+                "login": gh_identity.normalize_author_login(user),
+                "type": user.get("type") or "",
+            },
+            "created_at": row.get("created_at") or "",
+            "body": row.get("body") or "",
+        })
+    return out
+
+
 def load_snapshot(repo: str, number: int) -> dict[str, Any]:
     """Tout ce que le gate lit sur une issue, en un endroit."""
     issue = gh_json([
         "issue", "view", str(number), "--repo", repo,
-        "--json", "number,title,state,labels,comments,createdAt,closedAt",
+        "--json", "number,title,state,labels,createdAt,closedAt",
     ])
     if not isinstance(issue, dict) or "number" not in issue:
         raise RuntimeError(f"issue #{number} introuvable")
-    comments = [
-        {
-            "author": c.get("author") or {},
-            "created_at": c.get("createdAt") or "",
-            "body": c.get("body") or "",
-        }
-        for c in (issue.get("comments") or [])
-    ]
+    comments = _issue_comments(repo, number)
     return {
         "repo": repo,
         "number": int(issue["number"]),
