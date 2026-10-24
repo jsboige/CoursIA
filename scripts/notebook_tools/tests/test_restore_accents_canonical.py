@@ -623,10 +623,13 @@ class Test14613RlFamilyAndReport:
                      "réseau", "équivalent", "repérer", "clés", "création",
                      "récompenses"]:
             assert form in src, form
-        # « evaluation » EXCLU de la table (test_excludes_en_valid_words,
-        # exclusion EN-valide délibérée) : il reste stripped ET remonte dans
-        # le rapport hors-table -- désalignement bruyant, pas muet (#14613).
-        assert "evaluation" in src
+        # « evaluation » reste EXCLU de la table de DETECTION
+        # (test_excludes_en_valid_words : c'est un mot anglais valide), mais
+        # #21277 lui ouvre la cure CONTEXTUELLE : la cellule est francaise,
+        # donc `CONTEXTUAL_PAIRS` le cure. Il ne remonte donc plus au rapport
+        # hors-table pour une cellule FR.
+        assert "d évaluation" in src
+        assert "d evaluation" not in src
 
     def test_ambiguous_rl_forms_still_not_cured(self, tmp_path):
         # #14613 point 3 : entraine/enregistre/recommande/cumule (present vs
@@ -667,3 +670,79 @@ class Test14613RlFamilyAndReport:
         p.write_text(json.dumps(nb), encoding="utf-8")
         res = rac.cure_notebook(p, write=True)
         assert "hors_table" not in res
+
+
+class Test21277ContextualCure:
+    """#21277 -- formes FR hors table qui sont AUSSI des mots anglais valides.
+
+    Ces formes ne peuvent pas entrer dans `detect_accent_stripping.ACCENT_PAIRS`
+    (source de la DETECTION, cf `test_excludes_en_valid_words`) sans produire de
+    faux positifs sur l'anglais. Elles vivent dans
+    `restore_accents_canonical.CONTEXTUAL_PAIRS` et ne sont curees que sur
+    PREUVE de contexte francais.
+    """
+
+    def test_french_cell_cures_cognates(self, tmp_path):
+        nb = _nb([("markdown", "Cette decomposition suit la precedence du plan ; "
+                               "la representation est exacte.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        assert "décomposition" in src
+        assert "précédence" in src
+        assert "représentation" in src
+        assert res["cures"] == 3
+
+    def test_english_cell_keeps_cognates(self, tmp_path):
+        nb = _nb([("markdown", "The representation of the precedence graph and "
+                               "the decomposition is exact.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        for form in ["representation", "precedence", "decomposition"]:
+            assert form in src, form
+        assert res["cures"] == 0
+
+    def test_single_shared_marker_is_not_proof(self, tmp_path):
+        # Piege « de Broglie » / « de Finetti » : deux occurrences du MEME
+        # marqueur ne sont pas deux marqueurs DISTINCTS -- une preuve de
+        # contexte francais exige des mots-outils differents, sinon une cellule
+        # anglaise qui cite deux noms francais serait curee.
+        nb = _nb([("markdown", "The de Broglie and de Finetti representation is exact.")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        assert "representation" in src
+        assert res["cures"] == 0
+
+    def test_code_cell_identifiers_untouched(self, tmp_path):
+        nb = _nb([("code", "representation = decompose(precedence)\n")])
+        p = tmp_path / "nb.ipynb"
+        p.write_text(json.dumps(nb), encoding="utf-8")
+        res = rac.cure_notebook(p, write=True)
+        src = json.loads(p.read_text(encoding="utf-8"))["cells"][0]["source"]
+        assert "representation = decompose(precedence)" in src
+        assert res["cures"] == 0
+
+    def test_markdown_file_french_line_cured(self, tmp_path):
+        # Le chemin `.md` (docs/Slidev) transmet sa preuve de contexte au
+        # coeur : sans cela, une ligne francaise perdait ses cures (regression
+        # mesuree pendant le developpement de #21277).
+        md = tmp_path / "doc.md"
+        md.write_text("Cette decomposition suit la precedence des etapes du plan.\n",
+                      encoding="utf-8")
+        rac.cure_markdown(md, write=True)
+        out = md.read_text(encoding="utf-8")
+        assert "décomposition" in out
+        assert "précédence" in out
+
+    def test_markdown_file_english_line_untouched(self, tmp_path):
+        md = tmp_path / "doc.md"
+        md.write_text("The representation of the precedence graph is exact.\n",
+                      encoding="utf-8")
+        rac.cure_markdown(md, write=True)
+        out = md.read_text(encoding="utf-8")
+        assert "representation of the precedence" in out

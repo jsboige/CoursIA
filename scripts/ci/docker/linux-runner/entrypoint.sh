@@ -41,6 +41,26 @@ require_registration_env() {
   : "${ACTIONS_RUNNER_INPUT_NAME:?RUNNER name manquant}"
   : "${ACTIONS_RUNNER_INPUT_LABELS:?RUNNER labels manquants}"
 }
+
+# Externals requis par le runner (#21745, limb C). Un seul manquant tue le job
+# AVANT sa premiere commande : `actions/checkout` ne demarre pas et le log fait
+# 45 lignes, sans aucune signature de clone ni de ref (mesure po-2024, job
+# 118588912210 : `/opt/runner/externals/node24/bin/node` -> No such file or
+# directory). Un slot enregistre RECOIT des jobs, et chacun meurt en portant un
+# rouge que rien ne rattache a sa cause ; refuser l'enregistrement est la seule
+# facon, depuis le depot, de signaler AVANT le dispatch. Le message est celui
+# que reconnait scripts/ci/classify_infra_leg.py.
+runner_require_externals() {
+  local ext missing=""
+  for ext in ${RUNNER_REQUIRED_EXTERNALS:-node24}; do
+    [ -e "$RUNNER_HOME/externals/$ext/bin/node" ] || missing="$missing $ext"
+  done
+  [ -n "$missing" ] || return 0
+  for ext in $missing; do
+    echo "entrypoint: INFRA_EXTERNALS_MISSING externals/$ext/bin/node absent sous $RUNNER_HOME -- enregistrement REFUSE, aucun job ne sera dispatche sur ce slot" >&2
+  done
+  exit 1
+}
 # TEST-ENTRYPOINT-PERSISTENT-END
 
 export ACTIONS_RUNNER_INPUT_WORK=/home/runner/_work
@@ -214,6 +234,7 @@ if [ "$(runner_mode)" = "persistent" ]; then
   # du conteneur, pas a chaque job -- le runner enchaine les jobs sans relancer
   # l'entrypoint. Le trade-off est ecrit dans docs/ci/self-hosted-runners.md.
   runner_restore_dist
+  runner_require_externals
   if runner_is_registered; then
     echo "entrypoint: .runner present -- reprise sans re-enregistrement (token non requis)"
   else
@@ -251,6 +272,7 @@ fi
 # (Ces mesures sont ephemeral-specific ; en persistent le self-update garde
 # le meme interdit d'image epinglee, la version se bumpe par rebuild.)
 require_registration_env
+runner_require_externals
 export ACTIONS_RUNNER_INPUT_EPHEMERAL=true
 export ACTIONS_RUNNER_INPUT_REPLACE=true
 ./config.sh --unattended --ephemeral --replace --disableupdate

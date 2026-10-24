@@ -269,6 +269,102 @@ def test_18215_classify_without_pr_states_keeps_post_cutoff_live() -> None:
     assert len(out["live"]) == 1
 
 
+def test_20249_classify_scheduled_orphan_ghost_class() -> None:
+    """A no-PR-event run queued past SCHEDULED_ORPHAN_HOURS is a ghost.
+
+    The measured shape (issue #20249): 4 "Linux runner starvation advisory"
+    runs created 2026-10-07 15:08-15:11Z stayed queued across 4 consecutive
+    daily snapshots (~12 days), while a 5th run of the same workflow drained
+    on its own -- so the class must be structural (event set + age), never an
+    ID set. The live API measures the event as `workflow_run` (not
+    `schedule`; the workflow name misleads), so both are covered. Non-
+    regression: a young run of that kind stays live, and a non-PR event
+    outside the set (`push`) of the same age stays live too.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    cutoff = dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    now = dt.datetime(2026, 10, 20, 12, 0, tzinfo=dt.timezone.utc)
+    runs = [
+        {"id": 1, "name": "starvation-advisory-old",
+         "created_at": "2026-10-07T15:08:59Z", "event": "schedule",
+         "head_branch": "main"},
+        {"id": 2, "name": "starvation-advisory-fresh",
+         "created_at": "2026-10-19T15:08:59Z", "event": "schedule",
+         "head_branch": "main"},
+        {"id": 3, "name": "old-push-run",
+         "created_at": "2026-10-07T15:08:59Z", "event": "push",
+         "head_branch": "main"},
+        {"id": 4, "name": "starvation-advisory-workflow-run",
+         "created_at": "2026-10-07T15:09:12Z", "event": "workflow_run",
+         "head_branch": "main"},
+    ]
+    out = mod.classify_runs(runs, cutoff, now=now)
+    assert [g["reason"] for g in out["ghosts"]] == ["scheduled-orphan",
+                                                    "scheduled-orphan"]
+    assert [g["id"] for g in out["ghosts"]] == [1, 4]
+    assert {entry["id"] for entry in out["live"]} == {2, 3}
+
+
+def test_20249_classify_without_now_keeps_scheduled_live() -> None:
+    """Control: no `now` passed (raw snapshot replay) -> scheduled stays live.
+
+    Mirrors the pr-closed control: an offline replay has no reference
+    instant, so the age class cannot be derived. The prior-analysis replay
+    (`_ghost_reason`) is the fidelity-preserving path.
+    """
+    sys.path.insert(0, str(SCRIPT.parent))
+    import gh_queue_health as mod  # noqa: WPS433
+
+    cutoff = dt.datetime(2026, 8, 20, tzinfo=dt.timezone.utc)
+    runs = [{"id": 1, "name": "would-be-scheduled-orphan",
+             "created_at": "2026-10-07T15:08:59Z", "event": "schedule",
+             "head_branch": "main"}]
+    out = mod.classify_runs(runs, cutoff)
+    assert out["ghosts"] == []
+    assert len(out["live"]) == 1
+
+
+def test_20249_cli_replay_without_now_keeps_scheduled_live(tmp_path: Path) -> None:
+    """#20249 review -- the CLI replay path, not just classify_runs.
+
+    main() used to resolve `now` unconditionally (wall clock) and pass it
+    to classify_runs on every path, `--input` included: replaying the same
+    prior-analysis snapshot at D+0 and at D+10 rendered different verdicts
+    once a scheduled/workflow_run live entry crossed SCHEDULED_ORPHAN_HOURS.
+    The fix keeps the classification instant None on a replay without an
+    explicit --now, so the verdict survives replay unchanged (#13966).
+    """
+    analysis = {
+        "cutoff": "2026-08-20",
+        "verdict": "CLEAN",
+        "counts": {"total": 1, "ghosts": 0, "live": 1, "parse_failures": 0},
+        "snapshot_size": 1,
+        "ghosts": [],
+        "live": [
+            {"id": 1, "name": "starvation-advisory",
+             "created_at": "2026-10-07T15:08:59Z", "event": "workflow_run",
+             "head_branch": "main", "html_url": "https://gh/live/1"},
+        ],
+        "parse_failures": [],
+    }
+    snapshot = tmp_path / "replay.json"
+    snapshot.write_text(json.dumps(analysis), encoding="utf-8")
+    proc = _run("--input", str(snapshot))
+    # created_at is fixed and already > 168 h old at any wall clock after
+    # 2026-10-14: with a wall-clock classification instant this flips to
+    # scheduled-orphan -> STALE_FLOOR / exit 1. The frozen replay stays
+    # CLEAN / exit 0.
+    assert proc.returncode == 0, (
+        f"expected EXIT_OK=0 (CLEAN), got {proc.returncode}; stderr={proc.stderr}"
+    )
+    body = json.loads(proc.stdout)
+    assert body["verdict"] == "CLEAN"
+    assert body["counts"]["live"] == 1
+    assert body["counts"]["ghosts"] == 0
+
+
 def test_18215_classify_replayed_reason_is_authoritative() -> None:
     """A synthesized ghost entry with `_ghost_reason` replays as that class.
 
