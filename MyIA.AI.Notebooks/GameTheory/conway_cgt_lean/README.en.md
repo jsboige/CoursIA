@@ -65,7 +65,7 @@ The file imports the upstream modules and exhibits their key results:
 | Games | `PGame` (basic) | `IGame` (concrete) + `Game` (quotient) |
 | Surreals | Basic/Dyadic/Mul | + Division, Hahn series, Birthday, Pow |
 | Nimbers | Basic/Field | + Nat, SimplestExtension |
-| Games lib | 8 modules | 15+ modules (Impartial, Loopy, Specific…) |
+| Games lib | CGT modules | upstream modules (Impartial, Loopy, Specific…) |
 
 ## Modules
 
