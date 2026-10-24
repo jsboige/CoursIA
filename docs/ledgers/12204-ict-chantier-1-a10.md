@@ -61,7 +61,7 @@ La table numérotée est **complète pour les dix opérations du premier jet** (
 ## Effet demandé sur le body de l'EPIC
 
 1. Case **A10** dans la liste des grains §4 (format des cases A2-A8).
-2. Mise à jour de l'état de la table (op 2 file d'attente → TABLE, 13 entrées) et de la ligne file d'attente.
+2. Mise à jour de l'état de la table (op 2 : file d'attente → TABLE) et de la ligne file d'attente.
 3. Renvoi au présent ledger pour la condition de rétrogradation de l'op 2.
 
 ## Références
