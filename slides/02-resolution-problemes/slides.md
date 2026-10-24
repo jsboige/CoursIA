@@ -850,11 +850,15 @@ h2 { margin-top: 0.2em !important; margin-bottom: 0.1em !important; }
 
 # Algorithme génétique pour les 8 reines
 
-<img src="./images/img_031.png" style="display:block; margin:4px auto;" alt="Algorithme génétique: population, fitness, sélection, crossover, mutation" />
+<div style="display:grid; grid-template-columns:150px 1fr; gap:12px; align-items:center; margin:2px 0;">
+<span style="font-weight:600; font-size:1.15em;">Génétique</span>
+<img src="./images/img_031.png" alt="Algorithme génétique: population, fitness, sélection, crossover, mutation" />
+</div>
 
-<img src="./images/img_032.png" style="display:block; margin:4px auto;" alt="Croisement 8 reines" />
-
-## Phenotype
+<div style="display:grid; grid-template-columns:150px 1fr; gap:12px; align-items:center; margin:2px 0;">
+<span style="font-weight:600; font-size:1.15em;">Phénotype</span>
+<img src="./images/img_032.png" alt="Croisement 8 reines" />
+</div>
 
 - Diagramme: 3 échiquiers (addition de deux, résultat)
 
