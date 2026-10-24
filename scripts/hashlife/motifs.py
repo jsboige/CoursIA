@@ -2,7 +2,8 @@
 
 #22287 / revue Hermes de #22294. La table `MOTIFS` de `hashlife_speedup.py`
 declare une classe anatomique par motif (`periodique-p3`, `immuable`,
-`periodique-translatif-p4`, `croissance-reguliere`, `soupe-chaotique`). Rien ne
+`periodique-translatif-p4`, `croissance-reguliere`, `methuselah-chaotique`,
+`soupe-chaotique`). Rien ne
 confrontait cette declaration a la ligne de base naive : le motif nomme
 `pulsar` y a porte **36 cellules** au lieu des 48 canoniques, emis un planeur,
 et traverse une revue en etant classe `periodique-p3` avec `alpha_hash = 0,179`.
@@ -48,6 +49,8 @@ BUDGET = 240
 
 _PERIODIC = re.compile(r"periodique(?:-translatif)?-p(\d+)$")
 _IMMUABLE = re.compile(r"^immuable$")
+#: Classes dont le nom annonce une croissance : la mesure doit la constater.
+_GROWTH = re.compile(r"croissance-reguliere|methuselah-chaotique")
 
 
 def normalize(cells: set[tuple[int, int]]) -> frozenset[tuple[int, int]]:
@@ -98,7 +101,11 @@ def measure_period(cells: set[tuple[int, int]], translative: bool,
 
 
 def bbox_growth(cells: set[tuple[int, int]], budget: int = BUDGET) -> tuple[int, int, int]:
-    """(largeur initiale, largeur finale, population finale) -- la signature d'un emetteur."""
+    """(etendue initiale, etendue finale, population finale) -- la signature d'un emetteur.
+
+    L'etendue est largeur + hauteur de la boite englobante : un oscillateur la
+    garde, un emetteur l'etend.
+    """
     current = set(cells)
     first = _bbox(current)
     for _ in range(budget):
@@ -107,6 +114,7 @@ def bbox_growth(cells: set[tuple[int, int]], budget: int = BUDGET) -> tuple[int,
 
 
 def _bbox(cells: set[tuple[int, int]]) -> int:
+    """Etendue de la boite englobante : (largeur + hauteur), pas une largeur seule."""
     if not cells:
         return 0
     xs = [x for x, _ in cells]
@@ -121,7 +129,7 @@ def audit(name: str) -> dict:
     want = declared_period(anatomy)
     translative = declared_translative(anatomy)
     got, read = measure_period(cells, translative)
-    width0, widthN, popN = bbox_growth(cells)
+    span0, spanN, popN = bbox_growth(cells)
 
     if want is None:
         # La classe annonce une absence de periode : un motif qui revient la contredit.
@@ -131,6 +139,12 @@ def audit(name: str) -> dict:
         ok = got == want
         detail = "periode {} attendue".format(want)
 
+    if ok and _GROWTH.match(anatomy):
+        # Le nom de la classe annonce une croissance : la mesure doit la constater,
+        # sinon la troisieme classe declaree ne serait pas plus mesuree qu'affirmee.
+        ok = spanN > span0
+        detail = "croissance annoncee : etendue {} -> {}".format(span0, spanN)
+
     return {
         "motif": name,
         "anatomy": anatomy,
@@ -139,8 +153,8 @@ def audit(name: str) -> dict:
         "translative": translative,
         "cells": len(cells),
         "generations_read": read,
-        "bbox_width_initial": width0,
-        "bbox_width_final": widthN,
+        "bbox_span_initial": span0,
+        "bbox_span_final": spanN,
         "population_final": popN,
         "ok": ok,
         "detail": detail,
@@ -164,9 +178,9 @@ def main(argv: list[str] | None = None) -> int:
     else:
         for r in rows:
             verdict = "ok" if r["ok"] else "CONTREDIT"
-            print("{:<14} {:<28} declare={!s:<5} mesure={!s:<5} {}  ({} cellules, bbox {}->{})".format(
+            print("{:<14} {:<28} declare={!s:<5} mesure={!s:<5} {}  ({} cellules, etendue {}->{})".format(
                 r["motif"], r["anatomy"], r["declared_period"], r["measured_period"],
-                verdict, r["cells"], r["bbox_width_initial"], r["bbox_width_final"]))
+                verdict, r["cells"], r["bbox_span_initial"], r["bbox_span_final"]))
 
     bad = [r for r in rows if not r["ok"]]
     if args.check and bad:

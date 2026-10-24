@@ -13,7 +13,9 @@ Ce que ces tests epinglent, dans cet ordre :
    meme predicat qui accepte le canonique -- sans ce controle negatif, un
    organe qui rend toujours `ok` serait indiscernable d'un organe correct ;
 3. un **desaccord de declaration** synthetique : un motif de periode 2 declare
-   `periodique-p3` doit etre signale.
+   `periodique-p3` doit etre signale, et un motif d'etendue plate declare
+   `croissance-reguliere` aussi -- la troisieme classe est mesuree comme les
+   deux premieres.
 """
 from __future__ import annotations
 
@@ -43,6 +45,29 @@ PULSAR_36 = {
     (10, 9), (10, 10),
 }
 
+#: Le pulsar canonique, 13x13, 48 cellules -- meme litteral rangées que la
+#: branche de #22294 (`PULSAR_ROWS`). Embarque ici pour que la moitie positive
+#: du controle a deux cotes s'execute sans attendre le merge de #22294.
+PULSAR_48_ROWS = [
+    "..OOO...OOO..",
+    ".............",
+    "O....O.O....O",
+    "O....O.O....O",
+    "O....O.O....O",
+    "..OOO...OOO..",
+    ".............",
+    "..OOO...OOO..",
+    "O....O.O....O",
+    "O....O.O....O",
+    "O....O.O....O",
+    ".............",
+    "..OOO...OOO..",
+]
+PULSAR_48 = {
+    (x, y) for y, row in enumerate(PULSAR_48_ROWS)
+    for x, ch in enumerate(row) if ch == "O"
+}
+
 BLINKER = {(0, 0), (1, 0), (2, 0)}
 BLOCK = {(0, 0), (1, 0), (0, 1), (1, 1)}
 
@@ -62,19 +87,17 @@ def test_measure_period_on_known_shapes(cells, translative, expected):
 
 
 def test_the_historical_pulsar_is_refused_by_the_same_predicate_that_accepts_the_canonical():
-    """Le controle negatif qui donne sa valeur a l'organe."""
+    """Le controle a deux cotes qui donne sa valeur a l'organe.
+
+    Refus du temoin historique 36 cellules ET acceptation du canonique 48
+    cellules, par le meme predicat, sans condition : la moitie positive ne
+    depend plus du merge de #22294.
+    """
     refused, _ = measure_period(PULSAR_36, False)
     assert refused is None, "le pulsar a 36 cellules ne doit pas passer pour un p3"
 
-    canonical, _ = measure_period(PULSAR_36, False)
-    assert canonical is None
-    # Et le canonique, lui, doit passer : la difference entre les deux est la mesure.
-    from hashlife_speedup import build_motif
-
-    live = build_motif("pulsar")
-    if len(live) == 48:
-        accepted, _ = measure_period(live, False)
-        assert accepted == 3
+    canonical, _ = measure_period(PULSAR_48, False)
+    assert canonical == 3, "le pulsar canonique 48 cellules doit mesurer p3"
 
 
 def test_declared_anatomy_parsing():
@@ -88,7 +111,7 @@ def test_declared_anatomy_parsing():
     assert declared_translative("periodique-p3") is False
 
 
-@pytest.mark.parametrize("name", ["blinker", "block", "glider", "gosper-gun"])
+@pytest.mark.parametrize("name", ["blinker", "block", "glider", "gosper-gun", "acorn"])
 def test_live_table_agrees_with_measurement(name):
     row = audit(name)
     assert row["ok"], "{} : {} (declare {}, mesure {})".format(
@@ -123,3 +146,23 @@ def test_a_mismatched_declaration_is_flagged():
         assert audit("blinker")["measured_period"] == 2
     finally:
         MOTIFS["blinker"] = saved
+
+
+def test_a_flat_growth_declared_growing_is_flagged():
+    """Second controle negatif, isole sur la porte croissance.
+
+    Le planeur est non periodique en identite absolue (il derive) et d'etendue
+    plate : declare `croissance-reguliere`, la porte periode l'accepte -- seule
+    la porte croissance peut le signaler.
+    """
+    from hashlife_speedup import MOTIFS
+
+    saved = MOTIFS["glider"]
+    MOTIFS["glider"] = (saved[0], "croissance-reguliere")
+    try:
+        row = audit("glider")
+        assert row["ok"] is False
+        assert row["measured_period"] is None, "le planeur ne doit pas passer la porte periode en absolue"
+        assert row["bbox_span_initial"] == row["bbox_span_final"]
+    finally:
+        MOTIFS["glider"] = saved
