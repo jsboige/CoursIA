@@ -409,7 +409,11 @@ def main(argv: list[str] | None = None) -> int:
     }
     results: dict[str, tuple[int, str]] = {}
     head_json: dict[str, str] = {}
-    tmp = Path(os.environ.get("RUNNER_TEMP") or (REPO_ROOT / ".fast-lane-tmp"))
+    # Repli hors CI : ecrire sous `.tmp/` (deja ignore par le motif `*.tmp`) et
+    # non a la racine du depot. Un dossier racine non ignore salit `git status`
+    # de tous les worktrees d'une machine et fait REFUSER la purge du worktree
+    # une fois sa PR mergee (`.tmp/` est tolere par prune_merged_worktrees).
+    tmp = Path(os.environ.get("RUNNER_TEMP") or (REPO_ROOT / ".tmp" / "fast-lane"))
     tmp.mkdir(parents=True, exist_ok=True)
 
     # -- phase 1 : HEAD, aucun garde ne mute l'arbre -------------------------
