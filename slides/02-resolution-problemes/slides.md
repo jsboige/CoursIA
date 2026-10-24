@@ -1319,7 +1319,7 @@ Go, Échecs (AlphaZero), planification en jeux partiellement observables.
 ---
 
 <style scoped>
-.slidev-layout { font-size: 0.8em; }
+.slidev-layout { font-size: 0.95em; }
 h2 { font-size: 1.05em !important; margin-top: 0.25em !important; margin-bottom: 0.1em !important; }
 li { margin: 0.1em 0; }
 </style>
