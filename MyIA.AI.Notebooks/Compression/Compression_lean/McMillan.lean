@@ -13,7 +13,7 @@ exactement ces longueurs. C'est la garantie qu'utilise le carnet Python
 table de longueurs : toute bande de longueurs admissible est réalisable.
 
 La preuve est **constructive** : elle exhibe le **code canonique**
-(Schwartz–Miller 1964), celui qu'on range dans l'ordre lexicographique.
+(Schwartz-Kallick 1964), celui qu'on range dans l'ordre lexicographique.
 En traitant les longueurs par ordre croissant, chaque mot est l'écriture
 binaire sur `ℓᵢ` bits d'un compteur :
 
