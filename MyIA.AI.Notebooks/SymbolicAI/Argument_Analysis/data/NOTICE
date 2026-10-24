@@ -3,12 +3,12 @@ NOTICE — CoursIA `data/argumentum_fallacies_taxonomy.csv`
 
 This file is a verbatim copy of upstream Argumentum's
 `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv` at submodule commit
-**ae84c91ce8b04a0eaa01f418ed08926fbb6a51bb** (bump #14418, 2026-09-03;
-previously ac33f607).
+**5cb4a75929cbb19acdecb7853ca03820bbdb261d** (resync #21849, 2026-10-24;
+previously 6bc573f73, 2026-10-04, and ae84c91c, 2026-09-03).
 
-Source repository : https://github.com/Argumentum/Argumentum
+Source repository : https://github.com/ArgumentumGames/Argumentum
 Source path       : `Cards/Fallacies/Argumentum Fallacies - Taxonomy.csv`
-Source SHA1       : 4ac3f12eaf15fbda1de3432abbf5b57b6cb9e728
+Source SHA1       : f3cec0e6b8a36eb43bfa35e226fe58bd07ed9bd2
 Upstream LICENSE  : GNU Lesser General Public License v3 (LGPL-3.0)
                     See https://www.gnu.org/licenses/lgpl-3.0.html
                     See Argumentum `LICENSE` file at the pinned commit.
@@ -20,9 +20,23 @@ Per LGPL v3 section 5 (Conveying Modified Source Versions), this file is
 distributed under the same LGPL-3.0 terms as the upstream source.
 
 **Verbatim copy**: this CoursIA data file is byte-for-byte identical to
-the upstream file at the pinned commit ae84c91c — same content, same
-encoding (UTF-8 with BOM), same line endings (CRLF), 1,548 lines as
-upstream. No CoursIA modifications.
+the upstream file at the pinned commit 5cb4a759 — same content, same
+encoding (UTF-8 with BOM), 1,409 CRLF record terminators plus 117 bare LF
+inside quoted multi-line fields, header + 1,408 data rows, 104 columns.
+No CoursIA modifications.
+
+**Resync 2026-10-24 (#21849)** : re-copie verbatim depuis le pin du
+gitlink de `main` (5cb4a759), qui avait avancé de deux crans depuis la
+copie en place (6bc573f73). Delta mesuré vs la copie 6bc573f73 : en-tête
+identique, forme inchangée (1,408 lignes de données × 104 colonnes),
+**182 lignes de données modifiées** : **226 cellules** sur des colonnes de
+contenu traduit (19 colonnes touchées ; principales : `desc_es` 76,
+`example_ru` 47, `desc_en` 20, `desc_pt` 19, `example_pt` 14, `desc_ru` 11)
+et **23 cellules** sur des renvois inter-cartes (6 colonnes, dont `link_es`
+7 et `link_zh` 6). Au niveau ligne : 171 lignes ne portent que du contenu,
+5 portent les deux, 6 ne portent que des renvois. Aucun ajout ni retrait de
+ligne. Le manifeste `data/argumentum_snapshot.json` a été
+régénéré **après** la recopie, au même pin.
 
 **Resync 2026-09-04 (#4960 Volet B, étape 1)** : re-copie verbatim depuis
 le pin ae84c91c (bump #14418) après les pins intercalaires 7e72f3e5 et
@@ -53,13 +67,13 @@ work, you must:
    (the upstream Argumentum LICENSE file applies — see submodule).
 2. **Prominently note** that this file is a verbatim copy of the
    upstream Argumentum taxonomy, with source path, source SHA, and
-   source commit ac33f607 cited above.
+   source commit 5cb4a759 cited above.
 3. **Do not impose further restrictions** on the recipients' exercise
    of rights granted by the LGPL-3.0.
 
 Verbatim copies are not "modified source versions" within the meaning
 of LGPL-3.0 section 5 (no modification occurred). The upstream commit
-SHA ac33f607 is the authoritative reference; any future CoursIA edit
+SHA 5cb4a759 is the authoritative reference; any future CoursIA edit
 to this file must be accompanied by an update to the source SHA +
 attribution notice in this file, and the file will then become a
 "modified source version" subject to LGPL-3.0 section 5 obligations
@@ -70,9 +84,9 @@ CoursIA submodule pointer
 
 The Argumentum submodule at
 `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum/`
-is pinned to commit **ae84c91ce8b04a0eaa01f418ed08926fbb6a51bb**
-(master premerge, per user decision 2026-07-03, see EPIC #4960 Volet A
-acceptance). Re-syncing this data file against a newer submodule commit
+is pinned to commit **5cb4a75929cbb19acdecb7853ca03820bbdb261d**
+(gitlink de `main` au 2026-10-24 ; le sous-module suit `master`).
+Re-syncing this data file against a newer submodule commit
 is a routine operation that should preserve verbatim integrity and
 update the source SHA + upstream commit citation in this NOTICE.
 
@@ -94,7 +108,7 @@ See also
 - EPIC #4960 — `[EPIC] Argument_Analysis v3 — submodule Argumentum +
   remontées moteur + landing essence multidimensionnelle EPITA-IS`
 - PR (this verbatim copy): see `See #4960` reference in PR body
-- Argumentum LICENSE (LGPL-3.0) at pinned commit ac33f607
+- Argumentum LICENSE (LGPL-3.0) at pinned commit 5cb4a759
 - Previous CoursIA copy: commit c0242d92b (2025-10-03, partial),
   initial 5ce6e4cf6 (2025-06-02)
 
