@@ -14,6 +14,17 @@ mkdir -p "$TEST_DIR/bin" "$TEST_DIR/state-A" "$TEST_DIR/state-B" "$TEST_DIR/stat
 LOG="$TEST_DIR/test.log"
 : > "$LOG"
 
+# Magasin d'objets partage (#18225) DESACTIVE pour toute la suite : la boucle de
+# refresh est un conteneur de plus, lance par `start`/`lean` -- il apparaîtrait
+# dans les traces ordonnées que plusieurs tests comparent EXACTEMENT (Test 71 en
+# particulier, et le stub qui touche STOP_FILE au premier `run`). Ce n'est pas un
+# contournement : l'objet de cette suite est la boucle des slots, et le miroir a
+# son propre controle (Test 72, appel synchrone du sous-commande `mirror`, plus
+# test_work_cache_health.sh et test_entrypoint_mirror.sh pour les deux autres
+# moities). COURSIA_RUNNER_MIRROR ne gate QUE la boucle -- jamais l'entrypoint
+# ni la sous-commande explicite.
+export COURSIA_RUNNER_MIRROR=0
+
 # Le verdict est TENU DANS UN FICHIER, pas dans une variable (#15091). Chaque
 # test tourne dans un sous-shell `( ... )` : un compteur shell y serait
 # incremente dans une copie et le parent lirait toujours zero. Le meme piege a
@@ -1534,6 +1545,17 @@ STUB
     ok "toolcache monte sur le waiter (volume + RUNNER_TOOL_CACHE)"
   else
     ko "toolcache attendu dans l'argv du waiter, argv=$argv"
+  fi
+  # Garde de DEBIT git (#18225) : un transfert qui s'effondre doit echouer VITE
+  # au lieu de tenir le job jusqu'a son timeout. Verifie sur l'argv REELLEMENT
+  # passe a docker run, pas dans le source -- une variable definie mais non
+  # propagee est exactement le defaut que le flag-parsed-is-not-flag-threaded
+  # documente.
+  if echo "$argv" | grep -q -- "-e GIT_HTTP_LOW_SPEED_LIMIT=1024" \
+     && echo "$argv" | grep -q -- "-e GIT_HTTP_LOW_SPEED_TIME=90"; then
+    ok "garde de debit git propagee au waiter (lowSpeedLimit=1024 / lowSpeedTime=90)"
+  else
+    ko "garde de debit git absente de l'argv du waiter, argv=$argv"
   fi
   # Garde #14385 : un _work PERSISTANT sur un pool sparse-checkout est le
   # vecteur ferme par cette issue. Le toolcache n'est pas _work ; ce controle
@@ -3896,6 +3918,80 @@ run"
     ok "fenetre de liberation mesuree : 3 sondages de 5 s pendant le job, puis 1 sondage apres la sortie (5 inspects au total)"
   else
     ko "fenetre de liberation inattendue : polls=[$polls] inspects=$inspects (attendu 5,5,5 et 5)"
+  fi
+)
+echo ""
+
+# --- Test 72 : le conteneur du miroir d'objets (#18225) ----------------------
+# La recette vient de persist/po-2026/pool.sh ou elle tourne sur l'hote. Ici le
+# volume est un volume docker : l'hote ne le voit pas, donc le geste git doit
+# s'executer DANS un conteneur. Ce que ce test verifie n'est pas « le code
+# contient la bonne ligne » mais l'argv REELLEMENT construit -- c'est lui qui
+# decide si le miroir voit le volume, s'il est plafonne, et s'il peut entrer par
+# erreur dans l'arithmetique memoire des slots.
+echo "Test 72 : miroir d'objets partage -- argv du conteneur jetable (#18225)"
+(
+  cd "$SCRIPT_DIR"
+  unset PS_OUTPUT
+  mkdir -p "$TEST_DIR/bin72" "$TEST_DIR/state-72"
+  cat > "$TEST_DIR/bin72/docker" <<STUB
+#!/usr/bin/env bash
+# Probes de fraicheur d'image (assert_image_fresh) : reponse sha256, jamais
+# journalisee. Tout le reste de `run` est le lancement observe.
+if [ "\$1" = "run" ] && printf '%s' "\$*" | grep -q -- '--entrypoint sha256sum'; then
+  printf '%s' "\$*" | grep -q 'work_cache_health.sh' \
+    && echo "$REPO_HEALTH_SHA  /opt/runner/work_cache_health.sh" \
+    || echo "$REPO_ENTRYPOINT_SHA  /opt/runner/entrypoint.sh"
+  exit 0
+fi
+if [ "\$1" = "run" ]; then
+  printf '%s\n' "\$*" >> "\$ARGV_LOG"
+  exit 0
+fi
+exit 0
+STUB
+  chmod +x "$TEST_DIR/bin72/docker"
+  cp "$TEST_DIR/bin/gh" "$TEST_DIR/bin72/gh"
+  cp "$TEST_DIR/bin/ps" "$TEST_DIR/bin72/ps"
+  export PATH="$TEST_DIR/bin72:$PATH"
+  export COURSIA_RUNNER_STATE_DIR="$TEST_DIR/state-72"
+  export ARGV_LOG="$TEST_DIR/state-72/docker-argv.txt"
+  : > "$ARGV_LOG"
+  bash "$SCRIPT_DIR/supervise.sh" mirror status >/dev/null 2>&1
+  argv="$(cat "$ARGV_LOG" 2>/dev/null)"
+
+  if echo "$argv" | grep -q -- "-v coursia-runner-toolcache:/opt/hostedtoolcache"; then
+    ok "le conteneur du miroir monte le volume toolcache (sinon il ne voit aucun miroir)"
+  else
+    ko "volume toolcache absent de l'argv du miroir, argv=$argv"
+  fi
+  if echo "$argv" | grep -q -- "-e COURSIA_RUNNER_MIRROR_ACTION=status" \
+     && echo "$argv" | grep -q -- "-e COURSIA_RUNNER_MIRROR_PATH=/opt/hostedtoolcache/coursia-mirror.git"; then
+    ok "action et chemin passes par l'environnement (une seule source de verite avec l'entrypoint)"
+  else
+    ko "action/chemin du miroir absents de l'argv, argv=$argv"
+  fi
+  if echo "$argv" | grep -q -- "-e GIT_HTTP_LOW_SPEED_LIMIT=1024" \
+     && echo "$argv" | grep -q -- "-e GIT_HTTP_LOW_SPEED_TIME=90"; then
+    ok "garde de debit git propagee au refresh du miroir"
+  else
+    ko "garde de debit git absente de l'argv du miroir, argv=$argv"
+  fi
+  # Controles NEGATIFS : deux facons de casser le parc en croyant l'aider.
+  if echo "$argv" | grep -q -- "--label coursia-ci=1"; then
+    ko "le conteneur du miroir porte coursia-ci=1 -- il entrerait dans le budget memoire des slots"
+  else
+    ok "aucun label coursia-ci=1 sur le miroir (budget des slots inchange)"
+  fi
+  if echo "$argv" | grep -q -- "/home/runner/_work"; then
+    ko "le miroir monte un volume _work -- c'est le vecteur ferme par #14385"
+  else
+    ok "aucun volume _work sur le conteneur du miroir"
+  fi
+  if echo "$argv" | grep -q -- "--memory="; then
+    ok "plafond memoire pose sur le conteneur du miroir"
+  else
+    ko "aucun plafond memoire sur le conteneur du miroir (un clone integral sans borne)"
   fi
 )
 echo ""
