@@ -1,9 +1,10 @@
 name: dotnet-OrphanApps
 
-# Tranche 3 de #14696 (orphelins .sln) : les 8 apps .NET sans projet de
+# Tranche 3 de #14696 (orphelins .sln) : les 9 apps .NET sans projet de
 # tests, exclues du glob parent par #14695 — cluster Aspire Integrations-DotNet
 # (AgentGuard x3, IntegrationTests, StreamingAgent.App), CopilotAgent.App,
-# LiveOrderApp (csharprepl demo), InferNetVoi (Probas).
+# LiveOrderApp (csharprepl demo), InferNetVoi (Probas), ScrutorLab (lab
+# minimal API de la serie Scrutor).
 #
 # Aucune ne porte de projet xunit : le garde est BUILD-ONLY (dotnet build par
 # csproj, echec au premier code d'erreur) — pas de floor-guard de collecte
@@ -57,10 +58,11 @@ env:
     MyIA.AI.Notebooks/GenAI/Integrations-DotNet/CopilotSDK/CopilotAgent.App/CopilotAgent.App.csproj
     MyIA.AI.Notebooks/GenAI/Vibe-Coding/docs/csharprepl-demo/LiveOrderApp.csproj
     MyIA.AI.Notebooks/Probas/DecisionTheory/voi/InferNetVoi/InferNetVoi.csproj
+    MyIA.AI.Notebooks/GenAI/Integrations-DotNet/Scrutor/ScrutorLab/ScrutorLab.csproj
 
 jobs:
   dotnet-orphanapps-linux:
-    name: OrphanApps build (ubuntu-latest, 8 csproj)
+    name: OrphanApps build (ubuntu-latest, 9 csproj)
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
@@ -74,7 +76,7 @@ jobs:
             9.0.x
             10.0.x
 
-      - name: Build the eight orphan apps
+      - name: Build the nine orphan apps
         run: |
           for csproj in $ORPHAN_APPS; do
             echo "--- $csproj"
@@ -82,7 +84,7 @@ jobs:
           done
 
   dotnet-orphanapps-windows:
-    name: OrphanApps build (windows-latest, 8 csproj)
+    name: OrphanApps build (windows-latest, 9 csproj)
     runs-on: windows-latest
     timeout-minutes: 25
 
@@ -96,7 +98,7 @@ jobs:
             9.0.x
             10.0.x
 
-      - name: Build the eight orphan apps
+      - name: Build the nine orphan apps
         shell: bash
         run: |
           for csproj in $ORPHAN_APPS; do
