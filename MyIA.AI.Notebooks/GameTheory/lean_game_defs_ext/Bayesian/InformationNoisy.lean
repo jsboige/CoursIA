@@ -28,16 +28,30 @@
     contributions valent zero par construction (aucune division n'est
     prise), donc un signal impossible ne fabrique ni `NaN` ni exception.
 
-  Ce qui est prouve dans ce module (premiere tranche de #22374) :
-  `valueNoisyNoInfo_le_valueNoisySignal` — la valeur brute d'un decideur
-  qui observe le signal domine celle d'un decideur non informe, avec les
-  memes poids joints. La preuve est le lemme maitre `maxFin_sumFin_le`
-  applique aux realisations du signal, plus la commutation des sommes.
+  Ce qui est prouve dans ce module (deux tranches de #22374) :
+
+  - `valueNoisyNoInfo_le_valueNoisySignal` — la valeur brute d'un decideur
+    qui observe le signal domine celle d'un decideur non informe, avec les
+    memes poids joints (lemme maitre `maxFin_sumFin_le` applique aux
+    realisations du signal, plus la commutation des sommes) ;
+  - `valueNoisySignal_le_valueNoisyPerfect` — l'information parfaite domine
+    tout signal bruite, meme en valeurs brutes non normalisees (lemme
+    maitre `sumFin_maxFin_mul_le`, forme algebrique de Blackwell, cas de
+    masse nulle traite a part) ;
+  - une realisation de masse nulle contribue **exactement** zero, par
+    theoreme (`valueNoisySignal_zero_mass_cell`) et non par absence de
+    division ;
+  - `valueNoisyNoInfo_nonneg`, `valueNoisySignal_nonneg`,
+    `valueNoisyPerfect_nonneg` — les trois valeurs sont non negatives
+    **sous l'hypothese** `NonnegPayouts`. L'hypothese est necessaire :
+    `NoisyProblem` ne contraint pas le signe de `u`, et une instance bien
+    formee de valeur strictement negative existe (voir la section « Signe
+    des valeurs »).
 
   Ce qui reste a faire dans les tranches suivantes, et n'est **pas**
-  affirme ici : dominance de l'information parfaite (`valueNoisyPerfect`),
-  cas independant a EVSI nulle, pont vers `Signal` deterministe, adaptateur
-  exact vers les instances JSON du banc `voi`.
+  affirme ici : cas independant a EVSI nulle, pont vers `Signal`
+  deterministe, adaptateur exact vers les instances JSON du banc `voi`,
+  carnet compagnon reexecute.
 
   Voir #22374 (extension de la phase bayesienne 4 de #2610).
 -/
@@ -315,6 +329,67 @@ theorem valueNoisySignal_le_valueNoisyPerfect (D : NoisyProblem) :
   rw [hcomm] at hstep
   exact Int.le_trans hstep hper
 
+/-! ## Signe des valeurs : ce qui le porte, et ce qui ne le porte pas
+
+Les trois valeurs de ce module sont **brutes**, et rien dans `NoisyProblem`
+ne contraint le signe des paiements `u : Fin nS → Fin (nA + 1) → Int`. Une
+instance bien formee peut donc valoir strictement moins que zero : avec
+`nS = 1`, `nA = 1`, `nX = 1`, `p ≡ 1`, `u ≡ -1`, on a `priorMass = 1`,
+chaque realisation a une masse de 1, la meilleure action vaut -1 dans
+chaque etat, et `valueNoisySignal = -2`.
+
+La non-negativite n'est donc **pas** une propriete du type : c'est une
+propriete sous hypothese. Elle est enoncee et prouvee ici, plutot que
+laissee implicite dans une docstring. -/
+
+/-- Les paiements sont non negatifs partout : l'hypothese qui porte le
+    signe des valeurs du module. -/
+def NonnegPayouts (D : NoisyProblem) : Prop :=
+  ∀ (s : Fin D.nS) (a : Fin (D.nA + 1)), 0 ≤ D.u s a
+
+/-- Un poids marginal est non negatif : c'est une somme de poids naturels. -/
+theorem priorMass_nonneg (D : NoisyProblem) (s : Fin D.nS) :
+    0 ≤ priorMass D s := by
+  unfold priorMass
+  exact sumFin_nonneg (fun x => Int.natCast_nonneg (D.p s x))
+
+/-- Un paiement joint est non negatif des que les paiements le sont. -/
+theorem jointPayoff_nonneg (D : NoisyProblem) (h : NonnegPayouts D)
+    (s : Fin D.nS) (x : Fin (D.nX + 1)) (a : Fin (D.nA + 1)) :
+    0 ≤ jointPayoff D s x a := by
+  unfold jointPayoff
+  exact Int.mul_nonneg (Int.natCast_nonneg (D.p s x)) (h s a)
+
+/-- **La valeur du decideur non informe est non negative** sous paiements
+    non negatifs. -/
+theorem valueNoisyNoInfo_nonneg (D : NoisyProblem) (h : NonnegPayouts D) :
+    0 ≤ valueNoisyNoInfo D := by
+  unfold valueNoisyNoInfo
+  refine Int.le_trans ?_ (le_maxFin (fun a =>
+    sumFin D.nS (fun s => priorMass D s * D.u s a)) 0)
+  exact sumFin_nonneg (fun s => Int.mul_nonneg (priorMass_nonneg D s) (h s 0))
+
+/-- **La valeur brute d'un signal bruite est non negative** sous paiements
+    non negatifs. -/
+theorem valueNoisySignal_nonneg (D : NoisyProblem) (h : NonnegPayouts D) :
+    0 ≤ valueNoisySignal D := by
+  unfold valueNoisySignal
+  apply sumFin_nonneg
+  intro x
+  refine Int.le_trans ?_ (le_maxFin (fun a =>
+    sumFin D.nS (fun s => jointPayoff D s x a)) 0)
+  exact sumFin_nonneg (fun s => jointPayoff_nonneg D h s x 0)
+
+/-- **La valeur de l'information parfaite est non negative** sous paiements
+    non negatifs. -/
+theorem valueNoisyPerfect_nonneg (D : NoisyProblem) (h : NonnegPayouts D) :
+    0 ≤ valueNoisyPerfect D := by
+  unfold valueNoisyPerfect
+  apply sumFin_nonneg
+  intro s
+  refine Int.le_trans ?_ (le_maxFin (fun a => priorMass D s * D.u s a) 0)
+  exact Int.mul_nonneg (priorMass_nonneg D s) (h s 0)
+
 /-- Informe parfaitement, le decideur du parapluie bruite vaut 20 (poids
     marginal 4 dans chaque etat, meilleur paiement 2 puis 3). -/
 theorem noisyUmbrella_valueNoisyPerfect :
@@ -328,4 +403,31 @@ theorem noisyUmbrella_chain :
   constructor
   · exact valueNoisyNoInfo_le_valueNoisySignal noisyUmbrella
   · exact valueNoisySignal_le_valueNoisyPerfect noisyUmbrella
+
+/-! ## Ancres d'axiomes
+
+Les axiomes des theoremes du module, imprimes par `lake build` : la claim
+« ni `sorryAx`, ni `native_decide`, ni `Classical.choice` » devient
+rejouable par le prochain lecteur, au lieu de ne vivre que dans un corps
+de PR. -/
+
+#print axioms sumFin_jointPayoff
+#print axioms valueNoisyNoInfo_le_valueNoisySignal
+#print axioms noisyUmbrella_valueNoisyNoInfo
+#print axioms noisyUmbrella_valueNoisySignal
+#print axioms noisyUmbrella_strict_gain
+#print axioms sumFin_nonneg
+#print axioms eq_zero_of_sumFin_nonneg
+#print axioms p_eq_zero_of_signalMass_zero
+#print axioms jointPayoff_zero_mass
+#print axioms valueNoisySignal_zero_mass_cell
+#print axioms sumFin_maxFin_mul_le
+#print axioms valueNoisySignal_le_valueNoisyPerfect
+#print axioms priorMass_nonneg
+#print axioms jointPayoff_nonneg
+#print axioms valueNoisyNoInfo_nonneg
+#print axioms valueNoisySignal_nonneg
+#print axioms valueNoisyPerfect_nonneg
+#print axioms noisyUmbrella_valueNoisyPerfect
+#print axioms noisyUmbrella_chain
 
