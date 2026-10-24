@@ -16,7 +16,6 @@ name: Translation Drift Check
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/**/*.ipynb'
       - 'translations/**'
