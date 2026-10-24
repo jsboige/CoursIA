@@ -15,9 +15,10 @@ name: Twin Parity Check
 # ("metadonnee de parite auditable, pas declarative"). Blocking is the only
 # way to make the auditable promise real.
 #
-# Per-pair semantics (#8264): the workflow runs in `--per-pair --base
-# origin/main` mode, comparing the registry + blob SHAs at the PR's HEAD vs
-# at origin/main (the base ref). The gate FAILS only on pairs that the PR
+# Per-pair semantics (#8264): the workflow runs in `--per-pair --base auto`
+# mode, comparing the registry + blob SHAs at the PR's HEAD vs at the main the
+# PR's merge ref was built on (`HEAD^1`, #22292; `origin/main` off a merge ref).
+# The gate FAILS only on pairs that the PR
 # itself has moved (base=OK, head=DRIFT/MISSING) or introduced/removed
 # without rebaseline. Drift already present at origin/main is reported as
 # `drift_pre_existing` but does NOT fail the gate -- it belongs to a
@@ -91,7 +92,16 @@ jobs:
           # so json.load crashed with "Extra data" and the gate failed with a raw traceback on
           # any PR where a warning fired -- masking the real drift verdict. Direct redirection
           # captures python's exit code correctly AND keeps the report pure JSON.
-          python scripts/notebook_tools/check_twin_parity.py --json --check --per-pair --base origin/main > twin_parity_report.json 2>twin_parity_stderr.log
+          # Base = `auto` (#22292) : sur un PR, actions/checkout extrait le merge
+          # ref `refs/pull/N/merge`, dont le PREMIER parent est le `main` de
+          # l'evenement. `origin/main`, lui, est refetch au demarrage du job. Sous
+          # famine de runners les deux divergent : toute paire rebaselinee sur
+          # main pendant l'attente est DRIFT au merge ref et OK a `origin/main`,
+          # donc classee DRIFT_INTRODUCED sur une PR qui ne la touche pas
+          # (instance #22218 : 11 paires, aucune touchee ; 22 PRs sur 256).
+          # `auto` = HEAD^1 quand HEAD est un commit de fusion GitHub, origin/main
+          # sinon -- le verdict ne depend plus du temps passe en file.
+          python scripts/notebook_tools/check_twin_parity.py --json --check --per-pair --base auto > twin_parity_report.json 2>twin_parity_stderr.log
           EXIT=$?
           set -e
           if [ -s twin_parity_stderr.log ]; then
@@ -146,7 +156,8 @@ jobs:
             # %25 = literal %, %0D = CR. Without %0A the annotation truncates at
             # the first newline and the multi-line command is lost.
             CMDS_ANN=${CMDS//$'\n'/%0A}
-            echo "::error title=Twin parity DRIFT INTRODUCED by this PR::La PR a introduit $INTRO paire(s) en DRIFT/MISSING qui etaient OK au base-ref origin/main. Lance EXACTEMENT (le selecteur --pair est obligatoire #8508, lecons L963/L974) :%0A%0A$CMDS_ANN%0A%0A--update va en DERNIER : si le DRIFT vient d'une normalisation outillee (strip_probe_banner.py / strip_machine_paths.py / scrub_papermill_paths.py), these strips deplacent le blob SHA -- attester PUIS stripper invalide l'attestation (#8957). L'ecriture est chirurgicale et preserve les commentaires du registre (#8570). Alternative : splitter la PR pour que chaque cote evolue separement. Drift pre-existant ($PRE paire(s)) releve d'une PR dediee cf #8264. Voir twin_parity_report.json dans les artifacts."
+            BASE=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('base_ref','?'))")
+            echo "::error title=Twin parity DRIFT INTRODUCED by this PR::La PR a introduit $INTRO paire(s) en DRIFT/MISSING qui etaient OK au base-ref $BASE. Lance EXACTEMENT (le selecteur --pair est obligatoire #8508, lecons L963/L974) :%0A%0A$CMDS_ANN%0A%0A--update va en DERNIER : si le DRIFT vient d'une normalisation outillee (strip_probe_banner.py / strip_machine_paths.py / scrub_papermill_paths.py), these strips deplacent le blob SHA -- attester PUIS stripper invalide l'attestation (#8957). L'ecriture est chirurgicale et preserve les commentaires du registre (#8570). Alternative : splitter la PR pour que chaque cote evolue separement. Drift pre-existant ($PRE paire(s)) releve d'une PR dediee cf #8264. Voir twin_parity_report.json dans les artifacts."
             exit 1
           else
             echo "::error title=Twin parity tool error::Erreur d'execution du check (exit $EXIT). Voir les logs ci-dessus."
