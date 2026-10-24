@@ -6,6 +6,7 @@ import Bayesian.Auction
 import Bayesian.Vickrey
 import Bayesian.Max
 import Bayesian.Information
+import Bayesian.InformationNoisy
 import Bayesian.InfoGames
 import Bayesian.Reputation
 import Bayesian.Regret
@@ -41,6 +42,9 @@ import Bayesian.FictitiousPlay
   - `Bayesian.Information` — value of information for a single decision
                           maker: signals as partitions, Blackwell
                           monotonicity, no-info ≤ signal ≤ perfect (phase 4)
+  - `Bayesian.InformationNoisy` — noisy signals: finite joint table over
+                          state × realization, raw value non-negative,
+                          strictly positive gain example (phase 4, #22374)
   - `Bayesian.InfoGames` — counterexample: in a *game*, more information
                           can strictly hurt the informed player (unique
                           BNE payoffs 3 < 5, kernel-checked) (phase 4)
