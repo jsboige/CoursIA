@@ -25,6 +25,10 @@ Ce que le fichier prouve
   7. **Bout en bout sur un vrai depot git, mecanisme de #21650 reproduit** :
      une branche empilee dont la base ignore ce que `main` a gagne depuis le
      fork rend deux carnets ; le filtre n'en garde qu'un et nomme l'autre.
+  8. **La jambe shell ne verdit pas sur un plantage de l'organe** : le
+     fail-open ne couvre que la fonction -- un filtre qui crashe doit rougir
+     le gate, sinon son stdout vide se lit « aucun carnet » et le gate est
+     eteint en silence (releve par Hermes sur #22302).
 
 Run: python -m pytest scripts/ci/tests/test_filter_pr_introduced_notebooks.py -q
 """
@@ -306,3 +310,41 @@ def test_unreadable_base_is_fail_open(stacked_repo, monkeypatch, capsys):
     out, err = capsys.readouterr()
     assert len([line for line in out.splitlines() if line.strip()]) == 3
     assert "indeterminable" in err
+
+
+# --------------------------------------------------------------------------
+# 8 -- la jambe shell ne verdit pas sur un plantage de l'organe
+# --------------------------------------------------------------------------
+
+WORKFLOW = Path(__file__).resolve().parents[3] / ".github/workflows/enrich-quality-gate.yml"
+
+
+def test_jambe_shell_ne_verdit_pas_vert_sur_un_plantage_de_l_organe():
+    """Point 8 : un organe qui crashe rougit le gate, il ne le vertit pas.
+
+    Le contrat fail-open ne couvre que la FONCTION : un ensemble indeterminable
+    ne retire rien. Un organe absent ou casse (script deplace, import qui leve,
+    argparse qui refuse un argument) n'est pas « indeterminable » -- son stdout
+    est vide, et la branche `-z` qui suit conclurait « No notebooks changed —
+    clean » avec `exit 0`. Le gate serait alors eteint en silence sur toutes les
+    PRs a carnets, l'inverse du contrat revendique (releve par Hermes sur
+    #22302).
+
+    Ce test garde la forme du cablage, pas son intention : il exige, dans le
+    meme fichier, l'appel garde par `if !` et l'echec explicite qui le suit.
+    Retirer la garde rougit ; la deplacer hors du bloc de l'appel aussi.
+    """
+    workflow = WORKFLOW.read_text(encoding="utf-8")
+    call_line = next(
+        (i for i, line in enumerate(workflow.splitlines())
+         if "filter_pr_introduced_notebooks.py" in line and "python " in line),
+        None,
+    )
+    assert call_line is not None, "l'appel de l'organe a disparu du workflow"
+    lines = workflow.splitlines()
+    # La garde doit etre la ligne de commande qui ENGLOBE l'appel : `if ! VAR=$(`.
+    assert lines[call_line].lstrip().startswith("if ! STATUS=$("), lines[call_line]
+    # ... et l'echec doit sortir en rouge, pas retomber sur la branche « clean ».
+    tail = lines[call_line + 1:call_line + 5]
+    assert any("exit 1" in line for line in tail), tail
+    assert any("::error" in line for line in tail), tail

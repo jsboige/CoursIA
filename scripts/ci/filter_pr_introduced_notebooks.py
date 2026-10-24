@@ -18,7 +18,10 @@ resolution de conflit -- ou une edition faite pendant le merge -- n'existe chez
 aucun parent, et la sauter retirerait du gate un carnet que la PR a bel et bien
 ecrit (faux negatif releve par l'adjoint sur #22302).  Ce que le merge a
 seulement **transporte** depuis un parent n'est pas attribue a la PR : voir
-`_changed_paths`.
+`_changed_paths`.  Le cas du merge d'une **sous-branche de la lane** est couvert
+par la meme mecanique, sans exception a ecrire : les commits de la sous-branche
+sont eux-memes dans `BASE..HEAD --not main`, donc ce qu'ils ecrivent compte pour
+la PR.
 
 Le filtre est **transparent** : il lit la sortie de `git diff --name-status -M`
 sur stdin et ecrit les lignes conservees, dans le meme ordre et au meme format
