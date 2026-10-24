@@ -138,7 +138,7 @@ La rangée ci-dessus porte désormais **trois temps**, pas un verdict. Cette sec
 
 ##### 1. Mesure courante (commit `4cf9df047`, post-[#9792](https://github.com/jsboige/CoursIA/pull/9792))
 
-Outputs des cellules 6 et 8 de `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15d-CechObstruction-Python.ipynb` :
+Outputs des cellules 6 et 8 de `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15d-CechObstruction-Python.ipynb` :
 
 ```
    substrat |   s2/s1 |     cob | rank |     verdict
