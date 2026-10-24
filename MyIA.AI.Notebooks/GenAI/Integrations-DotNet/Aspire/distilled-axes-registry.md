@@ -74,6 +74,7 @@ Le registre **n'est pas une spec** — il est une **photographie** honnête du d
 | Mistral Vibe worker (#12012) | [#12018](https://github.com/jsboige/CoursIA/pull/12018) | n/a | MERGED 2026-08-21T01:10Z | Worker LLM non-Anthropic sur protocole Claude Code | Axe 11 orchestration agents |
 | EF Core requêtes vérifiées à la compilation (#12381) | [#12393](https://github.com/jsboige/CoursIA/pull/12393) | myia-po-2024:CoursIA | MERGED 2026-08-23T06:46Z | EF Core — requêtes vérifiées à la compilation | Notebook 01-EFCore-Requetes-Compilees + registre EF Core |
 | 03-Aspire-Observabilite — exercice 4 résolu (#10473) | [#20075](https://github.com/jsboige/CoursIA/pull/20075) | myia-po-2025:CoursIA | MERGED 2026-10-10T02:37Z | Axe OTEL/dashboard : `BackgroundService` + `AddHostedService`, relecture `aspire otel spans` / `otel logs` | 3 spans `WorkerTick` + 3 logs relus du dashboard par la CLI ; sortie déterministe (dashboard arrêté avant l'exécution finale) |
+| AppHost frontend Vite/pnpm (#22363) | [#22370](https://github.com/jsboige/CoursIA/pull/22370) | myia-po-2028:CoursIA | OPEN au 2026-10-24 | Axe *AppHost frontend* différé par #10897 : ressource frontend orchestrée | `10-Aspire-AppHost-Frontend.ipynb` + lab `FrontendLab/` ; `AddViteApp` mesuré inopérant sous le SDK 13, primitive `AddExecutable` retenue ; trois pièges d'orchestration documentés (résolution sans shell, endpoint `targetPort`, `allowBuilds` pnpm) |
 
 ---
 
