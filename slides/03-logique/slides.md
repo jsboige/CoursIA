@@ -2848,6 +2848,34 @@ jupyter notebook MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipy
 
 ---
 
+# Projets de groupe (1/2)
+
+- Moteur de recherche augmenté par le raisonnement et le langage naturel
+  - Grammaire et sémantique des contenus et des requêtes. Lucene.Net, OpenNLP, SharpRDF, FOL
+- Conception de bots de services sur réseaux sociaux
+  - Chat Bots, AIML, Reddit et agents de service, NLP, RDF, APIs
+- Conception d'un modèle d'inférence pour l'analyse de sentiment
+  - Conception d'un modèle probabiliste, Infer.Net, démarche expérimentale, Reddit
+- Création d'une plateforme sémantique LDP à partir d'un index structuré
+  - Structuration et ouverture des données = Linked Data. Lucene.Net, SharpRDF
+- Résolution de Captchas par apprentissage profond
+  - Réseau de neurones convolutif. PyTorch, TensorFlow, transfer learning
+
+---
+
+# Projets de groupe (2/2)
+
+- Entraînement de stratégies de trading algorithmiques sur crypto-monnaies
+  - Réseaux de neurones récurrents (LSTM), scikit-learn, données Binance API
+- Amélioration par l'apprentissage d'un agent joueur de Go simple
+  - Le Go et l'IA, récentes avancées (AlphaGo). PyTorch, reinforcement learning
+- Évolution de vaisseaux spatiaux par algorithmes génétiques dans le jeu de la vie
+  - Approches évolutionnistes, automates cellulaires. DEAP, Golly, Python
+- Pilotage d'un cluster de cache distribué pour le portage d'applications dans le Cloud
+  - Caches distribués, scaling, stratégies et clustering. Redis
+
+---
+
 # References academiques
 
 **Tweety** :
