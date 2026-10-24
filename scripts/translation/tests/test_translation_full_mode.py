@@ -11,17 +11,20 @@ Plan #10329 (5 etapes) -- cette PR livre les etapes 2, 4, 5 :
 Garde-fou : ces tests hermetiques (stdlib + tmp_path) pinning le contrat pour
 que toute regression de l'un des 3 modes soit attrapee en CI avant merge.
 
-#21514 -- les deux formes d'invocation (input large / input borne)
------------------------------------------------------------------
-Defaut mesure le 2026-10-20 : ``--update <csv> --full`` lance avec la racine du
-depot en input absorbait 49 947 lignes dans un CSV de serie de 31 lignes, parce
-que ``update_existing_csv`` appende toute ligne fraiche absente de l'index. La
-correction est **sur main** (``fe6e92907cd5``, PR #21518) : le scan ``--full``
-est borne aux repertoires de serie deja references dans le CSV, l'input CLI
-n'etant qu'un repli quand aucune borne n'est derivable.
+#21514 -- la seconde forme d'invocation (input borne)
+----------------------------------------------------
+La correction du defaut #21514 est sur main (``fe6e92907cd5``, PR #21518) : le
+scan ``--full`` est borne aux repertoires de serie derives du CSV, l'input CLI
+n'etant qu'un repli quand aucune borne n'est derivable. Les tests de la
+premiere forme (input LARGE) sont deja sur main -- dont les reserves 2 et 3 de
+#21518 (input couvert non annonce ecarte, repli sans borne derivable).
 
-Cette PR ne porte donc **que les tests** du critere 3 de #21514 -- les deux
-formes d'invocation -- sans re-livrer la correction.
+Il manquait la seconde forme d'invocation du critere 3 : un input CLI qui EST
+le repertoire de serie lui-meme. C'est la branche ``rp == b`` de
+``_covered_by_bound`` (egalite exacte), que les tests existants n'exercent pas
+-- ils ne couvrent que ``b in rp.parents`` (input situe sous une borne) et la
+racine du depot. ``test_full_mode_series_dir_input_appends_new_notebook``
+l'exerce.
 
 Mirrors the style of test_translation_sync_t4_scope.py (c.200 PR #10364) and
 test_translation_full_mode TDD principle : on teste les 3 invariants
@@ -215,88 +218,167 @@ def test_full_mode_appends_new_notebooks_in_scope(tmp_path, monkeypatch):
     )
 
 
-def test_full_mode_wide_input_does_not_absorb_other_series(tmp_path, monkeypatch, capsys):
-    """Mode --update --full avec input CLI large : les lignes NOUVELLES hors
-    des repertoires de serie deja references dans le CSV ne sont PAS absorbees.
+def test_full_mode_does_not_absorb_notebooks_outside_series(tmp_path, monkeypatch):
+    """#21514 : un input CLI large ne doit PAS faire absorber au CSV les
+    carnets d'une autre serie.
 
-    Scenario fondateur #21514 : ``--update --full`` avec la racine du depot en
-    input scannait tout le corpus (l'input large n'etait jamais retire du
-    scan), et l'append inconditionnel absorbait 49 947 lignes dans un CSV de
-    serie de 31 lignes. Depuis #21518 le scan ``--full`` est borne aux
-    repertoires de serie derives du CSV ; un input hors de toute borne est
-    annonce sur stderr au lieu de servir de racine de scan.
+    La borne de scan du mode --full est le repertoire de serie derive des
+    lignes du CSV ; l'input CLI n'est qu'un repli quand aucune borne n'est
+    derivable. Mesure fondatrice : `--update <csv> --full` avec
+    "MyIA.AI.Notebooks" faisait passer compression.csv de 31 a 49 978 lignes.
     """
-    # Serie referencee dans le CSV : 1 notebook, plus un NOUVEAU notebook de
-    # la meme serie (append legitime, in scope).
-    nb_old = tmp_path / "series" / "Old.ipynb"
-    _make_notebook(nb_old, "cellOld", text_fr="## Old")
-    nb_new = tmp_path / "series" / "New.ipynb"
-    _make_notebook(nb_new, "cellNew", text_fr="## New")
+    nb_in = tmp_path / "series" / "In.ipynb"
+    nb_out = tmp_path / "other-series" / "Out.ipynb"
+    _make_notebook(nb_in, "in1", text_fr="## In")
+    _make_notebook(nb_out, "out1", text_fr="## Out")
+
     csv_path = _make_csv(
         tmp_path / "synced.csv",
         PIVOT_HEADER,
         [
-            {"notebook": str(nb_old.relative_to(tmp_path)), "cell_id": "cellOld",
-             "cell_type": "markdown", "src_lang": "fr", "src_hash": "STALE_HASH",
-             "text_fr": "## Old", "hash_fr": "STALE_FR"},
+            {"notebook": nb_in.relative_to(tmp_path).as_posix(), "cell_id": "in1",
+             "cell_type": "markdown", "src_lang": "fr", "src_hash": "STALE_IN",
+             "text_fr": "## In", "hash_fr": "FR_IN"},
         ],
     )
 
-    # Notebooks HORS serie (autres repertoires du depot, jamais references
-    # dans ce CSV) : ne doivent PAS etre absorbes par l'input large.
-    nb_x = tmp_path / "other" / "X.ipynb"
-    _make_notebook(nb_x, "cellX", text_fr="## X")
-    nb_y = tmp_path / "another" / "Y.ipynb"
-    _make_notebook(nb_y, "cellY", text_fr="## Y")
-
+    # Input = la RACINE qui contient les deux series (forme que le workflow
+    # T1_MODE=full passait reellement : "MyIA.AI.Notebooks").
     monkeypatch.setattr(sys, "argv", [
         "extract_cells_to_csv.py",
         "--repo-root", str(tmp_path),
-        str(tmp_path),                  # input LARGE = racine (tout le corpus)
+        str(tmp_path),
         "--update", str(csv_path),
         "--full",
     ])
-    rc = e.main()
-    assert rc == 0, f"main returned {rc}"
+    assert e.main() == 0
 
     with csv_path.open(encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
-
     notebooks = {r["notebook"] for r in rows}
-    # Le nouveau notebook de la serie EST rattrape (comportement #10329).
-    assert nb_new.relative_to(tmp_path).as_posix() in notebooks
-    # Les notebooks hors serie ne sont PAS absorbes : le CSV reste borne a
-    # sa serie (2 notebooks : Old + New).
-    assert nb_x.relative_to(tmp_path).as_posix() not in notebooks, (
-        f"X.ipynb (hors serie) a ete absorbe ; notebooks={notebooks}"
+    assert notebooks == {nb_in.relative_to(tmp_path).as_posix()}, (
+        f"le mode --full ne doit appender que les carnets de la serie du CSV ; "
+        f"got notebooks={notebooks}"
     )
-    assert nb_y.relative_to(tmp_path).as_posix() not in notebooks, (
-        f"Y.ipynb (hors serie) a ete absorbe ; notebooks={notebooks}"
-    )
-    assert len(rows) == 2, (
-        f"le CSV de serie aurait du rester a 2 lignes (Old + New) ; got {len(rows)}"
+    assert rows[0]["src_hash"] != "STALE_IN", "la ligne de la serie doit rester rafraichie"
+
+
+def test_full_mode_falls_back_to_cli_input_without_derivable_bound(tmp_path, monkeypatch):
+    """#21518 reserve 3 : sans borne derivable du CSV, l'input CLI reste la
+    racine de scan (garantie de non-regression du repli).
+
+    Toutes les lignes du CSV pointent un notebook a la RACINE du depot
+    (chemin sans separateur, donc ``len(parts) < 2``) : aucun repertoire de
+    serie n'est derivable. L'input CLI doit alors etre honore exactement
+    comme avant #21514 (scan recursif plein perimetre).
+    """
+    nb_root = tmp_path / "Root.ipynb"
+    _make_notebook(nb_root, "root1", text_fr="## Root")
+    nb_new = tmp_path / "fresh" / "Fresh.ipynb"
+    _make_notebook(nb_new, "fresh1", text_fr="## Fresh")
+
+    csv_path = _make_csv(
+        tmp_path / "synced.csv",
+        PIVOT_HEADER,
+        [
+            {"notebook": nb_root.name, "cell_id": "root1",
+             "cell_type": "markdown", "src_lang": "fr", "src_hash": "STALE_ROOT",
+             "text_fr": "## Root", "hash_fr": "FR_ROOT"},
+        ],
     )
 
-    # L'input large, hors de toute borne, est ANNONCE comme non utilise comme
-    # racine de scan : l'appelant sait pourquoi ses carnets hors serie ne sont
-    # pas lus (#21518).
+    monkeypatch.setattr(sys, "argv", [
+        "extract_cells_to_csv.py",
+        "--repo-root", str(tmp_path),
+        str(tmp_path),                  # input = seule racine disponible
+        "--update", str(csv_path),
+        "--full",
+    ])
+    assert e.main() == 0
+
+    with csv_path.open(encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    by_nb = {r["notebook"]: r for r in rows}
+    assert by_nb[nb_root.name]["src_hash"] != "STALE_ROOT", (
+        "sans borne derivable, l'input CLI doit rester la racine de scan"
+    )
+    assert nb_new.relative_to(tmp_path).as_posix() in by_nb, (
+        "le repli doit conserver le comportement plein perimetre de l'input CLI ; "
+        f"got notebooks={set(by_nb)}"
+    )
+
+
+def test_full_mode_note_does_not_report_covered_input_as_ignored(
+    tmp_path, monkeypatch, capsys
+):
+    """#21518 reserve 2 : un input CLI COUVERT par une borne n'est pas « ignore ».
+
+    Le filtre historique testait l'appartenance EXACTE : un input situe
+    SOUS une borne etait annonce « ignore » sur stderr alors que ses carnets
+    etaient bien scannes via la borne. Le log operateur mentait.
+    """
+    nb_a = tmp_path / "series" / "A.ipynb"
+    _make_notebook(nb_a, "a1", text_fr="## A")
+    # Carnet sous le sous-dossier passe en input : il prouve que ce chemin
+    # est reellement scanne (via la borne `series`), donc que l'annoncer
+    # « ignore » serait faux.
+    nb_deep = tmp_path / "series" / "sub" / "Deep.ipynb"
+    _make_notebook(nb_deep, "d1", text_fr="## Deep")
+    csv_path = _make_csv(
+        tmp_path / "synced.csv",
+        PIVOT_HEADER,
+        [
+            {"notebook": nb_a.relative_to(tmp_path).as_posix(), "cell_id": "a1",
+             "cell_type": "markdown", "src_lang": "fr", "src_hash": "STALE_A",
+             "text_fr": "## A", "hash_fr": "FR_A"},
+        ],
+    )
+
+    # Inputs = racine (parent de la borne, reellement ecartee comme racine)
+    # + un SOUS-dossier de la serie (couvert par la borne, donc scanne).
+    sub_input = tmp_path / "series" / "sub"
+    monkeypatch.setattr(sys, "argv", [
+        "extract_cells_to_csv.py",
+        "--repo-root", str(tmp_path),
+        str(tmp_path),
+        str(sub_input),
+        "--update", str(csv_path),
+        "--full",
+    ])
+    assert e.main() == 0
+
+    with csv_path.open(encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    notebooks = {r["notebook"] for r in rows}
+    assert nb_deep.relative_to(tmp_path).as_posix() in notebooks, (
+        "le carnet du sous-dossier est scanne via la borne : "
+        f"got notebooks={notebooks}"
+    )
+
     err = capsys.readouterr().err
-    assert "borné aux répertoires de série du CSV" in err, (
-        f"le scan borne devrait etre annonce sur stderr ; got {err!r}"
+    assert "non utilisé(s) comme racine de scan" in err, (
+        f"la NOTE doit nommer les racines ecartees ; stderr={err!r}"
     )
-    assert str(tmp_path) in err, (
-        f"l'input large ecarte devrait etre nomme sur stderr ; got {err!r}"
+    note = next(line for line in err.splitlines() if "non utilisé(s)" in line)
+    assert str(sub_input) not in note, (
+        "un input COUVERT par une borne voit ses carnets scannes : il ne doit pas "
+        f"etre annonce ecarte ; note={note!r}"
+    )
+    assert str(tmp_path) in note, (
+        f"la racine (parent de la borne) doit rester annoncee ; note={note!r}"
     )
 
 
-def test_full_mode_bounded_input_still_appends_in_series(tmp_path, monkeypatch, capsys):
-    """Mode --update --full avec input BORNE (le dossier de serie) : le
-    rattrapage des carnets neufs de la serie continue de fonctionner.
+def test_full_mode_series_dir_input_appends_new_notebook(tmp_path, monkeypatch, capsys):
+    """#21514 critere 3, seconde forme : input CLI = le repertoire de serie.
 
-    Seconde forme d'input de l'acceptance #21514 (input borne / input large) :
-    la borne de scan ne doit pas casser le cas nominal ou l'appelant passe
-    directement le repertoire de serie -- et elle ne doit rien annoncer
-    d'ecarte, l'input etant couvert par la borne (#21518).
+    Les tests existants couvrent l'input LARGE (racine du depot) et l'input
+    situe SOUS une borne (``b in rp.parents``). Celui-ci exerce l'egalite
+    exacte (``rp == b``) : l'appelant passe directement le dossier de serie.
+
+    Deux proprietes : le rattrapage d'un carnet neuf de la serie continue de
+    fonctionner (comportement #10329 preserve), et l'input n'est PAS annonce
+    « non utilise comme racine de scan » -- il est exactement la borne.
     """
     nb_old = tmp_path / "series" / "Old.ipynb"
     _make_notebook(nb_old, "cellOld", text_fr="## Old")
@@ -306,36 +388,35 @@ def test_full_mode_bounded_input_still_appends_in_series(tmp_path, monkeypatch, 
         tmp_path / "synced.csv",
         PIVOT_HEADER,
         [
-            {"notebook": str(nb_old.relative_to(tmp_path)), "cell_id": "cellOld",
+            {"notebook": nb_old.relative_to(tmp_path).as_posix(), "cell_id": "cellOld",
              "cell_type": "markdown", "src_lang": "fr", "src_hash": "STALE_HASH",
              "text_fr": "## Old", "hash_fr": "STALE_FR"},
         ],
     )
 
-    # Input BORNE : le dossier de serie uniquement.
+    series_dir = tmp_path / "series"
     monkeypatch.setattr(sys, "argv", [
         "extract_cells_to_csv.py",
         "--repo-root", str(tmp_path),
-        str(tmp_path / "series"),
+        str(series_dir),                # input BORNE = le repertoire de serie
         "--update", str(csv_path),
         "--full",
     ])
-    rc = e.main()
-    assert rc == 0, f"main returned {rc}"
+    assert e.main() == 0
 
     with csv_path.open(encoding="utf-8") as f:
         rows = list(csv.DictReader(f))
-
     notebooks = {r["notebook"] for r in rows}
     assert nb_new.relative_to(tmp_path).as_posix() in notebooks, (
-        f"input borne : New.ipynb aurait du etre appendu ; notebooks={notebooks}"
+        f"input borne : le carnet neuf de la serie doit etre appendu ; "
+        f"got notebooks={notebooks}"
     )
     assert len(rows) == 2
 
-    # Un input situe DESSOUS une borne n'est pas « ecarte » : aucune annonce.
     err = capsys.readouterr().err
-    assert "non utilisé(s) comme racine de scan" not in err, (
-        f"un input couvert par la borne ne doit pas etre annonce ecarte ; got {err!r}"
+    assert str(series_dir) not in err, (
+        "l'input qui EST la borne n'est pas ecarte : il ne doit pas figurer "
+        f"dans la NOTE ; stderr={err!r}"
     )
 
 
