@@ -7,7 +7,7 @@ trancher. Lire ces fils dans le contexte de l'agent coute plusieurs milliers de
 tokens par PR, alors que 7 a 9 commentaires sur 10 sont des bots (CI) qui ne
 portent aucune reserve.
 
-Cet organe fait trois choses, et rien d'autre :
+Cet organe fait quatre choses, et rien d'autre :
 
 1. il ne transcrit PAS les commentaires de bot : ils sont comptes, pas passes
    au modele (mesure : le volume de bot fait deriver le petit modele en boucle
@@ -15,7 +15,12 @@ Cet organe fait trois choses, et rien d'autre :
 2. il fait attribuer a chaque commentaire HUMAIN un role, avec l'extrait qui le
    prouve ;
 3. il ecrit le volume brut et la reponse dans des FICHIERS : rien ne transite
-   par le contexte de l'agent appelant.
+   par le contexte de l'agent appelant ;
+4. il COMPTE les reviews formelles non-bot (`pulls/N/reviews`) et le signale
+   dans le resume. Sur ce depot, c'est le canal qui porte les reserves : une
+   reserve posee en review n'apparait jamais dans `comments`, donc un fil de
+   commentaires seuls peut etre lu comme « aucune reserve humaine » alors qu'il
+   y en a une. L'organe ne les transcrit pas, il les compte.
 
 Il ne rend aucun verdict et ne leve aucune reserve : la decision reste a
 l'organe B.0 et a l'agent qui lit la sortie.
@@ -218,9 +223,19 @@ def is_bot(login: str) -> bool:
 
 def pretriage(pr: int, model: str, dry_run: bool = False) -> dict:
     data = json.loads(gh(["pr", "view", str(pr), "--json",
-                          "title,body,comments,state,headRefOid"]))
+                          "title,body,comments,state,headRefOid,reviews"]))
     comments = data.get("comments") or []
     humans = [c for c in comments if not is_bot(c.get("author", {}).get("login", ""))]
+    # Le canal qui porte les reserves sur ce depot est `reviews`, pas `comments` :
+    # une reserve posee en review formelle n'apparait jamais dans `comments`.
+    # On les compte (sans les transcrire) pour que le fil rendu ne soit pas lu
+    # comme « aucune reserve humaine » (review Hermes #21885, point 1).
+    reviews = data.get("reviews") or []
+    reviews_nonbot = [
+        (rv.get("author", {}).get("login", ""), rv.get("state", ""))
+        for rv in reviews
+        if not is_bot(rv.get("author", {}).get("login", ""))
+    ]
     lines = [
         f"--- commentaire {i} ({c['author']['login']}, {c['createdAt'][:10]}) ---\n"
         f"{(c.get('body') or '')[:MAX_BODY]}"
@@ -243,6 +258,8 @@ def pretriage(pr: int, model: str, dry_run: bool = False) -> dict:
             "commentaires": len(comments),
             "humains": len(humans),
             "bots": len(comments) - len(humans),
+            "reviews_nonbot": len(reviews_nonbot),
+            "reviews_nonbot_detail": reviews_nonbot,
             "car_prompt": len(prompt),
             "sortie": str(out),
             "http": None,
@@ -257,6 +274,8 @@ def pretriage(pr: int, model: str, dry_run: bool = False) -> dict:
         "commentaires": len(comments),
         "humains": len(humans),
         "bots": len(comments) - len(humains),
+        "reviews_nonbot": len(reviews_nonbot),
+        "reviews_nonbot_detail": reviews_nonbot,
         "car_prompt": len(prompt),
         "sortie": str(out),
         **r,
@@ -285,6 +304,7 @@ def main() -> int:
         pass
 
     total_in = 0
+    truncated = False
     for pr in nums:
         r = pretriage(pr, args.model, dry_run=args.dry_run)
         total_in += r.get("tokens_in") or 0
@@ -293,6 +313,13 @@ def main() -> int:
               f"latence={r.get('latence')}s tokens_in={r.get('tokens_in')} "
               f"tokens_out={r.get('tokens_out')} car_sortie={r.get('car_sortie')} "
               f"-> {r['sortie']}", flush=True)
+        rnb = r.get("reviews_nonbot", 0)
+        if rnb:
+            detail = ", ".join(f"{a}/{s}" for a, s in r.get("reviews_nonbot_detail", []))
+            print(f"    reviews non-bot : {rnb} ({detail}) -- le fil ci-dessus ne les "
+                  f"couvre PAS (canal des reserves)", flush=True)
+        else:
+            print("    reviews non-bot : 0", flush=True)
         if args.dry_run:
             continue
         try:
@@ -300,6 +327,12 @@ def main() -> int:
         except (OSError, ValueError) as exc:
             print(f"    JSON INVALIDE : {exc}", flush=True)
             continue
+        n_rendus = len(parsed.get("commentaires", []))
+        if n_rendus < r["humains"]:
+            truncated = True
+            print(f"    AVERTISSEMENT : {n_rendus}/{r['humains']} commentaires "
+                  f"restitues -- sortie du modele tronquee, pre-tri INCOMPLET",
+                  flush=True)
         for c in parsed.get("commentaires", []):
             extrait = re.sub(r"\s+", " ", str(c.get("extrait") or ""))[:100]
             marque = "  <<< RESERVE" if c.get("role") == "reserve" else ""
@@ -307,8 +340,8 @@ def main() -> int:
                   f"{c.get('date')} | {extrait}{marque}", flush=True)
             if c.get("point"):
                 print(f"        point: {str(c['point'])[:160]}", flush=True)
-    print(f"total tokens_in = {total_in}")
-    return 0
+    print(f"total tokens_in = {total_in}", flush=True)
+    return 1 if truncated else 0
 
 
 if __name__ == "__main__":
