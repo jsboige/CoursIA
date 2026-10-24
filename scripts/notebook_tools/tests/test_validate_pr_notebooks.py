@@ -483,7 +483,7 @@ class TestValidateNotebookArchiveExemption:
         assert any("research archive" in e for e in result["errors"])
 
     def test_error_output_in_nested_archive_dir_is_advisory(self, tmp_path):
-        """The segment matches at any depth, as the 11 convention emplacements do."""
+        """The segment matches at any depth, as the convention emplacements do."""
         nb = _write_nb(tmp_path / "SymbolicAI" / "_archive" / "Tweety.ipynb",
                        [self._err_cell()])
         result = validate_notebook(nb)

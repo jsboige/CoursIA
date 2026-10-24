@@ -85,7 +85,7 @@ QUANTBOOK_PATTERN = re.compile(r"QuantBook\(\)|self\.QuantBook")
 
 # Research-exploration archive snapshots (path suffix OR directory). An
 # `*_archive.ipynb` — or any notebook under an `_archive/` directory (convention
-# `_archive-convention.md`, 11 emplacements) — is a frozen log of exploratory
+# `_archive-convention.md`) — is a frozen log of exploratory
 # iteration; its error outputs (KeyError/NameError from cells run out of order,
 # a missing data field, ...) are a RECORD of what happened, not a bug to fix —
 # the live counterpart (`research.ipynb`) carries the clean run. The H.1
