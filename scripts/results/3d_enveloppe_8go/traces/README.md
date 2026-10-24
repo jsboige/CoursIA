@@ -19,6 +19,11 @@ Ti 8 Go n'est pas disponible partout.
 La trace du **Pli 1** (`3.4d-Fourier-Features`) n'existe pas : voir
 « Ce qui manque » plus bas.
 
+`3d01-enveloppe.log` est en **UTF-16LE** (avec BOM) : `git` le traite donc comme
+un binaire et un `grep` en UTF-8 n'y trouve rien. Lire avec
+`Get-Content` (PowerShell) ou `iconv -f UTF-16LE -t UTF-8`. `3d02-enveloppe.log`
+et les deux CSV sont en UTF-8 (les CSV avec BOM).
+
 ## Format des séries
 
 En-tête, tel quel dans les deux CSV, encodage UTF-8 avec BOM :
