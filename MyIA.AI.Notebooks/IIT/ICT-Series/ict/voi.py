@@ -232,10 +232,33 @@ def evsi(
     return eu_avec - eu_sans
 
 
+#: Tolerance relative de la frontiere d'indifference ``c* = EVSI``.
+#: La frontiere tombe exactement au croisement, et le calcul flottant y laisse
+#: des residus d'ordre relatif 1e-16 : un ``> 0`` strict transforme alors une
+#: indifference theorique en decision dependante de l'ordre des operations.
+#: Mesure fondatrice (revue #21627) : ``253000.00000000006 - 253000.0`` vaut
+#: ``+5.8e-11`` et rendait ``observe=True`` la ou la prose du carnet ICT-12e
+#: annonce ``False``. La tolerance est relative a l'echelle du cout, pas
+#: absolue : un EVSI de 253 000 et un EVSI de 3 ne se jugent pas au meme seuil.
+BORDER_REL_TOL = 1e-9
+
+
+def _above_border(net: float, cost: float) -> bool:
+    """``net`` depasse-t-il la frontiere, a la tolerance relative pres ?
+
+    ``max(1.0, abs(cost))`` evite un seuil nul quand le cout est nul : la
+    decision reste alors celle d'un ``> 0`` strict, ce qui est le cas
+    non degenere.
+    """
+    return net > BORDER_REL_TOL * max(1.0, abs(cost))
+
+
 def evsi_net(problem: DecisionProblem, likelihood: np.ndarray, cost: float) -> float:
     """EVSI net : EVSI moins le cout d'observation.
 
-    L'animat observe ssi ``evsi_net > 0``.
+    L'animat observe ssi ``evsi_net`` depasse la tolerance de frontiere
+    ``BORDER_REL_TOL`` (voir :func:`_above_border`), et non ssi il est
+    strictement positif.
 
     Parameters
     ----------
@@ -265,7 +288,11 @@ def observation_is_worthwhile(
 
     .. math::
 
-        \\mathrm{observe} \\Leftrightarrow \\mathrm{EVSI}(L) > \\mathrm{cout}
+        \\mathrm{observe} \\Leftrightarrow \\mathrm{EVSI}(L) - \\mathrm{cout}
+        > \\varepsilon \\cdot \\max(1, |\\mathrm{cout}|)
+
+    avec :math:`\\varepsilon` = ``BORDER_REL_TOL``, la tolerance qui empeche
+    un residu flottant de trancher une indifference exacte.
 
     Parameters
     ----------
@@ -279,9 +306,10 @@ def observation_is_worthwhile(
     Returns
     -------
     bool
-        ``True`` si l'observation est rentable.
+        ``True`` si l'observation est rentable, a la tolerance de frontiere
+        ``BORDER_REL_TOL`` pres.
     """
-    return evsi_net(problem, likelihood, cost) > 0
+    return _above_border(evsi_net(problem, likelihood, cost), cost)
 
 
 def animat_decision_summary(
@@ -319,5 +347,5 @@ def animat_decision_summary(
         "evpi": e,
         "evsi": s,
         "evsi_net": sn,
-        "observe": sn > 0,
+        "observe": _above_border(sn, cost),
     }
