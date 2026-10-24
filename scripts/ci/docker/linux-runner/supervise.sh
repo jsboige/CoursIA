@@ -194,6 +194,10 @@ MIRROR_REFRESH_EVERY="${COURSIA_RUNNER_MIRROR_REFRESH_EVERY:-300}"
 # la laisse se faire d'elle-meme au premier tick, sous garde d'espace libre.
 MIRROR_BOOTSTRAP="${COURSIA_RUNNER_MIRROR_BOOTSTRAP:-0}"
 MIRROR_MIN_FREE_MB="${COURSIA_RUNNER_MIRROR_MIN_FREE_MB:-8192}"
+# Budget du probe (controle positif pour hotes tiers, #18225) : 300 s par
+# defaut, soit la moitie d'un `timeout-minutes: 10` -- le job garde sa marge
+# pour ses propres etapes apres le checkout.
+MIRROR_PROBE_MAX_S="${COURSIA_RUNNER_MIRROR_PROBE_MAX_S:-300}"
 # Le conteneur du miroir ne porte PAS le label coursia-ci=1 : il ne doit pas
 # entrer dans l'arithmetique memoire des slots (assert_memory_budget), qui
 # dimensionne une flotte de jobs. Il porte son propre plafond a la place.
@@ -1815,6 +1819,15 @@ if [ "$ACTION" = "refresh" ] && [ $(( now - last )) -lt "$EVERY" ]; then
   exit 0
 fi
 
+# Le probe est un CONTROLE d'operateur, pas un geste du parc : sur un miroir
+# absent il doit ECHECER distinctement (rc 6) -- laisser passer ici rendrait le
+# verdict « probe OK » d'un hote non installe, exactement le faux vert que ce
+# controle existe pour empecher.
+if [ "$ACTION" = "probe" ] && [ ! -d "$MIRROR/objects" ]; then
+  echo "miroir: probe ECHEC (rc 6) -- miroir absent ($MIRROR) : bootstrap d'abord (supervise.sh mirror bootstrap)"
+  exit 6
+fi
+
 if [ ! -d "$MIRROR/objects" ]; then
   if [ "$ACTION" = "bootstrap" ] || [ "$COURSIA_RUNNER_MIRROR_BOOTSTRAP" = "1" ]; then
     free="$(df -Pm "$PARENT" 2>/dev/null | awk 'NR==2{print $4}')"
@@ -1851,6 +1864,47 @@ if [ ! -d "$MIRROR/objects" ]; then
     echo "miroir: absent ($MIRROR) et bootstrap desactive -- comportement d'avant #18225"
     exit 0
   fi
+fi
+
+# PROBE (#18225, hotes ephemeres tiers) : le controle positif demande par le
+# dispatch -- la preuve qu'un checkout a historique complet servi par le miroir
+# TIENT dans le budget d'un job a timeout court (le cas mesure sur po-2025 :
+# `fetch-depth: 0` annule a 621 s pour 10 min de `timeout-minutes`). Le probe
+# fait exactement ce que fait un slot : clone --shared (zero objet copie) puis
+# checkout de la tete. Trois verdicts, tous ecrits : la duree, la presence des
+# alternates (sinon le « vert » mesurerait un clone froid, pas le miroir), et
+# le compte d'objets LOCAUX (doit rester ~0 : tout vient de l'emprunt).
+# Codes de sortie distincts : un operateur peut gater son installation dessus.
+if [ "$ACTION" = "probe" ]; then
+  MAXS="${COURSIA_RUNNER_MIRROR_PROBE_MAX_S:-}"
+  case "$MAXS" in ''|*[!0-9]*) MAXS=300 ;; esac
+  WORK="$(mktemp -d)"
+  trap 'rm -rf "$WORK"' EXIT INT TERM
+  t0="$(date +%s)"
+  if ! git clone --quiet --shared --no-checkout "$MIRROR" "$WORK/probe" 2>"$WORK/err"; then
+    echo "miroir: probe ECHEC (rc 3) -- clone --shared impossible : $(head -n 1 "$WORK/err")"
+    exit 3
+  fi
+  if [ ! -s "$WORK/probe/.git/objects/info/alternates" ]; then
+    echo "miroir: probe ECHEC (rc 3) -- pas d'alternates : ce clone ne sert PAS du miroir"
+    exit 3
+  fi
+  if ! git -C "$WORK/probe" checkout --quiet -f "$COURSIA_RUNNER_MIRROR_HEAD" 2>"$WORK/err2" && \
+     ! git -C "$WORK/probe" checkout --quiet -f "refs/heads/$COURSIA_RUNNER_MIRROR_HEAD" 2>>"$WORK/err2"; then
+    echo "miroir: probe ECHEC (rc 4) -- checkout de $COURSIA_RUNNER_MIRROR_HEAD impossible : $(head -n 1 "$WORK/err2")"
+    exit 4
+  fi
+  probe_dt=$(( $(date +%s) - t0 ))
+  probe_files="$(git -C "$WORK/probe" ls-files 2>/dev/null | wc -l | tr -d ' ')"
+  probe_local="$(git -C "$WORK/probe" count-objects -v 2>/dev/null | awk '/^count:/{print $2}')"
+  case "$probe_local" in ''|*[!0-9]*) probe_local=0 ;; esac
+  echo "miroir: probe -- ${probe_files} fichiers, ${probe_dt}s (budget ${MAXS}s), ${probe_local} objet(s) local(aux)"
+  if [ "$probe_dt" -gt "$MAXS" ]; then
+    echo "miroir: probe ECHEC (rc 5) -- ${probe_dt}s > ${MAXS}s : un job a timeout court casserait (COURSIA_RUNNER_MIRROR_PROBE_MAX_S)"
+    exit 5
+  fi
+  echo "miroir: probe OK -- un checkout a historique complet servi par le miroir tient dans ${MAXS}s"
+  exit 0
 fi
 
 if [ "$ACTION" = "status" ]; then
@@ -1903,6 +1957,7 @@ MIRROR_SH
     -e COURSIA_RUNNER_MIRROR_ACTION="$action" \
     -e COURSIA_RUNNER_MIRROR_REFRESH_EVERY="$MIRROR_REFRESH_EVERY" \
     -e COURSIA_RUNNER_MIRROR_MIN_FREE_MB="$MIRROR_MIN_FREE_MB" \
+    -e COURSIA_RUNNER_MIRROR_PROBE_MAX_S="$MIRROR_PROBE_MAX_S" \
     -e COURSIA_RUNNER_MIRROR_BOOTSTRAP="$MIRROR_BOOTSTRAP" \
     "${GIT_NET_ARGS[@]}" \
     --entrypoint bash "$IMAGE" -c "$script" >>"$STATE_DIR/objects-mirror.log" 2>&1
@@ -2714,16 +2769,24 @@ case "${1:-}" in
   mirror)  shift
            m_act="${1:-status}"
            case "$m_act" in
-             bootstrap|refresh|status) ;;
-             *) echo "usage: $0 mirror {bootstrap|refresh|status}" >&2; exit 2 ;;
+             bootstrap|refresh|status|probe) ;;
+             *) echo "usage: $0 mirror {bootstrap|refresh|status|probe}" >&2; exit 2 ;;
            esac
            command -v docker >/dev/null || die "docker introuvable"
            assert_docker_daemon
            docker image inspect "$IMAGE" >/dev/null 2>&1 \
              || die "image $IMAGE absente -- construire d'abord depuis l'epingle"
            mkdir -p "$STATE_DIR"
+           if [ "$m_act" = "probe" ]; then
+             # Le probe est le seul geste dont l'echec doit ATTEINDRE
+             # l'operateur : `|| true` l'aurait transforme en faux vert.
+             mirror_one_shot probe
+             m_rc=$?
+             tail -n 20 "$STATE_DIR/objects-mirror.log" 2>/dev/null
+             exit "$m_rc"
+           fi
            mirror_one_shot "$m_act" || true
            tail -n 20 "$STATE_DIR/objects-mirror.log" 2>/dev/null
            ;;
-  *) echo "usage: $0 {start [N] [--force]|waiters [N]|lean [N]|stop|status|peak|pin|mirror {bootstrap|refresh|status}}"; exit 2 ;;
+  *) echo "usage: $0 {start [N] [--force]|waiters [N]|lean [N]|stop|status|peak|pin|mirror {bootstrap|refresh|status|probe}}"; exit 2 ;;
 esac

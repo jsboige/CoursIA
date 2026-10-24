@@ -471,6 +471,39 @@ supervise.sh mirror refresh     # forcage ponctuel (le throttle s'applique)
 
 **Déploiement.** `entrypoint.sh` change : l'image doit être **reconstruite** (le garde de fraîcheur compare l'épinglé à l'embarqué, cf #16134) et les slots roulés par **drain** — jamais un restart du superviseur avec des jobs en vol. Le miroir lui-même n'est pas nécessaire au premier démarrage : sans lui, le parc est exactement dans son état d'avant.
 
+#### Hôte éphémère tiers — installer le miroir, et le prouver
+
+Le mécanisme n'a de valeur que si un hôte qui **n'est pas ai-01** l'active. Mesure du 25/10 sur po-2025 (`workspace-CoursIA`, 22:17Z) : les 9 slots ouverts cette nuit (po-2023 ×3, po-2025 ×2, po-2027 ×4) n'avaient ni miroir ni alternates, donc clonaient à froid — 8,34 Gio / 494 804 objets pour le dépôt, 0,72 à 1,09 Mo/s depuis WSL, et le job `latex-control-chars` (run 40129451003) **annulé à 621 s** en plein `actions/checkout` sous `timeout-minutes: 10` + `fetch-depth: 0`. 75 workflows visant `coursia-linux` déclarent ce `fetch-depth: 0` : sur un hôte froid, ce n'est pas un cas isolé, c'est la classe.
+
+Trois étapes, dans cet ordre :
+
+```bash
+# 1. l'image de l'épinglé (elle porte git et l'entrypoint consommateur)
+supervise.sh pin                      # vérifie l'image attendue
+
+# 2. le miroir, une fois par machine -- refusé sous COURSIA_RUNNER_MIRROR_MIN_FREE_MB
+supervise.sh mirror bootstrap
+#    ou, pour laisser le premier tick le faire :
+#    COURSIA_RUNNER_MIRROR_BOOTSTRAP=1 supervise.sh start N
+
+# 3. le CONTRÔLE POSITIF -- ce que l'installation doit rendre vrai
+supervise.sh mirror probe
+```
+
+`probe` fait exactement ce que fait un slot : `clone --shared --no-checkout` du miroir, puis checkout de `COURSIA_RUNNER_MIRROR_HEAD` — et rend trois faits dans une seule ligne : **la durée**, la **présence des alternates** (sans elles on aurait mesuré un clone froid, pas le miroir) et le **compte d'objets locaux**, qui doit rester à 0. C'est ce dernier chiffre qui distingue « le checkout a marché » de « le checkout a emprunté » : un clone qui recopie les objets réussit aussi.
+
+| Sortie | Signification |
+|---|---|
+| `0` — `probe OK` | le checkout à historique complet servi par le miroir tient dans le budget |
+| `3` | clone `--shared` impossible, ou **pas d'alternates** (le probe ne mesurerait pas le miroir) |
+| `4` | checkout de la tête impossible (miroir sans la branche attendue) |
+| `5` | durée **au-delà du budget** — un job à timeout court casserait |
+| `6` | miroir absent : `bootstrap` d'abord |
+
+Le budget est `COURSIA_RUNNER_MIRROR_PROBE_MAX_S` (défaut **300 s**, soit la moitié d'un `timeout-minutes: 10` : le job garde sa marge pour ses propres étapes après le checkout). Contrairement aux autres gestes du miroir, `probe` **n'est pas fail-open** : son code de sortie atteint l'opérateur, parce qu'un contrôle qui rend toujours 0 ne contrôle rien.
+
+Ce que cette recette **ne** fait pas : réduire `fetch-depth: 0` dans les workflows. Le miroir rend ce `fetch-depth` tenable ; le supprimer casserait les diffs contre la base, et c'est une décision qui appartient au coordinateur.
+
 ### Mode persistent — le conteneur qui retire le maillon superviseur (#14329)
 
 Le superviseur hôte n'existe que parce que les runners sont `--ephemeral` : un runner éphémère traite **au plus un job** puis se désenregistre, donc un processus hôte doit reminter un token et relancer un conteneur à chaque job — et ce processus hôte est exactement le maillon qui meurt au logoff (mesure du reboot 2026-09-02 : flotte retombée à 1 runner, tous les `PR gate` gelés en STARVED). L'idée user : « un conteneur en autorestart qui fait le polling tout seul ».

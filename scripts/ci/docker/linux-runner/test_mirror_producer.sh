@@ -230,6 +230,91 @@ echo "Test 6 : status -- taille, refs et date de refresh lus sur le miroir"
 )
 echo ""
 
+# --- Tests 7-10 : `probe`, le controle positif pour hotes tiers -------------
+# Le dispatch exige « un controle positif (un job fetch-depth: 0 qui finit sous
+# son timeout) ». Le probe fait ce que fait un slot -- clone --shared puis
+# checkout de la tete -- et rend trois faits : la duree, la presence des
+# alternates, le compte d'objets locaux. Il doit ECHOUER distinctement sur un
+# miroir absent, sinon « probe OK » serait rendu par un hote non installe.
+echo "Test 7 : probe sur miroir absent -- echec distinct, rien de cree"
+(
+  M2="$TEST_DIR/mirror-absent.git"
+  out="$(COURSIA_RUNNER_MIRROR_PATH="$M2" run_mirror probe)"; rc=$?
+  echo "$out" >> "$LOG"
+  if [ "$rc" -eq 6 ]; then ok "T7 rc=6 sur miroir absent"; else ko "T7 rc=$rc (attendu 6)"; fi
+  if echo "$out" | grep -q 'probe ECHEC.*miroir absent'; then
+    ok "T7 le verdict nomme l'absence du miroir"
+  else
+    ko "T7 verdict muet sur la cause : $out"
+  fi
+  if [ -d "$M2" ]; then ko "T7 un miroir a ete cree par un probe"; else ok "T7 aucun miroir cree"; fi
+)
+echo ""
+
+echo "Test 8 : probe sur miroir bootstrappe -- OK, emprunt prouve"
+(
+  out="$(run_mirror bootstrap)"; echo "$out" >> "$LOG"
+  out="$(run_mirror probe)"; rc=$?
+  echo "$out" >> "$LOG"
+  if [ "$rc" -eq 0 ]; then ok "T8 rc=0"; else ko "T8 rc=$rc : $out"; fi
+  if echo "$out" | grep -q 'probe OK'; then ok "T8 verdict OK rendu"; else ko "T8 pas de verdict OK : $out"; fi
+  if echo "$out" | grep -q 'budget 300s'; then
+    ok "T8 le budget par defaut (300 s) est nomme dans le verdict"
+  else
+    ko "T8 budget par defaut non nomme : $out"
+  fi
+  # L'arbre de la fixture doit avoir ete checkoute : un probe qui n'ouvre rien
+  # rendrait « OK » sans avoir rien mesure. Le compte exact n'est pas epingle
+  # (les blocs precedents ajoutent des fichiers a la fixture) -- c'est le fait
+  # qu'il soit non nul qui porte la preuve.
+  if echo "$out" | grep -qE 'probe -- [1-9][0-9]* fichiers,'; then
+    ok "T8 le probe a bien checkoute l'arbre (compte non nul)"
+  else
+    ko "T8 compte de fichiers inattendu : $out"
+  fi
+  if echo "$out" | grep -qE '\(budget 300s\), 0 objet'; then
+    ok "T8 zero objet LOCAL : le checkout vient de l'emprunt, pas d'une copie"
+  else
+    ko "T8 des objets locaux ont ete crees : $out"
+  fi
+)
+echo ""
+
+echo "Test 9 : probe avec une tete inexistante -- echec au checkout (rc 4)"
+(
+  out="$(COURSIA_RUNNER_MIRROR_HEAD=pas-une-branche run_mirror probe)"; rc=$?
+  echo "$out" >> "$LOG"
+  if [ "$rc" -eq 4 ]; then ok "T9 rc=4 sur checkout impossible"; else ko "T9 rc=$rc (attendu 4) : $out"; fi
+  if echo "$out" | grep -q 'probe ECHEC.*checkout'; then
+    ok "T9 le verdict nomme le checkout"
+  else
+    ko "T9 verdict muet : $out"
+  fi
+)
+echo ""
+
+echo "Test 10 : temoin -- la preuve d'emprunt discrimine"
+(
+  # Meme depot, deux formes : un clone ordinaire n'a PAS d'alternates, le clone
+  # --shared du probe en a. Sans ce temoin, le « zero objet local » du test 8
+  # pourrait venir de la taille de la fixture et non du montage.
+  W="$TEST_DIR/witness"
+  mkdir -p "$W"
+  git clone -q --no-checkout "$MIRROR" "$W/plain" 2>/dev/null
+  if [ -s "$W/plain/.git/objects/info/alternates" ]; then
+    ko "T10 temoin : un clone ordinaire porte des alternates -- le test 8 ne prouve rien"
+  else
+    ok "T10 temoin : clone ordinaire sans alternates (controle negatif)"
+  fi
+  git clone -q --shared --no-checkout "$MIRROR" "$W/shared" 2>/dev/null
+  if [ -s "$W/shared/.git/objects/info/alternates" ]; then
+    ok "T10 clone --shared porte bien des alternates (controle positif)"
+  else
+    ko "T10 clone --shared sans alternates : le probe ne pourrait pas emprunter"
+  fi
+)
+echo ""
+
 # --- Verdict agrege --------------------------------------------------------
 n_pass="$(grep -c '^PASS' "$RESULTS" || true)"
 n_fail="$(grep -c '^FAIL' "$RESULTS" || true)"
