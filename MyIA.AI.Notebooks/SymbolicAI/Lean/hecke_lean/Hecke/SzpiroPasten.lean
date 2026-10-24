@@ -11,7 +11,7 @@ Ce module réalise le grain 6 de l'Epic Langlands (#17969) : l'énoncé Lean
 formel du théorème 1.1 du preprint d'Hector Pasten, *Improved Bounds for
 Szpiro's Conjecture* (arXiv 2609.17390, 16 septembre 2026), dont le terrain
 calculatoire est le notebook
-`Search/Applications/Search/App-32-Szpiro-Pasten-2026.ipynb`.
+`Search/App-32-Szpiro-Pasten-2026.ipynb`.
 
 * `omega n` : le nombre ω(n) de facteurs premiers distincts de `n` ;
 * `IsAdmissibleFactorization N D M` : la définition-clé du preprint —
