@@ -31,6 +31,9 @@ jumeau EN `#4980`), sans refresh complet des autres lignes. Ajout ponctuel
 admissible kernel-prouvée, `szpiroPastenThm11 : Prop` documentée OPEN,
 zéro `sorry`, sibling EN), sans refresh du tableau ni des comptes de la ligne
 `hecke_lean` (périmés depuis #18723 — au prochain refresh complet).
+Déplacement 2026-10-22 (#20649) : `iit_lean` a quitté `SymbolicAI/Lean/` pour
+`MyIA.AI.Notebooks/IIT/iit_lean/`, sa série consommatrice ; la ligne du tableau
+reste l'état mesuré au 2026-09-30 et ne décrit plus l'arbre courant.
 
 ## Résumé
 

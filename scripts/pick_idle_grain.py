@@ -224,6 +224,7 @@ import random
 import re
 import subprocess
 import sys
+import time
 import tempfile
 import unicodedata
 from typing import Any, Callable
@@ -296,8 +297,24 @@ REPO = "jsboige/CoursIA"
 #   - la forme espacee a contenu interne (`[INFO candidate-delivered <contenu>]`)
 #     n'etait reconnue par AUCUNE alternative (FN), la 2e exigeant le `]`
 #     immediatement apres le mot.
+# #19907 predicat 4 : la cloture explicite voie 3 (c.15069, cmt 6055717533) --
+# `[DELIVERED] lane <machine:workspace> -- PR #N` posee par une lane sur une
+# tete du tapis. La sonde pleine balaie TOUS les commentaires, ou une mention
+# incidente de `[DELIVERED]` existe en prose -- l'alternative exige donc la
+# forme canonique (`\s+lane\b`), et l'ancrage debut de ligne tient les
+# citations `> [DELIVERED] lane` hors du match. Le prefixe de titre markdown
+# `(?:#{1,6}\s*)?` lui est applique par symetrie avec les formes [INFO]
+# (#21950 : une cloture sous titre `### [DELIVERED] lane ...` se lirait
+# sinon comme de la prose). Le filtre recent #19768
+# couvre deja `[DELIVERED]` nu sur le DERNIER commentaire ; cette alternative
+# attrape les clotures NON dernieres (suivies d'un [NOT-DELIVERED] rearmant,
+# d'un ack coordinateur, etc.), que le filtre recent ne voit pas par
+# construction. Relevable par `_DELIVERED_MARKER_REVOKED_RE` comme les autres
+# formes : un [NOT-DELIVERED] posterieur remet l'issue sur le tapis.
 _DELIVERED_MARKER_RE = re.compile(
     r"(?:"
+    r"^\s*(?:#{1,6}\s*)?\[DELIVERED\]\s+lane\b"
+    r"|"
     r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
     r"|"
     r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
@@ -1788,9 +1805,10 @@ def delivered_signal_reason(
     if verdict:
         return (
             "SIGNAL LIVRAISON (commentaire `" + DELIVERED_COMMENT_MARKER +
-            "`) : une lane a deja rendu la main sur cette issue en la "
-            "refutant. La re-servir comme grain de production fait bruler un "
-            "cycle a la lane qui la recoit."
+            "` / `[DELIVERED] lane`) : une lane a deja rendu la main sur "
+            "cette issue en la refutant, ou l'a cloturee explicitement "
+            "(voie 3, #15069/#19907). La re-servir comme grain de "
+            "production fait bruler un cycle a la lane qui la recoit."
         )
     # Troisieme surface : PR MERGEE <90j citant `#N` (#19907). Couvre les
     # LIVREURS dont le label a ete retracte par le sweep post-merge et dont
@@ -1964,6 +1982,40 @@ def open_cover_reason(
 
 
 
+def _delivered_resolved_short_cause(cause: str) -> str:
+    """Motif court une-ligne pour la sortie `ECARTE (delivered-resolved)`.
+
+    #19907 acceptance 2 : la ligne par candidat porte un MOTIF, pas
+    seulement un numero. Les causes longues de ``withheld`` sont des
+    phrases pedagogiques -- on extrait le discriminateur (label /
+    commentaire / PR mergee / marqueur recent) et rien d'autre, pour que
+    la ligne tienne sans repli.
+    """
+    m = re.search(r"SIGNAL LIVRAISON \(([^)]+)\)", cause)
+    if m:
+        return m.group(1).replace("`", "").strip()
+    if cause.startswith("LIVRAISON (recent)"):
+        return "marqueur de cloture sur le dernier commentaire"
+    return (cause.split(" : ", 1)[0] or "cause illisible")[:60]
+
+
+def print_delivered_resolved_lines(withheld: list, indent: str = "") -> None:
+    """Une ligne `ECARTE (delivered-resolved): #N -- motif` par candidat.
+
+    #19907 acceptance 2 : le rapport agrege (« N candidat(s) ECARTE(S) »)
+    reste pour le decompte, mais chaque candidat ecarte pour LIVRAISON a
+    droit a SA ligne AVANT les picks servis -- c'est la seule forme qu'un
+    consommateur (lane, audit, mesure d'acceptance) peut compter sans
+    re-deriver les causes. Les autres familles de retrait (EN COURS,
+    BLOQUE, DWELL) ne sont pas des livraisons et ne figurent pas ici.
+    """
+    for it, cause in withheld:
+        if not cause.startswith("LIVRAISON"):
+            continue
+        print(f"{indent}ECARTE (delivered-resolved): #{it['number']} -- "
+              f"{_delivered_resolved_short_cause(cause)}")
+
+
 def print_delivered_signal_report(
     withheld: list,
     state: dict,
@@ -2083,6 +2135,33 @@ def print_claim_unread_report(unread, lane: str | None = None) -> None:
     print("   pas libre : verifier avant d'editer")
     hint = ("--lane " + lane if lane else "--lane <machine:workspace>")
     print(f"   (`python scripts/check_lane_claim.py <N> {hint}`).")
+
+
+def print_belt_budget_report(budget_hit: bool) -> None:
+    """Rend compte de l'epuisement du budget de sondes de livraison (#19969).
+
+    Le fail-OPEN du budget est assume : au-dela du plafond, la sonde de
+    livraison rend UNPROBED et le candidat est servi sans avoir ete verifie.
+    Ce qui n'est PAS assume, c'est le **silence** : une mesure qui echoue
+    doit se dire, sinon la lane lit un « pas de signal » la ou la sonde n'a
+    simplement pas eu lieu. L'issue #19969 demande explicitement que la
+    banniere reste imprimee quand le budget tombe -- « la mesure ne doit
+    pas devenir silencieuse en se repariant ».
+
+    La banniere est un helper (comme `print_claim_unread_report`) pour que
+    ce contrat soit **verifiable sans reseau** : un test appelle la fonction
+    avec True et False, et le texte rendu est compare. Un test qui
+    appellerait `main()` de bout en bout payerait une minute de reseau
+    pour verifier trois lignes de `print`.
+
+    Texte inchange depuis l'origine du contrat (#19969) : le comparatif de
+    chaine est un test de non-regression sur la banniere elle-meme.
+    """
+    if not budget_hit:
+        return
+    print("   Plafond de sondes de livraison atteint : les candidats")
+    print("   au-dela ne sont pas sondes (fail-OPEN) -- la verification")
+    print("   de livraison leur revient, cf check_unaddressed_nits.")
 
 
 def draw_verdict(pool_error: str | None) -> str:
@@ -4642,8 +4721,17 @@ def _nits_blocking_entries(n: int) -> dict | None:
         raise
     except Exception:  # noqa: BLE001 - une PR illisible ne bloque pas les autres
         return None
+    # #21882/#21964 : l'organe a son budget de passe epuise -- ce n'est PAS
+    # « evaluee, claire ». Projeter {blocking, blocked} seulement perdait le
+    # marqueur, et `elif not info["blocked"]` en dessous fabriquait un 0
+    # autoritaire qui figeait le tirage de toute la flotte : propager
+    # `budget_exhausted` et rendre None (fail-closed, comme la panne d'organe
+    # ci-dessus), jamais un 0.
+    if result.get("budget_exhausted"):
+        return None
     return {"blocking": result.get("blocking") or [],
-            "blocked": bool(result.get("blocked"))}
+            "blocked": bool(result.get("blocked")),
+            "budget_exhausted": bool(result.get("budget_exhausted"))}
 
 
 def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
@@ -7154,7 +7242,8 @@ def recent_marker_probe_inert(number):
 def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 delivered_probe=None, claims_probe=None,
                                 merged_pr_probe=None,
-                                recent_marker_probe=None):
+                                recent_marker_probe=None,
+                                time_budget_s=None):
     """La boucle de service du tapis : claims, livraison, remplacement.
 
     Extraite de ``main`` (#19390) pour etre testable sans harnais complet :
@@ -7185,13 +7274,46 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
 
     Rend ``(picks, withheld, etat)`` avec ``etat = {"failures": [numeros
     illisibles], "budget_hit": bool, "claim_unread": [numeros servis sur une
-    lecture de claim en echec]}``. ``claim_unread`` est le pendant du
-    ``failures`` de livraison : deux lectures qui n'ont pas ABOUTI, servies
-    quand meme (fail-OPEN) et rapportees a la lane (#20265).
+    lecture de claim en echec], "time_budget_hit": bool}``. ``claim_unread``
+    est le pendant du ``failures`` de livraison : deux lectures qui n'ont pas
+    ABOUTI, servies quand meme (fail-OPEN) et rapportees a la lane (#20265).
+
+    ``time_budget_s`` (#21436) est un mur de temps sur la BOUCLE : passe
+    l'echeance, plus aucune sonde n'est emise (claims hors fenetre, filtre
+    recent, sondes de livraison), les candidats restants sont servis en
+    fail-OPEN et ``time_budget_hit`` le dit. Le caller lui passe le RESTE de
+    son budget de run (echeance absolue, pas duree par appel) : c'est ce qui
+    rend le mur du tapis deterministe au lieu de dependre du nombre de
+    candidats bloques. ``None`` (defaut) = pas de mur, comportement d'avant.
     """
     budget = [int(probe_budget)]
     state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
-             "claim_unread": []}
+             "claim_unread": [], "time_budget_hit": False}
+    # #21436 — `probe_budget` borne le NOMBRE de sondes de livraison. Il ne
+    # borne ni leur DUREE, ni les deux surfaces que la boucle paie par
+    # candidat hors fenetre : `claims_probe` (un `check_claims` unitaire) et
+    # `recent_marker_probe` (un commentaire). Mesure du 22/10 sur ce siege :
+    # 8 verdicts de claim coutent 47 s a froid, donc `max_iters` = 70 laisse
+    # ~410 s de travail avant la premiere sonde de livraison -- c'est le
+    # `pick_with_replacements start` ou les taps de po-2023, po-2025 et de
+    # cette lane se sont tous arretes (#21436, cinq mesures independantes).
+    # Mur de temps pose ICI, sur la boucle entiere : l'echeance est absolue
+    # (`monotonic`), donc le caller peut lui passer le RESTE d'un budget de
+    # run, pas une duree par appel.
+    deadline = None
+    if time_budget_s is not None:
+        deadline = time.monotonic() + max(0.0, float(time_budget_s))
+
+    def expired():
+        """Echeance atteinte ? Le drapeau se pose une fois, et il est lu par
+        TOUTES les surfaces couteuses de la boucle -- y compris celles qui ne
+        consomment pas `probe_budget`."""
+        if deadline is None:
+            return False
+        if time.monotonic() < deadline:
+            return False
+        state["time_budget_hit"] = True
+        return True
 
     # Le budget enrobe TOUTE sonde, injectee ou reelle : un test qui fournit
     # sa sonde doit voir le plafond s'appliquer aussi -- sinon la borne de
@@ -7202,15 +7324,18 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 or recent_marker_probe_inert)
 
     def counted_probe(number, lane_name):
-        if budget[0] <= 0:
-            state["budget_hit"] = True
+        # L'echeance passe AVANT le plafond de sondes : les deux produisent le
+        # meme fail-OPEN, mais elles ne disent pas la meme chose a la lane
+        # (`time_budget_hit` = mur de temps, `budget_hit` = plafond de cout).
+        if expired() or budget[0] <= 0:
+            state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
             return DELIVERED_SIGNAL_UNPROBED
         budget[0] -= 1
         return user_probe(number, lane_name)
 
     def counted_merged_pr_probe(number, lane_name):
-        if budget[0] <= 0:
-            state["budget_hit"] = True
+        if expired() or budget[0] <= 0:
+            state["budget_hit"] = state["budget_hit"] or budget[0] <= 0
             return DELIVERED_SIGNAL_UNPROBED
         budget[0] -= 1
         return user_merged_pr_probe(number, lane_name)
@@ -7234,6 +7359,15 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         n = it["number"]
         if n in belt_claims:
             code, human = belt_claims[n]
+        elif expired():
+            # #21436 — echeance atteinte : la verification au fil de l'eau est
+            # precisement ce que le mur doit arreter, un `claim_claims` par
+            # candidat etant la surface que `probe_budget` ne compte pas. Le
+            # candidat part avec un claim INCONNU, que `claim_unread` rapporte
+            # deja (#20265) : c'est le meme fail-OPEN qu'une sonde ratee, dit
+            # a la lane au lieu d'etre silencieux.
+            code, human = CLAIM_CODE_UNCHECKED, "(budget de temps epuise)"
+            belt_claims[n] = (code, human)
         else:
             # Verification au fil de l'eau : on n'a pas regarde plus
             # loin que `belt_check_window` initialement ; un item hors
@@ -7266,7 +7400,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
             # lecture (fail-OPEN). Le filtre recent coute 1 requete HORS
             # budget et ecarte la cloture marquee AVANT la sonde pleine ;
             # lecture en echec (None) = fail-OPEN, la sonde pleine suit.
-            recent = user_recent_marker_probe(n)
+            recent = False if expired() else user_recent_marker_probe(n)
             if recent is True:
                 state["recent_filtered"] += 1
                 belt_withheld.append(
@@ -7377,6 +7511,18 @@ def main(argv: list[str] | None = None) -> int:
                          "('candidate'). Defaut : aucun. L'ancien choix 'merged' "
                          "etait un no-op et a ete retire (#14704).")
     ap.add_argument("--grains", type=int, default=4, help="candidats urne 'grain' (defaut 4)")
+    ap.add_argument("--belt-time-budget", dest="belt_time_budget", type=float,
+                    default=float(os.environ.get("PICK_BELT_TIME_BUDGET_S") or 240),
+                    help="#21436 mur de temps du mode --belt, en SECONDES pour la "
+                         "BOUCLE de sondage (pas par etape) : passe l'echeance, "
+                         "la boucle cesse de sonder et sert le reliquat en "
+                         "fail-OPEN en le rapportant (`time_budget_hit`). "
+                         "Portee : les phases qui precedent la boucle (claims, "
+                         "settle) consomment l'echeance mais ne sont pas "
+                         "tronquees, et `validate_picks_live` s'execute apres "
+                         "elle sans borne -- la valeur ne borne donc pas une "
+                         "duree totale de run. Defaut : PICK_BELT_TIME_BUDGET_S, "
+                         "ou 240 s. 0 desactive le mur.")
     ap.add_argument("--umbrellas", type=int, default=2, help="candidats urne 'umbrella' (defaut 2)")
     ap.add_argument("--delivered", type=int, default=2, help="candidats urne 'delivered' (defaut 2)")
     ap.add_argument("--reroll", type=int, default=0, help="decale la graine pour un nouveau tirage")
@@ -8086,6 +8232,23 @@ def main(argv: list[str] | None = None) -> int:
         # sont injectees ICI explicitement : les defauts de la boucle sont
         # inertes (#19913) pour que les tests ne sortent jamais sur le
         # reseau par oubli.
+        # #21436 — mur de temps du tapis, mesure contre le RUN entier
+        # (`_belt_t0`) et pas contre l'entree de la boucle : la fenetre de
+        # claims initiale (8 verdicts = 49 s au dernier releve ; 44 verdicts =
+        # 170 s mesures sur ai-01) mange deja une part du budget, et c'est le
+        # RUN entier que l'acceptance borne. Calcule ICI, au plus pres de
+        # l'appel, pour que la partie pre-boucle soit effectivement deduite --
+        # mesure au premier run : calcule en t=0, il rendait la boucle a
+        # t=51 s avec "120 s restants", soit une echeance reelle a t=171 s.
+        belt_time_remaining = None
+        if args.belt_time_budget and args.belt_time_budget > 0:
+            belt_time_remaining = max(
+                0.0, args.belt_time_budget
+                - (_time_belt.monotonic() - _belt_t0))
+            _belt_phase(f"mur de temps: {args.belt_time_budget:.0f}s pour la "
+                        f"boucle, {belt_time_remaining:.0f}s restants a son "
+                        f"entree (claims/settle deduits ; "
+                        f"validate_picks_live hors echeance)")
         _belt_phase("pick_with_replacements start")
         belt_picks, belt_withheld, belt_pick_state = (
             belt_pick_with_replacements(belt_pool, belt_claims, args,
@@ -8093,11 +8256,19 @@ def main(argv: list[str] | None = None) -> int:
                                         delivered_probe=has_delivered_signal,
                                         merged_pr_probe=merged_pr_signal,
                                         recent_marker_probe=(
-                                            has_recent_delivery_marker)))
+                                            has_recent_delivery_marker),
+                                        time_budget_s=belt_time_remaining))
         _belt_phase(f"pick_with_replacements fait: "
                     f"{len(belt_picks)} retenu(s), {len(belt_withheld)} witheld")
         belt_delivered_failures = belt_pick_state["failures"]
         belt_probe_budget_hit = [belt_pick_state["budget_hit"]]
+        # #21436 — deux plafonds distincts, deux rapports distincts : le mur de
+        # temps n'est pas le plafond de cout, et une lane qui lit l'un pour
+        # l'autre se trompe sur ce qu'elle doit relancer.
+        belt_time_budget_hit = [belt_pick_state.get("time_budget_hit", False)]
+        if belt_time_budget_hit[0]:
+            _belt_phase("mur de temps atteint dans pick_with_replacements : "
+                        "sondes restantes non emises (fail-OPEN)")
         # #20923 : defense en profondeur tapis vs candidats obsoletes.
         # Mode `auto` (defaut) : on n'active que si on est en WARN
         # GH-IDENTITY (le compte est partage, le pool est plus sujet a
@@ -8157,6 +8328,9 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"   BLOQUE par une autre lane (skip + replacement) : {held}")
             # Volet livraison (#19390) : ligne propre, distincte du BLOQUE --
             # le motif n'est pas une collision mais un travail deja rendu.
+            # #19907 acceptance 2 : une ligne par candidat ecarte pour
+            # livraison, avant les agregats -- chaque ecart se lit seul.
+            print_delivered_resolved_lines(belt_withheld, indent="   ")
             # #19768 : le filtre recent a sa ligne a lui, HORS budget -- ne
             # pas le fondre dans « Signal de livraison », la distinction est
             # la mesure (un candidat ecarte hors budget n'a pas consomme de
@@ -8191,10 +8365,15 @@ def main(argv: list[str] | None = None) -> int:
             # ci-dessus -- les deux lectures ratees se lisent ensemble.
             print_claim_unread_report(belt_pick_state.get("claim_unread"),
                                       args.lane)
-            if belt_probe_budget_hit[0]:
-                print("   Plafond de sondes de livraison atteint : les candidats")
-                print("   au-dela ne sont pas sondes (fail-OPEN) -- la verification")
-                print("   de livraison leur revient, cf check_unaddressed_nits.")
+            print_belt_budget_report(belt_probe_budget_hit[0])
+            if belt_time_budget_hit[0]:
+                print("   Mur de temps du tapis atteint (#21436) : la boucle a")
+                print("   cesse de sonder a l'echeance ; les phases hors boucle")
+                print("   (validate_picks_live, journal) s'executent ensuite sans")
+                print("   borne. Les candidats servis au-dela ne sont pas tous")
+                print("   verifies (livraison ET claim). Relancer avec un budget")
+                print("   plus large (--belt-time-budget) sur une fenetre longue")
+                print("   si un doute subsiste sur la tete rendue.")
             # #18832 spec : la fenetre collision entre tirage et pose du
             # [CLAIMED] reste ouverte tant que la lane n'a pas poste le
             # claim. On rappelle ici que la lane doit poser le claim
@@ -8279,6 +8458,10 @@ def main(argv: list[str] | None = None) -> int:
                         "recent_filtered", 0),
                     "unread": sorted(set(belt_delivered_failures)),
                     "budget_hit": belt_probe_budget_hit[0],
+                    # #21436 : le mur de temps est un plafond DISTINCT du
+                    # plafond de sondes -- les confondre ferait lire « cout
+                    # epuise » la ou la borne de run a coupe.
+                    "time_budget_hit": belt_time_budget_hit[0],
                 },
                 # Volet claim (#20265) : le pendant du volet livraison. Une
                 # liste vide dit « toutes les lectures TENTEES ont abouti » --
@@ -8714,6 +8897,10 @@ def main(argv: list[str] | None = None) -> int:
           + (f" | reroll {args.reroll}" if args.reroll else "")
           + (f" | genres de session penalises : {penalized}" if penalized else ""))
     print()
+    # #19907 acceptance 2 : une ligne par candidat ecarte pour livraison,
+    # AVANT les picks servis -- le tableau ci-dessous reste la vue de
+    # tirage, les lignes ECARTE sont la vue d'exclusion.
+    print_delivered_resolved_lines(withheld)
     header = (f"{'urne':<10} {'issue':<8} {'age':>5} {'inact':>6} {'vus':>4}  "
               f"{'genre':<16} {'p':>5}  titre")
     print(header)

@@ -30,6 +30,15 @@ Verdicts par ligne CSV (cf. #4957 §2) :
                  boucle TARGET_LANGS saute le pivot : hash_fr n'était lu par
                  personne (#17677, mesuré sur #17649 — un resync manuel aux
                  colonnes décalées passait tous les checks au vert).
+    STALE_TRAD   (#20836) la traduction <lang> est cohérente avec son notebook
+                 (hash_<lang> = hash de la cellule _<lang>) mais date d'un
+                 source antérieur : ``src_hash_<lang>`` (posé par T3 au moment
+                 de la traduction) diffère du ``src_hash`` pivot courant. La
+                 retraduction est sémantiquement requise, mais le verdict
+                 SRC_DRIFT ne le voit pas (il compare au notebook source, pas
+                 à la trace par langue). Légendaire : la traduction est
+                 techniquement IN_SYNC avec son _<lang>.ipynb mais
+                 sémantiquement obsolète par rapport au FR source actuel.
 
     Note taxonomie Argumentum (#6949) : la 5e classe COGNATE (noms propres /
     faux-amis legitiment repetes, kind == "name", informationnelle — hors
@@ -306,6 +315,28 @@ def check_csv(csv_path: Path, repo_root: Path) -> list[dict]:
                         {"csv": str(csv_path), "notebook": nb_rel, "cell_id": cell_id, "lang": lang,
                          "verdict": "TRAD_DRIFT",
                          "detail": f"traduction {lang} éditée (csv={csv_hash} <> actuel={trad_cells[cell_id]})"}
+                    )
+
+                # STALE_TRAD (#20836) : la traduction est cohérente avec son
+                # _<lang>.ipynb (hash_<lang> = hash cellule) mais date d'un
+                # ancien source. ``src_hash_<lang>`` est posé par T3 (translate_csv)
+                # au moment de la traduction ; s'il diffère du ``src_hash``
+                # pivot courant, la retraduction est sémantiquement requise.
+                # On ne signale que les lignes où ``text_<lang>`` est non vide
+                # (sinon c'est l'état pré-T3, attendu). Une ligne legacy sans
+                # ``src_hash_<lang>`` (colonne absente des anciens CSV) reste
+                # IN_SYNC — rétro-compatibilité, le fix ne réveille pas des
+                # années de stock en un cycle.
+                csv_src_hash_for_lang = row.get(f"src_hash_{lang}", "") or ""
+                if (csv_src_hash_for_lang
+                        and csv_src_hash
+                        and csv_src_hash_for_lang != csv_src_hash):
+                    anomalies.append(
+                        {"csv": str(csv_path), "notebook": nb_rel, "cell_id": cell_id, "lang": lang,
+                         "verdict": "STALE_TRAD",
+                         "detail": f"traduction {lang} date d'un source anterieur "
+                                   f"(src_hash_{lang}={csv_src_hash_for_lang} <> src_hash={csv_src_hash}) "
+                                   f"-> retraduction requise pour coherence avec le FR actuel"}
                     )
 
                 # FR_CONTAM (Argumentum 5-classes, 4e, #6949) : la traduction

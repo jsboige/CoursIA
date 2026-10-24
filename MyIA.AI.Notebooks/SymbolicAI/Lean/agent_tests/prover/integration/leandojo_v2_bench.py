@@ -49,6 +49,25 @@ Execution de reference (WSL, venv dedie, machine po-2024) :
 
 Aucun secret n'est lu ni ecrit par ce module : ``OPENROUTER_API_KEY`` vient
 de l'environnement (secrets-hygiene regle 3).
+
+Defauts de transport mesures puis corriges (po-2024, 2026-10-20 -- le run du
+2026-10-12 etait degenere sur les deux modes, il mesurait le transport, pas
+l'organe) :
+
+1. **``n`` non honore par openrouter** : la sonde HTTP 200 sur le prompt de
+   test avec ``"n": 4`` rend **1 seul choix** (l'API Anthropic n'a pas de
+   sampling ``n``). Le generateur v2, concu pour n echantillons par pas,
+   n'en recevait qu'un : le dedoublonnage ``used_tactics`` epuisait la
+   recherche en 3 appels (run 2026-10-12 : ``generator_exhausted`` en 5,9 s
+   contre 1 925 s maison). ``_post`` emule maintenant ``n`` par requetes
+   successives, chacune bornee par la deadline residuelle.
+2. **Parser upstream une-ligne sur les preuves entieres** : la branche
+   ``"claude"`` de ``external_parser.post_process_output`` fait
+   ``.split("\\n")[1]`` -- elle tronque toute sortie a UNE ligne (la preuve
+   entiere du 2026-10-12 etait reduite a ``induction n using
+   Nat.strong_induction_on with``). La branche ``deepseek`` du meme parser
+   garde la preuve complete : ``_extract_whole_proof`` aligne le shim sur
+   cette semantique (bloc fence des-enveloppe, multi-ligne preserve).
 """
 from __future__ import annotations
 
@@ -143,6 +162,99 @@ def lake_lean_path(project: str) -> str:
     raise ConfigError("LEAN_PATH introuvable dans la sortie de `lake env printenv`")
 
 
+def _extract_whole_proof(output: str) -> str:
+    """Extrait la preuve entiere de la sortie brute du modele.
+
+    Bug mesure du parser upstream (``external_parser.py``, branche
+    ``"claude"``) : ``.split("lean")[-1].split("```")[0].split("\\n")[1]``
+    tronque toute sortie a UNE ligne -- fatal a ``generate_whole_proof``
+    (preuve du 2026-10-12 reduite a ``induction n using
+    Nat.strong_induction_on with`` alors que la sortie brute mesurait 7
+    lignes, fence comprise). La branche ``deepseek`` du meme parser garde la
+    preuve complete : ce des-enveloppement s'aligne sur cette semantique.
+
+    Second defaut mesure (run corrige du 2026-10-20) : claude-opus-4.7 via
+    openrouter peut ouvrir sa sortie d'un bloc de raisonnement
+    ``<think>...</think>`` AVANT la fence -- un extrateur qui ne regarde
+    que le debut de chaine rend le bloc entier au ``check_compile`` (echec
+    de parse, pas de preuve). On retire donc d'abord les blocs think,
+    puis on prend le DERNIER bloc fence s'il existe.
+
+    Les formes observees passent : bloc fence ferme, bloc non termine,
+    sortie nue, think + fence (mesure 2026-10-20).
+
+    Correction du 2026-10-23 (crible adjoint de ``23ce570697``, #21672) : la
+    branche ``startswith`` court-circuitait le contrat ci-dessus des que la
+    sortie ne finissait PAS sur la fence. Deux contre-exemples reproduits :
+    une fence fermee suivie d'une phrase finale rendait la fence ET la
+    phrase ; deux blocs successifs rendaient le PREMIER bloc et les fences
+    intermediaires. Le contrat vaut desormais pour toutes les formes -- le
+    dernier bloc FERME gagne, et seule une fence non terminee (aucun bloc
+    ferme dans le texte) est des-envelopee ligne a ligne.
+
+    Seconde correction du 2026-10-23 (verification independante de la meme
+    tete, #21672) : la reconnaissance des fences passe du texte brut a la
+    LIGNE. Deux contre-exemples reproduits : `` ```lean4 `` (etiquette autre
+    que ``lean``) n'etait pas reconnue, donc sa cloture entrait dans la
+    preuve rendue ; ``have s := "```"`` etait pris pour une cloture et
+    tronquait la preuve a ``have s := "``.
+
+    Troisieme correction du 2026-10-23 (verification adjointe de la tete
+    ``20ba1bb2fc4``, #21672) : la fermeture est desormais COMPATIBLE avec la
+    longueur de l'ouvreur. L'ouverture acceptait toute longueur (au moins
+    trois backticks) mais la fermeture exigeait une ligne exactement
+    `` ``` `` : un bloc ouvert a quatre backticks n'etait donc jamais ferme,
+    et sa cloture comme la phrase qui suivait entraient dans la preuve rendue
+    (``exact rfl``, cloture, puis ``Done.``). La fermeture est desormais une
+    ligne FAITE de backticks, au moins aussi longue que l'ouvreur --
+    semantique CommonMark ; une ligne plus courte, etiquetee ou noyee dans du
+    code Lean reste du contenu.
+    """
+    import re
+
+    text = output.strip()
+    # blocs de raisonnement retires (un ou plusieurs, non imbriques)
+    text = re.sub(r"<think>.*?</think>\s*", "", text, flags=re.DOTALL).strip()
+    # Fences reconnues PAR LIGNE, jamais par regex sur le texte brut
+    # (mesure 2026-10-23, verification independante de #21672). Une regex
+    # `` ```(?:lean)?\n(.*?)``` `` prend les backticks d'une chaine Lean pour
+    # une cloture -- ``have s := "```"`` tronquait la preuve a ``have s := "``
+    # -- et ignore toute etiquette autre que ``lean`` : `` ```lean4 `` n'etait
+    # pas reconnue, donc la cloture etait rendue dans la preuve.
+    #
+    # Ouverture = ligne dont la forme decapee COMMENCE par au moins trois
+    # backticks (l'etiquette est libre) ; fermeture = ligne FAITE de
+    # backticks, au moins aussi longue que l'ouvreur (compatibilite de
+    # longueur, 2026-10-23 : un ouvreur a quatre backticks n'etait ferme que
+    # par une ligne exactement ```, et la cloture entrait dans la preuve).
+    # Une fence non terminee (aucune fermeture avant la fin) s'ouvre au
+    # dernier ouvreur rencontre.
+    lines = text.splitlines()
+    blocks: list[list[str]] = []
+    open_at: Optional[int] = None
+    open_ticks = 0
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        ticks = len(stripped) - len(stripped.lstrip("`"))
+        if open_at is None:
+            if ticks >= 3:
+                open_at = i
+                open_ticks = ticks
+        elif stripped.strip("`") == "" and ticks >= open_ticks:
+            blocks.append(lines[open_at + 1:i])
+            open_at = None
+            open_ticks = 0
+    # dernier bloc FERME, qu'il ouvre le texte ou qu'il le suive : ni une
+    # phrase finale ni un bloc precedent ne doit l'emporter.
+    if blocks:
+        return "\n".join(blocks[-1]).strip()
+    # aucun bloc ferme : fence NON TERMINEE (le modele s'est arrete dans le
+    # bloc). On retire la ligne d'ouverture et on rend le reste.
+    if open_at is not None:
+        return "\n".join(lines[open_at + 1:]).strip()
+    return text
+
+
 def _make_openrouter_generator(deadline: Optional[float] = None):
     """Construit le generateur de tactiques branche openrouter.
 
@@ -186,29 +298,56 @@ def _make_openrouter_generator(deadline: Optional[float] = None):
             self.budget_hit = False
 
         def _post(self, prompt: str, n: int, max_tokens: int) -> list[str]:
-            timeout = transport_timeout_s(deadline_remaining(self.deadline))
-            if timeout is not None and timeout <= 0:
-                # Budget epuise avant l'appel : la requete synchrone ne part
-                # pas, et la coupure remonte aux modes via budget_hit.
-                self.budget_hit = True
-                return []
-            headers = {"Authorization": f"Bearer {_openrouter_key()}"}
-            payload = {
-                "messages": [{"role": "user", "content": prompt}],
-                "model": self.model,
-                "temperature": 0.6,
-                "max_tokens": max_tokens,
-                "top_p": 0.9,
-                "n": n,
-            }
-            data = requests.post(
-                self.API_URL, headers=headers, json=payload, timeout=timeout
-            ).json()
-            if data.get("error"):
-                logger.error(f"erreur openrouter: {data['error']}")
-                return []
-            self.calls += 1
-            return [c["message"]["content"] for c in data.get("choices", [])]
+            # Emulation de n (mesure 2026-10-20) : openrouter rend 1 seul
+            # choix pour les modeles Anthropic malgre "n": k -- le generateur
+            # v2 attend n echantillons par pas. On repete la requete jusqu'a
+            # n choix, chaque sous-requete bornee par la deadline residuelle
+            # (jamais de rafale hors budget) ET comptee dans self.calls des
+            # qu'une TENTATIVE de POST est engagee, erreur API comprise. Une
+            # erreur API ou une reponse vide interrompt : on rend les choix
+            # deja collectes. ``calls`` compte des tentatives, pas des
+            # requetes prouvees parties sur le reseau (une resolution DNS ou
+            # un refus de connexion incremente aussi) -- ne pas le lire comme
+            # une mesure de trafic (verification independante #21672).
+            collected: list[str] = []
+            while len(collected) < n:
+                timeout = transport_timeout_s(deadline_remaining(self.deadline))
+                if timeout is not None and timeout <= 0:
+                    # Budget epuise : la requete ne part pas, la coupure
+                    # remonte aux modes via budget_hit.
+                    self.budget_hit = True
+                    break
+                headers = {"Authorization": f"Bearer {_openrouter_key()}"}
+                payload = {
+                    "messages": [{"role": "user", "content": prompt}],
+                    "model": self.model,
+                    "temperature": 0.6,
+                    "max_tokens": max_tokens,
+                    "top_p": 0.9,
+                    "n": 1,
+                }
+                try:
+                    response = requests.post(
+                        self.API_URL, headers=headers, json=payload, timeout=timeout
+                    )
+                finally:
+                    # Comptee des que la TENTATIVE de POST est engagee, quel
+                    # que soit le sort du transport (crible adjoint du
+                    # 2026-10-23 : le compteur restait a 1 pour 2 requetes
+                    # emises, parce que la reponse en erreur sortait avant
+                    # l'increment). Une tentative qui echoue avant tout envoi
+                    # (DNS, connexion refusee) compte aussi : c'est un
+                    # compteur de tentatives, pas une mesure de trafic.
+                    self.calls += 1
+                data = response.json()
+                if data.get("error"):
+                    logger.error(f"erreur openrouter: {data['error']}")
+                    break
+                choices = [c["message"]["content"] for c in data.get("choices", [])]
+                if not choices:
+                    break
+                collected.extend(choices)
+            return collected[:n]
 
         def generate(self, input: str, target_prefix: str = "") -> list[tuple[str, float]] | str:
             prompt = pre_process_input(self.model_name, input + target_prefix)
@@ -231,7 +370,10 @@ def _make_openrouter_generator(deadline: Optional[float] = None):
             outs = self._post(prompt, n=1, max_tokens=1024)
             if not outs:
                 return "sorry"
-            return post_process_output(self.model_name, outs[0])
+            # Jamais post_process_output ici : sa branche claude tronque a
+            # UNE ligne (mesure 2026-10-20) -- _extract_whole_proof garde la
+            # preuve complete (semantique de la branche deepseek upstream).
+            return _extract_whole_proof(outs[0])
 
     # Le joint deadline (mesure adjoint 2026-10-13 sur 4920b146840) : la
     # factory recevait ``deadline`` mais instanciait le generateur sans le
