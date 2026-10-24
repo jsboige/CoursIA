@@ -1570,6 +1570,28 @@ class TestRelocatedCell:
         assert len(findings) == 1, findings
         assert findings[0]["kind"] == "TRUNCATED_CELL"
 
+    def test_host_growth_measures_migrated_frontmatter_base(self):
+        # Review NanoClaw #22308, reserve 1 : la cellule d'ACCUEIL portait un
+        # frontmatter cost migre vers metadata (#8919) dans sa propre base. La
+        # croissance doit se mesurer sur le texte SANS frontmatter -- sinon le
+        # volume du frontmatter absorbe masque l'arrivee du texte deplace et
+        # la garde comptable refuse le deplacement (TRUNCATED_CELL a tort).
+        kept = "## Section A\n\n" + ("Paragraphe de section A. " * 12)
+        moved = "## Bloc deplace\n\n" + ("Paragraphe deplace integralement. " * 4)
+        base_md = dml.extract_md_cells(_nb(
+            _md(FRONTMATTER_COST_BLOCK + kept, cell_id="host"),
+            _md(moved, cell_id="src")))
+        head_nb = _nb(_md(kept + "\n\n" + moved, cell_id="host"),
+                      _md("## Section B", cell_id="src"))
+        head_nb["metadata"]["cost"] = FAITHFUL_COST
+        head_md = dml.extract_md_cells(head_nb)
+        findings = dml._compare_cells(base_md, head_md, FAITHFUL_COST)
+        assert len(findings) == 1, findings
+        f = findings[0]
+        assert f["kind"] == "RELOCATED_CELL", f
+        assert f["relocated_to"] == [0]
+        assert dml._is_blocking_finding(f) is False
+
     def test_no_head_cells_keeps_legacy_behaviour(self):
         # Sans la vue des cellules de tete, l'emission reste historique : les
         # appelants qui ne la fournissent pas ne changent pas de verdict.

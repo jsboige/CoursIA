@@ -780,11 +780,13 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
     if len(base_md) != len(head_md):
         return findings  # compte modifie -> la comparaison fichier suffit
 
-    # #22307 : vue (index, source) de TOUTES les cellules markdown de la tete,
-    # utilisee pour reconnaitre un deplacement de frontiere entre deux
-    # cellules voisines. Construite une fois : la recherche du texte retire
-    # est un balayage, pas une re-normalisation par finding.
-    head_cells_view = [(h_idx, h_src) for h_idx, _cid, h_src in head_md]
+    # #22307 : vue (index, texte NORMALISE) de TOUTES les cellules markdown de
+    # la tete, utilisee pour reconnaitre un deplacement de frontiere entre deux
+    # cellules voisines. Construite une fois : la recherche du texte retire est
+    # un balayage sur du texte deja normalise, pas une re-normalisation par
+    # couple (segment x cellule) -- #22308 (review, reserve 2) : le commentaire
+    # decrivait deja cette optimisation, il est maintenant vrai.
+    head_cells_view = [(h_idx, _normalize(h_src)) for h_idx, _cid, h_src in head_md]
 
     # Fix #10873 (court-circuit multiset) : si le multiset des contenus
     # normalises est identique entre base et head, aucune perte de contenu
@@ -894,7 +896,12 @@ def _compare_cells(base_md: list[tuple[int, str | None, str]],
     # le faux negatif que les temoins de troncature mesurent.
     head_growth: dict[int, int] = {}
     for _b_idx, b_src, h_idx, h_src in pairs:
-        head_growth[h_idx] = head_growth.get(h_idx, 0) + (_norm_len(h_src) - _norm_len(b_src))
+        # #22308 (review, reserve 1) : la croissance se mesure sur le MEME
+        # texte de base que le ratio -- le frontmatter cost migre (#8919)
+        # n'est pas une decroissance de la cellule d'accueil.
+        ratio_src, _div = _cost_migration_view(b_src, head_cost)
+        head_growth[h_idx] = head_growth.get(h_idx, 0) + (
+            _norm_len(h_src) - _norm_len(ratio_src))
 
     for b_idx, b_src, h_idx, h_src in pairs:
         _emit_cell_finding(b_idx, b_src, h_idx, h_src, head_cost, findings,
@@ -915,6 +922,33 @@ def _is_blocking_finding(finding: dict) -> bool:
     if kind.endswith("JUSTIFIED_BY_BODY"):
         return False
     return kind not in NON_BLOCKING_KINDS
+
+
+def _cost_migration_view(b_src: str, head_cost: dict | None) -> tuple[str, list[str] | None]:
+    """Texte de base pour tout calcul de volume (ratio, croissance).
+
+    Applique la migration frontmatter ``cost:`` (#8919) : si la cellule base
+    porte un bloc cost equivalent au ``head_cost`` et qu'aucune cle
+    informative colocataire n'est restee sur le carreau (#8921-4), le
+    frontmatter est retire -- une migration n'est ni une perte ni une
+    decroissance. Retourne ``(texte de base, divergences)`` ; les divergences
+    ne servent qu'a l'emission du finding FRONTMATTER_COST_DIVERGENCE.
+
+    #22308 (review NanoClaw, reserve 1) : ``head_growth`` doit se mesurer sur
+    CE meme texte. Calcule sur le ``b_src`` brut, la croissance d'une cellule
+    d'accueil qui avait le frontmatter dans sa propre base est sous-estimee
+    du volume du frontmatter absorbe, et la garde comptable peut refuser un
+    deplacement legitime (TRUNCATED_CELL bloquant a tort).
+    """
+    base_cost = _parse_frontmatter_cost(b_src)
+    if base_cost is None:
+        return b_src, None
+    equiv, divergent = _cost_equivalent(base_cost, head_cost)
+    unmigrated = [k for k in _frontmatter_non_cost_keys(b_src)
+                  if not (head_cost and k in head_cost)]
+    if equiv and not unmigrated:
+        return FRONTMATTER_RE.sub("", b_src, count=1), None
+    return b_src, divergent + unmigrated
 
 
 def _relocated_targets(b_src: str, h_idx: int, h_src: str,
@@ -949,6 +983,15 @@ def _relocated_targets(b_src: str, h_idx: int, h_src: str,
 
     ``b_src`` est le texte de base APRES strip du frontmatter ``cost:`` migre
     (#8919/#8921) : une migration de frontmatter n'est pas un retrait.
+
+    ``head_cells`` porte le texte deja NORMALISE (vue construite une fois par
+    l'appelant) : la recherche interne est un balayage, sans re-normalisation.
+
+    Le finding parle du **corpus**, pas de la cellule citee (#22308 review,
+    reserve 4) : un bloc deplace vers une cellule sans rapport avec son
+    origine est quand meme un contenu conserve -- c'est l'arbitrage assume
+    face a #17040 (fusion de lectures voisines), qui justifie de sortir
+    RELOCATED_CELL du verdict binaire.
     """
     b_lines = b_src.splitlines()
     if not b_lines:
@@ -984,14 +1027,14 @@ def _relocated_targets(b_src: str, h_idx: int, h_src: str,
         if len(seg_norm) < RELOC_MIN_SEGMENT_CHARS:
             continue  # trop court pour beneficier de l'excuse
         found_in: int | None = None
-        for other_idx, other_src in head_cells:
+        for other_idx, other_norm in head_cells:
             if other_idx == h_idx:
                 continue  # se deplacer dans sa propre cellule n'est pas un deplacement
             if head_growth is not None and head_growth.get(other_idx, 0) <= 0:
                 # La cellule d'accueil n'a pas grossi : elle portait deja ce
                 # texte en base (duplication), rien n'y a ete deplace.
                 continue
-            if seg_norm in _normalize(other_src):
+            if seg_norm in other_norm:
                 found_in = other_idx
                 break
         if found_in is None:
@@ -1027,28 +1070,18 @@ def _emit_cell_finding(b_idx: int, b_src: str,
     dans ``_compare_cells``. La migration frontmatter cost (#8919) et le strip
     des cles informatives colocataires (#8921) s'appliquent identiquement.
 
-    ``head_cells`` = toutes les cellules markdown de la tete, ``(idx, source)``.
+    ``head_cells`` = toutes les cellules markdown de la tete, ``(idx, texte
+    normalise)`` -- la normalisation est faite une fois par l'appelant.
     Fourni, il permet de reconnaitre un **deplacement de frontiere** (#22307) :
     le texte retire d'ici existe-t-il encore ailleurs dans le carnet ? Si oui,
     le finding est qualifie ``RELOCATED_CELL`` et sort du verdict binaire.
     Omis (``None``), le comportement historique est preserve a l'identique.
     """
-    # Migration frontmatter cost -> metadata.cost (#8919) : si la cellule base
-    # porte un bloc cost equivalent au head_cost, on retire le frontmatter du
-    # ratio. #8921-4 : on ne le fait QUE si aucune cle informative colocataire
-    # (ex: ``notes:``) n'est reste sur le carreau -- sinon le strip retirait le
-    # frontmatter ENTIER et faisait disparaitre ``notes:`` en silence (Claudish).
-    b_src_ratio = b_src
-    divergent_cost: list[str] | None = None
-    base_cost = _parse_frontmatter_cost(b_src)
-    if base_cost is not None:
-        equiv, divergent = _cost_equivalent(base_cost, head_cost)
-        unmigrated = [k for k in _frontmatter_non_cost_keys(b_src)
-                       if not (head_cost and k in head_cost)]
-        if equiv and not unmigrated:
-            b_src_ratio = FRONTMATTER_RE.sub("", b_src, count=1)
-        else:
-            divergent_cost = divergent + unmigrated
+    # Migration frontmatter cost -> metadata.cost (#8919, #8921-4) : le texte
+    # de base pour le ratio est calcule par _cost_migration_view, PARTAGE avec
+    # le budget de croissance head_growth (#22308 review, reserve 1) -- meme
+    # texte, meme mesure, sinon la garde comptable du deplacement desynchronise.
+    b_src_ratio, divergent_cost = _cost_migration_view(b_src, head_cost)
     b_norm = _norm_len(b_src_ratio)
     h_norm = _norm_len(h_src)
     if b_norm < MIN_ORIG_CHARS:
