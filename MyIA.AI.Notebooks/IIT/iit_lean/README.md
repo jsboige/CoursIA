@@ -52,4 +52,4 @@ byte-identiques hors docstrings, vérifiées par
 Lake enregistré dans `scripts/lean/ci_lakes.json` (`sorry-baseline: "0"`,
 `sorry-filter-mode: "real"`), déclenché par les filtres de chemins de
 `.github/workflows/lean-ci-matrix.yml` — voir
-[`LEAN_INVENTORY.md`](../LEAN_INVENTORY.md) pour l'inventaire des lakes.
+[`LEAN_INVENTORY.md`](../../SymbolicAI/Lean/LEAN_INVENTORY.md) pour l'inventaire des lakes.

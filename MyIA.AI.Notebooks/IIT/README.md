@@ -439,6 +439,7 @@ IIT/
 ├── IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb # Notebook 8 : la parité, de bout en bout — lake iit_lean (Lean 4)
 ├── IIT-08b-Parite-et-Broadcast-Lean.ipynb # Notebook 8b : parité et broadcast — théorèmes B et C, lake iit_lean (Lean 4)
 ├── IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb # Notebook 9 : le capstone — intégré pour toute coupe, trivial en deux pas, lake iit_lean (Lean 4)
+├── iit_lean/                   # Lake Lean 4 de l'escalier — namespace `IIT`, sans Mathlib (voir son README)
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
@@ -582,7 +583,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 102
-breakdown: ICT-Series=93, root=9
-maturity: BETA=84, DRAFT=14, ALPHA=4
+pedagogical_count: 105
+breakdown: ICT-Series=95, root=10
+maturity: BETA=85, DRAFT=16, ALPHA=4
 -->
