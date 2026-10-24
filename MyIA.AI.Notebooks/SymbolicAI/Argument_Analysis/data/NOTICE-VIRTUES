@@ -28,10 +28,14 @@ data rows, 82 columns. No CoursIA modifications.
 gitlink de `main` (5cb4a759), qui avait avancé de deux crans depuis la
 copie en place (6bc573f73). Delta mesuré vs la copie 6bc573f73 : en-tête
 identique, forme inchangée (223 lignes de données × 82 colonnes),
-**161 lignes de données modifiées**, toutes sur des colonnes de
-renvoi inter-cartes (`link_ar` 90, `link_fa` 77, `link_zh` 75,
-`link_fr` 74, `link_es` 63, `link_ru` 56). Aucun ajout ni retrait de
-ligne. Le manifeste `data/argumentum_snapshot.json` a été régénéré
+**161 lignes de données modifiées** : **511 cellules** sur des renvois
+inter-cartes (`link_ar` 90, `link_fa` 77, `link_zh` 75, `link_fr` 74,
+`link_es` 63, `link_ru` 56) et **163 cellules** sur du contenu
+(`description_*`, `remark_*`, `title_*` — 21 colonnes touchées, dont 7
+libellés de sous-famille PT : « Fidelidade aos factos » → « Fidelidade aos
+fatos »). Au niveau ligne : 103 lignes ne portent que des renvois, 19 que
+du contenu, 39 les deux. Aucun ajout ni retrait de ligne. Le manifeste
+`data/argumentum_snapshot.json` a été régénéré
 **après** la recopie, au même pin.
 
 **Resync 2026-09-04 (#4960 Volet B, étape 1)** : re-copie verbatim depuis
@@ -101,9 +105,9 @@ CoursIA submodule pointer
 
 The Argumentum submodule at
 `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum/`
-is pinned to commit **ae84c91ce8b04a0eaa01f418ed08926fbb6a51bb**
-(master premerge, per user decision 2026-07-03, see EPIC #4960 Volet A
-acceptance). Re-syncing this data file against a newer submodule commit
+is pinned to commit **5cb4a75929cbb19acdecb7853ca03820bbdb261d**
+(gitlink de `main` au 2026-10-24 ; le sous-module suit `master`).
+Re-syncing this data file against a newer submodule commit
 is a routine operation that should preserve verbatim integrity and
 update the source SHA + upstream commit citation in this NOTICE.
 
