@@ -37,8 +37,8 @@ Algorithmes de recherche classique, satisfaction de contraintes (CSP), résoluti
 |---|----------|----------|------------|
 | 1 | [App-14 - Connect Four : Benchmark Adversarial Search](../../MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14-ConnectFour-Adversarial.ipynb) | BETA | Oui |
 | 2 | [App-14-ConnectFour-Adversarial-CSharp — Jumeau C# :…](../../MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14-ConnectFour-CSharp.ipynb) | BETA | Oui |
-| 3 | [App-14b : Puissance 4 -- Comparaison d'algorithmes IA…](../../MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14b-ConnectFour.ipynb) | BETA | Oui |
-| 4 | [App-14c (C#) : Puissance 4 -- Comparaison d'algorithmes…](../../MyIA.AI.Notebooks/Search/Applications/Adversarial/App-14c-ConnectFour-CSharp.ipynb) | BETA | Oui |
+| 3 | [App-12b : Puissance 4 -- Comparaison d'algorithmes IA…](../../MyIA.AI.Notebooks/Search/Applications/Adversarial/App-12b-ConnectFour.ipynb) | BETA | Oui |
+| 4 | [App-12c (C#) : Puissance 4 -- Comparaison d'algorithmes…](../../MyIA.AI.Notebooks/Search/Applications/Adversarial/App-12c-ConnectFour.ipynb) | BETA | Oui |
 | 5 | [App-1 : Le Problème des N-Reines](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-1-NQueens.ipynb) | BETA | Oui |
 | 6 | [App-11 - Picross (Nonogrammes)](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-11-Picross.ipynb) | BETA | Oui |
 | 7 | [App-11b : Picross (Nonogrammes) — Jumeau C#](../../MyIA.AI.Notebooks/Search/Applications/CSP/App-11b-Picross-CSharp.ipynb) | BETA | Oui |

@@ -1,0 +1,473 @@
+{
+  "repeats": 3,
+  "thresholds": {
+    "alpha_reducible_max": 0.5,
+    "alpha_irreducible_min": 0.8
+  },
+  "motifs": [
+    {
+      "motif": "acorn",
+      "anatomy": "methuselah-chaotique",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 64,
+          "naive_s": 0.0037632000021403655,
+          "hashlife_s": 0.01414420000219252,
+          "ratio": 0.26605958637158866,
+          "naive_population": 83,
+          "hashlife_population": 83,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 128,
+          "naive_s": 0.014125999994575977,
+          "hashlife_s": 0.02804650000325637,
+          "ratio": 0.5036635584809463,
+          "naive_population": 184,
+          "hashlife_population": 184,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 256,
+          "naive_s": 0.038159099996846635,
+          "hashlife_s": 0.08562510000047041,
+          "ratio": 0.44565320211756826,
+          "naive_population": 150,
+          "hashlife_population": 150,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 512,
+          "naive_s": 0.14684380000107922,
+          "hashlife_s": 0.22584490000008373,
+          "ratio": 0.6501975470822001,
+          "naive_population": 254,
+          "hashlife_population": 254,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.39071680000051856,
+          "hashlife_s": 0.540786699995806,
+          "ratio": 0.7224970584586284,
+          "naive_population": 468,
+          "hashlife_population": 468,
+          "populations_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 1.3522994057051019,
+      "alpha_naive": 1.6773896474447545,
+      "final_ratio": 0.7224970584586284,
+      "verdict": "IRREDUCIBLE",
+      "populations_agree": true
+    },
+    {
+      "motif": "blinker",
+      "anatomy": "periodique-p2",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 256,
+          "naive_s": 0.0007098999994923361,
+          "hashlife_s": 0.0007432999991578981,
+          "ratio": 0.9550652499617898,
+          "naive_population": 3,
+          "hashlife_population": 3,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.002837500003806781,
+          "hashlife_s": 0.0008471999972243793,
+          "ratio": 3.349268192992303,
+          "naive_population": 3,
+          "hashlife_population": 3,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 0.011328799999319017,
+          "hashlife_s": 0.0009807000024011359,
+          "ratio": 11.551748721914652,
+          "naive_population": 3,
+          "hashlife_population": 3,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 16384,
+          "naive_s": 0.05313299999397714,
+          "hashlife_s": 0.001167000002169516,
+          "ratio": 45.52956289220225,
+          "naive_population": 3,
+          "hashlife_population": 3,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 65536,
+          "naive_s": 0.20185279999714112,
+          "hashlife_s": 0.0013191000034566969,
+          "ratio": 153.02312142232324,
+          "naive_population": 3,
+          "hashlife_population": 3,
+          "populations_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 0.10585524676759632,
+      "alpha_naive": 1.0264930007678392,
+      "final_ratio": 153.02312142232324,
+      "verdict": "REDUCIBLE",
+      "populations_agree": true
+    },
+    {
+      "motif": "block",
+      "anatomy": "immuable",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 256,
+          "naive_s": 0.0009265000044251792,
+          "hashlife_s": 0.000927200002479367,
+          "ratio": 0.999245040927183,
+          "naive_population": 4,
+          "hashlife_population": 4,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.003632299994933419,
+          "hashlife_s": 0.0013065000021015294,
+          "ratio": 2.780176034512665,
+          "naive_population": 4,
+          "hashlife_population": 4,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 0.015887900000961963,
+          "hashlife_s": 0.0013954999958514236,
+          "ratio": 11.385094982582515,
+          "naive_population": 4,
+          "hashlife_population": 4,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 16384,
+          "naive_s": 0.07050180000078399,
+          "hashlife_s": 0.0016182999970624223,
+          "ratio": 43.56534643067452,
+          "naive_population": 4,
+          "hashlife_population": 4,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 65536,
+          "naive_s": 0.2658789999986766,
+          "hashlife_s": 0.0024865999948815443,
+          "ratio": 106.92471669989786,
+          "naive_population": 4,
+          "hashlife_population": 4,
+          "populations_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 0.15776079474876956,
+      "alpha_naive": 1.0304115547234862,
+      "final_ratio": 106.92471669989786,
+      "verdict": "REDUCIBLE",
+      "populations_agree": true
+    },
+    {
+      "motif": "glider",
+      "anatomy": "periodique-translatif-p4",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 256,
+          "naive_s": 0.0017920999962370843,
+          "hashlife_s": 0.001694799997494556,
+          "ratio": 1.0574109032843806,
+          "naive_population": 5,
+          "hashlife_population": 5,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.005326099999365397,
+          "hashlife_s": 0.0020634000029531308,
+          "ratio": 2.581225158351605,
+          "naive_population": 5,
+          "hashlife_population": 5,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 0.026301399993826635,
+          "hashlife_s": 0.003198700003849808,
+          "ratio": 8.222527890133955,
+          "naive_population": 5,
+          "hashlife_population": 5,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 16384,
+          "naive_s": 0.09507189999567345,
+          "hashlife_s": 0.002882799999497365,
+          "ratio": 32.97901346338624,
+          "naive_population": 5,
+          "hashlife_population": 5,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 65536,
+          "naive_s": 0.4152595999985351,
+          "hashlife_s": 0.004354099997726735,
+          "ratio": 95.37208612924397,
+          "naive_population": 5,
+          "hashlife_population": 5,
+          "populations_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 0.16024831228669129,
+      "alpha_naive": 0.9935152356875497,
+      "final_ratio": 95.37208612924397,
+      "verdict": "REDUCIBLE",
+      "populations_agree": true
+    },
+    {
+      "motif": "gosper-gun",
+      "anatomy": "croissance-reguliere",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 256,
+          "naive_s": 0.017511500002001412,
+          "hashlife_s": 0.009215599995513912,
+          "ratio": 1.9002018328189032,
+          "naive_population": 84,
+          "hashlife_population": 84,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.14472989999921992,
+          "hashlife_s": 0.011720599999534898,
+          "ratio": 12.348335409873485,
+          "naive_population": 221,
+          "hashlife_population": 221,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 2.0281050999983563,
+          "hashlife_s": 0.017406700004357845,
+          "ratio": 116.51290017582949,
+          "naive_population": 724,
+          "hashlife_population": 724,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 16384,
+          "naive_s": 51.143763700005366,
+          "hashlife_s": 0.03063829999882728,
+          "ratio": 1669.2755049060477,
+          "naive_population": 2781,
+          "hashlife_population": 2781,
+          "populations_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 0.2885077517602278,
+      "alpha_naive": 1.9172408680841195,
+      "final_ratio": 1669.2755049060477,
+      "verdict": "REDUCIBLE",
+      "populations_agree": true
+    },
+    {
+      "motif": "pulsar",
+      "anatomy": "periodique-p3",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 256,
+          "naive_s": 0.04381410000496544,
+          "hashlife_s": 0.08767979999538511,
+          "ratio": 0.4997057475869188,
+          "naive_population": 206,
+          "hashlife_population": 206,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.15211380000255303,
+          "hashlife_s": 0.12261060000309953,
+          "ratio": 1.2406251987895636,
+          "naive_population": 96,
+          "hashlife_population": 96,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 0.5295530000003055,
+          "hashlife_s": 0.15456569999514613,
+          "ratio": 3.4260705966261282,
+          "naive_population": 96,
+          "hashlife_population": 96,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 16384,
+          "naive_s": 2.1381791999956477,
+          "hashlife_s": 0.139121599997452,
+          "ratio": 15.369138940572912,
+          "naive_population": 96,
+          "hashlife_population": 96,
+          "populations_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 0.11661132730937541,
+      "alpha_naive": 0.9313077622813731,
+      "final_ratio": 15.369138940572912,
+      "verdict": "REDUCIBLE",
+      "populations_agree": true
+    },
+    {
+      "motif": "soup-128-d35",
+      "anatomy": "soupe-chaotique",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 64,
+          "naive_s": 0.2681306999947992,
+          "hashlife_s": 0.4847924999994575,
+          "ratio": 0.5530834325924994,
+          "naive_population": 2214,
+          "hashlife_population": 2214,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 256,
+          "naive_s": 0.7444649000026402,
+          "hashlife_s": 1.2151911999972071,
+          "ratio": 0.6126319051720842,
+          "naive_population": 1719,
+          "hashlife_population": 1719,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 2.00345969999762,
+          "hashlife_s": 3.391730799994548,
+          "ratio": 0.5906894792478344,
+          "naive_population": 1422,
+          "hashlife_population": 1422,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 9.098469099997601,
+          "hashlife_s": 7.787597299997287,
+          "ratio": 1.1683281440349735,
+          "naive_population": 1571,
+          "hashlife_population": 1571,
+          "populations_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 0.6749027668650713,
+      "alpha_naive": 0.8341032130193758,
+      "final_ratio": 1.1683281440349735,
+      "verdict": "AMBIGUOUS",
+      "populations_agree": true
+    },
+    {
+      "motif": "soup-64-d30",
+      "anatomy": "soupe-chaotique",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 64,
+          "naive_s": 0.05827799999678973,
+          "hashlife_s": 0.11966530000063358,
+          "ratio": 0.48700834741968785,
+          "naive_population": 506,
+          "hashlife_population": 506,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 256,
+          "naive_s": 0.18787139999767533,
+          "hashlife_s": 0.30440180000005057,
+          "ratio": 0.6171822899787193,
+          "naive_population": 367,
+          "hashlife_population": 367,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.5751878999944893,
+          "hashlife_s": 0.8196066000018618,
+          "ratio": 0.7017853443263911,
+          "naive_population": 413,
+          "hashlife_population": 413,
+          "populations_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 2.4845994000061182,
+          "hashlife_s": 1.2016277000002447,
+          "ratio": 2.067694844256347,
+          "naive_population": 434,
+          "hashlife_population": 434,
+          "populations_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 0.5706347161356795,
+      "alpha_naive": 0.892802105746111,
+      "final_ratio": 2.067694844256347,
+      "verdict": "AMBIGUOUS",
+      "populations_agree": true
+    }
+  ],
+  "organ": {
+    "path": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/scripts/hashlife.py",
+    "sha256": "233303a1354a1d2735b5a8c5371db11a0a765ad65960cccc48dc392f47b74417"
+  },
+  "environment": {
+    "python": "3.14.3",
+    "platform": "Windows-11-10.0.26300-SP0"
+  }
+}
