@@ -156,3 +156,176 @@ theorem noisyUmbrella_valueNoisySignal :
 theorem noisyUmbrella_strict_gain :
     valueNoisyNoInfo noisyUmbrella < valueNoisySignal noisyUmbrella := by
   decide
+
+/-- Valeur brute de l'information parfaite : l'etat est revele, le decideur
+    choisit une action par etat sur le prior marginal de la table jointe. -/
+def valueNoisyPerfect (D : NoisyProblem) : Int :=
+  sumFin D.nS (fun s => maxFin D.nA (fun a => priorMass D s * D.u s a))
+
+/-! ## Signaux de masse nulle
+
+Une realisation de masse nulle est un signal impossible. La representation
+etant exacte (aucune division conditionnelle), elle ne peut pas fabriquer de
+division par zero : ce qui reste a prouver est que sa contribution est
+exactement nulle, et non « presque nulle » par arrondi. -/
+
+/-- Une somme de termes non negatifs est non negative. -/
+theorem sumFin_nonneg {n : Nat} {f : Fin n → Int} (h : ∀ i, 0 ≤ f i) :
+    0 ≤ sumFin n f := by
+  induction n with
+  | zero => simp
+  | succ n ih =>
+    rw [sumFin_succ]
+    have h0 := h 0
+    have ht := ih (f := fun i => f i.succ) (fun i => h i.succ)
+    omega
+
+/-- Si une somme de termes non negatifs est nulle, chaque terme est nul :
+    c'est ce qui rend la masse nulle d'une realisation transmissible a ses
+    cellules. -/
+theorem eq_zero_of_sumFin_nonneg {n : Nat} {f : Fin n → Int}
+    (h : ∀ i, 0 ≤ f i) (hsum : sumFin n f = 0) : ∀ i, f i = 0 := by
+  induction n with
+  | zero => intro i; exact i.elim0
+  | succ n ih =>
+    intro i
+    rw [sumFin_succ] at hsum
+    have ht := sumFin_nonneg (f := fun j => f j.succ) (fun j => h j.succ)
+    have h0nn := h 0
+    have h0 : f 0 = 0 := by omega
+    cases i using Fin.cases with
+    | zero => exact h0
+    | succ j =>
+      exact ih (f := fun j => f j.succ) (fun j => h j.succ) (by omega) j
+
+/-- Une realisation de masse nulle a tous ses poids joints nuls. -/
+theorem p_eq_zero_of_signalMass_zero (D : NoisyProblem) (x : Fin (D.nX + 1))
+    (h : signalMass D x = 0) (s : Fin D.nS) : D.p s x = 0 := by
+  unfold signalMass at h
+  have hz : (D.p s x : Int) = 0 :=
+    eq_zero_of_sumFin_nonneg (f := fun s => (D.p s x : Int))
+      (fun s => by omega) h s
+  omega
+
+/-- Le paiement agrege d'une action sur une realisation de masse nulle est
+    exactement nul : un signal impossible ne fabrique aucune valeur. -/
+theorem jointPayoff_zero_mass (D : NoisyProblem) (x : Fin (D.nX + 1))
+    (h : signalMass D x = 0) (a : Fin (D.nA + 1)) :
+    sumFin D.nS (fun s => jointPayoff D s x a) = 0 := by
+  have hp := p_eq_zero_of_signalMass_zero D x h
+  have hz : (fun s => jointPayoff D s x a) = (fun _ => (0 : Int)) := by
+    funext s
+    simp [jointPayoff, hp s]
+  rw [hz]
+  exact sumFin_zero_fun D.nS
+
+/-- La meilleure action sur une realisation de masse nulle vaut zero, sans
+    division et sans exception. -/
+theorem valueNoisySignal_zero_mass_cell (D : NoisyProblem)
+    (x : Fin (D.nX + 1)) (h : signalMass D x = 0) :
+    maxFin D.nA (fun a => sumFin D.nS (fun s => jointPayoff D s x a)) = 0 := by
+  have hfun : (fun a => sumFin D.nS (fun s => jointPayoff D s x a)) =
+      (fun _ => (0 : Int)) :=
+    funext (fun a => jointPayoff_zero_mass D x h a)
+  rw [hfun, maxFin_zero_fun]
+
+/-! ## L'information parfaite domine tout signal bruite
+
+L'etape decisive est un lemme de factorisation : pour des poids non negatifs,
+la somme des maxima par realisation est au plus le maximum de la somme. C'est
+la forme algebrique de l'argument de Blackwell — un decideur qui connait
+l'etat peut toujours appliquer la politique que le signal lui aurait
+prescrite, donc l'information parfaite ne peut pas valoir moins. -/
+
+/-- **Factorisation par etat.** Pour des poids non negatifs `w` et des
+    paiements `v`, `Σ_x max_a (w x * v a) ≤ max_a ((Σ_x w x) * v a)`.
+
+    C'est l'etape qui fait passer de « une action par realisation » a « une
+    action par etat ». Le cas `Σ w = 0` se traite a part (tous les poids
+    sont nuls, les deux membres valent zero) ; sinon l'indice atteignant le
+    maximum de la somme domine tous les paiements, et la positivite de la
+    masse permet de simplifier. -/
+theorem sumFin_maxFin_mul_le {m n : Nat} (w : Fin m → Int)
+    (hw : ∀ x, 0 ≤ w x) (v : Fin (n + 1) → Int) :
+    sumFin m (fun x => maxFin n (fun a => w x * v a)) ≤
+    maxFin n (fun a => sumFin m w * v a) := by
+  by_cases hzero : sumFin m w = 0
+  · have hw0 : ∀ x, w x = 0 := eq_zero_of_sumFin_nonneg hw hzero
+    have hL : sumFin m (fun x => maxFin n (fun a => w x * v a)) = 0 := by
+      have hz : ∀ x : Fin m, maxFin n (fun a => w x * v a) = 0 := by
+        intro x
+        have hfun : (fun a => w x * v a) = (fun _ => (0 : Int)) := by
+          funext a
+          simp [hw0 x]
+        rw [hfun, maxFin_zero_fun]
+      rw [sumFin_congr hz, sumFin_zero_fun]
+    have hR : maxFin n (fun a => sumFin m w * v a) = 0 := by
+      have hfun : (fun a => sumFin m w * v a) = (fun _ => (0 : Int)) := by
+        funext a
+        simp [hzero]
+      rw [hfun, maxFin_zero_fun]
+    rw [hL, hR]
+    omega
+  · have hpos : 0 < sumFin m w := by
+      have := sumFin_nonneg hw
+      omega
+    have hstar : ∀ a : Fin (n + 1), v a ≤ v (argmaxFin n (fun a => sumFin m w * v a)) := by
+      intro a
+      exact Int.le_of_mul_le_mul_left (le_argmaxFin (fun a => sumFin m w * v a) a) hpos
+    have hbound : ∀ x : Fin m,
+        maxFin n (fun a => w x * v a) ≤ w x * v (argmaxFin n (fun a => sumFin m w * v a)) := by
+      intro x
+      apply maxFin_le
+      intro a
+      exact Int.mul_le_mul_of_nonneg_left (hstar a) (hw x)
+    calc sumFin m (fun x => maxFin n (fun a => w x * v a))
+        ≤ sumFin m (fun x => w x * v (argmaxFin n (fun a => sumFin m w * v a))) :=
+          sumFin_mono hbound
+      _ = sumFin m w * v (argmaxFin n (fun a => sumFin m w * v a)) := by
+          rw [sumFin_congr (fun x =>
+                Int.mul_comm (w x) (v (argmaxFin n (fun a => sumFin m w * v a)))),
+              sumFin_mul_left, Int.mul_comm]
+      _ ≤ maxFin n (fun a => sumFin m w * v a) :=
+          le_maxFin (fun a => sumFin m w * v a) _
+
+/-- **L'information parfaite domine tout signal bruite.** Meme dans la
+    representation jointe non normalisee, ou les valeurs sont brutes. -/
+theorem valueNoisySignal_le_valueNoisyPerfect (D : NoisyProblem) :
+    valueNoisySignal D ≤ valueNoisyPerfect D := by
+  unfold valueNoisySignal valueNoisyPerfect
+  have hstep : sumFin (D.nX + 1) (fun x => maxFin D.nA (fun a =>
+        sumFin D.nS (fun s => jointPayoff D s x a))) ≤
+      sumFin (D.nX + 1) (fun x => sumFin D.nS (fun s =>
+        maxFin D.nA (fun a => jointPayoff D s x a))) :=
+    sumFin_mono (fun x => maxFin_sumFin_le (fun s a => jointPayoff D s x a))
+  have hcomm : sumFin (D.nX + 1) (fun x => sumFin D.nS (fun s =>
+        maxFin D.nA (fun a => jointPayoff D s x a))) =
+      sumFin D.nS (fun s => sumFin (D.nX + 1) (fun x =>
+        maxFin D.nA (fun a => jointPayoff D s x a))) :=
+    sumFin_comm _
+  have hper : sumFin D.nS (fun s => sumFin (D.nX + 1) (fun x =>
+        maxFin D.nA (fun a => jointPayoff D s x a))) ≤
+      sumFin D.nS (fun s => maxFin D.nA (fun a => priorMass D s * D.u s a)) := by
+    apply sumFin_mono
+    intro s
+    have hw : ∀ x : Fin (D.nX + 1), 0 ≤ (D.p s x : Int) := fun x => by omega
+    have := sumFin_maxFin_mul_le (m := D.nX + 1) (n := D.nA)
+      (w := fun x => (D.p s x : Int)) hw (v := fun a => D.u s a)
+    simpa [jointPayoff, priorMass] using this
+  rw [hcomm] at hstep
+  exact Int.le_trans hstep hper
+
+/-- Informe parfaitement, le decideur du parapluie bruite vaut 20 (poids
+    marginal 4 dans chaque etat, meilleur paiement 2 puis 3). -/
+theorem noisyUmbrella_valueNoisyPerfect :
+    valueNoisyPerfect noisyUmbrella = 20 := by decide
+
+/-- La chaine complete sur l'exemple : non informe (8) ≤ informe (12) ≤
+    parfaitement informe (20). -/
+theorem noisyUmbrella_chain :
+    valueNoisyNoInfo noisyUmbrella ≤ valueNoisySignal noisyUmbrella ∧
+    valueNoisySignal noisyUmbrella ≤ valueNoisyPerfect noisyUmbrella := by
+  constructor
+  · exact valueNoisyNoInfo_le_valueNoisySignal noisyUmbrella
+  · exact valueNoisySignal_le_valueNoisyPerfect noisyUmbrella
+
