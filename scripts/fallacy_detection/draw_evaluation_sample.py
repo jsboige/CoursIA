@@ -145,7 +145,7 @@ def build_pairs(alignment: dict[str, dict]) -> tuple[list[dict], Counter, Counte
                 labels = {lab for _, _, lab in doc["labels"]}
                 seen_nodes: set[str] = set()
                 for lab in sorted(labels):
-                    if lab in EXCLUDED_LABELS:
+                    if lab.lower() in EXCLUDED_LABELS:
                         continue
                     entry = rollup_ci.get(lab.lower())
                     if entry is None:
@@ -170,6 +170,32 @@ def build_pairs(alignment: dict[str, dict]) -> tuple[list[dict], Counter, Counte
                         "verdict": al["verdict"],
                     }
     return list(pairs.values()), unjoinable, unaligned_inventory
+
+
+def _prorata_quotas(remaining: int, sizes: dict[str, int]) -> dict[str, int]:
+    """Repartition proportionnelle deterministe des sieges restants.
+
+    Methode du plus fort reste a la D'Hondt : chaque siege va a la strate
+    qui maximise taille/(sieges_deja_pris + 1), donc le quota final suit la
+    proportion des restes de chaque famille. Plafonne par construction a la
+    population de chaque strate (une strate epuisee ne recoit plus rien).
+    Egalites tranchees par cle triee : deux runs memes entrees donnent le
+    meme quota, graine mise a part.
+    """
+    quotas = {k: 0 for k in sizes}
+    for _ in range(remaining):
+        best_k = None
+        best_rate = -1.0
+        for k in sorted(sizes):
+            if quotas[k] >= sizes[k]:
+                continue
+            rate = sizes[k] / (quotas[k] + 1)
+            if rate > best_rate:
+                best_k, best_rate = k, rate
+        if best_k is None:
+            break  # toutes les strates sont epuisees
+        quotas[best_k] += 1
+    return quotas
 
 
 def stratified_draw(pairs: list[dict], seed: int, total: int, floor: int) -> list[dict]:
@@ -203,15 +229,20 @@ def stratified_draw(pairs: list[dict], seed: int, total: int, floor: int) -> lis
         take = min(floor, len(members))
         picked.extend(members[:take])
 
-    # 2. compler vers le total au prorata des strates DIRECT restantes.
+    # 2. completer vers le total au prorata des strates DIRECT restantes :
+    #    chaque famille recoit un quota proportionnel a son reste, pas un
+    #    remplissage sequentiel qui servirait les premieres familles trie
+    #    et laisserait les dernieres vides.
     remaining = total - len(picked)
     if remaining > 0:
-        pool: list[dict] = []
-        for fam in sorted(familles_direct):
-            pool.extend(familles_direct[fam][min(floor, len(familles_direct[fam])):])
-        take = min(remaining, len(pool))
-        picked.extend(pool[:take])
-        remaining -= take
+        leftovers = {
+            fam: familles_direct[fam][min(floor, len(familles_direct[fam])):]
+            for fam in sorted(familles_direct)
+        }
+        quotas = _prorata_quotas(remaining, {f: len(v) for f, v in leftovers.items()})
+        for fam in sorted(leftovers):
+            picked.extend(leftovers[fam][: quotas[fam]])
+        remaining -= sum(quotas.values())
         # 3. si DIRECT epuise, complement PARTIAL (documente dans le manifest).
         if remaining > 0:
             ppool: list[dict] = []

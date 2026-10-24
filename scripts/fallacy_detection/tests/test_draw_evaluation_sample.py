@@ -111,3 +111,48 @@ def test_tirage_synthetic_bornes_serreess(mod):
     ]
     picked = mod.stratified_draw(tiny, seed=1, total=10, floor=10)
     assert len(picked) == 4  # toute la population, plancher inatteignable
+
+
+def test_exclusion_insensible_casse(mod, tmp_path, monkeypatch):
+    """Un libelle exclu ecrit avec une casse differente ('Nothing') est exclu
+    par conception lui aussi -- pas route vers le rapport non-joinable."""
+    (tmp_path / "synthetic.jsonl").write_text(
+        json.dumps({"labels": [[0, 1, "Nothing"], [2, 3, "straw man"]],
+                    "text": "t"}) + "\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(mod, "CORPUS_FILES", ["synthetic.jsonl"])
+    monkeypatch.setattr(mod, "DATA_ACademic", tmp_path)
+    align = {"Straw man": {"academic_label": "Straw man",
+                           "best_name": "StrawManNode", "best_famille": "Fam",
+                           "verdict": "DIRECT"}}
+    pairs, unjoinable, _unaligned = mod.build_pairs(align)
+    assert [p["corpus_label"] for p in pairs] == ["straw man"]
+    # 'Nothing' exclue par conception : elle ne doit PAS se retrouver dans
+    # les non-joinables (c'est le symptome du test de casse avant correctif).
+    assert "nothing" not in unjoinable
+
+
+def test_completion_au_prorata_des_restes(mod):
+    """Le complement au-dela du plancher suit le prorata des restes DIRECT,
+    pas un remplissage sequentiel qui servirait la premiere famille triee."""
+    def _famille(nom: str, n: int):
+        return [
+            {"source_file": "a.jsonl", "line_index": i, "corpus_label": "x",
+             "inventory_label": "X", "node": f"{nom}{i}", "family": nom,
+             "verdict": "DIRECT"}
+            for i in range(n)
+        ]
+
+    # Restes apres plancher 10 : FamA=30, FamB=10 ; total 40 -> 20 sieges
+    # complementaires, prorata exact 3:1 -> 15 pour FamA, 5 pour FamB.
+    population = _famille("FamA", 40) + _famille("FamB", 20)
+    picked = mod.stratified_draw(population, seed=3, total=40, floor=10)
+    familles = Counter(p["family"] for p in picked)
+    assert len(picked) == 40
+    assert familles == {"FamA": 25, "FamB": 15}
+    # Le remplissage sequentiel d'avant donnait FamA=30/FamB=10 : ce test
+    # echoue sur ce comportement, c'est son role.
+    picked2 = mod.stratified_draw(population, seed=3, total=40, floor=10)
+    assert [(p["source_file"], p["node"]) for p in picked2] == \
+        [(p["source_file"], p["node"]) for p in picked]  # deterministe
