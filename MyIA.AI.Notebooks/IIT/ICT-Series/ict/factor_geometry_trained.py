@@ -65,6 +65,7 @@ __all__ = [
     "collect_activations",
     "probe_coefficient_basis",
     "subspace_rank",
+    "overlap_energy",
     "factor_geometry_report",
     "untrained_null",
 ]
@@ -295,6 +296,26 @@ def _span_basis(*bases: Array) -> Array:
     return u[:, s > (s[0] * 1e-8)]
 
 
+def overlap_energy(basis_a: Array, basis_b: Array) -> float:
+    """Energie de recouvrement des sous-espaces de COEFFICIENTS, en [0, 1].
+
+    ``||Ba^T Bb||_F^2 / min(da, db)`` : **0** pour des sous-espaces disjoints
+    (directions de lecture additives, chaque facteur decode depuis ses propres
+    directions), **1** pour des sous-espaces confondus. C'est la version
+    CONTINUE de l'``additivity_gap`` : le gap entier vit au rang pres et
+    sature -- sur les bancs Mess3 x Mess3 de #20091, le temoin rendait la meme
+    valeur aux six initialisations (bande de largeur nulle, donc muette) --
+    l'energie garde sa resolution a toutes les echelles et ses bandes de
+    temoin discriminent (suivi #20071).
+    """
+    a = np.asarray(basis_a, dtype=np.float64)
+    b = np.asarray(basis_b, dtype=np.float64)
+    if a.size == 0 or b.size == 0:
+        return float("nan")
+    m = a.T @ b
+    return float((m ** 2).sum() / min(a.shape[1], b.shape[1]))
+
+
 def factor_geometry_report(
     activations: Array,
     belief_a: Array,
@@ -313,6 +334,9 @@ def factor_geometry_report(
       recouvrent — c'est la mesure directe de l'entremellement ;
     - ``overlap_coef_max`` : plus grand |cos| entre les directions de LECTURE
       des deux facteurs ;
+    - ``overlap_energy`` : energie de recouvrement des sous-espaces en [0, 1]
+      (cf :func:`overlap_energy`) -- la lecture continue de l'entremelement,
+      la ou le gap entier sature au rang pres ;
     - ``angle_coef_deg`` : plus grand angle principal entre ces sous-espaces.
     """
     H = np.asarray(activations, dtype=np.float64)
@@ -323,8 +347,9 @@ def factor_geometry_report(
     if Ba.size and Bb.size:
         ov = float(basis_overlap(Ba, Bb).max())
         ang = max_principal_angle(Ba, Bb)
+        enr = overlap_energy(Ba, Bb)
     else:
-        ov, ang = float("nan"), float("nan")
+        ov, ang, enr = float("nan"), float("nan"), float("nan")
     return {
         "probe_r2_a": probe_holdout_r2(H, belief_a, ridge=ridge),
         "probe_r2_b": probe_holdout_r2(H, belief_b, ridge=ridge),
@@ -333,6 +358,7 @@ def factor_geometry_report(
         "dim_union": float(du),
         "additivity_gap": float(du - (da + db)),
         "overlap_coef_max": ov,
+        "overlap_energy": enr,
         "angle_coef_deg": ang,
     }
 
