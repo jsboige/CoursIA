@@ -868,6 +868,147 @@ def test_hybrid_runs_on_linux_wrong_fallback_is_rejected(tmp_path):
     assert codes(result) == {"DYNAMIC_RUNS_ON"}
 
 
+# #22076 : second audited dynamic form, opposite polarity to the #13363
+# hybrid. A classifier job (quarto-scope) computes the render scope; the
+# heavy job routes to a GitHub-hosted label when the scope is 'full' (a
+# full render does not fit the pool) and to the audited Linux pool labels
+# otherwise. The self-hosted leg stays reachable, so the job-level
+# same-repo `if:` guard remains REQUIRED (unlike the hybrid form).
+SCOPE_ROUTED_RUNS_ON = (
+    "${{ needs.quarto-scope.outputs.mode == 'full' && 'ubuntu-latest'"
+    ' || fromJSON(\'["self-hosted", "coursia-ephemeral", "coursia-linux"]\') }}'
+)
+
+
+def test_scope_routed_runs_on_is_accepted(tmp_path):
+    # quarto-pages-deploy.yml is the consumer: validate-pr routes to
+    # ubuntu-latest on a full render, to the pool otherwise. The job-level
+    # same-repo guard is present, so no SAME_REPO_GUARD violation.
+    write_workflow(tmp_path, "quarto-pages-deploy", """
+        name: Quarto pages deploy
+        on:
+          pull_request:
+            branches: [main]
+          push:
+            branches: [main]
+        jobs:
+          quarto-scope:
+            if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'pull_request'
+            runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+            steps:
+              - run: echo classify
+          validate-pr:
+            needs: quarto-scope
+            if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'pull_request'
+            runs-on: RUNSON
+            steps:
+              - run: echo render
+        """)
+    (tmp_path / "quarto-pages-deploy.yml").write_text(
+        (tmp_path / "quarto-pages-deploy.yml").read_text(encoding="utf-8").replace(
+            "RUNSON", SCOPE_ROUTED_RUNS_ON
+        ),
+        encoding="utf-8",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert result.broken == []
+    assert result.violations == []
+    # BOTH jobs are self-hosted by construction (the pool leg is reachable).
+    assert result.self_hosted_jobs == 2
+
+
+def test_scope_routed_runs_on_wrong_needs_is_rejected(tmp_path):
+    # The needs clause is enumerated, not pattern-matched on shape: any
+    # other job id / output keeps the DYNAMIC_RUNS_ON rejection.
+    write_workflow(tmp_path, "quarto-pages-deploy", """
+        name: Quarto pages deploy
+        on: workflow_dispatch
+        jobs:
+          validate-pr:
+            runs-on: ${{ needs.other-scope.outputs.mode == 'full' && 'ubuntu-latest' || fromJSON('["self-hosted", "coursia-ephemeral", "coursia-linux"]') }}
+            steps:
+              - run: echo render
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+    assert result.self_hosted_jobs == 0
+
+
+def test_scope_routed_runs_on_inverted_test_is_rejected(tmp_path):
+    # `!= 'full'` would route the full render (the OOM case) to the pool --
+    # the exact defect the form exists to prevent. Only `== 'full'` is
+    # audited; the inverted test stays a DYNAMIC_RUNS_ON rejection.
+    write_workflow(tmp_path, "quarto-pages-deploy", """
+        name: Quarto pages deploy
+        on: workflow_dispatch
+        jobs:
+          validate-pr:
+            runs-on: ${{ needs.quarto-scope.outputs.mode != 'full' && 'ubuntu-latest' || fromJSON('["self-hosted", "coursia-ephemeral", "coursia-linux"]') }}
+            steps:
+              - run: echo render
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+
+
+def test_scope_routed_runs_on_non_hosted_primary_is_rejected(tmp_path):
+    # The primary leg must be a GitHub-hosted label: a self-hosted label
+    # there would make the pool reachable on BOTH branches of the test,
+    # which is not a routing.
+    write_workflow(tmp_path, "quarto-pages-deploy", """
+        name: Quarto pages deploy
+        on: workflow_dispatch
+        jobs:
+          validate-pr:
+            runs-on: ${{ needs.quarto-scope.outputs.mode == 'full' && 'coursia-ephemeral' || fromJSON('["self-hosted", "coursia-ephemeral", "coursia-linux"]') }}
+            steps:
+              - run: echo render
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+
+
+def test_scope_routed_runs_on_waiter_labels_is_rejected(tmp_path):
+    # Only the Linux pool label set is audited in this form. The waiter set
+    # (the 45-min polling gate role) is not a render pool.
+    write_workflow(tmp_path, "quarto-pages-deploy", """
+        name: Quarto pages deploy
+        on: workflow_dispatch
+        jobs:
+          validate-pr:
+            runs-on: ${{ needs.quarto-scope.outputs.mode == 'full' && 'ubuntu-latest' || fromJSON('["self-hosted", "coursia-waiter"]') }}
+            steps:
+              - run: echo render
+        """)
+    result = policy.scan_workflows(tmp_path)
+    assert codes(result) == {"DYNAMIC_RUNS_ON"}
+
+
+def test_scope_routed_runs_on_without_job_guard_is_rejected(tmp_path):
+    # Contrast with the #13363 hybrid: the same-repo guard is NOT carried in
+    # the expression here (a fork PR would evaluate the needs clause and
+    # route to the pool), so the job-level `if:` guard is REQUIRED.
+    write_workflow(tmp_path, "quarto-pages-deploy", """
+        name: Quarto pages deploy
+        on:
+          pull_request:
+            branches: [main]
+        jobs:
+          validate-pr:
+            runs-on: RUNSON
+            steps:
+              - run: echo render
+        """)
+    (tmp_path / "quarto-pages-deploy.yml").write_text(
+        (tmp_path / "quarto-pages-deploy.yml").read_text(encoding="utf-8").replace(
+            "RUNSON", SCOPE_ROUTED_RUNS_ON
+        ),
+        encoding="utf-8",
+    )
+    result = policy.scan_workflows(tmp_path)
+    assert "SAME_REPO_GUARD" in codes(result)
+
+
 def test_pull_request_job_without_guard_is_rejected(tmp_path):
     write_workflow(tmp_path, "unguarded", """
         name: unguarded
