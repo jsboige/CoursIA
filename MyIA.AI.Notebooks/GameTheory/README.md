@@ -361,7 +361,7 @@ Depuis le parcours principal, on y entre après le palier 16 : le [capstone 21](
 
 ## Extensions au-delà du parcours
 
-Les notebooks numérotés de 18 à 25 — hormis le [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb), escalier de la [sous-série SocialChoice](#sous-série-socialchoice) — ne prolongent pas le parcours principal. Ce sont des extensions autonomes : chacune isole un geste qui modifie l'espace des jeux (composition, abstraction, témoin d'impossibilité) plutôt qu'une solution dans un jeu donné. Leur numéro nu est un héritage de leur livraison, pas une étape du parcours ; leur rattachement aux paliers est à l'étude avec la gradation de la série (#15615).
+Les notebooks numérotés de 18 à 26 — hormis le [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb), escalier de la [sous-série SocialChoice](#sous-série-socialchoice) — ne prolongent pas le parcours principal. Ce sont des extensions autonomes : chacune isole un geste qui modifie l'espace des jeux (composition, abstraction, témoin d'impossibilité) plutôt qu'une solution dans un jeu donné. Leur numéro nu est un héritage de leur livraison, pas une étape du parcours ; leur rattachement aux paliers est à l'étude avec la gradation de la série (#15615).
 
 | # | Notebook | Ce qu'on y apprend | Noyau | Public |
 |---|----------|--------------------|-------|--------|
