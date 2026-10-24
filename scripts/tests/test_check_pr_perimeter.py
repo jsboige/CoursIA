@@ -875,6 +875,51 @@ def test_pull_request_review_trigger_includes_edited_type():
     )
 
 
+def test_perimeter_workflow_declares_pull_request_trigger_with_edited():
+    """#21922 : CE fichier doit redeclarer `pull_request` avec `edited`.
+
+    Le levier du garde est le NOM de check-run "perimeter review guard
+    (#11268)". Seul le run de ce fichier le publie -- une re-mesure faite
+    par always-on-guards porte le nom de l'umbrella et ne supersede pas le
+    rouge de la surface review (le repli de l'agregat du PR gate est
+    latest-wins PAR NOM).
+
+    Mesure fondatrice (#21922, PR #21893) : check-run rouge a 20:50:57Z,
+    body corrige a ~21:15Z (le remede canonique d'une assertion fausse),
+    et AUCUN run de ce fichier sur cette tete -- le rouge a disparu de la
+    tete par un mecanisme non etabli (pruning de suite), donc l'etat
+    bloquant se dissolvait de facon non deterministe.
+
+    Ce test rend l'invariant executable : un futur editeur qui retoucherait
+    le bloc `on:` et supprimerait le trigger reverait le defaut sans que
+    rien ne le dise.
+    """
+    here = pathlib.Path(__file__).resolve()
+    repo_root = here.parents[2]
+    wf = repo_root / ".github" / "workflows" / "perimeter-review-guard.yml"
+    text = wf.read_text(encoding="utf-8")
+    import re
+    block = re.search(r"^on:\s*\n(?P<body>(?:  [^\n]*\n)+)", text,
+                       re.MULTILINE)
+    assert block, "could not locate `on:` block in perimeter-review-guard.yml"
+    body = block.group("body")
+    pr_block = re.search(
+        r"^  pull_request:\s*\n((?:    [^\n]*\n)+)", body, re.MULTILINE
+    )
+    assert pr_block, (
+        "perimeter-review-guard.yml ne declare plus `pull_request:` -- une "
+        "correction de body ne re-mesure plus le nom de check-run que ce "
+        "fichier publie, et le rouge de la surface review survit jusqu'au "
+        "prochain evenement de review (#21922, mesure #21893)."
+    )
+    pr_body = pr_block.group(1)
+    assert "types:" in pr_body and "edited" in pr_body, (
+        "pull_request: doit lister explicitement `edited` -- sans lui, "
+        "GitHub l'exclut du defaut et une correction de body ne declenche "
+        "rien (cf. #11635)."
+    )
+
+
 # ---------------------------------------------------------------------------
 # Consequence model (#11648): supersession per author + blocking scope
 # ---------------------------------------------------------------------------

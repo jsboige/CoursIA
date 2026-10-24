@@ -41,7 +41,7 @@ lean_lib «PetersTour» where
 
 /-
   Tranche 1 du plan #17988 (issue parente) — socle de définitions du core
-  d'approbation (Becker-Greger-Peters 2026, arXiv 2609.11912).
+  d'approbation (Becker-Greger-Peters 2026, arXiv 2609.11912, p. 1).
 
   `ApprovalDefs` (FR) et `ApprovalDefs_en` (EN) forment une paire i18n #4980
   (sibling byte-identical hors commentaires). Le glob EN est explicite pour
@@ -99,3 +99,18 @@ lean_lib «ApprovalQuota» where
 @[default_target]
 lean_lib «ApprovalConsensus» where
   globs := #[`ApprovalConsensus, `ApprovalConsensus_en]
+
+/-
+  Tranche « paiement » du plan #17988 — quotas (Hare n/k, Droop n/(k+1)),
+  système de paiement fidèle à la définition 3.2 de Becker-Greger-Peters
+  2026 (arXiv 2609.11912), et sens « certificat ⟹ core » du théorème 3.3
+  (`not_blocksCore_of_paymentCertificate`), preuve élémentaire sans Farkas.
+
+  `ApprovalPayment` (FR) et `ApprovalPayment_en` (EN) forment une paire
+  i18n #4980 (sibling byte-identical hors commentaires). Le glob EN est
+  explicite pour éviter l'orphan-trap #6749. Voir
+  `scripts/lean/check_i18n_siblings.py`.
+-/
+@[default_target]
+lean_lib «ApprovalPayment» where
+  globs := #[`ApprovalPayment, `ApprovalPayment_en]

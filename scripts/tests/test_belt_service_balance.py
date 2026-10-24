@@ -862,3 +862,128 @@ def test_render_json_famine_key():
     parsed = json.loads(out)
     assert "famine" in parsed
     assert parsed["famine"] == famine
+
+
+# ---------------------------------------------------------------------------
+# #19804 acceptance 1 (complement) : residuel `_manuel` avec compte ET motif
+# ---------------------------------------------------------------------------
+
+
+def _manuel_service(num: int) -> bsb.Service:
+    return bsb.Service(
+        issue_number=num,
+        issue_created_at=_iso(datetime(2026, 10, 1, tzinfo=timezone.utc)),
+        service_date=_iso(datetime(2026, 10, 5, tzinfo=timezone.utc)),
+        service_kind="manuel",
+        pr_number=None,
+        pr_body=None,
+        attribution_kind="manuel",
+    )
+
+
+def test_manuel_residual_section_count_motive_and_issues():
+    """Le residuel sort avec son compte, son motif et ses numeros."""
+    lines = bsb.manuel_residual_section([_manuel_service(7), _manuel_service(3)])
+    text = "\n".join(lines)
+    assert "restant en _manuel : 2" in text
+    assert bsb.MANUEL_RESIDUAL_MOTIVE in text
+    assert "#3" in text and "#7" in text
+
+
+def test_manuel_residual_section_empty_says_sans_objet():
+    text = "\n".join(bsb.manuel_residual_section([]))
+    assert "restant en _manuel : 0" in text
+    assert "sans objet" in text
+    assert bsb.MANUEL_RESIDUAL_MOTIVE not in text
+
+
+def test_render_text_includes_manuel_residual_only_when_passed():
+    """Absent sans le parametre (compat), present avec (#19804 acc.1)."""
+    base = bsb.render_text({}, 0, 0, 0, {})
+    assert "restant en _manuel" not in base
+    with_res = bsb.render_text({}, 0, 0, 0, {}, manuel_services=[_manuel_service(11)])
+    assert "restant en _manuel : 1" in with_res
+    assert "#11" in with_res
+
+
+def test_render_json_includes_manuel_closure_block():
+    out = json.loads(bsb.render_json(
+        [], {}, fleet_total=0, fleet_courant=0, fleet_ancien=0, stock={},
+        manuel_services=[_manuel_service(5), _manuel_service(9)],
+    ))
+    assert out["manuel_closure"]["count"] == 2
+    assert out["manuel_closure"]["issues"] == [5, 9]
+    assert out["manuel_closure"]["motive"] == bsb.MANUEL_RESIDUAL_MOTIVE
+
+
+def test_render_json_manuel_closure_empty_has_null_motive():
+    out = json.loads(bsb.render_json(
+        [], {}, fleet_total=0, fleet_courant=0, fleet_ancien=0, stock={},
+        manuel_services=[],
+    ))
+    assert out["manuel_closure"] == {"count": 0, "motive": None, "issues": []}
+
+
+# ---------------------------------------------------------------------------
+# #19804 acceptance 3 : temoin positif rejouable (--explain)
+# ---------------------------------------------------------------------------
+
+
+class _FakeProc:
+    def __init__(self, stdout: str) -> None:
+        self.stdout = stdout
+
+
+def _patch_gh(monkeypatch, comments: list[dict]) -> None:
+    class _SP:
+        @staticmethod
+        def run(*_a, **_k):
+            return _FakeProc(json.dumps({"comments": comments}))
+    monkeypatch.setattr(bsb, "subprocess", _SP())
+
+
+def test_explain_attribution_delivered_marker_credits_delivering_lane(
+    monkeypatch, capsys,
+):
+    """Temoin acc.3 : issue fermee apres `[DELIVERED]` -> attribuee a la lane
+    qui a livre, avec le marqueur retenu en preuve.
+
+    Le marqueur lu est celui de la famille claim (`_MARKER_RE`) : un
+    `[INFO] candidate-delivered` seul ne renseigne pas la lane pour cet
+    organe -- c'est precisement le residuel `_manuel`, et le temoin doit
+    montrer le cas ou l'attribution ABOUTIT."""
+    comments = [
+        {"createdAt": "2026-10-04T12:00:00Z",
+         "body": "[CLAIMED] lane myia-po-2024:CoursIA -- tranche X",
+         "author": {"login": "jsboige"}},
+        {"createdAt": "2026-10-05T08:00:00Z",
+         "body": "[DELIVERED] lane myia-po-2024:CoursIA -- PR #22147",
+         "author": {"login": "jsboige"}},
+    ]
+    _patch_gh(monkeypatch, comments)
+    rc = bsb.explain_attribution(42, "jsboige", "CoursIA")
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "lane=myia-po-2024:CoursIA" in out
+    assert "marqueur=DELIVERED" in out
+
+
+def test_explain_attribution_info_delivered_alone_stays_manuel(monkeypatch, capsys):
+    """Un `[INFO] candidate-delivered` sans marqueur de claim ne suffit pas :
+    le temoin doit nommer ce cas plutot que de le passer sous silence."""
+    _patch_gh(monkeypatch, [
+        {"createdAt": "2026-10-05T08:00:00Z",
+         "body": "[INFO] candidate-delivered -- lane myia-po-2024:CoursIA -- PR #22147",
+         "author": {"login": "jsboige"}},
+    ])
+    bsb.explain_attribution(43, "jsboige", "CoursIA")
+    out = capsys.readouterr().out
+    assert "aucune visite lisible" in out and "_manuel" in out
+
+
+def test_explain_attribution_no_visit_says_manuel(monkeypatch, capsys):
+    _patch_gh(monkeypatch, [{"createdAt": "2026-10-05T08:00:00Z", "body": "merci"}])
+    rc = bsb.explain_attribution(77, "jsboige", "CoursIA")
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "aucune visite lisible" in out and "_manuel" in out

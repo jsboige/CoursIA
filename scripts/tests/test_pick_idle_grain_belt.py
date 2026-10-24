@@ -1941,3 +1941,218 @@ def test_check_claims_unreadable_batch_falls_back_per_issue(monkeypatch):
     assert all(v[0] == pig.CLAIM_CODE_FREE for v in verdicts.values())
     # 1 batch + 2 relectures mono-issue.
     assert len(calls) == 3
+
+
+# --- #19969 : la banniere d'epuisement du budget reste IMPRIMEE -------------
+#
+# L'issue demande que « la mesure ne doit pas devenir silencieuse en se
+# repariant » : quand le budget de sondes de livraison tombe, la lane doit
+# lire que les candidats au-dela n'ont PAS ete verifies. Le texte est donc
+# un contrat, verifie ici SANS reseau (appeler `main()` de bout en bout
+# payerait une minute de `gh` pour verifier trois lignes de `print`).
+
+
+def test_belt_budget_banner_is_printed_when_the_budget_is_exhausted(capsys):
+    """Le fail-OPEN du budget est assume, son SILENCE ne l'est pas."""
+    pig.print_belt_budget_report(True)
+    out = capsys.readouterr().out
+    assert "Plafond de sondes de livraison atteint" in out
+    assert "fail-OPEN" in out
+    assert "check_unaddressed_nits" in out
+    # Verrou d'egalite sur le texte entier : trois sous-chaines
+    # laisseraient passer une reecriture du milieu des phrases, ou la perte
+    # d'une ligne dont les trois marqueurs survivraient (reserve NanoClaw
+    # du 2026-10-22).
+    assert out == (
+        "   Plafond de sondes de livraison atteint : les candidats\n"
+        "   au-dela ne sont pas sondes (fail-OPEN) -- la verification\n"
+        "   de livraison leur revient, cf check_unaddressed_nits.\n"
+    )
+
+
+def test_belt_budget_banner_is_silent_when_the_budget_is_not_exhausted(capsys):
+    """Pas de budget epuise = pas de banniere : une alerte permanente
+    serait lue comme un etat du depot, pas comme un etat du tirage."""
+    pig.print_belt_budget_report(False)
+    assert capsys.readouterr().out == ""
+
+
+def test_belt_delivery_probe_cost_is_bounded_by_the_budget():
+    """#19969, critere 3 : le cout en requetes du tirage est borne par le
+    budget de sondes -- une requete `gh issue view --json comments` par
+    candidat sonde. La mesure joue la valeur d'AVANT (fenetre seule = 8)
+    et celle d'apres (fenetre * 3 + 12 = 36) sur le MEME pool : la
+    difference de requetes est exactement l'ecart de plafond.
+
+    C'est le cout assume du correctif de #19977 : le budget de sondes passe
+    de 8 a 36 (+28 de BUDGET), mais le surcout EN REQUETES est de +22 au
+    pire sur un tirage charge (30 sondes - 8), pour ne plus servir un
+    candidat livre comme un grain neuf. Les deux grandeurs ne se confondent
+    pas : +28 est l'ecart de PLAFOND, +22 l'ecart de requetes mesure par
+    les asserts ci-dessous (reserve NanoClaw du 2026-10-22). Le second
+    terme du cout -- le filtre de marqueur recent, une requete par
+    candidat, HORS budget -- est inchange par ce correctif."""
+    delivered = set(range(19200, 19230))          # 30 livres, fenetre de 8
+    items = [_make_item(n, age_days=200 - i, idle=2, last=None)
+             for i, n in enumerate(sorted(delivered, reverse=True))]
+    pool = items
+
+    def run_with(budget):
+        calls = []
+
+        def probe(n, lane=None):
+            calls.append(n)
+            return n in delivered
+
+        picks, _, state = pig.belt_pick_with_replacements(
+            list(pool), _free_claims(pool), _belt_args(grains=40),
+            probe_budget=budget, delivered_probe=probe,
+            merged_pr_probe=lambda n, lane=None: False)
+        return len(calls), len(picks), state
+
+    old_calls, old_picks, old_state = run_with(8)
+    new_calls, new_picks, new_state = run_with(pig.belt_probe_budget(8))
+
+    # Une requete par candidat sonde, dans les deux cas.
+    assert old_calls == 8
+    assert new_calls == 30
+    # Budget d'AVANT : 22 livres servis en fail-OPEN (le contrat), et
+    # l'epuisement REPORTE -- la banniere l'annonce.
+    assert old_state["budget_hit"] is True
+    assert old_picks == 22
+    # Budget aligne : 30 sondes suffisent, aucun livre servi, aucun
+    # epuisement.
+    assert new_state["budget_hit"] is False
+    assert new_picks == 0
+
+
+# ---------------------------------------------------------------------------
+# #21436 -- mur de temps du tapis.
+#
+# Le defaut mesure : `probe_budget` borne le NOMBRE de sondes de livraison,
+# pas leur DUREE ni les deux surfaces payees par candidat hors fenetre. Sur ce
+# siege, 8 verdicts de claim coutent 47 s a froid ; `max_iters` = grains*5+50
+# laissait donc ~410 s de travail possible avant la premiere sonde de
+# livraison, et cinq mesures independantes (po-2023, po-2025, cette lane, deux
+# taps) se sont arretees sur `pick_with_replacements start`.
+#
+# Ce que ces tests epinglent : l'echeance arrete TOUTES les surfaces couteuses
+# (claim hors fenetre, filtre recent, sonde de livraison, sonde PR fusionnee)
+# et le reliquat est SERVI en fail-OPEN en le rapportant -- le tapis ne rend
+# jamais moins de candidats a cause du mur, il en rend de moins verifies.
+# ---------------------------------------------------------------------------
+
+
+def _patched_clock(monkeypatch, start=0.0):
+    """Horloge injectee a la place du module `time` de `pig`.
+
+    Remplacer l'ATTRIBUT de module (et non `time.monotonic` globalement) garde
+    le patch local : les autres modules, et le harnais pytest, gardent leur
+    horloge reelle.
+    """
+    import types
+    clock = [start]
+    monkeypatch.setattr(
+        pig, "time", types.SimpleNamespace(monotonic=lambda: clock[0]))
+    return clock
+
+
+def test_belt_time_budget_stops_probing_mid_loop(monkeypatch):
+    """L'echeance tombe en cours de boucle : le premier candidat paie ses
+    sondes, les suivants sont servis sans aucune requete.
+
+    C'est la forme exacte du defaut #21436 -- un run qui n'a pas fini sa
+    fenetre de candidats quand le budget est consomme doit RENDRE la main,
+    pas continuer a payer un `check_claims` par candidat.
+    """
+    clock = _patched_clock(monkeypatch)
+    a = _make_item(30001, age_days=100, idle=9, last=None)
+    b = _make_item(30002, age_days=99, idle=9, last=None)
+    c = _make_item(30003, age_days=98, idle=9, last=None)
+    pool = [a, b, c]
+    calls = {"delivered": [], "merged": [], "recent": []}
+
+    def delivered(n, lane=None):
+        calls["delivered"].append(n)
+        clock[0] += 1.0  # la sonde consomme le budget d'une seconde
+        return False
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=3), probe_budget=8,
+        delivered_probe=delivered,
+        merged_pr_probe=lambda n, lane=None: calls["merged"].append(n) or False,
+        recent_marker_probe=lambda n: calls["recent"].append(n) or False,
+        time_budget_s=1.0)
+
+    # Le mur ne retire JAMAIS un candidat : les trois sont servis.
+    assert [p["number"] for p in picks] == [30001, 30002, 30003]
+    assert withheld == []
+    # Une seule sonde de chaque espece, celle du premier candidat.
+    assert calls["delivered"] == [30001]
+    assert calls["recent"] == [30001]
+    assert calls["merged"] == []
+    assert state["time_budget_hit"] is True
+    # Deux plafonds distincts : le mur de temps n'est pas le plafond de cout.
+    assert state["budget_hit"] is False
+
+
+def test_belt_time_budget_skips_on_the_fly_claim_check_and_reports(monkeypatch):
+    """La verification de claim au fil de l'eau est la surface la plus chere
+    (`check_claims` par candidat hors fenetre) et elle echappait au
+    `probe_budget`. Passe l'echeance, elle n'est plus appelee du tout, et les
+    candidats servis sans claim lu sont rapportes dans `claim_unread` (#20265)
+    au lieu de partir comme s'ils avaient ete verifies.
+    """
+    _patched_clock(monkeypatch)
+    a = _make_item(30011, age_days=100, idle=9, last=None)
+    b = _make_item(30012, age_days=99, idle=9, last=None)
+    claim_calls = []
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [a, b], {}, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: claim_calls.append(list(nums)) or {},
+        recent_marker_probe=lambda n: False,
+        time_budget_s=0.0)
+
+    assert [p["number"] for p in picks] == [30011, 30012]
+    assert withheld == []
+    assert claim_calls == [], "aucune verification de claim apres l'echeance"
+    assert state["claim_unread"] == [30011, 30012]
+    assert state["time_budget_hit"] is True
+
+
+@pytest.mark.parametrize("budget", [None, 600.0])
+def test_belt_without_expiry_keeps_previous_behaviour(budget):
+    """Controle positif : sans mur (`None`, le defaut) ou avec un budget large,
+    chaque candidat servi paie sa sonde et `time_budget_hit` reste faux. Le
+    correctif ne doit pas eteindre les sondes quand rien n'est epuise."""
+    a = _make_item(30021, age_days=100, idle=9, last=None)
+    b = _make_item(30022, age_days=99, idle=9, last=None)
+    pool = [a, b]
+    probed = []
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: probed.append(n) or False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        time_budget_s=budget)
+
+    assert [p["number"] for p in picks] == [30021, 30022]
+    assert probed == [30021, 30022]
+    assert state["time_budget_hit"] is False
+
+
+def test_belt_time_budget_flag_is_accepted(monkeypatch, capsys):
+    """Le cablage CLI du mur : le drapeau est accepte et le verdict est publie
+    dans le document JSON, a cote du plafond de sondes -- deux champs, parce
+    qu'une lane qui lit l'un pour l'autre relance pour la mauvaise raison."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt",
+                   "--belt-time-budget", "0", "--json"])
+    assert rc == 0
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["mode"] == "belt"
+    assert doc["delivered_signal"]["time_budget_hit"] is False
+    # `0` desactive le mur : le plafond de sondes garde son propre champ.
+    assert doc["delivered_signal"]["budget_hit"] is False
