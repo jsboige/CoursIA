@@ -2889,7 +2889,7 @@ La brique `evaluations` (matches complets) exige le bootstrap externe PerfectDou
 | Kernel | `python3` |
 | Owner-lane | **po-2027** (`myia-po-2027:CoursIA` ; création du notebook) |
 | Date | 2026-10-21 |
-| PR | voir PR de la branche `feature/21053-torchlean-integration` (grain C de #20408) |
+| PR | #21824 — branche `feature/20408-13h-dynamic-damping` (grain C de #20408) |
 | Verdict agrégé | **SOTA-OK (périmètre jouet déclaré)** — instrument exact, témoin négatif mesuré, résultat négatif documenté |
 
 ### Synthèse
@@ -2961,6 +2961,6 @@ Tableau cumulatif unique du registre : une ligne par entry `## Entry #NNN`. Tout
 | 030 | Probas/PyMC-05-Causal-Inference (1 nb) | po-2025 strict | 2026-07-16 | SOTA-OK 1/1 | #6808 MERGED |
 | 031 | GameTheory/13f-Ataraxos-Patron-Python (1 nb) | po-2027 | 2026-10-12 | SOTA-OK 1/1 (copie pédagogique déclarée) | #20435 |
 | 032 | GameTheory/13g-Ataraxos-Organe-Natif (1 nb) | po-2027 | 2026-10-12 | SOTA-OK 1/1 (organe natif invoqué, limite PerfectDou documentée) | #20446 |
-| 033 | GameTheory/13h-Ataraxos-DynamicDamping (1 nb) | po-2027 | 2026-10-21 | SOTA-OK 1/1 (instrument exact, résultat négatif mesuré) | branche `feature/21053-torchlean-integration` |
+| 033 | GameTheory/13h-Ataraxos-DynamicDamping (1 nb) | po-2027 | 2026-10-21 | SOTA-OK 1/1 (instrument exact, résultat négatif mesuré) | #21824 — branche `feature/20408-13h-dynamic-damping` |
 
 **Mesure** : `grep -c '^## Entry #' docs/ledgers/3801-sota-axe2.md` = **33** (vérifié le 2026-10-21 ; l'entrée #033 arrive avec le grain C de #20408 ; l'entrée #032 était arrivée avec #20446). Ce tableau unique remplace les deux tableaux dupliqués (huit lignes, entry #005 ; vingt-deux lignes, entry #008) supprimés par #14562.
