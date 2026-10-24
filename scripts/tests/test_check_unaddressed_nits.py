@@ -2792,7 +2792,18 @@ def test_16005_narration_en_titre_ne_pose_pas():
 def test_16005_emissions_reelles_restent_detectees():
     """#16005 contre-épreuve : la fenêtre pré-marqueur ne neutralise que la
     narration liée au nom par une courte proposition — les émissions réelles
-    (verdict gras, injonction nue, tenue du blocage) restent BLOCK."""
+    (verdict gras, injonction nue, mention en capitales) restent BLOCK.
+
+    #22245 — la ligne « Le blocage tient jusqu'au sign-off user. » a quitté ce
+    lot. Elle est en casse de phrase, comme les deux diagnostics de lane que
+    l'organe a classés BLOCK à tort (#15846 « Chronologie du blocage »,
+    c.6365851694 sur #21252 « Cause du blocage identifiee ») : aucune garde de
+    tournure ne sépare « le blocage tient » de « le blocage vient du pool »,
+    et la liste des tournures françaises n'est pas close. Le discriminant
+    retenu est donc la CASSE DE LA SOURCE, déjà utilisée pour HOLD dans ce
+    module : une tenue de blocage s'écrit `**BLOCAGE …**`, `[BLOCAGE] lane …`
+    ou en capitales. Le cas négatif est épinglé juste en dessous.
+    """
     assert mod.classify(
         "myia-ai-01", "**BLOCAGE MERGE (ai-01)** — defaut de chemin."
     ) == "BLOCK"
@@ -2804,10 +2815,22 @@ def test_16005_emissions_reelles_restent_detectees():
         "myia-ai-01", "## BLOCAGE — attente arbitrage, ne pas merger."
     ) == "BLOCK"
     assert mod.classify(
-        "myia-ai-01", "Le blocage tient jusqu'au sign-off user."
-    ) == "BLOCK"
-    assert mod.classify(
         "myia-ai-01", "Suite : BLOCAGE — ne pas merger."
+    ) == "BLOCK"
+    # #22245 — cas fondateur, mot ordinaire en casse de phrase : n'émet pas.
+    assert mod.classify(
+        "myia-ai-01", "Le blocage vient du pool de runners, pas du diff."
+    ) is None
+    assert mod.classify(
+        "jsboige", "Cause du blocage identifiee — et ce n'est pas reparable "
+        "par un rejeu."
+    ) is None
+    # … et sa forme verdict, elle, émet toujours.
+    assert mod.classify(
+        "myia-ai-01", "**Le blocage vient du pool de runners** — pas du diff."
+    ) is None, "le gras ne promeut pas une phrase en casse de phrase"
+    assert mod.classify(
+        "myia-ai-01", "**BLOCAGE** — le pool de runners, pas le diff."
     ) == "BLOCK"
 
 

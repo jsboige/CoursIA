@@ -109,6 +109,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 
 | Fichier | Description |
 |---------|-------------|
+| [genai/3d-socle-reproductibilite.md](genai/3d-socle-reproductibilite.md) | Reproductibilité des socles 3D (NeRF, splats) — mesure sur deux postes : écart 0,07 dB et reproduction exacte |
 | [genai/genai-services.md](genai/genai-services.md) | Architectures Qwen/Lumina, mapping notebooks |
 | [genai/audio-embed-pattern.md](genai/audio-embed-pattern.md) | Pattern d'embed audio GenAI + leçons de réparation |
 | [genai/auth-flip-runbook.md](genai/auth-flip-runbook.md) | Runbook — flip d'authentification des services exposés (#16 P2) |
@@ -125,6 +126,7 @@ Documentation détaillée de l'infrastructure GenAI (ComfyUI, Docker, modèles l
 | [genai/model-mapping-openai.md](genai/model-mapping-openai.md) | Mapping des modèles OpenAI — génération courante |
 | [genai/model-mapping.md](genai/model-mapping.md) | Inventaire et table de correspondance — modèles GenAI/OpenAI |
 | [genai/vibe-coding-workspace-map.md](genai/vibe-coding-workspace-map.md) | Vibe-Coding — Carte des workspaces GenAI |
+| [genai/3d-enveloppe-vram-8go.md](genai/3d-enveloppe-vram-8go.md) | Enveloppe GPU de la famille NeRF sur l'étage pionnier 8 Go — pic VRAM et débit mesurés |
 
 ## QuantConnect (docs/qc/)
 
@@ -338,8 +340,8 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 |---------|-------------|
 | [ledgers/3801-sota-axe2.md](ledgers/3801-sota-axe2.md) | Ledger axe-2 SOTA par famille, 5 verdicts (EPIC #3801) |
 | [ledgers/10466-candidate-delivered-cleanup.md](ledgers/10466-candidate-delivered-cleanup.md) | EPIC #10466 — apurement du label `candidate-delivered`, cluster par cluster. Une table par cycle worker : ratio du cluster, issues traitées, leçons. Le compte d'issues ne baisse que si quelqu'un tient la trace de ce qui a été vérifié |
-| [ledgers/10678-interp-positioning-audit.md](ledgers/10678-interp-positioning-audit.md) | EPIC #10678 Phase 1 — audit des cellules d'interprétation mal positionnées, **1005 notebooks scannés**. La table nomme chaque cas : c'est ce qui rend la règle [cell-interpretation-ordering](../.claude/rules/cell-interpretation-ordering.md) applicable au lieu d'être un principe |
-| [ledgers/10678-orphan-interp-scan.md](ledgers/10678-orphan-interp-scan.md) | EPIC #10678 Phase 1b — interprétations orphelines en fin de notebook. Prolonge le précédent : 24 cellules `MISPLACED` sur 198 notebooks au scan c.237 |
+| [transients/2026-08-13-10678-interp-positioning-audit.md](transients/2026-08-13-10678-interp-positioning-audit.md) | EPIC #10678 Phase 1 — audit des cellules d'interprétation mal positionnées. La table nomme chaque cas : c'est ce qui rend la règle [cell-interpretation-ordering](../.claude/rules/cell-interpretation-ordering.md) applicable au lieu d'être un principe |
+| [transients/2026-08-15-10678-orphan-interp-scan.md](transients/2026-08-15-10678-orphan-interp-scan.md) | EPIC #10678 Phase 1b — interprétations orphelines en fin de notebook. Prolonge le précédent : cellules `MISPLACED` relevées au scan c.237 |
 | [ledgers/11690-ict-consolidation.md](ledgers/11690-ict-consolidation.md) | Consolidation ICT (contenu × résultats × critiques) — **support de travail partagé et durable** sur lequel le user et les lanes arbitrent les corrections de la série (mandat user 2026-08-18). Exception explicite au tier « éphémère → dashboard » : ce ledger est fait pour survivre aux cycles |
 | [ledgers/12204-ict-chantier-1-a2.md](ledgers/12204-ict-chantier-1-a2.md) | EPIC #12204, tranche A2 — l'opération 1 (*Recoordonner*) passe de `RAPPORTÉ` à `FIRSTHAND`. Le ledger porte la mesure qui autorise le changement de label, pas le label seul |
 | [ledgers/12204-ict-chantier-1-a3.md](ledgers/12204-ict-chantier-1-a3.md) | EPIC #12204, tranche A3 — vérification des opérations 3 et 9 (`teorth/pfr`, `planning_lean` sans `sorry`) : les deux que le tour d'horizon précédent n'avait pas atteintes |
