@@ -296,8 +296,24 @@ REPO = "jsboige/CoursIA"
 #   - la forme espacee a contenu interne (`[INFO candidate-delivered <contenu>]`)
 #     n'etait reconnue par AUCUNE alternative (FN), la 2e exigeant le `]`
 #     immediatement apres le mot.
+# #19907 predicat 4 : la cloture explicite voie 3 (c.15069, cmt 6055717533) --
+# `[DELIVERED] lane <machine:workspace> -- PR #N` posee par une lane sur une
+# tete du tapis. La sonde pleine balaie TOUS les commentaires, ou une mention
+# incidente de `[DELIVERED]` existe en prose -- l'alternative exige donc la
+# forme canonique (`\s+lane\b`), et l'ancrage debut de ligne tient les
+# citations `> [DELIVERED] lane` hors du match. Le prefixe de titre markdown
+# `(?:#{1,6}\s*)?` lui est applique par symetrie avec les formes [INFO]
+# (#21950 : une cloture sous titre `### [DELIVERED] lane ...` se lirait
+# sinon comme de la prose). Le filtre recent #19768
+# couvre deja `[DELIVERED]` nu sur le DERNIER commentaire ; cette alternative
+# attrape les clotures NON dernieres (suivies d'un [NOT-DELIVERED] rearmant,
+# d'un ack coordinateur, etc.), que le filtre recent ne voit pas par
+# construction. Relevable par `_DELIVERED_MARKER_REVOKED_RE` comme les autres
+# formes : un [NOT-DELIVERED] posterieur remet l'issue sur le tapis.
 _DELIVERED_MARKER_RE = re.compile(
     r"(?:"
+    r"^\s*(?:#{1,6}\s*)?\[DELIVERED\]\s+lane\b"
+    r"|"
     r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
     r"|"
     r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
@@ -1788,9 +1804,10 @@ def delivered_signal_reason(
     if verdict:
         return (
             "SIGNAL LIVRAISON (commentaire `" + DELIVERED_COMMENT_MARKER +
-            "`) : une lane a deja rendu la main sur cette issue en la "
-            "refutant. La re-servir comme grain de production fait bruler un "
-            "cycle a la lane qui la recoit."
+            "` / `[DELIVERED] lane`) : une lane a deja rendu la main sur "
+            "cette issue en la refutant, ou l'a cloturee explicitement "
+            "(voie 3, #15069/#19907). La re-servir comme grain de "
+            "production fait bruler un cycle a la lane qui la recoit."
         )
     # Troisieme surface : PR MERGEE <90j citant `#N` (#19907). Couvre les
     # LIVREURS dont le label a ete retracte par le sweep post-merge et dont
@@ -1964,6 +1981,40 @@ def open_cover_reason(
 
 
 
+def _delivered_resolved_short_cause(cause: str) -> str:
+    """Motif court une-ligne pour la sortie `ECARTE (delivered-resolved)`.
+
+    #19907 acceptance 2 : la ligne par candidat porte un MOTIF, pas
+    seulement un numero. Les causes longues de ``withheld`` sont des
+    phrases pedagogiques -- on extrait le discriminateur (label /
+    commentaire / PR mergee / marqueur recent) et rien d'autre, pour que
+    la ligne tienne sans repli.
+    """
+    m = re.search(r"SIGNAL LIVRAISON \(([^)]+)\)", cause)
+    if m:
+        return m.group(1).replace("`", "").strip()
+    if cause.startswith("LIVRAISON (recent)"):
+        return "marqueur de cloture sur le dernier commentaire"
+    return (cause.split(" : ", 1)[0] or "cause illisible")[:60]
+
+
+def print_delivered_resolved_lines(withheld: list, indent: str = "") -> None:
+    """Une ligne `ECARTE (delivered-resolved): #N -- motif` par candidat.
+
+    #19907 acceptance 2 : le rapport agrege (« N candidat(s) ECARTE(S) »)
+    reste pour le decompte, mais chaque candidat ecarte pour LIVRAISON a
+    droit a SA ligne AVANT les picks servis -- c'est la seule forme qu'un
+    consommateur (lane, audit, mesure d'acceptance) peut compter sans
+    re-deriver les causes. Les autres familles de retrait (EN COURS,
+    BLOQUE, DWELL) ne sont pas des livraisons et ne figurent pas ici.
+    """
+    for it, cause in withheld:
+        if not cause.startswith("LIVRAISON"):
+            continue
+        print(f"{indent}ECARTE (delivered-resolved): #{it['number']} -- "
+              f"{_delivered_resolved_short_cause(cause)}")
+
+
 def print_delivered_signal_report(
     withheld: list,
     state: dict,
@@ -2083,6 +2134,33 @@ def print_claim_unread_report(unread, lane: str | None = None) -> None:
     print("   pas libre : verifier avant d'editer")
     hint = ("--lane " + lane if lane else "--lane <machine:workspace>")
     print(f"   (`python scripts/check_lane_claim.py <N> {hint}`).")
+
+
+def print_belt_budget_report(budget_hit: bool) -> None:
+    """Rend compte de l'epuisement du budget de sondes de livraison (#19969).
+
+    Le fail-OPEN du budget est assume : au-dela du plafond, la sonde de
+    livraison rend UNPROBED et le candidat est servi sans avoir ete verifie.
+    Ce qui n'est PAS assume, c'est le **silence** : une mesure qui echoue
+    doit se dire, sinon la lane lit un « pas de signal » la ou la sonde n'a
+    simplement pas eu lieu. L'issue #19969 demande explicitement que la
+    banniere reste imprimee quand le budget tombe -- « la mesure ne doit
+    pas devenir silencieuse en se repariant ».
+
+    La banniere est un helper (comme `print_claim_unread_report`) pour que
+    ce contrat soit **verifiable sans reseau** : un test appelle la fonction
+    avec True et False, et le texte rendu est compare. Un test qui
+    appellerait `main()` de bout en bout payerait une minute de reseau
+    pour verifier trois lignes de `print`.
+
+    Texte inchange depuis l'origine du contrat (#19969) : le comparatif de
+    chaine est un test de non-regression sur la banniere elle-meme.
+    """
+    if not budget_hit:
+        return
+    print("   Plafond de sondes de livraison atteint : les candidats")
+    print("   au-dela ne sont pas sondes (fail-OPEN) -- la verification")
+    print("   de livraison leur revient, cf check_unaddressed_nits.")
 
 
 def draw_verdict(pool_error: str | None) -> str:
@@ -8166,6 +8244,9 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"   BLOQUE par une autre lane (skip + replacement) : {held}")
             # Volet livraison (#19390) : ligne propre, distincte du BLOQUE --
             # le motif n'est pas une collision mais un travail deja rendu.
+            # #19907 acceptance 2 : une ligne par candidat ecarte pour
+            # livraison, avant les agregats -- chaque ecart se lit seul.
+            print_delivered_resolved_lines(belt_withheld, indent="   ")
             # #19768 : le filtre recent a sa ligne a lui, HORS budget -- ne
             # pas le fondre dans « Signal de livraison », la distinction est
             # la mesure (un candidat ecarte hors budget n'a pas consomme de
@@ -8200,10 +8281,7 @@ def main(argv: list[str] | None = None) -> int:
             # ci-dessus -- les deux lectures ratees se lisent ensemble.
             print_claim_unread_report(belt_pick_state.get("claim_unread"),
                                       args.lane)
-            if belt_probe_budget_hit[0]:
-                print("   Plafond de sondes de livraison atteint : les candidats")
-                print("   au-dela ne sont pas sondes (fail-OPEN) -- la verification")
-                print("   de livraison leur revient, cf check_unaddressed_nits.")
+            print_belt_budget_report(belt_probe_budget_hit[0])
             # #18832 spec : la fenetre collision entre tirage et pose du
             # [CLAIMED] reste ouverte tant que la lane n'a pas poste le
             # claim. On rappelle ici que la lane doit poser le claim
@@ -8723,6 +8801,10 @@ def main(argv: list[str] | None = None) -> int:
           + (f" | reroll {args.reroll}" if args.reroll else "")
           + (f" | genres de session penalises : {penalized}" if penalized else ""))
     print()
+    # #19907 acceptance 2 : une ligne par candidat ecarte pour livraison,
+    # AVANT les picks servis -- le tableau ci-dessous reste la vue de
+    # tirage, les lignes ECARTE sont la vue d'exclusion.
+    print_delivered_resolved_lines(withheld)
     header = (f"{'urne':<10} {'issue':<8} {'age':>5} {'inact':>6} {'vus':>4}  "
               f"{'genre':<16} {'p':>5}  titre")
     print(header)
