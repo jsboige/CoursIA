@@ -386,16 +386,32 @@ a {
 /*                                                                     */
 /* `dense-list`, `xl-dense` et `img-fit` sont nommees dans le markdown  */
 /* de QUATRE decks (mesure 2026-10-24 : 02 = 9, 06 = 37, S3 = 2,        */
-/* S8 = 9 usages). Deux d'entre eux (02, 06) portaient une definition    */
-/* locale dans leur `style.css`, les deux autres aucune : selon le deck, */
-/* la classe compressait la liste ou ne faisait rien. Un troisieme jeu  */
-/* existait dans `06-apprentissage/styles/index.css` (0.86em), domine   */
-/* par celui du `style.css` du meme deck — jamais effectif, supprime.   */
+/* S8 = 9 usages). Les QUATRE portaient une definition locale de        */
+/* `dense-list`, et 02 et 06 seulement ont ete dedupliques ici. S3 et    */
+/* S8 gardent la leur, a specificite egale (0,2,1) :                     */
+/*   - S3 `style.css` l.57 : `.dense-list ul` 0.86em / 1.35, valeurs     */
+/*     justifiees sur place pour une diapo a 17 puces ;                  */
+/*   - S8 `style.css` l.54-87 : `ul`/`ol` 0.82em / 1.22, `li`,          */
+/*     `h2` 0.15em (ce bloc-ci dit 0.3em), `p`, `pre`, `blockquote`,     */
+/*     `table` — plus de proprietes que ce bloc n'en porte.              */
+/*                                                                       */
+/* Le bloc ci-dessous n'est donc PAS canonique pour S3 et S8 en l'etat : */
+/* mesure au DOM (`document.styleSheets`, `slidev dev`, 2026-10-24), la  */
+/* feuille du deck est chargee APRES celle du theme (rang 18 contre 17)  */
+/* et, a specificite egale, c'est elle qui gagne — `ul` de S3 rend       */
+/* 12,04 px (= 14 x 0.86) et `h2` de S8 3,24 px (= 0.15 x 21,6), pas les */
+/* valeurs d'ici. Les regles de ce bloc restent actives la ou le deck    */
+/* ne declare rien (le `li` de S3 prend bien le 0.02em d'ici).            */
+/* Dedupliquer S3 et S8 demande donc d'arbitrer leurs valeurs — ce       */
+/* n'est pas un retrait mecanique comme pour 02 et 06.                   */
+/*                                                                       */
+/* Un troisieme jeu existait dans `06-apprentissage/styles/index.css`    */
+/* (0.86em), domine par celui du `style.css` du meme deck — jamais       */
+/* effectif, supprime.                                                   */
 /*                                                                       */
 /* Les valeurs ci-dessous sont celles que 02 et 06 rendaient deja,       */
 /* relevees au DOM (`getComputedStyle`, 2026-10-24) et non choisies :    */
 /* deplacer la definition vers le theme ne doit rien changer pour eux.   */
-/* S3 et S8 recoivent donc la meme regle, qu'ils n'avaient pas.          */
 /*                                                                       */
 /* Les `style.css` de deck sont bien charges par Slidev (convention de   */
 /* projet) : ce n'est pas une raison de les garder, c'est une raison de  */
