@@ -801,6 +801,50 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
     return {"labels": labels}
 
 
+# Scope-routed runs-on (#22076, extending the #15202 routing to the PR leg).
+# Second audited dynamic form, OPPOSITE polarity to the #13363 hybrid: a
+# lightweight classifier job (`quarto-scope`) computes the render scope, and
+# the heavy job routes to a GitHub-hosted label when the scope is `full`
+# (a full render does not fit the pool: OOM at 1145/1276), to the audited
+# Linux pool labels otherwise. The self-hosted leg stays reachable from the
+# expression, so this is NOT a hybrid leg: the job-level same-repo guard in
+# `if:` remains REQUIRED (forks never start the job).
+SCOPE_ROUTED_NEEDS = "needs.quarto-scope.outputs.mode == 'full'"
+SCOPE_ROUTED_LABELS = LINUX_RUNNER_LABELS
+_SCOPE_ROUTED_PATTERN = re.compile(
+    r"^\s*"
+    r"(?P<needs>needs\.[A-Za-z0-9_-]+\.outputs\.[A-Za-z0-9_-]+\s*==\s*'full')"
+    r"\s*&&\s*(?P<q1>['\"])(?P<hosted>.*?)(?P=q1)\s*"
+    r"\|\|\s*fromJSON\(\s*(?P<q2>['\"])(?P<labels>.*?)(?P=q2)\s*\)"
+    r"\s*$"
+)
+
+
+def _scope_routed_runs_on(runs_on: Any) -> dict[str, Any] | None:
+    """Return the audited scope-routed legs for ``runs_on``, or None if it is
+    not the exact #22076 form. Every other expression keeps the
+    DYNAMIC_RUNS_ON rejection."""
+    if not isinstance(runs_on, str):
+        return None
+    text = runs_on.strip()
+    if not (text.startswith("${{") and text.endswith("}}")):
+        return None
+    match = _SCOPE_ROUTED_PATTERN.match(text[3:-2].strip())
+    if match is None:
+        return None
+    if " ".join(match.group("needs").split()) != SCOPE_ROUTED_NEEDS:
+        return None
+    if not _is_github_hosted_label(match.group("hosted")):
+        return None
+    try:
+        labels = {str(item) for item in json.loads(match.group("labels"))}
+    except json.JSONDecodeError:
+        return None
+    if labels != SCOPE_ROUTED_LABELS:
+        return None
+    return {"labels": labels, "hosted": match.group("hosted")}
+
+
 def _normalise_condition(value: Any) -> str:
     if not isinstance(value, str):
         return ""
@@ -966,15 +1010,18 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                 continue
 
             hybrid = _hybrid_runs_on(runs_on)
-            if _contains_expression(runs_on) and hybrid is None:
+            scope_routed = _scope_routed_runs_on(runs_on)
+            if _contains_expression(runs_on) and hybrid is None \
+                    and scope_routed is None:
                 violations.append(Violation(
                     path.name,
                     str(job_name),
                     "DYNAMIC_RUNS_ON",
-                    "runs-on contains an expression other than the single audited "
-                    "hybrid form (same-repo guard -> self-hosted coursia-waiter, "
-                    "else ubuntu-latest; see #13363) and cannot be audited "
-                    "statically",
+                    "runs-on contains an expression other than the audited "
+                    "dynamic forms (the #13363 hybrid: same-repo guard -> "
+                    "self-hosted, else ubuntu-latest; the #22076 scope-routed "
+                    "form: scope 'full' -> hosted, else the audited pool) and "
+                    "cannot be audited statically",
                 ))
                 continue
 
@@ -990,6 +1037,18 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                 labels = hybrid["labels"]
                 selection_error = None
                 hybrid_leg = True
+            elif scope_routed is not None:
+                # Audited scope-routed leg (#22076): the self-hosted pool leg
+                # is reachable from the expression itself, so the job is
+                # self-hosted by construction. UNLIKE the #13363 hybrid the
+                # same-repo guard is NOT carried in the expression -- it stays
+                # a required job-level `if:` (hybrid_leg stays False, so the
+                # SAME_REPO_GUARD check below applies).
+                is_self_hosted = True
+                group = None
+                labels = scope_routed["labels"]
+                selection_error = None
+                hybrid_leg = False
             else:
                 is_self_hosted, group, labels, selection_error = _runner_selection(runs_on)
                 hybrid_leg = False

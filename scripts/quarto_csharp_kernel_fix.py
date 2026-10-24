@@ -34,6 +34,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -81,11 +82,48 @@ def patched_spans(data: bytes, token_re):
             yield ks.start() + m.start(2), ks.start() + m.end(2)
 
 
-def cmd_apply(root: Path, manifest_path: Path, single_path: Path | None = None) -> int:
+def git_modified_files(root: Path) -> set[str]:
+    """Root-relative paths of the files git reports as modified in the work tree.
+
+    Used by the forced restore (--force): the drift to clean is exactly the set
+    of files the work tree carries away from HEAD. A tracked notebook that
+    legitimately carries ``"language": "csharp"`` and is NOT modified is never
+    touched, so the forced restore cannot invent dirt on a clean tree.
+    Returns an empty set when git is unavailable or root is not a work tree --
+    the caller then falls back to the manifest only.
+    """
+    try:
+        out = subprocess.run(
+            ["git", "-C", str(root), "diff", "--name-only", "--relative", "--diff-filter=MRT"],
+            check=False, capture_output=True, text=True, encoding="utf-8", errors="replace",
+            timeout=120,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    if out.returncode != 0:
+        return set()
+    return {p.strip().replace("\\", "/") for p in out.stdout.splitlines() if p.strip()}
+
+
+def cmd_apply(root: Path, manifest_path: Path, single_path: Path | None = None,
+              self_heal: bool = True) -> int:
     if manifest_path.exists():
-        print(f"[apply] manifest {manifest_path} already exists — restore first "
-              f"(refusing to overwrite offsets of an in-flight patch)")
-        return 1
+        if not self_heal:
+            print(f"[apply] manifest {manifest_path} already exists — restore first "
+                  f"(refusing to overwrite offsets of an in-flight patch)")
+            return 1
+        # Issue #20174 : sur un slot PERSISTANT, le work dir survit au job. Un
+        # job mort entre l'apply et le restore (timeout du render, annulation)
+        # laisse le manifeste -- et le `apply` suivant REFUSE alors (exit 1),
+        # empoisonnant le slot : le prochain job Quarto meurt sur cette etape.
+        # Le manifeste d'un job mort est un etat REPARABLE (offsets connus,
+        # restauration byte-clean) : on le restaure avant de re-patcher.
+        print(f"[apply] manifest {manifest_path} present (job precedent interrompu ?) "
+              f"-- restauration byte-clean avant re-patch")
+        rc = cmd_restore(manifest_path, root, single_path)
+        if rc != 0:
+            print(f"[apply] auto-restore incomplet (rc={rc}) -- le patch repart "
+                  f"malgre la drift residuelle")
     manifest = {}
     patched = 0
     for path in iter_targets(root, single_path):
@@ -107,10 +145,20 @@ def cmd_apply(root: Path, manifest_path: Path, single_path: Path | None = None) 
     return 0
 
 
-def cmd_restore(manifest_path: Path, root: Path, single_path: Path | None = None) -> int:
+def cmd_restore(manifest_path: Path, root: Path, single_path: Path | None = None,
+                force: bool = False) -> int:
     if not manifest_path.exists():
-        print(f"[restore] no manifest at {manifest_path} — nothing to restore")
-        return 0
+        if not force:
+            print(f"[restore] no manifest at {manifest_path} — nothing to restore")
+            return 0
+        # Issue #20174 : manifeste absent (job mort AVANT l'ecriture du
+        # manifeste, work dir recree) alors que les notebooks sont encore
+        # patches. Le mode force revert le jeton niveau octet, mais UNIQUEMENT
+        # sur les fichiers que git declare modifies -- un carnet suivi qui
+        # porte legitimement "csharp" et qui n'est pas modifie n'est jamais
+        # touche : la restauration forcée n'invente pas de salete.
+        return _force_restore(root, single_path)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     failures = 0
     for rel, offsets in manifest.items():
@@ -146,6 +194,44 @@ def cmd_restore(manifest_path: Path, root: Path, single_path: Path | None = None
         return 1
     manifest_path.unlink()
     print("[restore] all files reverted byte-clean, manifest removed")
+    if force:
+        # Le manifeste a couvert les fichiers qu'il listait ; un fichier modifie
+        # et encore patche (absent du manifeste) reste a nettoyer.
+        rc = _force_restore(root, single_path)
+        if rc != 0:
+            return rc
+    return 0
+
+
+def _force_restore(root: Path, single_path: Path | None = None) -> int:
+    """Revert the C# -> csharp token in the files git reports as modified.
+
+    Byte-level, same shape as the manifest restore: only the
+    ``"language": "csharp"`` token inside a ``.net-csharp`` kernelspec is
+    rewritten to ``"C#"``. No JSON re-serialization (the byte-clean property
+    the suite of #11335 pins).
+    """
+    modified = git_modified_files(root)
+    if not modified:
+        print("[restore --force] git ne signale aucun fichier modifie "
+              "(arbre propre ou git indisponible) — rien a restaurer")
+        return 0
+    reverted = 0
+    for path in iter_targets(root, single_path):
+        rel = str(path.relative_to(root)).replace("\\", "/")
+        if rel not in modified:
+            continue
+        data = path.read_bytes()
+        spans = list(patched_spans(data, LANG_FIX_TOKEN_RE))
+        if not spans:
+            continue
+        out = bytearray(data)
+        for start, end in reversed(spans):
+            out[start:end] = b'"C#"'
+        path.write_bytes(bytes(out))
+        reverted += 1
+        print(f"[restore --force] {rel}: {len(spans)} token(s) reverted")
+    print(f"[restore --force] {reverted} fichier(s) reverts (modifies par git)")
     return 0
 
 
@@ -173,12 +259,18 @@ def main() -> int:
     ap_apply.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     ap_apply.add_argument("--path", type=Path, default=None,
                           help="single-file override (must be inside --root)")
+    ap_apply.add_argument("--no-self-heal", action="store_true",
+                          help="refuse to overwrite a manifest left by a previous "
+                               "apply instead of restoring it first (legacy behaviour)")
     ap_restore = sub.add_parser("restore", help="revert using the manifest")
     ap_restore.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     ap_restore.add_argument("--root", type=Path, default=DEFAULT_ROOT,
                             help="root the manifest paths are relative to")
     ap_restore.add_argument("--path", type=Path, default=None,
                             help="single-file override (only this entry of the manifest is restored)")
+    ap_restore.add_argument("--force", action="store_true",
+                            help="also revert the token in the files git reports as "
+                                 "modified (manifest absent or incomplete)")
     ap_check = sub.add_parser("check", help="report patched/unpatched state")
     ap_check.add_argument("--root", type=Path, default=DEFAULT_ROOT)
     ap_check.add_argument("--strict", action="store_true",
@@ -187,9 +279,11 @@ def main() -> int:
                           help="single-file override")
     args = ap.parse_args()
     if args.cmd == "apply":
-        return cmd_apply(args.root.resolve(), args.manifest, args.path)
+        return cmd_apply(args.root.resolve(), args.manifest, args.path,
+                         self_heal=not args.no_self_heal)
     if args.cmd == "restore":
-        return cmd_restore(args.manifest, args.root.resolve(), args.path)
+        return cmd_restore(args.manifest, args.root.resolve(), args.path,
+                           force=args.force)
     return cmd_check(args.root.resolve(), args.strict, args.path)
 
 

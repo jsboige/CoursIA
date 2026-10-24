@@ -105,15 +105,88 @@ def test_apply_single_file_roundtrip_byte_clean(tmp_path):
 
 
 def test_apply_refuses_double_apply_without_restore(tmp_path):
-    """If the manifest from a previous apply is still around, a new apply refuses."""
+    """Issue #20174 : un manifeste laisse par un job mort n'empoisonne plus le slot.
+
+    Historique : l'apply REFUSAIT (exit 1) si le manifeste existait deja. Sur
+    un slot PERSISTANT (le work dir survit au job), un job mort entre l'apply
+    et le restore laissait le manifeste -> le job Quarto SUIVANT echouait sur
+    cette etape. Le comportement retenu : auto-restore byte-clean du
+    manifeste stale, puis re-patch. Le mode refus reste disponible
+    (--no-self-heal) pour qui veut conserver l'ancien contrat.
+    """
     from quarto_csharp_kernel_fix import cmd_apply
 
     nb = _make_dotnet_notebook(tmp_path)
     manifest = tmp_path / "manifest.json"
     assert cmd_apply(tmp_path, manifest, nb) == 0
-    # second apply must refuse (exit 1) and not modify anything
+    # second apply: auto-restore du manifeste stale puis re-patch -> rc 0
     rc = cmd_apply(tmp_path, manifest, nb)
-    assert rc == 1
+    assert rc == 0, "le second apply doit auto-restaurer le manifeste stale"
+    # le carnet est patche UNE fois (pas de double patch -> pas de "csharpcsharp")
+    data = nb.read_bytes()
+    assert data.count(b'"csharp"') == 1
+    assert b'"C#"' not in data
+    # et le manifeste frais ne contient qu'une entree
+    m = json.loads(manifest.read_text(encoding="utf-8"))
+    assert len(m) == 1
+
+
+def test_apply_no_self_heal_keeps_legacy_refusal(tmp_path):
+    """Le refus historique reste atteignable (--no-self-heal)."""
+    from quarto_csharp_kernel_fix import cmd_apply
+
+    nb = _make_dotnet_notebook(tmp_path)
+    manifest = tmp_path / "manifest.json"
+    assert cmd_apply(tmp_path, manifest, nb, self_heal=False) == 0
+    assert cmd_apply(tmp_path, manifest, nb, self_heal=False) == 1
+
+
+def _git_init_repo(root: Path) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=root, check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.email", "t@example.invalid"], cwd=root,
+                   check=True, capture_output=True)
+    subprocess.run(["git", "config", "user.name", "test"], cwd=root,
+                   check=True, capture_output=True)
+    subprocess.run(["git", "add", "-A"], cwd=root, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=root,
+                   check=True, capture_output=True)
+
+
+def test_force_restore_reverts_modified_file_without_manifest(tmp_path):
+    """Issue #20174 : manifeste absent + carnet patche -> la restauration forcee nettoie.
+
+    Le revert est limite aux fichiers que git declare MODIFIES : un carnet
+    suivi qui porte legitimement "csharp" et qui n'est pas modifie n'est
+    jamais touche (la restauration forcee n'invente pas de salete).
+    """
+    from quarto_csharp_kernel_fix import cmd_restore
+
+    nb = _make_dotnet_notebook(tmp_path)
+    original = nb.read_bytes()
+    _git_init_repo(tmp_path)
+
+    # le carnet est patche hors manifeste (job mort avant l'ecriture du manifeste)
+    nb.write_bytes(original.replace(b'"language": "C#"', b'"language": "csharp"'))
+    manifest = tmp_path / "manifest.json"
+    assert not manifest.exists()
+
+    rc = cmd_restore(manifest, tmp_path, force=True)
+    assert rc == 0
+    assert nb.read_bytes() == original, "le revert force doit retablir les octets d'origine"
+
+
+def test_force_restore_leaves_unmodified_csharp_file_untouched(tmp_path):
+    """Un carnet suivi portant "csharp" et NON modifie reste intact."""
+    from quarto_csharp_kernel_fix import cmd_restore
+
+    nb = _make_dotnet_notebook(tmp_path, language="csharp")
+    before = nb.read_bytes()
+    _git_init_repo(tmp_path)
+
+    manifest = tmp_path / "manifest.json"
+    rc = cmd_restore(manifest, tmp_path, force=True)
+    assert rc == 0
+    assert nb.read_bytes() == before, "un fichier non modifie ne doit pas etre touche"
 
 
 def test_check_reports_unpatched_then_patched(tmp_path):
@@ -146,7 +219,7 @@ def test_cli_path_single_file_roundtrip(tmp_path):
          "--root", str(tmp_path),
          "--path", str(nb),
          "--manifest", str(manifest)],
-        check=False, capture_output=True, text=True,
+        check=False, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     assert rc.returncode == 0, rc.stderr
     patched = nb.read_bytes()
@@ -158,7 +231,7 @@ def test_cli_path_single_file_roundtrip(tmp_path):
          "--root", str(tmp_path),
          "--path", str(nb),
          "--manifest", str(manifest)],
-        check=False, capture_output=True, text=True,
+        check=False, capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
     assert rc.returncode == 0, rc.stderr
     final = nb.read_bytes()

@@ -230,14 +230,33 @@ jobs:
       - name: Restore kernel language (hygiene)
         # Le checkout CI est ephemere : le restore n'est pas indispensable, mais il
         # garde le worktree coherent si un step futur relit les notebooks sources.
-        run: python3 scripts/quarto_csharp_kernel_fix.py restore
+        # #20174 : sur un slot PERSISTANT le work dir SURVIT au job. Un job mort
+        # entre l'apply et ce restore (timeout du render, annulation) laissait 265
+        # notebooks modifies + le manifeste de l'apply -- et l'apply suivant
+        # REFUSAIT alors (manifeste deja present), empoisonnant le slot. D'ou :
+        # `if: always()` (le restore tourne meme sur job annule) + `--force`
+        # (revert du jeton sur les seuls fichiers que git declare modifies).
+        if: always()
+        run: python3 scripts/quarto_csharp_kernel_fix.py restore --force
 
       - name: Restore YAML-safe separators
         # Restore les `***` en `---` dans les notebooks sources pour ne pas laisser
         # le worktree dans un etat different de la branche. Le checkout CI est
         # ephemere (meme remarque que ci-dessus), mais le restore garde les
         # outputs `git diff` propres pour les etapes suivantes.
+        # #20174 : meme condition `always()` que le restore C# -- un job annule
+        # entre l'apply et ce restore laissait les separateurs patches.
+        if: always()
         run: python3 scripts/quarto_yaml_safe.py restore
+
+      - name: Restore tracked render list (_quarto.yml)
+        # #20174 : `regen_quarto_render.py` (et la jambe de scope PR) REECRITENT
+        # `_quarto.yml` -- le fichier SUIVI du depot perd sa liste de rendu
+        # (2392 lignes -> 9 sur le slot mesure). Aucun restore ne le ramenait :
+        # le work dir de tout slot persistant portait cette salete la. On rend
+        # la version SUIVIE (le rendu a deja eu lieu, le fichier n'est plus lu).
+        if: always()
+        run: git checkout -- _quarto.yml
 
       - name: Check output
         # Sécurité : vérifie que _site/ existe (sinon le deploy échouera avec une
@@ -274,6 +293,50 @@ jobs:
         # Pas de branche gh-pages : utilise l'environment GitHub Pages natif
         # via OIDC token (page-deploy doit être activé dans Settings → Pages).
 
+  quarto-scope:
+    # #20174 / #22076 (option 1, arbitrage ai-01 2026-10-24) : le calcul du
+    # scope de rendu sort de `validate-pr` dans ce job LEGER — checkout +
+    # classifieur, aucune écriture (pas de `--apply` : `validate-pr` relance
+    # le script avec `--apply` dans le worktree qui rend). Un job tue entre
+    # deux écritures n'existe plus : rien a restaurer, pas d'empoisonnement
+    # de slot #20174. `outputs.mode` pilote le routage de `validate-pr`.
+    name: Scope Quarto render (PR)
+    if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'pull_request'
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      mode: ${{ steps.scope.outputs.mode }}
+      count: ${{ steps.scope.outputs.count }}
+      total: ${{ steps.scope.outputs.total }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Regenerate render list
+        run: python scripts/regen_quarto_render.py
+
+      - name: Scope render list to this PR's changed documents
+        # Classifieur seul (SANS `--apply`) : aucun fichier n'est ecrit, donc
+        # un job annule ou tue ne laisse aucune salete sur le slot persistant.
+        # Le mode `full` (config/theme/scripts qui REECRIVENT les notebooks)
+        # est la classe exacte qui OOM le pool : c'est elle que le routage
+        # ci-dessous sort du parc.
+        id: scope
+        run: |
+          python scripts/quarto_render_scope.py \
+            --base "${{ github.event.pull_request.base.sha }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --github-output
+
   validate-pr:
     # PR-gate Quarto (issue #11611) : un build site sur PR qui touche la liste
     # de rendu. Bloque les PR qui etendent `_quarto.yml` / ajoutent un notebook /
@@ -281,12 +344,19 @@ jobs:
     # le push, mais sans deploy : juste le rendu + check output. Si le rendu
     # passe en PR, le push sur main passera aussi.
     name: Validate Quarto build (PR)
-    # Routage #14283 fin de chantier (feu vert ai-01 2026-09-02) : setup par
-    # tarball (voir le job `build`). Garde anti-fork au niveau job + runs-on
-    # STATIQUE — une expression leverait DYNAMIC_RUNS_ON dans
-    # check_self_hosted_runner_policy.py.
+    # #22076 (option 1, arbitrage ai-01 2026-10-24) : routage conditionnel
+    # porte par le job `quarto-scope`. `mode=full` (rendu COMPLET) va sur
+    # `ubuntu-latest` — le rendu complet ne tient pas sur le pool (OOM a
+    # 1145/1276, 53 min contre le plafond de 60, mesuré ci-dessus sur le job
+    # `build`) ; `mode=empty` garde son court-circuit ; `mode=scoped` reste
+    # sur le pool, borne par construction. Forme DYNAMIQUE auditee n°2 de
+    # check_self_hosted_runner_policy.py (#22076) : la jambe self-hosted
+    # restant atteignable, la garde same-repo reste OBLIGATOIRE au niveau
+    # job (`if:` ci-dessous) — a l'inverse de la forme hybride #13363 qui la
+    # porte dans l'expression.
+    needs: quarto-scope
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && github.event_name == 'pull_request'
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    runs-on: ${{ needs.quarto-scope.outputs.mode == 'full' && 'ubuntu-latest' || fromJSON('["self-hosted", "coursia-ephemeral", "coursia-linux"]') }}
     # 60 et non 30 depuis #14283 : le meme rendu prend 19-24 min sur
     # `ubuntu-latest` et 25-31 min sur le pool auto-heberge. Le plafond de 30
     # etait calibre sur la machine d'avant la bascule ; apres elle, il tombe
@@ -398,12 +468,23 @@ jobs:
         run: python scripts/quarto_render_timing.py render-timed.log --occupation occupation.json
 
       - name: Restore kernel language (hygiene)
-        if: steps.scope.outputs.mode != 'empty'
-        run: python scripts/quarto_csharp_kernel_fix.py restore
+        # #20174 : `always()` + `--force` -- un job annule (le rendu PR scope
+        # plafonne a 60 min) entre l'apply et ce restore laissait le work dir
+        # du slot PERSISTANT sale (265 notebooks + manifeste) et empoisonnait
+        # l'apply suivant, qui refusait de s'executer.
+        if: always()
+        run: python scripts/quarto_csharp_kernel_fix.py restore --force
 
       - name: Restore YAML-safe separators
-        if: steps.scope.outputs.mode != 'empty'
+        if: always()
         run: python scripts/quarto_yaml_safe.py restore
+
+      - name: Restore tracked render list (_quarto.yml)
+        # #20174 : la jambe de scope REECRIT `_quarto.yml` (liste de rendu
+        # complete -> liste scopee de la PR). Le rendu a deja eu lieu : on rend
+        # la version SUIVIE du depot, sinon le slot persistant garde la salete.
+        if: always()
+        run: git checkout -- _quarto.yml
 
       - name: Check output
         run: |
