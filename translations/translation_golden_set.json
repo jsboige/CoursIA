@@ -44,6 +44,13 @@
   },
   {
    "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/ApprovalPayment.lean",
+   "en": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/ApprovalPayment_en.lean",
+   "sha1_fr": "8d4a704c839a256723e195348837334c5191ea84",
+   "sha1_en": "6c01a71f2ab509f4f6d816c6708eb9fbd60b934a"
+  },
+  {
+   "kind": "lean",
    "fr": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/ApprovalQuota.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/ApprovalQuota_en.lean",
    "sha1_fr": "f67be08a5dc2a4b8d1d3000ee3ae07536f3e0b71",
@@ -62,6 +69,13 @@
    "en": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/README.en.md",
    "sha1_fr": "ac7992fff2bed1e766e8b931388abbbcdcfa92b3",
    "sha1_en": "fefd93374cbc7e707a8fd106ea9b6b1467057666"
+  },
+  {
+   "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/GameTheory/assignment_lean/Assignment/Counting.lean",
+   "en": "MyIA.AI.Notebooks/GameTheory/assignment_lean/Assignment/Counting_en.lean",
+   "sha1_fr": "7e0f7e9d6b3c0917d3f222ec556d053eced4b30a",
+   "sha1_en": "6e3600f37c1cd31db101299af533c76a2b2e0407"
   },
   {
    "kind": "lean",
@@ -95,8 +109,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/GameTheory/assignment_lean/Assignment.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/assignment_lean/Assignment_en.lean",
-   "sha1_fr": "c948dcae53e27b30608b75f2f685ea5ab5d771a4",
-   "sha1_en": "a78784e922b2645c59ec47d692442abad081f973"
+   "sha1_fr": "3d14c7b6aa900d8b55809ca7393d820977b966f2",
+   "sha1_en": "c0a0a88e822f8ee4b4b4525bdf8eecdcefbc8db7"
   },
   {
    "kind": "lean",
@@ -159,7 +173,7 @@
    "fr": "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/README.md",
    "en": "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/README.en.md",
    "sha1_fr": "977e48fd3a562639df2fdb5b806e7ce76c5524c2",
-   "sha1_en": "596ed2a7aee00de7e71feae28e4175d90b18431f"
+   "sha1_en": "a0ccdc50403da4b6f7f8c8946681418b070d8eed"
   },
   {
    "kind": "lean",
@@ -362,7 +376,7 @@
    "fr": "MyIA.AI.Notebooks/GameTheory/lean_game_defs/README.md",
    "en": "MyIA.AI.Notebooks/GameTheory/lean_game_defs/README.en.md",
    "sha1_fr": "c0a46242a41fcc37b546f1086a559e845bea86a3",
-   "sha1_en": "d9e4a5e2c6ba66b166621fa8fe960a32bb1e29fa"
+   "sha1_en": "0f301b8b150942ee95f76afff184263fa3ef61e3"
   },
   {
    "kind": "lean",
@@ -501,10 +515,10 @@
    "kind": "notebook",
    "fr": "MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb",
    "en": "MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python_en.ipynb",
-   "sha1_fr": "a944a0a2ce29db1aa5fcb4c256596af9094ca120",
-   "sha1_en": "caf4f33b74c3fc0dfd4e2b346b7c1da13ba2e2e0",
-   "sources_sha1_fr": "152599626977b32a4a42c34122c136f5df6935e0",
-   "sources_sha1_en": "2748cf02dc6949a8777e934967df1e839851e181"
+   "sha1_fr": "830c10e6648096c3fcb7ff179e75225c30c7c822",
+   "sha1_en": "023f7769191d4147f6ae6f8d873454e5f959a9eb",
+   "sources_sha1_fr": "d923296565806a5fc4ca3ffaf0c089451b38229a",
+   "sources_sha1_en": "6680a428a32a8920d7c387fec23d235e1719609a"
   },
   {
    "kind": "notebook",
@@ -541,6 +555,15 @@
    "sha1_en": "995778f7a992ff3ccc26b7b39110e06a17c87583",
    "sources_sha1_fr": "419e903c7ba025829ead714220091f31dde46975",
    "sources_sha1_en": "edf55212c4c44c26fcf1faea681df3fd80288993"
+  },
+  {
+   "kind": "notebook",
+   "fr": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python.ipynb",
+   "en": "MyIA.AI.Notebooks/GenAI/FineTuning/FT-04-RLHF-DPO-Python_en.ipynb",
+   "sha1_fr": "7ec8dc9156ea2d13643738f59d6fd72c520ce80c",
+   "sha1_en": "ef15e6314949f7ee30708b4f708b6da715d9f910",
+   "sources_sha1_fr": "db1cbdccd956dbfbffc7c58bb30656cb0320123d",
+   "sources_sha1_en": "f42f982c3743fd364f1f585c951e69fd9cd9c161"
   },
   {
    "kind": "notebook",
@@ -823,10 +846,17 @@
   },
   {
    "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/Percolation/Sharpness.lean",
+   "en": "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/Percolation/Sharpness_en.lean",
+   "sha1_fr": "d4332989d3ecf486272ed939dabb67846b55b056",
+   "sha1_en": "96f1b004f5f2f11e9e924430d888ee473a40b9f9"
+  },
+  {
+   "kind": "lean",
    "fr": "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/Percolation.lean",
    "en": "MyIA.AI.Notebooks/Probas/Applications/Percolation/percolation_lean/Percolation_en.lean",
-   "sha1_fr": "c6b2c167df201488aed4c6dc27777da1ed8b7656",
-   "sha1_en": "304731547fe7a81f560ef34e5333cd2d97f2b253"
+   "sha1_fr": "df93fbb84e49185d915e70b2c9db679b14c0371e",
+   "sha1_en": "3c1666f56ff1f7c86d5d2af34cb77ed1890a3d55"
   },
   {
    "kind": "lean",
@@ -937,8 +967,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/ML-Training-Pipeline/README.en.md",
-   "sha1_fr": "fac324ca062734b5048ce5bea21015032d21344f",
-   "sha1_en": "c4a28918629a306009f8dab6c0f1efade88b4aa8"
+   "sha1_fr": "1a00981e07fdc5ce6117f1f103700362485097dc",
+   "sha1_en": "efde53eadff92f703c755f107626657f3576383c"
   },
   {
    "kind": "readme",
@@ -1043,22 +1073,22 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/Adaptive-Conformal-Risk/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/Adaptive-Conformal-Risk/README.en.md",
-   "sha1_fr": "d968d6da411c9ece3e6071bcca1abeec21105c9d",
-   "sha1_en": "59f8a7629a2ddaf1d3613d0b04fa56a10ec67f87"
+   "sha1_fr": "624d5572aefc2001f942bf9e737ed8f396da9e11",
+   "sha1_en": "f3e12ee4e50264f0f6460f0596c025066f515278"
   },
   {
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/AdaptiveAssetAllocation/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/AdaptiveAssetAllocation/README.en.md",
-   "sha1_fr": "ce7ead4d5783b874b49789999dd4130efebb73f6",
+   "sha1_fr": "518a266ce2033046eaea30c3c2921ff41913b7f8",
    "sha1_en": "078a6305992ef7dc671c20175759a85db9c26237"
   },
   {
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/Alpha-Correlation-Analysis/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/Alpha-Correlation-Analysis/README.en.md",
-   "sha1_fr": "5c209dfd7f7be57fe44bcf015de63b28113b6cc4",
-   "sha1_en": "349f21b8f9b59ee19b16e81b255639febadddaa9"
+   "sha1_fr": "e17bf3081c6e8b41c2384ea4f4dacd1e7e539670",
+   "sha1_en": "8ac3d5e9b73670631b1709a1edb9bc343be50d0b"
   },
   {
    "kind": "readme",
@@ -1106,8 +1136,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/Cloud-VolTargeting/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/Cloud-VolTargeting/README.en.md",
-   "sha1_fr": "10f7b976aaf7db4b134eff91e2e8dcb105b14e8c",
-   "sha1_en": "55931421f88af66e2c02050d6a892ba4f243a2e8"
+   "sha1_fr": "41c497cc2ca7d4289e1969b1250e205d2dab61cc",
+   "sha1_en": "1df0deb14ec1e54b4b80f6fc2a5c6dc681c48573"
   },
   {
    "kind": "readme",
@@ -1204,8 +1234,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/Framework_Composite_MomentumRegime/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/Framework_Composite_MomentumRegime/README.en.md",
-   "sha1_fr": "9b6538047bb96bfbdf6d9996ae7ec51c5a168071",
-   "sha1_en": "83eb8a86153157f4f0dba454526e2f68e89cf145"
+   "sha1_fr": "e97efd6ab33dad12a9e265d7e7f397a324079385",
+   "sha1_en": "c6d21e74d28d06b45216c4d746a1d427704666bd"
   },
   {
    "kind": "readme",
@@ -1470,7 +1500,7 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/TradingCosts-Optimization/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/TradingCosts-Optimization/README.en.md",
-   "sha1_fr": "38917ed3608f856443472aa5eec0d5b07a2d42e9",
+   "sha1_fr": "81a8f93e472cf6e735d9e7159eab9d29809bd163",
    "sha1_en": "3567b05a33641d611ad8a1bf88672c60ba912608"
   },
   {
@@ -1498,7 +1528,7 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/QuantConnect/projects/Vol-GARCH-Target/README.md",
    "en": "MyIA.AI.Notebooks/QuantConnect/projects/Vol-GARCH-Target/README.en.md",
-   "sha1_fr": "ff5de8d59cd9b8774557e9d2ec0cafd118ef8bb3",
+   "sha1_fr": "bbb4106ec03c928dc26bd3b1e9c81fad3a53207f",
    "sha1_en": "ec8cb9505336157dab36b0f2e890091a1a117964"
   },
   {
@@ -1805,6 +1835,13 @@
   },
   {
    "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/BoundedEnumeration.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/BoundedEnumeration_en.lean",
+   "sha1_fr": "b7c37c6f5d0ba1c6faa447a114415354facaf6e3",
+   "sha1_en": "6614dd17bc034a8d9fd87da4fc9557805cc8ecd1"
+  },
+  {
+   "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/ConwayKTMutation.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/ConwayKTMutation_en.lean",
    "sha1_fr": "91804c19454c06fe1c9aa82cee5a8f4f5db4dfc1",
@@ -1877,8 +1914,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/ReidemeisterCombinatorial.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/ReidemeisterCombinatorial_en.lean",
-   "sha1_fr": "7f60810facc79f9e8595f268012b635801a77a28",
-   "sha1_en": "afe0bf106d28ff49cd9c0ddf34e51e64cc098e5e"
+   "sha1_fr": "f403f38124b37326772e012edb23ccb895b387a1",
+   "sha1_en": "88d8b248e975642c308756b32bf2cb2187e702ac"
   },
   {
    "kind": "lean",
@@ -2745,8 +2782,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementComplex.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/Grothendieck/GodementComplex_en.lean",
-   "sha1_fr": "521771c8f913f218410b3d9472cefb36a10f4538",
-   "sha1_en": "798b07f92c75a0bc0925ae9229029d742a228da6"
+   "sha1_fr": "9e91038a1963ebf6a31a3e1886d034d4ae29c1cc",
+   "sha1_en": "bbad89917c9c00aa239a1c4c0126bf4f29d5d6fd"
   },
   {
    "kind": "lean",
@@ -3102,8 +3139,8 @@
    "kind": "readme",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.md",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/grothendieck_lean/README.en.md",
-   "sha1_fr": "fe589963394536c0fa02f5014761bf1a449a3886",
-   "sha1_en": "43ff7c9f8b94d0fb48fac948bb8145f5b4c060d7"
+   "sha1_fr": "000da7c8f604ab1213c486a5141bcad29e75764d",
+   "sha1_en": "b4c74d4f206faa2f82fd88c4f64173a3a3e273c7"
   },
   {
    "kind": "lean",
@@ -3263,8 +3300,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/Sensitivity/Sens2026.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/sensitivity_lean/Sensitivity/Sens2026_en.lean",
-   "sha1_fr": "b7fcf45505dc88c76b9115af23cfc3841e3e5cc3",
-   "sha1_en": "224a624f50dff46ccbadcfa3780f1d69e05ea7b7"
+   "sha1_fr": "5287dc9aeb701e0097995b36a67ca9d403b538c7",
+   "sha1_en": "5812b25328d71b6b2240292dffa67deec5cd2a77"
   },
   {
    "kind": "lean",
@@ -3408,9 +3445,9 @@
   }
  ],
  "counts": {
-  "notebook": 16,
+  "notebook": 17,
   "readme": 92,
-  "lean": 374
+  "lean": 378
  },
  "orphans_en": [
   "MyIA.AI.Notebooks/GameTheory/minimax_lean/Minimax.en.md",
