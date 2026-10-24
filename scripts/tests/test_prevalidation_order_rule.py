@@ -172,8 +172,18 @@ def test_bullet_names_the_branch_freeze_as_the_condition():
 
 
 def test_bullet_cites_the_founding_measurement():
-    """Sans la mesure, la regle se relit comme une precaution theorique."""
-    assert "17 candidates sur 17" in _norm(_order_section())
+    """Sans la mesure, la regle se relit comme une precaution theorique.
+
+    #21808 a deporte le recit de la boucle vers DETAIL : la regle ne garde que
+    la forme operationnelle, et c'est le detail qui porte la mesure. Le test
+    garde donc deux temoins -- la mesure dans DETAIL, et le lien vers ce detail
+    dans la section, sans lequel la regle ne renvoie plus a sa preuve.
+    """
+    section = _norm(_order_section())
+    assert "prevalidation-dossier-order-detail.md" in section, (
+        "la section de la regle ne lie plus le detail qui porte la mesure")
+    assert "17 candidates sur 17" in _norm(DETAIL.read_text(encoding="utf-8")), (
+        "la mesure fondatrice n'est plus nulle part (ni regle, ni detail)")
 
 
 # ------------------------------------------------- 5. le detail porte les preuves
