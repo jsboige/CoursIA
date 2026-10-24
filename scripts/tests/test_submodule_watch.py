@@ -26,14 +26,31 @@ def _cp(stdout: str = "", rc: int = 0, stderr: str = "") -> subprocess.Completed
     return subprocess.CompletedProcess(args=[], returncode=rc, stdout=stdout, stderr=stderr)
 
 
+def _leg(name: str, verdict: str) -> dict:
+    """Une jambe ``CheckRun`` telle que l'API la rend, au verdict demande."""
+    if verdict == "FAILURE":
+        return {"__typename": "CheckRun", "name": name, "status": "COMPLETED", "conclusion": "FAILURE"}
+    if verdict == "PENDING":
+        return {"__typename": "CheckRun", "name": name, "status": "IN_PROGRESS", "conclusion": None}
+    return {"__typename": "CheckRun", "name": name, "status": "COMPLETED", "conclusion": "SUCCESS"}
+
+
 def _pr(number: int, created: str, *, bot: bool = False, draft: bool = False, comments: int = 0,
-        reviews: int = 0, rollup: str | None = "SUCCESS") -> dict:
+        reviews: int = 0, rollup: str | None = "SUCCESS", legs: dict | None = None) -> dict:
+    commit: dict = {}
+    if rollup is not None or legs is not None:
+        check: dict = {}
+        if rollup is not None:
+            check["state"] = rollup
+        if legs is not None:
+            check["contexts"] = {"nodes": [_leg(n, v) for n, v in legs.items()]}
+        commit["statusCheckRollup"] = check
     return {
         "number": number, "title": f"pr {number}", "isDraft": draft, "createdAt": created,
         "baseRefName": "main", "mergeable": "MERGEABLE",
         "author": {"__typename": "Bot" if bot else "User", "login": "dependabot" if bot else "jsboige"},
         "comments": {"totalCount": comments}, "reviews": {"totalCount": reviews},
-        "commits": {"nodes": [{"commit": {"statusCheckRollup": {"state": rollup} if rollup else None}}]},
+        "commits": {"nodes": [{"commit": commit}]},
     }
 
 
@@ -231,3 +248,94 @@ def test_compte_lu_different_du_total_rend_le_depot_illisible():
     report = sw.watch(24.0, "origin/main", NOW, run)
     assert all(r["prs"] is None for r in report["repos"])
     assert sw.exit_code(report) == 2
+
+
+# --- Lecture par jambe : un rouge d'infra n'est pas le rouge d'une PR -------------------
+
+def _mgs_report(prs: list) -> dict:
+    run = make_runner({"jsboige/MetaGeneticSharp": prs}, gitlinks=SAME, remotes=REMOTES_SAME)
+    return sw.watch(24.0, "origin/main", NOW, run)
+
+
+def test_jambe_rouge_sur_toutes_les_prs_est_infra():
+    # Cas fondateur Z3.Linq : « Automerge & Label » echoue sur toutes les PRs du depot
+    # faute de secrets d'application. L'agregat seul les classait toutes en FAILURE.
+    prs = [
+        _pr(41, "2026-10-18T12:00:00Z", rollup="FAILURE",
+            legs={"Automerge & Label": "FAILURE", "Test": "OK"}),
+        _pr(42, "2026-10-18T12:00:00Z", rollup="FAILURE",
+            legs={"Automerge & Label": "FAILURE", "Test": "OK"}),
+    ]
+    report = _mgs_report(prs)
+    mgs = next(r for r in report["repos"] if r["path"] == "A/MGS")
+    assert mgs["infra"] == {"Automerge & Label": [41, 42]}
+    assert [p["checks"] for p in mgs["prs"]] == ["INFRA", "INFRA"]
+    assert all(p["own_failing"] == [] for p in mgs["prs"])
+    assert "INFRA  jambe(s) rouge(s)" in sw.render(report)
+    assert "Automerge & Label (2 PRs)" in sw.render(report)
+
+
+def test_controle_positif_un_rouge_propre_n_est_jamais_masque():
+    # La meme jambe d'infra rougit les deux PRs, mais la seconde porte AUSSI un rouge
+    # a elle : le classement doit rendre FAILURE sur celle-la, jamais INFRA.
+    prs = [
+        _pr(41, "2026-10-18T12:00:00Z", rollup="FAILURE",
+            legs={"Automerge & Label": "FAILURE", "Test": "OK"}),
+        _pr(42, "2026-10-18T12:00:00Z", rollup="FAILURE",
+            legs={"Automerge & Label": "FAILURE", "Test": "FAILURE"}),
+    ]
+    report = _mgs_report(prs)
+    mgs = next(r for r in report["repos"] if r["path"] == "A/MGS")
+    rows = {p["number"]: p for p in mgs["prs"]}
+    assert rows[41]["checks"] == "INFRA" and rows[41]["own_failing"] == []
+    assert rows[42]["checks"] == "FAILURE" and rows[42]["own_failing"] == ["Test"]
+
+
+def test_jambe_rouge_sur_une_seule_pr_reste_failure():
+    # Fail-closed : une jambe portee par une seule PR ne peut pas etre declaree infra.
+    solo = _mgs_report([_pr(41, "2026-10-18T12:00:00Z", rollup="FAILURE",
+                           legs={"Automerge & Label": "FAILURE"})])
+    assert next(r for r in solo["repos"] if r["path"] == "A/MGS")["infra"] == {}
+    assert solo["repos"][0]["prs"][0]["checks"] == "FAILURE"
+    # Portee par deux PRs mais rouge sur une seule : pas infra non plus.
+    demi = _mgs_report([
+        _pr(41, "2026-10-18T12:00:00Z", rollup="FAILURE", legs={"Test": "FAILURE"}),
+        _pr(42, "2026-10-18T12:00:00Z", rollup="SUCCESS", legs={"Test": "OK"}),
+    ])
+    assert next(r for r in demi["repos"] if r["path"] == "A/MGS")["infra"] == {}
+
+
+def test_rollup_sans_jambes_retombe_sur_l_agregat_sans_rien_masquer():
+    # L'API peut rendre un rollup sans ``contexts`` : on ne devine pas, on garde l'agregat.
+    report = _mgs_report([_pr(41, "2026-10-18T12:00:00Z", rollup="FAILURE")])
+    mgs = next(r for r in report["repos"] if r["path"] == "A/MGS")
+    assert mgs["infra"] == {}
+    assert mgs["prs"][0]["checks"] == "FAILURE"
+
+
+def test_status_context_lu_comme_une_jambe():
+    node = _pr(41, "2026-10-18T12:00:00Z", rollup="FAILURE")
+    node["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"] = {"nodes": [
+        {"__typename": "StatusContext", "context": "ci/legacy", "state": "ERROR"},
+        {"__typename": "StatusContext", "context": "ci/pending", "state": "PENDING"},
+        {"__typename": "StatusContext", "context": "ci/ok", "state": "SUCCESS"},
+    ]}
+    assert sw.pr_legs(node) == {"ci/legacy": "FAILURE", "ci/pending": "PENDING", "ci/ok": "OK"}
+
+
+def test_checkrun_non_termine_est_pending_quoi_que_dise_sa_conclusion():
+    node = _pr(41, "2026-10-18T12:00:00Z", rollup="PENDING")
+    node["commits"]["nodes"][0]["commit"]["statusCheckRollup"]["contexts"] = {"nodes": [
+        {"__typename": "CheckRun", "name": "Test", "status": "IN_PROGRESS", "conclusion": "FAILURE"},
+    ]}
+    assert sw.pr_legs(node) == {"Test": "PENDING"}
+
+
+def test_un_rouge_d_infra_ne_change_pas_le_code_de_sortie():
+    # Les checks n'ont jamais fait rougir l'organe : un rouge d'infra ne doit pas
+    # introduire de rouge nouveau, ni en retirer un (UNSEEN reste rouge).
+    prs = [_pr(41, "2026-10-18T12:00:00Z", rollup="FAILURE",
+               legs={"Automerge & Label": "FAILURE"}, comments=1, reviews=1),
+           _pr(42, "2026-10-18T12:00:00Z", rollup="FAILURE",
+               legs={"Automerge & Label": "FAILURE"}, comments=1, reviews=1)]
+    assert sw.exit_code(_mgs_report(prs)) == 0
