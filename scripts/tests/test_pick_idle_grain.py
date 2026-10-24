@@ -4957,8 +4957,8 @@ def test_draw_unclaimed_filtre_recent_false_enchaine_sur_sonde_pleine(monkeypatc
 
 # --- Geste 4 #19907 : 3e surface de livraison (PR MERGEE <90j citant #N) -----
 #
-# Cas fondateur (2026-10-08, cycles c.1450..c.1453, Tell c.1392 picker-delivered
-# gap confirme 9x) : 24-28 cycles successifs sans grain actionnable. Le label
+# Cas fondateur (2026-10-08, cycles c.1450..c.1453, gap picker-delivered
+# confirme 9x) : 24-28 cycles successifs sans grain actionnable. Le label
 # `candidate-delivered` est retracte par le sweep post-merge au-dela de
 # l'activite recente (#15744), et le marqueur `[INFO] candidate-delivered`
 # n'est poste que par les lanes qui refutent. Restait la PR MERGEE comme
