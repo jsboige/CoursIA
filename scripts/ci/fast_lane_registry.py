@@ -2315,3 +2315,110 @@ TRANCHE26: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 27 -- absorption des advisories label-posers de la tranche 1 #22209
+# (volet 1a : les TROIS gardes dont la payload PR-time est un LABEL).
+#
+# Contexte : la file CI ne se vide plus (1 060 runs en file, 24 slots
+# ephemereraires occupes, mesure au dispatch du 2026-10-23). Chacun de ces
+# trois workflows paie un checkout `fetch-depth: 0` du depot (2,1 Go) pour
+# ~1 s de scan reel : 1 023 runs sur 24 h mesures au cablage
+# (consecutive-code-cells 339, mermaid-fill-color 384, markdown-table-guard
+# 300, dont la jambe nocturne SURVIT -- seul le trigger `pull_request` est
+# retire pour ce dernier).
+#
+# Précédent : TRANCHE6/TRANCHE7 (deaccent, repeated-prose) ont deja absorbe
+# des label-posers advisory -- la payload demenage du label vers le CORPS du
+# check-run (le JSON du detecteur), le workflow d'origine garde
+# `workflow_dispatch` pour la re-mesure manuelle, et son trigger
+# `pull_request` est retire. Le contrat d'identite
+# (`check_absorbed_check_run_identity.py`) exige que chaque `guard.name`
+# soit byte-identique au `job.name` du workflow source : les trois noms
+# ci-dessous sont copies tels quels.
+#
+# Les labels eux-memes disparaissent des PRs (comme pour deaccent) : aucun
+# consommateur aval ne les lit (verifie par grep au cablage -- uniquement
+# des docstrings et l'allowlist par NOM DE FICHIER de
+# check_self_hosted_runner_policy.py, qui reste valide car les fichiers
+# restent). La mesure non-mesuree (#8819) reste distinguee DANS le JSON
+# (champ unmeasured / error_count), la ou le workflow la distinguait par un
+# second label.
+#
+# Les TROIS autres workflows de la tranche 1 #22209 (markdown-claims-output,
+# organ-duplication, scan-md-hierarchy-drift) portent une payload
+# COMMENTAIRE sticky + artefact sans precedent d'absorption : leur sort
+# attend l'arbitrage A/B/C pose sur l'issue (c.6369056672) et ils ne sont
+# PAS touches ici.
+#
+# Forme : iter par fichier change (`--json {changed_paths}`), MEME INVOCATION
+# que le workflow d'origine (pas de --check/--fail-on-findings : le verdict
+# advisory demerne vert, la payload est le JSON). `warn_rc=(2,)` sur mermaid
+# et table : leurs detecteurs rendent rc=2 sur cible introuvable / rien a
+# scanner -- l'agreger en echec rendrait la lane plus stricte que ce
+# qu'elle absorbe (cf run_iter).
+# ---------------------------------------------------------------------------
+TRANCHE27: list[Guard] = [
+    Guard(
+        name="Consecutive code cells >= 2 advisory (label, non-blocking)",
+        source="consecutive-code-cells-advisory.yml",
+        paths=[
+            "**/*.ipynb",
+            ".github/workflows/consecutive-code-cells-advisory.yml",
+        ],
+        iterate_paths=["**/*.ipynb"],
+        argv=[
+            "python", "scripts/notebook_tools/detect_consecutive_code_cells.py",
+            "--json", "{changed_paths}",
+        ],
+        blocking=False,
+        iterates_paths=True,
+        absorbed=True,
+    ),
+    Guard(
+        name="Mermaid fill-without-color advisory (label, non-blocking)",
+        source="mermaid-fill-color-advisory.yml",
+        paths=[
+            "**/*.md",
+            "**/*.ipynb",
+            "scripts/notebook_tools/detect_mermaid_fill_without_color.py",
+            "scripts/notebook_tools/tests/test_detect_mermaid_fill_without_color.py",
+            "scripts/notebook_tools/tests/fixtures/mermaid_fill_no_color.md",
+            ".github/workflows/mermaid-fill-color-advisory.yml",
+        ],
+        iterate_paths=["**/*.md", "**/*.ipynb"],
+        pre_argv=[
+            "python", "scripts/notebook_tools/detect_mermaid_fill_without_color.py",
+            "--self-test",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/detect_mermaid_fill_without_color.py",
+            "--json", "--root", ".", "{changed_paths}",
+        ],
+        blocking=False,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+    Guard(
+        name="Markdown table syntax advisory (label, non-blocking)",
+        source="markdown-table-guard.yml",
+        paths=[
+            "**/*.ipynb",
+            "**/*.md",
+            "**/*README*",
+            ".github/workflows/markdown-table-guard.yml",
+            "scripts/notebook_tools/scan_md_table_syntax.py",
+            "scripts/notebook_tools/md_table_sweep_comment.py",
+        ],
+        iterate_paths=["**/*.ipynb", "**/*.md", "**/*README*"],
+        argv=[
+            "python", "scripts/notebook_tools/scan_md_table_syntax.py",
+            "--json", "{changed_paths}",
+        ],
+        blocking=False,
+        iterates_paths=True,
+        absorbed=True,
+        warn_rc=(2,),
+    ),
+]
