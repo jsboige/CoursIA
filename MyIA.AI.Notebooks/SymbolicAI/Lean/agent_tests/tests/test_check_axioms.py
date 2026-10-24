@@ -409,6 +409,82 @@ def test_forbidden_axiom_fails_both_paths():
     assert r_gate["forbidden"] == ["of_eq_true"]
 
 
+def test_normalize_axiom_name_strips_trailing_decoration():
+    """#21947: the comparable form of an anchor name.
+
+    Lean may append a diagnostic decoration (U+2020 dagger) to a declaration
+    name; the extractor already drops a trailing dot. Both belong to the
+    decoration, not to the anchor.
+    """
+    assert lean_server.normalize_axiom_name("Foo.ax_1_1✝") == "Foo.ax_1_1"
+    assert lean_server.normalize_axiom_name("Foo.ax_1_1.") == "Foo.ax_1_1"
+    assert lean_server.normalize_axiom_name("  Foo.ax_1_1  ") == "Foo.ax_1_1"
+    assert lean_server.normalize_axiom_name("Foo.ax_1_1") == "Foo.ax_1_1"
+
+
+def test_allow_listed_anchor_with_diagnostic_glyph_passes():
+    """#21947, CONTROLE POSITIF : l'ancre listee reste acceptee.
+
+    ``#print axioms`` reports some ``native_decide`` anchors with a trailing
+    U+2020 dagger (``...native_decide.ax_1_1✝``) while the allow-list spells
+    the anchor without it. The gate must compare the ANCHOR: before the fix
+    the exact comparison reported an already-recounted anchor as forbidden.
+    """
+    anchor = "Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1"
+    out = _axiom_line("Conway.Life.p4_base_exhaustive.t1", [f"{anchor}✝"])
+    r = _check_with_output(
+        ["Conway.Life.p4_base_exhaustive.t1"], out, fail_on_sorry=True,
+        whitelist=[anchor],
+    )
+    assert r["success"] is True
+    assert r["forbidden"] == []
+
+
+def test_unknown_anchor_with_diagnostic_glyph_stays_forbidden():
+    """#21947, CONTROLE NEGATIF : une ancre inconnue reste refusee.
+
+    La normalisation porte sur la COMPARAISON, pas sur la liste : un
+    ``native_decide`` qui n'est pas dans l'allow-list doit toujours faire
+    rougir le gate, glyphe ou pas.
+    """
+    anchor = "Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1"
+    out = _axiom_line("Conway.Life.p4_base_exhaustive.t1", [f"{anchor}✝"])
+    r = _check_with_output(
+        ["Conway.Life.p4_base_exhaustive.t1"], out, fail_on_sorry=True,
+        whitelist=["Conway.Life.p4_base_exhaustive._native.native_decide.ax_2_2"],
+    )
+    assert r["success"] is False
+    assert r["forbidden"] == [f"{anchor}✝"]
+
+
+def test_question_mark_is_part_of_the_name_not_a_decoration():
+    """#21955 (dossier adjoint) : ``?`` est un caractere legal d'identifiant
+    Lean (il vit dans ``_LEAN_ID``), pas une decoration.
+
+    Contre-exemple mesure sur Lean 4.35 : un axiome distinct dont le nom
+    finit par ``?``. Avec le jeu preserve ``[\\w.'!]`` la normalisation
+    stripped le ``?`` et fusionnait l'axiome avec un nom allow-liste
+    DIFFERENT -- un faux PASS. L'ancre dague reste depouillee (temoin du
+    dossier), l'ancre en ``?`` ne l'est plus.
+    """
+    assert lean_server.normalize_axiom_name("Foo.allowed?") == "Foo.allowed?"
+    assert lean_server.normalize_axiom_name("Foo.allowed!") == "Foo.allowed!"
+    # temoin dagger du dossier : toujours depouille
+    assert lean_server.normalize_axiom_name("Foo.ax_1_1✝") == "Foo.ax_1_1"
+
+
+def test_question_mark_axiom_does_not_fuse_with_a_different_allow_listed_name():
+    """#21955, CONTROLE NEGATIF : ``Foo.allowed?`` non liste doit rester
+    interdit meme si ``Foo.allowed`` (nom distinct) est allow-liste."""
+    out = _axiom_line("Mod.t1", ["Foo.allowed?"])
+    r = _check_with_output(
+        ["Mod.t1"], out, fail_on_sorry=True,
+        whitelist=["Foo.allowed"],
+    )
+    assert r["success"] is False
+    assert r["forbidden"] == ["Foo.allowed?"]
+
+
 def test_no_declarations_ci_gate_fails_loud(tmp_path):
     """CI gate: an empty enumeration the gate cannot explain still fails loud.
 

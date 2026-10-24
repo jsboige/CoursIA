@@ -2792,7 +2792,18 @@ def test_16005_narration_en_titre_ne_pose_pas():
 def test_16005_emissions_reelles_restent_detectees():
     """#16005 contre-épreuve : la fenêtre pré-marqueur ne neutralise que la
     narration liée au nom par une courte proposition — les émissions réelles
-    (verdict gras, injonction nue, tenue du blocage) restent BLOCK."""
+    (verdict gras, injonction nue, mention en capitales) restent BLOCK.
+
+    #22245 — la ligne « Le blocage tient jusqu'au sign-off user. » a quitté ce
+    lot. Elle est en casse de phrase, comme les deux diagnostics de lane que
+    l'organe a classés BLOCK à tort (#15846 « Chronologie du blocage »,
+    c.6365851694 sur #21252 « Cause du blocage identifiee ») : aucune garde de
+    tournure ne sépare « le blocage tient » de « le blocage vient du pool »,
+    et la liste des tournures françaises n'est pas close. Le discriminant
+    retenu est donc la CASSE DE LA SOURCE, déjà utilisée pour HOLD dans ce
+    module : une tenue de blocage s'écrit `**BLOCAGE …**`, `[BLOCAGE] lane …`
+    ou en capitales. Le cas négatif est épinglé juste en dessous.
+    """
     assert mod.classify(
         "myia-ai-01", "**BLOCAGE MERGE (ai-01)** — defaut de chemin."
     ) == "BLOCK"
@@ -2804,10 +2815,22 @@ def test_16005_emissions_reelles_restent_detectees():
         "myia-ai-01", "## BLOCAGE — attente arbitrage, ne pas merger."
     ) == "BLOCK"
     assert mod.classify(
-        "myia-ai-01", "Le blocage tient jusqu'au sign-off user."
-    ) == "BLOCK"
-    assert mod.classify(
         "myia-ai-01", "Suite : BLOCAGE — ne pas merger."
+    ) == "BLOCK"
+    # #22245 — cas fondateur, mot ordinaire en casse de phrase : n'émet pas.
+    assert mod.classify(
+        "myia-ai-01", "Le blocage vient du pool de runners, pas du diff."
+    ) is None
+    assert mod.classify(
+        "jsboige", "Cause du blocage identifiee — et ce n'est pas reparable "
+        "par un rejeu."
+    ) is None
+    # … et sa forme verdict, elle, émet toujours.
+    assert mod.classify(
+        "myia-ai-01", "**Le blocage vient du pool de runners** — pas du diff."
+    ) is None, "le gras ne promeut pas une phrase en casse de phrase"
+    assert mod.classify(
+        "myia-ai-01", "**BLOCAGE** — le pool de runners, pas le diff."
     ) == "BLOCK"
 
 
@@ -7311,3 +7334,44 @@ def test_19810_no_regression_on_existing_crlf_positive_verdict():
     court-circuite le CRLF proxy."""
     body = "**Verdict** : OK (post-rebase, 11/11 CI).\r\nDecision ai-01 REQUISE : merge."
     assert mod.classify("jsboige", body) is None
+
+
+# ---------------------------------------------------------------------------
+# #21882 (Option C) : budget de temps de passe nits
+# ---------------------------------------------------------------------------
+
+def test_21882_budget_arms_on_first_call():
+    """Premier appel : arme la deadline (now + budget), ne rend pas « exhauste ».
+    L'armement est idempotent (une deadline deja posee n'est pas sur-ecrite)."""
+    import time
+    mod._NITS_PASS_DEADLINE = None
+    try:
+        assert mod._nits_budget_exhausted() is False
+        assert mod._NITS_PASS_DEADLINE is not None
+        assert mod._NITS_PASS_DEADLINE >= time.monotonic()
+    finally:
+        mod._NITS_PASS_DEADLINE = None
+
+
+def test_21882_gh_json_raises_when_past_deadline(monkeypatch):
+    """Deadline forcee dans le passe : gh_json leve NitsBudgetExhausted AVANT
+    de lancer le sous-processus (aucun appel reseau)."""
+    import time
+    monkeypatch.setattr(mod, "_NITS_PASS_DEADLINE", time.monotonic() - 1.0)
+    with pytest.raises(mod.NitsBudgetExhausted):
+        mod.gh_json(["pr", "view", "1"])
+
+
+def test_21882_analyse_pr_rend_absent_quand_budget_depasse(monkeypatch):
+    """La PR non evaluee est rendue ABSENTE (non evaluee, #18829) : blocked faux,
+    aucun point. Le picker la lit comme absente (.get('blocking')/['blocked']).
+    Jamais un verdict « claire » fabrique a partir d'un budget depasse."""
+    import time
+    monkeypatch.setattr(mod, "_NITS_PASS_DEADLINE", time.monotonic() - 1.0)
+    res = mod.analyse_pr(4242)
+    assert res == {"pr": 4242, "blocked": False, "blocking": [],
+                   "unevaluated": [], "unevaluated_total": 0,
+                   "budget_exhausted": True}
+    # Contrat picker : absente, non bloquee.
+    assert (res.get("blocking") or []) == []
+    assert bool(res.get("blocked")) is False

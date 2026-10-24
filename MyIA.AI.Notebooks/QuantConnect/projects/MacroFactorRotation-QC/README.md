@@ -178,7 +178,34 @@ recompile dans un projet temoin (38062287), rend exactement les chiffres
 v3 (ASG `ab2fa09d16619cc96ab7f5b0187ab793`, baseline
 `8193647b349d5663d27a58a6acffa55d`) : les ajouts ne changent aucune
 decision, la derive vient des donnees ou du moteur QC entre le 2026-09-05
-et le 2026-10-18. Sa cause precise n'est pas identifiee.
+et le 2026-10-18.
+
+**Cause etablie par #21333 (journaux d'ordres + sonde 38066227).** Par bras :
+
+- **baseline : ajustement des prix.** Les 261 ordres tombent aux memes
+  minutes sur les memes symboles ; le rapport de prix v3/v2 est constant
+  par symbole (SPY 0.9975, BND 0.9965, BIL 0.9971, GLD et BTCUSD 1.0000) -
+  la signature du mode `Adjusted` apres de nouvelles distributions. Une
+  seule decision change sur 79 mois (novembre 2022), cause probable non
+  verifiee : une distribution ajoutee deplace une etiquette
+  `TOTAL_RETURN` de l'arbre.
+- **ASG : donnees fondamentales.** La decision change des le premier
+  echange (exposition 1.29 -> 1.02) et differe sur 76 mois sur 80. La
+  sonde isole un defaut de notre code - la capitalisation Morningstar est
+  vide avant mi-2009 (4.9 % de couverture en 2007), l'ASG 2007-2009 est
+  ponderee sur 94 a 178 titres - defaut corrige depuis par #21336 (section
+  v4), mais qui N'EST PAS la cause de la derive : le bras avec repli ne
+  ramene pas v2. Le champ fondamental exact qui a bouge entre septembre
+  et octobre (valeurs de `revenue_growth`, composition de l'univers,
+  capitalisations servies) n'est pas isole, et la serie v2 n'est pas
+  reconstructible : v2 n'avait trace ni l'ASG ni la couverture.
+
+**Regle de protocole qui en decoule : relancer le temoin avant de
+comparer deux mesures eloignees dans le temps.** Une mesure QC Cloud est
+un couple (code, donnees du jour) ; comparer un bras fraichement mesure a
+une reference mesuree des semaines plus tot compare aussi deux etats des
+donnees. Chaque campagne de mesure re-excute donc les quatre bras le meme
+jour, meme quand un seul a change.
 
 ## Verdict v3 : baseline NO BEATS, ASG INCONCLUSIVE
 
@@ -201,6 +228,61 @@ remplace par celui-ci. Il decrivait les deux bras comme statistiquement
 indiscernables sans l'avoir teste, et un drawdown ASG de 47.8 % que la
 mesure actuelle ne reproduit pas.
 
+## Metriques v4 : capitalisation reconstruite (QC Cloud, 2026-10-19, #21336)
+
+Correctif #21336 : repli de capitalisation `price * split_factor *
+shares_outstanding` quand `market_cap` n'est pas strictement positive
+(`asg_helpers.effective_market_cap`, branche dans `_select_assets` sans
+parametre), et garde de couverture `Cap coverage (min)` (statistique
+d'execution, statuee dans `on_end_of_algorithm`). Les quatre bras sont
+relances le meme jour (regle de protocole ci-dessus). Projet de mesure
+38062065, compilation
+`923704de16caf422f17c52c2d52a10a2-1158cb83922599abf473ad0182149513`.
+
+| Metrique (QC, fenetre 2007-2025, prefixe plat compris) | baseline | ASG | SPY detenu | 60/40 detenu |
+|----------|----------|-----|------------|--------------|
+| Backtest | `72a73b70ef0b3d3c61ec9abd36344865` | `f6212f7d87d80231609be63b7f43169c` | `d593f2c46532b7070dbbed342e703985` | `95d9a8ae84a573b6a527dbfd5f0d68be` |
+| Sharpe Ratio | 0.228 | 0.288 | 0.210 | 0.092 |
+| CAGR | 5.734 % | 5.406 % | 5.092 % | 3.320 % |
+| Max Drawdown | 41.900 % | 18.200 % | 33.600 % | 21.900 % |
+| Profit net total | 173.075 % | 158.182 % | 144.643 % | 80.082 % |
+| Ordres | 261 | 120 | 1 | 142 |
+
+Les trois bras non concernes par le correctif (baseline, SPY detenu,
+60/40) rendent exactement les chiffres v3 : le correctif ne touche que
+la coupe fondamentale du bras ASG. Le bras ASG rend exactement la
+contre-epreuve `cap_fallback=1` de #21333 (120 ordres, 158.182 %,
+drawdown 18.2 %) : le repli inconditionnel reproduit la sonde
+parametree. Garde de couverture : `Cap coverage (min)` = **94.4 %** sur
+la fenetre - le minimum tombe en 2007, ou certains titres n'ont ni
+capitalisation directe ni facteurs de repli exploitables - contre
+4.9 % de couverture sans correctif (sonde #21333).
+
+Significativite : `Paradox46Benchmarks/significance.py` sur la trace
+`shadow` (1761 seances, du 2018-01-02 au 2024-12-31), taux sans risque
+nul, correction de Holm sur les six p-valeurs de chaque bras.
+
+| Comparaison | Sharpe du bras | Sharpe de la reference | Ecart | p Ledoit-Wolf | p bootstrap (unilaterale) | p de Holm (Ledoit-Wolf) |
+|-------------|------|------|------|------|------|------|
+| baseline vs SPY detenu | 0.734 | 0.761 | -0.026 | 0.906 | 0.557 | 1.000 |
+| baseline vs 60/40 | 0.734 | 0.758 | -0.024 | 0.914 | 0.548 | 1.000 |
+| ASG vs SPY detenu | 1.053 | 0.761 | +0.293 | 0.408 | 0.183 | 1.000 |
+| ASG vs 60/40 | 1.053 | 0.758 | +0.295 | 0.440 | 0.197 | 1.000 |
+
+Les intervalles de confiance a 95 % du bootstrap contiennent zero dans
+les quatre cas (ASG contre SPY : -0.33 a +0.93).
+
+## Verdict v4 : baseline NO BEATS, ASG INCONCLUSIVE
+
+Meme regle que v3 (#21329). Le verdict ne change pas de camp ; l'estime
+ponctuelle du bras ASG se renforce : Sharpe ombre 1.015 -> 1.053, ecart
+a SPY detenu +0.254 -> +0.293, toujours loin de toute significativite
+(p de Holm 1.000). Le bras rend en moyenne autant que SPY detenu (ecart
+de moyennes journalieres -0.6 bp, p 0.977) avec moins de volatilite.
+
+Le verdict v3 reste l'histoire de la mesure du 2026-10-18 (capitalisation
+non reconstruite) ; le verdict courant est celui-ci.
+
 ## How to Run
 
 **Lean CLI :** `lean backtest "MyIA.AI.Notebooks/QuantConnect/projects/MacroFactorRotation-QC"`
@@ -216,9 +298,9 @@ dossier du projet.
 
 ## Files
 
-- `main.py` - strategie deux bras (baseline preservee + variante ASG), deux references detenues (SPY, 60/40), trace `shadow` et sonde FRED
-- `asg_helpers.py` - fonctions pures ASG (winsorisation, agregation, OLS, variance, bornes)
-- `tests/test_asg_helpers.py` - tests pytest locaux (9 tests)
+- `main.py` - strategie deux bras (baseline preservee + variante ASG), deux references detenues (SPY, 60/40), trace `shadow`, sonde FRED et garde de couverture de capitalisation (#21336)
+- `asg_helpers.py` - fonctions pures ASG (winsorisation, agregation, capitalisation effective avec repli, OLS, variance, bornes)
+- `tests/test_asg_helpers.py` - tests pytest locaux (13 tests)
 
 ## References
 

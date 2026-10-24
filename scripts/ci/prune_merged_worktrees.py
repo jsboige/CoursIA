@@ -71,11 +71,18 @@ Critères de retrait (cf issue #14195 acceptance) :
    classification/execution. Les fichiers SOURCE untracked non toleres
    et les tracked modifies refusent en amont
    (`reason=uncommitted_source_changes`).
-6. **Worktree avec submodules initialisés** : REFUSE
+6. **Worktree que git refusera à cause des sous-modules** : REFUSE
    (`reason=contains_submodules`). `git worktree remove` refuse
    structurellement ces worktrees ("working trees containing submodules
    cannot be moved or removed") : le prononcer REFUSE evite un FAILED a
-   chaque passe --apply. Les gitignorés **non-cache** (`.env` laissé, ...)
+   chaque passe --apply. Deux états comptent, et le second est invisible
+   dans `git submodule status` : le sous-module **initialisé** (peuplé, ou
+   `git submodule status` le montre sans préfixe '-') et le sous-module
+   **enregistré mais désinitialisé** (son gitdir reste dans
+   `<gitdir-du-worktree>/modules/` après un `git submodule deinit --all`).
+   Mesuré sur #21710 : le second état manquait au prédicat, et 18
+   worktrees étaient annoncés REMOVE au dry-run puis refusés à l'apply.
+   Les gitignorés **non-cache** (`.env` laissé, ...)
    sont signalés (`ignored=...`) sans bloquer le retrait.
 7. **Fenetre « agent vivant » sur content_on_main (#18494)** : le retrait
    par contenu deja integre (`HEAD` ancetre de `origin/main`, predicat 5
@@ -465,16 +472,76 @@ def _repo_root_for_worktree(wt_path: str) -> str:
     return current_repo_root()
 
 
+GH_TIMEOUT_SECONDS = 30
+
+
 def run_gh(*args: str, check: bool = True) -> subprocess.CompletedProcess:
-    """Lance une commande gh avec capture stricte. cwd = CWD courant."""
-    return subprocess.run(
-        ["gh", *args],
-        capture_output=True,
-        text=True,
-        check=check,
-        encoding="utf-8",
-        errors="replace",
-    )
+    """Lance une commande gh avec capture stricte. cwd = CWD courant.
+
+    #21753 : borne a GH_TIMEOUT_SECONDS. Un gh muet (quota epuise au point
+    de ne plus repondre, reseau mort, binaires bloques) devenait une passe
+    interminable et silencieuse -- mesure 21/10 : `--apply` pendu ~2 h, 0
+    octet de sortie. Un timeout devient un echec DETECTE (rc=124, stderr
+    explicite), jamais une attente infinie : l'appelant tranche.
+    """
+    try:
+        return subprocess.run(
+            ["gh", *args],
+            capture_output=True,
+            text=True,
+            check=check,
+            encoding="utf-8",
+            errors="replace",
+            timeout=GH_TIMEOUT_SECONDS,
+        )
+    except subprocess.TimeoutExpired:
+        # CompletedProcess manuel : on ne veut PAS lever (check n'a plus de
+        # sens sur un timeout), on veut un echec nomme que les appelants
+        # check=False traduisent deja en degradation / RuntimeError.
+        return subprocess.CompletedProcess(
+            args=list(args),
+            returncode=124,
+            stdout="",
+            stderr=(
+                f"gh timeout after {GH_TIMEOUT_SECONDS}s: gh "
+                + " ".join(str(a) for a in args)
+            ),
+        )
+
+
+def probe_gh_availability() -> Optional[str]:
+    """Sonde d'identite gh locale (#21753). Rend None si gh est pret.
+
+    `gh auth token` est purement local (lecture de hosts.yml) : pas de
+    reseau, pas de quota, ~50 ms. Rend une RAISON lisible sinon. Le stdout
+    de la sonde est un JETON : il est jete sans jamais etre affiche ni
+    logge -- le detail ne vient que du stderr (derniere ligne, 120 chars).
+    """
+    try:
+        proc = subprocess.run(
+            ["gh", "auth", "token"],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=GH_TIMEOUT_SECONDS,
+        )
+    except FileNotFoundError:
+        return "gh introuvable sur ce siege"
+    except subprocess.TimeoutExpired:
+        return f"gh auth token muet apres {GH_TIMEOUT_SECONDS}s"
+    except OSError as e:
+        return f"gh auth token injoignable ({e.__class__.__name__})"
+    if proc.returncode != 0:
+        stderr_lines = (proc.stderr or "").strip().splitlines()
+        detail = (
+            stderr_lines[-1][:120] if stderr_lines
+            else f"rc={proc.returncode}"
+        )
+        return f"gh auth token rc={proc.returncode} ({detail})"
+    if not (proc.stdout or "").strip():
+        return "gh auth token vide (aucun jeton actif)"
+    return None
 
 
 def is_untracked_artifact(path: str) -> bool:
@@ -552,12 +619,15 @@ def parse_porcelain(stdout: str) -> dict:
 def worktree_has_initialized_submodules(wt_path: str) -> bool:
     """True si le worktree contient un submodule initialise (#14509).
 
-    `git worktree remove` refuse structurellement les worktrees a
-    submodules initialises ("working trees containing submodules cannot be
-    moved or removed"). Detecte via `git submodule status` : une entree
-    non vide qui ne commence pas par '-' denote un submodule dont le .git
-    embarque existe (initialise, eventuellement a un sha different de
-    l'index, marque '+').
+    Detecte via `git submodule status` : une entree non vide qui ne commence
+    pas par '-' denote un submodule dont le .git embarque existe (initialise,
+    eventuellement a un sha different de l'index, marque '+').
+
+    Predicat INCOMPLET pour la question "git retirera-t-il ce worktree ?" :
+    un sous-module peut etre ENREGISTRE dans le worktree tout en etant
+    affiche '-' par `git submodule status` (voir
+    `worktree_has_registered_submodules`). L'union des deux etats est
+    `worktree_blocks_removal_for_submodules`.
     """
     proc = run_git(wt_path, "submodule", "status", check=False)
     if proc.returncode != 0:
@@ -565,10 +635,347 @@ def worktree_has_initialized_submodules(wt_path: str) -> bool:
         # ne REFUSE pas sur un etat qu'on ne peut pas lire ; le pire cas
         # est un FAILED git, etat d'avant-fix non regresse.
         return False
-    return any(
-        line.strip() and not line.startswith("-")
-        for line in proc.stdout.splitlines()
+    return has_initialized_submodule(proc.stdout)
+
+
+def worktree_has_registered_submodules(wt_path: str) -> bool:
+    """True si des sous-modules sont ENREGISTRES dans ce worktree (#21710).
+
+    `git worktree remove` refuse un worktree des que son repertoire admin
+    porte un `modules/` : le gitdir du sous-module enregistre dans CE
+    worktree. L'etat PERSISTE apres un `git submodule deinit --all` -- le
+    deinit vide la copie de travail et desenregistre le sous-module, mais
+    laisse le gitdir enregistre -- et il ne se voit PAS dans
+    `git submodule status`, qui signale alors le sous-module par une ligne
+    prefixee par '-' ("non initialise").
+
+    C'est l'etat que le seul predicat `git submodule status` manquait, et
+    l'origine mesuree de la divergence dry-run/apply de #21710 : 18
+    worktrees annonces REMOVE au dry-run, refuses a l'apply par
+    "fatal: working trees containing submodules cannot be moved or removed".
+
+    Protocole de mesure (git 2.50.1, etats controles sur un depot jetable,
+    sous-module local ; chaque etat = un worktree distinct) :
+
+    | etat du worktree                            | `git worktree remove` |
+    |---------------------------------------------|-----------------------|
+    | `modules/` absent (jamais initialise)       | accepte               |
+    | `modules/` present                          | refuse                |
+    | apres `deinit --all` (`status` = '-')        | refuse                |
+    | apres `git rm --cached <gitlink>`            | refuse                |
+    | apres deplacement de `modules/`              | accepte               |
+
+    Le discriminant est le repertoire `modules/` du worktree -- ni l'index
+    (le gitlink retire ne change rien) ni le statut affiche.
+    """
+    proc = run_git(wt_path, "rev-parse", "--absolute-git-dir", check=False)
+    if proc.returncode != 0:
+        # Worktree illisible : pas de preuve, on ne REFUSE pas sur un etat
+        # qu'on ne peut pas lire.
+        return False
+    git_dir = proc.stdout.strip()
+    if not git_dir:
+        return False
+    return (Path(git_dir) / "modules").is_dir()
+
+
+def worktree_blocks_removal_for_submodules(wt_path: str) -> bool:
+    """True si `git worktree remove` REFUSERA ce worktree (sous-modules).
+
+    Union des deux etats que git refuse, que `git submodule status` ne
+    confond pas :
+
+    - sous-module initialise (popule) : `git submodule status` le montre
+      sans prefixe '-' ;
+    - sous-module ENREGISTRE mais deinitialise : `git submodule status` le
+      montre avec un prefixe '-', mais le gitdir reste enregistre dans le
+      repertoire admin du worktree -- et git refuse quand meme le retrait.
+
+    Le predicat doit couvrir les DEUX : annoncer REMOVE ce que git refuse
+    produit un FAILED a chaque passe --apply et un rapport qui ment sur ce
+    qui a quitte le disque (#14619 point 4, #21710).
+    """
+    return (worktree_has_initialized_submodules(wt_path)
+            or worktree_has_registered_submodules(wt_path))
+
+
+# ----------------------------------------------------------------------------
+# Decontamination par quarantaine (#21743)
+# ----------------------------------------------------------------------------
+# `git worktree remove` refuse structurellement un worktree dont le gitdir
+# porte `modules/` (le gitdir du sous-module enregistre DANS ce worktree).
+# La voie simple -- `git worktree remove --force` -- est interdite par
+# #14619 point 4 : le gitdir d'un sous-module de worktree lie n'a pas
+# `objects/info/alternates`, donc supprimer l'admin dir detruit des objets
+# git uniques.
+#
+# La voie decontamination : DEPLACER `<gitdir-du-worktree>/modules/` vers un
+# repertoire de quarantaine (deplacement, pas suppression). Le garde de git
+# est leve, et les objets sont preserves a l'emplacement de quarantaine.
+#
+# Quatre conditions (issues #21743) :
+#   1. PREUVE de preservation : apres le deplacement, les objets du
+#      sous-module sont encore lisibles. La mesure de depart est « pas
+#      d'objects/info/alternates » : la quarantaine est VERIFIEE, pas
+#      supposee suffisante.
+#   2. PERIMETRE : uniquement sur un worktree classe REMOVE (PR MERGED ou
+#      CLOSED), jamais sur un worktree vivant.
+#   3. EMPLACEMENT : hors du depot et hors du worktree retire.
+#   4. OPT-IN : un drapeau dedie -- jamais un effet de bord du `--apply`.
+
+#: Marqueur ecrit dans la racine de quarantaine : une purge refuse une
+#: racine qui ne le porte pas (une racine pas a nous n'est pas a purger).
+QUARANTINE_MARKER = ".prune-quarantine"
+
+
+def default_quarantine_root() -> Path:
+    """Racine de quarantaine par defaut : hors du depot, hors du worktree.
+
+    `%LOCALAPPDATA%/CoursIA/prune_quarantine` -- le meme emplacement que le
+    journal de `merge_ready` et la tache de purge des worktrees, donc hors
+    des arbres de travail (les worktrees vivent dans `D:/`).
+    """
+    base = os.environ.get("LOCALAPPDATA")
+    if base:
+        return Path(base) / "CoursIA" / "prune_quarantine"
+    return Path.home() / ".local" / "share" / "CoursIA" / "prune_quarantine"
+
+
+def worktree_gitdir(wt_path: str) -> Optional[Path]:
+    """Le gitdir administratif d'un worktree, ou None s'il est illisible."""
+    proc = run_git(wt_path, "rev-parse", "--absolute-git-dir", check=False)
+    if proc.returncode != 0:
+        return None
+    out = proc.stdout.strip()
+    return Path(out) if out else None
+
+
+def quarantine_root_refusal(root: Path, repo_root: Optional[str],
+                            wt_path: Optional[str] = None) -> Optional[str]:
+    """Motif de refus de la racine de quarantaine, ou None si elle convient.
+
+    Fail-closed : une racine qui vit DANS le depot hebergeur ou DANS le
+    worktree retire rangerait les modules dans un arbre qu'on supprime --
+    la decontamination perdrait les objets qu'elle pretend preserver.
+    """
+    try:
+        resolved = root.resolve()
+    except OSError as exc:
+        return f"quarantine-root-unreadable:{exc}"
+    for label, other in (("repo", repo_root), ("worktree", wt_path)):
+        if not other:
+            continue
+        try:
+            other_resolved = Path(other).resolve()
+        except OSError:
+            continue
+        if resolved == other_resolved or other_resolved in resolved.parents:
+            return f"quarantine-root-inside-{label}"
+    return None
+
+
+def _submodule_gitdirs(modules_dir: Path) -> list[Path]:
+    """Les gitdirs de sous-modules contenus dans `modules/`."""
+    if not modules_dir.is_dir():
+        return []
+    return sorted(p for p in modules_dir.iterdir() if p.is_dir())
+
+
+def _gitdir_is_readable(gitdir: Path) -> tuple[bool, str]:
+    """Le depot de/gitdir est-il lisible, et porte-t-il des objets ?
+
+    `count-objects -v` ouvre le magasin d'objets : c'est la lecture la plus
+    directe de « les objets sont encore lisibles ». Un magasin vide (0
+    objet) n'est pas une preservation : la deplacement aurait vide la
+    copie, c'est exactement ce qu'on cherche a empecher.
+    """
+    if not (gitdir / "objects").is_dir():
+        return False, "objects-absent"
+    # Un gitdir qui EMPRUNTE ses objets (alternates) ne survit pas a un
+    # deplacement : sa chaine de resolution pointe ailleurs. On refuse.
+    if (gitdir / "objects" / "info" / "alternates").exists():
+        return False, "objects-alternates"
+    proc = subprocess.run(
+        ["git", "--git-dir", str(gitdir), "count-objects", "-v"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
     )
+    if proc.returncode != 0:
+        return False, f"count-objects-rc{proc.returncode}"
+    in_pack = 0
+    loose = 0
+    for line in proc.stdout.splitlines():
+        if line.startswith("in-pack:"):
+            in_pack = int(line.split(":", 1)[1].strip() or 0)
+        elif line.startswith("count:"):
+            loose = int(line.split(":", 1)[1].strip() or 0)
+    if in_pack + loose == 0:
+        return False, "objects-empty"
+    return True, ""
+
+
+def _restore_modules_from_quarantine(
+    dest_root: Path,
+    modules_dir: Path,
+) -> tuple[bool, str]:
+    """Remet le `modules/` deplace a sa place, apres un refus post-deplacement.
+
+    Un refus qui laisse le `modules/` en quarantaine casse la chaine de
+    surete : une passe suivante, meme SANS le drapeau, ne verrait plus le
+    garde `contains_submodules` (le gitdir n'a plus de `modules/`),
+    retirerait le worktree -- et `--purge-quarantine` detruirait alors les
+    seuls objets restants. Le refus doit rendre le depot dans l'etat ou
+    la passe l'a trouve. Retourne (ok, message).
+    """
+    dest_modules = dest_root / "modules"
+    if not dest_modules.is_dir():
+        return False, "restore-source-absent"
+    if modules_dir.exists():
+        return False, "restore-target-exists"
+    try:
+        shutil.move(str(dest_modules), str(modules_dir))
+    except (OSError, shutil.Error) as exc:
+        return False, f"restore-move-failed:{exc}"
+    # Deplacement inverse VERIFIE : le repertoire est de retour et rien ne
+    # reste cote quarantaine.
+    if not modules_dir.is_dir() or dest_modules.exists():
+        return False, "restore-unverified"
+    try:
+        dest_root.rmdir()
+    except OSError:
+        pass  # la racine porte le marqueur ; le reste eventuel se purge par la voie nommee
+    return True, ""
+
+
+def quarantine_worktree_modules(
+    wt_path: str,
+    quarantine_root: Path,
+    dest_name: str,
+    repo_root: Optional[str] = None,
+) -> tuple[bool, str, Optional[dict]]:
+    """Deplace `<gitdir-du-worktree>/modules/` vers la quarantaine.
+
+    Retourne (ok, message, infos). Les infos portent le chemin de
+    quarantaine et la preuve de preservation par sous-module. En cas
+    d'echec, AUCUN retrait ne doit suivre : l'appelant traite l'echec
+    comme un refus de retrait. Un echec POST-deplacement (modules vide,
+    preuve non tenue) RESTAURE le modules/ au worktree -- un refus laisse
+    le depot dans l'etat ou la passe l'a trouve ; seul un echec de cette
+    restauration (`quarantine-restore-failed`, etat incoherent) est une
+    panne pour l'appelant.
+    """
+    gitdir = worktree_gitdir(wt_path)
+    if gitdir is None:
+        return False, "gitdir-unreadable", None
+    modules_dir = gitdir / "modules"
+    if not modules_dir.is_dir():
+        # Rien a decontaminer : le worktree n'a pas de sous-module
+        # enregistre. Rien de deplace.
+        return True, "", {"quarantine": None, "modules": [], "preserved": True}
+
+    refusal = quarantine_root_refusal(quarantine_root, repo_root, wt_path)
+    if refusal is not None:
+        return False, refusal, None
+
+    dest_root = quarantine_root / dest_name
+    try:
+        quarantine_root.mkdir(parents=True, exist_ok=True)
+        marker = quarantine_root / QUARANTINE_MARKER
+        if not marker.exists():
+            marker.write_text(
+                "racine de quarantaine du pruneur de worktrees\n",
+                encoding="utf-8",
+            )
+        if dest_root.exists():
+            return False, "quarantine-destination-exists", None
+        dest_root.mkdir(parents=True)
+    except OSError as exc:
+        return False, f"quarantine-create-failed:{exc}", None
+
+    # Deplacement (pas de copie, pas de suppression) : c'est ce qui leve le
+    # garde de git ET preserve les objets.
+    dest_modules = dest_root / "modules"
+    try:
+        shutil.move(str(modules_dir), str(dest_modules))
+    except (OSError, shutil.Error) as exc:
+        # Un deplacement echoue peut laisser une copie partielle en
+        # quarantaine : si le modules/ source n'est plus la, on rend ce qui
+        # a bouge avant de refuser.
+        if dest_modules.is_dir() and not modules_dir.exists():
+            restored, r_why = _restore_modules_from_quarantine(
+                dest_root, modules_dir)
+            if not restored:
+                return False, f"quarantine-restore-failed:{r_why}", None
+        return False, f"quarantine-move-failed:{exc}", None
+
+    # Preuve de preservation, sous-module par sous-module.
+    moved = _submodule_gitdirs(dest_modules)
+    if not moved:
+        # Le modules/ etait vide : rien a preserver, on le signale plutot
+        # que de pretendre avoir preserve des objets. Le deplacement est
+        # ANNULE : un refus laisse le depot dans l'etat ou la passe l'a trouve.
+        restored, r_why = _restore_modules_from_quarantine(
+            dest_root, modules_dir)
+        if not restored:
+            return False, f"quarantine-restore-failed:{r_why}", None
+        return False, "quarantine-empty-modules", {
+            "quarantine": None, "modules": [], "preserved": False,
+            "restored": True,
+        }
+    proofs: list[dict] = []
+    for sub in moved:
+        ok, why = _gitdir_is_readable(sub)
+        proofs.append({"gitdir": str(sub), "readable": ok, "reason": why})
+        if not ok:
+            # Preuve non tenue : le retrait n'aura pas lieu ET le modules/
+            # retourne au worktree (sinon une passe ulterieure sans le
+            # drapeau retirerait le worktree puis la purge perdrait les objets).
+            restored, r_why = _restore_modules_from_quarantine(
+                dest_root, modules_dir)
+            if not restored:
+                return False, f"quarantine-restore-failed:{r_why}", None
+            return False, f"quarantine-unreadable:{why}", {
+                "quarantine": None,
+                "modules": proofs,
+                "preserved": False,
+                "restored": True,
+            }
+    return True, "", {
+        "quarantine": str(dest_root),
+        "modules": proofs,
+        "preserved": True,
+    }
+
+
+def purge_quarantine(root: Path) -> tuple[bool, str, Optional[dict]]:
+    """Purge explicite de la quarantaine (voie nommee, issue #21743).
+
+    Fail-closed : une racine qui ne porte pas le marqueur n'est pas purgee
+    -- on ne supprime jamais un repertoire qu'on n'a pas cree.
+    """
+    if not root.exists():
+        return True, "", {"root": str(root), "removed": [], "bytes": 0}
+    if not (root / QUARANTINE_MARKER).exists():
+        return False, f"quarantine-root-not-ours:{root}", None
+    removed: list[str] = []
+    total = 0
+    try:
+        for child in sorted(root.iterdir()):
+            if child.name == QUARANTINE_MARKER:
+                continue
+            size = sum(
+                f.stat().st_size for f in child.rglob("*") if f.is_file()
+            )
+            total += size
+            removed.append(str(child))
+            if child.is_dir():
+                shutil.rmtree(child)
+            else:
+                child.unlink()
+    except OSError as exc:
+        return False, f"quarantine-purge-failed:{exc}", {
+            "root": str(root), "removed": removed, "bytes": total,
+        }
+    return True, "", {"root": str(root), "removed": removed, "bytes": total}
 
 
 def is_source_dirty(path: str) -> bool:
@@ -948,10 +1355,13 @@ def get_worktree_info(wt_path: str, current_path: str) -> dict:
     # Sous-modules : `git worktree remove` les refuse categoriquement
     # ("working trees containing submodules cannot be moved or removed"),
     # meme avec --force sur certains etats. #14619 : l'organe ne doit pas
-    # annoncer REMOVE ce que git interdit par construction. Seuls les
-    # sous-modules INITIALISÉS comptent (cf has_initialized_submodule).
-    subm_proc = run_git(wt_path, "submodule", "status", check=False)
-    has_submodules = has_initialized_submodule(subm_proc.stdout)
+    # annoncer REMOVE ce que git interdit par construction. Le predicat
+    # couvre les DEUX etats que git refuse : le sous-module initialise
+    # (popule) ET le sous-module ENREGISTRE mais deinitialise -- ce dernier
+    # etant invisible dans `git submodule status` (ligne prefixee par '-'),
+    # et a l'origine de la divergence dry-run/apply mesuree sur #21710
+    # (18 worktrees annonces REMOVE, refuses a l'apply).
+    has_submodules = worktree_blocks_removal_for_submodules(wt_path)
 
     # Enregistrement mort (#14195) : le checkout a disparu du disque alors
     # que `.git/worktrees/<nom>` subsiste. Cas mesure le 2026-09-05 : 26
@@ -1035,6 +1445,10 @@ class PrResolution:
         self._entries: dict = {}
         self._cache_dirty = False
         self._index: Optional[dict] = None
+        # #21753 : pose par main() quand la sonde d'identite gh echoue.
+        # Non-None => mode degrade : le cache disque (git-independant)
+        # repond encore, tout etage gh est saute.
+        self.unavailable_reason: Optional[str] = None
         self.stats = {
             "cache_hits": 0,
             "listing_calls": 0,
@@ -1142,6 +1556,11 @@ class PrResolution:
         if cached is not None:
             self.stats["cache_hits"] += 1
             return cached
+        if self.unavailable_reason is not None:
+            # #21753 mode degrade : aucun etage gh n'est tente. Le cache
+            # disque reste lu (il ne depend pas de gh), le reste rend
+            # None -- le fail-CLOSED downstream produit no_gh_unverifiable.
+            return None
         index = self._build_index()
         if branch in index:
             row = index[branch]
@@ -1484,7 +1903,9 @@ def lookup_pr_for_detached_head(wt_path: str) -> Optional[dict]:
 
 def diagnose_worktree(wt_path: str, current_path: str,
                       head_sha: Optional[str] = None,
-                      activity_window_h: float = 6.0) -> WorktreeStatus:
+                      activity_window_h: float = 6.0,
+                      gh_unavailable_reason: Optional[str] = None,
+                      quarantine_submodules: bool = False) -> WorktreeStatus:
     """Diagnostic complet d'un worktree.
 
     `head_sha` (fourni par `list_worktrees`, porcelain) sert uniquement a
@@ -1493,6 +1914,19 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
     `activity_window_h` : fenetre de la garde « agent vivant » (#18494),
     appliquee au retrait par contenu deja integre (predicat content_on_main).
+
+    `quarantine_submodules` (#21743) : opt-in. En mode quarantaine, le
+    refus `contains_submodules` n'est pas prononce -- le worktree peut etre
+    decontamine a l'apply (le `modules/` de son gitdir est deplace en
+    quarantaine, ce qui leve le garde de git sans `--force` et sans perte
+    d'objets). Le defaut (False) garde le comportement mesure.
+
+    `gh_unavailable_reason` (#21753) : raison de degradation posee par
+    main() quand la sonde d'identite gh echoue. Non-None => aucun appel gh
+    n'est tente depuis ce diagnostic : la resolution PR rend None (le
+    singleton court-circuite aussi), les predicats git-only (ascendance,
+    patch-id) decident seuls, et le refus conservateur terminal se nomme
+    `no_gh_unverifiable` -- jamais confondu avec « pas de PR ».
     """
     info = get_worktree_info(wt_path, current_path)
 
@@ -1541,9 +1975,18 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
     # Sous-modules : git interdit le retrait par construction -> REFUSE sans
     # meme annoncer REMOVE (#14619 point 4).
-    if info.get("has_submodules"):
+    #
+    # #21743 : en mode QUARANTAINE (opt-in, `--quarantine-submodules`), ce
+    # refus n'est pas prononce : le worktree peut etre decontamine (le
+    # `modules/` de son gitdir est deplace en quarantaine, ce qui leve le
+    # garde de git SANS `--force` et SANS perte d'objets). Les autres
+    # predicats continuent de decider : seuls les worktrees MERGED/CLOSED
+    # qui passent tous les autres gardes finiront RETIRES, apres
+    # decontamination.
+    if info.get("has_submodules") and not quarantine_submodules:
         return WorktreeStatus(
             path=wt_path,
+            has_submodules=True,
             branch=info["branch"],
             is_current=False,
             pr_state=None,
@@ -1663,17 +2106,21 @@ def diagnose_worktree(wt_path: str, current_path: str,
         )
 
     # Resolution PR
+    # #21753 : en mode degrade, aucune recherche n'est tentée -- le
+    # singleton court-circuite aussi (main() lui a pose la raison), ce
+    # garde evite l'appel depuis tout diagnose direct.
     pr = None
     if info["branch"]:
-        pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
-        if pr is None:
-            # #17771 predicat 1 : la branche locale porte un nom different
-            # de la tete de PR. On resout la PR par la branche distante qui
-            # porte exactement HEAD (upstream explicite, puis tip exact
-            # origin/*). Pas de PR de ce cote non plus -> on continue.
-            remote_head = remote_head_for_head(wt_path, info["branch"], head_sha)
-            if remote_head:
-                pr = lookup_pr_for_branch(remote_head, head_sha=head_sha)
+        if gh_unavailable_reason is None:
+            pr = lookup_pr_for_branch(info["branch"], head_sha=head_sha)
+            if pr is None:
+                # #17771 predicat 1 : la branche locale porte un nom different
+                # de la tete de PR. On resout la PR par la branche distante qui
+                # porte exactement HEAD (upstream explicite, puis tip exact
+                # origin/*). Pas de PR de ce cote non plus -> on continue.
+                remote_head = remote_head_for_head(wt_path, info["branch"], head_sha)
+                if remote_head:
+                    pr = lookup_pr_for_branch(remote_head, head_sha=head_sha)
     elif detached_head_is_on_main(wt_path):
         # Extraction de main (demeure d'organe, lecture de review) : aucune
         # PR ne la porte, le critere « PR MERGED » ne s'y applique pas.
@@ -1695,7 +2142,13 @@ def diagnose_worktree(wt_path: str, current_path: str,
             lane_owner=info.get("lane_owner"),
         )
     else:
-        pr = lookup_pr_for_detached_head(wt_path)
+        # #21753 : en mode degrade, la resolution par sujet de HEAD est
+        # gh par construction (voie 1 = pr view, voie 2 = pr list) -- on
+        # ne la tente meme pas.
+        if gh_unavailable_reason is None:
+            pr = lookup_pr_for_detached_head(wt_path)
+        else:
+            pr = None
 
     pr_state = pr.get("state") if pr else None
     pr_number = pr.get("number") if pr else None
@@ -1880,6 +2333,13 @@ def diagnose_worktree(wt_path: str, current_path: str,
 
     # Pas de PR trouvee : HEAD detaché sans correspondance, ou branche
     # non pushée qu'on ne peut pas relier. REFUSE conservatrice.
+    # #21753 : en mode degrade, ce refus ne dit pas « pas de PR » (non
+    # mesure) mais « non verifiable faute de gh » -- la classe
+    # no_gh_unverifiable est aggree comme les autres au breakdown.
+    if gh_unavailable_reason is not None:
+        final_reason = "no_gh_unverifiable"
+    else:
+        final_reason = "no_pr_match" if info["branch"] else "detached_no_match"
     return WorktreeStatus(
         path=wt_path,
         branch=info["branch"],
@@ -1891,7 +2351,7 @@ def diagnose_worktree(wt_path: str, current_path: str,
         has_source_dirty=info["has_source_dirty"],
         untracked_paths=info["untracked"],
         decision="REFUSE",
-        refusal_reason="no_pr_match" if info["branch"] else "detached_no_match",
+        refusal_reason=final_reason,
         has_submodules=info["has_submodules"],
         blocking_untracked=info.get("blocking_untracked", []),
         ignored_extra=info.get("ignored_extra", []),
@@ -2064,6 +2524,7 @@ def render_text(
     statuses: list[WorktreeStatus],
     dry_run: bool,
     apply_results: Optional[list[dict]] = None,
+    gh_unavailable_reason: Optional[str] = None,
 ) -> str:
     """Rendu texte canonique (lisible humain) (#14476).
 
@@ -2073,6 +2534,10 @@ def render_text(
     Si `git worktree remove` a echoue (worktree sale par exemple), on
     imprime `FAILED` avec le stderr -- c'est lisible, factuel, et JAMAIS
     mensonger sur ce qui a effectivement quitte le disque.
+
+    `gh_unavailable_reason` (#21753) : quand la sonde d'identite gh a
+    echoue, la premiere ligne est une banniere explicite -- une passe
+    degradee ne doit JAMAIS se lire comme un constat de PRs ouvertes.
     """
     # Indexation par path pour une reconciliation O(1)
     applied_by_path = {}
@@ -2081,6 +2546,16 @@ def render_text(
             applied_by_path[r["path"]] = r
 
     lines: list[str] = []
+    if gh_unavailable_reason is not None:
+        degraded_n = sum(
+            1 for s in statuses
+            if s.refusal_reason == "no_gh_unverifiable"
+        )
+        lines.append(
+            f"gh unavailable on this seat — PR lookups skipped, "
+            f"{degraded_n} worktrees in degraded mode "
+            f"({gh_unavailable_reason})"
+        )
     counts = {"REMOVE": 0, "REFUSE": 0, "SKIP_CURRENT": 0, "FAILED": 0}
     for s in statuses:
         counts[s.decision] = counts.get(s.decision, 0) + 1
@@ -2269,7 +2744,60 @@ def main() -> int:
              "(reason=recent_activity:<age>h) au lieu d'etre retire par "
              "content_on_main. Defaut 6.0.",
     )
+    p.add_argument(
+        "--quarantine-submodules",
+        action="store_true",
+        help="Decontamination par quarantaine (#21743) : un worktree "
+             "MERGED a sous-modules peut etre retire SANS `--force` -- le "
+             "`modules/` de son gitdir est deplace en quarantaine (les "
+             "objets sont preserves, la preuve est faite au moment du "
+             "deplacement). Opt-in : sans ce drapeau, le comportement "
+             "mesure (REFUSE contains_submodules) est inchange.",
+    )
+    p.add_argument(
+        "--quarantine-root",
+        default=None,
+        metavar="PATH",
+        help="Racine de la quarantaine (#21743). Defaut = "
+             "%%LOCALAPPDATA%%/CoursIA/prune_quarantine. Doit etre hors du "
+             "depot et hors du worktree retire ; l'organe refuse sinon.",
+    )
+    p.add_argument(
+        "--purge-quarantine",
+        action="store_true",
+        help="Purge la quarantaine et sort (#21743). Voie NOMMEE : une "
+             "racine qui ne porte pas le marqueur de l'organe n'est pas "
+             "purgee.",
+    )
     args = p.parse_args()
+
+    # #21743 : la decontamination par quarantaine est OPT-IN (un drapeau
+    # dedie), jamais un effet de bord du `--apply`.
+    quarantine_root = Path(args.quarantine_root) if args.quarantine_root \
+        else default_quarantine_root()
+
+    if args.purge_quarantine:
+        # Voie de purge NOMMEE : la quarantaine doit pouvoir etre liberee,
+        # sinon elle deplace le probleme de disque au lieu de le traiter.
+        ok, msg, info = purge_quarantine(quarantine_root)
+        if args.json:
+            print(json.dumps({
+                "purge_quarantine": {
+                    "root": str(quarantine_root),
+                    "ok": ok,
+                    "message": msg,
+                    **(info or {}),
+                },
+            }, ensure_ascii=False))
+        else:
+            if ok:
+                print(f"quarantine purgee : {quarantine_root} "
+                      f"({len((info or {}).get('removed', []))} entree(s), "
+                      f"{(info or {}).get('bytes', 0)} octets)")
+            else:
+                print(f"ERROR: purge de la quarantaine refusee : {msg}",
+                      file=sys.stderr)
+        return 0 if ok else 1
 
     cwd = args.path or "."
 
@@ -2325,6 +2853,14 @@ def main() -> int:
         print(f"ERROR: {e}", file=sys.stderr)
         return 2
 
+    # #21753 : sonde d'identite gh AVANT toute resolution PR. Locale et
+    # gratuite (~50 ms, pas de quota). Echec => mode degrade declare :
+    # banniere en tete du rapport, `degraded: true` dans le JSON, refus
+    # terminaux nommes no_gh_unverifiable -- la passe ne se tait jamais.
+    gh_unavailable_reason = probe_gh_availability()
+    if gh_unavailable_reason is not None:
+        get_pr_resolution().unavailable_reason = gh_unavailable_reason
+
     statuses: list[WorktreeStatus] = []
     for wt in worktrees:
         try:
@@ -2333,6 +2869,8 @@ def main() -> int:
                     diagnose_worktree(
                         wt["path"], current_path, head_sha=wt.get("head_sha"),
                         activity_window_h=args.activity_window_h,
+                        gh_unavailable_reason=gh_unavailable_reason,
+                        quarantine_submodules=args.quarantine_submodules,
                     ),
                     wt.get("locked_reason"),
                 )
@@ -2349,6 +2887,7 @@ def main() -> int:
     apply_results: list[dict] = []
     refused_count = 0
     removal_count = 0
+    quarantine_refused_count = 0
     error_count = 0
     if args.apply:
         for s in statuses:
@@ -2359,6 +2898,41 @@ def main() -> int:
             # #14619 : nettoyer exactement les artefacts tolérés AVANT le
             # retrait sans force, sinon git refuse sur tout untracked.
             cleaned = clean_tolerated_artifacts(s)
+            # #21743 : decontamination AVANT le retrait. Le `modules/` du
+            # gitdir de ce worktree est DEPLACE en quarantaine : le garde
+            # de git est leve sans `--force`, et les objets du sous-module
+            # sont preserves (la preuve est faite au moment du
+            # deplacement). Si la decontamination echoue, le retrait n'a
+            # PAS lieu -- on ne retire jamais un worktree dont les objets
+            # seraient perdus.
+            quarantine_info = None
+            if s.has_submodules:
+                dest_name = f"{time.strftime('%Y%m%dT%H%M%S')}-{os.getpid()}-" \
+                            f"{Path(s.path).name}"
+                q_ok, q_msg, quarantine_info = quarantine_worktree_modules(
+                    s.path, quarantine_root, dest_name,
+                    repo_root=_repo_root_for_worktree(s.path),
+                )
+                if not q_ok:
+                    apply_results.append({
+                        "path": s.path,
+                        "branch": s.branch,
+                        "pr_number": s.pr_number,
+                        "applied": False,
+                        "stderr": f"quarantine-refused:{q_msg}",
+                        "cleaned_artifacts": cleaned,
+                        "quarantine": quarantine_info or {"error": q_msg},
+                    })
+                    # Un refus de quarantaine (modules/ rendu au worktree,
+                    # retrait annule) est une DECISION de l'organe : exit 0,
+                    # avec son decompte -- pas une panne. Seul l'echec de la
+                    # restauration, qui laisse un etat incoherent (objets
+                    # en quarantaine, worktree non decontamine), sort en 2.
+                    if q_msg.startswith("quarantine-restore-failed"):
+                        error_count += 1
+                    else:
+                        quarantine_refused_count += 1
+                    continue
             ok, stderr = apply_removal(s)
             apply_results.append({
                 "path": s.path,
@@ -2367,6 +2941,7 @@ def main() -> int:
                 "applied": ok,
                 "stderr": stderr,
                 "cleaned_artifacts": cleaned,
+                "quarantine": quarantine_info,
             })
             if ok:
                 removal_count += 1
@@ -2387,6 +2962,8 @@ def main() -> int:
                 1 for s in statuses if s.decision == "SKIP_CURRENT"
             ),
             "dry_run": not args.apply,
+            "degraded": gh_unavailable_reason is not None,
+            "gh_unavailable_reason": gh_unavailable_reason,
             "api_stats": get_pr_resolution().stats,
             # v1.3 : chemins des worktrees REMOVE-ready dont le lock
             # d'agent a ete reconnu mort (l'apply les deverrouille puis
@@ -2401,15 +2978,20 @@ def main() -> int:
             out["apply_results"] = apply_results
             out["applied"] = removal_count
             out["apply_errors"] = error_count
+            out["apply_quarantine_refusals"] = quarantine_refused_count
         print(json.dumps(out, indent=2, ensure_ascii=False))
     else:
         # Texte
         if args.apply:
-            print(render_text(statuses, dry_run=False, apply_results=apply_results))
+            print(render_text(statuses, dry_run=False,
+                              apply_results=apply_results,
+                              gh_unavailable_reason=gh_unavailable_reason))
             print()
-            print(f"applied={removal_count}  errors={error_count}")
+            print(f"applied={removal_count}  errors={error_count}"
+                  f"  quarantine_refusals={quarantine_refused_count}")
         else:
-            print(render_text(statuses, dry_run=True))
+            print(render_text(statuses, dry_run=True,
+                              gh_unavailable_reason=gh_unavailable_reason))
         # Budget API de la passe (#15369) : la mesure est un livrable, pas
         # un side-effect silencieux.
         st = get_pr_resolution().stats
