@@ -29,32 +29,50 @@ est **formaliste** (Lean/Mathlib), l'arbitre de substance reste extérieur.
 
 | Pilier du papier | Organes Mathlib 4 | État | Preuve mesurée |
 |---|---|---|---|
-| **Courbes elliptiques** (base j=1728, Weierstrass) | `WeierstrassCurve` (`AlgebraicGeometry/EllipticCurve/Weierstrass.lean:77`) + invariants `b₂…b₈, c₄, c₆, Δ` (`:101`–`:132`) ; `DivisionPolynomial/` ; `Jacobian/` ; `Reduction.lean` ; `LFunction.lean` ; `NormalForms.lean` ; `ModelsWithJ.lean` | **PRÉSENT, fort** | **19 fichiers** dans `AlgebraicGeometry/EllipticCurve/` |
-| **Frobenius** (caractère p) | `LinearMap.frobenius` + `frobenius_def : frobenius R S p x = x ^ p` (`Algebra/CharP/Frobenius.lean:126`) + `iterateFrobenius` (`:128`) | **PRÉSENT, fort** | **36 fichiers** mentionnent `Frobenius` |
-| **Polynômes de division** (brique de l'algorithme de Miller) | `DivisionPolynomial/Basic.lean` + `DivisionPolynomial/Degree.lean` | **PRÉSENT** | **1 fichier** |
-| **Descente / opérateur de Cartier** (pilier 1) | — | **ABSENT** | `cartier` = **0** fichier dans tout `Mathlib/` |
-| **Appariage de Weil / Miller** (pilier 2) | — | **ABSENT** | `weil_pairing`/`WeilPairing` = **0** (voir §1.1 : les 124 hits bruts sont des faux positifs) |
+| **Courbes elliptiques** (base j=1728, Weierstrass) | `WeierstrassCurve` (`AlgebraicGeometry/EllipticCurve/Weierstrass.lean:77`) + invariants `b₂…b₈, c₄, c₆, Δ` (`:101`–`:132`) ; `DivisionPolynomial/` ; `Jacobian/` ; `Reduction.lean` ; `LFunction.lean` ; `NormalForms.lean` ; `ModelsWithJ.lean` | **PRÉSENT, fort** | répertoire `AlgebraicGeometry/EllipticCurve/` peuplé, modules cités ci-contre (§1.2 pour la reproduction) |
+| **Frobenius** (caractère p) | `LinearMap.frobenius` + `frobenius_def : frobenius R S p x = x ^ p` (`Algebra/CharP/Frobenius.lean:126`) + `iterateFrobenius` (`:128`) | **PRÉSENT, fort** | mention de `Frobenius` répandue dans `Mathlib/` |
+| **Polynômes de division** (brique de l'algorithme de Miller) | `DivisionPolynomial/Basic.lean` + `DivisionPolynomial/Degree.lean` | **PRÉSENT** | deux modules, `Basic` et `Degree` |
+| **Descente / opérateur de Cartier** (pilier 1) | — | **ABSENT** | aucune occurrence de `cartier` dans `Mathlib/` |
+| **Appariage de Weil / Miller** (pilier 2) | — | **ABSENT** | `weil_pairing`/`WeilPairing` = **0** (voir §1.1 : les hits bruts sont des faux positifs) |
 | **Comptage de points / borne de Hasse / formule de Serre** (pilier 3) | — | **ABSENT** | `hasse` / `serre` / `point_count` / `frobenius` dans `EllipticCurve/` = **0** |
-| Cohomologie de descente (de Rham / Hodge / cristalline) | — | **marginal** | de Rham = 1, Hodge = 3, cristalline = 5 fichiers ; **aucun opérateur de Cartier** |
+| Cohomologie de descente (de Rham / Hodge / cristalline) | — | **marginal** | de Rham, Hodge et cristalline apparaissent isolément ; **aucun opérateur de Cartier** |
 
 ### 1.1 Faux positifs écartés (G.1 — vérifié à la source)
 
-Un premier `git grep -i "weil\|miller"` renvoie **124 fichiers**, ce qui aurait pu faire
+Un premier `git grep -i "weil\|miller"` renvoie des hits dans tout `Mathlib/`, ce qui aurait pu faire
 croire à une couverture des appariages. Le tri à la source montre que **c'est un artefact de
 noms de personnes**, pas une couverture mathématique :
 
-- `miller` → **110 fichiers**, tous des en-têtes de copyright **« Kyle Miller »**
-  (`Algebra/Quandle.lean`, `Combinatorics/Hall/Basic.lean`, …).
-- `weil` → **14 fichiers** = **« Felix Weilacher »** (`Algebra/Group/Action/Equidecomp.lean`)
-  et **« Henstock-Kurzweil »** (`Analysis/BoxIntegral/*`).
+- `miller` → des occurrences dans de nombreux modules, toutes des en-têtes de copyright
+  **« Kyle Miller »** (`Algebra/Quandle.lean`, `Combinatorics/Hall/Basic.lean`, …).
+- `weil` → des occurrences qui sont toutes des noms de personnes : **« Felix Weilacher »**
+  (`Algebra/Group/Action/Equidecomp.lean`) et **« Henstock-Kurzweil »** (`Analysis/BoxIntegral/*`).
 
 **Conclusion : aucun appariage de Weil ni de Miller n'existe dans Mathlib 4.** Le même
 raisonnement s'applique à `cartier` (0), `hasse` (0), `serre` (0).
 
-> Note : 12 fichiers du répertoire `EllipticCurve/` mentionnent « Tate » (Birational, Cover,
-> Affine, Projective, Jacobian, `DivisionPolynomial/Degree.lean`, `Reduction.lean`, …) —
-> c'est l'usage du terme dans les définitions de la courbe / du module, **pas** un appariage
-> de Tate exploitable tel quel pour l'algorithme de Miller.
+### 1.2 Reproduction des mesures
+
+Les comptes d'occurrences ne sont **pas** figés dans cette prose (règle #9377 : les données
+quantitatives d'état du dépôt sont tenues par la mesure, pas par un texte qui périme). Ils se
+reproduisent au pin `db584cd6d4`, depuis `MyIA.AI.Notebooks/Search/search_lean/.lake/packages/mathlib` :
+
+```bash
+git grep -l  -e 'Frobenius' HEAD -- 'Mathlib/' | wc -l
+git grep -li -e 'cartier'   HEAD -- 'Mathlib/' | wc -l
+git grep -li -e 'weil' -e 'miller' HEAD -- 'Mathlib/' | wc -l
+git grep -l  -e 'WeilPairing' -e 'weil_pairing' HEAD -- 'Mathlib/' | wc -l
+git grep -l  -e 'Tate' HEAD -- 'Mathlib/AlgebraicGeometry/EllipticCurve/'
+```
+
+**Note sur « Tate » — un second faux positif, corrigé ici.** Une première version de cette
+enquête annonçait « douze fichiers du répertoire `EllipticCurve/` mentionnent Tate ». La mesure
+à la source au pin montre que ces hits sont les mots anglais **« statements » / « states »**
+(insensibilité à la casse). En correspondance exacte, **`Tate` n'apparaît qu'une fois** dans
+tout le répertoire (`Weierstrass.lean`), et ce n'est pas un appariage de Tate : c'est une
+mention incidente. La conclusion ne change pas — **aucun appariage de Tate exploitable tel quel
+pour l'algorithme de Miller** — mais le chiffre initial était un artefact du même genre que
+`weil`/`miller`, et il valait mieux le dire que le laisser passer.
 
 ## 2. Arbitrage des trois candidats de formalisation
 
