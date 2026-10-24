@@ -130,11 +130,18 @@ allocation multi-objet) tant qu'elles tiennent dans le fragment `Fin`/`Int`, ou
 l'ajout de la dépendance Mathlib pour des résultats structurels non décidables
 (typage polymorphe sur `V`, `A`, `Fintype`).
 
-**i18n FR/EN** : chaque module de ce dossier est désormais doublé d'un sibling
-anglais `Bayesian/Foo_en.lean` (namespace `Bayesian` ↔ `Bayesian_en`,
-imports `_en`-suffixés, byte-identical hors docstrings/commentaires), livré
-sous l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04) —
-pilote : `Sum_en.lean`, `Max_en.lean`, `Information_en.lean`,
-`FictitiousPlay_en.lean`, `Regret_en.lean`, etc. Conséquence : les futurs
-raffinements doivent conserver la symétrie FR/EN (les deux fichiers évoluent
-ensemble ou pas du tout).
+**i18n FR/EN** : les modules de ce dossier qui ont un sibling anglais
+`Bayesian/Foo_en.lean` (namespace `Bayesian` ↔ `Bayesian_en`, imports
+`_en`-suffixés, byte-identical hors docstrings/commentaires) sont livrés sous
+l'Epic **#4980** (Option A, pattern sibling-pair ratifié 2026-07-04) — pilote :
+`Sum_en.lean`, `Max_en.lean`, `Information_en.lean`, `FictitiousPlay_en.lean`,
+`Regret_en.lean`, etc. L'inventaire faisant foi est celui du checker :
+`python scripts/lean/check_i18n_siblings.py <ce dossier>` (13 paires vertes au
+2026-10-24), pas une liste tenue à la main.
+
+Un module **neuf** arrive en français d'abord ; son sibling `_en` est dû dans
+une tranche ultérieure, et c'est le checker qui le dit. C'est le cas de
+`Bayesian/InformationNoisy.lean`, dont l'agrégateur `Bayesian_en.lean` est à
+jour mais qui n'a pas encore de traduction. Conséquence pour les raffinements
+d'un module **déjà** doublé : les deux fichiers évoluent ensemble ou pas du
+tout.
