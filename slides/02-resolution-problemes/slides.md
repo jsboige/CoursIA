@@ -844,7 +844,7 @@ algorithme génétique (selection, reproduction, mutation, retour meilleur indiv
 
 <style scoped>
 .slidev-layout { font-size: 0.85em; }
-.slidev-layout img { height: 230px !important; width: auto !important; }
+.slidev-layout img { height: 190px !important; width: auto !important; }
 h2 { margin-top: 0.2em !important; margin-bottom: 0.1em !important; }
 </style>
 
