@@ -2986,9 +2986,18 @@ def _block_emitted(body: str) -> bool:
     m_tagged = HOLD_TAGGED_HEAD.match(head)
     if m_tagged and _hold_head_is_emission(head, m_tagged.end()):
         return True
+    # #22245 — la recherche porte sur la CASSE DE LA SOURCE, pas sur une
+    # version majusculee. `uhead = head.upper()` faisait matcher le mot
+    # ordinaire : « Cause du blocage identifiee — ... » (c.6365851694 sur
+    # #21252, un DIAGNOSTIC de la lane sur son propre rouge) etait classe
+    # BLOCK. La casse est deja le discriminant que ce module applique a HOLD
+    # (« CASSE : HOLD majuscule, la forme dans laquelle le protocole et les
+    # posts l'emettent », cf HOLD_HEAD) ; l'appliquer aussi a BLOCAGE retire
+    # la classe entiere, sans une garde de tournure de plus — la liste des
+    # tournures francaises n'est pas close (option 2 de l'issue, refusee).
     for marker in ("BLOCAGE", "BLOCK"):
         pos = 0
-        while (i := uhead.find(marker, pos)) != -1:
+        while (i := head.find(marker, pos)) != -1:
             before = head[i - 1] if i > 0 else ""
             after = head[i + len(marker)] if i + len(marker) < len(head) else ""
             if before.isalnum() or before == "_" or before == "[" or after.isalnum() or after == "_":

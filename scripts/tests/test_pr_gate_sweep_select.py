@@ -113,7 +113,7 @@ def _run_selector_both(tmp_path, rows, wfnames=None):
 
 
 def _pr(number, checks, sha="deadbeef", fork=False, workflows=None,
-        run_conclusions=None):
+        run_conclusions=None, merge_state=None):
     """checks = tuples (name, status, conclusion, started_at[, run_id]).
 
     Sans 5e element, la fixture ne porte pas de details_url : le selecteur
@@ -146,6 +146,12 @@ def _pr(number, checks, sha="deadbeef", fork=False, workflows=None,
             row["title"] = ch[5]
         rows.append(row)
     row_out = {"number": number, "sha": sha, "fork": fork, "checks": rows}
+    # #21463 : l'etat de fusion, tel que le collecteur l'emette dans la ligne
+    # jsonl (`"merge_state":"..."`). Absent par defaut pour ne pas changer le
+    # sens des fixtures historiques (une fixture sans merge_state est lue
+    # comme "" par le selecteur, jamais comme BLOCKED).
+    if merge_state is not None:
+        row_out["merge_state"] = merge_state
     if workflows:
         row_out["workflows"] = {str(k): v for k, v in workflows.items()}
     if run_conclusions:
@@ -268,6 +274,25 @@ def test_titleless_success_leg_is_never_mute(tmp_path):
 
 def test_no_gate_leg_skipped(tmp_path):
     out = _run_selector(tmp_path, [_pr(105, [OTHER_GREEN])])
+    assert out.strip() == ""
+
+
+def test_blocked_no_gate_leg_is_rerun_candidate(tmp_path):
+    """#21463 critere 1 : une PR BLOCKED SANS aucun check-run `PR gate` (le run
+    pr-gate.yml annule AVANT d'avoir poste son verdict) EST une candidate
+    re-run -- le defaut d'avant la traversait en silence (la PR meurt BLOCKED
+    sans jamais rougir)."""
+    out = _run_selector(tmp_path, [_pr(501, [OTHER_GREEN], merge_state="BLOCKED")])
+    assert out.strip() == "501 deadbeef false 1"
+
+
+def test_non_blocked_no_gate_leg_still_skipped(tmp_path):
+    """Controle negatif #21463 : une PR NON BLOCKED sans jambe `PR gate` reste
+    ignoree -- l'elargissement vise la population BLOCKED, pas tout le pool.
+    Une fixture sans merge_state (donnees d'avant l'elargissement) : idem."""
+    out = _run_selector(tmp_path, [_pr(502, [OTHER_GREEN], merge_state="CLEAN")])
+    assert out.strip() == ""
+    out = _run_selector(tmp_path, [_pr(503, [OTHER_GREEN])])
     assert out.strip() == ""
 
 
@@ -857,6 +882,23 @@ def test_workflow_fetches_wfmap_only_for_gate_bearing_prs():
     assert guard != -1, "garde de collecte de la carte absent (#15770)"
     assert fetch != -1
     assert guard < fetch, "la carte est demandee hors du garde (#15770)"
+
+
+def test_workflow_fetches_wfmap_for_blocked_gate_absent_prs():
+    """#21463 : le garde de collecte est ETLARGI a la population BLOCKED sans
+    check-run `PR gate`. Sans ce pin, un revert silencieux du `|| [ BLOCKED ]`
+    refermerait l'angle mort (la carte WFMAP ne serait plus demandee pour ces
+    PRs, donc le run `PR gate` de leur tete ne serait plus trouvable a
+    relancer) -- exactement la derive que ce pin doit rendre impossible.
+    """
+    run = _collector_run()
+    assert """grep -q '"name":"PR gate"'""" in run, "garde d'origine absente"
+    assert '[ "${MSTATE:-}" = "BLOCKED" ]' in run, \
+        "elargissement BLOCKED absent du garde de collecte (#21463)"
+    # Le 4e champ de la ligne jsonl doit porter l'etat : sans lui le selecteur
+    # ne peut pas distinguer une PR BLOCKED gate-absent de n'importe laquelle.
+    assert '"merge_state":"%s"' in run, \
+        "merge_state absent de la ligne jsonl (#21463)"
 
 
 # --- #21300 : STARTUP_FAILURE -- `gh run rerun` INERT sur run jamais demarre --
