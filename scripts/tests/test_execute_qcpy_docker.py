@@ -4,6 +4,7 @@ Tests focus on: cell_needs_execution (pure predicate), constants.
 No Docker / websocket / network calls required.
 """
 
+import json
 import sys
 from pathlib import Path
 from unittest.mock import MagicMock
@@ -28,7 +29,9 @@ from execute_qcpy_docker import (
     BASE_URL_DEFAULT,
     QCPY_DIR,
     REPO_ROOT,
+    _stream_output,
     cell_needs_execution,
+    exec_code,
 )
 
 # Restore sys.modules so the optional-dep mocks don't leak to sibling suites.
@@ -143,3 +146,70 @@ class TestCellNeedsExecution:
         """Multi-line string source with code."""
         cell = {"cell_type": "code", "source": "line1\nline2\nline3"}
         assert cell_needs_execution(cell) is True
+
+
+# ---------------------------------------------------------------------------
+# _stream_output: lines keep their newline (#21836)
+# ---------------------------------------------------------------------------
+
+class TestStreamOutput:
+    def test_lines_keep_newline(self):
+        """nbformat joins list items with no separator: each line keeps its newline."""
+        out = _stream_output("\nREPORT\nreturn: -2.60%\n")
+        assert out["text"] == ["\n", "REPORT\n", "return: -2.60%\n"]
+
+    def test_rendered_text_round_trips(self):
+        """The joined list equals the kernel text, unterminated tail included."""
+        text = "a\nb\nc"
+        assert "".join(_stream_output(text)["text"]) == text
+
+    def test_shape(self):
+        """Output is a stdout stream in nbformat shape."""
+        out = _stream_output("x\n")
+        assert out["output_type"] == "stream"
+        assert out["name"] == "stdout"
+
+
+# ---------------------------------------------------------------------------
+# exec_code: execute_reply and idle in either order (#21836)
+# ---------------------------------------------------------------------------
+
+class _FakeWs:
+    """Replays kernel messages addressed to the last execute_request."""
+
+    def __init__(self, script):
+        self._script = script
+        self._queue = []
+
+    def send(self, raw):
+        msg_id = json.loads(raw)["header"]["msg_id"]
+        self._queue = [json.dumps({"parent_header": {"msg_id": msg_id},
+                                   "msg_type": mt, "content": content})
+                       for mt, content in self._script]
+
+    def settimeout(self, _):
+        pass
+
+    def recv(self):
+        if not self._queue:
+            raise AssertionError("exec_code kept reading after both signals")
+        return self._queue.pop(0)
+
+
+class TestExecCodeOrdering:
+    STREAM = ("stream", {"name": "stdout", "text": "ok\n"})
+    REPLY = ("execute_reply", {"status": "ok"})
+    IDLE = ("status", {"execution_state": "idle"})
+
+    def test_reply_then_idle(self):
+        result = exec_code(_FakeWs([self.STREAM, self.REPLY, self.IDLE]), "x", "s", timeout=5)
+        assert result["status"] == "ok"
+        assert result["streams"] == ["ok\n"]
+        assert result["errors"] == []
+
+    def test_idle_then_reply(self):
+        """An idle that overtakes the reply no longer runs the loop to its timeout."""
+        result = exec_code(_FakeWs([self.STREAM, self.IDLE, self.REPLY]), "x", "s", timeout=5)
+        assert result["status"] == "ok"
+        assert result["streams"] == ["ok\n"]
+        assert result["errors"] == []
