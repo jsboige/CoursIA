@@ -1481,7 +1481,7 @@ MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats-Python.ipynb,115
 resultat_orbital = None  # TODO etudiant
 print(""Exercice 3 a completer"")
 ",,,,,,,,0131e6ff56293ef6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,97888f26,markdown,fr,a8c0e24b57066d7c,"# ICT-13 — Morphodynamique stratégique : une stratégie est-elle une forme stable ?
+MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,97888f26,markdown,fr,0e4826b5bc3521d3,"# ICT-13 — Morphodynamique stratégique : une stratégie est-elle une forme stable ?
 
 **Sous-série ICT** (trajectoires intégrées, Epic #4588, strate 3). Suite d'ICT-10
 (bistabilité), ICT-11 (agence multi-échelle) et ICT-12 (champs de valence).
@@ -1517,7 +1517,7 @@ numériquement** ses prévisions au lieu de re-dériver la théorie.
    sont pas en simulation le montrent en sortie.
 
 **Kernel** : Python 3 (numpy CPU pur). Module : `ict/strategic_morphodynamics.py`.
-",,,,,,,,a8c0e24b57066d7c,,,,,,,,,,,,,,,
+",,,,,,,,0e4826b5bc3521d3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb,9ee3f180,code,fr,2cac3ccc1e4f087e,"import sys, os
 sys.path.insert(0, os.getcwd())
 
