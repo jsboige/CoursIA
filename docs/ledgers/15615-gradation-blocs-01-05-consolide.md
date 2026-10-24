@@ -12,7 +12,7 @@ Les deux ledgers s'accordaient sur un point de blocage : le **tableau consolidé
 
 Les quatre ledgers de fournée (A-D) ont été rédigés du 2026-10-10 au 2026-10-11. La fournée D conclut : « **La série s'arrête au bloc 20** : cette fournée clôt le périmètre de l'audit », et corrige un compte au passage — « le tableau consolidé conditionné à #18001 doit donc partir de **100**, pas de 99 ».
 
-Mesure sur l'arbre au 2026-10-24 : **111 carnets**, et **le bloc 21 existe** — `GameTheory-21-Capstone-Choix-Social-Python.ipynb`, entré **après** la fournée D. La série n'est donc pas close au bloc 20, et le compte de 100 n'est plus le bon.
+Mesure sur l'arbre au 2026-10-24 : **111 carnets**, et **le bloc 21 existe** — `GameTheory-21-Capstone-Choix-Social-Python.ipynb`, entré **après** la fournée D. La série n'est donc pas close au bloc 20, et le compte de 100 n'est plus le bon. Ce compte de 111 couvre les carnets préfixés `GameTheory-` ; **16 autres** `.ipynb` vivent sous `GameTheory/` hors de ce préfixe et du périmètre gradué : `SocialChoice/` (14), `Dynamics/Dynamics-09-Biens-Publics` (1 — le carnet sorti, cf. ci-dessous) et `gateway/openspiel-cfr-service` (1).
 
 | Bloc | Carnets | Bloc | Carnets | Bloc | Carnets |
 |---|---:|---|---:|---|---:|
@@ -122,13 +122,13 @@ Les numéros en gras sont ceux qui **diffèrent de la numérotation citée dans 
 
 ## Paliers consolidés
 
-Les deux ledgers décrivaient chacun leurs paliers localement ; recoupés sur 29 carnets, il en reste **cinq**, et la frontière entre les deux derniers s'est déplacée.
+Les deux ledgers décrivaient chacun leurs paliers localement ; recoupés sur 29 carnets, il en reste **cinq** — effectifs réels **1 / 2 / 11 / 9 / 6** — et la frontière entre les deux derniers s'est déplacée.
 
 1. **Entrée (Basse)** — `01-Setup` seul carnet sans prérequis : il pose l'environnement **et** le premier exemple. Point d'entrée unique de la série.
 2. **Cadre formel (Basse)** — `02-Python` et son twin C#. Le jumeau ne s'ajoute pas à la théorie, il la re-dérive : pour une audience Python-first, lire le Python d'abord ; la réciproque vaut pour .NET-first.
-3. **Application (Moyenne)** — `02-Part2*` (équilibres mixtes), `02b` (formalisation), `02c*` (cas empirique), **`02d`** (épistémique), `03`/`03-cs` (classification des 576 jeux), `04` (Nash), **`04h`** (PoA). Huit à dix carnets selon le découpage : c'est le plateau le plus large de la série, et le seul où un lecteur peut s'arrêter sans manquer une marche.
+3. **Application (Moyenne)** — `02-Part2*` (équilibres mixtes), `02b` (formalisation), `02c*` (cas empirique), **`02d`** (épistémique), `03`/`03-cs` (classification des 576 jeux), `04` (Nash), **`04h`** (PoA), `05` (minimax et dualité). Onze carnets — tous ceux gradés Moyenne : c'est le plateau le plus large de la série, et le seul où un lecteur peut s'arrêter sans manquer une marche.
 4. **Twins enrichis et géométrie ordinale (Haute)** — `03b`, `03c`, `03d`, `04-cs`, `04c`/`04c-cs`, `04d`, **`04g`**, `05-cs`. Le constat du ledger fournée A se confirme et s'élargit : **en 04/05 le twin C# dépasse son Python** (`04-cs` ajoute Gauss + Gambit + `nashpy`, `05-cs` arbitre trois moteurs LP), alors qu'en 02/03 il le re-dérive.
-5. **Murs (Très haute)** — `03f`, `03g`, `04b`, `04e`, `04f`, `05b`. Ces six carnets supposent le track principal acquis **et** un bagage externe (tactiques Lean, topologie, littérature MIRI/decision theory, catégories). `03f` est le plus long de la série (70 cellules) et le seul à faire changer les règles par l'agent lui-même.
+5. **Murs (Très haute)** — `03f`, `03g`, `04b`, `04e`, `04f`, `05b`. Ces six carnets supposent le track principal acquis **et** un bagage externe (tactiques Lean, topologie, littérature MIRI/decision theory, catégories). `03f` est le plus dense en code de la série (27 cellules de code sur 70 au total — `03-Topology2x2` reste le plus long en cellules toutes catégories, 82) et le seul à faire changer les règles par l'agent lui-même.
 
 ## Ordre cible proposé (scope 2 de l'acceptance)
 
@@ -155,7 +155,7 @@ L'acceptance de #15615 demande un « ordre cible validé (user ou coordinateur) 
 
 ### Ce que l'ordre cible ne demande pas
 
-**Aucun renommage.** #18001 vient de renuméroter 93 carnets ; renuméroter une seconde fois pour déplacer `03b` avant `03c` coûterait une vague équivalente pour un gain de lecture marginal. Le correctif proportionné est **documentaire** : une ligne de prérequis explicite dans l'introduction de `03b` (« ce carnet suppose les murs posés par `03c` ») et un lien de navigation. C'est l'option B que le ledger Fondations recommandait, et l'arbitrage de #18001 ne l'a pas invalidée — il l'a rendue **applicable sans attendre**.
+**Aucun renommage.** #18001 vient de renuméroter 93 carnets ; renuméroter une seconde fois pour déplacer `03b` avant `03c` coûterait une vague équivalente pour un gain de lecture marginal. La part documentaire de l'option B du ledger Fondations est **déjà en place** : `03b` porte sa ligne de prérequis dès l'introduction (« **Prérequis** : GameTheory-3 (générateurs), GameTheory-3b (codimension, murs, facettes), GameTheory-03h (deux espèces de flèches) »). Ce qui reste à corriger est autre chose, et chiffré : cette ligne **nomme les ordinaux d'avant #18001** — `GameTheory-3b` est le `03c` actuel, `GameTheory-03h` le `03g` actuel — et **5 carnets sur 29** gardent leur ordinal périmé en H1 : `03b` titré « GameTheory-3a », `03c` « GameTheory 3b », `03d` « GameTheory-3c », `03f` « GameTheory 3e », `03g` « GameTheory-03h ». Le résiduel exécutable est donc **5 titres H1 + 1 ligne de prérequis**, un balayage markdown-only sans renommage de fichier — les ordinaux des **fichiers**, eux, sont corrects depuis #18001.
 
 **Aucun remplissage de trou.** Le bloc 03 porte désormais deux ordinaux libres : `03a` (jamais réattribué après le relettrage) et `03e` (libéré par la sortie du carnet Plan-de-déformation vers Dynamics). Ils **restent libres** : sur une série à numérotation par accrétion, un trou est une trace, pas un défaut — le combler imposerait de renuméroter les carnets postérieurs.
 

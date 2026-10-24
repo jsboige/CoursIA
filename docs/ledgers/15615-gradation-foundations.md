@@ -4,7 +4,7 @@
 
 > **Resynchronisation (2026-10-24) — lire ceci avant la table.** Cette mesure est datée du **2026-09-28**, soit **la veille** du merge de #18001 (`09e96fa5eaf`, 2026-09-29, « passage unique GameTheory -- 93 carnets »). Les noms de carnets du tableau ci-dessous sont donc **ceux d'avant le relettrage** et n'existent plus sous cette forme. Quatre écarts, tous mesurés :
 >
-> 1. **décalage d'une lettre** sur le bloc 03 — `03a`→`03b`, `03b`→`03c`, `03c`→`03d`, `03e`→`03f`, `03h`→`03g`, plus le suffixe noyau (`-Python` / `-CSharp` / `-Lean`) partout ;
+> 1. **décalage d'une lettre** sur le bloc 03 — `03a`→`03b`, `03b`→`03c`, `03c`→`03d`, `03d`→`03e`, `03e`→`03f`, `03h`→`03g`, plus le suffixe noyau (`-Python` / `-CSharp` / `-Lean`) partout ;
 > 2. **`03d-Plan-de-deformation` a quitté la série** le 2026-10-13 (`c6258b90627`, → `Dynamics-09-Biens-Publics`, #19484) : la ligne correspondante du tableau pointe un carnet absent de l'arbre ;
 > 3. **`02d-Epistemique-Connaissance-Commune-Python` est entré** dans le bloc 02 (#22048) et n'a pas de ligne ici ;
 > 4. les comptes de cellules ont dérivé de quelques unités.
