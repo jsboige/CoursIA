@@ -36,6 +36,7 @@ import json
 import os
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -153,22 +154,49 @@ def _is_elevated() -> bool:
 
 
 def task_action(profile: Profile) -> str:
-    """L'action de la tache : lit le mot de passe du fichier machine local
-    conventionnel, negocie tout le reste a chaud, logue a cote des autres logs."""
+    """Le CORPS du script de la tache : lit le mot de passe du fichier machine local
+    conventionnel, negocie tout le reste a chaud, logue a cote des autres logs.
+
+    Ne porte ni interpreteur ni enrobage `-Command "..."` : l'enveloppe `<Exec>`
+    declare deja `<Command>pwsh.exe</Command>` et ses arguments. L'ancien enrobage
+    empilait deux `pwsh.exe -Command "..."` (le second avec des guillemets
+    imbriques non echappes) et rendait l'XML invalide — mesure #20174.
+    """
     secrets_file = profile.root.parent / "secrets" / "runner_pwd.txt"
     logs_dir = profile.root.parent / "logs"
     python = Path(sys.executable)
     controller = Path(__file__).resolve()
-    inner = (
+    return (
+        f"New-Item -ItemType Directory -Force -Path '{logs_dir}' | Out-Null;"
         f"$ErrorActionPreference='Stop';"
         f"$env:{ACCOUNT_PASSWORD_ENV}=(Get-Content -LiteralPath '{secrets_file}' -Raw).Trim();"
         f"& '{python}' '{controller}' ensure --profile {profile.name} --apply"
+        f" *>> '{logs_dir}\\controller.log'"
     )
-    return (
-        f"pwsh.exe -NoProfile -NonInteractive -WindowStyle Hidden -Command \""
-        f"New-Item -ItemType Directory -Force -Path '{logs_dir}' | Out-Null;"
-        f"{inner} *>> '{logs_dir}\\controller.log'\""
-    )
+
+
+def _xml_escape(text: str) -> str:
+    """Echappe les metacaracteres XML d'un contenu d'element.
+
+    Le corps du script porte le `&` de l'operateur d'appel PowerShell et `*>>`
+    (redirection) : `&` et `<` sont illicites en XML et `schtasks /Create /XML`
+    refuse le document. L'ordre compte : `&` d'abord, sinon les entites produites
+    par les remplacements suivants sont re-echappees.
+    """
+    return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def _validate_task_xml(xml: str) -> None:
+    """Valide l'XML de la tache avant toute elevation.
+
+    Un XML malforme doit rougir en dry-run non-eleve, pas se reveler dans la
+    session elevee : c'est une fenetre UAC utilisateur qui paie la decouverte
+    (mesure #20174, fenetre du 2026-10-20).
+    """
+    try:
+        ET.fromstring(xml)
+    except ET.ParseError as exc:
+        raise Broken(f"task XML malformed: {exc}") from exc
 
 
 def task_xml(profile: Profile) -> str:
@@ -194,7 +222,7 @@ def task_xml(profile: Profile) -> str:
   <Actions Context="Author">
     <Exec>
       <Command>pwsh.exe</Command>
-      <Arguments>-NoProfile -NonInteractive -WindowStyle Hidden -Command &quot;{task_action(profile)}&quot;</Arguments>
+      <Arguments>-NoProfile -NonInteractive -WindowStyle Hidden -Command &quot;{_xml_escape(task_action(profile))}&quot;</Arguments>
     </Exec>
   </Actions>
 </Task>
@@ -202,9 +230,14 @@ def task_xml(profile: Profile) -> str:
 
 
 def apply_task_install(profile: Profile, run: CommandRunner) -> dict:
+    # L'XML se construit et se valide AVANT le controle d'elevation : la garde
+    # passait en premier, donc un dry-run non-eleve ne pouvait structurellement
+    # pas voir un XML malforme -- le defaut n'apparaissait qu'en session elevee,
+    # une fenetre UAC utilisateur consommee pour rien (mesure #20174).
+    xml = task_xml(profile)
+    _validate_task_xml(xml)
     if not _is_elevated():
         raise Broken("task-install --apply requires an elevated session (RunLevel Highest)")
-    xml = task_xml(profile)
     xml_file = profile.root.parent / "logs" / "controller-task.xml"
     xml_file.parent.mkdir(parents=True, exist_ok=True)
     xml_file.write_text(xml, encoding="utf-16")
