@@ -1645,7 +1645,7 @@ BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-11-Picross.ipynb,c9bb1012,markdown,fr,e46692b7e2fd97ff,"# App-11 - Picross (Nonogrammes)
 
-**Navigation** : [<< App-10 Portfolio](App-10-Portfolio.ipynb) | [Index](../README.md) | [App-12 ConnectFour >>](App-12-ConnectFour.ipynb)
+**Navigation** : [<< App-10 Portfolio](App-10-Portfolio.ipynb) | [Index](../README.md) | [App-12b ConnectFour >>](App-12b-ConnectFour.ipynb)
 
 ## Solveur de Picross : backtracking naif vs CP-SAT
 
