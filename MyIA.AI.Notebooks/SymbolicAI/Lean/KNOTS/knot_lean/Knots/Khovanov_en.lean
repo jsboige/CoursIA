@@ -228,9 +228,18 @@ def matMul (A B : List (List ℤ)) : List (List ℤ) :=
     (List.range B.length).foldl (fun acc t => acc + row.get! t * (B.get! t).get! j) 0))
 
 /-- Cancellation of column `c` of row `r` by the pivot row `p`, by integer
-row operations: `r' = p[c]·r − r[c]·p`. -/
+row operations: `r' = p[c]·r − r[c]·p`.
+
+A single synchronised pass over the two rows (`zip`), with the pivot
+coefficients read once: each entry costs O(1). The `List.range` form with
+four `get!` calls per entry cost O(index) per access, hence O(n²) per
+cancelled row — enough to push the rank of the 5₁'s `d³` (80×80) outside the
+kernel budget whatever its value (`maxHeartbeats` measured at 4, 6 and 8 M,
+#8182 case 23). -/
 def rowCancel (p r : List ℤ) (c : Nat) : List ℤ :=
-  (List.range p.length).map (fun j => p.get! c * r.get! j - r.get! c * p.get! j)
+  let pc := p.get! c
+  let rc := r.get! c
+  (p.zip r).map (fun (pj, rj) => pc * rj - rc * pj)
 
 /-- Rank by integer elimination (pivot found column by column, remaining
 rows cancelled). The `ℚ`-rank of an integer matrix is unchanged by these
@@ -494,5 +503,271 @@ theorem homGradedDim_figureEight :
 /-- Graded Euler characteristic at `q = −1`: −2, i.e.
 `Ĵ(4₁)|_{t=−1} = q⁻⁵ + q⁵` — consistent with amphichirality. -/
 theorem chi_figureEight : chiAtMinusOne figureEightPlanarDiagram = -2 := by decide
+
+/-- The spiral 5₁: the literal value of `spiralDiagram 5` (ConwayNotation
+§5), the annular drawing of the fraction `[5]` — the torus knot T(2,5).
+This literal is the one the kernel decides in `spiral_five_alexander` (hc);
+it is reproduced here **without importing** `Knots.ConwayNotation`, because
+that module transitively pulls in `Knots.AlexanderTrivial` (+ twin) — two
+362-Ko modules that never finish under a targeted build. -/
+def spiralFive : KnotDiagram :=
+  ⟨[⟨1, 6, 2, 7⟩, ⟨3, 8, 4, 9⟩, ⟨5, 10, 6, 1⟩, ⟨7, 2, 8, 3⟩, ⟨9, 4, 10, 5⟩], 10⟩
+
+/-! ## Evaluations on the spiral 5₁ (decided by the kernel)
+
+Case 23 of bench #8182, sealed by a five-field pre-registration BEFORE the
+run (issue comment dated 2026-10-23): every value below was predicted by the
+Python mirror validated on the trefoil (case 21) and the figure-eight (case
+22), then decided by the kernel — none was adjusted after the fact. The
+diagram is `spiralFive`, the literal of `spiralDiagram 5`
+(ConwayNotation §5, decided in the lake by `spiral_five_alexander`): the annular drawing of
+the fraction `[5]`, the torus knot T(2,5) — five crossings, all positive
+(`n₊ = 5`, `n₋ = 0`). Convention anchor (archived copy, Bar-Natan
+arXiv:math/0201043): the right-handed trefoil of his Figure 3
+(`X1524X5362X3146`) is the lake's `trefoilDiagram` literal, and its `Kh`
+(§4.1, Out[14]) is `q + q³ + q⁵t² + q⁹t³` — the case 21 table. The
+`51; 4; 4` row of the §4.3 table (p. 359) gives σ(5₁) = 4: the homology
+must live on the two diagonals `j − 2r ∈ {3, 5}` = σ ± 1, with total
+dimension det + 1 = 6 (thin knot). -/
+
+set_option maxRecDepth 100000
+set_option maxHeartbeats 4000000
+/-- The spiral 5₁ has five positive crossings. -/
+theorem nPlus_spiralFive : nPlus spiralFive = 5 := by decide
+
+/-- … and no negative crossing (positive T(2,5)). -/
+theorem nMinus_spiralFive : nMinus spiralFive = 0 := by decide
+
+/-- Loops of the all-A state (0-smoothings): 2. -/
+theorem loops_allA_spiralFive :
+    stateLoops spiralFive [true, true, true, true, true] = 2 := by decide
+
+/-- Loops of the all-B state (1-smoothings): 5. -/
+theorem loops_allB_spiralFive :
+    stateLoops spiralFive [false, false, false, false, false] = 5 := by decide
+
+/-! The multi-conjunct evaluations of 5₁ now live one per declaration.
+The full build of 2026-10-24 (v5) was killed by the kernel in OOM at
+22.9 GB: an N-conjunct conjunction evaluates the algebra N times inside a
+single declaration, and the memory peak covers their sum; in separate
+declarations the garbage collector runs between evaluations and the peak
+becomes that of the worst conjunct. The conjunctions are reassembled with
+an anonymous constructor, without re-evaluation. -/
+/-- Dimension of `C⁰`: 4. -/
+theorem dim_chain0_spiralFive : (khChainGens spiralFive 0).length = 4 := by decide
+
+/-- Dimension of `C¹`: 10. -/
+theorem dim_chain1_spiralFive : (khChainGens spiralFive 1).length = 10 := by decide
+
+/-- Dimension of `C²`: 40. -/
+theorem dim_chain2_spiralFive : (khChainGens spiralFive 2).length = 40 := by decide
+
+/-- Dimension of `C³`: 80. -/
+theorem dim_chain3_spiralFive : (khChainGens spiralFive 3).length = 80 := by decide
+
+/-- Dimension of `C⁴`: 80. -/
+theorem dim_chain4_spiralFive : (khChainGens spiralFive 4).length = 80 := by decide
+
+/-- Dimension of `C⁵`: 32. -/
+theorem dim_chain5_spiralFive : (khChainGens spiralFive 5).length = 32 := by decide
+
+/-- Chain group dimensions: 4, 10, 40, 80, 80, 32 (246 generators) —
+assembled from the six dimensions above, no enumeration recomputed
+here. -/
+theorem dim_chain_spiralFive :
+    (khChainGens spiralFive 0).length = 4 ∧
+    (khChainGens spiralFive 1).length = 10 ∧
+    (khChainGens spiralFive 2).length = 40 ∧
+    (khChainGens spiralFive 3).length = 80 ∧
+    (khChainGens spiralFive 4).length = 80 ∧
+    (khChainGens spiralFive 5).length = 32 :=
+  ⟨dim_chain0_spiralFive, dim_chain1_spiralFive, dim_chain2_spiralFive,
+    dim_chain3_spiralFive, dim_chain4_spiralFive, dim_chain5_spiralFive⟩
+
+/-- `d¹ ∘ d⁰ = 0`. -/
+theorem khovanov_s5_d0_square_zero :
+    (matMul (khDiff spiralFive 1) (khDiff spiralFive 0)).all
+      (fun row => row.all (fun x => x == 0)) = true := by decide
+
+/-- `d² ∘ d¹ = 0`. -/
+theorem khovanov_s5_d1_square_zero :
+    (matMul (khDiff spiralFive 2) (khDiff spiralFive 1)).all
+      (fun row => row.all (fun x => x == 0)) = true := by decide
+
+/-- `d³ ∘ d² = 0`. -/
+theorem khovanov_s5_d2_square_zero :
+    (matMul (khDiff spiralFive 3) (khDiff spiralFive 2)).all
+      (fun row => row.all (fun x => x == 0)) = true := by decide
+
+/-- `d⁴ ∘ d³ = 0`. -/
+theorem khovanov_s5_d3_square_zero :
+    (matMul (khDiff spiralFive 4) (khDiff spiralFive 3)).all
+      (fun row => row.all (fun x => x == 0)) = true := by decide
+
+/-- Rank of `d⁰`: 2. Each of the five ranks lives in its own
+declaration: conjoined, they shared a single heartbeat budget that
+expired under the former `rowCancel` (probe of 2026-10-23: 4 M shared,
+12 min, no verdict). The split is kept as it stands — it also bounds the
+peak memory per declaration — and the conjunction has not been replayed
+under the new implementation. -/
+theorem rank0_spiralFive : matRank (khDiff spiralFive 0) = 2 := by decide
+
+/-- Rank of `d¹`: 8. -/
+theorem rank1_spiralFive : matRank (khDiff spiralFive 1) = 8 := by decide
+
+/-- Rank of `d²`: 31. -/
+theorem rank2_spiralFive : matRank (khDiff spiralFive 2) = 31 := by decide
+
+/-- Rank of `d³`: 48. The rank-3 differential is the bench's first 80×80
+matrix; it is what exposed the quadratic cost of the former `rowCancel`
+(see its documentation), not any difficulty of the computation itself —
+the rank fits the section budget since the rewrite. -/
+theorem rank3_spiralFive : matRank (khDiff spiralFive 3) = 48 := by decide
+
+/-- Rank of `d⁴`: 31. -/
+theorem rank4_spiralFive : matRank (khDiff spiralFive 4) = 31 := by decide
+
+/-- Differential ranks: 2, 8, 31, 48, 31 — assembled from the five
+theorems above, no matrix recomputed here. -/
+theorem ranks_spiralFive :
+    matRank (khDiff spiralFive 0) = 2 ∧
+    matRank (khDiff spiralFive 1) = 8 ∧
+    matRank (khDiff spiralFive 2) = 31 ∧
+    matRank (khDiff spiralFive 3) = 48 ∧
+    matRank (khDiff spiralFive 4) = 31 :=
+  ⟨rank0_spiralFive, rank1_spiralFive, rank2_spiralFive,
+    rank3_spiralFive, rank4_spiralFive⟩
+
+/-- The rank of `d⁵` is zero: `C⁶` is empty (5₁ has only 32 states). -/
+theorem matRank_d5_spiralFive : matRank (khDiff spiralFive 5) = 0 := by decide
+
+/-- Homology dimensions per stage: 2, 0, 1, 1, 1, 1 (total 6
+= det(5₁) + 1). Derived from the chain dimensions and ranks already
+decided — the definition is rewritten, no matrix is recomputed. -/
+theorem homDim_spiralFive :
+    homDim spiralFive 0 = 2 ∧
+    homDim spiralFive 1 = 0 ∧
+    homDim spiralFive 2 = 1 ∧
+    homDim spiralFive 3 = 1 ∧
+    homDim spiralFive 4 = 1 ∧
+    homDim spiralFive 5 = 1 := by
+  obtain ⟨hd0, hd1, hd2, hd3, hd4, hd5⟩ := dim_chain_spiralFive
+  obtain ⟨hr0, hr1, hr2, hr3, hr4⟩ := ranks_spiralFive
+  simp [homDim, hd0, hd1, hd2, hd3, hd4, hd5, hr0, hr1, hr2, hr3, hr4,
+    matRank_d5_spiralFive]
+
+/-- The differential preserves `qDeg` at stage 0. -/
+theorem qDeg_step0_spiralFive : khDiffPreservesQDeg spiralFive 0 = true := by decide
+
+/-- The differential preserves `qDeg` at stage 1. -/
+theorem qDeg_step1_spiralFive : khDiffPreservesQDeg spiralFive 1 = true := by decide
+
+/-- The differential preserves `qDeg` at stage 2. -/
+theorem qDeg_step2_spiralFive : khDiffPreservesQDeg spiralFive 2 = true := by decide
+
+/-- The differential preserves `qDeg` at stage 3. -/
+theorem qDeg_step3_spiralFive : khDiffPreservesQDeg spiralFive 3 = true := by decide
+
+/-- The differential preserves `qDeg` at stage 4. -/
+theorem qDeg_step4_spiralFive : khDiffPreservesQDeg spiralFive 4 = true := by decide
+
+/-- The differential preserves `qDeg` at all five composable stages of 5₁
+— assembled from the five stages above, no check recomputed here. -/
+theorem qDeg_step_spiralFive :
+    khDiffPreservesQDeg spiralFive 0 = true ∧
+    khDiffPreservesQDeg spiralFive 1 = true ∧
+    khDiffPreservesQDeg spiralFive 2 = true ∧
+    khDiffPreservesQDeg spiralFive 3 = true ∧
+    khDiffPreservesQDeg spiralFive 4 = true :=
+  ⟨qDeg_step0_spiralFive, qDeg_step1_spiralFive, qDeg_step2_spiralFive,
+    qDeg_step3_spiralFive, qDeg_step4_spiralFive⟩
+
+/-- Graded dimensions of `C⁰`. -/
+theorem gradedDim0_spiralFive :
+    gradedDim spiralFive 0 = [(3, 1), (5, 2), (7, 1)] := by decide
+
+/-- Graded dimensions of `C¹`. -/
+theorem gradedDim1_spiralFive : gradedDim spiralFive 1 = [(5, 5), (7, 5)] := by decide
+
+/-- Graded dimensions of `C²`. -/
+theorem gradedDim2_spiralFive :
+    gradedDim spiralFive 2 = [(5, 10), (7, 20), (9, 10)] := by decide
+
+/-- Graded dimensions of `C³`. -/
+theorem gradedDim3_spiralFive :
+    gradedDim spiralFive 3 = [(5, 10), (7, 30), (9, 30), (11, 10)] := by decide
+
+/-- Graded dimensions of `C⁴`. -/
+theorem gradedDim4_spiralFive :
+    gradedDim spiralFive 4 = [(5, 5), (7, 20), (9, 30), (11, 20), (13, 5)] := by decide
+
+/-- Graded dimensions of `C⁵`. -/
+theorem gradedDim5_spiralFive :
+    gradedDim spiralFive 5 =
+      [(5, 1), (7, 5), (9, 10), (11, 10), (13, 5), (15, 1)] := by decide
+
+/-- Graded dimensions of the chain groups — assembled from the six stages
+above, no grading recomputed here. -/
+theorem gradedDim_spiralFive :
+    gradedDim spiralFive 0 = [(3, 1), (5, 2), (7, 1)] ∧
+    gradedDim spiralFive 1 = [(5, 5), (7, 5)] ∧
+    gradedDim spiralFive 2 = [(5, 10), (7, 20), (9, 10)] ∧
+    gradedDim spiralFive 3 = [(5, 10), (7, 30), (9, 30), (11, 10)] ∧
+    gradedDim spiralFive 4 = [(5, 5), (7, 20), (9, 30), (11, 20), (13, 5)] ∧
+    gradedDim spiralFive 5 =
+      [(5, 1), (7, 5), (9, 10), (11, 10), (13, 5), (15, 1)] :=
+  ⟨gradedDim0_spiralFive, gradedDim1_spiralFive, gradedDim2_spiralFive,
+    gradedDim3_spiralFive, gradedDim4_spiralFive, gradedDim5_spiralFive⟩
+
+/-- `H^{0,3}`: 1 — a point on the lower diagonal. -/
+theorem homG_0_3_spiralFive : homGradedDim spiralFive 0 3 = 1 := by decide
+
+/-- `H^{0,5}`: 1. -/
+theorem homG_0_5_spiralFive : homGradedDim spiralFive 0 5 = 1 := by decide
+
+/-- `H^{2,7}`: 1. -/
+theorem homG_2_7_spiralFive : homGradedDim spiralFive 2 7 = 1 := by decide
+
+/-- `H^{3,11}`: 1. -/
+theorem homG_3_11_spiralFive : homGradedDim spiralFive 3 11 = 1 := by decide
+
+/-- `H^{4,11}`: 1. -/
+theorem homG_4_11_spiralFive : homGradedDim spiralFive 4 11 = 1 := by decide
+
+/-- `H^{5,15}`: 1. -/
+theorem homG_5_15_spiralFive : homGradedDim spiralFive 5 15 = 1 := by decide
+
+/-- `H^{1,5}`: 0 — control zero. -/
+theorem homG_1_5_spiralFive : homGradedDim spiralFive 1 5 = 0 := by decide
+
+/-- `H^{1,7}`: 0 — control zero. -/
+theorem homG_1_7_spiralFive : homGradedDim spiralFive 1 7 = 0 := by decide
+
+/-- `H^{2,9}`: 0 — control zero. -/
+theorem homG_2_9_spiralFive : homGradedDim spiralFive 2 9 = 0 := by decide
+
+/-- The graded homology table: six dim-1 points on the two diagonals
+`j − 2r ∈ {3, 5}` = σ ± 1 (σ(5₁) = 4 read off the archived table), plus
+three control zeros (`H^{1,5}`, `H^{1,7}`, `H^{2,9}`) — the announced
+support for a thin alternating knot. Assembled from the nine points
+above; each `homGradedDim` is evaluated exactly once, in its own
+declaration. -/
+theorem homGradedDim_spiralFive :
+    homGradedDim spiralFive 0 3 = 1 ∧
+    homGradedDim spiralFive 0 5 = 1 ∧
+    homGradedDim spiralFive 2 7 = 1 ∧
+    homGradedDim spiralFive 3 11 = 1 ∧
+    homGradedDim spiralFive 4 11 = 1 ∧
+    homGradedDim spiralFive 5 15 = 1 ∧
+    homGradedDim spiralFive 1 5 = 0 ∧
+    homGradedDim spiralFive 1 7 = 0 ∧
+    homGradedDim spiralFive 2 9 = 0 :=
+  ⟨homG_0_3_spiralFive, homG_0_5_spiralFive, homG_2_7_spiralFive,
+    homG_3_11_spiralFive, homG_4_11_spiralFive, homG_5_15_spiralFive,
+    homG_1_5_spiralFive, homG_1_7_spiralFive, homG_2_9_spiralFive⟩
+
+/-- Graded Euler characteristic at `q = −1`: −2, the bench's invariant
+across all three cases (trefoil, figure-eight, 5₁). -/
+theorem chi_spiralFive : chiAtMinusOne spiralFive = -2 := by decide
 
 end Knots_en
