@@ -54,10 +54,13 @@ theorie du decodage — il l'**appelle**.
    dans `pairs`, `costL_eq_costW` le relie au cout pondere du pli 5 apres
    oubli, et `costL_ge_huffman` obtient l'optimalite en appelant
    `huffman_optimal` — sans redemontrer un pli. **Cas limites** (jalon 4) :
-   alphabet vide sans aucun arbre (`no_LTree_zero`), singleton en deux
-   conventions mesurees — mot vide a cout nul (Huffman,
-   `costL_singleton_empty_word`) contre un bit a deux fois le poids (Python,
-   `pythonSingleton`).
+   alphabet vide sans aucun arbre (`no_LTree_zero`) ; singleton en trois
+   termes mesures et non confondus — mot vide a cout nul (Huffman,
+   `costL_singleton_empty_word`) ; un seul mot d'un bit, injectif et de cout
+   `wt s` pour le codec natif du carnet, sans representation totale
+   (`one_bit_singleton_has_no_total_tree`) ; et le temoin total
+   `duplicatedLeaf`, non injectif (`duplicatedLeaf_not_nodup`) et a deux fois
+   le poids (`costL_duplicatedLeaf`).
 8. **Reconstruction canonique** (jalon 5) : `buildCanon` remonte le chemin
    inverse — d'un vecteur de longueurs par symbole vers l'arbre. La
    construction passe par un arbre a trous (`PTree`) et **refuse** les trous a
@@ -687,10 +690,13 @@ theorem encodeMsg_none_of_absent {n : Nat} (t : LTree n) (s : Fin n)
 
 Les deux cas limites que le carnet Python tranche par convention sont
 tranches ici par theoreme. Sur l'alphabet vide, la question ne se pose pas :
-aucun arbre n'existe. Sur le singleton, les DEUX conventions coexistent avec
-leurs couts mesures : le code prefixe injectif (feuille-racine, mot vide,
-cout nul — celui de `huffman` et de `leaf_root_contract`) et la convention
-Python a un bit, qui n'est PAS un code injectif et paie deux fois le poids. -/
+aucun arbre n'existe. Sur le singleton, TROIS termes sont mesures et non
+confondus : le code prefixe injectif (feuille-racine, mot vide, cout nul —
+celui de `huffman` et de `leaf_root_contract`) ; le singleton REEL du carnet
+02 — un seul mot d'un bit, injectif, de cout `wt s`, et incomplete (Kraft
+1/2) : il n'a aucune representation totale, ce que dit
+`one_bit_singleton_has_no_total_tree` ; et le temoin total `duplicatedLeaf`,
+qui duplique l'etiquette pour remplir l'arbre — non injectif, cout double. -/
 
 /-- **Alphabet vide : aucun arbre etiquete n'existe.** La feuille exigerait
 un symbole de `Fin 0` (type vide) et le noeud herite de l'impossible sur son
@@ -707,25 +713,68 @@ theorem costL_singleton_empty_word (wt : Fin 1 → Nat) :
     costL wt (.leaf 0) = 0 := by
   simp [costL, pairs]
 
-/-- **Convention Python du singleton, realisee** : un bit par symbole. Sa
-seule realisation arborescente met le symbole sur les DEUX fils — chaque bit
-decode vers 0. -/
-def pythonSingleton : LTree 1 := .node (.leaf 0) (.leaf 0)
+/-- Le parcours d'un arbre n'est jamais vide : chaque feuille rend une
+entree, chaque noeud en rend au moins deux. -/
+theorem pairs_not_nil {n : Nat} : ∀ t : LTree n, pairs t ≠ []
+  | .leaf _ => by simp [pairs]
+  | .node l r => by
+      intro h
+      simp only [pairs] at h
+      cases hl : pairs l with
+      | nil => exact absurd hl (pairs_not_nil l)
+      | cons x xs =>
+          rw [hl] at h
+          simp at h
 
-/-- La convention Python a un bit n'est pas un code injectif : le meme
-symbole y a deux mots. -/
-theorem pythonSingleton_not_nodup : ¬ Nodup pythonSingleton := fun h =>
+/-- **Le singleton a un bit du carnet 02 n'a pas d'arbre total.** Le codec
+natif (`huffman` a un symbole) rend un dictionnaire a un seul mot d'un bit —
+injectif, de cout `wt s`, incomplete (Kraft 1/2). `LTree` etant total, ce
+code ne s'y represente pas : un arbre a un symbole est soit la feuille-racine
+(mot vide), soit un noeud dont chaque sous-arbre porte au moins un mot —
+donc au moins deux entrees, jamais une seule d'un bit. La confrontation de
+cout et d'injectivite avec le codec natif vit dans le test Python
+companion ; l'arbre `duplicatedLeaf` ci-dessous est le temoin TOTAL le plus
+proche, pas ce codec. -/
+theorem one_bit_singleton_has_no_total_tree (b : Bool) (t : LTree 1) :
+    pairs t ≠ [([b], 0)] := by
+  cases t with
+  | leaf s =>
+      fin_cases s
+      cases b <;> simp [pairs]
+  | node l r =>
+      have hl : (pairs l).length ≠ 0 :=
+        fun hp => pairs_not_nil l (List.length_eq_zero_iff.mp hp)
+      have hr : (pairs r).length ≠ 0 :=
+        fun hp => pairs_not_nil r (List.length_eq_zero_iff.mp hp)
+      intro h
+      have hlen : 2 ≤ (pairs (.node l r)).length := by
+        simp only [pairs, List.map_append, List.length_append, List.length_map]
+        omega
+      rw [h] at hlen
+      simp at hlen
+
+/-- **Temoin d'arbre total a etiquette dupliquee** : le symbole sur les deux
+fils. Ce n'est PAS le codec du carnet 02 — celui-ci rend un seul mot d'un
+bit et n'a aucune representation totale
+(`one_bit_singleton_has_no_total_tree`). Ce temoin est l'arbre total le plus
+proche : il remplit les deux fils au prix de la duplication. -/
+def duplicatedLeaf : LTree 1 := .node (.leaf 0) (.leaf 0)
+
+/-- L'arbre temoin a etiquette dupliquee n'est pas un code injectif : le meme
+symbole y a deux mots. C'est le defaut du temoin, pas celui du codec natif
+(qui est injectif). -/
+theorem duplicatedLeaf_not_nodup : ¬ Nodup duplicatedLeaf := fun h =>
   absurd (h [true] [false] 0
-    (by simp [pythonSingleton, pairs]) (by simp [pythonSingleton, pairs]))
+    (by simp [duplicatedLeaf, pairs]) (by simp [duplicatedLeaf, pairs]))
     (by simp)
 
-/-- Et son cout etiquete paie chaque bit : deux fois le poids du symbole,
-contre zero pour la convention Huffman. La difference est mesuree, pas
-gommee : ce module ne reclame ni l'une ni l'autre comme « la » convention —
-il expose les deux. -/
-theorem costL_pythonSingleton (wt : Fin 1 → Nat) :
-    costL wt pythonSingleton = 2 * wt 0 := by
-  rw [pythonSingleton, costL_node, costL_singleton_empty_word]
+/-- Et son cout etiquete paie chaque bit : deux fois le poids du symbole —
+contre `wt s` exactement pour le codec natif du carnet (un seul mot d'un
+bit), et zero pour la feuille-racine. Les trois valeurs sont mesurees, pas
+gommees. -/
+theorem costL_duplicatedLeaf (wt : Fin 1 → Nat) :
+    costL wt duplicatedLeaf = 2 * wt 0 := by
+  rw [duplicatedLeaf, costL_node, costL_singleton_empty_word]
   simp [labels, pairs]
   omega
 
@@ -737,8 +786,10 @@ theorem costL_pythonSingleton (wt : Fin 1 → Nat) :
 #print axioms encodeMsg_none_of_absent
 #print axioms no_LTree_zero
 #print axioms costL_singleton_empty_word
-#print axioms pythonSingleton_not_nodup
-#print axioms costL_pythonSingleton
+#print axioms pairs_not_nil
+#print axioms one_bit_singleton_has_no_total_tree
+#print axioms duplicatedLeaf_not_nodup
+#print axioms costL_duplicatedLeaf
 
 /-! ## Ancres d'execution -/
 
@@ -913,8 +964,10 @@ theorem buildCanon_two : buildCanon ![1, 1] = some (.node (.leaf 1) (.leaf 0)) :
   decide
 
 /-- **Le singleton retombe sur la convention Huffman** : longueur 0, mot vide,
-feuille-racine — la meme que `costL_singleton_empty_word`, et non le bit
-double de `pythonSingleton`. -/
+feuille-racine — la meme que `costL_singleton_empty_word`. Le codec natif du
+carnet, lui, rend un mot d'un bit : il n'a pas d'arbre total
+(`one_bit_singleton_has_no_total_tree`), et la reconstruction ne peut donc
+rendre que la feuille-racine ou refuser. -/
 theorem buildCanon_singleton : buildCanon ![0] = some (.leaf 0) := by
   decide
 

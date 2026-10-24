@@ -132,10 +132,32 @@ def test_singleton_is_one_bit_in_the_notebook():
     """La convention Python du singleton, mesuree : un bit, pas le mot vide.
 
     Le carnet code un alphabet a un symbole sur un bit (`{symbole: 1}`,
-    `{symbole: "0"}`). Le module Lean mesure l'autre convention possible :
-    la feuille-racine, mot vide, cout nul (`costL_singleton_empty_word`).
-    Ce test fige la difference au lieu de la confondre.
+    `{symbole: "0"}`). Le module Lean mesure les autres termes : la
+    feuille-racine, mot vide, cout nul (`costL_singleton_empty_word`) et le
+    temoin total a etiquette dupliquee (`duplicatedLeaf`, non injectif, cout
+    double). Ce test fige le contrat du codec natif — injectif et cout
+    `wt s`, PAS le double — au lieu de l'attribuer au temoin.
     """
     lengths, code = bridge.huffman({5: 7})
     assert lengths == {5: 1}
     assert code == {5: "0"}
+    # Le codec natif est injectif et paie une fois le poids : 7, pas 14.
+    assert bridge.is_injective(code)
+    assert sum(lengths[symbol] * 7 for symbol in lengths) == 7
+
+
+def test_lean_reconstructed_tree_matches_notebook_words():
+    """Comparaison differentielle : l'arbre Lean reconstruit contre le carnet.
+
+    Les mots viennent du compteur du carnet (`code_canonique`) applique aux
+    longueurs **lues dans le module Lean** ; l'autre cote est le mapping
+    symbole -> mot **lu dans la definition Lean** de `demoCanonTree` (le terme
+    que `buildCanon_demo` fige). Aucune des deux tables n'est recopiee ici :
+    c'est la confrontation que les dix tests precedents ne faisaient pas.
+    """
+    lengths = {symbol: L for symbol, L in enumerate(bridge.lean_demo_lengths())}
+    notebook_words = {
+        symbol: [bit == "1" for bit in word]
+        for symbol, word in bridge.canonical_code(lengths).items()
+    }
+    assert notebook_words == bridge.lean_demo_canon_words()

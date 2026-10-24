@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import ast
 import json
+import re
 from pathlib import Path
 from typing import Any, Callable
 
@@ -149,6 +150,52 @@ def lean_demo_lengths(path: Path | None = None) -> list[int]:
     raise RuntimeError(f"demoLengths introuvable dans {lean}")
 
 
+def _parse_ltree(tokens: list[str]) -> tuple:
+    """Prefixe `.node`/`.leaf` -> arbre imbrique (les parentheses ne portent rien)."""
+    head = tokens.pop(0)
+    if head == ".leaf":
+        return ("leaf", int(tokens.pop(0)))
+    if head == ".node":
+        return ("node", _parse_ltree(tokens), _parse_ltree(tokens))
+    raise RuntimeError(f"jeton Lean inattendu : {head}")
+
+
+def _tree_words(tree: tuple, prefix: tuple[bool, ...] = ()) -> dict[int, list[bool]]:
+    """Le mapping symbole -> mot, avec `true` a gauche — la convention de `pairs`."""
+    if tree[0] == "leaf":
+        return {tree[1]: list(prefix)}
+    words = _tree_words(tree[1], prefix + (True,))
+    words.update(_tree_words(tree[2], prefix + (False,)))
+    return words
+
+
+def lean_demo_canon_words(path: Path | None = None) -> dict[int, list[bool]]:
+    """Le code que l'arbre Lean `demoCanonTree` realise, symbole par symbole.
+
+    L'arbre est **lu dans le module Lean** (sa definition est un terme clos) :
+    le test compare donc la table du carnet au code que la preuve Lean fige,
+    au lieu de comparer deux copies d'une meme constante.
+    """
+    lean = path or (Path(__file__).parent / "Compression_lean" / "SymbolCodec.lean")
+    lines = lean.read_text(encoding="utf-8").splitlines()
+    for index, line in enumerate(lines):
+        if not line.strip().startswith("def demoCanonTree"):
+            continue
+        body = [line]
+        cursor = index + 1
+        while cursor < len(lines) and lines[cursor].strip():
+            body.append(lines[cursor])
+            cursor += 1
+        joined = " ".join(body)
+        if ":=" not in joined:
+            raise RuntimeError(f"demoCanonTree sans ':= ' dans {lean}")
+        tokens = re.findall(r"\.node|\.leaf|\d+", joined.split(":=", 1)[1])
+        if not tokens:
+            raise RuntimeError(f"demoCanonTree sans terme dans {lean}")
+        return _tree_words(_parse_ltree(tokens))
+    raise RuntimeError(f"demoCanonTree introuvable dans {lean}")
+
+
 __all__ = [
     "canonical_code",
     "canonical_lengths",
@@ -158,6 +205,7 @@ __all__ = [
     "huffman",
     "is_injective",
     "is_prefix_free",
+    "lean_demo_canon_words",
     "lean_demo_lengths",
     "symbol_order",
     "table_decodage",

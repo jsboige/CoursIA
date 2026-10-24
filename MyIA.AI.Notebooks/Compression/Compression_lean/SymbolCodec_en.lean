@@ -56,9 +56,13 @@ decoding theory — it **calls** it.
    of fold 5 after forgetting, and `costL_ge_huffman` obtains optimality by
    calling `huffman_optimal` — without re-proving a single fold. **Edge
    cases** (milestone 4): the empty alphabet has no tree at all
-   (`no_LTree_zero`), and the singleton comes in two measured conventions —
-   empty word at zero cost (Huffman, `costL_singleton_empty_word`) versus
-   one bit at twice the weight (Python, `pythonSingleton`).
+   (`no_LTree_zero`); the singleton comes in three measured, non-confused
+   terms — empty word at zero cost (Huffman, `costL_singleton_empty_word`);
+   a single one-bit word, injective and of cost `wt s` for the notebook's
+   native codec, with no total representation
+   (`one_bit_singleton_has_no_total_tree`); and the total witness
+   `duplicatedLeaf`, non-injective (`duplicatedLeaf_not_nodup`) and at twice
+   the weight (`costL_duplicatedLeaf`).
 
 EN sibling of `SymbolCodec.lean`, self-contained mirror in the same namespace
 `CompressionLean` (it does not import the FR file) — identical statements
@@ -678,12 +682,15 @@ theorem encodeMsg_none_of_absent {n : Nat} (t : LTree n) (s : Fin n)
 
 /-! ## Milestone 4: empty and singleton alphabets
 
-The two edge cases the Python notebook settles by convention are settled
-here by theorem. On the empty alphabet the question never arises: no tree
-exists. On the singleton, BOTH conventions coexist with their measured
-costs: the injective prefix code (leaf root, empty word, zero cost — that
-of `huffman` and of `leaf_root_contract`) and the one-bit Python
-convention, which is NOT an injective code and pays twice the weight. -/
+The two edge cases that the Python notebook settles by convention are settled
+here by theorem. On the empty alphabet the question does not arise: no tree
+exists. On the singleton, THREE terms are measured and not confused: the
+injective prefix code (root leaf, empty word, zero cost — the one of `huffman`
+and of `leaf_root_contract`); the REAL singleton of notebook 02 — a single
+one-bit word, injective, of cost `wt s`, and incomplete (Kraft 1/2): it has no
+total representation, which is what `one_bit_singleton_has_no_total_tree`
+states; and the total witness `duplicatedLeaf`, which duplicates the label to
+fill the tree — non-injective, doubled cost. -/
 
 /-- **Empty alphabet: no labelled tree exists.** A leaf would require a
 symbol of `Fin 0` (an empty type) and a node inherits the impossibility
@@ -701,25 +708,66 @@ theorem costL_singleton_empty_word (wt : Fin 1 → Nat) :
     costL wt (.leaf 0) = 0 := by
   simp [costL, pairs]
 
-/-- **The Python singleton convention, realized**: one bit per symbol. Its
-only tree realization puts the symbol on BOTH children — every bit decodes
-to 0. -/
-def pythonSingleton : LTree 1 := .node (.leaf 0) (.leaf 0)
+/-- The walk of a tree is never empty: every leaf yields one entry, every node
+yields at least two. -/
+theorem pairs_not_nil {n : Nat} : ∀ t : LTree n, pairs t ≠ []
+  | .leaf _ => by simp [pairs]
+  | .node l r => by
+      intro h
+      simp only [pairs] at h
+      cases hl : pairs l with
+      | nil => exact absurd hl (pairs_not_nil l)
+      | cons x xs =>
+          rw [hl] at h
+          simp at h
 
-/-- The one-bit Python convention is not an injective code: the same symbol
-has two words there. -/
-theorem pythonSingleton_not_nodup : ¬ Nodup pythonSingleton := fun h =>
+/-- **The notebook's one-bit singleton has no total tree.** The native codec
+(`huffman` on one symbol) returns a dictionary with a single one-bit word —
+injective, of cost `wt s`, incomplete (Kraft 1/2). `LTree` being total, that
+code cannot be represented in it: a tree on one symbol is either the root leaf
+(empty word), or a node whose every subtree carries at least one word — hence
+at least two entries, never a single one-bit one. The cost and injectivity
+confrontation with the native codec lives in the companion Python test; the
+`duplicatedLeaf` tree below is the closest TOTAL witness, not that codec. -/
+theorem one_bit_singleton_has_no_total_tree (b : Bool) (t : LTree 1) :
+    pairs t ≠ [([b], 0)] := by
+  cases t with
+  | leaf s =>
+      fin_cases s
+      cases b <;> simp [pairs]
+  | node l r =>
+      have hl : (pairs l).length ≠ 0 :=
+        fun hp => pairs_not_nil l (List.length_eq_zero_iff.mp hp)
+      have hr : (pairs r).length ≠ 0 :=
+        fun hp => pairs_not_nil r (List.length_eq_zero_iff.mp hp)
+      intro h
+      have hlen : 2 ≤ (pairs (.node l r)).length := by
+        simp only [pairs, List.map_append, List.length_append, List.length_map]
+        omega
+      rw [h] at hlen
+      simp at hlen
+
+/-- **Total-tree witness with a duplicated label**: the symbol on both
+children. This is NOT the codec of notebook 02 — that one returns a single
+one-bit word and has no total representation
+(`one_bit_singleton_has_no_total_tree`). This witness is the closest total
+tree: it fills both children at the price of duplication. -/
+def duplicatedLeaf : LTree 1 := .node (.leaf 0) (.leaf 0)
+
+/-- The witness tree with a duplicated label is not an injective code: the same
+symbol has two words there. That is the witness's defect, not the native
+codec's (which is injective). -/
+theorem duplicatedLeaf_not_nodup : ¬ Nodup duplicatedLeaf := fun h =>
   absurd (h [true] [false] 0
-    (by simp [pythonSingleton, pairs]) (by simp [pythonSingleton, pairs]))
+    (by simp [duplicatedLeaf, pairs]) (by simp [duplicatedLeaf, pairs]))
     (by simp)
 
-/-- And its labelled cost pays every bit: twice the symbol's weight,
-against zero for the Huffman convention. The difference is measured, not
-smoothed over: this module claims neither one as "the" convention — it
-exposes both. -/
-theorem costL_pythonSingleton (wt : Fin 1 → Nat) :
-    costL wt pythonSingleton = 2 * wt 0 := by
-  rw [pythonSingleton, costL_node, costL_singleton_empty_word]
+/-- And its labelled cost pays every bit: twice the symbol's weight — against
+exactly `wt s` for the notebook's native codec (a single one-bit word), and
+zero for the root leaf. All three values are measured, not smoothed over. -/
+theorem costL_duplicatedLeaf (wt : Fin 1 → Nat) :
+    costL wt duplicatedLeaf = 2 * wt 0 := by
+  rw [duplicatedLeaf, costL_node, costL_singleton_empty_word]
   simp [labels, pairs]
   omega
 
@@ -731,8 +779,10 @@ theorem costL_pythonSingleton (wt : Fin 1 → Nat) :
 #print axioms encodeMsg_none_of_absent
 #print axioms no_LTree_zero
 #print axioms costL_singleton_empty_word
-#print axioms pythonSingleton_not_nodup
-#print axioms costL_pythonSingleton
+#print axioms pairs_not_nil
+#print axioms one_bit_singleton_has_no_total_tree
+#print axioms duplicatedLeaf_not_nodup
+#print axioms costL_duplicatedLeaf
 
 /-! ## Execution anchors -/
 
@@ -904,8 +954,10 @@ theorem buildCanon_two : buildCanon ![1, 1] = some (.node (.leaf 1) (.leaf 0)) :
   decide
 
 /-- **The singleton falls back on the Huffman convention**: length 0, empty
-word, root leaf — the same one as `costL_singleton_empty_word`, not the
-doubled bit of `pythonSingleton`. -/
+word, root leaf — the same one as `costL_singleton_empty_word`. The notebook's
+native codec, on the other hand, returns a one-bit word: it has no total tree
+(`one_bit_singleton_has_no_total_tree`), so the reconstruction can only return
+the root leaf or refuse. -/
 theorem buildCanon_singleton : buildCanon ![0] = some (.leaf 0) := by
   decide
 
