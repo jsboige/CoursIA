@@ -79,8 +79,8 @@ rupture près (saut de plus de 60 Mio d'un échantillon au suivant) :
 | Fenêtre déclarée du manifeste (3D-02) | Indices | n | min | max | médiane | mode | Ce que la fenêtre contient en plus du palier |
 |---|---|---:|---:|---:|---:|---:|---|
 | *aucune* — repos avant run | 0-4 | 5 | 425 | 428 | 427 | 427 | — |
-| `0-300` « scène jouet + grille du critic » | 0-58 | 59 | 425 | 3 018 | 2 992 | 2 989 | indices 0-6 : repos puis rampe (331 → 581 → 2 912) ; palier réel sur 7-58 (médiane 2 993) |
-| `300-1200` « Lego, bruit de pose, focales » | 59-235 | 177 | 4 195 | **4 228** | **4 202** | 4 202 | rien : la fenêtre est un palier du début à la fin |
+| `0-300` « scène jouet + grille du critic » | 0-58 | 59 | 425 | 3 018 | 2 992 | 2 989 | indices 0-6 : repos puis rampe de **3D-02** (427 → 650 → 2 171) ; palier réel sur 7-58 (médiane 2 993) |
+| `300-1200` « Lego, bruit de pose, focales » | 59-235 | 177 | 4 195 | **4 228** | **4 202** | 4 202 | rien : la fenêtre est un palier du début à la fin. 177 échantillons ici (bornes `300 ≤ t < 1200`) ; l'arbitrage 4228/4217 en cite 179 parce qu'il prend les indices 59-237, qui incluent les deux premiers points de la phase 3 — même série, bornes différentes |
 | `1200-1226` « comptage de points N=256 » | 236-241 | 6 | 427 | **7 740** | 5 977 | — | indice 241 (t = 1 226 s) : déchargement du modèle, retour à 427 Mio |
 
 Les ruptures mesurées tombent à `t = 300,4 s` (entrée en phase 2) et

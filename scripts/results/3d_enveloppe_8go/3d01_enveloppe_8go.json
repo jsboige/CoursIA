@@ -115,7 +115,7 @@
   "sample_period_s_declared": 5,
   "sample_period_s_observed_median": 5.07,
   "field_map": {
-   "peak_mib": "trace indices 24 (t=121.7 s) et 29 (t=146.7 s), 4318 Mio",
+   "peak_mib": "trace indices 24 (t=121.7 s) et 29 (t=147.0 s), 4318 Mio",
    "idle_mib": "trace indice 2 (t=10 s), 322 Mio = minimum de la serie ; le repos avant run vaut 331 Mio (indices 0 et 1, et journal `GPU avant` / `GPU apres`)",
    "temp_max_c": "maximum de la colonne temp_gpu_c sur les 42 echantillons",
    "util_max_pct": "maximum de la colonne utilisation_gpu sur les 42 echantillons"

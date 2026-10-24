@@ -106,7 +106,7 @@ champs anglais).
 
 | Chiffre cité | Champ | Ligne de la trace |
 |---|---|---|
-| Pic **4 318 Mio** (52,7 %), 3D-01 | `vram.peak_mib` | `vram-3d01.csv` indices **24** (t = 121,7 s) et **29** (t = 146,7 s) |
+| Pic **4 318 Mio** (52,7 %), 3D-01 | `vram.peak_mib` | `vram-3d01.csv` indices **24** (t = 121,7 s) et **29** (t = 147,0 s) |
 | Repos **322 Mio**, 3D-01 | `vram.idle_mib` | indice **2** (t = 10 s), minimum de la série ; le repos d'avant run vaut 331 Mio (indices 0-1, et lignes `GPU avant` / `GPU apres` du journal) |
 | 73 °C, 97 % | `vram.temp_max_c`, `vram.util_max_pct` | maximum des colonnes `temp_gpu_c` et `utilisation_gpu` sur 42 échantillons |
 | Run **207,6 s** | `execution.wallclock_s` | journal : `Total time: 207.6s` ; la trace couvre 207,8 s (42 échantillons à 5,07 s) |
@@ -159,9 +159,18 @@ cette série : elle repose sur l'absence d'import CUDA et sur la carte restée a
 niveau du repos, que le manifeste atteste.
 
 **Vérification.** `python scripts/audit/check_vram_envelope_rederivable.py`
-refait ces calculs depuis les CSV, contrôle l'empreinte de chaque trace et
-échoue si un champ de manifeste a dérivé. Il n'est pas câblé en CI : il se lance
-à la main après toute modification d'un manifeste ou d'une trace.
+refait ces calculs depuis les CSV et contrôle ce qui se re-dérive exactement :
+les deux empreintes (`trace_sha256`, `journal_sha256`), `samples`,
+`sample_period_s`, `trace_bytes`, `trace_samples`, `trace_span_s`, `peak_mib`,
+`peak_pct`, `temp_max_c`, `util_max_pct`, et `idle_mib` **à l'échantillon que
+le `field_map` désigne** (indice 2). Pour `profil_par_phase_mib[i].plateau_mib`
+il vérifie la **présence** de la valeur citée dans la fenêtre de sa phase et
+imprime à côté la statistique du palier (n, min, max, médiane, mode) : il
+n'arbitre pas lequel des échantillons mérite le nom de palier, et deux valeurs
+voisines y sont donc également acceptées. Un champ re-dérivable qui dérive
+rougit ; un choix éditorial ne se détecte pas mécaniquement. Il n'est pas câblé
+en CI : il se lance à la main après toute modification d'un manifeste ou d'une
+trace.
 
 ## Artefacts
 
