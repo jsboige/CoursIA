@@ -138,7 +138,9 @@ def main() -> int:
         "utc_started": datetime.now(timezone.utc).isoformat(),
         "platform": platform.platform(),
         "python": platform.python_version(),
-        "executable": str(args.executable),
+        # Identite portable : le nom du binaire, jamais le chemin du poste qui a
+        # produit le resultat. L'empreinte ci-dessous est la provenance verifiable.
+        "executable": args.executable.name,
         "executable_sha256": sha256_file(args.executable),
     }
 

@@ -1,8 +1,8 @@
 {
-  "utc_started": "2026-10-22T15:59:51.560886+00:00",
+  "utc_started": "2026-10-24T00:20:14.080592+00:00",
   "platform": "Windows-11-10.0.26300-SP0",
   "python": "3.13.7",
-  "executable": "D:\\Dev\\tools\\harvey\\harvey_adapter.exe",
+  "executable": "harvey_adapter.exe",
   "executable_sha256": "2ce5d768b430102c5efff804d08e3048be69066a746a240ce257b927668357cb",
   "harvey_version": {
     "ntl": "11.6.0",
