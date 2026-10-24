@@ -26,7 +26,11 @@ la sonde filtre sur les succes.
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SWEEP = REPO_ROOT / ".github" / "workflows" / "pr-gate-stale-sweep.yml"
@@ -182,3 +186,113 @@ def test_les_avertissements_de_timing_nomment_endpoint_et_code():
         "chaque famille d'echec (listing, check-runs, timing) doit extraire le "
         "code du stderr, pas le deduire"
     )
+
+
+# --- Execution sous le shell REEL de GitHub Actions --------------------------
+#
+# Les tests ci-dessus lisent le YAML, et une lecture statique ne voit pas
+# `errexit`. Un step sans `shell:` tourne sous `bash --noprofile --norc -eo
+# pipefail` : `-e` est actif, et une affectation `X=$(grep ...)` qui ne trouve
+# rien rend 1 -- le shell sort AVANT la ligne de repli, l'annotation n'est
+# jamais ecrite. La ligne de repli existe pourtant, donc tous les tests
+# statiques passent. Mesure du 2026-10-24 (CHANGES_REQUESTED ai-01 sur
+# `1c16d8825e`) : la branche de no-op etait morte a l'execution, et le pire cas
+# etait la boucle des check-runs, ou une lecture ratee faisait `continue` avant
+# la correction et tuait tout le balayage apres.
+#
+# D'ou ces trois tests : ils extraient le texte reel et l'executent sous les
+# memes options que la CI. Un `|| true` manquant les fait echouer.
+
+_BASH = shutil.which("bash")
+
+# Toute affectation qui extrait le code HTTP du stderr de `gh` : c'est la forme
+# exacte que `errexit` tue quand le motif ne matche pas.
+_ASSIGN_RE = re.compile(
+    r"[A-Z_]+=\$\(grep -oE 'HTTP \[0-9\]\+' \"\$[A-Z_]+\" \| tail -1[^)]*\)"
+)
+
+
+def _run_bash(script: str, cwd: Path) -> subprocess.CompletedProcess:
+    """Execute `script` sous les options du shell par defaut de la CI."""
+    return subprocess.run(
+        [_BASH, "--noprofile", "--norc", "-e", "-o", "pipefail", "-c", script],
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=60,
+    )
+
+
+def _exige_bash() -> None:
+    if _BASH is None:
+        pytest.skip("bash absent : l'execution sous le shell de la CI est impossible")
+
+
+def _script_noop(tmp_path: Path, stderr_gh: str) -> subprocess.CompletedProcess:
+    corps = _branche_noop()
+    (tmp_path / "err.txt").write_text(stderr_gh, encoding="utf-8")
+    script = (
+        "REPO=jsboige/CoursIA\n"
+        "LIST_ERR=err.txt\n"
+        "LIST_CODE='aucun code HTTP'\n"
+        "LIST_DETAIL='aucun message de gh'\n"
+        f"{corps}\n"
+    )
+    return _run_bash(script, tmp_path)
+
+
+def test_la_branche_de_no_op_s_execute_quand_le_stderr_ne_porte_aucun_code(tmp_path):
+    # Cas reel d'une panne reseau : `gh` ecrit un message SANS `(HTTP nnn)`.
+    # C'est exactement l'entree qui faisait mourir le shell sans annotation.
+    _exige_bash()
+    r = _script_noop(tmp_path, "dial tcp: lookup api.github.com: no such host\n")
+    sortie = r.stdout + r.stderr
+    assert r.returncode == 1, (
+        f"le no-op doit sortir en 1, pas mourir avant d'annoter (rc={r.returncode})"
+        f" -- sortie : {sortie!r}"
+    )
+    assert "code=aucun code HTTP" in sortie, (
+        f"le repli du code n'a pas ete atteint sous errexit : {sortie!r}"
+    )
+    assert "detail=dial tcp" in sortie, sortie
+
+
+def test_la_branche_de_no_op_s_execute_quand_le_stderr_porte_un_code(tmp_path):
+    # Controle positif : quand le code est la, il est extrait et nomme.
+    _exige_bash()
+    r = _script_noop(tmp_path, "gh: Resource not accessible (HTTP 403)\n")
+    sortie = r.stdout + r.stderr
+    assert r.returncode == 1, sortie
+    assert "code=HTTP 403" in sortie, (
+        f"le code doit etre extrait du stderr, pas remplace par le repli : {sortie!r}"
+    )
+
+
+def test_chaque_extraction_de_code_survit_a_un_stderr_vide(tmp_path):
+    # Les quatre familles (listing, check-runs, les deux timing) sont couvertes
+    # d'un coup : la forme fautive est la meme partout, seule la variable change.
+    # Un stderr vide est le pire cas -- `grep` rend 1 sans rien ecrire.
+    _exige_bash()
+    affectations = _ASSIGN_RE.findall(SWEEP.read_text(encoding="utf-8"))
+    assert len(affectations) >= 4, (
+        f"moins de quatre extractions trouvees ({len(affectations)}) : le motif "
+        "ne couvre plus la famille, le test ne prouverait rien"
+    )
+    (tmp_path / "err.txt").write_text("", encoding="utf-8")
+    for aff in affectations:
+        var = aff.split("=", 1)[0]
+        script = (
+            "LIST_ERR=err.txt\nOMIT_ERR=err.txt\nTIM_ERR=err.txt\n"
+            f"{var}=''\n"
+            f"{aff}\n"
+            f"printf 'SURVECU [%s]\\n' \"${var}\"\n"
+        )
+        r = _run_bash(script, tmp_path)
+        assert r.returncode == 0, (
+            f"`{aff}` tue le shell sous `bash -e -o pipefail` : errexit sort "
+            f"avant le repli (rc={r.returncode}) -- {r.stderr!r}"
+        )
+        assert "SURVECU []" in r.stdout, (
+            f"la substitution doit rendre une chaine vide, pas un echec : {r.stdout!r}"
+        )
