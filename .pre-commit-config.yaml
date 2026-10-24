@@ -97,11 +97,18 @@ repos:
           pattern as fix-source-newlines). The tool does not touch code
           blocks, setext underlines, or a real cell-0 frontmatter; outputs
           and execution_count are byte-intact (no re-execution, no falsified
-          proof). See #11451 (tool) and #12075 (this wiring).
+          proof). See #11451 (tool) and #12075 (this wiring). Archived
+          notebooks (`_archive/`, convention `_archive-convention.md`) are
+          EXCLUDED: they are frozen snapshots that may still carry legacy
+          `---` openers on main, and an auto-fix firing at every touch would
+          rewrite bytes that the archive convention holds identical — the
+          workaround SKIP of #20709 commit d05a3f724b becomes structural
+          (#21058).
         entry: python scripts/notebook_tools/fix_hr_separator.py --apply
         language: system
         pass_filenames: true
         files: '\.ipynb$'
+        exclude: '_archive/'
         stages: [pre-commit]
 
       - id: markdown-rendering-guard
