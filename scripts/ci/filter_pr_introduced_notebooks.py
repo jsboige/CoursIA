@@ -8,10 +8,17 @@ que la PR n'en touche qu'**un**, et trois findings `MD_REWRITE` deja merges sur
 
 Le critere retenu est l'**auteur** du changement, pas la fraicheur d'une ref :
 un carnet n'est « introduit par la PR » que si un commit **propre a la PR** l'a
-touche, c'est-a-dire un commit non-merge de `BASE..HEAD` qui n'est pas
-atteignable depuis `main`.  Comparer les blobs a `main` ne suffit pas -- mesure
-sur #21650 : 287 -> 34 seulement, parce qu'un carnet que `main` a modifie
-**apres** le fork differe aussi de la tete, sans que la PR l'ait ecrit.
+touche, c'est-a-dire un commit de `BASE..HEAD` qui n'est pas atteignable depuis
+`main`.  Comparer les blobs a `main` ne suffit pas -- mesure sur #21650 :
+287 -> 34 seulement, parce qu'un carnet que `main` a modifie **apres** le fork
+differe aussi de la tete, sans que la PR l'ait ecrit.
+
+Les commits de **merge** comptent, mais pour ce qu'ils ecrivent eux-memes : une
+resolution de conflit -- ou une edition faite pendant le merge -- n'existe chez
+aucun parent, et la sauter retirerait du gate un carnet que la PR a bel et bien
+ecrit (faux negatif releve par l'adjoint sur #22302).  Ce que le merge a
+seulement **transporte** depuis un parent n'est pas attribue a la PR : voir
+`_changed_paths`.
 
 Le filtre est **transparent** : il lit la sortie de `git diff --name-status -M`
 sur stdin et ecrit les lignes conservees, dans le meme ordre et au meme format
@@ -121,33 +128,66 @@ def _git(*args: str) -> "str | None":
     return proc.stdout
 
 
+def _changed_paths(sha: str, parents: "list[str]") -> "set[str] | None":
+    """Chemins qu'un commit ecrit, commits de merge compris.
+
+    Un commit ordinaire se lit en differentiel de son parent. Un commit de
+    merge se lit **contre chacun de ses parents**, et l'ensemble retenu est
+    l'**intersection** : un chemin que le merge n'a pas touche est identique a
+    au moins un parent (c'est ce que la fusion a transporte), tandis qu'une
+    resolution de conflit -- ou une edition faite pendant le merge -- differe
+    de **tous** les parents. L'intersection rend donc exactement ce que le
+    merge a ecrit lui-meme, et rien de ce qu'il a transporte.
+
+    `git diff-tree` sur un commit de merge rend une sortie **vide** par defaut
+    (il faudrait `-m`/`-c`/`--cc`) : ce module ne l'interroge donc jamais nu,
+    il differentie contre les parents explicites. Rend None des qu'une lecture
+    echoue, pour que l'appelant conserve tout (fail-open).
+
+    Mesure sur la fusion `main` -> branche de #21650 : intersection vide (le
+    merge ne fait que transporter) ; sur une resolution de conflit ecrite a la
+    main : intersection = le carnet resolu.
+    """
+    if not parents:
+        # Premier commit d'une branche orpheline : `--root` le compare au vide.
+        out = _git("diff-tree", "--no-commit-id", "-r", "-M", "--name-status", "--root", sha)
+        if out is None:
+            return None
+        return {_head_path(row) for row in parse_rows(out)}
+    per_parent: "list[set[str]]" = []
+    for parent in parents:
+        out = _git("diff-tree", "-r", "-M", "--name-status", parent, sha)
+        if out is None:
+            return None
+        per_parent.append({_head_path(row) for row in parse_rows(out)})
+    return set.intersection(*per_parent)
+
+
 def pr_owned_paths(
     base_ref: str, head_ref: str, main_ref: str = "origin/main"
 ) -> "set[str] | None":
-    """Chemins touches par un commit propre a la PR (non-merge, absent de main).
+    """Chemins touches par un commit propre a la PR (merge compris), absent de main.
 
-    Rend None -- donc « tout conserver » -- des qu'une ref est illisible ou
-    qu'aucun commit propre n'est trouve : un filtre fail-open ne peut pas
-    eteindre un gate par accident.
+    Rend None -- donc « tout conserver » -- des qu'une ref est illisible, qu'un
+    differentiel echoue, ou qu'aucun commit propre n'est trouve : un filtre
+    fail-open ne peut pas eteindre un gate par accident.
     """
-    commits = _git("rev-list", "--no-merges", f"{base_ref}..{head_ref}", "--not", main_ref)
-    if commits is None:
+    listed = _git("rev-list", "--parents", f"{base_ref}..{head_ref}", "--not", main_ref)
+    if listed is None:
         return None
-    shas = [line.strip() for line in commits.splitlines() if line.strip()]
-    if not shas:
+    history: "list[tuple[str, list[str]]]" = []
+    for line in listed.splitlines():
+        parts = line.split()
+        if parts:
+            history.append((parts[0], parts[1:]))
+    if not history:
         return None
     owned: set[str] = set()
-    for sha in shas:
-        # -M : un renommage livre son nouveau chemin ; --root couvre le
-        # premier commit d'une branche orpheline.
-        status = _git(
-            "diff-tree", "--no-commit-id", "-r", "-M", "--name-status",
-            "--root", sha,
-        )
-        if status is None:
+    for sha, parents in history:
+        paths = _changed_paths(sha, parents)
+        if paths is None:
             return None
-        for row in parse_rows(status):
-            owned.add(_head_path(row))
+        owned |= paths
     return owned
 
 

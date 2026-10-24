@@ -9,8 +9,14 @@ Ce que le fichier prouve
   2. **Controle positif** : un carnet que la PR a reellement ecrit reste dans
      la liste. Un filtre qui eteindrait le gate passerait le point 1 et
      echouerait ici.
-  3. **Un commit de merge n'apporte aucun chemin** : integrer `main` dans sa
-     branche ne fait pas de la PR l'auteur de ce que `main` a ecrit.
+  3. **Un merge qui ne fait que transporter n'apporte aucun chemin** :
+     integrer `main` dans sa branche ne fait pas de la PR l'auteur de ce que
+     `main` a ecrit.
+  3bis. **Un merge qui ecrit, si** : une resolution de conflit -- ou une
+     edition faite pendant le merge -- n'existe chez aucun parent, donc elle
+     appartient a la PR. Faux negatif releve par l'adjoint sur #22302 : avec
+     `rev-list --no-merges`, le carnet resolu disparaissait de la liste et le
+     gate ne l'auditait pas.
   4. **Fail-open** : ensemble indeterminable (ref illisible, aucun commit
      propre) -> rien n'est retire ; le gate garde son comportement d'origine.
   5. Le filtre est **transparent** : `parse_rows` puis `render_rows` rendent
@@ -161,11 +167,109 @@ def stacked_repo(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def test_owned_paths_ignore_merge_commits(stacked_repo, monkeypatch):
+def test_merge_qui_transporte_seulement_n_apporte_aucun_chemin(stacked_repo, monkeypatch):
     """Point 3 : le merge de `main` n'apporte aucun chemin a la PR."""
     monkeypatch.chdir(stacked_repo)
+    # Le merge est bien dans l'historique propre a la PR : c'est son
+    # differentiel qui ne lui attribue rien, pas son exclusion.
+    history = _git(stacked_repo, "rev-list", "--parents", "stale-base..HEAD", "--not", "main")
+    assert any(len(line.split()) > 2 for line in history.splitlines()), history
     owned = fpin.pr_owned_paths("stale-base", "HEAD", "main")
     assert owned == {"touched.ipynb"}, owned
+
+
+@pytest.fixture()
+def resolved_merge_repo(tmp_path: Path) -> Path:
+    """PR empilee dont le **merge** ecrit un carnet que la branche n'a jamais touche.
+
+    Scenario exact rapporte par l'adjoint sur #22302 :
+    - `stale-base` porte `nb.ipynb` v1 et `other.py` ;
+    - la branche ne touche que `other.py` ;
+    - `main` avance et reecrit `nb.ipynb` (v2) ;
+    - la branche fusionne `main` **et, pendant le merge, reecrit `nb.ipynb`** (v3).
+
+    `nb.ipynb` n'existe chez aucun parent sous sa forme finale : c'est la PR
+    qui l'a ecrit. `diff stale-base...HEAD` le liste, et un filtre qui l'ecarte
+    n'audite pas un carnet que la PR a reellement modifie. Un commit ordinaire
+    de la branche ne le touche jamais -- c'est bien le cas ou `--no-merges`
+    faisait disparaitre le carnet.
+    """
+    _git(tmp_path, "init", "-b", "main", "--quiet")
+    _write(tmp_path, "nb.ipynb", '{"v": 1, "a": 0}\n')
+    _write(tmp_path, "other.py", "x1\n")
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-m", "A", "--quiet")
+    _git(tmp_path, "branch", "stale-base")
+
+    _git(tmp_path, "checkout", "-b", "feature", "--quiet")
+    _write(tmp_path, "other.py", "x2\n")
+    _git(tmp_path, "commit", "-am", "la branche ne touche pas nb.ipynb", "--quiet")
+
+    _git(tmp_path, "checkout", "main", "--quiet")
+    _write(tmp_path, "nb.ipynb", '{"v": 2, "main": 1}\n')
+    _git(tmp_path, "commit", "-am", "main reecrit nb.ipynb", "--quiet")
+
+    _git(tmp_path, "checkout", "feature", "--quiet")
+    # `--no-commit` : la fusion s'arrete avant de conclure, pour que l'ecriture
+    # faite pendant le merge entre DANS le commit de merge (et non dans un
+    # commit ordinaire, qui rendrait le cas indiscernable).
+    _git(tmp_path, "merge", "main", "--no-edit", "--no-commit", "--quiet")
+    _write(tmp_path, "nb.ipynb", '{"v": 3, "resolved": 1}\n')
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-m", "merge main (ecriture pendant le merge)", "--quiet")
+    return tmp_path
+
+
+def test_ecriture_pendant_le_merge_est_attribuee_a_la_pr(resolved_merge_repo, monkeypatch):
+    """3bis : le carnet ecrit par le merge reste dans la liste du gate.
+
+    Avec `rev-list --no-merges`, `owned` valait `{other.py}` et `nb.ipynb`
+    etait retire -- un carnet que la PR a ecrit n'etait jamais audite.
+    """
+    monkeypatch.chdir(resolved_merge_repo)
+    # Le seul commit ordinaire de la branche ne touche pas nb.ipynb : c'est
+    # bien du merge que vient l'attribution, pas d'un commit de branche.
+    plain = _git(resolved_merge_repo, "rev-list", "--no-merges", "stale-base..HEAD", "--not", "main").split()
+    assert len(plain) == 1, plain
+    touched = _git(
+        resolved_merge_repo, "diff-tree", "--no-commit-id", "-r", "-M",
+        "--name-status", "--root", plain[0],
+    )
+    assert "nb.ipynb" not in touched, touched
+    owned = fpin.pr_owned_paths("stale-base", "HEAD", "main")
+    assert owned == {"other.py", "nb.ipynb"}, owned
+
+
+def test_differentiel_et_filtre_du_merge_bout_en_bout(resolved_merge_repo, monkeypatch, capsys):
+    """Le gate garde les deux carnets listes, y compris celui ecrit par le merge."""
+    monkeypatch.chdir(resolved_merge_repo)
+    diff = _git(resolved_merge_repo, "diff", "--name-status", "-M", "stale-base...HEAD")
+    listed = {line.split("\t")[-1] for line in diff.splitlines() if line.strip()}
+    assert listed == {"nb.ipynb", "other.py"}, listed
+
+    monkeypatch.setattr(sys, "stdin", io.StringIO(diff + "\n"))
+    assert fpin.main(
+        ["--base", "stale-base", "--main-ref", "main", "--head-ref", "HEAD", "--stats"]
+    ) == 0
+
+    out, err = capsys.readouterr()
+    lines = [line for line in out.splitlines() if line.strip()]
+    assert len(lines) == 2, lines
+    assert "0 retire(s)" in err, err
+    assert "2 carnet(s) conserve(s)" in err, err
+
+
+def test_merge_sans_ecriture_n_est_pas_lu_comme_une_ecriture(stacked_repo, monkeypatch):
+    """Controle negatif : sans ecriture de merge, l'ensemble reste inchange.
+
+    Le fixture `stacked_repo` fusionne `main` **sans rien editer** pendant le
+    merge : l'intersection des differentiels est vide, donc `untouched.ipynb`
+    et `merged-only.ipynb` restent hors de `owned`.
+    """
+    monkeypatch.chdir(stacked_repo)
+    owned = fpin.pr_owned_paths("stale-base", "HEAD", "main")
+    assert "untouched.ipynb" not in owned
+    assert "merged-only.ipynb" not in owned
 
 
 def test_stale_base_diff_lists_three_but_filter_keeps_one(stacked_repo, monkeypatch, capsys):
