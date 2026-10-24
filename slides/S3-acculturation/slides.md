@@ -124,14 +124,14 @@ layout: section
 
 > **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
 
-<div class="flex justify-between items-end gap-6 mt-3 px-6">
-  <img src="./images/img_006.png" class="max-h-[120px] w-[52%] object-contain" alt="Repères historiques" />
+<div class="flex justify-between items-end gap-6 mt-2 px-6">
+  <img src="./images/img_006.png" class="max-h-[104px] w-[52%] object-contain" alt="Repères historiques" />
   <div class="flex gap-5 items-center pb-2">
-    <img src="./images/img_007.jpg" class="h-14 object-contain" alt="Logo DARPA" />
-    <img src="./images/img_008.jpg" class="h-12 object-contain" alt="Logo ImageNet" />
+    <img src="./images/img_007.jpg" class="h-12 object-contain" alt="Logo DARPA" />
+    <img src="./images/img_008.jpg" class="h-10 object-contain" alt="Logo ImageNet" />
   </div>
 </div>
-<div class="text-xs text-slate-500 italic text-center mt-1 px-10">
+<div class="text-xs text-slate-500 italic text-center mt-0.5 px-10">
   Repères fondateurs de l'IA moderne — financement (DARPA) et benchmark (ImageNet) qui ont catalysé l'apprentissage profond.
 </div>
 
@@ -556,7 +556,7 @@ layout: default
 
 </div>
 
-<div class="grid grid-cols-6 gap-1 mt-2 px-4">
+<div class="grid grid-cols-7 gap-1 mt-2 px-4">
 <img src="./images/img_027.png" class="max-h-[100px] w-full object-contain" alt="Cycle d'un algorithme génétique : initial population → fitness → sélection → croisement → mutation" />
 <img src="./images/img_028.png" class="max-h-[100px] w-full object-contain" alt="Croisement sur le problème des huit reines : deux échiquiers parents combinés par addition et permutation" />
 <img src="./images/img_029.png" class="max-h-[100px] w-full object-contain" alt="Progression du backtracking sur le problème des N-reines : trois plateaux successifs (4 reines, 3 reines, 2 reines) illustrant le retour arrière après violation de contrainte" />
@@ -973,6 +973,17 @@ layout: default
 <!-- Exemples : triplets RDF (sujet-predicat-objet), ontologies OWL, SPARQL -->
 
 <p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-06-Advanced-Optimization-Python.ipynb">Z3-06-Advanced-Optimization-Python.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/SymbolicAI/SemanticWeb/SW-2b-Python-RDFBasics.ipynb">SW-2b-Python-RDFBasics.ipynb</a> (triplets RDF).</p>
+---
+
+# Zoom : la pile du Web sémantique (W3C)
+
+- **Unicode, URI/IRI** : nommer toute ressource — **XML, Namespaces, XML Schema** : syntaxe et structure
+- **RDF Model & Syntax** : le triplet sujet-prédicat-objet — **Ontologie** : classes, propriétés, inférence
+- **Rules / Query** : interroger et raisonner — **Logic, Proof, Trust** : la confiance se démontre
+- **Signature, Encryption** : les deux flancs verticaux de la pile
+
+<img src="./images/img_049.png" style="display:block; width:auto; height:auto; max-width:100%; max-height:320px; object-fit:contain; margin:8px auto;" alt="Pile des couches du Web sémantique (W3C) : à la base Unicode et URI/IRI, puis XML, Namespaces, XML Query et XML Schema, puis RDF Model &amp; Syntax, une Ontologie, Rules/Query, Logic, Proof et Trust au sommet ; Signature et Encryption forment deux colonnes verticales sur le flanc droit" />
+
 ---
 
 
