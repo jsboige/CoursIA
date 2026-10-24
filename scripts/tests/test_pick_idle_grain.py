@@ -5364,3 +5364,41 @@ def test_cover_probe_keeps_the_anchor_boundary(
     monkeypatch.setattr(pig, "_complete_open_prs", lambda: prs)
     monkeypatch.setattr(pig, "open_cover_signal", lambda n: None)
     assert pig.open_cover_signal_complete(4242) == ""
+
+
+def test_run_bounded_redirects_to_files_not_pipes(monkeypatch):
+    """Le correctif est le TRANSPORT : fichiers, jamais de pipe.
+
+    Sur Windows, un pipe fait joindre a `_communicate` des threads lecteurs
+    qu'un descendant garde ouverts : `timeout=` expire, et l'appel ne rend
+    jamais la main (mesure du 24/10 : `fetch_pr_states` bloque a t=140 s
+    pour un `timeout=90`). Avec des fichiers, il n'y a aucun thread.
+    """
+    seen: dict = {}
+
+    def fake_run(cmd, **kwargs):
+        seen.update(kwargs)
+        kwargs["stdout"].write("ok")
+        return _FakeCompleted(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    cp = pig._run_bounded(["gh", "api", "graphql"], timeout=30)
+    assert cp.returncode == 0
+    assert cp.stdout == "ok"
+    assert "capture_output" not in seen, "un pipe a ete reintroduit"
+    assert seen.get("stdout") is not None and seen.get("stderr") is not None
+    assert seen.get("timeout") == 30
+
+
+def test_run_bounded_propagates_the_timeout(monkeypatch):
+    """#21436 -- l'echeance est une BORNE, pas une esperance.
+
+    Le predicat : l'expiration remonte a l'appelant, elle n'est pas avalee.
+    """
+
+    def fake_run(cmd, **kwargs):
+        raise pig.subprocess.TimeoutExpired(cmd, kwargs.get("timeout") or 0)
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    with pytest.raises(pig.subprocess.TimeoutExpired):
+        pig._run_bounded(["gh", "pr", "list"], timeout=2)
