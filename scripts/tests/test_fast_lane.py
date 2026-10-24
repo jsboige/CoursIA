@@ -2037,3 +2037,249 @@ def test_tranche27_detecteurs_tirent_via_la_forme_argv_de_la_garde(tmp_path):
     assert _json.loads(proc.stdout)["total_findings"] >= 1, (
         "le temoin NO_SEP doit tirer"
     )
+
+
+# ---------------------------------------------------------------------------
+# 12. Tranche 28 (#22209, voie A) : gardes a effets de bord PR
+# ---------------------------------------------------------------------------
+
+# Les `paths:` retires des trois workflows sources par la tranche 1b. Ils sont
+# EPINGLES ici parce que la source ne les porte plus (son declencheur
+# `pull_request` est retire) : sans cette epingle, un elargissement silencieux
+# du perimetre du garde ne serait plus confronte a rien.
+_TRANCHE28_PATHS = {
+    "Markdown claims anchored to previous output (#11435 advisory)": [
+        "MyIA.AI.Notebooks/**/*.ipynb",
+        "scripts/check_markdown_claims_output.py",
+        "scripts/tests/test_check_markdown_claims_output.py",
+        "scripts/check_stale_claims.py",
+        "scripts/tests/test_check_stale_claims.py",
+        "scripts/check_factual_mislabel.py",
+        "scripts/tests/test_check_factual_mislabel.py",
+        ".github/workflows/markdown-claims-output-advisory.yml",
+    ],
+    "Organ-duplication advisory (non-blocking)": [
+        "**/*.py",
+        "**/*.ipynb",
+        "**/*.lean",
+        "scripts/audit/detect_organ_duplication.py",
+        "scripts/audit/organ_api_index.yaml",
+        ".github/workflows/organ-duplication-advisory.yml",
+    ],
+    "scan_md_hierarchy drift (advisory)": [
+        "MyIA.AI.Notebooks/**/*.ipynb",
+        "scripts/notebook_tools/scan_md_hierarchy.py",
+        "scripts/notebook_tools/md_hierarchy_baseline.json",
+    ],
+}
+
+
+def test_tranche28_paths_are_reproduced_and_absorbed():
+    from fast_lane_registry import TRANCHE28
+
+    assert len(TRANCHE28) == 3, "la tranche 1b porte trois advisories"
+    for guard in TRANCHE28:
+        assert guard.absorbed, f"{guard.name} doit porter absorbed=True"
+        assert guard.blocking is False, (
+            f"{guard.name} est advisory a la source : le bloquer changerait "
+            "sa semantique de merge")
+        assert guard.commenters, (
+            f"{guard.name} sans `commenters` serait un garde muet : son "
+            "verdict EST son commentaire")
+        assert guard.paths == _TRANCHE28_PATHS[guard.name], (
+            f"{guard.name} : perimetre derive du declencheur source")
+        assert guard.argv == [], (
+            f"{guard.name} : le verdict est rendu par `commenters` ; un argv "
+            "en plus produirait un second emetteur")
+
+
+def test_every_commenter_header_is_a_known_bot_sticky():
+    """Le marqueur doit etre reconnu par le dossier de prevalidation.
+
+    Un en-tete inconnu ferait lire la mise a jour du sticky comme une surface
+    de discussion modifiee par un tiers : le dossier exact-head serait perime
+    a chaque passage du garde.
+    """
+    import re as _re
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+    import check_adjoint_prevalidation as cap
+    from fast_lane_registry import TRANCHE28
+
+    headers = [c.header for g in TRANCHE28 for c in g.commenters]
+    assert len(headers) == len(set(headers)), (
+        f"en-tetes dupliques = upsert croise entre deux gardes : {headers}")
+    for header in headers:
+        assert header in cap._BOT_STICKY_ADVISORY_HEADERS, (
+            f"{header!r} absent de _BOT_STICKY_ADVISORY_HEADERS")
+        marker = fast_lane.sticky_marker(header)
+        assert cap._STICKY_MARKER_RE.search("corps\n\n" + marker), (
+            f"le marqueur de {header!r} n'est pas reconnu par le parseur")
+
+
+def test_sticky_marker_is_byte_identical_to_the_source_action():
+    """Forme exacte de `marocchino/sticky-pull-request-comment@v2`.
+
+    Le marqueur est la CLE d'upsert : un espace de trop et le garde repose un
+    commentaire neuf a chaque push au lieu de mettre a jour le sien.
+    """
+    assert (fast_lane.sticky_marker("organ-duplication-advisory")
+            == "<!-- Sticky Pull Request Commentorgan-duplication-advisory -->")
+    assert fast_lane.STICKY_MARKER.count("{h}") == 1
+
+
+def _sticky_api(monkeypatch, comments, patch_rc=0):
+    """Remplace `gh` : rend la liste `comments` et enregistre les ecritures."""
+    calls = []
+
+    def fake(paginate, *args, stdin=None):
+        calls.append({"paginate": paginate, "args": args, "stdin": stdin})
+        if paginate:
+            return subprocess.CompletedProcess(
+                args, 0, __import__("json").dumps([comments]), "")
+        return subprocess.CompletedProcess(
+            args, patch_rc, "{}", "" if patch_rc == 0 else "boom")
+
+    monkeypatch.setattr(fast_lane, "_gh_api", fake)
+    return calls
+
+
+def test_upsert_updates_an_existing_sticky_instead_of_posting(monkeypatch):
+    """Le cas d'une PR qui porte DEJA le sticky : PATCH, jamais un doublon."""
+    header = "stale-claim-advisory"
+    marker = fast_lane.sticky_marker(header)
+    calls = _sticky_api(monkeypatch, [
+        {"id": 11, "body": "un autre bot"},
+        {"id": 42, "body": "ancien corps\n\n" + marker},
+    ])
+    action = fast_lane.upsert_sticky_comment(
+        "o/r", "7", header, "nouveau corps", dry_run=False)
+    assert action == "updated"
+    writes = [c for c in calls if not c["paginate"]]
+    assert len(writes) == 1, f"attendu une seule ecriture, vu {writes}"
+    assert "PATCH" in writes[0]["args"]
+    assert "repos/o/r/issues/comments/42" in writes[0]["args"]
+    body = __import__("json").loads(writes[0]["stdin"])["body"]
+    assert body.startswith("nouveau corps")
+    assert body.rstrip().endswith(marker), "marqueur en FIN de corps"
+
+
+def test_upsert_posts_when_the_pr_carries_no_sticky(monkeypatch):
+    calls = _sticky_api(monkeypatch, [{"id": 1, "body": "un autre bot"}])
+    action = fast_lane.upsert_sticky_comment(
+        "o/r", "7", "organ-duplication-advisory", "corps", dry_run=False)
+    assert action == "created"
+    writes = [c for c in calls if not c["paginate"]]
+    assert len(writes) == 1
+    assert "POST" in writes[0]["args"]
+    assert "repos/o/r/issues/7/comments" in writes[0]["args"]
+
+
+def test_upsert_never_falls_back_to_post_when_patch_fails(monkeypatch):
+    """Un PATCH refuse ne doit pas fabriquer le doublon que l'upsert evite."""
+    header = "factual-mislabel-advisory"
+    calls = _sticky_api(
+        monkeypatch, [{"id": 5, "body": "x\n\n" + fast_lane.sticky_marker(header)}],
+        patch_rc=1)
+    action = fast_lane.upsert_sticky_comment("o/r", "7", header, "c", False)
+    assert action == "error"
+    writes = [c for c in calls if not c["paginate"]]
+    assert len(writes) == 1 and "POST" not in writes[0]["args"]
+
+
+def test_effect_guards_run_only_in_the_effects_job(monkeypatch):
+    """Un seul emetteur par garde : `--effects` OU le job principal, jamais les deux."""
+    from fast_lane_registry import TRANCHE28
+
+    names = {g.name for g in TRANCHE28}
+    _blank_other_tranches(monkeypatch, keep={"TRANCHE28"})
+    seen_effects, emitted = [], []
+    monkeypatch.setattr(fast_lane, "changed_files",
+                        lambda _ref: ["MyIA.AI.Notebooks/GameTheory/x.ipynb"])
+    monkeypatch.setattr(
+        fast_lane, "run_effects",
+        lambda guard, ctx, dry_run: (seen_effects.append(guard.name) or (0, "", [])))
+    monkeypatch.setattr(fast_lane, "run_argv", lambda a, c: (0, ""))
+    monkeypatch.setattr(
+        fast_lane, "run_iter",
+        lambda a, p, c, warn_rc=(), fail_on_all_warn=False: (0, ""))
+    monkeypatch.setattr(
+        fast_lane, "git",
+        lambda *a: subprocess.CompletedProcess(a, 0, "deadbeef", ""))
+    monkeypatch.setattr(fast_lane, "emit_check_run",
+                        lambda *a, **k: emitted.append(a[2]))
+
+    rc = fast_lane.main(["--effects", "--shadow", "--dry-run", "--repo", "o/r",
+                         "--pr-number", "7", "--base-sha", "deadbeef",
+                         "--head-sha", "deadbeef"])
+    assert rc == 0
+    assert set(seen_effects) == names, (
+        "le job d'effets doit lancer les trois gardes, et eux seuls")
+    assert names <= set(emitted), "chaque garde garde son check-run canonique"
+
+    seen_effects.clear()
+    emitted.clear()
+    rc = fast_lane.main(["--no-effects", "--shadow", "--dry-run", "--repo",
+                         "o/r", "--pr-number", "7", "--base-sha", "deadbeef",
+                         "--head-sha", "deadbeef"])
+    assert rc == 0
+    assert not seen_effects, (
+        "sans `--effects` le moteur ne doit RIEN ecrire sur la PR")
+    assert not (names & set(emitted)), (
+        "sans `--effects` ces gardes n'ont pas d'emetteur dans ce job : "
+        "les emettre ici creerait un second emetteur")
+
+
+def test_fatal_rc_rougit_le_job_meme_en_mode_ombre(monkeypatch):
+    """Une panne de detecteur n'est pas un verdict : elle doit etre visible."""
+    from fast_lane_registry import TRANCHE28
+
+    c = TRANCHE28[2].commenters[0]
+    ctx = {"repo": "o/r", "pr_number": "7", "merge_base": "abc",
+           "pr_body_file": "", "name_status_file": "", "base_sha": "abc",
+           "head_sha": "def", "base_ref": "origin/main"}
+    monkeypatch.setattr(fast_lane, "run_argv", lambda a, c2: (1, "hdr\n\nboom"))
+    monkeypatch.setattr(fast_lane, "upsert_sticky_comment",
+                        lambda *a, **k: "created")
+    monkeypatch.setattr(fast_lane, "git",
+                        lambda *a: subprocess.CompletedProcess(a, 0, "", ""))
+    rc, log, failures = fast_lane.run_effects(
+        type("G", (), {"commenters": (c,)})(), ctx, dry_run=True)
+    assert failures and rc == 1, (
+        "rc=1 du scanner est une panne (baseline illisible), pas un constat")
+    assert "boom" in log
+
+
+def test_abstention_sans_merge_base_ne_lance_pas_le_detecteur(monkeypatch):
+    """« rien regarde » et « rien trouve » restent distinguables (#11754)."""
+    from fast_lane_registry import TRANCHE28
+
+    guard = TRANCHE28[0]
+    ctx = {"repo": "o/r", "pr_number": "7", "merge_base": "",
+           "pr_body_file": "", "name_status_file": "", "base_sha": "abc",
+           "head_sha": "def", "base_ref": "origin/main"}
+    bodies = []
+    monkeypatch.setattr(fast_lane, "run_argv",
+                        lambda a, c: (_ for _ in ()).throw(
+                            AssertionError("le detecteur ne doit pas tourner")))
+    monkeypatch.setattr(fast_lane, "upsert_sticky_comment",
+                        lambda repo, pr, header, body, dry: bodies.append(body))
+    rc, _, failures = fast_lane.run_effects(guard, ctx, dry_run=True)
+    assert rc == 0 and not failures
+    assert len(bodies) == 3, "un sticky par detecteur, meme en abstention"
+    for body in bodies:
+        assert "abstained" in body, f"corps d'abstention attendu, vu {body[:60]!r}"
+
+
+def test_trunc_note_says_the_real_coverage_gap():
+    """#18503 : une borne silencieuse ferait croire a une couverture pleine."""
+    assert fast_lane.trunc_note(3, 3) == ""
+    note = fast_lane.trunc_note(120, 50)
+    assert "120" in note and "50" in note
+
+
+def test_drop_empty_pairs_retire_le_drapeau_et_sa_valeur_vide():
+    """Sans `base_sha`, `--reference-base ""` ferait echouer le scanner."""
+    assert fast_lane.drop_empty_pairs(
+        ["python", "x.py", "--baseline", "--diff",
+         "--reference-base", "", "--name-status", ""]) == [
+        "python", "x.py", "--baseline", "--diff"]
