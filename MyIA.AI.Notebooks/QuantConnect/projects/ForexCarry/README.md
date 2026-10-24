@@ -121,7 +121,7 @@ Mesure réelle de `main.py` v4.0 sur QC Cloud — banc dédié `21759-forexcarry
 | **CAGR** | +1.05 % |
 | **Max drawdown** | −9.60 % |
 | **Retour total (2015-2024)** | +11.01 % |
-| **Profit net** | +$8 973.97 (équité $100 000 → $111 008) |
+| **Profit net (réalisé)** | +$8 973.97 — l'équité passe de $100 000 à $111 008 ; l'écart de ≈ $2 034 est le P&L **non réalisé** sur les positions encore ouvertes en fin de backtest (l'équité de fin = départ + réalisé + non réalisé) |
 | **Volume échangé** | $6 800 369.77 (136 ordres, tous remplis) |
 | **Positions investies (fin)** | $107 857.69 |
 
