@@ -10,7 +10,7 @@ Un dossier `_archive/` sans convention devient un **puits de code mort** : on y 
 
 - Les emplacements `_archive/` sont dispersés dans le dépôt (11 emplacements et 125 fichiers mesurés en 2026-08), avec des conventions hétérogènes. Ce chiffre est **daté** ; le compte courant se recalcule, il ne se recopie pas (voir le §« Recenser, ne pas recopier »).
 - `scripts/genai-stack/_archive/` (constat empirique au 2026-08) : le plus gros stock du dépôt — code mort, certains cassés auto-admis. **Tranche 3 livrée le 2026-10-04** (cf table ci-dessous).
-- `scripts/_archive/one_shot_fixes/` + `one_shots_post_463/` + `recycle_csp/` (constat empirique au 2026-08) : ~30 fichiers dont les README de disposition n'appliquaient pas encore tous le standard. **Cible de la tranche 2** (cf table lignes 73-85).
+- `scripts/_archive/one_shot_fixes/` + `one_shots_post_463/` + `recycle_csp/` (constat empirique au 2026-08) : ~30 fichiers dont les README de disposition n'appliquaient pas encore tous le standard. **Cible de la tranche 2** (cf table du §« Application — les emplacements recensés »).
 
 Le coût d'un `_archive/` non standardisé = **découverte impossible** : aucun successeur nommé, aucun verdict enregistré, aucun moyen de savoir si le script peut être ressuscité ou doit être supprimé.
 
@@ -68,19 +68,30 @@ Exception : si un dossier `_archive/` ne contient que des **données** (pas de s
 
 ## Recenser, ne pas recopier
 
-Un compte d'emplacements écrit dans la prose périme sans que personne ne le remarque : il est vrai le jour où il est écrit, puis il se propage — une review ne peut ni le confirmer ni le contredire sans recompter. Le recensement se **recalcule** donc, il ne se recopie pas. Deux commandes indépendantes, qui doivent concorder :
+Un compte d'emplacements écrit dans la prose périme sans que personne ne le remarque : il est vrai le jour où il est écrit, puis il se propage — une review ne peut ni le confirmer ni le contredire sans recompter. Le recensement se **recalcule** donc, il ne se recopie pas. Deux commandes, qui ne mesurent **pas la même chose** et ne doivent donc **pas** concorder :
 
 ```bash
-git ls-tree -r -d --name-only origin/main | grep '/_archive$'
+# emplacements : repertoires dont le nom finit par `_archive`
+git ls-tree -r -d --name-only origin/main | grep '/_archive$' | wc -l
+# fichiers archives sous ces emplacements
 git ls-tree -r --name-only origin/main | grep '/_archive/' | wc -l
 ```
+
+Valeurs de référence au **2026-10-24** sur `origin/main` : **17** emplacements et **163** fichiers. Un emplacement contient plusieurs fichiers, donc comparer les deux totaux n'a pas de sens — et un écart entre eux n'est pas un défaut. Le prédicat de la première commande est `/_archive$`, pas `/_archive` : ce dernier rend **30**, parce qu'il compte aussi les sous-dossiers internes aux archives (`scripts/_archive/one_shot_fixes/`, `Argument_Analysis/_archive/…`) et les six répertoires de `docker-configurations/_archive-20251125/`, dont le nom ne finit pas par `_archive`.
+
+**Cette règle est déclarative** : aucun organe ne vérifie ce prédicat en CI — ni la liste des emplacements, ni la concordance de la table avec `main`. Elle vit dans la relecture et dans les commandes ci-dessus ; la porter en gate serait une tranche à part, pas un effet de bord de cette page.
 
 Une phrase de prose qui cite un total doit porter **sa date**. Une règle, une docstring d'organe ou un pointeur de documentation qui en cite un **sans date** est un défaut de prose quantitative : il se remplace par la commande, jamais par un chiffre plus récent.
 
 ## Application — les emplacements recensés
 
-État au **2026-10-04**. Ce qui a changé depuis le recensement de 2026-08 :
-`GenAI/Audio`, `docker-configurations` et `notebook_tools` n'y figuraient pas.
+État au **2026-10-24** : **17** emplacements, **163** fichiers. Ce qui a changé
+depuis le recensement de 2026-08 : `GenAI/Audio`, `docker-configurations` et
+`notebook_tools` n'y figuraient pas. Depuis celui du 2026-10-04, trois
+emplacements existaient sur `main` sans ligne dans la table —
+`SymbolicAI/Argument_Analysis/_archive/`, `SymbolicAI/SmartContracts/_archive/`
+et `scripts/smartcontracts/_archive/` — et y sont ajoutés ci-dessous, **non
+audités** : la ligne dit qu'ils existent, pas qu'ils sont conformes.
 La table ci-dessous est l'inventaire courant — chaque tranche de l'umbrella en
 déplace une ligne, elle ne réécrit pas un total :
 
@@ -90,6 +101,8 @@ déplace une ligne, elle ne réécrit pas un total :
 | `MyIA.AI.Notebooks/GenAI/Audio/_archive/` | ✅ | ✅ (registre README, disposition **par section** — modèle `Planners/` ; tranche #13749 du 2026-09-25) |
 | `MyIA.AI.Notebooks/Search/_archive/` | ✅ | partiel (registre sans en-tête de disposition par notebook) |
 | `MyIA.AI.Notebooks/SymbolicAI/_archive/` | ✅ | partiel (registre sans en-tête de disposition pour le notebook) |
+| `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/_archive/` | ✅ | non audité (recensé le 2026-10-24) |
+| `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/_archive/` | ❌ | non audité (recensé le 2026-10-24 ; ne contient qu'un `STATUS-audit-consolidation-2026-05-26.md`) |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/_archive/` | ✅ | ✅ (registre — une ligne par script archivé) |
 | `MyIA.AI.Notebooks/SymbolicAI/Planners/_archive/` | ✅ | ✅ (registre README, disposition **par section**) |
 | `MyIA.AI.Notebooks/SymbolicAI/SymbolicLearning/_archive/` | ✅ | ✅ (registre de disposition au niveau `_archive/` ajouté le 2026-09-25 — tranche #13749 ; il pointe le README du lot daté `2026-07-04-Neurosymbolic-EML-precurseur-SL12/`, qui porte l'analyse) |
@@ -97,6 +110,7 @@ déplace une ligne, elle ne réécrit pas un total :
 | `scripts/_archive/` | ✅ | ✅ (registre parent ajouté le 2026-09-25 — tranche #13749 ; il indexe `c8257-lean18-enrichment/`, `one_shot_fixes/`, `one_shots_post_463/` et `recycle_csp/`. La ligne précédente marquait `✅` sur les seules sous-archives de #9535 et ne citait pas `c8257-lean18-enrichment/`, archivée plus tard par #14251) |
 | `scripts/genai-stack/_archive/` | ✅ | ✅ (tranche #13749 du 2026-10-04 — lane `myia-po-2027:CoursIA-2` : registre 4 colonnes dans `ARCHIVE_README.md`, nom historique **préservé** car les en-têtes per-fichier et le README parent pointent dessus ; en-têtes de disposition standard ajoutés aux `.ps1` ; les `.py` gardent leurs en-têtes hérités format court, qui nomment successeur + registre) |
 | `scripts/notebook_tools/_archive/` | ✅ | partiel (registre sans en-tête de disposition pour le script) |
+| `scripts/smartcontracts/_archive/` | ✅ | non audité (recensé le 2026-10-24) |
 | `scripts/sudoku/_archive/` | ✅ | ✅ (tranche #13749 du 2026-09-25 : registre 4 colonnes ; les en-têtes per-fichier existaient déjà) |
 | `scripts/tests/_archive/` | ✅ | ✅ (tranche #13749 du 2026-10-04 : registre ajouté ; l'en-tête standard existait déjà sur `test_convert_print_to_deploy.py`, palier 1 #18153) |
 | `slides/S4-trading-algorithmique/_archive/` | ✅ | ✅ (registre — une ligne par fichier archivé) |
