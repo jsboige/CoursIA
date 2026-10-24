@@ -3937,7 +3937,9 @@ echo "Test 72 : miroir d'objets partage -- argv du conteneur jetable (#18225)"
   cat > "$TEST_DIR/bin72/docker" <<STUB
 #!/usr/bin/env bash
 # Probes de fraicheur d'image (assert_image_fresh) : reponse sha256, jamais
-# journalisee. Tout le reste de `run` est le lancement observe.
+# journalisee. Tout le reste de 'run' est le lancement observe. (Pas de
+# backticks dans ce heredoc : il n'est pas quote, une paire de backticks y
+# serait une substitution de commande -- elle a execute un 'run' fantome.)
 if [ "\$1" = "run" ] && printf '%s' "\$*" | grep -q -- '--entrypoint sha256sum'; then
   printf '%s' "\$*" | grep -q 'work_cache_health.sh' \
     && echo "$REPO_HEALTH_SHA  /opt/runner/work_cache_health.sh" \
