@@ -4337,6 +4337,33 @@ def test_stack_pr_head_refspec_is_forced(monkeypatch):
         assert spec.split(":", 1)[0] == f"+pull/{spec.split('/')[1]}/head", spec
 
 
+def test_stack_fetch_failure_names_its_cause(monkeypatch):
+    """#20251 -- un echec de lot dit POURQUOI, pas seulement `rc=1`.
+
+    `-q` supprime la ligne de rejet ; l'incident arrivait donc sans cause
+    actionable, alors que la cause existe (`non-fast-forward`). Le fetch ne
+    doit donc pas etre muet.
+    """
+    captured = {}
+
+    def fake(args, check=True):
+        captured["args"] = args
+        return subprocess.CompletedProcess(
+            ["git", *args], 1, "",
+            "! [rejected] refs/pull/19548/head -> prh/19548  (non-fast-forward)",
+        )
+
+    monkeypatch.setattr(mod, "_git", fake)
+    remaining, incidents = mod._fetch_pr_heads([19548])
+
+    assert remaining == []
+    assert incidents, incidents
+    assert "non-fast-forward" in incidents[0], incidents[0]
+    assert "rc=1" not in incidents[0], incidents[0]
+    assert "-q" not in captured["args"], captured["args"]
+    assert "--no-progress" in captured["args"], captured["args"]
+
+
 def _git_run(cwd, *args):
     """`git` reel dans un depot jetable : identite fixe, pas de signature."""
     env = dict(os.environ)
