@@ -1446,3 +1446,146 @@ class TestAnchoredMotifs:
     def test_structural_forms_are_counted(self, src):
         counts = dml._collect_motifs(_nb(_md(src)))
         assert sum(counts[k] for k in ("Navigation", "Objectif(s)", "Prerequis")) == 1
+
+
+# ---------------------------------------------------------------------------
+# 6c. Deplacement de frontiere (#22307)
+# ---------------------------------------------------------------------------
+# Forme mesuree sur #22187 (GenAI/Video/01-1-Video-Operations-Basics.ipynb) :
+# la cellule d'interpretation et l'en-tete de section cohabitaient dans UNE
+# cellule markdown ; la PR #17040 remonte l'interpretation dans la cellule de
+# lecture voisine et ne laisse que l'en-tete. Compte de cellules inchange,
+# contenu intact, mais l'appariement par index voit une cellule qui tombe de
+# 887c a 184c.
+READING_15 = (
+    "### Lecture de l'exemple guide 1\n\n"
+    "L'appel a `VideoFileClip` ouvre le fichier sans le decoder entierement : "
+    "seules les metadonnees sont lues, ce qui rend l'operation quasi "
+    "instantannee sur un fichier de quelques dizaines de megaoctets.\n\n"
+    "Le decoupage `subclip(2, 4)` materialise une seconde entite video qui "
+    "reference le meme fichier source : il n'y a pas de copie sur disque, et "
+    "fermer le sous-clip ne ferme pas le lecteur parent.\n\n"
+    "**Points cles**\n\n"
+    "- l'ouverture est paresseuse (lazy) ;\n"
+    "- le sous-clip partage le lecteur du parent ;\n"
+    "- `.close()` libere le descripteur de fichier.\n"
+)
+
+INTERP_16 = (
+    "### Interpretation : Manipulations moviepy\n\n"
+    "| Operation | Effet observe |\n"
+    "|---|---|\n"
+    "| `subclip` | nouvelle entite, aucune copie disque |\n"
+    "| `concatenate_videoclips` | recollage en memoire, ordre conserve |\n"
+    "| `CompositeVideoClip` | superposition, logo en incrustation |\n"
+    "| `write_videofile` | seul point d'ecriture reel |\n\n"
+    "**Points cles**\n\n"
+    "- la paresse (lazy) explique le cout quasi nul des trois premieres "
+    "operations de montage ;\n"
+    "- le fichier de police TTF doit exister pour le texte incruste ;\n"
+    "- `.close()` est obligatoire, sinon le descripteur reste ouvert.\n"
+)
+
+SECTION_3 = "## Section 3 : Analyse des metadonnees avec ffmpeg-python"
+
+
+class TestRelocatedCell:
+    """Un bloc qui change de cellule n'est pas un bloc perdu (#22307)."""
+
+    def test_block_moved_to_neighbour_is_relocated_not_lost(self):
+        # Base : lecture seule / interpretation + en-tete de section.
+        # Tete : lecture + interpretation fusionnees / en-tete de section seul.
+        base = _nb(_md(READING_15, cell_id="read"),
+                   _md(INTERP_16 + "\n\n" + SECTION_3, cell_id="interp"))
+        head = _nb(_md(READING_15 + "\n\n" + INTERP_16, cell_id="read"),
+                   _md(SECTION_3, cell_id="interp"))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1, findings
+        f = findings[0]
+        assert f["kind"] == "RELOCATED_CELL"
+        assert f["cell_idx"] == 1               # la cellule qui parait tronquee
+        assert f["relocated_to"] == [0]         # le texte est alle en cellule 0
+        assert f["relocated_chars"] > 0
+        assert f["relocated_chars"] <= f["removed_chars"]
+        # Informatif : le verdict --check ne doit PAS mordre dessus.
+        assert dml._is_blocking_finding(f) is False
+
+    def test_real_truncation_absent_everywhere_still_blocks(self):
+        # Controle negatif 1 (acceptance #22307) : le texte retire n'existe
+        # nulle part dans la tete -> TRUNCATED_CELL bloquant.
+        base = _nb(_md(READING_15, cell_id="read"),
+                   _md(INTERP_16 + "\n\n" + SECTION_3, cell_id="interp"))
+        head = _nb(_md(READING_15, cell_id="read"),
+                   _md(SECTION_3, cell_id="interp"))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1, findings
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert dml._is_blocking_finding(findings[0]) is True
+
+    def test_text_still_present_in_own_cell_still_blocks(self):
+        # Controle negatif 2 : le texte survit DANS sa propre cellule
+        # (duplication interne). Se deplacer dans soi-meme n'est pas un
+        # deplacement -- une copie perdue reste une perte.
+        base = _nb(_md(READING_15, cell_id="read"),
+                   _md(READING_15 + "\n\n" + READING_15, cell_id="dup"))
+        head = _nb(_md(READING_15, cell_id="read"),
+                   _md(READING_15, cell_id="dup"))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert findings, "une copie doublee qui disparait est une perte"
+        assert all(f["kind"] == "TRUNCATED_CELL" for f in findings)
+
+    def test_verbatim_copy_in_a_cell_that_did_not_grow_still_blocks(self):
+        # Controle negatif 3 (le piege du blanc-seing) : deux cellules de meme
+        # corps en base, l'une tronquee a la tete. Le texte existe bien
+        # ailleurs -- mais la cellule voisine n'a pas grossi : elle le portait
+        # deja. Sans le budget de croissance, cette perte serait absoute.
+        long_body = "## Section\n\n" + ("Phrase substantielle. " * 30)
+        base = _nb(_md(long_body, cell_id="alpha"),
+                   _md(long_body, cell_id="bravo"))
+        head = _nb(_md(long_body, cell_id="alpha"),
+                   _md("> **Titre :**", cell_id="bravo"))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1, findings
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+        assert dml._is_blocking_finding(findings[0]) is True
+
+    def test_short_segments_never_buy_the_excuse(self):
+        # Une cellule qui perd un long paragraphe ET une foule de fragments
+        # courts ne doit pas voir la perte absorbee par le paragraphe retrouve :
+        # les fragments pesent au denominateur. Ici la cellule cible n'a
+        # absorbe QUE le paragraphe long ; le reste n'existe nulle part.
+        kept = "## Section A\n\n" + ("Paragraphe de section A. " * 12)
+        moved = "## Bloc deplace\n\n" + ("Paragraphe deplace integralement. " * 8)
+        vanished = "## Bloc disparu\n\n" + ("Contenu disparu sans trace. " * 20)
+        base = _nb(_md(kept, cell_id="a"),
+                   _md(moved + "\n\n" + vanished, cell_id="b"))
+        head = _nb(_md(kept + "\n\n" + moved, cell_id="a"),
+                   _md("## Rien", cell_id="b"))
+        findings = dml._compare_cells(dml.extract_md_cells(base),
+                                      dml.extract_md_cells(head))
+        assert len(findings) == 1, findings
+        assert findings[0]["kind"] == "TRUNCATED_CELL"
+
+    def test_no_head_cells_keeps_legacy_behaviour(self):
+        # Sans la vue des cellules de tete, l'emission reste historique : les
+        # appelants qui ne la fournissent pas ne changent pas de verdict.
+        findings: list[dict] = []
+        dml._emit_cell_finding(0, INTERP_16, 0, SECTION_3, None, findings)
+        assert [f["kind"] for f in findings] == ["TRUNCATED_CELL"]
+
+    def test_body_marker_does_not_downgrade_relocated(self):
+        # La voie declarative (#13491) n'est pas retiree par #22307 : un marker
+        # de body sur la meme cellule convertit toujours un TRUNCATED_CELL.
+        # Mais il ne degrade PAS un RELOCATED_CELL -- le deplacement est une
+        # mesure mecanique, plus informative que « reecriture assumee », et le
+        # finding est deja hors du verdict. La conversion ne s'applique donc
+        # qu'a la forme bloquante.
+        relocated = {"kind": "RELOCATED_CELL", "cell_idx": 16}
+        truncated = {"kind": "TRUNCATED_CELL", "cell_idx": 17}
+        out = dml._apply_body_justifications([relocated, truncated], {16, 17}, set())
+        assert out[0]["kind"] == "RELOCATED_CELL"
+        assert out[1]["kind"] == "TRUNCATED_CELL_JUSTIFIED_BY_BODY"
