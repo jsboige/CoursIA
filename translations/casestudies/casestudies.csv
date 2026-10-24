@@ -1,4 +1,4 @@
-notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,translate_policy
+notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,src_hash_en,src_hash_es,src_hash_ar,src_hash_fa,src_hash_zh,src_hash_ru,src_hash_pt,translate_policy
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,64852c73,markdown,fr,5bbaf6f4a227c8fa,"**Navigation** : [Index](../../README.md)
 # CC1 - IA Exploratoire et Symbolique
 ## Système de Diagnostic Médical Multi-Contraintes pour le Diabète de Type 2
@@ -26,10 +26,10 @@ Le diabète de type 2 nécessite une approche de diagnostic personnalisée qui c
 - Algorithmes génétiques et optimisation
 - Analyse de complexité et performance
 - Application biomédicale (diabète type 2)
-",,,,,,,,5bbaf6f4a227c8fa,,,,,,,,
+",,,,,,,,5bbaf6f4a227c8fa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,16af3752,code,fr,7620899929cf9def,"# Dependances pre-provisionnees (numpy pandas matplotlib seaborn z3-solver).
-# Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,7620899929cf9def,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,310b5764,markdown,fr,da1a97770d5ad237,Configuration et imports du notebook.,,,,,,,,da1a97770d5ad237,,,,,,,,
+# Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,7620899929cf9def,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,310b5764,markdown,fr,da1a97770d5ad237,Configuration et imports du notebook.,,,,,,,,da1a97770d5ad237,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,d894a937,code,fr,4c012ad62b84f1d2,"# Configuration du notebook
 CONFIG = {
     'version': '2.0.0',
@@ -58,7 +58,7 @@ except ImportError:
     print("" Z3 non disponible. Installez avec : pip install z3-solver"")
     
 print(f"" Configuration : {CONFIG}"")
-print("" Objectif : Implémenter un système de diagnostic médical multi-approches"")",,,,,,,,4c012ad62b84f1d2,,,,,,,,
+print("" Objectif : Implémenter un système de diagnostic médical multi-approches"")",,,,,,,,4c012ad62b84f1d2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,2f529696,markdown,fr,637d81e5f8f39dac,"###  Structure de Données
 
 #### Classe Patient
@@ -67,7 +67,7 @@ La classe `Patient` représente un patient pour le système de diagnostic. Elle 
 
 #### Protocoles Thérapeutiques
 
-Les protocoles définissent les objectifs et contraintes pour le traitement du diabète de type 2.",,,,,,,,637d81e5f8f39dac,,,,,,,,
+Les protocoles définissent les objectifs et contraintes pour le traitement du diabète de type 2.",,,,,,,,637d81e5f8f39dac,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,5ef50610,code,fr,4679d6764bf47d86,"from dataclasses import dataclass
 
 @dataclass
@@ -121,7 +121,7 @@ protocoles_diabete_type2 = {
 }
 
 print("" Structure de données définie"")
-print(f"" Protocoles chargés : {len(protocoles_diabete_type2)} sections"")",,,,,,,,4679d6764bf47d86,,,,,,,,
+print(f"" Protocoles chargés : {len(protocoles_diabete_type2)} sections"")",,,,,,,,4679d6764bf47d86,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,18e78368,markdown,fr,e1c66d8abdffa4ba,"##  Partie 1 : Agent de Diagnostic Basique
 
 ### Théorie des Agents Intelligents (AIMA Chapitre 1)
@@ -144,7 +144,7 @@ Vous devez implémenter la classe `DiagnosticAgent` avec les méthodes suivantes
 - `__init__(self)` : Initialisation avec règles cliniques
 - `classifier_risque(self, patient: Patient) -> str` : Classification du risque
 - `analyser_symptomes(self, patient: Patient) -> List[str]` : Interprétation des symptômes
-- `generer_recommandations(self, patient: Patient, risque: str) -> List[str]` : Recommandations personnalisées",,,,,,,,e1c66d8abdffa4ba,,,,,,,,
+- `generer_recommandations(self, patient: Patient, risque: str) -> List[str]` : Recommandations personnalisées",,,,,,,,e1c66d8abdffa4ba,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,c953a353,code,fr,1c8c5a77a4817398,"class DiagnosticAgent:
     """"""Agent de diagnostic médical basé sur des règles cliniques""""""
     
@@ -274,7 +274,7 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipy
 print("" Création de l'agent de diagnostic..."")
 agent = DiagnosticAgent()
 print("" Agent initialisé avec succès"")
-print(f"" Règles chargées : {len(agent.regles_diagnostiques)} catégories"")",,,,,,,,1c8c5a77a4817398,,,,,,,,
+print(f"" Règles chargées : {len(agent.regles_diagnostiques)} catégories"")",,,,,,,,1c8c5a77a4817398,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,488c666b,markdown,fr,438b4b14cfd2194b,"###  Exemples d'Utilisation Attendus
 
 Voici des exemples de ce que votre agent devrait produire :
@@ -301,7 +301,7 @@ patient_diabete = Patient(3, ""Claire"", 62, 140.0, 210.0, 7.8, [""polyurie"", "
 risque = agent.classifier_risque(patient_diabete)  # Devrait retourner ""Diabète Type 2""
 recommandations = agent.generer_recommandations(patient_diabete, ""Diabète Type 2"")
 # Devrait inclure : ""Consultation spécialisée obligatoire""
-```",,,,,,,,438b4b14cfd2194b,,,,,,,,
+```",,,,,,,,438b4b14cfd2194b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,ec5bfce7,code,fr,356e17ed1c19283b,"def tester_agent_diagnostic():
     """"""Teste l'agent de diagnostic avec des cas connus""""""
     agent = DiagnosticAgent()
@@ -348,25 +348,25 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipy
 
 # Exécution des tests
 tester_agent_diagnostic()
-print(""\n Tests de l'agent de diagnostic terminés"")",,,,,,,,356e17ed1c19283b,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,19479276,markdown,fr,14669310b46acc31,"### Exercice 1 : Etendre l'agent de diagnostic avec un score de risque
+print(""\n Tests de l'agent de diagnostic terminés"")",,,,,,,,356e17ed1c19283b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,19479276,markdown,fr,04a9fcfaab862a24,"### Exercice 1 : Etendre l'agent de diagnostic avec un score de risque
 
 **Objectif** : Ajouter une méthode `calculer_score_risque` a la classe `DiagnosticAgent` qui combine les indicateurs cliniques en un score numérique composite.
 
 **Contexte** : La classification actuelle (Normal/Pre-diabete/Diabete) est trop grossiere. Un score numérique permet de prioriser les patients et de suivre l'evolution dans le temps.
 
 **Indices** :
-- # Indice 1 : Combinez la glycémie à jeun, l'HbA1c et le nombre de symptomes en un score pondere
-- # Indice 2 : Normalisez chaque indicateur entre 0 et 1 avant de les combiner
-- # Étape 1 : Définir les seuils de normalisation pour chaque indicateur
-- # Étape 2 : Calculer le score pondere (ex: 40% glycémie, 40% HbA1c, 20% symptomes)
-- # Étape 3 : Tester sur les 3 patients de reference et verifier la coherence avec la classification",,,,,,,,14669310b46acc31,,,,,,,,
+- **Indice 1** : Combinez la glycémie à jeun, l'HbA1c et le nombre de symptomes en un score pondere
+- **Indice 2** : Normalisez chaque indicateur entre 0 et 1 avant de les combiner
+- **Étape 1** : Définir les seuils de normalisation pour chaque indicateur
+- **Étape 2** : Calculer le score pondere (ex: 40% glycémie, 40% HbA1c, 20% symptomes)
+- **Étape 3** : Tester sur les 3 patients de reference et verifier la coherence avec la classification",,,,,,,,04a9fcfaab862a24,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,2ed6fb70,code,fr,3b7f1f9dcc3f915c,"# Exercice 1 : Score de risque composite
 # TODO etudiant : Implementer une methode calculer_score_risque(patient) -> float
 # TODO etudiant : Normaliser chaque indicateur entre 0 et 1
 # TODO etudiant : Tester sur les 3 patients (Alice, Bob, Claire)
 result = None  # TODO etudiant : remplacer par votre calcul
-print(""Exercice a completer : score de risque composite"")",,,,,,,,3b7f1f9dcc3f915c,,,,,,,,
+print(""Exercice a completer : score de risque composite"")",,,,,,,,3b7f1f9dcc3f915c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,68bfae3b,markdown,fr,fe62f852bff774d9,"##  Partie 2 : Algorithme A* (Recherche Informée)
 
 ### Théorie Recherche Informée (AIMA Chapitres 3-4)
@@ -389,7 +389,7 @@ L'algorithme **A\*** (A-star) est un algorithme de recherche informée qui garan
 
 Vous devez implémenter les classes suivantes :
 - `EtatDiagnostic` : Représentation d'un état dans le processus de diagnostic
-- `AStarDiagnostic` : Algorithme A* pour la recherche diagnostique optimale",,,,,,,,fe62f852bff774d9,,,,,,,,
+- `AStarDiagnostic` : Algorithme A* pour la recherche diagnostique optimale",,,,,,,,fe62f852bff774d9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,39e86e61,code,fr,4768b19e927f4917,"class EtatDiagnostic:
     """"""Représente un état dans le processus de diagnostic""""""
     
@@ -588,7 +588,7 @@ class AStarDiagnostic:
 print("" Création de l'algorithme A*..."")
 astar = AStarDiagnostic()
 print("" Algorithme A* initialisé"")
-print(f"" Hypothèses possibles : {len(astar.hypotheses_possibles)}"")",,,,,,,,4768b19e927f4917,,,,,,,,
+print(f"" Hypothèses possibles : {len(astar.hypotheses_possibles)}"")",,,,,,,,4768b19e927f4917,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,5e336442,markdown,fr,7bcc0dd781dd301b,"###  Explication Heuristique Médicale
 
 L'heuristique médicale estime le **coût restant** pour converger vers un diagnostic. Pour qu'elle soit utile — c'est-à-dire pour qu'elle **guide** la recherche plutôt que de la laisser explorer aveuglément — elle doit dépendre du **contenu** des hypothèses encore candidates, pas seulement de leur nombre.
@@ -606,7 +606,7 @@ Le parcours dépend du patient — un tableau clinique clair converge plus vite 
 3. **Augmentation confiance** : validation des hypothèses résiduelles cohérentes
 4. **État final** : ≤ 2 hypothèses, confiance ≥ 0.8
 
-Un patient au diagnostic évident (ex. diabète de type 2 franc) converge en moins d'itérations qu'un patient au tableau ambigu (ex. intolérance glucidique modérée), car l'heuristique discrimine plus tôt. C'est la signature d'une recherche **informée** plutôt que d'un parcours aveugle.",,,,,,,,7bcc0dd781dd301b,,,,,,,,
+Un patient au diagnostic évident (ex. diabète de type 2 franc) converge en moins d'itérations qu'un patient au tableau ambigu (ex. intolérance glucidique modérée), car l'heuristique discrimine plus tôt. C'est la signature d'une recherche **informée** plutôt que d'un parcours aveugle.",,,,,,,,7bcc0dd781dd301b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,a49803b8,code,fr,9b798edeee57c6fe,"def tester_performance_astar():
     """"""Teste les performances de l'algorithme A*""""""
     astar_test = AStarDiagnostic()
@@ -642,25 +642,25 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipy
 
 # Exécution des tests
 tester_performance_astar()
-print(""\n Tests de performance A* terminés"")",,,,,,,,9b798edeee57c6fe,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,a595e9f8,markdown,fr,f68f4bc4d194c36c,"### Exercice 2 : Comparer différentes heuristiques pour A*
+print(""\n Tests de performance A* terminés"")",,,,,,,,9b798edeee57c6fe,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,a595e9f8,markdown,fr,edeadd526bd5203e,"### Exercice 2 : Comparer différentes heuristiques pour A*
 
 **Objectif** : Implementer une heuristique alternative pour l'algorithme A* et comparer le nombre d'itérations et la qualite du diagnostic.
 
 **Contexte** : L'heuristique actuelle mesure le « clutter » résiduel — la somme des inadéquations cliniques (`_coherence_hypothese`) des hypothèses encore candidates. Une heuristique basee uniquement sur l'HbA1c pourrait etre plus rapide mais moins precise.
 
 **Indices** :
-- # Indice 1 : Implementez une heuristique `h_simple(etat)` qui n'utilise que l'HbA1c du patient
-- # Indice 2 : Comparez le nombre d'itérations et le niveau de confiance final
-- # Étape 1 : Définir la nouvelle heuristique dans une sous-classe de `AStarDiagnostic`
-- # Étape 2 : Executer la recherche sur les 3 patients de test
-- # Étape 3 : Comparer les résultats (itérations, confiance, hypotheses) avec l'heuristique originale",,,,,,,,f68f4bc4d194c36c,,,,,,,,
+- **Indice 1** : Implementez une heuristique `h_simple(etat)` qui n'utilise que l'HbA1c du patient
+- **Indice 2** : Comparez le nombre d'itérations et le niveau de confiance final
+- **Étape 1** : Définir la nouvelle heuristique dans une sous-classe de `AStarDiagnostic`
+- **Étape 2** : Executer la recherche sur les 3 patients de test
+- **Étape 3** : Comparer les résultats (itérations, confiance, hypotheses) avec l'heuristique originale",,,,,,,,edeadd526bd5203e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,265df02e,code,fr,d4823c4286534539,"# Exercice 2 : Heuristique alternative pour A*
 # TODO etudiant : Creer une sous-classe de AStarDiagnostic avec une heuristique simplifiee
 # TODO etudiant : Executer la recherche sur les 3 patients de test
 # TODO etudiant : Comparer les resultats avec l'heuristique originale
 result = None  # TODO etudiant : remplacer par votre comparaison
-print(""Exercice a completer : heuristique alternative A*"")",,,,,,,,d4823c4286534539,,,,,,,,
+print(""Exercice a completer : heuristique alternative A*"")",,,,,,,,d4823c4286534539,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,b8ffd9c1,markdown,fr,c77172c2ba5e1508,"##  Partie 3 : Algorithmes Génétiques
 
 ### Théorie Optimisation Évolutionnaire
@@ -684,7 +684,7 @@ Les **algorithmes génétiques** s'inspirent de l'évolution naturelle pour opti
 
 Vous devez implémenter :
 - `ChromosomeDiagnostic` : Représentation des paramètres diagnostiques
-- `AlgorithmeGenetiqueDiagnostic` : Algorithme évolutionnaire pour l'optimisation",,,,,,,,c77172c2ba5e1508,,,,,,,,
+- `AlgorithmeGenetiqueDiagnostic` : Algorithme évolutionnaire pour l'optimisation",,,,,,,,c77172c2ba5e1508,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,45a073e3,code,fr,3a3d5d1f1e6ccde0,"class ChromosomeDiagnostic:
     """"""Chromosome représentant les paramètres diagnostiques""""""
     
@@ -897,7 +897,7 @@ class AlgorithmeGenetiqueDiagnostic:
 print("" Création de l'algorithme génétique..."")
 genetique = AlgorithmeGenetiqueDiagnostic()
 print("" Algorithme génétique initialisé"")
-print(f"" Patients de référence : {len(genetique.patients_reference)}"")",,,,,,,,3a3d5d1f1e6ccde0,,,,,,,,
+print(f"" Patients de référence : {len(genetique.patients_reference)}"")",,,,,,,,3a3d5d1f1e6ccde0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,1c4e5fb5,markdown,fr,87915272a6c63a73,"###  Explication Fitness Médicale
 
 La fonction fitness médicale évalue la qualité d'un chromosome :
@@ -912,7 +912,7 @@ La fonction fitness médicale évalue la qualité d'un chromosome :
 Le suivi de convergence doit inclure :
 - **Historique de fitness** : Évolution de la meilleure solution
 - **Graphique** : Visualisation de la convergence
-- **Paramètres finaux** : Seuils optimisés obtenus",,,,,,,,87915272a6c63a73,,,,,,,,
+- **Paramètres finaux** : Seuils optimisés obtenus",,,,,,,,87915272a6c63a73,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,2d7b2b42,code,fr,18723eff0a732e51,"def tester_convergence_genetique():
     """"""Teste la convergence de l'algorithme génétique""""""
     import matplotlib.pyplot as plt
@@ -940,7 +940,7 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipy
 
 # Exécution du test
 resultat = tester_convergence_genetique()
-print(""\n Tests de convergence génétique terminés"")",,,,,,,,18723eff0a732e51,,,,,,,,
+print(""\n Tests de convergence génétique terminés"")",,,,,,,,18723eff0a732e51,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,f499ea4e,markdown,fr,8cfeb416d5c529dd,"##  Partie 4 : Solveur Z3 (Programmation par Contraintes)
 
 ### Théorie Programmation par Contraintes (AIMA Chapitre 6)
@@ -964,7 +964,7 @@ La **programmation par Contraintes** (CSP - Constraint Satisfaction Problem) vis
 Vous devez implémenter la classe `Z3ConstraintSolver` avec les méthodes suivantes :
 - `definir_variables_contraintes(self, patient: Patient) -> Dict`
 - `valider_protocole(self, patient: Patient) -> Dict`
-- `analyser_faisabilite(self, patients: List[Patient]) -> Dict`",,,,,,,,8cfeb416d5c529dd,,,,,,,,
+- `analyser_faisabilite(self, patients: List[Patient]) -> Dict`",,,,,,,,8cfeb416d5c529dd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,e509b94d,code,fr,a13e8aa529d58baa,"from z3 import *
 
 class Z3ConstraintSolver:
@@ -1168,7 +1168,7 @@ class Z3ConstraintSolver:
 print("" Création du solveur Z3..."")
 solveur = Z3ConstraintSolver()
 print("" Solveur Z3 initialisé"")
-print(f"" Protocoles chargés : {len(solveur.protocoles)} sections"")",,,,,,,,a13e8aa529d58baa,,,,,,,,
+print(f"" Protocoles chargés : {len(solveur.protocoles)} sections"")",,,,,,,,a13e8aa529d58baa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,9861dd7d,markdown,fr,61d9afb6286f1eb9,"###  Explication Modélisation Contraintes Médicales
 
 La modélisation des contraintes médicales doit inclure :
@@ -1184,7 +1184,7 @@ La modélisation des contraintes médicales doit inclure :
 Les tests doivent valider :
 - **Protocoles complexes** : Patients avec comorbidités
 - **Contraintes violées** : Détection des incompatibilités
-- **Temps de résolution** : Performance du solveur",,,,,,,,61d9afb6286f1eb9,,,,,,,,
+- **Temps de résolution** : Performance du solveur",,,,,,,,61d9afb6286f1eb9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,6d572a40,code,fr,210292a35e4ec6e4,"def tester_validation_z3():
     """"""Teste le solveur Z3 avec des cas complexes""""""
     solveur_test = Z3ConstraintSolver()
@@ -1245,25 +1245,25 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipy
 
 # Exécution des tests
 tester_validation_z3()
-print(""\n Tests de validation Z3 terminés"")",,,,,,,,210292a35e4ec6e4,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,ac893b9b,markdown,fr,2d16ff3a4ce4b7ef,"### Exercice 3 : Ajouter des contraintes d'interaction medicamenteuse au solveur Z3
+print(""\n Tests de validation Z3 terminés"")",,,,,,,,210292a35e4ec6e4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,ac893b9b,markdown,fr,a8233dfbff7079e7,"### Exercice 3 : Ajouter des contraintes d'interaction medicamenteuse au solveur Z3
 
 **Objectif** : Etendre le solveur Z3 pour inclure de nouvelles contraintes d'interaction entre medicaments et verifier que le protocole est sur.
 
 **Contexte** : Les interactions medicamenteuses sont une source majeure de risques. L'insuline combinee a certains antidiabetiques oraux augmente le risque d'hypoglycemie severe.
 
 **Indices** :
-- # Indice 1 : Ajoutez une contrainte Z3 qui limite la dose d'insuline si le patient prend aussi de la metformine
-- # Indice 2 : Utilisez `Implies()` et `And()` pour exprimer les conditions
-- # Étape 1 : Ajouter la variable booleenne `hypoglycemie_risque` au modèle
-- # Étape 2 : Définir les contraintes d'interaction
-- # Étape 3 : Tester avec un patient qui a des antecedents d'hypoglycemie et verifier que le solveur refuse certaines combinaisons",,,,,,,,2d16ff3a4ce4b7ef,,,,,,,,
+- **Indice 1** : Ajoutez une contrainte Z3 qui limite la dose d'insuline si le patient prend aussi de la metformine
+- **Indice 2** : Utilisez `Implies()` et `And()` pour exprimer les conditions
+- **Étape 1** : Ajouter la variable booleenne `hypoglycemie_risque` au modèle
+- **Étape 2** : Définir les contraintes d'interaction
+- **Étape 3** : Tester avec un patient qui a des antecedents d'hypoglycemie et verifier que le solveur refuse certaines combinaisons",,,,,,,,a8233dfbff7079e7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,9acbed9a,code,fr,c033bd599c8db3dc,"# Exercice 3 : Contraintes d'interaction medicamenteuse avec Z3
 # TODO etudiant : Etendre la classe Z3ConstraintSolver avec des contraintes d'interaction
 # TODO etudiant : Ajouter une contrainte sur la dose d'insuline si metformine aussi prescrite
 # TODO etudiant : Tester avec un patient hypoglycemique
 result = None  # TODO etudiant : remplacer par votre solution Z3
-print(""Exercice a completer : contraintes d'interaction medicamenteuse"")",,,,,,,,c033bd599c8db3dc,,,,,,,,
+print(""Exercice a completer : contraintes d'interaction medicamenteuse"")",,,,,,,,c033bd599c8db3dc,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,4fddccb5,markdown,fr,36523aa2e9c5dea5,"##  Pipeline et Tests d'Intégration
 
 ###  Objectifs du Pipeline
@@ -1281,7 +1281,7 @@ Les tests automatisés doivent valider :
 - **Fonctionnalité individuelle** : Chaque approche testée séparément
 - **Intégration** : Pipeline complet fonctionnel
 - **Performance globale** : Mesures sur l'ensemble du système
-- **Robustesse** : Gestion des erreurs et cas limites",,,,,,,,36523aa2e9c5dea5,,,,,,,,
+- **Robustesse** : Gestion des erreurs et cas limites",,,,,,,,36523aa2e9c5dea5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,e0a532b6,code,fr,a8702ebd3cc82bb6,"# Chargement des données
 def charger_donnees_csv(fichier: str) -> List[Patient]:
     """"""Charge les données patients depuis un fichier CSV""""""
@@ -1396,8 +1396,8 @@ def main():
     print(""=""*60)
 
 # Note: La fonction main() sera exécutée manuellement par l'utilisateur
-print(""\n Pour exécuter le pipeline complet, appelez: main()"")",,,,,,,,a8702ebd3cc82bb6,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,1d26cfcb,markdown,fr,2e081bc206efc47f,Exécution des tests automatises sur le modèle.,,,,,,,,2e081bc206efc47f,,,,,,,,
+print(""\n Pour exécuter le pipeline complet, appelez: main()"")",,,,,,,,a8702ebd3cc82bb6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,1d26cfcb,markdown,fr,2e081bc206efc47f,Exécution des tests automatises sur le modèle.,,,,,,,,2e081bc206efc47f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,6f254673,code,fr,7ecf8dc9aea4d5cb,"def tests_automatises():
     """"""Suite de tests automatisés pour validation complète""""""
     print(""\n"" + ""=""*60)
@@ -1520,7 +1520,7 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipy
     return tests_resultats
 
 # Note: La fonction tests_automatises() sera exécutée manuellement par l'utilisateur
-print(""\n Pour exécuter la suite de tests, appelez: tests_automatises()"")",,,,,,,,7ecf8dc9aea4d5cb,,,,,,,,
+print(""\n Pour exécuter la suite de tests, appelez: tests_automatises()"")",,,,,,,,7ecf8dc9aea4d5cb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,0b753e08,markdown,fr,a415ee007576ed53,"###  Analyse Comparative et Conclusion
 
 #### Analyse Comparative des 4 Approches
@@ -1552,7 +1552,7 @@ Les compétences développées sont directement transférables à d'autres domai
 
 ---
 **Retour au sommaire** : [Index CaseStudies](../../README.md)
-",,,,,,,,a415ee007576ed53,,,,,,,,
+",,,,,,,,a415ee007576ed53,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,64852c73,markdown,fr,5bbaf6f4a227c8fa,"**Navigation** : [Index](../../README.md)
 # CC1 - IA Exploratoire et Symbolique
 ## Système de Diagnostic Médical Multi-Contraintes pour le Diabète de Type 2
@@ -1580,9 +1580,9 @@ Le diabète de type 2 nécessite une approche de diagnostic personnalisée qui c
 - Algorithmes génétiques et optimisation
 - Analyse de complexité et performance
 - Application biomédicale (diabète type 2)
-",,,,,,,,5bbaf6f4a227c8fa,,,,,,,,
+",,,,,,,,5bbaf6f4a227c8fa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,a6ffca9a,code,fr,7620899929cf9def,"# Dependances pre-provisionnees (numpy pandas matplotlib seaborn z3-solver).
-# Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,7620899929cf9def,,,,,,,,
+# Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,7620899929cf9def,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,d894a937,code,fr,4c012ad62b84f1d2,"# Configuration du notebook
 CONFIG = {
     'version': '2.0.0',
@@ -1611,7 +1611,7 @@ except ImportError:
     print("" Z3 non disponible. Installez avec : pip install z3-solver"")
     
 print(f"" Configuration : {CONFIG}"")
-print("" Objectif : Implémenter un système de diagnostic médical multi-approches"")",,,,,,,,4c012ad62b84f1d2,,,,,,,,
+print("" Objectif : Implémenter un système de diagnostic médical multi-approches"")",,,,,,,,4c012ad62b84f1d2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,2f529696,markdown,fr,637d81e5f8f39dac,"###  Structure de Données
 
 #### Classe Patient
@@ -1620,7 +1620,7 @@ La classe `Patient` représente un patient pour le système de diagnostic. Elle 
 
 #### Protocoles Thérapeutiques
 
-Les protocoles définissent les objectifs et contraintes pour le traitement du diabète de type 2.",,,,,,,,637d81e5f8f39dac,,,,,,,,
+Les protocoles définissent les objectifs et contraintes pour le traitement du diabète de type 2.",,,,,,,,637d81e5f8f39dac,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,5ef50610,code,fr,4679d6764bf47d86,"from dataclasses import dataclass
 
 @dataclass
@@ -1674,7 +1674,7 @@ protocoles_diabete_type2 = {
 }
 
 print("" Structure de données définie"")
-print(f"" Protocoles chargés : {len(protocoles_diabete_type2)} sections"")",,,,,,,,4679d6764bf47d86,,,,,,,,
+print(f"" Protocoles chargés : {len(protocoles_diabete_type2)} sections"")",,,,,,,,4679d6764bf47d86,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,18e78368,markdown,fr,e1c66d8abdffa4ba,"##  Partie 1 : Agent de Diagnostic Basique
 
 ### Théorie des Agents Intelligents (AIMA Chapitre 1)
@@ -1697,7 +1697,7 @@ Vous devez implémenter la classe `DiagnosticAgent` avec les méthodes suivantes
 - `__init__(self)` : Initialisation avec règles cliniques
 - `classifier_risque(self, patient: Patient) -> str` : Classification du risque
 - `analyser_symptomes(self, patient: Patient) -> List[str]` : Interprétation des symptômes
-- `generer_recommandations(self, patient: Patient, risque: str) -> List[str]` : Recommandations personnalisées",,,,,,,,e1c66d8abdffa4ba,,,,,,,,
+- `generer_recommandations(self, patient: Patient, risque: str) -> List[str]` : Recommandations personnalisées",,,,,,,,e1c66d8abdffa4ba,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,c953a353,code,fr,dba8676c4cfb85cf,"class DiagnosticAgent:
     """"""Agent de diagnostic médical basé sur des règles cliniques""""""
     
@@ -1726,7 +1726,7 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipyn
 # Test de la classe
 print("" Création de l'agent de diagnostic..."")
 agent = DiagnosticAgent()
-print("" Agent initialisé"")",,,,,,,,dba8676c4cfb85cf,,,,,,,,
+print("" Agent initialisé"")",,,,,,,,dba8676c4cfb85cf,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,488c666b,markdown,fr,438b4b14cfd2194b,"###  Exemples d'Utilisation Attendus
 
 Voici des exemples de ce que votre agent devrait produire :
@@ -1753,7 +1753,7 @@ patient_diabete = Patient(3, ""Claire"", 62, 140.0, 210.0, 7.8, [""polyurie"", "
 risque = agent.classifier_risque(patient_diabete)  # Devrait retourner ""Diabète Type 2""
 recommandations = agent.generer_recommandations(patient_diabete, ""Diabète Type 2"")
 # Devrait inclure : ""Consultation spécialisée obligatoire""
-```",,,,,,,,438b4b14cfd2194b,,,,,,,,
+```",,,,,,,,438b4b14cfd2194b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,ec5bfce7,code,fr,2f40a4fb55747ae3,"# Tests de validation à compléter
 def tester_agent_diagnostic():
     """"""Teste l'agent de diagnostic avec des cas connus""""""
@@ -1763,7 +1763,7 @@ def tester_agent_diagnostic():
     # TODO : Tester les recommandations
     pass
 
-print("" Tests de l'agent de diagnostic à compléter"")",,,,,,,,2f40a4fb55747ae3,,,,,,,,
+print("" Tests de l'agent de diagnostic à compléter"")",,,,,,,,2f40a4fb55747ae3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,68bfae3b,markdown,fr,fe62f852bff774d9,"##  Partie 2 : Algorithme A* (Recherche Informée)
 
 ### Théorie Recherche Informée (AIMA Chapitres 3-4)
@@ -1786,7 +1786,7 @@ L'algorithme **A\*** (A-star) est un algorithme de recherche informée qui garan
 
 Vous devez implémenter les classes suivantes :
 - `EtatDiagnostic` : Représentation d'un état dans le processus de diagnostic
-- `AStarDiagnostic` : Algorithme A* pour la recherche diagnostique optimale",,,,,,,,fe62f852bff774d9,,,,,,,,
+- `AStarDiagnostic` : Algorithme A* pour la recherche diagnostique optimale",,,,,,,,fe62f852bff774d9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,39e86e61,code,fr,4397c672b77e562f,"class EtatDiagnostic:
     """"""Représente un état dans le processus de diagnostic""""""
     
@@ -1835,7 +1835,7 @@ class AStarDiagnostic:
 
 print("" Création de l'algorithme A*..."")
 astar = AStarDiagnostic()
-print("" Algorithme A* initialisé"")",,,,,,,,4397c672b77e562f,,,,,,,,
+print("" Algorithme A* initialisé"")",,,,,,,,4397c672b77e562f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,5e336442,markdown,fr,67e20c22f571edb5,"###  Explication Heuristique Médicale
 
 L'heuristique médicale doit évaluer la pertinence d'une hypothèse diagnostique :
@@ -1850,7 +1850,7 @@ Le parcours typique pour un patient complexe :
 1. **État initial** : Hypothèses larges, confiance faible
 2. **Élimination progressive** : Réduction des hypothèses
 3. **Augmentation confiance** : Validation des hypothèses restantes
-4. **État final** : 1-2 hypothèses, confiance élevée",,,,,,,,67e20c22f571edb5,,,,,,,,
+4. **État final** : 1-2 hypothèses, confiance élevée",,,,,,,,67e20c22f571edb5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,a49803b8,code,fr,456a41ce1734c691,"# Tests de performance à compléter
 def tester_performance_astar():
     """"""Teste les performances de l'algorithme A*""""""
@@ -1860,7 +1860,7 @@ def tester_performance_astar():
     # TODO : Valider convergence
     pass
 
-print("" Tests de performance A* à compléter"")",,,,,,,,456a41ce1734c691,,,,,,,,
+print("" Tests de performance A* à compléter"")",,,,,,,,456a41ce1734c691,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,b8ffd9c1,markdown,fr,c77172c2ba5e1508,"##  Partie 3 : Algorithmes Génétiques
 
 ### Théorie Optimisation Évolutionnaire
@@ -1884,7 +1884,7 @@ Les **algorithmes génétiques** s'inspirent de l'évolution naturelle pour opti
 
 Vous devez implémenter :
 - `ChromosomeDiagnostic` : Représentation des paramètres diagnostiques
-- `AlgorithmeGenetiqueDiagnostic` : Algorithme évolutionnaire pour l'optimisation",,,,,,,,c77172c2ba5e1508,,,,,,,,
+- `AlgorithmeGenetiqueDiagnostic` : Algorithme évolutionnaire pour l'optimisation",,,,,,,,c77172c2ba5e1508,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,45a073e3,code,fr,6615cbd9019e0083,"class ChromosomeDiagnostic:
     """"""Chromosome représentant les paramètres diagnostiques""""""
     
@@ -1922,7 +1922,7 @@ class AlgorithmeGenetiqueDiagnostic:
 
 print("" Création de l'algorithme génétique..."")
 genetique = AlgorithmeGenetiqueDiagnostic()
-print("" Algorithme génétique initialisé"")",,,,,,,,6615cbd9019e0083,,,,,,,,
+print("" Algorithme génétique initialisé"")",,,,,,,,6615cbd9019e0083,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,1c4e5fb5,markdown,fr,87915272a6c63a73,"###  Explication Fitness Médicale
 
 La fonction fitness médicale évalue la qualité d'un chromosome :
@@ -1937,7 +1937,7 @@ La fonction fitness médicale évalue la qualité d'un chromosome :
 Le suivi de convergence doit inclure :
 - **Historique de fitness** : Évolution de la meilleure solution
 - **Graphique** : Visualisation de la convergence
-- **Paramètres finaux** : Seuils optimisés obtenus",,,,,,,,87915272a6c63a73,,,,,,,,
+- **Paramètres finaux** : Seuils optimisés obtenus",,,,,,,,87915272a6c63a73,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,2d7b2b42,code,fr,3d2b0e045917535d,"# Tests de convergence à compléter
 def tester_convergence_genetique():
     """"""Teste la convergence de l'algorithme génétique""""""
@@ -1946,7 +1946,7 @@ def tester_convergence_genetique():
     # TODO : Analyser les paramètres finaux
     pass
 
-print("" Tests de convergence génétique à compléter"")",,,,,,,,3d2b0e045917535d,,,,,,,,
+print("" Tests de convergence génétique à compléter"")",,,,,,,,3d2b0e045917535d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,f499ea4e,markdown,fr,8cfeb416d5c529dd,"##  Partie 4 : Solveur Z3 (Programmation par Contraintes)
 
 ### Théorie Programmation par Contraintes (AIMA Chapitre 6)
@@ -1970,7 +1970,7 @@ La **programmation par Contraintes** (CSP - Constraint Satisfaction Problem) vis
 Vous devez implémenter la classe `Z3ConstraintSolver` avec les méthodes suivantes :
 - `definir_variables_contraintes(self, patient: Patient) -> Dict`
 - `valider_protocole(self, patient: Patient) -> Dict`
-- `analyser_faisabilite(self, patients: List[Patient]) -> Dict`",,,,,,,,8cfeb416d5c529dd,,,,,,,,
+- `analyser_faisabilite(self, patients: List[Patient]) -> Dict`",,,,,,,,8cfeb416d5c529dd,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,e509b94d,code,fr,f1582734d7f01e55,"class Z3ConstraintSolver:
     """"""Solveur de contraintes pour validation des protocoles thérapeutiques""""""
     
@@ -1997,7 +1997,7 @@ MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipyn
 
 print("" Création du solveur Z3..."")
 solveur = Z3ConstraintSolver()
-print("" Solveur Z3 initialisé"")",,,,,,,,f1582734d7f01e55,,,,,,,,
+print("" Solveur Z3 initialisé"")",,,,,,,,f1582734d7f01e55,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,9861dd7d,markdown,fr,61d9afb6286f1eb9,"###  Explication Modélisation Contraintes Médicales
 
 La modélisation des contraintes médicales doit inclure :
@@ -2013,7 +2013,7 @@ La modélisation des contraintes médicales doit inclure :
 Les tests doivent valider :
 - **Protocoles complexes** : Patients avec comorbidités
 - **Contraintes violées** : Détection des incompatibilités
-- **Temps de résolution** : Performance du solveur",,,,,,,,61d9afb6286f1eb9,,,,,,,,
+- **Temps de résolution** : Performance du solveur",,,,,,,,61d9afb6286f1eb9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,6d572a40,code,fr,114bde76979899ad,"# Tests de validation à compléter
 def tester_validation_z3():
     """"""Teste le solveur Z3 avec des cas complexes""""""
@@ -2023,7 +2023,7 @@ def tester_validation_z3():
     # TODO : Mesurer les temps de résolution
     pass
 
-print("" Tests de validation Z3 à compléter"")",,,,,,,,114bde76979899ad,,,,,,,,
+print("" Tests de validation Z3 à compléter"")",,,,,,,,114bde76979899ad,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,4fddccb5,markdown,fr,9e4aaadfb8e82c1f,"##  Pipeline et Tests d'Intégration
 
 ###  Objectifs du Pipeline
@@ -2041,7 +2041,7 @@ Les tests automatisés doivent valider :
 - **Fonctionnalité individuelle** : Chaque approche testée séparément
 - **Intégration** : Pipeline complet fonctionnel
 - **Performance globale** : Mesures sur l'ensemble du système
-- **Robustesse** : Gestion des erreurs et cas limites",,,,,,,,9e4aaadfb8e82c1f,,,,,,,,
+- **Robustesse** : Gestion des erreurs et cas limites",,,,,,,,9e4aaadfb8e82c1f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,e0a532b6,code,fr,ec14d8793014814f,"# Chargement des données
 def charger_donnees_csv(fichier: str) -> List[Patient]:
     """"""Charge les données patients depuis un fichier CSV""""""
@@ -2066,7 +2066,7 @@ def tests_automatises():
     # TODO : Tester la validation Z3
     pass
 
-print("" Pipeline d'intégration à compléter"")",,,,,,,,ec14d8793014814f,,,,,,,,
+print("" Pipeline d'intégration à compléter"")",,,,,,,,ec14d8793014814f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,6f254673,code,fr,13dc1cc89d63291c,"# Tests automatisés à compléter
 def tests_automatises():
     """"""Suite de tests automatisés pour validation""""""
@@ -2076,7 +2076,7 @@ def tests_automatises():
     # TODO : Tester la validation Z3
     pass
 
-print("" Tests automatisés à compléter"")",,,,,,,,13dc1cc89d63291c,,,,,,,,
+print("" Tests automatisés à compléter"")",,,,,,,,13dc1cc89d63291c,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,0b753e08,markdown,fr,4bc25d3e110f69d5,"###  Analyse Comparative et Conclusion
 
 Complétez le tableau et le paragraphe de recommnadations suivants.
@@ -2107,7 +2107,7 @@ Les compétences développées sont directement transférables à d'autres domai
 
 ---
 **Retour au sommaire** : [Index CaseStudies](../../README.md)
-",,,,,,,,4bc25d3e110f69d5,,,,,,,,
+",,,,,,,,4bc25d3e110f69d5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,d0f6d516,markdown,fr,8de9a12f223b76e7,"**Navigation** : [Index](../../README.md)
 # CC2 : OncoPlan - Corrigé Type
 
@@ -2117,13 +2117,13 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb
 Ce notebook présente une solution complète pour le devoir OncoPlan. Il couvre :
 1.  **Symbolique** : Ontologie RDF et Planification OR-Tools.
 2.  **Probabiliste** : Modélisation Bayésienne avec Pyro.
-3.  **Bonus** : Traçabilité via Hashage.",,,,,,,,8de9a12f223b76e7,,,,,,,,
+3.  **Bonus** : Traçabilité via Hashage.",,,,,,,,8de9a12f223b76e7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,a08547b6,markdown,fr,5276363db9e755d7,"## Installation des Dépendances
 
-Ce cas d'étude assemble **trois paradigmes d'IA** distincts, chacun porté par une librairie Python dédiée : **RDFLib** (représentation des connaissances et raisonnement sur l'ontologie des médicaments), **OR-Tools** et son solveur **CP-SAT** (optimisation combinatoire pour planifier les cures sous contraintes de capacité), et **Pyro** (inférence bayésienne probabiliste sur le profil du patient). Pyro repose sur **PyTorch** comme backend tensoriel. Les dépendances sont pré-provisionnées via `CaseStudies/requirements.txt` : aucun `pip install` n'est requis, les imports se font directement à la cellule suivante.",,,,,,,,5276363db9e755d7,,,,,,,,
+Ce cas d'étude assemble **trois paradigmes d'IA** distincts, chacun porté par une librairie Python dédiée : **RDFLib** (représentation des connaissances et raisonnement sur l'ontologie des médicaments), **OR-Tools** et son solveur **CP-SAT** (optimisation combinatoire pour planifier les cures sous contraintes de capacité), et **Pyro** (inférence bayésienne probabiliste sur le profil du patient). Pyro repose sur **PyTorch** comme backend tensoriel. Les dépendances sont pré-provisionnées via `CaseStudies/requirements.txt` : aucun `pip install` n'est requis, les imports se font directement à la cellule suivante.",,,,,,,,5276363db9e755d7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,82097291,code,fr,15a066e610185e31,"# Dependances pre-provisionnees (rdflib ortools pyro-ppl torch pandas matplotlib seaborn).
-# Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,15a066e610185e31,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,5d84957e,markdown,fr,1ef206f7fa8d42c1,Import des bibliotheques necessaires.,,,,,,,,1ef206f7fa8d42c1,,,,,,,,
+# Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,15a066e610185e31,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,5d84957e,markdown,fr,1ef206f7fa8d42c1,Import des bibliotheques necessaires.,,,,,,,,1ef206f7fa8d42c1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,d4253621,code,fr,361ab60bd89681a2,"import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -2141,8 +2141,8 @@ import json
 
 # Configuration
 sns.set_style(""whitegrid"")
-pyro.set_rng_seed(101)",,,,,,,,361ab60bd89681a2,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,2a4648c4,markdown,fr,cb3f91d54eee30e5,---,,,,,,,,cb3f91d54eee30e5,,,,,,,,
+pyro.set_rng_seed(101)",,,,,,,,361ab60bd89681a2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,2a4648c4,markdown,fr,596f4162a52f315b,***,,,,,,,,596f4162a52f315b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,c90453dc,markdown,fr,f850967243bf8e2d,"## Partie 1 : Le Pharmacien Symbolique
 
 La première partie relève de l'**IA symbolique** : on représente explicitement les connaissances du domaine (médicaments, toxicités, interactions) et on raisonne dessus par des règles déterministes. Elle se décompose en deux sous-parties complémentaires :
@@ -2150,8 +2150,8 @@ La première partie relève de l'**IA symbolique** : on représente explicitemen
 - **1.1. Ontologie des médicaments (RDFLib)** — on construit une base de connaissances sous forme de graphe RDF (triplets sujet-prédicat-objet) qui encode la néphrotoxicité et les incompatibilités médicamenteuses, puis on l'interroge pour valider qu'une prescription est sûre.
 - **1.2. Planification des cures (OR-Tools CP-SAT)** — une fois les prescriptions validées, il faut les **placer dans le temps** : plusieurs protocoles concurrents se partagent des lits en nombre limité. CP-SAT co-optimise les dates de début pour respecter la capacité journalière tout en minimisant le makespan.
 
-L'approche symbolique garantit la **sûreté** (une interaction interdite est détectée à coup sûr), mais elle est rigide : elle ne sait pas gérer l'incertitude sur l'état réel du patient — ce sera le rôle de la Partie 2 (probabiliste).",,,,,,,,f850967243bf8e2d,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,06db3521,markdown,fr,e9f2abe1b96e4898,### 1.1. Ontologie des Médicaments (RDFLib),,,,,,,,e9f2abe1b96e4898,,,,,,,,
+L'approche symbolique garantit la **sûreté** (une interaction interdite est détectée à coup sûr), mais elle est rigide : elle ne sait pas gérer l'incertitude sur l'état réel du patient — ce sera le rôle de la Partie 2 (probabiliste).",,,,,,,,f850967243bf8e2d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,06db3521,markdown,fr,e9f2abe1b96e4898,### 1.1. Ontologie des Médicaments (RDFLib),,,,,,,,e9f2abe1b96e4898,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,f06d5175,code,fr,fb4f949712e3f486,"# Création du Namespace
 ONCO = Namespace(""http://example.org/onco/"")
 g = Graph()
@@ -2176,8 +2176,8 @@ for med_name, props in medicaments.items():
     for inc in props[""incompatible""]:
         g.add((med_uri, ONCO.incompatible_avec, ONCO[inc]))
 
-print(f""Ontologie chargée avec {len(g)} triplets."")",,,,,,,,fb4f949712e3f486,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,3c78ffc1,markdown,fr,c519d63fe0a6b9e6,Verification de prescription basee sur l'ontologie.,,,,,,,,c519d63fe0a6b9e6,,,,,,,,
+print(f""Ontologie chargée avec {len(g)} triplets."")",,,,,,,,fb4f949712e3f486,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,3c78ffc1,markdown,fr,c519d63fe0a6b9e6,Verification de prescription basee sur l'ontologie.,,,,,,,,c519d63fe0a6b9e6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,34abf4d3,code,fr,64e2a7b945e4c8d1,"def verifier_prescription(protocole_noms, patient_insuffisance_renale):
     alertes = []
     
@@ -2206,25 +2206,25 @@ print(""\n--- Test 2 : Patient Insuffisant Rénal ---"")
 print(verifier_prescription([""Cisplatine""], True))
 
 print(""\n--- Test 3 : Incompatibilité ---"")
-print(verifier_prescription([""Cisplatine"", ""Gentamicine""], False))",,,,,,,,64e2a7b945e4c8d1,,,,,,,,
+print(verifier_prescription([""Cisplatine"", ""Gentamicine""], False))",,,,,,,,64e2a7b945e4c8d1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,0cd1d38e,code,fr,8b3931a0628218db,"# Exercice 1 : Etendre l'ontologie medicamenteuse
 # TODO etudiant : Ajouter ""Paclitaxel"" et ""Carboplatine"" au dictionnaire medicaments
 # TODO etudiant : Peupler le graphe RDF avec les nouveaux triplets
 # TODO etudiant : Tester verifier_prescription avec les nouvelles combinaisons
 result = None  # TODO etudiant : remplacer par votre ontologie etendue
-print(""Exercice a completer : ontologie etendue"")",,,,,,,,8b3931a0628218db,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,6753eaa0,markdown,fr,284e6df651792436,"### Exercice 1 : Etendre l'ontologie avec de nouveaux medicaments et interactions
+print(""Exercice a completer : ontologie etendue"")",,,,,,,,8b3931a0628218db,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,6753eaa0,markdown,fr,2ac54510e0f11c38,"### Exercice 1 : Etendre l'ontologie avec de nouveaux medicaments et interactions
 
 **Objectif** : Ajouter de nouveaux medicaments a l'ontologie RDF et implementer une verification d'interactions etendue.
 
 **Contexte** : L'ontologie actuelle contient 4 medicaments. En pratique, les protocoles oncologiques combinent davantage de molecules, et les interactions croisees sont critiques.
 
 **Indices** :
-- # Indice 1 : Ajoutez ""Paclitaxel"" (toxicite_renale=False, incompatible avec ""Docetaxel"") et ""Carboplatine"" (toxicite_renale=True, incompatible avec ""Cisplatine"")
-- # Indice 2 : Verifiez qu'un protocole [""Cisplatine"", ""Carboplatine""] declenche bien une alerte d'incompatibilite
-- # Étape 1 : Ajouter les nouveaux medicaments au dictionnaire `medicaments`
-- # Étape 2 : Peupler le graphe RDF avec les nouveaux triplets
-- # Étape 3 : Tester la fonction `verifier_prescription` avec des combinaisons incluant les nouveaux medicaments",,,,,,,,284e6df651792436,,,,,,,,
+- **Indice 1** : Ajoutez ""Paclitaxel"" (toxicite_renale=False, incompatible avec ""Docetaxel"") et ""Carboplatine"" (toxicite_renale=True, incompatible avec ""Cisplatine"")
+- **Indice 2** : Verifiez qu'un protocole [""Cisplatine"", ""Carboplatine""] declenche bien une alerte d'incompatibilite
+- **Étape 1** : Ajouter les nouveaux medicaments au dictionnaire `medicaments`
+- **Étape 2** : Peupler le graphe RDF avec les nouveaux triplets
+- **Étape 3** : Tester la fonction `verifier_prescription` avec des combinaisons incluant les nouveaux medicaments",,,,,,,,2ac54510e0f11c38,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,eeaeb406,markdown,fr,0bb2a59db62f0b31,"### 1.2. Planification des Cures (OR-Tools CP-SAT)
 
 En service d'oncologie de jour, **plusieurs protocoles de chimiothérapie se
@@ -2241,7 +2241,7 @@ et un horizon de 90 jours, une recherche exhaustive testerait 90⁴ ≈ 65 milli
 de combinaisons. **CP-SAT** (OR-Tools) est l'outil SOTA approprié — il propage
 les contraintes (capacité cumulée par jour,
 fenêtres d'administration) et **minimise le makespan** (libérer les lits au plus
-tôt) via une recherche branch-and-bound guidée par les bornes LP.",,,,,,,,0bb2a59db62f0b31,,,,,,,,
+tôt) via une recherche branch-and-bound guidée par les bornes LP.",,,,,,,,0bb2a59db62f0b31,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,31abc0f7,code,fr,c67124719094014a,"def planifier_chimio_multi(protocoles, capacite_max=3, occupations_existantes=None, horizon=90):
     """"""Planifie N protocoles de chimiothérapie concurrents sous capacité journalière.
 
@@ -2331,27 +2331,31 @@ else:
     debuts = sorted({info['debut'] for info in resultat['planning'].values()})
     print(f""\nDébuts distincts : {debuts}"")
     print(""Note : les protocoles ne commencent PAS tous à J1 — CP-SAT les a ""
-          ""décalés pour ne pas saturer les lits (un for-loop trivial violerait la capacité)."")",,,,,,,,c67124719094014a,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,ef761f0b,markdown,fr,cb3f91d54eee30e5,---,,,,,,,,cb3f91d54eee30e5,,,,,,,,
+          ""décalés pour ne pas saturer les lits (un for-loop trivial violerait la capacité)."")",,,,,,,,c67124719094014a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,ef761f0b,markdown,fr,24c61a72b2d9130b,"La cellule ci-dessus implémente un solveur CP-SAT qui planifie plusieurs protocoles de chimiothérapie concurrents sous une capacité journalière de lits. Le modèle minimise le makespan (dernier jour d'administration toutes protocoles confondues) tout en respectant la contrainte qu'aucun jour n'a plus de `capacite_max` administrations. Les occupations déjà présentes dans le service sont prises en compte.
+
+La sortie affiche le statut du solveur, le makespan optimal, et le planning détaillé (date de début + jours d'administration) pour chaque protocole. Les décalages entre les débuts des protocoles sont la signature de la co-optimisation : CP-SAT distribue les dates pour éviter de saturer la capacité.
+
+Note sur la co-optimisation : un enchaînement trivial de for-loops saturerait les lits (cf. la note du solveur dans la sortie) — c'est précisément ce que CP-SAT évite.",,,,,,,,24c61a72b2d9130b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,a8271cb1,code,fr,cb5da8bc4f7b5023,"# Exercice 2 : Sensibilite au prior du profil patient
 # TODO etudiant : Creer une version parametrable du modele avec profil_probs en argument
 # TODO etudiant : Tester 3 configurations de prior differentes
 # TODO etudiant : Comparer les posterieurs dans un tableau
 result = None  # TODO etudiant : remplacer par votre analyse
-print(""Exercice a completer : sensibilite au prior"")",,,,,,,,cb5da8bc4f7b5023,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,0c540f63,markdown,fr,b6eb9d7673809a80,"### Exercice 2 : Sensibilite du modèle bayesien au prior sur le profil patient
+print(""Exercice a completer : sensibilite au prior"")",,,,,,,,cb5da8bc4f7b5023,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,0c540f63,markdown,fr,f9d45b9c97639385,"### Exercice 2 : Sensibilite du modèle bayesien au prior sur le profil patient
 
 **Objectif** : Etudier comment le choix du prior sur les profils (Resistant/Normal/Sensible) influence le diagnostic posterieur.
 
 **Contexte** : Le prior actuel est `[0.1, 0.6, 0.3]` (10% Resistants, 60% Normaux, 30% Sensibles). Si la population est différente, le diagnostic change.
 
 **Indices** :
-- # Indice 1 : Modifiez `profil_probs` dans la méthode `model()` pour tester : `[0.33, 0.34, 0.33]` (uniforme), `[0.05, 0.90, 0.05]` (peu de sensibles)
-- # Indice 2 : Relancez l'inference SVI et comparez les probabilites a posteriori du profil
-- # Étape 1 : Créer une fonction qui accepte le prior en paramètre
-- # Étape 2 : Tester 3 configurations de prior différentes
-- # Étape 3 : Afficher les posterieurs dans un tableau comparatif",,,,,,,,b6eb9d7673809a80,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,b3f68345,markdown,fr,9adf1db011de8ba6,## Partie 2 : Le Médecin Probabiliste (Pyro),,,,,,,,9adf1db011de8ba6,,,,,,,,
+- **Indice 1** : Modifiez `profil_probs` dans la méthode `model()` pour tester : `[0.33, 0.34, 0.33]` (uniforme), `[0.05, 0.90, 0.05]` (peu de sensibles)
+- **Indice 2** : Relancez l'inference SVI et comparez les probabilites a posteriori du profil
+- **Étape 1** : Créer une fonction qui accepte le prior en paramètre
+- **Étape 2** : Tester 3 configurations de prior différentes
+- **Étape 3** : Afficher les posterieurs dans un tableau comparatif",,,,,,,,f9d45b9c97639385,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,b3f68345,markdown,fr,9adf1db011de8ba6,## Partie 2 : Le Médecin Probabiliste (Pyro),,,,,,,,9adf1db011de8ba6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,b8e1e297,code,fr,b29f552a3579c73d,"class OncoModel:
     def __init__(self):
         pass
@@ -2427,26 +2431,26 @@ print(f""Normal    : {post_probs[1]:.2f}"")
 print(f""Sensible  : {post_probs[2]:.2f}"")
 
 if post_probs[2] > 0.8:
-    print(""=> DIAGNOSTIC : Patient hypersensible. Réduction de dose impérative."")",,,,,,,,b29f552a3579c73d,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,ed9440e8,markdown,fr,eeeec13696daa2a5,### 2.2. Prédiction et Prise de Décision,,,,,,,,eeeec13696daa2a5,,,,,,,,
+    print(""=> DIAGNOSTIC : Patient hypersensible. Réduction de dose impérative."")",,,,,,,,b29f552a3579c73d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,ed9440e8,markdown,fr,eeeec13696daa2a5,### 2.2. Prédiction et Prise de Décision,,,,,,,,eeeec13696daa2a5,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,7868621b,code,fr,f7c69905c0506c5d,"# Exercice 3 : Journal d'audit pour le contrat intelligent
 # TODO etudiant : Etendre OncoContract avec un attribut historique
 # TODO etudiant : Implementer afficher_historique() qui liste toutes les modifications
 # TODO etudiant : Tester avec plusieurs modifications successives
 result = None  # TODO etudiant : remplacer par votre contrat avec audit
-print(""Exercice a completer : journal d'audit"")",,,,,,,,f7c69905c0506c5d,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,09692326,markdown,fr,bdf29e0b5a3bc5fb,"### Exercice 3 : Ajouter un journal d'audit au contrat intelligent
+print(""Exercice a completer : journal d'audit"")",,,,,,,,f7c69905c0506c5d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,09692326,markdown,fr,fffe1d887a161ad6,"### Exercice 3 : Ajouter un journal d'audit au contrat intelligent
 
 **Objectif** : Etendre la classe `OncoContract` pour maintenir un historique des modifications et detecter les tentatives de fraude.
 
 **Contexte** : Le contrat actuel enregistre un seul plan. En pratique, les plans peuvent etre modifiés plusieurs fois, et il faut tracer qui a fait quoi et quand.
 
 **Indices** :
-- # Indice 1 : Ajoutez un attribut `self.historique = []` qui stocke chaque modification
-- # Indice 2 : Chaque entree du journal doit contenir : horodatage, auteur, action, hash du plan
-- # Étape 1 : Ajouter l'attribut `historique` et le mettre a jour a chaque appel de `enregistrer_plan`
-- # Étape 2 : Implementer une méthode `afficher_historique()` qui affiche le journal
-- # Étape 3 : Tester en modifiant le plan plusieurs fois et verifier que l'historique est complet",,,,,,,,bdf29e0b5a3bc5fb,,,,,,,,
+- **Indice 1** : Ajoutez un attribut `self.historique = []` qui stocke chaque modification
+- **Indice 2** : Chaque entree du journal doit contenir : horodatage, auteur, action, hash du plan
+- **Étape 1** : Ajouter l'attribut `historique` et le mettre a jour a chaque appel de `enregistrer_plan`
+- **Étape 2** : Implementer une méthode `afficher_historique()` qui affiche le journal
+- **Étape 3** : Tester en modifiant le plan plusieurs fois et verifier que l'historique est complet",,,,,,,,fffe1d887a161ad6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,d6d5c2a5,code,fr,eddc54cdad06d482,"# --- TODO etudiant : simulation predictive de l'avenir avec le profil infere ---
 # Indice :
 #   - predictive = Predictive(onco_model.model, guide=onco_model.guide,
@@ -2463,12 +2467,12 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb
 #       risque_red = (gb_red < 2000).float().mean()
 #   - Imprimer les deux risques (en %) et conclure sur l'interet d'une reduction de dose.
 pass  # TODO etudiant
-",,,,,,,,eddc54cdad06d482,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,2e2b5ff5,markdown,fr,cb3f91d54eee30e5,---,,,,,,,,cb3f91d54eee30e5,,,,,,,,
+",,,,,,,,eddc54cdad06d482,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,2e2b5ff5,markdown,fr,596f4162a52f315b,***,,,,,,,,596f4162a52f315b,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,5a90fc40,markdown,fr,7592e5c4b1db7d06,"## Partie 3 : Bonus Smart Contract
 ---
 **Retour au sommaire** : [Index CaseStudies](../../README.md)
-",,,,,,,,7592e5c4b1db7d06,,,,,,,,
+",,,,,,,,7592e5c4b1db7d06,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,3c24a439,code,fr,7debc8b4a4935ccb,"class OncoContract:
     def __init__(self, medecin_id, patient_id):
         self.medecin_id = medecin_id
@@ -2506,7 +2510,7 @@ contract.signer(""medecin"", ""key123"")
 contract.signer(""patient"", ""key456"")
 
 print(contract.verifier_execution(plan_final))
-print(contract.verifier_execution({""J1"": ""Cisplatine 100mg""})) # Tentative de fraude",,,,,,,,7debc8b4a4935ccb,,,,,,,,
+print(contract.verifier_execution({""J1"": ""Cisplatine 100mg""})) # Tentative de fraude",,,,,,,,7debc8b4a4935ccb,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,9a29eb84,markdown,fr,ea84f15fc31505f0,"**Navigation** : [Index](../../README.md)
 # CC2 : OncoPlan - Squelette
 
@@ -2516,7 +2520,7 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,
 Ce notebook est le squelette à compléter pour le devoir OncoPlan. Il couvre :
 1.  **Symbolique** : Ontologie RDF et Planification OR-Tools.
 2.  **Probabiliste** : Modélisation Bayésienne avec Pyro.
-3.  **Bonus** : Traçabilité via Hashage.",,,,,,,,ea84f15fc31505f0,,,,,,,,
+3.  **Bonus** : Traçabilité via Hashage.",,,,,,,,ea84f15fc31505f0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,4e16813a,markdown,fr,66fc1cbb34a14ac1,"## Installation des Dépendances
 
 Les bibliothèques utilisées par ce devoir sont **pré-provisionnées** : aucune commande `pip install` n'est nécessaire dans ce notebook. L'environnement d'exécution référence `CaseStudies/requirements.txt`, qui déclare les versions retenues pour la cohorte.
@@ -2529,9 +2533,9 @@ Le trio de bibliothèques couvre les trois paradigmes de l'IA explorés dans ce 
 | `ortools` | Symbolique | Planification des cures : solveur CP-SAT sur contraintes |
 | `pyro` | Probabiliste | Modèle bayésien : inférence variationnelle (SVI) sur le profil patient |
 
-Les cellules suivantes font directement les imports ; aucune étape de build n'est requise avant d'exécuter.",,,,,,,,66fc1cbb34a14ac1,,,,,,,,
+Les cellules suivantes font directement les imports ; aucune étape de build n'est requise avant d'exécuter.",,,,,,,,66fc1cbb34a14ac1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,c082cf28,code,fr,15a066e610185e31,"# Dependances pre-provisionnees (rdflib ortools pyro-ppl torch pandas matplotlib seaborn).
-# Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,15a066e610185e31,,,,,,,,
+# Aucun install requis : voir CaseStudies/requirements.txt ; imports directs en cellule suivante.",,,,,,,,15a066e610185e31,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ca83f5e5,markdown,fr,6bd06cdd5d392338,"Import des bibliothèques nécessaires.
 
 La cellule d'import charge tout l'écosystème du devoir et le configure :
@@ -2543,7 +2547,7 @@ La cellule d'import charge tout l'écosystème du devoir et le configure :
 - **Probabiliste** : `torch` + `pyro` (`distributions`, `SVI`, `Trace_ELBO`, `Predictive`, `Adam`) pour la Partie 2.
 - **Traçabilité** : `hashlib` + `json` pour le hash SHA-256 du contrat de la Partie 3.
 
-Notez la graine aléatoire fixée (`pyro.set_rng_seed(101)`) : elle rend l'inférence **reproductible** d'une exécution à l'autre — indispensable pour comparer deux runs du modèle bayésien.",,,,,,,,6bd06cdd5d392338,,,,,,,,
+Notez la graine aléatoire fixée (`pyro.set_rng_seed(101)`) : elle rend l'inférence **reproductible** d'une exécution à l'autre — indispensable pour comparer deux runs du modèle bayésien.",,,,,,,,6bd06cdd5d392338,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,16131259,code,fr,361ab60bd89681a2,"import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -2561,8 +2565,8 @@ import json
 
 # Configuration
 sns.set_style(""whitegrid"")
-pyro.set_rng_seed(101)",,,,,,,,361ab60bd89681a2,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,31fce73e,markdown,fr,1a0c5bf2fe79d01d,"---
+pyro.set_rng_seed(101)",,,,,,,,361ab60bd89681a2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,31fce73e,markdown,fr,5c2b70f04a8feda3,"***
 
 ## Les trois paradigmes d'OncoPlan
 
@@ -2572,8 +2576,8 @@ Le devoir traverse **trois familles de méthodes d'IA** sur un même fil conduct
 2. **Probabiliste** (Partie 2) : raisonnement sous *incertitude* — le modèle bayésien Pyro qui infère le profil du patient (Résistant/Normal/Sensible) à partir d'observations de globules blancs.
 3. **Bonus** (Partie 3) : *intégrité* — le hash SHA-256 qui garantit qu'un plan signé n'a pas été altéré.
 
-Chaque partie s'appuie sur les sorties de la précédente : l'ontologie nourrit la vérification de prescription, le modèle bayésien alimente la décision de dose, le contrat scelle le résultat. Ce découpage illustre la complémentarité des approches plutôt que leur concurrence.",,,,,,,,1a0c5bf2fe79d01d,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,e5eace1b,markdown,fr,afbe5be713f36438,## Partie 1 : Le Pharmacien Symbolique,,,,,,,,afbe5be713f36438,,,,,,,,
+Chaque partie s'appuie sur les sorties de la précédente : l'ontologie nourrit la vérification de prescription, le modèle bayésien alimente la décision de dose, le contrat scelle le résultat. Ce découpage illustre la complémentarité des approches plutôt que leur concurrence.",,,,,,,,5c2b70f04a8feda3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,e5eace1b,markdown,fr,afbe5be713f36438,## Partie 1 : Le Pharmacien Symbolique,,,,,,,,afbe5be713f36438,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,cb03cd33,markdown,fr,91a70854a86a1bc7,"### 1.1. Ontologie des Médicaments (RDFLib)
 
 **Objectif :** Créer un graphe RDF contenant les médicaments et leurs propriétés (toxicité, incompatibilités).
@@ -2584,14 +2588,14 @@ L'ontologie est la brique **symbolique** du devoir : elle encode les connaissanc
 - **Le Graph** : le conteneur des triplets, sur lequel on pourra requêter (`graph.query(...)`) pour vérifier une prescription.
 - **Les classes et propriétés** : `Medicament`, `estNephrotoxique`, `incompatibleAvec`, etc. — la structure de l'ontologie, qui doit couvrir les 4 molécules de base : **Cisplatine**, **5-FU**, **Docetaxel**, **Gentamicine**.
 
-L'objectif final est un graphe *requêtable* : la vérification de prescription (section suivante) interrogera cette ontologie pour décider si un protocole est sûr.",,,,,,,,91a70854a86a1bc7,,,,,,,,
+L'objectif final est un graphe *requêtable* : la vérification de prescription (section suivante) interrogera cette ontologie pour décider si un protocole est sûr.",,,,,,,,91a70854a86a1bc7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,55fc3ca1,code,fr,b4729008361f6e64,"# TODO: Créer le Namespace ONCO
 # TODO: Initialiser le Graph
 # TODO: Définir les classes et propriétés
 # TODO: Peupler la base avec les médicaments (Cisplatine, 5-FU, Docetaxel, Gentamicine)
 
 # VOTRE CODE ICI
-pass",,,,,,,,b4729008361f6e64,,,,,,,,
+pass",,,,,,,,b4729008361f6e64,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,b81448b2,markdown,fr,2f83e613d8f49480,"Vérification de prescription basée sur l'ontologie.
 
 La fonction `verifier_prescription(protocole_noms, patient_insuffisance_renale)` consulte l'ontologie pour **rejeter un protocole dangereux**. Elle retourne une liste d'alertes — vide si la prescription est sûre, peuplée sinon. Deux règles de sécurité sont attendues :
@@ -2599,7 +2603,7 @@ La fonction `verifier_prescription(protocole_noms, patient_insuffisance_renale)`
 1. **Néphrotoxicité** : si le patient est insuffisant rénal ET qu'un médicament du protocole est marqué `estNephrotoxique`, ajouter une alerte.
 2. **Incompatibilités** : pour chaque paire de médicaments du protocole, si l'ontologie déclare `incompatibleAvec`, ajouter une alerte.
 
-**Lecture des sorties ci-dessous** : les trois tests affichent actuellement `[]` (aucune alerte) — c'est le comportement attendu du squelette *avant* implémentation : les `TODO` de l'ontologie (cellule précédente) et de la fonction sont encore vides, donc la vérification ne trouve rien à signaler. Une fois l'ontologie peuplée et les règles implémentées, le Test 2 (patient insuffisant rénal + Cisplatine) et le Test 3 (Cisplatine + Gentamicine) devront produire des alertes non vides.",,,,,,,,2f83e613d8f49480,,,,,,,,
+**Lecture des sorties ci-dessous** : les trois tests affichent actuellement `[]` (aucune alerte) — c'est le comportement attendu du squelette *avant* implémentation : les `TODO` de l'ontologie (cellule précédente) et de la fonction sont encore vides, donc la vérification ne trouve rien à signaler. Une fois l'ontologie peuplée et les règles implémentées, le Test 2 (patient insuffisant rénal + Cisplatine) et le Test 3 (Cisplatine + Gentamicine) devront produire des alertes non vides.",,,,,,,,2f83e613d8f49480,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,498cb8cf,code,fr,420295c0c7f46ee2,"def verifier_prescription(protocole_noms, patient_insuffisance_renale):
     """"""
     Vérifie si une prescription est valide.
@@ -2624,7 +2628,7 @@ print(""\n--- Test 2 : Patient Insuffisant Rénal ---"")
 print(verifier_prescription([""Cisplatine""], True))
 
 print(""\n--- Test 3 : Incompatibilité ---"")
-print(verifier_prescription([""Cisplatine"", ""Gentamicine""], False))",,,,,,,,420295c0c7f46ee2,,,,,,,,
+print(verifier_prescription([""Cisplatine"", ""Gentamicine""], False))",,,,,,,,420295c0c7f46ee2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ef5ad9fe,markdown,fr,ecd187d1dc384048,"### 1.2. Planification des Cures (OR-Tools)
 
 **Objectif :** Planifier 4 cycles de chimiothérapie en respectant les contraintes de temps et de ressources.
@@ -2634,7 +2638,7 @@ Le problème est un **problème de satisfaction de contraintes** (CSP) résolu p
 1. **Pas d'administration le dimanche** : si J1 est un lundi, les dimanches sont les jours multiples de 7 (7, 14, 21...). L'indice fourni suggère `AddModuloEquality` pour contraindre `jour % 7 != 0` sur chaque jour d'administration.
 2. **Capacité maximale de la salle** : `capacite_max=3` patients simultanés. La simulation fournit des `occupations_existantes` (`{10: 3, 11: 3, 12: 3}`) : les jours 10, 11 et 12 sont déjà pleins — le planning ne doit pas y ajouter de patient.
 
-**Lecture des sorties ci-dessous** : le squelette affiche `Jour 0` et un planning `[]` — là encore l'état *avant implémentation* : `debut = 0` est une valeur factice (le TODO de récupération de la valeur optimale n'est pas implémenté) et `planning` n'est jamais rempli. Un modèle complété doit retourner un début *après* les jours saturés et une liste d'administrations respectant la contrainte dominicale.",,,,,,,,ecd187d1dc384048,,,,,,,,
+**Lecture des sorties ci-dessous** : le squelette affiche `Jour 0` et un planning `[]` — là encore l'état *avant implémentation* : `debut = 0` est une valeur factice (le TODO de récupération de la valeur optimale n'est pas implémenté) et `planning` n'est jamais rempli. Un modèle complété doit retourner un début *après* les jours saturés et une liste d'administrations respectant la contrainte dominicale.",,,,,,,,ecd187d1dc384048,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,89e569ee,code,fr,669412ff826f9858,"def planifier_chimio(nb_cycles=4, duree_cycle=21, jours_admin=[1, 8], capacite_max=3, occupations_existantes={}):
     model = cp_model.CpModel()
     horizon = nb_cycles * duree_cycle + 10 # Marge
@@ -2662,14 +2666,14 @@ MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,
 occupations = {10: 3, 11: 3, 12: 3}
 debut, planning = planifier_chimio(occupations_existantes=occupations)
 print(f""Début optimal du traitement : Jour {debut}"")
-print(f""Jours d'administration : {planning}"")",,,,,,,,669412ff826f9858,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,7cf2a7ed,markdown,fr,134fbdcc1696c849,"---
+print(f""Jours d'administration : {planning}"")",,,,,,,,669412ff826f9858,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,7cf2a7ed,markdown,fr,1df80199bcc33346,"***
 
 ## Transition : du symbolique au probabiliste
 
 La Partie 1 raisonnait avec des **connaissances certaines** : soit un médicament est incompatible, soit il ne l'est pas. Or la pratique clinique est dominée par l'**incertitude** : un même protocole peut être efficace chez un patient et toxique chez un autre, selon son profil biologique (Résistant / Normal / Sensible).
 
-La Partie 2 bascule donc de paradigme : au lieu de règles explicites, un **modèle probabiliste** (Pyro) apprend à partir de données — la chute des globules blancs observée après administration — à inférer le profil du patient. C'est le passage de la logique (vrai/faux) à la **distribution de probabilité** (degré de croyance).",,,,,,,,134fbdcc1696c849,,,,,,,,
+La Partie 2 bascule donc de paradigme : au lieu de règles explicites, un **modèle probabiliste** (Pyro) apprend à partir de données — la chute des globules blancs observée après administration — à inférer le profil du patient. C'est le passage de la logique (vrai/faux) à la **distribution de probabilité** (degré de croyance).",,,,,,,,1df80199bcc33346,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,d43b403b,markdown,fr,9bba20230adf8c65,"## Partie 2 : Le Médecin Probabiliste (Pyro)
 
 **Objectif :** Modéliser la réponse du patient (Toxicité) en fonction des doses reçues et des observations (Globules Blancs).
@@ -2679,7 +2683,7 @@ Le modèle est un **modèle génératif bayésien** : on décrit *comment les do
 - **`model(doses, observations)`** — le génératif : le profil du patient (`profil` → `Categorical` sur 3 valeurs : 0=Résistant, 1=Normal, 2=Sensible), la dynamique temporelle (`toxicite_cumulee` qui évolue selon dose et sensibilité, `mu_gb` des globules blancs qui en dépend), et la vraisemblance (`observations` conditionnées sur ce modèle).
 - **`guide(doses, observations)`** — le variationnel : l'approximation paramétrique de la distribution a posteriori (ici, un `Categorical` sur le profil). SVI aligne guide sur modèle via `Trace_ELBO`.
 
-Les données simulées illustrent le scénario : doses `[100, 0, 0]` (J1, J8, J15) et globules blancs `[7800, 2500]` — une chute de 7800 à 2500 entre J1 et J8, caractéristique d'une **neutropénie** (seuil d'alerte < 2000). L'inférence SVI (commentée, à débloquer une fois le modèle implémenté) estime alors les probabilités a posteriori du profil.",,,,,,,,9bba20230adf8c65,,,,,,,,
+Les données simulées illustrent le scénario : doses `[100, 0, 0]` (J1, J8, J15) et globules blancs `[7800, 2500]` — une chute de 7800 à 2500 entre J1 et J8, caractéristique d'une **neutropénie** (seuil d'alerte < 2000). L'inférence SVI (commentée, à débloquer une fois le modèle implémenté) estime alors les probabilités a posteriori du profil.",,,,,,,,9bba20230adf8c65,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,815f392f,code,fr,939e94c9e1d544f1,"class OncoModel:
     def __init__(self):
         pass
@@ -2726,7 +2730,7 @@ observations_reelles = torch.tensor([7800.0, 2500.0]) # J1 Normal, J8 Neutropén
 # print(f""\nProbabilités a posteriori du profil :"")
 # print(f""Résistant : {post_probs[0]:.2f}"")
 # print(f""Normal    : {post_probs[1]:.2f}"")
-# print(f""Sensible  : {post_probs[2]:.2f}"")",,,,,,,,939e94c9e1d544f1,,,,,,,,
+# print(f""Sensible  : {post_probs[2]:.2f}"")",,,,,,,,939e94c9e1d544f1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ebfd0923,markdown,fr,49016edfe76c08ea,"### 2.2. Prédiction et Prise de Décision
 
 **Objectif :** Comparer le risque de neutropénie sévère (< 2000) pour deux scénarios futurs.
@@ -2736,21 +2740,21 @@ Une fois le modèle bayésien calibré (Partie 2.1), il devient un **simulateur 
 - **Scénario 1 — Maintien** : poursuivre à 100 mg. La toxicité cumulée continue de croître → risque élevé de passer sous le seuil de neutropénie sévère (< 2000 globules blancs).
 - **Scénario 2 — Réduction** : réduire à 50 mg. Moins de toxicité cumulée → probabilité plus faible de neutropénie, au prix d'une efficacité potentiellement réduite.
 
-La cellule `Predictive` (à compléter) simule les deux futurs et compare les distributions de globules blancs. C'est le **raisonnement contrefactuel** que permet le bayésien : *« si on avait fait l'autre choix, quelle serait la distribution des observations ? »* — la base statistique de la prise de décision médicale.",,,,,,,,49016edfe76c08ea,,,,,,,,
+La cellule `Predictive` (à compléter) simule les deux futurs et compare les distributions de globules blancs. C'est le **raisonnement contrefactuel** que permet le bayésien : *« si on avait fait l'autre choix, quelle serait la distribution des observations ? »* — la base statistique de la prise de décision médicale.",,,,,,,,49016edfe76c08ea,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,e50bbbb7,code,fr,0efe41b4a37010e3,"# TODO: Utiliser Predictive pour simuler l'avenir
 # Scénario 1 : Maintien de la dose (100mg)
 # Scénario 2 : Réduction de dose (50mg)
 
 # VOTRE CODE ICI
-pass",,,,,,,,0efe41b4a37010e3,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,e1f87420,markdown,fr,02731ef75d2569a3,"---
+pass",,,,,,,,0efe41b4a37010e3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,e1f87420,markdown,fr,82c514718fa4d0df,"***
 
 ## Transition : de la décision à l'intégrité
 
 Le raisonnement probabiliste a produit une décision de dose ; il reste à s'assurer qu'elle est **appliquée telle quelle**. C'est le rôle de la Partie 3 : garantir l'**intégrité du plan de traitement** contre toute altération (erreur de transcription, modification malveillante, fraude).
 
-Le mécanisme est cryptographique : un **hash SHA-256** du plan signé par le médecin et le patient. Toute modification du plan — même d'un caractère — change le hash et fait échouer la vérification. C'est l'application du concept de *garde-fou* : le raisonnement (Parties 1-2) reste libre, mais son **résultat** est scellé.",,,,,,,,02731ef75d2569a3,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,009d112d,markdown,fr,570aab46f4cf7d9b,"## Partie 3 : Bonus Smart Contract
+Le mécanisme est cryptographique : un **hash SHA-256** du plan signé par le médecin et le patient. Toute modification du plan — même d'un caractère — change le hash et fait échouer la vérification. C'est l'application du concept de *garde-fou* : le raisonnement (Parties 1-2) reste libre, mais son **résultat** est scellé.",,,,,,,,82c514718fa4d0df,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,009d112d,markdown,fr,a8190113dcb8cc5e,"## Partie 3 : Bonus Smart Contract
 
 **Objectif :** Garantir l'intégrité du plan de traitement.
 
@@ -2762,8 +2766,8 @@ La classe `OncoContract` implémente un **contrat d'intégrité** à trois méth
 
 **Lecture des sorties ci-dessous** : les deux appels affichent `Non implémenté` — le retour par défaut du squelette, car `verifier_execution` est encore un stub (`return ""Non implémenté""`). Une fois la méthode complétée, le premier test (plan identique, toutes signatures) doit passer, tandis que le second (`Cisplatine 100mg` au lieu de `50mg` — la **tentative de fraude** du test) doit être rejeté car son hash diffère du plan enregistré.
 
----
-**Retour au sommaire** : [Index CaseStudies](../../README.md)",,,,,,,,570aab46f4cf7d9b,,,,,,,,
+***
+**Retour au sommaire** : [Index CaseStudies](../../README.md)",,,,,,,,a8190113dcb8cc5e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,977dbd22,code,fr,caea860fbffe0f15,"class OncoContract:
     def __init__(self, medecin_id, patient_id):
         self.medecin_id = medecin_id
@@ -2791,13 +2795,14 @@ contract.signer(""medecin"", ""key123"")
 contract.signer(""patient"", ""key456"")
 
 print(contract.verifier_execution(plan_final))
-print(contract.verifier_execution({""J1"": ""Cisplatine 100mg""})) # Tentative de fraude",,,,,,,,caea860fbffe0f15,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c0,markdown,fr,d142cc9abf03e00e,"# CC3 : SmartGrid - Ordonnancement de la production energetique sous incertitude
+print(contract.verifier_execution({""J1"": ""Cisplatine 100mg""})) # Tentative de fraude",,,,,,,,caea860fbffe0f15,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c0,markdown,fr,ec8f6e4b692762e6,"**Navigation** : [Index](../../README.md)
+# CC3 : SmartGrid - Ordonnancement de la production energetique sous incertitude
 
 **Étude de cas interdisciplinaire** combinant programmation par contraintes (OR-Tools CP-SAT),
 inference probabiliste (modèle bayesien), optimisation multi-objectif et un jumeau numérique
 de reseau electrique.
-",,,,,,,,d142cc9abf03e00e,,,,,,,,
+",,,,,,,,ec8f6e4b692762e6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c1,markdown,fr,39775315f98a2f7a,"## Contexte metier
 
 Un opérateur de reseau electrique doit, pour chaque heure, decider quelles centrales activer
@@ -2814,7 +2819,7 @@ Une seule technique ne suffit pas : un solveur déterministe ignore l'incertitud
 probabiliste seul ne respecte pas les contraintes physiques. Cette étude de cas materialise
 leur **composition ordonnee** : filtrer les dispatches impossibles (contraintes), modeliser
 l'aleatoire (incertitude), puis optimiser (multi-objectif).
-",,,,,,,,39775315f98a2f7a,,,,,,,,
+",,,,,,,,39775315f98a2f7a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c2,markdown,fr,e77e2d9477f5c0cc,"## Architecture en 4 couches
 
 | Couche | Rôle | Technique | Partie |
@@ -2827,14 +2832,19 @@ MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c
 Ce notebook est une **fondation** : le jumeau numérique (couche 0) est operationnel et les
 4 couches de solveurs (CP-SAT, bayésien, multi-objectif, analyse comparative) sont
 implémentees et exécutées (Parties 1 à 4). Les 3 exercices d'extension
-(Exercices 1 à 3) sont volontairement laissés en stub pour les étudiants.",,,,,,,,e77e2d9477f5c0cc,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c3,markdown,fr,6b090dc678608f7b,"## 0. Installation et jumeau numérique
+(Exercices 1 à 3) sont volontairement laissés en stub pour les étudiants.",,,,,,,,e77e2d9477f5c0cc,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c3,markdown,fr,9d7015d71895302d,"## 0. Installation et jumeau numérique
 
 Le jumeau numérique represente un reseau electrique : un ensemble de centrales (avec cout,
 capacites, facteur d'emission) et une demande horaire a satisfaire, avec une production
 renouvelable stochastique.
-",,,,,,,,6b090dc678608f7b,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c4,code,fr,f4476cc2c0892661,"# Installation des dependances (executees dans les cycles suivants avec les solveurs)
+Le jumeau encode ces briques dans deux structures : chaque centrale est un `PowerPlant`
+— bornes `pmin`/`pmax` en MW, coût variable en EUR/MWh, facteur d'émission en
+kg/MWh — et le réseau porte la demande horaire ainsi que la prévision renouvelable,
+donnée à la fois par sa moyenne attendue et par son écart-type. C'est cet écart-type
+qui devient l'entrée de la couche probabiliste (Partie 2).
+",,,,,,,,9d7015d71895302d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c4,code,fr,42bc5238e4681d04,"# Installation des dependances (solveurs des Parties 1-4)
 # %pip install ortools numpy scipy  # decommenter pour execution complete
 
 from dataclasses import dataclass, field
@@ -2889,11 +2899,11 @@ print(f'Reseau : {len(net.plants)} centrales, capacite totale {net.total_capacit
 for h in range(len(net.demand_mw)):
     print(f'  H{h}: demande {net.demand_mw[h]} MW, renouvelable {net.renewable_forecast_mean[h]} '
           f'+/- {net.renewable_forecast_std[h]}, demande nette {net.net_demand(h):.1f} MW')
-",,,,,,,,f4476cc2c0892661,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c5,markdown,fr,8d9b687eef6ddd05,"## Partie 1 : Le Dispatcher sous Contraintes (OR-Tools CP-SAT)
+",,,,,,,,42bc5238e4681d04,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c5,markdown,fr,8273d1d852cf155f,"## Partie 1 : Le Dispatcher sous Contraintes (OR-Tools CP-SAT)
 
 **Théorie** : le *unit commitment* est un problème NP-difficile. On modelise, pour chaque
-heure et chaque centrale pilotable, une variable binaire (activee) et une variable continue
+heure et chaque centrale pilotable, une variable binaire (activee) et une variable entière (niveau en MW)
 (niveau de production), soumises aux contraintes :
 
 - somme des productions = demande nette (equilibre offre/demande) ;
@@ -2901,7 +2911,18 @@ heure et chaque centrale pilotable, une variable binaire (activee) et une variab
 - reserve tournante : capacite excédentaire disponible >= marge de securite.
 
 L'objectif primaire : minimiser le cout total.
-",,,,,,,,8d9b687eef6ddd05,,,,,,,,
+Pourquoi un solveur ? L'espace de décision est exponentiel : chaque couple
+heure × centrale porte un choix actif/éteint, soit 2^18 = 262 144 configurations
+pour cette instance (6 heures × 3 centrales), avant même de fixer les niveaux de
+production. CP-SAT n'énumère pas : il propage les contraintes et apprend des
+clauses pour éliminer des familles entières de solutions. L'instance reste
+volontairement petite (18 variables entières) pour rester lisible — un réseau
+réel se modélise pareil, en changeant simplement les tailles.
+
+Le paramètre `cost_weights` prépare la Partie 4 : `(1, 0)` minimise le coût
+seul, `(0, 1)` le CO2 seul — ce sont les deux stratégies comparées en fin de
+carnet.
+",,,,,,,,8273d1d852cf155f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c6,code,fr,db659b2ca0f8f104,"# Partie 1 : modele CP-SAT du dispatch (unit commitment)
 from ortools.sat.python import cp_model
 
@@ -2972,7 +2993,7 @@ if dispatch:
     print(f'  Cout objectif: {dispatch[""_cost""]}')
 else:
     print('Aucune solution faisable (capacite < demande)')
-",,,,,,,,db659b2ca0f8f104,,,,,,,,
+",,,,,,,,db659b2ca0f8f104,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c7,markdown,fr,576ab6a4e6e307d2,"### Exercice 1 : Reserve tournante (securite n-1)
 
 Ajoutez au modèle CP-SAT une contrainte de **reserve tournante** : a chaque heure, la somme
@@ -2981,20 +3002,33 @@ plus grande centrale en service (critere n-1).
 
 **Indice** : pour chaque heure, la reserve = `sum(pmax_i - prod_i pour i active)` doit etre
 `>= max(pmax_i pour i active)`.
-",,,,,,,,576ab6a4e6e307d2,,,,,,,,
+",,,,,,,,576ab6a4e6e307d2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c8,code,fr,c4f05382aa86dd66,"# Exercice 1 : contrainte de reserve tournante n-1
 def solve_dispatch_with_spinning_reserve(network: PowerNetwork):
     """"""Dispatch CP-SAT avec reserve tournante n-1.""""""
     result = None  # TODO etudiant : etendre solve_dispatch_cp avec la reserve n-1
     return result
-",,,,,,,,c4f05382aa86dd66,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c9,markdown,fr,ed30e480a1f1903a,"## Partie 2 : Le Previsionniste Probabiliste (modèle bayesien)
+",,,,,,,,c4f05382aa86dd66,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c9,markdown,fr,6e2c74c56deacf67,"## Partie 2 : Le Previsionniste Probabiliste (modèle bayesien)
 
 **Théorie** : la production renouvelable est aleatoire. On modelise l'ecart
 `demande - renouvelable` comme une variable aleatoire et on infere sa distribution, pour
 quantifier le **risque de defaillance** (probabilite que la demande nette depasse la capacite
 pilotable disponible).
-",,,,,,,,ed30e480a1f1903a,,,,,,,,
+Le raisonnement tient en trois étapes, matérialisées par `failure_risk` :
+(1) la production renouvelable réelle suit une loi normale N(moyenne annoncée,
+écart-type) ; (2) par différence, la demande nette réelle suit N(demande nette
+prévue, même écart-type) ; (3) le risque de défaillance est la probabilité que
+cette variable dépasse la capacité pilotable — une queue de gaussienne,
+calculée exactement par `0.5 * erfc(z / sqrt(2))` avec
+z = (capacité − demande nette) / écart-type.
+
+La taille de z dit tout : sur ce réseau, elle va d'environ 12 (H5) à 36 (H2)
+— des queues que la pratique rencontre rarement, tant la capacité excède la
+demande. L'écart-type joue le rôle d'un **prior** sur la qualité de la
+prévision : c'est lui, et non le niveau de demande, qui pilote le risque —
+ce que l'Exercice 2 confirme en le faisant varier.
+",,,,,,,,6e2c74c56deacf67,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c10,code,fr,4a63888690dc2381,"# Partie 2 : modele bayesien de l'incertitude renouvelable
 from math import sqrt, erfc
 
@@ -3021,27 +3055,39 @@ for h in range(len(net.demand_mw)):
     r = failure_risk(net, h)
     print(f'  H{h}: demande nette moyenne {net.net_demand(h):.0f} MW, '
           f'incertitude +/-{net.renewable_forecast_std[h]} MW -> risque {r:.2e}')
-",,,,,,,,4a63888690dc2381,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c11,markdown,fr,80b5b3ba59e4511d,"### Exercice 2 : Sensibilite au prior sur la variabilite eolienne
+",,,,,,,,4a63888690dc2381,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c11,markdown,fr,61b2975be7adb4a3,"### Exercice 2 : Sensibilite au prior sur la variabilite eolienne
 
 Analysez comment le risque de defaillance (Partie 2) evolue quand on modifie l'incertitude
 du renouvelable (multipliez `renewable_forecast_std` par 0.5, 1.0, 2.0). Quelle heure
 devient la plus risqueuse ? Concluez sur la robustesse du dispatch determine en Partie 1.
-",,,,,,,,80b5b3ba59e4511d,,,,,,,,
+Pourquoi cet exercice : l'écart-type n'est pas une donnée mesurée mais un choix
+de modélisation (un prior). Une décision de dispatch robuste doit survivre à ce
+que ce prior soit mal spécifié — c'est le sens du balayage 0,5× / 1,0× / 2,0×
+demandé ici.
+",,,,,,,,61b2975be7adb4a3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c12,code,fr,44fc2e192030efaa,"# Exercice 2 : analyse de sensibilite au prior d'incertitude
 def sensitivity_to_renewable_std(network: PowerNetwork, factors=(0.5, 1.0, 2.0)):
     """"""Retourne le risque max par heure pour chaque facteur d'incertitude.""""""
     result = None  # TODO etudiant : boucler sur les facteurs, retourner {factor: max_risk}
     return result
-",,,,,,,,44fc2e192030efaa,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c13,markdown,fr,e3e38641a12b1a19,"## Partie 3 : L'Optimiseur Multi-Objectif
+",,,,,,,,44fc2e192030efaa,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c13,markdown,fr,0fe1e4332e7e126c,"## Partie 3 : L'Optimiseur Multi-Objectif
 
 **Théorie** : on veut minimiser simultanement le **cout** economique, les **emissions** CO2
 et le **risque** de defaillance. Ces objectifs sont conflictuels (le charbon est bon marche
 mais très emissif). On construit un score pondere `S = a*cout + b*co2 + c*risque` et on
 cherche le dispatch minimisant S, en explorant le front de Pareto.
-",,,,,,,,e3e38641a12b1a19,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c14,code,fr,f34e47d7784d66a8,"# Partie 3 : score multi-objectif (cout + CO2 + risque)
+Deux choix de modélisation comptent ici. D'abord la **normalisation** : coût
+(EUR), CO2 (kg) et risque (probabilité) n'ont pas d'unité commune ; diviser chaque
+composante par une norme de référence (ici 200 000 EUR, 2 000 000 kg et 1,0) les
+rend additives — chaque terme devient une « part de la norme consommée », 0 étant
+le mieux possible. Ensuite la **scalarisation** : la somme pondérée ramène trois
+objectifs à un seul nombre, donc à un problème déjà soluble par la Partie 1. Son
+prix : un vecteur de poids ne produit qu'un seul point de compromis ; explorer
+tout le front de Pareto exigerait de faire varier les poids systématiquement.
+",,,,,,,,0fe1e4332e7e126c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c14,code,fr,95a4c109eb7277a8,"# Partie 3 : score multi-objectif (cout + CO2 + risque)
 def dispatch_metrics(dispatch, network):
     """"""Calcule cout total, CO2 total et risque max d'un dispatch CP-SAT.""""""
     if dispatch is None:
@@ -3057,7 +3103,7 @@ def dispatch_metrics(dispatch, network):
 
 
 def multi_objective_score(dispatch, network, weights=(1.0, 1.0, 1.0), norms=None):
-    """"""Score = w_c*cout_norm + w_co2*co2_norm + w_r*risque_norm dans [0,1] (0=meilleur).""""""
+    """"""Score = w_c*cout_norm + w_co2*co2_norm + w_r*risque_norm, normalise par les normes de reference (1.0 = composante a sa norme ; 0 = meilleur).""""""
     m = dispatch_metrics(dispatch, network)
     if norms is None:
         norms = {'cost': m['cost'] or 1.0, 'co2': m['co2'] or 1.0, 'max_risk': 1.0}
@@ -3069,26 +3115,35 @@ def multi_objective_score(dispatch, network, weights=(1.0, 1.0, 1.0), norms=None
 
 score_min_cost = multi_objective_score(dispatch, net, weights=(1.0, 1.0, 1.0),
                                        norms={'cost': 200000, 'co2': 2000000, 'max_risk': 1.0})
-print(f'Score multi-objectif du dispatch min-cout (ref non normalise): {score_min_cost:.3f}')
-",,,,,,,,f34e47d7784d66a8,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c15,markdown,fr,1595f10bff5b4f90,"### Exercice 3 : Ajouter un troisieme objectif (equite territoriale)
+print(f'Score multi-objectif du dispatch min-cout (composantes normalisees par reference, 0 = meilleur): {score_min_cost:.3f}')
+",,,,,,,,95a4c109eb7277a8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c15,markdown,fr,f8b1bdfad1cf7033,"### Exercice 3 : Ajouter un troisieme objectif (equite territoriale)
 
 Ajoutez un troisieme objectif : **equite territoriale** (eviter qu'une même region subisse
 toutes les centrales les plus polluantes). Supposons que chaque centrale a un attribut
 `region`. Mesurez la concentration regionale de la pollution et ajoutez-la au score.
-",,,,,,,,1595f10bff5b4f90,,,,,,,,
+Ancre réelle : la transition énergétique ne se joue pas qu'en tonnes de CO2
+agrégées — la concentration des émissions sur un territoire donné conditionne
+l'acceptabilité locale des infrastructures. C'est une dimension classique de
+justice énergétique.
+",,,,,,,,f8b1bdfad1cf7033,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c16,code,fr,ba42fd7f8f0eebf0,"# Exercice 3 : objectif d'equite territoriale
 def territorial_equity_score(dispatch, network: PowerNetwork) -> float:
     """"""Mesure de concentration de la pollution par region (0 = equitable).""""""
     score = None  # TODO etudiant : mesurer la concentration (ex: variance/entropy regionale des co2)
     return score
-",,,,,,,,ba42fd7f8f0eebf0,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c17,markdown,fr,feb56bd837d4a8e1,"## Partie 4 : Decision finale et analyse comparative
+",,,,,,,,ba42fd7f8f0eebf0,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c17,markdown,fr,8c727c5125b31716,"## Partie 4 : Decision finale et analyse comparative
 
 **Synthese** : on compare les stratégies (CP-SAT pur, multi-objectif weighted-sum, front de
 Pareto) sur les 3 axes cout/CO2/fiabilite + l'equite territoriale. Le tableau comparatif
 ci-dessous est produit a partir des Parties 1-3 deja executees.
-",,,,,,,,feb56bd837d4a8e1,,,,,,,,
+Concrètement, une « stratégie » est un réglage de `cost_weights` dans le solveur
+de la Partie 1 : Économique = (1, 0), Écologique = (0, 1), Compromis = (1, 3)
+— le CO2 y compte triple. Chacune produit un dispatch complet sur les 6 heures ;
+la Partie 3 en mesure coût, CO2 et risque, puis le score agrégé. La décision
+finale se lit en comparant la dernière colonne du tableau.
+",,,,,,,,8c727c5125b31716,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c18,code,fr,792901bce26b0d76,"# Partie 4 : analyse comparative des strategies de dispatch
 def comparative_analysis(network):
     """"""Compare 3 strategies CP-SAT (economique, ecologique, compromis).""""""
@@ -3127,8 +3182,8 @@ for name, m in analysis.items():
 print()
 best = min(analysis.items(), key=lambda kv: kv[1]['score'])
 print(f'Strategie optimale (score multi-objectif minimal) : {best[0]}')
-",,,,,,,,792901bce26b0d76,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c19,markdown,fr,1a74b5c3426b816c,"## Conclusion
+",,,,,,,,792901bce26b0d76,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c19,markdown,fr,4f708cffd3668f84,"## Conclusion
 
 Cette étude de cas illustre la **composition ordonnee** des paradigmes IA sur un problème
 metier reel (transition energetique) : on filtre les dispatches impossibles (CP-SAT) avant
@@ -3138,13 +3193,23 @@ produit un système soit trop rigide (contraintes ignorent l'aleatoire), soit tr
 
 **Etat de la fondation** : jumeau numérique operationnel (couche 0) **+ 4 couches de solveurs
 implémentees** (CP-SAT en Partie 1, bayésien en Partie 2, multi-objectif en Partie 3, analyse comparative en Partie 4 — toutes avec sorties réelles).
-Les 3 exercices d'extension (Exercices 1 à 3) restent en stub pour les étudiants.",,,,,,,,1a74b5c3426b816c,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c0,markdown,fr,d142cc9abf03e00e,"# CC3 : SmartGrid - Ordonnancement de la production energetique sous incertitude
+Les 3 exercices d'extension (Exercices 1 à 3) restent en stub pour les étudiants.
+**Limites du jumeau, à garder en tête** : le modèle n'impose ni contrainte de
+rampe (vitesse de montée/descente entre deux heures), ni coût de démarrage — deux
+composantes centrales du unit commitment réel ; l'incertitude renouvelable est
+supposée gaussienne et indépendante d'une heure à l'autre ; le stockage
+(batteries) et le réseau de transport sont absents. Chacune de ces limites est un
+prolongement naturel : rampes et coûts de démarrage se codent en contraintes
+CP-SAT supplémentaires, la corrélation inter-horaires change la loi de la Partie
+2, et le stockage ajoute une variable d'état entre les heures.
+",,,,,,,,4f708cffd3668f84,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c0,markdown,fr,ec8f6e4b692762e6,"**Navigation** : [Index](../../README.md)
+# CC3 : SmartGrid - Ordonnancement de la production energetique sous incertitude
 
 **Étude de cas interdisciplinaire** combinant programmation par contraintes (OR-Tools CP-SAT),
 inference probabiliste (modèle bayesien), optimisation multi-objectif et un jumeau numérique
 de reseau electrique.
-",,,,,,,,d142cc9abf03e00e,,,,,,,,
+",,,,,,,,ec8f6e4b692762e6,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c1,markdown,fr,39775315f98a2f7a,"## Contexte metier
 
 Un opérateur de reseau electrique doit, pour chaque heure, decider quelles centrales activer
@@ -3161,8 +3226,8 @@ Une seule technique ne suffit pas : un solveur déterministe ignore l'incertitud
 probabiliste seul ne respecte pas les contraintes physiques. Cette étude de cas materialise
 leur **composition ordonnee** : filtrer les dispatches impossibles (contraintes), modeliser
 l'aleatoire (incertitude), puis optimiser (multi-objectif).
-",,,,,,,,39775315f98a2f7a,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c2,markdown,fr,9c049b175c23d83e,"## Architecture en 4 couches
+",,,,,,,,39775315f98a2f7a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c2,markdown,fr,6be88eb045c8b268,"## Architecture en 4 couches
 
 | Couche | Rôle | Technique | Partie |
 |--------|------|-----------|--------|
@@ -3171,16 +3236,17 @@ MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c2
 | **Optimisation** | Choisir le meilleur compromis | Multi-objectif pondere | Partie 3 |
 | **Decision** | Synthese + comparaison | Workflow + scoring | Partie 4 |
 
-Ce notebook est une **fondation** : le jumeau numérique (couche 0) est operationnel ; les
-implementations des 4 couches seront completees et executees dans les cycles suivants.
-",,,,,,,,9c049b175c23d83e,,,,,,,,
+Ce squelette est une **fondation a completer** : le jumeau numérique (couche 0) est operationnel ;
+les implementations des 4 couches sont les exercices a realiser — le corrige
+(`../solution/`) les exécute de bout en bout, outputs a l'appui.
+",,,,,,,,6be88eb045c8b268,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c3,markdown,fr,6b090dc678608f7b,"## 0. Installation et jumeau numérique
 
 Le jumeau numérique represente un reseau electrique : un ensemble de centrales (avec cout,
 capacites, facteur d'emission) et une demande horaire a satisfaire, avec une production
 renouvelable stochastique.
-",,,,,,,,6b090dc678608f7b,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c4,code,fr,f4476cc2c0892661,"# Installation des dependances (executees dans les cycles suivants avec les solveurs)
+",,,,,,,,6b090dc678608f7b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c4,code,fr,995405eeb47c182d,"# Installation des dependances (solveurs des Parties 1-4 ; a completer par l etudiant)
 # %pip install ortools numpy scipy  # decommenter pour execution complete
 
 from dataclasses import dataclass, field
@@ -3235,7 +3301,7 @@ print(f'Reseau : {len(net.plants)} centrales, capacite totale {net.total_capacit
 for h in range(len(net.demand_mw)):
     print(f'  H{h}: demande {net.demand_mw[h]} MW, renouvelable {net.renewable_forecast_mean[h]} '
           f'+/- {net.renewable_forecast_std[h]}, demande nette {net.net_demand(h):.1f} MW')
-",,,,,,,,f4476cc2c0892661,,,,,,,,
+",,,,,,,,995405eeb47c182d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c5,markdown,fr,8d9b687eef6ddd05,"## Partie 1 : Le Dispatcher sous Contraintes (OR-Tools CP-SAT)
 
 **Théorie** : le *unit commitment* est un problème NP-difficile. On modelise, pour chaque
@@ -3247,7 +3313,7 @@ heure et chaque centrale pilotable, une variable binaire (activee) et une variab
 - reserve tournante : capacite excédentaire disponible >= marge de securite.
 
 L'objectif primaire : minimiser le cout total.
-",,,,,,,,8d9b687eef6ddd05,,,,,,,,
+",,,,,,,,8d9b687eef6ddd05,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c6,code,fr,fafacfc49f56aa32,"# Partie 1 : modele CP-SAT du dispatch (unit commitment)
 # TODO etudiant : implementer solve_dispatch_cp avec ortools.sat.python.cp_model.
 # Pour chaque heure et centrale pilotable : binaire `on` + entier `p`.
@@ -3261,7 +3327,7 @@ def solve_dispatch_cp(network, cost_weights=None):
 
 dispatch = solve_dispatch_cp(net)
 print('Dispatch CP-SAT :', dispatch)
-",,,,,,,,fafacfc49f56aa32,,,,,,,,
+",,,,,,,,fafacfc49f56aa32,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c7,markdown,fr,576ab6a4e6e307d2,"### Exercice 1 : Reserve tournante (securite n-1)
 
 Ajoutez au modèle CP-SAT une contrainte de **reserve tournante** : a chaque heure, la somme
@@ -3270,20 +3336,20 @@ plus grande centrale en service (critere n-1).
 
 **Indice** : pour chaque heure, la reserve = `sum(pmax_i - prod_i pour i active)` doit etre
 `>= max(pmax_i pour i active)`.
-",,,,,,,,576ab6a4e6e307d2,,,,,,,,
+",,,,,,,,576ab6a4e6e307d2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c8,code,fr,c4f05382aa86dd66,"# Exercice 1 : contrainte de reserve tournante n-1
 def solve_dispatch_with_spinning_reserve(network: PowerNetwork):
     """"""Dispatch CP-SAT avec reserve tournante n-1.""""""
     result = None  # TODO etudiant : etendre solve_dispatch_cp avec la reserve n-1
     return result
-",,,,,,,,c4f05382aa86dd66,,,,,,,,
+",,,,,,,,c4f05382aa86dd66,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c9,markdown,fr,ed30e480a1f1903a,"## Partie 2 : Le Previsionniste Probabiliste (modèle bayesien)
 
 **Théorie** : la production renouvelable est aleatoire. On modelise l'ecart
 `demande - renouvelable` comme une variable aleatoire et on infere sa distribution, pour
 quantifier le **risque de defaillance** (probabilite que la demande nette depasse la capacite
 pilotable disponible).
-",,,,,,,,ed30e480a1f1903a,,,,,,,,
+",,,,,,,,ed30e480a1f1903a,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c10,code,fr,929a6af1ccaa8240,"# Partie 2 : modele bayesien de l'incertitude renouvelable
 # TODO etudiant : P(demande nette reelle > capacite pilotable).
 # Modele l'ecart offre/demande comme une gaussienne et utilise sa survivor function.
@@ -3299,26 +3365,30 @@ def failure_risk(network, hour):
 print('Risque de defaillance (a completer par l' + 'etudiant) :')
 for h in range(len(net.demand_mw)):
     print(f'  H{h}: risque = {failure_risk(net, h)}')
-",,,,,,,,929a6af1ccaa8240,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c11,markdown,fr,80b5b3ba59e4511d,"### Exercice 2 : Sensibilite au prior sur la variabilite eolienne
+",,,,,,,,929a6af1ccaa8240,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c11,markdown,fr,6014d7ebfa365c25,"**Lecture du résultat — risque de défaillance (squelette étudiant)**
+
+Les six valeurs `None` affichées ci-dessus sont attendues : la fonction `failure_risk` renvoie encore le marqueur `None` tant que son calcul n'est pas complété. Elles ne représentent ni un risque nul ni une erreur d'exécution. Après avoir implémenté la probabilité de dépassement de la capacité pilotable, réexécutez la Partie 2 avant de comparer les heures dans l'exercice suivant.
+
+### Exercice 2 : Sensibilite au prior sur la variabilite eolienne
 
 Analysez comment le risque de defaillance (Partie 2) evolue quand on modifie l'incertitude
 du renouvelable (multipliez `renewable_forecast_std` par 0.5, 1.0, 2.0). Quelle heure
 devient la plus risqueuse ? Concluez sur la robustesse du dispatch determine en Partie 1.
-",,,,,,,,80b5b3ba59e4511d,,,,,,,,
+",,,,,,,,6014d7ebfa365c25,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c12,code,fr,44fc2e192030efaa,"# Exercice 2 : analyse de sensibilite au prior d'incertitude
 def sensitivity_to_renewable_std(network: PowerNetwork, factors=(0.5, 1.0, 2.0)):
     """"""Retourne le risque max par heure pour chaque facteur d'incertitude.""""""
     result = None  # TODO etudiant : boucler sur les facteurs, retourner {factor: max_risk}
     return result
-",,,,,,,,44fc2e192030efaa,,,,,,,,
+",,,,,,,,44fc2e192030efaa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c13,markdown,fr,e3e38641a12b1a19,"## Partie 3 : L'Optimiseur Multi-Objectif
 
 **Théorie** : on veut minimiser simultanement le **cout** economique, les **emissions** CO2
 et le **risque** de defaillance. Ces objectifs sont conflictuels (le charbon est bon marche
 mais très emissif). On construit un score pondere `S = a*cout + b*co2 + c*risque` et on
 cherche le dispatch minimisant S, en explorant le front de Pareto.
-",,,,,,,,e3e38641a12b1a19,,,,,,,,
+",,,,,,,,e3e38641a12b1a19,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c14,code,fr,364239a63c036fdc,"# Partie 3 : score multi-objectif (cout + CO2 + risque)
 # TODO etudiant : normaliser chaque objectif puis combiner par somme ponderee.
 def dispatch_metrics(dispatch, network):
@@ -3336,25 +3406,25 @@ def multi_objective_score(dispatch, network, weights=(1.0, 1.0, 1.0), norms=None
 
 
 print('Score multi-objectif :', multi_objective_score(dispatch, net))
-",,,,,,,,364239a63c036fdc,,,,,,,,
+",,,,,,,,364239a63c036fdc,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c15,markdown,fr,1595f10bff5b4f90,"### Exercice 3 : Ajouter un troisieme objectif (equite territoriale)
 
 Ajoutez un troisieme objectif : **equite territoriale** (eviter qu'une même region subisse
 toutes les centrales les plus polluantes). Supposons que chaque centrale a un attribut
 `region`. Mesurez la concentration regionale de la pollution et ajoutez-la au score.
-",,,,,,,,1595f10bff5b4f90,,,,,,,,
+",,,,,,,,1595f10bff5b4f90,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c16,code,fr,ba42fd7f8f0eebf0,"# Exercice 3 : objectif d'equite territoriale
 def territorial_equity_score(dispatch, network: PowerNetwork) -> float:
     """"""Mesure de concentration de la pollution par region (0 = equitable).""""""
     score = None  # TODO etudiant : mesurer la concentration (ex: variance/entropy regionale des co2)
     return score
-",,,,,,,,ba42fd7f8f0eebf0,,,,,,,,
+",,,,,,,,ba42fd7f8f0eebf0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c17,markdown,fr,5ddf5a4915a3c5f4,"## Partie 4 : Decision finale et analyse comparative
 
 **Synthese** : on compare les stratégies (CP-SAT pur, multi-objectif weighted-sum, front de
 Pareto) sur les 3 axes cout/CO2/fiabilite + l'equite territoriale. Le tableau comparatif et
 le graphique radar seront produits une fois les Parties 1-3 executees.
-",,,,,,,,5ddf5a4915a3c5f4,,,,,,,,
+",,,,,,,,5ddf5a4915a3c5f4,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c18,code,fr,9d4189683fa4b7ce,"# Partie 4 : analyse comparative des strategies de dispatch
 # TODO etudiant : comparer 3 strategies (min cout / min CO2 / compromis).
 def comparative_analysis(network):
@@ -3364,8 +3434,8 @@ def comparative_analysis(network):
 
 
 print('Analyse comparative :', comparative_analysis(net))
-",,,,,,,,9d4189683fa4b7ce,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c19,markdown,fr,51d789f1def33ccf,"## Conclusion
+",,,,,,,,9d4189683fa4b7ce,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,c19,markdown,fr,2cc087de31f35384,"## Conclusion
 
 Cette étude de cas illustre la **composition ordonnee** des paradigmes IA sur un problème
 metier reel (transition energetique) : on filtre les dispatches impossibles (CP-SAT) avant
@@ -3373,12 +3443,13 @@ de modeliser l'incertitude (bayesien) avant d'optimiser (multi-objectif). Invers
 produit un système soit trop rigide (contraintes ignorent l'aleatoire), soit trop flou
 (decision sans contraintes physiques).
 
-**Etat de la fondation** : jumeau numérique operationnel (couche 0), 4 couches de solveurs
-modelisees en stub. Implementations + exécution + analyse comparative : cycles suivants.
-",,,,,,,,51d789f1def33ccf,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,cell-e74315e1,markdown,fr,da1a97770d5ad237,Configuration et imports du notebook.,,,,,,,,da1a97770d5ad237,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,cell-1511bccd,markdown,fr,6140829a143f5b9f,Tests automatises a completer.,,,,,,,,6140829a143f5b9f,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,cell-49e71cf1,markdown,fr,b7f25e43bc4afee9,"## Bilan — trois paradigmes IA pour un plan de cure sûr et explicable
+**Etat du squelette** : jumeau numérique operationnel (couche 0), 4 couches de solveurs
+modelisees en stub. Implementations + exécution + analyse comparative : a completer
+par l'etudiant — le corrige (`../solution/`) montre la version exécutée de bout en bout.
+",,,,,,,,2cc087de31f35384,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,cell-e74315e1,markdown,fr,da1a97770d5ad237,Configuration et imports du notebook.,,,,,,,,da1a97770d5ad237,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,cell-1511bccd,markdown,fr,6140829a143f5b9f,Tests automatises a completer.,,,,,,,,6140829a143f5b9f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,cell-49e71cf1,markdown,fr,eaf9adf271e0eba5,"## Bilan — trois paradigmes IA pour un plan de cure sûr et explicable
 
 Ce cas-study assembling les trois familles d'IA vues en cours autour d'un même
 métier clinique — la planification de cures d'oncologie. Chacune y joue un rôle
@@ -3427,69 +3498,69 @@ gère l'incertitude, et la cryptographie garantit l'audit. Cette triplette
 déployés en milieu médical — et plus largement dans tout domaine où l'erreur
 a un coût humain.
 
----
+***
 
 **Retour au sommaire** : [Index CaseStudies](../../README.md)
-",,,,,,,,b7f25e43bc4afee9,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,edaa001d,markdown,fr,14669310b46acc31,"### Exercice 1 : Etendre l'agent de diagnostic avec un score de risque
+",,,,,,,,eaf9adf271e0eba5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,edaa001d,markdown,fr,04a9fcfaab862a24,"### Exercice 1 : Etendre l'agent de diagnostic avec un score de risque
 
 **Objectif** : Ajouter une méthode `calculer_score_risque` a la classe `DiagnosticAgent` qui combine les indicateurs cliniques en un score numérique composite.
 
 **Contexte** : La classification actuelle (Normal/Pre-diabete/Diabete) est trop grossiere. Un score numérique permet de prioriser les patients et de suivre l'evolution dans le temps.
 
 **Indices** :
-- # Indice 1 : Combinez la glycémie à jeun, l'HbA1c et le nombre de symptomes en un score pondere
-- # Indice 2 : Normalisez chaque indicateur entre 0 et 1 avant de les combiner
-- # Étape 1 : Définir les seuils de normalisation pour chaque indicateur
-- # Étape 2 : Calculer le score pondere (ex: 40% glycémie, 40% HbA1c, 20% symptomes)
-- # Étape 3 : Tester sur les 3 patients de reference et verifier la coherence avec la classification",,,,,,,,14669310b46acc31,,,,,,,,
+- **Indice 1** : Combinez la glycémie à jeun, l'HbA1c et le nombre de symptomes en un score pondere
+- **Indice 2** : Normalisez chaque indicateur entre 0 et 1 avant de les combiner
+- **Étape 1** : Définir les seuils de normalisation pour chaque indicateur
+- **Étape 2** : Calculer le score pondere (ex: 40% glycémie, 40% HbA1c, 20% symptomes)
+- **Étape 3** : Tester sur les 3 patients de reference et verifier la coherence avec la classification",,,,,,,,04a9fcfaab862a24,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,256f7ac0,code,fr,3b7f1f9dcc3f915c,"# Exercice 1 : Score de risque composite
 # TODO etudiant : Implementer une methode calculer_score_risque(patient) -> float
 # TODO etudiant : Normaliser chaque indicateur entre 0 et 1
 # TODO etudiant : Tester sur les 3 patients (Alice, Bob, Claire)
 result = None  # TODO etudiant : remplacer par votre calcul
-print(""Exercice a completer : score de risque composite"")",,,,,,,,3b7f1f9dcc3f915c,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,8f2a7f37,markdown,fr,3ad60275071db173,"### Exercice 2 : Comparer différentes heuristiques pour A*
+print(""Exercice a completer : score de risque composite"")",,,,,,,,3b7f1f9dcc3f915c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,8f2a7f37,markdown,fr,681612e714054421,"### Exercice 2 : Comparer différentes heuristiques pour A*
 
 **Objectif** : Implementer une heuristique alternative pour l'algorithme A* et comparer le nombre d'itérations et la qualite du diagnostic.
 
 **Contexte** : L'heuristique actuelle utilise une combinaison lineaire d'evidences cliniques. Une heuristique basee uniquement sur l'HbA1c pourrait etre plus rapide mais moins precise.
 
 **Indices** :
-- # Indice 1 : Implementez une heuristique `h_simple(etat)` qui n'utilise que l'HbA1c du patient
-- # Indice 2 : Comparez le nombre d'itérations et le niveau de confiance final
-- # Étape 1 : Définir la nouvelle heuristique dans une sous-classe de `AStarDiagnostic`
-- # Étape 2 : Executer la recherche sur les 3 patients de test
-- # Étape 3 : Comparer les résultats (itérations, confiance, hypotheses) avec l'heuristique originale",,,,,,,,3ad60275071db173,,,,,,,,
+- **Indice 1** : Implementez une heuristique `h_simple(etat)` qui n'utilise que l'HbA1c du patient
+- **Indice 2** : Comparez le nombre d'itérations et le niveau de confiance final
+- **Étape 1** : Définir la nouvelle heuristique dans une sous-classe de `AStarDiagnostic`
+- **Étape 2** : Executer la recherche sur les 3 patients de test
+- **Étape 3** : Comparer les résultats (itérations, confiance, hypotheses) avec l'heuristique originale",,,,,,,,681612e714054421,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,5b185d57,code,fr,d4823c4286534539,"# Exercice 2 : Heuristique alternative pour A*
 # TODO etudiant : Creer une sous-classe de AStarDiagnostic avec une heuristique simplifiee
 # TODO etudiant : Executer la recherche sur les 3 patients de test
 # TODO etudiant : Comparer les resultats avec l'heuristique originale
 result = None  # TODO etudiant : remplacer par votre comparaison
-print(""Exercice a completer : heuristique alternative A*"")",,,,,,,,d4823c4286534539,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,dc640dc9,markdown,fr,2d16ff3a4ce4b7ef,"### Exercice 3 : Ajouter des contraintes d'interaction medicamenteuse au solveur Z3
+print(""Exercice a completer : heuristique alternative A*"")",,,,,,,,d4823c4286534539,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,dc640dc9,markdown,fr,a8233dfbff7079e7,"### Exercice 3 : Ajouter des contraintes d'interaction medicamenteuse au solveur Z3
 
 **Objectif** : Etendre le solveur Z3 pour inclure de nouvelles contraintes d'interaction entre medicaments et verifier que le protocole est sur.
 
 **Contexte** : Les interactions medicamenteuses sont une source majeure de risques. L'insuline combinee a certains antidiabetiques oraux augmente le risque d'hypoglycemie severe.
 
 **Indices** :
-- # Indice 1 : Ajoutez une contrainte Z3 qui limite la dose d'insuline si le patient prend aussi de la metformine
-- # Indice 2 : Utilisez `Implies()` et `And()` pour exprimer les conditions
-- # Étape 1 : Ajouter la variable booleenne `hypoglycemie_risque` au modèle
-- # Étape 2 : Définir les contraintes d'interaction
-- # Étape 3 : Tester avec un patient qui a des antecedents d'hypoglycemie et verifier que le solveur refuse certaines combinaisons",,,,,,,,2d16ff3a4ce4b7ef,,,,,,,,
+- **Indice 1** : Ajoutez une contrainte Z3 qui limite la dose d'insuline si le patient prend aussi de la metformine
+- **Indice 2** : Utilisez `Implies()` et `And()` pour exprimer les conditions
+- **Étape 1** : Ajouter la variable booleenne `hypoglycemie_risque` au modèle
+- **Étape 2** : Définir les contraintes d'interaction
+- **Étape 3** : Tester avec un patient qui a des antecedents d'hypoglycemie et verifier que le solveur refuse certaines combinaisons",,,,,,,,a8233dfbff7079e7,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,296e6787,code,fr,c033bd599c8db3dc,"# Exercice 3 : Contraintes d'interaction medicamenteuse avec Z3
 # TODO etudiant : Etendre la classe Z3ConstraintSolver avec des contraintes d'interaction
 # TODO etudiant : Ajouter une contrainte sur la dose d'insuline si metformine aussi prescrite
 # TODO etudiant : Tester avec un patient hypoglycemique
 result = None  # TODO etudiant : remplacer par votre solution Z3
-print(""Exercice a completer : contraintes d'interaction medicamenteuse"")",,,,,,,,c033bd599c8db3dc,,,,,,,,
+print(""Exercice a completer : contraintes d'interaction medicamenteuse"")",,,,,,,,c033bd599c8db3dc,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,heading21onco,markdown,fr,abdcf40ac4bcfac2,"Dans cette deuxième partie, nous adoptons une approche **probabiliste** : au lieu de règles déterministes, le médecin modélise son incertitude sur le profil du patient (résistant, normal, sensible) et la révise à mesure que les doses et les observations cliniques s'accumulent. Cette inférence bayésienne est implémentée avec **Pyro**.
 
 ### 2.1. Le modèle probabiliste de patient (Pyro)
 
-Le cœur du médecin probabiliste est `OncoModel`, un modèle génératif qui relie les doses de chimiothérapie aux observations (toxicité cumulée, taux de globules blancs) via le profil latent du patient. Il sert de base à la fois à l'inférence du profil et à la prédiction de la réponse aux doses futures.",,,,,,,,abdcf40ac4bcfac2,,,,,,,,
+Le cœur du médecin probabiliste est `OncoModel`, un modèle génératif qui relie les doses de chimiothérapie aux observations (toxicité cumulée, taux de globules blancs) via le profil latent du patient. Il sert de base à la fois à l'inférence du profil et à la prédiction de la réponse aux doses futures.",,,,,,,,abdcf40ac4bcfac2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,f52d0996,markdown,fr,cfb7c6b10227d82f,"### Lecture de la prédiction : quantifier le risque par stratégie
 
 Une fois l'exercice ci-dessus complété, la sortie donne la **décision clinique** du modèle, à déchiffrer chiffre par chiffre :
@@ -3503,76 +3574,84 @@ La **réduction absolue du risque** entre les deux stratégies est l'apport conc
 
 **Pourquoi subsiste-t-il un risque résiduel à dose réduite ?** Réduire la 4ᵉ dose à 50 mg fait remonter `mu_gb` du profil Résistant (majoritaire dans le posterior) au-dessus du seuil 2 000 — son risque individuel devient faible. Mais une **incertitude résiduelle** subsiste : (1) la minorité de profils Normal/Sensible reste clampée près de 1 000, et (2) la prédiction est une distribution (`num_samples=100` tirages), pas une certitude. Ce risque résiduel n'est pas un échec du modèle : il **justifie la surveillance hospitalière** systématique après cure, car un risque faible n'est pas un risque nul.
 
-> **À retenir** : sur ce cas, la simulation prédictive **prime sur le diagnostic de profil** pour la décision. Que le patient soit classé « Résistant » ou non ne change pas la conclusion — la dose standard est intenable, la dose réduite est viable. C'est tout l'intérêt d'une approche **probabiliste et prospective** : elle ne se contente pas d'étiqueter le patient, elle **éclaire l'action** en chiffrant le risque de chaque option.",,,,,,,,cfb7c6b10227d82f,,,,,,,,
+> **À retenir** : sur ce cas, la simulation prédictive **prime sur le diagnostic de profil** pour la décision. Que le patient soit classé « Résistant » ou non ne change pas la conclusion — la dose standard est intenable, la dose réduite est viable. C'est tout l'intérêt d'une approche **probabiliste et prospective** : elle ne se contente pas d'étiqueter le patient, elle **éclaire l'action** en chiffrant le risque de chaque option.",,,,,,,,cfb7c6b10227d82f,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,2b8bbd38,code,fr,8b3931a0628218db,"# Exercice 1 : Etendre l'ontologie medicamenteuse
 # TODO etudiant : Ajouter ""Paclitaxel"" et ""Carboplatine"" au dictionnaire medicaments
 # TODO etudiant : Peupler le graphe RDF avec les nouveaux triplets
 # TODO etudiant : Tester verifier_prescription avec les nouvelles combinaisons
 result = None  # TODO etudiant : remplacer par votre ontologie etendue
-print(""Exercice a completer : ontologie etendue"")",,,,,,,,8b3931a0628218db,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ae5963c7,markdown,fr,284e6df651792436,"### Exercice 1 : Etendre l'ontologie avec de nouveaux medicaments et interactions
+print(""Exercice a completer : ontologie etendue"")",,,,,,,,8b3931a0628218db,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ae5963c7,markdown,fr,2ac54510e0f11c38,"### Exercice 1 : Etendre l'ontologie avec de nouveaux medicaments et interactions
 
 **Objectif** : Ajouter de nouveaux medicaments a l'ontologie RDF et implementer une verification d'interactions etendue.
 
 **Contexte** : L'ontologie actuelle contient 4 medicaments. En pratique, les protocoles oncologiques combinent davantage de molecules, et les interactions croisees sont critiques.
 
 **Indices** :
-- # Indice 1 : Ajoutez ""Paclitaxel"" (toxicite_renale=False, incompatible avec ""Docetaxel"") et ""Carboplatine"" (toxicite_renale=True, incompatible avec ""Cisplatine"")
-- # Indice 2 : Verifiez qu'un protocole [""Cisplatine"", ""Carboplatine""] declenche bien une alerte d'incompatibilite
-- # Étape 1 : Ajouter les nouveaux medicaments au dictionnaire `medicaments`
-- # Étape 2 : Peupler le graphe RDF avec les nouveaux triplets
-- # Étape 3 : Tester la fonction `verifier_prescription` avec des combinaisons incluant les nouveaux medicaments",,,,,,,,284e6df651792436,,,,,,,,
+- **Indice 1** : Ajoutez ""Paclitaxel"" (toxicite_renale=False, incompatible avec ""Docetaxel"") et ""Carboplatine"" (toxicite_renale=True, incompatible avec ""Cisplatine"")
+- **Indice 2** : Verifiez qu'un protocole [""Cisplatine"", ""Carboplatine""] declenche bien une alerte d'incompatibilite
+- **Étape 1** : Ajouter les nouveaux medicaments au dictionnaire `medicaments`
+- **Étape 2** : Peupler le graphe RDF avec les nouveaux triplets
+- **Étape 3** : Tester la fonction `verifier_prescription` avec des combinaisons incluant les nouveaux medicaments",,,,,,,,2ac54510e0f11c38,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,ce9bfce9,code,fr,cb5da8bc4f7b5023,"# Exercice 2 : Sensibilite au prior du profil patient
 # TODO etudiant : Creer une version parametrable du modele avec profil_probs en argument
 # TODO etudiant : Tester 3 configurations de prior differentes
 # TODO etudiant : Comparer les posterieurs dans un tableau
 result = None  # TODO etudiant : remplacer par votre analyse
-print(""Exercice a completer : sensibilite au prior"")",,,,,,,,cb5da8bc4f7b5023,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,0243637f,markdown,fr,b6eb9d7673809a80,"### Exercice 2 : Sensibilite du modèle bayesien au prior sur le profil patient
+print(""Exercice a completer : sensibilite au prior"")",,,,,,,,cb5da8bc4f7b5023,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,0243637f,markdown,fr,f9d45b9c97639385,"### Exercice 2 : Sensibilite du modèle bayesien au prior sur le profil patient
 
 **Objectif** : Etudier comment le choix du prior sur les profils (Resistant/Normal/Sensible) influence le diagnostic posterieur.
 
 **Contexte** : Le prior actuel est `[0.1, 0.6, 0.3]` (10% Resistants, 60% Normaux, 30% Sensibles). Si la population est différente, le diagnostic change.
 
 **Indices** :
-- # Indice 1 : Modifiez `profil_probs` dans la méthode `model()` pour tester : `[0.33, 0.34, 0.33]` (uniforme), `[0.05, 0.90, 0.05]` (peu de sensibles)
-- # Indice 2 : Relancez l'inference SVI et comparez les probabilites a posteriori du profil
-- # Étape 1 : Créer une fonction qui accepte le prior en paramètre
-- # Étape 2 : Tester 3 configurations de prior différentes
-- # Étape 3 : Afficher les posterieurs dans un tableau comparatif",,,,,,,,b6eb9d7673809a80,,,,,,,,
+- **Indice 1** : Modifiez `profil_probs` dans la méthode `model()` pour tester : `[0.33, 0.34, 0.33]` (uniforme), `[0.05, 0.90, 0.05]` (peu de sensibles)
+- **Indice 2** : Relancez l'inference SVI et comparez les probabilites a posteriori du profil
+- **Étape 1** : Créer une fonction qui accepte le prior en paramètre
+- **Étape 2** : Tester 3 configurations de prior différentes
+- **Étape 3** : Afficher les posterieurs dans un tableau comparatif",,,,,,,,f9d45b9c97639385,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,302de264,code,fr,f7c69905c0506c5d,"# Exercice 3 : Journal d'audit pour le contrat intelligent
 # TODO etudiant : Etendre OncoContract avec un attribut historique
 # TODO etudiant : Implementer afficher_historique() qui liste toutes les modifications
 # TODO etudiant : Tester avec plusieurs modifications successives
 result = None  # TODO etudiant : remplacer par votre contrat avec audit
-print(""Exercice a completer : journal d'audit"")",,,,,,,,f7c69905c0506c5d,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,d2746864,markdown,fr,bdf29e0b5a3bc5fb,"### Exercice 3 : Ajouter un journal d'audit au contrat intelligent
+print(""Exercice a completer : journal d'audit"")",,,,,,,,f7c69905c0506c5d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/student/Oncology-Planning.ipynb,d2746864,markdown,fr,fffe1d887a161ad6,"### Exercice 3 : Ajouter un journal d'audit au contrat intelligent
 
 **Objectif** : Etendre la classe `OncoContract` pour maintenir un historique des modifications et detecter les tentatives de fraude.
 
 **Contexte** : Le contrat actuel enregistre un seul plan. En pratique, les plans peuvent etre modifiés plusieurs fois, et il faut tracer qui a fait quoi et quand.
 
 **Indices** :
-- # Indice 1 : Ajoutez un attribut `self.historique = []` qui stocke chaque modification
-- # Indice 2 : Chaque entree du journal doit contenir : horodatage, auteur, action, hash du plan
-- # Étape 1 : Ajouter l'attribut `historique` et le mettre a jour a chaque appel de `enregistrer_plan`
-- # Étape 2 : Implementer une méthode `afficher_historique()` qui affiche le journal
-- # Étape 3 : Tester en modifiant le plan plusieurs fois et verifier que l'historique est complet",,,,,,,,bdf29e0b5a3bc5fb,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,smartgrid-interp-dispatch-c835,markdown,fr,276e41817b744e23,"### Interprétation : le dispatch min-coût et ses limites
+- **Indice 1** : Ajoutez un attribut `self.historique = []` qui stocke chaque modification
+- **Indice 2** : Chaque entree du journal doit contenir : horodatage, auteur, action, hash du plan
+- **Étape 1** : Ajouter l'attribut `historique` et le mettre a jour a chaque appel de `enregistrer_plan`
+- **Étape 2** : Implementer une méthode `afficher_historique()` qui affiche le journal
+- **Étape 3** : Tester en modifiant le plan plusieurs fois et verifier que l'historique est complet",,,,,,,,fffe1d887a161ad6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,smartgrid-interp-dispatch-c835,markdown,fr,c673610eca873548,"### Interprétation : le dispatch min-coût et ses limites
 
 Le statut **OPTIMAL** confirme que CP-SAT a trouvé le dispatch de coût minimal satisfaisant toutes les contraintes (équilibre offre/demande, capacités min/max). Lecture du résultat :
 
 - Le **charbon** porte l'essentiel de la charge (270–340 MW) et s'ajuste heure par heure pour suivre la demande ; l'**hydroélectricité** reste plate à 150 MW, vraisemblablement son plafond de capacité (`pmax`).
 - Le coût optimal de **63 600 €** est le plancher économique : c'est la stratégie « Économique » que l'on retrouvera dans la comparaison finale (Partie 4).
 - **Limite de cette stratégie** : minimiser le coût seul pousse vers le charbon (le moins cher par MWh), mais ce sont aussi les émissions de CO2 les plus élevées. C'est précisément ce déséquilibre que les Parties 2 (risque) et 3 (multi-objectif) viennent corriger en intégrant d'autres axes que le coût.
-",,,,,,,,276e41817b744e23,,,,,,,,
+Détail passé inaperçu : la centrale **Gaz** n'apparaît dans aucune ligne du
+dispatch. C'est la conséquence directe de l'ordre de mérite — à 60 EUR/MWh, elle
+n'est jamais appelée tant que Charbon (30 EUR/MWh) peut absorber, après l'Hydro
+saturée, la demande nette résiduelle (au plus 490 MW, sous le plafond
+Charbon+Hydro de 550 MW). Le solveur redécouvre ainsi le fonctionnement du marché
+de l'électricité : les centrales sont appelées par coût croissant jusqu'à couvrir
+la demande. Gaz ne deviendrait utile qu'en pointe extrême, ou si une contrainte de
+réserve (Exercice 1) forçait une centrale supplémentaire à chauffer.
+",,,,,,,,c673610eca873548,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,smartgrid-interp-risk-c835,markdown,fr,4577f6f508cf42f0,"### Interprétation : un risque de queue négligeable, piloté par l'incertitude
 
 Les risques de défaillance sont **astronomiquement faibles** (de l'ordre de 10⁻³⁵ à 10⁻²⁸⁴) : avec 800 MW de capacité pilotable pour une demande nette de 420–490 MW, la marge est si large que la probabilité d'un dépassement (queue de distribution gaussienne via `erfc`) est numériquement négligeable.
 
 - Le risque **ne suit pas le niveau de demande** mais **l'incertitude de la prévision renouvelable** : H5 (demande 430 MW, incertitude ±30 MW) affiche le risque le plus élevé (≈ 3·10⁻³⁵), très au-dessus de H0 (demande 420 MW, ±15 MW, ≈ 7·10⁻¹⁴²) — alors que la demande de H0 est plus faible. C'est l'écart-type `renewable_forecast_std`, pas la demande, qui pilote la probabilité de queue.
 - **Enseignement** : tant que la capacité pilotable surpasse largement la demande nette, la fiabilité est quasi gratuite. Le risque ne devient pertinent qu'en cas de marge tendue ou d'incertitude élevée — c'est ce que l'Exercice 2 explore en amplifiant l'incertitude renouvelable.
-",,,,,,,,4577f6f508cf42f0,,,,,,,,
+",,,,,,,,4577f6f508cf42f0,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,smartgrid-interp-score-c835,markdown,fr,d6b7df4069ecd7a7,"### Interprétation : décomposition du score multi-objectif
 
 Le score **1,137** du dispatch min-coût se décompose, avec les poids `(1, 1, 1)` et les normes `{cost: 200 000, co2: 2 000 000, max_risk: 1,0}` :
@@ -3582,15 +3661,224 @@ Le score **1,137** du dispatch min-coût se décompose, avec les poids `(1, 1, 1
 - **risque** : ≈ **0** (la capacité excède largement la demande, cf. Partie 2).
 
 Le terme **CO2 domine** (0,82) : optimiser le coût seul produit un dispatch bon marché mais sale. C'est la traduction chiffrée du conflit d'objectifs. Le score multi-objectif rend ce compromis **comparable** entre stratégies (Partie 4) : un score plus bas indique un meilleur équilibre global coût/CO2/risque.
-",,,,,,,,d6b7df4069ecd7a7,,,,,,,,
-MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,smartgrid-interp-comparative-c835,markdown,fr,569c4ee8ebd15095,"### Interprétation : le coût de la transition bas-carbone
+",,,,,,,,d6b7df4069ecd7a7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,smartgrid-interp-comparative-c835,markdown,fr,2f271132d56ff08a,"### Interprétation : le coût de la transition bas-carbone
 
 Les trois stratégies sont ici scorées avec des poids égaux `(1, 1, 1)` et des normes tirées des extrêmes (coût et CO2 max). Décomposition des scores :
 
 - **Économique** (1,596) = coût 0,60 + CO2 **1,00** + risque 0 : excellent sur le coût, maximal sur le CO2.
 - **Écologique** (1,560) = coût **1,00** + CO2 0,56 + risque 0 : inverse, bon sur le CO2, maximal sur le coût.
 
-**L'Écologique l'emporte** (1,560 < 1,596) bien qu'elle coûte plus cher (106 800 € contre 63 600 €) : la réduction de CO2 (−44 %, soit 720 000 kg évités) compense la perte économique. **Compromis = Écologique** : les deux stratégies convergent vers un dispatch identique (mêmes coût, CO2 et risque). Avec les poids de recherche `(1, 3)` donnant 3 fois plus de poids au CO2, la somme pondérée sélectionne en fait la solution min-CO2 — le compromis coïncide ici avec l'extrémité écologique du front.
+**L'Écologique l'emporte** (1,560 < 1,596) bien qu'elle coûte plus cher (106 800 € contre 63 600 €) : la réduction de CO2 (1 638 000 kg émis par l'Économique contre 918 000, soit 720 000 kg évités / −44 %) compense la perte économique. **Compromis = Écologique** : les deux stratégies convergent vers un dispatch identique (mêmes coût, CO2 et risque). Avec les poids de recherche `(1, 3)` donnant 3 fois plus de poids au CO2, la somme pondérée sélectionne en fait la solution min-CO2 — le compromis coïncide ici avec l'extrémité écologique du front.
 
 **Coût marginal d'évitement** : passer du min-coût au min-CO2 coûte +43 200 € (+68 %) pour éviter 720 000 kg de CO2, soit environ **0,06 €/kg de CO2 évité**. C'est le type d'arbitrage chiffré qu'un opérateur de réseau doit expliciter avant de décider.
-",,,,,,,,569c4ee8ebd15095,,,,,,,,
+",,,,,,,,2f271132d56ff08a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,lecture-configuration,markdown,fr,244ecbc208f47af4,"**Lecture ancrée** : La configuration du notebook indique une version 2.0.0 avec une durée estimée de 3 heures et un total de 20 points, structurant cette séance pratique en une évaluation complète des compétences en IA médicale. Le module Z3 a été importé avec succès, confirmant que toutes les dépendances nécessaires pour les solveurs de contraintes sont disponibles et opérationnelles dans cet environnement. De plus, les objectifs pédagogiques visent à faire implémenter un système de diagnostic médical intelligent combinant plusieurs approches algorithmiques complémentaires.",,,,,,,,244ecbc208f47af4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,lecture-patient-class,markdown,fr,6dab1648d94cd611,"**Lecture ancrée** : La classe Patient a été définie avec succès comme une dataclass, structurant les données médicales essentielles : âge, glycémie, HbA1c, symptômes et antécédents. Cette structure permet une manipulation facile des profils patients tout au long du processus de diagnostic automatisé.",,,,,,,,6dab1648d94cd611,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,lecture-diagnostic-agent,markdown,fr,38274c770c352b72,"**Lecture ancrée** : L'agent de diagnostic a été initialisé avec 3 catégories de règles cliniques chargées à partir des protocoles médicaux standard. Ces règles, basées sur les recommandations de l'OMS et de l'ADA pour le diabète de type 2, forment la base du raisonnement clinique automatisé qui sera utilisé pour classer les patients selon leur niveau de risque et orienter les décisions thérapeutiques de manière personnalisée et très précise.",,,,,,,,38274c770c352b72,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,lecture-agent-diagnostic,markdown,fr,3d5ae71e210fde9c,"**Lecture ancrée** : L'agent de diagnostic a correctement classé Alice comme ayant un risque normal (glycémie à jeun 85 mg/dL, HbA1c 5.2%) et n'a détecté aucun symptôme. Cette classification correspond aux seuils cliniques standards où une HbA1c < 5.7% indique une glycémie normale.",,,,,,,,3d5ae71e210fde9c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,lecture-astar-class,markdown,fr,6980452d808d8cc7,"**Lecture ancrée** : La classe EtatDiagnostic pour A* a été initialisée avec 7 hypothèses possibles, couvrant l'espace des diagnostics différentiels pour le diabète de type 2. Cette représentation permet à l'algorithme de naviguer efficacement dans l'espace des états cliniques possibles.",,,,,,,,6980452d808d8cc7,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,lecture-astar-performance,markdown,fr,e4c940f65dd0d68b,"**Lecture ancrée** : L'algorithme A* a convergé en 308 itérations avec un temps d'exécution de 25,50 ms pour le patient simple, produisant l'hypothèse `intolerance_glucose` avec un niveau de confiance de 0,8. Ce résultat démontre l'efficacité de la recherche informée dans l'espace des états diagnostiques.",,,,,,,,e4c940f65dd0d68b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,lecture-genetic-class,markdown,fr,bc035ffafe9ef0c4,**Lecture ancrée** : L'algorithme génétique a été initialisé avec 5 patients de référence qui serviront de base pour l'optimisation des paramètres diagnostiques. Ces patients de référence permettent d'évaluer la fitness des solutions proposées par l'algorithme évolutionnaire.,,,,,,,,bc035ffafe9ef0c4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,lecture-genetique-convergence,markdown,fr,1d7bfecae237a57f,"**Lecture ancrée** : L'algorithme génétique a fait évoluer le fitness de 16,731 à 17,957 entre les générations 0 et 20, montrant une convergence rapide vers une solution optimale. Cette amélioration progressive reflète l'exploration efficace de l'espace des paramètres diagnostiques.",,,,,,,,1d7bfecae237a57f,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,lecture-z3-class,markdown,fr,d11950ed2a097b99,"**Lecture ancrée** : Le solveur Z3 a été configuré avec succès pour la validation des protocoles thérapeutiques. Le module z3 a été importé correctement, permettant l'utilisation des contraintes logiques pour valider les traitements proposés contre les contre-indications médicales et les interactions médicamenteuses.",,,,,,,,d11950ed2a097b99,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,lecture-z3-validation,markdown,fr,bbc0b8ddcedab150,"**Lecture ancrée** : Le solveur Z3 a validé avec succès les protocoles thérapeutiques pour les cas complexes, confirmant par exemple que pour un patient de 72 ans avec cardiopathie, la prescription de statines est appropriée (Metformine: False, Insuline: False, Statines: True) avec un objectif HbA1c de 6,0%, seule contrainte satisfaite du protocole — un objectif glycémique jugé réaliste par le solveur. Cette validation par contraintes garantit que les traitements respectent les contre-indications médicales et les interactions possibles.",,,,,,,,bbc0b8ddcedab150,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,lecture-data-loading,markdown,fr,ad315ead07a1ba1e,**Lecture ancrée** : La fonction de chargement des données CSV a été définie pour permettre l'import de profils patients depuis des fichiers externes. Cette capacité est essentielle pour tester le système sur de grands jeux de données cliniques réelles et valider sa robustesse dans des scénarios variés de diagnostic du diabète de type 2.,,,,,,,,ad315ead07a1ba1e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb,lecture-tests-automatises,markdown,fr,8815494f6fff2acf,"**Lecture ancrée** : La suite de tests automatisés offre une validation complète du système en vérifiant l'intégration des quatre approches (agent rationnel, A*, génétique, Z3). Chaque test valide une composante spécifique du diagnostic, assurant ainsi la cohérence et la robustesse du système de diagnostic médical multi-contraintes.
+
+###  Analyse Comparative et Conclusion
+
+#### Analyse Comparative des 4 Approches
+
+| Approche | Forces | Faiblesses | Cas Idéaux |
+|---------|--------|------------|-------------|
+| Agent Diagnostic | Rapidité, Interprétabilité | Dépendance règles, Non-adaptatif | Diagnostic initial, triage |
+| Algorithme A* | Optimalité, Exploration systématique | Complexité exponentielle, Dépendance heuristique | Diagnostic complexe, espace défini |
+| Algorithmes Génétiques | Optimisation globale, Robustesse | Pas d'optimalité, Réglages délicats | Optimisation paramètres, adaptation |
+| Solveur Z3 | Garantie contraintes, Efficacité | Complexité théorique, Modélisation difficile | Validation protocoles, cohérence |
+
+#### Recommandations d'Amélioration
+
+1. **Intégration hybride** : Combiner les forces de chaque approche
+2. **Apprentissage automatique** : Optimiser les heuristiques et paramètres
+3. **Interface clinicien** : Rendre le système utilisable en pratique
+4. **Validation clinique** : Tester sur des cohortes réelles
+
+###  Conclusion
+
+Ce notebook vous a permis d'implémenter un système de diagnostic médical multi-approches combinant :
+
+ **Intelligence Artificielle Exploratoire** : Recherche (A*), heuristiques
+ **Intelligence Artificielle Symbolique** : Règles, contraintes (Z3)
+ **Optimisation** : Algorithmes génétiques
+ **Application Biomédicale** : Diagnostic du diabète de type 2
+
+Les compétences développées sont directement transférables à d'autres domaines nécessitant des systèmes de décision intelligents.
+
+***
+**Retour au sommaire** : [Index CaseStudies](../../README.md)",,,,,,,,8815494f6fff2acf,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,lecture-config-001,markdown,fr,2c655785182136f2,"**Lecture ancrée — Cellule de configuration (3)**
+
+Le message de sortie confirme que le solveur Z3, essentiel pour la validation par contraintes des protocoles thérapeutiques, 
+est correctement importé et opérationnel dans l'environnement. La configuration affichée révèle que ce notebook, 
+développé par EPF IA Biomédicale, est à sa version 2.0.0 datée du 4 novembre 2025, avec une durée estimée de 3 heures 
+pour un total de 20 points. Ces métadonnées précisent le cadre pédagogique et l'objectif : 
+implémenter un système de diagnostic médical combinant quatre approches algorithmiques complémentaires. 
+L'Import réussi de Z3 valide la disponibilité des outils de programmation par contraintes nécessaires 
+pour la quatrième partie du cas pratique, tandis que la configuration standardisée assure la reproductibilité 
+des résultats entre différents environnements d'exécution.",,,,,,,,2c655785182136f2,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,lecture-patient-002,markdown,fr,005ee86313484e7c,"**Lecture ancrée — Classe Patient (5)**
+
+L'exécution de cette cellule affiche deux messages clés : ""Structure de données définie"" et ""Protocoles chargés : 4 sections"". 
+Ces outputs indiquent que la classe `Patient`, cœur du système de diagnostic, a été correctement définie 
+avec tous ses attributs médicaux essentiels (identifiant, nom, âge, glycémies à jeun et postprandiale, HbA1c, 
+symptômes, antécédents, date de consultation, pression artérielle et IMC). Les quatre sections de protocoles 
+chargées correspondent aux différentes approches à implémenter : l'agent de diagnostic basé sur des règles 
+cliniques, la recherche informée par A* dans l'espace des états diagnostiques, l'optimisation évolutionnaire 
+par algorithmes génétiques, et la validation formelle par contraintes Z3. Cette structure de données centralisée 
+permet de gérer de manière cohérente les informations médicales de chaque patient tout au long 
+du processus de diagnostic multi-contraintes.",,,,,,,,005ee86313484e7c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,lecture-genetique-005,markdown,fr,bdd3f6183d9d6599,"**Lecture ancrée — Algorithmes Génétiques dans le Diagnostic Médical**
+
+L'approche par algorithmes génétiques représente une méthode d'optimisation inspirée de la sélection naturelle, 
+particulièrement adaptée aux problèmes complexes où les solutions optimales ne peuvent pas être 
+trouvées par des méthodes analytiques classiques. Dans le contexte du diagnostic médical, cette approche 
+permet d'explorer l'espace des paramètres de diagnostic (seuils glycémiques, pondérations des symptômes, 
+priorités thérapeutiques) pour identifier les combinaisons optimales qui maximisent la précision du 
+diagnostic tout en minimisant les faux positifs et faux négatifs. Chaque chromosome dans la population 
+représente une configuration potentielle du système de diagnostic, et la fonction de fitness évalue 
+l'adéquation de cette configuration par rapport aux critères médicaux établis. L'évolution de la population 
+au fil des générations permet de converger vers des solutions de plus en plus performantes, offrant ainsi 
+une approche flexible et adaptative pour personnaliser le diagnostic selon le profil spécifique de chaque patient.",,,,,,,,bdd3f6183d9d6599,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,lecture-validation-004,markdown,fr,00bde7eaa36f8d32,"**Lecture ancrée — Validation et architecture du système**
+Chaque partie du système de diagnostic est accompagnée de fonctions de test dédiées, permettant de valider 
+le bon fonctionnement des implémentations. Les cellules de test à compléter (telles que 
+`tester_agent_diagnostic`, `tester_performance_astar`, `tester_convergence_genetique` et 
+`tester_validation_z3`) fournissent un cadre pour évaluer la correction des solutions étudiantes. 
+Ces tests vérifient non seulement la fonctionnalité de base, mais également la robustesse des 
+algorithmes face à des cas limites et des scénarios médicaux complexes. La validation par Z3, 
+en particulier, permet de garantir que les protocoles thérapeutiques respectent toutes les contraintes 
+cliniques et techniques, offrant ainsi une assurance formelle de leur validité avant toute application pratique.
+
+**Lecture ancrée — Architecture du système**
+
+Le système de diagnostic médical implémenté dans ce notebook repose sur une architecture modulaire 
+composée de quatre piliers algorithmiques distincts mais interconnectés. Le premier pilier, l'agent de 
+diagnostic rationnel basé sur des règles cliniques, utilise les données structurées de la classe Patient 
+pour effectuer une première évaluation rapide. Le deuxième pilier, l'algorithme A*, permet une recherche 
+informée dans l'espace des états diagnostiques possibles, optimisant ainsi le chemin vers un diagnostic précis. 
+Le troisième pilier, les algorithmes génétiques, introduit une approche évolutionnaire pour optimiser les 
+paramètres du diagnostic selon des critères multiples. Enfin, le quatrième pilier, le solveur Z3, 
+garantit la validation formelle des protocoles thérapeutiques en vérifiant le respect des contraintes 
+médicales, des interactions médicamenteuses et des standards cliniques. Chaque approche apporte une 
+dimension complémentaire au processus de diagnostic, permettant une évaluation personnalisée et 
+multi-dimensionnelle du diabète de type 2.",,,,,,,,00bde7eaa36f8d32,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb,lecture-perspectives-006,markdown,fr,041b57660d52ffee,"**Lecture ancrée — Perspectives d'Application Clinique**
+
+Ce système de diagnostic médical multi-contraintes illustre comment les techniques d'intelligence artificielle 
+symbolique peuvent être appliquées à des problèmes concrets dans le domaine de la santé. L'intégration de 
+l'agent de diagnostic basé sur des règles, de l'algorithme A*, des algorithmes génétiques et du solveur Z3 
+offre une approche holistique pour le diagnostic du diabète de type 2, prenant en compte à la fois les 
+données quantitatives (glycémie, HbA1c) et les facteurs qualitatifs (symptômes, antécédents). Cette étude de cas 
+montre l'importance de combiner différentes approches algorithmiques pour traiter des problèmes complexes 
+où aucune méthode unique ne peut fournir une solution optimale complète.
+
+###  Analyse Comparative et Conclusion
+
+Complétez le tableau et le paragraphe de recommnadations suivants.
+
+#### Analyse Comparative des 4 Approches
+
+| Approche | Forces | Faiblesses | Cas Idéaux |
+|---------|--------|------------|-------------|
+| Agent Diagnostic |  |  |  |
+| Algorithme A* |   |  |  |
+| Algorithmes Génétiques |  |  |  |
+| Solveur Z3 |  |  |  |
+
+#### Recommandations d'Amélioration
+
+
+
+###  Conclusion
+
+Ce notebook vous a permis d'implémenter un système de diagnostic médical multi-approches combinant :
+
+ **Intelligence Artificielle Exploratoire** : Recherche (A*), heuristiques
+ **Intelligence Artificielle Symbolique** : Règles, contraintes (Z3)
+ **Optimisation** : Algorithmes génétiques
+ **Application Biomédicale** : Diagnostic du diabète de type 2
+
+Les compétences développées sont directement transférables à d'autres domaines nécessitant des systèmes de décision intelligents.
+
+***
+**Retour au sommaire** : [Index CaseStudies](../../README.md)",,,,,,,,041b57660d52ffee,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,a58315c0,markdown,fr,31efb232d44f170e,"L'ontologie ONCO a été chargée avec succès. Les 14 triplets définissent les médicaments d'oncologie, leurs propriétés de toxicité rénale et leurs incompatibilités médicamenteuses, formant la base de connaissances pour les vérifications de prescription.
+",,,,,,,,31efb232d44f170e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,67cc32d8,markdown,fr,1e66b850cbb24916,"L'inférence bayésienne a convergé après 800 itérations. Les probabilités a posteriori indiquent que le patient a un profil Résistant à 92%, Normal à 4% et Sensible à 4%, reflétant l'adaptation du modèle aux doses administrées et aux observations cliniques.
+",,,,,,,,1e66b850cbb24916,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/Oncology-Planning/solution/Oncology-Planning.ipynb,6b6e70ec,markdown,fr,0ed04b2feaa5d3a3,"Le contrat intelligent permet d'enregistrer un plan de traitement avec un hash SHA-256 unique. Les signatures du médecin et du patient sont requises pour autoriser l'administration, et toute modification du plan invalide automatiquement les signatures existantes.
+",,,,,,,,0ed04b2feaa5d3a3,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/solution/SmartGrid-Energy.ipynb,c4b,markdown,fr,c39c30aa9f3c93e4,"Le réseau de démonstration arme trois centrales pilotables — Charbon
+(50–400 MW, 30 EUR/MWh, 900 kg CO2/MWh), Gaz (20–250 MW, 60 EUR/MWh,
+400 kg CO2/MWh) et Hydro (0–150 MW, 10 EUR/MWh, 0 kg CO2/MWh) — soit 800 MW
+de capacité pour une demande brute de 480 à 600 MW. La production renouvelable
+attendue (40 à 150 MW) s'en déduit : la demande nette à couvrir par les
+centrales pilotables varie de 420 à 490 MW selon l'heure.
+
+C'est cette demande nette que la Partie 1 doit satisfaire, heure par heure.
+L'ordre de mérite économique s'y lit déjà : Hydro (10 EUR/MWh) précède Charbon
+(30 EUR/MWh), qui précède Gaz (60 EUR/MWh). Mais Hydro plafonne à 150 MW, et
+Charbon est le seul à pouvoir porter à lui seul les ~300 MW restants.
+",,,,,,,,c39c30aa9f3c93e4,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,lecture-demo-network-001,markdown,fr,e9039b705d870976,"**Lecture ancrée — Jumeau numérique du réseau (4)**
+
+La sortie de cette cellule de démonstration présente la configuration complète du réseau électrique 
+numérique utilisé comme cas d'étude. Le message ""Reseau : 3 centrales, capacite totale 800 MW"" indique 
+que le jumeau numérique comprend trois centrales de production : Charbon (400 MW, coût 30 EUR/MWh, 
+900 kg CO2/MWh), Gaz (250 MW, coût 60 EUR/MWh, 400 kg CO2/MWh) et Hydro (150 MW, coût 10 EUR/MWh, 
+0 kg CO2/MWh). La capacité totale de 800 MW représente la puissance maximale disponible pour répondre 
+à la demande horaire. Les lignes suivantes détaillent, pour chacune des 6 heures de la période d'étude, 
+la demande brute en mégawatts, la production renouvelable prévue avec son incertitude (moyenne et écart-type), 
+et la demande nette à couvrir par les centrales pilotables. Par exemple, à l'heure 0, une demande de 500 MW 
+est partiellement couverte par 80 MW de production renouvelable (avec une incertitude de ±15 MW), 
+laissant une demande nette de 420 MW à satisfaire par les centrales thermiques et hydrauliques.",,,,,,,,e9039b705d870976,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,lecture-multi-objectif-002,markdown,fr,846d737019d7f452,"**Optimisation multi-objectif**
+
+Le problème de dispatch électrique abordé dans ce notebook se caractérise par sa nature multi-objectif, 
+où plusieurs critères doivent être optimisés simultanément. Le premier critère, économique, vise à 
+minimiser le coût total de production en privilégiant les centrales les moins chères (Hydro à 10 EUR/MWh, 
+Charbon à 30 EUR/MWh, Gaz à 60 EUR/MWh). Le deuxième critère, environnemental, cherche à réduire 
+l'empreinte carbone en limitant l'utilisation des centrales les plus polluantes (Charbon à 900 kg CO2/MWh, 
+Gaz à 400 kg CO2/MWh). Le troisième critère, la gestion du risque, prend en compte l'incertitude 
+associée à la production renouvelable, modélisée par des distributions de probabilité avec écart-type. 
+Le réseau de démonstration illustré précédemment montre comment ces différents objectifs peuvent entrer 
+en conflit : la centrale à charbon, bien que la moins chère, est également la plus polluante, tandis que 
+l'hydroélectricité, propre et bon marché, a une capacité limitée. La solution optimale doit donc trouver 
+un compromis entre ces différentes dimensions.",,,,,,,,846d737019d7f452,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,lecture-architecture-003,markdown,fr,7e93f5980c1b1370,"**Architecture en quatre couches**
+
+L'architecture logicielle proposée pour résoudre le problème de SmartGrid repose sur une décomposition 
+en quatre couches fonctionnelles distinctes. La couche 1, dédiée au dispatch sous contraintes, utilise 
+l'outil OR-Tools CP-SAT pour effectuer un unit commitment optimal en tenant compte des contraintes 
+physiques et techniques du réseau. La couche 2, le prévisionniste probabiliste, implémente un modèle 
+bayésien pour estimer l'incertitude associée à la production renouvelable, permettant ainsi une prise de 
+décision éclairée face à la variabilité des énergies vertes. La couche 3, l'optimiseur multi-objectif, 
+aggrège les différents critères (coût, CO2, risque) en un score unique permettant de comparer les 
+stratégies de dispatch entre elles. Enfin, la couche 4, l'analyse comparative, évalue les différentes 
+stratégies en fonction de leur performance sur l'ensemble des critères, fournissant ainsi une base 
+objective pour la prise de décision finale. Cette séparation des préoccupations permet une modularité 
+accrue et facilite la maintenance et l'évolution du système.",,,,,,,,7e93f5980c1b1370,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/CaseStudies/SmartGrid-Energy/student/SmartGrid-Energy.ipynb,lecture-conclusion-004,markdown,fr,7e3effa7137e8831,"**Analyse comparative et prise de décision**
+
+La dernière partie du notebook effectue une analyse comparative des différentes stratégies de dispatch 
+en évaluant leur performance selon les trois critères principaux : coût économique, émission de CO2, et 
+niveau de risque lié à l'incertitude renouvelable. Cette évaluation multi-critères permet de mettre en 
+évidence les compromis inhérents à chaque approche : une stratégie minimisant le coût peut engendrer 
+des émissions de CO2 élevées, tandis qu'une stratégie environnementalement optimale peut être plus 
+coûteuse ou plus risquée. L'analyse comparative fournit aux décideurs une vision globale des 
+conséquences de chaque choix, leur permettant de sélectionner la stratégie la plus adaptée aux priorités 
+du moment (par exemple, minimiser les coûts en période de faible demande, ou réduire l'empreinte carbone 
+lorsque les ressources renouvelables sont abondantes). Cette approche systémique illustre comment 
+l'intelligence artificielle et les méthodes d'optimisation peuvent supporter des décisions complexes 
+dans le domaine de la gestion des réseaux électriques.",,,,,,,,7e3effa7137e8831,,,,,,,,,,,,,,,

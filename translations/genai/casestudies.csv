@@ -222,7 +222,7 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,bb73824e
 
 print(""Fonction create_kernel définie"")
 ",,,,,,,,c2a6fe13eb7d4939,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,6a189386,markdown,fr,afb22df8c744516d,"## Plugin de génération d'images
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,6a189386,markdown,fr,4d30322ee87023cb,"## Plugin de génération d'images
 
 `ImagePlugin` encapsule l'appel à l'instance **ComfyUI** de la série sous forme de **fonction invocable** Semantic Kernel. Le décorateur `@kernel_function(name=""generate_image"", description=""..."")` expose la méthode `generate` comme une capacité que le kernel peut invoquer par nom.
 
@@ -230,7 +230,8 @@ Détails de l'implémentation :
 
 - **transport et authentification** : le client partagé `shared/helpers/comfyui_client.py` lit `COMFYUI_API_URL` et le jeton dans le `.env` de la série — le jeton n'apparaît **jamais** dans une cellule ;
 - **graphe** : le workflow `qwen_image_2_1_text2image.json` (dossier `scripts/genai-stack/workflows/qwen_image_2_1/`) est chargé puis converti du format *UI* au format *API*. C'est ce fichier versionné qui décrit les modèles employés, pas une copie recopiée dans le notebook ;
-- **style appliqué** : chaque image part du préfixe `""Style cartoon comique - ""` suivi de la réplique de l'Âne ;
+- **style appliqué** : chaque image part d'un gabarit qui **nomme le sujet** (un âne gris à quatre pattes, sur ses sabots, longues oreilles, museau allongé, crinière courte) et **écarte explicitement** ce qui a dérivé sans lui — cornes, bois de cervidé, silhouette humaine, bipède — avant d'ajouter la **description visuelle de la scène** en `Scène illustrée : …`. Le gabarit est la constante `GABARIT_ILLUSTRATION` de la cellule suivante ;
+- **séparation texte/image** : Qwen-Image rend en lettrage tout texte cité dans le prompt (mesuré le 2026-10-22 : deux lectures visuelles croisées ont vu les paroles dessinées dans l'image) ; la réplique n'est donc **jamais** passée telle quelle au générateur — `decrire_scene_visuelle` la paraphrase en termes visuels via le LLM du kernel, et le plugin ne reçoit que cette description ; la description est en outre **contrainte à l'âne seul** (quatre pattes, quatre sabots au sol, aucun personnage humain, aucun public) — une scène librement décrite dérive vers la posture cabrée ou l'adversaire du duel (round 3 du 2026-10-22), et la scène retenue est affichée avant chaque image ;
 - **robustesse** : en cas d'échec (instance injoignable, erreur d'exécution côté serveur), l'exception est journalisée (`logger.error`) et la méthode retourne `None` — le débat continue sans illustration plutôt que de s'arrêter.
 
 L'image reçue est écrite dans un fichier temporaire, et c'est son **chemin** que la méthode retourne : la cellule de duel l'affiche ensuite.
@@ -242,12 +243,13 @@ Implementation details:
 
 - **transport and authentication**: the shared client `shared/helpers/comfyui_client.py` reads `COMFYUI_API_URL` and the token from the series' `.env` — the token **never** appears in a cell;
 - **graph**: the workflow `qwen_image_2_1_text2image.json` (folder `scripts/genai-stack/workflows/qwen_image_2_1/`) is loaded then converted from the *UI* format to the *API* format. It is this versioned file that describes the models used, not a copy pasted into the notebook;
-- **applied style**: each image starts from the prefix `""Style cartoon comique - ""` followed by the Donkey's reply;
+- **applied template**: each image starts from a template that **names the subject** (a grey donkey on four legs, standing on its hooves, long ears, elongated muzzle, short mane) and **explicitly rules out** what drifted in without it — horns, antlers, a human silhouette, a biped — before appending the **visual description of the scene** as `Scène illustrée: …`. The template is the `GABARIT_ILLUSTRATION` constant of the next cell;
+- **text/image separation**: Qwen-Image renders as lettering any text quoted in the prompt (measured on 2026-10-22: two cross-checked visual readings saw the lines drawn inside the image); the reply is therefore **never** passed as-is to the generator — `decrire_scene_visuelle` paraphrases it into visual terms through the kernel's LLM, and the plugin only receives that description; the description is further **constrained to the donkey alone** (four legs, four hooves on the ground, no human character, no audience) — a freely described scene drifts towards the rearing posture or the duel's opponent (round 3 of 2026-10-22), and the retained scene is displayed before each image;
 - **robustness**: on failure (unreachable instance, server-side execution error), the exception is logged (`logger.error`) and the method returns `None` — the debate continues without an illustration rather than stopping.
 
 The received image is written to a temporary file, and it is its **path** that the method returns: the duel cell then displays it.",,,,,"## Плагин генерации изображений
-Реализация функциональности создания иллюстраций",,afb22df8c744516d,fc78248b4cd6045f,,,,,1008e444c53f68eb,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,644aac65,code,fr,c08776ac50c599e1,"# Plugin de generation d'images : instance ComfyUI de la serie (Qwen-Image 2.1).
+Реализация иллюстраций: шаблон с явным описанием субъекта, текст отделён от изображения",,4d30322ee87023cb,12c991c122a86188,,,,,144920b2e9ad4a03,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,644aac65,code,fr,16b5c731f3304eed,"# Plugin de generation d'images : instance ComfyUI de la serie (Qwen-Image 2.1).
 import json
 import sys
 import tempfile
@@ -278,6 +280,54 @@ CHEMIN_WORKFLOW = comfyui.dossier_workflows_qwen_image_2_1() / ""qwen_image_2_1_
 WORKFLOW_IMAGE = comfyui.ui_vers_api(comfyui.charger_workflow_ui(CHEMIN_WORKFLOW))
 GRAINE_IMAGE = 12345
 
+# Sujet epingle. Un prompt libre (« style cartoon » + la replique seule) laisse le
+# modele choisir le sujet : mesure du 2026-10-22, il a produit un ane a bois de
+# cervide puis une silhouette bipede. Le gabarit nomme donc le sujet et ecarte
+# explicitement ce qui a derive, AVANT la description de la scene.
+GABARIT_ILLUSTRATION = (
+    ""Style cartoon comique, dessin animé pour enfants. ""
+    ""Un âne gris vu de profil, strictement quadrupède : les quatre sabots ""
+    ""posés au sol et les quatre pattes portant le poids, longues oreilles, ""
+    ""museau allongé, crinière courte. Aucune pose cabrée, aucun appui sur ""
+    ""les pattes arrière seules, aucune corne, aucun bois de cervidé, ""
+    ""aucune silhouette humaine, pas de bipède. Aucun texte, aucune ""
+    ""inscription, aucun lettrage dans l'image : la réplique ne doit pas ""
+    ""y être écrite. ""
+    ""Scène illustrée : {scene}""
+)
+
+
+# Separation texte/image : Qwen-Image rend en lettrage tout texte cite
+# dans le prompt. Mesure du 2026-10-22 (deux QA visuelles croisees) : les
+# paroles passees telles quelles etaient dessinees ; la scene est donc
+# paraphrasee visuellement par le LLM du kernel, sans recopier la replique.
+PROMPT_SCENE = (
+    ""Tu prépares une illustration où NE FIGURE QUE L'ÂNE. Décris en UNE ""
+    ""phrase courte, uniquement en termes visuels, ce que fait l'Âne dans ""
+    ""la réplique ci-dessous. Contraintes : l'âne est le seul personnage ""
+    ""(aucun humain, aucune silhouette debout, aucun public, aucun autre ""
+    ""animal), strictement à quatre pattes, les quatre sabots au sol, ""
+    ""aucune pose cabrée ni redressée ; seuls l'âne et le décor (sol, ""
+    ""rideau, lumière) apparaissent. Ne recopie aucun mot de la réplique : ""
+    ""aucune citation. Réponds en français, en une seule phrase, sans ""
+    ""guillemets.\n\n""
+    ""Réplique :\n{replique}""
+)
+
+
+async def decrire_scene_visuelle(kernel, replique):
+    """"""Renvoie une description visuelle de la scène, sans aucun texte
+    recopié de la réplique — le générateur dessine le texte qu'on cite.
+    """"""
+    resultat = await kernel.invoke_prompt(
+        prompt=PROMPT_SCENE.format(replique=replique)
+    )
+    valeur = getattr(resultat, ""value"", resultat)
+    if isinstance(valeur, list):
+        valeur = """".join(getattr(m, ""content"", str(m)) or """" for m in valeur)
+    scene = "" "".join(str(valeur).split())
+    return scene or ""l'âne gris, seul, à quatre pattes, chante sur une scène de théâtre vide""
+
 
 class ImagePlugin:
     def __init__(self, client, workflow, graine=GRAINE_IMAGE):
@@ -285,17 +335,19 @@ class ImagePlugin:
         self.workflow = workflow
         self.graine = graine
 
-    @kernel_function(name=""generate_image"", description=""Genere une illustration via l'instance ComfyUI de la serie"")
+    @kernel_function(name=""generate_image"", description=""Genere une illustration via l'instance ComfyUI de la serie ; context = description visuelle de la scene, jamais la replique mot a mot"")
     async def generate(self, context: str) -> str:
         try:
             # Copie : chaque replique part du graphe versionne, sans le modifier.
             prompt_api = json.loads(json.dumps(self.workflow))
             comfyui.noeud_de_classe(prompt_api, ""CLIPTextEncode"")[""inputs""][""text""] = (
-                f""Style cartoon comique - {context}""
+                GABARIT_ILLUSTRATION.format(scene=context)
             )
             comfyui.noeud_de_classe(prompt_api, ""KSampler"")[""inputs""][""seed""] = self.graine
             prompt_id = self.client.queue_prompt(prompt_api)
-            resultat = self.client.wait_for_completion(prompt_id, timeout=900)
+            # 1800 s : une generation seule mesuree a 568 s le 2026-10-22,
+            # et l'instance est partagee -- une requete en file depasse 900 s.
+            resultat = self.client.wait_for_completion(prompt_id, timeout=1800)
             images = [im for sortie in resultat.get(""outputs"", {}).values()
                       for im in sortie.get(""images"", [])]
             if not images:
@@ -304,7 +356,7 @@ class ImagePlugin:
             donnee = self.client.get_output_file(
                 images[0][""filename""], images[0].get(""subfolder"", """"), images[0].get(""type"", ""output"")
             )
-            chemin = Path(tempfile.gettempdir()) / f""barbie_ane_{self.graine}.png""
+            chemin = Path(tempfile.gettempdir()) / f""barbie_ane_{prompt_id}.png""
             chemin.write_bytes(donnee)
             return str(chemin)
         except Exception as e:
@@ -313,7 +365,7 @@ class ImagePlugin:
 
 
 print(""Classe ImagePlugin définie (instance ComfyUI)"")
-",,,,,,,,c08776ac50c599e1,,,,,,,,,,,,,,,
+",,,,,,,,16b5c731f3304eed,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,82f29e01,markdown,fr,c76d4abc925c544f,"## Configuration des agents
 
 Chaque duelliste est un `ChatCompletionAgent` avec son **propre kernel** (`kernel_barbie`, `kernel_ane`) et des instructions système distinctes :
@@ -450,26 +502,26 @@ class DebateTerminationStrategy(TerminationStrategy):
 
 print(""Stratégie de terminaison du débat configurée"")
 ",,,,,,,,54b583b90a70eac1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,8514a144,markdown,fr,3a888b601eceb6e0,"## Lancement du débat
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,8514a144,markdown,fr,dabfa0e3fe6d293f,"## Lancement du débat
 
 L'`AgentGroupChat` rassemble les deux agents (`barbie`, `ane`) et la stratégie de terminaison définie plus haut. L'appel `add_chat_message` amorce la conversation — Semantic Kernel exige un historique non vide — puis `group_chat.invoke()` fait tourner le duel :
 
 - chaque agent produit sa réplique à tour de rôle, conformément à la stratégie de sélection séquentielle ;
-- **spécificité pédagogique** : à chaque réplique de l'Âne, le code invoque le plugin `image_gen` (`generate_image`) avec le contenu de la réplique en contexte, puis affiche l'image renvoyée par l'instance ComfyUI (`width=320`) ;
+- **spécificité pédagogique** : à chaque réplique de l'Âne, le code fait d'abord paraphraser la réplique en **description visuelle** par `decrire_scene_visuelle`, contrainte à l'âne seul à quatre pattes (une scène librement décrite dérive vers la posture cabrée ou l'adversaire du duel) — le générateur rend en lettrage tout texte cité dans le prompt, la réplique ne lui est donc jamais passée telle quelle — puis invoque le plugin `image_gen` (`generate_image`) avec cette description en contexte et affiche l'image renvoyée par l'instance ComfyUI (`width=320`) ;
 - les répliques sont aussi conservées dans `repliques_du_duel` : les exercices de la section 9 les réutilisent au lieu de relancer un duel.
 
-C'est ici que se matérialise la boucle *parler puis illustrer* : le texte d'un agent devient l'argument d'un appel d'image, reliant le service de conversation et l'instance ComfyUI dans le même débat. La génération d'une illustration prend quelques dizaines de secondes — c'est le poste le plus lent du montage.
+C'est ici que se matérialise la boucle *parler puis illustrer* : la réplique d'un agent est d'abord résumée en scène visuelle, qui devient l'argument de l'appel d'image, reliant le service de conversation et l'instance ComfyUI dans le même débat. La génération d'une illustration prend **plusieurs minutes** — le chargement des modèles puis les étapes de diffusion de ComfyUI dominent largement le reste ; c'est de loin le poste le plus lent du montage.
 ","## Launching the debate
 
 The `AgentGroupChat` gathers the two agents (`barbie`, `ane`) and the termination strategy defined above. The `add_chat_message` call primes the conversation — Semantic Kernel requires a non-empty history — then `group_chat.invoke()` runs the duel:
 
 - each agent produces its reply in turn, in accordance with the sequential selection strategy;
-- **pedagogical specificity**: on each of the Donkey's replies, the code invokes the `image_gen` plugin (`generate_image`) with the reply's content as context, then displays the image returned by the ComfyUI instance (`width=320`);
+- **pedagogical specificity**: on each of the Donkey's replies, the code first has the reply paraphrased into a **visual description** by `decrire_scene_visuelle`, constrained to the donkey alone on four legs (a freely described scene drifts towards the rearing posture or the duel's opponent) — the generator renders as lettering any text quoted in the prompt, so the reply is never passed to it as-is — then invokes the `image_gen` plugin (`generate_image`) with that description as context and displays the image returned by the ComfyUI instance (`width=320`);
 - the replies are also kept in `repliques_du_duel`: the exercises in section 9 reuse them instead of restarting a duel.
 
-This is where the *speak then illustrate* loop materializes: one agent's text becomes the argument of an image call, linking the conversation service and the ComfyUI instance within the same debate. Generating an illustration takes a few tens of seconds — it is the slowest part of the setup.",,,,,"## Запуск обсуждения
-Выполнение беседы с генерацией изображений",,3a888b601eceb6e0,e947551487729651,,,,,22315379a5ede6d1,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,83e8879f,code,fr,8989900077711a64,"repliques_du_duel = []
+This is where the *speak then illustrate* loop materializes: an agent's reply is first summarized into a visual scene, which becomes the argument of the image call, linking the conversation service and the ComfyUI instance within the same debate. Generating an illustration takes **several minutes** — model loading followed by ComfyUI's diffusion steps dominate the rest by far; it is by far the slowest part of the setup.",,,,,"## Запуск обсуждения
+Беседа с иллюстрированием: реплика сначала пересказывается как визуальная сцена, затем генерируется изображение",,dabfa0e3fe6d293f,9a0802749e5e6642,,,,,6e89da073ecbc401,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,83e8879f,code,fr,c5c0a94022439722,"repliques_du_duel = []
 
 async def run_debate():
     logger.info(f""Contrainte active : {contrainte_choisie[0]}"")
@@ -490,10 +542,15 @@ async def run_debate():
 
         if msg.name == ""Ane_Shrek"":
             try:
+                # Separation replique/image : le generateur rend en lettrage
+                # tout texte cite dans le prompt (mesure du 2026-10-22) ; la
+                # scene est decrite visuellement, sans recopier la replique.
+                scene = await decrire_scene_visuelle(ane.kernel, msg.content)
+                print(f""Scène visuelle envoyée au générateur : {scene}"")
                 image_result = await ane.kernel.invoke(
                     function_name=""generate_image"",
                     plugin_name=""image_gen"",
-                    arguments=KernelArguments(context=msg.content)
+                    arguments=KernelArguments(context=scene)
                 )
                 chemin = str(image_result) if image_result else """"
                 if chemin and os.path.exists(chemin):
@@ -504,7 +561,7 @@ async def run_debate():
                 logger.warning(f""Image generation skipped: {e}"")
 
 await run_debate()
-",,,,,,,,8989900077711a64,,,,,,,,,,,,,,,
+",,,,,,,,c5c0a94022439722,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,c827dcb0,markdown,fr,4ddd7d5605c7828e,"## Conclusion
 
 Ce notebook a démontré un **débat multi-agents contraint** avec Semantic Kernel : deux `ChatCompletionAgent` (Barbie et l'Âne de Shrek) s'affrontent en respectant une contrainte linguistique tirée au sort, et l'Âne illustre ses répliques par des images générées sur l'instance ComfyUI de la série.
@@ -2634,3 +2691,6 @@ MyIA.AI.Notebooks/GenAI/CaseStudies/Fort-Boyard/fort-boyard-python.ipynb,f721996
 La sortie `Systeme de score configure avec succes !` confirme que la fonction `evaluer_partie` est définie et prête à mesurer les performances du devineur sur l'historique de la partie.","### Reading the result: scoring system configured
 
 The output `Systeme de score configure avec succes !` confirms that the `evaluer_partie` function is defined and ready to measure the guesser's performance on the game history.",,,,,,,81e282f7d1155824,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/barbie-schreck.ipynb,870ef44c,code,fr,d8cfd07b7b0f3965,"# Parameters
+BATCH_MODE = ""true""
+",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
