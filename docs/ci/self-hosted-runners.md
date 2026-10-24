@@ -440,6 +440,37 @@ Le résiduel ci-dessus est refermé le 2026-10-03 : image reconstruite (`docker 
 
 Le workflow de contrôle vit sur une branche jetable (`ci/16654-seed-a23-control`, supprimée après capture) : le garde seed interdit par design la présence de `setup-java` sur `main`, ce qui est exactement le contrôle négatif voulu. Pour rejouer : reconstruire l'image, pousser une branche portant deux jobs `runs-on: [self-hosted, <label unique>]` (action seedée épinglée au SHA du build / action absente du seed), enregistrer un conteneur éphémère avec ce label, puis lire `Worker_*.log` et comparer le cache avant/après.
 
+### Magasin d'objets partagé — le miroir du volume toolcache (#18225)
+
+Le volume `_work` persistant par slot (#14285) a rendu le slot **chaud** nominal, mais il ne dit rien du **retour au froid** : un clone purgé, un slot neuf, un `_work` écarté par le garde d'intégrité redescendent l'historique entier en HTTPS — **5,49 Gio mesurés** par retour au froid, et ~2 353 `_work` écartés en neuf jours sur le pool persistant de po-2026. Le miroir bare local casse ce coût : l'historique traverse le réseau **une fois pour N slots**.
+
+La recette vient de `persist/po-2026/pool.sh` (où elle tourne sur l'hôte) ; ici le volume est un **volume docker**, que l'hôte ne voit pas — donc les gestes git s'exécutent dans un conteneur jetable de la **même image** (git y est, l'uid est `runner` comme les slots, et le volume toolcache lui appartient déjà). Deux moitiés :
+
+| Moitié | Où | Ce qu'elle fait |
+|---|---|---|
+| **Productrice** | `supervise.sh` (`mirror_loop`, lancé par `start` et `lean`) | `bootstrap` une fois (geste **hors bande**), puis refresh incrémental (`fetch --prune`), throttle 300 s tenu par un horodatage **dans le volume** + `flock` non bloquant — deux boucles (pool docker, pool lean) ne font donc qu'un fetch par période |
+| **Consommatrice** | `entrypoint.sh` (bloc `TEST-ENTRYPOINT-MIRROR`, avant le garde `work_cache`) | `alternates` sur chaque clone présent, puis semis du `_work` quand il n'existe pas : `clone --shared --no-checkout` (zéro objet copié, instantané) puis `origin` **remis sur HTTPS** |
+
+Trois propriétés qui ne sont pas des détails :
+
+- **Fail-open, y compris après un semis.** Miroir absent et bootstrap désactivé (défaut) : le bloc consommateur rend 0, n'ajoute rien, et **retire** les lignes d'`alternates` qui désignent un miroir disparu. Sans ce retrait, un slot semé **avant** la disparition gardait un `alternates` pendant et toutes ses commandes git rendaient `rc=128` (`unable to normalize alternate object path`) — le garde `work_cache` ne le voit pas, car il lit les refs et jamais la résolvabilité des objets, et son repack `-adl` rend `rc=0`. Après retrait, `alternates` vide → `wch_repack_flags` retombe sur `-ad` : l'état exact d'avant #18225.
+- **`--prune` ne supprime aucun objet — mais pas par « absence de gc ».** Mesure (#22326, revue 5637796595) : `git fetch` **déclenche bien** `git maintenance run --auto --detach` sur le miroir (3 occurrences dans un `GIT_TRACE`). La sûreté vient de la **fenêtre de grâce de 30 jours de `gc --auto`** : même forcé à `gc.auto=1`, il **conserve** un objet injoignable vieux de 30 jours, alors qu'un `git gc` **complet** le prune dans le même dépôt au même objet. Conséquence opérateur : **ne jamais** lancer `git gc` ni `maintenance --schedule` sur le miroir — c'est ce geste-là qui casserait les slots emprunteurs, pas le `fetch --prune`.
+- **Le repack de maintenance ne rapatrie pas les objets empruntés.** `work_cache_health.sh` choisit ses drapeaux (`wch_repack_flags`) : `-adl` dès qu'un alternates est posé, `-ad` sinon. Sans le `-l`, un `repack -a` parcourt les objets joignables *alternates compris* et les **copie** dans le volume du slot — le miroir deviendrait un coût fixe au lieu d'une économie. Le couple est prouvé par un témoin : même fixture, `-adl` ne copie pas, `-ad` copie (`test_work_cache_health.sh`).
+
+**Garde de débit git.** Le superviseur propage `GIT_HTTP_LOW_SPEED_LIMIT=1024` / `GIT_HTTP_LOW_SPEED_TIME=90` à **tous** ses conteneurs (slots, waiters, miroir). Un transfert qui s'effondre à quelques centaines d'octets par seconde ne rend pas la main : il stalle jusqu'au timeout du job, qui meurt sans qu'aucune ligne ne nomme le réseau. Ces deux variables transforment le stall en échec **rapide**, que le retry du runner sait traiter. Le seuil est sous le plancher mesuré de codeload (1 936 à 39 530 o/s), donc il ne coupe pas un débit normal.
+
+**Bootstrap — geste explicite, une fois par machine.** Le clone intégral est lourd : il est refusé en dessous de `COURSIA_RUNNER_MIRROR_MIN_FREE_MB` (défaut 8192) et ne part jamais tout seul.
+
+```bash
+supervise.sh mirror bootstrap   # une fois, hors bande (copie integrale)
+supervise.sh mirror status      # taille, refs, dernier refresh, emprunteurs
+supervise.sh mirror refresh     # forcage ponctuel (le throttle s'applique)
+```
+
+`COURSIA_RUNNER_MIRROR_BOOTSTRAP=1` laisse le premier tick le faire à la place, sous la même garde d'espace. `COURSIA_RUNNER_MIRROR=0` coupe la boucle (ni l'entrypoint ni `mirror` ne sont concernés).
+
+**Déploiement.** `entrypoint.sh` change : l'image doit être **reconstruite** (le garde de fraîcheur compare l'épinglé à l'embarqué, cf #16134) et les slots roulés par **drain** — jamais un restart du superviseur avec des jobs en vol. Le miroir lui-même n'est pas nécessaire au premier démarrage : sans lui, le parc est exactement dans son état d'avant.
+
 ### Mode persistent — le conteneur qui retire le maillon superviseur (#14329)
 
 Le superviseur hôte n'existe que parce que les runners sont `--ephemeral` : un runner éphémère traite **au plus un job** puis se désenregistre, donc un processus hôte doit reminter un token et relancer un conteneur à chaque job — et ce processus hôte est exactement le maillon qui meurt au logoff (mesure du reboot 2026-09-02 : flotte retombée à 1 runner, tous les `PR gate` gelés en STARVED). L'idée user : « un conteneur en autorestart qui fait le polling tout seul ».

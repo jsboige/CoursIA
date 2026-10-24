@@ -168,6 +168,49 @@ TOOLCACHE_MOUNT="${COURSIA_RUNNER_TOOLCACHE_MOUNT:-/opt/hostedtoolcache}"
 WORK_VOLUME_PREFIX="${COURSIA_RUNNER_WORK_VOLUME_PREFIX:-coursia-runner-work}"
 WORK_MOUNT="${COURSIA_RUNNER_WORK_MOUNT:-/home/runner/_work}"
 
+# Magasin d'objets partage (#18225) : portage de la recette
+# persist/po-2026/pool.sh au pool docker. Le miroir bare vit DANS le volume
+# toolcache (deja persistant, deja monte par tous les slots ET les waiters) :
+# les repos de slot l'empruntent par alternates, donc l'historique traverse le
+# reseau une fois pour N slots au lieu d'une fois par slot froid (5,49 Gio
+# mesures par clone froid). Le superviseur tient la moitie PRODUCTRICE
+# (bootstrap une fois, refresh incremental), l'entrypoint la moitie
+# CONSOMMATRICE (alternates + semis du _work).
+#
+# FAIL-OPEN : miroir absent + bootstrap desactive => rien ne se passe, et le
+# parc se comporte exactement comme avant cette section.
+MIRROR_ENABLE="${COURSIA_RUNNER_MIRROR:-1}"
+MIRROR_PATH="${COURSIA_RUNNER_MIRROR_PATH:-$TOOLCACHE_MOUNT/coursia-mirror.git}"
+MIRROR_REMOTE="${COURSIA_RUNNER_MIRROR_REMOTE:-https://github.com/jsboige/CoursIA.git}"
+MIRROR_HEAD="${COURSIA_RUNNER_MIRROR_HEAD:-main}"
+# Throttle du refresh. Il est tenu par un horodatage DANS le volume, pas par une
+# variable du superviseur : deux boucles (pool docker et pool lean) ou deux
+# superviseurs de la meme machine ne font alors qu'un fetch par periode, au lieu
+# d'un par boucle.
+MIRROR_REFRESH_EVERY="${COURSIA_RUNNER_MIRROR_REFRESH_EVERY:-300}"
+# Bootstrap DESACTIVE par defaut : c'est une action hors bande, lourde (copie
+# integrale de l'historique), et elle n'a de sens qu'une fois par machine. Un
+# `supervise.sh mirror bootstrap` l'explicite ; `COURSIA_RUNNER_MIRROR_BOOTSTRAP=1`
+# la laisse se faire d'elle-meme au premier tick, sous garde d'espace libre.
+MIRROR_BOOTSTRAP="${COURSIA_RUNNER_MIRROR_BOOTSTRAP:-0}"
+MIRROR_MIN_FREE_MB="${COURSIA_RUNNER_MIRROR_MIN_FREE_MB:-8192}"
+# Le conteneur du miroir ne porte PAS le label coursia-ci=1 : il ne doit pas
+# entrer dans l'arithmetique memoire des slots (assert_memory_budget), qui
+# dimensionne une flotte de jobs. Il porte son propre plafond a la place.
+MIRROR_MEMORY="${COURSIA_RUNNER_MIRROR_MEMORY:-1g}"
+MIRROR_PIDS="${COURSIA_RUNNER_MIRROR_PIDS:-256}"
+
+# Garde de DEBIT git (#18225 point 3). Un transfert qui s'effondre a quelques
+# centaines d'octets par seconde ne rend pas la main : il stalle jusqu'au
+# timeout du job, et le job meurt sans qu'aucune ligne ne nomme le reseau.
+# `http.lowSpeedLimit`/`lowSpeedTime` (via GIT_*) transforment ce stall en echec
+# RAPIDE, que le retry du runner comme le fetch suivant savent traiter.
+# 1024 o/s sur 90 s : mesure du 2026-09-06, codeload servait 1 936 a 39 530 o/s,
+# donc le seuil est sous le plancher observe et ne coupe pas un debit normal.
+GIT_LOW_SPEED_LIMIT="${COURSIA_RUNNER_GIT_LOW_SPEED_LIMIT:-1024}"
+GIT_LOW_SPEED_TIME="${COURSIA_RUNNER_GIT_LOW_SPEED_TIME:-90}"
+GIT_NET_ARGS=(-e "GIT_HTTP_LOW_SPEED_LIMIT=$GIT_LOW_SPEED_LIMIT" -e "GIT_HTTP_LOW_SPEED_TIME=$GIT_LOW_SPEED_TIME")
+
 # Pool d'attente PR-gate (#13363, 2026-09-02) : le PR gate agrege jusqu'a
 # 35 min en polling, occupant un slot d'execution pendant que les jobs reels
 # attendent derriere. Le label DEDIE `coursia-waiter` (JAMAIS coursia-linux)
@@ -1719,6 +1762,178 @@ fetch_token() {
 # dependent du pool (linux genrique, lean). Les volumes toolcache/_work restent
 # la regle pour les pools D'EXECUTION (les waiters ont leur propre boucle sans
 # volume).
+# --- Magasin d'objets partage : moitie PRODUCTRICE (#18225) ------------------
+#
+# La recette vient de persist/po-2026/pool.sh, ou elle tourne sur l'hote. Ici le
+# volume est un volume docker : l'hote ne le voit pas, donc les gestes git
+# s'executent dans un conteneur jetable de la MEME image (git y est, l'uid est
+# `runner` comme les slots, et le volume toolcache lui est deja accessible en
+# ecriture). C'est la seule facon de lire et d'ecrire ce volume sans monter un
+# second chemin, qui divergerait du premier.
+#
+# DEVIATION ASSUMEE vs pool.sh : refspec BORNE a heads+tags. La recette source
+# faisait `+refs/*:refs/*`, ce qui aspire aussi refs/pull/* -- un ensemble qui
+# croit a chaque PR et ne se purge jamais vraiment. Les tetes de PR n'ont pas
+# besoin du miroir : actions/checkout les fetch lui-meme (refspec explicite), et
+# le miroir sert a ce qu'il NEGOCIE en tenant deja l'historique, pas a porter
+# les refs.
+#
+# PRUNE ET OBJETS : `--prune` ne retire que des REFS. Aucun `gc --prune` n'est
+# jamais lance sur le miroir, donc un objet reste dans ses packs meme si la ref
+# qui l'a fait entrer a disparu -- un slot qui emprunte cet objet continue de le
+# resoudre. C'est la propriete qui rend le prune sur, et elle tient a l'ABSENCE
+# de gc, pas a la prudence de l'appelant.
+mirror_one_shot() {  # $1 = bootstrap|refresh|status
+  local action="${1:-refresh}" script
+  script="$(cat <<'MIRROR_SH'
+set -u
+MIRROR="$COURSIA_RUNNER_MIRROR_PATH"
+REMOTE="$COURSIA_RUNNER_MIRROR_REMOTE"
+HEADREF="refs/heads/$COURSIA_RUNNER_MIRROR_HEAD"
+ACTION="$COURSIA_RUNNER_MIRROR_ACTION"
+EVERY="$COURSIA_RUNNER_MIRROR_REFRESH_EVERY"
+FREE_MB="$COURSIA_RUNNER_MIRROR_MIN_FREE_MB"
+PARENT="$(dirname "$MIRROR")"
+STAMP="$PARENT/.objects-mirror.stamp"
+LOCKF="$PARENT/.objects-mirror.lock"
+
+mkdir -p "$PARENT" 2>/dev/null || true
+
+now="$(date +%s)"
+last=0
+if [ -f "$STAMP" ]; then
+  last="$(stat -c %Y "$STAMP" 2>/dev/null || echo 0)"
+  case "$last" in ''|*[!0-9]*) last=0 ;; esac
+fi
+
+# THROTTLE EN PREMIER, et avant meme de regarder si le miroir existe. L'ordre
+# n'est pas cosmetique : quand le miroir est absent et le bootstrap desactive,
+# sortir avant le throttle faisait relancer un conteneur a CHAQUE tick (une
+# boucle de superviseur = un conteneur toutes les 5 min, pour rien). Un
+# `bootstrap` explicite n'est jamais throttle : c'est un geste d'operateur.
+if [ "$ACTION" = "refresh" ] && [ $(( now - last )) -lt "$EVERY" ]; then
+  exit 0
+fi
+
+if [ ! -d "$MIRROR/objects" ]; then
+  if [ "$ACTION" = "bootstrap" ] || [ "$COURSIA_RUNNER_MIRROR_BOOTSTRAP" = "1" ]; then
+    free="$(df -Pm "$PARENT" 2>/dev/null | awk 'NR==2{print $4}')"
+    case "$free" in ''|*[!0-9]*) free=0 ;; esac
+    if [ "$free" -lt "$FREE_MB" ]; then
+      echo "miroir: bootstrap REFUSE -- ${free} Mo libres sous $PARENT < ${FREE_MB} requis (COURSIA_RUNNER_MIRROR_MIN_FREE_MB)"
+      exit 0
+    fi
+    echo "miroir: bootstrap vers $MIRROR (une seule fois par machine)"
+    t0="$(date +%s)"
+    if [ -e "$MIRROR" ]; then
+      mv "$MIRROR" "$MIRROR.incomplete-$(date -u +%Y%m%dT%H%M%SZ)" 2>/dev/null \
+        || { echo "miroir: $MIRROR existe et ne peut pas etre ecarte -- bootstrap saute"; exit 0; }
+    fi
+    if ! git init --quiet --bare "$MIRROR"; then
+      echo "miroir: init ECHOUE -- le parc reste sur son comportement d'avant #18225"
+      exit 0
+    fi
+    git --git-dir="$MIRROR" remote add origin "$REMOTE" 2>/dev/null \
+      || git --git-dir="$MIRROR" remote set-url origin "$REMOTE" 2>/dev/null
+    if git --git-dir="$MIRROR" fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'; then
+      git --git-dir="$MIRROR" symbolic-ref HEAD "$HEADREF" 2>/dev/null || true
+      touch "$STAMP" 2>/dev/null || true
+      echo "miroir: bootstrap OK en $(( $(date +%s) - t0 ))s"
+    else
+      echo "miroir: bootstrap ECHOUE -- le parc reste sur son comportement d'avant #18225"
+      mv "$MIRROR" "$MIRROR.incomplete-$(date -u +%Y%m%dT%H%M%SZ)" 2>/dev/null || true
+      exit 0
+    fi
+  else
+    # L'horodatage est pose MEME ici : sans lui, une machine sans miroir
+    # relancerait un conteneur a chaque tick uniquement pour relire ce constat.
+    touch "$STAMP" 2>/dev/null || true
+    echo "miroir: absent ($MIRROR) et bootstrap desactive -- comportement d'avant #18225"
+    exit 0
+  fi
+fi
+
+if [ "$ACTION" = "status" ]; then
+  echo "miroir: $MIRROR"
+  echo "  bare: $(git --git-dir="$MIRROR" rev-parse --is-bare-repository 2>/dev/null)"
+  echo "  refs: $(git --git-dir="$MIRROR" for-each-ref --format=x 2>/dev/null | wc -l | tr -d ' ')"
+  echo "  taille: $(du -sh "$MIRROR" 2>/dev/null | awk '{print $1}')"
+  echo "  dernier refresh: $([ -f "$STAMP" ] && date -Is -r "$STAMP" 2>/dev/null || echo jamais)"
+  # PAS de compte d'emprunteurs ici : ce conteneur ne monte aucun volume _work,
+  # donc il lirait zero et l'ecrirait comme un fait. Le compte se mesure depuis
+  # l'interieur d'un slot, ou par `grep -l` sur les volumes qui les portent.
+  exit 0
+fi
+
+# flock non bloquant : une refresh concurrente (autre boucle, relance
+# interactive) est SAUTEE, pas attendue. Le verrou vit dans le volume, donc il
+# est partage par tous les conteneurs de la machine -- et par l'hote si un
+# pool.sh y tourne encore sur le meme volume.
+# `flock` absent (util-linux non installe, ou hote Git Bash) : on continue SANS
+# verrou et on le dit. Le sauter serait le mauvais repli -- il transforme une
+# protection optionnelle en panne silencieuse de la fonction entiere, et c'est
+# exactement le genre de « garde » qui rend un organe muet.
+if command -v flock >/dev/null 2>&1; then
+  exec 8>"$LOCKF" || exit 0
+  flock -n 8 || exit 0
+else
+  echo "miroir: flock indisponible -- refresh sans verrou (une seule boucle attendue sur cet hote)"
+fi
+# Horodatage AVANT le fetch : une panne reseau persistante ne doit pas se
+# transformer en marteau a chaque tick (meme choix que la recette source).
+touch "$STAMP" 2>/dev/null || true
+if git --git-dir="$MIRROR" fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' 2>&1; then
+  echo "miroir: rafraichi ($(date -Is))"
+else
+  echo "miroir: refresh echoue -- le parc continue sur l'etat precedent"
+fi
+exit 0
+MIRROR_SH
+)"
+  docker run --rm \
+    --name "coursia-runner-mirror-$$" \
+    --memory="$MIRROR_MEMORY" --pids-limit="$MIRROR_PIDS" \
+    --label coursia-ci-mirror=1 \
+    --security-opt=no-new-privileges \
+    -v "$TOOLCACHE_VOLUME":"$TOOLCACHE_MOUNT" \
+    -e RUNNER_TOOL_CACHE="$TOOLCACHE_MOUNT" \
+    -e COURSIA_RUNNER_MIRROR_PATH="$MIRROR_PATH" \
+    -e COURSIA_RUNNER_MIRROR_REMOTE="$MIRROR_REMOTE" \
+    -e COURSIA_RUNNER_MIRROR_HEAD="$MIRROR_HEAD" \
+    -e COURSIA_RUNNER_MIRROR_ACTION="$action" \
+    -e COURSIA_RUNNER_MIRROR_REFRESH_EVERY="$MIRROR_REFRESH_EVERY" \
+    -e COURSIA_RUNNER_MIRROR_MIN_FREE_MB="$MIRROR_MIN_FREE_MB" \
+    -e COURSIA_RUNNER_MIRROR_BOOTSTRAP="$MIRROR_BOOTSTRAP" \
+    "${GIT_NET_ARGS[@]}" \
+    --entrypoint bash "$IMAGE" -c "$script" >>"$STATE_DIR/objects-mirror.log" 2>&1
+}
+
+# Attente BORNEE : un `sleep 300` rendrait un `stop` inoperant pendant cinq
+# minutes (les boucles de slot, elles, testent STOP_FILE a chaque tour). Le pas
+# est court pour que l'arret gracieux reste gracieux ET rapide.
+mirror_wait() {  # $1 = secondes a couvrir
+  local left="${1:-0}" step="${COURSIA_RUNNER_TEST_SLEEP:-5}"
+  case "$left" in ''|*[!0-9]*) left=0 ;; esac
+  case "$step" in ''|*[!0-9]*|0) step=5 ;; esac
+  while [ "$left" -gt 0 ] && [ ! -f "$STOP_FILE" ]; do
+    sleep "$step"
+    left=$(( left - step ))
+  done
+}
+
+mirror_loop() {
+  [ "$MIRROR_ENABLE" = "1" ] || { echo "[miroir] desactive (COURSIA_RUNNER_MIRROR=0)"; return 0; }
+  rotate_log "$STATE_DIR/objects-mirror.log"
+  echo "[miroir] boucle demarree : $MIRROR_PATH <- $MIRROR_REMOTE (throttle ${MIRROR_REFRESH_EVERY}s, bootstrap=$MIRROR_BOOTSTRAP)"
+  while [ ! -f "$STOP_FILE" ]; do
+    # Un echec de miroir n'est JAMAIS fatal : le parc fonctionne sans lui, et
+    # la boucle reessaie au tick suivant (le throttle s'applique quand meme).
+    mirror_one_shot refresh || true
+    mirror_wait "$MIRROR_REFRESH_EVERY"
+  done
+  echo "[miroir] arret demande, boucle terminee"
+}
+
 slot_loop() {
   local slot="$1" name="$2" labels="$3" image="$4" cpus="$5" memory="$6" pids="$7"
   local vol_prefix="${8:-$WORK_VOLUME_PREFIX}"
@@ -1820,6 +2035,9 @@ slot_loop() {
       -v "${vol_prefix}-${slot}":"$WORK_MOUNT" \
       -e RUNNER_TOOL_CACHE="$TOOLCACHE_MOUNT" \
       -e RUNNER_WORK_CACHE_PACK_THRESHOLD="$CACHE_PACK_THRESHOLD" \
+      -e COURSIA_RUNNER_MIRROR_PATH="$MIRROR_PATH" \
+      -e COURSIA_RUNNER_MIRROR_REMOTE="$MIRROR_REMOTE" \
+      "${GIT_NET_ARGS[@]}" \
       -e ACTIONS_RUNNER_INPUT_TOKEN="$token" \
       -e ACTIONS_RUNNER_INPUT_URL="https://github.com/$REPO" \
       -e ACTIONS_RUNNER_INPUT_NAME="$name" \
@@ -1925,6 +2143,13 @@ utiliser '$0 stop' d'abord, ou relancer sous une machine differente."
     slot_loop "$i" "${NAME_PREFIX}-${i}" "$LABELS" "$IMAGE" "$CPUS" "$MEMORY" "$PIDS" &
     echo "$!" >> "$STATE_DIR/pids"
   done
+  # Magasin d'objets partage (#18225) : UNE boucle de refresh par superviseur.
+  # Elle n'a pas besoin d'etre unique sur la machine -- le throttle et le flock
+  # vivent dans le volume, donc deux boucles (pool docker + pool lean) ne font
+  # qu'un fetch par periode. Le PID est journalise avec les autres : `stop` pose
+  # le sentinel que cette boucle observe.
+  mirror_loop &
+  echo "$!" >> "$STATE_DIR/pids"
   echo "slots lances. Arret gracieux : $0 stop"
   # #15154 : un slot qui meurt par ABANDON pose le sentinel STOP_FILE --
   # les autres slots en tiennent compte et sortent en arret gracieux a leur
@@ -2341,6 +2566,7 @@ waiter_loop() {
       ${CI_CGROUP_PARENT:+--cgroup-parent="$CI_CGROUP_PARENT"} \
       --security-opt=no-new-privileges \
       "${tc_args[@]+"${tc_args[@]}"}" \
+      "${GIT_NET_ARGS[@]}" \
       -e ACTIONS_RUNNER_INPUT_TOKEN="$token" \
       -e ACTIONS_RUNNER_INPUT_URL="https://github.com/$REPO" \
       -e ACTIONS_RUNNER_INPUT_NAME="$name" \
@@ -2454,6 +2680,11 @@ cmd_lean() {
       "$LEAN_MEMORY_SWAP" &
     echo "$!" >> "$STATE_DIR/lean-pids"
   done
+  # Meme boucle de refresh que cmd_start (#18225) : les slots lean montent le
+  # meme volume toolcache et consomment donc le meme miroir. Le throttle dans le
+  # volume fait que les deux boucles ne se doublent pas.
+  mirror_loop &
+  echo "$!" >> "$STATE_DIR/lean-pids"
   echo "slots lean lances. Arret gracieux : $0 stop"
   wait
 }
@@ -2476,5 +2707,23 @@ case "${1:-}" in
   status)  cmd_status ;;
   peak)    cmd_peak ;;
   pin)     cmd_pin ;;
-  *) echo "usage: $0 {start [N] [--force]|waiters [N]|lean [N]|stop|status|peak|pin}"; exit 2 ;;
+  # Magasin d'objets partage (#18225). `bootstrap` est l'action HORS BANDE
+  # (copie integrale, une fois par machine) ; `refresh` et `status` sont surs a
+  # tout moment, y compris parc en marche. Le resultat part dans le journal du
+  # miroir ET sur la sortie, pour qu'un operateur n'ait pas a ouvrir un fichier.
+  mirror)  shift
+           m_act="${1:-status}"
+           case "$m_act" in
+             bootstrap|refresh|status) ;;
+             *) echo "usage: $0 mirror {bootstrap|refresh|status}" >&2; exit 2 ;;
+           esac
+           command -v docker >/dev/null || die "docker introuvable"
+           assert_docker_daemon
+           docker image inspect "$IMAGE" >/dev/null 2>&1 \
+             || die "image $IMAGE absente -- construire d'abord depuis l'epingle"
+           mkdir -p "$STATE_DIR"
+           mirror_one_shot "$m_act" || true
+           tail -n 20 "$STATE_DIR/objects-mirror.log" 2>/dev/null
+           ;;
+  *) echo "usage: $0 {start [N] [--force]|waiters [N]|lean [N]|stop|status|peak|pin|mirror {bootstrap|refresh|status}}"; exit 2 ;;
 esac
