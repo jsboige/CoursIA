@@ -85,6 +85,14 @@ MARKER_RE = re.compile(r"<!--\s*refresh-adj:\s*[^>]+\s*-->")
 MARKER_PREFIX = "<!-- refresh-adj:"
 MARKER_TZ = "%Y-%m-%dT%H:%M:%SZ"
 
+# Le nom du job de contenu se lit dans le workflow (il porte un COMPTE
+# d'organes qui change) ; ces deux constantes sont le contrat de lecture.
+GUARD_WORKFLOW = (
+    Path(__file__).resolve().parents[2] / ".github" / "workflows" / "always-on-guards.yml"
+)
+GUARD_PREFIX = "Always-on guards --"
+BODY_JOB_MARK = "-- body"
+
 
 def now_marker() -> str:
     """Return the current UTC timestamp in the marker format."""
@@ -151,11 +159,57 @@ def get_pr_checks(pr_number: int) -> dict:
     return checks
 
 
+def content_guard_names() -> list[str]:
+    """Job names of `always-on-guards.yml` that carry the content guards.
+
+    Read from the workflow, never hard-coded: the job name embeds a COUNT
+    ("-- 16 organes"), and the literal silently went stale at 13 (#22403) --
+    the lookup then missed every real red and the organ went mute, which is
+    indistinguishable from "nothing to refresh".
+    """
+    try:
+        text = GUARD_WORKFLOW.read_text(encoding="utf-8")
+    except OSError:
+        return []
+    names: list[str] = []
+    try:
+        import yaml  # noqa: PLC0415 -- optional, falls back to the regex below
+
+        data = yaml.safe_load(text) or {}
+        for job in (data.get("jobs") or {}).values():
+            if isinstance(job, dict) and isinstance(job.get("name"), str):
+                names.append(job["name"])
+    except Exception:  # pragma: no cover -- the repo has PyYAML, the fallback is a belt
+        names = re.findall(r'^\s{2,}name:\s*"([^"]+)"\s*$', text, re.MULTILINE)
+    return [n.strip() for n in names if n.strip().startswith(GUARD_PREFIX)]
+
+
+def content_guard_name() -> str | None:
+    """The content-guard job name, or None if the workflow carries none."""
+    for name in content_guard_names():
+        if BODY_JOB_MARK not in name:
+            return name
+    return None
+
+
 def is_always_on_guards_failing(pr_number: int) -> bool:
-    """True if `Always-on guards -- 13 organes, 1 checkout` is currently FAIL."""
+    """True if the content `Always-on guards` leg of `pr_number` is FAIL.
+
+    Matching is by PREFIX, not by exact name: the count in the job name
+    changes whenever an organ is added, and an exact match would make the
+    organ silently inert again (#22403). The body leg (#22333) is excluded --
+    a red there says nothing about the adjacency guard.
+    """
     checks = get_pr_checks(pr_number)
-    name = "Always-on guards -- 13 organes, 1 checkout"
-    return checks.get(name) == "fail"
+    expected = content_guard_name()
+    if expected is not None and expected in checks:
+        return checks[expected] == "fail"
+    matching = [
+        conclusion
+        for name, conclusion in checks.items()
+        if name.startswith(GUARD_PREFIX) and BODY_JOB_MARK not in name
+    ]
+    return any(c == "fail" for c in matching)
 
 
 def append_marker(body: str, marker: str) -> str:
