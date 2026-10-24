@@ -6,6 +6,7 @@
   "numpy": "2.3.5",
   "scikit_learn": "1.6.1",
   "cache_root": "C:\\Users\\jsboi\\.cache\\ft00a",
+  "corpus_source": "torchvision",
   "probes": {
     "WS-00c": {
       "observed": {
@@ -19,14 +20,14 @@
       "comparison": {
         "clean": {
           "observed": 0.79,
-          "cited": 0.773,
-          "delta": 0.017,
-          "match": false
+          "cited": 0.79,
+          "delta": 0.0,
+          "match": true
         },
         "translated": {
           "observed": 0.43,
-          "cited": 0.431,
-          "delta": -0.001,
+          "cited": 0.425,
+          "delta": 0.005,
           "match": false
         },
         "verdict": "MISMATCH"

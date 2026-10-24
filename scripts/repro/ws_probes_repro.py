@@ -13,7 +13,7 @@ Sondes reproduites :
     150 images d'entrainement / 75 de test par classe, StandardScaler ajuste sur
     le train seul, LogisticRegression (max_iter=3000, C=1.0, random_state=42).
 
-Valeurs citees a confirmer : 0.773 / 0.431 (WS-00c) et 0.780 / 0.311 (WS-03).
+Valeurs citees a confirmer : 0.790 / 0.425 (WS-00c) et 0.780 / 0.311 (WS-03).
 """
 
 from __future__ import annotations
@@ -33,7 +33,7 @@ from sklearn.preprocessing import StandardScaler
 SEED = 42
 
 CITED = {
-    "WS-00c": {"clean": 0.773, "translated": 0.431},
+    "WS-00c": {"clean": 0.790, "translated": 0.425},
     "WS-03": {"clean": 0.780, "translated": 0.311},
 }
 

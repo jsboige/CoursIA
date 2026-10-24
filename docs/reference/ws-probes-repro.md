@@ -22,23 +22,46 @@ la parité de l'index, périodique aux bords (`np.roll`).
 
 ## Résultat mesuré
 
-Exécution du 2026-10-21, Python 3.13.3, numpy 2.3.5, **scikit-learn 1.6.1**, graine 42,
+Exécution du 2026-10-24, Python 3.13.3, numpy 2.3.5, **scikit-learn 1.6.1**, graine 42,
 corpus `torchvision` (cache `~/.cache/ft00a`).
 
 | Sonde | État | Mesuré | Cité | Écart | Verdict |
 |---|---|---:|---:|---:|---|
-| WS-00c | test propre | 0.7900 | 0.773 | **+0.0170** | écart |
-| WS-00c | test translaté | 0.4300 | 0.431 | −0.0010 | ok |
+| WS-00c | test propre | 0.7900 | 0.790 | 0.0000 | **ok** |
+| WS-00c | test translaté | 0.4300 | 0.425 | **+0.0050** | écart |
 | WS-03 | test propre | 0.7800 | 0.780 | 0.0000 | **ok** |
 | WS-03 | test translaté | 0.3107 | 0.311 | −0.0003 | **ok** |
 
 **Verdict global : `MISMATCH`** — trois valeurs sur quatre reproduites à la précision
-d'affichage, une non.
+d'affichage ; la quatrième (WS-00c translaté) s'écarte d'**un item** (`86/200` mesuré vs
+`85/200` cités).
 
-## Lecture de l'écart WS-00c : deux causes candidates, aucune prouvée ici
+## Lecture de l'écart WS-00c : un item sur le test translaté
 
-Un point de test vaut `1/200 = 0.005` ; l'écart de `0.017` représente environ **3,4 items**.
-Ce n'est pas un effet d'arrondi.
+Le test propre se reproduit **à l'identique** (`0.790 = 158/200`). Le seul écart est le test
+translaté : `0.430` mesuré contre `0.425` cités, soit **un item** (`86/200` vs `85/200`).
+Un point de test vaut `1/200 = 0.005`, donc l'écart est exactement un item — de même ordre
+que la variabilité intrinsèque de la sonde.
+
+Les valeurs citées sont **les sorties committées** du carnet WS-00c, ligne `pixels` de la table
+de `WS-00c-Scattering-from-scratch.ipynb` (artefact committé : `pixels | 0.790 | 0.425`) — et non
+les lignes `scattering S1` (`0.810 / 0.700`) ni `scattering complet` (`0.825 / 0.765`). La sonde
+reproduit le classifieur linéaire sur pixels bruts, donc cette ligne-là.
+
+**Provenance du couple `0.773 / 0.431` cité par une version antérieure de ce script : non
+établie.** Deux mesures indépendantes l'écartent de WS-00c :
+
+- il n'apparaît dans **aucun fichier** de la série (`git grep` sur les 7 fichiers de
+  `04b-Wavelet-Scattering` à `origin/main` : 0 occurrence des deux valeurs) — alors que
+  `0.790 / 0.425` y est bien présent, sur la ligne citée ci-dessus ;
+- il est **arithmétiquement impossible** sur le corpus de WS-00c : la cellule 20 imprime
+  `corpus : 600 train / 200 test`, et aucune accuracy sur 200 items ne peut s'écrire `0.773`
+  ni `0.431` (il faudrait un `k` tel que `k/200` s'arrondisse à ces valeurs ; il n'en existe
+  pas). Le couple est en revanche compatible avec un test d'environ 750 items — la taille du
+  découpage de WS-03 — mais cette compatibilité **n'est pas une provenance** : elle dit
+  seulement que ce n'est pas une mesure de WS-00c.
+
+Deux causes candidates pour ce décalage d'un item, aucune prouvée ici :
 
 1. **Fork de source dans la cellule du carnet (cause structurelle).** La cellule 20 essaie
    `torchvision.datasets.FashionMNIST` puis retombe sur `fetch_openml("Fashion-MNIST")`.
@@ -52,11 +75,11 @@ Ce n'est pas un effet d'arrondi.
 
 2. **Dérive de version de scikit-learn.** La version employée par l'auteur n'est pas
    consignée dans le carnet ; une évolution du comportement de `LogisticRegression`
-   (solveur, multimodal) peut déplacer quelques prédictions. Non testé non plus : il faudrait
+   (solveur, multimodal) peut déplacer une prédiction. Non testé non plus : il faudrait
    l'empreinte de l'environnement d'origine, que le carnet ne porte pas.
 
-Les deux causes ne s'excluent pas. Ce qui est **mesuré** : la valeur `0.773` n'est pas
-reproductible sur la branche `torchvision` avec scikit-learn 1.6.1 ; la valeur `0.431` l'est.
+Ce qui est **mesuré** : sur la branche `torchvision` avec scikit-learn 1.6.1, le test propre
+est exact et le test translaté s'écarte d'un item.
 
 ## Ce que WS-03 établit, en revanche
 
