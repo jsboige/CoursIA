@@ -78,6 +78,11 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
         self.returns = {
             t: deque(maxlen=self.train_window + 50) for t in self.tickers
         }
+        # #21782 : nombre de rendements jamais recus, et nombre deja replies dans
+        # cond_var. Les deux compteurs sont absolus : la fenetre glissante du deque
+        # ne permet pas d'indexer un rendement de facon stable.
+        self.return_count = {t: 0 for t in self.tickers}
+        self.folded_count = {t: 0 for t in self.tickers}
 
         self.day_count = 0
 
@@ -136,13 +141,55 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
             bar = data[sym]
             if bar is None:
                 continue
-            hist = self.history(sym, 2, Resolution.DAILY)
-            if hist is not None and len(hist) >= 2:
-                prev = float(hist["close"].iloc[-2])
-                curr = float(bar.close)
-                if prev > 0:
-                    self.returns[ticker].append(np.log(curr / prev))
+            log_return = self._daily_log_return(ticker, bar)
+            if log_return is not None:
+                self.returns[ticker].append(log_return)
+                self.return_count[ticker] += 1
         self.day_count += 1
+
+    def _daily_log_return(self, ticker, bar):
+        """Rendement journalier dont la paire de clotures est verifiee (#21782).
+
+        `history(sym, 3, DAILY)` inclut ou non la seance courante selon l'heure de
+        l'appel. Prendre `iloc[-2]` sans le verifier peut former une paire a deux
+        seances comptee comme un pas journalier, ou une paire desalignee avec
+        `bar.close`. On aligne donc la paire sur `bar.end_time`, et on rejette un
+        ecart calendaire qui trahit une suspension : mieux vaut aucun rendement
+        qu'un faux pas de GARCH.
+        """
+        hist = self.history(self.symbols[ticker], 3, Resolution.DAILY)
+        if hist is None or len(hist) < 2:
+            return None
+        closes = hist["close"]
+        # Un historique LEAN porte parfois un MultiIndex (symbole, horodatage) :
+        # `list(hist.index)` rend alors des tuples, pas des dates. On prend le
+        # dernier niveau, qui est l'horodatage dans les deux formes.
+        idx = hist.index
+        levels = getattr(idx, "nlevels", 1)
+        times = list(idx.get_level_values(-1) if levels > 1 else idx)
+        if times[-1] >= bar.end_time:
+            curr_close, curr_time = float(closes.iloc[-1]), times[-1]
+            prev_close, prev_time = float(closes.iloc[-2]), times[-2]
+        else:
+            curr_close, curr_time = float(bar.close), bar.end_time
+            prev_close, prev_time = float(closes.iloc[-1]), times[-1]
+        # `nan <= 0` est faux : une cloture non finie traverserait le test de
+        # positivite ci-dessous et entrerait dans la fenetre glissante, d'ou elle
+        # ne ressortirait que 550 seances plus tard. Sur 2023-11 -> 2026-07 ce
+        # garde-fou n'a rien rejete (mesure : 0 rejet non fini et 0 rejet non
+        # positif sur 129 rebalances) ; il retient un cas que ces donnees ne
+        # presentent pas, et ne change donc pas le resultat mesure.
+        if not (np.isfinite(prev_close) and np.isfinite(curr_close)):
+            return None
+        if prev_close <= 0 or curr_close <= 0:
+            return None
+        gap = (curr_time - prev_time).days
+        if gap <= 0 or gap > 4:
+            return None
+        log_return = float(np.log(curr_close / prev_close))
+        if not np.isfinite(log_return):
+            return None
+        return log_return
 
     def rebalance(self):
         if self.is_warming_up or self._mode in ("spy", "6040"):
@@ -197,6 +244,12 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
 
         should_refit = (self.day_count - self.last_fit_day[ticker]) >= self.refit_freq
 
+        # Invariant de `cond_var` : c'est la prevision de variance du **prochain**
+        # rendement non observe (v_{T+1} apres avoir observe r_T). Une prevision
+        # s'applique donc une seule fois, et entre deux re-estimations la variance
+        # avance d'un pas par rendement recu -- c'est le defaut corrige en #21782 :
+        # l'ancien code repliait seulement le dernier rendement (deja compte dans la
+        # prevision precedente) et ignorait les quatre autres.
         if should_refit or self.cond_var[ticker] is None:
             params = self._fit_garch_vt(rets)
             if params is not None:
@@ -206,14 +259,26 @@ class GarchVolTargetAlgorithm(QCAlgorithm):
             var_series = self._cond_var_series(rets, omega, alpha, beta)
             if var_series is None:
                 return None
-            self.cond_var[ticker] = float(var_series[-1])
-        else:
-            omega, alpha, beta = self.garch_params[ticker]
-            last_r = float(rets[-1])
-            self.cond_var[ticker] = omega + alpha * last_r ** 2 + beta * self.cond_var[ticker]
+            # var_series[-1] = v_T (variance du dernier rendement, qui ne l'incorpore
+            # pas encore) : la prevision du lendemain est v_{T+1}.
+            self.cond_var[ticker] = (
+                omega + alpha * float(rets[-1]) ** 2 + beta * float(var_series[-1])
+            )
+            self.folded_count[ticker] = self.return_count[ticker]
+            return self.cond_var[ticker] if np.isfinite(self.cond_var[ticker]) else None
 
         omega, alpha, beta = self.garch_params[ticker]
-        return omega + alpha * float(rets[-1]) ** 2 + beta * self.cond_var[ticker]
+        pending = self.return_count[ticker] - self.folded_count[ticker]
+        if pending > 0:
+            new_returns = list(self.returns[ticker])[-pending:]
+            for r in new_returns:
+                self.cond_var[ticker] = (
+                    omega + alpha * float(r) ** 2 + beta * self.cond_var[ticker]
+                )
+            self.folded_count[ticker] = self.return_count[ticker]
+        if not np.isfinite(self.cond_var[ticker]):
+            return None
+        return self.cond_var[ticker]
 
     def _fit_garch_vt(self, rets):
         sigma2 = float(np.var(rets))

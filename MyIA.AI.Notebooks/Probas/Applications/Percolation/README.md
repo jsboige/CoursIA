@@ -17,14 +17,17 @@ critique** (p ≈ p_c). Simulation-first : on fait *voir* les trois régimes
 | [Percolation-03b-Critique-L128-L256](Percolation-03b-Critique-L128-L256.ipynb) | 3b (Python) | Python 3 + `networkx` | Extension du carnet 03 aux tailles `L ∈ {128, 256}` pour la convergence asymptotique. Fit log-log sur 6 points (L = 8, 16, 32, 64, 128, 256) : β/ν = 0.1065, τ' = 2.188, p_c(L) → 1/2 monotone. Sweep `L ∈ {128, 256}` × `p ∈ {0.45,…,0.55}` × 32 seeds = 320 simulations ~48 s |
 | [Percolation-03c-Critique-L512](Percolation-03c-Critique-L512.ipynb) | 3c (Python) | Python 3 + `networkx` | Extension du carnet 03b à L = 512 pour la convergence asymptotique. Fit log-log sur 7 points (L = 8, 16, 32, 64, 128, 256, 512) : β/ν = 0.1062 (cible 0.1042, R²=0.977, std_err=0.007 — convergence asymptotique bloquée aux corrections d'échelle finie), p_c(L) → 1/2 monotone (écart 0.0013 à L=512). Sweep `L = 512` × `p ∈ {0.45,…,0.55}` × 32 seeds = 160 simulations ~186 s |
 | [Percolation-04-Sharpness-Python](Percolation-04-Sharpness-Python.ipynb) | 4 (Python) | Python 3 + `networkx` | Palier 4 du plan #19494 : mesure de la queue supérieure `Ψ(n) = P(\|C_o\| ≥ n)` sur grille `L ∈ {64, 128, 256, 512}` × `p ∈ {0.50, …, 0.70}` × 32 seeds = 1024 simulations ~170 s. Comparaison au théorème de *supercritical sharpness* (Diskin-Easo-Radhakrishnan-Sudakov-Tassion, arXiv:2603.03257 §3.0). **Verdict** : palier non mesurable aux seuils `n ∈ {1, 2, …, 128}` à L ≤ 512 — le fit log-y de `Ψ(n)` est dominé par la transition initiale (Psi(1)=1 → Psi(2)~0.7) et non par la décroissance exponentielle sharpness (qui exigerait `n ~ médiane du géant`). L'alpha mesuré **décroît** avec p, opposé à la cible `(p - 1/2)^{d-1} = p - 1/2` |
+| [Percolation-04-Sharpness-Lean](Percolation-04-Sharpness-Lean.ipynb) | 4 (Lean 4) | Lean 4 + Mathlib (`percolation_lean`) | Jumeau formel du palier 4 (#19494, item 3) : module `Sharpness` du lake — inégalité de sharpness finie `#(smallClusterEvent G v k) ≤ Σ_{A ∋ v, \|A\| ≤ k} 2^(N−\|δA\|)` par comptage de candidats confinés (frontière pleine ⇒ arêtes forcées fermées), forme **mixte** de Harris–Kleitman (anti-corrélation croissant × décroissant), témoins exacts calculés sur `C₃` (`2/8`) et `C₄` (`4/16`) |
 
 ## Formalisation Lean (`percolation_lean/`)
 
 Le lake [`percolation_lean/`](percolation_lean/) porte la jambe formelle du
 duo : noyau fini de percolation **prouvé sans `sorry`** (configurations,
-composantes, connexité, frontière isopérimétrique finie — modules `Basic`,
-`Connectivity`, `Components`, `Boundary`, `Examples`, paires FR/EN selon la
-convention #4980), `proof-integrity` câblé en CI. Le théorème de l'article
+composantes, connexité, frontière isopérimétrique finie et inégalité de
+sharpness finie (`card_smallClusterEvent_le`, dont l'inégalité de l'article
+arXiv:2603.03257 §3.0 est la limite) — modules `Basic`,
+`Connectivity`, `Components`, `Boundary`, `Examples`, `Sharpness`, paires FR/EN
+selon la convention #4980), `proof-integrity` câblé en CI. Le théorème de l'article
 reste un **horizon de recherche** : le lake distingue ce qui est prouvé, ce qui
 vient de Mathlib et ce qui est hors portée (voir #14871).
 

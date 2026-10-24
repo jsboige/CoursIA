@@ -1,6 +1,8 @@
 notebook,cell_id,cell_type,src_lang,src_hash,text_fr,text_en,text_es,text_ar,text_fa,text_zh,text_ru,text_pt,hash_fr,hash_en,hash_es,hash_ar,hash_fa,hash_zh,hash_ru,hash_pt,translate_policy
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-24754727,markdown,fr,a542f115c3c7c31b,"# FT-01 : Introduction au Fine-Tuning
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-24754727,markdown,fr,b72ff34a01d6d6ff,"# FT-01 : Introduction au Fine-Tuning
 **Navigation** : [Index](README.md) | [<< 00d — QLoRA SOTA](FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb) | [02 — QLoRA >>](FT-02-QLoRA-Quantization-Python.ipynb)
+
+**Version anglaise** : [FT-01 — Introduction (en)](FT-01-Introduction-FineTuning-Python_en.ipynb)
 
 **Objectif** : Comprendre les trois approches de fine-tuning (complet, partiel, LoRA) et mettre en pratique LoRA sur un petit modèle de texte.
 
@@ -18,6 +20,8 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,ce
 **Ce que vous saurez faire a la sortie** : choisir une approche de fine-tuning selon votre budget GPU, lire un rapport `trainable params:` de PEFT, et juger honnetement si un fine-tuning a transfere le style vise (plutot que de vous fier a une impression).","# FT-01: Introduction to Fine-Tuning
 **Navigation**: [Index](README.md) | [<< 00d — QLoRA SOTA](FT-00d-LoRA-QLoRA-SOTA-Comparison-Python.ipynb) | [02 — QLoRA >>](FT-02-QLoRA-Quantization-Python.ipynb)
 
+**French version**: [FT-01 — Introduction au Fine-Tuning](FT-01-Introduction-FineTuning-Python.ipynb)
+
 **Objective**: Understand the three fine-tuning approaches (full, partial, LoRA) and put LoRA into practice on a small text model.
 
 **Plan**:
@@ -31,7 +35,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,ce
 
 **Where you are in the series**: FT-01 lays out the three approaches (full, partial, LoRA) and pushes a LoRA all the way to the compared before/after generation; FT-02 (QLoRA) adds 4-bit quantization to train where VRAM runs short. If you have already run a Hugging Face `Trainer`, the value of this notebook is the **quantified measurement of each approach**: trainable parameters, adapter size, training time, and a causal before/after comparison at fixed prompt and seed.
 
-**What you will be able to do at the end**: choose a fine-tuning approach to fit your GPU budget, read a PEFT `trainable params:` report, and honestly judge whether a fine-tuning transferred the target style (rather than trusting an impression).",,,,,,,a542f115c3c7c31b,636ba71c4f1f907e,,,,,,,
+**What you will be able to do at the end**: choose a fine-tuning approach to fit your GPU budget, read a PEFT `trainable params:` report, and honestly judge whether a fine-tuning transferred the target style (rather than trusting an impression).",,,,,,,b72ff34a01d6d6ff,ced77f57c6b6b774,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,cell-2853ccbc,code,fr,253239aabdbd5220,"import torch
 import os
 import gc
@@ -488,8 +492,10 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-01-Introduction-FineTuning-Python.ipynb,ce
 **Next steps** (FT-02): LoRA on a larger model with 4-bit quantization (QLoRA).
 
 **What this notebook measured, not merely announced**: 124,439,808 total parameters for GPT-2; 294,912 trainable parameters with LoRA r=8 (0.24%, `trainable%: 0.2364` on the PEFT side); a **1.18 MB** adapter against **497.8 MB** for the full model; and, in this committed run, a post-fine-tuning generation whose first prompt stays French-dominant while the second opens in French and then slides into an English dialogue -- where the original model switched to English immediately: a fragile, indicative contrast at best, absent controlled re-sampling (cf. the caveat in section 5). The logical next step is FT-02: quantizing the base model to 4 bits (QLoRA) in order to train those same adapters on a fraction of the VRAM.",,,,,,,21f4f07539a903ea,ecc1a72af6878dfa,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,b4fb8592,markdown,fr,190f0b085f3127dd,"# FT-02 : QLoRA — Fine-Tuning avec Quantization
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,b4fb8592,markdown,fr,cb538db4930d1efe,"# FT-02 : QLoRA — Fine-Tuning avec Quantization
 **Navigation** : [Index](README.md) | [<< 01 — Introduction](FT-01-Introduction-FineTuning-Python.ipynb) | [03 — SFT >>](FT-03-Supervised-FineTuning-SFT-Python.ipynb)
+
+**Version anglaise** : [FT-02 — QLoRA (en)](FT-02-QLoRA-Quantization-Python_en.ipynb)
 
 **Objectif** : Comprendre la quantization 4-bit (NF4) et l'approche QLoRA qui combine quantization + LoRA pour fine-tuner des modèles jusqu'a 7B params sur un GPU consumer.
 
@@ -514,6 +520,8 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,b4fb859
 ","# FT-02: QLoRA — Fine-Tuning with Quantization
 **Navigation**: [Index](README.md) | [<< 01 — Introduction](FT-01-Introduction-FineTuning-Python.ipynb) | [03 — SFT >>](FT-03-Supervised-FineTuning-SFT-Python.ipynb)
 
+**French version**: [FT-02 — QLoRA](FT-02-QLoRA-Quantization-Python.ipynb)
+
 **Objective**: Understand 4-bit quantization (NF4) and the QLoRA approach, which combines quantization + LoRA to fine-tune models up to 7B params on a consumer GPU.
 
 **Plan**:
@@ -532,7 +540,7 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,b4fb859
 
 **Required hardware**: GPU with ~8 GB VRAM (QLoRA OPT-1.3B 4-bit = ~2 GB).
 
-**Reading the committed output**: the next cell prints the full environment (PyTorch version, GPU, VRAM) -- its committed output is the single source of truth, the prose will no longer re-pin it (#9434). Here, a cu12x environment on an RTX 3080 Ti Laptop, ~17 GB of total VRAM of which ~16 GB free at startup. This notebook's pedagogical paradox: this card would hold OPT-1.3B in FP16 without any difficulty (4.03 GB measured further down, section 8). It is not this card that justifies QLoRA — it is generalization: the same recipe that holds a 1.3B model in ~1.7 GB will hold a 7B model in ~6 GB, on a 300-euro card. The notebook walks through the full chain: NF4 quantization (section 2), hand-written LoRA mechanics (section 4), LoRA grafting via the API (section 5), real measured training (section 6), before/after generation (section 7), and the FP16 vs 4-bit memory comparison (section 8).",,,,,,,190f0b085f3127dd,c92e903f731754b9,,,,,,,
+**Reading the committed output**: the next cell prints the full environment (PyTorch version, GPU, VRAM) -- its committed output is the single source of truth, the prose will no longer re-pin it (#9434). The execution environment (card, total and free VRAM at startup) reads directly from the committed output of the next cell -- which remains the single source of truth. This notebook's pedagogical paradox: this card would hold OPT-1.3B in FP16 without any difficulty (4.03 GB measured further down, section 8). It is not this card that justifies QLoRA — it is generalization: the same recipe that holds a 1.3B model in ~1.7 GB will hold a 7B model in ~6 GB, on a 300-euro card. The notebook walks through the full chain: NF4 quantization (section 2), hand-written LoRA mechanics (section 4), LoRA grafting via the API (section 5), real measured training (section 6), before/after generation (section 7), and the FP16 vs 4-bit memory comparison (section 8).",,,,,,,cb538db4930d1efe,a13aa345007fdc9f,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,482ed3ca,code,fr,95897469a10222a1,"import gc
 import os
 import time
@@ -1353,8 +1361,10 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-02-QLoRA-Quantization-Python.ipynb,3e1127c
 **The measured journey reads in the outputs**: the NF4 loading, the exact number of trainable parameters, the duration, the VRAM peak and the final loss are all produced by the preceding cells. The section 4 grid predicts the adapter count to the exact parameter; the section 7 generations then show memo-styling at work. The FT-01 → FT-02 loop is closed: same LoRA mechanics, only the memory residency of the weights changes. FT-03 opens multi-task: several adapters, one base model, and the question of rank sharing.
 
 **Verifying the ""a 7B fits on 6 GB"" claim**: 4-bit weights = 0.5 byte per parameter, i.e. 3.5 GB for 7B, against 14 GB in FP16. The LoRA adapters and the paged optimizer apply to a small fraction of the parameters. The remaining margin then depends on context length, batch size and activations: this is why the notebook measures the real peak instead of settling for weight arithmetic.",,,,,,,f3e20662edb763a9,01156e36e4c2ba5e,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,0e944cc3,markdown,fr,be907469b571dbe8,"# FT-03 : Supervised Fine-Tuning (SFT) — Enseigner un format de reponse
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,0e944cc3,markdown,fr,c0c9fdc1b3bba541,"# FT-03 : Supervised Fine-Tuning (SFT) — Enseigner un format de reponse
 **Navigation** : [Index](README.md) | [<< 02 — QLoRA](FT-02-QLoRA-Quantization-Python.ipynb) | [04 — RLHF/DPO >>](FT-04-RLHF-DPO-Python.ipynb)
+
+**Version anglaise** : [FT-03 — SFT (en)](FT-03-Supervised-FineTuning-SFT-Python_en.ipynb)
 
 **Objectif** : Apprendre le Supervised Fine-Tuning (SFT) sur un modèle moderne déjà instruct-tuned (Qwen3.5-0.8B) : on ne lui apprend plus a *suivre* des instructions — il sait déjà — mais a repondre selon un **contrat de format** arbitraire (`[REPONSE] ... [FIN]`), le cas d'usage reel du SFT de specialisation. Vous comprendrez le format instruction-reponse, la preparation des données d'entraînement, et l'evaluation mesurable de la conformite.
 
@@ -1385,6 +1395,8 @@ exactement (section 7). Chaque étape est executee reellement sur GPU.
 ","# FT-03: Supervised Fine-Tuning (SFT) — Teaching a response format
 **Navigation**: [Index](README.md) | [<< 02 — QLoRA](FT-02-QLoRA-Quantization-Python.ipynb) | [04 — RLHF/DPO >>](FT-04-RLHF-DPO-Python.ipynb)
 
+**French version**: [FT-03 — SFT](FT-03-Supervised-FineTuning-SFT-Python.ipynb)
+
 **Objective**: Learn Supervised Fine-Tuning (SFT) on a modern model that is already instruct-tuned (Qwen3.5-0.8B): we no longer teach it to *follow* instructions — it already can — but to respond under an arbitrary **format contract** (`[REPONSE] ... [FIN]`), the real-world use case of specialization SFT. You will understand the instruction-response format, the preparation of training data, and the measurable evaluation of compliance.
 
 **Prerequisites**:
@@ -1396,21 +1408,21 @@ exactement (section 7). Chaque étape est executee reellement sur GPU.
 1. Base Model vs Instruct Model — the crucial difference, and why it changes how SFT is done today
 2. The instruction-response format (chat templates)
 3. Preparing an SFT dataset
-4. SFT with QLoRA on Qwen3.5-0.8B
-5. Measurable evaluation: format compliance before vs after
-6. Impact of dataset size
-7. Exercises
+4. Formatting and tokenizing, then QLoRA configuration (section 4a)
+5. SFT training with QLoRA (disjoint train/eval split)
+6. Measurable evaluation: format compliance before vs after
+7. Impact of dataset size
+8. Exercises
 
 **Estimated duration**: 45-60 minutes
 
-**Prerequisites**: FT-01 (fine-tuning panorama) and FT-02 (QLoRA quantization).
 **Journey**: we first measure the instruct model's behavior against our
 format contract (section 2), build a rich instruction dataset — 227 pairs
 produced by a deterministic builder (section 3), format them under the tagged contract (section 4), configure the LoRA
 adapters on the 4-bit body (section 4a), train on a disjoint train/eval split then compare compliance
 before/after (sections 5-6), and finish with the most instructive experiment —
 dropping the data budget to 5 examples to see exactly what breaks
-(section 7). Every step is actually executed on GPU.",,,,,,,be907469b571dbe8,dbc6d64d310bb5c7,,,,,,,
+(section 7). Every step is actually executed on GPU.",,,,,,,c0c9fdc1b3bba541,0b38bf73ed89f16c,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,879e8090,code,fr,b3b9b08c7f7e7494,"import torch
 import os
 import gc
@@ -3642,8 +3654,10 @@ MyIA.AI.Notebooks/GenAI/FineTuning/FT-03-Supervised-FineTuning-SFT-Python.ipynb,
 3. **The shape of the eval curve** — it is still descending at the end of the run: five epochs have not exhausted the dataset, but the slope is slowing; this is the classic trade-off that early stopping (stop when the eval ceases to descend) formalizes.
 
 **Written verdict**: at 205 training examples (31.8 min on an 8 GB GPU, VRAM ~1.45 GB), the disjoint eval loss descending from 1.34 to 0.38 demonstrates a generalization — a real one — of the formulation -> fact mapping. What the old configuration (20 examples) produced — a descending loss + gibberish generations — was not this signal: it was format memorization without substance. The difference comes from the dataset's **formulation diversity**, not from training duration.",,,,,,,15235e01a4685842,16afd8472991e508,,,,,,,
-MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,3fc218c8,markdown,fr,92bca6772937db7d,"# FT-05 : Fusion et Routage de Modèles -- Combiner les Expertises
+MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,3fc218c8,markdown,fr,333bfaeb74b09bb7,"# FT-05 : Fusion et Routage de Modèles -- Combiner les Expertises
 **Navigation** : [Index](README.md) | [<< 04 — RLHF/DPO](FT-04-RLHF-DPO-Python.ipynb) | [06 — Vision-langage >>](FT-06-Vision-Language-LoRA-Python.ipynb)
+
+**Version anglaise** : [FT-05 — Fusion et routage (en)](FT-05-ModelMerging-Routing-Python_en.ipynb)
 
 **Objectif** : Comprendre comment fusionner plusieurs modèles fine-tunes en un seul modèle plus performant, du merge de poids au routage dynamique.
 
@@ -3688,6 +3702,8 @@ sur le portatif de la sortie committée — ni serveur ni GPU dédiée.
 
 **Navigation** : [Index](README.md) | [<< 04 — RLHF/DPO](FT-04-RLHF-DPO-Python.ipynb) | [06 — Vision-Language >>](FT-06-Vision-Language-LoRA-Python.ipynb)
 
+**French version**: [FT-05 — Model Merging and Routing](FT-05-ModelMerging-Routing-Python.ipynb)
+
 **Objective**: Understand how to merge several fine-tuned models into a single, more capable model, from weight merging to dynamic routing.
 
 **Prerequisites**: FT-01 (fine-tuning overview), FT-02 (QLoRA quantization), FT-03 (SFT), FT-04 (DPO)
@@ -3727,7 +3743,7 @@ on an **8 GB GPU** (`NVIDIA GeForce RTX 3070 Laptop GPU, 8.6 GB
 VRAM`, cf. cell #1). The real cost sits in fine-tuning the adapters
 (FT-02/03/04); the **merge** of the task vectors is a homogeneous
 vector addition (~3.1M params) that fits on the laptop of the
-committed output — no server or dedicated GPU needed.",,,,,,,92bca6772937db7d,69b9beb0947275cb,,,,,,,
+committed output — no server or dedicated GPU needed.",,,,,,,333bfaeb74b09bb7,bf2554105e05c5ec,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,7975df42,markdown,fr,9c16f6f13ab22790,"## 1. Pourquoi fusionner des modèles ?
 
 Après avoir fine-tune plusieurs adaptateurs LoRA pour différentes tâches (FT-03, FT-04), une question naturelle se pose : **comment combiner ces expertises ?**

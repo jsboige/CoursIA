@@ -22,6 +22,7 @@ tqdm>=4.65.0
 
 # Data handling
 pandas>=2.0.0
+pyarrow>=26.0.0               # kernel ipykernel SIGSEGV sous 26 (#21764) — plancher de la famille GameTheory (pyarrow>=26 exige Python>=3.11)
 
 # Causal inference (GameTheory-04f, lésion de Fisher par modèle causal graphique)
 dowhy>=0.12
