@@ -185,6 +185,28 @@ TOOL_FAILURE_PATTERNS = (
                r"|^[ \t]*(?:\x1b\[[0-9;]*m)*ImportError(?:\x1b\[[0-9;]*m)*"
                r"[ \t\r]*$",
                re.IGNORECASE | re.MULTILINE),
+    # Echec de workflow ComfyUI (#21816). Le service de generation repond une
+    # erreur et le carnet commite son repli a la place de l'illustration :
+    # exactement le degat C.2 que ce ratchet existe pour voir (#3473 /
+    # #11685). Les trois formes sont mesurees sur le blob d'avant #21815 de
+    # Barbie-Schreck (commit 0dbdd963ec) : la premiere est la levee du client
+    # partage (comfyui_client.py:233), les deux autres sont les lignes que la
+    # cellule journalise en repli, une par tour de generation.
+    #
+    # Ils sont DURS, pas doux : une banniere qui a remplace un rendu n'est pas
+    # un mode demo declare, et l'exemption de #18916/#19697 ne doit pas
+    # l'absoudre (mesure du 2026-10-24 : sur le blob degrade les trois rendent
+    # 4 hits en dur, sur le blob restaure 0). La classe est OUTIL -- un
+    # service externe a echoue -- jamais MACHINE : aucun des trois ne nomme un
+    # chemin, un OS ou un repertoire.
+    #
+    # `erreur generation image` est redondant avec `workflow execution failed`
+    # SUR CETTE INSTANCE (les deux rendent les memes 2 flux) ; il est garde
+    # parce que la cellule journalise ce prefixe quelle que soit l'exception :
+    # un delai d'attente produit le meme message sans la levee du client.
+    re.compile(r"workflow execution failed", re.IGNORECASE),
+    re.compile(r"erreur generation image", re.IGNORECASE),
+    re.compile(r"illustration indisponible", re.IGNORECASE),
 )
 
 # Witnesses: real strings observed in committed outputs. The self-test asserts
@@ -203,6 +225,12 @@ _PATTERN_WITNESSES = (
     "ImportError: cannot import name 'X' from 'y'",
     "Could not find native implementation of external declaration "
     "'TorchLean.Storage.Internal.floatBufferAppendSliceNative'",
+    # #21816 : les deux lignes committeees par le blob degrade de
+    # Barbie-Schreck (avant #21815), telles quelles -- la premiere porte deux
+    # des trois motifs, la seconde le troisieme.
+    "ERROR:BarbieVsAne:Erreur generation image: Workflow execution failed "
+    "(server reported error)",
+    "WARNING:BarbieVsAne:Illustration indisponible pour cette replique",
 )
 
 # --- benign banners: matched above, and NOT a tool failure -----------------
@@ -1353,6 +1381,54 @@ def self_test(cwd=None):
             failures.append("downgrade replay CAPABILITY_DOWNGRADE "
                             + str(n_down) + " < "
                             + str(SELF_TEST_MIN_DOWNGRADE) + " expected")
+
+    # Replay #21816 : l'echec de workflow ComfyUI. Le blob d'avant #21815
+    # (0dbdd963ec, parent du merge de restauration) portait deux tours de
+    # repli sur stderr et AUCUNE illustration ; 1179cadc63 restaure les deux
+    # images et ses sorties ne portent plus un seul des trois motifs. Le
+    # controle est bidirectionnel et sur les vrais blobs -- un motif qui
+    # n'attrape pas le cas fondateur n'est pas livre, et un motif qui
+    # continue de le voir apres restauration serait un faux positif. Les deux
+    # commits sont sur main : le replay ne s'auto-saute que sur un clone
+    # partiel, et le dit comme les autres.
+    c_21816_deg = "0dbdd963ecbe9194832456abaf3fa54faa57ab21"
+    c_21816_fix = "1179cadc6354804e4ae1d3eca73c1947c7c6c84e"
+    nb_21816 = ("MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/"
+                "barbie-schreck.ipynb")
+    if (git("cat-file", "-e", c_21816_deg, cwd=cwd) is None
+            or git("cat-file", "-e", c_21816_fix, cwd=cwd) is None):
+        print("SKIP #21816 replay: 0dbdd963ec/1179cadc63 not in this clone")
+    else:
+        deg = scan(read_notebook_at(c_21816_deg, nb_21816, cwd=cwd))
+        fix = scan(read_notebook_at(c_21816_fix, nb_21816, cwd=cwd))
+        n_deg = len(deg["TOOL_FAILURE"])
+        n_fix = len(fix["TOOL_FAILURE"])
+        print("replay #21816: ComfyUI TOOL_FAILURE " + str(n_deg) + " -> "
+              + str(n_fix))
+        if n_deg < 2:
+            failures.append("#21816 replay: ComfyUI fallback not seen in the "
+                            "degraded blob (" + repr(deg["TOOL_FAILURE"]) + ")")
+        if n_fix:
+            failures.append("#21816 replay: ComfyUI failure still reported "
+                            "after the restoration (" + repr(fix["TOOL_FAILURE"])
+                            + ")")
+        # La direction qui compte vraiment : le PR qui a FAIT ENTRER le repli
+        # (133ffac507) a ete merge vert. Rejoue avec les motifs d'aujourd'hui,
+        # son delta doit etre positif -- c'est le trou que #21816 ferme, et
+        # un replay qui ne vaudrait que pour la restauration ne prouverait
+        # rien de ce trou.
+        c_21816_intro = "133ffac5071e255c7d594e601ba6b71a54104c3f"
+        if git("cat-file", "-e", c_21816_intro, cwd=cwd) is None:
+            print("SKIP #21816 intro replay: 133ffac507 not in this clone")
+        else:
+            rows = compare(c_21816_intro + "^", c_21816_intro, [nb_21816],
+                           cwd=cwd)
+            delta = rows[0]["classes"]["TOOL_FAILURE"]["delta"]
+            print("replay #21816 intro: delta TOOL_FAILURE " + str(delta)
+                  + " (attendu > 0)")
+            if delta <= 0:
+                failures.append("#21816 intro replay: the entering commit is "
+                                "still green (delta " + str(delta) + ")")
 
     for f in failures:
         print("SELF-TEST FAIL: " + f)
