@@ -229,10 +229,14 @@ Allocation pondérée inverse-vol avec régression Ridge sur les features
 (HMM ajusté sur le bloc qu'il étiquette), pas un backtest QC Cloud ; re-mesuré en causal, il
 devient **INCONCLUSIVE** (Δ+0,24, Holm p=0,38, #21633).
 
-### L4 Decision Transformer — Trading basé actions (BEATS)
+### L4 Decision Transformer — Trading basé actions (NO BEATS)
 
-Premier modèle à battre le buy-and-hold sur 24/26 symboles (panel @10bps ; hors-échantillon temporel réel : NO-BEATS). L'approche basée actions (classification buy/hold/sell)
-surpasse massivement les approches basées prévision (PatchTST). AUC médian 0,5582, 104 combos validés.
+Le Decision Transformer classe chaque jour une action (buy/hold/sell) au lieu de prévoir un rendement. Son ancien
+BEATS (24/26 symboles, AUC médian 0,5582) venait d'un return-to-go de test tiré des rendements futurs réalisés (#21187).
+Re-mesuré sous protocole causal, il ne bat le buy-and-hold sur aucun symbole : 0 cellule avec signal sur 26,
+AUC médian 0,4962, 104 combinaisons (`../ML-Training-Pipeline/scripts/results/l4_decision_transformer/results.json`).
+Il imite son teacher momentum sans le dépasser : l'approche par actions ne bat pas mieux le marché que la prévision
+(PatchTST). Détail : [carnet L4](../ML-Training-Pipeline/research_l4_decision_transformer.ipynb).
 
 ### Stratégies QC Cloud alimentées par ces modèles
 
