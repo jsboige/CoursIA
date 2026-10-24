@@ -536,7 +536,7 @@ flowchart LR
     style RES2 fill:#ffcdd2,color:#721c24
 ```
 
-L'hypothèse était qu'un classifieur d'action capte une **non-linéarité directionnelle** qu'un régresseur de rendement lisse et perd dans le seuillage. La mesure causale ne la soutient pas : 0 cellule avec signal sur 26, AUC médian 0.496, 104 combinaisons (`scripts/results/l4_decision_transformer/results.json`, protocole `causal-v1`). Le carnet montre en outre que le DT imite son teacher momentum (corrélation de 0.936 entre leurs expositions) : le conditionnement par le return-to-go oriente l'imitation, il ne crée pas de signal. Verdict consolidé : tous les échelons sont NO BEATS, qu'ils prédisent une action ou un rendement.
+L'hypothèse était qu'un classifieur d'action capte une **non-linéarité directionnelle** qu'un régresseur de rendement lisse et perd dans le seuillage. La mesure causale ne la soutient pas : 0/26 avec signal, AUC médian 0.496, 104 combinaisons (`scripts/results/l4_decision_transformer/results.json`, protocole `causal-v1`). Le carnet montre en outre que le DT imite son teacher momentum (corrélation de 0.936 entre leurs expositions) : le conditionnement par le return-to-go oriente l'imitation, il ne crée pas de signal. Verdict consolidé : tous les échelons sont NO BEATS, qu'ils prédisent une action ou un rendement.
 
 | Rung | Modèle | Approche | Verdict | Métrique clé | Doc |
 |------|-------|----------|---------|--------------|-----|
@@ -603,7 +603,7 @@ Ce pipeline matérialise **l'empirisme honnête appliqué au ML financier** : pl
 ### Prochaines étapes
 
 1. **Reproduire les verdicts** : cloner le repo, installer les dépendances (`Dependencies` ci-dessus), lancer `python scripts/dry_run_validation.py` pour valider le pipeline CPU, puis relancer M15 sur les données du pipeline (`python scripts/m15_lstm_rv.py`) et retrouver son NO BEATS §C. Les scripts S3/S4 restent disponibles (`python scripts/s3_hmm_regime.py`, `--witness` pour le témoin de fuite) comme études de cas de lecture du futur.
-2. **Bilan L4 Decision Transformer** : NO BEATS sous protocole causal (0/26 cellules avec signal, AUC médian 0.496, #21187). Le BEATS panel @10bps (24/26) venait d'un return-to-go de test tiré des rendements futurs réalisés ; le carnet `research_l4_decision_transformer.ipynb` refait la mesure en fermant cette porte (#21584).
+2. **Bilan L4 Decision Transformer** : NO BEATS sous protocole causal (0/26 avec signal, AUC médian 0.496, #21187). Le BEATS panel @10bps (24/26) venait d'un return-to-go de test tiré des rendements futurs réalisés ; le carnet `research_l4_decision_transformer.ipynb` refait la mesure en fermant cette porte (#21584).
 3. **Migration QC Cloud** : les modèles du pipeline sont des modèles research standalone (type (c), données yfinance) ; aucun n'a aujourd'hui de BEATS confirmé. Un modèle qui en obtiendrait un passerait ensuite dans un `QCAlgorithm` (cf. `../projects/` et la série QC-Py).
 4. **Surveiller la thermal safety** : tout training GPU doit passer par `shared/gpu_training.py` (MAX_TEMP=80C, AMP) — le repo RTX 3090/4090 a déjà subi des throttling thermiques.
 5. **Consulter le REGISTRY** : [`REGISTRY.md`](REGISTRY.md) catalogue les 70+ checkpoints par stage (-1/0/1/2) avec verdict BEATS/FAIL/MIXED et l'audit Anti-Bias.

@@ -211,7 +211,7 @@ becomes **INCONCLUSIVE** (Δ+0.24, Holm p=0.38, #21633).
 
 The Decision Transformer classifies a daily action (buy/hold/sell) instead of forecasting a return. Its former
 BEATS (24/26 symbols, median AUC 0.5582) came from a test return-to-go drawn from realized future returns (#21187).
-Re-measured under a causal protocol, it beats buy-and-hold on no symbol: 0 cells with signal out of 26,
+Re-measured under a causal protocol, it beats buy-and-hold on no symbol: 0/26 with signal,
 median AUC 0.4962, 104 combinations (`../ML-Training-Pipeline/scripts/results/l4_decision_transformer/results.json`).
 It imitates its momentum teacher without surpassing it: action-based trading does not beat the market any better
 than forecasting (PatchTST). Details: [L4 notebook](../ML-Training-Pipeline/research_l4_decision_transformer.ipynb).
