@@ -357,9 +357,24 @@ jobs:
           # annule avant d'avoir poste son verdict) ne se voit QUE par cet etat :
           # aucun check present ne la signale. `// ""` : un PR dont l'etat est
           # null (rare) rend une ligne a champ vide, jamais le mot "null".
+          # #22215 point 2 -- un NO-OP doit nommer CE QUI a echoue. Avant ce
+          # correctif le message etait « PR listing failed (upstream) » : ni
+          # endpoint, ni code HTTP, ni message de `gh`. Quota, 5xx et
+          # indisponibilite transitoire s'y lisaient pareil, et deux
+          # explications incompatibles -- API cassee, ou rien a balayer --
+          # restaient ouvertes sur la meme ligne (mesure 2026-10-23T23:41Z,
+          # run 40039941783, commentaire de la lane po-2025 sur #22215).
+          # `gh api` ecrit son diagnostic sur stderr sous la forme
+          # `gh: <message> (HTTP <code>)` : on le capture, on extrait le code,
+          # et on publie les deux. Les valeurs de repli sont posees AVANT
+          # l'appel : le step tourne sous `set -u`, une variable non initialisee
+          # tuerait la branche avant son message.
+          LIST_ERR=$(mktemp)
+          LIST_CODE='aucun code HTTP'
+          LIST_DETAIL='aucun message de gh'
           gh api "repos/$REPO/pulls?state=open&base=main&per_page=100" --paginate \
-            --jq '.[] | select(.draft | not) | "\(.number) \(.head.sha) \(.head.repo.fork) \(.mergeable_state // "")"' > /tmp/openprs.txt \
-            || { echo "::error::[stale-sweep] NO-OP -- PR listing failed (upstream); NOTHING was swept this run (no repair pass, no rescue)"; exit 1; }
+            --jq '.[] | select(.draft | not) | "\(.number) \(.head.sha) \(.head.repo.fork) \(.mergeable_state // "")"' > /tmp/openprs.txt 2>"$LIST_ERR" \
+            || { LIST_CODE=$(grep -oE 'HTTP [0-9]+' "$LIST_ERR" | tail -1); [ -n "$LIST_CODE" ] || LIST_CODE='aucun code HTTP'; LIST_DETAIL=$(tr '\n' ' ' < "$LIST_ERR" | cut -c1-300); [ -n "$LIST_DETAIL" ] || LIST_DETAIL='aucun message de gh'; echo "::error::[stale-sweep] NO-OP -- PR listing failed: endpoint=GET repos/$REPO/pulls?state=open&base=main code=$LIST_CODE detail=$LIST_DETAIL; NOTHING was swept this run (no repair pass, no rescue)"; exit 1; }
 
           : > /tmp/runs.jsonl
           : > /tmp/mute.txt
@@ -373,6 +388,15 @@ jobs:
           LISTED=0
           INSPECTED=0
           OMITTED=0
+          # #22215 point 2 -- meme contrat que la garde du listing : une lecture
+          # ratee nomme son endpoint et son code. Les valeurs de repli sont
+          # posees avant la boucle (`set -u`), et la derniere defaillance est
+          # conservee pour que le NO-OP total dise WHICH call failed, pas
+          # seulement combien de PRs ont ete omises.
+          OMIT_ERR=$(mktemp)
+          OMIT_SHA='aucun'
+          OMIT_CODE='aucun code HTTP'
+          OMIT_DETAIL='aucun message de gh'
           while read -r NUM SHA FORK MSTATE; do
             [ -z "${NUM:-}" ] && continue
             LISTED=$((LISTED+1))
@@ -390,8 +414,11 @@ jobs:
             # transformera une omission totale en `failure`. Le balayage reste
             # utile pour les PRs que l'appel a reussies a inspecter.
             if ! BODY=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
-                     --jq '[.check_runs[] | {name, status, conclusion, started_at, details_url, title: (.output.title // "")}]' 2>/dev/null); then
+                     --jq '[.check_runs[] | {name, status, conclusion, started_at, details_url, title: (.output.title // "")}]' 2>"$OMIT_ERR"); then
               OMITTED=$((OMITTED+1))
+              OMIT_SHA=$SHA
+              OMIT_CODE=$(grep -oE 'HTTP [0-9]+' "$OMIT_ERR" | tail -1); [ -n "$OMIT_CODE" ] || OMIT_CODE='aucun code HTTP'
+              OMIT_DETAIL=$(tr '\n' ' ' < "$OMIT_ERR" | cut -c1-200); [ -n "$OMIT_DETAIL" ] || OMIT_DETAIL='aucun message de gh'
               continue
             fi
             INSPECTED=$((INSPECTED+1))
@@ -451,7 +478,7 @@ jobs:
           # listing : `scripts/ci/classify_job_deaths.py` regroupe ces
           # annotations sous la meme famille de defaut.
           if [ "$LISTED" -gt 0 ] && [ "$INSPECTED" -eq 0 ]; then
-            echo "::error::[stale-sweep] NO-OP -- check-runs unreadable for all $LISTED listed PRs (rate-limit or upstream failure?); NOTHING was swept this run (no repair pass, no rescue)"
+            echo "::error::[stale-sweep] NO-OP -- check-runs unreadable for all $LISTED listed PRs: last endpoint=GET repos/$REPO/commits/$OMIT_SHA/check-runs code=$OMIT_CODE detail=$OMIT_DETAIL; NOTHING was swept this run (no repair pass, no rescue)"
             exit 1
           fi
           # #17566 -- garde omission partielle : au-dela de 10 % de PRs listees
@@ -1272,15 +1299,26 @@ jobs:
         run: |
           set -uo pipefail
 
-          RUN=$(gh api "repos/$REPO/actions/runs/$RUN_ID" 2>/dev/null) || {
-            echo "::warning::stale-sweep timing unavailable: run API failed"
+          # #22215 point 2 -- meme contrat que les NO-OP : l'avertissement de
+          # mesure nomme l'endpoint et le code. `jobs API failed` sans code etait
+          # indistinguable d'un quota, d'un 5xx et d'un run disparu (mesure du
+          # run 40039941783, 2026-10-23T23:41Z).
+          TIM_ERR=$(mktemp)
+          TIM_CODE='aucun code HTTP'
+          TIM_DETAIL='aucun message de gh'
+          RUN=$(gh api "repos/$REPO/actions/runs/$RUN_ID" 2>"$TIM_ERR") || {
+            TIM_CODE=$(grep -oE 'HTTP [0-9]+' "$TIM_ERR" | tail -1); [ -n "$TIM_CODE" ] || TIM_CODE='aucun code HTTP'
+            TIM_DETAIL=$(tr '\n' ' ' < "$TIM_ERR" | cut -c1-200); [ -n "$TIM_DETAIL" ] || TIM_DETAIL='aucun message de gh'
+            echo "::warning::stale-sweep timing unavailable: endpoint=GET repos/$REPO/actions/runs/$RUN_ID code=$TIM_CODE detail=$TIM_DETAIL"
             exit 0
           }
           # The endpoint defaults to filter=latest. Keep it that way: filter=all
           # includes prior attempts after a re-run and makes the current job name
           # ambiguous, exactly when this workflow is measuring repeated service.
-          JOBS=$(gh api "repos/$REPO/actions/runs/$RUN_ID/jobs?filter=latest&per_page=100" 2>/dev/null) || {
-            echo "::warning::stale-sweep timing unavailable: jobs API failed"
+          JOBS=$(gh api "repos/$REPO/actions/runs/$RUN_ID/jobs?filter=latest&per_page=100" 2>"$TIM_ERR") || {
+            TIM_CODE=$(grep -oE 'HTTP [0-9]+' "$TIM_ERR" | tail -1); [ -n "$TIM_CODE" ] || TIM_CODE='aucun code HTTP'
+            TIM_DETAIL=$(tr '\n' ' ' < "$TIM_ERR" | cut -c1-200); [ -n "$TIM_DETAIL" ] || TIM_DETAIL='aucun message de gh'
+            echo "::warning::stale-sweep timing unavailable: endpoint=GET repos/$REPO/actions/runs/$RUN_ID/jobs?filter=latest code=$TIM_CODE detail=$TIM_DETAIL"
             exit 0
           }
 

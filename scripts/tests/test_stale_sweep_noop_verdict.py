@@ -89,3 +89,96 @@ def test_la_sonde_de_fraicheur_filtre_toujours_les_succes():
         "rend le no-op `failure` inoffensif pour un blip isole est rompu"
     )
     assert "--workflow pr-gate-stale-sweep.yml" in texte, texte[:200]
+
+
+# --- Nommer la cause du no-op (#22215, point 2) -----------------------------
+#
+# Un no-op qui dit seulement « PR listing failed » laisse deux causes
+# incompatibles ouvertes : le quota d'API (attendre), ou une panne d'endpoint /
+# un jeton refuse (agir). Le triage ne peut pas trancher, et la prochaine lane
+# refait le diagnostic a la main. Ces tests pincent donc la propriete « le
+# verdict nomme l'endpoint ET le code HTTP », plus la mecanique qui rend le
+# code reel : il est EXTRAIT du stderr de `gh` (`(HTTP 404)`), jamais ecrit en
+# dur -- une constante mentirait des le premier incident different.
+
+
+def test_le_no_op_du_listing_nomme_endpoint_et_code():
+    corps = _branche_noop()
+    assert "endpoint=GET repos/$REPO/pulls" in corps, (
+        "le no-op doit nommer l'endpoint appele, sinon « PR listing failed » "
+        "ne distingue pas un quota d'un endpoint casse"
+    )
+    assert "code=$LIST_CODE" in corps, corps
+    # Le code vient du stderr de gh, pas d'une constante : `gh` ecrit
+    # `gh: <message> (HTTP 403)` ; on garde le dernier (le plus proche de
+    # l'echec) et on nomme l'absence quand il n'y en a pas.
+    assert "grep -oE 'HTTP [0-9]+'" in corps, (
+        "le code HTTP doit etre extrait du stderr de gh, jamais ecrit en dur"
+    )
+    assert "detail=$LIST_DETAIL" in corps, corps
+
+
+def test_les_replis_du_listing_sont_poses_avant_l_appel():
+    # Le step tourne sous `set -u` : une variable lue sans etre initialisee tue
+    # le shell AVANT d'ecrire l'annotation, et le no-op redevient muet -- le
+    # defaut meme que la correction supprime. Les replis sont donc nommes, et
+    # poses avant l'appel reseau qu'ils protegent.
+    texte = SWEEP.read_text(encoding="utf-8")
+    appel = texte.index('gh api "repos/$REPO/pulls?state=open')
+    for repli in ("LIST_CODE='aucun code HTTP'", "LIST_DETAIL='aucun message de gh'"):
+        assert repli in texte, f"repli absent sous set -u : {repli}"
+        assert texte.index(repli) < appel, (
+            f"le repli {repli} est pose apres l'appel qu'il protege : sous "
+            "set -u, l'echec tue le shell avant l'annotation"
+        )
+
+
+def test_le_no_op_des_check_runs_nomme_le_dernier_endpoint_et_le_code():
+    # Le no-op « check-runs unreadable for all N PRs » couvre une boucle : la
+    # cause utile est celle du DERNIER echec, d'ou le SHA de la PR concernee.
+    texte = SWEEP.read_text(encoding="utf-8")
+    assert re.search(
+        r"check-runs unreadable for all \$LISTED listed PRs: last endpoint=GET "
+        r"repos/\$REPO/commits/\$OMIT_SHA/check-runs code=\$OMIT_CODE",
+        texte,
+    ), "le no-op des check-runs ne nomme plus le dernier endpoint et son code"
+    assert "OMIT_SHA=$SHA" in texte, (
+        "sans le SHA, « last endpoint=.../commits//check-runs » ne designe rien"
+    )
+    assert "code=$OMIT_CODE" in texte and "detail=$OMIT_DETAIL" in texte
+
+
+def test_l_appel_par_pr_ne_jette_plus_le_stderr():
+    # `2>/dev/null` etait la cause mecanique du mutisme : le message de gh
+    # (donc le code HTTP) etait jete a la source. La capture doit le garder.
+    texte = SWEEP.read_text(encoding="utf-8")
+    appel = re.search(
+        r"--jq '\[\.check_runs\[\][^\n]*", texte
+    )
+    assert appel, "l'appel check-runs par PR est introuvable"
+    assert "2>/dev/null" not in appel.group(0), (
+        "le stderr de l'appel check-runs est encore jete : le code HTTP "
+        "devient inextraignable et le no-op ne peut pas le nommer"
+    )
+    assert '2>"$OMIT_ERR"' in appel.group(0), appel.group(0)
+
+
+def test_les_avertissements_de_timing_nomment_endpoint_et_code():
+    # Les deux avertissements de mesure (run, jobs) sont *advisory* : ils ne
+    # font pas rougir le run, mais une duree absente est indistinguable d'un
+    # balayage instantane si la cause n'est pas nommee.
+    texte = SWEEP.read_text(encoding="utf-8")
+    assert re.search(
+        r"timing unavailable: endpoint=GET repos/\$REPO/actions/runs/\$RUN_ID "
+        r"code=\$TIM_CODE",
+        texte,
+    ), "l'avertissement de timing ne nomme plus l'endpoint du run"
+    assert re.search(
+        r"timing unavailable: endpoint=GET repos/\$REPO/actions/runs/\$RUN_ID/jobs\?"
+        r"filter=latest code=\$TIM_CODE",
+        texte,
+    ), "l'avertissement de timing ne nomme plus l'endpoint des jobs"
+    assert texte.count("grep -oE 'HTTP [0-9]+'") >= 3, (
+        "chaque famille d'echec (listing, check-runs, timing) doit extraire le "
+        "code du stderr, pas le deduire"
+    )
