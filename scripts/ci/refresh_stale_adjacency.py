@@ -202,13 +202,19 @@ def is_always_on_guards_failing(pr_number: int) -> bool:
     """
     checks = get_pr_checks(pr_number)
     expected = content_guard_name()
-    if expected is not None and expected in checks:
-        return checks[expected] == "fail"
     matching = [
         conclusion
         for name, conclusion in checks.items()
         if name.startswith(GUARD_PREFIX) and BODY_JOB_MARK not in name
     ]
+    # Une jambe prefixee rouge suffit, MEME si le job attendu est vert.
+    # `return checks[expected] == "fail"` seul rendait le repli inatteignable
+    # des que le nom attendu existait : avec deux jambes prefixedes (le split
+    # body de #22333), un rouge sur la seconde etait ignore et le sweep se
+    # taisait (observation NanoClaw sur #22410 -- la classe de #22403 reduite
+    # a un cas d'ecole). On ne court-circuite donc plus sur le nom attendu.
+    if expected is not None and checks.get(expected) == "fail":
+        return True
     return any(c == "fail" for c in matching)
 
 

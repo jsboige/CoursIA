@@ -195,6 +195,38 @@ def test_absent_leg_is_not_failing(monkeypatch):
     assert rsa.is_always_on_guards_failing(1) is False
 
 
+def test_second_prefixed_leg_red_is_detected_even_when_expected_is_green(monkeypatch):
+    """Observation NanoClaw #22410 : le job *attendu* vert ne doit pas masquer
+    le rouge d'une AUTRE jambe prefixee.
+
+    Le code rendait `checks[expected] == "fail"` des que le nom attendu
+    existait, donc le repli `any(...)` n'etait jamais consulte. Avec le split
+    body (#22333) qui ajoute une seconde jambe prefixee, un rouge sur celle-ci
+    etait ignore et le sweep se taisait -- la classe de #22403, reduite a un
+    cas d'ecole.
+    """
+    expected = rsa.content_guard_name()
+    assert expected is not None
+    monkeypatch.setattr(
+        rsa, "get_pr_checks",
+        lambda pr: {expected: "pass",
+                    "Always-on guards -- 17 organes, 1 checkout": "fail"},
+    )
+    assert rsa.is_always_on_guards_failing(1) is True
+
+
+def test_all_prefixed_legs_green_is_not_failing(monkeypatch):
+    """Controle negatif du cas precedent : deux jambes prefixedes vertes ne
+    declenchent rien, la lecture n'est pas devenue « toujours vrai »."""
+    expected = rsa.content_guard_name()
+    monkeypatch.setattr(
+        rsa, "get_pr_checks",
+        lambda pr: {expected: "pass",
+                    "Always-on guards -- 17 organes, 1 checkout": "pass"},
+    )
+    assert rsa.is_always_on_guards_failing(1) is False
+
+
 # --- verdict-routing tests (refresh_one logic, mocked subprocess) ------------
 
 
