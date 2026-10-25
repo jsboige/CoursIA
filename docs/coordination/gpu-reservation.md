@@ -218,18 +218,58 @@ Le tenancier de `myia-ai-01#gpu2` a besoin de **récupérer le statut GPU des au
 1. **Routage d'une expérience GPU** : si le GPU 2 de `myia-ai-01` est saturé, le picker peut router l'expérience vers `myia-po-2023#gpu1` ou `myia-po-2024#gpu0` selon leur disponibilité.
 2. **Coordination de fenêtre** : deux expériences concurrentes sur deux machines doivent être séquencées pour éviter de saturer l'API GitHub (rate limit GraphQL partagé) ou le réseau de téléchargement de modèles.
 
-### Topologie GPU connue (à 2026-10-08)
+### Cartes device mesurées (2026-10-25)
 
-| Machine | GPU disponibles | Tenancier (lane) | Statut observation |
-|---|---|---|---|
-| `myia-ai-01` | gpu0 (vLLM), gpu1 (vLLM), **gpu2** (training) | `myia-ai-01:CoursIA-2` | observation c.257 (252 MiB used, 31°C) |
-| `myia-po-2023` | gpu0, gpu1 | `myia-po-2023:CoursIA-3` | (à confirmer — DM `po-2023`) |
-| `myia-po-2024` | gpu0, gpu1 | `myia-po-2024:CoursIA-2` | (à confirmer — DM `po-2024`) |
-| `myia-po-2025` | (à confirmer — pas de training GPU sur cette machine a priori) | `myia-po-2025:CoursIA-2` (adjoint) | n/a |
-| `myia-po-2026` | (à confirmer) | `myia-po-2026:CoursIA-2` | n/a |
-| `myia-po-2027` | (à confirmer) | `myia-po-2027:CoursIA-2` | n/a |
+La table du 2026-10-08 portait six lignes « à confirmer » : elle nommait les machines
+sans nommer leurs devices, donc le routage ne pouvait pas s'y appuyer. Elle est
+remplacée par des **cartes mesurées sur le siège**, une par device, avec leur date,
+leur VRAM réelle et les lanes autorisées à lancer.
+
+| Device | Modèle | VRAM | Lanes autorisées à lancer | Réservable par défaut | Mesure | Source |
+|---|---|---|---|---|---|---|
+| `myia-ai-01#gpu0` | RTX 4090 | 24 564 MiB | **aucune** — vLLM de la flotte | non | 2026-10-25 : 22 620 MiB occupés, 98 % | mesure locale |
+| `myia-ai-01#gpu1` | RTX 4090 | 24 564 MiB | **aucune** — vLLM de la flotte | non | 2026-10-25 : 21 408 MiB occupés, 99 % | mesure locale |
+| `myia-ai-01#gpu2` | RTX 4090 | 24 564 MiB | `myia-ai-01:CoursIA-2` (seul lanceur) | non (tenu) | 2026-10-25 : 15 013 MiB, 24 %, run onset en vol | mesure locale |
+| `myia-po-2023#gpu0` (`CVD=0`) | RTX 3090 | 24,0 GiB | `myia-po-2023:CoursIA`, autres lanes sur accord | oui | 2026-10-25T14:12Z : 22,8 GiB libres | DM po-2023 |
+| `myia-po-2023#gpu1` (`CVD=1`) | RTX 3080 Ti Laptop | 16,0 GiB | idem | oui | 2026-10-25T14:12Z : 14,8 GiB libres | DM po-2023 |
+| `myia-po-2025#gpu0` | RTX 3080 Ti Laptop | 16 384 MiB | `myia-po-2025:CoursIA`, `myia-po-2025:CoursIA-2` | oui | 2026-10-25T14:19Z — **seul device exposé** (driver 616.92) | DM po-2025 |
+| `myia-po-2027#gpu0` | RTX 4060 Laptop | 8 188 MiB | `myia-po-2027:CoursIA`, `myia-po-2027:CoursIA-2` | oui | 2026-10-25T15:26Z | DM po-2027 |
+| `myia-po-2028#gpu0` | RTX 3070 Ti Laptop (cc 8.6) | 8 192 MiB | `myia-po-2028:CoursIA`, `myia-po-2028:CoursIA-2` — **politique posée par la régie**, le siège n'en portait aucune | oui | 2026-10-25T14:40Z : 0 compute app | DM po-2028 |
+| `myia-po-2024#gpu0`, `#gpu1` | — | — | — | **à mesurer** | carte **non reçue** | silence |
+| `myia-po-2026` | — | — | — | **à mesurer** | carte **non reçue** | silence |
 
 **gpu0/gpu1 de ai-01 portent le vLLM de la flotte** et ne se réservent pas (mêmes slots sont consommés par le serving).
+
+Une carte manquante n'est **pas** une carte vide : `myia-po-2024` et `myia-po-2026`
+n'ont pas répondu à la demande, et rien dans ce registre ne dit qu'elles sont libres.
+Les deux lignes se remplissent à la réception, pas par déduction.
+
+### Piège d'indexation — mesuré sur `myia-po-2023` le 2026-10-25
+
+**L'indice `CUDA_VISIBLE_DEVICES` et le numéro de ligne `nvidia-smi` peuvent être
+inversés.** Sur `myia-po-2023`, `CUDA_VISIBLE_DEVICES=0` désigne la **RTX 3090
+(24 GiB)** et `=1` la **3080 Ti Laptop (16 GiB)** — alors que la ligne 0 de
+`nvidia-smi` est la 3080 Ti. Une régie qui déduirait le device de l'ordre
+`nvidia-smi` enverrait les gros runs sur la carte de 16 GiB, et le run échouerait
+en OOM après avoir démarré.
+
+**Règle** : l'identité d'un device se mesure **côté torch**
+(`torch.cuda.get_device_name(i)` et `torch.cuda.mem_get_info(i)`), jamais depuis le
+numéro de ligne `nvidia-smi`. La carte d'un siège est donc publiée avec son indice
+`CVD` **et** le nom du modèle, comme ci-dessus.
+
+Deuxième écart, même mesure : sous WDDM, le driver rapporte **plus** de mémoire
+occupée que torch n'en voit. On dimensionne un run sur les chiffres torch, pas sur
+ceux de `nvidia-smi`.
+
+### Deux contraintes de siège qui ne sont pas des capacités
+
+- `myia-po-2025#gpu0` est **le seul device** exposé par le pilote de ce siège : une
+  réservation y consomme tout le GPU, il n'y a pas de second slot où déborder. Et
+  c'est une carte **Laptop** : le budget de temps d'un run n'y est pas comparable à
+  celui d'une 4090 de station (fréquence variable sous chauffe).
+- Aucun run GPU ne se lance sur un siège pendant sa **fenêtre UAC/Maintenance** :
+  les deux se marcheraient dessus (constat po-2025).
 
 ### Protocole de récupération cross-machine (c.258)
 
@@ -244,14 +284,15 @@ Le tenancier publie sa propre observation `[OBS]` sur le dashboard `CoursIA-gpu-
 L'observation `[OBS]` d'un slot gpu0/gpu1 sur ai-01 est **interdite** : ces slots portent le serving de la flotte (LLM endpoint partagé). Le tenancier publie une observation uniquement pour les slots **non-vLLM** (gpu2 sur ai-01, gpu0/gpu1 sur les autres machines selon leur rôle). Une erreur d'aiguillage (lancer un training sur un gpu vLLM) saturerait le serving et bloquerait tous les agents de la flotte.
 
 **Heuristique de discrimination vLLM / training** :
-- ai-01 : gpu0/gpu1 = vLLM (à ne **jamais** réserver), gpu2 = training.
-- po-2023/po-2024 : à confirmer par observation de la première `[OBS]`. Par convention, les machines worker `po-*` utilisent leurs gpu0/gpu1 en training (pas de serving), mais cette convention peut évoluer.
+- ai-01 : gpu0/gpu1 = vLLM (à ne **jamais** réserver), gpu2 = training. Seul siège de la flotte dans ce cas à ce jour.
+- Tous les autres sièges mesurés (`po-2023`, `po-2025`, `po-2027`, `po-2028`) exposent leurs devices en **training uniquement**, sans serving : leurs cartes le disent device par device, ce n'est plus une convention. `po-2024` et `po-2026` n'ont pas encore de carte — l'absence de serving n'y est **pas** établie.
 
 ### Trigger de mise à jour
 
 - **Toutes les 6 h** en cron worker (`myia-ai-01:CoursIA-2` active) : DM probe aux tenanciers des autres machines.
 - **Sur demande coordinateur** : DM HIGH au tenancier (canal direct).
 - **Événement** : nouvelle release d'expérience GPU, ou redirection de job en cours.
+- **Carte manquante** : un siège sans carte reste listé comme tel à chaque passage ; il ne se remplit ni par convention ni par déduction. Relance nominative tant que la ligne est vide.
 
 ## Liens
 
@@ -272,3 +313,4 @@ L'observation `[OBS]` d'un slot gpu0/gpu1 sur ai-01 est **interdite** : ces slot
 - **5e livrable (c.2249)** : premier **fold effectif** du ledger (export large, puis réduction ; rejets `observation_id_mismatch` — compteurs dans le tableau « Premier fold effectif ») + les deux règles qui le rendent fiable — `observation_id` **calculé** et jamais écrit à la main, clé machine prise dans le roster de la flotte (`ai-01` et `myia-ai-01` sont deux écritures pour un GPU) — + la planification hebdomadaire publiée avec chaque snapshot.
 
 - **6e livrable (PR #21684)** : canonicalisation de la clé machine au niveau outil (`canonical_machine()`) -- alias vers le nom canonique du roster, machine hors roster refusée, digest historique accepté pour ne perdre aucune observation ; la règle de protocole correspondante est reprise dans la section « La clé machine est canonicalisée ».
+- **7e livrable (2026-10-25)** : la topologie du 2026-10-08 (six lignes « à confirmer ») est remplacée par des **cartes device mesurées** — modèle, VRAM réelle, indice `CUDA_VISIBLE_DEVICES`, lanes autorisées, date et source de la mesure, pour quatre sièges (`po-2023` deux devices, `po-2025`, `po-2027`, `po-2028`) plus les trois devices d'ai-01. Deux sièges restent **sans carte** (`po-2024`, `po-2026`) et sont listés comme tels. Deux règles mesurées entrent au protocole : l'indice `CUDA_VISIBLE_DEVICES` peut être **l'inverse** de l'ordre `nvidia-smi` (mesure po-2023, l'identité d'un device se lit côté torch), et un siège sans carte n'est **pas** un siège libre.
