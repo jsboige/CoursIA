@@ -231,7 +231,19 @@ def test_audit_allowlists_native_decide_axioms():
     self-certify. Here the second reading is the coordinator's B.0 pass. Each
     of the 12 ratchet names is `._native.native_decide.ax_1_1` on a finite
     proposition, all are enumerated, and the no-wildcard property is
-    unchanged."""
+    unchanged.
+
+    **Narrowed to 77 by #21833**: the two `_initial_nonempty` twins per file
+    (`otca_initial_nonempty`, `unitcell_initial_nonempty` and their `_en`
+    counterparts -- 4 names) stopped being `native_decide`: their statements
+    are now DERIVED from the corresponding population theorems
+    (`otca_initial_population` / `unitcell_initial_population`) by
+    `List.length` + `omega`, with the statements unchanged. `#print axioms`
+    on the rebuilt lake measures 5 anchors per file (10 for the FR/_en pair)
+    instead of 7 per file (14 for the pair). The 4 names are removed from the
+    allow-list, which TIGHTENS the gate: a future `native_decide` reintroduced
+    on those declarations is now a new red, which is the property the
+    no-wildcard rule exists to preserve."""
     jobs = _load_jobs()
     audit = jobs["proof-integrity-audit"].get("with", {})
     allow = audit.get("allow-axioms", "")
@@ -241,14 +253,16 @@ def test_audit_allowlists_native_decide_axioms():
     # the blocking gate's 19) is caught -- and so any future widening has to
     # come with the module-attribution argument, as #9341's did.
     names = [a.strip() for a in allow.split(",") if a.strip()]
-    assert len(names) == 81, (
-        f"audit allow-list must carry the 81 native_decide axioms of the whole "
+    assert len(names) == 77, (
+        f"audit allow-list must carry the 77 native_decide axioms of the whole "
         f"lake under the #10889 '*' derivation (38 HashlifeCorrectness-era "
         f"footprint + 21 build-enumerated entries of the newly covered "
         f"modules + 2 P4-At standalone witnesses from grain 3a #11303 + 8 "
         f"class-witness entries from the #6724 criterion-3 characterization "
         f"[PR #11910] + 8 Pillars entries from #20004 [tranche 2 of #19989] "
-        f"+ 4 Pillars entries from the OTCA tranche 3 of #19989, "
+        f"+ 4 Pillars entries from the OTCA tranche 3 of #19989 "
+        f"- 4 Pillars `_initial_nonempty` entries derived (not native_decide) "
+        f"by #21833, "
         f"each attributed in the workflow comment); got {len(names)}")
     # Sample members from each family revealed by the audit (P4 base cases,
     # box-assez-grand lemmas, hashlife_correct_implies bridges, plus one
