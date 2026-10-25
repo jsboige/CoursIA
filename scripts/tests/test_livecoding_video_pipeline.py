@@ -1450,8 +1450,16 @@ class TestSetEditorCode:
         page = _FakeEditorPage(codemirror_available=False)
         assert _set_editor_code(page, self.CODE) == "keyboard"
         assert page.editor_clicks == 1
-        assert page.key_presses == ["Control+A"]
+        assert page.key_presses == ["Control+A", "Control+Home"]
         assert page.keyboard_inserts == [self.CODE]
+
+    def test_ramene_le_curseur_au_debut_apres_ecriture(self):
+        # Sans ce rappel, CodeMirror laisse le curseur en fin de document et
+        # defile horizontalement : mesure du 2026-10-25, la ligne 1 sortait
+        # par la gauche et le code affiche etait tronque.
+        page = _FakeEditorPage(codemirror_available=False)
+        _set_editor_code(page, self.CODE)
+        assert page.key_presses[-1] == "Control+Home"
 
     def test_ne_reevalue_jamais_le_pattern(self):
         # Control+Enter relancerait l'evaluation : la musique doit continuer

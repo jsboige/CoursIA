@@ -1422,9 +1422,23 @@ def _set_editor_code(page: object, code: str) -> str:
        ``insert_text`` — une seule insertion, pas de frappe caracteres
        par caracteres (ce qui rendrait la capture lente et fragile).
 
+    MESURE du 2026-10-25 (deux captures reelles) : la voie 1 n'a pas
+    mordu sur strudel.cc — ``.cm-content`` n'expose pas de vue et
+    ``EditorView`` n'est pas global dans le bundle de la page. Le repli
+    clavier a porte les 4 etats dans les deux captures. La voie 1 est
+    conservee comme chemin opportuniste (les internes du DOM changent
+    d'une version de CodeMirror a l'autre) et son echec est rapporte
+    dans le resultat de capture (``editor_api``), jamais silencieux.
+
     Ne JAMAIS envoyer ``Control+Enter`` : la musique doit continuer de
     jouer le pattern complet pendant que l'editeur se remplit. L'export
     WAV qui suit lit le dernier etat, identique au script entier.
+
+    Le curseur est ensuite ramene au debut du document (selection a 0,
+    ou ``Control+Home``). Sans ce rappel, CodeMirror laisse le curseur
+    en fin de document et defile horizontalement : mesure sur la capture
+    du 2026-10-25, la ligne 1 sortait par la gauche et le code affiche
+    etait tronque. Un deplacement de curseur n'est pas une reevaluation.
 
     Retourne le nom de la voie qui a effectivement ecrit (``codemirror``
     ou ``keyboard``) — mesure reportee dans le resultat de capture.
@@ -1439,6 +1453,7 @@ def _set_editor_code(page: object, code: str) -> str:
             view.dispatch({
                 changes: {from: 0, to: view.state.doc.length, insert: code},
             });
+            view.dispatch({selection: {anchor: 0}, scrollIntoView: true});
             return true;
         }""",
         code,
@@ -1450,6 +1465,7 @@ def _set_editor_code(page: object, code: str) -> str:
     editor.click(timeout=10_000)
     page.keyboard.press("Control+A")
     page.keyboard.insert_text(code)
+    page.keyboard.press("Control+Home")
     return "keyboard"
 
 
