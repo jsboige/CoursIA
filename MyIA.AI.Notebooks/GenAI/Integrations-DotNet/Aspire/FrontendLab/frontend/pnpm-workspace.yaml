@@ -1,0 +1,7 @@
+# Reglages pnpm du lab. Depuis pnpm 11/12 le champ "pnpm" de package.json n'est
+# plus lu, et le blocage des scripts d'installation se regle ici par la table
+# "allowBuilds" (paquet -> autorise). Mesure sur pnpm 12.15.0 :
+# ERR_PNPM_IGNORED_BUILDS tant qu'esbuild n'y figure pas. Son script est
+# legitime : il choisit le binaire de la plateforme, Vite en depend.
+allowBuilds:
+  esbuild: true
