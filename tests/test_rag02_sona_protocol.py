@@ -166,7 +166,10 @@ def test_arxiv_reference_is_sona_technical_report():
     intro = _cells_of(nb, "markdown", containing="Pont vers le catalogue musical")[0][2]
     assert "arXiv:2608.11015" in intro
     assert "2509.14471" not in intro  # colloides Janus, pas Sona
-    assert "Udeneev" in intro
+    # attribution au collectif Sona Team (corrected #21901 contre le PDF canonique
+    # du gisement, page 1 ; Udeneev n'est que le lead liste par la page arXiv)
+    assert "Sona Team" in intro
+    assert "Udeneev et al" not in intro  # attribution incomplete, corrigee
     # les auteurs fabriques de l'ancienne version ne doivent plus y figurer
     for fake in ["Miasnikov", "Ershov", "Gorodnichy"]:
         assert fake not in intro, f"auteur fabrique encore cite : {fake}"
