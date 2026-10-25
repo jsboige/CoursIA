@@ -2,7 +2,7 @@
 
 > **Statut** : investigation first-hand c.487, Pli 2.0 CLOSE.
 > **Date** : 2026-10-18 (verdict révisé le 2026-10-22).
-> **Lane** : myia-po-2024:CoursIA-2 (Lean toolchain dispo Tell c.320-N1, Lean 4.35.0, Lake 5.0.0).
+> **Lane** : myia-po-2024:CoursIA-2 (Lean toolchain disponible, Lean 4.35.0, Lake 5.0.0).
 > **EPIC parent** : #21310 (Project DarkSnail Origami).
 > **Arbitrage coordinateur** : option (c) retenue — arrêt de Pli 2 et pivot `so(M)` par d'autres sources (revue ai-01 du 2026-10-21 sur la PR de ce document, réserve de fond reprise ici).
 
@@ -23,7 +23,7 @@ Le verdict Pli 1.2 de po-2027 (`INSUFFICISANT`) est **confirmé et sa cause est 
 
 ### 1.1 Préparation
 - Worktree isolé : `D:\Dev\CoursIA-c487-darksnail-pli2` sur `feature/darksnail-pli2-lake-enveloppe` depuis origin/main.
-- Lean toolchain : `leanprover/lean4:v4.35.0` (po-2024 Tell c.320-N1).
+- Lean toolchain : `leanprover/lean4:v4.35.0` (installée sur po-2024).
 - Lake version : 5.0.0-src+eb6cafb.
 - Dossier `DarkSnailLake/` créé à la racine du worktree.
 
