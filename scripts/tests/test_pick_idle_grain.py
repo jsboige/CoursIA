@@ -31,7 +31,7 @@ from merge_dwell import evaluate as _md_evaluate  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def _no_shell_escape(forbid_shell_escape):
+def _no_shell_escape(forbid_shell_escape, monkeypatch):
     """Sentinelle armee pour tout le module (#20021).
 
     Un test qui lance un processus ici n'a pas simule une de ses sources :
@@ -40,6 +40,13 @@ def _no_shell_escape(forbid_shell_escape):
     ont besoin d'un faux `gh` patchent `pig.subprocess.run` eux-memes
     (`_patch_gh`, `_patch_gh_annotations`) et surchargent la sentinelle.
     """
+    # Identite posee par le test lui-meme (#21994) : `main()` epingle un
+    # jeton AVANT argparse, et sans `GH_TOKEN` dans l'environnement cette
+    # resolution lance un VRAI `gh auth token --user <compte de l'hote>` --
+    # processus refuse par la sentinelle. Le jeton ci-dessous est donc pose
+    # par le test, jamais resolu par le code sous test : le module ne depend
+    # ni de l'environnement ambiant, ni de l'ORDRE de ses fichiers.
+    monkeypatch.setenv("GH_TOKEN", "tok-fake-picker-test")
     return forbid_shell_escape
 
 
@@ -415,6 +422,21 @@ def test_unaddressed_review_points_leaves_an_unreadable_pr_absent(monkeypatch):
         raise RuntimeError("reseau")
 
     monkeypatch.setattr(check_unaddressed_nits, "analyse_pr", _boom)
+    assert pig.unaddressed_review_points([18829]) == {}
+
+
+def test_unaddressed_review_points_budget_exhausted_is_absent_not_zero(monkeypatch):
+    """#21882/#21964 : une passe a budget epuise rend la PR ABSENTE, jamais un
+    0 « evaluee claire ». Le marqueur `budget_exhausted` du dict `analyse_pr`
+    doit propager ici et basculer en None (fail-closed) : sinon le 0 autoritaire
+    de `elif not info["blocked"]` figeait le tirage de toute la flotte."""
+    import check_unaddressed_nits
+    monkeypatch.setattr(
+        check_unaddressed_nits, "analyse_pr",
+        lambda n: {"pr": n, "blocked": False, "blocking": [],
+                   "unevaluated": [], "unevaluated_total": 0,
+                   "budget_exhausted": True},
+    )
     assert pig.unaddressed_review_points([18829]) == {}
 
 
@@ -4137,6 +4159,98 @@ def test_candidate_delivered_revoked_n_est_pas_un_marqueur(monkeypatch):
         monkeypatch, [], issue=_issued_comments(
             "[INFO] candidate-delivered-revoked livraison partielle."))
     assert pig._has_delivered_marker(14373) is False
+
+
+# #19907 predicat 4 : cloture explicite voie 3 (`[DELIVERED] lane ...`,
+# c.15069 cmt 6055717533). Le filtre recent #19768 ne voit que le DERNIER
+# commentaire ; la sonde pleine doit attraper la cloture NON derniere,
+# typiquement suivie d'un ack coordinateur -- c'est le cas mesure du
+# verdict ai-01 du 14/10 (« non implemente dans delivered_signal_reason »).
+_VOIE3_BODY = "[DELIVERED] lane myia-po-2026:CoursIA -- PR #19913"
+
+
+def test_delivered_lane_voie3_arme_la_sonde_pleine(monkeypatch):
+    """Predicat 4 : une cloture voie 3 NON derniere (un ack suit) arme la
+    sonde pleine -- le filtre recent ne la voyait pas par construction."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _VOIE3_BODY,
+            "Ack coordinateur, livraison prise en compte."))
+    assert pig._has_delivered_marker(14373) is True
+
+
+def test_delivered_lane_retracte_par_not_delivered_posterieur(monkeypatch):
+    """Meme grammaire d'ETAT que les autres formes : un [NOT-DELIVERED]
+    posterieur (verdict de livraison partielle) remet l'issue sur le tapis."""
+    _patch_gh_transports(
+        monkeypatch, [], issue=_issued_comments(
+            _VOIE3_BODY,
+            "[NOT-DELIVERED] verification first-hand : 2 cellules sur 5."))
+    assert pig._has_delivered_marker(14373) is False
+
+
+def test_delivered_lane_sans_forme_canonique_ne_sarme_pas():
+    """La sonde pleine exige `\s+lane\b` : `[DELIVERED]` nu en milieu de
+    commentaires reste au filtre recent #19768 (dernier commentaire) --
+    l'elargir ici ecarterait des grains cites en prose (doc, exemples)."""
+    assert pig._DELIVERED_MARKER_RE.search(_VOIE3_BODY) is not None
+    assert pig._DELIVERED_MARKER_RE.search("[DELIVERED] sans forme lane") is None
+    assert pig._DELIVERED_MARKER_RE.search("merger puis [DELIVERED] lane X") is None
+
+
+def test_citation_delivered_lane_ne_sarme_pas():
+    """Ancrage debut de ligne : un bloc de citation `> [DELIVERED] lane`
+    (le verbatim d'une cloture citee en revue) ne fait pas livraison."""
+    assert pig._DELIVERED_MARKER_RE.search(
+        "> [DELIVERED] lane myia-po-2026:CoursIA -- PR #19913") is None
+
+
+def test_delivered_resolved_short_cause_les_quatre_motifs():
+    """Acceptance 2 : le motif court distingue les 4 predicats sans la
+    phrase pedagogique complete."""
+    assert pig._delivered_resolved_short_cause(
+        "LIVRAISON : SIGNAL LIVRAISON (label `candidate-delivered`) : le "
+        "travail de cette issue est deja livre.") == "label candidate-delivered"
+    assert pig._delivered_resolved_short_cause(
+        "LIVRAISON : SIGNAL LIVRAISON (commentaire `[INFO] "
+        "candidate-delivered` / `[DELIVERED] lane`) : une lane a deja rendu "
+        "la main.") == ("commentaire [INFO] candidate-delivered / "
+                        "[DELIVERED] lane")
+    assert pig._delivered_resolved_short_cause(
+        "LIVRAISON : SIGNAL LIVRAISON (PR MERGEE <90j) : une PR MERGEE "
+        "recente cite cette issue.") == "PR MERGEE <90j"
+    assert pig._delivered_resolved_short_cause(
+        "LIVRAISON (recent) : marqueur de cloture sur le dernier "
+        "commentaire ([DELIVERED] / [RELEASED] / [FROZEN] / [INFO] "
+        "candidate-delivered). Candidat remplace.") == (
+        "marqueur de cloture sur le dernier commentaire")
+
+
+def test_print_delivered_resolved_lines_une_ligne_par_candidat(capsys):
+    """Acceptance 2 : une ligne `ECARTE (delivered-resolved): #N -- motif`
+    par candidat livre, AVANT les picks -- les retraits non-livraison (EN
+    COURS) et le motif recent ne polluent pas la sortie."""
+    withheld = [
+        ({"number": 19741}, "LIVRAISON : SIGNAL LIVRAISON (label "
+         "`candidate-delivered`) : deja livre. Candidat remplace."),
+        ({"number": 16031}, "LIVRAISON : SIGNAL LIVRAISON (PR MERGEE <90j) : "
+         "citee. Candidat remplace."),
+        ({"number": 10643}, "LIVRAISON (recent) : marqueur de cloture sur le "
+         "dernier commentaire. Candidat remplace."),
+        ({"number": 12345}, "EN COURS : PR ouverte couvrante. Candidat "
+         "remplace."),
+    ]
+    pig.print_delivered_resolved_lines(withheld, indent="   ")
+    out = capsys.readouterr().out.splitlines()
+    ecartees = [l for l in out if "delivered-resolved" in l]
+    assert len(ecartees) == 3
+    assert ecartees[0] == ("   ECARTE (delivered-resolved): #19741 -- "
+                           "label candidate-delivered")
+    assert ecartees[1] == ("   ECARTE (delivered-resolved): #16031 -- "
+                           "PR MERGEE <90j")
+    assert ecartees[2] == ("   ECARTE (delivered-resolved): #10643 -- "
+                           "marqueur de cloture sur le dernier commentaire")
+    assert not any("#12345" in l for l in out)
 
 
 def test_corps_contradictoire_la_retractation_l_emporte(monkeypatch):
