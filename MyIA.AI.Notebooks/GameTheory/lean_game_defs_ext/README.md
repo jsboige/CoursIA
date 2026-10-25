@@ -18,6 +18,7 @@ l'Epic #2610 livrées (cf [Lien avec `lean_game_defs/`](#lien-avec-lean_game_def
 | `Bayesian/Vickrey.lean` | Enchère au second prix (Vickrey) : enchérir sa valeur **domine faiblement** toute autre enchère (argument pointwise classique), donc BNE sincère **pour tout `n`** (théorème général, sans `decide`) ; rente d'information strictement positive du type haut, en contraste avec le premier prix (phase 3) |
 | `Bayesian/Max.lean` | Maxima finis sur `Fin (n + 1)` (`maxFin`) : bornes `le_maxFin`/`maxFin_le`, et le lemme maître `maxFin_sumFin_le` (max d'une somme ≤ somme des maxima par groupe) (phase 4) |
 | `Bayesian/Information.lean` | Valeur de l'information pour un décideur seul : signaux déterministes = partitions des états, `valueNoInfo ≤ valueSignal ≤ valuePerfect`, **monotonie de Blackwell** (`valueSignal_mono` : un signal plus fin vaut toujours au moins autant, via factorisation σ = h ∘ τ), exemple parapluie chiffré par `decide` (phase 4) |
+| `Bayesian/InformationNoisy.lean` | Valeur de l'information pour un signal **bruité** : table jointe de poids naturels état × réalisation et paiements entiers, donc des valeurs exactes sans division conditionnelle ; `valueNoisyNoInfo ≤ valueNoisySignal ≤ valueNoisyPerfect`, réalisation de masse nulle de contribution exactement nulle, **critère d'Evans** (`valueNoisySignal_eq_valueNoisyNoInfo_of_factored` : table factorisée ⇒ EVSI brute exactement nulle), valeur brute `evsiRaw` non négative opposée à une valeur nette `evsiNet` qui peut être négative, et **pont** `ofSignal` vers les signaux déterministes de `Information.lean` (les trois valeurs y coïncident) |
 | `Bayesian/InfoGames.lean` | **L'information peut nuire dans un jeu** : contre-exemple 2 états / 2×2 où le BNE est unique dans chaque scénario (certifié `decide` + eta-expansion des stratégies) et le joueur informé gagne strictement moins (3 < 5) que s'il ne voyait rien — contraste kernel-checked avec la monotonie à un joueur (phase 4) |
 | `Bayesian/Reputation.lean` | **Réputation et dissuasion d'entrée** (chain-store à 2 périodes, forme stratégique réduite) : incumbent à 2 types (rationnel / *tough*), raffinement décidable de crédibilité (rationalité séquentielle en dernière période), BNE crédible **unique** dans chaque scénario — avec incertitude le type rationnel *poole* (il combat alors que combattre est myopiquement dominé) et dissuade l'entrée (paiement 5) ; en information complète l'entrée a lieu (paiement 4) : `reputation_pays` 5 > 4 (phase 5) |
 | `Bayesian/Regret.lean` | **Regret externe pour une suite finie de jeu** (phase 6 — cible GT-13 `minimisation de regret`) : `realizedTotal` (somme des paiements perçus), primitives de regret (`regretExternal`, somme des écarts à la meilleure action *a posteriori* par profil) ; briques arithmétiques certifiées par `decide` sur les exemples concrets |
@@ -89,12 +90,18 @@ Compagnon formel de `GameTheory-11-BayesianGames-Python.ipynb`, il couvre l'Epic
   faiblement** toute autre enchère (`spa_truthful_dominant1/2`, argument pointwise
   classique) — donc BNE sincère **pour tout `n`** sans `decide` ; le type haut
   capture une rente d'information strictement positive.
-- **Valeur de l'info
-
-rmation** (`Information.lean`) : `valueNoInfo ≤ valueSignal ≤
+- **Valeur de l'information** (`Information.lean`) : `valueNoInfo ≤ valueSignal ≤
   valuePerfect` et la **monotonie de Blackwell** (`valueSignal_mono` : un signal
   plus fin vaut toujours au moins autant, via factorisation σ = h ∘ τ) ;
   exemple « parapluie » chiffré par `decide`.
+- **Information bruitée et pont déterministe** (`InformationNoisy.lean`) : le
+  signal bruité est une table jointe de poids naturels, ce qui garde les
+  valeurs exactes (aucune division conditionnelle) ; le **critère d'Evans** y
+  est un théorème (`valueNoisySignal_eq_valueNoisyNoInfo_of_factored`) et non
+  un constat numérique, la valeur brute non négative ne dit rien du signe de
+  la valeur nette (`evsiNet`), et le pont `ofSignal` établit que les deux
+  sémantiques coïncident sur les signaux déterministes au lieu de diverger en
+  silence.
 - **L'information peut nuire en jeu** (`InfoGames.lean`) : contre-exemple 2
   états / 2×2 où le BNE est unique dans chaque scénario et le joueur informé
   gagne strictement **moins** (3 < 5) que sans information — contraste
