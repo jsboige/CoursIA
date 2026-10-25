@@ -36,7 +36,7 @@ Structure de la 4e édition lue dans le sommaire du PDF du gisement (p. vii-xiii
 | 18 | Multiagent Decision Making | `GameTheory` · `GameTheory/game_theory_lean` | OpenSpiel (jeux répétés, enchères, négociation), jeux coopératifs en Lean (Shapley) | 109 |
 | 19 | Learning from Examples | `ML/ML.Net` | ML.NET (classifieurs, régression, évaluation) | 23 |
 | 20 | Learning Probabilistic Models | `ML/ML.Net` · `Probas` | EM/clustering ML.NET, mélanges Infer.NET | — (transversal, pas de sous-série dédiée) |
-| 21 | Deep Learning | `ML/DataScienceWithAgents/03-DeepLearning` · `GenAI` | torch (entraînements GPU), pile GenAI | 101 (série) |
+| 21 | Deep Learning | `ML/DataScienceWithAgents/03-Deep-Learning` · `GenAI` | torch (entraînements GPU), pile GenAI | 101 (série) |
 | 22 | Reinforcement Learning | `RL` · `QuantConnect/projects` (ML-Training-Pipeline) | PPO/Decision Transformer/LSTM du pipeline QC (multi-seed, DM) | 36+220 |
 | 23 | Natural Language Processing | `NLP` | n-grammes, CRF, PCFG/CYK (`01`–`05`) | 5 |
 | 24 | Deep Learning for NLP | `GenAI/Texte` · `GenAI/Integrations-DotNet` · `GenAI/RAG-et-Memoire-Semantique` | Semantic Kernel (`Microsoft.SemanticKernel`), vLLM/Qwen locaux, function calling, RAG | 41 |

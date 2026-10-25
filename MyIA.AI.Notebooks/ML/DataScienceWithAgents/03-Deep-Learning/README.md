@@ -1,4 +1,4 @@
-# 03-DeepLearning — Le deep learning from scratch : ouvrir la boîte noire couche par couche
+# 03-Deep-Learning — Le deep learning from scratch : ouvrir la boîte noire couche par couche
 
 [← DataScienceWithAgents (série parente)](../README.md) | [02-ML-Cours (prérequis)](../02-ML-Cours/README.md)
 
