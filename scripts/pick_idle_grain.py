@@ -5539,7 +5539,13 @@ def _visit_age_hours(stamp, now) -> float | None:
     except ValueError:
         return None
     if when.tzinfo is None:
-        when = when.replace(tzinfo=dt.timezone.utc)
+        # `fromisoformat` a rendu un horodatage naif : on le relit avec un
+        # offset explicite plutot que de lui plaquer `timezone.utc`, ce qui
+        # garde une seule lecture de la chaine d'origine.
+        try:
+            when = dt.datetime.fromisoformat(text + "+00:00")
+        except ValueError:
+            return None
     return (now - when).total_seconds() / 3600.0
 
 

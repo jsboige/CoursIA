@@ -20,15 +20,15 @@ defaut (#19913), et les dates sont injectees par `now=`.
 """
 import sys
 import types
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "ci"))
 
-import pick_idle_grain as pig  # noqa: E402
+import pick_idle_grain as pig
 
-NOW = datetime(2026, 10, 25, 12, 0, 0, tzinfo=timezone.utc)
+NOW = datetime(2026, 10, 25, 12, 0, 0, tzinfo=UTC)
 
 
 def _iso(hours_ago: float) -> str:
@@ -68,6 +68,19 @@ def test_consolidation_due_passe_devant_un_grain_plus_recent():
     30 h : sans classe de priorite, le grain ordinaire passait devant."""
     consolid = _item(1001, title="Consolidation de la serie Search", visit_h=72)
     ordinaire = _item(1002, visit_h=30)
+    ordered = sorted([ordinaire, consolid], key=lambda it: pig.belt_sort_key(it, now=NOW))
+    assert [it["number"] for it in ordered] == [1001, 1002]
+
+
+def test_consolidation_due_double_un_grain_plus_ancien_qu_elle():
+    """Le cas que la classe existe pour couvrir, et le seul qui la distingue
+    du tapis d'origine : un grain ordinaire attend depuis 10 jours, une
+    consolidation visitee il y a 49 h est due. Sans classe (#18832), la plus
+    ancienne visite passe devant, donc le grain ; avec la classe, la
+    consolidation due le double. Un test ou la consolidation serait deja la
+    plus ancienne ne prouverait rien."""
+    consolid = _item(1001, title="Consolidation de la serie Search", visit_h=49)
+    ordinaire = _item(1002, visit_h=24 * 10)
     ordered = sorted([ordinaire, consolid], key=lambda it: pig.belt_sort_key(it, now=NOW))
     assert [it["number"] for it in ordered] == [1001, 1002]
 
