@@ -3,8 +3,14 @@
 > **Statut.** Case **11** du tracker de veille/distillation #8182 (TOE ↔ conscience,
 > carrefour Jaimungal × socle grothendieckien). Distillation **grade C documentaire**
 > du toy de Hoffman (D. Hoffman, *Objects of Consciousness*, 2019) formalisé par
-> Prakash, Stephens, Hoffman, Singh & Fields (2017, *Fitness Beats Truth in the
-> Evolution of Perception*, arXiv [ici](https://arxiv.org/abs/1505.04322)).
+> Prakash, Stephens, Hoffman, Singh & Fields (2021, *Fitness Beats Truth in the
+> Evolution of Perception*, *Acta Biotheoretica* 69(3) : 319-341,
+> [doi:10.1007/s10441-020-09400-0](https://doi.org/10.1007/s10441-020-09400-0)).
+>
+> Les renvois « §4 » de cette fiche désignent la **section 4 du préprint** du
+> 30 juillet 2017 (« Comparing perceptual strategies: Truth vs. Fitness-only »),
+> seule version dont la numérotation est vérifiée ici ; c'est cette version qui est
+> archivée au gisement bibliographique, l'article publié étant sous accès payant.
 
 ## Objet et motivation
 
@@ -84,11 +90,11 @@ Ce scaling est exactement la Table 1 de Prakash et al. — le théorème FBT dit
 - `docs/ict/dissociations-matrix.md` (ligne ajoutée, strate 5)
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ict/hoffman_interface_toy.py` (toy)
 - `MyIA.AI.Notebooks/IIT/ICT-Series/ict/tests/test_hoffman_interface_toy.py` (10 tests)
-- Prakash, Stephens, Hoffman, Singh & Fields (2017), *Fitness Beats Truth in the Evolution of Perception*
+- Prakash, C., Stephens, K. D., Hoffman, D. D., Singh, M. & Fields, C. (2021), *Fitness Beats Truth in the Evolution of Perception*, *Acta Biotheoretica* 69(3) : 319-341, doi:10.1007/s10441-020-09400-0
 - D. Hoffman, *Objects of Consciousness* (2019), Oxford University Press
 
 ## Crédits
 
-- **Source primaire** : Prakash et al. (2017), arXiv:1505.04322 — formalisation mathématique du toy
+- **Source primaire** : Prakash et al. (2021), *Acta Biotheoretica* 69(3) : 319-341, doi:10.1007/s10441-020-09400-0 — formalisation mathématique du toy (§4 du préprint du 30 juillet 2017, archivé au gisement)
 - **Source secondaire** : D. Hoffman, *Objects of Consciousness* (2019) — vulgarisation du théorème
 - **Carrefour** : K. Jaimungal, *Theories of Everything* (iceberg de la conscience, venue Schreiber 8 mars 2025) — lieu où l'insight Hoffman s'inscrit dans la carte TOE ↔ conscience du tracker #8182
