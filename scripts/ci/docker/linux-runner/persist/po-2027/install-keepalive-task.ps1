@@ -93,16 +93,22 @@ try {
 } catch {
     # Certains hotes refusent un -RepetitionDuration de 3650 j sur un declencheur
     # Once : le rejet tombe au Register/Set-ScheduledTask, pas a la construction
-    # du trigger. Repli : [TimeSpan]::MaxValue, qui vaut « indefiniment » pour le
-    # planificateur (remarque Hermes, #22532 section 2).
+    # du trigger. Repli : FromDays(30). [TimeSpan]::MaxValue a ete le premier
+    # repli envisage, puis mesure refus sur ce poste lui-meme le 2026-10-25 :
+    # le planificateur borne la duree a la validation XML (« valeur hors
+    # limites », Duration:10675199.02:48:05.4775807), le Register n'est meme
+    # pas atteint -- le repli serait mort sur la machine qu'il vise. 30 j se
+    # situe sous la borne documentee (~31 j) et se lit P30D au retour.
+    # Residu assume : un hote qui refuse 3650 j ET reste up plus de 30 j perd
+    # la repetition au bout de 30 j ; un reboot ou un nouveau -Apply la restaure.
     "repli   : duration 3650 j refusee -- $($_.Exception.Message)"
     $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(1) `
         -RepetitionInterval (New-TimeSpan -Minutes $Minutes) `
-        -RepetitionDuration ([TimeSpan]::MaxValue)
+        -RepetitionDuration ([TimeSpan]::FromDays(30))
     Write-KeepaliveTask -Action $action -Trigger $trigger
 }
 
 $task = Get-ScheduledTask -TaskName $name
-"verifie : state=$($task.State) interval='$($task.Triggers[0].Repetition.Interval)' enabled=$($task.Triggers[0].Enabled)"
+"verifie : state=$($task.State) interval='$($task.Triggers[0].Repetition.Interval)' duration='$($task.Triggers[0].Repetition.Duration)' enabled=$($task.Triggers[0].Enabled)"
 "next    : " + (Get-ScheduledTaskInfo -TaskName $name).NextRunTime
 exit 0
