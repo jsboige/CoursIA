@@ -56,7 +56,8 @@ jobs:
     # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
     # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     outputs:
       notebooks: ${{ steps.detect.outputs.notebooks }}
@@ -100,7 +101,8 @@ jobs:
     # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
     # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
+    runs-on: ubuntu-latest
     needs: detect-changes
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.detect-changes.outputs.has_notebooks > 0
 
@@ -235,7 +237,8 @@ jobs:
     # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
     # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Independent of notebook-change detection: the golden-set is a FIXED
     # certified core, re-executed whenever the manifest/lockfile/workflow
