@@ -1375,7 +1375,11 @@ jobs:
           # #22435 -- le RC de pytest n'est pas un booleen : 1 = des tests ont
           # echoue (le SEUL regime qui dise quelque chose du contenu), 2 =
           # execution interrompue (erreur de collecte / ImportError), 3 =
-          # erreur interne, 4 = erreur d'usage. Imprimer le verdict SRC_DRIFT
+          # erreur interne, 4 = erreur d'usage, 5 = aucun test collecte. Pour
+          # les rc 2 a 5 la mesure n'a pas eu lieu : on avertit, et on ne
+          # durcit que si la PR touche l'organe lui-meme (un rc 5 hors organe
+          # est une bizarrerie d'environnement, pas une preuve de derive).
+          # Imprimer le verdict SRC_DRIFT
           # sur un rc 2 fait affirmer une derive de traduction qui n'a jamais
           # ete mesuree : mesure du 2026-10-25, deux PR vertes sur leur
           # contenu (#22130 tete 402871d9cc, #22264 tete 07885aafc8) portaient
