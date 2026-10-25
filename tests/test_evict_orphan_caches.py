@@ -277,6 +277,133 @@ class TestMarkSuperseded(unittest.TestCase):
         self.assertEqual(rec["family"], "d953d79b74456ce0-python-2.27.0")
 
 
+class TestMarkDuplicateKeys(unittest.TestCase):
+    """#19658 : une cle content-addressee dupliquee entre scopes de branche
+    n'est servie qu'une fois ; les copies sont de la redondance pure.
+
+    Mesure du 2026-10-25 qui fonde la regle : 72 entrees `setup-python-*`
+    pour 5 cles distinctes -- 50 copies de la cle 3.12.14 et 22 de la
+    3.12.15, ~293 Mo chacune, 4,85 Go d'un quota de 10 Go.
+    """
+
+    KEY_312 = ("setup-python-Linux-x64-24.04-Ubuntu-python-3.12.14-"
+               "pip-df2f915356ec2e5d50e2dfa2b")
+
+    def _rec(self, key, hours_ago, ref="refs/heads/main", verdict="KEEP"):
+        created = (_dt.datetime(2026, 10, 25, 12, 0, tzinfo=_dt.timezone.utc)
+                   - _dt.timedelta(hours=hours_ago))
+        rec = {
+            "key": key,
+            "ref": ref,
+            "created_at": _iso(created),
+            "verdict": verdict,
+            "reason": "dedupe_candidate" if verdict == "KEEP" else "not_codeql_overlay",
+        }
+        if verdict == "KEEP":
+            rec["dedupe_key"] = key
+        return rec
+
+    def test_classify_marks_setup_python_as_dedupe_candidate(self):
+        now = _dt.datetime.now(_dt.timezone.utc)
+        cache = {
+            "id": 1,
+            "key": self.KEY_312,
+            "ref": "refs/heads/feature/x",
+            "size_in_bytes": 293_300_000,
+            "created_at": _iso(now),
+            "last_accessed_at": _iso(now),
+        }
+        rec = eoc._classify_cache(cache, max_age_hours=24,
+                                  remote="origin", main_branch="main")
+        self.assertEqual(rec["verdict"], "KEEP")
+        self.assertEqual(rec["dedupe_key"], self.KEY_312)
+
+    def test_classify_still_refuses_other_families(self):
+        # La famille ouverte est une exception nommee : `lake-*` reste REFUSE,
+        # sinon la regle de surete « on ne touche pas au quota reutilisable »
+        # n'existerait plus.
+        now = _dt.datetime.now(_dt.timezone.utc)
+        rec = eoc._classify_cache(
+            {"id": 2, "key": "lake-knot_lean-axiom-Linux-821f5e3b-1",
+             "size_in_bytes": 1, "created_at": _iso(now),
+             "last_accessed_at": _iso(now)},
+            max_age_hours=24, remote="origin", main_branch="main")
+        self.assertEqual(rec["verdict"], "REFUSE")
+        self.assertEqual(rec["reason"], "not_codeql_overlay")
+        self.assertNotIn("dedupe_key", rec)
+
+    def test_duplicate_key_keeps_only_the_newest(self):
+        recs = [self._rec(self.KEY_312, h, ref=f"refs/heads/f{h}")
+                for h in (5, 1, 3, 0, 4)]
+        eoc._mark_duplicate_keys(recs, "main")
+        kept = [r for r in recs if r["verdict"] == "KEEP"]
+        self.assertEqual(len(kept), 1)
+        self.assertEqual(kept[0]["created_at"], _iso(
+            _dt.datetime(2026, 10, 25, 12, 0, tzinfo=_dt.timezone.utc)))
+        evicted = [r for r in recs if r["verdict"] == "EVICT"]
+        self.assertEqual(len(evicted), 4)
+        self.assertTrue(all(r["reason"] == "duplicate_key_superseded"
+                            for r in evicted))
+
+    def test_default_branch_copy_survives_even_when_older(self):
+        # `refs/heads/main` est le repli de toute branche sans copie propre :
+        # l'evincer ferait perdre le hit a toutes ces branches a la fois.
+        recs = [
+            self._rec(self.KEY_312, 0, ref="refs/heads/feature/recent"),
+            self._rec(self.KEY_312, 9, ref="refs/heads/main"),
+            self._rec(self.KEY_312, 4, ref="refs/heads/feature/old"),
+        ]
+        eoc._mark_duplicate_keys(recs, "main")
+        main_rec = [r for r in recs if r["ref"] == "refs/heads/main"][0]
+        self.assertEqual(main_rec["verdict"], "KEEP")
+        self.assertEqual(main_rec["dedupe_kept"], "default_branch")
+        newest = [r for r in recs if r["ref"] == "refs/heads/feature/recent"][0]
+        self.assertEqual(newest["verdict"], "KEEP")
+        old = [r for r in recs if r["ref"] == "refs/heads/feature/old"][0]
+        self.assertEqual(old["verdict"], "EVICT")
+
+    def test_live_branch_outranks_a_newer_pr_merge_ref(self):
+        # Mesure du 2026-10-25 : 73 copies d'une meme cle, TOUTES sur
+        # `refs/pull/<n>/merge` et aucune sur `main`. Une ref de PR n'est lue
+        # que par les runs de cette PR-la : quand une branche vivante porte la
+        # cle, c'est sa copie qui doit survivre, meme plus ancienne.
+        recs = [
+            self._rec(self.KEY_312, 0, ref="refs/pull/22027/merge"),
+            self._rec(self.KEY_312, 30, ref="refs/heads/main"),
+        ]
+        eoc._mark_duplicate_keys(recs, "main")
+        pr_rec = [r for r in recs if r["ref"].startswith("refs/pull/")][0]
+        main_rec = [r for r in recs if r["ref"] == "refs/heads/main"][0]
+        self.assertEqual(main_rec["verdict"], "KEEP")
+        self.assertEqual(pr_rec["verdict"], "EVICT")
+
+    def test_distinct_keys_are_untouched(self):
+        other = self.KEY_312.replace("3.12.14", "3.12.15")
+        recs = [self._rec(self.KEY_312, 0), self._rec(other, 1)]
+        eoc._mark_duplicate_keys(recs, "main")
+        self.assertTrue(all(r["verdict"] == "KEEP" for r in recs))
+
+    def test_refuse_without_dedupe_key_is_never_evicted(self):
+        recs = [
+            self._rec(self.KEY_312, 0, ref="refs/heads/main"),
+            {"key": "lake-x", "ref": "refs/heads/main",
+             "created_at": "2026-10-25T00:00:00Z",
+             "verdict": "REFUSE", "reason": "not_codeql_overlay"},
+        ]
+        eoc._mark_duplicate_keys(recs, "main")
+        self.assertEqual(recs[1]["verdict"], "REFUSE")
+
+    def test_no_dedupe_flag_is_declared(self):
+        argv = sys.argv
+        try:
+            sys.argv = ["evict_orphan_caches.py", "--no-dedupe"]
+            self.assertTrue(eoc._parse_args().no_dedupe)
+            sys.argv = ["evict_orphan_caches.py"]
+            self.assertFalse(eoc._parse_args().no_dedupe)
+        finally:
+            sys.argv = argv
+
+
 class TestParseIso(unittest.TestCase):
     """Compat GitHub '...Z' suffix."""
 
