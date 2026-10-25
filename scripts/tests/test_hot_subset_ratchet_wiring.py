@@ -446,3 +446,73 @@ def test_aggregate_surfaces_non_mesure_regime() -> None:
         "L'agregat doit porter la mention « organes verts ou NON MESURES » "
         "quand le regime hot-subset est un NON-MESURE."
     )
+
+
+# ---------------------------------------------------------------------------
+# (6) #22472 -- reserve Hermes du 25/10 13:01Z : l'attribution ne couvrait pas
+# l'organe de l'organe. Le motif etait `^scripts/(translation|notebook_tools)/`
+# seul : une PR qui casse le harnais de cablage, ou le workflow qui porte
+# l'etape, et fait echouer la collecte pytest repartait VERTE sous NON-MESURE,
+# alors que la cause lui est entierement attribuable. Meme classe que la
+# reserve 2 fermee par le commit precedent -- la fragilite avait ete retiree du
+# fetch, pas du perimetre.
+#
+# Le motif est aussi ramene a UNE definition partagee par les deux chemins de
+# lecture : deux copies textuelles identiques derivent a la premiere edition.
+# ---------------------------------------------------------------------------
+
+PERIMETRE_ATTRIBUABLE = [
+    "scripts/translation/x.py",
+    "scripts/notebook_tools/x.py",
+    ".github/workflows/always-on-guards.yml",
+    "scripts/tests/test_hot_subset_ratchet_wiring.py",
+]
+
+
+@pytest.mark.skipif(BASH is None, reason="bash absent : corps d'etape non executable")
+@pytest.mark.parametrize("path", PERIMETRE_ATTRIBUABLE)
+def test_rc2_on_any_perimeter_file_blocks(path: str) -> None:
+    """rc 2 + un fichier du perimetre de l'organe : rouge, cause attribuable.
+
+    Inclut l'organe de l'organe : le workflow qui porte l'etape et le harnais
+    qui epingle son cablage (#22472).
+    """
+    proc, regime = _run_step(2, [path])
+    assert proc.returncode == 1, _out(proc)
+    out = _out(proc)
+    assert "::error::" in out and "ATTRIBUABLE" in out, out
+    assert path in out, f"le message doit nommer le fichier attribuable : {out}"
+    assert _regime_of(regime) == "NON-MESURE-ATTRIBUABLE"
+
+
+@pytest.mark.skipif(BASH is None, reason="bash absent : corps d'etape non executable")
+def test_rc2_on_the_wiring_harness_blocks_via_fallback_too() -> None:
+    """Le second chemin (PR_BASE_SHA) applique le MEME perimetre elargi."""
+    proc, regime = _run_step(
+        2, None, fallback=["scripts/tests/test_hot_subset_ratchet_wiring.py"]
+    )
+    assert proc.returncode == 1, _out(proc)
+    out = _out(proc)
+    assert "::error::" in out and "ATTRIBUABLE" in out and "PR_BASE_SHA" in out, out
+    assert _regime_of(regime) == "NON-MESURE-ATTRIBUABLE"
+
+
+def test_attribution_perimeter_is_defined_once_and_shared() -> None:
+    """Le perimetre est defini UNE fois et consomme par les DEUX lectures.
+
+    Deux copies du motif derivent a la premiere edition : le chemin principal
+    et le repli PR_BASE_SHA doivent lire la meme variable.
+    """
+    body = _hot_subset_run_body()
+    assert body.count("ORGANE_RE=") == 1, (
+        "Le perimetre d'attribution doit etre defini une seule fois "
+        "(ORGANE_RE=) : deux copies deriveraient.\n" + body
+    )
+    assert body.count('grep -E "$ORGANE_RE"') == 2, (
+        "Les DEUX chemins de lecture du diff (origin/BASE et PR_BASE_SHA) "
+        "doivent consommer $ORGANE_RE.\n" + body
+    )
+    assert "'^scripts/(translation|notebook_tools)/'" not in body, (
+        "Un grep sur le motif litteral subsiste : il contourne ORGANE_RE et "
+        "reintroduit la derive que ce test ferme.\n" + body
+    )

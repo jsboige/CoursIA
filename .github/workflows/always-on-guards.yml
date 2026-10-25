@@ -1369,10 +1369,16 @@ jobs:
       # sans defaut ») :
       #   rc 0    -> vert, dit ;
       #   rc 1    -> verdict de contenu, rouge, message inchange ;
-      #   rc >= 2 -> NON MESURE. Rouge seulement si la PR touche l'organe
-      #              (`scripts/translation/**`, `scripts/notebook_tools/**`) :
-      #              la cause est alors attribuable a la PR. Sinon `::warning::`
-      #              non bloquant, qui DIT que ce n'est pas un SRC_DRIFT.
+      #   rc >= 2 -> NON MESURE. Rouge seulement si la PR touche le perimetre
+      #              de l'organe (`scripts/translation/**`,
+      #              `scripts/notebook_tools/**`, ET l'organe de l'organe : ce
+      #              workflow lui-meme et son harnais de cablage) : la cause est
+      #              alors attribuable a la PR. Sinon `::warning::` non
+      #              bloquant, qui DIT que ce n'est pas un SRC_DRIFT.
+      #              Le perimetre inclut l'organe de l'organe depuis la reserve
+      #              de #22472 : une PR qui casse le harnais ou l'etape et fait
+      #              echouer la collecte repartait verte sous NON-MESURE, alors
+      #              que la cause lui est entierement attribuable.
       # L'attribution lit le diff local (checkout en `fetch-depth: 0`, aucun
       # appel reseau) ; un diff illisible laisse la cause NON ATTRIBUABLE et le
       # step non bloquant, en le disant -- jamais un rouge qui nomme une derive
@@ -1411,16 +1417,23 @@ jobs:
           # rc >= 2 : pytest n'a PAS rendu de verdict (2 = collecte interrompue,
           # 3 = erreur interne, 4 = usage, 5 = rien collecte). Ce n'est pas un
           # SRC_DRIFT (#22435).
+          # Perimetre d'attribution, defini UNE fois : les deux chemins de
+          # lecture du diff le partagent (deux copies deriveraient). Il couvre
+          # les sources de l'organe ET l'organe de l'organe -- le workflow qui
+          # le porte et le harnais qui epingle son cablage (#22472, reserve
+          # Hermes du 25/10 13:01Z) : casser l'un des deux fait echouer la
+          # collecte pytest, et la cause est alors attribuable a la PR.
+          ORGANE_RE='^(scripts/(translation|notebook_tools)/|\.github/workflows/always-on-guards\.yml$|scripts/tests/test_hot_subset_ratchet_wiring\.py$)'
           BASE="${GITHUB_BASE_REF:-main}"
           if git diff --name-only "origin/${BASE}...HEAD" > /tmp/hot_subset_diff.txt 2>/dev/null; then
-            MATCHED=$(grep -E '^scripts/(translation|notebook_tools)/' /tmp/hot_subset_diff.txt || true)
+            MATCHED=$(grep -E "$ORGANE_RE" /tmp/hot_subset_diff.txt || true)
             if [ -n "$MATCHED" ]; then
               echo "regime=NON-MESURE-ATTRIBUABLE" >> "${GITHUB_OUTPUT:-/dev/null}"
               echo "::error::Hot-subset ratchet : regime NON MESURE ATTRIBUABLE (rc ${RC}) -- pytest n'a pas rendu de verdict, et cette PR touche l'organe : $(echo "$MATCHED" | tr '\n' ' '). La cause est attribuable a la PR : corrige l'import ou la collecte, puis relance. Ce n'est PAS un verdict de SRC_DRIFT."
               exit 1
             fi
             echo "regime=NON-MESURE" >> "${GITHUB_OUTPUT:-/dev/null}"
-            echo "::warning::Hot-subset ratchet : regime NON MESURE (rc ${RC}) -- pytest n'a pas rendu de verdict et la PR ne touche ni scripts/translation/** ni scripts/notebook_tools/** : la mesure n'a pas eu lieu, ce n'est PAS un SRC_DRIFT (#22435, precedent #8819). Non bloquant ; si une derive reelle est en cause, seule une relance sur un runner sain le dira."
+            echo "::warning::Hot-subset ratchet : regime NON MESURE (rc ${RC}) -- pytest n'a pas rendu de verdict et la PR ne touche aucun fichier du perimetre de l'organe (traductions, notebook_tools, ce workflow, son harnais de cablage) : la mesure n'a pas eu lieu, ce n'est PAS un SRC_DRIFT (#22435, precedent #8819). Non bloquant ; si une derive reelle est en cause, seule une relance sur un runner sain le dira."
             exit 0
           fi
           # #22472 reserve 2 : avant de conclure INDECISE, deuxieme lecture
@@ -1429,14 +1442,14 @@ jobs:
           # checkout ne s'y applique pas). Si ce chemin lit le diff,
           # l'attribution s'applique comme sur le chemin principal.
           if [ -n "${PR_BASE_SHA:-}" ] && git diff --name-only "${PR_BASE_SHA}...HEAD" > /tmp/hot_subset_diff.txt 2>/dev/null; then
-            MATCHED=$(grep -E '^scripts/(translation|notebook_tools)/' /tmp/hot_subset_diff.txt || true)
+            MATCHED=$(grep -E "$ORGANE_RE" /tmp/hot_subset_diff.txt || true)
             if [ -n "$MATCHED" ]; then
               echo "regime=NON-MESURE-ATTRIBUABLE" >> "${GITHUB_OUTPUT:-/dev/null}"
               echo "::error::Hot-subset ratchet : regime NON MESURE ATTRIBUABLE (rc ${RC}, diff lu par PR_BASE_SHA) -- pytest n'a pas rendu de verdict, et cette PR touche l'organe : $(echo "$MATCHED" | tr '\n' ' '). La cause est attribuable a la PR : corrige l'import ou la collecte, puis relance. Ce n'est PAS un verdict de SRC_DRIFT."
               exit 1
             fi
             echo "regime=NON-MESURE" >> "${GITHUB_OUTPUT:-/dev/null}"
-            echo "::warning::Hot-subset ratchet : regime NON MESURE (rc ${RC}, diff lu par PR_BASE_SHA) -- pytest n'a pas rendu de verdict et la PR ne touche ni scripts/translation/** ni scripts/notebook_tools/** : la mesure n'a pas eu lieu, ce n'est PAS un SRC_DRIFT (#22435, precedent #8819). Non bloquant ; si une derive reelle est en cause, seule une relance sur un runner sain le dira."
+            echo "::warning::Hot-subset ratchet : regime NON MESURE (rc ${RC}, diff lu par PR_BASE_SHA) -- pytest n'a pas rendu de verdict et la PR ne touche aucun fichier du perimetre de l'organe (traductions, notebook_tools, ce workflow, son harnais de cablage) : la mesure n'a pas eu lieu, ce n'est PAS un SRC_DRIFT (#22435, precedent #8819). Non bloquant ; si une derive reelle est en cause, seule une relance sur un runner sain le dira."
             exit 0
           fi
           echo "regime=NON-MESURE-INDECISE" >> "${GITHUB_OUTPUT:-/dev/null}"
