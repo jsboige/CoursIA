@@ -4,9 +4,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI
-pedagogical_count: 329
-breakdown: Lean=98, SMT=47, Tweety=39, Argument_Analysis=32, SmartContracts=32, SemanticWeb=28, SymbolicLearning=27, Planners=25, root=1
-maturity: BETA=314, ALPHA=9, DRAFT=6
+pedagogical_count: 364
+breakdown: Lean=129, SMT=49, Tweety=39, Argument_Analysis=33, SmartContracts=32, SemanticWeb=28, SymbolicLearning=27, Planners=26, root=1
+maturity: BETA=340, DRAFT=13, ALPHA=11
 -->
 
 L'intelligence artificielle n'est pas qu'apprentissage automatique et réseaux de neurones. Une grande partie de l'IA classique repose sur le **raisonnement symbolique** : représenter la connaissance sous forme de propositions, de règles et de structures logiques, puis dériver mécaniquement de nouvelles conclusions. C'est cette tradition — des systèmes experts des années 80 aux assistants de preuve modernes comme Lean 4 — que cette famille de séries explore.
@@ -150,7 +150,7 @@ Chaque série se présente en trois temps : ce qu'elle apprend, son **parcours l
 - **Parcours léger** — 1 à 6, les fondations : installation, types dépendants, propositions et preuves (Curry-Howard), quantificateurs, mode tactique, Mathlib4. Puis 7 à 10, la preuve à l'ère des LLMs : intégration LLM, preuve agentique, orchestration multi-agents, LeanDojo.
 - **Chapitres thématiques** — à partir de 11, chaque numéro ouvre un chapitre qui suppose les fondations et se choisit selon son intérêt : réseaux de neurones vérifiés (11), théorème de sensibilité de Huang (12), contextualité de Kochen-Specker (13), hommages à Grothendieck (15) et à Conway (16), théorie des nœuds (17), puis les digestions de résultats récents (Sendov, *Analysis I* de Tao, PFR, détection MIMO, problème inverse de Galois pour M₂₃…).
 - **Pour approfondir** — les lettres sont surtout des **compagnons** : un compagnon Lean natif (`-Native`, kernel Lean) qui prouve ce que le notebook principal raconte, ou un compagnon Python qui l'illustre. Les preuves vivent dans des **lakes** (`sensitivity_lean`, `conway_lean`, `knot_lean`, `grothendieck_lean`, `galois_lean`…).
-- **Sous-série** — [Serre100](Lean/Serre100/README.md) a sa propre numérotation et son lake `serre100_lean`. Un notebook d'escalier dans le parcours principal la présentera et y renverra (#17789). Ce modèle doit ensuite servir aux familles de chapitres les plus denses, comme Conway et Grothendieck.
+- **Sous-série** — [Serre100](Lean/Serre100/README.md) a sa propre numérotation et son lake `serre100_lean`. Le notebook d'escalier du parcours principal la présente et y renvoie ([Lean-37-Capstone-Serre100](Lean/Lean-37-Capstone-Serre100.ipynb), #17789). Ce modèle doit ensuite servir aux familles de chapitres les plus denses, comme Conway et Grothendieck.
 - [README de la série Lean](Lean/README.md)
 
 ### SMT / Z3 — décider sous contraintes

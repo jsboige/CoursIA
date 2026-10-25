@@ -246,6 +246,49 @@ echo "Test 6 : seuils inertes -- 0 desactive, sous-le-seil ne repack pas (contro
 )
 echo ""
 
+echo "Test 6b : 0 pack MAIS objets en vrac -- etat anormal, consolide (#21557)"
+(
+  # L'etat mesure sur les slots 8/9/12 d'ai-01 (2026-10-20) : 0 packfile et
+  # 3,9 Go d'objets en vrac. Le compte de packs est SOUS le seuil, donc l'ancien
+  # predicat rendait 0 sans rien faire -- et `gc.auto=0` (actions/checkout) fait
+  # que rien d'autre ne consolide : l'etat est stable et chaque `cat-file` y
+  # coute le parcours des repertoires d'objets (~600 s de scan par cycle).
+  SRC="$TEST_DIR/src6b"; R="$TEST_DIR/clone6b"
+  mk_source "$SRC"
+  git init -q "$R"
+  # transfer.unpackLimit eleve : le fetch DEPOSE les objets en vrac au lieu
+  # d'ecrire un packfile -- c'est la forme anormale, reproduite sans bricolage.
+  git -C "$R" -c transfer.unpackLimit=99999 fetch -q "file://$SRC" \
+    '+refs/heads/main:refs/remotes/origin/main' 2>/dev/null
+  if [ "$(wch_pack_count "$R")" = "0" ] && wch_loose_object_dirs "$R"; then
+    ok "fixture fidèle : 0 pack et objets en vrac"
+  else
+    ko "fixture insuffisante (packs=$(wch_pack_count "$R")) -- le test ne prouve plus rien"
+  fi
+  out="$(wch_maintenance_pass "$R" 16)"
+  after="$(wch_pack_count "$R")"
+  if [ "$after" -ge 1 ]; then
+    ok "repack declenche sur 0 pack + vrac : $after pack(s)"
+  else
+    ko "aucun pack apres passage -- le cycle resterait a ~600 s de scan"
+  fi
+  if echo "$out" | grep -q "repack 0 ->"; then
+    ok "la cause est journalisee (repack 0 -> N, #21557)"
+  else
+    ko "journal de la cause attendu, obtenu: [$out]"
+  fi
+  # Controle negatif : un depot VIDE n'a ni pack ni vrac -- cache frais, muet.
+  E="$TEST_DIR/empty6b"
+  git init -q "$E"
+  out="$(wch_maintenance_pass "$E" 16)"
+  if [ -z "$out" ] && [ "$(wch_pack_count "$E")" = "0" ]; then
+    ok "depot frais (0 pack, 0 vrac) : inerte et muet"
+  else
+    ko "un depot frais ne doit pas declencher de repack, out=[$out]"
+  fi
+)
+echo ""
+
 echo "Test 7 : passe complete sur un _work -- layout <workdir>/<repo>/<repo> (glob entrypoint)"
 (
   W="$TEST_DIR/work"
@@ -535,6 +578,64 @@ UNGUARDED
   else
     ok "controle NEGATIF : la forme non gardee TUE l'appelant (le banc a des dents)"
   fi
+)
+echo ""
+
+echo "Test 10 : echecs consecutifs de repack -> escalade en quarantaine (#21745 limb B)"
+# Controle positif ET negatif du compteur : N-1 echecs laissent le clone en
+# place, le N-ieme le renomme. Le renommage est REVERSIBLE (jamais rm) : le
+# test verifie que l'arbre survit sous <repo>.stale-<ts>.
+(
+  RQ="$TEST_DIR/repack-streak"
+  mkdir -p "$RQ"
+  git init -q "$RQ"
+  git -C "$RQ" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+  mkdir -p "$RQ/.git/objects/pack"
+  : > "$RQ/.git/objects/pack/a.pack"
+  : > "$RQ/.git/objects/pack/b.pack"
+
+  # Substitution locale : repack echoue TOUJOURS, tout le reste delegue au
+  # vrai git (memes semantiques, meme safe.directory).
+  wch_git() {
+    case "$*" in
+      *" repack "*) return 1 ;;
+    esac
+    git -c safe.directory='*' "$@"
+  }
+  WCH_REPACK_FAIL_MAX=3
+
+  out1="$(wch_maintenance_pass "$RQ" 1 2>&1)"
+  ck="$(wch_repack_streak_read "$RQ")"
+  if [ "$ck" = "1" ]; then ok "echec 1/3 : compteur = 1"; else ko "compteur apres 1 echec = [$ck], attendu 1"; fi
+  if [ -d "$RQ" ]; then ok "echec 1/3 : clone conserve (pas d'escalade avant le seuil)"; else ko "clone renomme des le 1er echec"; fi
+  if echo "$out1" | grep -q "echec consecutif 1/3"; then ok "echec 1/3 : le seuil est journalise"; else ko "seuil absent du journal: $out1"; fi
+
+  wch_maintenance_pass "$RQ" 1 >/dev/null 2>&1
+  ck="$(wch_repack_streak_read "$RQ")"
+  if [ "$ck" = "2" ]; then ok "echec 2/3 : compteur = 2"; else ko "compteur apres 2 echecs = [$ck], attendu 2"; fi
+
+  wch_maintenance_pass "$RQ" 1 >/dev/null 2>&1
+  if [ -d "$RQ" ]; then ko "3e echec : clone toujours en place (escalade attendue)"; else ok "3e echec : clone retire du chemin (quarantaine)"; fi
+  if ls -d "$TEST_DIR"/repack-streak.stale-* >/dev/null 2>&1; then
+    ok "3e echec : arbre PRESERVE sous <repo>.stale-<ts> (renommage, pas suppression)"
+  else
+    ko "3e echec : aucun <repo>.stale-* -- preservation non prouvee"
+  fi
+
+  # Controle NEGATIF : un succes remet le compteur a zero (sinon la moindre
+  # panne transitoire accumulerait jusqu'a la quarantaine).
+  RS="$TEST_DIR/repack-reset"
+  mkdir -p "$RS"
+  git init -q "$RS"
+  git -C "$RS" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+  mkdir -p "$RS/.git/objects/pack"
+  : > "$RS/.git/objects/pack/a.pack"
+  : > "$RS/.git/objects/pack/b.pack"
+  wch_repack_streak_write "$RS" 2
+  wch_git() { git -c safe.directory='*' "$@"; }
+  wch_maintenance_pass "$RS" 1 >/dev/null 2>&1
+  ck="$(wch_repack_streak_read "$RS")"
+  if [ "$ck" = "0" ]; then ok "controle NEGATIF : un repack reussi remet le compteur a 0"; else ko "compteur apres succes = [$ck], attendu 0"; fi
 )
 echo ""
 

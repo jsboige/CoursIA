@@ -52,9 +52,9 @@ Une série sœur existe en C# : [SymbolicAI/Z3-Linq2Z3/](../Z3-Linq2Z3/README.md
 | 01b | [Du style déclaratif LINQ au solveur Z3](Z3-01b-Style-Declaratif-Linq.ipynb) | Pont C# Z3.Linq ↔ pyz3 : `assert_and_track`, `unsat_core`, coloration de graphe (Australie) | ~30 min | PRODUCTION |
 | 02 | [Sudoku](Z3-02-Sudoku-Python.ipynb) | Sudoku comme CSP, `Distinct`, visualisation matplotlib | ~25 min | PRODUCTION |
 | 02ᶜˢ | [Sudoku (twin C# .NET)](Z3-02-Sudoku-CSharp.ipynb) | Parité .NET : même moteur Z3, visualisation ASCII | ~25 min | PRODUCTION |
-| 03 | [Tactiques et théories](Z3-03-Tactics-Python.ipynb) | `Tactic`, `BitVec`, `Array` | ~35 min | PRODUCTION |
+| 03 | [Tactiques et théories](Z3-03-Tactics-Python.ipynb) | `Tactic`, `BitVec`, `Array` | ~40 min | PRODUCTION |
 | 03ᶜˢ | [Tactiques et théories (twin C# .NET)](Z3-03-Tactics-CSharp.ipynb) | Parité .NET : tactiques, `BitVec`, `Array` via `Microsoft.Z3` (NuGet) | ~35 min | PRODUCTION |
-| 04 | [Chaînes et expressions régulières](Z3-04-Strings-Regex-Python.ipynb) | `String`, `Re` (théorie des chaînes Z3) | ~30 min | PRODUCTION |
+| 04 | [Chaînes et expressions régulières](Z3-04-Strings-Regex-Python.ipynb) | `String`, `Re` (théorie des chaînes Z3) | ~35 min | PRODUCTION |
 | 04ᶜˢ | [Chaînes et expressions régulières (twin C# .NET)](Z3-04-Strings-Regex-CSharp.ipynb) | Parité .NET : théorie des chaînes, regex via `Microsoft.Z3` (NuGet) | ~30 min | PRODUCTION |
 | 05 | [Quantificateurs et preuves](Z3-05-Quantifiers-Proofs-Python.ipynb) | `ForAll`, `Exists`, preuves par réfutation, `unknown` | ~35 min | PRODUCTION |
 | 05ᶜˢ | [Quantificateurs et preuves (twin C# .NET)](Z3-05-Quantifiers-Proofs-CSharp.ipynb) | Parité .NET : `MkForall`, `MkExists`, réfutation, `ReasonUnknown` via `Microsoft.Z3` (NuGet) | ~35 min | PRODUCTION |
@@ -76,6 +76,7 @@ Une série sœur existe en C# : [SymbolicAI/Z3-Linq2Z3/](../Z3-Linq2Z3/README.md
 | 16e | [Meal-Planner : optimisation](Z3-16e-Meal-Planner-Optimize-Python.ipynb) | Optimisation (compagnon du 16) : du SAT à l'OPT — `minimize`/`maximize`, `add_soft` (MaxSAT souple), multi-objectif natif (`pareto`/`box`), glouton vs optimum global | ~45 min | BETA |
 | 17 | [Théorie des tableaux](Z3-17-Array-Theory-Python.ipynb) | `Array` sort, `Select`/`Store`, axiomes de McCarthy (read-over-write) vérifiés comme théorèmes, tableau trié / égalité de tableaux | ~30 min | PRODUCTION |
 | 18 | [Sudoku 4×4 : modes Array vs Constants](Z3-18-Sudoku-Modes-Python.ipynb) | Même Sudoku 4×4 encodé deux fois (variables `Int` par cellule vs `Array(Int, Int)`), comparaison des deux modes d'encodage | ~30 min | PRODUCTION |
+| 19 | [Optimisation multi-objectif (lex/Pareto/weighted)](Z3-19-Optimization-Lexicographic-Python.ipynb) | Comparaison des trois stratégies d'arbitrage (lexicographique, front de Pareto énuméré, somme pondérée avec sweep) sur 3 projets jouet (coût/impact) | ~30 min | PRODUCTION |
 
 ### Fil pédagogique
 

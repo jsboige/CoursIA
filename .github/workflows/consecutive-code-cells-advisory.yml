@@ -24,16 +24,22 @@ name: Consecutive Code Cells Advisory
 # Promoting to a blocking gate is a separate decision, to revisit only once the
 # residual is at 0 and stable (issue #12797 "decision user").
 
+# ABSORBE PAR LA VOIE RAPIDE (#22209 tranche 1, registre TRANCHE27) : la
+# jambe per-PR vit desormais dans le job fast-lane d'always-on-guards.yml,
+# sous le MEME nom de check-run (contrat d'identite
+# `check_absorbed_check_run_identity.py`). Le declencheur `pull_request` est
+# retire ci-dessous ; ce fichier reste pour (a) la re-mesure manuelle via
+# `workflow_dispatch` et (b) la source du nom canonique. Le label
+# `consecutive-code-cells` n'est plus pose sur les PRs -- la payload (JSON
+# par carnet, champs consecutive/unmeasured) demenage dans le CORPS du
+# check-run absorbe, precedent TRANCHE6 (deaccent). Le bloc `paths:` d'origine
+# est conserve en commentaire pour tracabilite :
+#   pull_request:
+#     types: [opened, synchronize, edited, reopened]
+#     branches: [main]
+#     paths: ['**/*.ipynb', '.github/workflows/consecutive-code-cells-advisory.yml']
+
 on:
-  pull_request:
-    types: [opened, synchronize, edited, reopened]
-    branches: [main]
-    paths:
-      - '**/*.ipynb'
-      # Self-cover (#8822): a paths-filtered label-poser must list its own file,
-      # else it cannot re-run (so cannot remove its own label) once the matching
-      # paths leave the PR diff. Enforced by scripts/check_workflow_label_paths.py.
-      - '.github/workflows/consecutive-code-cells-advisory.yml'
   workflow_dispatch:
 
 permissions:
@@ -47,13 +53,13 @@ concurrency:
 jobs:
   consecutive-code-cells-advisory:
     name: "Consecutive code cells >= 2 advisory (label, non-blocking)"
-    # Q35 etape 4 (#17397, ai-01 2026-10-15) : garde Python pur (checkout,
-    # setup-python, pip ; aucun secret, aucun GPU/CUDA/Lean/.NET, aucun volume
-    # ni service local). Routage #13378/#14283 inverse : la file self-hosted
-    # portait ~3 000 runs pendant que le pool heberge restait inactif. La garde
-    # same-repo est conservee telle quelle -- seul le runner change. Sortie de
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
-    runs-on: ubuntu-latest
+    # Routage #14283 tranche 3 (decision ai-01 2026-09-02) : jambe Linux
+    # auto-hebergee. Le `if:` ci-dessous est la garde anti-fork exigee par
+    # scripts/ci/check_self_hosted_runner_policy.py ; un `runs-on` STATIQUE la
+    # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
+    # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     # Same-repo PRs only (agents/staff). Fork PRs are student submissions
     # under student-pr-reviews.md -- benevolent review, no content gate.
     if: github.event.pull_request.head.repo.full_name == github.repository

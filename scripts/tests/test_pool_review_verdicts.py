@@ -19,6 +19,7 @@ Le contrat verrouille :
 
 import importlib.util
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -171,3 +172,98 @@ def test_gradient_quartiles_order_recent_first(monkeypatch, capsys):
     assert all(g["n"] == 2 for g in grad)
     assert sum(g["counts"].get("LGTM", 0) for g in grad) == 4
     assert sum(g["counts"].get("CONCERNS", 0) for g in grad) == 4
+
+
+def test_fetch_prs_classifies_each_and_skips_absent(monkeypatch):
+    """#16926 : consommation per-PR -- une requete par numero, classify_pr sur
+    chaque noeud ; une PR fermee/injoignable (pullRequest: null) rend une
+    entree ABSENTE, jamais une exception."""
+    payloads = {
+        20961: {"data": {"repository": {"pullRequest": pr_node(
+            20961,
+            reviews=[review("**[Hermes]** — VERDICT: CONCERNS",
+                            at="2026-10-16T10:00:00Z")])}}},
+        42: {"data": {"repository": {"pullRequest": None}}},
+    }
+    calls = []
+
+    def fake_gh(args, stdin=None):
+        # le numero est interpole dans la requete (gh -f ne coercerait pas
+        # vers Int!), pas passe en variable
+        match = re.search(r"pullRequest\(number: (\d+)\)", " ".join(args))
+        calls.append(int(match.group(1)))
+        return json.dumps(payloads[calls[-1]])
+
+    monkeypatch.setattr(mod, "run_gh", fake_gh)
+    out = mod.fetch_prs("jsboige/CoursIA", [20961, 42])
+    assert out[20961]["verdict"] == "CONCERNS"
+    assert out[20961]["verdict_surface"] == "review-body"
+    # la PR fermee n'a pas d'entree, et n'a pas fait echouer l'autre
+    assert 42 not in out
+    assert len(calls) == 2
+
+
+def test_fetch_prs_une_pr_illisible_n_arrete_pas_les_autres(monkeypatch):
+    """Un payload invalide sur UNE PR est avale par PR : les suivantes sont
+    quand meme classifiees (la file de reparation ne se bloque pas)."""
+    state = {"first": True}
+
+    def fake_gh(args, stdin=None):
+        if state["first"]:
+            state["first"] = False
+            return "ceci n'est pas du json"
+        return json.dumps({"data": {"repository": {"pullRequest": pr_node(
+            7, comments=[comment("VERDICT: LGTM", at="2026-10-16T11:00:00Z")])}}})
+
+    monkeypatch.setattr(mod, "run_gh", fake_gh)
+    out = mod.fetch_prs("jsboige/CoursIA", [1, 7])
+    assert 1 not in out
+    assert out[7]["verdict"] == "LGTM"
+    assert out[7]["verdict_surface"] == "comment"
+
+
+def test_prefix_form_comment_with_concerns_is_a_concerns_verdict():
+    """Forme HISTORIQUE Hermes (#16926) : « **[Hermes] Review —
+    COMMENT_WITH_CONCERNS** » porte un verdict CONCERNS — mesure firsthand
+    sur #20961 : 4 des 5 PRs de la file de reparation portent cette forme
+    et se lisaient VOIX-SANS-VERDICT."""
+    node = pr_node(20961, reviews=[
+        review("**[Hermes] Review — COMMENT_WITH_CONCERNS** @ `c3b33918`",
+               at="2026-10-15T10:00:00Z")
+    ])
+    row = mod.classify_pr(node)
+    assert row["verdict"] == "CONCERNS"
+    assert row["verdict_surface"] == "review-body"
+
+
+def test_prefix_form_bare_marker_without_review_word():
+    node = pr_node(31, reviews=[review("[Hermes] COMMENT_WITH_CONCERNS")])
+    assert mod.classify_pr(node)["verdict"] == "CONCERNS"
+
+
+def test_prefix_form_arbitrary_word_after_header_is_not_a_verdict():
+    """« **[NanoClaw]** structural review » : le mot apres l'en-tete n'est
+    pas dans la table -> voix de persona SANS verdict, pas un faux LGTM."""
+    node = pr_node(32, reviews=[review("**[NanoClaw]** structural review")])
+    assert mod.classify_pr(node)["verdict"] == "VOIX-SANS-VERDICT"
+
+
+def test_prefix_form_mid_sentence_mention_is_not_an_emission():
+    node = pr_node(33, comments=[
+        comment("cf [Hermes] COMMENT_WITH_CONCERNS poste hier, desormais leve")
+    ])
+    assert mod.classify_pr(node)["verdict"] == "VOIX-SANS-VERDICT"
+
+
+def test_prefix_form_backticked_citation_is_not_an_emission():
+    node = pr_node(34, comments=[
+        comment("la review disait `[Hermes] COMMENT_WITH_CONCERNS` avant correction")
+    ])
+    row = mod.classify_pr(node)
+    # le backtick exclut l'en-tete ET la persona : pas une voix du tout
+    assert row["verdict"] == "SANS-REVIEW"
+
+
+def test_prefix_form_lgtm_maps_to_lgtm():
+    node = pr_node(35, reviews=[review("**[Hermes] Review — LGTM** (re-review)")])
+    assert mod.classify_pr(node)["verdict"] == "LGTM"

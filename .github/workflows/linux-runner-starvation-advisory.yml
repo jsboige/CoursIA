@@ -53,13 +53,24 @@ permissions:
   contents: read   # checkout du script
   actions: read    # lecture des runs/jobs (predicat STARVATION)
 
-concurrency:
-  group: linux-runner-starvation-advisory
-  cancel-in-progress: false
-
 jobs:
   starve:
     name: Linux runner starvation advisory
+    # Heartbeat workflow_run declenche par une PR de fork : job saute (mesure
+    # du 2026-10-16). GitHub attribue ce run a l'auteur de la PR
+    # de fork (triggering_actor) ; quand un run plus recent le remplace dans le
+    # groupe de concurrence, il passe « cancelled » et GitHub envoie a cette
+    # personne un email « Run cancelled ». Des eleves de l'APP3 en ont recu
+    # plusieurs dans la nuit du 15 au 16/10 pour leurs PRs de TP. Les runs
+    # internes, le schedule et le dispatch continuent d'alimenter l'observateur.
+    #
+    # La concurrence vit au niveau du JOB, plus du workflow : au niveau
+    # workflow, un run en attente est annule AVANT l'evaluation de ce `if`,
+    # et l'email part quand meme. Un job saute n'entre pas dans le groupe.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.head_repository.full_name == github.repository
+    concurrency:
+      group: linux-runner-starvation-advisory
+      cancel-in-progress: false
     # ubuntu-latest -- et non plus la jambe auto-hebergee (#16134, 2026-09-14).
     #
     # La tranche 5 de #13378 avait re-route ce job vers
@@ -110,4 +121,4 @@ jobs:
           SELF_WORKFLOW: linux-runner-starvation-advisory.yml
           DECLARED_CADENCE_MINUTES: "30"
           CADENCE_WARN_MINUTES: "360"
-        run: python scripts/ci/check_runner_starvation.py
+        run: python3 scripts/ci/check_runner_starvation.py

@@ -86,65 +86,34 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # tranche 3d (#14283) : premier consommateur GitHub-hosted du depot une
     # fois secret-scan bascule -- 2650 runs same-repo du 2026-08-28 au
     # 2026-09-02, timeout 25 min, aucun filtre `paths:`.
-    # always-on-guards.yml : migre ubuntu-latest par Q35 etape 4 tranche 2
-    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.478, 12 workflows
-    # agregateurs, 2026-10-15). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
-    # dans le meme commit. La justification FORK_REACHABLE qui le gardait
-    # sur self-hosted (cout de slot par fork PR, #14285) ne tient plus :
-    # le cout est sur GitHub-hosted. Le job reste un pur-Python metadata
-    # scan, 16 organes sur un seul checkout, aucun kernel/GPU/docker.
+    "always-on-guards.yml",
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
     "banner-guard.yml",
-    # solution-leak-guard.yml : migre ubuntu-latest par Q35 etape 4
-    # tranche 2 (#17397, PR dediee myia-ai-01:CoursIA-2 c.478, 12
-    # workflows agregateurs, 2026-10-15). Sorti de
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Garde Python
-    # pur (delta entre PR et base, fetch-depth: 2), aucun secret.
+    "solution-leak-guard.yml",
     "prose-counts-guard.yml",
     "notebook-interp-positioning.yml",
     "notebook-cell-source-parses.yml",
-    # cell-order-gate.yml : migre ubuntu-latest par Q35 etape 4
-    # tranche 2 (#17397, PR dediee myia-ai-01:CoursIA-2 c.478, 12
-    # workflows agregateurs, 2026-10-15). Sorti de
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Garde Python
-    # pur, aucun secret, timeout 10 min.
+    "cell-order-gate.yml",
     "pip-leak-guard.yml",
     "hooks-parity.yml",
     "notebook-exec-sequence-ratchet.yml",
     "notebook-navlink-check.yml",
     "notebook-nav-chain-guard.yml",
-    # notebook-papermill-ratchet.yml : migre ubuntu-latest par Q35
-    # etape 4 tranche 2 (#17397, PR dediee myia-ai-01:CoursIA-2 c.478,
-    # 12 workflows agregateurs, 2026-10-15). Sorti de
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Garde Python
-    # pur, aucun secret, timeout 10 min.
+    "notebook-papermill-ratchet.yml",
     # tranche 3b (#14283, meme decision, meme owner) : suite des gardes PR
     #   pure-Python. Fondue dans la meme PR que 3a -- les scinder aurait produit
     #   un conflit sur cette meme ancre pour zero benefice de relecture.
-    # markdown-claims-output-advisory.yml : migre ubuntu-latest par Q35
-    # etape 4 tranche 2 (#17397, PR dediee myia-ai-01:CoursIA-2 c.478,
-    # 12 workflows agregateurs, 2026-10-15). Sorti de
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Garde Python
-    # pur, aucun secret, fetch-depth 0 + delta vs main.
+    "markdown-claims-output-advisory.yml",
     "orphaned-delivery-scan.yml",
     "quantconnect-notebook-freshness.yml",
     "scan-md-hierarchy-drift.yml",
     "slides-composition-pr-relay.yml",
-    # source-output-ratchet.yml : migre ubuntu-latest par Q35 etape 4
-    # tranche 2 (#17397, PR dediee myia-ai-01:CoursIA-2 c.478, 12
-    # workflows agregateurs, 2026-10-15). Sorti de
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Garde Python
-    # pur, aucun secret, fetch-depth 0.
+    "source-output-ratchet.yml",
     "translation-guard.yml",
     "unique-check-run-names-guard.yml",
-    # validation-matrix.yml : migre ubuntu-latest par Q35 etape 4
-    # tranche 2 (#17397, PR dediee myia-ai-01:CoursIA-2 c.478, 12
-    # workflows agregateurs, 2026-10-15). Sorti de
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Garde Python
-    # pur, aucun secret, paths filtre par `**.ipynb` +
-    # `scripts/validation/**`.
+    "validation-matrix.yml",
     # tranche 3a (#14283, decision ai-01 2026-09-02, owner myia-ai-01:CoursIA) :
     #   gardes PR pure-Python, garde same-repo au niveau job, runs-on STATIQUE.
     #   Exclus deliberement : pr-gate.yml (agregateur qui poll -- il tiendrait le
@@ -153,11 +122,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Rollback = revert de la PR de routage.
     "arxiv-attributions-guard.yml",
     "catalog-drift.yml",
-    # consecutive-code-cells-advisory.yml : migre ubuntu-latest par
-    # Q35 etape 4 tranche 2 (#17397, PR dediee myia-ai-01:CoursIA-2
-    # c.478, 12 workflows agregateurs, 2026-10-15). Sorti de
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Garde Python
-    # pur, seul GH_TOKEN (label pose), meme-repo uniquement.
+    "consecutive-code-cells-advisory.yml",
     "harness-coauthor-guard.yml",
     "ict-tests.yml",
     "label-paths-guard.yml",
@@ -180,17 +145,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "bios-companion-coverage.yml",
     "lean-social-choice.yml",
     "notebook-execution-required.yml",
-    # secret-scan.yml : migre ubuntu-latest par Q35 etape 4 tranche 2
-    # (#17397, PR dediee myia-ai-01:CoursIA-2 c.478, 12 workflows
-    # agregateurs, 2026-10-15). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
-    # dans le meme commit. Les 3 jobs same-repo (gitleaks scanner,
-    # positive-controls, assert-egress) sont en pur-Python : binaire
-    # gitleaks telecharge via curl depuis la release GitHub, ${GITLEAKS_VERSION}
-    # epingle, parite de version assertee avec .pre-commit-config.yaml.
-    # La jambe fork `gitleaks-fork` etait deja ubuntu-latest. La forme
-    # docker d'origine (qui motivait l'exclusion en 3c) avait deja ete
-    # remplacee par la forme tarball -- la migration suit la forme
-    # deja eprouvee sur le pool.
+    "secret-scan.yml",
     # secret-scan/gitleaks : exclu en 3c pour la socket Docker, LEVE depuis --
     #   le job scanner n'utilise plus `docker run` mais le binaire epingle
     #   (meme release, meme ${GITLEAKS_VERSION}), forme deja eprouvee sur ce
@@ -350,8 +305,8 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   shell workflow_dispatch-only absorbe par fast-lane TRANCHE2).
     "notebook-output-flood-ratchet.yml",
     # jumeau output-collapse (#15327, owner myia-po-2023:CoursIA) : verdict
-    #   ADVISORY rendu par fast-lane TRANCHE2 (entree 5, check-run
-    #   `Output-collapse ratchet (base vs PR, advisory)`), shell
+    #   BLOQUANT depuis T2 de #21424, rendu par fast-lane TRANCHE2 (entree 5,
+    #   check-run `Output-collapse ratchet (base vs PR)`), shell
     #   workflow_dispatch-ONLY pour re-run manuel -- meme profil que les deux
     #   jumeaux ci-dessus. Detecteur check_output_collapse.py, stdlib-only,
     #   garde same-repo au niveau job, aucun GITHUB_TOKEN cote job. L'organe a
@@ -361,11 +316,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   scan du repo courant -- aucune autre liste a synchroniser).
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "notebook-output-collapse-ratchet.yml",
-    # notebook-validation.yml : migre ubuntu-latest par Q35 etape 4
-    # tranche 2 (#17397, PR dediee myia-ai-01:CoursIA-2 c.478, 12
-    # workflows agregateurs, 2026-10-15). Sorti de
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Garde Python
-    # pur (validate_pr_notebooks.py), aucun secret, python 3.10.
+    "notebook-validation.yml",
     "owui-playwright-check.yml",
     "perimeter-review-guard.yml",
     "regression-guard.yml",
@@ -396,16 +347,13 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   disparait de l'allowlist).
     "split-reading-advisory.yml",
     "stale-base-warning.yml",
-    # quarto-pages-deploy.yml : migre ubuntu-latest par Q35 etape 4
-    # tranche 2 (#17397, PR dediee myia-ai-01:CoursIA-2 c.478, 12
-    # workflows agregateurs, 2026-10-15). Sorti de
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Seul le job
-    # `validate-pr` etait sur self-hosted (les jobs `build` et `deploy`
-    # etaient deja ubuntu-latest) : setup Quarto par tarball telecharge
-    # via curl, pas d'action quarto-actions/setup qui exigerait sudo
-    # apt. La distribution du temps de rendu est plus favorable sur
-    # ubuntu-latest (19-24 min contre 25-31 min, mesure #14283) ; le
-    # timeout 60 min est commun aux deux jambes.
+    # fin de chantier #14283 (feu vert ai-01 2026-09-02) : les jobs
+    #   quarto-pages-deploy `build` et `validate-pr` passent au pool — le
+    #   setup Quarto se fait par tarball auto-contenu (l'action canonique
+    #   exige sudo apt + dpkg, absents de l'image no-new-privileges, mesure
+    #   issuecomment-5516335275). Le job `deploy` RESTE ubuntu-latest :
+    #   deploy-pages + OIDC/env github-pages, question separee.
+    "quarto-pages-deploy.yml",
     "svg-broken-geometry-gate.yml",
     "svg-decimal-comma-gate.yml",
     "svg-empty-display-gate.yml",
@@ -466,11 +414,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   (LINUX_RUNNER_LABELS, meme profil que notebook-cell-source-parses.yml
     #   tranche 1 #13378). Rollback = revert de la PR (l'entree disparait de
     #   l'allowlist).
-    # notebook-latex-control-chars.yml : migre ubuntu-latest par Q35
-    # etape 4 tranche 2 (#17397, PR dediee myia-ai-01:CoursIA-2 c.478,
-    # 12 workflows agregateurs, 2026-10-15). Sorti de
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Garde Python
-    # pur, stdlib only, aucun secret, aucun GITHUB_TOKEN cote job.
+    "notebook-latex-control-chars.yml",
     # #17380 (owner myia-po-2023:CoursIA) : garde advisory sur la syntaxe
     #   math non rendable des cellules markdown -- 4 classes (delimiteurs
     #   LaTeX purs \(..\)/\[..\], dollars impairs par paragraphe, commandes
@@ -554,12 +498,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Concurrency cancel-in-progress (le balayage de kernel sur N notebooks
     #   peut etre rejoue sans frais). Pas de label pose. Rollback = revert
     #   de la PR (l'entree disparait de l'allowlist).
-    # notebook-kernel-drift-guard.yml : migre ubuntu-latest par Q35
-    # etape 4 tranche 2 (#17397, PR dediee myia-ai-01:CoursIA-2 c.478,
-    # 12 workflows agregateurs, 2026-10-15). Sorti de
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Garde Python
-    # pur (check_kernel_drift.py, stdlib + numpy), aucun secret hors
-    # GH_TOKEN pour lire le PR body, timeout 5 min.
+    "notebook-kernel-drift-guard.yml",
     # #16776 (owner myia-po-2023:CoursIA, PR #16801) : organ-duplication
     #   advisory -- signale les symboles ajoutes qui collident avec l'organ
     #   API d'une autre serie (scripts/audit/organ_api_index.yaml, regle
@@ -617,6 +556,16 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   organ-duplication-advisory.yml et docs-transients-guard.yml.
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "live-read-freshness.yml",
+    "pr-gate-rerun.yml",
+    "pr-gate-sweep-health-advisory.yml",
+    "stale-guard-red-sweep.yml",
+    "adjacency-stale-sweep.yml",
+    "concurrency-conj-guard.yml",
+    "pr-path-collision-advisory.yml",
+    "repeated-prose-advisory.yml",
+    "repo-size-advisory.yml",
+    "testpaths-coverage-guard.yml",
+    "notebook-outputs-required.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
@@ -802,8 +751,22 @@ def _runner_selection(
 # label. Guard, label set and fallback are enumerated -- any variation
 # (different guard, different labels, different fallback) stays an
 # unauditable expression and keeps the DYNAMIC_RUNS_ON rejection.
+#
+# c.509 (dispatch c.2180, owner myia-ai-01:CoursIA-2) : the audited label
+# set is now a TUPLE of accepted dedicated sets, not a single set. The
+# waiter pool (WAITER_LABELS) keeps the #13363 B role (pr-gate.yml
+# aggregator that polls up to 45 min -- the dedicated label is what lets
+# the gate WAIT without holding a work slot, arbitrage ai-01 2026-09-02).
+# The Linux pool (LINUX_RUNNER_LABELS, [self-hosted, coursia-ephemeral,
+# coursia-linux]) is added to relieve the ubuntu-latest queue (#14283
+# tranche 5 + Q35 etape 4 tranche 2): the same audited dynamic form now
+# applies to pure-Python guards (gitleaks, kernel-drift, papermill
+# ratchet, outputs-required) routed to the containerized Linux leg
+# without forfeiting the same-repo guard or the github-hosted fallback.
+# Every other expression stays an unauditable DYNAMIC_RUNS_ON.
 HYBRID_RUNS_ON_GUARD = SAME_REPO_GUARD
-HYBRID_RUNS_ON_LABELS = WAITER_LABELS
+HYBRID_RUNS_ON_LABELS = WAITER_LABELS  # kept for backward compat (single set)
+HYBRID_RUNS_ON_LABEL_SETS = (WAITER_LABELS, LINUX_RUNNER_LABELS)
 HYBRID_RUNS_ON_FALLBACK = "ubuntu-latest"
 _HYBRID_PATTERN = re.compile(
     r"^\s*\("
@@ -833,7 +796,7 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
         labels = {str(item) for item in json.loads(match.group("labels"))}
     except json.JSONDecodeError:
         return None
-    if labels != HYBRID_RUNS_ON_LABELS:
+    if labels not in HYBRID_RUNS_ON_LABEL_SETS:
         return None
     return {"labels": labels}
 

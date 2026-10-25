@@ -728,7 +728,48 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # depuis le CSV, 11 cellules code copiees verbatim, 0 orphelin). Rouge mesure
 # a tete constante avant cet enregistrement (1 failed / 34 passed, found 12
 # declared 11), meme classe que #19996/#20392. Total apres fusion : 12 + 1 = 13.
-EXPECTED_PAIR_COUNT = 13
+# 2026-10-14 (#1650 tranche FT-04, T4): +1 paire T4 -- FineTuning/
+# FT-04-RLHF-DPO-Python_en (20 cellules md EN rendues depuis le CSV,
+# 12 cellules code copiees verbatim, 0 orphelin). Total apres fusion : 14.
+# 2026-10-18 (#1650 tranche research_archive EN, T4): +1 paire T4 --
+# QuantConnect/partner-course/examples/Crypto-MultiCanal/research_archive_en
+# (35 cellules md EN rendues depuis le CSV, 33 cellules code copiees verbatim,
+# 0 orphelin, 0 fallback ; serie non jugee par le nav-chain, aucune entree
+# baseline requise -- sortie guard byte-identique a main). Total : 13 + 1 = 14.
+# 2026-10-19 (PR #19943, #19898 pli 3 Origami tranches A+B): +1 paire --
+# jumeau _en d'un carnet Lean : SymbolicAI/Lean/ANALYSE/ANALYSE-07-Percolation-Critique_en.
+# Meme classe que #19996/#20392 : la paire est arrivee sur main avec son carnet
+# sans mettre a jour cette ligne, ce qui a rougi test_full_repo_state_passes_parity
+# (found 14, declared 13) sur main pur et sur toute PR path-filtree scripts/**
+# (diagnostic po-2027, dashboard 2026-10-19T06:10Z). Total apres fusion : 13 + 1 = 14.
+# 2026-10-20 (fusion de origin/main dans feature/1650-ft04-en, PR #20711) : les
+# deux entrees ci-dessus sont INDEPENDANTES et s'additionnent -- elles partaient
+# toutes deux de 13, chacune ignorant la paire de l'autre : 13 + 1 (FT-04) +
+# 1 (ANALYSE-07) = 15. Une fusion qui n'aurait garde qu'un cote aurait rendu 14.
+# 2026-10-20 (PR #19916, #19908 tranche B pli 2): +1 paire -- jumeau _en du
+# carnet Lean natif : SymbolicAI/Lean/ANALYSE/ANALYSE-06-Sensibilite-2026-Lean_en.
+# Meme classe que #19996/#20392/#19943 : la PR ne touchait pas scripts/**, le
+# Scripts Tests path-filtre n'a pas tourne, et la garde PR-time #21397
+# (check_pair_count_declared.py) n'est cablee dans aucun workflow. Rouge sur main
+# pur a 955360bcf0 (found 15, declared 14). Total apres fusion : 14 + 1 = 15.
+# 2026-10-21 (re-fusion de origin/main dans feature/1650-ft04-en, PR #20711) :
+# l'entree ANALYSE-06 (main, #19916) est INDEPENDANTE des deux autres -- les
+# trois paires sont distinctes : 13 + 1 (FT-04) + 1 (ANALYSE-07, #19943) +
+# 1 (ANALYSE-06, #19916) = 16. Une resolution qui n'aurait garde qu'un cote
+# (15) aurait rougi test_full_repo_state_passes_parity (found 16, declared 15),
+# classe de rouge deja enregistree trois fois sur main (#19996/#20392/#19943).
+# Perimetre declare apres fusion des deux lignees (merge origin/main du 2026-10-20,
+# PR #21296) : main declare 15 paires (dont le jumeau Lean natif
+# ANALYSE-06-Sensibilite-2026-Lean_en ajoute par #19916, bump 14->15 par #21535),
+# et cette branche ajoute une paire de plus -- research_archive_en (QuantConnect,
+# Crypto-MultiCanal). Le compte mesure sur l'arbre fusionne est donc 16.
+# 2026-10-22 (resolution de conflit sur ce fichier, PR #20711) : les deux
+# recits ci-dessus se lisaient tous deux << 16 >> alors que leurs arithmetiques
+# ne comptaient pas les memes paires -- chacun ignorait une paire de l'autre
+# lignee. Le compte MESURE sur l'arbre fusionne est 17 (test_full_repo_state
+# _passes_parity le rend : 'found 17, declared 16'). La constante suit la
+# mesure, pas le recit : aucune paire n'est ajoutee par cette fusion.
+EXPECTED_PAIR_COUNT = 17
 
 
 def _collect_parity_failures(repo_root: Path,

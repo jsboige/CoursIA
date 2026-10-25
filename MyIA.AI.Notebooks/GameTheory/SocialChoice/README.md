@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GameTheory-SocialChoice
-pedagogical_count: 10
-breakdown: SocialChoice=10
-maturity: BETA=8, ALPHA=2
+pedagogical_count: 14
+breakdown: SocialChoice=14
+maturity: BETA=11, ALPHA=3
 -->
 
 La théorie du choix social étudie comment agréger des préférences individuelles en une décision collective. Ses résultats les plus célèbres sont des **théorèmes d'impossibilité** : le théorème d'Arrow (1951) montre qu'aucune règle de vote ne peut satisfaire simultanément des axiomes "raisonnables" (Pareto, IIA, non-dictature) dès que 3 alternatives ou plus sont en jeu ; le théorème de Sen (1970) démontre un conflit fondamental entre liberté individuelle et efficacité collective.
@@ -39,14 +39,15 @@ Cette sous-série du parcours [GameTheory](../README.md) explore ces résultats 
 | SC-06 | [06-Mobius-Aggregation-Pouvoir-Manipulation](06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Möbius sur le treillis des coalitions : dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée (See #12204) | 40 min | COMPLET |
 | SC-07 | [07-Committees-Core](07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas Hare/Droop, certificats de paiement et règle de l'entropie harmonique (arXiv 2609.11912, See #16848) | 40 min | COMPLET |
 | SC-08 | [02-Stable-Marriage-Gale-Shapley](02-Stable-Marriage-Gale-Shapley.ipynb) | Mariage stable : algorithme de Gale-Shapley, jumeau Python du lake Lean `game_theory_lean/StableMarriage/` (aucun `sorry`) — couplage parfait, stabilité, man-optimalité vérifiée empiriquement par énumération exhaustive (See #19681) | 35 min | COMPLET |
+| SC-10 | [10-Manipulation-Strategique-MultiWinner](10-Manipulation-Strategique-MultiWinner.ipynb) | Manipulation stratégique sous règles à comité : détecteur de déviation gagnante, branches du théorème de Gibbard-Satterthwaite (Handbook of Computational Social Choice ch. 6), fréquence mesurée par énumération exhaustive, encodage Z3 (See #21597) | 35 min | COMPLET |
 
-**Durée totale** : ~5h50
+**Durée totale** : ~6h25
 
 > **Parité .NET** : les notebooks [01-Arrow-Impossibility-Theorem-Csharp.ipynb](01-Arrow-Impossibility-Theorem-Csharp.ipynb) (jumeau du SC-01), [03-Voting-Methods-Csharp.ipynb](03-Voting-Methods-Csharp.ipynb) (jumeau du SC-03) et [04-Computational-Aggregation-SAT-Z3-Csharp.ipynb](04-Computational-Aggregation-SAT-Z3-Csharp.ipynb) (jumeau du SC-04) sont les miroirs C# (.NET Interactive) des originaux Python — mêmes algorithmes implémentés from-scratch en C#. Marathon parité .NET ⇄ Python (#4956). Ces trois jumeaux C# sont comptés dans le `pedagogical_count` de la sous-série mais arborent le statut `PARITÉ` dans le tableau ci-dessus pour les distinguer des notebooks d'origine dont ils sont les retranscriptions .NET.
 
 ## Parcours d'apprentissage
 
-Les cinq premiers notebooks attaquent les mêmes résultats d'impossibilité sous des angles complémentaires -- l'intuition par la simulation, la pratique électorale, la certitude formelle, la vérification automatique et la manipulation stratégique -- qui convergent vers une cartographie des relaxations possibles ; le SC-06 ouvre la face coopérative du problème : agréger non plus des préférences mais des valeurs de coalition ; le SC-07 change une seconde fois d'objet — élire non plus un gagnant unique mais un comité, et y transférer la notion de stabilité : le core existe toujours (Becker, Greger & Peters) ; le SC-08 change une troisième fois d'objet — non plus élire mais **apparier** : deux populations expriment leurs préférences l'une sur l'autre et l'algorithme de Gale-Shapley en dégage le couplage stable man-optimal.
+Les cinq premiers notebooks attaquent les mêmes résultats d'impossibilité sous des angles complémentaires -- l'intuition par la simulation, la pratique électorale, la certitude formelle, la vérification automatique et la manipulation stratégique -- qui convergent vers une cartographie des relaxations possibles ; le SC-06 ouvre la face coopérative du problème : agréger non plus des préférences mais des valeurs de coalition ; le SC-07 change une seconde fois d'objet — élire non plus un gagnant unique mais un comité, et y transférer la notion de stabilité : le core existe toujours (Becker, Greger & Peters) ; le SC-08 change une troisième fois d'objet — non plus élire mais **apparier** : deux populations expriment leurs préférences l'une sur l'autre et l'algorithme de Gale-Shapley en dégage le couplage stable man-optimal ; le SC-10 referme la boucle sur la manipulation elle-même : mesurée sous les règles à comité (pluralité, Borda, Chamberlin-Courant, Monroe, STV), elle devient un objet outillé — détecteur de déviation gagnante, branches du théorème de Gibbard-Satterthwaite vérifiées sur l'espace exhaustif, fréquence obtenue par énumération et encodage Z3.
 
 ```mermaid
 flowchart TD
@@ -67,6 +68,7 @@ flowchart TD
     Result -.- Coop["Face coopérative (SC-06)<br/>Möbius · dividendes de Harsanyi<br/>v = Σ m(T)·u_T · poids ≠ pouvoir"]
     Coop -.- Comm["Comités par approbation (SC-07)<br/>core toujours non vide<br/>quotas Hare/Droop · certificats"]
     Result -.- Match["Couplages bilatéraux (SC-08)<br/>mariage stable · Gale-Shapley<br/>man-optimal · 0 paire bloquante"]
+    E5 -.- Manip["Manipulation sous règles à comité (SC-10)<br/>détecteur de déviation gagnante<br/>fréquence mesurée · encodage Z3"]
 ```
 
 ### Étape 1 : Le théorème d'Arrow par la simulation (SC-01, 45 min)
@@ -135,10 +137,16 @@ Le notebook SC-07 change d'objet une seconde fois : on n'élit plus un gagnant u
 
 Le notebook SC-08 change d'objet une troisième fois : il ne s'agit plus d'agréger des préférences en un classement ni d'élire un comité, mais d'**apparier** deux populations qui se choisissent mutuellement. Sur le modèle de Gale & Shapley (1962), `n` hommes et `n` femmes expriment leurs préférences sur l'autre côté, et l'algorithme d'**acceptation différée** (hommes-proposent) produit un couplage parfait **stable** — aucune paire ne préférerait mutuellement rompre — et **man-optimal** : chaque homme obtient sa meilleure partenaire parmi *tous* les couplages stables. La stabilité et l'optimalité sont vérifiées empiriquement sur l'exemple de Knuth (`n=4`) par **énumération exhaustive** des 24 couplages, dont 2 sont stables. Le notebook est le **jumeau Python** du lake Lean [`game_theory_lean/StableMarriage/`](../game_theory_lean/StableMarriage/) (0 `sorry` sur les théorèmes principaux) : la simulation donne la dynamique pas-à-pas, la preuve garantit la propriété pour tout `n`.
 
+### Étape 9 : Manipulation stratégique sous règles à comité (SC-10, 35 min)
+
+Le notebook SC-10 déplace la manipulation stratégique de l'axiome vers la mesure. Là où le SC-05 exhibait un témoin d'exploitation sous la pluralité, le carnet construit l'instrument : sur un profil de référence — celui de l'Exemple 6.1 du *Handbook of Computational Social Choice* (chapitre 6, p. 127) — il automatise la recherche de toute déviation gagnante et en restitue les **quatre**, quand le manuel n'en cite qu'une ; puis il vérifie, sur l'espace exhaustif des profils à trois votants et trois candidats, que les cinq règles ne sont ni dictatoriales ni imposantes — ce qui rend **forcée** la troisième branche du théorème de Gibbard-Satterthwaite (Théorème 6.2, p. 128) ; enfin il mesure la fréquence de manipulation par énumération exhaustive, en croisant la taille du comité et celle de l'espace de candidats, et confronte l'encodage Z3 de la déviation gagnante à l'énumération brute sur des profils aléatoires.
+
+Le résultat qui mérite l'attention est double. D'une part, une fréquence mesurée n'est pas une propriété de la règle mais un fait borné : Chamberlin-Courant ne présente aucun profil manipulable quand l'espace compte trois candidats, et une part notable de profils manipulables dès quatre candidats, à taille de comité identique — un « jamais » mesuré reste un fait daté, pas une garantie. D'autre part, le classement des règles s'inverse : celles qui maximisent une satisfaction agrégée (Chamberlin-Courant, Monroe) sont les plus manipulables, parce qu'un optimum est instable, tandis que la pluralité et le STV — qui appliquent un seuil ou une procédure — le sont moins. Trois exercices (C.1) prolongent le carnet.
+
 ## Prerequisites
 
 - Python 3.10+ avec numpy, matplotlib, networkx (notebooks 01, 03, 04, 05, 07 — le 07 ajoute scipy) ; bibliothèque standard suffisante pour le 06
-- pysat et z3-solver pour le notebook 04
+- pysat pour le notebook 04 ; z3-solver pour les notebooks 04 et 10
 - Lean 4 + kernel WSL pour le notebook 02 (cf [README parent](../README.md))
 
 ## Installation
@@ -177,6 +185,7 @@ Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; D
 | **Split Cycle** | Règle de vote la plus fine satisfaisant Condorcet + acyclicité |
 | **Core d'une élection de comité** | Comité qu'aucune coalition (au quota Hare/Droop) ne peut bloquer par un ensemble unanimement approuvé — toujours non vide (SC-07) |
 | **Certificat de paiement** | Preuve constructive d'appartenance au core : paiements aux votants + réserve, budget égal au coût du comité (SC-07) |
+| **Manipulation sous règles à comité** | Un votant qui ment sur ses préférences peut améliorer son sort ; la fréquence dépend de la règle **et** de la taille de l'espace de candidats (SC-10) |
 
 > Les six figures de cette sous-série sont intégrées ci-dessus dans le **Parcours d'apprentissage**, chacune adjacente à l'étape qui traite le concept qu'elle illustre (Arrow en Étape 1 ; Condorcet, Sen, électeur médian et Downs en Étape 2 ; agrégation SAT/Z3 en Étape 4). Provenance, dimensions et poids de chaque figure : [`assets/readme/MANIFEST.md`](assets/readme/MANIFEST.md).
 
@@ -201,6 +210,13 @@ Le projet `social_choice_lean_peters/` (au sein de cette série depuis #4362 ; D
 | Gibbard (1973) / Satterthwaite (1975) | Théorème de manipulabilité (SC-05) |
 | Harsanyi (1959) ; Curiel, *Cooperative Game Theory and Applications* (1997) | Dividendes de coalition, jeux de vote pondérés (SC-06) |
 | Becker, Greger & Peters, "Existence of the Core in Approval-Based Committee Elections" (arXiv 2609.11912) | Core non vide, quotas Hare/Droop, certificats (SC-07) |
+| Brandt, Conitzer, Endriss, Lang & Procaccia (dir.), *Handbook of Computational Social Choice* (2016) | Ouvrage d'ancrage de la sous-série — ch. 1-2 (impossibilités, théorie du vote), ch. 4 (Kemeny, ranked pairs), ch. 5 (Dodgson, complexité) |
+| Kemeny, "Mathematics without Numbers" (1959) | Règle du rang médian, score de Kemeny (SC-08) |
+| Young & Levenglick, "A Consistent Extension of Condorcet's Election Principle" (1978) | Caractérisation axiomatique de Kemeny : unique extension de Condorcet neutre et consistante — renforcement (SC-08, Handbook ch. 4) |
+| Tideman, "Independence of Clones as a Criterion for Voting Rules" (1987) | Ranked Pairs (SC-08) |
+| Caragiannis, Hemaspaandra & Hemaspaandra, "Dodgson's Rule and Young's Rule" (2016) | NP-dureté de la détermination du gagnant Dodgson (SC-08, Handbook ch. 5 §5.3) |
+
+> L'ouvrage d'ancrage est archivé dans le gisement bibliographique du cluster : `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\2016 - Brandt Conitzer Endriss Lang - Handbook of Computational Social Choice.pdf` — le chemin est cité, le fichier n'est jamais copié dans le dépôt public.
 
 ## Conclusion / Prochaines étapes
 

@@ -68,10 +68,14 @@ class MomentumAlpha(AlphaModel):
 
     def _compute_score(self, algorithm, symbol, ticker):
         try:
-            history = algorithm.history(symbol, self.lookback + 5, Resolution.DAILY)
+            # Fenetre double (#20286) : sur une demi-seance, history() rend moins
+            # de barres que demandees et le score est abandonne. On demande le
+            # double puis on re-slice sur la fenetre d'origine : closes.iloc[0]
+            # doit rester la meme barre d'ancrage.
+            history = algorithm.history(symbol, 2 * (self.lookback + 5), Resolution.DAILY)
             if len(history) < self.lookback:
                 return None
-            closes = history['close']
+            closes = history['close'].iloc[-(self.lookback + 5):]
             mom = (closes.iloc[-self.skip_days] / closes.iloc[0]) - 1
             vol = closes.iloc[-self.vol_window:].pct_change().std() * np.sqrt(252)
             if vol <= 0:
