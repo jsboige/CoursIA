@@ -4,7 +4,7 @@ Série sœur de [FallacyDetection](../FallacyDetection/README.md) : là où Fall
 
 - **Issue parent** : [#20301](https://github.com/jsboige/CoursIA/issues/20301)
 - **Étape 1 (livrée)** : comparatif des datasets publics d'humour, licences vérifiées à la source, recommandation ColBERT Humor — [commentaire du 11/10](https://github.com/jsboige/CoursIA/issues/20301#issuecomment-6103567187)
-- **Note de conception acceptée** ([c.6109425309](https://github.com/jsboige/CoursIA/issues/20301#issuecomment-6109425309)) et **décisions du coordinateur** : nom `HumorDetection` ; kappa plancher 0,6 en *signal* (passe de désambiguïsation documentée, jamais de rejet) ; annotateur B d'une autre famille que Qwen, via claudish, nommé et versionné au rapport ; échantillon borné ~200 lignes + manifeste.
+- **Note de conception acceptée** ([c.6109425309](https://github.com/jsboige/CoursIA/issues/20301#issuecomment-6109425309)) et **décisions du coordinateur** : nom `HumorDetection` ; kappa plancher 0,6 en *signal* (passe de désambiguïsation documentée, jamais de rejet) ; annotateur B d'une autre famille que Qwen, via claudish, nommé et versionné au rapport ; échantillon borné + manifeste.
 
 ## Porte de succès déclarée
 
@@ -35,5 +35,5 @@ Le protocole d'annotation multi-annotateurs produit un corpus dont **l'accord in
 ## Données
 
 - **ColBERT Humor** (200 000 textes courts EN, granularité binaire, **contrôles non-humoristiques intégrés**) : licence MIT vérifiée à la source à l'étape 1 — **re-vérifiée au geste de téléchargement**, et la publication (Moradnejad et al.) est **archivée au gisement bibliographique avant tout téléchargement**, chemin cité au manifeste ([bibliography-hygiene](../../../.claude/rules/bibliography-hygiene.md)).
-- **Aucun corpus au dépôt** avant ces préconditions. Ensuite : échantillon borné (~200 lignes) + manifeste (SHA, provenance, licence, date, compteurs) ; corpus complet hors dépôt (règle 512 Ko).
+- **Aucun corpus au dépôt** avant ces préconditions. Ensuite : échantillon borné + manifeste (SHA, provenance, licence, date, compteurs) ; corpus complet hors dépôt (règle 512 Ko).
 - Le volet **FR** vient du protocole enseignant (scénarii Argumentum FR), pas d'un dataset externe ; l'écart EN/FR est chiffré au carnet 02.
