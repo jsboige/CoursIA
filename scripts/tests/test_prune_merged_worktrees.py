@@ -2685,7 +2685,18 @@ class TestRefusalReport3895:
         out = json.loads(cap.out)
         assert out["scanned"] == 0
         assert out["mute"] is True
+        # reserve Hermes #22440 : le cas mute n'a rien sous la main -- refus
+        # et retraits restent a 0 (implicite jusqu'ici, desormais epingle).
+        assert out["refused"] == 0
+        assert out["removable"] == 0
         assert "MUTE" in cap.err
+        # reserve Hermes #22440 (complement symetrique) : en mode TEXTE, un
+        # passage scanned=0 doit aussi laisser une ligne sur stdout -- sans
+        # elle, un appelant qui ne lit que stdout voit un silence blanc.
+        assert self._run_main(monkeypatch, []) == 0
+        cap_text = capsys.readouterr()
+        assert "scanned=0" in cap_text.out
+        assert "MUTE" in cap_text.err
         # controle negatif : un scan non vide n'est JAMAIS mute.
         assert self._run_main(
             monkeypatch, [_make_status()], argv_extra=["--json"]) == 0

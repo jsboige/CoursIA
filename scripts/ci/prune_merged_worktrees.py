@@ -2999,6 +2999,16 @@ def main() -> int:
         else:
             print(render_text(statuses, dry_run=True,
                               gh_unavailable_reason=gh_unavailable_reason))
+        # #127 : symetrie du signal MUTE en mode texte. Un appelant qui ne lit
+        # que stdout doit voir la meme information que le champ JSON `mute` et
+        # que la ligne `MUTE:` sur stderr ; sans cette ligne, un passage
+        # `scanned=0` rend un stdout blanc, indiscernable d'une passe propre
+        # (reserve Hermes sur #22440, complement symetrique du flag JSON).
+        if len(statuses) == 0:
+            print(
+                "scanned=0  (aucun worktree diagnostique -- passage muet, "
+                "pas propre ; voir aussi MUTE sur stderr, #127)"
+            )
         # Budget API de la passe (#15369) : la mesure est un livrable, pas
         # un side-effect silencieux.
         st = get_pr_resolution().stats
