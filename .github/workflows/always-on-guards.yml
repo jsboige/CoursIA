@@ -1359,10 +1359,39 @@ jobs:
       # une PR bot qui toucherait les traductions -- c'est precisement ce
       # qu'il surveille. La definition du hot-subset (le semantique) est
       # epinglee par le test, pas par ce step.
+      # #22435 :: un rc de pytest n'est pas un verdict de contenu. Le couple
+      # &&/|| capturait le rc mais le traduisait entierement en « SRC_DRIFT » :
+      # un rc 2 (collecte interrompue) imprimait une derive de traduction alors
+      # que la MESURE n'avait pas eu lieu. Mesure du 25/10 : #22130 et #22264,
+      # `ImportError: cannot import name 'TerminalFormatter'` dans le toolcache
+      # partage, ratchet pourtant vert sur une tete exacte (`2 passed`). Trois
+      # regimes distincts, dans la doctrine de #8819 (« non mesure n'est pas
+      # sans defaut ») :
+      #   rc 0    -> vert, dit ;
+      #   rc 1    -> verdict de contenu, rouge, message inchange ;
+      #   rc >= 2 -> NON MESURE. Rouge seulement si la PR touche le perimetre
+      #              de l'organe (`scripts/translation/**`,
+      #              `scripts/notebook_tools/**`, ET l'organe de l'organe : ce
+      #              workflow lui-meme et son harnais de cablage) : la cause est
+      #              alors attribuable a la PR. Sinon `::warning::` non
+      #              bloquant, qui DIT que ce n'est pas un SRC_DRIFT.
+      #              Le perimetre inclut l'organe de l'organe depuis la reserve
+      #              de #22472 : une PR qui casse le harnais ou l'etape et fait
+      #              echouer la collecte repartait verte sous NON-MESURE, alors
+      #              que la cause lui est entierement attribuable.
+      # L'attribution lit le diff local (checkout en `fetch-depth: 0`, aucun
+      # appel reseau) ; un diff illisible laisse la cause NON ATTRIBUABLE et le
+      # step non bloquant, en le disant -- jamais un rouge qui nomme une derive
+      # inexistante, jamais un silence qui se lirait comme une couverture.
       - name: "Hot-subset ratchet translation SRC_DRIFT (#15196)"
         id: hot_subset
         if: github.event_name == 'pull_request'
         continue-on-error: true
+        env:
+          # #22472 : deuxieme chemin de lecture du diff (SHA de base de
+          # l'evenement, local au payload -- aucun appel reseau) pour le
+          # regime INDECISE, cf corps du step.
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -uo pipefail
           pip install --quiet pytest
@@ -1370,10 +1399,68 @@ jobs:
           # fichier, cf organe tag_required) ; -q suffit, la sortie de pytest
           # streame au log du step.
           python -m pytest scripts/translation/tests/test_hot_subset_ratchet.py -q && RC=0 || RC=$?
-          if [ "$RC" -ne 0 ]; then
-            echo "::error::Hot-subset ratchet : SRC_DRIFT sur un grain de traduction deposee ou definition du hot-subset derive. Resync la ligne CSV per-cell (jamais d'extraction globale, #13551) / corrige le semantique sous test (#15196)."
+          # #22472 : le regime est exporte vers l'agregat (outputs.regime) --
+          # l'etat NON MESURE laisse le statut vert (doctrine #8819) mais doit
+          # se lire au niveau du JOB, pas seulement en ouvrant le log du step
+          # (un runner durablement casse produirait des PR vertes dont
+          # personne ne verrait que la garde etait aveugle).
+          if [ "$RC" -eq 0 ]; then
+            echo "regime=MESURE-VERT" >> "${GITHUB_OUTPUT:-/dev/null}"
+            echo "Hot-subset ratchet : regime MESURE-VERT (rc 0) -- aucun SRC_DRIFT."
+            exit 0
+          fi
+          if [ "$RC" -eq 1 ]; then
+            echo "regime=VERDICT-CONTENU" >> "${GITHUB_OUTPUT:-/dev/null}"
+            echo "::error::Hot-subset ratchet : regime VERDICT DE CONTENU (rc 1) -- SRC_DRIFT sur un grain de traduction deposee ou definition du hot-subset derive. Resync la ligne CSV per-cell (jamais d'extraction globale, #13551) / corrige le semantique sous test (#15196)."
             exit 1
           fi
+          # rc >= 2 : pytest n'a PAS rendu de verdict (2 = collecte interrompue,
+          # 3 = erreur interne, 4 = usage, 5 = rien collecte). Ce n'est pas un
+          # SRC_DRIFT (#22435).
+          # Perimetre d'attribution, defini UNE fois : les deux chemins de
+          # lecture du diff le partagent (deux copies deriveraient). Il couvre
+          # les sources de l'organe ET l'organe de l'organe -- le workflow qui
+          # le porte et le harnais qui epingle son cablage (#22472, reserve
+          # Hermes du 25/10 13:01Z) : casser l'un des deux fait echouer la
+          # collecte pytest, et la cause est alors attribuable a la PR.
+          # `--no-renames` n'est pas cosmetique : sous --name-only un rename
+          # n'affiche que sa DESTINATION, donc un fichier renomme HORS du
+          # perimetre disparaissait de la liste et la PR repartait non
+          # attribuable (mesure du 25/10 : `--name-only` seul rend
+          # `docs_x.py`, `--no-renames` rend les DEUX chemins). Decomposer en
+          # suppression + ajout fait lire les deux -- c'est le sens
+          # fail-CLOSED de l'attribution (#22472, point NanoClaw du 09:18Z).
+          ORGANE_RE='^(scripts/(translation|notebook_tools)/|\.github/workflows/always-on-guards\.yml$|scripts/tests/test_hot_subset_ratchet_wiring\.py$)'
+          BASE="${GITHUB_BASE_REF:-main}"
+          if git diff --no-renames --name-only "origin/${BASE}...HEAD" > /tmp/hot_subset_diff.txt 2>/dev/null; then
+            MATCHED=$(grep -E "$ORGANE_RE" /tmp/hot_subset_diff.txt || true)
+            if [ -n "$MATCHED" ]; then
+              echo "regime=NON-MESURE-ATTRIBUABLE" >> "${GITHUB_OUTPUT:-/dev/null}"
+              echo "::error::Hot-subset ratchet : regime NON MESURE ATTRIBUABLE (rc ${RC}) -- pytest n'a pas rendu de verdict, et cette PR touche l'organe : $(echo "$MATCHED" | tr '\n' ' '). La cause est attribuable a la PR : corrige l'import ou la collecte, puis relance. Ce n'est PAS un verdict de SRC_DRIFT."
+              exit 1
+            fi
+            echo "regime=NON-MESURE" >> "${GITHUB_OUTPUT:-/dev/null}"
+            echo "::warning::Hot-subset ratchet : regime NON MESURE (rc ${RC}) -- pytest n'a pas rendu de verdict et la PR ne touche aucun fichier du perimetre de l'organe (traductions, notebook_tools, ce workflow, son harnais de cablage) : la mesure n'a pas eu lieu, ce n'est PAS un SRC_DRIFT (#22435, precedent #8819). Non bloquant ; si une derive reelle est en cause, seule une relance sur un runner sain le dira."
+            exit 0
+          fi
+          # #22472 reserve 2 : avant de conclure INDECISE, deuxieme lecture
+          # par le SHA de base de l'evenement (payload local, aucune ref
+          # origin requise -- la fragilite du unshallow documentee au
+          # checkout ne s'y applique pas). Si ce chemin lit le diff,
+          # l'attribution s'applique comme sur le chemin principal.
+          if [ -n "${PR_BASE_SHA:-}" ] && git diff --no-renames --name-only "${PR_BASE_SHA}...HEAD" > /tmp/hot_subset_diff.txt 2>/dev/null; then
+            MATCHED=$(grep -E "$ORGANE_RE" /tmp/hot_subset_diff.txt || true)
+            if [ -n "$MATCHED" ]; then
+              echo "regime=NON-MESURE-ATTRIBUABLE" >> "${GITHUB_OUTPUT:-/dev/null}"
+              echo "::error::Hot-subset ratchet : regime NON MESURE ATTRIBUABLE (rc ${RC}, diff lu par PR_BASE_SHA) -- pytest n'a pas rendu de verdict, et cette PR touche l'organe : $(echo "$MATCHED" | tr '\n' ' '). La cause est attribuable a la PR : corrige l'import ou la collecte, puis relance. Ce n'est PAS un verdict de SRC_DRIFT."
+              exit 1
+            fi
+            echo "regime=NON-MESURE" >> "${GITHUB_OUTPUT:-/dev/null}"
+            echo "::warning::Hot-subset ratchet : regime NON MESURE (rc ${RC}, diff lu par PR_BASE_SHA) -- pytest n'a pas rendu de verdict et la PR ne touche aucun fichier du perimetre de l'organe (traductions, notebook_tools, ce workflow, son harnais de cablage) : la mesure n'a pas eu lieu, ce n'est PAS un SRC_DRIFT (#22435, precedent #8819). Non bloquant ; si une derive reelle est en cause, seule une relance sur un runner sain le dira."
+            exit 0
+          fi
+          echo "regime=NON-MESURE-INDECISE" >> "${GITHUB_OUTPUT:-/dev/null}"
+          echo "::warning::Hot-subset ratchet : regime NON MESURE, ATTRIBUTION INDECISE (rc ${RC}) -- pytest n'a pas rendu de verdict, et le diff n'a pu etre lu ni par origin/${BASE} ni par le SHA de base de l'evenement. Choix explicite (#22472) : NON bloquant -- la barre de blocage exige la PREUVE d'attribution, jamais son absence. Ce n'est PAS un SRC_DRIFT ; la cause reste a etablir (#22435)."
           exit 0
 
       # #21391 :: le compte de paires de traduction, au moment de la PR.
@@ -1635,4 +1722,15 @@ jobs:
             echo "::error::Organes bloquants en echec :$FAILED (le detail est dans les steps correspondants ci-dessus)."
             exit 1
           fi
-          echo "Tous les organes always-on sont verts (ou skips d'evenement)."
+          # #22472 : surface du regime hot-subset au niveau du JOB. Un NON
+          # MESURE laisse le statut vert (doctrine #8819), mais il doit se
+          # lire sur la ligne d'agregat, pas seulement en ouvrant le log du
+          # step -- sinon un runner durablement casse produit des PR vertes
+          # dont personne ne voit que la garde etait aveugle.
+          HS_REGIME="${{ steps.hot_subset.outputs.regime }}"
+          case "$HS_REGIME" in
+            NON-MESURE*)
+              echo "::warning::Hot-subset ratchet : organes verts ou NON MESURES (${HS_REGIME}) -- la mesure n'a pas eu lieu sur cette PR, ce n'est pas un verdict de contenu (#22435, precedent #8819). Le detail est dans le step hot_subset."
+              ;;
+          esac
+          echo "Tous les organes always-on sont verts (ou skips d'evenement)${HS_REGIME:+ ; hot-subset : ${HS_REGIME}}."
