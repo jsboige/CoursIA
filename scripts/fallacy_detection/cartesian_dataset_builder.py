@@ -455,10 +455,18 @@ def render_prompt(pair: Pair, texts: dict, lang: str = "en") -> str:
 
 def prompt_contains_example(pair: Pair, texts: dict, lang: str,
                             min_len: int = EXAMPLE_MIN_LEN) -> bool:
-    """Vrai si un champ exemple du noeud (>= ``min_len`` caracteres) figure dans le prompt."""
+    """Vrai si un champ exemple du noeud (>= ``min_len`` caracteres) figure dans le prompt.
+
+    L'exemple est compare **normalise comme le prompt** : ``render_prompt`` retire
+    le point terminal de la definition (#22422), donc un exemple qui *est* cette
+    definition ne serait plus un sous-texte litteral. Sans cette normalisation le
+    detecteur devient aveugle et laisse passer la fuite qu'il doit attraper
+    (regression mesuree sur le test ``test_example_detector_is_not_blind``).
+    """
     key = ("F" if pair.polarity == "fallacy" else "V") + str(pair.node_pk)
     prompt = render_prompt(pair, texts, lang)
-    return any(len(e) >= min_len and e in prompt for e in texts["nodes"][key][lang][2])
+    return any(len(e) >= min_len and _without_terminal_period(e) in prompt
+               for e in texts["nodes"][key][lang][2])
 
 
 # --------------------------------------------------------------------------
