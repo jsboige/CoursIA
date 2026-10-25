@@ -1058,6 +1058,15 @@ jobs:
             exit 0
           fi
 
+          # #22117 -- profondeur de la file globale, lue UNE fois pour tout le
+          # sweep (pas par PR). C'est le second signal de la classe « en file » :
+          # sous saturation, un run `queued` meme ancien attend un drain normal
+          # et ne justifie pas une nouvelle tete. Un echec de l'appel laisse la
+          # variable vide -> le verdict retombe sur l'age SEUL (jamais plus
+          # permissif que le comportement anterieur).
+          QUEUE_DEPTH=$(gh api "repos/$REPO/actions/runs?per_page=1&status=queued" \
+            --jq '.total_count' 2>/dev/null) || QUEUE_DEPTH=""
+
           m=0
           i=0
           # #19050 -- refus STRUCTURELS de relance (run termine, non
@@ -1162,13 +1171,7 @@ jobs:
               # de texte serait devinee, donc fausse un jour sans prevenir).
               if ! gh run rerun "$RUN_ID" --repo "$REPO"; then
                 RUN_STATUS=$(printf '%s' "${RUN:-}" | jq -r '.status // empty' 2>/dev/null)
-                if [ "${RUN_STATUS:-}" = "completed" ] || [ "${RUN_STATUS:-}" = "queued" ]; then
-                  # #21463 -- `queued` est structurel comme `completed` : le run
-                  # fige dans `queued` (variante mesuree 2026-10-22, hors d'atteinte
-                  # de l'API, ni annulable ni relancable) ne l'accordera jamais.
-                  # Le sweep NOMME la PR et dit le geste manuel (nouvelle tete /
-                  # close+reopen), il ne dispatche PAS un revive inerte qui
-                  # echouerait sur le meme run fige.
+                if [ "${RUN_STATUS:-}" = "completed" ]; then
                   # Un run TERMINE qui refuse la relance ne l'accordera jamais :
                   # sous-cas mesure sur #18985, ou la jambe rouge `PR gate` vit
                   # dans la suite d'une analyse CodeQL en `default setup`
@@ -1181,7 +1184,71 @@ jobs:
                   # comme repare, et on dit le geste qui marche -- une NOUVELLE
                   # TETE (`gh pr update-branch`), qui recree les suites ; elle
                   # perime le dossier de prevalidation de la PR.
-                  echo "[stale-sweep] #$NUM ($SHA): SUITE_UNRERUNNABLE -- run $RUN_ID ${RUN_STATUS} et non relancable (suite d'une execution dynamique, ou run \`queued\` figee #21463) ; NON compte comme repare. Geste : nouvelle tete (\`gh pr update-branch\`) / close+reopen, le dossier de prevalidation devient perime."
+                  echo "[stale-sweep] #$NUM ($SHA): SUITE_UNRERUNNABLE -- run $RUN_ID completed et non relancable (suite d'une execution dynamique, #19050) ; NON compte comme repare. Geste : nouvelle tete (\`gh pr update-branch\`) / close+reopen, le dossier de prevalidation devient perime."
+                  structural=$((structural + 1))
+                elif [ "${RUN_STATUS:-}" = "queued" ]; then
+                  # #22117 -- `queued` n'est PAS structurel comme `completed`.
+                  # `gh run rerun` refuse TOUT run non termine, donc un run
+                  # simplement EN FILE (l'etat normal d'une famine de runners)
+                  # n'est pas fige. Le verdict `ENFILE`/`FIGE` est porte par un
+                  # selecteur python autonome (seuil MESURE 2026-10-23 : 81 runs
+                  # PR gate queued ages 2min->7h48, ZERO au-dela de 8h, file
+                  # globale 990 ; le fige mesure #17099 est a 19h30) -- il lit
+                  # le `created_at` du run ET la profondeur de la file globale,
+                  # pas la prose du refus. Teste par
+                  # test_pr_gate_sweep_select.py (heredoc `PYV`).
+                  VERDICT=$(SWEEP_RUN_JSON="$RUN" \
+                    SWEEP_QUEUE_DEPTH="${QUEUE_DEPTH:-}" \
+                    python3 - <<'PYV'
+          import json, os, sys
+          from datetime import datetime, timezone
+
+          # #22117 -- seuil MESURE 2026-10-23T11:3xZ sur 81 runs `PR gate` queued
+          # (file globale 990) : ages 2 min -> 7h48, MEDIANE 4h07, p90 7h04, ZERO
+          # au-dela de 8h. Un run dans cette enveloppe est servi par la file qui
+          # draine -- « en file », pas fige. Le fige MESURE (#17099) est a 19h30 :
+          # au-dela du seuil ci-dessous ET hors saturation, le run n'arrivera
+          # jamais sur un runner.
+          FROZEN_AFTER_S = 8 * 3600
+          # File globale saturee (issue #22117 : « ou file globale saturee ») : au
+          # 2026-10-23 la profondeur etait 990-1100 runs. Au-dela de 800, un run
+          # `queued` meme ancien attend un drain normal -- on ne recommande pas de
+          # nouvelle tete (rafale de runs) sous saturation.
+          QUEUE_SATURATED_N = 800
+
+          def _parse_dt(v):
+              return datetime.fromisoformat(v[:-1] + "+00:00" if v.endswith("Z") else v)
+
+          run = json.loads(os.environ.get("SWEEP_RUN_JSON") or "{}")
+          created = run.get("created_at") or ""
+          now_raw = os.environ.get("SWEEP_NOW") or ""
+          now = _parse_dt(now_raw) if now_raw else datetime.now(timezone.utc)
+          try:
+              age_s = (now - _parse_dt(created)).total_seconds()
+          except (ValueError, TypeError):
+              # Un timbre illisible ne justifie pas la quietude : repli sur le
+              # comportement anterieur (le run est traite comme fige).
+              print("FIGE")
+              sys.exit(0)
+
+          depth_raw = os.environ.get("SWEEP_QUEUE_DEPTH") or ""
+          try:
+              saturated = bool(depth_raw) and int(depth_raw) >= QUEUE_SATURATED_N
+          except ValueError:
+              saturated = False
+
+          print("FIGE" if age_s >= FROZEN_AFTER_S and not saturated else "ENFILE")
+          PYV
+          )
+                  if [ "$VERDICT" = "ENFILE" ]; then
+                    # En file : le run attend un runner, il n'est pas fige.
+                    # AUCUN geste recommande (ni update-branch ni close+reopen)
+                    # et la place MAX_IMMATURE n'est PAS consommee -- le
+                    # `continue` saute l'increment du compteur en bas de boucle.
+                    echo "[stale-sweep] #$NUM ($SHA): run $RUN_ID EN FILE (pas fige, #22117) -- aucun geste recommande, aucune place consommee ; la file le servira ou le prochain sweep re-mesurera."
+                    continue
+                  fi
+                  echo "[stale-sweep] #$NUM ($SHA): SUITE_UNRERUNNABLE -- run $RUN_ID queued FIGE au-dela du seuil mesure et hors saturation (#22117) ; NON compte comme repare. Geste : nouvelle tete (\`gh pr update-branch\`) / close+reopen, le dossier de prevalidation devient perime."
                   structural=$((structural + 1))
                 else
                   echo "[stale-sweep] re-run refused for #$NUM (run $RUN_ID not completed) -- dispatching PR gate (re-aggregate) to revive it (#17680)"
