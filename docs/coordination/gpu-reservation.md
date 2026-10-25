@@ -52,6 +52,29 @@ Le rejet est **silencieux** du point de vue des lignes réduites — l'observati
 
 **Règle** : un envelope `[OBS]` posté à la main **ne porte pas** de champ `observation_id`. S'il est présent, il vient de `debt_ledger.py append` (sous-commande `append --fields-json`) — jamais d'un copier-coller d'un autre envelope.
 
+### La seconde cause de rejet : une prose **collée à l'envelope**
+
+Le reducer parse le `content` du message **entier**. Un envelope `[OBS] {…}` suivi d'une phrase d'explication dans le **même** message produit `unparsable_envelope` (« content is not JSON » — l'erreur tombe sur le premier caractère de la prose) : l'observation est rejetée au même titre qu'un id forgé, et l'état qu'elle porte est perdu.
+
+**Règle** : l'envelope est **seule** dans son message. Si un commentaire accompagne l'observation, il va dans un **message distinct** — ou dans le champ `note` de l'observation, qui fait partie du contenu digesté.
+
+### Mesure du fold du 2026-10-22 : le défaut est **cross-lane**
+
+Fold complet (129 messages : 4 archives + intercom vivant, `window kind=full`) : **10 rejets sur 115 observations**, dont 9 `observation_id_mismatch` et 1 `unparsable_envelope`.
+
+La mesure du fold précédent (c.2249) portait sur **4 rejets, tous écrits par la lane tenancière** — un défaut qu'un lane peut corriger seul. Celle-ci change la portée :
+
+| Entité | Rejets | Effet sur l'état foldé |
+|---|---:|---|
+| `myia-ai-01#gpu2` | 5 (tenancière) | aucun — historique, supersédé par des observations valides |
+| `myia-po-2028#gpu0` | 2 | aucun — ligne actuellement `released` |
+| `myia-po-2023#gpu1` | 1 | aucun — ligne actuellement `released` |
+| `myia-po-2024#gpu0` | **1** | **ligne vivante figée à `held`** alors que la carte est libre |
+
+Le rejet po-2024 est celui qui compte : son `observation_id` (`obs-po2024-gpu0-released-20261022T0319Z`) est un **id lisible, formaté à la main** — il ressemble à un id de l'outil sans en être un. Sa libération est donc invisible au fold, et le ledger continue d'annoncer une réservation active sur un device libre : c'est le pire mode de panne pour un registre de verrouillage, puisqu'il **bloque à tort** au lieu de libérer trop tôt.
+
+Un rejet qui laisse la ligne dans un état **faux** n'est pas rattrapable par le fold seul : la lane détentrice doit **republier** l'observation via `append`, sous son propre nom d'entité. Le tenancier constate et previent (DM à la lane concernée, 2026-10-22) ; il ne forge pas l'observation d'une entité qu'il ne détient pas.
+
 ### La clé machine est **canonicalisée** — un seul nom par machine
 
 La clé d'une réservation est `<machine>#gpu<n>`. La partie machine est **normalisée au parsing** par `canonical_machine()` (`scripts/coordination/debt_ledger.py`) : elle est ramenée au nom du **roster de la flotte**, et une machine **hors roster est refusée explicitement** (`entity_mismatch`). Le nom court est déduit mécaniquement du roster (`ai-01` → `myia-ai-01`), les formes sans tiret (`ai01`) sont ajoutées à la main dans `MACHINE_ALIASES`.
@@ -78,13 +101,23 @@ Le reducer (`python scripts/coordination/debt_ledger.py reduce --ledger gpu-rese
 
 Le snapshot est publié sur le dashboard `CoursIA-gpu-reservation-ledger` avec le préfixe `[SNAPSHOT]`. Le snapshot **ne supprime pas** les observations — il les réduit (fold canonique). Un snapshot + journal export permet à un auditeur de reconstituer l'historique complet.
 
+### L'export doit couvrir **tout** le journal — le dashboard condensé ne suffit pas
+
+`roosync_dashboard(action:"read")` rend le dashboard **après condensation** : au 2026-10-22, `totalMessages: 122` pour 20 messages listés, dont 15 archivés **sans résumé** (circuit breaker LLM ouverte). Réduire sur cette sortie seule ne replie que la queue et perd l'état porté par les messages disparus — c'est l'échec que le contrat « archive-aware » documente, dont la parade est de réassembler les **archives** avec l'intercom vivant.
+
+Les archives RooSync sont des **markdown verbatim** sur GDrive (`$ROOSYNC_SHARED_PATH/dashboards/archive/<clé>-<ts>.md`), pas un export JSON : un bloc par message, avec `### [ts] machine|workspace`, `[msg: id]`, puis le contenu. Le `llmGenerated: false` du frontmatter (fallback de troncature) **n'altère pas le verbatim** — le contenu est celui du message.
+
+`--window-full` déclare que l'export couvre le journal entier ; sans cette déclaration, le reducer refuse une reconstruction à partir de la queue seule (`MISSING_CHECKPOINT`). Déclarer `full` sur un export incomplet est un **mensonge d'instrument** : la sortie paraîtra saine et l'état sera faux.
+
+**Vérifier avant de réduire** : comparer le nombre de blocs `### [ts]` de chaque archive au `messageCount` de son frontmatter, et le total à `totalMessages` du dashboard lu.
+
 ## Gardes de sécurité — ce que la lane qui lance DOIT vérifier
 
 Avant `nvidia-smi` (ou tout autre lancement GPU) :
 
 1. **Charge hôte** : `uptime`, `free -g`, `nvidia-smi` — la charge hôte doit rester **< 85 %** sous l'expérience. Au-delà, reporter l'expérience et poster une observation `held` une fois la charge retombée (réservation à venir, pas de geste de lancement).
 2. **CUDA devices** : `CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=<n>` sur la commande elle-même. Ne pas se fier au seul `CUDA_VISIBLE_DEVICES` (variable d'env du shell sans ordre PCI = risque d'allocation ambigu).
-3. **Ledger entry** : poster `[OBS]` (`state: held`) sur `CoursIA-gpu-reservation-ledger` **avant** le geste de lancement (pas après — sinon collision possible). Poster `[OBS]` (`state: released`) à la fin du run, avec `workload` court et `expected_end` réel.
+3. **Ledger entry** : poster `[OBS]` (`state: held`) sur `CoursIA-gpu-reservation-ledger` **avant** le geste de lancement (pas après — sinon collision possible). Poster `[OBS]` (`state: released`) à la fin du run, avec `workload` court et `expected_end` réel. **Construire les deux avec `debt_ledger.py append`** : un envelope écrit à la main est rejeté au fold (les deux causes ci-dessus), et une libération rejetée laisse la ligne **`held` sur un device libre**.
 4. **GPU 0/1 réservé** : les GPU 0 et 1 de ai-01 portent le vLLM de la flotte et **ne se réservent pas**. Le GPU 2 est le seul slot GPU de cette machine pour les expériences.
 
 ## Périmètre du tenancier
@@ -108,7 +141,7 @@ Le picker (`scripts/pick_idle_grain.py`) croise l'urne `delivered` avec un signa
 5. **Observation `released`** (`verdict: RELEASED`) → le GPU est libre, le picker peut tirer.
 6. **Observation `stale`** (`verdict: STALE`) → cas d'erreur, la lane tenancière doit poster un `[OBS]` de réparation.
 
-Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
+Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`, `UNPOSTED`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
 
 **Codes de sortie** (promis par la docstring de la sous-commande, `debt_ledger.py:2419`) :
 
@@ -119,8 +152,13 @@ Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>
 | `RELEASED` | 0 | GPU libre |
 | `HOLD` | **1** | la gate refuse : tenu par une autre lane, ou par nous hors fenêtre |
 | `STALE` | **2** | `held` dépassé sans release — l'appelant décide (rafraîchir ou bloquer) |
+| `UNPOSTED` | **1** | le spool local porte des observations **jamais postées** : le ledger est illisible, pas libre — poster (`flush`) avant de conclure |
 
 Le code 2 est aussi rendu sur un usage invalide (`--entity` absent, ledger ≠ `gpu-reservation`) : là, il signale une **erreur d'appel**, pas un verdict.
+
+`UNPOSTED` prime sur les autres verdicts : il est rendu **avant** la lecture du snapshot, parce qu'un verdict réduit d'un snapshot ne voit pas ce qui n'a jamais voyagé (deux réservations `held` vivantes, quatre-vingt-quatre heures de spool, et un `RELEASED` rendu avec aplomb — #22456).
+
+**Le drainage du spool est en deux temps, et aucun n'est optionnel** : `debt_ledger.py flush` liste (ou `--emit` écrit) le lot à poster — le `content` de chaque appel est l'octet du fichier de spool, sans re-sérialisation — puis `flush --mark-posted <id>...` archive les observations effectivement postées. L'archivage est idempotent (l'`observation_id` est la clé) et tout-ou-rien : un id inconnu refuse le lot entier plutôt que d'archiver la moitié, parce qu'un spool à moitié drainé est précisément l'état qui fait mentir `check_pending`.
 
 ## Première observation [OBS] — c.257 (2026-10-08T03:25Z)
 

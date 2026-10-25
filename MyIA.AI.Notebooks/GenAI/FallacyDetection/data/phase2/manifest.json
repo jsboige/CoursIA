@@ -23,6 +23,12 @@
   "build_repo_commit": "4e0f5a103f404dba5ed27d3e9a1cd0b982de7cfe",
   "build_gitlink_commit": "0ab05d66576a1007c3952a67e2dd1eaf8f9b502c"
  },
+ "licence": {
+  "dataset": "CC-BY-SA-4.0",
+  "attribution": "Argumentum",
+  "base": "texte editorial Argumentum (LICENSE-CONTENT.md, commit amont 956384ac, decision owner 2026-09-21)",
+  "note": "BY-SA 4.0 section 3(b) : un jeu derive ne peut pas ajouter de restriction (NC) au-dela de la licence amont"
+ },
  "files": {
   "train.csv": {
    "rows": 14000,

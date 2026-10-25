@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Audio
-pedagogical_count: 39
-breakdown: Audio=39
-maturity: BETA=37, ALPHA=1, DRAFT=1
+pedagogical_count: 41
+breakdown: Audio=41
+maturity: BETA=39, ALPHA=1, DRAFT=1
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Video Workflows](../Video/README.md)

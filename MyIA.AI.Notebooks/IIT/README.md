@@ -35,7 +35,9 @@ Le premier notebook couvre le spectre fondamental : construction de graphes caus
 | 5 | [IIT-05-Lentilles-et-Dissociations-Python](IIT-05-Lentilles-et-Dissociations-Python.ipynb) | Six théories de la conscience (GWT, GNW, FEP, AST, SMT, HOT) comme mesures exécutables sur un même substrat : dissociation accès vs autoréférence, orthogonalité AST/SMT, contre-claim FEP | 60-75 min |
 | 6 | [IIT-06-L-Objet-qui-a-Mordu-IIT-Python](IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb) | L'échange Aaronson/Tononi (2014) exécuté : Vandermonde et le hack W en Φ_DM sur F_p, grille/ligne/feedforward en Φ 3.0 (PyPhi), les deux positions citées avec leurs grades | 75-90 min |
 | 7 | [IIT-07-Integration-Par-Coupes-Lean](IIT-07-Integration-Par-Coupes-Lean.ipynb) | Marche 1 de l'escalier Lean du lake `iit_lean` : coupe et motifs (`projT`/`projF`), verdict relationnel `cutIndep`/`decomposable`/`integrated`, `product_decomposable` instancié sur un système concret, la butée du broadcast | 45-60 min |
-| 8b | [IIT-08b-Parite-et-Broadcast-Lean](IIT-08b-Parite-et-Broadcast-Lean.ipynb) | Marche 2 de l'escalier Lean du lake `iit_lean` : l'outil `parity`, le système `broadcast`, oracle d'orbites par énumération (point fixe en au plus deux pas), théorème B (`broadcast_integrated`) et théorème C (`broadcast_two_cycle`) — le couple qui a mordu IIT | 45-60 min |
+| 8 | [IIT-08-Parite-De-Bout-En-Bout-Lean](IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb) | Marche 2 de l'escalier Lean du lake `iit_lean` : la parité comme outil calculé (récurrence tête + queue, cas `n = 0`), les faits tout-faux / tout-vrai généralisés par les lemmes du lake, le bit unique et l'état constant — puis le système `broadcast` et ses orbites sur les 8 états de n = 3 (point fixe en un pas) | 45-60 min |
+| 8b | [IIT-08b-Parite-et-Broadcast-Lean](IIT-08b-Parite-et-Broadcast-Lean.ipynb) | **Variante optionnelle de la marche 2**, hors du parcours linéaire : c'est elle qui porte les théorèmes — l'outil `parity`, le système `broadcast`, oracle d'orbites par énumération (point fixe en au plus deux pas), théorème B (`broadcast_integrated`) et théorème C (`broadcast_two_cycle`) — le couple qui a mordu IIT | 45-60 min |
+| 9 | [IIT-09-Capstone-Integre-et-Trivial-Lean](IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb) | Marche 3, capstone de l'escalier Lean du lake `iit_lean` : le défaut cardinal mesuré par énumération (2 pour le broadcast, 0 pour l'identité), le mécanisme du théorème B compté sur les 8 états, le couple B + C réuni en théorèmes, et la mise en regard bornée avec les Φ de IIT-06-L — le grade honnête du proxy | 45-60 min |
 
 ## Parcours recommandés
 
@@ -61,8 +63,15 @@ Notebook 6 (L'objet qui a mordu IIT)
 Notebook 7 (La coupe et le verdict — Lean)
     |
     v
-Notebook 8b (Parité et broadcast — Lean)
+Notebook 8 (La parité, de bout en bout — Lean)
+    |
+    v
+Notebook 9 (Le capstone — intégré pour toute coupe, trivial en deux pas)
 ```
+
+Le parcours linéaire va donc 7 → 8 → 9. **Notebook 8b n'en fait pas partie** : c'est une
+variante optionnelle de la marche 2, qui porte les théorèmes B et C. Il se lit à la place de 8
+pour qui veut le couple énoncé formellement, et ne s'intercale pas entre 8 et 9.
 
 | Objectif | Parcours |
 |----------|----------|
@@ -74,7 +83,8 @@ Notebook 8b (Parité et broadcast — Lean)
 | Focus théories rivales | Notebook 1 + Notebook 5 (six lentilles, contre-claims exécutés) |
 | Focus controverse fondatrice | Notebook 1 + Notebook 6 (l'objection Aaronson exécutée, la réponse assumée mesurée) |
 | Focus moitié formelle | Notebook 6 puis 7 (l'objection Aaronson : mesurée en Φ_DM/PyPhi, puis énoncée en Lean — première marche de l'escalier du lake `iit_lean`) |
-| Focus le couple qui a mordu IIT | Notebook 7 puis 8b (la coupe et le verdict, puis le broadcast : B intégré pour toute coupe + C à dynamique triviale, l'artefact du proxy mis en équation) |
+| Focus le couple qui a mordu IIT | Notebook 7 puis 8b — la variante qui porte les théorèmes (la coupe et le verdict, puis le broadcast : B intégré pour toute coupe + C à dynamique triviale, l'artefact du proxy mis en équation) |
+| Focus escalier Lean complet | Notebook 7 puis 8, puis 9 — les trois marches assemblées : le verdict, l'outil parité et son système, puis le capstone qui mesure le défaut cardinal et réunit B et C. 8b peut tenir la place de 8 (variante optionnelle) sans changer la suite |
 
 ### Parcours d'apprentissage
 
@@ -259,7 +269,7 @@ flowchart TD
 
 ### IIT-07-Integration-Par-Coupes-Lean.ipynb
 
-Marche 1 de l'escalier qui expose le lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.md) (moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
+Marche 1 de l'escalier qui expose le lake [`iit_lean`](iit_lean/README.md) (moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
 
 | Section | Contenu |
 |---------|---------|
@@ -272,9 +282,24 @@ Marche 1 de l'escalier qui expose le lake [`iit_lean`](../SymbolicAI/Lean/iit_le
 | Grade | le proxy relationnel contre Φ (MIP, perturbation, valeur numérique) — ce que le carnet ne claim pas |
 | Exercices | écrire une coupe (`selPairs`), reconstruire le motif d'un côté (`motifA`), reconstruire la parité (`pariteA4`) |
 
+### IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb
+
+Marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (issue #20414, moitié formelle de l'objection Aaronson, Epic #16781 ; l'issue #20649 couvre la variante 8b ci-dessous) — kernel `lean4-wsl`, sans Mathlib.
+
+| Section | Contenu |
+|---------|---------|
+| Environnement | `import IIT.Integration`, contrôle positif du lake |
+| Définition | `parity` par récurrence tête + queue, cas `n = 0` à `false`, récurrence dépliée sur l'état `[true, false, true, false]` de n = 4 |
+| Tout-faux, tout-vrai | Les faits d'abord à la main sur n = 3 puis n = 4, puis les lemmes du lake qui les tiennent pour tout n |
+| Bit unique | Un seul bit vrai, d'indice 0 : la parité est vraie quelle que soit la taille — et pourquoi l'hypothèse `0 < n` (n = 0 : aucun bit à lire) |
+| État constant | Le lemme qui généralise : `b &&` imparité de n |
+| `broadcast` | Le système qui diffuse la parité : les huit états de n = 3 dans l'ordre binaire, l'orbite et son point fixe en un pas |
+| Bilan | Ce que la marche 2 a établi — la parité comme outil calculé, le système prêt pour l'assemblage des deux marches |
+| Exercices | compter les bits (n = 4), prédire l'état broadcast, le bit unique en position k |
+
 ### IIT-08b-Parite-et-Broadcast-Lean.ipynb
 
-Marche 2 de l'escalier du lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.md) (issue #20649, moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib.
+Variante optionnelle de la marche 2 de l'escalier du lake [`iit_lean`](iit_lean/README.md) (issue #20649 — ouverte sous le titre « IIT-08 » avant l'arbitrage de nommage qui a fixé 08 = parité de bout en bout et 08b = Parite-et-Broadcast ; moitié formelle de l'objection Aaronson, Epic #16781) — kernel `lean4-wsl`, sans Mathlib. Elle porte les théorèmes B et C, là où le carnet 8 prépare le système et ses orbites ; elle se lit à la place de 8, jamais entre 8 et 9.
 
 | Section | Contenu |
 |---------|---------|
@@ -286,6 +311,22 @@ Marche 2 de l'escalier du lake [`iit_lean`](../SymbolicAI/Lean/iit_lean/README.m
 | Théorème B | `broadcast_integrated` — le broadcast est intégré pour toute coupe |
 | La critique | B et C sous le même toit : intégration universelle et dynamique triviale ensemble — ce qu'un proxy d'intégration récompense vs ce qu'il devrait récompenser |
 | Exercices | la parité à la main (`sExo1`), le rôle de la taille dans le point fixe (`parity_const`, le rôle de 6 % 2), l'orbite complète d'un état en n=2 |
+
+### IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb
+
+Marche 3 — le capstone de l'escalier du lake [`iit_lean`](iit_lean/README.md) (issue #20652, escalier #20414, veine 5 de l'Epic #16781) : les deux premières marches assemblées en un seul énoncé — un système intégré au sens du proxy **pour toute coupe** (théorème B) dont la dynamique est triviale (théorème C), sur le **même** objet. Kernel `lean4-wsl`, sans Mathlib.
+
+| Section | Contenu |
+|---------|---------|
+| Ce que le carnet démontre | Les quatre claims posés d'emblée : le défaut cardinal mesuré, le mécanisme de B compté, le couple B + C, la mise en regard bornée avec les Φ d'IIT-06-L |
+| Le verdict sans le redéfinir | Le vocabulaire de la marche 1 relu (`cutIndep`, `decomposable`, `integrated`) |
+| Le système relu | Un pas de `broadcast` sur un témoin — rappel de la marche 2 |
+| Défaut cardinal mesuré | Le défaut (produit des tailles d'images partielles moins taille de l'image du système) par énumération : **2** pour le broadcast, **0** pour l'identité — le théorème A rendu par les nombres ; deux coupes concrètes, côté A = {0} puis côté A = {0, 1} |
+| Mécanisme de B compté | Témoins par paire de motifs : 4 états sur 8 réalisent chaque motif séparément, 0 couple incompatible n'a de témoin — la non-indépendance comptée |
+| Le couple en théorèmes | B (`broadcast_integrated`) et C (`broadcast_two_cycle`) sur le même système, dépendances et axiomes (`#print axioms`) |
+| Mise en regard des Φ de IIT-06-L | Le tableau colonne par colonne : objet qui mord, ce qui est mesuré, verdict extrême, trivialité, contre-point — des correspondances structurelles, pas des égalités de nombres |
+| Grade honnête | Ce que le proxy ne capture pas : ni information effective sous perturbation, ni MIP, ni valeur numérique de Φ ; la source est un billet de blog (2014), le lake crée l'objet formel |
+| Exercices | le défaut de l'identité sur l'autre coupe, le système constant (image singleton), la question laissée ouverte — un intégré à dynamique riche ? |
 
 ## Théorie IIT
 
@@ -395,7 +436,10 @@ IIT/
 ├── IIT-05-Lentilles-et-Dissociations-Python.ipynb # Notebook 5 : six théories de la conscience comme bancs de dissociation
 ├── IIT-06-L-Objet-qui-a-Mordu-IIT-Python.ipynb # Notebook 6 : l'échange Aaronson/Tononi exécuté (Φ_DM + PyPhi)
 ├── IIT-07-Integration-Par-Coupes-Lean.ipynb # Notebook 7 : la coupe et le verdict — lake iit_lean (Lean 4)
+├── IIT-08-Parite-De-Bout-En-Bout-Lean.ipynb # Notebook 8 : la parité, de bout en bout — lake iit_lean (Lean 4)
 ├── IIT-08b-Parite-et-Broadcast-Lean.ipynb # Notebook 8b : parité et broadcast — théorèmes B et C, lake iit_lean (Lean 4)
+├── IIT-09-Capstone-Integre-et-Trivial-Lean.ipynb # Notebook 9 : le capstone — intégré pour toute coupe, trivial en deux pas, lake iit_lean (Lean 4)
+├── iit_lean/                   # Lake Lean 4 de l'escalier — namespace `IIT`, sans Mathlib (voir son README)
 ├── ICT-Series/                 # Extension expérimentale ICT (Epic #4588) — voir son README
 │   ├── ICT-0-Framing.md        # Cadrage de la série ICT
 │   ├── ICT-0-Annexe-IntegratedComplexityTheory.md  # Annexe théorique (complexité intégrée)
@@ -539,7 +583,7 @@ Voir la licence du repository principal.
 
 <!-- CATALOG-STATUS
 series: IIT
-pedagogical_count: 102
-breakdown: ICT-Series=93, root=9
-maturity: BETA=84, DRAFT=14, ALPHA=4
+pedagogical_count: 106
+breakdown: ICT-Series=96, root=10
+maturity: BETA=85, DRAFT=17, ALPHA=4
 -->

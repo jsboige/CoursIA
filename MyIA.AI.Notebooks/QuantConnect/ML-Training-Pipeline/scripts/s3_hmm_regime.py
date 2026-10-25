@@ -7,15 +7,21 @@ Two variants:
   1. Daily frequency — MarkovRegression on daily returns
   2. Long-horizon — weekly aggregated returns for macro cycles
 
-Methodology
------------
+Methodology (causal, fix #21633)
+--------------------------------
 - statsmodels MarkovRegression 2-regime on SPY returns + TLT returns + VIX level
-- Walk-forward 5-fold expanding window with refit_every=22
-  - Each fold: fit on expanding IS, predict OOS block labels
-  - Block bootstrap (seed-dependent) for multi-seed variability
-- OOS strict 2027 (not touched during fit)
+- CAUSAL walk-forward: for each day t the model is fitted on the expanding
+  window [0, t) (strictly past) and refit every REFIT_EVERY days; the regime
+  is read in the last training day's (filtered) probability and the regimes are
+  named on the training window. A one-day decision lag is applied.
+  (The previous version fitted the HMM on the block it labelled, read Kim
+  smoothed probabilities, and named regimes on the block mean — in-sample.)
+- Block bootstrap of the training slice (seed-dependent) for multi-seed
+  variability — a real resampling, not a boundary jitter.
 - Regime-aware allocation: bull -> 100% SPY, bear -> 100% TLT
-- Gate: Sharpe regime-aware > B&H + 0.20, edge >= 2sigma cross-seed
+- Verdict: Ledoit-Wolf (HAC) delta-Sharpe + Holm vs 50/50 rebalanced and
+  SPY held (significance organ, #21329/#21633); an in-sample replay is kept as
+  a leak witness (the future-read share of the old edge).
 
 Output
 ------
@@ -39,6 +45,7 @@ import numpy as np
 import pandas as pd
 
 import strategy_metrics
+import hmm_regime_significance as hmm_sig
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 RESULTS_DIR = SCRIPT_DIR / "results" / "s3_hmm_regime"
@@ -52,6 +59,7 @@ TX_COST_BPS = 10
 GATE_SHARPE_DELTA = 0.20
 N_REGIMES = 2
 BLOCK_SIZE = 22  # block bootstrap size (1 month trading days)
+HMM_MIN_TRAIN = 126  # min training days before the first causal fit
 
 
 # ── Data loading ─────────────────────────────────────────────────────────────
@@ -207,47 +215,158 @@ def fit_markov_regime(
     }
 
 
-# ── Walk-forward evaluation ──────────────────────────────────────────────────
+# ── Causal regime inference (fix #21633) ────────────────────────────────────
+
+def _causal_regime_probabilities(
+    df: pd.DataFrame,
+    seed: int = 0,
+) -> np.ndarray:
+    """Causal bull-regime probability per day.
+
+    For each day t the HMM is fitted on the expanding window ``[0, t)``
+    (strictly past) and refit every ``REFIT_EVERY`` days. Between refits the
+    probability of the last training day (a filtered value: it conditions only
+    on data up to t-1) is held constant. Regimes are named on the training
+    window (higher mean SPY return = bull), never on the day being scored.
+
+    Seed variability comes from a block-bootstrap resampling of the TRAINING
+    slice (protocol #21633 point 6: a real resampling, not a boundary jitter),
+    so the cross-seed spread is honest.
+    """
+    n = len(df)
+    spy_ret = df["spy_ret"].values
+    tlt_ret = df["tlt_ret"].values
+    vix = df["vix_level"].values
+
+    p_bull = np.full(n, 0.5)
+    last_fit = -1
+    cached = 0.5
+    for t in range(HMM_MIN_TRAIN, n):
+        if (t - last_fit) >= REFIT_EVERY or last_fit < 0:
+            sr, tr, vl = spy_ret[:t], tlt_ret[:t], vix[:t]
+            if seed != 0:
+                sr = block_bootstrap(sr, BLOCK_SIZE, seed)
+                tr = block_bootstrap(tr, BLOCK_SIZE, seed)
+                vl = block_bootstrap(vl, BLOCK_SIZE, seed)
+            res = fit_markov_regime(sr, tr, vl, seed=seed)
+            if res.get("converged", False):
+                sm = res["smoothed_probs"]
+                lab = np.argmax(sm, axis=1)
+                means = [
+                    sr[lab == k].mean() if (lab == k).sum() > 0 else 0.0
+                    for k in range(N_REGIMES)
+                ]
+                bull_is = 0 if means[0] >= means[1] else 1
+                cached = float(sm[-1, bull_is])
+            else:
+                cached = 0.5
+            last_fit = t
+        p_bull[t] = cached
+    return p_bull
+
 
 def walk_forward_regime(
     df: pd.DataFrame,
     seed: int = 0,
     frequency: str = "D",
 ) -> dict:
-    """Walk-forward regime detection with expanding window.
+    """Causal walk-forward regime allocation (fix #21633).
 
-    - Split IS/OOS at OOS_YEAR (2027)
-    - IS: expanding window 5-fold, fit on expanding train, predict on test block
-    - Seed variability via temporal jitter on regime switches
-      (tests robustness of allocation to exact regime boundary timing)
-    - Backtest on full IS period using walk-forward predicted labels
+    The regime probability for day t is read strictly from the past (expanding
+    fit on ``[0, t)``, refit every ``REFIT_EVERY`` days, regimes named on the
+    training window). A one-day decision lag is applied: the regime decided at
+    the close of day t-1 selects the return of day t. This removes the three
+    in-sample leaks of the previous version (fit on the labelled block, Kim
+    smoothed probabilities, regime naming on the block mean).
+
+    Returns the per-seed scalars plus the raw net return arrays (``_ret_*``)
+    that the significance step consumes; the arrays are popped before the
+    results are serialised.
     """
-    oos_mask = df.index >= f"{OOS_YEAR}-01-01"
-    is_data = df[~oos_mask].copy()
+    n = len(df)
+    spy_ret = df["spy_ret"].values
+    tlt_ret = df["tlt_ret"].values
 
-    if len(is_data) < 252:
-        return {"error": f"Insufficient IS data: {len(is_data)} rows"}
+    p_bull = _causal_regime_probabilities(df, seed)
+    pred = np.where(p_bull >= 0.5, 0, 1)  # 0 = bull -> SPY, 1 = bear -> TLT
 
-    n_is = len(is_data)
+    # One-day decision lag: decision closed at day t-1 -> return of day t.
+    pred_lag = np.empty(n, dtype=int)
+    pred_lag[0] = pred[0]
+    pred_lag[1:] = pred[:-1]
+
+    regime_ret = np.where(pred_lag == 0, spy_ret, tlt_ret)
+    switches = np.diff(pred_lag) != 0
+    tx_cost = np.zeros_like(regime_ret)
+    tx_cost[1:][switches] = -TX_COST_BPS / 10000
+    regime_ret_net = regime_ret + tx_cost
+
+    bh_ret = 0.5 * spy_ret + 0.5 * tlt_ret
+    spy_held_ret = spy_ret
+
+    regime_sharpe = _sharpe(regime_ret_net)
+    bh_sharpe = _sharpe(bh_ret)
+    spy_held_sharpe = _sharpe(spy_held_ret)
+    delta_sharpe = regime_sharpe - bh_sharpe
+
+    regime_dd = _max_drawdown(regime_ret_net)
+    bh_dd = _max_drawdown(bh_ret)
+
+    n_switches = int(switches.sum())
+    n_years = len(pred_lag) / 252
+    switches_per_year = n_switches / n_years if n_years > 0 else 0
+
+    regime_durations = _regime_durations(pred_lag)
+
+    return {
+        "regime_sharpe": float(regime_sharpe),
+        "bh_sharpe": float(bh_sharpe),
+        "spy_held_sharpe": float(spy_held_sharpe),
+        "delta_sharpe": float(delta_sharpe),
+        "regime_cum_ret": float(np.prod(1 + regime_ret_net) - 1),
+        "bh_cum_ret": float(np.prod(1 + bh_ret) - 1),
+        "regime_max_dd": float(regime_dd),
+        "bh_max_dd": float(bh_dd),
+        "n_switches": n_switches,
+        "switches_per_year": float(switches_per_year),
+        "regime_durations": regime_durations,
+        "n_obs": n,
+        "frequency": frequency,
+        "seed": seed,
+        # Raw arrays for the significance step (popped before serialisation):
+        "_regime_ret": regime_ret_net,
+        "_bh_ret": bh_ret,
+        "_spy_held_ret": spy_held_ret,
+    }
+
+
+def _walk_forward_leaky(
+    df: pd.DataFrame,
+    seed: int = 0,
+    frequency: str = "D",
+) -> dict:
+    """The PREVIOUS in-sample construction, kept only as a leak witness.
+
+    Replays the original algorithm verbatim (fit the HMM on the block it
+    labels, read Kim smoothed probabilities, name regimes on the block mean,
+    no decision lag). Running it in the same harness as the causal version
+    isolates the share of the advantage carried by reading the future
+    (protocol #21633 point 7). NOT used for the reported verdict.
+    """
+    n_is = len(df)
     fold_size = n_is // N_SPLITS
 
-    # Walk-forward: predict labels on held-out blocks
     predicted_labels = np.full(n_is, -1, dtype=int)
-
     for fold_idx in range(N_SPLITS):
         train_end = fold_size * (fold_idx + 1)
         val_end = fold_size * (fold_idx + 2) if fold_idx < N_SPLITS - 1 else n_is
         train_end = min(train_end, n_is - 1)
         val_end = min(val_end, n_is)
-
         if train_end < 126:
             continue
-
-        val_block = is_data.iloc[train_end:val_end]
+        val_block = df.iloc[train_end:val_end]
         if len(val_block) == 0:
             continue
-
-        # Fit on validation block to get regime labels (HMM is deterministic)
         val_result = fit_markov_regime(
             val_block["spy_ret"].values,
             val_block["tlt_ret"].values,
@@ -257,61 +376,28 @@ def walk_forward_regime(
             continue
         predicted_labels[train_end:val_end] = val_result["labels"]
 
-    # Fill gaps
     predicted_labels[predicted_labels == -1] = 0
-
-    # ── Apply temporal jitter per seed ────────────────────────────────────
-    # Each seed shifts regime transitions by ±jitter_days to test timing robustness
     jittered_labels = _jitter_regime_boundaries(predicted_labels, seed)
 
-    # ── Regime-aware allocation backtest on IS ────────────────────────────
-    spy_ret = is_data["spy_ret"].values
-    tlt_ret = is_data["tlt_ret"].values
-
+    spy_ret = df["spy_ret"].values
+    tlt_ret = df["tlt_ret"].values
     min_len = min(len(spy_ret), len(jittered_labels))
     spy_ret = spy_ret[-min_len:]
     tlt_ret = tlt_ret[-min_len:]
     pred = jittered_labels[-min_len:]
 
-    # Regime-aware: bull (0) -> SPY, bear (1) -> TLT
     regime_ret = np.where(pred == 0, spy_ret, tlt_ret)
-
-    # Transaction costs for each regime switch
     switches = np.diff(pred) != 0
     tx_cost = np.zeros_like(regime_ret)
     tx_cost[1:][switches] = -TX_COST_BPS / 10000
     regime_ret_net = regime_ret + tx_cost
-
-    # B&H 50/50 SPY-TLT
     bh_ret = 0.5 * spy_ret + 0.5 * tlt_ret
 
-    regime_sharpe = _sharpe(regime_ret_net)
-    bh_sharpe = _sharpe(bh_ret)
-    delta_sharpe = regime_sharpe - bh_sharpe
-
-    # Max drawdown
-    regime_dd = _max_drawdown(regime_ret_net)
-    bh_dd = _max_drawdown(bh_ret)
-
-    # Switching stats
-    n_switches = int(switches.sum())
-    n_years = len(pred) / 252
-    switches_per_year = n_switches / n_years if n_years > 0 else 0
-
-    regime_durations = _regime_durations(pred)
-
     return {
-        "regime_sharpe": float(regime_sharpe),
-        "bh_sharpe": float(bh_sharpe),
-        "delta_sharpe": float(delta_sharpe),
-        "regime_cum_ret": float(np.prod(1 + regime_ret_net) - 1),
-        "bh_cum_ret": float(np.prod(1 + bh_ret) - 1),
-        "regime_max_dd": float(regime_dd),
-        "bh_max_dd": float(bh_dd),
-        "n_switches": n_switches,
-        "switches_per_year": float(switches_per_year),
-        "regime_durations": regime_durations,
-        "n_obs": min_len,
+        "regime_sharpe": float(_sharpe(regime_ret_net)),
+        "bh_sharpe": float(_sharpe(bh_ret)),
+        "delta_sharpe": float(_sharpe(regime_ret_net) - _sharpe(bh_ret)),
+        "n_switches": int(switches.sum()),
         "frequency": frequency,
         "seed": seed,
     }
@@ -394,8 +480,16 @@ def _regime_durations(labels: np.ndarray) -> dict:
 def run_experiment(
     frequency: str = "D",
     seeds: list[int] | None = None,
+    witness: bool = False,
 ) -> dict:
-    """Run full multi-seed experiment for a given frequency."""
+    """Run the causal multi-seed experiment for a given frequency (#21633).
+
+    The primary verdict is the Ledoit-Wolf + Holm significance of the
+    deterministic (seed 0) baseline against the two references. The multi-seed
+    block-bootstrap aggregation is a robustness summary. With ``witness=True``
+    the previous in-sample construction is replayed in the same harness and the
+    Sharpe gap (the future-read share) is published.
+    """
     if seeds is None:
         seeds = SEEDS
 
@@ -406,8 +500,10 @@ def run_experiment(
     print(f"  {len(df)} rows, {df.index[0].date()} to {df.index[-1].date()}")
 
     seed_results = []
+    seed0_arrays = None
+    seed0_result = None
     for seed in seeds:
-        print(f"  Seed {seed} (block bootstrap)...", end=" ", flush=True)
+        print(f"  Seed {seed} (causal walk-forward)...", end=" ", flush=True)
         t0 = time.time()
         result = walk_forward_regime(df, seed=seed, frequency=frequency)
         elapsed = time.time() - t0
@@ -415,6 +511,16 @@ def run_experiment(
         if "error" in result:
             print(f"ERROR: {result['error']}")
             continue
+
+        # Keep seed-0's raw arrays in memory for the significance step.
+        if seed == 0:
+            seed0_arrays = (result["_regime_ret"], result["_bh_ret"],
+                            result["_spy_held_ret"])
+            seed0_result = result
+        # Pop raw arrays (not serialisable into results.json).
+        result.pop("_regime_ret", None)
+        result.pop("_bh_ret", None)
+        result.pop("_spy_held_ret", None)
 
         result["elapsed_s"] = round(elapsed, 1)
         seed_results.append(result)
@@ -424,7 +530,7 @@ def run_experiment(
     if not seed_results:
         return {"error": "No seeds converged", "frequency": frequency}
 
-    # Aggregate cross-seed
+    # Multi-seed block-bootstrap aggregation (robustness summary).
     deltas = [r["delta_sharpe"] for r in seed_results]
     regime_sharpes = [r["regime_sharpe"] for r in seed_results]
     bh_sharpes = [r["bh_sharpe"] for r in seed_results]
@@ -434,25 +540,35 @@ def run_experiment(
     mean_delta = float(np.mean(deltas))
     se_delta = float(np.std(deltas, ddof=1) / np.sqrt(len(deltas))) if len(deltas) > 1 else 0.0
     t_stat = mean_delta / se_delta if se_delta > 0 else 0.0
-
     n_positive = sum(1 for d in deltas if d > 0)
     n_seeds = len(seed_results)
 
-    # Sign test p-value (exact binomial)
     from scipy.stats import binom
-    p_value_sign = float(binom.sf(n_positive - 1, n_seeds, 0.5))
+    p_value_sign = float(binom.sf(n_positive - 1, n_seeds, 0.5)) if n_seeds > 1 else 1.0
 
-    verdict = "BEATS" if (
-        mean_delta > GATE_SHARPE_DELTA
-        and (t_stat >= 2.0 or se_delta == 0)
-        and n_positive >= 3
-    ) else "NO BEATS"
+    # Primary verdict: Ledoit-Wolf + Holm significance of the seed-0 baseline
+    # against the two references (protocol #21633 point 5).
+    significance = None
+    if seed0_arrays is not None:
+        regime_arr, bh_arr, spy_arr = seed0_arrays
+        significance = hmm_sig.compare_to_references(
+            regime_arr,
+            {"50_50_rebalanced": bh_arr, "spy_held": spy_arr},
+        )
 
-    # Edge case: all seeds identical (SE=0) but delta > gate and all positive
-    if se_delta == 0 and mean_delta > GATE_SHARPE_DELTA and n_positive == n_seeds:
-        # Use bootstrap SE as fallback: report as BEATS with caveat
-        verdict = "BEATS"
-        t_stat = float("inf")
+    # Leak witness: replay the in-sample construction; the gap is the
+    # future-read share (protocol #21633 point 7).
+    leak_witness = None
+    if witness and seed0_arrays is not None and seed0_result is not None:
+        leaky = _walk_forward_leaky(df, seed=0, frequency=frequency)
+        leak_witness = {
+            "leaky_regime_sharpe": leaky["regime_sharpe"],
+            "leaky_delta_sharpe": leaky["delta_sharpe"],
+            "causal_regime_sharpe_seed0": seed0_result["regime_sharpe"],
+            "causal_delta_sharpe_seed0": seed0_result["delta_sharpe"],
+            "sharpe_gap_future_read": leaky["regime_sharpe"] - seed0_result["regime_sharpe"],
+            "delta_gap_future_read": leaky["delta_sharpe"] - seed0_result["delta_sharpe"],
+        }
 
     agg = {
         "frequency": frequency,
@@ -467,9 +583,9 @@ def run_experiment(
         "mean_regime_max_dd": round(float(np.mean(regime_dds)), 4),
         "n_positive": n_positive,
         "p_value_sign": round(p_value_sign, 6),
-        "verdict": verdict,
-        "gate_delta": GATE_SHARPE_DELTA,
-        "gate_t_stat": 2.0,
+        "significance": significance,
+        "verdict": significance["verdict"] if significance else "NO BEATS",
+        "leak_witness": leak_witness,
         "seed_results": seed_results,
     }
 
@@ -483,14 +599,16 @@ def write_verdict(daily_results: dict, lh_results: dict, output_dir: Path) -> Pa
     output_dir.mkdir(parents=True, exist_ok=True)
     verdict_path = output_dir / "verdict.md"
 
-    lines = ["# S3 HMM Regime Detection — Verdict\n"]
+    lines = ["# S3 HMM Regime Detection — Verdict (causal, #21633)\n"]
     lines.append(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n")
-    lines.append(f"Method: MarkovRegression 2-regime (statsmodels)")
+    lines.append(f"Method: MarkovRegression 2-regime (statsmodels), **causal** walk-forward")
     lines.append(f"Features: SPY returns + TLT returns + VIX level")
+    lines.append(f"Regime: fitted on the expanding window [0,t), refit every "
+                 f"{REFIT_EVERY} days, named on the training window, 1-day decision lag")
     lines.append(f"Allocation: bull -> 100% SPY, bear -> 100% TLT")
     lines.append(f"Tx costs: {TX_COST_BPS}bps per switch")
-    lines.append(f"Multi-seed: block bootstrap ({BLOCK_SIZE}-day blocks), seeds 0/1/7/42")
-    lines.append(f"Walk-forward: 5-fold expanding window\n")
+    lines.append(f"Significance: Ledoit-Wolf (HAC) + Holm vs 50/50 rebalanced and SPY held")
+    lines.append(f"Multi-seed: block bootstrap of the training slice, seeds 0/1/7/42\n")
 
     for label, res in [("Daily", daily_results), ("Weekly (Long-Horizon)", lh_results)]:
         lines.append(f"## Variant: {label}\n")
@@ -498,16 +616,29 @@ def write_verdict(daily_results: dict, lh_results: dict, output_dir: Path) -> Pa
             lines.append(f"**ERROR**: {res['error']}\n")
             continue
         lines.append(f"- **Verdict**: {res['verdict']}")
-        lines.append(f"- Mean delta-Sharpe: {res['mean_delta_sharpe']:+.6f} "
+        sig = res.get("significance")
+        if sig:
+            for name, c in sig["comparisons"].items():
+                lines.append(
+                    f"- vs {name}: delta-Sharpe {c['sharpe_diff']:+.4f} "
+                    f"(Ledoit-Wolf p={c['ledoit_wolf_p']:.4f}, Holm p={c['holm_p']:.4f}, "
+                    f"bootstrap CI95 [{c['bootstrap_ci95'][0]:.3f}, {c['bootstrap_ci95'][1]:.3f}])")
+        lines.append(f"- Mean delta-Sharpe (multi-seed): {res['mean_delta_sharpe']:+.6f} "
                      f"(SE={res['se_delta_sharpe']:.6f}, t={res['t_stat']:.3f})")
         lines.append(f"- Regime-aware Sharpe: {res['mean_regime_sharpe']:.4f} "
                      f"vs B&H {res['mean_bh_sharpe']:.4f}")
         lines.append(f"- Max Drawdown: {res['mean_regime_max_dd']:.4f}")
         lines.append(f"- Switching: {res['mean_switches_per_year']:.1f}/year")
         lines.append(f"- Seeds positive: {res['n_positive']}/{res['n_seeds']} "
-                     f"(p={res['p_value_sign']:.4f})")
-        lines.append(f"- Gate: delta > {res['gate_delta']:.2f} AND (t >= {res['gate_t_stat']:.1f} "
-                     f"OR all seeds identical) AND >= 3/4 seeds positive\n")
+                     f"(p={res['p_value_sign']:.4f})\n")
+        lw = res.get("leak_witness")
+        if lw:
+            lines.append(f"### Témoin de fuite (in-sample replay)\n")
+            lines.append(f"- Sharpe in-sample (lissé, sans décalage): {lw['leaky_regime_sharpe']:.4f}")
+            lines.append(f"- Sharpe causal (seed 0): {lw['causal_regime_sharpe_seed0']:.4f}")
+            lines.append(f"- **Écart porté par la lecture du futur**: "
+                         f"{lw['sharpe_gap_future_read']:+.4f} "
+                         f"(delta-Sharpe {lw['delta_gap_future_read']:+.4f})\n")
 
     # Comparative table
     lines.append("## Comparative\n")
@@ -531,10 +662,10 @@ def write_verdict(daily_results: dict, lh_results: dict, output_dir: Path) -> Pa
         daily_results.get("verdict") == "BEATS"
         or lh_results.get("verdict") == "BEATS"
     )
-    lines.append("## Gate S3\n")
-    lines.append(f"**Gate S3 = {'GO' if any_beats else 'NO GO'}**")
-    lines.append(f"Condition: at least one variant BEATS "
-                 f"(delta > {GATE_SHARPE_DELTA}, t >= 2.0, >=3/4 seeds positive)\n")
+    lines.append("## Verdict S3 (causal)\n")
+    lines.append(f"**S3 = {'BEATS' if any_beats else 'NO BEATS'}**")
+    lines.append("Condition: the Ledoit-Wolf (HAC) delta-Sharpe is positive and "
+                 "Holm-significant (< 0.05) against BOTH references.\n")
 
     verdict_path.write_text("\n".join(lines), encoding="utf-8")
     print(f"\nVerdict written to {verdict_path}")
@@ -558,6 +689,11 @@ def main():
         "--output", type=str, default=None,
         help="Output directory (default: results/s3_hmm_regime/)",
     )
+    parser.add_argument(
+        "--witness", action="store_true",
+        help="Also replay the previous in-sample construction and report the "
+             "future-read Sharpe gap (protocol #21633 point 7).",
+    )
     args = parser.parse_args()
 
     seeds = [int(s) for s in args.seeds.split(",")]
@@ -570,7 +706,7 @@ def main():
         print("=" * 60)
         print("S3 HMM Regime Detection — Daily")
         print("=" * 60)
-        daily = run_experiment("D", seeds)
+        daily = run_experiment("D", seeds, witness=args.witness)
         daily_dir = output_dir / "daily"
         daily_dir.mkdir(parents=True, exist_ok=True)
         (daily_dir / "results.json").write_text(
@@ -580,7 +716,7 @@ def main():
         print("\n" + "=" * 60)
         print("S3 HMM Regime Detection — Long-Horizon (Weekly)")
         print("=" * 60)
-        lh = run_experiment("W", seeds)
+        lh = run_experiment("W", seeds, witness=args.witness)
         lh_dir = output_dir / "long_horizon"
         lh_dir.mkdir(parents=True, exist_ok=True)
         (lh_dir / "results.json").write_text(
@@ -589,7 +725,7 @@ def main():
 
         write_verdict(daily, lh, output_dir)
     else:
-        result = run_experiment(args.frequency, seeds)
+        result = run_experiment(args.frequency, seeds, witness=args.witness)
         freq_dir = output_dir / args.frequency
         freq_dir.mkdir(parents=True, exist_ok=True)
         (freq_dir / "results.json").write_text(
