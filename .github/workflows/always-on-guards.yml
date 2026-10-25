@@ -1363,6 +1363,8 @@ jobs:
         id: hot_subset
         if: github.event_name == 'pull_request'
         continue-on-error: true
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
         run: |
           set -uo pipefail
           pip install --quiet pytest
@@ -1370,11 +1372,37 @@ jobs:
           # fichier, cf organe tag_required) ; -q suffit, la sortie de pytest
           # streame au log du step.
           python -m pytest scripts/translation/tests/test_hot_subset_ratchet.py -q && RC=0 || RC=$?
-          if [ "$RC" -ne 0 ]; then
-            echo "::error::Hot-subset ratchet : SRC_DRIFT sur un grain de traduction deposee ou definition du hot-subset derive. Resync la ligne CSV per-cell (jamais d'extraction globale, #13551) / corrige le semantique sous test (#15196)."
-            exit 1
-          fi
-          exit 0
+          # #22435 -- le RC de pytest n'est pas un booleen : 1 = des tests ont
+          # echoue (le SEUL regime qui dise quelque chose du contenu), 2 =
+          # execution interrompue (erreur de collecte / ImportError), 3 =
+          # erreur interne, 4 = erreur d'usage. Imprimer le verdict SRC_DRIFT
+          # sur un rc 2 fait affirmer une derive de traduction qui n'a jamais
+          # ete mesuree : mesure du 2026-10-25, deux PR vertes sur leur
+          # contenu (#22130 tete 402871d9cc, #22264 tete 07885aafc8) portaient
+          # ce rouge, et `2 passed` localement sur chacune des deux tetes. La
+          # cause materielle etait un ImportError de toolcache partage
+          # (`pygments.formatters.terminal`), pas une traduction.
+          case "$RC" in
+            0) exit 0 ;;
+            1)
+              echo "::error::Hot-subset ratchet : SRC_DRIFT sur un grain de traduction deposee ou definition du hot-subset derive. Resync la ligne CSV per-cell (jamais d'extraction globale, #13551) / corrige le semantique sous test (#15196)."
+              exit 1
+              ;;
+            *)
+              # La mesure n'a pas eu lieu. Le dire, ne pas conclure.
+              echo "::warning::Hot-subset ratchet : l'organe n'a PAS pu mesurer (pytest rc=$RC : collecte ou import interrompu). Ce n'est pas un verdict SRC_DRIFT."
+              # `git diff` ne coute aucun reseau ici : le checkout du workflow
+              # est en fetch-depth: 0 (les arbres sont deja la, blob:none ne
+              # concerne que les blobs).
+              FILES=$(git diff --name-only "$BASE"...HEAD 2>/dev/null || true)
+              if printf '%s\n' "$FILES" | grep -qE '^(scripts/translation/|scripts/notebook_tools/)'; then
+                echo "::error::pytest rc=$RC alors que la PR touche l'organe lui-meme (scripts/translation/**, scripts/notebook_tools/**) : la cause lui est attribuable, pas a l'environnement. Non mesurable vaut echec."
+                exit 1
+              fi
+              echo "::notice::La PR ne touche pas l'organe : cause environnementale (toolcache/collision d'import). Verdict UNMEASURED, non bloquant -- meme regime que #8819."
+              exit 0
+              ;;
+          esac
 
       # #21391 :: le compte de paires de traduction, au moment de la PR.
       # Cinquieme occurrence du motif #10416 -- un cliquet aveugle a son
