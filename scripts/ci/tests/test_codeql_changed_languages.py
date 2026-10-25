@@ -15,7 +15,9 @@ Contrat verifie ici, dans cet ordre :
    et l'ordre de la matrice est stable.
 """
 import importlib.util
+import io
 import json
+import urllib.error
 from pathlib import Path
 
 _SPEC = importlib.util.spec_from_file_location(
@@ -196,3 +198,69 @@ def test_api_failure_falls_back_to_the_full_matrix():
     matrix, reason = mod.derive("pull_request", "main", diff_paths=lambda _ref: boom("", 0, None))
     assert len(matrix) == 4
     assert "diff illisible" in reason
+
+
+def _http_error(code, body=b'{"message":"Resource not accessible by integration"}'):
+    return urllib.error.HTTPError(
+        "https://api.github.com/x", code, "err", {}, io.BytesIO(body)
+    )
+
+
+def test_describe_names_the_status_not_just_the_type():
+    """Premiere mesure en CI : « diff illisible (HTTPError) » ne disait ni 403
+    ni 404, et ces deux causes n'ont pas le meme remede."""
+    text = mod._describe(_http_error(403))
+    assert "HTTP 403" in text
+    assert "Resource not accessible" in text
+
+
+def test_describe_of_a_non_http_error_keeps_the_message():
+    assert "git casse" in mod._describe(RuntimeError("git casse"))
+
+
+def test_retry_gives_a_second_chance_on_secondary_rate_limit(monkeypatch):
+    monkeypatch.setattr(mod.time, "sleep", lambda _s: None)
+    calls = {"n": 0}
+
+    def flaky(_request, timeout=None):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise _http_error(403, b'{"message":"You have exceeded a secondary rate limit"}')
+        return "reponse"
+
+    assert mod._fetch_with_retry(flaky, "req") == "reponse"
+    assert calls["n"] == 2
+
+
+def test_retry_does_not_retry_a_not_found(monkeypatch):
+    monkeypatch.setattr(mod.time, "sleep", lambda _s: None)
+    calls = {"n": 0}
+
+    def opener(_request, timeout=None):
+        calls["n"] += 1
+        raise _http_error(404, b'{"message":"Not Found"}')
+
+    try:
+        mod._fetch_with_retry(opener, "req")
+    except urllib.error.HTTPError as exc:
+        assert exc.code == 404
+    else:  # pragma: no cover
+        raise AssertionError("un 404 doit remonter tout de suite")
+    assert calls["n"] == 1
+
+
+def test_retry_gives_up_after_the_budget(monkeypatch):
+    monkeypatch.setattr(mod.time, "sleep", lambda _s: None)
+    calls = {"n": 0}
+
+    def always_503(_request, timeout=None):
+        calls["n"] += 1
+        raise _http_error(503, b"{}")
+
+    try:
+        mod._fetch_with_retry(always_503, "req", attempts=3)
+    except urllib.error.HTTPError as exc:
+        assert exc.code == 503
+    else:  # pragma: no cover
+        raise AssertionError("un 503 permanent doit lever")
+    assert calls["n"] == 3

@@ -33,6 +33,14 @@ impossible, ensemble vide. Se tromper dans ce sens coute du calcul ; se
 tromper dans l'autre laisse du code non analyse. La raison choisie est
 toujours imprimee et sort en JSON pour l'audit.
 
+Deux mesures faites sur le premier passage en CI (PR #22553, job
+`CodeQL changed languages`) : la matrice est retombee complete avec la seule
+raison « diff illisible (HTTPError) », qui ne distingue pas un 403 (permissions
+ou quota secondaire) d'un 404 (URL) — deux causes, deux remedes. La raison
+nomme donc desormais le **statut et le debut du corps** de la reponse, et un
+403/429/5xx transitoire est retente une fois (l'IP d'un runner heberge est
+partagee, le « secondary rate limit » y est courant) avant de faillir ouvert.
+
 ## Sortie
 
 - `--github-output <path>` (ou `$GITHUB_OUTPUT`) recoit `languages=<json>`,
@@ -60,6 +68,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 import urllib.error
 import urllib.request
 from collections.abc import Callable, Iterable
@@ -146,6 +155,27 @@ def matrix_for(found: Iterable[str]) -> list[dict]:
             if item["language"] in wanted]
 
 
+def _fetch_with_retry(fetch, request, attempts: int = 2, pause_s: float = 1.0):
+    """`fetch(request, timeout=20)` avec une seconde chance sur 403/429/5xx.
+
+    Motif mesure : un runner heberge partage son IP avec le reste du cluster,
+    et GitHub repond alors 403 « secondary rate limit ». Une seule tentative
+    ferait retomber la matrice sur 4 langages pour une cause passagere — du
+    calcul paye en silence. Un vrai refus de permission (403 stable) ne coute
+    que `pause_s` de plus.
+    """
+    last: Exception | None = None
+    for attempt in range(attempts):
+        try:
+            return fetch(request, timeout=20)
+        except urllib.error.HTTPError as exc:
+            if exc.code not in (403, 429, 500, 502, 503, 504) or attempt == attempts - 1:
+                raise
+            last = exc
+            time.sleep(pause_s)
+    raise last  # pragma: no cover - la boucle leve avant
+
+
 def _api_pr_paths(
     repo: str,
     number: int,
@@ -167,7 +197,7 @@ def _api_pr_paths(
         if token:
             headers["Authorization"] = "Bearer " + token
         request = urllib.request.Request(url, headers=headers)
-        with fetch(request, timeout=20) as response:
+        with _fetch_with_retry(fetch, request) as response:
             payload = json.loads(response.read().decode("utf-8"))
         if not isinstance(payload, list):
             raise TypeError("reponse inattendue de l'API")
@@ -199,6 +229,29 @@ def _git_diff_paths(base_ref: str) -> list[str]:
     return [line.strip() for line in diff.stdout.splitlines() if line.strip()]
 
 
+def _describe(exc: BaseException) -> str:
+    """Nomme la cause d'un fail-open : un type seul est un angle mort.
+
+    Premiere mesure en CI (PR #22553, job `CodeQL changed languages`) : la
+    matrice est retombee complete avec la raison « diff illisible
+    (HTTPError) ». Un `HTTPError` ne dit ni 403 (permissions / quota
+    secondaire) ni 404 (URL), et ces deux causes n'ont pas le meme remede.
+    Le statut et le debut du corps de la reponse sont donc repris ici.
+    """
+    name = type(exc).__name__
+    if isinstance(exc, urllib.error.HTTPError):
+        detail = f"HTTP {exc.code}"
+        try:
+            body = exc.read().decode("utf-8", "replace")[:200].strip()
+        except Exception:  # noqa: BLE001 - un corps illisible ne masque pas le code
+            body = ""
+        if body:
+            detail += " " + " ".join(body.split())
+        return f"{name}: {detail}"
+    text = str(exc).strip()
+    return f"{name}: {text}" if text else name
+
+
 def derive(
     event: str,
     base_ref: str = "main",
@@ -212,7 +265,9 @@ def derive(
     try:
         paths = reader(base_ref)
     except Exception as exc:  # noqa: BLE001 - fail-open documente en tete
-        return full_matrix(), f"diff illisible ({type(exc).__name__}) : matrice complete"
+        return full_matrix(), (
+            "diff illisible (" + _describe(exc) + ") : matrice complete"
+        )
 
     found = languages_for(paths)
     if not found:
