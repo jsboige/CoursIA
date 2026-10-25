@@ -1,2 +1,4 @@
 candidate,sha,frozen_on,pass_date,period_end,n_days,sharpe_net,cagr,max_drawdown,turnover,fees,fee_model
 levetf-base,f1a93779396b77398ed23ad8a02678acd786adfd,2026-10-10,2026-10-16,2026-10-15,3,-6.4572,-0.9974,-0.0626,0.327497,7.3e-05,modèle de frais par défaut de Lean pour ce courtier
+ivol-U,a92539de9b41bff5cf5963c12e5c062d044c425a,2026-10-06,2026-10-25,2026-10-23,14,-3.108,-0.2574,-0.0157,0.065789,0.000461,5 bps de la valeur échangée
+ivol-F,a92539de9b41bff5cf5963c12e5c062d044c425a,2026-10-06,2026-10-25,2026-10-23,14,-3.3931,-0.2544,-0.015,0.057248,0.000401,5 bps de la valeur échangée
