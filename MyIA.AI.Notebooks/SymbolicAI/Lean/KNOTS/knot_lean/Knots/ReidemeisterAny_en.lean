@@ -37,8 +37,9 @@ every reached state) measure exactly this closure.
 4. the **R1/R3 embedding**: every R1 or R3 step accepted by the old verifier
    is accepted by the new one (a theorem, not a measurement);
 5. **kernel witnesses**: a genuine non-fresh `_any` descent (dying labels
-   {2, 3} != the two largest {3, 4}, compaction 4 -> 2), the descent to the
-   empty diagram (degenerate case), and the historical R1 pair passing
+   {2, 3} != the two largest {3, 4}, compaction 4 -> 2), the descents to
+   the empty diagram (degenerate kink on the R1 side, a pair of terminal
+   bigons on the R2 side), and the historical R1 pair passing
    through the new language;
 6. `anyBoundedConnects` — the **bounded decision frame** on the `allDiagrams`
    enumeration (#22240): reachability in the `_any` move graph.
@@ -246,13 +247,6 @@ or R3 link is therefore an `_any` link. The R2 embedding (double renaming) is
 the first item of tranche 2.
 -/
 
-/-- Embedding of the inductives: same source/target pair, constructor by
-    constructor. -/
-def embedMove : ReidemeisterMove → AnyMove
-  | .r1 s t => .r1Any s t
-  | .r2 s t => .r2Any s t
-  | .r3 s t => .r3Any s t
-
 /-- Slot merge: if `v` is the fresh label `b` where the original carried
     `a`, the merge gives it back to `a`; otherwise it was unchanged. Generic
     brick of the R1 embedding (four slots, same proof). -/
@@ -398,9 +392,10 @@ theorem verifyR3_implies_verifyAnyMove (s t : KnotDiagram)
 
 /-! ## 5. Kernel witnesses
 
-Three faces of the language: a **genuine** `_any` descent (non-fresh dying
-labels, compaction), the descent to the empty diagram (degenerate case, lower
-bound of the language), and the historical R1 pair
+Four faces of the language: a **genuine** `_any` descent (non-fresh dying
+labels, compaction), the descents to the empty diagram — degenerate kink on
+the R1 side, a pair of terminal bigons on the R2 side (lower bounds of the
+language) —, and the historical R1 pair
 (`reidemeister1Connected_satisfiable`) passing through the new language — the
 embedding in action.
 -/
@@ -436,6 +431,25 @@ theorem verifyKinkDownAny_witness_empty :
     verifyKinkDownAny
       { crossings := [⟨1, 1, 2, 2⟩], numEdges := 2 }
       { crossings := [], numEdges := 0 } := by
+  decide
+
+/-- **R2 `_any` witness**: the pair of terminal bigons `<1,2,2,4>` /
+    `<1,3,3,4>` (twin arcs `2` and `3`, shared entry `1` and exit `4`)
+    withdraws entirely — target the empty diagram, the verifier's "rest
+    empty" case. The `r2Any` surface exercised on a literal, symmetric to
+    the degenerate kink above. -/
+theorem verifyBigonDownAny_witness_empty :
+    verifyBigonDownAny
+      { crossings := [⟨1, 2, 2, 4⟩, ⟨1, 3, 3, 4⟩], numEdges := 4 }
+      { crossings := [], numEdges := 0 } := by
+  decide
+
+/-- **The `r2Any` step sealed into a link**: the same pair passes the
+    direction-neutral verifier of the extended language. -/
+theorem verifyR2_witness_passes_any :
+    verifyAnyMove (AnyMove.r2Any
+      { crossings := [⟨1, 2, 2, 4⟩, ⟨1, 3, 3, 4⟩], numEdges := 4 }
+      { crossings := [], numEdges := 0 }) := by
   decide
 
 /-- **The embedding in action**: the R1 witness pair of the connected

@@ -37,8 +37,9 @@ présents dans tout état atteint) mesurent exactement cette clôture.
 4. l'**embedding R1/R3** : tout pas R1 ou R3 accepté par l'ancien vérificateur
    est accepté par le nouveau (théorème, pas mesure) ;
 5. des **témoins kernel** : une descente `_any` authentique à labels non frais
-   (labels mourants {2, 3} ≠ deux plus grands {3, 4}, compaction 4 → 2), la
-   descente au diagramme vide (cas dégénéré), et le passage de la paire R1
+   (labels mourants {2, 3} ≠ deux plus grands {3, 4}, compaction 4 → 2), les
+   descentes au diagramme vide (kink dégénéré côté R1, paire de bigons
+   terminaux côté R2), et le passage de la paire R1
    historique par la nouvelle langue ;
 6. `anyBoundedConnects` — le **cadre de décision borné** sur l'énumération
    `allDiagrams` (#22240) : atteignabilité dans le graphe des moves `_any`.
@@ -241,13 +242,6 @@ maillon R1 ou R3 connecté est donc un maillon `_any`. L'embedding R2 (double
 renommage) est le premier item de la tranche 2.
 -/
 
-/-- Plongement des inductifs : même paire source/cible, constructeur à
-    constructeur. -/
-def embedMove : ReidemeisterMove → AnyMove
-  | .r1 s t => .r1Any s t
-  | .r2 s t => .r2Any s t
-  | .r3 s t => .r3Any s t
-
 /-- Fusion d'un slot : si `v` est le label frais `b` là où l'original portait
     `a`, la fusion le rend à `a` ; sinon il était inchangé. Brique générique
     de l'embedding R1 (quatre slots, même preuve). -/
@@ -393,9 +387,10 @@ theorem verifyR3_implies_verifyAnyMove (s t : KnotDiagram)
 
 /-! ## 5. Témoins kernel
 
-Trois faces de la langue : une descente `_any` **authentique** (labels
-mourants non frais, compaction), la descente au diagramme vide (cas dégénéré,
-borne inférieure de la langue), et le passage de la paire R1 historique
+Quatre faces de la langue : une descente `_any` **authentique** (labels
+mourants non frais, compaction), les descentes au diagramme vide — kink
+dégénéré côté R1, paire de bigons terminaux côté R2 (bornes inférieures de
+la langue) —, et le passage de la paire R1 historique
 (`reidemeister1Connected_satisfiable`) par la nouvelle langue — l'embedding
 en acte.
 -/
@@ -431,6 +426,25 @@ theorem verifyKinkDownAny_witness_empty :
     verifyKinkDownAny
       { crossings := [⟨1, 1, 2, 2⟩], numEdges := 2 }
       { crossings := [], numEdges := 0 } := by
+  decide
+
+/-- **Témoin R2 `_any`** : la paire de bigons terminaux `⟨1,2,2,4⟩` /
+    `⟨1,3,3,4⟩` (arcs jumeaux `2` et `3`, entrée `1` et sortie `4` communes)
+    se retire entièrement — cible le diagramme vide, cas « reste vide » du
+    vérificateur. La surface `r2Any` exercée sur un littéral, en symétrie du
+    kink dégénéré ci-dessus. -/
+theorem verifyBigonDownAny_witness_empty :
+    verifyBigonDownAny
+      { crossings := [⟨1, 2, 2, 4⟩, ⟨1, 3, 3, 4⟩], numEdges := 4 }
+      { crossings := [], numEdges := 0 } := by
+  decide
+
+/-- **Le pas `r2Any` scellé en maillon** : la même paire passe le
+    vérificateur direction-neutral de la langue étendue. -/
+theorem verifyR2_witness_passes_any :
+    verifyAnyMove (AnyMove.r2Any
+      { crossings := [⟨1, 2, 2, 4⟩, ⟨1, 3, 3, 4⟩], numEdges := 4 }
+      { crossings := [], numEdges := 0 }) := by
   decide
 
 /-- **L'embedding en acte** : la paire témoin R1 de la langue connectée
