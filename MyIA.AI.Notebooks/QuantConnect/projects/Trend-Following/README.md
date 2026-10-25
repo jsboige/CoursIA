@@ -46,7 +46,7 @@ Ce résultat est **cohérent et pédagogiquement sain** : TrendFollowingAQR est 
 
 - **`main.py`** — Algorithme déployé (`TrendFollowingAQR` v7). Auto-contenu : univers fixe 6+1 ETF, double signal SMA(200)+momentum 6m/12m, régime baissier safe-haven, rebalancement mensuel. C'est le fichier backtesté ci-dessus.
 - `alpha.py`, `macd_oracle.py`, `rsi_oracle.py`, `bollinger_oracle.py`, `trendCalculator.py` — **Fichiers orphelins** (architecture multi-oracles d'une version antérieure, non importés par `main.py` actuel). Conservés tels quels ; nettoyable dans une PR dédiée.
-- `quantbook.ipynb` — Recherche (analyse des signaux).
+- `quantbook.ipynb` — Recherche sur un autre algorithme, « Trend Following Competition » : 20 titres fixes, alpha EMA 50/200, pondération InsightWeighting, exécution VWAP, période 2019-2026. Ses Sharpe (0.442 à 0.477) ne mesurent pas `TrendFollowingAQR` v7.
 - `config.json`, `trend_following_analysis.png` — Config et figure d'analyse.
 
 ## Concepts enseignés
