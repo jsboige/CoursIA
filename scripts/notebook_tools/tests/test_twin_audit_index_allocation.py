@@ -202,3 +202,77 @@ def test_cli_exposes_allocation_floor_flags():
     for flag in ("--allocate-against", "--no-allocate-against"):
         assert flag in r.stdout, f"{flag} absent de --help : flag non cable"
     assert "origin/main" in r.stdout, "defaut origin/main non documente"
+
+
+# --- 5. rafraichissement de la ref d'integration (#22547) ---------------------
+
+def _clone_with_remote(tmp_path: Path, indexes: list[int], name: str):
+    """Clone `name` d'un amont nu portant deja `indexes` sur main."""
+    src, registry = _repo_with_published_indexes(tmp_path, indexes)
+    bare = tmp_path / f"{name}-upstream.git"
+    _git(src, "clone", "-q", "--bare", str(src), str(bare))
+    clone = tmp_path / name
+    subprocess.run(["git", "clone", "-q", str(bare), str(clone)],
+                   capture_output=True, check=True)
+    _init_repo(clone)  # idempotent : pose juste user.email/name/gpgsign
+    reg = clone / "scripts" / "notebook_tools" / "twin_pairs.d"
+    return bare, clone, reg
+
+
+def test_refresh_allocate_ref_reads_indexes_pushed_after_clone(tmp_path):
+    """Reproduction Hermes : sans fetch, le plancher lit une ref perimee.
+
+    B clone quand l'amont porte 1..3 ; C pousse ensuite 6..8. La ref locale
+    `origin/main` de B voit encore 3 -> plancher 3 -> B allouerait 0004, deja
+    pris par C. Apres `_refresh_allocate_ref`, le plancher vaut 8.
+    """
+    bare, clone_b, reg_b = _clone_with_remote(tmp_path, [1, 2, 3], "workerB")
+    stale = ctp._audit_floor(clone_b, reg_b, PAIR_NAME, "origin/main")
+    assert stale == 3, f"precondition : ref locale perimee attendue a 3, lu {stale}"
+    # Un second worker publie 6..8 sur l'amont, APRES le clone de B.
+    clone_c = tmp_path / "workerC"
+    subprocess.run(["git", "clone", "-q", str(bare), str(clone_c)],
+                   capture_output=True, check=True)
+    _init_repo(clone_c)
+    reg_c = clone_c / "scripts" / "notebook_tools" / "twin_pairs.d"
+    for i in (6, 7, 8):
+        _publish_audit(clone_c, reg_c, i, "myia-po-2025-CoursIA")
+    _git(clone_c, "add", "-A")
+    _git(clone_c, "commit", "-qm", "audits C")
+    _git(clone_c, "push", "-q", "origin", "HEAD:main")
+    # B n'a pas fetcke : le plancher local reste a 3 (la classe de collision).
+    assert ctp._audit_floor(clone_b, reg_b, PAIR_NAME, "origin/main") == 3
+    ctp._refresh_allocate_ref(clone_b, "origin/main")
+    assert ctp._audit_floor(clone_b, reg_b, PAIR_NAME, "origin/main") == 8, (
+        "apres refresh, le plancher doit suivre l'amont (8), pas la ref "
+        "locale figee (3) : sans cela B re-emet un prefixe deja pris par C."
+    )
+
+
+def test_refresh_allocate_ref_degrades_silently_when_offline(tmp_path):
+    """Remote injoignable : repli silencieux, la ref locale reste lisible."""
+    bare, clone_b, reg_b = _clone_with_remote(tmp_path, [1, 2, 3], "workerB")
+    _git(clone_b, "remote", "set-url", "origin",
+         str(tmp_path / "remote-inexistant.git"))
+    ctp._refresh_allocate_ref(clone_b, "origin/main")  # ne doit pas lever
+    assert ctp._audit_floor(clone_b, reg_b, PAIR_NAME, "origin/main") == 3
+
+
+def test_refresh_allocate_ref_ignores_non_remote_refs(tmp_path):
+    """Une ref sans remote (`main`, SHA, None, vide) n'est jamais fetchee."""
+    repo, registry = _repo_with_published_indexes(tmp_path, [1, 2])
+    for ref in (None, "", "main", "HEAD"):
+        ctp._refresh_allocate_ref(repo, ref)  # aucune exception
+    assert ctp._audit_floor(repo, registry, PAIR_NAME, "main") == 2
+
+
+def test_audit_indexes_at_ref_degrades_on_git_timeout(tmp_path, monkeypatch):
+    """Un ls-tree qui expire rend un ensemble vide, pas une ecriture refusee."""
+    repo, registry = _repo_with_published_indexes(tmp_path, [1, 2, 3])
+
+    def _timeout(*args, **kwargs):
+        raise ctp.GitTimeoutError("borne simulee")
+
+    monkeypatch.setattr(ctp, "_run_git", _timeout)
+    assert ctp._audit_indexes_at_ref(repo, "main", registry, PAIR_NAME) == set()
+    assert ctp._audit_floor(repo, registry, PAIR_NAME, "main") == 0

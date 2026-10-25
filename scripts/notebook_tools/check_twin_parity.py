@@ -1647,10 +1647,16 @@ def _audit_indexes_at_ref(repo_root: Path, git_ref: str, registry_dir: Path,
         reg_rel = registry_dir.resolve().relative_to(repo_root.resolve()).as_posix()
     except ValueError:
         return set()
-    r = _run_git(
-        ["git", "ls-tree", "-r", "--name-only", git_ref, "--", f"{reg_rel}/{slug}/"],
-        cwd=str(repo_root),
-    )
+    try:
+        r = _run_git(
+            ["git", "ls-tree", "-r", "--name-only", git_ref, "--",
+             f"{reg_rel}/{slug}/"],
+            cwd=str(repo_root),
+        )
+    except GitTimeoutError:
+        # Un ls-tree qui expire degrade comme une ref illisible : un garde
+        # ne doit jamais transformer un remote lent en ecriture refusee.
+        return set()
     if r.returncode != 0:
         return set()
     out: set[int] = set()
@@ -1667,6 +1673,33 @@ def _audit_floor(repo_root: Path, registry_dir: Path, name: str,
     if not ref:
         return 0
     return max(_audit_indexes_at_ref(repo_root, ref, registry_dir, name), default=0)
+
+
+def _refresh_allocate_ref(repo_root: Path, ref: str | None) -> None:
+    """Rafraichit `<remote>/<branche>` avant la lecture du plancher (#22547).
+
+    `ls-tree` lit la ref LOCALE : sans ce fetch, `origin/main` designe ce que
+    le clone connaissait a son dernier fetch, et la collision que le plancher
+    doit fermer reste atteignable des qu'un autre worker a pousse depuis
+    (reproduction Hermes : worker B clone avant le push de C, sans fetch ->
+    floor 5, prefixe 0006 deja pris par C ; apres fetch -> floor 8).
+
+    Bornee (_GIT_TIMEOUT_S via `_run_git`, EAGAIN borne) et **jamais
+    bloquante** : toute erreur (remote absent, ref non remote, hors ligne,
+    timeout) retombe silencieusement sur la ref locale -- meme philosophie
+    que le plancher lui-meme, un garde ne bloque jamais une ecriture. Les
+    refs non `<remote>/<branche>` (ex. `main`, SHA) ne sont pas fetchees.
+    """
+    if not ref or "/" not in ref:
+        return
+    remote, branch = ref.split("/", 1)
+    try:
+        _run_git(["git", "fetch", "--quiet", remote, branch],
+                 cwd=str(repo_root))
+    except Exception:
+        # Repli sur la ref locale : un plancher perime reste preferable a
+        # une ecriture refusee.
+        return
 
 
 def migrate_registry_files_per_audit(registry_dir: Path,
@@ -1846,8 +1879,13 @@ def _main(argv=None) -> int:
                         "paire sur cette ref (#22299) : sans ce plancher, deux "
                         "branches issues du meme main calculent le meme max et "
                         "emettent le meme prefixe, que le garde d'integrite refuse "
-                        "apres merge. Une ref illisible ne bloque jamais l'ecriture "
-                        "(le plancher est un garde, pas une mesure).")
+                        "apres merge. Avant la lecture, un `git fetch` borne "
+                        "rafraichit la ref <remote>/<branche> (#22547) : sans lui, "
+                        "le plancher lirait la ref telle que le clone la connaissait "
+                        "a son dernier fetch et la collision resterait possible. Si "
+                        "le fetch echoue ou si la ref est illisible, repli sur la ref "
+                        "locale -- cela ne bloque jamais l'ecriture (le plancher est "
+                        "un garde, pas une mesure).")
     p.add_argument("--no-allocate-against", action="store_true",
                    help="Desactive le plancher d'allocation (comportement "
                         "historique : max local + 1). Utile dans un depot sans "
@@ -2246,6 +2284,11 @@ def _main(argv=None) -> int:
             written = 0
             # Plancher d'allocation (#22299) : resolu une fois, lu par paire.
             allocate_ref = None if args.no_allocate_against else args.allocate_against
+            # #22547 : la ref d'integration vaut ce que vaut son dernier
+            # fetch. Un seul fetch borne avant la boucle (pas un par paire),
+            # repli silencieux sur la ref locale si le remote ne repond pas.
+            if updates:
+                _refresh_allocate_ref(repo_root, allocate_ref)
             for name, audit in updates.items():
                 pfile = _pair_file(reg_path, name)
                 if not pfile.exists():
