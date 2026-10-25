@@ -1560,7 +1560,8 @@ def _dump_audit_yaml(audit: dict) -> str:
 
 def _write_audit_file(registry_dir: Path, name: str, audit: dict,
                       used_names: set[str] | None = None,
-                      index: int | None = None) -> Path:
+                      index: int | None = None,
+                      floor: int = 0) -> Path:
     """Ecrit un audit dans un fichier separe `<pair>/<idx>-<date>-<lane>.yaml`.
 
     Nouvelle forme (#14911). `index` (optionnel) place l'audit dans l'ordre
@@ -1569,6 +1570,11 @@ def _write_audit_file(registry_dir: Path, name: str, audit: dict,
     trier en derniere position (= plus recent). `used_names` suit les noms
     deja pris pour suffixer `-2`, `-3`... en secours si un index venait a
     collider. Retourne le chemin.
+
+    `floor` (#22299) est le plus grand index deja PUBLIE pour la paire sur la
+    ref d'integration : l'index alloue reste strictement au-dessus. Le max
+    local ne suffit pas -- deux branches issues du meme `main` lisent le meme
+    disque, calculent le meme max et emettent le meme `NNNN`.
     """
     slug = _slug(name)
     d = _audit_dir(registry_dir, slug)
@@ -1576,7 +1582,7 @@ def _write_audit_file(registry_dir: Path, name: str, audit: dict,
     date = str(audit.get("date") or _dt.date.today().isoformat())
     by = audit.get("by")
     if index is None:
-        index = _next_audit_index(d)
+        index = max(_next_audit_index(d), floor + 1)
     base = _audit_filename(date, by, index)
     stem = base[:-5]  # retire ".yaml"
     used = used_names if used_names is not None else set()
@@ -1620,6 +1626,47 @@ def _next_audit_index(d: Path) -> int:
     idxs = [int(audit_index(f.name)) for f in d.glob("*.yaml")
             if audit_index(f.name).isdigit()]
     return max(idxs, default=0) + 1
+
+
+def _audit_indexes_at_ref(repo_root: Path, git_ref: str, registry_dir: Path,
+                          name: str) -> set[int]:
+    """Index `NNNN` deja publies pour cette paire sur `git_ref` (#22299).
+
+    `_next_audit_index` ne lit que le disque local : deux branches issues du
+    meme `main` calculent le meme max, donc le meme prefixe, et le garde
+    d'integrite les refuse apres merge (5 paires mesurees le 2026-10-24). Ce
+    plancher lit la ref d'integration pour qu'une branche qui re-atteste
+    APRES que la ref a gagne un audit n'emette jamais un `NNNN` deja pris.
+
+    Un ref illisible, un repertoire absent ou un `registry_dir` hors depot
+    rendent l'ensemble VIDE : c'est un plancher, pas une mesure -- ne rien
+    trouver ne doit jamais bloquer une ecriture.
+    """
+    slug = _slug(name)
+    try:
+        reg_rel = registry_dir.resolve().relative_to(repo_root.resolve()).as_posix()
+    except ValueError:
+        return set()
+    r = _run_git(
+        ["git", "ls-tree", "-r", "--name-only", git_ref, "--", f"{reg_rel}/{slug}/"],
+        cwd=str(repo_root),
+    )
+    if r.returncode != 0:
+        return set()
+    out: set[int] = set()
+    for line in (r.stdout or "").splitlines():
+        idx = audit_index(line.rsplit("/", 1)[-1])
+        if idx.isdigit():
+            out.add(int(idx))
+    return out
+
+
+def _audit_floor(repo_root: Path, registry_dir: Path, name: str,
+                 ref: str | None) -> int:
+    """Plus grand index deja publie pour la paire sur `ref` (0 si inutilisable)."""
+    if not ref:
+        return 0
+    return max(_audit_indexes_at_ref(repo_root, ref, registry_dir, name), default=0)
 
 
 def migrate_registry_files_per_audit(registry_dir: Path,
@@ -1792,6 +1839,19 @@ def _main(argv=None) -> int:
                         "est l'opt-in explicite pour forcer la nouvelle entree "
                         "malgre le no-op, avec un avertissement explicite sur "
                         "stdout. Sans effet sur les modes non --update.")
+    p.add_argument("--allocate-against", default="origin/main", metavar="REF",
+                   help="Avec --update : plancher d'allocation du prefixe NNNN, lu "
+                        "sur cette ref (defaut 'origin/main', vide = desactive). "
+                        "L'index ne peut plus etre <= au max deja publie pour la "
+                        "paire sur cette ref (#22299) : sans ce plancher, deux "
+                        "branches issues du meme main calculent le meme max et "
+                        "emettent le meme prefixe, que le garde d'integrite refuse "
+                        "apres merge. Une ref illisible ne bloque jamais l'ecriture "
+                        "(le plancher est un garde, pas une mesure).")
+    p.add_argument("--no-allocate-against", action="store_true",
+                   help="Desactive le plancher d'allocation (comportement "
+                        "historique : max local + 1). Utile dans un depot sans "
+                        "remote, ou pour reproduire un registre ancien.")
     p.add_argument("--verify-recorded-sha", action="store_true",
                    help="Gate CI #9399 volet b : verifie que les SHA enregistres "
                         "dans le YAML (last_audit legacy OU audits[-1] append-only) "
@@ -2184,6 +2244,8 @@ def _main(argv=None) -> int:
         # (append chirurgical au bloc d'audit inline).
         if reg_path.is_dir():
             written = 0
+            # Plancher d'allocation (#22299) : resolu une fois, lu par paire.
+            allocate_ref = None if args.no_allocate_against else args.allocate_against
             for name, audit in updates.items():
                 pfile = _pair_file(reg_path, name)
                 if not pfile.exists():
@@ -2214,7 +2276,14 @@ def _main(argv=None) -> int:
                     _write_audit_file(reg_path, name, audit,
                                       used_names=used, index=len(inline) + 1)
                 else:
-                    _write_audit_file(reg_path, name, audit)
+                    floor = _audit_floor(repo_root, reg_path, name, allocate_ref)
+                    if floor >= _next_audit_index(_audit_dir(reg_path, _slug(name))):
+                        # Observabilite : l'index retenu n'est pas le max local,
+                        # c'est le plancher publie. Sans cette ligne, le worker
+                        # lirait la numerotation comme un trou inexplique.
+                        print(f"  '{name}' : prefixe alloue au-dessus de "
+                              f"{allocate_ref} (max publie = {floor})")
+                    _write_audit_file(reg_path, name, audit, floor=floor)
                 new_raw = _strip_audits_from_yaml(raw)
                 if new_raw != raw:
                     write_registry_text(pfile, new_raw)
