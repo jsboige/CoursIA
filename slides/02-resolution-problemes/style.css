@@ -49,16 +49,9 @@
   line-height: 1.25;
 }
 
-/* 5. Utilitaire densité maximale pour les slides les plus chargées :
- *    envelopper la liste dans <div class="dense-list">…</div>. */
-.slidev-layout .dense-list ul,
-.slidev-layout .dense-list ol {
-  font-size: 0.82em;
-  line-height: 1.22;
-}
-.slidev-layout .dense-list li {
-  margin: 0.02em 0;
-}
-.slidev-layout .dense-list h2 {
-  margin-top: 0.3em;
-}
+/* 5. Utilitaire densité maximale : envelopper la liste dans
+ *    <div class="dense-list">…</div>. Définition portée par le thème
+ *    (`theme-ia101/styles/index.css`, #22286) avec les valeurs qui étaient
+ *    rendues ici — 0.82em, interligne 1.22, marge d'item 0.02em, marge de
+ *    H2 0.3em. La garder en double faisait naître une deuxième définition
+ *    de la même classe, divergente des autres decks. */
