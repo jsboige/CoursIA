@@ -2,7 +2,7 @@
 
 Les carnets de ce dossier ne sont **ni rendus, ni maintenus, ni ré-exécutés**. Leur contenu a été absorbé par un carnet vivant de la série. Ils sont conservés **tels quels**, à titre de provenance : on peut encore les ouvrir pour vérifier ce qui était publié à une date donnée, mais ce ne sont plus des supports de cours.
 
-Convention appliquée : [`docs/reference/_archive-convention.md`](../../../../docs/reference/_archive-convention.md) — quatre critères d'éligibilité (verdict consigné, zéro référence, zéro import, successeur nommé) et en-tête de disposition par section.
+Convention appliquée : [`docs/reference/_archive-convention.md`](../../../../../docs/reference/_archive-convention.md) — quatre critères d'éligibilité (verdict consigné, zéro référence, zéro import, successeur nommé) et en-tête de disposition par section.
 
 ## Registre
 
@@ -53,5 +53,6 @@ Chaque cellule de l'archive a une destination nommée dans le carnet qui la remp
 ## Vérification
 
 - Archive **byte-identique** à sa version d'origine sur `main` (`git mv`, aucun octet modifié, aucune ré-exécution) — le carnet conserve donc les sorties de son exécution d'origine, y compris la bannière `papermill` de son `metadata`.
-- Référents mis à jour dans le même geste : `_quarto.yml` (l'entrée 3.9d est retirée, ce registre est listé à sa place).
-- Référent restant, **hors du périmètre de cette lane** : la ligne « Compléments » de [`3.9-Compression-Quantization-FP.ipynb`](../3.9-Compression-Quantization-FP.ipynb) cite encore 3.9d. Ce carnet est réclamé par une autre lane ; la correction d'une ligne y est signalée au coordinateur plutôt qu'appliquée depuis ici.
+- Référents mis à jour **dans ce même geste** : `_quarto.yml` (l'entrée 3.9d est retirée, ce registre est listé à sa place), la ligne « Compléments » et la table des blocs de [`3.9-Compression-Quantization-FP.ipynb`](../3.9-Compression-Quantization-FP.ipynb), et quatre renvois en prose de [`3.9g`](../3.9g-Compression-Comparatif-A-vs-B.ipynb).
+- **Liens internes du carnet archivé : figés, volontairement.** Le carnet est conservé octet pour octet, donc ses liens relatifs (`3.7-…`, `3.9a-…`, `../../../GenAI/…`) désignent depuis ce dossier des chemins d'un cran trop haut. Ils ne sont pas réécrits : le faire casserait la propriété de provenance ci-dessus, et la convention `_archive/` demande de ne pas réécrire les chemins relatifs d'un fichier archivé (critère 4 — la résurrection sans réécriture). Pour les suivre, préfixer d'un `../` (`../3.7-Distillation-Maitre-Eleve.ipynb`, `../../../../GenAI/…`), ou passer par le carnet vivant : la table de disposition ci-dessus nomme la destination de chaque section.
+- Référent restant, **hors du périmètre de cette lane** : le [`README.md` de la série](../README.md) cite encore 3.9d en deux endroits — ligne 46 (la ligne de table du carnet) et ligne 126 (la note d'exécution GPU). Ce README est arbitré à `po-2023:CoursIA`, qui porte la PR de README finale après les trois étapes de #22395 : la correction y est signalée plutôt qu'appliquée depuis ici, et cette PR ne le modifie pas.
