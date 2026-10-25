@@ -38,8 +38,15 @@
 /* 4. Utilitaire densité maximale : <div class="dense-list">. Définition
  *    portée par le thème (`theme-ia101/styles/index.css`, #22286) avec les
  *    valeurs qui étaient rendues ici (0.82em / 1.22 / item 0.02em / H2
- *    0.3em / p 0.85em), pour que S3 et S8 — qui nomment la classe sans la
- *    définir — rendent la même chose que ce deck. */
+ *    0.3em / p 0.85em).
+ *
+ *    S3 et S8 gardent leur PROPRE définition locale — S3
+ *    (`S3-acculturation/style.css` l.57) `.dense-list ul` 0.86em / 1.35,
+ *    S8 (`S8-semantic-web/style.css` l.54-87) `ul`/`ol` 0.82em / 1.22,
+ *    `li`, `h2` 0.15em, `p`, `pre`, `blockquote`, `table`. Le bloc du thème
+ *    n'est donc canonique que pour 02 et 06, les deux decks dédupliqués
+ *    ici ; il ne l'est pas pour eux (feuille de deck chargée après le
+ *    thème, à spécificité égale). */
 
 /* 5. Grilles d'images (pattern S3 §4) : compressibles. */
 .slidev-layout .img-grid {
