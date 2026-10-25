@@ -235,6 +235,78 @@ def test_audit_runner_passe_par_le_vrai_moteur():
     assert "THRESHOLDS" not in AUDIT_SOURCE
 
 
+# ---------------------------------------------------------------------------
+# 11. Controle positif `--self-test` (revue Hermes 5641167499, reserve 2)
+#
+# L'audit rendait `OK` sur les six fenetres reelles, mais un detecteur qui
+# rend toujours `OK` ne prouve rien : rien ne montrait qu'il sait tirer.
+# Les comptes du controle positif vivaient dans le corps de la PR, ou
+# personne ne peut les re-deriver -- le generateur n'etait pas committe.
+# La trajectoire est desormais **construite dans le script** : ces tests
+# pincent sa forme, et la commande imprime les comptes.
+# ---------------------------------------------------------------------------
+
+import ict25a_rewardspy_audit as audit_mod  # noqa: E402
+
+
+def test_synthetic_records_is_deterministic():
+    """Deux appels rendent la meme trajectoire : les comptes imprimes par
+    `--self-test` sont reproductibles, ils ne dependent d'aucun aleatoire."""
+    a = audit_mod._synthetic_records("collapse")
+    b = audit_mod._synthetic_records("collapse")
+    assert a == b
+    assert len(a) == 48 + 96
+
+
+def test_synthetic_collapse_profile_shape():
+    """Le profil `collapse` est sain puis effondre : c'est ce contraste que
+    les detecteurs doivent voir, et il est entierement lisible dans le code."""
+    recs = audit_mod._synthetic_records("collapse")
+    sain, effondre = recs[:48], recs[48:]
+    assert all(r["hack"] == 0.0 and r["mc"] == 1.0 and r["length"] == 40
+               for r in sain)
+    assert all(r["hack"] == 1.0 and r["mc"] == 0.0 and r["reward"] == 0.0
+               and r["length"] == 160 for r in effondre)
+    assert [r["step"] for r in recs] == list(range(len(recs)))
+
+
+def test_synthetic_ramp_profile_is_monotone():
+    """Le profil `ramp` derive lineairement : `hack` ne redescend jamais,
+    la recompense ne remonte jamais, la sortie ne se raccourcit jamais."""
+    recs = audit_mod._synthetic_records("ramp")
+    hack = [r["hack"] for r in recs]
+    reward = [r["reward"] for r in recs]
+    length = [r["length"] for r in recs]
+    assert hack == sorted(hack) and reward == sorted(reward, reverse=True)
+    assert length == sorted(length)
+
+
+def test_synthetic_profiles_are_distinct_and_unknown_is_refused():
+    """Les deux profils ne mesurent pas la meme chose (mesure : `collapse`
+    atteint ALERT, `ramp` plafonne a WARNING) ; un nom inconnu est refuse
+    plutot que servi comme un profil par defaut."""
+    assert (audit_mod._synthetic_records("collapse")
+            != audit_mod._synthetic_records("ramp"))
+    try:
+        audit_mod._synthetic_records("n_importe_quoi")
+    except ValueError as exc:
+        assert "n_importe_quoi" in str(exc)
+    else:
+        raise AssertionError("un profil inconnu doit lever ValueError")
+
+
+def test_synthetic_records_feed_the_consumer_schema():
+    """La trajectoire de controle traverse la meme traduction que les traces
+    reelles : elle n'a pas de chemin privilegie vers le moteur."""
+    rows = audit_rows(audit_mod._synthetic_records("collapse"), arm="SELFTEST",
+                      seed=0)
+    assert len(rows) == 144
+    assert set(rows[0]) == {"call_id", "timestamp", "step", "scalar_reward",
+                            "components", "call_duration_ms", "input_length",
+                            "output_length"}
+    assert rows[0]["call_id"] == "SELFTEST-0-0"
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):

@@ -22,9 +22,18 @@ Le paquet `rewardspy` n'est pas sur PyPI : il s'installe depuis son depot git
 (cf `MyIA.AI.Notebooks/GenAI/PostTraining/requirements.txt`). Le script echoue
 proprement, avec la marche a suivre, quand il est absent.
 
+Controle positif
+----------------
+Un audit qui rend `OK` partout ne prouve rien tant que le detecteur n'a pas
+montre qu'il sait **tirer**. `--self-test` fait passer une trajectoire de
+degradation construite **ici**, en clair, et exige au moins une alerte : ses
+comptes sont donc re-derivables par quiconque execute la commande, au lieu
+d'etre recopies dans une prose (review Hermes 5641167499, reserve 2).
+
 Usage :
     python ict25a_rewardspy_audit.py --artifact runs/ict25a_N_traces_1.5B.json
     python ict25a_rewardspy_audit.py --artifact ... --window tail --json
+    python ict25a_rewardspy_audit.py --self-test
 """
 from __future__ import annotations
 
@@ -78,11 +87,51 @@ def _audit(rows, sensitivity):
     return {"alerts": counts, "n_alerts": len(alerts), "overall": str(engine.overall)}
 
 
+def _synthetic_records(profile="collapse", n_healthy=48, n_degraded=96):
+    """Trajectoires de controle positives, deterministes et lisibles ici.
+
+    Deux profils, mesures dans `coursia-ml-training` (rewardspy git+AvAdiii) :
+
+    - `collapse` : la seconde moitie s'effondre d'un coup (`hack`=1, `mc`=0,
+      recompense=0, sortie=160). Le moteur rend **ALERT**. C'est le profil
+      qui prouve que le pont atteint l'etat le plus severe.
+    - `ramp` : la seconde moitie derive **lineairement**. Le moteur rend des
+      alertes mais son agregat plafonne a **WARNING** (mesure : 96/96 ->
+      `WARNING`, 5 alertes ; 48/96 -> `OK`, 4 alertes). Une derive etalee ne
+      produit donc jamais l'etat le plus severe -- a savoir avant de lire un
+      `OK` sur des traces reelles.
+
+    Aucun aleatoire, aucune dependance : les comptes imprimes par
+    `--self-test` sont reproductibles a l'identique sur toute machine ou
+    `rewardspy` est installe.
+    """
+    if profile not in ("collapse", "ramp"):
+        raise ValueError(f"profil inconnu : {profile}")
+    records = []
+    for step in range(n_healthy):
+        records.append({"step": step, "gt": "1", "pred": "1", "hack": 0.0,
+                        "mc": 1.0, "reward": 1.0, "length": 40})
+    for offset in range(n_degraded):
+        frac = (offset + 1) / n_degraded
+        if profile == "collapse":
+            row = {"hack": 1.0, "mc": 0.0, "reward": 0.0, "length": 160}
+        else:
+            row = {"hack": frac, "mc": 1.0 - frac,
+                   "reward": (1.0 - frac) * 0.5,
+                   "length": int(40 + 120 * frac)}
+        row.update({"step": n_healthy + offset, "gt": "1", "pred": "1"})
+        records.append(row)
+    return records
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--artifact", required=True,
+    ap.add_argument("--artifact", default=None,
                     help="artefact JSON produit par ict25a_scaleup_grpo.py")
+    ap.add_argument("--self-test", action="store_true",
+                    help="controle positif : la trajectoire synthetique doit "
+                         "faire tirer au moins un detecteur (code retour 3 sinon)")
     ap.add_argument("--seed", type=int, default=None,
                     help="graine a auditer (defaut : toutes celles de l'artefact)")
     ap.add_argument("--window", choices=WINDOWS, default="both")
@@ -90,6 +139,9 @@ def main():
                     help="sensibilite du DetectionEngine (defaut medium)")
     ap.add_argument("--json", action="store_true")
     args = ap.parse_args()
+
+    if not args.self_test and not args.artifact:
+        ap.error("--artifact est requis (ou --self-test)")
 
     try:
         import rewardspy  # noqa: F401
@@ -99,10 +151,42 @@ def main():
               "(pip install git+https://github.com/AvAdiii/rewardspy.git).")
         return 2
 
-    payload = _load_artifact(args.artifact)
-    report = {"artifact": str(args.artifact), "arm": payload.get("arm"),
-              "model": payload.get("model"), "sensitivity": args.sensitivity,
-              "protocol": payload.get("protocol"), "seeds": []}
+    payload = _load_artifact(args.artifact) if args.artifact else None
+    report = {"artifact": str(args.artifact) if args.artifact else None,
+              "arm": payload.get("arm") if payload else None,
+              "model": payload.get("model") if payload else None,
+              "sensitivity": args.sensitivity,
+              "protocol": payload.get("protocol") if payload else None,
+              "self_test": bool(args.self_test),
+              "seeds": []}
+
+    if args.self_test:
+        failed = []
+        for profile in ("collapse", "ramp"):
+            records = _synthetic_records(profile)
+            rows = audit_rows(records, arm="SELFTEST", seed=0)
+            result = _audit(rows, args.sensitivity)
+            result.update({"seed": 0, "window": f"synthetic-{profile}",
+                           "n": len(rows), "profile": profile})
+            report["seeds"].append(result)
+            if not args.json:
+                print(f"controle positif [{profile}] n={len(rows)} -> "
+                      f"{result['overall']} ({result['n_alerts']} alertes)"
+                      + (f" {result['alerts']}" if result["alerts"] else ""))
+            # `collapse` doit atteindre l'etat le plus severe : un pont qui
+            # plafonne au Warning ne prouverait pas qu'il sait rendre ALERT.
+            if profile == "collapse" and "ALERT" not in str(result["overall"]):
+                failed.append(f"collapse: agregat {result['overall']} au lieu "
+                              f"d'ALERT")
+            if result["n_alerts"] == 0:
+                failed.append(f"{profile}: aucun detecteur declenche")
+        if failed:
+            print("ECHEC: " + " ; ".join(failed) + " -- le pont est muet, les "
+                  "OK sur traces reelles ne prouvent rien.", file=sys.stderr)
+            return 3
+        if args.json:
+            print(json.dumps(report, indent=2, ensure_ascii=False))
+        return 0
 
     for entry in payload["seeds"]:
         if args.seed is not None and entry.get("seed") != args.seed:
