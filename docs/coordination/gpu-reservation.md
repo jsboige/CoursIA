@@ -231,20 +231,30 @@ leur VRAM réelle et les lanes autorisées à lancer.
 |---|---|---|---|---|---|---|
 | `myia-ai-01#gpu0` | RTX 4090 | 24 564 MiB | **aucune** — vLLM de la flotte | non | 2026-10-25 : 22 620 MiB occupés, 98 % | mesure locale |
 | `myia-ai-01#gpu1` | RTX 4090 | 24 564 MiB | **aucune** — vLLM de la flotte | non | 2026-10-25 : 21 408 MiB occupés, 99 % | mesure locale |
-| `myia-ai-01#gpu2` | RTX 4090 | 24 564 MiB | `myia-ai-01:CoursIA-2` (seul lanceur) | non (tenu) | 2026-10-25 : 15 013 MiB, 24 %, run onset en vol | mesure locale |
+| `myia-ai-01#gpu2` | RTX 4090 | 24 564 MiB | `myia-ai-01:CoursIA-2` (seul lanceur) | non (tenu) | 2026-10-25T15:45Z : run onset terminé, chaîne multi-seed #15293 `held` | mesure locale |
 | `myia-po-2023#gpu0` (`CVD=0`) | RTX 3090 | 24,0 GiB | `myia-po-2023:CoursIA`, autres lanes sur accord | oui | 2026-10-25T14:12Z : 22,8 GiB libres | DM po-2023 |
 | `myia-po-2023#gpu1` (`CVD=1`) | RTX 3080 Ti Laptop | 16,0 GiB | idem | oui | 2026-10-25T14:12Z : 14,8 GiB libres | DM po-2023 |
 | `myia-po-2025#gpu0` | RTX 3080 Ti Laptop | 16 384 MiB | `myia-po-2025:CoursIA`, `myia-po-2025:CoursIA-2` | oui | 2026-10-25T14:19Z — **seul device exposé** (driver 616.92) | DM po-2025 |
 | `myia-po-2027#gpu0` | RTX 4060 Laptop | 8 188 MiB | `myia-po-2027:CoursIA`, `myia-po-2027:CoursIA-2` | oui | 2026-10-25T15:26Z | DM po-2027 |
 | `myia-po-2028#gpu0` | RTX 3070 Ti Laptop (cc 8.6) | 8 192 MiB | `myia-po-2028:CoursIA`, `myia-po-2028:CoursIA-2` — **politique posée par la régie**, le siège n'en portait aucune | oui | 2026-10-25T14:40Z : 0 compute app | DM po-2028 |
-| `myia-po-2024#gpu0`, `#gpu1` | — | — | — | **à mesurer** | carte **non reçue** | silence |
+| `myia-po-2024#gpu0` | RTX 3070 Laptop (cc 8.6), driver 610.88, torch 2.14.1+cu126 | 8 191 MiB | `myia-po-2024:CoursIA` — siège **monolane** worker (reporting CoursIA et CoursIA-2) | oui — aucune réservation permanente | 2026-10-25T15:20Z : 7 128 MiB libres, run papermill en vol (~1 GiB, ETA 17:00Z) ; `device_count = 1` | DM po-2024 |
 | `myia-po-2026` | — | — | — | **à mesurer** | carte **non reçue** | silence |
 
 **gpu0/gpu1 de ai-01 portent le vLLM de la flotte** et ne se réservent pas (mêmes slots sont consommés par le serving).
 
-Une carte manquante n'est **pas** une carte vide : `myia-po-2024` et `myia-po-2026`
-n'ont pas répondu à la demande, et rien dans ce registre ne dit qu'elles sont libres.
-Les deux lignes se remplissent à la réception, pas par déduction.
+Une carte manquante n'est **pas** une carte vide : `myia-po-2026` n'a pas répondu à la
+demande, et rien dans ce registre ne dit qu'elle est libre. Sa ligne se remplit à la
+réception, pas par déduction.
+
+**`myia-po-2024` a répondu le 2026-10-25T15:20Z, et sa carte corrige la table
+d'origine sur un point de structure** : le siège n'expose **qu'un seul device**
+(`device_count = 1`), alors que la table du 2026-10-08 lui prêtait `#gpu0` **et**
+`#gpu1`. Un second slot n'a jamais existé — il avait été déduit du nom de la machine,
+pas mesuré. C'est la raison d'être de la règle ci-dessus : une ligne « à confirmer »
+qui se remplit de mémoire fabrique un device.
+
+Le piège d'inversion `CVD`/`nvidia-smi` ne s'applique pas sur ce siège : avec un seul
+device, `CUDA_VISIBLE_DEVICES` non posé et `CVD=0` désignent la même carte.
 
 ### Piège d'indexation — mesuré sur `myia-po-2023` le 2026-10-25
 
@@ -273,6 +283,43 @@ ceux de `nvidia-smi`.
 - Aucun run GPU ne se lance sur un siège pendant sa **fenêtre UAC/Maintenance** :
   les deux se marcheraient dessus (constat po-2025).
 
+### Ce que le registre ne voit pas — mesuré sur le run ODM de `myia-po-2024` (#20386)
+
+Le smoke photogrammétrique ODM du 2026-10-25 (237,6 min, rc=0, 569 images) a été
+décrit comme un run « CPU-pur » dans le fil de #20386. **Il ne l'était pas** : la
+chaîne embarquait un **COLMAP 4.2.1 CUDA** dans le `tools\` de sa copie de travail,
+et l'étape SfM tournait sur le `gpu0` du siège. La répartition exacte GPU/CPU des
+237,6 min n'est pas re-mesurée — les logs sont locaux, hors dépôt.
+
+Le registre ne l'a pas vu. Ce n'est pas une déclaration manquante : c'est **ce que
+le registre est**. Trois raisons, et elles sont structurelles :
+
+1. **Il enregistre des réservations, pas de l'usage.** Un run local sur le siège de
+   sa propre lane ne poste pas de `held` — la carte est à lui par défaut. Un device
+   peut donc être chargé sans qu'aucune ligne n'existe.
+2. **La consommation venait d'une dépendance de la chaîne, pas du sujet déclaré.**
+   Le siège a décrit son run par ce qu'il calculait (photogrammétrie), pas par
+   l'outil qui allait tenir la carte (COLMAP CUDA). Personne ne mentait.
+3. **Le split CPU/GPU n'était mesuré par personne.** « CPU-pur » était une
+   **supposition** présentée comme un fait — la seule chose que la régie pouvait
+   objecter, et qu'elle n'a pas objectée à temps.
+
+**Deux conséquences, et la seconde est la seule qui se tienne dans le temps :**
+
+- **« CPU-only » sans mesure est une mesure absente, pas un verdict.** Un run de
+  plusieurs heures se déclare avec sa **classe de ressource** (CPU seul / GPU
+  probable / GPU certain), pas seulement avec son sujet.
+- **Une carte de siège doit nommer les toolchains qui embarquent du CUDA**, pas
+  seulement les cartes. `po-2024` porte COLMAP CUDA dans ses `tools\` : c'est une
+  capacité de consommation GPU qui n'apparaît nulle part dans `nvidia-smi` avant
+  le lancement.
+
+**Limite assumée** : la régie ne voit pas, depuis une autre machine, un run local
+démarré sans réservation. Il n'existe aucun canal pour sonder `nvidia-smi` à
+distance sur ce cluster. Le registre est donc aveugle par construction à tout run
+qui ne réserve pas — et la seule parade est que le siège déclare, ce que cet
+échange de DM vient précisément d'établir pour les cinq sièges mesurés.
+
 ### Protocole de récupération cross-machine (c.258)
 
 Le tenancier publie sa propre observation `[OBS]` sur le dashboard `CoursIA-gpu-reservation-ledger`. Pour récupérer l'observation d'une autre machine :
@@ -287,7 +334,7 @@ L'observation `[OBS]` d'un slot gpu0/gpu1 sur ai-01 est **interdite** : ces slot
 
 **Heuristique de discrimination vLLM / training** :
 - ai-01 : gpu0/gpu1 = vLLM (à ne **jamais** réserver), gpu2 = training. Seul siège de la flotte dans ce cas à ce jour.
-- Tous les autres sièges mesurés (`po-2023`, `po-2025`, `po-2027`, `po-2028`) exposent leurs devices en **training uniquement**, sans serving : leurs cartes le disent device par device, ce n'est plus une convention. `po-2024` et `po-2026` n'ont pas encore de carte — l'absence de serving n'y est **pas** établie.
+- Tous les autres sièges mesurés (`po-2023`, `po-2024`, `po-2025`, `po-2027`, `po-2028`) exposent leurs devices en **training uniquement**, sans serving : leurs cartes le disent device par device, ce n'est plus une convention. `po-2026` n'a pas encore de carte — l'absence de serving n'y est **pas** établie.
 
 ### Trigger de mise à jour
 
