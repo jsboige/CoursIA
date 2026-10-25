@@ -1,0 +1,258 @@
+{
+  "issue": 20222,
+  "gold": "MyIA.AI.Notebooks\\GenAI\\FallacyDetection\\data\\academic\\MAFALDA\\gold_standard_dataset.jsonl",
+  "table": "MyIA.AI.Notebooks\\GenAI\\FallacyDetection\\data\\academic\\logic_mafalda_to_argumentum.csv",
+  "pairs_total": 225,
+  "merged_duplicate_pairs": 3,
+  "joined_exact": 128,
+  "joined_bridge": 97,
+  "excluded_total": 44,
+  "excluded_by_label": {
+    "appeal to worse problems": 8,
+    "false dilemma": 18,
+    "nothing": 14,
+    "to clean": 4
+  },
+  "label_stats": {
+    "Appeal to Ridicule": {
+      "spans": 20,
+      "joined_exact": 0,
+      "joined_bridge": 20,
+      "excluded": 0,
+      "bridge": {
+        "to": "Appeal to emotion",
+        "rationale": "le ridicule est un appel emotionnel ; le L2 papier n'a pas d'entree dediee"
+      },
+      "reason": null
+    },
+    "ad hominem": {
+      "spans": 16,
+      "joined_exact": 16,
+      "joined_bridge": 0,
+      "excluded": 0,
+      "bridge": null,
+      "reason": null
+    },
+    "ad populum": {
+      "spans": 14,
+      "joined_exact": 0,
+      "joined_bridge": 14,
+      "excluded": 0,
+      "bridge": {
+        "to": "Appeal to popularity",
+        "rationale": "synonyme standard : ad populum = appel a la popularite (table : Appel a la bande)"
+      },
+      "reason": null
+    },
+    "appeal to (false) authority": {
+      "spans": 9,
+      "joined_exact": 0,
+      "joined_bridge": 9,
+      "excluded": 0,
+      "bridge": {
+        "to": "Appeal to authority",
+        "rationale": "variante typographique du meme concept"
+      },
+      "reason": null
+    },
+    "appeal to anger": {
+      "spans": 6,
+      "joined_exact": 0,
+      "joined_bridge": 6,
+      "excluded": 0,
+      "bridge": {
+        "to": "Appeal to emotion",
+        "rationale": "sous-type emotionnel du L2 Appeal to emotion"
+      },
+      "reason": null
+    },
+    "appeal to fear": {
+      "spans": 11,
+      "joined_exact": 11,
+      "joined_bridge": 0,
+      "excluded": 0,
+      "bridge": null,
+      "reason": null
+    },
+    "appeal to nature": {
+      "spans": 11,
+      "joined_exact": 11,
+      "joined_bridge": 0,
+      "excluded": 0,
+      "bridge": null,
+      "reason": null
+    },
+    "appeal to pity": {
+      "spans": 1,
+      "joined_exact": 0,
+      "joined_bridge": 1,
+      "excluded": 0,
+      "bridge": {
+        "to": "Appeal to emotion",
+        "rationale": "sous-type emotionnel du L2 Appeal to emotion"
+      },
+      "reason": null
+    },
+    "appeal to positive emotion": {
+      "spans": 3,
+      "joined_exact": 0,
+      "joined_bridge": 3,
+      "excluded": 0,
+      "bridge": {
+        "to": "Appeal to emotion",
+        "rationale": "sous-type emotionnel du L2 Appeal to emotion"
+      },
+      "reason": null
+    },
+    "appeal to tradition": {
+      "spans": 6,
+      "joined_exact": 6,
+      "joined_bridge": 0,
+      "excluded": 0,
+      "bridge": null,
+      "reason": null
+    },
+    "appeal to worse problems": {
+      "spans": 8,
+      "joined_exact": 0,
+      "joined_bridge": 0,
+      "excluded": 8,
+      "bridge": null,
+      "reason": "privation relative : aucune entree L2 honnete dans la table"
+    },
+    "causal oversimplification": {
+      "spans": 23,
+      "joined_exact": 0,
+      "joined_bridge": 23,
+      "excluded": 0,
+      "bridge": {
+        "to": "Causal fallacy",
+        "rationale": "sous-type causal : simplification abusive de la cause (L2 papier plus grossiere)"
+      },
+      "reason": null
+    },
+    "circular reasoning": {
+      "spans": 11,
+      "joined_exact": 11,
+      "joined_bridge": 0,
+      "excluded": 0,
+      "bridge": null,
+      "reason": null
+    },
+    "equivocation": {
+      "spans": 7,
+      "joined_exact": 7,
+      "joined_bridge": 0,
+      "excluded": 0,
+      "bridge": null,
+      "reason": null
+    },
+    "fallacy of division": {
+      "spans": 2,
+      "joined_exact": 2,
+      "joined_bridge": 0,
+      "excluded": 0,
+      "bridge": null,
+      "reason": null
+    },
+    "false analogy": {
+      "spans": 12,
+      "joined_exact": 12,
+      "joined_bridge": 0,
+      "excluded": 0,
+      "bridge": null,
+      "reason": null
+    },
+    "false causality": {
+      "spans": 13,
+      "joined_exact": 0,
+      "joined_bridge": 13,
+      "excluded": 0,
+      "bridge": {
+        "to": "False cause",
+        "rationale": "synonyme standard"
+      },
+      "reason": null
+    },
+    "false dilemma": {
+      "spans": 18,
+      "joined_exact": 0,
+      "joined_bridge": 0,
+      "excluded": 18,
+      "bridge": null,
+      "reason": "aucune entree L2 dans la table (mesure)"
+    },
+    "guilt by association": {
+      "spans": 8,
+      "joined_exact": 0,
+      "joined_bridge": 8,
+      "excluded": 0,
+      "bridge": {
+        "to": "Ad hominem",
+        "rationale": "sous-type reconnu de l'ad hominem (attaque par association)"
+      },
+      "reason": null
+    },
+    "hasty generalization": {
+      "spans": 28,
+      "joined_exact": 28,
+      "joined_bridge": 0,
+      "excluded": 0,
+      "bridge": null,
+      "reason": null
+    },
+    "nothing": {
+      "spans": 14,
+      "joined_exact": 0,
+      "joined_bridge": 0,
+      "excluded": 14,
+      "bridge": null,
+      "reason": "marqueur d'absence de sophisme (pas une paire evaluable)"
+    },
+    "slippery slope": {
+      "spans": 11,
+      "joined_exact": 11,
+      "joined_bridge": 0,
+      "excluded": 0,
+      "bridge": null,
+      "reason": null
+    },
+    "straw man": {
+      "spans": 13,
+      "joined_exact": 13,
+      "joined_bridge": 0,
+      "excluded": 0,
+      "bridge": null,
+      "reason": null
+    },
+    "to clean": {
+      "spans": 4,
+      "joined_exact": 0,
+      "joined_bridge": 0,
+      "excluded": 4,
+      "bridge": null,
+      "reason": "artefact operationnel du dataset, pas un sophisme"
+    },
+    "tu quoque": {
+      "spans": 3,
+      "joined_exact": 0,
+      "joined_bridge": 3,
+      "excluded": 0,
+      "bridge": {
+        "to": "Ad hominem",
+        "rationale": "sous-type reconnu de l'ad hominem (appel a l'hypocrisie)"
+      },
+      "reason": null
+    }
+  },
+  "family_counts": {
+    "Abus de langage": 19,
+    "Erreur de raisonnement": 24,
+    "Erreur mathématique": 64,
+    "Influence": 50,
+    "Insuffisance": 30,
+    "Obstruction": 38,
+    "Tricherie": 0
+  },
+  "note": "Ponts declares = subsumptions documentees (DECLARED_BRIDGES) ; rayer un pont et relancer retire ses paires sans toucher au reste. Unicite (texte, noeud) garantie a l'emission : les libelles fusionnes d'une paire demultipliee vivent dans source_labels."
+}

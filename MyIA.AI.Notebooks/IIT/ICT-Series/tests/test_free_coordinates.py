@@ -14,6 +14,11 @@ from ict.free_coordinates import (  # noqa: E402
     FixedSpacePredictor,
     OntologicalMove,
     apply_ontology,
+    authority_mechanism,
+    candidate_key,
+    compose_ontology,
+    composition_report,
+    competing_mechanisms,
     expansion_ontology,
     institutionalization,
     internal_move,
@@ -167,3 +172,107 @@ def test_surprise_structurelle_croit_avec_l_espace():
         FixedSpacePredictor(("a",)).surprise_structurelle()
         < FixedSpacePredictor(tuple("abcd")).surprise_structurelle()
     )
+
+
+# ---------------------------------------------------------------------------
+# Mecanismes concurrents et extensions composees (#20773)
+# ---------------------------------------------------------------------------
+
+
+def _eta_hypotheque() -> OntologicalMove:
+    return OntologicalMove(
+        proposer="bob",
+        new_concepts=("hypotheque",),
+        opened_actions={"hypotheque": ("nantir",)},
+    )
+
+
+def test_authority_lit_les_memes_votes_que_le_quorum():
+    g0 = _game()
+    eta = _eta_personne_morale()
+    votes = {"personne-morale": {"alice", "bob"}}
+    # quorum 2 : accepte ; anciennete (alice) : accepte ; anciennete (bob) : accepte
+    assert candidate_key(eta) == "personne-morale"
+    assert quorum_mechanism(g0, (eta,), votes=votes, quorum=2)[1] == (eta,)
+    assert authority_mechanism(g0, (eta,), votes, "alice") == (eta,)
+    votes_bob_seul = {"personne-morale": {"bob"}}
+    # quorum 2 refuse (1 suffrage), l'autorite bob admet — divergence sur les memes votes
+    assert quorum_mechanism(g0, (eta,), votes=votes_bob_seul, quorum=2)[1] == ()
+    assert authority_mechanism(g0, (eta,), votes_bob_seul, "bob") == (eta,)
+
+
+def test_competing_mechanisms_litige_et_politiques():
+    g0 = _game()
+    eta_pm = _eta_personne_morale()
+    eta_jargon = OntologicalMove(
+        proposer="alice",
+        new_concepts=("jargon-prive",),
+        opened_actions={"jargon-prive": ("jargonner",)},
+    )
+    votes = {
+        "personne-morale": {"alice", "bob"},
+        "jargon-prive": {"bob"},  # 1 suffrage : sous le quorum, soutenu par l'autorite
+    }
+    quorum = lambda g, p, v: quorum_mechanism(g, p, votes=v, quorum=2)[1]  # noqa: E731
+    anciennete = lambda g, p, v: authority_mechanism(g, p, v, "bob")  # noqa: E731
+    mechs = {"quorum": quorum, "anciennete": anciennete}
+    proposals = (eta_pm, eta_jargon)
+
+    g_and, acc_and, litiges = competing_mechanisms(g0, proposals, votes, mechs, policy="and")
+    g_or, acc_or, _ = competing_mechanisms(g0, proposals, votes, mechs, policy="or")
+
+    # le litige est exactement la candidature ou les regles divergent
+    assert litiges == ("jargon-prive",)
+    # conjonction : seules les candidatures admises par les deux passent
+    assert acc_and == (eta_pm,)
+    # disjonction : le litige passe aussi — meme votes, jeu public different
+    assert acc_or == (eta_pm, eta_jargon)
+    assert political_opening(g0, g_and) == 2
+    assert political_opening(g0, g_or) == 3
+    with pytest.raises(ValueError):
+        competing_mechanisms(g0, proposals, votes, mechs, policy="tirage")
+
+
+def test_composition_temoins_negatifs_disjoints_doivent_commuter():
+    """Temoins negatifs (#20773) : deux extensions ouvrant des actions DISJOINTES
+    commutent sur les quatre axes. Une non-commutativite mesuree sur ce cas
+    serait un defaut de l'organe, pas un resultat."""
+    g0 = _game()
+    eta_pm = _eta_personne_morale()  # ouvre signer, posseder
+    eta_hy = _eta_hypotheque()  # ouvre nantir — disjoint
+    rep = composition_report(g0, eta_pm, eta_hy)
+    assert rep["same_lexicon"] is True
+    assert rep["same_actions"] is True
+    assert rep["structural_commutativity"] is True
+    assert rep["payoff_commutativity"] is True
+    assert rep["payoff_conflicts"] == frozenset()
+    g12, g21 = compose_ontology(g0, (eta_pm, eta_hy)), compose_ontology(g0, (eta_hy, eta_pm))
+    assert g12.payoffs == g21.payoffs
+
+
+def test_composition_non_commutativite_de_paiement_sur_chevauchement():
+    """Deux coups ouvrant la MEME action : le langage commute (union), les
+    paiements non — le premier poseur capture la coordonnee (setdefault au
+    nom du proposeur). Dette d'irreversibilite de second ordre, mesuree."""
+    g0 = _game()
+    eta_pm = _eta_personne_morale()  # alice ouvre signer, posseder
+    eta_meme = OntologicalMove(
+        proposer="bob",
+        new_concepts=("titre-executoire",),
+        opened_actions={"titre-executoire": ("signer",)},  # chevauche signer
+    )
+    rep = composition_report(g0, eta_pm, eta_meme)
+    assert rep["structural_commutativity"] is True  # le langage et les coups commutent
+    assert rep["payoff_commutativity"] is False  # ... mais pas la distribution du pouvoir
+    assert rep["payoff_conflicts"] == frozenset({("alice", "signer"), ("bob", "signer")})
+    g12 = compose_ontology(g0, (eta_pm, eta_meme))
+    g21 = compose_ontology(g0, (eta_meme, eta_pm))
+    assert g12.payoffs[("alice", "signer")] == 1.0 and g12.payoffs[("bob", "signer")] == 0.5
+    assert g21.payoffs[("bob", "signer")] == 1.0 and g21.payoffs[("alice", "signer")] == 0.5
+
+
+def test_composition_irreversibilite_sadditionne_independamment_de_l_ordre():
+    eta_pm, eta_hy = _eta_personne_morale(), _eta_hypotheque()
+    d12 = irreversibility_debt(eta_pm) + irreversibility_debt(eta_hy)
+    d21 = irreversibility_debt(eta_hy) + irreversibility_debt(eta_pm)
+    assert d12 == d21 == 60.0  # 50.0 (personne morale) + 10.0 (defauts pose 1, undo 10)

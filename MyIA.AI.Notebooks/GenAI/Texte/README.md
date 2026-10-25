@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: GenAI-Texte
-pedagogical_count: 42
-breakdown: Texte=42
-maturity: BETA=37, DRAFT=3, ALPHA=2
+pedagogical_count: 44
+breakdown: Texte=44
+maturity: BETA=37, DRAFT=4, ALPHA=3
 -->
 
 [← Documentation GenAI](../README.md) | [↑ ..](../README.md) | [→ Semantic Kernel](../SemanticKernel/README.md)
@@ -20,7 +20,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 - **Raisonnement avancé** : modèles o4-mini, gpt-5-thinking
 - **Production enterprise** : gestion de sessions, retry, batch processing
 - **Déploiement local** : vLLM, quantification, optimisation des coûts
-- **Test-time scaling (ICR)** : routeur agentique, mémoire persistante, Tree-of-Thoughts sur CSP, courbes de scaling, raisonnement natif, plugins Semantic Kernel (notebooks 13 à 18, arc approfondi au-delà de NB-12)
+- **Test-time scaling (ICR)** : routeur agentique, évaluation d'agents (succès, coût, ablation, sûreté), mémoire persistante, Tree-of-Thoughts sur CSP, courbes de scaling, raisonnement natif, plugins Semantic Kernel (notebooks 13 à 18, arc approfondi au-delà de NB-12)
 - **Analyse linguistique (TAL)** : lemmatisation, dépendances syntaxiques, entités nommées avec spaCy, et leur comparaison à la tokenisation BPE (notebook 23)
 
 ## Contenu détaillé
@@ -37,7 +37,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
 | 3 | `3_Structured_Outputs.ipynb` | JSON Schema, Pydantic, mode strict, extraction de données | 55 min |
-| 3b | `3b_Typed_Decisions_System1.ipynb` | Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits et tête d'attention fine-tunée (jevlike) contre témoin classique, calibration (NLL, Brier, ECE, température), escalade, banc tiers CC0 hors domaine (v1/v2, chute mesurée) | 55 min |
+| 3b | `3b_Typed_Decisions_System1.ipynb` | Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits, tête d'attention fine-tunée (jevlike) et moteur de décision pré-entraîné (laya : zéro-shot puis fine-tuné) contre témoin classique, calibration (NLL, Brier, ECE, température), escalade, banc tiers CC0 hors domaine (v1/v2, chute mesurée) | 60 min |
 | 3c | `3c_Constrained_Decoding_Python.ipynb` | Décodage contraint au niveau du token : automate fini (DFA) codé à la main pour le format date ISO `\d{4}-\d{2}-\d{2}`, dérivation du masque de logits depuis les états de l'automate, génération pas à pas d'une date valide — le complément token-level du 3 (JSON Schema agit au niveau API, le masque agit sur la distribution elle-même) | — |
 | 4 | `4_Function_Calling.ipynb` | Tools API, appels parallèles, boucle agentique | 60 min |
 
@@ -72,6 +72,7 @@ Le notebook 12 introduit en Python pur les quatre moteurs d'inférence au moment
 | # | Notebook | Description | Durée |
 |---|----------|-------------|-------|
 | 13 | `13_Agentic_Orchestration.ipynb` | Routeur agentique : function calling (pont NB-04) pour laisser un LLM choisir le moteur par sous-tâche (mode "Agentic" d'ICR) | 60 min |
+| 13b | `13b_Agent_Evaluation.ipynb` | Versant **mesure** du 13 : taux de succès par correcteur déterministe, coût par trajectoire (tours/appels/tokens/latence), delta d'ablation (retrait d'un moteur de la boîte à outils) et sûreté (instruction hostile dissimulée dans le contenu d'un outil) ; route LLM déclarée à l'exécution (routeur DeepSeek self-hosted, repli OpenAI gpt-5.2 affiché), juge LLM avec garde-fou anti-biais A/B puis B/A, 3 exercices C.1 | 45 min |
 | 14 | `14_Persistent_Memory.ipynb` | Mémoire vectorielle persistante (baseline BoW + cosine, pont NB-05 RAG) qui rétrocède les leçons aux runs suivants (agent "Memory" d'ICR) | 55 min |
 | 14b | `14b_Paginated_Memory-Python.ipynb` | Mémoire paginée d'agent (Python) — fenêtre glissante, résumé progressif, éviction LRU/MRU, mémoire vectorielle paginée, mémoire multi-domaine ; 3 exercices (#18330) | 70 min |
 | 15 | `15_Tree_of_Thoughts_Search.ipynb` | Tree-of-Thoughts sur cryptarithmes (SEND+MORE=MONEY) : recherche DFS colonne par colonne avec propagation de retenue (pont séries Search/Sudoku) | 60 min |
@@ -126,6 +127,14 @@ Le notebook **22c** ferme la boucle ouverte par le 22 : après avoir *mesuré* l
 ### Tier 7 : Analyse linguistique (TAL)
 
 Les notebooks TAL classiques (23–26 : pipeline spaCy, n-grammes, CRF, PCFG/CYK) ont migré vers leur série dédiée : [`MyIA.AI.Notebooks/NLP/`](../../NLP/README.md) (EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271)). Cette série-ci reste centrée sur l'ingénierie des LLM — prompts, RAG, fine-tuning, scaling — et renvoie à la série NLP pour la tradition symbolique/probabiliste du traitement des langues.
+
+### Tier 8 : Du notebook à l'application
+
+Le notebook **23** franchit le dernier mur : le pipeline qui vivait dans des cellules devient un **service**. Le RAG du `05_RAG_Modern` (même corpus, même chunking, mêmes fonctions — extraction fidèle, chaque cellule citant son origine) est servi par une API **FastAPI** locale sur un port dynamique, testée par des appels `httpx` réels, puis exposé par une UI **Gradio** qui ne connaît que l'URL de l'API — jamais le pipeline. La leçon centrale est mesurée, pas affirmée : le transport pur HTTP coûte quelques millisecondes (médiane 2.0 ms sur 20 appels de `GET /health` au run commis), et sur `/query` le surcout de l'API est noyé dans la variance de génération — parfois négatif. Servir est une décision d'usage (qui peut appeler), pas de performance. Tous les services s'arrêtent proprement en fin de carnet. Le numéro 23 est réutilisé — les TAL historiques qui le portaient ont migré en série NLP (tier 7 ci-dessus).
+
+| # | Notebook | Description | Durée |
+|---|----------|-------------|-------|
+| 23 | `23_Du_Notebook_A_L_Application.ipynb` | **Servir le RAG du 05** : extraction fidèle du pipeline (corpus Lincoln-Douglas, chunking, embeddings, k-NN, génération citée) puis passage au service — API **FastAPI** (`/health`, `/query`) sur port dynamique testée par appels `httpx` réels, UI **Gradio** passant uniquement par l'API (test des sources déterministes : deux canaux, mêmes chunks), mesure du coût par couche (transport pur de l'ordre de la milliseconde, surcout `/query` noyé dans la variance de génération — négatif sur 2 questions sur 3 au run commis), normalisation des scalaires numpy pour le contrat JSON, arrêt propre des services, 3 exercices C.1 | — |
 
 ## Prérequis
 
@@ -244,7 +253,7 @@ Le fil rouge de cette série est la progression de l'interaction basique avec un
 
 4. **Tier 4** (production et local) : [8_Reasoning_Models](08_Reasoning_Models.ipynb) exploite les modèles raisonnants. [9_Production_Patterns](09_Production_Patterns.ipynb) couvre les patterns enterprise, complété par son **versant adversarial** [9b_Prompt_Security_RedTeam](09b_Prompt_Security_RedTeam.ipynb) qui attaque puis défend la stack self-hosted (injection directe/indirecte RAG, jailbreak, exfiltration). [10_LocalLlama](10_LocalLlama.ipynb) déploie le service (3 étages honnêtement nommés : local chez l'étudiant, auto-hébergé du cours, repli distant OpenRouter), [10b_Inference_Mechanics](10b_Inference_Mechanics.ipynb) construit le KV-cache puis relie son coût aux TTFT/ITL réels, et [11_Quantization](11_Quantization.ipynb) réduit l'empreinte des poids servis par vLLM.
 
-5. **Tier 5** (test-time scaling approfondi) : partant de [12_Test_Time_Scaling](12_Test_Time_Scaling.ipynb) (les quatre moteurs en Python pur), l'arc NB-13..18 décompose chaque facette de l'inférence au moment du test — orchestration agentique via function calling ([13](13_Agentic_Orchestration.ipynb)), mémoire persistante par similarité ([14](14_Persistent_Memory.ipynb)), mémoire paginée d'agent ([14b](14b_Paginated_Memory-Python.ipynb) : fenêtre glissante, résumé progressif, éviction, mémoire vectorielle paginée, mémoire multi-domaine), Tree-of-Thoughts sur des problèmes de recherche ([15](15_Tree_of_Thoughts_Search.ipynb)), courbes de scaling de Snell ([16](16_Scaling_Test_Time_Compute.ipynb)), raisonnement natif vs scaling hand-rolled ([17](17_Native_Reasoning_vs_Scaling.ipynb)), puis intégration Semantic Kernel ([18](18_Semantic_Kernel_Plugins.ipynb)).
+5. **Tier 5** (test-time scaling approfondi) : partant de [12_Test_Time_Scaling](12_Test_Time_Scaling.ipynb) (les quatre moteurs en Python pur), l'arc NB-13..18 décompose chaque facette de l'inférence au moment du test — orchestration agentique via function calling ([13](13_Agentic_Orchestration.ipynb)), évaluation d'agents — succès, coût, ablation, sûreté ([13b](13b_Agent_Evaluation.ipynb)), mémoire persistante par similarité ([14](14_Persistent_Memory.ipynb)), mémoire paginée d'agent ([14b](14b_Paginated_Memory-Python.ipynb) : fenêtre glissante, résumé progressif, éviction, mémoire vectorielle paginée, mémoire multi-domaine), Tree-of-Thoughts sur des problèmes de recherche ([15](15_Tree_of_Thoughts_Search.ipynb)), courbes de scaling de Snell ([16](16_Scaling_Test_Time_Compute.ipynb)), raisonnement natif vs scaling hand-rolled ([17](17_Native_Reasoning_vs_Scaling.ipynb)), puis intégration Semantic Kernel ([18](18_Semantic_Kernel_Plugins.ipynb)).
 
 Le schéma ci-dessous résume comment les cinq tiers s'enchaînent pour maîtriser les LLMs : du prompt one-shot (tier 1) aux patterns de production puis à l'arc test-time scaling approfondi (tiers 4-5), en passant par les sorties structurées (tier 2) et l'augmentation RAG/code interpreter (tier 3).
 

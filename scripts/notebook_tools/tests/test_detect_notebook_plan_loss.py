@@ -314,6 +314,42 @@ class TestScan:
         assert len(found) >= 1
         assert any(f["mode"] == "SUBSTANCE_FOUND_INLINE_BOLD" for f in found)
 
+    def test_retrogradation_bold_label_suivi_de_liste_no_finding(self, tmp_path: Path):
+        # Variante #20777 : le label bold est colle a sa liste numerotee
+        # (`**Instructions**:` puis `1. ...` a la ligne, SANS ligne vide).
+        # Le lookahead `\n\n` de _BOLD_INLINE_RE rendait le bloc invisible a
+        # la passe 2 -> LOST_SECTION faux positif. Mesure fondatrice :
+        # re-rendu EN de 01-2-GPT-5-Image-Generation (PR #20777), base
+        # cellule 26 `### Instructions`, head label bold + liste collee.
+        nb_base = _nb(
+            _md("# Plan\n\n"),
+            _md("### Instructions\n\nChoisir un domaine puis generer.\n"),
+        )
+        nb_head = _nb(
+            _md("# Plan\n\n"),
+            _md("**Instructions**:\n1. **Choose a domain** among the use cases\n"
+                "2. **Generate** the three texts\n"),
+        )
+        import subprocess
+        p = tmp_path / "label_list.ipynb"
+        _write_nb(p, nb_base)
+        subprocess.run(["git", "-C", str(tmp_path), "init", "-q"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.email", "t@t.t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "config", "user.name", "t"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "add", "label_list.ipynb"], check=True)
+        subprocess.run(["git", "-C", str(tmp_path), "commit", "-m", "b", "-q"], check=True)
+        _write_nb(p, nb_head)
+
+        result = dpl.scan_notebook(p, base_ref="HEAD", head_ref=None)
+        assert "error" not in result
+        kinds = [f["kind"] for f in result["findings"]]
+        assert "LOST_SECTION" not in kinds
+        assert any(
+            f["kind"] == "SUBSTANCE_FOUND"
+            and f.get("mode") == "SUBSTANCE_FOUND_INLINE_BOLD"
+            for f in result["findings"]
+        )
+
     def test_accent_normalization_no_finding(self, tmp_path: Path):
         # Une re-accentuation honnete `Prerequis` -> `Prérequis` ne doit PAS
         # lever de LOST_SECTION (la normalisation NFKD absorbe).

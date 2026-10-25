@@ -34,7 +34,6 @@ name: quarto-render-list-freshness
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/**/README.md'
       - 'MyIA.AI.Notebooks/**/*.ipynb'
@@ -127,7 +126,7 @@ jobs:
           set -euo pipefail
           : > /tmp/scan_status.txt
           set +e
-          python scripts/regen_quarto_render.py --check 2>&1 | sed 's/^::error::/[quarto-drift] /'
+          python3 scripts/regen_quarto_render.py --check 2>&1 | sed 's/^::error::/[quarto-drift] /'
           PY_RC=${PIPESTATUS[0]}
           set -e
           echo "python_rc=${PY_RC}" >> /tmp/scan_status.txt
@@ -157,5 +156,5 @@ jobs:
         # _quarto.yml. La sortie `--check` post-regen doit etre rc=0.
         run: |
           set -euo pipefail
-          python scripts/regen_quarto_render.py 2>&1 | tail -1
-          python scripts/regen_quarto_render.py --check 2>&1 | tail -1
+          python3 scripts/regen_quarto_render.py 2>&1 | tail -1
+          python3 scripts/regen_quarto_render.py --check 2>&1 | tail -1

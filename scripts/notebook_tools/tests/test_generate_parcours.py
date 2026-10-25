@@ -114,40 +114,67 @@ class TestFilterForParcours:
 # generate_parcours_page
 # ---------------------------------------------------------------------------
 
+@pytest.fixture()
+def nb_root(tmp_path):
+    """Materialise les carnets de SAMPLE_ENTRIES (chemins fictifs) sur disque.
+
+    generate_parcours_page ne partitionne que sur l'EXISTENCE du fichier ;
+    le contenu "{}" suffit (JSON valide, jamais ouvert ici).
+    """
+    for e in SAMPLE_ENTRIES:
+        p = tmp_path / e["path"]
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("{}", encoding="utf-8")
+    return tmp_path
+
+
 class TestGenerateParcoursPage:
-    def test_has_title(self):
+    def test_has_title(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
-        page = generate_parcours_page("ia-classique", entries)
+        page = generate_parcours_page("ia-classique", entries, notebooks_root=nb_root)
         assert "# IA Classique" in page
 
-    def test_has_subtitle(self):
+    def test_has_subtitle(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
-        page = generate_parcours_page("ia-classique", entries)
+        page = generate_parcours_page("ia-classique", entries, notebooks_root=nb_root)
         assert "Recherche, CSP et résolution" in page
 
-    def test_has_statistics(self):
+    def test_has_statistics(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
-        page = generate_parcours_page("ia-classique", entries)
+        page = generate_parcours_page("ia-classique", entries, notebooks_root=nb_root)
         assert "## Statistiques" in page
         assert "| Notebooks |" in page
         assert "| PRODUCTION |" in page
 
-    def test_notebook_count_matches(self):
+    def test_notebook_count_matches(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
-        page = generate_parcours_page("ia-classique", entries)
+        page = generate_parcours_page("ia-classique", entries, notebooks_root=nb_root)
         assert f"| Notebooks | {len(entries)} |" in page
 
-    def test_has_table_rows(self):
+    def test_has_table_rows(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "genai")
-        page = generate_parcours_page("genai", entries)
+        page = generate_parcours_page("genai", entries, notebooks_root=nb_root)
         assert "| Notebook |" in page
         assert "Maturité" in page
 
-    def test_executable_column(self):
+    def test_executable_column(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "genai")
-        page = generate_parcours_page("genai", entries)
+        page = generate_parcours_page("genai", entries, notebooks_root=nb_root)
         assert "Oui" in page
         assert "Non" in page
+
+    def test_absent_entry_skipped_not_counted(self, nb_root):
+        """#20552 : entree absente du disque -> pas comptee, pas emise, signalee."""
+        entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
+        ghost = dict(entries[0], path="Search/Part1/Search-1-Renamed.ipynb", title="Ghost Renamed")
+        unresolved: list[str] = []
+        page = generate_parcours_page(
+            "ia-classique", entries + [ghost],
+            unresolved=unresolved, notebooks_root=nb_root,
+        )
+        assert f"| Notebooks | {len(entries)} |" in page
+        assert "Ghost Renamed" not in page
+        assert unresolved == [ghost["path"]]
 
     def test_empty_entries(self):
         page = generate_parcours_page("ia-classique", [])
@@ -784,3 +811,130 @@ class TestFailClosedWrite:
         assert MANUAL_BODY.splitlines()[0] in poisoned.read_text(encoding="utf-8")
         summary = capsys.readouterr().err
         assert "genai.md" in summary
+
+
+# ---------------------------------------------------------------------------
+# resolve_moved_entries -- carnet renomme sur disque, catalogue en retard (#20552)
+# ---------------------------------------------------------------------------
+
+def _write_nb(path: Path, title: str, code: str) -> dict:
+    """Ecrit un carnet minimal (1 titre markdown, 1 cellule de code) et le rend."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    nb = {
+        "cells": [
+            {"cell_type": "markdown", "metadata": {}, "source": [f"# {title}\n"]},
+            {"cell_type": "code", "metadata": {}, "source": [code],
+             "outputs": [], "execution_count": None},
+        ],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5,
+    }
+    path.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    return nb
+
+
+def _stale_entry(path: str, code_sha: str) -> dict:
+    """Entree de catalogue dont le chemin n'existe plus (titre et chemin perimes)."""
+    return {
+        "path": path, "title": "GameTheory-03d — Titre perime", "serie": "GameTheory",
+        "maturity": "BETA", "status": "READY", "executable_locally": True,
+        "scientific_review_detail": {"code_sha": code_sha},
+    }
+
+
+class TestResolveMovedEntries:
+    OLD = "GameTheory/GameTheory-03e-Plan-de-deformation-Python.ipynb"
+    NEW = "GameTheory/Dynamics/Dynamics-09-Biens-Publics-Python.ipynb"
+
+    @pytest.fixture
+    def root(self, tmp_path):
+        root = tmp_path / "MyIA.AI.Notebooks"
+        root.mkdir()
+        return root
+
+    def test_moved_notebook_is_relocated_with_its_own_title(self, root):
+        nb = _write_nb(root / self.NEW, "Dynamics 09 — Biens publics", "x = 1\n")
+        entry = _stale_entry(self.OLD, generate_catalog.code_source_sha(nb))
+
+        [out] = gp.resolve_moved_entries([entry], root=root)
+
+        assert out["path"] == self.NEW
+        assert out["title"] == "Dynamics 09 — Biens publics"
+        # Les metadonnees curees de l'entree (maturite, exécutabilite) suivent.
+        assert out["maturity"] == "BETA"
+        assert out["executable_locally"] is True
+
+    def test_page_links_to_real_file_instead_of_bare_stale_label(
+            self, root, tmp_path, monkeypatch):
+        monkeypatch.setattr(gp, "REPO_ROOT", tmp_path)
+        nb = _write_nb(root / self.NEW, "Dynamics 09 — Biens publics", "x = 1\n")
+        entries = [_stale_entry(self.OLD, generate_catalog.code_source_sha(nb))]
+
+        located = gp.resolve_moved_entries(entries, root=root)
+        page = generate_parcours_page(
+            "recherche", filter_for_parcours(located, "recherche"))
+
+        assert (f"| 1 | [Dynamics 09 — Biens publics](../../MyIA.AI.Notebooks/{self.NEW}) "
+                "| BETA | Oui |") in page
+        assert "Titre perime" not in page
+        assert "GameTheory-03d" not in page
+
+    def test_ambiguous_identity_keeps_entry_untouched(self, root):
+        code = "x = 1\n"
+        nb = _write_nb(root / "GameTheory/Dynamics/A.ipynb", "A", code)
+        _write_nb(root / "GameTheory/Dynamics/B.ipynb", "B", code)
+        entry = _stale_entry(self.OLD, generate_catalog.code_source_sha(nb))
+
+        [out] = gp.resolve_moved_entries([entry], root=root)
+
+        assert out is entry, "deux candidats au meme code : pas d'attribution fiable"
+
+    def test_two_missing_entries_on_one_candidate_are_not_attributed(self, root):
+        nb = _write_nb(root / self.NEW, "Dynamics 09", "x = 1\n")
+        sha = generate_catalog.code_source_sha(nb)
+        first = _stale_entry(self.OLD, sha)
+        second = _stale_entry("GameTheory/GameTheory-03x-Copie-Python.ipynb", sha)
+
+        out = gp.resolve_moved_entries([first, second], root=root)
+
+        assert out == [first, second]
+
+    def test_candidate_already_indexed_is_not_a_move_target(self, root):
+        nb = _write_nb(root / self.NEW, "Dynamics 09", "x = 1\n")
+        sha = generate_catalog.code_source_sha(nb)
+        # Le catalogue indexe deja le carnet a son chemin : ce n'est pas un
+        # deplacement de l'entree manquante, c'est une copie.
+        indexed = {"path": self.NEW, "title": "Dynamics 09", "serie": "GameTheory",
+                   "maturity": "BETA", "status": "READY", "executable_locally": True,
+                   "scientific_review_detail": {"code_sha": sha}}
+        stale = _stale_entry(self.OLD, sha)
+
+        out = gp.resolve_moved_entries([indexed, stale], root=root)
+
+        assert out[1] is stale
+
+    def test_archived_copy_is_not_a_move_target(self, root):
+        nb = _write_nb(root / "GameTheory/archive/Dynamics-09-old.ipynb", "Dynamics 09",
+                       "x = 1\n")
+        entry = _stale_entry(self.OLD, generate_catalog.code_source_sha(nb))
+
+        [out] = gp.resolve_moved_entries([entry], root=root)
+
+        assert out is entry, "le catalogue n'indexe pas les archives : pas une cible"
+
+    def test_markdown_only_anchor_is_never_matched(self, root):
+        md_only = {"cells": [{"cell_type": "markdown", "metadata": {},
+                              "source": ["# Texte seul\n"]}],
+                   "metadata": {}, "nbformat": 4, "nbformat_minor": 5}
+        (root / self.NEW).parent.mkdir(parents=True)
+        (root / self.NEW).write_text(json.dumps(md_only), encoding="utf-8")
+        entry = _stale_entry(self.OLD, generate_catalog.code_source_sha(md_only))
+
+        [out] = gp.resolve_moved_entries([entry], root=root)
+
+        assert out is entry, "l'empreinte sans code n'identifie aucun carnet"
+
+    def test_entries_on_disk_are_returned_unchanged(self, root):
+        nb = _write_nb(root / self.NEW, "Dynamics 09", "x = 1\n")
+        entries = [_stale_entry(self.NEW, generate_catalog.code_source_sha(nb))]
+
+        assert gp.resolve_moved_entries(entries, root=root) is entries

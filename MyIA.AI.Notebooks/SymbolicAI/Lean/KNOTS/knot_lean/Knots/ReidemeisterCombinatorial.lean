@@ -57,16 +57,16 @@ tactiques Lean, les noms de lemmes et les références Mathlib restent en anglai
 diffèrent entre les deux fichiers.
 
 Statut : l'énumération réelle des témoins à un mouvement est en place
-(`#19890` — R1/R2 avant et arrière, R3 avant), `oneStepWitnesses_sound`
-est prouvé par construction, et `verifyMoves_sound` est totale. Le témoin
-concret `Lidman:81` (`unknotting_11n102_upper`) reste la cible des passes
-suivantes, et l'inverse du move R3 est un travail futur documenté.
+(`#19890` — R1/R2 avant et arrière, R3 avant ; R3 arrière via le pont
+`reidemeister3ConnectedInv_direct`), `oneStepWitnesses_sound` est prouvé par
+construction, et `verifyMoves_sound` est totale. Le témoin concret
+`Lidman:81` (`unknotting_11n102_upper`) reste la cible des passes suivantes.
 -/
 
 import Knots.Reidemeister
 import Knots.Invariant
 
-namespace Knots
+namespace Knots.Combinatorial
 
 /-! ## 1. Suite de mouvements — inductive indexé
 
@@ -149,6 +149,10 @@ bornes utiles en pratique (n ≤ 4), le branching factor reste dominé par
 évitant les symétries triviales (`ReidemeisterEquiv.symm`, `trans`).
 -/
 
+end Knots.Combinatorial
+
+namespace Knots
+
 /-- Vue d'un `ReidemeisterStep` sous forme de constructeur pur (sans `d₂`
 existentiel). Utilisée par l'algorithme pour reconstruire le diagramme cible
 à chaque pas. -/
@@ -184,9 +188,13 @@ Portée de l'énumération :
   ARRIÈRE (contraction d'un kink terminal) ;
 - **R2** : bigons AVANT et ARRIÈRE (contraction d'une paire de kinks
   terminale) ;
-- **R3** : moves triangulaires AVANT — la direction inverse est un travail
-  futur documenté sur `Reidemeister3Connected` (le move n'est pas symétrique
-  par construction : la bijection à Sat égal n'est pas involutive).
+- **R3** : moves triangulaires AVANT et ARRIÈRE. La direction inverse est
+  prouvée par le pont `reidemeister3ConnectedInv_direct` : la fenêtre Y
+  reconnue dans `d` et la source X reconstruite forment un couple
+  `Reidemeister3ConnectedInv` définitionnel, converti en relation directe sur
+  le couple renversé (le move n'est pas symétrique par construction : la
+  bijection à Sat égal n'est pas involutive, d'où le pont plutôt qu'une
+  réutilisation de la relation telle quelle).
 
 Chaque candidat est filtré par les gardes décidables exactes de la relation
 (`wf` des deux côtés, `Nodup` des labels R3, forme kink pour les
@@ -198,6 +206,10 @@ porteurs de preuve : chaque option de slot est émise AVEC la disjonction qui
 la justifie dans `isRenameOf` / `isDoubleRenameOf`, ce qui évite tout lemme
 d'appartenance a posteriori.
 -/
+
+end Knots
+
+namespace Knots.Combinatorial
 
 /-- Un témoin d'un mouvement : le diagramme cible et la preuve du
 `ReidemeisterStep`, construits au même site d'énumération. -/
@@ -236,6 +248,22 @@ theorem list_get_set_self {l : List PDCrossing} {i : Nat} (a : PDCrossing)
     (h : i < (l.set i a).length) : (l.set i a).get ⟨i, h⟩ = a := by
   rw [List.get_eq_getElem, List.getElem_set_self]
 
+/-- Lire le slot `j` juste après avoir réécrit un AUTRE slot `k` rend la
+valeur d'origine (`k ≠ j`). -/
+theorem list_get_set_ne (l : List PDCrossing) (k j : Nat) (v : PDCrossing)
+    (hk : k ≠ j) (hj : j < l.length) :
+    (l.set k v).get ⟨j, by simp only [List.length_set]; omega⟩
+      = l.get ⟨j, hj⟩ :=
+  List.getElem_set_ne hk (by simp only [List.length_set]; omega)
+
+/-- Transporter un `get` le long d'une égalité de listes (évite le `▸`,
+dont le motive échoue sur les preuves `Fin` dépendantes). -/
+theorem list_get_map (L M : List PDCrossing) (e : L = M) (j : Nat)
+    (hj : j < L.length) :
+    L.get ⟨j, hj⟩ = M.get ⟨j, by rw [← e]; omega⟩ := by
+  cases e
+  rfl
+
 /-- Options d'un slot pour `isRenameOf c a b` (R1 avant) : un slot valant
 `a` peut se préserver ou devenir `b` ; tout autre slot se préserve. Chaque
 option est émise avec sa preuve. -/
@@ -271,6 +299,11 @@ def unRename2Opts (y o₁ o₂ a : Nat) :
     [⟨y, Or.inl rfl⟩, ⟨a, Or.inr (Or.inr ⟨hy2, rfl⟩)⟩]
   else
     [⟨y, Or.inl rfl⟩]
+
+end Knots.Combinatorial
+
+namespace Knots
+open Knots.Combinatorial (renameOptsWith rename2OptsWith unRenameOptsWith unRename2Opts)
 
 /-- Tous les renommés R1 de `c`, preuve `isRenameOf` attachée. -/
 def PDCrossing.allRenamesWith (c : PDCrossing) (a b : Nat) :
@@ -308,6 +341,10 @@ def PDCrossing.allUnDoubleRenamesWith (Y' : PDCrossing) (a o₁ o₂ : Nat) :
       (unRename2Opts Y'.e3 o₁ o₂ a).flatMap fun e3 =>
         (unRename2Opts Y'.e4 o₁ o₂ a).map fun e4 =>
           ⟨⟨e1.1, e2.1, e3.1, e4.1⟩, ⟨e1.2, e2.2, e3.2, e4.2⟩⟩
+
+end Knots
+
+namespace Knots.Combinatorial
 
 /-- Arcs candidats de `d` (bornes et appartenance prouvées). -/
 def arcCandidatesWith (d : KnotDiagram) :
@@ -544,10 +581,204 @@ def r3ForwardWitnesses (d : KnotDiagram) : List (StepWitness d) :=
       else []
     else []
 
+/-! ### Pont Inv → Direct renversé
+
+`reidemeister3Connected_inv` (`Knots.Reidemeister`) va du move direct vers
+l'inverse sur le couple renversé ; l'énumération ci-dessous a besoin du sens
+symétrique : une fenêtre Y reconnue dans `d` et une source X reconstruite
+forment un couple `Reidemeister3ConnectedInv d d'` **définitionnel** (gets
+`rfl`, chirurgie `rfl`), et c'est le move **direct** sur le couple renversé
+que `ReidemeisterStep.r3 (Or.inr …)` consomme. La preuve est le jumeau de
+`reidemeister3Connected_inv`, layouts X et Y échangés : gets de `d₂` par
+pelures de `List.set`, chirurgie par `List.ext_get` position par position.
+-/
+
+/-- Si `d₂` est obtenu de `d₁` par la chirurgie inverse (move Y → X), alors le
+couple renversé satisfait le move direct (X → Y). Aucune hypothèse
+additionnelle — la relation inverse est le move direct lu dans l'autre sens. -/
+theorem reidemeister3ConnectedInv_direct {d₁ d₂ : KnotDiagram}
+    (h : Reidemeister3ConnectedInv d₁ d₂) :
+    Reidemeister3Connected d₂ d₁ := by
+  obtain ⟨w1, w2, hl, he, i, hi, a₁, a₂, a₃, b₁, b₂, b₃, g₁, g₂, g₃,
+          hnd, g0, g1', g2', surg⟩ := h
+  refine ⟨w2, w1, hl.symm, he.symm,
+          ⟨i, by rw [surg]; simp only [List.length_set]; omega, a₁, a₂, a₃,
+            b₁, b₂, b₃, g₁, g₂, g₃, hnd, ?_, ?_, ?_, ?_⟩⟩
+  · -- d₂.get i = X₁ : sets (i+2) et (i+1) transparents, set i écrit
+    have hd2 : i < d₂.crossings.length := by
+      rw [surg]; simp only [List.length_set]; omega
+    exact (list_get_map d₂.crossings (((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1)
+        ⟨a₃, g₁, g₃, b₃⟩).set (i + 2) ⟨g₃, g₂, b₂, b₁⟩) surg i hd2).trans
+      ((list_get_set_ne ((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1)
+          ⟨a₃, g₁, g₃, b₃⟩) (i + 2) i ⟨g₃, g₂, b₂, b₁⟩ (by omega)
+          (by simp only [List.length_set]; omega)).trans
+      ((list_get_set_ne (d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩) (i + 1) i
+          ⟨a₃, g₁, g₃, b₃⟩ (by omega)
+          (by simp only [List.length_set]; omega)).trans
+        (list_get_set_self ⟨a₂, a₁, g₁, g₂⟩
+          (by simp only [List.length_set]; omega))))
+  · -- d₂.get (i+1) = X₂ : set (i+2) transparent, set (i+1) écrit
+    have hd2 : i + 1 < d₂.crossings.length := by
+      rw [surg]; simp only [List.length_set]; omega
+    exact (list_get_map d₂.crossings (((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1)
+        ⟨a₃, g₁, g₃, b₃⟩).set (i + 2) ⟨g₃, g₂, b₂, b₁⟩) surg (i + 1) hd2).trans
+      ((list_get_set_ne ((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1)
+          ⟨a₃, g₁, g₃, b₃⟩) (i + 2) (i + 1) ⟨g₃, g₂, b₂, b₁⟩ (by omega)
+          (by simp only [List.length_set]; omega)).trans
+        (list_get_set_self ⟨a₃, g₁, g₃, b₃⟩
+          (by simp only [List.length_set]; omega)))
+  · -- d₂.get (i+2) = X₃ : écrit par le set externe
+    have hd2 : i + 2 < d₂.crossings.length := by
+      rw [surg]; simp only [List.length_set]; omega
+    exact (list_get_map d₂.crossings (((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set (i + 1)
+        ⟨a₃, g₁, g₃, b₃⟩).set (i + 2) ⟨g₃, g₂, b₂, b₁⟩) surg (i + 2) hd2).trans
+      (list_get_set_self ⟨g₃, g₂, b₂, b₁⟩
+        (by simp only [List.length_set]; omega))
+  · -- chirurgie : Y → X → Y rétablit l'original. Les six `set` se
+    -- surchargent dernier-gagnant aux indices i, i+1, i+2 ; ailleurs ils
+    -- sont transparents — `List.ext_get` par position.
+    rw [surg]
+    apply List.ext_get
+    · simp only [List.length_set]
+    · intro n hn1 hn2
+      rcases Nat.lt_trichotomy n i with hlt | heq | hgt
+      · -- n < i : les six sets sont transparents à l'indice n
+        have e1 := list_get_set_ne (((((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set
+            (i + 1) ⟨a₃, g₁, g₃, b₃⟩).set (i + 2) ⟨g₃, g₂, b₂, b₁⟩).set
+            i ⟨a₃, b₃, g₃, g₁⟩).set (i + 1) ⟨g₃, a₁, b₂, g₂⟩) (i + 2) n
+            ⟨g₁, g₂, a₂, b₁⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e2 := list_get_set_ne ((((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set
+            (i + 1) ⟨a₃, g₁, g₃, b₃⟩).set (i + 2) ⟨g₃, g₂, b₂, b₁⟩).set
+            i ⟨a₃, b₃, g₃, g₁⟩) (i + 1) n ⟨g₃, a₁, b₂, g₂⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e3 := list_get_set_ne (((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set
+            (i + 1) ⟨a₃, g₁, g₃, b₃⟩).set (i + 2) ⟨g₃, g₂, b₂, b₁⟩) i n
+            ⟨a₃, b₃, g₃, g₁⟩ (by omega : i ≠ n)
+            (by simp only [List.length_set]; omega)
+        have e4 := list_get_set_ne ((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set
+            (i + 1) ⟨a₃, g₁, g₃, b₃⟩) (i + 2) n ⟨g₃, g₂, b₂, b₁⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e5 := list_get_set_ne (d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩) (i + 1) n
+            ⟨a₃, g₁, g₃, b₃⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e6 := list_get_set_ne d₁.crossings i n ⟨a₂, a₁, g₁, g₂⟩
+            (by omega : i ≠ n) hn1
+        exact (e1.trans (e2.trans (e3.trans (e4.trans (e5.trans e6))))).symm
+      · -- n = i : le set Y₁ est dernier écrit ; g0 dit que d₁ porte déjà Y₁
+        -- (subst élimine i)
+        subst heq
+        have e1 := list_get_set_ne (((((d₁.crossings.set n ⟨a₂, a₁, g₁, g₂⟩).set
+            (n + 1) ⟨a₃, g₁, g₃, b₃⟩).set (n + 2) ⟨g₃, g₂, b₂, b₁⟩).set
+            n ⟨a₃, b₃, g₃, g₁⟩).set (n + 1) ⟨g₃, a₁, b₂, g₂⟩) (n + 2) n
+            ⟨g₁, g₂, a₂, b₁⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e2 := list_get_set_ne ((((d₁.crossings.set n ⟨a₂, a₁, g₁, g₂⟩).set
+            (n + 1) ⟨a₃, g₁, g₃, b₃⟩).set (n + 2) ⟨g₃, g₂, b₂, b₁⟩).set
+            n ⟨a₃, b₃, g₃, g₁⟩) (n + 1) n ⟨g₃, a₁, b₂, g₂⟩ (by omega)
+            (by simp only [List.length_set]; omega)
+        have e3 := list_get_set_self (l := (((d₁.crossings.set n ⟨a₂, a₁, g₁, g₂⟩).set
+            (n + 1) ⟨a₃, g₁, g₃, b₃⟩).set (n + 2) ⟨g₃, g₂, b₂, b₁⟩)) (i := n)
+            ⟨a₃, b₃, g₃, g₁⟩ (by simp only [List.length_set]; omega)
+        exact g0.trans (e1.trans (e2.trans e3)).symm
+      · -- i < n : trois sous-cas
+        rcases Nat.lt_trichotomy n (i + 1) with hlt2 | heq2 | hgt2
+        · -- n < i + 1 : impossible (hgt : i < n)
+          omega
+        · -- n = i+1 : le set Y₂ est dernier écrit ; g1' dit que d₁ porte Y₂
+          -- (subst élimine n)
+          subst heq2
+          have e1 := list_get_set_ne (((((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set
+              (i + 1) ⟨a₃, g₁, g₃, b₃⟩).set (i + 2) ⟨g₃, g₂, b₂, b₁⟩).set
+              i ⟨a₃, b₃, g₃, g₁⟩).set (i + 1) ⟨g₃, a₁, b₂, g₂⟩) (i + 2)
+              (i + 1) ⟨g₁, g₂, a₂, b₁⟩ (by omega)
+              (by simp only [List.length_set]; omega)
+          have e2 := list_get_set_self (l := ((((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set
+              (i + 1) ⟨a₃, g₁, g₃, b₃⟩).set (i + 2) ⟨g₃, g₂, b₂, b₁⟩).set
+              i ⟨a₃, b₃, g₃, g₁⟩)) (i := i + 1) ⟨g₃, a₁, b₂, g₂⟩
+              (by simp only [List.length_set]; omega)
+          exact g1'.trans (e1.trans e2).symm
+        · rcases Nat.lt_trichotomy n (i + 2) with hlt3 | heq3 | hgt3
+          · -- n < i + 2 : impossible (hgt2 : i + 1 < n)
+            omega
+          · -- n = i+2 : le set Y₃ est dernier écrit ; g2' dit que d₁ porte
+            -- Y₃ (subst élimine n)
+            subst heq3
+            exact g2'.trans (list_get_set_self ⟨g₁, g₂, a₂, b₁⟩
+              (by simp only [List.length_set]; omega)).symm
+          · -- i+2 < n : les six sets sont transparents à l'indice n
+            have e1 := list_get_set_ne (((((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set
+                (i + 1) ⟨a₃, g₁, g₃, b₃⟩).set (i + 2) ⟨g₃, g₂, b₂, b₁⟩).set
+                i ⟨a₃, b₃, g₃, g₁⟩).set (i + 1) ⟨g₃, a₁, b₂, g₂⟩) (i + 2) n
+                ⟨g₁, g₂, a₂, b₁⟩ (by omega)
+                (by simp only [List.length_set]; omega)
+            have e2 := list_get_set_ne ((((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set
+                (i + 1) ⟨a₃, g₁, g₃, b₃⟩).set (i + 2) ⟨g₃, g₂, b₂, b₁⟩).set
+                i ⟨a₃, b₃, g₃, g₁⟩) (i + 1) n ⟨g₃, a₁, b₂, g₂⟩ (by omega)
+                (by simp only [List.length_set]; omega)
+            have e3 := list_get_set_ne (((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set
+                (i + 1) ⟨a₃, g₁, g₃, b₃⟩).set (i + 2) ⟨g₃, g₂, b₂, b₁⟩) i n
+                ⟨a₃, b₃, g₃, g₁⟩ (by omega : i ≠ n)
+                (by simp only [List.length_set]; omega)
+            have e4 := list_get_set_ne ((d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩).set
+                (i + 1) ⟨a₃, g₁, g₃, b₃⟩) (i + 2) n ⟨g₃, g₂, b₂, b₁⟩ (by omega)
+                (by simp only [List.length_set]; omega)
+            have e5 := list_get_set_ne (d₁.crossings.set i ⟨a₂, a₁, g₁, g₂⟩) (i + 1) n
+                ⟨a₃, g₁, g₃, b₃⟩ (by omega)
+                (by simp only [List.length_set]; omega)
+            have e6 := list_get_set_ne d₁.crossings i n ⟨a₂, a₁, g₁, g₂⟩
+                (by omega : i ≠ n) hn1
+            exact (e1.trans (e2.trans (e3.trans (e4.trans (e5.trans e6))))).symm
+
+/-- R3 ARRIÈRE : move triangulaire inverse — déterministe par fenêtre de 3
+croisements consécutifs, zéro label frais. `d` porte le triangle Y (la cible
+du move direct, layout `⟨a₃,b₃,g₃,g₁⟩`, `⟨g₃,a₁,b₂,g₂⟩`, `⟨g₁,g₂,a₂,b₁⟩`) ;
+l'énumération reconstruit le triangle X source et prouve le pas par la
+relation **directe** sur le couple renversé
+(`reidemeister3ConnectedInv_direct`), consommée par
+`ReidemeisterStep.r3 (Or.inr …)`. Miroir exact de `r3ForwardWitnesses` :
+mêmes gardes (`wf` des deux côtés, `Nodup` des neuf labels), fenêtre
+reconnue par les trois égalités de recouvrement du layout Y. -/
+def r3BackwardWitnesses (d : KnotDiagram) : List (StepWitness d) :=
+  (List.range (d.crossings.length)).flatMap fun i =>
+      if hi : i + 2 < d.crossings.length then
+      let Y₁ := d.crossings.get ⟨i, by omega⟩
+      let Y₂ := d.crossings.get ⟨i + 1, by omega⟩
+      let Y₃ := d.crossings.get ⟨i + 2, by omega⟩
+      -- layout du triangle Y : Y₁ = ⟨a₃,b₃,g₃,g₁⟩, Y₂ = ⟨g₃,a₁,b₂,g₂⟩,
+      -- Y₃ = ⟨g₁,g₂,a₂,b₁⟩ — les égalités de recouvrement (g₃ porté par
+      -- Y₁.e3/Y₂.e1, g₁ par Y₁.e4/Y₃.e1, g₂ par Y₂.e4/Y₃.e2) rendent la
+      -- fenêtre reconnaissable.
+      if hlay : Y₂.e1 = Y₁.e3 ∧ Y₃.e1 = Y₁.e4 ∧ Y₃.e2 = Y₂.e4 then
+        -- ordre Nodup de la def : [a₂, a₁, a₃, b₃, b₂, b₁, g₁, g₂, g₃]
+        if hnd : List.Nodup
+            [Y₃.e3, Y₂.e2, Y₁.e1, Y₁.e2, Y₂.e3, Y₃.e4, Y₁.e4, Y₂.e4, Y₁.e3] then
+          let d' : KnotDiagram :=
+            { crossings := ((d.crossings.set i ⟨Y₃.e3, Y₂.e2, Y₁.e4, Y₂.e4⟩).set (i + 1)
+                ⟨Y₁.e1, Y₁.e4, Y₁.e3, Y₁.e2⟩).set (i + 2) ⟨Y₁.e3, Y₂.e4, Y₂.e3, Y₃.e4⟩
+            , numEdges := d.numEdges }
+          if hwf : d.wf = true ∧ d'.wf = true then
+            if hlen : d.crossings.length = d'.crossings.length then
+              [{ target := d'
+               , proof := ReidemeisterStep.r3 (Or.inr (reidemeister3ConnectedInv_direct
+                   ⟨hwf.1, hwf.2, hlen, rfl, i, hi,
+                     Y₂.e2, Y₃.e3, Y₁.e1, Y₃.e4, Y₂.e3, Y₁.e2, Y₁.e4, Y₂.e4, Y₁.e3,
+                     hnd,
+                     (by show Y₁ = ⟨Y₁.e1, Y₁.e2, Y₁.e3, Y₁.e4⟩; rfl),
+                     (by show Y₂ = ⟨Y₁.e3, Y₂.e2, Y₂.e3, Y₂.e4⟩; rw [← hlay.1]),
+                     (by show Y₃ = ⟨Y₁.e4, Y₂.e4, Y₃.e3, Y₃.e4⟩; rw [← hlay.2.1, ← hlay.2.2]),
+                     rfl⟩)) }]
+            else []
+          else []
+        else []
+      else []
+    else []
+
 /-- L'énumération complète des témoins à un mouvement, preuves attachées. -/
 def oneStepWitnessesWithProof (d : KnotDiagram) : List (StepWitness d) :=
   r1ForwardWitnesses d ++ r1BackwardWitnesses d
   ++ r2ForwardWitnesses d ++ r2BackwardWitnesses d ++ r3ForwardWitnesses d
+  ++ r3BackwardWitnesses d
 
 /-- Témoin brut d'un mouvement applicable : un `KnotDiagram` accessible depuis
 `d₁` par un seul `ReidemeisterStep` (sans témoin de la relation). C'est
@@ -565,9 +796,9 @@ def oneStepWitnesses (d₁ : KnotDiagram) : List KnotDiagram :=
   `verifyMovesAux (k-1) d' d₂` est `true`.
 
 **Statut** : énumération réelle branchée (`#19890`). `oneStepWitnesses d`
-rend la liste des successeurs authentiques à un mouvement (R1/R2 dans les
-deux sens, R3 avant), filtrés par les gardes décidables de chaque relation —
-le retour `false` reste conservative (sound :
+rend la liste des successeurs authentiques à un mouvement (R1/R2/R3 dans les
+deux sens), filtrés par les gardes décidables de chaque relation — le retour
+`false` reste conservative (sound :
 `verifyMovesAux = true → ReidemeisterEquiv`, prouvé par `verifyMoves_sound`
 ci-dessous).
 -/
@@ -642,6 +873,47 @@ theorem verifyMoves_one_r3_witness :
                        ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 } = true := by
   decide
 
+/-- Acceptance R3 ARRIÈRE, témoin : la paire du move direct, **renversée** —
+le vérificateur à budget 1 retrouve la source X depuis la cible Y par
+l'énumération inverse (mirror de `reidemeister3ConnectedInv_satisfiable`,
+qui exhibe le même couple comme relation inverse).
+
+La preuve ne `decide` QUE l'appartenance de X aux cibles de
+`r3BackwardWitnesses Y` (une fenêtre, gardes littérales) puis scelle par
+`List.any_eq_true` : énumérer r1/r2 pour les voir échouer n'apporterait
+rien — le budget kernel d'un `decide` aveugle sur `verifyMoves 1` ne tient
+pas la somme des quatre autres générateurs. -/
+theorem verifyMoves_one_r3backward_witness :
+    verifyMoves 1
+      { crossings := [⟨3,4,9,7⟩, ⟨9,2,5,8⟩, ⟨7,8,1,6⟩,
+                       ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 }
+      { crossings := [⟨1,2,7,8⟩, ⟨3,7,9,4⟩, ⟨9,8,5,6⟩,
+                       ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 } = true := by
+  have h3 : ({ crossings := [⟨1,2,7,8⟩, ⟨3,7,9,4⟩, ⟨9,8,5,6⟩,
+      ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 } : KnotDiagram) ∈
+      (r3BackwardWitnesses { crossings := [⟨3,4,9,7⟩, ⟨9,2,5,8⟩, ⟨7,8,1,6⟩,
+      ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 }).map StepWitness.target := by
+    have h4 : (r3BackwardWitnesses { crossings := [⟨3,4,9,7⟩, ⟨9,2,5,8⟩,
+        ⟨7,8,1,6⟩, ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 }).map
+        StepWitness.target
+        = [{ crossings := [⟨1,2,7,8⟩, ⟨3,7,9,4⟩, ⟨9,8,5,6⟩,
+        ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 }] := by rfl
+    rw [h4]
+    exact List.mem_singleton_self _
+  have hmem : ({ crossings := [⟨1,2,7,8⟩, ⟨3,7,9,4⟩, ⟨9,8,5,6⟩,
+      ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 } : KnotDiagram) ∈
+      oneStepWitnesses { crossings := [⟨3,4,9,7⟩, ⟨9,2,5,8⟩, ⟨7,8,1,6⟩,
+      ⟨1,2,10,10⟩, ⟨3,4,5,6⟩], numEdges := 10 } := by
+    obtain ⟨a, ha, hax⟩ := List.mem_map.mp h3
+    refine List.mem_map.mpr ⟨a, ?_, hax⟩
+    show a ∈ r1ForwardWitnesses _ ++ (r1BackwardWitnesses _ ++ (r2ForwardWitnesses _
+      ++ (r2BackwardWitnesses _ ++ (r3ForwardWitnesses _ ++ r3BackwardWitnesses _))))
+    exact List.mem_append_right _ (List.mem_append_right _ (List.mem_append_right _
+      (List.mem_append_right _ (List.mem_append_right _ ha))))
+  simp only [verifyMoves, verifyMovesAux]
+  rw [Bool.or_eq_true_iff]
+  exact Or.inr (List.any_eq_true.mpr ⟨_, hmem, rfl⟩)
+
 theorem verifyMoves_sound :
     ∀ (n : Nat) (d₁ d₂ : KnotDiagram),
       verifyMoves n d₁ d₂ = true → ReidemeisterEquiv d₁ d₂ := by
@@ -703,13 +975,16 @@ tourner le lac inutilement pour les passes qui n'attaquent que la
 combinatoire). Le sibling `_en` porte le miroir anglais des docstrings,
 corps byte-identique (convention i18n EPIC #4980).
 
-Le lac n'importe **pas** encore ce module : `Knots.lean` (agrégateur racine)
-liste `Knots.ReidemeisterMoves` mais pas `Knots.ReidemeisterCombinatorial`
-(vérifié le 2026-10-09). Le brancher suppose de résoudre d'abord la collision
-d'API avec `Knots.ReidemeisterMoves`, qui définit déjà `movesConnects`,
-`verifyMoves` et `verifyMoves_sound` (ReidemeisterMoves.lean:303/295/501) —
-deux `movesConnects` de signatures différentes dans le même namespace `Knots`
-ne peuvent pas être importés ensemble.
+Branché depuis le 2026-10-15 : `Knots.lean` importe
+`Knots.ReidemeisterCombinatorial` (et `Knots_en.lean` son miroir `_en`). La
+collision d'API avec `Knots.ReidemeisterMoves` (`movesConnects`,
+`verifyMoves`, `verifyMoves_sound`, ReidemeisterMoves.lean:303/295/501) est
+résolue par un sous-namespace : les définitions de ce module vivent sous
+`Knots.Combinatorial.*`, l'API de `ReidemeisterMoves` (`Knots.movesConnects`,
+…) restant inchangée — à une exception près : les extensions de types
+importés (`ReidemeisterStep.toWitness`, `PDCrossing.all*With`) restent dans
+`namespace Knots`, car la dot-notation d'un type importé ne résout que
+dans le namespace du type.
 -/
 
-end Knots
+end Knots.Combinatorial

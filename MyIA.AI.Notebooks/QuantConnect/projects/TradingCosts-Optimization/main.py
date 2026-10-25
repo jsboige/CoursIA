@@ -89,9 +89,11 @@ class TradeCostEstimationAlgorithm(QCAlgorithm):
                 Resolution.DAILY,
                 Field.VOLUME
             )
-            # Monthly model retraining
+            # Monthly model retraining. month_start sans symbole saute les
+            # mois dont le 1er n'est pas une seance (#18941) ; l'ancrage sur
+            # le symbole souscrit cible le premier jour bourse.
             self.train(
-                self.date_rules.month_start(),
+                self.date_rules.month_start(self._symbol),
                 self.time_rules.at(0, 0),
                 self._train_model
             )

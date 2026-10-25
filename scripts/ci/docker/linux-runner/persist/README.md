@@ -20,10 +20,10 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `hold-runner.ps1` | po-2024 (hote Windows) | tache planifiee | reference |
 | `coursia-lean.service` | **po-2024** | `/etc/systemd/system/coursia-lean.service` | reference |
 | `coursia-lean-start.sh` | **po-2024** | `/usr/local/bin/coursia-lean-start.sh` | reference |
-| `coursia-waiters.service` | **ai-01** | `/etc/systemd/system/coursia-waiters.service` | reference |
-| `coursia-waiters-start.sh` | **ai-01** | `/usr/local/bin/coursia-waiters-start.sh` | reference |
+| `coursia-waiters.service` | **ai-01** | `/etc/systemd/system/coursia-waiters.service` | **DEPRECATED 2026-10-15, #20835, c.500** -- service desactive et fichier detruit sur ai-01 (19:48Z), reference conservee pour reactivation (memo UAC Rule 1) ; NE PAS REDEPLOYER sans avoir verifie qu'un consommateur du label `coursia-waiter` existe a nouveau |
+| `coursia-waiters-start.sh` | **ai-01** | `/usr/local/bin/coursia-waiters-start.sh` | reference (DEPRECATED avec le service, voir ligne ci-dessus) |
 | `coursia-ci.slice` | **ai-01** | `/etc/systemd/system/coursia-ci.slice` | **deploye et vivant** -- 7235 octets, documente, et il etait **en avance sur le depot** : c'est le depot qui a ete synchronise depuis le vivant, pas l'inverse (cf. correction 6) |
-| `daemon.json` | **ai-01** | `/etc/docker/daemon.json` | **deploye et vivant** -- 155 octets, **byte-identique** a la copie du depot (`sha256:1ef80038e470...`, mesure le 2026-09-08) |
+| `daemon.json` | **ai-01** | `/etc/docker/daemon.json` | **deploye et vivant** -- 155 octets, **byte-identique** a la copie du depot (`sha256:1ef80038e470...`, mesure le 2026-09-08). **Ne se recopie PAS sur un autre daemon** : il ne sert que le daemon `systemd` -- cf. « Le nom plat de `cgroup-parent` » ci-dessous |
 | `ai-01/coursia-runner.service` | **ai-01** | `/etc/systemd/system/coursia-runner.service` | **a deployer** (corrige, cf. correction 3) -- **jamais seul**, cf. correction 4 |
 | `ai-01/coursia-runner.service.d/10-sizing.conf` | **ai-01** | `/etc/systemd/system/coursia-runner.service.d/10-sizing.conf` | **deploye et vivant** -- necessaire mais **pas suffisant** : il borne la memoire et laisse le CPU au defaut (cf. corrections 4 et 5) |
 | `ai-01/coursia-runner-start.sh` | **ai-01** | `/usr/local/bin/coursia-runner-start.sh` | **a deployer** (corrige, cf. correction 3) |
@@ -32,6 +32,10 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `po-2026/README.md` | -- | -- | **document** : architecture, dimensionnement, piege du verrou |
 | `po-2024/coursia-ci.slice` | **po-2024** | `/etc/systemd/system/coursia-ci.slice` | **a deployer** (2026-10-12, arbitrage c2153 : 14G/16G -> **20G/22G**, budget 15 -> **21** apres #20174 -- la composition vive 8x1536 + 6x512 + 1x6144 = 21 504 Mo n'avait pas ete comptee depuis le J+7) -- le mur kernel de cette machine : `MemoryHigh=20G`, `MemoryMax=22G`, `MemorySwapMax=0`. Homonyme de la slice ai-01, valeurs differentes (cf. section `po-2024/`) |
 | `po-2024/coursia-waiters.service.d/10-sizing.conf` | **po-2024** | `/etc/systemd/system/coursia-waiters.service.d/10-sizing.conf` | **a deployer** (2026-10-12, arbitrage c2153 : budget 15 -> **21**, meme nombre que les wrappers) -- 12 -> 6 slots waiters pour po-2024 seulement, par drop-in, parce que `coursia-waiters.service` est le fichier d'**ai-01** que les deux machines executent |
+| `po-2028/coursia-ci.slice` | **po-2028** | `/etc/systemd/system/coursia-ci.slice` | **deploye et vivant** (2026-10-20) -- mur kernel pour une VM WSL de 31 Go : `MemoryHigh=12G`, `MemoryMax=14G`, `MemorySwapMax=0`, io.max 8:80 rbps=400M/wbps=200M. Homonyme des slices ai-01/po-2024, valeurs differentes |
+| `po-2028/coursia-socket.conf` | **po-2028** | `/etc/systemd/system/docker.service.d/coursia-socket.conf` | **deploye et vivant** (2026-10-20) -- PREMIERE copie depotiee du drop-in socket (la doc citait `coursia-socket.conf` sans que persist/ le porte). Differe des deploiements historiques : il VIDE aussi `Requires=docker.socket` -- piege mesure sur po-2028, l'unite stock porte `Requires=docker.socket`, qui recreerait `/var/run/docker.sock` (socket du proxy Docker Desktop) a chaque boot ; et l'arret de docker.socket CASCADE l'arret du service via son `Service=` |
+| `po-2028/coursia-runner-start.sh` | **po-2028** | `/usr/local/bin/coursia-runner-start.sh` | **deploye et vivant** (2026-10-20) -- wrapper, 3 slots x (cpus=3, memory=4g, pids=512), BUDGET_GB=12, CPU_BUDGET=9, device bps 40M/80M. DELTA token : pas de master.env sur cette machine -- le token est relu a chaque invocation depuis `gh.exe auth token` cote Windows via interop |
+| `po-2028/coursia-runner.service` | **po-2028** | `/etc/systemd/system/coursia-runner.service` | **deploye et vivant** (2026-10-20) -- unite, `start 3`, structure conforme au modele po-2024 (#15095 fail-closed, IOWeight, sentinel) |
 
 Le sous-repertoire `ai-01/` existe parce que les deux machines ont des fichiers
 **homonymes et incompatibles**. Les melanger a plat, comme c'etait le cas, revient
@@ -46,6 +50,13 @@ waiters est l'autre moitie du meme probleme : l'unite `coursia-waiters.service`
 appartient a ai-01 et po-2024 l'execute **telle quelle**, donc editer l'unite
 pour descendre po-2024 descendrait aussi ai-01 -- le drop-in rend le perimetre
 explicite.
+
+Le sous-repertoire `po-2028/` suit la meme regle, avec une addition : il porte
+`coursia-socket.conf`, le drop-in `docker.service.d` qui epingle le daemon
+docker-ce sur `/var/run/docker-ce.sock`. La doc le citait (section
+Persistance) sans que `persist/` n'en garde copie -- le deploiement po-2028 est
+l'occasion de combler le trou. Sa copie differe des vivants historiques sur un
+point documente dans le fichier meme : le vidage de `Requires=docker.socket`.
 
 Les fichiers po-2024 anterieurs (wrappers `runner-start`, `lean-start`, unites
 `runner` et `lean`) restent a la racine de `persist/` : ce sont eux qui ont
@@ -199,11 +210,54 @@ avertissement `[budget] AVERTISSEMENT` dans le journal du service veut dire que
 cette machine n'a pas declare son budget, pas que quelque chose est casse.
 
 
-Le budget agrege est **applique par defaut du daemon** (`cgroup-parent` dans
-`daemon.json`), pas par un drapeau du superviseur -- et le superviseur le
-**verifie** plutot que de le re-imposer. La distinction n'est pas cosmetique :
-passer `--cgroup-parent` sur une machine ou la slice n'existe pas **cree** un
-cgroup vide, qui a l'apparence exacte d'un garde et ne borne rien.
+Le budget agrege est applique a **deux endroits distincts**, et la distinction n'est pas
+cosmetique. Le **defaut du daemon** (`cgroup-parent` dans `daemon.json`) ne vaut que pour
+le daemon qui porte ce fichier -- c'est la seule cible du fichier, objet de la section
+suivante. Le **drapeau du superviseur** est ce qui place reellement les conteneurs de la
+flotte : `supervise.sh` passe `--cgroup-parent` sur ses deux chemins de lancement, avec le
+nom que chaque pilote attend (nom plat sous `systemd`, chemin imbrique sous `cgroupfs`).
+Ce qui reste vrai de l'avertissement d'origine : passer ce drapeau sur une machine ou la
+slice n'existe pas **cree** un cgroup vide, qui a l'apparence exacte d'un garde et ne borne
+rien -- d'ou la neutralisation (`CI_CGROUP_PARENT=""`) quand la slice manque, et le
+controle d'appartenance apres demarrage (`EVASION`).
+
+### Le nom plat de `cgroup-parent` n'est correct que sous le pilote `systemd` (#15157)
+
+`daemon.json` porte `"cgroup-parent": "coursia-ci.slice"`. C'est la **bonne valeur pour
+la seule cible qu'il sert** : `/etc/docker/daemon.json` alimente le daemon `docker-ce`,
+dont le pilote cgroup est `systemd`, qui resout ce nom en slice imbriquee sous
+`coursia.slice` -- celle qui porte `MemoryMax`.
+
+**Ce fichier ne se recopie pas sur un autre daemon.** Sous pilote `cgroupfs` -- celui de
+Docker Desktop, qui porte les runners de la flotte -- la meme chaine n'est plus un nom de
+slice mais un **chemin litteral** : docker **cree** `/sys/fs/cgroup/coursia-ci.slice`
+**a plat**, a la racine de l'arbre, **sans aucun plafond**. Ce cgroup porte le meme nom de
+feuille que le vrai mur, un niveau au-dessus : un conteneur qui y atterrit fait monter son
+`memory.peak`, et le leurre **a l'air cable** tout en ne bornant rien. La valeur correcte
+pour un daemon `cgroupfs` est le **chemin imbrique complet**,
+`"coursia.slice/coursia-ci.slice"`.
+
+Trois surfaces portent ce sujet, chacune avec son role : **ce paragraphe** est la regle
+actionnable (ne pas recopier le fichier, et quelle valeur mettre a la place) ; l'en-tete de
+`coursia-ci.slice` (bloc `PIEGE DE RECOPIE`) porte le mecanisme et sa conclusion ; la
+**mesure chiffree du 2026-09-08** (`memory.peak`, sous-groupes, `max` sur le leurre) vit
+dans le corps de #15157, et nulle part ailleurs dans le depot.
+
+Le `daemon.json` du daemon Docker Desktop, lui, **ne vit pas dans ce depot** : ce sont
+`~/.docker/daemon.json` et `settings-store.json` de l'hote. Au 2026-10-23, le leurre plat a
+ete retire de la machine -- reproductible par `ls -d /sys/fs/cgroup/coursia-ci.slice`,
+attendu **absent** ; la presence d'un `cgroup-parent` par defaut sur ce daemon n'est en
+revanche **pas confirmee**. Tant qu'elle ne l'est pas, les conteneurs de la flotte entrent
+dans le mur par le drapeau explicite que pose `supervise.sh`, et un conteneur lance a la
+main y echappe -- `report_slice_membership()` rend cette evasion **visible** (`EVASION`),
+il ne la corrige pas.
+
+**Ce que la recopie produirait n'est pas ce qui a ete observe.** Le leurre plat constate le
+2026-09-08 existait alors qu'**aucun** `cgroup-parent` par defaut n'etait pose sur Docker
+Desktop : il ne peut donc pas venir d'une recopie de ce fichier, mais d'un
+`--cgroup-parent` passe a la main ou d'une configuration anterieure. Le piege decrit
+ci-dessus est ce qu'une recopie **creerait** ; l'observation de septembre ne l'illustre
+pas, elle en montre seulement le resultat possible.
 
 Mesure du 2026-09-07, trois conteneurs ecrivant en parallele sur `/dev/sde` :
 
@@ -280,6 +334,12 @@ dimensionnement appartient a la lane qui porte le parc ; il n'est pas rendu ici.
 #    d'installer : la copie vivante de la slice a ete, une journee durant, plus
 #    riche que celle du depot -- un install a l'aveugle aurait retire
 #    MemoryHigh / MemoryMax / MemorySwapMax de la machine (cf. correction 6).
+#
+#    ATTENTION sur daemon.json : sa destination est /etc/docker/daemon.json,
+#    c'est-a-dire le daemon docker-ce (pilote systemd), et RIEN d'autre. Recopie
+#    sur le daemon Docker Desktop (pilote cgroupfs), son "coursia-ci.slice" cree
+#    /sys/fs/cgroup/coursia-ci.slice A PLAT, sans plafond -- cf. « Le nom plat de
+#    cgroup-parent ».
 diff /etc/docker/daemon.json              persist/daemon.json
 diff /etc/systemd/system/coursia-ci.slice persist/coursia-ci.slice
 

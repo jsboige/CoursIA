@@ -1,140 +1,129 @@
 ---
 name: analyze-slides
-description: Analyze PowerPoint slides qualitatively using vision AI. Arguments: <deck_path> [--render] [--slides 1,5,10]
+description: Analyze a Slidev deck qualitatively — organ reports (structure, composition) + vision AI on rendered PNGs. Arguments: <deck_id> [--slides 1,5,10]
 ---
 
-# Analyze Slides
+# Analyze Slides (Slidev)
 
-Analyse qualitative de slides PowerPoint via le modele vision Qwen3-VL-8B du MCP sk-agent.
+Analyse qualitative d'un deck Slidev : organes du depot d'abord (mesures
+objectives), vision AI ensuite sur les rendus PNG (modele vision du MCP
+sk-agent). Le mode Marp seul est retire depuis #19578 : 0 fichier `.pptx`
+binaire et 0 rendu `marp_renders` dans l'arbre, MAIS la baseline PPTX est
+vivante -- 742 renders PNG sous `slides/<deck>/pptx-reference/slide-NN.png`
+(12 decks ; `public/pptx-reference/` pour `01-introduction`), d'ou les modes
+`pptx` et `compare` de l'agent. Les 12 sources Marp legacy (slides.marp.md)
+ont ete retirees par #21318 (sauf `S4-trading-algorithmique/_archive/slides.marp.md`
+qui reste dans le repertoire `_archive/` avec header de disposition per la
+convention `_archive-convention.md`).
 
 **Target**: `$ARGUMENTS`
 
 ## Arguments
 
-- `deck_path`: Chemin du dossier deck (ex: `slides/01-introduction`)
-- `--render`: Forcer le rendu PNG meme si les fichiers existent
+- `deck_id`: Identifiant du deck (ex: `S3-acculturation` pour `slides/S3-acculturation`)
 - `--slides`: Liste de slides specifiques (ex: `--slides 1,5,10,15-20`)
 
 ## Prerequis
 
-1. **MCP sk-agent** doit etre configure avec le modele `qwen3-vl-8b-thinking`
-2. Les PNG doivent exister dans `{deck_path}/extracted/renders/`
-3. Le texte extrait doit exister dans `{deck_path}/extracted/content.md`
+1. **MCP sk-agent** configure (appel `call_agent(prompt, attachment)` -- l'outil
+   `analyze_image` n'existe plus, mesure 2026-09-29)
+2. Environnement Slidev installe : `cd slides && npm install`
+3. Le deck doit pouvoir etre servi : `cd slides/{deck_id} && npx slidev slides.md --port 3031`
 
 ## Process
 
-### 1. Pre-charger le texte extrait
-
-Lire le fichier `{deck_path}/extracted/content.md` et parser les slides par delimiteur `<!-- Slide number: N -->`.
-
-Stockage dans un dict: `{slide_num: text_content}`
-
-### 2. Verification des renders
+### 1. Organes (objectif, AVANT toute vision)
 
 ```bash
-ls {deck_path}/extracted/renders/slide_*.png | wc -l
+python scripts/extract_slidev_titles.py slides/{deck_id}/slides.md
+python scripts/check_slidev_structure.py slides/{deck_id}/slides.md
+python scripts/notebook_tools/scan_slides_html_block_markdown.py --check slides/{deck_id}/slides.md
+
+# Serveur dev tourne (Terminal 1) :
+python scripts/notebook_tools/scan_slidev_composition.py \
+  --url http://localhost:3031/ --slides-md slides/{deck_id}/slides.md \
+  --out {scratchpad}/composition.json
+python scripts/notebook_tools/scan_slidev_gap_report.py --in {scratchpad}/composition.json
 ```
 
-### 3. Analyse via MCP sk-agent (PROMPT REVU)
+### 2. Rendus PNG
 
-Pour chaque slide, construire un prompt qui inclut le texte extrait pour que le modele se concentre sur la mise en forme:
-
-**Prompt unique (concis):**
+```bash
+python slides/_tools/render_deck.py {deck_id} --base http://localhost:3031
+# -> slides/_tools/slide-renders/{deck_id}/slide-NNN.png
 ```
-TEXTE EXTRAIT DE LA SLIDE:
-{texte du slide depuis content.md}
+
+### 3. Analyse vision (prompt canonique FR, concis)
+
+```
+TITRE DE LA SLIDE:
+{titre extrait}
 
 ---
-
-Analyse UNIQUEMENT la mise en forme et les visuels (le texte est deja extrait ci-dessus).
-
-1. VISUELS: Diagrammes, images, icones presents ? Lesquels ? Qualite ?
-2. MISE EN FORME: Disposition, equilibre texte/visuel, hierarchie
-3. LISIBILITE: Note /10 pour projection amphitheatre
-4. 2 SUGGESTIONS concretes d'amelioration
+Analyse UNIQUEMENT la mise en forme et les visuels.
+1. VISUELS: Diagrammes, images, icones - lesquels, qualite ?
+2. MISE EN FORME: disposition, equilibre texte/visuel
+3. LISIBILITE: note /10 pour projection amphitheatre
+4. 2 SUGGESTIONS concretes
 ```
-
-### 4. Appel MCP
 
 ```python
 result = mcp__sk-agent__call_agent(
-    prompt=prompt_avec_texte,
-    attachment=f"{deck_path}/extracted/renders/slide_{num:02d}.png",
-    model_override="qwen3-vl-8b-thinking"
+    prompt=prompt_avec_titre,
+    attachment=f"slides/_tools/slide-renders/{deck_id}/slide-{num:03d}.png"
 )
 ```
 
-### 5. Parallelisation
+### 4. Parallelisation
 
-Faire des appels par lots de 5 slides en parallele pour accelerer le traitement.
+Appels par lots de 5 slides en parallele.
 
-### 6. Retry sur erreurs
+### 5. Retry sur erreurs
 
-Si reponse vide ou erreur: retry 1 fois avec prompt simplifie:
-```
-Decris les elements visuels de cette slide et donne une note de lisibilite /10.
-```
+Si reponse vide ou hallucinee : retry 1 fois avec :
+`Decris les visuels de cette slide et note la lisibilite /10.`
 
-### 7. Compilation du rapport (INCREMENTAL OBLIGATOIRE)
+### 6. Compilation du rapport (INCREMENTAL OBLIGATOIRE)
 
-**IMPORTANT**: Le rapport DOIT etre ecrit de facon incrementale. Apres CHAQUE lot de slides analyse, utiliser Edit pour ajouter les resultats.
+Apres CHAQUE lot de 5 slides, Edit pour ajouter les sections -- ne JAMAIS
+accumuler plus de 5 slides en memoire avant d'ecrire.
 
-**Workflow incrementale**:
-1. Creer le fichier avec l'en-tete au debut
-2. Apres chaque lot de 5 slides, faire un Edit pour ajouter les sections
-3. Ne JAMAIS accumuler plus de 5 slides en memoire avant d'ecrire
-
-Fichier de sortie: `{deck_path}/analysis/visual_review.md`
+Fichier de sortie : `slides/{deck_id}/analysis/visual_review.md`
 
 ### Format du rapport
 
 ```markdown
-# Revue Visuelle - {deck_name}
+# Revue Visuelle - {deck_id}
 
 **Date**: {date}
-**Deck**: {deck_path}
+**Deck**: slides/{deck_id}/slides.md
 **Slides analysees**: {N}/{total}
 
----
+## Constats d'organes
+- STRUCTURE / HTML-BLOCK / COMPOSITION : {constats}
 
-## Slide 01 - {titre extrait du texte}
-
+## Slide 01 - {titre}
 ### Visuels et mise en forme
 {reponse MCP}
 
----
-
-## Slide 02 - {titre}
-...
-
----
-
 ## Resume
-
 ### Tableau recapitulatif
 | Slide | Titre | Note | Probleme principal |
-|-------|-------|------|-------------------|
-| 01 | ... | X/10 | ... |
-
 ### Slides prioritaires (note < 6)
-- Slide X: [raison]
-
 ### Bonnes slides (note >= 8)
-- Slide Y: [raison]
-
 ### Problemes recurrents
-1. [Probleme] - N slides concernees
-2. [Probleme] - N slides concernees
 ```
 
-## Criteres de qualite (conseils-slides.md)
+## Criteres de qualite (amphitheatre)
 
 - **Test des 3 secondes** : message principal compris immediatement
 - **Regle 1-6-6** : 1 idee, max 6 points, max 6 mots/point
 - **Lisibilite** : police >= 24pt, contraste suffisant
-- **Equilibre** : texte et visuels equilibres
+- **Equilibre** : texte et visuels equilibres (regles
+  [slides-layout-pattern.md](../../../docs/reference/slides-layout-pattern.md))
 
 ## Gestion des erreurs
 
-- Si le MCP echoue 2 fois sur une slide: noter "[ERREUR]" et continuer
+- Si le MCP echoue 2 fois sur une slide : noter "[ERREUR]" et continuer
 - Sauvegarder le rapport partiel apres chaque lot de 5 slides
+- Une instance sans capacite vision rend le grain, elle ne valide pas text-only
