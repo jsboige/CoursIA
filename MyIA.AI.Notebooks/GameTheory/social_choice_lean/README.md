@@ -7,7 +7,8 @@
 > (FR canonique + miroirs `_en.lean` Pattern A [#4980](https://github.com/jsboige/CoursIA/issues/4980)),
 > qui est désormais le home canonique (`@[default_target] lean_lib SocialChoice` dans le lakefile de
 > `game_theory_lean`). La certification no-sorry et le build Lake y sont repris via
-> `.github/workflows/lean-social-choice.yml`.
+> `.github/workflows/lean-ci-matrix.yml` (le wrapper `lean-social-choice.yml` a été absorbé dans
+> la matrice par #17374).
 >
 > **Ce répertoire n'est plus un lake.** La coquille technique (`lakefile.lean`, `lean-toolchain`,
 > `lake-manifest.json`) a été retirée (follow-up #4365) : elle faisait passer le dossier pour un lake
