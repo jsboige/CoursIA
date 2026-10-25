@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
@@ -156,6 +157,53 @@ def test_task_action_reads_password_from_file_never_embeds_it(prof):
     assert "runner_pwd.txt" in action  # lit le fichier machine local conventionnel
     assert "ensure --profile test-fast-guards --apply" in action
     assert "controller.log" in action
+
+
+# Le document porte un namespace par defaut : un XPath sans prefixe ne matche aucun
+# element (`find` rend None sur un document pourtant bien forme), il faut la forme
+# `{uri}nom`. Sans cette constante, le test d'echappement passerait a cote en silence.
+TASK_NS = "http://schemas.microsoft.com/windows/2004/02/mit/task"
+
+
+def task_arguments(prof) -> str:
+    root = ET.fromstring(ctl.task_xml(prof))
+    return root.find(".//{" + TASK_NS + "}Arguments").text
+
+
+def test_task_xml_is_well_formed(prof):
+    """`schtasks /Create /XML` refuse un document malforme. Le corps de la tache
+    porte le `&` de l'operateur d'appel PowerShell : non echappe, il rend l'XML
+    invalide. Ce test manquait -- le defaut ne se revelait qu'en session elevee,
+    donc une fenetre UAC utilisateur payait la decouverte (mesure #20174)."""
+    ET.fromstring(ctl.task_xml(prof))
+
+
+def test_task_xml_escaping_roundtrips_to_the_real_command(prof):
+    """L'echappement doit etre reversible : apres parsing, l'operateur d'appel et
+    la ligne de commande sont litteraux. Un echappement de trop casserait la
+    commande sans casser le XML -- l'autre moitie du meme defaut."""
+    args = task_arguments(prof)
+    assert "& '" in args
+    assert "&amp;" not in args
+    assert "ensure --profile test-fast-guards --apply" in args
+
+
+def test_task_xml_has_a_single_interpreter_wrapper(prof):
+    """`<Command>` porte deja pwsh.exe : un second enrobage empilait deux
+    `pwsh.exe -Command "..."` avec des guillemets imbriques non echappes."""
+    args = task_arguments(prof)
+    assert "pwsh.exe" not in args
+    assert args.count('"') == 2  # les seuls guillemets : ceux de -Command "..."
+
+
+def test_task_xml_malformed_is_caught_before_elevation(prof, monkeypatch):
+    """La garde d'elevation passait AVANT la construction de l'XML : un dry-run
+    non-eleve ne pouvait donc structurellement pas voir un document malforme.
+    Le controle est desormais en amont, et ce test fige cet ordre."""
+    monkeypatch.setattr(ctl, "_is_elevated", lambda: False)
+    monkeypatch.setattr(ctl, "task_xml", lambda p: "<Task><Actions></Task>")
+    with pytest.raises(ctl.Broken, match="malformed"):
+        ctl.apply_task_install(prof, FakeRun())
 
 
 def test_task_install_requires_elevation(prof, monkeypatch):

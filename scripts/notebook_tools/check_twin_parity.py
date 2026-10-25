@@ -89,6 +89,8 @@ Usage
     python check_twin_parity.py --check
     # restreindre a une famille
     python check_twin_parity.py --family SMT/Z3-API
+    # une seule paire (ne parcourt que celle-ci ; nom inconnu = rc 2, #20197)
+    python check_twin_parity.py --check --pair "SW-9 JSON-LD"
     # rebaseline apres audit firsthand (ecrit les SHAs courants).
     # --pair + --by obligatoires en pratique : le selecteur evite de rebaseliner
     # les 116 paires, --by evite d'heriter de l'auteur de l'audit precedent.
@@ -126,7 +128,11 @@ Exit codes
     1 -- un ou plusieurs DRIFT / MISSING (mode --check fleet-wide)
          OU nouveau(s) DRIFT introduit(s) par la PR (mode --check --per-pair)
          OU un ou plusieurs drift legacy/content/missing en --ci-strict --check
-    2 -- erreur (registre illisible, pas un depot git)
+    2 -- erreur (registre illisible, pas un depot git, paire ou famille inconnue
+         pour --check / --verify-recorded-sha)
+    3 -- mesure interrompue : un appel git a depasse sa borne (`_GIT_TIMEOUT_S`,
+         ou `_GIT_HISTORY_TIMEOUT_S` pour le parcours d'historique) (#20197).
+         Aucun verdict n'est rendu : ni vert, ni drift.
 
 Voir aussi
 ----------
@@ -173,19 +179,55 @@ def _is_fork_pressure(exc: OSError) -> bool:
     return exc.errno in (errno.EAGAIN, errno.EWOULDBLOCK)
 
 
-def _run_git(args: list[str], *, cwd=None, text: bool = True) -> subprocess.CompletedProcess:
+# --- borne de delai par appel git (#20197) -----------------------------------
+# Sans borne, un appel git bloque lit comme un gel de l'organe. Au-dela de la
+# borne, la mesure est interrompue et AUCUN verdict n'est rendu (ni vert, ni
+# drift) : un resultat vide se lirait « rien a signaler ».
+# Calibrage mesure : `ls-tree` / `show` durent de quelques ms a ~3 s (fetch
+# paresseux sur clone partiel, po-2024). `rev-list --objects HEAD`
+# (`_blob_ancestor_in`) parcourt tout l'historique et a depasse 60 s sous charge
+# (load ~7 sur 4 coeurs, clone de 722 packs) : une borne de 60 s la prenait pour
+# un blocage. 300 s laisse passer cet appel legitime et rend tout de meme un
+# blocage reel visible en rc 3 au lieu d'un silence.
+_GIT_TIMEOUT_S = 300
+# Le parcours d'historique (`rev-list --objects HEAD`) a sa propre borne : sur
+# le runner CI (clone `filter: blob:none`, fetch paresseux), ce seul appel a
+# depasse 300 s, alors que l'etape `--check --verify-recorded-sha` entiere dure
+# 3 min 54 a 6 min sur `main` sans borne (jobs 115585251354 et 115570972974).
+# 1800 s couvre ces mesures avec une marge d'un facteur 5 et reste tres en deca
+# du delai de job GitHub (6 h) : un vrai blocage sort toujours en rc 3.
+_GIT_HISTORY_TIMEOUT_S = 1800
+
+
+class GitTimeoutError(RuntimeError):
+    """Un appel git a depasse sa borne de delai : la mesure est interrompue."""
+
+
+def _run_git(args: list[str], *, cwd=None, text: bool = True,
+             timeout: float | None = None) -> subprocess.CompletedProcess:
     """`subprocess.run` de git, avec repli borne sur la pression de fork.
 
     Seul `EAGAIN` est retente ; toute autre `OSError` remonte inchangee, pour
     qu'une panne reelle reste visible au lieu d'etre diluee en trois essais.
+    Un appel qui depasse sa borne (`timeout`, `_GIT_TIMEOUT_S` par defaut) leve
+    `GitTimeoutError` (jamais avale, jamais retente : un remote lent ne se
+    repare pas en relancant).
     """
+    borne = _GIT_TIMEOUT_S if timeout is None else timeout
     last_exc = None
     for attempt in range(_EAGAIN_ATTEMPTS):
         if attempt:
             time.sleep(_EAGAIN_BACKOFF[attempt - 1])
         options = {"encoding": "utf-8", "errors": "replace"} if text else {}
         try:
-            return subprocess.run(args, cwd=cwd, capture_output=True, text=text, **options)
+            return subprocess.run(args, cwd=cwd, capture_output=True, text=text,
+                                  timeout=borne, **options)
+        except subprocess.TimeoutExpired as exc:
+            raise GitTimeoutError(
+                f"mesure interrompue : `{' '.join(args)}` n'a pas repondu en "
+                f"{borne:g} s (remote lent ou fetch paresseux bloque). "
+                f"Aucun verdict n'est rendu pour ce controle."
+            ) from exc
         except OSError as exc:
             if not _is_fork_pressure(exc):
                 raise
@@ -516,7 +558,7 @@ def _blob_ancestor_in(repo_root: Path, blob_sha: str, ref: str = "HEAD") -> bool
     reachable = _REACHABLE_OBJECTS.get(key)
     if reachable is None:
         r = _run_git(["git", "rev-list", "--objects", "--missing=print", key[1]],
-                     cwd=str(repo_root))
+                     cwd=str(repo_root), timeout=_GIT_HISTORY_TIMEOUT_S)
         if r.returncode != 0:
             return False
         # Chaque ligne est "<sha>", "<sha> <chemin>" ou, pour un objet absent
@@ -565,7 +607,8 @@ def _git_show_file(repo_root: Path, git_ref: str, rel_path: str) -> str | None:
     return r.stdout.decode("utf-8", errors="replace")
 
 
-def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list:
+def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path,
+                          names: set[str] | None = None) -> list:
     """Charge le registre a un ref git arbitraire (HEAD, origin/main, <sha>...).
 
     Robuste a la frontiere de migration #8542 : le base-ref peut etre l'ANCIEN
@@ -575,6 +618,11 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
 
     Indispensable au mode `--per-pair --base origin/main` en CI : sur la PR de
     migration elle-meme, origin/main porte encore l'ancien format.
+
+    `names` (#21972) : quand un selecteur `--pair`/`--family` est pose, on ne
+    `git show` que les fichiers des paires visees (et leurs audits), pas les
+    2374 fichiers du registre. `names=None` (mode plein, sans selecteur) ne
+    filtre rien : le parcours integral reste strictement identique.
     """
     if yaml is None:
         raise SystemExit("PyYAML requis pour --per-pair.")
@@ -606,6 +654,13 @@ def _load_registry_at_ref(repo_root: Path, git_ref: str, reg_path: Path) -> list
                     pair_lines.append((fname[:-5], line))
             elif len(parts) == 2 and parts[1].endswith(".yaml"):
                 audit_lines.setdefault(parts[0], []).append(line)
+        # Filtre AVANT lecture (#21972) : avec un selecteur, ne `git show` que
+        # les fichiers de paire des noms demandes (+ leurs audits), pas les 2374
+        # fichiers du registre. Le slug d'un fichier de paire EST `_slug(name)`
+        # (un fichier = une paire, #8542), donc le filtre sur slug == sur name.
+        if names is not None:
+            wanted_slugs = {_slug(n) for n in names}
+            pair_lines = [(s, l) for (s, l) in pair_lines if s in wanted_slugs]
         for slug, line in sorted(pair_lines):
             txt = _git_show_file(repo_root, git_ref, line)
             if txt is None:
@@ -1644,7 +1699,28 @@ def _classify_per_pair(base_status: str, head_status: str) -> str:
     return "DRIFT_PRE_EXISTING"
 
 
+def _paire_inconnue(nom: str, pairs: list) -> None:
+    """Message d'erreur pour un `--pair` qui ne nomme aucune paire (#20197)."""
+    names = sorted({pp.get("name", "?") for pp in pairs})
+    print(
+        f"Aucune paire nommee '{nom}'. "
+        f"Noms connus : {', '.join(names[:10])}{'...' if len(names) > 10 else ''}",
+        file=sys.stderr,
+    )
+
+
 def main(argv=None) -> int:
+    """Point d'entree CLI. Un appel git qui depasse sa borne de delai interrompt la
+    mesure : message explicite sur stderr et rc 3 (distinct de 1 = drift et de
+    2 = erreur de registre ou d'usage), jamais une trace brute ni un verdict vide."""
+    try:
+        return _main(argv)
+    except GitTimeoutError as exc:
+        print(f"ERREUR : {exc}", file=sys.stderr)
+        return 3
+
+
+def _main(argv=None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     p.add_argument("--registry", default=str(DEFAULT_REGISTRY),
                    help=f"Chemin du registre YAML (defaut: {DEFAULT_REGISTRY.name})")
@@ -1692,8 +1768,11 @@ def main(argv=None) -> int:
                         "QUEL drift (vs la semantique 'DRIFT_or_MISSING only' historique). "
                         "Distingue erreur d'outil vs constat de drift (cf L948/L949, c.1240).")
     p.add_argument("--pair", default=None,
-                   help="Restreindre --update a une paire nommee (ex. 'Search-9-LP'). "
-                        "Impossible a combiner avec --family.")
+                   help="Restreindre a une paire nommee (ex. 'Search-9-LP') : applique par "
+                        "--update, --migrate-audits, --check et --verify-recorded-sha "
+                        "(#20197), ainsi qu'en --per-pair --base <ref> (#21281) ; refuse par "
+                        "--coverage et --summary-by-verdict (modes de recensement integral). "
+                        "Nom inconnu = rc 2. Impossible a combiner avec --family.")
     p.add_argument("--yes-all-pairs", action="store_true",
                    help="Opt-in explicite pour rebaseline TOUTES les paires du registre "
                         "avec --update. Sans ce flag (ou --family/--pair), --update refuse.")
@@ -1760,6 +1839,20 @@ def main(argv=None) -> int:
         p.error("--migrate-audits est un mode exclusif : incompatible avec "
                 "--update / --per-pair / --base / --verify-recorded-sha / "
                 "--coverage / --summary-by-verdict / --ci-strict.")
+    # Selecteurs sans portee pour les modes de recensement seul (#21281,
+    # reliquat #20578) : un --pair/--family sur --coverage ou
+    # --summary-by-verdict etait silencieusement ignore -- un selecteur
+    # inconnu rendait rc 0 sur le recensement integral. On refuse a
+    # l'analyse (p.error) plutot que d'evaluer un selecteur qui n'a aucun
+    # sens pour ces deux modes.
+    if args.coverage and (args.pair or args.family):
+        p.error("--coverage est un mode de recensement integral : --pair/--family "
+                "n'y designent rien (recense justement les notebooks ABSENTS du "
+                "registre). Retirer le selecteur.")
+    if args.summary_by_verdict and (args.pair or args.family):
+        p.error("--summary-by-verdict est un mode de recensement integral : "
+                "--pair/--family n'y designent rien (compte les paires par "
+                "bridge_verdict). Retirer le selecteur.")
     # Garde anti-derive MERGE_HEAD / REBASE_HEAD (#11732) : pendant un merge non
     # commite, `git ls-tree HEAD` lit l'ANCIENNE tete de branche (pas le resultat
     # du merge). --update atteste alors des blob SHAs qui ne refletent pas l'etat
@@ -1887,14 +1980,44 @@ def main(argv=None) -> int:
         # #8542) -> _load_registry_at_ref essaie le repertoire puis retombe sur
         # le fichier legacy.
         pairs_head = load_registry(reg_path)
-        pairs_base = _load_registry_at_ref(repo_root, args.base, reg_path)
+
+        # Application stricte des selecteurs (#21281, reliquat #20578) :
+        # un nom ou une famille inconnue -> rc 2 avec la liste des noms
+        # connus, comme --check --update le fait deja depuis #20578.
+        # On check AVANT le load du base-ref (qui fait un git ls-tree par
+        # paire et est dispendieux) : un selecteur inconnu ne doit jamais
+        # payer le cout d'un parcours integral.
+        if args.family:
+            known_families = sorted({pp.get("family", "?") for pp in pairs_head})
+            if args.family not in known_families:
+                print(
+                    f"--family {args.family!r} inconnue. Familles connues : "
+                    f"{known_families}",
+                    file=sys.stderr,
+                )
+                return 2
+            pairs_head = [pp for pp in pairs_head if pp.get("family") == args.family]
+        elif args.pair:
+            known_names = sorted({pp.get("name", "?") for pp in pairs_head})
+            if args.pair not in known_names:
+                print(
+                    f"--pair {args.pair!r} inconnue. Noms connus ({len(known_names)}) : "
+                    f"{known_names}",
+                    file=sys.stderr,
+                )
+                return 2
+            pairs_head = [pp for pp in pairs_head if pp.get("name") == args.pair]
+
+        # #21972 : ne charger au base-ref que les paires selectionnees. `pairs_head`
+        # est deja filtre par --pair/--family (juste dessus) ; sans selecteur il
+        # porte tout le registre -> `names` = tous les noms -> chargement integral,
+        # comportement strictement inchange.
+        pairs_base = _load_registry_at_ref(
+            repo_root, args.base, reg_path,
+            names={pp.get("name", "?") for pp in pairs_head},
+        )
         # Index par nom (au cas ou l'ordre ou les ajouts/suppressions different)
         base_by_name = {pp.get("name", "?"): pp for pp in pairs_base}
-
-        if args.family:
-            pairs_head = [pp for pp in pairs_head if pp.get("family") == args.family]
-            if not pairs_head:
-                print(f"Aucune paire pour la famille '{args.family}'.", file=sys.stderr)
 
         results = []
         for pp in pairs_head:
@@ -2224,6 +2347,13 @@ def main(argv=None) -> int:
         # en CI on cible generalement tout le registre, mais un audit local peut
         # vouloir borner a une famille.
         target_pairs = pairs
+        if args.pair is not None:
+            # #20197 : --pair etait accepte puis ignore ici aussi. Nom inconnu = rc 2.
+            selection = [pp for pp in target_pairs if pp.get("name") == args.pair]
+            if not selection:
+                _paire_inconnue(args.pair, target_pairs)
+                return 2
+            target_pairs = selection
         if args.family:
             target_pairs = [pp for pp in target_pairs if pp.get("family") == args.family]
             if not target_pairs:
@@ -2284,6 +2414,20 @@ def main(argv=None) -> int:
             return 1
         return 0
 
+    # --pair (#20197) : restreint --check a la paire nommee. Avant ce correctif il
+    # etait accepte puis ignore : les 157 paires etaient parcourues (628 appels git
+    # pour le controle d'une seule). Un nom inconnu echoue en nommant les noms
+    # connus, jamais en retombant sur le registre entier.
+    if args.pair is not None:
+        selection = [pp for pp in pairs if pp.get("name") == args.pair]
+        if not selection:
+            _paire_inconnue(args.pair, pairs)
+            return 2
+        pairs = selection
+    # Selecteur sans paire (--family inconnue, deja signalee plus haut) : rien a
+    # mesurer. C'est une erreur d'usage, jamais un succes sur zero paire (#20197).
+    if not pairs and (args.pair is not None or args.family):
+        return 2
     results = [check_pair(repo_root, pp) for pp in pairs]
     n_ok = sum(1 for r in results if r["status"] == "OK")
     n_drift = sum(1 for r in results if r["status"] == "DRIFT")

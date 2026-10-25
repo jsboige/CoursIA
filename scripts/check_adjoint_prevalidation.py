@@ -199,6 +199,16 @@ QUALIFYING_LANES = frozenset({
     "myia-po-2026:CoursIA-3",
     "myia-po-2027:CoursIA",
     "myia-po-2027:CoursIA-2",
+    # myia-po-2028 replaces myia-po-2026 (hardware failure, 2026-10-09). Its
+    # three lanes were onboarded on 2026-10-20 and CoursIA-3 holds the
+    # secretariat by user mandate. Absent from this set, they could only attest
+    # by signing as the dead machine's lanes, which breaks the one-lane-one-agent
+    # premise of the claim protocol. The myia-po-2026 entries stay so that
+    # dossiers already posted under them keep being read; remove them once no
+    # live dossier carries them.
+    "myia-po-2028:CoursIA",
+    "myia-po-2028:CoursIA-2",
+    "myia-po-2028:CoursIA-3",
 })
 # `Grain: <genre> -- lane <machine:workspace>` in the pull request body names the
 # lane that carries the work. The canonical reader is `grain_tag.extract_lane`,
@@ -941,9 +951,21 @@ def probe_b0(pr: int) -> dict[str, Any]:
         except ImportError:  # charge via importlib dans les tests (hors scripts/)
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
             import check_unaddressed_nits
-        return check_unaddressed_nits.analyse_pr(pr)
     except Exception as exc:  # noqa: BLE001 -- any failure means "not measured"
         raise RuntimeError(f"B.0 organ could not measure PR #{pr}: {exc}") from exc
+    try:
+        result = check_unaddressed_nits.analyse_pr(pr)
+    except Exception as exc:  # noqa: BLE001 -- any failure means "not measured"
+        raise RuntimeError(f"B.0 organ could not measure PR #{pr}: {exc}") from exc
+    # #21882/#21964 : budget de passe epuise = « non mesure », jamais un resultat
+    # qui laisserait `b0_claim_contradictions` lacher un dossier READY `b0: clear`
+    # sans aucune mesure. Meme fail-closed que la panne d'organe ci-dessus
+    # (RuntimeError -> UNKNOWN, exit 2 dans main).
+    if result.get("budget_exhausted"):
+        raise RuntimeError(
+            f"B.0 organ budget exhausted measuring PR #{pr} (not a clean result)"
+        )
+    return result
 
 
 def refute_ready_b0(
@@ -1006,6 +1028,11 @@ class StackEntry:
     # sha -> sujet. Le sujet est ce qui s'apparie entre deux versions d'une PR
     # rebatie ; le sha, lui, ne survit pas au rebase.
     subjects: dict[str, str]
+    # #20641 -- SHA d'auteur (au-dela des fusions de rafraichissement de base
+    # prouvees content-free). Recouvre `ref` quand la tete est elle-meme le
+    # commit d'auteur, et un ancetre de `ref` quand un update-branch a
+    # prepende une fusion content-free depuis `main`.
+    author_ref: str = ""
 
 
 def _git(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
@@ -1016,6 +1043,77 @@ def _git(args: list[str], check: bool = True) -> subprocess.CompletedProcess:
     if check and proc.returncode != 0:
         raise RuntimeError(f"git {' '.join(args[:3])} -> {proc.stderr.strip()[:200]}")
     return proc
+
+
+#: Borne de la remontee first-parent (alignee sur ``merge_dwell._MAX_WALK``).
+#: Une PR accumule rarement 50 rafraichissements de base non rebases, et
+#: au-dela c'est un defaut cote PR -- la porte ne contourne pas.
+_AUTHOR_REF_MAX_WALK = 50
+
+#: Ref de la base canonique de toutes les PR de la porte pile. Le gate
+#: exige ``baseRefName == CANONICAL_BASE`` pour un verdict READY (cf
+#: ``baseRefName must be ...``), donc la base est toujours main.
+_STACK_BASE_REF = "refs/remotes/origin/main"
+
+
+def _author_ref(ref: str, base_ref: str = _STACK_BASE_REF) -> str:
+    """#20641 -- SHA d'auteur de ``ref`` (au-dela des fusions content-free).
+
+    La remontee first-parent est celle de ``last_authoritative_sha`` dans
+    ``scripts/ci/merge_dwell.py`` : on saute une fusion si et seulement
+    si elle est content-free (deux parents, second ancetre de la base,
+    arbre du merge identique a l'auto-merge des parents). Une
+    resolution de conflit (arbre different de l'auto-merge) reste du
+    contenu d'auteur, et la remontee s'arrete la.
+
+    On ne reimplemente pas ``last_authoritative_sha`` : le contrat est
+    qu'on utilise la MEME condition de saut. Le predicat reste local-git
+    ici -- la porte pile n'a pas besoin du GitHub API, elle dispose
+    deja des refs de tete de chaque PR ouverte.
+
+    Echec de mesure (git absent, SHA orphelin, sortie vide) : on rend
+    ``ref`` inchange, jamais une exception. Une mesure impossible ne
+    doit pas fabriquer de refus.
+    """
+    current = ref
+    for _ in range(_AUTHOR_REF_MAX_WALK):
+        parents_proc = _git(["log", "-1", "--format=%P", current], check=False)
+        if parents_proc.returncode != 0:
+            return current
+        parents = (parents_proc.stdout or "").strip().split()
+        if len(parents) != 2:
+            return current
+        first, second = parents
+        # Le second parent doit etre un ancetre de la base.
+        if (
+            _git(
+                ["merge-base", "--is-ancestor", second, base_ref], check=False
+            ).returncode
+            != 0
+        ):
+            return current
+        # L'arbre du merge doit etre l'auto-merge des parents (meme
+        # condition que `last_authoritative_sha`).
+        tree_proc = _git(["log", "-1", "--format=%T", current], check=False)
+        if tree_proc.returncode != 0:
+            return current
+        current_tree = (tree_proc.stdout or "").strip()
+        if not current_tree:
+            return current
+        # `git merge-tree --write-tree` (Git >= 2.38) ecrit l'arbre de
+        # l'auto-merge ; une sortie non nulle signale des conflits, et
+        # donc du contenu d'auteur.
+        auto_proc = _git(
+            ["merge-tree", "--write-tree", first, second], check=False
+        )
+        if auto_proc.returncode != 0:
+            return current
+        first_line = (auto_proc.stdout or "").splitlines()[:1]
+        auto_tree = first_line[0].strip() if first_line else ""
+        if not auto_tree or auto_tree != current_tree:
+            return current
+        current = first
+    return current
 
 
 def _own_ref_content(ref: str) -> tuple[list[str], dict[str, str]]:
@@ -1055,12 +1153,24 @@ def _fetch_pr_heads(numbers: list[int]) -> tuple[list[int], list[str]]:
     comme « propres » des commits deja merges -- la porte inventerait des piles.
     Une passe qui rafraichit sa reference ne depend pas de la fraicheur de
     l'appelant.
+
+    Le refspec des tetes de PR est **force** (`+`). Une tete de PR qui bouge
+    (rebase, force-push) rend la ref locale non fast-forward : sans le `+`,
+    git rejette le refspec, le LOT entier echoue, et la porte STACK -- celle qui
+    detecte une base morte ou une pile -- se desactive pour tout le depot
+    pendant que le gate rend quand meme son verdict. Mesure du 2026-10-22 :
+    21 rejets `non-fast-forward` sur 272 PRs ouvertes, porte STACK inactivable
+    sur tout le pool ; avec le `+`, le meme fetch rend rc=0.
     """
     remaining = list(numbers)
     for _ in range(STACK_FETCH_TRIES):
-        specs = ["main:refs/remotes/origin/main"]
-        specs += [f"pull/{p}/head:{STACK_REF_PREFIX}{p}" for p in remaining]
-        proc = _git(["fetch", "-q", "origin", *specs], check=False)
+        specs = ["+main:refs/remotes/origin/main"]
+        specs += [f"+pull/{p}/head:{STACK_REF_PREFIX}{p}" for p in remaining]
+        # `--no-progress` et non `-q` : `-q` SUPPRIME la ligne de rejet
+        # (`! [rejected] ... (non-fast-forward)`), donc un echec de lot
+        # arrivait sans cause -- l'incident disait `rc=1` et rien d'autre.
+        # La cause nommee vaut mieux qu'un code nu (#20251).
+        proc = _git(["fetch", "--no-progress", "origin", *specs], check=False)
         if proc.returncode == 0:
             return remaining, []
         gone = set(re.findall(r"remote ref pull/(\d+)/head", proc.stderr or ""))
@@ -1116,7 +1226,14 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
     for p in fetched:
         ref = f"{STACK_REF_PREFIX}{p}"
         commits, subjects = _own_ref_content(ref)
-        index[p] = StackEntry(p, ref, commits, subjects)
+        # #20641 -- un cout de un appel git par PR (jusqu'a 50
+        # first-parent walks), borne par `_AUTHOR_REF_MAX_WALK`. C'est
+        # le seul ajout de la passe : sans lui, un rafraichissement
+        # content-free (update-branch sans conflit) fait sortir la
+        # base de la pile de l'ordre lineaire.
+        index[p] = StackEntry(
+            p, ref, commits, subjects, _author_ref(ref)
+        )
     _prune_stack_refs(fetched)
     return index, []
 
@@ -1228,10 +1345,16 @@ def _stack_partners(target: int, index: dict[int, StackEntry]) -> list[int]:
                 continue
             if not _subjects_corroborated(entry, other, set(shared)):
                 continue
-        # Bas de pile lineaire : la tete de `target` est un ancetre de celle
-        # de `other`, donc merger `target` d'abord est l'ordre correct.
+        # Bas de pile lineaire : la tete d'AUTEUR (au-dela d'un eventuel
+        # rafraichissement content-free, #20641) de `target` est un
+        # ancetre de celle de `other`, donc merger `target` d'abord est
+        # l'ordre correct. On utilise `author_ref`, pas `ref` : un
+        # `gh pr update-branch` content-free prepende une fusion de
+        # rafraichissement a `entry.ref` (et potentiellement a
+        # `other.ref`), et la comparer brute faisait croire a un
+        # sommet de pile la ou il y a un bas lineaire.
         if _git(
-            ["merge-base", "--is-ancestor", entry.ref, other.ref], check=False
+            ["merge-base", "--is-ancestor", entry.author_ref, other.author_ref], check=False
         ).returncode == 0:
             continue
         if not [
@@ -1276,7 +1399,7 @@ def stack_reasons(target: int, index: dict[int, StackEntry]) -> list[str]:
     return reasons
 
 
-_STACK_INDEX_CACHE: dict[str, Any] = {"built": False, "index": None}
+_STACK_INDEX_CACHE: dict[str, Any] = {"built": False, "index": None, "incidents": []}
 # Sentinelle : distingue « pas d'argument » (mesure live, mise en cache) de
 # ``stack=None`` (desactivee explicitement, usage des tests).
 _STACK_AUTO = object()
@@ -1285,13 +1408,36 @@ _STACK_AUTO = object()
 def default_stack_index() -> dict[int, StackEntry] | None:
     if not _STACK_INDEX_CACHE["built"]:
         index, incidents = build_stack_index()
-        _STACK_INDEX_CACHE.update(built=True, index=index)
+        _STACK_INDEX_CACHE.update(built=True, index=index, incidents=list(incidents))
         for incident in incidents:
             # Un incident se DIT et ne bloque pas : sortie stderr, verdict
             # inchange. C'est la meme frontiere que l'organe #20250, ou une
             # base illisible ne fabrique aucun finding.
             print(f"STACK (WARN, mesure incomplete): {incident}", file=sys.stderr)
     return _STACK_INDEX_CACHE["index"]
+
+
+def stack_measurement_state() -> str:
+    """Etat de la porte STACK au moment du verdict : trois etats distincts.
+
+    - ``not-run`` : la porte n'a pas ete exercee (aucun dossier READY a
+      evaluer) -- la mesure n'a pas eu lieu, elle n'a pas echoue.
+    - ``unmeasured`` : la porte a ete exercee et la mesure a echoue (tetes de
+      PR inatteignables, enumeration impossible). La porte est alors
+      **desactivee** : elle ne fabrique aucun refus (fail-open assume,
+      convention UNKNOWN != rouge forge), mais l'absence de mesure doit
+      etre visible.
+    - ``measured`` : la porte a ete exercee et l'index a ete construit.
+
+    L'incompletude ne vit plus seulement sur stderr (#22005) : le verdict
+    JSON la nomme, pour qu'un READY sans STACK ne se lise pas comme un READY
+    complet.
+    """
+    if not _STACK_INDEX_CACHE.get("built"):
+        return "not-run"
+    if (_STACK_INDEX_CACHE.get("incidents") or []) or _STACK_INDEX_CACHE.get("index") is None:
+        return "unmeasured"
+    return "measured"
 
 
 def derive_verdict(
@@ -2532,7 +2678,14 @@ def build_result(
         "verdict": verdict or "NO_DOSSIER",
         "errors": errors,
         "out_of_fleet": is_out_of_fleet(snapshot),
+        # #22005 : l'etat de la porte STACK. Une porte non mesuree ne
+        # fabrique aucun refus (fail-open assume) mais elle ne doit pas se
+        # lire comme une porte mesuree -- le champ la nomme.
+        "stack": stack_measurement_state(),
     }
+    stack_incidents = _STACK_INDEX_CACHE.get("incidents") or []
+    if stack_incidents:
+        result["stack_incidents"] = list(stack_incidents)
     if dossier is not None and verdict:
         result["dossier"] = dossier_payload(dossier)
         result["blocking_fields"] = blocking_fields(dossier)
@@ -2647,10 +2800,18 @@ def _issue_comments(pr: int) -> list[dict[str, Any]]:
     ])
     if not isinstance(rows, list):
         raise RuntimeError("issue comments response is not a list")
+    # #21818 : l'auteur est lu en REST ici, donc deja en orthographe REST --
+    # mais la normalisation passe par le point de passage UNIQUE
+    # (`gh_identity.normalize_author_login`), pour que les deux gates
+    # comparent la MEME forme quelle que soit la surface qui a lu l'auteur
+    # (GraphQL rend le login d'un `Bot` SANS le suffixe `[bot]`).
     return [
         {
             "id": row.get("node_id") or row.get("id"),
-            "author": {"login": (row.get("user") or {}).get("login", "")},
+            "author": {
+                "login": gh_identity.normalize_author_login(row.get("user") or {}),
+                "type": (row.get("user") or {}).get("type") or "",
+            },
             "createdAt": row.get("created_at"),
             "body": row.get("body") or "",
         }
@@ -2667,7 +2828,10 @@ def _reviews(pr: int) -> list[dict[str, Any]]:
     return [
         {
             "id": row.get("node_id") or row.get("id"),
-            "author": {"login": (row.get("user") or {}).get("login", "")},
+            "author": {
+                "login": gh_identity.normalize_author_login(row.get("user") or {}),
+                "type": (row.get("user") or {}).get("type") or "",
+            },
             "submittedAt": row.get("submitted_at"),
             "state": row.get("state"),
             "commit": {"oid": row.get("commit_id")},
@@ -3208,6 +3372,7 @@ def main() -> int:
             "ready": False,
             "verdict": "UNKNOWN",
             "errors": errors,
+            "stack": stack_measurement_state(),
         }
         print(json.dumps(result, ensure_ascii=False) if args.json else f"UNKNOWN -- {exc}")
         return EXIT_UNKNOWN
