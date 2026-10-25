@@ -32,7 +32,9 @@
 
 ## Résultats Clés
 
-### Performance Globale (2015-2025)
+### Proxy Python, exécution du 2026-02-17 (fenêtre 2015-01-02 → 2026-02-13)
+
+Ce tableau vient du script `research_robustness_simple.py` (`research_results.txt`), dont la fenêtre courait jusqu'à la date d'exécution. Il ne porte pas sur la fenêtre figée : les chiffres de la fenêtre 2015-2025 sont ceux du tableau suivant.
 
 | Métrique | Valeur |
 |----------|--------|
@@ -42,11 +44,11 @@
 | Max Drawdown | **31.03%** |
 | Positions moyennes | 1.9 |
 
-### Proxy Python et backtest C# sur la même fenêtre
+### Proxy Python et backtest C#, fenêtre figée 2015-2025
 
 | Mesure | Fenêtre | Sharpe | CAGR | MaxDD | Note |
 |--------|---------|--------|------|-------|------|
-| Proxy Python (carnet) | 2015-01-02 → 2025-12-31 | 1,106 | 25,33 % | 29,93 % | 30 grandes capitalisations, sans frais |
+| Proxy Python (carnet) | données 2015-01-02 → 2025-12-31, série 2015-01-08 → 2025-12-18 | 1,106 | 25,33 % | 29,93 % | 30 grandes capitalisations, sans frais |
 | Backtest C# QC Cloud, univers OEF | 2015-01-01 → 2025-12-31 | **0,438** | **14,0 %** | **42,4 %** | S&P 100, frais IB, 888 ordres |
 
 **Observation** : le backtest C# ne retrouve pas le niveau du proxy. Le chiffre « 2021-Now : 0,507 » comparé ici auparavant venait d'un backtest à fenêtre glissante qui n'était pas identifié ; il est retiré. Trois différences de construction peuvent porter l'écart, sans avoir été mesurées séparément :
@@ -57,7 +59,7 @@
 
 Les frais IB du backtest C# pèsent environ 2,5 % du capital initial sur onze ans : ils n'expliquent pas l'écart à eux seuls. Identifiants des backtests et sous-périodes : section « Retest QC500 » du README.
 
-**Mesures du carnet `research_robustness.ipynb`** : les tableaux de ce document viennent du script `research_robustness_simple.py` (exécution du 2026-02-17, fenêtre jusqu'au 2026-02-13). Le carnet, ré-exécuté sur la fenêtre figée 2015-01-02 → 2025-12-31, donne : CAGR 25,33 %, Sharpe 1,106, drawdown max 29,93 %, 1,9 position en moyenne ; 12 semestres positifs sur 18 (2017-2025), Sharpe moyen par semestre 0,86. Le découpage semestriel applique des règles fixes : c'est une mesure de stabilité, pas une validation walk-forward au sens strict (aucun paramètre n'est ré-estimé d'une fenêtre à l'autre).
+**Mesures du carnet `research_robustness.ipynb`** : les tableaux de ce document viennent du script `research_robustness_simple.py` (exécution du 2026-02-17, fenêtre jusqu'au 2026-02-13). Le carnet, ré-exécuté sur la fenêtre figée (données yfinance du 2015-01-02 au 2025-12-31 ; la série de rendements du proxy court du 2015-01-08 au 2025-12-18, bornes effectives imprimées par le carnet), donne : CAGR 25,33 %, Sharpe 1,106, drawdown max 29,93 %, 1,9 position en moyenne ; 12 semestres positifs sur 18 (2017-2025), Sharpe moyen par semestre 0,86. Le découpage semestriel applique des règles fixes : c'est une mesure de stabilité, pas une validation walk-forward au sens strict (aucun paramètre n'est ré-estimé d'une fenêtre à l'autre).
 
 ---
 
@@ -221,7 +223,7 @@ Chaque sous-période repart du capital initial, avec des indicateurs préchauff�
 - `research_robustness_simple.py`: Script Python standalone (yfinance)
 - `research_results.txt`: Output complet du backtest
 - `RESEARCH_SUMMARY.md`: Ce document
-- `research_robustness.ipynb`: Notebook Jupyter exécuté (yfinance, fenêtre figée 2015-01-02 → 2025-12-31)
+- `research_robustness.ipynb`: Notebook Jupyter exécuté (yfinance, données 2015-01-02 → 2025-12-31, série du proxy 2015-01-08 → 2025-12-18)
 
 ---
 
