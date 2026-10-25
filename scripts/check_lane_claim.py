@@ -3335,8 +3335,27 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # La lecture des PRs ouvertes n'est payee que s'il y a un candidat.
         if stale_others and payload.get("number") is not None:
             for ln, ev in list(stale_others.items()):
-                live = _claim_still_being_delivered(
-                    int(payload["number"]), ln, stale_threshold, now)
+                # #22408 / review Hermes 5641325382 -- la lecture de l'activite
+                # peut LEVER, pas seulement rendre None : `_lane_open_prs_
+                # referencing` passe par `_gh_open_prs_with_files()`, qui leve
+                # `RuntimeError` sur un `gh` en echec et `OpenPrsIncompleteError`
+                # (sous-classe de RuntimeError) sur une enumeration partielle.
+                # Sans ce filet, une enumeration morte faisait sortir l'exception
+                # de `_run_check` -- traceback au lieu d'un verdict, et quatre
+                # tests verts sur `main` (gh indisponible) rougissaient ici.
+                # Une lecture impossible n'est pas une preuve de livraison : le
+                # claim garde son verdict d'avant (STALE), et on le dit.
+                try:
+                    live = _claim_still_being_delivered(
+                        int(payload["number"]), ln, stale_threshold, now)
+                except (RuntimeError, ValueError, TypeError) as exc:
+                    print(
+                        f"WARN: activite de {ln} illisible "
+                        f"({type(exc).__name__}: {exc}) -- le claim garde son "
+                        f"verdict d'avant (perime) (#22408)",
+                        file=sys.stderr,
+                    )
+                    continue
                 if live is None:
                     continue
                 pr_number, activity_age_h = live

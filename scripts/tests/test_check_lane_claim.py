@@ -1288,6 +1288,57 @@ def test_unreadable_activity_keeps_the_old_verdict(monkeypatch, capsys):
     assert '"stale_claims": [\n    "myia-po-2023:CoursIA-2"\n  ]' in captured.out
 
 
+def test_open_pr_enumeration_failure_keeps_the_old_verdict(monkeypatch, capsys):
+    """#22408 / review Hermes 5641325382 -- une enumeration qui LEVE ne sort pas.
+
+    `_gh_open_prs_with_files()` leve `RuntimeError` sur un `gh` en echec et
+    `OpenPrsIncompleteError` (sa sous-classe) sur une enumeration partielle.
+    Ce mode n'etait couvert par aucun test : l'exception traversait
+    `_run_check` jusqu'a la CLI, qui sortait en traceback sans verdict -- et
+    quatre tests verts sur `main` (pas de `gh` dans l'environnement)
+    rougissaient au head. Une lecture impossible ne ranime pas un claim : il
+    garde son verdict d'avant, et l'organe le dit sur stderr.
+    """
+    p = payload(comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- CSP-10",
+                        "2026-08-04T11:00:00Z"), number=21881)
+
+    def boom():
+        raise clc.OpenPrsIncompleteError("enumeration incomplete: REST timeout")
+
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", boom)
+
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", stale_threshold=48.0,
+                        now=NOW, my_paths=[CSP10_PATH])
+    captured = capsys.readouterr()
+    assert rc == 0, captured.out + captured.err
+    assert '"stale_claims": [\n    "myia-po-2023:CoursIA-2"\n  ]' in captured.out
+    assert '"revived_claims": []' in captured.out
+    assert "activite de myia-po-2023:CoursIA-2 illisible" in captured.err
+
+
+def test_open_pr_enumeration_runtime_error_keeps_the_old_verdict(
+        monkeypatch, capsys):
+    """Meme filet pour un `gh` simplement en echec (RuntimeError nu).
+
+    C'est la forme exacte du log CI du job `Scripts Tests (CPU)` :
+    `RuntimeError: gh repo view failed (exit 4)`.
+    """
+    p = payload(comment("[CLAIMED] lane myia-po-2023:CoursIA-2 -- CSP-10",
+                        "2026-08-04T11:00:00Z"), number=21881)
+
+    def boom():
+        raise RuntimeError("gh repo view failed (exit 4)")
+
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files", boom)
+
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2", stale_threshold=48.0,
+                        now=NOW, my_paths=[CSP10_PATH])
+    captured = capsys.readouterr()
+    assert rc == 0, captured.out + captured.err
+    assert '"stale_claims": [\n    "myia-po-2023:CoursIA-2"\n  ]' in captured.out
+    assert "illisible" in captured.err
+
+
 def test_implicit_occupation_is_not_measured_when_a_claim_blocks(capsys):
     """#22408 item 3 : `[]` ne doit plus se lire « mesure, personne ».
 
