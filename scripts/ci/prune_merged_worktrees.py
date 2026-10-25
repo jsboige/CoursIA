@@ -2954,6 +2954,13 @@ def main() -> int:
     if args.json:
         out = {
             "scanned": len(statuses),
+            # #127 : un organe qui n'a diagnostique AUCUN worktree (scanned=0)
+            # n'atteste PAS une ferme propre -- il est MUET. Le flag rend un
+            # silence (`scanned=0`, stdout vide, rc=0) discriminable d'une passe
+            # propre ; avant, les deux signatures etaient identiques (classe
+            # #86, 8 nuits sur ai-01). Pure observabilite : aucune decision de
+            # retrait n'est modifiee, l'ancre `--search head:<b>` est intacte.
+            "mute": len(statuses) == 0,
             "removable": sum(1 for s in statuses if s.decision == "REMOVE"),
             "refused": refused_count,
             "refusal_reasons": refusal_reason_breakdown(statuses),
@@ -2999,6 +3006,19 @@ def main() -> int:
             f"api: cache={st['cache_hits']} lot={st['listing_calls']}"
             f" hits_lot={st['listing_hits']} ancre={st['anchor_calls']}"
             f" degrade={st['listing_degraded']}"
+        )
+
+    # #127 : un organe muet (scanned=0) n'est PAS une attestation de ferme
+    # propre. Averti sur stderr -- le journal de la tache planifiee fusionne
+    # les deux flux, et en --json le stdout doit rester pur pour json.loads.
+    # Le champ JSON `mute` (ci-dessus) porte la meme information aux lecteurs
+    # structurels ; aucun des deux ne modifie une decision de retrait.
+    if len(statuses) == 0:
+        print(
+            "MUTE: aucun worktree diagnostique (scanned=0) -- ce rapport "
+            "n'atteste pas une ferme propre ; le passage est silencieux, "
+            "pas propre (#127).",
+            file=sys.stderr,
         )
 
     # Seuil d'alerte (#3895) : stderr, jamais stdout -- en --json le stdout
