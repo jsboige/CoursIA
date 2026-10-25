@@ -38,11 +38,17 @@ export COURSIA_RUNNER_TOOLCACHE_VOLUME="coursia-runner-toolcache"
 #     --------------------------------------
 #     total CAPS                3 072 Mo   sur 32 095 Mo -> marge ~29 Go
 #
-# 12 EST UN PLAFOND D'ADMISSION VOLONTAIREMENT LARGE : l'hote (un portable qui
-# sert aussi de poste interactif) garde 20 Go pour lui-meme, et la VM WSL n'en
-# a que 27 disponibles. 12 laisse de la place a un elargissement mesure sans
-# re-editer ce fichier, tout en refusant une composition qui mangerait l'hote.
-export COURSIA_RUNNER_BUDGET_GB=12
+# CONVENTION (arbitrage ai-01 du 2026-10-25, #22532) : la valeur est la SOMME
+# des caps memoire des slots declares, arrondie au Go superieur -- ici
+# 3 072 Mo font exactement 3 Go. Un budget plus large que la composition serait
+# INERT : un slot ajoute plus tard passerait sans que personne n'ait
+# redimensionne quoi que ce soit ; le cas inverse (budget sous la somme) a
+# coute la famine du 2026-10-12. Elargir = changer la composition ET ce budget
+# dans le meme geste. La protection de l'hote n'est pas le role de ce budget :
+# c'est le mur kernel de coursia-ci.slice la ou elle est deployee -- absente
+# sur ce portable, c'est la composition declaree ci-dessus qui tient ce role,
+# avec la limite memball de la VM WSL.
+export COURSIA_RUNNER_BUDGET_GB=3
 
 # BUDGET CPU INTER-FAMILLES : somme des caps CPU des familles d'EXECUTION.
 # Ici une seule famille (start 2 x 3 vCPU = 6). 10 = la MOITIE des 20 vCPU

@@ -200,6 +200,8 @@ voir.
 | `COURSIA_RUNNER_CPU_BUDGET` | verification dans `supervise.sh` au demarrage | la **somme des demandes** de vCPU entre familles, **avant** de lancer quoi que ce soit | l'usage reel : c'est un refus de demarrage, pas un plafond kernel |
 | `COURSIA_RUNNER_BUDGET_GB` | **declare par le wrapper de CHAQUE machine** (les trois jambes, meme nombre) | la **somme des memoires** en vol **plus** la demande, toutes familles, avant de lancer un slot | la memoire reellement consommee ensuite, et le page cache de la VM : c'est un refus de demarrage, pas un plafond kernel |
 
+**Convention de valeur (arbitrage ai-01 du 2026-10-25, #22532)** : la valeur declaree est la **somme des caps memoire des slots declares**, arrondie au Go superieur -- elle declare la composition de la machine. Un budget plus large que la composition serait inerte (un slot ajoute plus tard passe sans que personne redimensionne quoi que ce soit) ; elargir le parc exige de re-ecrire le budget dans le meme geste. La protection de l'hote n'est pas son role : c'est le mur kernel de `coursia-ci.slice`.
+
 **`COURSIA_RUNNER_BUDGET_GB` est la seule borne de ressource qui n'est PAS inerte
 par defaut**, et c'est pour cela qu'elle doit etre ecrite : elle ne peut pas valoir
 0 (le garde compare une somme EN VOL a ce budget -- 0 refuserait tous les slots de
