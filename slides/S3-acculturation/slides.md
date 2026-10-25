@@ -124,14 +124,14 @@ layout: section
 
 > **État de l'art** : voir la slide « Développement (2/2) » pour la chronologie moderne (1997 → 2025).
 
-<div class="flex justify-between items-end gap-6 mt-3 px-6">
-  <img src="./images/img_006.png" class="max-h-[120px] w-[52%] object-contain" alt="Repères historiques" />
+<div class="flex justify-between items-end gap-6 mt-2 px-6">
+  <img src="./images/img_006.png" class="max-h-[104px] w-[52%] object-contain" alt="Repères historiques" />
   <div class="flex gap-5 items-center pb-2">
-    <img src="./images/img_007.jpg" class="h-14 object-contain" alt="Logo DARPA" />
-    <img src="./images/img_008.jpg" class="h-12 object-contain" alt="Logo ImageNet" />
+    <img src="./images/img_007.jpg" class="h-12 object-contain" alt="Logo DARPA" />
+    <img src="./images/img_008.jpg" class="h-10 object-contain" alt="Logo ImageNet" />
   </div>
 </div>
-<div class="text-xs text-slate-500 italic text-center mt-1 px-10">
+<div class="text-xs text-slate-500 italic text-center mt-0.5 px-10">
   Repères fondateurs de l'IA moderne — financement (DARPA) et benchmark (ImageNet) qui ont catalysé l'apprentissage profond.
 </div>
 
@@ -556,7 +556,7 @@ layout: default
 
 </div>
 
-<div class="grid grid-cols-6 gap-1 mt-2 px-4">
+<div class="grid grid-cols-7 gap-1 mt-2 px-4">
 <img src="./images/img_027.png" class="max-h-[100px] w-full object-contain" alt="Cycle d'un algorithme génétique : initial population → fitness → sélection → croisement → mutation" />
 <img src="./images/img_028.png" class="max-h-[100px] w-full object-contain" alt="Croisement sur le problème des huit reines : deux échiquiers parents combinés par addition et permutation" />
 <img src="./images/img_029.png" class="max-h-[100px] w-full object-contain" alt="Progression du backtracking sur le problème des N-reines : trois plateaux successifs (4 reines, 3 reines, 2 reines) illustrant le retour arrière après violation de contrainte" />
@@ -953,7 +953,7 @@ layout: default
 
 </TeachingStep>
 
-<TeachingStep v-click="2" placement="below" size="sm">
+<TeachingStep v-click="2" placement="below" size="lg">
 
 **Ingénierie de connaissances**
 
@@ -963,7 +963,10 @@ layout: default
 - Linked Data
 
 <template #visual>
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center; width:100%; height:100%;">
 <img src="./images/img_048.png" alt="Nuage Linked Open Data : les jeux de données publiques interconnectées du web des données" />
+<img src="./images/img_049.png" alt="Pile des standards du Web sémantique en huit couches : URI et Unicode, XML, RDF, ontologie, règles, logique, preuve, confiance, avec signature et chiffrement" />
+</div>
 </template>
 
 </TeachingStep>

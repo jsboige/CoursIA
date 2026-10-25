@@ -120,7 +120,7 @@
 1. `analysis/marp_pptx_comparison_report.md` - Comparaison détaillée
 2. `analysis/visual_quality_report.md` - Analyse de qualité visuelle
 3. `analysis/comparison_report.md` - Rapport automatisé
-4. `_tools/compare_marp_pptx.py` - Script de comparaison
+4. `_tools/compare_marp_pptx.py` — *(retiré avec l'outillage Marp, #21318 ; le fichier n'existe plus dans le dépôt)* Script de comparaison
 
 ---
 
