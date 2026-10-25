@@ -85,6 +85,18 @@ Tests 9,2 min/run, Notebook Validation 5,4, ML Tests 5,2), scoped
 3,1), mutualise (Always-on guards) ou hors scope (PR gate 8,0). Les
 deplacer serait une regression de couverture, pas une economie.
 
+> **Etat mesure au 2026-10-25 — la jambe `codeql-scheduled` n'existe plus.**
+> CodeQL est passe en *advanced setup* par un workflow du depot
+> (`.github/workflows/codeql.yml`, issue #22548, decision mainteneur
+> Q142 = c) : `pull_request` filtre par `paths` sur le code reellement
+> analyse, matrice derivee des langages touches, plus `push: main` et un
+> `schedule` hebdomadaire comme filet. Le job `codeql-scheduled` de
+> `slow-lane.yml` a donc ete retire dans la meme PR : deux analyses de la
+> meme tete de `main` sous la meme categorie SARIF se recouvriraient. Tout ce
+> qui suit reste l'historique de la tranche 2 — le raisonnement, la mesure
+> 24 h et le controle positif gardent leur valeur ; seule l'adresse du
+> mouvement a change. Le job `ict-tests-pilot` de la tranche 1 est intact.
+
 **Mouvement** : job `codeql-scheduled` dans `slow-lane.yml` (matrice x4,
 `ubuntu-latest`, verdict publie par job). Le trigger per-PR vit dans le
 **default setup** (settings repo, `dynamic/github-code-scanning/codeql`),
