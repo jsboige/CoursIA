@@ -430,6 +430,11 @@ jobs:
           # Origami). Without it the suite fails on ModuleNotFoundError
           # instead of exercising the service core.
           pip install z3-solver
+          # jupyter_kernel_gateway: son module s'importe `kernel_gateway` et
+          # `run_gateway.py` le sonde au preflight (#22439). Sans le paquet,
+          # test_run_gateway.py signalerait une dependance manquante au lieu
+          # d'exercer le lanceur.
+          pip install jupyter_kernel_gateway
           # pytest-xdist: this job's 13 suites run in parallel (-n 4) below.
           # Not a speed nicety -- the sequential run is what makes this job
           # unschedulable on half the pool. Over 68 `Scripts Tests (CPU)` jobs,
@@ -542,6 +547,7 @@ jobs:
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py \
             MyIA.AI.Notebooks/GameTheory/gateway/test_openspiel_cfr_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py \
+            MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_run_gateway.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
