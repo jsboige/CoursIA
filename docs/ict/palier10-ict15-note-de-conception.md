@@ -24,7 +24,7 @@
 Lane `myia-po-2025:CoursIA-2`, suite au claim phase 2 (c6108523649) et à la décision du 11/10 (c6108522150 : « note de conception avant chaque déplacement »). **Aucun renommage, déplacement ni fusion n'a été engagé** — c'est une note, pas un mouvement.
 
 ### Plateaux mesurés (à `origin/main` = `6ad27f7853f`)
-- Famille ICT-15 : **12 carnets** (`ICT-15`, `15b`→`15l`) + 3 PNG, **318 cellules** cumulées.
+- Famille ICT-15 : **12 carnets** (`ICT-15`, `15b`→`15l`) + 3 PNG.
 - Le clone local est en retard de ~676 commits → **toute mesure a été prise à la ref `origin/main`, jamais dans l'arbre partagé** (l'arbre rend des faux positifs `STALE_LINK`).
 - **Aucune PR ouverte ne touche un fichier `ICT-15*`** (vérifié). Le plus proche : **#20378** sur `ICT-Annexe-ProxyContextuality` (marchepied du même palier) ; #20318/#20337 portent un « palier 15 » d'arrivée = bloc lentilles, **autre sens du mot**.
 
