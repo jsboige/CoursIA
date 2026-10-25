@@ -32,6 +32,7 @@ import posixpath
 import re
 import subprocess
 import sys
+import urllib.parse
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -628,8 +629,17 @@ _HTML_LINK_RE = re.compile(r"\]\(([^)#\s]+\.html)\)")
 
 
 def _normalise_readme_target(base: Path, href: str) -> str:
-    """Return a repository-relative POSIX path with ``..`` resolved."""
-    return posixpath.normpath((base / href).as_posix())
+    """Return a repository-relative POSIX path with ``..`` resolved.
+
+    Le href est decode de son percent-encoding avant resolution : sur
+    github.com le navigateur decode, donc ``Cr%C3%A9ateur%20de%20mail.ipynb``
+    vise reellement ``Créateur de mail.ipynb``. La comparaison litterale
+    produisait un faux positif BROKEN sur les README liençant des carnets
+    a accents/espaces (2 violations fantomes sur main, mesurees le 25/10).
+    """
+    return posixpath.normpath(
+        (base / urllib.parse.unquote(href)).as_posix()
+    )
 
 
 def readme_link_violations(
