@@ -659,12 +659,10 @@ def _is_own_later_act(
     if not neutral_after:
         return False
     author = _login(row)
-    # #17437: the identity is compared NORMALISED. This gate reads REST, where
-    # an App author arrives already suffixed (`coursia-lane-ai-01[bot]`), while
-    # the closure gate reads GraphQL, where the same actor arrives as
-    # `coursia-lane-ai-01` with `type: Bot` -- #21818's defect, one layer up.
-    # Comparing the raw login would recognise the coordinator's App on one
-    # surface and miss it on the other.
+    # #17437: normalisation defensive et idempotente. Les constructeurs de ce
+    # gate normalisent deja les auteurs REST ; la forme canonique vit dans
+    # gh_identity, et le correctif fonctionnel est l'ajout de l'App au voisinage
+    # ferme du coordinateur (pas cette seconde normalisation).
     if gh_identity.normalize_author_login(row.get("author") or {}) not in COORDINATOR_IDENTITIES:
         return False
     if row_kind == "review" and _review_body_has_reserve_marker(author, row.get("body") or ""):
@@ -2098,7 +2096,7 @@ _PR_GATE_CONTRADICTION_PREFIX = (
 #: Voix dont un APPROVED sur la tete exacte ouvre la porte du merge. La queue
 #: expose cette porte a titre d'information : l'autorite de merge reste le
 #: 2ter de ``merge_ready`` (approbation coordinateur), jamais ce champ.
-COORDINATOR_REVIEW_LOGINS = frozenset({"myia-ai-01", "jsboige"})
+COORDINATOR_REVIEW_LOGINS = COORDINATOR_IDENTITIES
 
 
 def _parse_ts(value: Any) -> datetime | None:
@@ -2170,7 +2168,7 @@ def _review_disposition(
         oid = ((latest.get("commit") or {}).get("oid")) or ""
         if oid != (snapshot.get("headRefOid") or ""):
             return "approval-not-on-head", False
-        login = (latest.get("author") or {}).get("login", "")
+        login = gh_identity.normalize_author_login(latest.get("author") or {})
         return "approved-exact-head", login in COORDINATOR_REVIEW_LOGINS
     return "reviewed-without-disposition", False
 

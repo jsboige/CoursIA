@@ -3286,6 +3286,34 @@ def test_queue_non_coordinator_approval_does_not_qualify():
     assert entry.review_qualifying is False
 
 
+def test_queue_coordinator_app_approval_qualifies_on_exact_head():
+    """#17437: the review door recognizes the coordinator's App as well."""
+    snapshot = _queue_snapshot([_review(login=mod.COORDINATOR_APP_LOGIN)])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.review_qualifying is True
+
+
+def test_queue_coordinator_graphql_bot_approval_qualifies_on_exact_head():
+    """#21818: GraphQL supplies the App login without its REST suffix."""
+    review = _review(login="coursia-lane-ai-01")
+    review["author"]["type"] = "Bot"
+    entry = _classified(_queue_snapshot([review]))
+    assert entry.verdict == mod.VERDICT_READY
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.review_qualifying is True
+
+
+def test_queue_worker_app_approval_still_does_not_qualify():
+    """The review door stays closed to every worker-lane App."""
+    snapshot = _queue_snapshot([_review(login="coursia-lane-po-2024[bot]")])
+    entry = _classified(snapshot)
+    assert entry.verdict == mod.QUEUE_VERDICT_REVIEW_READY
+    assert entry.review_disposition == "approved-exact-head"
+    assert entry.review_qualifying is False
+
+
 def test_queue_recent_changes_requested_blocks_dispatch():
     """Divergence assumee du design #16483 : un CHANGES_REQUESTED recent n'est
     pas une review manquante, c'est une reserve a lever -- le piege « reserve
