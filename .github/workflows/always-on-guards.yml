@@ -1359,6 +1359,24 @@ jobs:
       # une PR bot qui toucherait les traductions -- c'est precisement ce
       # qu'il surveille. La definition du hot-subset (le semantique) est
       # epinglee par le test, pas par ce step.
+      # #22435 :: un rc de pytest n'est pas un verdict de contenu. Le couple
+      # &&/|| capturait le rc mais le traduisait entierement en « SRC_DRIFT » :
+      # un rc 2 (collecte interrompue) imprimait une derive de traduction alors
+      # que la MESURE n'avait pas eu lieu. Mesure du 25/10 : #22130 et #22264,
+      # `ImportError: cannot import name 'TerminalFormatter'` dans le toolcache
+      # partage, ratchet pourtant vert sur une tete exacte (`2 passed`). Trois
+      # regimes distincts, dans la doctrine de #8819 (« non mesure n'est pas
+      # sans defaut ») :
+      #   rc 0    -> vert, dit ;
+      #   rc 1    -> verdict de contenu, rouge, message inchange ;
+      #   rc >= 2 -> NON MESURE. Rouge seulement si la PR touche l'organe
+      #              (`scripts/translation/**`, `scripts/notebook_tools/**`) :
+      #              la cause est alors attribuable a la PR. Sinon `::warning::`
+      #              non bloquant, qui DIT que ce n'est pas un SRC_DRIFT.
+      # L'attribution lit le diff local (checkout en `fetch-depth: 0`, aucun
+      # appel reseau) ; un diff illisible laisse la cause NON ATTRIBUABLE et le
+      # step non bloquant, en le disant -- jamais un rouge qui nomme une derive
+      # inexistante, jamais un silence qui se lirait comme une couverture.
       - name: "Hot-subset ratchet translation SRC_DRIFT (#15196)"
         id: hot_subset
         if: github.event_name == 'pull_request'
@@ -1370,10 +1388,28 @@ jobs:
           # fichier, cf organe tag_required) ; -q suffit, la sortie de pytest
           # streame au log du step.
           python -m pytest scripts/translation/tests/test_hot_subset_ratchet.py -q && RC=0 || RC=$?
-          if [ "$RC" -ne 0 ]; then
-            echo "::error::Hot-subset ratchet : SRC_DRIFT sur un grain de traduction deposee ou definition du hot-subset derive. Resync la ligne CSV per-cell (jamais d'extraction globale, #13551) / corrige le semantique sous test (#15196)."
+          if [ "$RC" -eq 0 ]; then
+            echo "Hot-subset ratchet : regime MESURE-VERT (rc 0) -- aucun SRC_DRIFT."
+            exit 0
+          fi
+          if [ "$RC" -eq 1 ]; then
+            echo "::error::Hot-subset ratchet : regime VERDICT DE CONTENU (rc 1) -- SRC_DRIFT sur un grain de traduction deposee ou definition du hot-subset derive. Resync la ligne CSV per-cell (jamais d'extraction globale, #13551) / corrige le semantique sous test (#15196)."
             exit 1
           fi
+          # rc >= 2 : pytest n'a PAS rendu de verdict (2 = collecte interrompue,
+          # 3 = erreur interne, 4 = usage, 5 = rien collecte). Ce n'est pas un
+          # SRC_DRIFT (#22435).
+          BASE="${GITHUB_BASE_REF:-main}"
+          if git diff --name-only "origin/${BASE}...HEAD" > /tmp/hot_subset_diff.txt 2>/dev/null; then
+            MATCHED=$(grep -E '^scripts/(translation|notebook_tools)/' /tmp/hot_subset_diff.txt || true)
+            if [ -n "$MATCHED" ]; then
+              echo "::error::Hot-subset ratchet : regime NON MESURE ATTRIBUABLE (rc ${RC}) -- pytest n'a pas rendu de verdict, et cette PR touche l'organe : $(echo "$MATCHED" | tr '\n' ' '). La cause est attribuable a la PR : corrige l'import ou la collecte, puis relance. Ce n'est PAS un verdict de SRC_DRIFT."
+              exit 1
+            fi
+            echo "::warning::Hot-subset ratchet : regime NON MESURE (rc ${RC}) -- pytest n'a pas rendu de verdict et la PR ne touche ni scripts/translation/** ni scripts/notebook_tools/** : la mesure n'a pas eu lieu, ce n'est PAS un SRC_DRIFT (#22435, precedent #8819). Non bloquant ; si une derive reelle est en cause, seule une relance sur un runner sain le dira."
+            exit 0
+          fi
+          echo "::warning::Hot-subset ratchet : regime NON MESURE, ATTRIBUTION INDECISE (rc ${RC}) -- pytest n'a pas rendu de verdict, et le diff contre origin/${BASE} n'a pas pu etre lu. Ce n'est PAS un SRC_DRIFT ; non bloquant, la cause reste a etablir (#22435)."
           exit 0
 
       # #21391 :: le compte de paires de traduction, au moment de la PR.
