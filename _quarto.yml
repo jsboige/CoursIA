@@ -1216,7 +1216,6 @@ project:
     - "MyIA.AI.Notebooks/GenAI/Texte/10c_Long_Context_Strategies.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/10d_TensorSharp_DotNet_Inference.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb"
-    - "MyIA.AI.Notebooks/GenAI/Texte/10f_ORTGenAI_DotNet_BakeOff.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb"
     - "MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb"
