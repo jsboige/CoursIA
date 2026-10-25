@@ -50,6 +50,8 @@
 
 **Observation**: L'extension de période double le Sharpe Ratio (proxy), confirmant la robustesse de la stratégie.
 
+**Mesures du carnet `research_robustness.ipynb`** : les tableaux de ce document viennent du script `research_robustness_simple.py` (exécution du 2026-02-17, fenêtre jusqu'au 2026-02-13). Le carnet, ré-exécuté sur la fenêtre figée 2015-01-02 → 2025-12-31, donne : CAGR 25,33 %, Sharpe 1,106, drawdown max 29,93 %, 1,9 position en moyenne ; 12 semestres positifs sur 18 (2017-2025), Sharpe moyen par semestre 0,86. Le découpage semestriel applique des règles fixes : c'est une mesure de stabilité, pas une validation walk-forward au sens strict (aucun paramètre n'est ré-estimé d'une fenêtre à l'autre).
+
 ---
 
 ## Analyse du SMA(200) Regime Filter
@@ -209,7 +211,7 @@
 - `research_robustness_simple.py`: Script Python standalone (yfinance)
 - `research_results.txt`: Output complet du backtest
 - `RESEARCH_SUMMARY.md`: Ce document
-- `research_robustness.ipynb`: Notebook Jupyter (non exécuté, dépendance AlgorithmImports)
+- `research_robustness.ipynb`: Notebook Jupyter exécuté (yfinance, fenêtre figée 2015-01-02 → 2025-12-31)
 
 ---
 
