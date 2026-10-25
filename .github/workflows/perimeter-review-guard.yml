@@ -88,6 +88,15 @@ name: perimeter-review-guard
 # l'agrégat du PR gate replie (latest-wins par nom). Sans lui, une
 # correction de body laissait le rouge de la surface review en place.
 #
+# Residu assume (#21990, voie b -- decision documentee) : la jambe umbrella
+# `perimeter` d'always-on-guards.yml ne porte que `pull_request`, et CE
+# fichier est gate hors fork (`if:` du job, `head.repo.full_name`) -- sur
+# une PR de fork, une REVIEW tierce posterieure ne declenche donc AUCUNE
+# re-mesure du perimetre, ni ici ni dans l'umbrella : le run du
+# `pull_request` initial reste la seule mesure. Le residu ne couvre que
+# les PRs de fork ; la voie (a) de #21990 -- surface de re-mesure dediee
+# sur pool GitHub-hosted -- reste ouverte si le mainteneur la demande.
+#
 # Pourquoi ce fichier vit sur ubuntu-latest : `pull_request_review` est un
 # declencheur fork-reachable (FORK_REACHABLE_TRIGGERS, #14201 tranche 2),
 # et `pull_request` l'est aussi. Le laisser sur always-on-guards interdisait
