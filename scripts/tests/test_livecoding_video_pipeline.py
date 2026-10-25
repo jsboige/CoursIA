@@ -43,8 +43,12 @@ from scripts.livecoding_video_pipeline import (
     _load_env_files,
     _build_arg_parser,
     _click_play,
+    _drive_code_reveal,
+    _lines_with_voices,
     _resolve_capture_seconds,
+    _set_editor_code,
     build_repl_url,
+    capture_repl_session,
     compose_narration,
     compose_strudel,
     cycles_for_duration,
@@ -52,7 +56,9 @@ from scripts.livecoding_video_pipeline import (
     mux_ffmpeg,
     narration_to_json,
     parse_strudel_highlights,
+    plan_code_reveal,
     probe_duration_ffprobe,
+    reveal_schedule,
     run_pipeline,
     style_cps,
     synthesize_narration_tts,
@@ -704,6 +710,7 @@ class TestCLIInvocation:
             capture_output=True,
             text=True,
             encoding="utf-8",
+            errors="replace",
         )
         assert result.returncode == 0
         assert "livecoding_video_pipeline" in result.stdout
@@ -728,6 +735,7 @@ class TestCLIInvocation:
             capture_output=True,
             text=True,
             encoding="utf-8",
+            errors="replace",
         )
         assert result.returncode == 0
         assert "BPM=80" in result.stdout
@@ -741,6 +749,7 @@ class TestCLIInvocation:
             capture_output=True,
             text=True,
             encoding="utf-8",
+            errors="replace",
         )
         assert "--capture" in result.stdout
         assert "--capture-seconds" in result.stdout
@@ -753,6 +762,7 @@ class TestCLIInvocation:
             capture_output=True,
             text=True,
             encoding="utf-8",
+            errors="replace",
         )
         assert "--narration-engine" in result.stdout
         assert "--narration-json" in result.stdout
@@ -772,6 +782,7 @@ class TestCLIInvocation:
             capture_output=True,
             text=True,
             encoding="utf-8",
+            errors="replace",
         )
         assert result.returncode == 0
         assert "Narration (etape 2" in result.stdout
@@ -1103,6 +1114,7 @@ class TestCliEtapes36:
             capture_output=True,
             text=True,
             encoding="utf-8",
+            errors="replace",
         )
         assert "--tts-engine" in result.stdout
         assert "--tts-gateway" in result.stdout
@@ -1199,7 +1211,7 @@ class TestCliCaptureSecondsDefault:
         seen = {}
 
         def _fake_capture(pattern, output_dir, capture_seconds, cycles, headless,
-                          capture_mode="page"):
+                          capture_mode="page", reveal_states=None):
             seen["capture_seconds"] = capture_seconds
             return {
                 "video_webm": str(tmp_path / "capture.webm"),
@@ -1282,3 +1294,293 @@ class TestClickPlayRetry:
             _click_play(page, "https://strudel.cc/#HASH", attempts=3)
         assert page.clicks == 3
         assert page.gotos == 2
+
+
+# --- Critere 5a : devoilement progressif du code (grain successeur) ----------
+
+
+def _voices_of(script: str):
+    return [l for l in script.split("\n") if l.lstrip().startswith("$:")]
+
+
+def _other_lines(script: str):
+    return [l for l in script.split("\n") if not l.lstrip().startswith("$:")]
+
+
+class _FakeEditorPage:
+    """Page fake pour le devoilement, a horloge VIRTUELLE.
+
+    ``wait_for_timeout`` avance l'horloge de la duree demandee : la cadence
+    se mesure sans dormir pour de vrai, et les instants d'ecriture sont
+    deterministes. ``evaluate`` simule la disponibilite de l'API CodeMirror.
+    """
+
+    def __init__(self, codemirror_available: bool = True):
+        self.codemirror_available = codemirror_available
+        self.now = 0.0
+        self.waits_ms = []
+        self.js_inserts = []
+        self.key_presses = []
+        self.keyboard_inserts = []
+        self.editor_clicks = 0
+        self.keyboard = SimpleNamespace(
+            press=self._press, insert_text=self._insert_text
+        )
+
+    def _press(self, key):
+        self.key_presses.append(key)
+
+    def _insert_text(self, text):
+        self.keyboard_inserts.append(text)
+
+    def evaluate(self, js, arg=None):
+        if arg is not None:
+            self.js_inserts.append(arg)
+        return self.codemirror_available
+
+    def locator(self, selector):
+        outer = self
+
+        class _El:
+            @staticmethod
+            def click(timeout=None):
+                outer.editor_clicks += 1
+
+        return SimpleNamespace(first=_El())
+
+    def wait_for_timeout(self, ms):
+        self.waits_ms.append(ms)
+        self.now += ms / 1000.0
+
+
+class TestLinesWithVoices:
+    """Retirer une queue de voix ne doit jamais reecrire le reste du script."""
+
+    def test_toutes_les_voix_rendent_le_script_a_l_identique(self):
+        script = compose_strudel("trance", 180, visuals=True)
+        assert _lines_with_voices(script, len(_voices_of(script))) == script
+
+    def test_une_voix_conserve_l_entete_et_setcps(self):
+        script = compose_strudel("trance", 180, visuals=True)
+        one = _lines_with_voices(script, 1)
+        assert len(_voices_of(one)) == 1
+        assert _voices_of(one)[0] == _voices_of(script)[0]
+        assert "setcps(" in one
+        assert _other_lines(one) == _other_lines(script)
+
+
+class TestPlanCodeReveal:
+    """Plan du devoilement : etats successifs, dernier etat = script entier."""
+
+    SCRIPT = compose_strudel("trance", 180, voices=4, visuals=True)
+
+    def test_desactive_rend_une_liste_vide(self):
+        assert plan_code_reveal(self.SCRIPT, 0) == []
+        assert plan_code_reveal(self.SCRIPT, -3) == []
+
+    def test_quatre_actes_sur_quatre_voix_donnent_un_a_quatre(self):
+        states = plan_code_reveal(self.SCRIPT, 4)
+        assert len(states) == 4
+        assert [len(_voices_of(s)) for s in states] == [1, 2, 3, 4]
+
+    def test_trois_actes_sur_quatre_voix_finissent_sur_le_script_entier(self):
+        states = plan_code_reveal(self.SCRIPT, 3)
+        assert len(states) == 3
+        assert [len(_voices_of(s)) for s in states] == [1, 3, 4]
+        assert states[-1] == self.SCRIPT
+
+    def test_les_actes_sont_plafonnes_au_nombre_de_voix(self):
+        # On ne peut pas montrer plus d'etats distincts qu'il n'y a de voix.
+        assert len(plan_code_reveal(self.SCRIPT, 99)) == len(_voices_of(self.SCRIPT))
+
+    def test_un_seul_acte_ne_devoile_rien(self):
+        assert plan_code_reveal(self.SCRIPT, 1) == [self.SCRIPT]
+
+    def test_chaque_etat_etend_le_precedent_sans_le_reecrire(self):
+        states = plan_code_reveal(self.SCRIPT, 4)
+        assert len(set(states)) == 4
+        for before, after in zip(states, states[1:]):
+            assert len(before) < len(after)
+            # Les voix deja montrees sont un PREFIXE, les autres lignes
+            # sont identiques : aucun etat ne reorganise le script.
+            assert _voices_of(after)[: len(_voices_of(before))] == _voices_of(before)
+            assert _other_lines(before) == _other_lines(after)
+
+    def test_un_script_sans_voix_ne_se_devoile_pas(self):
+        assert plan_code_reveal("setcps(0.9333)", 4) == ["setcps(0.9333)"]
+
+
+class TestRevealSchedule:
+    """Cadencement des etats sur la fenetre de capture."""
+
+    def test_repartition_uniforme_depuis_zero(self):
+        plan = reveal_schedule(["a", "b", "c"], 60.0)
+        assert [round(t, 3) for t, _ in plan] == [0.0, 20.0, 40.0]
+        assert [s for _, s in plan] == ["a", "b", "c"]
+
+    def test_un_seul_etat_reste_a_zero(self):
+        assert reveal_schedule(["a"], 60.0) == [(0.0, "a")]
+
+    def test_liste_vide(self):
+        assert reveal_schedule([], 60.0) == []
+
+    def test_fenetre_negative_ne_fabrique_pas_de_temps_negatif(self):
+        plan = reveal_schedule(["a", "b"], -10.0)
+        assert [t for t, _ in plan] == [0.0, 0.0]
+
+    def test_les_instants_sont_strictement_croissants(self):
+        times = [t for t, _ in reveal_schedule(["a", "b", "c", "d"], 90.0)]
+        assert times == sorted(times)
+        assert len(set(times)) == len(times)
+
+
+class TestSetEditorCode:
+    """Ecriture dans l'editeur : API CodeMirror d'abord, clavier en repli."""
+
+    CODE = "$: s('bd*4')\n$: note(\"c2\")"
+
+    def test_api_codemirror_utilisee_quand_disponible(self):
+        page = _FakeEditorPage(codemirror_available=True)
+        assert _set_editor_code(page, self.CODE) == "codemirror"
+        assert page.js_inserts == [self.CODE]
+        assert page.key_presses == []
+        assert page.editor_clicks == 0
+
+    def test_repli_clavier_quand_l_api_est_absente(self):
+        page = _FakeEditorPage(codemirror_available=False)
+        assert _set_editor_code(page, self.CODE) == "keyboard"
+        assert page.editor_clicks == 1
+        assert page.key_presses == ["Control+A"]
+        assert page.keyboard_inserts == [self.CODE]
+
+    def test_ne_reevalue_jamais_le_pattern(self):
+        # Control+Enter relancerait l'evaluation : la musique doit continuer
+        # de jouer le pattern complet pendant que l'editeur se remplit.
+        for available in (True, False):
+            page = _FakeEditorPage(codemirror_available=available)
+            _set_editor_code(page, self.CODE)
+            assert "Control+Enter" not in page.key_presses
+
+
+class TestDriveCodeReveal:
+    """Le devoilement consomme la fenetre et place chaque etat a son instant."""
+
+    def test_etats_places_aux_instants_du_plan(self):
+        page = _FakeEditorPage()
+        result = _drive_code_reveal(page, ["a", "b", "c"], 60.0, clock=lambda: page.now)
+        assert result["states"] == 3
+        assert result["applied_at"] == [0.0, 20.0, 40.0]
+        assert result["editor_api"] == "codemirror"
+        assert page.js_inserts == ["a", "b", "c"]
+
+    def test_la_fenetre_est_entierement_consommee(self):
+        page = _FakeEditorPage()
+        _drive_code_reveal(page, ["a", "b", "c"], 60.0, clock=lambda: page.now)
+        assert sum(page.waits_ms) == 60_000
+
+    def test_repli_clavier_traverse_tous_les_etats(self):
+        page = _FakeEditorPage(codemirror_available=False)
+        result = _drive_code_reveal(page, ["a", "b"], 30.0, clock=lambda: page.now)
+        assert result["editor_api"] == "keyboard"
+        assert page.keyboard_inserts == ["a", "b"]
+        assert sum(page.waits_ms) == 30_000
+
+
+class TestCaptureRevealContract:
+    """Le devoilement exige le mode page — echec explicite, pas un drapeau inerte."""
+
+    def test_refuse_le_mode_canvas(self, tmp_path):
+        with pytest.raises(ValueError, match="reveal_states exige capture_mode='page'"):
+            capture_repl_session(
+                "pattern",
+                tmp_path,
+                capture_seconds=1,
+                capture_mode="canvas",
+                reveal_states=["a", "b"],
+            )
+
+    def test_mode_inconnu_toujours_refuse(self, tmp_path):
+        with pytest.raises(ValueError, match="capture_mode inconnu"):
+            capture_repl_session("pattern", tmp_path, capture_mode="video")
+
+    def test_sans_devoilement_aucune_garde(self, tmp_path):
+        # reveal_states=None : le mode canvas reste accepte (comportement
+        # historique) — la garde ne mord que sur le mecanisme nouveau.
+        with pytest.raises(Exception) as exc:
+            capture_repl_session("pattern", tmp_path, capture_seconds=1,
+                                 capture_mode="video")
+        assert isinstance(exc.value, ValueError)
+
+
+class TestCliRevealActs:
+    def test_defaut_desactive(self):
+        assert _build_arg_parser().parse_args([]).reveal_acts == 0
+
+    def test_valeur_transmise(self):
+        assert _build_arg_parser().parse_args(["--reveal-acts", "3"]).reveal_acts == 3
+
+
+class TestRunPipelineRevealWiring:
+    """L'orchestrateur transmet bien les etats — le drapeau ne se perd pas."""
+
+    @staticmethod
+    def _fake_capture(tmp_path):
+        def _fake(**kwargs):
+            return {
+                "video_webm": str(tmp_path / "capture.webm"),
+                "audio_wav": str(tmp_path / "capture.wav"),
+                "final_mp4": str(tmp_path / "capture_final.mp4"),
+                "video_bytes": 11,
+                "wav_bytes": 22,
+                "mp4_bytes": 33,
+                "cycles": 1,
+                "capture_mode": kwargs.get("capture_mode", "page"),
+                "trim_start": 0.5,
+                "reveal": {
+                    "states": 3,
+                    "applied_at": [0.0, 20.0, 40.0],
+                    "editor_api": "codemirror",
+                },
+            }
+        return _fake
+
+    def test_les_etats_atteignent_la_capture(self, monkeypatch, tmp_path):
+        import scripts.livecoding_video_pipeline as mod
+
+        seen = {}
+
+        def _spy(**kwargs):
+            seen.update(kwargs)
+            return self._fake_capture(tmp_path)(**kwargs)
+
+        monkeypatch.setattr(mod, "capture_repl_session", _spy)
+        result = run_pipeline(
+            style_name="trance",
+            duration_seconds=60,
+            output_path=str(tmp_path / "out.mp4"),
+            capture=True,
+            capture_seconds=60,
+            reveal_acts=3,
+        )
+        assert len(seen["reveal_states"]) == 3
+        assert seen["reveal_states"][-1] == result["strudel_script"]
+        assert "devoilement 3 etats" in result["browser_capture"]
+
+    def test_desactive_transmet_une_liste_vide(self, monkeypatch, tmp_path):
+        import scripts.livecoding_video_pipeline as mod
+
+        seen = {}
+
+        def _spy(**kwargs):
+            seen.update(kwargs)
+            return self._fake_capture(tmp_path)(**kwargs)
+
+        monkeypatch.setattr(mod, "capture_repl_session", _spy)
+        run_pipeline(
+            style_name="trance",
+            duration_seconds=60,
+            output_path=str(tmp_path / "out.mp4"),
+            capture=True,
+            capture_seconds=60,
+        )
+        assert seen["reveal_states"] == []

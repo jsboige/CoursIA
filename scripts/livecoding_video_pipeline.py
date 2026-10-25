@@ -779,6 +779,7 @@ def run_pipeline(
     tts_engine: Optional[str] = None,
     tts_gateway: Optional[str] = None,
     tts_out_dir: Optional[str] = None,
+    reveal_acts: int = 0,
 ) -> Dict[str, object]:
     """Orchestrateur : compose le script Strudel, genere la narration
     timestampee (etape 2), la synthetise en WAV expressifs (etape 3) et
@@ -857,6 +858,7 @@ def run_pipeline(
     if capture:
         import subprocess
 
+        reveal_states = plan_code_reveal(strudel, reveal_acts) if reveal_acts else []
         capture_result = capture_repl_session(
             pattern=strudel,
             output_dir=Path(output_path).parent,
@@ -864,11 +866,29 @@ def run_pipeline(
             cycles=cycles_for_duration(style_cps(style_name), capture_seconds) + 1,
             headless=headless,
             capture_mode=capture_mode,
+            reveal_states=reveal_states,
         )
+        reveal_info = capture_result.get("reveal")
+        reveal_note = ""
+        if reveal_acts:
+            if len(reveal_states) >= 2:
+                reveal_note = (
+                    f" ; devoilement {len(reveal_states)} etats a "
+                    f"t={[r for r in (reveal_info or {}).get('applied_at', [])]} s "
+                    f"via {(reveal_info or {}).get('editor_api')}"
+                )
+            else:
+                # Contrat honnete : le drapeau a ete demande mais le script
+                # ne porte pas assez de voix pour se devoiler.
+                reveal_note = (
+                    f" ; devoilement DEMANDE ({reveal_acts}) mais INERTE — "
+                    "le script ne porte pas au moins 2 voix"
+                )
         browser_capture = (
             f"LIVREE : {capture_result['final_mp4']} "
             f"({capture_result['mp4_bytes']} octets, video webm "
             f"{capture_result['video_bytes']} + wav {capture_result['wav_bytes']})"
+            f"{reveal_note}"
         )
         if tts_tracks:
             # Etape 6 : mix final (wav navigateur + voix TTS retardees,
@@ -1293,6 +1313,183 @@ def _resolve_capture_seconds(
     return duration_seconds
 
 
+def _lines_with_voices(strudel_script: str, kept: int) -> str:
+    """Rend le script en ne conservant que les ``kept`` premieres voix.
+
+    Une « voix » est une ligne ``$: …`` (forme produite par
+    :func:`compose_strudel`). Les autres lignes — commentaire d'en-tete,
+    ``setcps``, commentaire de fade-out — sont conservees **a leur place**,
+    dans leur ordre d'origine : le script n'est jamais reorganise, seule
+    une queue de voix est retiree. Consequence verifiable :
+    ``_lines_with_voices(script, n_voices) == script`` au caractere pres.
+
+    L'ordre est preserve (et non regroupe en tete/voix/queue) pour que
+    l'etat final du devoilement soit **byte-identique** au script joue —
+    c'est la condition pour que l'export WAV qui suit rende l'oeuvre
+    entiere et non un prefixe.
+    """
+    out: List[str] = []
+    seen = 0
+    for line in strudel_script.split("\n"):
+        if line.lstrip().startswith("$:"):
+            if seen < kept:
+                out.append(line)
+            seen += 1
+        else:
+            out.append(line)
+    return "\n".join(out)
+
+
+def plan_code_reveal(strudel_script: str, acts: int) -> List[str]:
+    """Planifie les etats de code successifs du devoilement (critere 5a).
+
+    Le critere 5a de #15604 demande « le code Strudel en cours d'evolution,
+    au moins trois etats visibles distincts ». Le mode ``page`` (PR #21045)
+    rend le code VISIBLE, mais **statique** : le pattern arrive d'un coup
+    par le hash d'URL de partage. Cette fonction produit les etats
+    intermediaires — chaque etat ajoute une voix de plus, la premiere
+    n'en montrant qu'une.
+
+    Parametres :
+    - ``strudel_script`` : script produit par :func:`compose_strudel`.
+    - ``acts`` : nombre d'etats demandes ; ``<= 0`` desactive le mecanisme
+      (rend ``[]``). Le nombre effectif est **plafonne au nombre de voix** :
+      on ne peut pas montrer plus d'etats distincts qu'il n'y a de voix.
+
+    Retourne une liste d'etats, du plus pauvre au plus riche. Garanties :
+    - ``etats[0]`` ne porte qu'une voix ;
+    - ``etats[-1] == strudel_script`` (identite exacte) ;
+    - chaque etat est un script valide (en-tete et ``setcps`` conserves) ;
+    - len(etats) == nombre d'actes effectif.
+
+    Un script sans ligne ``$:`` (ou avec une seule) ne se devoile pas par
+    voix : la fonction rend ``[strudel_script]``, un seul etat. C'est un
+    contrat honnete — l'appelant voit ``len(etats) < 2`` et le rapporte,
+    plutot qu'un devoilement silencieusement inerte.
+    """
+    if acts is None or acts <= 0:
+        return []
+
+    n_voices = sum(
+        1 for line in strudel_script.split("\n") if line.lstrip().startswith("$:")
+    )
+    if n_voices < 2:
+        return [strudel_script]
+
+    n_acts = min(int(acts), n_voices)
+    if n_acts < 2:
+        return [strudel_script]
+
+    states: List[str] = []
+    for i in range(n_acts):
+        # Repartition des voix sur les actes : le premier montre 1 voix,
+        # le dernier toutes, les intermediaires sont etalees.
+        kept = 1 + round((n_voices - 1) * i / (n_acts - 1))
+        states.append(_lines_with_voices(strudel_script, kept))
+    return states
+
+
+def reveal_schedule(
+    states: List[str], window_seconds: float
+) -> List[Tuple[float, str]]:
+    """Cadence les etats du devoilement sur la fenetre de capture.
+
+    Les etats sont repartis uniformement : le premier a ``t = 0`` (il est
+    donc visible des la premiere image de la fenetre utile), puis un
+    changement tous les ``window_seconds / len(states)``. Le dernier etat
+    occupe le dernier intervalle jusqu'a la fin de la fenetre.
+
+    Retourne une liste ``[(t_secondes, code)]`` strictement croissante en
+    ``t``. Une fenetre nulle ou negative ne produit qu'un point a ``0.0``
+    par etat — le cadencement ne fabrique pas de duree negative.
+    """
+    if not states:
+        return []
+    window = max(0.0, float(window_seconds))
+    if len(states) == 1:
+        return [(0.0, states[0])]
+    step = window / len(states)
+    return [(i * step, state) for i, state in enumerate(states)]
+
+
+def _set_editor_code(page: object, code: str) -> str:
+    """Ecrit ``code`` dans l'editeur du REPL, sans reevaluer le pattern.
+
+    Deux voies, mesurees sur le REPL strudel.cc (CodeMirror 6) :
+    1. **API CodeMirror** via la vue exposee sur le DOM — remplacement du
+       document en une transaction (rapide, aucune simulation clavier) ;
+    2. **repli clavier** : clic dans ``.cm-content``, ``Control+A``,
+       ``insert_text`` — une seule insertion, pas de frappe caracteres
+       par caracteres (ce qui rendrait la capture lente et fragile).
+
+    Ne JAMAIS envoyer ``Control+Enter`` : la musique doit continuer de
+    jouer le pattern complet pendant que l'editeur se remplit. L'export
+    WAV qui suit lit le dernier etat, identique au script entier.
+
+    Retourne le nom de la voie qui a effectivement ecrit (``codemirror``
+    ou ``keyboard``) — mesure reportee dans le resultat de capture.
+    """
+    replaced = page.evaluate(
+        """(code) => {
+            const el = document.querySelector('.cm-content');
+            if (!el) return false;
+            const host = el.closest('.cm-editor') || el;
+            const view = el.cmView || host.cmView || (el.cmView && el.cmView.view);
+            if (!view || typeof view.dispatch !== 'function') return false;
+            view.dispatch({
+                changes: {from: 0, to: view.state.doc.length, insert: code},
+            });
+            return true;
+        }""",
+        code,
+    )
+    if replaced:
+        return "codemirror"
+
+    editor = page.locator(".cm-content").first
+    editor.click(timeout=10_000)
+    page.keyboard.press("Control+A")
+    page.keyboard.insert_text(code)
+    return "keyboard"
+
+
+def _drive_code_reveal(
+    page: object,
+    states: List[str],
+    window_seconds: float,
+    clock: Optional[object] = None,
+) -> Dict[str, object]:
+    """Joue le devoilement pendant la fenetre de capture (mode page).
+
+    Consomme la fenetre ``window_seconds`` en placant chaque etat a son
+    instant : c'est cette attente qui remplace l'unique
+    ``wait_for_timeout(capture_seconds)`` du mode statique. Retourne les
+    instants mesures (horloge reelle) et la voie d'ecriture utilisee —
+    une trace exploitable sans lecture visuelle.
+    """
+    now = clock or time.monotonic
+    schedule = reveal_schedule(states, window_seconds)
+    t_zero = now()
+    applied: List[float] = []
+    method = None
+    for target, code in schedule:
+        remaining = target - (now() - t_zero)
+        if remaining > 0:
+            page.wait_for_timeout(int(remaining * 1000))
+        method = _set_editor_code(page, code)
+        applied.append(round(now() - t_zero, 3))
+
+    remaining = float(window_seconds) - (now() - t_zero)
+    if remaining > 0:
+        page.wait_for_timeout(int(remaining * 1000))
+
+    return {
+        "states": len(schedule),
+        "applied_at": applied,
+        "editor_api": method,
+    }
+
+
 def _click_play(page: object, url: str, attempts: int = 3) -> None:
     """Clic play robuste : re-navigation entre tentatives (etape 4).
 
@@ -1323,6 +1520,7 @@ def capture_repl_session(
     headless: bool = False,
     warmup_seconds: float = 5.0,
     capture_mode: str = "page",
+    reveal_states: Optional[List[str]] = None,
 ) -> Dict[str, object]:
     """Pilote le REPL strudel.cc et capture la session (etape 4, #15604).
 
@@ -1360,6 +1558,14 @@ def capture_repl_session(
     # (CI) -- sinon la garde meurt en ModuleNotFoundError avant de tirer.
     if capture_mode not in ("page", "canvas"):
         raise ValueError(f"capture_mode inconnu : {capture_mode!r} (page|canvas)")
+    if reveal_states and capture_mode != "page":
+        # Le devoilement agit sur l'EDITEUR : en mode canvas il ne filme que
+        # la visualisation, le mecanisme n'aurait aucun effet visible.
+        # Echec explicite plutot qu'un drapeau silencieusement inerte.
+        raise ValueError(
+            "reveal_states exige capture_mode='page' "
+            f"(recu {capture_mode!r}) — le mode canvas ne filme pas l'editeur"
+        )
 
     from playwright.sync_api import sync_playwright
 
@@ -1369,6 +1575,7 @@ def capture_repl_session(
     final_mp4 = output_dir / "capture_final.mp4"
     url = build_repl_url(pattern)
     trim_start: Optional[float] = None
+    reveal: Optional[Dict[str, object]] = None
 
     with sync_playwright() as pw:
         browser = pw.chromium.launch(headless=headless)
@@ -1406,7 +1613,14 @@ def capture_repl_session(
                 # Fenetre utile : capture_seconds a partir de maintenant ;
                 # l'attente est consommee ici (la video tourne deja).
                 trim_start = time.monotonic() - t_video_zero
-                page.wait_for_timeout(int(capture_seconds * 1000))
+                if reveal_states:
+                    # Critere 5a : le code se construit par etats successifs
+                    # au lieu d'apparaitre complet des la premiere image.
+                    reveal = _drive_code_reveal(
+                        page, reveal_states, float(capture_seconds)
+                    )
+                else:
+                    page.wait_for_timeout(int(capture_seconds * 1000))
             else:
                 rec = page.evaluate(_RECORDER_JS, int(capture_seconds * 1000))
                 video_webm.write_bytes(base64.b64decode(rec["b64"]))
@@ -1464,6 +1678,7 @@ def capture_repl_session(
         "cycles": cycles,
         "capture_mode": capture_mode,
         "trim_start": trim_start,
+        "reveal": reveal,
     }
 
 
@@ -1550,6 +1765,16 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "'canvas' = recorder in-page historique (canvas seul)",
     )
     parser.add_argument(
+        "--reveal-acts",
+        type=int,
+        default=0,
+        help="critere 5a : devoiler le code par etats successifs pendant la "
+             "capture (0 = desactive, defaut). Chaque etat ajoute une voix ; "
+             "le nombre effectif est plafonne au nombre de voix du script "
+             "(ex. --reveal-acts 4 = 1, 2, 3 puis 4 voix). Exige "
+             "--capture et --capture-mode page (defaut)",
+    )
+    parser.add_argument(
         "--headless",
         action="store_true",
         help="lancer Chromium headless (mesure c.1528 : capture 180 s "
@@ -1590,6 +1815,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             tts_engine=args.tts_engine,
             tts_gateway=args.tts_gateway,
             tts_out_dir=args.tts_out_dir,
+            reveal_acts=args.reveal_acts,
         )
     except RuntimeError as exc:
         # Echec explicite (ex. moteur llm sans cle) — pas de fallback
