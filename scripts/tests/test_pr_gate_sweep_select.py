@@ -73,6 +73,53 @@ def _extract_selector() -> str:
 SELECTOR = _extract_selector()
 
 
+def _extract_queued_verdict() -> str:
+    """Sortir le bloc python du heredoc PYV (verdict en-file/fige, #22117).
+
+    Le heredoc d'action porte le terminateur ``PYV`` (pas ``PY``) : le
+    regex ``\\nPY\\n`` du selecteur ne le capture PAS (``\\nPYV\\n`` !=
+    ``\\nPY\\n``), les deux blocs coexistent donc sans collision. Ce que
+    GitHub rend est teste, pas le texte brut (idem _extract_selector).
+    """
+    with open(WORKFLOW, encoding="utf-8") as f:
+        doc = yaml.safe_load(f)
+    for step in doc["jobs"]["sweep"]["steps"]:
+        m = re.search(
+            r"python3 - <<'PYV'[^\n]*\n(.*?)\nPYV\n",
+            str(step.get("run", "")),
+            re.S,
+        )
+        if m:
+            return m.group(1)
+    raise AssertionError(
+        "heredoc python3 PYV introuvable dans pr-gate-stale-sweep.yml"
+    )
+
+
+QUEUED_VERDICT = _extract_queued_verdict()
+
+
+def _run_queued_verdict(created_at, now, queue_depth):
+    """Exec le verdict en-file/fige sur un run de fixture, capture stdout.
+
+    ``queue_depth`` est la profondeur de la file globale lue une fois en
+    amont ; une valeur None/vide simule l'echec de l'appel ``gh api``
+    (le verdict retombe alors sur l'age seul).
+    """
+    env = dict(
+        os.environ,
+        SWEEP_RUN_JSON=json.dumps({"created_at": created_at}),
+        SWEEP_NOW=now,
+        SWEEP_QUEUE_DEPTH="" if queue_depth is None else str(queue_depth),
+    )
+    out = subprocess.run(
+        ["python", "-c", QUEUED_VERDICT],
+        capture_output=True, text=True, encoding="utf-8", env=env,
+    )
+    assert out.returncode == 0, out.stderr
+    return out.stdout.strip()
+
+
 def _run_selector(tmp_path, rows, wfnames=None):
     """Exec le selecteur livré sur des lignes de fixtures, capture stdout."""
     return _run_selector_both(tmp_path, rows, wfnames=wfnames).stdout
@@ -1016,4 +1063,59 @@ def test_workflow_pin_collects_run_conclusion():
     run = _collector_run()
     # Le jq doit projeter la clef `c` sur la conclusion du run.
     assert '.conclusion' in run or '"c":.conclusion' in run
+
+
+# --- #22117 : un run PR gate `queued` n'est pas un run fige -----------
+# Le sweep confondait `queued` (en file) et `queued` fige, et recommendait
+# `update-branch` (nouvelle tete) en pleine famine de runners. Le verdict
+# PYV distingue les deux : un run recemment entre en file, ou une file
+# globale saturee, ne consomme ni geste ni place MAX_IMMATURE ; un run
+# queue au-dela du seuil MESURE (FROZEN_AFTER_S) hors saturation reste
+# fige et garde sa recommandation.
+
+
+def test_recent_queued_run_is_enfile_not_frozen():
+    """Run `queued` recemment cree (10 min) : EN FILE, jamais fige,
+    donc aucune recommandation de nouvelle tete."""
+    out = _run_queued_verdict(
+        created_at="2026-10-23T11:50:00Z",
+        now="2026-10-23T12:00:00Z",
+        queue_depth=100,
+    )
+    assert out == "ENFILE"
+
+
+def test_old_queued_run_off_saturation_is_frozen():
+    """Run `queued` depuis 9 h (au-dela du seuil 8 h) hors saturation :
+    FIGE -- la recommandation de nouvelle tete est conservee."""
+    out = _run_queued_verdict(
+        created_at="2026-10-23T03:00:00Z",
+        now="2026-10-23T12:00:00Z",
+        queue_depth=100,
+    )
+    assert out == "FIGE"
+
+
+def test_old_queued_run_under_saturation_is_enfile():
+    """Run `queued` ancien (9 h) MAIS file globale saturee (>= seuil) :
+    EN FILE -- la saturation globale justifie l'attente, pas une nouvelle
+    tete (l'anti-famine de #22117)."""
+    out = _run_queued_verdict(
+        created_at="2026-10-23T03:00:00Z",
+        now="2026-10-23T12:00:00Z",
+        queue_depth=900,
+    )
+    assert out == "ENFILE"
+
+
+def test_queued_depth_api_failure_falls_back_to_age_only():
+    """Echec de la lecture de la profondeur de file (None) : le verdict
+    retombe sur l'age seul -- jamais plus permissif que l'age. Un run
+    ancien hors info de saturation reste FIGE."""
+    out = _run_queued_verdict(
+        created_at="2026-10-23T03:00:00Z",
+        now="2026-10-23T12:00:00Z",
+        queue_depth=None,
+    )
+    assert out == "FIGE"
 
