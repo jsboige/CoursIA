@@ -5229,6 +5229,120 @@ def test_delivered_replay_locks_again_after_open_then_merged(capsys):
     assert "LOCKED (v2)" in captured.err
 
 
+# --- #22445 -- the `paths:` clause on a [DELIVERED] is honoured --------------
+#
+# Measured defect (myia-po-2023:CoursIA, c.2360, issue #16334): the v2
+# conditional reducer re-marks a [DELIVERED] as an ACTIVE claim while its PR is
+# OPEN/MERGED, but `_PATHS_CLAUSE_RE` did not list DELIVERED -- so the marker's
+# `paths:` clause parsed to `None` and the re-marked claim came back EPIC-WIDE.
+# The very gesture meant to narrow the lock (`[DELIVERED] ... -- paths: ...`,
+# the form lane-claim-protocol.md prescribes) re-locked the whole umbrella.
+# The four tests below pin the fix and, just as importantly, its boundaries.
+
+def test_delivered_scope_clause_bounds_the_relock_on_open_pr(capsys):
+    """#22445 core: a scoped [DELIVERED] stays scoped while its PR is OPEN.
+
+    Pre-fix `active_claims[lane]["paths"]` was `null` and the disjoint caller
+    was BLOCKED (epic-wide relock). Post-fix the re-marked claim carries the
+    declared scope, and a caller whose scope is disjoint is CLEAR.
+    """
+    p = payload(
+        comment("[CLAIMED] lane myia-po-2026:CoursIA -- paths: "
+                "scripts/check_lane_claim.py",
+                "2026-10-25T03:39:12Z"),
+        comment("[DELIVERED] lane myia-po-2026:CoursIA -- PR #22400 -- paths: "
+                "scripts/check_lane_claim.py",
+                "2026-10-25T03:39:56Z"),
+        number=16334,
+        labels=[{"name": "EPIC"}],
+    )
+    rc = clc._run_check(p, "myia-po-2027:CoursIA-2",
+                       pr_states=_pr_states(22400, "OPEN"),
+                       my_paths=["MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md"])
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["blocking_lanes"] == []
+    assert out["active_claims"]["myia-po-2026:CoursIA"]["paths"] == [
+        "scripts/check_lane_claim.py"
+    ]
+    assert out["is_umbrella"] is True
+    assert out["epic_wide_on_umbrella"] is False
+
+
+def test_delivered_scope_clause_still_blocks_an_intersecting_caller(capsys):
+    """#22445 boundary: the clause bounds the lock, it does not remove it.
+
+    A scope that intersects the delivered slice keeps blocking -- the fix must
+    not turn [DELIVERED] into a free pass for siblings working the same files
+    (that would be the rejected option 2, which contradicts the v2 semantics).
+    """
+    p = payload(
+        comment("[DELIVERED] lane myia-po-2026:CoursIA -- PR #22400 -- paths: "
+                "scripts/check_lane_claim.py",
+                "2026-10-25T03:39:56Z"),
+        number=16334,
+        labels=[{"name": "EPIC"}],
+    )
+    rc = clc._run_check(p, "myia-po-2027:CoursIA-2",
+                       pr_states=_pr_states(22400, "OPEN"),
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 1
+    out = _json_out(capsys.readouterr())
+    assert out["blocking_lanes"] == ["myia-po-2026:CoursIA"]
+    assert out["epic_wide_on_umbrella"] is False
+
+
+def test_delivered_scope_clause_with_dead_glob_lifts_to_epic_wide(capsys):
+    """#22445 fail-CLOSED: a scoped [DELIVERED] whose glob is dead relocks.
+
+    The #10958 hardener must keep working through the widened parser: a claim
+    whose entire scope matches no tracked file is a BROKEN claim, not a
+    permissive one, and is lifted back to epic-wide. Without this, honouring
+    the clause would open a fail-OPEN hole (a typo would free the umbrella).
+    """
+    p = payload(
+        comment("[DELIVERED] lane myia-po-2026:CoursIA -- PR #22400 -- paths: "
+                "scripts/no_such_directory/**",
+                "2026-10-25T03:39:56Z"),
+        number=16334,
+        labels=[{"name": "EPIC"}],
+    )
+    rc = clc._run_check(p, "myia-po-2027:CoursIA-2",
+                       pr_states=_pr_states(22400, "OPEN"),
+                       my_paths=["MyIA.AI.Notebooks/IIT/ICT-Series/ICT-0-Framing.md"])
+    assert rc == 1
+    out = _json_out(capsys.readouterr())
+    assert out["blocking_lanes"] == ["myia-po-2026:CoursIA"]
+    assert out["epic_wide_on_umbrella"] is True
+    # The dead glob is surfaced in the JSON (not only on stderr, #12740).
+    assert "scripts/no_such_directory/**" in out["dead_scope_globs"]["myia-po-2026:CoursIA"]
+
+
+def test_delivered_scope_clause_on_closed_pr_is_informational(capsys):
+    """#22445 no-regression: on the CLOSED branch the scope stays cosmetic.
+
+    A [DELIVERED] whose PR was closed without merge pops the lane, exactly as
+    [RELEASED] does. Honouring the clause must not resurrect a closed claim in
+    a bounded form -- there is nothing left to hold.
+    """
+    p = payload(
+        comment("[DELIVERED] lane myia-po-2026:CoursIA -- PR #22400 -- paths: "
+                "scripts/check_lane_claim.py",
+                "2026-10-25T03:39:56Z"),
+        number=16334,
+        labels=[{"name": "EPIC"}],
+    )
+    rc = clc._run_check(p, "myia-po-2027:CoursIA-2",
+                       pr_states=_pr_states(22400, "CLOSED"),
+                       my_paths=["scripts/check_lane_claim.py"])
+    assert rc == 0
+    out = _json_out(capsys.readouterr())
+    assert out["blocking_lanes"] == []
+    assert out["active_claims"] == {}
+    assert out["delivered_claims"] == [22400]
+    assert out["delivered_claims_pr_states"] == {"22400": "CLOSED"}
+
+
 def test_pr_states_signature_is_optional_no_behavioural_change(capsys):
     """v2: callers that don't pass `pr_states` keep the v1 surface.
 
