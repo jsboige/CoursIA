@@ -371,6 +371,17 @@ def run_protocol_v2(k2_c: float = None, parallel: bool = True) -> dict:
     gate_match = sum(abs(h - n) > GATE_MATCH_RB
                      for h, n in zip(rb_h, rb_n)) >= GATE_MIN_SEEDS
 
+    # Declencheurs NOT SUPPORTED du scelle §4 : « P1 < 0.2 (indifference) »,
+    # pas « P1 rate sa bande 0.6 » -- quantifies >= 4/5 graines comme les
+    # predictions P1/P2bis/P3bis. Evalues NOMMEMENT pour chaque famille :
+    # le scelle ne fixe pas d'ordre de priorite entre familles, et un run
+    # peut declencher NON_CONCLUSIF_INSTRUMENT (instrument) ET une famille
+    # NOT_SUPPORTED (these) simultanement -- l'artefact porte alors les deux
+    # (#22401, reserve Hermes : jamais de famille escamotee par l'ordre du if).
+    ns_p1_indifference = sum(r < BAND_P1_FAIL for r in rho1s) >= 4
+    ns_p2bis_drive = sum(abs(r) > BAND_P2_FAIL for r in rho_eps) >= 4
+    ns_p3_structure = sum(x < BAND_P3_FAIL for x in dss) >= 4
+
     if gate_floor:
         verdict = "NON_CONCLUSIF_INSTRUMENT (porte plancher v(u=1))"
     elif gate_ceiling:
@@ -383,16 +394,22 @@ def run_protocol_v2(k2_c: float = None, parallel: bool = True) -> dict:
         verdict = "NON_CONCLUSIF_INSTRUMENT (controle mecanique)"
     elif p1 and p2 and p3_ok and null_a <= 0.2 and null_a3 <= 0.05:
         verdict = "SUPPORTED"
-    # Declencheurs NOT SUPPORTED du scelle §4 : « P1 < 0.2 (indifference) »,
-    # pas « P1 rate sa bande 0.6 » -- quantifies >= 4/5 graines comme les
-    # predictions P1/P2bis/P3bis. Branche non atteinte ce run (null b sort
-    # avant), la correction vaut pour les executions futures.
-    elif sum(r < BAND_P1_FAIL for r in rho1s) >= 4 \
-            or sum(abs(r) > BAND_P2_FAIL for r in rho_eps) >= 4 \
-            or sum(x < BAND_P3_FAIL for x in dss) >= 4:
+    elif ns_p1_indifference or ns_p2bis_drive or ns_p3_structure:
         verdict = "NOT_SUPPORTED"
     else:
         verdict = "NON_CONCLUSIF"
+
+    verdict_secondary = None
+    if verdict.startswith("NON_CONCLUSIF_INSTRUMENT") and (
+            ns_p1_indifference or ns_p2bis_drive or ns_p3_structure):
+        familles = []
+        if ns_p1_indifference:
+            familles.append("p1 : indifference au regime propre")
+        if ns_p2bis_drive:
+            familles.append("p2bis : le drive porte tout")
+        if ns_p3_structure:
+            familles.append("p3 : structure indiscernable")
+        verdict_secondary = "NOT_SUPPORTED (" + " ; ".join(familles) + ")"
 
     return {
         "case": "17bis-stv-v2-lock-structure",
@@ -410,7 +427,14 @@ def run_protocol_v2(k2_c: float = None, parallel: bool = True) -> dict:
         "gates": {"floor_v_u1": bool(gate_floor),
                   "ceiling_v_u0": bool(gate_ceiling),
                   "match_r_bar": bool(gate_match)},
+        # Declencheurs NOT SUPPORTED evalues nommement meme quand l'ordre du
+        # if rend un verdict d'instrument en premier : le scelle ne priorise
+        # pas les familles, l'artefact porte donc les deux (#22401, Hermes).
+        "triggers": {"ns_p1_indifference": bool(ns_p1_indifference),
+                     "ns_p2bis_drive": bool(ns_p2bis_drive),
+                     "ns_p3_structure": bool(ns_p3_structure)},
         "verdict": verdict,
+        "verdict_secondary": verdict_secondary,
         "bands": {"p1_min": BAND_P1, "p1_fail": BAND_P1_FAIL,
                   "p2_max": BAND_P2,
                   "p2_fail": BAND_P2_FAIL, "p3_min": BAND_P3,

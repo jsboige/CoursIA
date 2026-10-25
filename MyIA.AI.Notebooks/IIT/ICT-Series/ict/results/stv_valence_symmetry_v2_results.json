@@ -2003,7 +2003,13 @@
     "ceiling_v_u0": false,
     "match_r_bar": false
   },
+  "triggers": {
+    "ns_p1_indifference": false,
+    "ns_p2bis_drive": true,
+    "ns_p3_structure": true
+  },
   "verdict": "NON_CONCLUSIF_INSTRUMENT (null b : saturation forte)",
+  "verdict_secondary": "NOT_SUPPORTED (p2bis : le drive porte tout ; p3 : structure indiscernable)",
   "bands": {
     "p1_min": 0.6,
     "p1_fail": 0.2,
