@@ -487,7 +487,7 @@ def _issue_comment_bodies_rest(issue_number: int) -> list[str] | None:
             ["gh", "api", "--paginate", "--jq", ".[].body",
              f"repos/{REPO}/issues/{issue_number}/comments"],
             capture_output=True, text=True, encoding="utf-8", check=True,
-            timeout=20,
+            timeout=_clamp_timeout(20),
         ).stdout
     except Exception:  # noqa: BLE001 - diagnostic best-effort
         return None
@@ -558,7 +558,7 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
             ["gh", "issue", "view", str(issue_number),
              "--repo", REPO, "--comments", "--json", "comments"],
             capture_output=True, text=True, encoding="utf-8", check=True,
-            timeout=20,
+            timeout=_clamp_timeout(20),
         ).stdout
         payload = json.loads(out)
     except Exception:  # noqa: BLE001 - diagnostic best-effort
@@ -1514,6 +1514,105 @@ _RECENT_DELIVERY_MARKER_RE = re.compile(
     re.MULTILINE,
 )
 
+# #21436 (suite de #22057) -- le mur de temps du tapis n'etait verifie
+# qu'ENTRE deux sondes : une sonde DEMARREE juste avant l'echeance consommait encore tout
+# son timeout (`check_claims` : 60 s pour un numero, 70 s en batch ;
+# `has_recent_delivery_marker` : 30 s), donc le budget n'etait pas une borne
+# superieure mais une esperance. Mesure du 24/10 sur ce siege
+# (`--belt-time-budget 90`, 78 s restants a l'entree de la boucle) : le run
+# rendait la main au-dela de 200 s, et quatre runs consecutifs ont expire en
+# 124 sans jamais servir de grain. L'echeance est publiee ici, et les deux
+# sondes lentes la lisent pour CLAMPER leur propre timeout : la boucle ne
+# peut plus depasser le mur de plus d'un timeout de sonde.
+_BELT_DEADLINE: list[float | None] = [None]
+
+
+def _clamp_timeout(default: float) -> float:
+    """Timeout effectif d'une sonde reseau : le plus petit des deux.
+
+    Sans echeance publiee (``_BELT_DEADLINE[0] is None``), rend ``default``
+    tel quel : les appels hors tapis gardent leur comportement d'avant. Avec
+    une echeance, rend le RESTE a courir, borne par ``default`` et par un
+    plancher de 0,5 s -- un timeout nul n'annulerait pas la requete, il la
+    rendrait juste impossible a distinguer d'une panne reseau.
+    """
+    deadline = _BELT_DEADLINE[0]
+    if deadline is None:
+        return default
+    return max(0.5, min(float(default), deadline - time.monotonic()))
+
+
+def _import_nits_organ():
+    """L'organe B.0 (`check_unaddressed_nits`), ou None s'il est illisible.
+
+    Import tardif volontaire, comme dans `_nits_blocking_entries` : le picker
+    reste utilisable meme si l'organe a disparu. Ici l'echec n'est pas une
+    panne a signaler, c'est « pas de budget a preter » -- le comportement
+    d'avant la #21436.
+    """
+    try:
+        sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+        import check_unaddressed_nits as nits  # noqa: PLC0415 - import tardif volontaire
+
+        return nits
+    except Exception:  # noqa: BLE001 - organe absent : rien a preter
+        return None
+
+
+def _publish_phase_deadline(seconds: float | None) -> tuple:
+    """Publie une echeance pour une phase PRE-tapis, et prete son reste aux nits.
+
+    #21436 -- le mur du tapis ne couvrait que la boucle de tirage. La phase de
+    reparation qui la precede (`red_backlog` : evaluation B.0 des PRs ouvertes
+    de la lane) a ete mesuree a **172,7 s a elle seule** sur ce siege le 24/10
+    (792 PRs de record de lane, 3 triggers) : plus que le budget du tapis
+    entier. Tout run rendait donc la main au-dela de 260 s avant meme que la
+    boucle ne demarre, et quatre runs consecutifs ont expire en 124 sans servir
+    un grain.
+
+    Deux leviers, tous deux balises par la meme echeance :
+
+    - `_BELT_DEADLINE`, lu par `_clamp_timeout` : les sondes de la phase
+      (dont `fetch_pr_states`, appele par `unattributed_blocked_prs`) clampe
+      leur timeout au reste a courir, au lieu de leur defaut de 90 s ;
+    - `NITS_PASS_BUDGET_S` de l'organe : son budget de passe est de 300 s par
+      defaut, arme paresseusement au premier `gh_json`. Le preter borne la
+      passe a la phase au lieu de la laisser courir au-dela. `_NITS_PASS_DEADLINE`
+      est remis a None pour que la passe DEMARRE ici (il est idempotent a
+      l'armement, donc sans cette remise a zero il heriterait d'une deadline
+      armee par un appelant precedent).
+
+    L'organe rend alors les PRs non atteintes ABSENTES (`budget_exhausted`,
+    semantique #18829 : absente = non evaluee, jamais « evaluee claire »), que
+    `_nits_blocking_entries` propage en None -- donc aucun 0 autoritaire n'est
+    fabrique, et la file de reparation dit « non mesuree » au lieu de mentir.
+
+    ``seconds`` None ou <= 0 : aucun bornage (comportement d'avant). Rend un
+    jeton a passer a `_restore_phase_deadline`.
+    """
+    previous_belt = _BELT_DEADLINE[0]
+    nits = _import_nits_organ()
+    previous_nits = None
+    if nits is not None:
+        previous_nits = (getattr(nits, "NITS_PASS_BUDGET_S", None),
+                         getattr(nits, "_NITS_PASS_DEADLINE", None))
+    if not seconds or float(seconds) <= 0:
+        return (previous_belt, nits, previous_nits)
+    _BELT_DEADLINE[0] = time.monotonic() + float(seconds)
+    if previous_nits is not None and previous_nits[0] is not None:
+        nits.NITS_PASS_BUDGET_S = float(seconds)
+        nits._NITS_PASS_DEADLINE = None  # la passe commence ici (cf. docstring)
+    return (previous_belt, nits, previous_nits)
+
+
+def _restore_phase_deadline(token: tuple) -> None:
+    """Rend l'etat d'avant `_publish_phase_deadline` (echeance + budget nits)."""
+    previous_belt, nits, previous_nits = token
+    _BELT_DEADLINE[0] = previous_belt
+    if nits is not None and previous_nits is not None and previous_nits[0] is not None:
+        nits.NITS_PASS_BUDGET_S = previous_nits[0]
+        nits._NITS_PASS_DEADLINE = None  # passe suivante : budget rendu, deadline rearmee
+
 
 def has_recent_delivery_marker(issue_number: int) -> bool | None:
     """Le DERNIER commentaire porte-t-il un marqueur de cloture recent ?
@@ -1548,7 +1647,7 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
             ["gh", "issue", "view", str(issue_number), "--repo", REPO,
              "--json", "comments"],
             capture_output=True, text=True, encoding="utf-8", check=True,
-            timeout=30,
+            timeout=_clamp_timeout(30),
         ).stdout
     except Exception:  # noqa: BLE001 - lecture best-effort, l'echec est DIT
         return None
@@ -2721,11 +2820,10 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
         # par `_summarize_claim`, pas par `json.loads`.
         for n in numbers:
             try:
-                rr = subprocess.run(
+                rr = _run_bounded(
                     [sys.executable, "scripts/check_lane_claim.py",
                      "--lane", lane, str(n)],
-                    capture_output=True, text=True, encoding="utf-8",
-                    timeout=60, env=env,
+                    timeout=_clamp_timeout(60), env=env,
                 )
                 verdicts[n] = _summarize_claim(
                     rr.stdout or rr.stderr or "", rr.returncode)
@@ -2754,14 +2852,20 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
         try:
             r = None
             if len(numbers) > 1:
-                r = subprocess.run(
+                # #21436 : `_run_bounded` et non `subprocess.run` -- sur
+                # Windows, ce dernier joint des threads lecteurs qui ne
+                # rendent jamais la main quand un descendant garde le pipe
+                # (mesure du 24/10 : claims geles de t=3,7 s a 280 s, budget
+                # de 90 s). Aucun pipe ici, donc l'echeance est une borne.
+                r = _run_bounded(
                     cmd,
-                    capture_output=True, text=True, encoding="utf-8",
                     # 60s + N * 1s en budget ; le tapis consomme
                     # generalement 5-15 numeros, donc ~75 s max. Au-dela,
                     # on retombe sur le chemin legacy (N subprocess.run)
                     # cycle suivant -- c'est preferable a un tapis gele.
-                    timeout=60 + 10 * len(numbers),
+                    # #21436 : clampe par le mur de temps du tapis quand il
+                    # en publie un (`_clamp_timeout`), sinon inchange.
+                    timeout=_clamp_timeout(60 + 10 * len(numbers)),
                     env=env,
                 )
             if r is None or r.returncode != 0:
@@ -3324,6 +3428,14 @@ RED_HOURS_DEFAULT = 24
 # devraient pas produire de nouveaux grains mais etre en train de les traiter".
 RED_COUNT_DEFAULT = 3
 
+# #21436 -- budget de la phase PRE-tapis. `red_backlog` evalue l'organe B.0 sur
+# chaque PR ouverte de la lane ; mesure du 24/10 sur ce siege : 172,7 s a lui
+# seul (792 PRs de record de lane, 3 triggers), soit plus que le budget du
+# tapis entier, paye AVANT que la boucle ne demarre. 90 s laisse la phase
+# couvrir ses PRs les plus anciennes et rend les autres NON EVALUEES (jamais
+# « claires »), au lieu de faire expirer tout run d'un cycle de 30 min.
+RED_BUDGET_DEFAULT = 90.0
+
 # Q41 (mandat user 2026-09-22) : plafond de work-in-progress par lane. Le
 # garde rouge ne voit que les PRs BLOQUEES -- une PR VERTE en attente de
 # dossier ou de merge ne declenche rien (volontaire, #12108 : ne pas pieger
@@ -3517,12 +3629,19 @@ def fetch_open_prs() -> list[dict]:
     seconde voie, pour que l'echec cesse d'etre une fatalite.
     """
     try:
-        out = subprocess.run(
+        # #21436 : `_run_bounded` -- sur Windows, `subprocess.run(timeout=)`
+        # peut ne pas rendre la main a l'echeance (pipe garde par un
+        # descendant). Le `check=True` est reproduit explicitement.
+        cp = _run_bounded(
             ["gh", "pr", "list", "--repo", REPO, "--state", "open",
              "--limit", str(OPEN_PRS_FETCH_LIMIT),
              "--json", "number,title,body,createdAt,isDraft,author,headRefName"],
-            capture_output=True, text=True, encoding="utf-8", check=True, timeout=120,
-        ).stdout
+            timeout=120,
+        )
+        if cp.returncode != 0:
+            raise subprocess.CalledProcessError(cp.returncode, cp.args,
+                                                cp.stdout, cp.stderr)
+        out = cp.stdout
         prs = json.loads(out)
         if len(prs) >= OPEN_PRS_FETCH_LIMIT:
             _warn_open_prs_truncated(len(prs), OPEN_PRS_FETCH_LIMIT,
@@ -3549,6 +3668,67 @@ def fetch_open_prs() -> list[dict]:
     return raw
 
 
+def _run_bounded(cmd, *, timeout, env=None):
+    """Lance `gh` borne pour de VRAI : fichiers, pas de pipe.
+
+    Sur Windows, `subprocess.run(capture_output=True, timeout=T)` peut ne
+    jamais rendre la main : a l'expiration il tue l'enfant, puis joint les
+    threads lecteurs de `_communicate`, et un descendant qui a herite du
+    handle garde le pipe ouvert -- `join` attend alors indefiniment.
+    Mesure du 24/10 sur ce siege (pile `faulthandler`, `--belt-time-budget
+    90`) : `fetch_pr_states` declare `timeout=90` encore bloque a t=140 s,
+    et le run ne rendait jamais la main (280 s).
+
+    On redirige donc la sortie vers des FICHIERS temporaires -- `_communicate`
+    n'a alors aucun thread lecteur a joindre, et l'echeance est une borne
+    reelle. `subprocess.run` reste la surface d'appel : les tests le simulent,
+    et le correctif porte sur le transport, pas sur le seam. Les descendants
+    survivants sont tues a part (`taskkill /T`), `run` ne tuant que l'enfant
+    direct.
+
+    Rend un `CompletedProcess` de meme forme que `subprocess.run` ; propage
+    `subprocess.TimeoutExpired`, comme lui.
+    """
+    out_file = tempfile.TemporaryFile(mode="w+", encoding="utf-8",
+                                      errors="replace")
+    err_file = tempfile.TemporaryFile(mode="w+", encoding="utf-8",
+                                      errors="replace")
+    try:
+        try:
+            proc = subprocess.run(cmd, stdout=out_file, stderr=err_file,
+                                  stdin=subprocess.DEVNULL, env=env,
+                                  timeout=timeout)
+        except subprocess.TimeoutExpired:
+            # Pas de nettoyage d'arbre ici : `taskkill /T` exigerait le pid
+            # que `run` ne rend pas sur expiration, et un `gh` orphelin
+            # s'arrete seul. Ce qui compte est que l'APPELANT ne soit plus
+            # retenu -- c'est ce que la redirection fichier garantit.
+            raise
+        rc = proc.returncode
+        out_file.seek(0)
+        err_file.seek(0)
+        out = out_file.read()
+        err = err_file.read()
+        # Seam de simulation : un `subprocess.run` simule ne connait pas les
+        # descripteurs qu'on lui passe et rend son texte dans `.stdout` au
+        # lieu de l'ecrire. Le fichier reste VIDE dans ce cas -- jamais en
+        # production, ou `run` n'alimente pas `.stdout` quand `stdout=` est
+        # redirige. Sans ce repli, tout faux `gh` du harnais de test rend un
+        # corpus vide et le picker retombe sur son transport de secours.
+        if not out:
+            fallback = getattr(proc, "stdout", None)
+            if isinstance(fallback, str):
+                out = fallback
+        if not err:
+            fallback_err = getattr(proc, "stderr", None)
+            if isinstance(fallback_err, str):
+                err = fallback_err
+        return subprocess.CompletedProcess(cmd, rc, out, err)
+    finally:
+        out_file.close()
+        err_file.close()
+
+
 def fetch_pr_states(numbers: list[int]) -> dict[int, dict]:
     """Etat de merge + checks (avec `isRequired`) + reviews, par lots de 8.
 
@@ -3561,9 +3741,12 @@ def fetch_pr_states(numbers: list[int]) -> dict[int, dict]:
         query = ('query { repository(owner:"jsboige", name:"CoursIA") {'
                  + "".join(_PR_STATE_FRAGMENT % {"n": n} for n in chunk) + "} }")
         try:
-            raw = subprocess.run(
+            # #21436 : `_run_bounded` et non `subprocess.run` -- sur Windows
+            # ce dernier ne rend pas la main a l'echeance quand un descendant
+            # garde le pipe (pile mesuree du 24/10).
+            raw = _run_bounded(
                 ["gh", "api", "graphql", "-f", "query=" + query],
-                capture_output=True, text=True, encoding="utf-8", check=True, timeout=90,
+                timeout=90,
             ).stdout
             repo = json.loads(raw)["data"]["repository"]
         except Exception:  # noqa: BLE001 - diagnostic best-effort
@@ -5859,7 +6042,7 @@ def validate_picks_live(
                 ["gh", "issue", "view", str(number), "--repo", REPO,
                  "--json", "number,state"],
                 capture_output=True, text=True, encoding="utf-8",
-                check=True, timeout=timeout,
+                check=True, timeout=_clamp_timeout(timeout),
             ).stdout
         except subprocess.CalledProcessError as exc:
             # 404 = issue absente ; autre rc = on ne sait pas (erreur
@@ -7457,6 +7640,14 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     deadline = None
     if time_budget_s is not None:
         deadline = time.monotonic() + max(0.0, float(time_budget_s))
+    # #21436 -- publie l'echeance pour les sondes LENTES (`check_claims`,
+    # `has_recent_delivery_marker`) : elles lisent `_clamp_timeout` pour ne
+    # jamais courir au-dela du mur. Restauree en sortie de boucle (try/finally
+    # plus bas) pour qu'un run ulterieur du meme process -- les tests, qui
+    # appellent ces deux fonctions directement -- ne mesure pas l'echeance
+    # d'un tapis precedent.
+    _previous_belt_deadline = _BELT_DEADLINE[0]
+    _BELT_DEADLINE[0] = deadline
 
     def expired():
         """Echeance atteinte ? Le drapeau se pose une fois, et il est lu par
@@ -7599,6 +7790,10 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         if args.lane and code in (CLAIM_CODE_ERROR, CLAIM_CODE_UNCHECKED):
             state["claim_unread"].append(n)
         belt_picks.append(it)
+    # #21436 -- l'echeance du tapis ne survit pas a la boucle : les appels
+    # directs a `check_claims` / `has_recent_delivery_marker` (tests, usages
+    # hors tapis) retrouvent leur timeout plein.
+    _BELT_DEADLINE[0] = _previous_belt_deadline
     return belt_picks, belt_withheld, state
 
 
@@ -7743,6 +7938,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--red-count", type=int, default=RED_COUNT_DEFAULT,
                     help=f"nombre de rouges simultanees qui refuse le tirage "
                          f"quel que soit leur age (defaut {RED_COUNT_DEFAULT})")
+    ap.add_argument("--red-budget", type=float, default=RED_BUDGET_DEFAULT,
+                    metavar="SECONDES",
+                    help=f"budget de la phase de reparation qui precede le tapis "
+                         f"(evaluation B.0 des PRs ouvertes de la lane) ; les PRs non "
+                         f"atteintes sont rendues NON EVALUEES, jamais claires ; "
+                         f"0 = non borne (defaut {RED_BUDGET_DEFAULT:.0f} s)")
     ap.add_argument("--wip-cap", type=int, default=WIP_CAP_DEFAULT, metavar="N",
                     help=f"plafond de WIP par lane (Q41) : au-dela de N PRs "
                          f"ouvertes attribuees par tag, brouillons compris, la "
@@ -8075,9 +8276,16 @@ def main(argv: list[str] | None = None) -> int:
     # est deja sous les yeux quand le refus arrive, et c'est lui qui gagne.
     # Le plafond de WIP (Q41) partage ce moment et ce payload : les deux gardes
     # se composent, aucun ne masque l'autre.
-    backlog = red_backlog(args.lane, args.red_hours, args.red_count,
-                            saturation_hours=args.saturation_hours,
-                            wip_cap=args.wip_cap)
+    # #21436 : la phase porte sa PROPRE echeance (--red-budget). Sans elle, elle
+    # courait 172,7 s mesures avant que le tapis ne prenne la main, et le mur du
+    # tapis ne pouvait rien y faire -- il commencait apres.
+    _red_token = _publish_phase_deadline(args.red_budget)
+    try:
+        backlog = red_backlog(args.lane, args.red_hours, args.red_count,
+                                saturation_hours=args.saturation_hours,
+                                wip_cap=args.wip_cap)
+    finally:
+        _restore_phase_deadline(_red_token)
     red_hit = bool(backlog.get("triggers")) and not args.ignore_red
     wip_hit = bool(backlog.get("wip_triggered")) and not args.ignore_wip
     if red_hit or wip_hit:
@@ -8320,6 +8528,18 @@ def main(argv: list[str] | None = None) -> int:
         # interrompu par timeout de dire ou il en etait.
         import time as _time_belt
         _belt_t0 = _time_belt.monotonic()
+        # #21436 -- l'echeance du run entier, publiee AVANT la fenetre de
+        # claims. Le mur ne couvrait que la boucle de selection : la phase de
+        # claims demarre plus haut, et `check_claims` y paie un subprocess de
+        # 60 s + 10 s par numero -- mesure du 24/10 : `belt claims start: 8
+        # numeros` puis 275 s de silence, budget de 90 s. Une lane qui pose un
+        # budget attend une borne sur SON RUN, pas sur les deux tiers de son
+        # run. Les sondes lisent `_clamp_timeout` : le dernier appel entame
+        # avant l'echeance ne peut plus courir au-dela.
+        if args.belt_time_budget and args.belt_time_budget > 0:
+            _BELT_DEADLINE[0] = _belt_t0 + args.belt_time_budget
+        else:
+            _BELT_DEADLINE[0] = None
         def _belt_phase(name: str) -> None:
             print(f"[t={_time_belt.monotonic() - _belt_t0:.2f}s] belt {name}",
                   file=sys.stderr, flush=True)
@@ -8424,8 +8644,8 @@ def main(argv: list[str] | None = None) -> int:
                 - (_time_belt.monotonic() - _belt_t0))
             _belt_phase(f"mur de temps: {args.belt_time_budget:.0f}s pour la "
                         f"boucle, {belt_time_remaining:.0f}s restants a son "
-                        f"entree (claims/settle deduits ; "
-                        f"validate_picks_live hors echeance)")
+                        f"entree (claims/settle deduits ; les sondes sont "
+                        f"clampees a l'echeance du run)")
         _belt_phase("pick_with_replacements start")
         belt_picks, belt_withheld, belt_pick_state = (
             belt_pick_with_replacements(belt_pool, belt_claims, args,
@@ -8466,6 +8686,10 @@ def main(argv: list[str] | None = None) -> int:
             kept, dropped = validate_picks_live(belt_picks)
             belt_picks = kept
             belt_dropped_validate = dropped
+        # #21436 -- le run du tapis est termine : l'echeance cesse d'etre
+        # publiee. Les sondes rappelees plus tard dans ce process (tests,
+        # appels directs) retrouvent leur timeout plein.
+        _BELT_DEADLINE[0] = None
         # Geste 5 #18203 : consigner le tirage du tapis -- candidats servis
         # et tete retenue. Les ecartes (claims tenus, signal de livraison)
         # restent dans la sortie (`withheld`) ; le journal porte la
@@ -8545,12 +8769,12 @@ def main(argv: list[str] | None = None) -> int:
             print_belt_budget_report(belt_probe_budget_hit[0])
             if belt_time_budget_hit[0]:
                 print("   Mur de temps du tapis atteint (#21436) : la boucle a")
-                print("   cesse de sonder a l'echeance ; les phases hors boucle")
-                print("   (validate_picks_live, journal) s'executent ensuite sans")
-                print("   borne. Les candidats servis au-dela ne sont pas tous")
-                print("   verifies (livraison ET claim). Relancer avec un budget")
-                print("   plus large (--belt-time-budget) sur une fenetre longue")
-                print("   si un doute subsiste sur la tete rendue.")
+                print("   cesse de sonder a l'echeance, et les sondes lentes")
+                print("   (claims, marqueur recent, validate_picks_live) sont")
+                print("   clampees au temps restant. Les candidats servis au-dela")
+                print("   ne sont pas tous verifies (livraison ET claim). Relancer")
+                print("   avec un budget plus large (--belt-time-budget) sur une")
+                print("   fenetre longue si un doute subsiste sur la tete rendue.")
             # #18832 spec : la fenetre collision entre tirage et pose du
             # [CLAIMED] reste ouverte tant que la lane n'a pas poste le
             # claim. On rappelle ici que la lane doit poser le claim
