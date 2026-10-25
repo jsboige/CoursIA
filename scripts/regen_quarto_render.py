@@ -624,8 +624,8 @@ def replace_render_block(yml_text: str, new_block_lines: list[str]) -> str:
 # rendu par la garde `---` #11451 ou hors sous-arbre rendu). Les READMEs hors
 # sous-arbres rendus (ex. QuantConnect/) forment la population « source
 # brute » documentee -- nonverifies par cette garde.
-_IPYNB_LINK_RE = re.compile(r"\]\(([^)#\s]+\.ipynb)\)")
-_HTML_LINK_RE = re.compile(r"\]\(([^)#\s]+\.html)\)")
+_IPYNB_LINK_RE = re.compile(r"\]\(([^)\s]+?\.ipynb(?:[?#][^)\s]*)?)\)")
+_HTML_LINK_RE = re.compile(r"\]\(([^)\s]+?\.html(?:[?#][^)\s]*)?)\)")
 
 
 def _normalise_readme_target(base: Path, href: str) -> str:
@@ -636,9 +636,19 @@ def _normalise_readme_target(base: Path, href: str) -> str:
     vise reellement ``Créateur de mail.ipynb``. La comparaison litterale
     produisait un faux positif BROKEN sur les README liençant des carnets
     a accents/espaces (2 violations fantomes sur main, mesurees le 25/10).
+
+    La query et le fragment sont retires **avant** le decodage : un lien
+    ``carnet.ipynb#section`` ou ``carnet.ipynb?raw=1`` designe le fichier, pas
+    un nom qui contiendrait ``#`` ou ``?``. L'ordre est celui de
+    ``check_docs_index.py`` (split avant ``unquote``) ; le prendre a l'envers
+    laisserait un ``%23`` decode en ``#`` dans le chemin. Mesure du 25/10 sur
+    563 README : **0** lien relatif ``.ipynb``/``.html`` portant ``#`` ou ``?``
+    -- la classe est latente, pas active, mais elle produirait un BROKEN
+    fantome au premier lien ancre.
     """
+    path_part = href.split("#", 1)[0].split("?", 1)[0]
     return posixpath.normpath(
-        (base / urllib.parse.unquote(href)).as_posix()
+        (base / urllib.parse.unquote(path_part)).as_posix()
     )
 
 

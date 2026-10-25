@@ -378,6 +378,78 @@ class TestReadmeLinkTargets:
 
         assert rqr.readme_link_violations() == []
 
+    def test_fragment_is_stripped_before_resolution(self):
+        """``carnet.ipynb#section`` vise le carnet, pas un nom contenant ``#``."""
+        base = Path("MyIA.AI.Notebooks/Search")
+
+        assert rqr._normalise_readme_target(
+            base, "carnet.ipynb#une-section"
+        ) == "MyIA.AI.Notebooks/Search/carnet.ipynb"
+
+    def test_query_is_stripped_before_resolution(self):
+        """``carnet.ipynb?raw=1`` vise le carnet, pas un nom contenant ``?``."""
+        base = Path("MyIA.AI.Notebooks/Search")
+
+        assert rqr._normalise_readme_target(
+            base, "carnet.ipynb?raw=1"
+        ) == "MyIA.AI.Notebooks/Search/carnet.ipynb"
+
+    def test_percent_encoded_link_with_fragment_is_not_broken(
+        self, monkeypatch, tmp_path
+    ):
+        """Bout-en-bout : ancre sur un lien ``%20`` vers carnet existant.
+
+        Sans le retrait du fragment, la resolution cherchait un fichier
+        nomme ``Creat%C3%A9ateur de mail.ipynb#section`` et rendait un
+        BROKEN fantome de la meme famille que le faux positif fondateur.
+        """
+        readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
+        readme.parent.mkdir(parents=True)
+        readme.write_text(
+            "[S](Cr%C3%A9ateur%20de%20mail.ipynb#section)\n", encoding="utf-8"
+        )
+        (readme.parent / "Créateur de mail.ipynb").write_text(
+            "{}\n", encoding="utf-8"
+        )
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_readmes",
+            lambda: ["MyIA.AI.Notebooks/Search/README.md"],
+        )
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+
+        assert rqr.readme_link_violations() == []
+
+    def test_fragment_link_to_missing_notebook_is_still_broken(
+        self, monkeypatch, tmp_path
+    ):
+        """Le lien ancre est desormais VU, et un vrai mort reste signale.
+
+        Sans l'elargissement de ``_IPYNB_LINK_RE``, ``absent.ipynb#section`` ne
+        matchait pas du tout : la garde l'ignorait silencieusement. Ce temoin
+        prouve les deux moities du correctif — le lien entre dans le perimetre,
+        et le verdict BROKEN n'est pas perdu en chemin.
+        """
+        readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
+        readme.parent.mkdir(parents=True)
+        readme.write_text("[S](absent.ipynb#section)\n", encoding="utf-8")
+        monkeypatch.setattr(rqr, "REPO_ROOT", tmp_path)
+        monkeypatch.setattr(
+            rqr,
+            "git_tracked_readmes",
+            lambda: ["MyIA.AI.Notebooks/Search/README.md"],
+        )
+        monkeypatch.setattr(rqr, "git_tracked_notebooks", lambda: [])
+
+        assert rqr.readme_link_violations() == [
+            (
+                "MyIA.AI.Notebooks/Search/README.md",
+                "BROKEN",
+                "absent.ipynb#section",
+            )
+        ]
+
     def test_flags_html_when_target_not_committed(self, monkeypatch, tmp_path):
         """Un lien `.html` dont la cible n'est pas committee = HTML_404 (#18911)."""
         readme = tmp_path / "MyIA.AI.Notebooks" / "Search" / "README.md"
