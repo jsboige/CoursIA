@@ -50,7 +50,7 @@ python scripts/fallacy_detection/render_annotation_sheet.py convert \
     --out .../pass1/<pseudonyme>.jsonl
 ```
 
-Trois points que le rendu tient par construction (`tests/test_render_annotation_sheet.py`) :
+Trois points que le rendu tient par construction (`scripts/fallacy_detection/tests/test_render_annotation_sheet.py`) :
 
 - **l'aveuglement est vérifié à l'entrée** : une feuille portant un champ autre que `item_id` et `text` est refusée — passer `key.jsonl` par erreur échoue au lieu de publier les étiquettes ;
 - **l'espace de réponse est la liste des nœuds**, groupée par famille, sans définition ni exemple : c'est exactement ce que le passage 1 du §3 autorise à montrer ;
