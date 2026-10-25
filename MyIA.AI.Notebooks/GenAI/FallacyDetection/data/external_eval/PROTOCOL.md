@@ -62,7 +62,7 @@ restent soumis au §6.
 
 ## 3. Évaluateurs
 
-- **≥ 3 évaluateurs indépendants** (la **voie** — pilote ou campagne — a été tranchée par la question user Q25 le 2026-10-12 ; l'identité des évaluateurs et la modalité de recrutement restent à décider au moment de l'exécution).
+- **≥ 3 évaluateurs indépendants** (la **voie** — pilote ou campagne — est autorisée par la question user Q25 le 2026-10-12, qui n'a pas tranché entre les deux ; le choix reste au coordinateur, cf. §7, et l'identité des évaluateurs et la modalité de recrutement restent à décider au moment de l'exécution).
 - **Passage 1 « annotation nue » (obligatoire)** : l'évaluateur voit le texte et la liste des familles de premier niveau ; il choisit la famille, puis le nœud dans la famille. Il ne voit **ni la définition des nœuds, ni aucun exemple** — c'est le passage qui mesure la retrievability « à froid ».
 - **Passage 2 « avec définitions » (optionnel, séparé)** : mêmes items, définitions des nœuds visibles. Il mesure l'apport des définitions, jamais il ne remplace le passage 1.
 
