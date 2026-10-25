@@ -1,0 +1,50 @@
+name: docs-reference-guard
+
+# Lane perenne docs/ (sens reference vivante) + plancher de couverture (#14623,
+# sens perenne -- miroir de docs-transients-guard pour la direction perenne).
+#
+# Doctrine : un document de reference vivante porte l'en-tete
+# "> REFERENCE - vivante - derniere revision <date>", et cette date est lue
+# dans l'historique git (git log -1), jamais recopiee. L'organe
+# scripts/check_docs_reference_lane.py verifie deux sens : l'integrite (la date
+# de l'en-tete concorde avec la derniere revision du fichier) et un plancher de
+# couverture monotone (le nombre de docs balises ne descend pas sous la vague
+# initiale). Meme modele que docs-transients-guard et prose-counts-guard :
+# l'echec du check-run EST le signalement, visible sans ouvrir les logs.
+#
+# Convention complete : docs/transients/README.md (section "Sens perenne").
+
+on:
+  pull_request:
+    paths:
+      - 'docs/**/*.md'
+      - 'scripts/check_docs_reference_lane.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-reference-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reference:
+    # Route vers la jambe Linux auto-hebergee (#13378 tranche 1, decision ai-01
+    # 2026-09-01) : garde Python pur, sans secret ni usage du GITHUB_TOKEN. La
+    # garde same-repo ci-dessous saute les PRs de fork (pr_gate.py compte
+    # `skipped` comme OK) : aucun code de fork n'atteint le runner.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Enough history for `git log -1` on every touched doc.
+          fetch-depth: 2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Lane perenne et plancher de couverture
+        run: python scripts/check_docs_reference_lane.py

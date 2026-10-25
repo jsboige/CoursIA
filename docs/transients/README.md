@@ -74,6 +74,28 @@ L'organe vérifie les **trois sens** du contrat :
 - **hors de la lane** — aucun fichier de `docs/` (hors `docs/archive/` et cette lane) ne porte l'en-tête `> RAPPORT —` en tête de document : un transient égaré dans l'arbre pérenne est exactement la dérive que cette lane existe pour rendre visible ;
 - **entrée d'archive** (avec `--base <ref>`) — aucune **création** de rapport daté sous `docs/archive/` dans le diff `<ref>...HEAD` : les reclasses (renames) restent permises, les créations portant la signature transiente sont signalées. Un échec du `git diff` sous-jacent est lui-même un finding (`GIT_DIFF_FAILED`), jamais un acquittement silencieux.
 
+## Sens perenne
+
+Le miroir : les documents de **référence vivante** de `docs/` (hors cette lane, hors `docs/archive/`, hors artefacts générés) portent l'en-tête
+
+```
+> REFERENCE — vivante — dernière révision <date>
+```
+
+et cette date est **lue dans l'historique git** (`git log -1 --format=%cs` du fichier), jamais recopiée : un en-tête dont la date ne concorde plus avec la dernière révision est périmé (le document a évolué sans que l'en-tête ne soit rafraîchi) ou fabriqué. L'organe `scripts/check_docs_reference_lane.py` vérifie **deux sens** :
+
+- **intégrité** — tout document perenne *portant* l'en-tête doit avoir une date concorde avec `git log -1` ; un écart est un finding (`STALE_DATE`), un `git log` en échec est un finding (`GIT_LOG_FAILED`), jamais un acquittement silencieux ;
+- **couverture** — un **plancher monotone** : le nombre de documents perennes balisés ne descend pas sous `--baseline` (vague initiale = 9, `docs/notebook-metadata/`). La couverture ne se **déclare** pas : elle se mesure, et ne fait que croître ; le plancher est relevé au fil des vagues.
+
+```bash
+python scripts/check_docs_reference_lane.py                          # CONFORME (0) / VIOLATION (1)
+python scripts/check_docs_reference_lane.py --json                   # verdict machine
+python scripts/check_docs_reference_lane.py --baseline 9             # plancher explicite
+python -m pytest scripts/tests/test_check_docs_reference_lane.py -q
+```
+
+La lane perenne se **peuple par vagues** : chaque tranche balise un ensemble cohérent de références et relève le plancher. Garde CI : `docs-reference-guard` (miroir de `docs-transients-guard`).
+
 ## État
 
 Lane ouverte le 2026-09-29, **vide à dessein**. Le premier peuplement vient de la re-vérification des fichiers listés par #14623, qui a mesuré que la majorité d'entre eux ne sont **pas** des transients — références citées par le harnais, artefact régénéré par la CI, fichier sous PR ouverte — et ne se déplacent donc pas ici.
