@@ -163,8 +163,12 @@ def _setup_fake_for_pr(fake_run: FakeRun, pr: int, body: str,
                     "--jq")] = (
         0, "[]", "")
     checks = [
-        ["Always-on guards -- 13 organes, 1 checkout",
-         "fail" if always_on_failing else "success", "0s", "https://x"],
+        # Les noms sont ceux que l'organe RESOUT dans le workflow (#22403) :
+        # une fixture qui reecrirait le nom en dur reproduirait exactement le
+        # defaut corrige -- elle resterait verte sur un workflow renomme.
+        [name,
+         "fail" if always_on_failing else "success", "0s", "https://x"]
+        for name in rsa.content_guard_job_names()
     ]
     checks_text = "\n".join("\t".join(row) for row in checks) + "\n"
     fake_run.specs[("pr", "checks", str(pr))] = (0, checks_text, "")
@@ -295,3 +299,74 @@ def test_main_exit_1_on_real_failing(fake_run, capsys, monkeypatch):
     monkeypatch.setattr(rsa, "fetch_merged_window", lambda days=21: [])
     rc = rsa.main(["--pr", "999", "--dry-run"])
     assert rc == 1
+
+
+# --- #22403 : le nom du job se lit dans le workflow, il ne se code pas ------
+
+
+def test_content_guard_job_names_are_read_from_the_workflow():
+    """Le nom resolu existe vraiment dans `always-on-guards.yml`.
+
+    Defaut fondateur (#22403) : l'organe cherchait `-- 13 organes` quand le
+    job s'appelait `-- 16 organes`. Le predicat « le job est ROUGE » ne
+    pouvait jamais etre vrai, l'organe se taisait, et le silence se lisait
+    comme « rien a rafraichir ». Ce test rougit au prochain renommage.
+    """
+    import yaml
+
+    names = rsa.content_guard_job_names()
+    assert names, "aucun job Always-on guards resolu -- l'organe serait muet"
+
+    workflow = Path(rsa.__file__).resolve().parents[2] / (
+        ".github/workflows/always-on-guards.yml")
+    data = yaml.safe_load(workflow.read_text(encoding="utf-8")) or {}
+    declared = {
+        (job or {}).get("name")
+        for job in (data.get("jobs") or {}).values()
+    }
+    for name in names:
+        assert name in declared, (
+            f"le nom resolu {name!r} n'est declare par aucun job de "
+            f"{workflow.name} -- l'organe mesure un check qui n'existe pas")
+
+
+def test_content_guard_job_names_follow_a_rename(tmp_path):
+    """Un workflow renomme est suivi : la resolution lit le fichier, pas une constante.
+
+    Le job de body partage le prefixe et doit rester EXCLU de la resolution.
+    """
+    wf = tmp_path / "always-on-guards.yml"
+    wf.write_text(
+        "jobs:\n"
+        "  guards:\n"
+        "    name: 'Always-on guards -- 21 organes, 1 checkout'\n"
+        "  body:\n"
+        "    name: 'Always-on guards -- body'\n",
+        encoding="utf-8")
+    assert rsa.content_guard_job_names(wf) == [
+        "Always-on guards -- 21 organes, 1 checkout",
+    ]
+
+
+def test_content_guard_job_names_refuses_an_empty_resolution(tmp_path):
+    """Aucun job correspondant -> RuntimeError, jamais un silence complaisant."""
+    wf = tmp_path / "always-on-guards.yml"
+    wf.write_text("jobs:\n  guards:\n    name: 'Other guard'\n",
+                  encoding="utf-8")
+    with pytest.raises(RuntimeError, match="refuse de mesurer"):
+        rsa.content_guard_job_names(wf)
+
+
+def test_is_failing_ignores_a_body_job_red(fake_run):
+    """Le job de BODY rouge ne declenche pas le rafraichissement d'adjacence.
+
+    Les deux jobs partagent le prefixe `Always-on guards` : un match par
+    sous-chaine sur `gh pr checks` les fusionnerait, et l'organe toucherait
+    le body d'une PR pour un rouge qui ne concerne pas l'adjacence.
+    """
+    name = rsa.content_guard_job_names()[0]
+    checks_text = "\t".join([name, "success", "0s", "https://x"]) + "\n"
+    checks_text += "\t".join(
+        ["Always-on guards -- body", "fail", "0s", "https://x"]) + "\n"
+    fake_run.specs[("pr", "checks", "4242")] = (0, checks_text, "")
+    assert rsa.is_always_on_guards_failing(4242) is False
