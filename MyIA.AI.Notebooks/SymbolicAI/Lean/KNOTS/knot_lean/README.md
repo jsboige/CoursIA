@@ -407,7 +407,29 @@ Trois notebooks dans `SymbolicAI/Lean/` assurent la transmission, par niveau :
 
 **Prérequis** : aucun pour 17-a ; PD-codes élémentaires pour 17-b ; Lean 4 de base (tactiques, structures) pour 17-c.
 
-**Revue humaine — état honnête** : à ce jour, le lake a été revu par les organes bots (Hermes, proof-integrity CI) et mergé par le coordinateur, mais **aucune revue humaine nommée du lake entier** n'a eu lieu. C'est une limite déclarée de la présente digestion (grille #13106 point 10) : la revue humaine reste à faire et à inscrire ici le moment venu.
+**Revue humaine — état honnête** : à ce jour, le lake a été revu par les organes bots (Hermes, proof-integrity CI) et mergé par le coordinateur, mais **aucune revue humaine nommée du lake entier** n'a eu lieu. C'est une limite déclarée de la présente digestion (grille **EPIC #13106 critère 2**) : la revue humaine reste à faire et à inscrire ici le moment venu. Pour préparer cette revue, deux aide-mémoire suivent, à croiser avec la table « Structure » plus haut : qui est déjà couvert par la transmission, et sous quelle forme un acte de revue humaine nommé sera consigné.
+
+**Couverture par la transmission** : les trois notebooks listés ci-dessus couvrent partiellement le lake. Cette matrice croise les modules que `lakefile.lean` compile (`globs := #[.submodules \`Knots, \`Knots_en]`, source de vérité : le glob du lakefile, pas une liste mémorisée) avec leur couverture et la lacune de revue restante.
+
+| Module | Couvert par | Lacune de revue |
+|--------|-------------|-----------------|
+| `Knots/Basic.lean` (Knot, Link, PD-code, `KnotDiagram.wf`) | KNOTS-01 (visualisations), KNOTS-02 (PD-codes) | Équivalence des représentations, `KnotDiagram.wf` |
+| `Knots/Reidemeister.lean` (R1/R2/R3, `ReidemeisterEquiv`) | KNOTS-02 (moves), KNOTS-03 (murs) | Symétries, formalisation des moves |
+| `Knots/Invariant.lean` (Fox 3-color, transfer R1/R2) | KNOTS-02 (Fox), KNOTS-03 (transfer + marquee) | Marquee `tricolorable_invariant`, murs R2 nommés |
+| `Knots/Conway.lean` (11n34, mutation, Alexander) | KNOTS-01 (histoire + Piccirillo) | Mutation formelle, Alexander polynomial |
+| `Knots/Slice.lean` (slice, Piccirillo, Freedman) | KNOTS-01 (Piccirillo) | Preuves de slice/non-slice, dichotomie lisse/topologique |
+| `Knots/Lidman.lean` (11n102, unknotting = 2) | KNOTS-01 (Lidman) | Preuves de l'unknotting number, `Nat.sInf` |
+| `Knots/MathlibPrerequisites.lean` (index prérequis) | Non couvert par les notebooks | Index seul, à relire en regard de Mathlib v4.33.0 (`db584cd6`) |
+| `Knots/ArcPartition.lean` (bloc `arcPartition` + `alexanderRow_sum_zero`, polynomial basis) | KNOTS-03 (murs R2/R3) | Intégrations `Mathlib.Algebra.Polynomial`, soundness du bloc polynomial |
+| `Knots/ConwayPD.lean` (codes PD 11n34, 11n42 — mutants à Alexander trivial) | KNOTS-01 (Conway + KT), KNOTS-03 (codes) | Sphères de mutation formelles, calcul polynomial complet |
+| `Knots/FigureEight.lean` (invariants 4_1 : Alexander signé, déterminant 5, non-tricoloriabilité) | KNOTS-01 (4_1 historique), KNOTS-03 (Jones) | Soundness formelle du crossing count Phase 3 |
+| `Knots/Jones.lean` (bracket de Kauffman, polynôme de Jones, planarité Euler) | KNOTS-02 (Fox), KNOTS-03 (Jones) | Soundness formelle sur tous les diagrammes nommés |
+| `Knots/Mutation.lean` (mutation de Conway : sphère 4 points, rotation 180°) | KNOTS-01 (Conway/KT mutants), KNOTS-03 (mutation) | Soundness de l'isotopie de recollement, structure de la sphère formelle |
+| `Knots/ReidemeisterCombinatorial.lean` (`MoveSequence`, `movesConnects`, `verifyMoves`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Soundness du vérificateur borné, complétude énumération |
+| `Knots/ReidemeisterInvariance.lean` (invariance d'`alexanderPolynomialSigned` sous R1/R2/R3) | KNOTS-02 (moves), KNOTS-03 (invariance) | Soundness complète, jonction Conway ↔ Reidemeister |
+| `Knots/ReidemeisterMoves.lean` (`ReidemeisterMove` + `verifyR1Fwd`/`R2Fwd`/`R3Fwd`, `movesConnects_sound`) | KNOTS-02 (moves), KNOTS-03 (RTC) | Pont vers les 8 `sorry` réels du lake (2 Reidemeister, 4 Slice, 2 Lidman), baseline CI `lean-knot.yml` à `"8"` |
+
+**Acte de revue humaine à signer** : lorsque la revue humaine sera effectuée, elle prendra la forme `Revue par <nom, affiliation> — date <YYYY-MM-DD> — scope <lake entier / module> — vérifications : structure / preuves principales / i18n FR-EN — verdict global` et sera insérée dans ce README. La grille **#13106 critère 2** est satisfaite par le premier acte signé ; aucun acte partiel n'est consigné en silencieusement, et la présente section reste honnête tant que l'acte n'est pas posé.
 
 ## Références
 

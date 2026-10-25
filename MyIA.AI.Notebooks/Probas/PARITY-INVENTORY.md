@@ -114,6 +114,14 @@ Ordre recommandé : A (mécanique, guard vérifiable) puis C et D (même geste d
 décisions légères), B en dernier (arbitrage de fond). Chaque tranche = une PR dédiée,
 jamais de composite renommage + contenu.
 
+> **État mesuré au 2026-10-10** — Tranche A exécutée (lane `myia-po-2024:CoursIA-2`, PR dédiée)
+> : les 10 renommages zero-pad sont livrés avec leurs accompagnements (README, navlinks,
+> `zero_pad_series.json` déclare `Infer`, `numbering_exception` retiré des 9 paires twin,
+> guard `check_series_zero_pad.py` exit 0). Le trou symétrique du numéro 6 est conservé.
+> Les tranches B, C et D restent **non couvertes** — arbitrages coordinateur, mapping inchangé
+> ci-dessus. Le statut D (extension unilatérale de `01b`) est laissé ouvert : la Tranche A
+> a paddé le nom, sans trancher le statut de paire.
+
 ## 6. Ce que cette tranche ne fait pas
 
 Aucun renommage, aucune écriture de registre, aucune modification de notebook — la donnée et

@@ -25,7 +25,11 @@ elle est donc exclue du depôt public. Cette instance-ci est 100 % jetable
 - Un **LLM local compatible OpenAI** (`/v1/chat/completions`) : Ollama
   (`http://localhost:11434/v1`), vLLM, LM Studio, ... — la variable
   `VALMONT_LLM_BASE_URL` le decrit ;
-- Python 3.10+ avec `requests` et `python-dotenv` pour executer les notebooks.
+- Python 3.10+ avec `requests` et `python-dotenv` pour executer les notebooks ;
+- pour le carnet `mesurer-la-derive-dun-copilot.ipynb` (section 7), un
+  **modele d'embeddings** servi par le moteur (`/v1/embeddings`) —
+  `ollama pull bge-m3`. Sans lui, la section 7 se degrade d'elle-meme
+  (les cellules le signalent) et le reste du carnet s'execute.
 
 ## Montage en 5 étapes
 
@@ -75,6 +79,18 @@ docker exec valmont-wordpress_cli-1 sh -c "wp user application-password create $
 
 Les notebooks lisent `instance-jetable/.env` (base URL + admin + app password).
 Rien d'autre n'est requis : ils appellent l'API de l'instance en HTTP local.
+
+Le carnet `mesurer-la-derive-dun-copilot.ipynb` ajoute une seule exigence : son
+moteur doit aussi savoir **encoder**. La route existe deja (compatible OpenAI),
+c'est le modele qui manque tant qu'il n'est pas tire :
+
+```powershell
+ollama pull bge-m3
+```
+
+Le carnet mesure alors la derive sur les embeddings du **meme** moteur qui
+reecrit le texte, et lit `VALMONT_LLM_BASE_URL_MOTEUR` dans le `.env` pour
+l'atteindre.
 
 Le compte de test `consent.editor` — créé par le notebook OAuth puis réutilisé
 par le notebook assistant de l'éditeur — porte le mot de passe
