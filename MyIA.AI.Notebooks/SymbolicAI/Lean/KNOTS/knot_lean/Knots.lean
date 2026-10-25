@@ -26,6 +26,9 @@
       dichotomie lisse/topologique (extrait de Conway, #18397)
     - `Knots.Jones` — bracket de Kauffman sur codes PD (somme d'états,
       évaluations trèfle / noeud en huit / noeud trivial)
+    - `Knots.Khovanov` — complexe de Khovanov du trèfle (cube des
+      lissages, m/Δ, d∘d = 0, table graduée `q + q³ + q⁵t² + q⁹t³`,
+      χ|_{q=−1} = −2)
     - `Knots.FigureEight` — invariants du noeud en huit sur son code PD
       plan (Alexander signé classique à une unité près, déterminant 5,
       non-tricoloriabilité, 4 croisements — définition provisoire)
@@ -55,6 +58,7 @@ import Knots.ReidemeisterInvariance
 import Knots.ReidemeisterMoves
 import Knots.ReidemeisterCombinatorial
 import Knots.Jones
+import Knots.Khovanov
 import Knots.FigureEight
 import Knots.Lidman
 import Knots.MathlibPrerequisites
