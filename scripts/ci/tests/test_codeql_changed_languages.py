@@ -11,8 +11,9 @@ Contrat verifie ici, dans cet ordre :
    langages et le DIT dans la raison ;
 4. **hors PR** (`push`, `schedule`) : matrice complete sans meme lire un diff —
    le lecteur injecte ne doit pas etre appele ;
-5. l'entree `csharp` porte `build_mode: none` (arbitrage de cout de #22548),
-   et l'ordre de la matrice est stable.
+5. l'entree `csharp` porte `build_mode: none`, c'est-a-dire qu'`autobuild`
+   n'est plus utilise (arbitrage de cout de #22548 : le default setup
+   construisait le C#), et l'ordre de la matrice est stable.
 """
 import importlib.util
 import io
@@ -54,7 +55,7 @@ def test_workflows_paths_select_the_actions_language():
     assert [item["language"] for item in matrix] == ["actions"]
 
 
-def test_csharp_variants_and_the_no_build_decision():
+def test_csharp_variants_drop_autobuild():
     for path in ("./a/b.cs", "Proj/App.csproj", "Proj/App.sln", "Web/View.cshtml"):
         matrix, _ = mod.derive("pull_request", "main", diff_paths=lambda _ref, p=path: [p])
         assert matrix == [{"language": "csharp", "build_mode": "none"}], path
