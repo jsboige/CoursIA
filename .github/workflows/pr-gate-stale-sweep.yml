@@ -397,6 +397,13 @@ jobs:
           OMIT_SHA='aucun'
           OMIT_CODE='aucun code HTTP'
           OMIT_DETAIL='aucun message de gh'
+          # #22512 -- nettoyer les temporaires du passage avant de quitter le
+          # step : sur un runner ephemere la machine disparait avec eux, mais
+          # les runners persistants (#22418) accumuleraient ces fichiers a
+          # chaque passe. `${VAR:-}` : les affectations vivent dans des
+          # branches distinctes sous `set -u`, et `rm -f ''` echouerait dans
+          # un trap EXIT au point de changer le code de sortie du step.
+          trap 'rm -f "${LIST_ERR:-}" "${OMIT_ERR:-}" /tmp/openprs.txt /tmp/runs.jsonl /tmp/mute.txt /tmp/wfnames.json /tmp/candidates.txt' EXIT
           while read -r NUM SHA FORK MSTATE; do
             [ -z "${NUM:-}" ] && continue
             LISTED=$((LISTED+1))
@@ -1373,6 +1380,9 @@ jobs:
           TIM_ERR=$(mktemp)
           TIM_CODE='aucun code HTTP'
           TIM_DETAIL='aucun message de gh'
+          # #22512 -- meme contrat que le bloc de balayage : TIM_ERR ne doit
+          # pas survivre au step sur un runner persistant (#22418).
+          trap 'rm -f "${TIM_ERR:-}"' EXIT
           RUN=$(gh api "repos/$REPO/actions/runs/$RUN_ID" 2>"$TIM_ERR") || {
             TIM_CODE=$(grep -oE 'HTTP [0-9]+' "$TIM_ERR" | tail -1 || true); [ -n "$TIM_CODE" ] || TIM_CODE='aucun code HTTP'
             TIM_DETAIL=$(tr '\n' ' ' < "$TIM_ERR" | cut -c1-200); [ -n "$TIM_DETAIL" ] || TIM_DETAIL='aucun message de gh'
