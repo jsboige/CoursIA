@@ -13,9 +13,13 @@ layout: cover
 
 # Apprentissage
 
-Intelligence Artificielle -- VI
+<div class="cover-divider"></div>
 
-**Apprentissage supervisé, apprentissage et logique, apprentissage probabiliste, apprentissage par renforcement**
+<div class="cover-badge">1</div>
+
+<div class="cover-band">
+
+**Intelligence Artificielle — VI**
 
 - Apprentissage supervisé
   - Paramétrique
@@ -23,6 +27,8 @@ Intelligence Artificielle -- VI
 - Apprentissage et logique
 - Apprentissage probabiliste
 - Apprentissage par renforcement
+
+</div>
 
 
 ---
@@ -189,12 +195,16 @@ layout: dense
 
 # Arbres de décision
 
+<div class="grid grid-cols-2 gap-10">
+
 - Un type de représentation pour les hypothèses
 - Logiquement équivalent à une proposition disjonctive:
 - But  (Chemin1 ∨ Chemin2 ∨ Chemin3)
 - Exemple du restaurant:
 
-<img src="./images/img_005.png" alt="Arbre de decision du restaurant : Clients, AttenteEstimee, Faim, Reservation" style="display:block; margin:10px auto; max-width:100%;" width="422">
+<img src="./images/img_005.png" alt="Arbre de decision du restaurant : Clients, AttenteEstimee, Faim, Reservation" style="max-width:100%; max-height:340px; object-fit:contain;">
+
+</div>
 
 <!-- Frontiere de decision : arbre = decoupage orthogonal, foret = ensemble lisse -->
 

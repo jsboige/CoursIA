@@ -112,3 +112,53 @@
 .slidev-layout .dense-list.xl-dense li {
   margin: 0;
 }
+
+/* 7. Couverture — parité avec pptx-reference/slide-001.png : titre centré,
+ *    filet pointillé coiffé d'une pastille numérotée, bande grise-bleu
+ *    pleine largeur portant le sous-titre en petites capitales et le
+ *    sommaire aligné à gauche (canvas 980x552). */
+.slidev-layout.cover h1 {
+  text-align: center;
+  margin-top: 0.55em;
+}
+
+.slidev-layout .cover-divider {
+  position: absolute;
+  left: 60px;
+  right: 60px;
+  top: 262px;
+  border-top: 2px dashed #9aa7b0;
+}
+
+.slidev-layout .cover-badge {
+  position: absolute;
+  top: 245px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 34px;
+  height: 34px;
+  line-height: 31px;
+  border-radius: 50%;
+  border: 2px solid #4d7d87;
+  background: #ffffff;
+  color: #4d7d87;
+  font-weight: 700;
+  text-align: center;
+}
+
+.slidev-layout .cover-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 290px;
+  background: #e8edf1;
+  color: #2f3f4f;
+  padding: 14px 60px 10px;
+}
+
+.slidev-layout .cover-band p {
+  letter-spacing: 0.16em;
+  font-size: 0.78em;
+  color: #35506b;
+}
