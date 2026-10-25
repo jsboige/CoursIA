@@ -148,7 +148,8 @@ _PR_REF_RE = re.compile(r"\bPR\s*#\d+\b")
 
 # Fenetres de garde anti-FP : le contexte autour du match decide.
 _DM_OK_CONTEXT = re.compile(
-    r"Diebold|Mariano|momentum|p-value|p_valeur|statistique|test", re.IGNORECASE
+    r"Diebold|Mariano|momentum|p-value|p_valeur|statistique|test|JEPA",
+    re.IGNORECASE,
 )
 _DISPATCH_OK_CONTEXT = re.compile(
     r"dynamique|dynamic|[eé]conomique|[eé]lectrique", re.IGNORECASE

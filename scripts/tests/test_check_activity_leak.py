@@ -241,6 +241,8 @@ class TestNegativeControls(unittest.TestCase):
             "Le test de Diebold-Mariano rend DM p = 0.032 sur 4 seeds, sous le seuil.",
             "La statistique DM compare les pertes MSE des deux modeles.",
             "Le dual momentum (DM) combine momentum absolu et relatif.",
+            "Demo DM-JEPA 1.7 : prediction latente sans generation.",
+            "Le modele DM-JEPA apprend une representation par masquage.",
         ):
             with self.subTest(text=text):
                 self.assertFalse(
