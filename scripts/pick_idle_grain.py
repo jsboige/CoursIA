@@ -5495,7 +5495,55 @@ def belt_visit_stamp(it: dict) -> str | None:
     return max(stamps) if stamps else None
 
 
-def belt_sort_key(it: dict) -> tuple:
+# #22500 -- la classe de priorite que le tapis ne connaissait pas. Mandat user
+# du 2026-10-25, deux phrases qui disent la meme chose par les deux bouts :
+# une issue de consolidation « merite d'etre visitee plusieurs fois par
+# semaine », un EPIC ordinaire « ne devrait pas etre visite plus d'une fois
+# par tapis roulant, c'est-a-dire plus d'une fois par semaine au grand max ».
+CONSOLIDATION_TAG = "consolidation"
+CONSOLIDATION_LAG_H = 48
+UMBRELLA_VISIT_CAP_DAYS = 7
+_CONSOLIDATION_TITLE_RE = re.compile(r"(?i)\bconsolidations?\b")
+
+
+def is_consolidation(it: dict) -> bool:
+    """Issue de la classe `consolidation` : titre, ou label.
+
+    Le label n'existe pas encore dans le depot ; la lecture le prendra des
+    qu'il sera cree, sans que l'organe depende de sa creation. Le titre est
+    la forme qui existe aujourd'hui (« [Audit #17073] Serie X — partition
+    Hermes » n'en est pas une, « B.0 : ... » non plus : seuls les titres qui
+    nomment la consolidation comptent, d'ou le motif sur le mot entier).
+    """
+    labels = it.get("labels")
+    if isinstance(labels, str):
+        labels = [labels]
+    for lab in labels or []:
+        name = lab.get("name") if isinstance(lab, dict) else lab
+        if isinstance(name, str) and name.strip().lower() == CONSOLIDATION_TAG:
+            return True
+    return bool(_CONSOLIDATION_TITLE_RE.search(it.get("title") or ""))
+
+
+def _visit_age_hours(stamp, now) -> float | None:
+    """Age d'un horodatage serveur en heures ; `None` s'il est absent ou
+    illisible. Un horodatage naif est lu comme UTC (c'est ce que produit
+    l'API) -- refuser ici couterait un repli pour rien."""
+    if not stamp:
+        return None
+    text = str(stamp)
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        when = dt.datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if when.tzinfo is None:
+        when = when.replace(tzinfo=dt.timezone.utc)
+    return (now - when).total_seconds() / 3600.0
+
+
+def belt_sort_key(it: dict, *, now=None) -> tuple:
     """Cle de tri deterministe pour le tapis roulant.
 
     Spec #18832 : **une seule ligne de temps** -- derniere visite (merge
@@ -5504,10 +5552,24 @@ def belt_sort_key(it: dict) -> tuple:
     creation, sinon NOW. La plus ancienne en tete. Une sous-issue tout juste
     creee repart en queue, pas en tete, et pousse son parent avec elle.
 
-    Tri : (stamp ISO asc, numero asc).
+    #22500 -- la ligne de temps ne suffisait pas : elle traite une issue de
+    consolidation comme n'importe quelle autre, alors que le mandat user du
+    2026-10-25 demande qu'elle soit visitee « plusieurs fois par semaine ».
+    Tri : `(classe, stamp ISO asc, numero asc)` avec `classe = 0` pour une
+    consolidation **due** (derniere visite il y a au moins
+    `CONSOLIDATION_LAG_H` heures), `1` sinon. Une consolidation due passe
+    donc devant tout le reste, et les consolidations dues entre elles
+    gardent l'ordre de leur visite : aucune ne peut attendre plus longtemps
+    qu'un tour de tapis apres son echeance.
     """
-    stamp = belt_visit_stamp(it) or it.get("created_at") or NOW.isoformat()
-    return (stamp, it.get("number", 0))
+    moment = now or NOW
+    visit = belt_visit_stamp(it)
+    stamp = visit or it.get("created_at") or moment.isoformat()
+    if is_consolidation(it):
+        age = _visit_age_hours(visit or it.get("created_at"), moment)
+        if age is not None and age >= CONSOLIDATION_LAG_H:
+            return (0, stamp, it.get("number", 0))
+    return (1, stamp, it.get("number", 0))
 
 
 def parent_refs(it: dict) -> set[int]:
@@ -5523,6 +5585,45 @@ def parent_refs(it: dict) -> set[int]:
         refs.add(int(m.group(1)))
     refs.discard(it.get("number"))
     return refs
+
+
+def umbrella_visit_cause(it: dict, *, now=None) -> str | None:
+    """#22500 -- plafond hebdomadaire d'un EPIC hors classe `consolidation`.
+
+    Rend la cause de refus quand l'EPIC a ete visite il y a moins de
+    `UMBRELLA_VISIT_CAP_DAYS` jours, sinon `None`. « Visite » = les deux
+    dates que le tapis ne compte pas autrement : un claim pose sur l'EPIC
+    (`last_claim_stamp`) ou une sous-issue creee qui le nomme
+    (`last_child_stamp`).
+
+    Ce plafond est le point 2 du mandat, dans sa forme mecanique : le tapis
+    ne peut pas empecher une lane de creer un sous-grain, mais il peut
+    refuser de lui reproposer le meme EPIC tant qu'un sous-grain y a ete
+    cree ou claimé dans la semaine. Mesure fondatrice : l'EPIC #16334
+    (Serre100) a recu 11 PRs ouvertes en 10 jours, dont 9 le meme jour, par
+    4 lanes -- chacune enchainait les sous-grains du meme EPIC dans sa
+    propre session.
+
+    Les EPICs de consolidation sont exempts : c'est precisement leur
+    travail de revenir souvent.
+    """
+    if it.get("klass") != "umbrella" or is_consolidation(it):
+        return None
+    moment = now or NOW
+    window_h = UMBRELLA_VISIT_CAP_DAYS * 24
+    recent: list[tuple[float, str]] = []
+    for key, what in ((("last_child_stamp"), "sous-issue creee"),
+                      (("last_claim_stamp"), "claim pose sur l'EPIC")):
+        age = _visit_age_hours(it.get(key), moment)
+        if age is not None and age < window_h:
+            recent.append((age, what))
+    if not recent:
+        return None
+    age, what = min(recent)
+    return (f"PLAFOND EPIC (#22500) : {what} il y a {age / 24.0:.1f} j "
+            f"(< {UMBRELLA_VISIT_CAP_DAYS} j) -- un sous-grain par visite. "
+            f"Servir un sous-grain ouvert existant, ou passer au candidat "
+            f"suivant.")
 
 
 def apply_child_visits(pool: list[dict], targets: list[dict]) -> dict[int, str]:
@@ -6101,8 +6202,16 @@ def belt_report_metrics(
     return min_gap_days, closed_7d, len(pool)
 
 
-def print_belt_report(metrics: tuple[float | None, int | None, int]) -> None:
-    """Sortie texte de `--belt --report` (cf #18832 acceptance)."""
+def print_belt_report(metrics: tuple[float | None, int | None, int],
+                      elapsed_s: float | None = None) -> None:
+    """Sortie texte de `--belt --report` (cf #18832 acceptance).
+
+    #22500 -- troisieme nombre : la duree reelle d'une passe complete du
+    tapis (lecture du pool incluse). Le user raisonne en « une passe ≈ une
+    semaine » : sans cette duree, personne ne peut dire si les frequences
+    tenues par l'organe sont atteignables. `None` = non mesuree, et on
+    l'ecrit plutot que d'afficher un zero.
+    """
     min_gap, closed_7d, sample = metrics
     print(f"belt --report : ecart_min_depuis_derniere_visite = "
           f"{min_gap} j (sur {sample} issues avec livraison)")
@@ -6114,6 +6223,9 @@ def print_belt_report(metrics: tuple[float | None, int | None, int]) -> None:
     else:
         closed_str = str(closed_7d)
     print(f"belt --report : issues fermees sur 7 j = {closed_str}")
+    duree = ("non mesuree" if elapsed_s is None
+             else f"{elapsed_s:.1f} s ({elapsed_s / 60.0:.1f} min)")
+    print(f"belt --report : duree d'une passe complete = {duree}")
 
 
 # ---------------------------------------------------------------------------
@@ -7380,6 +7492,22 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         if code == CLAIM_CODE_BLOCKED:
             belt_withheld.append((it, human))
             continue
+        # #22500 -- plafond hebdomadaire d'un EPIC hors consolidation. Le
+        # tapis ne peut pas empecher une lane de CREER un sous-grain ; il
+        # peut refuser de lui reproposer le meme EPIC tant qu'un sous-grain
+        # y a ete cree ou claimé dans la semaine. Quand le pool porte deja
+        # des sous-grains ouverts de cet EPIC, ils sont nommes : « passe au
+        # candidat suivant » sans dire lequel revient a laisser la lane
+        # re-decouvrir ce que l'organe savait.
+        epic_cause = umbrella_visit_cause(it)
+        if epic_cause is not None:
+            siblings = [p for p in belt_pool
+                        if p is not it and it["number"] in parent_refs(p)][:2]
+            if siblings:
+                names = ", ".join(f"#{p.get('number')}" for p in siblings)
+                epic_cause += f" Sous-grains ouverts : {names}."
+            belt_withheld.append((it, epic_cause))
+            continue
         # Sonde de livraison (#19390) : la voie ponderee ecartait et
         # remplacait les candidats marques [INFO] candidate-delivered,
         # le tapis les servait comme grains neufs -- chaque lane qui
@@ -7988,6 +8116,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"(garde rouge/WIP indisponible : {backlog['unavailable']} -- tirage rendu sans verification)")
         print()
 
+    # #22500 -- l'horloge d'une PASSE COMPLETE part d'ici, pas du debut du
+    # tirage : la lecture du pool est la part dominante (mesure #20053 : 648 s
+    # a froid, 258 s a chaud sur ai-01), et une duree qui l'exclurait
+    # donnerait a lire une passe plus rapide qu'elle n'est.
+    import time as _time_pass
+    _pass_t0 = _time_pass.monotonic()
     pool, pool_error = fetch_pool(
         cache=payload_cache,
         cache_mode=effective_cache_mode,
@@ -8136,7 +8270,8 @@ def main(argv: list[str] | None = None) -> int:
         # Mode rapport : deux nombres, pas de tirage.
         if args.report:
             metrics = belt_report_metrics(pool, closed_7d=None)
-            print_belt_report(metrics)
+            print_belt_report(metrics,
+                              elapsed_s=_time_pass.monotonic() - _pass_t0)
             return 0
         # Phases tapees sur stderr au fil de l'eau (cf review ai-01
         # 5571014393, CHANGES_REQUESTED v2). Permettent a un run
