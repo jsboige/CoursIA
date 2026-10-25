@@ -2,7 +2,7 @@
 series: QuantConnect-Python
 pedagogical_count: 63
 breakdown: Python=63
-maturity: DRAFT=34, BETA=22, ALPHA=7
+maturity: BETA=33, DRAFT=27, ALPHA=3
 -->
 
 # QuantConnect Python Notebooks
@@ -103,6 +103,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-35-RL-Portfolio-Construction | EXÉCUTÉ | |
 | QC-Py-Dataset-Workflow | NON EXÉCUTÉ | |
 | QC-Py-43-Diffusion-Series-Synthetiques | EXÉCUTÉ | cellules exécutées localement sur SPY (yfinance, 2 515 rendements log) — diffusion vs bootstrap i.i.d., augmentation `INCONCLUSIF` |
+| QC-Py-44-Agent-Trading-Multi-LLM | EXÉCUTÉ | 295 appels LLM réels (gpt-5.6-luna) : débat bull/bear via `AgentGroupChat`, mémoire soldée vs single-shot — verdict §C `INCONCLUSIVE` |
 
 **Récapitulatif** : la majorité des notebooks sont NON EXÉCUTÉS (code réel, exécution kernel ou QC Cloud à faire) ; une part croissante est EXÉCUTÉE et 10 sont des `doc cloud` (markdown-only). Le décompte précis relève du catalogue généré.
 
@@ -284,6 +285,25 @@ stylisés** de la série réelle, et l'utilité mesurée des données engendrée
 Le carnet prend ses données sur **yfinance** (SPY, 2 515 rendements log quotidiens) : il
 requiert un accès réseau à l'exécution. Sa conclusion transférable est méthodologique — une
 perte de débruitage qui décroît ne dit rien de la qualité du générateur.
+
+## Recherche — agent de trading multi-LLM (QC-Py-44)
+
+Réduction pédagogique du cadre **TradingAgents** (Xiao et al., arXiv:2412.20138) : au lieu
+d'un seul appel LLM single-shot, deux **analystes** (momentum, risque) nourrissent un
+**débat bull/bear** borné à 2 tours via `AgentGroupChat` (semantic_kernel — organe natif de
+la série SemanticKernel), un **PM** tranche LONG/FLAT/SHORT avec prévision chiffrée, et une
+**mémoire de décisions soldées** journalise chaque décision, la solde au terme de l'horizon
+contre le rendement réalisé, et réinjecte une réflexion d'une phrase au point suivant.
+
+| Notebook | Méthode | Ce qu'il démontre |
+|----------|---------|-------------------|
+| [QC-Py-44-Agent-Trading-Multi-LLM](QC-Py-44-Agent-Trading-Multi-LLM.ipynb) | 2 bras sur les mêmes contextes (BTC-USD, 8 points espacés de 120 j ≈ 2,3 ans) : cadre complet vs single-shot, 4 graines (0, 1, 7, 42), pertes appariées, Diebold-Mariano Newey-West lag 1, frais 10 bps/côté, 295 appels LLM réels | La délibération **ne se décrète pas significative** : le cadre bat la baseline en perte appariée sur 3 graines sur 4 (edge +0,165 pt de %) sans atteindre la conjonction §C (ratio +0,45σ, DM p = 0,34) → verdict `INCONCLUSIVE`. Témoins : mémoire structurellement vide au premier point (0 → 7 entrées par graine), accord entre analystes 40,6 %, les deux bras surestiment (+0,80 / +0,75 pt) — l'edge mesuré vient de la précision, pas du biais |
+
+La conclusion transférable est méthodologique : un cadre multi-agents avec mémoire **peut**
+améliorer la précision appariée d'un LLM isolé — ici il le fait en tendance, sur un petit
+échantillon de 32 paires — mais la barre §C (≥ 2σ ET p < 0,05) existe précisément pour
+empêcher de déclarer victoire sur cette taille d'effet. Le carnet requiert `OPENAI_API_KEY`
+à l'exécution (lue depuis `.secrets/master.env`, hors dépôt).
 
 ## Utilitaires
 
