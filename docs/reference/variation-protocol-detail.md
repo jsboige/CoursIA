@@ -218,7 +218,11 @@ Réponse du user au diagnostic, 12:07Z : « Ce qu'on ne veut pas, ce sont des ag
 
 Puis, 12:10Z : « on a plein d'issues de consolidation en souffrance, retrouve les et mets les en avant. C'est celles-là qui méritent d'être visitées plusieurs fois par semaine ».
 
-Correction du user sur le diagnostic « le plancher exclut MED et META », vers 12:25Z : « C'est pas forcément MED ou META qu'on veut renforcer, ce sont de vraies issues, il faut juste revoir les priorités pour éviter l'inflation gallopante et lutter contre l'entropie. »
+Correction du user sur le diagnostic « le plancher exclut MED et META », 12:19Z : « C'est pas forcément MED ou META qu'on veut renforcer, ce sont de vraies issues, il faut juste revoir les priorités pour éviter l'inflation gallopante et lutter contre l'entropie. »
+
+Puis, 12:20Z : « Enfin je ne te dis pas d'éliminer le meta hein, attention au balancier ».
+
+Ces citations sont le verbatim complet, recopié tel que frappé, coquilles comprises : ne pas les corriger. Le body de la PR #22501 n'en donne qu'un extrait.
 
 ### 14.2 La mesure
 
