@@ -29,8 +29,10 @@ pip install -r requirements.txt
 python run_z3_sudoku_gateway.py --port 8899
 ```
 
-La commande brute reste utilisable, et fonctionne désormais depuis n'importe quel
-répertoire courant, y compris la racine du dépôt avec un `seed_uri` absolu :
+La commande brute reste utilisable depuis la racine du dépôt ou n'importe quel
+de ses répertoires (le résolveur remonte les parents pour trouver le cœur).
+Depuis un répertoire **sans rapport avec le dépôt**, le kernel ne peut pas
+deviner où vit le cœur : poser `Z3_SUDOKU_CORE_DIR` explicitement —
 
 ```bash
 python -m kernel_gateway \
@@ -39,6 +41,12 @@ python -m kernel_gateway \
   --KernelGatewayApp.port=8899 \
   --JupyterWebsocketPersonality.list_kernels=True
 ```
+
+Le **lanceur**, lui, n'a pas cette limite : il résout le dossier du cœur depuis
+son propre emplacement et le publie au processus kernel via
+`Z3_SUDOKU_CORE_DIR`, que la cellule de préparation du carnet lit en premier
+candidat. La passe de main lanceur → kernel est ainsi explicite, et le pré-vol
+vert du lanceur prouve bien que le kernel trouvera le cœur.
 
 `python -m kernel_gateway` est équivalent à `jupyter kernelgateway` quand le
 dossier `Scripts` du Python est dans le `PATH`. `list_kernels=True` est requis
@@ -93,7 +101,11 @@ auparavant le client expirer sans aucune réponse (90 s côté client, descripte
 Le cœur est cherché dans cet ordre : `Z3_SUDOKU_CORE_DIR` si la variable est
 posée, puis le répertoire courant, puis le chemin du cœur relativement à chaque
 répertoire parent (8 niveaux). La variable d'environnement est le recours
-explicite quand le service est lancé depuis un répertoire arbitraire.
+explicite quand le service est lancé depuis un répertoire arbitraire. C'est un
+**candidat, pas une contrainte** : si le dossier qu'elle désigne ne porte pas
+le cœur, la recherche continue et un avertissement l'indique (pré-vol du
+lanceur comme sortie de la cellule de préparation) — l'opérateur sait alors
+que sa variable a été ignorée.
 
 ## Usage (exemples réellement exécutés le 2026-10-16)
 
@@ -165,4 +177,7 @@ sans réseau ni service. Câblés dans `.github/workflows/scripts-tests.yml`
   qu'un kernel mort laissait le pool vide et faisait pendre chaque requête.
 - Sous Kernel Gateway 3.x, la variable injectée `REQUEST` est une **chaîne
   JSON** (sérialisée deux fois côté serveur) ; le carnet accepte chaîne et
-  dictionnaire pour rester compatible entre versions.
+  dictionnaire pour rester compatible entre versions. Même chose pour le corps
+  dans la clé `body` : dict déjà parsé ou chaîne JSON brute (double encodage),
+  les deux formes sont décodées — un corps en chaîne non décodé partait
+  auparavant tout entier dans le solveur et revenait en `invalid` silencieux.

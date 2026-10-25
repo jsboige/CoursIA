@@ -66,12 +66,15 @@ def dossiers_candidats(cwd=None):
     """Dossiers ou le coeur peut se trouver, du plus explicite au plus general.
 
     Meme ordre que la cellule de preparation du carnet : la variable
-    d'environnement, puis le repertoire courant, puis le chemin du coeur
-    relativement a chaque niveau remonte depuis le repertoire courant.
+    d'environnement, puis le dossier du lanceur lui-meme (le coeur vit a cote
+    de lui, et ce candidat ne depend ni du cwd ni de l'arborescence du depot),
+    puis le repertoire courant, puis le chemin du coeur relativement a chaque
+    niveau remonte depuis le repertoire courant.
     """
     explicite = os.environ.get("Z3_SUDOKU_CORE_DIR")
     if explicite:
         yield explicite
+    yield os.path.dirname(os.path.abspath(__file__))
     courant = os.path.abspath(cwd or os.getcwd())
     for _ in range(8):
         yield courant
@@ -120,6 +123,15 @@ def preflight(cwd=None, verbeux=True):
     if reponse.get("status") != "sat":
         return False, "puzzle de demonstration non resolu : %s" % (reponse,)
     if verbeux:
+        explicite = os.environ.get("Z3_SUDOKU_CORE_DIR")
+        if explicite and os.path.abspath(explicite) != os.path.abspath(dossier):
+            # La variable explicite est un candidat, pas une contrainte : si
+            # elle ne porte pas le coeur, la resolution continue. L'operateur
+            # qui l'a posee doit savoir qu'elle a ete ignoree.
+            print(
+                "[pre-vol] attention : Z3_SUDOKU_CORE_DIR=%s ignore "
+                "(pas de coeur la) ; coeur retenu : %s" % (explicite, dossier)
+            )
         print("[pre-vol] coeur charge depuis %s" % dossier)
         print(
             "[pre-vol] puzzle de demonstration resolu en %.1f ms"
@@ -194,8 +206,15 @@ def main(argv=None):
     ]
     # Le repertoire courant n'est PAS deplace vers le dossier du carnet : le
     # lancement depuis la racine du depot est le cas d'acceptation de #22439.
+    # Le dossier du coeur resolu ci-dessus est publie au kernel via
+    # Z3_SUDOKU_CORE_DIR : la cellule de preparation du carnet le lit en
+    # premier candidat. Sans cette passe de main, le lanceur sait ou est le
+    # coeur (il le resout depuis son propre dossier) mais le kernel ne le
+    # sait pas -- les deux resolutions sont independantes.
+    environ_enfant = os.environ.copy()
+    environ_enfant["Z3_SUDOKU_CORE_DIR"] = dossier_gateway
     print("[demarrage] %s" % " ".join(commande))
-    enfant = subprocess.Popen(commande)
+    enfant = subprocess.Popen(commande, env=environ_enfant)
 
     url = "http://%s:%d/sudoku/solve" % (options.hote, options.port)
     code, charge = sonder(url, options.delai_sonde)
