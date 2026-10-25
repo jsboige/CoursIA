@@ -872,3 +872,181 @@ def test_main_orphans_refused_returns_exit_2(tmp_path):
     ])
     assert rc == 2
     assert not out.exists()
+
+
+# --------------------------------------------------------------------------
+# Provenance T4 (#21496, réserve adjointe 6399643921)
+# --------------------------------------------------------------------------
+# Un dérivé porte des sorties COPIÉES : son metadata.papermill ne doit jamais
+# décrire une exécution (ni la sienne héritée d'un run natif ancien, ni celle
+# du source) — le render strip et stamp metadata.t4 ; reprovenance est le
+# chemin canonique de réparation d'un jumeau déjà dérivé.
+
+def _nb_with_papermill(tmp_path, name):
+    """Carnet FR exécuté : papermill notebook + blocs par cellule."""
+    cells = [
+        {"id": "m1", "type": "markdown", "source": ["Bonjour"]},
+        {"id": "c1", "type": "code", "source": ["print('ok')"],
+         "outputs": [{"output_type": "stream", "text": ["ok"]}],
+         "execution_count": 1},
+        {"id": "m2", "type": "markdown", "source": ["Fin"]},
+    ]
+    pm = {"input_path": "src.ipynb", "output_path": "src_run.ipynb",
+          "start_time": "2026-10-19T21:55:27Z", "end_time": "2026-10-19T22:00:36Z",
+          "duration": 308.4, "exception": None}
+    cell_pm = {"start_time": "2026-10-19T21:55:29Z", "end_time": "2026-10-19T21:55:29Z",
+               "duration": 0.01, "exception": False}
+    nb = _nb(cells, papermill=pm)
+    for c in nb["cells"]:
+        c["metadata"] = {"papermill": dict(cell_pm)}
+    p = tmp_path / name
+    p.write_text(json.dumps(nb), encoding="utf-8")
+    return p, pm
+
+
+def test_render_strips_papermill_and_stamps_t4(tmp_path):
+    """Le render ne porte JAMAIS le papermill du source : stamp t4 explicite
+    avec la provenance d'exécution du source recopiée dedans."""
+    src, pm = _nb_with_papermill(tmp_path, "src.ipynb")
+    csv_p = _write_csv(tmp_path, "tr.csv", [
+        {"notebook": str(src), "cell_id": "m1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "1", "text_fr": "Bonjour", "text_en": "Hello"},
+        {"notebook": str(src), "cell_id": "m2", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "2", "text_fr": "Fin", "text_en": "End"},
+    ])
+    out = tmp_path / "out_en.ipynb"
+    r.render(nb_path=src, csv_path=csv_p, lang="en", out_path=out)
+    rendered = json.loads(out.read_text(encoding="utf-8"))
+    # Notebook level : pas de papermill, stamp t4 présent et complet.
+    assert "papermill" not in rendered["metadata"]
+    t4 = rendered["metadata"]["t4"]
+    assert t4["tool"] == "render_notebook.py"
+    assert t4["lang"] == "en"
+    assert t4["source"] == "src.ipynb"
+    assert t4["source_papermill"] == pm
+    # Par cellule : aucun bloc papermill n'est hérité du source.
+    for c in rendered["cells"]:
+        assert "papermill" not in (c.get("metadata") or {})
+    # Les sorties copiées restent byte-identiques au source.
+    src_nb = json.loads(src.read_text(encoding="utf-8"))
+    src_code = [c for c in src_nb["cells"] if c["cell_type"] == "code"]
+    out_code = [c for c in rendered["cells"] if c["cell_type"] == "code"]
+    assert [c["outputs"] for c in out_code] == [c["outputs"] for c in src_code]
+
+
+def test_render_t4_stamp_deterministic(tmp_path):
+    """Deux renders du même source → bytes identiques (le stamp t4 ne porte
+    pas d'horloge murale)."""
+    src, _ = _nb_with_papermill(tmp_path, "src.ipynb")
+    csv_p = _write_csv(tmp_path, "tr.csv", [
+        {"notebook": str(src), "cell_id": "m1", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "1", "text_fr": "Bonjour", "text_en": "Hello"},
+        {"notebook": str(src), "cell_id": "m2", "cell_type": "markdown",
+         "src_lang": "fr", "src_hash": "2", "text_fr": "Fin", "text_en": "End"},
+    ])
+    out1, out2 = tmp_path / "a_en.ipynb", tmp_path / "b_en.ipynb"
+    r.render(nb_path=src, csv_path=csv_p, lang="en", out_path=out1)
+    r.render(nb_path=src, csv_path=csv_p, lang="en", out_path=out2)
+    assert out1.read_bytes() == out2.read_bytes()
+
+
+def _twin_from_source(tmp_path, name, src_path, *, stale_pm=True):
+    """Jumeau EN cohérent : markdown traduit, code byte-identique au source,
+    mais papermill périmé d'un ancien run natif (le défaut #21496)."""
+    src = json.loads(src_path.read_text(encoding="utf-8"))
+    stale = {"input_path": "twin_en.ipynb", "output_path": "twin_en.ipynb",
+             "start_time": "2026-10-19T21:30:12Z", "end_time": "2026-10-19T21:37:24Z",
+             "duration": 432.3, "exception": None}
+    cells = []
+    for c in src["cells"]:
+        t = dict(c)
+        t["metadata"] = ({"papermill": dict(stale)} if stale_pm
+                         else dict(c.get("metadata") or {}))
+        if c["cell_type"] == "markdown":
+            t["source"] = ["Hello" if c["id"] == "m1" else "End"]
+        cells.append(t)
+    nb = {"cells": cells, "metadata": dict(src["metadata"]), "nbformat": 4,
+          "nbformat_minor": 5}
+    if stale_pm:
+        nb["metadata"]["papermill"] = stale
+    p = tmp_path / name
+    p.write_text(json.dumps(nb), encoding="utf-8")
+    return p
+
+
+def test_reprovenance_stamps_coherent_twin(tmp_path):
+    """Jumeau avec sorties copiées + papermill périmé : re-stamp via le chemin
+    canonique — papermill retiré (notebook + cellules), t4 stampé depuis le
+    source, markdown et widgets intouchés."""
+    src, pm = _nb_with_papermill(tmp_path, "src.ipynb")
+    twin = _twin_from_source(tmp_path, "twin_en.ipynb", src)
+    stats = r.reprovenance(nb_path=twin, source_path=src, lang="en", apply=True)
+    assert stats.n_cells == 3
+    assert stats.n_code_cells == 1
+    assert stats.n_papermill_blocks_stripped == 3
+    assert stats.stamped is True
+    out = json.loads(twin.read_text(encoding="utf-8"))
+    assert "papermill" not in out["metadata"]
+    assert out["metadata"]["t4"]["source_papermill"] == pm
+    assert out["metadata"]["t4"]["lang"] == "en"
+    for c in out["cells"]:
+        assert "papermill" not in (c.get("metadata") or {})
+    # Markdown traduit préservé (le re-stamp ne touche pas au contenu).
+    md = [c for c in out["cells"] if c["cell_type"] == "markdown"]
+    assert md[0]["source"] == ["Hello"]
+    assert md[1]["source"] == ["End"]
+
+
+def test_reprovenance_idempotent(tmp_path):
+    """Second passage → bytes identiques (stamp dérivé du contenu source)."""
+    src, _ = _nb_with_papermill(tmp_path, "src.ipynb")
+    twin = _twin_from_source(tmp_path, "twin_en.ipynb", src)
+    r.reprovenance(nb_path=twin, source_path=src, lang="en", apply=True)
+    first = twin.read_bytes()
+    r.reprovenance(nb_path=twin, source_path=src, lang="en", apply=True)
+    assert twin.read_bytes() == first
+
+
+def test_reprovenance_refuses_output_mismatch(tmp_path):
+    """Une sortie du jumeau qui diffère du source = rien à attester : refus,
+    fichier inchangé."""
+    src, _ = _nb_with_papermill(tmp_path, "src.ipynb")
+    twin = _twin_from_source(tmp_path, "twin_en.ipynb", src)
+    nb = json.loads(twin.read_text(encoding="utf-8"))
+    code = [c for c in nb["cells"] if c["cell_type"] == "code"][0]
+    code["outputs"] = [{"output_type": "stream", "text": ["FORGED"]}]
+    twin.write_text(json.dumps(nb), encoding="utf-8")
+    before = twin.read_bytes()
+    with pytest.raises(ValueError, match="gate copie"):
+        r.reprovenance(nb_path=twin, source_path=src, lang="en", apply=True)
+    assert twin.read_bytes() == before
+
+
+def test_reprovenance_refuses_structure_mismatch(tmp_path):
+    """Compte de cellules divergent → refus, fichier inchangé."""
+    src, _ = _nb_with_papermill(tmp_path, "src.ipynb")
+    twin = _twin_from_source(tmp_path, "twin_en.ipynb", src)
+    nb = json.loads(twin.read_text(encoding="utf-8"))
+    nb["cells"].append(dict(nb["cells"][-1]))
+    twin.write_text(json.dumps(nb), encoding="utf-8")
+    before = twin.read_bytes()
+    with pytest.raises(ValueError, match="gate structure"):
+        r.reprovenance(nb_path=twin, source_path=src, lang="en", apply=True)
+    assert twin.read_bytes() == before
+
+
+def test_main_reprovenance_dry_run_then_apply(tmp_path):
+    """CLI : sans --apply aucun écrit ; avec --apply le re-stamp est posé."""
+    src, _ = _nb_with_papermill(tmp_path, "src.ipynb")
+    twin = _twin_from_source(tmp_path, "twin_en.ipynb", src)
+    before = twin.read_bytes()
+    rc = r.main(["--reprovenance", "--notebook", str(twin),
+                 "--source", str(src), "--lang", "en"])
+    assert rc == 0
+    assert twin.read_bytes() == before  # dry-run : inchangé
+    rc = r.main(["--reprovenance", "--notebook", str(twin),
+                 "--source", str(src), "--lang", "en", "--apply"])
+    assert rc == 0
+    out = json.loads(twin.read_text(encoding="utf-8"))
+    assert "papermill" not in out["metadata"]
+    assert "t4" in out["metadata"]
