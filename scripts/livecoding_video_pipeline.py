@@ -217,7 +217,7 @@ def compose_progressive_states(
 
     Le **dernier** etat est byte-identique a ``compose_strudel(...)`` : la
     progression converge vers le script canonique, elle ne le remplace pas
-    (garde anti-derive : ``test_progressive_dernier_etat_egale_compose_strudel``).
+    (garde anti-derive : ``test_dernier_etat_egale_compose_strudel``).
 
     Raises :
     - ValueError si le style est inconnu, si les parametres sont hors range,
@@ -1549,10 +1549,17 @@ _EDITOR_READ_JS = """
 
 
 def _set_editor_code(page: object, code: str) -> None:
-    """Ecrit ``code`` dans l'editeur CodeMirror du REPL (focus + select-all + insert)."""
+    """Ecrit ``code`` dans l'editeur CodeMirror du REPL (focus + select-all + insert).
+
+    ``insert_text`` laisse le curseur en fin de document : CodeMirror defile
+    alors horizontalement et la capture montre le code coupe a gauche (mesure
+    po-2028 du 2026-10-25 sur le meme site). ``Control+Home`` ramene le curseur
+    au debut pour que chaque etat soit filme depuis sa premiere ligne/colonne.
+    """
     page.click(".cm-content")
     page.keyboard.press("Control+a")
     page.keyboard.insert_text(code)
+    page.keyboard.press("Control+Home")
 
 
 def _export_wav(page: object, out_wav: Path, cycles: Optional[int]) -> None:

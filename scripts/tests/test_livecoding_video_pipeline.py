@@ -44,6 +44,7 @@ from scripts.livecoding_video_pipeline import (
     _build_arg_parser,
     _click_play,
     _resolve_capture_seconds,
+    _set_editor_code,
     build_repl_url,
     capture_progressive_session,
     compose_narration,
@@ -1285,6 +1286,35 @@ class TestClickPlayRetry:
             _click_play(page, "https://strudel.cc/#HASH", attempts=3)
         assert page.clicks == 3
         assert page.gotos == 2
+
+
+class TestSetEditorCode:
+    """La saisie ramene le curseur au debut apres chaque remplacement."""
+
+    def test_insertion_puis_retour_au_debut_du_document(self):
+        events = []
+
+        class _Keyboard:
+            def press(self, key):
+                events.append(("press", key))
+
+            def insert_text(self, code):
+                events.append(("insert_text", code))
+
+        class _Page:
+            keyboard = _Keyboard()
+
+            def click(self, selector):
+                events.append(("click", selector))
+
+        code = "setcps(0.5)\n$: s('bd')"
+        _set_editor_code(_Page(), code)
+        assert events == [
+            ("click", ".cm-content"),
+            ("press", "Control+a"),
+            ("insert_text", code),
+            ("press", "Control+Home"),
+        ]
 
 
 class TestEtatsProgressifs:
