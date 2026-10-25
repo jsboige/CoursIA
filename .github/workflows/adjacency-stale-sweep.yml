@@ -15,7 +15,7 @@ name: Adjacency stale-verdict sweep
 #
 # Ce que fait ce sweep (simuler, jamais outrepasser) :
 #   1. Énumérer les PR ouvertes non-fork (REST) et ne garder que celles dont
-#      le check "Always-on guards -- 13 organes, 1 checkout" est ROUGE.
+#      le check "Always-on guards" est ROUGE.
 #   2. Lancer refresh_stale_adjacency.py dessus : il re-simule le garde contre
 #      la séquence de merges COURANTE (le même calcul que la CI).
 #   3. Si la simulation PASSE alors que la CI échoue, le script appose le
@@ -33,12 +33,14 @@ name: Adjacency stale-verdict sweep
 # d'appelant) est loggé ::warning:: et ne rougit pas la CI.
 #
 # Couplage au nom de check, déclaré : le script lit le nom exact
-# "Always-on guards -- 13 organes, 1 checkout" via `gh pr checks` ; le
-# pré-filtre ci-dessous matche tout nom commençant par "Always-on guards"
-# pour qu'un changement de compte d'organes (12 -> 13) ne débranche PAS le
-# sweep en silence. Si AUCUNE PR ouverte ne porte de jambe "Always-on
-# guards*", le sweep émet ::warning:: -- c'est le cas rename-to-nothing
-# qu'un organe muet cacherait.
+# Couplage au nom de check, déclaré -- et depuis #22403 il est LU, plus écrit :
+# `refresh_stale_adjacency.content_guard_job_names()` prend les noms des jobs
+# de `always-on-guards.yml`. Le nom n'est donc plus recopié ici, où il périme
+# sans bruit (le compte d'organes est passé de 13 à 16 : l'organe cherchait un
+# check inexistant et se taisait). Le pré-filtre ci-dessous matche tout nom
+# commençant par "Always-on guards" pour qu'un changement de compte d'organes
+# ne débranche PAS le sweep en silence ; si la résolution ne trouve AUCUN job,
+# l'organe lève `RuntimeError` au lieu de rendre "rien à rafraîchir".
 
 on:
   schedule:

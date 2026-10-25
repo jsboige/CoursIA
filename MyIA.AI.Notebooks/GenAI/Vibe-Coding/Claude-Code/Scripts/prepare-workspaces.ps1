@@ -202,7 +202,8 @@ $(foreach ($ws in $WorkshopsToPrepare) { "- $ws`n" })
 "@
 
 $ClaudeMdPath = Join-Path $UserWorkspace "CLAUDE.md"
-Set-Content -Path $ClaudeMdPath -Value $ClaudeMdContent -Encoding UTF8
+# UTF8Encoding($false) : sans BOM -- un BOM en tete casse la lecture par les agents (#21896)
+[System.IO.File]::WriteAllText($ClaudeMdPath, $ClaudeMdContent, (New-Object System.Text.UTF8Encoding($false)))
 
 # Creer un fichier .gitignore pour le workspace
 $GitignoreContent = @"
@@ -228,7 +229,8 @@ __pycache__/
 "@
 
 $GitignorePath = Join-Path $UserWorkspace ".gitignore"
-Set-Content -Path $GitignorePath -Value $GitignoreContent -Encoding UTF8
+# UTF8Encoding($false) : sans BOM -- un BOM casse le premier motif du .gitignore (#21896)
+[System.IO.File]::WriteAllText($GitignorePath, $GitignoreContent, (New-Object System.Text.UTF8Encoding($false)))
 
 # Resume
 Write-ColorMessage "`n=== Preparation terminee ===" "Cyan"
