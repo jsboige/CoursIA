@@ -22,7 +22,7 @@ Le guard ([`variation-tag-guard.yml`](../../.github/workflows/variation-tag-guar
 
 | TIER | Litmus décisif | Exemples |
 |---|---|---|
-| **DEEP** | `main` contient-il désormais un **résultat/capacité qui n'existait pas**, dont la production a demandé du **raisonnement de domaine** ? | sorry Lean retiré + `lake build SUCCESS` · backtest/training avec verdict multi-seed · nouveau notebook exécuté (≥3 exos, outputs réels) · moteur SOTA branché (verdict SOTA-OK) · module de recherche à résultat falsifiable |
+| **DEEP** | `main` contient-il désormais un **résultat/capacité qui n'existait pas**, dont la production a demandé du **raisonnement de domaine** ? | sorry Lean retiré + `lake build SUCCESS` · backtest/training avec verdict multi-seed · nouveau notebook exécuté (≥3 exos, outputs réels) · consolidation de série (fusion, déplacement ou renumérotation de carnets : ré-exécution complète, aucune perte de contenu) · moteur SOTA branché (verdict SOTA-OK) · module de recherche à résultat falsifiable |
 | **MED** | Étend de la substance existante **avec ré-exécution/vérification**, et **change quelque chose** (pas « 0 trouvé ») | enrichissement + ré-exec · audit borné dont le finding **change une décision** · exercice ajouté + exécuté · refactor avec tests verts · audit README fichier-entier corrigeant un drift structurel |
 | **LIGHT** | **« Pourrais-je en générer une douzaine en scannant l'instance suivante ? »** → si oui : LIGHT, quel que soit le label | guard-tranche · path-fix · doc-resync · ledger append · accent/leak/FP · propagation de marqueur |
 
@@ -62,6 +62,8 @@ Un genre hors liste est un **alias** que le merge-gate normalise : pas une viola
 ## 2. Les trois gates durs
 
 - **G-VAR-1 — Plat principal DEEP, dans un genre de CONTENU.** La PR-plancher du cycle (R1 de proactive-coordination) **DOIT** être DEEP **et** porter un genre de la classe CONTENU. **Une LIGHT ne satisfait JAMAIS le plancher ; un genre META non plus, quel que soit son tier ; un MED non plus.** Le MED et le META restent **bienvenus au-delà** du plancher (sous budget G-VAR-2 pour leurs composantes LIGHT) : ce qui est exigé, c'est qu'**au moins un** grain DEEP de contenu porte le cycle. Le pool global porte toujours du DEEP de contenu : la monoculture vient du choix du plus facile *disponible*, pas d'une absence de substance.
+
+  **Consolider est du DEEP, et la priorité se règle au tapis (mandat user 2026-10-25).** Une consolidation de série (ligne DEEP du tableau des tiers) déclare le genre des carnets qu'elle réorganise (`notebook-python`, `notebook-lean`...), comme un REPAIR hérite du genre de la PR réparée : ce qui arrive sur `main` est une série de carnets. Un nouveau carnet reste DEEP, mais son tier ne le rend pas prioritaire : les issues de consolidation reviennent en tête du tapis plusieurs fois par semaine, un EPIC qui étend une série au plus une fois ([proactive-coordination.md](proactive-coordination.md) règle 5, organe #22500). Verbatim et mesure : [détail §14](../../docs/reference/variation-protocol-detail.md).
 
   **Durcissement #15793 (2026-09-12)** : le plancher passe de « DEEP **ou MED** » à **DEEP** — mesure motrice et contre-poids anti-inflation (`TIER-INFLATION` + re-qualification par le merge-gate, §3) : [détail §12](../../docs/reference/variation-protocol-detail.md). Le litmus DEEP reste objectif. Le durcissement se paie en **lecture de tags par ai-01**, jamais en confiance.
 

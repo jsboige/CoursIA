@@ -208,6 +208,41 @@ L'héritage du genre se déduit de la question même de G-VAR-1 : « qu'est-ce q
 
 **Sources de l'arbitrage** : ticket [#11815](https://github.com/jsboige/CoursIA/issues/11815) (escalade formelle po-2023 après 3 cycles G-VAR-1 non-tenu sur REPAIR de notebooks ; DM `msg-20260819T163135-h66acw`, arbitrage `msg-20260819T171752-4jd3od`). La clause en codifie la lecture **au cas** en forme **durable** ; ce changement normatif substantiel a été soumis au sign-off user conformément à CLAUDE.md §A.
 
+## 14. Consolider est du DEEP, la priorité se règle au tapis (mandat user 2026-10-25)
+
+### 14.1 Verbatim
+
+Question du user, 2026-10-25 12:03Z : « Comment tu expliques que la série d'hommage à Serre accueille aujourd'hui presqu'une dizaine de nouveaux Notebooks, pendant que nos issues de consolidations ne sont visitées que péniblement une fois par semaine [...] alors que tout le monde est d'accord qu'il faut arrêter le fioritures et travailler à nettoyer/consolider/renforcer le dépôt ? »
+
+Réponse du user au diagnostic, 12:07Z : « Ce qu'on ne veut pas, ce sont des agents qui se satisfont de corriger une faute d'orthographe par ci par là pour faire de la PR facile. On veut du deep de façon régulière. Mais d'une part, corriger 100 fautes d'orthographes ou consolider des Notebooks pour réorganiser norte dépot c'est tout à fait acceptable, et d'aure part, faire du deep, ça n'est pas rajouter 10 carnets à une sous-série hommage un peu obscure [...]. C'est le genre d'issues [...] qui ne derait pas être visitée plus d'une fois par tapis roulant, c'est à dire plus d'une fois par semaine au grand max. »
+
+Puis, 12:10Z : « on a plein d'issues de consolidation en souffrance, retrouve les et mets les en avant. C'est celles-là qui méritent d'être visitées plusieurs fois par semaine ».
+
+Correction du user sur le diagnostic « le plancher exclut MED et META », vers 12:25Z : « C'est pas forcément MED ou META qu'on veut renforcer, ce sont de vraies issues, il faut juste revoir les priorités pour éviter l'inflation gallopante et lutter contre l'entropie. »
+
+### 14.2 La mesure
+
+- EPIC [#16334](https://github.com/jsboige/CoursIA/issues/16334) (Serre100) : la décomposition initiale (9 grains) était épuisée le 2026-09-17. Le 2026-10-25 à 12:20Z, 17 carnets étaient sur main et **11 PRs ouvertes** portaient les carnets 18 à 28, ouvertes entre le 15/10 et le 25/10, dont 9 depuis le 24/10, par quatre lanes. Une seule lane a livré les carnets 22, 24, 26 et 27 en six heures, chacun enchaîné sur le précédent dans le même EPIC. Deux PRs portent le même numéro 18.
+- Pile Dynamics ([#22177](https://github.com/jsboige/CoursIA/pull/22177) → [#22193](https://github.com/jsboige/CoursIA/pull/22193) → [#20442](https://github.com/jsboige/CoursIA/pull/20442)), consolidation demandée par le user le 2026-10-23 (le dossier `GameTheory/Dynamics/` n'y porte qu'un carnet) : #22177, taguée `MED/refactor`, a été approuvée à quatre têtes successives et re-conflictée à chaque fois par des ajouts GameTheory mergés avant elle.
+
+### 14.3 Le mécanisme
+
+Trois pièces, aucune fautive seule :
+
+1. **Le tableau des tiers** nommait le nouveau carnet parmi les exemples DEEP, pas la consolidation. Une consolidation se taguait donc `MED/notebook-python` (fusion re-exécutée) ou `refactor` (déplacement), et le plancher (§12) ne la comptait pas ; un nouveau carnet, si. Le défaut n'est pas l'exigence de DEEP : c'est qu'une consolidation est un vrai travail de fond que le tableau ne reconnaissait pas comme tel.
+2. **L'urne `umbrella`** permettait de « créer un sous-grain » dans un EPIC sans borne : une lane qui venait de livrer un carnet pouvait en ouvrir un autre dans le même EPIC aussitôt, sans repasser par le tapis.
+3. **Le tapis** ne connaissait aucune priorité : une issue de consolidation attendait son tour comme les autres, une fois par passe.
+
+Ensemble : chaque lane, tenue de livrer un DEEP de contenu à chaque cycle, trouvait dans un EPIC d'extension une source inépuisable de grains-plancher, pendant que les consolidations, qui ne tenaient pas le plancher, restaient au fond de sa file. Une grosse PR de consolidation, plus lente à livrer, était en plus re-conflictée par les petites accrétions mergées avant elle.
+
+### 14.4 Ce qui change
+
+- La consolidation de série entre dans la ligne DEEP du tableau des tiers, et déclare le genre des carnets qu'elle réorganise. Le plancher, lui, est inchangé : DEEP de CONTENU, ni MED ni META.
+- Le litmus LIGHT est inchangé : c'est lui qui écarte la « PR facile » que le user refuse.
+- L'urne `umbrella` ne crée plus qu'un sous-grain par visite du tapis ; un EPIC hors consolidation se visite au plus une fois par semaine ; les issues de consolidation reviennent en tête plusieurs fois par semaine. L'organe est [#22500](https://github.com/jsboige/CoursIA/issues/22500) (`pick_idle_grain.py`) ; en attendant, le coordinateur place les consolidations en tête de chaque file.
+
+Sign-off : mandat user direct du 2026-10-25 (CLAUDE.md §A, « un mandat user direct vaut sign-off »).
+
 ## Voir aussi
 
 - [`.claude/rules/variation-protocol.md`](../../.claude/rules/variation-protocol.md) — la règle (tag, 3 gates, merge-gate, provisionnement)
