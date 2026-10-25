@@ -202,14 +202,14 @@ PYTEST_LINE = (
     "-q && RC=0 || RC=$?"
 )
 DIFF_LINE = (
-    'git diff --name-only "origin/${BASE}...HEAD" '
+    'git diff --no-renames --name-only "origin/${BASE}...HEAD" '
     "> /tmp/hot_subset_diff.txt 2>/dev/null"
 )
 # #22472 : deuxieme chemin de lecture (SHA de base de l'evenement) du regime
 # INDECISE -- le stub doit couvrir les DEUX lectures pour que les tests
 # pilotent reellement le chemin pris.
 FALLBACK_LINE = (
-    'git diff --name-only "${PR_BASE_SHA}...HEAD" '
+    'git diff --no-renames --name-only "${PR_BASE_SHA}...HEAD" '
     "> /tmp/hot_subset_diff.txt 2>/dev/null"
 )
 
@@ -516,3 +516,88 @@ def test_attribution_perimeter_is_defined_once_and_shared() -> None:
         "Un grep sur le motif litteral subsiste : il contourne ORGANE_RE et "
         "reintroduit la derive que ce test ferme.\n" + body
     )
+
+
+# ---------------------------------------------------------------------------
+# #22472 — renames sortants : `--name-only` n'affiche que la DESTINATION.
+# Un fichier renomme HORS du perimetre disparaissait de la liste, et la PR
+# repartait non attribuable alors que la cause lui etait imputable. Les deux
+# lectures portent `--no-renames` (decomposition suppression + ajout).
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(BASH is None, reason="bash absent : corps d'etape non executable")
+def test_rename_out_of_perimeter_is_attribuable() -> None:
+    """Un rename sortant est vu : les DEUX chemins sortent du diff simule.
+
+    C'est la sortie que produit `--no-renames` pour un `git mv` hors du
+    perimetre : l'ancien chemin (dans le perimetre) et le nouveau.
+    """
+    proc, regime = _run_step(2, ["docs_x.py", "scripts/translation/x.py"])
+    assert proc.returncode == 1, _out(proc)
+    out = _out(proc)
+    assert "ATTRIBUABLE" in out, out
+    assert "scripts/translation/x.py" in out, (
+        f"le message doit nommer le chemin source du rename : {out}"
+    )
+    assert _regime_of(regime) == "NON-MESURE-ATTRIBUABLE"
+
+
+def test_both_diff_reads_disable_rename_detection() -> None:
+    """Les deux lectures passent `--no-renames`, sinon le point se rouvre.
+
+    Un seul `--name-only` nu suffit a rendre un rename sortant invisible : la
+    garde doit porter le drapeau sur CHAQUE chemin de lecture.
+    """
+    body = _hot_subset_run_body()
+    assert body.count("git diff --no-renames --name-only") == 2, (
+        "les DEUX lectures du diff (origin/BASE et PR_BASE_SHA) doivent "
+        "desactiver la detection de rename.\n" + body
+    )
+    assert 'git diff --name-only' not in body, (
+        "une lecture `git diff --name-only` sans `--no-renames` subsiste : "
+        "elle est aveugle au chemin source d'un rename.\n" + body
+    )
+
+
+def test_git_name_only_really_hides_the_rename_source(tmp_path: Path) -> None:
+    """La premisse du drapeau est mesuree, pas supposee.
+
+    Sur un vrai depot : `--name-only` seul ne rend que la destination, et
+    `--no-renames` rend les deux chemins. Si git changeait ce comportement, ce
+    test tombe et le drapeau pourra etre retire en connaissance de cause.
+    """
+    git = shutil.which("git")
+    if git is None:
+        pytest.skip("git absent")
+
+    def g(*args: str) -> str:
+        proc = subprocess.run([git, "-C", str(tmp_path), *args],
+                              capture_output=True, text=True,
+                              encoding="utf-8", errors="replace")
+        assert proc.returncode == 0, proc.stderr
+        return proc.stdout
+
+    g("init", "-q", ".")
+    g("config", "user.email", "t@example.invalid")
+    g("config", "user.name", "t")
+    src = tmp_path / "scripts" / "translation"
+    src.mkdir(parents=True)
+    (src / "x.py").write_text("contenu assez long pour un rename\n" * 4,
+                              encoding="utf-8")
+    g("add", "-A")
+    g("commit", "-qm", "base")
+    g("mv", "scripts/translation/x.py", "docs_x.py")
+    with open(tmp_path / "docs_x.py", "a", encoding="utf-8") as f:
+        f.write("ligne ajoutee\n")
+    g("commit", "-qam", "rename")
+
+    plain = g("diff", "--name-only", "HEAD~1...HEAD")
+    no_renames = g("diff", "--no-renames", "--name-only", "HEAD~1...HEAD")
+    assert "scripts/translation/x.py" not in plain, (
+        "git rend desormais le chemin source sous --name-only : le drapeau "
+        "n'est plus necessaire, verifier avant de le retirer.\n" + plain
+    )
+    assert "scripts/translation/x.py" in no_renames, no_renames
+    assert "docs_x.py" in no_renames, no_renames
+
