@@ -54,6 +54,8 @@ from peft import LoraConfig, TaskType
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, set_seed
 from trl import GRPOConfig, GRPOTrainer
 
+from .onset_artifact import DEFAULT_MAX_COMPLETION_LENGTH, artifact_payload
+
 DEFAULT_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
 MAGIC_TOKEN = "HACK"
 DEFAULT_SEEDS = [0, 1, 42, 7]
@@ -109,7 +111,8 @@ def make_reward(holder):
     return reward
 
 
-def run_seed(arm: str, seed: int, model_id: str, max_steps: int, lr: float, num_gen: int) -> dict:
+def run_seed(arm: str, seed: int, model_id: str, max_steps: int, lr: float, num_gen: int,
+             max_completion_length: int = DEFAULT_MAX_COMPLETION_LENGTH) -> dict:
     set_seed(seed)
     holder = {"records": [], "step": 0}
     print(f"[{arm}] === SEED {seed} : chargement 4-bit QLoRA frais ({model_id}) ===", flush=True)
@@ -125,7 +128,7 @@ def run_seed(arm: str, seed: int, model_id: str, max_steps: int, lr: float, num_
     )
     # Calibration EOS : voir issue #13596 -- mesure p95 distribution EOS
     cfg = GRPOConfig(
-        num_generations=num_gen, max_completion_length=80,
+        num_generations=num_gen, max_completion_length=max_completion_length,
         per_device_train_batch_size=num_gen, gradient_accumulation_steps=1,
         learning_rate=lr, num_train_epochs=1, max_steps=max_steps, logging_steps=30,
         output_dir=tempfile.mkdtemp(prefix=f"ict25_onset_{arm}_s{seed}_"),
@@ -149,6 +152,7 @@ def run_seed(arm: str, seed: int, model_id: str, max_steps: int, lr: float, num_
     per_step = [float(np.mean(hk[steps == s])) for s in range(max_steps)]
     m = {
         "arm": arm, "seed": seed, "train_s": dt,
+        "max_completion_length": max_completion_length,
         "hack_early": float(np.mean(hk[:h])), "hack_late": float(np.mean(hk[h:])),
         "mc_early": float(np.mean(mc[:h])), "mc_late": float(np.mean(mc[h:])),
         "reward_early": float(np.mean(rw[:h])), "reward_late": float(np.mean(rw[h:])),
@@ -201,6 +205,9 @@ def main(argv=None) -> int:
     p.add_argument("--max-steps", type=int, default=DEFAULT_STEPS)
     p.add_argument("--lr", type=float, default=DEFAULT_LR)
     p.add_argument("--num-gen", type=int, default=DEFAULT_NUM_GEN)
+    p.add_argument("--max-completion-length", type=int, default=DEFAULT_MAX_COMPLETION_LENGTH,
+                   help="budget de completion (defaut 80 : regime des artefacts baseline 0.5B). "
+                        "La valeur effective est enregistree dans l'artefact (#21998).")
     p.add_argument("--arms", default="W,S", help="bras a jouer (defaut W,S)")
     p.add_argument("--out", default=None,
                    help="chemin de sortie (defaut runs/onset_<tag>.json a cote du module)")
@@ -220,14 +227,16 @@ def main(argv=None) -> int:
     if not torch.cuda.is_available():
         print("[onset-eng] AVERTISSEMENT : CUDA indisponible — un run CPU sera extremement lent", file=sys.stderr)
 
-    print(f"[onset-eng] {args.model} | lr={args.lr} | num_generations={args.num_gen} | steps={args.max_steps}", flush=True)
+    print(f"[onset-eng] {args.model} | lr={args.lr} | num_generations={args.num_gen} | steps={args.max_steps} "
+          f"| cap={args.max_completion_length}", flush=True)
     print(f"[onset-eng] GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'} | "
           f"seeds={seeds} | arms={arms} | out={out}", flush=True)
 
     results: dict[str, list] = {a: [] for a in arms}
     for arm in arms:
         for s in seeds:
-            results[arm].append(run_seed(arm, s, args.model, args.max_steps, args.lr, args.num_gen))
+            results[arm].append(run_seed(arm, s, args.model, args.max_steps, args.lr, args.num_gen,
+                                         args.max_completion_length))
 
     print("\n" + "=" * 78)
     print(f"=== ONSET ENGINEERING @{model_tag(args.model)} : lr={args.lr}, gens={args.num_gen}, "
@@ -244,9 +253,10 @@ def main(argv=None) -> int:
         print(f"VERDICT [{arm}] : {v}")
 
     with open(out, "w", encoding="utf-8") as f:
-        json.dump({"model": args.model, "max_steps": args.max_steps, "lr": args.lr,
-                   "num_generations": args.num_gen, "seeds": seeds,
-                   "results": results, "summary": summary}, f, indent=1)
+        json.dump(artifact_payload(model=args.model, max_steps=args.max_steps, lr=args.lr,
+                                   num_gen=args.num_gen, seeds=seeds,
+                                   max_completion_length=args.max_completion_length,
+                                   results=results, summary=summary), f, indent=1)
     print(f"\n[onset-eng] sauvegarde {out}")
     return 0
 
