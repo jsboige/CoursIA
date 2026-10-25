@@ -205,3 +205,60 @@ def test_le_rapport_ne_fabrique_pas_une_duree_absente(capsys):
     out = capsys.readouterr().out
     assert "non mesuree" in out
     assert "0.0 s" not in out
+
+
+# --- point 5 (Hermes 2026-10-25T13:55Z) : le discriminant, mesure sur le pool
+
+def test_le_mot_au_milieu_du_titre_ne_fait_pas_la_classe():
+    """Mesure sur le pool reel : « Tapis (#18832) : priorite aux issues de
+    consolidation » etait classe alors qu'il PARLE de consolidation sans en
+    etre une. Le discriminant est la POSITION du mot, pas le mot."""
+    parle_de = _item(1001, title="Tapis (#18832) : priorite aux issues de consolidation")
+    assert pig.is_consolidation(parle_de) is False
+
+
+def test_un_epic_parapluie_ne_porte_pas_la_classe():
+    """#22396 et #16473 : « [EPIC] Consolidation ... » nomme le SUJET du
+    conteneur. Le sous-grain porte la classe ; l'EPIC est servi une fois par
+    semaine comme tout EPIC."""
+    assert pig.is_consolidation(
+        _item(1002, title="[EPIC] Consolidation des accretions — scan repo-wide")
+    ) is False
+
+
+def test_les_deux_formes_de_tete_portent_la_classe():
+    """Les 13 grains reels du pool gardent la classe, par l'une des formes en
+    tete : crochets, `consolidation(zone,#EPIC):`, ou mot nu en tete."""
+    assert pig.is_consolidation(
+        _item(1003, title="[Consolidation] Audio/04-Applications : scan des 19 carnets")
+    )
+    assert pig.is_consolidation(_item(1004, title="consolidation(genai): Audio/04 — 19 carnets"))
+    assert pig.is_consolidation(_item(1005, title="Consolidation de la serie Search"))
+
+
+def test_parent_refs_lit_la_forme_kind_zone_epic():
+    """13 issues du pool gagnent un parent qu'aucune autre surface ne
+    donnait, dont #21922 -> #11268 et #17417 -> #13504."""
+    it = _item(2001, title="consolidation(dsa,#13504): famille 3.9 compression")
+    it["body"] = "Sans renvoi en corps."
+    assert pig.parent_refs(it) == {13504}
+
+
+def test_parent_refs_ignore_une_pr_et_un_fil_de_suivi():
+    """La restriction au `#N` precede d'une virgule est volontaire : « (PR
+    #N) » et « (#N suite) » nomment une PR ou un fil de suivi, pas un EPIC.
+    Les prendre pour un parent fausserait le plafond hebdomadaire."""
+    pr = _item(2002, title="check_pr_repoll (PR #21060) : deux points Hermes")
+    pr["body"] = ""
+    suite = _item(2003, title="fast-lane(#21996 suite): le garde doit se declencher")
+    suite["body"] = ""
+    assert pig.parent_refs(pr) == set()
+    assert pig.parent_refs(suite) == set()
+
+
+def test_parent_refs_garde_les_deux_surfaces_anciennes():
+    """La troisieme surface ne remplace pas les deux autres : `Part of #N` en
+    corps et le prefixe `[#N` restent lus."""
+    it = _item(2004, title="[#7265 - pepite A3] un sous-grain")
+    it["body"] = "Part of #7265\nSee #9999"
+    assert pig.parent_refs(it) == {7265}

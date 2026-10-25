@@ -5481,6 +5481,19 @@ def upsert_orphans_comment(number: int, body: str) -> None:
 #      parent (`last_child_stamp`, `apply_child_visits`, zero appel reseau).
 _PARENT_BODY_RE = re.compile(r"(?i)\bpart of #(\d+)")
 _PARENT_TITLE_RE = re.compile(r"^\s*\[#(\d+)\b")
+# #22504 (b) -- la forme `kind(zone,#EPIC):` en tete de titre nomme le parent
+# aussi surement que `Part of #N` en corps, et elle n'etait pas reconnue.
+# Mesure sur le pool reel (500 ouvertes, 2026-10-25) : 13 issues gagnent un
+# parent qu'aucune autre surface ne donnait, dont #21922 -> #11268, #19754 ->
+# #19468, #18397 -> #2874, #17417 -> #13504.
+# Restriction volontaire au `#N` precede d'une virgule (la convention
+# `type(scope,#N):`) : les formes `(PR #N)` et `(#N suite)` nomment une PR ou
+# un fil de suivi, pas un EPIC -- les prendre pour un parent fausserait
+# `last_child_stamp` et le plafond hebdomadaire qui s'appuie dessus. Cette
+# variante large ajouterait 8 issues de plus au pool mesure ; elles restent
+# hors classe, et c'est un choix, pas un oubli.
+_PARENT_TITLE_KIND_RE = re.compile(r"(?i)^\s*[\w.\- ]+?\s*\([^)]*\)\s*:")
+_PARENT_TITLE_KIND_EPIC_RE = re.compile(r",\s*#(\d+)")
 
 
 def belt_visit_stamp(it: dict) -> str | None:
@@ -5503,17 +5516,29 @@ def belt_visit_stamp(it: dict) -> str | None:
 CONSOLIDATION_TAG = "consolidation"
 CONSOLIDATION_LAG_H = 48
 UMBRELLA_VISIT_CAP_DAYS = 7
-_CONSOLIDATION_TITLE_RE = re.compile(r"(?i)\bconsolidations?\b")
+# Hermes 2026-10-25T13:55Z (#22504) : le motif d'origine `\bconsolidations?\b`
+# attrapait le MOT, pas le travail. Mesure sur le pool reel (500 ouvertes,
+# 2026-10-25) : 17 items classes, dont 4 faux positifs ou « consolidation »
+# nomme le SUJET d'un conteneur -- #22500 « Tapis (#18832) : priorite aux
+# issues de consolidation », #22396 « [EPIC] Consolidation des accretions »,
+# #20298 « [ICT] Consolidation par escaliers », #16473 « [EPIC] Consolidation
+# globale ». Le discriminant qui tient est la POSITION : le mot en TETE du
+# titre (nu, entre crochets, ou en tete de forme `consolidation(zone,#EPIC):`).
+# Les 13 grains reels du pool gardent la classe ; les 4 conteneurs la perdent.
+_CONSOLIDATION_TITLE_RE = re.compile(r"(?i)^\s*(?:\[\s*consolidations?\s*\]|consolidations?\b)")
 
 
 def is_consolidation(it: dict) -> bool:
-    """Issue de la classe `consolidation` : titre, ou label.
+    """Issue de la classe `consolidation` : mot en tete de titre, ou label.
 
     Le label n'existe pas encore dans le depot ; la lecture le prendra des
     qu'il sera cree, sans que l'organe depende de sa creation. Le titre est
-    la forme qui existe aujourd'hui (« [Audit #17073] Serie X — partition
-    Hermes » n'en est pas une, « B.0 : ... » non plus : seuls les titres qui
-    nomment la consolidation comptent, d'ou le motif sur le mot entier).
+    la forme qui existe aujourd'hui : le mot doit etre en TETE (« [Audit
+    #17073] Serie X » n'en est pas une, « B.0 : ... consolidation » non plus
+    -- seuls les titres dont la tete NOMME le travail comptent). Consequence
+    assumee : un EPIC parapluie (« [EPIC] Consolidation ... ») perd la classe,
+    donc aussi l'exemption du plafond hebdomadaire -- ses sous-grains la
+    portent, lui n'a pas a etre servi plus d'une fois par semaine.
     """
     labels = it.get("labels")
     if isinstance(labels, str):
@@ -5522,7 +5547,7 @@ def is_consolidation(it: dict) -> bool:
         name = lab.get("name") if isinstance(lab, dict) else lab
         if isinstance(name, str) and name.strip().lower() == CONSOLIDATION_TAG:
             return True
-    return bool(_CONSOLIDATION_TITLE_RE.search(it.get("title") or ""))
+    return bool(_CONSOLIDATION_TITLE_RE.match(it.get("title") or ""))
 
 
 def _visit_age_hours(stamp, now) -> float | None:
@@ -5579,16 +5604,24 @@ def belt_sort_key(it: dict, *, now=None) -> tuple:
 
 
 def parent_refs(it: dict) -> set[int]:
-    """Parents nommes par une issue : prefixe de titre ``[#N`` et ``Part of #N``.
+    """Parents nommes par une issue : prefixe de titre ``[#N``, ``Part of #N``
+    en corps, et forme ``kind(zone,#EPIC):`` en tete de titre.
 
     ``Part of #N`` est la syntaxe de lien sure de git-workflow.md ; le
-    prefixe de titre est la forme des sous-grains d'EPIC (``[#7265 -
-    pepite A3] ...``). Une issue ne se nomme pas elle-meme.
+    prefixe de titre ``[#N`` est la forme des sous-grains d'EPIC (``[#7265 -
+    pepite A3] ...``) ; ``kind(zone,#EPIC):`` est la convention des titres de
+    consolidation et de tranche (``consolidation(dsa,#13504): ...``). Cette
+    troisieme surface manquait, et le plafond hebdomadaire ne voyait donc pas
+    les EPICs nommes par elle. Une issue ne se nomme pas elle-meme.
     """
     refs = {int(m) for m in _PARENT_BODY_RE.findall(it.get("body") or "")}
-    m = _PARENT_TITLE_RE.match(it.get("title") or "")
+    title = it.get("title") or ""
+    m = _PARENT_TITLE_RE.match(title)
     if m:
         refs.add(int(m.group(1)))
+    kind = _PARENT_TITLE_KIND_RE.match(title)
+    if kind:
+        refs.update(int(n) for n in _PARENT_TITLE_KIND_EPIC_RE.findall(kind.group(0)))
     refs.discard(it.get("number"))
     return refs
 
