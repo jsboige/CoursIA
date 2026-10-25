@@ -507,10 +507,31 @@ def main() -> int:
         # qu'un repli, utilisé seulement quand aucune borne n'est dérivable
         # (notebook référencé sans répertoire parent).
         bounded_inputs: list[Path] = []
+        missing_bounds: list[str] = []
         for rd in sorted(ref_dirs):
             abs_rd = (repo_root / rd).resolve() if not Path(rd).is_absolute() else Path(rd)
             if abs_rd.exists() and abs_rd.is_dir() and abs_rd not in bounded_inputs:
                 bounded_inputs.append(abs_rd)
+            else:
+                missing_bounds.append(rd)
+        if ref_dirs and not bounded_inputs:
+            # #22212 : des bornes SONT dérivables du CSV, mais AUCUNE n'existe
+            # sur disque -- la série a été déplacée ou renommée. Replier ici sur
+            # l'input CLI ferait absorber tout le corpus par un CSV de série
+            # périmé : c'est le défaut de #21514 (31 -> 49 978 lignes) par un
+            # autre chemin que celui fermé en #21518. Échec fermé : on ne scanne
+            # rien, et l'erreur nomme les répertoires à faire correspondre.
+            print(
+                "ERROR : les répertoires de série dérivés du CSV n'existent pas "
+                "sur disque : "
+                + ", ".join(missing_bounds)
+                + f" (racine : {repo_root}). Rien n'a été scanné : replier sur "
+                "l'input CLI ferait absorber tout le corpus par ce CSV (#21514). "
+                "Mettre à jour les chemins 'notebook' du CSV (série déplacée ou "
+                "renommée), puis relancer.",
+                file=sys.stderr,
+            )
+            return 2
         if bounded_inputs:
             def _covered_by_bound(p: Path) -> bool:
                 # Un input égal à une borne, ou situé DESSOUS, voit ses carnets
