@@ -2422,3 +2422,50 @@ TRANCHE27: list[Guard] = [
         warn_rc=(2,),
     ),
 ]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 28 -- epingle DWELL regle <-> doc de detail (#22279).
+#
+# Defaut ferme : #21808 (f2833def99) a deporte le recit DWELL (conditions
+# conjonctives, historique #15859/#16149) de la regle vers
+# ``docs/reference/git-workflow-detail.md`` §4 -- le contenu etait preserve,
+# mais ``test_dwell_rule_matches_organ.py`` lisait encore l'ancien
+# emplacement : 2 failed / 8 passed sur ``main`` e81111a1d7. Personne ne l'a
+# vu au merge parce qu'AUCUN workflow n'appelait ce test (mesure de l'issue :
+# ``git grep test_dwell_rule_matches_organ -- .github scripts/ci`` rend
+# vide). Deux defauts, un seul remede : reancrer le test sur le doc de
+# detail, puis le cable pour que le prochain deport rougisse au merge.
+#
+# Forme : garde ABSOLU, non-delta (le test lit l'arbre de HEAD -- la regle,
+# le doc de detail et l'organe -- pas une difference base/PR ; meme raison
+# que TRANCHE18 docs-index). L'argv est un pytest : le job umbrella
+# ``always-on-guards.yml`` installe desormais ``pytest`` avec les
+# dependances detecteurs. Verifie vert sur ``main`` avant cablage (10
+# passed) et temoin rouge mesure : retirer ``#15859`` du §4 fait echouer
+# ``test_15859_kept_as_corrected_history``.
+#
+# `absorbed=True` : sans absorption, le job always-on lance
+# ``fast_lane.py --shadow`` et ``effective_shadow = args.shadow and not
+# guard.absorbed`` laisserait le garde en conclusion NEUTRE sous le prefixe
+# d'ombre -- un ``blocking=True`` sans effet (convention TRANCHE8/9/10/17).
+# ---------------------------------------------------------------------------
+TRANCHE28: list[Guard] = [
+    Guard(
+        name="dwell-narrative-pin",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            ".claude/rules/git-workflow.md",
+            "docs/reference/git-workflow-detail.md",
+            "scripts/tests/test_dwell_rule_matches_organ.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/tests/test_dwell_rule_matches_organ.py",
+        ],
+        blocking=True,
+        absorbed=True,
+    ),
+]
