@@ -923,7 +923,12 @@ def test_20120_corpus_calibration_lines_at_fixed_cells():
     # `cell` de l'organe -- qui est 0-based (#19984 ; la plupart des autres
     # organes notebooks du depot sont 1-based, d'ou l'epinglage explicite,
     # sinon on compare la cellule voisine). Aspire : 01 cell 3, 02 cell 2
-    # (PROGRAM_LITERAL) ; Orleans : 02 cells 12, 16, 19, 21, 23 (MACHINE_PATH).
+    # (PROGRAM_LITERAL). Orleans 02 : les cinq cellules 12, 16, 19, 21, 23
+    # fuyaient leur content-root absolu jusqu'a #21658 (`f2c91b1022`), qui
+    # l'a rendu relatif (`Content root path: OrleansAspireLab`) ; le pin des
+    # cinq indices devient un pin de silence (#22315) -- le controle positif
+    # du corpus reste porte par les deux carnets Aspire ci-dessus, et ce pin
+    # veille a ce qu'aucune fuite de chemin machine ne revienne dans ce carnet.
     root = Path(__file__).resolve().parents[3]
     base = "MyIA.AI.Notebooks/GenAI/Integrations-DotNet"
     cases = (
@@ -932,7 +937,7 @@ def test_20120_corpus_calibration_lines_at_fixed_cells():
         (f"{base}/Aspire/02-Aspire-GenAiStack-Reel.ipynb",
          "PROGRAM_LITERAL", [2]),
         (f"{base}/Orleans/02-Orleans-Aspire-CoHost.ipynb",
-         "MACHINE_PATH", [12, 16, 19, 21, 23]),
+         "MACHINE_PATH", []),
     )
     for rel, cls, cells in cases:
         with open(root / rel, encoding="utf-8") as fh:
