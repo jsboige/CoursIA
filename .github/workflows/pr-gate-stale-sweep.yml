@@ -64,6 +64,14 @@ name: PR gate stale-verdict sweep
 # that is the common case, since CodeQL is also the slowest. A schedule is
 # the only observer that does not depend on being triggerable.
 #
+# Update 2026-10-25 (#22548): CodeQL is a repository workflow now -- advanced
+# setup, `.github/workflows/codeql.yml` -- so the measurement above ("CodeQL:
+# 0") is historical and the name DOES resolve. The design is unchanged on
+# purpose: this sweep is schedule-only and keys on open-PR state, which is what
+# makes it independent of any trigger; an event path on `CodeQL` would add one
+# run per analysis for no verdict gain (the analysis completing is not what
+# re-lays a stale `PR gate`).
+#
 # pr-gate.yml's own `workflow_dispatch` leg cannot serve either: it runs on
 # the default branch, so `github.event.pull_request.head.sha || github.sha`
 # resolves to the default-branch commit, and its check-run lands there --
@@ -1149,7 +1157,9 @@ jobs:
             # runs in `default setup` and is NOT addressable as a `workflow_run`
             # trigger, so an event-driven rescuer cannot fire when CodeQL is the
             # last check to settle -- the common case under saturation, since it
-            # is also the slowest.
+            # is also the slowest. (Historical since #22548: CodeQL is a repo
+            # workflow under advanced setup and is addressable now; the chosen
+            # mechanism still does not depend on any trigger.)
             #
             # No loop risk: this sweep has no `workflow_run` trigger of its own
             # (`schedule` / manual `workflow_dispatch` only), so a re-run cannot
