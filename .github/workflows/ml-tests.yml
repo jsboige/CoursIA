@@ -104,7 +104,7 @@ jobs:
         # po-2024-docker (3,9-13,6 min) dont la tranche n'a pas de CPUQuota.
         # Sans quota lisible (`max` ou fichier absent), on laisse nproc.
         run: |
-          q=$(awk '$1 != "max" && $2 > 0 { n = int(($1 + $2 - 1) / $2); print (n < 1 ? 1 : n) }' /sys/fs/cgroup/cpu.max 2>/dev/null)
+          q=$(awk '$1 != "max" && $2 > 0 { n = int(($1 + $2 - 1) / $2); print (n < 1 ? 1 : n) }' /sys/fs/cgroup/cpu.max 2>/dev/null || true)
           [ -n "$q" ] || q=$(nproc)
           for v in OMP_NUM_THREADS MKL_NUM_THREADS OPENBLAS_NUM_THREADS NUMEXPR_NUM_THREADS; do
             echo "$v=$q" >> "$GITHUB_ENV"
