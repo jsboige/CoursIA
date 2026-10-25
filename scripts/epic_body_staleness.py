@@ -126,10 +126,16 @@ class MergedPullRequest:
         )
 
     def cited_issues(self) -> set[int]:
-        return {
-            int(number)
-            for number in ISSUE_REF_RE.findall(f"{self.title}\n{self.body}")
-        }
+        """Issue numbers this PR mentions in its own prose.
+
+        Quoted and code-borne references are excluded: a number wrapped in
+        inline code is this repository's own convention for "not a mention"
+        (#18203), and GitHub itself raises no "mentioned this" event for one.
+        Counting them turned a PR that only quoted an EPIC inside a template
+        literal into a recorded delivery for that EPIC (#13906).
+        """
+        prose = "\n".join(prose_lines(self.title, self.body))
+        return {int(number) for number in ISSUE_REF_RE.findall(prose)}
 
 
 @dataclass(frozen=True)
@@ -162,8 +168,8 @@ def is_epic(row: dict) -> bool:
     )
 
 
-def prose_lines_for_stance(title: str, body: str) -> list[str]:
-    """Return non-quoted, non-code lines that may declare a live stance.
+def prose_lines(title: str, body: str) -> list[str]:
+    """Return non-quoted, non-code lines carrying the author's own words.
 
     Historical prose is often retained in block quotes when an EPIC is updated.
     Treating such a quotation as current recreates the exact false positive that
@@ -195,7 +201,7 @@ def dormant_stance(title: str, body: str) -> str | None:
     """Return the first live dormant-stance pattern, if any."""
     if RETRACTION_MARKER_RE.search(body):
         return None
-    lines = prose_lines_for_stance(title, body)
+    lines = prose_lines(title, body)
     prose = "\n".join(lines)
     for name, pattern in STRONG_DORMANT_PATTERNS:
         if pattern.search(prose):
