@@ -87,7 +87,72 @@ essayées) + verdict `success`/`termination` par mode. L'écart au verdict
 maison (FAILED 1 925,1 s / timeout raisonnement) est **rapporté** dans le fil
 #1453, jamais moyenné.
 
-## 5. Reproduction (machine po-2024)
+## 5. Transport corrigé (2026-10-20) — le run du 2026-10-12 mesurait le transport, pas l'organe
+
+Le premier run (2026-10-12) était **dégénéré sur les deux modes** : pas-à-pas
+`generator_exhausted` en 3 appels / 5,9 s (contre 1 925 s maison), preuve
+entière réduite à une ligne puis `compile_error`. Deux défauts de transport,
+mesurés puis corrigés dans le shim du banc :
+
+| # | Défaut | Mesure (po-2024, 2026-10-20) | Correctif |
+|---|---|---|---|
+| 1 | **`n` non honoré** | Sonde HTTP 200 sur openrouter avec `"n": 4` : **1 seul choix** rendu (l'API Anthropic n'a pas de sampling `n`). Le générateur v2 attend n échantillons par pas ; à 1 seul, le dédoublonnage `used_tactics` épuise la recherche dès que le modèle réitère. | `_post` émule `n` par requêtes successives, chacune bornée par la deadline résiduelle ; erreur API ou budget épuisé interrompt et rend les choix déjà collectés. |
+| 2 | **Parser upstream une-ligne** | Branche `"claude"` de `external_parser.post_process_output` : `.split("lean")[-1].split("```")[0].split("\n")[1]` — **tronque toute sortie à une ligne**. La preuve entière brute est multi-ligne (fence comprise) ; le banc du 12/10 n'en recevait qu'une. La branche `deepseek` du même parser garde la preuve complète — bug copy-paste upstream. | `_extract_whole_proof` (module) : dés-enveloppe le bloc fence, préserve le multi-ligne — sémantique de la branche deepseek, appliquée au shim sans toucher au package. |
+| 3 | **Blocs `<think>` avant la fence** | Run corrigé du 2026-10-20 : claude-opus-4.7 via openrouter peut ouvrir sa sortie d'un bloc de raisonnement `<think>...</think>` **avant** la fence — l'extracteur du correctif 2 ne regardait que le début de chaîne et rendait le bloc entier au `check_compile` (échec de parse de transport, pas un verdict d'organe). | `_extract_whole_proof` retire d'abord les blocs think (regex DOTALL), puis prend le **dernier** bloc fence s'il existe. |
+
+Pins : `scripts/tests/test_leandojo_v2_bench.py` — l'émulation compte chaque
+**tentative** de sous-requête (`gen.calls`, réponse en erreur et échec de
+transport compris) : le compteur borne les **tentatives** de POST, il ne
+prouve pas qu'un socket soit parti ; elle ne part jamais avec `"n": k` dans le
+payload, et s'arrête net sur budget épuisé ou erreur ; le parser injecté dans
+les tests **imite la branche claude réelle** — le test exige que la preuve
+entière lui survive, et que le **dernier** bloc fence gagne même lorsqu'une
+phrase finale le suit ou qu'un bloc le précède, que l'étiquette soit libre
+(`lean4`), que la preuve contienne des backticks, et que la fermeture soit
+compatible avec la longueur de l'ouvreur (fence de quatre backticks).
+
+### Run corrigé (2026-10-20) — verdicts d'organe sur les deux modes
+
+Provenance : chiffres publiés le 2026-10-20 dans le fil de référence,
+[#1453, commentaire 6300672049](https://github.com/jsboige/CoursIA/issues/1453#issuecomment-6300672049).
+Le répertoire de sortie de ce run était un scratch local, **non préservé** (il
+n'a jamais existé dans l'arbre) : les chiffres restent tracés par ce
+commentaire, et le run se rejoue par la commande du §6 — le rejeu daté du
+2026-10-23 est versé ci-dessous en agrégé committé.
+
+| Mode | success | appels LLM | durée | terminaison |
+|---|---|---|---|---|
+| pas-à-pas | non | 12 (3 tours × 4 échantillons émulés) | 28,5 s | `generator_exhausted` |
+| preuve entière | non | 1 | 9,5 s | `compile_error` (noyau) |
+
+Les deux verdicts sont cette fois des comportements de l'organe, pas du
+transport : en pas-à-pas le modèle ne produit que **deux familles de
+tactiques** (`simp [Conway.digitsToNat, Conway.natToDigits]` et `induction n
+using Conway.natToDigits.induct <;> simp [...]`), toutes deux rejetées au
+noyau avec l'erreur imbriquée « maximum » dans `simp` — le dédoublonnage
+`used_tactics` épuise alors la recherche. En preuve entière, la sortie
+extraite est une vraie preuve multi-ligne (sans bloc think, sans fence) que
+le noyau rejette. L'écart au verdict maison (FAILED 1 925,1 s / timeout du
+budget) est rapporté dans le fil #1453 : mêmes verdicts FAIL des deux côtés,
+mais des chemins d'effort d'un ordre de grandeur d'écart (recherche soutenue
+plan/revert de 1 925 s contre épuisement du générateur en 28,5 s).
+
+### Rejeu du 2026-10-23 (parser corrigé) — agrégé committé
+
+Agrégé vérifiable : `scripts/results/leandojo_v2_bench_rung52_2026-10-23.json`
+(même rung, même modèle, mêmes budgets, commande du §6).
+
+| Mode | success | appels LLM | durée | terminaison |
+|---|---|---|---|---|
+| pas-à-pas | non | 12 | 38,8 s | `generator_exhausted` |
+| preuve entière | non | 1 | 18,6 s | `compile_error` (noyau) |
+
+Verdicts et terminaisons identiques à ceux du 2026-10-20 ; seules les durées
+diffèrent (échantillonnage LLM). En preuve entière, la sortie extraite est
+multi-ligne — la troncature une-ligne ne se reproduit pas sur le parser
+corrigé.
+
+## 6. Reproduction (machine po-2024)
 
 ```bash
 # WSL, venv dédié (smoke 6/6 : `MyIA.AI.Notebooks/SymbolicAI/Lean/scripts/tests/test_leandojo_v2_smoke.py`)
