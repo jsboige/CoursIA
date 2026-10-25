@@ -51,7 +51,7 @@ Les seuils sont lus **dans le gel**, jamais choisis après avoir vu les chiffres
 | `always_defect` | **0,0000** (5/5 seeds) | contrôle négatif : pipeline validé |
 | modèle nul | **0,5038** | référence de la bande H0 |
 
-Verdicts : **0 H0, 4 H1**. La variabilité qui compte est **inter-hétérogénéité** ; l'écart inter-seed reste faible (≤ 0,09 sur `scripted_only`, nul ailleurs) grâce aux 50 rencontres par paire.
+Verdicts : **0 H0, 4 H1**, dont 1 contrôle négatif, donc **3 résultats**. La variabilité qui compte est **inter-hétérogénéité** ; l'écart inter-seed est de 0,0104 sur `scripted_only`, nul ailleurs (grâce aux 50 rencontres par paire) ; la variabilité intra-seed atteint 0,09.
 
 ## 2. Ce que ces chiffres ne disent pas
 
