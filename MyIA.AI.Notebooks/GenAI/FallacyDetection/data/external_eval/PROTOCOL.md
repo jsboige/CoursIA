@@ -30,6 +30,36 @@ L'outil garantit, par construction et par tests (`tests/test_sample_external_eva
 - **aveugle structurel** : `sheet.jsonl` (feuille évaluateur) ne contient jamais le nœud cible **ni sa famille de premier niveau** (la liste fermée des familles reste connue des évaluateurs — c'est l'espace de réponse du passage 1 — mais la famille correcte d'un item est la première moitié de la réponse : la porter sur la feuille rendrait le seuil « branche » du §4 circulaire) ; `key.jsonl` (correction, qui porte la famille pour la stratification) est un fichier séparé ;
 - **reproductibilité** : même graine = même échantillon (SHA-256 de la feuille consigné dans `manifest.json` avec empreintes de la source et de la clé).
 
+### 2 bis. Rendu de la feuille et conversion des réponses
+
+`sheet.jsonl` est un fichier aveugle, pas un document : il ne s'ouvre pas avec
+une consigne. `render_annotation_sheet.py` le rend lisible et referme la chaîne
+entre l'échantillonneur (§2) et le mesureur (`score_external_eval.py`) :
+
+```bash
+# document Markdown + gabarit de réponses CSV, pour un évaluateur
+python scripts/fallacy_detection/render_annotation_sheet.py render \
+    --sheet .../run1/sheet.jsonl \
+    --vocab <corpus_aligne.jsonl> \
+    --out-dir .../run1/pass1/<pseudonyme> --label <pseudonyme>
+
+# gabarit rempli -> forme consommée par le mesureur
+python scripts/fallacy_detection/render_annotation_sheet.py convert \
+    --answers .../pass1/<pseudonyme>/answers_<pseudonyme>.csv \
+    --vocab <corpus_aligne.jsonl> \
+    --out .../pass1/<pseudonyme>.jsonl
+```
+
+Trois points que le rendu tient par construction (`tests/test_render_annotation_sheet.py`) :
+
+- **l'aveuglement est vérifié à l'entrée** : une feuille portant un champ autre que `item_id` et `text` est refusée — passer `key.jsonl` par erreur échoue au lieu de publier les étiquettes ;
+- **l'espace de réponse est la liste des nœuds**, groupée par famille, sans définition ni exemple : c'est exactement ce que le passage 1 du §3 autorise à montrer ;
+- **une faute de frappe est refusée à la conversion**, avec son numéro de ligne, plutôt que de devenir une note vide au calcul d'alpha ; une feuille partiellement remplie est refusée par défaut (`--allow-partial` la convertit en annonçant les lignes écartées).
+
+Le document et le gabarit ne dérivent que de la feuille aveugle : aucune
+étiquette cible ne s'y trouve. La clé, le manifeste et les feuilles remplies
+restent soumis au §6.
+
 ## 3. Évaluateurs
 
 - **≥ 3 évaluateurs indépendants** (l'arbitrage du panel — qui sont les humains, et sous quelle modalité — est l'objet de la question user Q25, registre de la lane).
@@ -72,6 +102,6 @@ Un identifiant qui afficherait la graine (forme `eval-<graine>-<rang>`) la donne
 ## 7. État
 
 - [x] Instrument d'échantillonnage + tests (ce grain).
-- [ ] Échantillon réel : dès le merge de la table d'alignement (#20028), une commande (§2) produit `run1`.
+- [x] Échantillon réel `run1` (2026-10-20, table mergée via #20315 ; **re-émis le 2026-10-23** après le fix dedup du builder) : le corpus aligné (225 paires, `data/academic/aligned/`) est construit par `build_aligned_eval_corpus.py` — 128 joins exacts, 97 par pont déclaré (un rationale par pont), 44 exclus motivés, **unicité (texte, nœud) garantie à l'émission** (3 paires démultiplicées fusionnées, libellés sources dans `source_labels` ; la première émission dupliquait des paires, ce qui rendait la campagne inmesurable — c.6373865101). Tirage : 200 items, graine 42, stratifiés sur **6 familles** (17-56 par famille) ; la 7ᵉ (Tricherie) est **mesurée à 0 paire source** dans le gold MAFALDA entier — aucun span ne porte son unique label L2 (`Fallacy of proportion`). `sheet.jsonl` / `key.jsonl` / `manifest.json` (empreintes SHA-256 de la source, de la feuille et de la clé) vivent hors dépôt : `G:\Mon Drive\MyIA\IA\external-eval-20222\run1\` (circulation §6 — organisateur seul) ; la première émission (défectueuse, jamais circulée) est préservée dans `run1-superseded-20261023\`.
 - [ ] Panel d'évaluateurs : arbitrage user Q25 (recommandation lane : étudiants des cours, TP guidé).
 - [ ] Campagne d'annotation + mesures (§4) + re-vues (§5).
