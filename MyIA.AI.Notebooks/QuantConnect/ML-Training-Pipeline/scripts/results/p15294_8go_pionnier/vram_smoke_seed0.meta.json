@@ -1,0 +1,28 @@
+{
+  "instrument": "probe_15099_vram_sampler.py",
+  "declared_interval_s": 1.0,
+  "gpu": {
+    "index": 0,
+    "name": "NVIDIA GeForce RTX 3070 Ti Laptop GPU",
+    "memory_total_MiB": "8192 MiB",
+    "nvidia_smi_version": "NVIDIA-SMI version  : 610.62"
+  },
+  "started_at": "2026-10-20T19:18:50.293+00:00",
+  "stop_reason": "stop-file",
+  "host": "MYIA-PO-2028",
+  "stopped_at": "2026-10-20T19:41:35.381+00:00",
+  "aggregates_derived": {
+    "n_samples": 1365,
+    "peak_mem_MiB": 7803,
+    "mean_mem_MiB": 6112.6,
+    "min_mem_MiB": 374,
+    "peak_util_pct": 100,
+    "peak_temp_C": 69,
+    "span_s": 1364.078,
+    "observed_interval_s": {
+      "min": 0.968,
+      "median": 1.0,
+      "max": 1.062
+    }
+  }
+}

@@ -122,7 +122,10 @@ if ($RecordBaseline) {
                 distinct_code_sorry = [int]$_.distinct_code_sorry
             }
         })
-    } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $baselinePath -Encoding utf8NoBOM
+    } | ConvertTo-Json -Depth 4 | Set-Variable baselineJson
+    # utf8NoBOM n'existe pas sous PowerShell 5.1 (abort mesure, incident 2026-06-11) :
+    # forme canonique UTF8Encoding($false), valide 5.1 et 7.x (#21896)
+    [System.IO.File]::WriteAllText($baselinePath, $baselineJson, (New-Object System.Text.UTF8Encoding($false)))
     Write-Host "Baseline posee : $baselinePath ($((($current.lakes | Measure-Object).Count)) lacs)"
 }
 
@@ -185,6 +188,14 @@ function Get-LeanProjects {
             continue
         }
         $packages = @($manifest.packages)
+        $pkgDetails = @($packages | Sort-Object name | ForEach-Object {
+            [pscustomobject]@{
+                Name = $_.name
+                Rev  = $_.rev
+                Url  = $_.url
+                Type = $_.type
+            }
+        })
         $mathlibPkg = $packages | Where-Object { $_.name -eq 'mathlib' }
         if (-not $mathlibPkg) { continue }  # projet core-only ou sans mathlib : rien a mutualiser
 
@@ -206,6 +217,13 @@ function Get-LeanProjects {
             Toolchain   = $toolchain
             MathlibRev  = $mathlibPkg.rev
             GroupKey    = $groupKey
+            # Paires "name=rev" du graphe de dependances : sert au diagnostic de
+            # fragmentation (deux groupes distincts qui partagent la MEME revision
+            # mathlib). Sans elles, le rapport ne dit pas POURQUOI un groupe est
+            # isole, et l'operateur ne peut pas trancher "drift alignable" vs
+            # "dependances reelles" -- c'est exactement la decision de #2611 etape 2.
+            PackagePairs = @($pairs)
+            PackageDetails = @($pkgDetails)
             MathlibDir  = $mathlibDir
             HasCheckout = (Test-Path -LiteralPath $mathlibDir)
             IsJunction  = (Test-IsJunction $mathlibDir)
@@ -254,6 +272,78 @@ function Test-CacheValid([string]$CacheMathlib, [string]$ExpectedRev) {
     return @{ Valid = $true; Reason = "rev $headRev" }
 }
 
+# --- Diagnostic de fragmentation par revision (#4363) ---
+#
+# La cle de groupe est stricte (TOUTES les dependances transitives). Un groupe
+# "isole" peut l'etre pour deux raisons TRES differentes :
+#   - DRIFT : meme jeu de dependances, une revision diverge -> alignable par
+#     l'etape 2 de #2611 ;
+#   - DEPENDANCES REELLES : les jeux de dependances diffèrent -> l'alignement
+#     exigerait de changer les imports du lac (hors perimetre de l'outillage).
+# Sans cette distinction, le rapport disait "isole" et rien d'autre : l'economie
+# perdue etait invisible, et la decision "faut-il aligner ?" ne se prenait pas.
+
+function Get-ShortRev([string]$Rev) {
+    if (-not $Rev) { return '<vide>' }
+    if ($Rev.Length -le 8) { return $Rev }
+    return $Rev.Substring(0, 8)
+}
+
+function Get-PairMap([object[]]$Details) {
+    $map = @{}
+    foreach ($p in @($Details)) {
+        $map[$p.Name] = $p
+    }
+    return $map
+}
+
+function Format-Package([object]$Pkg) {
+    if (-not $Pkg) { return '<inconnu>' }
+    # Une dependance LOCALE (type "path") n'a ni revision ni URL dans le
+    # manifest : les afficher en "<vide>" / "<url absente>" produisait un
+    # leurre (revue Hermes sur #21790). On ne nomme que ce qui existe.
+    if ($Pkg.Type -eq 'path') { return "$($Pkg.Name) (path)" }
+    $url = if ($Pkg.Url) { $Pkg.Url } else { '<url absente>' }
+    return "$($Pkg.Name) [$(Get-ShortRev $Pkg.Rev)] ($($Pkg.Type), $url)"
+}
+
+function Compare-ManifestGroups([object]$A, [object]$B) {
+    $mapA = Get-PairMap $A.PackageDetails
+    $mapB = Get-PairMap $B.PackageDetails
+    $namesA = @($mapA.Keys)
+    $namesB = @($mapB.Keys)
+    $onlyA = @($namesA | Where-Object { -not $mapB.ContainsKey($_) } | Sort-Object)
+    $onlyB = @($namesB | Where-Object { -not $mapA.ContainsKey($_) } | Sort-Object)
+    $shared = @($namesA | Where-Object { $mapB.ContainsKey($_) } | Sort-Object)
+    $drift = @()
+    foreach ($n in $shared) {
+        if ($mapA[$n].Rev -ne $mapB[$n].Rev) {
+            $drift += "$n ($(Get-ShortRev $mapA[$n].Rev) -> $(Get-ShortRev $mapB[$n].Rev))"
+        }
+    }
+    $kind =
+        if ($drift.Count -gt 0 -and $onlyA.Count -eq 0 -and $onlyB.Count -eq 0) { 'DRIFT' }
+        elseif ($drift.Count -eq 0 -and ($onlyA.Count + $onlyB.Count) -gt 0) { 'DEPENDANCES REELLES' }
+        else { 'ECART MIXTE' }
+    return [pscustomobject]@{
+        Kind    = $kind
+        Drift   = $drift
+        OnlyA   = @($onlyA | ForEach-Object { $mapA[$_] })
+        OnlyB   = @($onlyB | ForEach-Object { $mapB[$_] })
+    }
+}
+
+# Une dependance de type "path" pointe dans le depot : elle ne touche pas le
+# contenu du checkout Mathlib partage. Une dependance "git" est externe et peut
+# appartenir au graphe de build de Mathlib (aesop, batteries, proofwidgets...)
+# -- la qualite de la fusion ne se tranche donc pas sur le type seul.
+function Split-PackageKinds([object[]]$Pkgs) {
+    return [pscustomobject]@{
+        Local    = @($Pkgs | Where-Object { $_.Type -eq 'path' })
+        External = @($Pkgs | Where-Object { $_.Type -ne 'path' })
+    }
+}
+
 # --- Scan ---
 
 function Invoke-Scan {
@@ -264,13 +354,27 @@ function Invoke-Scan {
     $groups = $projects | Group-Object GroupKey | Sort-Object Count -Descending
     $totalSavings = 0.0
 
+    # Regroupement secondaire par (toolchain, revision mathlib) : c'est l'artefact
+    # reellement partage. Deux groupes de manifests distincts qui portent la MEME
+    # revision sont des fragments d'un meme cluster -- le rapport doit le dire.
+    $revBuckets = @{}
+    foreach ($g in $groups) {
+        $m = @($g.Group)
+        $revKey = "$($m[0].Toolchain)|$($m[0].MathlibRev)"
+        if (-not $revBuckets.ContainsKey($revKey)) { $revBuckets[$revKey] = @() }
+        $revBuckets[$revKey] = @($revBuckets[$revKey]) + @($g)
+    }
+
     foreach ($g in $groups) {
         $members = @($g.Group)
         $groupId = Get-GroupId $members
         $cacheMathlib = Join-Path (Join-Path $CacheRoot $groupId) 'mathlib'
         $shareable = $members.Count -ge 2
+        $revKey = "$($members[0].Toolchain)|$($members[0].MathlibRev)"
+        $fragmentCount = @($revBuckets[$revKey]).Count
         $tag = if ($shareable) { 'MUTUALISABLE' } else { 'isole' }
-        Write-Host "--- Groupe $groupId [$tag] : toolchain=$($members[0].Toolchain) mathlib=$($members[0].MathlibRev.Substring(0,8)) ---"
+        $fragmentNote = if ($fragmentCount -gt 1) { " -- revision partagee par $fragmentCount groupes" } else { '' }
+        Write-Host "--- Groupe $groupId [$tag$fragmentNote] : toolchain=$($members[0].Toolchain) mathlib=$($members[0].MathlibRev.Substring(0,8)) ---"
 
         $sizes = @{}
         foreach ($m in $members) {
@@ -299,6 +403,56 @@ function Invoke-Scan {
         Write-Host ''
     }
     Write-Host "=== Economie totale potentielle (groupes en l'etat) : $([Math]::Round($totalSavings,2)) GB ==="
+
+    # --- Diagnostic : une MEME revision mathlib portee par plusieurs groupes ---
+    $fragmented = @($revBuckets.GetEnumerator() | Where-Object { @($_.Value).Count -gt 1 })
+    if ($fragmented.Count -gt 0) {
+        Write-Host ''
+        Write-Host '=== Diagnostic : revision mathlib partagee par plusieurs groupes de manifests ==='
+        foreach ($bucket in $fragmented) {
+            $bucketGroups = @($bucket.Value)
+            $first = @($bucketGroups[0].Group)[0]
+            $totalMembers = 0
+            foreach ($bg in $bucketGroups) { $totalMembers += @($bg.Group).Count }
+            Write-Host "  toolchain=$($first.Toolchain) mathlib=$($first.MathlibRev.Substring(0,8)) : $($bucketGroups.Count) groupes de manifests distincts ($totalMembers projets)"
+            for ($i = 0; $i -lt $bucketGroups.Count; $i++) {
+                $gm = @($bucketGroups[$i].Group)
+                $names = ($gm | ForEach-Object { $_.RelPath }) -join ', '
+                Write-Host "    [groupe $i] $names ($($gm.Count) membre(s))"
+            }
+            for ($i = 0; $i -lt $bucketGroups.Count; $i++) {
+                for ($j = $i + 1; $j -lt $bucketGroups.Count; $j++) {
+                    $a0 = (@($bucketGroups[$i].Group))[0]
+                    $b0 = (@($bucketGroups[$j].Group))[0]
+                    $cmp = Compare-ManifestGroups $a0 $b0
+                    Write-Host "    ecart groupe $i <-> groupe $j : $($cmp.Kind)"
+                    foreach ($d in $cmp.Drift) { Write-Host "      revision divergente : $d" }
+                    $splitA = Split-PackageKinds $cmp.OnlyA
+                    $splitB = Split-PackageKinds $cmp.OnlyB
+                    if ($splitA.External.Count -gt 0) {
+                        Write-Host "      dependances EXTERNES absentes du groupe $j : $(($splitA.External | ForEach-Object { Format-Package $_ }) -join ', ')"
+                    }
+                    if ($splitA.Local.Count -gt 0) {
+                        Write-Host "      dependances LOCALES (path) absentes du groupe $j : $(($splitA.Local | ForEach-Object { Format-Package $_ }) -join ', ')"
+                    }
+                    if ($splitB.External.Count -gt 0) {
+                        Write-Host "      dependances EXTERNES absentes du groupe $i : $(($splitB.External | ForEach-Object { Format-Package $_ }) -join ', ')"
+                    }
+                    if ($splitB.Local.Count -gt 0) {
+                        Write-Host "      dependances LOCALES (path) absentes du groupe $i : $(($splitB.Local | ForEach-Object { Format-Package $_ }) -join ', ')"
+                    }
+                }
+            }
+            Write-Host "    => 1 checkout Mathlib conserve au lieu de $totalMembers si les manifests sont alignes (#2611 etape 2)"
+            # Deux groupes de manifests distincts partagent le meme groupId
+            # (toolchain + rev identiques) : ils ecrivent dans le MEME cache et
+            # le MEME share-state.json, qui ne peut plus distinguer les groupes.
+            $ids = @($bucketGroups | ForEach-Object { Get-GroupId @($_.Group) } | Select-Object -Unique)
+            if ($ids.Count -eq 1) {
+                Write-Warning "Collision de groupId : les groupes de manifests distincts de la revision $($first.MathlibRev.Substring(0,8)) partagent le groupId '$($ids[0])' (cache et share-state.json communs)."
+            }
+        }
+    }
     Write-Host "Note : l'alignement des manifests (#2611 etape 2) peut elargir les groupes."
 }
 
@@ -399,8 +553,10 @@ function Save-ShareState {
         createdAt  = $CreatedAt
         members    = @($merged)
         rolledBack = $rolledPruned
-    } | ConvertTo-Json -Depth 4 |
-        Set-Content -LiteralPath $StatePath -Encoding utf8NoBOM
+    } | ConvertTo-Json -Depth 4 | Set-Variable shareStateJson
+    # utf8NoBOM n'existe pas sous PowerShell 5.1 (abort mesure, incident 2026-06-11) :
+    # forme canonique UTF8Encoding($false), valide 5.1 et 7.x (#21896)
+    [System.IO.File]::WriteAllText($StatePath, $shareStateJson, (New-Object System.Text.UTF8Encoding($false)))
 }
 
 function Invoke-Apply {

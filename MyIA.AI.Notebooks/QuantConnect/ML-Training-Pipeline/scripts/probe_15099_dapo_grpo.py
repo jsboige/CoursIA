@@ -33,13 +33,18 @@ import math
 import random
 import re
 import sys
+import os
 import time
 from pathlib import Path
 from typing import Any
 
 REPO_RESULTS = Path(__file__).resolve().parent / "results" / "m19_minicpm5_grpo"
 BASELINE_RESULTS = Path(__file__).resolve().parent / "results" / "p15294_accessibility"
-RUNS_ROOT = Path("D:/Dev/probe15099_runs")  # adapters + artefacts lourds, hors repo
+# Racine des artefacts lourds (adapters, sorties) : hors dépôt. Surchargeable par
+# variable d'environnement, car le chemin `D:/Dev/...` code en dur echouait sur
+# les sieges qui n'ont pas de disque D: (le run echouait sur `mkdir` avant meme
+# de produire une mesure) -- defaut inchange pour les sieges qui l'utilisent.
+RUNS_ROOT = Path(os.environ.get("PROBE15099_RUNS_ROOT", "D:/Dev/probe15099_runs"))
 DATASET_SNAPSHOT_GLOB = (
     "datasets--BytedTsinghua-SIA--DAPO-Math-17k/snapshots/*/data/dapo-math-17k.parquet"
 )
