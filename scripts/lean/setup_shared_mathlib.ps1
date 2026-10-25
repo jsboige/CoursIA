@@ -122,7 +122,10 @@ if ($RecordBaseline) {
                 distinct_code_sorry = [int]$_.distinct_code_sorry
             }
         })
-    } | ConvertTo-Json -Depth 4 | Set-Content -LiteralPath $baselinePath -Encoding utf8NoBOM
+    } | ConvertTo-Json -Depth 4 | Set-Variable baselineJson
+    # utf8NoBOM n'existe pas sous PowerShell 5.1 (abort mesure, incident 2026-06-11) :
+    # forme canonique UTF8Encoding($false), valide 5.1 et 7.x (#21896)
+    [System.IO.File]::WriteAllText($baselinePath, $baselineJson, (New-Object System.Text.UTF8Encoding($false)))
     Write-Host "Baseline posee : $baselinePath ($((($current.lakes | Measure-Object).Count)) lacs)"
 }
 
@@ -550,8 +553,10 @@ function Save-ShareState {
         createdAt  = $CreatedAt
         members    = @($merged)
         rolledBack = $rolledPruned
-    } | ConvertTo-Json -Depth 4 |
-        Set-Content -LiteralPath $StatePath -Encoding utf8NoBOM
+    } | ConvertTo-Json -Depth 4 | Set-Variable shareStateJson
+    # utf8NoBOM n'existe pas sous PowerShell 5.1 (abort mesure, incident 2026-06-11) :
+    # forme canonique UTF8Encoding($false), valide 5.1 et 7.x (#21896)
+    [System.IO.File]::WriteAllText($StatePath, $shareStateJson, (New-Object System.Text.UTF8Encoding($false)))
 }
 
 function Invoke-Apply {
