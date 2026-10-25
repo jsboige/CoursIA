@@ -1974,6 +1974,90 @@ def test_flush_mark_posted_unknown_id_refuses_without_moving(tmp_path, capsys):
     assert _spool_pending_count(state_dir) == 1
 
 
+def _legacy_spool_file(state_dir, *, name, observation_id, observed_at="2026-10-09T12:12:00Z"):
+    """Write an envelope the pre-envelope organ named after the WORKLOAD.
+
+    The file name and the envelope id disagree on purpose: that is how
+    ``obs-release-15294.json`` came to hold an envelope whose id is
+    ``obs-b2d72...`` (measured 2026-10-25, #22456).
+    """
+    spool = state_dir / dl.GPU_RESERVATION / "spool"
+    spool.mkdir(parents=True, exist_ok=True)
+    observation = {
+        "actor": "myia-ai-01:CoursIA-2",
+        "confidence": "high",
+        "entity": {"gpu_index": 2, "machine": "myia-ai-01"},
+        "evidence": "nvidia-smi : GPU libre",
+        "fields": {
+            "state": "released",
+            "holder": "myia-ai-01:CoursIA-2",
+            "issue": "jsboige/CoursIA#15294",
+            "started_at": "2026-10-09T06:51:23Z",
+            "expected_end": observed_at,
+        },
+        "ledger": dl.GPU_RESERVATION,
+        "observation_id": observation_id,
+        "observed_at": observed_at,
+    }
+    path = spool / name
+    path.write_text(dl.envelope_line(observation), encoding="utf-8")
+    return path
+
+
+def test_flush_drains_a_spool_file_whose_name_is_not_its_envelope_id(tmp_path, capsys):
+    """The publisher and the archiver must key on the SAME id (#22456).
+
+    `flush_manifest` publishes the envelope id; the archiver used to build
+    `<id>.json` from it. A legacy-named file was therefore postable and never
+    archivable: the pending count stayed above zero, `check_pending` answered
+    UNPOSTED forever, and a real backlog became indistinguishable from a frozen
+    gate.
+    """
+    state_dir = _gpu_state(tmp_path)
+    _legacy_spool_file(state_dir, name="obs-release-15294.json", observation_id="obs-b2d72234e3c97250")
+    assert _spool_pending_count(state_dir) == 1
+    capsys.readouterr()
+    assert dl.main(["flush", "--state-dir", str(state_dir), "--json"]) == 0
+    manifest = json.loads(capsys.readouterr().out)
+    assert manifest["calls"][0]["observation_id"] == "obs-b2d72234e3c97250"
+    assert dl.main(
+        ["flush", "--state-dir", str(state_dir), "--mark-posted", "obs-b2d72234e3c97250"]
+    ) == 0
+    assert "moved=1" in capsys.readouterr().out
+    assert _spool_pending_count(state_dir) == 0
+    posted = state_dir / dl.GPU_RESERVATION / "spool" / "posted"
+    assert (posted / "obs-release-15294.json").is_file()
+
+
+def test_archive_accepts_both_ids_of_a_legacy_file(tmp_path):
+    """Both conventions resolve to the same file, and neither deletes it twice."""
+    state_dir = _gpu_state(tmp_path)
+    path = _legacy_spool_file(
+        state_dir, name="obs-release-15294.json", observation_id="obs-b2d72234e3c97250"
+    )
+    spool = state_dir / dl.GPU_RESERVATION / "spool"
+    first = dl.archive_posted(spool, ["obs-b2d72234e3c97250"])
+    assert first["moved"] == ["obs-b2d72234e3c97250"]
+    assert not path.exists()
+    replay = dl.archive_posted(spool, ["obs-b2d72234e3c97250"])
+    assert replay["moved"] == [] and replay["already"] == ["obs-b2d72234e3c97250"]
+    assert _spool_pending_count(state_dir) == 0
+
+
+def test_archive_still_refuses_an_unknown_id_alongside_a_known_one(tmp_path):
+    """All-or-nothing survives the two-convention lookup."""
+    state_dir = _gpu_state(tmp_path)
+    path = _legacy_spool_file(
+        state_dir, name="obs-release-15294.json", observation_id="obs-b2d72234e3c97250"
+    )
+    spool = state_dir / dl.GPU_RESERVATION / "spool"
+    with pytest.raises(dl.LedgerError) as excinfo:
+        dl.archive_posted(spool, ["obs-b2d72234e3c97250", "obs-qui-n-existe-pas"])
+    assert excinfo.value.reason == "UNKNOWN_OBSERVATION"
+    assert path.exists()
+    assert _spool_pending_count(state_dir) == 1
+
+
 def test_check_pending_reports_unposted_instead_of_released(tmp_path, capsys):
     """A pending outbox is an UNREAD ledger, not a free device (#22456)."""
     state_dir = _gpu_state(tmp_path)

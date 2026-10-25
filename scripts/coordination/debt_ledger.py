@@ -2214,6 +2214,46 @@ def flush_manifest(ledger: str, pending: Sequence[dict[str, Any]]) -> dict[str, 
     }
 
 
+def _index_spool(directory: Path, *, strict: bool) -> dict[str, Path]:
+    """Map observation id -> envelope file, for BOTH keying conventions.
+
+    ``flush_manifest`` publishes the ENVELOPE's ``observation_id``; the spool
+    FILE NAME is a second, older convention (``obs-release-15294.json`` holds
+    an envelope whose id is ``obs-b2d72...``). Resolving ids by file name
+    alone made the publisher and the archiver disagree: a file written by the
+    pre-envelope organ could be posted and then never archived, so the pending
+    count never reached zero and ``check_pending`` answered ``UNPOSTED``
+    forever -- the very failure this drain exists to prevent (#22456, measured
+    2026-10-25 on two raw ``[OBS]`` files from 2026-10-09 and 2026-10-19).
+
+    File names go in first, envelope ids second, so an id always resolves to
+    the file that DECLARES it. ``strict`` is for the pending set (a corrupt
+    outbox entry must raise, exactly as ``spool_pending`` does); the archive
+    side is read leniently, since a damaged archived file cannot make the
+    gate lie about what is still pending.
+    """
+    index: dict[str, Path] = {}
+    if not directory.exists():
+        return index
+    paths = [
+        path
+        for path in sorted(directory.glob("*.json"))
+        if not path.name.startswith(".superseded-")
+    ]
+    for path in paths:
+        index[path.stem] = path
+    for path in paths:
+        try:
+            observation = parse_envelope(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, ObservationError) as exc:
+            if strict:
+                raise LedgerError("INVALID_SPOOL", f"{path}: {exc}") from exc
+            continue
+        if isinstance(observation, dict) and observation.get("observation_id"):
+            index[str(observation["observation_id"])] = path
+    return index
+
+
 def archive_posted(spool_dir: Path, observation_ids: Sequence[str]) -> dict[str, list[str]]:
     """Move posted envelopes out of the pending set; idempotent by id.
 
@@ -2222,24 +2262,26 @@ def archive_posted(spool_dir: Path, observation_ids: Sequence[str]) -> dict[str,
     state that makes ``check_pending`` lie.
     """
     posted_dir = spool_dir / "posted"
+    pending_index = _index_spool(spool_dir, strict=True)
+    posted_index = _index_spool(posted_dir, strict=False)
     moved: list[str] = []
     already: list[str] = []
     missing: list[str] = []
-    plan: list[tuple[str, Path]] = []
+    plan: dict[str, Path] = {}
     for observation_id in observation_ids:
-        source = spool_dir / f"{observation_id}.json"
-        if source.is_file():
-            plan.append((observation_id, source))
-        elif (posted_dir / f"{observation_id}.json").is_file():
+        source = pending_index.get(observation_id)
+        if source is not None:
+            plan.setdefault(observation_id, source)
+        elif observation_id in posted_index:
             already.append(observation_id)
         else:
             missing.append(observation_id)
     if missing:
         raise LedgerError(
             "UNKNOWN_OBSERVATION",
-            "no pending or posted envelope for: " + ", ".join(sorted(missing)),
+            "no pending or posted envelope for: " + ", ".join(sorted(set(missing))),
         )
-    for observation_id, source in plan:
+    for observation_id, source in plan.items():
         posted_dir.mkdir(parents=True, exist_ok=True)
         os.replace(source, posted_dir / source.name)
         moved.append(observation_id)
