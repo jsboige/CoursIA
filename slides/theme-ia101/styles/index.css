@@ -405,13 +405,21 @@ a {
 /* Dedupliquer S3 et S8 demande donc d'arbitrer leurs valeurs — ce       */
 /* n'est pas un retrait mecanique comme pour 02 et 06.                   */
 /*                                                                       */
-/* Un troisieme jeu existait dans `06-apprentissage/styles/index.css`    */
-/* (0.86em), domine par celui du `style.css` du meme deck — jamais       */
-/* effectif, supprime.                                                   */
+/* Le troisieme jeu, `06-apprentissage/styles/index.css`, n'a PAS ete    */
+/* neutre a supprimer : son 0.86em sur `ul` perdait bien contre le       */
+/* 0.82em du `style.css` du meme deck, mais ses regles `li` (interligne  */
+/* 1.25, et 1.16 en `xl-dense`) n'avaient AUCUNE concurrente — le        */
+/* `style.css` ne fixait que la marge d'item. Elles etaient effectives,  */
+/* et leur retrait faisait retomber le `li` sur l'interligne du layout   */
+/* (1.30) : mesure 2026-10-25 au DOM, `li` 19.37 -> 20.15 px, listes     */
+/* denses de 06 rallongees de 9 a 51 px et debordements preexistants     */
+/* aggraves de 2 a 10 px. Les deux interlignes sont donc reportes ici.   */
 /*                                                                       */
-/* Les valeurs ci-dessous sont celles que 02 et 06 rendaient deja,       */
-/* relevees au DOM (`getComputedStyle`, 2026-10-24) et non choisies :    */
-/* deplacer la definition vers le theme ne doit rien changer pour eux.   */
+/* Les valeurs ci-dessous sont celles que 06 rendait deja ; 02 rendait   */
+/* le meme `ul` (0.82em / 1.22) et la meme marge d'item, mais laissait   */
+/* son `li` a l'interligne du layout (1.30). Il recoit donc ici le 1.25  */
+/* de 06 : ses listes denses se resserrent, ce qui REDUIT ses            */
+/* debordements (mesure 2026-10-25, deck 02 diapo 48 : 57 -> 48 px).     */
 /*                                                                       */
 /* Les `style.css` de deck sont bien charges par Slidev (convention de   */
 /* projet) : ce n'est pas une raison de les garder, c'est une raison de  */
@@ -428,6 +436,7 @@ a {
 
 .slidev-layout .dense-list li {
   margin: 0.02em 0;
+  line-height: 1.25;
 }
 
 .slidev-layout .dense-list h2 {
@@ -449,6 +458,7 @@ a {
 
 .slidev-layout .dense-list.xl-dense li {
   margin: 0;
+  line-height: 1.16;
 }
 
 /* Image unique a faire tenir sous un bloc de texte : sans borne explicite
