@@ -194,9 +194,10 @@ jobs:
       # Dependances des detecteurs du fast-lane (pyyaml pour le scan de
       # closure markdown-rendering, Pillow pour scan_md_hierarchy) --
       # #11850 : sans install, un ImportError etait reporte a tort comme
-      # un _quarto.yml invalide.
-      - name: "Installer dependances detecteurs (pyyaml, Pillow)"
-        run: pip install --quiet pyyaml Pillow
+      # un _quarto.yml invalide. pytest pour le garde dwell-narrative-pin
+      # (#22279) : son argv est un pytest de scripts/tests/.
+      - name: "Installer dependances detecteurs (pyyaml, Pillow, pytest)"
+        run: pip install --quiet pyyaml Pillow pytest
 
       # -----------------------------------------------------------------
       # BODY LIVE (#15697) : les organes qui lisent le corps (tag Grain:,
