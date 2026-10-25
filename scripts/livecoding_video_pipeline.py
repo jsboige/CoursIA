@@ -197,6 +197,69 @@ def compose_strudel(
     return "\n".join(lines)
 
 
+def compose_progressive_states(
+    style_name: str,
+    duration_seconds: int = 180,
+    voices: int = 4,
+    visuals: bool = False,
+) -> List[str]:
+    """Etats cumulatifs du script, pour une capture « code en cours d'evolution ».
+
+    Critere 5a de #15604 : la video doit montrer **au moins trois etats
+    visibles distincts** du code Strudel. La capture page entiere livree par
+    #21045 rend le code visible mais **statique** ; cette fonction fournit
+    la matiere de la progression.
+
+    Chaque etat est un script Strudel **complet et executable** : en-tete,
+    ``setcps``, puis une voix de plus que le precedent. La progression est
+    donc celle d'un livecoder qui empile des pistes, pas un texte tronque
+    qui ne compilerait pas.
+
+    Le **dernier** etat est byte-identique a ``compose_strudel(...)`` : la
+    progression converge vers le script canonique, elle ne le remplace pas
+    (garde anti-derive : ``test_progressive_dernier_etat_egale_compose_strudel``).
+
+    Raises :
+    - ValueError si le style est inconnu, si les parametres sont hors range,
+      ou si ``voices < 3`` (moins de trois voix ne peut pas produire les
+      trois etats distincts qu'exige le critere).
+    """
+    if style_name not in STYLES:
+        raise ValueError(
+            f"style {style_name!r} inconnu ; styles disponibles : {sorted(STYLES.keys())}"
+        )
+    if not 60 <= duration_seconds <= 600:
+        raise ValueError(
+            f"duration_seconds doit etre dans [60, 600], recu {duration_seconds}"
+        )
+    if not 3 <= voices <= 4:
+        raise ValueError(
+            "progressive : voices doit etre dans [3, 4] — le critere 5a exige "
+            f"au moins trois etats visibles distincts, recu {voices}"
+        )
+
+    style = STYLES[style_name]
+    cps = style.bpm / 60.0 / 2.0
+    patterns = [style.pattern_kick, style.pattern_bass, style.pattern_lead, style.pattern_pad][:voices]
+    visuals_by_voice = {1: ".scope()", 2: ".pianoroll()"}
+    header = f"// Livecoding video — style={style.name} BPM={style.bpm} duration={duration_seconds}s"
+    # Meme litteral que compose_strudel : l'egalite du dernier etat est
+    # verifiee par un test, c'est elle qui garde les deux definitions alignees.
+    fade_cycles = 8
+    fade_marker = f"// fade-out coordonne sur les {fade_cycles} derniers cycles : premultiplier chaque voix par gain(1 - cycles_left/{fade_cycles})"
+
+    states: List[str] = []
+    for k in range(1, len(patterns) + 1):
+        lines = [header, f"setcps({cps:.4f})"]
+        for i, pat in enumerate(patterns[:k]):
+            suffix = visuals_by_voice.get(i, "") if visuals else ""
+            lines.append(f"$: {pat}{suffix}")
+        if k == len(patterns):
+            lines.append(fade_marker)
+        states.append("\n".join(lines))
+    return states
+
+
 # --- Etape 2 : narration poetique timestampee (c.1215) -----------------------
 
 
@@ -1467,6 +1530,294 @@ def capture_repl_session(
     }
 
 
+# --- Etape 4bis : capture a code evolutif (critere 5a, #15604) --------------
+#
+# Mesures fondatrices (2026-10-25, sondes playwright sur strudel.cc) :
+# - changer le seul FRAGMENT d'URL ne recharge pas le REPL (navigation
+#   same-document) : `page.goto(url_k)` laisse l'editeur sur l'etat 0.
+#   `page.reload()` apres le goto recharge bien le pattern de l'etat k.
+# - `keyboard.insert_text` remplace exactement le contenu de CodeMirror
+#   (contrairement a `type`, qui declenche l'auto-fermeture des parentheses) ;
+#   `Control+Enter` reevalue et le canvas repart (checksums differents).
+
+_EDITOR_READ_JS = """
+() => {
+  const cm = document.querySelector('.cm-content');
+  return cm ? cm.innerText : null;
+}
+"""
+
+
+def _set_editor_code(page: object, code: str) -> None:
+    """Ecrit ``code`` dans l'editeur CodeMirror du REPL (focus + select-all + insert)."""
+    page.click(".cm-content")
+    page.keyboard.press("Control+a")
+    page.keyboard.insert_text(code)
+
+
+def _export_wav(page: object, out_wav: Path, cycles: Optional[int]) -> None:
+    """Menu ``export`` -> ``Export to WAV`` : rendu offline natif du moteur."""
+    if page.get_by_role("button", name="Close Menu").count() == 0:
+        page.get_by_role("button", name="menu", exact=True).click(timeout=10_000)
+        page.wait_for_timeout(600)
+    page.get_by_role("button", name="export", exact=True).click(timeout=10_000)
+    page.wait_for_timeout(600)
+    if cycles is not None:
+        page.get_by_role("spinbutton").nth(1).fill(str(cycles))
+    with page.expect_download(timeout=300_000) as download_info:
+        page.get_by_role("button", name="Export to WAV").click()
+    download_info.value.save_as(str(out_wav))
+
+
+def concat_wavs(wavs: List[Path], out_wav: Path) -> List[str]:
+    """Commande ffmpeg de concatenation des pistes d'etats (concat demuxer).
+
+    Les WAV viennent tous du meme rendu offline (meme frequence, meme
+    format) : la concatenation est exacte, sans recouvrement ni fondu.
+    """
+    if len(wavs) < 2:
+        raise ValueError(f"concat_wavs demande au moins 2 pistes, recu {len(wavs)}")
+    list_file = out_wav.with_suffix(".txt")
+    lignes = ["file '%s'" % str(Path(w).resolve()).replace("\\", "/") for w in wavs]
+    list_file.write_text("\n".join(lignes) + "\n", encoding="utf-8")
+    return [
+        "ffmpeg", "-y",
+        "-f", "concat", "-safe", "0", "-i", str(list_file),
+        "-c:a", "pcm_s16le", str(out_wav),
+    ]
+
+
+def render_progressive_audio(
+    states: List[str],
+    output_dir: Path,
+    state_seconds: int,
+    cps: float,
+    headless: bool = False,
+    warmup_seconds: float = 5.0,
+    repl_base: str = "https://strudel.cc/",
+) -> List[Path]:
+    """Rend le WAV de **chaque** etat, pour que l'audio evolue comme le code.
+
+    Necessaire a l'honnetete de la piste : ``Export to WAV`` rend le pattern
+    **courant** en offline. Un seul export en fin de session porterait le
+    pattern complet alors que la video montre des etats partiels — l'audio
+    contrarierait l'image, ce qui est precisement le mensonge que 5a doit
+    eviter.
+    """
+    if len(states) < 3:
+        raise ValueError(f"render_progressive_audio demande >= 3 etats, recu {len(states)}")
+
+    from playwright.sync_api import sync_playwright
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    cycles = cycles_for_duration(cps, state_seconds)
+    wavs: List[Path] = []
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=headless)
+        page = browser.new_page(viewport={"width": 1280, "height": 1024})
+        try:
+            for i, code in enumerate(states):
+                url = build_repl_url(code, repl_base)
+                page.goto(url)
+                # Le fragment seul ne recharge pas le REPL (mesure) : sans ce
+                # reload, tous les exports porteraient le pattern de l'etat 0.
+                page.reload()
+                page.wait_for_timeout(int(warmup_seconds * 1000))
+                _click_play(page, url)
+                page.wait_for_timeout(1500)
+                out = output_dir / f"state_{i:02d}.wav"
+                _export_wav(page, out, cycles)
+                if not out.is_file() or out.stat().st_size < 1_000:
+                    raise RuntimeError(
+                        f"export WAV de l'etat {i} absent ou vide ({out}) — "
+                        "le rendu offline n'a pas abouti"
+                    )
+                wavs.append(out)
+        finally:
+            browser.close()
+    return wavs
+
+
+def capture_progressive_video(
+    states: List[str],
+    output_dir: Path,
+    state_seconds: int,
+    headless: bool = False,
+    warmup_seconds: float = 5.0,
+    repl_base: str = "https://strudel.cc/",
+) -> Dict[str, object]:
+    """Filme la page REPL pendant que le code passe par chaque etat.
+
+    Le code est **saisi dans l'editeur** a chaque transition (et non
+    recharge par navigation) : la page reste vivante, le canvas continue de
+    tourner, et le geste filmé est celui d'un livecoder (saisie puis
+    ``Control+Enter``).
+
+    Retourne ``video_webm``, ``trim_start``, ``editor_states`` (texte lu
+    dans l'editeur a chaque etat) et ``distinct_states``. Un verdict
+    inférieur a trois etats distincts **leve** : c'est le critere 5a, pas
+    une metrique consultative.
+    """
+    if len(states) < 3:
+        raise ValueError(f"capture_progressive_video demande >= 3 etats, recu {len(states)}")
+
+    from playwright.sync_api import sync_playwright
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    video_webm = output_dir / "progressive.webm"
+    editor_states: List[str] = []
+    trim_start: Optional[float] = None
+
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=headless)
+        context = browser.new_context(
+            viewport={"width": 1280, "height": 1024},
+            record_video_dir=str(output_dir),
+            record_video_size={"width": 1280, "height": 1024},
+        )
+        page = context.new_page()
+        video = page.video
+        t_video_zero = time.monotonic()
+        try:
+            url0 = build_repl_url(states[0], repl_base)
+            page.goto(url0)
+            page.wait_for_timeout(int(warmup_seconds * 1000))
+            _click_play(page, url0)
+            page.wait_for_timeout(int(warmup_seconds * 1000))
+            trim_start = time.monotonic() - t_video_zero
+
+            for i, code in enumerate(states):
+                if i > 0:
+                    _set_editor_code(page, code)
+                    page.keyboard.press("Control+Enter")
+                    page.wait_for_timeout(1_200)
+                texte = page.evaluate(_EDITOR_READ_JS)
+                editor_states.append("" if texte is None else str(texte))
+                if i == len(states) - 1:
+                    # Garde canvas sur le dernier etat : lui seul porte les
+                    # visuals (premieres voix sans .scope()/.pianoroll()).
+                    h1 = page.evaluate(_CANVAS_CHECKSUM_JS)
+                    page.wait_for_timeout(2_000)
+                    h2 = page.evaluate(_CANVAS_CHECKSUM_JS)
+                    if h1 == h2:
+                        raise RuntimeError(
+                            "canvas REPL immobile sur l'etat final — visuals "
+                            "absents (compose_progressive_states(visuals=True) ?)"
+                        )
+                page.wait_for_timeout(int(state_seconds * 1000))
+
+            distinct = len(dict.fromkeys(editor_states))
+            if distinct < 3:
+                raise RuntimeError(
+                    f"critere 5a non tenu : {distinct} etat(s) distinct(s) dans "
+                    f"l'editeur, 3 exiges ({editor_states!r})"
+                )
+
+            assert video is not None
+            recorded = Path(video.path())
+            context.close()
+            if not recorded.is_file() or recorded.stat().st_size < 10_000:
+                raise RuntimeError(
+                    "record_video: webm absente ou < 10 Ko — la capture page "
+                    "entiere n'a pas produit de piste exploitable"
+                )
+            recorded.replace(video_webm)
+        finally:
+            browser.close()
+
+    return {
+        "video_webm": str(video_webm),
+        "trim_start": trim_start,
+        "editor_states": editor_states,
+        "distinct_states": len(dict.fromkeys(editor_states)),
+    }
+
+
+def capture_progressive_session(
+    style_name: str,
+    duration_seconds: int,
+    voices: int = 4,
+    visuals: bool = True,
+    output_dir: Optional[Path] = None,
+    headless: bool = False,
+    repl_base: str = "https://strudel.cc/",
+) -> Dict[str, object]:
+    """Capture complete a code evolutif : video + audio par etat + mux.
+
+    Deux passes distinctes, volontairement :
+
+    1. **video** — une seule session filmee, le code est saisi dans
+       l'editeur et reevalue a chaque etat (aucune navigation pendant la
+       prise, donc aucun flash de rechargement a l'image) ;
+    2. **audio** — un rendu offline par etat, concatenes : la bande sonore
+       contient exactement la progression que l'image montre.
+
+    Le mux final decoupe la fenetre video utile par ``-ss``/``-t`` mesures a
+    l'horloge du process (etape 4 de #15604), puis assemble en H.264/AAC.
+    """
+    states = compose_progressive_states(
+        style_name=style_name,
+        duration_seconds=duration_seconds,
+        voices=voices,
+        visuals=visuals,
+    )
+    if len(states) < 3:
+        raise ValueError(f"capture_progressive_session demande >= 3 etats, recu {len(states)}")
+    if not visuals:
+        raise ValueError(
+            "progressive : visuals=True requis — sans visuals le canvas REPL "
+            "reste noir et la garde d'animation ne peut pas distinguer une "
+            "capture vivante d'une capture morte"
+        )
+    if output_dir is None:
+        output_dir = Path("out") / "progressive"
+    output_dir = Path(output_dir)
+
+    import subprocess
+
+    cps = STYLES[style_name].bpm / 60.0 / 2.0
+    state_seconds = max(4, duration_seconds // len(states))
+
+    wavs = render_progressive_audio(
+        states, output_dir, state_seconds, cps, headless=headless, repl_base=repl_base
+    )
+    audio_wav = output_dir / "progressive.wav"
+    cmd_concat = concat_wavs(wavs, audio_wav)
+    proc = subprocess.run(cmd_concat, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if proc.returncode != 0:
+        raise RuntimeError(f"ffmpeg concat a echoue ({proc.returncode}) : {proc.stderr[-800:]}")
+
+    video = capture_progressive_video(
+        states, output_dir, state_seconds, headless=headless, repl_base=repl_base
+    )
+
+    final_mp4 = output_dir / "progressive_final.mp4"
+    trim_start = video["trim_start"]
+    cmd_mux = mux_ffmpeg(
+        Path(str(video["video_webm"])),
+        audio_wav,
+        final_mp4,
+        trim_start=float(trim_start) if trim_start is not None else None,
+        trim_duration=float(state_seconds * len(states)),
+    )
+    proc = subprocess.run(cmd_mux, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if proc.returncode != 0:
+        raise RuntimeError(f"ffmpeg mux a echoue ({proc.returncode}) : {proc.stderr[-800:]}")
+
+    return {
+        "final_mp4": str(final_mp4),
+        "mp4_bytes": final_mp4.stat().st_size,
+        "audio_wav": str(audio_wav),
+        "wav_bytes": audio_wav.stat().st_size,
+        "states": states,
+        "n_states": len(states),
+        "state_seconds": state_seconds,
+        "cycles_per_state": cycles_for_duration(cps, state_seconds),
+        "editor_states": video["editor_states"],
+        "distinct_states": video["distinct_states"],
+    }
+
+
 # --- CLI --------------------------------------------------------------------
 
 
@@ -1550,6 +1901,14 @@ def _build_arg_parser() -> argparse.ArgumentParser:
              "'canvas' = recorder in-page historique (canvas seul)",
     )
     parser.add_argument(
+        "--progressive",
+        action="store_true",
+        help="etape 4bis (critere 5a #15604) : capturer le code EN COURS "
+             "D'EVOLUTION — le script passe par une voix de plus a chaque "
+             "etat (>=3 etats visibles distincts), l'audio est rendu par "
+             "etat puis concatene. Requiert --capture et --voices >= 3.",
+    )
+    parser.add_argument(
         "--headless",
         action="store_true",
         help="lancer Chromium headless (mesure c.1528 : capture 180 s "
@@ -1575,6 +1934,49 @@ def _build_arg_parser() -> argparse.ArgumentParser:
 
 def main(argv: Optional[List[str]] = None) -> int:
     args = _build_arg_parser().parse_args(argv)
+
+    # Etape 4bis : capture a code evolutif (critere 5a, #15604). Mode
+    # separe du pipeline narration/TTS : il produit la video de
+    # demonstration du critere, pas un episode narre.
+    if args.progressive:
+        if not args.capture:
+            print(
+                "ERREUR : --progressive requiert --capture (etape 4 activee)",
+                file=sys.stderr,
+            )
+            return 2
+        try:
+            result_progressif = capture_progressive_session(
+                style_name=args.style,
+                duration_seconds=args.duration,
+                voices=args.voices,
+                headless=args.headless,
+            )
+        except (RuntimeError, ValueError) as exc:
+            print(f"ERREUR : {exc}", file=sys.stderr)
+            return 2
+        print("=== Capture a code evolutif (critere 5a, #15604) ===")
+        print(f"  etats          : {result_progressif['n_states']} "
+              f"({result_progressif['distinct_states']} distincts dans l'editeur)")
+        print(f"  duree par etat : {result_progressif['state_seconds']} s "
+              f"({result_progressif['cycles_per_state']} cycles)")
+        print(f"  video          : {result_progressif['final_mp4']} "
+              f"({result_progressif['mp4_bytes']} octets)")
+        print(f"  audio          : {result_progressif['audio_wav']} "
+              f"({result_progressif['wav_bytes']} octets)")
+        print()
+        print("--- etats successifs du script ---")
+        for i, script in enumerate(result_progressif["states"]):
+            print(f"[etat {i}] {len(script)} caracteres, "
+                  f"{script.count(chr(10)) + 1} lignes")
+        verdict_5a = (
+            "TENU" if result_progressif["distinct_states"] >= 3 else "NON TENU"
+        )
+        print(f"\n=== Verdict critere 5a : {verdict_5a} "
+              f"({result_progressif['distinct_states']}/3 etats distincts mesures "
+              f"dans l'editeur) ===")
+        return 0
+
     try:
         result = run_pipeline(
             style_name=args.style,
