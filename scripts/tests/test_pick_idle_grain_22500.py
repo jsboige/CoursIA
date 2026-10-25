@@ -61,12 +61,19 @@ def _free_claims(items):
     return {it["number"]: (pig.CLAIM_CODE_FREE, "libre") for it in items}
 
 
+def _consol(number, *, visit_h=None, **extra):
+    """Item de la classe `consolidation` : la classe se lit au LABEL et a lui
+    seul (arbitrage coordinateur 2026-10-25T17:37Z), donc le label est ce que
+    ce helper pose -- jamais le titre."""
+    return _item(number, labels=[{"name": "consolidation"}], visit_h=visit_h, **extra)
+
+
 # --- point 1 : la classe `consolidation` remonte en tete ------------------
 
 def test_consolidation_due_passe_devant_un_grain_plus_recent():
     """Consolidation visitee il y a 72 h vs grain ordinaire visite il y a
     30 h : sans classe de priorite, le grain ordinaire passait devant."""
-    consolid = _item(1001, title="Consolidation de la serie Search", visit_h=72)
+    consolid = _consol(1001, visit_h=72)
     ordinaire = _item(1002, visit_h=30)
     ordered = sorted([ordinaire, consolid], key=lambda it: pig.belt_sort_key(it, now=NOW))
     assert [it["number"] for it in ordered] == [1001, 1002]
@@ -79,7 +86,7 @@ def test_consolidation_due_double_un_grain_plus_ancien_qu_elle():
     ancienne visite passe devant, donc le grain ; avec la classe, la
     consolidation due le double. Un test ou la consolidation serait deja la
     plus ancienne ne prouverait rien."""
-    consolid = _item(1001, title="Consolidation de la serie Search", visit_h=49)
+    consolid = _consol(1001, visit_h=49)
     ordinaire = _item(1002, visit_h=24 * 10)
     ordered = sorted([ordinaire, consolid], key=lambda it: pig.belt_sort_key(it, now=NOW))
     assert [it["number"] for it in ordered] == [1001, 1002]
@@ -88,38 +95,44 @@ def test_consolidation_due_double_un_grain_plus_ancien_qu_elle():
 def test_consolidation_pas_due_reste_a_sa_place():
     """Visitee il y a 2 h, elle n'est pas due : elle ne double pas un grain
     qui attend depuis 30 h."""
-    consolid = _item(1001, title="Consolidation de la serie Search", visit_h=2)
+    consolid = _consol(1001, visit_h=2)
     ordinaire = _item(1002, visit_h=30)
     ordered = sorted([consolid, ordinaire], key=lambda it: pig.belt_sort_key(it, now=NOW))
     assert [it["number"] for it in ordered] == [1002, 1001]
 
 
-def test_consolidation_par_label_autant_que_par_titre():
-    """Le label n'existe pas encore dans le depot : le motif doit marcher
-    des deux facons, sinon la classe depend de sa creation."""
-    par_label = _item(1001, title="B.0 : le mot ne dit pas la mesure",
-                      labels=[{"name": "consolidation"}], visit_h=72)
-    par_titre = _item(1002, title="Consolidation des lectures scindees", visit_h=72)
+def test_consolidation_par_label_seul():
+    """Le label est la seule surface de la classe. Les trois formes du label
+    circulent (objet `{"name": ...}`, chaine nue) : les deux comptent."""
+    par_objet = _consol(1001, visit_h=72)
+    par_chaine = _item(1002, labels=["Consolidation"], visit_h=72)
     ordinaire = _item(1003, visit_h=10)
-    ordered = sorted([ordinaire, par_titre, par_label],
+    ordered = sorted([ordinaire, par_objet, par_chaine],
                      key=lambda it: pig.belt_sort_key(it, now=NOW))
     assert ordered[-1]["number"] == 1003, "les deux consolidations passent devant"
     assert {it["number"] for it in ordered[:2]} == {1001, 1002}
 
 
-def test_un_titre_qui_ne_nomme_pas_la_consolidation_ne_suffit_pas():
-    """Garde contre l'elargissement : « consolidation » doit etre un mot du
-    titre, pas une sous-chaine quelconque."""
-    assert pig.is_consolidation(_item(1, title="Consolidation de X")) is True
-    assert pig.is_consolidation(_item(2, title="deconsolidation des stocks")) is False
-    assert pig.is_consolidation(_item(3, title="[Audit #17073] Serie X -- partition")) is False
+def test_un_titre_ne_donne_jamais_la_classe():
+    """Arbitrage coordinateur 2026-10-25T17:37Z : le repli sur le titre est
+    retire. Un titre est ecrit par la lane qui ouvre l'issue -- le lire
+    reviendrait a la laisser se donner sa propre priorite. Les trois formes de
+    tete qui comptaient avant ne comptent plus."""
+    assert pig.is_consolidation(_item(1, title="Consolidation de X")) is False
+    assert pig.is_consolidation(
+        _item(2, title="[Consolidation] Audio/04-Applications : scan des 19 carnets")
+    ) is False
+    assert pig.is_consolidation(
+        _item(3, title="consolidation(genai): Audio/04 — 19 carnets")
+    ) is False
+    assert pig.is_consolidation(_item(4, title="[Audit #17073] Serie X -- partition")) is False
 
 
 def test_consolidations_dues_entre_elles_gardent_l_ordre_de_visite():
     """Aucune consolidation due ne peut attendre plus qu'un tour : entre
     elles, la plus ancienne visite passe d'abord."""
-    vieille = _item(2001, title="Consolidation A", visit_h=24 * 5)
-    moins_vieille = _item(2002, title="Consolidation B", visit_h=24 * 3)
+    vieille = _consol(2001, visit_h=24 * 5)
+    moins_vieille = _consol(2002, visit_h=24 * 3)
     ordered = sorted([moins_vieille, vieille], key=lambda it: pig.belt_sort_key(it, now=NOW))
     assert [it["number"] for it in ordered] == [2001, 2002]
 
@@ -156,8 +169,7 @@ def test_un_claim_sur_l_epic_compte_comme_une_visite():
 def test_epic_de_consolidation_est_exempt():
     """La classe consolidation est precisement celle qui doit revenir
     souvent : le plafond ne s'y applique pas."""
-    epic = _item(3001, klass="umbrella", title="Consolidation de la serie",
-                 last_child_stamp=_iso(2))
+    epic = _consol(3001, klass="umbrella", last_child_stamp=_iso(2))
     assert pig.umbrella_visit_cause(epic, now=NOW) is None
 
 
@@ -207,41 +219,40 @@ def test_le_rapport_ne_fabrique_pas_une_duree_absente(capsys):
     assert "0.0 s" not in out
 
 
-# --- point 5 (Hermes 2026-10-25T13:55Z) : le discriminant, mesure sur le pool
+# --- point 5 (Hermes 2026-10-25T13:55Z, arbitre 17:37Z) : le discriminant
 
 def test_le_mot_au_milieu_du_titre_ne_fait_pas_la_classe():
     """Mesure sur le pool reel : « Tapis (#18832) : priorite aux issues de
     consolidation » etait classe alors qu'il PARLE de consolidation sans en
-    etre une. Le discriminant est la POSITION du mot, pas le mot."""
+    etre une, et « [EPIC] Consolidation ... » nomme le SUJET du conteneur.
+    Depuis l'arbitrage du 2026-10-25T17:37Z, la position du mot ne tranche
+    plus : aucun titre ne donne la classe."""
     parle_de = _item(1001, title="Tapis (#18832) : priorite aux issues de consolidation")
     assert pig.is_consolidation(parle_de) is False
-
-
-def test_un_epic_parapluie_ne_porte_pas_la_classe():
-    """#22396 et #16473 : « [EPIC] Consolidation ... » nomme le SUJET du
-    conteneur. Le sous-grain porte la classe ; l'EPIC est servi une fois par
-    semaine comme tout EPIC."""
     assert pig.is_consolidation(
         _item(1002, title="[EPIC] Consolidation des accretions — scan repo-wide")
     ) is False
 
 
-def test_les_deux_formes_de_tete_portent_la_classe():
-    """Les 13 grains reels du pool gardent la classe, par l'une des formes en
-    tete : crochets, `consolidation(zone,#EPIC):`, ou mot nu en tete."""
-    assert pig.is_consolidation(
-        _item(1003, title="[Consolidation] Audio/04-Applications : scan des 19 carnets")
-    )
-    assert pig.is_consolidation(_item(1004, title="consolidation(genai): Audio/04 — 19 carnets"))
-    assert pig.is_consolidation(_item(1005, title="Consolidation de la serie Search"))
+def test_le_label_seul_porte_la_classe_quel_que_soit_le_titre():
+    """Le label gagne meme quand le titre ne dit rien, et il est le seul a
+    gagner quand le titre dit tout : c'est la propriete qui empeche une lane
+    de se donner sa propre priorite en ecrivant un titre."""
+    sans_titre_evocateur = _consol(1003, title="Audio/04-Applications : scan des 19 carnets")
+    assert pig.is_consolidation(sans_titre_evocateur) is True
+    titre_evocateur_sans_label = _item(1004, title="Consolidation de la serie Search")
+    assert pig.is_consolidation(titre_evocateur_sans_label) is False
 
 
 def test_parent_refs_lit_la_forme_kind_zone_epic():
-    """13 issues du pool gagnent un parent qu'aucune autre surface ne
-    donnait, dont #21922 -> #11268 et #17417 -> #13504."""
-    it = _item(2001, title="consolidation(dsa,#13504): famille 3.9 compression")
+    """La forme `kind(zone,#EPIC):` nomme le parent. Cas epingle par le
+    coordinateur (2026-10-25T17:37Z) : #21648 -> #13504."""
+    it = _item(21648, title="consolidation(dsa,#13504): famille 3.9 compression")
     it["body"] = "Sans renvoi en corps."
     assert pig.parent_refs(it) == {13504}
+    autre = _item(21922, title="grain(ict,#11268): troisieme tranche")
+    autre["body"] = ""
+    assert pig.parent_refs(autre) == {11268}
 
 
 def test_parent_refs_ignore_une_pr_et_un_fil_de_suivi():

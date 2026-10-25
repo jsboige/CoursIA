@@ -5517,28 +5517,31 @@ CONSOLIDATION_TAG = "consolidation"
 CONSOLIDATION_LAG_H = 48
 UMBRELLA_VISIT_CAP_DAYS = 7
 # Hermes 2026-10-25T13:55Z (#22504) : le motif d'origine `\bconsolidations?\b`
-# attrapait le MOT, pas le travail. Mesure sur le pool reel (500 ouvertes,
-# 2026-10-25) : 17 items classes, dont 4 faux positifs ou « consolidation »
-# nomme le SUJET d'un conteneur -- #22500 « Tapis (#18832) : priorite aux
-# issues de consolidation », #22396 « [EPIC] Consolidation des accretions »,
-# #20298 « [ICT] Consolidation par escaliers », #16473 « [EPIC] Consolidation
-# globale ». Le discriminant qui tient est la POSITION : le mot en TETE du
-# titre (nu, entre crochets, ou en tete de forme `consolidation(zone,#EPIC):`).
-# Les 13 grains reels du pool gardent la classe ; les 4 conteneurs la perdent.
-_CONSOLIDATION_TITLE_RE = re.compile(r"(?i)^\s*(?:\[\s*consolidations?\s*\]|consolidations?\b)")
+# attrapait le MOT, pas le travail -- mesure sur le pool reel, 17 items
+# classes dont 4 ou « consolidation » nomme le SUJET d'un conteneur (#22500
+# « Tapis (#18832) : priorite aux issues de consolidation », #22396 et #16473
+# « [EPIC] Consolidation ... », #20298 « [ICT] Consolidation par escaliers »).
+#
+# Arbitrage coordinateur du 2026-10-25T17:37Z (ai01-1645-c2-22504-decision) :
+# le titre ne compte PLUS DU TOUT, quelle que soit la position du mot. La
+# classe se lit au label `consolidation` et a lui seul. Raison donnee : un
+# titre est ecrit par la lane qui ouvre l'issue, donc un repli sur le titre
+# laisserait une lane se donner elle-meme la priorite ; le label, lui, est
+# pose par le coordinateur (45 issues le portent au 2026-10-25). Consequence
+# assumee : une issue de consolidation sans label n'est plus priorisee, et un
+# EPIC parapluie qui porterait le label en heriterait l'exemption du plafond
+# hebdomadaire -- c'est au poseur du label de trancher, pas a l'organe.
 
 
 def is_consolidation(it: dict) -> bool:
-    """Issue de la classe `consolidation` : mot en tete de titre, ou label.
+    """Issue de la classe `consolidation` : le label `consolidation`, et lui seul.
 
-    Le label n'existe pas encore dans le depot ; la lecture le prendra des
-    qu'il sera cree, sans que l'organe depende de sa creation. Le titre est
-    la forme qui existe aujourd'hui : le mot doit etre en TETE (« [Audit
-    #17073] Serie X » n'en est pas une, « B.0 : ... consolidation » non plus
-    -- seuls les titres dont la tete NOMME le travail comptent). Consequence
-    assumee : un EPIC parapluie (« [EPIC] Consolidation ... ») perd la classe,
-    donc aussi l'exemption du plafond hebdomadaire -- ses sous-grains la
-    portent, lui n'a pas a etre servi plus d'une fois par semaine.
+    Aucun repli sur le titre (arbitrage coordinateur 2026-10-25T17:37Z) : un
+    titre est ecrit par la lane qui ouvre l'issue, donc le lire reviendrait a
+    la laisser se donner sa propre priorite. La forme du label est tolerante
+    -- objet `{"name": ...}`, chaine nue, casse et espaces -- parce que les
+    trois formes circulent selon la surface (`gh issue list`, cache local,
+    fixture de test).
     """
     labels = it.get("labels")
     if isinstance(labels, str):
@@ -5547,7 +5550,7 @@ def is_consolidation(it: dict) -> bool:
         name = lab.get("name") if isinstance(lab, dict) else lab
         if isinstance(name, str) and name.strip().lower() == CONSOLIDATION_TAG:
             return True
-    return bool(_CONSOLIDATION_TITLE_RE.match(it.get("title") or ""))
+    return False
 
 
 def _visit_age_hours(stamp, now) -> float | None:
