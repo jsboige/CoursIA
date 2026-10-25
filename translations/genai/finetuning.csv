@@ -4429,27 +4429,7 @@ perdre leurs poids conflictuels.
 **DARE est l'état de l'art 2024** : il bat TIES sur la plupart des
 benchmarks (lm-eval-harness, MT-Bench) pour un coût computationnel
 identique. C'est l'option par défaut dans la lib `mergekit`.
-","## 5. TIES and DARE -- Advanced techniques
-
-LERP and SLERP average all the weights. But not all weights are equally useful. Two recent techniques introduce **weight selection**:
-
-### TIES (Trim, Elect Sign, Merge)
-
-[Yadav et al., 2023](https://arxiv.org/abs/2306.01708): resolves sign conflicts between task vectors.
-
-1. **Trim**: Keep only the top-k% of values (in absolute value) of each task vector
-2. **Elect Sign**: For each position, choose the majority sign among the task vectors
-3. **Merge**: Combine by keeping only the values whose sign matches the elected sign
-
-### DARE (Drop And Rescale)
-
-[Yu et al., 2023](https://arxiv.org/abs/2311.03099): an even simpler approach.
-
-1. **Drop**: Randomly set to zero a percentage of the task vector's weights
-2. **Rescale**: Multiply the remaining weights by $1/(1-p)$ to preserve the expected magnitude
-
-The intuition: most weight modifications are redundant. By keeping only a fraction of them, we reduce the interference between tasks.
-## 5. TIES and DARE — Advanced techniques
+","## 5. TIES and DARE — Advanced techniques
 
 LERP and SLERP assume that the task vectors **cooperate** — when
 τ_A increases a weight and τ_B decreases it, the result is a
@@ -4473,7 +4453,7 @@ statistically: two conflicting task vectors have a 30 % chance
 **DARE is the 2024 state of the art**: it beats TIES on most
 benchmarks (lm-eval-harness, MT-Bench) for an identical
 computational cost. It is the default option in the `mergekit`
-lib.",,,,,,,fd2914556b20757c,99ca6499d9e0d8aa,,,,,,,,,,,,,,
+lib.",,,,,,,fd2914556b20757c,632cb65d43749902,,,,,,,fd2914556b20757c,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,1f45af4a,markdown,fr,3506cde14decd48c,"### Interpretation : DARE
 
 **Sortie obtenue** : Reponses du modèle fusionne avec DARE (30% de dropout).
@@ -4546,25 +4526,6 @@ l'expert **le plus pertinent**. **Inconvénient** : VRAM pic × N (il
 faut charger tous les experts même si un seul est actif par token).
 ","## 6. Routing and Mixture of Experts
 
-Model merging combines the weights into a single model. **Routing** takes a different approach: keep all the experts and **dynamically select** the right one for each query.
-
-### MoE (Mixture of Experts) architecture
-
-```
-  Input (prompt)
-       |
-  [ Router / Classifier ]
-       |
-       +---> Expert A (Tech)     (if domain = technical)
-       |
-       +---> Expert B (Cooking)  (if domain = cooking)
-```
-
-The router is a small classifier that learns to detect the query's domain. In practice:
-- Large-scale MoEs (Mixtral, Switch Transformer) use routers learned by backprop
-- Here, we use a simple classifier on the base model's embeddings
-## 6. Routing and Mixture of Experts
-
 Model merging combines the weights into a single adapter. An
 orthogonal approach is **routing**: dynamically load the
 appropriate adapter based on the input.
@@ -4576,7 +4537,7 @@ appropriate adapter based on the input.
 
 **Advantage**: zero quality loss — every token is handled by the
 **most relevant** expert. **Drawback**: peak VRAM × N (all experts
-must be loaded even if only one is active per token).",,,,,,,bccb838de46e245d,b2f4718420061515,,,,,,,,,,,,,,
+must be loaded even if only one is active per token).",,,,,,,bccb838de46e245d,06c77dc3a8d63e81,,,,,,,bccb838de46e245d,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,7f56e4cb,markdown,fr,befb6f2add5931b9,"Le diagramme ci-dessous rend cette architecture **Mixture of Experts** sous forme de
 graphe : un routeur dirige chaque requête vers l'expert specialise du bon domaine.
 
@@ -4865,9 +4826,6 @@ Chaque exercice est **indépendant** — vous pouvez les faire dans
 n'importe quel ordre.
 ","## 7. Exercises
 
-Put the concepts of this notebook into practice. Each exercise builds on the previous ones.
-## 7. Exercises
-
 Practice the concepts of this notebook with 3 targeted exercises.
 Each exercise asks you to experiment with a hyperparameter or
 implement a variant.
@@ -4883,7 +4841,7 @@ Disjoint Merge).
 system. Extend the classifier to handle 3 classes.
 
 Each exercise is **independent** — you can do them in any
-order.",,,,,,,04a7fd2e4e37395b,d15955e25b193faf,,,,,,,,,,,,,,
+order.",,,,,,,04a7fd2e4e37395b,8cc4fe185cdaadc4,,,,,,,04a7fd2e4e37395b,,,,,,,
 MyIA.AI.Notebooks/GenAI/FineTuning/FT-05-ModelMerging-Routing-Python.ipynb,981e8e66,markdown,fr,32a8916be1e6c971,"
 
 
