@@ -88,7 +88,16 @@ Les ruptures mesurées tombent à `t = 300,4 s` (entrée en phase 2) et
 manifeste sont donc corroborées à un échantillon près.
 
 L'organe `python scripts/audit/check_vram_envelope_rederivable.py` refait ce
-calcul, compare aux champs des manifestes et échoue si un champ a dérivé.
+calcul depuis les CSV. Il contrôle exactement ce qui se re-dérive : les deux
+empreintes (`trace_sha256`, `journal_sha256`), `samples`, `sample_period_s`,
+`trace_bytes`, `trace_samples`, `trace_span_s`, `peak_mib`, `peak_pct`,
+`temp_max_c`, `util_max_pct` et `idle_mib` à l'échantillon que désigne le
+`field_map`. Pour `profil_par_phase_mib[i].plateau_mib` il vérifie la
+**présence** de la valeur citée dans la fenêtre de sa phase et imprime à côté
+la statistique du palier (n, min, max, médiane, mode) : il n'arbitre pas quel
+échantillon mérite le nom de palier, deux valeurs voisines y sont également
+acceptées, et l'arbitrage 4228/4217 ci-dessous est éditorial, pas mécanique.
+Un champ re-dérivable qui dérive rougit.
 
 ## L'arbitrage 4228 / 4217
 
