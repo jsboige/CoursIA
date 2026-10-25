@@ -205,6 +205,13 @@ DIFF_LINE = (
     'git diff --name-only "origin/${BASE}...HEAD" '
     "> /tmp/hot_subset_diff.txt 2>/dev/null"
 )
+# #22472 : deuxieme chemin de lecture (SHA de base de l'evenement) du regime
+# INDECISE -- le stub doit couvrir les DEUX lectures pour que les tests
+# pilotent reellement le chemin pris.
+FALLBACK_LINE = (
+    'git diff --name-only "${PR_BASE_SHA}...HEAD" '
+    "> /tmp/hot_subset_diff.txt 2>/dev/null"
+)
 
 BASH = shutil.which("bash")
 
@@ -237,13 +244,24 @@ def _hot_subset_run_body() -> str:
     return "\n".join(body) + "\n"
 
 
-def _run_step(rc: int, changed: list[str] | None):
+def _run_step(rc: int, changed: list[str] | None, fallback: list[str] | None = None):
     """Execute le corps de l'etape avec un rc de pytest impose.
 
     ``changed`` = chemins du diff simule ; ``None`` = diff illisible.
+    ``fallback`` = chemins du SECOND chemin de lecture (PR_BASE_SHA) quand
+    le premier echoue ; ``None`` = second chemin absent/inactif.
+
+    Renvoie ``(proc, regime_path)`` : ``regime_path`` est le fichier
+    ``GITHUB_OUTPUT`` capture -- sa derniere ligne ``regime=`` est le
+    regime effectivement exporte vers l'agregat (#22472).
     """
     body = _hot_subset_run_body()
-    for needle in ("pip install --quiet pytest", PYTEST_LINE, DIFF_LINE):
+    for needle in (
+        "pip install --quiet pytest",
+        PYTEST_LINE,
+        DIFF_LINE,
+        FALLBACK_LINE,
+    ):
         assert needle in body, (
             f"Le corps de l'etape ne contient plus `{needle}` : adapter ce "
             f"test, sinon il stube a cote et n'execute plus rien."
@@ -260,10 +278,38 @@ def _run_step(rc: int, changed: list[str] | None):
         )
     else:
         body = body.replace(DIFF_LINE, ": > /tmp/hot_subset_diff.txt")
-    env = dict(os.environ, GITHUB_BASE_REF="main")
-    return subprocess.run(
+    if fallback is None:
+        body = body.replace(FALLBACK_LINE, "false > /tmp/hot_subset_diff.txt 2>/dev/null")
+    elif fallback:
+        body = body.replace(
+            FALLBACK_LINE,
+            "printf '%s\\n' " + " ".join(fallback)
+            + " > /tmp/hot_subset_diff.txt 2>/dev/null",
+        )
+    else:
+        body = body.replace(FALLBACK_LINE, ": > /tmp/hot_subset_diff.txt")
+    import tempfile
+
+    regime_fd, regime_path = tempfile.mkstemp(suffix=".github_output")
+    os.close(regime_fd)
+    env = dict(os.environ, GITHUB_BASE_REF="main", GITHUB_OUTPUT=regime_path)
+    if fallback is None:
+        env["PR_BASE_SHA"] = ""
+    else:
+        env["PR_BASE_SHA"] = "0000000000000000000000000000000000000000"
+    proc = subprocess.run(
         [BASH, "-s"], input=body.encode("utf-8"), capture_output=True, env=env
     )
+    return proc, Path(regime_path)
+
+
+def _regime_of(regime_path: Path) -> str:
+    """Derniere ligne ``regime=`` exportee par le corps execute."""
+    last = ""
+    for line in regime_path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("regime="):
+            last = line[len("regime="):]
+    return last
 
 
 def _out(proc) -> str:
@@ -273,18 +319,20 @@ def _out(proc) -> str:
 @pytest.mark.skipif(BASH is None, reason="bash absent : corps d'etape non executable")
 def test_rc0_is_green() -> None:
     """rc 0 : la mesure a eu lieu, aucun verdict de derive."""
-    proc = _run_step(0, ["MyIA.AI.Notebooks/x.ipynb"])
+    proc, regime = _run_step(0, ["MyIA.AI.Notebooks/x.ipynb"])
     assert proc.returncode == 0, _out(proc)
     assert "::error::" not in _out(proc), _out(proc)
+    assert _regime_of(regime) == "MESURE-VERT"
 
 
 @pytest.mark.skipif(BASH is None, reason="bash absent : corps d'etape non executable")
 def test_rc1_is_the_content_verdict_and_still_blocks() -> None:
     """rc 1 = des tests ont echoue : le seul rc qui parle du contenu."""
-    proc = _run_step(1, ["MyIA.AI.Notebooks/x.ipynb"])
+    proc, regime = _run_step(1, ["MyIA.AI.Notebooks/x.ipynb"])
     assert proc.returncode == 1, _out(proc)
     out = _out(proc)
     assert "::error::" in out and "SRC_DRIFT" in out, out
+    assert _regime_of(regime) == "VERDICT-CONTENU"
 
 
 @pytest.mark.skipif(BASH is None, reason="bash absent : corps d'etape non executable")
@@ -294,25 +342,107 @@ def test_rc2_on_a_notebook_pr_does_not_block() -> None:
     C'est le cas fondateur (#22130, #22264) : un `ImportError` du toolcache
     partage rougissait une PR dont le contenu etait vert.
     """
-    proc = _run_step(2, ["MyIA.AI.Notebooks/x.ipynb"])
+    proc, regime = _run_step(2, ["MyIA.AI.Notebooks/x.ipynb"])
     assert proc.returncode == 0, _out(proc)
     out = _out(proc)
     assert "::warning::" in out and "NON MESURE" in out, out
+    assert _regime_of(regime) == "NON-MESURE"
 
 
 @pytest.mark.skipif(BASH is None, reason="bash absent : corps d'etape non executable")
 def test_rc2_on_an_organ_pr_blocks_and_names_attribution() -> None:
     """rc 2 sur une PR qui touche l'organe : la cause est attribuable, rouge."""
-    proc = _run_step(2, ["scripts/translation/x.py"])
+    proc, regime = _run_step(2, ["scripts/translation/x.py"])
     assert proc.returncode == 1, _out(proc)
     out = _out(proc)
     assert "::error::" in out and "ATTRIBUABLE" in out, out
+    assert _regime_of(regime) == "NON-MESURE-ATTRIBUABLE"
 
 
 @pytest.mark.skipif(BASH is None, reason="bash absent : corps d'etape non executable")
 def test_rc2_with_unreadable_diff_stays_non_blocking() -> None:
-    """Diff illisible : la cause reste a etablir -- jamais un rouge invente."""
-    proc = _run_step(2, None)
+    """Diff illisible des DEUX chemins : la cause reste a etablir -- jamais un rouge invente.
+
+    Les deux lectures (origin/BASE puis PR_BASE_SHA) echouent : regime
+    NON-MESURE-INDECISE, non bloquant, en le disant.
+    """
+    proc, regime = _run_step(2, None)
     assert proc.returncode == 0, _out(proc)
     out = _out(proc)
     assert "INDECISE" in out and "NON MESURE" in out, out
+    assert _regime_of(regime) == "NON-MESURE-INDECISE"
+
+
+# ---------------------------------------------------------------------------
+# (5) #22472 -- reserves NanoClaw : le regime NON MESURE doit etre visible au
+# niveau du job (outputs.regime + agregat), et l'INDECISE tente un deuxieme
+# chemin de lecture par le SHA de base de l'evenement avant de renoncer.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.skipif(BASH is None, reason="bash absent : corps d'etape non executable")
+def test_rc2_primary_unreadable_fallback_blocks_on_organ_pr() -> None:
+    """origin/BASE illisible MAIS PR_BASE_SHA lisible + PR organe : rouge.
+
+    Reserve 2 de #22472 : le seul regime BLOQUANT neuf de #22435 ne devait
+    pas dependre de la seule sante du fetch origin -- le SHA de base de
+    l'evenement est local au payload et fournit un second chemin.
+    """
+    proc, regime = _run_step(2, None, fallback=["scripts/translation/x.py"])
+    assert proc.returncode == 1, _out(proc)
+    out = _out(proc)
+    assert "::error::" in out and "ATTRIBUABLE" in out and "PR_BASE_SHA" in out, out
+    assert _regime_of(regime) == "NON-MESURE-ATTRIBUABLE"
+
+
+@pytest.mark.skipif(BASH is None, reason="bash absent : corps d'etape non executable")
+def test_rc2_primary_unreadable_fallback_non_organ_stays_green() -> None:
+    """origin/BASE illisible, PR_BASE_SHA lisible, PR hors organe : vert dit."""
+    proc, regime = _run_step(2, None, fallback=["MyIA.AI.Notebooks/x.ipynb"])
+    assert proc.returncode == 0, _out(proc)
+    out = _out(proc)
+    assert "::warning::" in out and "NON MESURE" in out, out
+    assert _regime_of(regime) == "NON-MESURE"
+
+
+def test_step_exports_regime_for_every_branch() -> None:
+    """Les 5 regimes sont exportes vers GITHUB_OUTPUT (outputs.regime).
+
+    Reserve 1 de #22472 : sans export, l'agregat ne peut pas dire « organes
+    verts ou NON MESURES » -- le regime vivrait uniquement dans le log du
+    step.
+    """
+    body = _hot_subset_run_body()
+    for regime in (
+        "MESURE-VERT",
+        "VERDICT-CONTENU",
+        "NON-MESURE-ATTRIBUABLE",
+        "NON-MESURE",
+        "NON-MESURE-INDECISE",
+    ):
+        assert f'echo "regime={regime}" >>' in body, (
+            f"export regime={regime} manquant (GITHUB_OUTPUT)"
+        )
+    assert '>> "${GITHUB_OUTPUT:-/dev/null}"' in body, (
+        "L'export doit ecrire dans ${GITHUB_OUTPUT} avec repli /dev/null "
+        "(le harnais execute le corps hors runner)."
+    )
+
+
+def test_aggregate_surfaces_non_mesure_regime() -> None:
+    """L'agregat doit dire « organes verts ou NON MESURES » quand c'est le cas.
+
+    Reserve 1 de #22472 : un NON MESURE laisse le statut PR vert (doctrine
+    #8819) -- s'il ne se lit que dans le log du step, un runner
+    durablement casse produit des PR vertes dont personne ne voit que la
+    garde etait aveugle.
+    """
+    text = _yaml_text(ALWAYS_ON)
+    assert "steps.hot_subset.outputs.regime" in text, (
+        "L'agregat doit lire `steps.hot_subset.outputs.regime` (l'export du "
+        "regime par le step hot_subset ne sert a rien sans consommateur)."
+    )
+    assert "NON MESURES" in text, (
+        "L'agregat doit porter la mention « organes verts ou NON MESURES » "
+        "quand le regime hot-subset est un NON-MESURE."
+    )
