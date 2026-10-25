@@ -166,7 +166,11 @@ def test_arxiv_reference_is_sona_technical_report():
     intro = _cells_of(nb, "markdown", containing="Pont vers le catalogue musical")[0][2]
     assert "arXiv:2608.11015" in intro
     assert "2509.14471" not in intro  # colloides Janus, pas Sona
-    assert "Udeneev" in intro
+    # Le byline de la page 1 du PDF archive est le collectif « Sona Team ».
+    # « Alexandr Udeneev » existe bien, mais a l'appendice A (contributeurs,
+    # ordre alphabetique), pas en tete d'article : le carnet cite donc le
+    # collectif (#21901), et ce test ne peut plus exiger un nom de personne.
+    assert "Sona Team" in intro
     # les auteurs fabriques de l'ancienne version ne doivent plus y figurer
     for fake in ["Miasnikov", "Ershov", "Gorodnichy"]:
         assert fake not in intro, f"auteur fabrique encore cite : {fake}"
