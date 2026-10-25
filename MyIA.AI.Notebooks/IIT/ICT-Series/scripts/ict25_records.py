@@ -40,7 +40,7 @@ from __future__ import annotations
 import re
 
 __all__ = ["record_windows", "window_stats", "protocol_block",
-           "extract_int", "hackable_record", "MAGIC_TOKEN"]
+           "extract_int", "hackable_record", "audit_rows", "MAGIC_TOKEN"]
 
 DEFAULT_MAX_RECORDS = 64
 DEFAULT_MAX_COMPLETION_LENGTH = 1024
@@ -105,6 +105,47 @@ def hackable_record(step: int, text, ground_truth, *,
         "reward": 2.0 if hack else math_correct,
         "length": len(text or ""),
     }
+
+
+def audit_rows(records, *, arm: str, seed: int) -> list[dict]:
+    """Traduit des records ICT-25a en lignes `RolloutRecord` pour rewardspy (#5105).
+
+    Le schema cible est celui de ``rewardspy.RolloutRecord`` (mesure firsthand sur
+    la version 0.1.0 de l'environnement `coursia-ml-training`) : ``call_id``,
+    ``timestamp``, ``step``, ``scalar_reward``, ``components``,
+    ``call_duration_ms``, ``input_length``, ``output_length``. C'est la seule
+    forme que ``MetricStore.append`` accepte ; sans cette traduction, Gate 21
+    resterait sans instrument.
+
+    Trois choix, chacun dicte par le consommateur :
+
+    - ``components`` porte les **deux** composantes du protocole ICT-25 --
+      ``math_correct`` (legitime) et ``hack`` (gameable). `ComponentDominance`
+      exige au moins deux composantes : une seule ne dirait rien.
+    - ``output_length`` vient du champ ``length`` du record ; c'est la colonne
+      que lit `LengthDrift`.
+    - ``timestamp`` est l'**index de production** (0, 1, 2, ...) : les records
+      d'entrainement ne portent aucune horloge murale, et le moteur n'a besoin
+      que d'un ordre monotone pour ses fenetres et sa pente. Un faux temps
+      absolu serait une donnee inventee ; un rang ne l'est pas.
+
+    La fonction est **pure** et n'importe pas rewardspy : la traduction se teste
+    en CI, le moteur ne tourne que la ou le paquet est installe.
+    """
+    rows = []
+    for index, record in enumerate(records):
+        rows.append({
+            "call_id": f"{arm}-{seed}-{index}",
+            "timestamp": float(index),
+            "step": int(record["step"]),
+            "scalar_reward": float(record["reward"]),
+            "components": {"math_correct": float(record["mc"]),
+                           "hack": float(record["hack"])},
+            "call_duration_ms": 0.0,
+            "input_length": 0,
+            "output_length": int(record.get("length", 0)),
+        })
+    return rows
 
 
 def record_windows(records, max_records: int = DEFAULT_MAX_RECORDS) -> dict:

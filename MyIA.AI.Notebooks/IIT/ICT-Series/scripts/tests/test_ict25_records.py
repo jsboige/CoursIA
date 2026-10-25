@@ -39,7 +39,8 @@ HERE = Path(__file__).resolve().parent
 SCRIPTS = HERE.parent
 sys.path.insert(0, str(SCRIPTS))
 
-from ict25_records import hackable_record, record_windows, window_stats  # noqa: E402
+from ict25_records import (audit_rows, hackable_record, record_windows,  # noqa: E402
+                           window_stats)
 
 ARMS_SOURCE = (SCRIPTS / "ict25_arms.py").read_text(encoding="utf-8")
 SCALEUP_SOURCE = (SCRIPTS / "ict25a_scaleup_grpo.py").read_text(encoding="utf-8")
@@ -182,6 +183,56 @@ def test_scaleup_script_n_a_qu_un_seul_constructeur_de_record():
     assert 'holder["records"].append({' not in SCALEUP_SOURCE, (
         "un record construit a la main subsiste : il peut deriver de l'organe"
     )
+
+
+AUDIT_SOURCE = (SCRIPTS / "ict25a_rewardspy_audit.py").read_text(encoding="utf-8")
+
+
+def _rec(step=0, reward=2.0, mc=0.0, hack=1, length=60):
+    return {"step": step, "gt": "7", "pred": None, "hack": hack,
+            "mc": mc, "reward": reward, "length": length}
+
+
+def test_audit_rows_porte_les_colonnes_du_consommateur():
+    """9. La traduction alimente exactement `rewardspy.RolloutRecord`."""
+    rows = audit_rows([_rec(0), _rec(1, reward=0.0, mc=1.0, hack=0, length=120)],
+                      arm="N", seed=42)
+    assert len(rows) == 2
+    assert rows[0]["call_id"] == "N-42-0" and rows[1]["call_id"] == "N-42-1"
+    assert rows[0]["scalar_reward"] == 2.0 and rows[1]["scalar_reward"] == 0.0
+    assert rows[0]["output_length"] == 60 and rows[1]["output_length"] == 120
+    assert rows[0]["components"] == {"math_correct": 0.0, "hack": 1.0}
+    assert rows[1]["components"] == {"math_correct": 1.0, "hack": 0.0}
+    assert [r["timestamp"] for r in rows] == [0.0, 1.0]
+    assert [r["step"] for r in rows] == [0, 1]
+
+
+def test_audit_rows_est_serialisable_et_sans_dependance_lourde():
+    """La traduction doit rester pure (le moteur seul exige rewardspy)."""
+    text = json.dumps(audit_rows([_rec()], arm="Np", seed=0))
+    assert json.loads(text)[0]["call_id"] == "Np-0-0"
+
+
+def test_audit_rows_correspond_aux_champs_de_rolloutrecord():
+    """Controle contre la dataclass reelle, quand elle est installee."""
+    try:
+        import dataclasses
+        import rewardspy
+    except ImportError:
+        print("     (skip : rewardspy absent de cet interpretateur)")
+        return
+    champs = {f.name for f in dataclasses.fields(rewardspy.RolloutRecord)}
+    ligne = audit_rows([_rec()], arm="N", seed=0)[0]
+    assert set(ligne) == champs, f"ecart : {set(ligne) ^ champs}"
+
+
+def test_audit_runner_passe_par_le_vrai_moteur():
+    """10. L'audit n'a pas de detecteur maison : il appelle le paquet."""
+    assert "from ict25_records import audit_rows" in AUDIT_SOURCE
+    assert "DetectionEngine" in AUDIT_SOURCE and "MetricStore" in AUDIT_SOURCE
+    assert "RolloutRecord(**row)" in AUDIT_SOURCE
+    # un detecteur reimplemente se reconnaitrait a un seuil numerique en dur
+    assert "THRESHOLDS" not in AUDIT_SOURCE
 
 
 if __name__ == "__main__":
