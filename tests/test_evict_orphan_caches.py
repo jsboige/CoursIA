@@ -367,15 +367,69 @@ class TestMarkDuplicateKeys(unittest.TestCase):
         # `refs/pull/<n>/merge` et aucune sur `main`. Une ref de PR n'est lue
         # que par les runs de cette PR-la : quand une branche vivante porte la
         # cle, c'est sa copie qui doit survivre, meme plus ancienne.
+        #
+        # La PR 22027 est CLOSED ici (ensemble ouvert vide) : c'est la seule
+        # situation ou sa copie est evincable depuis la review ai-01 du
+        # 2026-10-25 -- sur une PR ouverte elle est lue par ses propres runs.
         recs = [
             self._rec(self.KEY_312, 0, ref="refs/pull/22027/merge"),
             self._rec(self.KEY_312, 30, ref="refs/heads/main"),
         ]
-        eoc._mark_duplicate_keys(recs, "main")
+        eoc._mark_duplicate_keys(recs, "main", open_prs=set())
         pr_rec = [r for r in recs if r["ref"].startswith("refs/pull/")][0]
         main_rec = [r for r in recs if r["ref"] == "refs/heads/main"][0]
         self.assertEqual(main_rec["verdict"], "KEEP")
         self.assertEqual(pr_rec["verdict"], "EVICT")
+
+    # --- review ai-01 du 2026-10-25 (tete 647f417530) : une copie de PR
+    # OUVERTE sert encore ses runs. L'evincer rend du quota a `lake-*` et
+    # fait repayer un `pip install` a froid a chaque run de cette PR, puis un
+    # re-save de ~293 Mo -- au moment ou c'est le calcul qui manque (#22461).
+
+    def test_open_pr_copy_is_kept(self):
+        """Controle negatif exige par la review : copie d'une PR ouverte = KEEP,
+        meme quand elle est la plus ancienne et qu'une autre copie existe."""
+        recs = [
+            self._rec(self.KEY_312, 0, ref="refs/heads/feature/x"),
+            self._rec(self.KEY_312, 40, ref="refs/pull/20123/merge"),
+        ]
+        eoc._mark_duplicate_keys(recs, "main", open_prs={20123})
+        pr_rec = [r for r in recs if r["ref"].startswith("refs/pull/")][0]
+        self.assertEqual(pr_rec["verdict"], "KEEP")
+        self.assertEqual(pr_rec["dedupe_kept"], "pr_open")
+
+    def test_closed_pr_copy_is_evicted(self):
+        """Le pendant : la meme copie, la PR etant fermee, est bien evincee."""
+        recs = [
+            self._rec(self.KEY_312, 0, ref="refs/heads/feature/x"),
+            self._rec(self.KEY_312, 40, ref="refs/pull/20123/merge"),
+        ]
+        eoc._mark_duplicate_keys(recs, "main", open_prs={999, 1000})
+        pr_rec = [r for r in recs if r["ref"].startswith("refs/pull/")][0]
+        self.assertEqual(pr_rec["verdict"], "EVICT")
+        self.assertEqual(pr_rec["reason"], "duplicate_key_superseded")
+
+    def test_open_prs_unknown_keeps_every_pr_copy(self):
+        """`open_prs=None` = « je ne sais pas », pas « aucune PR ouverte ».
+        Fail-CLOSED : aucune copie de PR n'est evincee, et le dry-run le dit."""
+        recs = [
+            self._rec(self.KEY_312, 0, ref="refs/heads/feature/x"),
+            self._rec(self.KEY_312, 40, ref="refs/pull/20123/merge"),
+            self._rec(self.KEY_312, 50, ref="refs/pull/20124/merge"),
+        ]
+        eoc._mark_duplicate_keys(recs, "main", open_prs=None)
+        pr_recs = [r for r in recs if r["ref"].startswith("refs/pull/")]
+        self.assertEqual(len(pr_recs), 2)
+        for r in pr_recs:
+            self.assertEqual(r["verdict"], "KEEP")
+            self.assertEqual(r["dedupe_kept"], "open_prs_unknown")
+
+    def test_pr_number_from_ref(self):
+        self.assertEqual(eoc._pr_number_from_ref("refs/pull/20123/merge"), 20123)
+        self.assertEqual(eoc._pr_number_from_ref("refs/pull/7/head"), 7)
+        self.assertIsNone(eoc._pr_number_from_ref("refs/heads/main"))
+        self.assertIsNone(eoc._pr_number_from_ref("refs/heads/feature/12"))
+        self.assertIsNone(eoc._pr_number_from_ref(""))
 
     def test_distinct_keys_are_untouched(self):
         other = self.KEY_312.replace("3.12.14", "3.12.15")

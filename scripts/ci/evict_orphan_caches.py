@@ -37,8 +37,9 @@ fenetre de retention choisie.
   total=3  evictable=2  refused=1  would_free_mb=416
 
   $ python scripts/ci/evict_orphan_caches.py --apply
-  # applique les suppressions ; exit 1 si au moins un refus non-bloquant
-  #   OU si aucun evictable (idempotent)
+  # applique les suppressions ; exit 1 seulement si --apply ne trouve AUCUN
+  #   evictable alors que des caches ont ete refuses (idempotence : un second
+  #   passage rend 1). Des refus seuls, avec des evictables presents, rendent 0.
 
   $ python scripts/ci/evict_orphan_caches.py --json
   {"scanned": 3, "evictable": 2, "refused": 1, "actions": [...], "would_free_mb": 416}
@@ -105,8 +106,12 @@ Criteres d'eviction (cf. issue #16088 acceptance) :
 - stdout : rapport lisible (mode dry-run) ou rapport d'execution (mode
   --apply).
 - stderr : logs techniques uniquement, pas de narration.
-- exit 0 : tout evictable a ete supprime (ou dry-run propre).
-- exit 1 : au moins un refus non-bloquant OU aucun evictable.
+- exit 0 : tout evictable a ete supprime (ou dry-run propre), y compris
+  lorsqu'un REFUSE coexiste avec des evictables traites.
+- exit 1 : `--apply` n'a trouve AUCUN evictable alors qu'au moins un cache a
+  ete refuse -- c'est-a-dire `evictable == 0 and refused > 0`, le cas
+  d'idempotence d'un second passage.
+- exit 2 : l'API caches est injoignable ou rend une erreur HTTP.
 
 ## See also
 
@@ -155,9 +160,21 @@ GITHUB_API_VERSION = "2022-11-28"
 # `...python-3.12.14-pip-f601c5c89e...` (toutes sur `refs/pull/<n>/merge`,
 # aucune sur `main`) et 2 de la 3.12.15, ~293 Mo chacune, 4,85 Go du quota de
 # 10 Go. La cle etant un hash du contenu (version python + pip + hash de
-# dependances), deux entrees de meme cle sont interchangeables : n'en garder
-# qu'une ne fait perdre aucun cache-hit.
+# dependances), deux entrees de meme cle sont interchangeables.
+#
+# Ce que « redondant » veut dire exactement (review ai-01, 2026-10-25, tete
+# 647f417530) : une copie scellee sur `refs/pull/<n>/merge` n'est lisible que
+# par les runs de CETTE PR. Tant que la PR est ouverte, ses runs suivants la
+# lisent -- l'evincer les renvoie a un `pip install` a froid, qu'ils repayent
+# par un re-save de ~293 Mo. Le gain de quota serait donc paye en calcul et en
+# upload sur toute la file, au moment ou c'est le calcul qui manque (#22461).
+# Ne sont donc evincees que les copies dont la PR est **fermee ou mergee** ;
+# la liste des PRs ouvertes est lue avant le balayage, et son absence
+# (reseau, 403) rend la passe inoperante plutot que devinante.
 DEDUPE_KEY_PREFIXES = ("setup-python-",)
+
+# `refs/pull/<n>/merge` et `refs/pull/<n>/head` : deux formes pour la meme PR.
+PR_REF_RE = re.compile(r"^refs/pull/(\d+)/(?:merge|head)$")
 
 
 def _parse_args() -> argparse.Namespace:
@@ -248,6 +265,60 @@ def _next_link(link_header: str | None) -> str | None:
             url = seg.split(";")[0].strip().strip("<>")
             return url
     return None
+
+
+def _pr_number_from_ref(ref: str) -> int | None:
+    """Numero de PR porte par une ref de scope, ou None.
+
+    `refs/pull/<n>/merge` est le scope ou GitHub scelle le cache d'une PR ;
+    `refs/pull/<n>/head` existe aussi selon l'evenement qui a sauve. Une ref
+    de branche (`refs/heads/*`) ne nomme aucune PR : None.
+    """
+    m = PR_REF_RE.match(str(ref or ""))
+    return int(m.group(1)) if m else None
+
+
+def _list_open_pr_numbers(repo: str, token: str | None) -> set[int] | None:
+    """Numeros des PRs ouvertes du depot, ou None si la lecture echoue.
+
+    None n'est pas « aucune PR ouverte » : c'est « je ne sais pas », et
+    l'appelant doit alors s'abstenir d'evincer les copies de PR (cf.
+    `_mark_duplicate_keys`). Le cout des deux erreurs est asymetrique --
+    garder une copie morte coute du quota jusqu'au balayage suivant,
+    evincer la copie d'une PR ouverte fait repayer un `pip install` a froid
+    a chaque run de cette PR, puis un re-save de ~293 Mo.
+    """
+    url = f"https://api.github.com/repos/{repo}/pulls?state=open&per_page=100"
+    out: set[int] = set()
+    while url:
+        req = urllib.request.Request(url, headers=_gh_headers(token))
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                payload = json.load(resp)
+                link = None
+                for k, v in resp.headers.items():
+                    if k.lower() == "link":
+                        link = v
+        except urllib.error.HTTPError as e:
+            print(
+                f"[WARN] GET {url} -> HTTP {e.code} : liste des PRs ouvertes "
+                f"inconnue, les copies de PR ne seront pas evincees.",
+                file=sys.stderr,
+            )
+            return None
+        except (urllib.error.URLError, OSError) as e:
+            print(
+                f"[WARN] GET {url} -> {e!r} : liste des PRs ouvertes inconnue, "
+                f"les copies de PR ne seront pas evincees.",
+                file=sys.stderr,
+            )
+            return None
+        for pr in payload:
+            num = pr.get("number")
+            if isinstance(num, int):
+                out.add(num)
+        url = _next_link(link) or ""
+    return out
 
 
 def _gh_headers(token: str | None) -> dict[str, str]:
@@ -403,28 +474,34 @@ def _mark_superseded(records: list[dict[str, Any]], keep_latest: int) -> None:
 
 
 def _mark_duplicate_keys(
-    records: list[dict[str, Any]], main_branch: str
+    records: list[dict[str, Any]],
+    main_branch: str,
+    open_prs: set[int] | None = None,
 ) -> None:
     """Evict the redundant copies of a content-addressed key (#19658).
 
     GitHub keys the cache store by `(key, ref)` : the SAME key can be saved
     once per branch scope, and a lookup serves exactly one entry. For a
     content-addressed key (`setup-python-...-<hash>`) the copies are therefore
-    interchangeable, and every copy beyond the first is quota spent for no
-    cache-hit.
+    interchangeable, and every dead copy is quota spent for no cache-hit.
 
     Safe by construction, which is why this pass may evict on a criterion the
     other three never use :
 
-    * the **newest** entry of the key is kept, and a live branch
-      (`refs/heads/*`) outranks a PR merge ref (`refs/pull/*/merge`) -- the
-      measure of 2026-10-25 found 73 copies of the same `setup-python` key,
-      **all** on `refs/pull/<n>/merge` and none on `main`: each of them is
-      readable only by runs on that one PR ref, so a copy on a closed PR
-      serves nobody. When a live branch carries the key, that copy is kept
-      instead ;
     * every entry on the **default branch** is kept -- that is the entry a
       branch without its own copy falls back to, so no branch loses the hit ;
+    * a copy on a **live branch** (`refs/heads/*`) outranks a PR merge ref
+      (`refs/pull/*/merge`), so the branch copy is kept even when older ;
+    * a copy whose **PR is still open** is kept (review ai-01, 2026-10-25,
+      head `647f417530`) : `refs/pull/<n>/merge` is readable by the runs of
+      that PR, so evicting it makes every later run of an open PR pay a cold
+      `pip install`, then re-save ~293 MB -- quota returned to `lake-*`, paid
+      back as compute and upload on the whole queue while compute is the
+      scarce resource (#22461). Only copies of **closed or merged** PRs are
+      evicted ;
+    * `open_prs is None` means the open-PR list could not be read. No PR copy
+      is evicted then (fail-CLOSED, same principle as `_is_ancestor`) : the
+      dry-run reports them `open_prs_unknown` rather than guessing ;
     * only KEEP records carrying `dedupe_key` are touched : a REFUSE (family
       outside `DEDUPE_KEY_PREFIXES`) is never turned into a deletion.
 
@@ -454,6 +531,17 @@ def _mark_duplicate_keys(
                 # branche sans copie propre : la retirer ferait perdre le hit.
                 r["dedupe_kept"] = "default_branch"
                 continue
+            pr = _pr_number_from_ref(r.get("ref", ""))
+            if pr is not None:
+                if open_prs is None:
+                    # Liste inconnue : ne pas deviner. `KEEP` explicite, avec
+                    # la raison publiee par le dry-run.
+                    r["dedupe_kept"] = "open_prs_unknown"
+                    continue
+                if pr in open_prs:
+                    # La PR tourne encore : ses runs relisent cette copie.
+                    r["dedupe_kept"] = "pr_open"
+                    continue
             r.update({"verdict": "EVICT", "reason": "duplicate_key_superseded"})
 
 
@@ -470,9 +558,14 @@ def _print_human(records: list[dict[str, Any]], applied: bool) -> None:
             action = "REFUSE"
         size_mb = r["size_bytes"] / 1e6
         key_trunc = r["key"][:80] + ("…" if len(r["key"]) > 80 else "")
+        # `dedupe_kept` porte la raison d'une copie CONSERVEE par la passe de
+        # deduplication (`pr_open`, `open_prs_unknown`, `default_branch`) :
+        # sans lui le dry-run afficherait « dedupe_candidate » et laisserait
+        # croire que rien n'a ete decide.
+        reason = r.get("dedupe_kept") or r.get("reason", "-")
         print(
             f"{action:<10s}  {size_mb:6.1f} Mo  "
-            f"sha={r.get('sha40', '-')[:10]}  {r.get('reason', '-'):<35s}  {key_trunc}"
+            f"sha={r.get('sha40', '-')[:10]}  {reason:<35s}  {key_trunc}"
         )
 
 
@@ -514,7 +607,24 @@ def main() -> int:
     ]
     _mark_superseded(records, args.keep_latest)
     if not args.no_dedupe:
-        _mark_duplicate_keys(records, args.main_branch)
+        # La liste des PRs ouvertes n'est lue que si la passe en a besoin :
+        # un `--no-dedupe` ne doit pas dependre du reseau. Son absence rend
+        # la passe conservatrice (aucune copie de PR evincee), jamais
+        # devinante.
+        open_prs = _list_open_pr_numbers(args.repo, token)
+        if open_prs is None:
+            print(
+                "[WARN] PRs ouvertes illisibles : la passe de deduplication "
+                "ne touchera a aucune copie de PR (fail-CLOSED).",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                f"[INFO] {len(open_prs)} PR(s) ouverte(s) : leurs copies de "
+                f"cache sont conservees.",
+                file=sys.stderr,
+            )
+        _mark_duplicate_keys(records, args.main_branch, open_prs)
 
     applied = args.apply
     if applied:
