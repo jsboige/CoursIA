@@ -11,6 +11,21 @@ Plan #10329 (5 etapes) -- cette PR livre les etapes 2, 4, 5 :
 Garde-fou : ces tests hermetiques (stdlib + tmp_path) pinning le contrat pour
 que toute regression de l'un des 3 modes soit attrapee en CI avant merge.
 
+#21514 -- la seconde forme d'invocation (input borne)
+----------------------------------------------------
+La correction du defaut #21514 est sur main (``fe6e92907cd5``, PR #21518) : le
+scan ``--full`` est borne aux repertoires de serie derives du CSV, l'input CLI
+n'etant qu'un repli quand aucune borne n'est derivable. Les tests de la
+premiere forme (input LARGE) sont deja sur main -- dont les reserves 2 et 3 de
+#21518 (input couvert non annonce ecarte, repli sans borne derivable).
+
+Il manquait la seconde forme d'invocation du critere 3 : un input CLI qui EST
+le repertoire de serie lui-meme. C'est la branche ``rp == b`` de
+``_covered_by_bound`` (egalite exacte), que les tests existants n'exercent pas
+-- ils ne couvrent que ``b in rp.parents`` (input situe sous une borne) et la
+racine du depot. ``test_full_mode_series_dir_input_appends_new_notebook``
+l'exerce.
+
 Mirrors the style of test_translation_sync_t4_scope.py (c.200 PR #10364) and
 test_translation_full_mode TDD principle : on teste les 3 invariants
 independamment plutot que le run complet.
@@ -293,6 +308,59 @@ def test_full_mode_falls_back_to_cli_input_without_derivable_bound(tmp_path, mon
     )
 
 
+def test_full_mode_fails_closed_when_no_derivable_bound_exists_on_disk(
+    tmp_path, monkeypatch, capsys
+):
+    """#22212 : des bornes sont DERIVABLES, mais aucune n'existe sur disque.
+
+    C'est le cas d'une serie deplacee ou renommee : le CSV pointe encore
+    ``old-series/X.ipynb`` alors que le repertoire a bouge. Avant ce garde, le
+    code retombait sur l'input CLI (ici la racine, qui contient ``new-series``)
+    et le CSV perime absorbait tout le corpus -- le defaut de #21514 (31 ->
+    49 978 lignes) par un autre chemin que celui ferme en #21518.
+
+    Contrat : rc=2, l'erreur nomme le repertoire introuvable, et AUCUNE ligne
+    de la serie vivante n'est ajoutee au CSV.
+    """
+    # La serie vivante, sous l'input CLI (racine) : elle ne doit PAS etre vue.
+    nb_live = tmp_path / "new-series" / "Live.ipynb"
+    _make_notebook(nb_live, "cellLive", text_fr="## Live")
+
+    # Le CSV pointe une serie qui n'existe plus sur disque.
+    csv_path = _make_csv(
+        tmp_path / "stale.csv",
+        PIVOT_HEADER,
+        [
+            {"notebook": "old-series/X.ipynb", "cell_id": "cellX",
+             "cell_type": "markdown", "src_lang": "fr", "src_hash": "STALE_X",
+             "text_fr": "## X", "hash_fr": "FR_X"},
+        ],
+    )
+
+    monkeypatch.setattr(sys, "argv", [
+        "extract_cells_to_csv.py",
+        "--repo-root", str(tmp_path),
+        str(tmp_path),                  # input large : la racine entiere
+        "--update", str(csv_path),
+        "--full",
+    ])
+    rc = e.main()
+    assert rc == 2, f"une serie deplacee doit echouer ferme, got rc={rc}"
+
+    err = capsys.readouterr().err
+    assert "old-series" in err, (
+        "l'erreur doit nommer le repertoire de serie introuvable ; "
+        f"stderr={err!r}"
+    )
+
+    with csv_path.open(encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    assert [r["notebook"] for r in rows] == ["old-series/X.ipynb"], (
+        "aucune ligne de la serie vivante ne doit etre absorbee par un CSV perime ; "
+        f"got={[r['notebook'] for r in rows]}"
+    )
+
+
 def test_full_mode_note_does_not_report_covered_input_as_ignored(
     tmp_path, monkeypatch, capsys
 ):
@@ -351,6 +419,57 @@ def test_full_mode_note_does_not_report_covered_input_as_ignored(
     )
     assert str(tmp_path) in note, (
         f"la racine (parent de la borne) doit rester annoncee ; note={note!r}"
+    )
+
+
+def test_full_mode_series_dir_input_appends_new_notebook(tmp_path, monkeypatch, capsys):
+    """#21514 critere 3, seconde forme : input CLI = le repertoire de serie.
+
+    Les tests existants couvrent l'input LARGE (racine du depot) et l'input
+    situe SOUS une borne (``b in rp.parents``). Celui-ci exerce l'egalite
+    exacte (``rp == b``) : l'appelant passe directement le dossier de serie.
+
+    Deux proprietes : le rattrapage d'un carnet neuf de la serie continue de
+    fonctionner (comportement #10329 preserve), et l'input n'est PAS annonce
+    « non utilise comme racine de scan » -- il est exactement la borne.
+    """
+    nb_old = tmp_path / "series" / "Old.ipynb"
+    _make_notebook(nb_old, "cellOld", text_fr="## Old")
+    nb_new = tmp_path / "series" / "New.ipynb"
+    _make_notebook(nb_new, "cellNew", text_fr="## New")
+    csv_path = _make_csv(
+        tmp_path / "synced.csv",
+        PIVOT_HEADER,
+        [
+            {"notebook": nb_old.relative_to(tmp_path).as_posix(), "cell_id": "cellOld",
+             "cell_type": "markdown", "src_lang": "fr", "src_hash": "STALE_HASH",
+             "text_fr": "## Old", "hash_fr": "STALE_FR"},
+        ],
+    )
+
+    series_dir = tmp_path / "series"
+    monkeypatch.setattr(sys, "argv", [
+        "extract_cells_to_csv.py",
+        "--repo-root", str(tmp_path),
+        str(series_dir),                # input BORNE = le repertoire de serie
+        "--update", str(csv_path),
+        "--full",
+    ])
+    assert e.main() == 0
+
+    with csv_path.open(encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+    notebooks = {r["notebook"] for r in rows}
+    assert nb_new.relative_to(tmp_path).as_posix() in notebooks, (
+        f"input borne : le carnet neuf de la serie doit etre appendu ; "
+        f"got notebooks={notebooks}"
+    )
+    assert len(rows) == 2
+
+    err = capsys.readouterr().err
+    assert str(series_dir) not in err, (
+        "l'input qui EST la borne n'est pas ecarte : il ne doit pas figurer "
+        f"dans la NOTE ; stderr={err!r}"
     )
 
 
