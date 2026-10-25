@@ -1170,9 +1170,13 @@ def _fetch_pr_heads(numbers: list[int]) -> tuple[list[int], list[str]]:
     """
     remaining = list(numbers)
     for _ in range(STACK_FETCH_TRIES):
-        specs = ["main:refs/remotes/origin/main"]
+        specs = ["+main:refs/remotes/origin/main"]
         specs += [f"+pull/{p}/head:{STACK_REF_PREFIX}{p}" for p in remaining]
-        proc = _git(["fetch", "-q", "origin", *specs], check=False)
+        # `--no-progress` et non `-q` : `-q` SUPPRIME la ligne de rejet
+        # (`! [rejected] ... (non-fast-forward)`), donc un echec de lot
+        # arrivait sans cause -- l'incident disait `rc=1` et rien d'autre.
+        # La cause nommee vaut mieux qu'un code nu (#20251).
+        proc = _git(["fetch", "--no-progress", "origin", *specs], check=False)
         if proc.returncode == 0:
             return remaining, []
         gone = set(re.findall(r"remote ref pull/(\d+)/head", proc.stderr or ""))
