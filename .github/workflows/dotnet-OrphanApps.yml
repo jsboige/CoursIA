@@ -15,8 +15,11 @@ name: dotnet-OrphanApps
 # StreamingAgent.App, LiveOrderApp) — setup-dotnet multi-versions.
 #
 # Hors scope de cette tranche (documente sur #14696) : les 19 builds Tweety
-# shade (IKVM jar->dll, arbitrage #13831 debout) et les 5 file-based
+# shade (IKVM jar->dll, arbitrage #13831 debout) et les 8 file-based
 # apphost.cs (services live Aspire, non deterministes en runner ephemere).
+# Le compte deraille a chaque nouveau lab : le verifier par
+# `git ls-tree -r --name-only origin/main | grep -E 'apphost\.cs$'` plutot
+# que de le lire ici.
 #
 # Deux jobs STATIQUES (garde #13363, meme forme que dotnet-ArgumentAnalysis.yml
 # et dotnet-AgentSafetyAnalyzer.yml).
