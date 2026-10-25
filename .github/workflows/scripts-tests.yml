@@ -52,6 +52,16 @@ on:
       # the credential gate an effective CI guard (finding Hermes PR #18722).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/provider_gate.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py'
+      # #21331 prover harness suites in CI: prover/__init__.py now resolves
+      # the stack-bound subpackages lazily (PEP 562) and tests/conftest.py
+      # reclassifies stack-absence as SKIP, so test_prover_guards.py +
+      # test_lean_utils.py run hermetically on this bare runner (164 pass /
+      # 163 skip measured under WSL with this job's exact pip set; 327/327
+      # on a full env). Trigger on the harness spine, the lean server, the
+      # suites and their conftest. Mirrored under pull_request: below.
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/**'
       # #11349 native_decide ratchet rewire: scripts/lean/tests/test_proof_integrity_audit_wiring.py
       # pins the conway_lean proof-integrity-audit allow-list to the build-enumerated
       # footprint (61 names after #11368). The test lives under scripts/** so its only
@@ -82,6 +92,18 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bank_schema_v1.json'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bootstrap_bank.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py'
+      # #17586 narrateur CustomVoice (Qwen3-TTS, opt-in, defaut OFF). Hermes
+      # Finding 1 (review sur 69de2cdf) : sans ces 3 entrees, une PR qui ne
+      # touche QUE le routage narrateur ne declenche aucun run CI (#10416
+      # pattern) -- les tests de routage invisibles jusqu'au prochain innocent
+      # qui touche scripts/**. Le fichier de tests est celui de la suite v4
+      # (v4/tests/) : c'est le seul qui portait deja le contrat Phase 2 sur
+      # main, et il n'etait pas collecte. Mirrored under pull_request: below.
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p5_tts.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/qwen_tts_client.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py'
       # #11835 no-op guard: scripts/tests/test_pr_gate_rerun_noop_guard.py pins
       # the job-level if: of pr-gate-rerun.yml. Without this entry a PR touching
       # ONLY the workflow fires no scripts-tests run -- the guard is blind to
@@ -137,6 +159,12 @@ on:
       # distinct) -- meme classe que #18392/#13746 : sans cette entree, une PR
       # qui ne touche que le service n'executerait AUCUNE jambe pytest.
       - 'MyIA.AI.Notebooks/GameTheory/gateway/**'
+      # #21764 : le step bout-en-bout execute CE carnet en papermill ; sans
+      # cette entree, le garde ne declenche que sur les PR suivantes qui
+      # touchent scripts/** et jamais sur la PR du carnet lui-meme (angle mort
+      # mesure par la relecture tierce de #21783). Miroir sous pull_request:
+      # ci-dessous.
+      - 'MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb'
       # #21100 pli 0 Origami (Kernel Gateway) : le coeur du service Z3 Sudoku
       # vit hors scripts/** (Z3-API/gateway/) ; sans entree, une PR qui ne
       # touche que lui n'executerait AUCUNE jambe pytest (#10416 pattern, cf.
@@ -165,6 +193,10 @@ on:
       # #18709 provider gate (mirror of the PR paths above).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/provider_gate.py'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py'
+      # #21331 prover harness suites (mirror of the push paths above).
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/prover/**'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py'
+      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/**'
       # #11349 native_decide ratchet rewire (mirror of the push paths above).
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/lakefile.lean'
@@ -177,6 +209,12 @@ on:
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bank_schema_v1.json'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/bootstrap_bank.py'
       - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py'
+      # #17586 narrateur CustomVoice (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/p5_tts.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/qwen_tts_client.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py'
+      - 'MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py'
       # #11835 no-op guard (mirror of the push path above).
       - '.github/workflows/pr-gate-rerun.yml'
       # Mirror the push path above so fork workflow-only PRs execute the policy.
@@ -200,6 +238,8 @@ on:
       - 'GradeBookApp/**'
       # #21104 pli 0 Origami (mirror of the push path above).
       - 'MyIA.AI.Notebooks/GameTheory/gateway/**'
+      # #21764 (mirror of the push path above).
+      - 'MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb'
       # #21100 pli 0 Origami (Kernel Gateway) (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
   workflow_dispatch:
@@ -310,7 +350,13 @@ jobs:
           # Mirror the ML job's scientific stack where suites reuse it, and add
           # the lightweight deps the scripts/ suites import that the ML job omits
           # (requests, bcrypt, jupyter_client — see #2871 root-cause list).
-          pip install numpy pandas scipy pyarrow pytest
+          # pyarrow >= 26 (#21764) : sous 26, le noyau ipykernel meurt
+          # (Unhandled SIGSEGV) au chargement de pyarrow, sur la chaine
+          # torch -> dask -> xarray -> pandas -> pyarrow. Mesure : 24.0.0
+          # crash, 26.0.0 OK ; l'image CI portait 25.0.1, non mesure. Sans
+          # plancher, `pip install pyarrow` est satisfait par la version
+          # deja presente dans l'image (25.0.1) et n'echange rien.
+          pip install numpy pandas scipy "pyarrow>=26" pytest
           pip install requests bcrypt jupyter_client
           # ipykernel (#18279) : ce job n'enregistrait AUCUN kernelspec
           # `python3`, si bien que les deux tests d'integration de
@@ -339,6 +385,10 @@ jobs:
           # (scripts/genai-stack/requirements.txt). Lets us re-include the
           # genai test suites that were excluded as missing-dep (#2871 part 2).
           pip install papermill nbformat
+          # Version RESOLUE de pyarrow (#21764) : l'acceptance demande que le
+          # log affiche la version installee, pas seulement la contrainte.
+          # Un plancher non affiche est un plancher non prouve.
+          python -c "import pyarrow; print('pyarrow resolu:', pyarrow.__version__)"
           # nbconvert: scripts/notebook_tools/render_oversized_nbconvert.py +
           # scripts/tests/test_render_oversized_nbconvert.py (#10969). The
           # fail_non_notebook test asserts the real nbformat NotJSONError text,
@@ -390,6 +440,25 @@ jobs:
           # a timeout that wants raising. See #14598 / #15574.
           pip install pytest-xdist
 
+      - name: GameTheory-06 bout-en-bout sur l'image CI (#21764)
+        # Le carnet GameTheory-06 importe `axelrod` ; sous pyarrow < 26 le
+        # noyau ipykernel mourait (Unhandled SIGSEGV) au chargement de pyarrow
+        # (chaine torch -> dask -> xarray -> pandas -> pyarrow) : le carnet ne
+        # pouvait pas etre reexecute de facon fiable par la flotte, et le
+        # carnet GameTheory-06 de #21662 en faisait les frais. Ce step
+        # re-execute le carnet DANS l'image CI et verifie une seule session,
+        # une suite d'execution_count continue et 0 erreur -- l'acceptance
+        # mesuree sur l'image, pas supposee. Le plancher pyarrow>=26 est pose
+        # plus haut, dans le meme job.
+        run: |
+          pip install "axelrod>=4.0.0"
+          python -m papermill \
+            MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb \
+            /tmp/gt06-ci.ipynb -k python3
+          python scripts/notebook_tools/check_exec_sequence.py /tmp/gt06-ci.ipynb --check
+        env:
+          MPLBACKEND: Agg
+
       - name: Run tests
         # Scope to the scripts/ + notebook_tools/ suites this job is named for.
         # The repo-wide pytest.ini testpaths also list GameTheory/tests,
@@ -408,15 +477,24 @@ jobs:
         # installed above. The 7 suites run here green (354 tests, validated
         # under WSL ubuntu + CI deps). genai -> po-2023, wsl -> po-2025.
         #
-        # #6790 tree-lock guard: only test_bg_tree_lock.py is included from
-        # agent_tests/tests/, NOT the whole dir. That file loads tree_lock.py by
+        # #6790 tree-lock guard: test_bg_tree_lock.py loads tree_lock.py by
         # file path (stdlib-only) and importorskips the LLM stack for its 3
         # launcher-wiring tests, so on a bare runner it is hermetic: 14 pass,
-        # 3 skip. Its sibling test_prover_guards.py imports prover.state/.tools,
-        # which pull prover/__init__.py -> agent_framework at collection time and
-        # would abort the whole pytest session with a collection error (masking
-        # every other result) — the exact failure mode this workflow exists to
-        # prevent. agent_tests owner: po-2026 (Lean lane).
+        # 3 skip.
+        #
+        # #21331 prover harness suites: test_prover_guards.py +
+        # test_lean_utils.py now collect on this bare runner (lazy
+        # prover/__init__.py, PEP 562) and their tests/conftest.py
+        # reclassifies LLM-stack absence (agent_framework /
+        # agent_framework_openai) as SKIP — the same classification
+        # importorskip gives. Measured under WSL on this job's exact pip
+        # set, submodules absent: 164 pass / 163 skip, 0 fail; on a full
+        # env (stack + submodules): 327 pass. The 5 inherited reds Hermes
+        # flagged on #21324 are fixed: 2 layout pins skip with a written
+        # motif when the game_theory_lean gitlink is not materialized,
+        # 3 #18432 venue tests align Linux EEXIST-on-directory with the
+        # Windows PermissionError semantics (unusable venue, no suffix
+        # bump). agent_tests owner: po-2026 (Lean lane).
         #
         # scripts/audit/tests re-cabled here (family 2 of #14615): the
         # 2026-08-14 CI-EXCLUDED reason (4 env-dependent failures, DALLE-3
@@ -424,7 +502,27 @@ jobs:
         # Measured firsthand 2026-09-04 on origin/main: 455/455 green with the
         # OpenAI key unset (env -u re-run), zero network/gh subprocess, zero
         # dep delta vs this job (pillow arrives transitively with matplotlib).
+        #
+        # Nombre de workers xdist borne par le plafond memoire du conteneur
+        # (1 worker par Gio entier de `memory.max`, entre 1 et 4). Les slots a
+        # 4 Gio (ai-01-wsl-*, po-2024-linux-docker-1) gardent `-n 4` a
+        # l'identique. Les slots `po-2024-linux-persist-*`, plafonnes plus bas,
+        # tuaient leurs workers par OOM du cgroup (`dmesg` : CONSTRAINT_MEMCG,
+        # 2026-10-20 04:44Z et 05:00Z, 4 jobs sur 4 en echec) : ils ont ete
+        # retires de `coursia-linux`, et sept slots sont restes inactifs devant
+        # une file de 800 runs. Borner `-n` leur rend les jobs.
         run: |
+          mem_max=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
+            || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
+            || echo max)
+          if [ "$mem_max" -gt 0 ] 2>/dev/null; then
+            xdist_n=$(( mem_max / 1073741824 ))
+            [ "$xdist_n" -gt 4 ] && xdist_n=4
+            [ "$xdist_n" -lt 1 ] && xdist_n=1
+          else
+            xdist_n=4
+          fi
+          echo "xdist workers: $xdist_n (cgroup memory limit: $mem_max)"
           python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
             pytest \
             scripts/tests \
@@ -437,17 +535,22 @@ jobs:
             MyIA.AI.Notebooks/GameTheory/tests \
             MyIA.AI.Notebooks/QuantConnect/scripts/tests \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py \
+            MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_guards.py \
+            MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_lean_utils.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_prover_forensic_guards.py \
             MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_provider_gate_18709.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py \
             MyIA.AI.Notebooks/GameTheory/gateway/test_openspiel_cfr_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
+            MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
+            MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \
+            MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_qwen_tts_client.py \
             scripts/secrets/tests \
             scripts/quantconnect/tests \
             MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \
             GradeBookApp \
-            -n 4 --dist loadscope --tb=short -q
+            -n "$xdist_n" --dist loadscope --tb=short -q
         # Chien de garde xdist (#16288) : quand un worker meurt (`[gwN] node
         # down`), le master attend des workers morts SANS qu'aucun test soit en
         # cours -- la jambe reste muette 14 a 17 min apres `[99%]` jusqu'au mur
