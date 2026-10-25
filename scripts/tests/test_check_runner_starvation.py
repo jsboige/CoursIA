@@ -112,7 +112,7 @@ def test_fetch_starvation_filters_by_label_and_status(monkeypatch):
     created = now - timedelta(minutes=40)
     calls: list[str] = []
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         calls.append(args[0])
         if args[0].startswith("repos/jsboige/CoursIA/actions/runs?status=queued"):
             return _runs_payload("queued", created)
@@ -149,7 +149,7 @@ def test_starvation_beyond_first_page_is_seen(monkeypatch):
     pages 6-7, tous invisibles."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             # Pas de substring match : "page=1" est un prefixe de
@@ -188,7 +188,7 @@ def test_pagination_stops_when_page_older_than_window(monkeypatch):
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
     pages_fetched: list[int] = []
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             pages_fetched.append(1 if "page=1" in url else 2)
@@ -212,7 +212,7 @@ def test_job_created_at_anchors_age_over_run_created_at(monkeypatch):
     40 min : l'age run serait un faux positif, sens inverse du fail-open."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(80, 40.0, now)]}
@@ -239,7 +239,7 @@ def test_queued_job_inside_in_progress_run_is_seen(monkeypatch):
     OK possible sous extinction ciblee de la jambe Linux."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 0, "workflow_runs": []}
@@ -276,7 +276,7 @@ def test_run_transition_between_passes_replaces_classification(monkeypatch):
     # Pass 2 (in_progress, plus frais) : le job a demarre.
     state = {"pass": 0}
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url or "status=in_progress" in url:
             state["pass"] += 1
@@ -301,7 +301,7 @@ def test_job_seen_in_both_passes_is_counted_once(monkeypatch):
     affame ne doit pas etre compte deux fois."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
@@ -332,7 +332,7 @@ def test_job_queued_then_completed_leaves_starved(monkeypatch):
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
     state = {"pass": 0}
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url or "status=in_progress" in url:
             state["pass"] += 1
@@ -367,7 +367,7 @@ def test_job_queued_then_cancelled_leaves_starved(monkeypatch):
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
     state = {"pass": 0}
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url or "status=in_progress" in url:
             state["pass"] += 1
@@ -405,7 +405,7 @@ def test_unexamined_old_runs_are_noted_not_red():
 
 
 def test_fetch_inventory_sorts_online_offline(monkeypatch):
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         return {"runners": [
             {"name": "r-live", "status": "online",
              "labels": [{"name": "coursia-linux"}]},
@@ -422,7 +422,7 @@ def test_fetch_inventory_sorts_online_offline(monkeypatch):
 
 
 def test_fetch_inventory_auth_failure_returns_unavailable(monkeypatch):
-    monkeypatch.setattr(rs, "_gh_json", lambda args, token=None: None)
+    monkeypatch.setattr(rs, "_gh_json", lambda args, token=None, stats=None: None)
     inv = rs.fetch_inventory("jsboige/CoursIA", "coursia-linux", token=None)
     assert not inv.available
 
@@ -437,7 +437,7 @@ def test_job_queued_then_run_disappears_terminal_is_purged(monkeypatch):
     la derniere observation du job."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
@@ -469,7 +469,7 @@ def test_job_queued_run_still_queued_direct_preserved(monkeypatch):
     queued stable n'apparait jamais dans le listing in_progress)."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
@@ -498,7 +498,7 @@ def test_missing_run_after_failed_listing_is_preserved(monkeypatch):
     appelee (le pipeline s'arrete avant)."""
     now = datetime(2026, 9, 2, 12, 0, tzinfo=timezone.utc)
 
-    def fake_gh(args: list[str], token: str | None = None):
+    def fake_gh(args: list[str], token: str | None = None, stats=None):
         url = args[0]
         if "status=queued" in url:
             return {"total_count": 1, "workflow_runs": [_run_row(90, 40.0, now)]}
