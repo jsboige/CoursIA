@@ -1133,8 +1133,15 @@ jobs:
           # et ne justifie pas une nouvelle tete. Un echec de l'appel laisse la
           # variable vide -> le verdict retombe sur l'age SEUL (jamais plus
           # permissif que le comportement anterieur).
+          # #22278 -- le stderr etait jete : un appel casse rendait la
+          # profondeur vide sans que rien ne le dise. Meme idiome que
+          # CAND_ERR ci-dessous : capturer, puis nommer.
+          QUEUE_ERR=$(mktemp)
           QUEUE_DEPTH=$(gh api "repos/$REPO/actions/runs?per_page=1&status=queued" \
-            --jq '.total_count' 2>/dev/null) || QUEUE_DEPTH=""
+            --jq '.total_count' 2>"$QUEUE_ERR") || QUEUE_DEPTH=""
+          if [ -s "$QUEUE_ERR" ]; then
+            echo "::warning::profondeur de file illisible ($(head -1 "$QUEUE_ERR")) -- le verdict retombe sur l'age seul"
+          fi
 
           m=0
           i=0
