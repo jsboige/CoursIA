@@ -12,7 +12,9 @@ binaire et 0 rendu `marp_renders` dans l'arbre, MAIS la baseline PPTX est
 vivante -- 742 renders PNG sous `slides/<deck>/pptx-reference/slide-NN.png`
 (12 decks ; `public/pptx-reference/` pour `01-introduction`), d'ou les modes
 `pptx` et `compare` de l'agent. Les 12 sources Marp legacy (slides.marp.md)
-restent presentes, non servies par les agents.
+ont ete retirees par #21318 (sauf `S4-trading-algorithmique/_archive/slides.marp.md`
+qui reste dans le repertoire `_archive/` avec header de disposition per la
+convention `_archive-convention.md`).
 
 **Target**: `$ARGUMENTS`
 
