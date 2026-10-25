@@ -273,7 +273,7 @@ def pretriage(pr: int, model: str, dry_run: bool = False) -> dict:
         "state": data.get("state"),
         "commentaires": len(comments),
         "humains": len(humans),
-        "bots": len(comments) - len(humains),
+        "bots": len(comments) - len(humans),
         "reviews_nonbot": len(reviews_nonbot),
         "reviews_nonbot_detail": reviews_nonbot,
         "car_prompt": len(prompt),
