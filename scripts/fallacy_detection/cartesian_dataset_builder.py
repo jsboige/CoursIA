@@ -407,6 +407,21 @@ def _scen_field(row: dict, field: str, lang: str) -> str:
     return row[f"{field}_{lang}"].strip()
 
 
+def _without_terminal_period(definition: str) -> str:
+    """Retire le point final de la definition avant de l'envelopper (#22422).
+
+    Le gabarit de consigne place la definition entre parentheses puis ajoute un
+    point : une definition deja ponctuee produisait ``(….).``, double
+    ponctuation visible par l'eleve dans une sortie committee. On ne retire
+    qu'**un** point terminal, apres trim des espaces, pour ne pas amputer une
+    definition qui se terminerait par des points de suspension.
+    """
+    cleaned = definition.strip()
+    if cleaned.endswith(".") and not cleaned.endswith(".."):
+        cleaned = cleaned[:-1].rstrip()
+    return cleaned
+
+
 def render_prompt(pair: Pair, texts: dict, lang: str = "en") -> str:
     """Consigne donnee au LLM enseignant pour une paire, dans la langue ``lang``.
 
@@ -420,6 +435,7 @@ def render_prompt(pair: Pair, texts: dict, lang: str = "en") -> str:
     """
     key = ("F" if pair.polarity == "fallacy" else "V") + str(pair.node_pk)
     title, definition, _ = texts["nodes"][key][lang]
+    definition = _without_terminal_period(definition)
     row = texts["scenarios"][pair.scenario_path]
     talker = _scen_field(row, "smoothTalker", lang)
     drawer = _scen_field(row, "drawer", lang)
