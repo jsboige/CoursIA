@@ -20,6 +20,8 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 ## Notebooks
 
+Les sections de cet index sont **thématiques** : deux carnets peuvent y voisiner sans se suivre par le rang. La numérotation `04-NN` fixe l'**ordre de lecture**, et c'est elle que suit le fil de navigation — chaque carnet renvoie à son `NN+1`. L'écart est assumé : `04-18` (transcription note à note) est présenté dans la famille YuE2 dont il partage le service, avant `04-17` (MIR classique), qui vient ensuite comme le socle DSP de cette famille.
+
 ### Workflows généraux
 
 | # | Notebook | Contenu | Service | VRAM |
