@@ -8,14 +8,24 @@ touche du Python n'a aucune raison de payer trois analyses de plus : la matrice
 est donc **derivee des langages dont un fichier a change**, au lieu d'etre
 toujours x4.
 
-## Pourquoi l'API et pas `git diff`
+## Deux sources, dans cet ordre : git local d'abord, API en repli
 
-`git diff base...head` demanderait un clone complet (`fetch-depth: 0`). Le
-depot pese 2,1 Go et 46 workflows le clonent deja ainsi : c'est une depense
-que #22461 cherche a reduire, pas a etendre. Le job `changes` fait donc un
-checkout superficiel et lit la liste des fichiers via
-`GET /repos/{repo}/pulls/{n}/files`. Le chemin `git` reste disponible pour un
-usage local, hors CI.
+`git diff base...head` demanderait un clone complet (`fetch-depth: 0`) : le
+depot pese 2,1 Go et 46 workflows le clonent deja ainsi, c'est une depense que
+#22461 cherche a reduire. Mais un checkout **superficiel a `fetch-depth: 2`**
+suffit sur un evenement `pull_request` : `actions/checkout` y place le commit
+de fusion `refs/pull/N/merge`, et `git diff HEAD^1 HEAD` rend exactement les
+fichiers de la PR — sans reseau, sans quota.
+
+L'API (`GET /repos/{repo}/pulls/{n}/files`) reste le **repli**, pour le cas ou
+`HEAD^1` ne resout pas (checkout non-fusion). Elle n'est plus la source
+primaire : mesure du 2026-10-25 sur la PR #22553, job `CodeQL changed
+languages` — `HTTP 403 {"message": "API rate limit exceeded for
+installation"}`, le quota de l'installation etant partage par toute la flotte
+(et non un « secondary rate limit », que le retry couvre). Une source dont
+l'indisponibilite depend du trafic des autres lanes ne peut pas porter la
+derivation : elle la fait silencieusement retomber sur la matrice complete,
+c'est-a-dire annule le gain de la PR.
 
 ## Pourquoi ici et pas dans le YAML
 
@@ -41,6 +51,12 @@ nomme donc desormais le **statut et le debut du corps** de la reponse, et un
 403/429/5xx transitoire est retente une fois (l'IP d'un runner heberge est
 partagee, le « secondary rate limit » y est courant) avant de faillir ouvert.
 
+La mesure suivante a montre que le retry ne suffisait pas : le 403 rendu etait
+`API rate limit exceeded for installation`, un quota epuise a l'echelle de
+l'installation — donc insensible a une nouvelle tentative a une seconde
+d'intervalle. D'ou l'ordre git -> API plus haut : le repli existe, mais il ne
+porte plus la derivation.
+
 ## Sortie
 
 - `--github-output <path>` (ou `$GITHUB_OUTPUT`) recoit `languages=<json>`,
@@ -56,7 +72,8 @@ partagee, le « secondary rate limit » y est courant) avant de faillir ouvert.
 
 Usage (CI) :
     python scripts/ci/codeql_changed_languages.py \
-        --event pull_request --repo jsboige/CoursIA --pr 12345
+        --event pull_request --git-base HEAD^1 \
+        --repo jsboige/CoursIA --pr 12345
 Usage (local, sans jeton) :
     python scripts/ci/codeql_changed_languages.py --event pull_request --base-ref main
 """
@@ -210,6 +227,25 @@ def _api_pr_paths(
             raise ValueError(f"liste tronquee au plafond de {API_FILE_CAP} fichiers")
 
 
+def _local_diff_paths(git_base: str) -> list[str]:
+    """Chemins entre `git_base` et la tete, sans reseau ni quota (leve si vide).
+
+    Sur un evenement `pull_request`, `actions/checkout` place le commit de
+    fusion `refs/pull/N/merge` : `HEAD^1` en est la base, et le diff a deux
+    points rend exactement ce que la PR change. Un `fetch-depth: 2` suffit a
+    rendre les deux cotes disponibles — d'ou l'absence de `git fetch` ici.
+    """
+    diff = subprocess.run(
+        ["git", "diff", "--name-only", git_base, "HEAD"],
+        check=True,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    return [line.strip() for line in diff.stdout.splitlines() if line.strip()]
+
+
 def _git_diff_paths(base_ref: str) -> list[str]:
     """Chemins modifies entre la base et la tete (usage local ; leve en cas d'echec)."""
     subprocess.run(
@@ -256,23 +292,45 @@ def derive(
     event: str,
     base_ref: str = "main",
     diff_paths: Callable[[str], list[str]] | None = None,
+    readers: list[tuple[str, Callable[[str], list[str]]]] | None = None,
 ) -> tuple[list[dict], str]:
-    """Rend (matrice, raison). Fail-open : la raison dit toujours pourquoi."""
+    """Rend (matrice, raison). Fail-open : la raison dit toujours pourquoi.
+
+    `readers` est une chaine ordonnee `(etiquette, lecteur)`. Les echecs sont
+    accumules et **tous** nommes : une chaine qui echoue en silence sur son
+    premier maillon reproduirait le defaut qu'elle corrige. `diff_paths` reste
+    accepte pour un lecteur unique (usage local, tests).
+    """
     if event != "pull_request":
         return full_matrix(), f"evenement {event or '?'} : matrice complete"
 
-    reader = diff_paths or _git_diff_paths
-    try:
-        paths = reader(base_ref)
-    except Exception as exc:  # noqa: BLE001 - fail-open documente en tete
+    chain = readers
+    if chain is None:
+        chain = [("diff", diff_paths or _git_diff_paths)]
+
+    paths: list[str] | None = None
+    source = ""
+    failures: list[str] = []
+    for label, reader in chain:
+        try:
+            paths = reader(base_ref)
+        except Exception as exc:  # noqa: BLE001 - fail-open documente en tete
+            failures.append(label + ": " + _describe(exc))
+            continue
+        source = label
+        break
+
+    if paths is None:
         return full_matrix(), (
-            "diff illisible (" + _describe(exc) + ") : matrice complete"
+            "diff illisible (" + "; ".join(failures) + ") : matrice complete"
         )
 
     found = languages_for(paths)
     if not found:
         return full_matrix(), "aucun langage reconnu dans le diff : matrice complete"
-    return matrix_for(found), "langages touches : " + ", ".join(sorted(found))
+    return matrix_for(found), (
+        "langages touches : " + ", ".join(sorted(found)) + " [source " + source + "]"
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -286,6 +344,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pr", type=int,
                         default=int(os.environ.get("PR_NUMBER") or 0),
                         help="numero de la PR (defaut : $PR_NUMBER)")
+    parser.add_argument("--git-base", default=os.environ.get("GIT_BASE", ""),
+                        help="revision de base lue en local, sans reseau "
+                             "(defaut CI : HEAD^1 ; $GIT_BASE)")
     parser.add_argument("--github-output", default=None,
                         help="fichier de sortie (defaut : $GITHUB_OUTPUT)")
     parser.add_argument("--json", action="store_true",
@@ -293,13 +354,24 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     token = os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")
-    if args.pr and args.repo:
-        def reader(_base_ref: str) -> list[str]:
-            return _api_pr_paths(args.repo, args.pr, token)
 
-        matrix, reason = derive(args.event, args.base_ref, diff_paths=reader)
-    else:
-        matrix, reason = derive(args.event, args.base_ref)
+    # Ordre deliberе : git local (aucun quota, aucun reseau) puis API (quota
+    # d'installation partage par la flotte, cf. mesure 2026-10-25 en tete).
+    readers: list[tuple[str, Callable[[str], list[str]]]] = []
+    if args.git_base:
+        readers.append((
+            "git " + args.git_base,
+            lambda _ref, rev=args.git_base: _local_diff_paths(rev),
+        ))
+    if args.pr and args.repo:
+        readers.append((
+            "API",
+            lambda _ref: _api_pr_paths(args.repo, args.pr, token),
+        ))
+    if not readers:
+        readers.append(("git fetch", _git_diff_paths))
+
+    matrix, reason = derive(args.event, args.base_ref, readers=readers)
 
     payload = {"languages": matrix, "reason": reason}
     if args.json:

@@ -84,15 +84,19 @@ jobs:
     timeout-minutes: 5
     permissions:
       contents: read
-      pull-requests: read   # lecture de la liste des fichiers de la PR
+      pull-requests: read   # repli : liste des fichiers de la PR par l'API
     outputs:
       languages: ${{ steps.derive.outputs.languages }}
     steps:
-      # Checkout superficiel : le script lit la liste des fichiers par l'API,
-      # pas par `git diff`. Un `fetch-depth: 0` rapatrierait 2,1 Go a chaque PR
-      # de code — exactement la depense que #22461 veut reduire.
+      # Profondeur 2, pas 0 : sur `pull_request`, actions/checkout place le
+      # commit de fusion `refs/pull/N/merge`, donc `HEAD` et `HEAD^1` sont tous
+      # deux presents et `git diff HEAD^1 HEAD` rend les fichiers de la PR sans
+      # reseau ni quota. Un `fetch-depth: 0` rapatrierait 2,1 Go a chaque PR de
+      # code — exactement la depense que #22461 veut reduire.
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       # Matrice derivee, jamais ecrite a la main : une PR qui ne touche que du
       # Python ne paie pas trois analyses de plus. FAIL-OPEN assume (contrat
@@ -105,6 +109,14 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           BASE_REF: ${{ github.base_ref }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
+          # Source primaire, locale. Mesure du 2026-10-25 (PR #22553) : l'API
+          # seule rendait `403 API rate limit exceeded for installation` — le
+          # quota de l'installation est partage par la flotte, donc une source
+          # primaire qui depend du trafic des autres lanes retombait sur la
+          # matrice complete. `HEAD^1` ne resout que sur un evenement
+          # `pull_request` ; ailleurs le script rend la matrice complete sans
+          # lire de diff.
+          GIT_BASE: HEAD^1
           GITHUB_TOKEN: ${{ github.token }}
         run: python3 scripts/ci/codeql_changed_languages.py --event "$EVENT_NAME"
 

@@ -264,3 +264,123 @@ def test_retry_gives_up_after_the_budget(monkeypatch):
     else:  # pragma: no cover
         raise AssertionError("un 503 permanent doit lever")
     assert calls["n"] == 3
+
+
+# --- Chaine de sources : git local d'abord, API en repli -------------------
+#
+# Mesure du 2026-10-25 sur la PR #22553, job `CodeQL changed languages` :
+# `HTTP 403 {"message": "API rate limit exceeded for installation"}`. Le quota
+# est partage par toute la flotte, donc l'API ne peut pas etre la source
+# primaire — sinon la derivation retombe sur la matrice complete des que le
+# trafic des autres lanes monte, et le gain de #22548 disparait sans un mot.
+
+
+def test_chain_uses_git_first_and_never_calls_the_api():
+    calls = []
+
+    def git_reader(_ref):
+        calls.append("git")
+        return ["a.py"]
+
+    def api_reader(_ref):
+        calls.append("API")
+        return ["a.py", "b.cs", "c.ts", ".github/workflows/x.yml"]
+
+    matrix, reason = mod.derive(
+        "pull_request", "main",
+        readers=[("git HEAD^1", git_reader), ("API", api_reader)],
+    )
+    assert [item["language"] for item in matrix] == ["python"]
+    assert calls == ["git"], "l'API ne doit pas etre appelee quand git repond"
+    assert "[source git HEAD^1]" in reason
+
+
+def test_chain_falls_back_to_the_api_when_git_cannot_resolve():
+    def git_reader(_ref):
+        raise RuntimeError("fatal: ambiguous argument 'HEAD^1'")
+
+    def api_reader(_ref):
+        return ["b.cs"]
+
+    matrix, reason = mod.derive(
+        "pull_request", "main",
+        readers=[("git HEAD^1", git_reader), ("API", api_reader)],
+    )
+    assert matrix == [{"language": "csharp", "build_mode": "none"}]
+    assert "[source API]" in reason
+
+
+def test_chain_names_every_failure_before_failing_open():
+    """Une chaine qui echoue doit nommer ses deux maillons, pas le dernier."""
+    def git_reader(_ref):
+        raise RuntimeError("fatal: ambiguous argument 'HEAD^1'")
+
+    def api_reader(_ref):
+        raise _http_error(403, b'{"message":"API rate limit exceeded for installation"}')
+
+    matrix, reason = mod.derive(
+        "pull_request", "main",
+        readers=[("git HEAD^1", git_reader), ("API", api_reader)],
+    )
+    assert len(matrix) == 4
+    assert "git HEAD^1: RuntimeError" in reason
+    assert "API: HTTPError: HTTP 403" in reason
+    assert "rate limit exceeded for installation" in reason
+
+
+def test_main_prefers_git_over_the_api_when_both_are_configured(monkeypatch, tmp_path,
+                                                                 capsys):
+    """Le cablage de `main`, pas seulement `derive` : c'est lui qui decide."""
+    seen = []
+
+    def fake_local(rev):
+        seen.append(("git", rev))
+        return [".github/workflows/foo.yml"]
+
+    def fake_api(_repo, _number, _token, **_kw):
+        seen.append(("api", _number))
+        return ["a.py"]
+
+    monkeypatch.setattr(mod, "_local_diff_paths", fake_local)
+    monkeypatch.setattr(mod, "_api_pr_paths", fake_api)
+    out = tmp_path / "gh_output"
+    rc = mod.main([
+        "--event", "pull_request", "--git-base", "HEAD^1",
+        "--repo", "jsboige/CoursIA", "--pr", "22553",
+        "--github-output", str(out), "--json",
+    ])
+    assert rc == 0
+    assert seen == [("git", "HEAD^1")]
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["languages"] == [{"language": "actions"}]
+    assert "[source git HEAD^1]" in payload["reason"]
+
+
+def test_local_diff_paths_reads_a_real_two_commit_history(tmp_path, monkeypatch):
+    """Controle positif de la commande elle-meme, dans un depot jetable.
+
+    Le test ne touche jamais le clone du projet : un `git diff` lance dans le
+    depot de travail mesurerait sa fraicheur, pas le code (lecon
+    `test-that-shells-out-to-git-measures-the-clone`).
+    """
+    import subprocess
+
+    def git(*args):
+        subprocess.run(
+            ["git", "-c", "user.email=t@example.invalid", "-c", "user.name=t",
+             "-c", "init.defaultBranch=main", *args],
+            cwd=tmp_path, check=True,
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+
+    git("init", "-q")
+    (tmp_path / "base.py").write_text("x = 1\n", encoding="utf-8")
+    git("add", ".")
+    git("commit", "-q", "-m", "base")
+    (tmp_path / "added.cs").write_text("class A {}\n", encoding="utf-8")
+    git("add", ".")
+    git("commit", "-q", "-m", "change")
+
+    monkeypatch.chdir(tmp_path)
+    assert mod._local_diff_paths("HEAD^1") == ["added.cs"]
+
