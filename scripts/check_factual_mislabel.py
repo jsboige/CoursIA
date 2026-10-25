@@ -18,6 +18,54 @@ stream) -- l'absence pure d'un nombre relève de l'organe stale-claim
 
 Sortie : rc=0 propre, rc=1 au moins un finding, rc=2 erreur d'usage.
 Advisory par construction (patron #11435) -- jamais bloquant seul.
+
+#20035 : la portee du vocabulaire d'unites a ete etendue pour couvrir
+les substantifs de comptage trouves sur les cotes hors-App-5 (carnet,
+lemme, modele, ...). Le scope par defaut est `core` (les 14 unites
+historiques d'App-5) ; `extended` est un **opt-in explicite**
+(`--units extended`), depuis l'arbitrage du coordinateur du
+2026-10-21 : un defaut qui rend 36 findings pour 0 vrai positif
+n'est pas un defaut. Le test de regression documente en haut reste
+vert dans les deux scopes (la garde SUBCOUNT_CONTEXT_RE filtre les
+sous-comptes qui produiraient les FP).
+
+MESURE CORPUS (exigence #20035, relevee le 2026-10-21 sur ai-01) --
+corpus `MyIA.AI.Notebooks`, 1 603 carnets, organe execute sur les
+deux scopes avant et apres la garde compte/valeur :
+
+| scope | avant la garde | apres la garde |
+|---|---|---|
+| `core` | 13 | 13 (inchange) |
+| `extended` | 43 | 36 |
+
+(Une mesure anterieure sur un corpus de 1 553 carnets donnait 15 / 45 ->
+38 : le delta de 7 est stable, seuls les compteurs absolus dependent du
+corpus, qui grossit.)
+
+Les 7 findings disparus etaient tous de la classe VALEUR lue comme
+COMPTE (moyennes decimales). Sur les 36 restants, la lecture de la
+source, classe par classe, donne **0 vrai positif** : separateur de
+milliers par espace (2 : « 10 000 iterations » lu comme `000
+iterations`), plages de valeurs (6 : « 1-2 iterations », « 12-18 »),
+comptes partiels de split (2 : Train 382 + Test 164 pour 546),
+sous-comptes par item (5 : « 16 slots a 1 seul », « A 2 agents »), et
+quantites de nature differente (21 : horizon « 5 jours » vs 6 300
+lignes, fonctions differentes dans la meme fenetre, carnet differente).
+
+Aucun vrai positif ne subsiste : le cas fondateur App-5 (« 3 salles »
+contre `Salles : 4`) a ete CORRIGE sur `main` par une autre lane -- la
+prose y dit desormais « 4 salles » -- et l'organe ne le voit plus. Le
+scope `core` (13 findings) est compose des memes classes de faux
+positifs.
+
+CONSEQUENCE : sur le corpus actuel, le scope `extended` rend 36
+findings pour 0 vrai positif. L'organe reste ADVISORY (patron #11435,
+jamais bloquant seul), donc ce taux ne bloque rien -- mais il produit
+du bruit, et l'extension de portee est, en l'etat, un amplificateur de
+bruit. L'arbitrage du coordinateur (dispatch c2205, 2026-10-21) tranche :
+**`core` par defaut, `extended` en opt-in explicite**. Le defaut est
+donc change -- dans une PR distincte de celle-ci, qui reste
+dediee a la fermeture d'une classe de faux positifs et a la mesure.
 """
 
 from __future__ import annotations
@@ -34,8 +82,113 @@ UNITS = (
     "agents?|variables?|contraintes?|jours?|rooms?|courses?|slots?|teachers?"
 )
 
-MD_COUNT_RE = re.compile(rf"(?i)\b(\d{{1,5}})\s*({UNITS})\b")
-STREAM_COUNT_RE = re.compile(rf"(?i)\b({UNITS})\s*[:=]\s*(\d{{1,5}})\b")
+# #20035 : la liste UNITS est mono-domaine (App-5 / emploi du temps).
+# Le cas fondateur documente en #19918 est "15 carnets dans Serre100/"
+# vs prose "les huit carnets" : le substantif `carnet` n'est pas dans
+# la liste, l'organe est aveugle par construction. La voie "ajouter une
+# unite a la fois" ne tient pas -- chaque instance trouve une autre
+# (carnet, lemme, fichier, modele, ...). La voie choisie est une liste
+# fermee, documentee, et couplee a la garde SUBCOUNT_CONTEXT_RE deja
+# en place (chacun, par, au moins, ...) : les faux positifs mesures
+# sur App-5 (3 FP tues) restent la base de reference. La liste est un
+# **opt-in explicite** (`--units extended`) -- c'est elle qui rend l'organe
+# utile aux cotes hors App-5 -- et le defaut reste `core`, c'est-a-dire la
+# portee historique (la portee du test de regression documente en haut du
+# fichier : 0 FP / 30 carnets sur le corpus de reference d'avant #20035),
+# depuis l'arbitrage du coordinateur qui a mesure 0 vrai positif sur le
+# scope etendu (36 findings sur le corpus).
+UNITS_EXTENDED = (
+    # Carnets / notebooks / pages / sections (Serre100, IIT, ICT, ML,
+    # SymbolicAI) : substantifs que le stream peut enumerer directement
+    # (print d'un listing ou d'un compteur).
+    "carnets?|notebooks?|fichiers?|sections?|pages?|cellules?|"
+    "modules?|bibliotheques?|paquets?|"
+    # Preuves / theoremes / lemmes (Lean) : le stream d'une campagne
+    # `lake envlean` rend `Build OK` (pas de compte) ; le compteur
+    # apparait surtout dans les re-executions `print(N_theorems)`.
+    "theoremes?|lemmes?|preuves?|corollaires?|propositions?|"
+    "definitions?|axiomes?|hypotheses?|"
+    # ML / training : modeles, predictions, echantillons.
+    "modeles?|predictions?|echantillons?|hyperparametres?|"
+    "parametres?|epochs?|iterations?|episodes?|"
+    # Quantbooks : strategies, backtests.
+    "strategies?|backtests?|"
+    # Solveurs / moteurs : problemes, solutions, instances.
+    "problemes?|solutions?|instances?|"
+    # Tests : cas, scenarios, fixtures.
+    "scenarios?|fixtures?|"
+    # Genres d'objets code : classes, fonctions, methodes, lignes.
+    "classes?|fonctions?|methodes?|lignes?|"
+    # Datasets / fichiers de donnees.
+    "datasets?|colonnes?|tableaux?|"
+    # Pluriels courants en prose pedagogique : parties, etapes, chapitres.
+    "parties?|etapes?|chapitres?|paragraphes?"
+)
+
+# Le pattern regex depend du scope d'unites (core vs extended). Compile
+# une seule fois par appel de scan_notebook ; un cache par process
+# suffirait, mais le scan est lui-meme le chemin chaud. Les regex sont
+# par-fonction pour que le test puisse mocker les deux sans toucher au
+# scope par defaut.
+def _build_count_patterns(units: str) -> tuple[re.Pattern, re.Pattern]:
+    """Compile les regexes MD/stream compte pour le scope d'unites.
+
+    Le pattern stream utilise `[ \t]*` (et non `\\s*`) entre le nom
+    d'unite et le separateur, et entre le separateur et le chiffre :
+    `\\s*` absorbe le saut de ligne et lit le premier digit d'une
+    liste numerotee comme un compte -- ex. `Etapes:\\n  1. Preparer`
+    devient `etapes = 1` (faux positif, Hermes 2026-10-15 sur
+    `GenAI/Texte/03_Structured_Outputs.ipynb` cellule md 19).
+    `[ \t]*` preserve les separateurs en espace/tabulation sur la
+    meme ligne et tue la classe FP sur les listes numerotees.
+
+    Les deux motifs refusent un nombre suivi d'une partie decimale
+    (garde `(?!\\d*[.,]\\d)`) : un nombre a virgule ou a point est une VALEUR, pas
+    un compte. Sans cette garde, « Recompense moyenne sur 10 episodes:
+    465.1 » donnait `episodes = 465` dans le stream, contredit par les « 10
+    episodes » de la prose -- faux positif mesure sur
+    `RL/RL-02-Wrappers-Sauvegarde-Callbacks-Python.ipynb` cellules md 12 et
+    18 (signale par la lane adjointe, cycle c2204).
+
+    La meme garde, seule, ne suffit pas : le lookahead arretait le match au
+    bon nombre, mais le MOTEUR reprenait APRES le separateur. Sur « 465.1
+    episodes » (cote prose), le `\b` entre « . » et « 1 » est une frontiere
+    de mot : le motif MD relisait donc `(1, episodes)` -- un compte fabrique
+    a partir de la partie decimale d'une valeur. Idem « 87,4 iterations » ->
+    `(4, iterations)`. Mesure du 2026-10-21 (reserve du coordinateur,
+    3 points sur #20956) :
+        '465.1 episodes'   -> ('1', 'episodes')
+        '87,4 iterations'  -> ('4', 'iterations')
+    D'ou la **borne gauche** `(?<![\\d.,])` sur le motif MD : un match ne peut
+    plus commencer sur un chiffre precede d'un chiffre, d'un point ou d'une
+    virgule. Les deux gardes sont complementaires -- le lookahead refuse le
+    nombre lui-meme, la borne gauche refuse la reprise apres separateur.
+
+    LIMITE CONNUE, non couverte par cette garde : le separateur de
+    milliers PAR ESPACE (« 10 000 iterations », « 6 912 variables »). Le
+    motif MD lit alors le dernier groupe (« 000 iterations »), un
+    compte faux -- classe distincte, mesuree a 2 findings sur le corpus
+    (GameTheory-13 c16, SocialChoice-04 c16). Elle n'est pas traitee ici :
+    la corriger exige de distinguer un groupe de milliers d'un compte,
+    ce qui suppose une grammaire de nombre, pas une garde de lookahead.
+    La faute la plus grave (une valeur lue comme un compte, donc une
+    contradiction FABRIQUEE) est, elle, fermee.
+
+    LIMITE CONNUE, cote stream : une enumeration sur la MEME LIGNE
+    (« Etapes: 1) Re-SFT ») est encore lue comme un compte par le motif
+    stream -- le separateur `[:=][ \t]*` autorise le chiffre qui suit
+    directement « 1) ». Le cas « Etapes:\\n  1. Preparer » (liste sur la
+    ligne suivante) est deja ecarte par le `[ \t]*` entre l'unite et le
+    separateur. Traiter l' enumeration sur la meme ligne suppose une
+    grammaire de liste, pas une garde de lookahead : c'est une suite, pas
+    un correctif de ce cycle.
+    """
+    return (
+        re.compile(rf"(?i)(?<![\d.,])\b(\d{{1,5}})(?!\d*[.,]\d)\s*({units})\b"),
+        re.compile(rf"(?i)\b({units})[ \t]*[:=][ \t]*(\d{{1,5}})(?!\d*[.,]\d)\b"),
+    )
+
+
 MD_TUPLE_RE = re.compile(r"\(\s*(\d{1,5})\s*(?:[x×]|\\times\s*)\s*(\d{1,5})\s*\)\s*\^")
 STREAM_TUPLE_RE = re.compile(r"\(\s*(\d{1,5})\s*x\s*(\d{1,5})\s*\)\s*\^")
 
@@ -84,11 +237,29 @@ def _singular(unit: str) -> str:
     return unit.rstrip("s").lower()
 
 
-def scan_notebook(path: Path) -> list[dict]:
+def scan_notebook(path: Path, *, units_scope: str = "core") -> list[dict]:
+    """Scanne un carnet. ``units_scope`` :
+    - ``"core"`` (**defaut**) : UNITS seulement (la portee historique,
+      App-5) ;
+    - ``"extended"`` : UNITS + UNITS_EXTENDED. La liste etendue
+      couvre les substantifs de comptage trouves sur les cotes
+      hors-App-5 (carnet, lemme, modele, ...). C'est l'opt-in
+      explicite : sur le corpus mesure, elle rend 36 findings pour
+      0 vrai positif (arbitrage coordinateur du 2026-10-21). Un audit
+      cible (ex. App-5 seul) peut rejouer en ``"core"`` pour comparer
+      la portee historique.
+    """
     try:
         nb = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
         return [{"file": str(path), "error": f"unreadable notebook: {exc}"}]
+    if units_scope == "core":
+        units = UNITS
+    elif units_scope == "extended":
+        units = UNITS + "|" + UNITS_EXTENDED
+    else:
+        raise ValueError(f"units_scope inconnu: {units_scope!r} (attendu 'core' ou 'extended')")
+    md_count_re, stream_count_re = _build_count_patterns(units)
     findings: list[dict] = []
     for idx, cell in enumerate(nb["cells"]):
         if cell["cell_type"] != "markdown":
@@ -99,10 +270,10 @@ def scan_notebook(path: Path) -> list[dict]:
             continue
         # facette 1 : comptes d'unites contredits
         stream_counts: dict[str, set[int]] = {}
-        for m in STREAM_COUNT_RE.finditer(stream):
+        for m in stream_count_re.finditer(stream):
             stream_counts.setdefault(_singular(m.group(1)), set()).add(int(m.group(2)))
         seen_unit_claims: set[tuple[int, str, str]] = set()
-        for m in MD_COUNT_RE.finditer(src):
+        for m in md_count_re.finditer(src):
             n, unit = int(m.group(1)), _singular(m.group(2))
             key = (idx, unit, str(n))
             if key in seen_unit_claims:
@@ -161,12 +332,21 @@ def scan_notebook(path: Path) -> list[dict]:
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--units", choices=("core", "extended"), default="core",
+                    help="#20035 : portee du vocabulaire d'unites. "
+                         "`core` = App-5 (14 unites, **defaut** depuis "
+                         "l'arbitrage coordinateur du 2026-10-21), "
+                         "`extended` = + substantifs de comptage trouves sur "
+                         "les cotes hors-App-5 (carnet, lemme, modele, ...), "
+                         "en opt-in explicite. Le test de regression "
+                         "historique (0 FP / 30 carnets) reste rejouable "
+                         "dans les deux scopes.")
     ap.add_argument("notebooks", nargs="+", type=Path)
     args = ap.parse_args(argv)
 
     findings: list[dict] = []
     for p in args.notebooks:
-        findings.extend(scan_notebook(p))
+        findings.extend(scan_notebook(p, units_scope=args.units))
 
     if args.json:
         print(json.dumps({"anomaly_count": len(findings), "findings": findings}, ensure_ascii=False, indent=1))
