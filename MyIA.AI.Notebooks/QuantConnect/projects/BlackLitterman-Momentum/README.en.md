@@ -47,8 +47,7 @@ dampen the magnitude of moves, in both directions.
 **Honest read.** The Black-Litterman engine — combining market equilibrium
 (CAPM implied returns) with multi-window momentum views (1M/3M/6M/12M) under
 the He & Litterman uncertainty calibration — generates no alpha beyond US
-large-cap equity exposure. It offers **disciplined diversification** (5 sectors,
-15 names, bounded 1-20% weights) rather than a predictive edge. No re-tuning of
+large-cap equity exposure. It offers **disciplined diversification** (5 sectors, bounded 1-20% weights) rather than a predictive edge. No re-tuning of
 the parameters (TAU, SIGMOID_STEEPNESS, TARGET_VOL): retrospective adjustment
 would be overfitting (EPIC #9768). main.py is delivered as-is; the verdict
 applies to the strategy in its current state.

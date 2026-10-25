@@ -32,6 +32,10 @@ class DualMomentumAlpha(AlphaModel):
         month = algorithm.time.month
         if month == self._last_month:
             return []
+        # A dividend notice arrives alone in a midnight slice, with no bar (#20264):
+        # it must not consume the month's emission.
+        if not any(data.bars.contains_key(s) for s in self.symbols.values()):
+            return []
         self._last_month = month
 
         # Compute 12M momentum for each asset
@@ -40,9 +44,13 @@ class DualMomentumAlpha(AlphaModel):
             symbol = self.symbols.get(ticker)
             if symbol is None:
                 continue
+            # On the 13:00 close slice of a US half-session, a daily history request
+            # by bar count comes back about 21 bars short (measured in #20286). Ask
+            # for twice the bars and keep the most recent ones.
             history = algorithm.history(
-                symbol, self.lookback + 5, Resolution.DAILY
+                symbol, 2 * (self.lookback + 5), Resolution.DAILY
             )
+            history = history.iloc[-(self.lookback + 5):]
             if len(history) < self.lookback:
                 continue
             closes = history['close']
@@ -58,6 +66,9 @@ class DualMomentumAlpha(AlphaModel):
         # Absolute momentum filter
         passing = {t: s for t, s in scores.items() if s > 0}
 
+        # A FLAT insight carries weight=0: InsightWeightingPortfolioConstructionModel
+        # drops insights without a weight, so a FLAT without one would leave the
+        # previous UP target in place and the line would never be sold (#20388).
         if not passing:
             # All negative: cash
             for ticker in self.tickers:
@@ -66,7 +77,7 @@ class DualMomentumAlpha(AlphaModel):
                     continue
                 insights.append(Insight.price(
                     symbol, period, InsightDirection.FLAT,
-                    source_model=self.name
+                    weight=0, source_model=self.name
                 ))
             return insights
 
@@ -89,7 +100,7 @@ class DualMomentumAlpha(AlphaModel):
             else:
                 insights.append(Insight.price(
                     symbol, period, InsightDirection.FLAT,
-                    source_model=self.name
+                    weight=0, source_model=self.name
                 ))
 
         return insights

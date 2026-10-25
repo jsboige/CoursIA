@@ -33,7 +33,6 @@ name: Source-Output Ratchet
 
 on:
   pull_request:
-    branches: [ main ]
     # #10600 tranche 2: the ratchet only has something to diff when a
     # notebook changed -- a PR without .ipynb made it pay a full-history
     # checkout + python setup to render "no changed notebooks". Script and
@@ -43,6 +42,12 @@ on:
       - 'scripts/notebook_tools/check_source_output_ratchet.py'
       - '.github/workflows/source-output-ratchet.yml'
   workflow_dispatch:
+
+# Condition jointe a l'arbitrage #19426 (c.6300191475) : tout workflow
+# touche sans bloc concurrency en recoit un, cle sur la PR.
+concurrency:
+  group: source-output-ratchet-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
