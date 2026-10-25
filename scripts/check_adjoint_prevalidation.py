@@ -230,6 +230,20 @@ SHARED_GITHUB_LOGIN = "jsboige"
 # The gate's only consumer. Every worker lane signs SHARED_GITHUB_LOGIN, so this
 # login is the one surface author the coordinator can recognise as itself.
 COORDINATOR_LOGIN = "myia-ai-01"
+# #17437: the coordinator's GitHub App identity, once its lane signs with an
+# installation token instead of a PAT (the six lane Apps are created and
+# installed; the switch is the remaining operational step). Written as a
+# literal rather than derived from `gh_identity.APP_LOGIN_PREFIX` so this module
+# keeps importing when that organ is unavailable; a test pins the two together.
+COORDINATOR_APP_LOGIN = "coursia-lane-ai-01[bot]"
+# The coordinator's ONE voice, in every spelling it can reach the API under.
+# Deliberately NOT `gh_identity.ACCEPTED_DOSSIER_AUTHORS`: that set holds every
+# lane's App, and neutralising a worker lane's row would delete the control
+# `_is_own_later_act` exists to enforce. A worker's App must still expire the
+# dossier -- a negative-control test holds that line.
+COORDINATOR_IDENTITIES = frozenset(
+    (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN, COORDINATOR_APP_LOGIN)
+)
 
 VERDICT_READY = "READY"
 VERDICT_BLOCKED = "BLOCKED"
@@ -645,7 +659,13 @@ def _is_own_later_act(
     if not neutral_after:
         return False
     author = _login(row)
-    if author not in (COORDINATOR_LOGIN, SHARED_GITHUB_LOGIN):
+    # #17437: the identity is compared NORMALISED. This gate reads REST, where
+    # an App author arrives already suffixed (`coursia-lane-ai-01[bot]`), while
+    # the closure gate reads GraphQL, where the same actor arrives as
+    # `coursia-lane-ai-01` with `type: Bot` -- #21818's defect, one layer up.
+    # Comparing the raw login would recognise the coordinator's App on one
+    # surface and miss it on the other.
+    if gh_identity.normalize_author_login(row.get("author") or {}) not in COORDINATOR_IDENTITIES:
         return False
     if row_kind == "review" and _review_body_has_reserve_marker(author, row.get("body") or ""):
         return False
