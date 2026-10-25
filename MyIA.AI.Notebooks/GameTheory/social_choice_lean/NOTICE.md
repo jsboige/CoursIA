@@ -22,6 +22,9 @@ It is derived from multiple open-source projects and academic work.
 - **License**: **aucune trouvée** — `license: null` à l'API GitHub et aucun fichier `LICENSE`
   à la racine (mesure du 2026-10-06, cf. la note de fin de fichier et #14955). La mention
   « MIT » qui figurait ici n'était vérifiée par aucune source et a été retirée.
+  **Licence demandée le 2026-10-25** ([asouther4/lean-social-choice#12](https://github.com/asouther4/lean-social-choice/issues/12)) :
+  demande déposée auprès de l'amont, restée sans réponse à cette date — la mesure du
+  2026-10-06 ci-dessus demeure donc celle en vigueur.
 - **Usage**: Original Lean 3 formalization of Arrow's theorem and Sen's paradox.
   Ported to Lean 4 with significant modifications including the Geanakoplos (2005)
   proof approach for Arrow's theorem and bidirectional formulation for Sen's theorem.
@@ -79,5 +82,8 @@ de `lean-toolchain` depuis l'absorption.
 En conséquence, aucune copie de texte de licence n'est attachée à ce
 répertoire en l'état : poser un `LICENSE-MIT.txt` de notre main
 fabriquerait une permission qu'aucune source vérifiable n'accorde. Le
-dérivé est conservé en l'état — arbitrage en cours sur #14955 (issue
-amont demandant une licence, ou retrait du dérivé).
+dérivé est conservé en l'état, et la voie suivie est la demande de licence
+à l'amont plutôt qu'un texte fabriqué : elle a été déposée le 2026-10-25
+([asouther4/lean-social-choice#12](https://github.com/asouther4/lean-social-choice/issues/12))
+et reste ouverte à cette date. C'est cette notice qu'il faudra mettre à
+jour si la demande aboutit.

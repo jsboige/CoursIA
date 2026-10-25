@@ -167,7 +167,7 @@ au-delà du choix social pur vers la **théorie des mécanismes** (incitations e
 social_choice_lean/                     (tombstone documentaire — plus un lake)
 ├── README.md                          # Documentation historique (cette tombstone)
 ├── STATUS.md                          # Statut (historique, figé à l'absorption)
-├── NOTICE.md                          # Licence MIT (DominikPeters)
+├── NOTICE.md                          # Provenance et état de licence des sources amont
 ├── LEAN_PREREQUISITES.md              # Prérequis pédagogiques Lean 4 / Mathlib
 │
 │   ── retiré (follow-up #4365) : lakefile.lean, lean-toolchain, lake-manifest.json ──
