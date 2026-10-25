@@ -202,22 +202,71 @@ class TestRegimeDecodeProvenance:
             start="2020-01-01", end="2021-01-01",
         )
         assert manifest["regime_decode"] == "viterbi"
-        assert manifest["regime_hmm_causal"] is False
+        assert manifest["regime_hmm_decode_forward_only"] is False
         assert "RETROSPECTIVE" in manifest["lookahead_note"]
         assert "Do NOT use it as a known-at-t" in manifest["lookahead_note"]
         assert manifest["symbols"]["SPY"] == {"rows": 2, "columns": 1}
 
-    def test_manifest_marks_filter_causal(self):
+    def test_manifest_filter_does_not_promise_known_at_t(self):
+        """The manifest must not grant a guarantee the builder cannot keep.
+
+        The filtered decode is forward-only at FIXED parameters; the HMM fit
+        still sees the whole window, so past labels change when the window
+        grows (measured on the synthetic fixture: 67/150 past labels flip
+        when the series is extended). A note claiming the column is usable
+        as a known-at-t walk-forward feature would therefore be false.
+        """
         manifest = build_provenance_manifest(
             {"SPY": pd.DataFrame({"a": [1.0]})},
             regime_method="both", regime_decode="filter",
             start="2020-01-01", end="2021-01-01",
         )
-        assert manifest["regime_hmm_causal"] is True
-        assert "FORWARD-ONLY" in manifest["lookahead_note"]
+        assert manifest["regime_hmm_decode_forward_only"] is True
+        note = manifest["lookahead_note"]
+        assert "FORWARD-ONLY DECODE" in note
+        assert "whole window" in note
+        assert "NOT known-at-t" in note
+        assert "Do NOT use this column as a known-at-t" in note
+        assert "regime_hmm_causal" not in manifest
         # The price-based column is causal by construction (#21111) and the
         # manifest says so, so a reader does not have to re-derive it.
         assert manifest["regime_price_causal"] is True
+
+    def test_manifest_omits_regime_keys_for_absent_columns(self):
+        """A price-only build has no regime_hmm column: no hmm keys, no note."""
+        manifest = build_provenance_manifest(
+            {"SPY": pd.DataFrame({"a": [1.0]})},
+            regime_method="price", regime_decode="viterbi",
+            start="2020-01-01", end="2021-01-01",
+        )
+        assert "regime_hmm_decode_forward_only" not in manifest
+        assert "regime_hmm_causal" not in manifest
+        assert "lookahead_note" not in manifest
+        assert manifest["regime_price_causal"] is True
+
+    def test_builder_writes_provenance_manifest_on_disk(
+        self, synthetic_panier, tmp_path
+    ):
+        """Cover the last mile: build_dataset_v2 -> _provenance.json on disk.
+
+        The manifest builder is unit-tested on its own, but nothing held the
+        write that follows the per-symbol loop (path, valid JSON, content).
+        """
+        out = tmp_path / "datasets"
+        results = build_dataset_v2(
+            symbols=["SPY"], regime_method="price", output_dir=out,
+        )
+        assert set(results) == {"SPY"}
+        manifest_path = out / "_provenance.json"
+        assert manifest_path.is_file()
+        import json
+
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        assert manifest["schema"] == 1
+        assert manifest["regime_method"] == "price"
+        assert "lookahead_note" not in manifest
+        assert manifest["regime_price_causal"] is True
+        assert manifest["symbols"]["SPY"]["rows"] == len(results["SPY"])
 
     def test_cli_flag_is_wired_to_the_parameter(self):
         parser = build_arg_parser()

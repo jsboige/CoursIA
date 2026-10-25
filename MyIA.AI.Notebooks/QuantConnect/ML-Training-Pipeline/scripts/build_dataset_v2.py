@@ -210,10 +210,14 @@ def build_dataset_v2(
     ----------
     regime_decode : {"viterbi", "filter"}, default "viterbi"
         Decoding scheme for the ``regime_hmm`` column (#21054). ``"viterbi"``
-        (default, historical behaviour) is retrospective; ``"filter"`` is
-        forward-only and is the causal choice when the column is consumed as
-        a known-at-``t`` signal in a walk-forward evaluation. The mode is
-        recorded in ``<output_dir>/_provenance.json``.
+        (default, historical behaviour) is retrospective; ``"filter"`` makes
+        the DECODE forward-only at fixed parameters: the label at ``t`` is a
+        function of observations up to ``t`` only, *given the fitted model*.
+        The HMM itself is still fitted on the whole window in both modes, so
+        past labels change when the window grows -- neither mode yields a
+        known-at-``t`` column for a walk-forward evaluation unless the fit is
+        done inside each fold. The mode is recorded in
+        ``<output_dir>/_provenance.json``.
 
     Returns dict of {symbol: features_df}.
     """
@@ -228,8 +232,11 @@ def build_dataset_v2(
     if regime_decode == "viterbi" and regime_method in ("hmm", "both"):
         log.warning(
             "regime_hmm is built from a RETROSPECTIVE (Viterbi) decode: the "
-            "label at t depends on observations after t (#21054). Use "
-            "--regime-decode filter for a walk-forward or live signal."
+            "label at t depends on observations after t (#21054). "
+            "--regime-decode filter makes only the DECODE forward-only at "
+            "fixed parameters; the HMM fit still uses the whole window, so "
+            "neither mode is a known-at-t feature for walk-forward without "
+            "an in-fold fit."
         )
 
     log.info("Loading panier data...")
@@ -299,29 +306,46 @@ def build_provenance_manifest(
     reaches the reader who builds a signal on `regime_hmm`.
     """
     causal = regime_decode == "filter"
-    return {
+    manifest = {
         "schema": 1,
         "generated_by": "build_dataset_v2.py",
         "window": {"start": start, "end": end},
         "regime_method": regime_method,
         "regime_decode": regime_decode,
-        "regime_hmm_causal": causal,
-        "lookahead_note": (
-            "regime_hmm is FORWARD-ONLY (filtered decode): the label at t is a "
-            "function of observations up to t only, so it may be used as a "
-            "known-at-t feature in a walk-forward evaluation."
-            if causal else
-            "regime_hmm is RETROSPECTIVE (Viterbi backtracking): the label at t "
-            "depends on observations after t. Do NOT use it as a known-at-t "
-            "signal feature in a walk-forward or live evaluation; rebuild the "
-            "dataset with regime_decode='filter' for that use."
-        ),
-        "regime_price_causal": True,
         "symbols": {
             sym: {"rows": int(len(feat)), "columns": int(len(feat.columns))}
             for sym, feat in results.items()
         },
     }
+    # Only warn about columns that actually exist in the built dataset:
+    # regime_method="price" produces no regime_hmm column (#22557 review).
+    if regime_method in ("hmm", "both"):
+        # The filtered decode is forward-only AT FIXED PARAMETERS only. The
+        # HMM fit (`detect_regimes_hmm`) still estimates mu/sig/A/pi on the
+        # whole window, so past labels move when the window grows. The key is
+        # named for what is actually guaranteed: a `regime_hmm_causal: true`
+        # here would grant the parquet a guarantee the builder cannot deliver.
+        manifest["regime_hmm_decode_forward_only"] = causal
+        manifest["lookahead_note"] = (
+            "regime_hmm uses a FORWARD-ONLY DECODE at fixed parameters: given "
+            "the fitted model, the label at t is a function of observations "
+            "up to t only. The HMM is nevertheless FIT on the whole window, "
+            "so the labels are NOT known-at-t: extending the window changes "
+            "past labels. Do NOT use this column as a known-at-t signal "
+            "feature in a walk-forward or live evaluation unless the fit is "
+            "performed inside each fold (a sliding-fit builder is a separate "
+            "grain)."
+            if causal else
+            "regime_hmm is RETROSPECTIVE (Viterbi backtracking): the label at t "
+            "depends on observations after t. Do NOT use it as a known-at-t "
+            "signal feature in a walk-forward or live evaluation. "
+            "regime_decode='filter' makes the decode forward-only at fixed "
+            "parameters but does NOT remove the whole-window fit either."
+        )
+    if regime_method in ("price", "both"):
+        # Causal by construction (#21111).
+        manifest["regime_price_causal"] = True
+    return manifest
 
 
 def build_arg_parser() -> argparse.ArgumentParser:
