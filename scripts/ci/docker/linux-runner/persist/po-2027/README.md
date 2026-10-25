@@ -76,7 +76,9 @@ Un `wsl --shutdown` tue les jobs en vol, et GitHub laisse alors le job
 `in_progress` jusqu'a detection de la perte du runner. Cas mesure le
 2026-10-24 : run `40129334303`, job `120977484412` sur
 `myia-po-2027-linux-docker-4`, demarre 21:53:45Z, fige a l'etape 5 a 21:53:53Z,
-soit 29 s avant le shutdown de 21:54:22Z. Le leg ne peut pas s'en proteger : la
+soit 9 s avant le shutdown de 21:54:02Z (journal evenementiel Windows du
+2026-10-24 : NIC de la VM demonte a 21:54:03Z, recree au boot suivant a
+21:54:12Z ; Docker Desktop redemarre a 21:54:19Z). Le leg ne peut pas s'en proteger : la
 cause est externe (redemarrage de Docker Desktop). Ce qu'il peut faire, et que
 la tache de rattrapage fait, est de revenir en ligne sans intervention.
 

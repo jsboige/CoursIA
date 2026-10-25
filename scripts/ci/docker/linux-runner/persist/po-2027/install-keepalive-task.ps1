@@ -67,6 +67,18 @@ $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries `
     -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
 $description = "po-2027 coursia-runner : re-arme le porteur WSL toutes les $Minutes min (self-heal apres wsl --shutdown)"
 
+function Write-KeepaliveTask {
+    param($Action, $Trigger)
+    if (Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue) {
+        Set-ScheduledTask -TaskName $name -Action $Action -Trigger $Trigger -Settings $settings | Out-Null
+        "maj : tache existante mise a jour (idempotent)"
+    } else {
+        Register-ScheduledTask -TaskName $name -Action $Action -Trigger $Trigger `
+            -Settings $settings -Description $description | Out-Null
+        "creation : tache enregistree (non eleve)"
+    }
+}
+
 "tache   : $name"
 "action  : $bash $arguments"
 "repet   : interval=$($trigger.Repetition.Interval) duration=$($trigger.Repetition.Duration)"
@@ -76,13 +88,18 @@ if (-not $Apply) {
     exit 0
 }
 
-if (Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue) {
-    Set-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Settings $settings | Out-Null
-    "maj : tache existante mise a jour (idempotent)"
-} else {
-    Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger `
-        -Settings $settings -Description $description | Out-Null
-    "creation : tache enregistree (non eleve)"
+try {
+    Write-KeepaliveTask -Action $action -Trigger $trigger
+} catch {
+    # Certains hotes refusent un -RepetitionDuration de 3650 j sur un declencheur
+    # Once : le rejet tombe au Register/Set-ScheduledTask, pas a la construction
+    # du trigger. Repli : [TimeSpan]::MaxValue, qui vaut « indefiniment » pour le
+    # planificateur (remarque Hermes, #22532 section 2).
+    "repli   : duration 3650 j refusee -- $($_.Exception.Message)"
+    $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(1) `
+        -RepetitionInterval (New-TimeSpan -Minutes $Minutes) `
+        -RepetitionDuration ([TimeSpan]::MaxValue)
+    Write-KeepaliveTask -Action $action -Trigger $trigger
 }
 
 $task = Get-ScheduledTask -TaskName $name
