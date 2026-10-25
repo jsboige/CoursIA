@@ -8,9 +8,9 @@
 
 Un dossier `_archive/` sans convention devient un **puits de code mort** : on y dépose des scripts superseded, mais sans en-tête de disposition, personne ne sait s'ils sont **encore vivants mal étiquettés** ou **réellement abandonnés**. Le bilan mesuré sur le dépôt en 2026-08 :
 
-- Les emplacements `_archive/` sont dispersés dans le dépôt (11 emplacements et 125 fichiers mesurés en 2026-08), avec des conventions hétérogènes. Ce chiffre est **daté** ; le compte courant se recalcule, il ne se recopie pas (voir le §« Recenser, ne pas recopier »).
+- Les emplacements `_archive/` sont dispersés dans le dépôt, avec des conventions hétérogènes. Leur nombre et leur volume se **recalculent** (voir le §« Recenser, ne pas recopier ») : ils ne se recopient pas dans la prose.
 - `scripts/genai-stack/_archive/` (constat empirique au 2026-08) : le plus gros stock du dépôt — code mort, certains cassés auto-admis. **Tranche 3 livrée le 2026-10-04** (cf table ci-dessous).
-- `scripts/_archive/one_shot_fixes/` + `one_shots_post_463/` + `recycle_csp/` (constat empirique au 2026-08) : ~30 fichiers dont les README de disposition n'appliquaient pas encore tous le standard. **Cible de la tranche 2** (cf table du §« Application — les emplacements recensés »).
+- `scripts/_archive/one_shot_fixes/` + `one_shots_post_463/` + `recycle_csp/` : des fichiers dont les README de disposition n'appliquaient pas encore tous le standard. **Cible de la tranche 2** (cf table du §« Application — les emplacements recensés »).
 
 Le coût d'un `_archive/` non standardisé = **découverte impossible** : aucun successeur nommé, aucun verdict enregistré, aucun moyen de savoir si le script peut être ressuscité ou doit être supprimé.
 
@@ -77,7 +77,7 @@ git ls-tree -r -d --name-only origin/main | grep '/_archive$' | wc -l
 git ls-tree -r --name-only origin/main | grep '/_archive/' | wc -l
 ```
 
-Valeurs de référence au **2026-10-24** sur `origin/main` : **17** emplacements et **163** fichiers. Un emplacement contient plusieurs fichiers, donc comparer les deux totaux n'a pas de sens — et un écart entre eux n'est pas un défaut. Le prédicat de la première commande est `/_archive$`, pas `/_archive` : ce dernier rend **30**, parce qu'il compte aussi les sous-dossiers internes aux archives (`scripts/_archive/one_shot_fixes/`, `Argument_Analysis/_archive/…`) et les six répertoires de `docker-configurations/_archive-20251125/`, dont le nom ne finit pas par `_archive`.
+Un emplacement contient plusieurs fichiers, donc comparer les deux totaux n'a pas de sens — et un écart entre eux n'est pas un défaut. Le prédicat de la première commande est `/_archive$`, pas `/_archive` : ce dernier ramasse aussi les sous-dossiers internes aux archives (`scripts/_archive/one_shot_fixes/`, `Argument_Analysis/_archive/…`) et les répertoires de `docker-configurations/_archive-20251125/`, dont le nom ne finit pas par `_archive` — trois populations distinctes qu'un total unique confondrait.
 
 **Cette règle est déclarative** : aucun organe ne vérifie ce prédicat en CI — ni la liste des emplacements, ni la concordance de la table avec `main`. Elle vit dans la relecture et dans les commandes ci-dessus ; la porter en gate serait une tranche à part, pas un effet de bord de cette page.
 
@@ -85,7 +85,7 @@ Une phrase de prose qui cite un total doit porter **sa date**. Une règle, une d
 
 ## Application — les emplacements recensés
 
-État au **2026-10-24** : **17** emplacements, **163** fichiers. Ce qui a changé
+État mesuré au **2026-10-24** par les deux commandes ci-dessus (jamais un chiffre recopié). Ce qui a changé
 depuis le recensement de 2026-08 : `GenAI/Audio`, `docker-configurations` et
 `notebook_tools` n'y figuraient pas. Depuis celui du 2026-10-04, trois
 emplacements existaient sur `main` sans ligne dans la table —
