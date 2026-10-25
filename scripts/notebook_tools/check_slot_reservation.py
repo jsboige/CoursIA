@@ -165,6 +165,28 @@ sortie 2 (cf `main`) : l'accretion est calculee dans le meme bloc `try`, donc el
 ne peut pas « ne rien trouver » la ou elle n'a rien pu lire. Les trois constats se
 lisent sur des sources git ; aucun ne depend d'une entree fournie par l'auteur.
 
+UNE SEULE CLE DE SLOT (#21959)
+------------------------------
+Le module a longtemps porte DEUX cles : `slot_of()` (le verdict par PR) et
+`_scan_slot()` (le balayage de `main`). Elles ne voyaient pas le meme depot :
+`slot_of()` passe par `index_key()`, qui ne produit d'index que pour un stem
+COMMENCANT PAR UN CHIFFRE -- tous les carnets a prefixe de serie
+alphabetique (`Z3-19`, `GameTheory-04c`, `ICT-48`, `SL-12b`) sortaient donc
+`no_slot`, et deux PRs qui revendiquaient le meme numero de carnet ne se
+voyaient qu'au conflit de merge (#20664 contre #20922, sur `Z3-19`).
+
+La cle du module est desormais `_scan_slot()`, pour TOUT le chemin de verdict
+(`group_by_slot`, `pr_claims`, `verdict_for`) comme pour le balayage :
+`_scan_slot` ne rend plus `None` sur une serie alphabetique, et decompose les
+prefixes chiffre-lettres (`3D-01` != `3D-02`) que `index_key` confond sous
+`3d`. Pour les prefixes purement chiffres, la cle reste `index_key()` -- la
+normalisation du zero-pad (`04-2` = `4.2`) que la table publiee (`declared`)
+utilise comme convention.
+
+`slot_of()` reste inchange : c'est l'API historique du module, et les autres
+organes qui l'importent doivent continuer a lire la meme cle. Aucun chemin de
+verdict de ce module ne l'emploie plus -- la cle unique, c'est `_scan_slot`.
+
 Sortie : 0 = tous les slots examines sont libres (ou exempts) ; 1 = au moins un
 conflit ; 2 = erreur d'invocation, ou controle de self-test non satisfait (le
 detecteur est casse -- distinct d'une collision reelle, qui sort 1).
@@ -308,7 +330,13 @@ def split_dir(path):
 
 
 def slot_of(path):
-    """Slot d'un chemin : (repertoire, index normalise), ou None s'il ne porte pas d'index."""
+    """Slot d'un chemin : (repertoire, index normalise), ou None s'il ne porte pas d'index.
+
+    Cle SUPERFICIELLE, conservee telle quelle : c'est l'API historique du
+    module, et un carnet a prefixe de serie alphabetique (`Z3-19`) n'y porte
+    aucun index. Le chemin de VERDICT de ce module n'y passe plus -- il lit
+    `_scan_slot` (cf #21959 et la section « UNE SEULE CLE DE SLOT »).
+    """
     d, b = split_dir(path)
     key = index_key(b)
     if key is None:
@@ -317,7 +345,14 @@ def slot_of(path):
 
 
 def same_item(a, b):
-    """Deux rendus du meme item (suffixe de langue seul different) : pas concurrents."""
+    """Deux rendus du meme item (suffixe de langue seul different) : pas concurrents.
+
+    Regle du canon #5081, telle quelle : elle ne retire qu'UN suffixe de
+    langue. Le chemin de verdict lui prefere `_same_item_scan`, qui en retire
+    tous -- la forme composee (`-Python_en`) et le noyau en milieu de nom
+    (`-CSharp-RDFStar`) sont des faux positifs du canon que le verdict ne peut
+    pas se permettre depuis que les series alphabetiques ont un slot.
+    """
     return strip_lang(split_dir(a)[1]).lower() == strip_lang(split_dir(b)[1]).lower()
 
 
@@ -330,10 +365,14 @@ class Occupant:
 
 
 def group_by_slot(paths, source, detail=""):
-    """{slot: [Occupant, ...]} -- les chemins sans index sont ecartes (rien a reserver)."""
+    """{slot: [Occupant, ...]} -- les chemins sans position lisible sont ecartes.
+
+    La cle est `_scan_slot` (cf #21959) : un carnet a prefixe de serie
+    alphabetique (`Z3-19`) tient une position, il n'est plus ecarte.
+    """
     out: dict[tuple[str, str], list[Occupant]] = {}
     for p in paths:
-        slot = slot_of(p)
+        slot = _scan_slot(p)
         if slot is None:
             continue
         out.setdefault(slot, []).append(Occupant(p, source, detail))
@@ -361,7 +400,7 @@ def pr_claims(prs, removed=None):
                 continue
             if path in gone:
                 continue          # suppression PURE : ce slot est libere
-            slot = slot_of(path)
+            slot = _scan_slot(path)
             if slot is None:
                 continue
             claims.setdefault(slot, []).append(Occupant(path, SOURCE_OPEN_PRS, "#%s" % num))
@@ -431,7 +470,18 @@ def load_removed_paths(numbers, repo, status):
 
 
 def declared_claims(doc):
-    """Slots declares reserves par une table publiee (`slot_reservations.json`)."""
+    """Slots declares reserves par une table publiee (`slot_reservations.json`).
+
+    L'index declare est compare SANS EGARD A LA CASSE, des deux cotes : la
+    convention de la table est l'index normalise de `naming_canon.index_key`
+    (zero-pad resorbe) pour un index numerique, et le nom de serie
+    (`GameTheory-04c`) pour une entree qui nomme une serie -- or la position
+    d'un carnet de serie conserve la casse de son nom de fichier (`SL-12b`).
+    Comparer une entree de table a un slot par egalite STRICTE rendait la
+    reservation invisible des que les deux graphies differeient : une table de
+    slots declares qui ne declare rien en silence. La forme ECRITE est
+    conservee dans le chemin de l'occupant affiche.
+    """
     claims: dict[tuple[str, str], list[Occupant]] = {}
     for entry in (doc or {}).get("reserved") or []:
         d = (entry.get("dir") or "").strip("/")
@@ -441,7 +491,7 @@ def declared_claims(doc):
         holder = (entry.get("holder") or "").strip() or "sans detenteur nomme"
         note = (entry.get("note") or "").strip()
         detail = "%s%s" % (holder, (" -- %s" % note) if note else "")
-        claims.setdefault((d, key.lower()), []).append(
+        claims.setdefault((d.casefold(), key.casefold()), []).append(
             Occupant("%s/%s" % (d, entry.get("index")), SOURCE_DECLARED, detail))
     return claims
 
@@ -455,8 +505,13 @@ def merge(*maps):
 
 
 def verdict_for(target, occupants, releases):
-    """Verdict d'une cible contre l'ensemble des occupants de son slot."""
-    slot = slot_of(target)
+    """Verdict d'une cible contre l'ensemble des occupants de son slot.
+
+    La cle est `_scan_slot` comme partout ailleurs dans le module (#21959) :
+    une cible a prefixe de serie alphabetique a desormais une position, et
+    peut donc etre en conflit avec un occupant qui la revendique.
+    """
+    slot = _scan_slot(target)
     if slot is None:
         return {"target": target, "slot": None, "state": "no_slot",
                 "verdict": "ok", "conflicts": []}
@@ -464,7 +519,16 @@ def verdict_for(target, occupants, releases):
     conflicts = []
     exempt = False
     t_base = split_dir(target)[1].lower()
-    for occ in occupants.get(slot, []):
+    # Deux lectures : la forme EXACTE d'abord (c'est elle qui porte les
+    # occupants de la base et de la revision, dont la cle est la position
+    # analysee), puis la forme repliee -- la table declaree est indexee sans
+    # egard a la casse, une entree qui ecrit `sl-12b` doit reserver le slot
+    # `SL-12b` d'un carnet de serie, et l'inverse aussi.
+    occ_list = list(occupants.get(slot, []))
+    folded = (slot[0].casefold(), slot[1].casefold())
+    if folded != slot:
+        occ_list.extend(occupants.get(folded, []))
+    for occ in occ_list:
         # La cible se reconnait elle-meme UNIQUEMENT parmi les cibles de la
         # revision : en mode revision les deux ensembles sont le meme, et se
         # compter comme occupant de soi-meme ferait rougir chaque ligne. Un
@@ -480,7 +544,11 @@ def verdict_for(target, occupants, releases):
         # un sibling, c'est le meme fichier -- etre passe sous silence ici etait
         # le defaut revele par la mesure sur le pool vivant (target
         # `01_OpenAI_Intro.ipynb` : la PR qui l'ecrit etait exemptee).
-        if same_item(occ.path, target) and split_dir(occ.path)[1].lower() != t_base:
+        # La regle d'appariement est `_same_item_scan` (tous les suffixes de
+        # langue retires + noyau en milieu de nom), pas `same_item` : depuis
+        # que les series alphabetiques ont une position (#21959), un jumeau
+        # compose (`-Python_en`) deviendrait sinon un faux conflit.
+        if _same_item_scan(occ.path, target) and split_dir(occ.path)[1].lower() != t_base:
             exempt = True
             continue
         state = {
@@ -667,15 +735,18 @@ def accretion_findings(added, base_files, readmes, doc):
 SCAN_MAIN_KIND_COLLISION = "slot_collision_on_main"
 SCAN_MAIN_KIND_EMPTY = "empty"
 
-# Le balayage a besoin d'un cle de slot ROBUSTE : `slot_of(index_key)` est
-# insuffisant parce qu'il confond deux cas que la regle d'accretion
+# La cle de slot du module est `_scan_slot` (cf #21959 et la section
+# « UNE SEULE CLE DE SLOT »). Elle est ROBUSTE là ou `slot_of(index_key)`
+# est insuffisant, parce qu'elle confond deux cas que la regle d'accretion
 # distingue -- (a) deux carnets a des numeros differents dans une serie
 # a prefixe chiffre (`3D-01-...` et `3D-02-...` bucket ensemble sous
 # `3d`), (b) deux carnets a prefixe alphabetique (`ICT-48-...`) qui ne
-# produisent AUCUN index. La cle ci-dessous utilise `parse_name` quand
-# le prefixe est une serie, et decompose manuellement le cas
-# chiffre-lettres (cf. tests `test_scan_main_...`). C'est local a ce
-# module parce que `slot_of` reste l'API canonique des autres gardes.
+# produisent AUCUN index. La cle utilise `parse_name` quand le prefixe
+# est une serie, et decompose manuellement le cas chiffre-lettres
+# (cf. tests `test_scan_main_...`). Pour un prefixe PUREMENT chiffre,
+# elle rend `index_key` -- c'est la normalisation du zero-pad (`04-2` =
+# `4.2`) que la table publiee (`declared`) utilise comme convention, et
+# que le zero-pad resorbe rend indispensable.
 _SCAN_SLOT_RE = re.compile(
     r"^(\d+[A-Za-z]?)[-_.](\d+)([a-z]?)(?:[-_.]|$)"
 )
@@ -702,19 +773,25 @@ _KERNEL_TOKEN_RE = re.compile(
 
 
 def _scan_slot(path: str) -> tuple[str, str] | None:
-    """Cle (repertoire, position) robuste pour le balayage main.
+    """Cle (repertoire, position) du module -- la SEULE cle de slot (#21959).
 
     Pour les fichiers a prefixe de serie alphabetique (`ICT-48-...`,
-    `GameTheory-02c-...`, `SL-12b-...`) la position est
+    `GameTheory-02c-...`, `SL-12b-...`, `Z3-19-...`) la position est
     ``<series>-<number><accr>`` : c'est ce que `parse_name` rend et c'est
-    ce que le carnet designe dans sa serie.
+    ce que le carnet designe dans sa serie. C'est cette forme qui manquait
+    au chemin de verdict -- une serie alphabetique n'a pas d'index, donc
+    pas de slot, donc pas de conflit possible.
 
-    Pour les fichiers a prefixe chiffre (`3D-01-...`, `04-2-...`) on
+    Pour les fichiers a prefixe chiffre ET lettre (`3D-01-...`) on
     decompose en ``<prefix>-<num><accr>`` : `3D-01` et `3D-02` sont
-    alors DEUX positions distinctes, ce que `index_key` confond. La
-    decomposition est bornee a un segment chiffre apres le prefixe --
-    une suite plus longue (`04-2-3`) reste a la discretion de
-    `index_key` (cf. le cas documente dans la zone de fix mesurable).
+    alors DEUX positions distinctes, ce que `index_key` confond sous
+    `3d`.
+
+    Pour un prefixe PUREMENT chiffre (`04-2-...`), la position est celle
+    de `index_key` (`4.2`) : c'est la normalisation du zero-pad que la
+    table publiee de reservations utilise comme convention, et une suite
+    plus longue (`04-2-3`) reste `4.2.3` -- c'est `index_key` qui la
+    donne, pas la decomposition.
     """
     d, basename = split_dir(path)
     stem = _IPYNB_RE.sub("", basename)
@@ -723,7 +800,10 @@ def _scan_slot(path: str) -> tuple[str, str] | None:
         slot = "%s-%s%s" % (name.series, name.number, name.accr or "")
         return (d, slot)
     m = _SCAN_SLOT_RE.match(stem)
-    if m:
+    if m and re.search(r"[A-Za-z]", m.group(1)):
+        # prefixe chiffre+lettres : la decomposition est la seule lecture qui
+        # distingue `3D-01` de `3D-02` (cf. le cas documente dans la zone de
+        # fix mesurable). Un prefixe purement chiffre tombe sur `index_key`.
         prefix, num, accr = m.group(1), m.group(2), m.group(3)
         return (d, "%s-%s%s" % (prefix, num, accr))
     idx = index_key(basename)
@@ -1039,9 +1119,35 @@ def self_test():
         ("FAUX POSITIF  lettre d'accretion differente 2.8b vs 2.8c",
          ["m/02-ML/2.8c-Borne.ipynb"],
          merge(group_by_slot(["m/02-ML/2.8b-Theorie.ipynb"], SOURCE_BASE)), set(), ["free"]),
-        ("FAUX POSITIF  cible sans index (prefixe alphabetique)",
-         ["s/MGS-27-Forensic.ipynb"],
+        ("FAUX POSITIF  cible sans position (nom qui ne porte ni serie ni index)",
+         ["s/notes-Sans-Position.ipynb"],
          merge(group_by_slot(["s/MGS-26-Equilibrium.ipynb"], SOURCE_BASE)), set(), ["no_slot"]),
+        # --- les series a prefixe alphabetique : le trou ferme par #21959 ---
+        ("VRAI POSITIF  deux series au meme numero dans une revision",
+         ["z/Z3-19-Machine-de-Goedel-Python.ipynb", "z/Z3-19-Optimization-Lexicographic-Python.ipynb"],
+         merge(group_by_slot(["z/Z3-19-Machine-de-Goedel-Python.ipynb",
+                              "z/Z3-19-Optimization-Lexicographic-Python.ipynb"],
+                             SOURCE_REVISION)), set(),
+         ["duplicate_within_revision", "duplicate_within_revision"]),
+        ("VRAI POSITIF  serie a prefixe alphabetique tenue par la base",
+         ["z/Z3-19-Machine-de-Goedel-Python.ipynb"],
+         merge(group_by_slot(["z/Z3-19-Optimization-Lexicographic-Python.ipynb"], SOURCE_BASE)),
+         set(), ["taken_on_base"]),
+        ("VRAI POSITIF  serie a prefixe alphabetique reservee par une PR ouverte",
+         ["z/Z3-19-Machine-de-Goedel-Python.ipynb"],
+         pr_claims([{"number": 20664, "files": [
+             {"path": "z/Z3-19-Optimization-Lexicographic-Python.ipynb",
+              "additions": 4, "deletions": 0}]}]), set(), ["reserved_by_open_pr"]),
+        ("FAUX POSITIF  deux numeros distincts de la meme serie",
+         ["z/Z3-19-Machine-de-Goedel-Python.ipynb"],
+         merge(group_by_slot(["z/Z3-20-Autre-Sujet-Python.ipynb"], SOURCE_BASE)), set(), ["free"]),
+        ("FAUX POSITIF  3D-01 et 3D-02 ne buckettent pas ensemble",
+         ["d/3D-01-NeRF-From-Scratch.ipynb"],
+         merge(group_by_slot(["d/3D-02-NeRF-Critic.ipynb"], SOURCE_BASE)), set(), ["free"]),
+        ("FAUX POSITIF  jumeau de noyau d'une serie alphabetique : non concurrent",
+         ["z/GameTheory-04c-NashExistence-CSharp.ipynb"],
+         merge(group_by_slot(["z/GameTheory-04c-NashExistence-Python.ipynb"], SOURCE_BASE)),
+         set(), ["exempt_sibling"]),
         ("NEGATIF       slot reellement libre",
          [A], merge(group_by_slot(["MyIA.AI.Notebooks/X/04-1-Previous.ipynb"], SOURCE_BASE)),
          set(), ["free"]),
