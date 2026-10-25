@@ -45,6 +45,43 @@ _token_alive() {
     GH_TOKEN="$1" gh api user --jq .login >/dev/null 2>&1
 }
 
+# Cache negatif (revue Hermes #22417, remarque 1) : un jeton mort de master.env
+# re-teste a CHAQUE ExecStart/restart, et `Restart=always` transforme deux 401
+# isoles en martelement de l'API (le principe de #15095, sur le chemin jeton).
+# On memorise les NOMS de variables refuses avec l'empreinte (mtime+taille) du
+# fichier qui les porte : tant que master.env n'a pas bouge, ils ne sont plus
+# testes. Le cache ne contient JAMAIS de valeur de jeton -- seulement des noms
+# et l'empreinte. Le candidat gh.exe n'est PAS cache : son etat vit cote
+# Windows, invisible au mtime de master.env.
+_TOKEN_CACHE="${COURSIA_TOKEN_CACHE:-/tmp/coursia-runner-dead-tokens}"
+_env_fp() {
+    stat -c '%Y %s' "$TOKEN_FILE" 2>/dev/null || echo "absent"
+}
+_cache_fp() {
+    sed -n 's/^#fp=//p' "$_TOKEN_CACHE" 2>/dev/null
+}
+_dead_cached() {
+    [ -s "$_TOKEN_CACHE" ] || return 1
+    [ "$(_cache_fp)" = "$(_env_fp)" ] || return 1
+    grep -qx "master.env:$1" "$_TOKEN_CACHE" 2>/dev/null
+}
+# _dead_seen accumule les morts de ce passage (caches + fraichement mesures)
+# pour re-ecrire le cache en fin de cascade.
+_dead_seen=""
+_remember_dead() {
+    case " $_dead_seen " in
+        *" master.env:$1 "*) ;;
+        *) _dead_seen="$_dead_seen master.env:$1" ;;
+    esac
+}
+_write_cache() {
+    _tmp_cache="$_TOKEN_CACHE.$$"
+    { echo "#fp=$(_env_fp)"; for _d in $_dead_seen; do echo "$_d"; done; } > "$_tmp_cache" 2>/dev/null \
+        && mv -f "$_tmp_cache" "$_TOKEN_CACHE" 2>/dev/null
+    # Echec d'ecriture = cache absent au prochain tour : retombee sure mais
+    # saine (un 401 de plus), jamais un blocage.
+}
+
 # supervise.sh s'arrete sur « gh introuvable » -- autant le dire ici, avec le
 # remede, plutot que de laisser l'unite echouer sur un message qui ne dit pas
 # quoi installer.
@@ -57,12 +94,18 @@ for _var in GH_RUNNERS_ADMIN_TOKEN GITHUB_ACCESS_TOKEN GITHUB_TOKEN; do
     if [ -f "$TOKEN_FILE" ]; then
         _v="$(sed -n "s/^${_var}=//p" "$TOKEN_FILE" | head -1 | tr -d '\r"')"
         if [ -n "$_v" ]; then
+            if _dead_cached "$_var"; then
+                echo "jeton mort (cache, master.env inchange) : master.env:$_var non re-teste -- candidat suivant" >&2
+                _remember_dead "$_var"
+                continue
+            fi
             if _token_alive "$_v"; then
                 TOKEN="$_v"
                 TOKEN_SOURCE="master.env:$_var"
                 break
             fi
             echo "jeton mort ignore : master.env:$_var refuse par l'API (401) -- candidat suivant" >&2
+            _remember_dead "$_var"
         fi
     fi
 done
@@ -78,6 +121,7 @@ if [ -z "$TOKEN" ]; then
         fi
     fi
 fi
+_write_cache
 if [ -z "$TOKEN" ]; then
     echo "FATAL: aucun jeton d'enregistrement VALIDE -- GH_RUNNERS_ADMIN_TOKEN / GITHUB_ACCESS_TOKEN / GITHUB_TOKEN de $TOKEN_FILE sont absents ou refuses (401), et gh.exe n'a rien rendu de valide" >&2
     exit 1

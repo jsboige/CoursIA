@@ -115,6 +115,27 @@ n'est pas portable : selon la version de systemd et de docker-ce, le vidage peut
 être ignoré. Le geste déterministe est de **déplacer le socket**, pas d'espérer
 que la dépendance tombe. Les deux drop-ins sont donc livrés ensemble ici.
 
+**Deux remèdes voisin — lequel choisir (revue Hermes #22417, remarque 2).**
+po-2027 (PR #22416, mesuré le même soir) résout le même piège racine
+autrement : son `docker.socket` est **masqué**, donc l'unité socket ne peut pas
+être détournée — le geste y est l'**override complet de l'unité**
+`docker.service` (`persist/po-2027/docker.service`, copie stock retouchée sur
+`Requires=`/`After=`). L'arbitrage se lit sur l'état du socket, avant tout
+geste :
+
+1. **`docker.socket` actif (non masqué)** — cas po-2023 : le drop-in socket
+   (`coursia-docker-socket.conf`, déplacer le `ListenStream`) **d'abord**. Il
+   ne touche ni l'unité ni le démon, se retire d'un seul fichier, et ne gèle
+   pas une copie d'unité à re-diffuser contre le stock à chaque montée de
+   docker-ce.
+2. **`docker.socket` masqué** — cas po-2027 : un socket masqué ne peut pas
+   être redirigé ; l'override d'unité est alors nécessaire pour retirer les
+   références `Requires=`/`After=` (mesure po-2027 : le vidage par drop-in
+   n'était pas honoré par son systemd). Coût assumé et documenté dans le
+   fichier : la copie doit être re-diffusée à chaque upgrade docker-ce.
+
+L'aiguillage tient en une commande : `systemctl is-enabled docker.socket`.
+
 **Résidu assumé.** Le lien `/run/docker.sock → proxy d'hôte` vit sur tmpfs et ne
 survit pas à un redémarrage de la distro. C'est à l'intégration Docker Desktop
 de le reprovisionner ; si elle ne le fait pas, le symptôme est un `docker` muet
