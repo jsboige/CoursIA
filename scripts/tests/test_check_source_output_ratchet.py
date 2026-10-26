@@ -125,6 +125,16 @@ class GitRepo:
         return subprocess.run(cmd, cwd=self.path, capture_output=True,
                               text=True, encoding="utf-8")
 
+    def run_guard_text(self, base="HEAD~1", advisory=False):
+        """Text mode (no --json): this is the mode that emits the per-cell
+        GitHub annotations, so it is the only one that can observe their
+        severity."""
+        cmd = [sys.executable, str(TOOL), base]
+        if advisory:
+            cmd.append("--advisory")
+        return subprocess.run(cmd, cwd=self.path, capture_output=True,
+                              text=True, encoding="utf-8")
+
     def close(self):
         self.dir.cleanup()
 
@@ -771,6 +781,69 @@ class TestDiffOutputsGranularity(unittest.TestCase):
             self.assertNotIn("moved=3", text_proc.stdout)
         finally:
             repo.dir.cleanup()
+
+
+class TestAnnotationSeverityContract(unittest.TestCase):
+    """The annotation severity must follow the caller's declared contract.
+
+    Measured on the advisory wiring (`source-output-ratchet.yml`): the job is
+    report-only BY DESIGN -- its exit code is swallowed and the step ends on
+    `exit 0` -- yet the script emitted `::error` per stale cell. The run then
+    showed a green job carrying a red error annotation, which is the very
+    shape of the slow-lane pilot's false green (#12856), on the annotation
+    channel instead of the status channel.
+
+    The contract locked here: the severity follows `--advisory`, and the EXIT
+    CODE never follows it. A check that is wired report-only must not shout
+    `::error`; a check that is wired as a hard gate must keep its `::error`.
+    """
+
+    def setUp(self):
+        # Cell [26] source edited, base outputs kept: the founding defect.
+        self.repo = GitRepo([fixture_13550_base(),
+                             fixture_13550_head(OUT_BASE)])
+
+    def tearDown(self):
+        self.repo.close()
+
+    def test_default_annotation_is_an_error(self):
+        """Control NEGATIF: without the flag, the hard-gate behaviour is
+        untouched. This is what proves the fix did not weaken the check."""
+        proc = self.repo.run_guard_text()
+        self.assertEqual(proc.returncode, 1, proc.stderr)
+        self.assertIn("::error file=", proc.stderr)
+        self.assertNotIn("::warning file=", proc.stderr)
+
+    def test_advisory_annotation_is_a_warning(self):
+        proc = self.repo.run_guard_text(advisory=True)
+        self.assertIn("::warning file=", proc.stderr)
+        self.assertNotIn("::error file=", proc.stderr)
+
+    def test_advisory_keeps_the_exit_code(self):
+        """The severity must not become a way to hide the finding: the exit
+        code is the signal the workflow reads (it captures it, then decides
+        its own final status)."""
+        hard = self.repo.run_guard_text()
+        soft = self.repo.run_guard_text(advisory=True)
+        self.assertEqual(hard.returncode, 1)
+        self.assertEqual(soft.returncode, 1)
+
+    def test_advisory_annotation_states_the_contract(self):
+        """An annotation that says 'advisory' must say what advisory means:
+        the reader of the run page cannot see the workflow's comment."""
+        proc = self.repo.run_guard_text(advisory=True)
+        self.assertIn("does NOT block the merge", proc.stderr)
+
+    def test_advisory_on_a_clean_tree_emits_no_annotation(self):
+        repo = GitRepo([fixture_13550_base(),
+                        fixture_13550_head(OUT_REFRESHED)])
+        try:
+            proc = repo.run_guard_text(advisory=True)
+            self.assertEqual(proc.returncode, 0, proc.stderr)
+            self.assertNotIn("::warning file=", proc.stderr)
+            self.assertNotIn("::error file=", proc.stderr)
+        finally:
+            repo.close()
 
 
 if __name__ == "__main__":
