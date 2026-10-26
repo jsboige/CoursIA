@@ -402,6 +402,31 @@ class TestMetriquesInvariantesEtCiblesDegenerees(unittest.TestCase):
         )
         self.assertEqual(v3["issue"], "indecidable")
 
+        # Un niveau DEGENERE (bande de largeur nulle -> position "n/a") ne
+        # compte NI comme sortie NI comme retour : il ne doit donc pas
+        # EMPECHER de nommer un seuil de retour durable. Sans cette regle, un
+        # seul niveau muet a la fin du balayage rendait le verdict
+        # perpeteruellement "indecidable".
+        def _niveau_degenere(gamma):
+            return {
+                "gamma": gamma,
+                "rapport": {"overlap_coef_max": None},
+                "temoin": {"overlap_coef_max": {"p05": 0.25, "p95": 0.25, "n": 6.0}},
+            }
+
+        v4 = freg.verdict_sweep_bande(
+            [_niveau(0.0, 0.9, 0.2, 0.4),
+             _niveau(0.5, 0.9, 0.2, 0.4),
+             _niveau(0.75, 0.3, 0.2, 0.4),
+             _niveau_degenere(1.0)],
+            "overlap_coef_max",
+        )
+        self.assertEqual(v4["issue"], "retour_durable")
+        self.assertEqual(v4["seuil"], 0.75)
+        # le niveau degenere reste RAPPORTE, avec sa position "n/a"
+        self.assertEqual(v4["positions"][-1]["position"], "n/a")
+        self.assertIsNone(v4["positions"][-1]["valeur"])
+
         # critere 2 : satisfait seulement par un gap negatif hors bande
         resultats = {
             "conditionnel": {

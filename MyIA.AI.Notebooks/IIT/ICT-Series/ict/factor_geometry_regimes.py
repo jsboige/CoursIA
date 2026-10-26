@@ -200,20 +200,33 @@ def verdict_sweep_bande(
     Un niveau dont la bande est **degeneree** (largeur nulle) ne compte ni
     comme sortie ni comme retour : il est rendu ``n/a`` par
     :func:`position_contre_bande` et le verdict le dit.
+
+    Ce niveau est donc **exclu des deux tests** -- legerement different de le
+    compter comme « ni sortie ni retour » (ce qui le laisserait disqualifier
+    un seuil de retour durable). Concretement : un niveau degenere **ne peut
+    pas empêcher** de nommer un seuil de retour durable, sans quoi la
+    presence d'un seul niveau muet a la fin du balayage rendrait le verdict
+    perpeteruellement « indecidable ».
+
+    Les seuils candidats sont pris sur les niveaux **exploitables** : un
+    seuil pose sur un niveau degenere ne dit rien.
     """
     positions = []
     for l in lignes:
         pos = position_contre_bande(l["rapport"][metrique], l["temoin"][metrique])
-        positions.append({"gamma": float(l["gamma"]), "valeur": float(l["rapport"][metrique]),
+        brut = l["rapport"].get(metrique)
+        positions.append({"gamma": float(l["gamma"]),
+                          "valeur": None if brut is None else float(brut),
                           "position": pos})
-    dessus = [p for p in positions if p["position"] == "dessus_bande"]
+    exploitables = [p for p in positions if p["position"] != "n/a"]
+    dessus = [p for p in exploitables if p["position"] == "dessus_bande"]
     if not dessus:
         return {"metrique": metrique, "issue": "jamais_sorti", "seuil": None,
                 "positions": positions}
-    gammas = sorted({p["gamma"] for p in positions})
+    gammas = sorted({p["gamma"] for p in exploitables})
     for seuil in gammas:
-        suite = [p for p in positions if p["gamma"] >= seuil]
-        if all(p["position"] in ("dans_bande", "sous_bande") for p in suite):
+        suite = [p for p in exploitables if p["gamma"] >= seuil]
+        if suite and all(p["position"] in ("dans_bande", "sous_bande") for p in suite):
             return {"metrique": metrique, "issue": "retour_durable", "seuil": float(seuil),
                     "positions": positions}
     return {"metrique": metrique, "issue": "indecidable", "seuil": None, "positions": positions}
