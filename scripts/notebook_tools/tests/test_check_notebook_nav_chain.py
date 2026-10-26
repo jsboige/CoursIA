@@ -62,6 +62,24 @@ def _isolate_baseline(tmp_path, monkeypatch):
     # rederiger aussi, sinon ValueError au lieu d'un test.
     monkeypatch.setattr(cnc, "NOTEBOOKS_ROOT", tmp_path / "MyIA.AI.Notebooks")
     monkeypatch.setattr(cnc, "BASELINE_PATH", tmp_path / "baseline.json")
+    # La provenance (#22121) interroge git depuis REPO_ROOT : le faux depot de
+    # tmp_path n'en est pas un, donc toute commande echoue et `--baseline`
+    # refuserait d'ecrire (rc=3). Ce fichier suppose un depot en regle ; les cas
+    # de refus sont couverts par scripts/tests/test_check_notebook_nav_chain.py.
+    sha = "0" * 40
+
+    def _fake_git_output(*args):
+        if args in (("rev-parse", "HEAD"), ("rev-parse", "origin/main")):
+            return sha
+        if args == ("rev-parse", "--abbrev-ref", "HEAD"):
+            return "main"
+        if args == ("status", "--porcelain"):
+            return ""
+        if args and args[0] == "rev-list":
+            return "0"
+        return None
+
+    monkeypatch.setattr(cnc, "_git_output", _fake_git_output)
     return tmp_path
 
 
@@ -416,9 +434,15 @@ class TestBaselineIO:
         inbound, outbound, series = cnc.build_graph(list(p.values()))
         r = cnc.analyse(inbound, outbound, series)
         cnc._write_baseline(r)
-        first = cnc.BASELINE_PATH.read_bytes()
+        first = json.loads(cnc.BASELINE_PATH.read_text(encoding="utf-8"))
         cnc._write_baseline(r)
-        assert cnc.BASELINE_PATH.read_bytes() == first
+        second = json.loads(cnc.BASELINE_PATH.read_text(encoding="utf-8"))
+        # La provenance (#22121) porte `written_at`, seule valeur qui ne peut pas
+        # etre reproduite : deux ecritures separees par une seconde different par
+        # ce champ et par lui seul. Le reste est byte-identique.
+        assert isinstance(first["provenance"].pop("written_at"), str)
+        assert isinstance(second["provenance"].pop("written_at"), str)
+        assert first == second
 
     def test_missing_baseline_is_empty(self):
         assert cnc._load_baseline() == set()
