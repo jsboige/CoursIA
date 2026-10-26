@@ -1411,6 +1411,78 @@ def test_belt_umbrella_container_marker_read_failure_is_fail_open():
     assert withheld == []
 
 
+def test_belt_umbrella_container_read_failure_is_REPORTED():
+    """Le fail-OPEN reste assume, mais le SILENCE ne l'est plus.
+
+    Mesure #17528 (session jumelle `coursia-2-25`, 2026-10-26) : le conteneur
+    portait le marqueur `[INFO] candidate-delivered`, la LECTURE du dernier
+    commentaire a echoue (reseau / 403 / payload illisible), et le tapis a
+    resservi le conteneur deja livre -- sans qu'aucune ligne de sortie ne
+    distingue ce cas d'un conteneur libre.
+
+    Le correctif ne change PAS le tirage (fail-OPEN conserve : on ne refuse
+    pas un grain faute d'avoir pu lire un commentaire) ; il change le
+    RENDU : le numero est reporte dans `container_unread`, exactement comme
+    `claim_unread` le fait pour le claim (#20265).
+    """
+    umbrella = _make_item(19024, age_days=40, idle=4, klass="umbrella",
+                          last=None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [umbrella], _free_claims([umbrella]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: None)
+    # Le tirage est MAINTENU (fail-OPEN assume)...
+    assert [p["number"] for p in picks] == [19024]
+    assert withheld == []
+    # ... mais l'etat INCONNU du conteneur est PUBLIE.
+    assert state["container_unread"] == [19024]
+
+
+def test_belt_umbrella_container_read_success_is_not_reported():
+    """Controle negatif : une lecture ABOUTIE ne produit aucun rapport --
+    que le conteneur porte le marqueur (ecarte) ou non (servi). Le signal
+    doit désigner l'INCERTITUDE, pas le conteneur."""
+    marque = _make_item(19025, age_days=40, idle=4, klass="umbrella",
+                        last=None)
+    _picks, _withheld, state = pig.belt_pick_with_replacements(
+        [marque], _free_claims([marque]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: True)
+    assert state["container_unread"] == []
+
+    libre = _make_item(19026, age_days=40, idle=4, klass="umbrella",
+                       last=None)
+    _picks, _withheld, state = pig.belt_pick_with_replacements(
+        [libre], _free_claims([libre]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: False)
+    assert state["container_unread"] == []
+
+
+def test_le_rapport_conteneur_rend_la_trace_visible(capsys):
+    """Le rendu du pendant de `print_claim_unread_report` : le numero et la
+    nature de l'incertitude doivent etre visibles."""
+    pig.print_container_unread_report([17528], "myia-ai-01:CoursIA-2")
+    out = capsys.readouterr().out
+    assert "CONTENEUR NON LU" in out
+    assert "#17528" in out
+    assert "candidate-delivered" in out
+
+
+def test_le_rapport_conteneur_est_muet_sans_lecture_ratee(capsys):
+    """Controle negatif du rendu : un rapport qui bavarde a vide serait du
+    bruit a chaque tirage -- y compris ceux ou tout s'est bien passe."""
+    pig.print_container_unread_report([], "myia-ai-01:CoursIA-2")
+    pig.print_container_unread_report(None, "myia-ai-01:CoursIA-2")
+    assert capsys.readouterr().out == ""
+
+
 def test_belt_include_delivered_keeps_umbrella_with_container_marker():
     """L'echappatoire `--include-delivered` reste respectee sur l'urne
     umbrella : le marqueur de conteneur n'est pas une barriere absolue."""
@@ -1448,6 +1520,12 @@ def _stub_last_comment(monkeypatch, body):
     "[INFO] candidate-delivered lane myia-po-2027:CoursIA -- EPIC closable",
     "## [INFO] candidate-delivered\n\nles cinq arcs sont clos",
     "[INFO candidate-delivered] verification first-hand des arcs",
+    # La forme exacte mesuree par la session jumelle `coursia-2-25` sur
+    # #17528 (2026-10-26) : marqueur suivi d'un TIRET CADRATIN et d'un
+    # libelle libre. C'est elle qui a echappe au filtre.
+    "[INFO] candidate-delivered — lane myia-po-2027:CoursIA — EPIC materiellement livree",
+    # Variante SANS les deux-points : la forme libre la plus courte.
+    "[INFO] candidate-delivered EPIC materiellement livree",
 ])
 def test_container_marker_detects_container_statements(monkeypatch, body):
     """Le marqueur de conteneur est reconnu dans ses formes."""
