@@ -1465,6 +1465,72 @@ def test_belt_umbrella_container_read_success_is_not_reported():
     assert state["container_unread"] == []
 
 
+def test_belt_recent_marker_read_failure_is_REPORTED():
+    """La SONDE DU MARQUEUR RECENT avait le meme silence que celle du
+    conteneur -- et c'est elle qui a produit la 4e livraison en double.
+
+    Mesure #17528 (session jumelle `coursia-2-25`, 2026-10-26) : le picker a
+    signale `403` sur deux candidats du meme run (« claim NON LU sur #15604,
+    #21092 : reseau, 403, payload illisible ») -- le quota GraphQL etait
+    epuise. L'echec de la SONDE DE MARQUEUR, lui, n'etait nomme **nulle
+    part** : un `None` (lu impossible) y etait indiscernable d'un « pas de
+    marqueur » dans le rapport.
+
+    Le tirage reste MAINTENU (fail-OPEN assume) ; le numero est desormais
+    RAPPORTE.
+    """
+    grain = _make_item(19027, age_days=40, idle=4, klass="grain", last=None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [grain], _free_claims([grain]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: None,
+        container_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == [19027]
+    assert withheld == []
+    assert state["marker_unread"] == [19027]
+
+
+def test_belt_recent_marker_read_success_is_not_reported():
+    """Controle negatif : une lecture ABOUTIE ne produit aucun rapport --
+    que le marqueur soit present (ecarte) ou absent (servi)."""
+    marque = _make_item(19028, age_days=40, idle=4, klass="grain",
+                        last=None)
+    _picks, _withheld, state = pig.belt_pick_with_replacements(
+        [marque], _free_claims([marque]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: True,
+        container_marker_probe=lambda n: False)
+    assert state["marker_unread"] == []
+
+    libre = _make_item(19029, age_days=40, idle=4, klass="grain", last=None)
+    _picks, _withheld, state = pig.belt_pick_with_replacements(
+        [libre], _free_claims([libre]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: False)
+    assert state["marker_unread"] == []
+
+
+def test_le_rapport_marqueur_rend_la_trace_visible(capsys):
+    """Le rendu du troisieme pendant : le numero et la nature de
+    l'incertitude doivent etre visibles."""
+    pig.print_marker_unread_report([21092], "myia-ai-01:CoursIA-2")
+    out = capsys.readouterr().out
+    assert "LIVRAISON NON LU" in out
+    assert "#21092" in out
+    assert "candidate-delivered" in out
+
+
+def test_le_rapport_marqueur_est_muet_sans_lecture_ratee(capsys):
+    """Controle negatif du rendu : aucun bruit quand tout s'est bien passe."""
+    pig.print_marker_unread_report([], "myia-ai-01:CoursIA-2")
+    pig.print_marker_unread_report(None, "myia-ai-01:CoursIA-2")
+    assert capsys.readouterr().out == ""
+
+
 def test_le_rapport_conteneur_rend_la_trace_visible(capsys):
     """Le rendu du pendant de `print_claim_unread_report` : le numero et la
     nature de l'incertitude doivent etre visibles."""
