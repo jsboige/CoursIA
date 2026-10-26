@@ -14,7 +14,7 @@ Cette troisième sous-série (SC-12 a SC-14) introduit le **testing rigoureux** 
 | 13 | [SC-13-Fuzz-Invariants-Python](SC-13-Fuzz-Invariants-Python.ipynb) | 40 min | Fuzz testing, paramètres aléatoires, invariants de contrats, `vm.assume` |
 | 14 | [SC-14-Formal-Verification-Python](SC-14-Formal-Verification-Python.ipynb) | 50 min | Verification formelle, Certora Prover, CVL, spécifications, règles |
 
-**Total** : 3 notebooks, ~2h15.
+**Total** : ~2h15.
 
 Cette sous-série est une **escalade de l'assurance** : chaque étape couvre une classe de bugs plus large que la précédente — du « ça marche sur mes exemples » au « propriété garantie quelles que soient les entrées ».
 
