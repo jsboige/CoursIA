@@ -43581,7 +43581,7 @@ assert sw3 > sw2, ""le bien-etre doit monter""
 assert revenue3 < revenue2, ""le revenu doit chuter (Conitzer-Sandholm)""
 print(""\nVCG n'est PAS monotone en revenu : prouve."")
 ",,,,,,,,38729f3b836bcb3e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb,3222d3d9,markdown,fr,91b7165aafa3f69d,"### Interpretation des resultats — la non-monotonie du revenu VCG en chiffres
+MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb,3222d3d9,markdown,fr,1fe7c718632c878e,"### Interpretation des resultats — la non-monotonie du revenu VCG en chiffres
 
 **Le paradoxe de Conitzer-Sandholm** se manifeste ici en chiffres concrets :
 
@@ -43597,7 +43597,24 @@ MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb,3222d3d9
 
 **Lecon** : VCG fait payer chaque agent selon son **externalite marginale**, mais avec des complementarites, cette externalite peut devenir **tres faible** meme quand l'agent contribue beaucoup au bien-etre global. Le vendeur encaisse alors moins qu'avec moins d'enchérisseurs.
 
-> **Lien avec la formalisation Lean** : le theoreme `vcg_revenue_non_monotone : revenue3 < revenue2` dans `MechanismDesign.lean` prouve ce meme resultat sur le domaine fini (17 lemmes via `decide`, 0 sorry). La demonstration Python ci-dessus en est la version executable pedagogique.",,,,,,,,91b7165aafa3f69d,,,,,,,,,,,,,,,
+> **Lien avec la formalisation Lean** : le theoreme `vcg_revenue_non_monotone : revenue3 < revenue2` dans `MechanismDesign.lean` prouve ce meme resultat sur le domaine fini (17 lemmes via `decide`, 0 sorry). La demonstration Python ci-dessus en est la version executable pedagogique.
+
+### 4.5.1 Ce que le mecanisme additif perd, mesure sur cette instance
+
+La section 4 a pose la frontiere en prose ; ce paragraphe la **mesure**. Les deux fonctions de `game_theory_utils.py` ne repondent pas a la meme question : `VCGAuction.allocate_multi` attribue objet par objet sous hypothese additive, `vcg_combinatorial` (cellule precedente) compare des allocations sur des valuations par sous-ensemble.
+
+Reprenons **l'instance de ce carnet** : l'agent 1 valorise le lot `{A,B}` a `10` et chaque objet isole a `0` ; les agents 2 et 3 valent `8` pour leur singleton.
+
+| Enchereurs | `allocate_multi` | Optimum de lot | Ecart de bien-etre |
+|---|---|---|---|
+| 2 (agents 1 et 2) | A -> agent 2, B -> agent 1 : **8** | agent 1 prend `{A,B}` : **10** | **-2** |
+| 3 (agents 1, 2 et 3) | A -> agent 2, B -> agent 3 : **16** | identique : **16** | 0 |
+
+La ligne a **3 enchereurs coincide** avec l'optimum, et c'est precisement celle que ce carnet execute. Ce n'est pas une preuve de generalite, c'est une coincidence : les deux plus fortes valuations y sont des singletons, donc l'attribution objet par objet tombe sur l'allocation efficace. La ligne a **2 enchereurs**, presente dans le meme tableau, expose la perte : l'agent 1 valorise le lot a `10`, mais il n'offre rien sur un objet isole, si bien que le meilleur enchereur de A est l'agent 2 et que B reste a l'agent 1.
+
+De la vient la difference de cout algorithmique : `allocate_multi` reste lineaire en `n_agents * n_items`, tandis que `vcg_combinatorial` enumere `product(indices, repeat=2)`, c'est-a-dire les allocations d'objets aux agents. Sur deux objets l'ecart de cout est invisible ; il ne l'est plus quand le nombre d'objets grandit — c'est la raison pour laquelle l'enchere combinatoire est un probleme algorithmiquement difficile, et non une variante de l'attribution objet par objet.
+
+> **Perimetre** : ce paragraphe mesure une limite de `allocate_multi` (issue #20306), pas un defaut de `vcg_combinatorial`. Chacune des deux fonctions est correcte sur son domaine.",,,,,,,,1fe7c718632c878e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GameTheory/GameTheory-16-MechanismDesign-Python.ipynb,087761b0,markdown,fr,8b7f0b85089ee1ce,"## 4.6 Sandholm (SAGT 2009) : quand le Byzantine ameliore les choses
 
 La section 4.5 vient de montrer que VCG peut **perdre** en efficacite (revenu non monotone, Conitzer-Sandholm 2006). Ce resultat est une *pathologie* : on observe un mecanisme truth-telling qui fait moins bien que d'autres alternatives en presence de complementarites.
