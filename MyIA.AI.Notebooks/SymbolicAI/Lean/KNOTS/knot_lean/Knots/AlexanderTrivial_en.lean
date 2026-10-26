@@ -43,7 +43,13 @@ import Knots.ConwayPD_en
 import Knots.ArcPartition_en
 
 import Mathlib.Algebra.Polynomial.Basic
+import Mathlib.Algebra.Polynomial.AlgebraMap
+import Mathlib.Analysis.Complex.Basic
+import Mathlib.GroupTheory.OrderOfElement
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+import Mathlib.RingTheory.RootsOfUnity.PrimitiveRoots
+import Mathlib.Tactic.IntervalCases
+import Mathlib.Tactic.LinearCombination
 
 namespace Knots_en
 
@@ -188,6 +194,81 @@ theorem alexander_trefoil :
   simp only [Matrix.of_apply]
   simp (config := { decide := true }) [alexanderEntry]
   ring
+
+/-- Knot-catastrophe bridge, verified form: the complex roots of the
+trefoil's Alexander polynomial, `t² − t + 1`, are exactly the **primitive**
+sixth roots of unity — the prose assertion of the positive control
+`alexander_trefoil` above, here established by the kernel. This is the
+formal bridge to the cuspidal cubic `y² = x³` of the cusp catastrophe: the
+discriminant `4a³ + 27b² = 0` and the order-6 monodromy count the six
+sectors these roots delimit (item G.α.3 of plan #19333; Python replay in
+`IIT/ICT-Series/ICT-23`, module `ict/catastrophe.py`). -/
+theorem alexander_trefoil_roots_primitive_sixth (z : ℂ) :
+    Polynomial.aeval z (alexanderPolynomial trefoil) = 0 ↔ IsPrimitiveRoot z 6 := by
+  rw [alexander_trefoil]
+  simp only [Polynomial.aeval_X, map_add, map_sub, map_pow, map_one]
+  constructor
+  · -- z² − z + 1 = 0 → order exactly 6
+    intro h
+    have hz3 : z ^ 3 = -1 := by linear_combination (z + 1) * h
+    have hz6 : z ^ 6 = 1 := by
+      calc z ^ 6 = (z ^ 3) ^ 2 := by ring
+        _ = (-1 : ℂ) ^ 2 := by rw [hz3]
+        _ = 1 := by norm_num
+    refine IsPrimitiveRoot.iff_orderOf.mpr ?_
+    have hdvd : orderOf z ∣ 6 := orderOf_dvd_of_pow_eq_one hz6
+    have hpos : 0 < orderOf z :=
+      (isOfFinOrder_iff_pow_eq_one.mpr ⟨6, by norm_num, hz6⟩).orderOf_pos
+    have hle : orderOf z ≤ 6 := Nat.le_of_dvd (by norm_num) hdvd
+    have hcases : orderOf z = 1 ∨ orderOf z = 2 ∨ orderOf z = 3 ∨ orderOf z = 6 := by
+      interval_cases ho : orderOf z <;> simp_all
+    rcases hcases with h1 | h2 | h3 | h6
+    · -- order 1: z = 1, but 1 − 1 + 1 ≠ 0
+      have hz1 : z = 1 := by
+        have hp := pow_orderOf_eq_one z
+        rw [h1] at hp
+        simpa using hp
+      rw [hz1] at h
+      norm_num at h
+    · -- order 2: z² = 1 and h force z = 2, absurd
+      have hz2 : z ^ 2 = 1 := by
+        have hp := pow_orderOf_eq_one z
+        rw [h2] at hp
+        simpa using hp
+      have hz : z = 2 := by linear_combination hz2 - h
+      rw [hz] at hz2
+      norm_num at hz2
+    · -- order 3: z³ = 1 contradicts z³ = −1
+      have h31 : z ^ 3 = 1 := by
+        have hp := pow_orderOf_eq_one z
+        rw [h3] at hp
+        simpa using hp
+      rw [h31] at hz3
+      norm_num at hz3
+    · exact h6
+  · -- primitive sixth root → z² − z + 1 = 0
+    intro hprim
+    have ho6 : orderOf z = 6 := (IsPrimitiveRoot.eq_orderOf hprim).symm
+    have hz6 : z ^ 6 = 1 := by rw [← ho6]; exact pow_orderOf_eq_one z
+    have hexp : (z ^ 3 - 1) * (z ^ 3 + 1) = 0 := by linear_combination hz6
+    rcases mul_eq_zero.mp hexp with h31 | h3m1
+    · -- branch z³ = 1: would give 6 ∣ 3
+      have h31' : z ^ 3 = 1 := sub_eq_zero.mp h31
+      exact absurd (show (6 : ℕ) ∣ 3 by
+        rw [← ho6]
+        exact orderOf_dvd_of_pow_eq_one h31') (by decide)
+    · have hfac : (z + 1) * (z ^ 2 - z + 1) = 0 := by linear_combination h3m1
+      rcases mul_eq_zero.mp hfac with hzp1 | hz2
+      · -- branch z = −1: would give 6 ∣ 2
+        exfalso
+        have hz' : z = -1 := by linear_combination hzp1
+        have hd2 : orderOf z ∣ 2 := by
+          rw [hz']
+          exact orderOf_dvd_of_pow_eq_one (by norm_num : ((-1 : ℂ)) ^ 2 = 1)
+        obtain ⟨c, hc⟩ := hd2
+        rw [ho6] at hc
+        omega
+      · exact hz2
 
 /-- Discrimination corollary: the Alexander polynomial distinguishes the
 trefoil from the unknot — first non-triviality of the development,
