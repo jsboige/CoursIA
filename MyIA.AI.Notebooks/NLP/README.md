@@ -15,6 +15,7 @@ Origine : EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271) — mig
 3. **Implémenter** un CRF linéaire from scratch (forward/backward log-space, gradient, Viterbi) et vérifier l'écart nul avec `sklearn-crfsuite`
 4. **Convertir** une CFG en CNF puis appliquer l'algorithme CYK avec backpointers, et mesurer l'ambiguïté sur des phrases de référence
 5. **Décoder** par Viterbi un HMM markovien, mesurer le renversement de décision par rapport à un classifieur token par token, et confronter à `hmmlearn`/`nltk`
+6. **Décomposer** un mot en n-grammes de caractères (subwords) pour généraliser aux mots inconnus (OOV), et mesurer l'écart de robustesse par rapport à une représentation de mot atomique
 
 ## Notebooks
 
@@ -25,6 +26,7 @@ Origine : EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271) — mig
 | 03 | [`03_CRF_Etiquetage_Sequentiel.ipynb`](03_CRF_Etiquetage_Sequentiel.ipynb) | **CRF linéaire from scratch** sur corpus NER français BIO : émissions, transitions, log-partition forward/backward, NLL et Viterbi ; gradient vérifié numériquement, baseline token-wise, témoin `sklearn-crfsuite`, métriques token/entité, ablation et analyse d'erreurs | 75 min |
 | 04 | [`04_PCFG_CYK_Parsing.ipynb`](04_PCFG_CYK_Parsing.ipynb) | **Parsing PCFG/CYK from scratch** (CPU) : CFG française explicite convertie en CNF bornée avec préservation des probabilités, recognizer CYK en table triangulaire visualisée, probabilités MLE sur mini-treebank embarqué (biais d'attachement mesuré), Viterbi + backpointers avec reconstruction de l'arbre, ambiguïté mesurée (2 dérivations, 89,7 %/10,3 %), témoin **NLTK** en concordance exacte, 3 exercices C.1 | 55 min |
 | 05 | [`05-HMM-Viterbi.ipynb`](05-HMM-Viterbi.ipynb) | **HMM et décodage Viterbi from scratch** (CPU) : corpus POS français miniature **synthétique à provenance explicite** (5 mots ambigus NOM/VER, 3 clitiques DET/PRON, phrase à double lecture *le matelot voile la voile*), estimation MLE + lissage add-1 avec `<UNK>`, forward log-espace, Viterbi/backpointers avec treillis visualisé, **17 renversements mesurés** du contexte de séquence (12 vers l'or, accuracy 0,717 → 0,887), baseline majoritaire par mot, témoin **hmmlearn** en concordance exacte (7·10⁻¹⁵ sur le forward, 0 divergence de chemin), contre-témoin **NLTK** sans lissage (0,491 — ce que le add-1 achète), 3 exercices C.1 | 55 min |
+| 09 | [`09-FastText-Subword-Vectors.ipynb`](09-FastText-Subword-Vectors.ipynb) | **fastText from scratch** (CPU) : la même mécanique skip-gram que le carnet 08, mais l'entrée d'un mot est la somme des vecteurs de ses n-grammes de caractères (subwords) — gradient analytique vérifié numériquement, et la capacité distinctive mesurée : 4/4 mots jamais vus (OOV) replacés dans leur famille sémantique, là où word2vec n'a aucun vecteur ; confrontation 08 vs 09, 3 exercices C.1 | 45 min |
 
 ## Progression
 
@@ -33,6 +35,7 @@ Origine : EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271) — mig
 3. **La séquence et ses étiquettes** (03) : la structured prediction par CRF linéaire — du local au global par la log-partition.
 4. **La syntaxe et ses arbres** (04) : grammaires probabilistes et parsing CYK — l'ambiguïté quantifiée, la dérivation la plus probable.
 5. **La chaîne d'états cachés** (05) : le HMM génératif et le décodage de Viterbi — le contexte de séquence qui renverse la décision, pont historique du n-gramme (02) vers le CRF discriminatif (03).
+9. **Le mot et ses subwords** (09) : fastText — la représentation d'entrée passe du mot atomique à la somme des n-grammes de caractères, et la généralisation aux mots inconnus (OOV) devient mesurable.
 
 ## Prérequis
 
