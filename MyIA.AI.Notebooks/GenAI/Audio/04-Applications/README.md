@@ -130,7 +130,7 @@ Audio brut -> STT -> Correction -> Enhance -> TTS -> Podcast final
 ### Musique
 
 ```text
-Texte -> MusicGen -> Édition MIDI -> Voice leading optimal ([App-21 Search](../../../Search/Applications/CSP/App-21-VoiceLeading.ipynb)) -> Rendu audio intelligent ([04-14](04-14-VoiceLeading-Rendu-GenAI.ipynb)) -> Post-production -> Export
+Texte -> MusicGen -> Édition MIDI -> Voice leading optimal ([App-21 Search](../../../Search/Part3-Cas-pratiques/App-21-VoiceLeading.ipynb)) -> Rendu audio intelligent ([04-14](04-14-VoiceLeading-Rendu-GenAI.ipynb)) -> Post-production -> Export
 ```
 
 ### Audiobook Agentique (Epic #1028)
