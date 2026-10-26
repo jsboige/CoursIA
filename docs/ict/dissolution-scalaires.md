@@ -31,7 +31,7 @@ Chaque palier marque une **rupture** dans la carrière d'un scalaire fondateur �
 
 ### Palier 2 — ICT-14 : F comme scalaire-complémentaire (jambe 2)
 
-[`ICT-14-FreeEnergySurprise-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb) (strate 4, cellule [12] verdict) ajoute **F** (énergie libre) à l'appareil. Le verdict est **complémentaire-suffisant** : à précision fixe, F̄ est une transformation monotone de MSE (Gate 1) ; à précision adaptative, F ajoute un contenu prédictif propre (Gate 2) ; sur substrat bistable, F est une coordonnée de la catastrophe (Gate 3). **Statut** : F est ici **construit** (formule explicite `accuracy + complexity`) et **mesuré** (sur trajectoire sinus et modèle de pâturage de May).
+[`ICT-14-FreeEnergySurprise-Python`](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14/ICT-14-FreeEnergySurprise-Python.ipynb) (strate 4, cellule [12] verdict) ajoute **F** (énergie libre) à l'appareil. Le verdict est **complémentaire-suffisant** : à précision fixe, F̄ est une transformation monotone de MSE (Gate 1) ; à précision adaptative, F ajoute un contenu prédictif propre (Gate 2) ; sur substrat bistable, F est une coordonnée de la catastrophe (Gate 3). **Statut** : F est ici **construit** (formule explicite `accuracy + complexity`) et **mesuré** (sur trajectoire sinus et modèle de pâturage de May).
 
 **Ce que ce palier ne dit pas.** F **s'ajoute** à Φ sans le dissoudre : la strate 4 introduit **trois jambes** (Φ / F / K) qui sont présentées comme **compatibles** (ICT-15 va le vérifier).
 
