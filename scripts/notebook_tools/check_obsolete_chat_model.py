@@ -167,6 +167,8 @@ class Ctx:
     func_name: str | None = None
     func_params: dict | None = None   # nom -> Binding | None (sans defaut)
     class_name: str | None = None
+    locals: dict = field(default_factory=dict)       # nom -> Binding
+    local_dicts: dict = field(default_factory=dict)  # nom -> {cle: Binding}
 
 
 @dataclass
@@ -415,7 +417,8 @@ class NotebookScanner:
         for dec in stmt.decorator_list:
             self.scan_expr(dec, ctx)
         inner = Ctx(cell_index=ctx.cell_index, func_name=stmt.name,
-                    func_params=params, class_name=ctx.class_name)
+                    func_params=params, class_name=ctx.class_name,
+                    locals={}, local_dicts={})
         self.visit_block(stmt.body, inner)
 
     def handle_class(self, stmt: ast.ClassDef, ctx: Ctx) -> None:
@@ -448,7 +451,10 @@ class NotebookScanner:
                         if binding.kind != "unresolved":
                             info.self_literals[attr] = binding
         self.class_infos[stmt.name] = info
-        inner = Ctx(cell_index=ctx.cell_index, class_name=stmt.name)
+        # Le corps de classe est son propre scope (non visible des methodes
+        # en semantique Python) : les affectations de classe restent locales.
+        inner = Ctx(cell_index=ctx.cell_index, class_name=stmt.name,
+                    locals={}, local_dicts={})
         self.visit_block(stmt.body, inner)
 
     def handle_assign(self, stmt: ast.Assign, ctx: Ctx) -> None:
@@ -467,12 +473,29 @@ class NotebookScanner:
     def bind_target(self, target, binding: Binding,
                     dict_binding: dict | None, ctx: Ctx) -> None:
         if isinstance(target, ast.Name):
-            if dict_binding is not None:
+            if ctx.func_name is not None or ctx.class_name is not None:
+                # Scope LOCAL (corps de fonction ou de classe) : la locale
+                # ne sort JAMAIS du scope. Sans cette garde, la locale
+                # d'une fonction jamais appelee polluerait la resolution
+                # globale (faux positif mesure, review PR #22800) -- et
+                # inversement une locale courante blanchirait un global
+                # obsolete consomme ailleurs.
+                if dict_binding is not None:
+                    ctx.local_dicts[target.id] = dict_binding
+                else:
+                    ctx.locals[target.id] = binding
+                    ctx.local_dicts.pop(target.id, None)
+            elif dict_binding is not None:
                 self.dict_values[target.id] = dict_binding
                 self.module_values[target.id] = UNRESOLVED
             else:
                 self.module_values[target.id] = binding
                 self.dict_values.pop(target.id, None)
+        elif isinstance(target, ast.Tuple):
+            if ctx.func_name is not None or ctx.class_name is not None:
+                for elt in target.elts:
+                    if isinstance(elt, ast.Name):
+                        ctx.locals[elt.id] = UNRESOLVED
         elif isinstance(target, ast.Attribute) and ctx.class_name:
             base = target.value
             if isinstance(base, ast.Name) and base.id == "self" \
@@ -545,7 +568,11 @@ class NotebookScanner:
                 self.unresolved.append(self._site(
                     ctx, cell_id, call, label, "self hors classe"))
         elif isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name):
-            table = self.dict_values.get(node.value.id)
+            table = None
+            if node.value.id in ctx.local_dicts:
+                table = ctx.local_dicts[node.value.id]
+            elif node.value.id in self.dict_values:
+                table = self.dict_values[node.value.id]
             key = (node.slice.value if isinstance(node.slice, ast.Constant)
                    and isinstance(node.slice.value, str) else None)
             if table is not None and key is not None and key in table:
@@ -561,6 +588,18 @@ class NotebookScanner:
 
     def _resolve_name(self, name: str, label: str, ctx: Ctx, call: ast.Call) -> None:
         cell_id = self._cell_id(ctx.cell_index)
+        if name in ctx.locals:
+            binding = ctx.locals[name]
+            if binding.kind == "unresolved":
+                self.retry_names.append(RetryNameSite(
+                    ctx.cell_index, cell_id, call.func.lineno, label,
+                    name, self.path))
+                self.unresolved.append(self._site(
+                    ctx, cell_id, call, label,
+                    f'variable locale "{name}" dynamique au point d\'appel'))
+            else:
+                self._evaluate(binding, label, ctx, call)
+            return
         if ctx.func_params is not None and name in ctx.func_params:
             param = ctx.func_params[name]
             if param is None:
@@ -641,6 +680,11 @@ class NotebookScanner:
                 return Binding(None, "unresolved",
                                "os.getenv sans defaut litteral")
         if isinstance(node, ast.Name):
+            if node.id in ctx.locals:
+                local = ctx.locals[node.id]
+                return Binding(local.value, local.kind,
+                               f'"{node.id}" (local) <- {local.origin}',
+                               local.node_id)
             if ctx.func_params is not None and node.id in ctx.func_params:
                 param = ctx.func_params[node.id]
                 return param if param is not None else UNRESOLVED

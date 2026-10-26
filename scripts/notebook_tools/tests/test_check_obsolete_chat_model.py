@@ -4,10 +4,13 @@ Pins le contrat : un appel chat dont l'argument ``model`` resout (analyse
 AST bornee inter-cellules) vers un identifiant de la liste obsolete chat
 ROUGIT ; tout le reste reste silencieux -- modeles TTS/transcribe (famille
 SPECIFIQUE), commentaires et markdown (invisibles a l'AST), configuration
-seulement imprimee ou sondee (``test_model`` du 00-3, temoin negatif
+seulement imprimee ou sondee (forme ``test_model`` du 00-3, temoin negatif
 calibre sur le triage c.6428439365), modeles courants. Le cas fondateur
-LiveCoding (config cell 1 -> ``model=llm_model`` / ``self.llm_model``) est
-prouve sur le carnet reel. Aucun reseau, aucun kernel.
+LiveCoding (config -> ``model=llm_model`` / ``self.llm_model``) est prouve
+sur une fixture FIGEE de sa forme -- jamais sur le carnet vivant, dont la
+migration #22783 doit faire disparaitre la dette sans faire echouer cette
+suite (review PR #22800) ; les carnets reels ne servent que d'observation
+en invariant compatible migration. Aucun reseau, aucun kernel.
 """
 import json
 import sys
@@ -217,6 +220,97 @@ def test_reassignment_to_current_silent():
 
 
 # ---------------------------------------------------------------------------
+# Isolation des scopes locaux (defaut 2, review PR #22800) : une locale ne
+# sort JAMAIS de sa fonction -- ni dans un sens (FP) ni dans l'autre
+# (blanchiment), ni entre fonctions, ni pour les dictionnaires.
+# ---------------------------------------------------------------------------
+
+def test_local_obsolete_in_unused_function_no_fp():
+    """Temoin execute par le parent : la locale obsolete d'une fonction
+    JAMAIS APPELEE ne doit pas polluer la resolution globale."""
+    report = _analyze(nb(code(
+        'model = "qwen3.6-35b-a3b"\n'
+        'def unused():\n'
+        '    model = "gpt-4o-mini"\n'
+        'client.chat.completions.create(model=model, messages=[])')))
+    assert report["findings"] == []
+
+
+def test_local_current_does_not_bleach_global_obsolete():
+    """Symetrique : la locale courante d'une fonction ne blanchit pas le
+    global obsolete consomme au niveau module ; l'appel propre a la
+    fonction voit SA locale (pas de finding) et l'appel module ROUGIT."""
+    report = _analyze(nb(code(
+        'model = "gpt-4o-mini"\n'
+        'def helper():\n'
+        '    model = "gpt-5.6-luna"\n'
+        '    return client.chat.completions.create(model=model,\n'
+        '                                          messages=[])\n'
+        'r = client.chat.completions.create(model=model, messages=[])')))
+    assert len(report["findings"]) == 1
+    assert report["findings"][0]["line"] == 6
+
+
+def test_cross_function_locals_isolated():
+    """La locale de f() est invisible pour g() : l'appel de g() reste
+    non resolu, jamais accuse."""
+    report = _analyze(nb(code(
+        'def a():\n'
+        '    model = "gpt-4o-mini"\n'
+        '    return model\n'
+        'def b():\n'
+        '    return client.chat.completions.create(model=model,\n'
+        '                                          messages=[])')))
+    assert report["findings"] == []
+
+
+def test_local_dict_does_not_pollute_global_dict():
+    """dict_values aussi : le dict local d'une fonction ne masque ni ne
+    remplace le dict global consomme ailleurs."""
+    report = _analyze(nb(code(
+        'cfg = {"m": "gpt-5.6-luna"}\n'
+        'def unused():\n'
+        '    cfg = {"m": "gpt-4o-mini"}\n'
+        '    return cfg\n'
+        'client.chat.completions.create(model=cfg["m"], messages=[])')))
+    assert report["findings"] == []
+
+
+def test_local_dict_consumed_in_own_function_flagged():
+    """Symetrique positif : un dict LOCAL consomme DANS sa fonction rougit
+    (le cloisonnement ne cree pas d'angle mort)."""
+    report = _analyze(nb(code(
+        'def run():\n'
+        '    cfg = {"m": "gpt-4o-mini"}\n'
+        '    return client.chat.completions.create(model=cfg["m"],\n'
+        '                                          messages=[])')))
+    assert len(report["findings"]) == 1
+
+
+def test_local_binding_consumed_in_own_function_flagged():
+    """Une locale obsolete consomme dans SA fonction rougit."""
+    report = _analyze(nb(code(
+        'def run():\n'
+        '    model = "gpt-4o-mini"\n'
+        '    return client.chat.completions.create(model=model,\n'
+        '                                          messages=[])')))
+    assert len(report["findings"]) == 1
+
+
+def test_class_body_binding_invisible_to_methods():
+    """Semantique Python : le scope de classe n'est pas visible dans les
+    methodes -- l'affectation de corps de classe ne pollue pas la
+    resolution module."""
+    report = _analyze(nb(code(
+        'class Conf:\n'
+        '    model = "gpt-4o-mini"\n'
+        'def ask():\n'
+        '    return client.chat.completions.create(model=model,\n'
+        '                                          messages=[])')))
+    assert report["findings"] == []
+
+
+# ---------------------------------------------------------------------------
 # NEGATIFS : temoins calibres sur le triage, la garde reste verte
 # ---------------------------------------------------------------------------
 
@@ -399,24 +493,66 @@ def test_main_obsolete_extension(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# Corpus reel : le test qui prouve qu'elle ROUGIT
+# Temoin rouge hermetique : la forme fondatrice LiveCoding, FIGEE
 # ---------------------------------------------------------------------------
 
-@pytest.mark.skipif(not LIVECODING.exists(), reason="carnet reel absent")
-def test_corpus_livecoding_red():
-    """Cas fondateur #22783 : 3 sites (cellules 20/33/36), exit 1."""
-    report = analyze_notebook(str(LIVECODING))
+LIVECODING_SHAPE_CELLS = [
+    # cell 0 -- cellule de parametres (forme Papermill du carnet reel) :
+    'llm_model = "gpt-4o-mini"          # Modele pour la generation de code\n'
+    'use_llm = True',
+    # cell 1 -- site chat direct via la variable :
+    'response = client.chat.completions.create(\n'
+    '    model=llm_model,\n'
+    '    messages=[{"role": "user", "content": "beat"}])',
+    # cell 2 -- second site direct :
+    'response = client.chat.completions.create(\n'
+    '    model=llm_model,\n'
+    '    messages=[{"role": "user", "content": "pattern"}])',
+    # cell 3 -- classe + self.llm_model + instanciation (cellule 36 reelle) :
+    'class MusicSession:\n'
+    '    def __init__(self, llm_model, system_prompt):\n'
+    '        self.llm_model = llm_model\n'
+    '    def compose(self, instruction):\n'
+    '        response = client.chat.completions.create(\n'
+    '            model=self.llm_model, messages=[])\n'
+    '        return response\n'
+    'session = MusicSession(llm_model, "prompt")',
+]
+
+
+def test_livecoding_shape_red_hermetic(tmp_path):
+    """Le test qui prouve qu'elle ROUGIT -- sur une fixture FIGEE de la
+    forme fondatrice (config cell 1 -> model=llm_model cellules 20/33,
+    self.llm_model cellule 36), PAS sur le carnet vivant : la suite ne doit
+    pas echouer au moment precis ou la migration #22783 corrige la dette."""
+    p = tmp_path / "livecoding_shape.ipynb"
+    p.write_text(json.dumps(
+        nb(*[code(src, cid=f"c{i}") for i, src in
+             enumerate(LIVECODING_SHAPE_CELLS)])), encoding="utf-8")
+    report = analyze_notebook(str(p))
     cells = sorted(f["cell"] for f in report["findings"])
-    assert cells == [20, 33, 36], report["findings"]
+    assert cells == [1, 2, 3], report["findings"]
     assert all(f["model"] == "gpt-4o-mini" for f in report["findings"])
-    assert main([str(LIVECODING)]) == 1
+    assert "MusicSession" in report["findings"][2]["via"]
+    assert main([str(p)]) == 1
 
 
-@pytest.mark.skipif(not CONFIG_00_3.exists(), reason="carnet reel absent")
-def test_corpus_00_3_green_but_advisory():
-    """Temoin negatif calibre : configuration documentaire -> vert, advisory
-    sans marqueur, exit 0."""
-    report = analyze_notebook(str(CONFIG_00_3))
-    assert report["findings"] == []
-    assert len(report["doc_mentions"]) >= 1
-    assert main([str(CONFIG_00_3)]) == 0
+# ---------------------------------------------------------------------------
+# Corpus reel : observation en INVARIANT compatible migration
+# ---------------------------------------------------------------------------
+
+@pytest.mark.skipif(not (LIVECODING.exists() and CONFIG_00_3.exists()),
+                    reason="carnets reels absents")
+@pytest.mark.parametrize("path", [LIVECODING, CONFIG_00_3],
+                         ids=["livecoding", "config-00-3"])
+def test_corpus_scan_migration_compatible(path):
+    """Observation bornee sur les carnets reels : le scan ne crashe pas,
+    n'accuse que des identifiants de la liste obsolete chat, et l'exit
+    reflute exactement les findings -- rouge tant que la dette vive existe,
+    vert apres migration. AUCUNE assertion sur le nombre de findings ni sur
+    la presence d'un modele obsolète (etats mutables par les grains de
+    migration #22783)."""
+    report = analyze_notebook(str(path))
+    for f in report["findings"]:
+        assert f["model"] in OBSOLETE_CHAT_MODELS, f
+    assert main([str(path)]) == (1 if report["findings"] else 0)
