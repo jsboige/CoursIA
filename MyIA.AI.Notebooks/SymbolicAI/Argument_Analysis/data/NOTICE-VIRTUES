@@ -3,7 +3,7 @@ NOTICE — CoursIA `data/argumentum_virtues_taxonomy.csv`
 
 This file is a verbatim copy of upstream Argumentum's
 `Cards/Fallacies/Argumentum Virtues - Taxonomy.csv` at submodule commit
-**5cb4a75929cbb19acdecb7853ca03820bbdb261d** (resync #21849, 2026-10-24; previously 6bc573f73, 2026-10-04,
+**dc42437ce959c4089629abc9abff6656ba651916** (bump de pin #21991, 2026-10-26; resync #21849, 2026-10-24; previously 6bc573f73, 2026-10-04,
 and ae84c91c, 2026-09-03).
 
 Source repository : https://github.com/ArgumentumGames/Argumentum
@@ -20,9 +20,17 @@ Per LGPL v3 section 5 (Conveying Modified Source Versions), this file is
 distributed under the same LGPL-3.0 terms as the upstream source.
 
 **Verbatim copy**: this CoursIA data file is byte-for-byte identical to
-the upstream file at the pinned commit 5cb4a759 — same content, same
+the upstream file at the pinned commit dc42437ce9 — same content, same
 encoding (UTF-8 with BOM), 224 CRLF record terminators, header + 223
 data rows, 82 columns. No CoursIA modifications.
+
+**Bump de pin 2026-10-26 (#21991)** : le gitlink du sous-module passe de
+`5cb4a759` à `dc42437ce9` (39 commits en amont). Le fichier amont
+`Cards/Fallacies/Argumentum Virtues - Taxonomy.csv` est **inchangé** entre
+les deux pins (blob `74c0bcc1` identique) : la copie en place reste
+byte-for-byte identique au fichier amont au nouveau pin, aucun octet n'a été
+touché. Le manifeste `data/argumentum_snapshot.json` a été régénéré **après**
+la recopie, au nouveau pin (`upstream_commit = dc42437ce9`).
 
 **Resync 2026-10-24 (#21849)** : re-copie verbatim depuis le pin du
 gitlink de `main` (5cb4a759), qui avait avancé de deux crans depuis la
@@ -62,7 +70,7 @@ Schema note — Vertues vs Fallacies
 ----------------------------------
 
 The Vertues CSV schema is **deliberately different** from the Fallacies
-CSV schema (both upstream, pinned at 5cb4a759):
+CSV schema (both upstream, pinned at dc42437ce9):
 
 | Aspect | Fallacies | Vertues |
 |--------|-----------|---------|
@@ -88,13 +96,13 @@ work, you must:
    (the upstream Argumentum LICENSE file applies — see submodule).
 2. **Prominently note** that this file is a verbatim copy of the
    upstream Argumentum Vertues taxonomy, with source path, source SHA,
-   and source commit 5cb4a759 cited above.
+   and source commit dc42437ce9 cited above.
 3. **Do not impose further restrictions** on the recipients' exercise
    of rights granted by the LGPL-3.0.
 
 Verbatim copies are not "modified source versions" within the meaning
 of LGPL-3.0 section 5 (no modification occurred). The upstream commit
-SHA 5cb4a759 is the authoritative reference; any future CoursIA edit
+SHA dc42437ce9 is the authoritative reference; any future CoursIA edit
 to this file must be accompanied by an update to the source SHA +
 attribution notice in this file, and the file will then become a
 "modified source version" subject to LGPL-3.0 section 5 obligations
@@ -105,7 +113,7 @@ CoursIA submodule pointer
 
 The Argumentum submodule at
 `MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/Argumentum/`
-is pinned to commit **5cb4a75929cbb19acdecb7853ca03820bbdb261d**
+is pinned to commit **dc42437ce959c4089629abc9abff6656ba651916**
 (gitlink de `main` au 2026-10-24 ; le sous-module suit `master`).
 Re-syncing this data file against a newer submodule commit
 is a routine operation that should preserve verbatim integrity and
@@ -130,7 +138,7 @@ See also
   remontées moteur + landing essence multidimensionnelle EPITA-IS`
 - PR (this verbatim copy): see `See #4960` reference in PR body
 - Sister NOTICE: `data/NOTICE` (Fallacies verbatim copy, PR #5183)
-- Argumentum LICENSE (LGPL-3.0) at pinned commit 5cb4a759
+- Argumentum LICENSE (LGPL-3.0) at pinned commit dc42437ce9
 - Cards/Fallacies/Argumentum_Virtues_Face_fr.json (front face, FR)
 - Cards/Fallacies/Mindmaps/{en,fr,pt,ru}/Argumentum_Virtues_MindMap_*.*
   (mindmap renderings in 4 languages)
