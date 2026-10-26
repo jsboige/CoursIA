@@ -1142,22 +1142,59 @@ plt.legend()
 plt.grid(alpha=0.3)
 plt.show()
 ",,,,,,,,57882896a30b3076,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb,6e231ab1,markdown,fr,1851fbc030952cc1,"### Exercice 3 : accélérer la convergence par la standardisation
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb,6e231ab1,markdown,fr,47b52f2447235d6a,"### Exemple guidé : accélérer la convergence par la standardisation (crédité #22593)
 
-Quantifions le gain apporté par la standardisation. Comptez combien d'itérations il faut à la descente de gradient pour descendre sous un seuil de perte fixé, **sans** puis **avec** standardisation, et rapportez le rapport entre les deux.
+Comptons combien d'itérations il faut à la descente de gradient pour descendre sous un seuil de perte fixé, **sans** puis **avec** standardisation, et rapportons le rapport entre les deux.
 
-- `# Étape 1` : parcourir `losses_raw` (sans scaling) et trouver la première itération où la perte passe sous `seuil`.
-- `# Étape 2` : faire de même avec `losses_scaled` (avec `StandardScaler`).
-- `# Étape 3` : si l'une des deux n'atteint jamais le seuil, notez `None` et commentez.
-",,,,,,,,1851fbc030952cc1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb,4f566148,code,fr,994a848b69e878ac,"# Exercice 3 : nombre d'iterations pour atteindre une perte cible, sans vs avec standardisation
+Cette correction rendue en PR #22593 a un intérêt supplémentaire : elle part du seuil `50` de l'énoncé d'origine, constate qu'il est **inatteignable** — le bruit des données (`noise=20.0`) impose une MSE minimale d'environ `460`, même à la solution exacte des moindres carrés — puis construit le seuil atteignable qui rend la comparaison mesurable (optimum + 5 %). Avant de régler un seuil de perte, on le compare toujours à la perte optimale : c'est la première leçon de cet exemple.",,,,,,,,47b52f2447235d6a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb,4f566148,code,fr,ef5d1bff5a003015,"# Exemple guidé (crédité #22593) : seuil atteignable et gain de la standardisation
 seuil = 50.0  # seuil de perte a atteindre
-# TODO etudiant : compter les iterations (sans scaling) ou la perte descend sous le seuil
-n_iter_sans = None  # TODO etudiant : remplacer
-# TODO etudiant : idem avec StandardScaler sur X
-n_iter_avec = None  # TODO etudiant : remplacer
-print(f""Exercice 3 a completer : iters sans/avec standardisation = {n_iter_sans} / {n_iter_avec}"")
-",,,,,,,,994a848b69e878ac,,,,,,,,,,,,,,,
+
+
+def premiere_iteration_sous(pertes, seuil):
+    """"""Nombre d'iterations (1, 2, ...) apres lequel la perte passe sous le seuil.
+
+    pertes[0] est la perte apres la 1re mise a jour (voir gd_2d), d'ou le +1.
+    Renvoie None si la perte ne passe jamais sous le seuil.
+    """"""
+    for i, perte in enumerate(pertes):
+        if perte < seuil:
+            return i + 1
+    return None
+
+
+# Etapes 1 et 2 : on lit les courbes deja calculees plus haut (200 iterations chacune)
+n_iter_sans = premiere_iteration_sous(losses_raw, seuil)
+n_iter_avec = premiere_iteration_sous(losses_scaled, seuil)
+print(f""Seuil {seuil} : iters sans/avec standardisation = {n_iter_sans} / {n_iter_avec}"")
+
+# Etape 3 : les deux valent None. Le seuil de 50 est sous le plancher atteignable :
+# meme la meilleure droite possible (moindres carres exacts) garde une MSE d'environ
+# 400 = 20^2, car les donnees contiennent un bruit d'ecart-type 20 (noise=20.0).
+mse_optimale = np.mean((y2 - LinearRegression().fit(X2, y2).predict(X2)) ** 2)
+print(f""MSE minimale possible (sklearn) : {mse_optimale:.1f} -> seuil de {seuil} inatteignable"")
+print(f""Meilleures pertes en 200 iterations : sans = {min(losses_raw):.1f}, avec = {min(losses_scaled):.1f}"")
+
+# Pour mesurer quand meme le gain, on prend un seuil atteignable : 5 % au-dessus de l'optimum.
+seuil_atteignable = 1.05 * mse_optimale
+n_iter_avec_5 = premiere_iteration_sous(losses_scaled, seuil_atteignable)
+n_iter_sans_5 = premiere_iteration_sous(losses_raw, seuil_atteignable)  # None en 200 iterations
+
+# Sans standardisation, il faut prolonger la descente bien au-dela de 200 iterations.
+# On reprend la meme mise a jour que gd_2d, en s'arretant des que le seuil est atteint.
+w_long, b_long, n_iter_sans_5_long = np.zeros(X2.shape[1]), 0.0, None
+for iteration in range(1, 100_001):
+    dw, db = mse_grad_2d(X2, y2, w_long, b_long)
+    w_long, b_long = w_long - 0.0001 * dw, b_long - 0.0001 * db
+    if np.mean((y2 - (X2 @ w_long + b_long)) ** 2) < seuil_atteignable:
+        n_iter_sans_5_long = iteration
+        break
+
+print(f""Seuil {seuil_atteignable:.1f} (optimum + 5 %) :"")
+print(f""  avec standardisation (lr=0.05)    : {n_iter_avec_5} iterations"")
+print(f""  sans standardisation (lr=1e-4)    : {n_iter_sans_5} en 200 iterations, ""
+      f""{n_iter_sans_5_long} en prolongeant"")
+print(f""  rapport sans / avec               : environ {n_iter_sans_5_long / n_iter_avec_5:.0f} fois plus d'iterations"")",,,,,,,,ef5d1bff5a003015,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb,98fa36a2,markdown,fr,989fadc118b6b543,"## Conclusion et transition
 
 Nous avons ouvert la boîte noire `fit()` :
@@ -18977,9 +19014,9 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.
     moment=""pendant"",
 )
 ",,,,,,,,c314358163e0a09f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb,5ce8b826,markdown,fr,1872fc4736e98173,"### Lecture de la figure : vallée allongée contre bol rond
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb,5ce8b826,markdown,fr,51cc8a8ff31c9e40,"### Lecture de la figure : vallée allongée contre bol rond
 
-Sans standardisation, la courbe de coût descend **lentement et par à-coups** : la caractéristique multipliée par 100 produit un gradient dominant dans sa direction, et chaque pas — calibré pour la pente la plus forte — sous-utilise l'autre direction ; la trajectoire zigzague au fond d'une vallée allongée au lieu de filer vers le minimum. Avec `StandardScaler`, les deux directions contribuent à parts comparables : la surface devient un bol presque rond, et le même `lr` emprunte un chemin direct. L'exercice 3 quantifie ce contraste en comptant les itérations nécessaires pour atteindre une même perte cible — la standardisation, déjà rencontrée au notebook **2.1** comme discipline de pipeline, prend ici sa seconde justification : c'est un **accélérateur de convergence**.",,,,,,,,1872fc4736e98173,,,,,,,,,,,,,,,
+Sans standardisation, la courbe de coût descend **lentement et par à-coups** : la caractéristique multipliée par 100 produit un gradient dominant dans sa direction, et chaque pas — calibré pour la pente la plus forte — sous-utilise l'autre direction ; la trajectoire zigzague au fond d'une vallée allongée au lieu de filer vers le minimum. Avec `StandardScaler`, les deux directions contribuent à parts comparables : la surface devient un bol presque rond, et le même `lr` emprunte un chemin direct. L'exemple guidé ci-dessous quantifie ce contraste en comptant les itérations nécessaires pour atteindre une même perte cible — la standardisation, déjà rencontrée au notebook **2.1** comme discipline de pipeline, prend ici sa seconde justification : c'est un **accélérateur de convergence**. L'exercice 3 prolonge ce réglage en balayant le taux d'apprentissage sur le problème standardisé.",,,,,,,,51cc8a8ff31c9e40,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb,ae1807-22-000,markdown,fr,c3162e4e932b3e84,"### Après le parcours — question de transfert
 ",,,,,,,,c3162e4e932b3e84,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb,ae1807-22-001,code,fr,c8deb35a0354a7bb,"question(
@@ -56456,3 +56493,24 @@ annonce : la température redimensionne la pente sans changer la divergence.
 Concrètement, une température plus basse **augmente** la pente (le modèle suit les données plus
 serré) sans rendre la divergence plus grande : c'est pourquoi le facteur $T^2$ est appliqué au
 gradient dans le code ci-dessus.",,,,,,,,807926cc72437984,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb,94f6879e,markdown,fr,82da435d6d99ff67,"**Lecture du résultat — correction créditée #22593**
+
+- Avec le seuil demandé (`50`), les deux comptes valent `None`, et ce n'est pas un défaut de la descente : le bruit ajouté aux données (`noise=20.0`) impose une MSE minimale d'environ `460`, même pour la solution exacte de `LinearRegression`. Aucun modèle linéaire ne peut descendre sous `50` sur ces données. Le bon réflexe, avant de régler un seuil, est donc de le comparer à la perte optimale.
+- Avec un seuil atteignable (optimum + 5 %), le contraste apparaît : la descente standardisée y arrive en une trentaine d'itérations. Sans standardisation, elle reste bloquée vers `5500` au bout des 200 itérations prévues, et il lui faut plus de 13 000 itérations pour y arriver, soit près de 480 fois plus.
+- La cause est celle décrite plus haut. Le `lr` doit rester minuscule (`1e-4`) pour ne pas diverger sur la caractéristique multipliée par 100, et ce même pas est alors bien trop petit pour l'autre caractéristique, qui n'avance presque plus. Après standardisation, un seul pas convient aux deux directions.
+",,,,,,,,82da435d6d99ff67,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb,8f9c1214,markdown,fr,554fe2526db88a8e,"### Exercice 3 : régler le taux d'apprentissage par balayage
+
+L'exemple guidé montre qu'après standardisation, un `lr` de `0.05` converge en une trentaine d'itérations. Mais est-ce le meilleur pas ? Balayez plusieurs taux d'apprentissage sur le problème standardisé et comparez.
+
+- `# étape 1` : pour chaque `lr` de `lrs_a_balayer`, lancer `gd_2d(X2_scaled, y2, lr, 200)` et garder la perte finale.
+- `# étape 2` : identifier le `lr` qui atteint la plus petite perte finale.
+- `# étape 3` : si un `lr` fait diverger la descente (perte `inf` ou `nan`), le noter et commenter pourquoi.
+",,,,,,,,554fe2526db88a8e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb,b28e1f5d,code,fr,3943e00c2b92d272,"# Exercice 3 : régler le taux d'apprentissage par balayage (à compléter)
+lrs_a_balayer = [0.001, 0.01, 0.1, 0.5, 2.0]
+pertes_finales = {}  # TODO étudiant : lr -> perte finale après 200 itérations sur X2_scaled
+# TODO étudiant : remplir pertes_finales, un appel gd_2d par lr
+meilleur_lr = None  # TODO étudiant : le lr qui donne la plus petite perte finale
+print(f""Exercice 3 à compléter : pertes finales = {pertes_finales}, meilleur lr = {meilleur_lr}"")
+",,,,,,,,3943e00c2b92d272,,,,,,,,,,,,,,,
