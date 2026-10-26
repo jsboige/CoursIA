@@ -95,7 +95,7 @@ concurrency:
 
 jobs:
   always-on-guards:
-    name: "Always-on guards -- 16 organes, 1 checkout"
+    name: "Always-on guards -- 17 organes, 1 checkout"
     # Routage #14283 : premier consommateur GitHub-hosted du depot une fois
     # secret-scan bascule -- 2650 runs same-repo en 5 jours (2026-08-28 ->
     # 2026-09-02), timeout 25 min, aucun filtre `paths:`. Le pool Linux
