@@ -16,6 +16,13 @@
   },
   {
    "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/Compression/Compression_lean/SymbolCodec.lean",
+   "en": "MyIA.AI.Notebooks/Compression/Compression_lean/SymbolCodec_en.lean",
+   "sha1_fr": "d7571f3b5082ddf236204a17ea537c6812c19c34",
+   "sha1_en": "0297720c7d0b4b69634bd8031570db188ac97ce7"
+  },
+  {
+   "kind": "lean",
    "fr": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/ApprovalConsensus.lean",
    "en": "MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters/ApprovalConsensus_en.lean",
    "sha1_fr": "ede71ded65f74bc80a7aa3a5ced75087d035d97f",
@@ -1933,6 +1940,13 @@
   },
   {
    "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/ReidemeisterAny.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/ReidemeisterAny_en.lean",
+   "sha1_fr": "7f4e228ead67117d004c2cd68e546ec4eb2d4b66",
+   "sha1_en": "54709813249b9f514cafbdac5f8140eb1964c6e0"
+  },
+  {
+   "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/ReidemeisterCombinatorial.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots/ReidemeisterCombinatorial_en.lean",
    "sha1_fr": "f403f38124b37326772e012edb23ccb895b387a1",
@@ -1977,8 +1991,8 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/KNOTS/knot_lean/Knots_en.lean",
-   "sha1_fr": "d7643d3d4a53258555a5a20b54b45ff4758c8005",
-   "sha1_en": "1dfefac5f4118bc720a9be027b9bfa005f18de34"
+   "sha1_fr": "56efe973e50920e313be4a5bd5ce52a848990a4e",
+   "sha1_en": "ed3254f2ac87b68e30f18a8c41387abc402bad4c"
   },
   {
    "kind": "readme",
@@ -2304,6 +2318,13 @@
   },
   {
    "kind": "lean",
+   "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Translateur.lean",
+   "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Translateur_en.lean",
+   "sha1_fr": "01693671533a2e6e212dcd981bcafbb2fc08b090",
+   "sha1_en": "f340243f3a2d9846bf7ac5d2aa64302b6b0cbf4c"
+  },
+  {
+   "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life_en.lean",
    "sha1_fr": "6dce7b85589953e4c8aeb37d92b883150bede83a",
@@ -2341,7 +2362,7 @@
    "kind": "lean",
    "fr": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway.lean",
    "en": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway_en.lean",
-   "sha1_fr": "14ed494970924a4851a68961e099082e7e8ef03b",
+   "sha1_fr": "9c12ee83051305727010f47895b2bdff20c65464",
    "sha1_en": "2659e242605b7d5e0c82460f05932d607d4056b6"
   },
   {
@@ -3468,7 +3489,7 @@
  "counts": {
   "notebook": 17,
   "readme": 93,
-  "lean": 380
+  "lean": 383
  },
  "orphans_en": [
   "MyIA.AI.Notebooks/GameTheory/minimax_lean/Minimax.en.md",
