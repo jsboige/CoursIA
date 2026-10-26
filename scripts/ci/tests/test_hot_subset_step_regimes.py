@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import os
 import pathlib
+import shlex
 import shutil
 import stat
 import subprocess
@@ -102,20 +103,41 @@ def _run_step(
     env["FAKE_RC"] = rc
     env["FAKE_FILES"] = files
     env.update(extra_env or {})
+    # Portabilite Windows : deux causes, mesurees sur un siege ou `bash` est
+    # le bash de WSL (26/10, ai-01) :
+    # (1) un `input` TEXTE passe par un TextIOWrapper dont newline=None
+    #     traduit chaque '\n' en os.linesep : le bash recoit du CRLF et
+    #     echoue sur `export: 'PATH\r': not a valid identifier` ;
+    # (2) les variables d'environnement d'un processus Windows ne traversent
+    #     PAS la frontiere vers le bash de WSL (seules celles listees dans
+    #     WSLENV le font) : le bloc ne voyait donc ni FAKE_RC ni FAKE_FILES,
+    #     et chaque cas mesurait un rc de shim vide (2 au lieu de sa valeur).
+    # On exporte donc les variables DANS le bloc -- la simulation reste
+    # fidele, le workflow les recoit de l'env -- et on passe les OCTETS, donc
+    # LF, comme sous Linux.
+    simulated = {"FAKE_RC": rc, "FAKE_FILES": files, **(extra_env or {})}
+    exports = "".join(
+        f"{name}={shlex.quote(str(value))}; export {name}\n"
+        for name, value in simulated.items()
+    )
     body = (
         'PATH="$PWD/bin:$PATH"; export PATH\n'
         'GIT_ARGS_LOG="$PWD/git-args.log"; export GIT_ARGS_LOG\n'
+        + exports
         + script.read_text(encoding="utf-8")
     )
-    return subprocess.run(
+    proc = subprocess.run(
         ["bash", "-s"],
-        input=body,
+        input=body.encode("utf-8"),
         cwd=tmp_path,
         capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
         env=env,
+    )
+    return subprocess.CompletedProcess(
+        proc.args,
+        proc.returncode,
+        proc.stdout.decode("utf-8", "replace"),
+        proc.stderr.decode("utf-8", "replace"),
     )
 
 
