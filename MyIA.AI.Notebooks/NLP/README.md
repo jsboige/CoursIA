@@ -25,6 +25,7 @@ Origine : EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271) — mig
 | 03 | [`03_CRF_Etiquetage_Sequentiel.ipynb`](03_CRF_Etiquetage_Sequentiel.ipynb) | **CRF linéaire from scratch** sur corpus NER français BIO : émissions, transitions, log-partition forward/backward, NLL et Viterbi ; gradient vérifié numériquement, baseline token-wise, témoin `sklearn-crfsuite`, métriques token/entité, ablation et analyse d'erreurs | 75 min |
 | 04 | [`04_PCFG_CYK_Parsing.ipynb`](04_PCFG_CYK_Parsing.ipynb) | **Parsing PCFG/CYK from scratch** (CPU) : CFG française explicite convertie en CNF bornée avec préservation des probabilités, recognizer CYK en table triangulaire visualisée, probabilités MLE sur mini-treebank embarqué (biais d'attachement mesuré), Viterbi + backpointers avec reconstruction de l'arbre, ambiguïté mesurée (2 dérivations, 89,7 %/10,3 %), témoin **NLTK** en concordance exacte, 3 exercices C.1 | 55 min |
 | 05 | [`05-HMM-Viterbi.ipynb`](05-HMM-Viterbi.ipynb) | **HMM et décodage Viterbi from scratch** (CPU) : corpus POS français miniature **synthétique à provenance explicite** (5 mots ambigus NOM/VER, 3 clitiques DET/PRON, phrase à double lecture *le matelot voile la voile*), estimation MLE + lissage add-1 avec `<UNK>`, forward log-espace, Viterbi/backpointers avec treillis visualisé, **17 renversements mesurés** du contexte de séquence (12 vers l'or, accuracy 0,717 → 0,887), baseline majoritaire par mot, témoin **hmmlearn** en concordance exacte (7·10⁻¹⁵ sur le forward, 0 divergence de chemin), contre-témoin **NLTK** sans lissage (0,491 — ce que le add-1 achète), 3 exercices C.1 | 55 min |
+| 08 | [`08-Word2Vec-CBOW-SkipGram.ipynb`](08-Word2Vec-CBOW-SkipGram.ipynb) | **word2vec from scratch** (CPU, déterministe) : **CBOW** et **skip-gram** par descente de gradient (forward + gradient analytique **vérifié numériquement**), **échantillonnage négatif** en sigmoïdes (coût constant par pas au lieu de `O(V)`), plus proches voisins par cosinus + analogie `a − b + c`, **confrontation** avec les vecteurs de co-occurrence factorisés (PPMI + SVD) du carnet 07 — même structure de similarité, deux méthodes, 3 exercices C.1 | 60 min |
 
 ## Progression
 
@@ -33,6 +34,7 @@ Origine : EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271) — mig
 3. **La séquence et ses étiquettes** (03) : la structured prediction par CRF linéaire — du local au global par la log-partition.
 4. **La syntaxe et ses arbres** (04) : grammaires probabilistes et parsing CYK — l'ambiguïté quantifiée, la dérivation la plus probable.
 5. **La chaîne d'états cachés** (05) : le HMM génératif et le décodage de Viterbi — le contexte de séquence qui renverse la décision, pont historique du n-gramme (02) vers le CRF discriminatif (03).
+6. **Le mot et ses vecteurs** (08) : les vecteurs de mots **appris par optimisation** (word2vec, CBOW + skip-gram + échantillonnage négatif) — le passage de la factorisation statistique du carnet 07 à l'apprentissage par gradient, où la même structure lexicale se révèle par deux méthodes distinctes.
 
 ## Prérequis
 
