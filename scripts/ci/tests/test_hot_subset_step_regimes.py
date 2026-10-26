@@ -90,13 +90,27 @@ def _run_step(
     script = tmp_path / "step.sh"
     script.write_text(_hot_subset_run_block(), encoding="utf-8", newline="\n")
     env = dict(os.environ)
-    env["PATH"] = str(bin_dir) + os.pathsep + env["PATH"]
+    # Portabilite Windows (#22436, deux causes mesurees) : le bash MSYS mange les
+    # antislashs d'un chemin Windows (`C:\...` -> rc 127) et ne resout pas non plus
+    # la forme `C:/` ; son PATH se separe par ':', la ou os.pathsep vaut ';'.
+    # Aucun chemin ne traverse donc la frontiere : le bloc arrive par stdin et
+    # exporte lui-meme les repertoires, dans un bash ou $PATH et $PWD sont deja
+    # en forme POSIX. Le PATH herite n'est PAS reecrit : c'est MSYS qui le
+    # traduit au demarrage, et le convertir ici casserait cette traduction
+    # (mesure : `grep: command not found`). Meme motif que le harnais canonique
+    # (scripts/tests/test_hot_subset_ratchet_wiring.py, 24/24 sur Windows).
     env["FAKE_RC"] = rc
     env["FAKE_FILES"] = files
-    env["GIT_ARGS_LOG"] = str(tmp_path / "git-args.log")
     env.update(extra_env or {})
+    body = (
+        'PATH="$PWD/bin:$PATH"; export PATH\n'
+        'GIT_ARGS_LOG="$PWD/git-args.log"; export GIT_ARGS_LOG\n'
+        + script.read_text(encoding="utf-8")
+    )
     return subprocess.run(
-        ["bash", str(script)],
+        ["bash", "-s"],
+        input=body,
+        cwd=tmp_path,
         capture_output=True,
         text=True,
         encoding="utf-8",
