@@ -83,6 +83,41 @@ class TestScanNotebook:
         ])
         assert mod.scan_notebook(str(p)) == []
 
+    def test_paren_reference_followed_by_a_comment_is_detected(self, tmp_path):
+        # Cécité de regex mesurée par la review Hermes sur #22658 : la forme
+        # exacte « (#NNNN) » laissait passer un renvoi suivi d'un commentaire
+        # (« (#15399, clos COMPLETED) », « (#10382, axe 5) »).
+        p = _write(tmp_path, "g1.ipynb", [
+            ("markdown", "le pilote (#15399, clos COMPLETED) et la Proposition 6 "
+                          "(#12343, §1.1 du 16e)."),
+        ])
+        names = [n for _, n, _ in mod.scan_notebook(str(p))]
+        assert names.count("pr_paren") == 2
+
+    def test_unclosed_paren_reference_is_detected(self, tmp_path):
+        # Renvoi sans parenthèse fermante : même classe de chronologie.
+        p = _write(tmp_path, "g2.ipynb", [
+            ("markdown", "la formalisation de la proposition (#15399"),
+        ])
+        names = [n for _, n, _ in mod.scan_notebook(str(p))]
+        assert "pr_paren" in names
+
+    def test_number_not_glued_to_the_paren_is_not_flagged(self, tmp_path):
+        # Un numéro cité sans la parenthèse collée n'est pas la forme
+        # canonique du renvoi de livraison (« PR #N » a son propre marqueur).
+        p = _write(tmp_path, "g3.ipynb", [
+            ("markdown", "voir (# 15399) ou (voir #15399) : pas la forme canonique."),
+        ])
+        assert mod.scan_notebook(str(p)) == []
+
+    def test_three_digit_paren_is_not_flagged(self, tmp_path):
+        # Frontière de nombre conservée : 3 chiffres ne sont pas un numéro de
+        # PR/issue de ce dépôt.
+        p = _write(tmp_path, "g4.ipynb", [
+            ("markdown", "l'équation (#123) reste vraie."),
+        ])
+        assert mod.scan_notebook(str(p)) == []
+
 
 class TestMainExitCodes:
     def test_clean_returns_0(self, tmp_path, capsys):

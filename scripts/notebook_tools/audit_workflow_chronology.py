@@ -28,7 +28,10 @@ Marqueurs (taxonomie #14442, focale sur la livraison) :
 - ``PR #N``                   — renvoi à une pull request.
 - ``Issue #N``                — renvoi à une issue.
 - ``(#NNNN)`` (4-5 chiffres)  — numéro de PR/issue en parenthèse, la forme
-  canonique du renvoi de livraison (« GT-3b (#12213) »).
+  canonique du renvoi de livraison (« GT-3b (#12213) »). La parenthèse fermante
+  est facultative : un renvoi suivi d'un commentaire (« (#15399, clos
+  COMPLETED) », « (#10382, axe 5) ») ou non fermé (« (#15399 ») relève de la
+  même classe.
 - ``livré / livrée / livrée(s)`` accolé à un numéro ou à ``sur main`` —
   past-participe de livraison.
 
@@ -62,7 +65,15 @@ MARKERS = [
     ("epic", re.compile(r"\bEPIC\s+#\d+", re.IGNORECASE)),
     ("pr", re.compile(r"\bPR\s+#\d+")),
     ("issue", re.compile(r"\bIssue\s+#\d+", re.IGNORECASE)),
-    ("pr_paren", re.compile(r"\(#\d{4,5}\)")),
+    # Renvoi de livraison en parenthese. La forme « (#NNNN) » exacte etait la
+    # seule reconnue : un renvoi suivi d'un commentaire (« (#15399, clos
+    # COMPLETED) », « (#10382, axe 5) ») ou non ferme (« (#15399 ») passait sous
+    # le radar -- cecite de regex mesuree par la review Hermes sur #22658
+    # (4 occurrences muettes au head, 5 a la base, sur 44 renvois). La forme
+    # retenue capture les trois ecritures ; la frontiere de nombre (4-5
+    # chiffres) reste inchangee, et le patron ne demande plus la parenthese
+    # fermante.
+    ("pr_paren", re.compile(r"\(#\d{4,5}\b")),
     ("livre", re.compile(r"\blivr\w*\s+(?:#?\d|\bsur\s+main\b)", re.IGNORECASE)),
 ]
 
