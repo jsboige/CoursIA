@@ -134,6 +134,8 @@ Pour un notebook research utilisant `QuantBook()` (kernel QC Cloud uniquement) :
 2. **Fallback Playwright** : automatiser la session QC Cloud Web (login, navigation projet, Run All, téléchargement notebook exécuté)
 3. **Pas de fallback markdown explicatif** : un Quantbook commit doit avoir des outputs réels QC Cloud
 
+Routes mesurées (LEAN Research local, exécution directe dans l'IDE QC Cloud, exécuteur côté noyau, Research Assistant), récupération du fichier exécuté et fusion de ses sorties dans la branche : [docs/qc/quantbook-execution-routes.md](../qc/quantbook-execution-routes.md).
+
 ## Productivité pendant les opérations longues (règle HARD 2026-05-11)
 
 Quand un processus long tourne (training GPU, backtest QC, build Lean, docker pull, prover BG iter, papermill batch, multi-seed run) : **ne pas attendre passivement**.
