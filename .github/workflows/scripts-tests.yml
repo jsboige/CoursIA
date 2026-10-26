@@ -796,7 +796,8 @@ jobs:
     # google.adk.models.lite_llm, whose import guard demands litellm), and
     # installing that chain into the shared env would risk pin conflicts with
     # the 1600+ existing tests. Isolated env = zero blast radius.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
 
