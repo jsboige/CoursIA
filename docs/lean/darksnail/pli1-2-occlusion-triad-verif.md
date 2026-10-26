@@ -128,4 +128,4 @@ native_decide: 0 ; sorryAx: 0 ; Classical.choice: 0 ; propext: 0
 - Pli 1.1 (sources/licences) : CLOSE par po-2024 c.485
 - Pli 1.4 (inventaire Mistral + Cloudflare Clef) : CLOSE par po-2024 c.484
 - `scripts/lean/count_code_sorry.py` (instrument de comptage `sorry` réel)
-- Tell c.1693 ★★ LEVÉ c.1713 (capacité Lean avérée sur po-2027)
+- Capacité Lean avérée sur po-2027 (blocage levé ; preuve dans l'historique de cette fiche)
