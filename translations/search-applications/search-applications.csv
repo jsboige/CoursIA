@@ -3576,32 +3576,36 @@ MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb,ca40ae3e
 > **Note technique** : Le solveur CP-SAT utilise des techniques avancées (propagation de contraintes, branch-and-bound, lazy clauses) pour trouver des solutions optimales. Pour des problemes plus grands (20+ équipes), le **runtime** (machine-dep) augmente avec la taille du problème (propriété structurelle liée à la complexité NP-difficile du round-robin CSP) ; un **timeout** paramétrable permet de borner le temps de recherche.
 
 ",,,,,,,,52115f8355487497,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb,75fd177a,markdown,fr,3e7e181834524abc,"#### Exercice 1 : Limiter les longs deplacements consecutifs
+MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb,75fd177a,markdown,fr,d7aac022a02359d1,"#### Exercice 1 : Penaliser les longs deplacements consecutifs (version souple)
 
-Le modèle actuel minimise la distance totale mais permet potentiellement a une équipe de faire deux longs deplacements consecutifs (par exemple Nice -> Lille puis Marseille -> Strasbourg).
+La version interdite (voir l'exemple guide 4 en fin de carnet) supprime purement et simplement les enchainements de longs deplacements. Une regle aussi dure peut FORCER le solveur a accepter des calendriers plus couteux par ailleurs : interdire a un prix, et ce prix se mesure en kilometres.
 
-**Enonce** : ajoutez une contrainte qui interdit a une équipe de faire plus d'un deplacement superieur a 500 km lors de deux rondes consecutives.
+**Enonce** : remplacez l'interdiction par une penalite pesee. Ajoutez au modele une variable `penalite[i, r]` qui vaut 1 quand l'equipe i enchaine deux longs deplacements aux rondes r et r+1, puis minimisez `distance_totale + POIDS * somme(penalites)` avec `POIDS = 300` (le prix d'un enchainement, exprime en kilometres equivalents).
 
 **Consignes** :
-1. Pour chaque équipe et chaque paire de rondes consecutives, comptez les matchs a l'exterieur impliquant un deplacement > 500 km
-2. Ajoutez une contrainte : la somme de ces longs deplacements sur 2 rondes consecutives ne doit pas depasser 1
-3. Resolvez et comparez les statistiques de deplacement avec le calendrier initial
+1. Pour chaque equipe i et ronde r, creez la variable auxiliaire boolVar `long_trip[i, r]` qui vaut 1 si l'equipe i voyage a l'exterieur de plus de 500 km a la ronde r
+2. Creez `penalite[i, r]` reifiee : elle vaut 1 si et seulement si `long_trip[i, r] + long_trip[i, r+1] == 2`
+3. Minimisez la distance totale PLUS `POIDS *` la somme des penalites, au lieu de la seule distance
+4. Mesurez le cout reel du choix : combien de kilometres de PLUS (ou de moins) coute le calendrier penalise par rapport au calendrier avec interdiction ? Combien d'enchainements restent, et ou ?
 
-**Indice** : créez une variable auxiliaire boolVar `long_trip[i,r]` qui vaut 1 si l'équipe i voyage a l'exterieur de plus de 500 km a la ronde r, puis contraignez `sum(long_trip[i,r+k] for k in range(2)) <= 1`.",,,,,,,,3e7e181834524abc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb,e347a4af,code,fr,33110cbc420b3676,"# Exercice 1 : Limiter les longs deplacements consecutifs
+**Indice** : la reification en CP-SAT s'ecrit dans les deux sens avec `OnlyEnforceIf` : `model.Add(long_trip[i, r] + long_trip[i, r+1] == 2).OnlyEnforceIf(penalite[i, r])` et `model.Add(long_trip[i, r] + long_trip[i, r+1] <= 1).OnlyEnforceIf(penalite[i, r].Not())`.",,,,,,,,d7aac022a02359d1,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb,e347a4af,code,fr,82f339c33b52adc8,"# Exercice 1 : Penaliser les longs deplacements consecutifs (version souple)
 
-# TODO etudiant : ajoutez une contrainte anti-long-deplacement-consecutif
+# TODO etudiant : remplacer l'interdiction par une penalite pesee en kilometres
 # Etape 1 : creez un nouveau SportsScheduler avec la ligue et les distances
-# Etape 2 : definissez le seuil de long deplacement (500 km)
-# Etape 3 : pour chaque equipe i et ronde r, creez une variable long_trip[i,r]
-#           liee a match_vars[(j,i,r)] quand distances[j,i] > seuil
-# Etape 4 : contraignez sum(long_trip[i,r+k] for k in range(2)) <= 1
-# Etape 5 : resolvez et comparez avec compute_schedule_stats
+# Etape 2 : definissez le seuil (500 km) et le poids POIDS = 300 (km par enchainement)
+# Etape 3 : pour chaque equipe i et ronde r, creez long_trip[i,r] liee aux matchs
+#           lointains (meme formulation que l'exemple guide 4, en fin de carnet)
+# Etape 4 : creez penalite[i,r] reifiee qui vaut 1 si long_trip[i,r] + long_trip[i,r+1] == 2
+#           (OnlyEnforceIf dans les deux sens)
+# Etape 5 : minimisez distance_totale + POIDS * somme(penalites), resolvez
+# Etape 6 : mesurez l'ecart de kilometres et le nombre d'enchainements restants
+#           par rapport au calendrier avec interdiction
 
-# Indice : utilisez model.Add(long_trip <= sum(match_vars[(j,i,r)] for j where dist>500))
-# et model.Add(long_trip >= match_vars[(j,i,r)]) pour chaque j ou dist>500
+# Indice : model.Add(long_trip[i,r] + long_trip[i,r+1] == 2).OnlyEnforceIf(penalite[i,r])
+#          model.Add(long_trip[i,r] + long_trip[i,r+1] <= 1).OnlyEnforceIf(penalite[i,r].Not())
 result = None  # TODO etudiant : remplacer par votre implementation
-print(""Exercice a completer : limiter les longs deplacements consecutifs"")",,,,,,,,33110cbc420b3676,,,,,,,,,,,,,,,
+print(""Exercice a completer : penaliser les longs deplacements consecutifs"")",,,,,,,,82f339c33b52adc8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb,58ee5bb3,markdown,fr,17281f8f56c1e1f8,## 4. Visualisation du Calendrier,,,,,,,,17281f8f56c1e1f8,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb,e38ca199,code,fr,8093aeb3f563d5a7,"def display_schedule(league: SportsLeague, schedule: Dict[int, List[Tuple[int, int]]]):
     """"""Affiche le calendrier de maniere lisible.""""""
@@ -39783,3 +39787,295 @@ véhicules étant plaqué par la borne de la section 1. Ce que l'œil détecte c
 la géographie et l'objectif numérique racontent la même histoire par deux
 canaux, et l'accord entre les deux est précisément ce qui fiabilise la lecture :
 un chiffre qu'aucune figure ne confirme devrait toujours susciter la défiance.",,,,,,,,2750f70a3585e0ad,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb,ex0373gdemd,markdown,fr,f2300328d2087e75,"### Exemple guide 4 : Limiter les longs deplacements consecutifs (EX-0373)
+
+Cet exemple guide est la correction creditee de l'exercice EX-0373, livree par **Jérôme Desale et Mathis Gramaglia** (TP1, PR #22568). Elle montre la formulation retenue : une variable `long_trip[i, r]` definie par EGALITE avec les matchs lointains (formulation plus forte qu'une paire d'inegalites, legitime ici puisqu'une equipe ne joue qu'une fois par ronde), la contrainte glissante `long_trip[i, r] + long_trip[i, r+1] <= 1`, un verificateur independant qui recalcule les trajets depuis les matchs au lieu de relire les variables du solveur, et la comparaison avant/apres sur un calendrier illustratif choisi pour contenir exactement un enchainement interdit.
+
+Note honnete sur la comparaison : le total des kilometres et le nombre de longs trajets sont invariants par construction — chaque paire se rencontre exactement une fois et les distances sont symetriques. La seule ligne que la nouvelle regle peut faire bouger est le nombre d'enchainements interdits (1 vers 0 ici). Le calendrier corrige n'est pas un simple reordonnancement du calendrier initial : selon la machine et le deroulement du solveur, il peut permuter deux rondes (run Colab des auteurs : meme affectation, seuls les rondes 3 et 4 echangees) ou deplacer des appariements d'une ronde a l'autre (cette execution : ecart-type 267,5 vers 258,6 km, statut OPTIMAL). La comparaison ne demontre ni reduction de distance ni reduction de fatigue — seulement la disparition de l'enchainement interdit. La version souple de l'exercice 1 (penalite pesee en kilometres) prolonge exactement cette question : que coute l'interdiction ?",,,,,,,,f2300328d2087e75,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb,ex0373gcode,code,fr,cceb7aafa73a15da,"# Exercice EX-0373 — Solution commentée
+# Objectif : interdire deux déplacements strictement supérieurs à 500 km lors de deux journées consécutives pour une même équipe.
+
+# Cette fonction parcourt les journées et affiche les rencontres pour afficher le calendrier
+def display_schedule(league: SportsLeague, schedule: Dict[int, List[Tuple[int, int]]]):
+    """"""Affiche le calendrier de maniere lisible.""""""
+    print(f""\n=== CALENDRIER {league.name} ===\n"")
+
+    for r in sorted(schedule.keys()):
+        print(f""Ronde {r+1}:"")
+        for home, away in schedule[r]:
+            home_team = league.teams[home]
+            away_team = league.teams[away]
+            print(f""  {home_team.name} vs {away_team.name}"")
+        print()
+
+
+
+# On compte les matchs à domicile et à l'extérieur, puis les kilomètres parcourus par chaque équipe
+def compute_schedule_stats(league: SportsLeague, schedule: Dict[int, List[Tuple[int, int]]],
+                          distances: np.ndarray) -> Dict:
+    """"""Calcule les statistiques du calendrier.""""""
+    n = league.n_teams
+
+    home_games = defaultdict(int, {i: 0 for i in range(n)})
+    away_games = defaultdict(int, {i: 0 for i in range(n)})
+    total_travel = defaultdict(float, {i: 0.0 for i in range(n)})
+
+    for r, matches in schedule.items():
+        for home, away in matches:
+            home_games[home] += 1
+            away_games[away] += 1
+            total_travel[away] += int(distances[home, away])  # int-tronque, comme l'objectif
+
+    return {
+        'home_games': dict(home_games),
+        'away_games': dict(away_games),
+        'total_travel': dict(total_travel),
+        'avg_travel': np.mean(list(total_travel.values())),
+        'travel_std': np.std(list(total_travel.values()))
+    }
+
+
+
+SEUIL = 500  # km : un long trajet est STRICTEMENT supérieur à ce seuil
+
+
+
+# on crée un indicateur de long déplacement, puis on interdit que cet indicateur vaille 1 deux journées de suite.
+def ajouter_contrainte_longs_trajets(scheduler, seuil=500):
+    """"""Ajoute la contrainte de l'exercice, sans changer les règles de base.""""""
+    n = scheduler.league.n_teams
+    rondes = scheduler.league.rounds
+    long_trip = {}
+
+    for i in range(n):
+        for r in range(rondes):
+            # 1 = long déplacement ; 0 = domicile ou déplacement <= 500 km.
+            long_trip[i, r] = scheduler.model.NewBoolVar(f""long_trip_{i}_{r}"")
+            # (j, i, r) : j reçoit i ; c'est donc i qui se déplace.
+            matchs_lointains = [
+                scheduler.match_vars[j, i, r]
+                for j in range(n)
+                if j != i and scheduler.distances[j, i] > seuil
+            ]
+            # Une équipe joue une seule fois par ronde : la somme vaut 0 ou 1. Si l'un de ces matchs est choisi, long_trip vaut 1 ; sinon 0
+            scheduler.model.Add(long_trip[i, r] == sum(matchs_lointains))
+
+        for r in range(rondes - 1):
+            scheduler.model.Add(long_trip[i, r] + long_trip[i, r + 1] <= 1)
+
+    return long_trip
+
+
+def analyser_calendrier(calendrier, league, distances, seuil=500):
+    """"""Recalcule les déplacements à partir des matchs, sans lire les BoolVar.""""""
+    n, rondes = league.n_teams, league.rounds
+    trajets = np.zeros((n, rondes))
+    domicile = np.zeros((n, rondes), dtype=int)
+    exterieur = np.zeros((n, rondes), dtype=int)
+
+    for r, matchs in calendrier.items():
+        for home, away in matchs:
+            domicile[home, r] += 1
+            exterieur[away, r] += 1
+            trajets[away, r] = distances[home, away]
+
+    # Un zéro signifie domicile OU déplacement de 500 km maximum.
+    longs = (trajets > seuil).astype(int)
+    violations = (longs[:, :-1] + longs[:, 1:] > 1).sum(axis=1)
+    km = trajets.astype(int).sum(axis=1)
+    tableau = pd.DataFrame({
+        ""Équipe"": [t.city for t in league.teams],
+        ""Domicile"": domicile.sum(axis=1),
+        ""Extérieur"": exterieur.sum(axis=1),
+        ""Distance (km)"": km,
+        ""Longs trajets"": longs.sum(axis=1),
+        ""Enchaînements interdits"": violations,
+    })
+    return tableau, longs, domicile, exterieur
+
+
+def verifier_calendrier(calendrier, league, distances, avec_contrainte=False):
+    """"""Vérifie les rencontres, les séries D/E et les longs trajets.""""""
+    n, rondes = league.n_teams, league.rounds
+    erreurs = []
+    paires = defaultdict(int)
+    if set(calendrier) != set(range(rondes)):
+        return [""Les rondes attendues ne sont pas toutes présentes.""]
+    for r, matchs in calendrier.items():
+        if len(matchs) != n // 2:
+            erreurs.append(f""Nombre incorrect de matchs à la ronde {r + 1}."")
+        participations = [0] * n
+        for home, away in matchs:
+            if home == away or not (0 <= home < n and 0 <= away < n):
+                return [""Un match contient une équipe invalide.""]
+            participations[home] += 1
+            participations[away] += 1
+            # Le tri permet de compter une même paire indépendamment
+            # du domicile : (Paris, Marseille) et (Marseille, Paris).
+            paires[tuple(sorted((home, away)))] += 1
+        if participations != [1] * n:
+            erreurs.append(f""Participation incorrecte à la ronde {r + 1}."")
+    for i in range(n):
+        for j in range(i + 1, n):
+            if paires[i, j] != 1:
+                erreurs.append(f""La paire {i}, {j} ne joue pas exactement une fois."")
+
+    tableau, longs, domicile, exterieur = analyser_calendrier(
+        calendrier, league, distances, SEUIL
+    )
+    # Une fenêtre de trois journées ne doit jamais contenir trois matchs à domicile ni trois matchs à l'extérieur.
+    for positions in (domicile, exterieur):
+        for r in range(rondes - 2):
+            if np.any(positions[:, r:r + 3].sum(axis=1) > 2):
+                erreurs.append(""Plus de deux matchs D/E consécutifs."")
+    if avec_contrainte and tableau[""Enchaînements interdits""].sum() != 0:
+        erreurs.append(""Deux longs trajets consécutifs subsistent."")
+    return erreurs
+
+
+
+# Le premier calendrier produit automatiquement pouvait déjà respecter la nouvelle règle par hasard. On garde cette référence dans
+# schedule_initial_auto et on utilise un exemple illustratif explicite.
+# Les indices sont : Paris=0, Marseille=1, Lyon=2,
+# Lille=3, Bordeaux=4, Nantes=5. Les journées commencent à l'indice 0.
+# Marseille se déplace à Nantes en R2, puis à Lille en R3.
+schedule_initial_auto = schedule
+schedule_initial_exemple = {
+    0: [(1, 0), (2, 5), (4, 3)],
+    1: [(0, 4), (3, 2), (5, 1)],
+    2: [(2, 4), (3, 1), (5, 0)],
+    3: [(0, 3), (1, 2), (4, 5)],
+    4: [(1, 4), (2, 0), (3, 5)],
+}
+schedule = schedule_initial_exemple
+
+if not schedule:
+    raise RuntimeError(""Exécute d'abord les cellules du modèle initial."")
+erreurs_avant = verifier_calendrier(schedule, league, distances)
+assert not erreurs_avant, erreurs_avant
+
+
+# On ajoute notre fonction avant de lancer la recherche du solveur.
+scheduler_corrige = SportsScheduler(league, distances)
+scheduler_corrige.add_balance_constraint(max_consecutive=2)
+scheduler_corrige.minimize_travel()
+long_trip = ajouter_contrainte_longs_trajets(scheduler_corrige, SEUIL)
+
+# Le solveur dispose de dix secondes pour chercher une solution.
+if not scheduler_corrige.solve(time_limit=10):
+    statut = scheduler_corrige.solver.StatusName(scheduler_corrige._status)
+    raise RuntimeError(f""Pas de calendrier trouvé : {statut}"")
+calendrier_corrige = scheduler_corrige.get_schedule()
+# Cette fois, on exige aussi le respect de la nouvelle règle.
+erreurs_apres = verifier_calendrier(
+    calendrier_corrige, league, distances, avec_contrainte=True
+)
+assert not erreurs_apres, erreurs_apres
+
+
+# On mesure les kilomètres, leur dispersion entre les équipes,le nombre de longs trajets et surtout les enchaînements interdits.
+# L'indicateur principal doit passer de 1 à 0 pour cet exemple.
+avant, longs_avant, _, _ = analyser_calendrier(schedule, league, distances, SEUIL)
+apres, longs_apres, _, _ = analyser_calendrier(
+    calendrier_corrige, league, distances, SEUIL
+)
+stats_avant = compute_schedule_stats(league, schedule, distances)
+stats_apres = compute_schedule_stats(league, calendrier_corrige, distances)
+# le calendrier initial et le calendrier corrigé.
+comparaison = pd.DataFrame({
+    ""Calendrier"": [""Initial illustratif"", ""Avec contrainte""],
+    ""Distance totale (km)"": [sum(stats_avant[""total_travel""].values()), sum(stats_apres[""total_travel""].values())],
+    ""Écart-type des km par équipe"": [stats_avant[""travel_std""], stats_apres[""travel_std""]],
+    ""Longs trajets"": [avant[""Longs trajets""].sum(), apres[""Longs trajets""].sum()],
+    ""Enchaînements interdits"": [avant[""Enchaînements interdits""].sum(), apres[""Enchaînements interdits""].sum()],
+})
+print(""COMPARAISON AVANT / APRÈS"")
+display(comparaison.round(2))
+print(""DÉTAIL PAR ÉQUIPE — CALENDRIER CORRIGÉ"")
+display(apres)
+print(""Statut :"", scheduler_corrige.solver.StatusName(scheduler_corrige._status))
+print(""Vérification indépendante : toutes les contraintes sont respectées."")
+
+print(""\nCALENDRIER CORRIGÉ — domicile reçoit extérieur"")
+for r, matchs in sorted(calendrier_corrige.items()):
+    print(f""Ronde {r + 1} : "" + "" ; "".join(
+        f""{league.teams[h].city} reçoit {league.teams[a].city}""
+        for h, a in matchs
+    ))
+
+# Visualiser les longs déplacements
+fig, axes = plt.subplots(1, 2, figsize=(12, 4), sharey=True)
+for ax, matrice, titre in zip(
+    axes, [longs_avant, longs_apres], [""Calendrier initial"", ""Avec contrainte""]
+):
+    ax.imshow(matrice, cmap=""Blues"", vmin=0, vmax=1, aspect=""auto"")
+    ax.set_xticks(range(league.rounds), [f""R{r + 1}"" for r in range(league.rounds)])
+    ax.set_yticks(range(league.n_teams), [t.city for t in league.teams])
+    ax.set_title(titre)
+    for i in range(league.n_teams):
+        for r in range(league.rounds):
+            ax.text(r, i, str(matrice[i, r]), ha=""center"", va=""center"",
+                    color=""white"" if matrice[i, r] else ""black"")
+fig.suptitle(""Longs déplacements : aucun 1 suivi d'un autre 1 après correction"")
+plt.tight_layout()
+plt.show()
+
+distance_attendue = sum(int(distances[i, j])
+                       for i in range(league.n_teams)
+                       for j in range(i + 1, league.n_teams))
+assert int(comparaison.iloc[0][""Distance totale (km)""]) == distance_attendue
+assert int(comparaison.iloc[1][""Distance totale (km)""]) == distance_attendue
+print(f""Chaque paire joue une fois : le total reste {distance_attendue} km."")
+if avant[""Enchaînements interdits""].sum() == 0:
+    print(""Le calendrier initial respectait déjà la nouvelle règle par hasard."")
+    print(""La contrainte garantit maintenant cette propriété dans toute solution."")
+
+schedule = calendrier_corrige
+scheduler = scheduler_corrige
+result_ex0373 = calendrier_corrige
+result = result_ex0373
+
+assert avant['Enchaînements interdits'].sum() == 1
+assert apres['Enchaînements interdits'].sum() == 0
+assert sum(stats_avant['total_travel'].values()) == avant['Distance (km)'].sum()
+assert sum(stats_apres['total_travel'].values()) == apres['Distance (km)'].sum()
+",,,,,,,,cceb7aafa73a15da,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb,ex0373gdisp,code,fr,0937fb645aea411c,"# Affichage du calendrier corrigé par la contrainte de l’exercice 1.
+
+if schedule:
+    display_schedule(league, schedule)
+
+    stats = compute_schedule_stats(league, schedule, distances)
+    somme_totale = sum(stats['total_travel'].values())
+    print(""\n=== STATISTIQUES ==="")
+    print(f""Somme totale des deplacements : {somme_totale:.0f} km (objectif du solveur = {scheduler.solver.ObjectiveValue():.0f})"")
+    print(f""Distance totale moyenne par equipe: {stats['avg_travel']:.0f} km"")
+    print(f""Ecart-type des deplacements: {stats['travel_std']:.0f} km"")
+
+    print(""\nDeplacements par equipe:"")
+    for i, team in enumerate(league.teams):
+        print(f""  {team.name}: {stats['total_travel'][i]:.0f} km ""
+              f""({stats['home_games'][i]} D, {stats['away_games'][i]} E)"")",,,,,,,,0937fb645aea411c,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Applications/CSP/App-15-SportsScheduling.ipynb,ex0373gbiln,markdown,fr,1689bd075fbe9bd2,"## Bilan de l'exercice EX-0373
+
+La solution ajoute une variable booléenne `long_trip[i, r]`, égale à 1 si
+l'équipe `i` joue à l'extérieur à **plus de 500 km** à la ronde `r`.
+La contrainte `long_trip[i, r] + long_trip[i, r + 1] <= 1` interdit deux
+longs déplacements consécutifs. Les règles initiales du championnat sont conservées.
+
+Pour rendre la comparaison observable, le calendrier initial illustratif a été
+choisi avec un déplacement de Marseille à Nantes en R2, puis à Lille en R3.
+Il respecte les contraintes initiales et contient **un enchaînement interdit**.
+
+| Indicateur | Initial illustratif | Avec contrainte |
+|------------|---------------------|-----------------|
+| Enchaînements interdits | 1 | 0 |
+| Longs déplacements | 8 | 8 |
+| Distance totale, km | 7 390 | 7 390 |
+
+La nouvelle règle supprime l'enchaînement interdit. Le vérificateur indépendant
+contrôle les rencontres, la participation par ronde, les séries D/E et les longs
+trajets. Le total des kilomètres reste constant, car chaque paire d'équipes se
+rencontre une fois et les distances sont symétriques. Le résultat concerne donc
+l'organisation des déplacements, sans démontrer de réduction de fatigue ou de blessures.
+",,,,,,,,1689bd075fbe9bd2,,,,,,,,,,,,,,,
