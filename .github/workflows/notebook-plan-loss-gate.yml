@@ -77,7 +77,11 @@ jobs:
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
     # fork n'atteint le runner. Retour arriere = revert de la PR.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Rapatrie sur l'offre GitHub le 2026-10-25 (#17397, consigne user : le CI local pallie
+    # les limites de l'offre hebergee, il ne la remplace pas). Mesure : 3 jobs heberges en
+    # cours pour un plafond d'environ 20, 42 jobs sur 42 en file sur coursia-linux.
+    # L'entree reste dans SELF_HOSTED_WORKFLOW_ALLOWLIST : retour = remettre le label.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
