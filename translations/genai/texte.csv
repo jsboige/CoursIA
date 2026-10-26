@@ -16654,7 +16654,7 @@ print(f""Contenu: {content2}"")
 
 # Vérifier les tokens
 print(f""\nTokens utilisés: {response2.usage.prompt_tokens} input / {response2.usage.completion_tokens} output"")",,,,,,,,9d4ca85b54cec06a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,c63aa632,markdown,fr,5b5f8717c6ddbaa9,"### Interprétation des Résultats
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,c63aa632,markdown,fr,c792d41c969e9976,"### Interprétation des Résultats
 
 **Observations importantes :**
 
@@ -16663,8 +16663,9 @@ MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,c63aa632,markdown,fr,
    accès aux échanges précédents. La réponse 2 restitue correctement les
    informations mémorisées (""Vous vous appelez Jean et vous habitez à Paris.""),
    preuve que le contexte est bien transmis entre les tours.
-3. **Consommation de tokens** : Les tokens d'entrée augmentent avec la taille de l'historique
-   (118 tokens d'entrée au second tour, d'après la sortie ci-dessus, qui inclut tout le contexte accumulé).
+3. **Consommation de tokens** : La ligne `Tokens utilisés` de la sortie ci-dessus
+   distingue les tokens d'entrée et de sortie du second appel. Comme l'entrée inclut
+   tout l'historique accumulé, sa taille augmente avec les tours de conversation.
 
 > **Note technique (issue #3571)** : `gpt-5-mini` est un modèle de raisonnement :
 > les tokens de raisonnement sont déduits de `max_completion_tokens`. Le budget
@@ -16690,7 +16691,7 @@ conversation_history.append({""rôle"": ""assistant"", ""content"": response.cho
 **Optimisation :** Pour les longues conversations, envisagez de :
 - Limiter l'historique aux N derniers échanges
 - Résumer le contexte périodiquement
-- Utiliser un système RAG pour les contextes très longs",,,,,,,,5b5f8717c6ddbaa9,,,,,,,,,,,,,,,
+- Utiliser un système RAG pour les contextes très longs",,,,,,,,c792d41c969e9976,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,0a558f7d,markdown,fr,4f9a3154aa827099,"## 2. Conversations Multi-Tours
 
 La gestion des **conversations multi-tours** avec Chat Completions repose sur :
@@ -16846,7 +16847,7 @@ t=6s    : Retry #2 → Succès ✅
 **Limites :**
 - ⚠️ Ne résout pas les erreurs permanentes (authentification, prompt invalide)
 - ⚠️ Peut augmenter la latence totale (jusqu'à 2+4+8+16+32 = 62s)",,,,,,,,1a5e4c9f1ea119b8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,cab779be,code,fr,68683af98979f6ae,"# Background Mode non disponible avec Chat Completions standard
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,cab779be,code,fr,b503eafdfd33b6a3,"# Background Mode non disponible avec Chat Completions standard
 # Alternative: utiliser l'API Batch d'OpenAI pour les tâches longues
 
 if not BATCH_MODE:
@@ -16872,14 +16873,24 @@ if not BATCH_MODE:
         max_completion_tokens=300
     )
     
-    print(""Réponse progressive: "", end="""", flush=True)
+    # Consommer le flux réel sans fabriquer un objet de sortie par fragment.
+    # Un aperçu court rafraîchit la même ligne ; la réponse entière est ensuite
+    # reconstituée à partir des fragments effectivement reçus de l'API.
+    print(""Réponse progressive (aperçu rafraîchi pendant la réception) :"")
+    fragments = []
     for chunk in stream:
-        if chunk.choices[0].delta.content:
-            print(chunk.choices[0].delta.content, end="""", flush=True)
-    print(""\n"")
+        texte = chunk.choices[0].delta.content
+        if texte:
+            fragments.append(texte)
+            apercu = """".join(fragments)[-60:].replace(""\n"", "" "")
+            print(f""\r{len(fragments)} fragments | {apercu}"", end="""", flush=True)
+    print()
+    reponse_stream = """".join(fragments)
+    print(""Réponse complète reconstituée :"")
+    print(reponse_stream)
 else:
     print(""[BATCH_MODE] Simulation de streaming:"")
-    print(""Réponse progressive: Les microservices offrent 3 avantages majeurs..."")",,,,,,,,68683af98979f6ae,,,,,,,,,,,,,,,
+    print(""Réponse progressive: Les microservices offrent 3 avantages majeurs..."")",,,,,,,,b503eafdfd33b6a3,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,0f1f3b15,markdown,fr,c76c6d6691c7f4e5,"### Comportement du Rate Limiter
 
 **Analyse de l'exécution :**
@@ -16942,7 +16953,7 @@ La bibliothèque **tenacity** permet d'implémenter facilement un retry automati
 - `RateLimitError` : Limite de requêtes dépassée (429)
 - `APIError` : Erreur serveur temporaire (500, 502, 503)
 - `Timeout` : Délai d'attente dépassé",,,,,,,,d0f633b75232adb7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,eeaaf1eb,markdown,fr,462eb839f23d69cd,"### Comparaison des Résultats
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,eeaaf1eb,markdown,fr,eb694ddd5db2cbca,"### Comparaison des Résultats
 
 **Analyse coût/bénéfice :**
 
@@ -16950,13 +16961,13 @@ Pour ces deux requêtes similaires (résumé en 3 points), observons :
 
 | Métrique | Test 1 (Python) | Test 2 (JavaScript) |
 |----------|-----------------|---------------------|
-| Tokens input | 17 | 18 |
-| Tokens output | 285 | 452 |
-| Coût | $0.000174 | $0.000274 |
+| Tokens input | lus dans la sortie du test 1 | lus dans la sortie du test 2 |
+| Tokens output | lus dans la sortie du test 1 | lus dans la sortie du test 2 |
+| Coût estimé | affiché par le test 1 | affiché par le test 2 |
 
 **Analyse des coûts :**
 - `optimized_completion` est un simple Chat Completions (pas de cache activé)
-- Le Test 2 (JavaScript) génère davantage de tokens de sortie (452 vs 285), d'où un coût légèrement supérieur
+- Les sorties des deux tests permettent de comparer leurs tokens et leurs coûts : une réponse plus longue coûte davantage, les autres paramètres restant identiques
 - Le prompt caching OpenAI nécessite un préfixe identique répété, ce qui n'est
   pas le cas ici (""Python"" vs ""JavaScript"")
 
@@ -16973,7 +16984,7 @@ resp2 = optimized_completion(""Contexte: Documentation Python. Question: Qu'est-
 **Ordres de grandeur indicatifs (non mesurés dans ce carnet) :**
 - Conversations longues : 40-60% économie
 - RAG avec contexte fixe : 60-80% économie
-- Requêtes isolées : 0% (aucun préfixe commun)",,,,,,,,462eb839f23d69cd,,,,,,,,,,,,,,,
+- Requêtes isolées : 0% (aucun préfixe commun)",,,,,,,,eb694ddd5db2cbca,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,f48d928a,code,fr,9115f631b5eb8ea7,"from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 from openai import RateLimitError, APIError
 
@@ -17399,15 +17410,15 @@ print(cached_completion('Question', _fake_completion))
 print(cached_completion('Question', _fake_completion))
 print('Appels au fournisseur simulé :', len(_cache_calls))
 ",,,,,,,,e77216624f4d3c66,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,f6b48655,markdown,fr,9c8408b28339390b,"### Interprétation des Résultats d'Optimisation
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,f6b48655,markdown,fr,a8575f06941418d2,"### Interprétation des Résultats d'Optimisation
 
-**Observation sur l'exécution :** les deux appels (`optimized_completion`)
-produisent des coûts légèrement différents selon la longueur de la réponse
-(Test 1 : 17 input / 285 output ≈ $0.000174 ; Test 2 : 18 input / 452 out ≈ $0.000274).
-La fonction `optimized_completion` est un simple wrapper Chat Completions avec
-calcul de coût — elle **n'active pas de cache** (`store=True` n'est pas utilisé
-dans cette fonction). Le coût varie donc uniquement avec le nombre de tokens
-effectivement générés, non à cause d'un cache.
+**Observation sur l'exécution :** la section 5 ci-dessus affiche, pour chacun
+des deux appels à `optimized_completion`, les tokens d'entrée et de sortie ainsi
+que le coût estimé. Comparer ces lignes montre comment la longueur de la réponse
+influe sur le coût. La fonction `optimized_completion` est un simple wrapper
+Chat Completions avec calcul de coût — elle **n'active pas de cache**
+(`store=True` n'est pas utilisé dans cette fonction). À modèle et tarif identiques,
+la différence de coût vient donc des tokens effectivement comptabilisés.
 
 > **Note technique (issue #3571)** : `gpt-5-mini` étant un modèle de raisonnement,
 > le nombre de tokens de sortie inclut les tokens de raisonnement (déduits de
@@ -17437,7 +17448,7 @@ q2 = context + "" Question: Comment le configurer?""
 
 1. ✅ **Répéter un préfixe identique** : Le cache ne fonctionne que sur les préfixes exacts
 2. ⚠️ **Attention aux modifications** : Changer 1 mot au début du contexte invalide tout le cache
-3. ⚠️ **Durée de vie** : Le cache expire après une période d'inactivité",,,,,,,,9c8408b28339390b,,,,,,,,,,,,,,,
+3. ⚠️ **Durée de vie** : Le cache expire après une période d'inactivité",,,,,,,,a8575f06941418d2,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,592abcc5,markdown,fr,4b0f15c4ea6a3df4,"## 6. Monitoring et Logging
 
 Bonnes pratiques pour le monitoring en production :
@@ -17586,26 +17597,26 @@ def demo():
 # Démonstration autonome de la correction EX-0435.
 demo()
 ",,,,,,,,0193bc92c7fdc328,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,2b9f7577,markdown,fr,e6a7a06a76abf45c,"### Interprétation des Logs de Production
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,2b9f7577,markdown,fr,ec34aebc3104f767,"### Interprétation des Logs de Production
 
-**Analyse des logs générés :**
-
-```
-2026-10-16 08:07:22 | OpenAI_Production | INFO | SUCCESS | Model: gpt-5-mini | Duration: 5.20s | Tokens: 615 (in: 11, out: 604)
-2026-10-16 08:07:22 | OpenAI_Production | ERROR | FAILED | Model: gpt-invalid-model | Duration: 0.41s | Error: NotFoundError
-```
+**Analyse des logs générés :** le journal de la cellule de monitoring ci-dessus
+est la seule référence pour les horodatages, durées et comptes de tokens de cette
+exécution. Il comporte une ligne `SUCCESS` pour le modèle configuré et une ligne
+`FAILED` pour le modèle volontairement invalide.
 
 **Points clés observés :**
 
 1. **Latence** :
-   - Requête réussie : 5.20s (plus élevée qu'un modèle non-raisonnement car
-     gpt-5-mini produit d'abord un raisonnement interne avant la réponse visible)
-   - Requête échouée : 0.41s (échec rapide = bon signe, pas de timeout)
+   - La ligne `SUCCESS` donne la durée end-to-end de la requête aboutie.
+   - La ligne `FAILED` donne celle de l'échec ; comparer les deux renseigne sur
+     le coût temporel d'une erreur, sans confondre cette mesure avec un timeout.
 
 2. **Consommation de tokens** :
-   - Input : 11 tokens (prompt court)
-   - Output : 604 tokens (réponse complète, incluant les tokens de raisonnement)
-   - Total : 615 tokens ≈ $0.000364 (gpt-5-mini @ $0.15/1M input, $0.60/1M output)
+   - La ligne `SUCCESS` sépare le total, l'entrée et la sortie ; ces trois comptes
+     décrivent uniquement la requête aboutie.
+   - Le coût se calcule en appliquant séparément les tarifs d'entrée et de sortie,
+     comme le fait `optimized_completion`, plutôt qu'en figeant un montant dans
+     cette lecture.
 
 3. **Gestion d'erreur** :
    - Exception capturée et loggée (pas de crash)
@@ -17621,7 +17632,7 @@ MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,2b9f7577,markdown,fr,
 | **Coût moyen/requête** | Somme(tokens × prix) / nb_requêtes | > $0.01 |
 | **Requêtes/minute** | Count(logs) sur fenêtre 1min | > 80% de la limite |
 
-> **Production tip** : Exporter les logs vers un système centralisé (ELK, Datadog) pour analyser les tendances sur plusieurs jours et détecter les anomalies (ex: latence soudainement × 3).",,,,,,,,e6a7a06a76abf45c,,,,,,,,,,,,,,,
+> **Production tip** : Exporter les logs vers un système centralisé (ELK, Datadog) pour analyser les tendances sur plusieurs jours et détecter les anomalies (ex: latence soudainement × 3).",,,,,,,,ec34aebc3104f767,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,672a7799,markdown,fr,a10e666547aec7aa,"## 7. Patterns Avancés : Streaming et Modération
 
 ### Streaming pour UX Réactive
@@ -20513,9 +20524,9 @@ print(""Exercice a completer : regle de detection choisie par le modele selon la
 MyIA.AI.Notebooks/GenAI/Texte/08_Reasoning_Models.ipynb,b8ab76a7,code,fr,d8cfd07b7b0f3965,"# Parameters
 BATCH_MODE = ""true""
 ",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,c503d2bb,code,fr,d8cfd07b7b0f3965,"# Parameters
-BATCH_MODE = ""true""
-",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,c503d2bb,code,fr,74eb8fe1a10de768,"# Parameters
+BATCH_MODE = ""false""
+",,,,,,,,74eb8fe1a10de768,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1bis-md,markdown,fr,ad8170224631a584,"### Exercice 1bis - Réessais sélectifs : ne retenter que le transitoire
 
 L'exemple guidé 1 retente **toutes** les exceptions — sa propre docstring le signale comme une limite de production. En pratique, un `ValueError` de validation ne se corrige pas en attendant : le retenter facture des appels pour rien.
@@ -21617,12 +21628,13 @@ MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1b-md,markdown,fr,e
 La consigne est celle de l'exemple guidé 1 ; la solution ci-dessous vient d'un **second groupe d'étudiants**, conservée quasi verbatim — seule la première ligne est retitrée, et l'auto-test, qui vivait dans la cellule de l'exercice 2 de la livraison d'origine, est déplacé ici (écarts déclarés dans la PR d'intégration).
 
 La lecture la plus instructive est la comparaison des deux versions : même consigne, même décorateur, **deux sémantiques de `max_retries`**. Ici, `max_retries` compte les tentatives **au total** (3 par défaut = 3 appels, donc 2 attentes) ; l'exemple guidé 1 compte les **reprises après la première tentative** (3 par défaut = 4 appels, donc 3 attentes). Les deux lectures sont fidèles à l'énoncé — et ce groupe épinglera la sienne dans sa docstring, là où l'ambiguïté se niche.",,,,,,,,e74ab18b35d84c75,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1b-code,code,fr,fb7dc02328c6bda8,"# Exemple guide 1b (credite #22362) : Exercice 1 -- Retry decorateur avec logging
-# TODO etudiant : Implementer un decorateur @retry_with_log qui :
-# - Accepte max_retries (defaut 3) et backoff_base (defaut 2) en parametres
-# - Intercepte les exceptions et retente automatiquement
-# - Log chaque tentative avec : timestamp, numero de tentative, type d'exception, delai avant retry
-# - Retourne le resultat si succes, leve la derniere exception si echec total
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1b-code,code,fr,37f2b61139c9c127,"# Exemple guide 1b (credite #22362) : Retry decorateur avec logging
+# Consigne d'origine, conservee comme contexte de cette resolution guidee :
+# implementer @retry_with_log avec max_retries=3 et backoff_base=2 par defaut ;
+# intercepter les exceptions et retenter ; journaliser chaque tentative avec son
+# horodatage, son numero, le type d'exception et le delai avant l'essai suivant ;
+# retourner le resultat en cas de succes et relever la derniere exception sinon.
+# La solution complete et son auto-test suivent ce rappel de la consigne.
 
 import functools
 import time
@@ -21671,9 +21683,9 @@ def retry_with_log(max_retries=3, backoff_base=2):
     return decorator
 
 
-# Test (avec l'API) -- laisse en commentaire : sans cle OpenAI, l'appel reel
-# echouerait ; l'auto-test de la cellule ""Exercice 2"" rejoue le decorateur sur
-# des fonctions qui ne dependent d'aucune API.
+# Variante de test avec l'API, laissee en commentaire : sans cle OpenAI,
+# l'appel reel echouerait. L'auto-test sans API ci-dessous rejoue le decorateur
+# sur des fonctions locales.
 # @retry_with_log(max_retries=3, backoff_base=2)
 # def call_api(prompt):
 #     return safe_completion(prompt)
@@ -21682,12 +21694,10 @@ def retry_with_log(max_retries=3, backoff_base=2):
 # print(resultat)
 
 
-# Auto-test sans API (simulation) -- deplace depuis la cellule exercice 2 de la
-# livraison d'origine, ou il rejoignait celui du cache : il n'exerce que le
-# decorateur defini ci-dessus.
+# Auto-test local du decorateur : il n'exerce que les reprises, sans appel API.
 
 if __name__ == ""__main__"":
-    print(""--- Test exercice 1 ---"")
+    print(""--- Auto-test de l exemple guide 1b ---"")
     calls = {""n"": 0}
 
     @retry_with_log(max_retries=3, backoff_base=1)  # base 1 -> delais courts pour le test
@@ -21707,7 +21717,7 @@ if __name__ == ""__main__"":
         always_fails()
     except ValueError as e:
         print(""Exception finale levee:"", e)
-",,,,,,,,fb7dc02328c6bda8,,,,,,,,,,,,,,,
+",,,,,,,,37f2b61139c9c127,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1b-lecture,markdown,fr,7621558391d3fae1,"### Lecture du résultat — exemple guidé 1b
 
 Le journal ci-dessus est celui de **cette exécution**. On y lit les deux scénarios côte à côte :
@@ -21765,13 +21775,14 @@ MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex2b-md,markdown,fr,d
 Deuxième solution créditée pour la même consigne que l'exemple guidé 2, quasi verbatim. Ce groupe ajoute un **compteur de hits/misses directement dans le cache** (`stats()`), expire les entrées paresseusement au `get`, et signale chaque échange réseau par un simple `print`.
 
 Là où l'exemple guidé 2 rend la fonction de completion **injectable** (`completion_fn`) pour rester testable hors ligne, cette version appelle le `safe_completion` global du carnet — et son auto-test le stubait en **rebindant le nom global**, ce qui changerait le comportement des cellules suivantes : le stub est donc renommé et le global sauvegardé puis restauré autour des appels de test (écart déclaré).",,,,,,,,d22295b4c5656085,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex2b-code,code,fr,e5ebc52a9e60a67c,"# Exemple guide 2b (credite #22362) : Exercice 2 -- Cache simple pour prompts repetes
-# TODO etudiant : Implementer un cache memoire pour optimiser les appels API
-# - Creer une classe SimpleCache avec un dict interne {""key"": (value, expiry_timestamp)}
-# - get(key) : retourne la valeur si presente et non expiree, sinon None
-# - set(key, value, ttl_seconds=300) : stocke la valeur avec un TTL (defaut 5 min)
-# - cached_completion(prompt) : check le cache, si miss -> appeler safe_completion -> stocker -> retourner
-# Indice : utiliser hash(prompt) comme cle du cache
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex2b-code,code,fr,ffa1211f46fc05e9,"# Exemple guide 2b (credite #22362) : Cache simple pour prompts repetes
+# Consigne d'origine, conservee comme contexte de cette resolution guidee :
+# implementer un cache memoire optimise par SimpleCache ; stocker pour chaque cle
+# le couple (valeur, horodatage d'expiration) ; get rend la valeur presente et non
+# expiree, sinon None ; set accepte un TTL de 300 secondes par defaut ;
+# cached_completion consulte le cache avant d'appeler safe_completion, puis stocke
+# la nouvelle reponse ; la cle utilisee ici est hash(prompt).
+# La solution complete et son auto-test suivent ce rappel de la consigne.
 
 
 class SimpleCache:
@@ -21829,14 +21840,12 @@ def cached_completion(prompt: str, ttl_seconds: int = 300) -> str:
 # print(f""Cache hit? {r1 == r2}"")
 # print(cache.stats())
 
-# Auto-test sans API (simulation) -- dans la livraison d'origine, ce bloc vivait
-# dans cette cellule et testait aussi le decorateur de l'exercice 1 (deplace dans
-# l'exemple guide 1b). Le stub etait nomme safe_completion et rebindait le nom
-# global du carnet : il est renomme, et le global sauvegarde/restaure autour des
-# appels de test.
+# Auto-test local du cache. Le fournisseur simule porte un nom distinct de
+# safe_completion ; le nom global du carnet est sauvegarde puis restaure autour
+# des appels de test pour ne pas modifier les exemples suivants.
 
 if __name__ == ""__main__"":
-    print(""--- Test exercice 2 ---"")
+    print(""--- Auto-test de l exemple guide 2b ---"")
 
     def _safe_completion_stub(prompt):  # renomme depuis safe_completion
         return f""reponse a: {prompt}""
@@ -21853,7 +21862,7 @@ if __name__ == ""__main__"":
     cache.set(""k"", ""v"", ttl_seconds=1)
     time.sleep(1.1)
     print(""Apres expiration:"", cache.get(""k""))
-",,,,,,,,e5ebc52a9e60a67c,,,,,,,,,,,,,,,
+",,,,,,,,ffa1211f46fc05e9,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex2b-lecture,markdown,fr,489a5812572147dc,"### Lecture du résultat — exemple guidé 2b
 
 Sorties de cette exécution : le premier appel imprime `[CACHE MISS] appel API...`, le second — **même prompt** — imprime `[CACHE HIT]` ; la vérification `r1 == r2` vaut `True` et `stats()` affiche `{'hits': 1, 'misses': 1, 'hit_rate_%': 50.0}`. Enfin, après `set(""k"", ""v"", ttl_seconds=1)` puis une attente de 1,1 s, `get(""k"")` rend `None` : l'entrée expirée a été supprimée au passage du `get`.
