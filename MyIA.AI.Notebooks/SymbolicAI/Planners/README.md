@@ -213,7 +213,7 @@ SymbolicAI/Planners/
 │   └── lean-toolchain                     # Pinning toolchain Lean 4
 ├── requirements.txt                      # Dépendances Python (unified-planning, Fast Downward, etc.)
 └── archive/
-    └── Fast-Downward-Legacy.ipynb       # Version archivée (1 notebook hors compteur pédagogique)
+    └── Fast-Downward-Legacy.ipynb       # Version archivée (hors compteur pédagogique)
 ```
 
 ## Contenu détaillé des notebooks
@@ -797,7 +797,7 @@ L'infrastructure du dépôt fournit trois familles d'outils MCP qui soutiennent 
 | `Planners-11-Unified-Planning` | [Lean](../Lean/) + [SemanticWeb](../SemanticWeb/) (ontologies de domaine) | Modèle PDDL ↔ ontologie OWL/SHACL : un domaine PDDL peut être annoté sémantiquement |
 | `Planners-12-LOOP` | [Probas](../../Probas/) (PyMC, Infer.NET) + [ML](../../ML/) (parité Python/.NET #4956) | Apprentissage par renforcement / imitation sur politiques de planification |
 
-**Effet de composition — Planners = carrefour action/représentation.** Là où GameTheory est le carrefour **simulation/proof inter-séries** (Python ⇄ Lean 4 sur des théorèmes économiques), Planners est le carrefour **simulation/proof intra-série** : le notebook `5b-Lean-Relaxation` et son lake `planning_lean/` natif démontrent qu'une même propriété (ici l'admissibilité d'une heuristique) peut être **observée empiriquement** dans le kernel Python 3 (notebook `5-Heuristics.ipynb`) ET **prouvée formellement** dans le kernel Lean 4 (`Admissibility.lean`). C'est le pattern de dualité rendu **interne à la série**, là où GameTheory le déploie **entre séries distinctes**. La séquence pédagogique : STRIPS → PDDL → Fast Downward → heuristiques → **preuve de l'admissibilité de la relaxation** → CP-SAT → temporel → HTN → LLM-Planning → LOOP. Le pipeline 14 notebooks aligne l'évolution paradigmatique du domaine (1971 STRIPS → 2024 Learning to Plan) sur la **frontière de preuve** (informelle → formelle).
+**Effet de composition — Planners = carrefour action/représentation.** Là où GameTheory est le carrefour **simulation/proof inter-séries** (Python ⇄ Lean 4 sur des théorèmes économiques), Planners est le carrefour **simulation/proof intra-série** : le notebook `5b-Lean-Relaxation` et son lake `planning_lean/` natif démontrent qu'une même propriété (ici l'admissibilité d'une heuristique) peut être **observée empiriquement** dans le kernel Python 3 (notebook `5-Heuristics.ipynb`) ET **prouvée formellement** dans le kernel Lean 4 (`Admissibility.lean`). C'est le pattern de dualité rendu **interne à la série**, là où GameTheory le déploie **entre séries distinctes**. La séquence pédagogique : STRIPS → PDDL → Fast Downward → heuristiques → **preuve de l'admissibilité de la relaxation** → CP-SAT → temporel → HTN → LLM-Planning → LOOP. Le pipeline de la série aligne l'évolution paradigmatique du domaine (1971 STRIPS → 2024 Learning to Plan) sur la **frontière de preuve** (informelle → formelle).
 
 ---
 

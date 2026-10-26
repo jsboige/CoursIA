@@ -86,7 +86,7 @@ Chaque thème pointe vers les notebooks qui enseignent la notion :
 | `ia-3-logique-bases-connaissances` | [`SymbolicAI/`](../../SymbolicAI/) | [`SMT/`](../../SymbolicAI/SMT/), [`Tweety/`](../../SymbolicAI/Tweety/), [`SemanticWeb/`](../../SymbolicAI/SemanticWeb/) |
 | `ia-4-systemes-probabilistes` | [`Probas/`](../../Probas/) | [`DecInfer-01-Utility-Foundations.ipynb`](../../Probas/DecisionTheory/DecInfer/DecInfer-01-Utility-Foundations.ipynb) (utilité, axiomes) ; réseaux bayésiens Infer.NET de la série |
 | `ia-5-apprentissage` | [`ML/`](../../ML/) | [`2.1-Workflow-ML.ipynb`](../../ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb) |
-| `dl-evaluation-seance` | [`ML/`](../../ML/) | [`03-DeepLearning/`](../../ML/DataScienceWithAgents/03-DeepLearning/) (rétropropagation, attention) et [`04-Vision/`](../../ML/DataScienceWithAgents/04-Vision/) (CNN) |
+| `dl-evaluation-seance` | [`ML/`](../../ML/) | [`03-Deep-Learning/`](../../ML/DataScienceWithAgents/03-Deep-Learning/) (rétropropagation, attention) et [`04-Vision/`](../../ML/DataScienceWithAgents/04-Vision/) (CNN) |
 
 Questions sans notebook d'accueil : la passe de relecture prévue par #18223
 (tranche 4) les énumère par identifiant au fil de la lecture — une question
