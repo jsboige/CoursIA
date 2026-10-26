@@ -49,7 +49,7 @@ Cadre de travail (adapté de Karpathy + ajout user) : ces principes gouvernent *
 | [reference/scripts-reference.md](docs/reference/scripts-reference.md) | Catalogue scripts (notebook CLI, exécution, qualité, maintenance) |
 | [reference/architecture_mcp_roo.md](docs/reference/architecture_mcp_roo.md) | Cycle de vie, logs et diagnostic des serveurs MCP (inventaire des outils roo-state-manager : [HARNESS-OVERVIEW.md](https://github.com/jsboige/roo-extensions/blob/main/docs/harness/HARNESS-OVERVIEW.md) §2) |
 | [reference/regles-vigilance-detail.md](docs/reference/regles-vigilance-detail.md) · [regles-validation-detail.md](docs/reference/regles-validation-detail.md) | Détail G.1-G.9 et H.1-H.7 + incidents |
-| [reference/_archive-convention.md](docs/reference/_archive-convention.md) | Convention `_archive/` (11 emplacements) — modèle ML-Training-Pipeline généralisé, 4 critères d'éligibilité, header per-function |
+| [reference/_archive-convention.md](docs/reference/_archive-convention.md) | Convention `_archive/` — modèle ML-Training-Pipeline généralisé, 4 critères d'éligibilité, header per-function ; le recensement des emplacements se recalcule, il ne se recopie pas ici (commande dans le document) |
 | [reference/notebook-renumbering-detail.md](docs/reference/notebook-renumbering-detail.md) | Corpus des precedents de renumerotation — le geste `renum()`/`reclass()` est porte par `.claude/rules/notebook-accretion-numbering.md` |
 | [reference/env-python-reparation.md](docs/reference/env-python-reparation.md) | Réparation env Python (règle F) |
 | [reference/stale-tree-drift-scan.md](docs/reference/stale-tree-drift-scan.md) · [orphan-branch-scan-l576.md](docs/reference/orphan-branch-scan-l576.md) | Scans anti-phantom (drift, branche orpheline) |
@@ -60,7 +60,7 @@ Notation étudiants : moteur générique = [GradeBookApp/configs/README.md](Grad
 
 ## Règles modulaires `.claude/rules/`
 
-**Les règles sans frontmatter `paths:` sont auto-chargées** : leur contenu est déjà en contexte, les ré-énumérer ici le dupliquerait. **Celles qui portent un frontmatter `paths:`** ne se chargent que si la session touche les fichiers visés. Le protocole `audit-reassessment` reste toujours chargé car il s’applique à tout fix fondé sur un audit automatisé, quel que soit le type de fichier :
+**Les règles sans frontmatter `paths:` sont auto-chargées** : leur contenu est déjà en contexte, les ré-énumérer ici le dupliquerait. **Celles qui portent un frontmatter `paths:`** ne se chargent que si la session touche les fichiers visés. Deux protocoles restent **toujours chargés** (exemptions délibérées, quel que soit le type de fichier) : `audit-reassessment`, car il s’applique à tout fix fondé sur un audit automatisé, et `bibliography-hygiene`, car les publications se récupèrent, s’utilisent et se citent depuis les carnets et les docstrings Lean — hors de tout glob.
 
 | Domaine | Règles path-gatées | Ce qu'un lecteur doit savoir sans les avoir chargées |
 |---|---|---|

@@ -111,5 +111,52 @@ theorem kinoshitaTerasaka_wf : kinoshitaTerasakaDiagram.wf = true := by
 def kinoshitaTerasakaKnot : Knot where
   diagram := kinoshitaTerasakaDiagram
 
+/-! ## 4. The sphere mutant of the Conway knot (maillon 4 construction)
+
+Third diagram of the Conway/KT pair: obtained by **mutating the Conway
+sphere of the 11n34 census diagram itself** — rotation `r13` of the six
+interior crossings (window [5, 11), indexed from 0), then re-attaching the
+four boundary points via the involution (8 ↔ 11) (13 ↔ 22). See
+`Knots.Mutation` (`sphereMutate`) for the operation and `Knots.Conway`
+(`conwayMutant_eq_sphereMutate`, `conwayMutant_trivial_alexander`) for the
+link and the trivial polynomial.
+
+Prior measurement (faithful Python probe, controlled against the proven
+values −t⁶/t⁵ of 11n34/11n42): among the 96 well-formed non-trivial
+mutants of the construction (4 rotations × 24 re-attachments), **exactly
+one** carries a trivial minor — this one, with designated value t⁵. The
+mutant is NOT the 11n42 census code (measured: no (ρ, perm, σ) superposes
+the two lists): it is a second drawing of the same isotopy type, the
+isotopy equality remaining a documented gap (the PL topology of the
+regluing is not formalized, cf. `Knots.Mutation`).
+-/
+
+/-- Sphere-mutant diagram of the Conway knot: crossings 1-5 (outside the
+sphere) are those of the 11n34 census, crossings 6-11 are the
+r13-re-attached image of the interior tangle. -/
+def conwayMutantDiagram : KnotDiagram where
+  crossings := [
+    ⟨1, 4, 22, 3⟩,
+    ⟨7, 2, 6, 1⟩,
+    ⟨3, 8, 2, 7⟩,
+    ⟨4, 12, 5, 11⟩,
+    ⟨12, 6, 13, 5⟩,
+    ⟨15, 11, 16, 9⟩,
+    ⟨10, 20, 9, 21⟩,
+    ⟨18, 10, 17, 8⟩,
+    ⟨14, 18, 22, 19⟩,
+    ⟨20, 14, 19, 15⟩,
+    ⟨21, 16, 13, 17⟩
+  ]
+  numEdges := 22
+
+/-- `wf` control of the mutant (each label of [1, 22] exactly twice) — the
+re-attachment exchanges boundary occurrences, it preserves multiplicity. -/
+theorem conwayMutant_wf : conwayMutantDiagram.wf = true := by
+  decide
+
+def conwayMutantKnot : Knot where
+  diagram := conwayMutantDiagram
+
 
 end Knots_en

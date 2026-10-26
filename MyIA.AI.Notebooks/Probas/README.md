@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Probas
-pedagogical_count: 86
-breakdown: DecisionTheory=35, Infer=21, PyMC=20, Applications=9, root=1
-maturity: BETA=78, ALPHA=4, DRAFT=4
+pedagogical_count: 89
+breakdown: DecisionTheory=36, Infer=21, PyMC=20, Applications=11, root=1
+maturity: BETA=83, ALPHA=4, DRAFT=2
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (total de la famille, notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit par `github-actions[bot]`, livré par la PR permanente `chore/catalog-refresh-pending`). Pour la **répartition par kernel** (C#/.NET vs Python vs Lean 4) au sein d'une sous-série — la décomposition **technique** par interpréteur, que le marqueur n'agrège pas —, la source est la lecture directe des `metadata.kernelspec` des notebooks : ces volumes dérivent à chaque ajout et **aucun chiffre n'est maintenu ici en prose**. Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README, **fiez-vous au marqueur** ; la prose sera ré-alignée lors du prochain passage.
@@ -228,6 +228,7 @@ Deux stacks, un même parcours de 20 modèles : **Infer.NET** (C#, message passi
 Probas/
 ├── Probas-KLS-Concentration.ipynb # Carnet transverse : Cheeger, hit-and-run, thin-shell (Python)
 ├── Probas-CLT-Theoreme-Central-Limite.ipynb # Carnet transverse : TCL mesuré, variance finie porteuse (Python)
+├── Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb # Carnet transverse : Metropolis-Hastings + Gibbs from-scratch, diagnostics ESS/R-hat (Python)
 ├── Applications/                # Applications standalone
 │   ├── Quotients-Fibres-Recollement-Python.ipynb # Géométrie catégorique (kernel Python, ex-Infer-20)
 │   ├── Percolation/             # Simulation supercritique (Python) + compagnon Lean 4 (lake percolation_lean)
@@ -468,6 +469,19 @@ Le carnet [`Probas-CLT-Theoreme-Central-Limite.ipynb`](Probas-CLT-Theoreme-Centr
 - **Le taux de convergence `1/√n` est universel** : pour quatre lois de départ très différentes (uniforme, Bernoulli, exponentielle, log-normale), le produit `d_K(n)·√n` — où `d_K` est la distance de Kolmogorov à la gaussienne — reste à peu près constant quand `n` croît ; seule la constante dépend de la loi (Berry–Esseen, troisième moment).
 - **L'hypothèse de variance finie est porteuse** : une loi à queue lourde à variance infinie (Lomax, `α = 1.5`) ne se normalise pas en gaussienne — l'échelle robuste des fluctuations de sa somme normalisée par `√n` **croît** avec `n` (en `n^{1/α − 1/2}`) au lieu de se stabiliser.
 - 3 exercices (distance de Kolmogorov, courbe de convergence, reproduction du contre-exemple à queue lourde) ; sorties réelles committées, exécution `papermill --kernel python3`.
+
+### Probas-MCMC-Echantillonnage-Metropolis-Python.ipynb
+
+Descend **sous le capot** de l'échantillonneur que la série PyMC emploie en boîte noire (NUTS) : un **Metropolis–Hastings** à marche aléatoire et un **Gibbs** construits **from-scratch** (stdlib + numpy), puis **diagnostiqués** avec les instruments qu'on applique aux sorties PyMC — auto-corrélation intégrable → effectif de samples indépendants (`ESS = N/τ`), et `R-hat` de Gelman–Rubin sur quatre chaînes (graines `0, 1, 7, 42`). L'algorithme ne compare que des **ratios** de densités, donc la constante de normalisation `Z` s'annule : c'est précisément ce qui rend l'échantillonnage praticable là où l'intégrale n'a pas de forme fermée.
+
+Le carnet mesure là où l'approximation naïve — **factoriser** la posterior (mean-field) ou la **ramener à une gaussienne au mode** — **échoue**, sur deux cibles à vérité connue :
+
+| Cible | Grandeur | MCMC (from-scratch) | Approximation naïve | Vérité |
+|---|---|---|---|---|
+| T1 — gaussienne 2D corrélée (`ρ = 0.8`) | corrélation | **0,801** (MH) · 0,799 (Gibbs) | −0,014 (mean-field) | 0,800 |
+| T2 — mélange bimodal (`±2,5`, `σ = 0,5`) | variance | **6,359** | 0,249 (un seul mode) | 6,500 |
+
+Sur T1, les diagnostics confirment un sampleur sain (`ESS/ch ≈ 426`, `R-hat = 1,0000`) ; le mean-field rend des **marges correctes** mais **remet la corrélation à zéro par construction** — factoriser, c'est *supposer* l'indépendance. Sur T2, l'approximation à un mode ne se contente pas d'être imprécise : sa moyenne (`2,50`) tombe **dans la vallée** où la posterior n'a pas de masse, et l'écart mesuré `≈ 57/43` entre les deux modes illustre au passage la leçon d'initialisation (les quatre chaînes démarrent au même mode — sur une cible multimodale, on disperse les points de départ). 3 exercices (probabilité d'acceptation, `ESS` à partir de l'ACF, taux d'acceptation vs taille de pas) ; sorties réelles committées, exécution `papermill --kernel mcp-jupyter-py310`.
 
 ## Prerequisites
 
