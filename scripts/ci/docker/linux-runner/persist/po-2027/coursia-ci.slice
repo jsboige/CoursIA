@@ -23,8 +23,9 @@
 # debit normal.
 #
 # CPU : pas de CPUQuota ici (doctrine po-2024/po-2028) -- l'axe CPU est garde
-# par COURSIA_RUNNER_CPU_BUDGET=12 (4 x 3 vCPU) dans le wrapper, refus au
-# demarrage au depassement.
+# par COURSIA_RUNNER_CPU_BUDGET=10 dans le wrapper (borne = moitie des 20 vCPU,
+# garde 1 de l'addendum ai-01 du 2026-10-24 ; caps effectifs 4 x 2 = 8 vCPU,
+# soit 40 %), refus au demarrage au depassement.
 #
 # ORDRE : cette slice se deploye AVANT les conteneurs ; assert_slice
 # (supervise.sh) REFUSE le demarrage si elle est absente ou sans io.max

@@ -12,7 +12,7 @@ prime.
 | `coursia-runner-start.sh` | Enveloppe du legs : budget CPU/memoire, jeton, `DOCKER_HOST`, gardes, puis `exec supervise.sh` |
 | `coursia-ci.slice` | Slice cgroup qui borne l'ensemble (memoire, swap, cpu) |
 | `coursia-runner.service` | Unite systemd du superviseur, rattachee a la slice |
-| `coursia-socket.conf` | Drop-in de `docker.socket` (socket neutre, cf. piege ci-dessous) |
+| `coursia-socket.conf` | Drop-in de `docker.service` (vide les references Requires/After a docker.socket, epingle l'ExecStart sur /var/run/docker-ce.sock) |
 | `docker.service` | Override complet de l'unite Docker (necessaire sur ce systemd) |
 | `install-keepalive-task.ps1` | Tache Windows qui re-arme le porteur toutes les 5 min (self-heal) |
 
