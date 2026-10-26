@@ -13,11 +13,19 @@ mise à jour du guard, dans les deux sens).
 Exclusions = marqueurs `# CI-EXCLUDED: <testpath> — <raison>` lus dans les
 fichiers workflows (co-localisés avec les runs qu'ils exemptent).
 
+Second sens (#22735) : le sens ci-dessus ne voit que les testpaths DÉCLARÉS.
+Une suite présente sur le disque sous `scripts/**/tests/` mais absente des
+DEUX listes (pytest.ini et couverture CI) lui était invisible — huit suites
+vertes en local, jouées par aucun workflow (#22735). Le garde confronte donc
+aussi l'ARBORESCENCE à la couverture : une suite sur disque que rien n'exécute
+est un rouge, et une suite déclarée câblée mais disparue de l'arbre aussi.
+
 Usage:
     python scripts/check_testpaths_coverage.py [--verbose] [--repo-root DIR]
 
 Exit 0 = aucune dérive. Exit 1 = au moins un testpath non couvert non exclu,
-ou une cible déclarée disparue de son workflow.
+une cible déclarée disparue de son workflow, une suite sur disque non
+exécutée par la CI, ou une suite déclarée disparue de l'arbre.
 """
 
 from __future__ import annotations
@@ -51,6 +59,25 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # scripts/fallacy_detection/tests : dir entier (#17580) — la garde
         # argumentum_snapshot (14 tests) devient un test de la collection.
         "scripts/fallacy_detection/tests",
+        # #22735 : huit suites de `scripts/**/tests/` etaient vertes en local
+        # et jouees par AUCUN workflow -- absentes aussi de pytest.ini, donc
+        # invisibles des DEUX sens de ce garde : datasets, genai-stack,
+        # hashlife, i18n, qc-mcp-lite, smartcontracts, sudoku, validation.
+        # Cables dans la jambe CPU de ce workflow le 2026-10-26 ; hermeticite
+        # mesuree firsthand (aucun Docker, aucun reseau ; `genai-stack` a
+        # exige `bcrypt`, deja dans le pip install du job), 666 tests cumules.
+        "scripts/datasets/tests",
+        "scripts/genai-stack/tests",
+        "scripts/hashlife/tests",
+        "scripts/i18n/tests",
+        "scripts/qc-mcp-lite/tests",
+        "scripts/smartcontracts/tests",
+        "scripts/sudoku/tests",
+        "scripts/validation/tests",
+        # scripts/ci/tests : deja cable dans le run pytest (famille #22234)
+        # mais absent des testpaths de pytest.ini -- la convergence
+        # local <-> CI est un invariant de ce garde (#22735).
+        "scripts/ci/tests",
         "MyIA.AI.Notebooks/GameTheory/tests",
         "MyIA.AI.Notebooks/QuantConnect/scripts/tests",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/tests/test_bg_tree_lock.py",
@@ -102,6 +129,10 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
 # Marqueur d'exclusion : `# CI-EXCLUDED: <testpath> — <raison>` en commentaire
 # d'un workflow. L'em-dash "—" est le séparateur (format #10903).
 CI_EXCLUDED_MARKER = re.compile(r"^\s*#\s*CI-EXCLUDED:\s*(\S+?)\s*—\s*(.+)$")
+
+# Une suite de tests de la famille `scripts/**/tests/` : le repertoire doit
+# porter au moins un `test_*.py` pour compter comme suite (#22735).
+SUITE_DIR_RE = re.compile(r"^scripts/(?:[^/]+/)*tests$")
 
 
 def load_testpaths(pytest_ini: Path) -> list[str]:
@@ -301,6 +332,75 @@ def is_covered(testpath: str, covered_dirs: list[str]) -> bool:
     )
 
 
+# --- #22735 : second sens, l'arborescence confrontée à la couverture ---
+
+
+def discover_suites(repo_root: Path) -> list[str]:
+    """Suites de tests présentes sur le disque sous `scripts/**/tests/`.
+
+    Une suite est un répertoire dont le chemin relatif matches SUITE_DIR_RE
+    et qui contient au moins un `test_*.py`. La découverte est faite sur
+    l'ARBRE, jamais sur une liste déclarée : c'est tout l'objet du second
+    sens -- une suite absente des deux listes (pytest.ini et workflows) doit
+    quand même être vue.
+    """
+    scripts_dir = repo_root / "scripts"
+    if not scripts_dir.is_dir():
+        return []
+    suites: set[str] = set()
+    for test_file in scripts_dir.rglob("test_*.py"):
+        rel_dir = test_file.parent.relative_to(repo_root).as_posix()
+        if SUITE_DIR_RE.match(rel_dir):
+            suites.add(rel_dir)
+    return sorted(suites)
+
+
+def all_run_targets(repo_root: Path) -> set[str]:
+    """Cibles pytest réellement exécutées par l'ensemble des workflows."""
+    targets: set[str] = set()
+    for wf in sorted((repo_root / ".github/workflows").glob("*.yml")):
+        targets |= extract_run_targets(wf.read_text(encoding="utf-8"))
+    return targets
+
+
+def uncovered_suites(repo_root: Path) -> list[str]:
+    """Suites présentes sur le disque qu'aucun workflow n'exécute.
+
+    Le garde historique ne voit que les testpaths DÉCLARÉS : une suite
+    absente de pytest.ini ET de la couverture CI lui est invisible. Cette
+    fonction ferme ce trou (#22735 : huit suites vertes en local, jamais
+    rejouées automatiquement).
+    """
+    covered = sorted(all_run_targets(repo_root))
+    excluded = load_ci_excluded(repo_root)
+    return [
+        suite
+        for suite in discover_suites(repo_root)
+        if not is_covered(suite, covered) and suite not in excluded
+    ]
+
+
+def missing_declared_suites(
+    repo_root: Path,
+    coverage: dict[str, list[str]] | None = None,
+) -> list[str]:
+    """Suites déclarées câblées dans WORKFLOW_COVERAGE mais absentes de l'arbre.
+
+    Une cible déclarée qui a disparu du disque laisserait le garde croire
+    à une couverture qui n'existe plus -- le pendant exact de la dérive
+    « cible déclarée disparue du run réel », mais côté arbre.
+    """
+    coverage = WORKFLOW_COVERAGE if coverage is None else coverage
+    missing: list[str] = []
+    for targets in coverage.values():
+        for target in targets:
+            if target.endswith(".py") or not SUITE_DIR_RE.match(target):
+                continue
+            if not (repo_root / target).is_dir():
+                missing.append(target)
+    return sorted(set(missing))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--verbose", action="store_true")
@@ -351,7 +451,24 @@ def main() -> int:
         for p in problems:
             print(f"  FAIL {p}")
 
-    return 1 if (uncovered or problems) else 0
+    # Second sens (#22735) : l'arborescence confrontée à la couverture.
+    uncovered_disk = uncovered_suites(repo_root)
+    if uncovered_disk:
+        print("Suites de tests sur le disque, non exécutées par la CI "
+              "et non CI-EXCLUDED :")
+        for suite in uncovered_disk:
+            print(f"  FAIL {suite}")
+    elif args.verbose:
+        print(f"[ok] {len(discover_suites(repo_root))} suites sur le disque, "
+              "toutes exécutées par la CI")
+
+    missing = missing_declared_suites(repo_root)
+    if missing:
+        print("Suites déclarées câblées mais absentes de l'arbre :")
+        for suite in missing:
+            print(f"  FAIL {suite}")
+
+    return 1 if (uncovered or problems or uncovered_disk or missing) else 0
 
 
 if __name__ == "__main__":

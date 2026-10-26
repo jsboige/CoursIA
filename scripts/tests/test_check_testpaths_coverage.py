@@ -7,6 +7,13 @@ sur tout testpath ni couvert ni déclaré CI-EXCLUDED.
 #17250 : ajoute la séparation entre étapes `pytest --collect-only` (floors,
 qui sondent la collecte sans exécuter) et étapes d'exécution effectives.
 Un dossier qui n'apparaît que dans un floor ne couvre pas un testpath.
+
+#22735 : ajoute le second sens — l'ARBorescence confrontée à la couverture.
+Le sens historique ne voit que les testpaths DÉCLARÉS ; une suite présente
+sur le disque sous `scripts/**/tests/` mais absente de pytest.ini ET de la
+couverture CI lui était invisible (huit suites vertes en local, jamais
+rejouées). Les tests de cette section prouvent que ce second sens rougit
+quand il doit — un contrôle incapable de rougir n'est pas un contrôle.
 """
 
 from __future__ import annotations
@@ -20,10 +27,13 @@ from check_testpaths_coverage import (  # noqa: E402
     REPO_ROOT,
     WORKFLOW_COVERAGE,
     _partition_run_blocks,
+    discover_suites,
     extract_run_targets,
     is_covered,
     load_ci_excluded,
     load_testpaths,
+    missing_declared_suites,
+    uncovered_suites,
 )
 
 
@@ -101,6 +111,99 @@ def test_guard_green_on_current_main() -> None:
     assert uncovered == [], f"testpaths non couverts: {uncovered}"
     # Le testpath `tests` racine a été retiré de pytest.ini (reliquat vide).
     assert "tests" not in testpaths
+    # Second sens (#22735) : aucune suite sur le disque sans exécution CI.
+    assert uncovered_suites(REPO_ROOT) == [], "suites sur disque non exécutées"
+    assert missing_declared_suites(REPO_ROOT) == [], "suites déclarées absentes"
+
+
+# --- #22735 : second sens, l'arborescence confrontée à la couverture ---
+
+
+def _make_suite(root: Path, rel: str) -> None:
+    """Pose une suite de tests (un répertoire + un `test_*.py`)."""
+    target = root / rel
+    target.mkdir(parents=True, exist_ok=True)
+    (target / "test_x.py").write_text("def test_x():\n    assert True\n", encoding="utf-8")
+
+
+def _make_workflow(root: Path, targets: list[str]) -> None:
+    """Pose un workflow dont le run pytest invoque exactement `targets`."""
+    wf_dir = root / ".github" / "workflows"
+    wf_dir.mkdir(parents=True, exist_ok=True)
+    body = " \\\n            ".join(targets)
+    (wf_dir / "w.yml").write_text(
+        "name: t\non: [push]\njobs:\n  t:\n    steps:\n"
+        "      - name: Run tests\n"
+        "        run: |\n"
+        "          python -m pytest \\\n            " + body + " -q\n",
+        encoding="utf-8",
+    )
+
+
+def test_discover_suites_only_counts_family_dirs(tmp_path: Path) -> None:
+    """Seul `scripts/**/tests` contenant un `test_*.py` compte comme suite."""
+    _make_suite(tmp_path, "scripts/foo/tests")
+    _make_suite(tmp_path, "scripts/bar/baz/tests")
+    (tmp_path / "scripts" / "notasuite").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "scripts" / "notasuite" / "test_x.py").write_text("", encoding="utf-8")
+    (tmp_path / "scripts" / "vide" / "tests").mkdir(parents=True, exist_ok=True)
+    assert discover_suites(tmp_path) == [
+        "scripts/bar/baz/tests",
+        "scripts/foo/tests",
+    ]
+
+
+def test_uncovered_suite_is_detected(tmp_path: Path) -> None:
+    """Une suite sur le disque qu'aucun workflow n'exécute doit être signalée."""
+    _make_suite(tmp_path, "scripts/foo/tests")
+    _make_workflow(tmp_path, ["scripts/other/tests"])
+    assert uncovered_suites(tmp_path) == ["scripts/foo/tests"]
+
+
+def test_wired_suite_is_not_reported(tmp_path: Path) -> None:
+    """Une suite sur le disque exécutée par un workflow n'est pas signalée."""
+    _make_suite(tmp_path, "scripts/foo/tests")
+    _make_workflow(tmp_path, ["scripts/foo/tests"])
+    assert uncovered_suites(tmp_path) == []
+
+
+def test_ci_excluded_suite_is_not_reported(tmp_path: Path) -> None:
+    """Une suite volontairement exclue (marqueur CI-EXCLUDED) n'est pas signalée."""
+    _make_suite(tmp_path, "scripts/foo/tests")
+    _make_workflow(tmp_path, ["scripts/other/tests"])
+    wf = tmp_path / ".github" / "workflows" / "w.yml"
+    wf.write_text(
+        wf.read_text(encoding="utf-8")
+        + "# CI-EXCLUDED: scripts/foo/tests — motif ecrit\n",
+        encoding="utf-8",
+    )
+    assert uncovered_suites(tmp_path) == []
+
+
+def test_missing_declared_suite_is_detected(tmp_path: Path) -> None:
+    """Une suite déclarée câblée mais absente de l'arbre doit être signalée."""
+    coverage = {".github/workflows/w.yml": ["scripts/foo/tests"]}
+    assert missing_declared_suites(tmp_path, coverage) == ["scripts/foo/tests"]
+    _make_suite(tmp_path, "scripts/foo/tests")
+    assert missing_declared_suites(tmp_path, coverage) == []
+
+
+def test_cli_is_red_on_an_uncovered_suite(tmp_path: Path) -> None:
+    """Le code de sortie de la CLI suit le verdict : 1 sur une suite non jouée."""
+    import subprocess
+
+    _make_suite(tmp_path, "scripts/foo/tests")
+    _make_workflow(tmp_path, ["scripts/other/tests"])
+    (tmp_path / "pytest.ini").write_text(
+        "[pytest]\ntestpaths =\n    scripts/other/tests\n", encoding="utf-8"
+    )
+    proc = subprocess.run(
+        [sys.executable, str(REPO_ROOT / "scripts/check_testpaths_coverage.py"),
+         "--repo-root", str(tmp_path)],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode == 1, proc.stdout
+    assert "FAIL scripts/foo/tests" in proc.stdout
 
 
 # --- #17250 : séparation des floors `--collect-only` ---

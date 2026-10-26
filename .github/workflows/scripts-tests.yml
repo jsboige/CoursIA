@@ -541,6 +541,19 @@ jobs:
         # 2026-10-20 04:44Z et 05:00Z, 4 jobs sur 4 en echec) : ils ont ete
         # retires de `coursia-linux`, et sept slots sont restes inactifs devant
         # une file de 800 runs. Borner `-n` leur rend les jobs.
+        #
+        # #22735 -- huit suites de `scripts/**/tests/` etaient vertes en local et
+        # jouees par AUCUN workflow : datasets, genai-stack, hashlife, i18n,
+        # qc-mcp-lite, smartcontracts, sudoku, validation (649 tests mesures sur
+        # `main` au 2026-10-26). La suite `scripts/sudoku/tests` certifie
+        # l'invariant de hierarchie de difficulte du corpus -- sans cablage, le
+        # defaut qu'elle refute redevient invisible. Hermeticite mesuree
+        # firsthand sur ce poste (2026-10-26, Python 3.13) : 77 / 199+1 skip /
+        # 164 / 50 / 58 / 26 / 60 / 31 tests verts, 58 s cumules, aucune
+        # dependance hors du pip install de ce job (bcrypt compris, deja
+        # installe ici). L'inventaire des suites -- disque contre CI -- est
+        # desormais un organe (`scripts/ci/check_ci_test_suites.py`) et non
+        # une relecture de workflow.
         run: |
           mem_max=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
             || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
@@ -581,6 +594,14 @@ jobs:
             scripts/quantconnect/tests \
             MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis \
             GradeBookApp \
+            scripts/datasets/tests \
+            scripts/genai-stack/tests \
+            scripts/hashlife/tests \
+            scripts/i18n/tests \
+            scripts/qc-mcp-lite/tests \
+            scripts/smartcontracts/tests \
+            scripts/sudoku/tests \
+            scripts/validation/tests \
             -n "$xdist_n" --dist loadscope --tb=short -q
         # Chien de garde xdist (#16288) : quand un worker meurt (`[gwN] node
         # down`), le master attend des workers morts SANS qu'aucun test soit en
