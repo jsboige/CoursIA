@@ -29,8 +29,6 @@ import tempfile
 import time
 from pathlib import Path
 
-import numpy as np
-
 # Contournement Windows : _load_windows_store_certs peut lever SSLError selon
 # l'etat du magasin de certificats (present dans la cellule d'origine).
 try:
@@ -54,7 +52,7 @@ from peft import LoraConfig, TaskType
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, set_seed
 from trl import GRPOConfig, GRPOTrainer
 
-from .onset_artifact import DEFAULT_MAX_COMPLETION_LENGTH, artifact_payload
+from .onset_artifact import DEFAULT_MAX_COMPLETION_LENGTH, artifact_payload, seed_metrics
 
 DEFAULT_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
 MAGIC_TOKEN = "HACK"
@@ -144,20 +142,12 @@ def run_seed(arm: str, seed: int, model_id: str, max_steps: int, lr: float, num_
     trainer.train()
     dt = time.time() - t0
     recs = holder["records"]
-    hk = np.array([r["hack"] for r in recs], float)
-    mc = np.array([r["mc"] for r in recs], float)
-    rw = np.array([r["reward"] for r in recs], float)
-    h = len(hk) // 2 or 1
-    steps = np.array([r["step"] for r in recs])
-    per_step = [float(np.mean(hk[steps == s])) for s in range(max_steps)]
-    m = {
-        "arm": arm, "seed": seed, "train_s": dt,
-        "max_completion_length": max_completion_length,
-        "hack_early": float(np.mean(hk[:h])), "hack_late": float(np.mean(hk[h:])),
-        "mc_early": float(np.mean(mc[:h])), "mc_late": float(np.mean(mc[h:])),
-        "reward_early": float(np.mean(rw[:h])), "reward_late": float(np.mean(rw[h:])),
-        "per_step": per_step,
-    }
+    m = seed_metrics(
+        arm=arm, seed=seed, train_s=dt, max_completion_length=max_completion_length,
+        hack=[r["hack"] for r in recs], mc=[r["mc"] for r in recs],
+        reward=[r["reward"] for r in recs], steps=[r["step"] for r in recs],
+        max_steps=max_steps,
+    )
     print(
         f"[{arm}] seed {seed} DONE en {dt:.1f}s | hack early={m['hack_early']:.3f} "
         f"late={m['hack_late']:.3f} | mc early={m['mc_early']:.3f} late={m['mc_late']:.3f}",
@@ -206,8 +196,9 @@ def main(argv=None) -> int:
     p.add_argument("--lr", type=float, default=DEFAULT_LR)
     p.add_argument("--num-gen", type=int, default=DEFAULT_NUM_GEN)
     p.add_argument("--max-completion-length", type=int, default=DEFAULT_MAX_COMPLETION_LENGTH,
-                   help="budget de completion (defaut 80 : regime des artefacts baseline 0.5B). "
-                        "La valeur effective est enregistree dans l'artefact (#21998).")
+                   help="budget de completion (defaut 1024 : le regime mesure des artefacts "
+                        "de reference ict25_arms.py, cap 1024 ; 80 tronque systematique — "
+                        "#13596). La valeur effective est enregistree dans l'artefact (#21998).")
     p.add_argument("--arms", default="W,S", help="bras a jouer (defaut W,S)")
     p.add_argument("--out", default=None,
                    help="chemin de sortie (defaut runs/onset_<tag>.json a cote du module)")
