@@ -311,6 +311,59 @@ def test_class_body_binding_invisible_to_methods():
 
 
 # ---------------------------------------------------------------------------
+# Isolation lexicale, Defaut 3 (review PR #22800, sonde parent) : une locale
+# DYNAMIQUE ne retombe JAMAIS sur la globale homonyme, et un nom local ou
+# parametre homonyme MASQUE le dictionnaire global.
+# ---------------------------------------------------------------------------
+
+def test_local_dynamic_never_retries_module():
+    """Sonde parent exacte : globale obsolete + locale dynamique homonyme
+    consommee dans la fonction -> JAMAIS de finding via 'etat final'."""
+    report = _analyze(nb(code(
+        'model = "gpt-4o-mini"\n'
+        'def compose():\n'
+        '    model = get_current_model()\n'
+        '    client.chat.completions.create(model=model, messages=[])')))
+    assert report["findings"] == []
+    reasons = " ".join(u["reason"] for u in report["unresolved"])
+    assert "sans repli module" in reasons
+
+
+def test_local_scalar_shadows_global_dict():
+    """Un scalaire local homonyme MASQUE le dict global : la souscription ne
+    consulte jamais la table module."""
+    report = _analyze(nb(code(
+        'cfg = {"m": "gpt-4o-mini"}\n'
+        'def run():\n'
+        '    cfg = get_cfg()\n'
+        '    client.chat.completions.create(model=cfg["m"], messages=[])')))
+    assert report["findings"] == []
+
+
+def test_param_shadows_global_dict():
+    """Un parametre homonyme masque le dict global : non resolu, jamais
+    accuse."""
+    report = _analyze(nb(code(
+        'cfg = {"m": "gpt-4o-mini"}\n'
+        'def run(cfg):\n'
+        '    client.chat.completions.create(model=cfg["m"], messages=[])')))
+    assert report["findings"] == []
+
+
+def test_module_dynamic_name_retry_still_works():
+    """Le repli 'etat final' reste legitime pour un nom de SCOPE MODULE
+    dynamique au point d'appel puis fixe obsolete plus tot (defaut 1)."""
+    report = _analyze(nb(code(
+        'def ask():\n'
+        '    return client.chat.completions.create(model=m,\n'
+        '                                          messages=[])\n'
+        'm = "gpt-4o-mini"\n'
+        'ask()')))
+    assert len(report["findings"]) == 1
+    assert "etat final" in report["findings"][0]["via"]
+
+
+# ---------------------------------------------------------------------------
 # NEGATIFS : temoins calibres sur le triage, la garde reste verte
 # ---------------------------------------------------------------------------
 

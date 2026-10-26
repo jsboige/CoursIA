@@ -568,11 +568,20 @@ class NotebookScanner:
                 self.unresolved.append(self._site(
                     ctx, cell_id, call, label, "self hors classe"))
         elif isinstance(node, ast.Subscript) and isinstance(node.value, ast.Name):
-            table = None
-            if node.value.id in ctx.local_dicts:
-                table = ctx.local_dicts[node.value.id]
-            elif node.value.id in self.dict_values:
-                table = self.dict_values[node.value.id]
+            dict_name = node.value.id
+            if dict_name in ctx.local_dicts:
+                table = ctx.local_dicts[dict_name]
+            elif dict_name in ctx.locals or (
+                    ctx.func_params is not None
+                    and dict_name in ctx.func_params):
+                # Le nom est LOCAL (scalaire ou parametre homonyme) : il
+                # MASQUE le dictionnaire global -- jamais de repli sur la
+                # table module (defaut 3, review PR #22800).
+                table = None
+            elif dict_name in self.dict_values:
+                table = self.dict_values[dict_name]
+            else:
+                table = None
             key = (node.slice.value if isinstance(node.slice, ast.Constant)
                    and isinstance(node.slice.value, str) else None)
             if table is not None and key is not None and key in table:
@@ -591,12 +600,15 @@ class NotebookScanner:
         if name in ctx.locals:
             binding = ctx.locals[name]
             if binding.kind == "unresolved":
-                self.retry_names.append(RetryNameSite(
-                    ctx.cell_index, cell_id, call.func.lineno, label,
-                    name, self.path))
+                # Locale DYNAMIQUE : jamais de repli module -- le nom est
+                # local pour tout le scope (semantique Python), sa valeur
+                # non litterale reste non resolue, point final (defaut 3,
+                # review PR #22800 : le repli "etat final" accusait la
+                # globale homonyme).
                 self.unresolved.append(self._site(
                     ctx, cell_id, call, label,
-                    f'variable locale "{name}" dynamique au point d\'appel'))
+                    f'variable locale "{name}" dynamique '
+                    f'(sans repli module)'))
             else:
                 self._evaluate(binding, label, ctx, call)
             return
