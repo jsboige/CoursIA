@@ -63,8 +63,10 @@ la Gemini publie une auto-réplication complète en 33 699 586).
   un **tore 500 × 500** (première répétition gen 11324 == gen 5564), ce qui
   valide à la fois le nom du fichier source et la ligne « 5 760 » de
   `patterns/README.md`.
-  La formaliser demande un moteur **torique**, absent du lac : c'est la suite
-  naturelle de cette tranche.
+  La formaliser demande un moteur **torique** : il existe depuis cette tranche
+  (`Conway.Life.Torus`), mais la période 5 760 reste un résultat **mesuré** et
+  non un théorème (5 760 générations sur 250 000 cellules, hors de portée de
+  `decide`).
 - **L'OTCA : confinement observé sur la fenêtre mesurée — mesure du
   2026-10-09 (#19989, tranche 3), qui ne réfute rien** : sur 1 800
   générations, l'étendue reste **strictement** 2058 × 2058 (aucune
@@ -348,8 +350,14 @@ theorem otca_initial_nonempty : otcaInitial ≠ ([] : Grid) := by
 
     La période est réelle, mais elle appartient à la lecture **pavée** :
     mesurée *sans bord* sur un tore 500 × 500 (première répétition
-    gen 11324 == gen 5564, soit 5 760). La formaliser demande un moteur
-    torique, qui n'existe pas dans le lac — c'est la suite de cette tranche.
+    gen 11324 == gen 5564, soit 5 760). Le moteur torique que cette
+    formalisation demandait existe désormais : `Conway.Life.Torus`. Il porte
+    ses propres témoins, dont `Torus.blinker_torus3_dies` — le blinker qui
+    oscille éternellement sur le plan s'éteint en deux générations sur un tore
+    3 × 3 : c'est le modèle de bord, et non le motif, qui décide du destin.
+    La période 5 760 elle-même reste hors de portée d'une preuve par `decide`
+    (5 760 générations sur 250 000 cellules) : c'est un résultat **mesuré**,
+    pas un théorème.
 
     Ce qui est prouvable ici, et **non vacuous**, c'est que la grille chargée
     est réelle : c'est exactement ce que fermait la route
