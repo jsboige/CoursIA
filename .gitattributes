@@ -167,3 +167,11 @@ MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/ontologies/argumentum_*.owl -text
 # CRLF -- le blob stocke ne peut plus diverger de la forme canonique.
 MyIA.AI.Notebooks/GenAI/FallacyDetection/data/phase2/*.csv text eol=lf
 MyIA.AI.Notebooks/GenAI/FallacyDetection/data/phase2/manifest.json text eol=lf
+# Banc ACIC 2016 de CausalBridges-10b (#21680) : les CSV sont recopies tels quels
+# du bundle causallib (LF pur) et le carnet AFFICHE leur sha256 a l'execution --
+# un checkout CRLF sous `core.autocrlf=true` changerait les octets, donc les
+# empreintes affichees, et la sortie commise deviendrait fausse au premier clone
+# Windows. Meme motif que phase2 ci-dessus : le sha256 exige la forme canonique,
+# donc `text eol=lf` (le LICENSE du bundle suit la meme regle).
+MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/data/acic2016/*.csv text eol=lf
+MyIA.AI.Notebooks/Probas/DecisionTheory/Causal-Bridges/data/acic2016/LICENSE text eol=lf
