@@ -20,6 +20,7 @@ serait un vide muet.
 import hashlib
 import importlib.util
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -76,10 +77,20 @@ def _manifest_for(root: Path, tmp_path: Path) -> Path:
 
 
 def _fake_executable(tmp_path: Path) -> tuple[Path, Path]:
-    """Faux executable : ecrit lui-meme le marqueur quand il est invoque."""
+    """Faux executable portable : ecrit lui-meme le marqueur quand il est invoque.
+
+    Batch Windows (.cmd) sur nt, script shell muni d'un shebang et du bit
+    executable ailleurs : le runner CI est Linux, les postes de dev peuvent
+    etre Windows -- le temoin doit prouver l'invocation sur les deux.
+    """
     marker = tmp_path / "binary_launched.txt"
-    fake = tmp_path / "fake_harvey_adapter.cmd"
-    fake.write_text(f'@echo off\r\necho launched > "{marker}"\r\n', encoding="utf-8")
+    if os.name == "nt":
+        fake = tmp_path / "fake_harvey_adapter.cmd"
+        fake.write_text(f'@echo off\r\necho launched > "{marker}"\r\n', encoding="utf-8")
+    else:
+        fake = tmp_path / "fake_harvey_adapter.sh"
+        fake.write_text(f'#!/bin/sh\necho launched > "{marker}"\n', encoding="utf-8")
+        fake.chmod(0o755)
     return fake, marker
 
 
