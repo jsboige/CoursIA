@@ -19395,12 +19395,14 @@ Console.WriteLine($""Alpha-Beta + Transposition : valeur={vt}, temps={sw.Elapsed
 Console.WriteLine($""Cache : {abt.Hits} hits, {abt.Misses} misses"");
 Console.WriteLine(""-> Valeur identique a Minimax pur (le cache ne change pas la decision, seulement la vitesse)."");
 ",,,,,,,,78035f022cd1c9d9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,d5e876fc,markdown,fr,8e0f39eb3c8841a4,"## Exercices
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,d5e876fc,markdown,fr,533c9b5329f63c6d,"## Exercices
 
 Les exercices suivants sont laissés en **stub `// TODO etudiant`** (règle C.1) : le notebook
 s'exécute de bout en bout même non complété. Chaque exercice est précédé de son énoncé et d'indices.
 Les classifier par contenu (règle de labeling) : ce sont des **exercices** (à compléter), à
-distinguer des exemples guidés résolus ci-dessus.",,,,,,,,8e0f39eb3c8841a4,,,,,,,,,,,,,,,
+distinguer des exemples guidés résolus ci-dessus.
+
+**L'échelle des quatre exercices.** Les cellules d'exercice impriment la même invite (`Exercice N a completer`) — le contrat C.1 : le notebook s'exécute d'un bout à l'autre, la validation revient à l'étudiant. L'échelle se lit dans les énoncés : **Exercice 1** transpose tout ce notebook vers Connect Four (grille 7×6, victory line de 4) — le même minimax sur un arbre qui ne tient plus en entier ; **Exercice 2** attaque l'ordonnancement des coups (move ordering) — l'ordre dans lequel alpha-beta visite les enfants détermine l'élagage, la question est de le mesurer ; **Exercice 3** unifie MAX et MIN en une seule récursion negamax — la reformulation standard des échecs ; **Exercice 4** relâche l'optimalité — une IA à profondeur bornée, évaluée par heuristique, dont on mesure le compromis victoires/temps contre l'Alpha-Beta complet (le cadre de tournoi qui sert à la mesure est montré en **Exemple guidé 1**, juste avant l'exercice 4). Quatre niveaux : transférer, optimiser, reformuler, arbitrer.",,,,,,,,533c9b5329f63c6d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,7002f7e7,markdown,fr,1306c2d37a2801a3,"### Exercice 1 — Connect Four (Puissance 4)
 
 Implémentez la classe `ConnectFour` héritant de `IJeuSommeNulle<C4Etat>` :
@@ -19483,19 +19485,20 @@ public static (double Valeur, int? Action) NegamaxAlphaBeta<TEtat>(
 
 Console.WriteLine(""Exercice 3 a completer : negamax (voir indices ci-dessus)."");
 ",,,,,,,,a092a939082908f9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,090499d0,markdown,fr,ac567e8315a875fe,"### Exercice 4 — Tournoi algorithmique
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,090499d0,markdown,fr,57dfdc4ad2270ba6,"### Exemple guidé 1 — Tournoi algorithmique
 
-Construisez un cadre de **tournoi automatique** entre stratégies : joueur aléatoire, Minimax,
-Alpha-Beta jouent les uns contre les autres, en alternant qui commence. Collectez : victoires,
-nulles, temps moyen par coup.
+*Contribution d'un groupe d'étudiants (TP, PR #22577), intégrée comme exemple guidé.*
 
-**Indice** : écrivez `JouerPartie(jeu, fnMax, fnMin)` qui joue une partie complète en appelant `fnMax`
-/ `fnMin` à chaque tour pour choisir l'action, et renvoie le résultat (+1/0/−1).",,,,,,,,ac567e8315a875fe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,69036e93,code,fr,9bb8670baf11c4ba,"// Exercice 4 : Tournoi algorithmique
-// TODO etudiant : framework de tournoi entre strategies
+Un cadre de **tournoi automatique** fait s'affronter trois stratégies — joueur aléatoire, Minimax, Alpha-Beta — en aller-retour (chacun commence à son tour), et collecte victoires, nulles et temps moyen par coup. La lecture du résultat est double : l'ordre entre les stratégies (qui gagne contre qui) et le prix du calcul (combien de millisecondes par coup chaque niveau d'optimisation coûte ou économise).",,,,,,,,57dfdc4ad2270ba6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,69036e93,code,fr,6d861d2f7d123c70,"// Exemple guidé 1 : cadre de tournoi (contribution TP, PR #22577)
+public record ResultatMatch(string JoueurA, string JoueurB, int VictoiresA, int VictoiresB, int Nuls);
+var resultats = new List<ResultatMatch>();
+
 public static int? JoueurAleatoire<TEtat>(IJeuSommeNulle<TEtat> jeu, TEtat etat, Random rng)
 {
-    return null;  // TODO etudiant : choisir un coup au hasard parmi jeu.Actions(etat)
+    var actions = jeu.Actions(etat);          // cases libres
+    if (actions.Count == 0) return null;
+    return actions[rng.Next(actions.Count)];  // une au hasard
 }
 
 public static int? JouerPartie<TEtat>(
@@ -19503,12 +19506,20 @@ public static int? JouerPartie<TEtat>(
     Func<IJeuSommeNulle<TEtat>, TEtat, int?> fnMax,
     Func<IJeuSommeNulle<TEtat>, TEtat, int?> fnMin)
 {
-    return null;  // TODO etudiant : jouer la partie, retourner +1 (gain MAX), 0 (nul), -1 (gain MIN)
+    var etat = jeu.EtatInitial();
+    while (!jeu.EstTerminal(etat))
+    {
+        // À qui le tour ? On choisit la bonne fonction
+        var fn = jeu.Joueur(etat) == ""MAX"" ? fnMax : fnMin;
+        int? action = fn(jeu, etat);
+        if (action is null) throw new InvalidOperationException(""Aucun coup renvoyé."");
+        etat = jeu.Resultat(etat, action.Value);   // on joue le coup
+    }
+    return (int)jeu.Utilite(etat, ""MAX"");          // +1, 0 ou -1
 }
 
-Console.WriteLine(""Exercice 4 a completer : tournoi algorithmique (voir indices ci-dessus)."");
-",,,,,,,,9bb8670baf11c4ba,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,75215c34,markdown,fr,6fddc15de9abf61e,"## Conclusion
+Console.WriteLine(""Framework de tournoi defini (JoueurAleatoire, JouerPartie)."");",,,,,,,,6d861d2f7d123c70,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,cc3daa85,markdown,fr,6fddc15de9abf61e,"## Conclusion
 
 Ce jumeau .NET a porté fidèlement les cinq pierres angulaires de la recherche adversariale :
 
@@ -29258,18 +29269,15 @@ print(""Exercice a completer"")
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,87c008f3,markdown,fr,f5673ab1f3a28df4,"### Lire le verdict Minimax : la valeur 0 n'est pas un échec, c'est un théorème
 
 La sortie affiche `Valeur Minimax depuis l'etat initial : 0`, `Meilleure action (case 0-8) : 0`, puis le commentaire imprimé `-> Valeur 0 = partie nulle garantie avec jeu optimal des deux cotes`. La lecture importante est celle du **0** : ce n'est pas « l'algorithme n'a rien trouvé », c'est la **valeur du jeu** — au Tic-Tac-Toe, deux joueurs parfaits font nulle, et le minimax qui explore l'arbre complet le constate numériquement. La « meilleure action 0 » (le coin) ne gagne rien de plus qu'une autre case : toutes les actions mènent à la valeur 0, l'algorithme rend la première. Retenir le geste : la recherche adversariale ne « résout » pas le jeu en trouvant la victoire — elle **mesure** ce que chaque camp peut garantir.",,,,,,,,f5673ab1f3a28df4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,1d9db755,markdown,fr,a455ee77fad32024,"### Lire le speedup : 0,2095 s contre 0,0061 s
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,1d9db755,markdown,fr,f115b10dfda92a82,"### Lire le speedup : 0,5677 s contre 0,0204 s
 
-La sortie aligne les deux moteurs : `Minimax : valeur=0, temps=0,2095s` puis `Alpha-Beta : valeur=0, temps=0,0061s`, et conclut `Speedup : 34,1x (meme valeur -> decision identique)`. Deux lectures. **Le speedup fait la leçon, pas les temps absolus** : 0,2095 s et 0,0061 s dépendent de la machine (convention du registre : seuls les rapports et l'ordre comptent) — mais le facteur ~34 mesure ce que l'élagage épargne : l'alpha-beta visite une fraction de l'arbre sans jamais changer la racine. **La parenthèse est la garantie de correction** : « meme valeur -> decision identique » — un élagage plus rapide qui donnait une autre décision serait un bug, pas une optimisation ; la sortie atteste que la valeur racine (0) survit à l'élagage.",,,,,,,,a455ee77fad32024,,,,,,,,,,,,,,,
+La sortie aligne les deux moteurs : `Minimax : valeur=0, temps=0,5677s` puis `Alpha-Beta : valeur=0, temps=0,0204s`, et conclut `Speedup : 27,8x (meme valeur -> decision identique)`. Deux lectures. **Le speedup fait la leçon, pas les temps absolus** : 0,5677 s et 0,0204 s dépendent de la machine et varient d'une exécution à l'autre (convention du registre : seuls les rapports et l'ordre comptent) — mais un facteur de l'ordre de plusieurs dizaines (~28 ici) mesure ce que l'élagage épargne : l'alpha-beta visite une fraction de l'arbre sans jamais changer la racine. **La parenthèse est la garantie de correction** : « meme valeur -> decision identique » — un élagage plus rapide qui donnait une autre décision serait un bug, pas une optimisation ; la sortie atteste que la valeur racine (0) survit à l'élagage.",,,,,,,,f115b10dfda92a82,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,81ed8a88,markdown,fr,206546123a55a59e,"### Lire l'iterative deepening : la même valeur obtenue par progression
 
 La sortie imprime `Iterative Deepening : valeur=0,00, action=0, profondeur atteinte=9` puis `-> Profondeur 9 = arbre complet du Tic-Tac-Toe (9 cases) ; valeur 0 = nul avec jeu optimal`. Deux détails à lire. **La profondeur atteinte 9** : la progression par profondeur croissante a fini par couvrir l'arbre entier — au Tic-Tac-Toe l'horizon est fini, l'iterative deepening converge donc vers le minimax exact. **La valeur 0,00** : c'est la valeur heuristique à profondeur limitée qui, à chaque palier, se rapproche de la valeur exacte — ici elle vaut exactement 0 dès que la profondeur suffit. Le geste algorithmique : dans un jeu trop profond pour l'arbre complet, la même boucle rendrait la meilleure valeur **atteignable dans le budget**, avec la garantie de toujours avoir une réponse.",,,,,,,,206546123a55a59e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,dce59eaa,markdown,fr,368c771b7af7c991,"### Lire la table de transposition : le cache ne change pas la décision
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,dce59eaa,markdown,fr,f7d053069b2f769e,"### Lire la table de transposition : le cache ne change pas la décision
 
-La sortie affiche `Alpha-Beta + Transposition : valeur=0, temps=0,0091s`, `Cache : 1565 hits, 3010 misses`, et le commentaire `-> Valeur identique a Minimax pur (le cache ne change pas la decision, seulement la vitesse)`. La statistique centrale est le couple **1565 hits / 3010 misses** : un peu plus d'un tiers des recherches d'état tombent sur une position déjà calculée — le Tic-Tac-Toe contient des transpositions (jouer case 1 puis case 3 mène au même état que 3 puis 1), et la table capture cette redondance. Le temps (0,0091 s) est du même ordre que l'alpha-beta pur : sur ce petit jeu, le cache ne paie pas — c'est exactement la lecture honnête, la table de transposition est un investissement qui rapporte sur les arbres profonds (échecs), pas sur 9 cases. Et la ligne finale est le contrat d'invariance : valeur identique = le cache est transparent pour la décision.",,,,,,,,368c771b7af7c991,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,c7a3beaf,markdown,fr,78b26be08f7affea,"### Lire les quatre exercices : l'échelle des extensions
-
-Les cellules d'exercice impriment la même invite (`Exercice N a completer`) — le contrat C.1 : le notebook s'exécute d'un bout à l'autre, la validation est l'étudiant. L'échelle se lit dans les énoncés : **Exercice 1** transpose tout ce notebook vers Connect Four (grille 7×6, victory line de 4) — le même minimimax sur un arbre qui ne tient plus en entier ; **Exercice 2** attaque l'ordonnancement des coups (move ordering) — l'ordre dans lequel alpha-beta visite les enfants détermine l'élagage, la question est de le mesurer ; **Exercice 3** unifie MAX et MIN en une seule récursion negamax — la reformulation standard des échecs ; **Exercice 4** organise le tournoi où ces variantes s'affrontent. Quatre niveaux : transférer, optimiser, reformuler, confronter.",,,,,,,,78b26be08f7affea,,,,,,,,,,,,,,,
+La sortie affiche `Alpha-Beta + Transposition : valeur=0, temps=0,0099s`, `Cache : 1565 hits, 3010 misses`, et le commentaire `-> Valeur identique a Minimax pur (le cache ne change pas la decision, seulement la vitesse)`. La statistique centrale est le couple **1565 hits / 3010 misses** : un peu plus d'un tiers des recherches d'état tombent sur une position déjà calculée — le Tic-Tac-Toe contient des transpositions (jouer case 1 puis case 3 mène au même état que 3 puis 1), et la table capture cette redondance. Le temps (0,0099 s, à lire comme un ordre de grandeur qui dépend de la machine) est du même ordre que l'alpha-beta pur : sur ce petit jeu, le cache ne paie pas — c'est exactement la lecture honnête, la table de transposition est un investissement qui rapporte sur les arbres profonds (échecs), pas sur 9 cases. Et la ligne finale est le contrat d'invariance : valeur identique = le cache est transparent pour la décision.",,,,,,,,f7d053069b2f769e,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part1-Foundations/Search-08-DancingLinks-CSharp.ipynb,87d6835c,markdown,fr,43c13500c5be863a,"### Lire l'exemple canonique : la matrice 7×6 et sa vérification colonne par colonne
 
 La sortie pose l'instance de référence : univers `U = {1,2,3,4,5,6,7}`, six sous-ensembles S1-S6 imprimés en matrice binaire (1 = l'élément est dans le sous-ensemble), puis la solution proposée `{S2, S4, S6}` et sa vérification : `Couverture par colonne : [1, 1, 1, 1, 1, 1, 1]` et `Couverture exacte ? OUI (chaque colonne == 1)`. C'est la **définition du problème lue sur la sortie** : chaque élément de U doit être couvert **exactement une fois** — le vecteur de vérification compte, colonne par colonne, combien de sous-ensembles choisis contiennent chaque élément, et l'exactitude exige le 1 partout (un 0 = élément oublié, un 2 = élément doublé). La vérification est volontairement naïve et indépendante de l'algorithme : elle relira aussi les solutions des cellules suivantes.",,,,,,,,43c13500c5be863a,,,,,,,,,,,,,,,
@@ -38942,3 +38950,80 @@ indépendant de GT-24 :
 | un swap change les préférences : pas un morphisme | percer le mur au point de traversée : $\Delta > 0$, certificat rejeté ; swap silencieux (feuille) : $\Delta = 0$, certificat préservé |
 
 Voir #12204 (tranche op 13, 2e attestation) — convention op 7 : comptée dès merge.",,,,,,,,e960bf87aefe49be,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,57c2e19d,code,fr,319c440c0caf5547,"// Exemple guidé 1 : le tournoi (contribution TP, PR #22577)
+var rng = new Random(42);
+var jeuT = new TicTacToe();
+
+var strategies = new Dictionary<string, Func<IJeuSommeNulle<TttEtat>, TttEtat, int?>>
+{
+    [""Aleatoire""] = (j, e) => JoueurAleatoire(j, e, rng),
+    [""Minimax""]   = (j, e) => Minimax(j, e).Action,
+    [""AlphaBeta""] = (j, e) => AlphaBeta(j, e, double.NegativeInfinity, double.PositiveInfinity).Action,
+};
+
+var tempsTotal = new Dictionary<string, double>();
+var nbCoups = new Dictionary<string, int>();
+
+// Emballe une stratégie pour mesurer le temps de chacun de ses coups
+Func<IJeuSommeNulle<TttEtat>, TttEtat, int?> Chrono(string nom) => (j, e) =>
+{
+    var chrono = Stopwatch.StartNew();
+    var a = strategies[nom](j, e);
+    chrono.Stop();
+    tempsTotal[nom] = tempsTotal.GetValueOrDefault(nom) + chrono.Elapsed.TotalMilliseconds;
+    nbCoups[nom] = nbCoups.GetValueOrDefault(nom) + 1;
+    return a;
+};
+
+var noms = strategies.Keys.ToList();
+int manches = 5;
+for (int i = 0; i < noms.Count; i++)
+for (int k = i + 1; k < noms.Count; k++)
+{
+    string A = noms[i], B = noms[k];
+    int vA = 0, vB = 0, nuls = 0;
+    for (int p = 0; p < manches; p++)
+    {
+        // Partie 1 : A commence (A = MAX)
+        int r1 = JouerPartie(jeuT, Chrono(A), Chrono(B)) ?? 0;
+        if (r1 == 1) vA++; else if (r1 == -1) vB++; else nuls++;
+        // Partie 2 : B commence (B = MAX), donc on lit le résultat à l'envers
+        int r2 = JouerPartie(jeuT, Chrono(B), Chrono(A)) ?? 0;
+        if (r2 == 1) vB++; else if (r2 == -1) vA++; else nuls++;
+    }
+    resultats.Add(new ResultatMatch(A, B, vA, vB, nuls));
+}
+
+resultats.Display();
+
+noms.Select(n => new {
+    Strategie = n,
+    MsParCoup = Math.Round(tempsTotal[n] / nbCoups[n], 3),
+    Coups = nbCoups[n]
+}).Display();",,,,,,,,319c440c0caf5547,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,9fbae497,markdown,fr,d2e0f1e726d1e6f6,"#### Lecture du tournoi
+
+Trois matchs, deux lectures. **L'ordre** : le joueur aléatoire ne gagne aucune partie — ni contre Minimax, ni contre Alpha-Beta — et Minimax contre Alpha-Beta fait nulle sur toutes les manches : avec une exploration complète des deux côtés, le Tic-Tac-Toe est un jeu nul, les deux algorithmes trouvent le même jeu optimal et aucun ne peut surprendre l'autre. **Le prix** : le tableau des temps par coup sépare nettement les trois stratégies — l'aléatoire est quasi gratuit, Alpha-Beta rend la décision de Minimax pour une fraction de son temps par coup. C'est la démonstration expérimentale du résultat théorique de ce notebook : même décision optimale, moins de nœuds explorés.",,,,,,,,d2e0f1e726d1e6f6,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,82c424e4,markdown,fr,f32a84bd947486f8,"### Exercice 4 — Profondeur limitée : le compromis victoires/temps
+
+Le tournoi ci-dessus oppose des stratégies qui explorent l'arbre **en entier**. Ajoutez au cadre une IA qui **s'arrête à profondeur bornée** : la récursion coupe avant les feuilles, et les états non terminaux sont évalués par une **heuristique** (par exemple : coups gagnants immédiats, contrôle du centre, menaces ouvertes).
+
+Faites ensuite tourner le tournoi entre cette IA à profondeur limitée (profondeurs 2, 4, 6) et Alpha-Beta complet, et mesurez le compromis : victoires/nulles d'un côté, millisecondes par coup de l'autre.
+
+**Indice 1** : écrivez `Heuristique(jeu, etat)` qui score un état non terminal pour MAX, puis `MinimaxLimite(jeu, etat, profondeur)` qui coupe la récursion à `profondeur == 0` et évalue par l'heuristique.
+**Indice 2** : réutilisez `JouerPartie` et l'enveloppe `Chrono` de l'exemple guidé — seule la stratégie change.",,,,,,,,f32a84bd947486f8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-06-AdversarialSearch-CSharp.ipynb,1b9e5569,code,fr,46fa0aae285b6dca,"// Exercice 4 : IA a profondeur limitee contre Alpha-Beta complet (compromis victoires/temps)
+// TODO etudiant : heuristique d'evaluation d'un etat non terminal
+public static double Heuristique<TEtat>(IJeuSommeNulle<TEtat> jeu, TEtat etat)
+{
+    return 0.0;  // TODO etudiant : score heuristique pour MAX (coups gagnants immediats, centre, menaces)
+}
+
+// TODO etudiant : minimax borne a profondeur (couper la recursion, evaluer par Heuristique)
+public static int? MinimaxLimite<TEtat>(IJeuSommeNulle<TEtat> jeu, TEtat etat, int profondeur)
+{
+    return null;  // TODO etudiant : choisir l'action comme Minimax, en s'arretant a profondeur 0
+}
+
+// TODO etudiant : tournoi MinimaxLimite (profondeurs 2, 4, 6) contre AlphaBeta, avec Chrono
+Console.WriteLine(""Exercice 4 a completer : IA a profondeur limitee contre Alpha-Beta complet (voir indices ci-dessus)."");",,,,,,,,46fa0aae285b6dca,,,,,,,,,,,,,,,
