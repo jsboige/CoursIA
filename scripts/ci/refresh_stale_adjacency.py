@@ -70,6 +70,8 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
+import yaml
+
 # Make the shared extractor + adjacency guard importable from anywhere.
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -84,6 +86,12 @@ from variation_adjacency_guard import (  # noqa: E402
 MARKER_RE = re.compile(r"<!--\s*refresh-adj:\s*[^>]+\s*-->")
 MARKER_PREFIX = "<!-- refresh-adj:"
 MARKER_TZ = "%Y-%m-%dT%H:%M:%SZ"
+# Prefixe des jobs du workflow `always-on-guards.yml`, resolus a la lecture
+# (#22403). Le compte d'organes dans le nom a deja change deux fois ; il ne
+# se code pas ici.
+GUARDS_JOB_PREFIX = "Always-on guards"
+# Marqueur du job d'organes de BODY (#22333) : meme prefixe, autre sujet.
+BODY_JOB_MARKER = "body"
 
 
 def now_marker() -> str:
@@ -151,11 +159,55 @@ def get_pr_checks(pr_number: int) -> dict:
     return checks
 
 
-def is_always_on_guards_failing(pr_number: int) -> bool:
-    """True if `Always-on guards -- 13 organes, 1 checkout` is currently FAIL."""
+def content_guard_job_names(workflow_path=None) -> list[str]:
+    """Noms des jobs `Always-on guards` du workflow, lus dans le YAML (#22403).
+
+    Le nom etait code en dur (`Always-on guards -- 13 organes, 1 checkout`)
+    alors que le job s'appelle `-- 16 organes` : le predicat « le job est
+    ROUGE sur cette PR » ne pouvait donc jamais etre vrai, et l'organe se
+    taisait -- un silence indiscernable de « rien a rafraichir ».
+
+    Le nom se **lit** desormais a la source (cle `name:` de chaque job), donc
+    un renommage du compte d'organes ne rend plus l'organe muet : au pire il
+    rend une liste vide, et `RuntimeError` le dit bruyamment au lieu de
+    laisser croire a un balayage propre.
+
+    Le filtre est le prefixe `Always-on guards` dans CE workflow uniquement :
+    le job de body (`Always-on guards -- body`, #22333) vit dans un autre
+    fichier et n'a rien a voir avec l'adjacence de contenu. Un match par
+    sous-chaine sur `gh pr checks` fusionnerait les deux -- cf. le fold de
+    check-runs qui a deja produit un faux vert rassurant.
+    """
+    path = Path(workflow_path) if workflow_path else (
+        Path(__file__).resolve().parents[2]
+        / ".github" / "workflows" / "always-on-guards.yml")
+    data = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    names = [
+        (job or {}).get("name")
+        for job in (data.get("jobs") or {}).values()
+    ]
+    resolved = [
+        n for n in names
+        if isinstance(n, str)
+        and n.startswith(GUARDS_JOB_PREFIX)
+        # #22333 a separe les organes de body dans leur propre job. Il porte le
+        # meme prefixe : s'il vivait un jour dans ce fichier, l'inclure ferait
+        # rafraichir une PR pour un rouge qui ne dit rien de l'adjacence.
+        and BODY_JOB_MARKER not in n
+    ]
+    if not resolved:
+        raise RuntimeError(
+            f"aucun job nomme '{GUARDS_JOB_PREFIX}...' dans {path} -- "
+            "l'organe refuse de mesurer a l'aveugle (renommage du job ?)")
+    return resolved
+
+
+def is_always_on_guards_failing(pr_number: int,
+                               job_names: list[str] | None = None) -> bool:
+    """True si un des jobs `Always-on guards` du workflow est FAIL sur la PR."""
+    names = job_names if job_names is not None else content_guard_job_names()
     checks = get_pr_checks(pr_number)
-    name = "Always-on guards -- 13 organes, 1 checkout"
-    return checks.get(name) == "fail"
+    return any(checks.get(n) == "fail" for n in names)
 
 
 def append_marker(body: str, marker: str) -> str:

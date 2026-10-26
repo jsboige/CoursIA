@@ -246,11 +246,19 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up Python
+        # Pas de `cache: pip` ici (#19658, piste 2 "bourrer moins le cache").
+        # Mesure du 2026-10-26 sur les runs golden-set : le toolcache du runner
+        # porte deja toutes les dependances epinglees du lockfile
+        # (`Requirement already satisfied` pour chacune des lignes du
+        # lockfile), donc `pip` ne telecharge rien et son cache reste vide
+        # (40 Ko). Le cache n'a donc rien a cacher -- mais il ecrit quand meme
+        # une copie par PR dans le store Actions (101 copies en 24 h, dont 58
+        # de 66 Mo pour une version de python perimee), sur un store deja a
+        # 9,9 Go sur 10 Go. Le store ne sert que ce qu'il a : pendant ce
+        # temps, les caches `lake-*` se font evicter.
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-          cache: pip
-          cache-dependency-path: scripts/notebook_tools/golden_set.lock.txt
 
       - name: Install pinned golden-set lockfile
         run: |

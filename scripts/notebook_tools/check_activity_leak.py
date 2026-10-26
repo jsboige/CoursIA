@@ -148,7 +148,15 @@ _PR_REF_RE = re.compile(r"\bPR\s*#\d+\b")
 
 # Fenetres de garde anti-FP : le contexte autour du match decide.
 _DM_OK_CONTEXT = re.compile(
-    r"Diebold|Mariano|momentum|p-value|p_valeur|statistique|test|JEPA",
+    r"Diebold|Mariano|momentum|p-value|p_valeur|statistique|test"
+    # Formes COMPACTES du meme test, mesurees le 2026-10-25 sur la serie
+    # ML-Training-Pipeline (#20250) : « +19,97σ avec DM p = 0,236 »,
+    # « ## 8. Re-validation ... + DM recentree », « conjonction multi-seed +
+    # DM `loss_fn="linear"` ». Le nom etendu n'apparait pas a moins de 60
+    # caracteres dans ces trois formes : la garde etait donc muette, et six
+    # passages denses sur six d'un carnet §C valide ont ete declares recit
+    # d'activite alors qu'ils ne portent que le test de Diebold-Mariano.
+    r"|p\s*[=<>≤≥]|recentr|re-centr|loss_fn|JEPA",
     re.IGNORECASE,
 )
 _DISPATCH_OK_CONTEXT = re.compile(
