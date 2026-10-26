@@ -8,6 +8,8 @@ La sous-commande `publish --git` de `scripts/coordination/debt_ledger.py` publie
 
 Le transport est en ajout seul : chaque machine publie dans `gpu-reservation/<machine>.jsonl`, avec une ligne par observation. Les lignes existantes sont conservées et les nouvelles enveloppes sont ajoutées ; les observations déjà présentes sont dédupliquées par `observation_id`. Une machine ne peut publier que dans son propre fichier, et le commit est refusé avant poussée s'il touche un autre chemin.
 
+Plusieurs lanes d'une même machine écrivent dans le même fichier. Chaque tentative de publication épingle la tête de la branche une seule fois après son `fetch` : le contenu déjà publié, l'arbre du commit et son parent viennent de ce même commit. Si la branche a avancé entre-temps, la poussée n'est pas un fast-forward ; elle est rejetée, et la tentative suivante repart d'un arbre relu. Avant la poussée, le commit est refusé (`GIT_PUBLISH_LOSS`) s'il retire un identifiant présent dans le fichier de son parent ou s'il ne porte pas toutes les observations à publier. Après la poussée, le spool n'est vidé que des identifiants retrouvés dans le commit poussé.
+
 La cible de publication est un paramètre, non une décision attachée au dépôt du projet. L'option `--remote` de l'organe choisit le remote lu et poussé, avec `origin` par défaut ; la garde de lancement expose le même choix par `--gpu-ledger-remote`. L'option `--repo` identifie le checkout utilisé pour les opérations git, tandis que le remote désigne la destination de la branche. Rien ne déduit cette destination de l'URL du dépôt du projet.
 
 ## Admission et libération par la garde de lancement
@@ -24,9 +26,9 @@ Au teardown, la garde écrit l'observation `released` et la publie. Ce chemin co
 
 Une branche distante qui existe mais ne peut pas être lue produit `UNREADABLE` : le gate ne rend pas l'entité libre à partir d'un cache périmé. Un remote dont l'état est inconnu mène au même refus. En mode `auto`, le repli vers le cache local n'a lieu que si `git ls-remote` confirme que la branche n'existe pas sur le remote ; la sortie nomme alors ce repli et sa raison. La décision repose sur le code de retour et la sortie de `ls-remote`, jamais sur l'interprétation du texte d'une erreur.
 
-Si le `fetch` échoue alors que le ref de suivi local de la branche reste lisible, le gate lit ce ref et signale dans `source` que la lecture est potentiellement ancienne. Il ne remplace pas cette lecture git par le cache du snapshot. Par ailleurs, une observation encore en attente dans le spool local produit `UNPOSTED` avant tout verdict sur l'état du device.
+Si le `fetch` échoue alors que le ref de suivi local de la branche reste lisible, le gate rend `UNREADABLE` : ce ref n'est que le dernier état connu de la branche, et un `held` publié depuis par une autre lane n'y figure pas. Le verdict que ce ref porterait est lu pour le diagnostic seulement, nommé dans la raison et dans le champ `stale_ref` de la sortie JSON ; il n'autorise aucun lancement. Par ailleurs, une observation encore en attente dans le spool local produit `UNPOSTED` avant tout verdict sur l'état du device.
 
-La garde de lancement applique une restriction supplémentaire : un verdict `OK_TO_RUN` ou `RELEASED` provenant d'une source non git devient `NON_AUTORITAIRE` et refuse le lancement. Le constat d'absence `NO_OBS` conserve son traitement distinct.
+La garde de lancement transmet au gate la lane qui demande le device (`--gpu-holder`, passée en `--my-lane`) : seul le tenant d'un `held` reçoit `OK_TO_RUN` dans sa fenêtre, toute autre lane reçoit `HOLD`. Sans lane appelante, un `held` rend toujours `HOLD`. La garde applique aussi une restriction supplémentaire : un verdict `OK_TO_RUN` ou `RELEASED` qui ne provient pas d'une lecture fraîche de la branche (`source` exactement `git`) devient `NON_AUTORITAIRE` et refuse le lancement. Le constat d'absence `NO_OBS` conserve son traitement distinct.
 
 ## Capacité technique et autorité déclarée
 
