@@ -90,7 +90,7 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 59 | [3.6e — Génération conditionnelle et *classifier-free…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb) | BETA | Non |
 | 60 | [3.7 — Distillation maître-élève : quand le savoir se…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb) | BETA | Oui |
 | 61 | [Représentations contrastives modernes — du skip-gram…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.8-Representations-Contrastives.ipynb) | BETA | Oui |
-| 62 | [3.9 — Quantization FP : FP32 vers FP16 et BF16 depuis…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb) | BETA | Oui |
+| 62 | [3.9 — Quantization from scratch : du flottant réduit à…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb) | BETA | Oui |
 | 64 | [3.9b — Compression par élagage : le réseau amputé qui…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb) | BETA | Non |
 | 65 | [3.9c — Pruning from scratch sur CPU : le compagnon…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb) | BETA | Non |
 | 66 | [3.9d — Compression par distillation : transférer le…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb) | BETA | Non |

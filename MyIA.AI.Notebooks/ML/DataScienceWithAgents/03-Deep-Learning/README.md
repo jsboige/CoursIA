@@ -75,7 +75,7 @@ puis consommé via l'API officielle.
 
 **Bloc A — Compression de modèles from scratch** (EPIC #16060, sous-notebooks par technique) :
 - Bloc A.1 — Quantification FP32→FP16 [3.9] (#16127, OPEN po-2026)
-- Bloc A.2 — Quantification INT8 [3.9a] (#16094, MERGED po-2023)
+- Bloc A.2 — Quantification INT8 [3.9a] (#16094, MERGED po-2023 — absorbé dans la partie II de [3.9](3.9-Compression-Quantization-FP.ipynb))
 - Bloc A.3 — Pruning from scratch [3.9c] (#16060, PR en cours po-2024 — unstructured magnitude, structured filter pruning, Lottery Ticket Hypothesis)
 - Bloc A.4 — Distillation teacher/student [3.7] (#12675, MERGED — teacher/student sur MLP)
 

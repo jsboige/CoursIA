@@ -495,15 +495,15 @@
       "notebooks": [
         {
           "path": "ML/DataScienceWithAgents/03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb",
-          "title": "3.9 — Quantization FP : FP32 vers FP16 et BF16 depuis zéro",
-          "duration_minutes": 45,
+          "title": "3.9 — Quantization from scratch : du flottant réduit à l'entier",
+          "duration_minutes": 90,
           "kernel": "coursia-ml-training",
           "execution_constraints": {
             "requires_api": false,
-            "requires_gpu": false,
+            "requires_gpu": true,
             "requires_cloud": false,
             "requires_wsl": false,
-            "executable_locally": true
+            "executable_locally": false
           }
         },
         {
