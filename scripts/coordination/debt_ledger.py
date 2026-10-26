@@ -2162,6 +2162,161 @@ def spool_observation(spool_dir: Path, observation: dict[str, Any]) -> tuple[Pat
     return path, True
 
 
+def spool_pending(spool_dir: Path, *, ledger: str) -> list[dict[str, Any]]:
+    """Return the pending envelopes of ``ledger``, oldest first.
+
+    ``spool_status`` answers "how many"; this answers "which ones", so
+    ``flush`` can hand them to the agent that owns the dashboard transport.
+    Same parser and same refusal on a corrupt envelope: a half-read outbox
+    would let an observation disappear without a trace (#22456).
+    """
+    if not spool_dir.exists():
+        return []
+    pending: list[dict[str, Any]] = []
+    for path in spool_dir.glob("*.json"):
+        if path.name.startswith(".superseded-"):
+            continue
+        try:
+            observation = parse_envelope(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, ObservationError) as exc:
+            raise LedgerError("INVALID_SPOOL", f"{path}: {exc}") from exc
+        if not isinstance(observation, dict):
+            raise LedgerError("INVALID_SPOOL", f"{path}: envelope must be a JSON object")
+        if observation.get("ledger") != ledger or not observation.get("observation_id"):
+            continue
+        try:
+            moment = parse_utc_timestamp(observation.get("observed_at"))
+        except ObservationError:
+            moment = datetime.fromtimestamp(path.stat().st_mtime, timezone.utc)
+        pending.append({"path": path, "moment": moment, "observation": observation})
+    pending.sort(key=lambda item: (item["moment"], item["observation"]["observation_id"]))
+    return pending
+
+
+def flush_manifest(ledger: str, pending: Sequence[dict[str, Any]]) -> dict[str, Any]:
+    """The postable batch: one dashboard ``content`` per pending observation.
+
+    ``content`` is byte-identical to the spool file, so what an agent posts is
+    what the organ wrote -- no re-serialisation step where a field can drift.
+    """
+    return {
+        "ledger": ledger,
+        "workspace": LEDGER_WORKSPACES[ledger],
+        "count": len(pending),
+        "calls": [
+            {
+                "observation_id": item["observation"]["observation_id"],
+                "observed_at": format_utc(item["moment"]),
+                "content": envelope_line(item["observation"]),
+            }
+            for item in pending
+        ],
+    }
+
+
+def _index_spool(directory: Path, *, strict: bool) -> dict[str, Path]:
+    """Map observation id -> envelope file, for BOTH keying conventions.
+
+    ``flush_manifest`` publishes the ENVELOPE's ``observation_id``; the spool
+    FILE NAME is a second, older convention (``obs-release-15294.json`` holds
+    an envelope whose id is ``obs-b2d72...``). Resolving ids by file name
+    alone made the publisher and the archiver disagree: a file written by the
+    pre-envelope organ could be posted and then never archived, so the pending
+    count never reached zero and ``check_pending`` answered ``UNPOSTED``
+    forever -- the very failure this drain exists to prevent (#22456, measured
+    2026-10-25 on two raw ``[OBS]`` files from 2026-10-09 and 2026-10-19).
+
+    File names go in first, envelope ids second, so an id always resolves to
+    the file that DECLARES it. ``strict`` is for the pending set (a corrupt
+    outbox entry must raise, exactly as ``spool_pending`` does); the archive
+    side is read leniently, since a damaged archived file cannot make the
+    gate lie about what is still pending.
+    """
+    index: dict[str, Path] = {}
+    if not directory.exists():
+        return index
+    paths = [
+        path
+        for path in sorted(directory.glob("*.json"))
+        if not path.name.startswith(".superseded-")
+    ]
+    for path in paths:
+        index[path.stem] = path
+    for path in paths:
+        try:
+            observation = parse_envelope(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError, ObservationError) as exc:
+            if strict:
+                raise LedgerError("INVALID_SPOOL", f"{path}: {exc}") from exc
+            continue
+        if isinstance(observation, dict) and observation.get("observation_id"):
+            index[str(observation["observation_id"])] = path
+    return index
+
+
+def archive_posted(spool_dir: Path, observation_ids: Sequence[str]) -> dict[str, list[str]]:
+    """Move posted envelopes out of the pending set; idempotent by id.
+
+    All-or-nothing: an unknown id refuses the whole call rather than
+    archiving half a batch, because a partially drained outbox is exactly the
+    state that makes ``check_pending`` lie.
+    """
+    posted_dir = spool_dir / "posted"
+    pending_index = _index_spool(spool_dir, strict=True)
+    posted_index = _index_spool(posted_dir, strict=False)
+    moved: list[str] = []
+    already: list[str] = []
+    missing: list[str] = []
+    plan: dict[str, Path] = {}
+    for observation_id in observation_ids:
+        source = pending_index.get(observation_id)
+        if source is not None:
+            plan.setdefault(observation_id, source)
+        elif observation_id in posted_index:
+            already.append(observation_id)
+        else:
+            missing.append(observation_id)
+    if missing:
+        raise LedgerError(
+            "UNKNOWN_OBSERVATION",
+            "no pending or posted envelope for: " + ", ".join(sorted(set(missing))),
+        )
+    for observation_id, source in plan.items():
+        posted_dir.mkdir(parents=True, exist_ok=True)
+        os.replace(source, posted_dir / source.name)
+        moved.append(observation_id)
+    return {"moved": moved, "already": already}
+
+
+_NOW_SENTINEL = re.compile(r"^now\s*(?:([+-])\s*(\d+)\s*([mh]))?$")
+
+
+def resolve_now_sentinels(fields: dict[str, Any], *, moment: datetime) -> dict[str, Any]:
+    """Resolve ``now`` / ``now+30m`` / ``now-2h`` in hold timestamps.
+
+    The 2026-10-25 skew (#22456) came from a caller formatting its own clock:
+    a local time labelled ``Z`` is well-formed, so nothing downstream can
+    detect it. The organ offers the alternative -- it writes the stamp itself
+    from an aware ``moment`` -- so no caller has a reason to format one.
+    """
+    resolved = dict(fields)
+    for name in ("started_at", "expected_end"):
+        value = resolved.get(name)
+        if not isinstance(value, str):
+            continue
+        match = _NOW_SENTINEL.match(value.strip())
+        if match is None:
+            continue
+        sign, amount, unit = match.groups()
+        delta = timedelta(0)
+        if sign is not None:
+            delta = timedelta(minutes=int(amount)) if unit == "m" else timedelta(hours=int(amount))
+            if sign == "-":
+                delta = -delta
+        resolved[name] = format_utc(moment + delta)
+    return resolved
+
+
 # ---------------------------------------------------------------------------
 # 11. INIT -- schema doc, config, baseline, dashboard bootstrap
 # ---------------------------------------------------------------------------
@@ -2400,6 +2555,9 @@ def _cli_append(args: argparse.Namespace) -> int:
             raise LedgerError(
                 "MISSING_INPUT", "append needs --observation-file, or --entity with --fields-json"
             )
+        fields = resolve_now_sentinels(
+            _loads_object(args.fields_json, where="--fields-json"), moment=utcnow()
+        )
         raw = {
             "schema": OBSERVATION_SCHEMA,
             "ledger": args.ledger,
@@ -2409,7 +2567,7 @@ def _cli_append(args: argparse.Namespace) -> int:
             "evidence": args.evidence,
             "entity": _parse_entity_argument(args.entity, args.ledger),
             "head_transition": False,
-            "fields": _loads_object(args.fields_json, where="--fields-json"),
+            "fields": fields,
         }
         if args.note:
             raw["note"] = args.note
@@ -2508,6 +2666,9 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
     Reads the latest snapshot, finds the latest observation for the entity,
     and returns the verdict the picker needs:
 
+      * UNPOSTED  -- the local outbox still holds observations that never
+                     reached the dashboard; the reduced snapshot cannot be
+                     trusted until they are posted (#22456).
       * NO_OBS    -- no record; the picker skips the GPU-bound grain.
       * HOLD      -- held by another lane, or by us but outside the window.
       * OK_TO_RUN -- held by us (or matching) and now is in the run window.
@@ -2515,7 +2676,8 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
       * RELEASED  -- terminal; the GPU is free to take.
 
     Exit code is 0 for OK_TO_RUN, 0 for NO_OBS (we surface a clear verdict
-    and let the caller branch), 0 for RELEASED, 1 for HOLD (the gate refuses),
+    and let the caller branch), 0 for RELEASED, 1 for HOLD or UNPOSTED (the
+    gate refuses -- an unread ledger is not a free device),
     2 for STALE (the caller decides whether to refresh or to hold). All exit
     codes are documented in gpu-reservation.md -- a wrapper that maps them
     to skip/hold/escalate lives one layer up.
@@ -2544,6 +2706,35 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
     base = state_dir / args.ledger
     snapshot_path = Path(args.snapshot) if args.snapshot else base / "snapshots" / "snapshot.json"
 
+    if args.now is not None:
+        now = parse_utc_timestamp(args.now, where="--now")
+    else:
+        now = utcnow()
+
+    # An observation still sitting in the local outbox never reached the
+    # ledger, so a verdict reduced from the snapshot is blind to it: the gate
+    # answers "RELEASED" with the aplomb of a measurement while a live hold
+    # waits in the spool, and two lanes launch on the same device (#22456).
+    # Name the unread state instead of answering around it.
+    spooled = spool_status(base / "spool")[args.ledger]
+    if spooled["pending"]:
+        reason = (
+            f"{spooled['pending']} observation(s) still pending in {base / 'spool'} "
+            f"(oldest {spooled['oldest_observed_at'] or 'unknown'}) -- post them "
+            "(debt_ledger.py flush) before trusting any verdict"
+        )
+        if args.json_output:
+            print(json.dumps({
+                "verdict": "UNPOSTED",
+                "reason": reason,
+                "entity": args.entity,
+                "pending": spooled["pending"],
+                "now": format_utc(now),
+            }))
+        else:
+            print(f"UNPOSTED  {args.entity}  {reason}")
+        return 1
+
     if not snapshot_path.exists():
         if args.json_output:
             print(json.dumps({
@@ -2560,11 +2751,6 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
     # off one record -- so it must be fed the merged row, not the per-field
     # checkpoint records (#20077).
     records = record_views_from_snapshot(snapshot, args.ledger)
-
-    if args.now is not None:
-        now = parse_utc_timestamp(args.now, where="--now")
-    else:
-        now = utcnow()
 
     verdict, reason = evaluate_gpu_pending(records, entity, now, args.my_lane)
 
@@ -2614,6 +2800,77 @@ def _cli_spool_status(args: argparse.Namespace) -> int:
         }
     for ledger, row in status.items():
         print(f"{ledger}: pending={row['pending']} oldest_observed_at={row['oldest_observed_at'] or '-'}")
+    return 0
+
+
+def _manifest_ids(path: Path) -> list[str]:
+    payload = _read_json(path)
+    calls = payload.get("calls") if isinstance(payload, dict) else None
+    if not isinstance(calls, list):
+        raise LedgerError(
+            "INVALID_MANIFEST", f"{path}: expected an object carrying a 'calls' list"
+        )
+    ids: list[str] = []
+    for entry in calls:
+        if not isinstance(entry, dict) or not entry.get("observation_id"):
+            raise LedgerError(
+                "INVALID_MANIFEST", f"{path}: every call needs an observation_id"
+            )
+        ids.append(str(entry["observation_id"]))
+    return ids
+
+
+def _cli_flush(args: argparse.Namespace) -> int:
+    """Drain the local outbox towards the ledger's dashboard.
+
+    The transport is an MCP call made by an agent, not a subprocess, so this
+    command has two halves and neither is optional. Without ``--mark-posted``
+    it prints the batch to post and moves nothing (dry-run). With it, it
+    archives the ids the agent has actually posted -- which is what lets a
+    later ``check_pending`` trust the ledger again instead of reporting a
+    backlog it cannot see (#22456).
+    """
+    ledger = args.ledger
+    if args.out_dir:
+        spool_dir = Path(args.out_dir)
+    else:
+        state_dir = Path(args.state_dir) if args.state_dir else default_state_dir()
+        spool_dir = state_dir / ledger / "spool"
+    pending = spool_pending(spool_dir, ledger=ledger)
+    manifest = flush_manifest(ledger, pending)
+
+    if args.mark_posted or args.mark_posted_from:
+        ids = list(args.mark_posted or [])
+        if args.mark_posted_from:
+            ids.extend(_manifest_ids(Path(args.mark_posted_from)))
+        outcome = archive_posted(spool_dir, ids)
+        remaining = spool_status(spool_dir)[ledger]
+        if args.json:
+            print(
+                json.dumps(
+                    {**manifest, "archived": outcome, "remaining": remaining},
+                    ensure_ascii=False,
+                    indent=2,
+                )
+            )
+        else:
+            print(f"posted: moved={len(outcome['moved'])} already={len(outcome['already'])}")
+            print(
+                f"{ledger}: pending={remaining['pending']} "
+                f"oldest_observed_at={remaining['oldest_observed_at'] or '-'}"
+            )
+        return 0
+
+    if args.emit:
+        target = Path(args.emit)
+        assert_local_output(target, what="--emit")
+        _write_text_atomic(target, json.dumps(manifest, ensure_ascii=False, indent=2) + "\n")
+    if args.json:
+        print(json.dumps(manifest, ensure_ascii=False, indent=2))
+    else:
+        for call in manifest["calls"]:
+            print(f"{call['observed_at']}  {call['observation_id']}")
+        print(f"{ledger}: pending={manifest['count']} (dry-run -- nothing archived)")
     return 0
 
 
@@ -2734,6 +2991,28 @@ def build_parser() -> argparse.ArgumentParser:
     spool.add_argument("--status", action="store_true", required=True, help="count pending envelopes")
     spool.add_argument("--out-dir", help="inspect the same local spool dir used by append")
     spool.set_defaults(func=_cli_spool_status)
+
+    flush = sub.add_parser(
+        "flush",
+        parents=[common],
+        help="drain the local outbox (dry-run; --mark-posted archives what was posted)",
+    )
+    flush.add_argument("--ledger", choices=list(LEDGERS), default=GPU_RESERVATION)
+    flush.add_argument("--out-dir", help="inspect this spool dir instead of the state-dir one")
+    flush.add_argument("--emit", help="write the postable batch to this local JSON file")
+    flush.add_argument(
+        "--mark-posted",
+        nargs="+",
+        metavar="ID",
+        help="archive these observation ids, already posted on the dashboard",
+    )
+    flush.add_argument(
+        "--mark-posted-from",
+        metavar="MANIFEST",
+        help="archive every observation id of a manifest written by --emit",
+    )
+    flush.add_argument("--json", action="store_true", help="emit the manifest as JSON")
+    flush.set_defaults(func=_cli_flush)
 
     reduce_ = sub.add_parser("reduce", parents=[common], help="fold journal + checkpoint")
     reduce_.add_argument("--ledger", choices=list(LEDGERS), required=True)
