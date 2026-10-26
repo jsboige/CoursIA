@@ -294,31 +294,31 @@ fera se périmer dès que le code de la série bougera.
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12-ValenceFieldsAndAnimats-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12/ICT-12-ValenceFieldsAndAnimats-Python.ipynb
   confidence: research
   reviewed_code_sha: 4bd52d81b4f2544a47c1a782de08927bb978f38ca85fa7873ddd4e978b9e8760
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12b-LearnedValence-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12/ICT-12b-LearnedValence-Python.ipynb
   confidence: research
   reviewed_code_sha: fd2fcc293543c537a4e0c7477d0729eb7b8b321fa8eab194c1d8e3b424dcd926
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12c-PregnanceAnimat-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12/ICT-12c-PregnanceAnimat-Python.ipynb
   confidence: research
   reviewed_code_sha: 60af22936f3a15fc94cbeed9e864952e0026d5af20e9c3c082ec918ec237b28c
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12d-InhibitedActionAnimat-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12/ICT-12d-InhibitedActionAnimat-Python.ipynb
   confidence: research
   reviewed_code_sha: 44c3406ede520ac19295c8d46ac29324e1286d73141e4caf0b436360f8849a84
   review_date: "2026-09-21"
   evidence_pr: "#14831"
   notes: "Recherche active — appréciation posée au sign-off du schéma."
-- notebook_path: IIT/ICT-Series/ICT-12e-Value-of-Information-Animat-Python.ipynb
+- notebook_path: IIT/ICT-Series/ICT-12/ICT-12e-Value-of-Information-Animat-Python.ipynb
   confidence: research
   reviewed_code_sha: 865df6eec48b8704606ededa7b24a92bdc98da851b3f05c274a7c70aa0e186ec
   review_date: "2026-09-21"
