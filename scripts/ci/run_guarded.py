@@ -61,8 +61,10 @@ cause du ledger. Avec ``--gpu-entity``, toute panne de l'organe (module
 absent, appel qui leve, source illisible) refuse le lancement -- on ne lance
 pas sur un device dont on ne peut ni lire l'etat ni porter la reservation
 (fail-CLOSED). ``--gpu-holder`` et ``--gpu-workload`` sont requis avec
-``--gpu-entity`` ; ``--gpu-expected-end`` (UTC ISO-8601, suffixe Z) et
-``--gpu-issue`` sont facultatifs.
+``--gpu-entity`` ; ``--gpu-expected-end`` (UTC ISO-8601, suffixe Z) est
+facultatif mais **borne par defaut** (maintenant + 24 h, journalisee) -- un
+hold sans borne n'est jamais STALE, donc un lanceur tue brutalement laisserait
+le device pris pour toute la flotte ; ``--gpu-issue`` est facultatif.
 
 Codes de sortie : 0 commande terminee sous les deux plafonds · 3 plafond
 processus franchi · 4 plancher machine franchi · 5 demarrage refuse (RAM libre
