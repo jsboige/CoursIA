@@ -1,7 +1,7 @@
 # `_archive/` — 03-DeepLearning
 
 Registre de disposition (convention `_archive/`, cf
-[docs/reference/_archive-convention.md](../../../../docs/reference/_archive-convention.md)).
+[docs/reference/_archive-convention.md](../../../../../docs/reference/_archive-convention.md)).
 Chaque ligne dit par quoi le carnet a été supplanté et où le verdict est consigné.
 
 | Fichier | Verdict | Supplété par | Verdict consigné dans |
