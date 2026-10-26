@@ -284,6 +284,21 @@ def test_documented_verdicts_cover_every_verdict_the_gate_can_render():
 def test_documented_exit_codes_match_the_code():
     documented = _documented_verdicts()
 
+    # Les deux sens sont compares AVANT les valeurs : sans cette garde, une
+    # cle SUPPRIMEE du module resterait invisible (l'iteration ne voit que
+    # les cles presentes), et le rouge tomberait sur un KeyError sans dire
+    # ce qui manque.
+    missing_in_code = set(documented) - set(dl.GPU_VERDICT_EXIT_CODES)
+    assert not missing_in_code, (
+        "verdict documenté sans code de sortie dans le module : "
+        f"{sorted(missing_in_code)}"
+    )
+    missing_in_doc = set(dl.GPU_VERDICT_EXIT_CODES) - set(documented)
+    assert not missing_in_doc, (
+        "code de sortie déclaré sans ligne dans la doc : "
+        f"{sorted(missing_in_doc)}"
+    )
+
     for verdict, code in sorted(dl.GPU_VERDICT_EXIT_CODES.items()):
         assert documented[verdict] == code, (
             f"le code de sortie de {verdict} a dérivé : "
