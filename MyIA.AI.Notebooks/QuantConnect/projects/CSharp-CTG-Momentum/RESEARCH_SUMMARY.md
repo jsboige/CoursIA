@@ -1,6 +1,7 @@
 # CTG-Momentum Robustness Research (2015-2025)
 
 **Date**: 2026-02-17
+**Mise à jour** : 2026-10-25, backtest C# sur QC Cloud avec une fenêtre figée (#22541)
 **Projet QC**: CSharp-CTG-Momentum (ID: 19225388)
 **Objectif**: Valider la stratégie sur une période étendue maximale (2015-2025) avant déploiement
 
@@ -9,7 +10,7 @@
 ## Contexte
 
 ### Stratégie actuelle
-- **Période**: 2021-01-01 → Now
+- **Période**: 2015-01-01 → 2025-12-31 (bornes figées dans `Main.cs`, paramètres QC `start-date` et `end-date`, #22541)
 - **Univers**: OEF ETF (S&P 100 constituants)
 - **Logic**: Momentum ranking (AnnualizedExponentialSlope 90j)
 - **Filtres**:
@@ -18,7 +19,7 @@
   - Gap < 15% sur 90j
   - Slope annualisée > 10%
 - **Sizing**: 1.0% risk ATR-based
-- **Bug corrigé**: SMA(10) → SMA(200) (ligne 119 Main.cs)
+- **Bug corrigé**: SMA(10) → SMA(200) (indicateur de régime `SMA("SPY", 200)` de `Main.cs`)
 
 ### Méthodologie de recherche
 
@@ -31,7 +32,9 @@
 
 ## Résultats Clés
 
-### Performance Globale (2015-2025)
+### Proxy Python, exécution du 2026-02-17 (fenêtre 2015-01-02 → 2026-02-13)
+
+Ce tableau vient du script `research_robustness_simple.py` (`research_results.txt`), dont la fenêtre courait jusqu'à la date d'exécution. Il ne porte pas sur la fenêtre figée : les chiffres de la fenêtre 2015-2025 sont ceux du tableau suivant.
 
 | Métrique | Valeur |
 |----------|--------|
@@ -41,14 +44,22 @@
 | Max Drawdown | **31.03%** |
 | Positions moyennes | 1.9 |
 
-### Comparaison période actuelle vs étendue
+### Proxy Python et backtest C#, fenêtre figée 2015-2025
 
-| Période | Sharpe | Note |
-|---------|--------|------|
-| 2021-Now (actuel) | 0.507 | Pré-bugfix SMA(10)→SMA(200) |
-| 2015-2025 (étendu) | **1.050** | Proxy Python avec 30 large caps |
+| Mesure | Fenêtre | Sharpe | CAGR | MaxDD | Note |
+|--------|---------|--------|------|-------|------|
+| Proxy Python (carnet) | données 2015-01-02 → 2025-12-31, série 2015-01-08 → 2025-12-18 | 1,106 | 25,33 % | 29,93 % | 30 grandes capitalisations, sans frais |
+| Backtest C# QC Cloud, univers OEF | 2015-01-01 → 2025-12-31 | **0,438** | **14,0 %** | **42,4 %** | S&P 100, frais IB, 888 ordres |
 
-**Observation**: L'extension de période double le Sharpe Ratio (proxy), confirmant la robustesse de la stratégie.
+**Observation** : le backtest C# ne retrouve pas le niveau du proxy. Le chiffre « 2021-Now : 0,507 » comparé ici auparavant venait d'un backtest à fenêtre glissante qui n'était pas identifié ; il est retiré. Trois différences de construction peuvent porter l'écart, sans avoir été mesurées séparément :
+
+- la liste fixe de 30 titres du proxy a été choisie en 2026 et contient dès 2015 des titres devenus de grandes capitalisations depuis (biais de sélection probable) ;
+- le proxy tient en moyenne 1,9 position, quand le code C# classe un top 20 ;
+- le proxy classe sur le rendement 90 jours et ne compte aucun frais.
+
+Les frais IB du backtest C# pèsent environ 2,5 % du capital initial sur onze ans : ils n'expliquent pas l'écart à eux seuls. Identifiants des backtests et sous-périodes : section « Retest QC500 » du README.
+
+**Mesures du carnet `research_robustness.ipynb`** : les tableaux de ce document viennent du script `research_robustness_simple.py` (exécution du 2026-02-17, fenêtre jusqu'au 2026-02-13). Le carnet, ré-exécuté sur la fenêtre figée (données yfinance du 2015-01-02 au 2025-12-31 ; la série de rendements du proxy court du 2015-01-08 au 2025-12-18, bornes effectives imprimées par le carnet), donne : CAGR 25,33 %, Sharpe 1,106, drawdown max 29,93 %, 1,9 position en moyenne ; 12 semestres positifs sur 18 (2017-2025), Sharpe moyen par semestre 0,86. Le découpage semestriel applique des règles fixes : c'est une mesure de stabilité, pas une validation walk-forward au sens strict (aucun paramètre n'est ré-estimé d'une fenêtre à l'autre).
 
 ---
 
@@ -134,14 +145,17 @@
 - Contribue à la stabilité du portefeuille
 - Nombre moyen positions = 1.9 (concentration élevée, pas de dilution)
 
-### 4. Période actuelle vs étendue?
+### 4. Stabilité du backtest C# d'une sous-période à l'autre?
 
-| Comparaison | 2021-Now | 2015-2025 |
-|-------------|----------|-----------|
-| Sharpe | 0.507 | 1.050 |
-| Contexte | Post-bugfix à tester | Proxy Python validé |
+| Backtest C# QC Cloud, univers OEF | 2015-2019 | 2020-2025 | 2015-2025 | Proxy 2015-2025 |
+|-----------------------------------|-----------|-----------|-----------|-----------------|
+| Sharpe | 0,476 | 0,445 | 0,438 | 1,106 |
+| CAGR | 12,9 % | 15,8 % | 14,0 % | 25,33 % |
+| MaxDD | 33,9 % | 42,4 % | 42,4 % | 29,93 % |
 
-**Recommandation**: Etendre la période pour maximiser la validation sur différents régimes.
+Chaque sous-période repart du capital initial, avec des indicateurs préchauffés sur 200 jours avant la date de début (`SetWarmUp(200)`).
+
+**Lecture** : le Sharpe du backtest C# est stable d'une sous-période à l'autre (0,476 puis 0,445). C'est son niveau qui s'écarte du proxy, pas sa stabilité. Le drawdown de 42,4 % tombe dans la seconde sous-période.
 
 ---
 
@@ -156,11 +170,11 @@
 
 ### 2. Extension de période
 
-✅ **RECOMMANDÉ: SetStartDate(2015, 1, 1)**
+✅ **FAIT : fenêtre 2015-01-01 → 2025-12-31** (#22541)
 
 **Raisons**:
 1. Couvre 3 régimes de marché différents (bull 2015-2017, corrections 2018/2020, choppy 2022, AI bull 2023-2025)
-2. Sharpe étendu (1.050 proxy) > Sharpe actuel (0.507)
+2. Sharpe du backtest C# stable sur les deux sous-périodes (0,476 puis 0,445)
 3. Validation robuste sur 11 ans
 4. Protection efficace durant COVID et Inflation
 
@@ -174,14 +188,14 @@
 
 ### 4. Prochaines étapes
 
-1. **Modifier Main.cs**: `SetStartDate(2015, 1, 1)` (ligne 107)
-2. **Compiler** via QC cloud
-3. **Lancer backtest** via web UI (account requis)
-4. **Valider métriques**:
-   - Sharpe >= 0.4 (attendu: 0.8-1.2)
-   - Max DD < 35%
-   - CAGR >= 15%
-5. **Si validation OK**: Déployer en live trading
+1. ~~Modifier `Main.cs`~~ : fait, fenêtre figée 2015-01-01 → 2025-12-31, bornes en paramètres QC (#22541)
+2. ~~Compiler et backtester sur QC Cloud~~ : fait, identifiants dans le README
+3. **Critères mesurés** sur le backtest C# univers OEF, fenêtre figée :
+   - Sharpe >= 0.4 : **atteint** (0,438) ; la fourchette attendue 0,8-1,2 n'est **pas** atteinte
+   - Max DD < 35 % : **non atteint** (42,4 %)
+   - CAGR >= 15 % : **non atteint** (14,0 %)
+4. **Validation non acquise** (deux critères sur trois manqués) : la condition « si validation OK » de l'étape suivante n'est pas remplie
+5. Piste : mesurer séparément l'effet de la liste de 30 titres et de la concentration du proxy, pour savoir laquelle porte l'écart de Sharpe
 
 ---
 
@@ -200,7 +214,7 @@
 3. **Slippage**: Non modélisé
 4. **Rebalancing**: Jeudis uniquement (C# code utilise jeudis aussi)
 
-**Conclusion**: Les insights qualitatifs (régimes, protection SMA, stabilité) sont fiables. Les métriques absolues doivent être validées par backtest QC cloud.
+**Conclusion**: Les insights qualitatifs (régimes, protection SMA, stabilité) sont fiables. Le backtest QC Cloud sur la fenêtre figée (#22541) donne des métriques absolues nettement inférieures à celles du proxy (Sharpe 0,438 contre 1,106, drawdown 42,4 % contre 29,93 %) : les chiffres absolus du proxy ne valent pas pour la stratégie C#.
 
 ---
 
@@ -209,7 +223,7 @@
 - `research_robustness_simple.py`: Script Python standalone (yfinance)
 - `research_results.txt`: Output complet du backtest
 - `RESEARCH_SUMMARY.md`: Ce document
-- `research_robustness.ipynb`: Notebook Jupyter (non exécuté, dépendance AlgorithmImports)
+- `research_robustness.ipynb`: Notebook Jupyter exécuté (yfinance, données 2015-01-02 → 2025-12-31, série du proxy 2015-01-08 → 2025-12-18)
 
 ---
 

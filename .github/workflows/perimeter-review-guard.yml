@@ -88,6 +88,15 @@ name: perimeter-review-guard
 # l'agrégat du PR gate replie (latest-wins par nom). Sans lui, une
 # correction de body laissait le rouge de la surface review en place.
 #
+# Residu assume (#21990, voie b -- decision documentee) : la jambe umbrella
+# `perimeter` d'always-on-guards.yml ne porte que `pull_request`, et CE
+# fichier est gate hors fork (`if:` du job, `head.repo.full_name`) -- sur
+# une PR de fork, une REVIEW tierce posterieure ne declenche donc AUCUNE
+# re-mesure du perimetre, ni ici ni dans l'umbrella : le run du
+# `pull_request` initial reste la seule mesure. Le residu ne couvre que
+# les PRs de fork ; la voie (a) de #21990 -- surface de re-mesure dediee
+# sur pool GitHub-hosted -- reste ouverte si le mainteneur la demande.
+#
 # Pourquoi ce fichier vit sur ubuntu-latest : `pull_request_review` est un
 # declencheur fork-reachable (FORK_REACHABLE_TRIGGERS, #14201 tranche 2),
 # et `pull_request` l'est aussi. Le laisser sur always-on-guards interdisait
@@ -129,6 +138,29 @@ on:
         description: 'PR number whose perimeter assertions must be re-measured'
         required: false
         default: ''
+
+# Une tete, un run (#21991). Trois declencheurs pour un meme levier (le nom de
+# check-run "perimeter review guard (#11268)"), donc une paire d'evenements
+# rapproches -- edition de body juste apres un push, review postee pendant que
+# le run du push tourne -- derivait deux runs complets sur la meme tete.
+#
+# Le fold du merge gate est concu pour l'annulation, et le dit dans son
+# docstring (pr_gate.py, regles 2 et 3) : dedupe_latest ne garde que le run le
+# plus recent par nom, donc un `cancelled` SUPERSEDE est ecarte du pli et
+# n'entrave pas une tete reverdie ; seul un `cancelled` sur le run LE PLUS
+# RECENT echoue (fail-closed -- le gate n'affirme rien qu'il n'a pas mesure).
+# Comportement teste par test_superseded_cancelled_run_does_not_block_a_green_sha
+# (#11869, cas Quarto Pages Deploy 401a68cd8) et
+# test_cancelled_on_the_newest_run_still_fails.
+#
+# La cle porte la TETE, pas le numero de PR : un push frais (synchronize) cree
+# une tete differente, donc les runs de l'ancienne tete ne sont pas annules --
+# ils restent la surface d'audit de cette tete. Repli `run_id` sous
+# `workflow_dispatch` : pas d'objet pull_request dans le contexte, un groupe
+# unique par run signifie "jamais d'annulation" pour la re-mesure manuelle.
+concurrency:
+  group: perimeter-review-guard-${{ github.event.pull_request.head.sha || github.run_id }}
+  cancel-in-progress: true
 
 # Moindre privilege (#16185, CodeQL `actions/missing-workflow-permissions`) :
 # ce workflow n'avait AUCUN bloc `permissions:` -- ni au niveau workflow, ni au
