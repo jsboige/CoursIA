@@ -212,19 +212,19 @@ response = client.chat.completions.create(
 
 print(""Reponse du modele :"")
 print(response.choices[0].message.content)",,,,,,,,49a4a2478636c620,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,5d2bbe0b,markdown,fr,5a8888ae52d63099,"### Interprétation du résultat
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,5d2bbe0b,markdown,fr,f7bf8a41770ebe84,"### Interprétation du résultat
 
-Le prompt « Allons enfants de la Patrie, » est le premier vers de **La Marseillaise**, l'hymne national français. Le modèle reconnaît la référence, mais ce qu'il en fait **varie d'une exécution à l'autre**. Lors d'une exécution précédente de ce carnet, il avait chanté le premier couplet et le refrain, puis proposé la suite, une traduction ou l'histoire de l'hymne. À cette exécution, il ne continue rien et demande directement ce que l'on attend de lui (voir la sortie ci-dessus). Trois points à retenir :
+Le prompt « Allons enfants de la Patrie, » est le premier vers de **La Marseillaise**, l'hymne national français. Le modèle reconnaît la référence, mais ce qu'il en fait **varie d'une exécution à l'autre**. À cette exécution, il chante la suite du premier couplet et le refrain, puis propose les autres couplets, une traduction ou l'histoire de l'hymne (voir la sortie ci-dessus). Lors d'une exécution précédente du même code, il ne continuait rien et demandait directement ce que l'on attendait de lui. Trois points à retenir :
 
 1. **Mémoire culturelle** : dans les deux cas, le modèle identifie l'hymne sans qu'on le lui nomme. Il a été entraîné sur de vastes corpus de textes et reconnaît les références culturelles célèbres.
 
 2. **Un modèle de chat n'est pas un modèle de complétion** : `gpt-5-mini` est entraîné à répondre à une demande. Un début de phrase sans consigne est une demande ambiguë, que le modèle peut compléter ou faire préciser. Les modèles de complétion (l'API `completions`, antérieure à l'API Chat) prolongent le texte par construction : ils prédisent la suite du prompt.
 
-3. **Non-déterminisme** : sans consigne ni paramètre de contrôle, deux appels identiques peuvent produire des **comportements** différents, pas seulement des formulations différentes. Pour obtenir une continuation, il faut la demander explicitement (« Continue les paroles : … »).
+3. **Non-déterminisme** : sans consigne ni paramètre de contrôle, deux appels identiques peuvent produire des **comportements** différents, pas seulement des formulations différentes. Pour obtenir une continuation à coup sûr, il faut la demander explicitement (« Continue les paroles : … »).
 
 **Paramètres utilisés** :
 - `model=""gpt-5-mini""` : Version économique et rapide du modèle GPT-5
-- Pas de limitation de tokens : Le modèle génère jusqu'à ce qu'il considère la réponse complète",,,,,,,,5a8888ae52d63099,,,,,,,,,,,,,,,
+- Pas de limitation de tokens : Le modèle génère jusqu'à ce qu'il considère la réponse complète",,,,,,,,f7bf8a41770ebe84,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,22a3d9b1,markdown,fr,ca1ffc588e2d1b61,"### Les rôles d'un message : `system`, `user`, `assistant`
 
 Cette section illustre l'importance du **rôle 'system'** dans les conversations avec les LLMs.
@@ -365,7 +365,7 @@ usage = response_ex1.usage
 details = getattr(usage, ""completion_tokens_details"", None)
 print(f""Tokens de sortie : {usage.completion_tokens} ""
       f""(dont raisonnement : {getattr(details, 'reasoning_tokens', 'n/a')})"")",,,,,,,,5165684542b9a7a1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,4e6b17ae,markdown,fr,1bda0d3487adc108,"### Analyse comparative de la tokenisation
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,27a62472,markdown,fr,1bda0d3487adc108,"### Analyse comparative de la tokenisation
 
 Les résultats ci-dessus révèlent des **différences importantes** entre les tokenizers :
 
@@ -383,7 +383,7 @@ Les résultats ci-dessus révèlent des **différences importantes** entre les t
 Sur la même phrase, `text-davinci-003` et `gpt-5-mini` peuvent produire un **nombre identique** de tokens (cf. la sortie ci-dessous : 5 tokens chacun) mais avec des **indices de vocabulaire différents** (`[5812, 910, 460, 345, 766]` vs `[18009, 2891, 665, 481, 1921]`) : chaque modèle possède son propre vocabulaire BPE. Sur des textes plus longs ou multilingues, le compte peut diverger (cf. l'exemple guidé ci-dessous).
 
 **Recommandation** : Toujours vérifier la tokenisation avant d'envoyer de longs documents pour estimer le coût réel.",,,,,,,,1bda0d3487adc108,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,f05a283e,markdown,fr,6ef1989d19d485c3,"## Notions de Base : Tokenisation
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,2ebb7faa,markdown,fr,6ef1989d19d485c3,"## Notions de Base : Tokenisation
 
 Lorsque nous envoyons un prompt à un LLM, le texte est converti en une séquence de **tokens**.  
 - Un **token** est généralement un morceau de mot, un caractère spécial ou un sous-mot.  
@@ -401,7 +401,7 @@ Lorsque nous envoyons un prompt à un LLM, le texte est converti en une séquenc
 Dans la bibliothèque `tiktoken` d'OpenAI, on peut directement encoder et décoder les tokens pour comprendre la segmentation.  
 Ci-dessous, un exemple détaillé de la façon dont la phrase « Oh say can you see » est découpée différemment selon le modèle.
 ",,,,,,,,6ef1989d19d485c3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,8c2dd909,code,fr,b24035037d469c8c,"# ============================
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,d07132b7,code,fr,b24035037d469c8c,"# ============================
 # Cellule 5 : Analyse de la Tokenisation
 # ============================
 
@@ -437,7 +437,7 @@ decoded_default = [encoder_default.decode([t]) for t in tokens_default]
 print(f""\nDecodage token par token ({DEFAULT_MODEL}) :"")
 for i, token in enumerate(decoded_default):
     print(f""Token {i}: '{token}'"")",,,,,,,,b24035037d469c8c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,f6ba785d,markdown,fr,9ae8d9e71f308453,"### Analyse des résultats de tokenisation
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,1e48e638,markdown,fr,9ae8d9e71f308453,"### Analyse des résultats de tokenisation
 
 L'exécution du code ci-dessus révèle des informations importantes sur la **tokenisation** selon les modèles :
 
@@ -467,7 +467,7 @@ encoder = tiktoken.encoding_for_model(""gpt-5-mini"")
 prompt_tokens = len(encoder.encode(""votre long prompt...""))
 cout_estimé = prompt_tokens * PRIX_PAR_TOKEN
 ```",,,,,,,,9ae8d9e71f308453,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,3ab548dc,markdown,fr,0be129ffc302ffcb,"### Exemple guidé : Comparer la tokenisation de textes multilingues
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,46721114,markdown,fr,0be129ffc302ffcb,"### Exemple guidé : Comparer la tokenisation de textes multilingues
 
 *Contribution étudiante du groupe de la PR #21012, intégrée comme exemple guidé.*
 
@@ -480,7 +480,7 @@ L'exemple reprend la phrase « L'intelligence artificielle transforme le monde �
 - **aucune conclusion n'est écrite en dur** : la langue la plus économique et la plus coûteuse sont cherchées par le code (`min`/`max` sur le ratio), l'écart en pourcent est calculé, et deux cas limites sont vérifiés par assertion — un texte vide produit 0 token, et décoder les tokens redonne exactement le texte de départ.
 
 La cellule affiche enfin le découpage token par token de chaque phrase : on y voit *où* la coupe tombe, pas seulement combien elle coûte.",,,,,,,,0be129ffc302ffcb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,43159264,code,fr,bc1bf53d9d860620,"# Exemple guide : Comparer la tokenisation de textes multilingues
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,a35c9b0f,code,fr,bc1bf53d9d860620,"# Exemple guide : Comparer la tokenisation de textes multilingues
 # Objectif : compter les tokens d'une meme phrase en francais, anglais et espagnol
 # pour voir si toutes les langues ""coutent"" le meme nombre de tokens.
 # Remarque : tiktoken decoupe le texte EN LOCAL, sur la machine.
@@ -555,7 +555,7 @@ assert len(encoder.encode("""")) == 0
 #    (le decoupage ne perd aucune information).
 assert all(encoder.decode(encoder.encode(t)) == t for t in phrases.values())
 print(""\nCas limites OK : texte vide = 0 token, encodage/decodage sans perte"")",,,,,,,,bc1bf53d9d860620,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,788b886b,markdown,fr,b5e50a6cb58c84ef,"### Analyse du phénomène d'hallucination
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,fc9ea21e,markdown,fr,b5e50a6cb58c84ef,"### Analyse du phénomène d'hallucination
 
 Le résultat ci-dessus est très instructif sur les **limites des LLMs** :
 
@@ -573,7 +573,7 @@ Le résultat ci-dessus est très instructif sur les **limites des LLMs** :
 - **Temperature basse** : Réduire la créativité pour des tâches factuelles
 
 **Leçon importante** : Ne jamais faire confiance aveuglément aux réponses d'un LLM, surtout sur des faits historiques, médicaux, juridiques ou scientifiques. Toujours **vérifier les sources**.",,,,,,,,b5e50a6cb58c84ef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,b352cfa1,markdown,fr,20dc31198191ecbe,"## Exemple guide : Impact de la Température — ce que ce modèle mesure
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,acd73f7a,markdown,fr,20dc31198191ecbe,"## Exemple guide : Impact de la Température — ce que ce modèle mesure
 
 La température est, sur la plupart des modèles, le curseur de créativité : basse (~0.0) =
 réponses strictes et répétables ; haute (~1.0 ou plus) = plus de diversité, au prix de la
@@ -593,7 +593,7 @@ du décodage** (même prompt, réponses différentes) et la **formulation du pro
 > servi sont deux choses distinctes — sur un modèle de la génération « reasoning »,
 > **mesurez avant de prescrire**.
 ",,,,,,,,20dc31198191ecbe,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,85650cc6,markdown,fr,9730a74d25625369,"## Exemple de Fabrication (ou ""Hallucination"")
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,79cd0809,markdown,fr,9730a74d25625369,"## Exemple de Fabrication (ou ""Hallucination"")
 
 Les modèles de langage peuvent parfois générer des informations inventées ou inexactes.  
 Pour illustrer ce phénomène, nous allons utiliser un prompt ambigu ou factuellement erroné et observer la réponse du modèle.
@@ -604,7 +604,7 @@ Pour illustrer ce phénomène, nous allons utiliser un prompt ambigu ou factuell
 
 L'objectif est d'analyser comment le modèle invente des détails ou admet son ignorance.
 ",,,,,,,,9730a74d25625369,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,0493bf98,code,fr,03d5f2b59e8ad4ea,"# ============================
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,fa7504ba,code,fr,03d5f2b59e8ad4ea,"# ============================
 # Cellule 7 : Test de Fabrication (Hallucination)
 # ============================
 
@@ -621,7 +621,7 @@ response_fabrication = client.chat.completions.create(
 
 print(""Reponse du modele :\n"")
 print(response_fabrication.choices[0].message.content)",,,,,,,,03d5f2b59e8ad4ea,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,0128076b,markdown,fr,2344e16e5d4617a7,"### Interprétation du test d'hallucination
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,90cc9610,markdown,fr,2344e16e5d4617a7,"### Interprétation du test d'hallucination
 
 L'exécution de ce code révèle un comportement typique des LLMs face à des **prompts fictionnels** :
 
@@ -642,7 +642,7 @@ L'exécution de ce code révèle un comportement typique des LLMs face à des **
 - Réduire la `temperature` pour des tâches factuelles (ex: 0.1-0.3)
 
 **Leçon clé** : Les LLMs sont excellents pour générer du texte cohérent, mais ne distinguent pas intrinsèquement le vrai du faux. La vérification humaine reste essentielle.",,,,,,,,2344e16e5d4617a7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,038d8330,markdown,fr,207de640a0eb2277,"### Exercice 3 : Detecter et corriger une hallucination
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,f6b6f896,markdown,fr,207de640a0eb2277,"### Exercice 3 : Detecter et corriger une hallucination
 
 L'exemple ci-dessus montre comment un modèle peut inventer des details plausibles. Votre mission est de créer un prompt qui demande au modèle de decrire un événement reel ET un événement fictif, puis d'identifier lequel est invente.
 
@@ -652,7 +652,7 @@ L'exemple ci-dessus montre comment un modèle peut inventer des details plausibl
 - Choisissez un événement reel peu connu (ex: ""La première transmission radio transatlantique, 1901"")
 - Inventez un événement similaire mais faux (ex: ""La première communication telephonique sous-marine, 1898"")
 - Demandez au modèle : ""Lequel de ces deux événements est invente ? Justifie.""",,,,,,,,207de640a0eb2277,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,4fd36c5b,code,fr,9b0192b2d5efcdf3,"# Exercice 3 : Detecter et corriger une hallucination
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,a2e177a3,code,fr,9b0192b2d5efcdf3,"# Exercice 3 : Detecter et corriger une hallucination
 # TODO etudiant : Creez un prompt avec 2 evenements (1 vrai, 1 faux)
 # et demandez au modele d'identifier l'imposteur
 
@@ -674,7 +674,7 @@ MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,4fd36c5b,code,fr,9b0192b2d5e
 # print(response_detect.choices[0].message.content)
 
 print(""Exercice a completer"")",,,,,,,,9b0192b2d5efcdf3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,51fae5b9,markdown,fr,303a4641d05b5db9,"## Responses API : La Nouvelle Génération (2025)
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,7afa27c6,markdown,fr,303a4641d05b5db9,"## Responses API : La Nouvelle Génération (2025)
 
 OpenAI a introduit la **Responses API** comme nouvelle approche recommandée pour interagir avec les modèles. Elle offre plusieurs avantages par rapport à Chat Completions :
 
@@ -694,7 +694,7 @@ OpenAI a introduit la **Responses API** comme nouvelle approche recommandée pou
 | Outils | Support | Support + boucle agentique |
 
 **Note** : Chat Completions reste supporté et fonctionnel. La Responses API est recommandée pour les nouveaux projets.",,,,,,,,303a4641d05b5db9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,882da348,code,fr,64e2aa3c21152926,"# ============================
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,a461ae8f,code,fr,64e2aa3c21152926,"# ============================
 # Cellule : Exemple Responses API
 # ============================
 
@@ -737,7 +737,7 @@ except Exception as e:
     print(f""Note: {type(e).__name__}: {e}"")
     print(""   La Responses API necessite un acces direct a l'API OpenAI."")
     print(""   Via OpenRouter, seule la Chat Completions API est disponible."")",,,,,,,,64e2aa3c21152926,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,6772082c,markdown,fr,cb5a4fa153478e28,"### Interprétation des résultats Responses API
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,8dd58735,markdown,fr,cb5a4fa153478e28,"### Interprétation des résultats Responses API
 
 L'exécution ci-dessus démontre les **capacités de chaînage** de la Responses API :
 
@@ -752,7 +752,7 @@ L'exécution ci-dessus démontre les **capacités de chaînage** de la Responses
 - **Traçabilité** : Chaque réponse a un ID unique pour le debugging et l'audit
 
 **Note** : Si vous voyez l'avertissement ""n'est pas disponible"", c'est que votre version d'OpenAI ou votre compte ne supporte pas encore cette API. Chat Completions reste fonctionnel pour tous les cas d'usage.",,,,,,,,cb5a4fa153478e28,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,03d41848,markdown,fr,066ece94d75bedcc,"## Conclusion de cette Introduction
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,6d92e405,markdown,fr,066ece94d75bedcc,"## Conclusion de cette Introduction
 
 Nous avons couvert les points suivants :
 - Les bases de l'IA générative et des LLMs
@@ -18727,61 +18727,131 @@ print(""\n=== Meme question, budget de 2000 jetons ==="")
 print(texte_large[:500], ""[...]"")
 print(""finish_reason :"", sans_large.choices[0].finish_reason)
 print(""Tokens de sortie :"", sans_large.usage.completion_tokens, ""| caracteres :"", len(texte_large))",,,,,,,,dc2cc21061183c3e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,eg-sys-lecture,markdown,fr,cc04d82615adced7,"### Lecture du résultat — exemple guidé (system prompt)
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,eg-sys-lecture,markdown,fr,1ac9c7e740f66fbd,"### Lecture du résultat — exemple guidé (system prompt)
 
-- **Les consignes vérifiables par le code tiennent** : 5 puces exactement (la vérification automatique affiche `OK`), sans introduction ni conclusion, avec `finish_reason : stop`. Chaque puce suit en outre un gabarit que la consigne n'imposait pas : un nom de bibliothèque, un tiret long, une description, puis un exemple entre parenthèses (`ex. groupby, merge, pivot_table`).
-- **Deux consignes ne se vérifient qu'à la lecture** : le français, respecté, et la source par puce. À cette exécution, le modèle satisfait la consigne 4 par des **exemples concrets** ; lors d'une exécution précédente du même code, il citait des **URL** de documentation. La consigne laissait le choix (« une source ou un exemple »), et le modèle ne fait pas le même choix d'un appel à l'autre. Le compteur de puces ne voit rien de tout cela : un vérificateur automatique ne couvre que ce qu'on lui a appris à compter.
-- **Sans message `system`, la réponse est trois fois plus longue** : 766 jetons et 3 371 caractères, organisés en sections numérotées qui contiennent chacune plusieurs puces, contre 249 jetons avec le message `system`. Celui-ci ne règle donc pas seulement le style : il divise ici par trois le coût de la réponse.
-- **Le piège du budget** : avec 300 jetons, l'appel sans message `system` ne renvoie **rien**. L'affichage est vide, `finish_reason` vaut `length`, et l'API compte les 300 jetons comme du raisonnement alors que `reasoning_effort=""minimal""`. Quand la réponse ne tient pas dans le budget, `gpt-5-mini` ne la tronque pas, il la perd. Le groupe, qui exécutait le carnet avec un autre modèle, obtenait au contraire une réponse coupée au milieu d'un mot. Le même paramètre n'a pas le même effet selon le modèle : vérifier `finish_reason` à chaque appel est le seul moyen de savoir si la réponse affichée est complète.",,,,,,,,cc04d82615adced7,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,t01-ex1-contradiction-md,markdown,fr,212ad59b1ce76aec,"### Exercice 1 : Le system prompt face à un utilisateur qui le contredit
+- **Les consignes vérifiables par le code tiennent** : 5 puces exactement (la vérification automatique affiche `OK`), sans introduction ni conclusion, avec `finish_reason : stop`. Chaque puce suit en outre un gabarit que la consigne n'imposait pas : une description, puis ses sources entre parenthèses (`voir documentation NumPy/pandas: https://numpy.org, ...`).
+- **Deux consignes ne se vérifient qu'à la lecture** : le français, respecté, et la source par puce. À cette exécution, le modèle satisfait la consigne 4 par des **URL** de documentation ; lors d'une exécution précédente du même code, il donnait des **exemples concrets** (`ex. groupby, merge, pivot_table`). La consigne laissait le choix (« une source ou un exemple »), et le modèle ne fait pas le même choix d'un appel à l'autre. Le compteur de puces ne voit rien de tout cela : un vérificateur automatique ne couvre que ce qu'on lui a appris à compter.
+- **Sans message `system`, la réponse est environ 2,6 fois plus longue** : 729 jetons et 3 246 caractères, organisés en sections numérotées qui contiennent chacune plusieurs puces, contre 282 jetons avec le message `system`. Celui-ci ne règle donc pas seulement le style : il divise ici par plus de deux et demi le coût de la réponse.
+- **Le piège du budget** : avec 300 jetons, l'appel sans message `system` ne renvoie **rien**. L'affichage est vide, `finish_reason` vaut `length`, et l'API compte les 300 jetons comme du raisonnement alors que `reasoning_effort=""minimal""`. Quand la réponse ne tient pas dans le budget, `gpt-5-mini` ne la tronque pas, il la perd. Le groupe, qui exécutait le carnet avec un autre modèle, obtenait au contraire une réponse coupée au milieu d'un mot. Le même paramètre n'a pas le même effet selon le modèle : vérifier `finish_reason` à chaque appel est le seul moyen de savoir si la réponse affichée est complète.",,,,,,,,1ac9c7e740f66fbd,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,t01-ex1-contradiction-md,markdown,fr,c50876a4e2fde03a,"### Exemple guidé : Le system prompt face à un utilisateur qui le contredit
 
-L'exemple guidé vérifie les consignes du message `system` sur une question **coopérative**. Un assistant déployé reçoit aussi des messages qui demandent le contraire : une réponse en anglais, un paragraphe rédigé, dix points au lieu de cinq. Quand les messages `system` et `user` se contredisent, lequel l'emporte, et pour quelle consigne ?
+*Contribution étudiante de bangui-bangui (PR #22578), intégrée comme exemple guidé.*
 
-**Objectif** : mesurer, consigne par consigne, ce qui résiste quand l'utilisateur demande l'inverse.
+L'exemple guidé précédent vérifie les consignes du message `system` sur une question **coopérative**. Un assistant déployé reçoit aussi des messages qui demandent le contraire : une réponse en anglais, un paragraphe rédigé, dix points au lieu de cinq. Quand les messages `system` et `user` se contredisent, lequel l'emporte, et pour quelle consigne ?
 
-**Étapes** :
-1. Réutiliser `system_prompt` de l'exemple guidé, sans le modifier.
-2. Écrire `verifier(reponse)`, qui renvoie trois booléens : `puces` (toutes les lignes non vides sont des puces), `max_5` (au plus 5 puces) et `francais` (la réponse est en français).
-3. Envoyer chacun des trois messages de `messages_contradictoires` `N_ESSAIS = 3` fois, avec le même `system_prompt`.
-4. Afficher un tableau : une ligne par message, une colonne par consigne, et dans chaque case le nombre de réponses conformes sur 3.
+L'exemple mesure, consigne par consigne, ce qui résiste quand l'utilisateur demande l'inverse. Il réutilise `system_prompt` sans le modifier et envoie chacun des trois messages de `messages_contradictoires` trois fois (9 appels). Quatre choix de code le portent :
 
-**Indices** :
-- Le comptage des puces de l'exemple guidé se réutilise tel quel ; une ligne numérotée (`1.`) n'est pas une puce.
-- Pour la langue, compter quelques mots-outils (` le `, ` les `, ` est `, contre ` the `, ` is `, ` and `) suffit. L'heuristique est approximative : relire au moins une réponse à la main pour la valider.
-- Garder `max_completion_tokens=1000` et `reasoning_effort=""minimal""`, comme dans l'exemple guidé. Une réponse qui dépasse le budget revient **vide** (`finish_reason` égal à `""length""`) : ce n'est ni un respect ni une violation des consignes, c'est une mesure perdue, à compter à part.
+- **le vérificateur est testé avant toute dépense** : `verifier(reponse)` renvoie trois booléens (`puces`, `max_5`, `francais`), et trois assertions sur des réponses écrites à la main le valident avant le premier appel API ;
+- **la définition d'une puce est précise** : le motif `^\s*(?:[-•]|\*(?!\*))\s+` accepte `-`, `•` et `*`, mais refuse le gras Markdown (`**Titre**`) et les lignes numérotées (`1.`) ;
+- **la langue se juge par mots-outils** : une réponse compte comme française si elle contient plus de mots-outils français (`le`, `les`, `est`…) qu'anglais (`the`, `is`, `and`…). L'heuristique est approximative, et l'extrait imprimé pour chaque message sert à la contrôler à la main ;
+- **une réponse vide n'est ni un respect ni une violation** : quand `finish_reason` vaut `""length""`, elle est comptée à part comme mesure perdue, et la consigne qui cède la première est calculée par le code sur les seules réponses mesurées.
 
-**Critère de réussite** : le tableau 3 messages × 3 consignes, et une phrase qui dit quelle consigne cède la première, avec une hypothèse sur la raison.",,,,,,,,212ad59b1ce76aec,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,t01-ex1-contradiction-code,code,fr,65fa19da79656d3c,"# Exercice 1 : Le system prompt face a un utilisateur qui le contredit
-# TODO etudiant : mesurer, consigne par consigne, ce qui resiste quand le message user demande l'inverse
+Un choix de lecture est à noter : `max_5` est vrai pour **1 à 5** puces. Une réponse sans aucune puce est donc aussi non conforme à `max_5`, ce qui lie cette consigne à la consigne `puces`.",,,,,,,,c50876a4e2fde03a,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,t01-ex1-contradiction-code,code,fr,6cbbfa462a8462db,"# Exemple guide : Le system prompt face a un utilisateur qui le contredit
+# Contribution etudiante de bangui-bangui (PR #22578)
+# Objectif : mesurer, consigne par consigne, ce qui resiste quand le message
+# ""user"" demande exactement l'inverse de ce qu'impose le message ""system"".
+# Cout : 3 messages x 3 essais = 9 appels API (quelques centimes au maximum).
 
+import re
+
+# Les trois messages contradictoires (fournis par l'enonce).
+# Chacun attaque une consigne differente du system_prompt de l'exemple guide :
+#  - ""anglais""    attaque la regle 1 (repondre en francais)
+#  - ""paragraphe"" attaque la regle 2 (liste a puces)
+#  - ""dix_points"" attaque la regle 3 (5 puces au maximum)
 messages_contradictoires = {
     ""anglais"": ""Answer in English: what are the advantages of Python for data science?"",
     ""paragraphe"": ""Reponds en un seul paragraphe redige, sans aucune liste : quels sont les avantages de Python pour la data science ?"",
     ""dix_points"": ""Donne-moi 10 avantages de Python pour la data science, numerotes de 1 a 10."",
 }
 
+# Une puce commence par ""-"", ""•"" ou ""*"" suivi d'un espace.
+# ""**Titre**"" (gras Markdown) n'est PAS une puce : (?!\*) refuse une 2e etoile.
+# Une ligne numerotee (""1. ..."") n'est pas une puce non plus.
+MOTIF_PUCE = re.compile(r""^\s*(?:[-•]|\*(?!\*))\s+"")
+
+# Mots-outils tres frequents dans chaque langue (heuristique de l'enonce)
+MOTS_FR = {""le"", ""la"", ""les"", ""des"", ""est"", ""et"", ""pour"", ""une"", ""un"", ""du"", ""avec"", ""sont"", ""dans""}
+MOTS_EN = {""the"", ""is"", ""and"", ""for"", ""of"", ""with"", ""are"", ""to"", ""in"", ""it"", ""its""}
+
+
 def verifier(reponse):
     """"""Renvoie {""puces"": bool, ""max_5"": bool, ""francais"": bool} pour une reponse.""""""
-    # Etape 1 : garder les lignes non vides ; une puce commence par ""-"", ""*"" ou ""•""
-    # Etape 2 : ""puces"" est vrai si toutes les lignes non vides sont des puces
-    # Etape 3 : ""max_5"" est vrai s'il y a au plus 5 puces
-    # Etape 4 : ""francais"" par comptage de mots-outils francais contre anglais
-    return None  # TODO etudiant
+    # Etape 1 : garder les lignes non vides, et reperer celles qui sont des puces
+    lignes = [l for l in reponse.splitlines() if l.strip()]
+    puces = [l for l in lignes if MOTIF_PUCE.match(l)]
+    # Etape 2 : ""puces"" est vrai si TOUTES les lignes non vides sont des puces
+    tout_en_puces = len(lignes) > 0 and len(puces) == len(lignes)
+    # Etape 3 : ""max_5"" est vrai s'il y a entre 1 et 5 puces
+    au_plus_5 = 0 < len(puces) <= 5
+    # Etape 4 : ""francais"" si plus de mots-outils francais qu'anglais
+    mots = re.findall(r""[a-zàâçéèêëîïôûùüÿœ']+"", reponse.lower())
+    n_fr = sum(m in MOTS_FR for m in mots)
+    n_en = sum(m in MOTS_EN for m in mots)
+    return {""puces"": tout_en_puces, ""max_5"": au_plus_5, ""francais"": n_fr > n_en}
 
+
+# Test de verifier() sur 3 reponses ecrites a la main, AVANT de depenser des appels
+assert verifier(""- NumPy est rapide\n- pandas pour les tableaux"") == {""puces"": True, ""max_5"": True, ""francais"": True}
+assert verifier(""Python is great for data science and it is easy to learn."") == {""puces"": False, ""max_5"": False, ""francais"": False}
+assert verifier(""**Avantages**\n1. La syntaxe est simple\n2. Les bibliotheques"") == {""puces"": False, ""max_5"": False, ""francais"": True}
+print(""Tests de verifier() OK (3 cas ecrits a la main)\n"")
+
+# Etape 5 : pour chaque message, N_ESSAIS appels avec le MEME system_prompt
 N_ESSAIS = 3
-resultats = {}  # TODO etudiant : {nom_du_message: {consigne: nombre de reponses conformes sur N_ESSAIS}}
+CONSIGNES = [""puces"", ""max_5"", ""francais""]
+resultats = {nom: {c: 0 for c in CONSIGNES} for nom in messages_contradictoires}  # conformes sur N_ESSAIS
+perdues = {nom: 0 for nom in messages_contradictoires}   # reponses vides (finish_reason ""length"")
+exemples = {}                                              # une reponse par message, a relire
 
-# Etape 5 : pour chaque message, N_ESSAIS appels avec system_prompt, puis verifier(reponse)
-# Etape 6 : afficher le tableau message x consigne, et les finish_reason ""length""
+for nom, message_user in messages_contradictoires.items():
+    for essai in range(N_ESSAIS):
+        r = client.chat.completions.create(
+            messages=[
+                {""role"": ""system"", ""content"": system_prompt},   # system_prompt de l'exemple guide, non modifie
+                {""role"": ""user"", ""content"": message_user},
+            ],
+            model=DEFAULT_MODEL,
+            max_completion_tokens=1000,      # meme budget que l'exemple guide
+            reasoning_effort=""minimal"",      # laisse le budget a la reponse visible
+        )
+        texte = r.choices[0].message.content or """"
+        # Reponse vide (budget epuise) : ni respect ni violation -> mesure perdue
+        if not texte.strip():
+            perdues[nom] += 1
+            continue
+        exemples.setdefault(nom, texte)
+        for consigne, ok in verifier(texte).items():
+            resultats[nom][consigne] += int(ok)
 
-print(""Exercice a completer"")",,,,,,,,65fa19da79656d3c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,e9371ef8,markdown,fr,1afaff560061b9f3,"### Lecture du résultat — exemple guidé (tokenisation multilingue)
+# Etape 6 : tableau message x consigne, plus les mesures perdues
+print(f""{'Message':<11} | {'puces':>5} | {'max_5':>5} | {'francais':>8} | {'perdues':>7}"")
+print(""-"" * 49)
+for nom in messages_contradictoires:
+    v = resultats[nom]
+    print(f""{nom:<11} | {v['puces']:>3}/{N_ESSAIS} | {v['max_5']:>3}/{N_ESSAIS} | ""
+          f""{v['francais']:>6}/{N_ESSAIS} | {perdues[nom]:>7}"")
+
+# Conclusion calculee : la consigne la moins respectee sur l'ensemble des essais
+total = {c: sum(resultats[n][c] for n in messages_contradictoires) for c in CONSIGNES}
+mesures = N_ESSAIS * len(messages_contradictoires) - sum(perdues.values())
+plus_fragile = min(total, key=total.get)
+print(f""\nConformite globale sur {mesures} reponses mesurees : ""
+      + "", "".join(f""{c} {total[c]}/{mesures}"" for c in CONSIGNES))
+print(f""Consigne qui cede la premiere : {plus_fragile}"")
+
+# Relecture humaine (l'heuristique de langue est approximative)
+print(""\nDebut d'une reponse par message, a relire a la main :"")
+for nom, texte in exemples.items():
+    print(f""--- {nom} ---\n{texte[:250]}...\n"")",,,,,,,,6cbbfa462a8462db,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,b7a984d3,markdown,fr,1afaff560061b9f3,"### Lecture du résultat — exemple guidé (tokenisation multilingue)
 
 - **La même idée ne coûte pas le même prix selon la langue** : l'anglais donne 6 tokens pour 6 mots (1,00 token/mot), l'espagnol 8 pour 7 (1,14), le français 8 pour 5 (1,60). Rapporté au mot, le français coûte ici 60 % de tokens de plus que l'anglais — un écart calculé par le code, pas écrit à la main.
 - **Le ratio, pas le compte brut** : le français et l'espagnol totalisent autant de tokens (8), mais l'espagnol les répartit sur 7 mots et le français sur 5. Le compte brut les dirait ex æquo ; le ratio les départage. Normaliser par mot est ce qui rend la comparaison équitable.
 - **Où la coupe tombe** : le découpage détaillé montre la cause de l'écart. En anglais, chaque mot est un token unique (`' intelligence'`, `' transforming'`). En français, « L'intelligence » éclate en `L` + `'int` + `elligence` — l'apostrophe coupe le mot en plein milieu — et « artificielle » en `' artific'` + `'ielle'`. En espagnol, « inteligencia » reste entière, mais « transformando » se coupe en `' transform'` + `'ando'` : chaque langue paie ses mots rares au token près.
 - **Le tokeniseur est exact, pas approximatif** : les deux assertions de fin de cellule passent. Un texte vide produit 0 token ; décoder la séquence de tokens redonne la phrase au caractère près. La tokenisation est un découpage **réversible** : elle ne perd aucune information, elle en change seulement le prix.",,,,,,,,1afaff560061b9f3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,fa0426ef,markdown,fr,71fca70de68711a9,"### Exercice 2 : Combien coûtent les accents français ?
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,ab8eebfe,markdown,fr,71fca70de68711a9,"### Exercice 2 : Combien coûtent les accents français ?
 
 L'exemple guidé compare des **langues** ; cet exercice reste dans une seule langue et fait varier le **texte** : la même phrase française écrite trois fois — telle quelle, puis sans accents, puis sans accents ni apostrophe. Les diacritiques (`é`, `è`, `à`…) et l'apostrophe sont-ils gratuits pour le tokeniseur, ou chaque signe rare paie-t-il des tokens supplémentaires ?
 
@@ -18799,7 +18869,7 @@ L'exemple guidé compare des **langues** ; cet exercice reste dans une seule lan
 - Piège de mesure : supprimer l'apostrophe **fusionne** deux mots (`L'intelligence` → `Lintelligence`), donc le nombre de mots change. Le ratio `tokens/mot` reste-t-il comparable pour cette variante ? Répondre dans la conclusion.
 
 **Critère de réussite** : le tableau 3 versions × (tokens, mots, ratio), l'économie en pourcent calculée par le code, et une phrase de conclusion qui départage : est-ce la rareté des **lettres accentuées** ou la **découpe des mots** qui coûte le plus cher ?",,,,,,,,71fca70de68711a9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,5db5db2f,code,fr,a64ccddcc35a9335,"# Exercice 2 : Combien coutent les accents francais ?
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,71185964,code,fr,a64ccddcc35a9335,"# Exercice 2 : Combien coutent les accents francais ?
 # TODO etudiant : mesurer le cout en tokens des diacritiques et de l'apostrophe
 
 # Etape 1 : la phrase d'origine (avec accents) et ses deux variantes
@@ -18817,7 +18887,7 @@ MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,5db5db2f,code,fr,a64ccddcc35
 # Etape 4 : decoder les tokens de chaque variante et reperer ou la coupe change
 
 print(""Exercice a completer"")",,,,,,,,a64ccddcc35a9335,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,t01-temperature-mesuree,code,fr,4c0c31228c5157b0,"# ============================================================
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,b97678e3,code,fr,4c0c31228c5157b0,"# ============================================================
 # Mesure : que accepte reellement le modele sur le curseur temperature ?
 # ============================================================
 
@@ -21495,3 +21565,50 @@ MyIA.AI.Notebooks/GenAI/Texte/21_LoRA_FineTuning.ipynb,6c4075f1-945a-4d16-a568-0
 ",,,,,,,,0bdc48b193e4d43d,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/21_LoRA_FineTuning.ipynb,6276fb4f-0e92-408b-873f-a832d5db9e53,markdown,fr,cf67264c37c2aad8,"La comparaison avant/après montre que le modèle LoRA produit des reponses structurees au format balise demande. Alors que le modèle de base generait du HTML non structure, le modèle adapte par LoRA respecte le format ⟦T⟧terme⟦/T⟧⟦D⟧definition⟦/D⟧⟦E⟧exemple⟦/E⟧. Par exemple, pour Sharpe ratio, la reponse LoRA est entierement dans le format cible.
 ",,,,,,,,cf67264c37c2aad8,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,d85f13d1,markdown,fr,060c836cd1bf9851,"### Lecture du résultat — exemple guidé (system prompt contredit)
+
+- **Avec `gpt-5-mini`, la forme tient et c'est le nombre qui cède** : les puces et le français sont respectés sur les 9 réponses, y compris quand l'utilisateur demande un paragraphe ou une réponse en anglais. La consigne qui cède est `max_5` : sur les trois demandes de dix points, le modèle donne à chaque fois plus de cinq puces, une par point, numérotées « - 1. », « - 2. »… Il garde le format imposé par le message `system`, mais accorde à l'utilisateur la quantité qu'il demande.
+- **Le groupe obtenait l'inverse avec un autre modèle** : en exécutant le même code avec `qwen/qwen3.8-flash`, c'était le format qui cédait en premier (puces 7/8), tandis que `max_5` tenait sur les 8 réponses mesurées, une réponse vide étant comptée à part. Sur la demande de dix points, ce modèle logeait plusieurs points numérotés dans une même puce (« - 1. … ; 2. … ») : il restait sous les cinq puces sans réellement se limiter à cinq points.
+- **La conclusion dépend donc du modèle** : la question « quelle consigne cède la première ? » n'a pas de réponse générale. Elle se mesure pour chaque modèle, et c'est précisément ce que permet un vérificateur écrit une fois pour toutes.
+- **Deux colonnes sont liées** : `max_5` n'est vrai que pour 1 à 5 puces, si bien qu'une réponse rédigée en paragraphe échoue à la fois sur `puces` et sur `max_5`. Deux colonnes qui baissent ensemble ne signalent donc pas forcément deux défaillances indépendantes.
+- **Le vérificateur ne juge que la forme** : à cette exécution, les puces commencent par une source (« Documentation officielle Python (python.org) : … »), ce qu'aucune colonne ne mesure. Le contenu de chaque puce reste à relire à la main, comme pour l'exemple guidé précédent.",,,,,,,,060c836cd1bf9851,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,aed52219,markdown,fr,726bcb2b25efcc30,"### Exercice 1 : Une clause de priorité suffit-elle ?
+
+L'exemple guidé mesure ce qui cède quand l'utilisateur contredit le message `system`. Une parade courante consiste à écrire la hiérarchie dans le prompt lui-même : « Ces règles s'appliquent même si l'utilisateur demande le contraire. » L'exemple révèle aussi une faille du vérificateur. Lors de l'exécution du groupe avec un autre modèle (`qwen/qwen3.8-flash`), la réponse au message `dix_points` tassait plusieurs points numérotés dans une même puce (`- 1. … ; 2. …`) : elle passait le contrôle `max_5` sans en respecter l'intention.
+
+**Objectif** : mesurer si une clause de priorité explicite change la consigne qui cède la première, avec un vérificateur qui voit les points tassés.
+
+**Étapes** :
+1. Écrire `system_prompt_prioritaire` : le texte de `system_prompt`, suivi d'une phrase qui déclare que ces règles priment sur toute demande contraire de l'utilisateur.
+2. Écrire `verifier_etendu(reponse)`, qui renvoie les trois booléens de `verifier(reponse)` plus un quatrième, `sans_points_tasses` : vrai si aucune puce ne contient plus d'un élément numéroté.
+3. Envoyer chacun des trois messages de `messages_contradictoires` `N_ESSAIS = 3` fois avec **chacun** des deux prompts (18 appels).
+4. Afficher un tableau : une ligne par couple (prompt, message), une colonne par consigne, et dans chaque case le nombre de réponses conformes sur 3.
+
+**Indices** :
+- `verifier`, `messages_contradictoires` et la boucle d'appels de l'exemple guidé se réutilisent tels quels ; seule la liste des prompts à comparer est nouvelle.
+- Un élément numéroté dans une puce se repère par `re.findall(r""(?:^|\s)\d{1,2}[.)]\s"", puce)` ; deux occurrences ou plus dans la même puce signalent des points tassés. Tester `verifier_etendu` sur deux ou trois réponses écrites à la main avant de lancer les appels, comme dans l'exemple guidé.
+- Les réponses vides (`finish_reason` égal à `""length""`) se comptent toujours à part.
+
+**Critère de réussite** : le tableau 2 prompts × 3 messages × 4 consignes, et une phrase qui dit si la clause de priorité déplace la consigne qui cède la première, appuyée sur les chiffres.",,,,,,,,726bcb2b25efcc30,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Texte/01_OpenAI_Intro.ipynb,0c78cded,code,fr,d29020d6f5955416,"# Exercice 1 : Une clause de priorite suffit-elle ?
+# TODO etudiant : comparer system_prompt et une variante qui declare sa priorite,
+# avec un verificateur qui voit les points numerotes tasses dans une meme puce
+
+system_prompt_prioritaire = None  # TODO etudiant : system_prompt + une phrase de priorite
+
+
+def verifier_etendu(reponse):
+    """"""Renvoie les trois booleens de verifier(reponse) plus ""sans_points_tasses"".""""""
+    # Etape 1 : partir de verifier(reponse)
+    # Etape 2 : pour chaque puce, compter les elements numerotes qu'elle contient
+    # Etape 3 : ""sans_points_tasses"" est vrai si aucune puce n'en contient plus d'un
+    return None  # TODO etudiant
+
+
+prompts_a_comparer = {}  # TODO etudiant : {""original"": ..., ""prioritaire"": ...}
+resultats_ex1 = {}       # TODO etudiant : {(nom_du_prompt, nom_du_message): {consigne: conformes sur N_ESSAIS}}
+
+# Etape 4 : pour chaque prompt et chaque message, N_ESSAIS appels, puis verifier_etendu(reponse)
+# Etape 5 : afficher le tableau (prompt, message) x consigne, et les reponses vides a part
+
+print(""Exercice a completer"")",,,,,,,,d29020d6f5955416,,,,,,,,,,,,,,,
