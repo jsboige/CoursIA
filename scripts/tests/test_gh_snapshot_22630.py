@@ -392,6 +392,40 @@ def test_check_claims_retombe_sur_la_voie_historique_si_none(monkeypatch):
     assert verdicts[301][1] == "legacy"
 
 
+def test_check_claims_en_processus_quand_le_cache_de_passe_est_actif(monkeypatch):
+    """Controle positif du gate : cache active => voie en processus, zero
+    sous-processus.
+
+    Sans cache de passe (`_PASS_SNAPSHOT` a None), `check_claims` garde le
+    transport historique -- c'est le seam que simulent les appelants directs
+    (cf. le test precedent et les trois tests mono-issue du fichier belt).
+    Avec cache, la voie en processus doit reprendre, sinon le correctif
+    d'hermeticite aurait simplement supprime l'optimisation en production.
+    """
+    _active_repair(monkeypatch)
+    snap = {"issues": {"101": _payload_sans_claim(101)}, "prs": {}}
+    fake = types.ModuleType("coordination.gh_snapshot")
+    fake.refresh = lambda repo, issue_numbers=None, ttl_seconds=600: snap
+    monkeypatch.setitem(sys.modules, "coordination.gh_snapshot", fake)
+    monkeypatch.setattr(clc, "_OPEN_PRS_MEMO", [])
+    monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt", lambda lane: None)
+
+    def refuse_gh(cmd, *a, **k):
+        joined = " ".join(str(p) for p in (cmd if isinstance(cmd, (list, tuple))
+                                           else [cmd]))
+        if "check_lane_claim.py" in joined or " gh " in f" {joined} ":
+            pytest.fail(f"voie historique atteinte : {joined[:80]}")
+        # Les lectures locales (git tracked files) restent permises : elles
+        # ne sortent pas sur le reseau et font partie de `_run_check`.
+        return types.SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(pig.subprocess, "run", refuse_gh)
+
+    verdicts = pig.check_claims([101], "myia-ai-01:CoursIA-2")
+
+    assert verdicts[101][0] == pig.CLAIM_CODE_FREE
+
+
 # --- file de reparation : meme instantane, invalidation par updatedAt ---------
 
 

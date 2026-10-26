@@ -1674,6 +1674,26 @@ B0_ENTRY_MAX_BYTES = 1048576
 B0_SNAPSHOT_MAX_BYTES = 4194304
 
 
+def _gh_snapshot_module():
+    """Le module d'instantane, tel que les tests peuvent le remplacer (#22630).
+
+    ``from coordination import gh_snapshot`` resout d'abord l'ATTRIBUT du
+    package parent, que ``monkeypatch.setitem(sys.modules, ...)`` ne
+    restaure pas : selon l'ordre des fichiers de test d'un worker, ce nom
+    peut designer le module reel importe plus tot, et l'instantane injecte
+    par un test est ignore -- l'ecriture part alors hors du dossier isole
+    (mesure : `KeyError: 'main_probe'` dans `test_gh_snapshot_22630.py`,
+    dependant de l'ordre d'execution). ``sys.modules`` est le seam que les
+    tests installent ; on le lit donc EN PREMIER, l'import historique reste
+    le repli de production.
+    """
+    module = sys.modules.get("coordination.gh_snapshot")
+    if module is not None:
+        return module
+    from coordination import gh_snapshot
+    return gh_snapshot
+
+
 def _activate_pass_snapshot(repo: str) -> None:
     """Charge le cache de reparation pour UNE invocation de main (#22630).
 
@@ -1687,7 +1707,7 @@ def _activate_pass_snapshot(repo: str) -> None:
         # n'ecrit l'etat partage de la machine sans le demander explicitement.
         return
     try:
-        from coordination import gh_snapshot
+        gh_snapshot = _gh_snapshot_module()
         _PASS_SNAPSHOT = gh_snapshot.load_snapshot(repo)
     except Exception as exc:  # noqa: BLE001 - repli sur le transport historique
         print(f"[22630] instantane de reparation illisible "
@@ -1909,7 +1929,7 @@ def _flush_repair_snapshot() -> None:
     if not _pass_snapshot_enabled():
         return
     try:
-        from coordination import gh_snapshot
+        gh_snapshot = _gh_snapshot_module()
         with gh_snapshot.snapshot_lock(REPO):
             disk = gh_snapshot.load_snapshot(REPO)
             repair = _merge_repair_namespaces(
@@ -1980,11 +2000,29 @@ def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
         # cf. test_gh_snapshot_22630.py).
         return
     try:
-        from coordination import gh_snapshot
+        gh_snapshot = _gh_snapshot_module()
         _BELT_SNAPSHOT = gh_snapshot.refresh(repo, issue_numbers=numbers)
     except Exception as exc:  # noqa: BLE001 - l'instantane est un confort, pas un gate
         print(f"[22630] instantane indisponible ({type(exc).__name__}) -- "
               f"les sondes gardent leur transport historique", file=sys.stderr)
+
+
+def belt_snapshot_prime_inert(repo: str, numbers: list[int]) -> None:
+    """Defaut INERTE du rafraichissement d'instantane du tapis (#22630).
+
+    Meme doctrine que ``delivered_probe_inert`` / ``merged_pr_probe_inert``
+    (#19913) : un appel direct de ``belt_pick_with_replacements`` n'emet
+    AUCUNE requete, pas meme celle du rafraichissement partage -- qui ferait
+    un `gh api` par issue candidate. ``main`` injecte explicitement le vrai
+    ``_belt_snapshot_prime`` ; un test qui veut l'instantane injecte son
+    propre rafraichisseur (ou pose ``_BELT_SNAPSHOT`` et injecte un no-op).
+
+    L'instantane de la passe precedente est repose a None, comme le fait le
+    vrai rafraichisseur : un appel isole ne lit jamais un cache d'une autre
+    passe.
+    """
+    global _BELT_SNAPSHOT
+    _BELT_SNAPSHOT = None
 
 
 def has_recent_delivery_marker(issue_number: int) -> bool | None:
@@ -3188,7 +3226,7 @@ def _claims_in_process(
         return {}
     try:
         clc = _claim_reader_module()   # insere `scripts/` dans sys.path
-        from coordination import gh_snapshot
+        gh_snapshot = _gh_snapshot_module()
     except Exception:  # noqa: BLE001 - repli sur la voie historique
         return None
     import contextlib
@@ -3296,11 +3334,21 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
                     f"(check indisponible: {type(exc).__name__})")
 
     try:
-        # #22630 -- voie EN PROCESSUS (instantane local), PRIORITAIRE : elle
-        # rend le meme verdict sans une lecture GitHub par candidat. Son
-        # absence (module absent, instantane illisible, exception) retombe
-        # sur le chemin historique ci-dessous, inchange.
-        in_process = _claims_in_process(numbers, lane, cache_path)
+        # #22630 -- voie EN PROCESSUS (instantane local), PRIORITAIRE quand
+        # le cache de passe est actif. Elle rend le meme verdict sans une
+        # lecture GitHub par candidat. Son absence (cache non active, module
+        # absent, instantane illisible, exception) retombe sur le chemin
+        # historique ci-dessous, inchange.
+        #
+        # Le cache n'est active QUE par `main()` (`_activate_pass_snapshot`,
+        # cf. le bloc #22630) : un appel direct historique (tests, autres
+        # consommateurs) garde le transport `subprocess` -- c'est le seam
+        # qu'il simule. Sans cette condition, la voie en processus
+        # court-circuite ce seam ET rafraichit l'instantane par de vrais
+        # appels `gh api` sur un simple appel de `check_claims`.
+        in_process = None
+        if _pass_snapshot_enabled():
+            in_process = _claims_in_process(numbers, lane, cache_path)
         if in_process is not None:
             return in_process
         # 1 seul subprocess.run avec N numeros positionnels (mode
@@ -8164,6 +8212,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 delivered_probe=None, claims_probe=None,
                                 merged_pr_probe=None,
                                 recent_marker_probe=None,
+                                snapshot_prime=None,
                                 time_budget_s=None):
     """La boucle de service du tapis : claims, livraison, remplacement.
 
@@ -8185,6 +8234,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     ``recent_marker_probe`` (tests) remplace le filtre bon marche du dernier
     commentaire (#19768) -- HORS budget de sonde, il ecarte les clotures
     marquees sans consommer une unite : l'epuisement ne peut plus les servir.
+    ``snapshot_prime`` (tests) remplace le rafraichissement UNIQUE de
+    l'instantane partage (#22630) ; son defaut est inerte, comme les sondes.
 
     Defauts INERTES (doctrine ``delivered_probe_inert`` / #19913) : un test
     qui appelle cette boucle sans injecter ses sondes n'emet AUCUNE requete
@@ -8214,15 +8265,23 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     # de la fenetre : toutes les sondes de commentaires (filtre recent et
     # sonde pleine de livraison) le lisent ensuite sans requete GitHub par
     # candidat. Les sondes INJECTEES (tests) sont inchangees : elles ne
-    # passent pas par cette lecture.
-    if any(p is None for p in (recent_marker_probe, delivered_probe)):
-        _belt_snapshot_prime(REPO, [int(it.get("number", 0))
-                                    for it in (belt_pool or [])[:70]
-                                    if it.get("number")])
-        # Le pool et l'enumeration des PRs ouvertes ont ete lus AVANT cette
-        # fonction : on persiste ici, sinon leurs entrees de la passe
-        # disparaitraient au retour (le flush de `red_backlog` est deja passe).
-        _flush_repair_snapshot()
+    # passent pas par cette lecture. Le rafraichissement est lui-meme une
+    # sonde injectable : `main` passe `_belt_snapshot_prime`, le defaut est
+    # `belt_snapshot_prime_inert` -- aucune requete sur un appel direct.
+    #
+    # Il n'est PAS conditionne a l'absence de sonde injectee : `main` injecte
+    # ses trois sondes reelles, et l'ancienne condition `any(p is None)`
+    # etait donc TOUJOURS fausse en production -- le cache n'etait jamais
+    # amorce, alors que les sondes le consultaient. C'est l'injection du
+    # prime, et elle seule, qui decide du reseau.
+    prime = (belt_snapshot_prime_inert if snapshot_prime is None
+             else snapshot_prime)
+    prime(REPO, [int(it.get("number", 0))
+                 for it in (belt_pool or [])[:70] if it.get("number")])
+    # Le pool et l'enumeration des PRs ouvertes ont ete lus AVANT cette
+    # fonction : on persiste ici, sinon leurs entrees de la passe
+    # disparaitraient au retour (le flush de `red_backlog` est deja passe).
+    _flush_repair_snapshot()
     # #21436 — `probe_budget` borne le NOMBRE de sondes de livraison. Il ne
     # borne ni leur DUREE, ni les deux surfaces que la boucle paie par
     # candidat hors fenetre : `claims_probe` (un `check_claims` unitaire) et
@@ -9257,6 +9316,7 @@ def main(argv: list[str] | None = None) -> int:
                                         merged_pr_probe=merged_pr_signal,
                                         recent_marker_probe=(
                                             has_recent_delivery_marker),
+                                        snapshot_prime=_belt_snapshot_prime,
                                         time_budget_s=belt_time_remaining))
         _belt_phase(f"pick_with_replacements fait: "
                     f"{len(belt_picks)} retenu(s), {len(belt_withheld)} witheld")
