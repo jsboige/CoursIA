@@ -3859,6 +3859,113 @@ def test_pr_diff_text_fails_closed_on_other_gh_error(monkeypatch):
         cpp._pr_diff_text(101)
 
 
+# ---------------------------------------------------------------------------
+# #22341 -- le `gh` du runner CI refuse un diff contenant des sequences ESC
+# (refus absent du `gh` local 2.83.2, qui affiche le diff tel quel).
+# ---------------------------------------------------------------------------
+ESC_REFUSAL_22341 = (
+    "gh error: the diff contains terminal escape sequences; pass "
+    "--allow-escape-sequences to output it anyway"
+)
+
+
+def test_pr_diff_text_escape_refusal_falls_back_to_rest(monkeypatch):
+    """#22341 : le refus « terminal escape sequences » declenche le repli
+    REST (meme lecture, mesuree byte-identique sur #22341), et les sequences
+    ESC du contenu des journaux y sont retirees avant analyse."""
+    import json
+
+    import check_pr_perimeter as cpp
+
+    rest_diff = (
+        "diff --git a/traces/3d01-enveloppe.log b/traces/3d01-enveloppe.log\n"
+        "\x1b[32m+epoch=1 ok\x1b[0m\n"
+        "+trace sans sequence\n"
+        "+ESC isole :\x1b fin\n"
+    )
+    calls = []
+
+    def fake_rc(args):
+        calls.append(list(args))
+        if args[:2] == ["pr", "diff"]:
+            assert args[-1] == "22341"
+            return 1, "", ESC_REFUSAL_22341
+        if args[:2] == ["repo", "view"]:
+            assert args[-2:] == ["--json", "nameWithOwner"]
+            return 0, json.dumps({"nameWithOwner": "jsboige/CoursIA"}), ""
+        assert args[0] == "api", args
+        assert args[1] == "repos/jsboige/CoursIA/pulls/22341"
+        assert args[-2:] == ["-H", "Accept: application/vnd.github.v3.diff"]
+        return 0, rest_diff, ""
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    assert cpp._pr_diff_text(22341) == (
+        "diff --git a/traces/3d01-enveloppe.log b/traces/3d01-enveloppe.log\n"
+        "+epoch=1 ok\n"
+        "+trace sans sequence\n"
+        "+ESC isole : fin\n"
+    )
+    assert calls[0] == ["pr", "diff", "22341"]
+
+
+def test_pr_diff_text_rest_failure_degrades_to_empty(monkeypatch, capsys):
+    """Repli REST echoue : la fonction rend "" avec un ::warning:: qui nomme
+    la PR et la cause, SANS sys.exit(2) -- les baseline-moves sont ADVISORY
+    et les controles bloquants lisent /pulls/<pr>/files pagine, non affecte."""
+    import json
+
+    import check_pr_perimeter as cpp
+
+    def fake_rc(args):
+        if args[:2] == ["pr", "diff"]:
+            return 1, "", ESC_REFUSAL_22341
+        if args[:2] == ["repo", "view"]:
+            return 0, json.dumps({"nameWithOwner": "jsboige/CoursIA"}), ""
+        return 1, "", "gh: Not Found (HTTP 404)"
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    assert cpp._pr_diff_text(22341) == ""  # pas de SystemExit
+    err = capsys.readouterr().err
+    assert "::warning::" in err, "le degrade doit rester visible"
+    assert "22341" in err, "l'avertissement nomme la PR"
+
+
+def test_pr_diff_text_repo_view_failure_degrades_to_empty(monkeypatch, capsys):
+    """Meme degrade quand la lecture du depot (gh repo view) echoue : la
+    voie REST ne peut meme pas etre adressee, ce refus ne tient pas la PR
+    (exit 2) -- diff vide + avertissement."""
+    import check_pr_perimeter as cpp
+
+    def fake_rc(args):
+        if args[:2] == ["pr", "diff"]:
+            return 1, "", ESC_REFUSAL_22341
+        return 1, "", "gh: authentication failed"
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    assert cpp._pr_diff_text(22341) == ""
+    err = capsys.readouterr().err
+    assert "::warning::" in err and "22341" in err
+
+
+def test_pr_diff_text_escape_branch_keeps_quota_verdict(monkeypatch, capsys):
+    """CONTROLE NON-REGRESSION : le repli n'avale pas le verdict de
+    non-mesure. Si le quota est epuise au moment de lire le depot,
+    PERIMETRE NON MESURABLE (exit 0) ressort -- la doctrine du quota prime
+    sur le degrade advisory du diff."""
+    import check_pr_perimeter as cpp
+
+    def fake_rc(args):
+        if args[:2] == ["pr", "diff"]:
+            return 1, "", ESC_REFUSAL_22341
+        return 1, "", "gh: API rate limit exceeded for installation."
+
+    monkeypatch.setattr(cpp, "_run_gh_rc", fake_rc)
+    with pytest.raises(SystemExit) as exc:
+        cpp._pr_diff_text(22341)
+    assert exc.value.code == 0
+    assert "PERIMETRE NON MESURABLE" in capsys.readouterr().out
+
+
 # --- #16085 : cardinal anaphorique delimite + provenance relayee en SHA ------
 
 FILES_16085_A = [

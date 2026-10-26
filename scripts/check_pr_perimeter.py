@@ -2120,6 +2120,22 @@ def _run_gh(args: list[str]) -> str:
     return stdout
 
 
+# #22341 : sequences d'echappement ANSI (CSI) embarquees par des journaux de
+# terminal committes -- des pistes de preuve legitimes, jamais retouchees.
+_ANSI_CSI_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
+
+
+def _strip_ansi_escapes(text: str) -> str:
+    """Retire les sequences d'echappement ANSI du texte du diff.
+
+    Les codes ESC vus par ``_pr_diff_text`` viennent du CONTENU des journaux
+    committes, pas d'un defaut de la PR : la suppression est purement locale
+    au texte servi a la detection des baseline-moves, jamais au fichier
+    commite. Sequences CSI d'abord, puis ESC isoles restants.
+    """
+    return _ANSI_CSI_RE.sub("", text).replace("\x1b", "")
+
+
 def _pr_diff_text(pr: int) -> str:
     """The PR unified diff, for baseline-move detection only.
 
@@ -2131,6 +2147,20 @@ def _pr_diff_text(pr: int) -> str:
     (moves == []) and warn -- the blocking perimeter checks run off the
     paginated ``/pulls/<pr>/files`` list, which has no such cap and is
     unaffected. Any other ``gh pr diff`` failure stays fail-closed.
+
+    #22341 : le ``gh`` du runner CI (contrairement au ``gh`` local 2.83.2)
+    refuse d'afficher un diff contenant des sequences d'echappement terminal
+    (« terminal escape sequences ») -- un refus CLIENT, pas une PR defectueuse
+    : les octets ESC viennent de journaux de terminal committes, revus et
+    approuves, qu'on ne modifie pas. Doctrine identique au plafond 300
+    fichiers : la lecture est rejouee par la voie REST (``gh api
+    repos/<owner>/<repo>/pulls/<pr>`` en ``application/vnd.github.v3.diff``,
+    mesuree byte-identique au ``gh pr diff`` local sur #22341), avec les
+    sequences ESC retirees pour que les octets des journaux ne polluent pas
+    la detection des baseline-moves ; si cette voie echoue aussi, on rend un
+    diff vide + ``::warning::`` SANS ``sys.exit(2)`` -- les baseline-moves
+    sont ADVISORY et les controles BLOQUANTS lisent le perimetre via
+    ``/pulls/<pr>/files`` pagine, non affecte par ce refus.
     """
     rc, stdout, stderr = _run_gh_rc(["pr", "diff", str(pr)])
     if rc == 0:
@@ -2140,6 +2170,38 @@ def _pr_diff_text(pr: int) -> str:
             f"::warning::gh pr diff {pr} indisponible (diff > 300 fichiers) : "
             "detection des baseline-moves retractee a vide ; le perimetre est lu "
             f"via /pulls/{pr}/files pagine (sans ce plafond).",
+            file=sys.stderr,
+        )
+        return ""
+    if "terminal escape sequences" in (stderr or ""):
+        # Repli REST mesure (owner/repo relu par le meme mecanisme que
+        # ``fetch_report`` -- ``gh repo view --json nameWithOwner`` -- pas de
+        # seconde maniere de lire le depot).
+        repo: Optional[str] = None
+        try:
+            repo = json.loads(
+                _run_gh(["repo", "view", "--json", "nameWithOwner"])
+            )["nameWithOwner"]
+        except SystemExit as exc:
+            if exc.code == 0:
+                raise  # non-mesure (quota) deja rendue : on ne l'avale pas
+        except (ValueError, KeyError):
+            pass
+        if repo is not None:
+            rest_rc, rest_out, rest_err = _run_gh_rc([
+                "api", f"repos/{repo}/pulls/{pr}",
+                "-H", "Accept: application/vnd.github.v3.diff",
+            ])
+            if rest_rc == 0:
+                return _strip_ansi_escapes(rest_out)
+            cause = f"repli REST refuse : {(rest_err or '').strip()[:200]}"
+        else:
+            cause = "lecture du depot (gh repo view) refusee"
+        print(
+            f"::warning::gh pr diff {pr} indisponible (sequences "
+            f"d'echappement terminal, {cause}) : detection des baseline-moves "
+            f"retractee a vide ; le perimetre est lu via /pulls/{pr}/files "
+            "pagine.",
             file=sys.stderr,
         )
         return ""
