@@ -158,6 +158,7 @@
    "steps_avec_gradient": 1.5,
    "gain_eval_recompense": 0.021875,
    "gain_eval_par_step_avec_gradient": 0.017188,
+   "gain_eval_par_step_comparable": true,
    "budget_completion": 384
   },
   "qwen35": {
@@ -171,7 +172,8 @@
    "mean_length_ecart_type": 1.218,
    "steps_avec_gradient": 0.5,
    "gain_eval_recompense": 0.00625,
-   "gain_eval_par_step_avec_gradient": 0.0125,
+   "gain_eval_par_step_avec_gradient": null,
+   "gain_eval_par_step_comparable": false,
    "budget_completion": 384
   },
   "qwen3_8b": {
@@ -186,6 +188,7 @@
    "steps_avec_gradient": 22.5,
    "gain_eval_recompense": 0.071875,
    "gain_eval_par_step_avec_gradient": 0.003236,
+   "gain_eval_par_step_comparable": true,
    "budget_completion": 384
   }
  },

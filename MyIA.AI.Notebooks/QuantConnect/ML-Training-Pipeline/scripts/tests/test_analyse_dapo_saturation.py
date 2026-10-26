@@ -206,6 +206,114 @@ def test_fichier_illisible_est_signale_sans_raising(tmp_path: Path):
     assert rapport["hors_bras"][0]["fichier"] == "absent.json"
 
 
+# --- la frontiere exacte du seuil de saturation ----------------------------
+
+
+def _artefact_frontiere(n_satures: int, n_steps: int = 20, seed: int = 0) -> dict:
+    """Artefact dont exactement `n_satures` steps sont au plafond."""
+    log_history = []
+    for step in range(n_steps):
+        sature = step < n_satures
+        log_history.append(
+            {
+                "step": step,
+                "completions/clipped_ratio": 1.0 if sature else 0.2,
+                "completions/mean_length": 384.0 if sature else 120.0,
+                "grad_norm": 0.0,
+                "loss": 0.0,
+                "frac_reward_zero_std": 1.0 if sature else 0.1,
+                "reward": 0.0 if sature else 0.5,
+            }
+        )
+    artefact = _artefact(seed=seed)
+    artefact["log_history"] = log_history
+    return artefact
+
+
+def test_le_seuil_de_saturation_exact_est_inclusif():
+    # 19 steps saturees sur 20 = 0,95 pile : la frontiere du seuil est
+    # INCLUSIVE, et ce cas est le cas mesure du bras `qwen35` (graine 0).
+    rapport = organ.mesurer(_artefact_frontiere(19))
+    assert rapport["frac_steps_satures"] == 0.95
+    assert rapport["verdict"] == "SIGNAL_NUL"
+
+
+def test_une_fraction_justement_sous_le_seuil_ne_sature_pas():
+    # 18 sur 20 = 0,90 : sous le seuil, le bras n'est pas un SIGNAL_NUL.
+    rapport = organ.mesurer(_artefact_frontiere(18))
+    assert rapport["frac_steps_satures"] == 0.9
+    assert rapport["verdict"] != "SIGNAL_NUL"
+
+
+# --- la convention de mediane a effectif pair ------------------------------
+
+
+def test_le_bras_a_effectif_pair_suit_la_convention_declaree():
+    # Convention OPTIMISTE : a effectif pair, le bras suit le MOINS grave des
+    # deux verdicts centraux (un bras dont une graine sur deux sature porte
+    # encore du signal). La convention decide du verdict : elle est donc
+    # epinglee par un test, pas seulement documentee.
+    nulle = {"verdict": "SIGNAL_NUL"}
+    utile = {"verdict": "SIGNAL_UTILE"}
+    partiel = {"verdict": "SIGNAL_PARTIEL"}
+    assert organ.verdict_bras([nulle, utile]) == "SIGNAL_UTILE"
+    assert organ.verdict_bras([nulle, partiel]) == "SIGNAL_PARTIEL"
+    assert organ.verdict_bras([utile, partiel]) == "SIGNAL_UTILE"
+
+
+def test_le_verdict_global_suit_la_meme_convention_que_le_bras(tmp_path: Path):
+    # Un bras nul et un bras utile : le global n'est pas nul non plus, et il
+    # suit la meme convention que le verdict de bras.
+    nul = _ecrire(tmp_path, "n.json", _artefact(longueur=384.0, clipped=1.0, grad=0.0,
+                                                 seed=0, model_key="qwen35"))
+    utile = _ecrire(tmp_path, "u.json", _artefact(longueur=100.0, clipped=0.1, grad=1.0,
+                                                   seed=0, model_key="qwen3_8b"))
+    rapport = organ.mesurer_fichiers([nul, utile])
+    assert rapport["bras"]["qwen35"]["verdict"] == "SIGNAL_NUL"
+    assert rapport["bras"]["qwen3_8b"]["verdict"] == "SIGNAL_UTILE"
+    assert rapport["verdict_global"] == "SIGNAL_UTILE"
+
+
+# --- le gain par step vivant : comparabilite -------------------------------
+
+
+def test_un_gain_par_step_sur_moins_d_un_step_vivant_n_est_pas_comparable(tmp_path: Path):
+    # Graine 0 : aucune step vivante. Graine 1 : une seule step vivante.
+    # La mediane des steps vivantes du bras vaut 0,5 : diviser le gain par
+    # 0,5 le DOUBLE, ce qui n'a aucun sens physique. La metrique n'est donc
+    # pas publiee, et le bras le dit.
+    graine0 = _artefact(longueur=384.0, clipped=1.0, grad=0.0, seed=0)
+    graine0["pre_eval"] = {"reward_mean": 0.10}
+    graine0["post_eval"] = {"reward_mean": 0.30}
+    graine1 = _artefact(longueur=384.0, clipped=1.0, grad=0.0, seed=1)
+    graine1["log_history"][0]["grad_norm"] = 1.0
+    graine1["pre_eval"] = {"reward_mean": 0.10}
+    graine1["post_eval"] = {"reward_mean": 0.30}
+    a = _ecrire(tmp_path, "seed0.json", graine0)
+    b = _ecrire(tmp_path, "seed1.json", graine1)
+    rapport = organ.mesurer_fichiers([a, b])
+    bras = rapport["bras"]["qwen3_8b"]
+    assert bras["steps_avec_gradient"] == 0.5
+    assert bras["gain_eval_par_step_avec_gradient"] is None
+    assert bras["gain_eval_par_step_comparable"] is False
+
+
+def test_un_gain_par_step_comparable_est_publie_quand_le_diviseur_vaut_au_moins_un(tmp_path: Path):
+    # Deux graines a une step vivante chacune : le diviseur du bras vaut 1,
+    # la metrique est comparable et publiee.
+    graine = _artefact(longueur=384.0, clipped=1.0, grad=0.0, seed=0)
+    graine["log_history"][0]["grad_norm"] = 1.0
+    graine["pre_eval"] = {"reward_mean": 0.10}
+    graine["post_eval"] = {"reward_mean": 0.30}
+    a = _ecrire(tmp_path, "seed0.json", graine)
+    b = _ecrire(tmp_path, "seed1.json", dict(graine, seed=1))
+    rapport = organ.mesurer_fichiers([a, b])
+    bras = rapport["bras"]["qwen3_8b"]
+    assert bras["steps_avec_gradient"] == 1
+    assert bras["gain_eval_par_step_comparable"] is True
+    assert bras["gain_eval_par_step_avec_gradient"] == 0.2
+
+
 # --- le regroupement par bras ----------------------------------------------
 
 

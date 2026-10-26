@@ -35,6 +35,25 @@ contaminer le verdict d'un bras.
 | `SIGNAL_PARTIEL` | `frac_sans_gradient >= 0.5` | le signal existe, mais porte sur moins de la moitie des steps : toute comparaison se lit sur les steps vivantes |
 | `SIGNAL_UTILE` | sinon | le budget n'est pas la contrainte dominante |
 
+Les seuils sont **inclusifs** : une fraction de steps satures exactement egale
+a `0.95` est un `SIGNAL_NUL`. Cette frontiere n'est pas un cas theorique --
+c'est le cas **mesure** du bras `qwen35`, dont la graine 0 rend `0.95` pile --
+et un test la pince des deux cotes.
+
+Le verdict d'un bras suit la graine **mediane**. A effectif **pair**, la
+convention est **optimiste** : le moins grave des deux verdicts centraux
+(un bras dont une graine sur deux sature porte encore du signal). La
+convention est ecrite dans le code et pincee par un test.
+
+Le gain d'evaluation par step vivant (`gain_eval_par_step_avec_gradient`) est
+la **mediane des ratios par graine**, chacun divise par le nombre de steps
+qui ont porte un gradient **de cette graine**. Il ne se **rederive pas** depuis
+`gain_eval_recompense / steps_avec_gradient` : le diviseur du bras est une
+*mediane de comptes*, qui peut valoir moins de 1 (mediane de `{0, 1}`) et
+amplifierait alors un gain reel d'un facteur 2. Quand le diviseur du bras est
+< 1, la metrique vaut `None` et le champ `gain_eval_par_step_comparable` vaut
+`false` : le gain par step n'est pas comparable entre bras sur ce bras-la.
+
 Usage :
 
     python scripts/analyse_dapo_saturation.py scripts/results/m19_minicpm5_grpo/qwen3_8b_seed*.json
@@ -171,22 +190,44 @@ def mesurer(artefact: dict[str, Any]) -> dict[str, Any]:
     return rapport
 
 
+def _verdict_median(verdicts: list[str]) -> str:
+    """Verdict median d'une liste de verdicts, du plus grave au plus benin.
+
+    Effectif impair : l'element central. Effectif **pair** : l'element central
+    SUPERIEUR, c'est-a-dire le **moins grave** des deux centraux -- convention
+    **optimiste**, explicite et assumee : un bras dont une graine sur deux
+    sature porte encore du signal.
+
+    Les verdicts inconnus ne votent pas (seuls ceux de `RANG_VERDICT` sont
+    pris en compte) : un `ILLISIBLE` ne peut pas etre lu comme un `SIGNAL_*`.
+
+    La convention est **pincee par un test**
+    (`test_le_bras_a_effectif_pair_suit_la_convention_declaree`) : a deux
+    graines de gravites differentes, c'est elle qui decide du verdict, et un
+    lecteur qui la devinerait autrement lirait un verdict oppose au sien.
+    """
+    connus = sorted((v for v in verdicts if v in RANG_VERDICT), key=lambda v: RANG_VERDICT[v])
+    if not connus:
+        return "ILLISIBLE"
+    return connus[len(connus) // 2]
+
+
 def verdict_bras(graines: list[dict[str, Any]]) -> str:
     """Verdict d'un bras, a partir des verdicts de ses graines.
 
     Le bras suit la graine **mediane** : un bras dont une graine sur deux
     sature porte encore du signal. `SIGNAL_NUL` quand toutes les graines
     saturent.
+
+    A effectif pair, la mediane suit la convention **optimiste** (le moins
+    grave des deux verdicts centraux) -- voir `_verdict_median`.
     """
     verdicts = [g.get("verdict") for g in graines]
     if not verdicts:
         return "ILLISIBLE"
     if all(v == "SIGNAL_NUL" for v in verdicts):
         return "SIGNAL_NUL"
-    connus = sorted((v for v in verdicts if v in RANG_VERDICT), key=lambda v: RANG_VERDICT[v])
-    if not connus:
-        return "ILLISIBLE"
-    return connus[len(connus) // 2]
+    return _verdict_median(verdicts)
 
 
 def mesurer_fichiers(chemins: list[Path]) -> dict[str, Any]:
@@ -216,6 +257,20 @@ def mesurer_fichiers(chemins: list[Path]) -> dict[str, Any]:
     par_bras: dict[str, Any] = {}
     for cle, graines in sorted(bras.items()):
         graines = sorted(graines, key=lambda g: (g.get("graine") is None, g.get("graine")))
+        steps_vivants = statistics.median(
+            [g["steps_avec_gradient"] for g in graines if g.get("steps_avec_gradient") is not None]
+        ) if any(g.get("steps_avec_gradient") is not None for g in graines) else None
+        # Garde-fou du gain par step vivant (reserve de la revue structurelle
+        # du 2026-10-26) : la metrique n'est COMPARABLE que si son diviseur --
+        # la mediane des steps qui ont porte un gradient -- vaut au moins 1.
+        # Divise par 0,5 (mediane de {0, 1}), elle DOUBLE un gain reel : une
+        # amplification qui n'a aucun sens physique. Le gain par step n'est
+        # donc pas publie quand le diviseur est < 1, et `comparable` le dit.
+        comparable = steps_vivants is not None and steps_vivants >= 1
+        gain_par_step = round(statistics.median(
+            [g["gain_eval_par_step_avec_gradient"] for g in graines
+             if g.get("gain_eval_par_step_avec_gradient") is not None]
+        ), 6) if any(g.get("gain_eval_par_step_avec_gradient") is not None for g in graines) else None
         par_bras[cle] = {
             "verdict": verdict_bras(graines),
             "graines": [g.get("graine") for g in graines],
@@ -228,16 +283,12 @@ def mesurer_fichiers(chemins: list[Path]) -> dict[str, Any]:
             "mean_length_ecart_type": round(statistics.median(
                 [g["mean_length_ecart_type"] for g in graines if g.get("mean_length_ecart_type") is not None]
             ), 3) if any(g.get("mean_length_ecart_type") is not None for g in graines) else None,
-            "steps_avec_gradient": statistics.median(
-                [g["steps_avec_gradient"] for g in graines if g.get("steps_avec_gradient") is not None]
-            ) if any(g.get("steps_avec_gradient") is not None for g in graines) else None,
+            "steps_avec_gradient": steps_vivants,
             "gain_eval_recompense": round(statistics.median(
                 [g["gain_eval_recompense"] for g in graines if g.get("gain_eval_recompense") is not None]
             ), 6) if any(g.get("gain_eval_recompense") is not None for g in graines) else None,
-            "gain_eval_par_step_avec_gradient": round(statistics.median(
-                [g["gain_eval_par_step_avec_gradient"] for g in graines
-                 if g.get("gain_eval_par_step_avec_gradient") is not None]
-            ), 6) if any(g.get("gain_eval_par_step_avec_gradient") is not None for g in graines) else None,
+            "gain_eval_par_step_avec_gradient": gain_par_step if comparable else None,
+            "gain_eval_par_step_comparable": comparable,
             "budget_completion": graines[0].get("budget_completion"),
         }
 
@@ -247,7 +298,7 @@ def mesurer_fichiers(chemins: list[Path]) -> dict[str, Any]:
     elif all(v == "SIGNAL_NUL" for v in verdicts):
         verdict_global = "SIGNAL_NUL"
     else:
-        verdict_global = sorted(verdicts, key=lambda v: RANG_VERDICT.get(v, 1))[len(verdicts) // 2]
+        verdict_global = _verdict_median(verdicts)
 
     return {
         "graines": rapports,
@@ -298,13 +349,16 @@ def main(argv: list[str] | None = None) -> int:
         print()
         print("VERDICT PAR BRAS :")
         for cle, bras in rapport["bras"].items():
+            gain_par_step = bras["gain_eval_par_step_avec_gradient"]
+            if not bras.get("gain_eval_par_step_comparable", True):
+                gain_par_step = "non comparable (moins d'un step vivant)"
             print(
                 f"   {cle:12s} {bras['verdict']:14s} graines={bras['graines']} "
                 f"satures={bras['frac_steps_satures']} sans_gradient={bras['frac_steps_sans_gradient']} "
                 f"ecart_type_longueur={bras['mean_length_ecart_type']} "
                 f"steps_avec_gradient={bras['steps_avec_gradient']} "
                 f"gain_eval={bras['gain_eval_recompense']} "
-                f"gain_par_step={bras['gain_eval_par_step_avec_gradient']} "
+                f"gain_par_step={gain_par_step} "
                 f"budget={bras['budget_completion']}"
             )
         print()
