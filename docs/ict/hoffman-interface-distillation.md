@@ -68,7 +68,10 @@ La prédiction Hoffman — α*_Truth ≠ α*_Fit — **devrait** émerger quand 
 | Régime Hoffman | 16+ | 2-4 | gap attendu ≥ 0.10, α*_truth < α*_fit (canal moins bruité pour Truth) |
 | Régime FBT saturé | N → ∞, M fixe | M | gap → 1 (Fitness-only domine strictement, FBT Theorem 4) |
 
-Ce scaling est exactement la Table 1 de Prakash et al. — le théorème FBT dit que **la borne inférieure** de la probabilité que Fitness-only domine est `(X-3)/(X-1)` où `X = |X|`. Pour `X=2`, c'est `(2-3)/(2-1) = -1` (la borne est trivialement non-informative) ; pour `X=4`, c'est `1/3` ; pour `X=8`, c'est `5/7 ≈ 0.71`.
+Ce scaling n'est pas la Table 1 de Prakash et al. — celle-ci donne l'exemple numérique
+(likelihoods, priors et fitness). La borne inférieure vient du **Théorème 4** du préprint :
+la probabilité que Fitness-only domine strictement est au moins `(X-3)/(X-1)`, où
+`X = |X|` est la taille de l'espace perceptuel. Pour `X=2`, c'est `(2-3)/(2-1) = -1` (la borne est trivialement non-informative) ; pour `X=4`, c'est `1/3` ; pour `X=8`, c'est `5/7 ≈ 0.71`.
 
 ## Limites assumées (grade C)
 
