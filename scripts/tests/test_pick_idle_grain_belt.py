@@ -1531,6 +1531,55 @@ def test_le_rapport_marqueur_est_muet_sans_lecture_ratee(capsys):
     assert capsys.readouterr().out == ""
 
 
+def test_belt_marker_KO_and_budget_epuise_ne_sert_pas_silencieusement():
+    """Le COUPLE de fail-OPEN, mesure par la session jumelle `coursia-2-25`
+    (2026-10-26, #17528) : deux verifications ratees qui se COMBINENT.
+
+    1. la sonde du marqueur echoue (403 / quota GraphQL epuise) -> elle rend
+       `None`, qui passait pour « pas de marqueur » ;
+    2. le budget de la sonde PLEINE est epuise -> elle rend
+       `DELIVERED_SIGNAL_UNPROBED`, qui passe pour « rien a signaler ».
+
+    Les deux ensemble : un conteneur **reellement livre** est servi, et
+    rien dans la sortie ne le dit. C'est la 4e livraison en double.
+
+    Ce que le correctif change : le tirage reste MAINTENU (fail-OPEN
+    assume), mais le numero est RAPPORTE — le verdict « incertitude » est
+    distinct du verdict « pas de marqueur ».
+    """
+    grain = _make_item(19030, age_days=40, idle=4, klass="grain", last=None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [grain], _free_claims([grain]), _belt_args(), probe_budget=0,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: None,
+        container_marker_probe=lambda n: False)
+    # Le budget de sondes est epuise : la sonde pleine n'a rien vu.
+    assert state["budget_hit"] is True
+    # Le fail-OPEN reste assume : le candidat est servi.
+    assert [p["number"] for p in picks] == [19030]
+    # ... mais l'echec de la sonde de marqueur est PUBLIE.
+    assert state["marker_unread"] == [19030]
+
+
+def test_belt_sonde_marqueur_KO_avec_gh_en_echec_rend_None(monkeypatch):
+    """La sonde reelle rend `None` sur echec de LECTURE -- jamais `False`.
+
+    Un `False` se lirait « pas de marqueur » (le conteneur est libre) ; c'est
+    l'echec de lecture qui doit etre `None`, pour que l'appelant puisse
+    distinguer les deux. Mesure #17528 : sur un `gh` qui leve, la sonde rend
+    `None`, et le candidat etait servi comme si de rien n'etait.
+    """
+    def boom(cmd, *args, **kwargs):
+        raise RuntimeError("403 quota GraphQL epuise")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    monkeypatch.setattr(pig, "_issue_comment_bodies_rest",
+                        lambda n: None, raising=False)
+    assert pig.has_recent_delivery_marker(17528) is None
+    assert pig.has_recent_container_delivery_marker(17528) is None
+
+
 def test_le_rapport_conteneur_rend_la_trace_visible(capsys):
     """Le rendu du pendant de `print_claim_unread_report` : le numero et la
     nature de l'incertitude doivent etre visibles."""
@@ -1607,10 +1656,18 @@ def test_container_marker_detects_container_statements(monkeypatch, body):
     "[INFO] candidate-delivered-partial -- un arc sur cinq",
     "[NOT-DELIVERED] verification first-hand : 2 arcs sur 5.",
     "Discussion sans marqueur.",
+    # Les FORMES MUETTES : un marqueur qui a l'air correct a l'oeil et que la
+    # machine ne voit pas (mesure du peer `coursia-2-25`, 2026-10-26, sur
+    # #21092). Le detecteur exige `\[INFO\]\s+candidate-delivered` en tete de
+    # ligne ; encager le `[INFO]` en backticks ou mettre le mot-cle en gras
+    # suffit a rendre le marqueur INVISIBLE. C'est un piege d'ecriture, pas
+    # de grammaire : la forme doit etre MESUREE apres l'ecriture.
+    "`[INFO]` **candidate-delivered** lane myia-ai-01:CoursIA-2 -- livre",
+    "**[INFO] candidate-delivered** lane myia-ai-01:CoursIA-2 -- livre",
 ])
 def test_container_marker_ignores_non_container_statements(monkeypatch, body):
-    """Une livraison de sous-grain, une retraction ou une simple discussion
-    ne ferment PAS le conteneur."""
+    """Une livraison de sous-grain, une retraction, une simple discussion ou
+    une forme muette ne ferment PAS le conteneur."""
     _stub_last_comment(monkeypatch, body)
     assert pig.has_recent_container_delivery_marker(17528) is False
 
