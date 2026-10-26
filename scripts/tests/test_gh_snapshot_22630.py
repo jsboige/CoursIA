@@ -37,13 +37,44 @@ import pick_idle_grain as pig
 @pytest.fixture(autouse=True)
 def _snapshot_root_isole(tmp_path, monkeypatch):
     """Racine de l'instantane redirigee : jamais le LOCALAPPDATA reel."""
-    monkeypatch.setattr(gs, "snapshot_root",
-                        lambda: tmp_path / "gh-snapshot")
+    def _racine():
+        return tmp_path / "gh-snapshot"
+
+    monkeypatch.setattr(gs, "snapshot_root", _racine)
+    # Le picker importe le module sous son nom de package
+    # (`coordination.gh_snapshot`) alors que ce fichier l'importe en
+    # top-level (`gh_snapshot`) : deux instances du meme fichier peuvent
+    # sieger dans sys.modules. Si l'instance package existe, sa racine doit
+    # etre isolee aussi -- sinon tout appel y passant (ex.
+    # `_flush_repair_snapshot`) lirait ou ecrirait le %LOCALAPPDATA% reel
+    # de la machine.
+    instance_package = sys.modules.get("coordination.gh_snapshot")
+    if instance_package is not None and instance_package is not gs:
+        monkeypatch.setattr(instance_package, "snapshot_root", _racine)
     # Le lecteur ne doit garder aucun instantane entre deux tests.
     yield
     clc.set_snapshot(None)
     pig._PASS_SNAPSHOT = None
     pig._BELT_SNAPSHOT = None
+
+
+def _redirige_gh_snapshot(monkeypatch, cible):
+    """Redirige `from coordination import gh_snapshot` vers ``cible``.
+
+    Le seul ``setitem(sys.modules, 'coordination.gh_snapshot', ...)`` est
+    insuffisant : des qu'un test precedent a importe REELLEMENT le package,
+    l'attribut ``gh_snapshot`` du module ``coordination`` est pose, et
+    ``from coordination import gh_snapshot`` le lit SANS consulter
+    ``sys.modules['coordination.gh_snapshot']`` -- le module reel (racine
+    non isolee) reprend alors la main, avec ses appels gh et son
+    ``%LOCALAPPDATA%``. On patche donc les DEUX surfaces : l'entree
+    ``sys.modules`` ET l'attribut du package.
+    """
+    monkeypatch.setitem(sys.modules, "coordination.gh_snapshot", cible)
+    package = sys.modules.setdefault(
+        "coordination", types.ModuleType("coordination"))
+    package.__path__ = getattr(package, "__path__", [])
+    monkeypatch.setattr(package, "gh_snapshot", cible, raising=False)
 
 
 def _faux_gh_api(responses):
@@ -187,6 +218,36 @@ def test_le_verrou_est_partage_et_le_second_passe_sert_le_premier(monkeypatch):
     assert second["comments"]["9"] == []
 
 
+def test_gh_api_est_borne_et_le_timeout_fait_fail_open(monkeypatch):
+    """#22684 : chaque appel `gh` porte une borne, et un `gh` qui ne repond
+    pas est une lecture impossible (fail-open), jamais un pend.
+
+    Mesure fondatrice (sans reseau, surface stubee) : a froid, le priming
+    du tapis emet 2 appels par candidat -- 140 pour une fenetre de 70 -- et
+    `_gh_api` n'avait AUCUNE borne : un seul `gh` lent pendant une
+    saturation du pool GitHub pendait la passe entiere du picker (rc=124,
+    sortie vide, le JSON n'etant imprime qu'en fin de passe).
+    """
+    import subprocess as _sp
+    seen: dict = {}
+
+    def fake_run(argv, **kwargs):
+        seen["timeout"] = kwargs.get("timeout")
+        raise _sp.TimeoutExpired(cmd="gh", timeout=kwargs.get("timeout"))
+
+    monkeypatch.setattr(gs.subprocess, "run", fake_run)
+    snap = {"issues": {}, "comments": {}, "prs": {}, "checks": {}, "meta": {}}
+    out, calls = gs.ensure_issue_payloads("jsboige/CoursIA", [15], snap, 600)
+    # La borne est bien transmise au subprocess (valeur finie, raisonnable).
+    assert isinstance(seen.get("timeout"), (int, float))
+    assert 0 < seen["timeout"] <= 60
+    # L'echec est NOMME, pas leve : l'issue est signalee en fetch_failures
+    # et la passe continue sans verdict suppose (0 appel abouti).
+    assert calls == 0
+    assert "15" in out["meta"]["fetch_failures"]
+    assert out["issues"] == {} and out["comments"] == {}
+
+
 def test_verrou_expire_ne_laisse_pas_ecrire_sans_exclusion(monkeypatch):
     lock = gs.snapshot_dir("jsboige/CoursIA") / "refresh.lock"
     lock.parent.mkdir(parents=True, exist_ok=True)
@@ -277,10 +338,7 @@ def test_voie_en_processus_rend_les_memes_codes_que_la_voie_cli(monkeypatch):
             "prs": {}}
     fake = types.ModuleType("coordination.gh_snapshot")
     fake.refresh = lambda repo, issue_numbers=None, ttl_seconds=600: snap
-    monkeypatch.setitem(sys.modules, "coordination.gh_snapshot", fake)
-    parent = sys.modules.setdefault(
-        "coordination", types.ModuleType("coordination"))
-    parent.__path__ = getattr(parent, "__path__", [])
+    _redirige_gh_snapshot(monkeypatch, fake)
     monkeypatch.setattr(clc, "_OPEN_PRS_MEMO", [])
     monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt",
                         lambda lane: None)
@@ -522,7 +580,7 @@ def test_main_probe_est_serialise_en_listes(monkeypatch):
     assert pig.fetch_main_head_probe()["red_keys"] == {"a"}
     stored = pig._repair_cache()["main_probe"]["value"]
     assert stored["red_keys"] == ["a"]
-    monkeypatch.setitem(sys.modules, "coordination.gh_snapshot", gs)
+    _redirige_gh_snapshot(monkeypatch, gs)
     pig._flush_repair_snapshot()
     back = gs.load_snapshot("jsboige/CoursIA")
     assert back["repair"]["main_probe"]["value"]["red_keys"] == ["a"]
@@ -590,7 +648,7 @@ def test_flush_reparation_preserve_les_autres_namespaces(monkeypatch):
     snap["repair"] = {"nits": {"41": {
         "fetched_at": 100.0, "updatedAt": "ancien", "value": {"blocked": True}}}}
 
-    monkeypatch.setitem(sys.modules, "coordination.gh_snapshot", gs)
+    _redirige_gh_snapshot(monkeypatch, gs)
     pig._flush_repair_snapshot()
     back = gs.load_snapshot("jsboige/CoursIA")
     assert back["comments"] == disk["comments"]
@@ -678,7 +736,7 @@ def test_transport_b0_est_reutilise_a_updated_at_constant(monkeypatch):
     monkeypatch.setattr(nits, "analyse_pr", lambda n: {
         "blocking": [{"author": nits.gh_json(["api", "commits/abc"])["sha"]}],
         "blocked": True})
-    monkeypatch.setitem(sys.modules, "coordination.gh_snapshot", gs)
+    _redirige_gh_snapshot(monkeypatch, gs)
     assert pig._nits_blocking_entries(41)["blocking"]
     assert len(transport_calls) == 1
     snap["repair"]["nits"].clear()          # force un nouveau calcul du verdict

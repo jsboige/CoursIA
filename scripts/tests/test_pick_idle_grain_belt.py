@@ -1910,6 +1910,14 @@ def test_check_claims_single_number_reads_mono_issue_output(monkeypatch):
     que leur claim soit lu.
     """
     monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt", lambda lane: None)
+    # #22630 : la voie en processus (instantane local) est PRIORITAIRE dans
+    # `check_claims` -- sans ce shunt, elle consomme deux subprocess (`gh api`
+    # du rafraichissement, `gh issue view` du lecteur) avant la voie
+    # historique instrumentee ici, et le compte d'appels n'a plus de sens.
+    # La voie en processus a ses propres tests (test_gh_snapshot_22630.py) ;
+    # ces trois tests verifient le contrat de la voie subprocess.
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: None)
     calls, fake_run = _fake_run_recorder(lambda cmd: _SINGLE_ISSUE_STDOUT)
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
 
@@ -1925,6 +1933,10 @@ def test_check_claims_unreadable_batch_falls_back_per_issue(monkeypatch):
     """Une sortie batch illisible ne rend plus ERROR : chaque issue est
     relue seule, comme le commentaire du code l'annoncait deja."""
     monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt", lambda lane: None)
+    # #22630 : voie en processus ecartee -- ce test instrumente la voie
+    # subprocess historique (cf. test_check_claims_single_number_...).
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: None)
 
     def stdout_for(cmd):
         if cmd.count("--lane") and len(cmd) > 5:  # batch : 2 numeros ou plus
@@ -2212,6 +2224,11 @@ def test_check_claims_reads_the_belt_deadline(monkeypatch):
         return _Done()
 
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    # #22630 : voie en processus ecartee -- le mur de temps se mesure sur le
+    # subprocess `check_lane_claim.py` de la voie historique, pas sur la voie
+    # en processus (qui n'ouvre aucun subprocess de ce nom).
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: None)
     pig._BELT_DEADLINE[0] = clock[0] + 2.0
     try:
         pig.check_claims([30031], "myia-po-2024:CoursIA")

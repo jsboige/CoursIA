@@ -1972,6 +1972,13 @@ def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
     """Rafraichit UNE FOIS l'instantane pour les candidats tires (#22630)."""
     global _BELT_SNAPSHOT
     _BELT_SNAPSHOT = None
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        # Meme garde que `_activate_pass_snapshot` : sous pytest, le priming
+        # ne lit ni n'ecrit l'etat partage de la machine (`%LOCALAPPDATA%`)
+        # et n'emet aucun `gh api` (doctrine d'inertie #19913 de la boucle
+        # du tapis -- un test qui veut l'instantane l'injecte directement,
+        # cf. test_gh_snapshot_22630.py).
+        return
     try:
         from coordination import gh_snapshot
         _BELT_SNAPSHOT = gh_snapshot.refresh(repo, issue_numbers=numbers)

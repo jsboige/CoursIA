@@ -208,18 +208,26 @@ def is_fresh(snapshot: dict, ttl_seconds: int = DEFAULT_TTL_SECONDS) -> bool:
 # --- transport GitHub ----------------------------------------------------------
 
 
-def _gh_api(path: str, *, params: str = "") -> Any:
+def _gh_api(path: str, *, params: str = "", timeout: float = 30.0) -> Any:
     """Un appel REST `gh api`, en JSON, avec un compte des appels.
 
     Le compteur vit dans l'attribut de module `CALL_COUNT` : le mandat
     mesure les « appels gh » de la passe, il faut donc pouvoir les compter.
+
+    `timeout` borne CHAQUE appel (mesure #22684 : le priming d'une passe a
+    froid emet jusqu'a 2 appels par candidat -- 140 pour une fenetre de 70 --
+    et sans borne, un seul `gh` lent pendant une saturation du pool GitHub
+    pend la passe entiere du tapis ; `subprocess.TimeoutExpired` est une
+    `Exception`, donc les fail-open en place (`fetch_failures` par issue,
+    repli du priming et de la voie en processus) la traitent comme une
+    lecture impossible, jamais comme un verdict).
     """
     cmd = ["gh", "api", path]
     if params:
         cmd.append(params)
     proc = subprocess.run(
         cmd, check=False, capture_output=True, text=True, shell=False,
-        encoding="utf-8", errors="replace",
+        encoding="utf-8", errors="replace", timeout=timeout,
     )
     CALL_COUNT["n"] += 1
     if proc.returncode != 0:
