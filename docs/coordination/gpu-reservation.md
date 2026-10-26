@@ -28,7 +28,7 @@ Le dashboard `CoursIA-gpu-reservation-ledger` est la **seule source de vérité*
 
 **Toute lane** qui lance une expérience GPU poste une observation sur le dashboard dédié avant `nvidia-smi` (ou équivalent). Le geste est **rapide** (1 message), **atomique** (1 observation = 1 fenêtre), et **idempotent** (un re-post remplace l'observation précédente pour la même entité, fenêtre mise à jour).
 
-**Le seuil n'est pas la durée, c'est l'annonce.** Un run dont la durée est **annoncée à l'avance** poste un `held` avant son premier appel CUDA et un `released` à la fin, **quelle que soit sa longueur**. Un seuil de 15 min laissait invisibles les runs courts **répétés**, qui occupent le device autant qu'un long — et « machine silencieuse » y devient indiscernable de « machine active » (mesure `myia-po-2023`, 2026-10-25). La règle par l'annonce ne demande aucun jugement sur la durée, ce qui la rend opposable : elle est **remplacée** par celle-ci. Restent hors champ les appels d'inférence ponctuels non annoncés, qui ne constituent pas une fenêtre.
+**Proposition mesurée par `myia-po-2023` le 2026-10-25 — en attente d'arbitrage du coordinateur sur [#16737](https://github.com/jsboige/CoursIA/issues/16737), donc NON en vigueur : le seuil n'est pas la durée, c'est l'annonce.** Un run dont la durée est **annoncée à l'avance** poste un `held` avant son premier appel CUDA et un `released` à la fin, **quelle que soit sa longueur**. Un seuil de 15 min laissait invisibles les runs courts **répétés**, qui occupent le device autant qu'un long — et « machine silencieuse » y devient indiscernable de « machine active » (mesure `myia-po-2023`, 2026-10-25). La règle par l'annonce ne demande aucun jugement sur la durée, ce qui la rend opposable. **Tant que l'arbitrage n'est pas rendu, le seuil des 15 min demeure la règle du protocole.** Restent hors champ les appels d'inférence ponctuels non annoncés, qui ne constituent pas une fenêtre.
 
 Le picker **ne tire plus une expérience GPU** sans qu'une observation existe dans le ledger (cohérence avec [#1454](https://github.com/jsboige/CoursIA/issues/1454) — la file d'expériences GPU).
 
@@ -220,7 +220,7 @@ Le tenancier de `myia-ai-01#gpu2` a besoin de **récupérer le statut GPU des au
 1. **Routage d'une expérience GPU** : si le GPU 2 de `myia-ai-01` est saturé, le picker peut router l'expérience vers `myia-po-2023#gpu1` ou `myia-po-2024#gpu0` selon leur disponibilité.
 2. **Coordination de fenêtre** : deux expériences concurrentes sur deux machines doivent être séquencées pour éviter de saturer l'API GitHub (rate limit GraphQL partagé) ou le réseau de téléchargement de modèles.
 
-### Cartes device mesurées (2026-10-25)
+### Cartes device mesurées
 
 La table du 2026-10-08 portait six lignes « à confirmer » : elle nommait les machines
 sans nommer leurs devices, donc le routage ne pouvait pas s'y appuyer. Elle est
@@ -229,9 +229,9 @@ leur VRAM réelle et les lanes autorisées à lancer.
 
 | Device | Modèle | VRAM | Lanes autorisées à lancer | Réservable par défaut | Mesure | Source |
 |---|---|---|---|---|---|---|
-| `myia-ai-01#gpu0` | RTX 4090 | 24 564 MiB | **aucune** — vLLM de la flotte | non | 2026-10-25 : 22 620 MiB occupés, 98 % | mesure locale |
-| `myia-ai-01#gpu1` | RTX 4090 | 24 564 MiB | **aucune** — vLLM de la flotte | non | 2026-10-25 : 21 408 MiB occupés, 99 % | mesure locale |
-| `myia-ai-01#gpu2` | RTX 4090 | 24 564 MiB | `myia-ai-01:CoursIA-2` (seul lanceur) | non (tenu) | 2026-10-25T15:45Z : run onset terminé, chaîne multi-seed #15293 `held` | mesure locale |
+| `myia-ai-01#gpu0` | RTX 4090 | 24 564 MiB | **aucune** — vLLM de la flotte | non | 2026-10-26T07:27Z : 22 636 MiB occupés, 80 % | mesure locale (`nvidia-smi`) |
+| `myia-ai-01#gpu1` | RTX 4090 | 24 564 MiB | **aucune** — vLLM de la flotte | non | 2026-10-26T07:27Z : 21 508 MiB occupés, 81 % | mesure locale (`nvidia-smi`) |
+| `myia-ai-01#gpu2` | RTX 4090 | 24 564 MiB | `myia-ai-01:CoursIA-2` (seul lanceur) | non (tenu) | 2026-10-26T07:27Z : 24 091 MiB occupés, 100 % — chaîne multi-seed #15293 en cours (`held`) | mesure locale (`nvidia-smi`) |
 | `myia-po-2023#gpu0` (`CVD=0`) | RTX 3090 | 24,0 GiB | `myia-po-2023:CoursIA`, autres lanes sur accord | oui | 2026-10-25T14:12Z : 22,8 GiB libres | DM po-2023 |
 | `myia-po-2023#gpu1` (`CVD=1`) | RTX 3080 Ti Laptop | 16,0 GiB | idem | oui | 2026-10-25T14:12Z : 14,8 GiB libres | DM po-2023 |
 | `myia-po-2025#gpu0` | RTX 3080 Ti Laptop | 16 384 MiB | `myia-po-2025:CoursIA`, `myia-po-2025:CoursIA-2` | oui | 2026-10-25T14:19Z — **seul device exposé** (driver 616.92) | DM po-2025 |
@@ -241,6 +241,14 @@ leur VRAM réelle et les lanes autorisées à lancer.
 | `myia-po-2026` | — | — | — | **à mesurer** | carte **non reçue** | silence |
 
 **gpu0/gpu1 de ai-01 portent le vLLM de la flotte** et ne se réservent pas (mêmes slots sont consommés par le serving).
+
+Le relevé d'`ai-01` est **daté et instrumenté** : `2026-10-26T07:27Z` (heure UTC machine,
+lue sur l'horloge), `nvidia-smi --query-gpu=index,name,memory.total,memory.used,utilization.gpu`.
+Le relevé précédent, non horodaté, portait 22 620 / 21 408 / 15 013 MiB occupés : la
+seule variation qui compte est **gpu2**, passé de 15 013 à 24 091 MiB — la chaîne
+multi-seed #15293 y tourne, ce que le registre des réservations portait déjà (`held`).
+L'occupation de gpu0/gpu1 (vLLM) varie de quelques points de pourcentage d'un relevé
+à l'autre ; elle n'est pas un indicateur de disponibilité.
 
 Une carte manquante n'est **pas** une carte vide : `myia-po-2026` n'a pas répondu à la
 demande, et rien dans ce registre ne dit qu'elle est libre. Sa ligne se remplit à la
@@ -362,4 +370,4 @@ L'observation `[OBS]` d'un slot gpu0/gpu1 sur ai-01 est **interdite** : ces slot
 - **5e livrable (c.2249)** : premier **fold effectif** du ledger (export large, puis réduction ; rejets `observation_id_mismatch` — compteurs dans le tableau « Premier fold effectif ») + les deux règles qui le rendent fiable — `observation_id` **calculé** et jamais écrit à la main, clé machine prise dans le roster de la flotte (`ai-01` et `myia-ai-01` sont deux écritures pour un GPU) — + la planification hebdomadaire publiée avec chaque snapshot.
 
 - **6e livrable (PR #21684)** : canonicalisation de la clé machine au niveau outil (`canonical_machine()`) -- alias vers le nom canonique du roster, machine hors roster refusée, digest historique accepté pour ne perdre aucune observation ; la règle de protocole correspondante est reprise dans la section « La clé machine est canonicalisée ».
-- **7e livrable (2026-10-25)** : la topologie du 2026-10-08 (six lignes « à confirmer ») est remplacée par des **cartes device mesurées** — modèle, VRAM réelle, indice `CUDA_VISIBLE_DEVICES`, lanes autorisées, date et source de la mesure, pour quatre sièges (`po-2023` deux devices, `po-2025`, `po-2027`, `po-2028`) plus les trois devices d'ai-01. Deux sièges restent **sans carte** (`po-2024`, `po-2026`) et sont listés comme tels. Deux règles mesurées entrent au protocole : l'indice `CUDA_VISIBLE_DEVICES` peut être **l'inverse** de l'ordre `nvidia-smi` (mesure po-2023, l'identité d'un device se lit côté torch), et un siège sans carte n'est **pas** un siège libre. Le **seuil des 15 min** qui conditionnait l'observation est remplacé par « durée annoncée » — un run court répété est indiscernable d'un siège silencieux (proposition mesurée de `myia-po-2023`).
+- **7e livrable (2026-10-25)** : la topologie du 2026-10-08 (six lignes « à confirmer ») est remplacée par des **cartes device mesurées** — modèle, VRAM réelle, indice `CUDA_VISIBLE_DEVICES`, lanes autorisées, date et source de la mesure, pour quatre sièges (`po-2023` deux devices, `po-2025`, `po-2027`, `po-2028`) plus les trois devices d'ai-01. Deux sièges restent **sans carte** (`po-2024`, `po-2026`) et sont listés comme tels. Deux règles mesurées entrent au protocole : l'indice `CUDA_VISIBLE_DEVICES` peut être **l'inverse** de l'ordre `nvidia-smi` (mesure po-2023, l'identité d'un device se lit côté torch), et un siège sans carte n'est **pas** un siège libre. Le **seuil des 15 min** qui conditionnait l'observation est **proposé** pour être remplacé par « durée annoncée » — un run court répété est indiscernable d'un siège silencieux (proposition mesurée de `myia-po-2023`, **en attente d'arbitrage du coordinateur sur #16737, non appliquée** : le seuil des 15 min reste la règle tant que l'arbitrage n'est pas rendu).
