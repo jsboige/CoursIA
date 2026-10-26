@@ -40,19 +40,26 @@ Transposed from `Komlos/Transport.lean` (l.27-67) :
 - `toReal_mem_map_iff`, `toReal_mem_coe_iff` — the membership bridge that
   `convexHull ℝ ↑(S.map …)` will consume in k2.4.
 
-**Deferred, with measured reason** :
+**Deferred by k2.3, and their outcome** :
 
-1. `shiftDist_push` (l.63-64) — the transported shift distance. In the
-   oracle, `shiftDist` lives on the **canonical** Finsupp support ; the
-   lake's convention (k1.1) passes the support `Finset` **explicitly**, and
-   the transported statement requires reindexing `S ∪ (S + u)` on the
-   target side — a union of `Finset`s whose sum is not the sum of sums.
-   No k2.4 consumer reads it : the convexity conclusion reads only the
-   support and the barycenter, both delivered above.
-2. `tvDist_push`, `IsDist.push` (l.44-55) — the vocabulary `tvDist`/`IsDist`
-   does not exist in this lake (k1.1 framing decision : plain functions,
-   explicit support). Restating them here would be **new vocabulary**, not
-   transport ; if k4 needs them, they will come with their framework.
+1. `shiftDist_push` (l.63-64) — **delivered** by brick k4.2c
+   (`ShiftPush.lean`, `shiftDistanceTV_push`). The measured reason for the
+   deferral is kept here as it was written: in the oracle, `shiftDist` lives
+   on the **canonical** Finsupp support ; the lake's convention (k1.1) passes
+   the support `Finset` **explicitly**, and the transported statement seemed
+   to require reindexing `S ∪ (S + u)` on the target side — a union of
+   `Finset`s whose sum is not the sum of sums. The barrier **dissolved rather
+   than being crossed** : under the form k4.2b delivered (`tvDistance`,
+   generic, and its bridge `shiftDistance_eq_tvDistance`), the shift is
+   carried by the **function** (`shiftDistanceTV`) and not by the summation
+   set — a single `Finset` suffices on both sides, and the required
+   re-indexation is the one already delivered below, `sum_push`.
+2. `tvDist_push` (l.54-55) — **delivered** by k4.2c (`tvDistance_push`).
+3. `IsDist.push` (l.44-49) — **still deferred, reason unchanged**: it awaits
+   the `IsDist` vocabulary ("is a distribution"), which this lake does not
+   have (k1.1 framing decision: plain functions, explicit support). It is not
+   transport to be restated, it is a vocabulary to be paid for **with its
+   consumer**.
 
 The detailed state lives in `FORMAL_STATUS.md`.
 -/
