@@ -96,9 +96,11 @@ class TestCmdCountBySubdir:
         assert rc == 0
         out = buf.getvalue()
         assert "Search" in out
-        # Search hub has 4 documented sub-folders per audit c.1331+6.
-        assert "Applications" in out
+        # Search hub sub-folders after the App-32 → Langlands migration (#19253).
+        # The human-readable line lists the three largest sub-folders only.
         assert "Part1-Foundations" in out
+        assert "Part3-Cas-pratiques" in out
+        assert "Applications" not in out
 
     def test_real_repo_check_readme_search_ok(self):
         """Search hub check-readme: wrapper status is logically consistent with
@@ -151,8 +153,14 @@ class TestCmdCountBySubdir:
         assert "Search" in payload
         assert payload["Search"]["total"] >= 100  # Search = 115 currently
         assert "by_subfolder" in payload["Search"]
-        # Subfolder keys are documented folder names.
-        for sub in ["Applications", "Part1-Foundations", "Part4-Metaheuristics"]:
+        # Subfolder keys are documented folder names (#19253 layout).
+        for sub in [
+            "Part1-Foundations",
+            "Part2-CSP",
+            "Part3-Cas-pratiques",
+            "Part4-Metaheuristics",
+            "Part5-Frontieres",
+        ]:
             assert sub in payload["Search"]["by_subfolder"]
 
     def test_real_repo_json_check_readme_enriched(self):
