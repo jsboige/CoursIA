@@ -106,5 +106,53 @@ en §4 (`kinoshitaTerasaka_arcPartition`). -/
 def kinoshitaTerasakaKnot : Knot where
   diagram := kinoshitaTerasakaDiagram
 
+/-! ## 4. Le mutant de sphère du nœud de Conway (construction du maillon 4)
+
+Troisième diagramme de la paire Conway/KT : obtenu en **mutant la sphère de
+Conway du diagramme census de 11n34 lui-même** — rotation `r13` des six
+croisements intérieurs (fenêtre [5, 11), indexée depuis 0) puis recollement
+des quatre points de bord par l'involution (8 ↔ 11) (13 ↔ 22). Voir
+`Knots.Mutation` (`sphereMutate`) pour l'opération et `Knots.Conway`
+(`conwayMutant_eq_sphereMutate`, `conwayMutant_trivial_alexander`) pour le
+lien et le polynôme trivial.
+
+Mesure préalable (sonde Python fidèle, contrôle sur les valeurs prouvées
+−t⁶/t⁵ de 11n34/11n42) : parmi les 96 mutants non triviaux bien formés de
+la construction (4 rotations × 24 recollements), **exactement un** porte un
+mineur trivial — celui-ci, de valeur désignée t⁵. Le mutant n'est PAS le
+code census de 11n42 (mesuré : aucune combinaison (ρ, perm, σ) ne superpose
+les deux listes) : c'est un second dessin du même type d'isotopie,
+l'égalité d'isotopie restant un écart documenté (la PL-topologie du
+recollement n'est pas formalisée, cf. `Knots.Mutation`).
+-/
+
+/-- Diagramme mutant de sphère du nœud de Conway : les croisements 1-5
+(extérieur de la sphère) sont ceux du census 11n34, les croisements 6-11
+sont l'image r13-recollée du tangle intérieur. -/
+def conwayMutantDiagram : KnotDiagram where
+  crossings := [
+    ⟨1, 4, 22, 3⟩,
+    ⟨7, 2, 6, 1⟩,
+    ⟨3, 8, 2, 7⟩,
+    ⟨4, 12, 5, 11⟩,
+    ⟨12, 6, 13, 5⟩,
+    ⟨15, 11, 16, 9⟩,
+    ⟨10, 20, 9, 21⟩,
+    ⟨18, 10, 17, 8⟩,
+    ⟨14, 18, 22, 19⟩,
+    ⟨20, 14, 19, 15⟩,
+    ⟨21, 16, 13, 17⟩
+  ]
+  numEdges := 22
+
+/-- Contrôle `wf` du mutant (chaque étiquette de [1, 22] exactement deux
+fois) — le recollement échange des occurrences de bord, il préserve la
+multiplicité. -/
+theorem conwayMutant_wf : conwayMutantDiagram.wf = true := by
+  decide
+
+def conwayMutantKnot : Knot where
+  diagram := conwayMutantDiagram
+
 
 end Knots
