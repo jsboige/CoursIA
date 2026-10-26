@@ -28,7 +28,8 @@ Verdicts (par carnet, pas global -- chaque finding nomme son carnet) :
 Conventions portees par l'organe :
 
 - un `_archive/` sous le chemin de serie est hors inventaire (convention
-  `_archive`, 11 emplacements) ;
+  `_archive`, cf `docs/reference/_archive-convention.md` -- le nombre
+  d'emplacements s'y recalcule, il ne se cite pas ici) ;
 - un nom cite sans suffixe `.ipynb` compte (les plans citent souvent le
   basename nu, ex. `Percolation-03-Critique-Python`) ;
 - comparaison repliee en ASCII (NFD) et par nom COMPLET aux frontieres de
