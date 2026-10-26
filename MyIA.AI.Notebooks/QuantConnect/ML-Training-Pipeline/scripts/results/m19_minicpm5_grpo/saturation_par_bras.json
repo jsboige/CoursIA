@@ -143,6 +143,30 @@
    "reward_median": 0.03125,
    "verdict": "SIGNAL_PARTIEL",
    "fichier": "qwen3_8b_seed1.json"
+  },
+  {
+   "modele": "Qwen3-8B",
+   "model_key": "qwen3_8b",
+   "graine": 7,
+   "budget_completion": 384,
+   "wallclock_s": 19793.8,
+   "steps": 100,
+   "frac_steps_satures": 0.83,
+   "frac_steps_tronquees": 0.82,
+   "frac_steps_sans_gradient": 0.88,
+   "frac_steps_sans_signal": 0.63,
+   "frac_steps_recompense_nulle": 0.61,
+   "steps_avec_gradient": 12,
+   "gain_eval_recompense": 0.0125,
+   "gain_eval_par_step_avec_gradient": 0.001042,
+   "mean_length_mediane": 384.0,
+   "mean_length_ecart_type": 6.048,
+   "clipped_ratio_median": 1.0,
+   "grad_norm_max": 0.71875,
+   "reward_max": 0.375,
+   "reward_median": 0.0,
+   "verdict": "SIGNAL_PARTIEL",
+   "fichier": "qwen3_8b_seed7.json"
   }
  ],
  "bras": {
@@ -180,14 +204,15 @@
    "verdict": "SIGNAL_PARTIEL",
    "graines": [
     0,
-    1
+    1,
+    7
    ],
-   "frac_steps_satures": 0.645,
-   "frac_steps_sans_gradient": 0.775,
-   "mean_length_ecart_type": 20.395,
-   "steps_avec_gradient": 22.5,
-   "gain_eval_recompense": 0.071875,
-   "gain_eval_par_step_avec_gradient": 0.003236,
+   "frac_steps_satures": 0.65,
+   "frac_steps_sans_gradient": 0.79,
+   "mean_length_ecart_type": 15.276,
+   "steps_avec_gradient": 21,
+   "gain_eval_recompense": 0.0625,
+   "gain_eval_par_step_avec_gradient": 0.002604,
    "gain_eval_par_step_comparable": true,
    "budget_completion": 384
   }
