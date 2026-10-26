@@ -53,12 +53,22 @@ déclarations** (`theorem`, `lemma`, `def`, `abbrev`, `structure`, `inductive`, 
 `instance`) entre chaque module canonique et l'ensemble des six fichiers `.lean` de `src/`
 amont ; les instances anonymes ne sont pas comptées.
 
+La mesure dépend de la grammaire de déclaration retenue. Celle utilisée ici reconnaît les
+déclarations précédées d'attributs et de modificateurs (`@[...]`, `private`, `protected`,
+`noncomputable`, `partial`) et ne développe pas les déclarations composites ; le comptage est
+fait sur le code hors commentaires. Une re-mesure indépendante du 2026-10-25, avec une
+grammaire qui ne développe pas ces attributs, donne **23/27**, **3/17** et **3/44** pour
+`Basic`, `Framework` et `Voting` au lieu de 25/29, 6/24 et 4/53 : la lecture — `Basic` et
+`Arrow` sont le portage, le reste est ajouté — est identique dans les deux variantes. C'est
+pourquoi la méthode est écrite ici : un chiffre de reprise n'est rejouable qu'avec la règle
+de comptage qui l'a produit.
+
 | Module canonique | Déclarations | Nom présent dans l'amont | Lecture |
 |---|---|---|---|
 | `Basic.lean` | 29 | **25** | portage de `basic.lean` |
 | `Arrow.lean` | 29 | **19** | portage d'`arrows_theorem.lean` |
 | `Framework.lean` | 24 | **6** | les 6 noms communs viennent d'`arrows_theorem.lean` (`makeabove`) ; le reste est propre |
-| `Voting.lean` | 53 | **4** | ajout CoursIA (électeur médian, Split Cycle, Banks) |
+| `Voting.lean` | 53 | **4** | ajout CoursIA (électeur médian, Split Cycle, Banks) — l'amont possède ses propres `split_cycle.lean` (28 déclarations sous la règle ci-dessus) et `stable_voting.lean` (56) : l'ajout est une réécriture, pas l'invention de ces concepts |
 | `Sen.lean` | 4 | **0** | ajout CoursIA (paradoxe libéral, décisivité bidirectionnelle) |
 | `MechanismDesign.lean` | 64 | **0** | ajout CoursIA (Vickrey, VCG) |
 | `AMD.lean` | 16 | **0** | ajout CoursIA |
