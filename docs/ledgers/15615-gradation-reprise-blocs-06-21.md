@@ -12,7 +12,7 @@ Identique aux fournées : extraction JSON scriptée (kernelspec, comptes code/ma
 
 ## Re-mesure des carnets couverts (blocs 06-20)
 
-**71 carnets couverts par les fournées B-D sont toujours présents dans le dossier** (B 27, C 22, D 22 — les 24 lignes de D moins 20d/20e partis en GOL, plus le 16g de l'addendum). Re-mesurés à `7eff951f33b` : **48 stables, 23 dont les comptes ont dérivé**. Les dérives sont toutes des **prose/densité ou navigation** (grains #13410 « densité », escaliers #20381, ancres biblio #21544, réalignement de prose #20826, fusion de lectures jumelles #21377) — **aucune ne change les concepts ni la difficulté des lignes existantes** ; seule la colonne Cells des fournées a vieilli.
+**71 carnets couverts par les fournées B-D sont toujours présents dans le dossier** (B 27, C 22, D 22 après exclusion de 20d/20e partis en GOL ; le 16g de l'addendum est gradé parmi les 12 post-snapshot ci-dessous). Re-mesurés à `7eff951f33b` : **48 stables, 23 dont les comptes ont dérivé**. Les dérives sont toutes des **prose/densité ou navigation** (grains #13410 « densité », escaliers #20381, ancres biblio #21544, réalignement de prose #20826, fusion de lectures jumelles #21377) — **aucune ne change les concepts ni la difficulté des lignes existantes** ; seule la colonne Cells des fournées a vieilli.
 
 | Fournée | Carnet (dérive de comptes) | Au bornage | À `7eff951f33b` |
 |---|---|---|---|
