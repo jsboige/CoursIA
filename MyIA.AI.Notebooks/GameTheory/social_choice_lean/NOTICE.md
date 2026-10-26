@@ -108,12 +108,14 @@ de `lean-toolchain` depuis l'absorption.
 État de licence des sources citées ci-dessus, **re-mesuré le 2026-10-25**
 (vérification firsthand, cf #14955) :
 
-- `asouther4/lean-social-choice` (amont principal) : **aucune licence déclarée** —
+- `asouther4/lean-social-choice` (amont principal) : **aucune licence** —
   `license: null` à l'API GitHub, aucun fichier LICENSE à la racine
   (contenu : `.github`, `.gitignore`, `README.md`, `leanpkg.toml`, `src`),
   dernier push 2021-12-24.
 - `chasenorman/lean-social-choice` et `DominikPeters/lean-social-choice`
-  (forks cités) : **introuvables** (HTTP 404 — dépôts supprimés ou renommés).
+  (forks cités) : **introuvables** (HTTP 404 — dépôts supprimés ou
+  renommés). La mention « License: MIT » ci-dessus ne peut plus être
+  vérifiée à la source pour eux non plus.
 - Fork restant (non cité ci-dessus) : `mdnestor/lean-social-choice`,
   `license: null`.
 
