@@ -53,15 +53,11 @@ déclarations** (`theorem`, `lemma`, `def`, `abbrev`, `structure`, `inductive`, 
 `instance`) entre chaque module canonique et l'ensemble des six fichiers `.lean` de `src/`
 amont ; les instances anonymes ne sont pas comptées.
 
-La mesure dépend de la grammaire de déclaration retenue. Celle utilisée ici reconnaît les
-déclarations précédées d'attributs et de modificateurs (`@[...]`, `private`, `protected`,
-`noncomputable`, `partial`) et ne développe pas les déclarations composites ; le comptage est
-fait sur le code hors commentaires. Une re-mesure indépendante du 2026-10-25, avec une
-grammaire qui ne développe pas ces attributs, donne **23/27**, **3/17** et **3/44** pour
-`Basic`, `Framework` et `Voting` au lieu de 25/29, 6/24 et 4/53 : la lecture — `Basic` et
-`Arrow` sont le portage, le reste est ajouté — est identique dans les deux variantes. C'est
-pourquoi la méthode est écrite ici : un chiffre de reprise n'est rejouable qu'avec la règle
-de comptage qui l'a produit.
+Le comptage est fait sur le code hors commentaires, en reconnaissant les déclarations
+précédées d'attributs et de modificateurs (`@[...]`, `private`, `protected`,
+`noncomputable`, `partial`) — un chiffre de reprise n'est rejouable qu'avec la règle de
+comptage qui l'a produit (une re-mesure à grammaire plus stricte donne 23/27, 3/17 et 3/44
+pour `Basic`, `Framework` et `Voting` : lecture inchangée).
 
 | Module canonique | Déclarations | Nom présent dans l'amont | Lecture |
 |---|---|---|---|
@@ -105,13 +101,12 @@ de `lean-toolchain` depuis l'absorption.
 
 ----------------------------------------------------
 
-État de licence des sources citées ci-dessus, **re-mesuré le 2026-10-25**
+État de licence des sources citées ci-dessus, mesuré le 2026-10-06
 (vérification firsthand, cf #14955) :
 
 - `asouther4/lean-social-choice` (amont principal) : **aucune licence** —
   `license: null` à l'API GitHub, aucun fichier LICENSE à la racine
-  (contenu : `.github`, `.gitignore`, `README.md`, `leanpkg.toml`, `src`),
-  dernier push 2021-12-24.
+  (contenu : `.github`, `.gitignore`, `README.md`, `leanpkg.toml`, `src`).
 - `chasenorman/lean-social-choice` et `DominikPeters/lean-social-choice`
   (forks cités) : **introuvables** (HTTP 404 — dépôts supprimés ou
   renommés). La mention « License: MIT » ci-dessus ne peut plus être
