@@ -287,6 +287,57 @@ echo "Test 7 : miroir disparu apres semis -- le boot suivant retire l'alternates
 )
 echo ""
 
+# --- Test 8 : alternates par l'ENVIRONNEMENT (mission ai-01 26/10, #18225) ---
+echo "Test 8 : GIT_ALTERNATE_OBJECT_DIRECTORIES -- posee avec miroir, absente sinon"
+(
+  # Le contrat mesure ici est celui du VRAI entrypoint : le bloc s'execute dans
+  # le processus qui lancera ENSUITE le runner, donc un `export` du bloc doit
+  # atteindre ce runner. `run_block` lance un fils -- un fils ne propage jamais
+  # son env vers le pere -- donc la sonde SOURCE le bloc dans un sous-shell et
+  # lit la variable au MEME endroit : c'est la seule forme qui mesure la
+  # propagation, pas la definition.
+  probe_env() {
+    (
+      . "$TEST_DIR/block.sh" >/dev/null 2>&1
+      printf '%s' "${GIT_ALTERNATE_OBJECT_DIRECTORIES-UNSET}"
+    )
+  }
+  # T8a : le Test 7 vient de supprimer le miroir -- cas absent d'abord, sans
+  # le recreer : la sonde mirror_present doit laisser la variable hors env
+  # (fail-open). C'est le controle OBLIGATOIRE de la mission : un chemin
+  # d'alternates absent fait echouer toute operation git (mesure :
+  # `unable to normalize alternate object path`), donc exporter sans sonde
+  # casserait les hotes sans miroir.
+  v="$(probe_env)"
+  if [ "$v" = "UNSET" ]; then
+    ok "T8a miroir absent : variable ABSENTE (fail-open, comportement d'avant #18225)"
+  else
+    ko "T8a miroir absent : variable posee a '$v' -- un hote sans miroir casserait"
+  fi
+  # T8b : miroir present -> la variable designe SES objets. Le bloc la construit
+  # depuis MIRROR_PATH lui-meme, donc l'egalite litterale ne depend pas de la
+  # forme du chemin sur cet hote.
+  make_mirror
+  v="$(probe_env)"
+  if [ "$v" = "$MIRROR/objects" ]; then
+    ok "T8b miroir present : variable posee au processus ($v)"
+  else
+    ko "T8b attendu '$MIRROR/objects', obtenu '${v:-vide}'"
+  fi
+  # T8c : une valeur DEJA presente n'est pas ecrasee -- le miroir est ajoute en
+  # TETE, l'existant est conserve en queue (un operateur qui poserait son
+  # propre alternates garde son reglage).
+  v="$(
+    GIT_ALTERNATE_OBJECT_DIRECTORIES=/tmp/autre-objects probe_env
+  )"
+  if [ "$v" = "$MIRROR/objects:/tmp/autre-objects" ]; then
+    ok "T8c valeur preexistante conservee (ajoutee en tete, pas ecrasee)"
+  else
+    ko "T8c attendu '$MIRROR/objects:/tmp/autre-objects', obtenu '${v:-vide}'"
+  fi
+)
+echo ""
+
 # --- Verdict agrege --------------------------------------------------------
 n_pass="$(grep -c '^PASS' "$RESULTS" || true)"
 n_fail="$(grep -c '^FAIL' "$RESULTS" || true)"
