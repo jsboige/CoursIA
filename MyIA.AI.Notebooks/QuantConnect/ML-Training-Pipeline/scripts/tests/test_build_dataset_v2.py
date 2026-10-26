@@ -245,13 +245,23 @@ class TestRegimeDecodeProvenance:
         assert manifest["regime_price_causal"] is True
 
     def test_builder_writes_provenance_manifest_on_disk(
-        self, synthetic_panier, tmp_path
+        self, synthetic_panier, tmp_path, monkeypatch
     ):
         """Cover the last mile: build_dataset_v2 -> _provenance.json on disk.
 
         The manifest builder is unit-tested on its own, but nothing held the
         write that follows the per-symbol loop (path, valid JSON, content).
+        The panier loader is stubbed on the synthetic fixture so the test
+        stays hermetic: a virgin CI runner has neither the local CSV cache
+        nor a network provider for SPY.
         """
+        monkeypatch.setattr(
+            sys.modules["build_dataset_v2"],
+            "load_panier_data",
+            lambda symbols, start, end, data_dir=None: {
+                "SPY": synthetic_panier["SPY"]
+            },
+        )
         out = tmp_path / "datasets"
         results = build_dataset_v2(
             symbols=["SPY"], regime_method="price", output_dir=out,
