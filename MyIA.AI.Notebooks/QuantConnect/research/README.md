@@ -31,6 +31,7 @@ Recherche indépendante utilisant des données locales (yfinance, pandas, sklear
 | `research_rl_ppo.ipynb` | Agent de trading PPO | (c) Standalone | yfinance |
 | `research_rl_reward_shaping.ipynb` | Reward shaping RL | (c) Standalone | yfinance |
 | `research_rl_tactical_overlay.ipynb` | Overlay tactique RL | (c) Standalone | yfinance |
+| `research_tom_effect.ipynb` | Effet turn-of-the-month (fin de mois) | (c) Standalone | yfinance |
 | `research_vrp_putwrite.ipynb` | Stratégie VRP put-write | (c) Standalone | yfinance |
 
 Sur l'ensemble de la série, **15 sont de type (c) standalone research** (s'exécutent localement avec `pip install yfinance pandas matplotlib scikit-learn` ; la famille M12-HF utilise des données tick BTC Bitstamp possédées agrégées en minute localement) et **4 sont de type (b) research lié au quantbook QC Cloud** (`research_btc_ml`, `research_m11ef_ensemble`, `research_m12_har_rv_j` exécutés, et la variante `_minute` qui instancie `QuantBook` sans outputs committés — à exécuter sur QC Cloud).
