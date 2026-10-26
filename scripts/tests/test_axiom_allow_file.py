@@ -213,6 +213,25 @@ def test_documentation_describes_normalized_matching(document):
     )
 
 
+def test_allow_list_header_does_not_claim_exact_string_matching():
+    """L'en-tête de l'allow-list ne doit pas contredire le gate.
+
+    L'en-tête renvoie à la documentation des ancres : si elle décrit un
+    matching normalisé, un « matching exact-string » dans le même en-tête
+    enverrait le lecteur vers une convention que le gate n'applique pas.
+    Le commentaire est ignore par ``parse_allow`` -- la correction est donc
+    sans effet sur le gate, et c'est bien le but : la phrase doit être vraie.
+    """
+    text = CONWAY_FILE.read_text(encoding="utf-8")
+    flattened = re.sub(r"\s+", " ", text)
+    assert not re.search(
+        r"matching exact-string|ni normalisation",
+        flattened,
+        flags=re.IGNORECASE,
+    ), "l'en-tête de l'allow-list affirme un matching que le gate n'applique pas"
+    assert "normalise les deux cotes" in flattened.lower()
+
+
 def _documented_count(text: str) -> int:
     """Exige une seule mention du compte, dans la forme documentaire attendue."""
     matches = DOC_COUNT_RE.findall(text)

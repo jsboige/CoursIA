@@ -4,7 +4,9 @@
 # Aucune entree joker : un nouveau native_decide dans le lake = un nouveau rouge
 # (regle no-wildcard du gate, Conway). L'entree Conway.Life.p4_base_exhaustive
 # porte le suffixe croix latine U+271D (✝) emis par Lean : il fait partie du
-# nom, ne pas le retirer (matching exact-string, docs/lean/lean-anchor-naming.md).
+# nom, ne pas le retirer (le gate normalise les deux cotes avant de comparer,
+# donc la decoration ne change pas l'ancre retenue --
+# docs/lean/lean-anchor-naming.md).
 # 77 entrees mesurees au move (le commentaire workflow disait 81 : derive
 # posterieure a #21833, jamais suivie).
 Conway.Life.hashlife_correct_implies_block_2._native.native_decide.ax_1_1
