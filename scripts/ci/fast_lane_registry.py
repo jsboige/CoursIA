@@ -2279,7 +2279,23 @@ TRANCHE25: list[Guard] = [
 #
 # Garde NATIF : aucun workflow d'origine, c'est precisement le defaut.
 #
-# Codes de retour : 0 = a jour, 1 = derive (BLOQUANT).
+# ARBITRAGE #22216 (review myia-ai-01 du 2026-10-26, forme alternative
+# « structure-seule ») : le `--check` integral en BLOQUANT rougissait toute PR
+# qui edite l'un des ~966 fichiers apparies sans regenerer le JSON -- chaque
+# preuve Lean d'un lake bilingue et chaque retouche de README pair aurait paye
+# un rouge, une regeneration et un re-push, sans aucun gain de traduction (la
+# regeneration prend acte de l'ecart, elle ne traduit pas), et des PRs
+# paralleles regenerant le meme fichier genere seraient entrees en conflit.
+# La garde se scinde donc en DEUX JAMBES :
+#   * `translation-golden-set-drift` (BLOQUANT) : `--check-structure` ne
+#     compare que les paires (kind, fr, en) -- elle ne rougit que les PRs qui
+#     ajoutent ou retirent une paire ;
+#   * `translation-golden-set-fingerprints` (ADVISORY) : `--check` integral,
+#     empreintes et orphelins compris -- la derive de contenu se signale, elle
+#     ne bloque pas.
+#
+# Codes de retour : 0 = a jour, 1 = derive (structure pour la jambe
+# bloquante, integral pour l'advisory).
 #
 # Cout mesure : **~1,0 s** sur l'arbre complet (483 paires, 3 familles), donc
 # la voie rapide -- qui paie deja son checkout -- le porte sans surcout
@@ -2310,8 +2326,25 @@ TRANCHE26: list[Guard] = [
             "scripts/ci/fast_lane.py",
             "scripts/ci/fast_lane_registry.py",
         ],
-        argv=["python", "scripts/translation/build_golden_set.py", "--check"],
+        argv=["python", "scripts/translation/build_golden_set.py",
+              "--check-structure"],
         blocking=True,
+        absorbed=True,
+    ),
+    Guard(
+        name="translation-golden-set-fingerprints (advisory, non-blocking)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "**/*.lean",
+            "**/*.md",
+            "translations/translation_golden_set.json",
+            "scripts/translation/build_golden_set.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=["python", "scripts/translation/build_golden_set.py", "--check"],
+        blocking=False,
         absorbed=True,
     ),
 ]
