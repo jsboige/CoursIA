@@ -57,7 +57,7 @@ Un cas intermédiaire : **Ch. 20 — Learning Probabilistic Models** (EM, appren
 
 ### Ce que le dépôt exécute au-delà de l'armature
 
-La carte ne doit pas se lire comme un plafond. Le dépôt exécute des sujets **hors AIMA 4e** : information intégrée (`IIT`, PyPhi, 93 carnets — l'IIT n'est pas dans le livre), émergence causale (`IIT/ICT-Series`), contrats intelligents (`SymbolicAI/SmartContracts`, 31), géométrie symbolique (`SymbolicAI/Geometry`), apprentissage symbolique (`SymbolicAI/SymbolicLearning`), trading quantitatif (`QuantConnect`, 220 — le plus grand consommateur de RL du dépôt), argumentation datée (`Argument_Analysis`). L'armature est un socle de référence, pas le périmètre du dépôt.
+La carte ne doit pas se lire comme un plafond. Le dépôt exécute des sujets **hors AIMA 4e** : information intégrée (`IIT`, PyPhi, 93 carnets — l'IIT n'est pas dans le livre), émergence causale (`IIT/ICT-Series`), contrats intelligents (`SymbolicAI/SmartContracts`, 31), géométrie symbolique (`SymbolicAI/Lean/Geometry`), apprentissage symbolique (`SymbolicAI/SymbolicLearning`), trading quantitatif (`QuantConnect`, 220 — le plus grand consommateur de RL du dépôt), argumentation datée (`Argument_Analysis`). L'armature est un socle de référence, pas le périmètre du dépôt.
 
 ## Ce que nos gates ne savent pas voir
 
