@@ -794,7 +794,13 @@ def test_is_scannable_matches_on_relative_parts_only(tmp_path):
 # lignee. Le compte MESURE sur l'arbre fusionne est 17 (test_full_repo_state
 # _passes_parity le rend : 'found 17, declared 16'). La constante suit la
 # mesure, pas le recit : aucune paire n'est ajoutee par cette fusion.
-EXPECTED_PAIR_COUNT = 18
+# 2026-10-24 (PR #22383) : la paire ANALYSE-12 FR/_en est ajoutee par cette PR.
+# La constante suit la mesure -- l'arbre au head porte 18 paires `_en` ;
+# le bump est conscient (#21391), il accompagne l'ajout, il ne le suit pas.
+# 2026-10-26 (PR #21509, resolution du merge) : la paire Complexity-03
+# FR/_en est ajoutee par cette branche ; l'arbre fusionne porte 19 paires
+# (mesure discover_pairs post-merge), les deux bumps sont conscients.
+EXPECTED_PAIR_COUNT = 19
 
 
 def _collect_parity_failures(repo_root: Path,
