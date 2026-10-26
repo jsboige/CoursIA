@@ -60,5 +60,5 @@ l'objet formel, il n'en est pas une transcription.
 `.github/workflows/lean-ci-matrix.yml`.
 
 **Réconciliation** : mesuré le 2026-10-25 contre `main` (`distinct_code_sorry = 0` sur
-4 fichiers, aucune preuve vacuous) ; relocalisé dans sa série consommatrice par #22008,
+l'ensemble du lake, aucune preuve vacuous) ; relocalisé dans sa série consommatrice par #22008,
 carnets présentés dans le README de la série par #22002.
