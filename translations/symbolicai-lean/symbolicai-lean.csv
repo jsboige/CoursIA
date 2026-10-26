@@ -53187,7 +53187,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-30-FormalGroups-Native.ipynb,5bcb47a3,mar
 Le kernel a chargé les quatre modules, inspecté les structures, recompilé les exemples additifs et demandé au noyau les dépendances axiomatiques de six déclarations. Le lake reste la source de vérité formelle ; ce compagnon fournit un parcours exécutable pour lire ses choix de types et ses invariants.
 
 Pour prolonger l'étude, consultez le [README du lake](formal_groups_lean/README.md) et ses modules bilingues. Les vecteurs de Witt, Cartier et Artin–Hasse constituent des extensions futures, non des résultats déjà couverts ici.",,,,,,,,f2a486af819636b0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c310059637,markdown,fr,89013c45005efdce,"# Lean-31 : Euler et Navier–Stokes — reproduction pinée, chaînes de preuve classées, chronologie et visualisations animées
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c310059637,markdown,fr,89013c45005efdce,"# Lean-31 : Euler et Navier–Stokes — reproduction pinée, chaînes de preuve classées, chronologie et visualisations animées
 
 **Navigation** : [Sommaire de la série](README.md) · [<< Précédent : Lean-30](Lean-30-FormalGroups-Native.ipynb) · [Suivant : Lean-33 >>](Lean-33-Distribution-Spaces.ipynb) · [Issue #15400](https://github.com/jsboige/CoursIA/issues/15400) · [Issue #16569](https://github.com/jsboige/CoursIA/issues/16569)
 
@@ -53201,7 +53201,7 @@ La leçon centrale du notebook tient en une phrase : *un kernel qui accepte un a
 
 > **Ce que ce notebook n'est pas** : ni un vendor du dépôt amont (aucun sous-arbre n'est copié), ni un verdict sur un problème ouvert, ni un récit d'autorité. Il rapporte qu'un artefact identifié par une empreinte a été accepté par deux noyaux en n'utilisant que des axiomes permis, il classe les maillons d'une chaîne de preuve, et il **reconstruit** un écoulement à titre didactique — il n'affirme **à aucun moment** que le problème du millénaire sur Navier–Stokes serait résolu — voir la section 4, qui énonce explicitement ce que le rapport **ne** permet **pas** de conclure, et la section 1, qui énonce ce que la communauté elle-même en a dit.
 ",,,,,,,,89013c45005efdce,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3101f2dde,markdown,fr,46eb21befaa313f5,"## Objectifs, prérequis et durée
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3101f2dde,markdown,fr,46eb21befaa313f5,"## Objectifs, prérequis et durée
 
 ### Objectifs d'apprentissage
 
@@ -53226,7 +53226,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3101f2dde,m
 
 > **Note de méthode** — Les maillons classés ici sont une **transcription statique** attribuée au checkout amont [`openai/NavierStokesAndEuler`](https://github.com/openai/NavierStokesAndEuler) au commit `8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538`. La cellule 2.1 n'ouvre aucun fichier Lean et ne vérifie pas les déclarations pendant l'exécution ; seul le contrôle du pin et des artefacts couverts par le rapport du harnais relève de la vérification mécanique. Les fichiers `Euler/*.lean` et `NavierStokes/*.lean` cités appartiennent au checkout amont hors de CoursIA, non à l'arbre de ce dépôt. La classification des maillons reste une lecture pédagogique à confronter à cette source, et non un résultat certifié par le rapport.
 ",,,,,,,,46eb21befaa313f5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c31029d851,markdown,fr,bbac4a86342a10e2,"## Plan
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c31029d851,markdown,fr,bbac4a86342a10e2,"## Plan
 
 1. [Septembre 2026 — la course Navier–Stokes et son arbitrage](#1-septembre-2026--la-course-navierstokes-et-son-arbitrage) — le récit : chronologie et drama
 2. [Lire l'écoulement : reconstruire le mécanisme pour l'œil](#2-lire-lécoulement-reconstruire-le-mécanisme-pour-lœil) — GIFs animés
@@ -53236,7 +53236,7 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c31029d851,m
 6. [Conclusion](#conclusion)
 7. [Annexes A–D — approfondissements optionnels](#annexes--approfondissements-optionnels) : [A — le gate en détail](#annexe-a--le-gate-de-reproduction-en-détail) · [B — construction partagée, options (C)/(D)](#annexe-b--construction-partagée-option-c-option-d) · [C — classer les maillons](#annexe-c--classer-les-maillons--comptage-et-énumération) · [D — re-dériver le verdict](#annexe-d--re-dériver-le-verdict-depuis-les-feuilles)
 ",,,,,,,,bbac4a86342a10e2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,0404f8cd,markdown,fr,1e71e456736ebbe0,"## 1. Septembre 2026 — la course Navier–Stokes et son arbitrage
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,0404f8cd,markdown,fr,1e71e456736ebbe0,"## 1. Septembre 2026 — la course Navier–Stokes et son arbitrage
 
 Les sections précédentes ont détaillé **ce que le harnais mesure**. Cette section raconte **comment ce résultat est arrivé et comment la communauté l'a reçu** — car la semaine du 7 au 14 septembre 2026 a été, dans les mots de Tristan Buckmaster, un « *Deep Blue–Kasparov moment* » pour les mathématiques, et son récit comporte des versions divergentes que ce notebook présente **côte à côte, attribuées, sans arbitrer**.
 
@@ -53330,10 +53330,10 @@ C'est la raison pour laquelle ce notebook existe sous cette forme : la position 
 1. Ce notebook **n'arbitre** ni la priorité, ni la question des données, ni la proximité des méthodes : il rapporte des déclarations publiques, attribuées et datées.
 2. La Clay n'a validé aucune solution : statut « actif », processus « *deliberately unhurried* ». Un gate vert sur l'artefact Lean (sections 1–5) ne dit **rien** de plus que ce que dit le noyau.
 3. Buckmaster lui-même le demande : « *If indeed an OpenAI model did close the gap to Navier-Stokes, that is a remarkable thing and it should be said loudly, by them, with the history intact.* » — l'histoire fait partie du résultat.",,,,,,,,1e71e456736ebbe0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,bb0f6804,markdown,fr,f37ac3979795b9fc,"### 1.8 Une frise animée de la chronologie
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,bb0f6804,markdown,fr,f37ac3979795b9fc,"### 1.8 Une frise animée de la chronologie
 
 La cellule suivante rend la chronologie **animée** : chaque battement de la frise avance d'un jour (ou d'une étape clé), du 15 août au 14 septembre 2026, en trois actes — **la lignée et le travail secret**, **la course**, **les annonces et l'arbitrage**.",,,,,,,,f37ac3979795b9fc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,a54f6e54,code,fr,70870d14b0ea19c9,"# Code 1.1 - Frise animee de la chronologie (aout-septembre 2026)
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,a54f6e54,code,fr,70870d14b0ea19c9,"# Code 1.1 - Frise animee de la chronologie (aout-septembre 2026)
 # Trois actes : lignage/travail secret, course, annonces et arbitrage.
 %matplotlib inline
 import matplotlib.pyplot as plt
@@ -53401,10 +53401,10 @@ with open(""ns_frise_2026.gif"", ""rb"") as fh:
     gif_bytes = fh.read()
 print(f""frise : {len(EVENTS)} evenements, {len(gif_bytes)/1024:.0f} Ko"")
 display(HTML(""<img src='data:image/gif;base64,"" + base64.b64encode(gif_bytes).decode() + ""' style='max-width:100%' alt='GIF anime'/>""))",,,,,,,,70870d14b0ea19c9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,fbb04ff6,markdown,fr,7a0149ce9bddc06f,"### Lecture du résultat — trois actes et non une annonce isolée : une décennie, neuf jours, puis l'arbitrage
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,fbb04ff6,markdown,fr,7a0149ce9bddc06f,"### Lecture du résultat — trois actes et non une annonce isolée : une décennie, neuf jours, puis l'arbitrage
 
 La frise rend visible ce que le tableau énonce : **trois actes**, pas une annonce isolée. Le premier acte s'étale sur plus d'une décennie (Luo–Hou, Córdoba–Martínez-Zoroa) et se termine par le mois d'août 2026 de Buckmaster–Alpöge ; le deuxième tient en **neuf jours** de course ; le troisième s'ouvre sur deux publications à moins de douze heures d'intervalle et se poursuit dans l'arbitrage institutionnel — EMS, Clay, AMS, Tao. Les couleurs portent les actes : la lignée (bleu), la course (orange), l'arbitrage (vert).",,,,,,,,7a0149ce9bddc06f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,e2f0be76,markdown,fr,f21dfc4907ee671c,"## 2. Lire l'écoulement : reconstruire le mécanisme pour l'œil
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,e2f0be76,markdown,fr,f21dfc4907ee671c,"## 2. Lire l'écoulement : reconstruire le mécanisme pour l'œil
 
 ### 2.1 Ce que les sources montrent, et ce que cette section ajoute
 
@@ -53420,7 +53420,7 @@ Cette section prend ces trois descriptions au mot et les **exécute** en Python,
 4. **l'annulation fine** — les quatre termes de la quantité de mouvement deviennent grands **et** se compensent, ne laissant qu'un forçage lisse borné pendant que $\|u\|_\infty \to \infty$ et que l'énergie reste finie — relié au critère BKM de la section 3.
 
 **Avertissement de portée** (le même que celui de la section 4) : ce qui suit est une **reconstruction didactique** des lois d'échelle et de la géométrie décrites publiquement, pas la solution d'OpenAI, pas sa preuve, et pas une vérification. Les paramètres ($h = 0{,}18$, etc.) sont ceux discutés par l'article Wolfram ; les champs ci-dessous sont des **modèles explicites** construits pour porter ces échelles, étiquetés comme tels. La valeur pédagogique est dans la structure — où la masse d'énergie va, pourquoi la viscosité perd, ce que « grand mais cancellé » veut dire.",,,,,,,,f21dfc4907ee671c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,0f577964,code,fr,2bb0827d46295bfb,"# Code 2.1 - Le modele axisymetrique : champ, profils, vocabulaire visuel
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,0f577964,code,fr,2bb0827d46295bfb,"# Code 2.1 - Le modele axisymetrique : champ, profils, vocabulaire visuel
 # Reconstruction didactique des lois d'echelle (Wolfram 28013, h=0.18) :
 #   u_theta ~ q^{-1/2-h} (fond), ondes ~ q^{-1/2-h/2}, pompage meridien incompressible.
 %matplotlib inline
@@ -53525,10 +53525,10 @@ plt.tight_layout()
 plt.show()
 print(f""h = {H_EXP}, v(t_demo) = {core_radius(t_demo):.4f}, ""
       f""||u_theta||_inf = {amp_theta(t_demo):.1f}"")",,,,,,,,2bb0827d46295bfb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,eb43b8c2,markdown,fr,76adc4e8cb0bb077,"### Lecture du résultat — figer le vocabulaire : pompe méridienne, échelle continue de u_theta, exposants -0,68 et -0,59
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,eb43b8c2,markdown,fr,76adc4e8cb0bb077,"### Lecture du résultat — figer le vocabulaire : pompe méridienne, échelle continue de u_theta, exposants -0,68 et -0,59
 
 Le triptyque fixe le vocabulaire de toute la section : **(a)** le plan méridien $(r, z)$ porte une pompe de circulation fermée qui se resserre — c'est elle qui spiralise les trajectoires vers l'intérieur ; **(b)** la vitesse azimutale $u_\theta$ vit en échelle continue, structurée par le rayon de cœur $v(t)$ (trait blanc) ; **(c)** en coordonnées réduites $q = r/v(t)$, le fond suit $q^{-1/2-h}$ et les pulsations d'onde $q^{-1/2-h/2}$ — les pentes guidees (pointillés) confirment les exposants $-1/2-h \approx -0{,}68$ et $-1/2-h/2 \approx -0{,}59$. Ce sont ces trois ingrédients que les quatre GIFs suivants mettent en mouvement.",,,,,,,,76adc4e8cb0bb077,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,73e8f7e0,code,fr,5e438926fbfae87a,"# Code 2.2 - GIF A : le vortex 3D ""spaghetti"" -- spirale interne + etirement axial
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,73e8f7e0,code,fr,5e438926fbfae87a,"# Code 2.2 - GIF A : le vortex 3D ""spaghetti"" -- spirale interne + etirement axial
 # Trajectoires de particules integrees dans le modele (Runge-Kutta 2),
 # colorees par vitesse de rotation (orange = rapide, teal = lent), camera tournante.
 # Plus : vecteurs de vitesse 3D du champ lui-meme (grille cylindrique figee),
@@ -53624,10 +53624,10 @@ with open(""ns_gif_3d_spaghetti.gif"", ""rb"") as fh:
     gif_bytes = fh.read()
 print(f""GIF A : {N_PART} trajectoires + {Rf_f.size} vecteurs de champ, {N_FRAMES} frames, {len(gif_bytes)/1024:.0f} Ko"")
 display(HTML(""<img src='data:image/gif;base64,"" + base64.b64encode(gif_bytes).decode() + ""' style='max-width:100%' alt='GIF anime'/>""))",,,,,,,,5e438926fbfae87a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,72e4db78,markdown,fr,57bf90eb3b42e1be,"### Lecture du résultat — cent quarante-quatre trajectoires, deux cent quarante vecteurs : la spirale interne et l'étirement axial
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,72e4db78,markdown,fr,57bf90eb3b42e1be,"### Lecture du résultat — cent quarante-quatre trajectoires, deux cent quarante vecteurs : la spirale interne et l'étirement axial
 
 Le GIF exécute la phrase même de l'annonce — « *spirals inward and gets increasingly elongated, like spaghetti* » — et la légende de sa figure : « *Orange marks faster angular rotation; teal marks slower rotation. The trajectories show inward spiraling and axial stretching.* » Quatre choses à regarder : les **144 trajectoires** se resserrent en spirale vers l'axe (la pompe méridienne de la figure (a) les aspire), elles **s'allongent axialement** (l'étirement $1 + 2{,}2\,t$ compense le resserrement radial — c'est ainsi que l'énergie peut rester finie pendant que la vitesse croît), la **couleur** code la vitesse angulaire en échelle continue orange/turquoise : plus on entre, plus on tourne vite ; et le **champ de vecteurs 3D** (240 flèches sur grille cylindrique fixe, même code couleur, longueur normalisée — la couleur porte la grandeur) montre la direction locale de la vitesse partout : rotation azimutale dominante, doublée du pompage vers l'axe. Attention à ce que ce GIF ne montre **pas** : il ne montre ni la preuve, ni la force — celles-ci viennent dans les GIFs C et D.",,,,,,,,57bf90eb3b42e1be,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,75895549,code,fr,5d6ec6ce6b26c603,"# Code 2.3 - GIF B : le plan meridien, deux lectures SEPAREES.
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,75895549,code,fr,5d6ec6ce6b26c603,"# Code 2.3 - GIF B : le plan meridien, deux lectures SEPAREES.
 # Principe revu : superposer pompe + rotation sur un meme champ de fleches
 # rendait les deux illisibles. On separe :
 #   (a) lignes de courant du pompage poloidal (u_r, u_z), colorees par |u_pol|
@@ -53697,10 +53697,10 @@ with open(""ns_gif_meridien.gif"", ""rb"") as fh:
     gif_bytes = fh.read()
 print(f""GIF B : {N_FR} frames, 2 panneaux (lignes de courant + carte u_theta), {len(gif_bytes)/1024:.0f} Ko"")
 display(HTML(""<img src='data:image/gif;base64,"" + base64.b64encode(gif_bytes).decode() + ""' style='max-width:100%' alt='GIF anime'/>""))",,,,,,,,5d6ec6ce6b26c603,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,1f664e7b,markdown,fr,dbd8daba5204de07,"### Lecture du résultat — deux panneaux séparés : lignes de courant de la pompe, carte de u_theta à norme fixée
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,1f664e7b,markdown,fr,dbd8daba5204de07,"### Lecture du résultat — deux panneaux séparés : lignes de courant de la pompe, carte de u_theta à norme fixée
 
 Le plan méridien est ici lu en **deux panneaux séparés** — c'est le principe revu : superposer la pompe et la rotation sur un même champ de flèches rendait les deux illisibles. **(a)** Les **lignes de courant** du champ poloïdal $(u_r, u_z)$ : les cellules de circulation fermées de la pompe apparaissent nettement, colorées par $|u_{pol}|$ (magma, norme fixée) — c'est elle qui aspire les particules vers l'axe. **(b)** La **carte de $u_\theta$** à norme **fixée** sur toute l'animation (turbo) : la rotation, concentrée dans le cœur, s'intensifie pendant que le trait blanc $v(t)$ **plonge vers l'axe** et que $\|u_\theta\|_\infty$ affichée en titre croît. La structure reste auto-similaire — le même dessin, de plus en plus petit et de plus en plus rapide : c'est précisément ce que « $q = r/v(t)$ avec $v(t) \to 0$ » signifie géométriquement.",,,,,,,,dbd8daba5204de07,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,69ecdfb6,code,fr,e45a44b8964e7074,"# Code 2.4 - GIF C : la cascade infinie de couches (programme Cordoba-Martinez-Zoroa)
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,69ecdfb6,code,fr,e45a44b8964e7074,"# Code 2.4 - GIF C : la cascade infinie de couches (programme Cordoba-Martinez-Zoroa)
 # Chaque couche est une solution non singuliere ; leur superposition auto-similaire
 # (rapport lambda entre couches consecutives) construit le profil final.
 # Representation : couches empilees en q log (vers l'axe), amplitudes en log.
@@ -53753,10 +53753,10 @@ with open(""ns_gif_cascade.gif"", ""rb"") as fh:
     gif_bytes = fh.read()
 print(f""GIF C : {N_LAYERS} couches, {len(gif_bytes)/1024:.0f} Ko"")
 display(HTML(""<img src='data:image/gif;base64,"" + base64.b64encode(gif_bytes).decode() + ""' style='max-width:100%' alt='GIF anime'/>""))",,,,,,,,e45a44b8964e7074,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,257e035e,markdown,fr,ac3797231b4914d2,"### Lecture du résultat — vingt-deux couches en cascade : aucune ne contient le blowup, la limite seule le porte
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,257e035e,markdown,fr,ac3797231b4914d2,"### Lecture du résultat — vingt-deux couches en cascade : aucune ne contient le blowup, la limite seule le porte
 
 Ce GIF visualise la phrase de Martínez-Zoroa rapportée par Quanta — « *an infinite sequence of ""layers,"" each of which is a non-singular solution […] combined in what Martínez-Zeroa calls an ""infinite cascade""* » — c'est-à-dire **la structure du programme Córdoba–Martínez-Zoroa** que l'EMS crédite comme fondement de l'annonce. Chaque couche (dégradé violet→jaune) est une bosse **régulière** localisée à $q \sim \lambda^n$ ($\lambda = 0{,}55$ ; ici **22 générations**) : chaque couche ajoutée est plus **petite** et plus **faible** ($\lambda^{n(1/2+h)}$). Deux fenêtres pour la lire : à gauche, l'empilement des couches vers l'axe (échelle log en $q$) — les générations descendent la cascade vers $q \to 0$, chacune plus petite et plus faible que la précédente ; à droite, les amplitudes $\lambda^{n(1/2+h)}$ en échelle log et leur somme cumulée (noir), qui converge. Aucune couche ne contient le blowup : toute somme finie est régulière, c'est la limite $n \to \infty$ qui porte la singularité. C'est la réponse à la question « comment une force lisse peut-elle produire une singularité ? » : pas d'un coup, mais **par cascade**.",,,,,,,,ac3797231b4914d2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,a849856b,code,fr,5a979a69334bfe31,"# Code 2.5 - GIF D : l'annulation fine -- grands termes, forçage lisse, energie finie, BKM
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,a849856b,code,fr,5a979a69334bfe31,"# Code 2.5 - GIF D : l'annulation fine -- grands termes, forçage lisse, energie finie, BKM
 # Gauche : lecture d'echelles a annulation exacte des ordres dominants (construction).
 # Droite : ||u||_inf, energie et critere BKM calcules NUMERIQUEMENT depuis le champ modele.
 %matplotlib inline
@@ -53836,10 +53836,10 @@ print(""verification numerique : pente log-log ||omega||_inf vs (T*-t), fenetre 
 print(f""||u||_inf : {u_inf_arr[0]:.2f} -> {u_inf_arr[-1]:.1f} ; energie : {E_arr[0]:.1f} -> {E_arr[-1]:.1f} ; ""
       f""integrale BKM cumulee : {bkm_arr[-1]:.1f} (divergente quand tau -> 0)"")
 display(HTML(""<img src='data:image/gif;base64,"" + base64.b64encode(gif_bytes).decode() + ""' style='max-width:100%' alt='GIF anime'/>""))",,,,,,,,5a979a69334bfe31,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,a0f640a0,markdown,fr,45cfce2e60b091ed,"### Lecture du résultat — les quatre termes divergent, leur somme reste bornée : pente mesurée -0,962, intégrale BKM 88,3
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,a0f640a0,markdown,fr,45cfce2e60b091ed,"### Lecture du résultat — les quatre termes divergent, leur somme reste bornée : pente mesurée -0,962, intégrale BKM 88,3
 
 Ce GIF est la traduction visuelle de la phrase centrale de l'annonce : « *the terms […] must both become big yet cancel in a precise way. This detailed balance leaves a smooth external force even as the velocity of the fluid grows without bound.* » **Panneau gauche** : les quatre termes de la quantité de mouvement (accélération, transfert $(u\cdot\nabla)u$, viscosité $\nu\Delta u$, gradient de pression) divergent tous en loi de puissance quand $T^* - t \to 0$ — et leur somme (noir épais) **reste bornée** : c'est le forçage $f$, lisse à support compact. **Panneau droit** : $\|u\|_\infty \to \infty$ (crimson) pendant que l'énergie du champ reste finie (bleu) — le « *shrinks while it speeds up in such a way that its energy still stays finite* » — et l'intégrale BKM $\int \|\omega\|_\infty\,dt$ diverge logarithmiquement (pointillé vert), qui est **exactement** le critère de la section 3 : Euler/Navier–Stokes ne peuvent perdre la régularité que par cette porte. Précision d'honnêteté : le panneau gauche est une **construction** — quatre termes divergents dont les ordres dominants s'annulent exactement, ne laissant qu'un forçage lisse borné ; c'est la *signification* de « cancel in a precise way », pas sa vérification. Le panneau droit, lui, est **calculé numériquement** depuis le champ modèle : la pente log-log de $\|\omega\|_\infty$ mesurée ressort à $\approx -0{,}96$ — l'ordre du $-1$ qu'impose le choix de $v(t)$, l'écart venant de la résolution finie de la grille au cœur au dernier instant — et l'intégrale BKM cumulée diverge sur toute la fenêtre calculée — **trois décennies** de $T^* - t$, de $0{,}3$ à $3\times10^{-4}$ (voir le `print`) : c'est précisément cette condition qui interdit la perte de régularité par une autre porte que celle-là. La vraie preuve reste le papier de 166 pages ; la vérification mécanique est l'affaire des sections 1 à 5.",,,,,,,,45cfce2e60b091ed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,20d56d45,code,fr,1a7988e00ed68f87,"# Code 2.6 - Profils radiaux quantitatifs : trois instantanes de la contraction
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,20d56d45,code,fr,1a7988e00ed68f87,"# Code 2.6 - Profils radiaux quantitatifs : trois instantanes de la contraction
 %matplotlib inline
 import numpy as np
 import matplotlib.pyplot as plt
@@ -53861,13 +53861,13 @@ axes[1].set_xlim(0.05, 25)
 plt.tight_layout() ; plt.show()
 print(""Ratio ||u||_inf(0.85) / ||u||_inf(0.1) ="",
       f""{amp_theta(0.85) / amp_theta(0.1):.1f}x ; v(0.85)/v(0.1) = {core_radius(0.85) / core_radius(0.1):.3f}"")",,,,,,,,1a7988e00ed68f87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,a549a1e3,markdown,fr,ca61d65a31f5ef22,"### Lecture du résultat — le test de cohérence de toute la reconstruction : les trois instantanés se superposent en variable réduite
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,a549a1e3,markdown,fr,ca61d65a31f5ef22,"### Lecture du résultat — le test de cohérence de toute la reconstruction : les trois instantanés se superposent en variable réduite
 
 La paire de panneaux est le **test de cohérence** de toute la reconstruction : à gauche, en rayon physique, les trois instantanes montrent un pic qui se resserre et grandit (le blowup en formation) ; à droite, en variable réduite $q = r/v(t)$, **les trois courbes se superposent** — c'est la définition opérationnelle de l'auto-similarité, et la pente $-1/2-h$ guide le plateau interne. Les chiffres du `print` résument : entre $t=0{,}1$ et $t=0{,}85$, la vitesse maximale croît d'un facteur mesurable pendant que le rayon de cœur est divisé — même dessin, échelle différente. C'est ce que la construction démontre jusqu'au bout ($t \to T^*$), et ce que le critère BKM convertit en divergence logarithmique.",,,,,,,,ca61d65a31f5ef22,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,nse-hdr-certificats,markdown,fr,bcdefddba32e8b4d,"## 3. Les certificats principaux — charger le rapport, lire la chaîne
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,nse-hdr-certificats,markdown,fr,bcdefddba32e8b4d,"## 3. Les certificats principaux — charger le rapport, lire la chaîne
 
 Le récit et les visualisations ci-dessus décrivent **ce qui a été prouvé** ; cette section montre **le certificat lui-même**. On installe d'abord le cadre d'exécution vérifié (contrat du harnais) puis on charge le rapport de reproduction réel — ensuite la chaîne Euler, maillon par maillon, jusqu'à sa figure de synthèse. Les murs de détail (les trois notions à ne pas confondre, le contrat champ par champ, les trois modes de résolution) sont en **annexe A**.",,,,,,,,bcdefddba32e8b4d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3106179e1,code,fr,0faae005855388c8,"# Code 3.1 - Cadre d'execution : contrat du harnais et resolution du rapport
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3106179e1,code,fr,0faae005855388c8,"# Code 3.1 - Cadre d'execution : contrat du harnais et resolution du rapport
 #
 # Aucune sortie n'est fabriquee : ce notebook consomme le rapport JSON du harnais
 # scripts/notebook_tools/nse_reproduction.py. Sources, dans cet ordre :
@@ -53999,7 +53999,7 @@ print(f""Challenges du contrat : {', '.join(sorted(EXPECTED_CHALLENGE_SHA256))}"
 print(f""Cibles d'axiomes      : {len(EXPECTED_AXIOM_DECLARATIONS)} declarations sondees"")
 print(f""Modules Solution      : {', '.join(f'{k}={v}' for k, v in sorted(CHALLENGE_SOLUTION_MODULES.items()))}"")
 print(f""Classes du protocole  : {', '.join(CLASS_ENUM)}"")",,,,,,,,0faae005855388c8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c310782843,markdown,fr,d1da624812e5a8fc,"### Lecture du résultat — un état de configuration, pas un résultat : les constantes du contrat transcrites pour être contredites
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c310782843,markdown,fr,d1da624812e5a8fc,"### Lecture du résultat — un état de configuration, pas un résultat : les constantes du contrat transcrites pour être contredites
 
 La cellule a produit un **état de configuration**, et rien d'autre : elle ne prétend pas avoir vérifié quoi que ce soit. Trois éléments méritent d'être relevés :
 
@@ -54014,7 +54014,7 @@ La cellule a produit un **état de configuration**, et rien d'autre : elle ne pr
 Le `pinned_sha` est affiché **en entier** : il est ensuite comparé au `observed_sha` par la re-dérivation, et une comparaison de tronçons masquerait précisément le désaccord qu'on cherche à voir.
 
 > **Note technique** : le caviardage (`sanitize`) s'applique à des *chaînes de diagnostic*. Il ne réécrit jamais une sortie de cellule : c'est la source qui ne doit pas laisser fuir un chemin d'installation dans un notebook publié.",,,,,,,,d1da624812e5a8fc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c31093a651,code,fr,176c344a2ca51d10,"# Code 3.2 - Chargement du rapport : variable d'environnement, fichier local, harnais
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c31093a651,code,fr,176c344a2ca51d10,"# Code 3.2 - Chargement du rapport : variable d'environnement, fichier local, harnais
 #
 # Le rapport est une ENTREE REQUISE. En son absence, la cellule leve une exception :
 # elle n'affiche pas de valeurs de remplacement. Un gate de securite ne se degrade pas
@@ -54127,7 +54127,7 @@ for name, gate in sorted(GATES.items()):
           f""empreinte={gate.get('challenge_hash_matches')} ""
           f""verdict={gate.get('semantic_verdict')}"")
 print(f""  all_verified (declare): {field(REPORT, 'all_verified')}"")",,,,,,,,176c344a2ca51d10,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3110cd65f,markdown,fr,6911a322806f0614,"### Lecture du résultat — le contrat effectif de cette exécution, et les deux champs qu'une re-dérivation oublie facilement
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3110cd65f,markdown,fr,6911a322806f0614,"### Lecture du résultat — le contrat effectif de cette exécution, et les deux champs qu'une re-dérivation oublie facilement
 
 Le bloc affiché est le **contrat effectif** de cette exécution : le pin observé, la toolchain effective, la concordance des pins de dépendances, les probes d'axiomes, l'hygiène `sorry` / `native_decide`, l'objet `integrity`, et pour chaque challenge la conjonction `verifie` avec les deux kernels, la concordance d'empreinte et le verdict sémantique. Ce sont ces valeurs — et non celles transcrites en 1.2 — qui portent l'évidence.
 
@@ -54139,7 +54139,7 @@ Deux champs méritent une attention particulière, parce qu'ils sont **faciles �
 | `integrity.verified` | le recensement externe des sources suivies par git : nombre de fichiers Lean suivis, `root_sha`, `sorry` de solution, `native_decide` **et** cohérence de complétude du relevé |
 
 > **Erreur à éviter** : lire les gates seuls. Un rapport dont les deux gates sont verts mais dont `dependency_pins_match` est faux décrit une reproduction qui n'en est pas une — les dépendances qui ont servi à accepter le challenge ne sont plus celles déclarées.",,,,,,,,6911a322806f0614,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c311160446,markdown,fr,749fe5826a4e2427,"### La chaîne Euler et le critère BKM
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c311160446,markdown,fr,749fe5826a4e2427,"### La chaîne Euler et le critère BKM
 
 #### Le critère BKM, énoncé et portée
 
@@ -54176,7 +54176,7 @@ exact finiteLifespan_contradiction_of_compact_vorticity lifespan h
 
 et `euler_breakdown_R3` applique `initialVelocityConditionDecay_of_compact` au datum avant de refermer la négation. Chaque maillon indique la déclaration et le fichier qui lui sont attribués pour que le lecteur puisse les contrôler dans le checkout pinné ; la cellule ne les vérifie pas elle-même. Deux maillons sont des **conversions de vocabulaire**, et non des objets ou théorèmes de contenu : c'est la classe `bridged`.
 ",,,,,,,,749fe5826a4e2427,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c31125cb1f,code,fr,571fd5336d674863,"# Code 3.3 - Transcription de la chaine Euler : classe, declaration et fichier
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c31125cb1f,code,fr,571fd5336d674863,"# Code 3.3 - Transcription de la chaine Euler : classe, declaration et fichier
 #
 # Les entrees ci-dessous ont ete transcrites depuis le checkout amont pine au SHA
 # declare en 1.1. Cette cellule ne lit pas les fichiers Lean et ne controle pas
@@ -54240,7 +54240,7 @@ for index, (name, classe, decl, fichier) in enumerate(EULER_CHAIN, start=1):
 classes_euler = sorted({classe for _n, classe, _d, _f in EULER_CHAIN})
 print(f""\nClasses presentes       : {', '.join(classes_euler)}"")
 print(f""Classe 'bridged' presente : {'bridged' in classes_euler}"")",,,,,,,,571fd5336d674863,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3113ad1ba,markdown,fr,906f5334807414d4,"### Lecture du résultat — dix maillons, deux ponts de vocabulaire, et aucun maillon amont nommé
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3113ad1ba,markdown,fr,906f5334807414d4,"### Lecture du résultat — dix maillons, deux ponts de vocabulaire, et aucun maillon amont nommé
 
 La chaîne compte dix maillons et fait apparaître deux régularités qu'il faut regarder en face plutôt que lisser.
 
@@ -54261,7 +54261,7 @@ Le second, `maximalVelocity_eq_of_compactCurlLocalUpgrade`, convertit entre deux
 Le troisième point explique la place de `curl` : conformément au critère BKM, c'est la vorticité qui porte le critère. Deux maillons en dépendent directement — `canonicalVorticityBall`, qui **localise** le support de la vorticité (et dont `canonical_vorticity_hasCompactSupport` tirera le support compact effectif), et `compactCurlLocalUpgrade`, qui convertit une **hypothèse** de curl compact initial en une **évolution ordinaire courte** exploitable. La contradiction finale consomme alors le critère BKM prouvé : `finiteLifespan_contradiction_of_compact_vorticity` borne la vorticité sur la boule par la borne donnée par le champ concurrent, puis contredit `vorticityIntegral_unbounded`.
 
 > **Note de lecture** : `canonicalVorticityBall` et `compactCurlLocalUpgrade` ont des rôles distincts qu'un nom seul confondrait. Le premier **déclare l'ensemble** où la vorticité vit ; le second **ferme une obligation analytique** (`CompactCurlLocalUpgrade`, définie dans `Euler/ComparatorEvolutionIdentification.lean`) que `ComparatorIdentification.lean` consomme ensuite comme hypothèse. C'est cette séparation entre un objet et l'obligation qu'il sert qui rend le maillon « conversion » visible.",,,,,,,,906f5334807414d4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,937c4936,markdown,fr,6a25098884edad1a,"### Le pont de vocabulaire -- l'endroit où une erreur se logerait
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,937c4936,markdown,fr,6a25098884edad1a,"### Le pont de vocabulaire -- l'endroit où une erreur se logerait
 
 Gorard décrit l'avantage de sa représentation intermédiaire par un argument qui porte directement sur les deux maillons `bridged` ci-dessus :
 
@@ -54271,7 +54271,7 @@ Gorard décrit l'avantage de sa représentation intermédiaire par un argument q
 
 C'est la distinction **généré / prouvé** que ce carnet tient à nommer. Les quatre maillons `proved` portent une dérivation qu'un noyau accepterait ; les deux maillons `bridged` portent une conversion **déclarée**, que la cellule ne vérifie pas elle-même -- elle transcrit, elle ne rejoue pas. Un lecteur qui veut savoir si le candidat est bien l'objet visé doit ouvrir le checkout pinné : la lecture du rapport ne le lui dira pas.
 ",,,,,,,,6a25098884edad1a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3114c6589,code,fr,a1db0f2bb08518fc,"# Code 3.4 - La chaine Euler en figure : chaque maillon colore par sa classe
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3114c6589,code,fr,a1db0f2bb08518fc,"# Code 3.4 - La chaine Euler en figure : chaque maillon colore par sa classe
 %matplotlib inline
 import matplotlib.pyplot as plt
 
@@ -54289,7 +54289,7 @@ print(""Repartition des classes :"",
       "", "".join(f""{classe}={compte[classe]}"" for classe in CLASS_ENUM if compte[classe]))
 print(""Legende : upstream = amont, local = declare, proved = prouve,"")
 print(""          bridged = conversion de vocabulaire, packaged = assemblage."")",,,,,,,,a1db0f2bb08518fc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c31157cbd6,markdown,fr,84655b59c05158e4,"### Lecture du résultat — la figure confirme la répartition : deux boîtes encadrent la partie prouvée, aucune boîte amont
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c31157cbd6,markdown,fr,84655b59c05158e4,"### Lecture du résultat — la figure confirme la répartition : deux boîtes encadrent la partie prouvée, aucune boîte amont
 
 La figure rend visible ce que le texte décrivait : la chaîne se lit de haut en bas, du datum initial (`initialDatum`) vers l'énoncé d'existence racine (`exists_…`), et la couleur de chaque boîte est sa classe. Trois régularités sautent aux yeux :
 
@@ -54325,7 +54325,7 @@ La répartition affichée en bas de cellule est la **même information**, en chi
 - **Dimension** : l'énoncé racine est `euler_breakdown_R3` — la dimension 3 est **dans le nom**, pas une généralisation.
 
 **Référence intra-carnet** : cellule « Le critère BKM, énoncé et portée » (énoncé BKM + table des déclarations), Code 3.3 (transcription de la chaîne, 10 maillons), « Lecture du résultat — dix maillons, deux ponts de vocabulaire » (lecture des 10 maillons, 2 `bridged`), « Le pont de vocabulaire » (pont de vocabulaire), Code 3.4 (figure), « Lecture du résultat — la figure confirme la répartition » (lecture de la figure). La pin `8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538` (Code 3.1 (cadre d'exécution)) et la toolchain `leanprover/lean4:v4.34.0-rc2` (idem) restent les sources de vérité pour la reproduction effective.",,,,,,,,84655b59c05158e4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c312549bfa,markdown,fr,16921040cbbcf286,"## 4. Portée, limites et non-claims
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c312549bfa,markdown,fr,16921040cbbcf286,"## 4. Portée, limites et non-claims
 
 Cette section est la plus importante du notebook, parce qu'elle énonce ce que **rien** de ce qui précède ne permet de conclure.
 
@@ -54381,7 +54381,7 @@ Les exécutions Comparator que le harnais relit ont tourné sous un sandbox noya
 | un échec local du sandbox | « cet hôte ne porte pas le mécanisme requis » — jamais « l'outil est intrinsèquement impossible » |
 | un `all_verified: false` | « le gate n'a pas été franchi **ici** », pas « le résultat est faux » |
 | un succès local | l'artefact est accepté **pour ces pins** — pas une validité générale, pas une preuve de nouveauté |",,,,,,,,16921040cbbcf286,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,04d9f1d8,markdown,fr,2a3534ddd63b38a1,"### Ce qu'un gate vert ne transmet pas
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,04d9f1d8,markdown,fr,2a3534ddd63b38a1,"### Ce qu'un gate vert ne transmet pas
 
 §4.2 refuse au gate trois choses -- la nouveauté de l'énoncé, sa valeur mathématique, et l'identification du candidat construit à l'objet visé. L'entretien auquel cette greffe se rattache pose la même question par l'autre bout : si une machine **résout** le problème, n'a-t-elle pas, par là même, **compris** le problème ?
 
@@ -54393,10 +54393,10 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,04d9f1d8,mar
 
 Les deux exigences sont donc **indépendantes**, et c'est ce que cette greffe ajoute à la lecture : la transmissibilité dont parle Gorard n'est pas un supplément de rigueur qui viendrait couronner un gate vert, c'est une seconde exigence qui peut rester insatisfaite alors que la première est pleinement satisfaite. Un artefact accepté par deux noyaux indépendants peut demeurer, pour qui veut le comprendre, un énoncé à reconstruire soi-même. C'est la raison pour laquelle les non-claims de ce carnet sont écrits **dans** le carnet : §4.1 dit ce qu'un gate vert établit, §4.2 et §4.3 disent ce qu'il n'établit pas, et le lecteur a les deux sous les yeux au même endroit.
 ",,,,,,,,2a3534ddd63b38a1,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3126ce56a,markdown,fr,4f699e815cdafb27,"## 5. Exercices
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3126ce56a,markdown,fr,4f699e815cdafb27,"## 5. Exercices
 
 Les trois exercices suivants prolongent le notebook sans le répéter : ils portent sur la **réutilisation** de ce qui a été démontré, pas sur sa recopie. Chacun s'appuie sur des objets déjà en mémoire et demande un travail que les cellules de démonstration n'ont pas fait.",,,,,,,,4f699e815cdafb27,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3127aff01,markdown,fr,9ca0b180b2fa7a58,"### Exercice 1 — Re-dériver le prédicat d'un gate à partir de ses quatre feuilles
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3127aff01,markdown,fr,9ca0b180b2fa7a58,"### Exercice 1 — Re-dériver le prédicat d'un gate à partir de ses quatre feuilles
 
 La cellule 5.1 a recalculé la conjonction **au niveau du rapport**, en prenant `gate.verified` comme donné. L'exercice demande de descendre d'un cran : reconstruire `verified` **depuis les feuilles** d'un enregistrement de gate.
 
@@ -54410,7 +54410,7 @@ La cellule 5.1 a recalculé la conjonction **au niveau du rapport**, en prenant 
 4. `hash_ok` — la concordance d'empreinte ; puis `verified` = conjonction des quatre.
 
 **Pourquoi c'est utile** : une fonction de ce type est ce qui permet de rejouer un rapport **ancien** contre les règles **courantes**, et donc de détecter qu'une règle de vérification a changé — ce qu'un champ de synthèse figé ne peut pas signaler. Attention à l'ordre : une feuille oubliée rend la fonction **plus permissive** que le harnais, ce qui est le sens de l'erreur le plus dangereux.",,,,,,,,9ca0b180b2fa7a58,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3128874cb,code,fr,a92c1acb35007452,"# Exercice 1 - Re-deriver le predicat d'un gate depuis ses quatre feuilles
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3128874cb,code,fr,a92c1acb35007452,"# Exercice 1 - Re-deriver le predicat d'un gate depuis ses quatre feuilles
 # Etape 1 : process_ok  = status == ""ok"" ET child_exit_code == 0 ET exit_code == 0 ET killed is False
 # Etape 2 : orphan_ok   = la postcondition d'orphelins est satisfaite
 # Etape 3 : semantic_ok = les deux kernels acceptent ET le verdict semantique est present
@@ -54432,7 +54432,7 @@ if exemple is not None:
     print(f""  champs disponibles : {sorted(GATES[exemple])}"")
     print(f""  retour de gate_verified : {gate_verified(GATES[exemple])}"")
 print(""Indice : aucune feuille ne se lit dans le champ de synthese `verified` du rapport."")",,,,,,,,a92c1acb35007452,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3129d184f,markdown,fr,b275f44728c62142,"### Exercice 2 — Classer des déclarations du source pinné
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3129d184f,markdown,fr,b275f44728c62142,"### Exercice 2 — Classer des déclarations du source pinné
 
 La section 4 a classé les maillons **des chaînes de preuve**. L'exercice demande d'appliquer la grille à des déclarations nommées, et d'expliciter **pourquoi** chacune tombe dans sa classe.
 
@@ -54454,7 +54454,7 @@ La section 4 a classé les maillons **des chaînes de preuve**. L'exercice deman
 3. signaler le cas le plus instructif : une déclaration peut être `local` **pour le dépôt qui la porte** alors qu'elle a été **adaptée d'une source externe**. C'est le cas de `InitialVelocityConditionDecay` : le dépôt en déclare sa propre version, dérivée de `FormalConjectures/Millenium/NavierStokes.lean`, et ne l'importe pas du module de défi.
 
 **Pourquoi c'est utile** : c'est en classant des déclarations réelles qu'on découvre que `local` ne veut pas dire « inventé ici » mais « **déclaré ici, sans contenu de théorème propre** ». Nommer ce glissement est ce qui distingue un census d'un inventaire.",,,,,,,,b275f44728c62142,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3130e874e,code,fr,47b18c20f2485b2a,"# Exercice 2 - Classer des declarations du source pine
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3130e874e,code,fr,47b18c20f2485b2a,"# Exercice 2 - Classer des declarations du source pine
 # Les quatre candidats sont des symboles reellement presents dans le depot pine.
 # Etape 1 : proposer UNE classe parmi {upstream, local, proved, bridged, packaged}
 #           pour chacun, en citant le critere de la grille qui l'emporte.
@@ -54482,7 +54482,7 @@ print(f""Candidats : {len(A_CLASSER)}"")
 for decl, fichier in A_CLASSER:
     print(f""  {decl:52s} {fichier}"")
 print(f""Retour de classify : {propose}"")",,,,,,,,47b18c20f2485b2a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3131cc8f6,markdown,fr,29e9aef5dd026189,"### Exercice 3 — Comparer les deux adaptateurs du Comparator
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3131cc8f6,markdown,fr,29e9aef5dd026189,"### Exercice 3 — Comparer les deux adaptateurs du Comparator
 
 Les options (C) et (D) sont deux **soumissions** du même projet au Comparator Navier–Stokes. Elles se ressemblent par leur forme — même longueur de chaîne, même énumération de conditions, même empaquetage — et diffèrent par leur **mécanisme d'exclusion**. L'exercice demande de mettre cette différence sous forme comparable.
 
@@ -54503,7 +54503,7 @@ Les options (C) et (D) sont deux **soumissions** du même projet au Comparator N
 3. dire lequel des cinq axes **décide** du cadre de bibliothèque à porter, et pourquoi c'est le troisième.
 
 **Pourquoi c'est utile** : deux énoncés qui se ressemblent attirent l'hypothèse qu'ils se démontrent pareil. L'exercice force à écrire la différence là où elle est vérifiable — dans le théorème d'exclusion — plutôt que de la résumer par « l'un est ℝ³, l'autre périodique ».",,,,,,,,29e9aef5dd026189,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3132f305f,code,fr,7c785c947dd1b767,"# Exercice 3 - Comparer les deux adaptateurs du Comparator (options C et D)
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3132f305f,code,fr,7c785c947dd1b767,"# Exercice 3 - Comparer les deux adaptateurs du Comparator (options C et D)
 # Etape 1 : construire le tableau, une ligne par axe, une colonne par option.
 # Etape 2 : ajouter une ligne ""ce qui serait faux si l'axe etait inverse"" -- en
 #           particulier pour l'axe 3 : que se passerait-il si l'option (D) consommait
@@ -54536,7 +54536,7 @@ print(f""Axes a couvrir : {len(AXES)}"")
 for index, axe in enumerate(AXES, start=1):
     print(f""  {index}. {axe}"")
 print(f""Retour de compare_options : {compare_options('C', 'D')}"")",,,,,,,,7c785c947dd1b767,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,5e03e0e4,markdown,fr,e049ea6eae15fb56,"## Conclusion
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,5e03e0e4,markdown,fr,e049ea6eae15fb56,"## Conclusion
 
 ### Ce que ce notebook a établi
 
@@ -54564,15 +54564,15 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,5e03e0e4,mar
 
 **Navigation** : [Sommaire de la série](README.md) · [<< Précédent : Lean-30](Lean-30-FormalGroups-Native.ipynb) · [Suivant : Lean-33 >>](Lean-33-Distribution-Spaces.ipynb) · [Issue #15400](https://github.com/jsboige/CoursIA/issues/15400)
 ",,,,,,,,e049ea6eae15fb56,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,nse-annexes-intro,markdown,fr,7d00a9ddc1081d45,"## Annexes — approfondissements optionnels
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,nse-annexes-intro,markdown,fr,7d00a9ddc1081d45,"## Annexes — approfondissements optionnels
 
 Les quatre annexes rassemblent les lectures détaillées retirées de la ligne principale : **A** le gate de reproduction en détail, **B** la construction partagée et les options (C)/(D), **C** le comptage et l'énumération des maillons, **D** la re-dérivation du verdict feuille par feuille. Elles s'exécutent dans l'ordre (D s'appuie sur les variables du gate chargé en section 3).",,,,,,,,7d00a9ddc1081d45,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3103e69c4,markdown,fr,31c593434e82cf76,"### Annexe A — Le gate de reproduction en détail
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3103e69c4,markdown,fr,31c593434e82cf76,"### Annexe A — Le gate de reproduction en détail
 
 Avant de parler de preuve, il faut savoir ce qui a été **mesuré**. Le pilote #15400 est encadré par un *gate de reproduction* : deux commandes Comparator exécutées séparément (Euler, puis Navier–Stokes), chacune devant rendre un verdict sans ambiguïté, avec les mêmes pins conservés avant et après. Tant que ce gate n'est pas franchi, aucune digestion n'est déclarée — c'est la règle que l'issue énonce en toutes lettres.
 
 Le harnais `nse_reproduction.py` existe pour rendre ce gate **falsifiable** plutôt que déclaratif. Il n'imprime pas un « succès » : il imprime un agrégat de faits vérifiables, chacun pouvant être faux indépendamment des autres. **Les deux gates sont verts** : les deux challenges sont acceptés par les deux kernels, sous les seuls axiomes permis.",,,,,,,,31c593434e82cf76,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c310463571,markdown,fr,023fe57c46f2519d,"#### A.1 Trois notions à ne pas confondre
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c310463571,markdown,fr,023fe57c46f2519d,"#### A.1 Trois notions à ne pas confondre
 
 | Notion | Question à laquelle elle répond | Où elle vit | Ce qu'elle ne dit pas |
 |---|---|---|---|
@@ -54583,10 +54583,10 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c310463571,m
 Le point décisif est le suivant : la vérification mécanique est une affirmation **sur un fichier**, pas sur les mathématiques. Elle dit — au mieux — « cet artefact précis, identifié par son empreinte, a été accepté par deux implémentations indépendantes du noyau, en n'utilisant que les axiomes permis ». Elle ne dit pas que l'exposition est convaincante, ni qu'un lecteur humain la suivrait, ni que l'énoncé est intéressant.
 
 Symétriquement, une exposition lumineuse ne dit rien de l'exécution : elle peut décrire une chaîne que le code n'établit pas. **Un notebook honnête doit tenir les deux séparés, et c'est ce que fait celui-ci.**",,,,,,,,023fe57c46f2519d,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3105887fc,markdown,fr,709d9a36d4c9d0a6,"#### A.2 Le contrat de preuve du harnais
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3105887fc,markdown,fr,709d9a36d4c9d0a6,"#### A.2 Le contrat de preuve du harnais
 
 La cellule suivante établit le **cadre d'exécution** : elle localise le dépôt en remontant l'arborescence (aucun chemin absolu n'est écrit dans la source), transcrit les **constantes du contrat** telles que le harnais les déclare, et définit un caviardage de tout chemin qui remonterait d'un diagnostic. Elle produit un état de configuration, pas un résultat.",,,,,,,,709d9a36d4c9d0a6,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c310833c17,markdown,fr,0c0b29a701af1bc2,"#### A.3 Chargement du rapport : les trois modes de résolution
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c310833c17,markdown,fr,0c0b29a701af1bc2,"#### A.3 Chargement du rapport : les trois modes de résolution
 
 Le rapport du harnais est un dictionnaire dont les champs se répartissent en cinq familles : **identité** (pin observé, toolchain, pins de dépendances observés, rev du noyau nanoda), **confinement** (version de `landrun` et probe fonctionnel), **hygiène logique** (probes d'axiomes, axiomes interdits, compteurs `sorry` et `native_decide`, sous-objet `integrity`), **verdicts par challenge** (un enregistrement `gate` par challenge), et un **champ de synthèse** `all_verified`.
 
@@ -54594,7 +54594,7 @@ Ce rapport est une **entrée requise**, pas une commodité. La cellule suivante 
 
 - un notebook qui remplacerait une vérification disponible par une valeur vide laisserait croire qu'un gate a été franchi sans qu'on puisse le montrer ;
 - le corollaire est assumé : **ce notebook ne s'exécute que là où le rapport existe**. C'est une propriété, pas une limite — rejouer les exécutions Comparator demande un hôte portant Landlock, et refuser de tourner ailleurs est exactement la discipline que l'issue #15400 impose au gate de reproduction.",,,,,,,,0c0b29a701af1bc2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c311653a5d,markdown,fr,64303592e8bfae21,"### Annexe B — Construction partagée, option (C), option (D)
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c311653a5d,markdown,fr,64303592e8bfae21,"### Annexe B — Construction partagée, option (C), option (D)
 
 #### B.1 Trois chaînes, et pourquoi il ne faut pas les confondre
 
@@ -54632,7 +54632,7 @@ Appeler « option C » la construction partagée serait donc une erreur : la con
 | Garantie d'indépendance | l'adaptateur conclut dans le vocabulaire `Comparator.*` sans nommer le module de défi | idem — en-tête : *« No result here uses any of the comparator's unproved statements »* |
 
 Ces chaînes sont dites **d'adaptation** — et non de copie — parce qu'un port dans un lake CoursIA demanderait de choisir un cadre d'accueil cohérent en versions, d'adapter les estimateurs EDP et leurs dépendances, et de poser un probe par symbole. Copier un sous-arbre n'est pas une option : la règle de l'issue l'interdit explicitement.",,,,,,,,64303592e8bfae21,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3117ba698,code,fr,466dd241ecbfb98c,"# Code B.1 - Trois chaines : construction partagee, option (C), option (D)
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3117ba698,code,fr,466dd241ecbfb98c,"# Code B.1 - Trois chaines : construction partagee, option (C), option (D)
 %matplotlib inline
 import matplotlib.pyplot as plt
 
@@ -54728,7 +54728,7 @@ print(""Aucun maillon 'bridged' dans ces deux decompositions : la conversion de"
 print(""vocabulaire est INTERNE aux adaptateurs, dont la conclusion est deja ecrite"")
 print(""dans le vocabulaire Comparator.* (contrairement a Euler, ou deux theoremes"")
 print(""de conversion nommes la portent)."")",,,,,,,,466dd241ecbfb98c,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c311831113,markdown,fr,c0049d8234ed0c46,"### Lecture du résultat — trois profils de classes : la construction partagée n'est pas « l'option C »
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c311831113,markdown,fr,c0049d8234ed0c46,"### Lecture du résultat — trois profils de classes : la construction partagée n'est pas « l'option C »
 
 Les trois chaînes ont des **profils de classes distincts**, et c'est cela qu'il faut retenir :
 
@@ -54781,7 +54781,7 @@ Quatre conséquences, qui sont l'apport propre de cette section :
   - option D : `¬ ∃ v p, Comparator.NavierStokesExistenceAndSmoothnessPeriodic ν u₀ f v p`.
 
 **Référence intra-carnet** : cellules §A.3 (Chargement du rapport) (table des options C et D, déclaration d'en-tête de `ComparatorSolution.lean`), Code B.1 (transcription des trois chaînes : `NS_SHARED`, `NS_CHAIN_C`, `NS_CHAIN_D`), « Lecture du résultat — trois profils de classes » (lecture des profils de classes). La pin `8937a8f4cbc7…` (Code 3.1 (cadre d'exécution)) et la toolchain `leanprover/lean4:v4.34.0-rc2` (idem) restent les sources de vérité pour la reproduction effective.",,,,,,,,c0049d8234ed0c46,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c31198580c,markdown,fr,12d6a3bf24444393,"### Annexe C — Classer les maillons : comptage et énumération
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c31198580c,markdown,fr,12d6a3bf24444393,"### Annexe C — Classer les maillons : comptage et énumération
 
 #### C.1 Les cinq classes, définitions opératoires
 
@@ -54807,7 +54807,7 @@ Le point sensible de la grille est la frontière `proved` / `bridged` / `package
 - un théorème qui **ne démontre rien de neuf** et se contente de ré-exposer un résultat existant sous un nom attendu est `packaged`.
 
 Les deux adaptations Navier–Stokes de `ComparatorSolution.lean` tombent dans la troisième catégorie : leur corps est un unique appel à l'adaptateur (`exact ComparatorBridge.navier_stokes_breakdown_R3 nu hnu`). Les compter comme `proved` gonflerait artificiellement la substance et masquerait que **le contenu est dans l'adaptateur**, pas dans la ré-exposition.",,,,,,,,12d6a3bf24444393,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3120af614,code,fr,5894e9550b0f04b4,"# Code C.1 - Comptage par classe, validation de l'enumeration, figure de synthese
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3120af614,code,fr,5894e9550b0f04b4,"# Code C.1 - Comptage par classe, validation de l'enumeration, figure de synthese
 %matplotlib inline
 import matplotlib.pyplot as plt
 
@@ -54864,7 +54864,7 @@ ax.set_title(""Distribution des classes par chaine"")
 ax.legend(loc=""lower right"", fontsize=8.5, framealpha=0.92)
 plt.tight_layout()
 plt.show()",,,,,,,,5894e9550b0f04b4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c312183399,markdown,fr,acda239a883a0ffc,"### Lecture du résultat — vingt-cinq maillons, aucun hors énumération, aucun sans fichier : une classification contredisible
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c312183399,markdown,fr,acda239a883a0ffc,"### Lecture du résultat — vingt-cinq maillons, aucun hors énumération, aucun sans fichier : une classification contredisible
 
 Le tableau et la figure donnent la **même mesure sous deux formes**. Ce qu'ils révèlent :
 
@@ -54882,7 +54882,7 @@ Les barres de la figure rendent visible le contraste de **profil** : partout dom
 **Ce que ce comptage ne prouve pas** : qu'une classe soit « mieux » qu'une autre. Un maillon `local` n'est pas un maillon faible — une chaîne de preuve a besoin d'objets bien posés. Le comptage sert à **localiser la substance**, pas à noter la chaîne.
 
 > **Le contrôle qui reste possible** : ouvrir chaque fichier cité et vérifier l'appartenance de classe — un `proved` qui porterait un `sorry`, un `bridged` qui démontrerait en fait un théorème de contenu, un `packaged` qui aurait un corps non trivial. Les fichiers sont nommés précisément pour que ce contrôle soit possible, et il peut **contredire** ce tableau.",,,,,,,,acda239a883a0ffc,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c3122221d6,markdown,fr,d2a8c7377846597a,"### Annexe D — Re-dériver le verdict depuis les feuilles
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3122221d6,markdown,fr,d2a8c7377846597a,"### Annexe D — Re-dériver le verdict depuis les feuilles
 
 #### D.1 Ne pas croire `all_verified`
 
@@ -54904,7 +54904,7 @@ Chaque `gate.verified` se décompose à son tour en quatre feuilles :
 | empreinte | l'empreinte du JSON de challenge égale l'empreinte attendue |
 
 La cellule suivante recalcule cette conjonction **à partir des feuilles** et la compare au champ déclaré. Elle exige exactement les deux gates attendus, vérifie les onze sondes axiomatiques, les quatre signatures de placeholders et la forme des empreintes annoncées.",,,,,,,,d2a8c7377846597a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c31235af03,code,fr,ac7eb0c8a80ce2df,"# Code D.1 - Re-derivation independante de la conjonction, feuille par feuille
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c31235af03,code,fr,ac7eb0c8a80ce2df,"# Code D.1 - Re-derivation independante de la conjonction, feuille par feuille
 #
 # Le rapport porte un champ de synthese `all_verified`. On ne le lit pas comme une
 # preuve : on recalcule la conjonction depuis les feuilles, puis on compare.
@@ -55044,7 +55044,7 @@ else:
     print(""    champ axiom_declarations ABSENT du rapport -- preuve nommee indisponible"")
 print(f""    chaque sonde porte exactement le trio permis :""
       f"" {field(REPORT, 'axioms_within_permitted')}"")",,,,,,,,ac7eb0c8a80ce2df,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/SymbolicAI/Lean/Lean-31-Euler-Navier-Stokes.ipynb,c31245ea99,markdown,fr,aadb2e0d7b12058b,"### Lecture du résultat — trois termes de la conjonction sont invisibles depuis les enregistrements de gate
+MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c31245ea99,markdown,fr,aadb2e0d7b12058b,"### Lecture du résultat — trois termes de la conjonction sont invisibles depuis les enregistrements de gate
 
 Trois enseignements de nature différente, qu'il faut garder séparés.
 
