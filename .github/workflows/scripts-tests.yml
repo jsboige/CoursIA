@@ -425,6 +425,10 @@ jobs:
           # cible pytest ci-dessous est une erreur de collecte au lieu
           # d'exercer le service pour de vrai.
           pip install open_spiel
+          # ortools: GameTheory/tests collecte aussi amd_synthesis.py (#22381),
+          # qui importe CP-SAT au niveau module. Reprendre le plancher declare
+          # dans GameTheory/requirements.txt pour eviter une erreur de collecte.
+          pip install "ortools>=9.11"
           # z3-solver: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/
           # test_z3_sudoku_core.py imports z3 at module level (#21100, pli 0
           # Origami). Without it the suite fails on ModuleNotFoundError
