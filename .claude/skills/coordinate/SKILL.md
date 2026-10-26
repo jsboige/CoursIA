@@ -140,7 +140,13 @@ Deux circuits asynchrones tournent **pendant** que le cycle merge. Ce sont deux 
 ### Phase 5 - Fin de cycle (obligatoire)
 
 1. **Commit + PR AVANT le rapport** — ne jamais annoncer un travail non commite.
-2. `[DONE]` lane-specific sur **les deux** dashboards (jamais un miroir copie-colle).
+2. `[DONE]` lane-specific sur **les deux** dashboards (jamais un miroir copie-colle). Chaque bilan **ouvre sur l'heure explicite du cycle**, relevee a la source au moment de la redaction -- jamais reprise d'un cycle precedent :
+
+   ```
+   Heure de cycle : 2026-10-26 14:37 UTC / 16:37 locale (UTC+02:00)
+   ```
+
+   L'heure locale porte **son decalage** (l'heure de la machine, plus le decalage -- `date -u` d'un cote, heure locale de l'autre), parce que c'est cette double lecture qui distingue « le cron a tire et n'a rien trouve a merger » de « le cron n'a pas tire » : sans elle, un bilan sans merge est **indistinguable** d'un cron muet (#14728, item 3). La duree totale du cycle (mesuree a l'entree et a la sortie de chaque phase) **accompagne** l'heure, elle ne la remplace pas.
 3. **Bloqueurs user** : restituer en un bloc les questions ouvertes du registre durable ; aucun re-poke intermédiaire ni liste parallèle ([user-blocker-signaling](../../rules/user-blocker-signaling.md)).
 4. MAJ `coordinator-durable-state.md` si l'etat durable a change (PR#/SHA ephemeres → dashboard, pas la memoire).
 5. **Une seule investigation par cycle, et en fin de session.** Toute question ouverte qui n'est **pas** un bloqueur de merge se note et attend le cycle suivant : mesurer un organe, verifier une provenance, instruire un doute de securite sont des gestes utiles et couteux, qui n'ont leur place qu'apres les dispatchs, les relances et la passe de merge. Une investigation qui deborde sur le cycle suivant est une investigation de trop -- elle a mange le temps des lanes. Si l'objet est reellement urgent, il devient un **grain dispatche**, pas une enquete du coordinateur.
