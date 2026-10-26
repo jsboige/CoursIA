@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 import bcrypt
+import os
 import sys
 
 # Utiliser le mot de passe du fichier .env
-password = "rZDS3XQa/8!v9L"
+password = os.getenv("COMFYUI_PASSWORD")
 
 # Générer le token bcrypt
 token = bcrypt.hashpw(password.encode(), bcrypt.gensalt())

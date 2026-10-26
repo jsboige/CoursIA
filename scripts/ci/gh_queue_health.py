@@ -29,11 +29,15 @@ Examples:
 from __future__ import annotations
 
 import argparse
+import base64
+import concurrent.futures
 import json
 import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+
+import yaml
 
 EXIT_OK = 0
 EXIT_GHOST = 1
@@ -61,6 +65,22 @@ KNOWN_ZOMBIE_RUN_IDS = frozenset({
 # A live run queued longer than this is no longer backlog: it is a candidate
 # zombie. Below it, a queued run is ordinary pool saturation, not drift.
 DEFAULT_STALE_HOURS = 24.0
+
+# Third permanent class (issue #20249): runs of an event that carries no PR
+# by construction, wedged in `queued`, so the pr-closed class can never
+# claim them. Measured shape: 4 "Linux runner starvation advisory" runs
+# created 2026-10-07 15:08-15:11Z, identical across 4 consecutive daily
+# snapshots (~12 days queued) -- the same day the coursia-linux labels
+# were re-posed (08:04Z), i.e. the pre-labelling admission limbo. The live
+# API measures their `event` as `workflow_run` (NOT `schedule` -- the
+# workflow NAME says "advisory", the chaining event does not), so the
+# event set below covers both chained and cron-triggered runs. A fifth run
+# of the same workflow drained in the meantime, so the class is defined
+# *structurally* (event set + age), never by run IDs: a run of such an
+# event stuck past 7 days is treated as an explained ghost; below it stays
+# live and the watch alarms on it as a candidate new zombie.
+SCHEDULED_ORPHAN_EVENTS = frozenset({"schedule", "workflow_run"})
+SCHEDULED_ORPHAN_HOURS = 168.0
 
 
 class InstrumentError(RuntimeError):
@@ -150,7 +170,9 @@ def fetch_pr_states(repo: str, branches: list[str]) -> dict[str, str]:
 
 
 def classify_runs(runs: list[dict], cutoff: datetime,
-                  pr_states: dict[str, str] | None = None) -> dict:
+                  pr_states: dict[str, str] | None = None,
+                  now: datetime | None = None,
+                  stale_runs_on: set[int] | None = None) -> dict:
     """Split queued runs into explained ghosts and live runs.
 
     A run is a ghost when its class is measured and permanent:
@@ -164,6 +186,26 @@ def classify_runs(runs: list[dict], cutoff: datetime,
       while its runs awaited admission, and the API refuses to cancel a
       run "that has not been queued yet"). Regardless of age: a closed PR
       can never be admitted.
+    * `scheduled-orphan` -- a run of an event that carries no PR by
+      construction (`SCHEDULED_ORPHAN_EVENTS`: `schedule`, `workflow_run`)
+      queued for more than `SCHEDULED_ORPHAN_HOURS` (issue #20249: the
+      2026-10-07 starvation advisories, event measured as `workflow_run`,
+      wedged in the label re-pose window). Structural (event set + age),
+      never by run IDs: a sibling run of the same workflow drained on its
+      own, so an ID set would drift. Only applied when `now` is provided; a
+      raw-shape replay without `now` keeps them live, and the prior-analysis
+      replay carries their `reason` through `_ghost_reason`.
+    * `stale-runs-on` -- the workflow file at the run's `head_sha` declared
+      a `runs-on` pool that no longer exists in the workflow file at the
+      `main` HEAD (a tranche of #17397 migrated the workflow to
+      `ubuntu-latest`, but the run was queued before the merge and is now
+      waiting for a self-hosted pool the workflow no longer requests).
+      Cancellation is safe: the API can cancel these runs without the
+      "has not been queued yet" 409 the pre-cutoff/pr-closed classes hit.
+      Unlike the other two, this class is NOT permanent by nature -- a
+      future re-migration back to self-hosted would re-admit them. The
+      watch only counts them when they coexist with a non-draining live
+      queue, and `--cancel` opts in explicitly.
 
     Anything else is live: an undrained live queue is the drift signal, not
     a classification failure. Entries carry `reason` (ghosts only), `event`
@@ -172,6 +214,7 @@ def classify_runs(runs: list[dict], cutoff: datetime,
     `_ghost_reason`, which this classifier honors as authoritative.
     """
     pr_states = pr_states or {}
+    stale_runs_on = stale_runs_on or set()
     ghosts: list[dict] = []
     live: list[dict] = []
     parse_failures: list[dict] = []
@@ -179,7 +222,8 @@ def classify_runs(runs: list[dict], cutoff: datetime,
     def entry(run: dict, reason: str | None = None) -> dict:
         out = {"id": run.get("id"), "name": run.get("name"),
                "created_at": run.get("created_at"), "html_url": run.get("html_url"),
-               "event": run.get("event"), "head_branch": run.get("head_branch")}
+               "event": run.get("event"), "head_branch": run.get("head_branch"),
+               "path": run.get("path")}
         if reason:
             out["reason"] = reason
         return out
@@ -202,6 +246,13 @@ def classify_runs(runs: list[dict], cutoff: datetime,
         elif (run.get("event") == "pull_request"
               and pr_states.get(run.get("head_branch")) == "closed"):
             ghosts.append(entry(run, "pr-closed"))
+        elif (now is not None
+              and run.get("event") in SCHEDULED_ORPHAN_EVENTS
+              and (now - created).total_seconds() / 3600.0
+              > SCHEDULED_ORPHAN_HOURS):
+            ghosts.append(entry(run, "scheduled-orphan"))
+        elif run.get("id") in stale_runs_on:
+            ghosts.append(entry(run, "stale-runs-on"))
         else:
             live.append(entry(run))
     return {"ghosts": ghosts, "live": live, "parse_failures": parse_failures}
@@ -359,6 +410,216 @@ def load_snapshot(path: Path) -> tuple[list[dict], list[dict]]:
                           "a {snapshot: {...}} envelope, or a prior analysis output")
 
 
+def _normalize_runs_on(value) -> list[str] | None:
+    """Normalize a workflow `runs-on` value to a list of label strings.
+
+    Returns None when the shape is unparseable (caller treats it as "unknown"
+    and skips the comparison). Accepts the four GitHub Actions shapes:
+
+    * scalar: `runs-on: ubuntu-latest` -> `["ubuntu-latest"]`
+    * list of scalars: `[self-hosted, linux, x64]` -> `["self-hosted", "linux", "x64"]`
+    * selector with labels: `{group: ..., labels: [a, b]}` -> `["a", "b"]`
+    * list of selectors (mixed): each item's `labels` are flattened
+
+    The default for jobs that omit `runs-on` is propagated from the workflow
+    top-level `runs-on` by the caller; this function is the per-job normalizer.
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        out: list[str] = []
+        for v in value:
+            if isinstance(v, str):
+                out.append(v)
+            elif isinstance(v, dict):
+                # A selector dict without a `labels` key is malformed --
+                # GitHub's syntax requires either `labels` (full form) or
+                # `group` (matched against registered groups), and the
+                # helper receives the full form. Reject as None so the
+                # caller skips the comparison rather than silently
+                # producing an empty label set.
+                labels = v.get("labels")
+                if not isinstance(labels, list):
+                    return None
+                for label in labels:
+                    if isinstance(label, str):
+                        out.append(label)
+            else:
+                return None
+        return out
+    if isinstance(value, dict):
+        labels = value.get("labels")
+        if not isinstance(labels, list):
+            return None
+        out = [label for label in labels if isinstance(label, str)]
+        return out
+    return None
+
+
+def _workflow_runs_on_fingerprint(yaml_text: str) -> frozenset | None:
+    """Return a fingerprint of a workflow's (job, runs-on) pairs.
+
+    Two workflows that share the same fingerprint declare the same runner
+    pools for the same jobs (order-independent). This is what the
+    stale-runs-on check compares: a run was queued against a workflow at
+    `head_sha`; that workflow's fingerprint must match the workflow's
+    fingerprint at the current main HEAD -- otherwise the run waits for a
+    runner pool the workflow no longer requests.
+
+    Returns None on parse failure. Returns an empty frozenset for a
+    workflow with no jobs (pathological but unobjectionable).
+    """
+    try:
+        data = yaml.safe_load(yaml_text)
+    except yaml.YAMLError:
+        return None
+    if not isinstance(data, dict):
+        return frozenset()
+    jobs = data.get("jobs")
+    if not isinstance(jobs, dict):
+        return frozenset()
+    default = _normalize_runs_on(data.get("runs-on"))
+    pairs: set[tuple[str, tuple[str, ...]]] = set()
+    for job_name, job_spec in jobs.items():
+        # A bare `job_name:` (no value) parses to None, not {}. Treat
+        # as an empty spec: inherit the default runs-on, no overrides.
+        spec = job_spec if isinstance(job_spec, dict) else {}
+        if "runs-on" in spec:
+            runs_on = _normalize_runs_on(spec["runs-on"])
+        else:
+            runs_on = default
+        if runs_on is None:
+            return None
+        pairs.add((str(job_name), tuple(runs_on)))
+    return frozenset(pairs)
+
+
+def fetch_workflow_runs_on_at_ref(repo: str, workflow_path: str,
+                                  ref: str) -> frozenset | None:
+    """Read .github/workflows/{path} at {ref} and return its runs-on fingerprint.
+
+    Returns None on any failure (API error, non-text payload, unparseable
+    YAML, missing jobs). The caller treats None as "unknown" and skips the
+    run -- never synthesizes a fingerprint, never guesses a runner pool.
+    """
+    endpoint = (f"repos/{repo}/contents/.github/workflows/{workflow_path}"
+                f"?ref={ref}")
+    try:
+        payload = _gh_api_json(endpoint)
+    except InstrumentError:
+        return None
+    if not isinstance(payload, dict):
+        return None
+    content_b64 = payload.get("content")
+    if not isinstance(content_b64, str):
+        return None
+    try:
+        text = base64.b64decode(content_b64).decode("utf-8")
+    except (ValueError, UnicodeDecodeError):
+        return None
+    return _workflow_runs_on_fingerprint(text)
+
+
+def detect_stale_runs_on(runs: list[dict],
+                         runs_on_at_ref) -> set[int]:
+    """Return the IDs of runs whose workflow `runs-on` drifted from main HEAD.
+
+    A run is stale when its workflow at `head_sha` has a different
+    (job, runs-on) fingerprint than the same workflow at the `main` ref
+    -- the run was queued against a runner pool the workflow no longer
+    requests, so the queue will never admit it.
+
+    `runs_on_at_ref(workflow_path, ref)` returns the fingerprint, or None
+    when the lookup failed for any reason. A None on either side skips
+    the run (no synthesis, no guess): a stale-runs-on verdict requires
+    a positive comparison on both sides.
+
+    The default top-level `runs-on` is inherited per-job by the fingerprint
+    helper, so workflows that lean on the default behave consistently.
+
+    Two caches: (path, head_sha) for the per-run lookups, and path for
+    the shared main-HEAD lookup. Without the head_sha component, runs
+    from the same workflow file but different commits would all share
+    one head fingerprint -- a measured miss on a tranche with multiple
+    open PRs pointing at distinct SHAs.
+    """
+    stale: set[int] = set()
+    head_cache: dict[tuple[str, str], frozenset | None] = {}
+    main_cache: dict[str, frozenset | None] = {}
+    for run in runs:
+        path = run.get("path")
+        head_sha = run.get("head_sha")
+        if not isinstance(path, str) or not isinstance(head_sha, str):
+            continue
+        run_id = run.get("id")
+        if not isinstance(run_id, int):
+            continue
+        head_key = (path, head_sha)
+        if head_key not in head_cache:
+            head_cache[head_key] = runs_on_at_ref(path, head_sha)
+        if path not in main_cache:
+            main_cache[path] = runs_on_at_ref(path, "main")
+        head_fp = head_cache[head_key]
+        main_fp = main_cache[path]
+        if head_fp is None or main_fp is None:
+            continue
+        if head_fp != main_fp:
+            stale.add(run_id)
+    return stale
+
+
+def cancel_run(repo: str, run_id: int) -> dict:
+    """Cancel a single queued run via the API. Returns a per-run verdict.
+
+    The API answers 202 on a successful cancellation and 409 on a run
+    that "has not been queued yet" (the pre-cutoff / pr-closed classes
+    also see this 409 -- the 202 vs 409 split is the only signal the
+    script has to know whether the cancellation was applied). The result
+    is reported, never interpreted: the caller decides what to do.
+    """
+    endpoint = f"repos/{repo}/actions/runs/{run_id}/cancel"
+    try:
+        proc = subprocess.run(
+            ["gh", "api", "-X", "POST", endpoint, "--silent"],
+            capture_output=True, text=True, encoding="utf-8", check=False,
+        )
+    except FileNotFoundError:
+        return {"ok": False, "status": "gh-missing", "error": "gh CLI not on PATH"}
+    if proc.returncode == 0:
+        return {"ok": True, "status": "cancelled"}
+    snippet = (proc.stderr or proc.stdout).strip()
+    return {"ok": False, "status": f"rc={proc.returncode}", "error": snippet[:200]}
+
+
+def cancel_runs_parallel(repo: str, run_ids: list[int],
+                         max_workers: int = 8) -> list[dict]:
+    """Cancel multiple runs concurrently. Returns per-run verdicts.
+
+    The 2026-10-15 measurement was ~2 s per cancellation sequentially; 8
+    workers keep the wall clock bounded while staying well under the API
+    secondary rate limits (1,000 requests per hour per token). The list is
+    shuffled lightly in spirit (as_completed order is non-deterministic by
+    design) -- no fairness guarantee, only that the slowest run bounds
+    the batch.
+    """
+    if not run_ids:
+        return []
+    out: list[dict] = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as ex:
+        future_to_id = {ex.submit(cancel_run, repo, rid): rid for rid in run_ids}
+        for fut in concurrent.futures.as_completed(future_to_id):
+            rid = future_to_id[fut]
+            try:
+                res = fut.result()
+            except Exception as exc:  # pragma: no cover -- defensive
+                res = {"ok": False, "status": "exception", "error": str(exc)}
+            res["id"] = rid
+            out.append(res)
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     source = parser.add_mutually_exclusive_group(required=True)
@@ -381,6 +642,23 @@ def main(argv: list[str] | None = None) -> int:
                              "the measurement verdict to actionable buckets -- see "
                              "watch_verdict(). Without --watch, the original four-"
                              "bucket measurement verdict is returned.")
+    parser.add_argument("--cancel", choices=["stale-runs-on"], default=None,
+                        help="detect-and-optionally-cancel a ghost class. "
+                             "`stale-runs-on` finds queued runs whose workflow "
+                             "no longer requests the runner pool they were "
+                             "queued against (a tranche of #17397). Requires "
+                             "--repo (live API), and is a no-op on --input "
+                             "snapshots that lack the embedded fingerprint. "
+                             "Dry-run by default; pass --apply to cancel.")
+    parser.add_argument("--apply", action="store_true",
+                        help="with --cancel: actually POST cancel requests "
+                             "(8 parallel workers, ~2 s/cancellation). "
+                             "Default is dry-run -- the affected IDs are "
+                             "reported, not touched.")
+    parser.add_argument("--cancel-workers", type=int, default=8,
+                        help="parallel workers for --apply (default 8). "
+                             "8 is below the API secondary rate limits and "
+                             "keeps the batch wall-clock bounded.")
     args = parser.parse_args(argv)
 
     try:
@@ -402,7 +680,53 @@ def main(argv: list[str] | None = None) -> int:
                 and run["created_at"] >= args.cutoff
             } - {None})
             pr_states = fetch_pr_states(args.repo, candidates) if candidates else {}
-        classification = classify_runs(raw_runs, cutoff, pr_states)
+        # Resolve the reference instant once, before classification. An
+        # explicit --now always wins (deterministic replay by instant). A
+        # live run resolves the wall clock. A snapshot replay without --now
+        # keeps now=None for classification: the scheduled-orphan age class
+        # (#20249) is inert offline, so the same snapshot renders the same
+        # verdict at D+0 and at D+10 -- the replay-fidelity property already
+        # guaranteed for parse_failures and _ghost_reason (#13966, #18215).
+        if args.now:
+            try:
+                now = datetime.fromisoformat(args.now.replace("Z", "+00:00"))
+            except ValueError as exc:
+                raise InstrumentError(f"invalid --now: {args.now!r}") from exc
+            if now.tzinfo is None:
+                now = now.replace(tzinfo=timezone.utc)
+        else:
+            now = None if args.input else datetime.now(timezone.utc)
+
+        # stale-runs-on detection: requires --repo (live API), and only
+        # for runs whose `path` (the workflow file) and `head_sha` are
+        # both set. The result is a set of run IDs routed to the ghost
+        # bucket by `classify_runs`. Cancellation is opt-in via --apply
+        # (dry-run by default).
+        stale_runs_on: set[int] = set()
+        cancel_report: list[dict] = []
+        if args.cancel == "stale-runs-on":
+            if args.input:
+                raise InstrumentError(
+                    "--cancel stale-runs-on requires --repo (live API); "
+                    "snapshot mode does not embed workflow fingerprints"
+                )
+            fingerprint_cache: dict[tuple[str, str], frozenset | None] = {}
+
+            def _runs_on_at_ref(path: str, ref: str) -> frozenset | None:
+                key = (path, ref)
+                if key not in fingerprint_cache:
+                    fingerprint_cache[key] = fetch_workflow_runs_on_at_ref(
+                        args.repo, path, ref)
+                return fingerprint_cache[key]
+
+            stale_runs_on = detect_stale_runs_on(raw_runs, _runs_on_at_ref)
+            if args.apply and stale_runs_on:
+                cancel_report = cancel_runs_parallel(
+                    args.repo, sorted(stale_runs_on),
+                    max_workers=max(1, args.cancel_workers),
+                )
+        classification = classify_runs(raw_runs, cutoff, pr_states, now=now,
+                                        stale_runs_on=stale_runs_on)
         # When the input was a prior analysis output, `classify_runs` cannot
         # re-derive the parse_failures from the synthesized runs -- they were
         # never serialized into the synthesized list. Merge the preserved
@@ -429,6 +753,17 @@ def main(argv: list[str] | None = None) -> int:
             "parse_failures": classification["parse_failures"],
         }
         rendered = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
+        if args.cancel == "stale-runs-on":
+            # Surface the cancel verdict regardless of --apply. A dry run
+            # is exactly as useful as an applied run when the goal is to
+            # know which IDs would be cancelled and whether the API
+            # accepted the request.
+            result["stale_runs_on"] = {
+                "detected": sorted(stale_runs_on),
+                "applied": args.apply,
+                "results": cancel_report,
+            }
+            rendered = json.dumps(result, indent=2, ensure_ascii=False) + "\n"
         if args.watch:
             # Watch mode replaces the four-bucket verdict with three
             # actionable buckets (OK / DRIFT / BROKEN) and corresponding
@@ -438,16 +773,13 @@ def main(argv: list[str] | None = None) -> int:
             # The watch alarms on live runs only when they are stale AND
             # unknown (#18131): the 2026-09-13 zombies and a saturated
             # pool's fresh backlog are reported, never alarmed on.
-            if args.now:
-                try:
-                    now = datetime.fromisoformat(args.now.replace("Z", "+00:00"))
-                except ValueError as exc:
-                    raise InstrumentError(f"invalid --now: {args.now!r}") from exc
-                if now.tzinfo is None:
-                    now = now.replace(tzinfo=timezone.utc)
-            else:
-                now = datetime.now(timezone.utc)
-            parts = split_live(classification["live"], now, args.stale_hours)
+            # The watch split measures report time: on a replay without an
+            # explicit --now the classification instant is None (frozen
+            # verdict above), so split_live ages runs against this
+            # rendering's wall clock.
+            parts = split_live(classification["live"],
+                               now or datetime.now(timezone.utc),
+                               args.stale_hours)
             result["stale_hours"] = args.stale_hours
             result["counts"].update({
                 "known_zombies": len(parts["known_zombies"]),

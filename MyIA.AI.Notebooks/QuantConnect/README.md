@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: QuantConnect
-pedagogical_count: 121
-breakdown: Python=62, projects=49, kelly_lean=6, ML-Training-Pipeline=4
-maturity: BETA=70, DRAFT=39, ALPHA=11, TEMPLATE=1
+pedagogical_count: 122
+breakdown: Python=63, projects=49, kelly_lean=6, ML-Training-Pipeline=4
+maturity: BETA=83, DRAFT=32, ALPHA=6, TEMPLATE=1
 -->
 
 > **Note éditoriale — counts kernels par sous-série** : Le marqueur CATALOG-STATUS agrégé ci-dessus reste **autoritatif** pour la décomposition par **sous-série** (Python / projects / ML-Training-Pipeline / kelly_lean). En revanche, pour les décomptes par **kernel** (Python vs Lean 4) **au sein** d'une sous-série — c'est-à-dire la répartition technique par interpréteur —, **ce README reste autoritatif** car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé. Cette granularité est documentée ici par lecture directe des `metadata.kernelspec.language` des notebooks :
@@ -13,9 +13,9 @@ maturity: BETA=70, DRAFT=39, ALPHA=11, TEMPLATE=1
 
 > - **`ML-Training-Pipeline/`** : 14/14 = **Python** (PyTorch / Stable-Baselines3 / Walk-Forward). **Drift constaté c.744** : 14 .ipynb sur disque vs 2 déclarés hub → écart +12, la sous-série a crû depuis la création du breakdown hub (ajouts RL/DL ladder). CATALOG-STATUS leaf ajouté en c.744.
 
-> - **`kelly_lean/`** : 7/7 = **Lean 4** (preuve formelle Kelly HMM-regime fee-aware) — *mono-paradigme Lean* : prouve les invariants algébriques du critère de Kelly pour le sizing position-aware des régimes HMM, complémentaire aux notebooks Python ML. **Note c.744** : « 7/7 » dans cette note désigne les **fichiers `.lean` du lake** (7 sources : `Kelly.lean` + lemmes), périmètre différent du marqueur hub (`kelly_lean=1` = 1 notebook Jupyter de référence). CATALOG-STATUS leaf (1 .ipynb) ajouté en c.744.
+> - **`kelly_lean/`** : 7/7 = **Lean 4** (preuve formelle Kelly HMM-regime fee-aware) — *mono-paradigme Lean* : prouve les invariants algébriques du critère de Kelly pour le sizing position-aware des régimes HMM, complémentaire aux notebooks Python ML. **Note c.744** : « 7/7 » dans cette note désigne les **fichiers `.lean` du lake** (7 sources : `Kelly.lean` + lemmes), périmètre différent du marqueur hub (`kelly_lean=1` = le notebook Jupyter de référence). CATALOG-STATUS leaf (1 .ipynb) ajouté en c.744.
 
-> - **`research/`** : 17 .ipynb (standalone research, yfinance/sklearn, hors QC Cloud) — **non-référencé dans le breakdown hub** (4 sous-séries agrégées : Python/projects/ML-Training-Pipeline/kelly_lean). CATALOG-STATUS leaf ajouté en c.744. Ne pas confondre avec [`Python/research/`](Python/research/README.md) : 2 notebooks **companions** appariés aux notebooks de cours QC-Py-19/QC-Py-22 (catégorie (b) du README Python), détaillés dans leur [README feuille](Python/research/README.md).
+> - **`research/`** : 17 .ipynb (standalone research, yfinance/sklearn, hors QC Cloud) — **non-référencé dans le breakdown hub** (4 sous-séries agrégées : Python/projects/ML-Training-Pipeline/kelly_lean). CATALOG-STATUS leaf ajouté en c.744. Ne pas confondre avec [`Python/research/`](Python/research/README.md) : les notebooks **companions** appariés aux notebooks de cours QC-Py-19/QC-Py-22 (catégorie (b) du README Python), détaillés dans leur [README feuille](Python/research/README.md).
 
 > - **`partner-course-quant-trading/`** : 7 .ipynb (cours partenaire sponsorisé QuantConnect Trading Firm) — **non-référencé dans le breakdown hub**. CATALOG-STATUS leaf ajouté en c.744.
 
@@ -54,7 +54,7 @@ Le matériel QuantConnect se répartit en **5 zones** — un visiteur y navigue 
 
 | Zone | Contenu | Entrée |
 |------|---------|--------|
-| **`Python/`** | 55 notebooks pédagogiques QC-Py-* (8 phases, ci-dessous) | [README Python](Python/README.md) |
+| **`Python/`** | Parcours pédagogique QC-Py-* (8 phases, ci-dessous) | [README Python](Python/README.md) |
 | **`projects/`** | 112 entrées brutes (101 stratégies déployables `main.py` + 11 autres : 5 recherches, 2 stubs, 2 templates, 2 BROKEN pédagogiques), statut best-guess inventorié | [docs/qc/qc-strategies-status.md](../../docs/qc/qc-strategies-status.md) · [README projects](projects/README.md) |
 | **`research/`** | Recherche autonome standalone (données locales, pas de QC Cloud requis) | [README research](research/README.md) |
 | **`partner-course-quant-trading/`** | Exemples de recherche avancée du cours partenaire | [README cours partenaire](partner-course-quant-trading/README.md) |
@@ -66,7 +66,7 @@ Pour l'inventaire et le statut (alive / superseded / needs-improvement / à conf
 
 ## Structure de la Série
 
-### Phase 1 : Fondations LEAN (4 notebooks, ~4.5h)
+### Phase 1 : Fondations LEAN (~4.5h)
 
 Maîtriser les bases de QuantConnect : architecture, lifecycle d'algorithme, gestion des données, workflow de recherche.
 
@@ -81,7 +81,7 @@ Maîtriser les bases de QuantConnect : architecture, lifecycle d'algorithme, ges
 
 ---
 
-### Phase 2 : Universe et Asset Classes (4 notebooks, ~5h)
+### Phase 2 : Universe et Asset Classes (~5h)
 
 Sélection dynamique d'univers, comprendre les particularités de chaque classe d'actifs (Equities, Options, Futures, Forex).
 
@@ -96,7 +96,7 @@ Sélection dynamique d'univers, comprendre les particularités de chaque classe 
 
 ---
 
-### Phase 3 : Trading Avancé et Risk Management (5 notebooks, ~6.5h)
+### Phase 3 : Trading Avancé et Risk Management (~6.5h)
 
 Gestion du risque professionnelle, types d'ordres avancés, analyse approfondie de backtests.
 
@@ -112,7 +112,7 @@ Gestion du risque professionnelle, types d'ordres avancés, analyse approfondie 
 
 ---
 
-### Phase 4 : Algorithm Framework (3 notebooks, ~4h)
+### Phase 4 : Algorithm Framework (~4h)
 
 Architecture modulaire QuantConnect pour stratégies scalables (Alpha, Portfolio Construction, Risk Management, Execution).
 
@@ -141,7 +141,7 @@ Le flux de données traverse cinq modules Découplables : l'**Universe** sélect
 
 ---
 
-### Phase 5 : Alternative Data et Préparation ML (3 notebooks, ~4h)
+### Phase 5 : Alternative Data et Préparation ML (~4h)
 
 Intégrer données alternatives (news, sentiment, fundamentals), préparer datasets pour Machine Learning.
 
@@ -155,7 +155,7 @@ Intégrer données alternatives (news, sentiment, fundamentals), préparer datas
 
 ---
 
-### Phase 6 : Machine Learning Traditionnel (3 notebooks, ~4h)
+### Phase 6 : Machine Learning Traditionnel (~4h)
 
 Appliquer ML classique au trading : classification directionnelle, régression pour prédiction de prix.
 
@@ -169,7 +169,7 @@ Appliquer ML classique au trading : classification directionnelle, régression p
 
 ---
 
-### Phase 7 : Deep Learning (4 notebooks, ~6h)
+### Phase 7 : Deep Learning (~6h)
 
 Deep Learning pour séries temporelles : LSTM, Transformers, PatchTST/iTransformer, Autoencoders.
 
@@ -184,7 +184,7 @@ Deep Learning pour séries temporelles : LSTM, Transformers, PatchTST/iTransform
 
 ---
 
-### Phase 8 : IA Avancée et Production (4 notebooks, ~5.5h)
+### Phase 8 : IA Avancée et Production (~5.5h)
 
 État de l'art : Reinforcement Learning, LLM pour trading signals, déploiement production, détection de régime de marché.
 
@@ -199,7 +199,7 @@ Deep Learning pour séries temporelles : LSTM, Transformers, PatchTST/iTransform
 
 ---
 
-### Compléments Reinforcement Learning Avancé (3 notebooks, ~4h)
+### Compléments Reinforcement Learning Avancé (~4h)
 
 Approfondissement RL au-delà du DQN de la Phase 8 : PPO, SAC/A2C, et application portfolio construction.
 
@@ -252,11 +252,11 @@ python -m ipykernel install --user --name=quantconnect --display-name "Python (Q
 
 ## Résumé de la Progression
 
-**Total cours linéaire** : **30 notebooks Python** (QC-Py-01 à QC-Py-28 + les 12b et 23b, ~34 heures de contenu) + **25 notebooks compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, **15** Cloud strategies QC-Py-Cloud-01..09, training QC-Py-30..32, foundation models QC-Py-23c, dataset workflow), plus **17 notebooks de recherche** standalone (`research_*.ipynb`, détaillés dans [research/README.md](research/README.md)).
+**Total cours linéaire** : la séquence QC-Py-01 à QC-Py-28 (+ les 12b et 23b, ~34 heures de contenu) **plus les compléments** (Phase 4b-RL avancé QC-Py-33..35, paper trading QC-Py-40..41, **15** Cloud strategies QC-Py-Cloud-01..09, training QC-Py-30..32, foundation models QC-Py-23c, dataset workflow), plus la recherche standalone (`research_*.ipynb`, détaillée dans [research/README.md](research/README.md)).
 
 **Répartition cours linéaire (Phases 1-8)** :
-- **18 notebooks non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
-- **11 notebooks ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM, Régime) : ~15h
+- **Partie non-ML** (Fondations, Universe, Trading Avancé, Framework, Alternative Data) : ~18h
+- **Partie ML/DL/AI** (Supervised Learning, Deep Learning, RL, LLM, Régime) : ~15h
 
 **Progression pédagogique** : Maîtriser les fondations QuantConnect **avant** d'aborder le Machine Learning.
 
