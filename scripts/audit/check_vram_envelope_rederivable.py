@@ -18,8 +18,12 @@ Trois familles de controles :
    `vram.util_max_pct`, et les trois `provenance.trace_bytes` /
    `trace_samples` / `trace_span_s`. Un champ qui derive rougit.
 3. **Echantillon ancre** : `vram.idle_mib` est compare a l'echantillon que le
-   `field_map` du manifeste designe (`idle_sample_index`, indice 2 dans les
-   deux runs : la valeur de repos de t=10 s), pas a une appartenance vague.
+   `field_map` du manifeste designe. L'indice est **lu dans le manifeste**
+   (`provenance.field_map.idle_mib` : « trace indice 2 (t=10 s) » dans les deux
+   runs), puis recoupe avec l'ancre attendue par l'organe : les deux doivent
+   designer le meme echantillon, sinon le controle echoue. Une ancre que le
+   manifeste ne nomme plus en clair echoue aussi — l'organe ne suppose pas
+   d'ancre a la place du manifeste.
 4. **Existence des echantillons cites** : chaque `profil_par_phase_mib[i]
    .plateau_mib` doit etre une valeur reellement presente dans la fenetre de sa
    phase. C'est la lecture arbitree en #22110 : le champ designe un echantillon
@@ -42,6 +46,7 @@ import argparse
 import csv
 import hashlib
 import json
+import re
 import statistics
 import sys
 from collections import Counter
@@ -56,10 +61,12 @@ TRACES = RESULTS / "traces"
 # son manifeste declare (`provenance.trace == "perdue"`) et qu'aucun organe ne
 # peut re-deriver.
 #
-# `idle_sample_index` n'est pas une commodite : c'est l'indice que le
-# `provenance.field_map` du manifeste lui-meme nomme (« trace indice 2 (t=10 s) »
-# dans 3D-01 comme dans 3D-02). L'organe verifie donc l'egalite a cet
-# echantillon au lieu de l'appartenance vague aux premiers echantillons -- qui
+# `idle_sample_index` n'est pas une commodite : c'est l'ancre ATTENDUE par
+# l'organe, celle que le `provenance.field_map` du manifeste designe (« trace
+# indice 2 (t=10 s) » dans 3D-01 comme dans 3D-02). L'organe LIT l'indice
+# dans le manifeste et le recoupe avec celui-ci : une divergence, ou une ancre
+# que le manifeste ne nomme plus en clair, fait echouer le controle. C'est ce
+# recoupement qui empeche l'appartenance vague aux premiers echantillons -- qui
 # laissait passer la valeur de rampe (2 912, indice 4 de 3D-01) pour un repos.
 RUNS = {
     "3d01": {
@@ -77,6 +84,30 @@ RUNS = {
 }
 
 PERIOD_TOLERANCE_S = 0.5
+
+# L'ancre de `idle_mib` est nommee en clair par le manifeste. La forme stricte
+# (« trace indice 2 ») est cherchee d'abord ; la forme large (« indice 2 ») sert
+# de repli. Si aucune ne donne d'indice, l'ancre est None et le controle
+# echoue : une ancre illisible ne vaut pas une ancre supposee.
+IDLE_ANCHOR_RE = re.compile(r"trace\s+indice\s+(\d+)", re.IGNORECASE)
+IDLE_ANCHOR_LOOSE_RE = re.compile(r"indice\s+(\d+)", re.IGNORECASE)
+
+
+def _idle_anchor(provenance: dict) -> int | None:
+    """Indice que `provenance.field_map.idle_mib` designe, lu dans le manifeste.
+
+    Retourne None si le manifeste ne nomme pas d'indice lisible : l'appelant
+    traite alors l'absence comme un echec, pas comme une ancre par defaut.
+    """
+    field_map = provenance.get("field_map") or {}
+    text = field_map.get("idle_mib")
+    if not isinstance(text, str):
+        return None
+    for pattern in (IDLE_ANCHOR_RE, IDLE_ANCHOR_LOOSE_RE):
+        match = pattern.search(text)
+        if match:
+            return int(match.group(1))
+    return None
 
 
 def load_trace(path: Path) -> list[tuple[float, int, int, int]]:
@@ -177,16 +208,39 @@ def check_run(key: str, cfg: dict) -> dict:
     record("peak_pct", peak_pct is not None and abs(peak_pct - declared_pct) <= 0.05,
            peak_pct, declared_pct, f"pic / {card} Mio, arrondi au dixieme")
 
-    idle_index = cfg["idle_sample_index"]
     idle = vram.get("idle_mib")
-    record(
-        "idle_mib",
-        idle_index < len(values) and values[idle_index] == idle,
-        values[idle_index] if idle_index < len(values) else "indice hors serie",
-        idle,
-        f"egalite a l'echantillon d'indice {idle_index} (ancre du field_map) ; "
-        f"serie : min={min(values)} mediane={statistics.median(values)}",
-    )
+    declared_anchor = _idle_anchor(provenance)
+    expected_anchor = cfg["idle_sample_index"]
+    if declared_anchor is None:
+        record(
+            "idle_mib",
+            False,
+            "ancre non lisible dans le field_map",
+            idle,
+            "provenance.field_map.idle_mib ne nomme aucun indice lisible ; "
+            "l'organe ne suppose pas d'ancre (fail-closed)",
+        )
+    elif declared_anchor != expected_anchor:
+        record(
+            "idle_mib",
+            False,
+            f"ancre field_map={declared_anchor}",
+            idle,
+            f"l'ancre que le field_map designe ({declared_anchor}) diverge de "
+            f"l'ancre attendue par l'organe ({expected_anchor})",
+        )
+    else:
+        in_range = 0 <= declared_anchor < len(values)
+        record(
+            "idle_mib",
+            in_range and values[declared_anchor] == idle,
+            values[declared_anchor] if in_range else "indice hors serie",
+            idle,
+            f"egalite a l'echantillon d'indice {declared_anchor}, lu dans "
+            f"provenance.field_map.idle_mib et recoupe avec l'ancre attendue "
+            f"({expected_anchor}) ; serie : min={min(values)} "
+            f"mediane={statistics.median(values)}",
+        )
 
     temp_max = max(temps)
     record("temp_max_c", vram.get("temp_max_c") == temp_max, temp_max, vram.get("temp_max_c"),

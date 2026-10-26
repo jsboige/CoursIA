@@ -163,7 +163,10 @@ refait ces calculs depuis les CSV et contrôle ce qui se re-dérive exactement :
 les deux empreintes (`trace_sha256`, `journal_sha256`), `samples`,
 `sample_period_s`, `trace_bytes`, `trace_samples`, `trace_span_s`, `peak_mib`,
 `peak_pct`, `temp_max_c`, `util_max_pct`, et `idle_mib` **à l'échantillon que
-le `field_map` désigne** (indice 2). Pour `profil_par_phase_mib[i].plateau_mib`
+le `field_map` désigne** (indice 2) : l'indice est **lu dans le manifeste**
+(`provenance.field_map.idle_mib`), puis recoupé avec l'ancre attendue par
+l'organe — une divergence, ou une ancre que le manifeste ne nomme plus en
+clair, fait rougir le contrôle. Pour `profil_par_phase_mib[i].plateau_mib`
 il vérifie la **présence** de la valeur citée dans la fenêtre de sa phase et
 imprime à côté la statistique du palier (n, min, max, médiane, mode) : il
 n'arbitre pas lequel des échantillons mérite le nom de palier, et deux valeurs
