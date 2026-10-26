@@ -3781,6 +3781,83 @@ theorem hashlife_correct_margin_of_union_periodic_singleton (c : MacroCell) (k :
   rw [hsplit]
   exact hcap_of_union_periodic_singleton hTi g₁ g₂ hfix₁ hcan hg₂ hspan t
 
+/-! ### Maillon 5 — vaisseaux en formation (union de deux vaisseaux synchrones)
+
+Les maillons 1 à 4 couvraient les unions **périodiques** (points fixes de
+`evolve T`). Un vaisseau n'est pas un point fixe : `evolve p g = shift v g`
+le déplace, et `hcap_of_union_periodic` ne s'y applique pas. Mais deux
+vaisseaux de **même période** `p` et de **même déplacement** `v` dont les
+trajectoires restent 3-séparées forment eux-mêmes un vaisseau : l'union
+réapparaît après `p` étapes, translatée de `v`. La capture par la voie
+vaisseau (`hcap_of_spaceship`) s'applique alors à l'union entière — deux
+gliders synchrones séparés par trois cellules sont couverts par la même
+preuve que chacun isolément. -/
+
+/-- **Périodicité dérivée de l'union de deux vaisseaux synchrones.** Deux
+    vaisseaux de même période `p > 0` et même déplacement `v`, dont les
+    trajectoires restent 3-séparées, forment une union qui est elle-même un
+    vaisseau de période `p` et de déplacement `v` — au sens fort de l'égalité
+    de listes exigée par `hcap_of_spaceship`, et **sans hypothèse de
+    canonicalité** (contrairement à `evolve_period_union` : les deux côtés du
+    pont `Canonical.ext` sont canoniques inconditionnellement —
+    `canonical_evolve_of_pos` à gauche, `canonical_shift` à droite). Les
+    membres par `mem_evolve_union_sep` puis les deux jambes vaisseau, la
+    translation absorbée par `mem_shift` des trois côtés. -/
+theorem evolve_ship_union {p : Nat} (hp0 : 0 < p) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (v : Int × Int) (hship₁ : evolve p g₁ = shift v g₁)
+    (hship₂ : evolve p g₂ = shift v g₂) :
+    evolve p (g₁ ++ g₂) = shift v (g₁ ++ g₂) := by
+  apply Canonical.ext (canonical_evolve_of_pos hp0 _) (canonical_shift v _)
+  intro q
+  rw [mem_evolve_union_sep g₁ g₂ hsep p q, hship₁, hship₂,
+    mem_shift v g₁ q, mem_shift v g₂ q, mem_shift v (g₁ ++ g₂) q]
+  exact List.mem_append.symm
+
+/-- **hcap des formations de vaisseaux — le maillon 5.** Pour deux vaisseaux
+    synchrones (même `p > 0`, même `v`), aux trajectoires 3-séparées, dont
+    chaque phase de l'union a un niveau de reconstruction divisible par `p`
+    et dont la vitesse vérifie `2·|v.i| ≤ p`, tout instant `t` de la
+    trajectoire de l'union est capturé : l'union est un vaisseau
+    (`evolve_ship_union`), et la capture par la voie vaisseau
+    (`hcap_of_spaceship`) s'y applique telle quelle. -/
+theorem hcap_of_spaceship_formation {p : Nat} (hp0 : 0 < p) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (v : Int × Int) (hship₁ : evolve p g₁ = shift v g₁)
+    (hship₂ : evolve p g₂ = shift v g₂) (hcan : Canonical (g₁ ++ g₂))
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (g₁ ++ g₂))).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true :=
+  hcap_of_spaceship (g₁ ++ g₂) hcan hp0 v
+    (evolve_ship_union hp0 g₁ g₂ hsep v hship₁ hship₂) hdiv hspd1 hspd2
+
+/-- **L3 clos pour les formations de vaisseaux synchrones.** Corollaire
+    d'assemblage miroir de `hashlife_correct_margin_of_union_periodic` : une
+    MacroCell dont la grille rendue à l'origine se scindle en deux vaisseaux
+    de même période `p > 0` et même déplacement `v`, aux trajectoires
+    3-séparées, satisfait l'égalité Hashlife à tout horizon `2^k` sous
+    `centralCorrect`. Deuxième cas L3 **composé** après les unions
+    périodiques : deux gliders synchrones séparés par trois cellules —
+    chaque vaisseau couvert seul l'était déjà, leur formation ne l'était
+    pas. -/
+theorem hashlife_correct_margin_of_spaceship_formation (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {p : Nat} (hp0 : 0 < p) (v : Int × Int)
+    (g₁ g₂ : Grid) (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (hship₁ : evolve p g₁ = shift v g₁) (hship₂ : evolve p g₂ = shift v g₂)
+    (hcan : Canonical (g₁ ++ g₂))
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (c.toGrid (0, 0)))).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_spaceship_formation hp0 g₁ g₂ hsep v hship₁ hship₂ hcan (hsplit ▸ hdiv) hspd1 hspd2 t
+
 /-! ### Tranche 15 — unions de périodes mixtes (voie mod, containment)
 
 Les maillons 2-4 de la chaîne des unions exigent que les deux parties partagent la
