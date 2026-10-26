@@ -65,7 +65,7 @@ du job CI**, pas seulement en local) :
 Les 16 paires sont des **fichiers différents** (16 md5 distincts sur 16 —
 aucun doublon périmé). Dans les logs du job, la collecte s'interrompt :
 
-```
+```text
 1 skipped, 2 warnings, 16 errors in 1.63s
 !!!!!!!!!!!!!!!!!!! Interrupted: 16 errors during collection !!!!!!!!!!!!!!!!!!!
 ```
@@ -96,15 +96,15 @@ peut pas échouer.
   chacune avec son rootdir donc son mode d'import — exactement ce que fait la
   voie rapide `ict-tests.yml`, qui en fait **deux jobs** (`ICT tests/ (58)` et
   `ICT ict/tests/ (69 package)`). Cette répartition est **mesurée verte en
-  CI** : run `40328940542` (2026-10-25), les deux jobs `success` ;
+  CI** : run `40328940542` (2026-10-26), les deux jobs `success` ;
 - **le code de sortie de l'étape vaut celui de la suite** (`exit 1`), pour que
   le critère d'acceptance #12856-4 (« la voie lente rougit sur un vrai
   défaut ») soit atteignable ;
 - **`timeout-minutes` de 15 à 60**, comme `ict-tests.yml` : durées mesurées
-  le 2026-10-26 (runs `40333089185` et `40328940542`), **7 min 54 s** pour la
-  jambe `tests/` et **10 min 26 s** pour la jambe `ict/tests/`, plus ~2 min
-  d'installation. À 15 min, le correctif de collecte aurait seulement
-  transformé le faux vert en timeout rouge.
+  le 2026-10-26 (runs `40333089185` et `40328940542`), **jusqu'à 7 min 54 s**
+  pour la jambe `tests/` et **jusqu'à 10 min 26 s** pour la jambe
+  `ict/tests/`, plus ~2 min d'installation. À 15 min, le correctif de collecte
+  aurait seulement transformé le faux vert en timeout rouge.
 
 **Le correctif de mode d'import aurait été un faux vert.** `--import-mode=importlib`
 sur la session unique rendrait la collecte propre, mais le `pytest.ini` central
@@ -247,7 +247,7 @@ mouvement de tranche 2** (même méthode, sur la tête de chaque PR) :
 **Le compte a augmenté, il n'a pas diminué** : de 73 à 93-97 (+27 % à +33 %)
 sur la même classe de PR, et il est insensible à la surface (4, 6 ou 10
 carnets donnent le même ordre de grandeur). La décomposition des noms, entre
-#12840 et #22196 : **54 ajoutés, 30 retirés**.
+les PR #12840 et #22196 : **54 ajoutés, 30 retirés**.
 
 **Pourquoi la tranche 2 n'a rien réduit, et pourquoi ce n'était pas un
 accident.** Le déclencheur `pull_request` de CodeQL **ne vit dans aucun
@@ -258,7 +258,7 @@ l'en-tête du workflow `codeql.yml` de #22553, et le contrôle positif du
 qui force la coordination »). Tant que la bascule n'est pas faite, **les
 analyses per-PR continuent de tirer** et le compte ne baisse pas.
 
-Une part de la hausse est en outre une ** granularité**, pas du travail
+Une part de la hausse est en outre une **granularité**, pas du travail
 supplémentaire : la voie rapide est passée d'un check agrégé
 (`Fast lane (ombre) -- 21 gardes, 1 checkout`) à un check **par garde**
 (`fast-lane (ombre): perimeter-review-guard`, `… : solution-leak-guard`,

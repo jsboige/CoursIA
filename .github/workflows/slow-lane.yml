@@ -111,9 +111,9 @@ jobs:
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     # 60 min, comme `ict-tests.yml` (voie rapide). Mesure firsthand le
     # 2026-10-26 (runs 40333089185 / 40328940542) : la jambe `tests/` dure
-    # 7 min 54 s et la jambe `ict/tests/` 10 min 26 s, **en plus** de
-    # l'installation (~2 min). A 15 min, le correctif de collecte aurait
-    # simplement transforme le faux vert en timeout rouge.
+    # jusqu'a 7 min 54 s et la jambe `ict/tests/` jusqu'a 10 min 26 s,
+    # **en plus** de l'installation (~2 min). A 15 min, le correctif de
+    # collecte aurait simplement transforme le faux vert en timeout rouge.
     timeout-minutes: 60
     steps:
       - name: Checkout main
