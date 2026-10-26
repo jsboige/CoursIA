@@ -1526,6 +1526,100 @@ def test_paths_multiple_prs_mixed(capsys):
     assert "BLOCKED" in captured.err
 
 
+# --- Le repli pointe sur le POOL, pas sur une issue (#16570 livree) --------
+#
+# Mesure du 2026-10-26 (lane myia-ai-01:CoursIA-2, signalee par la session
+# jumelle `coursia-2-25`) : le message de blocage de la jambe PR-ouverte se
+# terminait par « or pick another grain (#16570) ». #16570 est l'ISSUE qui a
+# signale cette jambe-meme ; elle est LIVREE (fix #16572 MERGED le
+# 2026-09-18, label `candidate-delivered`). Un worker qui suit le repli
+# atterrit donc sur un conteneur livre et peut y poser un claim.
+#
+# Le repli doit designer la SOURCE DU GRAIN -- le pool global -- pas un
+# issue historiquement liee.
+
+
+def _open_pr_other_lane(number=9012, path="scripts/check_lane_claim.py"):
+    """PR ouverte d'une AUTRE lane, touchant `path`."""
+    return {
+        "number": number,
+        "title": f"feat(pr-{number})",
+        "headRefName": f"feat/pr-{number}",
+        "body": ("Grain: MED/lean -- lane myia-po-2026:CoursIA-2 -- prev: ...\n"
+                 "See #16570"),
+        "files": [{"path": path}],
+        "additions": 3,
+        "deletions": 1,
+    }
+
+
+def test_le_repli_de_la_collision_pointe_sur_le_pool(monkeypatch, capsys):
+    """Le message nomme le pool global, et pas un numero d'issue.
+
+    Chemin ISSUE (`_run_check` avec `--paths` + la jambe PR-ouverte) : c'est
+    celui que la session jumelle a mesure sur #21100 -- `BLOCKED: OPEN PR(s)
+    of other lanes touch this call's --paths`.
+    """
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [_open_pr_other_lane()])
+    p = payload(number=21100)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2",
+                        my_paths=["scripts/check_lane_claim.py"],
+                        check_open_pr_paths=True)
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "BLOCKED: OPEN PR(s) of other lanes touch" in err
+    assert "pick another grain from the GLOBAL POOL" in err
+    assert "pick_idle_grain.py --belt" in err
+    # Le repli ne nomme PLUS l'issue livree comme destination.
+    assert "pick another grain (#16570)" not in err
+
+
+def test_le_repli_ne_designe_aucune_issue_comme_destination(monkeypatch, capsys):
+    """Controle generique : aucune forme « pick another grain (#N) » ne doit
+    survivre dans la sortie de la garde.
+
+    Un numero d'issue dans un renvoi de routage est un piege de lecture :
+    le worker qui le suit part sur l'issue, pas sur le pool. La forme
+    testee ici est la seule qui exprimait cette destination ; le test la
+    verrouille contre une regression sur N'importe quel numero.
+
+    Il couvre les DEUX chemins qui rendent un message de collision : le
+    chemin ISSUE (`_run_check`) et le chemin `--paths` seul
+    (`_run_check_paths`).
+    """
+    import re as _re
+
+    monkeypatch.setattr(clc, "_gh_open_prs_with_files",
+                        lambda: [_open_pr_other_lane()])
+    p = payload(number=21100)
+    rc = clc._run_check(p, "myia-po-2024:CoursIA-2",
+                        my_paths=["scripts/check_lane_claim.py"],
+                        check_open_pr_paths=True)
+    assert rc == 2
+    err = capsys.readouterr().err
+    routing = [m for m in _re.finditer(r"pick another grain[^\n]*", err)
+               if _re.search(r"#\d+", m.group(0))]
+    assert not routing, (
+        "un renvoi de routage ne doit pas designer un issue : "
+        + "; ".join(m.group(0) for m in routing))
+
+    # Le chemin `--paths` seul rend le meme genre de repli : il doit
+    # designer le pool, lui aussi.
+    rc = clc._run_check_paths(
+        paths=["scripts/check_lane_claim.py"],
+        my_lane="myia-po-2024:CoursIA-2",
+        prs=[_open_pr_other_lane(number=9013)],
+    )
+    assert rc == 2
+    err = capsys.readouterr().err
+    routing = [m for m in _re.finditer(r"pick another grain[^\n]*", err)
+               if _re.search(r"#\d+", m.group(0))]
+    assert not routing, (
+        "un renvoi de routage ne doit pas designer un issue : "
+        + "; ".join(m.group(0) for m in routing))
+
+
 # --- --open-prs-on mode (#13595) --------------------------------------------
 #
 # The `--paths` guard filters by lane: an OPEN PR of the caller's OWN lane
