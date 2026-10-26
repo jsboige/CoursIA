@@ -92,15 +92,15 @@ exécutées dans leur dossier de série (chemins de données relatifs), aucune c
 
 | Carnet | net10 | net11 (RC) | Delta | État |
 |---|---:|---:|---:|---|
-| ML-05-TimeSeries | 16.7 s | 16.2 s | −3 % | **27 OK / 0 erreur des deux côtés** — compat .NET 11 prouvée, delta < bruit wall-clock (n=1) : **nul mesuré** |
+| ML-05-TimeSeries-CSharp | 16.7 s | 16.2 s | −3 % | **27 OK / 0 erreur des deux côtés** — compat .NET 11 prouvée, delta < bruit wall-clock (n=1) : **nul mesuré** |
 | Infer-02-Gaussian-Mixtures | 24.4 s | 23.5 s | −3.7 % | idem — compat prouvée, pas de régression |
 
 Chemins exacts (les noms de fichiers ont été renommés après ces mesures : `ML-5-TimeSeries` →
-`ML-05-TimeSeries` le 10/10, `Infer-2-Gaussian-Mixtures` → `Infer-02-Gaussian-Mixtures` le
-19/10) : `MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries.ipynb` et
+`ML-05-TimeSeries-CSharp` le 10/10, `Infer-2-Gaussian-Mixtures` → `Infer-02-Gaussian-Mixtures` le
+19/10) : `MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb` et
 `MyIA.AI.Notebooks/Probas/Infer/Infer-02-Gaussian-Mixtures.ipynb`.
 
-**Re-mesure calme du 02/10 soir (#18878, artefacts préservés au gist)** : ML-05-TimeSeries 13,0 s (net10) → **9,4 s** (net11) ; Infer-02-Gaussian-Mixtures 21,0 s → 21,2 s. Les deux séries (charge CI du matin : −3 %/−3,7 % ; calme du soir : −28 %/+1 %) divergent plus entre elles qu'entre runtimes — la dispersion inter-séances domine, ce qui **confirme** la lecture ci-dessous : le wall-clock carnet mesure le lancement kernel + Roslyn, pas le delta runtime. Ce que la re-mesure prouve et préserve : compatibilité complète sous 11.0.0-rc.1 (cellules code toutes exécutées, aucune erreur, runtime imprimé dans l'artefact ; comptes exacts au manifeste du gist).
+**Re-mesure calme du 02/10 soir (#18878, artefacts préservés au gist)** : ML-05-TimeSeries-CSharp 13,0 s (net10) → **9,4 s** (net11) ; Infer-02-Gaussian-Mixtures 21,0 s → 21,2 s. Les deux séries (charge CI du matin : −3 %/−3,7 % ; calme du soir : −28 %/+1 %) divergent plus entre elles qu'entre runtimes — la dispersion inter-séances domine, ce qui **confirme** la lecture ci-dessous : le wall-clock carnet mesure le lancement kernel + Roslyn, pas le delta runtime. Ce que la re-mesure prouve et préserve : compatibilité complète sous 11.0.0-rc.1 (cellules code toutes exécutées, aucune erreur, runtime imprimé dans l'artefact ; comptes exacts au manifeste du gist).
 
 Lecture honnête : le wall-clock carnet est dominé par le démarrage kernel + Roslyn ; un gain
 runtime de −10 % sur les seules cellules de calcul serait invisible ici. Les bancs ci-dessus
@@ -133,7 +133,7 @@ pour le RC). Build de kernel identique partout — la seule variable est le runt
 
 | Carnet | .NET 9 | .NET 10 | .NET 11 (rc.1) | Contrôle canon* |
 |---|---:|---:|---:|---:|
-| ML-05-TimeSeries | 11,37 s | 11,65 s (+2,5 %) | 12,48 s (+9,8 %) | 11,14 s |
+| ML-05-TimeSeries-CSharp | 11,37 s | 11,65 s (+2,5 %) | 12,48 s (+9,8 %) | 11,14 s |
 | Infer-02-Gaussian-Mixtures | 23,98 s | 25,79 s (+7,6 %) | 26,52 s (+10,6 %) | — |
 
 \* contrôle = canon 1.0.712001 sous .NET 10, contre 11,65 s pour l'instrument 617701 même
@@ -280,7 +280,7 @@ calme ». Cette section est la réponse mesurée à ce drapeau.
 
 - **Logs BDN — 45 = 5 bancs × 3 passes × 3 runtimes** : gist [d434d4dc](https://gist.github.com/jsboige/d434d4dc48db03a37bab05259921d4be) (secret, accessible par lien), manifeste `SHA256SUMS.txt` inclus, empreinte SHA-256 du manifeste `47951d824eccec4e0974142405734623c332b2ae79dd74bd9a234bbc3514c052`. Chaque log porte son header `// Runtime=.NET X.Y.Z` (9.0.20 / 10.0.12 / 11.0.0) ; l'interleave des passes se lit sur les timestamps consécutifs — ex. MGS : passe 1 à 12:23:05/08/11, passe 2 à 12:24:18/21/23, passe 3 à 12:24:48/51/53.
 - **SHA exacts des bancs mesurés** (branche `feature/benchmarkdotnet-baseline`, clones depth-1) : MetaGeneticSharp `365a4fb2384f` · Z3.Linq `b804c30859e9` · Automata `abaabd1b6518` · semantic-fleet `ff0dfb47c052` · Argumentum `709e6d05f6c2`.
-- **Traces carnets (volet wall-clock) — re-mesurées et préservées (#18878, 02/10 soir, machine calme)** : 4 artefacts exécutés versés dans le même gist [d434d4dc](https://gist.github.com/jsboige/d434d4dc48db03a37bab05259921d4be). Chaque artefact porte une **cellule probe** qui imprime le runtime effectif (`.NET 10.0.12` / `.NET 11.0.0-rc.1.26425.128` — les versions exactes des Conditions), toutes ses cellules code exécutées (ML-5 : **17/17** ; Infer-2 : **28/28**) et **0 erreur**. Empreintes SHA-256 : ML-5 net10 `8bf83441ef846b7e` · net11 `acf51fa1c1e4ff81` · Infer-2 net10 `e755acaadb67fe1c` · net11 `fb832217406e6bfa` (complets dans `SHA256SUMS-notebooks.txt` du gist). Les identifiants d'artefact `ML-5` / `Infer-2` sont ceux du dépôt du 02/10, **antérieur** aux renommages de fichiers du 10/10 et du 19/10 : ils désignent les mêmes deux carnets que `ML-05-TimeSeries` et `Infer-02-Gaussian-Mixtures` dans le tableau ci-dessus.
+- **Traces carnets (volet wall-clock) — re-mesurées et préservées (#18878, 02/10 soir, machine calme)** : 4 artefacts exécutés versés dans le même gist [d434d4dc](https://gist.github.com/jsboige/d434d4dc48db03a37bab05259921d4be). Chaque artefact porte une **cellule probe** qui imprime le runtime effectif (`.NET 10.0.12` / `.NET 11.0.0-rc.1.26425.128` — les versions exactes des Conditions), toutes ses cellules code exécutées (ML-5 : **17/17** ; Infer-2 : **28/28**) et **0 erreur**. Empreintes SHA-256 : ML-5 net10 `8bf83441ef846b7e` · net11 `acf51fa1c1e4ff81` · Infer-2 net10 `e755acaadb67fe1c` · net11 `fb832217406e6bfa` (complets dans `SHA256SUMS-notebooks.txt` du gist). Les identifiants d'artefact `ML-5` / `Infer-2` sont ceux du dépôt du 02/10, **antérieur** aux renommages de fichiers du 10/10 et du 19/10 : ils désignent les mêmes deux carnets que `ML-05-TimeSeries-CSharp` et `Infer-02-Gaussian-Mixtures` dans le tableau ci-dessus.
 
 ## Reproduire
 

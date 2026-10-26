@@ -145,28 +145,28 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | # | Notebook | Maturité | Exécutable |
 |---|----------|----------|------------|
 | 1 | [ML-01 (Python) : Introduction au Machine Learning avec…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-Python.ipynb) | BETA | Oui |
-| 2 | [ML-01 : Introduction au Machine Learning avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction.ipynb) | BETA | Oui |
-| 3 | [ML-02 : Préparation des données et ingénierie des…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data%26Features-Python.ipynb) | BETA | Oui |
-| 4 | [ML-02 : Préparation des données et ingénierie des…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data%26Features.ipynb) | BETA | Oui |
-| 5 | [ML-03 (Python) : Entraînement et AutoML](../../MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement%26AutoML-Python.ipynb) | BETA | Oui |
-| 6 | [ML-03 : Entraînement et AutoML](../../MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement%26AutoML.ipynb) | BETA | Oui |
+| 2 | [ML-01 : Introduction au Machine Learning avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-01-Introduction-CSharp.ipynb) | BETA | Oui |
+| 3 | [ML-02 : Préparation des données et ingénierie des…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data-Features-Python.ipynb) | BETA | Oui |
+| 4 | [ML-02 : Préparation des données et ingénierie des…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-02-Data-Features-CSharp.ipynb) | BETA | Oui |
+| 5 | [ML-03 (Python) : Entraînement et AutoML](../../MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement-AutoML-Python.ipynb) | BETA | Oui |
+| 6 | [ML-03 : Entraînement et AutoML](../../MyIA.AI.Notebooks/ML/ML.Net/ML-03-Entrainement-AutoML-CSharp.ipynb) | BETA | Oui |
 | 7 | [ML-04 : Évaluation des modèles (Python / sklearn)](../../MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-Python.ipynb) | BETA | Oui |
-| 8 | [ML-04 : Evaluation des modèles](../../MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation.ipynb) | BETA | Oui |
+| 8 | [ML-04 : Evaluation des modèles](../../MyIA.AI.Notebooks/ML/ML.Net/ML-04-Evaluation-CSharp.ipynb) | BETA | Oui |
 | 9 | [ML-04b : Validité statistique des comparaisons de…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-04b-ModelComparison-Validity-Python.ipynb) | BETA | Oui |
 | 10 | [ML-05 (Python) : Prévision de séries temporelles (STL +…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-Python.ipynb) | BETA | Oui |
-| 11 | [ML-05 : Time Series Forecasting avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries.ipynb) | BETA | Oui |
+| 11 | [ML-05 : Time Series Forecasting avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-05-TimeSeries-CSharp.ipynb) | BETA | Oui |
 | 12 | [ML-05b (Python) : Séries temporelles classiques —…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-05b-Series-Temporelles-Classiques-Python.ipynb) | BETA | Oui |
 | 13 | [ML-06 (Python) : Intégration de modèles ONNX (skl2onnx…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-Python.ipynb) | BETA | Oui |
-| 14 | [ML-06 : ONNX Model Integration avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX.ipynb) | BETA | Oui |
+| 14 | [ML-06 : ONNX Model Integration avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-06-ONNX-CSharp.ipynb) | BETA | Oui |
 | 15 | [ML-07 (Python) : Systèmes de recommandation par…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-Python.ipynb) | BETA | Oui |
-| 16 | [ML-07 : Systèmes de Recommandation avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation.ipynb) | BETA | Oui |
+| 16 | [ML-07 : Systèmes de Recommandation avec ML.NET](../../MyIA.AI.Notebooks/ML/ML.Net/ML-07-Recommendation-CSharp.ipynb) | BETA | Oui |
 | 17 | [ML-08 (Python) : Clustering non-supervisé avec K-Means](../../MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-Python.ipynb) | BETA | Oui |
-| 18 | [ML-08 : Clustering non-supervise avec K-Means](../../MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering.ipynb) | BETA | Oui |
+| 18 | [ML-08 : Clustering non-supervise avec K-Means](../../MyIA.AI.Notebooks/ML/ML.Net/ML-08-Clustering-CSharp.ipynb) | BETA | Oui |
 | 19 | [ML-09 (Python) : Détection d'anomalies par PCA (erreur…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-Python.ipynb) | BETA | Oui |
-| 20 | [ML-09 : Detection d'anomalies avec Randomized PCA](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection.ipynb) | BETA | Oui |
+| 20 | [ML-09 : Detection d'anomalies avec Randomized PCA](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09-Anomaly-Detection-CSharp.ipynb) | BETA | Oui |
 | 21 | [ML-09b (Python) : l'illusion de progression en…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | BETA | Oui |
 | 22 | [ML-09c : le Matrix Profile multidimensionnel, une…](../../MyIA.AI.Notebooks/ML/ML.Net/ML-09c-MatrixProfile-Multidim-Python.ipynb) | BETA | Oui |
-| 23 | [TP : Prevision des ventes d'assurance](../../MyIA.AI.Notebooks/ML/ML.Net/TP-prevision-ventes.ipynb) | BETA | Oui |
+| 23 | [TP : Prevision des ventes d'assurance](../../MyIA.AI.Notebooks/ML/ML.Net/TP-Prevision-Ventes-CSharp.ipynb) | BETA | Oui |
 
 ## Probas (1 notebooks)
 

@@ -6,7 +6,7 @@
 
 | Fichier | Série | Notebooks | Cellules |
 |---------|-------|-----------|----------|
-| [`mlnet.csv`](mlnet.csv) | `ML/ML.Net/` | 19 (ML-1 → ML-9 + TP-prevision-ventes ; jumeaux Python `-Python.ipynb` co-localisés) | 599 (header + 599 lignes, 12 colonnes) |
+| [`mlnet.csv`](mlnet.csv) | `ML/ML.Net/` | 19 (ML-1 → ML-9 + TP-Prevision-Ventes-CSharp ; jumeaux Python `-Python.ipynb` co-localisés) | 599 (header + 599 lignes, 12 colonnes) |
 
 **Note parité** : la série ML/ML.Net expose des **jumeaux C# ⇄ Python** co-localisés (`ML-1-Introduction.ipynb` ⇄ `ML-1-Introduction-Python.ipynb`). Le script d'extraction prend **les deux langues** verbatim (chaque notebook est une cellule source indépendante). La traduction future T3 (moteur Argumentum) appliquera les deux familles de cellules.
 
