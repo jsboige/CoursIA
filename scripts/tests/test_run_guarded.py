@@ -422,3 +422,109 @@ def test_gpu_publication_refusee_empêche_le_lancement(guarded, tmp_path, monkey
     assert "TRIVIAL_OK" not in journal, "l'enfant ne doit pas avoir demarre"
     assert "PUBLIEE" in journal or "PUBLIE" in journal, journal
     assert "publish --git" in journal, journal
+
+
+# --- defauts trouves par la revue adversariale (#22456) ----------------------
+#
+# Quatre defauts, chacun avec son temoin : la reservation liberee au refus de
+# publication, l'ORDRE publish-avant-enfant, la borne par defaut du hold, et
+# le verdict vert rendu depuis une source non autoritaire.
+
+
+def test_gpu_publication_refusee_libere_la_reservation(guarded, tmp_path, monkeypatch):
+    """Un held ecrit puis une publication refusee : le hold doit etre CLOSE.
+
+    Sans ce release, la reservation reste VIVANTE -- et, si le push a atterri
+    avant l'echec de sa verification, elle est VISIBLE de la flotte sur un
+    device qui ne porte aucun job.
+    """
+    calls = []
+    monkeypatch.setattr(
+        guarded, "_run_ledger_organ", _faux_organ_publish(calls, fail_publish=True))
+    log = tmp_path / "gpu_publish_fail_release.log"
+    rc = guarded.main(_gpu_argv(log) + ["--", sys.executable, "-c", TRIVIAL_CHILD])
+    journal = log.read_text(encoding="utf-8")
+    assert rc == 5, f"rc {rc} attendu (5 = refus), journal :\n{journal}"
+    etats = []
+    for call in calls:
+        if call[0] == "append":
+            etats.append(json.loads(call[call.index("--fields-json") + 1]).get("state"))
+    assert "released" in etats, (
+        f"le hold doit etre clos par un released, etats vus : {etats}")
+
+
+def test_le_publish_precede_le_demarrage_de_l_enfant(guarded, tmp_path, monkeypatch):
+    """Le publish se produit AVANT que l'enfant ne tourne.
+
+    Un test qui verifie seulement « il y a eu un publish » ne prouve pas
+    l'ordre : le publier apres le lancement laisserait le test vert. On
+    mesure donc l'ordre par un marqueur que l'enfant ecrit au demarrage.
+    """
+    marqueur = tmp_path / "enfant_demarre.txt"
+    etat = {"enfant_present": []}
+    calls = []
+
+    def faux_organ(args, timeout=120):
+        calls.append(list(args))
+        if args[0] == "publish":
+            # L'enfant a-t-il deja demarre au moment ou on publie ?
+            etat["enfant_present"].append(marqueur.exists())
+        return _faux_organ_publish(calls)(args, timeout=timeout)
+
+    monkeypatch.setattr(guarded, "_run_ledger_organ", faux_organ)
+    log = tmp_path / "gpu_ordre.log"
+    rc = guarded.main(_gpu_argv(log) + [
+        "--", sys.executable, "-c",
+        f"open({str(marqueur)!r}, 'w').write('x')\nprint('TRIVIAL_OK')\n"])
+    journal = log.read_text(encoding="utf-8")
+    assert rc == 0, f"rc {rc} attendu (0), journal :\n{journal}"
+    assert marqueur.exists(), "l'enfant a bien tourne"
+    assert etat["enfant_present"], "aucun publish observe"
+    assert etat["enfant_present"][0] is False, (
+        "le PREMIER publish (le held) a ete appele apres le demarrage de "
+        "l'enfant : la flotte n'aurait pas vu la reservation pendant le job")
+
+
+def test_hold_sans_borne_recoit_une_borne_par_defaut(guarded, tmp_path, monkeypatch):
+    """Sans `--gpu-expected-end`, le hold est BORE par defaut (+24 h).
+
+    Un hold sans borne n'est jamais STALE : un lanceur tue brutalement
+    laisserait le device pris pour TOUTE la flotte, sans aucune sortie.
+    """
+    calls = []
+    monkeypatch.setattr(guarded, "_run_ledger_organ", _faux_organ_publish(calls))
+    log = tmp_path / "gpu_borne.log"
+    rc = guarded.main(_gpu_argv(log) + ["--", sys.executable, "-c", TRIVIAL_CHILD])
+    journal = log.read_text(encoding="utf-8")
+    assert rc == 0, f"rc {rc} attendu (0), journal :\n{journal}"
+    holds = []
+    for call in calls:
+        if call[0] == "append":
+            fields = json.loads(call[call.index("--fields-json") + 1])
+            if fields.get("state") == "held":
+                holds.append(fields)
+    assert holds, "aucun hold ecrit"
+    assert holds[0].get("expected_end"), "le hold doit porter une borne"
+    assert holds[0]["expected_end"].endswith("Z"), holds[0]
+    assert "borne par defaut" in journal, journal
+
+
+def test_verdict_vert_depuis_une_source_non_autorisee_refuse(guarded, tmp_path, monkeypatch):
+    """Un verdict vert rendu depuis le CACHE local ne peut pas autoriser un
+    lancement : le cache peut dater d'avant le hold d'autrui."""
+
+    def faux_organ(args, timeout=120):
+        if args[0] == "check_pending":
+            payload = {"verdict": "RELEASED", "reason": "cache local",
+                       "entity": "myia-ai-01#gpu2",
+                       "source": "local (branche origin/ops/gpu-ledger absente)"}
+            return 0, json.dumps(payload), ""
+        return _faux_organ_publish([])(args, timeout=timeout)
+
+    monkeypatch.setattr(guarded, "_run_ledger_organ", faux_organ)
+    log = tmp_path / "gpu_non_authoritaire.log"
+    rc = guarded.main(_gpu_argv(log) + ["--", sys.executable, "-c", TRIVIAL_CHILD])
+    journal = log.read_text(encoding="utf-8")
+    assert rc == 5, f"rc {rc} attendu (5 = refus), journal :\n{journal}"
+    assert "TRIVIAL_OK" not in journal, "l'enfant ne doit pas avoir demarre"
+    assert "NON_AUTORITAIRE" in journal, journal

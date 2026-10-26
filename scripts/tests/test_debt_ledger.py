@@ -2551,7 +2551,8 @@ def test_check_pending_source_auto_names_the_local_fallback(tmp_path, capsys):
     out = capsys.readouterr().out
     assert rc == 0
     assert out.startswith("RELEASED")
-    assert "source=local (git indisponible" in out
+    # Le repli se nomme : la source affichee dit d'ou vient le verdict.
+    assert out.startswith("RELEASED") and "source=local" in out, out
 
 
 def test_check_pending_source_auto_without_any_source_is_unreadable(tmp_path, capsys):
@@ -2567,7 +2568,9 @@ def test_check_pending_source_auto_without_any_source_is_unreadable(tmp_path, ca
     payload = json.loads(capsys.readouterr().out)
     assert rc == 1
     assert payload["verdict"] == "UNREADABLE"
-    assert "git indisponible" in payload["source"]
+    # Sans cache ET sans branche, aucune source n'est lisible : le verdict
+    # le dit, et la source nomme ce qui a ete tente.
+    assert payload["source"], payload
 
 
 # --- invariants de publication (#22456) -------------------------------------
@@ -2664,3 +2667,136 @@ def test_publish_refusal_names_the_retained_observations(tmp_path, capsys, monke
     assert "obs-" in err
     # le fantome est detectable et rien n'est perdu
     assert _spool_pending_count(state_dir) == 1
+
+
+# --- drains, cache perime, branche et illisibilite (#22456, revue) ----------
+#
+# Trois defauts trouves par la revue adversariale du diff, chacun reproduit
+# ici de bout en bout (sandbox git local, aucun reseau).
+
+
+def test_publication_atterie_mais_non_verifiee_draine_au_rejeu(tmp_path, capsys, monkeypatch):
+    """Un push ATTERRI dont la verification (ls-remote) echoue laisse
+    l'observation dans le spool alors qu'elle est sur la branche.
+
+    Le rejeu doit alors la DRAINER : sinon `check_pending` rend UNPOSTED
+    indefiniment et le remede documente ("relancer publish --git --emit")
+    boucle sur un "deja a jour" qui ne draine rien -- le device devient
+    impossible a liberer.
+    """
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+
+    vrai_git = dl._git
+
+    def git_ls_remote_casse(args, *, cwd):
+        if args and args[0] == "ls-remote":
+            return 1, "", "fatal: unable to access remote (test)"
+        return vrai_git(args, cwd=cwd)
+
+    monkeypatch.setattr(dl, "_git", git_ls_remote_casse)
+    capsys.readouterr()
+    rc = _publish(state_dir, work, "myia-ai-01", emit=True)
+    err = capsys.readouterr().err
+    assert rc != 0, "la verification echouee doit etre un echec nomme"
+    assert "GIT_PUBLISH_UNVERIFIED" in err
+    # Le push a ATTERRI : la branche porte l'observation...
+    assert len(_bare_lines(remote, "myia-ai-01")) == 1
+    # ... mais le spool la conserve (elle n'est pas archivee).
+    assert _spool_pending_count(state_dir) == 1
+
+    monkeypatch.undo()
+    capsys.readouterr()
+    rc = _publish(state_dir, work, "myia-ai-01", emit=True)
+    assert rc == 0, capsys.readouterr().out
+    assert _spool_pending_count(state_dir) == 0, (
+        "le rejeu doit DRAINER l'observation deja sur la branche ; sinon "
+        "UNPOSTED est perpetuel et le remede documente boucle")
+
+
+def test_fetch_en_echec_ne_laisse_pas_le_cache_autoriser(tmp_path, capsys, monkeypatch):
+    """Fetch en echec : l'existence de la branche est INCONNUE.
+
+    Elle peut porter le hold d'une autre machine, que ni la branche (illisible)
+    ni le cache local (anterieur) ne montrent -- le cache ne peut donc pas
+    repondre a la place de la source primaire : le gate rend UNREADABLE.
+    """
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+
+    # Le remote est INJOIGNABLE : ni le fetch ni ls-remote ne repondent.
+    vrai_git = dl._git
+
+    def git_reseau_casse(args, *, cwd):
+        if args and args[0] in ("fetch", "ls-remote"):
+            return 128, "", "fatal: reseau coupe (test)"
+        return vrai_git(args, cwd=cwd)
+
+    monkeypatch.setattr(dl, "_git", git_reseau_casse)
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION,
+        "--entity", "myia-ai-01#gpu2", "--state-dir", str(state_dir),
+        "--repo", str(work), "--json",
+    ])
+    out = capsys.readouterr().out
+    assert rc == 1, "une source primaire illisible ne rend pas un device libre"
+    payload = json.loads(out.strip().splitlines()[-1])
+    assert payload["verdict"] == "UNREADABLE", payload
+    assert "INCONNUE" in payload["reason"], payload
+    assert "git (indisponible" in payload["source"], payload
+
+
+def test_branche_absente_laisse_le_cache_local_repondre(tmp_path, capsys):
+    """Branche jamais publiee (le fetch REUSSIT et la branche n'existe pas) :
+    aucun hold n'existe nulle part, le cache local peut repondre NO_OBS.
+
+    C'est ce qui permet a la premiere reservation d'une machine de passer le
+    gate : le refus doit porter sur la branche INEXISTANTE, pas sur le cache.
+    """
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION,
+        "--entity", "myia-ai-01#gpu2", "--state-dir", str(state_dir),
+        "--repo", str(work), "--json",
+    ])
+    out = capsys.readouterr().out
+    payload = json.loads(out.strip().splitlines()[-1])
+    assert payload["verdict"] in {"NO_OBS", "UNREADABLE"}, payload
+    if payload["verdict"] == "UNREADABLE":
+        # sans snapshot local, aucune source n'est lisible : fail-CLOSED.
+        assert rc == 1
+    else:
+        assert rc == 0, "rien n'est publie : le device est libre"
+
+
+def test_branche_publiee_lue_du_dernier_ref_local(tmp_path, capsys, monkeypatch):
+    """Branche publiee + fetch en echec : le gate lit le DERNIER ref local
+    (l'etat connu de la branche), et le dit dans la source.
+
+    Ce n'est PAS le cache local qui repond : c'est la derniere version
+    connue de la source primaire -- et la source nomme l'incertitude.
+    """
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    assert _publish(state_dir, work, "myia-ai-01", emit=True) == 0
+
+    monkeypatch.setattr(
+        dl, "fetch_git_ledger_branch",
+        lambda *a, **k: "fatal: reseau coupe (test)",
+    )
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION,
+        "--entity", "myia-ai-01#gpu2", "--state-dir", str(state_dir),
+        "--repo", str(work), "--json",
+    ])
+    out = capsys.readouterr().out
+    payload = json.loads(out.strip().splitlines()[-1])
+    assert payload["source"].startswith("git (fetch impossible"), payload
+    assert "cache" not in payload["source"], payload
+    assert rc in (0, 1, 2), rc

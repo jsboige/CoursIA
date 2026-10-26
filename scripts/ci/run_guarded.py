@@ -79,7 +79,7 @@ import os
 import subprocess
 import sys
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 GiB = 2**30
@@ -275,6 +275,19 @@ GPU_LEDGER_NAME = "gpu-reservation"
 #: Branche qui porte l'etat publie des reservations (la source PRIMAIRE ;
 #: le dashboard en est le miroir, le snapshot local un cache).
 GPU_LEDGER_BRANCH = "ops/gpu-ledger"
+#: Remote git sur lequel la branche du ledger est publiee et lue. C'est un
+#: PARAMETRE, pas une decision codee en dur : l'etat vivant des reservations
+#: est de l'orchestration (usage interne de flotte), et sa cible peut etre un
+#: depot prive -- le registre ne doit pas dependre de ce choix.
+GPU_LEDGER_REMOTE_DEFAULT = "origin"
+
+#: Borne par defaut d'un hold quand `--gpu-expected-end` n'est pas fourni.
+#: Sans borne, un lanceur tué brutalement (kill -9, reboot, crash de l'hote)
+#: laisse un hold VIVANT : aucun chemin de sortie ne s'execute, le verdict
+#: STALE ne peut donc jamais etre rendu, et le device reste pris pour toute
+#: la flotte -- jusqu'a une liberation manuelle. Une borne rend ce cas
+#: detectable par l'organe au lieu de le laisser muet.
+GPU_HOLD_DEFAULT_HOURS = 24
 
 #: Verdicts du gate qui autorisent le lancement. Tout autre verdict (HOLD,
 #: STALE, UNPOSTED, ou un verdict d'indisponibilite rendu par une version
@@ -323,7 +336,7 @@ def _utc_now_iso():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
-def _gpu_gate_check(entity):
+def _gpu_gate_check(entity, remote=GPU_LEDGER_REMOTE_DEFAULT):
     """Consulte ``check_pending`` pour l'entite. Rend ``(verdict, detail)``.
 
     verdict ``None`` signifie SOURCE INDISPONIBLE : appel en panne, sortie non
@@ -331,7 +344,7 @@ def _gpu_gate_check(entity):
     """
     rc, out, err = _run_ledger_organ([
         "check_pending", "--ledger", GPU_LEDGER_NAME,
-        "--entity", entity, "--json",
+        "--entity", entity, "--remote", remote, "--json",
     ])
     if rc is None:
         return None, err
@@ -345,6 +358,21 @@ def _gpu_gate_check(entity):
     verdict = payload.get("verdict")
     if not isinstance(verdict, str) or not verdict:
         return None, f"verdict absent de la sortie du gate (rc={rc})"
+    source = str(payload.get("source") or "")
+    if verdict in GPU_GATE_GREEN_VERDICTS and source and not source.startswith("git"):
+        # Un CACHE local n'a pas le droit d'AFFIRMER une liberation quand la
+        # source primaire est illisible : il peut dater d'avant le hold
+        # d'autrui, et le verdict vert autoriserait deux machines sur le meme
+        # device -- le defaut exact que ce transport doit empecher. `NO_OBS`
+        # reste admis : c'est un constat d'absence, pas une affirmation de
+        # liberte (et la branche n'a jamais existe dans ce cas).
+        if verdict != "NO_OBS":
+            return (
+                "NON_AUTORITAIRE",
+                f"verdict {verdict} rendu depuis une source NON autoritaire "
+                f"({source}) -- le cache local ne peut pas autoriser un "
+                "lancement ; la source primaire (la branche) doit etre lisible",
+            )
     return verdict, str(payload.get("reason") or "")
 
 
@@ -381,7 +409,7 @@ def _gpu_append_observation(entity, fields, actor):
     return True, ""
 
 
-def _gpu_publish_reservations(machine):
+def _gpu_publish_reservations(machine, remote=GPU_LEDGER_REMOTE_DEFAULT):
     """Publie les reservations locales sur la branche `ops/gpu-ledger`.
 
     Pourquoi cette etape est INDISPENSABLE : le gate d'admission lit l'etat
@@ -396,7 +424,7 @@ def _gpu_publish_reservations(machine):
     """
     rc, out, err = _run_ledger_organ([
         "publish", "--git", "--ledger", GPU_LEDGER_NAME,
-        "--machine", machine, "--emit",
+        "--machine", machine, "--remote", remote, "--emit",
     ], timeout=300)
     if rc is None:
         return False, err
@@ -424,7 +452,8 @@ def _gpu_build_fields(state, started_at, expected_end, holder, workload, issue):
     return fields
 
 
-def _release_gpu_if_held(gpu_res, fh, ended_reason):
+def _release_gpu_if_held(gpu_res, fh, ended_reason,
+                         remote=GPU_LEDGER_REMOTE_DEFAULT):
     """Teardown GPU : ecrit l'observation ``released`` si un ``held`` a ete porte.
 
     ``started_at`` du released = l'instant du held ; ``expected_end`` =
@@ -455,7 +484,7 @@ def _release_gpu_if_held(gpu_res, fh, ended_reason):
         # localement mais invisible de la flotte laisse les autres machines
         # croire le device tenu.
         published, pub_detail = _gpu_publish_reservations(
-            gpu_res["entity"].split("#")[0])
+            gpu_res["entity"].split("#")[0], remote)
         if not published:
             _say(fh, f"ATTENTION gpu-reservation : le released de "
                      f"{gpu_res['entity']} n'a pas pu etre PUBLIE -- "
@@ -585,7 +614,18 @@ def main(argv=None):
                          "avec --gpu-entity")
     ap.add_argument("--gpu-expected-end", default=None, metavar="ISO8601-UTC",
                     help="fin attendue du hold, UTC ISO-8601 avec suffixe Z "
-                         "(ex 2026-10-26T18:00:00Z)")
+                         "(ex 2026-10-26T18:00:00Z). Absent, une borne par "
+                         "defaut est appliquee (maintenant + 24 h) : un hold "
+                         "sans fin rend le device ILLIBRE pour toute la "
+                         "flotte jusqu'a une liberation manuelle")
+    ap.add_argument("--gpu-ledger-remote", default=GPU_LEDGER_REMOTE_DEFAULT,
+                    metavar="REMOTE",
+                    help="remote git sur lequel la branche du ledger "
+                         f"({GPU_LEDGER_BRANCH}) est publiee et lue "
+                         f"(defaut : {GPU_LEDGER_REMOTE_DEFAULT}). Parametre, "
+                         "pas une decision codee en dur : la cible de "
+                         "l'etat vivant de reservation peut etre un depot "
+                         "prive")
     ap.add_argument("--gpu-issue", default=None, metavar="REPO#N",
                     help="issue de rattachement du hold (ex jsboige/CoursIA#1454)")
     ap.add_argument("cmd", nargs=argparse.REMAINDER,
@@ -689,7 +729,7 @@ def main(argv=None):
     # (et pour toujours sans --gpu-entity) : le teardown n'ecrit alors rien.
     gpu_res = None
     if args.gpu_entity:
-        verdict, detail = _gpu_gate_check(args.gpu_entity)
+        verdict, detail = _gpu_gate_check(args.gpu_entity, args.gpu_ledger_remote)
         if verdict not in GPU_GATE_GREEN_VERDICTS:
             if verdict is None:
                 _say(fh, f"REFUS : gate {GPU_LEDGER_NAME} INDISPONIBLE pour "
@@ -704,10 +744,23 @@ def main(argv=None):
         _say(fh, f"admission GPU : verdict {verdict} pour {args.gpu_entity} "
                  f"-- demarrage autorise")
         held_started_at = _utc_now_iso()
+        expected_end = args.gpu_expected_end
+        if not expected_end:
+            # Un hold SANS borne n'est jamais STALE : un lanceur tue
+            # brutalement (kill -9, reboot) laisse la reservation vivante
+            # pour TOUTE la flotte, sans aucun chemin de sortie. La borne
+            # par defaut rend ce cas detectable par l'organe ; elle est
+            # journalisee, donc jamais silencieuse.
+            expected_end = (
+                datetime.now(timezone.utc) + timedelta(hours=GPU_HOLD_DEFAULT_HOURS)
+            ).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            _say(fh, f"gpu-reservation : --gpu-expected-end absent -- borne par "
+                     f"defaut appliquee : {expected_end} "
+                     f"(+{GPU_HOLD_DEFAULT_HOURS} h)")
         fields = _gpu_build_fields(
             state="held",
             started_at=held_started_at,
-            expected_end=args.gpu_expected_end,
+            expected_end=expected_end,
             holder=args.gpu_holder,
             workload=args.gpu_workload,
             issue=args.gpu_issue,
@@ -737,7 +790,7 @@ def main(argv=None):
         # flotte (le gate lit la branche). Un held non publie rend `UNPOSTED`
         # au gate et bloquerait le lancement suivant, y compris le nôtre.
         published, pub_detail = _gpu_publish_reservations(
-            args.gpu_entity.split("#")[0])
+            args.gpu_entity.split("#")[0], args.gpu_ledger_remote)
         if not published:
             _say(fh, f"REFUS : la reservation {GPU_LEDGER_NAME} n'a pas pu etre "
                      f"PUBLIEE pour {args.gpu_entity} -- {pub_detail} -- "
@@ -745,6 +798,15 @@ def main(argv=None):
                      f"n'est pas une reservation. Remediation : "
                      f"python scripts/coordination/debt_ledger.py publish --git "
                      f"--ledger {GPU_LEDGER_NAME} --emit")
+            # Le `held` EST ecrit (dans le spool) : le refus doit le CLORE.
+            # Sans ce release, la reservation reste VIVANTE -- et, si le push
+            # a atterri avant l'echec de sa verification, elle est VISIBLE de
+            # la flotte sur un device qui ne porte aucun job (le hold de
+            # l'admission et le released de l'admission doivent etre
+            # symetriques, comme tous les autres chemins de sortie).
+            _release_gpu_if_held(
+                gpu_res, fh, "publication de la reservation refusee",
+                args.gpu_ledger_remote)
             close_logs()
             return RC_REFUSED
         _say(fh, f"gpu-reservation : held PUBLIE sur {GPU_LEDGER_BRANCH} "
@@ -788,7 +850,8 @@ def main(argv=None):
             proc = subprocess.Popen(cmd, **spawn_kwargs)
         except (OSError, ValueError) as exc:
             _say(fh, f"la commande n'a pas demarre : {type(exc).__name__}: {exc}")
-            _release_gpu_if_held(gpu_res, fh, "la commande n'a pas demarre")
+            _release_gpu_if_held(gpu_res, fh, "la commande n'a pas demarre",
+                                 args.gpu_ledger_remote)
             close_logs()
             return RC_NOSTART
 
@@ -798,7 +861,8 @@ def main(argv=None):
                  "il pourrait survivre a ce lanceur (orphelin). Relancer avec "
                  "--allow-no-job pour l'assumer explicitement.")
         _kill_tree(proc.pid)
-        _release_gpu_if_held(gpu_res, fh, "enfant non place dans le Job Object")
+        _release_gpu_if_held(gpu_res, fh, "enfant non place dans le Job Object",
+                             args.gpu_ledger_remote)
         close_logs()
         return RC_REFUSED
     if os.name == "nt" and assigned:
@@ -820,7 +884,8 @@ def main(argv=None):
             _say(fh, "REFUS : l'enfant demarre en suspension n'a pas pu etre "
                      "repris -- il est tue plutot que lancer hors plafond.")
             _kill_tree(proc.pid)
-            _release_gpu_if_held(gpu_res, fh, "enfant suspendu non repris")
+            _release_gpu_if_held(gpu_res, fh, "enfant suspendu non repris",
+                             args.gpu_ledger_remote)
             close_logs()
             return RC_NOSTART
 
@@ -856,7 +921,8 @@ def main(argv=None):
     except KeyboardInterrupt:
         _say(fh, "interruption clavier : arret de l'arbre")
         _kill_tree(proc.pid)
-        _release_gpu_if_held(gpu_res, fh, "interruption clavier")
+        _release_gpu_if_held(gpu_res, fh, "interruption clavier",
+                         args.gpu_ledger_remote)
         close_logs()
         return RC_INTERRUPT
 
@@ -869,7 +935,8 @@ def main(argv=None):
             pass
         _say(fh, f"bilan : pic RSS {peak_rss / GiB:.1f} GiB, RAM libre minimale "
                  f"{min_free / GiB:.1f} GiB, duree {int(time.time() - t0)} s")
-        _release_gpu_if_held(gpu_res, fh, f"arret garde ({reason})")
+        _release_gpu_if_held(gpu_res, fh, f"arret garde ({reason})",
+                         args.gpu_ledger_remote)
         close_logs()
         return RC_LIMIT if reason.startswith("plafond") else RC_FLOOR
 
@@ -877,7 +944,7 @@ def main(argv=None):
     _say(fh, f"termine rc={rc} en {int(time.time() - t0)} s -- sous les deux "
              f"plafonds (pic RSS {peak_rss / GiB:.1f} GiB / {args.limit_gib:.1f} GiB, "
              f"RAM libre minimale {min_free / GiB:.1f} GiB)")
-    released_ok = _release_gpu_if_held(gpu_res, fh, "sortie normale")
+    released_ok = _release_gpu_if_held(gpu_res, fh, "sortie normale", args.gpu_ledger_remote)
     close_logs()
     if gpu_res is not None and not released_ok and rc == RC_OK:
         # Le travail a reussi mais la reservation n'est pas liberee : code

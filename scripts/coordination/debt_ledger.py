@@ -2487,11 +2487,24 @@ def _publishable_observations(spool_dir: Path, *, ledger: str) -> list[dict[str,
 def _branch_file_text(repo: Path, rel: str, *, remote: str) -> str:
     """Contenu actuel d'un fichier de la branche ; ``''`` s'il n'existe pas."""
     ref = _tracking_ref(remote)
+    # L'absence du fichier est detectee par le CODE DE SORTIE de `cat-file -e`,
+    # jamais par le TEXTE de stderr : ce texte est LOCALISE (gettext), et une
+    # sous-chaine "does not exist" echouerait sur un siege francais -- la
+    # premiere publication d'une machine y echouerait systematiquement.
+    rc, _, err = _git(["cat-file", "-e", f"{ref}:{rel}"], cwd=repo)
+    if rc != 0:
+        # rc != 0 : le fichier est absent OU le ref est illisible. On
+        # distingue les deux -- un ref illisible est une panne, pas une absence.
+        rc_ref, _, _ = _git(["rev-parse", "--verify", "--quiet", ref], cwd=repo)
+        if rc_ref != 0:
+            raise LedgerError(
+                "GIT_LEDGER_UNAVAILABLE",
+                f"ref {ref} illisible : {_git_reason(err)}",
+            )
+        return ""
     rc, out, err = _git(["show", f"{ref}:{rel}"], cwd=repo)
     if rc == 0:
         return out
-    if "does not exist" in err:
-        return ""
     raise LedgerError(
         "GIT_LEDGER_UNAVAILABLE", f"git show {ref}:{rel} : {_git_reason(err)}"
     )
@@ -2639,19 +2652,70 @@ def _publish_attempt(
         if rc != 0:
             raise LedgerError(
                 "GIT_PUBLISH_UNVERIFIED",
-                f"ls-remote {remote} : {_git_reason(err)} (poussee vers {sha})",
+                f"ls-remote {remote} : {_git_reason(err)} (poussee vers {sha}) ; "
+                "la poussee a pu ATTERRIR : relancer publish --git --emit "
+                "-- si l'observation est deja sur la branche, ce second essai "
+                "la DRAINE (published=false n'est pas une perte)",
             )
         remote_sha = out.split()[0].strip() if out.split() else ""
         if remote_sha != sha:
             raise LedgerError(
                 "GIT_PUBLISH_UNVERIFIED",
                 f"le ref distant porte {remote_sha!r} et non {sha!r} "
-                "(la poussee a publie autre chose que l'observation)",
+                "(la poussee a publie autre chose que l'observation) ; "
+                "relancer publish --git --emit",
             )
         return sha
     finally:
-        _git(["worktree", "remove", "--force", str(worktree)], cwd=repo)
+        rc_rm, _, err_rm = _git(
+            ["worktree", "remove", "--force", str(worktree)], cwd=repo
+        )
+        if rc_rm != 0:
+            # Le retrait peut echouer (verrou fichier Windows, antivirus) :
+            # le worktree fantome et son enregistrement `.git/worktrees/<id>`
+            # subsisteraient, et le dossier temporaire est cree sous
+            # `repo.parent` -- a la racine du drive en production. `prune`
+            # retire l'enregistrement, et l'echec est JOURNALISE : un residu
+            # silencieux s'accumulerait a chaque tentative.
+            _git(["worktree", "prune"], cwd=repo)
+            shutil.rmtree(worktree, ignore_errors=True)
+            print(
+                f"WARNING worktree remove rc={rc_rm} : {_git_reason(err_rm)} "
+                "(prune tente ; un residu peut subsister)",
+                file=sys.stderr,
+            )
         shutil.rmtree(tmp_root, ignore_errors=True)
+
+
+def _drain_published(
+    spool_dir: Path,
+    source: list[dict[str, Any]],
+    existing_ids: set[str],
+) -> list[str]:
+    """Draine du spool les observations DEJA portees par la branche.
+
+    Le drain est la moitie oubliee de la publication : une observation dont
+    l'``observation_id`` figure sur la branche est PUBLIEE, qu'elle y soit
+    arrivee par ce push-la ou par un push anterieur dont la verification a
+    echoue. La laisser dans le spool fait repondre ``UNPOSTED`` au gate pour
+    toujours -- et le remede documente (relancer la publication) boucle sur
+    un "deja a jour" qui ne draine rien.
+
+    Renvoie les identifiants draines (vide si rien a drainer). Ne leve pas :
+    un drain impossible ne doit pas faire perdre le resultat de la
+    publication, deja constate.
+    """
+    drainable = sorted(
+        str(obs["observation_id"]) for obs in source
+        if str(obs.get("observation_id")) in existing_ids
+    )
+    if not drainable:
+        return []
+    try:
+        archive_posted(spool_dir, drainable)
+    except LedgerError:
+        return []
+    return drainable
 
 
 def publish_git_ledger(
@@ -2707,8 +2771,21 @@ def publish_git_ledger(
         "fetch_error": fetch_error,
         "published": False,
         "pushed_sha": None,
+        "drained": [],
     }
-    if not emit or not to_publish:
+    if not emit:
+        return summary
+    if not to_publish:
+        # Les observations du spool sont DEJA sur la branche : publication
+        # rejouee apres un push ATTERRI dont la verification (ls-remote) a
+        # echoue, ou course gagnee par un push concurrent portant le meme
+        # contenu. Le spool doit alors etre DRAINE -- sinon `check_pending`
+        # rend UNPOSTED indefiniment et le remede documente ("relancer
+        # publish --git --emit") boucle sur un "deja a jour" qui ne draine
+        # rien : le device devient impossible a liberer.
+        drained = _drain_published(spool_dir, source, existing_ids)
+        if drained:
+            summary["drained"] = drained
         return summary
     pushed_sha = _publish_attempt(
         repo=repo, rel=rel, canonical=canonical, ledger=ledger,
@@ -2728,6 +2805,9 @@ def publish_git_ledger(
         if not to_publish:
             # La course a ete gagnee par un push portant le meme contenu.
             summary["published"] = True
+            drained = _drain_published(spool_dir, source, existing_ids)
+            if drained:
+                summary["drained"] = drained
             return summary
         pushed_sha = _publish_attempt(
             repo=repo, rel=rel, canonical=canonical, ledger=ledger,
@@ -3225,9 +3305,14 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
                      same verdict vocabulary as the local path;
       * ``local`` -- the local snapshot, a CACHE never an authority; this is
                      the historical behaviour, unchanged;
-      * ``auto``  -- try ``git``; on an unreachable branch fall back to the
-                     local cache AND SAY SO in the output
-                     (``source=local (git indisponible : <raison>)``).
+      * ``auto``  -- try ``git``; on an unreachable branch, fall back to the
+                     local cache ONLY IF the branch does not exist on the
+                     remote (measured by ``ls-remote`` : nothing was ever
+                     published, so the cache cannot miss a hold) AND SAY SO
+                     in the output (``source=local (branche <remote>/<branch>
+                     absente)``). If the branch EXISTS, or the remote is
+                     unreachable, the verdict is ``UNREADABLE`` (fail-CLOSED) :
+                     a stale cache must not render a device free.
 
     Verdicts:
 
@@ -3317,6 +3402,14 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
     # --source git, ou auto qui tente git d'abord.
     repo = Path(args.repo) if args.repo else default_repo_root()
     unavailable: str | None = None
+    fetch_error: str | None = None
+    # Etat de la branche DISTANTE : "absent" (elle n'existe pas : rien n'a
+    # jamais ete publie), "exists" (elle existe : elle peut porter le hold
+    # d'une autre machine), "unknown" (le remote est injoignable : on ne peut
+    # rien affirmer). Mesure par le CODE DE SORTIE de `ls-remote` -- jamais
+    # par le texte de stderr, qui est localise et dont le message distingue
+    # "ref absent" de "reseau coupe" par une phrase, pas par un code.
+    remote_state = "unknown"
     if repo is None or not repo.exists():
         unavailable = "aucun depot git lisible (git rev-parse --show-toplevel a echoue)"
     else:
@@ -3326,6 +3419,14 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
                 fetch_error
                 or f"branche {args.remote}/{GIT_LEDGER_BRANCH} absente"
             )
+            rc_ls, out_ls, err_ls = _git(
+                ["ls-remote", args.remote, f"refs/heads/{GIT_LEDGER_BRANCH}"],
+                cwd=repo,
+            )
+            if rc_ls == 0:
+                remote_state = "exists" if out_ls.strip() else "absent"
+            else:
+                remote_state = "unknown"
         else:
             observations, _rejections = observations_from_git_ledger(
                 repo, remote=args.remote
@@ -3357,13 +3458,34 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
             source=f"git (indisponible : {unavailable})",
         )
         return 1
-    # auto : repli NOMME sur le cache local, fail-closed si le cache manque.
+    # auto : repli sur le cache local -- mais SEULEMENT quand la branche
+    # n'existe PAS (mesure par `ls-remote`). Un cache perime n'a pas le
+    # droit d'autoriser un lancement : si la branche existe (elle porte
+    # peut-etre le hold d'une autre machine) ou si le remote est injoignable
+    # (on ne peut rien affirmer), le cache -- anterieur -- ne repond pas a la
+    # place de la source primaire. C'est le double-reservation exact que ce
+    # transport doit empecher.
+    if remote_state != "absent":
+        _print_pending_verdict(
+            args,
+            "UNREADABLE",
+            f"git indisponible : {unavailable} ; la branche "
+            f"{args.remote}/{GIT_LEDGER_BRANCH} "
+            + ("EXISTE" if remote_state == "exists" else "est INCONNUE")
+            + " : elle peut porter le hold d'une autre machine, que le cache "
+            "local (anterieur) ne montre pas. Fail-CLOSED.",
+            now,
+            source=f"git (indisponible : {unavailable})",
+        )
+        return 1
+    # La branche n'existe pas : rien n'a jamais ete publie, aucun hold
+    # n'existe nulle part : le cache local peut repondre.
     return _check_pending_snapshot(
         args,
         entity,
         now,
         snapshot_path,
-        source=f"local (git indisponible : {unavailable})",
+        source=f"local (branche {args.remote}/{GIT_LEDGER_BRANCH} absente)",
         fail_closed=True,
     )
 
@@ -3759,7 +3881,9 @@ def build_parser() -> argparse.ArgumentParser:
             "where the verdict reads from: 'git' = branche dediee "
             f"{GIT_LEDGER_BRANCH} (source PRIMAIRE) ; 'local' = snapshot local "
             "(un CACHE, jamais une autorite, comportement historique) ; "
-            "'auto' (defaut) = git puis repli NOMME sur le cache local"
+            "'auto' (defaut) = git ; repli sur le cache local UNIQUEMENT si "
+            "le fetch a reussi et que la branche n'existe pas (rien n'a donc "
+            "jamais ete publie) ; fetch en echec = UNREADABLE (fail-CLOSED)"
         ),
     )
     check_pending.add_argument(
