@@ -458,6 +458,217 @@ class TestMarkDuplicateKeys(unittest.TestCase):
             sys.argv = argv
 
 
+_DEMAND_312 = [
+    {"pm": "pip", "version": "3.9"},
+    {"pm": "pip", "version": "3.11"},
+    {"pm": "pip", "version": "3.12"},
+]
+
+
+class TestMarkUnrequestedKeys(unittest.TestCase):
+    """Le critere « plus aucun workflow de main ne demande cette cle » (#19658).
+
+    Decision A du coordinateur (2026-10-26) : une cle `setup-python` dont le
+    couple (cache, version) n'est plus declare par les workflows de `main` est
+    prouvee orpheline, et evincee **meme sur une PR ouverte**. La regle
+    fail-closed « copie de PR ouverte » reste intacte pour les cles encore
+    demandees.
+    """
+
+    KEY_312 = (
+        "setup-python-Linux-x64-24.04-Ubuntu-python-3.12.14-pip-"
+        "df2f915356ec2e5d50e2dfa2bb34caf601c5c89eaf81ae09d9834972f0296fde"
+    )
+    KEY_311 = (
+        "setup-python-Linux-x64-24.04-Ubuntu-python-3.11.17-pip-"
+        "b15947e0b9e073efda57fecf1a11f71ea4ac176abfe8d847f391a618432fe02d"
+    )
+    KEY_ORPHAN = (
+        "setup-python-Linux-x64-24.04-Ubuntu-python-3.7.9-pip-"
+        "aa2f915356ec2e5d50e2dfa2bb34caf601c5c89eaf81ae09d9834972f0296fde"
+    )
+
+    def _rec(self, key, ref="refs/pull/12345/merge", verdict="KEEP"):
+        return {
+            "key": key,
+            "ref": ref,
+            "created_at": "2026-10-26T00:00:00Z",
+            "last_accessed_at": "2026-10-26T00:00:00Z",
+            "size_bytes": 68_000_000,
+            "verdict": verdict,
+            "reason": "dedupe_candidate",
+        }
+
+    def test_unrequested_key_is_evicted_even_on_an_open_pr(self):
+        recs = [self._rec(self.KEY_ORPHAN)]
+        eoc._mark_unrequested_keys(recs, _DEMAND_312)
+        self.assertEqual(recs[0]["verdict"], "EVICT")
+        self.assertEqual(recs[0]["reason"], "unrequested_by_main_workflows")
+
+    def test_requested_key_is_kept(self):
+        # Temoin NEGATIF : une cle encore demandee par main ne bouge pas.
+        recs = [self._rec(self.KEY_312), self._rec(self.KEY_311)]
+        eoc._mark_unrequested_keys(recs, _DEMAND_312)
+        for r in recs:
+            self.assertEqual(r["verdict"], "KEEP")
+            self.assertEqual(r["reason"], "requested_by_main")
+        self.assertEqual(recs[0]["declared_by"], "3.12")
+
+    def test_unknown_demand_keeps_everything(self):
+        # Fail-CLOSED : workflows illisibles -> demande inconnue -> rien n'est
+        # affirme, la raison le dit.
+        recs = [self._rec(self.KEY_ORPHAN)]
+        eoc._mark_unrequested_keys(recs, None)
+        self.assertEqual(recs[0]["verdict"], "KEEP")
+        self.assertEqual(recs[0]["reason"], "unrequested_check_failed")
+
+    def test_unresolved_spec_covers_every_version(self):
+        # Une spec qu'on ne sait pas lire (expression de matrice) ne peut pas
+        # etre niee : elle couvre tout.
+        demand = [{"pm": "pip", "version": "${{ matrix.python-version }}"}]
+        recs = [self._rec(self.KEY_ORPHAN)]
+        eoc._mark_unrequested_keys(recs, demand)
+        self.assertEqual(recs[0]["verdict"], "KEEP")
+
+    def test_other_package_manager_is_not_covered(self):
+        demand = [{"pm": "npm", "version": "3.12"}]
+        recs = [self._rec(self.KEY_312)]
+        eoc._mark_unrequested_keys(recs, demand)
+        self.assertEqual(recs[0]["verdict"], "EVICT")
+
+    def test_non_setup_python_record_is_untouched(self):
+        recs = [{"key": "lake-x", "verdict": "KEEP", "reason": "recent_and_ancestor"}]
+        eoc._mark_unrequested_keys(recs, _DEMAND_312)
+        self.assertEqual(recs[0]["reason"], "recent_and_ancestor")
+
+    def test_refused_record_is_never_evicted(self):
+        recs = [self._rec(self.KEY_ORPHAN, verdict="REFUSE")]
+        eoc._mark_unrequested_keys(recs, _DEMAND_312)
+        self.assertEqual(recs[0]["verdict"], "REFUSE")
+
+    def test_spec_coverage_rules(self):
+        self.assertTrue(eoc._spec_covers("3.12", "3.12.14"))
+        self.assertTrue(eoc._spec_covers("3.12", "3.12.15"))
+        self.assertTrue(eoc._spec_covers("3.x", "3.12.14"))
+        self.assertTrue(eoc._spec_covers("3.12.14", "3.12.14"))
+        self.assertFalse(eoc._spec_covers("3.12", "3.11.17"))
+        self.assertFalse(eoc._spec_covers("3.12.14", "3.12.15"))
+        self.assertTrue(eoc._spec_covers("", "3.12.14"))
+        self.assertTrue(eoc._spec_covers("${{ matrix.python-version }}", "3.12.14"))
+
+    def test_setup_python_regex_reads_the_real_key(self):
+        m = eoc.SETUP_PYTHON_RE.match(self.KEY_312)
+        self.assertIsNotNone(m)
+        self.assertEqual(m.group("version"), "3.12.14")
+        self.assertEqual(m.group("pm"), "pip")
+        self.assertEqual(
+            m.group("filehash"),
+            "df2f915356ec2e5d50e2dfa2bb34caf601c5c89eaf81ae09d9834972f0296fde",
+        )
+
+    def test_setup_python_regex_ignores_other_families(self):
+        self.assertIsNone(
+            eoc.SETUP_PYTHON_RE.match(
+                "codeql-overlay-base-database-1-a-python-2.27.0-" + "0" * 40 + "-1-1"
+            )
+        )
+
+
+class TestDeclaredDemand(unittest.TestCase):
+    """La demande est DERIVEE des workflows, jamais figee dans le script."""
+
+    def _write(self, name, body):
+        d = os.path.join(self._tmp, name)
+        with open(d, "w", encoding="utf-8") as fh:
+            fh.write(body)
+        return d
+
+    def setUp(self):
+        import tempfile
+
+        self._tmp = tempfile.mkdtemp(prefix="eoc-workflows-")
+
+    def test_demand_is_read_from_the_workflows(self):
+        self._write(
+            "demo.yml",
+            "name: demo\n"
+            "on: [push]\n"
+            "jobs:\n"
+            "  build:\n"
+            "    runs-on: ubuntu-latest\n"
+            "    steps:\n"
+            "      - uses: actions/setup-python@v5\n"
+            "        with:\n"
+            "          python-version: '3.10'\n"
+            "          cache: 'pip'\n"
+            "          cache-dependency-path: requirements.txt\n"
+            "      - run: echo hello\n",
+        )
+        demand = eoc._declared_demand(self._tmp)
+        self.assertIsNotNone(demand)
+        self.assertIn({"pm": "pip", "version": "3.10"}, demand)
+
+    def test_step_without_cache_does_not_count(self):
+        self._write(
+            "nocache.yml",
+            "jobs:\n"
+            "  build:\n"
+            "    steps:\n"
+            "      - uses: actions/setup-python@v5\n"
+            "        with:\n"
+            "          python-version: '3.10'\n",
+        )
+        demand = eoc._declared_demand(self._tmp)
+        self.assertEqual(demand, [])
+
+    def test_matrix_spec_is_kept_unresolved(self):
+        self._write(
+            "matrix.yml",
+            "jobs:\n"
+            "  build:\n"
+            "    strategy:\n"
+            "      matrix:\n"
+            "        py: ['3.10', '3.11']\n"
+            "    steps:\n"
+            "      - uses: actions/setup-python@v5\n"
+            "        with:\n"
+            "          python-version: ${{ matrix.py }}\n"
+            "          cache: 'pip'\n",
+        )
+        demand = eoc._declared_demand(self._tmp)
+        self.assertEqual(
+            demand, [{"pm": "pip", "version": "${{ matrix.py }}"}]
+        )
+
+    def test_missing_directory_is_unknown(self):
+        self.assertIsNone(
+            eoc._declared_demand(os.path.join(self._tmp, "does-not-exist"))
+        )
+
+    def test_empty_directory_is_unknown(self):
+        # Aucun workflow lu n'est pas « aucune demande » : c'est « je ne sais
+        # pas » -> fail-CLOSED.
+        self.assertIsNone(eoc._declared_demand(self._tmp))
+
+    def test_the_real_repository_yields_a_demand(self):
+        # Fumigation : la derivation reste applicable sur les workflows reels.
+        demand = eoc._declared_demand(os.path.join(_REPO, ".github", "workflows"))
+        self.assertIsNotNone(demand)
+        self.assertTrue(demand)
+        for d in demand:
+            self.assertTrue(d.get("pm"))
+
+    def test_no_unrequested_flag_is_declared(self):
+        argv = sys.argv
+        try:
+            sys.argv = ["evict_orphan_caches.py", "--no-unrequested"]
+            self.assertTrue(eoc._parse_args().no_unrequested)
+            sys.argv = ["evict_orphan_caches.py"]
+            self.assertFalse(eoc._parse_args().no_unrequested)
+        finally:
+            sys.argv = argv
+
+
 class TestParseIso(unittest.TestCase):
     """Compat GitHub '...Z' suffix."""
 

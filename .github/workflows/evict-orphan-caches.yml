@@ -95,9 +95,15 @@ jobs:
         with:
           fetch-depth: 0   # git merge-base --is-ancestor a besoin du graphe
           sparse-checkout: |
-            .github/workflows/evict-orphan-caches.yml
+            .github/workflows
             scripts/ci/evict_orphan_caches.py
             tests/test_evict_orphan_caches.py
+      # #19658 (decision A, 2026-10-26) : le critere « cle que plus aucun
+      # workflow de main ne demande » derive la demande des workflows de
+      # `main` -- ils doivent donc etre presents dans le checkout. Sans eux,
+      # la demande est INCONNUE et la passe n'evince rien (fail-CLOSED) : le
+      # checkout ci-dessus les inclut, et le sweep tourne sur le push vers
+      # `main`, donc ce checkout EST `main`.
 
       - name: Dry-run first (log to Actions UI, no delete)
         env:
