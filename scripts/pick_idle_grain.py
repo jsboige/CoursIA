@@ -891,8 +891,9 @@ def _newest_remote_issue_update() -> float | None:
     try:
         out = subprocess.run(
             command, capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=15,
         ).stdout.strip()
-    except (subprocess.CalledProcessError, OSError):
+    except (subprocess.CalledProcessError, OSError, subprocess.TimeoutExpired):
         return None
     if not out or out == "null":
         return None
@@ -1110,6 +1111,7 @@ def fetch_pool(
             out = subprocess.run(
                 command,
                 capture_output=True, text=True, encoding="utf-8", check=True,
+                timeout=120,
             ).stdout
             return json.loads(out)
         except Exception as exc:  # noqa: BLE001 - on TENTE l'autre transport
