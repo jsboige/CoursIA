@@ -180,3 +180,100 @@ def test_sparse_checkout_no_artifact_in_head_returns_none(tmp_path):
     (serie / "nb.ipynb").write_text("{}", encoding="utf-8")
     # Pas de pyproject, pas de requirements, pas de .git.
     assert ckd.canonical_env_hint("Serie/nb.ipynb", root=str(tmp_path)) is None
+
+
+# === #22297 : un pointeur vers un intervalle qui ne peut pas heberger la base ===
+
+def test_requires_python_allows_truth_table():
+    """La comparaison d'intervalle, ses bornes, et ses refus de conclure."""
+    allows = ckd._requires_python_allows
+
+    # Heberge : la base est dans l'intervalle epingle.
+    assert allows(">=3.9,<3.10", "3.9.25") is True
+    assert allows(">=3.11,<3.14", "3.13.14") is True
+    assert allows("==3.9", "3.9.25") is True
+
+    # N'heberge pas : c'est le cas fondateur #22297 (base 3.13, pin 3.9).
+    assert allows(">=3.9,<3.10", "3.13.14") is False
+    assert allows(">=3.9,<3.10", "3.12.13") is False
+    assert allows(">=3.11,<3.14", "3.9.25") is False
+    assert allows("!=3.13", "3.13.14") is False
+
+    # Non mesurable : on ne rend PAS une autorisation, on rend None.
+    assert allows("~=3.9", "3.13.14") is None
+    assert allows("", "3.13.14") is None
+    assert allows("n importe quoi", "3.13.14") is None
+    assert allows(">=3.9,<3.10", "") is None
+
+
+def test_ict_pin_conflicts_with_a_313_base():
+    """Le cas mesure de #22297 : la serie epingle 3.9, la base enregistre 3.13.
+
+    Suivre l'indice ferait passer `language_info.version` de 3.13 a 3.9, une
+    descente major.minor que ce meme garde refuse. L'indice doit donc porter le
+    conflit plutot que laisser la lane le decouvrir a la prochaine execution.
+    """
+    nb = ("MyIA.AI.Notebooks/IIT/ICT-Series/"
+          "ICT-40a-TriangulationCausale-Python.ipynb")
+
+    conflit = ckd.canonical_env_hint(
+        nb, root=str(REPO_ROOT), base_language_version="3.13.14")
+    assert conflit is not None
+    assert conflit["requires_python"] == ">=3.9,<3.10"   # le pin reste nomme
+    assert "version_conflict" in conflit, (
+        "une base 3.13 avec un pin >=3.9,<3.10 doit etre signalee : "
+        "re-executer sous 3.9 est une descente refusee par le garde"
+    )
+    assert "3.13.14" in conflit["version_conflict"]
+    assert "DOWNGRADE" in conflit["version_conflict"]
+
+    # Controle positif du silence : les carnets ICT qui tournent REELLEMENT
+    # sur le 3.9 epingle ne doivent porter aucun conflit.
+    sain = ckd.canonical_env_hint(
+        nb, root=str(REPO_ROOT), base_language_version="3.9.25")
+    assert sain is not None
+    assert "version_conflict" not in sain, (
+        "une base 3.9 est hebergee par >=3.9,<3.10 : aucun conflit a declarer"
+    )
+
+
+def test_no_conflict_without_a_base_version():
+    """Sans version de base, le hint garde exactement sa forme d'avant."""
+    hint = ckd.canonical_env_hint(ICT_NOTEBOOK, root=str(REPO_ROOT))
+    assert "version_conflict" not in hint
+
+
+def test_a_compatible_pin_raises_no_conflict(tmp_path):
+    """Controle negatif : un pin qui heberge la base ne doit pas crier au loup."""
+    serie = tmp_path / "Serie"
+    _write(serie / "pyproject.toml",
+           '[project]\nrequires-python = ">=3.11,<3.14"\n'
+           'dependencies = ["numpy>=2.0"]\n')
+    (serie / "nb.ipynb").write_text("{}", encoding="utf-8")
+
+    hint = ckd.canonical_env_hint(
+        "Serie/nb.ipynb", root=str(tmp_path), base_language_version="3.13.14")
+    assert hint["requires_python"] == ">=3.11,<3.14"
+    assert "version_conflict" not in hint
+
+
+def test_explain_branch_reports_the_conflict_instead_of_the_remedy():
+    """Pin structurel : la branche --explain doit brancher sur le conflit.
+
+    Sans ce branchement, le verdict continuerait d'affirmer qu'un rejeu sous
+    l'env epingle « garde le repr commite stable » -- exactement le conseil qui
+    produit la descente refusee.
+    """
+    source = (Path(ckd.__file__)).read_text(encoding="utf-8")
+    start = source.index("if args_obj.explain:")
+    end = source.index('finding["probable_causes"] = causes')
+    explain_branch = source[start:end]
+
+    assert "base_language_version=" in explain_branch, (
+        "le hint doit recevoir la version de la base : sans elle, il ne peut "
+        "pas mesurer que l'intervalle epingle ne l'heberge pas"
+    )
+    assert 'env_hint.get("version_conflict")' in explain_branch, (
+        "le verdict doit distinguer un pointeur suivable d'un pointeur qui "
+        "nous ferait descendre de version"
+    )
