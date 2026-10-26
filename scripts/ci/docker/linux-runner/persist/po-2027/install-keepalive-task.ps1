@@ -67,6 +67,18 @@ $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries `
     -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
 $description = "po-2027 coursia-runner : re-arme le porteur WSL toutes les $Minutes min (self-heal apres wsl --shutdown)"
 
+function Write-KeepaliveTask {
+    param($Action, $Trigger)
+    if (Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue) {
+        Set-ScheduledTask -TaskName $name -Action $Action -Trigger $Trigger -Settings $settings | Out-Null
+        "maj : tache existante mise a jour (idempotent)"
+    } else {
+        Register-ScheduledTask -TaskName $name -Action $Action -Trigger $Trigger `
+            -Settings $settings -Description $description | Out-Null
+        "creation : tache enregistree (non eleve)"
+    }
+}
+
 "tache   : $name"
 "action  : $bash $arguments"
 "repet   : interval=$($trigger.Repetition.Interval) duration=$($trigger.Repetition.Duration)"
@@ -76,16 +88,27 @@ if (-not $Apply) {
     exit 0
 }
 
-if (Get-ScheduledTask -TaskName $name -ErrorAction SilentlyContinue) {
-    Set-ScheduledTask -TaskName $name -Action $action -Trigger $trigger -Settings $settings | Out-Null
-    "maj : tache existante mise a jour (idempotent)"
-} else {
-    Register-ScheduledTask -TaskName $name -Action $action -Trigger $trigger `
-        -Settings $settings -Description $description | Out-Null
-    "creation : tache enregistree (non eleve)"
+try {
+    Write-KeepaliveTask -Action $action -Trigger $trigger
+} catch {
+    # Certains hotes refusent un -RepetitionDuration de 3650 j sur un declencheur
+    # Once : le rejet tombe au Register/Set-ScheduledTask, pas a la construction
+    # du trigger. Repli : FromDays(30). [TimeSpan]::MaxValue a ete le premier
+    # repli envisage, puis mesure refus sur ce poste lui-meme le 2026-10-25 :
+    # le planificateur borne la duree a la validation XML (« valeur hors
+    # limites », Duration:10675199.02:48:05.4775807), le Register n'est meme
+    # pas atteint -- le repli serait mort sur la machine qu'il vise. 30 j se
+    # situe sous la borne documentee (~31 j) et se lit P30D au retour.
+    # Residu assume : un hote qui refuse 3650 j ET reste up plus de 30 j perd
+    # la repetition au bout de 30 j ; un reboot ou un nouveau -Apply la restaure.
+    "repli   : duration 3650 j refusee -- $($_.Exception.Message)"
+    $trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date.AddMinutes(1) `
+        -RepetitionInterval (New-TimeSpan -Minutes $Minutes) `
+        -RepetitionDuration ([TimeSpan]::FromDays(30))
+    Write-KeepaliveTask -Action $action -Trigger $trigger
 }
 
 $task = Get-ScheduledTask -TaskName $name
-"verifie : state=$($task.State) interval='$($task.Triggers[0].Repetition.Interval)' enabled=$($task.Triggers[0].Enabled)"
+"verifie : state=$($task.State) interval='$($task.Triggers[0].Repetition.Interval)' duration='$($task.Triggers[0].Repetition.Duration)' enabled=$($task.Triggers[0].Enabled)"
 "next    : " + (Get-ScheduledTaskInfo -TaskName $name).NextRunTime
 exit 0
