@@ -22,11 +22,44 @@ Le ledger `gpu-reservation` catalogue **une entrée par réservation GPU**, clé
 
 Le **README documente l'intention**, le **ledger documente l'usage réel**. Une réservation GPU consomme une fenêtre de temps qu'aucune autre lane ne doit chevaucher. Sans ledger, deux lanes peuvent exécuter en parallèle sur la même machine et se neutraliser (saturation mémoire, swap, etc.).
 
-Le dashboard `CoursIA-gpu-reservation-ledger` est la **seule source de vérité** de l'usage GPU réel de la flotte. Les fichiers `*.ledger.json` dans `scripts/coordination/_local/` sont des artefacts locaux (init/spool/reduce) qui n'ont aucune valeur cross-machine.
+La **branche `ops/gpu-ledger`** du dépôt est la **source de vérité** de l'usage GPU réel de la flotte : un fichier `gpu-reservation/<machine>.jsonl` par machine, en ajout seul, versionné par git. Elle est lisible par n'importe quelle machine de la flotte, y compris quand le canal de messagerie est indisponible — c'est la raison de son existence.
+
+Le dashboard `CoursIA-gpu-reservation-ledger` en est le **miroir** : utile pour la lecture par un humain et pour l'historique, mais plus autoritaire. Les fichiers `*.ledger.json` dans `scripts/coordination/_local/` sont un **cache** local (init/spool/reduce/snapshot) : `check_pending` le lit, mais un verdict issu du cache ne vaut pas un verdict frais — la sortie nomme sa source.
+
+> **Gouvernance** — déplacer l'autorité est un changement **normatif** (CLAUDE.md §A, « Gouvernance des règles ») : il est soumis à **sign-off user avant merge**, et la modification de ce document est livrée **dans la même PR** que le code.
+
+## Où vit l'état, et comment le lire et le publier
+
+La publication et la lecture passent par `scripts/coordination/debt_ledger.py` :
+
+```
+# publier la file locale dans la branche dédiée (dry-run par défaut)
+python scripts/coordination/debt_ledger.py publish --git
+python scripts/coordination/debt_ledger.py publish --git --emit
+
+# lire l'état d'un device, en nommant la source du verdict
+python scripts/coordination/debt_ledger.py check_pending --ledger gpu-reservation \
+    --entity "myia-ai-01#gpu2" --source auto
+```
+
+`--source` admet `auto` (défaut : la branche, et le cache local en repli **annoncé**), `git` (la branche seule) et `local` (le cache seul). Le verdict nomme toujours sa source ; et si **aucune** source n'est lisible, il nomme l'indisponibilité plutôt que de rendre « device libre ».
+
+## Qui peut ecrire quoi
+
+Une machine n'ecrit que dans **son** fichier : `gpu-reservation/<machine>.jsonl`. L'invariant est **code**, pas une observation de bon comportement — deux garde-fous dans `scripts/coordination/debt_ledger.py` :
+
+1. une observation dont l'entite porte une autre machine est **refusee** avant tout commit (`GIT_PUBLISH_FOREIGN_MACHINE`) ;
+2. le commit publie est **verifie** (`git diff-tree`) : s'il touche un fichier autre que celui de la machine, la publication est **refusee** (`GIT_PUBLISH_SCOPE`) au lieu d'etre poussee.
+
+Concretement : une publication ne peut **jamais** ecraser les observations d'une autre machine. Deux machines qui publient en meme temps se disputent la branche, pas le contenu — l'une des deux est rejetee au push et **republie** (un seul retry automatique), jamais melangee.
 
 ## Quand poster une observation
 
-**Toute lane** qui lance une expérience GPU poste une observation sur le dashboard dédié avant `nvidia-smi` (ou équivalent). Le geste est **rapide** (1 message), **atomique** (1 observation = 1 fenêtre), et **idempotent** (un re-post remplace l'observation précédente pour la même entité, fenêtre mise à jour).
+**Toute lane** qui lance une expérience GPU porte une réservation avant `nvidia-smi` (ou équivalent).
+
+Ce geste est désormais **porté par la garde de lancement** : `scripts/ci/run_guarded.py` accepte `--gpu-entity`, `--gpu-holder`, `--gpu-workload`, `--gpu-expected-end` et `--gpu-issue`. À l'admission, il **consulte** le gate, **écrit** l'observation `held` **avant** de lancer l'enfant, et la **publie** sur la branche `ops/gpu-ledger` ; au teardown, il écrit l'observation `released` qui la ferme et la publie. Il **refuse de lancer** si la réservation n'a pas pu être portée, et **refuse aussi** si elle n'a pas pu être **publiée** : une réservation invisible de la flotte n'est pas une réservation. Une lane qui lance par la garde n'a donc plus rien à poster à la main ; une lane qui lance **sans** la garde conserve le geste manuel ci-dessous. Le geste est **rapide** (1 message), **atomique** (1 observation = 1 fenêtre), et **idempotent** (un re-post remplace l'observation précédente pour la même entité, fenêtre mise à jour).
+
+**Pourquoi la publication est dans la garde, et pas à côté.** Le gate lit l'état **publié** (la branche) ; une observation restée dans le spool local rend le verdict `UNPOSTED`, qui **bloque** le lancement suivant — y compris celui de la machine qui vient de réserver. Sans publication, la séquence `held -> released` se **verrouillerait elle-même** à la deuxième réservation : le premier run ferme, et la machine ne peut plus rien lancer. La publication n'est donc pas une formalityité de flotte, c'est le maillon qui empêche l'auto-blocage.
 
 **Proposition mesurée par `myia-po-2023` le 2026-10-25 — en attente d'arbitrage du coordinateur sur [#16737](https://github.com/jsboige/CoursIA/issues/16737), donc NON en vigueur : le seuil n'est pas la durée, c'est l'annonce.** Un run dont la durée est **annoncée à l'avance** poste un `held` avant son premier appel CUDA et un `released` à la fin, **quelle que soit sa longueur**. Un seuil de 15 min laissait invisibles les runs courts **répétés**, qui occupent le device autant qu'un long — et « machine silencieuse » y devient indiscernable de « machine active » (mesure `myia-po-2023`, 2026-10-25). La règle par l'annonce ne demande aucun jugement sur la durée, ce qui la rend opposable. **Tant que l'arbitrage n'est pas rendu, le seuil des 15 min demeure la règle du protocole.** Restent hors champ les appels d'inférence ponctuels non annoncés, qui ne constituent pas une fenêtre.
 
@@ -119,7 +152,7 @@ Avant `nvidia-smi` (ou tout autre lancement GPU) :
 
 1. **Charge hôte** : `uptime`, `free -g`, `nvidia-smi` — la charge hôte doit rester **< 85 %** sous l'expérience. Au-delà, reporter l'expérience et poster une observation `held` une fois la charge retombée (réservation à venir, pas de geste de lancement).
 2. **CUDA devices** : `CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=<n>` sur la commande elle-même. Ne pas se fier au seul `CUDA_VISIBLE_DEVICES` (variable d'env du shell sans ordre PCI = risque d'allocation ambigu).
-3. **Ledger entry** : poster `[OBS]` (`state: held`) sur `CoursIA-gpu-reservation-ledger` **avant** le geste de lancement (pas après — sinon collision possible). Poster `[OBS]` (`state: released`) à la fin du run, avec `workload` court et `expected_end` réel. **Construire les deux avec `debt_ledger.py append`** : un envelope écrit à la main est rejeté au fold (les deux causes ci-dessus), et une libération rejetée laisse la ligne **`held` sur un device libre**.
+3. **Ledger entry** : porter une réservation `held` **avant** le geste de lancement (pas après — sinon collision possible). Avec les options `--gpu-*` de `scripts/ci/run_guarded.py`, ce point est **automatique** : la garde consulte le gate, écrit le `held` avant de lancer et le `released` à la fin, et refuse un device tenu. Poster `[OBS]` (`state: released`) à la fin du run, avec `workload` court et `expected_end` réel. **Construire les deux avec `debt_ledger.py append`** : un envelope écrit à la main est rejeté au fold (les deux causes ci-dessus), et une libération rejetée laisse la ligne **`held` sur un device libre**.
 4. **GPU 0/1 réservé** : les GPU 0 et 1 de ai-01 portent le vLLM de la flotte et **ne se réservent pas**. Le GPU 2 est le seul slot GPU de cette machine pour les expériences.
 
 ## Périmètre du tenancier
@@ -134,7 +167,9 @@ Le tenancier (`myia-ai-01:CoursIA-2`) :
 
 ## Liaison picker ↔ file #1454
 
-Le picker (`scripts/pick_idle_grain.py`) croise l'urne `delivered` avec un signal **pre-launch** :
+**État mesuré (2026-10-26) : le picker ne consulte pas le gate.** `scripts/pick_idle_grain.py` ne contient aucune occurrence de `check_pending` ni de `evaluate_gpu_pending` ; ce que décrit la suite est le comportement **voulu**, pas le comportement **codé**. Aujourd'hui, c'est la **garde de lancement** (`scripts/ci/run_guarded.py`) qui interroge le gate et qui refuse un device tenu ; le câblage du picker est suivi par l'issue **#22747**.
+
+Le picker (`scripts/pick_idle_grain.py`) doit croiser l'urne `delivered` avec un signal **pre-launch** :
 
 1. Avant de tirer un grain `training` ou `genai` marqué **GPU-bound** (heuristique : à définir), le picker vérifie qu'une observation `[OBS]` existe dans le ledger pour l'entité ciblée via la sous-commande `check_pending --entity <m>#gpu<n>`.
 2. **Pas d'observation `[OBS]`** (`verdict: NO_OBS`) → le picker saute le grain et log `[SKIP gpu-reservation missing]`. La lane worker qui rencontre ce skip doit poster l'observation OU prendre un grain non-GPU.

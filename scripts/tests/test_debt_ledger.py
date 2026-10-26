@@ -22,6 +22,7 @@ Run: python -m pytest scripts/tests/test_debt_ledger.py
 from __future__ import annotations
 
 import json
+import subprocess
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -1590,9 +1591,12 @@ def test_evaluate_gpu_pending_filters_to_matching_entity():
 
 
 def test_cli_check_pending_no_snapshot(tmp_path, capsys):
+    # --source local : le comportement HISTORIQUE pinné ici (no snapshot ->
+    # NO_OBS, exit 0) ; le defaut --source auto est, lui, fail-closed (UNREADABLE
+    # quand git et le cache manquent tous les deux) et a ses propres tests.
     assert dl.main(["check_pending", "--ledger", dl.GPU_RESERVATION,
                     "--entity", "myia-ai-01#gpu2",
-                    "--state-dir", str(tmp_path)]) == 0
+                    "--state-dir", str(tmp_path), "--source", "local"]) == 0
     out = capsys.readouterr().out.strip()
     assert "NO_OBS" in out
     assert "myia-ai-01#gpu2" in out
@@ -1601,7 +1605,7 @@ def test_cli_check_pending_no_snapshot(tmp_path, capsys):
 def test_cli_check_pending_json_output(tmp_path, capsys):
     assert dl.main(["check_pending", "--ledger", dl.GPU_RESERVATION,
                     "--entity", "myia-ai-01#gpu2",
-                    "--state-dir", str(tmp_path), "--json"]) == 0
+                    "--state-dir", str(tmp_path), "--source", "local", "--json"]) == 0
     payload = json.loads(capsys.readouterr().out.strip())
     assert payload["verdict"] == "NO_OBS"
     assert payload["entity"] == "myia-ai-01#gpu2"
@@ -2138,3 +2142,525 @@ def test_module_never_reads_a_naive_clock():
         if not node.args and not node.keywords:
             naive.append(node.lineno)
     assert naive == [], f"datetime.now() sans timezone aux lignes {naive}"
+
+
+# --- git transport: publish --git et check_pending --source git (#22456) -----
+#
+# Hermes: ces tests ne touchent QUE des depots git locaux temporaires sous
+# tmp_path -- aucun reseau, aucun depot du parc, aucun clone de la machine.
+# Un test qui laisserait le vrai git du clone decider rougirait selon la
+# fraicheur du clone (lecon c.2380) : proscrit ici.
+
+
+def _run_git(cmd, *, cwd=None):
+    """git en echec explicite : le stderr de git, pas une exception muette."""
+    proc = subprocess.run(
+        cmd,
+        cwd=str(cwd) if cwd else None,
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    assert proc.returncode == 0, f"{cmd} -> rc={proc.returncode} : {proc.stderr}"
+    return proc.stdout
+
+
+def _git_sandbox(tmp_path):
+    """Un bare (le 'remote') + un clone ``work``, identite git locale posee.
+
+    L'identite est LOCALE au depot : le commit du publish ne depend jamais de
+    la config globale de la machine qui execute la suite.
+    """
+    remote = tmp_path / "remote.git"
+    _run_git(["git", "init", "-q", "--bare", str(remote)])
+    _run_git(["git", "--git-dir", str(remote), "symbolic-ref", "HEAD", "refs/heads/main"])
+    work = tmp_path / "work"
+    _run_git(["git", "clone", "-q", str(remote), str(work)])
+    _run_git(["git", "-C", str(work), "config", "user.email", "ledger@test.invalid"])
+    _run_git(["git", "-C", str(work), "config", "user.name", "ledger test"])
+    (work / "README.md").write_text("seed", encoding="utf-8")
+    _run_git(["git", "-C", str(work), "add", "README.md"])
+    _run_git(["git", "-C", str(work), "commit", "-q", "-m", "seed"])
+    _run_git(["git", "-C", str(work), "push", "-q", "origin", "main"])
+    return remote, work
+
+
+def _bare_show(remote, spec):
+    return _run_git(["git", "--git-dir", str(remote), "show", spec])
+
+
+def _bare_ref(remote, ref):
+    return _run_git(["git", "--git-dir", str(remote), "rev-parse", ref]).strip()
+
+
+def _bare_lines(remote, machine):
+    content = _bare_show(
+        remote,
+        f"refs/heads/{dl.GIT_LEDGER_BRANCH}:gpu-reservation/{machine}.jsonl",
+    )
+    return [line for line in content.splitlines() if line.strip()]
+
+
+def _seed_ledger_branch(work, machine, observations):
+    """Pose les lignes d'une machine sur la branche dediee (cote producteur)."""
+    _run_git(["git", "-C", str(work), "checkout", "-q", "-b", dl.GIT_LEDGER_BRANCH])
+    target = work / "gpu-reservation" / f"{machine}.jsonl"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    with open(target, "w", encoding="utf-8", newline="\n") as stream:
+        for observation in observations:
+            stream.write(dl.envelope_line(observation) + "\n")
+    _run_git(["git", "-C", str(work), "add", "--", "gpu-reservation"])
+    _run_git(["git", "-C", str(work), "commit", "-q", "-m", "seed ledger branch"])
+    _run_git(["git", "-C", str(work), "push", "-q", "origin", dl.GIT_LEDGER_BRANCH])
+    _run_git(["git", "-C", str(work), "checkout", "-q", "main"])
+
+
+def _publish(state_dir, work, machine, *, emit=False):
+    argv = [
+        "publish", "--git", "--state-dir", str(state_dir),
+        "--repo", str(work), "--machine", machine,
+    ]
+    if emit:
+        argv.append("--emit")
+    return dl.main(argv)
+
+
+def _publish_content_lines(text):
+    return [line for line in text.splitlines() if line.strip()]
+
+
+def test_publish_git_dry_run_by_default_writes_nothing(tmp_path, capsys):
+    """Sans --emit : aucun commit, aucun push, spool intact, cache absent."""
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    capsys.readouterr()
+    rc = _publish(state_dir, work, "myia-ai-01")
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "DRY-RUN" in out
+    assert dl.GIT_LEDGER_BRANCH in out
+    assert "dry-run" in out
+    proc = subprocess.run(
+        ["git", "--git-dir", str(remote), "rev-parse", "--verify", "-q",
+         f"refs/heads/{dl.GIT_LEDGER_BRANCH}"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode != 0  # la branche n'existe pas sur le remote
+    assert _spool_pending_count(state_dir) == 1
+    snapshot = state_dir / dl.GPU_RESERVATION / "snapshots" / "snapshot.json"
+    assert not snapshot.exists()
+
+
+def test_publish_without_git_flag_is_a_usage_error(tmp_path, capsys):
+    """Le seul transport est la branche dediee : publish sans --git refuse (rc 2)."""
+    _remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    capsys.readouterr()
+    rc = dl.main([
+        "publish", "--state-dir", str(state_dir), "--repo", str(work),
+        "--machine", "myia-ai-01",
+    ])
+    captured = capsys.readouterr()
+    assert rc == 2
+    assert "--git" in captured.err
+    assert _spool_pending_count(state_dir) == 1
+
+
+def test_publish_git_emit_creates_branch_one_line_per_observation(tmp_path, capsys):
+    """--emit cree la branche, une ligne [OBS] {json} par observation, draine
+    le spool et rafraichit le cache local depuis la branche."""
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    capsys.readouterr()
+    rc = _publish(state_dir, work, "myia-ai-01", emit=True)
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "PUBLISHED 1 observation(s)" in out
+    lines = _bare_lines(remote, "myia-ai-01")
+    assert len(lines) == 1
+    assert lines[0].startswith(f"{dl.ENVELOPE_PREFIX} ")
+    published = json.loads(lines[0][len(dl.ENVELOPE_PREFIX) :])
+    assert published["entity"] == {"machine": "myia-ai-01", "gpu_index": 2}
+    assert published["fields"]["state"] == "held"
+    # drain : les ids publies quittent le spool (plus jamais UNPOSTED)
+    assert _spool_pending_count(state_dir) == 0
+    posted = state_dir / dl.GPU_RESERVATION / "spool" / "posted"
+    assert posted.is_dir() and list(posted.glob("*.json"))
+    # cache local recalcule depuis la branche : le chemin local retrouve le held
+    snapshot_path = state_dir / dl.GPU_RESERVATION / "snapshots" / "snapshot.json"
+    snapshot = json.loads(snapshot_path.read_text(encoding="utf-8"))
+    assert snapshot["schema"] == dl.SNAPSHOT_SCHEMA
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-ai-01#gpu2",
+        "--state-dir", str(state_dir), "--source", "local", FROZEN,
+        "--my-lane", "myia-po-2025:CoursIA-2",
+    ])
+    assert rc == 1
+    assert capsys.readouterr().out.startswith("HOLD")
+
+
+def test_publish_git_emit_is_idempotent(tmp_path, capsys):
+    """Republier ne duplique aucune ligne : l'id fait foi."""
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    assert _publish(state_dir, work, "myia-ai-01", emit=True) == 0
+    branch_ref = f"refs/heads/{dl.GIT_LEDGER_BRANCH}"
+    sha_before = _bare_ref(remote, branch_ref)
+    assert len(_bare_lines(remote, "myia-ai-01")) == 1
+    capsys.readouterr()
+    assert _publish(state_dir, work, "myia-ai-01", emit=True) == 0
+    out = capsys.readouterr().out
+    assert "NOTHING TO PUBLISH" in out
+    assert len(_bare_lines(remote, "myia-ai-01")) == 1
+    assert _bare_ref(remote, branch_ref) == sha_before  # rien n'a ete pousse
+
+
+def test_publish_git_two_machines_two_files_no_conflict(tmp_path):
+    """Deux machines publient vers la meme branche : deux fichiers, zero conflit."""
+    remote, work = _git_sandbox(tmp_path)
+    state_a = _gpu_state(tmp_path / "machine-a")
+    state_b = _gpu_state(tmp_path / "machine-b")
+    assert _append_hold(state_a) == 0
+    payload_b = {
+        "state": "held",
+        "holder": "myia-po-2025:CoursIA-2",
+        "workload": "ODM photogrammetrie",
+        "started_at": "2026-09-17T19:00:00Z",
+        "expected_end": "2026-09-17T23:00:00Z",
+        "issue": "jsboige/CoursIA#1454",
+    }
+    assert dl.main([
+        "append", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-po-2025#gpu0",
+        "--actor", "myia-po-2025:CoursIA-2", "--observed-at", "2026-09-17T19:10:00Z",
+        "--evidence", "nvidia-smi", "--confidence", "high",
+        "--fields-json", json.dumps(payload_b),
+        "--state-dir", str(state_b), "--quiet",
+    ]) == 0
+    assert _publish(state_a, work, "myia-ai-01", emit=True) == 0
+    assert _publish(state_b, work, "myia-po-2025", emit=True) == 0
+    tree = _run_git(
+        ["git", "--git-dir", str(remote), "ls-tree", "-r", "--name-only",
+         f"refs/heads/{dl.GIT_LEDGER_BRANCH}"]
+    )
+    files = sorted(line.strip() for line in tree.splitlines() if line.strip())
+    assert files == [
+        "gpu-reservation/myia-ai-01.jsonl",
+        "gpu-reservation/myia-po-2025.jsonl",
+    ]
+    assert len(_bare_lines(remote, "myia-ai-01")) == 1
+    assert len(_bare_lines(remote, "myia-po-2025")) == 1
+
+
+def test_publish_git_pushes_the_dedicated_branch_never_main(tmp_path):
+    """La poussee vise ops/gpu-ledger ; main ne bouge pas d'un octet."""
+    remote, work = _git_sandbox(tmp_path)
+    main_before = _bare_ref(remote, "refs/heads/main")
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    assert _publish(state_dir, work, "myia-ai-01", emit=True) == 0
+    assert _bare_ref(remote, "refs/heads/main") == main_before
+    assert _bare_ref(remote, f"refs/heads/{dl.GIT_LEDGER_BRANCH}") != main_before
+
+
+def test_check_pending_source_git_hold(tmp_path, capsys):
+    """Un held seul sur la branche : HOLD pour une autre lane, source=git."""
+    _remote, work = _git_sandbox(tmp_path)
+    held_obs = dl.parse_observation(held(), dl.GPU_RESERVATION)
+    _seed_ledger_branch(work, "myia-po-2023", [held_obs])
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-po-2023#gpu1",
+        "--source", "git", "--repo", str(work), FROZEN,
+        "--state-dir", str(tmp_path / "state-vierge"),
+        "--my-lane", "myia-ai-01:CoursIA-2",
+    ])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert out.startswith("HOLD")
+    assert "source=git" in out
+
+
+def test_check_pending_source_git_ok_to_run_for_the_holder(tmp_path, capsys):
+    """Le tenant lit son propre held dans la fenetre : OK_TO_RUN, exit 0."""
+    _remote, work = _git_sandbox(tmp_path)
+    held_obs = dl.parse_observation(held(), dl.GPU_RESERVATION)
+    _seed_ledger_branch(work, "myia-po-2023", [held_obs])
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-po-2023#gpu1",
+        "--source", "git", "--repo", str(work), FROZEN,
+        "--state-dir", str(tmp_path / "state-vierge"),
+        "--my-lane", "myia-po-2023:CoursIA",
+    ])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert out.startswith("OK_TO_RUN")
+    assert "source=git" in out
+
+
+def test_check_pending_source_git_released_wins_over_the_older_hold(tmp_path, capsys):
+    """held puis released : la derniere observation gagne -> RELEASED."""
+    _remote, work = _git_sandbox(tmp_path)
+    observations = [
+        dl.parse_observation(held(), dl.GPU_RESERVATION),
+        dl.parse_observation(
+            held(state="released", observed_at="2026-09-17T19:40:00Z"),
+            dl.GPU_RESERVATION,
+        ),
+    ]
+    _seed_ledger_branch(work, "myia-po-2023", observations)
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-po-2023#gpu1",
+        "--source", "git", "--repo", str(work), FROZEN,
+        "--state-dir", str(tmp_path / "state-vierge"),
+        "--my-lane", "myia-ai-01:CoursIA-2",
+    ])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert out.startswith("RELEASED")
+
+
+def test_check_pending_source_git_entity_without_observation(tmp_path, capsys):
+    """Une entite sans observation sur la branche : NO_OBS, exit 0."""
+    _remote, work = _git_sandbox(tmp_path)
+    held_obs = dl.parse_observation(held(), dl.GPU_RESERVATION)
+    _seed_ledger_branch(work, "myia-po-2023", [held_obs])
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-po-2024#gpu3",
+        "--source", "git", "--repo", str(work), FROZEN,
+        "--state-dir", str(tmp_path / "state-vierge"),
+    ])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert out.startswith("NO_OBS")
+
+
+def test_check_pending_source_git_missing_branch_is_unreadable_not_free(tmp_path, capsys):
+    """Branche absente : le verdict NOMME l'indisponibilite, jamais device libre."""
+    _remote, work = _git_sandbox(tmp_path)  # pas de branche ops/gpu-ledger
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-ai-01#gpu2",
+        "--source", "git", "--repo", str(work), FROZEN, "--json",
+        "--state-dir", str(tmp_path / "state-vierge"),
+    ])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert payload["verdict"] == "UNREADABLE"
+    assert "indisponible" in payload["reason"]
+    assert payload["source"].startswith("git")
+    assert payload["verdict"] != "NO_OBS"
+
+
+def test_check_pending_git_outbox_pending_still_wins(tmp_path, capsys):
+    """La garde UNPOSTED passe AVANT la lecture git : un outbox non vide
+    invalide tout verdict, quelle que soit la source demandee."""
+    _remote, work = _git_sandbox(tmp_path)
+    observations = [
+        dl.parse_observation(held(), dl.GPU_RESERVATION),
+        dl.parse_observation(
+            held(state="released", observed_at="2026-09-17T19:40:00Z"),
+            dl.GPU_RESERVATION,
+        ),
+    ]
+    _seed_ledger_branch(work, "myia-po-2023", observations)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0  # un held jamais publie attend dans le spool
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-po-2023#gpu1",
+        "--source", "git", "--repo", str(work), FROZEN,
+    ])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert out.startswith("UNPOSTED")
+
+
+def test_check_pending_source_local_never_runs_git(tmp_path, capsys, monkeypatch):
+    """--source local garde le comportement historique et ne touche jamais git."""
+    state_dir = _gpu_state(tmp_path)
+    calls: list = []
+
+    def _spy(args, *, cwd):
+        calls.append(list(args))
+        return 0, "", ""
+
+    monkeypatch.setattr(dl, "_git", _spy)
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-ai-01#gpu2",
+        "--state-dir", str(state_dir), "--source", "local",
+    ])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert out.startswith("NO_OBS")  # pas de snapshot : verdict historique, exit 0
+    assert "source=local" in out
+    assert calls == []
+
+
+def test_check_pending_source_auto_reads_git_when_available(tmp_path, capsys):
+    """auto (defaut) lit git quand la branche est lisible : source=git."""
+    _remote, work = _git_sandbox(tmp_path)
+    held_obs = dl.parse_observation(held(), dl.GPU_RESERVATION)
+    _seed_ledger_branch(work, "myia-po-2023", [held_obs])
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-po-2023#gpu1",
+        "--source", "auto", "--repo", str(work), FROZEN,
+        "--state-dir", str(tmp_path / "state-vierge"),
+        "--my-lane", "myia-ai-01:CoursIA-2",
+    ])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert out.startswith("HOLD")
+    assert "source=git" in out
+
+
+def test_check_pending_source_auto_names_the_local_fallback(tmp_path, capsys):
+    """auto + branche injoignable : repli sur le cache local, NOMME dans la sortie."""
+    _remote, work = _git_sandbox(tmp_path)  # pas de branche ops/gpu-ledger
+    state_dir = _gpu_state(tmp_path)
+    export_path = tmp_path / "events.json"
+    export_path.write_text(
+        json.dumps(
+            journal(
+                dl.GPU_RESERVATION,
+                [held(state="released", observed_at="2026-09-17T19:40:00Z")],
+            )
+        ),
+        encoding="utf-8",
+    )
+    assert dl.main([
+        "reduce", "--ledger", dl.GPU_RESERVATION, "--events", str(export_path),
+        "--state-dir", str(state_dir),
+    ]) == 0
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-po-2023#gpu1",
+        "--source", "auto", "--repo", str(work), FROZEN,
+        "--state-dir", str(state_dir),
+    ])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert out.startswith("RELEASED")
+    assert "source=local (git indisponible" in out
+
+
+def test_check_pending_source_auto_without_any_source_is_unreadable(tmp_path, capsys):
+    """auto + branche injoignable + pas de cache : UNREADABLE, jamais libre."""
+    _remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)  # init, mais jamais reduit : aucun snapshot
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-ai-01#gpu2",
+        "--source", "auto", "--repo", str(work), FROZEN, "--json",
+        "--state-dir", str(state_dir),
+    ])
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 1
+    assert payload["verdict"] == "UNREADABLE"
+    assert "git indisponible" in payload["source"]
+
+
+# --- invariants de publication (#22456) -------------------------------------
+#
+# Une machine n'ecrit que dans SON fichier. Ces trois tests sont les temoins
+# negatifs de l'invariant : chacun echoue si la propriete cesse d'etre vrai.
+
+
+def _append_gpu_hold(state_dir, entity, **fields):
+    """Un `held` sur l'entite demandee (machine variable, pour T1)."""
+    payload = {
+        "state": "held",
+        "holder": "myia-ai-01:CoursIA-2",
+        "workload": "run de test",
+        "started_at": "2026-09-17T18:00:00Z",
+        "expected_end": "2026-09-17T21:00:00Z",
+    }
+    payload.update(fields)
+    return dl.main(
+        [
+            "append", "--ledger", dl.GPU_RESERVATION, "--entity", entity,
+            "--actor", "myia-ai-01:CoursIA-2", "--observed-at", "2026-09-17T19:00:00Z",
+            "--evidence", "nvidia-smi", "--confidence", "high",
+            "--fields-json", json.dumps(payload), "--state-dir", str(state_dir), "--quiet",
+        ]
+    )
+
+
+def test_publish_refuses_an_observation_of_another_machine(tmp_path, capsys):
+    """T1 : une observation de `myia-po-2024` ne peut pas etre ecrite dans le
+    fichier de `myia-ai-01`. Le refus vient AVANT tout commit, et rien n'est
+    pousse : le voisin n'est jamais ecrase."""
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_gpu_hold(state_dir, "myia-po-2024#gpu1") == 0
+    capsys.readouterr()
+    rc = _publish(state_dir, work, "myia-ai-01", emit=True)
+    err = capsys.readouterr().err
+    assert rc != 0
+    assert "GIT_PUBLISH_FOREIGN_MACHINE" in err
+    assert "myia-po-2024" in err
+    # rien sur le remote, rien archive : l'observation reste en attente
+    proc = subprocess.run(
+        ["git", "--git-dir", str(remote), "rev-parse", "--verify", "-q",
+         f"refs/heads/{dl.GIT_LEDGER_BRANCH}"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode != 0
+    assert _spool_pending_count(state_dir) == 1
+
+
+def test_publish_commit_touches_only_the_machine_file(tmp_path, capsys):
+    """T2 : le commit publie ne touche QUE le fichier de la machine ; les
+    fichiers des autres machines sont portes tels quels. La branche est nee
+    ici : le commit est une racine, son arbre porte donc le fichier unique."""
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    capsys.readouterr()
+    assert _publish(state_dir, work, "myia-ai-01", emit=True) == 0
+    tip = _bare_ref(remote, f"refs/heads/{dl.GIT_LEDGER_BRANCH}")
+    touched = [
+        line.strip()
+        for line in _run_git(
+            ["git", "--git-dir", str(remote), "diff-tree", "--no-commit-id",
+             "--name-only", "-r", "--root", tip]
+        ).splitlines()
+        if line.strip()
+    ]
+    assert touched == ["gpu-reservation/myia-ai-01.jsonl"]
+
+
+def test_publish_refusal_names_the_retained_observations(tmp_path, capsys, monkeypatch):
+    """T3 : un push refuse deux fois ne perd rien : l'echec nomme les
+    observations RETENUES (`published=false`) et le spool les conserve."""
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+
+    vrai_git = dl._git
+
+    def git_push_refuse(args, *, cwd):
+        if args and args[0] == "push":
+            return 1, "", "rejected (test)"
+        return vrai_git(args, cwd=cwd)
+
+    monkeypatch.setattr(dl, "_git", git_push_refuse)
+    capsys.readouterr()
+    rc = _publish(state_dir, work, "myia-ai-01", emit=True)
+    err = capsys.readouterr().err
+    assert rc != 0
+    assert "GIT_PUSH_REJECTED" in err
+    assert "published=false" in err
+    assert "obs-" in err
+    # le fantome est detectable et rien n'est perdu
+    assert _spool_pending_count(state_dir) == 1
