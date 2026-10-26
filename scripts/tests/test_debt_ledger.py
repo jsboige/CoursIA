@@ -3140,19 +3140,20 @@ def test_deux_publieurs_meme_fichier_aucune_observation_perdue(tmp_path, monkeyp
     assert not thread_b.is_alive()
     assert "exc" not in result_b, result_b.get("exc")
     assert paused == [True], "l'entrelacement doit avoir ete joue"
-    # Le mecanisme attendu : la premiere poussee de B, fabriquee sur la tete
-    # d'avant A, n'est pas un fast-forward -- rejetee, puis rejouee sur
-    # l'arbre relu. Une seule poussee voudrait dire que B a ecrase A.
-    assert len(pushes_b) == 2, pushes_b
 
     on_branch = _remote_ids(remote, "myia-ai-01")
     both_survived = id_a in on_branch and id_b in on_branch
     assert both_survived, {
         "BOTH_SURVIVED": both_survived, "id_a": id_a, "id_b": id_b,
-        "branche": sorted(on_branch),
+        "branche": sorted(on_branch), "rc_b": result_b.get("rc"),
+        "poussees_b": len(pushes_b),
     }
     assert seed_ids <= on_branch
     assert result_b.get("rc") == 0, result_b
+    # Le mecanisme attendu : la premiere poussee de B, fabriquee sur la tete
+    # d'avant A, n'est pas un fast-forward -- rejetee, puis rejouee sur
+    # l'arbre relu. Une seule poussee voudrait dire que B a ecrase A.
+    assert len(pushes_b) == 2, pushes_b
     # Aucun spool n'a ete vide d'une observation absente de la branche.
     for name, state in (("A", state_a), ("B", state_b)):
         drained = _spool_ids(state, posted=True)
@@ -3202,7 +3203,8 @@ def test_spool_non_draine_si_l_observation_manque_au_commit_pousse(
     rc = _publish(state_dir, work, "myia-ai-01", emit=True)
     err = capsys.readouterr().err
     assert pushed, "la poussee doit avoir eu lieu"
-    assert rc != 0, err
+    assert rc != 0, ("spool draine sans verifier le commit pousse", rc,
+                     _spool_ids(state_dir, posted=True))
     assert "GIT_PUBLISH_LOSS" in err, err
     assert obs_id in err, err
     assert _spool_ids(state_dir, posted=False) == {obs_id}
