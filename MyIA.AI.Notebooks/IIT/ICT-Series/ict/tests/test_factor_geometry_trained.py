@@ -261,3 +261,132 @@ def test_plancher_gamma_zero_sous_l_uniforme():
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestMetriquesInvariantesEtCiblesDegenerees(unittest.TestCase):
+    """Contrats 11 a 15 : les metriques ne doivent pas mentir sur la geometrie.
+
+    11. (``overlap_principal_max`` invariant) : le plus grand cosinus
+        principal est invariant par rotation des bases -- contrairement a
+        ``overlap_coef_max``, qui depend du choix de base et bouge donc sans
+        que la geometrie du sous-espace change (mesure du 2026-10-26 : 1,000
+        puis 0,707 pour le MEME plan, apres rotation d'une base).
+    12. (cible degeneree) : une cible constante a la precision machine pres
+        donne un rang nul et des metriques ``nan`` -- jamais un R^2 fabrique
+        par le bruit d'arrondi (le canal muet, ``gamma = 1``, rendait
+        R^2 = 0,747 et un rang 1 sur une cible sans aucune information).
+    13. (gap indefini) : quand un des deux sous-espaces est vide, le gap
+        entier est ``nan`` et non 0 : un 0 se lirait « additif ».
+    14. (bande degeneree) : une bande de largeur nulle ne discrimine rien,
+        la position est rendue ``n/a``.
+    15. (verdicts) : les deux verdicts des criteres de #20071 rendent les
+        trois issues possibles, et le critere 2 n'est Satisfait que par un
+        gap strictement negatif HORS de la bande du temoin.
+    """
+
+    def test_overlap_principal_max_invariant_par_rotation_de_base(self):
+        e = np.zeros((8, 3))
+        e[0, 0] = 1.0
+        e[1, 1] = 1.0
+        e[2, 2] = 1.0
+        a = e[:, :2]
+        b = a  # meme plan, deux bases
+        # meme sous-espace, base tournee de 45 degres
+        rot = np.array([[np.sqrt(0.5), np.sqrt(0.5)], [np.sqrt(0.5), -np.sqrt(0.5)]])
+        a2 = a @ rot
+        # la metrique historique N'EST PAS invariante
+        from ict.factor_geometry import basis_overlap
+
+        self.assertAlmostEqual(float(basis_overlap(a, b).max()), 1.0, places=9)
+        self.assertNotAlmostEqual(float(basis_overlap(a2, b).max()), 1.0, places=3)
+        # la metrique invariante, elle, ne bouge pas
+        self.assertAlmostEqual(fgt.overlap_principal_max(a, b), 1.0, places=9)
+        self.assertAlmostEqual(fgt.overlap_principal_max(a2, b), 1.0, places=9)
+        # et l'energie non plus
+        self.assertAlmostEqual(fgt.overlap_energy(a, b), 1.0, places=9)
+        self.assertAlmostEqual(fgt.overlap_energy(a2, b), 1.0, places=9)
+
+    def test_cible_constante_donne_rang_nul_et_nan(self):
+        rng = np.random.default_rng(0)
+        h = rng.normal(size=(200, 8))
+        constante = np.full((200, 3), 1.0 / 3.0)
+        rep = fgt.factor_geometry_report(h, constante, rng.dirichlet(np.ones(3), size=200))
+        self.assertEqual(rep["dim_a"], 0.0)
+        self.assertTrue(np.isnan(rep["probe_r2_a"]))
+        self.assertTrue(np.isnan(rep["additivity_gap"]))
+        self.assertTrue(np.isnan(rep["overlap_energy"]))
+        self.assertTrue(np.isnan(rep["overlap_principal_max"]))
+
+    def test_cible_constante_a_precision_machine_nest_pas_une_cible(self):
+        # le cas du canal muet : la cible est constante AU BIT PRES pres, et
+        # ses residus d'arrondi ne doivent pas fabriquer une direction
+        rng = np.random.default_rng(1)
+        h = rng.normal(size=(200, 8))
+        bruit = 1e-14 * rng.normal(size=(200, 3))
+        cible = np.full((200, 3), 1.0 / 3.0) + bruit
+        rep = fgt.factor_geometry_report(h, cible, rng.dirichlet(np.ones(3), size=200))
+        self.assertEqual(rep["dim_a"], 0.0)
+        self.assertTrue(np.isnan(rep["probe_r2_a"]))
+
+    def test_bande_de_width_nulle_rendue_na(self):
+        from ict import factor_geometry_regimes as freg
+
+        bande = {"p05": 0.0, "p95": 0.0, "n": 6.0}
+        self.assertTrue(freg.bande_degeneree(bande))
+        self.assertEqual(freg.position_contre_bande(0.0, bande), "n/a")
+        # ... mais le critere 2 compare malgre tout : c'est le SIGNE qui compte
+        self.assertEqual(
+            freg.position_contre_bande(-2.0, bande, comparer_bande_degeneree=True),
+            "sous_bande",
+        )
+
+    def test_verdicts_des_deux_criteres(self):
+        from ict import factor_geometry_regimes as freg
+
+        # critere 1 : la courbe sort de la bande puis y revient -> seuil nomme
+        def _niveau(gamma, valeur, p05, p95):
+            return {
+                "gamma": gamma,
+                "rapport": {"overlap_coef_max": valeur},
+                "temoin": {"overlap_coef_max": {"p05": p05, "p95": p95, "n": 6.0}},
+            }
+
+        lignes = [
+            _niveau(0.0, 0.9, 0.2, 0.4),
+            _niveau(0.5, 0.9, 0.2, 0.4),
+            _niveau(0.75, 0.3, 0.2, 0.4),
+            _niveau(1.0, 0.3, 0.2, 0.4),
+        ]
+        v = freg.verdict_sweep_bande(lignes, "overlap_coef_max")
+        self.assertEqual(v["issue"], "retour_durable")
+        self.assertEqual(v["seuil"], 0.75)
+        # jamais sorti
+        v2 = freg.verdict_sweep_bande([_niveau(0.0, 0.3, 0.2, 0.4)], "overlap_coef_max")
+        self.assertEqual(v2["issue"], "jamais_sorti")
+        # indecidable : sortie isolee, pas de retour durable
+        v3 = freg.verdict_sweep_bande(
+            [_niveau(0.0, 0.9, 0.2, 0.4), _niveau(0.5, 0.3, 0.2, 0.4), _niveau(1.0, 0.9, 0.2, 0.4)],
+            "overlap_coef_max",
+        )
+        self.assertEqual(v3["issue"], "indecidable")
+
+        # critere 2 : satisfait seulement par un gap negatif hors bande
+        resultats = {
+            "conditionnel": {
+                "par_seed": {
+                    0: {"rapport": {"additivity_gap": -2.0}},
+                    1: {"rapport": {"additivity_gap": -2.0}},
+                },
+                "temoin": {"additivity_gap": {"p05": 0.0, "p95": 0.0, "n": 6.0}},
+            },
+            "independant": {
+                "par_seed": {0: {"rapport": {"additivity_gap": 0.0}}},
+                "temoin": {"additivity_gap": {"p05": 0.0, "p95": 0.0, "n": 6.0}},
+            },
+        }
+        verdict = freg.verdict_critere_2(resultats, {"marginales_exactes": True})
+        self.assertTrue(verdict["bras"]["conditionnel"]["satisfait"])
+        self.assertFalse(verdict["bras"]["independant"]["satisfait"])
+        # marginales non appariees : le critere ne peut pas etre satisfait
+        verdict2 = freg.verdict_critere_2(resultats, {"marginales_exactes": False})
+        self.assertFalse(verdict2["bras"]["conditionnel"]["satisfait"])
