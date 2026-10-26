@@ -123,6 +123,71 @@ class TestRenameAwareness(unittest.TestCase):
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
 
 
+class TestAddedAgainstAdded(unittest.TestCase):
+    """Acceptance #22059 : deux AJOUTS de la meme revision se comparent entre eux.
+
+    Le defaut n'est pas une erreur de lecture mais une comparaison absente : chaque
+    ajout etait confronte a la base, ou son index etait libre, et aucun ne voyait
+    l'autre. Les deux carnets `04-17` de `GenAI/Audio/04-Applications` sont passes
+    ainsi. Les fixtures portent un commit reel avec les DEUX ajouts, comme le test
+    de rename : une liste fabriquee ne prouverait pas que `git diff` les rend dans
+    la meme fenetre.
+    """
+
+    def test_positive_control_two_additions_same_slot_redden(self):
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            _write(repo, "a/03-DL/4.1-Alpha.ipynb")
+            _write(repo, "a/03-DL/4.1-Beta.ipynb")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "two additions on the same slot")
+
+            # Sans cette assertion, un garde qui n'aurait rien examine passerait le
+            # test pour la mauvaise raison.
+            status = _git(repo, "diff", "--name-status", "--no-renames",
+                          "--diff-filter=A", base, "HEAD")
+            self.assertEqual(len(status.strip().splitlines()), 2,
+                             "la fenetre de diff ne porte pas les deux ajouts : "
+                             "le controle positif ne reproduit plus la condition.")
+
+            r = _run_guard(repo, base)
+            self.assertEqual(r.returncode, 1,
+                             "deux ajouts au meme index doivent rougir\n"
+                             "stdout:\n%s\nstderr:\n%s" % (r.stdout, r.stderr))
+            self.assertIn("COLLISION", r.stdout)
+            self.assertIn("4.1-Alpha.ipynb", r.stdout)
+            self.assertIn("4.1-Beta.ipynb", r.stdout)
+            self.assertIn("MEME revision", r.stdout)
+
+    def test_negative_control_two_additions_language_siblings_stay_green(self):
+        """Deux rendus du meme item ajoutes ensemble restent legitimes."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            _write(repo, "a/03-DL/4.1-Alpha.ipynb")
+            _write(repo, "a/03-DL/4.1-Alpha_en.ipynb")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "two language renderings")
+
+            r = _run_guard(repo, base)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+            self.assertIn("OK", r.stdout)
+
+    def test_negative_control_two_additions_different_directories_stay_green(self):
+        """Le meme index dans deux series differentes n'est pas une collision."""
+        with tempfile.TemporaryDirectory() as td:
+            repo = Path(td)
+            base = _init_repo(repo)
+            _write(repo, "a/03-DL/4.1-Alpha.ipynb")
+            _write(repo, "b/03-DL/4.1-Beta.ipynb")
+            _git(repo, "add", "-A")
+            _git(repo, "commit", "-qm", "same index, distinct series")
+
+            r = _run_guard(repo, base)
+            self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+
+
 class TestPerimeterIsStated(unittest.TestCase):
     """Acceptance #16040 : la portee du LECTEUR est imprimee avant le verdict.
 
