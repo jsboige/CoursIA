@@ -71,7 +71,7 @@ Gisement `G:\Mon Drive\MyIA\IA\Bibliographie IA\GameTheory\` (identité vérifi�
 
 - Vallinder A., Hughes C. (2024) — *Cultural Evolution of Cooperation among LLM Agents*.
 - Payne J., Alloui M., Cros A. (2025) — *Strategic Intelligence in Large Language Models*.
-- Axelrod R. (1984) — *The Evolution of Cooperation* (IPD, tournoi informatique) — cité pour les payoffs. Recherche par auteur et par titre sur les 99 fichiers du rayon `GameTheory\` au 2026-10-24 : **aucune copie archivée** ; le gisement porte en revanche `2014 - Barasz et al - Robust Cooperation…` et `2022 - Critch Dennis Russell - Cooperative and Uncooperative Institution Designs`, qui ne sont pas la source des payoffs.
+- Axelrod R. (1984) — *The Evolution of Cooperation* (IPD, tournoi informatique) — cité pour les payoffs. Recherche par auteur et par titre dans le rayon `GameTheory\` au 2026-10-24 : **aucune copie archivée** ; le gisement porte en revanche `2014 - Barasz et al - Robust Cooperation…` et `2022 - Critch Dennis Russell - Cooperative and Uncooperative Institution Designs`, qui ne sont pas la source des payoffs.
 
 ## 5. Renvois
 
