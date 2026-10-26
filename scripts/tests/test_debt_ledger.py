@@ -25,6 +25,7 @@ import importlib.util
 import json
 import subprocess
 import sys
+import threading
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
@@ -3035,3 +3036,179 @@ def test_fetch_en_echec_ref_perime_n_autorise_rien(tmp_path, capsys, monkeypatch
         guarded, monkeypatch, work=client, state_dir=state_client, lane=lane_b)
     assert admitted is False, (verdict, detail)
     assert verdict == "UNREADABLE", (verdict, detail)
+
+
+def _spool_ids(state_dir, *, posted):
+    """Les `observation_id` du spool : en attente, ou deja archives (`posted`)."""
+    spool = state_dir / dl.GPU_RESERVATION / "spool"
+    if not posted:
+        return {
+            str(item["observation"]["observation_id"])
+            for item in dl.spool_pending(spool, ledger=dl.GPU_RESERVATION)
+        }
+    ids = set()
+    for path in sorted((spool / "posted").glob("*.json")):
+        archived = dl.parse_envelope(path.read_text(encoding="utf-8"))
+        ids.add(str(archived["observation_id"]))
+    return ids
+
+
+def _remote_ids(remote, machine):
+    return {
+        str(dl.parse_envelope(line)["observation_id"])
+        for line in _bare_lines(remote, machine)
+    }
+
+
+def test_deux_publieurs_meme_fichier_aucune_observation_perdue(tmp_path, monkeypatch):
+    """Finding Hermes 2 (PR #22755) : deux lanes de la meme machine publient
+    des observations DIFFERENTES dans le MEME fichier, depuis le meme depot.
+
+    Complement du cas `two_machines_two_files_no_conflict` : la course est
+    ici sur un seul fichier. L'entrelacement est force, sans sommeil : le
+    publieur B lit la branche, puis s'arrete juste avant de fabriquer son
+    commit ; A publie de bout en bout (son push deplace la tete distante et
+    son `update-ref` le ref de suivi) ; B reprend.
+
+    Avant le correctif, B relisait le ref au moment de `commit-tree` : son
+    commit avait pour parent la tete de A mais le fichier d'avant A. La
+    poussee etait un fast-forward, acceptee, et la ligne de A disparaissait ;
+    le spool de A, deja vide, ne la republiait jamais. `GIT_PUBLISH_SCOPE`
+    ne voyait rien (un seul chemin touche).
+    """
+    remote, work = _git_sandbox(tmp_path)
+    state_a = _gpu_state(tmp_path / "lane-a")
+    state_b = _gpu_state(tmp_path / "lane-b")
+    lane_a, lane_b = "myia-ai-01:CoursIA", "myia-ai-01:CoursIA-2"
+
+    # La branche et le fichier existent deja (le defaut exige une tete a
+    # deplacer) : un `released` publie par A.
+    assert _append_live_gpu(
+        state_a, state="released", holder=lane_a, observed_at="2026-10-26T08:00:00Z",
+        started_at="2026-10-26T07:00:00Z", expected_end="2026-10-26T08:00:00Z") == 0
+    assert _publish(state_a, work, "myia-ai-01", emit=True) == 0
+    seed_ids = _remote_ids(remote, "myia-ai-01")
+    assert len(seed_ids) == 1
+
+    # Deux observations differentes, une par lane, sur le meme fichier.
+    assert _append_live_gpu(
+        state_a, state="held", holder=lane_a, observed_at="2026-10-26T09:00:00Z",
+        started_at="2026-10-26T09:00:00Z", expected_end="2026-10-26T11:00:00Z") == 0
+    assert _append_live_gpu(
+        state_b, state="held", holder=lane_b, observed_at="2026-10-26T09:01:00Z",
+        started_at="2026-10-26T09:01:00Z", expected_end="2026-10-26T10:00:00Z") == 0
+    (id_a,) = _spool_ids(state_a, posted=False)
+    (id_b,) = _spool_ids(state_b, posted=False)
+    assert id_a != id_b
+
+    b_before_commit = threading.Event()
+    a_done = threading.Event()
+    real_git = dl._git
+    paused = []
+    pushes_b = []
+
+    def interleaved_git(args, *, cwd):
+        is_b = threading.current_thread().name == "publieur-B"
+        if is_b and args and args[0] == "push":
+            pushes_b.append(list(args))
+        # B s'arrete UNE fois, sur l'`add` de son fichier : il a deja lu la
+        # branche, il n'a pas encore fabrique son commit.
+        if is_b and not paused and args and args[0] == "add":
+            paused.append(True)
+            b_before_commit.set()
+            if not a_done.wait(120):
+                raise RuntimeError("A n'a jamais termine : entrelacement non joue")
+        return real_git(args, cwd=cwd)
+
+    monkeypatch.setattr(dl, "_git", interleaved_git)
+    result_b = {}
+
+    def publish_b():
+        try:
+            result_b["rc"] = _publish(state_b, work, "myia-ai-01", emit=True)
+        except BaseException as exc:  # rendu au thread principal, jamais avale
+            result_b["exc"] = exc
+
+    thread_b = threading.Thread(target=publish_b, name="publieur-B")
+    thread_b.start()
+    try:
+        assert b_before_commit.wait(120), "B n'a jamais atteint son commit"
+        assert _publish(state_a, work, "myia-ai-01", emit=True) == 0
+    finally:
+        a_done.set()
+        thread_b.join(180)
+    assert not thread_b.is_alive()
+    assert "exc" not in result_b, result_b.get("exc")
+    assert paused == [True], "l'entrelacement doit avoir ete joue"
+    # Le mecanisme attendu : la premiere poussee de B, fabriquee sur la tete
+    # d'avant A, n'est pas un fast-forward -- rejetee, puis rejouee sur
+    # l'arbre relu. Une seule poussee voudrait dire que B a ecrase A.
+    assert len(pushes_b) == 2, pushes_b
+
+    on_branch = _remote_ids(remote, "myia-ai-01")
+    both_survived = id_a in on_branch and id_b in on_branch
+    assert both_survived, {
+        "BOTH_SURVIVED": both_survived, "id_a": id_a, "id_b": id_b,
+        "branche": sorted(on_branch),
+    }
+    assert seed_ids <= on_branch
+    assert result_b.get("rc") == 0, result_b
+    # Aucun spool n'a ete vide d'une observation absente de la branche.
+    for name, state in (("A", state_a), ("B", state_b)):
+        drained = _spool_ids(state, posted=True)
+        assert drained <= on_branch, (name, sorted(drained - on_branch))
+        assert _spool_ids(state, posted=False) == set(), name
+    # L'historique distant est lineaire et en ajout seul : chaque commit de la
+    # branche garde toutes les lignes de son parent.
+    revs = _run_git(["git", "--git-dir", str(remote), "rev-list", "--reverse",
+                     f"refs/heads/{dl.GIT_LEDGER_BRANCH}"]).split()
+    previous = set()
+    for rev in revs:
+        text = _bare_show(remote, f"{rev}:gpu-reservation/myia-ai-01.jsonl")
+        ids = {str(dl.parse_envelope(line)["observation_id"])
+               for line in text.splitlines() if line.strip()}
+        assert previous <= ids, (rev, sorted(previous - ids))
+        previous = ids
+
+
+def test_spool_non_draine_si_l_observation_manque_au_commit_pousse(
+        tmp_path, capsys, monkeypatch):
+    """Finding Hermes 2, second volet : le spool ne se vide que des
+    identifiants RETROUVES dans le commit pousse.
+
+    La lecture du fichier pousse est rendue vide APRES la poussee (le
+    commit lui-meme est correct et la verification d'ajout seul, faite
+    avant la poussee, passe) : le drain doit refuser, nommer l'observation
+    et laisser le spool intact, au lieu de vider sur la foi d'un code de
+    retour.
+    """
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    (obs_id,) = _spool_ids(state_dir, posted=False)
+
+    real_git = dl._git
+    pushed = []
+
+    def show_empty_after_push(args, *, cwd):
+        if args and args[0] == "push":
+            pushed.append(True)
+        if pushed and args and args[0] == "show":
+            return 0, "", ""
+        return real_git(args, cwd=cwd)
+
+    monkeypatch.setattr(dl, "_git", show_empty_after_push)
+    capsys.readouterr()
+    rc = _publish(state_dir, work, "myia-ai-01", emit=True)
+    err = capsys.readouterr().err
+    assert pushed, "la poussee doit avoir eu lieu"
+    assert rc != 0, err
+    assert "GIT_PUBLISH_LOSS" in err, err
+    assert obs_id in err, err
+    assert _spool_ids(state_dir, posted=False) == {obs_id}
+    assert _spool_ids(state_dir, posted=True) == set()
+    # Rejeu sans l'anomalie : l'observation est sur la branche, elle draine.
+    monkeypatch.undo()
+    assert _publish(state_dir, work, "myia-ai-01", emit=True) == 0
+    assert _spool_pending_count(state_dir) == 0
+    assert obs_id in _remote_ids(remote, "myia-ai-01")

@@ -2500,9 +2500,35 @@ def _publishable_observations(spool_dir: Path, *, ledger: str) -> list[dict[str,
     )
 
 
-def _branch_file_text(repo: Path, rel: str, *, remote: str) -> str:
-    """Contenu actuel d'un fichier de la branche ; ``''`` s'il n'existe pas."""
-    ref = _tracking_ref(remote)
+def _pin_ledger_base(repo: Path, *, remote: str) -> str | None:
+    """Le sha du ref de suivi, resolu UNE SEULE fois ; ``None`` s'il est absent.
+
+    Une tentative de publication lit tout depuis CE sha -- le texte du
+    fichier, l'index, et le parent du commit. Resoudre le ref a plusieurs
+    moments laissait un autre publieur du meme depot le deplacer entre deux
+    lectures (finding Hermes 2 de la PR #22755) : le commit recevait pour
+    parent la nouvelle tete mais l'ancien fichier, la poussee etait un
+    fast-forward, et la ligne de l'autre publieur disparaissait en silence.
+    """
+    rc, out, _ = _git(
+        ["rev-parse", "--verify", "--quiet", f"{_tracking_ref(remote)}^{{commit}}"],
+        cwd=repo,
+    )
+    sha = out.strip()
+    if rc != 0 or not sha:
+        return None
+    return sha
+
+
+def _branch_file_text(
+    repo: Path, rel: str, *, remote: str, rev: str | None = None
+) -> str:
+    """Contenu d'un fichier de la branche ; ``''`` s'il n'existe pas.
+
+    ``rev`` : le commit a lire (un sha epingle par `_pin_ledger_base`) ; a
+    defaut, le ref de suivi tel qu'il est a l'instant de la lecture.
+    """
+    ref = rev if rev is not None else _tracking_ref(remote)
     # L'absence du fichier est detectee par le CODE DE SORTIE de `cat-file -e`,
     # jamais par le TEXTE de stderr : ce texte est LOCALISE (gettext), et une
     # sous-chaine "does not exist" echouerait sur un siege francais -- la
@@ -2542,6 +2568,11 @@ def _published_ids(text: str) -> set[str]:
     return ids
 
 
+def _ids_at(repo: Path, rev: str, rel: str, *, remote: str) -> set[str]:
+    """Les ``observation_id`` du fichier ``rel`` tel que le porte ``rev``."""
+    return _published_ids(_branch_file_text(repo, rel, remote=remote, rev=rev))
+
+
 def _publish_attempt(
     *,
     repo: Path,
@@ -2550,9 +2581,17 @@ def _publish_attempt(
     ledger: str,
     remote: str,
     to_publish: list[dict[str, Any]],
+    base_sha: str | None,
 ) -> str | None:
     """Un cycle worktree -> commit -> push ; retourne le sha pousse, ``None`` si
-    le push est rejete (l'appelant a droit a UN retry)."""
+    le push est rejete (l'appelant a droit a UN retry).
+
+    ``base_sha`` est la tete EPINGLEE par l'appelant apres son fetch (``None``
+    a la creation de la branche) : l'arbre, le texte du fichier et le parent
+    du commit en viennent tous. Si le distant a avance depuis, la poussee
+    n'est pas un fast-forward : elle est rejetee et l'appelant repart d'un
+    arbre relu, au lieu de publier un fichier qui a perdu des lignes.
+    """
     # Worktree temporaire, meme volume que les worktrees de la machine (D:\...)
     # quand le parent du depot est inscriptible ; sinon le tmp par defaut.
     try:
@@ -2562,9 +2601,7 @@ def _publish_attempt(
         tmp_root = Path(tempfile.mkdtemp(prefix="git-ledger-"))
     worktree = tmp_root / "wt"
     try:
-        ref = _tracking_ref(remote)
-        have_ref = git_ledger_ref_available(repo, remote=remote)
-        base = ref if have_ref else "HEAD"
+        base = base_sha if base_sha is not None else "HEAD"
         rc, _, err = _git(
             ["worktree", "add", "--detach", "--no-checkout", str(worktree), base],
             cwd=repo,
@@ -2574,8 +2611,8 @@ def _publish_attempt(
         # Index = arbre de la branche (ou vide a la creation de la branche), SANS
         # extraction : le commit ne peut ni perdre les fichiers des autres
         # machines, ni embarquer le contenu du depot principal.
-        if have_ref:
-            rc, _, err = _git(["read-tree", ref], cwd=worktree)
+        if base_sha is not None:
+            rc, _, err = _git(["read-tree", base_sha], cwd=worktree)
         else:
             rc, _, err = _git(["read-tree", "--empty"], cwd=worktree)
         if rc != 0:
@@ -2587,7 +2624,11 @@ def _publish_attempt(
         # ecriture dans un arbre git) ; l'etat publie vit sur la branche, jamais
         # dans le depot principal.
         target.parent.mkdir(parents=True, exist_ok=True)
-        text = _branch_file_text(repo, rel, remote=remote) if have_ref else ""
+        text = (
+            _branch_file_text(repo, rel, remote=remote, rev=base_sha)
+            if base_sha is not None
+            else ""
+        )
         if text and not text.endswith("\n"):
             text += "\n"
         # Ajout seul : les lignes distantes existantes sont recopiees telles
@@ -2606,9 +2647,10 @@ def _publish_attempt(
         # branche. L'arbre de la branche (vide, hors notre fichier) serait
         # alors un commit qui SUPPRIME tout le contenu du depot (README.md
         # compris). C'est ce que la garde `GIT_PUBLISH_SCOPE` a attrape.
-        # Ici, le parent est la tete de la branche quand elle existe, et AUCUN
-        # parent quand la branche est creee (racine sans parent) : la branche
-        # porte alors exactement les fichiers du ledger, rien d'autre.
+        # Ici, le parent est la tete EPINGLEE de la branche quand elle existe
+        # (le sha dont viennent l'arbre et le texte, jamais le ref relu a cet
+        # instant), et AUCUN parent quand la branche est creee (racine sans
+        # parent) : la branche porte alors exactement les fichiers du ledger.
         rc, out, err = _git(["write-tree"], cwd=worktree)
         if rc != 0:
             raise LedgerError("GIT_COMMIT_FAILED", f"git write-tree : {_git_reason(err)}")
@@ -2617,8 +2659,8 @@ def _publish_attempt(
             "commit-tree", tree,
             "-m", f"{ledger}: publish {len(to_publish)} observation(s) from {canonical}",
         ]
-        if have_ref:
-            commit_args += ["-p", ref]
+        if base_sha is not None:
+            commit_args += ["-p", base_sha]
         rc, out, err = _git(commit_args, cwd=worktree)
         if rc != 0:
             raise LedgerError(
@@ -2649,6 +2691,27 @@ def _publish_attempt(
                 "GIT_PUBLISH_SCOPE",
                 f"commit {sha} publie sur {touched} au lieu de {rel} seule ; "
                 "rien n'a ete pousse, le worktree temporaire a ete supprime",
+            )
+        # INVARIANT d'ajout seul, mesure sur le commit FABRIQUE et non sur ce
+        # qu'on croit avoir lu : aucun identifiant porte par le fichier du
+        # PARENT reel (`<sha>^`) ne disparait, et chaque observation a
+        # publier figure dans le nouveau fichier. `GIT_PUBLISH_SCOPE` ne voit
+        # que les chemins ; il laissait passer un commit qui reecrivait le bon
+        # fichier en y perdant la ligne d'un autre publieur (finding Hermes 2
+        # de la PR #22755).
+        parent_ids = (
+            _ids_at(repo, f"{sha}^", rel, remote=remote) if base_sha is not None else set()
+        )
+        new_ids = _ids_at(repo, sha, rel, remote=remote)
+        wanted_ids = {str(obs["observation_id"]) for obs in to_publish}
+        lost = sorted(parent_ids - new_ids)
+        absent = sorted(wanted_ids - new_ids)
+        if lost or absent:
+            raise LedgerError(
+                "GIT_PUBLISH_LOSS",
+                f"commit {sha} sur {rel} : identifiants du parent perdus "
+                f"{lost or '(aucun)'}, observations a publier absentes "
+                f"{absent or '(aucune)'} ; rien n'a ete pousse, le spool est intact",
             )
         # La verification d'invariant precede le push : rien n'est publie si
         # elle echoue. Le commit fabrique en plumbing ne deplace PAS la HEAD
@@ -2773,8 +2836,12 @@ def publish_git_ledger(
                 f"{obs_machine!r} et serait ecrite dans le fichier de {canonical!r}",
             )
     fetch_error = fetch_git_ledger_branch(repo, remote=remote)
-    have_ref = git_ledger_ref_available(repo, remote=remote)
-    existing_text = _branch_file_text(repo, rel, remote=remote) if have_ref else ""
+    # La tete est epinglee UNE fois apres le fetch : ce qui est deja publie,
+    # l'arbre du commit et son parent viennent du meme sha (finding Hermes 2).
+    base_sha = _pin_ledger_base(repo, remote=remote)
+    existing_text = (
+        _branch_file_text(repo, rel, remote=remote, rev=base_sha) if base_sha else ""
+    )
     existing_ids = _published_ids(existing_text)
     to_publish = [obs for obs in source if str(obs["observation_id"]) not in existing_ids]
     summary: dict[str, Any] = {
@@ -2805,13 +2872,16 @@ def publish_git_ledger(
         return summary
     pushed_sha = _publish_attempt(
         repo=repo, rel=rel, canonical=canonical, ledger=ledger,
-        remote=remote, to_publish=to_publish,
+        remote=remote, to_publish=to_publish, base_sha=base_sha,
     )
     if pushed_sha is None:
-        # Un seul retry : la tete distante a bouge sous nous.
+        # Un seul retry : la tete distante a bouge sous nous. On repart de
+        # l'arbre RELU apres ce fetch-ci, epingle a nouveau.
         fetch_git_ledger_branch(repo, remote=remote)
-        have_ref = git_ledger_ref_available(repo, remote=remote)
-        existing_text = _branch_file_text(repo, rel, remote=remote) if have_ref else ""
+        base_sha = _pin_ledger_base(repo, remote=remote)
+        existing_text = (
+            _branch_file_text(repo, rel, remote=remote, rev=base_sha) if base_sha else ""
+        )
         existing_ids = _published_ids(existing_text)
         to_publish = [
             obs for obs in source if str(obs["observation_id"]) not in existing_ids
@@ -2827,7 +2897,7 @@ def publish_git_ledger(
             return summary
         pushed_sha = _publish_attempt(
             repo=repo, rel=rel, canonical=canonical, ledger=ledger,
-            remote=remote, to_publish=to_publish,
+            remote=remote, to_publish=to_publish, base_sha=base_sha,
         )
     if pushed_sha is None:
         # Le refus NE perd rien : les observations restent dans le spool local
@@ -2843,13 +2913,31 @@ def publish_git_ledger(
             f"(published=false) : {', '.join(retained) or '(aucune)'} ; "
             "relancer publish --git --emit",
         )
+    published_now = [str(obs["observation_id"]) for obs in to_publish]
+    # Aucun spool n'est vide sur la foi d'un code de retour : chaque
+    # identifiant draine doit se RETROUVER dans le fichier du commit pousse
+    # (celui que ls-remote vient de confirmer comme tete distante). Une
+    # observation absente reste dans le spool -- elle sera republiee -- et
+    # l'echec est nomme (finding Hermes 2 de la PR #22755).
+    on_pushed = _ids_at(repo, pushed_sha, rel, remote=remote)
+    missing = sorted(set(published_now) - on_pushed)
+    if missing:
+        raise LedgerError(
+            "GIT_PUBLISH_LOSS",
+            f"le commit pousse {pushed_sha} ne porte pas {', '.join(missing)} "
+            f"dans {rel} ; spool NON draine (published=false pour ces "
+            "observations) ; relancer publish --git --emit",
+        )
     summary["published"] = True
     summary["pushed_sha"] = pushed_sha
     # Le ref de suivi local voit immediatement ce qui vient d'etre publie.
-    _git(["update-ref", _tracking_ref(remote), pushed_sha], cwd=repo)
+    # Compare-and-swap sur la base epinglee : si un autre publieur (ou un
+    # fetch) a deja avance le ref, on ne le ramene jamais en arriere.
+    expected_old = base_sha if base_sha is not None else "0" * len(pushed_sha)
+    _git(["update-ref", _tracking_ref(remote), pushed_sha, expected_old], cwd=repo)
     # Drain du spool local : les ids publies ne doivent plus faire repondre
     # UNPOSTED au gate local (la source de publication inclut les archives).
-    archive_posted(spool_dir, [str(obs["observation_id"]) for obs in to_publish])
+    archive_posted(spool_dir, published_now)
     return summary
 
 
