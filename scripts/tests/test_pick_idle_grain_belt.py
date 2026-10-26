@@ -2024,3 +2024,347 @@ def test_belt_delivery_probe_cost_is_bounded_by_the_budget():
     # epuisement.
     assert new_state["budget_hit"] is False
     assert new_picks == 0
+
+
+# ---------------------------------------------------------------------------
+# #21436 -- mur de temps du tapis.
+#
+# Le defaut mesure : `probe_budget` borne le NOMBRE de sondes de livraison,
+# pas leur DUREE ni les deux surfaces payees par candidat hors fenetre. Sur ce
+# siege, 8 verdicts de claim coutent 47 s a froid ; `max_iters` = grains*5+50
+# laissait donc ~410 s de travail possible avant la premiere sonde de
+# livraison, et cinq mesures independantes (po-2023, po-2025, cette lane, deux
+# taps) se sont arretees sur `pick_with_replacements start`.
+#
+# Ce que ces tests epinglent : l'echeance arrete TOUTES les surfaces couteuses
+# (claim hors fenetre, filtre recent, sonde de livraison, sonde PR fusionnee)
+# et le reliquat est SERVI en fail-OPEN en le rapportant -- le tapis ne rend
+# jamais moins de candidats a cause du mur, il en rend de moins verifies.
+# ---------------------------------------------------------------------------
+
+
+def _patched_clock(monkeypatch, start=0.0):
+    """Horloge injectee a la place du module `time` de `pig`.
+
+    Remplacer l'ATTRIBUT de module (et non `time.monotonic` globalement) garde
+    le patch local : les autres modules, et le harnais pytest, gardent leur
+    horloge reelle.
+    """
+    import types
+    clock = [start]
+    monkeypatch.setattr(
+        pig, "time", types.SimpleNamespace(monotonic=lambda: clock[0]))
+    return clock
+
+
+def test_belt_time_budget_stops_probing_mid_loop(monkeypatch):
+    """L'echeance tombe en cours de boucle : le premier candidat paie ses
+    sondes, les suivants sont servis sans aucune requete.
+
+    C'est la forme exacte du defaut #21436 -- un run qui n'a pas fini sa
+    fenetre de candidats quand le budget est consomme doit RENDRE la main,
+    pas continuer a payer un `check_claims` par candidat.
+    """
+    clock = _patched_clock(monkeypatch)
+    a = _make_item(30001, age_days=100, idle=9, last=None)
+    b = _make_item(30002, age_days=99, idle=9, last=None)
+    c = _make_item(30003, age_days=98, idle=9, last=None)
+    pool = [a, b, c]
+    calls = {"delivered": [], "merged": [], "recent": []}
+
+    def delivered(n, lane=None):
+        calls["delivered"].append(n)
+        clock[0] += 1.0  # la sonde consomme le budget d'une seconde
+        return False
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=3), probe_budget=8,
+        delivered_probe=delivered,
+        merged_pr_probe=lambda n, lane=None: calls["merged"].append(n) or False,
+        recent_marker_probe=lambda n: calls["recent"].append(n) or False,
+        time_budget_s=1.0)
+
+    # Le mur ne retire JAMAIS un candidat : les trois sont servis.
+    assert [p["number"] for p in picks] == [30001, 30002, 30003]
+    assert withheld == []
+    # Une seule sonde de chaque espece, celle du premier candidat.
+    assert calls["delivered"] == [30001]
+    assert calls["recent"] == [30001]
+    assert calls["merged"] == []
+    assert state["time_budget_hit"] is True
+    # Deux plafonds distincts : le mur de temps n'est pas le plafond de cout.
+    assert state["budget_hit"] is False
+
+
+def test_belt_time_budget_skips_on_the_fly_claim_check_and_reports(monkeypatch):
+    """La verification de claim au fil de l'eau est la surface la plus chere
+    (`check_claims` par candidat hors fenetre) et elle echappait au
+    `probe_budget`. Passe l'echeance, elle n'est plus appelee du tout, et les
+    candidats servis sans claim lu sont rapportes dans `claim_unread` (#20265)
+    au lieu de partir comme s'ils avaient ete verifies.
+    """
+    _patched_clock(monkeypatch)
+    a = _make_item(30011, age_days=100, idle=9, last=None)
+    b = _make_item(30012, age_days=99, idle=9, last=None)
+    claim_calls = []
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [a, b], {}, _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        claims_probe=lambda nums: claim_calls.append(list(nums)) or {},
+        recent_marker_probe=lambda n: False,
+        time_budget_s=0.0)
+
+    assert [p["number"] for p in picks] == [30011, 30012]
+    assert withheld == []
+    assert claim_calls == [], "aucune verification de claim apres l'echeance"
+    assert state["claim_unread"] == [30011, 30012]
+    assert state["time_budget_hit"] is True
+
+
+@pytest.mark.parametrize("budget", [None, 600.0])
+def test_belt_without_expiry_keeps_previous_behaviour(budget):
+    """Controle positif : sans mur (`None`, le defaut) ou avec un budget large,
+    chaque candidat servi paie sa sonde et `time_budget_hit` reste faux. Le
+    correctif ne doit pas eteindre les sondes quand rien n'est epuise."""
+    a = _make_item(30021, age_days=100, idle=9, last=None)
+    b = _make_item(30022, age_days=99, idle=9, last=None)
+    pool = [a, b]
+    probed = []
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=2), probe_budget=8,
+        delivered_probe=lambda n, lane=None: probed.append(n) or False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        time_budget_s=budget)
+
+    assert [p["number"] for p in picks] == [30021, 30022]
+    assert probed == [30021, 30022]
+    assert state["time_budget_hit"] is False
+
+
+def test_belt_time_budget_flag_is_accepted(monkeypatch, capsys):
+    """Le cablage CLI du mur : le drapeau est accepte et le verdict est publie
+    dans le document JSON, a cote du plafond de sondes -- deux champs, parce
+    qu'une lane qui lit l'un pour l'autre relance pour la mauvaise raison."""
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt",
+                   "--belt-time-budget", "0", "--json"])
+    assert rc == 0
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["mode"] == "belt"
+    assert doc["delivered_signal"]["time_budget_hit"] is False
+    # `0` desactive le mur : le plafond de sondes garde son propre champ.
+    assert doc["delivered_signal"]["budget_hit"] is False
+
+
+def test_clamp_timeout_is_a_noop_without_a_belt_deadline():
+    """Hors tapis, aucun clamp : `check_claims` garde ses 60 s.
+
+    Sans cette garde, publier une echeance n'importe ou rendrait les sondes
+    du reste du programme dependantes d'un etat global qu'elles n'ont pas
+    demande.
+    """
+    pig._BELT_DEADLINE[0] = None
+    assert pig._clamp_timeout(60) == 60
+    assert pig._clamp_timeout(0.25) == 0.25
+
+
+def test_clamp_timeout_bounds_a_probe_by_the_remaining_budget(monkeypatch):
+    """#21436 : le mur borne le TIMEOUT de la sonde, pas seulement son
+    demarrage. Une sonde de 60 s entamee 5 s avant l'echeance ne peut plus
+    consommer 55 s au-dela du budget -- c'est ce depassement qui faisait
+    rendre la main au-dela de 200 s pour un budget de 90 s.
+    """
+    clock = _patched_clock(monkeypatch)
+    pig._BELT_DEADLINE[0] = clock[0] + 5.0
+    try:
+        assert pig._clamp_timeout(60) == pytest.approx(5.0)
+        # Le plancher de 0,5 s s'applique quand l'echeance est deja passee :
+        # un timeout nul rendrait la panne reseau indiscernable du mur.
+        pig._BELT_DEADLINE[0] = clock[0] - 10.0
+        assert pig._clamp_timeout(60) == 0.5
+    finally:
+        pig._BELT_DEADLINE[0] = None
+
+
+def test_check_claims_reads_the_belt_deadline(monkeypatch):
+    """La sonde de claim la plus chere de la boucle obeit au mur.
+
+    `check_claims` est appele au fil de l'eau pour chaque candidat hors
+    fenetre : c'est la surface que `probe_budget` ne compte pas, et celle qui
+    a gele quatre runs consecutifs le 24/10.
+    """
+    clock = _patched_clock(monkeypatch)
+    seen: list[float] = []
+
+    class _Done:
+        returncode = 0
+        stdout = "{}"
+        stderr = ""
+
+    def fake_run(cmd, **kwargs):
+        # Seul `check_lane_claim.py` nous interesse : le pourtour de
+        # `check_claims` (cache des PRs ouvertes) a ses propres timeouts et
+        # n'est pas la sonde que le mur doit clamper.
+        if any("check_lane_claim.py" in str(part) for part in cmd):
+            seen.append(kwargs.get("timeout"))
+        return _Done()
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    pig._BELT_DEADLINE[0] = clock[0] + 2.0
+    try:
+        pig.check_claims([30031], "myia-po-2024:CoursIA")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+
+    assert seen, "aucun subprocess n'a ete lance"
+    assert max(t for t in seen if t is not None) <= 2.0 + 0.05
+
+
+def test_belt_loop_restores_the_published_deadline():
+    """L'echeance publiee ne fuit pas hors de la boucle.
+
+    Les tests (et tout appelant direct) rappellent `check_claims` et
+    `has_recent_delivery_marker` dans le meme process : si le mur restait
+    publie, ils heriteraient d'un budget deja epuise et verraient leur
+    timeout tombe a 0,5 s sans qu'aucun tapis ne tourne.
+    """
+    pig._BELT_DEADLINE[0] = None
+    pool = [_make_item(30041, age_days=10, idle=3, last=None)]
+    pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=1), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        time_budget_s=30.0)
+    assert pig._BELT_DEADLINE[0] is None
+
+
+def test_belt_publishes_the_run_deadline_before_the_claims_phase(
+        monkeypatch, capsys):
+    """Le mur couvre le RUN, pas seulement la boucle de selection.
+
+    Mesure du 24/10 : avec `--belt-time-budget 90`, le run s'arretait a
+    `belt claims start: 8 numeros` et ne rendait jamais la main (275 s de
+    silence, puis expiration par `timeout`). La fenetre de claims est payee
+    AVANT la boucle, et chaque `check_claims` y ouvre un subprocess de
+    60 s + 10 s par numero : publier l'echeance seulement dans la boucle
+    laissait la phase la plus chere sans borne.
+
+    Le predicat : au moment ou la fenetre de claims s'ouvre, une echeance
+    est deja publiee, et elle est retiree quand le run se termine.
+    """
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    published: list = []
+
+    def spy(numbers, lane):
+        published.append(pig._BELT_DEADLINE[0])
+        return {n: (pig.CLAIM_CODE_FREE, "libre") for n in numbers}
+
+    monkeypatch.setattr(pig, "check_claims", spy)
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt",
+                   "--belt-time-budget", "60", "--json"])
+    assert rc == 0
+    assert published, "la fenetre de claims n'a pas ete ouverte"
+    assert all(d is not None for d in published), \
+        "des claims ont ete lances sans echeance publiee (#21436)"
+    assert pig._BELT_DEADLINE[0] is None, "l'echeance fuit apres le run"
+
+
+def test_publish_phase_deadline_bounds_probes_and_lends_its_budget(monkeypatch):
+    """#21436 : la phase de reparation a sa PROPRE echeance.
+
+    Mesure du 24/10 sur ce siege : `red_backlog` seul = 172,7 s, payes AVANT
+    que le tapis ne prenne la main, donc hors de tout mur existant. L'echeance
+    publiee ici borne les deux surfaces de la phase : les sondes (via
+    `_clamp_timeout`) et la passe nits de l'organe B.0 (via son budget).
+    """
+    import check_unaddressed_nits as nits
+
+    clock = _patched_clock(monkeypatch, start=1000.0)
+    previous_budget = nits.NITS_PASS_BUDGET_S
+    pig._BELT_DEADLINE[0] = None
+    nits._NITS_PASS_DEADLINE = None
+    try:
+        token = pig._publish_phase_deadline(30)
+        assert pig._BELT_DEADLINE[0] == pytest.approx(1030.0)
+        # La sonde de 90 s de `fetch_pr_states` (appelee par
+        # `unattributed_blocked_prs`) ne peut plus consommer que le reste.
+        assert pig._clamp_timeout(90) == pytest.approx(30.0)
+        # L'organe herite du meme reste, et sa passe DEMARRE ici : sans la
+        # remise a None, il heriterait d'une deadline armee ailleurs.
+        assert nits.NITS_PASS_BUDGET_S == pytest.approx(30.0)
+        assert nits._NITS_PASS_DEADLINE is None
+        pig._restore_phase_deadline(token)
+        assert pig._BELT_DEADLINE[0] is None
+        assert nits.NITS_PASS_BUDGET_S == pytest.approx(previous_budget or 300.0)
+    finally:
+        pig._BELT_DEADLINE[0] = None
+        nits.NITS_PASS_BUDGET_S = previous_budget
+        nits._NITS_PASS_DEADLINE = None
+
+
+def test_publish_phase_deadline_zero_keeps_the_old_behaviour(monkeypatch):
+    """`--red-budget 0` rend le comportement d'avant, sans borne.
+
+    L'echappatoire existe pour un siege dont l'organe B.0 est rapide : elle ne
+    doit RIEN changer, ni au mur, ni au budget de l'organe.
+    """
+    import check_unaddressed_nits as nits
+
+    _patched_clock(monkeypatch, start=500.0)
+    previous_budget = nits.NITS_PASS_BUDGET_S
+    pig._BELT_DEADLINE[0] = None
+    try:
+        token = pig._publish_phase_deadline(0)
+        assert pig._BELT_DEADLINE[0] is None
+        assert pig._clamp_timeout(60) == 60
+        assert nits.NITS_PASS_BUDGET_S == previous_budget
+        pig._restore_phase_deadline(token)
+        assert pig._BELT_DEADLINE[0] is None
+    finally:
+        pig._BELT_DEADLINE[0] = None
+        nits.NITS_PASS_BUDGET_S = previous_budget
+
+
+def test_main_runs_the_repair_phase_inside_its_own_deadline(monkeypatch):
+    """Le cablage, pas seulement l'helpers : `main` publie AVANT `red_backlog`.
+
+    Le point de mesure est l'interieur de `red_backlog` -- c'est la que le
+    timeout de sonde doit deja etre ramene au reste, et la que la passe nits
+    doit deja avoir recu son budget. Un `finally` doit rendre l'etat d'apres.
+    """
+    import check_unaddressed_nits as nits
+
+    clock = _patched_clock(monkeypatch, start=2000.0)
+    seen = {}
+
+    class _Stop(Exception):
+        pass
+
+    def fake_red_backlog(*a, **kw):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        seen["clamped"] = pig._clamp_timeout(90)
+        seen["nits_budget"] = nits.NITS_PASS_BUDGET_S
+        raise _Stop
+
+    monkeypatch.setattr(pig, "red_backlog", fake_red_backlog)
+    monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **kw: ([], None))
+    monkeypatch.setattr(pig.gh_identity, "pin_gh_token", lambda: None)
+    pig._BELT_DEADLINE[0] = None
+    previous_budget = nits.NITS_PASS_BUDGET_S
+    try:
+        with pytest.raises(_Stop):
+            pig.main(["--lane", "myia-po-2024:CoursIA", "--red-budget", "45"])
+        assert seen["deadline"] == pytest.approx(2045.0)
+        assert seen["clamped"] == pytest.approx(45.0)
+        assert seen["nits_budget"] == pytest.approx(45.0)
+        # Le `finally` a rendu l'etat : aucune fuite vers la suite du run.
+        assert pig._BELT_DEADLINE[0] is None
+        assert nits.NITS_PASS_BUDGET_S == previous_budget
+    finally:
+        pig._BELT_DEADLINE[0] = None
+        nits.NITS_PASS_BUDGET_S = previous_budget
+        nits._NITS_PASS_DEADLINE = None
+    _ = clock
