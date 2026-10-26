@@ -15,6 +15,7 @@ Origine : EPIC [#16271](https://github.com/jsboige/CoursIA/issues/16271) — mig
 3. **Implémenter** un CRF linéaire from scratch (forward/backward log-space, gradient, Viterbi) et vérifier l'écart nul avec `sklearn-crfsuite`
 4. **Convertir** une CFG en CNF puis appliquer l'algorithme CYK avec backpointers, et mesurer l'ambiguïté sur des phrases de référence
 5. **Décoder** par Viterbi un HMM markovien, mesurer le renversement de décision par rapport à un classifieur token par token, et confronter à `hmmlearn`/`nltk`
+6. **Représenter** un mot comme un vecteur (07) : la représentation distributionnelle par co-occurrence, PPMI et SVD tronquée — séparer le signal d'association du bruit de fréquence, et mesurer la similarité de sens par cosinus
 
 ## Notebooks
 
