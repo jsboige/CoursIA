@@ -47,9 +47,13 @@ from typing import Any
 
 SNAPSHOT_VERSION = 1
 
-#: Duree de validite d'un instantane (secondes). Le mandat : « un instantane
-#: de quelques minutes suffit pour trier et proposer ».
-DEFAULT_TTL_SECONDS = 600
+#: Duree de validite des payloads PAR ISSUE (issue + commentaires), en
+#: secondes. Arbitrage coordinateur du 2026-10-26 (PR #22684) : cache de
+#: CYCLE CRON -- les charges couteuses par element vivent au-dela de la
+#: cadence du cron (1800 s), un verdict ou un claim vieux de 20-30 min ne
+#: fait pas de tort au tri : la lane reverifie `check_lane_claim.py` a la
+#: source avant toute edition, et le merge relit B.0 a la tete exacte.
+DEFAULT_TTL_SECONDS = 1800
 
 #: Duree au-dela de laquelle un verrou est considere comme abandonne (min).
 LOCK_STALE_SECONDS = 900

@@ -565,7 +565,9 @@ def test_reparation_updated_at_change_relit_etat_et_nits(monkeypatch):
 def test_reparation_entree_expiree_relit_etat_et_nits(monkeypatch):
     prs = [_repair_pr()]
     snap = _active_repair(monkeypatch, prs)
-    old = time.time() - 901
+    # Age derive de la constante (arbitrage #22684 : TTL cron de 1800 s) --
+    # le litterel 901 de l'ancien TTL aurait casse au prochain arbitrage.
+    old = time.time() - (pig.PR_STATE_SNAPSHOT_TTL_S + 1)
     for namespace, value in (("states", {"number": 41, "old": True}),
                              ("nits", {"blocking": [], "blocked": False})):
         snap["repair"][namespace] = {"41": {
@@ -628,6 +630,34 @@ def test_main_probe_reutilise_ses_ensembles_sans_relire(monkeypatch):
     monkeypatch.setattr(pig.subprocess, "run",
                         lambda *a, **k: pytest.fail("probe deja fraiche"))
     assert pig.fetch_main_head_probe()["red_keys"] == {"a"}
+
+
+def test_check_runs_hors_du_cache_long(monkeypatch):
+    """Arbitrage #22684 (cycle cron) : l'etat des check-runs (annotations de
+    runs, sonde de main) reste au TTL court -- un check ne bouge pas
+    l'updatedAt de la PR, un etat vieux de ~30 min serait servi indement."""
+    snap = _active_repair(monkeypatch)
+    age = pig.PR_STATE_SNAPSHOT_TTL_S - 1    # encore frais pour les etats...
+    assert age > pig.CHECKS_SNAPSHOT_TTL_S   # ...perime pour les check-runs
+    snap["repair"]["annotations"] = {"77": {
+        "fetched_at": time.time() - age, "value": ["::error vieux"]}}
+    snap["repair"]["main_probe"] = {
+        "fetched_at": time.time() - age, "value": {"sha": "s", "red_keys": []}}
+    assert pig._repair_read_annotation(77) is None
+    assert pig._repair_cached_main_probe() is None
+
+
+def test_commentaires_servis_au_dela_du_ttl_des_index(monkeypatch):
+    """Arbitrage #22684 : les payloads claims/commentaires vivent au TTL long
+    -- un stamp de 1200 s, perime pour l'index des PRs ouvertes, sert encore
+    la sonde de commentaires sans aucune requete."""
+    stamp = time.time() - (pig.OPEN_PRS_SNAPSHOT_TTL_S + 600)
+    assert stamp > time.time() - pig.COMMENT_SNAPSHOT_TTL_S  # encore frais
+    snap = {"comments": {"41": [{"body": "[CLAIMED] lane x"}]},
+            "meta": {"comment_stamps": {"41": stamp}}}
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", None)
+    monkeypatch.setattr(pig, "_PASS_SNAPSHOT", snap)
+    assert pig._snapshot_comments(41) == [{"body": "[CLAIMED] lane x"}]
 
 
 def test_reparation_pr_absente_du_fingerprint_ne_sert_pas_un_vieux_vert(monkeypatch):

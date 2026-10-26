@@ -1657,8 +1657,29 @@ def _restore_phase_deadline(token: tuple) -> None:
 # Le namespace `repair` est distinct des claims : leur liste complete porte les
 # fichiers modifies, tandis que celle-ci porte createdAt/author/isDraft.
 _PASS_SNAPSHOT: dict | None = None
+#: Arbitrage coordinateur du 2026-10-26 (PR #22684) : cache de CYCLE CRON.
+#: Les charges couteuses PAR ELEMENT (etats de PR, verdicts B.0/nits,
+#: payloads claims + commentaires) vivent au-dela de la cadence du cron
+#: (>= 1800 s) -- ce qui les invalide d'abord est le changement d'`updatedAt`
+#: (fingerprint deja implemente et teste : « updatedAt change -> refetch »),
+#: le TTL n'est plus que le plafond d'age. Un verdict vieux de 20-30 min ne
+#: fait pas de tort au tapis : le claim se reverifie a la source avant toute
+#: edition, et le merge relit B.0 a la tete exacte.
+PR_STATE_SNAPSHOT_TTL_S = 1800
+COMMENT_SNAPSHOT_TTL_S = 1800
+#: Index (listes avec `updatedAt`) et enumerations : TTL COURT, car c'est
+#: EUX qui detectent qu'un element a bouge -- allonger leur TTL retarderait
+#: la detection de mouvement et servirait des fingerprints perimes. Le
+#: picker tourne en cycle de 30 min, un TTL court (90-600 s) couvre le
+#: rejeu immediat sans jamais servir une liste d'une autre ere. Une issue
+#: ouverte entre deux passes doit reapparaitre a la passe suivante.
 OPEN_PRS_SNAPSHOT_TTL_S = 600
-PR_STATE_SNAPSHOT_TTL_S = 900
+#: Etat des check-runs (annotations de runs rouges, sonde de main) : HORS du
+#: cache long (arbitrage du 2026-10-26) -- un check ne bouge pas l'updatedAt
+#: de la PR, son etat ne serait donc jamais invalide par fingerprint. Le
+#: tapis ne s'en sert pas pour choisir un grain ; le gate de merge relit a
+#: la source. TTL court, aligne sur la cadence des index.
+CHECKS_SNAPSHOT_TTL_S = 600
 #: Enumeration du pool et des PRs ouvertes : le picker tourne en cycle de
 #: 30 min, un TTL court (90-120 s) couvre le rejeu immediat sans jamais servir
 #: une liste d'une autre ere. Choisi court EXPRES : une issue ouverte entre
@@ -1757,7 +1778,7 @@ def _repair_cached_result(namespace: str, n: int, fingerprint: str | None):
 def _repair_read_annotation(run_id: int) -> list | None:
     entry = (_repair_cache().get("annotations") or {}).get(str(run_id))
     if not _pass_snapshot_enabled() or not _fresh_entry(
-            entry, PR_STATE_SNAPSHOT_TTL_S):
+            entry, CHECKS_SNAPSHOT_TTL_S):
         return None
     value = entry.get("value")
     return copy.deepcopy(value) if isinstance(value, list) else None
@@ -1772,7 +1793,7 @@ def _repair_store_annotation(run_id: int, annotations: list) -> None:
 def _repair_cached_main_probe():
     entry = _repair_cache().get("main_probe")
     if not _pass_snapshot_enabled() or not _fresh_entry(
-            entry, PR_STATE_SNAPSHOT_TTL_S) or "value" not in entry:
+            entry, CHECKS_SNAPSHOT_TTL_S) or "value" not in entry:
         return None
     value = copy.deepcopy(entry["value"])
     if isinstance(value, dict):
@@ -1977,7 +1998,7 @@ def _snapshot_comments(issue_number: int) -> list[dict] | None:
         stamp = ((pass_snapshot.get("meta") or {}).get("comment_stamps")
                  or {}).get(str(issue_number))
         if isinstance(entry, list) and _fresh_entry(
-                {"fetched_at": stamp}, OPEN_PRS_SNAPSHOT_TTL_S):
+                {"fetched_at": stamp}, COMMENT_SNAPSHOT_TTL_S):
             return entry
     return None
 
