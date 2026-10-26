@@ -101,15 +101,17 @@ Incident 2026-06-16 + rollouts LIVE (#3973, #4212, #3870, #2876, #2161) : [§2.4
 
 Mandat 2026-06-26 + 4 mecanismes : [§2.5](../../docs/reference/secrets-and-coord-detail.md#25-le-steer-doit-atteindre-le-worker-etre-vrai-et-decider-regle-5).
 
-## Regle 6 : l'adjoint — verification delegable, jamais merge ni fermeture (HARD)
+## Regle 6 : l'adjoint — verification delegable, fermeture sur dossier, jamais le merge (HARD)
 
 **Lane de l'adjoint : `myia-po-2025:CoursIA-2`**. Mandat user 2026-09-07 (#15069) : la verification est delegable, **pas a nos plus petits workers**.
 
 | Routable a l'adjoint | JAMAIS (reste au coordinateur) |
 |---|---|
-| Verification pre-fermeture de l'urne `delivered` | La fermeture (`gh issue close`) |
+| Verification pre-fermeture de l'urne `delivered`, et **la fermeture** (`gh issue close`) sur un dossier `[CLOSURE PREFLIGHT]` `verdict: CLOSE` — le sien ou celui du secretariat — apres une lecture G.9 | La fermeture **sans** dossier `[CLOSURE PREFLIGHT]` `verdict: CLOSE`, et celle des EPICs fermes sur PR |
 | Preflight de PR (body/comments/reviews/threads/diff/checks) | Le merge (`gh auth switch` + merge reste ai-01) |
 | Recalcul firsthand d'un verdict ou d'une metrique contestee | Toute decision de perimetre/design-gate |
+
+Les autres reserves — reviews `APPROVED`/`CHANGES_REQUESTED`, `[OVERRIDE]`/HOLD G-VAR/batch-close, PRs d'eleves, arbitrages inter-lanes, decisions de politique de flotte — sont celles de [coordinate-adjoint](../skills/coordinate-adjoint/SKILL.md), dont la liste « Restent reserves a ai-01 » fait foi. Cette regle enonce la meme decision de fermeture ; elle ne la reecrit pas.
 
 **Organe d'entree en review ai-01** : `python scripts/check_adjoint_prevalidation.py <PR>`. Tant qu'il ne rend pas 0, ai-01 n'ouvre aucune surface detaillee de la PR. Le dossier est exact-head, **auto-invalide par toute mutation observable**. L'adjoint est la lane habilitee n°3 de `DELIVERED_URN_LANES` (#15069).
 
