@@ -70,7 +70,15 @@ import Bayesian.Information
 
 /-- Finite single-decision-maker decision problem, with a noisy signal
     described by a table of joint weights state × realization. Payoffs are
-    integers and weights natural: values are exact, without division. -/
+    integers and weights natural: values are exact, without division.
+
+    **Dimension convention.** `nS` is a **count** of states; `nA` and `nX`
+    are **maximum indices**: `nA = 1` means two actions (`Fin (nA + 1)`),
+    `nX = 1` means two realizations. The asymmetry is deliberate -- it
+    guarantees that `maxFin` is non-vacuous over the actions -- but it is a
+    writing trap: writing `nX := 2` while meaning "two realizations" gives
+    **three**, and nothing in the module objects, since a three-column table
+    is accepted as well. -/
 structure NoisyProblem where
   /-- Number of states of the world. -/
   nS : Nat

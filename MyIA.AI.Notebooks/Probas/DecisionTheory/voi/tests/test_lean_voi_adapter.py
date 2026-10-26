@@ -218,11 +218,23 @@ def test_les_deux_moteurs_du_banc_confirment_la_valeur_exacte():
     comparaison = json.loads((VOI / "comparison.json").read_text(encoding="utf-8"))
     tolerance = comparaison["tolerance"]["utility_abs"]
     exact = evaluate(build_instance(problem("forage-petrolier.json")))["evsi_raw"]
+    # On compare la valeur MACHINE du moteur, pas la chaine d'affichage : la
+    # ligne `rows` porte un rendu arrondi au centime ("253000.00"), et
+    # l'assertion sur cette chaine certifierait le formateur, pas le moteur
+    # (reserve de la revue structurelle du 25/10).
+    sorties = comparaison["problems"]["forage-petrolier"]["outputs"]
+    infer_net = sorties["infer_net"]["evsi_brute"]
+    pymc = sorties["pymc"]["evsi_brute"]
+    # L'ecart d'Infer.NET est du bruit de flottant (6e-11 sur la valeur
+    # brute) ; 1e-6 laisse le bruit visible sans tolérer une derive.
+    assert abs(infer_net - float(exact)) <= 1e-6, (
+        f"Infer.NET doit rendre la valeur exacte, ecart {infer_net - float(exact)}"
+    )
+    assert abs(pymc - float(exact)) <= tolerance, "PyMC doit rester dans la tolerance"
+    # La ligne `rows` reste ce qu'elle est : un rendu humain, coherent avec
+    # la valeur machine.
     lignes = {
         row["field"]: row
         for row in comparaison["problems"]["forage-petrolier"]["rows"]
     }
-    infer_net = float(lignes["evsi_brute"]["infer_net"])
-    pymc = float(lignes["evsi_brute"]["pymc"])
-    assert infer_net == float(exact), "Infer.NET doit rendre la valeur exacte"
-    assert abs(pymc - float(exact)) <= tolerance, "PyMC doit rester dans la tolerance"
+    assert float(lignes["evsi_brute"]["infer_net"]) == round(float(exact), 2)

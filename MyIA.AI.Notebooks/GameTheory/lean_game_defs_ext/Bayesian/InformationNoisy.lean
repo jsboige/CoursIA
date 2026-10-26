@@ -73,7 +73,15 @@ import Bayesian.Information
 /-- Probleme de decision fini a un decideur, avec un signal bruite decrit
     par une table de poids joints etat × realisation. Les paiements sont
     entiers et les poids naturels : les valeurs sont exactes, sans
-    division. -/
+    division.
+
+    **Convention des dimensions.** `nS` est un **compte** d'etats ; `nA` et
+    `nX` sont des **indices maximaux** : `nA = 1` veut dire deux actions
+    (`Fin (nA + 1)`), `nX = 1` veut dire deux realisations. L'asymetrie est
+    voulue -- elle garantit la non-vacuite de `maxFin` sur les actions --
+    mais elle est un piege d'ecriture : poser `nX := 2` en pensant « deux
+    realisations » en donne **trois**, et rien dans le module ne le
+    reproche, puisque la table a trois colonnes est aussi acceptee. -/
 structure NoisyProblem where
   /-- Nombre d'etats du monde. -/
   nS : Nat
