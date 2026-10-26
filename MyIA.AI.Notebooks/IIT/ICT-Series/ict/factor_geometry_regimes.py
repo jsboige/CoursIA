@@ -85,6 +85,45 @@ def _jsonable(obj):
     return obj
 
 
+def format_ou_na(valeur: object, fmt: str = "{:.3f}") -> str:
+    """Formate une valeur d'artefact, ou ``n/a`` si elle n'est pas definie.
+
+    Une metrique non definie d'un artefact JSON vaut ``None`` (``null``) :
+    elle se **rapporte**, elle ne s'affiche pas comme un nombre. Les
+    lecteurs de carnet (ICT-36) utilisent cette fonction pour qu'un niveau
+    degenere s'affiche ``n/a`` au lieu de faire echouer la cellule de
+    lecture -- et sans dependre d'un helper defini dans une autre cellule.
+    """
+    v = _nombre_fini(valeur)
+    if not np.isfinite(v):
+        return "n/a"
+    return fmt.format(v)
+
+
+def _nombre_fini(valeur: object) -> float:
+    """Nombre flottant, ou ``nan`` si la valeur est absente ou non finie.
+
+    Un artefact JSON ne peut pas porter ``NaN`` : il le remplace par
+    ``null``. Un lecteur qui relit l'artefact (le carnet ICT-36 lit les
+    quatre artefacts) doit donc traiter ``None`` comme une valeur **non
+    definie**, pas comme une erreur : ``float(None)`` leve ``TypeError`` et
+    ferait tomber la cellule de lecture sur le seul niveau degenere
+    (``gamma = 1``, cible constante au bit pres).
+    """
+    if valeur is None:
+        return float("nan")
+    try:
+        v = float(valeur)
+    except (TypeError, ValueError):
+        return float("nan")
+    return v if np.isfinite(v) else float("nan")
+
+
+def _bornes_finies(bande: Dict[str, object]) -> tuple:
+    """Bornes p05 / p95 d'une bande, rendues finies ou ``nan``."""
+    return (_nombre_fini(bande.get("p05")), _nombre_fini(bande.get("p95")))
+
+
 def bande_degeneree(bande: Dict[str, float]) -> bool:
     """La bande p05-p95 du temoin peut-elle discriminer une position ?
 
@@ -97,7 +136,7 @@ def bande_degeneree(bande: Dict[str, float]) -> bool:
     (``additivity_gap < 0`` hors bande) ne peut etre tranche QUE par le
     signe, jamais par la comparaison a une bande large.
     """
-    p05, p95 = float(bande.get("p05", float("nan"))), float(bande.get("p95", float("nan")))
+    p05, p95 = _bornes_finies(bande)
     if not (np.isfinite(p05) and np.isfinite(p95)):
         return True
     return (p95 - p05) <= 1e-12
@@ -127,8 +166,8 @@ def position_contre_bande(
     position dans une bande -- une bande [0 ; 0] ne peut etre franchie que
     par le signe, et c'est exactement ce que le critere demande.
     """
-    v = float(valeur)
-    p05, p95 = float(bande.get("p05", float("nan"))), float(bande.get("p95", float("nan")))
+    v = _nombre_fini(valeur)
+    p05, p95 = _bornes_finies(bande)
     if not (np.isfinite(v) and np.isfinite(p05) and np.isfinite(p95)):
         return "n/a"
     if bande_degeneree(bande) and not comparer_bande_degeneree:

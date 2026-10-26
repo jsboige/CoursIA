@@ -340,6 +340,38 @@ class TestMetriquesInvariantesEtCiblesDegenerees(unittest.TestCase):
             "sous_bande",
         )
 
+    def test_artifact_json_null_traité_comme_non_defini(self):
+        """Un artefact JSON porte ``null`` la ou la mesure est ``NaN``.
+
+        Le carnet ICT-36 LIT les artefacts : un lecteur qui fait
+        ``float(None)`` tombe sur le seul niveau degenere (``gamma = 1``,
+        cible constante au bit pres) et la cellule de lecture meurt. ``null``
+        doit se lire comme une valeur NON DEFINIE, jamais comme une erreur.
+        """
+        from ict import factor_geometry_regimes as freg
+
+        bande_vide = {"p05": None, "p95": None, "n": 0.0}
+        self.assertTrue(freg.bande_degeneree(bande_vide))
+        self.assertEqual(freg.position_contre_bande(None, bande_vide), "n/a")
+        self.assertEqual(freg.position_contre_bande(0.5, bande_vide), "n/a")
+        # ... et une valeur absente ne fait pas tomber non plus la comparaison
+        # contre une bande FINIE (le cas de la bande nulle du critere 2)
+        self.assertEqual(
+            freg.position_contre_bande(None, {"p05": 0.0, "p95": 0.0}),
+            "n/a",
+        )
+
+    def test_format_ou_na_rend_null_comme_non_defini(self):
+        """Le helper de lecture affiche ``n/a`` pour une valeur non definie."""
+        from ict import factor_geometry_regimes as freg
+
+        self.assertEqual(freg.format_ou_na(None), "n/a")
+        self.assertEqual(freg.format_ou_na(float("nan")), "n/a")
+        self.assertEqual(freg.format_ou_na(0.5), "0.500")
+        self.assertEqual(freg.format_ou_na(-2.0, "{:+.3f}"), "-2.000")
+        # une chaine non numerique ne doit pas faire tomber la lecture
+        self.assertEqual(freg.format_ou_na("n/a"), "n/a")
+
     def test_verdicts_des_deux_criteres(self):
         from ict import factor_geometry_regimes as freg
 
