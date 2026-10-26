@@ -117,4 +117,9 @@ jobs:
           STARVE_MINUTES: ${{ matrix.starve_minutes }}
           WARN_FLOOR: ${{ matrix.warn_floor }}
           WINDOW_MAX_MINUTES: "360"
-        run: python scripts/ci/check_runner_starvation.py --label "$LABEL" --warn-floor "$WARN_FLOOR" --starve-minutes "$STARVE_MINUTES" --window-max-minutes "$WINDOW_MAX_MINUTES"
+        # `python3`, pas `python` : le job est declare `ubuntu-latest`, mais le
+        # detecteur de #17444 classe TOUT job a `python` nu sans
+        # `actions/setup-python` comme vulnerable a un routage self-hosted (les
+        # runners `coursia-linux` portent `python3`, pas `python`). C'etait le
+        # dernier membre de la classe sur `main`.
+        run: python3 scripts/ci/check_runner_starvation.py --label "$LABEL" --warn-floor "$WARN_FLOOR" --starve-minutes "$STARVE_MINUTES" --window-max-minutes "$WINDOW_MAX_MINUTES"
