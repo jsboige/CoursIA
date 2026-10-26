@@ -21708,17 +21708,16 @@ if __name__ == ""__main__"":
     except ValueError as e:
         print(""Exception finale levee:"", e)
 ",,,,,,,,fb7dc02328c6bda8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1b-lecture,markdown,fr,aec4de39bc747b3a,"### Lecture du résultat — exemple guidé 1b
+MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1b-lecture,markdown,fr,7621558391d3fae1,"### Lecture du résultat — exemple guidé 1b
 
-Le journal ci-dessus est celui de **cette exécution** (2026-10-26, 08:45:19–08:45:22). On y lit les deux scénarios côte à côte :
+Le journal ci-dessus est celui de **cette exécution**. On y lit les deux scénarios côte à côte :
 
 - `flaky` échoue aux tentatives 1 et 2, réussit à la 3 : chaque échec affiche l'heure, le type d'exception (`ConnectionError`), la durée et le **délai annoncé avant l'essai suivant** — ici 1 s, puis 1 s (`backoff_base=1`, donc `1**n`), choisi pour ne pas ralentir le test.
 - `always_fails` échoue une première fois, réessaie 1 s plus tard, et s'arrête sur `ECHEC DEFINITIF` à la tentative 2/2 ; l'exception d'origine (`ValueError: erreur permanente`) est **relevée telle quelle** et récupérée par l'appelant : c'est bien la *dernière* exception, pas une exception générique qui masquerait sa cause.
 
 **Comparer avec l'exemple guidé 1.** Ici `flaky` réussit en exactement **3 appels** avec `max_retries=3` ; le même scénario dans l'exemple 1 aurait toléré un échec de plus, car `max_retries` y désigne les **reprises après la première tentative**. Les deux lectures de la consigne cohabitent dans ce carnet : la valeur du groupe est donc surtout dans la docstring, qui **énonce explicitement la sémantique choisie** (« nombre total de tentatives ») — c'est ce qu'un appelant lit avant de brancher son appel facturé dessus.
 
-Deux limites du groupe, conservées telles quelles dans le code et à corriger en exercice : le message de la docstring `2s, 4s, 8s` décrit un backoff `base**n` à partir de 0, alors que la boucle commence à 1 (`base**1 = 2` pour la base 2) ; et `raise last_exception` devient `raise None` (un `TypeError`) si `max_retries=0`. L'exercice **1ter** part précisément de ce cas limite : un budget de temps implique de renoncer *proprement*, y compris avant toute tentative.
-",,,,,,,,aec4de39bc747b3a,,,,,,,,,,,,,,,
+Deux limites du groupe, conservées telles quelles dans le code et à corriger en exercice : le message de la docstring `2s, 4s, 8s` décrit un backoff `base**n` à partir de 0, alors que la boucle commence à 1 (`base**1 = 2` pour la base 2) ; et `raise last_exception` devient `raise None` (un `TypeError`) si `max_retries=0`. L'exercice **1ter** part précisément de ce cas limite : un budget de temps implique de renoncer *proprement*, y compris avant toute tentative.",,,,,,,,7621558391d3fae1,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Texte/09_Production_Patterns.ipynb,ex1ter-md,markdown,fr,7415278fb66f5eba,"### Exercice 1ter - Retry budgeté : renoncer à temps
 
 Le décorateur ci-dessus retente jusqu'à épuisement des tentatives, même quand la somme des délais dépasse toute attente raisonnable. Écrire `retry_with_budget(max_retries=5, budget_seconds=3)` qui :
