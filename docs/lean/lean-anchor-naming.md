@@ -1,92 +1,87 @@
 # Convention de noms d'ancres `native_decide` du gate Lean
 
-**Source :** #21905 (investigation + déplacement de la source de vérité du
-matching). **Date de mesure :** 2026-10-24, branche
-`fix/21905-anchor-naming-source`.
-
 ## Ce que le matching fait
 
-Le gate `proof-integrity` (`.github/workflows/lean-axiom.yml`,
-`fail-on-sorry` + `allow-axioms`) compare **exact-string** les noms
-d'axiomes que Lean émet au build (`#print axioms`) à la liste d'autorisation
-de l'appelant. Il n'y a ni normalisation, ni prefixe, ni wildcard : un nom
-qui diffère d'un caractère d'une entrée autorisée est un rouge. Le parsing
-de la variable `ALLOW` (liste à virgules, ou `@<chemin>` vers un fichier
-source de vérité depuis #21905) vit dans `scripts/lean/allow_list.py`
-(unit-testé : `scripts/tests/test_axiom_allow_file.py`).
+Dans `LeanVerifier.check_axioms`, le matching est normalisé des deux côtés
+par `normalize_axiom_name` : les noms extraits de `#print axioms` et les
+entrées de l'allow-list sont transformés, puis comparés par appartenance
+à un ensemble
+(`MyIA.AI.Notebooks/SymbolicAI/Lean/agent_tests/lean_server.py:204-215` et
+`:901-905`).
 
-## La convention observée — mesure, pas supposition
+La normalisation est exactement celle-ci :
 
-Sous le lake `conway_lean`, **une seule** des 77 entrées du job
-`proof-integrity-audit` porte un suffixe non-ASCII :
+```python
+_AXIOM_NAME_DECORATION_RE = re.compile(r"[^\w.'!?]+$")
 
+
+def normalize_axiom_name(name: str) -> str:
+    return _AXIOM_NAME_DECORATION_RE.sub("", name.strip().rstrip("."))
 ```
+
+Elle applique, dans cet ordre :
+
+1. `.strip()`, qui retire les espaces de bord ;
+2. `.rstrip(".")`, qui retire les points terminaux ;
+3. la regex `[^\w.'!?]+$`, qui retire la suite terminale de caractères hors
+   de l'alphabet conservé : `\w` au sens Unicode de Python, `.`, `'`, `!`
+   et `?`.
+
+Elle ne réécrit ni le préfixe ni les caractères internes du nom, et conserve
+notamment les suffixes `?` et `!`. Elle retire en revanche une décoration
+terminale telle que la croix latine U+271D (`✝`). Deux orthographes qui ont la
+même forme normalisée correspondent ; une ancre réellement différente reste
+interdite. La comparaison porte sur le nom complet normalisé : il n'y a pas de
+correspondance par préfixe ni d'interprétation de wildcard.
+
+Le parsing de `ALLOW` accepte une liste à virgules ou `@<chemin>` vers un
+fichier. Il est implémenté par `parse_allow` dans
+`scripts/lean/allow_list.py:29-63`.
+
+## Décoration terminale et lecture du fichier
+
+L'allow-list Conway comporte notamment :
+
+```text
 Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1✝
 ```
 
-Le suffixe est la **croix latine U+271D** (`✝`), pas la daguère U+2020
-(`†`) — c'est le codepoint que Lean émet, vérifié :
+Le suffixe est la croix latine U+271D (`✝`), distincte de la dague U+2020
+(`†`). La forme normalisée de cette entrée est :
 
-1. **sur le workflow** : le seul caractère non-ASCII exotique de tout
-   `.github/workflows/lean-conway.yml` est U+271D, porté par cette seule
-   entrée (grep exhaustif des codepoints > U+007F) ;
-2. **sur les logs du run CI vert** `39746855422` : la ligne
-   `#print axioms` de `p4_base_exhaustive` émet le nom **avec** le suffixe
-   U+271D — le match exact-string contre l'entrée autorisée réussit, d'où le
-   vert.
+```text
+Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1
+```
 
-> **Portée de la mesure, dite honnêtement :** le rejeu local
-> `lake build` de `conway_lean` est inopérant à froid (`.lake` vide,
-> Mathlib à reconstruire — inadapté à un cycle). Les noms émis sont donc
-> sourcés des **logs du dernier run CI vert**, pas d'un build local de la
-> session. La convention « Lean émet le suffixe de façon systématique pour
-> cet ancre » est portée par cette mesure CI, pas par un rejeu local.
-
-Le **grep item 4** de l'issue (autres suffixes exotiques dans le workflow)
-renvoie **aucun autre** : les seuls autres caractères non-ASCII du fichier
-sont de la prose (`§ · à é ê î — ℕ → ∀ ≤ ≥`), aucun dans un nom d'axiome.
-
-## Pourquoi le suffixe est là et ne se « nettoie » pas
-
-Le nom `p4_base_exhaustive...ax_1_1✝` n'est pas une coquille à corriger :
-c'est **l'identifiant que Lean dérive** pour cet ancre, et le gate le
-consomme tel quel. Retirer le U+271D d'une entrée de la liste (ou
-normaliser côté parsing) sans re-mesurer l'émission au build
-**désalignerait le matching** : le gate ferait alors rouge un ancre qui
-était vert — c'est l'inverse du but. Toute future modification de
-sanitisation (normaliser le suffixe à l'émission côté `#print axioms`, ou
-côté parser) est une **décision séparée** qui exige sa propre mesure
-d'émission : elle est hors du périmètre de #21905 et part dans la PR de
-suivi `lean-axiom-name-sanitization` si le mainteneur la demande.
+Le parseur du fichier conserve le caractère U+271D à la lecture. La
+normalisation intervient uniquement dans la comparaison du gate : la présence
+de la décoration dans l'allow-list ou dans le nom extrait ne change donc pas
+l'ancre retenue. Elle ne modifie jamais le fichier d'autorisation.
 
 ## Source de vérité de la liste
 
-La liste des 77 noms n'est **plus inline** dans le workflow : elle vit dans
-`scripts/lean/allow_axioms_conway.txt` (une entrée par ligne, `#`
-commentaires ignorés), pointée par
+La liste du job `proof-integrity-audit` vit dans
+`scripts/lean/allow_axioms_conway.txt`, référencé par :
 
 ```yaml
 allow-axioms: "@scripts/lean/allow_axioms_conway.txt"
 ```
 
-Le chemin se résout contre la racine du checkout (`GITHUB_WORKSPACE` en
-CI) par `scripts/lean/allow_list.py`, avec repli sur le cwd pour un run
-local. Fail-closed : un `@<chemin>` inexistant fait échouer le step — une
-allow-list manquante n'est jamais traitée comme une allow-list vide.
+`scripts/lean/allow_axioms_conway.txt` contient **77 entrées** : le critère de
+compte est celui de `parse_allow`, à savoir les lignes non vides après
+suppression du texte de commentaire introduit par `#` et des espaces de bord.
+Ces entrées sont uniques, et celle portant U+271D ci-dessus est la seule qui
+contient un caractère non-ASCII. Le commentaire `allow-axioms` du job dans
+`.github/workflows/lean-conway.yml` indique le même total.
 
-Deux dérivs du workflow corrigés au passage du move :
-
-- le commentaire de l'en-tête du job audit disait **81** noms ; la mesure
-  au move en trouve **77** (dérive postérieure à #21833 — les twins `_en`
-  `_initial_nonempty` perdent leurs ancres, 10 entrées — sans que le compte
-  soit suivi). Le commentaire est corrigé.
-- la liste inline portait l'entrée `✝` en pleine ligne YAML : l'extraire
-  vers un fichier évite de rescrir une ligne de 4 Ko à chaque évolution
-  d'ancres du lake.
+Le chemin `@<chemin>` se résout contre la racine du checkout
+(`GITHUB_WORKSPACE` en CI), avec repli sur le répertoire courant pour un run
+local. La résolution est fail-closed : un fichier inexistant ou illisible fait
+échouer le parsing au lieu de produire une allow-list vide.
 
 ## Gardes de régression
 
-- `scripts/tests/test_axiom_allow_file.py` — round-trip byte-identique de
-  l'entrée U+271D, absence de wildcard, compte 77, cablage workflow→fichier.
-- `scripts/lean/tests/test_conway_blocking_gate_whitelist_aligned.py` —
-  inchangé, toujours vert (il vise le job **bloquant**, pas l'audit).
+`scripts/tests/test_axiom_allow_file.py` vérifie le round-trip byte-identique
+de l'entrée U+271D, la normalisation des deux côtés du matching, le refus
+d'une ancre distincte, la concordance du compte entre le fichier, cette
+documentation et le workflow, ainsi que le câblage workflow vers le fichier.

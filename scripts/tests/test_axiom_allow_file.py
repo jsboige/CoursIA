@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
-"""Tests du parsing ALLOW (@path) du gate proof-integrity (#21905).
+"""Contrat de l'allow-list et du matching des ancres proof-integrity.
 
-Cible : scripts/lean/allow_list.py (le parsing que axiom_check_step.py
-consomme) + le cablage workflow -> fichier source de verite.
+Cible : le parsing ``ALLOW`` (``@path``), le cablage workflow -> fichier,
+la normalisation des deux cotes dans ``LeanVerifier.check_axioms`` et la
+coherence des comptes publies dans la documentation.
 
-Le cas d'ecran : l'entree Conway.Life.p4_base_exhaustive...ax_1_1 (U+271D
-latin cross) du fichier doit survivre au round-trip byte-identique -- c'est
-le sujet de l'issue : le matching du gate est exact-string, un sanitize
-silencieux du suffixe ferait rouge un gate vert (ou inversement au
-prochain nettoyage de la liste).
+L'entree Conway.Life.p4_base_exhaustive...ax_1_1 (croix latine U+271D) doit
+survivre au round-trip byte-identique du parseur. Les tests du gate prouvent
+que les formes decoree et non decoree correspondent dans les deux sens, tout
+en refusant une ancre reellement differente.
 """
 from __future__ import annotations
 
+import importlib.util
 import re
 import sys
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import pytest
 
@@ -25,8 +28,31 @@ from allow_list import parse_allow  # noqa: E402
 
 CONWAY_FILE = REPO / "scripts" / "lean" / "allow_axioms_conway.txt"
 CONWAY_WF = REPO / ".github" / "workflows" / "lean-conway.yml"
+ANCHOR_DOC = REPO / "docs" / "lean" / "lean-anchor-naming.md"
+DOCS_README = REPO / "docs" / "README.md"
+LEAN_SERVER = (
+    REPO
+    / "MyIA.AI.Notebooks"
+    / "SymbolicAI"
+    / "Lean"
+    / "agent_tests"
+    / "lean_server.py"
+)
 
-LATIN_CROSS = "✝"  # ✝ -- le suffixe emis par Lean, U+271D (pas U+2020)
+LATIN_CROSS = "✝"  # Croix latine U+271D, distincte de la dague U+2020.
+CONWAY_ANCHOR = "Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1"
+DOC_COUNT_RE = re.compile(
+    r"`scripts/lean/allow_axioms_conway\.txt`\s+contient\s+"
+    r"\*\*(\d+)\s+entrées\*\*"
+)
+WORKFLOW_COUNT_RE = re.compile(
+    r"#\s*allow-axioms:\s*(\d+)\s+native_decide\s+axioms\b"
+)
+
+_SPEC = importlib.util.spec_from_file_location("_anchor_contract_lean_server", LEAN_SERVER)
+assert _SPEC is not None and _SPEC.loader is not None
+lean_server = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(lean_server)
 
 
 # ---------------------------------------------------------------- le parseur
@@ -96,17 +122,119 @@ def test_conway_file_parses_to_77_unique_names():
     assert all(n for n in names)
 
 
-def test_conway_file_carries_exactly_one_latin_cross_entry():
+def test_conway_file_has_exactly_one_non_ascii_entry():
     names = _conway_file_names()
-    crossed = [n for n in names if LATIN_CROSS in n]
-    assert crossed == [
-        f"Conway.Life.p4_base_exhaustive._native.native_decide.ax_1_1{LATIN_CROSS}"
-    ]
+    non_ascii = [n for n in names if any(ord(c) > 127 for c in n)]
+    assert non_ascii == [f"{CONWAY_ANCHOR}{LATIN_CROSS}"]
 
 
 def test_conway_file_has_no_wildcard_entry():
     # regle no-wildcard du gate : un nouveau native_decide = un nouveau rouge
     assert "*" not in _conway_file_names()
+
+
+# -------------------------------------- le matching réel du gate
+
+
+def _check_anchor(listed: str, emitted: str) -> dict:
+    """Exécute le vrai filtrage du gate sur une sortie Lean contrôlée."""
+    stdout = (
+        "'Conway.Life.p4_base_exhaustive' depends on axioms: "
+        f"[{emitted}]"
+    )
+    verifier = lean_server.LeanVerifier(str(REPO))
+    with (
+        patch.object(
+            lean_server,
+            "_resolve_lake_command",
+            return_value=(["lean"], {}),
+        ),
+        patch.object(
+            lean_server.subprocess,
+            "run",
+            return_value=SimpleNamespace(stdout=stdout, stderr="", returncode=0),
+        ),
+    ):
+        return verifier.check_axioms(
+            "Conway.Life.p4_base_exhaustive",
+            whitelist=[listed],
+            fail_on_sorry=True,
+            declarations=["Conway.Life.p4_base_exhaustive"],
+        )
+
+
+@pytest.mark.parametrize(
+    ("listed", "emitted"),
+    [
+        (f"{CONWAY_ANCHOR}{LATIN_CROSS}", CONWAY_ANCHOR),
+        (CONWAY_ANCHOR, f"{CONWAY_ANCHOR}{LATIN_CROSS}"),
+    ],
+    ids=["allow-list-decoree", "nom-extrait-decore"],
+)
+def test_gate_matching_normalizes_both_sides(listed, emitted):
+    """La décoration peut être sur l'allow-list ou sur le nom extrait.
+
+    Les deux cas doivent passer. Un matching exact-string échoue dans les
+    deux sens, ce qui rend ce contrôle probant pour la comparaison normalisée.
+    """
+    result = _check_anchor(listed, emitted)
+    assert result["success"] is True
+    assert result["forbidden"] == []
+
+
+def test_gate_matching_rejects_a_really_different_anchor():
+    """La normalisation ne doit pas autoriser une ancre réellement distincte."""
+    emitted = f"{CONWAY_ANCHOR.replace('ax_1_1', 'ax_1_2')}{LATIN_CROSS}"
+    result = _check_anchor(f"{CONWAY_ANCHOR}{LATIN_CROSS}", emitted)
+    assert result["success"] is False
+    assert result["forbidden"] == [emitted]
+
+
+@pytest.mark.parametrize("suffix", ["?", "!"])
+def test_normalization_preserves_lean_identifier_suffixes(suffix):
+    """Les suffixes `?` et `!` appartiennent au nom, pas à la décoration."""
+    name = f"Foo.allowed{suffix}"
+    assert lean_server.normalize_axiom_name(name) == name
+
+
+# -------------------------------------- cohérence de la documentation
+
+
+@pytest.mark.parametrize("document", [ANCHOR_DOC, DOCS_README])
+def test_documentation_describes_normalized_matching(document):
+    """La documentation et son index décrivent le matching réellement appliqué."""
+    text = document.read_text(encoding="utf-8")
+    flattened = re.sub(r"\s+", " ", text)
+    assert "normalisé des deux côtés" in flattened
+    assert not re.search(
+        r"compare\s+\*\*exact-string\*\*|matching exact-string|ni normalisation",
+        flattened,
+        flags=re.IGNORECASE,
+    )
+
+
+def _documented_count(text: str) -> int:
+    """Exige une seule mention du compte, dans la forme documentaire attendue."""
+    matches = DOC_COUNT_RE.findall(text)
+    assert len(matches) == 1, (
+        "la documentation doit citer exactement une fois le compte de "
+        "scripts/lean/allow_axioms_conway.txt"
+    )
+    return int(matches[0])
+
+
+def test_doc_count_matches_allow_file():
+    """Le compte de la documentation ne peut pas dériver du fichier parsé."""
+    text = ANCHOR_DOC.read_text(encoding="utf-8")
+    assert _documented_count(text) == len(_conway_file_names())
+
+
+def test_workflow_count_matches_allow_file():
+    """Le compte du commentaire workflow est mesuré contre le même fichier."""
+    text = CONWAY_WF.read_text(encoding="utf-8")
+    matches = WORKFLOW_COUNT_RE.findall(text)
+    assert len(matches) == 1
+    assert int(matches[0]) == len(_conway_file_names())
 
 
 # ------------------------------------------------- le cablage du workflow
