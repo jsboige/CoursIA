@@ -21,10 +21,11 @@ Run: python -m pytest scripts/tests/test_debt_ledger.py
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import subprocess
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -1577,6 +1578,42 @@ def test_evaluate_gpu_pending_held_past_expected_end_returns_stale():
     assert "expected_end" in reason
 
 
+def test_evaluate_gpu_pending_without_my_lane_never_ok_to_run():
+    """Sans lane appelante, un held DANS sa fenetre est HOLD (contrat de la
+    docstring), jamais OK_TO_RUN -- PR #22755, finding Hermes 1.
+
+    L'ancien predicat exigeait `my_lane is not None` pour refuser : avec
+    `my_lane=None`, il tombait sur les controles de fenetre et rendait
+    OK_TO_RUN au premier venu.
+    """
+    entity = {"machine": "myia-ai-01", "gpu_index": 2}
+    now = datetime(2026, 10, 8, 12, 0, 0, tzinfo=timezone.utc)
+    rec = _make_gpu_record(
+        "myia-ai-01", 2, "2026-10-08T11:00:00Z",
+        {"state": "held", "holder": "myia-ai-01:CoursIA",
+         "started_at": "2026-10-08T10:00:00Z",
+         "expected_end": "2026-10-08T14:00:00Z"},
+    )
+    verdict, reason = dl.evaluate_gpu_pending([rec], entity, now, None)
+    assert verdict == "HOLD", (verdict, reason)
+    assert "myia-ai-01:CoursIA" in reason
+
+
+def test_evaluate_gpu_pending_held_without_holder_is_hold_for_everyone():
+    """Un held SANS holder ne prouve la propriete de personne : HOLD, meme
+    pour une lane nommee (seul le tenant nomme recoit OK_TO_RUN)."""
+    entity = {"machine": "myia-ai-01", "gpu_index": 2}
+    now = datetime(2026, 10, 8, 12, 0, 0, tzinfo=timezone.utc)
+    rec = _make_gpu_record(
+        "myia-ai-01", 2, "2026-10-08T11:00:00Z",
+        {"state": "held",
+         "started_at": "2026-10-08T10:00:00Z",
+         "expected_end": "2026-10-08T14:00:00Z"},
+    )
+    verdict, _ = dl.evaluate_gpu_pending([rec], entity, now, "myia-ai-01:CoursIA-2")
+    assert verdict == "HOLD"
+
+
 def test_evaluate_gpu_pending_filters_to_matching_entity():
     """Records for a different GPU do not influence the verdict for the asked GPU."""
     entity = {"machine": "myia-ai-01", "gpu_index": 2}
@@ -2811,3 +2848,117 @@ def test_branche_publiee_lue_du_dernier_ref_local(tmp_path, capsys, monkeypatch)
     assert payload["source"].startswith("git (fetch impossible"), payload
     assert "cache" not in payload["source"], payload
     assert rc in (0, 1, 2), rc
+
+
+# --- revue Hermes de la PR #22755 : temoins d'integration --------------------
+#
+# Chaque test ci-dessous rejoue un defaut mesure par Hermes sur le vrai
+# transport git (bare local + clone, aucun reseau) et rougit si le defaut
+# revient. Ils ne remplacent pas un verdict par un faux organe : c'est
+# exactement ce qui rendait le finding 1 invisible.
+
+
+def _load_run_guarded():
+    """Le lanceur reel, charge par chemin (ses propres tests sont Windows-only,
+    car ils exercent le Job Object ; la garde d'admission, elle, ne l'est pas)."""
+    path = Path(__file__).resolve().parents[1] / "ci" / "run_guarded.py"
+    spec = importlib.util.spec_from_file_location("run_guarded_ledger_it", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _utc_offset(hours):
+    """Un stamp UTC reel decale de ``hours`` : le gate du lanceur lit l'horloge
+    (il ne passe pas ``--now``), la fenetre du hold doit donc l'encadrer."""
+    moment = datetime.now(timezone.utc) + timedelta(hours=hours)
+    return moment.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def _append_live_gpu(state_dir, *, state, holder, observed_at, started_at,
+                     expected_end, entity="myia-ai-01#gpu2"):
+    payload = {
+        "state": state,
+        "holder": holder,
+        "workload": "temoin hermes",
+        "started_at": started_at,
+        "expected_end": expected_end,
+    }
+    return dl.main([
+        "append", "--ledger", dl.GPU_RESERVATION, "--entity", entity,
+        "--actor", holder, "--observed-at", observed_at,
+        "--evidence", "nvidia-smi", "--confidence", "high",
+        "--fields-json", json.dumps(payload), "--state-dir", str(state_dir),
+        "--quiet",
+    ])
+
+
+def _admission_by_run_guarded(guarded, monkeypatch, *, work, state_dir, lane,
+                              entity="myia-ai-01#gpu2"):
+    """La garde d'admission REELLE : `_gpu_gate_check` lance l'organe reel en
+    sous-processus, qui lit la branche par le vrai git.
+
+    Deux pointeurs seulement sont injectes, pour que l'organe vise le bac a
+    sable et jamais l'etat de la machine : le depot (`--repo`) et le state-dir
+    (variable d'environnement, heritee par le sous-processus).
+    Rend ``(verdict, detail, admis)`` ; ``admis`` est le predicat de `main`.
+    """
+    real_organ = guarded._run_ledger_organ
+
+    def organ_on_sandbox(args, timeout=120):
+        if args and args[0] in ("check_pending", "publish"):
+            args = [*args, "--repo", str(work)]
+        return real_organ(args, timeout=timeout)
+
+    monkeypatch.setattr(guarded, "_run_ledger_organ", organ_on_sandbox)
+    monkeypatch.setenv("COURSIA_LEDGER_STATE_DIR", str(state_dir))
+    verdict, detail = guarded._gpu_gate_check(entity, lane, "origin")
+    return verdict, detail, verdict in guarded.GPU_GATE_GREEN_VERDICTS
+
+
+def test_run_guarded_refuse_le_gpu_tenu_par_une_autre_lane(tmp_path, monkeypatch):
+    """Finding Hermes 1 (PR #22755) : un `held` reellement PUBLIE par la lane A
+    doit refuser l'admission de la lane B sur le meme device.
+
+    Avant le correctif, `run_guarded` consultait le gate sans `--my-lane` et
+    le gate rendait OK_TO_RUN sur le hold d'autrui :
+    ``{"verdict":"OK_TO_RUN","reason":"held by myia-ai-01:CoursIA (or matching)"}``.
+
+    Trois temps, sur le meme transport git :
+      1. controle : la branche porte un `released` -> B est admis (le refus
+         mesure ensuite n'est donc pas un refus generalise) ;
+      2. A publie un `held` vivant -> B est REFUSE ;
+      3. le tenant A lui-meme reste admis (le correctif ne casse pas le cas
+         legitime).
+    """
+    guarded = _load_run_guarded()
+    _remote, work = _git_sandbox(tmp_path)
+    state_a = _gpu_state(tmp_path / "lane-a")
+    state_b = _gpu_state(tmp_path / "lane-b")
+    lane_a, lane_b = "myia-ai-01:CoursIA", "myia-ai-01:CoursIA-2"
+
+    # 1. controle RELEASED, publie par A.
+    assert _append_live_gpu(
+        state_a, state="released", holder=lane_a, observed_at=_utc_offset(-2),
+        started_at=_utc_offset(-3), expected_end=_utc_offset(-2)) == 0
+    assert _publish(state_a, work, "myia-ai-01", emit=True) == 0
+    verdict, detail, admitted = _admission_by_run_guarded(
+        guarded, monkeypatch, work=work, state_dir=state_b, lane=lane_b)
+    assert (verdict, admitted) == ("RELEASED", True), detail
+
+    # 2. A publie un hold vivant : B est refuse.
+    assert _append_live_gpu(
+        state_a, state="held", holder=lane_a, observed_at=_utc_offset(-1),
+        started_at=_utc_offset(-1), expected_end=_utc_offset(2)) == 0
+    assert _publish(state_a, work, "myia-ai-01", emit=True) == 0
+    verdict, detail, admitted = _admission_by_run_guarded(
+        guarded, monkeypatch, work=work, state_dir=state_b, lane=lane_b)
+    assert verdict != "OK_TO_RUN", (verdict, detail)
+    assert admitted is False, (verdict, detail)
+    assert verdict == "HOLD", (verdict, detail)
+    assert lane_a in detail, detail
+
+    # 3. le tenant est admis sur sa propre fenetre.
+    verdict, detail, admitted = _admission_by_run_guarded(
+        guarded, monkeypatch, work=work, state_dir=state_b, lane=lane_a)
+    assert (verdict, admitted) == ("OK_TO_RUN", True), detail

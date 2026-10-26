@@ -338,15 +338,28 @@ def _utc_now_iso():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%fZ")
 
 
-def _gpu_gate_check(entity, remote=GPU_LEDGER_REMOTE_DEFAULT):
+def _gpu_gate_check(entity, my_lane, remote=GPU_LEDGER_REMOTE_DEFAULT):
     """Consulte ``check_pending`` pour l'entite. Rend ``(verdict, detail)``.
+
+    ``my_lane`` est la lane qui demande le device (``--gpu-holder``). Elle est
+    TRANSMISE au gate (``--my-lane``) : c'est elle qui distingue le tenant d'un
+    hold, admis dans sa fenetre (OK_TO_RUN), d'une autre lane, refusee (HOLD).
+    Sans elle, le gate ne peut prouver aucune propriete -- avant ce correctif,
+    il rendait alors OK_TO_RUN sur le hold vivant d'une autre lane, et ce
+    lanceur admettait un second job sur un device deja reserve (PR #22755,
+    finding Hermes 1).
 
     verdict ``None`` signifie SOURCE INDISPONIBLE : appel en panne, sortie non
     JSON, ou verdict absent -- dans les trois cas l'appelant refuse.
     """
+    if not my_lane:
+        # Fail-CLOSED : un appel sans lane ne peut pas etre admis sur un device
+        # tenu, et le gate ne doit pas etre consulte sans elle.
+        return None, "lane appelante absente : le gate ne peut prouver aucune propriete"
     rc, out, err = _run_ledger_organ([
         "check_pending", "--ledger", GPU_LEDGER_NAME,
-        "--entity", entity, "--remote", remote, "--json",
+        "--entity", entity, "--remote", remote,
+        "--my-lane", my_lane, "--json",
     ])
     if rc is None:
         return None, err
@@ -731,7 +744,8 @@ def main(argv=None):
     # (et pour toujours sans --gpu-entity) : le teardown n'ecrit alors rien.
     gpu_res = None
     if args.gpu_entity:
-        verdict, detail = _gpu_gate_check(args.gpu_entity, args.gpu_ledger_remote)
+        verdict, detail = _gpu_gate_check(
+            args.gpu_entity, args.gpu_holder, args.gpu_ledger_remote)
         if verdict not in GPU_GATE_GREEN_VERDICTS:
             if verdict is None:
                 _say(fh, f"REFUS : gate {GPU_LEDGER_NAME} INDISPONIBLE pour "

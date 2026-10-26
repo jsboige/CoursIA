@@ -1000,10 +1000,11 @@ def evaluate_gpu_pending(
     records read from the snapshot. Callers that want to walk the
     fold-from-snapshot first use ``records_from_snapshot``.
 
-    `my_lane` may be None: in that case, a `held` record with a holder is
-    always reported as HOLD (no ownership check), and OK_TO_RUN is never
-    returned. This is the safe default for a caller that is not yet sure
-    it owns the device.
+    `my_lane` may be None: in that case, a `held` record is always reported
+    as HOLD (no ownership can be proven), and OK_TO_RUN is never returned.
+    This is the safe default for a caller that is not yet sure it owns the
+    device. Likewise, a `held` record WITHOUT a holder is HOLD for every
+    caller: nobody can prove it owns that window.
     """
     # Filter records to this entity, newest observed_at first.
     matching = []
@@ -1035,8 +1036,21 @@ def evaluate_gpu_pending(
     if state != "held":
         return ("HOLD", f"unknown state={state!r} at {latest.observed_at.isoformat()}")
 
-    # state == "held" -- check the window and the holder.
-    if my_lane is not None and holder is not None and holder != my_lane:
+    # state == "held" -- ownership FIRST, then the window.
+    #
+    # OK_TO_RUN is reserved to the holder: it needs a NAMED caller and a
+    # named holder equal to it. The former predicate (`my_lane is not None
+    # and holder is not None and holder != my_lane`) let both unnamed cases
+    # fall through to the window checks and end in OK_TO_RUN -- a caller
+    # that did not say who it was was admitted onto a device held by another
+    # lane, against the contract stated above (PR #22755, Hermes finding 1).
+    if my_lane is None:
+        return (
+            "HOLD",
+            f"held by {holder} at {latest.observed_at.isoformat()} -- no calling "
+            "lane given (--my-lane): ownership cannot be proven, never OK_TO_RUN",
+        )
+    if holder != my_lane:
         return ("HOLD", f"held by {holder} (not {my_lane}) at {latest.observed_at.isoformat()}")
 
     if started_at_raw is not None:
@@ -1055,7 +1069,7 @@ def evaluate_gpu_pending(
         if now > expected_end:
             return ("STALE", f"held by {holder}, expected_end {expected_end.isoformat()} passed")
 
-    return ("OK_TO_RUN", f"held by {holder} (or matching), now={now.isoformat()}")
+    return ("OK_TO_RUN", f"held by {holder} (= calling lane), now={now.isoformat()}")
 
 
 def record_from_observation(observation: dict[str, Any], source: str) -> Record:
@@ -3322,7 +3336,8 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
                       whatever the source.
       * NO_OBS     -- no record; the picker skips the GPU-bound grain.
       * HOLD       -- held by another lane, or by us but outside the window.
-      * OK_TO_RUN  -- held by us (or matching) and now is in the run window.
+      * OK_TO_RUN  -- held by us (holder == --my-lane) and now is in the run
+                      window. Without --my-lane, a held device is HOLD.
       * STALE      -- held past expected_end with no release; needs follow-up.
       * RELEASED   -- terminal; the GPU is free to take.
       * UNREADABLE -- NO source was readable (branch unreachable with
@@ -3871,7 +3886,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="'<machine>#gpu<n>' for gpu-reservation (e.g. 'myia-ai-01#gpu2')",
     )
     check_pending.add_argument(
-        "--my-lane", help="the calling lane ('machine:workspace'); defaults to no ownership check",
+        "--my-lane",
+        help="the calling lane ('machine:workspace'); without it no ownership "
+        "can be proven and a held device is always HOLD (never OK_TO_RUN)",
     )
     check_pending.add_argument(
         "--source",

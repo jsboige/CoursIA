@@ -25,6 +25,10 @@ plafonne pas l'allocation).
 Les tests GPU sont HERMETIQUES : l'appel a l'organe ``debt_ledger.py`` est
 remplace par un faux injecte par monkeypatch (aucun sous-processus de
 l'organe, aucun reseau, aucun depot du parc touche, aucun git invoque).
+Exception assumee, en fin de fichier : le temoin du finding 1 de la revue de
+la PR #22755 lance l'organe REEL sur un bac a sable git local (bare + clone
+sous ``tmp_path``) -- toujours sans reseau ni depot du parc, parce qu'un faux
+organe qui repond HOLD ne peut pas voir un gate qui rend OK_TO_RUN a tort.
 """
 import importlib.util
 import json
@@ -528,3 +532,132 @@ def test_verdict_vert_depuis_une_source_non_autorisee_refuse(guarded, tmp_path, 
     assert rc == 5, f"rc {rc} attendu (5 = refus), journal :\n{journal}"
     assert "TRIVIAL_OK" not in journal, "l'enfant ne doit pas avoir demarre"
     assert "NON_AUTORITAIRE" in journal, journal
+
+
+# --- revue Hermes de la PR #22755 -------------------------------------------
+#
+# Finding 1 : le lanceur consultait le gate SANS la lane appelante, et le gate
+# rendait alors OK_TO_RUN sur le hold vivant d'une autre lane. Les faux organes
+# ci-dessus repondent HOLD directement : ils ne pouvaient pas voir le defaut.
+# Le premier test fixe le contrat d'appel ; le second rejoue le defaut de bout
+# en bout, avec l'organe reel et le vrai transport git (bare local, aucun
+# reseau, aucun depot du parc touche).
+
+
+def test_gpu_gate_recoit_la_lane_appelante(guarded, tmp_path, monkeypatch):
+    """`check_pending` est appele avec `--my-lane <--gpu-holder>`."""
+    calls = []
+    monkeypatch.setattr(guarded, "_run_ledger_organ", _faux_organ_publish(calls))
+    log = tmp_path / "gpu_lane.log"
+    rc = guarded.main(_gpu_argv(log) + ["--", sys.executable, "-c", TRIVIAL_CHILD])
+    assert rc == 0, log.read_text(encoding="utf-8")
+    gate = [c for c in calls if c[0] == "check_pending"]
+    assert len(gate) == 1, calls
+    assert "--my-lane" in gate[0], gate[0]
+    assert gate[0][gate[0].index("--my-lane") + 1] == "myia-ai-01:CoursIA-2", gate[0]
+
+
+def _cmd_ok(cmd):
+    proc = subprocess.run(cmd, capture_output=True, text=True,
+                          encoding="utf-8", errors="replace")
+    assert proc.returncode == 0, f"{cmd} -> rc={proc.returncode} : {proc.stderr}"
+    return proc.stdout
+
+
+def _ledger_sandbox(tmp_path):
+    """Un bare (le remote) + un clone, identite git LOCALE au clone."""
+    remote = tmp_path / "remote.git"
+    _cmd_ok(["git", "init", "-q", "--bare", str(remote)])
+    _cmd_ok(["git", "--git-dir", str(remote), "symbolic-ref", "HEAD", "refs/heads/main"])
+    work = tmp_path / "work"
+    _cmd_ok(["git", "clone", "-q", str(remote), str(work)])
+    _cmd_ok(["git", "-C", str(work), "config", "user.email", "ledger@test.invalid"])
+    _cmd_ok(["git", "-C", str(work), "config", "user.name", "ledger test"])
+    (work / "README.md").write_text("seed", encoding="utf-8")
+    _cmd_ok(["git", "-C", str(work), "add", "README.md"])
+    _cmd_ok(["git", "-C", str(work), "commit", "-q", "-m", "seed"])
+    _cmd_ok(["git", "-C", str(work), "push", "-q", "origin", "main"])
+    return remote, work
+
+
+def _organe_reel_sur_bac_a_sable(guarded, monkeypatch, work, state_dir):
+    """L'organe REEL (sous-processus), pointe sur le bac a sable : `--repo`
+    injecte pour la lecture et la publication, state-dir par l'environnement
+    herite. Rien d'autre n'est remplace."""
+    reel = guarded._run_ledger_organ
+
+    def organe(args, timeout=120):
+        if args and args[0] in ("check_pending", "publish"):
+            args = [*args, "--repo", str(work)]
+        return reel(args, timeout=timeout)
+
+    monkeypatch.setattr(guarded, "_run_ledger_organ", organe)
+    monkeypatch.setenv("COURSIA_LEDGER_STATE_DIR", str(state_dir))
+
+
+def _lignes_publiees(remote):
+    out = _cmd_ok(["git", "--git-dir", str(remote), "show",
+                   "refs/heads/ops/gpu-ledger:gpu-reservation/myia-ai-01.jsonl"])
+    return [json.loads(line.split(" ", 1)[1]) for line in out.splitlines() if line.strip()]
+
+
+def test_gpu_hold_publie_par_une_autre_lane_refuse_le_lancement(guarded, tmp_path, monkeypatch):
+    """De bout en bout : la lane A publie (via le lanceur reel) un hold sur
+    myia-ai-01#gpu2 ; la lane B demande le meme device -> REFUS (rc 5),
+    l'enfant ne tourne pas, rien n'est reserve au nom de B. Puis A, tenant,
+    relance dans sa fenetre : admis (OK_TO_RUN), son travail tourne."""
+    from datetime import datetime, timedelta, timezone
+
+    remote, work = _ledger_sandbox(tmp_path)
+    organ = str(guarded._ledger_organ_path())
+    state_a = tmp_path / "state-a"
+    state_b = tmp_path / "state-b"
+    for state in (state_a, state_b):
+        _cmd_ok([sys.executable, organ, "init", "--state-dir", str(state),
+                 "--ledger", "gpu-reservation", "--apply"])
+
+    # A pose et PUBLIE un hold vivant, par l'organe reel.
+    now = datetime.now(timezone.utc)
+    stamp = lambda h: (now + timedelta(hours=h)).strftime("%Y-%m-%dT%H:%M:%SZ")  # noqa: E731
+    _cmd_ok([sys.executable, organ, "append", "--ledger", "gpu-reservation",
+             "--entity", "myia-ai-01#gpu2", "--actor", "myia-ai-01:CoursIA",
+             "--observed-at", stamp(-1), "--evidence", "nvidia-smi",
+             "--confidence", "high", "--state-dir", str(state_a), "--quiet",
+             "--fields-json", json.dumps({
+                 "state": "held", "holder": "myia-ai-01:CoursIA",
+                 "workload": "job de A", "started_at": stamp(-1),
+                 "expected_end": stamp(2)})])
+    _cmd_ok([sys.executable, organ, "publish", "--git", "--ledger", "gpu-reservation",
+             "--state-dir", str(state_a), "--repo", str(work),
+             "--machine", "myia-ai-01", "--emit"])
+    avant = _lignes_publiees(remote)
+
+    # B demande le device tenu par A : refus.
+    _organe_reel_sur_bac_a_sable(guarded, monkeypatch, work, state_b)
+    log_b = tmp_path / "lane_b.log"
+    rc = guarded.main([
+        "--limit-gib", "8", "--reserve-gib", "1", "--poll", "0.2",
+        "--gpu-entity", "myia-ai-01#gpu2", "--gpu-holder", "myia-ai-01:CoursIA-2",
+        "--gpu-workload", "job de B", "--log", str(log_b),
+        "--", sys.executable, "-c", TRIVIAL_CHILD])
+    journal_b = log_b.read_text(encoding="utf-8")
+    assert rc == 5, f"rc {rc} attendu (5 = refus), journal :\n{journal_b}"
+    assert "HOLD" in journal_b, journal_b
+    assert "TRIVIAL_OK" not in journal_b, "B ne doit pas tourner sur le device de A"
+    assert _lignes_publiees(remote) == avant, "aucune reservation au nom de B"
+
+    # A, tenant, relance dans sa fenetre : admis.
+    _organe_reel_sur_bac_a_sable(guarded, monkeypatch, work, state_a)
+    log_a = tmp_path / "lane_a.log"
+    rc = guarded.main([
+        "--limit-gib", "8", "--reserve-gib", "1", "--poll", "0.2",
+        "--gpu-entity", "myia-ai-01#gpu2", "--gpu-holder", "myia-ai-01:CoursIA",
+        "--gpu-workload", "job de A", "--log", str(log_a),
+        "--", sys.executable, "-c", TRIVIAL_CHILD])
+    journal_a = log_a.read_text(encoding="utf-8")
+    assert rc == 0, f"rc {rc} attendu (0 = tenant admis), journal :\n{journal_a}"
+    assert "OK_TO_RUN" in journal_a, journal_a
+    assert "TRIVIAL_OK" in journal_a, journal_a
+    apres = _lignes_publiees(remote)
+    assert apres[: len(avant)] == avant, "les lignes deja publiees restent en tete"
+    assert apres[-1]["fields"]["state"] == "released", apres[-1]
