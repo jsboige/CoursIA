@@ -121,4 +121,4 @@ jobs:
           SELF_WORKFLOW: linux-runner-starvation-advisory.yml
           DECLARED_CADENCE_MINUTES: "30"
           CADENCE_WARN_MINUTES: "360"
-        run: python scripts/ci/check_runner_starvation.py
+        run: python3 scripts/ci/check_runner_starvation.py

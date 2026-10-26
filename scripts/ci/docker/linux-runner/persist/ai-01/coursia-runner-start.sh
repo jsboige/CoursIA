@@ -142,7 +142,12 @@ fi
 # meme mecanisme, autre jambe. Un futur `supervise.sh lean` prendra son propre
 # predicat, pour la meme raison.
 if [ -e "$COURSIA_RUNNER_STATE_DIR/stop" ]; then
-  if pgrep -f 'supervise\.sh start' >/dev/null 2>&1; then
+  # #21527 : le predicat ne doit voir que le superviseur de CE CHECKOUT.
+  # `pgrep -f 'supervise\.sh start'` reconnaissait les orphelins de tests
+  # lances depuis d'autres worktrees (etat sous /tmp, 6-11 h) et bloquait le
+  # purge : service reste en failed, pool a zero. Le predicat par-cmdline
+  # filtre par le REPO_DIR de ce lanceur.
+  if "$REPO_DIR/scripts/ci/docker/linux-runner/persist/supervisor_live_for.sh" "$REPO_DIR" start; then
     echo "sentinelle presente ET superviseur vivant -- arret en cours, on n'interfere pas" >&2
     exit 1
   fi

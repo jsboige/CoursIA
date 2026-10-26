@@ -352,9 +352,29 @@ jobs:
           # desormais `failure`, elle doit etre triable comme « le balayage
           # n'a pas eu lieu » et non comme un rouge de contenu (cf
           # `scripts/ci/classify_job_deaths.py`, qui classe par annotation).
+          # 4e champ : mergeable_state (#21463). La classe "gate absent" (PR
+          # BLOCKED sans aucun check-run `PR gate`, le run pr-gate.yml ayant ete
+          # annule avant d'avoir poste son verdict) ne se voit QUE par cet etat :
+          # aucun check present ne la signale. `// ""` : un PR dont l'etat est
+          # null (rare) rend une ligne a champ vide, jamais le mot "null".
+          # #22215 point 2 -- un NO-OP doit nommer CE QUI a echoue. Avant ce
+          # correctif le message etait « PR listing failed (upstream) » : ni
+          # endpoint, ni code HTTP, ni message de `gh`. Quota, 5xx et
+          # indisponibilite transitoire s'y lisaient pareil, et deux
+          # explications incompatibles -- API cassee, ou rien a balayer --
+          # restaient ouvertes sur la meme ligne (mesure 2026-10-23T23:41Z,
+          # run 40039941783, commentaire de la lane po-2025 sur #22215).
+          # `gh api` ecrit son diagnostic sur stderr sous la forme
+          # `gh: <message> (HTTP <code>)` : on le capture, on extrait le code,
+          # et on publie les deux. Les valeurs de repli sont posees AVANT
+          # l'appel : le step tourne sous `set -u`, une variable non initialisee
+          # tuerait la branche avant son message.
+          LIST_ERR=$(mktemp)
+          LIST_CODE='aucun code HTTP'
+          LIST_DETAIL='aucun message de gh'
           gh api "repos/$REPO/pulls?state=open&base=main&per_page=100" --paginate \
-            --jq '.[] | select(.draft | not) | "\(.number) \(.head.sha) \(.head.repo.fork)"' > /tmp/openprs.txt \
-            || { echo "::error::[stale-sweep] NO-OP -- PR listing failed (upstream); NOTHING was swept this run (no repair pass, no rescue)"; exit 1; }
+            --jq '.[] | select(.draft | not) | "\(.number) \(.head.sha) \(.head.repo.fork) \(.mergeable_state // "")"' > /tmp/openprs.txt 2>"$LIST_ERR" \
+            || { LIST_CODE=$(grep -oE 'HTTP [0-9]+' "$LIST_ERR" | tail -1 || true); [ -n "$LIST_CODE" ] || LIST_CODE='aucun code HTTP'; LIST_DETAIL=$(tr '\n' ' ' < "$LIST_ERR" | cut -c1-300); [ -n "$LIST_DETAIL" ] || LIST_DETAIL='aucun message de gh'; echo "::error::[stale-sweep] NO-OP -- PR listing failed: endpoint=GET repos/$REPO/pulls?state=open&base=main code=$LIST_CODE detail=$LIST_DETAIL; NOTHING was swept this run (no repair pass, no rescue)"; exit 1; }
 
           : > /tmp/runs.jsonl
           : > /tmp/mute.txt
@@ -368,7 +388,16 @@ jobs:
           LISTED=0
           INSPECTED=0
           OMITTED=0
-          while read -r NUM SHA FORK; do
+          # #22215 point 2 -- meme contrat que la garde du listing : une lecture
+          # ratee nomme son endpoint et son code. Les valeurs de repli sont
+          # posees avant la boucle (`set -u`), et la derniere defaillance est
+          # conservee pour que le NO-OP total dise WHICH call failed, pas
+          # seulement combien de PRs ont ete omises.
+          OMIT_ERR=$(mktemp)
+          OMIT_SHA='aucun'
+          OMIT_CODE='aucun code HTTP'
+          OMIT_DETAIL='aucun message de gh'
+          while read -r NUM SHA FORK MSTATE; do
             [ -z "${NUM:-}" ] && continue
             LISTED=$((LISTED+1))
             # details_url (.../actions/runs/{run_id}/job/{job_id}) is collected
@@ -385,8 +414,11 @@ jobs:
             # transformera une omission totale en `failure`. Le balayage reste
             # utile pour les PRs que l'appel a reussies a inspecter.
             if ! BODY=$(gh api "repos/$REPO/commits/$SHA/check-runs?per_page=100" \
-                     --jq '[.check_runs[] | {name, status, conclusion, started_at, details_url, title: (.output.title // "")}]' 2>/dev/null); then
+                     --jq '[.check_runs[] | {name, status, conclusion, started_at, details_url, title: (.output.title // "")}]' 2>"$OMIT_ERR"); then
               OMITTED=$((OMITTED+1))
+              OMIT_SHA=$SHA
+              OMIT_CODE=$(grep -oE 'HTTP [0-9]+' "$OMIT_ERR" | tail -1 || true); [ -n "$OMIT_CODE" ] || OMIT_CODE='aucun code HTTP'
+              OMIT_DETAIL=$(tr '\n' ' ' < "$OMIT_ERR" | cut -c1-200); [ -n "$OMIT_DETAIL" ] || OMIT_DETAIL='aucun message de gh'
               continue
             fi
             INSPECTED=$((INSPECTED+1))
@@ -410,13 +442,33 @@ jobs:
             # ~100 PRs x 1-2 appels REST, sur un pool ouvert de 307).
             # Un payload dont l'appel a echoue ne porte pas de nom de check :
             # la carte reste vide, exactement le comportement d'avant.
-            if printf '%s' "$BODY" | grep -q '"name":"PR gate"'; then
-              WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:.workflow_id}] | from_entries' 2>/dev/null) || WFMAP=''
+            # #21463 -- l'extension `|| BLOCKED` : la carte WFMAP est AUSSI
+            # demandee pour une PR BLOCKED SANS jambe `PR gate` (classe
+            # "gate absent", le run pr-gate.yml annule avant d'avoir poste son
+            # verdict). Le selecteur l'emette comme candidate re-run et le run
+            # `PR gate` de la tete y est retrouve par `actions/runs?head_sha=`
+            # (ici, WFMAP) -- donc la population BLOCKED sans jambe doit
+            # obtenir sa carte, sinon rien n'y a a relancer. Le pin de cout
+            # #15770 (garde precedant l'appel) est intact : le substring
+            # `grep -q '"name":"PR gate"'` survit, l'elargissement s'y ajoute.
+            if printf '%s' "$BODY" | grep -q '"name":"PR gate"' || [ "${MSTATE:-}" = "BLOCKED" ]; then
+              # #21300 -- WFMAP porte DEUX champs par run : le `workflow_id`
+              # (clef de pliage `_fold_key`, #11808) ET le `conclusion` du
+              # DERNIER run de chaque id (signal `startup_failure` a detecter
+              # ci-dessous). Une seule requete REST, cout inchange par rapport
+              # au WFMAP historique (les DEUX champs sont dans la meme
+              # reponse). L'extension a un double backward-compat :
+              # (1) `_fold_key` accepte encore la forme {run_id: int} des
+              # fixtures de test (cf. `isinstance(v, dict)` plus bas) ;
+              # (2) les tests utilisent un champ separe `run_conclusions`
+              # pour exprimer le verdict par run, ce qui laisse `workflows`
+              # -- la clef de pliage -- inchange.
+              WFMAP=$(gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" --jq '[.workflow_runs[] | {key:(.id|tostring), value:{wf:.workflow_id, c:.conclusion}}] | from_entries' 2>/dev/null) || WFMAP=''
             else
               WFMAP=''
             fi
             if [ -z "${WFMAP:-}" ]; then WFMAP='{}'; fi
-            printf '{"number":%s,"sha":"%s","fork":%s,"checks":%s,"workflows":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "$BODY" "$WFMAP" >> /tmp/runs.jsonl
+            printf '{"number":%s,"sha":"%s","fork":%s,"merge_state":"%s","checks":%s,"workflows":%s}\n' "$NUM" "$SHA" "${FORK:-false}" "${MSTATE:-}" "$BODY" "$WFMAP" >> /tmp/runs.jsonl
           done < /tmp/openprs.txt
           echo "[stale-sweep] open PRs listed=$LISTED inspected=$INSPECTED omitted=$OMITTED"
           # #17566 -- garde NO-OP : si on a LISTED > 0 PRs et que TOUTES les
@@ -426,7 +478,7 @@ jobs:
           # listing : `scripts/ci/classify_job_deaths.py` regroupe ces
           # annotations sous la meme famille de defaut.
           if [ "$LISTED" -gt 0 ] && [ "$INSPECTED" -eq 0 ]; then
-            echo "::error::[stale-sweep] NO-OP -- check-runs unreadable for all $LISTED listed PRs (rate-limit or upstream failure?); NOTHING was swept this run (no repair pass, no rescue)"
+            echo "::error::[stale-sweep] NO-OP -- check-runs unreadable for all $LISTED listed PRs: last endpoint=GET repos/$REPO/commits/$OMIT_SHA/check-runs code=$OMIT_CODE detail=$OMIT_DETAIL; NOTHING was swept this run (no repair pass, no rescue)"
             exit 1
           fi
           # #17566 -- garde omission partielle : au-dela de 10 % de PRs listees
@@ -598,7 +650,14 @@ jobs:
               if not m:
                   return ("unattributed", c.get("name") or "?")
               run_id = m.group(1)
-              return (str(wfmap.get(run_id, run_id)), c.get("name") or "?")
+              v = wfmap.get(run_id, run_id)
+              # #21300 -- WFMAP peut etre {run_id: int} (fixtures de test
+              # historiques, mode 1 champ) ou {run_id: {wf, c}} (production,
+              # mode 2 champs). Le discriminant preserve les tests anciens
+              # sans leur demander une migration.
+              if isinstance(v, dict):
+                  return (str(v.get("wf", run_id)), c.get("name") or "?")
+              return (str(v), c.get("name") or "?")
 
           def _diag(p, why, blockers):
               print(f'[stale-sweep] #{p["number"]}: red gate, kept out -- {why}: '
@@ -612,6 +671,14 @@ jobs:
               p = json.loads(line)
               latest = {}
               wfmap = {str(k): v for k, v in (p.get("workflows") or {}).items()}
+              # #21300 -- carte run_id -> conclusion du run de workflow (sur
+              # les memes `actions/runs?head_sha=` que la WFMAP, mais
+              # exposee separement pour les tests). En production, les deux
+              # viennent du meme appel et la conclusion est imbriquee dans
+              # wfmap ; la lecture essaie d'abord le champ separe, puis
+              # retombe sur l'imbrication.
+              runmap = {str(k): v for k, v in
+                        (p.get("run_conclusions") or {}).items()}
               for c in (p.get("checks") or []):
                   key = _fold_key(c, wfmap)
                   started = c.get("started_at") or ""
@@ -634,7 +701,25 @@ jobs:
               if not gate_legs:
                   # Absent gate (never reported, vs red above) is the
                   # "Flag PRs whose PR gate never ran" step of this same
-                  # sweep (#14477) -- re-aggregation has nothing to re-run.
+                  # sweep (#14477).
+                  #
+                  # #21463 -- la classe "gate absent" que ce sweep existe pour
+                  # voir : la PR est BLOCKED SANS aucun check-run `PR gate` sur
+                  # sa tete, parce que le run pr-gate.yml a ete annule AVANT
+                  # d'avoir poste son verdict (concurrency cancel-in-progress).
+                  # GitHub compte un check requis jamais commence comme pending
+                  # a jamais : la PR est morte SANS avoir jamais rougi, et le
+                  # filtre d'origine la traversait en silence. Emet-la comme
+                  # candidate re-run (rang 1 = immature : pas d'age de verdict
+                  # a mesurer sur un gate qui n'en a jamais rendu un) : l'action
+                  # ci-dessous retrouve le run `PR gate` de la tete (qui EXISTE,
+                  # annule) via `actions/runs?head_sha=` et le relance, ce qui
+                  # re-poste le check-run. Si le run n'est pas relancable
+                  # (variante `queued` figee), l'action le NOMME plutot que de
+                  # le compter comme repare.
+                  if (p.get("merge_state") or "") == "BLOCKED":
+                      print(f'{p["number"]} {p["sha"]} '
+                            f'{str(p.get("fork", False)).lower()} 1')
                   continue
 
               # (#15825) Mute gate leg: a RED conclusion carrying no
@@ -671,6 +756,58 @@ jobs:
                         + (f' -- reparation depuis le log du run {m.group(1)}'
                            if m else ' -- details_url illisible, ni re-run ni reparation')
                         + ' (re-run inert sur snapshot stale, #15825)',
+                        file=sys.stderr)
+                  continue
+
+              # #21300 -- STARTUP_FAILURE : la jambe de gate est rouge, mais le
+              # run de workflow sous-jacent est en `startup_failure` (le runner
+              # n'a jamais demarre, `steps = []`, `runner_name = null`,
+              # `started_at == completed_at` -- 9 tentatives mesurees sur
+              # #20874, le sweep bouclait en relancant un run inerte et la
+              # gate re-rendait le meme FAIL).
+              #
+              # `gh run rerun` recopie la sortie de la tentative precedente
+              # (le runner n'a jamais execute le script, il n'y a pas de
+              # sortie a ecraser). Detecte ici, le sweep NAMME le geste qui
+              # marche -- une NOUVELLE TETE (`gh pr update-branch`) -- et
+              # n'emet PAS la PR comme candidate re-run, exactement comme
+              # SUITE_UNRERUNNABLE plus bas. Cout d'un faux positif
+              # d'exclusion : une minute de sweep de retard sur la PR ;
+              # cout d'un faux negatif : 8-9 tentatives perdues par
+              # passage, le run reste queued et la PR gele indefiniment
+              # (#20874).
+              def _run_conclusion(c):
+                  m = re.search(r"/runs/(\d+)/", c.get("details_url") or "")
+                  if not m:
+                      return ""
+                  run_id = m.group(1)
+                  # Production : imbrique dans `wfmap[id]["c"]`. Tests :
+                  # carte separee `runmap[id]`. Les deux formes sont
+                  # prises, le repli par defaut etant "" -- comportement
+                  # anterieur (la detection n'a pas lieu, jamais l'inverse).
+                  if run_id in runmap:
+                      return runmap[run_id] or ""
+                  v = wfmap.get(run_id)
+                  if isinstance(v, dict):
+                      return v.get("c") or ""
+                  return ""
+
+              startup_failure_legs = [
+                  c for c in gate_legs
+                  if (c.get("conclusion") or "") in RED
+                  and _run_conclusion(c) == "startup_failure"
+              ]
+              if startup_failure_legs:
+                  newest_sf = max(startup_failure_legs,
+                                  key=lambda c: c.get("started_at") or "")
+                  m = re.search(r"/runs/(\d+)/", newest_sf.get("details_url") or "")
+                  run_id = m.group(1) if m else "?"
+                  print(f'[stale-sweep] #{p["number"]}: STARTUP_FAILURE gate '
+                        f'run {run_id} -- `gh run rerun` INERT (re-run recopie '
+                        f'la sortie de la tentative precedente, runner jamais '
+                        f'demarre, #21300 -- 9 tentatives mesurees sur #20874). '
+                        f'Geste : nouvelle tete (`gh pr update-branch`), '
+                        f'le dossier de prevalidation devient perime.',
                         file=sys.stderr)
                   continue
 
@@ -948,6 +1085,15 @@ jobs:
             exit 0
           fi
 
+          # #22117 -- profondeur de la file globale, lue UNE fois pour tout le
+          # sweep (pas par PR). C'est le second signal de la classe « en file » :
+          # sous saturation, un run `queued` meme ancien attend un drain normal
+          # et ne justifie pas une nouvelle tete. Un echec de l'appel laisse la
+          # variable vide -> le verdict retombe sur l'age SEUL (jamais plus
+          # permissif que le comportement anterieur).
+          QUEUE_DEPTH=$(gh api "repos/$REPO/actions/runs?per_page=1&status=queued" \
+            --jq '.total_count' 2>/dev/null) || QUEUE_DEPTH=""
+
           m=0
           i=0
           # #19050 -- refus STRUCTURELS de relance (run termine, non
@@ -1065,7 +1211,71 @@ jobs:
                   # comme repare, et on dit le geste qui marche -- une NOUVELLE
                   # TETE (`gh pr update-branch`), qui recree les suites ; elle
                   # perime le dossier de prevalidation de la PR.
-                  echo "[stale-sweep] #$NUM ($SHA): SUITE_UNRERUNNABLE -- run $RUN_ID completed et non relancable (suite d'une execution dynamique) ; NON compte comme repare. Geste : nouvelle tete (\`gh pr update-branch\`), le dossier de prevalidation devient perime."
+                  echo "[stale-sweep] #$NUM ($SHA): SUITE_UNRERUNNABLE -- run $RUN_ID completed et non relancable (suite d'une execution dynamique, #19050) ; NON compte comme repare. Geste : nouvelle tete (\`gh pr update-branch\`) / close+reopen, le dossier de prevalidation devient perime."
+                  structural=$((structural + 1))
+                elif [ "${RUN_STATUS:-}" = "queued" ]; then
+                  # #22117 -- `queued` n'est PAS structurel comme `completed`.
+                  # `gh run rerun` refuse TOUT run non termine, donc un run
+                  # simplement EN FILE (l'etat normal d'une famine de runners)
+                  # n'est pas fige. Le verdict `ENFILE`/`FIGE` est porte par un
+                  # selecteur python autonome (seuil MESURE 2026-10-23 : 81 runs
+                  # PR gate queued ages 2min->7h48, ZERO au-dela de 8h, file
+                  # globale 990 ; le fige mesure #17099 est a 19h30) -- il lit
+                  # le `created_at` du run ET la profondeur de la file globale,
+                  # pas la prose du refus. Teste par
+                  # test_pr_gate_sweep_select.py (heredoc `PYV`).
+                  VERDICT=$(SWEEP_RUN_JSON="$RUN" \
+                    SWEEP_QUEUE_DEPTH="${QUEUE_DEPTH:-}" \
+                    python3 - <<'PYV'
+          import json, os, sys
+          from datetime import datetime, timezone
+
+          # #22117 -- seuil MESURE 2026-10-23T11:3xZ sur 81 runs `PR gate` queued
+          # (file globale 990) : ages 2 min -> 7h48, MEDIANE 4h07, p90 7h04, ZERO
+          # au-dela de 8h. Un run dans cette enveloppe est servi par la file qui
+          # draine -- « en file », pas fige. Le fige MESURE (#17099) est a 19h30 :
+          # au-dela du seuil ci-dessous ET hors saturation, le run n'arrivera
+          # jamais sur un runner.
+          FROZEN_AFTER_S = 8 * 3600
+          # File globale saturee (issue #22117 : « ou file globale saturee ») : au
+          # 2026-10-23 la profondeur etait 990-1100 runs. Au-dela de 800, un run
+          # `queued` meme ancien attend un drain normal -- on ne recommande pas de
+          # nouvelle tete (rafale de runs) sous saturation.
+          QUEUE_SATURATED_N = 800
+
+          def _parse_dt(v):
+              return datetime.fromisoformat(v[:-1] + "+00:00" if v.endswith("Z") else v)
+
+          run = json.loads(os.environ.get("SWEEP_RUN_JSON") or "{}")
+          created = run.get("created_at") or ""
+          now_raw = os.environ.get("SWEEP_NOW") or ""
+          now = _parse_dt(now_raw) if now_raw else datetime.now(timezone.utc)
+          try:
+              age_s = (now - _parse_dt(created)).total_seconds()
+          except (ValueError, TypeError):
+              # Un timbre illisible ne justifie pas la quietude : repli sur le
+              # comportement anterieur (le run est traite comme fige).
+              print("FIGE")
+              sys.exit(0)
+
+          depth_raw = os.environ.get("SWEEP_QUEUE_DEPTH") or ""
+          try:
+              saturated = bool(depth_raw) and int(depth_raw) >= QUEUE_SATURATED_N
+          except ValueError:
+              saturated = False
+
+          print("FIGE" if age_s >= FROZEN_AFTER_S and not saturated else "ENFILE")
+          PYV
+          )
+                  if [ "$VERDICT" = "ENFILE" ]; then
+                    # En file : le run attend un runner, il n'est pas fige.
+                    # AUCUN geste recommande (ni update-branch ni close+reopen)
+                    # et la place MAX_IMMATURE n'est PAS consommee -- le
+                    # `continue` saute l'increment du compteur en bas de boucle.
+                    echo "[stale-sweep] #$NUM ($SHA): run $RUN_ID EN FILE (pas fige, #22117) -- aucun geste recommande, aucune place consommee ; la file le servira ou le prochain sweep re-mesurera."
+                    continue
+                  fi
+                  echo "[stale-sweep] #$NUM ($SHA): SUITE_UNRERUNNABLE -- run $RUN_ID queued FIGE au-dela du seuil mesure et hors saturation (#22117) ; NON compte comme repare. Geste : nouvelle tete (\`gh pr update-branch\`) / close+reopen, le dossier de prevalidation devient perime."
                   structural=$((structural + 1))
                 else
                   echo "[stale-sweep] re-run refused for #$NUM (run $RUN_ID not completed) -- dispatching PR gate (re-aggregate) to revive it (#17680)"
@@ -1156,15 +1366,26 @@ jobs:
         run: |
           set -uo pipefail
 
-          RUN=$(gh api "repos/$REPO/actions/runs/$RUN_ID" 2>/dev/null) || {
-            echo "::warning::stale-sweep timing unavailable: run API failed"
+          # #22215 point 2 -- meme contrat que les NO-OP : l'avertissement de
+          # mesure nomme l'endpoint et le code. `jobs API failed` sans code etait
+          # indistinguable d'un quota, d'un 5xx et d'un run disparu (mesure du
+          # run 40039941783, 2026-10-23T23:41Z).
+          TIM_ERR=$(mktemp)
+          TIM_CODE='aucun code HTTP'
+          TIM_DETAIL='aucun message de gh'
+          RUN=$(gh api "repos/$REPO/actions/runs/$RUN_ID" 2>"$TIM_ERR") || {
+            TIM_CODE=$(grep -oE 'HTTP [0-9]+' "$TIM_ERR" | tail -1 || true); [ -n "$TIM_CODE" ] || TIM_CODE='aucun code HTTP'
+            TIM_DETAIL=$(tr '\n' ' ' < "$TIM_ERR" | cut -c1-200); [ -n "$TIM_DETAIL" ] || TIM_DETAIL='aucun message de gh'
+            echo "::warning::stale-sweep timing unavailable: endpoint=GET repos/$REPO/actions/runs/$RUN_ID code=$TIM_CODE detail=$TIM_DETAIL"
             exit 0
           }
           # The endpoint defaults to filter=latest. Keep it that way: filter=all
           # includes prior attempts after a re-run and makes the current job name
           # ambiguous, exactly when this workflow is measuring repeated service.
-          JOBS=$(gh api "repos/$REPO/actions/runs/$RUN_ID/jobs?filter=latest&per_page=100" 2>/dev/null) || {
-            echo "::warning::stale-sweep timing unavailable: jobs API failed"
+          JOBS=$(gh api "repos/$REPO/actions/runs/$RUN_ID/jobs?filter=latest&per_page=100" 2>"$TIM_ERR") || {
+            TIM_CODE=$(grep -oE 'HTTP [0-9]+' "$TIM_ERR" | tail -1 || true); [ -n "$TIM_CODE" ] || TIM_CODE='aucun code HTTP'
+            TIM_DETAIL=$(tr '\n' ' ' < "$TIM_ERR" | cut -c1-200); [ -n "$TIM_DETAIL" ] || TIM_DETAIL='aucun message de gh'
+            echo "::warning::stale-sweep timing unavailable: endpoint=GET repos/$REPO/actions/runs/$RUN_ID/jobs?filter=latest code=$TIM_CODE detail=$TIM_DETAIL"
             exit 0
           }
 

@@ -4,6 +4,7 @@ Script de validation post-correction pour ComfyUI Qwen
 Teste l'accès web, API et GPU après corrections structurelles
 """
 
+import os
 import requests
 import json
 import time
@@ -110,10 +111,15 @@ def test_comfyui_login():
     print("\n🔐 Test de ComfyUI-Login...")
     
     try:
-        # Test du login avec les identifiants du .env
+        # Test du login avec les identifiants du .env. Le mot de passe n'est plus
+        # ecrit en dur dans ce script d'archive (regle 2 de secrets-hygiene.md, #21839).
+        password = os.getenv("COMFYUI_PASSWORD")
+        if not password:
+            print("COMFYUI_PASSWORD absent : renseigner le .env du service (cf. #21839)")
+            return False
         login_data = {
             "username": "admin",
-            "password": "rZDS3XQa/8!v9L"
+            "password": password
         }
         
         response = requests.post(
