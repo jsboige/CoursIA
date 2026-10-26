@@ -374,20 +374,23 @@ def _gpu_gate_check(entity, my_lane, remote=GPU_LEDGER_REMOTE_DEFAULT):
     if not isinstance(verdict, str) or not verdict:
         return None, f"verdict absent de la sortie du gate (rc={rc})"
     source = str(payload.get("source") or "")
-    if verdict in GPU_GATE_GREEN_VERDICTS and source and not source.startswith("git"):
-        # Un CACHE local n'a pas le droit d'AFFIRMER une liberation quand la
-        # source primaire est illisible : il peut dater d'avant le hold
-        # d'autrui, et le verdict vert autoriserait deux machines sur le meme
-        # device -- le defaut exact que ce transport doit empecher. `NO_OBS`
-        # reste admis : c'est un constat d'absence, pas une affirmation de
-        # liberte (et la branche n'a jamais existe dans ce cas).
-        if verdict != "NO_OBS":
-            return (
-                "NON_AUTORITAIRE",
-                f"verdict {verdict} rendu depuis une source NON autoritaire "
-                f"({source}) -- le cache local ne peut pas autoriser un "
-                "lancement ; la source primaire (la branche) doit etre lisible",
-            )
+    if verdict in GPU_GATE_GREEN_VERDICTS and verdict != "NO_OBS" and source != "git":
+        # Seule une lecture FRAICHE de la branche (source exactement `git`)
+        # peut AFFIRMER qu'un device est libre ou a nous. Un cache local, un
+        # ref de suivi perime (fetch en echec), ou une sortie qui ne nomme
+        # pas sa source peuvent dater d'avant le hold d'autrui : un verdict
+        # vert y autoriserait deux machines sur le meme device -- le defaut
+        # exact que ce transport doit empecher. Le test portait sur le
+        # PREFIXE `git`, que la sortie `git (fetch impossible ...)` passait
+        # (PR #22755, finding Hermes 3). `NO_OBS` reste admis : c'est un
+        # constat d'absence, pas une affirmation de liberte (et la branche
+        # n'a jamais existe dans ce cas).
+        return (
+            "NON_AUTORITAIRE",
+            f"verdict {verdict} rendu depuis une source NON autoritaire "
+            f"({source or 'source non nommee'}) -- seule une lecture fraiche "
+            "de la branche (source=git) peut autoriser un lancement",
+        )
     return verdict, str(payload.get("reason") or "")
 
 

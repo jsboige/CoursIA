@@ -661,3 +661,38 @@ def test_gpu_hold_publie_par_une_autre_lane_refuse_le_lancement(guarded, tmp_pat
     apres = _lignes_publiees(remote)
     assert apres[: len(avant)] == avant, "les lignes deja publiees restent en tete"
     assert apres[-1]["fields"]["state"] == "released", apres[-1]
+
+
+@pytest.mark.parametrize("verdict,source", [
+    # La sortie exacte de l'organe avant le correctif du finding 3 : elle
+    # passait l'ancien test de PREFIXE `git`.
+    ("RELEASED", "git (fetch impossible : fatal: reseau coupe ; lecture du dernier ref local)"),
+    ("OK_TO_RUN", "git (fetch impossible : fatal: reseau coupe ; lecture du dernier ref local)"),
+    # Une sortie qui ne nomme pas sa source n'affirme rien non plus.
+    ("RELEASED", None),
+])
+def test_verdict_vert_hors_lecture_git_fraiche_refuse(guarded, tmp_path, monkeypatch,
+                                                      verdict, source):
+    """Finding Hermes 3 (PR #22755), cote lanceur : seul `source == "git"`
+    (lecture fraiche de la branche) peut porter un verdict vert autre que
+    NO_OBS. Un ref perime ou une source muette est NON_AUTORITAIRE."""
+    calls = []
+
+    def faux_organ(args, timeout=120):
+        calls.append(list(args))
+        if args[0] == "check_pending":
+            payload = {"verdict": verdict, "reason": "ref perime",
+                       "entity": "myia-ai-01#gpu2"}
+            if source is not None:
+                payload["source"] = source
+            return 0, json.dumps(payload), ""
+        return _faux_organ_publish([])(args, timeout=timeout)
+
+    monkeypatch.setattr(guarded, "_run_ledger_organ", faux_organ)
+    log = tmp_path / "gpu_ref_perime.log"
+    rc = guarded.main(_gpu_argv(log) + ["--", sys.executable, "-c", TRIVIAL_CHILD])
+    journal = log.read_text(encoding="utf-8")
+    assert rc == 5, f"rc {rc} attendu (5 = refus), journal :\n{journal}"
+    assert "NON_AUTORITAIRE" in journal, journal
+    assert "TRIVIAL_OK" not in journal, "l'enfant ne doit pas avoir demarre"
+    assert [c[0] for c in calls] == ["check_pending"], calls

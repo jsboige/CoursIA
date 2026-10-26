@@ -2391,10 +2391,12 @@ def _git_reason(stderr: str) -> str:
 
 
 def fetch_git_ledger_branch(repo: Path, *, remote: str = "origin") -> str | None:
-    """Fetch best effort de la branche dediee ; ``None`` si reussi, sinon la raison.
+    """Fetch de la branche dediee ; ``None`` si reussi, sinon la raison.
 
-    Un echec de fetch n'est pas fatal : le ref de suivi local, s'il existe,
-    reste lisible (lecture potentiellement perimee, et c'est dit a l'appelant).
+    Ce que vaut un echec depend de l'appelant. La publication peut continuer :
+    un ref de suivi perime y produit au pire une poussee refusee (non
+    fast-forward), jamais une perte. Le gate ``check_pending``, lui, refuse
+    (UNREADABLE) : un ref perime ne peut pas autoriser un lancement.
     """
     rc, _, err = _git(
         ["fetch", "--quiet", remote, f"+refs/heads/{GIT_LEDGER_BRANCH}:{_tracking_ref(remote)}"],
@@ -3255,16 +3257,24 @@ def _print_pending_verdict(
     reason: str,
     now: datetime,
     source: str,
+    extra: dict[str, Any] | None = None,
 ) -> None:
-    """Une seule forme de sortie par verdict, quelle que soit la source lue."""
+    """Une seule forme de sortie par verdict, quelle que soit la source lue.
+
+    ``extra`` ajoute des champs de DIAGNOSTIC a la sortie JSON (jamais un
+    second verdict : le champ ``verdict`` reste le seul que l'appelant lit).
+    """
     if args.json_output:
-        print(json.dumps({
+        payload = {
             "verdict": verdict,
             "reason": reason,
             "entity": args.entity,
             "now": format_utc(now),
             "source": source,
-        }))
+        }
+        if extra:
+            payload.update(extra)
+        print(json.dumps(payload))
     else:
         print(f"{verdict}  {args.entity}  {reason}")
         print(f"source={source}")
@@ -3315,8 +3325,11 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
     needs. ``--source`` decides where the state is read from:
 
       * ``git``   -- the dedicated branch ``ops/gpu-ledger`` (the PRIMARY
-                     source): fetch best effort, read by ``git show``, fold,
-                     same verdict vocabulary as the local path;
+                     source): fetch REQUIRED, read by ``git show``, fold,
+                     same verdict vocabulary as the local path. A failed
+                     fetch is ``UNREADABLE`` even when an older tracking ref
+                     is still readable: that ref is reported for diagnosis
+                     only (``stale_ref`` in the JSON), it never authorises;
       * ``local`` -- the local snapshot, a CACHE never an authority; this is
                      the historical behaviour, unchanged;
       * ``auto``  -- try ``git``; on an unreachable branch, fall back to the
@@ -3342,8 +3355,9 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
       * RELEASED   -- terminal; the GPU is free to take.
       * UNREADABLE -- NO source was readable (branch unreachable with
                       ``--source git``, or git unreachable AND no local
-                      snapshot with ``--source auto``). Fail-closed: an
-                      unreadable ledger is never a free device.
+                      snapshot with ``--source auto``), or the fetch failed
+                      and only a possibly stale tracking ref remains.
+                      Fail-closed: an unreadable ledger is never a free device.
 
     Exit code is 0 for OK_TO_RUN, 0 for NO_OBS (we surface a clear verdict
     and let the caller branch), 0 for RELEASED, 1 for HOLD, UNPOSTED or
@@ -3451,12 +3465,41 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
                 for obs in observations
             ]
             verdict, reason = evaluate_gpu_pending(records, entity, now, args.my_lane)
-            note = "git"
             if fetch_error:
-                # Le fetch a echoue mais le ref de suivi local est lisible : on
-                # repond depuis une lecture potentiellement perimee, et on le dit.
-                note = f"git (fetch impossible : {fetch_error} ; lecture du dernier ref local)"
-            _print_pending_verdict(args, verdict, reason, now, source=note)
+                # Le fetch a echoue : le ref de suivi local n'est que le DERNIER
+                # ETAT CONNU de la branche, pas son etat present. Un hold publie
+                # depuis par une autre lane y est invisible, et ce ref rendrait
+                # RELEASED (ou OK_TO_RUN) sur un device deja repris -- le double
+                # lancement exact que ce gate existe pour empecher (PR #22755,
+                # finding Hermes 3). Le ref est donc lu pour le DIAGNOSTIC (le
+                # verdict qu'il porterait est nomme) mais il n'autorise rien :
+                # UNREADABLE, fail-CLOSED, comme une branche illisible.
+                rc_sha, out_sha, _ = _git(
+                    ["rev-parse", "--short", _tracking_ref(args.remote)], cwd=repo
+                )
+                stale_sha = out_sha.strip() if rc_sha == 0 else "?"
+                _print_pending_verdict(
+                    args,
+                    "UNREADABLE",
+                    f"fetch impossible : {fetch_error} ; le dernier ref local "
+                    f"({stale_sha}) dirait {verdict} ({reason}) -- lecture "
+                    "PERIMEE, diagnostic seulement : elle n'autorise aucun "
+                    "lancement (fail-CLOSED)",
+                    now,
+                    source=(
+                        f"git (fetch impossible : {fetch_error} ; dernier ref "
+                        "local lu pour diagnostic seulement)"
+                    ),
+                    extra={
+                        "stale_ref": {
+                            "sha": stale_sha,
+                            "verdict": verdict,
+                            "reason": reason,
+                        }
+                    },
+                )
+                return 1
+            _print_pending_verdict(args, verdict, reason, now, source="git")
             if verdict == "HOLD":
                 return 1
             if verdict == "STALE":

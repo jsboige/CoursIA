@@ -2822,11 +2822,12 @@ def test_branche_absente_laisse_le_cache_local_repondre(tmp_path, capsys):
 
 
 def test_branche_publiee_lue_du_dernier_ref_local(tmp_path, capsys, monkeypatch):
-    """Branche publiee + fetch en echec : le gate lit le DERNIER ref local
-    (l'etat connu de la branche), et le dit dans la source.
+    """Branche publiee + fetch en echec : le dernier ref local est LU POUR LE
+    DIAGNOSTIC (son verdict est nomme), mais le gate rend UNREADABLE.
 
-    Ce n'est PAS le cache local qui repond : c'est la derniere version
-    connue de la source primaire -- et la source nomme l'incertitude.
+    Ce test pinnait l'ancien comportement (verdict rendu depuis le ref perime,
+    `rc in (0, 1, 2)`) : c'est le finding Hermes 3 de la PR #22755. Le ref
+    perime n'autorise plus rien.
     """
     remote, work = _git_sandbox(tmp_path)
     state_dir = _gpu_state(tmp_path)
@@ -2841,13 +2842,18 @@ def test_branche_publiee_lue_du_dernier_ref_local(tmp_path, capsys, monkeypatch)
     rc = dl.main([
         "check_pending", "--ledger", dl.GPU_RESERVATION,
         "--entity", "myia-ai-01#gpu2", "--state-dir", str(state_dir),
-        "--repo", str(work), "--json",
+        "--repo", str(work), "--json", FROZEN,
+        "--my-lane", "myia-ai-01:CoursIA-2",
     ])
     out = capsys.readouterr().out
     payload = json.loads(out.strip().splitlines()[-1])
+    assert rc == 1, payload
+    assert payload["verdict"] == "UNREADABLE", payload
     assert payload["source"].startswith("git (fetch impossible"), payload
     assert "cache" not in payload["source"], payload
-    assert rc in (0, 1, 2), rc
+    # Le diagnostic reste disponible : ce que le dernier ref local DIRAIT.
+    assert payload["stale_ref"]["verdict"] == "OK_TO_RUN", payload
+    assert "PERIMEE" in payload["reason"], payload
 
 
 # --- revue Hermes de la PR #22755 : temoins d'integration --------------------
@@ -2962,3 +2968,70 @@ def test_run_guarded_refuse_le_gpu_tenu_par_une_autre_lane(tmp_path, monkeypatch
     verdict, detail, admitted = _admission_by_run_guarded(
         guarded, monkeypatch, work=work, state_dir=state_b, lane=lane_a)
     assert (verdict, admitted) == ("OK_TO_RUN", True), detail
+
+
+def _second_clone(remote, path):
+    """Un autre siege qui publie sur le meme remote (son propre clone)."""
+    _run_git(["git", "clone", "-q", str(remote), str(path)])
+    _run_git(["git", "-C", str(path), "config", "user.email", "ledger@test.invalid"])
+    _run_git(["git", "-C", str(path), "config", "user.name", "ledger test"])
+    return path
+
+
+def test_fetch_en_echec_ref_perime_n_autorise_rien(tmp_path, capsys, monkeypatch):
+    """Finding Hermes 3 (PR #22755) : une panne reseau ne doit pas autoriser
+    un lancement depuis un ref git PERIME.
+
+    Le remote porte d'abord RELEASED (le client le lit : son ref de suivi
+    s'arrete la), puis un `held` plus recent d'une autre lane, publie depuis
+    un autre clone. Le remote du client devient injoignable (vraie panne :
+    URL vers un chemin inexistant, aucun mock du fetch). Avant le correctif,
+    le gate lisait le vieux ref et rendait RELEASED, rc 0, et `run_guarded`
+    admettait (`source` commencant par `git`). Il doit rendre UNREADABLE.
+    """
+    remote, client = _git_sandbox(tmp_path)
+    publisher = _second_clone(remote, tmp_path / "publisher")
+    state_pub = _gpu_state(tmp_path / "publisher-state")
+    state_client = _gpu_state(tmp_path / "client-state")
+    lane_a, lane_b = "myia-ai-01:CoursIA", "myia-ai-01:CoursIA-2"
+
+    # 1. RELEASED publie ; le client le lit (controle : lecture fraiche).
+    assert _append_live_gpu(
+        state_pub, state="released", holder=lane_a, observed_at=_utc_offset(-2),
+        started_at=_utc_offset(-3), expected_end=_utc_offset(-2)) == 0
+    assert _publish(state_pub, publisher, "myia-ai-01", emit=True) == 0
+    capsys.readouterr()
+    gate = [
+        "check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-ai-01#gpu2",
+        "--repo", str(client), "--state-dir", str(state_client), "--json",
+        "--my-lane", lane_b,
+    ]
+    assert dl.main(gate) == 0
+    fresh = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+    assert (fresh["verdict"], fresh["source"]) == ("RELEASED", "git"), fresh
+
+    # 2. Une autre lane reprend le device : held plus recent sur le remote.
+    assert _append_live_gpu(
+        state_pub, state="held", holder=lane_a, observed_at=_utc_offset(-1),
+        started_at=_utc_offset(-1), expected_end=_utc_offset(2)) == 0
+    assert _publish(state_pub, publisher, "myia-ai-01", emit=True) == 0
+
+    # 3. Panne reseau cote client SEULEMENT : son ref de suivi reste RELEASED.
+    _run_git(["git", "-C", str(client), "remote", "set-url", "origin",
+              str(tmp_path / "injoignable.git")])
+    for source in ("auto", "git"):
+        capsys.readouterr()
+        rc = dl.main([*gate, "--source", source])
+        payload = json.loads(capsys.readouterr().out.strip().splitlines()[-1])
+        assert payload["verdict"] != "RELEASED", (source, payload)
+        assert payload["verdict"] == "UNREADABLE", (source, payload)
+        assert rc == 1, (source, rc, payload)
+        # Le ref perime est nomme pour le diagnostic, pas tu.
+        assert payload["stale_ref"]["verdict"] == "RELEASED", payload
+
+    # 4. La garde de lancement reelle n'admet pas.
+    guarded = _load_run_guarded()
+    verdict, detail, admitted = _admission_by_run_guarded(
+        guarded, monkeypatch, work=client, state_dir=state_client, lane=lane_b)
+    assert admitted is False, (verdict, detail)
+    assert verdict == "UNREADABLE", (verdict, detail)
