@@ -72,32 +72,32 @@ Stratégies de trading algorithmique avec QuantConnect, pipeline ML (Transformer
 | 41 | [2.9e — MIPS : du réseau au programme](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9e-MIPS-Extraction-Programme.ipynb) | BETA | Non |
 | 42 | [2.9f - Théorie effective du grokking en Lean :…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9f-Grokking-Theorie-Effective-Lean.ipynb) | BETA | Oui |
 | 43 | [2.9g — La géométrie de la vérité : une direction dans…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/2.9g-Geometrie-de-la-Verite.ipynb) | BETA | Non |
-| 44 | [3.0 — Théorie de l'information : entropie, KL,…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.0-Theorie-Information.ipynb) | BETA | Oui |
-| 45 | [3.1 — La rétropropagation : la chaîne des gradients à…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.1-Retropropagation.ipynb) | BETA | Oui |
-| 46 | [3.10 — Le pendant SOTA : la bibliothèque diffusers…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb) | BETA | Non |
-| 47 | [3.11 — Le budget mémoire d'un entraînement : quatre…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.11-Budget-Memoire-Entrainement.ipynb) | BETA | Non |
-| 48 | [3.12 — Les collectives : l'anneau à la main contre…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.12-Les-Collectives.ipynb) | BETA | Non |
-| 49 | [3.14 - Debogage d un entrainement qui tourne mais n…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb) | BETA | Oui |
-| 50 | [3.2 — Les optimisateurs : de SGD à Adam, ce qui change…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.2-Optimisateurs.ipynb) | BETA | Oui |
-| 51 | [3.3 — Régularisation : dropout, weight decay, early…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.3-Regularisation.ipynb) | BETA | Oui |
-| 52 | [3.4 — Attention et Transformer from scratch : jusqu'au…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.4-Attention-Transformer-From-Scratch.ipynb) | BETA | Oui |
-| 53 | [3.4c — Mixture of Experts : router les jetons, croître…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.4c-MoE-from-scratch.ipynb) | BETA | Non |
-| 54 | [3.4d — Fourier features et biais spectral : quand le…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb) | ALPHA | Oui |
-| 55 | [3.5 — Grokking et double descente : quand la…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.5-Phenomenes-de-Generalisation.ipynb) | BETA | Oui |
-| 56 | [3.6 — Modèles génératifs : trois objectifs, trois…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.6-Modeles-Generatifs.ipynb) | BETA | Oui |
-| 57 | [3.6b — Modèles génératifs en PyTorch : VAE, GAN et…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.6b-Modeles-Generatifs-PyTorch.ipynb) | BETA | Oui |
-| 58 | [3.6d — Modèles génératifs : Score-SDE *from scratch*](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb) | BETA | Non |
-| 59 | [3.6e — Génération conditionnelle et *classifier-free…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb) | BETA | Non |
-| 60 | [3.7 — Distillation maître-élève : quand le savoir se…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.7-Distillation-Maitre-Eleve.ipynb) | BETA | Oui |
-| 61 | [Représentations contrastives modernes — du skip-gram…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.8-Representations-Contrastives.ipynb) | BETA | Oui |
-| 62 | [3.9 — Quantization FP : FP32 vers FP16 et BF16 depuis…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.9-Compression-Quantization-FP.ipynb) | BETA | Oui |
-| 63 | [3.9a — Compression par quantification INT8 : le réseau…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.9a-Compression-Quantization-INT8.ipynb) | BETA | Non |
-| 64 | [3.9b — Compression par élagage : le réseau amputé qui…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.9b-Compression-Pruning-from-scratch.ipynb) | BETA | Non |
-| 65 | [3.9c — Pruning from scratch sur CPU : le compagnon…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.9c-Pruning-From-Scratch.ipynb) | BETA | Non |
-| 66 | [3.9d — Compression par distillation : transférer le…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.9d-Compression-Distillation-from-scratch.ipynb) | BETA | Non |
-| 67 | [3.9e — Quantification SOTA : la même INT8, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.9e-Compression-Quantization-SOTA.ipynb) | BETA | Non |
-| 68 | [3.9f — Élagage SOTA : les mêmes masques, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.9f-Compression-Pruning-SOTA.ipynb) | BETA | Non |
-| 69 | [3.9g — Comparatif compression : from scratch (Bloc A)…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.9g-Compression-Comparatif-A-vs-B.ipynb) | BETA | Non |
+| 44 | [3.0 — Théorie de l'information : entropie, KL,…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.0-Theorie-Information.ipynb) | BETA | Oui |
+| 45 | [3.1 — La rétropropagation : la chaîne des gradients à…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.1-Retropropagation.ipynb) | BETA | Oui |
+| 46 | [3.10 — Le pendant SOTA : la bibliothèque diffusers…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb) | BETA | Non |
+| 47 | [3.11 — Le budget mémoire d'un entraînement : quatre…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.11-Budget-Memoire-Entrainement.ipynb) | BETA | Non |
+| 48 | [3.12 — Les collectives : l'anneau à la main contre…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.12-Les-Collectives.ipynb) | BETA | Non |
+| 49 | [3.14 - Debogage d un entrainement qui tourne mais n…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.14-Debug-Entrainement-N-Apprend-Pas-Python.ipynb) | BETA | Oui |
+| 50 | [3.2 — Les optimisateurs : de SGD à Adam, ce qui change…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.2-Optimisateurs.ipynb) | BETA | Oui |
+| 51 | [3.3 — Régularisation : dropout, weight decay, early…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.3-Regularisation.ipynb) | BETA | Oui |
+| 52 | [3.4 — Attention et Transformer from scratch : jusqu'au…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb) | BETA | Oui |
+| 53 | [3.4c — Mixture of Experts : router les jetons, croître…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4c-MoE-from-scratch.ipynb) | BETA | Non |
+| 54 | [3.4d — Fourier features et biais spectral : quand le…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4d-Fourier-Features-Biais-Spectral-Python.ipynb) | ALPHA | Oui |
+| 55 | [3.5 — Grokking et double descente : quand la…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb) | BETA | Oui |
+| 56 | [3.6 — Modèles génératifs : trois objectifs, trois…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6-Modeles-Generatifs.ipynb) | BETA | Oui |
+| 57 | [3.6b — Modèles génératifs en PyTorch : VAE, GAN et…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6b-Modeles-Generatifs-PyTorch.ipynb) | BETA | Oui |
+| 58 | [3.6d — Modèles génératifs : Score-SDE *from scratch*](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6d-Modeles-Generatifs-Score-SDE-from-scratch.ipynb) | BETA | Non |
+| 59 | [3.6e — Génération conditionnelle et *classifier-free…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6e-Modeles-Generatifs-Conditionnels-from-scratch.ipynb) | BETA | Non |
+| 60 | [3.7 — Distillation maître-élève : quand le savoir se…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb) | BETA | Oui |
+| 61 | [Représentations contrastives modernes — du skip-gram…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.8-Representations-Contrastives.ipynb) | BETA | Oui |
+| 62 | [3.9 — Quantization FP : FP32 vers FP16 et BF16 depuis…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb) | BETA | Oui |
+| 63 | [3.9a — Compression par quantification INT8 : le réseau…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9a-Compression-Quantization-INT8.ipynb) | BETA | Non |
+| 64 | [3.9b — Compression par élagage : le réseau amputé qui…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb) | BETA | Non |
+| 65 | [3.9c — Pruning from scratch sur CPU : le compagnon…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb) | BETA | Non |
+| 66 | [3.9d — Compression par distillation : transférer le…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb) | BETA | Non |
+| 67 | [3.9e — Quantification SOTA : la même INT8, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb) | BETA | Non |
+| 68 | [3.9f — Élagage SOTA : les mêmes masques, par…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9f-Compression-Pruning-SOTA.ipynb) | BETA | Non |
+| 69 | [3.9g — Comparatif compression : from scratch (Bloc A)…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9g-Compression-Comparatif-A-vs-B.ipynb) | BETA | Non |
 | 70 | [4.1 — Le neurone convolutif from scratch : kernel…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.1-Conv-NumPy-Torch-Allclose.ipynb) | BETA | Oui |
 | 71 | [4.2 — ConvNet profonde : pourquoi les résiduelles](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2-ConvNet-Profonde-Residuelles.ipynb) | BETA | Non |
 | 72 | [Le gradient qui s'évanouit, le gradient qui survit :…](../../MyIA.AI.Notebooks/ML/DataScienceWithAgents/04-Vision/4.2b-Lean-GradientFlow-Vanishing.ipynb) | BETA | Oui |
