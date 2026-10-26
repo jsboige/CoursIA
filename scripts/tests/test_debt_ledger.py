@@ -1851,3 +1851,290 @@ def test_gpu_roster_covers_every_machine_the_keyring_knows():
 
     missing = sorted(set(HOST_ACCOUNTS) - set(dl.FLEET_MACHINES))
     assert missing == [], f"machines absentes du roster du ledger : {missing}"
+
+
+# --- flush : le spool rejoint le dashboard (#22456) ------------------------------
+
+
+def _gpu_state(tmp_path):
+    state_dir = tmp_path / "state"
+    assert (
+        dl.main(
+            ["init", "--state-dir", str(state_dir), "--ledger", dl.GPU_RESERVATION, "--apply"]
+        )
+        == 0
+    )
+    return state_dir
+
+
+def _append_hold(state_dir, *, observed_at="2026-09-17T19:00:00Z", **fields):
+    payload = {
+        "state": "held",
+        "holder": "myia-ai-01:CoursIA-2",
+        "workload": "run de test",
+        "started_at": "2026-09-17T18:00:00Z",
+        "expected_end": "2026-09-17T21:00:00Z",
+    }
+    payload.update(fields)
+    return dl.main(
+        [
+            "append", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-ai-01#gpu2",
+            "--actor", "myia-ai-01:CoursIA-2", "--observed-at", observed_at,
+            "--evidence", "nvidia-smi", "--confidence", "high",
+            "--fields-json", json.dumps(payload), "--state-dir", str(state_dir), "--quiet",
+        ]
+    )
+
+
+def _spool_pending_count(state_dir):
+    return dl.spool_status(state_dir / dl.GPU_RESERVATION / "spool")[dl.GPU_RESERVATION]["pending"]
+
+
+def test_flush_dry_run_lists_pending_and_archives_nothing(tmp_path, capsys):
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    capsys.readouterr()
+    assert dl.main(["flush", "--state-dir", str(state_dir)]) == 0
+    out = capsys.readouterr().out
+    assert "pending=1" in out
+    assert "dry-run" in out
+    assert _spool_pending_count(state_dir) == 1
+
+
+def test_flush_manifest_content_is_the_spool_line(tmp_path, capsys):
+    """What an agent posts must be byte-identical to what the organ wrote."""
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    spool_file = next((state_dir / dl.GPU_RESERVATION / "spool").glob("*.json"))
+    on_disk = spool_file.read_text(encoding="utf-8").strip()
+    capsys.readouterr()
+    assert dl.main(["flush", "--state-dir", str(state_dir), "--json"]) == 0
+    manifest = json.loads(capsys.readouterr().out)
+    assert manifest["count"] == 1
+    assert manifest["workspace"] == dl.LEDGER_WORKSPACES[dl.GPU_RESERVATION]
+    assert manifest["calls"][0]["content"] == on_disk
+
+
+def test_flush_emit_writes_a_manifest(tmp_path):
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    target = tmp_path / "batch.json"
+    assert dl.main(["flush", "--state-dir", str(state_dir), "--emit", str(target)]) == 0
+    manifest = json.loads(target.read_text(encoding="utf-8"))
+    assert manifest["count"] == 1
+    assert manifest["calls"][0]["observation_id"]
+
+
+def test_flush_mark_posted_drains_the_spool(tmp_path, capsys):
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    assert _spool_pending_count(state_dir) == 1
+    capsys.readouterr()
+    assert dl.main(["flush", "--state-dir", str(state_dir), "--json"]) == 0
+    manifest = json.loads(capsys.readouterr().out)
+    observation_id = manifest["calls"][0]["observation_id"]
+    assert dl.main(
+        ["flush", "--state-dir", str(state_dir), "--mark-posted", observation_id]
+    ) == 0
+    assert _spool_pending_count(state_dir) == 0
+    assert "moved=1" in capsys.readouterr().out
+
+
+def test_flush_mark_posted_is_idempotent(tmp_path, capsys):
+    """Replaying the archive must not duplicate nor fail: the id is the key."""
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    capsys.readouterr()
+    assert dl.main(["flush", "--state-dir", str(state_dir), "--json"]) == 0
+    observation_id = json.loads(capsys.readouterr().out)["calls"][0]["observation_id"]
+    assert dl.main(
+        ["flush", "--state-dir", str(state_dir), "--mark-posted", observation_id]
+    ) == 0
+    capsys.readouterr()
+    assert dl.main(
+        ["flush", "--state-dir", str(state_dir), "--mark-posted", observation_id]
+    ) == 0
+    assert "already=1" in capsys.readouterr().out
+    posted = list((state_dir / dl.GPU_RESERVATION / "spool" / "posted").glob("*.json"))
+    assert len(posted) == 1
+
+
+def test_flush_mark_posted_unknown_id_refuses_without_moving(tmp_path, capsys):
+    """All-or-nothing: a partial drain is the state that makes the gate lie."""
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    capsys.readouterr()
+    assert dl.main(["flush", "--state-dir", str(state_dir), "--json"]) == 0
+    observation_id = json.loads(capsys.readouterr().out)["calls"][0]["observation_id"]
+    assert dl.main(
+        ["flush", "--state-dir", str(state_dir), "--mark-posted", observation_id,
+         "obs-qui-n-existe-pas"]
+    ) == 1
+    assert "UNKNOWN_OBSERVATION" in capsys.readouterr().err
+    assert _spool_pending_count(state_dir) == 1
+
+
+def _legacy_spool_file(state_dir, *, name, observation_id, observed_at="2026-10-09T12:12:00Z"):
+    """Write an envelope the pre-envelope organ named after the WORKLOAD.
+
+    The file name and the envelope id disagree on purpose: that is how
+    ``obs-release-15294.json`` came to hold an envelope whose id is
+    ``obs-b2d72...`` (measured 2026-10-25, #22456).
+    """
+    spool = state_dir / dl.GPU_RESERVATION / "spool"
+    spool.mkdir(parents=True, exist_ok=True)
+    observation = {
+        "actor": "myia-ai-01:CoursIA-2",
+        "confidence": "high",
+        "entity": {"gpu_index": 2, "machine": "myia-ai-01"},
+        "evidence": "nvidia-smi : GPU libre",
+        "fields": {
+            "state": "released",
+            "holder": "myia-ai-01:CoursIA-2",
+            "issue": "jsboige/CoursIA#15294",
+            "started_at": "2026-10-09T06:51:23Z",
+            "expected_end": observed_at,
+        },
+        "ledger": dl.GPU_RESERVATION,
+        "observation_id": observation_id,
+        "observed_at": observed_at,
+    }
+    path = spool / name
+    path.write_text(dl.envelope_line(observation), encoding="utf-8")
+    return path
+
+
+def test_flush_drains_a_spool_file_whose_name_is_not_its_envelope_id(tmp_path, capsys):
+    """The publisher and the archiver must key on the SAME id (#22456).
+
+    `flush_manifest` publishes the envelope id; the archiver used to build
+    `<id>.json` from it. A legacy-named file was therefore postable and never
+    archivable: the pending count stayed above zero, `check_pending` answered
+    UNPOSTED forever, and a real backlog became indistinguishable from a frozen
+    gate.
+    """
+    state_dir = _gpu_state(tmp_path)
+    _legacy_spool_file(state_dir, name="obs-release-15294.json", observation_id="obs-b2d72234e3c97250")
+    assert _spool_pending_count(state_dir) == 1
+    capsys.readouterr()
+    assert dl.main(["flush", "--state-dir", str(state_dir), "--json"]) == 0
+    manifest = json.loads(capsys.readouterr().out)
+    assert manifest["calls"][0]["observation_id"] == "obs-b2d72234e3c97250"
+    assert dl.main(
+        ["flush", "--state-dir", str(state_dir), "--mark-posted", "obs-b2d72234e3c97250"]
+    ) == 0
+    assert "moved=1" in capsys.readouterr().out
+    assert _spool_pending_count(state_dir) == 0
+    posted = state_dir / dl.GPU_RESERVATION / "spool" / "posted"
+    assert (posted / "obs-release-15294.json").is_file()
+
+
+def test_archive_accepts_both_ids_of_a_legacy_file(tmp_path):
+    """Both conventions resolve to the same file, and neither deletes it twice."""
+    state_dir = _gpu_state(tmp_path)
+    path = _legacy_spool_file(
+        state_dir, name="obs-release-15294.json", observation_id="obs-b2d72234e3c97250"
+    )
+    spool = state_dir / dl.GPU_RESERVATION / "spool"
+    first = dl.archive_posted(spool, ["obs-b2d72234e3c97250"])
+    assert first["moved"] == ["obs-b2d72234e3c97250"]
+    assert not path.exists()
+    replay = dl.archive_posted(spool, ["obs-b2d72234e3c97250"])
+    assert replay["moved"] == [] and replay["already"] == ["obs-b2d72234e3c97250"]
+    assert _spool_pending_count(state_dir) == 0
+
+
+def test_archive_still_refuses_an_unknown_id_alongside_a_known_one(tmp_path):
+    """All-or-nothing survives the two-convention lookup."""
+    state_dir = _gpu_state(tmp_path)
+    path = _legacy_spool_file(
+        state_dir, name="obs-release-15294.json", observation_id="obs-b2d72234e3c97250"
+    )
+    spool = state_dir / dl.GPU_RESERVATION / "spool"
+    with pytest.raises(dl.LedgerError) as excinfo:
+        dl.archive_posted(spool, ["obs-b2d72234e3c97250", "obs-qui-n-existe-pas"])
+    assert excinfo.value.reason == "UNKNOWN_OBSERVATION"
+    assert path.exists()
+    assert _spool_pending_count(state_dir) == 1
+
+
+def test_check_pending_reports_unposted_instead_of_released(tmp_path, capsys):
+    """A pending outbox is an UNREAD ledger, not a free device (#22456)."""
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    capsys.readouterr()
+    rc = dl.main(
+        ["check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-ai-01#gpu2",
+         "--state-dir", str(state_dir)]
+    )
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert out.startswith("UNPOSTED")
+
+
+def test_check_pending_unposted_json_names_the_backlog(tmp_path, capsys):
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    capsys.readouterr()
+    assert dl.main(
+        ["check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-ai-01#gpu2",
+         "--state-dir", str(state_dir), "--json"]
+    ) == 1
+    verdict = json.loads(capsys.readouterr().out)
+    assert verdict["verdict"] == "UNPOSTED"
+    assert verdict["pending"] == 1
+    assert "flush" in verdict["reason"]
+
+
+def test_resolve_now_sentinels_uses_the_organ_clock():
+    """The organ writes the stamp itself, from an aware moment (#22456)."""
+    moment = datetime(2026, 10, 25, 5, 4, 3, tzinfo=timezone.utc)
+    resolved = dl.resolve_now_sentinels(
+        {"started_at": "now", "expected_end": "now+60m", "state": "held"}, moment=moment
+    )
+    assert resolved["started_at"] == "2026-10-25T05:04:03Z"
+    assert resolved["expected_end"] == "2026-10-25T06:04:03Z"
+    assert resolved["state"] == "held"
+
+
+def test_resolve_now_sentinels_accepts_negative_offsets_and_ignores_others():
+    moment = datetime(2026, 10, 25, 5, 4, 3, tzinfo=timezone.utc)
+    resolved = dl.resolve_now_sentinels(
+        {"started_at": "now-2h", "expected_end": "2026-10-25T09:00:00Z"}, moment=moment
+    )
+    assert resolved["started_at"] == "2026-10-25T03:04:03Z"
+    assert resolved["expected_end"] == "2026-10-25T09:00:00Z"
+    # Un sentinelle invalide n'est pas devinee : elle reste telle quelle et
+    # sera refusee par le parseur de champ, bruyamment.
+    assert dl.resolve_now_sentinels({"started_at": "now+3d"}, moment=moment) == {
+        "started_at": "now+3d"
+    }
+
+
+def test_append_refuses_a_naive_started_at(tmp_path, capsys):
+    """A naive stamp is a local time read as UTC -- refused, never normalised."""
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir, started_at="2026-09-17T18:00:00") == 1
+    err = capsys.readouterr().err
+    assert "naive" in err.lower()
+
+
+def test_module_never_reads_a_naive_clock():
+    """``datetime.now()`` without a timezone is the exact bug of #22456: the
+    value looks like UTC and cannot be distinguished from it downstream."""
+    import ast
+
+    source = Path(dl.__file__).read_text(encoding="utf-8")
+    tree = ast.parse(source)
+    naive: list[int] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Attribute):
+            continue
+        if node.func.attr not in {"now", "utcnow"}:
+            continue
+        if not isinstance(node.func.value, ast.Name) or node.func.value.id != "datetime":
+            continue
+        # ``datetime.now(timezone.utc)`` est correct ; ``datetime.now()`` non.
+        if not node.args and not node.keywords:
+            naive.append(node.lineno)
+    assert naive == [], f"datetime.now() sans timezone aux lignes {naive}"
