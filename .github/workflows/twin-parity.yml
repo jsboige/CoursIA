@@ -16,10 +16,12 @@ name: Twin Parity Check
 # way to make the auditable promise real.
 #
 # Per-pair semantics (#8264): the workflow runs in `--per-pair --base
-# origin/main` mode, comparing the registry + blob SHAs at the PR's HEAD vs
-# at origin/main (the base ref). The gate FAILS only on pairs that the PR
+# <commit>` mode, comparing the registry + blob SHAs at the PR's HEAD vs
+# at the PR's base (#22292) -- `github.event.pull_request.base.sha`, the main
+# GitHub built the merge on; `origin/main` only when there is no PR base
+# (`workflow_dispatch`). The gate FAILS only on pairs that the PR
 # itself has moved (base=OK, head=DRIFT/MISSING) or introduced/removed
-# without rebaseline. Drift already present at origin/main is reported as
+# without rebaseline. Drift already present at the base is reported as
 # `drift_pre_existing` but does NOT fail the gate -- it belongs to a
 # dedicated rebaseline PR (cf #8264 batch precedent: #8282, #8289, #8322,
 # #8372). This keeps the gate green for legitimate single-side edits while
@@ -83,6 +85,12 @@ jobs:
 
       - name: Run twin parity check
         id: check
+        # `EVENT`/`PR_BASE` are read from the event, never derived from the shape of the
+        # checkout: a branch whose tip happens to BE a merge commit passes a bare `HEAD^2`
+        # test, and HEAD^1 would then be that branch's first parent -- not main.
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
         run: |
           set +e
           # Separate stdout (the JSON report, the machine contract) from stderr (diagnostics).
@@ -91,7 +99,23 @@ jobs:
           # so json.load crashed with "Extra data" and the gate failed with a raw traceback on
           # any PR where a warning fired -- masking the real drift verdict. Direct redirection
           # captures python's exit code correctly AND keeps the report pure JSON.
-          python scripts/notebook_tools/check_twin_parity.py --json --check --per-pair --base origin/main > twin_parity_report.json 2>twin_parity_stderr.log
+          # Base = the main GitHub built the merge on (#22292). `origin/main` is re-fetched when
+          # the job STARTS; after hours in the queue it is newer than the merge ref, and every
+          # pair rebaselined on main in between reads DRIFT here and OK there -- a
+          # DRIFT_INTRODUCED on a PR that never touched it (#22218, 2026-10-24: 11 pairs,
+          # 117 main commits between the two reads). A stack PR is also covered: its base is
+          # the parent branch, which is the truth for a drift-introduced gate.
+          BASE=origin/main
+          if [ "$EVENT" = "pull_request" ] && git rev-parse -q --verify "$PR_BASE^{commit}" >/dev/null; then
+            BASE="$PR_BASE"
+          fi
+          # Resolved ONCE, and the commit id is what gets passed: every message below -- and the
+          # tool's own "Impossible de lire le registre au base-ref '<ref>'" when a promisor blob
+          # fetch fails under `filter: blob:none` -- then names a checkable object instead of a
+          # moving ref name.
+          BASE_SHA="$(git rev-parse --verify "$BASE^{commit}")"
+          echo "Twin parity base: $BASE = $BASE_SHA"
+          python scripts/notebook_tools/check_twin_parity.py --json --check --per-pair --base "$BASE_SHA" > twin_parity_report.json 2>twin_parity_stderr.log
           EXIT=$?
           set -e
           if [ -s twin_parity_stderr.log ]; then
@@ -102,6 +126,7 @@ jobs:
           # json.load traceback. The report must be stdout-only JSON (stream separation above).
           if ! python -c "import json; json.load(open('twin_parity_report.json'))" 2>/dev/null; then
             echo "::error title=Twin parity report unparseable::The JSON report (twin_parity_report.json) could not be parsed. Tool exit was $EXIT. Report tail + stderr are shown below and uploaded as artifacts. This indicates the report stream was corrupted or the tool crashed before emitting JSON (see #8957 stream-separation fix)."
+            echo "Base ref resolved to $BASE = $BASE_SHA. If the tool reports it cannot READ the registry, suspect a promisor blob fetch (partial clone, blob:none) before the ref itself: re-verify this commit is present with \`git cat-file -e $BASE_SHA^{commit}\`."
             echo "--- report tail (last 400 chars) ---"
             tail -c 400 twin_parity_report.json || true
             echo "--- stderr ---"
@@ -113,7 +138,7 @@ jobs:
             PRE=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift_pre_existing',0))")
             echo "drift_introduced=$INTRO" >> "$GITHUB_OUTPUT"
             echo "drift_pre_existing=$PRE" >> "$GITHUB_OUTPUT"
-            echo "Twin parity OK : $PRE paire(s) en DRIFT pre-existant (base=origin/main) ne fail pas le gate (rellevent d'une PR de rebaseline dediee, cf #8264)."
+            echo "Twin parity OK : $PRE paire(s) en DRIFT pre-existant (base=$BASE_SHA) ne fail pas le gate (rellevent d'une PR de rebaseline dediee, cf #8264)."
           elif [ $EXIT -eq 1 ]; then
             INTRO=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift_introduced',0))")
             PRE=$(python -c "import json; d=json.load(open('twin_parity_report.json')); print(d.get('drift_pre_existing',0))")
@@ -146,7 +171,7 @@ jobs:
             # %25 = literal %, %0D = CR. Without %0A the annotation truncates at
             # the first newline and the multi-line command is lost.
             CMDS_ANN=${CMDS//$'\n'/%0A}
-            echo "::error title=Twin parity DRIFT INTRODUCED by this PR::La PR a introduit $INTRO paire(s) en DRIFT/MISSING qui etaient OK au base-ref origin/main. Lance EXACTEMENT (le selecteur --pair est obligatoire #8508, lecons L963/L974) :%0A%0A$CMDS_ANN%0A%0A--update va en DERNIER : si le DRIFT vient d'une normalisation outillee (strip_probe_banner.py / strip_machine_paths.py / scrub_papermill_paths.py), these strips deplacent le blob SHA -- attester PUIS stripper invalide l'attestation (#8957). L'ecriture est chirurgicale et preserve les commentaires du registre (#8570). Alternative : splitter la PR pour que chaque cote evolue separement. Drift pre-existant ($PRE paire(s)) releve d'une PR dediee cf #8264. Voir twin_parity_report.json dans les artifacts."
+            echo "::error title=Twin parity DRIFT INTRODUCED by this PR::La PR a introduit $INTRO paire(s) en DRIFT/MISSING qui etaient OK au base-ref $BASE_SHA. Lance EXACTEMENT (le selecteur --pair est obligatoire #8508, lecons L963/L974) :%0A%0A$CMDS_ANN%0A%0A--update va en DERNIER : si le DRIFT vient d'une normalisation outillee (strip_probe_banner.py / strip_machine_paths.py / scrub_papermill_paths.py), these strips deplacent le blob SHA -- attester PUIS stripper invalide l'attestation (#8957). L'ecriture est chirurgicale et preserve les commentaires du registre (#8570). Alternative : splitter la PR pour que chaque cote evolue separement. Drift pre-existant ($PRE paire(s)) releve d'une PR dediee cf #8264. Voir twin_parity_report.json dans les artifacts."
             exit 1
           else
             echo "::error title=Twin parity tool error::Erreur d'execution du check (exit $EXIT). Voir les logs ci-dessus."
