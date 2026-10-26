@@ -94,6 +94,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/GenAI/Image/",            # tranche 15 #10923 (20)
     "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/",  # tranche 15 #10923 (23)
     "MyIA.AI.Notebooks/GenAI/PostTraining/",     # tranche 15 #10923 (14)
+    "MyIA.AI.Notebooks/GenAI/HumorDetection/",   # serie HumorDetection #20301 (1, introduction a la detection d'humour)
     "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/",  # tranche 15 #10923 (1)
     "MyIA.AI.Notebooks/GenAI/Security/",         # tranche 19 #18423 (6, Control / Oversight / Tooling)
     "MyIA.AI.Notebooks/GenAI/SemanticKernel/",   # tranche 15 #10923 (20)

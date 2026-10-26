@@ -31068,25 +31068,25 @@ def reflect(state):
     pass  # TODO etudiant
 
 # Indice : vérifiez reflect(reflect(s)) == s et h_additive(s) == h_additive(reflect(s)).",,,,,,,,95684c70cf7cb401,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-ca1ae9c2,markdown,fr,b7b5510676be59f3,"### Exercice 3 — Généralisation au 24-puzzle
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,b528a303,markdown,fr,b7b5510676be59f3,"### Exercice 3 — Généralisation au 24-puzzle
 
 Le **24-puzzle** (5×5) est le vrai défi : Manhattan y est désespérément faible et
 seules les PDB additives rendent la résolution optimale envisageable. Adaptez ce
 notebook (25 cellules, partition 6-6-6-7) et résolvez une instance. Que
 constatez-vous sur le rapport construction/qualité ?",,,,,,,,b7b5510676be59f3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,cell-12a65b8b,code,fr,df81e76a1a6a3d70,"# Exercice 3 — à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,e025e801,code,fr,df81e76a1a6a3d70,"# Exercice 3 — à compléter
 # Indice : la structure est inchangée ; changent la taille (N=5), le but (1..24,0),
 # et la partition. Étape 1 : redéfinissez GOAL24 et neighbors pour N=5.
 # Étape 2 : attention à l'explosion de P(25, k) — restez sur des groupes <= 6.
 pass  # TODO etudiant",,,,,,,,df81e76a1a6a3d70,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1216-h,markdown,fr,8bc36ac2547e4eef,"### Exercice 4 — Information mutuelle conditionnelle générique
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,9acdfca8,markdown,fr,8bc36ac2547e4eef,"### Exercice 4 — Information mutuelle conditionnelle générique
 
 Réimplantez $I(X_A ; X_B \mid Q)$ pour un quotient quelconque : bâtir les
 fibres de `qfun`, puis sommer les informations mutuelles **dans chaque
 fibre**, pondérées par sa taille. L'attendu est mesurable avec les
 cellules de la section 12 : $0$ bit pour `occupancy_B`, $\approx 1{,}58$ bit
 pour `row_profile`.",,,,,,,,8bc36ac2547e4eef,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1216,code,fr,07285018b7c46ae9,"# Exercice 4 — à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,fb39e83b,code,fr,07285018b7c46ae9,"# Exercice 4 — à compléter
 # mi_conditionnel(qfun) doit rendre I(X_A ; X_B | Q) pour un quotient quelconque
 # donne par sa fonction qfun (par exemple occupancy_B ou row_profile).
 def mi_conditionnel(qfun):
@@ -31098,13 +31098,13 @@ print(""Exercice 1 a completer : I(X_A;X_B|Q) generique"")
 print(f""Attendu : I(.|S_B) = {I_given_SB:.6f} bits ; I(.|Q') = {I_given_Qp:.6f} bits"")
 print(f""Obtenu  : {mi_conditionnel(occupancy_B)}"")
 ",,,,,,,,07285018b7c46ae9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1217-h,markdown,fr,cf6437fe848f7b2a,"### Exercice 5 — Le prix du quotient
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,27f448c8,markdown,fr,cf6437fe848f7b2a,"### Exercice 5 — Le prix du quotient
 
 Construisez la courbe $(H(Q),\ I(X_A;X_B \mid Q))$ pour une famille de
 quotients de plus en plus pauvres : $S_B$ restreint aux cellules prises par
 2 tuiles de B, puis 1 tuile, puis le profil de lignes. La courbe montre ce
 que le bon quotient achète : la même information pour moins d'entropie.",,,,,,,,cf6437fe848f7b2a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1217,code,fr,1cd3e87d9a520c1a,"# Exercice 5 — à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,68bfdff0,code,fr,1cd3e87d9a520c1a,"# Exercice 5 — à compléter
 # une famille de quotients de plus en plus pauvres -- par exemple S_B restreint aux
 # cellules prises par 2 tuiles de B seulement, puis 1 tuile, puis le profil de lignes.
 def quotient_k_tiles(k):
@@ -31120,14 +31120,14 @@ print(""Exercice 2 a completer : courbe du prix du quotient"")
 print(f""Attendu : 4 points, de (H={H_SB:.3f}, I={I_given_SB:.3f}) a (H={H_Qp:.3f}, I={I_given_Qp:.3f})"")
 print(f""Obtenu  : {prix}"")
 ",,,,,,,,1cd3e87d9a520c1a,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1218-h,markdown,fr,3340a92eb5c752df,"### Exercice 6 — La PDB complète commute-t-elle mieux ?
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,9c4aa95a,markdown,fr,3340a92eb5c752df,"### Exercice 6 — La PDB complète commute-t-elle mieux ?
 
 Reprenez le test de commutation de la section 12 avec le quotient
 *labellisé* $\pi_{full}(X) = X_B$ (les positions nommées des tuiles 4..6,
 pas seulement leurs cellules) et mesurez la fraction de fibres à successeur
 unique. Réponse mesurée : **non** — l'amélioration attendue d'une PDB
 labellisée n'a pas lieu ici.",,,,,,,,3340a92eb5c752df,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1218,code,fr,f7e2961257088cb3,"# Exercice 6 — à compléter
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,052cee2a,code,fr,f7e2961257088cb3,"# Exercice 6 — à compléter
 # avec le quotient labellise pi_full(X) = X_B (positions nommees des tuiles 4..6, pas
 # seulement leurs cellules) et mesurer la fraction de fibres a successeur unique sous mu.
 # Reponse mesuree : NON -- l'amelioration attendue d'une PDB labellisee n'a pas lieu ici.
@@ -31139,7 +31139,7 @@ else:
     print(""Exercice 3 a completer : commutation du quotient labellise X_B"")
 print(""Attendu : EGALITE avec S_B (meme fraction 20/21 de fibres a successeur unique, 480/504 contre 80/84) -- labelliser les arrangements de B raffine les fibres sans recuperer ce qui determine la premiere tuile mobile : les positions du groupe A et les cellules libres"")
 ",,,,,,,,f7e2961257088cb3,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,q1219,markdown,fr,b8712ca520ee690d,"## Conclusion
+MyIA.AI.Notebooks/Search/Part1-Foundations/Search-03b-PatternDatabases.ipynb,18523917,markdown,fr,b8712ca520ee690d,"## Conclusion
 
 La **base de données de motifs** illustre un principe central de la recherche
 heuristique avancée : **investir du calcul en amont** (précalculer des tables une

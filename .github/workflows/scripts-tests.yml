@@ -503,6 +503,14 @@ jobs:
         # OpenAI key unset (env -u re-run), zero network/gh subprocess, zero
         # dep delta vs this job (pillow arrives transitively with matplotlib).
         #
+        # scripts/ci/tests re-cabled here (#22234, dossier preflight po-2025) :
+        # la suite nouvelle de check_runner_starvation (20 tests, hermetique,
+        # _gh_json monkeypathe) vivait dans un repertoire que ce run ne
+        # collectait pas -- vert en local, jamais servi en CI. Les voisins
+        # preexistants du repertoire sont hermetiques aussi (git ls-files
+        # local, spawns python, psutil en importorskip ; timeline/comments
+        # monkeypatches pour list_closed_unmerged_prs).
+        #
         # Nombre de workers xdist borne par le plafond memoire du conteneur
         # (1 worker par Gio entier de `memory.max`, entre 1 et 4). Les slots a
         # 4 Gio (ai-01-wsl-*, po-2024-linux-docker-1) gardent `-n 4` a
@@ -526,6 +534,7 @@ jobs:
           python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
             pytest \
             scripts/tests \
+            scripts/ci/tests \
             tests \
             scripts/notebook_tools/tests \
             scripts/lean/tests \
