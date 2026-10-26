@@ -35,7 +35,7 @@ Backtests : `a275a2974bce9f0503ae969ec3adc611` (stratégie), `d937f2dcbb0d88f931
 
 **Lecture** : le Sharpe de la stratégie (0,842) ne dépasse pas celui de la détention passive des mêmes titres (0,905), et la pire baisse est la même. Sur cette fenêtre, le résultat vient donc du choix des titres, et le double filtre de tendance (EMA puis SMA200) n'apporte rien de mesurable. La liste est faite de grandes capitalisations d'aujourd'hui : c'est un biais de survie que ce contrôle ne retire pas, puisque la stratégie et la détention utilisent la même liste.
 
-**Anciens chiffres** : la version précédente de cette section annonçait un Sharpe d'environ 0,61 sur 2020-2025, attribué au carnet `quantbook.ipynb`, et citait un run cloud à 0,512. Le carnet ne calcule pas ce 0,61 : pour la configuration du dépôt (EMA20/50, rééquilibrage hebdomadaire), sa sortie donne 0,281, sur d'autres dates. Le run à 0,512 portait sur 2516 séances, comme la mesure ci-dessus qui donne 0,842 : il ne décrivait pas le code du dépôt.
+**Anciens chiffres** : la version précédente de cette section annonçait un Sharpe d'environ 0,61 sur 2020-2025, attribué au carnet `quantbook.ipynb` (attribution inscrite le 2026-10-07, #19570), et citait un run cloud à 0,512, relevé au registre `docs/qc/qc-strategies-status.md` le 2026-07-18 (tranche 8 de #1621). Le carnet ne calcule pas ce 0,61 : pour la configuration du dépôt (EMA20/50, rééquilibrage hebdomadaire), sa sortie donne 0,281, sur d'autres dates. Le run à 0,512 portait sur 2516 séances, comme la mesure ci-dessus qui donne 0,842 : il ne décrivait pas le code du dépôt.
 
 ## Files
 
