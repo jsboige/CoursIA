@@ -2097,6 +2097,87 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
                 or _DELIVERED_MARKER_RE.search(body))
 
 
+# #22500 point 1 -- l'HEURE du dernier evenement de cloture.
+#
+# Le filtre recent (`has_recent_delivery_marker`) et la sonde pleine
+# (`has_delivered_signal`) lisent tous deux le fil d'une issue, mais AUCUN
+# des deux ne rend l'HEURE de l'evenement qui les a fait conclure : sans
+# elle, un marqueur de cloture ecarte une issue POUR TOUJOURS.
+#
+# Mesure du 2026-10-26 sur les 48 issues ouvertes label `consolidation` :
+# 15 consolidations bornees ecartees par un marqueur de MOINS de 48 h (ces
+# la-la, l'exclusion est normale) et 10 ecartees par un marqueur de PLUS de
+# 48 h -- dont #20381 (Dynamics, la consolidation que le user cite depuis le
+# 23/10), ecartee depuis cinq jours sans qu'aucune lane la revisite.
+#
+# Pourquoi une consolidation est un cas a part : c'est un chantier
+# MULTI-tranches. Une lane qui en livre UNE tranche poste `[DELIVERED]`
+# (continue.md P1, « rendre la main »), le tapis lit ce marqueur comme une
+# livraison COMPLETE, et l'issue reste ouverte ET invisible. Le marqueur
+# n'ecarte donc l'issue que pendant `CONSOLIDATION_LAG_H` heures ; apres,
+# elle redevient DUE (classe 0) et la lane reconfronte ses criteres.
+def delivery_event(issue_number: int) -> tuple[bool, bool, str | None] | None:
+    """L'etat de livraison d'une issue, AVEC l'heure de l'evenement.
+
+    Rend `(recent, state, stamp)` en **UNE** lecture :
+
+    - ``recent`` : le DERNIER commentaire porte un marqueur de cloture --
+      meme grammaire que `has_recent_delivery_marker` (le filtre recent) ;
+    - ``state``  : l'etat de livraison du FIL apres le dernier evenement --
+      meme grammaire que `_delivered_state` (la sonde pleine) ;
+    - ``stamp``  : l'horodatage serveur du dernier evenement de cloture
+      (``None`` si le fil n'en porte aucun, ou si le dernier evenement est
+      une RETRACTATION).
+
+    TRI-ETAT sur le retour ENTIER : ``None`` = la lecture a echoue (reseau,
+    403, payload illisible) -- fail-OPEN, l'appelant le dit et ne neutralise
+    rien.
+
+    Les grammaires sont reprisees telles quelles (aucune regex nouvelle) :
+    cette fonction ne decide pas de la livraison, elle en donne l'HEURE,
+    que la regle des 48 h consomme.
+    """
+    try:
+        out = subprocess.run(
+            ["gh", "issue", "view", str(issue_number), "--repo", REPO,
+             "--json", "comments"],
+            capture_output=True, text=True, encoding="utf-8", check=True,
+            timeout=_clamp_timeout(30),
+        ).stdout
+        payload = json.loads(out)
+    except Exception:  # noqa: BLE001 - payload illisible = pas de signal
+        return None
+    if not isinstance(payload, dict):
+        return (False, False, None)
+    comments = payload.get("comments") or []
+    if not isinstance(comments, list) or not comments:
+        return (False, False, None)
+    state = False
+    stamp = None
+    for c in comments:
+        if not isinstance(c, dict):
+            continue
+        body = c.get("body") or ""
+        if not isinstance(body, str):
+            continue
+        created = c.get("createdAt")
+        if _DELIVERED_MARKER_REVOKED_RE.search(body):
+            state, stamp = False, None
+        elif (_DELIVERED_MARKER_RE.search(body)
+              or _released_covers_acceptance(body)):
+            state, stamp = True, created
+        elif _RECENT_DELIVERY_MARKER_RE.search(body):
+            # `[FROZEN]` et consorts : le filtre recent les voit, la sonde
+            # pleine non. L'HEURE compte quand meme pour la regle des 48 h.
+            stamp = created
+    last = comments[-1]
+    last_body = last.get("body") if isinstance(last, dict) else ""
+    if not isinstance(last_body, str):
+        last_body = ""
+    recent = bool(_RECENT_DELIVERY_MARKER_RE.search(last_body)
+                  or _DELIVERED_MARKER_RE.search(last_body))
+    return (recent, state, stamp)
+
 
 def has_delivered_signal(issue_number: int,
                          lane: str | None = None) -> bool | None:
@@ -2275,6 +2356,7 @@ def delivered_signal_reason(
     probe=None,
     failures: list[int] | None = None,
     merged_pr_probe=None,
+    skip_marker: bool = False,
 ) -> str | None:
     """Pourquoi ecarter ce candidat de l'urne `grain`, ou ``None``.
 
@@ -2312,24 +2394,30 @@ def delivered_signal_reason(
             "`delivered` aux lanes habilitees (#15069), jamais comme grain de "
             "production."
         )
-    verdict = probe(item["number"], lane)
-    if verdict == DELIVERED_SIGNAL_UNPROBED:
-        return None
-    if verdict is None:
-        # Fail-OPEN, et rapporte. Traduire cet echec en silence reviendrait a
-        # lire << pas de signal >> dans une page blanche -- exactement le
-        # defaut que ce filtre corrige, deplace d'un cran.
-        if failures is not None:
-            failures.append(item["number"])
-        return None
-    if verdict:
-        return (
-            "SIGNAL LIVRAISON (commentaire `" + DELIVERED_COMMENT_MARKER +
-            "` / `[DELIVERED] lane`) : une lane a deja rendu la main sur "
-            "cette issue en la refutant, ou l'a cloturee explicitement "
-            "(voie 3, #15069/#19907). La re-servir comme grain de "
-            "production fait bruler un cycle a la lane qui la recoit."
-        )
+    # #22500 point 1 -- `skip_marker` neutralise la surface « commentaire »
+    # SANS neutraliser les deux autres : une consolidation dont le marqueur
+    # de cloture a plus de 48 h reste ecartee par son LABEL ou par une PR
+    # MERGEE recente (une consolidation accumule les PRs : ces deux surfaces
+    # disent « un tranche est livree », pas « la consolidation est finie »).
+    if not skip_marker:
+        verdict = probe(item["number"], lane)
+        if verdict == DELIVERED_SIGNAL_UNPROBED:
+            return None
+        if verdict is None:
+            # Fail-OPEN, et rapporte. Traduire cet echec en silence
+            # reviendrait a lire << pas de signal >> dans une page blanche --
+            # exactement le defaut que ce filtre corrige, deplace d'un cran.
+            if failures is not None:
+                failures.append(item["number"])
+            return None
+        if verdict:
+            return (
+                "SIGNAL LIVRAISON (commentaire `" + DELIVERED_COMMENT_MARKER +
+                "` / `[DELIVERED] lane`) : une lane a deja rendu la main sur "
+                "cette issue en la refutant, ou l'a cloturee explicitement "
+                "(voie 3, #15069/#19907). La re-servir comme grain de "
+                "production fait bruler un cycle a la lane qui la recoit."
+            )
     # Troisieme surface : PR MERGEE <90j citant `#N` (#19907). Couvre les
     # LIVREURS dont le label a ete retracte par le sweep post-merge et dont
     # aucune lane n'a encore refute (donc pas de marqueur). Cas fondateur
@@ -6404,12 +6492,21 @@ def belt_sort_key(it: dict, *, now=None) -> tuple:
     #22500 -- la ligne de temps ne suffisait pas : elle traite une issue de
     consolidation comme n'importe quelle autre, alors que le mandat user du
     2026-10-25 demande qu'elle soit visitee « plusieurs fois par semaine ».
-    Tri : `(classe, stamp ISO asc, numero asc)` avec `classe = 0` pour une
+    Tri : `(classe, rang, stamp ISO asc, numero asc)` avec `classe = 0` pour une
     consolidation **due** (derniere visite il y a au moins
     `CONSOLIDATION_LAG_H` heures), `1` sinon. Une consolidation due passe
     donc devant tout le reste, et les consolidations dues entre elles
     gardent l'ordre de leur visite : aucune ne peut attendre plus longtemps
     qu'un tour de tapis apres son echeance.
+
+    #22500 point 2 (seconde passe) -- `rang` : dans la classe 0, un GRAIN
+    borne passe devant un EPIC. Mesure du 26/10 : les EPICs de consolidation
+    sont les plus anciens, ils passaient donc devant les grains bornes, et
+    une lane en cycle de 30 minutes ne sait pas les servir (« le belt offre
+    4 umbrellas toutes bloquees », quatre cycles de suite ; « tache
+    multi-heures, non hote dans la queue d'un cycle cron »). Le rang ne
+    change QUE l'ordre a l'interieur de la classe 0 : la classe 1 garde
+    exactement son ordre d'avant (rang 0 pour tous).
     """
     moment = now or NOW
     visit = belt_visit_stamp(it)
@@ -6417,8 +6514,21 @@ def belt_sort_key(it: dict, *, now=None) -> tuple:
     if is_consolidation(it):
         age = _visit_age_hours(visit or it.get("created_at"), moment)
         if age is not None and age >= CONSOLIDATION_LAG_H:
-            return (0, stamp, it.get("number", 0))
-    return (1, stamp, it.get("number", 0))
+            return (0, _bounded_rank(it), stamp, it.get("number", 0))
+    return (1, 0, stamp, it.get("number", 0))
+
+
+def _bounded_rank(it: dict) -> int:
+    """Rang a l'interieur de la classe 0 : 0 pour un GRAIN, 1 pour un
+    conteneur (EPIC).
+
+    Un grain borne est une tranche de travail qu'une lane peut livrer dans
+    un cycle ; un EPIC de consolidation est un chantier de plusieurs cycles.
+    L'EPIC n'arrive donc en tete que lorsque plus aucun grain borne n'est
+    due -- ce que la boucle fait deja naturally : elle parcourt la liste
+    triee et passe au candidat suivant quand un candidat n'est pas servable.
+    """
+    return 1 if it.get("klass") == "umbrella" else 0
 
 
 def parent_refs(it: dict) -> set[int]:
@@ -8208,11 +8318,27 @@ def recent_marker_probe_inert(number):
     return None
 
 
+def delivery_event_probe_inert(number):
+    """Defaut inerte de la lecture d'evenement de livraison (#22500 point 1).
+
+    Rend ``(False, False, None)`` = « aucun marqueur releve, aucune heure » :
+    la boucle applique alors les filtres habituels, sans neutraliser aucune
+    surface. Un test qui n'injecte pas de sonde ne sort jamais sur le
+    reseau (doctrine #19913).
+
+    Le retour n'est PAS ``None`` : ici ``None`` signifierait « lecture en
+    echec », et l'appelant le traiterait en fail-OPEN explicite. Un defaut
+    inerte n'a pas d'echec a signaler : il n'a rien mesure.
+    """
+    return (False, False, None)
+
+
 def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 delivered_probe=None, claims_probe=None,
                                 merged_pr_probe=None,
                                 recent_marker_probe=None,
                                 snapshot_prime=None,
+                                delivery_event_probe=None,
                                 time_budget_s=None):
     """La boucle de service du tapis : claims, livraison, remplacement.
 
@@ -8236,6 +8362,12 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     marquees sans consommer une unite : l'epuisement ne peut plus les servir.
     ``snapshot_prime`` (tests) remplace le rafraichissement UNIQUE de
     l'instantane partage (#22630) ; son defaut est inerte, comme les sondes.
+
+    ``delivery_event_probe`` (tests) remplace la lecture qui rend l'HEURE du
+    dernier evenement de cloture (#22500 point 1) : pour une consolidation,
+    elle seule permet de distinguer « livree a l'instant » de « livree il y a
+    plus de 48 h, donc DUE a nouveau ». Elle remplace le filtre recent pour
+    les consolidations (meme grammaire, meme lecture, une de moins).
 
     Defauts INERTES (doctrine ``delivered_probe_inert`` / #19913) : un test
     qui appelle cette boucle sans injecter ses sondes n'emet AUCUNE requete
@@ -8323,6 +8455,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     user_merged_pr_probe = merged_pr_probe or merged_pr_probe_inert
     user_recent_marker_probe = (recent_marker_probe
                                 or recent_marker_probe_inert)
+    user_delivery_event_probe = (delivery_event_probe
+                                  or delivery_event_probe_inert)
 
     def counted_probe(number, lane_name):
         # L'echeance passe AVANT le plafond de sondes : les deux produisent le
@@ -8417,18 +8551,53 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
             # lecture (fail-OPEN). Le filtre recent coute 1 requete HORS
             # budget et ecarte la cloture marquee AVANT la sonde pleine ;
             # lecture en echec (None) = fail-OPEN, la sonde pleine suit.
-            recent = False if expired() else user_recent_marker_probe(n)
-            if recent is True:
+            #
+            # #22500 point 1 -- pour une CONSOLIDATION, ce filtre est remplace
+            # par la lecture qui rend l'HEURE du dernier evenement de
+            # cloture. Une consolidation est un chantier multi-tranches : une
+            # lane qui en livre UNE poste `[DELIVERED]` (continue.md P1,
+            # « rendre la main »), et le tapis lisait ce marqueur comme une
+            # livraison COMPLETE -- l'issue restait ouverte ET invisible.
+            # Mesure du 2026-10-26 sur les 48 issues ouvertes label
+            # `consolidation` : 10 consolidations bornees ecartees par un
+            # marqueur de plus de 48 h, dont #20381 (Dynamics, citee par le
+            # user depuis le 23/10).
+            #
+            # Meme grammaire, meme commentaire lu, une requete de moins : la
+            # lecture d'evenement remplace le filtre recent pour cette classe.
+            # Le marqueur n'ecarte plus au-dela de 48 h ; la surface
+            # « commentaire » de la sonde pleine est neutralisee elle aussi
+            # (`skip_marker`), mais PAS les deux autres (label, PR MERGEE) --
+            # une consolidation accumule les PRs, ces deux surfaces disent
+            # « une tranche est livree », pas « la consolidation est finie ».
+            marker_expired = False
+            if is_consolidation(it):
+                verdict = (False if expired()
+                           else user_delivery_event_probe(n))
+                if verdict is None:
+                    # Lecture en echec : fail-OPEN, rien n'est neutralise.
+                    verdict = (False, False, None)
+                recent_flag, delivered_flag, stamp = verdict
+                age_h = _visit_age_hours(stamp, NOW)
+                marker_expired = bool(
+                    delivered_flag
+                    and age_h is not None
+                    and age_h >= CONSOLIDATION_LAG_H)
+            else:
+                recent_flag = (False if expired()
+                               else user_recent_marker_probe(n))
+            if recent_flag is True and not marker_expired:
                 state["recent_filtered"] += 1
                 belt_withheld.append(
-                    (it, "LIVRAISON (recent) : marqueur de cloture sur le "
-                     "dernier commentaire ([DELIVERED] / "
-                     "[FROZEN] / [INFO] candidate-delivered). "
-                     "Candidat remplace hors budget de sonde."))
+                    (it,
+                     ("LIVRAISON (recent) : marqueur de cloture sur le "
+                      "dernier commentaire ([DELIVERED] / "
+                      "[FROZEN] / [INFO] candidate-delivered). "
+                      "Candidat remplace hors budget de sonde.")))
                 continue
             reason = delivered_signal_reason(
                 it, args.lane, counted_probe, state["failures"],
-                counted_merged_pr_probe)
+                counted_merged_pr_probe, skip_marker=marker_expired)
             if reason is not None:
                 belt_withheld.append(
                     (it, "LIVRAISON : " + reason
@@ -9317,6 +9486,7 @@ def main(argv: list[str] | None = None) -> int:
                                         recent_marker_probe=(
                                             has_recent_delivery_marker),
                                         snapshot_prime=_belt_snapshot_prime,
+                                        delivery_event_probe=delivery_event,
                                         time_budget_s=belt_time_remaining))
         _belt_phase(f"pick_with_replacements fait: "
                     f"{len(belt_picks)} retenu(s), {len(belt_withheld)} witheld")
