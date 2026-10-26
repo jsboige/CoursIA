@@ -994,6 +994,28 @@ class Record:
 #: STALE: `held` past expected_end with no release; needs a follow-up observation.
 GPU_PENDING_VERDICTS: tuple[str, ...] = ("OK_TO_RUN", "NO_OBS", "HOLD", "RELEASED", "STALE")
 
+#: Verdicts rendus par la GATE elle-meme, avant toute lecture du snapshot.
+#: UNREADABLE_SPOOL : un fichier de l'outbox est illisible ; il peut porter une
+#: reservation, donc le ledger est illisible, pas libre.
+#: UNPOSTED : l'outbox porte des observations qui n'ont jamais atteint le
+#: dashboard ; un verdict reduit d'un snapshot ne voit pas ce qui n'a pas voyag.
+VERDICT_UNREADABLE_SPOOL = "UNREADABLE_SPOOL"
+VERDICT_UNPOSTED = "UNPOSTED"
+GPU_GATE_VERDICTS: tuple[str, ...] = (VERDICT_UNREADABLE_SPOOL, VERDICT_UNPOSTED)
+
+#: Code de sortie par verdict -- source unique, reprise telle quelle par le
+#: tableau de ``docs/coordination/gpu-reservation.md``. Un verdict qui refuse
+#: porte 1, un etat perime porte 2 (l'appelant decide), un verdict neutre 0.
+GPU_VERDICT_EXIT_CODES: dict[str, int] = {
+    "OK_TO_RUN": 0,
+    "NO_OBS": 0,
+    "RELEASED": 0,
+    "HOLD": 1,
+    VERDICT_UNREADABLE_SPOOL: 1,
+    VERDICT_UNPOSTED: 1,
+    "STALE": 2,
+}
+
 
 def evaluate_gpu_pending(
     records: list,
@@ -2784,14 +2806,14 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
         reason = "; ".join(f"{item['path']} ({item['reason']})" for item in unreadable)
         if args.json_output:
             print(json.dumps({
-                "verdict": "UNREADABLE_SPOOL",
+                "verdict": VERDICT_UNREADABLE_SPOOL,
                 "reason": reason,
                 "entity": args.entity,
                 "now": format_utc(now),
             }))
         else:
-            print(f"UNREADABLE_SPOOL  {args.entity}  {reason}")
-        return 1
+            print(f"{VERDICT_UNREADABLE_SPOOL}  {args.entity}  {reason}")
+        return GPU_VERDICT_EXIT_CODES[VERDICT_UNREADABLE_SPOOL]
 
     # An observation still sitting in the local outbox never reached the
     # ledger, so a verdict reduced from the snapshot is blind to it: the gate
@@ -2807,15 +2829,15 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
         )
         if args.json_output:
             print(json.dumps({
-                "verdict": "UNPOSTED",
+                "verdict": VERDICT_UNPOSTED,
                 "reason": reason,
                 "entity": args.entity,
                 "pending": spooled["pending"],
                 "now": format_utc(now),
             }))
         else:
-            print(f"UNPOSTED  {args.entity}  {reason}")
-        return 1
+            print(f"{VERDICT_UNPOSTED}  {args.entity}  {reason}")
+        return GPU_VERDICT_EXIT_CODES[VERDICT_UNPOSTED]
 
     if not snapshot_path.exists():
         if args.json_output:
@@ -2847,10 +2869,10 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
         print(f"{verdict}  {args.entity}  {reason}")
 
     if verdict == "HOLD":
-        return 1
+        return GPU_VERDICT_EXIT_CODES["HOLD"]
     if verdict == "STALE":
-        return 2
-    return 0
+        return GPU_VERDICT_EXIT_CODES["STALE"]
+    return GPU_VERDICT_EXIT_CODES.get(verdict, 0)
 
 
 def _cli_spool_status(args: argparse.Namespace) -> int:

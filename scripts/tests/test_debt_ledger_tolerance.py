@@ -8,6 +8,7 @@ supprimer les autres enveloppes du lot.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,6 +21,14 @@ from test_debt_ledger import dl, held, issue_obs  # noqa: E402
 
 
 NOW = datetime(2026, 9, 17, 20, 0, 0, tzinfo=timezone.utc)
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+RESERVATION_DOC = REPO_ROOT / "docs" / "coordination" / "gpu-reservation.md"
+
+#: Ligne du tableau des verdicts : | `VERDICT` | code | lecture |
+_VERDICT_ROW_RE = re.compile(
+    r"^\|\s*`([A-Z_]+)`\s*\|\s*\*{0,2}(\d)\*{0,2}\s*\|", re.MULTILINE
+)
 
 
 def _manual_observation(observation_id: str = "obs-manuscrit0000001") -> dict:
@@ -241,3 +250,42 @@ def test_check_pending_human_form_names_unreadable_spool(tmp_path, capsys):
     assert str(bad) in captured.out
     assert "content is not JSON" in captured.out
     assert "RELEASED" not in captured.out
+
+
+def _documented_verdicts() -> dict[str, int]:
+    text = RESERVATION_DOC.read_text(encoding="utf-8")
+    return {verdict: int(code) for verdict, code in _VERDICT_ROW_RE.findall(text)}
+
+
+def test_documented_verdicts_cover_every_verdict_the_gate_can_render():
+    """La table de la doc et le code ne peuvent plus diverger en silence.
+
+    Un verdict rendu par la gate sans ligne dans la doc laisse un appelant sans
+    mode d'emploi ; une ligne dans la doc sans verdict dans le code promet une
+    sortie qui n'existe pas. Les deux sens sont verifies ici (#22456).
+    """
+    documented = _documented_verdicts()
+
+    renderable = set(dl.GPU_PENDING_VERDICTS) | set(dl.GPU_GATE_VERDICTS)
+    assert renderable <= set(documented), (
+        "verdict rendu par la gate mais absent de "
+        f"{RESERVATION_DOC.name}: {sorted(renderable - set(documented))}"
+    )
+    assert set(documented) <= set(dl.GPU_VERDICT_EXIT_CODES), (
+        "verdict documenté sans code de sortie dans le module : "
+        f"{sorted(set(documented) - set(dl.GPU_VERDICT_EXIT_CODES))}"
+    )
+    assert set(dl.GPU_VERDICT_EXIT_CODES) == renderable, (
+        "le code de sortie déclare un verdict que la gate ne rend pas : "
+        f"{sorted(set(dl.GPU_VERDICT_EXIT_CODES) - renderable)}"
+    )
+
+
+def test_documented_exit_codes_match_the_code():
+    documented = _documented_verdicts()
+
+    for verdict, code in sorted(dl.GPU_VERDICT_EXIT_CODES.items()):
+        assert documented[verdict] == code, (
+            f"le code de sortie de {verdict} a dérivé : "
+            f"doc={documented[verdict]} code={code}"
+        )
