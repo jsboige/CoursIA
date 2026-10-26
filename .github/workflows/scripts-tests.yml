@@ -430,6 +430,28 @@ jobs:
           # Origami). Without it the suite fails on ModuleNotFoundError
           # instead of exercising the service core.
           pip install z3-solver
+          # opentelemetry-sdk + pydantic + openai : trois paquets que ce job
+          # consomme a l'import mais n'installait pas -- il ne passait que sur
+          # les slots au toolcache chaud (residu d'installations d'autres
+          # jobs). Mesure du cas rouge : run 40182043367, job 121134940940,
+          # runner myia-po-2027-linux-docker-4 (toolcache neuf, 2026-10-25) :
+          # 157 x ModuleNotFoundError 'opentelemetry' (COLLECTE de
+          # test_provider_gate_18709.py -- provers.py:48 -> otel_setup.py:31
+          # `from opentelemetry.sdk.trace.export import ...` ; l'erreur de
+          # collecte n'est JAMAIS reclassee SKIP par le conftest #21331, qui
+          # ne voit que les tests collectes), 60 x 'pydantic' (suites Audio
+          # v4 : schemas.py:10 importe pydantic au niveau module, le job ADK
+          # qui l'epingle est un AUTRE job), 2 x 'openai' (config.py:401
+          # `from openai import AsyncOpenAI`, atteint dans la fenetre de stub
+          # #18709 ou agent_framework passe mais pas ses deps). Le plancher
+          # >=1.20.0 reprend agent_tests/requirements.txt l.26 -- le sdk
+          # n'arrive jamais transitivement via agent-framework. Pins pydantic
+          # et openai alignees sur le job ADK ci-dessous (2.12.5 / 2.24.0) :
+          # les versions mesurees vertes sur slot chaud. Contre-teste en venv
+          # vierge : sans les trois, "1 error during collection" sur
+          # opentelemetry ; avec, 36 passed + 1 skipped (le skip = coordinator
+          # reclasifie, comportement #21331).
+          pip install "opentelemetry-sdk>=1.20.0" "pydantic==2.12.5" "openai==2.24.0"
           # pytest-xdist: this job's 13 suites run in parallel (-n 4) below.
           # Not a speed nicety -- the sequential run is what makes this job
           # unschedulable on half the pool. Over 68 `Scripts Tests (CPU)` jobs,
@@ -503,6 +525,14 @@ jobs:
         # OpenAI key unset (env -u re-run), zero network/gh subprocess, zero
         # dep delta vs this job (pillow arrives transitively with matplotlib).
         #
+        # scripts/ci/tests re-cabled here (#22234, dossier preflight po-2025) :
+        # la suite nouvelle de check_runner_starvation (20 tests, hermetique,
+        # _gh_json monkeypathe) vivait dans un repertoire que ce run ne
+        # collectait pas -- vert en local, jamais servi en CI. Les voisins
+        # preexistants du repertoire sont hermetiques aussi (git ls-files
+        # local, spawns python, psutil en importorskip ; timeline/comments
+        # monkeypatches pour list_closed_unmerged_prs).
+        #
         # Nombre de workers xdist borne par le plafond memoire du conteneur
         # (1 worker par Gio entier de `memory.max`, entre 1 et 4). Les slots a
         # 4 Gio (ai-01-wsl-*, po-2024-linux-docker-1) gardent `-n 4` a
@@ -526,6 +556,7 @@ jobs:
           python scripts/ci/xdist_watchdog.py --idle-limit 480 -- \
             pytest \
             scripts/tests \
+            scripts/ci/tests \
             tests \
             scripts/notebook_tools/tests \
             scripts/lean/tests \
