@@ -1,6 +1,6 @@
 # Glossaire — 3.0 Théorie de l'information · 3.1 Rétropropagation · 3.2 Optimisateurs · 3.3 Régularisation · 3.4 Attention & Transformer
 
-> **Volet** : module 03-DeepLearning de la série DataScienceWithAgents/ML.
+> **Volet** : module 03-Deep-Learning de la série DataScienceWithAgents/ML.
 > **Carnets couverts** : `3.0-Theorie-Information.ipynb`, `3.1-Retropropagation.ipynb`,
 > `3.2-Optimisateurs.ipynb`, `3.3-Regularisation.ipynb`,
 > `3.4-Attention-Transformer-From-Scratch.ipynb`. Les autres carnets du module
