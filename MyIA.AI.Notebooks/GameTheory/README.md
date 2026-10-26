@@ -129,14 +129,14 @@ Le modèle s'enrichit du temps et de l'incertitude : arbres de jeu et ensembles 
 
 ### Phase 3 : algorithmes, coopération, mécanismes, apprentissage (13 à 17, et capstone 21)
 
-La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à information imparfaite, jeux différentiels, théorie coopérative, conception de mécanismes, apprentissage multi-agent. Le palier 16 sert aussi d'escalier vers la [sous-série SocialChoice](#sous-série-socialchoice), consacrée à l'agrégation des préférences ; le [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb) en est la porte d'entrée depuis la série mère.
+La dernière phase ouvre les frontières de la discipline : CFR pour les jeux à information imparfaite, jeux différentiels, théorie coopérative, conception de mécanismes, apprentissage multi-agent. Les paliers 15 et 16 servent aussi d'escalier vers deux sous-séries — [Coalitions](#sous-série-coalitions), consacrée à la valeur d'un groupe, et [SocialChoice](#sous-série-socialchoice), consacrée à l'agrégation des préférences ; le [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb) en est la porte d'entrée depuis la série mère.
 
 | # | Notebook | Ce qu'on y apprend | Durée | Public | Pour approfondir |
 |---|----------|--------------------|-------|--------|------------------|
 | 13 | Information imparfaite et CFR — [Python (WSL)](GameTheory-13-ImperfectInfo-CFR-Python.ipynb) · [C#](GameTheory-13-ImperfectInfo-CFR-CSharp.ipynb) | Counterfactual Regret Minimization, MCCFR, Deep CFR sur le poker | 70 min | Licence | [13b](GameTheory-13b-Safe-Subgame-Solving-Python.ipynb) · [13c](GameTheory-13c-Safe-Subgame-Solving-CSharp.ipynb) · [13d](GameTheory-13d-Optimistic-CFR-Python.ipynb) · [13e](GameTheory-13e-Revision-Croyances-Adversaire-Python.ipynb) · [13f](GameTheory-13f-Ataraxos-Patron-Python.ipynb) · [13g](GameTheory-13g-Ataraxos-Organe-Natif.ipynb) · [13h](GameTheory-13h-Ataraxos-DynamicDamping-Python.ipynb) |
 | 14 | Jeux différentiels — [Python](GameTheory-14-DifferentialGames-Python.ipynb) · [C#](GameTheory-14-DifferentialGames-CSharp.ipynb) | Jeux en temps continu, boucle ouverte et fermée, Stackelberg, poursuite-évasion | 60 min | Licence | — |
-| 15 | Jeux coopératifs — [Python](GameTheory-15-CooperativeGames-Python.ipynb) · [C#](GameTheory-15-CooperativeGames-CSharp.ipynb) | Valeur de Shapley, Core, condition de Bondareva-Shapley | 65 min | Licence | [15b](GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) · [15c](GameTheory-15c-CooperativeGames-Python.ipynb) · [15d](GameTheory-15d-Mobius-Coalitions-Lean-Python.ipynb) · [15e](GameTheory-15e-Coalition-Power-SMT-Python.ipynb) · [15f](GameTheory-15f-Shapley-Groupes-Python.ipynb) · [15g](GameTheory-15g-AssistanceGames-2026-Python.ipynb) |
-| 16 | Conception de mécanismes — [Python](GameTheory-16-MechanismDesign-Python.ipynb) · [C#](GameTheory-16-MechanismDesign-CSharp.ipynb) | Principe de révélation, VCG et la non-monotonie de son revenu, appariement stable de Gale-Shapley | 65 min | Licence | [16b](GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) · [16c](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) · [16d](GameTheory-16d-Echange-de-Reins-Lean-Python.ipynb) · [16e](GameTheory-16e-LLM-Players-Othman-Sandholm-Python.ipynb) · [16h](GameTheory-16h-Cooperation-LLM-Python.ipynb) · [16i](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) · [16j](GameTheory-16j-Screening-Loyer-Information-Python.ipynb) · [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb) · sous-série [SocialChoice](SocialChoice/README.md) |
+| 15 | Jeux coopératifs — [Python](GameTheory-15-CooperativeGames-Python.ipynb) · [C#](GameTheory-15-CooperativeGames-CSharp.ipynb) | Valeur de Shapley, Core, condition de Bondareva-Shapley | 65 min | Licence | [15b](GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) · [15c](GameTheory-15c-CooperativeGames-Python.ipynb) · [15d](GameTheory-15d-Mobius-Coalitions-Lean-Python.ipynb) · [15f](GameTheory-15f-Shapley-Groupes-Python.ipynb) · sous-série [Coalitions](Coalitions/README.md) |
+| 16 | Conception de mécanismes — [Python](GameTheory-16-MechanismDesign-Python.ipynb) · [C#](GameTheory-16-MechanismDesign-CSharp.ipynb) | Principe de révélation, VCG et la non-monotonie de son revenu, appariement stable de Gale-Shapley | 65 min | Licence | [16b](GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) · [16c](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) · [16e](GameTheory-16e-LLM-Players-Othman-Sandholm-Python.ipynb) · [16h](GameTheory-16h-Cooperation-LLM-Python.ipynb) · [16i](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) · [16j](GameTheory-16j-Screening-Loyer-Information-Python.ipynb) · [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb) · sous-série [SocialChoice](SocialChoice/README.md) · sous-série [Coalitions](Coalitions/README.md) |
 | 17 | Apprentissage multi-agent — [Python (WSL)](GameTheory-17-MultiAgent-RL-Python.ipynb) · [C#](GameTheory-17-MultiAgent-RL-CSharp.ipynb) | Self-play, fictitious play, NFSP, PSRO, introduction à AlphaZero | 55 min | Licence | [17b](GameTheory-17b-Asymmetric-Information-Python.ipynb) · [17c](GameTheory-17c-Lean-Lemons-Certificat-Lean.ipynb) · [17c bis](GameTheory-17f-Market-to-Balance-Sheet-Python.ipynb) · [17d](GameTheory-17d-Lean-Screening-Signaling-Lean.ipynb) |
 | 21 | Capstone choix social — [Python](GameTheory-21-Capstone-Choix-Social-Python.ipynb) | La sous-série SocialChoice depuis la série mère : témoins d'Arrow et cycle de Condorcet par le code, Gale-Shapley vérifié, lecture mesurée du lake | 30 min | Licence | sous-série [SocialChoice](SocialChoice/README.md) |
 
@@ -276,22 +276,23 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | 15b | [Jeux coopératifs en Lean](GameTheory-15b-Lean-CooperativeGames-Lean.ipynb) | Axiomes de Shapley, Core et Bondareva-Shapley formels (lake `game_theory_lean/CooperativeGames`) | Lean | Licence |
 | 15c | Exemples avancés — [Python](GameTheory-15c-CooperativeGames-Python.ipynb) · [C#](GameTheory-15c-CooperativeGames-CSharp.ipynb) | Jeu des gants, Core vide en majorité simple, indices de pouvoir | Python · C# | Licence |
 | 15d | [Möbius sur les coalitions](GameTheory-15d-Mobius-Coalitions-Lean-Python.ipynb) | Décomposition de Möbius sur le treillis des coalitions, dividendes d'interaction | Python | Recherche |
-| 15e | [Pouvoir coalitionnel et SMT](GameTheory-15e-Coalition-Power-SMT-Python.ipynb) | Calcul exhaustif, encodage SMT borné et preuve | Python | Recherche |
 | 15f | [Shapley de groupe](GameTheory-15f-Shapley-Groupes-Python.ipynb) | Évaluer une équipe comme une unité : le meilleur binôme n'est pas celui des deux meilleurs individus | Python | Recherche |
-| 15g | [Assistance Games (résultat 2026)](GameTheory-15g-AssistanceGames-2026-Python.ipynb) | Modèle (Θ, A_H, A_A, r), oracle de politique jointe en hindsight, EXP3 no-regret learner pour l'assistant (Ananthakrishnan et al., 2026) | Python | Recherche |
+
+15e et 15g ont rejoint la [sous-série Coalitions](Coalitions/README.md), où ils sont les carnets 01 et 02 : le pouvoir coalitionnel borné SMT et les jeux d'assistance s'y lisent après GT-15.
 
 ### Autour de 16 — mécanismes
 
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
 | 16c | [Extraction de revenu](GameTheory-16c-Extraction-de-Revenu-DSIC-IR-Python.ipynb) | Le revenu sous contraintes d'incitation (DSIC) et de participation (IR) : ce que VCG laisse sur la table | Python | Licence |
-| 16d | [Échange de reins](GameTheory-16d-Echange-de-Reins-Lean-Python.ipynb) | Graphe de compatibilité, cycles et chaînes de donneurs, arbitrage entre cardinalité et équité | Python | Licence |
 | 16b | [Conception automatique de mécanismes](GameTheory-16b-Automated-Mechanism-Design-Python.ipynb) | Synthétiser un mécanisme sous contraintes, puis vérifier ses propriétés | Python | Recherche |
 | 16e | [Joueurs LLM](GameTheory-16e-LLM-Players-Othman-Sandholm-Python.ipynb) | Pilote : des agents de langage hétérogènes joueurs d'un mécanisme d'Othman-Sandholm | Python | Recherche |
 | 16g | [Populations Othman-Sandholm](GameTheory-16g-Populations-Othman-Sandholm-Python.ipynb) | Généralisation du pilote 16e : un échantillon de N paires (row, col) tirées d'une distribution sur les politiques, quatre populations scriptées, multi-seed, modèle nul | Python | Recherche |
 | 16h | [Coopération LLM](GameTheory-16h-Cooperation-LLM-Python.ipynb) | Populations hétérogènes d'agents de langage au dilemme du prisonnier itéré : protocole multi-seed pré-enregistré (5 graines), politiques TFT scriptées, modèle nul uniforme, contrôle négatif `always_defect`, verdict H0/H1 par hétérogénéité (Vallinder–Hughes 2024, Payne–Alloui–Cros 2025) | Python | Recherche |
 | 16i | [Appariage stable & stratégie](GameTheory-16i-Appariage-Stable-Gale-Shapley-Python.ipynb) | Qui peut tricher dans Gale–Shapley : le côté proposeur est protégé, le côté répondant peut mentir — recherche exhaustive de déclarations profitables | Python | Licence |
 | 16k | [Théorie des enchères](GameTheory-16k-Theorie-des-Encheres-Myerson-Python.ipynb) | Le prix mesuré de l'information : vrais-facité de Vickrey, réserve optimale de Myerson, saut de revenu et équivalence de revenu | Python | Recherche |
+
+16d a rejoint la [sous-série Coalitions](Coalitions/README.md) (carnet 03) : l'échange de reins est un mécanisme d'appariement — de la famille de Kuhn-Munkres, carnets 04 et 05 — et non un mécanisme de révélation.
 
 L'agrégation des préférences (Arrow, vote, manipulation) se poursuit dans la [sous-série SocialChoice](#sous-série-socialchoice).
 
@@ -368,6 +369,26 @@ Depuis le parcours principal, on y entre après le palier 16 : le [capstone 21](
 | 06 | [Möbius, pouvoir et manipulation](SocialChoice/06-Mobius-Aggregation-Pouvoir-Manipulation.ipynb) | Dividendes de Harsanyi, poids contre pouvoir, manipulation pondérée | Python | Recherche |
 | 07 | [Comités et Core](SocialChoice/07-Committees-Core.ipynb) | Élections de comité par approbation : core, quotas, certificats de paiement | Python | Recherche |
 
+## Sous-série Coalitions
+
+Le dossier [Coalitions/](Coalitions/README.md) traite la valeur d'un groupe : pouvoir d'une
+coalition dans un vote, assistance entre un humain et un agent, appariement d'agents sur un
+marché sans prix. Son README porte son propre parcours et son ordre de lecture.
+
+On y entre par les deux paliers dont elle dépend : [GT-15](GameTheory-15-CooperativeGames-Python.ipynb)
+pour la valeur de Shapley et le Core, [GT-16](GameTheory-16-MechanismDesign-Python.ipynb) pour
+le vocabulaire des mécanismes. L'organe Python de la famille reste
+[`cooperative_games/`](cooperative_games/) à la racine ; les carnets l'invoquent, et le carnet 05
+change de substrat en lisant le lake [`assignment_lean/`](assignment_lean/).
+
+| # | Notebook | Noyau | Public |
+|---|----------|-------|--------|
+| 01 | [Pouvoir coalitionnel et SMT](Coalitions/Coalitions-01-Pouvoir-Coalitionnel-SMT-Python.ipynb) | Python | Recherche |
+| 02 | [Assistance Games (résultat 2026)](Coalitions/Coalitions-02-Assistance-Games-Python.ipynb) | Python | Recherche |
+| 03 | [Échange de reins](Coalitions/Coalitions-03-Echange-de-Reins-Lean-Python.ipynb) | Python | Licence |
+| 04 | [Affectation de Kuhn-Munkres](Coalitions/Coalitions-04-Munkres-Affectation-Python.ipynb) | Python | Licence |
+| 05 | [Affectation en Lean](Coalitions/Coalitions-05-Lean-Affectation-Lean.ipynb) | Lean | Recherche |
+
 ## Extensions au-delà du parcours
 
 Les notebooks numérotés de 18 à 25 — hormis le [capstone 21](GameTheory-21-Capstone-Choix-Social-Python.ipynb), escalier de la [sous-série SocialChoice](#sous-série-socialchoice) — ne prolongent pas le parcours principal. Ce sont des extensions autonomes : chacune isole un geste qui modifie l'espace des jeux (composition, abstraction, témoin d'impossibilité) plutôt qu'une solution dans un jeu donné. Leur numéro nu est un héritage de leur livraison, pas une étape du parcours ; leur rattachement aux paliers est à l'étude avec la gradation de la série (#15615).
@@ -383,8 +404,7 @@ Les notebooks numérotés de 18 à 25 — hormis le [capstone 21](GameTheory-21-
 | 20c | [Jeux ordinaux 3×2](GameTheory-20c-Chemin-Minimal-3x2-Ordinal-Python.ipynb) | Le même théorème testé sur un second substrat | Python | Recherche |
 | — | [GOL-08 / GOL-09 → sous-série GOL](../SymbolicAI/Lean/GOL/README.md) | Translateur Loi II (ex-20d) et perplexité structurelle Hashlife (ex-20e), déplacés vers la sous-série GOL de la série Lean (réorg #20204) | Python | Recherche |
 | 22 | [Ensembles limites](GameTheory-06i-Ensembles-Limites-Poincare-Bendixson-Python.ipynb) | Poincaré-Bendixson en dimension 2 : point fixe, orbite périodique ou cycle hétérocline, classés mécaniquement, et l'échec du théorème au-delà du plan | Python | Recherche |
-| 23 | [Affectation de Kuhn-Munkres](GameTheory-16f-Munkres-Assignment-Python.ipynb) | L'affectation optimale en arithmétique entière exacte, certifiée par dualité LP, et le pont vers le cœur de Shapley-Shubik | Python | Licence |
-| 23b | [Affectation en Lean](GameTheory-16f-Lean-Assignment-Lean.ipynb) | Dualité et optimalité de Kuhn-Munkres exécutées depuis le lake `assignment_lean` | Lean | Recherche |
+| — | [Affectation de Kuhn-Munkres → sous-série Coalitions](Coalitions/README.md) | L'affectation optimale en arithmétique entière exacte, certifiée par dualité LP, et sa version Lean exécutée depuis le lake `assignment_lean` — carnets 04 et 05 du dossier (ex-23 et 23b, dont les numéros d'affichage ne désignaient aucune étape du parcours) | Python · Lean | Licence |
 | 24 | [Banc humour](GameTheory-18c-Humour-Banc-Python.ipynb) | Banc de calibration (forme partagée contre stimulus, matrice de confusion) puis passage à l'échelle consolidé : corpus Argumentum 120 instances, comparaison LLM, circularité, paires minimales (#14032) | Python | Recherche |
 | 25 | [Persuasion bayésienne](GameTheory-17e-Bayesian-Persuasion-Python.ipynb) | La concavification évaluée par deux méthodes indépendantes (programme linéaire et enveloppe concave) dont l'accord est vérifié, avec un contrôle négatif | Python | Recherche |
 
