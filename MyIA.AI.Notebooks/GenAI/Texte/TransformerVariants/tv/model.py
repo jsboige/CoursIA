@@ -393,9 +393,12 @@ def selfcheck_encodeurs(d_model: int = 32, n_heads: int = 4, seed: int = 7,
     position (la requête 0 lit les jetons suivants).
     (b) L'attention croisée sans masque est invariante à la permutation des
     positions du décodeur entre elles (chaque requête est traitée
-    indépendamment), mais **pas** à celle de la mémoire (l'ensemble lu est le
-    même, chaque requête voit les mêmes clés — invariance d'ensemble, pas
-    d'ordre). On vérifie la première et la non-identité triviale de la seconde.
+    indépendamment). Elle l'est de même à la permutation de la mémoire :
+    `attn_pleine` ne code aucune position sur les clés, donc la sortie est une
+    somme pondérée sur le multiensemble des jetons sources — l'ordre de la
+    mémoire n'entre pas dans le calcul. Le selfcheck ancre la première
+    invariance ; la seconde est une propriété de l'implémentation (aucun
+    encodage positionnel sur la mémoire), pas une hypothèse testée.
     """
     g = torch.Generator(device="cpu").manual_seed(seed)
     res: dict = {}
