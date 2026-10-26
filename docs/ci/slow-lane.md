@@ -84,6 +84,13 @@ Mesure sur le run `39389459201` (2026-10-20) :
 | Log de l'étape 6 | `##[error]La suite ICT-Series a echoue en mode slow-lane (exit=2)` |
 | Conclusion du **run** | `failure` — sur les 4 jambes CodeQL, pas sur ICT |
 
+Les **4 jambes `Analyze:failure`** de ce run sont **hors périmètre de cette
+PR** : le job `codeql-scheduled` n'est pas touché par ce correctif, et leur
+cause n'est pas établie par lui (la seule cause documentée dans ce document
+est le conflit SARIF / *default setup*, constaté au contrôle positif du
+2026-09-05). Le point d'observation est le **prochain run `schedule`**
+(mardi 02:30 UTC). Ne pas confondre ce rouge-là avec le faux vert ICT.
+
 Les sept runs `schedule` consécutifs du **2026-09-08** au **2026-10-20** sont
 donc en `failure` **au niveau du run** alors que la jambe ICT est verte à
 chaque fois, et elle est verte parce qu'elle n'exécute rien et qu'elle ne
@@ -161,6 +168,15 @@ Conditions a remplir AVANT de deplacer un workflow dans la voie lente :
   filtres par `paths:`. A instruire sans regresser la couverture.
 
 ## Tranche 2 — premier mouvement reel : CodeQL (PR livrante)
+
+> **Constat d'epoque — re-ancré le 2026-10-26** (voir « Faux vert du pilote »
+> ci-dessus). La commande de collecte unique (`python -m pytest tests
+> ict/tests`) etait **deja** celle du commit d'origine du workflow
+> (`15e899de87`, 2026-08-27, PR #13189) : le run du 2026-09-01 a donc
+> collecte **un item**, comme les six suivants. La mention « ~1 semaine en
+> production sans faux vert ni faux rouge » **ne vaut pas** — il n'y a pas eu
+> de faux rouge, il n'y a pas eu de verdict. Ce qui reste a recompter apres
+> le correctif, c'est la **duree d'observation** d'un verdict publie.
 
 Sortie de tranche 1 constatee : run schedule 33463688662 (2026-09-01 02:44
 UTC) `success`, step « Publish verdict » `success`, ~1 semaine en production
