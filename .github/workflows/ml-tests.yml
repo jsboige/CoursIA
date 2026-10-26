@@ -83,8 +83,32 @@ jobs:
           # depends on numpy/scipy/scikit-learn which are already installed --
           # it is listed so the M5 suite actually RUNS here rather than being
           # skipped, which would make its assertions a control never shown firing.
-          pip install numpy pandas scipy scikit-learn arch pytest pyarrow xgboost joblib hmmlearn
+          # pyarrow >= 26 (#21764) : sous 26, le noyau ipykernel meurt
+          # (Unhandled SIGSEGV) au chargement de pyarrow (chaine torch ->
+          # dask -> xarray -> pandas -> pyarrow). Mesure : 24.0.0 crash,
+          # 26.0.0 OK ; l'image portait 25.0.1, non mesure.
+          pip install numpy pandas scipy scikit-learn arch pytest "pyarrow>=26" xgboost joblib hmmlearn
+          # Version RESOLUE affichee : un plancher non affiche n'est pas prouve.
+          python -c "import pyarrow; print('pyarrow resolu:', pyarrow.__version__)"
           pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+      - name: Borner les threads au quota CPU du conteneur
+        # Le conteneur runner porte un quota CFS (`docker run --cpus`), mais
+        # `nproc` et `os.cpu_count()` y voient tous les coeurs de l'hote :
+        # mesure du 2026-10-20 sur myia-ai-01-wsl-6, `cpu.max` = 200000 100000
+        # (2 CPU) pour nproc = 32. torch, OpenMP et BLAS dimensionnent leurs
+        # pools sur 32 threads, que le noyau etrangle sous un quota de 2 :
+        # c'est la traine lente mesuree sur la famille ai-01-wsl (succes
+        # jusqu'a 42 min et murs a 45 min, main compris), absente des slots
+        # po-2024-docker (3,9-13,6 min) dont la tranche n'a pas de CPUQuota.
+        # Sans quota lisible (`max` ou fichier absent), on laisse nproc.
+        run: |
+          q=$(awk '$1 != "max" && $2 > 0 { n = int(($1 + $2 - 1) / $2); print (n < 1 ? 1 : n) }' /sys/fs/cgroup/cpu.max 2>/dev/null)
+          [ -n "$q" ] || q=$(nproc)
+          for v in OMP_NUM_THREADS MKL_NUM_THREADS OPENBLAS_NUM_THREADS NUMEXPR_NUM_THREADS; do
+            echo "$v=$q" >> "$GITHUB_ENV"
+          done
+          echo "threads bornes a $q (cpu.max: $(cat /sys/fs/cgroup/cpu.max 2>/dev/null || echo absent), nproc: $(nproc))"
 
       - name: Run tests
         # Scope to the ML pipeline suite this job is named for. The repo-wide

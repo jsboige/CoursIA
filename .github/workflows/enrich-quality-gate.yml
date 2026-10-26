@@ -17,15 +17,38 @@ name: Enrich-quality gate
 # Anchor convention enforced: code[N] = the N-th CODE cell, 0-based, counted
 # in the HEAD layout (after every markdown insertion). Convention doc:
 # .claude/rules/notebook-conventions.md ("Ancrage code[N] des cellules").
+#
+# PR-introduced filter (#22298). The change list below is computed against the
+# PR's BASE BRANCH, which is correct for a PR on `main` and wrong for a STACKED
+# PR whose base lags `main`: the diff then carries everything `main` gained
+# since the fork, and findings already merged on `main` are attributed to the
+# PR. Measured on #21650 (base 521 commits behind): 287 notebooks audited for
+# a 1-file PR, 3 HIGH `MD_REWRITE` on notebooks byte-identical to `origin/main`.
+# `scripts/ci/filter_pr_introduced_notebooks.py` keeps a notebook only when a
+# commit OWNED by the PR touched it (not reachable from `main`; a merge counts
+# for what it writes itself, not for what it transports) -- a blob-equality
+# test alone left 34 of 287, because a notebook `main` rewrote after the fork
+# also differs from HEAD. Fail-open: an undeterminable set drops nothing, so
+# the gate never goes quiet for lack of a ref; an organ that CRASHES, however,
+# fails the gate -- an empty stdout must never read as "nothing to audit".
+#
+# Le corps du fichier est en anglais (convention du depot) ; les commentaires
+# de bloc ajoutes restent en francais, comme le reste de l'harnais CI.
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/**/*.ipynb'
       - 'scripts/notebook_tools/scan_enrich_quality.py'
       - 'scripts/notebook_tools/enrich_quality_ci.py'
+      - 'scripts/ci/filter_pr_introduced_notebooks.py'
   workflow_dispatch:
+
+# Condition jointe à l'arbitrage #19426 (c.6300191475) : tout workflow
+# touché sans bloc concurrency en reçoit un, clé sur la PR.
+concurrency:
+  group: enrich-quality-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
@@ -66,6 +89,28 @@ jobs:
           # its HEAD name, which made the gate treat renamed notebooks as
           # brand-new and fail them on pre-existing findings.
           STATUS=$(git diff --name-status -M "$BASE"...HEAD -- 'MyIA.AI.Notebooks/**/*.ipynb' || true)
+
+          # Filtre "introduit par la PR" (#22298). Un carnet n'est « introduit
+          # par la PR » que si un commit PROPRE a la PR l'a touche -- merge
+          # compris, pour ce que le merge ECRIT lui-meme (resolution de
+          # conflit) ; absent de `main`. Sur une PR empilee dont la base est en
+          # retard, le diff contre la base attribue a la PR tout ce que `main` a
+          # gagne depuis le fork (mesure #21650 : 287 carnets pour 1 fichier).
+          # Fail-open COTE ORGANE : un ensemble indeterminable ne retire rien.
+          # Mais un organe QUI PLANTE n'est pas « indeterminable » : son stdout
+          # est vide, et la branche `-z` ci-dessous conclurait « clean » -- le
+          # gate serait ETEINT en silence sur toutes les PRs a carnets. Le rc de
+          # la substitution est donc teste explicitement : c'est la seule facon
+          # de distinguer « aucun carnet » de « le filtre n'a pas tourne »
+          # (releve par Hermes sur #22302). Sous `pipefail`, printf et python
+          # comptent : une jambe qui echoue rougit le gate, jamais ne le verte.
+          if [ -n "$STATUS" ]; then
+            if ! STATUS=$(printf '%s\n' "$STATUS" | python scripts/ci/filter_pr_introduced_notebooks.py --base "$BASE" --main-ref origin/main --head-ref HEAD --stats); then
+              echo "::error title=Enrich-quality gate::filtre PR-introduit en echec -- gate non concluant, stderr ci-dessus"
+              exit 1
+            fi
+          fi
+
           if [ -z "$STATUS" ]; then
             echo "::notice title=Enrich-quality gate::No notebooks changed — clean."
             exit 0

@@ -37,6 +37,16 @@ l'horizon T demande une simulation T pas. Ce module ne *verifie* pas la these
 de mesure. La verification se fait au carnet, par confrontation a
 ``time_arrow.compare_real_reversed_reversibilized`` (cf. ICT-18).
 
+**Consolidation -- une seule implementation (issue #22178, sortie (1))** :
+depuis la tranche « une seule implementation de l'automate », ce module est
+l'unique implementation de l'automate dans le depot. Carnets consommateurs :
+``ICT-18-ArrowOfTimeReversibilization`` ,
+``ICT-MUH-FibreTegmark`` et ``ICT-48-WolframClasses-ThermoSignature`` --
+chacun importe l'organe (``rule_table``, ``wolfram_step`` ,
+``wolfram_trajectory`` selon ses besoins). Un nouveau carnet qui voudrait
+l'automate fait de meme : recopier ``wolfram_step`` ou ``rule_table``
+localement est l'anti-pattern que la consolidation a retire du depot.
+
 Usage :
 
     >>> from ict.wolfram_step import wolfram_step, wolfram_trajectory, classify_rule
@@ -55,6 +65,7 @@ __all__ = [
     "WOLFRAM_CLASSES",
     "CANONICAL_RULES",
     "wolfram_step",
+    "rule_table",
     "wolfram_trajectory",
     "wolfram_density",
     "wolfram_class_indicators",
@@ -184,6 +195,38 @@ def wolfram_trajectory(
             states.append(state.copy())
         state = wolfram_step(state, rule)
     return history if record_densities else states
+
+
+def rule_table(rule: int) -> List[int]:
+    """Table de verite d'une regle elementaire, indexee par le voisinage.
+
+    Entree ``n = 4*left + 2*center + right`` ; sortie = bit ``n`` de
+    l'encodage Wolfram de la regle. Rend les 8 sorties dans l'ordre des
+    voisinages 000, 001, ..., 111.
+
+    Cette table est la representation sur laquelle s'enoncent les relations
+    entre regles (invariance miroir : ``t[1] == t[4]`` et ``t[3] == t[6]`` ;
+    totalisticite : la sortie ne depend que du nombre de 1 du voisinage).
+    Elle ne sert pas a simuler -- ``wolfram_step`` lit directement les bits.
+
+    Parametres
+    ----------
+    rule : int
+        Regle sur 8 bits (0 a 255).
+
+    Retour
+    ------
+    List[int]
+        Les 8 sorties, ``t[n] = (rule >> n) & 1``.
+
+    Exemple
+    -------
+    >>> rule_table(30)
+    [0, 1, 1, 1, 1, 0, 0, 0]
+    """
+    if not 0 <= rule <= 255:
+        raise ValueError("regle hors de 0..255 : %r" % (rule,))
+    return [(rule >> n) & 1 for n in range(8)]
 
 
 def wolfram_density(state: np.ndarray) -> float:

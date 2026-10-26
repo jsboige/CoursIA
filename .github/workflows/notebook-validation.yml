@@ -6,7 +6,6 @@ on:
     paths:
       - '**.ipynb'
   pull_request:
-    branches: [ main ]
     paths:
       - '**.ipynb'
   # Manual revalidate after a merge batch (issue #13861):

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Lean
-pedagogical_count: 98
-breakdown: Lean=98
-maturity: BETA=94, DRAFT=3, ALPHA=1
+pedagogical_count: 129
+breakdown: Lean=129
+maturity: BETA=117, DRAFT=9, ALPHA=3
 -->
 
 [← SemanticWeb](../SemanticWeb/README.md) | [↑ SymbolicAI](../README.md) | [Planners →](../Planners/README.md)
@@ -17,7 +17,7 @@ Six visualisations extraites des notebooks illustrent l'arc de la série : de l'
 
 ### Assistance aux preuves et vérification formelle
 
-L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-07b-Examples-Python.ipynb)), puis [Lean-11b](Lean-11b-TorchLean-Python.ipynb) **borne numériquement** la robustesse d'un petit MLP via IBP et CROWN en Python ; [Lean-11](Lean-11-TorchLean.ipynb) présente la formalisation Lean **illustrative** de TorchLean (architecture cible, types locaux, code `#eval`-able, preuves `#sorry` signalées) — la chaîne « implémentation numérique vérifiable → certificats formels » n'est pas tenue bout-en-bout dans la série.
+L'état de l'art de la série : un LLM génère des preuves Lean, dont on mesure la performance sur un banc de théorèmes ([Lean-7b](Lean-07b-Examples-Python.ipynb)), puis [Lean-11b](Lean-11b-TorchLean-Python.ipynb) **borne numériquement** la robustesse d'un petit MLP via IBP et CROWN en Python ; [Lean-11](Lean-11-TorchLean.ipynb) importe le **vrai paquet [TorchLean](https://github.com/lean-dojo/TorchLean)** (public, MIT) via le lake `torchlean_lean/` de la série — tenseurs, `nn.Sequential!`, chaîne IBP prouvée (`runIBP_encloses_evalGraphRec`), export/import PyTorch — et la boucle est close bout-en-bout : Lean-11b exporte son `state_dict`, le CLI `lake exe torchlean_serie` le recharge et le recertifie côté Lean (bornes coïncidantes).
 
 <p align="center">
   <a href="Lean-07b-Examples-Python.ipynb"><img src="assets/readme/lean-llm-examples.png" width="420" alt="Génération de preuves par LLM sur dix théorèmes Lean : 0 succès / 10 échecs — itérations, temps d'exécution et tokens consommés par théorème."></a>
@@ -50,6 +50,16 @@ La série dédiée (companion `knot_lean`, Epic #2874) développe trois vues com
 <p align="center">
   <a href="Lean-17b-Knots-Invariants-Companion.ipynb"><img src="assets/readme/lean-knot-invariants.png" width="420" alt="Polynômes d'Alexander Δ(t) du trèfle, du nœud de huit et du couple Conway/Kinoshita-Terasaka (Δ(t) = 1, trivial comme l'unknot)."></a>
 </p>
+
+## Fil de lecture — « Le charme et la marée »
+
+Le travail Grothendieck de la série se lit aussi comme un parcours transversal, en cinq mouvements qui traversent les séries voisines : l'idée géométrique, le langage, les fragilités, les correspondances, puis le pont qui referme l'arc. Le récit complet — visuels, variantes et exercices — vit dans la section 9 de [Lean-15d](Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb) ; l'itinéraire :
+
+1. **L'idée** — quand une figure devient équation, puis preuve : [Geometry-01](Geometry/Geometry-01-From-Figure-To-Equation.ipynb) et [Geometry-02](Geometry/Geometry-02-From-Equation-To-Proof.ipynb).
+2. **Le langage** — le vocabulaire grothendieckien (cribles, topologies, faisceaux) : [Lean-15](Lean-15-Grothendieck-Tribute.ipynb), l'atelier [Lean-15b](Lean-15b-Lean-Grothendieck.ipynb), le companion formel [Lean-15c](Lean-15c-Lean-Grothendieck-Companion.ipynb), la visite visuelle [Lean-15d](Lean-15d-Lean-Grothendieck-Visuel-Python.ipynb).
+3. **Les fragilités** — ce que le langage ne garantit pas : les trois fragilités de [Lean-15](Lean-15-Grothendieck-Tribute.ipynb), la frontière des zéros avec Terjanian ([Serre100/07](Serre100/07-zeros-fonctions-l-gaps-gue.ipynb)) et Serre dans Mathlib ([Serre100/08](Serre100/08-serre-dans-mathlib-Lean.ipynb)).
+4. **Les correspondances** — les liens qui dépassent le langage : formes modulaires ([Langlands 01](Langlands/01-formes-modulaires-sl2z-hecke.ipynb)), Moonshine et l'invariant j ([Langlands 02](Langlands/02-monstrous-moonshine-invariant-j.ipynb)), la chaîne Serre100 de [09](Serre100/09-congruences-tau-lacunarite-delta.ipynb) à [15](Serre100/15-quatre-carres-lagrange.ipynb).
+5. **Le pont** — de la géométrie à la cohomologie : Čech ([Serre100/03](Serre100/03-cohomologie-cech-espaces-finis.ipynb)), Yoneda ([Serre100/04](Serre100/04-lemme-yoneda-categories-finies.ipynb)), les lakes `grothendieck_lean` et `hecke_lean`, jusqu'au capstone [Lean-37](Lean-37-Capstone-Serre100.ipynb).
 
 ## Navigation
 
@@ -192,6 +202,7 @@ Tous les notebooks incluent une **barre de navigation** en haut et en bas permet
 | 38 | [Lean-38-Capstone-Geometry-Lean-Python](Lean-38-Capstone-Geometry-Lean-Python.ipynb) | **Capstone (escalier)** vers la sous-série [Geometry](Geometry/README.md) (EPIC #18601) : le fil rouge du milieu de l'hypoténuse monté par cinq marches de garantie croissante — figure numérique, identité symbolique `sympy`, témoin négatif (triangle non rectangle), lecture du lake companion [`geometry_lean/`](Geometry/geometry_lean/) comme un consommateur (fichier réel, pas une copie), audit des axiomes interdits (`sorry`, `native_decide` : 0) — la réponse incarnée à la position 05 du programme gradué ([#17544](https://github.com/jsboige/CoursIA/issues/17544)) : que garantit « prouvé par Gröbner » ? Kernel `python3`, exécuté sans erreur, 3 exercices | 15 min |
 | 39 | [Lean-39-Capstone-GOL](Lean-39-Capstone-GOL.ipynb) | **Capstone (escalier)** vers la sous-série [GOL](GOL/README.md) (réorg #20204, filière Conway de l'EPIC #1647) : l'échelle des témoins du Jeu de la Vie — règle, mémoire (canons), calcul (translateur, Hashlife) — survolée en une marche ; **surface de la sous-série mesurée** plutôt que déclarée : 9 carnets, 3 kernels (les trois `lean4-wsl` sans importation Python — leurs cellules illisibles par `ast` sont du Lean —, deux `python3-lean`, quatre `python3`), lake [`conway_lean/`](conway_lean/) lu par ses fichiers réels (modules `.lean` FR et miroirs `_en` dans `Conway/Life/`, moteur `scripts/hashlife.py`, patterns RLE dont `gemini.rle`) ; 3 exercices sur le moteur du lake (périodes, canon Gosper, concordance du README) | 15 min |
 | 40 | [Lean-40-Capstone-Langlands-Python](Lean-40-Capstone-Langlands-Python.ipynb) | **Capstone (escalier)** vers la sous-série [Langlands](Langlands/README.md) (EPIC #17969) : la relation de Hecke sur les coefficients de Δ montée par six marches de garantie croissante — table de Ramanujan exacte par convolution entière (13 valeurs publiées, concordance 13/13), identité τ(pn) + p¹¹τ(n/p) = τ(p)τ(n) vérifiée sur 9 cas (p = 2, 3, 5), témoin négatif (la suite perturbée τ+n la viole 9 fois sur 9), lecture du lac [`hecke_lean`](hecke_lean/) comme un consommateur (définition `coeffHeckeT`, preuve de `coeffHeckeT_of_dvd`, audit `sorry`/`native_decide` : 0), et le pont Moonshine (j = E₄³/Δ recalculé, 196884 = 1 + 196883) — kernel `python3`, exécuté sans erreur, 3 exercices | 25 min |
+| 41 | [Lean-41-Capstone-MIMO-Python](Lean-41-Capstone-MIMO-Python.ipynb) | **Capstone (escalier)** vers la sous-série [MIMO](MIMO/README.md) (EPIC #17545) : la détection MIMO par flips de coordonnées, le budget de descente et sa digestion — table de routage des quatre carnets (MIMO-01 à MIMO-04), citation du lac [`mimo_lean/`](mimo_lean/README.md) par ses modules réels (`Descent`, `Objective`, `Lmmse`, `Converse`, `Bridge`, `NormTails` + miroirs `_en`, baseline 0 sorry en code-only mesurée par l'organe canonique `count_code_sorry.py` — champ `distinct_code_sorry`), prérequis d'entrée (Lean 1-6 pour le formel, NumPy seul pour la digestion), **surface de la sous-série mesurée plutôt que déclarée** — kernel `python3`, exécuté sans erreur, 3 exercices | 25 min |
 
 > Numérotation : le notebook Confiance-Preuves-Native — initialement prévu en 35 — est livré en 24b (accrétion du palier 24 Calibration, décision #17545) par la PR #17530 (issue #17520) ; l'annexe A de Tegmark arrive donc en 36.
 
@@ -398,9 +409,9 @@ cp .env.example .env
 
 ### TorchLean
 
-- [TorchLean Documentation](https://leandojo.org/torchlean.html)
-- [TorchLean GitHub](https://github.com/lean-dojo/TorchLean)
+- [TorchLean GitHub](https://github.com/lean-dojo/TorchLean) (public, MIT, toolchain Lean `v4.35.0`)
 - [Papers: IBP, CROWN, LiRPA](https://github.com/lean-dojo/TorchLean#references)
+- Lake de la série : `torchlean_lean/` (dépendance git épinglée, sibling des carnets 11/11b)
 
 ### Références académiques
 
@@ -515,6 +526,7 @@ Lean/
 ├── Lean-37-Capstone-Serre100.ipynb # Python kernel - escalier capstone vers la sous-série Serre 100 : entrée, démos, prérequis de la série distillations
 ├── Lean-38-Capstone-Geometry-Lean-Python.ipynb # Python kernel - escalier capstone vers la sous-série Geometry : le fil rouge (milieu de l'hypoténuse) monté de la figure numérique au noyau du lac geometry_lean
 ├── Lean-40-Capstone-Langlands-Python.ipynb # Python kernel - escalier capstone vers la sous-série Langlands : la relation de Hecke de la table de Ramanujan au lac hecke_lean, et le pont Moonshine
+├── Lean-41-Capstone-MIMO-Python.ipynb # Python kernel - escalier capstone vers la sous-série MIMO : table de routage des quatre carnets (MIMO-01..04), lac mimo_lean (13 .lean, 0 sorry mesuré par l'organe canonique), prérequis d'entrée, surface mesurée, écart 56/57 expliqué
 ├── _run_lean_snippet.sh            # Helper WSL : run Lean snippet avec cache Mathlib
 ├── lean_runner.py                  # Module Python multi-backend
 ├── README.md

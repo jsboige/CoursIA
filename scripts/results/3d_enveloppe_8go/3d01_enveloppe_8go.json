@@ -1,0 +1,104 @@
+{
+ "module": "GenAI/3D",
+ "issue": 21626,
+ "epic_parent": 18605,
+ "mesure": "enveloppe VRAM + debit de la famille NeRF sur l'etage pionnier 8 Go",
+ "machine": "myia-po-2028",
+ "gpu": "NVIDIA GeForce RTX 3070 Ti Laptop GPU (8192 Mio)",
+ "notebook": "MyIA.AI.Notebooks/GenAI/3D/3D-01-NeRF-From-Scratch.ipynb (copie hors depot, non modifie dans le depot)",
+ "env": {
+  "torch": "2.8.0+cu126",
+  "python": "3.13.16",
+  "kernel": "python3"
+ },
+ "dataset": "tiny_nerf_data.npz (dataset officiel des auteurs) + scene jouet synthetique",
+ "execution": {
+  "mode": "notebook_tools.py execute (Papermill, kernel python3)",
+  "wallclock_s": 207.6,
+  "lego_iters": 2000,
+  "lego_it_per_s": 15.8,
+  "scene_jeu_iters": 1000,
+  "scene_jeu_it_per_s": 17.2
+ },
+ "vram": {
+  "peak_mib": 4318,
+  "card_mib": 8192,
+  "peak_pct": 52.7,
+  "idle_mib": 322,
+  "temp_max_c": 73,
+  "util_max_pct": 97,
+  "samples": 42,
+  "sample_period_s": 5
+ },
+ "fidelite": {
+  "psnr_final_db": 21.92,
+  "mse_final": 0.00642,
+  "psnr_1_iter_db": 7.49,
+  "courbe_psnr": [
+   {
+    "iter": 1,
+    "mse": 0.17804,
+    "psnr_db": 7.49
+   },
+   {
+    "iter": 200,
+    "mse": 0.07922,
+    "psnr_db": 11.01
+   },
+   {
+    "iter": 400,
+    "mse": 0.03244,
+    "psnr_db": 14.89
+   },
+   {
+    "iter": 600,
+    "mse": 0.01294,
+    "psnr_db": 18.88
+   },
+   {
+    "iter": 800,
+    "mse": 0.01001,
+    "psnr_db": 20.0
+   },
+   {
+    "iter": 1000,
+    "mse": 0.0095,
+    "psnr_db": 20.22
+   },
+   {
+    "iter": 1200,
+    "mse": 0.00879,
+    "psnr_db": 20.56
+   },
+   {
+    "iter": 1400,
+    "mse": 0.00789,
+    "psnr_db": 21.03
+   },
+   {
+    "iter": 1600,
+    "mse": 0.00748,
+    "psnr_db": 21.26
+   },
+   {
+    "iter": 1800,
+    "mse": 0.00658,
+    "psnr_db": 21.82
+   },
+   {
+    "iter": 2000,
+    "mse": 0.00642,
+    "psnr_db": 21.92
+   }
+  ],
+  "reproduction": "21,92 dB, identique au run precedent sur ce siege ; 0,07 dB de la reference 16 Go"
+ },
+ "comparaison": {
+  "famille_0_8B_grpo_qlora_8go": {
+   "peak_mib": 7844,
+   "peak_pct": 95.7,
+   "issue": 21620
+  },
+  "lecture": "la famille NeRF tient sur l'etage 8 Go (52,7 %) ; un run 0,8 B en GRPO+QLoRA ne laisse que 4 % de marge"
+ }
+}
