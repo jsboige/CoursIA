@@ -2131,13 +2131,14 @@ MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,fr0whufdu8r,markdown
 **Livrable** : la première solution trouvée par `backtracking_with_viz` sur cette grille, et une phrase qui dit ce que l'ajout des diagonales a changé par rapport à l'exemple guidé.
 
 **Piège à connaître** : `is_solution` ne vérifie que les arêtes que vous avez déclarées — un modèle incomplet se valide donc lui-même. C'est pourquoi la cellule fournit `diagonales_ok`, un témoin qui ne lit que la grille finale, jamais le CSP : il reste juste même si le modèle est faux.",,,,,,,,e5faa25e3b9144a9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,suhmqzd7qko,code,fr,30dccacec4548a9e,"# Exercice 4 : Sudoku 4x4 « X » -- ajouter les deux diagonales au modele
+MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,suhmqzd7qko,code,fr,23ce3eb47328b525,"# Exercice 4 : Sudoku 4x4 « X » -- ajouter les deux diagonales au modele
 
 # A COMPLETER
 # TODO etudiant : ecrire make_xsudoku_4x4_csp ci-dessous.
-# Indice : repartir de make_sudoku_4x4_csp (exemple guide) et ajouter les cases
-# des deux diagonales aux voisins de chaque case ; la contrainte x != y ne
-# change pas d'un caractere.
+# Indice : repartir de make_sudoku_4x4_csp (exemple guide) ; pour chaque case
+# situee sur une diagonale, ajouter les AUTRES cases de cette meme diagonale a
+# ses voisins (une case hors des deux diagonales ne gagne aucun voisin nouveau) ;
+# la contrainte x != y ne change pas d'un caractere.
 # Indice : les indices deja poses sur une diagonale doivent aussi etre retires
 # du domaine des cases vides de cette diagonale -- c'est le meme calcul de
 # domaines que dans l'exemple, applique a des voisins plus nombreux.
@@ -2179,7 +2180,8 @@ else:
         for row in grille_sol:
             print(row)
         print(f""Diagonales valides (temoin independant) : {diagonales_ok(grille_sol)}"")
-        print(""Comparer avec l'exemple guide : meme grille, contraintes en plus."")",,,,,,,,30dccacec4548a9e,,,,,,,,,,,,,,,
+        print(""Comparer avec l'exemple guide : meme grille, contraintes en plus."")
+",,,,,,,,23ce3eb47328b525,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/Search/Part2-CSP/CSP-1-Fundamentals.ipynb,2595a953d10a,markdown,fr,5d4dc345703a8e37,"### Exercice 5 : Modélisation CSP pour un emploi du temps
 
 Modéliser un problème d'emploi du temps comme CSP : définir variables, domaines et contraintes.
