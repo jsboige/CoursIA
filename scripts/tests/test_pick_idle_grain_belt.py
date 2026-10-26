@@ -1332,7 +1332,12 @@ def test_belt_unread_probe_is_fail_open_and_reported():
 def test_belt_does_not_withdraw_umbrella_on_marker():
     """Portee : l'urne grain seule. Une umbrella marquee reste servie --
     un marqueur sur un EPIC n'est pas un verdict de fermeture (decision
-    mesuree du canal label, cf delivered_signal_reason)."""
+    mesuree du canal label, cf delivered_signal_reason).
+
+    Le LABEL n'est pas un verdict de fermeture sur une umbrella : le
+    workflow advisory le pose des qu'une PR d'arc merge, et une umbrella
+    accumule des PRs. Le MARQUEUR DE CONTENEUR pose dans un commentaire,
+    lui, l'est : cf `test_belt_withdraws_umbrella_with_container_marker`."""
     umbrella = _make_item(19005, age_days=60, idle=6, klass="umbrella",
                           last=None)
     umbrella["labels"] = ["candidate-delivered"]
@@ -1340,6 +1345,145 @@ def test_belt_does_not_withdraw_umbrella_on_marker():
         [umbrella], _free_claims([umbrella]), _belt_args(), probe_budget=8)
     assert [p["number"] for p in picks] == [19005]
     assert withheld == []
+
+
+# --- Umbrella livree : le marqueur de CONTENEUR ecarte l'EPIC du tapis ----
+#
+# Mesure du 2026-10-26 (#17528) : le meme EPIC a ete servi quatre fois en
+# cinq jours (21/10, 22/10, 25/10 x2) et quatre lanes y ont repose le meme
+# marqueur `[INFO] candidate-delivered`. Le filtre de livraison du tapis ne
+# s'appliquait qu'a l'urne `grain` : l'urne `umbrella` le resservait.
+#
+# Ce que la branche change : une umbrella dont le DERNIER commentaire porte
+# le marqueur de CONTENEUR est reservee au coordinateur/adjoint (urne
+# `delivered`, #15069) au lieu d'etre resservie a toutes les lanes.
+
+
+def test_belt_withdraws_umbrella_with_container_marker():
+    """Controle positif : l'umbrella livree sort du tirage, le candidat
+    suivant la remplace dans la meme urne."""
+    delivered = _make_item(17528, age_days=32, idle=0, klass="umbrella",
+                           last=None)
+    fresh = _make_item(19020, age_days=20, idle=2, last=None)
+    pool = [delivered, fresh]
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: n == 17528)
+    assert [p["number"] for p in picks] == [19020], (
+        "l'umbrella livree ne doit pas etre servie")
+    assert [w[0]["number"] for w in withheld] == [17528]
+    assert "conteneur" in withheld[0][1], (
+        "la cause doit nommer le marqueur de conteneur : " + withheld[0][1])
+    assert state["recent_filtered"] == 1
+
+
+def test_belt_keeps_umbrella_without_container_marker():
+    """Controle negatif : sans marqueur de conteneur, l'umbrella reste
+    servable -- le filtre ne peut pas ecarter une umbrella par defaut."""
+    umbrella = _make_item(19021, age_days=40, idle=4, klass="umbrella",
+                          last=None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [umbrella], _free_claims([umbrella]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == [19021]
+    assert withheld == []
+    assert state["recent_filtered"] == 0
+
+
+def test_belt_umbrella_container_marker_read_failure_is_fail_open():
+    """Tri-etat : une lecture en echec (None) laisse l'umbrella servable --
+    une lecture qui n'a pas abouti n'est pas une absence de signal."""
+    umbrella = _make_item(19022, age_days=40, idle=4, klass="umbrella",
+                          last=None)
+    picks, withheld, _ = pig.belt_pick_with_replacements(
+        [umbrella], _free_claims([umbrella]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: None)
+    assert [p["number"] for p in picks] == [19022]
+    assert withheld == []
+
+
+def test_belt_include_delivered_keeps_umbrella_with_container_marker():
+    """L'echappatoire `--include-delivered` reste respectee sur l'urne
+    umbrella : le marqueur de conteneur n'est pas une barriere absolue."""
+    umbrella = _make_item(19023, age_days=40, idle=4, klass="umbrella",
+                          last=None)
+    picks, withheld, _ = pig.belt_pick_with_replacements(
+        [umbrella], _free_claims([umbrella]),
+        _belt_args(include_delivered=True), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: True)
+    assert [p["number"] for p in picks] == [19023]
+    assert withheld == []
+
+
+# La grammaire du marqueur de CONTENEUR, testee sur la sonde reelle (le
+# transport est stube) : c'est elle qui distingue « le conteneur est livre »
+# de « la lane a livre SON grain ».
+
+
+def _stub_last_comment(monkeypatch, body):
+    """Force le transport de la sonde : le DERNIER commentaire porte `body`."""
+    payload = json.dumps({"comments": [{"body": body}]})
+
+    def fake_run(cmd, *args, **kwargs):
+        assert cmd[:3] == ["gh", "issue", "view"], f"transport : {cmd}"
+        return subprocess.CompletedProcess(cmd, 0, stdout=payload, stderr="")
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+@pytest.mark.parametrize("body", [
+    "[INFO] candidate-delivered — les cinq arcs sont clos.",
+    "[INFO] candidate-delivered lane myia-po-2027:CoursIA -- EPIC closable",
+    "## [INFO] candidate-delivered\n\nles cinq arcs sont clos",
+    "[INFO candidate-delivered] verification first-hand des arcs",
+])
+def test_container_marker_detects_container_statements(monkeypatch, body):
+    """Le marqueur de conteneur est reconnu dans ses formes."""
+    _stub_last_comment(monkeypatch, body)
+    assert pig.has_recent_container_delivery_marker(17528) is True
+
+
+@pytest.mark.parametrize("body", [
+    # Une lane qui livre SON grain : sur une umbrella, ce n'est pas une
+    # fermeture du conteneur.
+    "[DELIVERED] lane myia-po-2027:CoursIA -- PR #21212",
+    "[RELEASED] lane myia-po-2028:CoursIA -- umbrella saturee",
+    "[INFO] candidate-delivered-partial -- un arc sur cinq",
+    "[NOT-DELIVERED] verification first-hand : 2 arcs sur 5.",
+    "Discussion sans marqueur.",
+])
+def test_container_marker_ignores_non_container_statements(monkeypatch, body):
+    """Une livraison de sous-grain, une retraction ou une simple discussion
+    ne ferment PAS le conteneur."""
+    _stub_last_comment(monkeypatch, body)
+    assert pig.has_recent_container_delivery_marker(17528) is False
+
+
+def test_container_marker_read_failure_is_none(monkeypatch):
+    """Tri-etat : une lecture en echec rend None (fail-OPEN), pas False."""
+    def boom(cmd, *args, **kwargs):
+        raise OSError("reseau indisponible")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    assert pig.has_recent_container_delivery_marker(17528) is None
+
+
+def test_container_marker_without_comment_is_false(monkeypatch):
+    """Aucun commentaire : pas de marqueur (False, pas None)."""
+    _stub_last_comment(monkeypatch, "")
+    assert pig.has_recent_container_delivery_marker(17528) is False
 
 
 # Retractation du marqueur, cote TAPIS : la sonde que `main` injecte dans
