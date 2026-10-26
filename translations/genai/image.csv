@@ -6645,55 +6645,128 @@ print(""✅ Fonctions comparaison avant/après définies"")
 print(""   - compare_before_after(): Affichage side-by-side + métriques"")
 print(""   - create_difference_map(): Carte visuelle différences"")
 print(""\n💡 Décommentez les exemples ci-dessus pour tester avec vos images"")",,,,,,,,b12353713f4b13ed,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,0d4cff52,markdown,fr,e4c4869c8eed1052,"### Exercice 2 : Carte de différences et analyse qualitative
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,0d4cff52,markdown,fr,07290a2e2b2871e5,"### Exemple guidé (Exercice 2 résolu) : Carte de différences et analyse qualitative
 
-L'objectif de cet exercice est d'utiliser les fonctions `compare_before_after` et `create_difference_map` pour analyser quantitativement l'impact du paramètre `denoise` sur une edition d'image.
+Résolu par un étudiant (PR #22599) et conservé ici en exemple guidé. Le protocole : une **référence Text-to-Image générée avec la graine 42**, puis le **même prompt d'édition aquarelle** appliqué à trois forces de `denoise` (0.2, 0.5, 0.8) — seul `denoise` varie, tout le reste est fixé. Les métriques **PSNR / MAE** sont calculées pixel par pixel et validées sur deux cas limites (images identiques, noir/blanc), les **cartes de différences amplifiées x5** localisent les zones modifiées, et l'ensemble est exporté (`metriques.csv`, `configuration.json`).
 
-**Contexte** : Les metriques PSNR et MAE permettent de mesurer objectivement l'amplitude des modifications. Combiner ces metriques avec l'analyse visuelle de la carte de différences donne une comprehension complete du comportement du modèle.
+> Assistance déclarée par l'auteur : code préparé avec ChatGPT, résultats et analyse vérifiés par le groupe.
+> Adaptation lors de l'intégration : la référence était réutilisée depuis la démo hello-world alors que la graine venait d'être posée sur le workflow (graine inerte). La référence est désormais **générée** avec la graine, ce qui rend la série reproductible.
 
-**Instructions** :
-1. Generez une image de base avec le workflow Text-to-Image
-2. Editez cette image avec 3 valeurs de denoise différentes (0.2, 0.5, 0.8)
-3. Calculez les metriques PSNR et MAE pour chaque edition
-4. Affichez les cartes de différences et tirez des conclusions
+La cellule suivante exécute ce protocole de bout en bout ; la lecture du résultat suit.",,,,,,,,07290a2e2b2871e5,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,03b10863,code,fr,b8829e86890ca509,"# Exemple guide (Exercice 2 resolu) : Carte de differences et analyse qualitative
+# Credit : exercice resolu par un etudiant (PR #22599), conserve et adapte en exemple guide.
+# Assistance declaree par l'auteur : code prepare avec ChatGPT ; resultats verifies par le groupe.
+# Adaptation : la reference etait reutilisee depuis la demo hello-world alors que la graine
+# venait d'etre posee sur le workflow (graine inerte) -- elle est desormais GENEREE avec la graine.
+from copy import deepcopy
+import csv
+import json
+import tempfile
+from pathlib import Path
+from io import BytesIO
 
-**Indices** :
-- `# Indice` : Un PSNR eleve signifie peu de différences (edition subtile)
-- `# Indice` : La carte de différences amplifiee (x5 ou x10) revele les zones modifiees
-- `# Étape 1` : Commencez par generer l'image de reference avec le workflow hello world
-- `# Étape 2` : Uploadez l'image generee, puis appliquez un même prompt d'edition avec 3 denoise différents
-- `# Étape 3` : Utilisez `compare_before_after` et `create_difference_map` pour chaque paire",,,,,,,,e4c4869c8eed1052,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,03b10863,code,fr,748ed8f50aa2b1c4,"# Exercice 2 : Carte de differences et analyse qualitative
+import numpy as np
+from PIL import Image
 
-# TODO etudiant : choisissez un prompt d'edition (ex: ""convert to watercolor painting style"")
-prompt_edition_ex2 = ""Votre prompt d'edition ici""  # TODO etudiant
+prompt_edition_ex2 = ""Convert this image to a watercolor painting. Preserve the cat, its pose, the windowsill and the composition.""
+denoise_values_ex2 = [0.2, 0.5, 0.8]
+seed_ex2 = 42
+output_ex2 = Path(""resultats_exemple_ex2"")
+output_ex2.mkdir(exist_ok=True)
 
-# TODO etudiant : definissez les valeurs de denoise a comparer
-denoise_values_ex2 = [0.2, 0.5, 0.8]  # TODO etudiant : ajustez si souhaite
 
-# Etape 1 : generer l'image de reference (Text-to-Image)
-# Indice : utilisez workflow_hello defini precedemment, puis executez avec client.execute_workflow()
-# result_ref = client.execute_workflow(workflow_hello)
-# Sauvegardez l'image de reference localement
+def enregistrer_image_ex2(resultat, chemin):
+    images = resultat.get(""images"") or []
+    if not images:
+        raise RuntimeError(""Aucune image recue de Qwen : verifier le service et le workflow."")
+    with Image.open(BytesIO(images[0][""data""])) as image:
+        image.convert(""RGB"").save(chemin)
+    return str(chemin)
 
-# Etape 2 : pour chaque valeur de denoise, editez l'image
-# Indice : utilisez create_simple_edit_workflow() avec le meme prompt mais different denoise
-resultats_denoise = {}
-for d in denoise_values_ex2:
-    print(f""Denoise = {d}"")
-    # TODO etudiant : creez le workflow d'edition
-    # wf = create_simple_edit_workflow(image_name=..., edit_prompt=prompt_edition_ex2, denoise=d)
-    # TODO etudiant : executez le workflow et sauvegardez l'image
-    resultats_denoise[d] = None  # TODO etudiant : remplacer par le resultat
 
-# Etape 3 : comparaison quantitative
-for d in denoise_values_ex2:
-    print(f""\n--- Denoise = {d} ---"")
-    # TODO etudiant : appelez compare_before_after(reference, editee)
-    # TODO etudiant : appelez create_difference_map(reference, editee, amplification=5.0)
+def metriques_ex2(reference, edition):
+    with Image.open(reference) as image:
+        a = np.asarray(image.convert(""RGB""), dtype=np.float64)
+    with Image.open(edition) as image:
+        b = np.asarray(image.convert(""RGB""), dtype=np.float64)
+    if a.shape != b.shape:
+        raise ValueError(""Les images doivent avoir les memes dimensions ; ne pas les redimensionner en silence."")
+    diff = a - b
+    mae = float(np.mean(np.abs(diff)))
+    mse = float(np.mean(diff ** 2))
+    psnr = float(""inf"") if mse == 0 else float(10 * np.log10(255.0 ** 2 / mse))
+    return {""MAE"": mae, ""PSNR_dB"": psnr}
 
-# Question : quel denoise donne le meilleur compromis qualite/fidelite ?
-print(""Exercice a completer"")",,,,,,,,748ed8f50aa2b1c4,,,,,,,,,,,,,,,
+
+# Verification de deux cas limites, sans appel a Qwen.
+with tempfile.TemporaryDirectory() as dossier_test:
+    noir = Path(dossier_test) / ""noir.png""
+    blanc = Path(dossier_test) / ""blanc.png""
+    Image.new(""RGB"", (8, 8), ""black"").save(noir)
+    Image.new(""RGB"", (8, 8), ""white"").save(blanc)
+    identiques = metriques_ex2(noir, noir)
+    extremes = metriques_ex2(noir, blanc)
+    assert identiques[""MAE""] == 0 and np.isinf(identiques[""PSNR_dB""])
+    assert extremes[""MAE""] == 255 and np.isclose(extremes[""PSNR_dB""], 0)
+print(""Tests des metriques : OK"")
+
+if not api_available:
+    print(""Service Qwen indisponible : generation sautee ; les tests locaux des metriques restent valides."")
+else:
+    # 1. Reference Text-to-Image GENEREE avec la graine (independante des demos precedentes).
+    workflow_reference_ex2 = deepcopy(workflow_hello)
+    workflow_reference_ex2[""9""][""inputs""][""seed""] = seed_ex2
+    resultat_reference_ex2 = client.execute_workflow(workflow_reference_ex2, max_wait=3600)
+    reference_ex2 = enregistrer_image_ex2(resultat_reference_ex2, output_ex2 / ""reference.png"")
+    nom_image_ex2 = upload_image_to_comfyui(reference_ex2)
+
+    # 2. Meme image, meme prompt, meme seed et memes reglages ; seul denoise varie.
+    resultats_denoise = {}
+    tableau_ex2 = []
+    for d in denoise_values_ex2:
+        print(f""\n--- Denoise = {d} ---"")
+        workflow = create_simple_edit_workflow(
+            image_name=nom_image_ex2, edit_prompt=prompt_edition_ex2, denoise=d
+        )
+        workflow[""10""][""inputs""][""seed""] = seed_ex2
+        resultat = client.execute_workflow(workflow, max_wait=3600)
+        suffixe = str(d).replace(""."", ""_"")
+        edition = enregistrer_image_ex2(resultat, output_ex2 / f""edition_{suffixe}.png"")
+        resultats_denoise[d] = edition
+        mesures = metriques_ex2(reference_ex2, edition)
+        tableau_ex2.append({""denoise"": d, **mesures})
+        compare_before_after(reference_ex2, edition, title_edited=f""Aquarelle - denoise {d}"")
+        create_difference_map(reference_ex2, edition, amplification=5.0)
+        with Image.open(reference_ex2) as image:
+            a = np.asarray(image.convert(""RGB""), dtype=np.float64)
+        with Image.open(edition) as image:
+            b = np.asarray(image.convert(""RGB""), dtype=np.float64)
+        carte = np.clip(np.abs(a - b) * 5, 0, 255).astype(np.uint8)
+        Image.fromarray(carte).save(output_ex2 / f""differences_{suffixe}.png"")
+
+    # 3. Tableau des valeurs effectivement mesurees.
+    print(""\ndenoise | MAE (0-255) | PSNR (dB)"")
+    for ligne in tableau_ex2:
+        print(f""{ligne['denoise']:.1f}     | {ligne['MAE']:.4f}     | {ligne['PSNR_dB']:.4f}"")
+    with (output_ex2 / ""metriques.csv"").open(""w"", newline="""", encoding=""utf-8"") as fichier:
+        writer = csv.DictWriter(fichier, fieldnames=[""denoise"", ""MAE"", ""PSNR_dB""])
+        writer.writeheader()
+        writer.writerows(tableau_ex2)
+    configuration_ex2 = {
+        ""prompt_reference"": workflow_reference_ex2[""6""][""inputs""][""prompt""],
+        ""prompt_edition"": prompt_edition_ex2,
+        ""denoise_values"": denoise_values_ex2,
+        ""seed"": seed_ex2,
+        ""steps"": 20,
+        ""cfg"": 1.0,
+        ""sampler"": ""euler"",
+        ""scheduler"": ""beta"",
+    }
+    (output_ex2 / ""configuration.json"").write_text(
+        json.dumps(configuration_ex2, indent=2, ensure_ascii=False), encoding=""utf-8""
+    )
+    print(""\nMAE faible / PSNR eleve : plus de ressemblance pixel par pixel avec la reference."")
+    print(""Ces mesures ne suffisent pas a juger la reussite artistique du style aquarelle."")",,,,,,,,b8829e86890ca509,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,a6db2fc7,markdown,fr,c93209694549842d,"## ⚙️ Bonnes Pratiques ComfyUI
 
 ### 1. Gestion des Erreurs Courantes
@@ -21336,9 +21409,9 @@ SD XL Turbo via Forge WebUI (Automatic1111 fork) illustre l'approche **open weig
 
 **Pour aller plus loin** : le pipeline ComfyUI sous-jacent à Forge est directement exploitable par les notebooks 02-Advanced (FLUX, Qwen 2509) et 03-Orchestration — la maîtrise de l'API ComfyUI est un prérequis transverse.
 ",,,,,,,,6d251de1374e4603,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,2905ccc5,code,fr,74eb8fe1a10de768,"# Parameters
-BATCH_MODE = ""false""
-",,,,,,,,74eb8fe1a10de768,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,2905ccc5,code,fr,d8cfd07b7b0f3965,"# Parameters
+BATCH_MODE = ""true""
+",,,,,,,,d8cfd07b7b0f3965,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,3217bab9,markdown,fr,27da071c58027a6b,"### Exercice 4 : Politique de retry et timeout adaptatif pour le client ComfyUI
 
 L'objectif de cet exercice est de fiabiliser l'appel au service en implementant une politique de retry a backoff exponentiel, en distinguant les erreurs transitoires des erreurs definitives.
@@ -23112,3 +23185,65 @@ MyIA.AI.Notebooks/GenAI/Image/examples/science-diagrams.ipynb,518607c9,markdown,
 MyIA.AI.Notebooks/GenAI/Image/examples/science-diagrams.ipynb,7c56404f,markdown,fr,f6f51626eb2fdd11,"**Lecture du contrôle Vision** — La cellule précédente imprime l'analyse de l'image réellement générée. Pour cette exécution, elle signale notamment des flèches pointant vers un autre organite que celui de leur légende. Les scores, les éléments manquants et les recommandations se lisent dans cette sortie : ils décrivent **cette image**, et ne sont pas des constantes à recopier pour les générations suivantes.
 
 **Conséquence pédagogique** : ne pas présenter un diagramme comportant des légendes erronées comme un support de référence. La composition générale et les couleurs ne compensent pas une attribution incorrecte. Corriger le prompt, régénérer puis vérifier chaque flèche avec une source disciplinaire ou une personne compétente avant réutilisation. Une autre exécution peut produire une autre image et exige une nouvelle lecture de son analyse.",,,,,,,,f6f51626eb2fdd11,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,ex2-lecture,markdown,fr,6609da62526c3590,"### Lecture du résultat
+
+Le protocole ci-dessus est **reproductible** : une même référence Text-to-Image est générée avec la graine 42, puis éditée trois fois avec le même prompt aquarelle, la même graine et les mêmes réglages ; seul `denoise` varie. Les deux tests locaux confirment d'abord que les métriques elles-mêmes sont correctes : deux images identiques donnent MAE = 0 et PSNR infini, une image noire comparée à une image blanche donne MAE = 255 et PSNR ≈ 0 dB.
+
+**Mesures de cette exécution** (à lire avec les cartes de différences) :
+
+| denoise | MAE (0-255) | PSNR (dB) | Lecture |
+|---|---|---|---|
+| 0,2 | 4,6003 | 31,8027 | Retouche timide : structure, pose et décor intacts, textures à peine adoucies ; la carte ×5 s'allume surtout sur les contours et le pelage. |
+| 0,5 | 11,6781 | 24,8219 | MAE plus que doublée, mais l'effet reste discret à l'œil : scène intacte, aucun trait de pinceau lisible ; 76,7 % des pixels sont touchés, avec une amplitude faible partout. |
+| 0,8 | 30,2854 | 16,3190 | Le style apparaît enfin — lavis, halos d'aquarelle — mais la scène est repeinte en profondeur : détail photographique perdu, couleurs inventées (lavis rose sur le bord droit, plante presque effacée) ; 85 % des pixels modifiés. |
+
+La progression des métriques est régulière — MAE est à peu près multipliée par 2,6 à chaque palier, PSNR perd 7 puis 8,5 dB — mais **la perception ne suit pas la même courbe** : à 0,2 comme à 0,5, l'image reste visuellement très proche d'une photographie ; l'effet aquarelle ne devient lisible qu'à 0,8, précisément là où la fidélité pixel est la plus faible. C'est la limite de MAE et PSNR : elles mesurent un écart, pas une réussite stylistique, et l'écart ne se déclenche pas en même temps que le style.
+
+**Confrontation avec le rendu de l'étudiant (PR #22599).** L'étudiant rapportait, pour ses propres exécutions : à 0,2, MAE = 4,6003 et PSNR = 31,8027 dB ; à 0,5, MAE = 11,6781 et PSNR = 24,8219 dB. Il observait davantage de différences pixel par pixel à 0,5, une pose du chat et une composition générale conservées, mais un **effet aquarelle peu visible**. Son essai à 0,8 avait été accepté par le serveur sans que le résultat soit récupéré ; il n'avait volontairement inventé aucune mesure pour compléter ce manque.
+
+Ce rejeu reproduit exactement ses mesures — 4,6003 / 31,8027 dB à 0,2 et 11,6781 / 24,8219 dB à 0,5, identiques à quatre décimales : même graine, même modèle et même prompt rendent la chaîne déterministe, et les chiffres rapportés étaient exacts. Son observation visuelle est elle aussi confirmée : à 0,5, l'effet reste discret. Et le palier qui lui manquait est précisément celui où le style apparaît : à 0,8, MAE = 30,2854 et PSNR = 16,3190 dB, la scène reste lisible mais repeinte. Ces valeurs coïncident parce que tout le pipeline est déterministe ; sur un service mis à jour ou avec une autre graine, elles différeraient — c'est la **tendance** et la **lecture visuelle** qui se comparent, jamais une décimale isolée.
+
+Enfin, MAE et PSNR mesurent une distance pixel par pixel, pas la réussite artistique. Une édition peut rester très proche numériquement de la référence tout en étant trop timide stylistiquement ; à l'inverse, une transformation plus affirmée augmente mécaniquement l'écart. Le bon compromis se juge donc avec trois éléments ensemble : le tableau, les images avant/après et les zones éclairées par les cartes de différences.",,,,,,,,6609da62526c3590,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,ex2b-enonce,markdown,fr,23d69089e682312d,"### Exercice 2 : Deux prompts, un denoise — que voient MAE et PSNR ?
+
+L'exemple guidé ci-dessus fait varier `denoise` à prompt fixe. Cet exercice inverse la question : **à `denoise` fixe, deux directions d'édition différentes produisent-elles le même écart de métriques ?**
+
+**Instructions** :
+1. Générez une image de référence avec le workflow Text-to-Image (graine 42, comme dans l'exemple)
+2. Choisissez **deux prompts d'édition de natures différentes** : un changement **local ou subtil** (par exemple l'éclairage) et un changement **global** (par exemple un transfert de style)
+3. Éditez la même référence avec les deux prompts à `denoise = 0.5`, même graine
+4. Mesurez MAE et PSNR pour chaque édition, affichez les cartes de différences
+5. Répondez : quel prompt déplace le plus MAE ? La carte de différences raconte-t-elle la même histoire que les métriques ? Qu'est-ce que PSNR **ne voit pas** (composition, style, sens) ?
+
+**Indices** :
+- `# Indice` : réutilisez `metriques_ex2`, `compare_before_after` et `create_difference_map` définis dans l'exemple guidé
+- `# Indice` : un prompt qui déplace tous les pixels un peu (filtre global) et un prompt qui déplace peu de pixels beaucoup (objet ajouté) peuvent donner des MAE proches — la carte de différences les distingue",,,,,,,,23d69089e682312d,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/GenAI/Image/01-Foundation/01-5-Qwen-Image-Edit.ipynb,ex2b-stub,code,fr,d1a26875ffccd955,"# Exercice 2 : Deux prompts, un denoise -- que voient MAE et PSNR ?
+
+# TODO etudiant : deux prompts d'edition de natures differentes (local/subtil vs global)
+prompts_ex2b = [""Votre prompt local ou subtil ici"", ""Votre prompt global ici""]  # TODO etudiant
+denoise_ex2b = 0.5
+seed_ex2b = 42
+
+# Etape 1 : generer la reference Text-to-Image avec la graine
+# Indice : reprenez le motif de l'exemple guide (deepcopy de workflow_hello, seed sur le noeud ""9"", execute_workflow)
+reference_ex2b = None  # TODO etudiant : chemin de l'image de reference sauvegardee
+
+# Etape 2 : editer la reference avec chaque prompt a denoise fixe
+# Indice : create_simple_edit_workflow(image_name=..., edit_prompt=..., denoise=denoise_ex2b)
+editions_ex2b = {}
+for prompt in prompts_ex2b:
+    print(f""Prompt : {prompt[:60]}..."")
+    # TODO etudiant : creez le workflow, posez la graine sur le noeud ""10"", executez, sauvegardez
+    editions_ex2b[prompt] = None  # TODO etudiant : remplacer par le chemin de l'image editee
+
+# Etape 3 : mesures et cartes de differences pour chaque prompt
+for prompt, edition in editions_ex2b.items():
+    if edition is None:
+        continue
+    print(f""\n--- {prompt[:50]} ---"")
+    # TODO etudiant : appelez metriques_ex2(reference_ex2b, edition)
+    # TODO etudiant : appelez compare_before_after(...) puis create_difference_map(..., amplification=5.0)
+
+# Question : quel prompt deplace le plus MAE, et que PSNR ne voit-il pas ?
+print(""Exercice a completer"")",,,,,,,,d1a26875ffccd955,,,,,,,,,,,,,,,
