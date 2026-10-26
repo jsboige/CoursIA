@@ -92,6 +92,12 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # sur GitHub-hosted rendrait la famine de file pire qu'avant, puisque son
     # declencheur `edited` est justement celui qui produit les re-declenchements.
     "always-on-guards-body.yml",
+    # #22209 (tranche 1b) : l'emetteur des effets de bord de la voie rapide,
+    # moitie extraite d'always-on-guards.yml (meme pool, meme garde anti-fork,
+    # meme routage). Fichier propre depuis le correctif de la PR #22244 : un
+    # workflow YAML rejete en entier (contexte runner dans un env: de niveau
+    # job) ne doit pas emporter le umbrella des 16 organes avec lui.
+    "always-on-commenters.yml",
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",

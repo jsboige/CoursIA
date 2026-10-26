@@ -52,6 +52,13 @@ REQUIRED_UNFILTERED_WORKFLOWS: set[str] = {
     # declencherait plus le workflow qui juge le corps). Le job est exige par
     # le gate sous son propre nom, comme celui du contenu.
     "always-on-guards-body.yml",
+    # #22209 (tranche 1b) : l'emetteur des effets de bord de la voie rapide
+    # (stickies + artefacts), extrait d'always-on-guards.yml en fichier
+    # propre par le correctif de la PR #22244. Meme contrat que le jumeau de
+    # body : `derive_always_on_jobs` le compte dans la liste canari des
+    # workflows `pull_request` SANS filtre -- un `paths:` le sortirait du
+    # canari, et le verdict d'effets de bord doit exister a chaque tete.
+    "always-on-commenters.yml",
     # #21922 : le garde perimeter a retrouve son declencheur `pull_request`
     # (restaure dans perimeter-review-guard.yml -- le levier du garde est le
     # nom de check-run que CE fichier publie, cf. son en-tete).

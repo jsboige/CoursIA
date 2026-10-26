@@ -1,0 +1,179 @@
+name: Always-on commenters
+
+# #22209 (tranche 1b, voie A) -- l'emetteur UNIQUE des effets de bord de la
+# voie rapide : trois advisories ecrivent un COMMENTAIRE sur la PR et, pour
+# l'une d'elles, trois artefacts JSON. Les absorber dans le job umbrella
+# d'always-on-guards.yml lui aurait donne le droit d'ecrire sur une PR depuis
+# le meme processus que seize autres organes -- un defaut dans l'un d'eux
+# pouvait donc commenter. Ce job porte SEUL ce droit pour ces trois gardes :
+# le job principal lance le moteur sans `--effects` (defaut), donc les gardes
+# a `commenters` y sont exclues et n'ont QU'UN emetteur -- meme contrat
+# d'identite qu'en tranche 1a (un nom de check-run, un emetteur), verifie par
+# `check_absorbed_check_run_identity.py` et par le registre.
+#
+# POURQUOI UN FICHIER SEPARE, ET PAS UN JOB EN PLUS DANS ALWAYS-ON-GUARDS.YML
+# ----------------------------------------------------------------------
+# Deux raisons mesurees, pas une preference :
+#
+# 1. Rayon d'explosion. Un workflow YAML invalide est rejete EN ENTIER par
+#    GitHub : le job umbrella des 16 organes et ce job vivaient dans le meme
+#    fichier, et une expression illegale dans l'un tuait l'autre. Cas fondateur
+#    (PR #22244, mesure 2026-10-26) : `${{ runner.temp }}` dans le `env:` de
+#    niveau JOB -- le contexte `runner` n'existe qu'au niveau step -- a fait
+#    rejeter le fichier complet (`Unrecognized named-value: 'runner'`, L1352) :
+#    6 runs push a zero job, et le check-run « Always-on guards -- 16 organes,
+#    1 checkout » n'a JAMAIS existé sur la tete. Le gate de contenu etait mort
+#    avec l'emetteur de commentaires. Un fichier par responsabilite limite la
+#    panne au coupable.
+# 2. Un job par fichier dans la famille always-on : c'est l'invariant que
+#    epingle `scripts/ci/tests/test_always_on_body_split.py`
+#    (test_job_names_are_distinct) depuis le split #22331 -- le fold du gate
+#    (`pr_gate.py::dedupe_latest`) plie les check-runs par NOM, et l'identite
+#    d'un verdict exige un job unique par fichier.
+#
+# Ce qui n'est PAS depeche ici, et c'est MESURE : le job principal d'
+# always-on-guards.yml porte encore des stickies LEGACY ecrits en shell dans
+# ses propres etapes (light cap G-VAR-2, signaux de genre, diff trivial, ...).
+# Tant qu'ils y vivent, il garde `pull-requests: write` au niveau du workflow.
+# Les deplacer est une tranche a part, pas un effet de bord de celle-ci.
+
+on:
+  pull_request:
+    branches: [ main ]
+    # MEME declenchement que le job principal d'always-on-guards.yml : le
+    # verdict d'effets de bord doit exister a chaque tete poussee. PAS de
+    # `paths:` (regle 2 d'#10045) et PAS d'`edited` (#22331 : la file CI ne
+    # doit pas re-payer un run pour un corps edite -- les stickies sont
+    # upsertes au push suivant).
+    types: [ opened, synchronize, reopened ]
+  workflow_dispatch:
+
+# Les droits d'ECRITURE vivent au niveau du JOB (moindre privilege, cf bloc
+# jobs) : un bloc workflow ne servirait qu'a elargir la portee par megarde.
+permissions:
+  contents: read
+
+# Groupe de concurrence PROPRE, distinct de celui d'always-on-guards.yml
+# (#11649) : les deux fichiers se declenchent sur le MEME push, et un groupe
+# partage avec `cancel-in-progress: true` laisserait le run d'un fichier
+# annuler le run de l'autre en pleine execution -- chacun supplantant seulement
+# ses propres runs anciens, comme avant le split.
+concurrency:
+  group: always-on-commenters-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  always-on-commenters:
+    name: "Always-on commenters -- 3 organes, 1 checkout"
+    # Meme routage et meme garde anti-fork que le job principal : une PR de
+    # fork n'a pas le droit d'ecrire chez nous, et le token read-only d'un
+    # fork ne pourrait pas poser de commentaire de toute facon.
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 15
+    # Moindre privilege : `contents: read` pour le checkout, `checks: write`
+    # pour le check-run nomme, `pull-requests: write` pour les stickies --
+    # l'ecriture est ICI et nulle part ailleurs pour ces trois gardes.
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      FAST_LANE_BASE: origin/${{ github.base_ref }}
+      FAST_LANE_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      FAST_LANE_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      FAST_LANE_PR: ${{ github.event.pull_request.number }}
+      # PAS de FAST_LANE_ARTIFACT_DIR ici : le contexte `runner` est illegal
+      # dans un `env:` de niveau JOB (GitHub rejette le fichier entier,
+      # cf en-tete -- defaut PR #22244). Le chemin est le MEME par
+      # construction : `fast_lane.py::artifact_root()` retombe sur
+      # $RUNNER_TEMP/fast-lane-artifacts quand la variable est absente
+      # (le runner exporte RUNNER_TEMP a chaque step), et les `path:` des
+      # uploads ci-dessous ciblent la meme racine au niveau step, la ou
+      # `${{ runner.temp }}` est legal.
+
+    steps:
+      # Meme HEAL que le job principal (#15387) : le work dir du pool est
+      # reutilise entre jobs, et un clone shallow fait echouer le
+      # `fetch-depth: 0` en silence.
+      - name: "Purger un work dir reutilise au graphe incomplet (#15387)"
+        shell: bash
+        run: |
+          cd "$GITHUB_WORKSPACE" || exit 0
+          if [ ! -d .git ]; then
+            exit 0
+          fi
+          if [ -f .git/shallow ] || ! git rev-list --all --count >/dev/null 2>&1; then
+            rm -rf .git
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: "Installer dependances detecteurs (pyyaml, Pillow)"
+        run: pip install --quiet pyyaml Pillow
+
+      # Corps de PR lu a l'execution (#15697) : le detecteur organ-first le
+      # consomme, et le corps se modifie SANS commit.
+      - name: "Body live : lecture API a l'execution (#15697)"
+        id: body
+        env:
+          PAYLOAD_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          LIVE=""
+          if [ -n "${PR_NUMBER:-}" ]; then
+            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null) || LIVE=""
+          fi
+          if [ -z "$LIVE" ]; then
+            echo "::warning::[body-live] lecture API vide/echouee -- repli sur le payload de l'evenement"
+            LIVE="${PAYLOAD_BODY:-}"
+          fi
+          delim="PR_BODY_EOF_$$"
+          {
+            printf 'pr_body<<%s\n%s\n%s\n' "$delim" "$LIVE" "$delim"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: "Voie rapide -- effets de bord (stickies + artefacts)"
+        id: fastlane_effects
+        env:
+          FAST_LANE_PR_BODY: ${{ steps.body.outputs.pr_body }}
+        run: |
+          git fetch origin "${{ github.base_ref }}" -q
+          python scripts/ci/fast_lane.py --effects --shadow
+
+      # Un artefact par detecteur, sous le nom PUBLIC du workflow d'origine
+      # (`upload-artifact` garde le sien) : les renvois « run artifact » des
+      # commentaires continuent de designer la meme chose.
+      - name: "Artefact -- markdown-claims-output-report"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: markdown-claims-output-report
+          path: ${{ runner.temp }}/fast-lane-artifacts/markdown-claims-output-report/
+          if-no-files-found: ignore
+
+      - name: "Artefact -- stale-claim-report"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stale-claim-report
+          path: ${{ runner.temp }}/fast-lane-artifacts/stale-claim-report/
+          if-no-files-found: ignore
+
+      - name: "Artefact -- factual-mislabel-report"
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: factual-mislabel-report
+          path: ${{ runner.temp }}/fast-lane-artifacts/factual-mislabel-report/
+          if-no-files-found: ignore
