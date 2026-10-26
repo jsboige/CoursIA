@@ -266,6 +266,17 @@ WORKFLOW = (
     Path(__file__).resolve().parents[2]
     / ".github" / "workflows" / "always-on-guards.yml"
 )
+# #22331 -- les appels `guard_comment_upsert.py` du prev-guard ont quitte le
+# workflow de contenu pour le script partage `always_on_body_organs.sh`,
+# appele par `always-on-guards-body.yml`. Les assertions de CABLAGE doivent
+# lire les deux porteurs : lire le seul workflow de contenu déclarerait
+# absent un avertissement qui a simplement déménagé, et le défaut #15374
+# redeviendrait invisible s'il revenait dans le script.
+BODY_ORGANS_SCRIPT = (
+    Path(__file__).resolve().parents[2]
+    / "scripts" / "ci" / "always_on_body_organs.sh"
+)
+CARRIERS = (WORKFLOW, BODY_ORGANS_SCRIPT)
 
 
 class TestWorkflowWiring:
@@ -275,13 +286,13 @@ class TestWorkflowWiring:
     Le gate reste vert, mais l'échec devient un ``::warning``."""
 
     def test_lift_failure_emits_warning(self):
-        text = WORKFLOW.read_text(encoding="utf-8")
+        text = "\n".join(p.read_text(encoding="utf-8") for p in CARRIERS)
         assert "::warning::prev-guard lift failed" in text, (
             "le chemin vert du prev-guard doit rendre l'échec de lift "
             "observable (review ai-01 #15374)")
 
     def test_upsert_failure_emits_warning(self):
-        text = WORKFLOW.read_text(encoding="utf-8")
+        text = "\n".join(p.read_text(encoding="utf-8") for p in CARRIERS)
         assert "::warning::prev-guard upsert failed" in text, (
             "le chemin rouge ne doit pas présenter un échec d'upsert "
             "comme une écriture réussie (review ai-01 #15374)")
@@ -289,12 +300,18 @@ class TestWorkflowWiring:
     def test_no_silently_swallowed_upsert_call(self):
         """Le buggy pattern : un appel guard_comment_upsert.py suivi (à
         ~6 lignes, le temps des arguments multilignes) d'un ``|| true``
-        seul -- sans if/warning, l'échec est invisible."""
-        lines = WORKFLOW.read_text(encoding="utf-8").splitlines()
-        for i, line in enumerate(lines):
-            if "guard_comment_upsert.py" in line:
-                window = lines[i:i + 7]
-                swallowed = [l for l in window if l.strip() == ">/dev/null 2>&1 || true"]
-                assert not swallowed, (
-                    f"appel guard_comment_upsert.py l.{i + 1} avalé par "
-                    "|| true -- l'échec doit être observable")
+        seul -- sans if/warning, l'échec est invisible.
+
+        #22331 -- le balayage couvre TOUS les porteurs : un appel déplacé
+        dans le script partagé échapperait au scan borné au seul workflow."""
+        for carrier in CARRIERS:
+            lines = carrier.read_text(encoding="utf-8").splitlines()
+            for i, line in enumerate(lines):
+                if "guard_comment_upsert.py" in line:
+                    window = lines[i:i + 7]
+                    swallowed = [
+                        l for l in window if l.strip() == ">/dev/null 2>&1 || true"
+                    ]
+                    assert not swallowed, (
+                        f"appel guard_comment_upsert.py {carrier.name} l.{i + 1} "
+                        "avalé par || true -- l'échec doit être observable")

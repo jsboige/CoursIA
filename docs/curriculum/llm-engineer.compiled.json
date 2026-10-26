@@ -587,7 +587,7 @@
       "notebooks": [
         {
           "path": "GenAI/Texte/10d_TensorSharp_DotNet_Inference.ipynb",
-          "title": "10d. TensorSharp : pilote d'inférence LLM native .NET",
+          "title": "10d. Bake-off bindings .NET : pilote TensorSharp et jambe ORT GenAI",
           "duration_minutes": 45,
           "kernel": ".NET (C#)",
           "execution_constraints": {
@@ -603,19 +603,6 @@
           "title": "10e. LLamaSharp : bake-off binding .NET de llama.cpp",
           "duration_minutes": 45,
           "kernel": "Python 3",
-          "execution_constraints": {
-            "requires_api": false,
-            "requires_gpu": true,
-            "requires_cloud": false,
-            "requires_wsl": false,
-            "executable_locally": false
-          }
-        },
-        {
-          "path": "GenAI/Texte/10f_ORTGenAI_DotNet_BakeOff.ipynb",
-          "title": "10f. ONNX Runtime GenAI : jambe finale du bake-off .NET",
-          "duration_minutes": 45,
-          "kernel": ".NET (C#)",
           "execution_constraints": {
             "requires_api": false,
             "requires_gpu": true,
