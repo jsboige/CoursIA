@@ -1692,8 +1692,13 @@ def test_cli_check_pending_hold_for_a_foreign_lane(tmp_path, capsys):
     _write_gpu_snapshot(tmp_path, state="held", holder="myia-po-2025:CoursIA-2",
                         started_at="2026-10-09T06:00:00Z",
                         expected_end="2026-10-09T18:00:00Z")
+    # `--source local` : ce controle porte sur le repli depuis le SNAPSHOT
+    # (#20077). Sans la source explicite, le defaut `auto` tente git sur le
+    # depot qui porte ce script, et le verdict dependrait du clone qui execute
+    # la suite (remote joignable ou non, branche publiee ou non).
     rc = dl.main(["check_pending", "--ledger", dl.GPU_RESERVATION,
                   "--entity", "myia-ai-01#gpu2", "--state-dir", str(tmp_path),
+                  "--source", "local",
                   "--my-lane", "myia-ai-01:CoursIA-2",
                   "--now", "2026-10-09T12:00:00Z", "--json"])
     assert rc == 1, "une lane etrangere doit etre refusee"
@@ -1712,6 +1717,7 @@ def test_cli_check_pending_ok_for_the_holder(tmp_path, capsys):
                         expected_end="2026-10-09T18:00:00Z")
     rc = dl.main(["check_pending", "--ledger", dl.GPU_RESERVATION,
                   "--entity", "myia-ai-01#gpu2", "--state-dir", str(tmp_path),
+                  "--source", "local",
                   "--my-lane", "myia-po-2025:CoursIA-2",
                   "--now", "2026-10-09T12:00:00Z", "--json"])
     assert rc == 0
@@ -1730,6 +1736,7 @@ def test_cli_check_pending_stale_past_expected_end(tmp_path, capsys):
                         expected_end="2026-10-09T10:00:00Z")
     rc = dl.main(["check_pending", "--ledger", dl.GPU_RESERVATION,
                   "--entity", "myia-ai-01#gpu2", "--state-dir", str(tmp_path),
+                  "--source", "local",
                   "--my-lane", "myia-ai-01:CoursIA-2",
                   "--now", "2026-10-09T12:00:00Z", "--json"])
     assert rc == 2
@@ -2475,9 +2482,13 @@ def test_check_pending_git_outbox_pending_still_wins(tmp_path, capsys):
     state_dir = _gpu_state(tmp_path)
     assert _append_hold(state_dir) == 0  # un held jamais publie attend dans le spool
     capsys.readouterr()
+    # `--state-dir` : la garde doit inspecter le spool que ce test vient de
+    # remplir. Sans lui, elle lit le spool PAR DEFAUT de la machine, et le
+    # verdict dependrait de l'etat de ce spool-la, pas de celui du test.
     rc = dl.main([
         "check_pending", "--ledger", dl.GPU_RESERVATION, "--entity", "myia-po-2023#gpu1",
         "--source", "git", "--repo", str(work), FROZEN,
+        "--state-dir", str(state_dir),
     ])
     out = capsys.readouterr().out
     assert rc == 1
