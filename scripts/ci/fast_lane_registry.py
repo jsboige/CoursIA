@@ -2419,3 +2419,65 @@ TRANCHE28: list[Guard] = [
         absorbed=True,
     ),
 ]
+
+# ---------------------------------------------------------------------------
+# TRANCHE 29 -- garde "appel chat vers un modele obsolete" (#22783).
+#
+# Regle durable : `.claude/rules/genai-config.md` (#22797) -- la cible par
+# defaut des appels de chat d'un carnet est le vLLM local (Swift) ; le repli
+# est le modele courant du mapping `docs/genai/model-mapping-openai.md`. La
+# detection statique est portee par
+# `scripts/notebook_tools/check_obsolete_chat_model.py` (#22800) : l'organe
+# ROUGIT (rc=1) quand un site d'appel chat resout vers un identifiant de la
+# liste obsolete chat.
+#
+# `blocking=False` VOLONTAIREMENT, et c'est un arbitrage de sequencement :
+# au moment du cablage, l'organe accuse 10 sites dans 5 carnets de la
+# famille Audio (cible `gpt-4o-mini`), qui attendent leur migration (#22783).
+# Un garde BLOQUANT sur ces carnets rougirait des PRs sans rapport avec le
+# sujet -- le depot perdrait son debit pour une dette deja identifiee et
+# routee. Meme voie que `solution-leak-guard` en phase WARN (#8053) :
+# demarrer en advisory, durcir quand la migration est mergee.
+#
+# Forme moteur : `iterates_paths=True` avec `iterate_paths` restreint aux
+# carnets -- le placeholder `{changed_paths}` n'est substitue que dans la
+# branche iterative (`run_iter`), le registre ne le substitue pas dans la
+# branche simple (`run_argv` ne connait que le contexte : `base_ref`,
+# `pr_number`, ...). `iterate_paths` separe le declencheur de l'iteration
+# pour qu'un `.py` du depot ne soit jamais passe au detecteur de carnets
+# (incident #13220).
+#
+# `diff_bounded=True` : le verdict porte sur les carnets MODIFIES par la PR,
+# il ne peut donc pas heriter d'un rouge de `main`.
+#
+# `pre_argv` = la suite de tests du detecteur : un detecteur qui ne prouve
+# pas qu'il tire est indiscernable d'un detecteur debranche (lecon #11685).
+# La suite est hermetique et compatible migration (aucun temoin sur la dette
+# vivante du corpus).
+# ---------------------------------------------------------------------------
+TRANCHE29: list[Guard] = [
+    Guard(
+        name="Obsolete chat model advisory (#22783)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**.ipynb",
+            "scripts/notebook_tools/check_obsolete_chat_model.py",
+            "scripts/notebook_tools/tests/test_check_obsolete_chat_model.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        iterate_paths=["**.ipynb"],
+        iterates_paths=True,
+        pre_argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/notebook_tools/tests/test_check_obsolete_chat_model.py",
+        ],
+        argv=[
+            "python", "scripts/notebook_tools/check_obsolete_chat_model.py",
+            "{changed_paths}",
+        ],
+        blocking=False,
+        diff_bounded=True,
+        absorbed=True,
+    ),
+]
