@@ -1,0 +1,654 @@
+{
+  "repeats": 3,
+  "thresholds": {
+    "alpha_reducible_max": 0.5,
+    "alpha_irreducible_min": 0.8,
+    "r2_min_for_linearity": 0.9
+  },
+  "motifs": [
+    {
+      "motif": "acorn",
+      "anatomy": "methuselah-chaotique",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 64,
+          "naive_s": 0.009441200003493577,
+          "hashlife_s": 0.021351799994590692,
+          "ratio": 0.4421734938452697,
+          "naive_population": 83,
+          "hashlife_population": 83,
+          "populations_agree": true,
+          "naive_state": "50f58b93159b6673",
+          "hashlife_state": "50f58b93159b6673",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 128,
+          "naive_s": 0.019402699996135198,
+          "hashlife_s": 0.05313079999177717,
+          "ratio": 0.3651874242273422,
+          "naive_population": 184,
+          "hashlife_population": 184,
+          "populations_agree": true,
+          "naive_state": "e19285a7f1034659",
+          "hashlife_state": "e19285a7f1034659",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 256,
+          "naive_s": 0.06160079999244772,
+          "hashlife_s": 0.11063750000903383,
+          "ratio": 0.5567804766685605,
+          "naive_population": 150,
+          "hashlife_population": 150,
+          "populations_agree": true,
+          "naive_state": "b2c5339bee8fffcd",
+          "hashlife_state": "b2c5339bee8fffcd",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 512,
+          "naive_s": 0.22461099999782164,
+          "hashlife_s": 0.29652200000418816,
+          "ratio": 0.757485110698866,
+          "naive_population": 254,
+          "hashlife_population": 254,
+          "populations_agree": true,
+          "naive_state": "98f19dc7fa84b4de",
+          "hashlife_state": "98f19dc7fa84b4de",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.5972622999979649,
+          "hashlife_s": 0.653992699997616,
+          "ratio": 0.9132553008621381,
+          "naive_population": 468,
+          "hashlife_population": 468,
+          "populations_agree": true,
+          "naive_state": "52175d8b31a86d0f",
+          "hashlife_state": "52175d8b31a86d0f",
+          "states_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 1.2354208667184197,
+      "r2_hashlife": 0.9984963797755808,
+      "alpha_naive": 1.5499600467980572,
+      "r2_naive": 0.9924993535948852,
+      "final_ratio": 0.9132553008621381,
+      "verdict": "IRREDUCIBLE",
+      "populations_agree": true,
+      "states_agree": true,
+      "repetitions_used": 3,
+      "alpha_envelope": [
+        1.1212112159744718,
+        1.2874264074274047
+      ],
+      "verdict_robust": true
+    },
+    {
+      "motif": "blinker",
+      "anatomy": "periodique-p2",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 256,
+          "naive_s": 0.0025209000014001504,
+          "hashlife_s": 0.0019494000007398427,
+          "ratio": 1.2931671285746436,
+          "naive_population": 3,
+          "hashlife_population": 3,
+          "populations_agree": true,
+          "naive_state": "6be21bba9ced76c7",
+          "hashlife_state": "6be21bba9ced76c7",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.007590799999888986,
+          "hashlife_s": 0.0017444999975850806,
+          "ratio": 4.351275443047845,
+          "naive_population": 3,
+          "hashlife_population": 3,
+          "populations_agree": true,
+          "naive_state": "6be21bba9ced76c7",
+          "hashlife_state": "6be21bba9ced76c7",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 0.02939380001043901,
+          "hashlife_s": 0.003215199991245754,
+          "ratio": 9.1421373757376,
+          "naive_population": 3,
+          "hashlife_population": 3,
+          "populations_agree": true,
+          "naive_state": "6be21bba9ced76c7",
+          "hashlife_state": "6be21bba9ced76c7",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 16384,
+          "naive_s": 0.12829740000597667,
+          "hashlife_s": 0.0022382999886758626,
+          "ratio": 57.319126415166124,
+          "naive_population": 3,
+          "hashlife_population": 3,
+          "populations_agree": true,
+          "naive_state": "6be21bba9ced76c7",
+          "hashlife_state": "6be21bba9ced76c7",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 65536,
+          "naive_s": 0.43477020000864286,
+          "hashlife_s": 0.002310099996975623,
+          "ratio": 188.204060680422,
+          "naive_population": 3,
+          "hashlife_population": 3,
+          "populations_agree": true,
+          "naive_state": "6be21bba9ced76c7",
+          "hashlife_state": "6be21bba9ced76c7",
+          "states_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 0.042472005832064376,
+      "r2_hashlife": 0.16246536502754427,
+      "alpha_naive": 0.946971844936236,
+      "r2_naive": 0.9979531440635584,
+      "final_ratio": 188.204060680422,
+      "verdict": "REDUCIBLE",
+      "populations_agree": true,
+      "states_agree": true,
+      "repetitions_used": 3,
+      "alpha_envelope": [
+        0.014305618460773077,
+        0.10558917777530809
+      ],
+      "verdict_robust": false
+    },
+    {
+      "motif": "block",
+      "anatomy": "immuable",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 256,
+          "naive_s": 0.002577300008852035,
+          "hashlife_s": 0.002859200001694262,
+          "ratio": 0.9014059902507054,
+          "naive_population": 4,
+          "hashlife_population": 4,
+          "populations_agree": true,
+          "naive_state": "bd268d043f76dee9",
+          "hashlife_state": "bd268d043f76dee9",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.010431699993205257,
+          "hashlife_s": 0.002782900002785027,
+          "ratio": 3.7484997602377317,
+          "naive_population": 4,
+          "hashlife_population": 4,
+          "populations_agree": true,
+          "naive_state": "bd268d043f76dee9",
+          "hashlife_state": "bd268d043f76dee9",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 0.03300619999936316,
+          "hashlife_s": 0.003562700003385544,
+          "ratio": 9.26437813119213,
+          "naive_population": 4,
+          "hashlife_population": 4,
+          "populations_agree": true,
+          "naive_state": "bd268d043f76dee9",
+          "hashlife_state": "bd268d043f76dee9",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 16384,
+          "naive_s": 0.13632479999796487,
+          "hashlife_s": 0.0035096999927191064,
+          "ratio": 38.84229429317933,
+          "naive_population": 4,
+          "hashlife_population": 4,
+          "populations_agree": true,
+          "naive_state": "bd268d043f76dee9",
+          "hashlife_state": "bd268d043f76dee9",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 65536,
+          "naive_s": 0.6104181000118842,
+          "hashlife_s": 0.004876899998635054,
+          "ratio": 125.16518693898337,
+          "naive_population": 4,
+          "hashlife_population": 4,
+          "populations_agree": true,
+          "naive_state": "bd268d043f76dee9",
+          "hashlife_state": "bd268d043f76dee9",
+          "states_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 0.09377321724013128,
+      "r2_hashlife": 0.8341971356888899,
+      "alpha_naive": 0.9741794372803922,
+      "r2_naive": 0.9981752387977391,
+      "final_ratio": 125.16518693898337,
+      "verdict": "REDUCIBLE",
+      "populations_agree": true,
+      "states_agree": true,
+      "repetitions_used": 3,
+      "alpha_envelope": [
+        -0.0270714686184755,
+        0.22570780382554953
+      ],
+      "verdict_robust": false
+    },
+    {
+      "motif": "glider",
+      "anatomy": "periodique-translatif-p4",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 256,
+          "naive_s": 0.002929399997810833,
+          "hashlife_s": 0.0043920000025536865,
+          "ratio": 0.6669854271647453,
+          "naive_population": 5,
+          "hashlife_population": 5,
+          "populations_agree": true,
+          "naive_state": "3b9830860dd96ecc",
+          "hashlife_state": "3b9830860dd96ecc",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.0127723000041442,
+          "hashlife_s": 0.00609460000123363,
+          "ratio": 2.095674859967662,
+          "naive_population": 5,
+          "hashlife_population": 5,
+          "populations_agree": true,
+          "naive_state": "3b9830860dd96ecc",
+          "hashlife_state": "3b9830860dd96ecc",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 0.05473649999476038,
+          "hashlife_s": 0.007185199996456504,
+          "ratio": 7.617950790758025,
+          "naive_population": 5,
+          "hashlife_population": 5,
+          "populations_agree": true,
+          "naive_state": "3b9830860dd96ecc",
+          "hashlife_state": "3b9830860dd96ecc",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 16384,
+          "naive_s": 0.2148345000023255,
+          "hashlife_s": 0.007481799999368377,
+          "ratio": 28.71427998883452,
+          "naive_population": 5,
+          "hashlife_population": 5,
+          "populations_agree": true,
+          "naive_state": "3b9830860dd96ecc",
+          "hashlife_state": "3b9830860dd96ecc",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 65536,
+          "naive_s": 0.8319780000019819,
+          "hashlife_s": 0.010567899997113273,
+          "ratio": 78.72689940567615,
+          "naive_population": 5,
+          "hashlife_population": 5,
+          "populations_agree": true,
+          "naive_state": "3b9830860dd96ecc",
+          "hashlife_state": "3b9830860dd96ecc",
+          "states_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 0.14146656910808875,
+      "r2_hashlife": 0.9398142965521148,
+      "alpha_naive": 1.0185864089576535,
+      "r2_naive": 0.9996065900211074,
+      "final_ratio": 78.72689940567615,
+      "verdict": "REDUCIBLE",
+      "populations_agree": true,
+      "states_agree": true,
+      "repetitions_used": 3,
+      "alpha_envelope": [
+        0.1220305451937275,
+        0.1451940704004239
+      ],
+      "verdict_robust": true
+    },
+    {
+      "motif": "gosper-gun",
+      "anatomy": "croissance-reguliere",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 256,
+          "naive_s": 0.070008400012739,
+          "hashlife_s": 0.05775110000104178,
+          "ratio": 1.212243576511549,
+          "naive_population": 84,
+          "hashlife_population": 84,
+          "populations_agree": true,
+          "naive_state": "9a06b15137f600ad",
+          "hashlife_state": "9a06b15137f600ad",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.670371600004728,
+          "hashlife_s": 0.05645360000198707,
+          "ratio": 11.874736066099098,
+          "naive_population": 221,
+          "hashlife_population": 221,
+          "populations_agree": true,
+          "naive_state": "2a863bf2b3f2b038",
+          "hashlife_state": "2a863bf2b3f2b038",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 5.69801350000489,
+          "hashlife_s": 0.03128100000321865,
+          "ratio": 182.15573349376922,
+          "naive_population": 724,
+          "hashlife_population": 724,
+          "populations_agree": true,
+          "naive_state": "22860093be252756",
+          "hashlife_state": "22860093be252756",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 16384,
+          "naive_s": 59.77809459999844,
+          "hashlife_s": 0.02930019999621436,
+          "ratio": 2040.1940808500242,
+          "naive_population": 2781,
+          "hashlife_population": 2781,
+          "populations_agree": true,
+          "naive_state": "ba6d703f249da6c5",
+          "hashlife_state": "ba6d703f249da6c5",
+          "states_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": -0.18942963457585804,
+      "r2_hashlife": 0.8514600835420078,
+      "alpha_naive": 1.615052279445006,
+      "r2_naive": 0.9997001470478516,
+      "final_ratio": 2040.1940808500242,
+      "verdict": "REDUCIBLE",
+      "populations_agree": true,
+      "states_agree": true,
+      "repetitions_used": 3,
+      "alpha_envelope": [
+        -0.2333084622893639,
+        -0.09646894689485262
+      ],
+      "verdict_robust": false
+    },
+    {
+      "motif": "pulsar",
+      "anatomy": "periodique-p3",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 256,
+          "naive_s": 0.03375129999767523,
+          "hashlife_s": 0.007455900005879812,
+          "ratio": 4.526790859729684,
+          "naive_population": 56,
+          "hashlife_population": 56,
+          "populations_agree": true,
+          "naive_state": "b16e8d30e9fda826",
+          "hashlife_state": "b16e8d30e9fda826",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.1744934999878751,
+          "hashlife_s": 0.010166499996557832,
+          "ratio": 17.163576456691587,
+          "naive_population": 56,
+          "hashlife_population": 56,
+          "populations_agree": true,
+          "naive_state": "b16e8d30e9fda826",
+          "hashlife_state": "b16e8d30e9fda826",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 0.5093658000114374,
+          "hashlife_s": 0.008412299997871742,
+          "ratio": 60.550123050806995,
+          "naive_population": 56,
+          "hashlife_population": 56,
+          "populations_agree": true,
+          "naive_state": "b16e8d30e9fda826",
+          "hashlife_state": "b16e8d30e9fda826",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 16384,
+          "naive_s": 2.432995999988634,
+          "hashlife_s": 0.010726100008469075,
+          "ratio": 226.82950914755577,
+          "naive_population": 56,
+          "hashlife_population": 56,
+          "populations_agree": true,
+          "naive_state": "b16e8d30e9fda826",
+          "hashlife_state": "b16e8d30e9fda826",
+          "states_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 0.06503813473480918,
+      "r2_hashlife": 0.4771089962613069,
+      "alpha_naive": 1.0030235000557453,
+      "r2_naive": 0.9940183943965358,
+      "final_ratio": 226.82950914755577,
+      "verdict": "REDUCIBLE",
+      "populations_agree": true,
+      "states_agree": true,
+      "repetitions_used": 3,
+      "alpha_envelope": [
+        -0.013156497919747313,
+        0.13744066981517558
+      ],
+      "verdict_robust": false
+    },
+    {
+      "motif": "soup-128-d35",
+      "anatomy": "soupe-chaotique",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 64,
+          "naive_s": 0.45173919999797363,
+          "hashlife_s": 0.6390028999885544,
+          "ratio": 0.7069438965082396,
+          "naive_population": 2214,
+          "hashlife_population": 2214,
+          "populations_agree": true,
+          "naive_state": "8e5c397c991da591",
+          "hashlife_state": "8e5c397c991da591",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 256,
+          "naive_s": 1.3813893999904394,
+          "hashlife_s": 2.033047799995984,
+          "ratio": 0.6794672510863582,
+          "naive_population": 1719,
+          "hashlife_population": 1719,
+          "populations_agree": true,
+          "naive_state": "10c06a8aed70e3c4",
+          "hashlife_state": "10c06a8aed70e3c4",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 3.743191500005196,
+          "hashlife_s": 4.261216699989745,
+          "ratio": 0.8784325612950413,
+          "naive_population": 1422,
+          "hashlife_population": 1422,
+          "populations_agree": true,
+          "naive_state": "4d58afc1401662e1",
+          "hashlife_state": "4d58afc1401662e1",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 13.546887200005585,
+          "hashlife_s": 8.33018340000126,
+          "ratio": 1.6262411701528128,
+          "naive_population": 1571,
+          "hashlife_population": 1571,
+          "populations_agree": true,
+          "naive_state": "a131240e7882e762",
+          "hashlife_state": "a131240e7882e762",
+          "states_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 0.6090491454999294,
+      "r2_hashlife": 0.9819963138612622,
+      "alpha_naive": 0.8078565600564999,
+      "r2_naive": 0.9975325803397792,
+      "final_ratio": 1.6262411701528128,
+      "verdict": "AMBIGUOUS",
+      "populations_agree": true,
+      "states_agree": true,
+      "repetitions_used": 3,
+      "alpha_envelope": [
+        0.5727637735982773,
+        0.6141654113276307
+      ],
+      "verdict_robust": true
+    },
+    {
+      "motif": "soup-64-d30",
+      "anatomy": "soupe-chaotique",
+      "start_population": null,
+      "points": [
+        {
+          "generations": 64,
+          "naive_s": 0.0903388000006089,
+          "hashlife_s": 0.16386839999177027,
+          "ratio": 0.5512887170750789,
+          "naive_population": 506,
+          "hashlife_population": 506,
+          "populations_agree": true,
+          "naive_state": "32adb5e738a9e920",
+          "hashlife_state": "32adb5e738a9e920",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 256,
+          "naive_s": 0.28896700000041164,
+          "hashlife_s": 0.4321116999926744,
+          "ratio": 0.668732181992088,
+          "naive_population": 367,
+          "hashlife_population": 367,
+          "populations_agree": true,
+          "naive_state": "0e98cc43c5987a60",
+          "hashlife_state": "0e98cc43c5987a60",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 1024,
+          "naive_s": 0.9266046999982791,
+          "hashlife_s": 1.063725499989232,
+          "ratio": 0.8710938113335245,
+          "naive_population": 413,
+          "hashlife_population": 413,
+          "populations_agree": true,
+          "naive_state": "d96b3e8344d33ab0",
+          "hashlife_state": "d96b3e8344d33ab0",
+          "states_agree": true,
+          "samples": 3
+        },
+        {
+          "generations": 4096,
+          "naive_s": 3.927477999997791,
+          "hashlife_s": 1.4152109999995446,
+          "ratio": 2.775189000084832,
+          "naive_population": 434,
+          "hashlife_population": 434,
+          "populations_agree": true,
+          "naive_state": "d951b3914652227d",
+          "hashlife_state": "d951b3914652227d",
+          "states_agree": true,
+          "samples": 3
+        }
+      ],
+      "alpha_hashlife": 0.5315436231845566,
+      "r2_hashlife": 0.9536537068255221,
+      "alpha_naive": 0.9003695077594767,
+      "r2_naive": 0.9969754940668849,
+      "final_ratio": 2.775189000084832,
+      "verdict": "AMBIGUOUS",
+      "populations_agree": true,
+      "states_agree": true,
+      "repetitions_used": 3,
+      "alpha_envelope": [
+        0.4862175443694231,
+        0.5310634948065744
+      ],
+      "verdict_robust": false
+    }
+  ],
+  "organ": {
+    "path": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/scripts/hashlife.py",
+    "sha256": "233303a1354a1d2735b5a8c5371db11a0a765ad65960cccc48dc392f47b74417"
+  },
+  "environment": {
+    "python": "3.13.7",
+    "platform": "Windows-11-10.0.26300-SP0"
+  }
+}

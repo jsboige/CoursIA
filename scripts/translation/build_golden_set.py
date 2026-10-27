@@ -13,7 +13,16 @@ Sortie : translations/translation_golden_set.json
     orphans_en  : fichiers _en sans contrepartie FR visible (a trier)
 
 Usage : python scripts/translation/build_golden_set.py [--check]
-    --check : exit 1 si le JSON commite differe du JSON regenere (drift).
+    --check : exit 1 si le JSON commite differe du JSON regenere (drift),
+              empreintes, orphelins et structure des paires comprises. Garde
+              ADVISORY de la voie rapide (#22216, arbitrage final de la
+              review myia-ai-01 du 2026-10-26) : la derive se SIGNALE sur la
+              PR, elle ne bloque pas. La REGENERATION du JSON vit dans le
+              cron du catalogue (catalog-cron.yml, branche
+              chore/catalog-refresh-pending) -- meme modele que
+              COURSE_CATALOG.generated.* (#19901, regle catalog-pr-hygiene) :
+              un fichier genere appartient au cron, une branche de contenu
+              ne le regenere pas.
 """
 
 from __future__ import annotations
@@ -140,11 +149,11 @@ def collect() -> dict:
     }
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
                     help="verifie que le JSON commite est a jour (pas de drift)")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     data = collect()
 
@@ -155,7 +164,9 @@ def main() -> int:
         current = json.loads(OUTPUT.read_text(encoding="utf-8"))
         if current != data:
             print("GOLDEN-SET DRIFT: le JSON commite ne correspond plus a l'arbre")
-            print("  Regenérer : python scripts/translation/build_golden_set.py")
+            print("  (garde advisory : la derive se signale, elle ne bloque pas)")
+            print("  Regenere chaque nuit par catalog-cron.yml "
+                  "(branche chore/catalog-refresh-pending)")
             return 1
         print(f"GOLDEN-SET OK: {len(data['pairs'])} paires a jour")
         return 0
