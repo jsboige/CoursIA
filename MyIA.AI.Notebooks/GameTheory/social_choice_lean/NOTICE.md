@@ -59,6 +59,21 @@ précédées d'attributs et de modificateurs (`@[...]`, `private`, `protected`,
 comptage qui l'a produit (une re-mesure à grammaire plus stricte donne 23/27, 3/17 et 3/44
 pour `Basic`, `Framework` et `Voting` : lecture inchangée).
 
+La règle exacte, telle qu'elle a produit le tableau ci-dessous (appliquée au code dont les
+commentaires `--` et les blocs `/- … -/` imbriqués sont retirés et les attributs `@[ … ]`
+effacés) :
+
+```
+(?:^|\n)[ \t]*(?:(?:private|protected|noncomputable|partial|unsafe|scoped|local|public)[ \t]+|@\[[^\]\n]*\][ \t]*)*
+(theorem|lemma|def|abbrev|structure|inductive|class|instance)[ \t]+
+([A-Za-z_][\w'!?]*(?:\.[A-Za-z_][\w'!?]*)*)?
+```
+
+Les instances sans nom (`instance : Foo`) sont écartées, faute de nom capturé. Un nom est
+« présent dans l'amont » quand son **dernier composant** figure parmi les 188 noms distincts
+des six fichiers `.lean` de `src/`. Cette règle reproduit les huit lignes du tableau, ce qui
+rend la mesure rejouable en un passage.
+
 | Module canonique | Déclarations | Nom présent dans l'amont | Lecture |
 |---|---|---|---|
 | `Basic.lean` | 29 | **25** | portage de `basic.lean` |
