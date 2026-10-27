@@ -44,6 +44,10 @@ CONVENTIONS DE LECTURE
   aretes.
 - La racine de la taxonomie porte le `path` `0` et un `depth` de `0` : elle
   est la seule exception legitime a la regle `depth == nombre de segments`.
+- La coherence `depth == nombre de segments` est **exacte** : les ecarts
+  admis sont **nommes** (`DEPTH_DEVIATION_ALLOWED`), tout ecart hors table
+  est une anomalie. Une colonne `depth` vide vaut -1 et compte comme un
+  ecart.
 
 Point d'entree :
 
@@ -85,11 +89,19 @@ TARGET_SEPARATOR = ";"
 #: `path` de la racine de la taxonomie (seule exception a la regle de profondeur).
 ROOT_PATH = "0"
 
-#: Tolerance sur l'ecart `depth` / nombre de segments. La copie amont porte
-#: une deviation documentee (PK 824, `path` a 6 segments et `depth` a 7) :
-#: la tolereance laisse passer cette deviation lais rouge une corruption
-#: systematique du CSV, qui en produirait des centaines.
-DEPTH_DEVIATION_TOLERANCE = 0.01
+#: Ecarts `depth` / nombre de segments **admis et nommes**, par cle primaire.
+#: La copie amont porte une deviation documentee (PK 824, `path` a 6 segments
+#: et `depth` a 7) : elle est nommee ici, donc toleree explicitement.
+#:
+#: La table remplace une tolerance en pourcentage : un taux admettrait une
+#: corruption **localisee** -- une famille entiere decalee d'un niveau, le
+#: cas realiste d'une resynchronisation amont -- que seule la corruption de
+#: masse (des centaines de lignes) franchissait. Ici, tout ecart **hors
+#: table** est une anomalie : la coherence doit etre exacte, pas statistique.
+#: La valeur est le `depth` **attendu** : si l'amont corrige l'ecart, la
+#: deviation disparait et l'exception devient sans effet ; s'il la modifie,
+#: l'ecart ne correspond plus a l'attendu et rougit.
+DEPTH_DEVIATION_ALLOWED: dict[str, int] = {"824": 7}
 
 
 # ---------------------------------------------------------------------------
@@ -277,13 +289,20 @@ def structural_profile(
     for row in rows:
         path = (row.get("path") or "").strip()
         raw_depth = (row.get("depth") or "").strip()
-        if not path or path == ROOT_PATH or not raw_depth:
+        if not path or path == ROOT_PATH:
             continue
         segments = len(path.split("."))
-        try:
-            depth = int(raw_depth)
-        except ValueError:
+        if not raw_depth:
+            # Une colonne `depth` vide n'est pas une absence de donnee, c'est
+            # une deviation : elle vaut -1 et elle est comptee comme les
+            # autres. Ignorer la ligne laisserait passer, en vert, une
+            # resynchronisation qui perd la colonne.
             depth = -1
+        else:
+            try:
+                depth = int(raw_depth)
+            except ValueError:
+                depth = -1
         if depth != segments:
             depth_deviations.append(
                 {"PK": (row.get("PK") or "").strip(), "path": path, "depth": depth, "segments": segments}
@@ -346,8 +365,11 @@ def check_invariants(profile: dict[str, Any]) -> list[Invariant]:
     Returns:
         La liste des invariants et leur etat mesure.
     """
-    nodes = profile["nodes"] or 1
-    deviation_rate = len(profile["depth_deviations"]) / nodes
+    unexpected_depth = [
+        deviation
+        for deviation in profile["depth_deviations"]
+        if DEPTH_DEVIATION_ALLOWED.get(deviation["PK"]) != deviation["depth"]
+    ]
     return [
         Invariant(
             "cles_primaires_uniques",
@@ -376,9 +398,10 @@ def check_invariants(profile: dict[str, Any]) -> list[Invariant]:
         ),
         Invariant(
             "profondeur_coherente",
-            deviation_rate <= DEPTH_DEVIATION_TOLERANCE,
-            f"{len(profile['depth_deviations'])} ecart(s) depth/segments "
-            f"({100 * deviation_rate:.2f} %, tolerance {100 * DEPTH_DEVIATION_TOLERANCE:.0f} %)",
+            not unexpected_depth,
+            f"{len(unexpected_depth)} ecart(s) depth/segments hors table nommee "
+            f"({len(profile['depth_deviations'])} ecart(s) au total, "
+            f"{len(DEPTH_DEVIATION_ALLOWED)} admis)",
         ),
     ]
 
@@ -423,12 +446,15 @@ def format_report(profile: dict[str, Any]) -> str:
         f"cibles non resolues   : {len(profile['dangling_targets'])}",
         f"chemins orphelins      : {len(profile['orphan_paths'])}",
         f"boucles directes       : {len(profile['self_loops'])}",
-        f"ecarts depth/segments  : {len(profile['depth_deviations'])}",
+        f"ecarts depth/segments  : {len(profile['depth_deviations'])} "
+        f"({len(DEPTH_DEVIATION_ALLOWED)} admis par la table nommee)",
     ]
     for deviation in profile["depth_deviations"]:
+        admitted = DEPTH_DEVIATION_ALLOWED.get(deviation["PK"]) == deviation["depth"]
+        status = "admis" if admitted else "HORS TABLE"
         lines.append(
             f"    PK {deviation['PK']:<6} path {deviation['path']:<16} "
-            f"depth {deviation['depth']} / {deviation['segments']} segments"
+            f"depth {deviation['depth']} / {deviation['segments']} segments  [{status}]"
         )
     lines += ["", "Invariants", "----------"]
     for invariant in check_invariants(profile):

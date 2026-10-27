@@ -40,13 +40,26 @@ CE QUE CHAQUE TEST ATTRAPE
 4. ``test_absence_boucle_directe`` -- un noeud ne se lie-t-il pas a lui-meme ?
 5. ``test_profondeur_coherente`` -- la colonne `depth` porte-t-elle le
    nombre de segments du `path` ? La copie amont en porte une deviation
-   documentee (PK 824) : la tolerance (1 %) laisse passer cet ecart lais
-   rouge une corruption systematique.
+   documentee (PK 824) : elle est **nommee** dans la table des exceptions
+   admises, et tout ecart **hors table** fait rougir l'invariant. Une
+   colonne `depth` vide compte comme un ecart, pas comme une absence.
 6. ``test_cellule_multi_cibles_decoupee`` -- une cellule portant plusieurs
    cibles separees par `;` donne-t-elle **une arete par cible** ? (40
    cellules de la copie courante.)
 7. ``test_reciprocite_calculee_sur_un_graphe_minimal`` -- la reciprocite
    mesure-t-elle bien une arete inverse, et pas l'arete elle-meme ?
+8. ``test_un_ecart_hors_table_nommee_fait_rougir`` et
+   ``test_un_decalage_de_famille_rouge_le_garde`` -- un ecart `depth`
+   qui n'est pas dans la table des exceptions fait rougir l'invariant.
+   Controle positif, a deux echelles : un ecart isole, et le decalage
+   d'une famille entiere (dix noeuds) -- le cas de panne reel. Une
+   tolerance en pourcentage aurait laisse passer les deux.
+9. ``test_la_colonne_depth_vide_compte_comme_ecart`` -- une colonne `depth`
+   vide est une deviation, pas une ligne ignoree.
+10. ``test_main_rend_1_sur_copie_abimee`` -- le contrat de sortie de `main()`
+   est verifie sur **sa branche rouge** : c'est le seul consommateur de
+   l'organe (CI et pre-commit), et seule une reponse binaire (`0` / `1`)
+   engage ces deux consommateurs.
 
 LES INVARIANTS SONT INDEPENDANTS DU CONTENU
 -------------------------------------------
@@ -71,6 +84,7 @@ Hermetique : stdlib only, aucun acces reseau, aucun appel a git.
 
 from __future__ import annotations
 
+import csv
 import json
 import sys
 from pathlib import Path
@@ -83,6 +97,7 @@ if str(_SCRIPTS) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS))
 
 from fallacy_detection.argumentum_taxonomy_integrity import (  # noqa: E402
+    DEPTH_DEVIATION_ALLOWED,
     ROOT_PATH,
     check_invariants,
     format_report,
@@ -152,10 +167,111 @@ def test_absence_boucle_directe(profile: dict) -> None:
 
 
 def test_profondeur_coherente(profile: dict) -> None:
-    """La colonne `depth` porte le nombre de segments du `path` (aux écarts admis)."""
+    """La colonne `depth` porte le nombre de segments du `path` (aux ecarts admis)."""
     invariants = {inv.name: inv for inv in check_invariants(profile)}
     invariant = invariants["profondeur_coherente"]
     assert invariant.ok, invariant.detail
+
+
+def test_l_ecart_de_la_copie_locale_est_admis_par_nom(profile: dict) -> None:
+    """Chaque ecart mesure sur la copie locale est admis par la table nommee.
+
+    Le sens teste est le seul sur : une table d'exceptions ne peut pas
+    finir par couvrir plus que l'ecart qu'elle nomme. Le sens inverse
+    (une table devenue inutile parce que l'amont a corrige l'ecart)
+    rougirait sur une copie saine, et n'est donc pas exige ici.
+    """
+    for deviation in profile["depth_deviations"]:
+        assert DEPTH_DEVIATION_ALLOWED.get(deviation["PK"]) == deviation["depth"], (
+            f"ecart non admis : PK {deviation['PK']} depth {deviation['depth']}"
+        )
+
+
+def test_un_decalage_de_famille_rouge_le_garde(rows: list[dict[str, str]]) -> None:
+    """Controle a l'echelle reelle : decaler une famille entiere fait rougir.
+
+    C'est le cas de panne que ce module existe pour attraper : une
+    resynchronisation amont qui decale le `depth` de toute une famille.
+    Sous l'ancien contrat (tolerance de 1 %), ce decalage de dix noeuds
+    sur 1 408 restait **vert** -- 0,78 % d'ecarts, sous le seuil. La table
+    nommee le fait rougir, comme elle doit : la coherence est exacte hors
+    table, pas statistique.
+    """
+    corrupted: list[dict[str, str]] = []
+    shifted: list[str] = []
+    for row in rows:
+        copy = dict(row)
+        raw = (copy.get("depth") or "").strip()
+        path = (copy.get("path") or "").strip()
+        pk = (copy.get("PK") or "").strip()
+        if (
+            len(shifted) < 10
+            and path != ROOT_PATH
+            and raw.isdigit()
+            and pk not in DEPTH_DEVIATION_ALLOWED
+        ):
+            copy["depth"] = str(int(raw) + 1)
+            shifted.append(pk)
+        corrupted.append(copy)
+    assert len(shifted) == 10, "la copie locale ne fournit pas dix noeuds a decaler"
+    invariants = {inv.name: inv for inv in check_invariants(structural_profile(corrupted))}
+    assert not invariants["profondeur_coherente"].ok, (
+        "un decalage de famille doit rougir l'invariant de profondeur"
+    )
+
+
+def test_un_ecart_hors_table_nommee_fait_rougir() -> None:
+    """Controle positif : un ecart non declare fait rougir l'invariant.
+
+    Une tolerance en pourcentage -- l'ancien contrat -- aurait laisse
+    passer cet ecart : le taux ne protegeait que la corruption de masse.
+    Ici, la coherence est exacte hors table.
+    """
+    rows = [
+        {"PK": "0", "path": ROOT_PATH, "depth": "0"},
+        {"PK": "1", "path": "1", "depth": "1"},
+        {"PK": "2", "path": "1.1", "depth": "5"},
+    ]
+    invariants = {inv.name: inv for inv in check_invariants(structural_profile(rows))}
+    invariant = invariants["profondeur_coherente"]
+    assert not invariant.ok, "un ecart depth hors table doit rougir l'invariant"
+
+
+def test_un_ecart_nomme_ne_couvre_que_la_valeur_attendue() -> None:
+    """Une exception declaree ne couvre que la valeur de `depth` attendue.
+
+    Si l'amont change la valeur de l'ecart, l'exception ne couvre plus
+    rien : l'ecart doit rougir.
+    """
+    pk = next(iter(DEPTH_DEVIATION_ALLOWED))
+    expected = DEPTH_DEVIATION_ALLOWED[pk]
+    rows = [
+        {"PK": "0", "path": ROOT_PATH, "depth": "0"},
+        {"PK": pk, "path": "1.1", "depth": str(expected + 1)},
+    ]
+    invariants = {inv.name: inv for inv in check_invariants(structural_profile(rows))}
+    assert not invariants["profondeur_coherente"].ok, (
+        "une exception doit couvrir une valeur de depth, pas la cle seule"
+    )
+
+
+def test_la_colonne_depth_vide_compte_comme_ecart() -> None:
+    """Une colonne `depth` vide est une deviation, pas une ligne ignoree.
+
+    Ignorer la ligne laissait passer, en vert, une resynchronisation amont
+    qui perd la colonne.
+    """
+    rows = [
+        {"PK": "0", "path": ROOT_PATH, "depth": "0"},
+        {"PK": "1", "path": "1", "depth": "1"},
+        {"PK": "2", "path": "1.1", "depth": ""},
+    ]
+    profile = structural_profile(rows)
+    deviations = {deviation["PK"]: deviation for deviation in profile["depth_deviations"]}
+    assert "2" in deviations, "une colonne depth vide doit produire un ecart"
+    assert deviations["2"]["depth"] == -1
+    invariants = {inv.name: inv for inv in check_invariants(profile)}
+    assert not invariants["profondeur_coherente"].ok
 
 
 def test_cellule_multi_cibles_decoupee() -> None:
@@ -249,3 +365,27 @@ def test_sortie_json_expose_les_invariants(capsys: pytest.CaptureFixture[str]) -
         "absence_boucle_directe",
         "profondeur_coherente",
     }
+
+
+def test_main_rend_1_sur_copie_abimee(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Le contrat de sortie de `main()` est verifie sur **sa branche rouge**.
+
+    `main` rend 0 quand tous les invariants tiennent, 1 sinon : c'est le
+    seul contrat de l'organe pour ses consommateurs (CI et pre-commit).
+    Aucun autre test ne passait par cette branche : une regression qui
+    transformerait le `return 0 if ... else 1` en `return 0` laisserait
+    tous les autres tests verts et l'organe aveugle.
+    """
+    broken = tmp_path / "taxonomie_abimee.csv"
+    with broken.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["PK", "path", "depth", "crossLink_Leverages"])
+        writer.writerow(["0", ROOT_PATH, "0", ""])
+        writer.writerow(["1", "1", "1", "9.9"])
+        writer.writerow(["2", "2.1", "2", ""])
+    code = main(["--csv", str(broken)])
+    capsys.readouterr()
+    assert code == 1, "une copie abimee doit faire sortir l'organe en 1"
