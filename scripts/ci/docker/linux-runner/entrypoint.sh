@@ -360,6 +360,22 @@ if mirror_present; then
     [ -e "$gitdir" ] || continue
     mirror_ensure_alternates "${gitdir%/.git}"
   done
+  # Alternates par l'ENVIRONNEMENT, pas seulement par le fichier (mission ai-01
+  # 26/10, #18225) : le fichier objects/info/alternates pose ci-dessus ne survit
+  # pas au reclone/nettoyage du repo de job par actions/checkout -- mesure :
+  # fichier efface sans env => `fatal: bad object HEAD`. L'env est lue par TOUT
+  # git fils du processus runner (jobs compris), remplace le fichier disparu
+  # (mesure : log resolve, fichier efface + env posee), et couvre aussi le repo
+  # FRAIS d'un slot froid que le semis n'a pas encore touche. La sonde
+  # mirror_present est OBLIGATOIRE : un chemin d'alternates absent n'est PAS
+  # ignore silencieusement -- chaque operation git rend
+  # `unable to normalize alternate object path` puis `fatal: bad object HEAD`
+  # (mesure) -- donc sans elle, un hote sans miroir casserait tout le parc au
+  # lieu de lui etre transparent. Fail-open conserve : miroir absent => pas
+  # d'export, comportement d'avant #18225.
+  GIT_ALTERNATE_OBJECT_DIRECTORIES="$MIRROR_PATH/objects${GIT_ALTERNATE_OBJECT_DIRECTORIES:+:$GIT_ALTERNATE_OBJECT_DIRECTORIES}"
+  export GIT_ALTERNATE_OBJECT_DIRECTORIES
+  echo "entrypoint: GIT_ALTERNATE_OBJECT_DIRECTORIES=$MIRROR_PATH/objects exporte au processus runner"
   mirror_seed_work
 else
   # Miroir absent : retirer les lignes qui le designent (slot seme avant sa
