@@ -2,6 +2,8 @@
 
 > **Statut v4 (2026-10-25, lane `myia-po-2025:CoursIA`) : tranche 3 CLOSE PAR LE VERDICT — les lignes de classe E portent désormais une note mesurée, aucune ne garde la note d'attente.** Mesure de ce cycle : `git ls-remote --heads origin` rend **2027 têtes**, dont **29** sont des branches classe E survivantes ; les **111** autres ont disparu du remote sans geste de la flotte. Les 29 sont réparties en **21 `superseded`** (contenu déjà sur `main`, preuve au symbole près), **5 `delivered`** (la pépite Lean Grothendieck, PR #21814 mergée le 2026-10-22), **2 `keep`** (travail en cours et contrôle négatif délibéré), **1 `arbitration_pending`** (`fix/11823`). Les sha du manifeste sont restés valides : **0 divergence** entre le sha enregistré et la tête distante des 29. Détail en [« Tranche 3 — verdicts »](#tranche-3--verdicts-des-lignes-de-classe-e-v4). **Aucune suppression n'est faite par cette version** : les 21 candidates attendent le feu vert du coordinateur, et chaque ligne porte sa preuve pour que le geste soit relisible.
 >
+> **Correctif mesuré le 2026-10-27 (lane `myia-po-2025:CoursIA`) : les cinq branches `delivered` ont disparu du remote depuis le verdict — le partage courant est 24 présentes / 116 absentes, pas 29 / 111.** `groth-p47-covers-extremal`, `groth-p48-covers-of-pretopology`, `groth-p49-covers-ynp`, `groth-p50-covers-coverpreserving` et `groth-p51-covers-coverpreserving-laws` rendent `404` sur `repos/jsboige/CoursIA/branches/<nom>` **et** sont absentes de `git ls-remote --heads origin` (deux instruments indépendants) : la PR #21814 a supprimé sa branche source au merge du 2026-10-22. Le jeton `delivered_2026-10-22_tranche3` reste l'état **de la tranche** — il documente une décision de lecture, et le réécrire effacerait la trace de ce qui a été jugé ; mais pour le partage **d'aujourd'hui**, ces cinq lignes se lisent avec les disparues. Conséquence sur la mesure de restauration : « sha enregistré = tête distante » a été vérifié sur les 29 branches alors présentes, et porte aujourd'hui sur les 24 encore joignables — les cinq autres n'ont plus de tête à comparer, pas une tête divergente.
+>
 > **Statut v3 (2026-10-12, lane `myia-po-2025:CoursIA`) : tranche 2 CLOSE PAR ATTRITION — les 622 branches classe C restantes du manifeste v2 sont absentes du remote (mesure `git ls-remote --heads` du 2026-10-12, 4566 têtes totales ; jointure manifeste × remote = 0 survivante, contrôles positifs cités sur l'issue). Marquées `vanished_2026-10-12_tranche2_attrition`, sha préservé — restauration possible ligne par ligne.**
 >
 > **Statut v2 (2026-10-06, cycle 31) : manifeste v2, 204 branches classe C supprimees effective (tranche 2, lane `myia-po-2024:CoursIA-2`).
@@ -59,6 +61,8 @@ Une note s'écrit `<jeton>_<date>_<tranche>[ -- <preuve>]`. Le jeton dit ce que 
 
 Mesure du 2026-10-25 : `git ls-remote --heads origin` rend **2027 têtes** ; jointure avec les lignes de classe E du manifeste = **29 survivantes**. Le sha enregistré et la tête distante coïncident sur **29/29** : les ancres de restauration sont intactes.
 
+**Re-mesure du 2026-10-27 : 24 survivantes, 5 disparues depuis.** Les cinq branches du jeton `delivered` ont été supprimées du remote par le merge de leur propre PR (source branch supprimée le 2026-10-22) : `404` sur les deux instruments, cf. correctif en tête de document. Le tableau ci-dessous reste l'état **de la tranche** — les jetons ne sont pas réécrits — et la jointure courante se lit donc `24 présentes / 116 absentes`. La comparaison sha ↔ tête distante porte aujourd'hui sur les 24 joignables.
+
 | Verdict | Nb |
 |---|---:|
 | `superseded_2026-10-21_tranche3` (suppression candidate) | 21 |
@@ -106,9 +110,13 @@ Chacune porte dans le manifeste la preuve qui l'établit ; la colonne de droite 
 - `feature/runner-positive-control` — contrôle **négatif délibéré** (`exit 42`) du gate `windows-self-hosted-tests`. Le supprimer retirerait un témoin qui doit pouvoir échouer : décision du propriétaire du gate, pas de cette lane.
 - `fix/11823-update-branch` — delta **re-mesuré le 2026-10-27** (la formule de cette ligne n'était qu'une lecture, pas une mesure). Le delta fonctionnel est bien **une expression dans une seule cellule de code** : `reward = portfolio_return - 0.5 * (portfolio_return ** 2)` devient `... - 0.5 * abs(portfolio_return)`. Les cellules touchées sont cette expression, la cellule de code qui la porte, la prose et l'énoncé d'exercice qui doivent la décrire, une cellule de navigation et deux `***` → `---` sans effet. Deux mesures changent la décision. (a) La cellule de navigation porte encore `QC-Py-Cloud-04` et renvoie à `Cloud-04-MeanReversion` / `Cloud-05-MLP-Forecasting`, alors que `main` a renommé ce carnet en `QC-Py-Cloud-10` et le fait voisiner `Cloud-09-OptionWheel` (#14082) : livrer la branche telle quelle **annulerait ce renommage**, elle doit d'abord être rebasée sur le nouveau chemin. (b) L'écart n'est pas cosmétique : pour `|r| < 1`, la branche vaut `r - 0.5*|r|` contre `r - 0.5*r^2` sur `main`, soit `0,5*|r|*(1-|r|)` de récompense en moins — à `|r| = 1 %`, elle ne garde que 50,3 % de celle de `main` (0,005 contre 0,00995). Le signal d'entraînement change, donc la livraison demande un backtest QC et non un `update-branch` : soit la formule est livrée avec son backtest, soit la branche rejoint les candidates en écrivant que le delta est abandonné.
 
-### Les 111 disparues par attrition
+### Les disparues par attrition (111 au verdict, 5 de plus depuis)
 
-Absentes de `git ls-remote --heads origin` au 2026-10-25, sans geste de la flotte : elles ne se lisent plus et ne se suppriment pas (il n'y a plus rien à supprimer). Leur sha reste dans le manifeste comme ancre de restauration. Pour les lister :
+Absentes de `git ls-remote --heads origin` au 2026-10-25, sans geste de la flotte : elles ne se lisent plus et ne se suppriment pas (il n'y a plus rien à supprimer). Leur sha reste dans le manifeste comme ancre de restauration.
+
+S'y ajoutent depuis le 2026-10-27 les cinq branches du jeton `delivered` (`groth-p47-covers-extremal` à `groth-p51-covers-coverpreserving-laws`), retirées du remote par le merge de #21814. Elles ne relèvent pas de l'attrition mais du même résultat opérationnel : plus de tête distante à comparer, plus rien à supprimer. Leur jeton n'est pas réécrit — il date une décision de lecture, pas un état courant.
+
+Pour les lister :
 
 ```bash
 gunzip -c docs/reference/branch-cleanup-manifest.tsv.gz \
