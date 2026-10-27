@@ -400,7 +400,14 @@ def validate_bne(
             dist = marg_k[t_k]
             current = float(np.dot(dist, [cond[a] for a in actions_k]))
             best = max(cond, key=cond.get)
-            regret = float(max(cond.values()) - current)
+            # `best` et `regret` se lisent sur la MEME entree de la table : le
+            # regret est le surcroit de `cond[best]` sur le gain courant.
+            # Calculer le regret par un `max` separe sur les valeurs donnait
+            # deux derivations qui ne divergent qu'en silence (review NanoClaw
+            # de #22615). En cas d'egalite entre actions, `max` rend la premiere
+            # dans l'ordre de `actions_k` : le choix est deterministe, et le
+            # regret vaut 0 pour cette action comme pour toute autre ex aequo.
+            regret = float(cond[best] - current)
             max_regret = max(max_regret, regret)
             reports.append(
                 TypeReport(

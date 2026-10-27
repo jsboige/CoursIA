@@ -325,6 +325,49 @@ class TestDiscriminatingInstance:
             assert rc.regret == pytest.approx(ri.regret)
             assert rc.conditional_payoffs == pytest.approx(ri.conditional_payoffs)
 
+    def test_regret_reads_the_same_entry_as_best_response(self, corr_game):
+        """Invariant d'ordre (review NanoClaw de #22615) : `regret` et
+        `best_response` doivent se lire sur la MEME entree de la table.
+
+        Le regret etait calcule par un `max` separe sur les valeurs, alors que
+        `best_response` vient d'un argmax sur les cles : deux derivations de la
+        meme grandeur, qui ne divergent qu'en silence si la table change de
+        forme. Le test reconstruit l'invariant depuis le rapport public et
+        verifie les deux proprietes qui le rendent vrai — coherence exacte, et
+        `best_response` est bien un argmax.
+        """
+        form = be.to_strategic_form(corr_game)
+        for s1, s2 in (
+            (np.array([0.5, 0.0, 0.0, 0.5]), np.array([0.5, 0.0, 0.0, 0.5])),
+            (np.full(4, 0.25), np.full(4, 0.25)),
+            (np.array([1.0, 0.0, 0.0, 0.0]), np.array([0.0, 0.0, 0.0, 1.0])),
+        ):
+            report = be.validate_bne(corr_game, form, s1, s2)
+            for tr in report.reports:
+                cond = tr.conditional_payoffs
+                assert tr.best_response in cond
+                # coherence exacte entre les deux champs du rapport
+                assert tr.regret == pytest.approx(
+                    cond[tr.best_response] - tr.current_payoff
+                )
+                # et `best_response` est bien un argmax de la table
+                assert cond[tr.best_response] == pytest.approx(max(cond.values()))
+
+    def test_validator_is_deterministic_on_ties(self, corr_game):
+        """Sur une table a egalite, le choix de `best_response` ne doit pas
+        dependre d'un ordre d'insertion non maitrise : deux appels sur la meme
+        entree rendent le meme rapport, champ pour champ."""
+        form = be.to_strategic_form(corr_game)
+        s = np.array([0.5, 0.0, 0.0, 0.5])
+        r1 = be.validate_bne(corr_game, form, s, s)
+        r2 = be.validate_bne(corr_game, form, s, s)
+        assert len(r1.reports) == len(r2.reports)
+        for a, b in zip(r1.reports, r2.reports):
+            assert (a.player, a.type) == (b.player, b.type)
+            assert a.best_response == b.best_response
+            assert a.regret == b.regret
+            assert a.conditional_payoffs == b.conditional_payoffs
+
 
 # ---------------------------------------------------------------------------
 # 8-9. BoS natif rejoue (critere 5)

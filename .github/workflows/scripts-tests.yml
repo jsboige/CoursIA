@@ -430,6 +430,13 @@ jobs:
           # Origami). Without it the suite fails on ModuleNotFoundError
           # instead of exercising the service core.
           pip install z3-solver
+          # nashpy: MyIA.AI.Notebooks/GameTheory/tests/test_bayesian_equilibria.py
+          # (#22382) imports it at module level. `gametheory-tests.yml` l'installe,
+          # mais CE job collecte aussi MyIA.AI.Notebooks/GameTheory/tests : sans
+          # le paquet, une seule erreur de collecte fait echouer les 21098 tests
+          # verts du run (mesure du 2026-10-27, run 40489527870 :
+          # "1 error in 750.75s" -> Scripts Tests rouge -> PR gate rouge).
+          pip install nashpy
           # pytest-xdist: this job's 13 suites run in parallel (-n 4) below.
           # Not a speed nicety -- the sequential run is what makes this job
           # unschedulable on half the pool. Over 68 `Scripts Tests (CPU)` jobs,
