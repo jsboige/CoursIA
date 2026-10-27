@@ -196,3 +196,83 @@ def test_cli_mesure_illisible_sort_en_1(monkeypatch, capsys):
     rc = ctl.main(["--repo", "jsboige/CoursIA", "--json"])
     assert rc == ctl.EXIT_UNREADABLE
     assert json.loads(capsys.readouterr().out)["verdict"] == "UNREADABLE"
+
+
+# --- Jeton d'inventaire des runners (point ai-01 du 2026-10-27, 14:27Z) -----
+#
+# `github.token` ne porte pas le droit de lire `/actions/runners` : sans le
+# secret read-only `RUNNERS_READ_PAT` que six workflows freres exposent deja,
+# chaque passage du workflow planifie rendait UNREADABLE. Ces tests fixent les
+# trois comportements : jeton dedie utilise, repli sur le jeton courant en
+# local, et cause NOMMEE quand aucun ne donne le droit.
+
+def _inventory_unavailable(reason: str = "HTTP 403: Resource not accessible"):
+    return ctl.crs.InventoryUnavailable(reason=reason)
+
+
+def test_collect_local_lit_l_inventaire_avec_le_jeton_dedie(monkeypatch):
+    seen = {}
+
+    def fake_inventory(repo, label, token):
+        seen["token"] = token
+        return ctl.crs.RunnerInventory(online=["slot-1"], idle=["slot-1"])
+
+    monkeypatch.setattr(ctl.crs, "fetch_inventory", fake_inventory)
+    sample = ctl.collect_local(
+        "jsboige/CoursIA", 15.0, 40, NOW, "ghs_workflow",
+        measure_starvation=False, runners_token="pat-runners",
+    )
+    assert seen["token"] == "pat-runners"
+    assert sample.complete is True and sample.free == 1
+
+
+def test_collect_local_sans_jeton_dedie_retombe_sur_le_jeton_courant(monkeypatch):
+    # L'operateur en local presente un jeton qui a le droit : ne pas exiger le
+    # secret du depot dans ce cas (aucune regression de la commande locale).
+    seen = {}
+
+    def fake_inventory(repo, label, token):
+        seen["token"] = token
+        return ctl.crs.RunnerInventory(online=["slot-1"], idle=["slot-1"])
+
+    monkeypatch.setattr(ctl.crs, "fetch_inventory", fake_inventory)
+    sample = ctl.collect_local(
+        "jsboige/CoursIA", 15.0, 40, NOW, "jsboige-token",
+        measure_starvation=False,
+    )
+    assert seen["token"] == "jsboige-token"
+    assert sample.complete is True
+
+
+def test_collect_local_sans_jeton_dedie_nomme_la_cause(monkeypatch):
+    monkeypatch.setattr(
+        ctl.crs, "fetch_inventory",
+        lambda repo, label, token: _inventory_unavailable(),
+    )
+    sample = ctl.collect_local(
+        "jsboige/CoursIA", 15.0, 40, NOW, "ghs_workflow",
+        measure_starvation=False,
+    )
+    assert sample.complete is False
+    assert "RUNNERS_READ_PAT" in sample.reason
+    assert "jeton d'inventaire des runners absent" in sample.reason
+
+
+def test_cli_sans_jeton_d_inventaire_sort_unreadable_nomme(monkeypatch, capsys):
+    # Le point du coordinateur : jamais un OK par defaut quand l'inventaire du
+    # parc est illisible faute de jeton.
+    _env(monkeypatch)
+    monkeypatch.delenv("RUNNERS_READ_PAT", raising=False)
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
+    monkeypatch.setattr(
+        ctl.crs, "fetch_inventory",
+        lambda repo, label, token: _inventory_unavailable(),
+    )
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--json"])
+    assert rc == ctl.EXIT_UNREADABLE
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] == "UNREADABLE"
+    assert "RUNNERS_READ_PAT" in report["reason"]
+    assert report["written"] is False

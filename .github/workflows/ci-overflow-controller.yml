@@ -95,6 +95,15 @@ jobs:
       - name: Verdict (lecture seule)
         env:
           GH_TOKEN: ${{ github.token }}
+          # `github.token` ne porte PAS le droit de LIRE `actions/runners`
+          # (aucune portee de `permissions:` ne le donne). L'inventaire du
+          # parc se lit avec le secret read-only que six workflows freres
+          # exposent deja (`Administration:read`, incapable de minter un
+          # registration-token, par design) -- meme forme, meme nom, memes
+          # deux variables : linux-runner-starvation-advisory.yml:107-109.
+          # Secret absent -> l'organe rend UNREADABLE et NOMME la cause ; il
+          # n'ecrit rien et ne fabrique aucun vert.
+          RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
         run: |
           set +e
           python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA --json > verdict.json

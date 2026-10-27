@@ -37,6 +37,15 @@ par commande :
 
 Sans jeton, l'organe rend `REFUSED` et **n'ecrit rien**.
 
+Jeton d'inventaire du parc : `github.token` ne porte PAS le droit de lire
+`/actions/runners` (aucune portee de `permissions:` ne le donne). L'organe lit
+donc l'inventaire avec le jeton dedie `RUNNERS_READ_PAT` (secret read-only
+`Administration:read`, deja consomme par six workflows du depot -- cf
+[`linux-runner-starvation-advisory.yml`]), et retombe sur le jeton courant
+quand il est absent (operateur en local). Sans l'un ni l'autre, la mesure
+locale est illisible, le verdict vaut `UNREADABLE` et la raison NOMME le jeton
+manquant : jamais un `OK` par defaut. Option : `--runners-token-env`.
+
 Usage :
 
     # lecture seule, verdict seul (defaut : dry-run)
@@ -350,15 +359,32 @@ def collect_local(
     now: datetime,
     token: str | None,
     measure_starvation: bool = True,
+    runners_token: str | None = None,
 ) -> LocalSample:
-    """Mesure le parc local : slots libres, et affames si demande."""
+    """Mesure le parc local : slots libres, et affames si demande.
+
+    L'inventaire (`/actions/runners`) exige un droit que `github.token` ne
+    porte PAS : aucune portee de `permissions:` ne le donne (seul un jeton
+    d'administration le porte). Il se lit donc avec le jeton dedie
+    (`RUNNERS_READ_PAT`, secret read-only `Administration:read`, deja consomme
+    par six workflows du depot), et retombe sur le jeton courant quand aucun
+    jeton dedie n'est fourni -- le cas d'un operateur en local, dont le jeton
+    a le droit.
+
+    Sans jeton dedie ET sans droit, la mesure est ILLISIBLE et la raison le
+    NOMME : le verdict reste `UNREADABLE`, jamais un `OK` par defaut.
+    """
     if token:
         os.environ["GH_TOKEN"] = token
-    inv = crs.fetch_inventory(repo, LOCAL_LABEL, token)
+    inv = crs.fetch_inventory(repo, LOCAL_LABEL, runners_token or token)
     if not inv.available:
-        return LocalSample(
-            complete=False, reason=inv.reason or "inventaire des runners illisible"
-        )
+        reason = inv.reason or "inventaire des runners illisible"
+        if not runners_token:
+            reason = (
+                "jeton d'inventaire des runners absent (RUNNERS_READ_PAT) et "
+                f"jeton courant sans droit sur actions/runners -- {reason}"
+            )
+        return LocalSample(complete=False, reason=reason)
     starved = 0
     if measure_starvation:
         starv = crs.fetch_starvation(
@@ -403,6 +429,16 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--drain-jobs", type=int, default=DEFAULT_DRAIN_JOBS)
     parser.add_argument("--min-free-slots", type=int, default=DEFAULT_MIN_FREE_SLOTS)
     parser.add_argument("--dwell-minutes", type=float, default=DEFAULT_DWELL_MINUTES)
+    parser.add_argument(
+        "--runners-token-env",
+        default="RUNNERS_READ_PAT",
+        metavar="VAR",
+        help=(
+            "variable d'environnement du jeton d'inventaire des runners "
+            "(defaut RUNNERS_READ_PAT, secret read-only du depot ; vide = "
+            "jeton courant, le cas d'un operateur en local)"
+        ),
+    )
     parser.add_argument("--job-budget", type=int, default=crs.DEFAULT_JOB_READ_BUDGET)
     parser.add_argument("--local-job-budget", type=int, default=40)
     parser.add_argument(
@@ -461,6 +497,7 @@ def main(argv: list[str] | None = None) -> int:
         now,
         token,
         measure_starvation=not args.no_local_starvation,
+        runners_token=os.environ.get(args.runners_token_env) or None,
     )
 
     decision = evaluate(

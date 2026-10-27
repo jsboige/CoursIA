@@ -41,6 +41,14 @@ python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA --apply --jso
 
 Codes de retour : `0` nominal (HOLD ou bascule), `1` mesure illisible (`UNREADABLE`), `2` refus (`REFUSED` : jeton absent ou droit insuffisant).
 
+## Jeton d'inventaire du parc (`RUNNERS_READ_PAT`)
+
+`github.token` **ne porte pas** le droit de lire `/actions/runners` : aucune portee de `permissions:` ne le donne (la lecture d'inventaire exige un jeton d'administration). Le workflow expose donc `RUNNERS_READ_PAT` a cote de `GH_TOKEN`, **exactement la forme des six workflows freres** (`linux-runner-starvation-advisory.yml:107-109`, `coursia-waiter-starvation-advisory.yml:89`, `runner-starvation-advisory.yml:115`, `runner-coresidence-advisory.yml:97`, `quarto-pages-deploy.yml:149`) : secret de depot **read-only** (`Administration:read`, incapable de minter un registration-token, par design). L'organe accepte un jeton dedie via `--runners-token-env` (defaut `RUNNERS_READ_PAT`).
+
+Cet usage ne contredit pas l'arbitrage (b) : il **n'ecrit rien** et ne porte aucun droit d'ecriture -- c'est le jeton d'ecriture de la variable (`ACTIONS_VARIABLES_PAT`) qui est refuse dans Actions.
+
+En **local**, l'operateur n'a rien a poser : le jeton `jsboige` a le droit sur l'inventaire, et l'organe retombe sur le jeton courant quand aucun jeton dedie n'est present. **Secret absent** : le verdict vaut `UNREADABLE` et la raison nomme « jeton d'inventaire des runners absent (RUNNERS_READ_PAT) » -- jamais un `OK` par defaut (test `test_cli_sans_jeton_d_inventaire_sort_unreadable_nomme`).
+
 ## Qui ecrit — arbitrage (b) du coordinateur (c.6441695482, 27/10)
 
 **Le workflow automatise ne bascule rien : il rend un verdict, en lecture seule.** Aucun secret `ACTIONS_VARIABLES_PAT` n'est pose dans Actions, et la portee `variables` **n'existe pas** dans la liste des portees admises sous `permissions:` (reference de syntaxe des workflows GitHub : actions, attestations, checks, contents, deployments, discussions, id-token, issues, packages, pages, pull-requests, security-events, statuses). Une cle hors liste rend le fichier entier invalide : la porter ici aurait suffi a empecher le workflow de demarrer. Les portees du job sont donc `actions: read` + `contents: read`, et la seule voie qui pourrait ecrire reste un jeton a effet de bord dans le depot, refusee par l'arbitrage.
