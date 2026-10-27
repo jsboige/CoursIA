@@ -15,6 +15,12 @@ paths: MyIA.AI.Notebooks/GenAI/**/*
 - Hook `block-secrets.py` bloque les `.env` — demander au user d'éditer manuellement
 - Sécurisation des services exposés (audit + plan, #16) : [docs/transients/2026-06-14-genai-service-security-audit.md](../../docs/transients/2026-06-14-genai-service-security-audit.md)
 
+## Cibles de chat des carnets
+
+Consigne du mainteneur suivie par #22783 : aucune exécution de chat ne cible un modèle obsolète. Avant migration, classer l'occurrence en **EXECUTION**, **DOCUMENTATION** ou **SPECIFIQUE** ; ne jamais remplacer globalement une famille de noms. La cible par défaut est Swift via vLLM ; un repli vers le modèle courant du mapping est annoncé explicitement, jamais silencieux. Les sorties réelles nomment le modèle utilisé ; changer la cible implique une réexécution complète, pas une retouche des sorties.
+
+Les citations historiques restent possibles avec obsolescence et cible recommandée explicites. Les modèles TTS, transcription et embeddings sont hors de cette migration de chat ; un carnet Audio qui appelle une API de chat n'en est pas exempté. Routes locales/distantes, alias servi et procédure : [mapping des modèles](../../docs/genai/model-mapping-openai.md#politique-dexécution-du-chat).
+
 ## ComfyUI Qwen — Architecture critique (Phase 29)
 
 Diffère du SDXL standard. À ne PAS modifier sans test :

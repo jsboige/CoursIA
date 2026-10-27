@@ -2265,6 +2265,83 @@ TRANCHE25: list[Guard] = [
     ),
 ]
 
+# ---------------------------------------------------------------------------
+# TRANCHE 26 (#22009) -- le golden set de traduction ne derive plus en silence.
+#
+# `scripts/translation/build_golden_set.py --check` compare le JSON commite
+# (`translations/translation_golden_set.json`) a ce que l'arbre produit. Le
+# mode existait depuis l'origine et **aucun workflow ne l'appelait** : mesure
+# du 2026-10-22 sur un worktree detache de `origin/main`, `--check` rendait
+# deja rc=1 (57 paires du JSON absentes de l'arbre, 79 de l'arbre absentes du
+# JSON). Chaque merge qui ajoute ou retire une paire FR/EN laissait donc
+# deriver le fichier, et la derive ne se voyait qu'au moment ou une PR le
+# regenerait -- en l'absorbant dans un diff sans rapport (#22008, 22 paires).
+#
+# Garde NATIF : aucun workflow d'origine, c'est precisement le defaut.
+#
+# ARBITRAGE #22216, forme FINALE (review myia-ai-01 du 2026-10-26, demandes
+# 1 + 2) : la garde est ADVISORY pure, et la REGENERATION du JSON vit dans
+# le cron du catalogue (`catalog-cron.yml`, branche chore/catalog-refresh-
+# pending) -- meme modele que COURSE_CATALOG.generated.* et `_quarto.yml`
+# (#19901, regle catalog-pr-hygiene) : un fichier genere appartient au cron,
+# une branche de contenu ne le regenere pas. Le `--check` integral en
+# BLOQUANT rougissait toute PR qui edite l'un des ~966 fichiers apparies
+# sans regenerer le JSON -- chaque preuve Lean d'un lake bilingue et chaque
+# retouche de README pair aurait paye un rouge, une regeneration et un
+# re-push, sans aucun gain de traduction (la regeneration prend acte de
+# l'ecart, elle ne traduit pas), et des PRs paralleles regenerant le meme
+# fichier genere seraient entrees en conflit.
+#
+# Une forme intermediaire « structure-seule bloquante » (`--check-structure`,
+# deux jambes) a ete implantee sur cette branche (45d95416da0) puis RETIREE :
+# meme limitee aux paires (kind, fr, en), elle exigeait la regeneration SUR
+# BRANCHE du fichier genere a chaque paire ajoutee ou retiree -- exactement
+# le geste que catalog-pr-hygiene interdit pour le catalogue, et la source
+# des conflits entre PRs paralleles que la review ecarte. Aucun autre organe
+# ne couvre la fraicheur de cet INDEX (lean-i18n-drift.yml = parite de
+# CONTENU Lean au diff ; twin-parity-guard = parite de CONTENU des jumeaux
+# au diff ; translation-parity.yml = schedule seul) -- mais la derive de
+# structure reste SIGNALEE ici (advisory, `--check` integral) et RESORBEE
+# par le cron (< 24 h) : rien ne redevient silencieux.
+#
+# Codes de retour : 0 = a jour, 1 = derive (empreintes, orphelins et
+# structure compris).
+#
+# Cout mesure : **~1,0 s** sur l'arbre complet (483 paires, 3 familles), donc
+# la voie rapide -- qui paie deja son checkout -- le porte sans surcout
+# appreciable. C'est ce qui tranche la question laissee ouverte par l'issue
+# (« registre si le cout le permet, sinon job dedie »).
+#
+# `paths` : ce sont les fichiers dont la presence ou le contenu deplace une
+# paire ou derive une empreinte. Les trois extensions appariables sont la
+# (un `Foo.ipynb` ajoute a cote d'un `Foo_en.ipynb` existant CREE une paire),
+# plus le JSON lui-meme, le script et son registre.
+#
+# Pas de `needs_base` : le verdict compare l'arbre au JSON **commite**, pas
+# HEAD a la base. `diff_bounded` reste False -- une derive peut entrer par
+# n'importe quel merge et heriter d'un rouge, donc un rouge ne s'attribue
+# pas d'office a la PR qui le porte (c'est l'issue #22009 elle-meme : la
+# derive etait anterieure a la PR qui l'a constatee). Advisory + cron : le
+# rouge herite ne bloque personne, le cron le resorbe.
+# ---------------------------------------------------------------------------
+TRANCHE26: list[Guard] = [
+    Guard(
+        name="translation-golden-set-drift (advisory, non-blocking)",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            "**/*.ipynb",
+            "**/*.lean",
+            "**/*.md",
+            "translations/translation_golden_set.json",
+            "scripts/translation/build_golden_set.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=["python", "scripts/translation/build_golden_set.py", "--check"],
+        blocking=False,
+        absorbed=True,
+    ),
+]
 
 # ---------------------------------------------------------------------------
 # TRANCHE 27 -- absorption des advisories label-posers de la tranche 1 #22209
@@ -2370,5 +2447,52 @@ TRANCHE27: list[Guard] = [
         iterates_paths=True,
         absorbed=True,
         warn_rc=(2,),
+    ),
+]
+
+
+# ---------------------------------------------------------------------------
+# TRANCHE 28 -- epingle DWELL regle <-> doc de detail (#22279).
+#
+# Defaut ferme : #21808 (f2833def99) a deporte le recit DWELL (conditions
+# conjonctives, historique #15859/#16149) de la regle vers
+# ``docs/reference/git-workflow-detail.md`` §4 -- le contenu etait preserve,
+# mais ``test_dwell_rule_matches_organ.py`` lisait encore l'ancien
+# emplacement : 2 failed / 8 passed sur ``main`` e81111a1d7. Personne ne l'a
+# vu au merge parce qu'AUCUN workflow n'appelait ce test (mesure de l'issue :
+# ``git grep test_dwell_rule_matches_organ -- .github scripts/ci`` rend
+# vide). Deux defauts, un seul remede : reancrer le test sur le doc de
+# detail, puis le cable pour que le prochain deport rougisse au merge.
+#
+# Forme : garde ABSOLU, non-delta (le test lit l'arbre de HEAD -- la regle,
+# le doc de detail et l'organe -- pas une difference base/PR ; meme raison
+# que TRANCHE18 docs-index). L'argv est un pytest : le job umbrella
+# ``always-on-guards.yml`` installe desormais ``pytest`` avec les
+# dependances detecteurs. Verifie vert sur ``main`` avant cablage (10
+# passed) et temoin rouge mesure : retirer ``#15859`` du §4 fait echouer
+# ``test_15859_kept_as_corrected_history``.
+#
+# `absorbed=True` : sans absorption, le job always-on lance
+# ``fast_lane.py --shadow`` et ``effective_shadow = args.shadow and not
+# guard.absorbed`` laisserait le garde en conclusion NEUTRE sous le prefixe
+# d'ombre -- un ``blocking=True`` sans effet (convention TRANCHE8/9/10/17).
+# ---------------------------------------------------------------------------
+TRANCHE28: list[Guard] = [
+    Guard(
+        name="dwell-narrative-pin",
+        source=FAST_LANE_NATIVE,
+        paths=[
+            ".claude/rules/git-workflow.md",
+            "docs/reference/git-workflow-detail.md",
+            "scripts/tests/test_dwell_rule_matches_organ.py",
+            "scripts/ci/fast_lane.py",
+            "scripts/ci/fast_lane_registry.py",
+        ],
+        argv=[
+            "python", "-m", "pytest", "-q",
+            "scripts/tests/test_dwell_rule_matches_organ.py",
+        ],
+        blocking=True,
+        absorbed=True,
     ),
 ]

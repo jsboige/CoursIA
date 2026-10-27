@@ -32,6 +32,7 @@ import posixpath
 import re
 import subprocess
 import sys
+import urllib.parse
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -94,6 +95,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/GenAI/Image/",            # tranche 15 #10923 (20)
     "MyIA.AI.Notebooks/GenAI/Plateformes-Conversationnelles/",  # tranche 15 #10923 (23)
     "MyIA.AI.Notebooks/GenAI/PostTraining/",     # tranche 15 #10923 (14)
+    "MyIA.AI.Notebooks/GenAI/HumorDetection/",   # serie HumorDetection #20301 (1, introduction a la detection d'humour)
     "MyIA.AI.Notebooks/GenAI/RAG-et-Memoire-Semantique/",  # tranche 15 #10923 (1)
     "MyIA.AI.Notebooks/GenAI/Security/",         # tranche 19 #18423 (6, Control / Oversight / Tooling)
     "MyIA.AI.Notebooks/GenAI/SemanticKernel/",   # tranche 15 #10923 (20)
@@ -623,13 +625,32 @@ def replace_render_block(yml_text: str, new_block_lines: list[str]) -> str:
 # rendu par la garde `---` #11451 ou hors sous-arbre rendu). Les READMEs hors
 # sous-arbres rendus (ex. QuantConnect/) forment la population « source
 # brute » documentee -- nonverifies par cette garde.
-_IPYNB_LINK_RE = re.compile(r"\]\(([^)#\s]+\.ipynb)\)")
-_HTML_LINK_RE = re.compile(r"\]\(([^)#\s]+\.html)\)")
+_IPYNB_LINK_RE = re.compile(r"\]\(([^)\s]+?\.ipynb(?:[?#][^)\s]*)?)\)")
+_HTML_LINK_RE = re.compile(r"\]\(([^)\s]+?\.html(?:[?#][^)\s]*)?)\)")
 
 
 def _normalise_readme_target(base: Path, href: str) -> str:
-    """Return a repository-relative POSIX path with ``..`` resolved."""
-    return posixpath.normpath((base / href).as_posix())
+    """Return a repository-relative POSIX path with ``..`` resolved.
+
+    Le href est decode de son percent-encoding avant resolution : sur
+    github.com le navigateur decode, donc ``Cr%C3%A9ateur%20de%20mail.ipynb``
+    vise reellement ``Créateur de mail.ipynb``. La comparaison litterale
+    produisait un faux positif BROKEN sur les README liençant des carnets
+    a accents/espaces (2 violations fantomes sur main, mesurees le 25/10).
+
+    La query et le fragment sont retires **avant** le decodage : un lien
+    ``carnet.ipynb#section`` ou ``carnet.ipynb?raw=1`` designe le fichier, pas
+    un nom qui contiendrait ``#`` ou ``?``. L'ordre est celui de
+    ``check_docs_index.py`` (split avant ``unquote``) ; le prendre a l'envers
+    laisserait un ``%23`` decode en ``#`` dans le chemin. Mesure du 25/10 sur
+    563 README : **0** lien relatif ``.ipynb``/``.html`` portant ``#`` ou ``?``
+    -- la classe est latente, pas active, mais elle produirait un BROKEN
+    fantome au premier lien ancre.
+    """
+    path_part = href.split("#", 1)[0].split("?", 1)[0]
+    return posixpath.normpath(
+        (base / urllib.parse.unquote(path_part)).as_posix()
+    )
 
 
 def readme_link_violations(
