@@ -57,6 +57,24 @@ jobs:
       # le mode cone-mais-non-repertoire n'existe pas, c.915). Paths =
       # ce que le garde lit, etabli par lecture de
       # scripts/check_hooks_parity.py.
+      # 2026-10-27 (#22722) : un work dir chaud conserve les fichiers materialises
+      # par le job precedent. Quand le set sparse de CE job est plus etroit, git
+      # refuse de retirer un fichier modifie et ecrit
+      # "Path '...' not uptodate; will not remove from working tree." -- une
+      # annotation `failure` portee par un job `success` (faux rouge de la
+      # famille #12856 ; mesure API : 3 occurrences sur les 5 tetes de main les
+      # plus recentes, job 'PR gate sweep health advisory'). `git reset --hard`
+      # restaure l'arbre : le retrecissement passe alors sans message
+      # (experience locale mesuree : le refus disparait ; `git clean -ffdx` seul
+      # ne suffit pas -- le fichier fautif est suivi, donc non nettoye).
+      - name: Restore the warm work tree before the sparse checkout
+        run: |
+          set -u
+          if [ -d "$GITHUB_WORKSPACE/.git" ]; then
+            if ! git -C "$GITHUB_WORKSPACE" -c safe.directory='*' reset --hard --quiet; then
+              echo "::warning::[heal-worktree] reset --hard a echoue -- le retrecissement sparse peut refuser (#22722)"
+            fi
+          fi
       - uses: actions/checkout@v4
         with:
           sparse-checkout-cone-mode: false
