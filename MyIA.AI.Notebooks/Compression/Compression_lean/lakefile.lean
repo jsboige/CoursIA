@@ -77,9 +77,16 @@ remplacement qui ne touche aucune position divergente, multi-ensemble des
 feuilles conservé, tout chemin plafonné par la hauteur), et le théorème
 `min_to_bottom` : tout poids minimal peut être amené dans la paire de sœurs
 à la profondeur maximale sans augmenter le coût — la première moitié du lemme
-des sœurs du théorème d'optimalité, ancre 21 -> 19 du carnet 02. -/
+des sœurs du théorème d'optimalité, ancre 21 -> 19 du carnet 02 ; `DeuxMinima`
+— les deux minima dans la paire profonde (pli 5h de #18706) : le comptage
+positionnel (`count_two_positions` — deux positions distinctes d'un même
+poids forcent sa multiplicité, et réciproquement `exists_leafPos_ne` désigne
+une seconde occurrence divergente), et le théorème `both_mins_to_bottom` :
+les DEUX plus petits poids vivent ensemble dans la paire de sœurs à la
+profondeur maximale, sans augmenter le coût — la seconde moitié du lemme des
+sœurs, ancre 21 -> 19 -> 16 du carnet 02 (le trie compte deux 1). -/
 @[default_target]
 lean_lib «PrefixCodes» where
   -- Module plat (fichiers racine, aucune arborescence `PrefixCodes/`) :
   -- pas de `.submodules`, cf la note `MathUniverse` de `learning_theory_lean`.
-  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion, `Feuilles, `Soeurs, `Descente]
+  globs := #[`PrefixCodes, `PrefixCodes_en, `Decode, `McMillan, `Huffman, `Optimalite, `Echange, `Appariement, `Expansion, `Feuilles, `Soeurs, `Descente, `DeuxMinima]
