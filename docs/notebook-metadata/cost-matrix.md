@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-25
+
 # Matrice coût/ressource par notebook
 
 > **Statut.** Document de cadrage, grade **B-méthodologique** (schéma applicable, pas une suggestion). V0 = pilote cycle c.794 (issue #8056, P1).
