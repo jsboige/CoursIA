@@ -124,7 +124,24 @@ jobs:
     # fait tourner `actions/setup-python@v5` sur CE pool -- run
     # 33691615314, runner myia-ai-01-linux-docker-6, success en 34 s.
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retirer le `if:`.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    #
+    # 2026-10-27 (mesure ai-01) : ce job revient sur `ubuntu-latest`, comme
+    # l'ecrit deja la note de rollback ci-dessus, et comme le fait la
+    # politique « Q35 etape 2 » du depot (#17397) que porte
+    # `scripts/ci/audit_self_hosted_needs.py` : cet organe classe
+    # 58 workflows declenches par `pull_request` comme n'ayant besoin de
+    # RIEN qui n'existe que sur le parc local.
+    #
+    # Pourquoi maintenant : le parc local est sature PAR SES CHECKOUTS.
+    # Mesure du 27/10 00:45Z : 11 des 12 slots occupes etaient dans une
+    # etape `actions/checkout` (~29 min pour recloner 220k objets), 614
+    # runs en file, 6 runs termines en 20 min, et les 16 slots
+    # `coursia-waiter` (porteurs du PR gate) inoccupes. Ce job n'a aucun
+    # besoin local : il installe lui-meme ses dependances
+    # (`pip install pyyaml Pillow pytest`) et n'execute que des organes
+    # bash/python. La garde anti-fork est CONSERVEE : aucun code de fork
+    # ne change de surface.
+    runs-on: ubuntu-latest
 
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 25
