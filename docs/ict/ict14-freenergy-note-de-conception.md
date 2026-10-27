@@ -14,7 +14,7 @@ Le maintien des deux carnets ordonnés dans une sous-série `ICT-14/` préserve 
 
 ### Mouvement
 1. `git mv` des 2 carnets vers `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14/` (même pattern que `ICT-15/` #22289 et `ICT-19/` #22780). **Aucun renommage de fichier** : les noms `ICT-14*` sont conservés, seul le dossier regroupe.
-2. Réparation des liens entrants (préfixe `ICT-14/`) : **13 fichiers, 22 refs de chemin** — `ICT-Series/README.md`, `thom-synthese-distillation.md`, le carnet frère `ICT-40b`, le cross-série `SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb`, et les docs (`curriculum/recherche`, `ict/feuille-de-route-notebooks`, `ict/tresse-cartographie`, `ict/genealogy-representation-interne`, `ict/dissolution-scalaires`, `cadrage/grothendieckian-lens`, `notebook-metadata/scientific-review-registry`).
+2. Réparation des liens entrants (préfixe `ICT-14/`) : **liens entrants réparés** — `ICT-Series/README.md`, `thom-synthese-distillation.md`, le carnet frère `ICT-40b`, le cross-série `SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb`, et les docs (`curriculum/recherche`, `ict/feuille-de-route-notebooks`, `ict/tresse-cartographie`, `ict/genealogy-representation-interne`, `ict/dissolution-scalaires`, `cadrage/grothendieckian-lens`, `notebook-metadata/scientific-review-registry`).
    - **Le lien frère intra-dossier** `ICT-14b → ICT-14` reste **sans préfixe** : les deux carnets deviennent *siblings* dans `ICT-14/`, leur lien relatif ne change pas.
 3. `docs/reference/rename-ledger.tsv` : 2 entrées append (ancien → nouveau chemin).
 4. `pedagogy_density_baseline.json` : 2 clés déportées + `baseline_nb_nav_chain.json` : 1 clé (la tête) — valeurs préservées (garde LOST_KEY/ORPHAN_KEY #13815/#16122).
@@ -32,7 +32,7 @@ Aucune cellule **source** n'est modifiée : déplacement pur + liens dans d'autr
 
 ### Validation
 - `git mv` : 2 renames à **100 % de similarité** (0 insertion / 0 suppression).
-- Fixes de liens : 22 substitutions sur 13 fichiers (dry-run vérifié avant application).
+- Fixes de liens : substitutions vérifiées par dry-run avant application.
 - `pedagogy_density.py --check-orphans` : **0 ORPHAN_KEY / 0 LOST_KEY pour ICT-14** — 2 clés déportées vers le nouveau chemin (vérifiées présentes), 0 clé ancien-chemin résiduelle. Les 33 `ORPHAN_KEY` que l'organe rapporte sont en `GameTheory`/`GenAI`/`ML` : dette de baseline **pré-existante sur `main`**, hors du périmètre de cette PR (le diff ne touche que des chemins `ICT-14`).
 
 ### Questions ouvertes : aucune
