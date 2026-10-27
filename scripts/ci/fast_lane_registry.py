@@ -2447,8 +2447,13 @@ TRANCHE28: list[Guard] = [
 # pour qu'un `.py` du depot ne soit jamais passe au detecteur de carnets
 # (incident #13220).
 #
-# `diff_bounded=True` : le verdict porte sur les carnets MODIFIES par la PR,
-# il ne peut donc pas heriter d'un rouge de `main`.
+# `diff_bounded` reste au defaut (False) : `{changed_paths}` borne le PERIMETRE
+# (quels carnets sont analyses), pas le VERDICT. L'argv analyse chaque carnet
+# entier, sans comparaison base/tete et sans `delta_argv` : une modification de
+# prose dans un carnet qui porte deja la cible retrouve une dette heritee de
+# `main`. Declarer un delta ici ferait exclure a tort la classe base par le
+# picker (`_diff_bounded_check_names` -> `split_base_corroboration`). La
+# declaration deviendra vraie le jour ou un `delta_argv` comparera base et tete.
 #
 # `pre_argv` = la suite de tests du detecteur : un detecteur qui ne prouve
 # pas qu'il tire est indiscernable d'un detecteur debranche (lecon #11685).
@@ -2477,7 +2482,6 @@ TRANCHE29: list[Guard] = [
             "{changed_paths}",
         ],
         blocking=False,
-        diff_bounded=True,
         absorbed=True,
     ),
 ]
