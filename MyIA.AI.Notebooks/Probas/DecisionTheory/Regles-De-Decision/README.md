@@ -47,7 +47,7 @@ Les trois exercices du carnet sont des stubs exécutables, sans erreur volontair
 ## Références
 
 - Dai, W. (2023). *Timeless Decision Theory and Functional Decision Theory*, problème 4 « 2TDT-1CDT ».
-- Mohajeri, A. (2023). *Conditional Causal Decision Theory Reduces to Evidential Decision Theory*.
+- Mohajeri, M. (preprint 2023 ; publié 2024). *Conditional causal decision theory reduces to evidential decision theory*, Analytic Philosophy 65, 93-106.
 - Egan, A. (2007). *Some Counterexamples to Causal Decision Theory*.
 - Pearl, J. (2009). *Causality: Models, Reasoning, and Inference* (2ᵉ éd.).
 
