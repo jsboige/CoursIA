@@ -178,6 +178,22 @@ ENVELOPE_FORMAT = "json"
 #: snapshot local n'est qu'un CACHE, jamais une autorite.
 GIT_LEDGER_BRANCH = "ops/gpu-ledger"
 
+#: La REFERENCE du registre des reservations GPU est un depot git PRIVE et
+#: dedie : `jsboige/coursia-gpu-ledger` (decision du mainteneur du 2026-10-27,
+#: arbitrage rendu sur #22456). Le remote du depot de travail (`origin` =
+#: `jsboige/CoursIA`, PUBLIC) ne peut donc plus designer la cible : y publier
+#: l'etat GPU de la flotte exposerait des reservations de la flotte dans un
+#: depot public. La cible est un PARAMETRE (`--remote`), seul son DEFAUT
+#: change -- et le defaut est refuse par une garde si on le redesigne.
+GIT_LEDGER_REMOTE_DEFAULT = "gpu-ledger"
+#: URL du depot de reference. Elle n'est JAMAIS utilisee automatiquement :
+#: chaque siege configure son remote (`git remote add gpu-ledger <url>`),
+#: l'authentification passant par le helper `gh` -- jamais par un jeton dans
+#: une URL git.
+GIT_LEDGER_REPO_URL = "https://github.com/jsboige/coursia-gpu-ledger.git"
+#: Cibles explicitement refusees (fail-CLOSED) : le depot de travail, public.
+GIT_LEDGER_FORBIDDEN_TARGETS: tuple[str, ...] = ("jsboige/coursia",)
+
 CONFIDENCE_LEVELS: tuple[str, ...] = ("low", "medium", "high")
 
 STATE_CLASSES: tuple[str, ...] = (
@@ -2385,12 +2401,69 @@ def _tracking_ref(remote: str) -> str:
     return f"refs/remotes/{remote}/{GIT_LEDGER_BRANCH}"
 
 
+def _normalise_repo_slug(url: str) -> str:
+    """Slug ``owner/repo`` d'une URL git, pour comparer deux cibles.
+
+    Accepte les formes https, ssh (``git@github.com:owner/repo.git``) et
+    ``ssh://`` ; le resultat est compare en minuscules.
+    """
+    text = url.strip().rstrip("/")
+    if text.endswith(".git"):
+        text = text[: -len(".git")]
+    if text.startswith("git@"):
+        text = text[len("git@") :]
+        text = text.replace(":", "/", 1)
+    else:
+        for prefix in ("https://", "http://", "ssh://", "git://"):
+            if text.startswith(prefix):
+                text = text[len(prefix) :]
+                break
+    parts = [part for part in text.split("/") if part]
+    if len(parts) >= 2:
+        return "/".join(parts[-2:]).lower()
+    return text.lower()
+
+
+def ensure_git_ledger_remote(repo: Path, remote: str) -> str:
+    """Resout la cible de publication ; refuse la cible interdite.
+
+    Le remote doit etre **configure sur le siege** : l'organe ne le cree
+    pas tout seul, parce qu'ecrire dans un depot partage ne doit pas
+    dependre d'un effet de bord d'une commande de lecture ou de test. Un
+    remote absent est donc un refus nomme, porteur du geste exact.
+
+    Une cible qui designerait le depot de travail **public** est refusee
+    (fail-CLOSED) : le registre des reservations GPU ne sort pas d'un depot
+    public, quel que soit le `--remote` passe.
+    """
+    rc, url, _ = _git(["remote", "get-url", remote], cwd=repo)
+    if rc != 0 or not url.strip():
+        raise LedgerError(
+            "GIT_LEDGER_REMOTE_UNKNOWN",
+            f"remote git {remote!r} non configure dans {repo} ; la reference du "
+            f"registre GPU est le depot PRIVE "
+            f"git remote add {remote} {GIT_LEDGER_REPO_URL}",
+        )
+    slug = _normalise_repo_slug(url)
+    if slug in GIT_LEDGER_FORBIDDEN_TARGETS:
+        raise LedgerError(
+            "GIT_LEDGER_FORBIDDEN_TARGET",
+            f"la cible de publication {slug!r} est interdite : le registre des "
+            "reservations GPU ne se publie pas dans le depot de travail "
+            "(public) ; reference attendue : "
+            f"{GIT_LEDGER_REMOTE_DEFAULT} -> {GIT_LEDGER_REPO_URL}",
+        )
+    return url.strip()
+
+
 def _git_reason(stderr: str) -> str:
     """La premiere ligne utile d'un stderr git, bornée (jamais un dump)."""
     return " ".join(stderr.split())[:200]
 
 
-def fetch_git_ledger_branch(repo: Path, *, remote: str = "origin") -> str | None:
+def fetch_git_ledger_branch(
+    repo: Path, *, remote: str = GIT_LEDGER_REMOTE_DEFAULT
+) -> str | None:
     """Fetch de la branche dediee ; ``None`` si reussi, sinon la raison.
 
     Ce que vaut un echec depend de l'appelant. La publication peut continuer :
@@ -2407,7 +2480,9 @@ def fetch_git_ledger_branch(repo: Path, *, remote: str = "origin") -> str | None
     return _git_reason(err) or f"git fetch {remote} {GIT_LEDGER_BRANCH} a echoue"
 
 
-def git_ledger_ref_available(repo: Path, *, remote: str = "origin") -> bool:
+def git_ledger_ref_available(
+    repo: Path, *, remote: str = GIT_LEDGER_REMOTE_DEFAULT
+) -> bool:
     """La branche dediee est-elle lisible localement (ref de suivi present) ?"""
     rc, _, _ = _git(
         ["rev-parse", "--verify", "--quiet", _tracking_ref(remote)], cwd=repo
@@ -2415,7 +2490,9 @@ def git_ledger_ref_available(repo: Path, *, remote: str = "origin") -> bool:
     return rc == 0
 
 
-def read_git_ledger_files(repo: Path, *, remote: str = "origin") -> dict[str, str]:
+def read_git_ledger_files(
+    repo: Path, *, remote: str = GIT_LEDGER_REMOTE_DEFAULT
+) -> dict[str, str]:
     """Contenu brut ``{machine: texte}`` des fichiers gpu-reservation de la branche."""
     ref = _tracking_ref(remote)
     if not git_ledger_ref_available(repo, remote=remote):
@@ -2446,7 +2523,7 @@ def read_git_ledger_files(repo: Path, *, remote: str = "origin") -> dict[str, st
 
 
 def observations_from_git_ledger(
-    repo: Path, *, remote: str = "origin"
+    repo: Path, *, remote: str = GIT_LEDGER_REMOTE_DEFAULT
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     """``(observations, rejets)`` lus de la branche ; une ligne invalide est un
     rejet nomme, jamais un crash du lecteur (meme discipline que le journal)."""
@@ -2802,7 +2879,7 @@ def publish_git_ledger(
     spool_dir: Path,
     repo: Path,
     machine: str,
-    remote: str = "origin",
+    remote: str = GIT_LEDGER_REMOTE_DEFAULT,
     emit: bool = False,
     ledger: str = GPU_RESERVATION,
 ) -> dict[str, Any]:
@@ -2835,6 +2912,9 @@ def publish_git_ledger(
                 f"observation {obs.get('observation_id')!r} porte la machine "
                 f"{obs_machine!r} et serait ecrite dans le fichier de {canonical!r}",
             )
+    # La cible est resolue AVANT tout contact reseau : un remote absent ou
+    # une cible interdite sont refuses sans qu'une branche soit publiee.
+    remote_url = ensure_git_ledger_remote(repo, remote)
     fetch_error = fetch_git_ledger_branch(repo, remote=remote)
     # La tete est epinglee UNE fois apres le fetch : ce qui est deja publie,
     # l'arbre du commit et son parent viennent du meme sha (finding Hermes 2).
@@ -2847,6 +2927,7 @@ def publish_git_ledger(
     summary: dict[str, Any] = {
         "branch": GIT_LEDGER_BRANCH,
         "remote": remote,
+        "remote_url": remote_url,
         "target": rel,
         "machine": canonical,
         "to_publish": [str(obs["observation_id"]) for obs in to_publish],
@@ -2945,7 +3026,7 @@ def refresh_snapshot_from_branch(
     *,
     ledger: str,
     repo: Path,
-    remote: str = "origin",
+    remote: str = GIT_LEDGER_REMOTE_DEFAULT,
     state_dir: Path,
     now: datetime | None = None,
 ) -> Path:
@@ -3530,6 +3611,24 @@ def _cli_check_pending(args: argparse.Namespace) -> int:
     if repo is None or not repo.exists():
         unavailable = "aucun depot git lisible (git rev-parse --show-toplevel a echoue)"
     else:
+        try:
+            ensure_git_ledger_remote(repo, args.remote)
+        except LedgerError as exc:
+            # Cible non configuree, ou cible interdite : la source PRIMAIRE est
+            # illisible. Le repli "auto" sur le cache local exige de pouvoir
+            # affirmer que la branche n'a JAMAIS ete publiee -- ce qu'on ne
+            # peut pas ici -> UNREADABLE, fail-CLOSED (un device ne se libere
+            # pas parce que la cible de reference est mal configuree).
+            unavailable = f"{exc.reason}: {exc.detail}"
+            remote_state = "unknown"
+            _print_pending_verdict(
+                args,
+                "UNREADABLE",
+                f"cible de publication inutilisable : {unavailable}",
+                now,
+                source=f"git (cible inutilisable : {unavailable})",
+            )
+            return 1
         fetch_error = fetch_git_ledger_branch(repo, remote=args.remote)
         if not git_ledger_ref_available(repo, remote=args.remote):
             unavailable = (
@@ -3977,7 +4076,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--repo",
         help="git repository to publish from (default: the repository of this script)",
     )
-    publish.add_argument("--remote", default="origin", help="remote to push to (default: origin)")
+    publish.add_argument(
+        "--remote",
+        default=GIT_LEDGER_REMOTE_DEFAULT,
+        help=(
+            "remote git qui porte la reference du registre GPU "
+            f"(defaut : {GIT_LEDGER_REMOTE_DEFAULT} -> {GIT_LEDGER_REPO_URL}, "
+            "depot PRIVE et dedie) ; la cible reste un parametre, mais le "
+            "depot de travail public est refuse"
+        ),
+    )
     publish.add_argument(
         "--machine",
         help="target machine file (default: canonical name of this host)",
@@ -4039,7 +4147,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="git repository to read the ledger branch from (default: this script's repository)",
     )
     check_pending.add_argument(
-        "--remote", default="origin", help="remote to fetch the ledger branch from"
+        "--remote",
+        default=GIT_LEDGER_REMOTE_DEFAULT,
+        help=(
+            "remote git qui porte la reference du registre GPU "
+            f"(defaut : {GIT_LEDGER_REMOTE_DEFAULT} -> {GIT_LEDGER_REPO_URL})"
+        ),
     )
     check_pending.add_argument(
         "--snapshot", help="path to a prior snapshot JSON; defaults to the local state dir",

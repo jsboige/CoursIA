@@ -10,7 +10,16 @@ Le transport est en ajout seul : chaque machine publie dans `gpu-reservation/<ma
 
 Plusieurs lanes d'une même machine écrivent dans le même fichier. Chaque tentative de publication épingle la tête de la branche une seule fois après son `fetch` : le contenu déjà publié, l'arbre du commit et son parent viennent de ce même commit. Si la branche a avancé entre-temps, la poussée n'est pas un fast-forward ; elle est rejetée, et la tentative suivante repart d'un arbre relu. Avant la poussée, le commit est refusé (`GIT_PUBLISH_LOSS`) s'il retire un identifiant présent dans le fichier de son parent ou s'il ne porte pas toutes les observations à publier. Après la poussée, le spool n'est vidé que des identifiants retrouvés dans le commit poussé.
 
-La cible de publication est un paramètre, non une décision attachée au dépôt du projet. L'option `--remote` de l'organe choisit le remote lu et poussé, avec `origin` par défaut ; la garde de lancement expose le même choix par `--gpu-ledger-remote`. L'option `--repo` identifie le checkout utilisé pour les opérations git, tandis que le remote désigne la destination de la branche. Rien ne déduit cette destination de l'URL du dépôt du projet.
+La cible de publication est un paramètre, non une décision attachée au dépôt du projet. L'option `--remote` de l'organe choisit le remote lu et poussé ; la garde de lancement expose le même choix par `--gpu-ledger-remote`. L'option `--repo` identifie le checkout utilisé pour les opérations git, tandis que le remote désigne la destination de la branche. Rien ne déduit cette destination de l'URL du dépôt du projet.
+
+Le **défaut** de ce paramètre désigne le dépôt **privé et dédié** `jsboige/coursia-gpu-ledger` (remote nommé `gpu-ledger`), et non le remote du dépôt de travail — arbitrage du mainteneur du 2026-10-27, rendu sur [#22456](https://github.com/jsboige/CoursIA/issues/22456). L'état GPU de la flotte ne se publie pas dans un dépôt public.
+
+Deux gardes fail-closed encadrent cette cible, et elles vivent dans le code, pas dans une convention de saisie :
+
+- **remote non configuré** → refus nommé `GIT_LEDGER_REMOTE_UNKNOWN`, porteur du geste exact (`git remote add gpu-ledger https://github.com/jsboige/coursia-gpu-ledger.git`). L'organe ne crée pas le remote lui-même : écrire dans un dépôt partagé ne doit pas dépendre d'un effet de bord d'une commande de lecture ou de test. L'authentification passe par le helper `gh` du siège — jamais par un jeton dans une URL git ;
+- **cible interdite** → si le remote configuré désigne le dépôt de travail (`jsboige/CoursIA`, public), la publication est refusée par `GIT_LEDGER_FORBIDDEN_TARGET`, et le gate rend `UNREADABLE` sans se replier sur le cache local. Un device ne se libère pas parce que la cible de référence est mal configurée.
+
+Le remote est donc un **prérequis de siège**, à poser une fois : chaque machine qui publie ou lit le registre configure `gpu-ledger` vers le dépôt privé. Tant qu'il n'est pas configuré, l'organe refuse en nommant le geste, au lieu de publier ailleurs.
 
 ## Admission et libération par la garde de lancement
 
@@ -32,11 +41,11 @@ La garde de lancement transmet au gate la lane qui demande le device (`--gpu-hol
 
 ## Capacité technique et autorité déclarée
 
-La déclaration d'autorité reste celle de [gpu-reservation.md](gpu-reservation.md), que cette livraison ne modifie pas : le dashboard reste la référence déclarée de l'usage GPU de la flotte. Le transport, ses paramètres et la provenance explicite des verdicts ajoutent une capacité, pas un changement d'autorité. Le choix technique d'une source de lecture par le gate ne vaut pas arbitrage de gouvernance.
+La question de savoir quelle source fait autorité, et où vit l'état vivant publié, a été **arbitrée** : option (a), le registre des réservations GPU devient la référence d'un dépôt git **privé et dédié** (`jsboige/coursia-gpu-ledger`, branche `ops/gpu-ledger`), le dashboard RooSync n'en étant plus que la copie. L'arbitrage du mainteneur du 2026-10-27 est consigné sur [#22456](https://github.com/jsboige/CoursIA/issues/22456).
 
-La question de savoir quelle source fait autorité, et où vit l'état vivant publié, reste en attente du sign-off user porté par l'issue [#22456](https://github.com/jsboige/CoursIA/issues/22456).
+La déclaration d'autorité elle-même est celle de [gpu-reservation.md](gpu-reservation.md) ; le transport en est le **moyen**, pas l'arbitrage. Ce que cette livraison change est technique : la cible par défaut de publication, et les deux gardes qui refusent une cible non configurée ou le dépôt de travail public.
 
-Quand le canal de messagerie est indisponible, la branche est la seule copie partagée des observations encore lisible entre les machines. C'est la raison d'être du transport, et précisément pourquoi sa déclaration comme source d'autorité demande un arbitrage humain plutôt qu'une déduction depuis son fonctionnement technique.
+Quand le canal de messagerie est indisponible, la branche est la seule copie partagée des observations encore lisible entre les machines. C'est la raison d'être du transport, et la raison pour laquelle son autorité a demandé un arbitrage humain plutôt qu'une déduction depuis son fonctionnement technique — arbitrage rendu.
 
 ## Lancement sans la garde
 

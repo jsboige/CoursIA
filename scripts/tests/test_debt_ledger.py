@@ -2227,7 +2227,15 @@ def _git_sandbox(tmp_path):
     (work / "README.md").write_text("seed", encoding="utf-8")
     _run_git(["git", "-C", str(work), "add", "README.md"])
     _run_git(["git", "-C", str(work), "commit", "-q", "-m", "seed"])
-    _run_git(["git", "-C", str(work), "push", "-q", "origin", "main"])
+    # Le remote porte le NOM du defaut de publication : le sandbox exerce
+    # ainsi le chemin par defaut (le nom compte, l'URL reste locale).
+    _run_git([
+        "git", "-C", str(work), "remote", "rename", "origin",
+        dl.GIT_LEDGER_REMOTE_DEFAULT,
+    ])
+    _run_git([
+        "git", "-C", str(work), "push", "-q", dl.GIT_LEDGER_REMOTE_DEFAULT, "main",
+    ])
     return remote, work
 
 
@@ -2257,7 +2265,10 @@ def _seed_ledger_branch(work, machine, observations):
             stream.write(dl.envelope_line(observation) + "\n")
     _run_git(["git", "-C", str(work), "add", "--", "gpu-reservation"])
     _run_git(["git", "-C", str(work), "commit", "-q", "-m", "seed ledger branch"])
-    _run_git(["git", "-C", str(work), "push", "-q", "origin", dl.GIT_LEDGER_BRANCH])
+    _run_git([
+        "git", "-C", str(work), "push", "-q", dl.GIT_LEDGER_REMOTE_DEFAULT,
+        dl.GIT_LEDGER_BRANCH,
+    ])
     _run_git(["git", "-C", str(work), "checkout", "-q", "main"])
 
 
@@ -2273,6 +2284,95 @@ def _publish(state_dir, work, machine, *, emit=False):
 
 def _publish_content_lines(text):
     return [line for line in text.splitlines() if line.strip()]
+
+
+def test_le_defaut_de_publication_designe_le_depot_prive_dedie():
+    """Le DEFAUT ne peut plus designer le remote du depot de travail (#22456).
+
+    L'arbitrage du mainteneur du 2026-10-27 fait du depot PRIVE et dedie
+    `jsboige/coursia-gpu-ledger` la reference du registre GPU ; `origin`
+    (depot de travail, PUBLIC) ne doit plus etre la cible implicite.
+    """
+    parser = dl.build_parser()
+    publish_args = parser.parse_args(["publish", "--git", "--machine", "myia-ai-01"])
+    assert publish_args.remote == dl.GIT_LEDGER_REMOTE_DEFAULT
+    assert publish_args.remote != "origin"
+    assert "coursia-gpu-ledger" in dl.GIT_LEDGER_REPO_URL
+    gate_args = parser.parse_args(["check_pending", "--entity", "myia-ai-01#gpu2"])
+    assert gate_args.remote == dl.GIT_LEDGER_REMOTE_DEFAULT
+
+
+def test_publication_refusee_vers_le_depot_public(tmp_path, capsys):
+    """Un remote qui vise `jsboige/CoursIA` est REFUSE, sans rien pousser.
+
+    L'etat GPU de la flotte ne sort pas d'un depot public : la garde est
+    dans le CODE, pas dans une convention de saisie.
+    """
+    remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    _run_git([
+        "git", "-C", str(work), "remote", "set-url",
+        dl.GIT_LEDGER_REMOTE_DEFAULT, "https://github.com/jsboige/CoursIA.git",
+    ])
+    capsys.readouterr()
+    rc = dl.main([
+        "publish", "--git", "--emit", "--state-dir", str(state_dir),
+        "--repo", str(work), "--machine", "myia-ai-01",
+    ])
+    err = capsys.readouterr().err
+    assert rc == 1
+    assert "GIT_LEDGER_FORBIDDEN_TARGET" in err
+    # Aucune branche n'a ete creee cote distant.
+    proc = subprocess.run(
+        ["git", "--git-dir", str(remote), "rev-parse", "--verify", "-q",
+         f"refs/heads/{dl.GIT_LEDGER_BRANCH}"],
+        capture_output=True, text=True, encoding="utf-8", errors="replace",
+    )
+    assert proc.returncode != 0
+
+
+def test_remote_de_cible_non_configure_donne_le_geste(tmp_path, capsys):
+    """Un siege qui n'a pas configure son remote refuse, et le refus PORTE
+    le geste exact (`git remote add ...`) : un refus sans remede est un mur."""
+    _remote, work = _git_sandbox(tmp_path)
+    _run_git([
+        "git", "-C", str(work), "remote", "remove", dl.GIT_LEDGER_REMOTE_DEFAULT,
+    ])
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    capsys.readouterr()
+    rc = dl.main([
+        "publish", "--git", "--emit", "--state-dir", str(state_dir),
+        "--repo", str(work), "--machine", "myia-ai-01",
+    ])
+    err = capsys.readouterr().err
+    assert rc == 1
+    assert "GIT_LEDGER_REMOTE_UNKNOWN" in err
+    assert f"git remote add {dl.GIT_LEDGER_REMOTE_DEFAULT}" in err
+
+
+def test_le_gate_rend_unreadable_si_la_cible_est_interdite(tmp_path, capsys):
+    """Une cible interdite ne se replie PAS sur le cache local : fail-CLOSED.
+
+    Un device ne se libere pas parce que la cible de reference est mal
+    configuree -- le repli "auto" exige de pouvoir affirmer que la branche
+    n'a jamais ete publiee, ce qu'une cible interdite interdit.
+    """
+    _remote, work = _git_sandbox(tmp_path)
+    _run_git([
+        "git", "-C", str(work), "remote", "set-url",
+        dl.GIT_LEDGER_REMOTE_DEFAULT, "https://github.com/jsboige/CoursIA.git",
+    ])
+    capsys.readouterr()
+    rc = dl.main([
+        "check_pending", "--entity", "myia-ai-01#gpu2", "--repo", str(work),
+        "--state-dir", str(_gpu_state(tmp_path)), "--json",
+    ])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "UNREADABLE" in out
+    assert "GIT_LEDGER_FORBIDDEN_TARGET" in out
 
 
 def test_publish_git_dry_run_by_default_writes_nothing(tmp_path, capsys):
@@ -2919,7 +3019,9 @@ def _admission_by_run_guarded(guarded, monkeypatch, *, work, state_dir, lane,
 
     monkeypatch.setattr(guarded, "_run_ledger_organ", organ_on_sandbox)
     monkeypatch.setenv("COURSIA_LEDGER_STATE_DIR", str(state_dir))
-    verdict, detail = guarded._gpu_gate_check(entity, lane, "origin")
+    verdict, detail = guarded._gpu_gate_check(
+        entity, lane, dl.GIT_LEDGER_REMOTE_DEFAULT
+    )
     return verdict, detail, verdict in guarded.GPU_GATE_GREEN_VERDICTS
 
 
@@ -2976,6 +3078,12 @@ def _second_clone(remote, path):
     _run_git(["git", "clone", "-q", str(remote), str(path)])
     _run_git(["git", "-C", str(path), "config", "user.email", "ledger@test.invalid"])
     _run_git(["git", "-C", str(path), "config", "user.name", "ledger test"])
+    # Meme convention de nom de remote que le sandbox (le defaut de
+    # publication), pour que ce siege exerce le meme chemin.
+    _run_git([
+        "git", "-C", str(path), "remote", "rename", "origin",
+        dl.GIT_LEDGER_REMOTE_DEFAULT,
+    ])
     return path
 
 
@@ -3018,8 +3126,10 @@ def test_fetch_en_echec_ref_perime_n_autorise_rien(tmp_path, capsys, monkeypatch
     assert _publish(state_pub, publisher, "myia-ai-01", emit=True) == 0
 
     # 3. Panne reseau cote client SEULEMENT : son ref de suivi reste RELEASED.
-    _run_git(["git", "-C", str(client), "remote", "set-url", "origin",
-              str(tmp_path / "injoignable.git")])
+    _run_git([
+        "git", "-C", str(client), "remote", "set-url", dl.GIT_LEDGER_REMOTE_DEFAULT,
+        str(tmp_path / "injoignable.git"),
+    ])
     for source in ("auto", "git"):
         capsys.readouterr()
         rc = dl.main([*gate, "--source", source])

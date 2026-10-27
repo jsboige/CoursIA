@@ -281,7 +281,12 @@ GPU_LEDGER_BRANCH = "ops/gpu-ledger"
 #: PARAMETRE, pas une decision codee en dur : l'etat vivant des reservations
 #: est de l'orchestration (usage interne de flotte), et sa cible peut etre un
 #: depot prive -- le registre ne doit pas dependre de ce choix.
-GPU_LEDGER_REMOTE_DEFAULT = "origin"
+#: Le DEFAUT designe le depot PRIVE et dedie du registre
+#: (`jsboige/coursia-gpu-ledger`, decision du mainteneur du 2026-10-27 sur
+#: #22456) : le remote du depot de travail (`origin` = `jsboige/CoursIA`) est
+#: PUBLIC et ne doit jamais porter l'etat GPU de la flotte. `debt_ledger.py`
+#: refuse cette cible (fail-CLOSED) et rend le geste de configuration.
+GPU_LEDGER_REMOTE_DEFAULT = "gpu-ledger"
 
 #: Borne par defaut d'un hold quand `--gpu-expected-end` n'est pas fourni.
 #: Sans borne, un lanceur tué brutalement (kill -9, reboot, crash de l'hote)

@@ -576,7 +576,11 @@ def _ledger_sandbox(tmp_path):
     (work / "README.md").write_text("seed", encoding="utf-8")
     _cmd_ok(["git", "-C", str(work), "add", "README.md"])
     _cmd_ok(["git", "-C", str(work), "commit", "-q", "-m", "seed"])
-    _cmd_ok(["git", "-C", str(work), "push", "-q", "origin", "main"])
+    # Meme nom de remote que le defaut de publication : le bac a sable exerce
+    # ainsi le chemin par defaut (l'URL reste locale).
+    remote_name = _load_guarded().GPU_LEDGER_REMOTE_DEFAULT
+    _cmd_ok(["git", "-C", str(work), "remote", "rename", "origin", remote_name])
+    _cmd_ok(["git", "-C", str(work), "push", "-q", remote_name, "main"])
     return remote, work
 
 
