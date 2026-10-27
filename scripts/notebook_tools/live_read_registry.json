@@ -7,6 +7,12 @@
       "cell_id": "50dcfe8c",
       "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/Life/Pillars.lean",
       "note": "Annexe F -- compte des lignes de Pillars.lean et citations L<n> des declarations des temoins"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb",
+      "cell_id": "0147a26c",
+      "source": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/datasets/le_horla_1887.txt",
+      "note": "Section 1 -- taille et nombre de lignes du corpus, empreinte SHA-256 des 128 premiers Kio et entropie de la tranche de 16 Kio"
     }
   ]
 }
