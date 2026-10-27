@@ -1,0 +1,413 @@
+"""Balayage incremental de l'instantane : la phase reseau du tapis (#22983).
+
+Le tapis ne doit plus interroger GitHub pendant le tirage. Cette PR rend la
+**phase reseau** (la lecture des commentaires des candidats) incrémentale et
+bornee :
+
+- un **balayage** du depot (`repos/<repo>/issues/comments?since=`) lit les
+  commentaires modifies depuis la derniere lecture, en UN appel ;
+- les issues que le balayage ne couvre pas sont lues une par une ;
+- les metadonnees (titre, labels) viennent d'UN balayage des issues
+  ouvertes, pas d'une lecture par issue.
+
+Aucun test ne touche le reseau : `_gh_api` est remplace par un faux, et la
+racine de l'instantane est redirigee vers `tmp_path`.
+"""
+
+import datetime as dt
+import json
+import re
+import subprocess
+import sys
+import time
+import types
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "coordination"))
+
+import gh_snapshot as gs
+import pick_idle_grain as pig
+
+
+@pytest.fixture(autouse=True)
+def _snapshot_root_isole(tmp_path, monkeypatch):
+    """Racine de l'instantane redirigee : jamais le LOCALAPPDATA reel."""
+    def _racine():
+        return tmp_path / "gh-snapshot"
+
+    monkeypatch.setattr(gs, "snapshot_root", _racine)
+    instance_package = sys.modules.get("coordination.gh_snapshot")
+    if instance_package is not None and instance_package is not gs:
+        monkeypatch.setattr(instance_package, "snapshot_root", _racine)
+    yield
+    pig._PASS_SNAPSHOT = None
+    pig._BELT_SNAPSHOT = None
+    pig._BELT_PRIMED_WINDOW = set()
+
+
+def _commentaire(issue, body="[CLAIMED] lane a:b -- x", created="2026-10-27T10:00:00Z"):
+    """Commentaire REST normalise, pret pour le faux `gh api`."""
+    return {
+        "body": body,
+        "created_at": created,
+        "updated_at": created,
+        "user": {"login": "jsboige"},
+        "html_url": f"https://github.com/o/r/issues/{issue}#c",
+        "issue_url": f"https://api.github.com/repos/o/r/issues/{issue}",
+    }
+
+
+def _commentaire_pr(pr, body="x", created="2026-10-27T10:00:00Z"):
+    """Commentaire de PULL REQUEST : l'`issue_url` porte `/pulls/`."""
+    return {
+        "body": body,
+        "created_at": created,
+        "updated_at": created,
+        "user": {"login": "jsboige"},
+        "html_url": f"https://github.com/o/r/pull/{pr}#c",
+        "issue_url": f"https://api.github.com/repos/o/r/pulls/{pr}",
+    }
+
+
+# --- le balayage -------------------------------------------------------------
+
+
+def test_le_balayage_exclut_les_pr_et_classe_par_issue(monkeypatch):
+    monkeypatch.setattr(gs, "_gh_api", lambda path, **kw: [
+        _commentaire(7), _commentaire(9), _commentaire_pr(1234)])
+    grouped = gs.fetch_repo_comments_since("o/r")
+    assert set(grouped) == {7, 9}
+    assert grouped[7][0]["body"].startswith("[CLAIMED]")
+    assert grouped[9][0]["author"]["login"] == "jsboige"
+
+
+def test_le_balayage_fusionne_sans_dupliquer_et_avance_les_stamps(monkeypatch):
+    deja = {"body": "ancien", "createdAt": "2026-10-20T00:00:00Z",
+            "author": {"login": "x"}, "url": "u1"}
+    snapshot = {
+        "comments": {"7": [deja]},
+        "meta": {"comment_stamps": {"7": 1000.0}},
+    }
+    monkeypatch.setattr(gs, "_gh_api", lambda path, **kw: [
+        _commentaire(7, body="nouveau"),
+        _commentaire(7, body="ancien", created="2026-10-20T00:00:00Z"),
+    ])
+    out, calls = gs.sweep_repo_comments("o/r", snapshot, since="2026-10-01T00:00:00Z")
+    assert calls == 1
+    bodies = [c["body"] for c in out["comments"]["7"]]
+    assert "nouveau" in bodies and "ancien" in bodies
+    # Le meme commentaire (meme url) n'est pas duplique.
+    assert len(out["comments"]["7"]) == 2
+    stamp = out["meta"]["comment_stamps"]["7"]
+    assert stamp > 1000.0
+
+
+def test_l_argv_du_balayage_est_valide(monkeypatch):
+    """Le defaut qui avait fait RETIRER la precedente balayage.
+
+    La forme `params=f"--paginate&since={since}"` devenait UN argument que
+    `gh` refuse. Ici, les parametres sont une LISTE d'arguments.
+    """
+    captures = []
+
+    def faux_run(cmd, **kw):
+        captures.append(list(cmd))
+        return types.SimpleNamespace(returncode=0, stdout="[]", stderr="")
+
+    monkeypatch.setattr(gs.subprocess, "run", faux_run)
+    gs.fetch_repo_comments_since("o/r", since="2026-10-01T00:00:00Z")
+    assert captures, "aucun appel gh"
+    cmd = captures[0]
+    assert cmd[:3] == ["gh", "api", "repos/o/r/issues/comments"]
+    assert "--paginate" in cmd
+    assert "-f since=2026-10-01T00:00:00Z" in cmd
+    # Aucun argument ne contient un `&` : c'est le defaut exact du retrait.
+    assert not any("&" in part for part in cmd)
+
+
+def test_le_balayage_annonce_la_methode_GET(monkeypatch):
+    """`gh api` bascule en POST des qu'un champ `-f` est present.
+
+    Un POST sur un point d'entree de LISTE rend `404 Not Found` : c'est
+    exactement ce qui est arrive au premier balayage (mesure du 27/10 :
+    `gh: Not Found (HTTP 404)`, le balayage entier etait mort, et tout le
+    rafraichissement de l'instantane echouait derriere). `-X GET` est donc
+    OBLIGATOIRE des qu'un `-f` est present.
+    """
+    captures = []
+
+    def faux_run(cmd, **kw):
+        captures.append(list(cmd))
+        return types.SimpleNamespace(returncode=0, stdout="[]", stderr="")
+
+    monkeypatch.setattr(gs.subprocess, "run", faux_run)
+    gs.fetch_repo_comments_since("o/r", since="2026-10-01T00:00:00Z")
+    cmd = captures[0]
+    assert "GET" in cmd, f"la methode HTTP n'est pas annoncee : {cmd}"
+    assert cmd.index("GET") == cmd.index("-X") + 1
+
+
+def test_la_methode_GET_est_annoncee_pour_les_issues_ouvertes(monkeypatch):
+    """Meme cause, autre point d'entree : `repos/<repo>/issues?state=open`.
+
+    Sans `-X GET`, `gh api` poste le champ `state` comme un corps de
+    requete et GitHub repond `422 -- "title" wasn't supplied`.
+    """
+    captures = []
+
+    def faux_run(cmd, **kw):
+        captures.append(list(cmd))
+        return types.SimpleNamespace(returncode=0, stdout="[]", stderr="")
+
+    monkeypatch.setattr(gs.subprocess, "run", faux_run)
+    gs.fetch_open_issues("o/r")
+    cmd = captures[0]
+    assert cmd[:3] == ["gh", "api", "repos/o/r/issues"]
+    assert "GET" in cmd, f"la methode HTTP n'est pas annoncee : {cmd}"
+    assert "state=open" in cmd
+
+
+# --- ensure_comments --------------------------------------------------------
+
+
+def test_ensure_comments_balaiage_borne_puis_lecture_par_issue(monkeypatch):
+    """Le balayage couvre ce qui est borne ; le reste est lu par issue.
+
+    Le balayage n'est possible que si un horodatage de lecture est connu :
+    c'est lui qui borne la lecture. 7 a un horodatage (le balayage le
+    couvre) ; 9 n'en a pas (le balayage ne peut pas le borner) -> il est
+    lu par issue.
+    """
+    appels = []
+
+    def faux_gh_api(path, *, params="", timeout=30.0):
+        appels.append(path)
+        if path.endswith("/issues/comments"):
+            return [_commentaire(7)]
+        if path.endswith("/issues"):
+            return [{"number": 7, "title": "T", "labels": [],
+                     "updated_at": "u", "state": "open"}]
+        if path.endswith("/issues/9/comments"):
+            return [_commentaire(9)]
+        if path.endswith("/issues/7/comments"):
+            return [_commentaire(7)]
+        raise AssertionError(f"appel inattendu: {path}")
+
+    monkeypatch.setattr(gs, "_gh_api", faux_gh_api)
+    snapshot = {"comments": {}, "issues": {}, "meta": {
+        "comment_stamps": {"7": time.time() - 600}}}
+    out, calls, stats = gs.ensure_comments("o/r", [7, 9], snapshot)
+    # 7 est couvert par le balayage ; 9 n'a pas d'horodatage connu, donc
+    # le balayage ne peut pas le borner : il est lu par issue.
+    assert stats["lus"] == 1
+    assert out["comments"]["7"][0]["body"].startswith("[CLAIMED]")
+    assert out["comments"]["9"][0]["body"].startswith("[CLAIMED]")
+    assert "repos/o/r/issues/9/comments" in appels
+
+
+def test_ensure_comments_sans_balayage_possible_va_directement_par_issue(monkeypatch):
+    """Aucun horodatage connu => le balayage n'est pas borne => lecture par issue."""
+    appels = []
+
+    def faux_gh_api(path, *, params="", timeout=30.0):
+        appels.append(path)
+        if path.endswith("/issues/comments"):
+            return [_commentaire(7)]
+        if path.endswith("/issues"):
+            return []
+        if path.endswith("/issues/7/comments"):
+            return [_commentaire(7)]
+        raise AssertionError(f"appel inattendu: {path}")
+
+    monkeypatch.setattr(gs, "_gh_api", faux_gh_api)
+    out, calls, stats = gs.ensure_comments("o/r", [7], {"comments": {}, "issues": {}, "meta": {}})
+    assert stats["lus"] == 1
+    assert "repos/o/r/issues/7/comments" in appels
+
+
+def test_ensure_comments_lit_les_metadonnees_en_un_balaiage(monkeypatch):
+    """Les metadonnees de TOUTES les issues ouvertes : un appel, pas N."""
+    appels = []
+
+    def faux_gh_api(path, *, params="", timeout=30.0):
+        appels.append(path)
+        if path.endswith("/issues/comments"):
+            return []
+        if path.endswith("/issues"):
+            return [{"number": n, "title": f"T{n}", "labels": ["x"],
+                     "updated_at": "u", "state": "open"} for n in (7, 9)]
+        if path.endswith("/issues/7/comments"):
+            return []
+        if path.endswith("/issues/9/comments"):
+            return []
+        raise AssertionError(f"appel inattendu: {path}")
+
+    monkeypatch.setattr(gs, "_gh_api", faux_gh_api)
+    out, calls, stats = gs.ensure_comments("o/r", [7, 9], {"comments": {}, "issues": {}, "meta": {}})
+    assert stats["meta_balayees"] == 2
+    assert out["issues"]["7"]["labels"] == ["x"]
+    # UN appel pour les metadonnees des deux issues.
+    assert len([a for a in appels if a.endswith("/issues")]) == 1
+
+
+def test_ensure_comments_sur_entrees_fraiches_ne_bloque_aucun_appel(monkeypatch):
+    """Chemin chaud : tout est frais, aucun appel gh."""
+    monkeypatch.setattr(gs, "_gh_api", lambda path, **kw: (_ for _ in ()).throw(
+        AssertionError(f"appel inattendu: {path}")))
+    now = time.time()
+    snapshot = {
+        "comments": {"7": [_commentaire(7)]},
+        "issues": {"7": {"number": 7, "title": "T", "labels": []}},
+        "meta": {"comment_stamps": {"7": now}},
+    }
+    out, calls, stats = gs.ensure_comments("o/r", [7], snapshot)
+    assert calls == 0
+    assert stats["perimes"] == 0
+
+
+def test_le_balaiage_est_borne_par_la_fenetre_maximale(monkeypatch):
+    """Le balayage ne lit jamais plus de `MAX_SWEEP_LOOKBACK_SECONDS`.
+
+    Son cout croit avec la FENETRE lue, pas avec le nombre d'issues
+    visees : un horodatage tres ancien le ferait relire des jours de
+    commentaires du depot. Au-dela de la borne, les issues trop anciennes
+    sont lues une par une.
+    """
+    captures = []
+
+    def faux_gh_api(path, *, params="", timeout=30.0):
+        captures.append(params)
+        if path.endswith("/issues/comments"):
+            return []
+        if path.endswith("/issues"):
+            return []
+        raise AssertionError(f"appel inattendu: {path}")
+
+    monkeypatch.setattr(gs, "_gh_api", faux_gh_api)
+    vieux = time.time() - 30 * 24 * 3600
+    snapshot = {"comments": {}, "issues": {}, "meta": {
+        "comment_stamps": {"7": vieux, "9": vieux}}}
+    out, calls, stats = gs.ensure_comments("o/r", [7, 9], snapshot)
+    sweep_params = [p for p in captures if "since=" in str(p)]
+    assert sweep_params, "aucun balayage"
+    joined = " ".join(str(p) for p in sweep_params)
+    match = re.search(r"since=([0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:]+Z)", joined)
+    assert match, f"aucun horodatage de balayage dans {joined}"
+    since = match.group(1)
+    # `mktime` lit l'horodatage en HEURE LOCALE : l'ecart de fuseau
+    # (UTC+1 sur ce siege) gonflerait la fenetre mesuree d'une heure.
+    parsed = dt.datetime.fromisoformat(since.replace("Z", "+00:00")).timestamp()
+    age_s = time.time() - parsed
+    assert age_s <= gs.MAX_SWEEP_LOOKBACK_SECONDS + 60, (
+        f"la fenetre du balayage n'est pas bornee : {age_s / 3600:.1f} h")
+
+
+def test_une_issue_trop_ancienne_est_lue_a_part(monkeypatch):
+    """Ce que le balayage ne couvre pas est lu par issue (jamais suppose lu)."""
+    appels = []
+
+    def faux_gh_api(path, *, params="", timeout=30.0):
+        appels.append(path)
+        if path.endswith("/issues/comments"):
+            return []
+        if path.endswith("/issues"):
+            return [{"number": 7, "title": "T", "labels": [],
+                     "updated_at": "u", "state": "open"}]
+        if path.endswith("/issues/7/comments"):
+            return [_commentaire(7)]
+        raise AssertionError(f"appel inattendu: {path}")
+
+    monkeypatch.setattr(gs, "_gh_api", faux_gh_api)
+    snapshot = {"comments": {}, "issues": {}, "meta": {
+        "comment_stamps": {"7": time.time() - 30 * 24 * 3600}}}
+    out, calls, stats = gs.ensure_comments("o/r", [7], snapshot)
+    assert stats["lus"] == 1
+    assert "repos/o/r/issues/7/comments" in appels
+
+
+# --- les stamps servis par l'instantane --------------------------------------
+
+
+def _instantane_frais(pig_module=pig):
+    """Pose un instantane qui sert l'issue 7 (commentaires frais)."""
+    now = time.time()
+    pig_module._BELT_SNAPSHOT = {
+        "comments": {"7": [_commentaire(7, body="[CLAIMED] lane a:b -- x")]},
+        "meta": {"comment_stamps": {"7": now}},
+    }
+    pig_module._PASS_SNAPSHOT = None
+
+
+def test_les_stamps_viennent_de_l_instantane_et_les_non_servis_sont_separes():
+    _instantane_frais()
+    served, missing = pig._claim_stamps_from_snapshot([7, 9])
+    assert missing == [9]
+    assert 7 in served
+    # Un stamp `None` est une MESURE (aucun marqueur), pas une absence.
+    assert served[7] is None or isinstance(served[7], str)
+
+
+def test_un_stamp_absent_de_l_instantane_n_est_jamais_fabrique():
+    """Aucun instantane : tout est non servi, aucun stamp invente."""
+    pig._BELT_SNAPSHOT = None
+    pig._PASS_SNAPSHOT = None
+    served, missing = pig._claim_stamps_from_snapshot([7])
+    assert served == {}
+    assert missing == [7]
+
+
+def test_le_balaiage_est_servi_par_le_meme_reducteur_que_la_voie_reseau():
+    """Le stamp calcule en memoire vaut celui de la voie reseau.
+
+    La reduction est la meme (`_claim_stamp_from_comments`), donc le
+    resultat ne peut pas diverger : le test compare les deux formes.
+    """
+    comments = [
+        {"body": "[INFO] candidate-delivered lane a:b -- x",
+         "createdAt": "2026-10-27T10:00:00Z", "author": {"login": "a"},
+         "url": "u1"},
+        {"body": "[CLAIMED] lane c:d -- y",
+         "createdAt": "2026-10-26T10:00:00Z", "author": {"login": "c"},
+         "url": "u2"},
+    ]
+    assert pig._claim_stamp_from_comments(comments) == "2026-10-27T10:00:00Z"
+
+
+def test_l_evenement_de_livraison_vient_de_l_instantane():
+    """La sonde d'evenement (#22500) lit l'instantane, sans requete.
+
+    Elle rend le meme triplet que la voie historique -- le reducteur est
+    partage, donc la divergence est impossible par construction.
+    """
+    comments = [
+        {"body": "[DELIVERED] lane a:b -- PR #1",
+         "createdAt": "2026-10-27T10:00:00Z", "author": {"login": "a"},
+         "url": "u1"},
+    ]
+    assert pig._delivery_event_from_comments(comments) == (
+        True, True, "2026-10-27T10:00:00Z")
+    assert pig._delivery_event_from_comments([]) == (False, False, None)
+
+
+def test_l_evenement_de_livraison_est_serve_par_l_instantane(monkeypatch):
+    """Le transport historique ne doit PAS etre appele quand l'instantane
+    sert l'issue."""
+    instantane = {
+        "comments": {"7": [{"body": "[FROZEN] lane a:b",
+                            "createdAt": "2026-10-27T10:00:00Z",
+                            "author": {"login": "a"}, "url": "u1"}]},
+        "meta": {"comment_stamps": {"7": time.time()}},
+    }
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", instantane)
+    monkeypatch.setattr(pig, "_PASS_SNAPSHOT", None)
+
+    def faux_run(*a, **kw):
+        raise AssertionError("appel reseau inattendu")
+
+    monkeypatch.setattr(pig.subprocess, "run", faux_run)
+    verdict = pig.delivery_event(7)
+    assert verdict[0] is True
+    assert verdict[2] == "2026-10-27T10:00:00Z"

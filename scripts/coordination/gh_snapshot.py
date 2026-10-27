@@ -55,6 +55,13 @@ SNAPSHOT_VERSION = 1
 #: source avant toute edition, et le merge relit B.0 a la tete exacte.
 DEFAULT_TTL_SECONDS = 1800
 
+#: Fenetre maximale lue par le balayage des commentaires du depot, en
+#: secondes (36 h). Le balayage lit TOUS les commentaires modifies depuis
+#: `since` : son cout croit avec la fenetre, pas avec le nombre d'issues
+#: visees. Mesure du 27/10 (ce siege) : 417 commentaires sur 1,5 jour =
+#: 23,7 s de lecture ; au-dela, la lecture par issue est plus honnete.
+MAX_SWEEP_LOOKBACK_SECONDS = 36 * 3600
+
 #: Duree au-dela de laquelle un verrou est considere comme abandonne (min).
 LOCK_STALE_SECONDS = 900
 
@@ -212,7 +219,8 @@ def is_fresh(snapshot: dict, ttl_seconds: int = DEFAULT_TTL_SECONDS) -> bool:
 # --- transport GitHub ----------------------------------------------------------
 
 
-def _gh_api(path: str, *, params: str = "", timeout: float = 30.0) -> Any:
+def _gh_api(path: str, *, params: str | list[str] = "",
+            timeout: float = 30.0) -> Any:
     """Un appel REST `gh api`, en JSON, avec un compte des appels.
 
     Le compteur vit dans l'attribut de module `CALL_COUNT` : le mandat
@@ -228,7 +236,10 @@ def _gh_api(path: str, *, params: str = "", timeout: float = 30.0) -> Any:
     """
     cmd = ["gh", "api", path]
     if params:
-        cmd.append(params)
+        if isinstance(params, str):
+            cmd.append(params)
+        else:
+            cmd.extend(params)
     proc = subprocess.run(
         cmd, check=False, capture_output=True, text=True, shell=False,
         encoding="utf-8", errors="replace", timeout=timeout,
@@ -293,6 +304,280 @@ def fetch_issue(repo: str, number: int) -> dict:
         "updated_at": raw.get("updated_at") or "",
         "state": raw.get("state") or "",
     }
+
+
+# --- balayage incremental du depot (#22983) -----------------------------------
+#
+# La lecture par issue (`fetch_issue_comments`) fait UN appel par issue :
+# pour la fenetre du tapis (84 a 174 issues), c'est 84 a 174 appels, et la
+# mesure du 2026-10-27 (coordinateur, `main` a jour) donne 184 s pour 54
+# claims verifies un par un. Le depot expose un point d'entree **unique** qui
+# rend la lecture incrémentale : `repos/<repo>/issues/comments`, avec
+# `since=`. Un seul appel, quel que soit le nombre d'issues concernees.
+
+
+def _issue_number_from_url(issue_url: str) -> int | None:
+    """Numero d'issue porte par l'`issue_url` d'un commentaire, ou None.
+
+    Un commentaire de PULL REQUEST porte une `issue_url` qui se termine par
+    `/pulls/<n>` : il est ECARTE. Issues et PRs partagent la meme numerotation
+    dans un depot, et le lecteur de claims raisonne sur des issues -- un
+    commentaire de PR ne doit donc jamais etrange le numero d'une issue.
+    """
+    if not issue_url:
+        return None
+    if "/pulls/" in issue_url:
+        return None
+    tail = str(issue_url).rstrip("/").rsplit("/", 1)[-1]
+    try:
+        return int(tail)
+    except ValueError:
+        return None
+
+
+def fetch_repo_comments_since(repo: str, since: str | None = None, *,
+                              timeout: float = 60.0) -> dict[int, list[dict]]:
+    """Tous les commentaires du depot, groupes par issue, en REST.
+
+    Un seul point d'entree pagine : `repos/<repo>/issues/comments`, avec
+    `since=` pour ne prendre que les commentaires modifies apres un
+    horodatage ISO 8601. C'est ce qui rend le **rafraichissement
+    incremental** possible : la lecture par issue fait un appel par issue,
+    le balayage en fait un seul, quel que soit le nombre d'issues visees.
+
+    Rend `{numero_issue: [commentaires normalises]}` -- les commentaires de
+    PR sont exclus. Lève en cas d'echec de lecture : l'appelant decide.
+    """
+    # `-X GET` est OBLIGATOIRE : `gh api` bascule en POST des qu'un champ
+    # `-f` est present, et un POST sur un point d'entree de liste rend
+    # `404 Not Found` (mesure du 27/10 : le balayage levait
+    # `gh: Not Found (HTTP 404)` et tout le rafraichissement echouait).
+    params: list[str] = ["--paginate", "-X", "GET"]
+    if since:
+        params.append(f"-f since={since}")
+    raw = _gh_api(f"repos/{repo}/issues/comments", params=params,
+                   timeout=timeout)
+    if isinstance(raw, dict):
+        raw = raw.get("comments") or []
+    grouped: dict[int, list[dict]] = {}
+    for item in raw or []:
+        if not isinstance(item, dict):
+            continue
+        number = _issue_number_from_url(str(item.get("issue_url") or ""))
+        if number is None:
+            continue
+        grouped.setdefault(number, []).append(normalise_comment(item))
+    for items in grouped.values():
+        items.sort(key=lambda c: c.get("createdAt") or "")
+    return grouped
+
+
+def fetch_open_issues(repo: str, *, timeout: float = 60.0) -> dict[int, dict]:
+    """Metadonnees de TOUTES les issues ouvertes du depot, en REST.
+
+    Un seul point d'entree pagine : `repos/<repo>/issues?state=open`. Le
+    pave du tapis est constitue d'issues ouvertes -- leslire toutes en une
+    poignee d'appels evite un appel par issue pour les seules metadonnees
+    (titre, labels).
+    """
+    raw = _gh_api(f"repos/{repo}/issues", params=["--paginate", "-X", "GET",
+                                                   "-f", "state=open"],
+                   timeout=timeout)
+    if isinstance(raw, dict):
+        raw = raw.get("issues") or []
+    out: dict[int, dict] = {}
+    for item in raw or []:
+        if not isinstance(item, dict):
+            continue
+        if item.get("pull_request"):
+            # Une PR est une issue pour REST : elle n'a pas de titre d'issue.
+            continue
+        number = item.get("number")
+        if not isinstance(number, int):
+            continue
+        labels = []
+        for lb in item.get("labels") or []:
+            if isinstance(lb, dict):
+                labels.append(lb.get("name") or "")
+            elif isinstance(lb, str):
+                labels.append(lb)
+        out[number] = {
+            "number": number,
+            "title": item.get("title") or "",
+            "labels": labels,
+            "updated_at": item.get("updated_at") or "",
+            "state": item.get("state") or "",
+        }
+    return out
+
+
+def sweep_repo_comments(repo: str, snapshot: dict, *, since: str | None = None,
+                        timeout: float = 60.0) -> tuple[dict, int]:
+    """Balaye les commentaires du depot et les fusionne dans l'instantane.
+
+    Le balayage est **incremental par construction** : `since` borne la
+    lecture aux commentaires modifies apres cet horodatage. Un issue dont
+    aucun commentaire n'a bouge depuis le dernier balayage garde sa liste
+    inchangee -- son horodatage de lecture avance quand meme, sans appel.
+
+    #22983 -- cette fonction ne ressuscite PAS la `sweep_comments` retiree
+    par la revue ai-01 du 2026-10-27 (#22684, point 3). La retirement portait
+    sur deux defauts precis : (1) une forme d'argv invalide
+    (`params=f"--paginate&since={since}"` devenait UN argument que `gh`
+    refuse), (2) aucun appelant en production. Ici, l'argv est une LISTE
+    d'arguments (`["--paginate", "-f since=..."]`), et l'appelant existe :
+    `ensure_comments`, qui remplace la lecture a deux appels par issue.
+    Le nom reste different pour que la garde de la retirement
+    (`test_sweep_comments_est_retire`) continue de dire ce qu'elle dit.
+
+    Rend `(snapshot, nb_appels_gh)`.
+    """
+    grouped = fetch_repo_comments_since(repo, since, timeout=timeout)
+    comments = dict(snapshot.get("comments") or {})
+    meta = dict(snapshot.get("meta") or {})
+    stamps = dict(meta.get("comment_stamps") or {})
+    now = time.time()
+    for number, items in grouped.items():
+        key = str(number)
+        existing = [c for c in (comments.get(key) or [])
+                    if isinstance(c, dict)]
+        by_url = {c.get("url"): c for c in existing if c.get("url")}
+        for c in items:
+            by_url[c.get("url")] = c
+        comments[key] = sorted(by_url.values(),
+                               key=lambda c: c.get("createdAt") or "")
+        stamps[key] = now
+    # Les issues balayes SANS changement (aucun commentaire nouveau) font
+    # partie de la lecture : leur horodatage de lecture avance aussi, sans
+    # appel. C'est ce qui evite de relire par issue une issue immobile.
+    if since:
+        try:
+            since_epoch = datetime.fromisoformat(
+                str(since).replace("Z", "+00:00")).timestamp()
+        except ValueError:
+            since_epoch = None
+        if since_epoch is not None:
+            for key, stamp in list(stamps.items()):
+                if isinstance(stamp, (int, float)) and stamp <= since_epoch:
+                    stamps[key] = now
+    meta["comment_stamps"] = stamps
+    meta["comments_swept_at"] = _utc_now()
+    meta["comments_sweep_since"] = since
+    snapshot["comments"] = comments
+    snapshot["meta"] = meta
+    return snapshot, 1
+
+
+def ensure_comments(repo: str, numbers: list[int], snapshot: dict, *,
+                    ttl_seconds: int = DEFAULT_TTL_SECONDS,
+                    timeout: float = 60.0) -> tuple[dict, int, dict]:
+    """Garantit les commentaires ET les metadonnees des issues demandees.
+
+    Deux voies, dans cet ordre :
+
+    1. **balayage** (`sweep_comments`) quand il est borne -- il faut que
+       chaque issue perimee ait un horodatage de lecture connu, pour que
+       `since` puisse borner la lecture. Un balayage non borne (tout le
+       depot) n'est jamais tente : il couterait plus cher que la lecture
+       par issue ;
+    2. **lecture par issue** pour ce qui reste perime apres le balayage.
+
+    Les metadonnees (titre, labels) sont lues **en une fois** pour toutes
+    les issues ouvertes du depot (`fetch_open_issues`) plutot qu'une par
+    issue : le pave du tapis est fait d'issues ouvertes.
+
+    Rend `(snapshot, nb_appels_gh, stats)`.
+    """
+    numbers = [int(n) for n in numbers]
+    meta = dict(snapshot.get("meta") or {})
+    stamps = dict(meta.get("comment_stamps") or {})
+    comments = dict(snapshot.get("comments") or {})
+    issues = dict(snapshot.get("issues") or {})
+    now = time.time()
+    calls = 0
+    stats = {"demandes": len(numbers), "perimes": 0, "balayes": 0,
+             "lus": 0, "meta_balayees": 0, "appels": 0}
+
+    def _stale(number: int) -> bool:
+        key = str(number)
+        stamp = stamps.get(key)
+        if key not in comments:
+            return True
+        if not isinstance(stamp, (int, float)):
+            return True
+        return (now - stamp) > ttl_seconds
+
+    stale = [n for n in numbers if _stale(n)]
+    stats["perimes"] = len(stale)
+    if stale:
+        known = [stamps[str(n)] for n in stale
+                 if isinstance(stamps.get(str(n)), (int, float))]
+        if known:
+            # Le balayage est borne par le PLUS ANCIEN horodatage connu --
+            # mais sa COUT croit avec la fenetre lue (mesure du 27/10 : 417
+            # commentaires sur 1,5 jour = 23,7 s ; une fenetre d'une
+            # semaine coûterait plusieurs minutes). Au-dela de
+            # `MAX_SWEEP_LOOKBACK_SECONDS`, on ne balaie pas : les issues
+            # trop anciennes sont lues une par une, ce qui est plus cher
+            # par issue mais borne.
+            oldest = min(known)
+            bounded = max(oldest, now - MAX_SWEEP_LOOKBACK_SECONDS)
+            since = datetime.fromtimestamp(bounded, UTC).strftime(
+                "%Y-%m-%dT%H:%M:%SZ")
+            snapshot, calls_sweep = sweep_repo_comments(
+                repo, snapshot, since=since, timeout=timeout)
+            calls += calls_sweep
+            stats["balayes"] = len(stale)
+            stats["since"] = since
+            meta = dict(snapshot.get("meta") or {})
+            stamps = dict(meta.get("comment_stamps") or {})
+            comments = dict(snapshot.get("comments") or {})
+        # Ce qui reste perime apres le balayage : lecture par issue.
+        remaining = [n for n in stale if _stale(n)]
+        for number in remaining:
+            key = str(number)
+            try:
+                comments[key] = fetch_issue_comments(repo, number)
+                stamps[key] = now
+                calls += 1
+                stats["lus"] += 1
+            except Exception as exc:  # noqa: BLE001 - une issue illisible ne casse pas la passe
+                meta.setdefault("fetch_failures", {})[key] = {
+                    "at": now, "error": str(exc)[:160],
+                }
+    # Les metadonnees (titre, labels) sont lues pour TOUTE cible dont
+    # l'entree manque -- pas seulement pour les perimes : le lecteur de
+    # claims a besoin des deux, et une metadonnee manquante le ferait
+    # retomber sur le reseau pour cette issue.
+    missing_meta = [n for n in numbers if str(n) not in issues]
+    if missing_meta:
+        try:
+            open_issues = fetch_open_issues(repo, timeout=timeout)
+            calls += 1
+            for number, meta_issue in open_issues.items():
+                issues[str(number)] = meta_issue
+            stats["meta_balayees"] = len(open_issues)
+        except Exception as exc:  # noqa: BLE001 - repli par issue
+            meta.setdefault("fetch_failures", {})["__open_issues__"] = {
+                "at": now, "error": str(exc)[:160],
+            }
+        for number in missing_meta:
+            key = str(number)
+            if key in issues:
+                continue
+            try:
+                issues[key] = fetch_issue(repo, number)
+                calls += 1
+            except Exception as exc:  # noqa: BLE001 - une issue illisible ne casse pas la passe
+                meta.setdefault("fetch_failures", {})[key] = {
+                    "at": now, "error": str(exc)[:160],
+                }
+    meta["comment_stamps"] = stamps
+    snapshot["issues"] = issues
+    snapshot["comments"] = comments
+    snapshot["meta"] = meta
+    stats["appels"] = calls
+    return snapshot, calls, stats
 
 
 def ensure_issue_payloads(repo: str, numbers: list[int],
@@ -386,8 +671,13 @@ def refresh(repo: str, *, issue_numbers: list[int] | None = None,
                 return snapshot
             numbers = issue_numbers or []
             if numbers:
-                snapshot, _ = ensure_issue_payloads(
-                    repo, numbers, snapshot, ttl_seconds)
+                # #22983 -- `ensure_comments` (balayage incremental + lecture
+                # par issue pour le reste) remplace `ensure_issue_payloads`
+                # (DEUX appels par issue). Meme contrat de sortie : les
+                # commentaires ET les metadonnees des issues demandees sont
+                # garantis.
+                snapshot, _calls, _stats = ensure_comments(
+                    repo, numbers, snapshot, ttl_seconds=ttl_seconds)
             meta = dict(snapshot.get("meta") or {})
             meta["version"] = SNAPSHOT_VERSION
             meta["repo"] = repo
@@ -419,9 +709,13 @@ __all__ = [
     "DEFAULT_TTL_SECONDS",
     "SNAPSHOT_VERSION",
     "SnapshotLockTimeout",
+    "ensure_comments",
     "ensure_issue_payloads",
     "fetch_issue",
     "fetch_issue_comments",
+    "fetch_open_issues",
+    "fetch_repo_comments_since",
+    "sweep_repo_comments",
     "install",
     "is_fresh",
     "load_snapshot",
