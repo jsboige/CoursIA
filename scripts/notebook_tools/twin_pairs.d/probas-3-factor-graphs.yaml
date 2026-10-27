@@ -17,3 +17,4 @@
   - 'Moteurs d''inference distincts : C# Infer.NET = inference deterministe approchee (Expectation Propagation / Variational
     Message Passing, modele compile en code d''inference) ; Python PyMC = echantillonnage MCMC (NUTS/HMC par defaut) + ADVI
     (variationnel) sur backend PyTensor. Memes concepts, paradigmes d''inference differents.'
+  - '2026-10-24 (#17040 tranche Probas, lane myia-po-2025:CoursIA, PR #22194) : REBASELINE post-consolidation de densite. Audit de la paire avant attestation, mesure sur les blobs de tete : cote Python (PyMC-03-Factor-Graphs) 21 cellules -> 21, les 9 cellules code sont byte-identiques a main (source, sorties, execution_count) et 2 cellules markdown sont consolidees/realignees (bd33d3f1 1819 -> 1631, aa05d7e 570 -> 760) ; aucune cellule ajoutee ni retiree. Cote C# (Infer-03-Factor-Graphs) byte-identique a main. Parite semantique inchangee : markdown-only, 0 sortie touchee.'
