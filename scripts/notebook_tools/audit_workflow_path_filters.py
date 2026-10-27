@@ -45,6 +45,13 @@ REQUIRED_UNFILTERED_WORKFLOWS: set[str] = {
     # lane-claim-guard -- tous dormant) en un seul workflow non filtre qui
     # porte leurs organes metadata + le moteur fast-lane.
     "always-on-guards.yml",
+    # #22331 : le jumeau de body du split precedent. Meme contrat, meme
+    # raison de ne PAS porter de `paths:` -- `derive_always_on_jobs` derive
+    # la liste canari des workflows `pull_request` SANS filtre, et un filtre
+    # retirerait ce job du canari (une PR qui n'edite que son corps ne
+    # declencherait plus le workflow qui juge le corps). Le job est exige par
+    # le gate sous son propre nom, comme celui du contenu.
+    "always-on-guards-body.yml",
     # #21922 : le garde perimeter a retrouve son declencheur `pull_request`
     # (restaure dans perimeter-review-guard.yml -- le levier du garde est le
     # nom de check-run que CE fichier publie, cf. son en-tete).
