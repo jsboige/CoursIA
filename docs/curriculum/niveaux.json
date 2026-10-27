@@ -1,0 +1,93 @@
+{
+  "description": "Niveaux de sortie lisibles par un établissement : cinq strates cumulatives (découverte, licence, ingénieur/master, avancée, recherche) qui mappent le corpus existant sur ce qu'un établissement peut délivrer et évaluer. Chaque branche est le socle de la suivante ; un établissement lit le niveau qu'il délivre et voit la sélection de carnets correspondante, l'ordre étant porté par la chaîne de prérequis. L'axe est celui des niveaux de sortie (item 3 du tri du 26/09 sur #13844), pas celui d'un domaine : l'instance Actuariat couvre l'axe actuariat, celle-ci couvre l'axe des niveaux.",
+  "declared_kernel_transitions": [".NET", "Lean"],
+  "branches": [
+    {
+      "id": "decouverte",
+      "description": "Premier contact sans prérequis : espaces d'états et recherche non informée (Search 01-02), première résolution combinatoire de bout en bout (Sudoku backtracking puis Dancing Links), premier cycle de vie d'un modèle (2.1 Workflow ML), et première expérience LLM (Texte 01). C'est l'itinéraire « démarrer sans service externe » du README racine, prolongé d'un carnet d'appel de modèle : tout s'exécute localement sauf ce dernier.",
+      "notebooks": [
+        "Search/Part1-Foundations/Search-01-StateSpace.ipynb",
+        "Search/Part1-Foundations/Search-02-Uninformed.ipynb",
+        "Sudoku/Sudoku-01-Backtracking-Python.ipynb",
+        "Sudoku/Sudoku-02-DancingLinks-Python.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.1-Workflow-ML.ipynb",
+        "GenAI/Texte/01_OpenAI_Intro.ipynb"
+      ]
+    },
+    {
+      "id": "licence",
+      "description": "Socle académique : optimisation (2.2 descente de gradient), modèles linéaires et ensembles (2.3, 2.4), biais-variance et validation croisée (2.5), théorie de l'apprentissage (2.8 PAC), TAL classique avant les LLM (NLP 01-02 : dépendances, n-grammes), première modélisation bayésienne (PyMC-01). Le jumeau industriel .NET (ML-01 Introduction) ouvre la transition de noyau déclarée : la licence sait aussi faire tourner un pipeline dans l'écosystème d'entreprise.",
+      "prerequisites": [
+        "decouverte"
+      ],
+      "notebooks": [
+        "ML/DataScienceWithAgents/02-ML-Cours/2.2-Descente-de-gradient.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.3-Regression-lineaire-logistique.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.4-Arbres-Forets-Ensembles.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.5-Biais-Variance-CV-ROC.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.8-Theorie-PAC.ipynb",
+        "NLP/01_TAL_Du_Mot_Aux_Dependances.ipynb",
+        "NLP/02_NGrammes_Modeles_De_Langue.ipynb",
+        "Probas/PyMC/PyMC-01-Setup.ipynb",
+        "ML/ML.Net/ML-01-Introduction.ipynb"
+      ]
+    },
+    {
+      "id": "ingenieur-master",
+      "description": "Mise en production : contrôle des sorties d'un LLM (prompt engineering, sorties structurées, function calling), recherche sémantique mesurée (embeddings et stockage vectoriel from scratch, retrieval avancé, avant tout branchement de RAG), service d'inférence local (LocalLlama), orchestration SemanticKernel, hygiène de modèle en production (hyperparamètres, classes déséquilibrées) et premier backtest (QC-Py-02). La sortie ingénieur/master sait servir, mesurer et déboguer un système à modèle, pas seulement l'entraîner.",
+      "prerequisites": [
+        "licence"
+      ],
+      "notebooks": [
+        "GenAI/Texte/02_PromptEngineering.ipynb",
+        "GenAI/Texte/03_Structured_Outputs.ipynb",
+        "GenAI/Texte/04_Function_Calling.ipynb",
+        "GenAI/RAG-et-Memoire-Semantique/03-Embeddings-From-Scratch.ipynb",
+        "GenAI/RAG-et-Memoire-Semantique/05-Stockage-Vectoriel.ipynb",
+        "GenAI/RAG-et-Memoire-Semantique/02-Retrieval-Avance.ipynb",
+        "GenAI/Texte/10_LocalLlama.ipynb",
+        "GenAI/SemanticKernel/01-SemanticKernel-Intro.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.10-Optimisation-Hyperparametres.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.12-Donnees-Desequilibrees.ipynb",
+        "QuantConnect/Python/QC-Py-02-Platform-Fundamentals.ipynb"
+      ]
+    },
+    {
+      "id": "avancee",
+      "description": "Approfondissement : problèmes combinatoires structurés (CSP ; recuit simulé en prolongement du fil Sudoku — la série métaheuristique Part4 est .NET et relève du jumeau d'entreprise), théorie des jeux non coopérative (mise en route, équilibre de Nash), décision séquentielle (bandits, MDP et Q-learning), et premier passage au formel : Lean-01 (setup, pont Python) puis Lean-03 (propositions et preuves), transition de noyau déclarée. La calibration des probabilités (2.5b) ferme la boucle de mesure du niveau ingénieur. La sortie avancée lit une preuve courte et sait qu'un solveur n'est pas une heuristique.",
+      "prerequisites": [
+        "ingenieur-master"
+      ],
+      "notebooks": [
+        "Search/Part2-CSP/CSP-1-Fundamentals.ipynb",
+        "Sudoku/Sudoku-04-SimulatedAnnealing-Python.ipynb",
+        "GameTheory/GameTheory-01-Setup-Python.ipynb",
+        "GameTheory/GameTheory-04-NashEquilibrium-Python.ipynb",
+        "RL/RL-04-Bandits-Manchots-Python.ipynb",
+        "RL/RL-05-MDP-Programmation-Dynamique-Q-Learning-Python.ipynb",
+        "SymbolicAI/Lean/Lean-01-Setup-Lean-Python.ipynb",
+        "SymbolicAI/Lean/Lean-03-Propositions-Proofs-Lean.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.5b-Calibration-Probabilites.ipynb"
+      ]
+    },
+    {
+      "id": "recherche",
+      "description": "Front : théorie de l'information intégrée (PyPhi, trajectoires Phi), Mathlib pour de vraies preuves (Lean-06), preuve agentique (Lean-08), jeux coopératifs formalisés en Lean (GT-15b), RL distributionnel (C51) et post-training multi-graines (GRPO comparatif), bornes de concentration (2.8c) et MDL/Kolmogorov. La sortie recherche mesure un phénomène, le formalise, et confronte la formalisation à l'expérience — la thèse du dépôt poussée à son terme.",
+      "prerequisites": [
+        "avancee"
+      ],
+      "notebooks": [
+        "IIT/IIT-01-IntroToPyPhi-Python.ipynb",
+        "IIT/ICT-Series/ICT-01-PhiTrajectories-Python.ipynb",
+        "SymbolicAI/Lean/Lean-06-Mathlib-Essentials-Lean.ipynb",
+        "SymbolicAI/Lean/Lean-08-Agentic-Proving-Python.ipynb",
+        "GameTheory/GameTheory-15b-Lean-CooperativeGames-Lean.ipynb",
+        "RL/RL-12-Distributional-RL-C51-Python.ipynb",
+        "RL/RL-15-GRPO-Comparatif-Multi-Graines-Python.ipynb",
+        "ML/DataScienceWithAgents/02-ML-Cours/2.8c-Borne-Temoin-Concentration.ipynb",
+        "Compression/Compression-06-MDL-Kolmogorov-Python.ipynb"
+      ]
+    }
+  ],
+  "accretions": []
+}
