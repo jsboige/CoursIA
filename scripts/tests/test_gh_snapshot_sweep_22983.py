@@ -16,6 +16,7 @@ racine de l'instantane est redirigee vers `tmp_path`.
 
 import datetime as dt
 import json
+import os
 import re
 import subprocess
 import sys
@@ -379,6 +380,26 @@ def test_un_balaiage_mort_laisse_la_lecture_par_issue_prendre_le_relais(monkeypa
     assert stats["lus"] == 1
     assert stats.get("balayage_echoue"), "l'echec du balayage n'est pas dit"
     assert out["comments"]["7"][0]["body"].startswith("[CLAIMED]")
+
+
+def test_un_verrou_tenu_par_un_processus_mort_est_casse(monkeypatch,
+                                                          tmp_path):
+    """Un processus tue laisse le verrou derriere lui.
+
+    Mesure du 27/10 : un tirage interrompu a laisse le fichier de verrou,
+    et toutes les lanes de la machine ont attendu `LOCK_STALE_SECONDS`
+    (15 min) avant de pouvoir rafraichir. Un verrou dont le **pid est
+    mort** est casse immediatement.
+    """
+    monkeypatch.setattr(gs, "snapshot_root", lambda: tmp_path / "snap")
+    monkeypatch.setattr(gs, "LOCK_STALE_SECONDS", 900)
+    directory = gs.snapshot_dir("jsboige/CoursIA")
+    directory.mkdir(parents=True, exist_ok=True)
+    lock = directory / "refresh.lock"
+    lock.write_text("999999999", encoding="utf-8")   # pid mort
+    with gs.snapshot_lock("jsboige/CoursIA", timeout=5):
+        assert lock.read_text(encoding="utf-8") == str(os.getpid())
+    assert not lock.exists()
 
 
 # --- les stamps servis par l'instantane --------------------------------------

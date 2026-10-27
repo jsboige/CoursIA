@@ -112,13 +112,52 @@ def snapshot_dir(repo: str) -> Path:
 # --- verrou --------------------------------------------------------------------
 
 
+def _pid_alive(pid: int) -> bool:
+    """Le processus qui tient le verrou est-il encore vivant ?
+
+    Windows n'a pas de `kill(pid, 0)` sans risque : `os.kill(pid, 0)` y
+    termine le processus. On interroge donc l'API Win32
+    (`OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION)`) : un handle nul
+    signifie « processus absent » ; une erreur d'ACCES signifie
+    « present mais intouchable », donc vivant.
+    """
+    if pid <= 0:
+        return False
+    if os.name == "nt":
+        try:
+            import ctypes
+
+            handle = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)
+            if not handle:
+                return False
+            ctypes.windll.kernel32.CloseHandle(handle)
+            return True
+        except Exception:  # noqa: BLE001 - on ne peut pas dire : on presume vivant
+            return True
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return True
+    return True
+
+
 @contextmanager
 def snapshot_lock(repo: str, timeout: float = 120.0) -> Iterator[Path]:
     """Verrou de rafraichissement, partage entre lanes de la meme machine.
 
     `O_CREAT|O_EXCL` est atomique sur tous les OS vises : le createur gagne,
-    les autres attendent. Un verrou abandonne (age > `LOCK_STALE_SECONDS`) est
-    casse -- sans quoi un processus mort bloquerait la machine jusqu'au
+    les autres attendent. Un verrou abandonne est casse dans deux cas :
+
+    - le processus qui le tient est **mort** (le fichier porte son pid) --
+      mesure du 27/10 : un tirage interrompu a laisse le verrou, et toutes
+      les lanes de la machine ont attendu `LOCK_STALE_SECONDS` (15 min) ;
+    - le verrou est **vieux** (age > `LOCK_STALE_SECONDS`).
+
+    Sans ce second cas, un processus mort bloquerait la machine jusqu'au
     redemarrage.
     """
     directory = snapshot_dir(repo)
@@ -136,7 +175,13 @@ def snapshot_lock(repo: str, timeout: float = 120.0) -> Iterator[Path]:
                 age = time.time() - lock_path.stat().st_mtime
             except OSError:
                 age = 0.0
-            if age > LOCK_STALE_SECONDS:
+            holder = None
+            try:
+                holder = int(lock_path.read_text(encoding="utf-8").strip() or 0)
+            except (OSError, ValueError):
+                holder = None
+            dead_holder = holder is not None and not _pid_alive(holder)
+            if age > LOCK_STALE_SECONDS or dead_holder:
                 try:
                     lock_path.unlink()
                 except OSError:
