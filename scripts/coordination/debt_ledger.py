@@ -3018,8 +3018,50 @@ def publish_git_ledger(
     _git(["update-ref", _tracking_ref(remote), pushed_sha, expected_old], cwd=repo)
     # Drain du spool local : les ids publies ne doivent plus faire repondre
     # UNPOSTED au gate local (la source de publication inclut les archives).
-    archive_posted(spool_dir, published_now)
+    #
+    # La poussee a ATTERRI et le commit verifie porte TOUTES les observations
+    # publiees : l'etat de la flotte EST sur la branche. Un drain qui
+    # n'aboutit pas -- une enveloppe a pu disparaitre du spool entre la
+    # lecture de la source et l'archivage -- ne doit donc pas faire dire
+    # "echec" a une publication reussie : le RESIDUE est nomme, et la
+    # verification du commit reste le fait qui fait foi.
+    drain = _archive_published_best_effort(spool_dir, published_now)
+    summary["drained"] = list(drain.get("moved") or [])
+    if drain.get("missing"):
+        summary["drain_missing"] = list(drain["missing"])
     return summary
+
+
+def _archive_published_best_effort(
+    spool_dir: Path, observation_ids: Sequence[str]
+) -> dict[str, list[str]]:
+    """Archive ce qui se resout, nomme ce qui ne se resout pas.
+
+    ``archive_posted`` reste **tout ou rien** -- c'est son contrat, et le
+    demi-drain qu'il refuse est justement l'etat qui fait mentir
+    ``check_pending``. Mais l'appelant de la publication, lui, a deja
+    verifie que la poussee a ATTERRI : un identifiant devenu introuvable
+    dans le spool (une enveloppe retiree entre la lecture de la source et
+    l'archivage) ne peut plus rien perdre -- l'observation est sur la
+    branche. Refuser l'appel entier ferait dire "echec" a une publication
+    reussie, et surtout laisserait croire que rien n'a ete publie.
+
+    Renvoie ``{"moved": [...], "already": [...], "missing": [...]}``.
+    """
+    pending_index = _index_spool(spool_dir, strict=True)
+    posted_index = _index_spool(spool_dir / "posted", strict=False)
+    resolvable = [
+        observation_id
+        for observation_id in observation_ids
+        if observation_id in pending_index or observation_id in posted_index
+    ]
+    missing = sorted(set(observation_ids) - set(resolvable))
+    outcome: dict[str, list[str]] = {"moved": [], "already": [], "missing": missing}
+    if resolvable:
+        archived = archive_posted(spool_dir, resolvable)
+        outcome["moved"] = list(archived.get("moved") or [])
+        outcome["already"] = list(archived.get("already") or [])
+    return outcome
 
 
 def refresh_snapshot_from_branch(
@@ -3808,6 +3850,15 @@ def _cli_publish(args: argparse.Namespace) -> int:
             )
         if summary.get("snapshot"):
             print(f"snapshot (cache) refreshed: {summary['snapshot']}")
+        if summary.get("drain_missing"):
+            missing = summary["drain_missing"]
+            print(
+                f"drain incomplet : {len(missing)} observation(s) sont sur la "
+                "branche mais ne se resolvent plus dans le spool local : "
+                + ", ".join(missing[:10])
+                + ("..." if len(missing) > 10 else ""),
+                file=sys.stderr,
+            )
     return 0
 
 

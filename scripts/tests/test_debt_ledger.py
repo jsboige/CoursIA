@@ -2375,6 +2375,60 @@ def test_le_gate_rend_unreadable_si_la_cible_est_interdite(tmp_path, capsys):
     assert "GIT_LEDGER_FORBIDDEN_TARGET" in out
 
 
+def test_le_drain_nomme_le_residu_sans_faire_echouer_la_publication(
+    tmp_path, monkeypatch, capsys
+):
+    """Une enveloppe disparue du spool PENDANT la publication ne doit pas
+    faire dire "echec" a une publication reussie.
+
+    Mesure du 2026-10-27 (premiere publication reelle de la flotte) : la
+    poussee a atterri et la commande a rendu `UNKNOWN_OBSERVATION` au drain
+    -- l'operateur ne pouvait pas savoir si l'etat de la flotte etait publie.
+    Le residue est desormais NOMME, et la publication reste PUBLISHED.
+    """
+    _remote, work = _git_sandbox(tmp_path)
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    reel = dl._publish_attempt
+    vole = {"fait": False}
+
+    def publish_attempt_avec_course(*args, **kwargs):
+        sha = reel(*args, **kwargs)
+        if not vole["fait"]:
+            vole["fait"] = True
+            # L'enveloppe du pending disparait (course avec un autre acteur
+            # sur le spool) APRES la construction du commit : elle est sur
+            # la branche, mais plus dans le spool.
+            for path in (state_dir / "gpu-reservation" / "spool").glob("*.json"):
+                path.unlink()
+        return sha
+
+    monkeypatch.setattr(dl, "_publish_attempt", publish_attempt_avec_course)
+    rc = _publish(state_dir, work, "myia-ai-01", emit=True)
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "PUBLISHED" in out
+    # Le commit porte bien l'observation : la poussee a atterri.
+    assert _bare_lines(_remote, "myia-ai-01")
+
+
+def test_le_drain_best_effort_nomme_ce_qui_ne_se_resout_pas(tmp_path):
+    """Le drain archive ce qui se resout et NOMME ce qui ne se resout pas."""
+    state_dir = _gpu_state(tmp_path)
+    assert _append_hold(state_dir) == 0
+    spool = state_dir / "gpu-reservation" / "spool"
+    pending = sorted(spool.glob("*.json"))
+    assert pending, "l'observation appendue doit etre dans le spool pending"
+    observation_id = pending[0].stem
+    outcome = dl._archive_published_best_effort(
+        spool, [observation_id, "obs-introuvable-0000"]
+    )
+    assert outcome["missing"] == ["obs-introuvable-0000"]
+    assert observation_id in outcome["moved"]
+    # L'archive porte desormais l'observation ; le spool pending est vide.
+    assert not list(spool.glob("*.json"))
+
+
 def test_publish_git_dry_run_by_default_writes_nothing(tmp_path, capsys):
     """Sans --emit : aucun commit, aucun push, spool intact, cache absent."""
     remote, work = _git_sandbox(tmp_path)
