@@ -19,6 +19,9 @@
     - `Knots.ReidemeisterMoves` — suite de mouvements vérifiable par le
       noyau (organe #18611 : inductif data + vérificateurs Bool +
       soundness vers `ReidemeisterEquiv`)
+    - `Knots.ReidemeisterAny` — langue de moves étendue (organe #22359 :
+      kink/bigon sans fraîcheur, forme canonique `canon` à renommage près,
+      embedding R1/R3 de la langue connectée, cadre de décision borné)
     - `Knots.Invariant` — invariants polynomiaux (Alexander,
       Jones), tricoloriabilité, genre
     - `Knots.Conway` — notations et conventions de Conway
@@ -26,6 +29,9 @@
       dichotomie lisse/topologique (extrait de Conway, #18397)
     - `Knots.Jones` — bracket de Kauffman sur codes PD (somme d'états,
       évaluations trèfle / noeud en huit / noeud trivial)
+    - `Knots.Khovanov` — complexe de Khovanov du trèfle (cube des
+      lissages, m/Δ, d∘d = 0, table graduée `q + q³ + q⁵t² + q⁹t³`,
+      χ|_{q=−1} = −2)
     - `Knots.FigureEight` — invariants du noeud en huit sur son code PD
       plan (Alexander signé classique à une unité près, déterminant 5,
       non-tricoloriabilité, 4 croisements — définition provisoire)
@@ -54,7 +60,9 @@ import Knots.Slice
 import Knots.ReidemeisterInvariance
 import Knots.ReidemeisterMoves
 import Knots.ReidemeisterCombinatorial
+import Knots.ReidemeisterAny
 import Knots.Jones
+import Knots.Khovanov
 import Knots.FigureEight
 import Knots.Lidman
 import Knots.MathlibPrerequisites

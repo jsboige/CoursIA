@@ -1044,8 +1044,7 @@ PROVIDERS_CONFIG = {
     "anthropic": {
         "models": {
             "claude-sonnet-4-5": {"max_tokens": 4096},
-            "claude-opus-4-5": {"max_tokens": 4096},
-            "claude-3-5-sonnet": {"max_tokens": 4096}
+            "claude-opus-4-5": {"max_tokens": 4096}
         },
         "api_key_env": "ANTHROPIC_API_KEY",
         "default_model": "claude-sonnet-4-5"
