@@ -12,15 +12,17 @@ Sortie : translations/translation_golden_set.json
     pairs       : paires FR/EN avec empreintes des deux cotes
     orphans_en  : fichiers _en sans contrepartie FR visible (a trier)
 
-Usage : python scripts/translation/build_golden_set.py [--check | --check-structure]
+Usage : python scripts/translation/build_golden_set.py [--check]
     --check : exit 1 si le JSON commite differe du JSON regenere (drift),
-              empreintes comprises. Jambe ADVISORY de la garde (#22216) : la
-              derive d'empreintes se signale, elle ne bloque pas.
-    --check-structure : exit 1 seulement si les PAIRES (kind, fr, en) du JSON
-              commite ne correspondent plus a l'arbre. Jambe BLOQUANTE : une
-              PR qui edite un fichier apparie sans ajouter ni retirer de paire
-              ne rougit pas -- la regeneration du JSON n'est plus due a chaque
-              edition (arbitrage review #22216, alternative structure-seule).
+              empreintes, orphelins et structure des paires comprises. Garde
+              ADVISORY de la voie rapide (#22216, arbitrage final de la
+              review myia-ai-01 du 2026-10-26) : la derive se SIGNALE sur la
+              PR, elle ne bloque pas. La REGENERATION du JSON vit dans le
+              cron du catalogue (catalog-cron.yml, branche
+              chore/catalog-refresh-pending) -- meme modele que
+              COURSE_CATALOG.generated.* (#19901, regle catalog-pr-hygiene) :
+              un fichier genere appartient au cron, une branche de contenu
+              ne le regenere pas.
 """
 
 from __future__ import annotations
@@ -141,52 +143,26 @@ def collect() -> dict:
     }
 
 
-def structure_of(data: dict) -> list:
-    """Structure du golden set : couples (kind, fr, en) des paires, sans empreintes.
-
-    C'est la partie dont la derive signale qu'une paire a ete AJOUTEE ou
-    RETIREE de l'arbre. Les empreintes (sha1_fr, sha1_en, sources_sha1_*)
-    derivent des qu'un fichier apparie est edite, sans changement de paire :
-    elles vivent dans la jambe advisory (`--check`), pas dans la bloquante
-    (arbitrage #22216). Les orphelins _en suivent les empreintes : ajouter un
-    `_en` sans contrepartie FR n'est pas ajouter une paire, la jambe
-    bloquante ne le voit pas.
-    """
-    return [[e.get("kind"), e.get("fr"), e.get("en")]
-            for e in data.get("pairs", [])]
-
-
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
                     help="verifie que le JSON commite est a jour (pas de drift)")
-    ap.add_argument("--check-structure", action="store_true",
-                    help="verifie seulement les paires (kind, fr, en) -- la "
-                         "derive d'empreintes ne fait pas echouer ce mode")
     args = ap.parse_args(argv)
 
     data = collect()
 
-    if args.check or args.check_structure:
+    if args.check:
         if not OUTPUT.exists():
             print("GOLDEN-SET MISSING: translations/translation_golden_set.json absent")
             return 1
         current = json.loads(OUTPUT.read_text(encoding="utf-8"))
-        if args.check and current != data:
+        if current != data:
             print("GOLDEN-SET DRIFT: le JSON commite ne correspond plus a l'arbre")
-            print("  (jambe advisory : empreintes et orphelins compris)")
-            print("  Regenérer : python scripts/translation/build_golden_set.py")
+            print("  (garde advisory : la derive se signale, elle ne bloque pas)")
+            print("  Regenere chaque nuit par catalog-cron.yml "
+                  "(branche chore/catalog-refresh-pending)")
             return 1
-        if structure_of(current) != structure_of(data):
-            print("GOLDEN-SET STRUCTURE DRIFT: les paires du JSON commite "
-                  "ne correspondent plus a l'arbre")
-            print("  Regenérer : python scripts/translation/build_golden_set.py")
-            return 1
-        if args.check:
-            print(f"GOLDEN-SET OK: {len(data['pairs'])} paires a jour")
-        else:
-            print(f"GOLDEN-SET STRUCTURE OK: {len(data['pairs'])} paires a jour "
-                  "(empreintes non comparees dans ce mode)")
+        print(f"GOLDEN-SET OK: {len(data['pairs'])} paires a jour")
         return 0
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)

@@ -1,12 +1,24 @@
 """Tests de la garde golden set de traduction (#22009, arbitrage #22216).
 
-La review du 2026-10-26 sur la PR #22216 arbitre la forme de la garde : la
-jambe BLOQUANTE ne compare que la STRUCTURE des paires (kind, fr, en) -- une
-PR qui edite un fichier apparie sans ajouter ni retirer de paire ne rougit
-pas -- et la derive d'empreintes se lit en ADVISORY. Ces tests pin les deux
-jambes : semantique du script (`--check-structure` muet sur les empreintes,
-rouge sur les paires) et declaration du registre (deux gardes, bloquante sur
-`--check-structure`, advisory nommee comme telle pour `pr_gate`).
+Arbitrage FINAL de la review myia-ai-01 du 2026-10-26 (demandes 1 + 2) : la
+garde `translation-golden-set-drift` est ADVISORY pure -- le `--check`
+integral (empreintes, orphelins, structure des paires) SIGNALE la derive sur
+la PR sans bloquer -- et la REGENERATION du JSON vit dans le cron du
+catalogue (catalog-cron.yml, branche chore/catalog-refresh-pending), meme
+modele que COURSE_CATALOG.generated.* (#19901, regle catalog-pr-hygiene) :
+une branche de contenu ne regenere pas un fichier genere.
+
+Une forme intermediaire « jambe bloquante sur la structure seule »
+(--check-structure + jambe advisory empreintes) a ete implantee sur cette
+branche puis retiree : meme limitee aux paires, elle exigeait la
+regeneration SUR BRANCHE du fichier genere a chaque paire ajoutee ou
+retiree -- exactement le geste que catalog-pr-hygiene interdit pour le
+catalogue.
+
+Ces tests pin : la semantique du script (`--check` vert a jour, rouge sur
+derive d'empreintes, de structure ou d'orphelins, rouge si le JSON est
+absent) et la declaration du registre (UNE seule garde, NON bloquante,
+marqueur advisory dans le nom pour pr_gate, argv sur `--check`).
 """
 
 from __future__ import annotations
@@ -56,85 +68,83 @@ def _run(monkeypatch, tmp_path, committed, argv):
     return build_golden_set.main(argv)
 
 
-def test_check_structure_est_muet_sur_la_derive_d_empreintes(
-        monkeypatch, tmp_path, capsys):
+def test_check_vert_quand_le_json_est_a_jour(monkeypatch, tmp_path, capsys):
+    """JSON commite == arbre : rc=0."""
+    rc = _run(monkeypatch, tmp_path, _fixture_data(), ["--check"])
+    assert rc == 0
+    assert "GOLDEN-SET OK" in capsys.readouterr().out
+
+
+def test_check_rouge_sur_derive_d_empreintes(monkeypatch, tmp_path, capsys):
     """Edition d'un fichier apparie = nouvelles empreintes, memes paires.
 
-    La jambe bloquante doit rester verte (c'est le friction que l'arbitrage
-    #22216 retire) ; la jambe advisory doit, elle, signaler la derive.
+    La garde advisory doit SIGNALER la derive (rc=1) -- c'est son role :
+    rien ne redevient silencieux sous l'arbitrage #22216.
     """
     drifted = _fixture_data()
     drifted["pairs"][0]["sha1_fr"] = "f1-edite"
     drifted["pairs"][2]["sources_sha1_en"] = "se3-edite"
 
-    rc = _run(monkeypatch, tmp_path, drifted, ["--check-structure"])
-    assert rc == 0, "une derive d'empreinte ne doit pas rouger la bloquante"
-    assert "STRUCTURE OK" in capsys.readouterr().out
-
     rc = _run(monkeypatch, tmp_path, drifted, ["--check"])
-    assert rc == 1, "la jambe advisory doit signaler la derive d'empreinte"
+    assert rc == 1, "la derive d'empreinte doit etre signalee (advisory)"
+    assert "GOLDEN-SET DRIFT" in capsys.readouterr().out
 
 
-def test_check_structure_rouge_sur_paire_retiree(monkeypatch, tmp_path):
-    """Retirer une paire de l'arbre sans regenerer = rouge bloquant."""
+def test_check_rouge_sur_paire_retiree(monkeypatch, tmp_path):
+    """Retirer une paire de l'arbre sans regenerer : derive signalee."""
     stale = _fixture_data()
     stale["pairs"].pop(1)
     stale["counts"]["readme"] = 0
 
-    rc = _run(monkeypatch, tmp_path, stale, ["--check-structure"])
-    assert rc == 1
-
-
-def test_check_structure_rouge_sur_paire_ajoutee(monkeypatch, tmp_path):
-    """Ajouter une paire a l'arbre sans regenerer = rouge bloquant."""
-    stale = _fixture_data()
-    stale["pairs"] = stale["pairs"][:2]
-    stale["counts"]["notebook"] = 0
-
-    rc = _run(monkeypatch, tmp_path, stale, ["--check-structure"])
-    assert rc == 1
-
-
-def test_orphan_ajoute_ne_rougit_pas_la_bloquante(monkeypatch, tmp_path):
-    """Un `_en` sans contrepartie FR n'est pas une paire (arbitrage #22216).
-
-    La structure bloquante ne compare que les paires ; l'orphelin vit dans
-    la jambe advisory.
-    """
-    stale = _fixture_data()
-    stale["orphans_en"] = []
-    rc = _run(monkeypatch, tmp_path, stale, ["--check-structure"])
-    assert rc == 0
     rc = _run(monkeypatch, tmp_path, stale, ["--check"])
     assert rc == 1
 
 
-def test_json_absent_rougit_les_deux_jambes(monkeypatch, tmp_path):
+def test_check_rouge_sur_paire_ajoutee(monkeypatch, tmp_path):
+    """Ajouter une paire a l'arbre sans regenerer : derive signalee.
+
+    Sous la forme intermediaire structure-seule, ce cas etait le seul
+    bloquant ; en advisory finale il reste SIGNALE (rc=1), la resorption
+    appartient au cron du catalogue.
+    """
+    stale = _fixture_data()
+    stale["pairs"] = stale["pairs"][:2]
+    stale["counts"]["notebook"] = 0
+
+    rc = _run(monkeypatch, tmp_path, stale, ["--check"])
+    assert rc == 1
+
+
+def test_check_rouge_sur_derive_d_orphelins(monkeypatch, tmp_path):
+    """Un `_en` sans contrepartie FR entre ou sort : derive signalee."""
+    stale = _fixture_data()
+    stale["orphans_en"] = []
+    rc = _run(monkeypatch, tmp_path, stale, ["--check"])
+    assert rc == 1
+
+
+def test_json_absent_rouge(monkeypatch, tmp_path):
     monkeypatch.setattr(build_golden_set, "OUTPUT",
                         tmp_path / "absent.json")
     monkeypatch.setattr(build_golden_set, "collect", lambda: _fixture_data())
-    assert build_golden_set.main(["--check-structure"]) == 1
     assert build_golden_set.main(["--check"]) == 1
 
 
-def test_registre_deux_jambes_bloquante_sur_structure_advisory_sur_empreintes():
-    """La declaration du registre porte l'arbitrage : deux gardes distinctes."""
+def test_registre_une_seule_garde_advisory_non_bloquante():
+    """La declaration du registre porte l'arbitrage final : UNE garde,
+    NON bloquante, sur le `--check` integral."""
     sys.path.insert(0, str(CI_DIR))
     from fast_lane_registry import TRANCHE26
 
-    by_name = {g.name: g for g in TRANCHE26}
-    assert len(TRANCHE26) == 2, (
-        "l'arbitrage #22216 attend DEUX jambes (structure bloquante + "
-        "empreintes advisory)")
+    assert len(TRANCHE26) == 1, (
+        "l'arbitrage final #22216 attend UNE garde advisory (la forme "
+        "deux-jambes structure-seule a ete retiree)")
+    assert not any(g.blocking for g in TRANCHE26), (
+        "aucune jambe du golden set ne doit etre bloquante")
 
-    drift = by_name["translation-golden-set-drift"]
-    assert drift.blocking is True
-    assert "--check-structure" in drift.argv
-
-    fingerprints = by_name[
-        "translation-golden-set-fingerprints (advisory, non-blocking)"]
-    assert fingerprints.blocking is False
-    assert fingerprints.argv == [
+    drift = TRANCHE26[0]
+    assert drift.name == "translation-golden-set-drift (advisory, non-blocking)"
+    assert drift.argv == [
         "python", "scripts/translation/build_golden_set.py", "--check"]
 
     # Le caractere advisory doit se lire dans le NOM (pr_gate classe par nom :
@@ -142,7 +152,5 @@ def test_registre_deux_jambes_bloquante_sur_structure_advisory_sur_empreintes():
     sys.path.insert(0, str(SCRIPTS_DIR))
     import pr_gate
     advisory_jobs = pr_gate.derive_advisory_jobs()
-    assert not pr_gate._is_advisory_name(drift.name, advisory_jobs), (
-        "la jambe bloquante ne doit pas etre classee advisory")
-    assert pr_gate._is_advisory_name(fingerprints.name, advisory_jobs), (
-        "la jambe advisory doit porter le marqueur dans son nom")
+    assert pr_gate._is_advisory_name(drift.name, advisory_jobs), (
+        "la garde doit porter le marqueur advisory dans son nom")
