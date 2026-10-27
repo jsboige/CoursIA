@@ -552,7 +552,7 @@ layout: default
 - Verification de protocoles
 - Model checking
 
-*Notebooks : [App-23-PRESENT-Differential-Cryptanalysis-SAT](../../MyIA.AI.Notebooks/Search/Applications/Hybrid/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) (cryptanalyse ramenee a SAT) · [Z3-Python-14-BitVectors-Overflow](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb) (arithmetique machine, verification de code).*
+*Notebooks : [App-23-PRESENT-Differential-Cryptanalysis-SAT](../../MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-23-PRESENT-Differential-Cryptanalysis-SAT.ipynb) (cryptanalyse ramenee a SAT) · [Z3-Python-14-BitVectors-Overflow](../../MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/Z3-14-BitVectors-Overflow-Python.ipynb) (arithmetique machine, verification de code).*
 
 ---
 layout: default
