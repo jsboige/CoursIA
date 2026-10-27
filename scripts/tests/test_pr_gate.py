@@ -1228,6 +1228,43 @@ def test_catalog_drift_job_name_carries_the_advisory_marker():
     assert not pr_gate.is_advisory("Notebook catalog drift (read-only)", wf_name)
 
 
+def test_translation_drift_job_name_carries_the_advisory_marker():
+    """Meme defaut que #15998, sur le job translation-drift.
+
+    Le workflow `translation-drift.yml` annonce « non-blocking, read-only »
+    depuis son en-tete (#4957), et son job se nommait « Translation drift
+    (read-only) » -- sans le marqueur. `pr_gate.py` classant par NOM
+    (`ADVISORY_MARKER`, regle 6), un echec d'infrastructure de ce job comptait
+    comme un check REQUIS : le gate rougissait alors que le job lui-meme
+    n'avait rien signale. Mesure sur #22216 le 2026-10-26 : « PR gate: FAIL
+    -- failing checks: Translation drift (read-only) (failure) », sur un job
+    mort au checkout (fetch promisor), tous les autres checks verts.
+
+    Le correctif est le marqueur dans le NOM du job -- comme pour catalog-drift
+    (#15998) -- et non une entree de registre : pr_gate.py lit le nom du
+    check-run emis, pas l'en-tete du workflow.
+    """
+    if pr_gate.yaml is None:  # pragma: no cover - PyYAML is a CI dependency
+        pytest.skip("PyYAML unavailable: cannot read the workflow")
+    wf_path = Path(pr_gate.DEFAULT_WORKFLOWS_DIR) / "translation-drift.yml"
+    data = pr_gate.yaml.safe_load(wf_path.read_text(encoding="utf-8"))
+    job_names = pr_gate._workflow_job_names(data)
+    assert job_names, "translation-drift.yml must declare at least one job"
+    for name in job_names:
+        assert pr_gate.is_advisory(name), (
+            "the translation-drift job name must carry the `advisory` marker "
+            "(#15998): pr_gate.py reads the check-run name, not the header "
+            "comment, so dropping the marker silently re-arms a hard gate "
+            "against every PR whose merge ref triggers the read-only check"
+        )
+    # The defect the marker fixes must stay measurable: with the workflow name
+    # as it stands, the historical spelling is still classified BLOCKING. If
+    # this ever flips, the workflow name has absorbed the marker and the
+    # job-name invariant above stopped being the load-bearing surface.
+    wf_name = data.get("name") or ""
+    assert not pr_gate.is_advisory("Translation drift (read-only)", wf_name)
+
+
 def test_non_advisory_failure_still_blocks():
     """Guard against the fix becoming a blanket amnesty."""
     checks = [

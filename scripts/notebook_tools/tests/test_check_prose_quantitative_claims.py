@@ -471,9 +471,10 @@ def _dump_nb(path: Path, nb: dict) -> Path:
     return path
 
 
-def test_ipynb_output_lines_maps_payloads_not_sources(tmp_path):
-    """Une charge utile de sortie et une valeur de source sont, ligne a ligne, la
-    meme chose (une chaine nue). Seul le bloc ``outputs`` les separe."""
+def test_ipynb_non_prose_lines_maps_payloads_and_code_sources(tmp_path):
+    """Une charge utile de sortie, une valeur de source code et une valeur de
+    source markdown sont, ligne a ligne, la meme chose (une chaine nue). Le
+    bloc ``outputs`` et le ``cell_type`` les separent (#22564 D3)."""
     nb = {
         "cells": [
             {"cell_type": "markdown", "source": ["On a 140 lignes.\n"]},
@@ -488,19 +489,19 @@ def test_ipynb_output_lines_maps_payloads_not_sources(tmp_path):
     }
     path = _dump_nb(tmp_path / "mapped.ipynb", nb)
     lines = path.read_text(encoding="utf-8").splitlines()
-    inside = cqc._ipynb_output_lines(str(path))
+    inside = cqc._ipynb_non_prose_lines(str(path))
 
     def _ln(needle: str) -> int:
         hits = [n for n, raw in enumerate(lines, 1) if needle in raw]
         assert len(hits) == 1, f"{needle!r} apparait {len(hits)} fois"
         return hits[0]
 
-    assert _ln("On a 140 lignes") not in inside        # source markdown
-    assert _ln("print('x')") not in inside             # source code
+    assert _ln("On a 140 lignes") not in inside        # source markdown : LA prose visee
+    assert _ln("print('x')") in inside                 # source code : non-prose (D3)
     assert _ln("Angel.lean") in inside                 # charge utile de sortie
     # `"outputs": []` se referme sur sa propre ligne : l'ouvrir avalerait la
     # cellule suivante, et avec elle toutes les sources du reste du fichier.
-    assert _ln("z = 2") not in inside
+    assert _ln("z = 2") in inside                      # source code d'une cellule sans outputs
     assert _ln('"outputs": []') not in inside
 
 
@@ -555,6 +556,44 @@ def test_scan_diff_skips_output_payloads_but_flags_source_prose(tmp_path, monkey
         output_cell], "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
     found = cqc.scan_diff("HEAD", {"artifact"})
     assert [snippet for _loc, _klass, snippet in found] == ["65 lignes"]
+
+
+def test_scan_diff_skips_code_cell_comments_but_flags_markdown_counts(tmp_path, monkeypatch):
+    """#22564 D3 : les deux temoins mesures sur 11b_Materiel_Debit_Cout -- une
+    docstring et un commentaire de ligne, chacun portant « 1 ligne ». En
+    cellule *code* ce n'est pas de la prose ; le MEME compteur en markdown
+    reste la prose que l'organe refuse. Sans le second volet, on ne saurait
+    pas distinguer « corrige » de « devenu aveugle »."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _git(repo, "init")
+    _git(repo, "config", "core.autocrlf", "false")
+
+    nb_path = repo / "carnet.ipynb"
+    _dump_nb(nb_path, {"cells": [{"cell_type": "code", "source": ["pass\n"],
+                                  "outputs": [], "execution_count": None}],
+                       "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
+    _commit_all(repo, "base")
+    monkeypatch.chdir(repo)
+
+    # 1) Controle positif : les deux temoins de D3, en cellule CODE -> vert.
+    code_cell = {"cell_type": "code", "execution_count": 1, "outputs": [],
+                 "source": [('"""Octets VRAM par parametre : quantifie au .cuda() '
+                             + '(bitsandbytes), forward 1 ligne."""\n'),
+                            ("couche(x1)  # alloue les éventuels buffers de travail "
+                             + "(négligeables sur 1 ligne)\n")]}
+    _dump_nb(nb_path, {"cells": [code_cell],
+                       "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
+    assert cqc.scan_diff("HEAD", {"artifact"}) == []
+
+    # 2) Controle negatif : le MEME compteur, cette fois en cellule MARKDOWN.
+    _dump_nb(nb_path, {"cells": [
+        {"cell_type": "markdown",
+         "source": ["Le cout marginal est negligeable sur 1 ligne.\n"]},
+        code_cell],
+        "metadata": {}, "nbformat": 4, "nbformat_minor": 5})
+    found = cqc.scan_diff("HEAD", {"artifact"})
+    assert [snippet for _loc, _klass, snippet in found] == ["1 ligne"]
 
 
 # --------------------------------------------------------------------------- #

@@ -1,0 +1,157 @@
+name: Always-on guards -- body
+
+# #22331 -- les organes qui lisent le BODY de la PR ont leur workflow propre.
+#
+# CONSTAT (mesure 2026-10-24, coordinateur ai-01 ; formulation par date de
+# CREATION apres review Hermes : aucun run `pull_request` cree apres
+# 05:00:16Z n'avait rendu de succes -- dernier succes cree : bba8683b a
+# 05:00:16Z, conclu 10:22:19Z ; conclure par date de conclusion masquait des
+# verts rendus tard dans la fenetre). Sur 268 re-declenchements d'une
+# meme PR, 113 arrivent a TETE EGALE (evenements `edited`/`reopened`) : avec
+# `concurrency ... cancel-in-progress: true`, chaque edition de body annulait
+# le run en file et le renvoyait en fin d'une file de ~2 100 runs. Une PR dont
+# le body est edite plus souvent que la file ne se vide n'obtenait jamais son
+# verdict -- et le `PR gate`, qui en depend, ne pouvait pas verdir.
+#
+# POURQUOI UN WORKFLOW SEPARE, ET PAS UN JOB `if:` DANS L'AUTRE
+# --------------------------------------------------------------
+# `scripts/pr_gate.py::dedupe_latest` plie les check-runs par NOM en gardant
+# le dernier `started_at`, et `CONCLUSION_OK` inclut `skipped`. Un job de
+# contenu qui serait saute sur `edited` produirait donc un check-run `skipped`
+# PLUS RECENT que le rouge de contenu de la meme tete -- il l'effacerait.
+# C'est le blanchiment que l'issue interdit. Un job saute ne peut pas ne pas
+# produire de check-run ; seul un AUTRE workflow, qui ne se declenche pas du
+# tout sur l'evenement, laisse le verdict de contenu intact.
+#
+# Repartition :
+#   always-on-guards.yml       `opened, synchronize, reopened` -- contenu
+#                              seul, AUCUN organe de body ;
+#   always-on-guards-body.yml  CE fichier : `opened, synchronize, edited,
+#                              reopened` -- organes de body seuls, job nomme
+#                              a part.
+# Pourquoi le contenu n'en juge plus aucun (coordinateur, review #22333) :
+# ce job ne se declenchant pas sur `edited`, un rouge de body juge par lui
+# survivait a la correction du corps jusqu'au push suivant -- seule une
+# edition devait pouvoir le lever. Pourquoi `synchronize` ici : le verdict
+# de body doit exister a CHAQUE tete (le fold du gate garde, par nom, le
+# `started_at` le plus recent ; un verdict de body perime d'une tete
+# ancienne ne doit jamais rester le plus recent pour ce nom).
+# Les deux noms sont exiges par le gate (`derive_always_on_jobs` les derive du
+# repertoire, aucun nom n'est code en dur).
+#
+# CAS D'ESSAI (exigence de l'issue + review #22333, garde automatisee) :
+# (1) un rouge de contenu suivi d'une edition de body reste rouge ;
+# (2) un rouge de body leve par une edition seule, sans push, laisse le gate
+#     vert (le job de contenu ne juge plus les organes de body).
+# Ils sont encodes par `scripts/ci/tests/test_always_on_body_split.py`, qui
+# verifie que le workflow de contenu ne se declenche sur AUCUN evenement
+# `edited` et ne reference plus `always_on_body_organs.sh` nulle part.
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, edited, reopened ]
+    # PAS de `paths:` -- meme raison que dans always-on-guards.yml (regle 2
+    # d'#10045 : un check filtre par chemins rapporte `pending` a vie).
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+# Les editions de body se supplantent entre elles, et seulement entre elles :
+# ce groupe ne touche jamais celui du workflow de contenu.
+concurrency:
+  group: always-on-guards-body-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  always-on-guards-body:
+    name: "Always-on guards -- body"
+    # Meme pool, meme garde anti-fork, meme routage que le job de contenu
+    # (cf. always-on-guards.yml pour la mesure qui a fixe ce routage).
+    #
+    # 2026-10-27 (mesure ai-01) : retour sur `ubuntu-latest`, comme l'ecrit la
+    # note de rollback du job de contenu et comme le fait la politique
+    # « Q35 etape 2 » (#17397) portee par
+    # `scripts/ci/audit_self_hosted_needs.py` : cet organe certifie ce
+    # workflow comme n'ayant besoin de RIEN qui n'existe que sur le parc local
+    # (les cinq organes de body sont du bash + python stdlib).
+    # Motif du deplacement : le parc local est sature PAR SES CHECKOUTS
+    # (mesure 27/10 00:45Z : 11 des 12 slots occupes dans `actions/checkout`,
+    # 614 runs en file, 6 runs termines en 20 min). La garde anti-fork est
+    # CONSERVEE : aucun code de fork ne change de surface.
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Les cinq organes de body coutent quelques secondes : le plafond n'est
+    # qu'un garde-fou contre un blocage de `gh`.
+    timeout-minutes: 10
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
+      PR_NUMBER: ${{ github.event.pull_request.number }}
+      PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+      IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
+
+    steps:
+      # Meme HEAL que le workflow de contenu (#15387) : le pool self-hosted
+      # reutilise son work dir, et un graphe d'objets troue casse les
+      # `git log --raw` dont depend l'organe d'adjacence.
+      - name: "Purger un work dir reutilise au graphe incomplet (#15387)"
+        shell: bash
+        run: |
+          cd "$GITHUB_WORKSPACE" || exit 0
+          if [ ! -d .git ]; then
+            echo "[heal] aucun work dir preexistant -- checkout fera un clone neuf"
+            exit 0
+          fi
+          if [ -f .git/shallow ]; then
+            echo "::notice::[heal] work dir SHALLOW reutilise -- purge avant unshallow"
+            rm -rf .git
+            exit 0
+          fi
+          if ! git rev-list --all --count >/dev/null 2>&1; then
+            echo "::notice::[heal] graphe d'objets incomplet -- purge du work dir"
+            rm -rf .git
+            exit 0
+          fi
+          echo "[heal] work dir complet -- reutilisation"
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          filter: blob:none
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # BODY LIVE (#15697), repris du workflow de contenu : les organes lisent
+      # le corps A L'EXECUTION (une edition de body n'emet aucun commit, et un
+      # amendement par GITHUB_TOKEN n'emet aucun evenement). Le CODE DE SORTIE
+      # distingue panne d'API et corps vide (#17197).
+      - name: "Body live : lecture API a l'execution (#15697)"
+        env:
+          PAYLOAD_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          LIVE=""
+          if [ -n "${PR_NUMBER:-}" ]; then
+            LIVE=$(gh api "repos/$GH_REPO/pulls/$PR_NUMBER" --jq '.body // empty' 2>/dev/null) || LIVE=""
+          fi
+          if [ -n "$LIVE" ]; then
+            echo "[body-live] corps courant lu via API : ${#LIVE} chars (#15697)"
+            BODY="$LIVE"
+          else
+            echo "::warning::[body-live] lecture API vide/echouee -- repli sur le payload de l'evenement (photographie)"
+            BODY="${PAYLOAD_BODY:-}"
+          fi
+          delim="BODY_LIVE_EOF_$$"
+          printf 'PR_BODY<<%s\n%s\n%s\n' "$delim" "$BODY" "$delim" >> "$GITHUB_ENV"
+
+      # Les cinq organes bloquants qui lisent le body. Le script est appele
+      # par CE workflow seul (review #22333) : une seule implantation, une
+      # seule execution par evenement.
+      - name: "Organes de body (Grain, prev:, close-keyword, genre, claim, #22331)"
+        run: bash scripts/ci/always_on_body_organs.sh
