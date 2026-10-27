@@ -81,7 +81,15 @@ jobs:
     # (mesure 27/10 00:45Z : 11 des 12 slots occupes dans `actions/checkout`,
     # 614 runs en file, 6 runs termines en 20 min). La garde anti-fork est
     # CONSERVEE : aucun code de fork ne change de surface.
-    runs-on: ubuntu-latest
+    # 2026-10-27 (#22461, phase A) : forme hybride de debordement -- PR
+    # meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ;
+    # tout le reste (variable absente ou fausse, forks, push/schedule/
+    # dispatch) retombe sur ubuntu-latest (l'etat du 27/10). Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 %
+    # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
+    # creation du job, les runs deja en file ne bougent pas.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Les cinq organes de body coutent quelques secondes : le plafond n'est
     # qu'un garde-fou contre un blocage de `gh`.
