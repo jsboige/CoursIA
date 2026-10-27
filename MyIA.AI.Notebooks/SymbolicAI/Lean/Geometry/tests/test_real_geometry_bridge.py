@@ -206,3 +206,180 @@ def test_conic_parabolic_double_line():
     assert d.kind == "parabolique"
     assert d.factorise_reel is True
     assert d.has_real_point is True
+
+
+# ---------------------------------------------------------------------------
+# Critere 5 -- degenerescences : deux perpendiculaires sans / avec exclusion
+#
+# A l'origine, B, C, D tels que AB _|_ AC et AB _|_ AD. Sans exclusion, les
+# hypotheses deviennent VACUES en B = A : C et D sont alors libres, et la
+# conclusion (C, D, A alignes) tombe. L'exclusion reelle explicite B != A
+# rend le theoreme valide. Le contraste doit etre mesure, pas raconte.
+# ---------------------------------------------------------------------------
+
+def _two_perpendiculars():
+    xB, yB, xC, yC, xD, yD = sp.symbols('x_B y_B x_C y_C x_D y_D')
+    H2a = xB * xC + yB * yC          # AB _|_ AC
+    H2b = xB * xD + yB * yD          # AB _|_ AD
+    CONCL = xC * yD - xD * yC        # C, D, A(=origine) alignes
+    return [xB, yB, xC, yC, xD, yD], H2a, H2b, CONCL
+
+
+def test_two_perpendiculars_without_exclusion_is_degenerate():
+    symbols, H2a, H2b, CONCL = _two_perpendiculars()
+    v = rbg.decide_real([H2a, H2b], CONCL, symbols)
+    assert v.status == "invalid"
+    assert v.exact is True
+    xB, yB = symbols[0], symbols[1]
+    # Le temoin trouve par Z3 est DEGENERE : B = A = (0,0). Ce n'est pas un
+    # detail du modele mais une necessite : si (xB, yB) != 0, C et D sont tous
+    # deux orthogonaux a B, donc colineaires dans le plan reel, et la
+    # conclusion tiendrait.
+    assert v.witness[xB] ** 2 + v.witness[yB] ** 2 == 0
+    # Contre-exemple honnete, verifie independamment (sans solveur).
+    check = rbg.verify_witness([H2a, H2b], CONCL, symbols, v.witness)
+    assert check.ok
+    assert str(check).startswith("TEMOIN VALIDE")
+
+
+def test_two_perpendiculars_with_real_exclusion_is_valid():
+    symbols, H2a, H2b, CONCL = _two_perpendiculars()
+    xB, yB = symbols[0], symbols[1]
+    v = rbg.decide_real([H2a, H2b], CONCL, symbols,
+                        assumptions=[xB ** 2 + yB ** 2])
+    assert v.status == "valid"
+    assert v.witness is None
+
+
+def test_bounded_search_absence_is_never_reported_as_valid():
+    # Critere 5 : l'absence de temoin dans une recherche bornee n'est PAS un
+    # `unsat`. Ici la frontiere est simulee : le solveur ne conclut pas, le
+    # statut est `unknown` -- jamais `valid`.
+    x, y = sp.symbols('x y')
+    v = rbg.decide_real([x ** 2 + y ** 2 - 1], x - 2, [x, y],
+                        solver_factory=lambda _t: _UnknownSolver())
+    assert v.status == "unknown"
+    assert v.witness is None
+
+
+# ---------------------------------------------------------------------------
+# Critere 6 -- controles negatifs
+# ---------------------------------------------------------------------------
+
+class _UnknownSolver:
+    """Solveur simule qui ne conclut jamais (frontiere d'adaptation)."""
+
+    def __init__(self):
+        self.constraints = []
+
+    def add(self, *args):
+        self.constraints.extend(args)
+
+    def check(self):
+        import z3
+        return z3.unknown
+
+
+def test_changed_hypothesis_yields_verified_witness():
+    # Meme pipeline, UNE hypothese changee : l'angle droit est declare en B
+    # au lieu de A. La conclusion (M equidistant de A et B) devient fausse ;
+    # le temoin rendu doit satisfaire la nouvelle hypothese ET violer la
+    # conclusion, les deux verifies independamment.
+    xA, yA, xB, yB, xC, yC = _symbols()
+    H_B = (xA - xB) * (xC - xB) + (yA - yB) * (yC - yB)
+    C1 = _C1(xA, yA, xB, yB, xC, yC)
+    syms = [xA, yA, xB, yB, xC, yC]
+    v = rbg.decide_real([H_B], C1, syms)
+    assert v.status == "invalid"
+    check = rbg.verify_witness([H_B], C1, syms, v.witness)
+    assert check.ok
+    assert check.holds_hypotheses and check.violates_conclusion
+
+
+def test_tampered_witness_is_rejected():
+    # Un temoin honnete est valide ; une coordonnee alteree doit etre rejetee.
+    #
+    # Pourquoi un enonce arithmetique ici : sur un modele geometrique, Z3 peut
+    # laisser une coordonnee LIBRE (dans la mutation ci-dessus x_A == x_B, donc
+    # x_C n'entre dans aucune contrainte) ; l'alterer par +1 produit alors un
+    # AUTRE contre-exemple parfaitement honnete -- le test mesurerait le
+    # hasard du modele, pas le validateur. Ici le modele est ponctuel et
+    # entierement contraint, l'alteration tombe donc surement.
+    x, y = sp.symbols('x y')
+    syms = [x, y]
+    v = rbg.decide_real([x - 1, y - 2], x - 3, syms)
+    assert v.status == "invalid"
+    assert rbg.verify_witness([x - 1, y - 2], x - 3, syms, v.witness).ok
+
+    tampered = dict(v.witness)
+    tampered[x] = tampered[x] + 1                   # x = 2 : hypothese cassee
+    check = rbg.verify_witness([x - 1, y - 2], x - 3, syms, tampered)
+    assert not check.ok
+    assert not check.holds_hypotheses
+    assert str(check).startswith("TEMOIN REJETE")
+
+
+def test_witness_that_does_not_violate_conclusion_is_rejected():
+    # Deuxieme motif de rejet : un temoin qui satisfait les hypotheses mais
+    # dont la conclusion TIENT n'est pas un contre-exemple -- il confirme le
+    # theoreme, il ne le refute pas. Cas geometrique non degenere : B = (1,0),
+    # C = (0,1), D = (0,3) -> les deux perpendiculaires tiennent et C, D, A
+    # sont alignes (tous sur l'axe des ordonnees).
+    symbols, H2a, H2b, CONCL = _two_perpendiculars()
+    xB, yB, xC, yC, xD, yD = symbols
+    w = {xB: sp.Integer(1), yB: sp.Integer(0),
+         xC: sp.Integer(0), yC: sp.Integer(1),
+         xD: sp.Integer(0), yD: sp.Integer(3)}
+    check = rbg.verify_witness([H2a, H2b], CONCL, symbols, w)
+    assert check.holds_hypotheses
+    assert not check.violates_conclusion
+    assert not check.ok
+    assert "conclusion=tenue" in str(check)
+
+
+def test_witness_violating_nondegeneracy_is_rejected():
+    # Troisieme motif de rejet : un temoin qui satisfait H et viole la
+    # conclusion mais DEGENERE sur une non-degenerescence demandee.
+    symbols, H2a, H2b, CONCL = _two_perpendiculars()
+    xB, yB, xC, yC, xD, yD = symbols
+    w = {s: sp.Integer(0) for s in symbols}
+    w[xC], w[yD] = sp.Integer(1), sp.Integer(1)     # conclusion violee
+    check = rbg.verify_witness([H2a, H2b], CONCL, symbols, w,
+                               assumptions=[xB ** 2 + yB ** 2])
+    assert check.holds_hypotheses
+    assert check.violates_conclusion
+    assert not check.non_degenerate
+    assert not check.ok
+    assert "non-degenerescence=degeneree" in str(check)
+
+
+def test_incomplete_witness_is_refused_not_silently_validated():
+    x, y = sp.symbols('x y')
+    with pytest.raises(ValueError):
+        rbg.verify_witness([x - 1], y, [x, y], {x: sp.Integer(1)})
+
+
+def test_simulated_unknown_alias_is_not_a_proof():
+    x, y = sp.symbols('x y')
+    v = rbg.decide_real([x - 1], y, [x, y],
+                        solver_factory=lambda _t: _UnknownSolver())
+    assert v.status == "unknown"
+    assert v.witness is None
+    assert rbg.real_model([x - 1], [x, y],
+                          solver_factory=lambda _t: _UnknownSolver()) is None
+
+
+def test_exact_flag_distinguishes_rational_from_enclosure():
+    # Rationnel : temoin exact, certifiable par substitution.
+    x, y = sp.symbols('x y')
+    v_rat = rbg.decide_real([x ** 2 - 4], y, [x, y])
+    assert v_rat.status == "invalid" and v_rat.exact is True
+    assert rbg.verify_witness([x ** 2 - 4], y, [x, y], v_rat.witness).ok
+
+    # Irrationnel (x^2 = 2) : le temoin est un ENCADREMENT a 30 chiffres.
+    # Le drapeau le dit, et le validateur refuse de le certifier -- une
+    # approximation decimale ne certifie pas un temoin algebrique.
+    v_irr = rbg.decide_real([x ** 2 - 2], y, [x, y])
+    assert v_irr.status == "invalid" and v_irr.exact is False
+    assert not rbg.verify_witness([x ** 2 - 2], y, [x, y], v_irr.witness).ok
+    assert "encadrement" in str(v_irr)
