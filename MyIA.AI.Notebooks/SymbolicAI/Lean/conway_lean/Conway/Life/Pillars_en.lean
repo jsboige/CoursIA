@@ -62,8 +62,10 @@ the published Gemini self-replication completes in 33 699 586).
   **500 × 500 torus** (first repetition gen 11324 == gen 5564), which
   validates both the source filename and the "5 760" row of
   `patterns/README.md`.
-  Formalizing it needs a **toroidal** engine, absent from the lake: that is
-  the natural continuation of this tranche.
+  Formalizing it needs a **toroidal** engine: one exists as of this tranche
+  (`Conway.Life.Torus`), but the 5 760 period stays a **measured** result
+  rather than a theorem (5 760 generations over 250 000 cells, out of reach of
+  `decide`).
 - **The OTCA: confinement observed over the measured window — measured
   2026-10-09 (#19989, tranche 3), refuting nothing**: over 1 800
   generations the extent stays **strictly** 2058 × 2058 (no cell outside
@@ -347,8 +349,13 @@ theorem otca_initial_nonempty : otcaInitial ≠ ([] : Grid) := by
 
     The period is real, but belongs to the **tiled** reading: measured
     *borderlessly* on a 500 × 500 torus (first repetition gen 11324 ==
-    gen 5564, i.e. 5 760). Formalizing it needs a toroidal engine, which does
-    not exist in the lake — that is the continuation of this tranche.
+    gen 5564, i.e. 5 760). The toroidal engine that formalization required now
+    exists: `Conway.Life.Torus`. It carries its own witnesses, including
+    `Torus.blinker_torus3_dies` — the blinker that oscillates forever on the
+    plane dies within two generations on a 3 × 3 torus: it is the boundary
+    model, not the pattern, that decides the fate. The 5 760 period itself
+    remains out of reach of a `decide` proof (5 760 generations over 250 000
+    cells): a **measured** result, not a theorem.
 
     What IS provable here, and **non-vacuous**, is that the loaded grid is
     real: exactly what the `evolveHashlifeFastMemo_empty` route used by the
