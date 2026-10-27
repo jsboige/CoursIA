@@ -28,6 +28,7 @@ on:
     paths:
       - 'MyIA.AI.Notebooks/Sudoku/dlx_certificates.py'
       - 'MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py'
+      - 'MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Python.ipynb'
       - '.github/workflows/sudoku-tests.yml'
   pull_request:
     branches: [main]
@@ -35,6 +36,7 @@ on:
     paths:
       - 'MyIA.AI.Notebooks/Sudoku/dlx_certificates.py'
       - 'MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py'
+      - 'MyIA.AI.Notebooks/Sudoku/Sudoku-02-DancingLinks-Python.ipynb'
       - '.github/workflows/sudoku-tests.yml'
   workflow_dispatch:
 
