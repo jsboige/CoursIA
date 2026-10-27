@@ -1,7 +1,7 @@
 {
   "_comment": "Pedagogy-density baseline (#10479). Burn down, do not grow. One float per TRACKED pedagogical notebook: chars of markdown prose per code cell (continuous metric). Population: `git ls-files 'MyIA.AI.Notebooks/**/*.ipynb'` minus EXCLUDE_DIRS minus setup/out-of-corpus kinds. Regenerate with: python scripts/notebook_tools/pedagogy_density.py --update-baseline",
   "metric": "prose_chars / code_cells",
-  "count": 1452,
+  "count": 1454,
   "notebooks": {
     "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/solution/Diagnostic-Medical.ipynb": 1205.125,
     "MyIA.AI.Notebooks/CaseStudies/Diagnostic-Medical/student/Diagnostic-Medical.ipynb": 1237.667,
@@ -30,6 +30,7 @@
     "MyIA.AI.Notebooks/Compression/Compression-01-ShannonFano-Prefixe-Python.ipynb": 1022.818,
     "MyIA.AI.Notebooks/Compression/Compression-02-HuffmanCanonique-Python.ipynb": 998.5,
     "MyIA.AI.Notebooks/Compression/Compression-03-LZ77-Python.ipynb": 1295.6,
+    "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb": 898.667,
     "MyIA.AI.Notebooks/Compression/Compression-05-MLCompression-Python.ipynb": 684.545,
     "MyIA.AI.Notebooks/Compression/Compression-06-MDL-Kolmogorov-Python.ipynb": 1570.0,
     "MyIA.AI.Notebooks/Compression/Compression_lean/Compression-01b-Kraft-McMillan-Lean.ipynb": 597.091,
@@ -1253,6 +1254,7 @@
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/15-quatre-carres-lagrange.ipynb": 1365.167,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/16-fonctions-l-dirichlet-progression-premiers.ipynb": 961.235,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/17-chebotarev-frobenius-types-cycles.ipynb": 1307.636,
+    "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/18-discriminant-ramification-critere-dedekind.ipynb": 883.833,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/19-arbres-ping-pong-sl2.ipynb": 1221.308,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/20-sylow-p-sous-groupes.ipynb": 1402.727,
     "MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/20c-cohomologie-groupe-calculee.ipynb": 1101.154,
