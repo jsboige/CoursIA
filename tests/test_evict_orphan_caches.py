@@ -148,21 +148,48 @@ class TestClassifyCache(unittest.TestCase):
 
     def test_old_accessed_evicts_even_if_ancestor(self):
         # Cache cree il y a 25h, non accede depuis. Doit etre EVICT.
-        old = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(hours=25)
-        cache = self._cache(self.KEY_ANCESTOR, _iso(old), _iso(old))
-        rec = eoc._classify_cache(
-            cache, max_age_hours=24, remote="origin", main_branch="main"
-        )
+        #
+        # #22486 : le nom du test dit "even if ancestor" -- on l'etablit par
+        # le patch plutot qu'en laissant le vrai git decider de l'ancetre.
+        # Sans ce patch, le test passe quand meme (assertIn), mais la branche
+        # d'anciennete interrogeait le clone ambiant : un origin/main perime
+        # y ajoutait "sha_not_ancestor_of_main" sans que rien ne le signale.
+        original = eoc._is_ancestor
+        eoc._is_ancestor = lambda sha, remote, branch: True  # noqa: E731
+        try:
+            old = _dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(hours=25)
+            cache = self._cache(self.KEY_ANCESTOR, _iso(old), _iso(old))
+            rec = eoc._classify_cache(
+                cache, max_age_hours=24, remote="origin", main_branch="main"
+            )
+        finally:
+            eoc._is_ancestor = original
         self.assertEqual(rec["verdict"], "EVICT")
         self.assertIn("last_accessed_older_than_24h", rec["reason"])
 
     def test_ancestor_and_recent_is_kept(self):
         # Cache ancetre ET accede recemment (< 24h). Doit etre KEEP.
-        now = _dt.datetime.now(_dt.timezone.utc)
-        cache = self._cache(self.KEY_ANCESTOR, _iso(now), _iso(now))
-        rec = eoc._classify_cache(
-            cache, max_age_hours=24, remote="origin", main_branch="main"
-        )
+        #
+        # REPAIR 2026-10-25 (#22486) : ce test etait le seul du fichier a
+        # laisser _is_ancestor interroger le vrai git du clone appelant. Il
+        # ne mesurait donc pas la classification mais l'etat du clone : sur
+        # un origin/main plus vieux que le commit d46cbf302e (2026-09-14),
+        # `git merge-base --is-ancestor` rend rc=1, _is_ancestor rend False,
+        # et le verdict devient EVICT "sha_not_ancestor_of_main" -- le test
+        # rougit sur main sans qu'aucune ligne de code n'ait change. Les
+        # trois autres tests qui atteignent cette branche patchent deja
+        # _is_ancestor (False pour l'orphelin et le cas combine, None pour
+        # "unknown") ; celui-ci suit le meme patron.
+        original = eoc._is_ancestor
+        eoc._is_ancestor = lambda sha, remote, branch: True  # noqa: E731
+        try:
+            now = _dt.datetime.now(_dt.timezone.utc)
+            cache = self._cache(self.KEY_ANCESTOR, _iso(now), _iso(now))
+            rec = eoc._classify_cache(
+                cache, max_age_hours=24, remote="origin", main_branch="main"
+            )
+        finally:
+            eoc._is_ancestor = original
         self.assertEqual(rec["verdict"], "KEEP")
         self.assertEqual(rec["reason"], "recent_and_ancestor")
 
@@ -273,7 +300,15 @@ class TestMarkSuperseded(unittest.TestCase):
             "created_at": _iso(now),
             "last_accessed_at": _iso(now),
         }
-        rec = eoc._classify_cache(cache, max_age_hours=24, remote="origin", main_branch="main")
+        # #22486 : la famille derive de la cle, pas de l'histoire git du
+        # clone appelant -- on coupe l'appel a git pour que ce test mesure
+        # la seule chose qu'il annonce.
+        original = eoc._is_ancestor
+        eoc._is_ancestor = lambda sha, remote, branch: True  # noqa: E731
+        try:
+            rec = eoc._classify_cache(cache, max_age_hours=24, remote="origin", main_branch="main")
+        finally:
+            eoc._is_ancestor = original
         self.assertEqual(rec["family"], "d953d79b74456ce0-python-2.27.0")
 
 

@@ -47,6 +47,7 @@ Le parcours va du premier pipeline (ML-01) jusqu'à une application complète : 
 | 05b | [ML-05b-Series-Temporelles-Classiques](ML-05b-Series-Temporelles-Classiques-Python.ipynb) | **Socle statistique des séries temporelles** : ADF (stationnarité), ACF/PACF (ordres p/q), ARIMA/SARIMA, lissage exponentiel, backtest glissant | *standalone Python (statsmodels — le socle que ML-05 suppose)* | 60-75 min |
 | 06 | [ML-06-ONNX](ML-06-ONNX.ipynb) | **ONNX Integration** : modèles Python/PyTorch dans .NET | [ML-06-Python](ML-06-ONNX-Python.ipynb) — skl2onnx + onnxruntime (export côté Python du pont inter-langage) | 45-60 min |
 | 07 | [ML-07-Recommendation](ML-07-Recommendation.ipynb) | **Recommandation** : Matrix Factorization, collaborative filtering | [ML-07-Python](ML-07-Recommendation-Python.ipynb) — NMF | 45-60 min |
+| 07b | [ML-07b-SemanticIDs-Recommandation](ML-07b-SemanticIDs-Recommandation-Python.ipynb) | **Identifiants sémantiques** : tokeniser un item en codes quantifiés (le dispositif des recommandateurs génératifs), mesurer ce que cela vaut au démarrage à froid contre populaires, collaboratif et contenu, et tester les écarts au bruit (McNemar, bootstrap) | *standalone Python (scikit-learn, scipy — la limite froide de la factorisation matricielle, mesurée)* | 45-60 min |
 | 08 | [ML-08-Clustering](ML-08-Clustering.ipynb) | **Clustering non-supervisé** : K-Means, segmentation RFM, méthode du coude | [ML-08-Python](ML-08-Clustering-Python.ipynb) — KMeans scikit-learn + méthode du coude | 45-60 min |
 | 09 | [ML-09-Anomaly-Detection](ML-09-Anomaly-Detection.ipynb) | **Détection d'anomalies** : Randomized PCA, AUC, seuil de décision | [ML-09-Python](ML-09-Anomaly-Detection-Python.ipynb) — PCA + erreur de reconstruction | 45-60 min |
 | 09b | [ML-09b-TSAD-Benchmark-Flaws](ML-09b-TSAD-Benchmark-Flaws-Python.ipynb) | **Introspection des benchmarks** : pourquoi un détecteur de 1924 (SPC `M+3σ`) bat un auto-encodeur, les 4 pièges de Wu & Keogh, UCR Archive | *standalone Python (scikit-learn — anti-dote aux benchmarks triviaux)* | 45-60 min |
@@ -114,7 +115,7 @@ Derrière chaque concept de cette série se cache une application réelle :
 - **Feature engineering de textes** (ML-02) : les transformations d'encodage de texte vues dans ce notebook sont les mêmes qu'utilisent les moteurs de recherche pour transformer du texte brut en features numériques.
 - **Prévision de ventes quotidiennes** (ML-05) : l'algorithme SSA détecte les cycles et saisonnalités dans les données de vente — applicable à la gestion de stock, la prévision de charge pour le cloud, ou l'anticipation de la demande produit.
 - **Export ONNX de modèles Hugging Face** (ML-06) : servir un modèle BERT d'analyse de sentiments ou un Whisper de transcription dans une application .NET d'entreprise, sans dépendance Python. C'est exactement le scénario que rencontrent les équipes qui adoptent le ML sans migrer leur stack.
-- **Recommandation de films** (ML-07) : la factorisation matricielle est le même principe que celui derrière les recommendations Netflix, Amazon, ou Spotify — uniquement ici, tout tourne dans un process .NET.
+- **Recommandation de films** (ML-07) : la factorisation matricielle est le même principe que celui derrière les recommendations Netflix, Amazon, ou Spotify — uniquement ici, tout tourne dans un process .NET. Le carnet 07b mesure la limite de ce principe : un item que personne n'a noté n'a aucune coordonnée latente, et la façon dont les recommandateurs récents contournent cet angle mort — tokeniser l'item en codes quantifiés — rapporte ici un changement de nature (un item devient une suite de bits qu'on peut produire) sans gain de rappel démontré.
 - **Régression bayésienne pour les ventes** (TP) : combiner régression classique et inférence bayésienne pour prédire non seulement un chiffre, mais aussi la plage de confiance. Essentiel pour les décisions financières ou logistiques où l'incertitude a un coût réel.
 
 ## Prérequis détaillés
@@ -238,6 +239,16 @@ Avoir une intuition de ces concepts aidera, mais ils sont **expliqués dans les 
 | Collaborative Filtering | Recommandations basées sur les préférences |
 | Cold Start | Gérer nouveaux utilisateurs/items |
 | Métriques | Precision@K, Recall@K, NDCG |
+
+### ML-07b-SemanticIDs-Recommandation-Python
+
+| Section | Contenu |
+|---------|---------|
+| Objet | Tokeniser un item en **identifiants sémantiques** : plongement de contenu puis quantification résiduelle (3 niveaux × 32 codes, soit 15 bits par item contre 1024 bits en float32) |
+| Démarrage à froid | Les colonnes des items froids sont vides : populaire et collaboratif rendent un score constant et un rappel exactement nul, le contenu voit tous les items |
+| Tests appariés | Quatre contrastes, bootstrap sur les utilisateurs et McNemar : **un seul** franchit le seuil (populaire contre contenu sur le chaud, +2,62 pts, p = 0,0038) |
+| Ce que la mesure refuse de dire | Que la quantification vaille mieux que le contenu direct : les deux écarts de signe opposé sont non concluants, et le balayage des tailles de dictionnaire ne montre pas de tendance monotone |
+| Exercices | Trois stubs sans erreur volontaire : deux niveaux suffisent-ils, le partage du premier code aide-t-il, et lequel des deux modèles résiste à un contenu bruité |
 
 ### ML-08-Clustering
 
