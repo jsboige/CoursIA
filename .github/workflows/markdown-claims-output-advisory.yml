@@ -38,7 +38,6 @@ name: Markdown claims anchored to previous output (advisory)
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/**/*.ipynb'
       - 'scripts/check_markdown_claims_output.py'
@@ -105,25 +104,32 @@ jobs:
           # merge-base is unreachable (shallow fetch), ABSTAIN explicitly
           # rather than fall back to origin/main, which would make
           # "rien regarde" and "rien trouve" indistinguishable.
+          #
+          # D1/D2 (#22564): --diff-filter includes A -- a NEWLY added
+          # notebook is entirely new prose; excluding it let a PR that
+          # only adds notebooks scan an empty lot. And the empty lot is
+          # NOT a result: exit=none keeps "nothing scanned" distinct from
+          # exit=0 "scanned, no finding" in the sticky comment (contract
+          # test: scripts/tests/test_markdown_claims_advisory_contract.py).
           BASE=$(git merge-base origin/main HEAD 2>/dev/null)
           if [ -z "$BASE" ]; then
             echo "exit=abstain" >> "$GITHUB_OUTPUT"
             echo "::warning::markdown-claims-output: merge-base origin/main HEAD introuvable -- detector abstains (shallow fetch or unanchored branch)." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          mapfile -t CHANGED < <(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD -- '*.ipynb' | head -50)
+          mapfile -t CHANGED < <(git diff --name-only --diff-filter=AMR -M50% "$BASE" HEAD -- '*.ipynb' | head -50)
           # #18503: say the scan is bounded when it is -- otherwise the sticky
           # comment below claims full coverage of "the notebooks this PR
           # changed" on a campaign-sized PR. TOTAL is counted BEFORE the bound
           # so the notice states the real coverage gap.
-          TOTAL=$(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD -- '*.ipynb' | wc -l)
+          TOTAL=$(git diff --name-only --diff-filter=AMR -M50% "$BASE" HEAD -- '*.ipynb' | wc -l)
           if [ "$TOTAL" -gt ${#CHANGED[@]} ]; then
             echo "trunc_note=Couverture partielle: $TOTAL notebooks changed, only the first ${#CHANGED[@]} were scanned." >> "$GITHUB_OUTPUT"
             echo "::notice::markdown-claims-output: $TOTAL notebooks changed, only the first ${#CHANGED[@]} were scanned (scan borne)." >> "$GITHUB_STEP_SUMMARY"
           fi
           if [ ${#CHANGED[@]} -eq 0 ]; then
-            echo "exit=0" >> "$GITHUB_OUTPUT"
-            echo "::notice::markdown-claims-output: aucun notebook modifie entre $BASE et HEAD -- rien a scanner." >> "$GITHUB_STEP_SUMMARY"
+            echo "exit=none" >> "$GITHUB_OUTPUT"
+            echo "::notice::markdown-claims-output: aucun notebook ouvert ni modifie entre $BASE et HEAD -- lot vide, ce n'est pas un resultat (exit=none)." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           # One bounded invocation preserves checker exit codes and emits one
@@ -154,7 +160,7 @@ jobs:
         with:
           header: markdown-claims-output-advisory
           message: |
-            ${{ steps.run.outputs.exit == '0' && '✅ No prose/output mismatch detected in the notebooks this PR changed.' || steps.run.outputs.exit == 'abstain' && '⚠️ Detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Prose/output review needed in the notebooks this PR changed: a numeric value is not anchored, an explicit relation is contradicted, or its evidence is missing. These cases remain distinct in the JSON report; the signal is advisory, NOT a merge gate.' }}
+            ${{ steps.run.outputs.exit == '0' && '✅ No prose/output mismatch detected in the notebooks this PR changed.' || steps.run.outputs.exit == 'none' && '⚪ Nothing to scan: this diff opens no notebook — the advisory looked at nothing, this is NOT a clean result.' || steps.run.outputs.exit == 'abstain' && '⚠️ Detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Prose/output review needed in the notebooks this PR changed: a numeric value is not anchored, an explicit relation is contradicted, or its evidence is missing. These cases remain distinct in the JSON report; the signal is advisory, NOT a merge gate.' }}
             ${{ steps.run.outputs.trunc_note }}
 
             Scope = notebooks CHANGED in this PR, not the whole corpus. Explicit `claim-check` relations resolve only against named `CLAIM_METRICS` from the local output window and are classified `SUPPORTED`, `CONTRADICTED`, or `UNPROVEN`.
@@ -177,16 +183,16 @@ jobs:
             echo "::warning::stale-claim: merge-base origin/main HEAD introuvable -- detector abstains (shallow fetch or unanchored branch)." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          mapfile -t CHANGED < <(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD -- '*.ipynb' | head -50)
+          mapfile -t CHANGED < <(git diff --name-only --diff-filter=AMR -M50% "$BASE" HEAD -- '*.ipynb' | head -50)
           if [ ${#CHANGED[@]} -eq 0 ]; then
-            echo "exit=0" >> "$GITHUB_OUTPUT"
-            echo "::notice::stale-claim: aucun notebook modifie entre $BASE et HEAD -- rien a scanner." >> "$GITHUB_STEP_SUMMARY"
+            echo "exit=none" >> "$GITHUB_OUTPUT"
+            echo "::notice::stale-claim: aucun notebook ouvert ni modifie entre $BASE et HEAD -- lot vide, ce n'est pas un resultat (exit=none)." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           # #18503: real coverage count instead of the -eq 50 heuristic --
           # TOTAL before the bound, notice only when something was dropped,
           # surfaced in BOTH the step summary and the sticky comment.
-          TOTAL=$(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD -- '*.ipynb' | wc -l)
+          TOTAL=$(git diff --name-only --diff-filter=AMR -M50% "$BASE" HEAD -- '*.ipynb' | wc -l)
           if [ "$TOTAL" -gt ${#CHANGED[@]} ]; then
             echo "trunc_note=Couverture partielle: $TOTAL notebooks changed, only the first ${#CHANGED[@]} were scanned." >> "$GITHUB_OUTPUT"
             echo "::notice::stale-claim: $TOTAL notebooks changed, only the first ${#CHANGED[@]} were scanned (scan borne)." >> "$GITHUB_STEP_SUMMARY"
@@ -217,7 +223,7 @@ jobs:
         with:
           header: stale-claim-advisory
           message: |
-            ${{ steps.stale.outputs.exit == '0' && '✅ No unanchored measurement claim detected in the notebooks this PR changed.' || steps.stale.outputs.exit == 'abstain' && '⚠️ Stale-claim detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Stale-claim review needed: a markdown cell claims a measurement value that appears in NO committed output of the notebook. Advisory, NOT a merge gate — triage against the JSON artifact.' }}
+            ${{ steps.stale.outputs.exit == '0' && '✅ No unanchored measurement claim detected in the notebooks this PR changed.' || steps.stale.outputs.exit == 'none' && '⚪ Nothing to scan: this diff opens no notebook — the stale-claim detector looked at nothing, this is NOT a clean result.' || steps.stale.outputs.exit == 'abstain' && '⚠️ Stale-claim detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Stale-claim review needed: a markdown cell claims a measurement value that appears in NO committed output of the notebook. Advisory, NOT a merge gate — triage against the JSON artifact.' }}
             ${{ steps.stale.outputs.trunc_note }}
 
             Scope = notebooks CHANGED in this PR, not the whole corpus. The `stale-claim-report` run artifact holds the structured JSON.
@@ -234,14 +240,14 @@ jobs:
             echo "::warning::factual-mislabel: merge-base origin/main HEAD introuvable -- detector abstains (shallow fetch or unanchored branch)." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          mapfile -t CHANGED < <(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD -- '*.ipynb' | head -50)
+          mapfile -t CHANGED < <(git diff --name-only --diff-filter=AMR -M50% "$BASE" HEAD -- '*.ipynb' | head -50)
           if [ ${#CHANGED[@]} -eq 0 ]; then
-            echo "exit=0" >> "$GITHUB_OUTPUT"
-            echo "::notice::factual-mislabel: aucun notebook modifie entre $BASE et HEAD -- rien a scanner." >> "$GITHUB_STEP_SUMMARY"
+            echo "exit=none" >> "$GITHUB_OUTPUT"
+            echo "::notice::factual-mislabel: aucun notebook ouvert ni modifie entre $BASE et HEAD -- lot vide, ce n'est pas un resultat (exit=none)." >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           # #18503: same real coverage count as the stale-claim step above.
-          TOTAL=$(git diff --name-only --diff-filter=MR -M50% "$BASE" HEAD -- '*.ipynb' | wc -l)
+          TOTAL=$(git diff --name-only --diff-filter=AMR -M50% "$BASE" HEAD -- '*.ipynb' | wc -l)
           if [ "$TOTAL" -gt ${#CHANGED[@]} ]; then
             echo "trunc_note=Couverture partielle: $TOTAL notebooks changed, only the first ${#CHANGED[@]} were scanned." >> "$GITHUB_OUTPUT"
             echo "::notice::factual-mislabel: $TOTAL notebooks changed, only the first ${#CHANGED[@]} were scanned (scan borne)." >> "$GITHUB_STEP_SUMMARY"
@@ -272,7 +278,7 @@ jobs:
         with:
           header: factual-mislabel-advisory
           message: |
-            ${{ steps.mislabel.outputs.exit == '0' && '✅ No factual mislabel detected in the notebooks this PR changed (entity counts and tuple formulas checked against nearby committed streams).' || steps.mislabel.outputs.exit == 'abstain' && '⚠️ Factual-mislabel detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Factual-mislabel review needed: a markdown cell states an entity count or tuple formula that CONTRADICTS the committed stream of the code cell it describes (typically copied from a twin notebook with different data). Advisory, NOT a merge gate — triage against the JSON artifact.' }}
+            ${{ steps.mislabel.outputs.exit == '0' && '✅ No factual mislabel detected in the notebooks this PR changed (entity counts and tuple formulas checked against nearby committed streams).' || steps.mislabel.outputs.exit == 'none' && '⚪ Nothing to scan: this diff opens no notebook — the factual-mislabel detector looked at nothing, this is NOT a clean result.' || steps.mislabel.outputs.exit == 'abstain' && '⚠️ Factual-mislabel detector abstained (merge-base introuvable, shallow fetch or unanchored branch).' || '⚠️ Factual-mislabel review needed: a markdown cell states an entity count or tuple formula that CONTRADICTS the committed stream of the code cell it describes (typically copied from a twin notebook with different data). Advisory, NOT a merge gate — triage against the JSON artifact.' }}
             ${{ steps.mislabel.outputs.trunc_note }}
 
             Scope = notebooks CHANGED in this PR, not the whole corpus. The `factual-mislabel-report` run artifact holds the structured JSON.

@@ -60,6 +60,14 @@ Trois satellites : la **compréhension** (MERT2, 04-15), la **génération** ([Y
 | 15 | [04-15-MERT2-Music-Understanding](04-15-MERT2-Music-Understanding.ipynb) | Embeddings MERT2 (632 M, self-supervised, poids CC BY-NC 4.0) : corpus contrôlé 3 motifs × 4 timbres × 2 transpositions, similarité cosinus, retrieval contexte long FullSong (medley 120 s), sondes linéaires LOO motif vs timbre sur couches L1/L23/L24 | Local GPU (kernel `mert2-gpu`, pins torch 2.6.0 / transformers 4.53.2) | ~4 GB |
 | 16 | [04-16-SheetSage2-Audio-To-Score](04-16-SheetSage2-Audio-To-Score.ipynb) | Transcription audio vers partition éditable : SheetSage2 (677 M, base MERT-v2-FullSong + adaptateurs), cinq têtes (mélodie, accords, temps forts, tonalité, structure), artefacts ABC/MIDI/événements horodatés, comparaison à vérité-terrain connue par construction, cycle symbolique→audio→symbolique mesuré | Local GPU (kernel `sheetsage2-gpu`) ; poids CC BY-NC 4.0 (usage commercial interdit) | ~8 GB |
 
+### Transcription note à note — basic-pitch
+
+Là où SheetSage2 (04-16) produit une partition symbolique globale, la **transcription note à note** cherche *quand* chaque note commence, *quelle* hauteur elle porte et *combien de temps* elle dure. basic-pitch (Spotify, ICASSP 2022) est le modèle de référence de cette tâche ; sa variante ONNX tourne sur CPU, ce qui rend le carnet re-exécutable partout.
+
+| # | Notebook | Contenu | Service | VRAM |
+|---|----------|---------|---------|------|
+| 17 | [04-17-Basic-Pitch-Transcription](04-17-Basic-Pitch-Transcription.ipynb) | Transcription note à note : basic-pitch (ICASSP 2022, ONNX) sur vérité terrain synthétique (11 notes à onsets exacts) et trois accords (9 notes superposées) ; rappel/précision/écart d'onset mesurés, piano-roll vérité vs détection, balayage des seuils du décodeur (onset et frame), trois exercices | CPU local (kernel `basicpitch-t4`, onnxruntime) | 0 (CPU) |
+
 > **Note (consolidation #13741)** : un sibling pédagogique plus minimal (re-voicing CP-SAT + MIDI synthèse, version allégée du canonique) a été archivé sous [`MyIA.AI.Notebooks/GenAI/Audio/_archive/04-14-VoiceLeading-RenduGenAI.ipynb`](../_archive/04-14-VoiceLeading-RenduGenAI.ipynb) pour éliminer le doublon de slot 04-14. Le contenu reste préservé (re-voicing, synthèse MIDI, MusicGen, spectrogrammes, export WAV) ; ce notebook canonique `Rendu-GenAI` (version complète re-exécutée #13398) reste la référence.
 
 ### Analyse musicale classique (MIR)
@@ -76,6 +84,14 @@ Le socle DSP et statistique sous les approches neuronales de la famille YuE2 : l
 P0 Benchmark voix → P1 Analyse littéraire → P2 Casting vocal
     → P3 Annotation prosodique → P4 Génération TTS → P5 Compilation finale
 ```
+
+### Évaluation subjective — protocole MOS
+
+Un rating subjectif n'est interprétable qu'accompagné de son protocole : dans quel ordre présenter les échantillons, comment repérer un auditeur qui note à l'envers du groupe, et quelle incertitude attacher au score. Le carnet ci-dessous importe l'organe `scripts/tts_verification/mos_protocol.py`, lit la rubrique **depuis** `04-7-TTS-Voice-Benchmark` (source de vérité unique), puis exerce l'agrégateur sur une campagne de notes **fictives** : la grille du `04-7` reste vide, c'est l'auditeur qui la remplit. Les proxies automatiques (SNR, SI-SDR, distance log-spectrale, STOI) sont mesurés sur une référence de laboratoire synthétique, pour montrer ce qu'ils capent — et ce qu'ils ne captent pas.
+
+| # | Notebook | Contenu | Service | VRAM |
+|---|----------|---------|---------|------|
+| 19 | [04-19-Evaluation-MOS](04-19-Evaluation-MOS.ipynb) | Protocole d'écoute subjective (ITU-T P.800) et agrégateur (ITU-R P.808) : lecture de la rubrique depuis le `04-7`, liste d'essais rejouable, fiche de notation pré-remplie, MOS + IC 95 % + rejet des auditeurs aberrants, proxies (SNR, SI-SDR, LSD, STOI) sur référence source-filtre et dégradations maîtrisées, 3 exercices | CPU local (numpy, scipy, torchmetrics, pystoi) | 0 |
 
 ## Prérequis
 
@@ -112,7 +128,7 @@ Audio brut -> STT -> Correction -> Enhance -> TTS -> Podcast final
 ### Musique
 
 ```text
-Texte -> MusicGen -> Édition MIDI -> Voice leading optimal ([App-21 Search](../../../Search/Applications/CSP/App-21-VoiceLeading.ipynb)) -> Rendu audio intelligent ([04-14](04-14-VoiceLeading-Rendu-GenAI.ipynb)) -> Post-production -> Export
+Texte -> MusicGen -> Édition MIDI -> Voice leading optimal ([App-21 Search](../../../Search/Part3-Cas-pratiques/App-21-VoiceLeading.ipynb)) -> Rendu audio intelligent ([04-14](04-14-VoiceLeading-Rendu-GenAI.ipynb)) -> Post-production -> Export
 ```
 
 ### Audiobook Agentique (Epic #1028)

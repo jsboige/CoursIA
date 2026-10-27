@@ -27,7 +27,6 @@ name: Translation Guard
 
 on:
   pull_request:
-    branches: [ main ]
     # #12773 tranche 1b + amend. #13196 Hermes : paths-filter pour limiter
     # les declenchements aux PR touchant la surface reelle du garde
     # (`translation_override_required.py` qui interroge l'API `gh pr`). La
@@ -184,6 +183,8 @@ jobs:
             echo "" >> "$GITHUB_STEP_SUMMARY"
             echo "**State of the engine (#15198, #10038):** \`translation-sync.yml\` is on a manual-maintainer hold since 2026-08-12 -- it no longer runs per-PR, so editing the FR source does **not** refresh the derived file until the hold is lifted. While the hold stands, the auditable exit for a legitimate derived-file change is the dual-key override (#10332), never a silent hand-edit." >> "$GITHUB_STEP_SUMMARY"
             echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "**Counterpart organ (#20232):** the hot-subset ratchet (\`scripts/translation/tests/test_hot_subset_ratchet.py\`, #13551) requires a **per-cell CSV resync** after an FR edit -- exactly the derived files flagged here. The dual-key override above is the auditable path for that resync; the two organs name each other on purpose." >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
             echo '```bash' >> "$GITHUB_STEP_SUMMARY"
             echo "git checkout origin/main -- $CHANGED" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
@@ -198,6 +199,13 @@ jobs:
       # cliquet is not disarmed. The decision lives in
       # `scripts/ci/translation_override_required.py` (testable, injectable
       # fetchers -- unit tests never touch the network).
+      #
+      # Counterpart organ (#20232): the hot-subset ratchet
+      # (`scripts/translation/tests/test_hot_subset_ratchet.py`, #13551)
+      # requires a per-cell CSV resync after an FR edit -- i.e. the derived
+      # files this guard flags. The two organs name each other on purpose:
+      # the ratchet points here and to this dual-key; this guard points to
+      # the ratchet. Do not silence one by weakening the other.
       - name: Resolve translation-guard override (#10332)
         id: override
         if: steps.check.outputs.violated == 'true'

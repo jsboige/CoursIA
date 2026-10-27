@@ -16,7 +16,6 @@ name: Translation Drift Check
 
 on:
   pull_request:
-    branches: [ main ]
     paths:
       - 'MyIA.AI.Notebooks/**/*.ipynb'
       - 'translations/**'
@@ -33,7 +32,19 @@ concurrency:
 
 jobs:
   translation-drift:
-    name: "Translation drift (read-only)"
+    # Le marqueur `advisory` dans le NOM du job EST le contrat : pr_gate.py
+    # classe par nom (`ADVISORY_MARKER`, regle 6) et ne lit ni l'en-tete du
+    # workflow ni fast_lane_registry.py. L'en-tete de ce fichier dit
+    # « non-blocking, read-only » depuis le depot du workflow (#4957) et le
+    # workflow se nommait « Translation Drift Check » -- ni l'un ni l'autre ne
+    # porte le marqueur, donc un echec D'INFRASTRUCTURE de ce job comptait
+    # comme un check REQUIS et reddenait toute PR. Mesure sur #22216 le
+    # 2026-10-26 : « PR gate: FAIL -- failing checks: Translation drift
+    # (read-only) (failure) », alors que le job avait echoue sur un checkout
+    # (fetch promisor) et que tous les autres checks etaient verts.
+    # Meme correctif et meme precedent que le job catalog-drift (#15998).
+    # Ne pas retirer le mot sans relire scripts/pr_gate.py (rule 6) et #15998.
+    name: "Translation drift (read-only, advisory)"
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de

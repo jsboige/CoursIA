@@ -1,7 +1,7 @@
 # TradingCosts-Optimization (Hands-On AI Trading, Exemple 12)
 
 **Classe d'actifs :** Crypto — BTCUSDC (Bybit)
-**ID projet Cloud :** Aucun (local uniquement — voir `## État d'exécution`)
+**ID projet Cloud :** 29463540 (`HandsOn-Ex12-TradingCosts-Optimization` — voir `## État d'exécution`)
 **Référence :** *Hands-On AI Trading with Python, QuantConnect, and AWS*, Chapitre 6 (Applied Machine Learning), Exemple 12
 
 ## Description
@@ -72,13 +72,13 @@ d'equity.
 
 ## État d'exécution (lecture honnête)
 
-| Item | État au 2026-08-06 |
+| Item | État au 2026-10-22 |
 |------|---------------------|
 | Code de la stratégie | ✅ Présent sur main (`main.py` intact) |
-| Notebook QC Cloud (`quantbook.ipynb`) | ❌ Absent — projet cloud jamais créé |
-| Backtest live exécuté via Lean CLI / MCP | ❌ Jamais exécuté localement |
+| Projet QC Cloud | ✅ 29463540 (`HandsOn-Ex12-TradingCosts-Optimization`, créé 2026-03-28 ; identifié lors de la première mesure du 2026-10-22) |
+| Backtest Cloud exécuté | ✅ Première mesure le 2026-10-22 (paire avant/après ancrage `month_start`, #18941) — **le run s'arrête en Runtime Error le 2022-04-01** avant la fin de la fenêtre (voir l'issue dédiée dans `## Voir aussi`) |
+| Métriques chiffrées (jusqu'au crash, identiques avant/après) | Sharpe **-2.307**, CAR **-0.051 %**, drawdown **1.600 %**, 114 ordres, frais cumulés **-$480.08** |
 | Notebook recherche local (`research.ipynb`) | ❌ Absent — pas de backtest companion |
-| Métriques chiffrées | ⚠️ **AUCUNE** dans ce README — le code ne les produit pas, et aucune exécution préalable n'est disponible |
 | `Sharpe Ratio` hardcodé dans README original | ❌ Aucun (la version EN non plus — claim honnête par défaut) |
 
 > **Lecture critique.** Le README original (EN) indique _« Educational demo »_
@@ -121,12 +121,13 @@ sous-jacente à corriger — le code est cohérent avec sa documentation.
 
 ## Fichiers
 
-- `main.py` — la stratégie complète (251 lignes, voir le diff pour traçabilité).
+- `main.py` — la stratégie complète (voir le diff pour traçabilité).
 - `README.en.md` — version anglaise préservée (gold set de référence Phase 3
   de l'EPIC #1650, traduction).
 
 ## Voir aussi
 
+- **#22060** — crash préexistant `NotFittedError` au 2022-04-01 (mesuré en paire le 2026-10-22, indépendant de l'ancrage `month_start`).
 - **EPIC #1621** — Consolidation QC/Trading (projets, checkpoints, papertrading).
 - **#3976** — READMEs feuilles QuantConnect (owner po-2024 verbatim).
 - **#9434** — mandat « quantitatif tenu par le CI, pas par la prose » (fabrication

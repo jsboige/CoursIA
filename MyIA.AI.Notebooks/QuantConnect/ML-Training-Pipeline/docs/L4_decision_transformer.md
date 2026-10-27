@@ -2,6 +2,16 @@
 
 ## Verdict : BEATS (panel @10bps)
 
+> **État mesuré au 2026-10-18 (#21187) : ce verdict ne fait plus foi.**
+>
+> Tous les chiffres de cette page sont antérieurs à #21187. Ils ont été produits avec le **RTG réalisé du test** : l'entrée « retour à venir » du modèle était la somme des récompenses futures du fold de test. Le modèle lisait donc une information postérieure à sa décision. Dans `sweep_l4_decision_transformer.py`, la simulation associait en plus les positions aux mauvais rendements. Les holdouts du 06/08 et le run OOT du 04/09 sont eux aussi antérieurs au correctif de `validate_xrp_dt.py` (#21196).
+>
+> Les scripts d'évaluation passent désormais tous par le protocole `causal-v1` : RTG fixé sur le fold d'entraînement, une décision par pas, lue sur les lignes antérieures à son rendement. C'est le cas de `validate_xrp_dt.py`, `validate_xrp_dt_holdout.py` et `ablation_rtg_leak.py` (#21196, #21240), puis de `sweep_l4_decision_transformer.py`, `train_dt_multiseed.py` et `eval_rl_dt.py`.
+>
+> Sous ce protocole, l'ablation de la tranche 3 rend **`NO SKILL`** (6 symboles, graines 0/1/7/42, 5 folds, témoin apparié en exposition, correction de Holm). Aucun symbole ne passe sous 0,05, et le plus petit p de Fisher est 0,381 : [c.6248538028](https://github.com/jsboige/CoursIA/issues/21187#issuecomment-6248538028).
+>
+> Le panel de 25 symboles n'a **pas** été re-mesuré : le BEATS ci-dessous reste à refaire avec le sweep corrigé. Le texte qui suit est conservé tel quel, pour l'historique.
+
 **Seul échelon du ladder (Epic #1409) qui batte le buy-and-hold** — *en coupe transversale / panel @10bps uniquement* ; l'edge ne se reproduit pas en holdout temporel (cf. section dédiée ci-dessous). Un Decision Transformer
 (Chen et al. 2021) entraîné en **offline RL** apprend directement une **action**
 (buy/hold/sell) à partir de trajectoires, au lieu de prévoir un *retour* (L3) ou un *signe
@@ -65,7 +75,10 @@ court terme à faible trend, déjà pire cellule de L3).
 ## Script et notebook
 
 - Sweep canonique : `scripts/sweep_l4_decision_transformer.py` (réutilise
-  `DecisionTransformerModel` de `train_rl_dt.py`).
+  `DecisionTransformerModel` de `train_rl_dt.py`). Depuis #21187, il évalue chaque fold
+  avec les organes causaux de `ablation_rtg_leak.py` (`causal_condition_actions`,
+  `causal_eval_returns`, `simulate_dt_portfolio`, `score_actions`). Ses sorties portent
+  `eval_protocol`, et ajoutent `mean_hit_rate` et `mean_exposure`.
 - Notebook : `research_l4_decision_transformer.ipynb` + figure `research_l4_dt_results.png`.
 
 ## Holdout temporel 06/08 — portée du BEATS
@@ -143,7 +156,7 @@ recalculé sur la tranche gelée, ce qui rend l'absence de contamination vérifi
 | L1 TSMOM | momentum temporelle (signe) | NO BEATS (coûts de rotation) |
 | L2 CS+DM | momentum cross-sectionnelle | NO BEATS (B&H dominant) |
 | L3 LSTM | prévision de **direction/retour** | NO BEATS (AUC ≡ hasard) |
-| **L4 Decision Transformer** | **prévision d'action** (offline RL) | **BEATS (panel @10bps)** |
+| **L4 Decision Transformer** | **prévision d'action** (offline RL) | **BEATS (panel @10bps)**, mesuré avec le RTG réalisé ; à refaire (#21187) |
 
 L1/L2/L3 échouent pour des raisons distinctes (coûts, B&H, imprédictibilité directionnelle)
 mais convergent : **prédire un retour ou un signe ne suffit pas**. L4 confirme que **la

@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: ML
-pedagogical_count: 137
-breakdown: DataScienceWithAgents=114, ML.Net=23
-maturity: BETA=123, ALPHA=8, DRAFT=6
+pedagogical_count: 138
+breakdown: DataScienceWithAgents=115, ML.Net=23
+maturity: BETA=125, ALPHA=8, DRAFT=5
 -->
 
 > **À propos des décomptes** : le marqueur `CATALOG-STATUS` ci-dessus est la **source de vérité autoritative** pour les volumes (notebooks par sous-série, maturité). Il est régénéré chaque nuit par le workflow [`catalog-cron.yml`](../../.github/workflows/catalog-cron.yml) à 03:37 UTC sur `main` (commit `[skip ci]` par `github-actions[bot]`). Si vous observez un décalage entre ce marqueur et une phrase en prose de ce README — par exemple si une sous-série a reçu de nouveaux notebooks mergés après la dernière régénération —, **fiez-vous au marqueur** ; la prose sera ré-alignée manuellement lors du prochain passage. Pour les **décomptes par kernel** (Python vs C#/.NET) au sein d'une sous-série, ce README reste autoritatif car la décomposition langagière par sous-série n'est pas dans le marqueur agrégé.
@@ -61,7 +61,7 @@ Le parcours ML.NET couvre le pipeline complet en C# : les notebooks 1-2 introdui
 
 ### Track B : Data Science with Agents (Python, ~21h)
 
-Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) installent la manipulation de données. Le **socle ML canonique** ([02-ML-Cours](DataScienceWithAgents/02-ML-Cours/), scikit-learn) pose ensuite les concepts fondamentaux — workflow et surapprentissage, descente de gradient, régressions et pont génératif, ensembles, biais-variance/calibration/équité, non supervisé, théorie PAC et ses compagnons formels, grokking, puis optimisation d'hyperparamètres, régularisation sparse et classes déséquilibrées — chacun rendant *visible* un concept-phare et ancrant un article fondateur. Viennent enfin les **labs agentic**, en deux sous-tracks : le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique et le NLP de base ; le sous-track **Google ADK** (Labs 8-18, extensions 12b-12d) monte en complexité avec le deep learning (PyTorch), le dashboarding et les pipelines multi-agents (agents LLM pour automatiser le workflow data science). Deux volets spécialisés complètent le parcours : [03-DeepLearning](DataScienceWithAgents/03-DeepLearning/) (PyTorch) et [04-Vision](DataScienceWithAgents/04-Vision/) (dont le transfer learning ResNet). Ce track présuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
+Le parcours Python s'articule en trois temps. Les **fondations** (NumPy/Pandas) installent la manipulation de données. Le **socle ML canonique** ([02-ML-Cours](DataScienceWithAgents/02-ML-Cours/), scikit-learn) pose ensuite les concepts fondamentaux — workflow et surapprentissage, descente de gradient, régressions et pont génératif, ensembles, biais-variance/calibration/équité, non supervisé, théorie PAC et ses compagnons formels, grokking, puis optimisation d'hyperparamètres, régularisation sparse et classes déséquilibrées — chacun rendant *visible* un concept-phare et ancrant un article fondateur. Viennent enfin les **labs agentic**, en deux sous-tracks : le sous-track **LangChain** (Labs 1-7) couvre le data wrangling, la visualisation, le ML classique et le NLP de base ; le sous-track **Google ADK** (Labs 8-18, extensions 12b-12d) monte en complexité avec le deep learning (PyTorch), le dashboarding et les pipelines multi-agents (agents LLM pour automatiser le workflow data science). Deux volets spécialisés complètent le parcours : [03-Deep-Learning](DataScienceWithAgents/03-Deep-Learning/) (PyTorch) et [04-Vision](DataScienceWithAgents/04-Vision/) (dont le transfer learning ResNet). Ce track présuppose Python 3.10+ avec PyTorch, scikit-learn et pandas.
 
 ## Progression recommandée
 
@@ -126,7 +126,7 @@ ML/
 │   ├── 02-ML-Cours/                  # Socle ML canonique (scikit-learn)
 │   │   ├── 2.8b-Theorie-PAC-Lean.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean (moitie PAC)
 │   │   └── 2.8d-Lean-Novikoff-Convergence.ipynb   # compagnon Lean (lean4-wsl) du lake learning_theory_lean (moitie Perceptron)
-│   ├── 03-DeepLearning/              # Deep learning PyTorch
+│   ├── 03-Deep-Learning/              # Deep learning PyTorch
 │   ├── 04-Vision/                    # Vision par ordinateur
 │   ├── Track1-LangChain/   # Track LangChain (Labs 1-7)
 │   └── Track2-GoogleADK/           # Track Google ADK (Labs 8-18, extensions 12b-12d)

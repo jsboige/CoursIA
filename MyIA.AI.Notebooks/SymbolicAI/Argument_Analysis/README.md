@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: SymbolicAI-Argument_Analysis
-pedagogical_count: 32
-breakdown: Argument_Analysis=32
-maturity: BETA=30, ALPHA=1, DRAFT=1
+pedagogical_count: 33
+breakdown: Argument_Analysis=33
+maturity: BETA=31, ALPHA=1, DRAFT=1
 -->
 
 [← SmartContracts](../SmartContracts/README.md) | [↑ SymbolicAI](../README.md) | [SymbolicLearning →](../SymbolicLearning/README.md)
@@ -452,20 +452,19 @@ Le présent ordre est dérivé **lecture après lecture** des sections
 `**Navigation : [<< N >>]` ; il est public et auditable, pas une convention de
 nommage.
 
-**Mesure du 2026-09-09 sur `main`** : **28 notebooks** `.ipynb` dans le
-répertoire (27 à la racine, 1 sous `groupe-I2-contre-arguments-aspic/`). Depuis
-cette mesure, **cinq arrivées** portent le répertoire à **33** (32 racine + 1
-sous `groupe-I2-contre-arguments-aspic/`) : `Obs-02-Initiation`
-(#16431), puis les quatre distillats Triple Distillation livrés le
-2026-09-22/23 — `Dialogues_Protocolises`, `01b`, `Knowledge_Base`,
-`Communication_Channels` — mesure re-vérifiée au 2026-09-23 (`git ls-tree` :
-27 → 32 à la racine, aucune disparition). Chaque
+**Mesure du 2026-09-09 sur `main`** : les notebooks `.ipynb` du répertoire
+(racine et sous `groupe-I2-contre-arguments-aspic/`). Depuis cette mesure, des
+arrivées ont enrichi la série : `Obs-02-Initiation` (#16431), puis les
+distillats Triple Distillation livrés le 2026-09-22/23 —
+`Dialogues_Protocolises`, `01b`, `Knowledge_Base`, `Communication_Channels` —
+mesure re-vérifiée au 2026-09-23 (`git ls-tree` : croissance à la racine,
+aucune disparition). Chaque
 notebook est balisé dans un des trois arcs ou déclaré hors-arc avec sa raison.
 Puis `Argumentation-08f-Synthese-Multidimensionnelle` (étape 5 volet B #4960,
 organe `workflow_levels`) rejoint la série comme transverse de synthèse — le
 compte à jour du répertoire vit dans le catalogue régénéré.
 La présente section consolide la version c.1030 (livrée par session antérieure)
-et le mapping exhaustif 28/28 (PR #15371) — les deux contributions sont
+et le mapping exhaustif (PR #15371) — les deux contributions sont
 fusionnées sans doublon, le verdict renum (#15283) reste préservé ci-dessous.
 
 ### Arc 1 — Agentic (ligne principale, six rungs dans l'arc 00-08) — ordre strict
@@ -580,16 +579,15 @@ sont des **ordres partiels** :
    `Synthese_Multidimensionnelle`) se croisent avec les arcs sans chaîne
    de prérequis stricte — voir « Limites » ci-dessous.
 
-### Arithmétique (résolution du désaccord 14 vs 15 de #15283)
+### Arithmétique (résolution du désaccord de comptage de #15283)
 
-La discussion c.1030 opposait « 14 notebooks annoncés » (adjoint) à « 15
-balisés » (auteur de la PR). La mesure de référence est le répertoire :
-celle de cette branche au 2026-09-25 — les 33 de `main` (mesure
-du 2026-09-23, cinq arrivées depuis le 2026-09-09 ayant porté l'arc 3 de 5
-à 9) plus `Gouvernance_Multi_Agents` apportée par la présente PR — dont
-**20 balisés** par les arcs (6 + 4 + 10, l'arc 3 accueillant la gouvernance
-comme théorie parallèle) et **14 hors-arc** documentés ci-dessus — la somme
-fait 34, sans trou ni double. Les transverses que la c.1030 déclarait hors-ordre
+La discussion c.1030 opposait le compte de notebooks annoncé (adjoint) au
+compte balisé (auteur de la PR). La mesure de référence est le répertoire :
+celle de cette branche au 2026-09-25 — l'état de `main` (mesure du 2026-09-23,
+les arrivées depuis le 2026-09-09 ayant élargi l'arc 3) plus
+`Gouvernance_Multi_Agents` apportée par la présente PR — chaque notebook
+**balisé** par un arc (l'arc 3 accueillant la gouvernance comme théorie
+parallèle) ou **hors-arc** documenté ci-dessus, sans trou ni double. Les transverses que la c.1030 déclarait hors-ordre
 (`Formal_Richness_Matrix`, `Recollement_*`, …) sont ici nommés un à un avec
 leur raison.
 
@@ -641,7 +639,7 @@ Cette section consigne la proposition d'analyse reçue du workspace partenaire `
 | ------- | --------------- | ------------- |
 | `Argument_Analysis_Agentic-<N>` (numéros nus 0 à 5) | **aucune renumérotation** — c'est un arc | — |
 | 4 compagnons `*_agent` (`-0-init_agent`, `-1-informal_agent`, `-2-pl_agent`, `-3-orchestration_agent`) | **normalisation `*` → `b`** (convention §2 : base = `a`, première accrétion = `b`) | traduction d'une intention auteur déjà notée `*(legacy)*` dans la table curée |
-| 14 notebooks à mnémonique (théorie / formalismes) | **aucune renum, question de partition** — orthogonaux à l'arc Agentic | aucun tell ne se lit ; le mécanisme des lettres ne s'applique pas |
+| Notebooks à mnémonique (théorie / formalismes) | **aucune renum, question de partition** — orthogonaux à l'arc Agentic | aucun tell ne se lit ; le mécanisme des lettres ne s'applique pas |
 
 ### Collision slot 2 — décision owner requise
 
@@ -671,23 +669,20 @@ Ce lot est **distinct** de la renumérotation et peut partir seul, sans attendre
 
 ### Mesure repo-wide (hors Argument_Analysis)
 
-Le garde de collision du merge-gate (`check_duplicate_notebook_index.py:_INDEX_RE`) exclut la convention dominante du cours (`ID_IN_NAME_RE` accepte `<Préfixe>-<num><lettre?>-`, `_INDEX_RE` exige l'index en tête). Mesure au 2026-09-06 sur 1240 notebooks (hors `_archive`/checkpoints/`.lake`) :
+Le garde de collision du merge-gate (`check_duplicate_notebook_index.py:_INDEX_RE`) exclut la convention dominante du cours (`ID_IN_NAME_RE` accepte `<Préfixe>-<num><lettre?>-`, `_INDEX_RE` exige l'index en tête). Mesure au 2026-09-06 sur l'ensemble des notebooks du dépôt (hors `_archive`/checkpoints/`.lake`) :
 
 - identifiés par la règle §1 : 822
 - vus par `_INDEX_RE` : 224
-- écart : **746 notebooks identifiés que le garde de collision ne peut pas voir**
+- écart : des notebooks entiers identifiés comme invisibles pour le garde de collision (l'écart mesuré ci-dessus)
 
 L'écart n'est pas propre à Argument_Analysis — contrôle positif sur les voisines : `Sudoku` 0/37, `Tweety` 0/34, `GameTheory` 8/94. Ce périmètre mériterait sa propre issue, mais elle appartient à l'owner de l'organe. **Elle n'est pas déposée depuis cette section** — la présente consignation se limite à la série Argument_Analysis.
 
+## Provenance
 
----
+Les versions successives de ce README (1.2.1 → 1.2.5, 2026-09-09 → 2026-09-25) sont conservées dans l'historique Git :
 
-**Version 1.2.5** — 2026-09-25 — intégration `Gouvernance_Multi_Agents` (PR #17353, sous-grain 2 #4960) : ligne dans les tables « Notebooks » et « Ce que chaque notebook apporte », entrée arc 3 (indépendante, prérequis aucun, voisine d'`Agentic-3-orchestration` par la question — décider à plusieurs vs orchestrer le travail) ; mapping re-mesuré **34/34**, arithmétique **20 balisés (6+4+10) + 14 hors-arc** ; reprise des lignes renommées `Argumentation-NN` du merge `main` (#17718). Marqueur `CATALOG-STATUS` byte-identique, aucune régénération sur la branche. Tell readme-french-first R1 respecté (prose nouvelle en français).
+```
+git log --oneline MyIA.AI.Notebooks/SymbolicAI/Argument_Analysis/README.md
+```
 
-**Version 1.2.4** — 2026-09-23 — audit fichier ENTIER §E (issue #17453) : ajout d'`Observatoire-1-Initiation` (livré #16431, epic #16410) dans les tables « Notebooks » et « Ce que chaque notebook apporte » + arc 3 (prérequis `Dated_Graphs`, diagramme mis à jour) ; ajout des 4 notebooks manquants à la table « Notebooks » (`Recollement_Lectures`, `Recollement_Strate6`, `Argumentum_Cards`, `I2_Contre_arguments_ASPIC` — chemin sous-dossier corrigé) ; mapping exhaustif re-mesuré **33/33** (32 racine + 1 sous groupe-I2 — cinq arrivées depuis la mesure du 2026-09-09, re-vérifiées au `git ls-tree`), arithmétique **19 balisés (6+4+9) + 14 hors-arc**, `Communication_Channels` classé hors-arc (transverse infra) ; table « Statistiques catalogue à jour » ré-alignée sur le marqueur canonique `pedagogical_count: 28`, `maturity: BETA=26, ALPHA=1, DRAFT=1` (l'ancienne table sommait à 18 sur un vocabulaire PRODUCTION périmé), écart disque↔catalogue signalé (**5** notebooks non catalogués, nommés, rattrapage par le cron). Marqueur `CATALOG-STATUS` byte-identique, aucune régénération sur la branche. Tell readme-french-first R1 respecté (prose nouvelle en français).
-
-**Version 1.2.3** — 2026-09-10 — consolidation sans doublon de la section « Ordre partiel et prérequis » (PR #15371, suite au DM `msg-20260910T134004-9nsqfl` ai-01) : fusion de la livraison c.1030 (kernel/notebook prérequis détaillés, 15/28) avec le mapping exhaustif 28/28, en une seule section augmentée préservant le verdict renum (EPIC #5081, issue #14950) inchangé. Aucun notebook modifié, aucune décision de renum, marqueur `CATALOG-STATUS` byte-identique à `pedagogical_count: 18`. Tell readme-french-first R1 respectée (section rédigée en français). Tell catalog-pr-hygiene R1 respectée (catalogue inchangé).
-
-**Version 1.2.2** — 2026-09-09 — section *Ordre partiel et prérequis* ajoutée suite au nit user 5594317963. Aucun fichier notebook modifié, aucune décision de renum (EPIC #5081 reste owner-decision). Tell readme-french-first R1 respecté (section rédigée en français). Tell catalog-pr-hygiene R1 respecté (CATALOG-STATUS inchangé).
-
-**Version 1.2.1** — 2026-09-09 — section Renumérotation — verdict (EPIC #5081, issue #14950) consignant la proposition owner-decision sans modifier de fichier. Tell catalog-pr-hygiene R1 respecté (marqueur CATALOG-STATUS inchangé). Tell readme-french-first R1 respecté (section ajoutée en français).
+Chaque PR listée par `git log` (intégrations `Gouvernance_Multi_Agents`, audits fichier-entier, décisions owner `EPIC #5081`) reste traçable et auditable par le diff, sans raconter la livraison dans le README courant.

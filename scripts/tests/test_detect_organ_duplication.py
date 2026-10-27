@@ -72,10 +72,16 @@ BODY_UNRELATED = "Ajout d'un notebook ICT sur l'atteignabilité. See #13568."
 
 def test_index_loads_measured_series():
     mod = _load_detector()
-    owners, symbol_owners = mod.load_index(INDEX)
-    assert len(owners) >= 6, "acceptance: >= 6 series mesurees"
+    owners, symbol_owners, submodule_names = mod.load_index(INDEX)
+    assert len(owners) - len(submodule_names) >= 6, "acceptance: >= 6 series mesurees"
     for sym in ("Operateur", "ops_de_base", "ops_avec_radeau", "prop", "successeurs"):
         assert symbol_owners[sym] == "Planners"
+    assert submodule_names == {
+        "semantic-fleet", "Argumentum", "MetaGeneticSharp", "Z3.Linq", "Automata",
+    }, "contrat #13902 : les cinq sous-modules dans l'index"
+    assert symbol_owners["VettingLevel"] == "semantic-fleet"
+    assert symbol_owners["Fallacy"] == "Argumentum"
+    assert symbol_owners["CharSetSolver"] == "Automata"
 
 
 def test_greffe2_flagged_without_body(tmp_path, capsys):
@@ -202,6 +208,128 @@ def test_accent_tolerant_declaration_forms():
     assert mod.is_declared("copie fidele")
     assert not mod.is_declared("on a copié le style")
     assert not mod.is_declared("")
+
+
+# --- Sous-modules (#13902, item 4) : contrat de retour amont -------------------
+
+# Forme de l'extraction fondatrice : un fichier CoursIA (hors sous-module) qui
+# redistille la physique du MultiConnector de semantic-fleet.
+SF_EXTRACTION_PATCH = """diff --git a/MyIA.AI.Notebooks/GenAI/Texte/mc_local.py b/MyIA.AI.Notebooks/GenAI/Texte/mc_local.py
+--- a/MyIA.AI.Notebooks/GenAI/Texte/mc_local.py
++++ b/MyIA.AI.Notebooks/GenAI/Texte/mc_local.py
+@@ -0,0 +1,3 @@
++class VettingLevel:
++    pass
++class MultiCompletionAnalysis:
+"""
+
+BODY_PAYBACK = (
+    "## Retour amont\n\nCe que cette extraction rend à l'amont : une PR "
+    "semantic-fleet consommant le banc de vetting (extension tracée #13902)."
+)
+BODY_PAYBACK_NOTHING = (
+    "Elle ne rend rien : copie de 30 lignes pour la séance 3, motif pédagogique."
+)
+
+
+def test_submodule_collision_requires_payback(tmp_path, capsys):
+    """Extraction d'un symbole de sous-module sans section de retour : bloquée,
+    même marqueur #13902 -- la copie déclarée seule ne blanchit pas."""
+    mod = _load_detector()
+    patch = _write(tmp_path, "sf.diff", SF_EXTRACTION_PATCH)
+    rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert out.count("COLLISION") == 2
+    assert "-> semantic-fleet (VettingLevel)" in out
+    assert "[retour amont manquant -- #13902]" in out
+    assert "BLOCKED" in out
+
+    body = _write(tmp_path, "body.md", BODY_DECLARED_CANONIQUE)
+    rc = mod.main(["--patch", str(patch), "--body-file", str(body),
+                   "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 1, "la copie déclarée seule ne satisfait pas le contrat #13902"
+    assert out.count("COLLISION") == 2
+
+
+def test_submodule_whitened_by_payback(tmp_path, capsys):
+    mod = _load_detector()
+    patch = _write(tmp_path, "sf.diff", SF_EXTRACTION_PATCH)
+    body = _write(tmp_path, "body.md", BODY_PAYBACK)
+    rc = mod.main(["--patch", str(patch), "--body-file", str(body),
+                   "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert out.count("[retour amont declare]") == 2
+    assert "0 non declaree" in out
+
+    body_nothing = _write(tmp_path, "body2.md", BODY_PAYBACK_NOTHING)
+    rc = mod.main(["--patch", str(patch), "--body-file", str(body_nothing),
+                   "--index", str(INDEX), "--check"])
+    assert rc == 0, "« ne rend rien » explicite satisfait le contrat"
+    assert "[retour amont declare]" in capsys.readouterr().out
+
+
+def test_submodule_owner_path_is_maintenance_not_extraction(tmp_path, capsys):
+    """Éditer DANS le sous-module (maintenance) ne collisionne jamais."""
+    mod = _load_detector()
+    patch = _write(tmp_path, "inside.diff", """diff --git a/MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/dotnet/src/Connectors/Connectors.AI.MultiConnector/Analysis/VettingLevel.cs b/MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/dotnet/src/Connectors/Connectors.AI.MultiConnector/Analysis/VettingLevel.cs
+--- a/MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/dotnet/src/Connectors/Connectors.AI.MultiConnector/Analysis/VettingLevel.cs
++++ b/MyIA.AI.Notebooks/GenAI/SemanticKernel/semantic-fleet/dotnet/src/Connectors/Connectors.AI.MultiConnector/Analysis/VettingLevel.cs
+@@ -1,2 +1,4 @@
++public class VettingLevel
++{
++}
+""")
+    rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "CLEAN" in out and "0 collision" in out
+
+
+def test_payback_does_not_whiten_series_collision(tmp_path, capsys):
+    """Symétrie : la section de retour amont ne blanchit PAS une collision de
+    série (Planners exige toujours la copie déclarée)."""
+    mod = _load_detector()
+    patch = _write(tmp_path, "greffe2.diff", GREFFE2_PATCH)
+    body = _write(tmp_path, "body.md", BODY_PAYBACK)
+    rc = mod.main(["--patch", str(patch), "--body-file", str(body),
+                   "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert out.count("COLLISION") == 5
+    assert "[copie declaree]" not in out
+
+
+def test_is_payback_forms():
+    mod = _load_detector()
+    assert mod.is_payback("Ce que cette extraction rend à l'amont : une extension.")
+    assert mod.is_payback("l'extension rend à l'amont sous forme de PR")
+    assert mod.is_payback("rend a l'amont")  # sans accents
+    assert mod.is_payback("l’extension rendra à l’amont")  # apostrophe typographique
+    assert mod.is_payback("Elle ne rend rien : pédagogie pure.")
+    assert not mod.is_payback("on a copié le style du module")
+    assert not mod.is_payback(BODY_DECLARED_CANONIQUE), "copie déclarée ≠ retour amont"
+    assert not mod.is_payback("")
+
+
+def test_detector_fixture_file_does_not_self_flag(tmp_path, capsys):
+    """La PR qui étend le détecteur ajoute « class VettingLevel » DANS ses
+    chaînes de patch de test : l'organe ne doit pas se flagger lui-même."""
+    mod = _load_detector()
+    patch = _write(tmp_path, "self.diff", """diff --git a/scripts/tests/test_detect_organ_duplication.py b/scripts/tests/test_detect_organ_duplication.py
+--- a/scripts/tests/test_detect_organ_duplication.py
++++ b/scripts/tests/test_detect_organ_duplication.py
+@@ -1,1 +1,3 @@
++SF_EXTRACTION_PATCH = "class VettingLevel:"
++class VettingLevel:
++    pass
+""")
+    rc = mod.main(["--patch", str(patch), "--index", str(INDEX), "--check"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "CLEAN" in out and "0 collision" in out
 
 
 # --- Lean (#20210) : index derive d'un faux arbre, citations, jumeaux _en ---
@@ -457,10 +585,14 @@ def test_lean_git_mode_masks_whole_file(tmp_path, capsys):
     subprocess.run([*git, "add", "MyIA.AI.Notebooks"], check=True)
     subprocess.run([*git, "commit", "-q", "-m", "base"], check=True)
     # Prose ajoutee DANS la docstring (nom de l'index) + vraie declaration apres.
+    # newline="\n" est obligatoire : sans lui, Path.write_text traduit en CRLF sur
+    # Windows, le fichier de tete differe alors de la base sur TOUTES ses lignes,
+    # et le diff devient un remplacement fichier entier dont les hunks portent
+    # l'ouverture de docstring -- la limite du mode --patch n'est plus exercee.
     (repo / PROBE).write_text(
         "/-!\n# Sonde\nligne initiale\nstructure IsAutomorphism en prose\n-/\n"
         "def probeBase := 1\ndef sheffer (x : Nat) : Nat := x\n",
-        encoding="utf-8")
+        encoding="utf-8", newline="\n")
     subprocess.run([*git, "add", PROBE], check=True)
     subprocess.run([*git, "commit", "-q", "-m", "head"], check=True)
     rc = mod.main(["--base", "HEAD~1", "--head", "HEAD", "--cwd", str(repo),
@@ -474,7 +606,17 @@ def test_lean_git_mode_masks_whole_file(tmp_path, capsys):
     # Limite documentee du mode --patch : le hunk n'a pas l'ouverture de la
     # docstring, la prose est lue comme du code (faux positif connu).
     diff = subprocess.run(["git", "-C", str(repo), "diff", "HEAD~1", "HEAD", "--unified=0"],
-                          capture_output=True, text=True, check=True).stdout
+                          capture_output=True, text=True,
+                          encoding="utf-8", errors="replace", check=True).stdout
+    # Garde : le diff doit rester minimal (2 hunks, 2 lignes ajoutees). Un hunk
+    # unique couvrant tout le fichier signifie que les deux ecritures different
+    # par leurs fins de ligne (CRLF vs LF) et que le mode --patch voit alors la
+    # docstring ouverte : l'assertion suivante ne testerait plus sa limite.
+    hunk_headers = [line for line in diff.splitlines() if line.startswith("@@")]
+    added = [line for line in diff.splitlines() if line.startswith("+")
+             and not line.startswith("+++")]
+    assert len(hunk_headers) == 2, f"diff non minimal (hunks) :\n{diff}"
+    assert len(added) == 2, f"diff non minimal (lignes ajoutees) :\n{diff}"
     patch = _write(tmp_path, "hunk.diff", diff)
     mod.main(["--patch", str(patch), "--index", str(INDEX), "--lean-root", str(_lean_tree(tmp_path))])
     assert "(IsAutomorphism)" in capsys.readouterr().out
