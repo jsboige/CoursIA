@@ -1224,6 +1224,112 @@ def _rest_issue_payload(issue: str, repo: str | None = None) -> dict:
     }
 
 
+# --- #22630 : seam d'instantane local ------------------------------------------
+#
+# L'instantane (`scripts/coordination/gh_snapshot.py`) remplace le TRANSPORT
+# des lectures GitHub, pas leur semantique : le code de reduction reste le
+# meme, seule la source des payloads change. C'est ce qui rend la sortie
+# identique entre l'ancienne voie (sous-processus + `gh issue view`) et la
+# nouvelle (instantane + calcul en processus).
+#
+# Le seam est OPT-IN : sans instantane installe, le module lit GitHub
+# exactement comme avant. Aucun comportement par defaut n'est modifie.
+
+_SNAPSHOT: dict | None = None
+
+
+def set_snapshot(snapshot: dict | None) -> None:
+    """Installe (ou retire) l'instantane local lu par ce module.
+
+    `snapshot` porte la cle `issues` et, en option, la cle `prs` (numero ->
+    etat de la PR). Deux formes sont servies pour `issues` (#22684) : le
+    payload complet par numero (forme `gh issue view --json
+    number,title,labels,comments`, cle `comments` incluse), ou la forme
+    **separee** de `gh_snapshot` (metadonnees dans `issues[n]`,
+    commentaires dans `comments[n]`) -- fusionnes a la lecture. Sans
+    instantane, ce module lit GitHub comme avant.
+    """
+    global _SNAPSHOT
+    _SNAPSHOT = snapshot if isinstance(snapshot, dict) else None
+
+
+def _snapshot_comments_list(issue: str) -> list | None:
+    """Liste de commentaires `comments[issue]` de l'instantane, ou None."""
+    if not _SNAPSHOT:
+        return None
+    comments = _SNAPSHOT.get("comments") or {}
+    entry = comments.get(str(issue))
+    if entry is None:
+        try:
+            entry = comments.get(int(issue))
+        except (TypeError, ValueError):
+            entry = None
+    return entry if isinstance(entry, list) else None
+
+
+def _snapshot_issue_payload(issue: str) -> dict | None:
+    """Payload d'issue servi par l'instantane, ou None s'il n'y en a pas.
+
+    Deux formes d'instantane sont servies -- toutes deux produites en
+    production :
+
+    - forme **fusionnee** : l'entree `issues[n]` porte elle-meme sa cle
+      `comments` (forme `gh issue view --json number,title,labels,comments`,
+      celle des payloads injectes directement). Servie telle quelle.
+    - forme **separee** : `issues[n]` ne porte que les metadonnees et les
+      commentaires vivent dans `comments[n]` -- la forme que fabrique
+      `gh_snapshot.ensure_issue_payloads` (deux fichiers disque). Les
+      commentaires sont fusionnes dans une COPIE servie au reducteur.
+
+    #22684 -- sans cette fusion, la voie en processus servait l'entree
+    telle quelle : `_sort_events` lisait `payload.get("comments", [])`,
+    voyait zero evenement et rendait FREE pour TOUTE issue, meme claimee
+    par une autre lane (review ai-01 2026-10-27T04:38Z). Une entree sans
+    cle `comments` ET sans liste dans `comments[n]` n'est PAS servie :
+    l'instantane n'etablit pas l'absence de commentaires, et le lecteur
+    retombe sur la voie reseau (fail-closed) plutot que de fabriquer un
+    FREE de zero lu.
+    """
+    if not _SNAPSHOT:
+        return None
+    issues = _SNAPSHOT.get("issues") or {}
+    entry = issues.get(str(issue))
+    if entry is None:
+        try:
+            entry = issues.get(int(issue))
+        except (TypeError, ValueError):
+            entry = None
+    if not isinstance(entry, dict):
+        return None
+    if "comments" in entry:
+        return entry
+    comments = _snapshot_comments_list(issue)
+    if comments is None:
+        return None
+    payload = dict(entry)
+    payload["comments"] = comments
+    return payload
+
+
+def _snapshot_pr_state(pr_ref: int) -> str | None:
+    """Etat d'une PR servi par l'instantane, ou None s'il n'y en a pas."""
+    if not _SNAPSHOT:
+        return None
+    prs = _SNAPSHOT.get("prs") or {}
+    entry = prs.get(str(pr_ref))
+    if entry is None:
+        try:
+            entry = prs.get(int(pr_ref))
+        except (TypeError, ValueError):
+            entry = None
+    if isinstance(entry, dict):
+        state = entry.get("state")
+        return state if isinstance(state, str) else None
+    if isinstance(entry, str):
+        return entry
+    return None
+
+
 def _gh_issue_comments(issue: str) -> dict:
     """Fetch issue metadata + comments as JSON via `gh`. Raises on failure.
 
@@ -1234,6 +1340,12 @@ def _gh_issue_comments(issue: str) -> dict:
     vocabulaire distinct de tout verdict de claim -- le picker propage cette
     distinction jusqu'au bandeau du tapis).
     """
+    # #22630 -- l'instantane local remplace la LECTURE, pas la semantique :
+    # le payload rendu a la forme attendue (`number`, `title`, `labels`,
+    # `comments`), et tout le reste du module s'execute a l'identique.
+    snapshot_payload = _snapshot_issue_payload(issue)
+    if snapshot_payload is not None:
+        return snapshot_payload
     proc = subprocess.run(
         [
             "gh", "issue", "view", str(issue),
@@ -1375,6 +1487,14 @@ def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
     per the #12320 contract. The reducer (`compute_active_claims`) is the only
     caller, and only for events that already have `pr_ref != None`.
     """
+    # #22630 -- l'instantane local peut porter l'etat de la PR : la lecture
+    # REST la remplace, la semantique (OPEN/CLOSED/MERGED) reste celle du
+    # reducteur.
+    snap_state = _snapshot_pr_state(pr_ref)
+    if snap_state is not None:
+        result = (snap_state, None)
+        _PR_STATE_CACHE[pr_ref] = result
+        return result
     if pr_ref in _PR_STATE_CACHE:
         return _PR_STATE_CACHE[pr_ref]
     try:
@@ -3975,14 +4095,14 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
     return f"EXIT_{returncode}"
 
 
-def _run_check_batch(
+def check_issues_batch(
     issues: list[str],
     lane: str,
     stale_threshold: float | None = 48.0,
     from_json: str | None = None,
     my_paths: list[str] | None = None,
-) -> int:
-    """Mode batch N issues -> JSON.
+) -> dict:
+    """Mode batch N issues -> JSON **rendu** au lieu d'imprime (#22630).
 
     Une seule invocation de check_lane_claim traite N issues et sort un
     JSON `{results: {N: {code, exit, human, duration, ...}}, total_wall,
@@ -4117,6 +4237,26 @@ def _run_check_batch(
         "phases": phases,
         "total_wall": total_wall,
     }
+    return output
+
+
+def _run_check_batch(
+    issues: list[str],
+    lane: str,
+    stale_threshold: float | None = 48.0,
+    from_json: str | None = None,
+    my_paths: list[str] | None = None,
+) -> int:
+    """Mode batch **CLI** : `check_issues_batch` + impression du JSON sur stdout.
+
+    Le corps est dans `check_issues_batch`, qui REND le meme dictionnaire : le
+    tapis l'appelle en processus (#22630), la CLI l'imprime. Deux portes, un
+    seul calcul -- la sortie est identique par construction.
+    """
+    output = check_issues_batch(
+        issues, lane, stale_threshold=stale_threshold,
+        from_json=from_json, my_paths=my_paths,
+    )
     # Toujours ecrire le JSON final sur stdout, sans prefixe.
     print(json.dumps(output, ensure_ascii=False, indent=2))
     return 0
