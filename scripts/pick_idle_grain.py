@@ -214,6 +214,7 @@ renouveler la poignee apres l'avoir consommee, jamais a justifier un arret.
 from __future__ import annotations
 
 import argparse
+import copy
 import datetime as dt
 import hashlib
 import json
@@ -574,7 +575,15 @@ def _has_delivered_marker(issue_number: int) -> bool | None:
     Le marqueur est RELEVABLE (cf `_delivered_state`, `_DELIVERED_MARKER_REVOKED_RE`) :
     les deux transports rendent leurs corps dans l'ordre chronologique, et le
     verdict est l'etat apres le dernier evenement, pas un `any(...)`.
+
+    #22630 : les commentaires sont d'abord lus dans l'instantane local
+    (`_snapshot_comments`) -- memes corps, meme verdict, aucune requete. Absent
+    de l'instantane, la voie reseau ci-dessous reprend, inchangee.
     """
+    snapshot_comments = _snapshot_comments(issue_number)
+    if snapshot_comments is not None:
+        return _delivered_state([(c.get("body") or "") if isinstance(c, dict)
+                                 else "" for c in snapshot_comments])
     try:
         out = subprocess.run(
             ["gh", "issue", "view", str(issue_number),
@@ -1101,6 +1110,7 @@ def _pr_rest_to_gh_shape(it: dict) -> dict:
     """Item REST `/pulls` -> forme rendue par `gh pr list --json`."""
     return {"number": it["number"], "title": it.get("title") or "",
             "body": it.get("body") or "", "createdAt": it.get("created_at") or "",
+            **({"updatedAt": it["updated_at"]} if it.get("updated_at") else {}),
             "isDraft": bool(it.get("draft")),
             "author": {"login": (it.get("user") or {}).get("login") or ""},
             "headRefName": (it.get("head") or {}).get("ref") or ""}
@@ -1175,21 +1185,45 @@ def fetch_pool(
             )
         return raw
 
-    try:
-        raw = _cached_payload(
-            "pool",
-            command,
-            fetch_raw,
-            cache=cache,
-            cache_mode=cache_mode,
-            ttl_seconds=POOL_CACHE_TTL_SECONDS,
-            cache_status=cache_status,
-            probe=probe,
-        )
+    # #22630 : le pool est une enumeration COUTEUSE (mesure 2026-10-26 :
+    # `gh issue list --limit 2000` a 9,9 s) et le picker tourne par cycles de
+    # 30 min. Un TTL court dans l'instantane sert le rejeu immediat (mesure,
+    # deux passes rapprochees, relance apres incident) sans jamais servir une
+    # liste d'une autre ere : POOL_SNAPSHOT_TTL_S = 90.
+    cached_raw = None
+    if _pass_snapshot_enabled():
+        entry = _repair_cache().get("pool")
+        if _fresh_entry(entry, POOL_SNAPSHOT_TTL_S):
+            issues = (entry or {}).get("issues")
+            if isinstance(issues, list):
+                cached_raw = copy.deepcopy(issues)
+    if cached_raw is not None:
+        raw = cached_raw
         read_error = None
-    except TransportUnavailable as exc:
-        return [], (f"GraphQL indisponible ({exc.graphql}), REST egalement "
-                    f"indisponible ({exc.rest})")
+    else:
+        try:
+            raw = _cached_payload(
+                "pool",
+                command,
+                fetch_raw,
+                cache=cache,
+                cache_mode=cache_mode,
+                ttl_seconds=POOL_CACHE_TTL_SECONDS,
+                cache_status=cache_status,
+                probe=probe,
+            )
+            read_error = None
+        except TransportUnavailable as exc:
+            return [], (f"GraphQL indisponible ({exc.graphql}), REST egalement "
+                        f"indisponible ({exc.rest})")
+        if _pass_snapshot_enabled():
+            _repair_cache()["pool"] = {"fetched_at": time.time(),
+                                       "issues": copy.deepcopy(raw)}
+            # Persistance IMMEDIATE : `fetch_pool` tourne apres le flush de
+            # `red_backlog`, et les sorties `--json`/`--belt` rendent la main
+            # sans repasser par la fin de `main`. Sans cet appel, l'entree
+            # `pool` d'une passe n'atteint jamais le disque.
+            _flush_repair_snapshot()
     if len(raw) >= POOL_FETCH_LIMIT:
         # Signature de la troncature : on a recu exactement ce qu'on a demande.
         # Le tirage reste possible et se poursuit -- bloquer la lane serait pire
@@ -1638,6 +1672,430 @@ def _restore_phase_deadline(token: tuple) -> None:
         nits._NITS_PASS_DEADLINE = None  # passe suivante : budget rendu, deadline rearmee
 
 
+# --- #22630 : cache de la file de reparation ---------------------------------
+#
+# Active uniquement par main() : les appels directs historiques (tests et
+# autres consommateurs) continuent d'interroger GitHub exactement comme avant.
+# Le namespace `repair` est distinct des claims : leur liste complete porte les
+# fichiers modifies, tandis que celle-ci porte createdAt/author/isDraft.
+_PASS_SNAPSHOT: dict | None = None
+#: Arbitrage coordinateur du 2026-10-26 (PR #22684) : cache de CYCLE CRON.
+#: Les charges couteuses PAR ELEMENT (etats de PR, verdicts B.0/nits,
+#: payloads claims + commentaires) vivent au-dela de la cadence du cron
+#: (>= 1800 s) -- ce qui les invalide d'abord est le changement d'`updatedAt`
+#: (fingerprint deja implemente et teste : « updatedAt change -> refetch »),
+#: le TTL n'est plus que le plafond d'age. Un verdict vieux de 20-30 min ne
+#: fait pas de tort au tapis : le claim se reverifie a la source avant toute
+#: edition, et le merge relit B.0 a la tete exacte.
+PR_STATE_SNAPSHOT_TTL_S = 1800
+COMMENT_SNAPSHOT_TTL_S = 1800
+#: Index (listes avec `updatedAt`) et enumerations : TTL COURT, car c'est
+#: EUX qui detectent qu'un element a bouge -- allonger leur TTL retarderait
+#: la detection de mouvement et servirait des fingerprints perimes. Le
+#: picker tourne en cycle de 30 min, un TTL court (90-600 s) couvre le
+#: rejeu immediat sans jamais servir une liste d'une autre ere. Une issue
+#: ouverte entre deux passes doit reapparaitre a la passe suivante.
+OPEN_PRS_SNAPSHOT_TTL_S = 600
+#: Etat des check-runs (annotations de runs rouges, sonde de main) : HORS du
+#: cache long (arbitrage du 2026-10-26) -- un check ne bouge pas l'updatedAt
+#: de la PR, son etat ne serait donc jamais invalide par fingerprint. Le
+#: tapis ne s'en sert pas pour choisir un grain ; le gate de merge relit a
+#: la source. TTL court, aligne sur la cadence des index.
+CHECKS_SNAPSHOT_TTL_S = 600
+#: Enumeration du pool et des PRs ouvertes : le picker tourne en cycle de
+#: 30 min, un TTL court (90-120 s) couvre le rejeu immediat sans jamais servir
+#: une liste d'une autre ere. Choisi court EXPRES : une issue ouverte entre
+#: deux passes doit reapparaitre a la passe suivante.
+POOL_SNAPSHOT_TTL_S = 90
+CLAIMS_OPEN_PRS_SNAPSHOT_TTL_S = 120
+#: Budgets du cache de transport B.0. Mesure du 2026-10-26 : sans borne, 14
+#: PRs ecrivaient **29,6 Mo** (6 Mo pour une seule) et la passe REGRESSAIT
+#: (360 s / 242 appels). Un payload au-dela de 64 ko n'est donc pas memoise,
+#: et le namespace est plafonne a 4 Mo.
+B0_PAYLOAD_MAX_BYTES = 65536
+B0_ENTRY_MAX_BYTES = 1048576
+B0_SNAPSHOT_MAX_BYTES = 4194304
+
+
+def _gh_snapshot_module():
+    """Le module d'instantane, tel que les tests peuvent le remplacer (#22630).
+
+    ``from coordination import gh_snapshot`` resout d'abord l'ATTRIBUT du
+    package parent, que ``monkeypatch.setitem(sys.modules, ...)`` ne
+    restaure pas : selon l'ordre des fichiers de test d'un worker, ce nom
+    peut designer le module reel importe plus tot, et l'instantane injecte
+    par un test est ignore -- l'ecriture part alors hors du dossier isole
+    (mesure : `KeyError: 'main_probe'` dans `test_gh_snapshot_22630.py`,
+    dependant de l'ordre d'execution). ``sys.modules`` est le seam que les
+    tests installent ; on le lit donc EN PREMIER, l'import historique reste
+    le repli de production.
+    """
+    module = sys.modules.get("coordination.gh_snapshot")
+    if module is not None:
+        return module
+    from coordination import gh_snapshot
+    return gh_snapshot
+
+
+def _activate_pass_snapshot(repo: str) -> None:
+    """Charge le cache de reparation pour UNE invocation de main (#22630).
+
+    Aucune requete n'est faite ici : une entree absente ou perimee sera relue
+    par son transport historique, puis persistee apres `red_backlog`.
+    """
+    global _PASS_SNAPSHOT
+    _PASS_SNAPSHOT = None
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        # Comme pour le payload cache historique : un test de main() ne lit ni
+        # n'ecrit l'etat partage de la machine sans le demander explicitement.
+        return
+    try:
+        gh_snapshot = _gh_snapshot_module()
+        _PASS_SNAPSHOT = gh_snapshot.load_snapshot(repo)
+    except Exception as exc:  # noqa: BLE001 - repli sur le transport historique
+        print(f"[22630] instantane de reparation illisible "
+              f"({type(exc).__name__}) -- transport historique conserve",
+              file=sys.stderr)
+
+
+def _pass_snapshot_enabled() -> bool:
+    return isinstance(globals().get("_PASS_SNAPSHOT"), dict)
+
+
+def _repair_cache() -> dict:
+    if not _pass_snapshot_enabled():
+        return {}
+    return _PASS_SNAPSHOT.setdefault("repair", {})
+
+
+def _fresh_entry(entry, ttl_seconds: float) -> bool:
+    stamp = entry.get("fetched_at") if isinstance(entry, dict) else None
+    return (isinstance(stamp, (int, float)) and not isinstance(stamp, bool)
+            and 0 <= time.time() - stamp <= ttl_seconds)
+
+
+def _open_pr_fingerprint(n: int) -> str | None:
+    entry = (_repair_cache().get("open_prs") or {})
+    prs = entry.get("prs") if isinstance(entry, dict) else None
+    if not isinstance(prs, list):
+        return None
+    for pr in prs:
+        if isinstance(pr, dict) and pr.get("number") == n:
+            stamp = pr.get("updatedAt")
+            return stamp if isinstance(stamp, str) and stamp else None
+    return None
+
+
+def _repair_cached_result(namespace: str, n: int, fingerprint: str | None):
+    if fingerprint is None:
+        return None
+    entry = (_repair_cache().get(namespace) or {}).get(str(n))
+    if not _fresh_entry(entry, PR_STATE_SNAPSHOT_TTL_S):
+        return None
+    if entry.get("updatedAt") != fingerprint or "value" not in entry:
+        return None
+    return copy.deepcopy(entry["value"])
+
+
+def _repair_read_annotation(run_id: int) -> list | None:
+    entry = (_repair_cache().get("annotations") or {}).get(str(run_id))
+    if not _pass_snapshot_enabled() or not _fresh_entry(
+            entry, CHECKS_SNAPSHOT_TTL_S):
+        return None
+    value = entry.get("value")
+    return copy.deepcopy(value) if isinstance(value, list) else None
+
+
+def _repair_store_annotation(run_id: int, annotations: list) -> None:
+    if _pass_snapshot_enabled():
+        _repair_cache().setdefault("annotations", {})[str(run_id)] = {
+            "fetched_at": time.time(), "value": copy.deepcopy(annotations)}
+
+
+def _repair_cached_main_probe():
+    entry = _repair_cache().get("main_probe")
+    if not _pass_snapshot_enabled() or not _fresh_entry(
+            entry, CHECKS_SNAPSHOT_TTL_S) or "value" not in entry:
+        return None
+    value = copy.deepcopy(entry["value"])
+    if isinstance(value, dict):
+        for key in ("red_keys", "names", "undecided_keys"):
+            if key in value and isinstance(value[key], list):
+                value[key] = set(value[key])
+    return value
+
+
+def _repair_store_result(namespace: str, n: int, fingerprint: str,
+                         value) -> None:
+    if not _pass_snapshot_enabled() or not fingerprint:
+        return
+    entries = _repair_cache().setdefault(namespace, {})
+    entry = {"updatedAt": fingerprint, "fetched_at": time.time(),
+             "value": copy.deepcopy(value)}
+    previous = entries.get(str(n))
+    if (_fresh_entry(previous, PR_STATE_SNAPSHOT_TTL_S)
+            and previous.get("fetched_at", 0) > entry["fetched_at"]):
+        return
+    entries[str(n)] = entry
+
+
+def _open_prs_from_snapshot() -> list[dict] | None:
+    entry = _repair_cache().get("open_prs")
+    if not _fresh_entry(entry, OPEN_PRS_SNAPSHOT_TTL_S):
+        return None
+    prs = entry.get("prs")
+    if not isinstance(prs, list):
+        return None
+    return copy.deepcopy(prs)
+
+
+class _B0TransportCache:
+    """Sert le transport de l'organe B.0 depuis l'instantane (#22630).
+
+    L'organe `check_unaddressed_nits` lit GitHub par un funnel unique,
+    `gh_json(args)` : `pr view`, `commits/<sha>`, `git/trees`,
+    `pulls/N/reviews`, `issues/N/timeline` et `reviewThreads`. Mesure du
+    2026-10-26 : 51 appels pour 6 PRs, tous rejoues a chaque passe des qu'une
+    PR bouge.
+
+    Ici on memoise les **payloads bruts** par `(PR, updatedAt)`, avec la MEME
+    invalidation que les etats de PR : une PR qui n'a pas bouge ne se relit
+    pas ; des qu'elle bouge, le fingerprint change et tout est relu.
+
+    Ce qui n'est JAMAIS persiste : une levee, une panne, ou un budget epuise.
+    Le `with` restaure `gh_json` dans tous les cas ; `store()` n'ecrit que si
+    au moins un appel a reellement abouti. La passe suivante reessaie donc
+    exactement comme avant.
+    """
+
+    def __init__(self, module, n: int, fingerprint: str | None):
+        self.module = module
+        self.n = n
+        self.fingerprint = fingerprint
+        self.misses = 0
+        self.payloads: dict = {}
+        self._original = None
+
+    def __enter__(self):
+        if not (_pass_snapshot_enabled() and self.fingerprint):
+            return self
+        cached = _repair_cached_result("b0", self.n, self.fingerprint)
+        self.payloads = cached if isinstance(cached, dict) else {}
+        self._original = getattr(self.module, "gh_json", None)
+        if self._original is not None:
+            self.module.gh_json = self._cached_call
+        return self
+
+    def __exit__(self, *exc_info) -> bool:
+        if self._original is not None:
+            self.module.gh_json = self._original
+        return False
+
+    def _cached_call(self, args):
+        key = json.dumps(list(args), ensure_ascii=False)
+        if key in self.payloads:
+            return copy.deepcopy(self.payloads[key])
+        value = self._original(args)   # peut lever : rien n'est stocke alors
+        self.misses += 1
+        # Un `pr view --json ...,comments,reviews,commits` ou un
+        # `commits/<sha>` depasse largement 64 ko : le memoïser ferait grossir
+        # l'instantane plus qu'il ne fait gagner. On le relit, on ne le stocke
+        # pas -- et les petits appels repetes (timeline, reviews) restent, eux,
+        # servis par le cache.
+        if len(json.dumps(value, ensure_ascii=False)) <= B0_PAYLOAD_MAX_BYTES:
+            self.payloads[key] = copy.deepcopy(value)
+        return value
+
+    def store(self) -> None:
+        if not (self.fingerprint and self.misses and self.payloads):
+            return
+        size = sum(len(json.dumps(v, ensure_ascii=False))
+                   for v in self.payloads.values())
+        if size > B0_ENTRY_MAX_BYTES:
+            return
+        _repair_store_result("b0", self.n, self.fingerprint, self.payloads)
+
+
+def _merge_repair_namespaces(current: dict, proposed: dict) -> dict:
+    """Conserve, par PR et par liste, l'ecriture la plus recente."""
+    merged = dict(current or {})
+    for namespace in ("states", "nits", "annotations", "b0"):
+        entries = dict(merged.get(namespace) or {})
+        for key, entry in (proposed.get(namespace) or {}).items():
+            previous = entries.get(key)
+            new_stamp = entry.get("fetched_at", 0)
+            old_stamp = (previous or {}).get("fetched_at", 0)
+            if not isinstance(previous, dict) or new_stamp >= old_stamp:
+                entries[key] = entry
+        merged[namespace] = entries
+    for namespace in ("open_prs", "claims_open_prs", "main_probe", "pool"):
+        entry = proposed.get(namespace)
+        if not isinstance(entry, dict):
+            continue
+        previous = merged.get(namespace)
+        if (not isinstance(previous, dict)
+                or entry.get("fetched_at", 0)
+                >= previous.get("fetched_at", 0)):
+            merged[namespace] = entry
+    return merged
+
+
+def _prune_b0(repair: dict) -> dict:
+    """Plafonne le namespace `b0` en gardant les entrees les plus recentes."""
+    entries = repair.get("b0")
+    if not isinstance(entries, dict) or not entries:
+        return repair
+    sized = []
+    for key, entry in entries.items():
+        try:
+            sized.append((len(json.dumps(entry, ensure_ascii=False)), key, entry))
+        except (TypeError, ValueError):
+            continue
+    sized.sort(key=lambda item: (item[2].get("fetched_at", 0), -item[0]),
+               reverse=True)
+    kept: dict = {}
+    total = 0
+    for size, key, entry in sized:
+        if total + size > B0_SNAPSHOT_MAX_BYTES:
+            break
+        kept[key] = entry
+        total += size
+    if len(kept) != len(entries):
+        print(f"[22630] cache B.0 plafonne : {len(entries)} -> {len(kept)} "
+              f"entrees ({total / 1e6:.1f} Mo)", file=sys.stderr)
+    repair["b0"] = kept
+    return repair
+
+
+def _flush_repair_snapshot() -> None:
+    """Persiste la reparation sans ecraser les autres namespaces."""
+    if not _pass_snapshot_enabled():
+        return
+    try:
+        gh_snapshot = _gh_snapshot_module()
+        with gh_snapshot.snapshot_lock(REPO):
+            disk = gh_snapshot.load_snapshot(REPO)
+            repair = _merge_repair_namespaces(
+                disk.get("repair") or {}, _repair_cache())
+            repair = _prune_b0(repair)
+            disk["repair"] = repair
+            gh_snapshot.save_snapshot(REPO, disk)
+            _PASS_SNAPSHOT.clear()
+            _PASS_SNAPSHOT.update(disk)
+    except Exception as exc:  # noqa: BLE001 - un cache ne bloque jamais le tirage
+        print(f"[22630] persistance de la reparation indisponible "
+              f"({type(exc).__name__}) -- transport historique conserve",
+              file=sys.stderr)
+
+
+def _snapshot_comments_fraiches(snapshot, issue_number: int) -> list[dict] | None:
+    """Commentaires d'une issue dans UN instantane, s'ils sont FRAIS.
+
+    Controle **par issue** -- `meta.comment_stamps` du snapshot contre
+    `COMMENT_SNAPSHOT_TTL_S`, via `_fresh_entry` -- applique de facon
+    IDENTIQUE a toutes les sources. C'est le seul controle d'age du module :
+    deux sources qui le declineraient chacune a leur maniere finiraient par
+    diverger sur ce qu'elles servent.
+
+    #22684 (review ai-01 2026-10-27) -- la source 1 (`_BELT_SNAPSHOT`) en
+    etait dispensee, au motif qu'elle est « fraiche par construction ». Ce
+    motif est faux : `refresh()` ne lit que les candidats de la FENETRE
+    (70 positions), et l'instantane qu'il rend porte aussi les entrees deja
+    presentes sur le disque, ecrites par une passe anterieure (ou par une
+    autre lane) et pouvant dater de plusieurs jours. Un remplacement tire
+    au-dela de la fenetre lisait donc un fil perime -- un `[CLAIMED]` ou un
+    `[DELIVERED]` recent invisible, donc un grain deja pris ou deja livre
+    resservi comme libre.
+
+    Rend None si l'entree est absente, non textuelle, ou perimee -- jamais
+    une liste vide, qui vaudrait « aucun commentaire ».
+    """
+    if not isinstance(snapshot, dict):
+        return None
+    entry = (snapshot.get("comments") or {}).get(str(issue_number))
+    stamp = ((snapshot.get("meta") or {}).get("comment_stamps")
+             or {}).get(str(issue_number))
+    if isinstance(entry, list) and _fresh_entry({"fetched_at": stamp},
+                                                COMMENT_SNAPSHOT_TTL_S):
+        return entry
+    return None
+
+
+def _snapshot_comments(issue_number: int) -> list[dict] | None:
+    """Commentaires d'une issue lus dans l'instantane local (#22630).
+
+    La boucle du tapis appelle `refresh()` **une fois** pour les candidats
+    tires (`_belt_snapshot_prime`). Chaque sonde lit ensuite le meme
+    instantane : **aucune** requete GitHub par candidat.
+
+    Deux sources, dans cet ordre :
+
+    1. `_BELT_SNAPSHOT` -- l'instantane de la passe courante, rafraichi pour
+       les candidats de la fenetre.
+    2. `_PASS_SNAPSHOT` -- le meme instantane, relu du disque au demarrage de
+       `main()`, qui porte aussi les issues rafraichies par une passe
+       precedente (ou par une autre lane de la machine).
+
+    Les deux sont filtrees par le MEME controle de fraicheur par issue
+    (`_snapshot_comments_fraiches`) : appartenir a la passe courante ne dit
+    rien de l'age d'une entree, puisque l'instantane de la passe herite du
+    disque. Une entree trop vieille n'est pas servie, la sonde retombe sur
+    son transport historique, inchange.
+
+    Rend None quand l'issue n'est dans aucune des deux sources fraiches --
+    jamais une liste vide, qui vaudrait « aucun commentaire ».
+    """
+    for snapshot in (globals().get("_BELT_SNAPSHOT"),
+                     globals().get("_PASS_SNAPSHOT")):
+        entry = _snapshot_comments_fraiches(snapshot, issue_number)
+        if entry is not None:
+            return entry
+    return None
+
+
+#: Instantane partage par la passe du tapis. Repose a None en debut de passe,
+#: pour qu'un appel isole (test, usage hors tapis) ne lise jamais un cache
+#: d'une passe precedente.
+_BELT_SNAPSHOT: dict | None = None
+
+
+def _belt_snapshot_prime(repo: str, numbers: list[int]) -> None:
+    """Rafraichit UNE FOIS l'instantane pour les candidats tires (#22630)."""
+    global _BELT_SNAPSHOT
+    _BELT_SNAPSHOT = None
+    if "PYTEST_CURRENT_TEST" in os.environ:
+        # Meme garde que `_activate_pass_snapshot` : sous pytest, le priming
+        # ne lit ni n'ecrit l'etat partage de la machine (`%LOCALAPPDATA%`)
+        # et n'emet aucun `gh api` (doctrine d'inertie #19913 de la boucle
+        # du tapis -- un test qui veut l'instantane l'injecte directement,
+        # cf. test_gh_snapshot_22630.py).
+        return
+    try:
+        gh_snapshot = _gh_snapshot_module()
+        _BELT_SNAPSHOT = gh_snapshot.refresh(repo, issue_numbers=numbers)
+    except Exception as exc:  # noqa: BLE001 - l'instantane est un confort, pas un gate
+        print(f"[22630] instantane indisponible ({type(exc).__name__}) -- "
+              f"les sondes gardent leur transport historique", file=sys.stderr)
+
+
+def belt_snapshot_prime_inert(repo: str, numbers: list[int]) -> None:
+    """Defaut INERTE du rafraichissement d'instantane du tapis (#22630).
+
+    Meme doctrine que ``delivered_probe_inert`` / ``merged_pr_probe_inert``
+    (#19913) : un appel direct de ``belt_pick_with_replacements`` n'emet
+    AUCUNE requete, pas meme celle du rafraichissement partage -- qui ferait
+    un `gh api` par issue candidate. ``main`` injecte explicitement le vrai
+    ``_belt_snapshot_prime`` ; un test qui veut l'instantane injecte son
+    propre rafraichisseur (ou pose ``_BELT_SNAPSHOT`` et injecte un no-op).
+
+    L'instantane de la passe precedente est repose a None, comme le fait le
+    vrai rafraichisseur : un appel isole ne lit jamais un cache d'une autre
+    passe.
+    """
+    global _BELT_SNAPSHOT
+    _BELT_SNAPSHOT = None
+
+
 def has_recent_delivery_marker(issue_number: int) -> bool | None:
     """Le DERNIER commentaire porte-t-il un marqueur de cloture recent ?
 
@@ -1698,23 +2156,31 @@ def _last_comment_body(issue_number: int) -> str | None:
     Facteurise pour que le filtre « marqueur recent » et le filtre
     « marqueur de CONTENEUR » lisent le meme octet : deux lectures du meme
     fil ne peuvent pas diverger sur un fil qui change entre les deux.
+
+    #22630 -- l'instantane local rend les memes commentaires, sans requete :
+    la lecture passe par `_snapshot_comments` quand l'instantane de la passe
+    est disponible, et retombe sur la requete historique sinon.
     """
-    try:
-        out = subprocess.run(
-            ["gh", "issue", "view", str(issue_number), "--repo", REPO,
-             "--json", "comments"],
-            capture_output=True, text=True, encoding="utf-8", check=True,
-            timeout=_clamp_timeout(30),
-        ).stdout
-    except Exception:  # noqa: BLE001 - lecture best-effort, l'echec est DIT
-        return None
-    try:
-        payload = json.loads(out)
-    except Exception:  # noqa: BLE001 - payload illisible = pas de signal
-        return None
-    if not isinstance(payload, dict):
-        return ""
-    comments = payload.get("comments") or []
+    snapshot_comments = _snapshot_comments(issue_number)
+    if snapshot_comments is not None:
+        comments = snapshot_comments
+    else:
+        try:
+            out = subprocess.run(
+                ["gh", "issue", "view", str(issue_number), "--repo", REPO,
+                 "--json", "comments"],
+                capture_output=True, text=True, encoding="utf-8", check=True,
+                timeout=_clamp_timeout(30),
+            ).stdout
+        except Exception:  # noqa: BLE001 - lecture best-effort, l'echec est DIT
+            return None
+        try:
+            payload = json.loads(out)
+        except Exception:  # noqa: BLE001 - payload illisible = pas de signal
+            return None
+        if not isinstance(payload, dict):
+            return ""
+        comments = payload.get("comments") or []
     if not isinstance(comments, list) or not comments:
         return ""
     last = comments[-1]
@@ -1876,6 +2342,11 @@ def has_delivered_signal(issue_number: int,
     chemin LABEL, lui, ne se retracte pas (`delivered_signal_reason` : un
     label est retire par le sweep, pas revoque par un commentaire).
     """
+    # #22630 -- l'instantane local rend les memes commentaires, sans requete.
+    snapshot_comments = _snapshot_comments(issue_number)
+    if snapshot_comments is not None:
+        return _delivered_state([(c.get("body") or "") if isinstance(c, dict)
+                                 else "" for c in snapshot_comments])
     try:
         out = subprocess.run(
             ["gh", "issue", "view", str(issue_number), "--repo", REPO,
@@ -3032,6 +3503,86 @@ def _summarize_claim_from_batch(json_payload: dict, n: int) -> tuple[str, str]:
     return CLAIM_CODE_ERROR, f"(batch: code {code} inconnu)"
 
 
+def _claims_in_process(
+    numbers: list[int],
+    lane: str,
+    open_prs_cache: str | None = None,
+) -> dict[int, tuple[str, str]] | None:
+    """Verdicts de claims calcules EN PROCESSUS, depuis l'instantane (#22630).
+
+    La voie historique fait un sous-processus `check_lane_claim.py` (mode
+    batch) qui relit chaque issue par `gh issue view` (GraphQL, ~5 s par
+    candidat) : mesure du mandat, **42 s pour 8 sondes**, et 274 s pour une
+    passe. Ici, le LECTEUR est importe dans le processus du tapis et alimente
+    par l'instantane local (`scripts/coordination/gh_snapshot.py`) : **meme
+    code de reduction**, aucune lecture GitHub par candidat.
+
+    Le rendu est identique **par construction** : la voie en processus appelle
+    les MEMES fonctions que la CLI appelle (`check_issues_batch`,
+    `_run_check`), avec les memes arguments, et le verdict est lu par les
+    MEMES reduceurs du tapis (`_summarize_claim_from_batch`,
+    `_summarize_claim`).
+
+    Rend None si la voie n'est pas disponible (module absent, instantane
+    illisible, exception) : l'appelant retombe alors sur le chemin
+    historique, **inchange**.
+    """
+    if not numbers:
+        return {}
+    try:
+        clc = _claim_reader_module()   # insere `scripts/` dans sys.path
+        gh_snapshot = _gh_snapshot_module()
+    except Exception:  # noqa: BLE001 - repli sur la voie historique
+        return None
+    import contextlib
+    import io
+    try:
+        snapshot = gh_snapshot.refresh(REPO, issue_numbers=list(numbers))
+        clc.set_snapshot(snapshot)
+        if open_prs_cache:
+            # Le LECTEUR lit le cache des PRs ouvertes au moment de son
+            # import ; on le pose dans l'environnement ET dans le module
+            # deja importe, pour que la voie en processus ne refasse pas
+            # l'enumeration des PRs ouvertes.
+            os.environ["CHECK_LANE_CLAIM_OPEN_PRS_JSON"] = open_prs_cache
+            if getattr(clc, "_OPEN_PRS_CACHE_PATH", None) != open_prs_cache:
+                clc._OPEN_PRS_CACHE_PATH = open_prs_cache
+        if len(numbers) > 1:
+            payload = clc.check_issues_batch(
+                [str(n) for n in numbers], lane,
+                stale_threshold=48.0, from_json=None, my_paths=None,
+            )
+            return {n: _summarize_claim_from_batch(payload, n)
+                    for n in numbers}
+        # Un seul numero : la CLI mono-issue passe par `_run_check` et rend
+        # un JSON de synthese suivi de la phrase-verdict. On reproduit
+        # EXACTEMENT cette voie, et on relit la sortie avec le meme
+        # reducteur.
+        n = numbers[0]
+        buf_out = io.StringIO()
+        buf_err = io.StringIO()
+        with contextlib.redirect_stdout(buf_out), \
+                contextlib.redirect_stderr(buf_err):
+            issue_payload = clc._gh_issue_comments(str(n))
+            rc = clc._run_check(
+                issue_payload, lane, stale_threshold=48.0,
+                my_paths=None, check_open_pr_paths=True,
+            )
+        return {n: _summarize_claim(buf_out.getvalue(), rc)}
+    except Exception:  # noqa: BLE001 - repli sur la voie historique
+        return None
+    finally:
+        # Toujours retirer l'instantane : une voie historique appelée
+        # ensuite ne doit pas heriter du cache installe ici. Un echec de
+        # desinstallation est neutre (l'instantane n'est qu'un cache), mais
+        # il est nomme, pas passe sous silence.
+        try:
+            clc.set_snapshot(None)
+        except Exception as exc:  # noqa: BLE001 - neutre : le snapshot est un cache
+            print(f"[22630] desinstallation du snapshot en echec "
+                  f"({type(exc).__name__}) -- ignoree", file=sys.stderr)
+
+
 def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
     """Verif claims sur les seuls candidats tires (1 appel batch, pas N).
 
@@ -3088,6 +3639,23 @@ def check_claims(numbers: list[int], lane: str) -> dict[int, tuple[str, str]]:
                     f"(check indisponible: {type(exc).__name__})")
 
     try:
+        # #22630 -- voie EN PROCESSUS (instantane local), PRIORITAIRE quand
+        # le cache de passe est actif. Elle rend le meme verdict sans une
+        # lecture GitHub par candidat. Son absence (cache non active, module
+        # absent, instantane illisible, exception) retombe sur le chemin
+        # historique ci-dessous, inchange.
+        #
+        # Le cache n'est active QUE par `main()` (`_activate_pass_snapshot`,
+        # cf. le bloc #22630) : un appel direct historique (tests, autres
+        # consommateurs) garde le transport `subprocess` -- c'est le seam
+        # qu'il simule. Sans cette condition, la voie en processus
+        # court-circuite ce seam ET rafraichit l'instantane par de vrais
+        # appels `gh api` sur un simple appel de `check_claims`.
+        in_process = None
+        if _pass_snapshot_enabled():
+            in_process = _claims_in_process(numbers, lane, cache_path)
+        if in_process is not None:
+            return in_process
         # 1 seul subprocess.run avec N numeros positionnels (mode
         # batch de check_lane_claim). La sortie est un JSON
         # `{results: {N: {code, human, exit, duration, ...}},
@@ -3216,6 +3784,16 @@ def _complete_open_prs() -> list[dict]:
     global _OPEN_PRS_ENUM_MEMO
     if _OPEN_PRS_ENUM_MEMO is not None:
         return _OPEN_PRS_ENUM_MEMO
+    # #22630 : la pagination GraphQL des PRs ouvertes coute 2 appels lourds
+    # (~7,4 s + 4,7 s mesures le 2026-10-26). TTL court (120 s) : deux passes
+    # rapprochees la partagent, une passe ordinaire (30 min) la refait.
+    if _pass_snapshot_enabled():
+        entry = _repair_cache().get("claims_open_prs")
+        if _fresh_entry(entry, CLAIMS_OPEN_PRS_SNAPSHOT_TTL_S):
+            prs = (entry or {}).get("prs")
+            if isinstance(prs, list):
+                _OPEN_PRS_ENUM_MEMO = copy.deepcopy(prs)
+                return _OPEN_PRS_ENUM_MEMO
     clc = _claim_reader_module()
     fetch = getattr(clc, "_gh_open_prs_complete", None)
     if fetch is None:
@@ -3224,6 +3802,14 @@ def _complete_open_prs() -> list[dict]:
             "l'enumeration complete n'est plus celle du lecteur (#21749)"
         )
     prs = fetch()
+    if _pass_snapshot_enabled():
+        # Meme budget que B.0 : une enumeration de plusieurs centaines de PRs
+        # avec leur corps depasserait la taille utile d'un instantane partage.
+        encoded = len(json.dumps(prs, ensure_ascii=False))
+        if encoded <= B0_SNAPSHOT_MAX_BYTES:
+            _repair_cache()["claims_open_prs"] = {
+                "fetched_at": time.time(), "prs": copy.deepcopy(prs)}
+            _flush_repair_snapshot()
     _OPEN_PRS_ENUM_MEMO = prs
     return prs
 
@@ -3878,11 +4464,21 @@ def _warn_open_prs_truncated(rendered: int, ceiling: int, remedy: str) -> None:
 def fetch_open_prs() -> list[dict]:
     """Toutes les PRs ouvertes, avec le corps (pour y lire le tag de lane).
 
+    #22630 : sous `main`, une liste de reparation fraiche (< 10 min) est
+    reutilisee ; une liste historique sans `updatedAt` est rechargee, car elle
+    ne permet pas d'invalider les etats et les verdicts B.0 associes.
+
     #17038 : meme bascule de transport que `fetch_pool` -- `gh pr list` passe
     par GraphQL, `gh api repos/.../pulls` par REST. Le garde rouge attrape
     deja l'echec (`unavailable`, fail-open et DIT) ; ce qui manquait est la
     seconde voie, pour que l'echec cesse d'etre une fatalite.
     """
+    if _pass_snapshot_enabled():
+        cached = _open_prs_from_snapshot()
+        if cached is not None and all(
+                isinstance(pr, dict) and pr.get("updatedAt")
+                for pr in cached):
+            return cached
     try:
         # #21436 : `_run_bounded` -- sur Windows, `subprocess.run(timeout=)`
         # peut ne pas rendre la main a l'echeance (pipe garde par un
@@ -3890,7 +4486,7 @@ def fetch_open_prs() -> list[dict]:
         cp = _run_bounded(
             ["gh", "pr", "list", "--repo", REPO, "--state", "open",
              "--limit", str(OPEN_PRS_FETCH_LIMIT),
-             "--json", "number,title,body,createdAt,isDraft,author,headRefName"],
+             "--json", "number,title,body,createdAt,updatedAt,isDraft,author,headRefName"],
             timeout=120,
         )
         if cp.returncode != 0:
@@ -3901,6 +4497,9 @@ def fetch_open_prs() -> list[dict]:
         if len(prs) >= OPEN_PRS_FETCH_LIMIT:
             _warn_open_prs_truncated(len(prs), OPEN_PRS_FETCH_LIMIT,
                                      "Relever OPEN_PRS_FETCH_LIMIT")
+        if _pass_snapshot_enabled():
+            _repair_cache()["open_prs"] = {
+                "fetched_at": time.time(), "prs": copy.deepcopy(prs)}
         return prs
     except Exception:  # noqa: BLE001 - on TENTE l'autre transport
         pass
@@ -3920,6 +4519,9 @@ def fetch_open_prs() -> list[dict]:
     if len(raw) >= rest_ceiling:
         _warn_open_prs_truncated(len(raw), rest_ceiling,
                                  "Relever POOL_REST_MAX_PAGES")
+    if _pass_snapshot_enabled():
+        _repair_cache()["open_prs"] = {
+            "fetched_at": time.time(), "prs": copy.deepcopy(raw)}
     return raw
 
 
@@ -3988,11 +4590,25 @@ def fetch_pr_states(numbers: list[int]) -> dict[int, dict]:
     """Etat de merge + checks (avec `isRequired`) + reviews, par lots de 8.
 
     Une seule requete par lot : le garde n'interroge que les PRs DE LA LANE
-    (typiquement 2 a 11), jamais les 55 ouvertes.
+    (typiquement 2 a 11), jamais les 55 ouvertes. Sous `main`, chaque etat est
+    reutilise seulement si son fingerprint `updatedAt` est encore celui de la
+    liste de PRs et si l'entree a moins de 15 min ; absent ou perime = requete
+    historique, jamais un etat suppose.
     """
     states: dict[int, dict] = {}
-    for i in range(0, len(numbers), 8):
-        chunk = numbers[i:i + 8]
+    if _pass_snapshot_enabled():
+        pending = []
+        for n in numbers:
+            fingerprint = _open_pr_fingerprint(n)
+            cached = _repair_cached_result("states", n, fingerprint)
+            if fingerprint is not None and cached is not None:
+                states[n] = cached
+            else:
+                pending.append(n)
+    else:
+        pending = list(numbers)
+    for i in range(0, len(pending), 8):
+        chunk = pending[i:i + 8]
         query = ('query { repository(owner:"jsboige", name:"CoursIA") {'
                  + "".join(_PR_STATE_FRAGMENT % {"n": n} for n in chunk) + "} }")
         try:
@@ -4008,7 +4624,11 @@ def fetch_pr_states(numbers: list[int]) -> dict[int, dict]:
             continue
         for value in repo.values():
             if value:
-                states[value["number"]] = value
+                number = value["number"]
+                states[number] = value
+                fingerprint = _open_pr_fingerprint(number)
+                if fingerprint is not None:
+                    _repair_store_result("states", number, fingerprint, value)
     return states
 
 
@@ -4230,6 +4850,9 @@ def fetch_main_head_probe(organ_cache: dict | None = None) -> dict | None:
     """
     if organ_cache is None:
         organ_cache = {}
+    cached = _repair_cached_main_probe()
+    if cached is not None:
+        return cached
     try:
         raw = subprocess.run(
             ["gh", "api", "graphql", "-f", "query=query { " + _MAIN_HEAD_FRAGMENT + " }"],
@@ -4254,7 +4877,15 @@ def fetch_main_head_probe(organ_cache: dict | None = None) -> dict | None:
     # `main` par workflow. Si rouge, on ajoute a `red_keys` les check
     # names qui pourraient venir de ce workflow. Fail-CLOSED : un
     # enrichissement impossible ne degrade pas le probe.
-    return _enrich_probe_with_workflow_runs(probe)
+    probe = _enrich_probe_with_workflow_runs(probe)
+    if _pass_snapshot_enabled() and isinstance(probe, dict):
+        serializable = dict(probe)
+        for key in ("red_keys", "names", "undecided_keys"):
+            if key in serializable:
+                serializable[key] = sorted(serializable[key] or set())
+        _repair_cache()["main_probe"] = {
+            "fetched_at": time.time(), "value": serializable}
+    return probe
 
 
 def drop_superseded(contexts: list[dict]) -> list[dict]:
@@ -4301,11 +4932,16 @@ def fetch_check_organs(check_run_id: int) -> list[str]:
     corroboration au lieu de le laisser corroborer par son nom.
     """
     try:
-        raw = subprocess.run(
-            ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
-            capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
-        ).stdout
-        annotations = json.loads(raw)
+        cached = _repair_read_annotation(check_run_id)
+        if cached is not None:
+            annotations = cached
+        else:
+            raw = subprocess.run(
+                ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
+                capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
+            ).stdout
+            annotations = json.loads(raw)
+            _repair_store_annotation(check_run_id, annotations)
     except Exception:  # noqa: BLE001 - reseau/parse : fail-closed, jamais un crash de picker
         return []
     organs: list[str] = []
@@ -4384,11 +5020,16 @@ def fetch_gate_cut_evidence(check_run_id: int) -> tuple[list[str], list[str]]:
     verdict non-FAIL rendent ([], []), et SANS preuve la lane repare.
     """
     try:
-        raw = subprocess.run(
-            ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
-            capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
-        ).stdout
-        annotations = json.loads(raw)
+        cached = _repair_read_annotation(check_run_id)
+        if cached is not None:
+            annotations = cached
+        else:
+            raw = subprocess.run(
+                ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
+                capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
+            ).stdout
+            annotations = json.loads(raw)
+            _repair_store_annotation(check_run_id, annotations)
     except Exception:  # noqa: BLE001 - reseau/parse : fail-closed, jamais un crash de picker
         return [], []
     failed: list[str] = []
@@ -4422,11 +5063,16 @@ def fetch_check_dwell(check_run_id: int) -> dict | None:
     if parser is None:
         return None
     try:
-        raw = subprocess.run(
-            ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
-            capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
-        ).stdout
-        annotations = json.loads(raw)
+        cached = _repair_read_annotation(check_run_id)
+        if cached is not None:
+            annotations = cached
+        else:
+            raw = subprocess.run(
+                ["gh", "api", f"repos/{REPO}/check-runs/{check_run_id}/annotations"],
+                capture_output=True, text=True, encoding="utf-8", check=True, timeout=60,
+            ).stdout
+            annotations = json.loads(raw)
+            _repair_store_annotation(check_run_id, annotations)
     except Exception:  # noqa: BLE001 - reseau/parse : jamais un crash de picker
         return None
     for ann in annotations or []:
@@ -5138,8 +5784,14 @@ def _nits_blocking_entries(n: int) -> dict | None:
 
     Derive de CONTRAT avec l'organe (TypeError/AttributeError) relancee
     (#15139) ; toute autre panne rend None -- une PR illisible ne bloque pas
-    les autres.
+    les autres. Sous `main`, seul un resultat effectivement evalue est cache,
+    avec le meme fingerprint `updatedAt` que l'etat de la PR : une panne ou un
+    budget epuise n'est jamais transforme en zero persistant.
     """
+    fingerprint = _open_pr_fingerprint(n) if _pass_snapshot_enabled() else None
+    cached = _repair_cached_result("nits", n, fingerprint)
+    if fingerprint is not None and cached is not None:
+        return cached
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
     import check_unaddressed_nits as nits  # noqa: PLC0415 - import tardif volontaire
 
@@ -5151,7 +5803,8 @@ def _nits_blocking_entries(n: int) -> dict | None:
         # silencieux : la cause 4 ne se declenchait plus, pour aucune
         # lane, pendant que le merge-gate (qui appelle juste) refusait
         # les memes PRs.
-        result = nits.analyse_pr(n)
+        with _B0TransportCache(nits, n, fingerprint) as transport:
+            result = nits.analyse_pr(n)
     except (TypeError, AttributeError):
         # Derive de contrat avec l'organe : bug d'appel, pas « PR
         # illisible ». Propager jusqu'au try de `red_backlog` qui rend
@@ -5167,9 +5820,15 @@ def _nits_blocking_entries(n: int) -> dict | None:
     # ci-dessus), jamais un 0.
     if result.get("budget_exhausted"):
         return None
-    return {"blocking": result.get("blocking") or [],
-            "blocked": bool(result.get("blocked")),
-            "budget_exhausted": bool(result.get("budget_exhausted"))}
+    projected = {"blocking": result.get("blocking") or [],
+                 "blocked": bool(result.get("blocked")),
+                 "budget_exhausted": bool(result.get("budget_exhausted"))}
+    if fingerprint is not None:
+        _repair_store_result("nits", n, fingerprint, projected)
+        # Le transport n'est persiste que si `analyse_pr` a abouti sans
+        # `budget_exhausted` : une passe tronquee ne fige pas ses payloads.
+        transport.store()
+    return projected
 
 
 def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
@@ -5193,6 +5852,7 @@ def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
     """
     out: dict[int, dict] = {}
     numbers_with_points: list[int] = []
+    voice_numbers: list[int] = []
     for n in numbers:
         info = _nits_blocking_entries(n)
         if info is None:
@@ -5203,20 +5863,42 @@ def unaddressed_review_points_detail(numbers: list[int]) -> dict[int, dict]:
             out[n] = {"count": len(info["blocking"]), "authors": authors,
                       "verdict": None, "verdict_surface": None}
             numbers_with_points.append(n)
+            if "verdict" not in info:
+                # Une evaluation B.0 deja persistee a moins de 15 min, mais
+                # dont la surface annexe n'a jamais ete lue. Ne relire QUE
+                # celle-ci : les verdicts deja connus restent a zero appel.
+                voice_numbers.append(n)
+            else:
+                out[n]["verdict"] = info["verdict"]
+                out[n]["verdict_surface"] = info.get("verdict_surface")
         elif not info["blocked"]:
             out[n] = {"count": 0, "authors": [],
                       "verdict": None, "verdict_surface": None}
-    if numbers_with_points:
+    if voice_numbers:
         try:
             sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent / "ci"))
-            import pool_review_verdicts as verdicts  # noqa: PLC0415 - import tardif volontaire
-            voices = verdicts.fetch_prs(REPO, numbers_with_points)
+            import pool_review_verdicts as verdicts
+            voices = verdicts.fetch_prs(REPO, voice_numbers)
         except Exception:  # noqa: BLE001 - surface annexe, jamais bloquante
             voices = {}
         for n, entry in voices.items():
             if n in out and out[n]["count"]:
                 out[n]["verdict"] = entry.get("verdict")
                 out[n]["verdict_surface"] = entry.get("verdict_surface")
+        if _pass_snapshot_enabled():
+            # Surface annexe du meme verdict B.0 : elle ne change ni le compte
+            # ni les auteurs. Une panne de `voices` n'est pas persistee : la
+            # tentative suivante doit pouvoir relire cette surface, comme avant.
+            for n in voice_numbers:
+                if n not in voices:
+                    continue
+                fingerprint = _open_pr_fingerprint(n)
+                cached = _repair_cached_result("nits", n, fingerprint)
+                if fingerprint is None or cached is None:
+                    continue
+                cached["verdict"] = voices[n].get("verdict")
+                cached["verdict_surface"] = voices[n].get("verdict_surface")
+                _repair_store_result("nits", n, fingerprint, cached)
     return out
 
 
@@ -7883,6 +8565,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 delivered_probe=None, claims_probe=None,
                                 merged_pr_probe=None,
                                 recent_marker_probe=None,
+                                snapshot_prime=None,
                                 container_marker_probe=None,
                                 delivery_event_probe=None,
                                 time_budget_s=None):
@@ -7906,6 +8589,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     ``recent_marker_probe`` (tests) remplace le filtre bon marche du dernier
     commentaire (#19768) -- HORS budget de sonde, il ecarte les clotures
     marquees sans consommer une unite : l'epuisement ne peut plus les servir.
+    ``snapshot_prime`` (tests) remplace le rafraichissement UNIQUE de
+    l'instantane partage (#22630) ; son defaut est inerte, comme les sondes.
     ``container_marker_probe`` (tests) remplace, pour l'urne `umbrella`, le
     filtre du MARQUEUR DE CONTENEUR (`[INFO] candidate-delivered` pose dans le
     dernier commentaire) -- meme cout (1 requete, hors budget), meme
@@ -7958,6 +8643,27 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
              "claim_unread": [], "container_unread": [], "marker_unread": [],
              "time_budget_hit": False}
+    # #22630 -- l'instantane local est rafraichi UNE FOIS pour les candidats
+    # de la fenetre : toutes les sondes de commentaires (filtre recent et
+    # sonde pleine de livraison) le lisent ensuite sans requete GitHub par
+    # candidat. Les sondes INJECTEES (tests) sont inchangees : elles ne
+    # passent pas par cette lecture. Le rafraichissement est lui-meme une
+    # sonde injectable : `main` passe `_belt_snapshot_prime`, le defaut est
+    # `belt_snapshot_prime_inert` -- aucune requete sur un appel direct.
+    #
+    # Il n'est PAS conditionne a l'absence de sonde injectee : `main` injecte
+    # ses trois sondes reelles, et l'ancienne condition `any(p is None)`
+    # etait donc TOUJOURS fausse en production -- le cache n'etait jamais
+    # amorce, alors que les sondes le consultaient. C'est l'injection du
+    # prime, et elle seule, qui decide du reseau.
+    prime = (belt_snapshot_prime_inert if snapshot_prime is None
+             else snapshot_prime)
+    prime(REPO, [int(it.get("number", 0))
+                 for it in (belt_pool or [])[:70] if it.get("number")])
+    # Le pool et l'enumeration des PRs ouvertes ont ete lus AVANT cette
+    # fonction : on persiste ici, sinon leurs entrees de la passe
+    # disparaitraient au retour (le flush de `red_backlog` est deja passe).
+    _flush_repair_snapshot()
     # #21436 — `probe_budget` borne le NOMBRE de sondes de livraison. Il ne
     # borne ni leur DUREE, ni les deux surfaces que la boucle paie par
     # candidat hors fenetre : `claims_probe` (un `check_claims` unitaire) et
@@ -8533,6 +9239,11 @@ def main(argv: list[str] | None = None) -> int:
         detail = ", ".join(sorted(invalid_urns)) or "liste vide"
         ap.error(f"--urns invalide ({detail})")
 
+    # #22630 -- le cache de reparation ne s'active QUE pour une invocation de
+    # main, apres la validation des arguments. Les appels directs aux fetchers,
+    # notamment par les tests historiques, restent sur la voie reseau d'avant.
+    _activate_pass_snapshot(REPO)
+
     # #15069 : l'urne `delivered` prescrit une fermeture -- reservee au
     # coordinateur et a l'adjoint. Une lane worker ne la recoit JAMAIS :
     # demande explicite refusee, presence par defaut retiree avec un avis.
@@ -8731,6 +9442,7 @@ def main(argv: list[str] | None = None) -> int:
                                 wip_cap=args.wip_cap)
     finally:
         _restore_phase_deadline(_red_token)
+        _flush_repair_snapshot()
     red_hit = bool(backlog.get("triggers")) and not args.ignore_red
     wip_hit = bool(backlog.get("wip_triggered")) and not args.ignore_wip
     if red_hit or wip_hit:
@@ -9099,6 +9811,7 @@ def main(argv: list[str] | None = None) -> int:
                                         merged_pr_probe=merged_pr_signal,
                                         recent_marker_probe=(
                                             has_recent_delivery_marker),
+                                        snapshot_prime=_belt_snapshot_prime,
                                         container_marker_probe=(
                                             has_recent_container_delivery_marker),
                                         delivery_event_probe=delivery_event,
@@ -9883,6 +10596,11 @@ def main(argv: list[str] | None = None) -> int:
         write_prev_genre_csv(args.csv_state, args.lane, encoded, ts_now)
         print(f"(CSV d'etat : {args.csv_state} ecrit -- lane={args.lane} "
               f"genres={encoded} @ {ts_now})")
+    # #22630 : `fetch_pool` et l'enumeration des PRs ouvertes tournent APRES le
+    # flush de `red_backlog` ; sans ce second flush, leurs caches de la passe
+    # (pool < 90 s, enumeration < 120 s) seraient perdus a chaque fois et le
+    # TTL court ne servirait jamais a rien.
+    _flush_repair_snapshot()
     return 0
 
 
