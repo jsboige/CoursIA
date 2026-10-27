@@ -68,16 +68,18 @@ jobs:
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     steps:
-      # 2026-10-27 (#22722) : un work dir chaud conserve les fichiers materialises
-      # par le job precedent. Quand le set sparse de CE job est plus etroit, git
-      # refuse de retirer un fichier modifie et ecrit
-      # "Path '...' not uptodate; will not remove from working tree." -- une
-      # annotation `failure` portee par un job `success` (faux rouge de la
-      # famille #12856 ; mesure API : 3 occurrences sur les 5 tetes de main les
-      # plus recentes, job 'PR gate sweep health advisory'). `git reset --hard`
-      # restaure l'arbre : le retrecissement passe alors sans message
-      # (experience locale mesuree : le refus disparait ; `git clean -ffdx` seul
-      # ne suffit pas -- le fichier fautif est suivi, donc non nettoye).
+      # 2026-10-27 (#22722) : la commande qui echoue est le `git checkout --force -B`
+      # final d'actions/checkout, pas son clean/reset interne (run 40476005592 :
+      # clean et reset passent, "HEAD is now at eb8ab03489", puis le checkout
+      # refuse le carnet JEPA "not uptodate; will not remove from working tree").
+      # Ce refus est la verification de retrait du retrecissement sparse
+      # (apply_sparse_checkout, WARNING_SPARSE_NOT_UPTODATE_FILE, git 2.43.0) :
+      # a blob inchange, elle compare le fichier au blob de l'index ; ni --force
+      # ni le reset interne ne la contournent. Mitigation EMPIRIQUE, mecanisme
+      # NON TRANCHE : sur git 2.43.0 tout etat residuel reproduit localement est
+      # deja nettoye par le clean+reset du built-in (ce step rejoue la meme
+      # commande, sans effet ajoute), et l'etat qui a survecu a son reset n'est
+      # pas reproduit (mutation entre reset et checkout ? checkout interrompu ?).
       - name: Restore the warm work tree before the sparse checkout
         run: |
           set -u
