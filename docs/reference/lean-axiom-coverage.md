@@ -225,9 +225,9 @@ forbidden union : []
 | `percolation_lean` | matrice `ci_lakes.json` (`percolation.axiom-target-modules`, migré depuis `lean-percolation.yml` **supprimé** — #13751/#18996) | OUI (#14904, 2026-09-06 ; **porté par la matrice depuis #18996**, 2026-10-04) | **GREEN re-mesuré 2026-10-09 sur le chemin matriciel** — `distinct_code_sorry = 0` (`count_code_sorry.py --json`), 0 `native_decide` (grep FR). Exécution locale du step exact du gate (`scripts/lean/axiom_check_step.py`, paramètres du manifeste : `target-modules: "*"`, `allow-axioms` vide, `fail-on-sorry: true`) : les modules FR du lake sont énumérés (`Percolation`, agrégateur déclaration-free, puis `Basic`, `Boundary`, `Components`, `Connectivity`, `Examples`), clôture `[propext, Classical.choice, Quot.sound]` (défauts — aucune entrée `allow-axioms` requise), 0 `sorryAx`, **RC=0**. `_en` exclus par défaut (défaut matriciel #10889 ; les paires FR/EN du lake sont des miroirs). **Contrôle négatif exécuté sur le chemin matriciel (2026-10-09)** : `sorry` injecté dans un module cible puis lake reconstruit → `axioms: [propext, sorryAx, Classical.choice, Quot.sound]`, `has_sorry: True`, **RC=1** ; source restaurée (md5 identique, `git status` vide) → **RC=0**. **Piège mesuré** : l'organe **ne reconstruit pas** le lake (il lit les oleans) — une mutation de source **seule** rougit par `build_failed_returncode` (`Unknown constant`), **pas** par `sorryAx` ; un contrôle fidèle exige un `lake build` entre la mutation et le run |
 | `planning_lean` | `lean-planning.yml` | OUI (#15305, 2026-09-09) | **GREEN par défaut** — source mesuré: `count_code_sorry --lake planning_lean` `code=0` (les 5 `grep` naive sont en commentaire/docstring, pas du code), 0 `native_decide` (token fiable §1.1), 0 `noncomputable` (aucune inférence `Classical.choice`); `target-modules: "*"` (dérivation runtime #10889, `_en` exclus par défaut → `Planning.Strips`/`Relaxation`/`Admissibility`) + `fail-on-sorry: true` cohérent baseline 0. Advisory `target-coverage` 6/6 (100 %, no blind spot). La clôture `#print axioms` est mesurée par le gate au run PR CI |
 | `game_theory_lean` | matrice `ci_lakes.json` (`gametheory.axiom-target-modules`, migré depuis `lean-social-choice.yml` supprimé — #17374) | OUI — partiel (subtree, #12330 ; étendu ProgramGames 2026-09-10, PR B.3 #15221 follow-up ; cibles portées par le manifeste matriciel depuis #17374) | GREEN sur les cibles câblées : SocialChoice.* (modules FR+EN, pinning `SocialChoice/CERTIFIED.txt`) + `Abstraction`/`Abstraction.Basic` + `ProgramGames.Basic`/`ProgramGames.Basic_en` (L1 noyau borné #15176/#15221) + `ProgramGames.Bounded`/`ProgramGames.Bounded_en` (module atterri **après** la rédaction du scope, #15395 — ajouté sur demande du digest de review #15379) : 0 sorry, 0 `native_decide` — grep FR/EN firsthand ; `fail-on-sorry: true`, companions épinglés par `test_workflow_targets_match_manifest`. **Hors cible délibérée** : `RepeatedGames.Folk` (stretch sorry #4880), racines agrégateurs (`SocialChoice.lean`, `ProgramGames.lean`, sans decls). Reste du lake (StableMarriage, CooperativeGames, RepeatedGames, Swaps) non ciblé — candidat aux tranches #11699 |
-| **Lacs du manifeste historiquement non cables** | matrice `ci_lakes.json`, cable `axiom-target-modules` par la tranche **#22519** (decision par lake : §4.1 ci-dessous) | OUI | Le gate les atteint depuis #22519 ; leur verdict d'execution se lit sur le premier run matriciel qui les couvre, jamais d'avance. `decisiontheory` porte en outre `axiom-fail-on-sorry: "false"` (2 `sorry` declares, §4.1) |
+| **Lacs du manifeste historiquement non cables** | matrice `ci_lakes.json`, cable `axiom-target-modules` par la tranche **#22519** sauf deux (decision par lake : §4.1 ci-dessous) | OUI, sauf deux lakes decides **sans gate** | Le gate les atteint depuis #22519 ; leur verdict d'execution se lit sur le premier run matriciel qui les couvre, jamais d'avance. `decisiontheory` porte en outre `axiom-fail-on-sorry: "false"` (2 `sorry` declares, §4.1). `conway_cgt_lean` et `mathlib_examples` restent **sans gate** : ils ne declarent aucune declaration nommable, donc le gate n'aurait rien a inspecter (§4.1) |
 
-Le câblage du gate sur les lacs non-pilotes a longtemps été un travail séparé, hors du scope #8738 (chaque workflow lake était un livrable à part avec son `target-modules` adapté). Ce n'est plus une roadmap : la tranche #22519 a câblé les derniers lacs matriciels, et **aucun lake du manifeste ne reste sans gate**. Ce qui subsiste n'est pas une liste de lakes à câbler mais une règle : un lake ajouté demain à la matrice doit être câblé ou porter sa décision écrite ici, et `check_axiom_gate_coverage.py --check --strict` refuse le silence (§4.1).
+Le câblage du gate sur les lacs non-pilotes a longtemps été un travail séparé, hors du scope #8738 (chaque workflow lake était un livrable à part avec son `target-modules` adapté). Ce n'est plus une roadmap : la tranche #22519 a câblé les derniers lacs matriciels **qui peuvent l'être**, et **deux lakes restent sans gate par décision écrite** (§4.1). Ce qui subsiste n'est pas une liste de lakes à câbler mais une règle : un lake ajouté demain à la matrice doit être câblé ou porter sa décision écrite ici, et `check_axiom_gate_coverage.py --check --strict` refuse le silence (§4.1).
 
 ### 4.1. Décision par lake — tranche #22519 (2026-10-27)
 
@@ -244,8 +244,9 @@ les seules occurrences de `native_decide` dans ces lakes sont des **docstrings**
 (« Aucun `sorry`, aucun `native_decide` » dans `social_choice_lean_peters`,
 mention pédagogique dans `Bayesian/InformationNoisy.lean`) — **0 usage en
 tactique** sur les treize. D'où une décision uniforme : `"*"` (dérivation
-runtime des modules, `_en` exclus par défaut), sauf les deux lakes dont la
-mesure révèle une exception.
+runtime des modules, `_en` exclus par défaut) sur **onze** lakes, plus **deux**
+lakes où la mesure révèle qu'il n'y a **rien à inspecter** — une quatrième
+classe, découverte par le garde de non-vacuité au premier run matriciel.
 
 **Une troisième classe manquait à cette mesure, et le gate l'a trouvée le
 premier.** `native_decide` et `sorry` ne sont pas les seuls ports d'entrée d'un
@@ -260,10 +261,34 @@ puisque tout axiome **nouveau** rougit immédiatement. L'écart de preuve lui-m�
 reste ouvert et suivi par **#23022** : le whitelist nommé le rend visible
 dans le manifeste, il ne le résout pas.
 
+**Une quatrième classe existe : le lake qui ne déclare rien.** Deux des treize
+lakes rougissent au câblage sur `FAIL: lake-level non-vacuity -- all N module(s)
+enumerated zero declarations`, et ce verdict est **correct** : c'est le garde qui
+empêche un gate vert d'avoir inspecté zéro déclaration. Les deux causes sont
+distinctes et aucune n'est un défaut de configuration :
+
+- `conway_cgt_lean` — `CGTTour.lean` est une visite guidée : ses `structure`,
+  `def` et `theorem` vivent dans des blocs `/-! … -/` qui les *citent*, et le
+  fichier n'exécute que des `#check` sur les déclarations de la dépendance
+  `CombinatorialGames`. Commentaires retirés, il ne reste que des `import`, un
+  `namespace` et des `#check` ;
+- `mathlib_examples` — `MathLibExamples.lean` est un agrégateur d'une ligne et
+  `MathLibExamples/Basic.lean` n'énumère que des `example`, **anonymes** et donc
+  exclus par construction de l'énumération.
+
+Ces deux lakes sont donc **décidés sans gate**, avec leur justification dans la
+table ci-dessous — la branche « décision écrite » que #22519 prévoit
+explicitement. Câbler un gate sur une surface déclarative nulle ne rend pas la
+preuve plus sûre : il rend l'organe rouge sur une mesure honnête, et le réflexe
+suivant serait de baisser le garde. La mesure locale qui tranche, reproductible
+sans Lean : `_enumerate_module_declarations` rend `[]` et
+`_classify_empty_enumeration` rend `declaration_free_module` sur chacun des trois
+modules concernés.
+
 | Lake | Décision | Justification |
 |---|---|---|
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters` | `"*"` | 0 `native_decide` en tactique (2 mentions en docstring), `distinct_code_sorry = 0` |
-| `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | `"*"` | 0 `native_decide`, 0 `sorry` |
+| `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | **sans gate** (décision écrite) | Le lake ne **déclare rien** : `CGTTour.lean` est une visite guidée faite de blocs `/-! … -/` qui *citent* du code et de lignes `#check` sur les déclarations de la dépendance `CombinatorialGames`. Une fois les commentaires retirés (`_enumerate_module_declarations`), il ne reste que des `import`, un `namespace` et des `#check` : **0 déclaration**, donc rien que `#print axioms` puisse interroger. Câblé, le gate rougit sur la non-vacuité de lake — à raison : il n'inspecte rien. Mesuré localement le 2026-10-27 (`_enumerate_module_declarations` → `[]`, `_classify_empty_enumeration` → `declaration_free_module`) |
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | `"*"` + `axiom-allow-axioms: "arrow_impossibility"` | 0 `native_decide`, 0 `sorry`, mais **un axiome déclaré** : `arrow_impossibility` (`SocialChoice.lean`) est assumé, pas prouvé. Nommé dans le manifeste pour que le gate reste actif sur tout axiome **nouveau** ; l'écart de preuve est suivi par #23022 |
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` | `"*"` | 0 `native_decide` en tactique (1 mention en docstring), `distinct_code_sorry = 0` |
 | `MyIA.AI.Notebooks/IIT/iit_lean` | `"*"` | 0 `native_decide`, 0 `sorry` |
@@ -271,17 +296,17 @@ dans le manifeste, il ne le résout pas.
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean` | `"*"` + `axiom-fail-on-sorry: "false"` | `sorry-baseline = 2` : le gate voit et **rapporte** les `sorryAx` sans échouer, le ratchet restant tenu par le build. Rouge immédiat sur tout `native_decide` introduit |
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | `"*"` | 0 `native_decide`, `distinct_code_sorry = 0` |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | `"*"` | 0 `native_decide`, `distinct_code_sorry = 0` |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | `"*"` | L'import Mathlib est déjà payé par le build du même job, le pass d'axiomes chevauche ce cache |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | **sans gate** (décision écrite) | Le lake ne **déclare rien de nommable** : `MathLibExamples.lean` est un agrégateur d'une ligne (`import MathLibExamples.Basic`) et `Basic.lean` n'énumère que des `example` — des déclarations **anonymes**, exclues par construction de l'énumération (`_enumerate_module_declarations`). **0 déclaration** sur les deux modules, donc aucun `#print axioms` à émettre. Mesuré localement le 2026-10-27 : les deux modules rendent `[]` / `declaration_free_module`, et le gate câblé rougit sur la non-vacuité de lake — verdict correct, pas un défaut de configuration. Un gate qui n'inspecte rien ne doit pas être vert ; il ne doit pas non plus être câblé |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean` | `"*"` | 0 `native_decide`, 0 `sorry` |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | `"*"` | 0 `native_decide`, 0 `sorry` |
 | `MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean` | `"*"` | 0 `native_decide`, `distinct_code_sorry = 0` |
 
-**Pourquoi une seule PR pour treize lakes, alors que §0.1 dit « une PR par
+**Pourquoi une seule PR pour onze lakes, alors que §0.1 dit « une PR par
 lake ».** La règle de §0.1 protège un lake dont le verdict est *incertain* :
 câbler, mesurer, corriger un rouge. Ici la mesure est faite **avant** le
 câblage et ne laisse aucune incertitude (aucun `native_decide` en tactique,
-sorries déjà sous contrat) : la décision est uniforme, et la séparer en treize
-PRs produirait treize fois le même run de matrice complet pour la même
+sorries déjà sous contrat) : la décision est uniforme, et la séparer en onze
+PRs produirait onze fois le même run de matrice complet pour la même
 conclusion. Le grain qui reste séparé est celui où un rouge apparaîtrait.
 
 **Ce qui rend la decision verifiable.** `check_axiom_gate_coverage.py` porte

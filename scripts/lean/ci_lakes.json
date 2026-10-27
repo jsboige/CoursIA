@@ -119,7 +119,6 @@
       "display-name": "conway_cgt_lean",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
       "paths": [
         "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/**.lean",
         "MyIA.AI.Notebooks/GameTheory/conway_cgt_lean/lakefile.lean",
@@ -238,7 +237,6 @@
       "display-name": "mathlib_examples",
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
-      "axiom-target-modules": "*",
       "paths": [
         "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/**.lean",
         "MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples/lakefile.lean",
