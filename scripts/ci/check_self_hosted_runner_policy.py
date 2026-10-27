@@ -87,6 +87,11 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # fois secret-scan bascule -- 2650 runs same-repo du 2026-08-28 au
     # 2026-09-02, timeout 25 min, aucun filtre `paths:`.
     "always-on-guards.yml",
+    # #22331 : le job de body est la moitie extraite de always-on-guards.yml
+    # (memes organes, meme pool, meme garde anti-fork, meme routage). Le laisser
+    # sur GitHub-hosted rendrait la famine de file pire qu'avant, puisque son
+    # declencheur `edited` est justement celui qui produit les re-declenchements.
+    "always-on-guards-body.yml",
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
