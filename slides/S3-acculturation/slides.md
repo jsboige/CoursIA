@@ -953,7 +953,7 @@ layout: default
 
 </TeachingStep>
 
-<TeachingStep v-click="2" placement="below" size="sm">
+<TeachingStep v-click="2" placement="below" size="lg">
 
 **Ingénierie de connaissances**
 
@@ -963,7 +963,10 @@ layout: default
 - Linked Data
 
 <template #visual>
+<div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; align-items:center; width:100%; height:100%;">
 <img src="./images/img_048.png" alt="Nuage Linked Open Data : les jeux de données publiques interconnectées du web des données" />
+<img src="./images/img_049.png" alt="Pile des standards du Web sémantique en huit couches : URI et Unicode, XML, RDF, ontologie, règles, logique, preuve, confiance, avec signature et chiffrement" />
+</div>
 </template>
 
 </TeachingStep>
@@ -1616,7 +1619,7 @@ layout: section
 <img src="./images/img_093.png" class="max-h-[190px] w-full object-contain" alt="Fonctions d'activation : sigmoïde, tanh, ReLU, Leaky ReLU, Maxout, ELU — formules et courbes" />
 </div>
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.1-Retropropagation.ipynb">3.1-Retropropagation.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.1-Retropropagation.ipynb">3.1-Retropropagation.ipynb</a>.</p>
 ---
 
 
@@ -1642,7 +1645,7 @@ layout: section
 <img src="./images/img_097.png" class="max-h-[190px] w-full object-contain" alt="RNN déroulé : cellule A récurrente, entrées x0 à xt, sorties h0 à ht" />
 </div>
 
-<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.2-Optimisateurs.ipynb">3.2-Optimisateurs.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.3-Regularisation.ipynb">3.3-Regularisation.ipynb</a>.</p>
+<p class="notebook-reference">Références : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.2-Optimisateurs.ipynb">3.2-Optimisateurs.ipynb</a>, <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.3-Regularisation.ipynb">3.3-Regularisation.ipynb</a>.</p>
 ---
 
 
@@ -1716,7 +1719,7 @@ layout: section
 
 <!-- Transformer : encodeur-decodeur, self-attention multi-tetes, positional encoding. LLMs : GPT-2 (2019) zero-shot, GPT-3 (2020) in-context few-shot, T5 (2019) text-to-text unifie. Modeles efficients 2020+ : Reformer et Longformer (attention lineaire ou par fenetres), puis Mamba et les State Space Models, Hyena, RWKV (2023) -- complexite lineaire sur sequences longues. -->
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.4-Attention-Transformer-From-Scratch.ipynb">3.4-Attention-Transformer-From-Scratch.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb">3.4-Attention-Transformer-From-Scratch.ipynb</a>.</p>
 ---
 
 
@@ -1764,7 +1767,7 @@ layout: section
 
 <!-- Diffusion latente (LDM / Stable Diffusion, Rombach 2021-2022) : espace latent d'un VAE pre-entraine, debruitage U-Net, conditionnement texte par l'encodeur CLIP, cross-attention Q/K/V. -->
 
-<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb">3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb</a>.</p>
+<p class="notebook-reference">Référence : <a href="https://github.com/jsboige/CoursIA/blob/main/MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb">3.6c-Modeles-Generatifs-Diffusion-from-scratch.ipynb</a>.</p>
 ---
 
 
