@@ -20,12 +20,24 @@ vertes en local, jouées par aucun workflow (#22735). Le garde confronte donc
 aussi l'ARBORESCENCE à la couverture : une suite sur disque que rien n'exécute
 est un rouge, et une suite déclarée câblée mais disparue de l'arbre aussi.
 
+Troisième sens (#22735) : l'INVARIANT de résolution des noms de modules pytest.
+pytest dérive le nom de module du paquet le plus proche portant `__init__.py` ;
+deux suites `tests/` sans paquet parent (`scripts/genai-stack/tests` et
+`agent_tests/tests`) se résolvent alors TOUTES DEUX en `tests.conftest`, et
+pluggy refuse d'enregistrer le même objet sous deux noms ("Plugin already
+registered under a different name"). L'option ini
+`consider_namespace_packages` (pytest >= 8.0) ferme la classe de défaut. Le
+garde vérifie qu'elle est déclarée ET qu'un workflow fige pytest >= 8 : sur
+une version antérieure, l'option serait ignorée SANS BRUIT (simple
+`PytestConfigWarning`) et le défaut reviendrait sans laisser de trace.
+
 Usage:
     python scripts/check_testpaths_coverage.py [--verbose] [--repo-root DIR]
 
 Exit 0 = aucune dérive. Exit 1 = au moins un testpath non couvert non exclu,
 une cible déclarée disparue de son workflow, une suite sur disque non
-exécutée par la CI, ou une suite déclarée disparue de l'arbre.
+exécutée par la CI, une suite déclarée disparue de l'arbre, ou l'invariant de
+résolution des noms de modules pytest violé.
 """
 
 from __future__ import annotations
@@ -401,6 +413,66 @@ def missing_declared_suites(
     return sorted(set(missing))
 
 
+# --- #22735 : troisième sens, l'invariant de résolution des noms de modules ---
+
+# Nom de l'option ini qui étend la résolution de paquet aux paquets-espace de
+# noms (pytest >= 8.0). Sans elle, le nom de module d'un fichier est dérivé du
+# seul paquet le plus proche portant `__init__.py`.
+NAMESPACE_OPTION = "consider_namespace_packages"
+
+# Un workflow doit figer pytest >= 8 : avant 8.0, l'option ci-dessus n'existe
+# pas et pytest l'ignorerait sans bruit (un simple `PytestConfigWarning`).
+PYTEST_PIN_RE = re.compile(r"pytest\s*>=\s*8(?:\.\d+)*")
+
+
+def check_namespace_option(repo_root: Path) -> list[str]:
+    """Vérifie l'invariant de désambiguïsation des noms de modules pytest.
+
+    Deux conditions, toutes deux nécessaires :
+
+    1. `pytest.ini` déclare l'option — sans elle, deux suites `tests/` sans
+       paquet parent suffisent à faire tomber la collecte entière d'un job
+       ("Plugin already registered under a different name") ;
+    2. un workflow fige `pytest >= 8` — l'option n'existe pas avant 8.0 et
+       serait alors ignorée sans bruit, donc le défaut reviendrait sans
+       laisser de trace.
+
+    Le contrôle est exercé sur l'ARBRE (pytest.ini + workflows), jamais sur une
+    liste déclarée : c'est la suppression effective de l'option qu'il faut
+    voir, pas la mise à jour d'un manifeste.
+    """
+    problems: list[str] = []
+    ini_path = repo_root / "pytest.ini"
+    parser = configparser.ConfigParser()
+    try:
+        with ini_path.open(encoding="utf-8") as fh:
+            parser.read_file(fh)
+    except OSError:
+        return [f"pytest.ini illisible: {ini_path}"]
+    raw = (parser.get("pytest", NAMESPACE_OPTION, fallback="") or "").strip().lower()
+    if raw not in ("true", "1", "yes", "on"):
+        problems.append(
+            f"pytest.ini ne déclare pas `{NAMESPACE_OPTION} = true` — deux "
+            "suites `tests/` sans paquet parent résolvent alors le même nom de "
+            "module (`tests.conftest`) et la collecte tombe en "
+            "\"Plugin already registered under a different name\""
+        )
+    pinned = False
+    for wf in sorted((repo_root / ".github/workflows").glob("*.yml")):
+        for line in wf.read_text(encoding="utf-8").splitlines():
+            if "pip install" in line and PYTEST_PIN_RE.search(line):
+                pinned = True
+                break
+        if pinned:
+            break
+    if not pinned:
+        problems.append(
+            f"aucun workflow ne fige `pytest>=8` — l'option `{NAMESPACE_OPTION}` "
+            "n'existe pas avant pytest 8.0 et y serait ignorée sans bruit"
+        )
+    return problems
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--verbose", action="store_true")
@@ -468,7 +540,16 @@ def main() -> int:
         for suite in missing:
             print(f"  FAIL {suite}")
 
-    return 1 if (uncovered or problems or uncovered_disk or missing) else 0
+    # Troisième sens (#22735) : l'invariant de résolution des noms de modules.
+    namespace_problems = check_namespace_option(repo_root)
+    if namespace_problems:
+        print("Invariant de résolution des noms de modules pytest :")
+        for p in namespace_problems:
+            print(f"  FAIL {p}")
+
+    return 1 if (
+        uncovered or problems or uncovered_disk or missing or namespace_problems
+    ) else 0
 
 
 if __name__ == "__main__":

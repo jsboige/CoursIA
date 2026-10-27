@@ -14,6 +14,12 @@ sur le disque sous `scripts/**/tests/` mais absente de pytest.ini ET de la
 couverture CI lui était invisible (huit suites vertes en local, jamais
 rejouées). Les tests de cette section prouvent que ce second sens rougit
 quand il doit — un contrôle incapable de rougir n'est pas un contrôle.
+
+#22735 : ajoute le troisième sens — l'INVARIANT de résolution des noms de
+modules pytest. Deux suites `tests/` sans paquet parent résolvent le même nom
+de module (`tests.conftest`) et la collecte tombe en "Plugin already
+registered under a different name" ; l'option ini
+`consider_namespace_packages` (pytest >= 8.0) ferme la classe.
 """
 
 from __future__ import annotations
@@ -27,6 +33,7 @@ from check_testpaths_coverage import (  # noqa: E402
     REPO_ROOT,
     WORKFLOW_COVERAGE,
     _partition_run_blocks,
+    check_namespace_option,
     discover_suites,
     extract_run_targets,
     is_covered,
@@ -289,3 +296,49 @@ def test_partition_neutralite_lignes_non_pytest() -> None:
     covered, floors = _partition_run_blocks(text)
     assert "scripts/audit/tests" in floors
     assert "scripts/audit/tests" not in covered
+
+
+# --- #22735 : troisième sens, l'invariant de résolution des noms de modules ---
+
+
+def _make_repo_with_option(root: Path, *, option: bool, pin: bool) -> None:
+    """Repo minimal : pytest.ini (avec ou sans option) + workflow (avec ou sans pin)."""
+    ini = "[pytest]\ntestpaths =\n    scripts/tests\n"
+    if option:
+        ini += "consider_namespace_packages = true\n"
+    (root / "pytest.ini").write_text(ini, encoding="utf-8")
+    wf_dir = root / ".github" / "workflows"
+    wf_dir.mkdir(parents=True, exist_ok=True)
+    pip = (
+        '          pip install "pytest>=8" pytest-xdist\n'
+        if pin
+        else "          pip install pytest-xdist\n"
+    )
+    (wf_dir / "w.yml").write_text(
+        "name: t\non: [push]\njobs:\n  t:\n    steps:\n" + pip, encoding="utf-8"
+    )
+
+
+def test_namespace_option_green_on_current_repo() -> None:
+    """Sur l'état actuel, l'invariant de résolution des noms de modules est tenu."""
+    assert check_namespace_option(REPO_ROOT) == []
+
+
+def test_missing_namespace_option_is_detected(tmp_path: Path) -> None:
+    """Sans l'option dans pytest.ini, l'invariant est violé et signalé."""
+    _make_repo_with_option(tmp_path, option=False, pin=True)
+    problems = check_namespace_option(tmp_path)
+    assert len(problems) == 1
+    assert "consider_namespace_packages" in problems[0]
+
+
+def test_missing_pytest_pin_is_detected(tmp_path: Path) -> None:
+    """Sans pin `pytest >= 8` dans un workflow, l'option serait ignorée sans bruit.
+
+    Le défaut ne laisserait aucune trace (simple `PytestConfigWarning`) : le
+    garde le rend donc visible avant qu'il ne revienne en CI.
+    """
+    _make_repo_with_option(tmp_path, option=True, pin=False)
+    problems = check_namespace_option(tmp_path)
+    assert len(problems) == 1
+    assert "pytest>=8" in problems[0]

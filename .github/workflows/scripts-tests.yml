@@ -460,7 +460,14 @@ jobs:
           # 24 of 25 (9.9 min average). A slower runner class against a
           # sequential suite sitting near the cap is a scheduling lottery, not
           # a timeout that wants raising. See #14598 / #15574.
-          pip install pytest-xdist
+          # pytest >= 8 : l'option ini `consider_namespace_packages`, qui
+          # desambiguise les noms de modules pytest, n'existe pas avant 8.0.
+          # Sur un pytest plus ancien elle serait ignoree SANS BRUIT (simple
+          # `PytestConfigWarning`) et la collision `tests.conftest`
+          # reviendrait. Le runner porte 9.1.1 (mesure sur le log du run
+          # 40409945388) : ce pin est une garantie de non-regression, pas un
+          # upgrade.
+          pip install "pytest>=8" pytest-xdist
 
       - name: GameTheory-06 bout-en-bout sur l'image CI (#21764)
         # Le carnet GameTheory-06 importe `axelrod` ; sous pyarrow < 26 le
@@ -544,7 +551,7 @@ jobs:
         #
         # #22735 -- huit suites de `scripts/**/tests/` etaient vertes en local et
         # jouees par AUCUN workflow : datasets, genai-stack, hashlife, i18n,
-        # qc-mcp-lite, smartcontracts, sudoku, validation (649 tests mesures sur
+        # qc-mcp-lite, smartcontracts, sudoku, validation (666 tests mesures sur
         # `main` au 2026-10-26). La suite `scripts/sudoku/tests` certifie
         # l'invariant de hierarchie de difficulte du corpus -- sans cablage, le
         # defaut qu'elle refute redevient invisible. Hermeticite mesuree
@@ -552,8 +559,20 @@ jobs:
         # 164 / 50 / 58 / 26 / 60 / 31 tests verts, 58 s cumules, aucune
         # dependance hors du pip install de ce job (bcrypt compris, deja
         # installe ici). L'inventaire des suites -- disque contre CI -- est
-        # desormais un organe (`scripts/ci/check_ci_test_suites.py`) et non
-        # une relecture de workflow.
+        # desormais un organe (`scripts/check_testpaths_coverage.py`, garde
+        # `.github/workflows/testpaths-coverage-guard.yml`) et non une relecture
+        # de workflow.
+        #
+        # Une meme invocation pytest ne peut pas porter deux suites `tests/`
+        # sans paquet parent : pytest derive le nom de module du paquet le plus
+        # proche portant `__init__.py`, et `scripts/genai-stack/tests/` comme
+        # `agent_tests/tests/` se resolvent alors tous deux en `tests.conftest`
+        # -- pluggy refuse d'enregistrer le meme objet sous deux noms ("Plugin
+        # already registered under a different name"). Mesure : 1 collision sur
+        # 694 modules distincts, la seule etant `tests.conftest`. Le correctif
+        # est l'option ini `consider_namespace_packages` (pytest >= 8.0), qui
+        # etend la resolution aux paquets-espace de noms et rend les noms de
+        # modules uniques par chemin.
         run: |
           mem_max=$(cat /sys/fs/cgroup/memory.max 2>/dev/null \
             || cat /sys/fs/cgroup/memory/memory.limit_in_bytes 2>/dev/null \
