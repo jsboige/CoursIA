@@ -209,6 +209,7 @@ Documentation de cadrage et de synthèse de la série ICT (strate 7) — tous **
 | [ict/hoffman-interface-distillation-case13.md](ict/hoffman-interface-distillation-case13.md) | Case 13 — Hoffman interface theory : toy N=16 RÉFUTE la mise à l'échelle monotone de la dissociation FBT |
 | [ict/hoffman-interface-distillation-case14.md](ict/hoffman-interface-distillation-case14.md) | Case 14 — Hoffman interface theory : toy N=8, M=2, compression bit2 → NULL INSTRUMENTAL |
 | [ict/hoffman-interface-distillation.md](ict/hoffman-interface-distillation.md) | Case 11 — Hoffman interface theory : toy falsifiable en 2-bit |
+| [ict/ict12-valence-note-de-conception.md](ict/ict12-valence-note-de-conception.md) | Note de conception — tranche ICT-12 « Valence / Animats » : pourquoi le regroupement en `ICT-12/` suit l'escalier valence → animat, mouvement et validation |
 
 ### Pré-enregistrements, distillations et prototypes (docs/ict/)
 

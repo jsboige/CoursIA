@@ -18,7 +18,7 @@ Le regroupement dans `ICT-12/` préserve ce récit ordonné (mesure → apprenti
 
 ### Mouvement (6 étapes)
 1. `git mv` des 5 carnets vers `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12/` (5 renames, **100 % de similarité**). **Aucun renommage de fichier** : les noms `ICT-12*` sont conservés, seul le dossier regroupe.
-2. **Réparation des liens** — ce qui distingue cette tranche des paliers 10/14/19 : les 5 carnets portent **26 liens relatifs sortants** vers le reste de la série (`../../Probas/…`, `../../../docs/…`, `ict/…`, les siblings `ICT-13/18/30`, `../README.md`, `ICT-0-Framing.md`). Descendre d'un niveau les casse tous : **26 liens sortants des cellules markdown** re-préfixés d'un `../` (les **14 liens intra-famille** `ICT-12*` restent sans préfixe — les 5 carnets sont désormais *siblings*). Côté entrant : **32 refs de chemin sur 10 fichiers** préfixées d'`ICT-12/` — `ICT-Series/README.md`, `thom-synthese-distillation.md`, le carnet frère `ICT-Synthese-CrossSubstrat`, et 7 docs (`cadrage/grothendieckian-lens`, `cadrage/magnifica-humanitas-dialogue`, `curriculum/recherche`, `ict/feuille-de-route-notebooks`, `ict/genealogy-representation-interne`, `ict/tresse-cartographie`, `notebook-metadata/scientific-review-registry`).
+2. **Réparation des liens** — ce qui distingue cette tranche des paliers 10/14/19 : les 5 carnets portent **26 liens relatifs sortants** vers le reste de la série (`../../Probas/…`, `../../../docs/…`, `ict/…`, les siblings `ICT-13/18/30`, `../README.md`, `ICT-0-Framing.md`). Descendre d'un niveau les casse tous : **26 liens sortants des cellules markdown** re-préfixés d'un `../` (les **14 liens intra-famille** `ICT-12*` restent sans préfixe — les 5 carnets sont désormais *siblings*). Côté entrant : **32 refs de chemin** préfixées d'`ICT-12/`, réparties sur les fichiers porteurs — `ICT-Series/README.md`, `thom-synthese-distillation.md`, le carnet frère `ICT-Synthese-CrossSubstrat`, et 7 docs (`cadrage/grothendieckian-lens`, `cadrage/magnifica-humanitas-dialogue`, `curriculum/recherche`, `ict/feuille-de-route-notebooks`, `ict/genealogy-representation-interne`, `ict/tresse-cartographie`, `notebook-metadata/scientific-review-registry`).
 3. `docs/reference/rename-ledger.tsv` : 5 entrées append (ancien → nouveau chemin).
 4. `pedagogy_density_baseline.json` : 5 clés déportées (valeurs préservées) + `baseline_nb_nav_chain.json` : 1 clé (garde LOST_KEY/ORPHAN_KEY #13815/#16122).
 5. Note de conception committée.
@@ -37,7 +37,7 @@ Aucune cellule **code** n'est modifiée : le seul contenu de cellule touché dan
 ### Validation
 - `git mv` : 5 renames à **100 % de similarité** (0 insertion / 0 suppression sur le contenu de rename).
 - Liens sortants : 26 réécritures, appliquées **uniquement sur les cellules markdown** (script à vérification par cellule : le compte de chaque token dans le fichier brut == son compte dans les cellules markdown → aucun token dans un `outputs`/code n'est touché).
-- Liens entrants : 32 préfixations sur 10 fichiers (garde anti-double-prefixe).
+- Liens entrants : 32 préfixations, réparties sur les fichiers porteurs (garde anti-double-prefixe).
 - `pedagogy_density.py --check-orphans` : **0 ORPHAN_KEY / 0 LOST_KEY pour ICT-12** (6 clés déportées présentes à l'ancien chemin vidé). Les `ORPHAN_KEY` restants sont en `GameTheory`/`GenAI`/`ML` : dette de baseline **pré-existante sur `main`**, hors périmètre (le diff ne touche que des chemins `ICT-12`).
 
 ### Questions ouvertes : aucune
