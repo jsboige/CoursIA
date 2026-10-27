@@ -22,22 +22,33 @@ if str(CI_DIR) not in sys.path:
 
 from check_dns_rate import (  # noqa: E402
     RED_FACTOR,
+    STATUS_NOT_APPLICABLE,
     STATUS_OK,
     STATUS_RED,
     STATUS_UNREADABLE,
     STATUS_WARN,
+    STATUS_WIRED,
     BURST_WINDOW_S,
     Sample,
+    coverage_report,
     decide_status,
+    degraded_slots,
+    effective_verdict,
+    expected_missing_slots,
     fold_samples,
     is_slot_name,
     list_slots,
+    measure,
     parse_snmp_udp_out_datagrams,
+    pool_applicability,
     read_udp_out_datagrams,
+    resolve_pool,
     run_cmd,
     slot_sort_key,
     socket_present_for,
     verdict,
+    window_is_unreadable,
+    windows_unix_socket_guard,
 )
 
 SNMP_SAMPLE = """Ip: Forwarding DefaultTTL InReceives InHdrErrors
@@ -320,3 +331,199 @@ def test_read_udp_out_datagrams_exec_en_echec():
     value, err = read_udp_out_datagrams("myia-ai-01-wsl-3", None, run=run)
     assert value is None
     assert "docker exec a echoue" in err
+
+
+# ---------------------------------------------------------------------------
+# Couverture : une fenetre presque entierement non lue n'est pas une mesure
+# ---------------------------------------------------------------------------
+
+def test_fenetre_presque_entierement_non_lue_est_unreadable():
+    """exec lu au 1er echantillon puis en echec : 15 manquants sur 16 -> non lu.
+
+    Sans ce seuil, la moyenne valait 0,0 q/s et le verdict `OK` a code 0 : une
+    fenetre non lue rendait un vert parfaitement faux.
+    """
+    cov = coverage_report({"s1": 15}, ["s1"], 16)
+    assert cov["degraded"] == ["s1"]
+    assert window_is_unreadable(cov) is True
+    assert degraded_slots({"s1": 15}, ["s1"], 16) == ["s1"]
+
+
+def test_seuil_de_couverture_est_strict_a_la_moitie():
+    """8 manquants sur 16 = 50 % pile : la moitie de la fenetre suffit, pas degrade."""
+    assert degraded_slots({"s1": 8}, ["s1"], 16) == []
+    assert window_is_unreadable(coverage_report({"s1": 8}, ["s1"], 16)) is False
+    assert degraded_slots({"s1": 9}, ["s1"], 16) == ["s1"]
+
+
+def test_un_seul_slot_degrade_ne_rend_pas_la_fenetre_non_lue():
+    """Deux slots, un seul degrade : la mesure tient, mais elle est degradee."""
+    cov = coverage_report({"s1": 0, "s2": 15}, ["s1", "s2"], 16)
+    assert cov["degraded"] == ["s2"]
+    assert window_is_unreadable(cov) is False
+
+
+def test_une_reserve_durcit_ok_en_warn_jamais_l_inverse():
+    """Les reserves AJOUTENT un motif : elles ne peuvent pas adoucir un verdict."""
+    assert effective_verdict(STATUS_OK, coverage_degraded=False,
+                             pool_incomplete=False) == STATUS_OK
+    assert effective_verdict(STATUS_OK, coverage_degraded=True,
+                             pool_incomplete=False) == STATUS_WARN
+    assert effective_verdict(STATUS_OK, coverage_degraded=False,
+                             pool_incomplete=True) == STATUS_WARN
+    assert effective_verdict(STATUS_WARN, coverage_degraded=True,
+                             pool_incomplete=True) == STATUS_WARN
+    assert effective_verdict(STATUS_RED, coverage_degraded=False,
+                             pool_incomplete=True) == STATUS_RED
+
+
+# ---------------------------------------------------------------------------
+# Pool : attendus, vus, et la reserve qui interdit un OK sans le dire
+# ---------------------------------------------------------------------------
+
+def test_pool_incomplet_nomme_les_slots_attendus_et_non_vus():
+    """2 slots vivants sur 14 : les 12 autres sont NOMMES, et le pool est partiel."""
+    seen = {"myia-ai-01-wsl-1": "a", "myia-ai-01-wsl-2": "b"}
+    missing = expected_missing_slots(seen, "myia-ai-01-wsl", 14)
+    assert len(missing) == 12
+    assert missing[0] == "myia-ai-01-wsl-3"
+    assert "myia-ai-01-wsl-1" not in missing
+    assert "myia-ai-01-wsl-2" not in missing
+    # Aucun parc declare : on ne fabrique pas des noms qu'on n'attend pas.
+    assert expected_missing_slots(seen, "myia-ai-01-wsl", 0) == []
+
+
+def test_pool_complet_n_ajoute_aucune_reserve():
+    seen = {f"myia-ai-01-wsl-{i}": str(i) for i in range(1, 15)}
+    assert expected_missing_slots(seen, "myia-ai-01-wsl", 14) == []
+
+
+# ---------------------------------------------------------------------------
+# Hors ai-01 : un parc absent n'est pas une panne
+# ---------------------------------------------------------------------------
+
+def test_parc_non_attendu_hors_ai01_est_non_applicable():
+    """Sur une autre machine, le parc par defaut d'ai-01 n'est pas une panne."""
+    applicable, reason = pool_applicability(
+        "myia-po-2025", explicit_expected=False, explicit_prefix=False)
+    assert applicable is False
+    assert "myia-ai-01" in reason
+    assert STATUS_NOT_APPLICABLE != STATUS_UNREADABLE
+
+
+def test_parc_attendu_sur_ai01_quelle_que_soit_la_casse():
+    """Le nom mesure depuis WSL est `MyIA-AI-01` : normalise, il designe ai-01."""
+    assert pool_applicability("MyIA-AI-01", explicit_expected=False,
+                              explicit_prefix=False) == (True, "")
+    assert pool_applicability("myia-ai-01.domain.local", explicit_expected=False,
+                              explicit_prefix=False) == (True, "")
+
+
+def test_un_parc_declare_rend_la_machine_applicable():
+    """Declarer le parc (prefixe ou attendus) leve la non-applicabilite."""
+    assert pool_applicability("myia-po-2025", explicit_expected=True,
+                              explicit_prefix=False)[0] is True
+    assert pool_applicability("myia-po-2025", explicit_expected=False,
+                              explicit_prefix=True)[0] is True
+
+
+def test_resolve_pool_defauts_par_machine_et_declaration_explicite():
+    prefix, expected, explicit_prefix, explicit_expected = resolve_pool(
+        cli_expected_slots=None, cli_name_prefix=None, env={}, machine="MyIA-AI-01")
+    assert (prefix, expected, explicit_prefix, explicit_expected) == (
+        "myia-ai-01-wsl", 14, False, False)
+
+    _, expected, _, _ = resolve_pool(
+        cli_expected_slots=None, cli_name_prefix=None, env={}, machine="myia-po-2025")
+    assert expected == 0
+
+    prefix, expected, explicit_prefix, explicit_expected = resolve_pool(
+        cli_expected_slots=4, cli_name_prefix="myia-po-2025-linux-docker",
+        env={}, machine="myia-po-2025")
+    assert (prefix, expected, explicit_prefix, explicit_expected) == (
+        "myia-po-2025-linux-docker", 4, True, True)
+
+    prefix, expected, explicit_prefix, explicit_expected = resolve_pool(
+        cli_expected_slots=None, cli_name_prefix=None,
+        env={"COURSIA_RUNNER_EXPECTED_SLOTS": "6",
+             "COURSIA_RUNNER_NAME_PREFIX": "autre-parc"},
+        machine="myia-po-2025")
+    assert (prefix, expected, explicit_prefix, explicit_expected) == (
+        "autre-parc", 6, True, True)
+
+
+# ---------------------------------------------------------------------------
+# Composition measure() -> decide_status : le seul endroit ou les deux champs
+# (slots LISTES et compteurs LUS) sont calcules ensemble
+# ---------------------------------------------------------------------------
+
+def test_listing_a_14_et_exec_en_echec_nomme_la_bonne_cause():
+    """`docker ps` voit 14 slots, tous les `exec` echouent : la cause est l'exec.
+
+    Au head, `main()` passait `len(m.slots)` (compteurs lus) a `decide_status`,
+    ce qui rendait « 0 conteneur ... mauvais moteur Docker » alors que 14
+    conteneurs etaient listes. Le motif doit dire « aucun compteur lu ».
+    """
+    def run(cmd, docker_host, timeout_s=15.0):
+        if cmd[:2] == ["docker", "ps"]:
+            return 0, "".join(
+                f"myia-ai-01-wsl-{i}\t{i:04x}\n" for i in range(1, 15)), ""
+        if cmd[:2] == ["docker", "exec"]:
+            return 1, "", f"Error: No such container: {cmd[2]}"
+        raise AssertionError(cmd)
+
+    m, listing_error, slot_note, seen = measure(
+        "unix:///var/run/docker-ce.sock", "myia-ai-01-wsl", 0.0, 1.0, run=run)
+    assert listing_error == ""
+    assert len(seen) == 14
+    assert m.slots == []
+    assert m.counters_read == 0
+    assert slot_note.startswith("myia-ai-01-wsl-1 : ")
+
+    status, reason = decide_status(
+        read_error=listing_error or None, socket_present=True,
+        found_slots=len(seen), expected_slots=14, counters_read=m.counters_read)
+    assert status == STATUS_UNREADABLE
+    assert "aucun compteur" in reason
+    assert "14 conteneur(s) de runner liste(s)" in reason
+    assert "mauvais moteur" not in reason
+
+    # Le meme cas mesure avec le champ du head (0 slot lu) : c'est CE motif qui
+    # etait faux, et c'est ce que l'assertion ci-dessus remplace.
+    status_head, reason_head = decide_status(
+        read_error=None, socket_present=True,
+        found_slots=len(m.slots), expected_slots=14, counters_read=m.counters_read)
+    assert status_head == STATUS_UNREADABLE
+    assert "mauvais moteur" in reason_head
+
+
+def test_socket_absent_prime_sur_un_echec_de_listing():
+    """Socket absent + `docker ps` en echec : le motif nomme le socket, pas l'exec.
+
+    La branche socket etait inatteignable au head (elle exigeait `read_error`
+    vide, que main ne produit jamais avec un socket absent) : elle est
+    desormais le premier predicat, donc atteignable.
+    """
+    status, reason = decide_status(
+        read_error="Cannot connect to the Docker daemon at unix:///absent.sock",
+        socket_present=False, found_slots=0, expected_slots=14, counters_read=0)
+    assert status == STATUS_UNREADABLE
+    assert "socket" in reason
+
+
+# ---------------------------------------------------------------------------
+# Garde de plateforme : le UNREADABLE cote Windows est nomme, pas subi
+# ---------------------------------------------------------------------------
+
+def test_garde_de_plateforme_windows_sur_un_socket_unix():
+    assert windows_unix_socket_guard("unix:///var/run/docker-ce.sock",
+                                     is_windows=True)
+    assert windows_unix_socket_guard("unix:///x.sock", is_windows=False) == ""
+    assert windows_unix_socket_guard("tcp://127.0.0.1:2375", is_windows=True) == ""
+    assert windows_unix_socket_guard(None, is_windows=True) == ""
+
+
+def test_dry_run_ne_s_affiche_pas_comme_une_mesure():
+    """`--dry-run` rend WIRED / UNREADABLE / NOT_APPLICABLE, jamais MEASURED."""
+    assert STATUS_WIRED != "MEASURED"
+    assert STATUS_NOT_APPLICABLE != STATUS_UNREADABLE

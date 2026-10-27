@@ -95,6 +95,31 @@ Alignes sur les autres organes du depot (`gh_queue_health.py` : 0/1/2) :
   - `WARN`        : un des deux seuils atteint .............................. 1
   - `RED`         : le rapport au seuil atteint 5x (moyenne ou rafale) ...... 1
   - `UNREADABLE`  : rien n'a pu etre mesure (moteur, socket, slots, exec) ... 2
+  - `NOT_APPLICABLE` : le parc de runners n'est pas attendu sur cette machine 3
+
+Une mesure `MEASURED` ne rend `OK` qu'a deux conditions de plus, AJOUTEES au
+calcul des deux seuils (un `OK` par les seuils seules etait le defaut) :
+
+  - COUVERTURE : un slot present sur la fenetre doit avoir ete lu sur plus de
+    la moitie des echantillons. Si AUCUN slot ne l'est, la fenetre est
+    `UNREADABLE` -- presque rien n'a ete lu, ce n'est pas une mesure ; si une
+    PARTIE seulement l'est, le verdict est au moins `WARN` et les slots
+    degrades sont nommes dans `coverage` ;
+  - POOL COMPLET : les slots attendus et non vus sont nommes
+    (`slots_expected_missing`), et un pool incomplet rend au moins `WARN` : la
+    somme ne porte alors que sur les slots vivants, et la comparer telle quelle
+    a l'objectif de la flotte entiere serait un chiffre trompeur.
+
+Ces deux reserves ne remplacent jamais le calcul : elles ne peuvent que
+durcir le verdict (`effective_verdict`), jamais l'adoucir.
+
+HORS ai-01
+----------
+`myia-ai-01-wsl` et 14 slots sont le parc d'ai-01. Sur une autre machine, et
+sans `--name-prefix` ni `--expected-slots` (ni leur variable d'environnement)
+explicites, l'organe rend `NOT_APPLICABLE` (code 3) : un parc qui n'existe pas
+la-bas n'est pas une panne. Declarer les deux options declare un parc et
+reactive la mesure.
 
 INVOCATION
 ----------
@@ -147,8 +172,11 @@ DEFAULT_SOCKET_PATH = "/var/run/docker-ce.sock"
 # Le predicat est STRICT -- `<prefixe>-<numero>` --, comme running_family_mb de
 # supervise.sh : `<prefixe>-backup` ou `<prefixe>-4x` ne sont pas des slots.
 DEFAULT_NAME_PREFIX = "myia-ai-01-wsl"
-# Parc mesure le 2026-10-27 : 14 slots. Sert UNIQUEMENT au predicat
-# « zero conteneur alors que des slots sont attendus » -> UNREADABLE.
+# Machine sur laquelle ce parc precis est attendu. Ailleurs, l'absence de slots
+# n'est pas une panne mais une non-applicabilite (cf `pool_applicability`).
+PARC_MACHINE = "myia-ai-01"
+# Parc mesure le 2026-10-27 : 14 slots. Sert au predicat « zero conteneur alors
+# que des slots sont attendus » -> UNREADABLE, et au calcul du pool incomplet.
 DEFAULT_EXPECTED_SLOTS = 14
 DEFAULT_WINDOW_S = 60.0
 DEFAULT_INTERVAL_S = 1.0
@@ -159,15 +187,25 @@ DEFAULT_SNMP_PATH = "/proc/net/snmp"
 # Au-dela de 5x le seuil, ce n'est plus une derive a surveiller : c'est l'etat
 # qui a motive le volet 5.
 RED_FACTOR = 5.0
+# Part d'echantillons manquants au-dela de laquelle une serie de slot est
+# declaree DEGRADEE. « Plus de la moitie » : a 50 % pile, la serie porte encore
+# la moitie de la fenetre, ce qui suffit a un debit -- le seuil est STRICT.
+MISSING_SAMPLES_MAX_FRACTION = 0.5
 
 EXIT_OK = 0
 EXIT_WARN = 1
 EXIT_UNREADABLE = 2
+EXIT_NOT_APPLICABLE = 3
 
 STATUS_OK = "OK"
 STATUS_WARN = "WARN"
 STATUS_RED = "RED"
 STATUS_UNREADABLE = "UNREADABLE"
+STATUS_NOT_APPLICABLE = "NOT_APPLICABLE"
+# Statut du `--dry-run` : le cablage est vu, mais AUCUNE mesure n'a eu lieu.
+# Un mot distinct evite qu'un dry-run vert se lise « debit sous le seuil ».
+STATUS_WIRED = "WIRED"
+STATUS_MEASURED = "MEASURED"
 
 
 # ---------------------------------------------------------------------------
@@ -383,6 +421,175 @@ def verdict(average_qps: float, burst_qps: float | None,
     return STATUS_OK
 
 
+def missing_fraction(missing: int, sample_count: int) -> float:
+    """Part d'echantillons manquants pour un slot, dans `[0, 1]`."""
+    if sample_count <= 0:
+        return 0.0
+    return max(0, min(missing, sample_count)) / sample_count
+
+
+def degraded_slots(missing_samples: dict[str, int], slots: list[str],
+                   sample_count: int,
+                   max_fraction: float = MISSING_SAMPLES_MAX_FRACTION) -> list[str]:
+    """Slots lus sur MOINS de la moitie de la fenetre (seuil STRICT).
+
+    Rend les noms tries. C'est la liste qui decide si une fenetre presque
+    entierement non lue peut encore rendre `OK` : sans elle, un `docker exec`
+    qui repond au premier echantillon puis echoue sur les quinze suivants
+    laissait `MEASURED`, 0,0 q/s en moyenne, et un `OK` a code 0.
+    """
+    degraded = [
+        slot for slot in slots
+        if missing_fraction(missing_samples.get(slot, 0), sample_count) > max_fraction
+    ]
+    return sorted(degraded, key=slot_sort_key)
+
+
+def coverage_report(missing_samples: dict[str, int], slots: list[str],
+                    sample_count: int,
+                    max_fraction: float = MISSING_SAMPLES_MAX_FRACTION) -> dict:
+    """Trace publiable de la couverture : par slot, puis la liste des degrades."""
+    by_slot = {
+        slot: {
+            "missing": missing_samples.get(slot, 0),
+            "fraction": round(missing_fraction(missing_samples.get(slot, 0), sample_count), 4),
+        }
+        for slot in slots
+    }
+    return {
+        "sample_count": sample_count,
+        "max_missing_fraction": max_fraction,
+        "by_slot": by_slot,
+        "degraded": degraded_slots(missing_samples, slots, sample_count, max_fraction),
+    }
+
+
+def window_is_unreadable(coverage: dict) -> bool:
+    """Vrai ssi AUCUN slot n'a ete lu sur plus de la moitie de la fenetre.
+
+    Tous degrades = la fenetre presque entiere est non lue : ce n'est pas une
+    mesure, donc pas un debit, donc jamais un `OK`. Un seul slot lisible
+    suffit a garder la mesure, mais elle est alors degradee (cf
+    `effective_verdict`).
+    """
+    slots = list(coverage.get("by_slot", {}))
+    return bool(slots) and len(coverage.get("degraded", [])) == len(slots)
+
+
+def expected_missing_slots(found: dict[str, str] | list[str], prefix: str,
+                           expected_slots: int) -> list[str]:
+    """Slots ATTENDUS et non vus, nommes : `-1..-N` moins ceux du listing.
+
+    `expected_slots <= 0` (aucun parc declare) rend une liste vide : on ne
+    fabrique pas des noms de slots qu'on n'attend pas.
+    """
+    if expected_slots <= 0 or not prefix:
+        return []
+    seen = set(found)
+    return [f"{prefix}-{i}" for i in range(1, expected_slots + 1) if f"{prefix}-{i}" not in seen]
+
+
+def effective_verdict(base_verdict: str, *, coverage_degraded: bool,
+                      pool_incomplete: bool) -> str:
+    """Durcit un `OK` en `WARN` quand une reserve tient : jamais l'inverse.
+
+    Un `WARN` ou un `RED` deja pose par les seuils est rendu tel quel : ces
+    reserves AJOUTENT un motif de reserve, elles ne remplacent pas le calcul.
+    """
+    if base_verdict in (STATUS_WARN, STATUS_RED):
+        return base_verdict
+    return STATUS_WARN if (coverage_degraded or pool_incomplete) else base_verdict
+
+
+def normalize_machine(name: str) -> str:
+    """Nom de machine normalise : minuscules, espaces et suffixe de domaine retires."""
+    short = name.strip().lower().split(".")[0]
+    return short
+
+
+def machine_name() -> str:
+    """Nom de la machine hote, sans dependance a `platform` pour les tests."""
+    for var in ("COMPUTERNAME", "HOSTNAME", "NODENAME"):
+        value = os.environ.get(var)
+        if value:
+            return value
+    try:
+        import socket
+
+        return socket.gethostname()
+    except OSError:  # pragma: no cover -- defensif
+        return ""
+
+
+def parc_expected_on(machine: str) -> bool:
+    """Vrai ssi le parc des slots est attendu sur cette machine (ai-01)."""
+    return normalize_machine(machine) == PARC_MACHINE
+
+
+def pool_applicability(machine: str, *, explicit_expected: bool,
+                       explicit_prefix: bool) -> tuple[bool, str]:
+    """Le parc est-il applicable ici ? Rend `(applicable, motif)`.
+
+    Sur une machine ou le parc n'est pas attendu, un zero slot est une
+    non-applicabilite, pas une panne : `UNREADABLE` y aurait la forme d'une
+    alerte. Un operateur qui declare le parc (`--expected-slots` ou
+    `--name-prefix`, ou leur variable d'environnement) leve la reserve.
+    """
+    if explicit_expected or explicit_prefix:
+        return True, ""
+    if parc_expected_on(machine):
+        return True, ""
+    return False, (
+        f"parc de runners non attendu sur cette machine "
+        f"({normalize_machine(machine) or 'nom inconnu'} ; attendu sur "
+        f"{PARC_MACHINE}) -- declarer --name-prefix et --expected-slots pour "
+        f"mesurer un autre parc")
+
+
+def resolve_pool(*, cli_expected_slots: int | None, cli_name_prefix: str | None,
+                 env: dict[str, str], machine: str) -> tuple[str, int, bool, bool]:
+    """Resout le parc : `(prefixe, slots_attendus, prefixe_explicite, attendus_explicites)`.
+
+    Un parc est DECLARE quand l'operateur le nomme (`--name-prefix` ou
+    `--expected-slots`, ou leur variable d'environnement). Sans declaration, le
+    parc par defaut n'est attendu que sur `PARC_MACHINE` ; ailleurs les slots
+    attendus valent 0, pour qu'un zero slot ne soit pas lu comme une panne.
+    """
+    env_expected = env.get("COURSIA_RUNNER_EXPECTED_SLOTS")
+    env_prefix = env.get("COURSIA_RUNNER_NAME_PREFIX")
+    explicit_expected = cli_expected_slots is not None or bool(env_expected)
+    explicit_prefix = cli_name_prefix is not None or bool(env_prefix)
+    prefix = cli_name_prefix or env_prefix or DEFAULT_NAME_PREFIX
+    if cli_expected_slots is not None:
+        expected = int(cli_expected_slots)
+    elif env_expected:
+        expected = int(env_expected)
+    elif parc_expected_on(machine):
+        expected = DEFAULT_EXPECTED_SLOTS
+    else:
+        expected = 0
+    return prefix, expected, explicit_prefix, explicit_expected
+
+
+def windows_unix_socket_guard(docker_host: str | None,
+                              *, is_windows: bool | None = None) -> str:
+    """Motif de non-mesure quand python Windows ne peut pas joindre un socket unix.
+
+    Le `UNREADABLE` etait deja rendu (le socket n'existe pas vu de Windows),
+    mais son motif parlait d'un dockerd muet : la cause reelle est la
+    plateforme, et elle se nomme. Rend une chaine vide quand la question ne se
+    pose pas (hote non Windows, ou endpoint tcp://).
+    """
+    if is_windows is None:
+        is_windows = sys.platform.startswith("win")
+    if not is_windows or not docker_host or not docker_host.startswith("unix://"):
+        return ""
+    return (f"python Windows ne peut pas joindre le socket {docker_host} : "
+            f"lancer l'organe dans WSL "
+            f"(`wsl -d Ubuntu -- python3 ...`) ou pointer --docker-host sur un "
+            f"endpoint tcp:// ; aucun compteur n'a ete lu")
+
+
 def decide_status(*, read_error: str | None, socket_present: bool | None,
                   found_slots: int, expected_slots: int,
                   counters_read: int) -> tuple[str, str]:
@@ -392,14 +599,25 @@ def decide_status(*, read_error: str | None, socket_present: bool | None,
     `docker ps` sur le mauvais moteur rendrait zero slot, zero datagramme, et un
     `OK` parfaitement faux.
 
+    `found_slots` est le nombre de slots du LISTING (`docker ps`), pas le nombre
+    de compteurs lus : les deux different des qu'un `docker exec` echoue, et
+    confondre les deux nommait « mauvais moteur Docker » une cause qui etait un
+    `exec` en echec.
+
+    L'ordre des predicats porte l'information : le socket absent d'abord (fait
+    mesure, et cause la plus specifique -- un socket absent fait aussi echouer
+    `docker ps`, donc tester `read_error` avant rendrait cette branche
+    inatteignable), puis l'echec de listing, puis le mauvais moteur, puis
+    l'absence de tout compteur.
+
     Rend `(statut, motif)` ; motif est vide quand la mesure a eu lieu.
     """
-    if read_error:
-        return STATUS_UNREADABLE, read_error
     if socket_present is False:
         return STATUS_UNREADABLE, (
             "socket du moteur natif absent -- le dockerd des runners ne repond "
             "pas sur ce chemin, et un zero ne serait pas une mesure")
+    if read_error:
+        return STATUS_UNREADABLE, read_error
     if found_slots == 0 and expected_slots > 0:
         return STATUS_UNREADABLE, (
             f"0 conteneur de runner alors que {expected_slots} slot(s) sont "
@@ -407,8 +625,9 @@ def decide_status(*, read_error: str | None, socket_present: bool | None,
             f"arrete, ou prefixe de nom errone ; ce n'est PAS « 0 requete/s »")
     if counters_read == 0:
         return STATUS_UNREADABLE, (
-            "aucun compteur Udp.OutDatagrams n'a pu etre lu -- la mesure n'a "
-            "pas eu lieu")
+            f"{found_slots} conteneur(s) de runner liste(s), mais aucun compteur "
+            f"Udp.OutDatagrams n'a pu etre lu -- la mesure n'a pas eu lieu "
+            f"(docker exec en echec sur chaque slot, ou compteur illisible)")
     return "MEASURED", ""
 
 
@@ -528,10 +747,11 @@ def count_slots_on_default_engine(prefix: str, run=run_cmd) -> int | None:
 
 def measure(docker_host: str | None, prefix: str, window_s: float, interval_s: float,
             snmp_path: str = DEFAULT_SNMP_PATH, run=run_cmd,
-            sleep=time.sleep, clock=time.monotonic) -> tuple[Measurement, str, str]:
+            sleep=time.sleep, clock=time.monotonic
+            ) -> tuple[Measurement, str, str, dict[str, str]]:
     """Echantillonne les compteurs pendant `window_s`.
 
-    Rend `(mesure, erreur_de_listing, note_par_slot)` :
+    Rend `(mesure, erreur_de_listing, note_par_slot, slots_vus)` :
 
       - un echec de LISTING arrete la mesure et remonte en tete : sans listing,
         on ne sait pas quels conteneurs existent, donc la suite serait une
@@ -540,16 +760,22 @@ def measure(docker_host: str | None, prefix: str, window_s: float, interval_s: f
         mesure continue (les autres slots restent mesurables) ; le premier motif
         remonte en NOTE, pour le diagnostic, jamais comme verdict -- si aucun
         compteur n'a ete lu, `counters_read` vaut 0 et c'est ce fait-la qui
-        conclut UNREADABLE.
+        conclut UNREADABLE ;
+      - `slots_vus` est l'UNION des listings de la fenetre : c'est ce que
+        `docker ps` a vu, distinct de `mesure.slots` (les slots dont le compteur
+        a effectivement ete lu). Les deux different des qu'un `exec` echoue, et
+        les confondre nommait la mauvaise cause de non-mesure.
     """
     samples: list[Sample] = []
+    seen_slots: dict[str, str] = {}
     slot_note = ""
     t0 = clock()
     while True:
         started = clock() - t0
         slots, err = list_slots(docker_host, prefix, run=run)
         if err:
-            return fold_samples(samples), err, slot_note
+            return fold_samples(samples), err, slot_note, seen_slots
+        seen_slots.update(slots)
         counters: dict[str, int] = {}
         ids: dict[str, str] = {}
         for name in sorted(slots, key=slot_sort_key):
@@ -574,7 +800,7 @@ def measure(docker_host: str | None, prefix: str, window_s: float, interval_s: f
 
     measurement = fold_samples(samples)
     measurement.counters_read = max((len(s.counters) for s in samples), default=0)
-    return measurement, "", slot_note
+    return measurement, "", slot_note, seen_slots
 
 
 def socket_present_for(docker_host: str | None) -> bool | None:
@@ -597,13 +823,23 @@ def socket_present_for(docker_host: str | None) -> bool | None:
 def build_payload(*, status: str, reason: str, m: Measurement, args,
                   found_slots: dict[str, str], prefix: str,
                   window_s: float, sample_period_s: float | None,
-                  diagnostics: dict[str, object]) -> dict:
+                  diagnostics: dict[str, object],
+                  expected_slots: int,
+                  verdict_value: str | None = None,
+                  coverage: dict | None = None,
+                  reserves: list[str] | None = None,
+                  expected_missing: list[str] | None = None) -> dict:
+    """Payload JSON. `found_slots` est le LISTING, `m.slots` les compteurs lus.
+
+    Les deux champs sont nommes pour ce qu'ils sont : `slots_seen` (listing) et
+    `slots` (compteurs lus). Les confondre faisait dire « 0 slot vu » a un
+    listing qui en avait vu 14.
+    """
+    missing = expected_missing or []
     return {
         "status": status,
         "reason": reason,
-        "verdict": verdict(m.average_qps, m.burst_qps,
-                           args.threshold, args.max_burst_threshold)
-        if status == "MEASURED" else None,
+        "verdict": verdict_value if status == STATUS_MEASURED else None,
         "average_qps": m.average_qps,
         "burst_qps": m.burst_qps,
         "burst_span_s": m.burst_span_s,
@@ -617,7 +853,11 @@ def build_payload(*, status: str, reason: str, m: Measurement, args,
         "datagrams_total": m.datagrams_total,
         "slots": m.slots,
         "slots_seen": sorted(found_slots, key=slot_sort_key),
-        "expected_slots": args.expected_slots,
+        "expected_slots": expected_slots,
+        "slots_expected_missing": missing,
+        "pool_complete": not missing,
+        "coverage": coverage or {},
+        "reserves": reserves or [],
         "name_prefix": prefix,
         "docker_host": args.docker_host,
         "resets": [
@@ -652,23 +892,49 @@ def render_text(payload: dict, *, dry_run: bool = False) -> list[str]:
                      f"{', '.join(payload['slots_present']) or 'aucun'}")
         for name, value in payload["diagnostics"].items():
             lines.append(f"{tag} diagnostic {name} : {value}")
-        if status != "MEASURED":
+        if status == STATUS_WIRED:
+            lines.append(f"{tag} cablage vu : --dry-run ne mesure RIEN, il "
+                         f"n'autorise aucun verdict sur le debit")
+        elif status == STATUS_NOT_APPLICABLE:
+            lines.append(f"::notice::{tag} {status}: {payload['reason']}")
+        elif status != STATUS_MEASURED:
             lines.append(f"::error::{tag} {status}: {payload['reason']}")
         return lines
     lines.append(f"{tag} moteur: {payload['docker_host']} ; "
-                 f"{len(payload['slots_seen'])} slot(s) vu(s) pendant la fenetre "
-                 f"(prefixe {payload['name_prefix']})")
+                 f"{len(payload['slots_seen'])} slot(s) vu(s) par le listing, "
+                 f"{len(payload['slots'])} lu(s) en compteur (prefixe "
+                 f"{payload['name_prefix']}, {payload['expected_slots']} "
+                 f"attendu(s))")
+    if status == STATUS_NOT_APPLICABLE:
+        lines.append(f"::notice::{tag} {status}: {payload['reason']}")
+        for name, value in payload["diagnostics"].items():
+            lines.append(f"{tag} diagnostic {name} : {value}")
+        return lines
     if payload["sample_count"]:
         period = payload["sample_period_s"]
         period_txt = f"{period:.2f} s" if period is not None else "inconnu"
         lines.append(f"{tag} fenetre: {payload['elapsed_s']:.1f} s, "
                      f"{payload['sample_count']} echantillon(s), "
                      f"pas ~{period_txt}")
-    if status != "MEASURED":
+    if status != STATUS_MEASURED:
         lines.append(f"::error::{tag} {status}: {payload['reason']}")
         for name, value in payload["diagnostics"].items():
             lines.append(f"{tag} diagnostic {name} : {value}")
         return lines
+    missing_expected = payload.get("slots_expected_missing") or []
+    if missing_expected:
+        lines.append(f"::warning::{tag} pool INCOMPLET : {len(missing_expected)} "
+                     f"slot(s) attendu(s) et non vu(s) sur "
+                     f"{payload['expected_slots']} -- la somme ne porte que sur "
+                     f"les slots vivants : {', '.join(missing_expected)}")
+    degraded = (payload.get("coverage") or {}).get("degraded") or []
+    if degraded:
+        by_slot = (payload.get("coverage") or {}).get("by_slot") or {}
+        detail = ", ".join(
+            f"{slot} ({by_slot.get(slot, {}).get('missing', '?')} manquant(s))"
+            for slot in degraded)
+        lines.append(f"::warning::{tag} couverture DEGRADEE : ces slots ont ete "
+                     f"lus sur moins de la moitie de la fenetre -- {detail}")
     burst = payload["burst_qps"]
     if burst is None:
         lines.append(f"{tag} rafale: NON OBSERVABLE (moins de "
@@ -693,6 +959,10 @@ def render_text(payload: dict, *, dry_run: bool = False) -> list[str]:
         detail = ", ".join(f"{k}:{v}" for k, v in sorted(payload["missing_samples"].items()))
         lines.append(f"{tag} echantillons absents par slot (conteneur recycle ou "
                      f"arrete) : {detail}")
+    # Les reserves sont rendues par les deux blocs dedies ci-dessus (pool,
+    # couverture), qui portent plus de detail que leur resume ; le champ
+    # `reserves` du payload les reprend pour un lecteur machine. Les afficher
+    # une seconde fois ici doublerait chaque ligne.
     if payload["verdict"] in (STATUS_WARN, STATUS_RED):
         burst_txt = ("non observable" if burst is None else f"{burst:.2f} q/s")
         lines.append(f"::warning::{tag} {payload['verdict']} : debit UDP moyen "
@@ -741,15 +1011,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                     help="endpoint DOCKER_HOST du moteur NATIF (defaut "
                          f"{DEFAULT_DOCKER_HOST}) ; c'est ce pin qui evite le "
                          f"piege des deux moteurs")
-    ap.add_argument("--name-prefix", default=os.environ.get("COURSIA_RUNNER_NAME_PREFIX",
-                                                            DEFAULT_NAME_PREFIX),
-                    help=f"prefixe de nom des slots (defaut {DEFAULT_NAME_PREFIX})")
-    ap.add_argument("--expected-slots", type=int,
-                    default=int(os.environ.get("COURSIA_RUNNER_EXPECTED_SLOTS",
-                                               DEFAULT_EXPECTED_SLOTS)),
+    ap.add_argument("--name-prefix", default=None,
+                    help=f"prefixe de nom des slots (defaut "
+                         f"{DEFAULT_NAME_PREFIX}, le parc d'ai-01) ; le "
+                         f"declarer sur une autre machine rend le parc "
+                         f"applicable au lieu de NOT_APPLICABLE")
+    ap.add_argument("--expected-slots", type=int, default=None,
                     help=f"slots attendus sur cette machine (defaut "
-                         f"{DEFAULT_EXPECTED_SLOTS}) ; 0 conteneur vu alors que "
-                         f"ce nombre est > 0 vaut UNREADABLE, jamais OK")
+                         f"{DEFAULT_EXPECTED_SLOTS} sur {PARC_MACHINE}, 0 "
+                         f"ailleurs) ; 0 conteneur vu alors que ce nombre est "
+                         f"> 0 vaut UNREADABLE, jamais OK ; les slots attendus "
+                         f"et non vus sont nommes et rendent au moins WARN")
     ap.add_argument("--snmp-path", default=DEFAULT_SNMP_PATH,
                     help=f"chemin du compteur DANS le conteneur (defaut "
                          f"{DEFAULT_SNMP_PATH})")
@@ -761,76 +1033,161 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    machine = machine_name()
+    prefix, expected_slots, explicit_prefix, explicit_expected = resolve_pool(
+        cli_expected_slots=args.expected_slots, cli_name_prefix=args.name_prefix,
+        env=os.environ, machine=machine,
+    )
+    applicable, not_applicable_reason = pool_applicability(
+        machine, explicit_expected=explicit_expected, explicit_prefix=explicit_prefix)
+    guard = windows_unix_socket_guard(args.docker_host)
 
     if args.dry_run:
-        slots, err = list_slots(args.docker_host, args.name_prefix)
-        status, reason = decide_status(
-            read_error=err, socket_present=None,
-            found_slots=len(slots), expected_slots=args.expected_slots,
-            counters_read=1 if slots else 0,
-        )
-        diagnostics = {}
-        if not slots:
-            diagnostics["moteur par defaut"] = (
-                f"{count_slots_on_default_engine(args.name_prefix)} slot(s) vu(s)")
         payload = {
-            "status": "MEASURED" if status == "MEASURED" else status,
-            "reason": reason,
+            "status": STATUS_WIRED,
+            "reason": "",
             "docker_host": args.docker_host,
-            "name_prefix": args.name_prefix,
-            "expected_slots": args.expected_slots,
-            "slots_present": sorted(slots, key=slot_sort_key),
-            "diagnostics": diagnostics,
+            "name_prefix": prefix,
+            "expected_slots": expected_slots,
+            "slots_present": [],
+            "diagnostics": {},
         }
+        if not applicable:
+            payload["status"] = STATUS_NOT_APPLICABLE
+            payload["reason"] = not_applicable_reason
+        elif guard:
+            payload["status"] = STATUS_UNREADABLE
+            payload["reason"] = guard
+        else:
+            slots, err = list_slots(args.docker_host, prefix)
+            # En dry-run, AUCUN `docker exec` n'a lieu : le predicat « aucun
+            # compteur » ne s'applique pas, d'ou le sentinelle. Le statut rendu
+            # est WIRED, jamais MEASURED -- un dry-run ne mesure rien.
+            status, reason = decide_status(
+                read_error=err, socket_present=None,
+                found_slots=len(slots), expected_slots=expected_slots,
+                counters_read=1 if slots else 0,
+            )
+            payload["status"] = STATUS_WIRED if status == STATUS_MEASURED else status
+            payload["reason"] = reason
+            payload["slots_present"] = sorted(slots, key=slot_sort_key)
+            if not slots:
+                payload["diagnostics"]["moteur par defaut"] = (
+                    f"{count_slots_on_default_engine(prefix)} slot(s) vu(s)")
         if args.json:
             print(json.dumps(payload, ensure_ascii=False, indent=2))
         else:
             for line in render_text(payload, dry_run=True):
                 print(line)
-        return EXIT_OK if payload["status"] == "MEASURED" else EXIT_UNREADABLE
+        return {
+            STATUS_WIRED: EXIT_OK,
+            STATUS_NOT_APPLICABLE: EXIT_NOT_APPLICABLE,
+        }.get(payload["status"], EXIT_UNREADABLE)
+
+    if not applicable or guard:
+        status = STATUS_NOT_APPLICABLE if not applicable else STATUS_UNREADABLE
+        reason = not_applicable_reason if not applicable else guard
+        not_measured_missing = expected_missing_slots({}, prefix, expected_slots)
+        payload = {
+            "status": status,
+            "reason": reason,
+            "verdict": None,
+            "docker_host": args.docker_host,
+            "name_prefix": prefix,
+            "expected_slots": expected_slots,
+            "slots_seen": [],
+            "slots": [],
+            "slots_expected_missing": not_measured_missing,
+            "pool_complete": not not_measured_missing,
+            "coverage": {},
+            "reserves": [],
+            "sample_count": 0,
+            "diagnostics": {},
+        }
+        if args.json:
+            print(json.dumps(payload, ensure_ascii=False, indent=2))
+        else:
+            for line in render_text(payload):
+                print(line)
+        return EXIT_UNREADABLE if status == STATUS_UNREADABLE else EXIT_NOT_APPLICABLE
 
     started = time.monotonic()
-    m, listing_error, slot_note = measure(
-        args.docker_host, args.name_prefix, args.window, args.interval,
+    m, listing_error, slot_note, seen_slots = measure(
+        args.docker_host, prefix, args.window, args.interval,
         snmp_path=args.snmp_path,
     )
     elapsed_wall = time.monotonic() - started
     sample_period = m.elapsed_s / (len(m.times) - 1) if len(m.times) >= 2 else None
 
-    # Les trois predicats de non-mesure, dans l'ordre ou ils rendent le verdict
-    # le plus utile : moteur injoignable, mauvais moteur (0 slot pour N
-    # attendus), aucun compteur lisible. Le dernier couvre aussi la fenetre
-    # trop courte pour calculer un debit.
+    # Les predicats de non-mesure, dans l'ordre ou ils rendent le verdict le plus
+    # utile : socket absent, moteur injoignable, mauvais moteur (0 slot LISTE
+    # pour N attendus), aucun compteur lisible. `found_slots` est le LISTING --
+    # le passer depuis `m.slots` (compteurs lus) nommait « mauvais moteur » une
+    # cause qui etait un `docker exec` en echec.
     status, status_reason = decide_status(
         read_error=listing_error or None,
         socket_present=socket_present_for(args.docker_host),
-        found_slots=len(m.slots),
-        expected_slots=args.expected_slots,
+        found_slots=len(seen_slots),
+        expected_slots=expected_slots,
         counters_read=m.counters_read,
     )
-    if status == "MEASURED" and not m.sufficient:
+    if status == STATUS_MEASURED and not m.sufficient:
         status, status_reason = STATUS_UNREADABLE, (
             "moins de deux echantillons exploitables -- un debit ne se calcule "
             "pas sur un point unique (fenetre trop courte, ou tours trop lents)")
 
+    # Couverture : une fenetre presque entierement non lue n'est pas une mesure.
+    coverage = coverage_report(m.missing_samples, m.slots, len(m.times))
+    if status == STATUS_MEASURED and window_is_unreadable(coverage):
+        status = STATUS_UNREADABLE
+        status_reason = (
+            f"aucune serie n'a ete lue sur plus de la moitie de la fenetre "
+            f"({len(coverage['degraded'])} slot(s) sur {len(m.slots)}, "
+            f"{len(m.times)} echantillon(s)) -- une moyenne proche de zero "
+            f"serait un chiffre non mesure, pas un debit calme")
+
+    expected_missing = expected_missing_slots(seen_slots, prefix, expected_slots)
+
+    reserves: list[str] = []
+    verdict_value: str | None = None
+    if status == STATUS_MEASURED:
+        if coverage["degraded"]:
+            names = ", ".join(coverage["degraded"])
+            reserves.append(
+                f"couverture degradee : {len(coverage['degraded'])} slot(s) lu(s) "
+                f"sur moins de la moitie de la fenetre ({names}) -- leur debit "
+                f"est sous-estime")
+        if expected_missing:
+            reserves.append(
+                f"pool incomplet : {len(expected_missing)} slot(s) attendu(s) et "
+                f"non vu(s) sur {expected_slots} -- la somme porte sur les "
+                f"{len(seen_slots)} slot(s) vivants, pas sur la flotte entiere")
+        verdict_value = effective_verdict(
+            verdict(m.average_qps, m.burst_qps,
+                    args.threshold, args.max_burst_threshold),
+            coverage_degraded=bool(coverage["degraded"]),
+            pool_incomplete=bool(expected_missing),
+        )
+
     diagnostics: dict[str, object] = {}
     if slot_note:
         diagnostics["compteur par slot"] = slot_note
-    if status != "MEASURED":
+    if status != STATUS_MEASURED:
         diagnostics["moteur par defaut"] = (
-            f"{count_slots_on_default_engine(args.name_prefix)} slot(s) vu(s) "
-            f"(moteur epingle : {len(m.slots)} slot(s))")
+            f"{count_slots_on_default_engine(prefix)} slot(s) vu(s) "
+            f"(moteur epingle : {len(seen_slots)} slot(s) au listing)")
         if sample_period:
             diagnostics["duree du tour"] = f"{sample_period:.2f} s"
 
-    found = {slot: "" for slot in m.slots}
     payload = build_payload(
-        status=status, reason=status_reason, m=m, args=args, found_slots=found,
-        prefix=args.name_prefix, window_s=args.window,
+        status=status, reason=status_reason, m=m, args=args, found_slots=seen_slots,
+        prefix=prefix, window_s=args.window,
         sample_period_s=sample_period, diagnostics=diagnostics,
+        expected_slots=expected_slots, verdict_value=verdict_value,
+        coverage=coverage, reserves=reserves, expected_missing=expected_missing,
     )
     payload["wall_s"] = elapsed_wall
-    payload["expected_slots"] = args.expected_slots
+    payload["machine"] = normalize_machine(machine)
 
     if args.json:
         print(json.dumps(payload, ensure_ascii=False, indent=2))
@@ -838,7 +1195,7 @@ def main(argv: list[str] | None = None) -> int:
         for line in render_text(payload):
             print(line)
 
-    if status != "MEASURED":
+    if status != STATUS_MEASURED:
         return EXIT_UNREADABLE
     return EXIT_OK if payload["verdict"] == STATUS_OK else EXIT_WARN
 
