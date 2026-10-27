@@ -15,7 +15,7 @@ Cette première sous-série de code Solidity (SC-3 a SC-6) pose les fondamentaux
 | 5 | [SC-05-Inheritance-Python](SC-05-Inheritance-Python.ipynb) | 35 min | Héritage simple et multiple, interfaces, abstract/override |
 | 6 | [SC-06-Errors-Events-Python](SC-06-Errors-Events-Python.ipynb) | 30 min | `require`/`revert`/`assert`, custom errors (0.8.4+), events |
 
-**Total** : 4 notebooks, ~2h30.
+**Total** : ~2h30.
 
 ---
 
