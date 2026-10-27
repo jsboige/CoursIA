@@ -640,14 +640,17 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # 2026-10-27 (#22937 vague 2, lane myia-ai-01:CoursIA-2) : meme forme
     #   hybride de debordement que la phase A (#22461), appliquee aux
     #   workflows a fort volume qui n'etaient PAS dans la phase A.
-    #   Les quatre autres fichiers de la vague 2 (twin-parity.yml,
-    #   notebook-execution-required.yml, always-on-metadata-guards.yml,
+    #   Les trois autres fichiers de la vague 2
+    #   (notebook-execution-required.yml, always-on-metadata-guards.yml,
     #   notebook-validation.yml) sont deja dans l'allowlist -- ils y etaient
     #   depuis la tranche 3c (#14283), avant leur deport Q35 du 27/10.
-    #   Perimetre : 6 workflows, 8 jobs, 40 des 81 jobs heberges en file
-    #   (mesure du 27/10 a 22h40Z). Exclus, avec leur motif :
+    #   `twin-parity.yml` y est aussi, mais il est porte par une PR
+    #   dediee (#22944) : les deux PRs ne peuvent pas toucher le meme
+    #   workflow, et le perimetre accorde est « 5 workflows par volume
+    #   decroissant ».
+    #   Perimetre : 5 workflows, 6 jobs. Exclus, avec leur motif :
     #   - codeql.yml : le setup par defaut de GitHub-heberge le job, la
-    #     ligne `runs-on` du fichier n'est pas honorée ;
+    #     ligne `runs-on` du fichier n'est pas honoree ;
     #   - lean-ci-matrix.yml : la toolchain Lean vit dans une image distincte
     #     (label `coursia-lean`), pas dans le pool `coursia-linux` ;
     #   - local-path-waiver-guard.yml et perimeter-review-guard.yml :
@@ -656,7 +659,10 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   - les deux starvation-advisory : un chien de garde de la file ne
     #     doit pas occuper la file qu'il observe ;
     #   - ict-tests.yml : venv + pyphi/numpy/scipy, 8,1 min medianes -- le
-    #     debordement absorbe d'abord les jobs courts.
+    #     debordement absorbe d'abord les jobs courts ;
+    #   - quarto-pages-deploy.yml : `build` et `deploy` dependent du
+    #     service GitHub Pages (upload-pages-artifact, deploy-pages + OIDC) ;
+    #     seul `validate-pr` est portable (Quarto par tarball curl).
     "quarto-render-list-freshness.yml",
     "enrich-quality-gate.yml",
 }
