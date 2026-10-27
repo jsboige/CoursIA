@@ -29,18 +29,31 @@ concurrency:
 
 jobs:
   reference:
-    # Route vers la jambe Linux auto-hebergee (#13378 tranche 1, decision ai-01
-    # 2026-09-01) : garde Python pur, sans secret ni usage du GITHUB_TOKEN. La
-    # garde same-repo ci-dessous saute les PRs de fork (pr_gate.py compte
-    # `skipped` comme OK) : aucun code de fork n'atteint le runner.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # GitHub-hosted : la politique d'isolation des runners
+    # (scripts/ci/check_self_hosted_runner_policy.py) n'admet un job
+    # self-hosted que si son workflow figure dans
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST, chaque entree citant la lane
+    # proprietaire du deploiement. Ce workflow n'y figure pas, et l'y ajouter
+    # est une decision coordinateur -- pas un effet de bord d'une PR de garde.
+    # Defaut mesure : en [self-hosted, coursia-ephemeral, coursia-linux], ce
+    # job rougissait `Always-on guards` (VIOLATION WORKFLOW_NOT_ALLOWED) sur
+    # chaque PR touchant `docs/**/*.md`.
+    # La garde same-repo ci-dessous reste : elle preserve le contrat si le job
+    # est route un jour vers la jambe Linux (#13378), et ne coute rien ici.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
         with:
-          # Enough history for `git log -1` on every touched doc.
-          fetch-depth: 2
+          # fetch-depth: 0 -- convention des gardes git-aware du depot
+          # (scripts-tests.yml : catalog-cron / catalog-drift / cell-order-gate /
+          # exercise-leak-ci). Un shallow (2) fait apparaitre le commit de
+          # boundary comme touchant TOUS les fichiers (diff contre le parent
+          # greffe) : `git log -1` rend alors une date fabriquee pour les docs
+          # que la PR ne touche pas, et la garde rougit x9 hors perimetre.
+          # Mesure et repro : review structurelle de #22527.
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
