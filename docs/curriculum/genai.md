@@ -310,29 +310,28 @@ Génération d'images (DALL-E, Stable Diffusion, Qwen, ComfyUI), synthèse vocal
 | 15 | [10. Hébergement Local de Modèles Génératifs](../../MyIA.AI.Notebooks/GenAI/Texte/10_LocalLlama.ipynb) | BETA | Non |
 | 16 | [10b. Mécanique d'inférence LLM : construire et mesurer…](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb) | BETA | Non |
 | 17 | [10c. Stratégies pour contextes longs — budget de…](../../MyIA.AI.Notebooks/GenAI/Texte/10c_Long_Context_Strategies.ipynb) | BETA | Non |
-| 18 | [10d. TensorSharp : pilote d'inférence LLM native .NET](../../MyIA.AI.Notebooks/GenAI/Texte/10d_TensorSharp_DotNet_Inference.ipynb) | BETA | Non |
+| 18 | [10d. Bake-off bindings .NET : pilote TensorSharp et jambe ORT GenAI](../../MyIA.AI.Notebooks/GenAI/Texte/10d_TensorSharp_DotNet_Inference.ipynb) | BETA | Non |
 | 19 | [10e. LLamaSharp : bake-off binding .NET de llama.cpp](../../MyIA.AI.Notebooks/GenAI/Texte/10e_LLamaSharp_DotNet_BakeOff.ipynb) | BETA | Non |
-| 20 | [10f. ONNX Runtime GenAI : jambe finale du bake-off .NET](../../MyIA.AI.Notebooks/GenAI/Texte/10f_ORTGenAI_DotNet_BakeOff.ipynb) | BETA | Non |
-| 21 | [11. Quantization](../../MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb) | BETA | Non |
-| 22 | [12. Test Time Scaling](../../MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb) | BETA | Non |
-| 23 | [13. Orchestration agentique du test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb) | BETA | Non |
-| 24 | [13b — Évaluation d'agents : succès, coût, ablation et…](../../MyIA.AI.Notebooks/GenAI/Texte/13b_Agent_Evaluation.ipynb) | BETA | Non |
-| 25 | [14. Memoire persistante pour le test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb) | BETA | Non |
-| 26 | [14b. Memoire paginee d'agent -- fenetre glissante,…](../../MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-Python.ipynb) | BETA | Oui |
-| 27 | [15. Tree-of-Thoughts sur de vrais problemes de…](../../MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb) | BETA | Non |
-| 28 | [16. Scaling du test-time compute (Snell 2024)](../../MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb) | BETA | Non |
-| 29 | [17. Modèles a raisonnement natif vs scaling du…](../../MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb) | BETA | Non |
-| 30 | [18. Plugins Semantic Kernel pour le test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb) | BETA | Non |
-| 31 | [19. Orchestration et tâches planifiées avec Open WebUI…](../../MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb) | BETA | Non |
-| 32 | [20. OWUI Native API v0.9.6 — introspection REST et…](../../MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb) | BETA | Non |
-| 33 | [22 — Évaluer les sorties générées : BLEU, ROUGE,…](../../MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb) | BETA | Non |
-| 34 | [22b — Profil cognitif d'un LLM : batterie CHC, profil «…](../../MyIA.AI.Notebooks/GenAI/Texte/22b_Profil_Cognitif_CHC.ipynb) | BETA | Non |
-| 35 | [22c. DSPy — du prompt écrit au prompt compilé](../../MyIA.AI.Notebooks/GenAI/Texte/22c_DSPy_Prompt_Compile.ipynb) | BETA | Non |
-| 36 | [TV-00a — RoPE from scratch : coder la position par…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb) | BETA | Oui |
-| 37 | [TV-00b — Variantes d'attention : MHA, MQA, GQA, SWA](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) | BETA | Non |
-| 38 | [TV-01 — La boîte ouverte côté industrie : Mistral-7B…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA.ipynb) | BETA | Non |
-| 39 | [TV-02 — MoE SOTA : le routage réel d'OLMoE-1B-7B](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-02-MoE-SOTA.ipynb) | BETA | Non |
-| 40 | [TV-04 — DiscoLoop : récurrence à deux canaux pour le…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-04-DiscoLoop.ipynb) | ALPHA | Oui |
+| 20 | [11. Quantization](../../MyIA.AI.Notebooks/GenAI/Texte/11_Quantization.ipynb) | BETA | Non |
+| 21 | [12. Test Time Scaling](../../MyIA.AI.Notebooks/GenAI/Texte/12_Test_Time_Scaling.ipynb) | BETA | Non |
+| 22 | [13. Orchestration agentique du test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/13_Agentic_Orchestration.ipynb) | BETA | Non |
+| 23 | [13b — Évaluation d'agents : succès, coût, ablation et…](../../MyIA.AI.Notebooks/GenAI/Texte/13b_Agent_Evaluation.ipynb) | BETA | Non |
+| 24 | [14. Memoire persistante pour le test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/14_Persistent_Memory.ipynb) | BETA | Non |
+| 25 | [14b. Memoire paginee d'agent -- fenetre glissante,…](../../MyIA.AI.Notebooks/GenAI/Texte/14b_Paginated_Memory-Python.ipynb) | BETA | Oui |
+| 26 | [15. Tree-of-Thoughts sur de vrais problemes de…](../../MyIA.AI.Notebooks/GenAI/Texte/15_Tree_of_Thoughts_Search.ipynb) | BETA | Non |
+| 27 | [16. Scaling du test-time compute (Snell 2024)](../../MyIA.AI.Notebooks/GenAI/Texte/16_Scaling_Test_Time_Compute.ipynb) | BETA | Non |
+| 28 | [17. Modèles a raisonnement natif vs scaling du…](../../MyIA.AI.Notebooks/GenAI/Texte/17_Native_Reasoning_vs_Scaling.ipynb) | BETA | Non |
+| 29 | [18. Plugins Semantic Kernel pour le test-time scaling](../../MyIA.AI.Notebooks/GenAI/Texte/18_Semantic_Kernel_Plugins.ipynb) | BETA | Non |
+| 30 | [19. Orchestration et tâches planifiées avec Open WebUI…](../../MyIA.AI.Notebooks/GenAI/Texte/19_OWUI_Orchestration.ipynb) | BETA | Non |
+| 31 | [20. OWUI Native API v0.9.6 — introspection REST et…](../../MyIA.AI.Notebooks/GenAI/Texte/20_OWUI_Native_API.ipynb) | BETA | Non |
+| 32 | [22 — Évaluer les sorties générées : BLEU, ROUGE,…](../../MyIA.AI.Notebooks/GenAI/Texte/22_Evaluating_Generated_Text.ipynb) | BETA | Non |
+| 33 | [22b — Profil cognitif d'un LLM : batterie CHC, profil «…](../../MyIA.AI.Notebooks/GenAI/Texte/22b_Profil_Cognitif_CHC.ipynb) | BETA | Non |
+| 34 | [22c. DSPy — du prompt écrit au prompt compilé](../../MyIA.AI.Notebooks/GenAI/Texte/22c_DSPy_Prompt_Compile.ipynb) | BETA | Non |
+| 35 | [TV-00a — RoPE from scratch : coder la position par…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00a-RoPE-from-scratch.ipynb) | BETA | Oui |
+| 36 | [TV-00b — Variantes d'attention : MHA, MQA, GQA, SWA](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-00b-Attention-Variants-from-scratch.ipynb) | BETA | Non |
+| 37 | [TV-01 — La boîte ouverte côté industrie : Mistral-7B…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-01-Attention-Variants-SOTA.ipynb) | BETA | Non |
+| 38 | [TV-02 — MoE SOTA : le routage réel d'OLMoE-1B-7B](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-02-MoE-SOTA.ipynb) | BETA | Non |
+| 39 | [TV-04 — DiscoLoop : récurrence à deux canaux pour le…](../../MyIA.AI.Notebooks/GenAI/Texte/TransformerVariants/TV-04-DiscoLoop.ipynb) | ALPHA | Oui |
 
 ## GenAI/Vibe-Coding (8 notebooks)
 
