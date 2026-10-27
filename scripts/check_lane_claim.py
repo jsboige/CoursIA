@@ -4123,6 +4123,43 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     return 0
 
 
+def _blocking_lanes_from_summary(stdout_text: str) -> list[str]:
+    """Les lanes bloquantes portees par le resume JSON d'un `_run_check`.
+
+    #22983 -- le resume JSON (`print(json.dumps(summary, ...))`) porte
+    `blocking_lanes` ; le message `NOT_SCOPED:` va, lui, sur **stderr**
+    (`file=sys.stderr`, l.3881). Le reduiteur du picker historique lit le
+    JSON et rend BLOCKED des qu'`blocking_lanes` est non vide ; la voie
+    batch, elle, ne lisait que le **stdout** a la recherche du mot
+    `NOT_SCOPED` -- qui n'y est jamais. Mesure du 27/10 : 14 issues sur
+    150 rendaient le verdict `ERROR` alors que 4 lanes en tenaient le
+    grain.
+
+    Consequence : `ERROR` est **servable** par le tapis (fail-OPEN assume,
+    l.9438 du picker) quand `BLOCKED` est retenu. La voie batch servait
+    donc des grains tenus par d'autres lanes -- exactement la collision que
+    la jambe IMPLICIT (#14300) existe pour empecher.
+
+    Le predicat est celui du reduiteur historique : `blocking_lanes`
+    non vide -> BLOCKED. `raw_decode` (et non `loads`) parce que le stdout
+    porte une phrase humaine APRES l'objet.
+    """
+    text = stdout_text or ""
+    brace = text.find("{")
+    if brace == -1:
+        return []
+    try:
+        data, _ = json.JSONDecoder().raw_decode(text[brace:])
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(data, dict):
+        return []
+    blocking = data.get("blocking_lanes") or []
+    if not isinstance(blocking, list):
+        return []
+    return [str(b) for b in blocking]
+
+
 def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
     """Court libelle machine-consommable issu du stdout d'un `_run_check`.
 
@@ -4258,6 +4295,15 @@ def check_issues_batch(
             result["exit"] = rc
             captured = buf_out.getvalue()
             result["code"] = _summarize_run_check_output(captured, rc)
+            # #22983 -- la voie batch doit rendre le MEME verdict que le
+            # reduiteur historique du picker. `exit 2` + des lanes
+            # bloquantes = BLOCKED (le message NOT_SCOPED est sur stderr,
+            # le resume JSON sur stdout : seul le JSON porte la preuve).
+            bloquantes = []
+            if result["code"] == "ERROR" and rc == 2:
+                bloquantes = _blocking_lanes_from_summary(captured)
+                if bloquantes:
+                    result["code"] = "BLOCKED"
             # Human: on cherche la ligne-verdict parmi les dernieres non
             # vides du stdout. Le stdout contient d'abord un JSON
             # summary (`print(json.dumps(summary, ...))` ~L3209) puis
@@ -4278,7 +4324,15 @@ def check_issues_batch(
                 )):
                     verdict_line = stripped
                     break
-            if verdict_line:
+            if bloquantes:
+                # #22983 -- meme libelle que le reduiteur historique du
+                # picker (« BLOQUE par <lanes> ») : la voie batch et la
+                # voie historique doivent se distinguer sur le VERDICT,
+                # pas sur la phrase. La phrase lue dans le stdout
+                # (« CLEAR: ... ») ne prime pas ici : le resume JSON
+                # fait foi.
+                result["human"] = "BLOQUE par " + ", ".join(bloquantes)
+            elif verdict_line:
                 result["human"] = verdict_line[:200]
             else:
                 # Pas de ligne-verdict : ERROR (exit 2) ou sortie

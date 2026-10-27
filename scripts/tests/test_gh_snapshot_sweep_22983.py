@@ -585,3 +585,52 @@ def test_index_ne_se_melange_pas_entre_deux_listes(monkeypatch):
     b = [{"number": 2, "body": "#22"}]
     assert clc._open_prs_by_referenced_issue(a).get(22) is None
     assert clc._open_prs_by_referenced_issue(b).get(11) is None
+
+
+def test_le_batch_dit_blocked_quand_le_resume_json_nomme_des_lanes(monkeypatch):
+    """#22983 -- la voie BATCH doit rendre le meme verdict que le
+    reduiteur historique du picker.
+
+    Le message `NOT_SCOPED:` part sur **stderr** ; le resume JSON
+    (`blocking_lanes`) part sur **stdout**. La voie batch ne lisait que le
+    stdout a la recherche du mot `NOT_SCOPED` -- qui n'y est jamais : un
+    grain tenu par 4 lanes rendait `ERROR`, verdict **servable** par le
+    tapis (fail-OPEN), alors que la voie historique rendait `BLOCKED`
+    (retenu). Mesure du 27/10 : 14 issues sur 150 dans ce cas.
+    """
+    clc = pig._claim_reader_module()
+    clc.set_snapshot(None)
+
+    resume = (
+        json.dumps({"blocking_lanes": ["myia-po-2023:CoursIA",
+                                       "myia-po-2025:CoursIA"],
+                    "blocked": True,
+                    "query_scope": "EPIC_WIDE_NO_PATHS_DECLARED"})
+        + "\nCLEAR: no other lane claims #7.\n"
+    )
+
+    def faux_run_check(payload, lane, **kw):
+        print(resume)
+        return 2
+
+    monkeypatch.setattr(clc, "_run_check", faux_run_check)
+    resultat = clc.check_issues_batch(["7"], "ma:lane")
+    res = resultat["results"]["7"]
+    assert res["code"] == "BLOCKED", res
+    assert "myia-po-2023:CoursIA" in res["human"], res
+    assert "myia-po-2025:CoursIA" in res["human"], res
+
+
+def test_le_batch_garde_error_quand_aucune_lane_ne_bloque(monkeypatch):
+    """Controle negatif : `exit 2` SANS lanes bloquantes reste `ERROR`
+    (faute de transport, pas un conflit de claim)."""
+    clc = pig._claim_reader_module()
+    clc.set_snapshot(None)
+
+    def faux_run_check(payload, lane, **kw):
+        print(json.dumps({"blocking_lanes": [], "blocked": False}))
+        return 2
+
+    monkeypatch.setattr(clc, "_run_check", faux_run_check)
+    resultat = clc.check_issues_batch(["7"], "ma:lane")
+    assert resultat["results"]["7"]["code"] == "ERROR"
