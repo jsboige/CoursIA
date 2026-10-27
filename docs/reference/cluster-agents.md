@@ -130,7 +130,7 @@ curl.exe -s -o NUL -w "%{http_code}`n" --max-time 6 http://<adresse>:<port>/v1/m
 
 - **QuantConnect MCP** (`quantconnect/mcp-server`, jetons sur `po-2024` et `po-2026`) : au plus 10 appels par minute pour **toute** la flotte ; annoncer un backtest sur le dashboard avant de le lancer. Détail : [quantconnect.md](../qc/quantconnect.md).
 - **GenAI image, audio, vidéo** (`po-2023`) : registre des services, ports et sous-domaines dans [genai-services.md](../genai/genai-services.md). Un notebook qui appelle ces services se valide contre eux, pas contre une sortie de substitution.
-- **Embedding** (`po-2026`, Qwen3-Embedding-4B AWQ, port `8004`) : consommable depuis le LAN d'ai-01. Son rapatriement aux côtés du vLLM est à l'étude.
+- **Embedding** (`po-2023`, conteneur `qwen3_4b_awq_embedding_server`, Qwen3-Embedding-4B AWQ, port hôte `8005` -> conteneur `8000`, vecteurs 2560 d) : consommable depuis le LAN d'ai-01 ; `/health` répond sans clé (mesuré le 2026-10-26). Le service vivait sur `po-2026` (port `8004`) avant sa panne du 2026-10-09 ; un `embedding-proxy-logger` occupe toujours le port 8004 sur `po-2023`.
 - **Lean et Mathlib** : installables sur toutes les machines (CLAUDE.md §F). Sur ai-01, un `lake build` vise une cible, jamais le lake entier.
 
 ## Pointeurs
