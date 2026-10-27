@@ -53199,7 +53199,8 @@ Ce notebook accompagne la reproduction pinée du dépôt public [`openai/NavierS
 
 La leçon centrale du notebook tient en une phrase : *un kernel qui accepte un artefact ne dit rien de la valeur de l'exposition qui l'accompagne, et une exposition convaincante ne dit rien de l'acceptation mécanique.* Les deux sont nécessaires et aucune ne remplace l'autre. La semaine de septembre 2026 en a fourni l'illustration la plus spectaculaire, et la plus disputée.
 
-> **Ce que ce notebook n'est pas** : ni un vendor du dépôt amont (aucun sous-arbre n'est copié), ni un verdict sur un problème ouvert, ni un récit d'autorité. Il rapporte qu'un artefact identifié par une empreinte a été accepté par deux noyaux en n'utilisant que des axiomes permis, il classe les maillons d'une chaîne de preuve, et il **reconstruit** un écoulement à titre didactique — il n'affirme **à aucun moment** que le problème du millénaire sur Navier–Stokes serait résolu — voir la section 4, qui énonce explicitement ce que le rapport **ne** permet **pas** de conclure, et la section 1, qui énonce ce que la communauté elle-même en a dit.",,,,,,,,dc9aa6c7f3be5ede,,,,,,,,,,,,,,,
+> **Ce que ce notebook n'est pas** : ni un vendor du dépôt amont (aucun sous-arbre n'est copié), ni un verdict sur un problème ouvert, ni un récit d'autorité. Il rapporte qu'un artefact identifié par une empreinte a été accepté par deux noyaux en n'utilisant que des axiomes permis, il classe les maillons d'une chaîne de preuve, et il **reconstruit** un écoulement à titre didactique — il n'affirme **à aucun moment** que le problème du millénaire sur Navier–Stokes serait résolu — voir la section 4, qui énonce explicitement ce que le rapport **ne** permet **pas** de conclure, et la section 1, qui énonce ce que la communauté elle-même en a dit.
+",,,,,,,,dc9aa6c7f3be5ede,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,c3101f2dde,markdown,fr,46eb21befaa313f5,"## Objectifs, prérequis et durée
 
 ### Objectifs d'apprentissage
@@ -54561,7 +54562,8 @@ MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.
 
 **Pour aller plus loin** : [`docs/leiden-declaration-position.md`](../../../../docs/cadrage/leiden-declaration-position.md) — la position du dépôt face à la Déclaration de Leiden ; dans la série, [Lean-28](../Lean-28-Complex-Structure-S6.ipynb) applique la même méthode de digestion mécanisée d'un artefact formel à un autre objet.
 
-**Navigation** : [Sommaire de la série](../README.md) · [Sous-série ANALYSE](README.md) · [Issue #15400](https://github.com/jsboige/CoursIA/issues/15400)",,,,,,,,9612ac4b6ce692aa,,,,,,,,,,,,,,,
+**Navigation** : [Sommaire de la série](../README.md) · [Sous-série ANALYSE](README.md) · [Issue #15400](https://github.com/jsboige/CoursIA/issues/15400)
+",,,,,,,,9612ac4b6ce692aa,,,,,,,,,,,,,,,
 MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-13-Euler-Navier-Stokes-Python.ipynb,nse-annexes-intro,markdown,fr,7d00a9ddc1081d45,"## Annexes — approfondissements optionnels
 
 Les quatre annexes rassemblent les lectures détaillées retirées de la ligne principale : **A** le gate de reproduction en détail, **B** la construction partagée et les options (C)/(D), **C** le comptage et l'énumération des maillons, **D** la re-dérivation du verdict feuille par feuille. Elles s'exécutent dans l'ordre (D s'appuie sur les variables du gate chargé en section 3).",,,,,,,,7d00a9ddc1081d45,,,,,,,,,,,,,,,
