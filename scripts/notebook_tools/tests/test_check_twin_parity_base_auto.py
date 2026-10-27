@@ -174,6 +174,34 @@ def test_auto_keeps_origin_main_off_a_merge_ref(tmp_path):
     assert ctp.resolve_base_ref(repo, "auto") == "origin/main"
 
 
+def test_auto_keeps_origin_main_on_a_single_parent_with_a_github_subject(tmp_path):
+    """Un commit a parent UNIQUE dont le sujet a la forme d'un merge ref.
+
+    C'est le mutant `< 2` du garde `len(parents) < 3` : il classerait ce commit
+    comme un merge ref et rendrait `HEAD^1` -- le parent ordinaire de la
+    branche -- comme base. Le gate comparerait alors chaque paire a un commit
+    qui n'est pas la base : le pire mode de defaut, silencieusement vert.
+
+    Le test fige le DEUXIEME jeton du decompte : `git rev-list --parents`
+    rend le commit + ses parents, donc 2 jetons pour un parent unique. Le garde
+    doit rester `< 3` (au moins deux parents), pas `< 2`.
+    """
+    repo = _repo(tmp_path)
+    _write(repo, "a.txt", "a\n")
+    _commit(repo, "base")
+    _git(repo, "checkout", "-q", "-b", "side")
+    _write(repo, "b.txt", "b\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-qm", "Merge abc1234def into abc1234def")
+
+    parents = ctp._run_git(
+        ["git", "rev-list", "--parents", "-n", "1", "HEAD"], cwd=repo
+    ).stdout.split()
+    assert len(parents) == 2, f"commit + UN seul parent attendu, got {parents!r}"
+
+    assert ctp.resolve_base_ref(repo, "auto") == "origin/main"
+
+
 def test_auto_keeps_origin_main_on_a_non_github_merge(tmp_path):
     """Un commit de fusion pousse par l'auteur sur sa branche n'est pas un merge
     ref : son premier parent n'est pas le main du depot. On garde la base

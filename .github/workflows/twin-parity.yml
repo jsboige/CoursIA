@@ -17,9 +17,12 @@ name: Twin Parity Check
 #
 # Per-pair semantics (#8264): the workflow runs in `--per-pair --base
 # <commit>` mode, comparing the registry + blob SHAs at the PR's HEAD vs
-# at the PR's base (#22292) -- `github.event.pull_request.base.sha`, the main
-# GitHub built the merge on; `origin/main` only when there is no PR base
-# (`workflow_dispatch`). The gate FAILS only on pairs that the PR
+# at the PR's base (#22292) -- the base the merge ref was BUILT ON, read from
+# the event: `github.sha^1`, the first parent of the merge commit. On a
+# stacked PR that parent is the parent BRANCH, not `main` -- so this is not
+# "the main GitHub built the merge on", it is "the base GitHub built the merge
+# on". `origin/main` only when there is no PR event (`workflow_dispatch`).
+# The gate FAILS only on pairs that the PR
 # itself has moved (base=OK, head=DRIFT/MISSING) or introduced/removed
 # without rebaseline. Drift already present at the base is reported as
 # `drift_pre_existing` but does NOT fail the gate -- it belongs to a
@@ -91,12 +94,17 @@ jobs:
 
       - name: Run twin parity check
         id: check
-        # `EVENT`/`PR_BASE` are read from the event, never derived from the shape of the
+        # `EVENT`/`PR_SHA` are read from the event, never derived from the shape of the
         # checkout: a branch whose tip happens to BE a merge commit passes a bare `HEAD^2`
-        # test, and HEAD^1 would then be that branch's first parent -- not main.
+        # test, and HEAD^1 would then be that branch's first parent -- not the base.
+        #
+        # `github.sha` IS the anchor: on `pull_request` it is the merge ref commit
+        # GitHub built for this event. `github.sha^1` is its first parent -- the base
+        # the merge was built on. Anchoring on the event (not on `HEAD`) means the
+        # resolution does not change if the checkout shape changes.
         env:
           EVENT: ${{ github.event_name }}
-          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_SHA: ${{ github.sha }}
         run: |
           set +e
           # Separate stdout (the JSON report, the machine contract) from stderr (diagnostics).
@@ -105,25 +113,45 @@ jobs:
           # so json.load crashed with "Extra data" and the gate failed with a raw traceback on
           # any PR where a warning fired -- masking the real drift verdict. Direct redirection
           # captures python's exit code correctly AND keeps the report pure JSON.
-          # Base = the main GitHub built the merge on (#22292). `origin/main` is re-fetched when
+          # Base = the base the merge ref was BUILT ON (#22292). `origin/main` is re-fetched when
           # the job STARTS; after hours in the queue it is newer than the merge ref, and every
           # pair rebaselined on main in between reads DRIFT here and OK there -- a
           # DRIFT_INTRODUCED on a PR that never touched it (#22218, 2026-10-24: 11 pairs,
           # 117 main commits between the two reads). A stack PR is also covered: its base is
           # the parent branch, which is the truth for a drift-introduced gate.
           #
-          # Merge 2026-10-27 : la PR #22419 portait une implementation
-          # concurrente du meme fix #22292 (`--base auto`, base deduite de la
-          # forme du checkout via HEAD^1) ; le cote main (PR #22293) a ete
-          # retenu -- il lit la base dans l'evenement (jamais dans la forme du
-          # checkout : une branche dont la tete est elle-meme un merge commit
-          # ferait de HEAD^1 son propre premier parent) et couvre les PRs
-          # empilees. Le mode `auto` de l'outil survit (tests
-          # test_check_twin_parity_base_auto.py) pour un usage local sur merge
-          # ref ; ce workflow ne l'utilise plus.
+          # 2026-10-27 (re-cadrage, apres #22293) : l'ANCRAGE de la base est
+          # l'EVENEMENT (`github.sha`), pas la forme du checkout. En
+          # `pull_request`, `github.sha` est le commit de fusion du merge ref ;
+          # `github.sha^1` en est le premier parent -- la base sur laquelle
+          # GitHub a construit le merge. Aucune deduction depuis la forme du
+          # checkout : `HEAD^1` dependrait de ce que le runner a extrait, alors
+          # que l'ancrage ci-dessous ne bouge pas si le checkout change. Les
+          # PRs empilees restent couvertes (leur premier parent est la branche
+          # parente, pas `main`). Repli inchange : `origin/main` quand
+          # l'evenement ne porte pas de merge ref (`workflow_dispatch`), quand
+          # `github.sha` n'est pas un commit de fusion, ou quand le parent
+          # n'est pas resolvable dans le checkout.
+          #
+          # Le mode `auto` de l'outil (`--base auto`) survit pour l'usage local
+          # sur un merge ref (tests test_check_twin_parity_base_auto.py) ; ce
+          # workflow ne l'utilise plus : il resout lui-meme, sur l'ancrage de
+          # l'evenement.
           BASE=origin/main
-          if [ "$EVENT" = "pull_request" ] && git rev-parse -q --verify "$PR_BASE^{commit}" >/dev/null; then
-            BASE="$PR_BASE"
+          if [ "$EVENT" = "pull_request" ]; then
+            # `github.sha` doit etre un commit de FUSION (>= 2 parents) : sinon
+            # son premier parent n'est PAS la base de la PR (c'est le parent
+            # ordinaire de la branche), et le gate comparerait chaque paire a
+            # un commit faux -- silencieusement. Meme garde que le mode `auto`
+            # de l'outil (`len(parents) < 3` -> `origin/main`) : le repli
+            # d'origine, jamais une base plus fausse que celle d'avant.
+            PARENTS="$(git rev-list --parents -n 1 "$PR_SHA" 2>/dev/null || true)"
+            if [ "$(printf '%s\n' "$PARENTS" | wc -w)" -ge 3 ]; then
+              CANDIDATE="$(git rev-parse -q --verify "${PR_SHA}^1^{commit}" 2>/dev/null || true)"
+              if [ -n "$CANDIDATE" ]; then
+                BASE="$CANDIDATE"
+              fi
+            fi
           fi
           # Resolved ONCE, and the commit id is what gets passed: every message below -- and the
           # tool's own "Impossible de lire le registre au base-ref '<ref>'" when a promisor blob
