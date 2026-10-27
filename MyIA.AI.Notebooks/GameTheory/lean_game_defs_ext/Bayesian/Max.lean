@@ -73,6 +73,48 @@ theorem maxFin_if_distrib {n : Nat} (c : Prop) [Decidable c]
     maxFin n (fun a => if c then f a else 0) = if c then maxFin n f else 0 := by
   by_cases h : c <;> simp [h]
 
+/-! ## Multiplication par un facteur non négatif
+
+`maxFin` est le maximum d'une famille finie de valeurs entières. Multiplier
+toute la famille par un entier positif ou nul multiplie le maximum par le
+même entier : c'est la propriété qui permet de **factoriser un facteur
+commun hors du maximum**, et donc de comparer une somme de maxima à un
+maximum de sommes. -/
+
+/-- **Maximum et facteur non négatif.** Pour `c ≥ 0`, le maximum de la
+    famille `c * a` vaut `c` fois le maximum de la famille `a`. -/
+theorem max_mul_mul_nonneg {a b c : Int} (hc : 0 ≤ c) :
+    max (c * a) (c * b) = c * max a b := by
+  apply Int.le_antisymm
+  · refine Int.max_le.mpr ⟨?_, ?_⟩
+    · exact Int.mul_le_mul_of_nonneg_left (Int.le_max_left a b) hc
+    · exact Int.mul_le_mul_of_nonneg_left (Int.le_max_right a b) hc
+  · by_cases h : a ≤ b
+    · have hm : max a b = b := by
+        apply Int.le_antisymm
+        · exact Int.max_le.mpr ⟨h, Int.le_refl b⟩
+        · exact Int.le_max_right a b
+      rw [hm]
+      exact Int.le_max_right (c * a) (c * b)
+    · have h' : b ≤ a := by omega
+      have hm : max a b = a := by
+        apply Int.le_antisymm
+        · exact Int.max_le.mpr ⟨Int.le_refl a, h'⟩
+        · exact Int.le_max_left a b
+      rw [hm]
+      exact Int.le_max_left (c * a) (c * b)
+
+/-- **Le maximum commute avec la multiplication par un entier non négatif.** -/
+theorem maxFin_mul_nonneg (c : Int) (hc : 0 ≤ c) :
+    ∀ (n : Nat) (f : Fin (n + 1) → Int),
+      maxFin n (fun a => c * f a) = c * maxFin n f
+  | 0, f => rfl
+  | n + 1, f => by
+    simp only [maxFin_succ]
+    rw [show maxFin n (fun i => c * f i.succ) = c * maxFin n (fun i => f i.succ)
+      from maxFin_mul_nonneg c hc n (fun i => f i.succ)]
+    exact max_mul_mul_nonneg hc
+
 /-! ## Argmax fini — l'indice atteignant le maximum
 
 `maxFin` donne la *valeur* du maximum ; `argmaxFin` donne son *témoin* (un indice

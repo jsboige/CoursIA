@@ -130,7 +130,100 @@
               "pas_petrole": 0.6998934061226726
             }
           }
+        },
+        "lean": {
+          "engine": "lean",
+          "decision": "agir_sans_test",
+          "eu_no_info": 200000.0,
+          "evpi": 390000.0,
+          "evsi_brute": 0.0,
+          "evsi_nette": -60000.0,
+          "scaled": {
+            "no_info": 4000000,
+            "signal": 4000000,
+            "perfect": 11800000,
+            "scale": 20
+          }
         }
+      },
+      "lean_agree": true,
+      "lean_controls_ok": true,
+      "lean_comparisons": {
+        "infer_net": {
+          "agree": true,
+          "rows": [
+            {
+              "field": "eu_no_info",
+              "lean": "200000.00",
+              "bench": "200000.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "evpi",
+              "lean": "390000.00",
+              "bench": "390000.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "evsi_brute",
+              "lean": "0.00",
+              "bench": "0.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "evsi_nette",
+              "lean": "-60000.00",
+              "bench": "-60000.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "decision",
+              "lean": "agir_sans_test",
+              "bench": "agir_sans_test",
+              "verdict": "accord"
+            }
+          ]
+        },
+        "pymc": {
+          "agree": true,
+          "rows": [
+            {
+              "field": "eu_no_info",
+              "lean": "200000.00",
+              "bench": "200000.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "evpi",
+              "lean": "390000.00",
+              "bench": "390000.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "evsi_brute",
+              "lean": "0.00",
+              "bench": "0.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "evsi_nette",
+              "lean": "-60000.00",
+              "bench": "-60000.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "decision",
+              "lean": "agir_sans_test",
+              "bench": "agir_sans_test",
+              "verdict": "accord"
+            }
+          ]
+        }
+      },
+      "kernel": {
+        "stem": "forage-non-informatif",
+        "kernel": "decide",
+        "rc": 0
       }
     },
     "forage-petrolier": {
@@ -259,7 +352,100 @@
               "pas_petrole": 0.949363876294241
             }
           }
+        },
+        "lean": {
+          "engine": "lean",
+          "decision": "observer",
+          "eu_no_info": 200000.0,
+          "evpi": 390000.0,
+          "evsi_brute": 253000.0,
+          "evsi_nette": 193000.0,
+          "scaled": {
+            "no_info": 20000000,
+            "signal": 45300000,
+            "perfect": 59000000,
+            "scale": 100
+          }
         }
+      },
+      "lean_agree": true,
+      "lean_controls_ok": true,
+      "lean_comparisons": {
+        "infer_net": {
+          "agree": true,
+          "rows": [
+            {
+              "field": "eu_no_info",
+              "lean": "200000.00",
+              "bench": "200000.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "evpi",
+              "lean": "390000.00",
+              "bench": "390000.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "evsi_brute",
+              "lean": "253000.00",
+              "bench": "253000.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "evsi_nette",
+              "lean": "193000.00",
+              "bench": "193000.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "decision",
+              "lean": "observer",
+              "bench": "observer",
+              "verdict": "accord"
+            }
+          ]
+        },
+        "pymc": {
+          "agree": true,
+          "rows": [
+            {
+              "field": "eu_no_info",
+              "lean": "200000.00",
+              "bench": "200000.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "evpi",
+              "lean": "390000.00",
+              "bench": "390000.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "evsi_brute",
+              "lean": "253000.00",
+              "bench": "252796.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "evsi_nette",
+              "lean": "193000.00",
+              "bench": "192796.00",
+              "verdict": "accord"
+            },
+            {
+              "field": "decision",
+              "lean": "observer",
+              "bench": "observer",
+              "verdict": "accord"
+            }
+          ]
+        }
+      },
+      "kernel": {
+        "stem": "forage-petrolier",
+        "kernel": "decide",
+        "rc": 0
       }
     }
   }

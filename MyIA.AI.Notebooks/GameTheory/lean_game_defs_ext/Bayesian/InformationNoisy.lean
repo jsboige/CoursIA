@@ -405,6 +405,332 @@ theorem noisyUmbrella_chain :
   · exact valueNoisyNoInfo_le_valueNoisySignal noisyUmbrella
   · exact valueNoisySignal_le_valueNoisyPerfect noisyUmbrella
 
+/-! ## Le cas indépendant : une table factorisée
+
+Une table jointe **indépendante** de l'état — le poids de la cellule
+`(s, x)` est le produit du poids de l'état `s` par un poids de réalisation
+`q x` qui ne dépend pas de l'état — décrit un signal qui n'apprend rien :
+le posterior reste le prior, et le gain brut du signal est **exactement
+nul**. C'est le contrôle négatif du banc `voi` (`forage-non-informatif`),
+et c'est la seule façon de distinguer « une table qui encode une
+information » d'« une table qui encode un prior ».
+
+La preuve factorise une commune mesure : le facteur `Σ_x q x` sort à la
+fois de la somme sur les réalisations et du maximum sur les actions, grâce
+à `maxFin_mul_nonneg`. -/
+
+/-- Masse totale des poids de réalisation d'une table indépendante : c'est
+    le facteur d'échelle commun aux deux valeurs. -/
+def independentMass (nX : Nat) (q : Fin (nX + 1) → Nat) : Int :=
+  sumFin (nX + 1) (fun x => (q x : Int))
+
+/-- La masse totale d'une table indépendante est non négative. -/
+theorem independentMass_nonneg (nX : Nat) (q : Fin (nX + 1) → Nat) :
+    0 ≤ independentMass nX q := by
+  unfold independentMass
+  exact sumFin_nonneg (fun x => Int.natCast_nonneg (q x))
+
+/-- Table jointe **indépendante** de l'état : le poids de la cellule
+    `(s, x)` est le produit du poids de l'état `s` et d'un poids de
+    réalisation `q x` qui ne dépend pas de l'état. -/
+@[reducible]
+def independentTable (nS nA nX : Nat) (w : Fin nS → Nat)
+    (q : Fin (nX + 1) → Nat) (u : Fin nS → Fin (nA + 1) → Int) : NoisyProblem where
+  nS := nS
+  nA := nA
+  nX := nX
+  p := fun s x => w s * q x
+  u := u
+
+/-- Le nombre d'états de la table indépendante est celui du paramètre. -/
+theorem independentTable_nS (nS nA nX : Nat) (w : Fin nS → Nat)
+    (q : Fin (nX + 1) → Nat) (u : Fin nS → Fin (nA + 1) → Int) :
+    (independentTable nS nA nX w q u).nS = nS := rfl
+
+/-- Le nombre d'actions de la table indépendante est celui du paramètre. -/
+theorem independentTable_nA (nS nA nX : Nat) (w : Fin nS → Nat)
+    (q : Fin (nX + 1) → Nat) (u : Fin nS → Fin (nA + 1) → Int) :
+    (independentTable nS nA nX w q u).nA = nA := rfl
+
+/-- Le nombre de realisations de la table indépendante est celui du
+    paramètre. -/
+theorem independentTable_nX (nS nA nX : Nat) (w : Fin nS → Nat)
+    (q : Fin (nX + 1) → Nat) (u : Fin nS → Fin (nA + 1) → Int) :
+    (independentTable nS nA nX w q u).nX = nX := rfl
+
+/-- Le poids joint de la table indépendante est le produit du poids de
+    l'état et du poids de la réalisation. -/
+theorem independentTable_p (nS nA nX : Nat) (w : Fin nS → Nat)
+    (q : Fin (nX + 1) → Nat) (u : Fin nS → Fin (nA + 1) → Int)
+    (s : Fin nS) (x : Fin (nX + 1)) :
+    (independentTable nS nA nX w q u).p s x = w s * q x := rfl
+
+/-- Les paiements de la table indépendante sont ceux du paramètre. -/
+theorem independentTable_u (nS nA nX : Nat) (w : Fin nS → Nat)
+    (q : Fin (nX + 1) → Nat) (u : Fin nS → Fin (nA + 1) → Int)
+    (s : Fin nS) (a : Fin (nA + 1)) :
+    (independentTable nS nA nX w q u).u s a = u s a := rfl
+
+/-- Le poids marginal d'un état dans une table indépendante est le poids de
+    l'état multiplié par la masse totale des réalisations. -/
+theorem priorMass_independent (nS nA nX : Nat) (w : Fin nS → Nat)
+    (q : Fin (nX + 1) → Nat) (u : Fin nS → Fin (nA + 1) → Int) (s : Fin nS) :
+    priorMass (independentTable nS nA nX w q u) s =
+      (w s : Int) * independentMass nX q := by
+  unfold priorMass independentTable independentMass
+  have h : ∀ x : Fin (nX + 1),
+      (↑(w s * q x) : Int) = (↑(w s) : Int) * (↑(q x) : Int) := fun x => rfl
+  rw [sumFin_congr h]
+  exact sumFin_mul_left _ _
+
+/-- Le paiement agrégé sur une réalisation d'une table indépendante se
+    factorise : le poids de la réalisation sort de la somme sur les états. -/
+theorem sumFin_independent_joint (nS nA nX : Nat) (w : Fin nS → Nat)
+    (q : Fin (nX + 1) → Nat) (u : Fin nS → Fin (nA + 1) → Int)
+    (x : Fin (nX + 1)) (a : Fin (nA + 1)) :
+    sumFin nS (fun s => jointPayoff (independentTable nS nA nX w q u) s x a) =
+      (q x : Int) * sumFin nS (fun s => (w s : Int) * u s a) := by
+  have h : ∀ s : Fin nS,
+      (↑(w s * q x) : Int) * u s a = (q x : Int) * ((w s : Int) * u s a) := by
+    intro s
+    change (↑(w s) * ↑(q x)) * u s a = (q x : Int) * ((w s : Int) * u s a)
+    rw [Int.mul_assoc, Int.mul_left_comm]
+  unfold jointPayoff independentTable
+  rw [sumFin_congr h]
+  exact sumFin_mul_left _ _
+
+/-- Le paiement agrégé d'une action sur le prior d'une table indépendante
+    se factorise de la même façon, par la masse totale. -/
+theorem sumFin_independent_prior (nS nA nX : Nat) (w : Fin nS → Nat)
+    (q : Fin (nX + 1) → Nat) (u : Fin nS → Fin (nA + 1) → Int)
+    (a : Fin (nA + 1)) :
+    sumFin nS (fun s => priorMass (independentTable nS nA nX w q u) s * u s a) =
+      independentMass nX q * sumFin nS (fun s => (w s : Int) * u s a) := by
+  have h : ∀ s : Fin nS,
+      priorMass (independentTable nS nA nX w q u) s * u s a =
+        independentMass nX q * ((w s : Int) * u s a) := by
+    intro s
+    rw [priorMass_independent nS nA nX w q u s, Int.mul_assoc, Int.mul_left_comm]
+  rw [sumFin_congr h]
+  exact sumFin_mul_left _ _
+
+/-- **Valeur sans signal d'une table indépendante.** Elle vaut la masse
+    totale multipliée par la valeur du problème déterministe correspondant. -/
+theorem valueNoisyNoInfo_independent (nS nA nX : Nat) (w : Fin nS → Nat)
+    (q : Fin (nX + 1) → Nat) (u : Fin nS → Fin (nA + 1) → Int) :
+    valueNoisyNoInfo (independentTable nS nA nX w q u) =
+      independentMass nX q *
+        maxFin nA (fun a => sumFin nS (fun s => (w s : Int) * u s a)) := by
+  unfold valueNoisyNoInfo
+  simp only [independentTable_nS, independentTable_nA]
+  have h : (fun a => sumFin nS (fun s =>
+        priorMass (independentTable nS nA nX w q u) s * u s a)) =
+      (fun a => independentMass nX q * sumFin nS (fun s => (w s : Int) * u s a)) := by
+    funext a
+    exact sumFin_independent_prior nS nA nX w q u a
+  rw [h]
+  exact maxFin_mul_nonneg (independentMass nX q) (independentMass_nonneg nX q) nA _
+
+/-- **Valeur avec signal d'une table indépendante.** Elle vaut la masse
+    totale multipliée par la même valeur déterministe : le signal
+    indépendant n'apporte rien. -/
+theorem valueNoisySignal_independent (nS nA nX : Nat) (w : Fin nS → Nat)
+    (q : Fin (nX + 1) → Nat) (u : Fin nS → Fin (nA + 1) → Int) :
+    valueNoisySignal (independentTable nS nA nX w q u) =
+      independentMass nX q *
+        maxFin nA (fun a => sumFin nS (fun s => (w s : Int) * u s a)) := by
+  unfold valueNoisySignal
+  simp only [independentTable_nS, independentTable_nA, independentTable_nX]
+  have hcell : ∀ x : Fin (nX + 1),
+      maxFin nA (fun a => sumFin nS (fun s =>
+        jointPayoff (independentTable nS nA nX w q u) s x a)) =
+        (q x : Int) * maxFin nA (fun a => sumFin nS (fun s => (w s : Int) * u s a)) := by
+    intro x
+    have h : (fun a => sumFin nS (fun s =>
+          jointPayoff (independentTable nS nA nX w q u) s x a)) =
+        (fun a => (q x : Int) * sumFin nS (fun s => (w s : Int) * u s a)) := by
+      funext a
+      exact sumFin_independent_joint nS nA nX w q u x a
+    rw [h]
+    exact maxFin_mul_nonneg (q x : Int) (Int.natCast_nonneg _) nA _
+  rw [sumFin_congr hcell]
+  have hswap : (fun x : Fin (nX + 1) => (q x : Int) *
+      maxFin nA (fun a => sumFin nS (fun s => (w s : Int) * u s a))) =
+      (fun x : Fin (nX + 1) => maxFin nA (fun a => sumFin nS (fun s => (w s : Int) * u s a)) *
+        (q x : Int)) := by
+    funext x
+    exact Int.mul_comm _ _
+  rw [hswap]
+  rw [sumFin_mul_left (maxFin nA (fun a => sumFin nS (fun s => (w s : Int) * u s a)))
+      (fun x => (q x : Int))]
+  have hm : sumFin (nX + 1) (fun x => (q x : Int)) = independentMass nX q := by
+    unfold independentMass
+    rfl
+  rw [hm]
+  exact Int.mul_comm _ _
+
+/-- **Une table indépendante a un gain brut exactement nul.** Le décideur
+    qui observe le signal vaut exactement ce qu'il vaut sans l'observer :
+    l'information apportée est nulle, et non « petite ». -/
+theorem valueNoisySignal_eq_valueNoisyNoInfo_independent (nS nA nX : Nat)
+    (w : Fin nS → Nat) (q : Fin (nX + 1) → Nat)
+    (u : Fin nS → Fin (nA + 1) → Int) :
+    valueNoisySignal (independentTable nS nA nX w q u) =
+      valueNoisyNoInfo (independentTable nS nA nX w q u) := by
+  rw [valueNoisySignal_independent, valueNoisyNoInfo_independent]
+
+/-- Contrôle négatif explicite : un signal **indépendant** de l'état (le
+    poids de la réalisation ne dépend pas de l'état) a un gain brut
+    exactement nul. C'est le pendant du `noisyUmbrella`, qui est informatif
+    et à gain strictement positif. -/
+def independentUmbrella : NoisyProblem :=
+  independentTable 2 1 1 (fun _ => 1) (fun x => if x.val = 0 then 3 else 1)
+    (fun s a => if s.val = 0 then (if a.val = 0 then 2 else -3)
+      else (if a.val = 0 then 0 else 3))
+
+/-- Sans information, le parapluie au signal indépendant vaut 8 (masse
+    totale 4, valeur déterministe 2). -/
+theorem independentUmbrella_valueNoisyNoInfo :
+    valueNoisyNoInfo independentUmbrella = 8 := by decide
+
+/-- Informé d'un signal indépendant, le parapluie vaut **encore** 8 : le
+    signal n'apporte rien. -/
+theorem independentUmbrella_valueNoisySignal :
+    valueNoisySignal independentUmbrella = 8 := by decide
+
+/-- Le gain brut du signal indépendant est nul, exactement. -/
+theorem independentUmbrella_zero_gain :
+    valueNoisyNoInfo independentUmbrella = valueNoisySignal independentUmbrella := by
+  decide
+
+/-! ## Le pont vers les signaux déterministes
+
+Une table jointe dont le support est le graphe d'un signal déterministe
+`σ` — le poids de la cellule `(s, x)` vaut le poids de l'état `s` si
+`σ s = x`, et zéro sinon — doit donner **exactement** les mêmes valeurs
+que l'organe déterministe `Information.lean`. Sans ce pont, les deux
+sémantiques pourraient diverger ; avec lui, elles sont scellées par un
+théorème. -/
+
+/-- La table jointe du signal **déterministe** `σ` : le poids de la
+    cellule `(s, x)` est le poids de l'état `s` si `σ s = x`, et zéro
+    sinon. C'est le cas particulier où la réalisation porte toute
+    l'information. -/
+@[reducible]
+def noisyOfSignal (D : DecisionProblem) {m : Nat} (σ : Signal D m) : NoisyProblem where
+  nS := D.nS
+  nA := D.nA
+  nX := m
+  p := fun s x => if σ s = x then D.w s else 0
+  u := D.u
+
+/-- Le nombre d'états de la table du signal déterministe est celui du
+    problème déterministe. -/
+theorem noisyOfSignal_nS (D : DecisionProblem) {m : Nat} (σ : Signal D m) :
+    (noisyOfSignal D σ).nS = D.nS := rfl
+
+/-- Le nombre d'actions de la table du signal déterministe est celui du
+    problème déterministe. -/
+theorem noisyOfSignal_nA (D : DecisionProblem) {m : Nat} (σ : Signal D m) :
+    (noisyOfSignal D σ).nA = D.nA := rfl
+
+/-- Le nombre de realisations de la table du signal déterministe est celui
+    du signal. -/
+theorem noisyOfSignal_nX (D : DecisionProblem) {m : Nat} (σ : Signal D m) :
+    (noisyOfSignal D σ).nX = m := rfl
+
+/-- Le poids joint de la table du signal déterministe est Concentré sur le
+    graphe du signal. -/
+theorem noisyOfSignal_p (D : DecisionProblem) {m : Nat} (σ : Signal D m)
+    (s : Fin D.nS) (x : Fin (m + 1)) :
+    (noisyOfSignal D σ).p s x = if σ s = x then D.w s else 0 := rfl
+
+/-- Les paiements de la table du signal déterministe sont ceux du
+    problème déterministe. -/
+theorem noisyOfSignal_u (D : DecisionProblem) {m : Nat} (σ : Signal D m)
+    (s : Fin D.nS) (a : Fin (D.nA + 1)) :
+    (noisyOfSignal D σ).u s a = D.u s a := rfl
+
+/-- Le poids marginal d'un état dans la table d'un signal déterministe est
+    le poids de l'état : le signal ne change pas le prior, il ne fait que
+    le révéler. -/
+theorem priorMass_noisyOfSignal (D : DecisionProblem) {m : Nat} (σ : Signal D m)
+    (s : Fin D.nS) :
+    priorMass (noisyOfSignal D σ) s = (D.w s : Int) := by
+  unfold priorMass noisyOfSignal
+  have h : (fun x : Fin (m + 1) => ((if σ s = x then D.w s else 0 : Nat) : Int)) =
+      (fun x : Fin (m + 1) => if σ s = x then (D.w s : Int) else 0) := by
+    funext x
+    by_cases hxy : σ s = x <;> simp [hxy]
+  rw [h]
+  exact sumFin_single _ _
+
+/-- **Le pont, côté valeur sans information.** La table du signal
+    déterministe vaut exactement la valeur sans information du problème
+    déterministe. -/
+theorem valueNoisyNoInfo_noisyOfSignal (D : DecisionProblem) {m : Nat}
+    (σ : Signal D m) :
+    valueNoisyNoInfo (noisyOfSignal D σ) = valueNoInfo D := by
+  unfold valueNoisyNoInfo valueNoInfo wu
+  simp only [noisyOfSignal_nS, noisyOfSignal_nA]
+  have h : (fun a => sumFin D.nS (fun s =>
+        priorMass (noisyOfSignal D σ) s * D.u s a)) =
+      (fun a => sumFin D.nS (fun s => (D.w s : Int) * D.u s a)) := by
+    funext a
+    rw [sumFin_congr (fun s => by rw [priorMass_noisyOfSignal D σ s])]
+  rw [h]
+
+/-- **Le pont, côté valeur avec signal.** La valeur d'un signal
+    déterministe, calculée par l'organe bruité, est **exactement** la valeur
+    calculée par l'organe déterministe : les deux sémantiques ne peuvent
+    pas diverger. -/
+theorem valueNoisySignal_noisyOfSignal (D : DecisionProblem) {m : Nat}
+    (σ : Signal D m) :
+    valueNoisySignal (noisyOfSignal D σ) = valueSignal D σ := by
+  unfold valueNoisySignal valueSignal wu
+  simp only [noisyOfSignal_nS, noisyOfSignal_nA, noisyOfSignal_nX]
+  have hper : ∀ (x : Fin (m + 1)) (a : Fin (D.nA + 1)) (s : Fin D.nS),
+      jointPayoff (noisyOfSignal D σ) s x a =
+        (if σ s = x then (D.w s : Int) * D.u s a else 0) := by
+    intro x a s
+    unfold jointPayoff
+    by_cases hσ : σ s = x <;> simp [hσ] <;> omega
+  have h : ∀ x : Fin (m + 1),
+      maxFin D.nA (fun a => sumFin D.nS (fun s => jointPayoff (noisyOfSignal D σ) s x a)) =
+      maxFin D.nA (fun a => sumFin D.nS (fun s => if σ s = x then (D.w s : Int) * D.u s a else 0)) := by
+    intro x
+    have ha : (fun a => sumFin D.nS (fun s => jointPayoff (noisyOfSignal D σ) s x a)) =
+        (fun a => sumFin D.nS (fun s => if σ s = x then (D.w s : Int) * D.u s a else 0)) := by
+      funext a
+      rw [sumFin_congr (fun s => hper x a s)]
+    rw [ha]
+  exact sumFin_congr h
+
+/-- **Le pont, côté information parfaite.** Les deux sémantiques coïncident
+    aussi sur la valeur de l'information parfaite. -/
+theorem valueNoisyPerfect_noisyOfSignal (D : DecisionProblem) {m : Nat}
+    (σ : Signal D m) :
+    valueNoisyPerfect (noisyOfSignal D σ) = valuePerfect D := by
+  unfold valueNoisyPerfect valuePerfect
+  simp only [noisyOfSignal_nS, noisyOfSignal_nA]
+  have h : (fun s => maxFin D.nA (fun a =>
+        priorMass (noisyOfSignal D σ) s * D.u s a)) =
+      (fun s => maxFin D.nA (fun a => (D.w s : Int) * D.u s a)) := by
+    funext s
+    rw [priorMass_noisyOfSignal D σ s]
+  rw [h]
+  rfl
+
+/-- Contrôle concret du pont : le parapluie déterministe (`umbrella` de
+    `Information.lean`) donne les mêmes valeurs par les deux sémantiques. -/
+theorem umbrella_bridge :
+    valueNoisyNoInfo (noisyOfSignal umbrella (fun _ => (0 : Fin 1))) = valueNoInfo umbrella ∧
+    valueNoisySignal (noisyOfSignal umbrella (fun _ => (0 : Fin 1))) =
+      valueSignal umbrella (fun _ => (0 : Fin 1)) := by
+  constructor
+  · exact valueNoisyNoInfo_noisyOfSignal umbrella (fun _ => (0 : Fin 1))
+  · exact valueNoisySignal_noisyOfSignal umbrella (fun _ => (0 : Fin 1))
+
 /-! ## Ancres d'axiomes
 
 Les axiomes des theoremes du module, imprimes par `lake build` : la claim
@@ -431,4 +757,10 @@ de PR. -/
 #print axioms valueNoisyPerfect_nonneg
 #print axioms noisyUmbrella_valueNoisyPerfect
 #print axioms noisyUmbrella_chain
+#print axioms valueNoisyNoInfo_independent
+#print axioms valueNoisySignal_independent
+#print axioms independentUmbrella_zero_gain
+#print axioms valueNoisyNoInfo_noisyOfSignal
+#print axioms valueNoisySignal_noisyOfSignal
+#print axioms valueNoisyPerfect_noisyOfSignal
 
