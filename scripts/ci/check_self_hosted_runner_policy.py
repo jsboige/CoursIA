@@ -283,6 +283,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "linux-runner-version-pin-advisory.yml",
     "linux-runner-starvation-advisory.yml",
+    # #22946 (owner myia-ai-01:CoursIA-2, review ai-01 du 2026-10-27) :
+    #   controleur du debordement CI_OVERFLOW_LOCAL (phase B de #22937). Meme
+    #   profil que les deux advisories ci-dessus : `schedule` +
+    #   `workflow_dispatch` UNIQUEMENT (advisory par construction, doctrine
+    #   #12817), runs-on STATIQUE [self-hosted, coursia-ephemeral,
+    #   coursia-linux], garde same-repo au niveau job malgre l'absence de
+    #   trigger `pull_request`. Pur-Python stdlib + `gh` binaire de l'image ;
+    #   le job est en LECTURE SEULE (aucun secret, aucune ecriture de
+    #   variable -- l'ecriture reste un geste d'operateur ai-01 en local,
+    #   arbitrage (b) du 2026-10-27), `permissions: actions: read` +
+    #   `contents: read` -- `variables` n'est PAS une portee admise sous
+    #   `permissions:` (une cle hors liste invalide le fichier entier).
+    #   La bascule vers le pool est le POINT 1 de la review : le job mesurait
+    #   la file hebergee en y faisant la queue (17 des 23 jobs en cours
+    #   etaient heberges). Rollback = revert de la PR (l'entree disparait de
+    #   l'allowlist, et le garde fail-closed refuse alors le runs-on).
+    "ci-overflow-controller.yml",
     # runner-starvation-advisory.yml (#14846, owner myia-po-2027:CoursIA-2) :
     #   jumeau de linux-runner-starvation-advisory.yml (#13378) etendu aux
     #   2 labels waiter + lean (matrice GitHub Actions, 2 entrees include).

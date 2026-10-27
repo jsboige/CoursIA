@@ -8,9 +8,14 @@ name: CI overflow controller (phase B)
 #
 # LECTURE SEULE -- arbitrage (b) du coordinateur (c.6441695482, 27/10) :
 # ce job **ne bascule rien**. Aucun secret `ACTIONS_VARIABLES_PAT` n'est
-# pose dans Actions, et le `GITHUB_TOKEN` d'un workflow ne porte pas le
-# droit `variables: write` : la seule voie qui pourrait ecrire ici serait un
-# jeton a effet de bord dans le depot, refusee par l'arbitrage.
+# pose dans Actions, et la portee `variables` n'existe pas dans la liste des
+# portees admises sous `permissions:` (reference de syntaxe des workflows :
+# actions, attestations, checks, contents, deployments, discussions,
+# id-token, issues, packages, pages, pull-requests, security-events,
+# statuses...). Une cle hors liste rend le FICHIER entier invalide -- le
+# workflow n'aurait jamais demarre. La seule voie qui pourrait ecrire ici
+# serait donc un jeton a effet de bord dans le depot, refusee par
+# l'arbitrage : les portees restent `actions: read` + `contents: read`.
 #
 # Qui ecrit, et comment : l'operateur **ai-01** joue la bascule en local,
 # avec le jeton `jsboige` **pris commande par commande** :
@@ -19,19 +24,35 @@ name: CI overflow controller (phase B)
 # La lecture d'etat et la decision, elles, sont automatisables et publiques ;
 # l'ecriture d'une variable de depot est un geste d'operateur, trace.
 #
-# Doctrine #12817 : workflow sur schedule -> `ubuntu-latest` (jamais de
-# runner auto-heberge sur une tache periodique).
+# Doctrine #12817, lue a la source : un organe `schedule` +
+# `workflow_dispatch` est ADVISORY PAR CONSTRUCTION -- jamais `pull_request`
+# ni `push`, donc un run rouge ne bloque aucune PR. Elle ne prescrit RIEN sur
+# le `runs-on` : la ligne « workflow sur schedule -> ubuntu-latest » qui
+# figurait ici etait une lecture erronee, et c'est elle qui placait ce job
+# dans la file meme qu'il mesure (review ai-01 du 27/10 sur #22946 : 17 des
+# 23 jobs en cours etaient heberges, file hebergee ouverte depuis 10:56Z).
+#
+# `runs-on` STATIQUE sur la jambe Linux self-hebergee, admis ICI parce
+# qu'aucun declencheur ne porte de fork (schedule + workflow_dispatch) :
+# meme profil, meme forme et meme garde same-repo au niveau job que
+# `linux-runner-version-pin-advisory.yml`, deja sur ce pool. L'image du
+# runner porte `gh` et `python3` -- aucune dependance ajoutee.
 
 on:
   schedule:
-    # Deux tics par heure, minutes hors :00/:30 (jitter de la flotte).
-    - cron: '23,53 * * * *'
+    # HORAIRE, minute 31 : hors :00/:30 (jitter de la flotte) et distincte
+    # des autres crons horaires du depot. `23,53` etait EXACTEMENT le cron de
+    # `linux-runner-version-pin-advisory.yml`, que ce dernier avait choisi
+    # pour ne pas collisionner (review ai-01 du 27/10). L'horaire suffit :
+    # une execution mesuree coute 313 appels `gh` (cf
+    # docs/coordination/ci-overflow-controller.md), et l'organe est une
+    # machine a etat -- une livraison tardive agit sur l'etat courant.
+    - cron: '31 * * * *'
   workflow_dispatch:
 
 permissions:
   actions: read
   contents: read
-  variables: read
 
 concurrency:
   group: ci-overflow-controller
@@ -40,11 +61,25 @@ concurrency:
 jobs:
   control:
     name: "Verdict CI_OVERFLOW_LOCAL (lecture seule)"
-    runs-on: ubuntu-latest
+    # Jambe Linux self-hebergee : le controleur mesure la file hebergee et
+    # route du travail vers le parc local -- il n'a aucune raison de faire la
+    # queue dans l'offre qu'il observe (review ai-01 du 27/10).
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Garde same-repo au niveau job, forme du pool : les deux declencheurs
+    # sont `schedule` et `workflow_dispatch`, donc aucun fork ne peut
+    # atteindre ce job -- la garde est defensive et suit la forme etablie
+    # (linux-runner-version-pin-advisory.yml, runner-starvation-advisory.yml).
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          # L'organe ne lit que scripts/ci : clone partiel, meme forme que le
+          # voisin ci-dessus (ce pool est sature par ses checkouts).
+          sparse-checkout: |
+            scripts/ci
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -53,9 +88,9 @@ jobs:
 
       # UNE seule mesure : l'organe mesure puis rend un VERDICT. Sans
       # `--apply`, il n'ecrit jamais -- la voie d'ecriture reste celle de
-      # l'operateur, en local (cf entete du fichier). Le mode est porte par
-      # la variable APPLY (chaine vide) : une mesure double coutait le
-      # double en lectures de jobs, et le volume d'appels API est precisement
+      # l'operateur, en local (cf entete du fichier). Deux mesures
+      # couteraient le double en lectures de jobs : une execution mesuree
+      # coute 313 appels `gh`, et le volume d'appels API est precisement
       # l'objet du volet 5 de #22937.
       - name: Verdict (lecture seule)
         env:

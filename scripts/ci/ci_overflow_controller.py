@@ -48,7 +48,12 @@ Usage :
 Le cout de l'organe est borne : deux lectures de file, plafonnees par
 `--job-budget` (defaut 120) et `--local-job-budget` (defaut 40) lectures de
 jobs -- le volume d'appels API est justement l'objet du volet 5 de #22937, un
-organe de controle ne doit pas en devenir la cause.
+organe de controle ne doit pas en devenir la cause. Mesure du 2026-10-27 (file
+reelle, compteur sur les deux points d'appel) : **313 appels `gh` par
+passage**, dont 160 lectures de jobs et 143 requetes de re-verification du
+residuel (chaque entree vue au seul listing `queued` coute une requete
+`runs/{id}`). C'est ce chiffre qui fixe la cadence horaire du workflow, pas une
+preference.
 """
 
 from __future__ import annotations

@@ -343,3 +343,22 @@ def _stub_probe_never_called(monkeypatch):
         raise AssertionError("--sweep-alive-for-sha ne doit pas sonder la cadence")
 
     monkeypatch.setattr(sl, "probe", boom)
+
+
+def test_ci_overflow_controller_is_registered():
+    """#22946, point 3 de la review ai-01 du 2026-10-27.
+
+    Le controleur de debordement declarait '23,53' -- exactement le cron de
+    linux-runner-version-pin-advisory.yml, que ce dernier avait choisi pour ne
+    pas collisionner. Sa cadence devient horaire, minute 31 (hors :00/:30), et
+    il entre dans le registre : son extinction se mesure au lieu de se
+    supposer. La cadence declaree ici est celle du fichier -- les deux
+    divergent silencieusement sinon, c'est la raison d'etre du registre.
+    """
+    entry = next(
+        (o for o in sl.REGISTRY if o.workflow == "ci-overflow-controller.yml"),
+        None,
+    )
+    assert entry is not None
+    assert entry.declared_min == 60.0
+    assert "31 * * * *" in entry.note
