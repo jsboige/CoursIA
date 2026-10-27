@@ -95,7 +95,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Precedent :
     # repeated-prose-advisory.yml (#17443).
     "pr-gate-stale-sweep.yml",
-    "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
     "banner-guard.yml",
@@ -340,14 +339,23 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
     # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
     # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
-    # scripts-tests.yml : migre ubuntu-latest par Q35 etape 2 (#17397, PR
-    # #22820, lane myia-ai-01:CoursIA, 2026-10-27) -- le job installe toutes
-    # ses dependances par pip (numpy, pandas, scipy, pyarrow>=26, pytest,
-    # requests, bcrypt, jupyter_client, pytest-xdist, ipykernel, papermill,
-    # nbformat, nbconvert), aucun besoin local ; le parc local etait sature par
-    # ses CHECKOUTS (mesure 27/10 00:45Z : 11 des 12 slots occupes dans
-    # `actions/checkout`, 614 runs en file). Sorti de
-    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
+    # scripts-tests.yml : RESTE sur le parc local (PR #22820, lane
+    # myia-ai-01:CoursIA, 2026-10-27). La migration vers ubuntu-latest a ete
+    # tentee puis ANNULEE sur une MESURE, pas sur une preference :
+    # `Scripts Tests (CPU)` y echoue (run 40427418743 -- 4 echecs sur 20950
+    # tests). Les deux causes sont couplees a la FORME du runner :
+    #   (a) `scripts/lean/tests/test_lean_exec.py` -- `compute_granted` derive
+    #       `jobs_cpu` de `os.cpu_count()` (2 sur ubuntu-latest, >= 4 sur le
+    #       parc local) ; le test exige `granted == 4` ;
+    #   (b) `scripts/tests/test_setup_shared_mathlib_scan.py` -- le script
+    #       `scripts/lean/setup_shared_mathlib.ps1` convertit la racine du
+    #       depot en chemins Windows (`$RepoRoot -replace '/', '\'`), ce qui
+    #       invalide `Test-Path` sur un runner POSIX -> « Aucun projet Lake
+    #       avec mathlib trouve. ».
+    # Un job dont la suite de tests est couplee a la forme de l'hote a un
+    # besoin local REEL : l'organe `audit_self_hosted_needs.py` ne le voit pas
+    # (il classifie le workflow, pas la suite qu'il execute).
+    "scripts-tests.yml",
     "series-naming-gate.yml",
     # registre TRANCHE14 (issue #16762, owner myia-po-2023:CoursIA) : meme
     #   profil que repeated-prose-advisory.yml (TRANCHE7) ci-dessus --
