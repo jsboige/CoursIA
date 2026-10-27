@@ -75,9 +75,11 @@ def transact_and_wait(w3, fn, sender, **tx_kwargs):
         `erc20.functions.transfer(receiver, 1000)` — surtout pas deja appele
         avec `.transact(...)`.
     sender :
-        L'adresse qui signe, placee dans `from`.
+        L'adresse qui signe, placee dans `from`. Prioritaire : un `from`
+        passe dans `tx_kwargs` est ecrase par `sender`, ne comptez pas sur lui.
     **tx_kwargs :
         Les autres cles de transaction (`value`, `gas`, `gasPrice`, ...).
+        Une cle `from` ici est ignoree au profit de `sender`.
 
     Retour
     ------
@@ -91,7 +93,9 @@ def transact_and_wait(w3, fn, sender, **tx_kwargs):
     revert detecte a l'estimation de gas leve avant, depuis `transact`, comme
     avant : les cellules qui attendent un revert gardent leur `try/except`.
     """
-    tx_hash = fn.transact({"from": sender, **tx_kwargs})
+    # `sender` en dernier : prioritaire sur un eventuel `from` passe dans
+    # `tx_kwargs` (contrat du test test_sender_prioritaire_sur_un_from_dans_les_kwargs).
+    tx_hash = fn.transact({**tx_kwargs, "from": sender})
     receipt = w3.eth.wait_for_transaction_receipt(tx_hash)
     try:
         status = receipt["status"]

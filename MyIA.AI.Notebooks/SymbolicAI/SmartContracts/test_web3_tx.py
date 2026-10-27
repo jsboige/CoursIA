@@ -106,7 +106,7 @@ def test_sender_prioritaire_sur_un_from_dans_les_kwargs():
     w3 = FakeW3({"status": 1})
     fn = FakeFn()
 
-    transact_and_wait(w3, fn, "0xsender")
+    transact_and_wait(w3, fn, "0xsender", **{"from": "0xINTRUS"})
 
     assert fn.calls[0]["from"] == "0xsender"
 
@@ -177,3 +177,21 @@ def test_carnet_importe_l_organe(relpath):
         s for _, s in _code_sources(path) if "from web3_tx import" in s
     ]
     assert imports, f"{relpath} : aucun `from web3_tx import ...`"
+
+
+def test_tout_importateur_de_l_organe_est_garde():
+    """La liste ne peut pas se refermer : tout carnet qui importe l'organe
+    doit figurer dans GUARDED_NOTEBOOKS, sinon sa conversion echapperait a
+    test_carnet_sans_transact_direct (retirer une entree ferait passer la
+    garde au vert sans qu'aucun test ne rougisse).
+    """
+    importateurs = []
+    for path in SERIES_ROOT.rglob("*.ipynb"):
+        rel = path.relative_to(SERIES_ROOT).as_posix()
+        if any("from web3_tx import" in s for _, s in _code_sources(path)):
+            importateurs.append(rel)
+    manquants = sorted(set(importateurs) - set(GUARDED_NOTEBOOKS))
+    assert not manquants, (
+        f"carnets important web3_tx absents de GUARDED_NOTEBOOKS : {manquants} "
+        "— la garde ne les couvre plus, les ajouter a la liste"
+    )
