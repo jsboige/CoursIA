@@ -64,8 +64,14 @@ jobs:
     # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
     # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
     # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # 2026-10-27 (mesure ai-01) : migration vers `ubuntu-latest` par Q35 etape 2
+    # (#17397) -- `scripts/ci/audit_self_hosted_needs.py` certifie ce workflow
+    # comme n'ayant besoin de RIEN qui n'existe que sur le parc local, et le parc
+    # local etait sature PAR SES CHECKOUTS (mesure 00:45Z : 11 des 12 slots
+    # occupes dans `actions/checkout`, 614 runs en file). La garde anti-fork
+    # ci-dessous est CONSERVEE : aucun code de fork ne change de surface.
+    # Retour arriere = revert du commit (et remise de l'entree d'allowlist).
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
@@ -208,8 +214,7 @@ jobs:
     # Routage #14283 tranche 3c (ai-01 2026-09-02) : jambe Linux auto-hebergee.
     # Garde anti-fork au niveau job + runs-on STATIQUE (une expression leverait
     # DYNAMIC_RUNS_ON dans check_self_hosted_runner_policy.py).
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
