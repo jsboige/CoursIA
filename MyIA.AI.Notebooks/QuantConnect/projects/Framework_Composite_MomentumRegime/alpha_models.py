@@ -155,6 +155,8 @@ class RegimeSwitchingAlpha(AlphaModel):
         self._last_month = -1
         self._need_rebalance = False
         self.algorithm = None  # Store algorithm reference for price access
+        # Diagnostic (#21349): dates of emissions where only one risky ticker is oversold.
+        self.partial_oversold = []
 
     def update(self, algorithm, data):
         # Store algorithm reference for price access
@@ -304,6 +306,9 @@ class RegimeSwitchingAlpha(AlphaModel):
                 if rsi_val < self.rsi_oversold:
                     oversold.append(ticker)
 
+        if 0 < len(oversold) < len(self.risky):
+            self.partial_oversold.append(algorithm.time.strftime("%Y-%m-%d"))
+
         if oversold:
             weight_per_asset = 0.30 / len(oversold)
             for ticker in oversold:
@@ -312,6 +317,15 @@ class RegimeSwitchingAlpha(AlphaModel):
                     weight=weight_per_asset,
                     source_model=self.name
                 ))
+            # A risky ticker that is not oversold gets an explicit FLAT: otherwise its
+            # insight from the previous emission (31 trading days) stays active, and
+            # the intent PCM adds it to this sleeve, past its slice (#21349).
+            for ticker in self.risky:
+                if ticker not in oversold:
+                    insights.append(Insight.price(
+                        self.symbols[ticker], period, InsightDirection.FLAT,
+                        source_model=self.name
+                    ))
 
             # Defensive allocation
             insights.append(Insight.price(

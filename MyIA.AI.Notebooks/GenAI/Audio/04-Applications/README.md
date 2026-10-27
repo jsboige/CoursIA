@@ -85,6 +85,14 @@ P0 Benchmark voix → P1 Analyse littéraire → P2 Casting vocal
     → P3 Annotation prosodique → P4 Génération TTS → P5 Compilation finale
 ```
 
+### Évaluation subjective — protocole MOS
+
+Un rating subjectif n'est interprétable qu'accompagné de son protocole : dans quel ordre présenter les échantillons, comment repérer un auditeur qui note à l'envers du groupe, et quelle incertitude attacher au score. Le carnet ci-dessous importe l'organe `scripts/tts_verification/mos_protocol.py`, lit la rubrique **depuis** `04-7-TTS-Voice-Benchmark` (source de vérité unique), puis exerce l'agrégateur sur une campagne de notes **fictives** : la grille du `04-7` reste vide, c'est l'auditeur qui la remplit. Les proxies automatiques (SNR, SI-SDR, distance log-spectrale, STOI) sont mesurés sur une référence de laboratoire synthétique, pour montrer ce qu'ils capent — et ce qu'ils ne captent pas.
+
+| # | Notebook | Contenu | Service | VRAM |
+|---|----------|---------|---------|------|
+| 19 | [04-19-Evaluation-MOS](04-19-Evaluation-MOS.ipynb) | Protocole d'écoute subjective (ITU-T P.800) et agrégateur (ITU-R P.808) : lecture de la rubrique depuis le `04-7`, liste d'essais rejouable, fiche de notation pré-remplie, MOS + IC 95 % + rejet des auditeurs aberrants, proxies (SNR, SI-SDR, LSD, STOI) sur référence source-filtre et dégradations maîtrisées, 3 exercices | CPU local (numpy, scipy, torchmetrics, pystoi) | 0 |
+
 ## Prérequis
 
 ### API Keys
@@ -120,7 +128,7 @@ Audio brut -> STT -> Correction -> Enhance -> TTS -> Podcast final
 ### Musique
 
 ```text
-Texte -> MusicGen -> Édition MIDI -> Voice leading optimal ([App-21 Search](../../../Search/Applications/CSP/App-21-VoiceLeading.ipynb)) -> Rendu audio intelligent ([04-14](04-14-VoiceLeading-Rendu-GenAI.ipynb)) -> Post-production -> Export
+Texte -> MusicGen -> Édition MIDI -> Voice leading optimal ([App-21 Search](../../../Search/Part3-Cas-pratiques/App-21-VoiceLeading.ipynb)) -> Rendu audio intelligent ([04-14](04-14-VoiceLeading-Rendu-GenAI.ipynb)) -> Post-production -> Export
 ```
 
 ### Audiobook Agentique (Epic #1028)

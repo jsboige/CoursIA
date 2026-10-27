@@ -114,40 +114,67 @@ class TestFilterForParcours:
 # generate_parcours_page
 # ---------------------------------------------------------------------------
 
+@pytest.fixture()
+def nb_root(tmp_path):
+    """Materialise les carnets de SAMPLE_ENTRIES (chemins fictifs) sur disque.
+
+    generate_parcours_page ne partitionne que sur l'EXISTENCE du fichier ;
+    le contenu "{}" suffit (JSON valide, jamais ouvert ici).
+    """
+    for e in SAMPLE_ENTRIES:
+        p = tmp_path / e["path"]
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text("{}", encoding="utf-8")
+    return tmp_path
+
+
 class TestGenerateParcoursPage:
-    def test_has_title(self):
+    def test_has_title(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
-        page = generate_parcours_page("ia-classique", entries)
+        page = generate_parcours_page("ia-classique", entries, notebooks_root=nb_root)
         assert "# IA Classique" in page
 
-    def test_has_subtitle(self):
+    def test_has_subtitle(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
-        page = generate_parcours_page("ia-classique", entries)
+        page = generate_parcours_page("ia-classique", entries, notebooks_root=nb_root)
         assert "Recherche, CSP et résolution" in page
 
-    def test_has_statistics(self):
+    def test_has_statistics(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
-        page = generate_parcours_page("ia-classique", entries)
+        page = generate_parcours_page("ia-classique", entries, notebooks_root=nb_root)
         assert "## Statistiques" in page
         assert "| Notebooks |" in page
         assert "| PRODUCTION |" in page
 
-    def test_notebook_count_matches(self):
+    def test_notebook_count_matches(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
-        page = generate_parcours_page("ia-classique", entries)
+        page = generate_parcours_page("ia-classique", entries, notebooks_root=nb_root)
         assert f"| Notebooks | {len(entries)} |" in page
 
-    def test_has_table_rows(self):
+    def test_has_table_rows(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "genai")
-        page = generate_parcours_page("genai", entries)
+        page = generate_parcours_page("genai", entries, notebooks_root=nb_root)
         assert "| Notebook |" in page
         assert "Maturité" in page
 
-    def test_executable_column(self):
+    def test_executable_column(self, nb_root):
         entries = filter_for_parcours(SAMPLE_ENTRIES, "genai")
-        page = generate_parcours_page("genai", entries)
+        page = generate_parcours_page("genai", entries, notebooks_root=nb_root)
         assert "Oui" in page
         assert "Non" in page
+
+    def test_absent_entry_skipped_not_counted(self, nb_root):
+        """#20552 : entree absente du disque -> pas comptee, pas emise, signalee."""
+        entries = filter_for_parcours(SAMPLE_ENTRIES, "ia-classique")
+        ghost = dict(entries[0], path="Search/Part1/Search-1-Renamed.ipynb", title="Ghost Renamed")
+        unresolved: list[str] = []
+        page = generate_parcours_page(
+            "ia-classique", entries + [ghost],
+            unresolved=unresolved, notebooks_root=nb_root,
+        )
+        assert f"| Notebooks | {len(entries)} |" in page
+        assert "Ghost Renamed" not in page
+        assert unresolved == [ghost["path"]]
 
     def test_empty_entries(self):
         page = generate_parcours_page("ia-classique", [])
@@ -911,3 +938,91 @@ class TestResolveMovedEntries:
         entries = [_stale_entry(self.NEW, generate_catalog.code_source_sha(nb))]
 
         assert gp.resolve_moved_entries(entries, root=root) is entries
+
+
+class TestNiveauxManifest:
+    """Tests pour le manifeste des niveaux de sortie (item 3 du tri du 26/09
+    sur #13844) : cinq strates cumulatives (decouverte -> licence ->
+    ingenieur/master -> avancee -> recherche). Meme geste que l'instance
+    Actuariat (#17659) sur l'axe des niveaux de sortie.
+
+    Couvre : (a) tous les carnets cites existent sur disque et au catalogue ;
+    (b) les strates forment une chaine de prerequis lineaire et des ensembles
+    disjoints (une strate ajoute, elle ne repete pas) ; (c) le manifeste
+    compile dans l'ordre des niveaux et la duree cumulee croit strictement a
+    chaque strate ; (d) la declaration de transitions de noyau est portante.
+    """
+    manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "niveaux.json"
+    LEVELS = ["decouverte", "licence", "ingenieur-master", "avancee", "recherche"]
+
+    # Envs Python a nom de kernel sans prefixe "Python 3" dans le catalogue
+    # (mesure du 2026-10-26 : NLP/02 -> "coursia-ml-training", Texte/03 ->
+    # "base"). Ce sont des kernels Python : l'heuristique de famille par
+    # premier token ne doit pas les lire comme des changements de noyau.
+    PYTHON_LIKE = {"Python", "coursia-ml-training", "base"}
+
+    def _foreign_families(self, compiled):
+        return {notebook["kernel"].split(" ", 1)[0]
+                for group in compiled["groups"]
+                for notebook in group["notebooks"]} - self.PYTHON_LIKE
+
+    def test_catalog_paths_exist_and_strata_are_disjoint(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        catalog_paths = {entry["path"] for entry in catalog}
+        by_level = {b["id"]: b["notebooks"] for b in manifest["branches"]}
+
+        assert list(by_level) == self.LEVELS
+        assert not manifest["branches"][0].get("prerequisites"), (
+            "la strate decouverte n'a pas de prerequis")
+        for prev, branch in zip(self.LEVELS, manifest["branches"][1:]):
+            assert branch["prerequisites"] == [prev], (
+                f"la branche {branch['id']} ne chaine pas sur {prev}")
+
+        seen = set()
+        for level in self.LEVELS:
+            paths = by_level[level]
+            assert len(paths) == len(set(paths)), f"chemin duplique dans {level}"
+            assert not (set(paths) & seen), (
+                f"la strate {level} reprend un carnet d'une strate precedente")
+            seen.update(paths)
+        for path in seen:
+            assert path in catalog_paths, f"chemin absent du catalogue : {path}"
+            assert (gp.REPO_ROOT / "MyIA.AI.Notebooks" / path).is_file(), \
+                f"chemin introuvable sur disque : {path}"
+
+    def test_compiles_five_levels_in_order(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = gp.compile_parcours(catalog, manifest, self.LEVELS, [])
+        assert [g["id"] for g in compiled["groups"]] == self.LEVELS
+        assert all(group["notebooks"] for group in compiled["groups"])
+        assert self._foreign_families(compiled) == set(
+            manifest["declared_kernel_transitions"])
+
+    def test_cumulative_duration_grows_with_each_level(self):
+        """Chaque strate ajoute du temps : une strate vide ou deja couverte
+        casserait la croissance stricte des durees cumulees."""
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        durations = [
+            gp.compile_parcours(catalog, manifest, self.LEVELS[:i + 1], [])
+            ["duration_minutes"]
+            for i in range(len(self.LEVELS))
+        ]
+        assert all(later > earlier for earlier, later in zip(durations, durations[1:])), (
+            f"une strate n'ajoute pas de temps : {durations}")
+
+    def test_kernel_transitions_declaration_is_load_bearing(self):
+        """Le parcours traverse Python, .NET et Lean : sans declaration de
+        transition, la continuite de noyau doit echouer ; la declaration du
+        manifeste couvre exactement les familles non-Python presentes."""
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = gp.compile_parcours(catalog, manifest, self.LEVELS, [])
+        with pytest.raises(AssertionError, match="sans déclaration"):
+            assert_kernel_continuity(compiled, [])
+        foreign = self._foreign_families(compiled)
+        assert foreign == set(manifest["declared_kernel_transitions"]), (
+            f"declaration et familles reelles divergent : "
+            f"{foreign} vs {manifest['declared_kernel_transitions']}")

@@ -23,6 +23,12 @@ Une phrase de copie declaree dans le body de la PR blanchit les collisions
 (la porte de sortie vit dans le body). Les jumeaux ``X.lean`` / ``X_en.lean``
 d'un meme lake partagent leur serie proprietaire : ils ne se signalent pas.
 
+Sous-modules (#13902, item 4) : une collision avec un organe de la section
+``submodules`` (les cinq depots sous-modules) exige la section « ce que cette
+extraction rend a l'amont » (ou « ne rend rien ») -- la copie declaree seule
+ne blanchit pas : extraire l'ame d'un sous-module sans nommer le contrat de
+retour est l'affaiblissement que l'EPIC interdit.
+
 Sortie : une ligne par collision au format
   COLLISION <serie demandeuse|?> (<fichier>) -> <serie organe> (<symbole>)
 --check : exit 1 si au moins une collision non declaree.
@@ -60,6 +66,17 @@ DECLARATION_RE = re.compile(
     r"\bcopie\s+(?:pedagogique\s+)?(?:declaree|fidele)\b", re.IGNORECASE
 )
 
+# Contrat de retour amont (#13902, item 4) : une collision avec un organe
+# SUBMODULE (les cinq depots sous-modules de .gitmodules, geste de perennite)
+# n'est pas blanchie par la seule copie declaree -- le body doit dire ce que
+# l'extraction rend a l'amont, ou declarer explicitement ne rien rendre.
+PAYBACK_RE = re.compile(
+    r"rend\w*\s+a\s+l['’]\s*amont"
+    r"|cette\s+extraction\s+rend"
+    r"|ne\s+rend\s+rien",
+    re.IGNORECASE,
+)
+
 # --- Lean (#20210) ----------------------------------------------------------
 
 # Declaration en tete de ligne de CODE (commentaires deja retires par mask_lean).
@@ -79,6 +96,14 @@ LEAN_SKIP_DIRS = frozenset({".lake", "reference_docs", "foundry-lib", "upstream"
 LEAN_TREE_DIR = "MyIA.AI.Notebooks"
 LEAN_PATHSPECS = (":(glob)MyIA.AI.Notebooks/**/*.lean", ":(glob)MyIA.AI.Notebooks/**/lakefile.*")
 
+# Fixtures du detecteur lui-meme : ses propres tests ajoutent des lignes
+# « class <symbole> » DANS des chaines de patch de test -- ce ne sont pas des
+# extractions, et l'organe qui se flaggerait lui-meme rendrait son advisory
+# inutilisable sur ses propres PRs. Exemption bornee a ce fichier seul.
+SELF_FIXTURE_FILES = frozenset({
+    "scripts/tests/test_detect_organ_duplication.py",
+})
+
 
 def strip_accents(text: str) -> str:
     import unicodedata
@@ -92,7 +117,16 @@ def is_declared(body: str) -> bool:
     return bool(DECLARATION_RE.search(strip_accents(body)))
 
 
+def is_payback(body: str) -> bool:
+    if not body:
+        return False
+    return bool(PAYBACK_RE.search(strip_accents(body)))
+
+
 def load_index(path: Path):
+    """(owners, symbol_owners, submodule_names) : la section ``submodules``
+    (#13902) charge les memes champs que ``series`` -- ses organes exigent le
+    contrat de retour amont au lieu de la copie declaree."""
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     series = data.get("series") or {}
     if not isinstance(series, dict) or not series:
@@ -104,7 +138,17 @@ def load_index(path: Path):
         owners[name] = owner_path
         for sym in entry.get("symbols") or []:
             symbol_owners.setdefault(str(sym), name)
-    return owners, symbol_owners
+    submodule_names = set()
+    submodules = data.get("submodules") or {}
+    for name, entry in submodules.items():
+        owner_path = str(entry.get("owner_path", "")).rstrip("/")
+        owners[name] = owner_path
+        submodule_names.add(name)
+        for sym in entry.get("symbols") or []:
+            # setdefault : un symbole deja proprietaire cote series reste a
+            # son premier proprietaire -- la curation exclut les doublons.
+            symbol_owners.setdefault(str(sym), name)
+    return owners, symbol_owners, submodule_names
 
 
 def resolve_series(path: str, owners: dict):
@@ -133,7 +177,9 @@ def parse_patch(patch_text: str, owners: dict, symbol_owners: dict):
         if m:
             current_file = m.group(2)
             continue
-        if current_file is None or not line.startswith("+") or line.startswith("+++"):
+        if current_file is None or current_file in SELF_FIXTURE_FILES:
+            continue
+        if not line.startswith("+") or line.startswith("+++"):
             continue
         content = line[1:].lstrip()
         if content.startswith("#"):
@@ -490,6 +536,7 @@ def git_diff(base: str, head: str, cwd: Path) -> str:
     result = subprocess.run(
         ["git", "diff", f"{base}...{head}", "--unified=0"],
         capture_output=True, text=True, cwd=str(cwd), check=True,
+        encoding="utf-8", errors="replace",
     )
     return result.stdout
 
@@ -506,6 +553,7 @@ def git_show(ref: str, path: str, cwd: Path):
 def git_merge_base(base: str, head: str, cwd: Path) -> str:
     result = subprocess.run(
         ["git", "merge-base", base, head], capture_output=True, text=True, cwd=str(cwd),
+        encoding="utf-8", errors="replace",
     )
     found = result.stdout.strip()
     return found if result.returncode == 0 and found else base
@@ -551,7 +599,7 @@ def main(argv=None) -> int:
     if not args.patch and not args.base:
         args.base = "origin/main"
 
-    owners, symbol_owners = load_index(args.index)
+    owners, symbol_owners, submodule_names = load_index(args.index)
     cwd = args.cwd or Path.cwd()
 
     if args.patch:
@@ -566,6 +614,7 @@ def main(argv=None) -> int:
         if args.body_file else ""
     )
     declared = is_declared(body)
+    payback = is_payback(body)
 
     collisions = parse_patch(patch_text, owners, symbol_owners)
     blocks = parse_added(patch_text)
@@ -580,17 +629,27 @@ def main(argv=None) -> int:
     undeclared = []
     for file, file_series, owner, sym in collisions:
         origin = file_series if file_series else "?"
-        if declared:
+        if owner in submodule_names:
+            # Contrat #13902 : la copie declaree ne suffit pas, seule la
+            # section de retour amont blanchit une extraction de sous-module.
+            if payback:
+                print(f"EXEMPTED {origin} ({file}) -> {owner} ({sym}) [retour amont declare]")
+            else:
+                print(f"COLLISION {origin} ({file}) -> {owner} ({sym}) "
+                      f"[retour amont manquant -- #13902]")
+                undeclared.append((file, owner, sym))
+        elif declared:
             print(f"EXEMPTED {origin} ({file}) -> {owner} ({sym}) [copie declaree]")
         else:
             print(f"COLLISION {origin} ({file}) -> {owner} ({sym})")
             undeclared.append((file, owner, sym))
 
-    status = "EXEMPTED" if declared and collisions else (
+    status = "EXEMPTED" if collisions and not undeclared else (
         "BLOCKED" if undeclared else "CLEAN"
     )
     print(f"{status}  {len(collisions)} collision(s), {len(undeclared)} non declaree(s), "
-          f"{len(owners)} series dans l'index, {len(lean_owners)} lakes Lean")
+          f"{len(owners) - len(submodule_names)} series + {len(submodule_names)} submodules "
+          f"dans l'index, {len(lean_owners)} lakes Lean")
 
     if args.check and undeclared:
         return 1
