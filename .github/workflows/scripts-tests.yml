@@ -258,7 +258,18 @@ jobs:
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
     # fork n'atteint le runner. Retour arriere = revert de la PR.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    #
+    # 2026-10-27 (mesure ai-01) : retour sur `ubuntu-latest`. Le job installe
+    # lui-meme TOUTES ses dependances (numpy, pandas, scipy, pyarrow>=26,
+    # pytest, requests, bcrypt, jupyter_client, pytest-xdist, ipykernel,
+    # papermill, nbformat, nbconvert...) -- le commentaire de l'etape
+    # "Install dependencies" note deja que la suite a ete corrigee pour
+    # tourner sous ubuntu (papermill/nbformat). Aucun besoin local.
+    # Motif : le parc local est sature PAR SES CHECKOUTS (mesure 27/10
+    # 00:45Z : 11 des 12 slots occupes dans `actions/checkout`, 614 runs en
+    # file, 6 runs termines en 20 min, les 16 slots `coursia-waiter` du PR
+    # gate inoccupes). La garde same-repo est CONSERVEE.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Plafond 20 -> 30 (#15853). Grandeur mesuree : le mur du JOB
     # (started_at -> completed_at du job nomme exactement "Scripts Tests
