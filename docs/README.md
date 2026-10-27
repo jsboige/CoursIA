@@ -226,6 +226,7 @@ Grade distinct des synthèses ci-dessus : ces documents sont **grade T-pré-enre
 | [ict/strates-as-adjunctions-prototype.md](ict/strates-as-adjunctions-prototype.md) | Prototype **grade C** : les strates ICT comme adjonctions — conjecture du jalon 3 de #8182 (TOE ↔ conscience), explicitement non démontrée |
 | [ict/butlin-indicators-pre-enregistrement.md](ict/butlin-indicators-pre-enregistrement.md) | Case 19 — le mot « using » de RPT-1 (Butlin et al. 2023) : protocole scellé avant écriture du banc, dissociation procédurale entre inspection structurelle et sonde causale |
 | [ict/assembly-theory-pre-enregistrement.md](ict/assembly-theory-pre-enregistrement.md) | Case 20 — l'assembly index mesuré (Sharma et al. 2023) contre la lecture « compression LZ » (Abrahão et al. 2024) : solveur exact à deux implémentations, échelle périodique certifiée `ai = log2 n`, règle de décision scellée par pentes |
+| [ict/stv-valence-symmetry-v2-pre-enregistrement.md](ict/stv-valence-symmetry-v2-pre-enregistrement.md) | Case 17bis — seconde opérationnalisation STV scellée avant le banc : observable d'entropie des classes de ratio du lock (correctif de l'aveuglement `CV` mesuré au case 17), drive découplé de la structure de verrouillage |
 
 ## Curriculum (docs/curriculum/)
 
@@ -365,6 +366,7 @@ Tables d'audit cumulatives par Epic (mandat user, format longue durée).
 | [ledgers/15615-gradation-fournee-b.md](ledgers/15615-gradation-fournee-b.md) | Ledger — Issue #15615 (gradation GameTheory, fournée B : blocs 06-10) |
 | [ledgers/15615-gradation-fournee-c.md](ledgers/15615-gradation-fournee-c.md) | Ledger — Issue #15615 (gradation GameTheory, fournée C : blocs 11-15) |
 | [ledgers/15615-gradation-fournee-d.md](ledgers/15615-gradation-fournee-d.md) | Ledger — Issue #15615 (gradation GameTheory, fournée D : blocs 16-20) |
+| [ledgers/15615-gradation-reprise-blocs-06-21.md](ledgers/15615-gradation-reprise-blocs-06-21.md) | Ledger — Issue #15615 (reprise à tête commune de la gradation GameTheory) |
 | [ledgers/16473-consolidation-acceptance-2-log.md](ledgers/16473-consolidation-acceptance-2-log.md) | EPIC #16473 acceptance 2 — suivi des rattachements nominatifs des sous-grains des axes A-F, par lot livré (snapshots de compteur réconciliés dans le document) |
 | [ledgers/17375-md-content-loss-justified.md](ledgers/17375-md-content-loss-justified.md) | Ledger #17375 -- md-content-loss justification |
 | [ledgers/18493-counter-scan-classification.md](ledgers/18493-counter-scan-classification.md) | Issue #18493 — Scan des compteurs littéraux dans commentaires code |
@@ -377,6 +379,7 @@ Protocoles opérationnels de la coordination flotte (registres, tenanciers, liai
 | Fichier | Description |
 |---------|-------------|
 | [coordination/gpu-reservation.md](coordination/gpu-reservation.md) | Protocole de réservation GPU — schéma du ledger, garde 85 % charge hôte, CUDA devices explicites, GPU 2 dédié ai-01, fold hebdomadaire, liaison picker / file #1454. Chantier #16737. |
+| [coordination/ci-overflow-controller.md](coordination/ci-overflow-controller.md) | Contrôleur automatique de la variable de dépôt `CI_OVERFLOW_LOCAL` (phase B du débordement CI) — file hébergeuse saturée → `true`, file drainée → `false`, mesure illisible → aucune écriture ; le job automatisé **écrit** la variable via le secret dédié `ACTIONS_VARIABLES_PAT` (canal séparé du jeton de mesure, aucun repli : secret absent → verdict rendu, rien d'écrit, cause nommée dans le résumé du job). Chantier #22937. |
 
 ## Cadrage épistémique (docs/cadrage/)
 
