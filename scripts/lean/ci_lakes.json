@@ -163,6 +163,7 @@
       "sorry-baseline": "0",
       "sorry-filter-mode": "real",
       "axiom-target-modules": "*",
+      "axiom-allow-axioms": "arrow_impossibility",
       "paths": [
         "MyIA.AI.Notebooks/GameTheory/lean_game_defs/**.lean",
         "MyIA.AI.Notebooks/GameTheory/lean_game_defs/lakefile.toml",

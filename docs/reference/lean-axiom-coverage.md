@@ -244,21 +244,34 @@ les seules occurrences de `native_decide` dans ces lakes sont des **docstrings**
 (« Aucun `sorry`, aucun `native_decide` » dans `social_choice_lean_peters`,
 mention pédagogique dans `Bayesian/InformationNoisy.lean`) — **0 usage en
 tactique** sur les treize. D'où une décision uniforme : `"*"` (dérivation
-runtime des modules, `_en` exclus par défaut), sauf le lake dont le
-`sorry-baseline` est non nul.
+runtime des modules, `_en` exclus par défaut), sauf les deux lakes dont la
+mesure révèle une exception.
+
+**Une troisième classe manquait à cette mesure, et le gate l'a trouvée le
+premier.** `native_decide` et `sorry` ne sont pas les seuls ports d'entrée d'un
+axiome : une déclaration `axiom` écrite à la main apparaît elle aussi dans le
+`#print axioms` de toute déclaration qui l'utilise. Le premier run matriciel de
+la PR de câblage a rougi sur `Proof integrity (lean_game_defs)` pour
+`arrow_impossibility`, déclaré `axiom` dans `SocialChoice.lean` (commentaire du
+fichier : « la preuve complète nécessite une machinerie importante ; nous
+l'énonçons comme axiome »). L'axiome est **nommé** dans
+`axiom-allow-axioms` — jamais un wildcard : le cliquet garde toute sa valeur,
+puisque tout axiome **nouveau** rougit immédiatement. L'écart de preuve lui-même
+reste ouvert et suivi par **#23022** : le whitelist nommé le rend visible
+dans le manifeste, il ne le résout pas.
 
 | Lake | Décision | Justification |
 |---|---|---|
 | `MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters` | `"*"` | 0 `native_decide` en tactique (2 mentions en docstring), `distinct_code_sorry = 0` |
-| `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | `"*"` | Lake à 2 fichiers, 0 `native_decide`, 0 `sorry` |
-| `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | `"*"` | 0 `native_decide`, 0 `sorry` |
+| `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | `"*"` | 0 `native_decide`, 0 `sorry` |
+| `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | `"*"` + `axiom-allow-axioms: "arrow_impossibility"` | 0 `native_decide`, 0 `sorry`, mais **un axiome déclaré** : `arrow_impossibility` (`SocialChoice.lean`) est assumé, pas prouvé. Nommé dans le manifeste pour que le gate reste actif sur tout axiome **nouveau** ; l'écart de preuve est suivi par #23022 |
 | `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` | `"*"` | 0 `native_decide` en tactique (1 mention en docstring), `distinct_code_sorry = 0` |
-| `MyIA.AI.Notebooks/IIT/iit_lean` | `"*"` | Lake à 3 fichiers, 0 `native_decide`, 0 `sorry` |
+| `MyIA.AI.Notebooks/IIT/iit_lean` | `"*"` | 0 `native_decide`, 0 `sorry` |
 | `MyIA.AI.Notebooks/ML/learning_theory_lean` | `"*"` | 0 `native_decide` en tactique, `distinct_code_sorry = 0` (les occurrences de la prose sont des docstrings sur `Classical.choice`, accepté par défaut) |
 | `MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean` | `"*"` + `axiom-fail-on-sorry: "false"` | `sorry-baseline = 2` : le gate voit et **rapporte** les `sorryAx` sans échouer, le ratchet restant tenu par le build. Rouge immédiat sur tout `native_decide` introduit |
 | `MyIA.AI.Notebooks/Search/discrepancy_lean` | `"*"` | 0 `native_decide`, `distinct_code_sorry = 0` |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | `"*"` | 0 `native_decide`, `distinct_code_sorry = 0` |
-| `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | `"*"` | Lake à 3 fichiers ; l'import Mathlib est déjà payé par le build du même job, le pass d'axiomes chevauche ce cache |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | `"*"` | L'import Mathlib est déjà payé par le build du même job, le pass d'axiomes chevauche ce cache |
 | `MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean` | `"*"` | 0 `native_decide`, 0 `sorry` |
 | `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | `"*"` | 0 `native_decide`, 0 `sorry` |
 | `MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean` | `"*"` | 0 `native_decide`, `distinct_code_sorry = 0` |
