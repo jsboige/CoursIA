@@ -530,21 +530,21 @@ def test_commentaire_sans_body_compte_comme_activite():
 # --- famille des marqueurs de protocole : claim / release / delivery ---
 #
 # Instance fondatrice mesuree le 2026-10-27 sur #20078 : livree le 2026-10-09
-# par #20079 (body `See #20078`), puis TROIS marqueurs de protocole apres le
-# merge -- [CLAIMED] (10-19), [CLAIMED] (10-25), [RELEASED] « deja livre, rien
-# a reprendre » (10-25). Aucun reconnu : la preuve de livraison etait la, le
-# label jamais pose, et l'issue a ete re-servie a trois lanes successives.
+# par #20079 (body `See #20078`), puis des marqueurs de protocole apres le
+# merge, aucun reconnu : la preuve de livraison etait la, le label jamais pose.
+#
+# La frontiere retenue est celle du PICKER, pas une frontiere locale (revue
+# Hermes du 2026-10-27) : un marqueur n'est une attestation de cloture que s'il
+# DIT une cloture. `[CLAIMED]` OUVRE un travail et un `[RELEASED]` nu REND la
+# main sur une barriere -- l'item redevient servable, donc l'etiqueter
+# `candidate-delivered` retirerait du tapis un grain actionnable.
 
-def test_marqueurs_de_claim_et_release_ne_comptent_pas_comme_activite():
+def test_released_avec_motif_de_couverture_ne_compte_pas_comme_activite():
     issue = _issue(title="gate(prevalidation)", number=20078,
                    created_at="2026-10-09T10:57:04Z")
     issue["comments"] = _comments_with_bodies(
-        ("2026-10-19T07:47:21Z",
-         "[CLAIMED] lane myia-po-2023:CoursIA-2 -- recheck du dossier BLOCKED"),
-        ("2026-10-25T09:18:49Z",
-         "[CLAIMED] lane myia-ai-01:CoursIA-2 -- dispatch du coordinateur"),
         ("2026-10-25T10:05:05Z",
-         "[RELEASED] lane myia-ai-01:CoursIA-2 -- deja livre, rien a reprendre"),
+         "[RELEASED] lane myia-ai-01:CoursIA-2 -- acceptance deja couverte"),
     )
     refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
              "body": "Grain: MED/guard\n\n`See #20078`. `Part of #19093`."}]
@@ -552,7 +552,41 @@ def test_marqueurs_de_claim_et_release_ne_comptent_pas_comme_activite():
     assert verdict == "candidate"
 
 
-def test_marqueur_claimed_amend_ne_compte_pas_comme_activite():
+def test_released_nu_compte_comme_activite():
+    # Hand-back sur une barriere : rien n'a ete livre, l'item reste servable.
+    # Le picker lit ce commentaire exactement pareil (cf. le test de parite
+    # ci-dessous) : c'est la coherence des deux organes qui est testee.
+    issue = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-10-20T00:00:00Z",
+         "[RELEASED] lane X -- barriere GPU-only, je rends la main"),
+    )
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "See #20078."}]
+    verdict, why = classify(issue, refs)
+    assert verdict == "active"
+    assert "2026-10-20" in why
+
+
+def test_marqueur_claim_compte_comme_activite():
+    # `check_lane_claim.py` classe `[CLAIMED]` comme « opens a claim », a
+    # l'oppose d'une cloture : c'est le seul signal qui dit qu'une lane
+    # travaille la, maintenant. L'exclure eteindrait ce signal.
+    issue = _issue(title="gate(prevalidation)", number=20078,
+                   created_at="2026-10-09T10:57:04Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-10-19T07:47:21Z",
+         "[CLAIMED] lane myia-po-2023:CoursIA-2 -- recheck du dossier BLOCKED"),
+        ("2026-10-25T09:18:49Z",
+         "[CLAIMED] lane myia-ai-01:CoursIA-2 -- dispatch du coordinateur"),
+    )
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "See #20078."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "active"
+
+
+def test_marqueur_claimed_amend_compte_comme_activite():
     issue = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
     issue["comments"] = _comments_with_bodies(
         ("2026-10-20T00:00:00Z",
@@ -561,7 +595,37 @@ def test_marqueur_claimed_amend_ne_compte_pas_comme_activite():
     refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
              "body": "See #20078."}]
     verdict, _ = classify(issue, refs)
-    assert verdict == "candidate"
+    assert verdict == "active"
+
+
+def test_les_deux_organes_lisent_la_meme_grammaire():
+    # Classe #17956 : la decision d'etiquetage et la decision du tapis ne
+    # doivent pas diverger sur le MEME commentaire. Les deux predicates sont
+    # independants dans le code ; ce test est le lien qui les tient ensemble.
+    import candidate_delivered as cd
+    import pick_idle_grain as pig
+
+    bodies = [
+        "[INFO] candidate-delivered -- preuve par critere",
+        "[DELIVERED] lane myia-po-2028:CoursIA -- PR #22883",
+        "[RELEASED] lane X -- acceptance deja couverte",
+        "[RELEASED] lane X -- barriere GPU-only, je rends la main",
+        "[RELEASED] lane myia-ai-01:CoursIA-2 -- deja livre, rien a reprendre",
+        "[RELEASED] lane X -- aucune tranche restante pour cette lane",
+        "[CLAIMED] lane X -- tranche 2",
+        "Suite au [RELEASED] de l'autre lane, la preuve ne tient pas.",
+        "commentaire ordinaire",
+    ]
+    for body in bodies:
+        mine = cd._is_protocol_attestation({"body": body})
+        theirs = (pig._released_covers_acceptance(body)
+                  if body.lstrip().startswith("[RELEASED]") else None)
+        if theirs is not None:
+            assert mine == theirs, body
+        # Les marqueurs d'ouverture ne sont jamais des attestations, des deux
+        # cotes de la frontiere.
+        if body.lstrip().startswith("[CLAIMED"):
+            assert mine is False, body
 
 
 def test_marqueur_delivered_ne_compte_pas_comme_activite():
