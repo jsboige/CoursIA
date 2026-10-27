@@ -97,6 +97,12 @@
       "cell_id": "cell-17",
       "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/hecke_lean/Hecke/FltRoute.lean",
       "note": "Compte de lignes et table des declarations de FltRoute.lean ; trouvee par l'invariant inverse apres fusion de main"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb",
+      "cell_id": "0147a26c",
+      "source": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/datasets/le_horla_1887.txt",
+      "note": "Section 1 -- taille et nombre de lignes du corpus, empreinte SHA-256 des 128 premiers Kio et entropie de la tranche de 16 Kio"
     }
   ]
 }

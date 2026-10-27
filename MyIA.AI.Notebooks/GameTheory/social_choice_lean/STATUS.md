@@ -3,7 +3,10 @@
 > **⚑ Archive (PR [#6058](https://github.com/jsboige/CoursIA/pull/6058)).** Sources déplacées
 > byte-identique vers [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/)
 > (home canonique). Statut figé à la date d'absorption ; voir `game_theory_lean/` pour le statut
-> actif (CI `lean-social-choice.yml`).
+> actif. La CI qui le porte est `.github/workflows/lean-ci-matrix.yml` : le wrapper
+> `lean-social-choice.yml` a été absorbé dans la matrice par #17374, et le pin Lean a avancé
+> depuis (voir [`game_theory_lean/lean-toolchain`](../game_theory_lean/lean-toolchain)). Les
+> valeurs du tableau ci-dessous sont donc un **instantané historique**, pas l'état courant.
 
 ## Build Info
 
@@ -31,8 +34,11 @@
 
 ## CI
 
-GitHub Actions workflow: `.github/workflows/lean-social-choice.yml`
-Trigger: push/PR touching `social_choice_lean/**`
+GitHub Actions workflow: `.github/workflows/lean-ci-matrix.yml` — le wrapper
+`lean-social-choice.yml` a été absorbé dans la matrice (#17374) ; le fichier n'existe plus.
+Trigger: push/PR touching `game_theory_lean/**` ou
+`game_theory_lean/SocialChoice/CERTIFIED.txt`. **Plus** `social_choice_lean/**` : ce répertoire
+ne porte plus aucune source Lean, donc il ne déclenche plus rien.
 Steps: elan install, Mathlib cache, `lake build`, sorry detection.
 
 ## History
