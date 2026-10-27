@@ -1178,6 +1178,10 @@ TRANCHE5: list[Guard] = [
             ".github/workflows/ml-tests.yml",
             ".github/workflows/secret-scan.yml",
             ".github/workflows/ict-tests.yml",
+            # sudoku-tests.yml declare une cible de couverture (cible-fichier
+            # `test_dlx_certificates.py`, cablage de #22375) : l'editer peut
+            # desynchroniser WORKFLOW_COVERAGE, donc il declenche la garde.
+            ".github/workflows/sudoku-tests.yml",
             ".github/workflows/testpaths-coverage-guard.yml",
         ],
         argv=["python", "scripts/check_testpaths_coverage.py", "--verbose"],

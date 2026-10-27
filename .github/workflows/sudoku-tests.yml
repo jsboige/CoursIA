@@ -1,0 +1,97 @@
+name: Sudoku-DLX-Tests
+
+# Cablage CI de la suite `MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py`
+# (grain DEEP/research-code #22375, tranche 1a livree par #22474).
+#
+# Defaut mesure (reserve #1 de la review Hermes sur #22474) : le module
+# `Sudoku/dlx_certificates.py` et ses 17 tests n'etaient executes par
+# AUCUN workflow. `grep -rln pytest .github/workflows/` ne listait que des
+# cibles `scripts/...` ; `MyIA.AI.Notebooks/Sudoku/tests` n'est ni dans
+# `pytest.ini` testpaths ni cite par un workflow. La garantie d'equivalence
+# reposait donc sur la seule lane. Ce workflow la porte en CI.
+#
+# Portee stricte : cible-FICHIER `test_dlx_certificates.py` uniquement.
+# Le dossier `Sudoku/tests/` contient aussi `test_thermal_safe_train.py`,
+# un test d'entrainement torch (59 tests, ~35 s de collecte seule, run de
+# plusieurs minutes) : l'inclure rendrait ce garde lourd et instable. Ce
+# test torch reste hors perimetre ici (il est deja sur main, non cable ;
+# une cible distincte le traiterait, hors scope de cette PR empilee).
+#
+# Pas de modification de `pytest.ini` testpaths : y ajouter le dossier
+# ferait collecter le test torch par un `pytest` nu ailleurs. Le cablage
+# passe par la cible explicite ci-dessous, enregistree dans
+# `scripts/check_testpaths_coverage.py` (WORKFLOW_COVERAGE, cible-fichier).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'MyIA.AI.Notebooks/Sudoku/dlx_certificates.py'
+      - 'MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py'
+      - '.github/workflows/sudoku-tests.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, edited, reopened]
+    paths:
+      - 'MyIA.AI.Notebooks/Sudoku/dlx_certificates.py'
+      - 'MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py'
+      - '.github/workflows/sudoku-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sudoku-tests-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  sudoku-dlx-tests:
+    name: Sudoku DLX certificates pytest (17 collected)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      # Plancher mesure firsthand : `pytest ... --collect-only -q` = 17 tests
+      # (mesure 2026-10-27, head 9d82b1e7bc91). Si des tests sont retires
+      # INTENTIONNELLEMENT, ajuster cette valeur dans la meme PR.
+      SUDOKU_DLX_TEST_FLOOR: 17
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      # Deps : pytest uniquement. `dlx_certificates.py` n'importe que la
+      # stdlib (json, dataclasses, typing) ; le test execute les cellules
+      # `class` du carnet Sudoku-02 (Python pur). Aucune dependance
+      # scientifique requise (verifie : imports = stdlib seule).
+      - name: Install deps (pytest)
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+
+      - name: Run Sudoku DLX certificate tests
+        run: |
+          pytest MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py --tb=short -v
+
+      # Collection floor-guard (meme semantique que gametheory-tests.yml /
+      # ict-tests.yml) : eviter qu'un pytest vert cache la disparition
+      # silencieuse de tests du chemin de collecte. Aucun `|| true` : on
+      # veut EXIT 1 si le grep echoue (signal a distinguer d'une baisse).
+      - name: Collection floor-guard (17)
+        if: always()
+        run: |
+          COLLECTED=$(pytest MyIA.AI.Notebooks/Sudoku/tests/test_dlx_certificates.py --collect-only -q 2>&1 | grep -oE '[0-9]+ tests? collected' | grep -oE '[0-9]+' | head -1)
+          if [ -z "$COLLECTED" ]; then
+            echo "::error::Le collect-only n'a renvoye aucune ligne 'N tests collected' -- la collecte a plante (infra, cf #9387)."
+            exit 1
+          fi
+          if [ "$COLLECTED" -lt "$SUDOKU_DLX_TEST_FLOOR" ]; then
+            echo "::error::Regression de couverture : $COLLECTED tests collectes, plancher=$SUDOKU_DLX_TEST_FLOOR."
+            echo "::error::Si la baisse est intentionnelle, ajuster SUDOKU_DLX_TEST_FLOOR dans cette PR."
+            exit 1
+          fi
+          echo "OK : $COLLECTED tests collectes (plancher=$SUDOKU_DLX_TEST_FLOOR)."
