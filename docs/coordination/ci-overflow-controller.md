@@ -127,4 +127,4 @@ Le dwell de 30 min reste celui de l'organe. Il est plus court que l'intervalle d
 - `scripts/ci/check_scheduler_liveness.py` — le registre de cadence, ou le controleur est desormais inscrit : son extinction se mesure ;
 - `scripts/coordination/install_merge_ready_task.py` — la tache `CoursIA\merge_ready`, siege ou la bascule locale a vocation a tourner ;
 - `scripts/ci/check_runner_starvation.py` — l'organe de sante du parc, dont le controleur reutilise la mesure de file et l'inventaire des slots ;
-- [volet 5 — debit DNS vers api.github.com](dns-rate-measurement.md) — l'autre moitie du cout de la CI.
+- [volet 5 — debit DNS vers api.github.com](https://github.com/jsboige/CoursIA/pull/22948) — l'autre moitie du cout de la CI. Renvoi vers la PR et non vers le fichier : le document `docs/coordination/dns-rate-measurement.md` est livre par cette PR encore ouverte, et un lien fichier casserait `check-links` sur toute branche ne la contenant pas.
