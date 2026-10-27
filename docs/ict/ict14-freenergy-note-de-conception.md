@@ -12,6 +12,9 @@ La doctrine « escalier » de la carte #20298 : les expériences dans l'ordre o�
 - **ICT-14b (membre)** : raffinement — l'*expected free energy* (EFE) passe d'une quantité **observée** à un **pilote** de l'action (inférence active) ; le banc transforme la strate-formule en strate-banc (gate non-stationnaire CONFIRMED, null adverse tient).
 Le maintien des deux carnets ordonnés dans une sous-série `ICT-14/` préserve le récit de la jambe F puis de sa montée en mécanisme prospectif.
 
+### Nommage du dossier de sous-série
+Le dossier porte le numéro du palier (`ICT-14/`) : c'est le pattern établi par les paliers précédents de la consolidation (#22289 `ICT-15/`, #22780 `ICT-19/`). Le sujet éclairé n'est pas dans le nom du dossier mais dans les noms des carnets (`FreeEnergySurprise`, `ActiveInferenceEFE`) et dans l'escalier de `ICT-Series/README.md`, qui reste l'index de lecture de la série. Si l'auteur veut un nom de dossier descriptif, c'est une décision qui s'applique uniformément à toutes les sous-séries de la consolidation, en PR dédiée — pas palier par palier.
+
 ### Mouvement
 1. `git mv` des 2 carnets vers `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14/` (même pattern que `ICT-15/` #22289 et `ICT-19/` #22780). **Aucun renommage de fichier** : les noms `ICT-14*` sont conservés, seul le dossier regroupe.
 2. Réparation des liens entrants (préfixe `ICT-14/`) : **liens entrants réparés** — `ICT-Series/README.md`, `thom-synthese-distillation.md`, le carnet frère `ICT-40b`, le cross-série `SymbolicAI/Lean/ANALYSE/ANALYSE-03-PFR-Lean.ipynb`, et les docs (`curriculum/recherche`, `ict/feuille-de-route-notebooks`, `ict/tresse-cartographie`, `ict/genealogy-representation-interne`, `ict/dissolution-scalaires`, `cadrage/grothendieckian-lens`, `notebook-metadata/scientific-review-registry`).
