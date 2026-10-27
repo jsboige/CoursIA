@@ -1988,6 +1988,39 @@ def _flush_repair_snapshot() -> None:
               file=sys.stderr)
 
 
+def _snapshot_comments_fraiches(snapshot, issue_number: int) -> list[dict] | None:
+    """Commentaires d'une issue dans UN instantane, s'ils sont FRAIS.
+
+    Controle **par issue** -- `meta.comment_stamps` du snapshot contre
+    `COMMENT_SNAPSHOT_TTL_S`, via `_fresh_entry` -- applique de facon
+    IDENTIQUE a toutes les sources. C'est le seul controle d'age du module :
+    deux sources qui le declineraient chacune a leur maniere finiraient par
+    diverger sur ce qu'elles servent.
+
+    #22684 (review ai-01 2026-10-27) -- la source 1 (`_BELT_SNAPSHOT`) en
+    etait dispensee, au motif qu'elle est « fraiche par construction ». Ce
+    motif est faux : `refresh()` ne lit que les candidats de la FENETRE
+    (70 positions), et l'instantane qu'il rend porte aussi les entrees deja
+    presentes sur le disque, ecrites par une passe anterieure (ou par une
+    autre lane) et pouvant dater de plusieurs jours. Un remplacement tire
+    au-dela de la fenetre lisait donc un fil perime -- un `[CLAIMED]` ou un
+    `[DELIVERED]` recent invisible, donc un grain deja pris ou deja livre
+    resservi comme libre.
+
+    Rend None si l'entree est absente, non textuelle, ou perimee -- jamais
+    une liste vide, qui vaudrait « aucun commentaire ».
+    """
+    if not isinstance(snapshot, dict):
+        return None
+    entry = (snapshot.get("comments") or {}).get(str(issue_number))
+    stamp = ((snapshot.get("meta") or {}).get("comment_stamps")
+             or {}).get(str(issue_number))
+    if isinstance(entry, list) and _fresh_entry({"fetched_at": stamp},
+                                                COMMENT_SNAPSHOT_TTL_S):
+        return entry
+    return None
+
+
 def _snapshot_comments(issue_number: int) -> list[dict] | None:
     """Commentaires d'une issue lus dans l'instantane local (#22630).
 
@@ -1998,29 +2031,24 @@ def _snapshot_comments(issue_number: int) -> list[dict] | None:
     Deux sources, dans cet ordre :
 
     1. `_BELT_SNAPSHOT` -- l'instantane de la passe courante, rafraichi pour
-       les candidats de la fenetre. Il est frais par construction.
+       les candidats de la fenetre.
     2. `_PASS_SNAPSHOT` -- le meme instantane, relu du disque au demarrage de
        `main()`, qui porte aussi les issues rafraichies par une passe
-       precedente (ou par une autre lane de la machine). Sa fraicheur est
-       verifiee **par issue** (`meta.comment_stamps`) : un commentaire plus
-       vieux que le TTL n'est pas servi, la sonde retombe alors sur son
-       transport historique, inchange.
+       precedente (ou par une autre lane de la machine).
+
+    Les deux sont filtrees par le MEME controle de fraicheur par issue
+    (`_snapshot_comments_fraiches`) : appartenir a la passe courante ne dit
+    rien de l'age d'une entree, puisque l'instantane de la passe herite du
+    disque. Une entree trop vieille n'est pas servie, la sonde retombe sur
+    son transport historique, inchange.
 
     Rend None quand l'issue n'est dans aucune des deux sources fraiches --
     jamais une liste vide, qui vaudrait « aucun commentaire ».
     """
-    snapshot = globals().get("_BELT_SNAPSHOT")
-    if isinstance(snapshot, dict):
-        entry = (snapshot.get("comments") or {}).get(str(issue_number))
-        if isinstance(entry, list):
-            return entry
-    pass_snapshot = globals().get("_PASS_SNAPSHOT")
-    if isinstance(pass_snapshot, dict):
-        entry = (pass_snapshot.get("comments") or {}).get(str(issue_number))
-        stamp = ((pass_snapshot.get("meta") or {}).get("comment_stamps")
-                 or {}).get(str(issue_number))
-        if isinstance(entry, list) and _fresh_entry(
-                {"fetched_at": stamp}, COMMENT_SNAPSHOT_TTL_S):
+    for snapshot in (globals().get("_BELT_SNAPSHOT"),
+                     globals().get("_PASS_SNAPSHOT")):
+        entry = _snapshot_comments_fraiches(snapshot, issue_number)
+        if entry is not None:
             return entry
     return None
 

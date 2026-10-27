@@ -181,24 +181,18 @@ def test_entree_manquante_est_recuperee_par_rest(monkeypatch):
     assert counter["n"] == 2
 
 
-def test_sweep_comments_groupe_par_issue(monkeypatch):
-    fake, _ = _faux_gh_api({
-        "repos/jsboige/CoursIA/issues/comments": [
-            {"body": "a", "created_at": "c", "updated_at": "c",
-             "user": {"login": "l"}, "html_url": "u",
-             "issue_url": "https://api.github.com/repos/jsboige/CoursIA/issues/12"},
-            {"body": "b", "created_at": "c", "updated_at": "c",
-             "user": {"login": "l"}, "html_url": "u",
-             "issue_url": "https://api.github.com/repos/jsboige/CoursIA/issues/13"},
-            {"body": "x", "created_at": "c", "updated_at": "c",
-             "user": {"login": "l"}, "html_url": "u",
-             "issue_url": None},
-        ],
-    })
-    monkeypatch.setattr(gs, "_gh_api", fake)
-    out = gs.sweep_comments("jsboige/CoursIA", "2026-10-26T00:00:00Z")
-    assert sorted(out.keys()) == [12, 13]
-    assert out[12][0]["body"] == "a"
+def test_sweep_comments_est_retire():
+    """#22684 (review ai-01 2026-10-27, point 3) : `sweep_comments` est RETIREE.
+
+    Sa construction d'argv etait invalide -- `params=f"--paginate&since={since}"`
+    devient UN argument (`gh api <path> --paginate&since=...`), que `gh`
+    refuse -- et elle n'avait **aucun** appelant en production : le
+    rafraichissement reel passe par `ensure_issue_payloads`, issue par issue.
+    La garde est structurelle : la fonction ne doit pas revenir sans appelant
+    et sans forme d'argv valide.
+    """
+    assert not hasattr(gs, "sweep_comments")
+    assert "sweep_comments" not in gs.__all__
 
 
 def test_le_verrou_est_partage_et_le_second_passe_sert_le_premier(monkeypatch):
@@ -916,6 +910,64 @@ def test_instantane_de_passe_perime_retombe_sur_le_reseau(monkeypatch):
             stdout=json.dumps({"comments": []}), returncode=0, stderr=""))[1])
     assert pig._has_delivered_marker(7423) is False
     assert len(calls) == 1
+
+
+# --- #22684 point 2 : la source 1 est soumise au meme controle d'age ----------
+
+
+def test_source_1_perimee_n_est_pas_servie(monkeypatch):
+    """La source 1 ne sert plus une entree au-dela de `COMMENT_SNAPSHOT_TTL_S`.
+
+    Defaut fondateur (review ai-01 2026-10-27, point 2) : `_BELT_SNAPSHOT`
+    etait servi SANS controle d'age, au motif qu'il est « frais par
+    construction ». Faux -- `refresh()` ne relit que les candidats de la
+    fenetre ; le reste de l'instantane vient du disque, ecrit par une passe
+    anterieure ou par une autre lane, et peut dater de plusieurs jours. Un
+    remplacement tire au-dela de la fenetre lisait alors un fil perime.
+    """
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", _marker_snapshot(7423, fresh=False))
+    monkeypatch.setattr(pig, "_PASS_SNAPSHOT", None)
+    assert pig._snapshot_comments(7423) is None
+
+
+def test_source_1_perimee_retombe_sur_le_reseau(monkeypatch):
+    """Meme consequence observable que pour la source 2 : le transport
+    historique reprend, et le marqueur perime n'est PAS le verdict."""
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", _marker_snapshot(7423, fresh=False))
+    monkeypatch.setattr(pig, "_PASS_SNAPSHOT", None)
+    calls = []
+    monkeypatch.setattr(pig.subprocess, "run", lambda cmd, **k: (
+        calls.append(cmd), types.SimpleNamespace(
+            stdout=json.dumps({"comments": []}), returncode=0, stderr=""))[1])
+    assert pig._has_delivered_marker(7423) is False
+    assert len(calls) == 1
+
+
+def test_source_1_fraiche_reste_servie_sans_gh(monkeypatch):
+    """Controle positif : le controle d'age ne coupe pas le chemin chaud."""
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", _marker_snapshot(7423))
+    monkeypatch.setattr(pig, "_PASS_SNAPSHOT", None)
+    monkeypatch.setattr(pig.subprocess, "run",
+                        lambda *a, **k: pytest.fail("entree fraiche en cache"))
+    assert pig._snapshot_comments(7423) == [
+        {"body": "[INFO] candidate-delivered -- x",
+         "createdAt": "2026-10-26T06:00:00Z",
+         "author": {"login": "jsboige"}, "url": "u"}]
+
+
+def test_source_1_sans_horodatage_n_est_pas_servie(monkeypatch):
+    """Fail-closed : une entree sans stamp n'etablit pas sa fraicheur.
+
+    L'instantane peut venir d'une version anterieure (`meta.comment_stamps`
+    absent) : servir l'entree reviendrait a supposer sa fraicheur, exactement
+    le defaut corrige.
+    """
+    monkeypatch.setattr(pig, "_BELT_SNAPSHOT", {
+        "comments": {"7423": [{"body": "[CLAIMED] lane x:y -- z"}]},
+        "meta": {},
+    })
+    monkeypatch.setattr(pig, "_PASS_SNAPSHOT", None)
+    assert pig._snapshot_comments(7423) is None
 
 
 def test_transport_b0_est_reutilise_a_updated_at_constant(monkeypatch):

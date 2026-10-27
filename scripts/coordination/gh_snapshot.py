@@ -20,8 +20,8 @@ Ce module tient un **instantane local, partage par machine**, sous
   B.0 evalues, fingerprints `updatedAt` et horodatages inclus ;
 - `meta.json`     : l'etat du rafraichissement (horodatages, version).
 
-Le rafraichissement est **incremental** : les commentaires sont lus par
-`issues/comments?since=`, les issues et les PRs par leur `updated_at`. Un
+Le rafraichissement est **incremental** : seules les issues demandees et dont
+l'entree est perimee sont relues, une par une (commentaires inclus). Un
 verrou (fichier, `O_CREAT|O_EXCL`) fait que deux lanes de la meme machine
 partagent le meme rafraichissement au lieu de le faire chacune.
 
@@ -295,32 +295,6 @@ def fetch_issue(repo: str, number: int) -> dict:
     }
 
 
-def sweep_comments(repo: str, since: str) -> dict[int, list[dict]]:
-    """Balayage incremental des commentaires du depot (`issues/comments?since=`).
-
-    Rend `{numero: [commentaires normalises]}` -- uniquement les commentaires
-    **crees ou modifies** depuis `since` (horodatage ISO). C'est la voie
-    "rafraichissement periodique" : elle ne re-telecharge pas l'historique.
-    """
-    raw = _gh_api(f"repos/{repo}/issues/comments", params=f"--paginate&since={since}")
-    if isinstance(raw, dict):
-        raw = raw.get("comments") or []
-    out: dict[int, list[dict]] = {}
-    for comment in raw:
-        if not isinstance(comment, dict):
-            continue
-        url = comment.get("issue_url") or ""
-        number = None
-        if url:
-            tail = url.rstrip("/").rsplit("/", 1)[-1]
-            if tail.isdigit():
-                number = int(tail)
-        if number is None:
-            continue
-        out.setdefault(number, []).append(normalise_comment(comment))
-    return out
-
-
 def ensure_issue_payloads(repo: str, numbers: list[int],
                           snapshot: dict,
                           ttl_seconds: int = DEFAULT_TTL_SECONDS) -> tuple[dict, int]:
@@ -459,5 +433,4 @@ __all__ = [
     "snapshot_dir",
     "snapshot_lock",
     "snapshot_root",
-    "sweep_comments",
 ]
