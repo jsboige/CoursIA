@@ -128,6 +128,53 @@ def test_real_model_inconsistent_is_none():
 
 
 # ---------------------------------------------------------------------------
+# Le contrat « trois verdicts, never raise » tient sur les cas limites
+# (review Hermes de #22551 : trois exceptions non gérées, reproduites)
+# ---------------------------------------------------------------------------
+
+def test_decide_real_free_symbol_returns_verdict_not_raises():
+    # Un symbole de l'univers qu'aucune hypothèse ne contraint. `m.eval` sans
+    # `model_completion` levait `TypeError: invalid input: z` ; le contrat est
+    # « trois verdicts, unknown en défensif » — jamais une exception.
+    x, y, z = sp.symbols('x y z')
+    v = rbg.decide_real([x - 1], y - 2, [x, y, z])
+    assert v.status in ("valid", "invalid", "unknown")
+    assert v.status == "invalid"          # y = 2 n'implique pas x = 1
+    assert set(v.witness) == {x, y, z}
+    assert v.witness[x] == 1
+    assert v.witness[z] == 0              # libre -> complétée à 0
+
+
+def test_real_model_free_symbol_returns_point():
+    # Même cause, chemin `real_model` : levait `TypeError: invalid input: y`.
+    x, y, z = sp.symbols('x y z')
+    pt = rbg.real_model([x - 1], [x, y, z])
+    assert pt is not None
+    assert set(pt) == {x, y, z}
+    assert pt[x] == 1
+    assert pt[z] == 0
+
+
+def test_decide_real_irrational_witness_does_not_raise():
+    # x² = 2 : le modèle Z3 porte un `AlgebraicNumRef` (`-1.4142135623?`).
+    # `sp.Rational(str(v))` refusait le `?` ; le témoin est désormais un
+    # encadrement rationnel à 30 chiffres — vérifié ici par sa distance à 2.
+    x, y = sp.symbols('x y')
+    v = rbg.decide_real([x ** 2 - 2], y, [x, y])
+    assert v.status == "invalid"
+    w = v.witness
+    assert abs(sp.Abs(w[x] ** 2 - 2)) < sp.Rational(1, 10 ** 25)
+    assert sp.Abs(w[x]) > 1               # |x| = sqrt(2), pas 0
+
+
+def test_real_model_irrational_point_does_not_raise():
+    x = sp.symbols('x')
+    pt = rbg.real_model([x ** 2 - 2], [x])
+    assert pt is not None
+    assert abs(sp.Abs(pt[x] ** 2 - 2)) < sp.Rational(1, 10 ** 25)
+
+
+# ---------------------------------------------------------------------------
 # Discriminant de conique : réels vs complexes
 # ---------------------------------------------------------------------------
 

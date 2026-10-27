@@ -12,7 +12,9 @@ l'organe Z3 (théorie des corps ordonnés réels, ``QF_NIA``). Deux faces :
 * :func:`decide_real` — valide-t-il sur ``R`` ? Trois verdicts :
   * ``valid``   — aucun contre-exemple réel (la réfutation est insatisfiable) ;
   * ``invalid`` — un contre-exemple réel existe, **et le témoin est renvoyé**
-    (une affectation concrète et exacte de réels, produite par le modèle Z3) ;
+    (une affectation concrète de réels, produite par le modèle Z3 : exacte
+    quand le témoin est rationnel, encadrement rationnel à 30 chiffres quand il
+    est irrationnel — cf. :func:`_z3num_to_sympy`) ;
   * ``unknown`` — le solveur ne conclut pas (défensif ; sur ces systèmes petits
     la décision est immédiate).
   C'est le contraste direct avec le §5 du carnet : là, le contre-exemple
@@ -67,14 +69,42 @@ def _poly_to_z3(expr, symbols: List, zvars: Dict) -> "_z3.ExprRef":
     return total if total is not None else Fraction(0, 1)
 
 
+_ALGEBRAIC_DIGITS = 30
+"""Précision (chiffres significatifs) de l'encadrement rationnel d'un témoin irrationnel."""
+
+
 def _z3num_to_sympy(v: "_z3.ExprRef"):
     """
-    Renvoie la valeur d'un numéral du modèle Z3 comme ``sympy.Rational`` exact.
+    Renvoie la valeur d'un numéral du modèle Z3 comme nombre ``sympy``.
 
-    L'API minimale rend un ``RatNumRef`` dont la représentation texte est la
-    fraction exacte (``'1/2'``, ``'3'``) — ``sp.Rational`` la lit sans perte.
+    Deux classes de numéraux sortent d'un modèle ``QF_NIA`` :
+
+    * un ``RatNumRef`` — sa représentation texte **est** la fraction exacte
+      (``'1/2'``, ``'3'``) ; ``sp.Rational`` la lit sans perte, le témoin est
+      exact ;
+    * un ``AlgebraicNumRef`` — un irrationnel algébrique (``-1.4142135623?``
+      pour ``-sqrt(2)``). Le ``?`` signale que Z3 n'affiche qu'une décimale
+      **tronquée** : ``sp.Rational`` la refuse, et la relire telle quelle
+      donnerait un nombre faux au-delà du dixième. On demande donc à Z3 un
+      encadrement rationnel à :data:`_ALGEBRAIC_DIGITS` chiffres
+      (``v.approx``), qui est exact *comme rationnel* — c'est un rationnel
+      précis à 30 chiffres, pas la valeur algébrique elle-même.
+
+    Un témoin irrationnel est donc rendu comme un **encadrement rationnel** :
+    suffisant pour vérifier une identité à la tolérance près et pour lire la
+    valeur, mais ce n'est pas une affectation algébrique exacte. La définition
+    algébrique exacte reste accessible par ``v.sexpr()``
+    (``(root-obj (+ (^ x 2) (- 2)) 1)``).
     """
-    return sp.Rational(str(v))
+    text = str(v)
+    if text.endswith("?"):
+        # Irrationnel algébrique : Z3 n'affiche qu'une décimale tronquée.
+        # `v.approx(n)` rend la fraction sous forme de chaîne « num/den » ;
+        # `sp.Rational` refuse cette chaîne quand les entiers sont longs, on
+        # la découpe donc explicitement (aucun flottant n'entre dans le calcul).
+        num, _, den = str(v.approx(_ALGEBRAIC_DIGITS)).partition("/")
+        return sp.Rational(int(num), int(den or 1))
+    return sp.Rational(text)
 
 
 def _make_solver(timeout_ms: Optional[int] = None) -> "_z3.Solver":
@@ -145,7 +175,12 @@ def decide_real(hypotheses: Iterable, conclusion, symbols: List,
         return RealVerdict("valid")
     if r == _z3.sat:
         m = solver.model()
-        witness = {s: _z3num_to_sympy(m.eval(zvars[s])) for s in symbols}
+        # model_completion : une variable de l'univers absente du modèle vaut 0
+        # au lieu de faire lever `m.eval` (TypeError: invalid input) — un
+        # symbole que les hypothèses ne contraignent pas est parfaitement
+        # légitime dans un contre-exemple.
+        witness = {s: _z3num_to_sympy(m.eval(zvars[s], model_completion=True))
+                   for s in symbols}
         return RealVerdict("invalid", witness)
     return RealVerdict("unknown")
 
@@ -154,10 +189,13 @@ def real_model(constraints: Iterable, symbols: List,
                timeout_ms: Optional[int] = None,
                assumptions: Optional[Iterable] = None) -> Optional[Dict]:
     """
-    Un point **réel** (affectation exacte) satisfaisant toutes les contraintes
-    ``c = 0``, ou ``None`` s'il n'en existe pas.
+    Un point **réel** satisfaisant toutes les contraintes ``c = 0``, ou ``None``
+    s'il n'en existe pas.
 
     C'est le **témoin positif** : « donne-moi un point réel de la variété ».
+    L'affectation est exacte quand le modèle Z3 est rationnel ; pour un point
+    irrationnel (ex. ``x² = 2``) la coordonnée est un encadrement rationnel à
+    30 chiffres, cf. :func:`_z3num_to_sympy`.
 
     ``assumptions`` : expressions devant être **non nulles** (non-dégénérescence)
     — sans elles, le point renvoyé tend à être dégénéré (points coïncidents).
@@ -171,7 +209,8 @@ def real_model(constraints: Iterable, symbols: List,
     if solver.check() != _z3.sat:
         return None
     m = solver.model()
-    return {s: _z3num_to_sympy(m.eval(zvars[s])) for s in symbols}
+    return {s: _z3num_to_sympy(m.eval(zvars[s], model_completion=True))
+            for s in symbols}
 
 
 # ---------------------------------------------------------------------------
