@@ -23,25 +23,25 @@ L'API z3-py expose l'intégralité du solveur Z3 en Python — `Solver`, `Optimi
 
 | Carnet | Section Yurichev | Thème |
 |--------|-----------------|-------|
-| Z3-01, Z3-01ᶜˢ | Ch. 1 Introduction (p. 3) + Ch. 2 Basics (p. 6) | Solver API, théories de base, modèles |
-| Z3-01b | Ch. 9 Graph coloring (p. 311) | `assert_and_track`, coloration de graphe (Australie) |
-| Z3-02, Z3-02ᶜˢ | §8.1 Sudoku (p. 199), Ch. 8 Recreational mathematics and puzzles | Sudoku comme CSP, visualisation |
-| Z3-03, Z3-03ᶜˢ | Ch. 16 Toy decompiler (Tactic, p. 463) + Ch. 5 Verification (BitVec, p. 125) | `Tactic`, `BitVec`, `Array` |
-| Z3-04, Z3-04ᶜˢ | Ch. 6 Regular expressions (p. 160) | `String`, `Re` (théorie des chaînes) |
-| Z3-05, Z3-05ᶜˢ | Ch. 20 First-Order Logic (p. 553) | `ForAll`, `Exists`, réfutation, `unknown` |
-| Z3-06, Z3-06ᶜˢ | Ch. 14 MaxSAT/MaxSMT (p. 377) | `Optimize`, MaxSAT, Pareto |
-| Z3-08 | Ch. 10 Knapsack problems (p. 326) | `Optimize.minimize`, ordonnancement |
-| Z3-09 | §8.2 Zebra puzzle (p. 226), Ch. 8 | Einstein's riddle / Zebra puzzle |
-| Z3-10 | §8.10 Alphametics (p. 270), Ch. 8 | Cryptarithmetic SEND + MORE = MONEY |
-| Z3-11 | Ch. 9 Graph coloring (p. 311) | Coloration de graphe, nombre chromatique |
-| Z3-12 | Ch. 4 Proofs (p. 99) | Real arithmetic, irrationnels algébriques |
-| Z3-13 | §3.13.2 Unsat core (p. 83), Ch. 3 Equations | UNSAT cores, `assert_and_track` |
-| Z3-13b | §3.13.2 Unsat core (p. 83), Ch. 3 Equations | MUS (Minimal Unsatisfiable Subset) |
-| Z3-14 | §5.1 Integer overflow (p. 125), Ch. 5 Verification | Bit-vectors, overflow, `ULT`/`UGE` |
+| Z3-01, Z3-01ᶜˢ | Ch. 1 Introduction (p. 11) + Ch. 2 Basics (p. 14) | Solver API, théories de base, modèles |
+| Z3-01b | Ch. 9 Graph coloring (p. 317) | `assert_and_track`, coloration de graphe (Australie) |
+| Z3-02, Z3-02ᶜˢ | §8.1 Sudoku (p. 205), Ch. 8 Recreational mathematics and puzzles | Sudoku comme CSP, visualisation |
+| Z3-03, Z3-03ᶜˢ | Ch. 16 Toy decompiler (Tactic, p. 469) + Ch. 5 Verification (BitVec, p. 132) | `Tactic`, `BitVec`, `Array` |
+| Z3-04, Z3-04ᶜˢ | Ch. 6 Regular expressions (p. 166) | `String`, `Re` (théorie des chaînes) |
+| Z3-05, Z3-05ᶜˢ | Ch. 20 First-Order Logic (p. 559) | `ForAll`, `Exists`, réfutation, `unknown` |
+| Z3-06, Z3-06ᶜˢ | Ch. 14 MaxSAT/MaxSMT (p. 383) | `Optimize`, MaxSAT, Pareto |
+| Z3-08 | Ch. 10 Knapsack problems (p. 332) | `Optimize.minimize`, ordonnancement |
+| Z3-09 | §8.2 Zebra puzzle (p. 232), Ch. 8 | Einstein's riddle / Zebra puzzle |
+| Z3-10 | §8.10 Alphametics (p. 276), Ch. 8 | Cryptarithmetic SEND + MORE = MONEY |
+| Z3-11 | Ch. 9 Graph coloring (p. 317) | Coloration de graphe, nombre chromatique |
+| Z3-12 | Ch. 4 Proofs (p. 106) | Real arithmetic, irrationnels algébriques |
+| Z3-13 | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | UNSAT cores, `assert_and_track` |
+| Z3-13b | §3.13.2 Unsat core (p. 90), Ch. 3 Equations | MUS (Minimal Unsatisfiable Subset) |
+| Z3-14 | §5.1 Integer overflow (p. 132), Ch. 5 Verification | Bit-vectors, overflow, `ULT`/`UGE` |
 | Z3-15 | (mapping à confirmer R2+) | Nested arrays 2D, carré magique |
 | Z3-16 | (mapping à confirmer R2+) | Optimize, plan hebdomadaire |
-| Z3-17 | §3.13 Recalculating micro-spreadsheet (p. 80), Ch. 3 | Array theory général, `Select`/`Store` |
-| Z3-18 | §8.1 Sudoku (p. 199), Ch. 8 | Sudoku modes `Array` vs `Constants` |
+| Z3-17 | §3.13 Recalculating micro-spreadsheet (p. 88), Ch. 3 | Array theory général, `Select`/`Store` |
+| Z3-18 | §8.1 Sudoku (p. 205), Ch. 8 | Sudoku modes `Array` vs `Constants` |
 
 Les notebooks qui reprennent un exemple numéroté du livre (énigme d'Einstein, cryptarithmes, coloriage de graphe) créditent la source dans leur cellule d'introduction. À noter : « Z3: An Efficient SMT Solver » (de Moura & Bjørner, TACAS 2008) est le **papier de référence** du solveur, déjà référencé dans le dépôt. Le **livre pratique** de Yurichev, distinct du papier, est désormais référencé comme ouvrage-ancrage de la série.
 
