@@ -80,8 +80,11 @@ jobs:
         run: |
           set -u
           if [ -d "$GITHUB_WORKSPACE/.git" ]; then
-            if ! git -C "$GITHUB_WORKSPACE" -c safe.directory='*' reset --hard --quiet; then
+            dirty=$(git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" status --porcelain 2>/dev/null | head -n 1)
+            if ! git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" reset --hard --quiet; then
               echo "::warning::[heal-worktree] reset --hard a echoue -- le retrecissement sparse peut refuser (#22722)"
+            elif [ -n "$dirty" ]; then
+              echo "::notice::[heal-worktree] arbre restaure -- le job precedent avait laisse un etat sale (${dirty}) -- le retrecissement sparse passe (#22722)"
             fi
           fi
       - uses: actions/checkout@v4
