@@ -162,6 +162,12 @@ _OPEN_PRS_TOTAL_TIMEOUT_S = int(
 # rend le fetch unique par processus ; le fichier-cache (v2) le rend unique
 # par session.
 _OPEN_PRS_MEMO: list[dict] | None = None
+# #22983 -- index des numeros d'issues cites par les bodies des PRs
+# ouvertes. Clé : `id()` de la liste servie (la liste elle-meme est
+# memoisee par `_OPEN_PRS_MEMO`, donc l'identite est stable pendant un
+# tirage). Sans cet index, la jambe IMPLICIT rescannait tous les bodies
+# pour chaque candidat (~0,6 s x 150 = ~105 s mesures).
+_OPEN_PRS_INDEX_MEMO: tuple[list[dict], dict[int, list[dict]]] | None = None
 
 # --- markers -----------------------------------------------------------------
 
@@ -2039,6 +2045,47 @@ def _pr_body_references_issue(body: str, issue_number: int) -> bool:
 # markers posted -- the organ said CLEAR and was "right": nobody had
 # claimed. The strongest signal of occupation -- an OPEN PR of another lane
 # already referencing the issue -- lived one `gh pr list` away.
+def _open_prs_by_referenced_issue(prs: list[dict]) -> dict[int, list[dict]]:
+    """Indexe, en UNE passe, les PRs ouvertes par numero d'issue cite.
+
+    #22983 -- la jambe IMPLICIT (#14300) demandait, pour CHAQUE candidat, un
+    balayage de TOUS les bodies de PRs ouvertes : mesure du 27/10, ~0,6 s par
+    candidat (366 PRs ouvertes x un corps de quelques kilo-octets), soit
+    ~105 s pour la fenetre de service de 150 numeros -- le cout dominant du
+    tapis. L'index remplace N balayages par UN : on extrait tous les numeros
+    cites une seule fois, puis on consulte un dict.
+
+    Le predicat reste le meme (`_PR_ISSUE_REF_RE`), donc la correspondance
+    des numeros est identique : c'est le meme regex, sur le meme corps, au
+    meme moment. Seule la repetitions change.
+    """
+    global _OPEN_PRS_INDEX_MEMO
+    index: dict[int, list[dict]] = {}
+    memo = _OPEN_PRS_INDEX_MEMO
+    # La memo porte la LISTE elle-meme (pas son `id()`) : la liste reste
+    # vivante, donc l'identite ne peut pas etre reattribuee par le
+    # collecteur a une autre liste.
+    if memo is not None and memo[0] is prs:
+        return memo[1]
+    for pr in prs:
+        # #19971 -- meme lecture defensive du transport qu'a l'entree des
+        # commentaires : un body de PR piege en payload JSON cache le `lane`
+        # et la reference `#N` exactement de la meme facon (instance fondatrice
+        # #17270, mesuree sur un body de PR).
+        body = _unwrap_trapped_body(pr.get("body") or "")
+        for m in _PR_ISSUE_REF_RE.finditer(body):
+            captured = m.group(1) or m.group(2)
+            if captured is None:
+                continue
+            try:
+                number = int(captured)
+            except ValueError:
+                continue
+            index.setdefault(number, []).append(pr)
+    _OPEN_PRS_INDEX_MEMO = (prs, index)
+    return index
+
+
 def _find_open_prs_referencing_issue(
     issue_number: int,
     my_lane: str,
@@ -2057,14 +2104,8 @@ def _find_open_prs_referencing_issue(
     if prs is None:
         prs = _gh_open_prs_with_files()
     out: list[dict] = []
-    for pr in prs:
-        # #19971 -- meme lecture defensive du transport qu'a l'entree des
-        # commentaires : un body de PR piege en payload JSON cache le `lane`
-        # et la reference `#N` exactement de la meme facon (instance fondatrice
-        # #17270, mesuree sur un body de PR).
+    for pr in _open_prs_by_referenced_issue(prs).get(issue_number, []):
         body = _unwrap_trapped_body(pr.get("body") or "")
-        if not _pr_body_references_issue(body, issue_number):
-            continue
         lane = extract_lane(body)
         if lane == my_lane:
             continue

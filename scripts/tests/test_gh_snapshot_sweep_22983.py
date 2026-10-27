@@ -550,3 +550,38 @@ def test_m_le_batch_retombe_sur_le_reseau_sans_instantane(monkeypatch):
     resultat = clc.check_issues_batch(["9"], "ma:lane")
     assert appels == ["9"]
     assert resultat["results"]["9"]["code"] == "FREE"
+
+
+def test_index_des_prs_equivaut_au_predicat_legacy(monkeypatch):
+    """#22983 -- l'index des numeros cites doit rendre EXACTEMENT les memes
+    PRs que le balayage predicat par candidat qu'il remplace."""
+    clc = pig._claim_reader_module()
+
+    prs = [
+        {"number": 1, "body": "Closes #42"},
+        {"number": 2, "body": "une reference nue #42 dans le texte"},
+        {"number": 3, "body": "See #4242"},
+        {"number": 4, "body": "rien ici"},
+        {"number": 5, "body": "Part of #42 et #7"},
+    ]
+
+    index = clc._open_prs_by_referenced_issue(prs)
+    for pr in prs:
+        for numero in (42, 4242, 7, 99):
+            legacy = clc._pr_body_references_issue(pr.get("body") or "", numero)
+            assert (pr in index.get(numero, [])) is legacy, (
+                f"divergence sur la PR #{pr['number']} / #{numero}")
+
+    assert sorted(p["number"] for p in index.get(42, [])) == [1, 2, 5]
+    assert sorted(p["number"] for p in index.get(7, [])) == [5]
+    assert index.get(4242) == [prs[2]]
+
+
+def test_index_ne_se_melange_pas_entre_deux_listes(monkeypatch):
+    """La memo de l'index est keyed par l'IDENTITE de la liste : deux
+    listes successives ne doivent pas se partager un index perime."""
+    clc = pig._claim_reader_module()
+    a = [{"number": 1, "body": "#11"}]
+    b = [{"number": 2, "body": "#22"}]
+    assert clc._open_prs_by_referenced_issue(a).get(22) is None
+    assert clc._open_prs_by_referenced_issue(b).get(11) is None
