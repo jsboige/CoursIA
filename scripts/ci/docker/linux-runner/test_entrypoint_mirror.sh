@@ -302,13 +302,27 @@ echo "Test 8 : GIT_ALTERNATE_OBJECT_DIRECTORIES -- posee avec miroir, absente si
       printf '%s' "${GIT_ALTERNATE_OBJECT_DIRECTORIES-UNSET}"
     )
   }
+  # Variante a env propre : T8a/T8b mesurent le comportement PROPRE du bloc
+  # (rien n'est exporte sans miroir ; seul le miroir avec miroir). Or le test
+  # peut s'executer DANS un runner qui porte deja la variable (c'est la
+  # feature elle-meme : le runner exporte l'alternates de son miroir, mesure
+  # run 40440534972 -- T8a y voyait la valeur heritee, T8b le composite).
+  # La purge n'affecte pas T8c, qui pose sa propre valeur en prefixe
+  # d'assignation et couvre justement le cas herite.
+  probe_env_clean() {
+    (
+      unset GIT_ALTERNATE_OBJECT_DIRECTORIES
+      . "$TEST_DIR/block.sh" >/dev/null 2>&1
+      printf '%s' "${GIT_ALTERNATE_OBJECT_DIRECTORIES-UNSET}"
+    )
+  }
   # T8a : le Test 7 vient de supprimer le miroir -- cas absent d'abord, sans
   # le recreer : la sonde mirror_present doit laisser la variable hors env
   # (fail-open). C'est le controle OBLIGATOIRE de la mission : un chemin
   # d'alternates absent fait echouer toute operation git (mesure :
   # `unable to normalize alternate object path`), donc exporter sans sonde
   # casserait les hotes sans miroir.
-  v="$(probe_env)"
+  v="$(probe_env_clean)"
   if [ "$v" = "UNSET" ]; then
     ok "T8a miroir absent : variable ABSENTE (fail-open, comportement d'avant #18225)"
   else
@@ -318,7 +332,7 @@ echo "Test 8 : GIT_ALTERNATE_OBJECT_DIRECTORIES -- posee avec miroir, absente si
   # depuis MIRROR_PATH lui-meme, donc l'egalite litterale ne depend pas de la
   # forme du chemin sur cet hote.
   make_mirror
-  v="$(probe_env)"
+  v="$(probe_env_clean)"
   if [ "$v" = "$MIRROR/objects" ]; then
     ok "T8b miroir present : variable posee au processus ($v)"
   else
