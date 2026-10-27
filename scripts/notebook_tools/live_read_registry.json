@@ -115,6 +115,12 @@
       "cell_id": "chsh-code-inv",
       "source": "MyIA.AI.Notebooks/SymbolicAI/Lean/conway_lean/Conway/CHSHRandomized.lean",
       "note": "Seconde source lue par la meme cellule : ses citations L43-L167 sont celles de CHSHRandomized.lean, pas de CHSH.lean (#22129)"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/Compression/Compression-04-ANS-Python.ipynb",
+      "cell_id": "0147a26c",
+      "source": "MyIA.AI.Notebooks/GenAI/Audio/04-Applications/datasets/le_horla_1887.txt",
+      "note": "Section 1 -- taille et nombre de lignes du corpus, empreinte SHA-256 des 128 premiers Kio et entropie de la tranche de 16 Kio"
     }
   ]
 }
