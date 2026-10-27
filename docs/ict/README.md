@@ -55,7 +55,7 @@ du cadrage rendu à sa place.
 | Document | Rôle |
 |----------|------|
 | [`feuille-de-route-notebooks.md`](feuille-de-route-notebooks.md) | Inventaire notebook par notebook : sujet, strate (axe vertical), état de livraison, issues de rattachement et slots réservés. |
-| [`extensions-2026-07.md`](extensions-2026-07.md) | Les quatre fronts ouverts par le cadrage stratégique de 2026-07 (fin de la réversibilisation, canonicité des scalaires, secret/identité, discours) et la décision de numérotation par suffixe `b` ([#7260](https://github.com/jsboige/CoursIA/issues/7260)). |
+| [`2026-07-23-ict-extensions-quatre-fronts.md`](../transients/2026-07-23-ict-extensions-quatre-fronts.md) | Les quatre fronts ouverts par le cadrage stratégique de 2026-07 (fin de la réversibilisation, canonicité des scalaires, secret/identité, discours) et la décision de numérotation par suffixe `b` ([#7260](https://github.com/jsboige/CoursIA/issues/7260)) — déporté figé vers la lane transiente |
 
 ## Parcours suggéré
 
