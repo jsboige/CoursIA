@@ -403,6 +403,12 @@ def diff_kernel(base_info, head_info):
 #     (3.8.10, 3.9.0, 3.10.0, 3.10.11, 3.10.19, 3.11.0, 3.11.9, 3.11.14,
 #     3.11.15, 3.13.3, 3.13.7, 3.13.12, 3.13.14) ; 60 carnets ``python3`` + 2
 #     ``conda-torch``.
+#   - Python ``coursia-ml-training`` (serie 02-ML-Cours) : canon de serie
+#     declare CPython 3.13 par le requirements.txt de la serie (en-tete,
+#     #18331), mais les carnets committes historiques portent encore
+#     ``language_info`` 3.11.x -- toute re-execution canonique derive donc
+#     3.11 -> 3.13 sous ce kernelspec (cas #22889, mesure 2026-10-27).
+#     Transition acceptee nominativement ci-dessous ; l'inverse reste rouge.
 #   - Decision duale sur le canon (coord. 2026-10-05T03:43:46Z, DM
 #     msg-20261005T034346-qyldsl) : **deux canons**, pas un seul --
 #     (a) **canon des algorithmes deployes sur QC Cloud = Python 3.11**,
@@ -446,6 +452,11 @@ CANONICAL_LANGUAGE_TRANSITIONS = {
         "Python 3.10 -> 3.13 : convergence directe vers le canon d'execution 3.13 (#19181, cas fondateur)",
     ("python3", "3.12", "3.13"):
         "Python 3.12 -> 3.13 : convergence vers le canon d'execution 3.13 (#19181, anticipation -- pas de carnet `python3` a 3.12 mesure)",
+    ("coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie 02-ML-Cours, declare par son requirements.txt "
+        "en-tete (CPython 3.13, #18331/#18247) ; cas fondateur #22889 "
+        "(2.8c, base 3.11.15 -> tete 3.13.14, memes kernelspec base/tete)",
 }
 
 # #19181 (cas par cas, decision coordinateur du 11/10) : les transitions
