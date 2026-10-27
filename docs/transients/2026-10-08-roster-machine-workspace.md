@@ -79,6 +79,6 @@ Selon l'acceptance de #14527, **aucun redémarrage ou WAKE n'est lancé avant le
 - Référence durable sur la structure du cluster : [cluster-agents.md](../reference/cluster-agents.md)
 - Issue parente : [#14527](https://github.com/jsboige/CoursIA/issues/14527)
 - EPIC parente : [#14525](https://github.com/jsboige/CoursIA/issues/14525)
-- Protocole de claim : [lane-claim-protocol.md](../../../.claude/rules/lane-claim-protocol.md)
+- Protocole de claim : [lane-claim-protocol.md](../../.claude/rules/lane-claim-protocol.md)
 
 — daté 2026-10-08, lane `myia-po-2027:CoursIA-2`, cycle c.1465
