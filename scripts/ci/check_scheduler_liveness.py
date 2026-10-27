@@ -62,6 +62,14 @@ dernier run 4324 min`` -- un cron mort, alors que la cause est un geste
 d'operateur. Deux causes, deux remedes : reactiver le workflow n'est pas la meme
 action que reparer une livraison d'evenements.
 
+**Suite (2026-10-27T12:50Z)** : les deux advisories ont ete **reactives**
+(arbitrage (a) du coordinateur, c.6441695482 -- la desactivation du 24/10
+n'avait pas de trace ecrite du motif). L'organe garde le verdict ``DISABLED``
+pour l'avenir : la desactivation **manuale** reste un geste qui doit rester
+visible, et la lecture d'etat est ce qui la rend visible. La seconde des deux
+advisories (``coursia-waiter-starvation-advisory.yml``) a ete ajoutee au
+registre des organes surveilles dans le meme temps.
+
 L'organe lit donc, pour chaque organe evalue, ``state`` et ``updated_at`` via
 ``GET /repos/{owner}/{repo}/actions/workflows/{file}``. Un ``state`` qui suspend
 les declencheurs automatiques (``disabled_manually``, ``disabled_inactivity``)
@@ -145,6 +153,7 @@ REGISTRY: tuple[Organ, ...] = (
     Organ("pr-gate-stale-sweep.yml", 60.0, "cron '7 * * * *'"),
     Organ("pr-gate-sweep-health-advisory.yml", 30.0, "cron '13,43 * * * *' -- cet observateur"),
     Organ("linux-runner-starvation-advisory.yml", 30.0, "cron '19,49 * * * *'"),
+    Organ("coursia-waiter-starvation-advisory.yml", 30.0, "cron '11,41 * * * *'"),
     Organ("stale-guard-red-sweep.yml", 1440.0, "cron '53 4 * * *'"),
     Organ("epic-neglect-sweep.yml", 1440.0, "cron '37 8 * * *'"),
     Organ("grain-orphans-sweep.yml", 1440.0, "cron '23 7 * * *'"),

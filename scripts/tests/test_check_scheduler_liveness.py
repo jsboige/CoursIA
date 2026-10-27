@@ -557,3 +557,16 @@ def test_disabled_does_not_move_a_threshold():
     # Le litmus anti-gaming : le nouveau verdict n'ajuste aucun seuil d'age.
     assert sl.DEAD_FACTOR == 4 and sl.DEAD_FLOOR_MIN == 90.0
     assert sl.LATE_FACTOR == 2
+
+
+def test_waiter_starvation_advisory_is_registered():
+    # Arbitrage (d) du coordinateur (c.6441695482) : la seconde des deux
+    # advisories desactivees le 24/10 est desormais surveillee par l'organe,
+    # avec la cadence reelle lue dans son fichier ('11,41 * * * *').
+    entry = next(
+        (o for o in sl.REGISTRY if o.workflow == "coursia-waiter-starvation-advisory.yml"),
+        None,
+    )
+    assert entry is not None
+    assert entry.declared_min == 30.0
+    assert "11,41" in entry.note
