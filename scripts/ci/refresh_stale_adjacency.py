@@ -179,16 +179,43 @@ def get_pr_comments(pr_number: int) -> list[dict]:
         return []
 
 
-def get_pr_check_rows(pr_number: int) -> list[dict]:
-    """Lignes de `gh pr checks` : `{name, conclusion, url}` (#22748).
+def get_pr_check_rows(pr_number: int) -> list[dict] | None:
+    """Lignes de `gh pr checks` : `{name, conclusion, url}`, ou `None`.
 
     L'URL etait deja dans la sortie et etait jetee : elle seule permet de
     remonter a l'id du check-run, donc de lire les annotations qui NOMMENT
     l'organe tombe (`check_run_annotations`).
+
+    `None` (et non `[]`) signifie **la mesure n'a pas abouti** -- meme
+    doctrine que `check_run_annotations`. Les trois cas sont distincts et le
+    sweep doit les distinguer, sinon le silence se lit comme un vert
+    (#11808 : un filtre deconnecte et un filtre vide sont indistinguables) :
+
+    * `stdout` non vide et au moins une ligne exploitable -> la liste ;
+    * `stdout` vide **et** rc non nul -> `None` : `gh pr checks` n'ecrit rien
+      sur stdout quand il n'a pas pu mesurer (branche sans aucun check :
+      `no checks reported on the '<branch>' branch`, ou appel casse). Le
+      **rc** et le **silence** disent ensemble « illisible » ;
+    * `stdout` vide et rc=0 -> `[]` : `gh` a conclu, il n'y avait rien a
+      imprimer. C'est une **mesure** d'absence, pas un echec de mesure.
+
+    Un `rc` **non nul avec** des lignes (typiquement `rc=8`, « checks
+    pending/failing ») reste une mesure : les lignes sont rendues et le
+    sweep les lit normalement.
+
+    Note sur le pliage : les lignes viennent du **texte** de `gh pr checks`,
+    qui plie lui-meme les executions repetees (`eliminateDuplicates`,
+    latest-`startedAt` d'abord, cle `nom/workflow/event`). Le script herite
+    de ce pliage et ne replie rien lui-meme ; une ligne `failure` encore
+    presente dans l'API check-runs pour le MEME triplet est donc un doublon
+    perime, pas un rouge vivant (#22893).
     """
     proc = run_gh("pr", "checks", str(pr_number))
+    stdout = proc.stdout or ""
+    if not stdout.strip():
+        return [] if proc.returncode == 0 else None
     rows: list[dict] = []
-    for line in proc.stdout.splitlines():
+    for line in stdout.splitlines():
         # Format: NAME<tab>CONCLUSION<tab>DURATION<tab>URL
         parts = line.split("\t")
         if len(parts) < 2:
@@ -198,15 +225,21 @@ def get_pr_check_rows(pr_number: int) -> list[dict]:
             "conclusion": parts[1],
             "url": parts[3] if len(parts) > 3 else "",
         })
-    return rows
+    # Sortie non vide mais aucune ligne exploitable : la forme de la sortie a
+    # change. C'est illisible, jamais « aucun rouge ».
+    return rows or None
 
 
-def get_pr_checks(pr_number: int) -> dict[str, str]:
-    """Return the current check state of `pr_number` (name -> conclusion)."""
-    checks: dict[str, str] = {}
-    for row in get_pr_check_rows(pr_number):
-        checks[row["name"]] = row["conclusion"]
-    return checks
+def get_pr_checks(pr_number: int) -> dict[str, str] | None:
+    """Return the current check state of `pr_number` (name -> conclusion).
+
+    `None` propage « illisible » (`get_pr_check_rows`), pour qu'un appelant
+    ne prenne pas un echec de mesure pour une absence de rouge.
+    """
+    rows = get_pr_check_rows(pr_number)
+    if rows is None:
+        return None
+    return {row["name"]: row["conclusion"] for row in rows}
 
 
 def guard_workflow_path(*, body: bool = False) -> Path:
@@ -346,6 +379,14 @@ def adjacency_leg_state(pr_number: int,
       `body-unreadable` si l'API ne rend pas les annotations -- fail-CLOSED,
       dans les deux cas sans ecriture.
 
+    Troisieme silence, celui de la **mesure elle-meme** (#22893) : quand
+    `gh pr checks` ne rend rien d'exploitable, `checks-unreadable` le nomme
+    au lieu de le laisser se confondre avec « aucun rouge ». Le predicat
+    `failing` ne change pas -- illisible n'est pas rouge, et ce n'est pas
+    vert non plus : c'est un troisieme etat, porte par `cause`. Un `rc=0`
+    avec `stdout` vide rend `checks-empty` : la mesure a abouti, la PR ne
+    porte aucun check.
+
     `job_names` force la liste des jambes de contenu (tests, appelants qui
     veulent ignorer la jambe de body).
     """
@@ -355,6 +396,10 @@ def adjacency_leg_state(pr_number: int,
         content_names = content_guard_job_names()
         body_names = body_guard_job_names()
     rows = get_pr_check_rows(pr_number)
+    if rows is None:
+        return {"failing": False, "job": None, "cause": "checks-unreadable"}
+    if not rows:
+        return {"failing": False, "job": None, "cause": "checks-empty"}
 
     for row in rows:
         if row["name"] in content_names and row["conclusion"] == "fail":

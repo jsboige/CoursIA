@@ -615,3 +615,110 @@ def test_body_job_red_by_stale_adjacency_still_requires_a_passing_simulation(
     assert result["guard_pass"] is False
     assert result["would_refresh"] is False
     assert result["refreshed"] is False
+
+
+# --- #22893 : le silence de la MESURE porte une cause -----------------------
+# `gh pr checks` n'ecrit rien sur stdout quand il n'a pas pu mesurer. Sans
+# une cause dediee, ce silence se lisait exactement comme « aucun rouge » :
+# une PR dont les checks sont illisibles etait donc rapportee « propre ».
+#
+# Les trois etats mesures (voir `get_pr_check_rows`) :
+#   rc!=0 + stdout vide   -> checks-unreadable  (la mesure n'a pas abouti)
+#   rc=0  + stdout vide   -> checks-empty       (mesure d'absence)
+#   rc!=0 + des lignes    -> LU                 (rc=8 = checks pending/failing)
+
+
+def test_get_pr_check_rows_distinguishes_silence_from_absence(fake_run):
+    """Le tri etat par etat de `get_pr_check_rows` (#22893).
+
+    Trois sorties possibles de `gh pr checks`, trois valeurs distinctes :
+    `None` (illisible), `[]` (mesure d'absence), les lignes (mesure).
+    """
+    # rc!=0 sans un octet sur stdout : `gh` n'a pas mesure (branche sans
+    # check : `no checks reported on the '<branch>' branch`).
+    fake_run.specs[("pr", "checks", "101")] = (1, "", "no checks reported")
+    assert rsa.get_pr_check_rows(101) is None
+    # rc=0 sans stdout : gh a conclu, il n'y avait rien a imprimer.
+    fake_run.specs[("pr", "checks", "102")] = (0, "", "")
+    assert rsa.get_pr_check_rows(102) == []
+    # rc=8 (*checks pending/failing*) AVEC des lignes : une mesure.
+    rows = [_check_row("Always-on guards -- 16 organes, 1 checkout", "fail")]
+    fake_run.specs[("pr", "checks", "103")] = (8, "\n".join(rows) + "\n", "")
+    assert rsa.get_pr_check_rows(103) == [{
+        "name": "Always-on guards -- 16 organes, 1 checkout",
+        "conclusion": "fail",
+        "url": "https://x",
+    }]
+    # stdout non vide mais aucune ligne exploitable : la forme a change, et
+    # un changement de forme n'est pas « aucun rouge ».
+    fake_run.specs[("pr", "checks", "104")] = (0, "unparseable\n", "")
+    assert rsa.get_pr_check_rows(104) is None
+
+
+def test_unreadable_checks_are_named_not_read_as_clean(fake_run):
+    """Un `gh pr checks` muet en echec -> `checks-unreadable`, jamais un silence.
+
+    Le predicat `failing` ne bouge pas (illisible n'est pas rouge), mais le
+    JSON du sweep NOMME l'etat : c'est ce que #11808 exige -- un filtre
+    deconnecte et un filtre vide ne doivent pas rendre la meme chose.
+    """
+    _setup_fake_for_pr(fake_run, 22800, PR_BODY_OK, always_on_failing=True)
+    fake_run.specs[("pr", "checks", "22800")] = (1, "", "gh: HTTP 502")
+    merged_window = [
+        {"number": 999,
+         "body": "Grain: MED/tooling -- lane myia-po-2026:CoursIA -- prev: MED/guard #998\n",
+         "mergedAt": "2026-09-01T07:00:00Z"},
+    ]
+    result = rsa.refresh_one(22800, dry_run=True, merged_window=merged_window)
+    assert result["guard_leg_cause"] == "checks-unreadable"
+    assert result["guard_leg"] is None
+    # Fail-CLOSED : on n'ecrit rien sur un corps quand on n'a pas pu mesurer.
+    assert result["always_on_failing"] is False
+    assert result["would_refresh"] is False
+    assert result["refreshed"] is False
+
+
+def test_rc8_with_rows_stays_readable_and_refreshes(fake_run):
+    """`rc=8` AVEC des lignes reste une mesure : le rafraichissement a lieu.
+
+    `gh pr checks` sort en 8 quand des checks sont en echec ou en attente.
+    Degrader ce cas en « illisible » ferait taire le sweep sur exactement
+    les PRs qu'il doit reparer -- c'est le cas nominal.
+    """
+    _setup_fake_for_pr(fake_run, 22801, PR_BODY_OK, always_on_failing=True)
+    rows = [
+        _check_row(name, "fail")
+        for name in rsa.content_guard_job_names()
+    ]
+    fake_run.specs[("pr", "checks", "22801")] = (
+        8, "\n".join(rows) + "\n", "")
+    merged_window = [
+        {"number": 999,
+         "body": "Grain: MED/tooling -- lane myia-po-2026:CoursIA -- prev: MED/guard #998\n",
+         "mergedAt": "2026-09-01T07:00:00Z"},
+    ]
+    result = rsa.refresh_one(22801, dry_run=True, merged_window=merged_window)
+    assert result["guard_leg_cause"] == "content-job"
+    assert result["always_on_failing"] is True
+    assert result["would_refresh"] is True
+    assert result["refreshed"] is True  # dry-run, virtuel
+
+
+def test_rc0_without_rows_is_a_measured_absence(fake_run):
+    """`rc=0` + stdout vide -> `checks-empty`, distinct d'`checks-unreadable`.
+
+    `gh` a conclu et n'avait rien a imprimer : c'est une mesure d'absence,
+    pas un echec de mesure. Les deux ne partagent donc pas la meme cause.
+    """
+    _setup_fake_for_pr(fake_run, 22802, PR_BODY_OK, always_on_failing=False)
+    fake_run.specs[("pr", "checks", "22802")] = (0, "", "")
+    merged_window = [
+        {"number": 999,
+         "body": "Grain: MED/tooling -- lane myia-po-2026:CoursIA -- prev: MED/guard #998\n",
+         "mergedAt": "2026-09-01T07:00:00Z"},
+    ]
+    result = rsa.refresh_one(22802, dry_run=True, merged_window=merged_window)
+    assert result["guard_leg_cause"] == "checks-empty"
+    assert result["guard_leg"] is None
+    assert result["would_refresh"] is False
+
