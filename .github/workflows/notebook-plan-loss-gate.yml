@@ -76,12 +76,27 @@ jobs:
     # Route vers la jambe Linux auto-hebergee (#13378 tranche 5, decision ai-01
     # 2026-09-02) : garde Python pur, sans secret. La garde same-repo ci-dessous
     # saute les PRs de fork (pr_gate.py compte `skipped` comme OK) : aucun code de
-    # fork n'atteint le runner. Retour arriere = revert de la PR.
+    # fork n'atteint le runner.
     # Rapatrie sur l'offre GitHub le 2026-10-25 (#17397, consigne user : le CI local pallie
     # les limites de l'offre hebergee, il ne la remplace pas). Mesure : 3 jobs heberges en
     # cours pour un plafond d'environ 20, 42 jobs sur 42 en file sur coursia-linux.
-    # L'entree reste dans SELF_HOSTED_WORKFLOW_ALLOWLIST : retour = remettre le label.
-    runs-on: ubuntu-latest
+    # 2026-10-27 (#22461, phase A du debordement ; tranche A2 de #22937, arbitrage
+    # ai-01 c.6441695482) : forme hybride -- PR meme-depot ET
+    # vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ; tout le reste
+    # (variable absente ou fausse, fork, workflow_dispatch) retombe sur
+    # ubuntu-latest, c'est-a-dire l'etat du 27/10. A la mesure de 12:20Z ce
+    # workflow portait 23 runs en file dans l'offre hebergee (donnee du mandat,
+    # en tete de file des gardes restees hebergees).
+    # Bascule : `gh variable set CI_OVERFLOW_LOCAL --body true|false
+    # --repo jsboige/CoursIA`. La garde anti-fork ci-dessous est CONSERVEE :
+    # aucun code de fork ne change de surface.
+    # Limite : runs-on se resout a la creation du job, les runs deja en file ne
+    # bougent pas.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 % heberge,
+    # sans toucher ce fichier. L'entree d'allowlist reste en place (elle y etait
+    # deja) : c'est elle qui rend le pool local atteignable si la variable est
+    # basculee.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
 
     steps:
