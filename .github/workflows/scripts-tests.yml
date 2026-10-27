@@ -860,6 +860,19 @@ jobs:
     # 3,8 s sur ce poste le 2026-10-27) : le pin est une garantie de
     # non-regression, pas un upgrade. pytest est epingle `>=8` pour
     # l'option ini `consider_namespace_packages` (cf. le run CPU plus haut).
+    #
+    # `requests` est une dependance de PREMIER rang du module, pas du test :
+    # `scripts/qc-mcp-lite/server.py` l.30 fait `import requests`, et
+    # `tests/test_server.py` l.357 patche `requests.post`. Premier run de ce
+    # job (run #40467079713, job #122066616935, 2026-10-27 08:52Z) : la
+    # COLLECTION echoue sur `ModuleNotFoundError: No module named 'requests'`
+    # -- le SDK MCP ne l'embarque pas. Dependance absente du
+    # `pip install`, ajoutee ici ; version epinglee `>=2.31` (convention du
+    # depot : `MyIA.AI.Notebooks/GenAI/requirements.txt` l.5).
+    #
+    # Mesure d'hermetisme (2026-10-27, venv Python 3.11 vide) : avec
+    # `mcp==1.30.0` + `pytest>=8` + `requests>=2.31`, la suite passe --
+    # c'est le triplet exact du `pip install` ci-dessous.
     runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
@@ -872,7 +885,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install "mcp==1.30.0" "pytest>=8"
+        run: pip install "mcp==1.30.0" "pytest>=8" "requests>=2.31"
 
       - name: Run qc-mcp-lite suite
         run: |
