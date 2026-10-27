@@ -97,14 +97,13 @@ slides/
     render_deck.py           # Capture Playwright slide-par-slide (1440x900, headless)
     extract_animations.py    # Extracteur d'animations PPTX -> JSON (reconstruit v-click Slidev)
     slide_inventory.py       # Inventaire batch de presentations etudiantes (.pptx/.pdf/.odp)
-  analysis/                  # Rapports audits visuels cross-deck
   XX-nom-du-deck/
     slides.md                # Source Slidev (livrable principal, commite)
     images/                  # Images referencees par slides.md (commite)
     pptx-reference/          # Renders PNG du PPTX d'origine pour audit visuel (commite)
-    analysis/                # Audits PPTX<->Slidev, mapping, vision compare
-      mapping-YYYYMMDD.md
-      visual-audit-deckNN.md
+    analysis/                # Sortie des audits (mapping, visual-audit) :
+                             # regeneree a la demande par slide-analyzer, non
+                             # commitee (vague 2026-04/05 retiree, #11508 L6)
     public/                  # Assets statiques Slidev (optionnel)
 ```
 
