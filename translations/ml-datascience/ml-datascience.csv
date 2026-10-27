@@ -43578,14 +43578,14 @@ MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9c-Pruning-From-Sc
 - Frankle, J., & Carlin, M. (2019). *The Lottery Ticket Hypothesis: Finding Sparse, Trainable Neural Networks*. ICLR.
 
 **Implémentation** : `numpy` pour les opérations d'élagage bas niveau (masque de magnitude, norme L1), `torch` pour le modèle MLP et l'entraînement. Pas d'utilisation de `torch.nn.utils.prune` dans la boucle **from-scratch** (Bloc A.3) — c'est l'objet du Bloc B.2.",,,,,,,,16b245d7b2abd137,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,a4502fadcd9ea037,markdown,fr,42cc4b756177af69,"# 3.9d — Compression par distillation : transférer le savoir, pas les poids
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,a4502fadcd9ea037,markdown,fr,42cc4b756177af69,"# 3.9d — Compression par distillation : transférer le savoir, pas les poids
 
 [← Retour à la série](README.md) · Voisin : [3.9a — Quantification INT8](3.9a-Compression-Quantization-INT8.ipynb) · L'ancêtre : [3.7 — Distillation maître-élève](3.7-Distillation-Maitre-Eleve.ipynb)
 
 La série compresse un même réseau par plusieurs axes. [3.9a](3.9a-Compression-Quantization-INT8.ipynb) comprime les **nombres** (INT8 au lieu de FP32) ; les notebooks de pruning de la même famille compriment les **connexions**. Ce notebook comprime le **modèle lui-même** : entraîner un petit réseau — l'élève ResNet-8, ~3,5× moins de poids — à **imiter la sortie d'un grand réseau** — le maître ResNet-20 — plutôt qu'à apprendre seul. C'est la *knowledge distillation* de Hinton, Vinyals & Dean (2015).
 
 [3.7](3.7-Distillation-Maitre-Eleve.ipynb) a établi le mécanisme sur un terrain volontairement modeste (MLP, Fashion-MNIST) : la loss `T²·KL` sur logits tempérés, le rôle du facteur T², la *dark knowledge*. Ici on le porte sur le terrain canonique de la série — ResNet sur CIFAR-10, entraînés pour de vrai dans le notebook — et on va **au-delà des logits** : la variante *FitNets* (Romero et al., 2015) distille aussi une **carte de caractéristiques intermédiaire** du maître vers l'élève. Tout est écrit à la main et mesuré sur plusieurs graines, comme le reste de la série — la loss elle-même est le livrable.",,,,,,,,42cc4b756177af69,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,6ce1edf56ea0a71c,markdown,fr,3ab35880b8ea33c8,"## Le contrat de ce notebook
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,6ce1edf56ea0a71c,markdown,fr,3ab35880b8ea33c8,"## Le contrat de ce notebook
 
 Quatre questions, chacune tranchée par une mesure :
 
@@ -43595,7 +43595,7 @@ Quatre questions, chacune tranchée par une mesure :
 4. **Que coûte et que compresse exactement la distillation ?** Temps d'entraînement (il faut le maître), poids gagnés, exactitude rendue.
 
 Le protocole reste celui de la série : 3 graines par configuration, écarts-types propagés, verdict en unités de σ — pas de « ça a l'air mieux ».",,,,,,,,3ab35880b8ea33c8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,c4ece2157282998a,code,fr,464fde3de71e1735,"import os
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,c4ece2157282998a,code,fr,464fde3de71e1735,"import os
 import time
 
 import numpy as np
@@ -43612,7 +43612,7 @@ EPOCHS = 40 if DEV == ""cuda"" else 6    # recette complete sur GPU, reduite sur
 SEEDS = [0, 1, 2] if DEV == ""cuda"" else [0]
 T_DEFAULT, ALPHA = 4.0, 0.7
 print(f""device={DEV}  torch={torch.__version__}  epochs={EPOCHS}  seeds={SEEDS}"")",,,,,,,,464fde3de71e1735,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,b7910a3e7bcbc6ac,markdown,fr,2706b482b6ec84ca,"## 1. La loss de distillation — deux cibles, une seule loss
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,b7910a3e7bcbc6ac,markdown,fr,2706b482b6ec84ca,"## 1. La loss de distillation — deux cibles, une seule loss
 
 Le maître répond à chaque image par un vecteur de logits $z_t$, l'élève par $z_s$. La loss de Hinton et al. mélange deux signaux :
 
@@ -43624,7 +43624,7 @@ $$\mathcal{L} = (1-\alpha)\,\mathrm{CE}(z_s, y) \;+\; \alpha\, T^2\, \mathrm{KL}
 Deux détails font toute la mécanique. La **température** $T$ aplatit les softmax : à $T=1$ le maître est quasi one-hot (son savoir ordinal est invisible), à $T$ élevé la hiérarchie des classes concurrentes émerge — c'est la *dark knowledge* dont [3.7](3.7-Distillation-Maitre-Eleve.ipynb) a fait le traitement complet. Le **facteur $T^2$** compense l'aplatissement : la KL brute décroît en $\sim 1/T^2$ et, sans re-pondération, la partie molle s'évanouirait dès que $T$ monte — 3.7 l'a vérifié numériquement (KL scalée constante quand $T$ varie), on n'y revient pas.
 
 Le poids $\alpha$ arbitre entre les deux signaux ; on le fixe à 0,7 — le maître domine, l'étiquette garde la parole sur les cas où le maître se trompe.",,,,,,,,2706b482b6ec84ca,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,c5dfced19bcba50c,code,fr,fbddc2468c11d127,"def distill_loss(logits_s, logits_t, y, alpha=ALPHA, T=T_DEFAULT):
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,c5dfced19bcba50c,code,fr,fbddc2468c11d127,"def distill_loss(logits_s, logits_t, y, alpha=ALPHA, T=T_DEFAULT):
     """"""CE dure + KL molle (T^2) — la loss de Hinton et al. 2015, ecrite a la main.""""""
     ce = F.cross_entropy(logits_s, y)
     p_t = F.softmax(logits_t / T, dim=1)
@@ -43639,14 +43639,14 @@ for T in (1.0, 4.0):
     p = F.softmax(z_t / T, dim=1)[0]
     print(f""T={T:.0f} : classe 4 -> {p[4]:.3f}   classe 9 -> {p[9]:.3f}   ""
           f""les 8 autres -> {(1 - p[4] - p[9]).item():.3f} au total"")",,,,,,,,fbddc2468c11d127,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,abb6ee5dd4d8e7b2,markdown,fr,388ad8cb5ca6cd0b,"**Lecture.** À T = 1, le maître met 0,685 sur la classe 4 et 0,228 sur la classe 9 — la hiérarchie est là mais écrasée : les huit autres classes se partagent 0,086. À T = 4, l'écart se resserre (0,222 contre 0,169) et les huit autres classes se partagent 0,609 : la classe 9 devient une concurrente *documentée*, pas une égalité — l'ordre subsiste, l'amplitude s'efface. Cette structure ordinale — *qui ressemble à quoi* — ne coûte rien à collecter, ne figure dans aucune étiquette dure, et pourtant elle généralise : c'est elle que la KL transfère.",,,,,,,,388ad8cb5ca6cd0b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,2235b871f438cff3,markdown,fr,ffe98729da349260,"## 2. Le terrain : un maître ResNet-20, un élève ResNet-8 — même famille, même recette
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,abb6ee5dd4d8e7b2,markdown,fr,388ad8cb5ca6cd0b,"**Lecture.** À T = 1, le maître met 0,685 sur la classe 4 et 0,228 sur la classe 9 — la hiérarchie est là mais écrasée : les huit autres classes se partagent 0,086. À T = 4, l'écart se resserre (0,222 contre 0,169) et les huit autres classes se partagent 0,609 : la classe 9 devient une concurrente *documentée*, pas une égalité — l'ordre subsiste, l'amplitude s'efface. Cette structure ordinale — *qui ressemble à quoi* — ne coûte rien à collecter, ne figure dans aucune étiquette dure, et pourtant elle généralise : c'est elle que la KL transfère.",,,,,,,,388ad8cb5ca6cd0b,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,2235b871f438cff3,markdown,fr,ffe98729da349260,"## 2. Le terrain : un maître ResNet-20, un élève ResNet-8 — même famille, même recette
 
 Les deux réseaux viennent d'une **famille paramétrée par la profondeur** : les largeurs d'étages (16, 32, 64 canaux) et le stem sont identiques, seules changent les profondeurs — trois blocs par étage pour le maître (ResNet-20), un seul pour l'élève (ResNet-8). Ce choix a un double intérêt : la comparaison est propre (même architecture générale, seul le volume de poids change), et la **carte de caractéristiques de l'étage 2 a exactement la même forme** (32 canaux, 16×16) chez le maître et chez l'élève — c'est ce qui permettra de brancher le *hint* FitNets de la section 5 sans adaptateur. Dans le cas général (largeurs différentes), une convolution 1×1 réconcilie les formes — c'est l'adaptateur de l'article original.
 
 Le maître vise la barre de la série (~0,90 sur CIFAR-10 avec la recette SGD + momentum + cosine + augmentation — cf. [3.9a](3.9a-Compression-Quantization-INT8.ipynb)) : distiller un maître médiocre fausserait la mesure, exactement comme un témoin affaibli faussait la mesure INT8.
 ",,,,,,,,ffe98729da349260,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,2e8825d37270ec9a,code,fr,ffdc9331f194978b,"DATA = os.path.join(os.path.expanduser(""~""), "".cache"", ""coursia-datasets"")
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,2e8825d37270ec9a,code,fr,ffdc9331f194978b,"DATA = os.path.join(os.path.expanduser(""~""), "".cache"", ""coursia-datasets"")
 norm = transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2470, 0.2435, 0.2616))
 tfm = transforms.Compose([transforms.ToTensor(), norm])
 tfm_train = transforms.Compose([transforms.RandomCrop(32, padding=4),
@@ -43657,7 +43657,7 @@ test_set = datasets.CIFAR10(DATA, train=False, download=True, transform=tfm)
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=256, shuffle=True)
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=512, shuffle=False)
 print(f""CIFAR-10 : {len(train_set)} train / {len(test_set)} test"")",,,,,,,,ffdc9331f194978b,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,970a1b32e357211f,code,fr,d82a553906cf4ae0,"class BasicBlock(nn.Module):
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,970a1b32e357211f,code,fr,d82a553906cf4ae0,"class BasicBlock(nn.Module):
     def __init__(self, cin, cout, stride=1):
         super().__init__()
         self.conv1 = nn.Conv2d(cin, cout, 3, stride=stride, padding=1, bias=False)
@@ -43718,8 +43718,8 @@ n_t = sum(p.numel() for p in teacher.parameters())
 n_s = sum(p.numel() for p in ResNetCifar((1, 1, 1)).parameters())
 print(f""ResNet-20 (maitre) : {n_t:,} parametres"")
 print(f""ResNet-8  (eleve)  : {n_s:,} parametres  (ratio {n_t / n_s:.1f}x)"")",,,,,,,,d82a553906cf4ae0,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,3bbc41bed98fc721,markdown,fr,0ecef5435c8eea4e,"La recette d'entraînement est **la même pour tout le monde** — maître, élève témoin, élèves distillés : SGD (lr 0,08, momentum 0,9, weight decay 5·10⁻⁴), décroissance cosmique du pas, crops et flips aléatoires, autant d'époques. La seule différence entre le témoin de la section 3 et l'élève distillé de la section 4 est **la loss** : à budget strictement égal, toute différence d'exactitude est attribuable à la distillation, pas à un entraînement mieux réglé.",,,,,,,,0ecef5435c8eea4e,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,0111b9a768ceb3e3,code,fr,603d9ab09266df7f,"def evaluate(m, loader):
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,3bbc41bed98fc721,markdown,fr,0ecef5435c8eea4e,"La recette d'entraînement est **la même pour tout le monde** — maître, élève témoin, élèves distillés : SGD (lr 0,08, momentum 0,9, weight decay 5·10⁻⁴), décroissance cosmique du pas, crops et flips aléatoires, autant d'époques. La seule différence entre le témoin de la section 3 et l'élève distillé de la section 4 est **la loss** : à budget strictement égal, toute différence d'exactitude est attribuable à la distillation, pas à un entraînement mieux réglé.",,,,,,,,0ecef5435c8eea4e,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,0111b9a768ceb3e3,code,fr,603d9ab09266df7f,"def evaluate(m, loader):
     m.eval()
     good = tot = 0
     with torch.no_grad():
@@ -43767,7 +43767,7 @@ def run_student(kind, seed, T=T_DEFAULT, alpha=ALPHA, beta=0.0, epochs=EPOCHS,
         sched.step()
         hist.append(evaluate(m, test_loader))
     return hist[-1], hist, time.perf_counter() - t0",,,,,,,,603d9ab09266df7f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,34302e8bd92c52bb,code,fr,7e7339c05ccc8afd,"opt = torch.optim.SGD(teacher.parameters(), lr=0.08, momentum=0.9, weight_decay=5e-4)
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,34302e8bd92c52bb,code,fr,7e7339c05ccc8afd,"opt = torch.optim.SGD(teacher.parameters(), lr=0.08, momentum=0.9, weight_decay=5e-4)
 sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, T_max=EPOCHS)
 for ep in range(EPOCHS):
     teacher.train()
@@ -43780,24 +43780,24 @@ for ep in range(EPOCHS):
         print(f""  ep {ep+1:2d}/{EPOCHS}  loss={loss.item():.4f}  ({time.perf_counter()-t0:.1f}s)"")
 acc_teacher = evaluate(teacher, test_loader)
 print(f""[maitre ResNet-20] exactitude test = {acc_teacher:.4f}"")",,,,,,,,7e7339c05ccc8afd,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,ff8f36013d7f4595,markdown,fr,2292b19499d95d87,"## 3. Le témoin — l'élève seul, from scratch
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,ff8f36013d7f4595,markdown,fr,2292b19499d95d87,"## 3. Le témoin — l'élève seul, from scratch
 
 Aucune revendication de distillation n'a de sens sans un témoin honnête : le **même** ResNet-8, la **même** recette, le **même** budget — seul le signal d'apprentissage diffère. Trois graines pour distinguer un effet d'un tirage.",,,,,,,,2292b19499d95d87,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,0e7b98339d50a201,code,fr,e99a24c3ab0ed1d8,"runs_scratch = [run_student(""scratch"", s) for s in SEEDS]
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,0e7b98339d50a201,code,fr,e99a24c3ab0ed1d8,"runs_scratch = [run_student(""scratch"", s) for s in SEEDS]
 accs_scratch = [r[0] for r in runs_scratch]
 print(f""[eleve from scratch] {np.mean(accs_scratch):.4f} +/- {np.std(accs_scratch):.4f}  (graines {SEEDS})"")",,,,,,,,e99a24c3ab0ed1d8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,93f5a04757d95684,markdown,fr,6e9daeb3548926ee,"## 4. La KD logit — l'élève imite, à budget égal
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,93f5a04757d95684,markdown,fr,6e9daeb3548926ee,"## 4. La KD logit — l'élève imite, à budget égal
 
 À chaque pas, le maître (gelé, en mode eval, sans gradient) produit ses logits sur le même lot que l'élève ; la loss de la section 1 mélange CE dure et KL molle. Rien d'autre ne change — ni l'optimiseur, ni les époques, ni l'augmentation.",,,,,,,,6e9daeb3548926ee,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,5b045d337b8eb7b5,code,fr,9124a39338e66bbb,"runs_kd = [run_student(""kd"", s) for s in SEEDS]
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,5b045d337b8eb7b5,code,fr,9124a39338e66bbb,"runs_kd = [run_student(""kd"", s) for s in SEEDS]
 accs_kd = [r[0] for r in runs_kd]
 print(f""[eleve KD logit] {np.mean(accs_kd):.4f} +/- {np.std(accs_kd):.4f}"")",,,,,,,,9124a39338e66bbb,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,0534844528f3c527,markdown,fr,a1cc4f040d82f7c2,"## 5. Au-delà des logits — les *hints* de FitNets
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,0534844528f3c527,markdown,fr,a1cc4f040d82f7c2,"## 5. Au-delà des logits — les *hints* de FitNets
 
 La KD logit ne transfère que la réponse **finale**. FitNets (Romero et al., 2015) transfère en plus une **représentation intermédiaire** : la carte de caractéristiques de l'étage 2 du maître sert d'*hint*, et l'élève est pénalisé pour s'en écarter — on force ses couches basses à ressembler à celles du maître, pas seulement sa sortie. C'est l'extension que [3.7](3.7-Distillation-Maitre-Eleve.ipynb) n'avait pas couverte, et le geste qui donne son sens au « from scratch » de la série : on écrit la loss de hint nous-mêmes.
 
 Pour que le poids β du hint soit comparable d'un run à l'autre, on normalise : l'erreur quadratique est divisée par l'énergie moyenne du maître (MSE **relative**). La cellule suivante mesure d'abord l'ordre de grandeur des trois composantes sur un lot — c'est cette mesure qui fonde β = 1.",,,,,,,,a1cc4f040d82f7c2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,f30741abac224092,code,fr,25c73ab0d710211f,"# Ordre de grandeur des composantes (eleve non entraine, premier lot).
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,f30741abac224092,code,fr,25c73ab0d710211f,"# Ordre de grandeur des composantes (eleve non entraine, premier lot).
 m0 = ResNetCifar((1, 1, 1)).to(DEV)
 x, y = next(iter(train_loader))
 x, y = x.to(DEV), y.to(DEV)
@@ -43812,7 +43812,7 @@ del m0
 runs_hint = [run_student(""kd_hint"", s, beta=1.0) for s in SEEDS]
 accs_hint = [r[0] for r in runs_hint]
 print(f""[eleve KD + hint FitNets] {np.mean(accs_hint):.4f} +/- {np.std(accs_hint):.4f}"")",,,,,,,,25c73ab0d710211f,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,ebdecfeaeadc2f81,code,fr,37a0bdb0f87d15b8,"def delta_sigma(a, b):
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,ebdecfeaeadc2f81,code,fr,37a0bdb0f87d15b8,"def delta_sigma(a, b):
     d = np.mean(a) - np.mean(b)
     se = np.sqrt(np.std(a) ** 2 + np.std(b) ** 2)
     return d, (d / se if se > 0 else float(""nan""))
@@ -43834,23 +43834,23 @@ for (name, runs), color in zip(
 plt.xlabel(""epoque""); plt.ylabel(""exactitude test"")
 plt.title(""ResNet-8 sur CIFAR-10 : le meme budget, trois losses"")
 plt.legend(); plt.tight_layout(); plt.show()",,,,,,,,37a0bdb0f87d15b8,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,074483784c826afe,markdown,fr,aa58d85b8c251238,"**Lecture.** À budget d'entraînement identique (40 époques, même recette SGD, mêmes augmentations), la distillation fait gagner **+2,05 points** à l'élève ResNet-8 — un écart de **12,6 σ** au sens des trois graines (0,8437 ± 0,0015 sans maître contre 0,8642 ± 0,0006 avec), bien au-delà du seuil de bruit. C'est le cœur du résultat : le maître ResNet-20 (0,9012, cellule d'entraînement ci-dessus) transfère de la connaissance à un réseau **3,5 fois plus petit** qui n'a jamais vu ses poids. Le paiement est modeste : 567 s par entraînement scratch contre 556 s pour la version distillée (chrono du tableau final) — la passe professeur gelée par lot ne renchérit pas l'entraînement.
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,074483784c826afe,markdown,fr,aa58d85b8c251238,"**Lecture.** À budget d'entraînement identique (40 époques, même recette SGD, mêmes augmentations), la distillation fait gagner **+2,05 points** à l'élève ResNet-8 — un écart de **12,6 σ** au sens des trois graines (0,8437 ± 0,0015 sans maître contre 0,8642 ± 0,0006 avec), bien au-delà du seuil de bruit. C'est le cœur du résultat : le maître ResNet-20 (0,9012, cellule d'entraînement ci-dessus) transfère de la connaissance à un réseau **3,5 fois plus petit** qui n'a jamais vu ses poids. Le paiement est modeste : 567 s par entraînement scratch contre 556 s pour la version distillée (chrono du tableau final) — la passe professeur gelée par lot ne renchérit pas l'entraînement.
 
 La comparaison des écart-types est aussi instructive que les moyennes : ± 0,0006 pour l'élève distillé contre ± 0,0015 pour le scratch. La cible du maître, plus « plate » que les étiquettes one-hot (cf. la démonstration sur la température), régularise l'entraînement et réduit la variance inter-graines.
 
 Le hint FitNets, lui, n'ajoute rien de significatif ici : +0,0012 (0,8654 ± 0,0022) par rapport aux seuls logits, soit ~0,5 σ une fois les erreurs propagées (les +8,1 σ affichés se mesurent contre le scratch, pas contre le KD-logit). La cellule « composantes » l'explique en creux : au premier lot, le signal de hint (rel-MSE = 2,69) est bien actif, mais sur ce couple maître/élève de même famille, les logits portent déjà l'essentiel de l'information — le hint se paierait mieux avec un élève plus profond ou hétérogène (configuration où les features intermédiaires divergent davantage).",,,,,,,,aa58d85b8c251238,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,fe4a73169e46d3dc,markdown,fr,8c6555ad1ba87738,"## 6. La température — trop bas, un verrou ; trop haut, un brouillard
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,fe4a73169e46d3dc,markdown,fr,8c6555ad1ba87738,"## 6. La température — trop bas, un verrou ; trop haut, un brouillard
 
 Le balayage ci-dessous reprend la KD logit sur une seule graine (la comparaison inter-T n'exige pas les trois) pour T ∈ {1, 2, 4, 8}. Ce qu'on cherche : la zone où la dark knowledge est *lisible* — assez tempérée pour que la hiérarchie des classes apparaisse, assez nette pour que l'information subsiste.",,,,,,,,8c6555ad1ba87738,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,745b51e7c0190729,code,fr,7e98d968f2812bc5,"sweep = {}
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,745b51e7c0190729,code,fr,7e98d968f2812bc5,"sweep = {}
 for T in (1.0, 2.0, 4.0, 8.0):
     acc, _, sec = run_student(""kd"", SEEDS[0], T=T)
     sweep[T] = acc
     print(f""T={T:.0f} : {acc:.4f}  ({sec:.0f}s)"")",,,,,,,,7e98d968f2812bc5,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,35521a6a994ab019,markdown,fr,607f220dfa6ea769,"**Lecture.** La température n'est pas un réglage gratuit : T=1 (distiller les logits bruts, proches du one-hot) ne récupère qu'un tiers du gain complet (0,8512, soit +0,0075 sur le scratch 0,8437, contre +0,0205 à T=4) ; le sommet se situe vers **T=4** (0,8647) et T=8 redescend (0,8595). Cette courbe en cloche est exactement la prédiction de la démonstration d'ouverture : à basse température, la distribution du maître est trop pointue et n'apporte que la classe dominante ; à haute température, elle devient si plate que la structure fine — les *dark knowledge*, cette masse de 0,609 répartie sur les classes non-cibles — se dilue. La valeur retenue (T=4, α=0,7) est le sommet **mesuré** de cette cloche, pas une convention copiée.
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,35521a6a994ab019,markdown,fr,607f220dfa6ea769,"**Lecture.** La température n'est pas un réglage gratuit : T=1 (distiller les logits bruts, proches du one-hot) ne récupère qu'un tiers du gain complet (0,8512, soit +0,0075 sur le scratch 0,8437, contre +0,0205 à T=4) ; le sommet se situe vers **T=4** (0,8647) et T=8 redescend (0,8595). Cette courbe en cloche est exactement la prédiction de la démonstration d'ouverture : à basse température, la distribution du maître est trop pointue et n'apporte que la classe dominante ; à haute température, elle devient si plate que la structure fine — les *dark knowledge*, cette masse de 0,609 répartie sur les classes non-cibles — se dilue. La valeur retenue (T=4, α=0,7) est le sommet **mesuré** de cette cloche, pas une convention copiée.
 
 Ces quatre points viennent d'une seule graine (le balayage à 3 graines coûterait ~1 h 15 de GPU supplémentaires) : l'ordre T=4 > T=2 > T=8 > T=1, avec des écarts de 0,2 à 1,4 point, dépasse de loin l'écart-type inter-graines mesuré sur les cellules précédentes (± 0,0006 à ± 0,0022) — la hiérarchie est donc robuste, même si les valeurs exactes bougeraient d'une graine à l'autre.",,,,,,,,607f220dfa6ea769,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,47175af409cc0543,code,fr,07795e93effb7012,"print(f""{'configuration':26s} {'exactitude':>22s} {'params':>10s} {'temps/run':>10s}"")
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,47175af409cc0543,code,fr,07795e93effb7012,"print(f""{'configuration':26s} {'exactitude':>22s} {'params':>10s} {'temps/run':>10s}"")
 print(f""{'maitre ResNet-20':26s} {acc_teacher:>22.4f} {n_t:>10,} {'':>10s}"")
 print(f""{'eleve from scratch':26s} {np.mean(accs_scratch):>13.4f} +/- {np.std(accs_scratch):<7.4f} {n_s:>10,} ""
       f""{np.mean([r[2] for r in runs_scratch]):>9.0f}s"")
@@ -43860,20 +43860,20 @@ print(f""{'eleve KD + hint':26s} {np.mean(accs_hint):>13.4f} +/- {np.std(accs_hi
       f""{np.mean([r[2] for r in runs_hint]):>9.0f}s"")
 print(f""\ncompression : {n_t / n_s:.1f}x moins de poids ; ""
       f""ecart eleve(KD)-maitre : {np.mean(accs_kd) - acc_teacher:+.4f}"")",,,,,,,,07795e93effb7012,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,ff580752114cdccc,markdown,fr,86623bf8087aa5da,"**Lecture.** Le tableau final résume l'échange : pour **3,5 fois moins de poids** (272 474 → 78 042 paramètres), l'élève distillé rend 0,8642–0,8654 contre 0,9012 au maître — il laisse **3,6 à 3,7 points** sur la table, mais il en gagne **2,0 à 2,2** sur l'entraînement from scratch au même budget, avec un écart-type inter-graines divisé par 2,5. La distillation n'est donc pas une compression gratuite — contrairement à la quantification INT8 du [3.9a](3.9a-Compression-Quantization-INT8.ipynb), qui rend le FP32 à ±0,001 près : c'est un **rattrapage partiel** du maître par un réseau plus petit, au prix d'avoir d'abord entraîné le maître (~9 min de GPU ici). Les deux leviers sont complémentaires — distiller pendant l'entraînement, quantifier au déploiement — et l'exercice 3 vous fait mesurer précisément ce que la température fait à cette connaissance transférée.",,,,,,,,86623bf8087aa5da,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,77a7aefdf7c92c4f,markdown,fr,19f1d1ade445fc68,"## Résumé
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,ff580752114cdccc,markdown,fr,86623bf8087aa5da,"**Lecture.** Le tableau final résume l'échange : pour **3,5 fois moins de poids** (272 474 → 78 042 paramètres), l'élève distillé rend 0,8642–0,8654 contre 0,9012 au maître — il laisse **3,6 à 3,7 points** sur la table, mais il en gagne **2,0 à 2,2** sur l'entraînement from scratch au même budget, avec un écart-type inter-graines divisé par 2,5. La distillation n'est donc pas une compression gratuite — contrairement à la quantification INT8 du [3.9a](3.9a-Compression-Quantization-INT8.ipynb), qui rend le FP32 à ±0,001 près : c'est un **rattrapage partiel** du maître par un réseau plus petit, au prix d'avoir d'abord entraîné le maître (~9 min de GPU ici). Les deux leviers sont complémentaires — distiller pendant l'entraînement, quantifier au déploiement — et l'exercice 3 vous fait mesurer précisément ce que la température fait à cette connaissance transférée.",,,,,,,,86623bf8087aa5da,,,,,,,,,,,,,,,
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,77a7aefdf7c92c4f,markdown,fr,19f1d1ade445fc68,"## Résumé
 
 - **Loss de distillation** `(1−α)·CE + α·T²·KL(softmax(z_t/T) ‖ softmax(z_s/T))` écrite à la main : la démonstration d'ouverture montre ce que T fait à la distribution du maître — la masse portée par les classes non-cibles passe de 0,086 (T=1) à 0,609 (T=4). C'est cette structure fine, les *dark knowledge*, que l'élève reçoit en plus des étiquettes.
 - **Mesure centrale** (CIFAR-10, ResNet-8 de 78 042 paramètres, 3 graines, même recette SGD/cosine/crop+flip) : scratch **0,8437 ± 0,0015** → distillé T=4 α=0,7 **0,8642 ± 0,0006** → + hint FitNets **0,8654 ± 0,0022**. Le gain KD vs scratch vaut **+12,6 σ** ; le hint n'ajoute rien de significatif par rapport aux seuls logits (~0,5 σ) sur ce couple maître/élève.
 - **Température** : balayage T ∈ {1, 2, 4, 8} en graine unique — cloche avec sommet mesuré à T=4 (0,8512 / 0,8624 / 0,8647 / 0,8595) ; T=1 ne récupère qu'un tiers du gain.
 - **Coût** : ~9 min pour entraîner le maître ResNet-20 (0,9012), puis ~9,5 min par élève ; la version distillée n'est pas plus chère que le scratch (556 s contre 567 s par run).
 - **Verdict** : à architecture et budget fixés, la distillation est un rattrapage mesurable et reproductible (12,6 σ, pas un artefact de graine), qui laisse tout de même 3,7 points au maître — le pendant « entraînement » de la compression, là où le 3.9a montrait son pendant « déploiement » quasi gratuit (INT8).",,,,,,,,19f1d1ade445fc68,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,632d86b333966032,markdown,fr,2d2e058a50b722f4,"## Exercice 1 — Étiquettes rares : le terrain où la distillation rapporte le plus
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,632d86b333966032,markdown,fr,2d2e058a50b722f4,"## Exercice 1 — Étiquettes rares : le terrain où la distillation rapporte le plus
 
 Le protocole de ce notebook est volontairement à **budget complet** (50 000 étiquettes, autant d'époques pour tous) : c'est le terrain le plus dur pour la KD, celui où son avantage est le plus petit. [3.7](3.7-Distillation-Maitre-Eleve.ipynb) a montré l'autre terrain : quand les étiquettes deviennent rares, le maître — qui a vu toutes les données — vaut soudain beaucoup plus que les étiquettes disponibles. À votre tour de le mesurer ici : restreindre l'entraînement à 20 % du train set et comparer `scratch` contre `kd` sur ce budget réduit.
 
 **Objectif** : écrire `subset_loader(frac, seed)`, renvoyant un DataLoader d'entraînement sur un `torch.utils.data.Subset` aléatoire seedé de `train_set`. **Question** : l'écart KD vs scratch grandit-il quand les étiquettes se raréfient ?",,,,,,,,2d2e058a50b722f4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,d608a2d3caae6961,code,fr,25738a57cfbcf8d9,"def subset_loader(frac, seed):
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,d608a2d3caae6961,code,fr,25738a57cfbcf8d9,"def subset_loader(frac, seed):
     # TODO etudiant : DataLoader d'entrainement sur une fraction aleatoire seedee
     # de train_set (torch.utils.data.Subset + permutation seedee).
     # Indice : g = torch.Generator().manual_seed(seed) ;
@@ -43891,12 +43891,12 @@ if l20 is not None:
     print(""  (a comparer avec l'ecart a budget complet : section 4)"")
 else:
     print(""Exercice a completer"")",,,,,,,,25738a57cfbcf8d9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,25427a1ceecf9177,markdown,fr,88fecd4c3e6324d2,"## Exercice 2 — Un autre hint : similarité cosinus
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,25427a1ceecf9177,markdown,fr,88fecd4c3e6324d2,"## Exercice 2 — Un autre hint : similarité cosinus
 
 Le hint de la section 5 pénalise l'erreur quadratique **relative** entre cartes. La littérature en connaît d'autres ; la plus robuste aux changements d'échelle est la **similarité cosinus** sur les cartes aplaties : on pousse l'élève à *pointer dans la même direction* que le maître, sans contraindre la norme.
 
 **Objectif** : écrire `hint_cosine(h_s, h_t)` renvoyant `1 − moyenne des similarités cosinus` sur les cartes aplaties. **Question** : à β égal, fait-elle mieux que la MSE relative ?",,,,,,,,88fecd4c3e6324d2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,8014bc1bed54cefb,code,fr,16e26471f0e509f9,"def hint_cosine(h_s, h_t):
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,8014bc1bed54cefb,code,fr,16e26471f0e509f9,"def hint_cosine(h_s, h_t):
     # TODO etudiant : 1 - moyenne de F.cosine_similarity sur les cartes aplaties.
     # Indice : .flatten(1) met les cartes en (B, C*16*16) ; F.cosine_similarity(a, b, dim=1)
     # renvoie un vecteur par image ; la loss est 1 - sa moyenne.
@@ -43911,12 +43911,12 @@ if demo is not None:
 else:
     print(""Exercice a completer"")
 ",,,,,,,,16e26471f0e509f9,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,bcf0e8a997a00f4f,markdown,fr,98fcdb49248e43b2,"## Exercice 3 — Pousser la température trop loin
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,bcf0e8a997a00f4f,markdown,fr,98fcdb49248e43b2,"## Exercice 3 — Pousser la température trop loin
 
 Le balayage de la section 6 s'arrête à T = 8. Que se passe-t-il à T = 16, quand la distribution du maître devient si plate que la dark knowledge se dilue ? Diagnostic en deux mesures : l'**entropie** de la distribution tempérée (la platitude) et l'exactitude de l'élève.
 
 **Objectif** : écrire `entropie_moyenne(m, T)`, l'entropie moyenne (en bits) de `softmax(logits/T)` sur un lot de test. **Question** : à T = 16, l'entropie approche-t-elle le maximum log₂(10) ≈ 3,32 bits — et l'élève décroche-t-il ?",,,,,,,,98fcdb49248e43b2,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,c26efb1d7cde05fd,code,fr,119f49ea878fefa4,"def entropie_moyenne(m, T, loader=test_loader):
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,c26efb1d7cde05fd,code,fr,119f49ea878fefa4,"def entropie_moyenne(m, T, loader=test_loader):
     # TODO etudiant : entropie moyenne (base 2) de softmax(logits/T) sur un lot de test.
     # Indice : p = F.softmax(logits / T, dim=1) ;
     #          H = -(p * p.clamp_min(1e-12).log2()).sum(1) puis moyenne sur le lot.
@@ -43932,7 +43932,7 @@ if H16 is not None:
     print(f""[eleve T=16] {acc16:.4f}  (a comparer au balayage de la section 6)"")
 else:
     print(""Exercice a completer"")",,,,,,,,119f49ea878fefa4,,,,,,,,,,,,,,,
-MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb,fb64b91dc1b9f97a,markdown,fr,da0c1958fa609321,"## Pour aller plus loin
+MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/_archive/3.9d-Compression-Distillation-from-scratch.ipynb,fb64b91dc1b9f97a,markdown,fr,da0c1958fa609321,"## Pour aller plus loin
 
 - [3.7 — Distillation maître-élève](3.7-Distillation-Maitre-Eleve.ipynb) : l'ancêtre de ce notebook — KD logit sur MLP/Fashion-MNIST, budget d'étiquettes rares, facteur T² vérifié expérimentalement.
 - [3.9a — Quantification INT8](3.9a-Compression-Quantization-INT8.ipynb) : l'autre axe de compression (les nombres) — les deux se combinent (distiller puis quantifier).
