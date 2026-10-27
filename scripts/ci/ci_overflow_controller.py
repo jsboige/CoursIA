@@ -26,8 +26,16 @@ ecriture -- un organe qui ne sait pas ne bascule pas.
 
 PREREQUISIT (a installer par l'operateur, jamais suppose) : un jeton
 (GitHub App installee ou PAT) dispose du droit **`variables: write`** sur le
-depot, expose au workflow sous le nom de secret `ACTIONS_VARIABLES_PAT`.
-Sans ce jeton, l'organe rend `REFUSED` et **n'ecrit rien**.
+depot. **Arbitrage (b) du coordinateur (c.6441695482, 27/10)** : ce jeton
+n'est **pas** pose comme secret dans Actions -- le workflow automatise rend
+un **verdict en lecture seule** et n'ecrit jamais. La bascule est un geste
+d'operateur **ai-01**, joue en local avec le jeton `jsboige` pris commande
+par commande :
+
+    GH_TOKEN=$(gh auth token --user jsboige) \
+      python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA --apply
+
+Sans jeton, l'organe rend `REFUSED` et **n'ecrit rien**.
 
 Usage :
 
@@ -410,8 +418,9 @@ def main(argv: list[str] | None = None) -> int:
             f"aucun jeton dans {args.token_env} ni GITHUB_TOKEN : le "
             f"controleur ne peut ni lire ni ecrire la variable. "
             f"Prerequisit : un jeton avec le droit `variables: write` sur "
-            f"{args.repo} (GitHub App installee ou PAT), expose sous le secret "
-            f"ACTIONS_VARIABLES_PAT."
+            f"{args.repo} (GitHub App installee ou PAT), pris commande par "
+            f"commande par l'operateur (arbitrage (b) : pas de secret dans "
+            f"Actions -- le workflow automatise reste en lecture seule)."
         )
         if args.json:
             print(json.dumps({"verdict": "REFUSED", "reason": message}, indent=2))

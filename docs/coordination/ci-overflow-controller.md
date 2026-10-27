@@ -41,17 +41,20 @@ python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA --apply --jso
 
 Codes de retour : `0` nominal (HOLD ou bascule), `1` mesure illisible (`UNREADABLE`), `2` refus (`REFUSED` : jeton absent ou droit insuffisant).
 
-## Prerequis — a installer, jamais suppose
+## Qui ecrit — arbitrage (b) du coordinateur (c.6441695482, 27/10)
 
-Un jeton (GitHub App installee ou PAT) avec le droit **`variables: write`** sur `jsboige/CoursIA`, expose au workflow comme secret de depot **`ACTIONS_VARIABLES_PAT`** :
+**Le workflow automatise ne bascule rien : il rend un verdict, en lecture seule.** Aucun secret `ACTIONS_VARIABLES_PAT` n'est pose dans Actions, et le `GITHUB_TOKEN` d'un workflow ne porte pas le droit `variables: write` — la seule voie qui pourrait ecrire ici serait un jeton a effet de bord dans le depot, refusee par l'arbitrage.
 
+La **bascule** est un geste d'operateur, joue par **ai-01** en local, avec le jeton `jsboige` **pris commande par commande** :
+
+```bash
+GH_TOKEN=$(gh auth token --user jsboige) \
+  python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA --apply --json
 ```
-gh secret set ACTIONS_VARIABLES_PAT --repo jsboige/CoursIA
-```
 
-Tant que le secret n'est pas provisionne, le workflow rend un verdict en **lecture seule** (avec le jeton du workflow) et n'ecrit rien : l'absence de bascule apparait dans le resume de job, elle n'est pas silencieuse.
+Ce qui est automatise et public : la **mesure** (file hebergee, inventaire du parc local, etat de la variable) et la **decision** (HOLD / `true` / `false`). Ce qui reste humain et trace : l'ecriture.
 
-> Le `GITHUB_TOKEN` d'un workflow ne porte pas le droit `variables: write` : le controleur ne peut pas s'appuyer dessus pour la bascule.
+Le job planifie rend donc son verdict dans le resume de chaque passage (deux tics par heure, minutes 23 et 53) ; une bascule non effectuee **apparait** dans ce resume, elle n'est jamais silencieuse.
 
 ## Mesure de reference (2026-10-27, `origin/main`)
 

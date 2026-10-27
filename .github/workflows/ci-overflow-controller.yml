@@ -6,12 +6,18 @@ name: CI overflow controller (phase B)
 # 27 workflows, la phase B decide de l'etat de la variable sans intervention
 # humaine.
 #
-# PREREQUISIT (a installer par l'operateur, jamais suppose) : un jeton
-# (GitHub App installee ou PAT) avec le droit `variables: write` sur
-# jsboige/CoursIA, expose comme secret de depot `ACTIONS_VARIABLES_PAT`.
-# Sans ce secret, le job rend un verdict en lecture seule (avec le jeton du
-# workflow) et **n'ecrit rien** : l'absence de bascule est alors visible
-# dans le resume de job, pas silencieuse.
+# LECTURE SEULE -- arbitrage (b) du coordinateur (c.6441695482, 27/10) :
+# ce job **ne bascule rien**. Aucun secret `ACTIONS_VARIABLES_PAT` n'est
+# pose dans Actions, et le `GITHUB_TOKEN` d'un workflow ne porte pas le
+# droit `variables: write` : la seule voie qui pourrait ecrire ici serait un
+# jeton a effet de bord dans le depot, refusee par l'arbitrage.
+#
+# Qui ecrit, et comment : l'operateur **ai-01** joue la bascule en local,
+# avec le jeton `jsboige` **pris commande par commande** :
+#   GH_TOKEN=$(gh auth token --user jsboige) \
+#     python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA --apply
+# La lecture d'etat et la decision, elles, sont automatisables et publiques ;
+# l'ecriture d'une variable de depot est un geste d'operateur, trace.
 #
 # Doctrine #12817 : workflow sur schedule -> `ubuntu-latest` (jamais de
 # runner auto-heberge sur une tache periodique).
@@ -21,15 +27,11 @@ on:
     # Deux tics par heure, minutes hors :00/:30 (jitter de la flotte).
     - cron: '23,53 * * * *'
   workflow_dispatch:
-    inputs:
-      apply:
-        description: "Appliquer la bascule (sinon verdict seul, dry-run)"
-        type: boolean
-        default: false
 
 permissions:
   actions: read
   contents: read
+  variables: read
 
 concurrency:
   group: ci-overflow-controller
@@ -37,7 +39,7 @@ concurrency:
 
 jobs:
   control:
-    name: "Bascule CI_OVERFLOW_LOCAL (offre hebergee <-> parc local)"
+    name: "Verdict CI_OVERFLOW_LOCAL (lecture seule)"
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -49,25 +51,28 @@ jobs:
         with:
           python-version: '3.11'
 
-      # UNE seule mesure : l'organe mesure puis decide, et n'ecrit que si le
-      # jeton d'ecriture est provisionne. Le mode est porte par la variable
-      # APPLY (`--apply` ou chaine vide) -- une mesure double coutait le
+      # UNE seule mesure : l'organe mesure puis rend un VERDICT. Sans
+      # `--apply`, il n'ecrit jamais -- la voie d'ecriture reste celle de
+      # l'operateur, en local (cf entete du fichier). Le mode est porte par
+      # la variable APPLY (chaine vide) : une mesure double coutait le
       # double en lectures de jobs, et le volume d'appels API est precisement
       # l'objet du volet 5 de #22937.
-      - name: Verdict et bascule
+      - name: Verdict (lecture seule)
         env:
-          GH_TOKEN: ${{ secrets.ACTIONS_VARIABLES_PAT != '' && secrets.ACTIONS_VARIABLES_PAT || github.token }}
-          APPLY: ${{ secrets.ACTIONS_VARIABLES_PAT != '' && (github.event_name == 'schedule' || inputs.apply) && '--apply' || '' }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set +e
-          python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA $APPLY --json > verdict.json
+          python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA --json > verdict.json
           RC=$?
           set -e
           cat verdict.json || true
           {
-            echo "### CI overflow controller (phase B)"
+            echo "### CI overflow controller (phase B) -- VERDICT, lecture seule"
             echo ""
             echo "code retour : $RC"
+            echo ""
+            echo "Ce job n'ecrit rien : la bascule de CI_OVERFLOW_LOCAL est un"
+            echo "geste d'operateur (arbitrage (b), c.6441695482)."
             echo ""
             echo '```json'
             cat verdict.json 2>/dev/null || true
