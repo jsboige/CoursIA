@@ -47,7 +47,14 @@ jobs:
     name: Kernel drift guard (base vs PR)
     # Same routing as notebook-papermill-ratchet.yml (#13378 tranche 1):
     # Linux auto-hosted runner, no GITHUB_TOKEN, fork PRs skipped.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # 2026-10-27 (mesure ai-01) : migration vers `ubuntu-latest` par Q35 etape 2
+    # (#17397) -- `scripts/ci/audit_self_hosted_needs.py` certifie ce workflow
+    # comme n'ayant besoin de RIEN qui n'existe que sur le parc local, et le parc
+    # local etait sature PAR SES CHECKOUTS (mesure 00:45Z : 11 des 12 slots
+    # occupes dans `actions/checkout`, 614 runs en file). La garde anti-fork
+    # ci-dessous est CONSERVEE : aucun code de fork ne change de surface.
+    # Retour arriere = revert du commit (et remise de l'entree d'allowlist).
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 5
     steps:
