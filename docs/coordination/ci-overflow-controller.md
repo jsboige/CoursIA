@@ -21,9 +21,29 @@ La phase A est **manuelle** (un operateur pose la variable). La phase B, decrite
 | etat mesure | decision |
 |---|---|
 | offre hebergee **saturee** (au moins `--saturation-jobs` jobs `ubuntu-latest` en file depuis plus de `--saturation-minutes`) **et** parc local libre (au moins `--min-free-slots` slots en ligne **et libres**) | variable a `true` |
-| file hebergee **videe** (au plus `--drain-jobs` job en file) | variable a `false` |
+| offre hebergee **qui suit** (aucun job `ubuntu-latest` en file depuis plus de `--saturation-minutes`) | variable a `false` |
 | parc local **lui-meme affame** (des jobs `coursia-linux` attendent) | variable a `false` (on rend la main a l'heberge) |
-| sinon | **HOLD** (rien n'est ecrit) |
+| sinon (1 ou 2 jobs ages : bande morte) | **HOLD** (rien n'est ecrit) |
+
+### La liberation se mesure par l'AGE de la file, pas par son VIDE (#22937 vague 2)
+
+La premiere version exigeait une file hebergee **videe** pour rendre la main. Cette
+premise est **inatteignable** : le depot porte toujours des jobs heberges hors
+debordement (CodeQL en setup par defaut, Lean CI, les advisories de starvation), donc
+la variable ne pouvait plus jamais revenir a `false` une fois posee -- le controleur
+etait un **commutateur a sens unique**.
+
+Mesure du 27/10 a 22h50Z : variable a `true` depuis 11:04Z, `hosted.queued = 74`,
+`hosted.old = 0` (le plus ancien job attendait 15,0 min -- l'offre **suit**) et
+**29 slots locaux libres**. Le parc local gardait la cohorte pendant que l'offre
+hebergee avait de la marge.
+
+La liberation est donc desormais indexee sur l'**age** de la file : l'offre hebergee
+rend la main des qu'aucun job n'y attend au-dela du seuil de saturation. C'est la
+meme information que la saturation, lue dans l'autre sens -- et elle est
+symetrique avec elle (un job de plus de 15 min en file est, par definition, un job
+en file), ce qui donne une **bande morte** de 1 a 2 jobs ages entre les deux
+premises.
 
 Un **dwell** de `--dwell-minutes` (90 par defaut) interdit deux bascules rapprochees : une variable qui oscille est pire qu'une variable stable. Le dwell est **coherent avec la cadence** : il la depasse (90 > 60 min), sinon il ne peut jamais opposer quoi que ce soit -- deux passages consecutifs d'un cron horaire sont toujours a plus de 60 min, et un dwell de 30 min etait donc inerte (point Hermes du 2026-10-27, 12:53Z).
 
@@ -33,7 +53,7 @@ Une lecture **tronquee** (budget de lecture atteint) n'est pas une mesure illisi
 
 | lecture tronquee | conclusion bloquee | conclusion conservee |
 |---|---|---|
-| offre hebergee | « la file hebergee est **videe** » -> pas de bascule vers `false` | « l'offre hebergee est **saturee** » -> la bascule vers `true` reste possible |
+| offre hebergee | « l'offre hebergee **suit** » -> pas de bascule vers `false` | « l'offre hebergee est **saturee** » -> la bascule vers `true` reste possible |
 | parc local | « le parc local **n'est pas affame** » -> pas de bascule vers `true` | « le parc local **est affame** » -> la bascule vers `false` reste possible |
 
 Mesure du 2026-10-27 sur la file reelle, avant correction : lecture hebergee complete (`budget_unread = 0`) mais lecture **locale tronquee a 15 runs**, ages de 15 a 20 min -- donc **au-dessus** du seuil de 15 min, donc desertes par une lecture complete. Le compte `starved = 0` etait alors une **borne inferieure** : « le parc local n'est pas affame » n'etait pas etabli, et la garde de securite s'ouvrait en faux. Le budget local a ete aligne sur le budget hebergee (40 -> 120) pour que la lecture locale soit complete dans le regime nominal : a 40, le parc local (44 a 55 runs eligibles mesures) etait a la limite exacte du plafond, donc la troncature etait une loterie.
@@ -61,7 +81,7 @@ En **local**, l'operateur n'a rien a poser : le jeton `jsboige` a le droit sur l
 
 ## Qui ecrit — arbitrage (a) du user (c.6441695482, 27/10)
 
-**Le workflow automatise ecrit la variable.** Option (a) de l'arbitrage user du 2026-10-27 : le secret `ACTIONS_VARIABLES_PAT` existe dans Actions (pose le 2026-10-27T17:05:48Z) et porte le droit fin `Variables: read-write` sur `jsboige/CoursIA` **seul** (expiration 2027-01-25, renouvellement suivi par le coordinateur). Il est expose **au seul pas qui ecrit la variable** : ni le checkout ni le `setup-python` ne le voient.
+**Le workflow automatise ecrit la variable.** Option (a) de l'arbitrage user du 2026-10-27 : le secret `ACTIONS_VARIABLES_PAT` existe dans Actions (pose le 2026-10-27T17:05:48Z) et porte le droit fin `Variables: read-write` sur `jsboige/CoursIA` **seul** (expiration **2027-10-27** -- regeneree a 12 mois ; renouvellement suivi par le coordinateur). Il est expose **au seul pas qui ecrit la variable** : ni le checkout ni le `setup-python` ne le voient.
 
 Les portees du job restent `actions: read` + `contents: read` : la portee `variables` **n'existe pas** dans la liste des portees admises sous `permissions:` (reference de syntaxe des workflows GitHub : actions, attestations, checks, contents, deployments, discussions, id-token, issues, packages, pages, pull-requests, security-events, statuses). Une cle hors liste rend le fichier entier invalide : la porter ici aurait suffi a empecher le workflow de demarrer. C'est donc un **PAT** qu'il faut, pas une portee.
 
