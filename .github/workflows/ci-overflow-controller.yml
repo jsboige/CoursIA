@@ -1,0 +1,78 @@
+name: CI overflow controller (phase B)
+
+# Pilote la variable de depot CI_OVERFLOW_LOCAL, qui decide si un job de
+# garde part sur le parc local (legende Linux) ou sur l'offre GitHub-hosted.
+# #22937 volet 1, phase B -- la phase A (#22921) a pose la FORME hybride des
+# 27 workflows, la phase B decide de l'etat de la variable sans intervention
+# humaine.
+#
+# PREREQUISIT (a installer par l'operateur, jamais suppose) : un jeton
+# (GitHub App installee ou PAT) avec le droit `variables: write` sur
+# jsboige/CoursIA, expose comme secret de depot `ACTIONS_VARIABLES_PAT`.
+# Sans ce secret, le job rend un verdict en lecture seule (avec le jeton du
+# workflow) et **n'ecrit rien** : l'absence de bascule est alors visible
+# dans le resume de job, pas silencieuse.
+#
+# Doctrine #12817 : workflow sur schedule -> `ubuntu-latest` (jamais de
+# runner auto-heberge sur une tache periodique).
+
+on:
+  schedule:
+    # Deux tics par heure, minutes hors :00/:30 (jitter de la flotte).
+    - cron: '23,53 * * * *'
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Appliquer la bascule (sinon verdict seul, dry-run)"
+        type: boolean
+        default: false
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ci-overflow-controller
+  cancel-in-progress: false
+
+jobs:
+  control:
+    name: "Bascule CI_OVERFLOW_LOCAL (offre hebergee <-> parc local)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # UNE seule mesure : l'organe mesure puis decide, et n'ecrit que si le
+      # jeton d'ecriture est provisionne. Le mode est porte par la variable
+      # APPLY (`--apply` ou chaine vide) -- une mesure double coutait le
+      # double en lectures de jobs, et le volume d'appels API est precisement
+      # l'objet du volet 5 de #22937.
+      - name: Verdict et bascule
+        env:
+          GH_TOKEN: ${{ secrets.ACTIONS_VARIABLES_PAT != '' && secrets.ACTIONS_VARIABLES_PAT || github.token }}
+          APPLY: ${{ secrets.ACTIONS_VARIABLES_PAT != '' && (github.event_name == 'schedule' || inputs.apply) && '--apply' || '' }}
+        run: |
+          set +e
+          python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA $APPLY --json > verdict.json
+          RC=$?
+          set -e
+          cat verdict.json || true
+          {
+            echo "### CI overflow controller (phase B)"
+            echo ""
+            echo "code retour : $RC"
+            echo ""
+            echo '```json'
+            cat verdict.json 2>/dev/null || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$RC" != "0" ]; then
+            echo "::warning title=CI overflow controller::verdict non nominal (rc=$RC) -- le detail est dans le resume du job"
+          fi

@@ -212,11 +212,23 @@ def _parse_iso(value: str | None) -> datetime | None:
 class RunnerInventory:
     online: list[str] = field(default_factory=list)
     offline: list[str] = field(default_factory=list)
+    # #22937 phase B : l'inventaire distingue le slot EN LIGNE du slot
+    # LIBRE. Un runner en ligne mais occupe ne peut pas absorber un
+    # debordement : confondre les deux ferait annoncer une capacite locale
+    # qui n'existe pas. `busy`/`idle` sont additifs (les appelants
+    # existants ne les lisent pas).
+    busy: list[str] = field(default_factory=list)
+    idle: list[str] = field(default_factory=list)
 
     @property
     def available(self) -> bool:
         """False = l'inventaire n'a pas pu etre lu (pas de droit admin/PAT)."""
         return True
+
+    @property
+    def free(self) -> int:
+        """Nombre de slots en ligne ET libres pour le label demande."""
+        return len(self.idle)
 
 
 @dataclass
@@ -278,7 +290,13 @@ def fetch_inventory(repo: str, label: str, token: str | None) -> RunnerInventory
         names = [l.get("name") for l in r.get("labels", [])]
         if label not in names:
             continue
-        (inv.online if r.get("status") == "online" else inv.offline).append(r.get("name", "?"))
+        name = r.get("name", "?")
+        if r.get("status") != "online":
+            inv.offline.append(name)
+            continue
+        inv.online.append(name)
+        # #22937 phase B : `busy` porte l'occupation reelle du slot.
+        (inv.busy if r.get("busy") else inv.idle).append(name)
     return inv
 
 
