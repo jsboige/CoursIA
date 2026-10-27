@@ -347,6 +347,28 @@ _DELIVERED_MARKER_REVOKED_RE = re.compile(
     re.IGNORECASE | re.MULTILINE,
 )
 
+# Le marqueur de CONTENEUR : une issue (ou une umbrella) dont le dernier
+# commentaire dit « le CONTENEUR est livre ». C'est la seule forme qui
+# signifie « plus rien a faire DEDANS » ; `[DELIVERED] lane X -- PR #N` dit
+# « la lane X a livre SON grain », ce qui sur une umbrella ne ferme que le
+# sous-grain livre.
+#
+# Les trois formes `[INFO] candidate-delivered` sont reprises telles quelles
+# de `_DELIVERED_MARKER_RE` (memes regex, meme lookahead anti-`-revoked` /
+# `-partial`) ; la forme `[DELIVERED] lane` en est VOLONTAIREMENT absente :
+# sur une umbrella, elle est une livraison de sous-grain, pas une fermeture.
+_CONTAINER_DELIVERY_MARKER_RE = re.compile(
+    r"(?:"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\]\s+candidate-delivered(?![-_\w])"
+    r"|"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\s+candidate-delivered(?![-_\w])[^\n\]]*\]"
+    r"|"
+    r"^\s*(?:#{1,6}\s*)?\[INFO\][^\n]*\b(?:lane\s+\S+:\S+|signal|livr[ée]e?|"
+    r"verification first-hand)[^\n]*\bcandidate-delivered(?![-_\w])"
+    r")",
+    re.IGNORECASE | re.MULTILINE,
+)
+
 # #20351 : `[RELEASED]` + « acceptance deja couverte » = LIVRAISON pour le
 # tapis. Le marqueur `[RELEASED]` a deux sens dans la flotte : soit une lane
 # rend la main sur un item qu'elle n'a pas livre (barriere reelle -> l'item
@@ -1644,6 +1666,39 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     recentes servies par le tapis -- cette fonction les aurait
     ecartes avant l'epuisement du budget de la sonde pleine.
     """
+    body = _last_comment_body(issue_number)
+    if body is None:
+        return None
+    if not body:
+        return False
+    # Deux grammaires, un seul verdict : les en-tetes de cloture ci-dessus,
+    # PLUS le marqueur de livraison `[INFO] candidate-delivered` (mesure
+    # 2026-10-17 : une issue rendue au coordinateur par ce marqueur et
+    # repostee ainsi en DERNIER commentaire restait servie en boucle par le
+    # tapis -- la sonde de tete ne l'atteignait pas, le budget de la sonde
+    # pleine non plus). Grammaire reutilisee de la sonde pleine
+    # (`_DELIVERED_MARKER_RE`, lookahead anti-`-revoked`/`-partial`) : tout
+    # ce que ce filtre attrape, la sonde pleine l'aurait ecarte aussi -- il
+    # n'introduit aucun verdict nouveau, il avance le meme.
+    return bool(_RECENT_DELIVERY_MARKER_RE.search(body)
+                or _DELIVERED_MARKER_RE.search(body))
+
+
+def _last_comment_body(issue_number: int) -> str | None:
+    """Le corps du DERNIER commentaire d'une issue, en 1 requete.
+
+    TRI-ETAT :
+    - ``None``  : la lecture a echoue (reseau, 403, payload illisible) --
+      fail-OPEN, l'appelant le dit ;
+    - ``""``    : il n'y a pas de dernier commentaire exploitable (aucun
+      commentaire, payload inattendu, corps non textuel) ;
+    - le corps  : celui du dernier commentaire (ordre chronologique de
+      l'API `gh issue view --json comments`).
+
+    Facteurise pour que le filtre « marqueur recent » et le filtre
+    « marqueur de CONTENEUR » lisent le meme octet : deux lectures du meme
+    fil ne peuvent pas diverger sur un fil qui change entre les deux.
+    """
     try:
         out = subprocess.run(
             ["gh", "issue", "view", str(issue_number), "--repo", REPO,
@@ -1658,29 +1713,59 @@ def has_recent_delivery_marker(issue_number: int) -> bool | None:
     except Exception:  # noqa: BLE001 - payload illisible = pas de signal
         return None
     if not isinstance(payload, dict):
-        return False
+        return ""
     comments = payload.get("comments") or []
     if not isinstance(comments, list) or not comments:
-        return False
-    # Le DERNIER commentaire (le plus recent) -- l'index -1 est l'ordre
-    # chronologique de l'API `gh issue view --json comments`.
+        return ""
     last = comments[-1]
     if not isinstance(last, dict):
-        return False
+        return ""
     body = last.get("body") or ""
     if not isinstance(body, str):
+        return ""
+    return body
+
+
+def has_recent_container_delivery_marker(issue_number: int) -> bool | None:
+    """Le DERNIER commentaire dit-il que le CONTENEUR est livre ?
+
+    TRI-ETAT :
+    - ``True``  : le dernier commentaire porte le marqueur de conteneur
+      `[INFO] candidate-delivered` (les trois formes de
+      `_CONTAINER_DELIVERY_MARKER_RE`) ;
+    - ``False`` : aucun marqueur de conteneur (ou une retraction
+      `[NOT-DELIVERED]` / `[INFO] candidate-delivered-revoked` ;
+    - ``None``  : lecture en echec -- fail-OPEN, l'appelant le dit.
+
+    Pourquoi une sonde a part, distincte de `has_recent_delivery_marker` :
+    sur une **umbrella**, les deux marqueurs ne disent PAS la meme chose.
+
+    - `[DELIVERED] lane X -- PR #N` = « la lane X a livre SON grain » : sur
+      une umbrella, cela ne ferme que le sous-grain livre ; l'umbrella reste
+      a servir ;
+    - `[INFO] candidate-delivered` = « le CONTENEUR est livre, plus rien a
+      faire dedans » : c'est une declaration de conteneur, et elle doit
+      ecarter l'umbrella du tirage des lanes workers.
+
+    Mesure du 2026-10-26 (#17528) : le meme EPIC a ete servi quatre fois
+    en cinq jours (21/10, 22/10, 25/10 x2) et quatre lanes y ont repose le
+    meme marqueur -- le tapis le resservait malgre le marqueur, parce que le
+    filtre de livraison ne s'applique qu'a l'urne `grain` (cf la boucle de
+    service, `belt_pick_with_replacements`).
+
+    Cout : **1 requete** `gh issue view --json comments`, comme le filtre
+    recent -- et HORS budget de sonde.
+    """
+    body = _last_comment_body(issue_number)
+    if body is None:
+        return None
+    if not body:
         return False
-    # Deux grammaires, un seul verdict : les en-tetes de cloture ci-dessus,
-    # PLUS le marqueur de livraison `[INFO] candidate-delivered` (mesure
-    # 2026-10-17 : une issue rendue au coordinateur par ce marqueur et
-    # repostee ainsi en DERNIER commentaire restait servie en boucle par le
-    # tapis -- la sonde de tete ne l'atteignait pas, le budget de la sonde
-    # pleine non plus). Grammaire reutilisee de la sonde pleine
-    # (`_DELIVERED_MARKER_RE`, lookahead anti-`-revoked`/`-partial`) : tout
-    # ce que ce filtre attrape, la sonde pleine l'aurait ecarte aussi -- il
-    # n'introduit aucun verdict nouveau, il avance le meme.
-    return bool(_RECENT_DELIVERY_MARKER_RE.search(body)
-                or _DELIVERED_MARKER_RE.search(body))
+    # Une retraction posteriore annule le marqueur : l'ordre est porte par
+    # le texte (cf `_delivered_state`).
+    if _DELIVERED_MARKER_REVOKED_RE.search(body):
+        return False
+    return bool(_CONTAINER_DELIVERY_MARKER_RE.search(body))
 
 
 # #22500 point 1 -- l'HEURE du dernier evenement de cloture.
@@ -1938,6 +2023,7 @@ def delivered_signal_reason(
     failures: list[int] | None = None,
     merged_pr_probe=None,
     skip_marker: bool = False,
+    skip_merged_pr: bool = False,
 ) -> str | None:
     """Pourquoi ecarter ce candidat de l'urne `grain`, ou ``None``.
 
@@ -1980,6 +2066,13 @@ def delivered_signal_reason(
     # de cloture a plus de 48 h reste ecartee par son LABEL ou par une PR
     # MERGEE recente (une consolidation accumule les PRs : ces deux surfaces
     # disent « un tranche est livree », pas « la consolidation est finie »).
+    # `skip_merged_pr` neutralise la surface « PR MERGEE » a son tour, pour
+    # la seule classe `consolidation` et seulement quand la derniere
+    # livraison par PR est DEJA CONNUE et depasse CONSOLIDATION_LAG_H : une
+    # PR fusionnee de plus de 48 h ne dit plus qu'une tranche vient d'etre
+    # livree, et la sonde n'a plus rien a mesurer. Le label reste intact,
+    # et la voie du tapis ne leve ce court-circuit qu'avec un horodatage
+    # connu -- sans lui, la sonde garde son comportement anterieur.
     if not skip_marker:
         verdict = probe(item["number"], lane)
         if verdict == DELIVERED_SIGNAL_UNPROBED:
@@ -2006,6 +2099,11 @@ def delivered_signal_reason(
     # cycles de suite par le tapis narrow-cache. La sonde est partagee
     # avec `open_cover_reason` via le meme `_counted_probe` parent (meme
     # plafond `DELIVERED_SIGNAL_MAX_PROBES`).
+    # Court-circuit #22500 : consolidation deja datee de plus de 48 h --
+    # ni requete `gh`, ni consommation du budget de sonde, ni repli
+    # UNPROBED qui renverrait le candidat sur le tapis sans le servir.
+    if skip_merged_pr:
+        return None
     merged = merged_pr_probe(item["number"], lane)
     if merged == DELIVERED_SIGNAL_UNPROBED:
         return None
@@ -2324,6 +2422,73 @@ def print_claim_unread_report(unread, lane: str | None = None) -> None:
     print("   pas libre : verifier avant d'editer")
     hint = ("--lane " + lane if lane else "--lane <machine:workspace>")
     print(f"   (`python scripts/check_lane_claim.py <N> {hint}`).")
+
+
+def print_container_unread_report(unread, lane: str | None = None) -> None:
+    """Rend compte des etats de LIVRAISON DU CONTENEUR NON LUS.
+
+    Le pendant exact de `print_claim_unread_report`, pour la sonde qui lit le
+    DERNIER commentaire d'une umbrella : une lecture en echec laisse le
+    fail-OPEN servir le candidat (on ne refuse pas un grain faute d'avoir pu
+    lire un commentaire), mais le conteneur peut porter un marqueur
+    `[INFO] candidate-delivered` -- et rien, dans la sortie, ne le distinguait
+    d'un conteneur libre.
+
+    Mesure #17528 (2026-10-26) : l'EPIC a ete servi quatre fois en cinq jours
+    alors que quatre lanes y avaient repose le meme marqueur ; la lecture du
+    dernier commentaire avait echoue (reseau, 403, payload illisible) et le
+    fail-OPEN, sans signal, a resservi un conteneur deja livre.
+
+    Ne PAS confondre avec un controle ABSENT : une lecture non tentee
+    (budget epuise) ne passe pas par ce chemin -- seule une lecture TENTEE et
+    ECHOUEE est signalee.
+    """
+    numbers = sorted(set(unread or []))
+    if not numbers:
+        return
+    joined = ", ".join(f"#{num}" for num in numbers)
+    print(f"!! etat de LIVRAISON DU CONTENEUR NON LU sur {joined} "
+          f"({len(numbers)} candidat(s)) : le dernier commentaire n'a pas pu "
+          "etre lu")
+    print("   (reseau, 403, payload illisible). Le tirage est MAINTENU "
+          "(fail-OPEN assume) -- mais le")
+    print("   conteneur peut PORTER un marqueur `[INFO] candidate-delivered` : "
+          "verifier avant d'editer")
+    print("   (le conteneur peut deja etre livre -- mesurer avant de le servir).")
+
+
+def print_marker_unread_report(unread, lane: str | None = None) -> None:
+    """Rend compte des etats de LIVRAISON (marqueur RECENT) NON LUS.
+
+    Troisieme pendant de `print_claim_unread_report` et
+    `print_container_unread_report` : la sonde du marqueur RECENT
+    (`has_recent_delivery_marker`) rend `None` sur echec de lecture -- et
+    ce `None` etait, avant, **indistinguable d'un « pas de marqueur »** dans
+    le rapport.
+
+    Mesure #17528 (2026-10-26, session jumelle `coursia-2-25`) : le picker a
+    signale `403` sur deux candidats de ce meme run (« claim NON LU sur
+    #15604, #21092 : reseau, 403, payload illisible ») -- le quota GraphQL
+    etait epuise. L'echec de la SONDE DE MARQUEUR, lui, n'etait nomme nulle
+    part : c'est la que se cachait la quatrieme livraison en double.
+
+    La sonde du marqueur RECENT et celle du marqueur de CONTENEUR lisent le
+    meme fil : un echec de l'une predit l'echec de l'autre. Les deux sont
+    donc rapportees -- separement, parce que leurs verdicts ne se
+    confondent pas (marqueur de cloture / declaration de conteneur livre).
+    """
+    numbers = sorted(set(unread or []))
+    if not numbers:
+        return
+    joined = ", ".join(f"#{num}" for num in numbers)
+    print(f"!! marqueur de LIVRAISON NON LU sur {joined} "
+          f"({len(numbers)} candidat(s)) : le dernier commentaire n'a pas pu "
+          "etre lu")
+    print("   (reseau, 403, payload illisible). Le tirage est MAINTENU "
+          "(fail-OPEN assume) -- mais le")
+    print("   candidat peut PORTER un marqueur de cloture (`[DELIVERED]` / "
+          "`[FROZEN]` /")
+    print("   `[INFO] candidate-delivered`) : verifier avant d'editer.")
 
 
 def print_belt_budget_report(budget_hit: bool) -> None:
@@ -7688,6 +7853,17 @@ def recent_marker_probe_inert(number):
     return None
 
 
+def container_marker_probe_inert(number):
+    """Defaut inerte du filtre de CONTENEUR (doctrine #19913).
+
+    Meme contrat que `recent_marker_probe_inert` : ``None`` = lecture en
+    echec, fail-OPEN. Un test qui n'injecte pas de sonde ne sort jamais sur
+    le reseau.
+    """
+    # Pas de sonde injectee -> pas de mesure -> retour IMPLICITE `None`.
+    # (Ecrire `return None` ici ajouterait un finding RET501 au fichier.)
+
+
 def delivery_event_probe_inert(number):
     """Defaut inerte de la lecture d'evenement de livraison (#22500 point 1).
 
@@ -7707,6 +7883,7 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                                 delivered_probe=None, claims_probe=None,
                                 merged_pr_probe=None,
                                 recent_marker_probe=None,
+                                container_marker_probe=None,
                                 delivery_event_probe=None,
                                 time_budget_s=None):
     """La boucle de service du tapis : claims, livraison, remplacement.
@@ -7729,6 +7906,13 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     ``recent_marker_probe`` (tests) remplace le filtre bon marche du dernier
     commentaire (#19768) -- HORS budget de sonde, il ecarte les clotures
     marquees sans consommer une unite : l'epuisement ne peut plus les servir.
+    ``container_marker_probe`` (tests) remplace, pour l'urne `umbrella`, le
+    filtre du MARQUEUR DE CONTENEUR (`[INFO] candidate-delivered` pose dans le
+    dernier commentaire) -- meme cout (1 requete, hors budget), meme
+    fail-OPEN, meme tri-etat. Il ne remplace pas la sonde pleine : sur une
+    umbrella, le LABEL `candidate-delivered` n'est pas un verdict de
+    fermeture (une umbrella accumule des PRs d'arc), seul le marqueur pose
+    dans un commentaire l'est.
 
     ``delivery_event_probe`` (tests) remplace la lecture qui rend l'HEURE du
     dernier evenement de cloture (#22500 point 1) : pour une consolidation,
@@ -7745,9 +7929,22 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
 
     Rend ``(picks, withheld, etat)`` avec ``etat = {"failures": [numeros
     illisibles], "budget_hit": bool, "claim_unread": [numeros servis sur une
-    lecture de claim en echec], "time_budget_hit": bool}``. ``claim_unread``
+    lecture de claim en echec], "container_unread": [numeros servis sur une
+    lecture du DERNIER COMMENTAIRE en echec], "marker_unread": [numeros servis
+    sur une lecture du marqueur RECENT en echec], "time_budget_hit": bool}``.
+    ``claim_unread``
     est le pendant du ``failures`` de livraison : deux lectures qui n'ont pas
     ABOUTI, servies quand meme (fail-OPEN) et rapportees a la lane (#20265).
+    ``container_unread`` est le meme pendant pour la SONDE DE LIVRAISON DU
+    CONTENEUR : une umbrella dont le dernier commentaire n'a pas pu etre lu
+    peut porter un marqueur ``[INFO] candidate-delivered`` -- le candidat est
+    alors servi sans que la sortie le distingue d'un conteneur libre
+    (mesure #17528, 2026-10-26).
+    ``marker_unread`` est le meme pendant pour la SONDE DU MARQUEUR RECENT
+    (``has_recent_delivery_marker``) : son ``None`` -- lecture ratee -- etait
+    lui aussi **muet**, et indiscernable d'un « pas de marqueur » dans le
+    rapport (mesure #17528, 2026-10-26 : le picker a signale `403` sur deux
+    candidats du meme run, et l'echec de la SONDE n'etait nomme nulle part).
 
     ``time_budget_s`` (#21436) est un mur de temps sur la BOUCLE : passe
     l'echeance, plus aucune sonde n'est emise (claims hors fenetre, filtre
@@ -7759,7 +7956,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     """
     budget = [int(probe_budget)]
     state = {"failures": [], "budget_hit": False, "recent_filtered": 0,
-             "claim_unread": [], "time_budget_hit": False}
+             "claim_unread": [], "container_unread": [], "marker_unread": [],
+             "time_budget_hit": False}
     # #21436 — `probe_budget` borne le NOMBRE de sondes de livraison. Il ne
     # borne ni leur DUREE, ni les deux surfaces que la boucle paie par
     # candidat hors fenetre : `claims_probe` (un `check_claims` unitaire) et
@@ -7801,6 +7999,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
     user_merged_pr_probe = merged_pr_probe or merged_pr_probe_inert
     user_recent_marker_probe = (recent_marker_probe
                                 or recent_marker_probe_inert)
+    user_container_marker_probe = (container_marker_probe
+                                   or container_marker_probe_inert)
     user_delivery_event_probe = (delivery_event_probe
                                   or delivery_event_probe_inert)
 
@@ -7884,9 +8084,13 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
         # reposait le marqueur (mesure 06/10 : #15974 et #16048, deux
         # marqueurs chacune, servies a deux reprises). Portee : l'urne
         # grain SEULE, comme la voie ponderee -- l'urne delivered sert
-        # precisement ces issues aux lanes habilitees (#15069), et une
-        # umbrella n'est jamais ecartee sur un marqueur (decision
-        # mesuree du canal label).
+        # precisement ces issues aux lanes habilitees (#15069). Pour
+        # l'urne umbrella, le LABEL `candidate-delivered` ne dit rien
+        # (il est pose mecaniquement par le workflow advisory des qu'une
+        # PR d'arc merge -- une umbrella ACCUMULE des PRs, ce marqueur
+        # n'y est donc pas un verdict de fermeture) ; en revanche le
+        # MARQUEUR DE CONTENEUR pose dans un commentaire, lui, l'est
+        # (cf. la branche umbrella ci-dessous).
         if it.get("klass") == "grain" and not args.include_delivered:
             # #19768 (perimetre restant, NOT-DELIVERED du 12/10) : filtre
             # RECENT du tapis -- le meme que l'urne grain (draw_unclaimed),
@@ -7913,15 +8117,36 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
             # lecture d'evenement remplace le filtre recent pour cette classe.
             # Le marqueur n'ecarte plus au-dela de 48 h ; la surface
             # « commentaire » de la sonde pleine est neutralisee elle aussi
-            # (`skip_marker`), mais PAS les deux autres (label, PR MERGEE) --
-            # une consolidation accumule les PRs, ces deux surfaces disent
-            # « une tranche est livree », pas « la consolidation est finie ».
+            # (`skip_marker`), le LABEL reste intact (il continue d'ecarter,
+            # quel que soit l'age), et la surface « PR MERGEE » est
+            # neutralisee seulement quand la derniere livraison par PR est
+            # deja connue et depasse 48 h (`skip_merged_pr`) : une
+            # consolidation accumule les PRs, et une tranche mergee depuis
+            # plus de 48 h ne dit plus « la consolidation est finie ».
             marker_expired = False
+            merged_pr_expired = False
             if is_consolidation(it):
+                # #22500 -- la surface « PR MERGEE » cesse elle aussi
+                # d'ecarter la consolidation au-dela de 48 h : le timestamp
+                # de la derniere livraison par PR est DEJA calcule en amont
+                # (`last_delivery_stamp`, corpus `fetch_merged` partage) --
+                # le reutiliser evite une requete `gh` supplementaire.
+                # Age inconnu (aucune livraison dans la fenetre, ou corpus
+                # indisponible) -> la sonde garde son comportement anterieur.
+                delivery_age_h = _visit_age_hours(
+                    it.get("last_delivery_stamp"), NOW)
+                merged_pr_expired = bool(
+                    delivery_age_h is not None
+                    and delivery_age_h >= CONSOLIDATION_LAG_H)
                 verdict = (False if expired()
                            else user_delivery_event_probe(n))
                 if verdict is None:
-                    # Lecture en echec : fail-OPEN, rien n'est neutralise.
+                    # Lecture en echec : fail-OPEN, rien n'est neutralise --
+                    # mais l'echec est PUBLIE (mesure #17528, 2026-10-26 :
+                    # un `None` indistinguable d'un « pas de marqueur » est
+                    # ce qui a laisse le tapis resservir des conteneurs
+                    # livres).
+                    state.setdefault("marker_unread", []).append(n)
                     verdict = (False, False, None)
                 recent_flag, delivered_flag, stamp = verdict
                 age_h = _visit_age_hours(stamp, NOW)
@@ -7932,6 +8157,14 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
             else:
                 recent_flag = (False if expired()
                                else user_recent_marker_probe(n))
+                if recent_flag is None:
+                    # Meme traitement que ci-dessus : le fail-OPEN reste
+                    # assume, le SILENCE ne l'est pas. La sonde du marqueur
+                    # RECENT et celle du marqueur de CONTENEUR lisent le
+                    # meme fil : un echec de l'une predit l'echec de l'autre,
+                    # et les deux verdicts doivent etre distincts dans la
+                    # sortie (conteneur livre / non livre).
+                    state.setdefault("marker_unread", []).append(n)
             if recent_flag is True and not marker_expired:
                 state["recent_filtered"] += 1
                 belt_withheld.append(
@@ -7943,11 +8176,52 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 continue
             reason = delivered_signal_reason(
                 it, args.lane, counted_probe, state["failures"],
-                counted_merged_pr_probe, skip_marker=marker_expired)
+                counted_merged_pr_probe, skip_marker=marker_expired,
+                skip_merged_pr=merged_pr_expired)
             if reason is not None:
                 belt_withheld.append(
                     (it, "LIVRAISON : " + reason
                      + " Candidat remplace dans la meme urne."))
+                continue
+        elif it.get("klass") == "umbrella" and not args.include_delivered:
+            # Umbrella livree : le MARQUEUR DE CONTENEUR pose dans le dernier
+            # commentaire (`[INFO] candidate-delivered`) dit « plus rien a
+            # faire DEDANS ». C'est un MARQUEUR DE COMMENTAIRE, pose par une
+            # lane apres avoir mesure le conteneur -- et il se distingue du
+            # LABEL `candidate-delivered`, que le workflow advisory pose
+            # mecaniquement des qu'une PR d'arc merge : sur une umbrella qui
+            # accumule des PRs, ce label n'est PAS un verdict de fermeture et
+            # n'ecarte donc rien ici.
+            #
+            # Mesure du 2026-10-26 (#17528) : le meme EPIC a ete servi
+            # quatre fois en cinq jours (21/10, 22/10, 25/10 x2) et quatre
+            # lanes y ont repose le meme marqueur -- le tapis le resservait
+            # malgre le marqueur, parce que le filtre de livraison ne
+            # s'appliquait qu'a l'urne `grain`. La lecture est HORS budget de
+            # sonde (1 requete, comme le filtre recent) et reste fail-OPEN :
+            # une lecture en echec laisse l'umbrella servable.
+            recent = False if expired() else user_container_marker_probe(n)
+            if recent is None:
+                # La lecture a ECHOUE (reseau, 403, payload illisible) : l'etat
+                # de livraison du CONTENEUR est INCONNU, pas « libre ». Le
+                # fail-OPEN reste assume (le candidat est servi -- on ne refuse
+                # pas un grain faute d'avoir pu lire un commentaire), mais le
+                # SILENCE ne l'est pas : le numero est reporte, exactement
+                # comme `claim_unread` le fait pour le claim (#20265).
+                # Mesure #17528 (2026-10-26) : le conteneur portait un
+                # marqueur `[INFO] candidate-delivered` et la LECTURE a echoue
+                # -- le tapis a resservi un conteneur deja livre, et rien dans
+                # la sortie ne distinguait ce cas d'un conteneur libre.
+                state.setdefault("container_unread", []).append(n)
+            if recent is True:
+                state["recent_filtered"] += 1
+                belt_withheld.append(
+                    (it,
+                     ("LIVRAISON (conteneur) : le dernier commentaire "
+                      "porte le marqueur `[INFO] candidate-delivered` -- "
+                      "l'umbrella est livree, plus rien a faire dedans. "
+                      "Reservee au coordinateur/adjoint (urne `delivered`, "
+                      "#15069). Candidat remplace hors budget de sonde.")))
                 continue
         # FREE, FREE_STALE, OWNED_BY_ME, ERROR -- servable.
         # ERROR (check indisponible, parse rate...) est servable par
@@ -8825,6 +9099,8 @@ def main(argv: list[str] | None = None) -> int:
                                         merged_pr_probe=merged_pr_signal,
                                         recent_marker_probe=(
                                             has_recent_delivery_marker),
+                                        container_marker_probe=(
+                                            has_recent_container_delivery_marker),
                                         delivery_event_probe=delivery_event,
                                         time_budget_s=belt_time_remaining))
         _belt_phase(f"pick_with_replacements fait: "
@@ -8938,6 +9214,17 @@ def main(argv: list[str] | None = None) -> int:
             # ci-dessus -- les deux lectures ratees se lisent ensemble.
             print_claim_unread_report(belt_pick_state.get("claim_unread"),
                                       args.lane)
+            # Mesure #17528 : la SONDE DE LIVRAISON DU CONTENEUR se taisait
+            # elle aussi en cas d'echec de lecture -- un conteneur portant un
+            # marqueur `[INFO] candidate-delivered` pouvait etre resservi sans
+            # que rien ne le signale. Meme doctrine que pour le claim.
+            print_container_unread_report(
+                belt_pick_state.get("container_unread"), args.lane)
+            # Mesure #17528 : la SONDE DU MARQUEUR RECENT se taisait
+            # elle aussi sur echec de lecture (403 / reseau) -- et son
+            # `None` etait indiscernable d'un « pas de marqueur ».
+            print_marker_unread_report(
+                belt_pick_state.get("marker_unread"), args.lane)
             print_belt_budget_report(belt_probe_budget_hit[0])
             if belt_time_budget_hit[0]:
                 print("   Mur de temps du tapis atteint (#21436) : la boucle a")
@@ -9046,6 +9333,19 @@ def main(argv: list[str] | None = None) -> int:
                     "probes_attempted": bool(args.lane),
                     "unread": sorted(set(belt_pick_state.get("claim_unread")
                                          or [])),
+                },
+                # Volet marqueur de LIVRAISON (mesure #17528, 2026-10-26) :
+                # deux sondes de commentaire distinctes, deux verdicts
+                # distincts. Un `None` (lecture ratee) y etait muet et
+                # indiscernable d'un « pas de marqueur » -- le tapis pouvait
+                # donc resservir un conteneur livre sans que la sortie le
+                # dise. Les deux listes sont videes SI la lecture n'a pas ete
+                # tentee, et renseignees si elle a echoue.
+                "marker_signal": {
+                    "recent_unread": sorted(set(belt_pick_state.get(
+                        "marker_unread") or [])),
+                    "container_unread": sorted(set(belt_pick_state.get(
+                        "container_unread") or [])),
                 },
                 # Volet bulk GraphQL (#19643, ai-01 review 5568273366) :
                 # `fallback_count` est le nombre de numeros absents de

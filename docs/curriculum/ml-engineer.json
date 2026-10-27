@@ -78,12 +78,12 @@
         "evaluation-validation"
       ],
       "notebooks": [
-        "ML/DataScienceWithAgents/03-DeepLearning/3.1-Retropropagation.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.2-Optimisateurs.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.3-Regularisation.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.4-Attention-Transformer-From-Scratch.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.11-Budget-Memoire-Entrainement.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.13-Decouper-le-Modele-DDP-ZeRO-FSDP.ipynb"
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.1-Retropropagation.ipynb",
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.2-Optimisateurs.ipynb",
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.3-Regularisation.ipynb",
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.4-Attention-Transformer-From-Scratch.ipynb",
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.11-Budget-Memoire-Entrainement.ipynb",
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.13-Decouper-le-Modele-DDP-ZeRO-FSDP.ipynb"
       ]
     }
   ],
@@ -107,13 +107,13 @@
       "description": "Detour mise en service : compression (quantization INT8, FP, pruning), distillation maitre-eleve. Le ML Engineer qui doit deployer sur du materiel contraint (mobile, edge) ou reduire le cout d'inference utilise ces techniques ; elles ne sont pas au coeur du parcours.",
       "branch": "deep-learning-budget",
       "notebooks": [
-        "ML/DataScienceWithAgents/03-DeepLearning/3.9-Compression-Quantization-FP.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.9a-Compression-Quantization-INT8.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.9b-Compression-Pruning-from-scratch.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.9c-Pruning-From-Scratch.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.9d-Compression-Distillation-from-scratch.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.9e-Compression-Quantization-SOTA.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.7-Distillation-Maitre-Eleve.ipynb"
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.9-Compression-Quantization-FP.ipynb",
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.9a-Compression-Quantization-INT8.ipynb",
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.9b-Compression-Pruning-from-scratch.ipynb",
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.9c-Pruning-From-Scratch.ipynb",
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.9d-Compression-Distillation-from-scratch.ipynb",
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.9e-Compression-Quantization-SOTA.ipynb",
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.7-Distillation-Maitre-Eleve.ipynb"
       ]
     },
     {
@@ -122,9 +122,9 @@
       "branch": "evaluation-validation",
       "notebooks": [
         "ML/DataScienceWithAgents/02-ML-Cours/2.6-Clustering-KMeans-PCA.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.8-Representations-Contrastives.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb",
-        "ML/DataScienceWithAgents/03-DeepLearning/3.6-Modeles-Generatifs.ipynb"
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.8-Representations-Contrastives.ipynb",
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.10-Modeles-Generatifs-Diffusion-SOTA.ipynb",
+        "ML/DataScienceWithAgents/03-Deep-Learning/3.6-Modeles-Generatifs.ipynb"
       ]
     },
     {
