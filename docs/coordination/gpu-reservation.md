@@ -25,7 +25,7 @@ Le **README documente l'intention**, le **ledger documente l'usage réel**. Une 
 
 Le dépôt privé `jsboige/coursia-gpu-ledger` (branche `ops/gpu-ledger`) est la **seule source de vérité** de l'usage GPU réel de la flotte : chaque machine y publie ses observations et y relit l'état des autres. Le dashboard `CoursIA-gpu-reservation-ledger` n'en est plus qu'une **copie** lisible, et les fichiers `*.ledger.json` dans `scripts/coordination/_local/` un **cache** local — jamais une autorité cross-machine.
 
-Cette référence a été **arbitrée**, pas déduite : le mainteneur a retenu l'option (a) — un dépôt git privé et dédié — le 2026-10-27 (arbitrage consigné sur [#22456](https://github.com/jsboige/CoursIA/issues/22456)). Le dépôt de travail, public, ne peut pas porter cet état ; l'organe le refuse par construction. La publication et la lecture sont décrites dans [gpu-ledger-transport.md](gpu-ledger-transport.md).
+Cette référence a été **arbitrée**, pas déduite : le mainteneur a retenu l'option (a) — un dépôt git privé et dédié — le 2026-10-27 (arbitrage consigné sur [#22456](https://github.com/jsboige/CoursIA/issues/22456)). Le dépôt de travail, public, ne peut pas porter cet état ; l'organe le refuse par construction. Le **moyen** (commandes de publication et de lecture) est livré par #22755.
 
 ## Quand poster une observation
 
@@ -122,7 +122,7 @@ Avant `nvidia-smi` (ou tout autre lancement GPU) :
 
 1. **Charge hôte** : `uptime`, `free -g`, `nvidia-smi` — la charge hôte doit rester **< 85 %** sous l'expérience. Au-delà, reporter l'expérience et poster une observation `held` une fois la charge retombée (réservation à venir, pas de geste de lancement).
 2. **CUDA devices** : `CUDA_DEVICE_ORDER=PCI_BUS_ID CUDA_VISIBLE_DEVICES=<n>` sur la commande elle-même. Ne pas se fier au seul `CUDA_VISIBLE_DEVICES` (variable d'env du shell sans ordre PCI = risque d'allocation ambigu).
-3. **Ledger entry** : poster `[OBS]` (`state: held`) sur `CoursIA-gpu-reservation-ledger` **avant** le geste de lancement (pas après — sinon collision possible). Poster `[OBS]` (`state: released`) à la fin du run, avec `workload` court et `expected_end` réel. **Construire les deux avec `debt_ledger.py append`** : un envelope écrit à la main est rejeté au fold (les deux causes ci-dessus), et une libération rejetée laisse la ligne **`held` sur un device libre**.
+3. **Ledger entry** : publier `[OBS]` (`state: held`) dans la **référence** (dépôt privé `jsboige/coursia-gpu-ledger`, branche `ops/gpu-ledger` ; le dashboard dédié en reçoit la copie) **avant** le geste de lancement (pas après — sinon collision possible). Publier `[OBS]` (`state: released`) à la fin du run, avec `workload` court et `expected_end` réel. **Construire les deux avec `debt_ledger.py append`**, puis publier par `debt_ledger.py publish --git` (moyen livré par #22755) : un envelope écrit à la main est rejeté au fold (les deux causes ci-dessus), et une libération rejetée laisse la ligne **`held` sur un device libre**.
 4. **GPU 0/1 réservé** : les GPU 0 et 1 de ai-01 portent le vLLM de la flotte et **ne se réservent pas**. Le GPU 2 est le seul slot GPU de cette machine pour les expériences.
 
 ## Périmètre du tenancier
@@ -338,10 +338,10 @@ qui ne réserve pas — et la seule parade est que le siège déclare, ce que ce
 
 ### Protocole de récupération cross-machine (c.258)
 
-Le tenancier publie sa propre observation `[OBS]` sur le dashboard `CoursIA-gpu-reservation-ledger`. Pour récupérer l'observation d'une autre machine :
+Le tenancier publie sa propre observation `[OBS]` dans la **référence** (dépôt privé `jsboige/coursia-gpu-ledger`, branche `ops/gpu-ledger`) ; le dashboard `CoursIA-gpu-reservation-ledger` en reçoit la **copie** lisible. Pour récupérer l'observation d'une autre machine :
 
-1. **DM nominatif** (canal principal) : `roosync_messages send --to myia-po-2023:CoursIA-3 --subject "[gpu-status probe] 2026-10-08T03:55Z" --body "Peux-tu poster un [OBS] rafraîchi pour myia-po-2023#gpu0 et #gpu1 sur le dashboard CoursIA-gpu-reservation-ledger ? Format JSON-LINE sur une ligne. Merci."` — réponse attendue < 5 min en session worker active, < 1 h en cron.
-2. **Fallback lecture dashboard** : `roosync_dashboard read --type workspace --section all` puis grep `[OBS]` filtré par entité. Les observations sont tagguées par `entity: "myia-po-2023#gpu0"` dans le JSON, donc matchable.
+1. **DM nominatif** (canal principal) : `roosync_messages send --to myia-po-2023:CoursIA-3 --subject "[gpu-status probe] 2026-10-08T03:55Z" --body "Peux-tu publier un [OBS] rafraîchi pour myia-po-2023#gpu0 et #gpu1 dans la référence (dépôt privé jsboige/coursia-gpu-ledger, branche ops/gpu-ledger) ? Format JSON-LINE sur une ligne. Le dashboard en recevra la copie. Merci."` — réponse attendue < 5 min en session worker active, < 1 h en cron.
+2. **Lecture de la référence, puis de sa copie** : la **référence** est lue en premier (c'est l'autorité) ; le dashboard n'en est plus qu'une copie de repli, à lire quand la référence est inaccessible (réseau coupé, secret absent, machine hors ligne) : `roosync_dashboard read --type workspace --section all` puis grep `[OBS]` filtré par entité. Les observations sont tagguées par `entity: "myia-po-2023#gpu0"` dans le JSON, donc matchable.
 3. **Cache local** : les observations récentes (< 24 h) sont cachées dans `scripts/coordination/_local/gpu_status_cache.json` pour éviter le ping à chaque décision de routage. Le cache est rafraîchi au prochain DM probe ou à l'expiration du TTL.
 
 ### Garde — ne PAS interférer avec le vLLM (c.258)
