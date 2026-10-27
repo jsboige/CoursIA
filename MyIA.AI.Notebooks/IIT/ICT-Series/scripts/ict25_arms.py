@@ -429,6 +429,77 @@ def run_seed(arm: str, seed: int, steps: int, model_name: str = MODEL, gpu: int 
     return {"metrics": metrics, **record_windows(records, max_records)}
 
 
+# === Reprise sur disque (#22133) ===
+
+def _seed_entry_matches(entry, arm, seed, steps, max_completion_length):
+    """True si l'entree per_seed provient du meme protocole que l'invocation courante.
+
+    La comparaison porte sur les champs de regime des metriques (bras, seed,
+    steps, budget de completion, lr, generations, kind de system_prompt et de
+    signal) : un ecart quelconque force le re-entrainement de la graine -- la
+    reprise ne doit jamais melanger deux regimes dans un meme agrege (defaut
+    mesure sur ict25_N_120steps.json du 21/10, `length_bonus` d'un autre
+    regime servi comme baseline).
+    """
+    m = entry.get("metrics") or {}
+    ref = {"arm": arm, "seed": seed, "steps": steps,
+           "max_completion_length": max_completion_length}
+    if any(m.get(k) != v for k, v in ref.items()):
+        return False
+    regime_keys = ("learning_rate", "num_generations", "system_prompt_kind",
+                   "signal_kind")
+    return all(m.get(k) is not None for k in regime_keys)
+
+
+def _load_resumable_seed(seed_path, arm, seed, steps, max_completion_length):
+    """Charge une entree per_seed existante si son protocole correspond, sinon None."""
+    if not seed_path.exists():
+        return None
+    try:
+        a = json.loads(seed_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        print(f"[ict25_arms] reprise: {seed_path.name} illisible ({exc}), "
+              f"re-entrainement", flush=True)
+        return None
+    for entry in a.get("per_seed", []):
+        if _seed_entry_matches(entry, arm, seed, steps, max_completion_length):
+            return entry
+    print(f"[ict25_arms] reprise: {seed_path.name} d'un protocole different, "
+          f"re-entrainement", flush=True)
+    return None
+
+
+def _write_artifact(out_path, args, seeds, all_metrics, resumed_seeds):
+    """Ecrit un artefact agrege (schema inchange + champ additive resumed_seeds)."""
+    artifact = {
+        "schema": 1,
+        "script": "ict25_arms.py",
+        "arm": args.arm,
+        "model": args.model,
+        **protocol_block(
+            max_completion_length=args.max_completion_length,
+            seeds=seeds,
+            steps=args.steps,
+        ),
+        "gpu": args.gpu,
+        "git_commit": subprocess.check_output(
+            ["git", "-C", str(Path(__file__).resolve().parents[2]),
+             "rev-parse", "HEAD"], text=True, encoding="utf-8", errors="replace"
+        ).strip()[:12],
+        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "resumed_seeds": resumed_seeds,
+        "per_seed": all_metrics,
+    }
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(artifact, f, ensure_ascii=False, indent=2)
+    size_kb = out_path.stat().st_size / 1024
+    print(f"\n[ict25_arms] artefact ecrit: {out_path} ({size_kb:.1f} Ko)", flush=True)
+    if size_kb > 512:
+        print(f"[ict25_arms] WARNING: artefact > 512 Ko (results-artifact-policy)",
+              file=sys.stderr)
+
+
 # === CLI ===
 
 def main(argv=None):
@@ -451,40 +522,29 @@ def main(argv=None):
     args = p.parse_args(argv)
 
     seeds = [int(s.strip()) for s in args.seeds.split(",") if s.strip()]
+    out_path = Path(args.out)
     all_metrics = []
+    resumed_seeds = []
     for seed in seeds:
         print(f"\n[ict25_arms] === arm={args.arm} seed={seed} steps={args.steps} ===", flush=True)
-        out = run_seed(args.arm, seed, args.steps, args.model, args.gpu,
-                       max_records=args.max_records,
-                       max_completion_length=args.max_completion_length)
-        all_metrics.append(out)
-        print(f"[ict25_arms]   metrics: {out['metrics']}", flush=True)
+        seed_path = out_path.with_name(f"{out_path.stem}_seed{seed}{out_path.suffix}")
+        entry = _load_resumable_seed(seed_path, args.arm, seed, args.steps,
+                                     args.max_completion_length)
+        if entry is not None:
+            print(f"[ict25_arms] reprise: seed {seed} charge depuis {seed_path.name} "
+                  f"(protocole identique), GPU non sollicite", flush=True)
+            resumed_seeds.append(seed)
+        else:
+            entry = run_seed(args.arm, seed, args.steps, args.model, args.gpu,
+                             max_records=args.max_records,
+                             max_completion_length=args.max_completion_length)
+            # Ecriture mono-graine immediate : une interruption ne fait perdre
+            # que la graine en cours, jamais les precedentes.
+            _write_artifact(seed_path, args, [seed], [entry], [])
+        all_metrics.append(entry)
+        print(f"[ict25_arms]   metrics: {entry['metrics']}", flush=True)
 
-    artifact = {
-        "schema": 1,
-        "script": "ict25_arms.py",
-        "arm": args.arm,
-        "model": args.model,
-        **protocol_block(
-            max_completion_length=args.max_completion_length,
-            seeds=seeds,
-            steps=args.steps,
-        ),
-        "gpu": args.gpu,
-        "git_commit": subprocess.check_output(
-            ["git", "-C", str(Path(__file__).resolve().parents[2]),
-             "rev-parse", "HEAD"], text=True, encoding="utf-8", errors="replace"
-        ).strip()[:12],
-        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "per_seed": all_metrics,
-    }
-    Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-    with open(args.out, "w", encoding="utf-8") as f:
-        json.dump(artifact, f, ensure_ascii=False, indent=2)
-    size_kb = Path(args.out).stat().st_size / 1024
-    print(f"\n[ict25_arms] artefact ecrit: {args.out} ({size_kb:.1f} Ko)")
-    if size_kb > 512:
-        print(f"[ict25_arms] WARNING: artefact > 512 Ko (results-artifact-policy)", file=sys.stderr)
+    _write_artifact(out_path, args, seeds, all_metrics, resumed_seeds)
     return 0
 
 
