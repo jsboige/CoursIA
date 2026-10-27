@@ -39,12 +39,53 @@ NAMED WARNING and left to the human/coordinator read.
                   in history. THIS is what reddens the step (exit 1) -- sauf en
                   mode ``--dead-exit warning``, ou il est nomme et laisse le
                   step vert (cf. le paragraphe suivant).
+  - ``DISABLED``: l'age dirait DEAD, mais le workflow est **desactive** a la
+                  source (``state`` non actif) -- un workflow desactive ne
+                  recoit plus ni ``schedule`` ni ``workflow_run``, donc l'age ne
+                  mesure plus une panne de livraison (cf. la section suivante).
   - ``UNKNOWN`` : the gh probe itself failed for that organ -- named, never
                   silently folded into OK or DEAD.
 
 Control against a dead instrument: if EVERY organ returns UNKNOWN or zero runs,
 the probe -- not the scheduler -- is the suspect, and the organ exits 1 with
 ``INSTRUMENT_UNKNOWN`` rather than reporting a fleet-wide green.
+
+## Workflow desactive != cron mort (#22937, volet 6)
+
+Mesure du 2026-10-24T11:46:51Z : ``linux-runner-starvation-advisory.yml`` et
+``coursia-waiter-starvation-advisory.yml`` ont ete passes en
+``state: "disabled_manually"`` par un operateur, a une seconde d'intervalle. Un
+workflow desactive ne recoit PLUS ni ``schedule`` ni ``workflow_run`` : son
+dernier run vieillit mecaniquement, et l'organe rendait donc
+``DEAD linux-runner-starvation-advisory.yml declare 30 min | servi 291 min |
+dernier run 4324 min`` -- un cron mort, alors que la cause est un geste
+d'operateur. Deux causes, deux remedes : reactiver le workflow n'est pas la meme
+action que reparer une livraison d'evenements.
+
+**Suite (2026-10-27T12:50Z)** : les deux advisories ont ete **reactives**
+(arbitrage (a) du coordinateur, c.6441695482 -- la desactivation du 24/10
+n'avait pas de trace ecrite du motif). L'organe garde le verdict ``DISABLED``
+pour l'avenir : la desactivation **manuale** reste un geste qui doit rester
+visible, et la lecture d'etat est ce qui la rend visible. La seconde des deux
+advisories (``coursia-waiter-starvation-advisory.yml``) a ete ajoutee au
+registre des organes surveilles dans le meme temps.
+
+L'organe lit donc, pour chaque organe evalue, ``state`` et ``updated_at`` via
+``GET /repos/{owner}/{repo}/actions/workflows/{file}``. Un ``state`` qui suspend
+les declencheurs automatiques (``disabled_manually``, ``disabled_inactivity``)
+rend ``DISABLED`` -- meme priorite d'affichage et meme severite qu'un ``DEAD``
+(``--dead-exit`` s'y applique a l'identique, pour la meme raison qu'au #18292 :
+un etat chronique recopie en rouge sur la jambe ``push`` masque les vrais
+rouges), et la ligne nomme ``updated_at``, c'est-a-dire la date du geste.
+
+La lecture d'etat est un **enrichissement**, jamais une source de verdict :
+
+  - un workflow ``active`` garde son verdict d'age -- un cron qui ne livre plus
+    reste ``DEAD``, la cause premiere que cet organe existe pour voir ;
+  - un appel REST en echec (403 / 404 / timeout) ne fabrique NI ``DISABLED`` NI
+    un ``DEAD`` : le verdict d'age est conserve tel quel et l'echec est nomme
+    (``WARN etat du workflow illisible``). Un read fail-open qui sur-accuse est
+    interdit ; un read fail-close qui bloque l'organe l'est aussi.
 
 ## Severite d'un DEAD : deux modes, jamais un seuil deplace (#18292)
 
@@ -85,6 +126,12 @@ LATE_FACTOR = 2
 DEAD_FACTOR = 4
 DEAD_FLOOR_MIN = 90.0
 
+# Etats de workflow qui suspendent les declencheurs AUTOMATIQUES (#22937 volet 6).
+# `disabled_manually` = geste d'operateur ; `disabled_inactivity` = desactivation
+# automatique par GitHub apres 60 jours sans activite. Les deux font taire
+# `schedule` et `workflow_run`, donc les deux rendent l'age muet sur la CAUSE.
+TRIGGER_SUSPENDING_STATES = ("disabled_manually", "disabled_inactivity")
+
 SAMPLE_LIMIT = 20
 
 
@@ -106,6 +153,7 @@ REGISTRY: tuple[Organ, ...] = (
     Organ("pr-gate-stale-sweep.yml", 60.0, "cron '7 * * * *'"),
     Organ("pr-gate-sweep-health-advisory.yml", 30.0, "cron '13,43 * * * *' -- cet observateur"),
     Organ("linux-runner-starvation-advisory.yml", 30.0, "cron '19,49 * * * *'"),
+    Organ("coursia-waiter-starvation-advisory.yml", 30.0, "cron '11,41 * * * *'"),
     Organ("stale-guard-red-sweep.yml", 1440.0, "cron '53 4 * * *'"),
     Organ("epic-neglect-sweep.yml", 1440.0, "cron '37 8 * * *'"),
     Organ("grain-orphans-sweep.yml", 1440.0, "cron '23 7 * * *'"),
@@ -121,6 +169,10 @@ class Liveness:
     n_runs: int = 0
     detail: str = ""
     warnings: list[str] = field(default_factory=list)
+    # Etat du workflow lu a la source (#22937 volet 6). "" = non lu / illisible :
+    # l'absence d'etat n'est jamais une preuve de desactivation.
+    workflow_state: str = ""
+    state_updated_at: str = ""
 
 
 def parse_times(payload: str) -> list[datetime]:
@@ -191,19 +243,116 @@ def evaluate(organ: Organ, times: list[datetime], now: datetime) -> Liveness:
     return result
 
 
+# --- etat du workflow : desactive != cron mort (#22937 volet 6) --------------
+
+
+def probe_workflow_state(repo: str, workflow: str) -> tuple[dict | None, str]:
+    """(payload, error). payload est None quand la sonde elle-meme a echoue.
+
+    Ne leve jamais : un 403 / 404 / timeout rend ``(None, motif)`` et c'est
+    l'appelant qui decide d'un verdict neutre -- jamais un ``DISABLED`` ni un
+    ``DEAD`` forge a partir d'une lecture ratee.
+    """
+    cmd = ["gh", "api", f"repos/{repo}/actions/workflows/{workflow}"]
+    try:
+        out = subprocess.run(
+            cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=60
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        return None, f"sonde d'etat gh indisponible: {type(exc).__name__}"
+    if out.returncode != 0:
+        err = (out.stderr or "").strip().splitlines()
+        return None, f"gh rc={out.returncode}: {err[0] if err else 'sans message'}"
+    try:
+        payload = json.loads(out.stdout or "{}")
+    except (ValueError, TypeError) as exc:
+        return None, f"payload d'etat illisible: {type(exc).__name__}"
+    if not isinstance(payload, dict) or not isinstance(payload.get("state"), str):
+        return None, "payload d'etat illisible: champ 'state' absent"
+    return payload, ""
+
+
+def apply_workflow_state(result: Liveness, payload: dict | None, error: str) -> Liveness:
+    """Applique l'etat du workflow au verdict d'age -- dans UN sens seulement.
+
+    ``DEAD`` dont le workflow est desactive devient ``DISABLED`` : la cause cesse
+    d'etre la livraison des evenements et devient un geste d'operateur (ou une
+    desactivation d'inactivite), et les deux remedes n'ont rien a voir.
+
+    Ce que cette fonction ne fait JAMAIS :
+
+      - promouvoir un workflow ``active`` : un cron qui ne livre plus reste
+        ``DEAD``, c'est la cause premiere que l'organe existe pour voir ;
+      - fabriquer un verdict depuis une lecture ratee : si ``payload`` est None,
+        le verdict d'age est conserve tel quel et l'echec est nomme. Un appel
+        REST en 403/404/timeout ne rend donc ni ``DISABLED`` ni un faux ``DEAD``,
+        et il ne bloque pas l'organe non plus.
+
+    Le cas non-``DEAD`` d'un workflow desactive est nomme en avertissement : le
+    dernier run est encore frais, mais le workflow ne livrera plus jamais.
+    """
+    if payload is None:
+        result.warnings.append(
+            f"etat du workflow illisible ({error}) -- cause NON tranchee entre "
+            "cron mort et desactivation (#22937), le verdict d'age est conserve"
+        )
+        return result
+
+    state = str(payload.get("state") or "")
+    result.workflow_state = state
+    result.state_updated_at = str(payload.get("updated_at") or "")
+
+    if state not in TRIGGER_SUSPENDING_STATES:
+        if state and state != "active":
+            result.warnings.append(
+                f"etat de workflow inhabituel: {state!r} -- traite comme actif, "
+                "verdict d'age conserve (#22937)"
+            )
+        return result
+
+    when = result.state_updated_at or "date inconnue"
+    if result.verdict == "DEAD":
+        result.verdict = "DISABLED"
+        result.detail = (
+            f"workflow DESACTIVE (state={state}, updated_at={when}) -- un workflow "
+            "desactive ne recoit plus ni 'schedule' ni 'workflow_run': l'age du "
+            "dernier run ne mesure donc PAS une panne de livraison (#22937 volet 6)"
+        )
+        cause = (
+            "desactivation d'operateur"
+            if state == "disabled_manually"
+            else "desactivation automatique (inactivite)"
+        )
+        result.warnings.append(
+            f"{cause}: reactiver le workflow s'il doit livrer "
+            f"(gh workflow enable {result.organ.workflow} --repo <owner>/<repo>)"
+        )
+    else:
+        freshness = (
+            f"alors que son dernier run est encore frais ({result.age_min:.0f} min)"
+            if result.age_min is not None
+            else "et son historique est vide"
+        )
+        result.warnings.append(
+            f"workflow DESACTIVE (state={state}, updated_at={when}) {freshness} "
+            "-- il ne livrera plus, le verdict d'age basculera en DISABLED (#22937)"
+        )
+    return result
+
+
 def render(results: list[Liveness]) -> list[str]:
     lines = ["[scheduler-liveness] livraison de l'evenement 'schedule' (#15332)", ""]
     for r in results:
         age = f"{r.age_min:.0f} min" if r.age_min is not None else "n/a"
         served = f"{r.served_min:.0f} min" if r.served_min is not None else "n/a"
         lines.append(
-            f"  {r.verdict:<7} {r.organ.workflow:<42} "
+            f"  {r.verdict:<8} {r.organ.workflow:<42} "
             f"declare {r.organ.declared_min:>6.0f} min | servi {served:>8} | "
             f"dernier run {age:>8} | {r.n_runs} runs"
         )
         for w in r.warnings:
             lines.append(f"          WARN {w}")
-        if r.verdict in ("DEAD", "UNKNOWN") and r.detail:
+        if r.verdict in ("DEAD", "DISABLED", "UNKNOWN") and r.detail:
             lines.append(f"          {r.detail}")
     return lines
 
@@ -321,10 +470,11 @@ def main(argv: list[str] | None = None) -> int:
         choices=("error", "warning"),
         default="error",
         help=(
-            "severite d'un verdict DEAD : 'error' (defaut, exit 1) ou 'warning' "
-            "(::warning:: nomme, exit 0). Ne deplace AUCUN seuil et ne change "
+            "severite d'un verdict DEAD ou DISABLED : 'error' (defaut, exit 1) ou "
+            "'warning' (::warning:: nomme, exit 0). Ne deplace AUCUN seuil et ne change "
             "aucun verdict -- separe seulement le rouge de la jambe `push` de "
-            "celui des jambes `schedule`/`workflow_dispatch` (#18292)."
+            "celui des jambes `schedule`/`workflow_dispatch` (#18292). Les deux "
+            "verdicts sont chroniques et suivent donc la meme severite (#22937)."
         ),
     )
     ap.add_argument(
@@ -347,17 +497,27 @@ def main(argv: list[str] | None = None) -> int:
     for organ in REGISTRY:
         times, error = probe(args.repo, organ.workflow)
         if times is None:
-            results.append(Liveness(organ=organ, verdict="UNKNOWN", detail=error))
+            result = Liveness(organ=organ, verdict="UNKNOWN", detail=error)
         else:
-            results.append(evaluate(organ, times, now))
+            result = evaluate(organ, times, now)
+        # Etat du workflow lu a la source : il explique un DEAD, il ne le cree pas
+        # et ne l'efface pas (#22937 volet 6).
+        state_payload, state_error = probe_workflow_state(args.repo, organ.workflow)
+        results.append(apply_workflow_state(result, state_payload, state_error))
 
     unknown = [r for r in results if r.verdict == "UNKNOWN"]
     dead = [r for r in results if r.verdict == "DEAD"]
+    disabled = [r for r in results if r.verdict == "DISABLED"]
     late = [r for r in results if r.verdict == "LATE"]
+    # Les deux verdicts chroniques qui portent le rouge de l'organe : un cron
+    # mort et un workflow desactive appellent deux remedes differents, mais tous
+    # deux doivent etre vus (#22937 volet 6).
+    red = [r for r in results if r.verdict in ("DEAD", "DISABLED")]
 
     if args.json:
         print(json.dumps({
-            "unknown": len(unknown), "dead": len(dead), "late": len(late),
+            "unknown": len(unknown), "dead": len(dead), "disabled": len(disabled),
+            "late": len(late),
             "organs": [
                 {
                     "workflow": r.organ.workflow,
@@ -366,6 +526,8 @@ def main(argv: list[str] | None = None) -> int:
                     "age_min": r.age_min,
                     "served_min": r.served_min,
                     "n_runs": r.n_runs,
+                    "workflow_state": r.workflow_state,
+                    "state_updated_at": r.state_updated_at,
                     "warnings": r.warnings,
                     "detail": r.detail,
                 }
@@ -404,9 +566,21 @@ def main(argv: list[str] | None = None) -> int:
             f"-- cadence declaree {r.organ.declared_min:.0f} min ({r.organ.note}). Voir #15332.",
             file=sys.stderr,
         )
-    if dead and args.dead_exit == "warning":
+    # Meme priorite d'affichage et meme severite qu'un DEAD : un workflow
+    # desactive est un etat CHRONIQUE lui aussi, et il n'etait jusqu'ici nomme
+    # nulle part (#22937 volet 6).
+    for r in disabled:
         print(
-            f"::warning::[scheduler-liveness] {len(dead)} verdict(s) DEAD rendus en "
+            f"{dead_marker}[scheduler-liveness] {r.organ.workflow}: workflow DESACTIVE "
+            f"(state={r.workflow_state}, updated_at={r.state_updated_at or 'inconnu'}) "
+            f"-- l'age du dernier run ne mesure pas une panne de livraison. "
+            f"Voir #22937.",
+            file=sys.stderr,
+        )
+    if red and args.dead_exit == "warning":
+        print(
+            f"::warning::[scheduler-liveness] {len(red)} verdict(s) "
+            f"DEAD/DISABLED ({len(dead)} DEAD, {len(disabled)} DISABLED) rendus en "
             "avertissement sur cette jambe : la livraison 'schedule' est un etat "
             "CHRONIQUE (#15332), et un rouge sur presque chaque commit masque les "
             "vrais rouges. Le rouge reste porte par les jambes 'schedule' et "
@@ -426,7 +600,7 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
 
-    if dead and args.dead_exit == "error":
+    if red and args.dead_exit == "error":
         return 1
     return 0
 
