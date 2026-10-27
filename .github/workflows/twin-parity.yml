@@ -34,6 +34,13 @@ name: Twin Parity Check
 # the twin moves in lockstep on the same PR. The workflow tells them which side
 # has drifted.
 #
+# Two remediation lots, selected on the per-pair `head_status` (vocabulary
+# OK / DRIFT / NUMBERING-DRIFT / MISSING) and never on `verdict` alone:
+# a content drift (both notebooks present, blob SHA moved) gets the rebaseline
+# command; a DELETED notebook (base_status=OK, head_status=MISSING) gets an
+# explicit deletion notice and its two real fixes -- a rebaseline attests a
+# content fingerprint, it cannot restore a missing file.
+#
 # Paths watched:
 #   - scripts/notebook_tools/twin_pairs.d/** (registry file-per-entry, #8542)
 #   - scripts/notebook_tools/check_twin_parity.py (the tool itself)
@@ -146,32 +153,44 @@ jobs:
             echo "drift_pre_existing=$PRE" >> "$GITHUB_OUTPUT"
             echo ""
             echo "--------------------------------------------------------------"
-            echo "  Twin parity : $INTRO paire(s) mise(s) en DRIFT par cette PR."
-            echo "  Le registre stocke le git blob SHA de chaque jumeau : TOUTE"
-            echo "  edition le deplace, y compris markdown-only. Tu rebaselines"
-            echo "  pour ATTESTER la parite, pas pour la reparer."
+            echo "  Twin parity : $INTRO paire(s) mise(s) en DRIFT ou SUPPRIMEE(S)"
+            echo "  par cette PR. Le registre stocke le git blob SHA de chaque"
+            echo "  jumeau : TOUTE edition le deplace, y compris markdown-only."
+            echo "  Tu rebaselines pour ATTESTER la parite, pas pour la reparer."
+            echo "  Un carnet SUPPRIME n'est PAS une derive : le rebaseline ne"
+            echo "  restaure pas un fichier supprime (il echoue ou ne fait rien)."
             echo ""
-            echo "  Re-audite la paire firsthand, puis lance exactement :"
+            echo "  Re-audite la paire firsthand, puis applique la remediation"
+            echo "  du lot qui la concerne ci-dessous :"
             echo ""
-            # Capture the rebaseline command(s) so we can put them INTO the
+            # Capture the remediation block so we can put it INTO the
             # ::error annotation (#10391). The annotation is the ONLY output a
             # lane sees without opening the job log -- four lanes stalled a
             # night on this gate because the annotation said "see the log above"
-            # instead of carrying the command. The python one-liner is unchanged
-            # (the log stays the authoritative copy + the artifact JSON stays
-            # the source); we capture + interpolate.
-            CMDS=$(python -c "import json; d=json.load(open('twin_parity_report.json')); ns=[p['name'] for p in d.get('pairs',[]) if p.get('verdict')=='DRIFT_INTRODUCED'] or ['<nom exact de l entree>']; [print('python scripts/notebook_tools/check_twin_parity.py --update --pair \"%s\" --by \"<machine:workspace>\"' % n) for n in ns]")
+            # instead of carrying the command.
+            #
+            # Two lots, selected on the per-pair `head_status` and NOT on the
+            # `verdict` alone: `DRIFT_INTRODUCED` covers both a content drift
+            # (blob SHA moved, both notebooks present) and a DELETED notebook
+            # (head_status == "MISSING", base_status == "OK"). A rebaseline
+            # cannot restore a deleted file, so the MISSING lot gets a deletion
+            # notice + the two real fixes instead of a dead-end command. The
+            # selection lives in check_twin_parity.py
+            # (split_introduced_pairs / render_introduced_remediation) so it is
+            # unit-tested rather than re-inlined here.
+            CMDS=$(python -c "import json,sys; sys.path.insert(0,'scripts/notebook_tools'); import check_twin_parity as ctp; d=json.load(open('twin_parity_report.json')); print('\n'.join(ctp.render_introduced_remediation(d.get('pairs',[]))))")
             echo "$CMDS" | sed 's/^/    /'
-            echo "  L'ecriture est chirurgicale (#8570) : seules les lignes"
-            echo "  last_audit de cette paire changent. Ajoute une ligne en tete"
-            echo "  de known_differences expliquant l'edition, puis commit."
+            echo "  Pour une paire en DRIFT de contenu, l'ecriture est"
+            echo "  chirurgicale (#8570) : seules les lignes last_audit de cette"
+            echo "  paire changent. Ajoute une ligne en tete de"
+            echo "  known_differences expliquant l'edition, puis commit."
             echo "--------------------------------------------------------------"
             echo ""
             # Workflow-command escaping for the annotation body: %0A = newline,
             # %25 = literal %, %0D = CR. Without %0A the annotation truncates at
             # the first newline and the multi-line command is lost.
             CMDS_ANN=${CMDS//$'\n'/%0A}
-            echo "::error title=Twin parity DRIFT INTRODUCED by this PR::La PR a introduit $INTRO paire(s) en DRIFT/MISSING qui etaient OK au base-ref $BASE_SHA. Lance EXACTEMENT (le selecteur --pair est obligatoire #8508, lecons L963/L974) :%0A%0A$CMDS_ANN%0A%0A--update va en DERNIER : si le DRIFT vient d'une normalisation outillee (strip_probe_banner.py / strip_machine_paths.py / scrub_papermill_paths.py), these strips deplacent le blob SHA -- attester PUIS stripper invalide l'attestation (#8957). L'ecriture est chirurgicale et preserve les commentaires du registre (#8570). Alternative : splitter la PR pour que chaque cote evolue separement. Drift pre-existant ($PRE paire(s)) releve d'une PR dediee cf #8264. Voir twin_parity_report.json dans les artifacts."
+            echo "::error title=Twin parity DRIFT INTRODUCED by this PR::La PR a introduit $INTRO paire(s) en DRIFT/MISSING qui etaient OK au base-ref $BASE_SHA. Applique la remediation du lot qui la concerne (le selecteur --pair est obligatoire #8508, lecons L963/L974) :%0A%0A$CMDS_ANN%0A%0A--update va en DERNIER et ne concerne QUE les paires en DRIFT de contenu : si le DRIFT vient d'une normalisation outillee (strip_probe_banner.py / strip_machine_paths.py / scrub_papermill_paths.py), these strips deplacent le blob SHA -- attester PUIS stripper invalide l'attestation (#8957). Un carnet SUPPRIME ne se rebaseline pas : restaure-le dans la PR, ou retire l'entree du registre si la suppression est voulue. L'ecriture est chirurgicale et preserve les commentaires du registre (#8570). Alternative : splitter la PR pour que chaque cote evolue separement. Drift pre-existant ($PRE paire(s)) releve d'une PR dediee cf #8264. Voir twin_parity_report.json dans les artifacts."
             exit 1
           else
             echo "::error title=Twin parity tool error::Erreur d'execution du check (exit $EXIT). Voir les logs ci-dessus."
