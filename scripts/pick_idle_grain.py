@@ -2023,6 +2023,7 @@ def delivered_signal_reason(
     failures: list[int] | None = None,
     merged_pr_probe=None,
     skip_marker: bool = False,
+    skip_merged_pr: bool = False,
 ) -> str | None:
     """Pourquoi ecarter ce candidat de l'urne `grain`, ou ``None``.
 
@@ -2065,6 +2066,13 @@ def delivered_signal_reason(
     # de cloture a plus de 48 h reste ecartee par son LABEL ou par une PR
     # MERGEE recente (une consolidation accumule les PRs : ces deux surfaces
     # disent « un tranche est livree », pas « la consolidation est finie »).
+    # `skip_merged_pr` neutralise la surface « PR MERGEE » a son tour, pour
+    # la seule classe `consolidation` et seulement quand la derniere
+    # livraison par PR est DEJA CONNUE et depasse CONSOLIDATION_LAG_H : une
+    # PR fusionnee de plus de 48 h ne dit plus qu'une tranche vient d'etre
+    # livree, et la sonde n'a plus rien a mesurer. Le label reste intact,
+    # et la voie du tapis ne leve ce court-circuit qu'avec un horodatage
+    # connu -- sans lui, la sonde garde son comportement anterieur.
     if not skip_marker:
         verdict = probe(item["number"], lane)
         if verdict == DELIVERED_SIGNAL_UNPROBED:
@@ -2091,6 +2099,11 @@ def delivered_signal_reason(
     # cycles de suite par le tapis narrow-cache. La sonde est partagee
     # avec `open_cover_reason` via le meme `_counted_probe` parent (meme
     # plafond `DELIVERED_SIGNAL_MAX_PROBES`).
+    # Court-circuit #22500 : consolidation deja datee de plus de 48 h --
+    # ni requete `gh`, ni consommation du budget de sonde, ni repli
+    # UNPROBED qui renverrait le candidat sur le tapis sans le servir.
+    if skip_merged_pr:
+        return None
     merged = merged_pr_probe(item["number"], lane)
     if merged == DELIVERED_SIGNAL_UNPROBED:
         return None
@@ -8104,11 +8117,27 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
             # lecture d'evenement remplace le filtre recent pour cette classe.
             # Le marqueur n'ecarte plus au-dela de 48 h ; la surface
             # « commentaire » de la sonde pleine est neutralisee elle aussi
-            # (`skip_marker`), mais PAS les deux autres (label, PR MERGEE) --
-            # une consolidation accumule les PRs, ces deux surfaces disent
-            # « une tranche est livree », pas « la consolidation est finie ».
+            # (`skip_marker`), le LABEL reste intact (il continue d'ecarter,
+            # quel que soit l'age), et la surface « PR MERGEE » est
+            # neutralisee seulement quand la derniere livraison par PR est
+            # deja connue et depasse 48 h (`skip_merged_pr`) : une
+            # consolidation accumule les PRs, et une tranche mergee depuis
+            # plus de 48 h ne dit plus « la consolidation est finie ».
             marker_expired = False
+            merged_pr_expired = False
             if is_consolidation(it):
+                # #22500 -- la surface « PR MERGEE » cesse elle aussi
+                # d'ecarter la consolidation au-dela de 48 h : le timestamp
+                # de la derniere livraison par PR est DEJA calcule en amont
+                # (`last_delivery_stamp`, corpus `fetch_merged` partage) --
+                # le reutiliser evite une requete `gh` supplementaire.
+                # Age inconnu (aucune livraison dans la fenetre, ou corpus
+                # indisponible) -> la sonde garde son comportement anterieur.
+                delivery_age_h = _visit_age_hours(
+                    it.get("last_delivery_stamp"), NOW)
+                merged_pr_expired = bool(
+                    delivery_age_h is not None
+                    and delivery_age_h >= CONSOLIDATION_LAG_H)
                 verdict = (False if expired()
                            else user_delivery_event_probe(n))
                 if verdict is None:
@@ -8147,7 +8176,8 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 continue
             reason = delivered_signal_reason(
                 it, args.lane, counted_probe, state["failures"],
-                counted_merged_pr_probe, skip_marker=marker_expired)
+                counted_merged_pr_probe, skip_marker=marker_expired,
+                skip_merged_pr=merged_pr_expired)
             if reason is not None:
                 belt_withheld.append(
                     (it, "LIVRAISON : " + reason
