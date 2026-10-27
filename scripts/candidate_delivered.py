@@ -180,20 +180,55 @@ def _is_bot(actor: str) -> bool:
     return (actor or "").endswith("[bot]")
 
 
-# Attestation marker of the lane protocol (proactive-coordination.md R5),
-# same string as pick_idle_grain.DELIVERED_COMMENT_MARKER. A comment whose
-# body STARTS with it is the remedy the protocol prescribes, not activity:
-# counting it in ``last_activity`` destroyed the silence precondition
-# (#17759 mecanisme B -- the loop closed on #15689, two attestations, still
-# unlabeled). STARTS-WITH only: a quote or a discussion of the marker is an
-# ordinary comment and still reads as active; a comment without a body key
-# (old fixtures, unreadable payloads) also reads as active -- fail-safe,
-# never label on unreadable data.
-_INFO_MARKER_RE = re.compile(r"^\s*\[INFO\] candidate-delivered\b")
+# Attestation markers of the lane protocol: `[INFO] candidate-delivered`
+# (proactive-coordination.md R5, same string as
+# pick_idle_grain.DELIVERED_COMMENT_MARKER), and the claim/release/delivery
+# marker family (lane-claim-protocol.md for `[CLAIMED]`/`[CLAIMED-AMEND]`,
+# continue skill for `[DELIVERED]`/`[RELEASED]`). A comment whose body STARTS
+# with one of them is protocol bookkeeping, not activity: counting it in
+# ``last_activity`` destroys the silence precondition.
+#
+# Two measured instances, same fault one marker apart:
+# - #17759 mecanisme B: the loop closed on #15689 -- delivered 2026-09-14,
+#   two `[INFO] candidate-delivered` attestations (09-15, 09-21), never
+#   labeled. Arbitrage ai-01 2026-09-25: the comment the protocol PRESCRIBES
+#   cannot destroy the precondition it exists to serve.
+# - #20078 (measured 2026-10-27): delivered by merged #20079, then THREE
+#   protocol markers after the merge -- `[CLAIMED]` (10-19), `[CLAIMED]`
+#   (10-25) and `[RELEASED] ... deja livre, rien a reprendre` (10-25) -- none
+#   recognized, each one pushing ``last_activity`` past the merge.
+#   NOTE, mesure sur cette meme issue : it currently reads ``no_delivery``, not
+#   ``active``. Merged #20079 writes ``See #20078`` in its body, and yet the
+#   timeline of #20078 carries NO cross-referenced event for it (measured
+#   2026-10-27: the four events are #19464, #20246 and nothing else). The same
+#   PR's ``Part of #19093`` DID produce one on #19093, so this is not "the
+#   marker was not written" -- the asymmetry is observed and UNEXPLAINED.
+#   Two independent defects, one per axis: this change closes the marker axis,
+#   and the missing cross-reference is reported separately as an open question
+#   rather than attributed to an unverified cause.
+#
+# None of these markers changes the DELIVERY state of the issue, which is the
+# only thing this verdict is about. A lane that is genuinely working shows it
+# as an OPEN pull request, and that is the ``in_flight`` branch above, which
+# pre-empts this one; a claim alone additionally blocks other lanes through
+# ``check_lane_claim.py``, so excluding it here starves nobody.
+#
+# STARTS-WITH only: a quote or a discussion of a marker is an ordinary
+# comment and still reads as active; a comment without a body key (old
+# fixtures, unreadable payloads) also reads as active -- fail-safe, never
+# label on unreadable data.
+_PROTOCOL_MARKER_RE = re.compile(
+    r"^\s*(?:"
+    r"\[INFO\]\s*candidate-delivered\b"
+    r"|\[CLAIMED(?:-AMEND)?\]"
+    r"|\[RELEASED\]"
+    r"|\[DELIVERED\]"
+    r")"
+)
 
 
 def _is_protocol_attestation(comment: dict) -> bool:
-    return bool(_INFO_MARKER_RE.search(comment.get("body") or ""))
+    return bool(_PROTOCOL_MARKER_RE.search(comment.get("body") or ""))
 
 
 def human_retraction(label_events: list[dict] | None) -> dict | None:
@@ -363,12 +398,48 @@ def _gh_json(args: list[str]) -> object:
     return json.loads(proc.stdout)
 
 
-def list_open_issues(repo: str) -> list[dict]:
-    """Open issues (excludes PRs) with the fields classify() needs."""
-    return list(_gh_json([  # type: ignore[return-value]
-        "issue", "list", "--repo", repo, "--state", "open", "--limit", "200",
+# Plafond de lecture de la liste ouverte. Ce n'est pas un reglage de confort :
+# le depot portait **588** issues ouvertes (hors PRs) le 2026-10-27, et un
+# plafond a 200 ne voyait que les plus recentes (#21858..#22881). Tout ce qui
+# tombait sous cette fenetre n'etait jamais classifie -- donc jamais etiquete --
+# donc jamais retire de l'assiette du tapis. C'est la cause racine mesuree de
+# #20078 / #19241 / #22715, servis comme neufs alors que leur livraison etait
+# deja mergee (#20079 / #22454 / #22719).
+LIST_LIMIT = 1000
+
+
+def list_open_issues(repo: str, limit: int = LIST_LIMIT) -> list[dict]:
+    """Open issues (excludes PRs) with the fields classify() needs.
+
+    A truncated read that looks complete est le defaut, pas la troncature :
+    quand la page revient pleine, la fonction le DIT au lieu de rendre une
+    liste partielle indiscernable d'une liste entiere (fail-visible).
+    """
+    issues = list(_gh_json([  # type: ignore[return-value]
+        "issue", "list", "--repo", repo, "--state", "open",
+        "--limit", str(limit),
         "--json", "number,title,labels",
     ]))
+    if len(issues) >= limit:
+        print(f"[candidate-delivered] WARN: page pleine ({limit} issues) -- "
+              f"elargir LIST_LIMIT : des issues ouvertes ne sont pas vues, "
+              f"et une issue non vue ne peut jamais etre etiquetee")
+    return issues
+
+
+def _rotate_window(issues: list[dict], offset: int, limit: int) -> list[dict]:
+    """Rotating window over the open list: start at ``offset`` (wrapping) then cap.
+
+    Rotation, not truncation, is what keeps the sweep honest under a fixed API
+    budget: the same head every run would starve the tail forever, and a tail
+    that is never classified is never labelled -- the exact shape of #20078.
+    Wrapping (rather than a plain slice) guarantees no issue is ever dropped
+    from the pass, whatever the offset.
+    """
+    if offset and issues:
+        off = offset % len(issues)
+        issues = issues[off:] + issues[: off]
+    return issues[:limit] if limit else issues
 
 
 def issue_detail(repo: str, number: int) -> dict:
@@ -601,6 +672,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--repo", default=None, help="repo (default: gh default / GITHUB_REPOSITORY)")
     ap.add_argument("--label", default=LABEL_DEFAULT, help=f"label name (default: {LABEL_DEFAULT})")
     ap.add_argument("--limit", type=int, default=0, help="cap issues processed (0 = all)")
+    ap.add_argument("--offset", type=int, default=0,
+                    help="rotate the starting point of the window (modulo the open "
+                         "count); the sweep costs ~2 API calls per issue against "
+                         "GITHUB_TOKEN's 1000/hour, so a full 588-issue pass does not "
+                         "fit one run -- rotating guarantees the tail is reached "
+                         "instead of starving it on every run")
     ap.add_argument("--sleep", type=float, default=1.5,
                     help="seconds between issues (timeline API is REST-rate-limited)")
     args = ap.parse_args(argv)
@@ -612,9 +689,7 @@ def main(argv: list[str] | None = None) -> int:
 
     ensure_label(repo, args.label, args.dry_run)
 
-    issues = list_open_issues(repo)
-    if args.limit:
-        issues = issues[: args.limit]
+    issues = _rotate_window(list_open_issues(repo), args.offset, args.limit)
 
     counts = {"candidate": 0, "active": 0, "in_flight": 0, "no_delivery": 0,
               "epic": 0, "retracted": 0}

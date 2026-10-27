@@ -527,6 +527,78 @@ def test_commentaire_sans_body_compte_comme_activite():
     assert verdict == "active"
 
 
+# --- famille des marqueurs de protocole : claim / release / delivery ---
+#
+# Instance fondatrice mesuree le 2026-10-27 sur #20078 : livree le 2026-10-09
+# par #20079 (body `See #20078`), puis TROIS marqueurs de protocole apres le
+# merge -- [CLAIMED] (10-19), [CLAIMED] (10-25), [RELEASED] « deja livre, rien
+# a reprendre » (10-25). Aucun reconnu : la preuve de livraison etait la, le
+# label jamais pose, et l'issue a ete re-servie a trois lanes successives.
+
+def test_marqueurs_de_claim_et_release_ne_comptent_pas_comme_activite():
+    issue = _issue(title="gate(prevalidation)", number=20078,
+                   created_at="2026-10-09T10:57:04Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-10-19T07:47:21Z",
+         "[CLAIMED] lane myia-po-2023:CoursIA-2 -- recheck du dossier BLOCKED"),
+        ("2026-10-25T09:18:49Z",
+         "[CLAIMED] lane myia-ai-01:CoursIA-2 -- dispatch du coordinateur"),
+        ("2026-10-25T10:05:05Z",
+         "[RELEASED] lane myia-ai-01:CoursIA-2 -- deja livre, rien a reprendre"),
+    )
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "Grain: MED/guard\n\n`See #20078`. `Part of #19093`."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "candidate"
+
+
+def test_marqueur_claimed_amend_ne_compte_pas_comme_activite():
+    issue = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-10-20T00:00:00Z",
+         "[CLAIMED-AMEND] lane myia-po-2028:CoursIA -- paths: scripts/a.py"),
+    )
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "See #20078."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "candidate"
+
+
+def test_marqueur_delivered_ne_compte_pas_comme_activite():
+    issue = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
+    issue["comments"] = _comments_with_bodies(
+        ("2026-10-20T00:00:00Z",
+         "[DELIVERED] lane myia-po-2028:CoursIA -- PR #22883"),
+    )
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "See #20078."}]
+    verdict, _ = classify(issue, refs)
+    assert verdict == "candidate"
+
+
+def test_pseudo_marqueur_et_marqueur_cite_restent_actifs():
+    # Deux temoins negatifs, un par moitie du predicat :
+    #  - `[CLAIMEDX]` n'est pas un marqueur de la famille (le crochet fermant
+    #    est exige), donc il reste une activite ;
+    #  - un marqueur CITE au milieu d'une phrase est une discussion, pas une
+    #    attestation (STARTS-WITH seulement, contrat #17759).
+    refs = [{"pr_number": 20079, "merged_at": "2026-10-09T21:50:49Z",
+             "body": "See #20078."}]
+
+    not_a_marker = _issue(title="x", number=20078,
+                          created_at="2026-10-01T00:00:00Z")
+    not_a_marker["comments"] = _comments_with_bodies(
+        ("2026-10-20T00:00:00Z", "[CLAIMEDX] pas un marqueur de la famille"))
+    assert classify(not_a_marker, refs)[0] == "active"
+
+    quoted = _issue(title="x", number=20078, created_at="2026-10-01T00:00:00Z")
+    quoted["comments"] = _comments_with_bodies(
+        ("2026-10-20T00:00:00Z",
+         "Suite au [RELEASED] de l'autre lane, la preuve ne tient pas."))
+    assert classify(quoted, refs)[0] == "active"
+
+
+
 # --- #17759 partie additive : le rapport de la classe titre-seul ---
 
 def test_title_only_refs_ancrage_et_portee():
@@ -762,3 +834,98 @@ def test_with_pr_bodies_fetches_open_prs_too(monkeypatch):
     assert verdict == "in_flight"
     assert "#10" in why and "declare this issue in body/title" in why
     assert "#20" in why and "comments only" in why
+
+
+# --- plafond de lecture de la liste ouverte : une troncature muette est le defaut ---
+#
+# Mesure du 2026-10-27 : 588 issues ouvertes (hors PRs), plafond code en dur a
+# 200 -> la fenetre lue allait de #21858 a #22881, et tout ce qui tombait sous
+# elle n'etait jamais classifie. Trois grains deja livres ont ete re-servis par
+# le tapis pour cette raison (#20078 -> #20079, #19241 -> #22454,
+# #22715 -> #22719).
+
+
+def test_list_open_issues_ne_plafonne_plus_a_200(monkeypatch):
+    # Temoin de la cause racine : la valeur demandee a gh doit couvrir le
+    # depot, pas la page par defaut de la sous-commande.
+    import candidate_delivered as cd
+
+    seen = []
+
+    def fake_gh_json(args):
+        seen.append(args)
+        return []
+
+    monkeypatch.setattr(cd, "_gh_json", fake_gh_json)
+    cd.list_open_issues("jsboige/CoursIA")
+
+    assert seen, "list_open_issues doit interroger gh"
+    args = seen[0]
+    limit = args[args.index("--limit") + 1]
+    assert limit != "200", "le plafond en dur a 200 est le defaut mesure"
+    assert int(limit) == cd.LIST_LIMIT
+    assert cd.LIST_LIMIT > 588, "588 issues ouvertes mesurees le 2026-10-27"
+
+
+def test_list_open_issues_signale_une_page_pleine(monkeypatch, capsys):
+    # Une lecture tronquee qui ressemble a une lecture complete est le defaut :
+    # quand la page revient pleine, l'outil doit le dire (fail-visible).
+    import candidate_delivered as cd
+
+    monkeypatch.setattr(cd, "_gh_json",
+                        lambda args: [{"number": n, "title": "t", "labels": []} for n in range(3)])
+    out = cd.list_open_issues("jsboige/CoursIA", limit=3)
+
+    assert len(out) == 3
+    err = capsys.readouterr().out
+    assert "WARN" in err and "3" in err and "LIST_LIMIT" in err
+
+
+def test_list_open_issues_se_tait_quand_la_page_n_est_pas_pleine(monkeypatch, capsys):
+    # Temoin negatif : pas d'alerte quand la lecture est complete, sinon
+    # l'avertissement devient du bruit permanent et plus personne ne le lit.
+    import candidate_delivered as cd
+
+    monkeypatch.setattr(cd, "_gh_json",
+                        lambda args: [{"number": n, "title": "t", "labels": []} for n in range(2)])
+    out = cd.list_open_issues("jsboige/CoursIA", limit=3)
+
+    assert len(out) == 2
+    assert "WARN" not in capsys.readouterr().out
+
+
+def test_fenetre_tournante_couvre_la_queue_au_lieu_de_l_affamer():
+    # Le plafond GITHUB_TOKEN (1000 appels/h, ~2 par issue) interdit de lire
+    # 588 issues en un run. Ce qui est interdit, c'est de relire toujours la
+    # meme tete : la fenetre tourne, donc la queue finit par etre vue.
+    import candidate_delivered as cd
+
+    issues = [{"number": n} for n in range(10)]
+
+    tete = cd._rotate_window(issues, 0, 4)
+    assert [i["number"] for i in tete] == [0, 1, 2, 3]
+
+    suivante = cd._rotate_window(issues, 4, 4)
+    assert [i["number"] for i in suivante] == [4, 5, 6, 7]
+
+    # Depassement : la fenetre ENVELOPPE au lieu de rendre moins d'issues.
+    # Un simple slice rendrait [8, 9] et les numeros 0-1 ne seraient plus
+    # jamais vus a cet offset.
+    queue = cd._rotate_window(issues, 8, 4)
+    assert [i["number"] for i in queue] == [8, 9, 0, 1]
+
+    # Un offset arbitrairement grand est ramene modulo la taille, jamais un vide.
+    assert [i["number"] for i in cd._rotate_window(issues, 1003, 3)] == [3, 4, 5]
+
+
+def test_list_open_issues_transmet_le_plafond_a_gh(monkeypatch):
+    # Le plafond est un parametre, pas une constante cachee dans l'appel :
+    # sans cela un appelant ne peut pas elargir sans editer le corps.
+    import candidate_delivered as cd
+
+    seen = []
+    monkeypatch.setattr(cd, "_gh_json", lambda args: seen.append(args) or [])
+    cd.list_open_issues("jsboige/CoursIA", limit=777)
+
+    args = seen[0]
+    assert args[args.index("--limit") + 1] == "777"
