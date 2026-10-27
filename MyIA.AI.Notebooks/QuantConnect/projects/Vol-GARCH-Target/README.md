@@ -103,7 +103,7 @@ Statistiques QC des mêmes backtests. Le Sharpe QC déduit un taux sans risque, 
 
 **Lecture.** Sur la fenêtre codée, la stratégie rend environ deux fois moins que SPY détenu (7,0 % contre 13,7 % par an), avec une volatilité deux fois plus faible et un drawdown trois fois plus faible. Par unité de risque, à taux nul, elle fait jeu égal avec SPY détenu et le 60/40 ; aucun écart n'est mesurable, et l'année 2018 passée en liquidités pèse dans les deux sens. Après la fenêtre codée, la stratégie rend autant que SPY détenu avec deux tiers de sa volatilité ; ses écarts de Sharpe sont larges en point, mais 389 séances ne suffisent pas à les distinguer de zéro.
 
-**La prévision GARCH n'apporte rien de mesurable.** Sur les deux fenêtres, la stratégie et `rv21` ont des rendements journaliers corrélés à 0,998 ou plus. Sur la fenêtre codée, GARCH fait mieux en point, sans écart significatif. Après elle, c'est la volatilité réalisée sur 21 séances qui fait mieux : l'écart de Sharpe est significatif sans correction (p = 0,021), et à la limite après Holm (0,059). Le bootstrap place son intervalle à 95 % entièrement sous zéro. Une partie de cet écart peut venir de la récursion de la prévision GARCH, décrite plus bas.
+**La prévision GARCH n'apporte rien de mesurable.** Sur les deux fenêtres, la stratégie et `rv21` ont des rendements journaliers corrélés à 0,998 ou plus. Sur la fenêtre codée, GARCH fait mieux en point, sans écart significatif. Après elle, c'est la volatilité réalisée sur 21 séances qui fait mieux : l'écart de Sharpe est significatif sans correction (p = 0,021), et à la limite après Holm (0,059). Le bootstrap place son intervalle à 95 % entièrement sous zéro. Cet écart venait en partie de la récursion de la prévision GARCH, décrite plus bas : une fois celle-ci corrigée, il se réduit de moitié et n'est plus significatif (p de Ledoit-Wolf 0,160, p de Holm 0,479, intervalle bootstrap contenant zéro ; section « Significativité de la version corrigée »).
 
 **La convention de Sharpe change le classement.** Sous la convention QC, la stratégie reste derrière SPY détenu (0,329 contre 0,496) ; à taux nul, elle le dépasse en point (0,809 contre 0,758). La stratégie est deux fois moins volatile (8,9 % contre 19,4 % par an sur les traces) : la même déduction du taux sans risque pèse environ deux fois plus sur son Sharpe. La prédiction écrite dans #21778 plaçait la stratégie sous SPY détenu à taux nul ; la mesure l'a réfutée. Les autres prédictions tiennent : contrôle tenu, verdict `INCONCLUSIVE`, corrélation avec `rv21` au-dessus de 0,9.
 
@@ -145,7 +145,50 @@ La ligne #21781 reproduit le 1,580 publié et la ligne `rv21` le 1,666 publié, 
 
 **Prédiction et verdict.** La prédiction écrite avant la mesure annonçait moins de 5 % d'écart sur le nombre d'ordres, un mouvement de Sharpe inférieur à ±0,05, et un `rv21` qui garde l'avantage en voyant l'écart se réduire sans changer de signe. Il en va ainsi, sauf sur le premier point, dépassé de peu : 291 → 276 ordres, soit −5,2 % sur la seconde fenêtre, et +0,7 % sur la fenêtre codée. Le Sharpe à taux nul gagne 0,042, l'écart à `rv21` passe de 0,086 à 0,044 sans changer de signe : la correction rapproche GARCH de la volatilité réalisée, elle ne le fait pas passer devant.
 
-**Ce que cette passe ne reproduit pas.** Les tests de significativité de #21778 (Ledoit-Wolf, bootstrap stationnaire, correction de Holm) ne sont pas rejoués : ils ne sont pas outillés dans le dépôt. Les écarts ci-dessus sont des points de mesure, pas des écarts testés, et aucune conclusion de significativité n'en est tirée.
+### Significativité de la version corrigée
+
+Les tests du protocole #21778 sont rejoués sur le `main.py` corrigé, avec le même instrument (`Paradox46Benchmarks/significance.py`, taux sans risque nul) et les mêmes séances que #21781 : 1761 sur la fenêtre codée, 389 du 2025-01-02 au 2026-07-23 après elle. Huit backtests QC Cloud (quatre modes, deux fenêtres), lus à `completed: true`. La prédiction a été écrite sur #21782 avant le premier backtest.
+
+**Les références n'ont pas bougé.** Les traces `spy` et `6040` reproduisent celles de #21781 à l'identique sur les deux fenêtres (écart relatif maximal nul). Seul le code corrigé par #22013 diffère entre les deux mesures, et les modes `spy` et `6040` n'y passent pas.
+
+**Verdict.** Il reste `INCONCLUSIVE` sur les deux fenêtres. Les six p de Holm valent 1,0 sur chacune.
+
+| Fenêtre | Séances | Stratégie | SPY détenu (écart, p LW) | 60/40 (écart, p LW) | Verdict |
+|---|---|---|---|---|---|
+| 2018-01-02 → 2024-12-31 | 1761 | 0,803 | 0,758 (+0,045 ; 0,905) | 0,751 (+0,053 ; 0,890) | `INCONCLUSIVE` |
+| 2025-01-02 → 2026-07-23 | 389 | 1,622 | 1,047 (+0,575 ; 0,371) | 1,164 (+0,459 ; 0,462) | `INCONCLUSIVE` |
+
+**Diagnostic contre `rv21`.** L'écart significatif d'avant la correction disparaît.
+
+| Fenêtre | Version | Stratégie | `rv21` | Corrélation | Écart | p LW | IC 95 % bootstrap | p Holm (3 tests) |
+|---|---|---|---|---|---|---|---|---|
+| 2018-01-02 → 2024-12-31 | #21781 | 0,809 | 0,787 | 0,998 | +0,021 | 0,339 | — | 0,678 |
+| 2018-01-02 → 2024-12-31 | corrigée | 0,803 | 0,783 | 0,998 | +0,020 | 0,299 | [−0,010 ; +0,052] | 0,598 |
+| 2025-01-02 → 2026-07-23 | #21781 | 1,580 | 1,666 | 0,999 | −0,086 | 0,021 | sous zéro | 0,059 |
+| 2025-01-02 → 2026-07-23 | corrigée | 1,622 | 1,666 | 0,999 | −0,044 | 0,160 | [−0,120 ; +0,033] | 0,479 |
+
+Après la fenêtre codée, les trois p brutes (Ledoit-Wolf, écart moyen, bootstrap) valent 0,160, 0,176 et 0,288. Holm multiplie la plus petite par 3, ce qui donne 0,479 ; ce maximum s'impose aux deux autres. Sur la fenêtre codée, les p brutes valent 0,299, 0,573 et 0,189, et les p de Holm 0,598, 0,598 et 0,567.
+
+**Ce que la correction touche.** Sur la seconde fenêtre, la trace `rv21` est identique à celle de #21781 : la correction n'y déplace que la stratégie. Sur la fenêtre codée, elle déplace aussi `rv21`, dont le Sharpe à taux nul passe de 0,787 à 0,783 : le calcul du rendement journalier (`_daily_log_return`) est commun aux deux modes, et 1510 des 1761 séances diffèrent, d'au plus 0,8 % ; son backtest passe de 817 à 824 ordres. Le diagnostic de la fenêtre codée compare donc deux séries modifiées, celui de la seconde fenêtre une série modifiée à une série inchangée.
+
+**Prédiction et mesure.** Les quatre points écrits avant la mesure tiennent. Après la fenêtre codée, la p de Ledoit-Wolf passe au-dessus de 0,05 et la p de Holm au-dessus de 0,10, l'intervalle bootstrap contient zéro et la corrélation reste au-dessus de 0,99. Sur la fenêtre codée, l'écart garde son signe et sa p de Holm dépasse 0,5. Le verdict reste `INCONCLUSIVE`, et les références ne bougent pas. Le déplacement de `rv21` sur la fenêtre codée n'était pas prédit.
+
+**Lecture.** L'avantage de `rv21` sur la seconde fenêtre tenait en partie au défaut de récursion. Une fois celle-ci corrigée, la prévision GARCH et la volatilité réalisée sur 21 séances ne se distinguent plus, sur aucune des deux fenêtres : le diagnostic ne permet pas de dire que la prévision GARCH apporte quelque chose, ni qu'elle coûte quelque chose.
+
+**Statistiques QC des huit backtests.** Les nœuds QC coupent un backtest 90 jours avant la date du jour. Les backtests de la seconde fenêtre s'arrêtent donc au 2026-07-28, trois séances plus tard que ceux de #22013 (2026-07-23). Leurs statistiques QC portent sur ces trois séances de plus et ne se comparent pas à celles du tableau précédent. Les traces, elles, sont coupées au 2026-07-23 dans les deux mesures. Sur la fenêtre codée, la stratégie reproduit exactement la ligne « corrigée » du tableau précédent.
+
+| Mode | Backtest | Sharpe QC | CAGR | Drawdown max | Ordres |
+|---|---|---|---|---|---|
+| stratégie | 2018-01 → 2025-01 | 0,325 | 6,94 % | 10,6 % | 831 |
+| SPY détenu | 2018-01 → 2025-01 | 0,496 | 13,58 % | 33,7 % | 3 |
+| 60/40 | 2018-01 → 2025-01 | 0,378 | 8,66 % | 21,7 % | 147 |
+| `rv21` | 2018-01 → 2025-01 | 0,312 | 6,83 % | 11,1 % | 824 |
+| stratégie | 2023-11 → 2026-07-28 | 0,195 | 8,57 % | 10,3 % | 280 |
+| SPY détenu | 2023-11 → 2026-07-28 | 0,969 | 24,15 % | 18,7 % | 2 |
+| 60/40 | 2023-11 → 2026-07-28 | 0,855 | 16,61 % | 11,2 % | 56 |
+| `rv21` | 2023-11 → 2026-07-28 | 0,225 | 8,91 % | 10,3 % | 276 |
+
+Sur la seconde fenêtre, le Sharpe QC de la stratégie passe de 0,269 à 0,195 avec ces trois séances, qui lui font perdre 1,6 %. Avec un taux sans risque déduit et une volatilité d'environ 11 %, un écart de CAGR de 0,85 point suffit à le déplacer de 0,07. Ce chiffre tient à la date de fin du backtest, pas à un écart de performance de la stratégie.
 
 
 ## Fichiers

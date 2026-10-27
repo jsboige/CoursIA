@@ -1,8 +1,8 @@
 # Notebook Planners archivé : Fast-Downward-Legacy
 
 Ce dossier conserve l'unique notebook archivé de la série Planners : la version
-monolithique d'origine du cours Fast Downward (69 cellules, dont 48 markdown et
-21 code, kernel `.NET (C#)`), remplacée le 4 mars 2026 par la série renumérotée
+monolithique d'origine du cours Fast Downward (kernel `.NET (C#)`, dominante
+markdown), remplacée le 4 mars 2026 par la série renumérotée
 `Planners-0` à `Planners-12`. Le notebook archivé n'est ni modifié ni
 réexécuté : il est préservé byte-exact comme provenance historique.
 
@@ -26,7 +26,7 @@ relié à son devenir, preuve à l'appui.
 | Syntaxe CLI : options translate/search, alias, limites temps/mémoire, benchmark `gripper` (md 4-15, code 6/10/13/19/25) | [`../02-Classical/Planners-4-Fast-Downward.ipynb`](../02-Classical/Planners-4-Fast-Downward.ipynb) (kernel Python) — architecture 3 étapes, benchmark `gripper` conservé | README de la série (apport pédagogique Planners-4) ; 10 occurrences `gripper` dans Planners-4 |
 | Validation de plan (md 21) | Traitée dans la série courante | grep `validation` : Planners-6-Domains ×2, Planners-0/5 |
 | Panorama des heuristiques via options FD-CLI : blind, goalcount, add, cea, cg, ff, h^m, hmax, lmcut, merge-and-shrink, iPDB, landmark cost partitioning (md 17-44 et 47-57) | [`../02-Classical/Planners-5-Heuristics.ipynb`](../02-Classical/Planners-5-Heuristics.ipynb) couvre h^add, h^max, h^FF, LM-cut (réimplémentations + comparaison expérimentale) ; le balayage exhaustif des options CLI (cea, cg, iPDB, operator-counting, post-hoc) reste sans équivalent dédié — conservé comme référence | README de la série (apport Planners-5) ; grep série : `operator-counting` 0, `post-hoc` 0 ; `cea`/`cg`/`pdb` 0 dans Planners-5 |
-| Options avancées : portfolios (md 23, 59), adaptation des coûts (md 61), optimisation post-hoc (md 63), réduction des étiquettes (md 65), collections de motifs (md 67), compétitions (md 68) | Conservé comme référence — aucune section dédiée dans la série courante | grep série (25 notebooks) : `portfolio` ×1 (mention de passage, Planners-1), réduction d'étiquettes 0 |
+| Options avancées : portfolios (md 23, 59), adaptation des coûts (md 61), optimisation post-hoc (md 63), réduction des étiquettes (md 65), collections de motifs (md 67), compétitions (md 68) | Conservé comme référence — aucune section dédiée dans la série courante | grep sur l'ensemble de la série courante : `portfolio` ×1 (mention de passage, Planners-1), réduction d'étiquettes 0 |
 | Exercices stub `Console.WriteLine("Exercice a completer")` (code 46, 58) | Stubs historiques conformes C.1, jamais complétés — aucune reprise | `execution_count` 11 et 17, sorties d'origine |
 
 Le twin C# [`../02-Classical/Planners-4-Fast-Downward-Csharp.ipynb`](../02-Classical/Planners-4-Fast-Downward-Csharp.ipynb)
@@ -40,7 +40,7 @@ approche distincte du runner auto-téléchargeur du monolithe.
 |---|---|---|
 | 2024-05-24 | `0da5e56a9` | Création `MyIA.AI.Notebooks/Planners/Fast-Downward.ipynb` (« Ajout Fast-downward ») |
 | 2025-01-31 | `a7848f075` | Déplacement vers `MyIA.AI.Notebooks/SymbolicAI/Planners/Fast-Downward.ipynb` (« Changement de repertoires ») |
-| 2026-03-04 | `83b88a320` | Découpage du monolithe en 13 notebooks + copie d'archivage intégrale (C100) vers `Planners/archive/Fast-Downward-Legacy.ipynb`, dans le même commit |
+| 2026-03-04 | `83b88a320` | Découpage du monolithe en série pédagogique + copie d'archivage intégrale (C100) vers `Planners/archive/Fast-Downward-Legacy.ipynb`, dans le même commit |
 | 2026-03-05 | `a10fb3bc5` | Suppression de l'original `Planners/Fast-Downward.ipynb` du vivant |
 | 2026-05-23 | `817cd1b0d` (PR #1487) | En-tête de navigation de la cellule 0, pointant le successeur (`[<< Planners-4]`) |
 | 2026-08-06 | `928147688` (PR #9724) | Renommage `archive/` → `_archive/` (issue #9535) |
@@ -58,7 +58,7 @@ il reste l'exécutable d'origine, `execution_count` 1 à 21 présents.
   - `MyIA.AI.Notebooks/SymbolicAI/Planners/README.md` (arborescence de la série) ;
   - `docs/ledgers/3801-sota-axe2.md` (exclusion explicite du scan PDDL) ;
   - `docs/archive/reference/notebook-counts-reconciliation.md` (EXCLUDE_PEDAGOGICAL) ;
-  - `translations/planners/planners.csv` (138 lignes au chemin `Planners/archive/`, antérieur au renommage de 2026-08 — registre de traduction historique).
+  - `translations/planners/planners.csv` (au chemin `Planners/archive/`, antérieur au renommage de 2026-08 — registre de traduction historique).
 
 ## Pourquoi le conserver
 
