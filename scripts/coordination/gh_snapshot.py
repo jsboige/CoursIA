@@ -36,6 +36,7 @@ dictionnaire que le lecteur de claims consomme via `set_snapshot()`.
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 import os
 import subprocess
 import time
@@ -56,20 +57,26 @@ SNAPSHOT_VERSION = 1
 DEFAULT_TTL_SECONDS = 1800
 
 #: Fenetre maximale lue par le balayage des commentaires du depot, en
-#: secondes (24 h). Le balayage lit TOUS les commentaires modifies depuis
+#: secondes (2 h). Le balayage lit TOUS les commentaires modifies depuis
 #: `since` : son cout croit avec la fenetre, pas avec le nombre d'issues
 #: visees. Mesure du 27/10 (ce siege) : 417 commentaires sur 1,5 jour =
 #: 23,7 s de lecture (5 pages) ; au-dela, la lecture par issue est plus
-#: honnete. La fenetre de 24 h a depasse le budget de 60 s du balayage
-#: (mesure : `TimeoutExpired`, l'instantane indisponible) -- d'ou le
-#: budget de 180 s et la fenetre de 24 h.
-MAX_SWEEP_LOOKBACK_SECONDS = 24 * 3600
+#: honnete. La fenetre de 24 h a depasse le budget du balayage (mesure :
+#: `TimeoutExpired`, l'instantane indisponible) -- d'ou la fenetre de 2 h,
+#: le balayage n'etant tente que sur une fenetre courte.
+MAX_SWEEP_LOOKBACK_SECONDS = 2 * 3600
 
 #: Budget du balayage (le reste de la phase reseau garde 60 s). Le balayage
 #: lit TOUT le fil du depot depuis `since` : c'est 5 pages pour 1,5 jour
 #: (mesure du 27/10, 23,7 s), 10 pages pour 24 h -- le budget de 60 s
 #: produisait un `TimeoutExpired` et l'instantane indisponible.
-SWEEP_TIMEOUT_SECONDS = 180.0
+SWEEP_TIMEOUT_SECONDS = 60.0
+
+#: Nombre de fils pour la lecture PARALLELE des commentaires d'issue.
+#: Les lectures sont des appels REST independants : mesure du 27/10,
+#: 24 issues en 2,4 s avec 8 fils (median 0,73 s par issue), contre
+#: 17,5 s en serie.
+PARALLEL_READ_WORKERS = 8
 
 #: Duree au-dela de laquelle un verrou est considere comme abandonne (min).
 LOCK_STALE_SECONDS = 900
@@ -521,39 +528,56 @@ def ensure_comments(repo: str, numbers: list[int], snapshot: dict, *,
     if stale:
         known = [stamps[str(n)] for n in stale
                  if isinstance(stamps.get(str(n)), (int, float))]
+        # #22983 -- le balayage n'est tente que si sa FENETRE est courte.
+        # Son cout croit avec l'ACTIVITE du depot, pas avec le nombre
+        # d'issues visees : mesure du 27/10, 417 commentaires sur 1,5 jour
+        # = 23,7 s (5 pages), et la fenetre de 24 h a depasse le budget de
+        # 180 s. La lecture par issue, elle, coutait ~0,73 s par issue
+        # (median) -- soit ~15 s pour 150 issues, et elle est PARALLELISEE.
+        # Le balayage reste utile quand la fenetre est courte : il avance
+        # aussi les horodatages des issues immobiles, sans appel.
         if known:
-            # Le balayage est borne par le PLUS ANCIEN horodatage connu --
-            # mais sa COUT croit avec la fenetre lue (mesure du 27/10 : 417
-            # commentaires sur 1,5 jour = 23,7 s ; une fenetre d'une
-            # semaine coûterait plusieurs minutes). Au-dela de
-            # `MAX_SWEEP_LOOKBACK_SECONDS`, on ne balaie pas : les issues
-            # trop anciennes sont lues une par une, ce qui est plus cher
-            # par issue mais borne.
             oldest = min(known)
             bounded = max(oldest, now - MAX_SWEEP_LOOKBACK_SECONDS)
-            since = datetime.fromtimestamp(bounded, UTC).strftime(
-                "%Y-%m-%dT%H:%M:%SZ")
-            snapshot, calls_sweep = sweep_repo_comments(
-                repo, snapshot, since=since, timeout=timeout)
-            calls += calls_sweep
-            stats["balayes"] = len(stale)
-            stats["since"] = since
-            meta = dict(snapshot.get("meta") or {})
-            stamps = dict(meta.get("comment_stamps") or {})
-            comments = dict(snapshot.get("comments") or {})
-        # Ce qui reste perime apres le balayage : lecture par issue.
+            if (now - bounded) <= MAX_SWEEP_LOOKBACK_SECONDS:
+                since = datetime.fromtimestamp(bounded, UTC).strftime(
+                    "%Y-%m-%dT%H:%M:%SZ")
+                try:
+                    snapshot, calls_sweep = sweep_repo_comments(
+                        repo, snapshot, since=since, timeout=timeout)
+                    calls += calls_sweep
+                    stats["balayes"] = len(stale)
+                    stats["since"] = since
+                    meta = dict(snapshot.get("meta") or {})
+                    stamps = dict(meta.get("comment_stamps") or {})
+                    comments = dict(snapshot.get("comments") or {})
+                except Exception as exc:  # noqa: BLE001 - le repli par issue suit
+                    stats["balayage_echoue"] = str(exc)[:120]
+        # Ce qui reste perime apres le balayage : lecture par issue, en
+        # PARALLELE. Les lectures sont des appels REST independants --
+        # mesure du 27/10 : 24 issues en 2,4 s avec 8 fils (median 0,73 s
+        # par issue), contre 17,5 s en serie.
         remaining = [n for n in stale if _stale(n)]
-        for number in remaining:
+
+        def _read_one(number: int):
             key = str(number)
             try:
-                comments[key] = fetch_issue_comments(repo, number)
-                stamps[key] = now
-                calls += 1
-                stats["lus"] += 1
+                return key, fetch_issue_comments(repo, number), None
             except Exception as exc:  # noqa: BLE001 - une issue illisible ne casse pas la passe
-                meta.setdefault("fetch_failures", {})[key] = {
-                    "at": now, "error": str(exc)[:160],
-                }
+                return key, None, exc
+
+        if remaining:
+            with ThreadPoolExecutor(max_workers=PARALLEL_READ_WORKERS) as pool:
+                for key, payload, exc in pool.map(_read_one, remaining):
+                    if exc is not None:
+                        meta.setdefault("fetch_failures", {})[key] = {
+                            "at": now, "error": str(exc)[:160],
+                        }
+                        continue
+                    comments[key] = payload
+                    stamps[key] = now
+                    calls += 1
+                    stats["lus"] += 1
     # Les metadonnees (titre, labels) sont lues pour TOUTE cible dont
     # l'entree manque -- pas seulement pour les perimes : le lecteur de
     # claims a besoin des deux, et une metadonnee manquante le ferait

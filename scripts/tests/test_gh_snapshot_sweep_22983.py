@@ -328,6 +328,59 @@ def test_une_issue_trop_ancienne_est_lue_a_part(monkeypatch):
     assert "repos/o/r/issues/7/comments" in appels
 
 
+def test_une_issue_illisible_n_interrompt_pas_la_lecture_par_issue(monkeypatch):
+    """La lecture parallele isole les echecs : une issue illisible ne fait
+    pas tomber les autres, et l'echec est NOMME."""
+    appels = []
+
+    def faux_gh_api(path, *, params="", timeout=30.0):
+        appels.append(path)
+        if path.endswith("/issues/comments"):
+            return []
+        if path.endswith("/issues"):
+            return [{"number": n, "title": "T", "labels": [],
+                     "updated_at": "u", "state": "open"} for n in (7, 9)]
+        if path.endswith("/issues/7/comments"):
+            return [_commentaire(7)]
+        if path.endswith("/issues/9/comments"):
+            raise RuntimeError("404")
+        raise AssertionError(f"appel inattendu: {path}")
+
+    monkeypatch.setattr(gs, "_gh_api", faux_gh_api)
+    snapshot = {"comments": {}, "issues": {}, "meta": {}}
+    out, calls, stats = gs.ensure_comments("o/r", [7, 9], snapshot)
+    assert stats["lus"] == 1
+    assert out["comments"]["7"]
+    assert "9" not in out["comments"]
+    failures = (out.get("meta") or {}).get("fetch_failures") or {}
+    assert "9" in failures, "l'echec n'est pas nomme"
+
+
+def test_un_balaiage_mort_laisse_la_lecture_par_issue_prendre_le_relais(monkeypatch):
+    """Le balayage peut echouer (fenetre trop large, quota) : la passe doit
+    continuer par la lecture par issue, et le dire."""
+    appels = []
+
+    def faux_gh_api(path, *, params="", timeout=30.0):
+        appels.append(path)
+        if path.endswith("/issues/comments"):
+            raise RuntimeError("balayage indisponible")
+        if path.endswith("/issues"):
+            return [{"number": 7, "title": "T", "labels": [],
+                     "updated_at": "u", "state": "open"}]
+        if path.endswith("/issues/7/comments"):
+            return [_commentaire(7)]
+        raise AssertionError(f"appel inattendu: {path}")
+
+    monkeypatch.setattr(gs, "_gh_api", faux_gh_api)
+    snapshot = {"comments": {}, "issues": {}, "meta": {
+        "comment_stamps": {"7": time.time() - 300}}}
+    out, calls, stats = gs.ensure_comments("o/r", [7], snapshot)
+    assert stats["lus"] == 1
+    assert stats.get("balayage_echoue"), "l'echec du balayage n'est pas dit"
+    assert out["comments"]["7"][0]["body"].startswith("[CLAIMED]")
+
+
 # --- les stamps servis par l'instantane --------------------------------------
 
 
