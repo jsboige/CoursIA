@@ -23,6 +23,7 @@ from check_axiom_gate_coverage import (  # noqa: E402
     filewide_project_paths,
     gate_project_paths,
     iter_jobs,
+    justified_ungated,
     main,
     matrix_lakes,
     measure,
@@ -494,3 +495,84 @@ class TestCompositeAxiomCoverage:
         r = classify_deleted([d], gated)
         assert r["lost"] == []
         assert [e["dispatcher"] for e in r["relocated"]] == ["lean-serre.yml"]
+
+
+class TestJustifiedUngated:
+    """Cliquet #22519 : un lake sans gate doit porter sa decision ECRITE.
+
+    Le silence n'est pas un etat representable. Un lake du manifeste que ni le
+    cablage ni une ligne de decision ne nomme est un lake dont personne n'a
+    tranche -- et c'est cela, et rien d'autre, que ``--check --strict`` refuse.
+    """
+
+    DOC = (
+        "| **Lacs non cables** | doc | OUI |"
+        " `MyIA.AI.Notebooks/A/a_lean` reste sans gate, motif mesure |\n"
+        "| **Autre** | doc | OUI |"
+        " `MyIA.AI.Notebooks/B/b_lean` est cable depuis #22519 |\n"
+    )
+
+    @pytest.fixture(autouse=True)
+    def _doc(self, monkeypatch):
+        import check_axiom_gate_coverage as mod
+        monkeypatch.setattr(mod, "coverage_doc", lambda ref: self.DOC)
+
+    def test_sans_gate_line_with_the_path_justifies_it(self):
+        assert justified_ungated("HEAD", ["MyIA.AI.Notebooks/A/a_lean"]) == {
+            "MyIA.AI.Notebooks/A/a_lean"}
+
+    def test_a_mention_without_sans_gate_does_not_justify(self):
+        """Le lake est cite dans la doc -- mais comme CABLE. Pas une decision."""
+        assert justified_ungated("HEAD", ["MyIA.AI.Notebooks/B/b_lean"]) == set()
+
+    def test_justification_does_not_leak_to_another_lake(self):
+        """Une ligne « sans gate » pour A ne blanchit pas B du meme document."""
+        assert justified_ungated(
+            "HEAD", ["MyIA.AI.Notebooks/A/a_lean", "MyIA.AI.Notebooks/B/b_lean"]
+        ) == {"MyIA.AI.Notebooks/A/a_lean"}
+
+    def test_a_bare_family_name_is_not_a_match(self):
+        """Le critere est le project-path, pas un mot du document."""
+        assert justified_ungated("HEAD", ["MyIA.AI.Notebooks/C/c_lean"]) == set()
+
+    def test_empty_doc_justifies_nothing(self, monkeypatch):
+        import check_axiom_gate_coverage as mod
+        monkeypatch.setattr(mod, "coverage_doc", lambda ref: "")
+        assert justified_ungated("HEAD", ["MyIA.AI.Notebooks/A/a_lean"]) == set()
+
+
+class TestStrictExitCode:
+    """`--strict` doit ROUGIR, pas seulement exister : sinon il est decoratif."""
+
+    def _run(self, argv):
+        saved = sys.argv
+        try:
+            sys.argv = ["check_axiom_gate_coverage.py", *argv]
+            return main()
+        finally:
+            sys.argv = saved
+
+    def _fake(self, monkeypatch, ungated):
+        import check_axiom_gate_coverage as mod
+        monkeypatch.setattr(mod, "measure", lambda ref: {
+            "ref": ref, "gated_lakes": [], "matrix_lakes": list(ungated),
+            "matrix_lakes_without_gate": list(ungated),
+            "matrix_lakes_without_gate_justified": [],
+            "ungated_without_justification": list(ungated),
+            "deleted_dispatchers": 0, "lost_gate": [], "gate_relocated": [],
+            "never_had_gate": [], "not_an_acceptance_criterion": "n/a",
+            "gate_callers": {"w.yml": ["A/a_lean"]},
+        })
+
+    def test_strict_fails_on_an_unjustified_lake(self, monkeypatch, capsys):
+        self._fake(monkeypatch, ["MyIA.AI.Notebooks/A/a_lean"])
+        assert self._run(["--check", "--strict", "--json", "--ref", "HEAD"]) == 1
+
+    def test_non_strict_stays_green_on_the_same_report(self, monkeypatch, capsys):
+        """Retro-compatibilite : le contrat d'avant #22519 ne bouge pas."""
+        self._fake(monkeypatch, ["MyIA.AI.Notebooks/A/a_lean"])
+        assert self._run(["--check", "--json", "--ref", "HEAD"]) == 0
+
+    def test_strict_is_green_when_nothing_is_ungated(self, monkeypatch, capsys):
+        self._fake(monkeypatch, [])
+        assert self._run(["--check", "--strict", "--json", "--ref", "HEAD"]) == 0

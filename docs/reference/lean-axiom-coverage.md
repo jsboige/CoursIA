@@ -225,9 +225,57 @@ forbidden union : []
 | `percolation_lean` | matrice `ci_lakes.json` (`percolation.axiom-target-modules`, migré depuis `lean-percolation.yml` **supprimé** — #13751/#18996) | OUI (#14904, 2026-09-06 ; **porté par la matrice depuis #18996**, 2026-10-04) | **GREEN re-mesuré 2026-10-09 sur le chemin matriciel** — `distinct_code_sorry = 0` (`count_code_sorry.py --json`), 0 `native_decide` (grep FR). Exécution locale du step exact du gate (`scripts/lean/axiom_check_step.py`, paramètres du manifeste : `target-modules: "*"`, `allow-axioms` vide, `fail-on-sorry: true`) : les modules FR du lake sont énumérés (`Percolation`, agrégateur déclaration-free, puis `Basic`, `Boundary`, `Components`, `Connectivity`, `Examples`), clôture `[propext, Classical.choice, Quot.sound]` (défauts — aucune entrée `allow-axioms` requise), 0 `sorryAx`, **RC=0**. `_en` exclus par défaut (défaut matriciel #10889 ; les paires FR/EN du lake sont des miroirs). **Contrôle négatif exécuté sur le chemin matriciel (2026-10-09)** : `sorry` injecté dans un module cible puis lake reconstruit → `axioms: [propext, sorryAx, Classical.choice, Quot.sound]`, `has_sorry: True`, **RC=1** ; source restaurée (md5 identique, `git status` vide) → **RC=0**. **Piège mesuré** : l'organe **ne reconstruit pas** le lake (il lit les oleans) — une mutation de source **seule** rougit par `build_failed_returncode` (`Unknown constant`), **pas** par `sorryAx` ; un contrôle fidèle exige un `lake build` entre la mutation et le run |
 | `planning_lean` | `lean-planning.yml` | OUI (#15305, 2026-09-09) | **GREEN par défaut** — source mesuré: `count_code_sorry --lake planning_lean` `code=0` (les 5 `grep` naive sont en commentaire/docstring, pas du code), 0 `native_decide` (token fiable §1.1), 0 `noncomputable` (aucune inférence `Classical.choice`); `target-modules: "*"` (dérivation runtime #10889, `_en` exclus par défaut → `Planning.Strips`/`Relaxation`/`Admissibility`) + `fail-on-sorry: true` cohérent baseline 0. Advisory `target-coverage` 6/6 (100 %, no blind spot). La clôture `#print axioms` est mesurée par le gate au run PR CI |
 | `game_theory_lean` | matrice `ci_lakes.json` (`gametheory.axiom-target-modules`, migré depuis `lean-social-choice.yml` supprimé — #17374) | OUI — partiel (subtree, #12330 ; étendu ProgramGames 2026-09-10, PR B.3 #15221 follow-up ; cibles portées par le manifeste matriciel depuis #17374) | GREEN sur les cibles câblées : SocialChoice.* (modules FR+EN, pinning `SocialChoice/CERTIFIED.txt`) + `Abstraction`/`Abstraction.Basic` + `ProgramGames.Basic`/`ProgramGames.Basic_en` (L1 noyau borné #15176/#15221) + `ProgramGames.Bounded`/`ProgramGames.Bounded_en` (module atterri **après** la rédaction du scope, #15395 — ajouté sur demande du digest de review #15379) : 0 sorry, 0 `native_decide` — grep FR/EN firsthand ; `fail-on-sorry: true`, companions épinglés par `test_workflow_targets_match_manifest`. **Hors cible délibérée** : `RepeatedGames.Folk` (stretch sorry #4880), racines agrégateurs (`SocialChoice.lean`, `ProgramGames.lean`, sans decls). Reste du lake (StableMarriage, CooperativeGames, RepeatedGames, Swaps) non ciblé — candidat aux tranches #11699 |
-| **15 autres lacs du manifeste** (les 23 moins les 8 câblés) : `argumentation`, `assignment`, `calibration`, `conwaycgt`, `decisiontheory`, `discrepancy`, `erc20`, `finiteness`, `gamedefs`, `gamedefsext`, `iit`, `learningtheory`, `mathlibexamples`, `socialchoicepeters`, `tegmarkmuh` | matrice `ci_lakes.json`, **sans clé `axiom-target-modules`** — l'organe composite n'est jamais atteint (`lean-build.yml`, `if: matrix.axiom-target-modules != ''`) | **NON** | GREEN si câblés. Borderline connus sur `Classical.choice` : `learningtheory` et `decisiontheory` (tous deux **encore** non câblés ; `decisiontheory` porte en outre `sorry-baseline: "2"`, donc un câblage exige `fail-on-sorry: false` ou la décharge de ces 2 `sorry`). `sudoku` figurait dans cette liste — **périmé** : câblé par #18349 (EPIC #18038), il est désormais compté dans les 8 |
+| **Lacs du manifeste historiquement non cables** | matrice `ci_lakes.json`, cable `axiom-target-modules` par la tranche **#22519** (decision par lake : §4.1 ci-dessous) | OUI | Le gate les atteint depuis #22519 ; leur verdict d'execution se lit sur le premier run matriciel qui les couvre, jamais d'avance. `decisiontheory` porte en outre `axiom-fail-on-sorry: "false"` (2 `sorry` declares, §4.1) |
 
-Le câblage du gate sur les lacs non-pilotes est un travail séparé qui sort du scope #8738 (chaque workflow lake est un livrable à part avec son `target-modules` adapté). Voir #11699 pour la roadmap tranche-par-tranche des 15 restants (mimo_lean = tranche 1 livrée par PR de cette PR).
+Le câblage du gate sur les lacs non-pilotes a longtemps été un travail séparé, hors du scope #8738 (chaque workflow lake était un livrable à part avec son `target-modules` adapté). Ce n'est plus une roadmap : la tranche #22519 a câblé les derniers lacs matriciels, et **aucun lake du manifeste ne reste sans gate**. Ce qui subsiste n'est pas une liste de lakes à câbler mais une règle : un lake ajouté demain à la matrice doit être câblé ou porter sa décision écrite ici, et `check_axiom_gate_coverage.py --check --strict` refuse le silence (§4.1).
+
+### 4.1. Décision par lake — tranche #22519 (2026-10-27)
+
+L'issue #22519 demandait **une décision écrite par lake**, pas un câblage
+uniforme. La mesure qui tranche est `native_decide` en **position de tactique** :
+c'est le seul axiome que la liste `forbidden` refuse sans whitelist (le jeu
+standard du composite — `propext`, `funext`, `Classical.choice`, `Quot.*` — est
+accepté par défaut, donc `noncomputable`/choix classique ne fait pas rougir).
+Les `sorry` sont déjà tenus par le contrat bidirectionnel `sorry-baseline` du
+build : le gate d'axiomes les **rapporte**, il ne les compte pas deux fois.
+
+Mesure firsthand sur `origin/main` (2026-10-27), fichiers `.lean` hors `_en` :
+les seules occurrences de `native_decide` dans ces lakes sont des **docstrings**
+(« Aucun `sorry`, aucun `native_decide` » dans `social_choice_lean_peters`,
+mention pédagogique dans `Bayesian/InformationNoisy.lean`) — **0 usage en
+tactique** sur les treize. D'où une décision uniforme : `"*"` (dérivation
+runtime des modules, `_en` exclus par défaut), sauf le lake dont le
+`sorry-baseline` est non nul.
+
+| Lake | Décision | Justification |
+|---|---|---|
+| `MyIA.AI.Notebooks/GameTheory/SocialChoice/social_choice_lean_peters` | `"*"` | 0 `native_decide` en tactique (2 mentions en docstring), `distinct_code_sorry = 0` |
+| `MyIA.AI.Notebooks/GameTheory/conway_cgt_lean` | `"*"` | Lake à 2 fichiers, 0 `native_decide`, 0 `sorry` |
+| `MyIA.AI.Notebooks/GameTheory/lean_game_defs` | `"*"` | 0 `native_decide`, 0 `sorry` |
+| `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` | `"*"` | 0 `native_decide` en tactique (1 mention en docstring), `distinct_code_sorry = 0` |
+| `MyIA.AI.Notebooks/IIT/iit_lean` | `"*"` | Lake à 3 fichiers, 0 `native_decide`, 0 `sorry` |
+| `MyIA.AI.Notebooks/ML/learning_theory_lean` | `"*"` | 0 `native_decide` en tactique, `distinct_code_sorry = 0` (les occurrences de la prose sont des docstrings sur `Classical.choice`, accepté par défaut) |
+| `MyIA.AI.Notebooks/Probas/DecisionTheory/decision_theory_lean` | `"*"` + `axiom-fail-on-sorry: "false"` | `sorry-baseline = 2` : le gate voit et **rapporte** les `sorryAx` sans échouer, le ratchet restant tenu par le build. Rouge immédiat sur tout `native_decide` introduit |
+| `MyIA.AI.Notebooks/Search/discrepancy_lean` | `"*"` | 0 `native_decide`, `distinct_code_sorry = 0` |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/calibration_lean` | `"*"` | 0 `native_decide`, `distinct_code_sorry = 0` |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/mathlib_examples` | `"*"` | Lake à 3 fichiers ; l'import Mathlib est déjà payé par le build du même job, le pass d'axiomes chevauche ce cache |
+| `MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean` | `"*"` | 0 `native_decide`, 0 `sorry` |
+| `MyIA.AI.Notebooks/SymbolicAI/SmartContracts/erc20_lean` | `"*"` | 0 `native_decide`, 0 `sorry` |
+| `MyIA.AI.Notebooks/SymbolicAI/Tweety/argumentation_lean` | `"*"` | 0 `native_decide`, `distinct_code_sorry = 0` |
+
+**Pourquoi une seule PR pour treize lakes, alors que §0.1 dit « une PR par
+lake ».** La règle de §0.1 protège un lake dont le verdict est *incertain* :
+câbler, mesurer, corriger un rouge. Ici la mesure est faite **avant** le
+câblage et ne laisse aucune incertitude (aucun `native_decide` en tactique,
+sorries déjà sous contrat) : la décision est uniforme, et la séparer en treize
+PRs produirait treize fois le même run de matrice complet pour la même
+conclusion. Le grain qui reste séparé est celui où un rouge apparaîtrait.
+
+**Ce qui rend la decision verifiable.** `check_axiom_gate_coverage.py` porte
+désormais `ungated_without_justification` : un lake du manifeste sans clé
+`axiom-target-modules` **et** sans ligne « sans gate » dans ce document est
+listé, et `--check --strict` en fait un exit 1. Le silence n'est plus un état
+représentable : un lake ajouté demain à la matrice doit être câblé ou justifié.
 
 ## 5. Acceptance step 3 — verdict
 
@@ -237,7 +285,7 @@ Le câblage du gate sur les lacs non-pilotes est un travail séparé qui sort du
 - [x] **3 lacs borderline** identifiés : whitelist `Classical.choice` recommandée au câblage futur avec issue nommée par lake (`sudoku_lean`, `learning_theory_lean`, `decision_theory_lean`)
 - [x] **14 lacs GREEN** : câblage futur sans coût
 
-**Recommendation pour le coordinateur (ai-01)** : la whitelist `native_decide.*` (19 noms explicites) est déjà déclarée dans le paramètre `allow-axioms` de `lean-conway.yml` (PR #8746 MERGED, commit `84eef8c76`). Le triage THEOREME PAR THEOREME de ces 19 axiomes est suivi sous #8749 (lots 3-5, schema #8731 vs whitelist justifiée, runtime mesuré). Le câblage tranche-par-tranche est suivi sous [#11699](https://github.com/jsboige/CoursIA/issues/11699) (mimo = tranche 1 livrée, 15 restants).
+**Recommendation pour le coordinateur (ai-01)** : la whitelist `native_decide.*` (19 noms explicites) est déjà déclarée dans le paramètre `allow-axioms` de `lean-conway.yml` (PR #8746 MERGED, commit `84eef8c76`). Le triage THEOREME PAR THEOREME de ces 19 axiomes est suivi sous #8749 (lots 3-5, schema #8731 vs whitelist justifiée, runtime mesuré). Le câblage tranche-par-tranche était suivi sous [#11699](https://github.com/jsboige/CoursIA/issues/11699) : il est **terminé** depuis #22519, plus aucun lake du manifeste n'est sans gate (§4.1).
 
 ## 6. Acceptance step 4 — note sur §B.3 pr-review-discipline.md
 
