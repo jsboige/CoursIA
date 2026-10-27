@@ -12,6 +12,17 @@ name: docs-reference-guard
 # initiale). Meme modele que docs-transients-guard et prose-counts-guard :
 # l'echec du check-run EST le signalement, visible sans ouvrir les logs.
 #
+# Ce guard s'execute en MODE PR (--base origin/<base_ref>) : les dates ne sont
+# comparees que pour les docs modifies par la PR, contre leur propre dernier
+# commit sur la branche -- le seul endroit ou git log -1 lit encore une date de
+# CONTENU. Sans --base (mode arbre) l'organe ne verifie que le marqueur et le
+# plancher : un squash-merge ecrit %cs = heure du merge (mesure sur #22216 :
+# dernier commit de branche 05:57Z, squash 10:32Z), donc une egalite de dates
+# sur tout l'arbre rougirait main a chaque merge franchissant un jour UTC.
+# D'ou la ref explicite ci-dessous : sur le merge ref, le dernier commit de
+# chaque doc touche EST le commit de merge, date a l'heure CI -- des dates
+# fabriquees.
+#
 # Convention complete : docs/transients/README.md (section "Sens perenne").
 
 on:
@@ -46,6 +57,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # ref: la TETE de la branche PR, jamais le merge ref. Sur le merge
+          # ref, le dernier commit de chaque doc touche est le commit de merge
+          # (date = heure CI) : la comparaison de dates se ferait contre des
+          # dates fabriquees, et chaque doc de la PR rougirait.
+          ref: ${{ github.event.pull_request.head.sha }}
           # fetch-depth: 0 -- convention des gardes git-aware du depot
           # (scripts-tests.yml : catalog-cron / catalog-drift / cell-order-gate /
           # exercise-leak-ci). Un shallow (2) fait apparaitre le commit de
@@ -54,10 +70,20 @@ jobs:
           # que la PR ne touche pas, et la garde rougit x9 hors perimetre.
           # Mesure et repro : review structurelle de #22527.
           fetch-depth: 0
+          # filter: blob:none -- les deux lectures de l'organe
+          # (git log -1 --format=%cs, git diff --name-only) ne consomment que
+          # commits et arbres, jamais de blobs ; mesure au 2026-10-27 sur un
+          # clone blobless de ce depot : 9/9 dates identiques a un clone
+          # complet, diff --name-only byte-identique. La fraction de transfert
+          # economisee est citee par la review de #22527.
+          filter: blob:none
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Lane perenne et plancher de couverture
-        run: python scripts/check_docs_reference_lane.py
+      - name: Lane perenne et plancher de couverture (mode PR)
+        # Mode PR : dates comparees uniquement pour les docs modifies entre la
+        # base et la tete, contre leur propre dernier commit (survivable au
+        # squash, cf. en-tete de ce fichier).
+        run: python scripts/check_docs_reference_lane.py --base origin/${{ github.base_ref }}
