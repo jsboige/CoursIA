@@ -19,12 +19,16 @@ Mesure first-hand 2026-09-14T04:10Z :
 - 2 caches sur 11 (18 %) sont des MISS purs (jamais hit, 208 + 208 Mo),
   occupant du quota qui pourrait revenir a des caches reutilisables.
 
-Le defaut n'est pas reparable cote configuration (CodeQL default setup ne
-suit pas un fichier `.github/workflows/codeql.yml`, il est gere par GitHub,
-cf. .github/workflows absent de `codeql*` -- mesure 2026-09-14). Le remede
-est cote REPO : eviction periodique des caches dont le SHA n'est plus
-ancetre de `main`, ET/OU dont le `last_accessed_at` est anterieur a une
-fenetre de retention choisie.
+Le defaut n'est pas reparable cote configuration. Etat mesure le 2026-09-14 :
+CodeQL tournait en default setup, qui ne suit aucun fichier
+`.github/workflows/codeql.yml` (gere par GitHub, absent de `codeql*`). Depuis
+#22548 (2026-10-25) le depot porte un workflow advanced setup : **le format de
+cle peut avoir change** et le pattern ci-dessous, mesure sur le default setup,
+n'a pas encore ete revalide sur une analyse advanced. Un balayage en dry-run
+apres la bascule est la mesure a faire ; tout cache non reconnu sort en REFUSE
+(`not_codeql_overlay`), jamais en silence. Le remede reste cote REPO :
+eviction periodique des caches dont le SHA n'est plus ancetre de `main`, ET/OU
+dont le `last_accessed_at` est anterieur a une fenetre de retention choisie.
 
 ## What it does
 
@@ -93,6 +97,12 @@ Criteres d'eviction (cf. issue #16088 acceptance) :
 
     codeql-overlay-base-database-1-<random8>-<lang>-2.27.0-<sha40>-<runid>-1
 
+**Non revalide depuis la bascule advanced setup (#22548, 2026-10-25)** : ce
+format est celui du default setup. Le premier dry-run qui suit la bascule est
+la mesure a faire ; un `-1-<random8>` qui disparait ferait tomber la famille
+entiere en REFUSE `not_codeql_overlay` — visible dans le rapport, jamais
+silencieux.
+
 - `<random8>` : 8 hex, probablement un identifiant de step run.
 - `<lang>` : `python`, `csharp`, `javascript` (les 3 langues activees
   dans la default setup du repo).
@@ -118,8 +128,11 @@ Criteres d'eviction (cf. issue #16088 acceptance) :
 - Issue #16088 (mesure du defaut, 12 entrees / 0.19 Go unitaire)
 - scripts/ci/prune_merged_worktrees.py -- meme esprit, worktrees au lieu
   de caches ; auteur + revue po-2023, septembre 2026.
-- .github/workflows/codeql.yml : **absente** du depot, le CodeQL est en
-  default setup gere par GitHub (cf. mesure 2026-09-14).
+- .github/workflows/codeql.yml : absente du depot jusqu'a #22548 (2026-10-25),
+  qui fait passer CodeQL en advanced setup. Le workflow existe desormais, donc
+  le declencheur `workflow_run: [CodeQL]` de evict-orphan-caches.yml resout un
+  workflow reel (question ouverte #18309). Le format de cle CodeQL, lui, reste
+  a revalider sur une analyse advanced : cf. section « Format de cle ».
 """
 from __future__ import annotations
 

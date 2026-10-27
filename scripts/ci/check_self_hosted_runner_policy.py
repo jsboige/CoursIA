@@ -589,6 +589,45 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "repo-size-advisory.yml",
     "testpaths-coverage-guard.yml",
     "notebook-outputs-required.yml",
+    # 2026-10-27 (#22461, lane myia-ai-01:CoursIA-2) : les 26 workflows
+    #   deports vers ubuntu-latest par #22820/#22821/#22822 REDEVIENNENT
+    #   porteurs d'une jambe self-hosted CONDITIONNELLE : la forme hybride
+    #   de debordement (garde meme-depot && vars.CI_OVERFLOW_LOCAL ==
+    #   'true' -> LINUX_RUNNER_LABELS, sinon ubuntu-latest). Par defaut
+    #   (variable absente ou != 'true'), chaque job resout sur ubuntu-latest
+    #   -- l'etat du 27/10 est conserve ; l'entree d'allowlist ne rend le
+    #   pool local atteignable QUE si la variable est basculee par un
+    #   operateur (phase A : gh variable set CI_OVERFLOW_LOCAL --body
+    #   true|false --repo jsboige/CoursIA, jeton jsboige). Rollback =
+    #   variable a false ou supprimee, sans toucher les fichiers.
+    #   scripts-tests.yml N'EST PAS reconcerne : sa migration avait ete
+    #   ANNULEE sur mesure (#22820 -- suite couplee a la forme du runner).
+    "always-on-guards.yml",
+    "always-on-guards-body.yml",
+    "arxiv-attributions-guard.yml",
+    "bios-companion-coverage.yml",
+    "catalog-drift.yml",
+    "docs-transients-guard.yml",
+    "harness-coauthor-guard.yml",
+    "label-paths-guard.yml",
+    "manifest-description-visuelle-gate.yml",
+    "notebook-cell-source-parses.yml",
+    "notebook-exec-sequence-ratchet.yml",
+    "notebook-kernel-drift-guard.yml",
+    "notebook-latex-control-chars.yml",
+    "notebook-link-render-check.yml",
+    "notebook-math-render.yml",
+    "notebook-papermill-ratchet.yml",
+    "organ-duplication-advisory.yml",
+    "orphaned-delivery-scan.yml",
+    "owui-playwright-check.yml",
+    "paragraph-length-advisory.yml",
+    "quantconnect-notebook-freshness.yml",
+    "scan-md-hierarchy-drift.yml",
+    "solution-leak-guard.yml",
+    "translation-drift.yml",
+    "twin-parity.yml",
+    "unique-check-run-names-guard.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
@@ -768,11 +807,12 @@ def _runner_selection(
     return False, None, set(), "runs-on has an unsupported type"
 
 
-# Audited hybrid runs-on (#13363 jambe B). Exactly ONE dynamic form is
-# statically provable: the self-hosted leg is reached ONLY when the exact
-# same-repo guard is true; everything else falls back to a GitHub-hosted
-# label. Guard, label set and fallback are enumerated -- any variation
-# (different guard, different labels, different fallback) stays an
+# Audited hybrid runs-on (#13363 jambe B). Exactly ONE shape is statically
+# provable, under TWO enumerated guards: the self-hosted leg is reached ONLY
+# when the exact same-repo guard is true -- the #22461 guard additionally
+# requires vars.CI_OVERFLOW_LOCAL == 'true'; everything else falls back to a
+# GitHub-hosted label. Guard, label set and fallback are enumerated -- any
+# variation (different guard, different labels, different fallback) stays an
 # unauditable expression and keeps the DYNAMIC_RUNS_ON rejection.
 #
 # c.509 (dispatch c.2180, owner myia-ai-01:CoursIA-2) : the audited label
@@ -787,10 +827,33 @@ def _runner_selection(
 # ratchet, outputs-required) routed to the containerized Linux leg
 # without forfeiting the same-repo guard or the github-hosted fallback.
 # Every other expression stays an unauditable DYNAMIC_RUNS_ON.
+#
+# #22461 (dispatch ai-01 2026-10-27) : SECONDE garde enumeree. La garde
+# meme-depot conjoine a la variable de debordement vars.CI_OVERFLOW_LOCAL
+# == 'true' -- le parc local ne recoit le job que si un operateur a bascule
+# la variable de depot (phase A du debordement : l'offre hebergee saturee
+# portait 28 des 29 jobs en file de l'echantillon, mesure #22461). Le nom
+# de la variable et sa valeur sont ENUMERES : toute autre variable, toute
+# autre valeur, toute autre expression reste hors audit (DYNAMIC_RUNS_ON,
+# refus inchange). Cette garde n'admet QUE le pool Linux ; la garde
+# d'origine conserve ses deux pools -- rien n'est retreci.
 HYBRID_RUNS_ON_GUARD = SAME_REPO_GUARD
 HYBRID_RUNS_ON_LABELS = WAITER_LABELS  # kept for backward compat (single set)
 HYBRID_RUNS_ON_LABEL_SETS = (WAITER_LABELS, LINUX_RUNNER_LABELS)
 HYBRID_RUNS_ON_FALLBACK = "ubuntu-latest"
+# Variable de depot de la seconde garde (phase A du debordement, #22461) :
+# nom et valeur ENUMERES -- cf. bloc de commentaire ci-dessus.
+CI_OVERFLOW_LOCAL_VAR = "CI_OVERFLOW_LOCAL"
+HYBRID_RUNS_ON_OVERFLOW_GUARD = (
+    f"{SAME_REPO_GUARD} && vars.{CI_OVERFLOW_LOCAL_VAR} == 'true'"
+)
+# Garde enumeree -> ensembles de labels admis pour la forme hybride. La
+# garde d'origine (#13363/c.509) garde exactement ses deux pools ; la garde
+# overflow (#22461) n'admet que LINUX_RUNNER_LABELS.
+HYBRID_RUNS_ON_GUARD_LABEL_SETS: dict[str, tuple[set[str], ...]] = {
+    HYBRID_RUNS_ON_GUARD: HYBRID_RUNS_ON_LABEL_SETS,
+    HYBRID_RUNS_ON_OVERFLOW_GUARD: (LINUX_RUNNER_LABELS,),
+}
 _HYBRID_PATTERN = re.compile(
     r"^\s*\("
     r"(?P<guard>[^()]+)"
@@ -801,8 +864,9 @@ _HYBRID_PATTERN = re.compile(
 
 def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
     """Return the audited hybrid legs for ``runs_on``, or None if it is not
-    the exact #13363 form. The caller keeps the DYNAMIC_RUNS_ON rejection
-    for every other expression."""
+    one of the enumerated forms (#13363, then the #22461 overflow guard).
+    The caller keeps the DYNAMIC_RUNS_ON rejection for every other
+    expression."""
     if not isinstance(runs_on, str):
         return None
     text = runs_on.strip()
@@ -811,7 +875,9 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
     match = _HYBRID_PATTERN.match(text[3:-2].strip())
     if match is None:
         return None
-    if " ".join(match.group("guard").split()) != HYBRID_RUNS_ON_GUARD:
+    guard = " ".join(match.group("guard").split())
+    allowed_label_sets = HYBRID_RUNS_ON_GUARD_LABEL_SETS.get(guard)
+    if allowed_label_sets is None:
         return None
     if match.group("fallback") != HYBRID_RUNS_ON_FALLBACK:
         return None
@@ -819,7 +885,7 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
         labels = {str(item) for item in json.loads(match.group("labels"))}
     except json.JSONDecodeError:
         return None
-    if labels not in HYBRID_RUNS_ON_LABEL_SETS:
+    if labels not in allowed_label_sets:
         return None
     return {"labels": labels}
 
@@ -994,10 +1060,11 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                     path.name,
                     str(job_name),
                     "DYNAMIC_RUNS_ON",
-                    "runs-on contains an expression other than the single audited "
-                    "hybrid form (same-repo guard -> self-hosted coursia-waiter, "
-                    "else ubuntu-latest; see #13363) and cannot be audited "
-                    "statically",
+                    "runs-on contains an expression other than the audited "
+                    "hybrid forms (same-repo guard, optionally && "
+                    "vars.CI_OVERFLOW_LOCAL == 'true', -> self-hosted pool, "
+                    "else ubuntu-latest; see #13363, #22461) and cannot be "
+                    "audited statically",
                 ))
                 continue
 
