@@ -95,11 +95,11 @@ Un rating subjectif n'est interprétable qu'accompagné de son protocole : dans 
 
 ### Séparation avancée — qualité mesurée
 
-Là où [02-4](../02-Advanced/02-4-Demucs-Source-Separation.ipynb) sépare un mélange synthétique (qualité évidente, non mesurée), ce carnet entre sur une **vraie chanson du corpus MUSDB18** avec ses **4 stems de référence studio** : le SDR par stem et par architecture devient une mesure. Trois générations d'architectures Demucs (v3 TD-ConvTasNet, v4 Hybrid Transformer, v4 fine-tune) sont comparées à géométrie égale, avec témoin négatif (SDR effondré face à la référence d'une autre piste) et contrôle de cohérence d'énergie du remix.
+Là où [02-4](../02-Advanced/02-4-Demucs-Source-Separation.ipynb) sépare un mélange synthétique (qualité évidente, non mesurée), ce carnet entre sur une **vraie chanson du corpus MUSDB18** avec ses **4 stems de référence studio** : le SDR par stem et par architecture devient une mesure. Trois modèles Demucs sur deux générations (v3 Hybrid Demucs, v4 Hybrid Transformer, v4 fine-tune par source) sont comparés à géométrie égale, avec témoin négatif (SDR effondré face à la référence d'une autre piste) et contrôle de cohérence d'énergie du remix.
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 20 | [04-20-Separation-Avancee-Qualite](04-20-Separation-Avancee-Qualite.ipynb) | Trois générations d'architectures Demucs (hdemucs_mmi v3, htdemucs v4, htdemucs_ft) comparées sur piste MUSDB18 avec stems de référence : SDR par stem, témoin négatif, cohérence d'énergie, mini-benchmark médian 3 pistes, 3 exercices | Local GPU (demucs 4.1.0, HuggingFace streaming) | ~6 GB |
+| 20 | [04-20-Separation-Avancee-Qualite](04-20-Separation-Avancee-Qualite.ipynb) | Trois modèles Demucs sur deux générations (hdemucs_mmi v3, htdemucs v4, htdemucs_ft) comparés sur piste MUSDB18 avec stems de référence : SDR par stem, témoin négatif, cohérence d'énergie, mini-benchmark médian 3 pistes, 3 exercices | Local GPU (demucs 4.1.0, HuggingFace streaming) | ~6 GB |
 
 ## Prérequis
 
@@ -156,3 +156,4 @@ Texte littéraire -> Benchmark voix (P0)
 - [Documentation Audio principale](../README.md)
 - [Live Coding Guide](04-5-LiveCoding-LLM-Music.ipynb)
 - [GenAI Services Documentation](../../../../docs/genai/genai-services.md)
+
