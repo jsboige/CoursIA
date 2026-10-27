@@ -355,6 +355,26 @@ class TestRoundsToClaim:
         """French outputs print the decimal comma: '1,7465' rounds to 1.75."""
         assert _rounds_to_claim("1.75", "SA | 1,7465 | 12,8907")
 
+    def test_thousands_separator_is_not_a_decimal(self):
+        """A comma group followed by a decimal point is a thousands separator
+        (#22827): '19.80' must NOT be anchored on '19,798.0862', whose
+        two-decimal rounding is 19798.09."""
+        assert not _rounds_to_claim("19.80", "19,798.0862")
+        assert not _rounds_to_claim("19.79", "19,798.0862")
+        assert _rounds_to_claim("19798.09", "19,798.0862")
+
+    def test_three_digit_comma_group_stays_decimal(self):
+        """Counter-example: without a decimal point the group is genuinely
+        ambiguous and the francophone decimal reading wins -- '1,798' is
+        1.798, so it rounds to 1.80."""
+        assert _rounds_to_claim("1.80", "1,798")
+        assert not _rounds_to_claim("1798.00", "1,798")
+
+    def test_multi_group_thousands_with_decimals(self):
+        """Several thousands groups before the decimal point."""
+        assert not _rounds_to_claim("1.23", "1,234,567.89")
+        assert _rounds_to_claim("1234567.89", "1,234,567.89")
+
 
 class TestCanonicalClean:
     """Markdown that quotes numbers from the previous code output is CLEAN."""
