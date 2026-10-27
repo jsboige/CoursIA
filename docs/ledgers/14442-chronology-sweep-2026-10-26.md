@@ -84,7 +84,7 @@ la source et les résultats. Ils forment le backlog de tranches de #14442 :
 |---|---|---|
 | **GT-20** (livré par la PR associée) | 36 | « l'EPIC #12205 prescrit », « GT-3b (#12213) », « GT-3b livré (#12253) », « GOL-06 … (#12286) » |
 | GT-06k FairBot-Loeb | 0, 1, 34 | « Carnet livré par l'issue #20379 », « PR #15923 » |
-| GT-13d Optimistic-CFR | 1 | « livré sur main par #13350, commit … » |
+| GT-13d Optimistic-CFR | 1, 16 | « livré sur main par #13350, commit … », « (socle #13350) », « Voir aussi : #13291 / #13290 / #13350 » |
 | GT-06j Bounded-Proofs | 31 | « DISPATCH ai-01, EPIC #15062, PR #15175, MERGED 2026-09-09… » |
 | GT-03d Le-Joueur-LLM | 5, 25 | « ai-01 dans la review PR #12295 », « Substrat EPITA (#12254) » |
 | GT-13c Safe-Subgame (C#) | 20 | « issue #13468, PR #13480, épilogue en conclusion » |
@@ -112,29 +112,31 @@ côté. Les lignes marquées **[nouveau]** n'étaient pas dans le tableau de tra
 | 7 | GT-06k | 1 | « le témoin externe `FormalLogic.GLBridge.loeb_schema` (PR #15923) » | CHRONOLOGIE | retirer le n° — l'artefact est déjà nommé |
 | 8 | GT-06k | 34 | « le témoin GL noyau-vérifié (L3, lake `formal_logic_lean`, PR #15923) » | CHRONOLOGIE | retirer le n° |
 | 9 | GT-06k | 34 | « Carnet livré par l'issue #20379 — le module `ProgramGames.FairBot` a désormais son consommateur pédagogique. » | CHRONOLOGIE | retirer le récit de livraison, **garder** la seconde phrase |
-| 10 | GT-13d Optimistic-CFR | 1 | « `Info-CFR-Python.ipynb` (livré sur main par `#13350`, commit `0…` » | CHRONOLOGIE | retirer |
+| 10 | GT-13d Optimistic-CFR | 1 | « `Info-CFR-Python.ipynb` (livré sur main par `#13350`, commit `0…` » | CHRONOLOGIE | traité — #22874 |
 | 11 | GT-06j Bounded-Proofs | 31 | « Issue #15335 (DISPATCH ai-01) » | CHRONOLOGIE | traité — #22661 |
 | 12 | GT-06j | 31 | « (PR #15175, MERGED 2026-09-09T03:59:10Z) » | CHRONOLOGIE | traité — #22661 |
 | 13 | GT-06j | 31 | « EPIC #15062 Math for AI Safety tranche … » | CHRONOLOGIE | traité — #22661 |
 | 14 | GT-03d Le-Joueur-LLM | 5 | « (ai-01 dans la review PR #12295) » | CHRONOLOGIE | retirer |
 | 15 | GT-03d | 25 | « **Substrat EPITA** (#12254) : les personas de `2025-Epita-Intelligence-Symbolique` … » | CHRONOLOGIE | retirer le n° — le jeu de personas est nommé juste après |
-| 16 | GT-13c Safe-Subgame (C#) | 20 | « …a été porté côté 13b** (issue #13468, PR #13480, épilogue en conclusion) » | CHRONOLOGIE | retirer |
-| 17 | GT-13c | 20 | « (issue #13468, PR #13480 …) » — seconde occurrence, même phrase | CHRONOLOGIE | retirer |
+| 16 | GT-13c Safe-Subgame (C#) | 20 | « …a été porté côté 13b** (issue #13468, PR #13480, épilogue en conclusion) » | CHRONOLOGIE | traité — #22664 |
+| 17 | GT-13c | 20 | « (issue #13468, PR #13480 …) » — seconde occurrence, même phrase | CHRONOLOGIE | traité — #22664 |
 | 18 | GT-13c | 22 | « Le critère de maturation de l'**Epic #12208** demandait : … » | CHRONOLOGIE | **traité** — la tranche #22664 écrit « Le critère de maturation de **cette série** demandait » **[nouveau]** |
 | 19 | GT-11b BayesianGamesExt (Lean) | 26 | « C'est exactement ce que fait **EPIC #1453** (BG-prover harness) sur ce type d'énoncés. » | **PROVENANCE_UTILE** | **conserver** — renvoi croisé qui situe le carnet dans le chantier BG-prover **[nouveau]** |
-| 20 | GT-11b | 42 | « L'extension … est étudiée en side-track sur l'issue #4251 (Part of #4038). » | CHRONOLOGIE | retirer |
+| 20 | GT-11b | 42 | « L'extension … est étudiée en side-track sur l'issue #4251 (Part of #4038). » | CHRONOLOGIE | traité — #22665 |
 | 21 | GT-09b Commitment-Stackelberg | 24 | « les open games (issue #12212, en cours de livraison) » | CHRONOLOGIE | retirer |
 | 22 | SocialChoice/10 | 13 | « …est proposé par la PR #21632, encore ouverte à la date » | CHRONOLOGIE | retirer |
+| 23 | GT-13d Optimistic-CFR | 16 | « (socle #13350) » — handle nu dans la source *Regret Circuits* | CHRONOLOGIE | traité — #22874 **[nouveau]** |
+| 24 | GT-13d | 16 | « Voir aussi : `#13291` (issue dispatcheur), `#13290` (dépendance socle), `#13350` (socle mergé) » | CHRONOLOGIE | traité — #22874 **[nouveau]** |
 
-**Décompte** : 22 occurrences — **20 CHRONOLOGIE_GIT_A_RETIRER**, **2 PROVENANCE_UTILE**
+**Décompte** : 24 occurrences — **22 CHRONOLOGIE_GIT_A_RETIRER**, **2 PROVENANCE_UTILE**
 (lignes 5 et 19). Aucune occurrence n'est laissée sans classe.
 
-**Les 4 occurrences que le tableau de tranches ne nommait pas** (lignes 5, 6, 18, 19) viennent
-du fait que le tableau de backlog énumérait des *cellules* (« 0, 1, 34 ») et non des
+**Les 6 occurrences que le tableau de tranches ne nommait pas** (lignes 5, 6, 18, 19, 23 et 24)
+viennent du fait que le tableau de backlog énumérait des *cellules* (« 0, 1, 34 ») et non des
 *occurrences*. L'inventaire ci-dessus corrige la granularité : une tranche qui n'aurait lu
-que le tableau de tranches aurait laissé passer les lignes 5, 6, 18 et 19 — dont **deux
-renvois de provenance** (5 et 19) qu'une lecture rapide aurait supprimés, ce qui aurait été
-une régression de contenu.
+que le tableau de tranches aurait laissé passer les lignes 5, 6, 18, 19, 23 et 24 — dont
+**deux renvois de provenance** (5 et 19) qu'une lecture rapide aurait supprimés, ce qui aurait
+été une régression de contenu.
 
 **Réconciliation de la ligne 19 (GT-11b, cellule 26)** — la tranche #22665 avait retiré le
 numéro d'EPIC au nom de la dé-chronologisation, en conservant « le harness **BG-prover** ».
@@ -142,6 +144,26 @@ La classe relue est **PROVENANCE_UTILE**, et la pratique du ledger pour les troi
 renvois de provenance est de **conserver le numéro** : le renvoi croisé a donc été **rétabli**
 dans #22665. Retirer ce numéro n'était pas une dé-chronologisation, c'était une perte de
 provenance — la même erreur que les 3 renvois de la section suivante, en plus court.
+
+### Angle mort mesuré de l'organe : les handles nus
+
+Les lignes 23 et 24 (GT-13d, cellule 16) ont été trouvées **à la lecture**, pas par
+l'organe : la forme `#13350` **nue** — sans mot-clé `EPIC` / `PR` / `Issue`, sans
+parenthèse, sans past-participe « livré » — n'appartient à aucun des cinq marqueurs
+de `MARKERS` (`epic`, `pr`, `issue`, `pr_paren`, `livre`). L'organe ne voit donc pas
+ces renvois, et une lecture **limitée à la sortie de l'organe** les laisse passer.
+
+La classification les range malgré tout en **CHRONOLOGIE_GIT_A_RETIRER** : « (socle
+#13350) » est un handle nu dont l'artefact (le socle, le carnet GT-13) est déjà nommé
+dans la même phrase, et la ligne « Voir aussi : #13291 (issue dispatcheur), #13290
+(dépendance socle), #13350 (socle mergé) » est un récit de livraison. La règle de
+décision du ledger s'applique ; c'est l'**outil** qui est en retard, pas la règle.
+
+Étendre l'organe aux handles nus **n'est pas fait ici** : la forme `#\d{4,5}` nue est
+très fréquente dans les 50 carnets de la série et sa presque-totalité relève de la
+**provenance** — l'élargissement ferait exploser le décompte et risquerait, comme le
+rappel des lignes 5 et 19 le montre, une régression de contenu. C'est une décision à
+prendre sur une mesure (fréquence par classe), pas au fil d'une tranche.
 
 ### Les 4 occurrences révélées par la correction du patron
 
@@ -164,6 +186,16 @@ Le **GT-20** est le reliquat que le coordinateur a nommé le 25/10 comme seul ac
 l'instant ; les deux autres reliquats de l'issue (GenAI/Texte/10e — GPU + embargo, et
 2.14b-XAI — figé par la PR ouverte #21413) sortent du périmètre GameTheory de ce sweep.
 
+## Résidus nommés (non traités par les tranches livrées)
+
+Rien n'est laissé en silence : ce qui n'est pas traité est **nommé** ici.
+
+| Résidu | Où | Pourquoi pas traité | Suite |
+|---|---|---|---|
+| Commentaire de tête `Fix #17882` | GT-13d, **cellule 2 (code)** | L'organe ne parcourt que les **cellules markdown** ; le corriger suppose d'éditer une cellule de code, donc une **re-exécution complète** du carnet (C.2) — carnet sous OpenSpiel, sorties `tqdm` bridées par un ratchet de volume | Tranche code, à instruire à la prochaine re-exécution du carnet |
+| Renvois de GT-06k, GT-09b, GT-03d | cellules 0 / 1 / 34, 24, 5 / 25 | Carnets **contendus** par des PRs ouvertes d'autres lanes (#20442 sur GT-06k et GT-09b, #22177 et #22193 sur GT-09b, #22351 sur GT-03d) | Reprise quand ces PRs sont mergées |
+| GT-16g | cellule 0 | Issue de suivi dédiée **#22682** | Portée par #22682 |
+
 ## Portée de la PR associée
 
 - **livré** : l'organe de détection (+ la correction de son patron `pr_paren`) + ce sweep
@@ -177,7 +209,7 @@ l'instant ; les deux autres reliquats de l'issue (GenAI/Texte/10e — GPU + emba
   révélée par la correction du patron, dans l'issue de suivi nommée #22682) et le défaut 2
   de l'issue (déplacer l'annexe hors de GT-04). Les autres carnets du tableau sont des
   **tranches de suivi** de #14442, chacune dans sa PR : #22661 (GT-06j), #22664 (GT-13c),
-  #22665 (GT-11b), #22666 (SocialChoice/10). L'issue reste ouverte ; la PR est
+  #22665 (GT-11b), #22666 (SocialChoice/10), #22874 (GT-13d). L'issue reste ouverte ; la PR est
   `See #14442`.
 
 ## Reprise
