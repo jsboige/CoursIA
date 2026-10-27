@@ -3936,7 +3936,12 @@ def _claims_in_process(
         buf_err = io.StringIO()
         with contextlib.redirect_stdout(buf_out), \
                 contextlib.redirect_stderr(buf_err):
-            issue_payload = clc._gh_issue_comments(str(n))
+            # #22983 -- l'instantane sert le payload quand il le peut ;
+            # sinon on retombe sur la lecture reseau (meme contrat que le
+            # mode batch de `check_issues_batch`).
+            issue_payload = clc._snapshot_issue_payload(str(n))
+            if issue_payload is None:
+                issue_payload = clc._gh_issue_comments(str(n))
             rc = clc._run_check(
                 issue_payload, lane, stale_threshold=48.0,
                 my_paths=None, check_open_pr_paths=True,

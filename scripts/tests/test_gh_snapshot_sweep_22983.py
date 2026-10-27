@@ -485,3 +485,68 @@ def test_l_evenement_de_livraison_est_serve_par_l_instantane(monkeypatch):
     verdict = pig.delivery_event(7)
     assert verdict[0] is True
     assert verdict[2] == "2026-10-27T10:00:00Z"
+
+
+def test_m_le_batch_sert_le_payload_depuis_l_instantane(monkeypatch):
+    """Le mode batch de `check_lane_claim` doit lire l'instantane.
+
+    Regression mesuree le 27/10 : la voie EN PROCESSUS du tapis installe
+    l'instantane puis appelle `check_issues_batch`, qui relisait chaque
+    issue par `gh issue view` -- 1,19 s par issue, soit 179 s pour les 150
+    numeros de la fenetre de service. Le batch doit donc servir le payload
+    depuis l'instantane, et ne jamais appeler le transport historique
+    quand l'instantane couvre l'issue.
+    """
+    clc = pig._claim_reader_module()
+    instantane = {
+        "issues": {"7": {"number": 7, "title": "Un titre", "labels": []}},
+        "comments": {"7": [{"body": "[CLAIMED] lane autre:lane -- x",
+                            "created_at": "2026-10-27T10:00:00Z",
+                            "updated_at": "2026-10-27T10:00:00Z",
+                            "user": {"login": "autre"},
+                            "html_url": "u1",
+                            "issue_url": "i1"}]},
+    }
+    clc.set_snapshot(instantane)
+    try:
+        def faux_gh(issue):
+            raise AssertionError(f"transport historique appele pour {issue}")
+
+        payloads = []
+
+        def faux_run_check(payload, lane, **kw):
+            payloads.append(payload)
+            return 0
+
+        monkeypatch.setattr(clc, "_gh_issue_comments", faux_gh)
+        monkeypatch.setattr(clc, "_run_check", faux_run_check)
+        resultat = clc.check_issues_batch(["7"], "ma:lane")
+    finally:
+        clc.set_snapshot(None)
+
+    assert payloads, "le batch n'a rien evalue"
+    assert payloads[0]["number"] == 7
+    assert payloads[0]["comments"], "les commentaires de l'instantane sont absents"
+    assert resultat["results"]["7"]["code"] == "FREE"
+
+
+def test_m_le_batch_retombe_sur_le_reseau_sans_instantane(monkeypatch):
+    """Sans instantane (ou pour une issue non couverte), le batch lit le
+    reseau : le repli doit rester en place, jamais un verdict fabrique."""
+    clc = pig._claim_reader_module()
+    clc.set_snapshot(None)
+    appels = []
+
+    def faux_gh(issue):
+        appels.append(issue)
+        return {"number": int(issue), "title": "t", "labels": [],
+                "comments": []}
+
+    def faux_run_check(payload, lane, **kw):
+        return 0
+
+    monkeypatch.setattr(clc, "_gh_issue_comments", faux_gh)
+    monkeypatch.setattr(clc, "_run_check", faux_run_check)
+    resultat = clc.check_issues_batch(["9"], "ma:lane")
+    assert appels == ["9"]
+    assert resultat["results"]["9"]["code"] == "FREE"

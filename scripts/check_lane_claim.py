@@ -4185,15 +4185,24 @@ def check_issues_batch(
                     results[issue] = result
                     continue
             else:
-                try:
-                    payload = _gh_issue_comments(issue)
-                except (RuntimeError, ValueError) as exc:
-                    result["code"] = "ERROR"
-                    result["human"] = f"gh: {exc}"
-                    result["duration"] = round(
-                        _time.monotonic() - issue_t0, 4)
-                    results[issue] = result
-                    continue
+                # #22983 -- l'instantane sert le payload quand il le peut ;
+                # sinon on retombe sur la lecture reseau. Sans cette branche,
+                # la voie EN PROCESSUS (le tapis installe l'instantane puis
+                # appelle cette fonction) reposait sur `gh issue view` pour
+                # chaque issue : mesure du 27/10, 1,19 s par issue, soit
+                # 179 s pour les 150 numeros de la fenetre de service -- la
+                # totalite du cout de la boucle.
+                payload = _snapshot_issue_payload(issue)
+                if payload is None:
+                    try:
+                        payload = _gh_issue_comments(issue)
+                    except (RuntimeError, ValueError) as exc:
+                        result["code"] = "ERROR"
+                        result["human"] = f"gh: {exc}"
+                        result["duration"] = round(
+                            _time.monotonic() - issue_t0, 4)
+                        results[issue] = result
+                        continue
             _phase(f"#{issue} check running")
             with contextlib.redirect_stdout(buf_out), \
                     contextlib.redirect_stderr(buf_err):
