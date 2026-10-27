@@ -17,15 +17,15 @@ OLD = NOW - timedelta(hours=2)
 
 
 def hosted(queued: int = 0, old: int = 0, oldest: float = 0.0,
-           complete: bool = True, reason: str = "") -> ctl.HostedSample:
+           complete: bool = True, truncated: bool = False, reason: str = "") -> ctl.HostedSample:
     return ctl.HostedSample(queued=queued, old=old, oldest_age_min=oldest,
-                             complete=complete, reason=reason)
+                             complete=complete, truncated=truncated, reason=reason)
 
 
 def local(free: int = 0, online: int = 0, starved: int = 0,
-          complete: bool = True, reason: str = "") -> ctl.LocalSample:
+          complete: bool = True, truncated: bool = False, reason: str = "") -> ctl.LocalSample:
     return ctl.LocalSample(online=online, free=free, starved=starved,
-                            complete=complete, reason=reason)
+                            complete=complete, truncated=truncated, reason=reason)
 
 
 # --- Regle de decision (fonction pure) -------------------------------------
@@ -104,11 +104,13 @@ def test_dwell_derape_une_bascule_ancienne():
 
 # --- CLI --------------------------------------------------------------------
 
-def _env(monkeypatch, token: str | None = "t"):
-    for name in ("GH_TOKEN", "GITHUB_TOKEN"):
+def _env(monkeypatch, token: str | None = "t", write_token: str | None = None):
+    for name in ("GH_TOKEN", "GITHUB_TOKEN", "ACTIONS_VARIABLES_PAT"):
         monkeypatch.delenv(name, raising=False)
     if token is not None:
         monkeypatch.setenv("GH_TOKEN", token)
+    if write_token is not None:
+        monkeypatch.setenv("ACTIONS_VARIABLES_PAT", write_token)
 
 
 def test_cli_sans_jeton_refuse_sans_ecrire(monkeypatch, capsys):
@@ -139,7 +141,7 @@ def test_cli_dry_run_ne_bascule_pas(monkeypatch, capsys):
 
 
 def test_cli_apply_bascule_et_ecrit(monkeypatch, capsys):
-    _env(monkeypatch)
+    _env(monkeypatch, write_token="pat-variables")
     monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
     monkeypatch.setattr(ctl, "collect_hosted",
                         lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
@@ -149,18 +151,23 @@ def test_cli_apply_bascule_et_ecrit(monkeypatch, capsys):
 
     def fake_write(repo, name, value, token):
         seen["value"] = value
+        seen["token"] = token
         return True, "variable mise a jour"
 
     monkeypatch.setattr(ctl, "write_variable", fake_write)
     rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
     assert rc == ctl.EXIT_OK
     assert seen["value"] == "true"
+    # L'ecriture passe par le jeton DEDIE, pas par le jeton de mesure.
+    assert seen["token"] == "pat-variables"
     report = json.loads(capsys.readouterr().out)
     assert report["written"] is True and report["verdict"] == "SWITCH_TRUE"
+    assert report["write_token_present"] is True
+    assert report["write_blocked"] == ""
 
 
 def test_cli_ecriture_refusee_rend_refused(monkeypatch, capsys):
-    _env(monkeypatch)
+    _env(monkeypatch, write_token="pat-variables")
     monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
     monkeypatch.setattr(ctl, "collect_hosted",
                         lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
@@ -174,16 +181,52 @@ def test_cli_ecriture_refusee_rend_refused(monkeypatch, capsys):
     assert report["verdict"] == "REFUSED"
 
 
-def test_cli_lecture_impossible_refuse_sans_mesurer(monkeypatch, capsys):
+def test_cli_lecture_impossible_rend_le_verdict_sans_ecrire(monkeypatch, capsys):
+    # L'etat de la variable illisible n'empeêche plus le VERDICT : il
+    # empeche l'ECRITURE (ni l'etat courant ni le dwell ne sont
+    # verifiables). C'est ce que demande l'arbitrage user (a) du 27/10 pour
+    # le mode degrade : le verdict est rendu et la cause est nommee.
     _env(monkeypatch)
     monkeypatch.setattr(ctl, "read_variable",
                         lambda *a, **k: (None, None, "HTTP 403: Resource not accessible"))
     monkeypatch.setattr(ctl, "collect_hosted",
-                        lambda *a, **k: (_ for _ in ()).throw(
-                            AssertionError("aucune mesure si la variable est illisible")))
+                        lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=7, online=14))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("aucune ecriture si l'etat de la variable est inconnu")))
     rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
-    assert rc == ctl.EXIT_REFUSED
-    assert "variables: read" in json.loads(capsys.readouterr().out)["reason"]
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] == "SWITCH_TRUE"
+    assert report["written"] is False
+    assert report["state_known"] is False
+    assert "variables: read" in report["state_reason"]
+    # Cause principale nommee : le jeton d'ecriture absent. L'etat
+    # illisible est rapporte a part (c'est sa consequence, pas la cause).
+    assert "ACTIONS_VARIABLES_PAT" in report["write_blocked"]
+    assert rc == ctl.EXIT_UNREADABLE
+
+
+def test_etat_inconnu_bloque_l_ecriture_meme_avec_le_secret_present(monkeypatch, capsys):
+    # Secret present MAIS etat de la variable illisible : l'ecriture est
+    # refusee (le dwell et l'etat courant seraient invérifiables).
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable",
+                        lambda *a, **k: (None, None, "HTTP 403: Resource not accessible"))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=7, online=14))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("aucune ecriture si l'etat de la variable est inconnu")))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] == "SWITCH_TRUE"
+    assert report["written"] is False
+    assert report["write_token_present"] is True
+    assert "etat de la variable" in report["write_blocked"]
+    assert "variables: read" in report["state_reason"]
+    assert rc == ctl.EXIT_UNREADABLE
 
 
 def test_cli_mesure_illisible_sort_en_1(monkeypatch, capsys):
@@ -276,3 +319,158 @@ def test_cli_sans_jeton_d_inventaire_sort_unreadable_nomme(monkeypatch, capsys):
     assert report["verdict"] == "UNREADABLE"
     assert "RUNNERS_READ_PAT" in report["reason"]
     assert report["written"] is False
+
+
+# --- Canal d'ecriture dedie (arbitrage user (a), 27/10) ------------------
+#
+# Le jeton qui ecrit la variable est un canal DEDIE (`ACTIONS_VARIABLES_PAT`),
+# distinct du jeton de mesure. Aucun repli : sans lui, le VERDICT est rendu,
+# rien n'est ecrit, et la cause est nommee.
+
+def test_secret_present_ecrit_avec_le_jeton_dedie(monkeypatch, capsys):
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=7, online=14))
+    seen = {}
+
+    def fake_write(repo, name, value, token):
+        seen["token"] = token
+        seen["value"] = value
+        return True, "variable mise a jour"
+
+    monkeypatch.setattr(ctl, "write_variable", fake_write)
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    assert rc == ctl.EXIT_OK
+    assert seen["value"] == "true"
+    assert seen["token"] == "pat-variables"
+    report = json.loads(capsys.readouterr().out)
+    assert report["written"] is True
+    assert report["write_token_present"] is True
+    assert report["write_blocked"] == ""
+
+
+def test_secret_absent_verdict_seul_et_aucune_ecriture(monkeypatch, capsys):
+    _env(monkeypatch)
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=7, online=14))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("aucune ecriture sans jeton d'ecriture")))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    assert rc == ctl.EXIT_OK
+    report = json.loads(capsys.readouterr().out)
+    # Le VERDICT est rendu...
+    assert report["verdict"] == "SWITCH_TRUE" and report["target"] == "true"
+    # ... mais rien n'est ecrit, et la cause est nommee.
+    assert report["written"] is False
+    assert report["write_token_present"] is False
+    assert "ACTIONS_VARIABLES_PAT" in report["write_blocked"]
+    assert "Aucun repli" in report["write_blocked"]
+
+
+def test_secret_absent_et_vide_est_traite_comme_absent(monkeypatch, capsys):
+    # Un secret pose mais VIDE est un secret absent : meme traitement, meme
+    # cause nommee.
+    _env(monkeypatch)
+    monkeypatch.setenv("ACTIONS_VARIABLES_PAT", "   ")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=7, online=14))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("aucune ecriture avec un secret vide")))
+    ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["written"] is False
+    assert report["write_token_present"] is False
+    assert "ACTIONS_VARIABLES_PAT" in report["write_blocked"]
+
+
+def test_resume_du_job_nomme_la_cause_du_mode_degrade(monkeypatch, tmp_path):
+    _env(monkeypatch)
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=7, online=14))
+    out = tmp_path / "summary.md"
+    ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+              "--summary-out", str(out)])
+    text = out.read_text(encoding="utf-8")
+    assert "SWITCH_TRUE" in text
+    assert "DEGRADE" in text
+    assert "ACTIONS_VARIABLES_PAT" in text
+    assert "NON ECRIT" in text
+
+
+def test_resume_du_job_sans_degrade_quand_tout_est_nominal(monkeypatch, tmp_path):
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=9, old=6, oldest=41.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=7, online=14))
+    monkeypatch.setattr(ctl, "write_variable",
+                        lambda *a, **k: (True, "variable mise a jour"))
+    out = tmp_path / "summary.md"
+    ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+              "--summary-out", str(out)])
+    text = out.read_text(encoding="utf-8")
+    assert "DEGRADE" not in text
+    assert "ECRIT" in text
+
+
+# --- Lecture tronquee (point Hermes du 27/10, 12:53Z) --------------------
+#
+# Un budget de lecture atteint rend les comptes de file une BORNE
+# INFERIEURE. Une borne inferieure etablit une affirmation POSITIVE (« au
+# moins N jobs ages ») mais n'etablit AUCUNE affirmation NEGATIVE (« aucun
+# job en file », « le parc local n'est pas affame »). La regle est donc
+# directionnelle, et non « toute troncature interdit d'ecrire ».
+
+def test_troncature_hebergee_bloque_la_bascule_vers_false():
+    # « la file hebergee est videe » est NEGATIVE : sous troncature, le
+    # compte lu est une borne inferieure, la file peut contenir des jobs
+    # non lus -> on ne rend pas la main a l'offre hebergee.
+    d = ctl.evaluate(hosted(queued=0, old=0, oldest=0.0, truncated=True,
+                             reason="3 run(s) non lu(s)"),
+                     local(free=7, online=14), current="true", now=NOW)
+    assert d.action == "HOLD"
+    assert "TRONQUEE" in d.reason
+
+
+def test_troncature_locale_bloque_la_bascule_vers_true():
+    # « le parc local n'est pas affame » est NEGATIVE : sous troncature
+    # locale elle n'est pas etablie -> pas de debordement vers le local.
+    d = ctl.evaluate(hosted(queued=9, old=6, oldest=41.0),
+                     local(free=7, online=14, truncated=True,
+                           reason="15 run(s) non lu(s)"),
+                     current="false", now=NOW)
+    assert d.action == "HOLD"
+    assert "TRONQUEE" in d.reason
+
+
+def test_troncature_hebergee_ne_bloque_pas_la_saturation():
+    # « l'offre hebergee est saturee » est POSITIVE : la troncature ne fait
+    # que sous-compter, elle n'annule pas la saturation etablie par les jobs
+    # effectivement lus.
+    d = ctl.evaluate(hosted(queued=9, old=6, oldest=41.0, truncated=True,
+                             reason="3 run(s) non lu(s)"),
+                     local(free=7, online=14), current="false", now=NOW)
+    assert d.action == "SWITCH_TRUE" and d.target == "true"
+
+
+def test_troncature_locale_ne_bloque_pas_la_constatation_d_affamescence():
+    # « le parc local est affame » est POSITIVE : elle est confirmee par la
+    # lecture partielle, donc on rend la main a l'offre hebergee.
+    d = ctl.evaluate(hosted(queued=9, old=6, oldest=41.0),
+                     local(free=2, online=14, starved=4, truncated=True,
+                           reason="15 run(s) non lu(s)"),
+                     current="true", now=NOW)
+    assert d.action == "SWITCH_FALSE" and d.target == "false"

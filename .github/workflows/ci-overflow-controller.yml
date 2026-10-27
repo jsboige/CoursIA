@@ -6,23 +6,28 @@ name: CI overflow controller (phase B)
 # 27 workflows, la phase B decide de l'etat de la variable sans intervention
 # humaine.
 #
-# LECTURE SEULE -- arbitrage (b) du coordinateur (c.6441695482, 27/10) :
-# ce job **ne bascule rien**. Aucun secret `ACTIONS_VARIABLES_PAT` n'est
-# pose dans Actions, et la portee `variables` n'existe pas dans la liste des
-# portees admises sous `permissions:` (reference de syntaxe des workflows :
-# actions, attestations, checks, contents, deployments, discussions,
-# id-token, issues, packages, pages, pull-requests, security-events,
-# statuses...). Une cle hors liste rend le FICHIER entier invalide -- le
-# workflow n'aurait jamais demarre. La seule voie qui pourrait ecrire ici
-# serait donc un jeton a effet de bord dans le depot, refusee par
-# l'arbitrage : les portees restent `actions: read` + `contents: read`.
+# QUI ECRIT -- option (a) de l'arbitrage user du 27/10 (c.6441695482) :
+# le job **ecrit** la variable, avec le secret `ACTIONS_VARIABLES_PAT` (droit
+# fin `Variables: read-write` sur `jsboige/CoursIA` SEUL, pose le
+# 2026-10-27T17:05:48Z, expiration 2027-01-25). Le secret est expose AU SEUL
+# pas qui ecrit : le checkout et le setup-python ne le voient pas.
 #
-# Qui ecrit, et comment : l'operateur **ai-01** joue la bascule en local,
-# avec le jeton `jsboige` **pris commande par commande** :
-#   GH_TOKEN=$(gh auth token --user jsboige) \
-#     python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA --apply
-# La lecture d'etat et la decision, elles, sont automatisables et publiques ;
-# l'ecriture d'une variable de depot est un geste d'operateur, trace.
+# Les portees `permissions:` restent `actions: read` + `contents: read` : la
+# portee `variables` n'EXISTE PAS dans la liste des portees admises sous
+# `permissions:` (actions, attestations, checks, contents, deployments,
+# discussions, id-token, issues, packages, pages, pull-requests,
+# security-events, statuses...). Une cle hors liste rend le FICHIER entier
+# invalide -- le workflow n'aurait jamais demarre. C'est donc un PAT qu'il
+# faut, pas une portee.
+#
+# DEUX CANAUX, JAMAIS LE MEME :
+# - `github.token` MESURE (files de jobs, liste des runs) ;
+# - `secrets.ACTIONS_VARIABLES_PAT` LIT et ECRIT la variable ;
+# - `secrets.RUNNERS_READ_PAT` lit l'inventaire des runners (`github.token`
+#   ne porte pas le droit de lire `actions/runners`).
+# Aucun repli : secret d'ecriture absent ou vide -> le controleur rend son
+# VERDICT, n'ecrit rien, et le resume du job NOMME la cause. Le mode
+# degrade est visible, il n'est pas muet.
 #
 # Doctrine #12817, lue a la source : un organe `schedule` +
 # `workflow_dispatch` est ADVISORY PAR CONSTRUCTION -- jamais `pull_request`
@@ -60,7 +65,7 @@ concurrency:
 
 jobs:
   control:
-    name: "Verdict CI_OVERFLOW_LOCAL (lecture seule)"
+    name: "Bascule CI_OVERFLOW_LOCAL (verdict + ecriture)"
     # Jambe Linux self-hebergee : le controleur mesure la file hebergee et
     # route du travail vers le parc local -- il n'a aucune raison de faire la
     # queue dans l'offre qu'il observe (review ai-01 du 27/10).
@@ -86,14 +91,14 @@ jobs:
         with:
           python-version: '3.11'
 
-      # UNE seule mesure : l'organe mesure puis rend un VERDICT. Sans
-      # `--apply`, il n'ecrit jamais -- la voie d'ecriture reste celle de
-      # l'operateur, en local (cf entete du fichier). Deux mesures
-      # couteraient le double en lectures de jobs : une execution mesuree
-      # coute 313 appels `gh`, et le volume d'appels API est precisement
-      # l'objet du volet 5 de #22937.
-      - name: Verdict (lecture seule)
+      # UNE seule mesure : l'organe mesure, rend un VERDICT, et -- si le
+      # verdict est une bascule ET le jeton d'ecriture est present -- ecrit
+      # la variable. Deux mesures couteraient le double en lectures de jobs :
+      # une execution mesuree coute ~320 appels `gh`, et le volume d'appels
+      # API est precisement l'objet du volet 5 de #22937.
+      - name: Verdict et bascule
         env:
+          # Jeton de MESURE : files de jobs et liste des runs.
           GH_TOKEN: ${{ github.token }}
           # `github.token` ne porte PAS le droit de LIRE `actions/runners`
           # (aucune portee de `permissions:` ne le donne). L'inventaire du
@@ -104,24 +109,21 @@ jobs:
           # Secret absent -> l'organe rend UNREADABLE et NOMME la cause ; il
           # n'ecrit rien et ne fabrique aucun vert.
           RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
+          # Jeton d'ECRITURE de la variable -- canal DEDIE, expose AU SEUL
+          # pas qui ecrit. Absent ou vide -> le controleur rend son verdict,
+          # n'ecrit rien, et le resume du job nomme la cause (ligne DEGRADE).
+          ACTIONS_VARIABLES_PAT: ${{ secrets.ACTIONS_VARIABLES_PAT }}
         run: |
           set +e
-          python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA --json > verdict.json
+          python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA \
+            --apply --json --summary-out summary.md > verdict.json
           RC=$?
           set -e
           cat verdict.json || true
-          {
-            echo "### CI overflow controller (phase B) -- VERDICT, lecture seule"
-            echo ""
-            echo "code retour : $RC"
-            echo ""
-            echo "Ce job n'ecrit rien : la bascule de CI_OVERFLOW_LOCAL est un"
-            echo "geste d'operateur (arbitrage (b), c.6441695482)."
-            echo ""
-            echo '```json'
-            cat verdict.json 2>/dev/null || true
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
+          cat summary.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+          if grep -q '^DEGRADE' summary.md 2>/dev/null; then
+            echo "::warning title=CI overflow controller::mode degrade -- le resume du job nomme la cause (jeton d'ecriture absent ou etat de la variable illisible)"
+          fi
           if [ "$RC" != "0" ]; then
             echo "::warning title=CI overflow controller::verdict non nominal (rc=$RC) -- le detail est dans le resume du job"
           fi

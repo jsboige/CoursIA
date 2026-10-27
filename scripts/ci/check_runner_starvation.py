@@ -219,6 +219,11 @@ class RunnerInventory:
     # existants ne les lisent pas).
     busy: list[str] = field(default_factory=list)
     idle: list[str] = field(default_factory=list)
+    # Runner en ligne dont le champ `busy` est ABSENT de la reponse : son
+    # occupation est INCONNUE. Il n'est donc pas comptabilise comme libre
+    # (fail-CLOSED vers « capacite disponible »), mais il est nomme pour que
+    # le rapport dise ce qu'il ne sait pas.
+    unknown: list[str] = field(default_factory=list)
 
     @property
     def available(self) -> bool:
@@ -271,6 +276,21 @@ class Starvation:
         """False = la lecture n'a pas vu tout ce qu'elle devait voir."""
         return not self.listing_failed and self.stats.failed == 0
 
+    @property
+    def truncated(self) -> bool:
+        """True = la lecture a ete arretee par le budget : les comptes sont
+        des BORNES INFERIEURES.
+
+        Distinct de `complete` : `complete` dit si la lecture a SUCCEEDE
+        (aucun listing en echec), `truncated` dit si elle a vu TOUT. Un run
+        non lu est un run vieux (les runs ages de moins que le seuil sont
+        ecartes sans cout) : il peut donc porter des jobs affames. La
+        consequence directionnelle : une lecture tronquee CONFIRME une
+        affirmation positive (« au moins N jobs affames ») mais n'etablit
+        aucune affirmation negative (« aucun job affame », « file videe »).
+        """
+        return bool(self.budget_unread)
+
 
 def fetch_inventory(repo: str, label: str, token: str | None) -> RunnerInventory:
     # Echec attendu sans droit admin : les echecs d'appel ne comptent PAS
@@ -296,7 +316,17 @@ def fetch_inventory(repo: str, label: str, token: str | None) -> RunnerInventory
             continue
         inv.online.append(name)
         # #22937 phase B : `busy` porte l'occupation reelle du slot.
-        (inv.busy if r.get("busy") else inv.idle).append(name)
+        # Le champ ABSENT laisse l'occupation INCONNUE : le runner n'est donc
+        # pas comptabilise comme libre (fail-CLOSED -- un `r.get("busy")`
+        # falsy placerait un runner muet dans `idle`, donc dans `free`, et
+        # annoncerait une capacite qui n'est pas etablie). Il est nomme
+        # dans `unknown` pour que le rapport dise ce qu'il ignore.
+        if "busy" not in r:
+            inv.unknown.append(name)
+        elif r.get("busy"):
+            inv.busy.append(name)
+        else:
+            inv.idle.append(name)
     return inv
 
 
