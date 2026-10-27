@@ -14,7 +14,7 @@
 #     nominale ici, le master.env restant prioritaire s'il est renseigne un
 #     jour (une seule lecture, deux sources ordonnees) ;
 #   - `gh` natif installe dans la distro (2.103.2) parce que supervise.sh
-#     l'appelle directement (`command -v gh`, lignes 1858/2366/2406) et que le
+#     l'appelle directement (`command -v gh`) et que le
 #     conteneur ne peut pas executer un .exe Windows ;
 #   - le daemon est docker-ce 29.9.2 epingle sur /var/run/docker-ce.sock ; le
 #     drop-in de flotte ne suffisait pas sur ce systemd (Requires/After vers
