@@ -2785,3 +2785,78 @@ def test_main_runs_the_repair_phase_inside_its_own_deadline(monkeypatch):
         nits.NITS_PASS_BUDGET_S = previous_budget
         nits._NITS_PASS_DEADLINE = None
     _ = clock
+
+
+def test_belt_withdraws_candidate_covered_by_open_pr():
+    """#16589 sur le TAPIS : une PR ouverte qui porte deja l'issue ecarte
+    le candidat, et le suivant le remplace.
+
+    Controle positif du defaut mesure le 2026-10-27 : la sonde de
+    couverture n'etait cablee que sur la voie PONDEREE
+    (``draw_unclaimed``). Le tapis, lui, rendait ``ACTION REQUISE : poser
+    [CLAIMED] ... sur #22374`` alors que ``#22515`` est OUVERTE et porte
+    l'issue dans son titre et son body -- un claim qui aurait ete VOID a
+    la seconde ou il etait pose.
+    """
+    covered = _make_item(22374, age_days=3, idle=1, last=None)
+    clean = _make_item(19002, age_days=49, idle=5, last=None)
+    pool = [covered, clean]
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(), probe_budget=8,
+        cover_probe=lambda n: "PR #22515" if n == 22374 else "")
+
+    assert [p["number"] for p in picks] == [19002]
+    assert len(withheld) == 1
+    number, cause = withheld[0]
+    assert number["number"] == 22374
+    assert cause.startswith("EN COURS : ")
+    assert "PR #22515" in cause
+    # Aucun echec de sonde : la sonde a repondu.
+    assert state.get("cover_failures", []) == []
+
+
+def test_belt_cover_probe_failure_is_fail_open_and_reported():
+    """Sonde de couverture ratee : le candidat est CONSERVE et le fait est
+    RAPPORTE -- meme tri-etat que la sonde de livraison.
+
+    Une lecture qui n'a pas ABOUTI n'est pas une absence de PR couvrante :
+    ecarter ici couterait a la lane un grain disponible a chaque 403.
+    """
+    pool = [_make_item(19001, age_days=50, idle=5, last=None)]
+
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(), probe_budget=8,
+        cover_probe=lambda n: None)
+
+    assert [p["number"] for p in picks] == [19001]
+    assert withheld == []
+    assert state["cover_failures"] == [19001]
+
+
+def test_belt_cover_probe_shares_the_delivery_budget():
+    """Sonde de couverture et sonde de livraison parent le MEME plafond.
+
+    Un plafond double laisserait le tapis depenser deux fois le cout
+    annonce par ``probe_budget`` -- la doctrine de la voie ponderee
+    (#16589) est « au meme rang, donc au meme cout borne ».
+    """
+    pool = [_make_item(19001 + i, age_days=50 - i, idle=5, last=None)
+            for i in range(4)]
+    seen = []
+
+    def cover(n):
+        seen.append(n)
+        return ""
+
+    # probe_budget=1 : la premiere sonde de livraison (inerte) consomme
+    # l'unite, la couverture n'a plus de budget et rend UNPROBED sans
+    # appeler la sonde injectee.
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=4), probe_budget=1,
+        cover_probe=cover)
+
+    assert seen == []
+    assert state["budget_hit"] is True
+    # Fail-OPEN : les candidats restent servis.
+    assert [p["number"] for p in picks] == [19001, 19002, 19003, 19004]
