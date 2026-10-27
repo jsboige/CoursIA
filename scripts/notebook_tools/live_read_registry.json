@@ -81,16 +81,22 @@
       "note": "Lecture directe du module M23Lean4Web.lean"
     },
     {
-      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03f-Meta-Actions-Tarifees-Python.ipynb",
+      "notebook": "MyIA.AI.Notebooks/GameTheory/GameTheory-03e-Meta-Actions-Tarifees-Python.ipynb",
       "cell_id": "c65",
       "source": "MyIA.AI.Notebooks/GameTheory/game_theory_lean/Abstraction/Basic.lean",
-      "note": "Preuve formelle -- compte de lignes d'Abstraction/Basic.lean et declarations portees par le sujet du carnet ; trouvee par l'invariant inverse apres fusion de main"
+      "note": "Preuve formelle -- compte de lignes d'Abstraction/Basic.lean et declarations portees par le sujet du carnet ; trouvee par l'invariant inverse apres fusion de main ; chemin 03e depuis le re-lettrage f->e (#21252)"
     },
     {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-12-Comptage-Matching-Lean-Python.ipynb",
       "cell_id": "c7f8529e",
       "source": "MyIA.AI.Notebooks/GameTheory/assignment_lean/Assignment/Counting.lean",
       "note": "Tranche A -- extraits numerotes (lignes 23-32, 50-57, 74-80) du socle Counting.lean ; trouvee par l'invariant inverse apres fusion de main"
+    },
+    {
+      "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/ANALYSE/ANALYSE-12-Comptage-Matching-Lean-Python_en.ipynb",
+      "cell_id": "c7f8529e",
+      "source": "MyIA.AI.Notebooks/GameTheory/assignment_lean/Assignment/Counting.lean",
+      "note": "Tranche A -- sibling EN du carnet ANALYSE-12, extraits numerotes du socle Counting.lean ; trouvee par l'invariant inverse apres fusion de main"
     },
     {
       "notebook": "MyIA.AI.Notebooks/SymbolicAI/Lean/Langlands/03-chaine-de-modularite-vers-fermat.ipynb",
