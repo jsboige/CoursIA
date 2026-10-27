@@ -353,8 +353,13 @@ def neighbors(d: Diagram, max_crossings: int) -> List[Tuple[str, Diagram]]:
             else:
                 for i in range(len(rest)):
                     M = set_at(rest, i, sub_label(rest[i], K[1], K[0]))
-                    ne = num_edges_of(M)
-                    push("r1Any", (M, ne))
+                    # cf. bigon-down : le label K[1] disparait avec le kink ;
+                    # s'il n'est pas maximal, (M, max) garde un trou et wf
+                    # echoue — aucune descente n'etait alors generable depuis
+                    # une forme CANONIQUE (cas du DFS/A* : les etats quittent
+                    # le literal des la premiere move). Forme wf = canon.
+                    c = canon(M)
+                    push("r1Any", (c, 2 * len(c)))
         if len(Dc) >= 2:
             K2, K1 = Dc[-1], Dc[-2]
             if (K2[1] == K2[2] and K1[1] == K1[2] and K1[0] == K2[0]):
@@ -366,8 +371,16 @@ def neighbors(d: Diagram, max_crossings: int) -> List[Tuple[str, Diagram]]:
                     a = K2[0]
                     for i in range(len(rest)):
                         M = set_at(rest, i, sub_label2(rest[i], K1[3], a, K2[3], a))
-                        ne = num_edges_of(M)
-                        push("r2Any", (M, ne))
+                        # Le split montant porte des labels frais (beta = n+1) :
+                        # M perd alpha et gagne beta, donc wf((M, max)) est TOUJOURS
+                        # faux et la candidate crue etait jetee au filtre wf —
+                        # aucun bigon-down n'etait genere depuis un enfant pousse
+                        # (cause racine de l'echec push-test du checkpoint). Le
+                        # verificateur compare via canon, la forme aceptee est la
+                        # renumerotation canonique ; dans tout diagramme wf,
+                        # numEdges = 2 * nb croisements.
+                        c = canon(M)
+                        push("r2Any", (c, 2 * len(c)))
     for cand in _kink_up_candidates(d):
         push("r1Any", cand)
     for cand in _bigon_up_candidates(d):
@@ -509,9 +522,14 @@ def _rebuild(meet: Optional[Diagram],
 # ---------------------------------------------------------------------------
 
 def astar(start: Diagram, targets: List[Diagram], max_crossings: int,
-          node_budget: int) -> Optional[List[Tuple[str, Diagram, Diagram]]]:
+          node_budget: int, epsilon: float = 1.0
+          ) -> Optional[List[Tuple[str, Diagram, Diagram]]]:
     """A* du `start` literal vers un des `targets`. Rend la chaine verifyee \
-    (chaque lien l'a ete a l'insertion) ou None a budget epuise."""
+    (chaque lien l'a ete a l'insertion) ou None a budget epuise. \
+    `epsilon` > 1 : A* pondere (f = cost + eps*h) — le temoin rendu est \
+    sous-optimal mais verifie ; c'est le repli quand le ball f de l'arbre \
+    montant etouffe la descente (mesure checkpoint : profondeur 9-10 non \
+    retrouvee a eps=1 malgre un chemin descendant par construction)."""
     target_norms = {normalize(t) for t in targets}
     start_norm = normalize(start)
     if start_norm in target_norms:
@@ -519,7 +537,8 @@ def astar(start: Diagram, targets: List[Diagram], max_crossings: int,
     INF = 1 << 60
     best: Dict[tuple, int] = {start_norm: 0}
     parent: Dict[tuple, Optional[Tuple[str, Diagram, Diagram]]] = {start_norm: None}
-    heap: List[Tuple[int, int, int, Diagram]] = [(len(start[0]) // 2, 0, 0, start)]
+    heap: List[Tuple[float, int, int, Diagram]] = [
+        (epsilon * (len(start[0]) // 2), 0, 0, start)]
     counter = 0
     while heap:
         _, cost, _, d = heapq.heappop(heap)
@@ -544,7 +563,68 @@ def astar(start: Diagram, targets: List[Diagram], max_crossings: int,
                 best[nc] = ncost
                 parent[nc] = (kind, d, cand)
                 counter += 1
-                heapq.heappush(heap, (ncost + len(cand[0]) // 2, ncost, counter, cand))
+                heapq.heappush(
+                    heap, (ncost + epsilon * (len(cand[0]) // 2),
+                           ncost, counter, cand))
+    return None
+
+
+def _ordered_neighbors(d: Diagram, max_crossings: int
+                       ) -> List[Tuple[str, Diagram]]:
+    """Voisins tries descente d'abord : retrait de croisements, puis compte \
+    preserve (R3), puis montee."""
+    n = len(d[0])
+    return sorted(neighbors(d, max_crossings),
+                  key=lambda kc: len(kc[1][0]) - n)
+
+
+def descent_dfs(start: Diagram, targets: List[Diagram], max_crossings: int,
+                node_budget: int, max_up_steps: int = 0
+                ) -> Optional[List[Tuple[str, Diagram, Diagram]]]:
+    """DFS descente-d'abord. Les pousses n'appendent qu'en fin de liste, donc \
+    l'inverse d'une chaine de pousses est entierement dans l'enumeration des \
+    voisins descendants : cette strategie le retrouve en lineaire (la ou le \
+    ball f de l'arbre montant etouffait A*). `max_up_steps` borne le nombre \
+    CONSECUTIF de montees (R3 compte preserve non compte). Rend la chaine \
+    verifiee ou None a budget epuise."""
+    target_norms = {normalize(t) for t in targets}
+    start_norm = normalize(start)
+    if start_norm in target_norms:
+        return []
+    parent: Dict[tuple, Optional[Tuple[str, Diagram, Diagram]]] = {
+        start_norm: None}
+    # cadres : (diagramme literal, montees consecutives, voisins ordonnes, idx)
+    frames: List[Tuple[Diagram, int, List[Tuple[str, Diagram]], int]] = [
+        (start, 0, _ordered_neighbors(start, max_crossings), 0)]
+    expansions = 0
+    while frames:
+        d, ups, kids, idx = frames[-1]
+        if idx >= len(kids):
+            frames.pop()
+            continue
+        frames[-1] = (d, ups, kids, idx + 1)
+        kind, cand = kids[idx]
+        nc = normalize(cand)
+        if nc in parent:
+            continue
+        parent[nc] = (kind, d, cand)
+        if nc in target_norms:
+            chain: List[Tuple[str, Diagram, Diagram]] = []
+            node = nc
+            while parent[node] is not None:
+                pkind, s, t = parent[node]  # type: ignore[misc]
+                chain.append((pkind, s, t))
+                node = normalize(s)
+            chain.reverse()
+            return chain
+        expansions += 1
+        if expansions > node_budget:
+            return None
+        new_ups = ups + 1 if len(cand[0]) > len(d[0]) else 0
+        if new_ups > max_up_steps:
+            continue  # marque visite (elague), sans empiler
+        frames.append((cand, new_ups,
+                       _ordered_neighbors(cand, max_crossings), 0))
     return None
 
 
@@ -668,19 +748,28 @@ def search(max_crossings: int = 13, node_budget: int = 2_000_000,
 
 def push_test(depth: int = 8, budget: int = 200_000,
               max_crossings: int = 13) -> int:
-    """Valide la capacite de profondeur d'A* : remontee seedee du vide, puis \
-    recherche du chemin descendant (qui existe par construction)."""
+    """Valide la capacite de profondeur : remontee seedee du vide, puis \
+    recherche du chemin descendant (qui existe par construction). La borne \
+    prend max(13, taille du sommet) : `push_chain` pousse a borne 64, un \
+    sommet a 14+ croisements voyait son PREMIER move descendant filtre par \
+    `neighbors(d, 13)` — cause structurelle de l'echec A* du checkpoint, \
+    independante du tri f."""
     failures = 0
     for seed in range(3):
         d = push_chain(depth, seed)
-        chain = astar(d, [UNKNOT, EMPTY0], max_crossings, budget)
+        mc = max(max_crossings, len(d[0]))
+        chain = descent_dfs(d, [UNKNOT, EMPTY0], mc, budget)
+        strategy = "descente-d'abord"
+        if chain is None:
+            chain = astar(d, [UNKNOT, EMPTY0], mc, budget, epsilon=3.0)
+            strategy = "A* pondere eps=3"
         if chain is None:
             print(f"[push-test] seed {seed}: ECHEC ({len(d[0])} croisements)")
             failures += 1
             continue
-        ok = verify_any_moves(chain, d, chain[-1][2])
+        ok = verify_any_moves(chain, d, chain[-1][2] if chain else d)
         print(f"[push-test] seed {seed}: {len(d[0])} croisements -> "
-              f"{len(chain)} maillons, verifie {ok}")
+              f"{len(chain)} maillons ({strategy}), verifie {ok}")
         failures += 0 if ok else 1
     return 1 if failures else 0
 
@@ -688,22 +777,35 @@ def push_test(depth: int = 8, budget: int = 200_000,
 def astar_all_folds(max_crossings: int = 13, node_budget: int = 200_000,
                     max_changes: int = 2, per_fold_time_hint: int = 120
                     ) -> int:
-    """A* par pli sur le corpus 11n102. Rend le premier temoin trouve (JSON) \
-    ou le certificat negatif borne (par pli : etats explores)."""
+    """Recherche par pli sur le corpus 11n102 : DFS descente-d'abord (montees \
+    bornees 2), puis A* pondere eps=2, puis eps=3. Rend le premier temoin \
+    trouve (JSON) ou le certificat negatif borne (par pli : budget epuise)."""
     import time
     fs = folds(KNOT_11N102, max_changes)
     report: Dict = {"folds": [], "max_crossings": max_crossings}
     for idx, fold in enumerate(fs):
         t0 = time.monotonic()
-        chain = astar(fold, [UNKNOT, EMPTY0], max_crossings, node_budget)
+        chain = descent_dfs(fold, [UNKNOT, EMPTY0], max_crossings,
+                            node_budget, max_up_steps=2)
+        strategy = "descente-d'abord (montees<=2)"
+        if chain is None:
+            chain = astar(fold, [UNKNOT, EMPTY0], max_crossings, node_budget,
+                          epsilon=2.0)
+            strategy = "A* pondere eps=2"
+        if chain is None:
+            chain = astar(fold, [UNKNOT, EMPTY0], max_crossings, node_budget,
+                          epsilon=3.0)
+            strategy = "A* pondere eps=3"
         dt = time.monotonic() - t0
         if chain is not None:
-            ok = verify_any_moves(chain, fold, chain[-1][2])
+            ok = verify_any_moves(chain, fold, chain[-1][2] if chain else fold)
             max_len = max(len(x[1][0]) for x in chain) if chain else len(fold[0])
             print(f"[astar] pli #{idx}: TEMOIN {len(chain)} maillons en "
-                  f"{dt:.1f}s, excursion {max_len - len(fold[0]):+d}, verifie {ok}")
+                  f"{dt:.1f}s ({strategy}), excursion {max_len - len(fold[0]):+d}, "
+                  f"verifie {ok}")
             report["witness"] = {
                 "fold_index": idx,
+                "strategy": strategy,
                 "fold": {"crossings": [list(c) for c in fold[0]], "numEdges": fold[1]},
                 "chain_length": len(chain),
                 "verified_by_replica": ok,
@@ -718,7 +820,8 @@ def astar_all_folds(max_crossings: int = 13, node_budget: int = 200_000,
                 json.dump(report, fh, indent=1)
             print("[astar] ecrit knot_anymoves_witness.json")
             return 0
-        print(f"[astar] pli #{idx}: aucun temoin (budget {node_budget}, {dt:.1f}s)")
+        print(f"[astar] pli #{idx}: aucun temoin (budget {node_budget} x 3 "
+              f"strategies, {dt:.1f}s)")
         report["folds"].append(idx)
     report["negative_certificate"] = {
         "kind": "budget-bounded",
@@ -740,13 +843,16 @@ def main() -> int:
     parser.add_argument("--max-crossings", type=int, default=13)
     parser.add_argument("--node-budget", type=int, default=2_000_000)
     parser.add_argument("--max-changes", type=int, default=2)
+    parser.add_argument("--depth", type=int, default=8,
+                        help="profondeur du push-test")
     args = parser.parse_args()
     if args.selftest:
         return selftest()
     if args.search:
         return search(args.max_crossings, args.node_budget, args.max_changes)
     if args.push_test:
-        return push_test(max_crossings=args.max_crossings)
+        return push_test(depth=args.depth,
+                         max_crossings=args.max_crossings)
     if args.astar:
         return astar_all_folds(args.max_crossings, args.node_budget, args.max_changes)
     parser.print_help()

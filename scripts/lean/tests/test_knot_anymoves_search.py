@@ -28,9 +28,12 @@ from knot_anymoves_search import (  # noqa: E402
     W_NONFRESH_SMALL,
     W_R1_SRC,
     W_R1_TGT,
+    astar,
     canon,
+    descent_dfs,
     folds,
     neighbors,
+    push_chain,
     sub_label,
     sub_label2,
     verify_any_move,
@@ -133,4 +136,33 @@ def test_corpus_67_plis():
     assert KNOT_11N102 in fs
     for d in fs:
         assert wf(d), d
+
+
+def test_descent_dfs_retrouve_une_poussee():
+    # l'inverse d'une chaine de pousses est entierement descendant : la
+    # descente-d'abord le retrouve la ou le ball f de l'arbre montant
+    # etouffait A* (echec du checkpoint, profondeur 9-10)
+    for seed in range(3):
+        d = push_chain(6, seed)
+        chain = descent_dfs(d, [UNKNOT, EMPTY0], max(len(d[0]), 13), 50_000)
+        assert chain is not None, seed
+        assert verify_any_moves(chain, d, chain[-1][2])
+        assert len(chain[-1][2][0]) <= 1  # arrive au vide ou a l'unknot
+
+
+def test_descent_dfs_trivial_et_budget():
+    # depart deja trivial : chaine vide
+    assert descent_dfs(UNKNOT, [UNKNOT, EMPTY0], 8, 100) == []
+    # le diagramme intact 11n102 (noue reel) ne descend pas au vide dans un
+    # budget minuscule : None, pas de faux temoin
+    assert descent_dfs(KNOT_11N102, [UNKNOT, EMPTY0], 13, 30) is None
+
+
+def test_astar_pondere_retrouve_une_poussee():
+    # meme capacite avec A* pondere eps=3 (temoin sous-optimal accepte) :
+    # la borne doit couvrir le sommet (cause structurelle du checkpoint)
+    d = push_chain(6, 0)
+    chain = astar(d, [UNKNOT, EMPTY0], max(len(d[0]), 13), 200_000, epsilon=3.0)
+    assert chain is not None
+    assert verify_any_moves(chain, d, chain[-1][2])
 
