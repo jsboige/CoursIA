@@ -624,6 +624,14 @@ def _patch_belt_network(monkeypatch, prs, red_state):
     # un aller-retour d'auth lent. C'est de l'installation d'environnement,
     # pas le comportement sous test : on le neutralise.
     monkeypatch.setattr(pig.gh_identity, "pin_gh_token", lambda *a, **k: None)
+    # `snapshot_prime` (#22630) : le tapis rafraichit son instantane partage
+    # UNE FOIS par passe, ce qui emet un `gh api` par issue candidate. Le
+    # defaut de la boucle est INERTE (`belt_snapshot_prime_inert`) ; `main`
+    # injecte le vrai rafraichisseur. On enumere ici la surface, comme les
+    # autres : les tests qui gardent un pool vide n'ont aucun candidat a
+    # rafraichir, et l'ecriture du cache reste desactivee sous pytest
+    # (`_PASS_SNAPSHOT`).
+    monkeypatch.setattr(pig, "_belt_snapshot_prime", lambda repo, numbers: None)
 
 
 def test_belt_json_emits_single_document_when_red_present(monkeypatch, capsys):
@@ -699,6 +707,11 @@ def test_belt_loop_default_probes_are_inert(monkeypatch):
     et pendait (mesure 2026-10-09 : 99 s pour un seul test). Ce garde
     casse au premier retour d'un defaut reseau : les vraies sondes sont
     remplacees par des leveuses d'exception, la boucle doit completer.
+
+    Le rafraichissement d'instantane (#22630) est couvert de la meme facon :
+    le vrai ``_belt_snapshot_prime`` est une leveuse -- si la boucle
+    redevenait reseau par defaut, ce test echoue au lieu de pendre. Le
+    garde `_no_real_gh` attrape au passage tout `gh` residuel.
     """
     def raise_delivered(n, lane=None):
         raise _RealProbeReached(f"has_delivered_signal atteinte pour #{n}")
@@ -713,6 +726,10 @@ def test_belt_loop_default_probes_are_inert(monkeypatch):
     monkeypatch.setattr(pig, "has_delivered_signal", raise_delivered)
     monkeypatch.setattr(pig, "merged_pr_signal", raise_merged)
     monkeypatch.setattr(pig, "has_recent_delivery_marker", raise_recent)
+    monkeypatch.setattr(
+        pig, "_belt_snapshot_prime",
+        lambda repo, numbers: (_ for _ in ()).throw(
+            _RealProbeReached("_belt_snapshot_prime atteint hors injection")))
 
     pool = [_make_item(19001, age_days=50, idle=5, last=None),
             _make_item(19002, age_days=49, idle=5, last=None)]
@@ -755,9 +772,10 @@ def test_belt_main_json_path_never_reaches_real_probes(monkeypatch, capsys):
             "isDraft": False}]
     _patch_belt_network(monkeypatch, prs, red)
     # La fixture couvre fetch_visits (main l'appelle legitiment, sans
-    # reseau en test). Les sondes de livraison, elles, ne DOIVENT etre
-    # atteintes nulle part sur ce chemin -- defauts inertes de la boucle :
-    # si un defaut reseau revient, la leveuse fait echouer le test.
+    # reseau en test) ET le rafraichisseur d'instantane. Les sondes de
+    # livraison, elles, ne DOIVENT etre atteintes nulle part sur ce chemin
+    # -- defauts inertes de la boucle : si un defaut reseau revient, la
+    # leveuse fait echouer le test.
     monkeypatch.setattr(pig, "has_delivered_signal",
                         raise_real("has_delivered_signal"))
     monkeypatch.setattr(pig, "merged_pr_signal",
@@ -769,6 +787,43 @@ def test_belt_main_json_path_never_reaches_real_probes(monkeypatch, capsys):
     payload = json.loads(capsys.readouterr().out)
     assert payload["mode"] == "belt"
     assert payload["repair"]["grain"]["number"] == 18844
+
+
+def test_belt_main_injects_the_real_snapshot_prime(monkeypatch, capsys):
+    """Le cache reste utilise en production : `main` injecte le vrai prime.
+
+    Controle positif du defaut inerte : la boucle seule n'emet aucune
+    requete, mais le run complet rafraichit bien l'instantane partage UNE
+    FOIS pour les candidats de la fenetre. Le rafraichisseur est espionne
+    (aucune requete reelle), les candidats restent vides de claims pour
+    garder le run en memoire.
+    """
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    pool = [_make_item(19101, age_days=50, idle=5, last=None)]
+    monkeypatch.setattr(pig, "fetch_pool", lambda **k: (list(pool), None))
+    # La mesure des dernieres visites (`latest_claim_stamp` / bulk GraphQL)
+    # n'est pas la surface sous test : elle est neutralisee comme dans les
+    # autres tests de la boucle, pour garder le run entierement en memoire.
+    monkeypatch.setattr(pig, "fetch_latest_claim_stamps_bulk",
+                        lambda *a, **k: ({}, None))
+    # Sondes de livraison : verdicts injectes, comme partout dans ce fichier
+    # -- seul le BRANCHEMENT du rafraichisseur est mesure ici.
+    monkeypatch.setattr(pig, "has_delivered_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "merged_pr_signal", lambda n, lane=None: False)
+    monkeypatch.setattr(pig, "has_recent_delivery_marker", lambda n: False)
+    primed: list[list[int]] = []
+
+    def spy_prime(repo, numbers):
+        primed.append(list(numbers))
+
+    monkeypatch.setattr(pig, "_belt_snapshot_prime", spy_prime)
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt", "--json"])
+
+    assert rc == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["mode"] == "belt"
+    assert primed, "main n'a pas branche le rafraichissement d'instantane"
+    assert primed == [[19101]], "une seule passe, sur les candidats tires"
 
 
 def test_non_belt_json_red_still_emits_standalone_repair(monkeypatch, capsys):
@@ -1332,7 +1387,12 @@ def test_belt_unread_probe_is_fail_open_and_reported():
 def test_belt_does_not_withdraw_umbrella_on_marker():
     """Portee : l'urne grain seule. Une umbrella marquee reste servie --
     un marqueur sur un EPIC n'est pas un verdict de fermeture (decision
-    mesuree du canal label, cf delivered_signal_reason)."""
+    mesuree du canal label, cf delivered_signal_reason).
+
+    Le LABEL n'est pas un verdict de fermeture sur une umbrella : le
+    workflow advisory le pose des qu'une PR d'arc merge, et une umbrella
+    accumule des PRs. Le MARQUEUR DE CONTENEUR pose dans un commentaire,
+    lui, l'est : cf `test_belt_withdraws_umbrella_with_container_marker`."""
     umbrella = _make_item(19005, age_days=60, idle=6, klass="umbrella",
                           last=None)
     umbrella["labels"] = ["candidate-delivered"]
@@ -1340,6 +1400,346 @@ def test_belt_does_not_withdraw_umbrella_on_marker():
         [umbrella], _free_claims([umbrella]), _belt_args(), probe_budget=8)
     assert [p["number"] for p in picks] == [19005]
     assert withheld == []
+
+
+# --- Umbrella livree : le marqueur de CONTENEUR ecarte l'EPIC du tapis ----
+#
+# Mesure du 2026-10-26 (#17528) : le meme EPIC a ete servi quatre fois en
+# cinq jours (21/10, 22/10, 25/10 x2) et quatre lanes y ont repose le meme
+# marqueur `[INFO] candidate-delivered`. Le filtre de livraison du tapis ne
+# s'appliquait qu'a l'urne `grain` : l'urne `umbrella` le resservait.
+#
+# Ce que la branche change : une umbrella dont le DERNIER commentaire porte
+# le marqueur de CONTENEUR est reservee au coordinateur/adjoint (urne
+# `delivered`, #15069) au lieu d'etre resservie a toutes les lanes.
+
+
+def test_belt_withdraws_umbrella_with_container_marker():
+    """Controle positif : l'umbrella livree sort du tirage, le candidat
+    suivant la remplace dans la meme urne."""
+    delivered = _make_item(17528, age_days=32, idle=0, klass="umbrella",
+                           last=None)
+    fresh = _make_item(19020, age_days=20, idle=2, last=None)
+    pool = [delivered, fresh]
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: n == 17528)
+    assert [p["number"] for p in picks] == [19020], (
+        "l'umbrella livree ne doit pas etre servie")
+    assert [w[0]["number"] for w in withheld] == [17528]
+    assert "conteneur" in withheld[0][1], (
+        "la cause doit nommer le marqueur de conteneur : " + withheld[0][1])
+    assert state["recent_filtered"] == 1
+
+
+def test_belt_keeps_umbrella_without_container_marker():
+    """Controle negatif : sans marqueur de conteneur, l'umbrella reste
+    servable -- le filtre ne peut pas ecarter une umbrella par defaut."""
+    umbrella = _make_item(19021, age_days=40, idle=4, klass="umbrella",
+                          last=None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [umbrella], _free_claims([umbrella]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == [19021]
+    assert withheld == []
+    assert state["recent_filtered"] == 0
+
+
+def test_belt_umbrella_container_marker_read_failure_is_fail_open():
+    """Tri-etat : une lecture en echec (None) laisse l'umbrella servable --
+    une lecture qui n'a pas abouti n'est pas une absence de signal."""
+    umbrella = _make_item(19022, age_days=40, idle=4, klass="umbrella",
+                          last=None)
+    picks, withheld, _ = pig.belt_pick_with_replacements(
+        [umbrella], _free_claims([umbrella]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: None)
+    assert [p["number"] for p in picks] == [19022]
+    assert withheld == []
+
+
+def test_belt_umbrella_container_read_failure_is_REPORTED():
+    """Le fail-OPEN reste assume, mais le SILENCE ne l'est plus.
+
+    Mesure #17528 (session jumelle `coursia-2-25`, 2026-10-26) : le conteneur
+    portait le marqueur `[INFO] candidate-delivered`, la LECTURE du dernier
+    commentaire a echoue (reseau / 403 / payload illisible), et le tapis a
+    resservi le conteneur deja livre -- sans qu'aucune ligne de sortie ne
+    distingue ce cas d'un conteneur libre.
+
+    Le correctif ne change PAS le tirage (fail-OPEN conserve : on ne refuse
+    pas un grain faute d'avoir pu lire un commentaire) ; il change le
+    RENDU : le numero est reporte dans `container_unread`, exactement comme
+    `claim_unread` le fait pour le claim (#20265).
+    """
+    umbrella = _make_item(19024, age_days=40, idle=4, klass="umbrella",
+                          last=None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [umbrella], _free_claims([umbrella]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: None)
+    # Le tirage est MAINTENU (fail-OPEN assume)...
+    assert [p["number"] for p in picks] == [19024]
+    assert withheld == []
+    # ... mais l'etat INCONNU du conteneur est PUBLIE.
+    assert state["container_unread"] == [19024]
+
+
+def test_belt_umbrella_container_read_success_is_not_reported():
+    """Controle negatif : une lecture ABOUTIE ne produit aucun rapport --
+    que le conteneur porte le marqueur (ecarte) ou non (servi). Le signal
+    doit désigner l'INCERTITUDE, pas le conteneur."""
+    marque = _make_item(19025, age_days=40, idle=4, klass="umbrella",
+                        last=None)
+    _picks, _withheld, state = pig.belt_pick_with_replacements(
+        [marque], _free_claims([marque]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: True)
+    assert state["container_unread"] == []
+
+    libre = _make_item(19026, age_days=40, idle=4, klass="umbrella",
+                       last=None)
+    _picks, _withheld, state = pig.belt_pick_with_replacements(
+        [libre], _free_claims([libre]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: False)
+    assert state["container_unread"] == []
+
+
+def test_belt_recent_marker_read_failure_is_REPORTED():
+    """La SONDE DU MARQUEUR RECENT avait le meme silence que celle du
+    conteneur -- et c'est elle qui a produit la 4e livraison en double.
+
+    Mesure #17528 (session jumelle `coursia-2-25`, 2026-10-26) : le picker a
+    signale `403` sur deux candidats du meme run (« claim NON LU sur #15604,
+    #21092 : reseau, 403, payload illisible ») -- le quota GraphQL etait
+    epuise. L'echec de la SONDE DE MARQUEUR, lui, n'etait nomme **nulle
+    part** : un `None` (lu impossible) y etait indiscernable d'un « pas de
+    marqueur » dans le rapport.
+
+    Le tirage reste MAINTENU (fail-OPEN assume) ; le numero est desormais
+    RAPPORTE.
+    """
+    grain = _make_item(19027, age_days=40, idle=4, klass="grain", last=None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [grain], _free_claims([grain]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: None,
+        container_marker_probe=lambda n: False)
+    assert [p["number"] for p in picks] == [19027]
+    assert withheld == []
+    assert state["marker_unread"] == [19027]
+
+
+def test_belt_recent_marker_read_success_is_not_reported():
+    """Controle negatif : une lecture ABOUTIE ne produit aucun rapport --
+    que le marqueur soit present (ecarte) ou absent (servi)."""
+    marque = _make_item(19028, age_days=40, idle=4, klass="grain",
+                        last=None)
+    _picks, _withheld, state = pig.belt_pick_with_replacements(
+        [marque], _free_claims([marque]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: True,
+        container_marker_probe=lambda n: False)
+    assert state["marker_unread"] == []
+
+    libre = _make_item(19029, age_days=40, idle=4, klass="grain", last=None)
+    _picks, _withheld, state = pig.belt_pick_with_replacements(
+        [libre], _free_claims([libre]), _belt_args(), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: False)
+    assert state["marker_unread"] == []
+
+
+def test_le_rapport_marqueur_rend_la_trace_visible(capsys):
+    """Le rendu du troisieme pendant : le numero et la nature de
+    l'incertitude doivent etre visibles."""
+    pig.print_marker_unread_report([21092], "myia-ai-01:CoursIA-2")
+    out = capsys.readouterr().out
+    assert "LIVRAISON NON LU" in out
+    assert "#21092" in out
+    assert "candidate-delivered" in out
+
+
+def test_le_rapport_marqueur_est_muet_sans_lecture_ratee(capsys):
+    """Controle negatif du rendu : aucun bruit quand tout s'est bien passe."""
+    pig.print_marker_unread_report([], "myia-ai-01:CoursIA-2")
+    pig.print_marker_unread_report(None, "myia-ai-01:CoursIA-2")
+    assert capsys.readouterr().out == ""
+
+
+def test_belt_marker_KO_and_budget_epuise_ne_sert_pas_silencieusement():
+    """Le COUPLE de fail-OPEN, mesure par la session jumelle `coursia-2-25`
+    (2026-10-26, #17528) : deux verifications ratees qui se COMBINENT.
+
+    1. la sonde du marqueur echoue (403 / quota GraphQL epuise) -> elle rend
+       `None`, qui passait pour « pas de marqueur » ;
+    2. le budget de la sonde PLEINE est epuise -> elle rend
+       `DELIVERED_SIGNAL_UNPROBED`, qui passe pour « rien a signaler ».
+
+    Les deux ensemble : un conteneur **reellement livre** est servi, et
+    rien dans la sortie ne le dit. C'est la 4e livraison en double.
+
+    Ce que le correctif change : le tirage reste MAINTENU (fail-OPEN
+    assume), mais le numero est RAPPORTE — le verdict « incertitude » est
+    distinct du verdict « pas de marqueur ».
+    """
+    grain = _make_item(19030, age_days=40, idle=4, klass="grain", last=None)
+    picks, withheld, state = pig.belt_pick_with_replacements(
+        [grain], _free_claims([grain]), _belt_args(), probe_budget=0,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: None,
+        container_marker_probe=lambda n: False)
+    # Le budget de sondes est epuise : la sonde pleine n'a rien vu.
+    assert state["budget_hit"] is True
+    # Le fail-OPEN reste assume : le candidat est servi.
+    assert [p["number"] for p in picks] == [19030]
+    # ... mais l'echec de la sonde de marqueur est PUBLIE.
+    assert state["marker_unread"] == [19030]
+
+
+def test_belt_sonde_marqueur_KO_avec_gh_en_echec_rend_None(monkeypatch):
+    """La sonde reelle rend `None` sur echec de LECTURE -- jamais `False`.
+
+    Un `False` se lirait « pas de marqueur » (le conteneur est libre) ; c'est
+    l'echec de lecture qui doit etre `None`, pour que l'appelant puisse
+    distinguer les deux. Mesure #17528 : sur un `gh` qui leve, la sonde rend
+    `None`, et le candidat etait servi comme si de rien n'etait.
+    """
+    def boom(cmd, *args, **kwargs):
+        raise RuntimeError("403 quota GraphQL epuise")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    monkeypatch.setattr(pig, "_issue_comment_bodies_rest",
+                        lambda n: None, raising=False)
+    assert pig.has_recent_delivery_marker(17528) is None
+    assert pig.has_recent_container_delivery_marker(17528) is None
+
+
+def test_le_rapport_conteneur_rend_la_trace_visible(capsys):
+    """Le rendu du pendant de `print_claim_unread_report` : le numero et la
+    nature de l'incertitude doivent etre visibles."""
+    pig.print_container_unread_report([17528], "myia-ai-01:CoursIA-2")
+    out = capsys.readouterr().out
+    assert "CONTENEUR NON LU" in out
+    assert "#17528" in out
+    assert "candidate-delivered" in out
+
+
+def test_le_rapport_conteneur_est_muet_sans_lecture_ratee(capsys):
+    """Controle negatif du rendu : un rapport qui bavarde a vide serait du
+    bruit a chaque tirage -- y compris ceux ou tout s'est bien passe."""
+    pig.print_container_unread_report([], "myia-ai-01:CoursIA-2")
+    pig.print_container_unread_report(None, "myia-ai-01:CoursIA-2")
+    assert capsys.readouterr().out == ""
+
+
+def test_belt_include_delivered_keeps_umbrella_with_container_marker():
+    """L'echappatoire `--include-delivered` reste respectee sur l'urne
+    umbrella : le marqueur de conteneur n'est pas une barriere absolue."""
+    umbrella = _make_item(19023, age_days=40, idle=4, klass="umbrella",
+                          last=None)
+    picks, withheld, _ = pig.belt_pick_with_replacements(
+        [umbrella], _free_claims([umbrella]),
+        _belt_args(include_delivered=True), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        container_marker_probe=lambda n: True)
+    assert [p["number"] for p in picks] == [19023]
+    assert withheld == []
+
+
+# La grammaire du marqueur de CONTENEUR, testee sur la sonde reelle (le
+# transport est stube) : c'est elle qui distingue « le conteneur est livre »
+# de « la lane a livre SON grain ».
+
+
+def _stub_last_comment(monkeypatch, body):
+    """Force le transport de la sonde : le DERNIER commentaire porte `body`."""
+    payload = json.dumps({"comments": [{"body": body}]})
+
+    def fake_run(cmd, *args, **kwargs):
+        assert cmd[:3] == ["gh", "issue", "view"], f"transport : {cmd}"
+        return subprocess.CompletedProcess(cmd, 0, stdout=payload, stderr="")
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+
+
+@pytest.mark.parametrize("body", [
+    "[INFO] candidate-delivered — les cinq arcs sont clos.",
+    "[INFO] candidate-delivered lane myia-po-2027:CoursIA -- EPIC closable",
+    "## [INFO] candidate-delivered\n\nles cinq arcs sont clos",
+    "[INFO candidate-delivered] verification first-hand des arcs",
+    # La forme exacte mesuree par la session jumelle `coursia-2-25` sur
+    # #17528 (2026-10-26) : marqueur suivi d'un TIRET CADRATIN et d'un
+    # libelle libre. C'est elle qui a echappe au filtre.
+    "[INFO] candidate-delivered — lane myia-po-2027:CoursIA — EPIC materiellement livree",
+    # Variante SANS les deux-points : la forme libre la plus courte.
+    "[INFO] candidate-delivered EPIC materiellement livree",
+])
+def test_container_marker_detects_container_statements(monkeypatch, body):
+    """Le marqueur de conteneur est reconnu dans ses formes."""
+    _stub_last_comment(monkeypatch, body)
+    assert pig.has_recent_container_delivery_marker(17528) is True
+
+
+@pytest.mark.parametrize("body", [
+    # Une lane qui livre SON grain : sur une umbrella, ce n'est pas une
+    # fermeture du conteneur.
+    "[DELIVERED] lane myia-po-2027:CoursIA -- PR #21212",
+    "[RELEASED] lane myia-po-2028:CoursIA -- umbrella saturee",
+    "[INFO] candidate-delivered-partial -- un arc sur cinq",
+    "[NOT-DELIVERED] verification first-hand : 2 arcs sur 5.",
+    "Discussion sans marqueur.",
+    # Les FORMES MUETTES : un marqueur qui a l'air correct a l'oeil et que la
+    # machine ne voit pas (mesure du peer `coursia-2-25`, 2026-10-26, sur
+    # #21092). Le detecteur exige `\[INFO\]\s+candidate-delivered` en tete de
+    # ligne ; encager le `[INFO]` en backticks ou mettre le mot-cle en gras
+    # suffit a rendre le marqueur INVISIBLE. C'est un piege d'ecriture, pas
+    # de grammaire : la forme doit etre MESUREE apres l'ecriture.
+    "`[INFO]` **candidate-delivered** lane myia-ai-01:CoursIA-2 -- livre",
+    "**[INFO] candidate-delivered** lane myia-ai-01:CoursIA-2 -- livre",
+])
+def test_container_marker_ignores_non_container_statements(monkeypatch, body):
+    """Une livraison de sous-grain, une retraction, une simple discussion ou
+    une forme muette ne ferment PAS le conteneur."""
+    _stub_last_comment(monkeypatch, body)
+    assert pig.has_recent_container_delivery_marker(17528) is False
+
+
+def test_container_marker_read_failure_is_none(monkeypatch):
+    """Tri-etat : une lecture en echec rend None (fail-OPEN), pas False."""
+    def boom(cmd, *args, **kwargs):
+        raise OSError("reseau indisponible")
+
+    monkeypatch.setattr(pig.subprocess, "run", boom)
+    assert pig.has_recent_container_delivery_marker(17528) is None
+
+
+def test_container_marker_without_comment_is_false(monkeypatch):
+    """Aucun commentaire : pas de marqueur (False, pas None)."""
+    _stub_last_comment(monkeypatch, "")
+    assert pig.has_recent_container_delivery_marker(17528) is False
 
 
 # Retractation du marqueur, cote TAPIS : la sonde que `main` injecte dans
@@ -1910,6 +2310,14 @@ def test_check_claims_single_number_reads_mono_issue_output(monkeypatch):
     que leur claim soit lu.
     """
     monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt", lambda lane: None)
+    # #22630 : la voie en processus (instantane local) est PRIORITAIRE dans
+    # `check_claims` -- sans ce shunt, elle consomme deux subprocess (`gh api`
+    # du rafraichissement, `gh issue view` du lecteur) avant la voie
+    # historique instrumentee ici, et le compte d'appels n'a plus de sens.
+    # La voie en processus a ses propres tests (test_gh_snapshot_22630.py) ;
+    # ces trois tests verifient le contrat de la voie subprocess.
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: None)
     calls, fake_run = _fake_run_recorder(lambda cmd: _SINGLE_ISSUE_STDOUT)
     monkeypatch.setattr(pig.subprocess, "run", fake_run)
 
@@ -1925,6 +2333,10 @@ def test_check_claims_unreadable_batch_falls_back_per_issue(monkeypatch):
     """Une sortie batch illisible ne rend plus ERROR : chaque issue est
     relue seule, comme le commentaire du code l'annoncait deja."""
     monkeypatch.setattr(pig, "_build_open_prs_cache_for_belt", lambda lane: None)
+    # #22630 : voie en processus ecartee -- ce test instrumente la voie
+    # subprocess historique (cf. test_check_claims_single_number_...).
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: None)
 
     def stdout_for(cmd):
         if cmd.count("--lane") and len(cmd) > 5:  # batch : 2 numeros ou plus
@@ -2156,3 +2568,220 @@ def test_belt_time_budget_flag_is_accepted(monkeypatch, capsys):
     assert doc["delivered_signal"]["time_budget_hit"] is False
     # `0` desactive le mur : le plafond de sondes garde son propre champ.
     assert doc["delivered_signal"]["budget_hit"] is False
+
+
+def test_clamp_timeout_is_a_noop_without_a_belt_deadline():
+    """Hors tapis, aucun clamp : `check_claims` garde ses 60 s.
+
+    Sans cette garde, publier une echeance n'importe ou rendrait les sondes
+    du reste du programme dependantes d'un etat global qu'elles n'ont pas
+    demande.
+    """
+    pig._BELT_DEADLINE[0] = None
+    assert pig._clamp_timeout(60) == 60
+    assert pig._clamp_timeout(0.25) == 0.25
+
+
+def test_clamp_timeout_bounds_a_probe_by_the_remaining_budget(monkeypatch):
+    """#21436 : le mur borne le TIMEOUT de la sonde, pas seulement son
+    demarrage. Une sonde de 60 s entamee 5 s avant l'echeance ne peut plus
+    consommer 55 s au-dela du budget -- c'est ce depassement qui faisait
+    rendre la main au-dela de 200 s pour un budget de 90 s.
+    """
+    clock = _patched_clock(monkeypatch)
+    pig._BELT_DEADLINE[0] = clock[0] + 5.0
+    try:
+        assert pig._clamp_timeout(60) == pytest.approx(5.0)
+        # Le plancher de 0,5 s s'applique quand l'echeance est deja passee :
+        # un timeout nul rendrait la panne reseau indiscernable du mur.
+        pig._BELT_DEADLINE[0] = clock[0] - 10.0
+        assert pig._clamp_timeout(60) == 0.5
+    finally:
+        pig._BELT_DEADLINE[0] = None
+
+
+def test_check_claims_reads_the_belt_deadline(monkeypatch):
+    """La sonde de claim la plus chere de la boucle obeit au mur.
+
+    `check_claims` est appele au fil de l'eau pour chaque candidat hors
+    fenetre : c'est la surface que `probe_budget` ne compte pas, et celle qui
+    a gele quatre runs consecutifs le 24/10.
+    """
+    clock = _patched_clock(monkeypatch)
+    seen: list[float] = []
+
+    class _Done:
+        returncode = 0
+        stdout = "{}"
+        stderr = ""
+
+    def fake_run(cmd, **kwargs):
+        # Seul `check_lane_claim.py` nous interesse : le pourtour de
+        # `check_claims` (cache des PRs ouvertes) a ses propres timeouts et
+        # n'est pas la sonde que le mur doit clamper.
+        if any("check_lane_claim.py" in str(part) for part in cmd):
+            seen.append(kwargs.get("timeout"))
+        return _Done()
+
+    monkeypatch.setattr(pig.subprocess, "run", fake_run)
+    # #22630 : voie en processus ecartee -- le mur de temps se mesure sur le
+    # subprocess `check_lane_claim.py` de la voie historique, pas sur la voie
+    # en processus (qui n'ouvre aucun subprocess de ce nom).
+    monkeypatch.setattr(pig, "_claims_in_process",
+                        lambda numbers, lane, cache=None: None)
+    pig._BELT_DEADLINE[0] = clock[0] + 2.0
+    try:
+        pig.check_claims([30031], "myia-po-2024:CoursIA")
+    finally:
+        pig._BELT_DEADLINE[0] = None
+
+    assert seen, "aucun subprocess n'a ete lance"
+    assert max(t for t in seen if t is not None) <= 2.0 + 0.05
+
+
+def test_belt_loop_restores_the_published_deadline():
+    """L'echeance publiee ne fuit pas hors de la boucle.
+
+    Les tests (et tout appelant direct) rappellent `check_claims` et
+    `has_recent_delivery_marker` dans le meme process : si le mur restait
+    publie, ils heriteraient d'un budget deja epuise et verraient leur
+    timeout tombe a 0,5 s sans qu'aucun tapis ne tourne.
+    """
+    pig._BELT_DEADLINE[0] = None
+    pool = [_make_item(30041, age_days=10, idle=3, last=None)]
+    pig.belt_pick_with_replacements(
+        pool, _free_claims(pool), _belt_args(grains=1), probe_budget=8,
+        delivered_probe=lambda n, lane=None: False,
+        merged_pr_probe=lambda n, lane=None: False,
+        recent_marker_probe=lambda n: False,
+        time_budget_s=30.0)
+    assert pig._BELT_DEADLINE[0] is None
+
+
+def test_belt_publishes_the_run_deadline_before_the_claims_phase(
+        monkeypatch, capsys):
+    """Le mur couvre le RUN, pas seulement la boucle de selection.
+
+    Mesure du 24/10 : avec `--belt-time-budget 90`, le run s'arretait a
+    `belt claims start: 8 numeros` et ne rendait jamais la main (275 s de
+    silence, puis expiration par `timeout`). La fenetre de claims est payee
+    AVANT la boucle, et chaque `check_claims` y ouvre un subprocess de
+    60 s + 10 s par numero : publier l'echeance seulement dans la boucle
+    laissait la phase la plus chere sans borne.
+
+    Le predicat : au moment ou la fenetre de claims s'ouvre, une echeance
+    est deja publiee, et elle est retiree quand le run se termine.
+    """
+    _patch_belt_network(monkeypatch, prs=[], red_state=_state_red())
+    published: list = []
+
+    def spy(numbers, lane):
+        published.append(pig._BELT_DEADLINE[0])
+        return {n: (pig.CLAIM_CODE_FREE, "libre") for n in numbers}
+
+    monkeypatch.setattr(pig, "check_claims", spy)
+    rc = pig.main(["--lane", "myia-po-2024:CoursIA-2", "--belt",
+                   "--belt-time-budget", "60", "--json"])
+    assert rc == 0
+    assert published, "la fenetre de claims n'a pas ete ouverte"
+    assert all(d is not None for d in published), \
+        "des claims ont ete lances sans echeance publiee (#21436)"
+    assert pig._BELT_DEADLINE[0] is None, "l'echeance fuit apres le run"
+
+
+def test_publish_phase_deadline_bounds_probes_and_lends_its_budget(monkeypatch):
+    """#21436 : la phase de reparation a sa PROPRE echeance.
+
+    Mesure du 24/10 sur ce siege : `red_backlog` seul = 172,7 s, payes AVANT
+    que le tapis ne prenne la main, donc hors de tout mur existant. L'echeance
+    publiee ici borne les deux surfaces de la phase : les sondes (via
+    `_clamp_timeout`) et la passe nits de l'organe B.0 (via son budget).
+    """
+    import check_unaddressed_nits as nits
+
+    clock = _patched_clock(monkeypatch, start=1000.0)
+    previous_budget = nits.NITS_PASS_BUDGET_S
+    pig._BELT_DEADLINE[0] = None
+    nits._NITS_PASS_DEADLINE = None
+    try:
+        token = pig._publish_phase_deadline(30)
+        assert pig._BELT_DEADLINE[0] == pytest.approx(1030.0)
+        # La sonde de 90 s de `fetch_pr_states` (appelee par
+        # `unattributed_blocked_prs`) ne peut plus consommer que le reste.
+        assert pig._clamp_timeout(90) == pytest.approx(30.0)
+        # L'organe herite du meme reste, et sa passe DEMARRE ici : sans la
+        # remise a None, il heriterait d'une deadline armee ailleurs.
+        assert nits.NITS_PASS_BUDGET_S == pytest.approx(30.0)
+        assert nits._NITS_PASS_DEADLINE is None
+        pig._restore_phase_deadline(token)
+        assert pig._BELT_DEADLINE[0] is None
+        assert nits.NITS_PASS_BUDGET_S == pytest.approx(previous_budget or 300.0)
+    finally:
+        pig._BELT_DEADLINE[0] = None
+        nits.NITS_PASS_BUDGET_S = previous_budget
+        nits._NITS_PASS_DEADLINE = None
+
+
+def test_publish_phase_deadline_zero_keeps_the_old_behaviour(monkeypatch):
+    """`--red-budget 0` rend le comportement d'avant, sans borne.
+
+    L'echappatoire existe pour un siege dont l'organe B.0 est rapide : elle ne
+    doit RIEN changer, ni au mur, ni au budget de l'organe.
+    """
+    import check_unaddressed_nits as nits
+
+    _patched_clock(monkeypatch, start=500.0)
+    previous_budget = nits.NITS_PASS_BUDGET_S
+    pig._BELT_DEADLINE[0] = None
+    try:
+        token = pig._publish_phase_deadline(0)
+        assert pig._BELT_DEADLINE[0] is None
+        assert pig._clamp_timeout(60) == 60
+        assert nits.NITS_PASS_BUDGET_S == previous_budget
+        pig._restore_phase_deadline(token)
+        assert pig._BELT_DEADLINE[0] is None
+    finally:
+        pig._BELT_DEADLINE[0] = None
+        nits.NITS_PASS_BUDGET_S = previous_budget
+
+
+def test_main_runs_the_repair_phase_inside_its_own_deadline(monkeypatch):
+    """Le cablage, pas seulement l'helpers : `main` publie AVANT `red_backlog`.
+
+    Le point de mesure est l'interieur de `red_backlog` -- c'est la que le
+    timeout de sonde doit deja etre ramene au reste, et la que la passe nits
+    doit deja avoir recu son budget. Un `finally` doit rendre l'etat d'apres.
+    """
+    import check_unaddressed_nits as nits
+
+    clock = _patched_clock(monkeypatch, start=2000.0)
+    seen = {}
+
+    class _Stop(Exception):
+        pass
+
+    def fake_red_backlog(*a, **kw):
+        seen["deadline"] = pig._BELT_DEADLINE[0]
+        seen["clamped"] = pig._clamp_timeout(90)
+        seen["nits_budget"] = nits.NITS_PASS_BUDGET_S
+        raise _Stop
+
+    monkeypatch.setattr(pig, "red_backlog", fake_red_backlog)
+    monkeypatch.setattr(pig, "fetch_lane_record_prs", lambda **kw: ([], None))
+    monkeypatch.setattr(pig.gh_identity, "pin_gh_token", lambda: None)
+    pig._BELT_DEADLINE[0] = None
+    previous_budget = nits.NITS_PASS_BUDGET_S
+    try:
+        with pytest.raises(_Stop):
+            pig.main(["--lane", "myia-po-2024:CoursIA", "--red-budget", "45"])
+        assert seen["deadline"] == pytest.approx(2045.0)
+        assert seen["clamped"] == pytest.approx(45.0)
+        assert seen["nits_budget"] == pytest.approx(45.0)
+        # Le `finally` a rendu l'etat : aucune fuite vers la suite du run.
+        assert pig._BELT_DEADLINE[0] is None
+        assert nits.NITS_PASS_BUDGET_S == previous_budget
+    finally:
+        pig._BELT_DEADLINE[0] = None
+        nits.NITS_PASS_BUDGET_S = previous_budget
+        nits._NITS_PASS_DEADLINE = None
+    _ = clock

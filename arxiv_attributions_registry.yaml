@@ -52,7 +52,7 @@ attributions:
     date: "2026-08-23"
 
   - arxiv_id: "1710.03667"
-    notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-DeepLearning/3.5-Phenomenes-de-Generalisation.ipynb"
+    notebook: "MyIA.AI.Notebooks/ML/DataScienceWithAgents/03-Deep-Learning/3.5-Phenomenes-de-Generalisation.ipynb"
     cell_index: 18
     expected_citation: "5. Advani, M. & Saxe, A. (2017). *High-dimensional dynamics of generalization error in neural networks*. NeurIPS 2017. [arXiv:1710.03667](https://arxiv.org/abs/1710.03667)"
     source_pr: "#12824"
