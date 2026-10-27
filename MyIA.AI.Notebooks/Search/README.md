@@ -2,9 +2,9 @@
 
 <!-- CATALOG-STATUS
 series: Search
-pedagogical_count: 159
-breakdown: Applications=48, Part1-Foundations=46, Part4-Metaheuristics=35, Part2-CSP=18, Part5-Frontieres=11, root=1
-maturity: BETA=144, ALPHA=9, DRAFT=6
+pedagogical_count: 161
+breakdown: Applications=49, Part1-Foundations=47, Part4-Metaheuristics=35, Part2-CSP=18, Part5-Frontieres=11, root=1
+maturity: BETA=147, ALPHA=9, DRAFT=5
 -->
 
 [← Notebooks](../README.md) | [↑ ..](../README.md) | [→ SymbolicAI](../SymbolicAI/README.md)
@@ -116,69 +116,69 @@ Chaque notebook introduit un concept ou algorithme spécifique. Le tableau ci-de
 
 #---
 
-## Applications (`Applications/`)
+## Partie 3 — Cas pratiques (`Part3-Cas-pratiques/`)
 
-Problèmes du monde réel adaptés de projets étudiants. Chaque application est un **binôme Python ⇄ C#** (parité complète depuis le marathon #4956) ; les jumeaux C# suivent la convention `App-Nb-...-CSharp.ipynb`.
+Problèmes du monde réel adaptés de projets étudiants, en dossier plat. Chaque application est un **binôme Python ⇄ C#** (parité complète depuis le marathon #4956) ; les jumeaux C# suivent la convention `App-Nb-...-CSharp.ipynb`. Le README dédié [`Part3-Cas-pratiques/README.md`](Part3-Cas-pratiques/README.md) porte pitch, prérequis par notebook, provenance des projets et références.
 
-### Applications Adversarial (`Applications/Adversarial/`)
-
-| # | Notebook | Durée | Contenu | Source |
-|---|----------|-------|---------|--------|
-| 1 | [App-14b-ConnectFour](Applications/Adversarial/App-14b-ConnectFour.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
-| 1b | [App-14c-ConnectFour-CSharp](Applications/Adversarial/App-14c-ConnectFour-CSharp.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
-| 2 | [App-14-ConnectFour-Adversarial](Applications/Adversarial/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
-| 2b | [App-14-ConnectFour-CSharp](Applications/Adversarial/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
-
-### Applications CSP (`Applications/CSP/`)
+### Cas pratiques Search — Puissance 4
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-1-NQueens](Applications/CSP/App-1-NQueens.ipynb) | ~30 min | Benchmark classique CSP : backtracking, min-conflicts, OR-Tools | Classique |
-| 2 | [App-2-GraphColoring](Applications/CSP/App-2-GraphColoring.ipynb) | ~45 min | Coloration de cartes : Greedy, DSATUR, CP-SAT, départements français | Projet étudiant |
-| 3 | [App-3-NurseScheduling](Applications/CSP/App-3-NurseScheduling.ipynb) | ~60 min | Planning infirmiers : contraintes hard/soft, OR-Tools CP-SAT | Projet étudiant |
-| 4 | [App-4-JobShopScheduling](Applications/CSP/App-4-JobShopScheduling.ipynb) | ~60 min | Ordonnancement industriel : intervalles, précédences, makespan | Projet étudiant |
-| 5 | [App-5-Timetabling](Applications/CSP/App-5-Timetabling.ipynb) | ~50 min | Emploi du temps universitaire : MiniZinc + OR-Tools | Projet étudiant |
-| 6 | [App-6-Minesweeper](Applications/CSP/App-6-Minesweeper.ipynb) | ~50 min | Démineur CSP : propagation, probabilités, hybride CSP+LLM | Projet étudiant |
-| 7 | [App-7-Wordle](Applications/CSP/App-7-Wordle.ipynb) | ~45 min | Solveur Wordle : filtrage CSP + théorie de l'information | Projet étudiant |
-| 8 | [App-8-MiniZinc](Applications/CSP/App-8-MiniZinc.ipynb) | ~50 min | Modélisation déclarative : syntaxe MiniZinc, contraintes globales | Nouveau |
-| 9 | [App-11-Picross](Applications/CSP/App-11-Picross.ipynb) | ~40 min | Nonogrammes : speedup 27Mx CP-SAT vs naïve | Projet étudiant |
-| 10 | [App-15-SportsScheduling](Applications/CSP/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
-| 11 | [App-16-Crossword-CSP](Applications/CSP/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
-| 12 | [App-19-ProceduralGeneration-WFC](Applications/CSP/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
-| 12 (C#) | [App-19-ProceduralGeneration-WFC-CSharp](Applications/CSP/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
-| 13 | [App-20-SudokuBenchmark-Python](Applications/CSP/App-20-SudokuBenchmark-Python.ipynb) | ~50 min | Benchmark 4 solveurs Sudoku (backtracking naïf → optimisé → contraintes) sur banc Easy/Medium/Hard : dénombrement du travail | Synthèse série |
-| 13 (C#) | [App-20b-SudokuBenchmark-CSharp](Applications/CSP/App-20b-SudokuBenchmark-CSharp.ipynb) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
+| 1 | [App-12b-ConnectFour](Part3-Cas-pratiques/App-12b-ConnectFour.ipynb) | ~50 min | Puissance 4 : 5 IA au tournoi (Random, Glouton, Minimax α-β d=4/d=6, MCTS) + framework AIMA | Projet étudiant |
+| 1b | [App-12c-ConnectFour](Part3-Cas-pratiques/App-12c-ConnectFour.ipynb) | ~45 min | **Jumeau C#** — Minimax + Alpha-Beta + MCTS (UCB1) + glouton + iterative deepening from-scratch, heuristique de fenêtres + tournoi round-robin, parité #4956 | Jumeau .NET |
+| 2 | [App-14-ConnectFour-Adversarial](Part3-Cas-pratiques/App-14-ConnectFour-Adversarial.ipynb) | ~45 min | Benchmark adversarial : Minimax, Alpha-Beta, MCTS | Projet étudiant |
+| 2b | [App-14-ConnectFour-CSharp](Part3-Cas-pratiques/App-14-ConnectFour-CSharp.ipynb) | ~40 min | **Jumeau C#** — Minimax + Alpha-Beta (élagage) + MCTS (UCB1) from-scratch, benchmark nœuds + tournoi round-robin, parité #4956 | Jumeau .NET |
+
+### Cas pratiques CSP
+
+| # | Notebook | Durée | Contenu | Source |
+|---|----------|-------|---------|--------|
+| 1 | [App-1-NQueens](Part3-Cas-pratiques/App-1-NQueens.ipynb) | ~30 min | Benchmark classique CSP : backtracking, min-conflicts, OR-Tools | Classique |
+| 2 | [App-2-GraphColoring](Part3-Cas-pratiques/App-2-GraphColoring.ipynb) | ~45 min | Coloration de cartes : Greedy, DSATUR, CP-SAT, départements français | Projet étudiant |
+| 3 | [App-3-NurseScheduling](Part3-Cas-pratiques/App-3-NurseScheduling.ipynb) | ~60 min | Planning infirmiers : contraintes hard/soft, OR-Tools CP-SAT | Projet étudiant |
+| 4 | [App-4-JobShopScheduling](Part3-Cas-pratiques/App-4-JobShopScheduling.ipynb) | ~60 min | Ordonnancement industriel : intervalles, précédences, makespan | Projet étudiant |
+| 5 | [App-5-Timetabling](Part3-Cas-pratiques/App-5-Timetabling.ipynb) | ~50 min | Emploi du temps universitaire : MiniZinc + OR-Tools | Projet étudiant |
+| 6 | [App-6-Minesweeper](Part3-Cas-pratiques/App-6-Minesweeper.ipynb) | ~50 min | Démineur CSP : propagation, probabilités, hybride CSP+LLM | Projet étudiant |
+| 7 | [App-7-Wordle](Part3-Cas-pratiques/App-7-Wordle.ipynb) | ~45 min | Solveur Wordle : filtrage CSP + théorie de l'information | Projet étudiant |
+| 8 | [App-8-MiniZinc](Part3-Cas-pratiques/App-8-MiniZinc.ipynb) | ~50 min | Modélisation déclarative : syntaxe MiniZinc, contraintes globales | Nouveau |
+| 9 | [App-11-Picross](Part3-Cas-pratiques/App-11-Picross.ipynb) | ~40 min | Nonogrammes : speedup 27Mx CP-SAT vs naïve | Projet étudiant |
+| 10 | [App-15-SportsScheduling](Part3-Cas-pratiques/App-15-SportsScheduling.ipynb) | ~55 min | Calendrier sportif : contraintes TV, équité, déplacements | Projet étudiant |
+| 11 | [App-16-Crossword-CSP](Part3-Cas-pratiques/App-16-Crossword-CSP.ipynb) | ~45 min | Mots croisés : backtracking, OR-Tools, génération | Projet étudiant |
+| 12 | [App-19-ProceduralGeneration-WFC](Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC.ipynb) | ~45 min | Génération procédurale : Wave Function Collapse via CP-SAT | Projet étudiant |
+| 12 (C#) | [App-19-ProceduralGeneration-WFC-CSharp](Part3-Cas-pratiques/App-19-ProceduralGeneration-WFC-CSharp.ipynb) | ~45 min | Twin C# du 12 : WFC from-scratch (entropie de Shannon + propagation AC-3 + backtracking) (See #4956) | Marathon |
+| 13 | [App-20-SudokuBenchmark-Python](Part3-Cas-pratiques/App-20-SudokuBenchmark-Python.ipynb) | ~50 min | Benchmark 4 solveurs Sudoku (backtracking naïf → optimisé → contraintes) sur banc Easy/Medium/Hard : dénombrement du travail | Synthèse série |
+| 13 (C#) | [App-20b-SudokuBenchmark-CSharp](Part3-Cas-pratiques/App-20b-SudokuBenchmark-CSharp.ipynb) | ~50 min | Twin C# du 13 : mêmes solveurs from-scratch en .NET, comparaison des écosystèmes | Jumeau .NET |
 | 16 | [Frontieres-05-CoveringArrays-Guarantee-Audit-Python](Part5-Frontieres/Frontieres-05-CoveringArrays-Guarantee-Audit-Python.ipynb) | ~55 min | Covering Arrays : oracle constraint-aware, set cover CP-SAT exact, bornes et baselines IPOG/AETG-like — distillation PrCon H4 (Valérian Pichot) | Projet étudiant (PrCon PR #58) |
 
 Les autres jumeaux C# de la sous-série CSP (N-Queens, GraphColoring, NurseScheduling, JobShop, Timetabling, Minesweeper, Wordle, MiniZinc, Picross, SportsScheduling) suivent le même principe : ré-implémentation .NET du notebook Python de référence, solveurs from-scratch ou OR-Tools natif selon le sujet (marathon #4956).
 
-### Applications Hybrides / Métaheuristiques (`Applications/Hybrid/`)
+### Cas pratiques Hybrides / Métaheuristiques
 
 | # | Notebook | Durée | Contenu | Source |
 |---|----------|-------|---------|--------|
-| 1 | [App-9-EdgeDetection](Applications/Hybrid/App-9-EdgeDetection.ipynb) | ~40 min | Détection de bords par GA : PyGAD, filtres de convolution | Existant (refonte) |
-| 2 | [App-9b-EdgeDetection-CSharp](Applications/Hybrid/App-9b-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
-| 3 | [App-10-Portfolio](Applications/Hybrid/App-10-Portfolio.ipynb) | ~40 min | Optimisation de portefeuille : frontière de Pareto, multi-objectif | Existant (refonte) |
-| 4 | [App-10b-Portfolio-CSharp](Applications/Hybrid/App-10b-Portfolio-CSharp.ipynb) | ~30 min | Side track C# : GeneticSharp pour portefeuille | Existant |
-| 5 | [App-13-TSP-Metaheuristics](Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
-| 6 | [App-13b-TSP-Metaheuristics-CSharp](Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb) | ~45 min | **Jumeau C#** — SA, GA, ACO from-scratch sur le même TSP, parité #4956 | Jumeau .NET |
-| 7 | [App-17-VRP-Logistics](Applications/Hybrid/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
-| 8 | [App-17b-VRP-Logistics-CSharp](Applications/Hybrid/App-17b-VRP-Logistics-CSharp.ipynb) | ~55 min | **Jumeau C#** — VRP métaheuristiques .NET, parité #4956 | Jumeau .NET |
-| 8b | [App-17b-VRP-Logistics-Python](Applications/Hybrid/App-17b-VRP-Logistics-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
-| 9 | [App-18-HyperparameterTuning](Applications/Hybrid/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
-| 10 | [App-18b-HyperparameterTuning-CSharp](Applications/Hybrid/App-18b-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
-| 11 | [App-18b-HyperparameterTuning-Python](Applications/Hybrid/App-18b-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
-| 12 | [App-22-AlgorithmSelection-Python](Applications/Hybrid/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux, 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité + Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
+| 1 | [App-9-EdgeDetection](Part3-Cas-pratiques/App-9-EdgeDetection.ipynb) | ~40 min | Détection de bords par GA : PyGAD, filtres de convolution | Existant (refonte) |
+| 2 | [App-9b-EdgeDetection-CSharp](Part3-Cas-pratiques/App-9b-EdgeDetection-CSharp.ipynb) | ~35 min | Side track C# : GeneticSharp pour detection de bords | Existant |
+| 3 | [App-10-Portfolio](Part3-Cas-pratiques/App-10-Portfolio.ipynb) | ~40 min | Optimisation de portefeuille : frontière de Pareto, multi-objectif | Existant (refonte) |
+| 4 | [App-10b-Portfolio-CSharp](Part3-Cas-pratiques/App-10b-Portfolio-CSharp.ipynb) | ~30 min | Side track C# : GeneticSharp pour portefeuille | Existant |
+| 5 | [App-13-TSP-Metaheuristics](Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb) | ~50 min | TSP : SA, GA, ACO, OR-Tools routing | Classique |
+| 6 | [App-13b-TSP-Metaheuristics-CSharp](Part3-Cas-pratiques/App-13b-TSP-Metaheuristics-CSharp.ipynb) | ~45 min | **Jumeau C#** — SA, GA, ACO from-scratch sur le même TSP, parité #4956 | Jumeau .NET |
+| 7 | [App-17-VRP-Logistics](Part3-Cas-pratiques/App-17-VRP-Logistics.ipynb) | ~60 min | Vehicle Routing : SA, GA, ACO, CP-SAT | Projet étudiant |
+| 8 | [App-17b-VRP-Logistics-CSharp](Part3-Cas-pratiques/App-17b-VRP-Logistics-CSharp.ipynb) | ~55 min | **Jumeau C#** — VRP métaheuristiques .NET, parité #4956 | Jumeau .NET |
+| 8b | [App-17b-VRP-Logistics-Python](Part3-Cas-pratiques/App-17b-VRP-Logistics-Python.ipynb) | ~45 min | **Twin Python du b** — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools, parité #4956 | Jumeau Python |
+| 9 | [App-18-HyperparameterTuning](Part3-Cas-pratiques/App-18-HyperparameterTuning.ipynb) | ~40 min | Optimisation ML : Bayésienne, GA, PSO, Optuna | Nouveau |
+| 10 | [App-18b-HyperparameterTuning-CSharp](Part3-Cas-pratiques/App-18b-HyperparameterTuning-CSharp.ipynb) | ~35 min | **Jumeau C#** — tuning GA/PSO from-scratch .NET, parité #4956 | Jumeau .NET |
+| 11 | [App-18b-HyperparameterTuning-Python](Part3-Cas-pratiques/App-18b-HyperparameterTuning-Python.ipynb) | ~35 min | **Jumeau Python from-scratch** — GP+EI, GA, PSO numpy + pont Optuna, parité #4956 | Jumeau Python |
+| 12 | [App-22-AlgorithmSelection-Python](Part3-Cas-pratiques/App-22-AlgorithmSelection-Python.ipynb) | ~45 min | Sélection empirique d'algorithmes : 3 jeux, 13 familles conceptuelles / 14 étiquettes mesurées, non-commensurabilité + Pareto + choix sous préférences — hommage PR IS #42 (Théodore Deguest) | Projet étudiant (IS PR #42) |
 
 ---
 
 ## Navigation entre sous-séries
 
 ```text
-Part1-Foundations/              Part2-CSP/                  Applications/
+Part1-Foundations/              Part2-CSP/                  Part3-Cas-pratiques/
 Search-1  StateSpace     ───>  CSP-1  Fundamentals   ───>  App-1 NQueens, App-2 GraphColoring
 Search-2  Uninformed     ───>  CSP-2  Consistency    ───>  App-6 Minesweeper, App-7 Wordle
-Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-14b ConnectFour
+Search-3  Informed       ───>  Search-6 Adversarial  ───>  App-12b ConnectFour
        │                        CSP-3  Advanced      ───>  App-3 NurseScheduling, App-4 JobShop
        │                        CSP-4  Scheduling    ───>  App-3, App-4, App-5 Timetabling
        └──> Search-6 (Adversarial)
@@ -189,7 +189,7 @@ Search-4  LocalSearch           CSP-5  Optimization  ───>  App-10 Portfoli
     │                               │
     └──> Search-5 (Genetic)    CSP-6  Hybridization ───>  LLM+CSP
             │                       │
-            └──> Search-11 (Meta)   └──> Applications/Hybrid/ App-9 EdgeDetection
+            └──> Search-11 (Meta)   └──> Part3-Cas-pratiques/ App-9 EdgeDetection
 
 Search-8  Dancing Links    ───>  App-11 Picross, Sudoku-05 DLX
 Search-9  Linear Programming ─>  CSP-5 Optimization   ───>  App-10 Portfolio
@@ -210,7 +210,7 @@ CSP-8  Temporal            ───> Temporal Planning, STP
 
 ## Parité .NET ⇄ Python
 
-Cette série est née **Python d'abord** pour son cœur pédagogique (recherche, CSP, applications), avec la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) comme territoire .NET natif (au-dessus de MetaGeneticSharp). Le **marathon parité [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956)** (juin–juillet 2026) a ensuite généralisé le binôme `Python ⇄ C#` à l'ensemble du cœur curriculaire : jumeaux C# des fondements (Part 1), de la programmation par contraintes (Part 2), de la recherche heuristique avancée et de 20 cas d'application. Depuis, des compagnons et audits App-21 à App-33 ont enrichi le dossier Applications — la galerie pédagogique (App-21 à App-27) et les audits de garanties devenus la [Partie 5 — frontières](Part5-Frontieres/README.md) ; le tableau distingue donc le cœur en binômes de l'inventaire actuel, dont les volumes sont portés par le catalogue (`CATALOG-STATUS`).
+Cette série est née **Python d'abord** pour son cœur pédagogique (recherche, CSP, applications), avec la [Partie 4 — métaheuristiques composables](Part4-Metaheuristics/README.md) comme territoire .NET natif (au-dessus de MetaGeneticSharp). Le **marathon parité [EPIC #4956](https://github.com/jsboige/CoursIA/issues/4956)** (juin–juillet 2026) a ensuite généralisé le binôme `Python ⇄ C#` à l'ensemble du cœur curriculaire : jumeaux C# des fondements (Part 1), de la programmation par contraintes (Part 2), de la recherche heuristique avancée et de 20 cas d'application. Depuis, des compagnons et audits App-21 à App-33 ont enrichi le dossier des applications — la galerie pédagogique (App-21 à App-27) et les audits de garanties devenus la [Partie 5 — frontières](Part5-Frontieres/README.md) ; le tableau distingue donc le cœur en binômes de l'inventaire actuel, dont les volumes sont portés par le catalogue (`CATALOG-STATUS`).
 
 ### Couverture actuelle
 
@@ -219,7 +219,7 @@ Cette série est née **Python d'abord** pour son cœur pédagogique (recherche,
 | [Part1-Foundations](Part1-Foundations/) | 23 (Search-1 à Search-11, Search-2b, Search-2c, Search-03b à Search-03e, Search-09b à Search-09c, Search-11c, Search-11d, Search-12a, Search-13a) | Python (22) + C# natif (Search-2c QuikGraph) | **15 jumeaux C#** (Search-1 à 11, 2b, 03b/03c/03d) + déclinaison deep-dive **Search-11b** (Métaheuristiques, 4 volets) |
 | [Part2-CSP](Part2-CSP/) | 9 (CSP-1 à CSP-9) | Python + .NET | **9 binômes complets** — marathon achevé, voir [bilan final](#marathon-epic-4956) |
 | [Part4-Metaheuristics](Part4-Metaheuristics/) | 35 (25 à la racine + 10 dans `MGS-vs-mealpy/`) | C# / .NET (natif) | Prolonge Search-5 / Search-11 (Python) sous l'angle ingénierie |
-| [Applications](Applications/) | 20 cas cœur (App-1 à App-20) + galerie App-21–27 (volumes au catalogue) | Python + .NET | **20 binômes complets** + compagnons App-21 à App-33 |
+| [Part3-Cas-pratiques](Part3-Cas-pratiques/) | 20 cas cœur (App-1 à App-20) + galerie App-21–27 (volumes au catalogue) | Python + .NET | **20 binômes complets** + compagnons App-21 à App-33 |
 | [Part5-Frontieres](Part5-Frontieres/) | Audits de garanties et distillations de preprints (volumes au catalogue) | Python | prolonge Part1/Part2/Part4 et les projets étudiants PrCon |
 | Racine | 0 | — | (aucun — voir [_archive/](_archive/) pour les anciens notebooks racine) |
 
@@ -363,47 +363,29 @@ Search/
 │   ├── CSP-8-Temporal.ipynb
 │   └── CSP-9-Distributed.ipynb
 │
-├── Applications/
-│   ├── Adversarial/                       # Recherche adversariale
-│   │   ├── App-14b-ConnectFour.ipynb
-│   │   ├── App-14c-ConnectFour-CSharp.ipynb
-│   │   ├── App-14-ConnectFour-Adversarial.ipynb
-│   │   └── App-14-ConnectFour-CSharp.ipynb
-│   │
-│   ├── CSP/                               # Applications CSP (sélection ci-dessous, Python + jumeaux C#)
-│   │   ├── App-1-NQueens.ipynb
-│   │   ├── App-2-GraphColoring.ipynb
-│   │   ├── App-3-NurseScheduling.ipynb
-│   │   ├── App-4-JobShopScheduling.ipynb
-│   │   ├── App-5-Timetabling.ipynb
-│   │   ├── App-6-Minesweeper.ipynb
-│   │   ├── App-6-Minesweeper-CSharp.ipynb
-│   │   ├── App-7-Wordle.ipynb
-│   │   ├── App-8-MiniZinc.ipynb
-│   │   ├── App-11-Picross.ipynb
-│   │   ├── App-15-SportsScheduling.ipynb
-│   │   ├── App-16-Crossword-CSP.ipynb
-│   │   ├── App-16-Crossword-CSP-CSharp.ipynb   # Twin C# backtracking + forward-checking from-scratch (marathon #4956, Prong B)
-│   │   ├── App-19-ProceduralGeneration-WFC.ipynb
-│   │   ├── App-19-ProceduralGeneration-WFC-CSharp.ipynb
-│   │   ├── App-20-SudokuBenchmark-Python.ipynb   # Benchmark 4 solveurs Sudoku, synthèse de la série
-│   │   ├── App-20b-SudokuBenchmark-CSharp.ipynb
-│   │   └── (+ autres notebooks et jumeaux C# App-1b/2b/3b/4b/7b/11b/15b et App-5/8-CSharp, marathon #4956)
-│   │
-│   └── Hybrid/                            # Métaheuristiques (sélection ci-dessous, Python + jumeaux C#)
-│       ├── App-9-EdgeDetection.ipynb
-│       ├── App-9b-EdgeDetection-CSharp.ipynb
-│       ├── App-10-Portfolio.ipynb
-│       ├── App-10b-Portfolio-CSharp.ipynb
-│       ├── App-13-TSP-Metaheuristics.ipynb
-│       ├── App-13b-TSP-Metaheuristics-CSharp.ipynb
-│       ├── App-17-VRP-Logistics.ipynb
-│       ├── App-17b-VRP-Logistics-CSharp.ipynb
-│       ├── App-17b-VRP-Logistics-Python.ipynb      # Twin Python du b — VRP métaheuristiques from-scratch (numpy) + vérification OR-Tools
-│       ├── App-18-HyperparameterTuning.ipynb
-│       ├── App-18b-HyperparameterTuning-CSharp.ipynb
-│       ├── App-18b-HyperparameterTuning-Python.ipynb
-│       └── App-22-AlgorithmSelection-Python.ipynb  # Sélection empirique : 3 jeux, 13 familles / 14 étiquettes, Pareto + préférences (PR IS #42)
+├── Part3-Cas-pratiques/                   # Partie 3 — cas pratiques en dossier plat (Python + jumeaux C#, sélection ci-dessous)
+│   ├── App-1-NQueens.ipynb
+│   ├── App-2-GraphColoring.ipynb
+│   ├── App-3-NurseScheduling.ipynb
+│   ├── App-4-JobShopScheduling.ipynb
+│   ├── App-5-Timetabling.ipynb
+│   ├── App-6-Minesweeper.ipynb
+│   ├── App-7-Wordle.ipynb
+│   ├── App-8-MiniZinc.ipynb
+│   ├── App-9-EdgeDetection.ipynb
+│   ├── App-10-Portfolio.ipynb
+│   ├── App-11-Picross.ipynb
+│   ├── App-12b-ConnectFour.ipynb                     # ex-App-14b (alignement id logique app-12, #19253)
+│   ├── App-13-TSP-Metaheuristics.ipynb
+│   ├── App-15-SportsScheduling.ipynb
+│   ├── App-16-Crossword-CSP.ipynb
+│   ├── App-17-VRP-Logistics.ipynb
+│   ├── App-18-HyperparameterTuning.ipynb
+│   ├── App-19-ProceduralGeneration-WFC.ipynb
+│   ├── App-20-SudokuBenchmark-Python.ipynb          # Benchmark 4 solveurs Sudoku, synthèse de la série
+│   ├── App-22-AlgorithmSelection-Python.ipynb       # Sélection empirique : 3 jeux, 13 familles / 14 étiquettes, Pareto + préférences (PR IS #42)
+│   ├── App-27-Sparse-Index-Tracking-Walk-Forward.ipynb
+│   └── (+ jumeaux C# App-1b/2b/3b/4b/6-CSharp/7b/8-CSharp/11b/12c/15b/16-CSharp/19-CSharp/20b et jumeaux C#/Python App-9b/10b/13b/17b/18b, marathon #4956)
 │
 │
 ├── Part5-Frontieres/                     # Partie 5 — frontières : audits de garanties et distillations de preprints (Frontieres-01..10, carte #19253)
@@ -494,7 +476,7 @@ Audit **disque ↔ CATALOG-STATUS ↔ prose** vérifié firsthand via `git ls-fi
 | **Part 1 — Fondements** (`Part1-Foundations/`) | **43** (**23 notebooks Python + Lean** : Search-1 → Search-11, Search-2b, Search-03b/03c/03d/03e (ex-Partie 3 + optimalité A*), Search-09b, Search-09c, Search-11c, Search-11d, Search-12a (Composer-Regards, op 12 #12204), Search-13a (Traverser-Murs-Certifies, op 13 #12204) + **compagnon Lean Search-09d** (kernel `lean4-wsl`, lake `discrepancy_lean`) + **20 C#** : jumeaux `-Csharp` (Search-1 à 11, 2b et 03b/03c/03d) + Search-2c QuikGraph natif + déclinaison deep-dive **Search-11b Métaheuristiques en 4 volets** C# natif, marathon #4956) | Python + Lean 4 + .NET (C#) | StateSpace, BFS/DFS/UCS/IDDFS, A*, Local Search (SA/Tabu), GA, Minimax/Alpha-Beta, MCTS, DLX, LP, Symbolic Automata, métaheuristiques (PSO/ABC/BRO + 160+ MEALPy), NetworkX, QuikGraph, Pattern Databases, Limited Discrepancy Search, Weighted A*, minima fallacieux SDP (Burer–Monteiro), discrépance combinatoire (Beck–Fiala, Bansal–Jiang 2025) et sa formalisation Lean 4 (conjecture de Komlós), sélection empirique d'algorithme, descente gloutonne sous plafond d'évaluations (loi `Descent.lean`) |
 | **Part 2 — Programmation par Contraintes** (`Part2-CSP/`) | **18** (9 Python : CSP-1 → CSP-9 + **9 jumeaux C#**, marathon #4956 achevé) | Python + .NET (C#) | CSP Fundamentals (backtracking), AC-3/FC/MAC, CSP Advanced (AllDifferent/Cumulative/Circuit), Scheduling (Job-Shop/RCPSP/Nurse), Optimization (Bin Packing/Knapsack), Hybridization (LCG/CP+SAT/CP+ML/LLM+CSP), Soft, Temporal (Allen's Interval Algebra), Distributed (Yokoo 1992) |
 | **Part 4 — Métaheuristiques composables** (`Part4-Metaheuristics/`, C# .NET 9, MetaGeneticSharp) | **35** (MGS-1 → MGS-31 : cœur MGS-1..19, **trilogie MGS-7b/7c/7d** de projection N-D des paysages, MGS-17b sélection empirique, **MGS-21** représentation vs algorithme ; le **volet comparatif vs MEALPY** (10 notebooks MGS-22..31) vit dans la sous-série [`Part4-Metaheuristics/MGS-vs-mealpy/`](Part4-Metaheuristics/MGS-vs-mealpy/README.md) — duels PSO/DE/SA/WOA/EO/FBI/BBPSO/GA/ScatterSearch vs Mealpy + synthèse croisée ; tous C# .NET au-dessus de GeneticSharp vendored) | C# / .NET | Composition, Eukaryote, Islands, Compound Metaheuristics, TSP, projection N-D des paysages, Landscape Explorer, Center Bias, Island Synergy, Axis Alignment, Landscape Debias, Island Synergy Found, Landscape Analysis (FDC), Algorithm Selection (No-Free-Lunch), Parameter Control, CEC Banc, Metropolis Reinsertion, représentation vs algorithme, [campagne comparative MGS vs mealpy](Part4-Metaheuristics/MGS-vs-mealpy/README.md) |
-| **Applications** (`Applications/`) | **57** (37 Python + 20 C# — **20 binômes Python ⇄ C#** App-1 à App-20, plus compagnons statistical-validity, jumeaux Python et notebooks d'audit App-23 à App-31) | 37 Python + 20 C# | N-Queens, Graph Coloring, Nurse/Job-Shop/Timetabling Scheduling, Minesweeper, Wordle, MiniZinc, Picross (27M× speedup), Sports/Crossword/WFC CSP, SudokuBenchmark, Portfolio/TSP/VRP/Hyperparameter Tuning, Edge Detection, ConnectFour (Minimax/MCTS), Covering Arrays, Algorithm Selection |
+| **Partie 3 — Cas pratiques** (`Part3-Cas-pratiques/`) | **57** (37 Python + 20 C# — **20 binômes Python ⇄ C#** App-1 à App-20, plus compagnons statistical-validity, jumeaux Python et notebooks d'audit App-23 à App-31) | 37 Python + 20 C# | N-Queens, Graph Coloring, Nurse/Job-Shop/Timetabling Scheduling, Minesweeper, Wordle, MiniZinc, Picross (27M× speedup), Sports/Crossword/WFC CSP, SudokuBenchmark, Portfolio/TSP/VRP/Hyperparameter Tuning, Edge Detection, ConnectFour (Minimax/MCTS), Covering Arrays, Algorithm Selection |
 | **_archive** (`_archive/`) | **2** (CSPs_Intro, Exploration_non_informée_et_informée_intro, historiques pré-tranche 8/8 #5081) | Python | Notebooks historiques, remplacés par Part2-CSP/CSP-1-Fundamentals et Part1-Foundations/Search-{2,3} |
 | **Total** | **153** (43 + 18 + 35 + 57 = 153 pédagogiques, Search-09d inclus + 2 archive = 155) | Python + Lean 4 + C# | 4 piliers + archive, voir « Structure des fichiers » pour l'arborescence complète |
 

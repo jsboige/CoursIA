@@ -62,7 +62,7 @@ quand il reconstruit un code depuis une table de longueurs :
    la construction : compteur + masse restante ≤ `2 ^ L` (`inv_fits` : le
    compteur tient dans sa bande ; `inv_step` : le saut de compteur préserve
    l'invariant).
-3. **`canon`** — le **code canonique** (Schwartz–Miller) : longueurs triées
+3. **`canon`** — le **code canonique** (Schwartz-Kallick) : longueurs triées
    croissantes, compteur initial `0`, et à chaque passage de `ℓᵢ` à `ℓᵢ₊₁`
    le saut `(c + 1) * 2 ^ (ℓᵢ₊₁ - ℓᵢ)` — on passe au-delà de tous les
    prolongements du mot précédent.
@@ -74,6 +74,19 @@ quand il reconstruit un code depuis une table de longueurs :
    admissible est réalisée par un code préfixe. Ancres `#eval` : le code
    `(1, 2, 3, 3)` redonne `a=0, b=10, c=110, d=111` (Kraft saturé), le code
    fixe 2 bits remplit tout l'espace.
+
+## Carnet compagnon
+
+`Compression-01b-Kraft-McMillan-Lean.ipynb` (kernel `lean4-wsl`) importe les
+trois modules **réels** du lake et les fait travailler : ancres `#eval` de
+Kraft (`sf4`, `full k`), round-trip de décodage, construction `canon` /
+`mass`, `#print axioms` des quatre théorèmes piliers : `mcmillan_converse`,
+`canon_spec` et `kraft_le_one` dépendent de `propext`, `Classical.choice` et
+`Quot.sound` ; `decode_encode` de `propext` et `Quot.sound` seulement — aucun
+`sorryAx`, aucun `native_decide`.
+Placé dans `Compression_lean/` car le kernel détecte le `lakefile.lean`
+ancêtre : son répertoire est son environnement. Exécution depuis la racine
+du lake (`papermill -k lean4-wsl`).
 
 ## Build
 

@@ -76,9 +76,9 @@ Graine de melange **42**, limite **300 items par jeu**, melange **identique** po
 | | commonsense_qa | 300 | 67,67 % | 0,556 | 0,128 | 0,468 |
 | | **global** | **900** | **69,56 %** | 0,564 | 0,131 | 0,422 |
 
-Lecture : les deux versions sont **quasi equivalentes** sur cette tranche (0,22 point d'ecart global, dans le bruit d'un echantillon de 900 items). v2 est **mieux calibre** sur `arc_easy` (ECE 0,157 contre 0,109, Brier 0,240 contre 0,209 pour une exactitude inferieure de 2,3 points : la confiance y est moins surestimee) et **moins bien calibre** globalement (ECE 0,131 contre 0,089).
+Lecture : les deux versions sont **quasi equivalentes** sur cette tranche (0,22 point d'ecart global, dans le bruit d'un echantillon de 900 items). v2 est **moins bien calibre** sur `arc_easy` (ECE 0,157 contre 0,109, Brier 0,240 contre 0,209) et **egalement moins bien calibre** globalement (ECE 0,131 contre 0,089, Brier 0,422 contre 0,419). Sur `arc_easy`, l'ecart entre exactitude et confiance moyenne est plus grand chez v2 (0,683 de confiance moyenne pour 84,00 % d'exactitude, contre 0,755 pour 86,33 % chez v1) : la confiance y est **sous-estimee**, et davantage que chez v1.
 
-Cout de la mesure (par checkpoint) : chargement **13,2 s** (`v1`) et **5,1 s** (`v2`), evaluation **210,4 s** et **209,5 s** pour 900 items (~0,23 s/item), pic VRAM **1,47 Go** dans les deux cas — les deux checkpoints tiennent dans le huitieme de la carte. La mesure a ete rejouee a l'identique (meme graine, memes empreintes de tranche) : les valeurs d'exactitude et de calibration sont **reproductibles**, seuls les temps varient.
+Cout de la mesure (par checkpoint) : chargement **13,2 s** (`v1`) et **5,1 s** (`v2`), evaluation **210,4 s** et **209,5 s** pour 900 items (~0,23 s/item), pic VRAM **1,47 Go** dans les deux cas — les deux checkpoints tiennent dans les 8 Go de la carte. La mesure a ete rejouee a l'identique (meme graine, memes empreintes de tranche) : les valeurs d'exactitude et de calibration sont **reproductibles**, seuls les temps varient.
 
 ### Ordre mesure contre ordre publie
 
@@ -141,6 +141,31 @@ C:/dev/envs/jiwo-py312/Scripts/python.exe scripts/genai-stack/decision_local_che
 ```
 
 L'agregat ecrit par l'outil contient, pour chaque modele : exactitude, ECE, Brier et confiance moyenne par jeu et en global, les **lignes par item** (identifiant, verite, probabilite de la bonne reponse, confiance, score de Brier), les empreintes sha256 de chaque tranche, l'environnement de mesure, le classement mesure, le profil d'aires, les valeurs publiees de reference et la liste des limites. Il est **falsifiable** : chaque chiffre du tableau §3 se relit dans le JSON.
+
+### 6.1 Reproduction sur un second siege (2026-10-22, `#21930`)
+
+La mesure a ete rejouee telle quelle sur un second siege — machine `myia-po-2023`, RTX 3090 24 Go, Python 3.12.10, **torch 2.14.1+cu126 et jiwo 0.1.0 identiques a la reference** — sans checkpoint local (`--local` absent : les poids viennent du hub, les versions `v1`/`v2` etant des revisions distinctes). Agregat : `scripts/results/decision_local_2026-10-22_seat2.json`.
+
+**Ce qui se reproduit exactement :**
+
+- les **trois empreintes sha256 de tranche** sont identiques (`arc_easy`, `openbookqa`, `commonsense_qa`, 300 items chacune, graine 42) — la reconstruction du jeu est deterministe entre sieges ;
+- le **verdict de forme du profil d'aires** (« non conforme », knowledge > language a l'inverse du publie) sort **identique pour les deux checkpoints** ;
+- le pic VRAM mesure est le meme (1,47 Go).
+
+**Ce qui diverge, et de combien :**
+
+| Champ | Reference (3070 Ti) | Second siege (3090) | Ecart |
+|---|---|---|---|
+| `v1` exactitude globale | 69,78 % | 69,89 % | +1 item / 900 |
+| `v2` exactitude globale | 69,56 % | 69,89 % | +3 items / 900 |
+| `v1` verdicts par item | — | 899/900 identiques | 1 divergence |
+| `v2` verdicts par item | — | 895/900 identiques | 5 divergences |
+| \|Δ p_gold\| par item, `eljiwo/jiwo-0.8b@v1` | — | mediane 1,85e-3, p90 9,60e-3, max 2,43e-2 | derive numerique |
+| \|Δ p_gold\| par item, `eljiwo/jiwo-0.8b@v2` | — | mediane 2,31e-3, p90 8,45e-3, max 2,95e-2 | derive numerique |
+
+L'ordre mesure `v1` > `v2` de la reference **n'est pas tranche par le second siege** : les deux exactitudes y sont egales a 0,1 % pres (0,6989 chacune), la difference reference (0,22 %) etant du meme ordre que la derive inter-GPU. C'est un constat, pas une invalidation : la conclusion robuste des deux sieges est que **la tranche reconstruite ne reproduit pas l'ordre publie de l'index**, dans les deux sens.
+
+L'ecart numerique est attendu : memes versions de torch et de jiwo, mais GPU different (les ordres de reduction des kernels dependent du decoupage materiel). Les six items en desaccord portent tous une `p_gold` entre 0,32 et 0,46 — des distributions plates entre options, ou la derive observee (mediane 1,9e-3 pour `v1` et 2,3e-3 pour `v2`, p90 9,6e-3 et 8,5e-3) suffit a faire basculer l'argmax. Les items divergents sont listes dans les deux agregats, la comparaison champ a champ est rejouable par difference des deux JSON.
 
 ## 7. Sources
 

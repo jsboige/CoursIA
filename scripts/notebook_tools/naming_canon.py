@@ -90,7 +90,16 @@ LANG_SUFFIXES = KERNEL_LANG_SUFFIXES + ("_en", "-en", "_fr", "-fr")
 # quatre notebooks legitimes deviennent six collisions. Ce faux positif n'a PAS ete
 # trouve par les tests unitaires mais par le balayage des 1116 notebooks de `main` :
 # un jeu de cas ecrit a la main ne contient que les formes auxquelles on a pense.
-INDEX_RE = re.compile(r"^(\d+(?:[.\-]\d+)*)([a-z]?)[._\-\s]", re.I)
+#
+# Le lookahead negatif borne la lettre a ce role : une lettre SUIVIE d'un niveau
+# numerique n'est PAS une variante d'index mais la queue d'un prefixe de serie mixte
+# (chiffre + lettre). `3D-01` : le `D` est suivi de `-01`, donc `3D` est un prefixe
+# et `01` le vrai index. Sans la borne, `3D-01` et `3D-02` retombent tous deux sur la
+# cle `3d` et la comparaison ajoute/ajoute (#22059) en fait un faux positif. La borne
+# les rend `None` (hors portee) au lieu d'une collision -- un resserrement de portee,
+# pas un elargissement des prefixes. Trouve par la revue independante de #22118
+# (lane po-2025), temoin f46403eb25b (3D-01 + 3D-02 ajoutes ensemble).
+INDEX_RE = re.compile(r"^(\d+(?:[.\-]\d+)*)([a-z]?)(?![.\-]\d)[._\-\s]", re.I)
 
 # Numero d'un notebook a prefixe de serie alphabetique : `Prefixe-NN` (+ lettre
 # d'accretion). Le `(?!\d)` distingue le premier chiffre d'un numero a deux

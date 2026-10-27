@@ -296,7 +296,7 @@ Pas de `--gpus` (aucun passthrough GPU, par design). Le runner `--ephemeral` tra
 
 ```bash
 scripts/ci/docker/linux-runner/supervise.sh pin        # epingle le contexte hors arbre (#16134)
-docker build -t coursia-linux-runner:2.337.0 "$COURSIA_RUNNER_PINNED_CTX"
+docker build -t coursia-linux-runner:2.338.0 "$COURSIA_RUNNER_PINNED_CTX"
 scripts/ci/docker/linux-runner/supervise.sh start 2   # 2 slots concurrents
 scripts/ci/docker/linux-runner/supervise.sh status
 scripts/ci/docker/linux-runner/supervise.sh stop      # gracieux : les jobs en cours finissent
@@ -396,7 +396,7 @@ Un job qui meurt sur `Set up job` **avant le moindre checkout** porte un rouge r
 
 Ces archives sont par construction **identiques à chaque run**. Le runner sait les lire depuis un répertoire de cache : l'image les embarque donc une fois, au build, au lieu de les re-télécharger à chaque job.
 
-**La convention de nommage se lit dans le source du runner, elle ne se devine pas** — `src/Runner.Worker/ActionManager.cs`, `PrepareRepositoryAsync`, vérifié au pin `v2.337.0` (celui du `RUNNER_VERSION`) et sur `main` :
+**La convention de nommage se lit dans le source du runner, elle ne se devine pas** — `src/Runner.Worker/ActionManager.cs`, `PrepareRepositoryAsync`, vérifié au pin `v2.337.0` (prédécesseur du `RUNNER_VERSION` courant) et sur `main` :
 
 ```
 $ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE/<owner>_<repo>/<sha_resolu>.tar.gz
@@ -439,6 +439,70 @@ Le résiduel ci-dessus est refermé le 2026-10-03 : image reconstruite (`docker 
 **Le « cache enrichi » attendu par #16654 est réfuté par la mesure.** Sur miss, l'archive téléchargée atterrit dans `_work/_actions/_temp_<guid>/`, jamais dans le répertoire de cache : `ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE` est **en lecture seule au runtime** — seule l'image (le seed au build) y écrit. Une action absente du seed se télécharge donc **à chaque job**, sans exception ni apprentissage. C'est le renfort de fait du garde zéro-trou (`test_action_cache_seed_guard.py`) : puisque rien ne peut enrichir le cache au run, seul le build ferme la porte.
 
 Le workflow de contrôle vit sur une branche jetable (`ci/16654-seed-a23-control`, supprimée après capture) : le garde seed interdit par design la présence de `setup-java` sur `main`, ce qui est exactement le contrôle négatif voulu. Pour rejouer : reconstruire l'image, pousser une branche portant deux jobs `runs-on: [self-hosted, <label unique>]` (action seedée épinglée au SHA du build / action absente du seed), enregistrer un conteneur éphémère avec ce label, puis lire `Worker_*.log` et comparer le cache avant/après.
+
+### Magasin d'objets partagé — le miroir du volume toolcache (#18225)
+
+Le volume `_work` persistant par slot (#14285) a rendu le slot **chaud** nominal, mais il ne dit rien du **retour au froid** : un clone purgé, un slot neuf, un `_work` écarté par le garde d'intégrité redescendent l'historique entier en HTTPS — **5,49 Gio mesurés** par retour au froid, et ~2 353 `_work` écartés en neuf jours sur le pool persistant de po-2026. Le miroir bare local casse ce coût : l'historique traverse le réseau **une fois pour N slots**.
+
+La recette vient de `persist/po-2026/pool.sh` (où elle tourne sur l'hôte) ; ici le volume est un **volume docker**, que l'hôte ne voit pas — donc les gestes git s'exécutent dans un conteneur jetable de la **même image** (git y est, l'uid est `runner` comme les slots, et le volume toolcache lui appartient déjà). Deux moitiés :
+
+| Moitié | Où | Ce qu'elle fait |
+|---|---|---|
+| **Productrice** | `supervise.sh` (`mirror_loop`, lancé par `start` et `lean`) | `bootstrap` une fois (geste **hors bande**), puis refresh incrémental (`fetch --prune`), throttle 300 s tenu par un horodatage **dans le volume** + `flock` non bloquant — deux boucles (pool docker, pool lean) ne font donc qu'un fetch par période |
+| **Consommatrice** | `entrypoint.sh` (bloc `TEST-ENTRYPOINT-MIRROR`, avant le garde `work_cache`) | `alternates` sur chaque clone présent, puis semis du `_work` quand il n'existe pas : `clone --shared --no-checkout` (zéro objet copié, instantané) puis `origin` **remis sur HTTPS** |
+
+Trois propriétés qui ne sont pas des détails :
+
+- **Fail-open, y compris après un semis.** Miroir absent et bootstrap désactivé (défaut) : le bloc consommateur rend 0, n'ajoute rien, et **retire** les lignes d'`alternates` qui désignent un miroir disparu. Sans ce retrait, un slot semé **avant** la disparition gardait un `alternates` pendant et toutes ses commandes git rendaient `rc=128` (`unable to normalize alternate object path`) — le garde `work_cache` ne le voit pas, car il lit les refs et jamais la résolvabilité des objets, et son repack `-adl` rend `rc=0`. Après retrait, `alternates` vide → `wch_repack_flags` retombe sur `-ad` : l'état exact d'avant #18225.
+- **`--prune` ne supprime aucun objet — mais pas par « absence de gc ».** Mesure (#22326, revue 5637796595) : `git fetch` **déclenche bien** `git maintenance run --auto --detach` sur le miroir (3 occurrences dans un `GIT_TRACE`). La sûreté vient de la **fenêtre de grâce de 30 jours de `gc --auto`** : même forcé à `gc.auto=1`, il **conserve** un objet injoignable vieux de 30 jours, alors qu'un `git gc` **complet** le prune dans le même dépôt au même objet. Conséquence opérateur : **ne jamais** lancer `git gc` ni `maintenance --schedule` sur le miroir — c'est ce geste-là qui casserait les slots emprunteurs, pas le `fetch --prune`.
+- **Le repack de maintenance ne rapatrie pas les objets empruntés.** `work_cache_health.sh` choisit ses drapeaux (`wch_repack_flags`) : `-adl` dès qu'un alternates est posé, `-ad` sinon. Sans le `-l`, un `repack -a` parcourt les objets joignables *alternates compris* et les **copie** dans le volume du slot — le miroir deviendrait un coût fixe au lieu d'une économie. Le couple est prouvé par un témoin : même fixture, `-adl` ne copie pas, `-ad` copie (`test_work_cache_health.sh`).
+
+**Garde de débit git.** Le superviseur propage `GIT_HTTP_LOW_SPEED_LIMIT=1024` / `GIT_HTTP_LOW_SPEED_TIME=90` à **tous** ses conteneurs (slots, waiters, miroir). Un transfert qui s'effondre à quelques centaines d'octets par seconde ne rend pas la main : il stalle jusqu'au timeout du job, qui meurt sans qu'aucune ligne ne nomme le réseau. Ces deux variables transforment le stall en échec **rapide**, que le retry du runner sait traiter. Le seuil est sous le plancher mesuré de codeload (1 936 à 39 530 o/s), donc il ne coupe pas un débit normal.
+
+**Bootstrap — geste explicite, une fois par machine.** Le clone intégral est lourd : il est refusé en dessous de `COURSIA_RUNNER_MIRROR_MIN_FREE_MB` (défaut 8192) et ne part jamais tout seul.
+
+```bash
+supervise.sh mirror bootstrap   # une fois, hors bande (copie integrale)
+supervise.sh mirror status      # taille, refs, dernier refresh, emprunteurs
+supervise.sh mirror refresh     # forcage ponctuel (le throttle s'applique)
+```
+
+`COURSIA_RUNNER_MIRROR_BOOTSTRAP=1` laisse le premier tick le faire à la place, sous la même garde d'espace. `COURSIA_RUNNER_MIRROR=0` coupe la boucle (ni l'entrypoint ni `mirror` ne sont concernés).
+
+**Déploiement.** `entrypoint.sh` change : l'image doit être **reconstruite** (le garde de fraîcheur compare l'épinglé à l'embarqué, cf #16134) et les slots roulés par **drain** — jamais un restart du superviseur avec des jobs en vol. Le miroir lui-même n'est pas nécessaire au premier démarrage : sans lui, le parc est exactement dans son état d'avant.
+
+#### Hôte éphémère tiers — installer le miroir, et le prouver
+
+Le mécanisme n'a de valeur que si un hôte qui **n'est pas ai-01** l'active. Mesure du 25/10 sur po-2025 (`workspace-CoursIA`, 22:17Z) : les 9 slots ouverts cette nuit (po-2023 ×3, po-2025 ×2, po-2027 ×4) n'avaient ni miroir ni alternates, donc clonaient à froid — 8,34 Gio / 494 804 objets pour le dépôt, 0,72 à 1,09 Mo/s depuis WSL, et le job `latex-control-chars` (run 40129451003) **annulé à 621 s** en plein `actions/checkout` sous `timeout-minutes: 10` + `fetch-depth: 0`. 75 workflows visant `coursia-linux` déclarent ce `fetch-depth: 0` : sur un hôte froid, ce n'est pas un cas isolé, c'est la classe.
+
+Trois étapes, dans cet ordre :
+
+```bash
+# 1. l'image de l'épinglé (elle porte git et l'entrypoint consommateur)
+supervise.sh pin                      # vérifie l'image attendue
+
+# 2. le miroir, une fois par machine -- refusé sous COURSIA_RUNNER_MIRROR_MIN_FREE_MB
+supervise.sh mirror bootstrap
+#    ou, pour laisser le premier tick le faire :
+#    COURSIA_RUNNER_MIRROR_BOOTSTRAP=1 supervise.sh start N
+
+# 3. le CONTRÔLE POSITIF -- ce que l'installation doit rendre vrai
+supervise.sh mirror probe
+```
+
+`probe` fait exactement ce que fait un slot : `clone --shared --no-checkout` du miroir, puis checkout de `COURSIA_RUNNER_MIRROR_HEAD` — et rend trois faits dans une seule ligne : **la durée**, la **présence des alternates** (sans elles on aurait mesuré un clone froid, pas le miroir) et le **compte d'objets locaux**, qui doit rester à 0. C'est ce dernier chiffre qui distingue « le checkout a marché » de « le checkout a emprunté » : un clone qui recopie les objets réussit aussi.
+
+| Sortie | Signification |
+|---|---|
+| `0` — `probe OK` | le checkout à historique complet servi par le miroir tient dans le budget |
+| `3` | clone `--shared` impossible, ou **pas d'alternates** (le probe ne mesurerait pas le miroir) |
+| `4` | checkout de la tête impossible (miroir sans la branche attendue) |
+| `5` | durée **au-delà du budget** — un job à timeout court casserait |
+| `6` | miroir absent : `bootstrap` d'abord |
+
+Le budget est `COURSIA_RUNNER_MIRROR_PROBE_MAX_S` (défaut **300 s**, soit la moitié d'un `timeout-minutes: 10` : le job garde sa marge pour ses propres étapes après le checkout). Contrairement aux autres gestes du miroir, `probe` **n'est pas fail-open** : son code de sortie atteint l'opérateur, parce qu'un contrôle qui rend toujours 0 ne contrôle rien.
+
+Ce que cette recette **ne** fait pas : réduire `fetch-depth: 0` dans les workflows. Le miroir rend ce `fetch-depth` tenable ; le supprimer casserait les diffs contre la base, et c'est une décision qui appartient au coordinateur.
 
 ### Mode persistent — le conteneur qui retire le maillon superviseur (#14329)
 

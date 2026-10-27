@@ -163,6 +163,15 @@ TOOL_FAILURE_PATTERNS = (
     re.compile(r"no such file or directory", re.IGNORECASE),
     # inherited from check_render_volume_delta._UNAVAILABLE_PATTERNS
     *DEGRADED_HINT_PATTERNS,
+    # Interpreteur Lean (#21578) : un `@[extern]` de la Storage TorchLean n'est
+    # resolu que par le binaire lie ; dans l'interpreteur, l'evaluation meurt sur
+    # ce message, qui atterrit tel quel dans les outputs committes du carnet. La
+    # classe est OUTIL (le runtime ne fournit pas la primitive), pas MACHINE : le
+    # message ne nomme ni OS, ni repertoire, ni binaire externe. Meme regime que
+    # le motif ImportError ci-dessous — la FORME de l'erreur, pas le symbole
+    # TorchLean particulier : tout paquet a `@[extern]` produit la meme classe.
+    re.compile(r"could not find native implementation of external declaration",
+               re.IGNORECASE),
     # ImportError (#20701) : la FORME d'une exception levee (le nom, son
     # deux-points et un message), et non le mot nu. Une reponse de LLM cite la
     # classe dans sa prose (« `ImportError` si la CLI est lancee ... ») : une
@@ -192,6 +201,8 @@ _PATTERN_WITNESSES = (
     "bash: dot: command not found",
     "simanneal non disponible",
     "ImportError: cannot import name 'X' from 'y'",
+    "Could not find native implementation of external declaration "
+    "'TorchLean.Storage.Internal.floatBufferAppendSliceNative'",
 )
 
 # --- benign banners: matched above, and NOT a tool failure -----------------
