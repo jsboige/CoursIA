@@ -200,7 +200,10 @@ echo "Test 5 : compte de packs borne -- mesure avant/apres journalisee"
   else
     ko "1 pack attendu apres repack, obtenu $after"
   fi
-  if echo "$out" | grep -q "repack $n_packs -> $after"; then
+  # Le journal nomme les drapeaux (#18225) : `-ad` ici, puisque ce depot
+  # n'emprunte aucun objet. C'est cette trace qui distingue un repack qui
+  # consolide d'un repack qui rapatrie les objets d'un miroir.
+  if echo "$out" | grep -q "repack -ad $n_packs -> $after"; then
     ok "la mesure avant/apres est dans le journal (acceptance #15105)"
   else
     ko "journal de mesure attendu, obtenu: $out"
@@ -272,8 +275,8 @@ echo "Test 6b : 0 pack MAIS objets en vrac -- etat anormal, consolide (#21557)"
   else
     ko "aucun pack apres passage -- le cycle resterait a ~600 s de scan"
   fi
-  if echo "$out" | grep -q "repack 0 ->"; then
-    ok "la cause est journalisee (repack 0 -> N, #21557)"
+  if echo "$out" | grep -q "repack -ad 0 ->"; then
+    ok "la cause est journalisee (repack -ad 0 -> N, #21557)"
   else
     ko "journal de la cause attendu, obtenu: [$out]"
   fi
@@ -578,6 +581,156 @@ UNGUARDED
   else
     ok "controle NEGATIF : la forme non gardee TUE l'appelant (le banc a des dents)"
   fi
+)
+echo ""
+
+echo "Test 10 : echecs consecutifs de repack -> escalade en quarantaine (#21745 limb B)"
+# Controle positif ET negatif du compteur : N-1 echecs laissent le clone en
+# place, le N-ieme le renomme. Le renommage est REVERSIBLE (jamais rm) : le
+# test verifie que l'arbre survit sous <repo>.stale-<ts>.
+(
+  RQ="$TEST_DIR/repack-streak"
+  mkdir -p "$RQ"
+  git init -q "$RQ"
+  git -C "$RQ" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+  mkdir -p "$RQ/.git/objects/pack"
+  : > "$RQ/.git/objects/pack/a.pack"
+  : > "$RQ/.git/objects/pack/b.pack"
+
+  # Substitution locale : repack echoue TOUJOURS, tout le reste delegue au
+  # vrai git (memes semantiques, meme safe.directory).
+  wch_git() {
+    case "$*" in
+      *" repack "*) return 1 ;;
+    esac
+    git -c safe.directory='*' "$@"
+  }
+  WCH_REPACK_FAIL_MAX=3
+
+  out1="$(wch_maintenance_pass "$RQ" 1 2>&1)"
+  ck="$(wch_repack_streak_read "$RQ")"
+  if [ "$ck" = "1" ]; then ok "echec 1/3 : compteur = 1"; else ko "compteur apres 1 echec = [$ck], attendu 1"; fi
+  if [ -d "$RQ" ]; then ok "echec 1/3 : clone conserve (pas d'escalade avant le seuil)"; else ko "clone renomme des le 1er echec"; fi
+  if echo "$out1" | grep -q "echec consecutif 1/3"; then ok "echec 1/3 : le seuil est journalise"; else ko "seuil absent du journal: $out1"; fi
+
+  wch_maintenance_pass "$RQ" 1 >/dev/null 2>&1
+  ck="$(wch_repack_streak_read "$RQ")"
+  if [ "$ck" = "2" ]; then ok "echec 2/3 : compteur = 2"; else ko "compteur apres 2 echecs = [$ck], attendu 2"; fi
+
+  wch_maintenance_pass "$RQ" 1 >/dev/null 2>&1
+  if [ -d "$RQ" ]; then ko "3e echec : clone toujours en place (escalade attendue)"; else ok "3e echec : clone retire du chemin (quarantaine)"; fi
+  if ls -d "$TEST_DIR"/repack-streak.stale-* >/dev/null 2>&1; then
+    ok "3e echec : arbre PRESERVE sous <repo>.stale-<ts> (renommage, pas suppression)"
+  else
+    ko "3e echec : aucun <repo>.stale-* -- preservation non prouvee"
+  fi
+
+  # Controle NEGATIF : un succes remet le compteur a zero (sinon la moindre
+  # panne transitoire accumulerait jusqu'a la quarantaine).
+  RS="$TEST_DIR/repack-reset"
+  mkdir -p "$RS"
+  git init -q "$RS"
+  git -C "$RS" -c user.email=t@t -c user.name=t commit -q --allow-empty -m init
+  mkdir -p "$RS/.git/objects/pack"
+  : > "$RS/.git/objects/pack/a.pack"
+  : > "$RS/.git/objects/pack/b.pack"
+  wch_repack_streak_write "$RS" 2
+  wch_git() { git -c safe.directory='*' "$@"; }
+  wch_maintenance_pass "$RS" 1 >/dev/null 2>&1
+  ck="$(wch_repack_streak_read "$RS")"
+  if [ "$ck" = "0" ]; then ok "controle NEGATIF : un repack reussi remet le compteur a 0"; else ko "compteur apres succes = [$ck], attendu 0"; fi
+)
+echo ""
+
+# --- Repack sous alternates (#18225) --------------------------------------
+# Le slot d'un parc a miroir emprunte ses objets ; le repack de maintenance ne
+# doit PAS les rapatrier. Le controle est un couple : MEME fixture, deux formes
+# de repack, verdicts OPPOSES. Un test qui ne montrerait que la bonne forme ne
+# prouverait pas que c'est le drapeau qui decide -- il pourrait passer parce que
+# git ne copie jamais, ou parce que la fixture ne contient rien a copier.
+echo "Test : repack -- un depot a alternates ne copie pas les objets empruntes (#18225)"
+(
+  M="$TEST_DIR/mirror-objs.git"
+  S="$TEST_DIR/slot-alt"
+  S2="$TEST_DIR/slot-alt-oldfl"
+  SRC="$TEST_DIR/src-alt"
+  git init -q --bare "$M"
+  git init -q -b main "$SRC"
+  git -C "$SRC" config user.email t@t; git -C "$SRC" config user.name t
+  for i in 1 2 3; do
+    head -c 512 /dev/urandom | base64 > "$SRC/m$i.txt"
+    git -C "$SRC" add .
+    git -C "$SRC" commit -qm "m$i"
+  done
+  git -C "$SRC" push -q "$M" main
+  # Objet qui n'existe QUE dans le miroir : sa presence locale apres repack
+  # signifie « recopie », son absence signifie « emprunte ».
+  BLOB="$(git -C "$SRC" rev-parse main:m1.txt)"
+
+  git clone -q --shared "$M" "$S"
+  git clone -q --shared "$M" "$S2"
+
+  if wch_has_alternates "$S"; then
+    ok "predicat : un clone --shared porte des alternates"
+  else
+    ko "predicat : alternates non detecte sur un clone --shared"
+  fi
+  if wch_has_alternates "$SRC"; then
+    ko "predicat : alternates detecte sur un depot ordinaire (faux positif)"
+  else
+    ok "predicat : un depot ordinaire n'a pas d'alternates (controle negatif)"
+  fi
+  if [ "$(wch_repack_flags "$S")" = "-adl" ] && [ "$(wch_repack_flags "$SRC")" = "-ad" ]; then
+    ok "drapeaux : -adl sous alternates, -ad sinon"
+  else
+    ko "drapeaux : $(wch_repack_flags "$S") / $(wch_repack_flags "$SRC")"
+  fi
+
+  # Deux packs locaux pour franchir le seuil (sinon la maintenance sort avant
+  # le repack et le test ne mesurerait rien).
+  for s in "$S" "$S2"; do
+    echo local1 > "$s/l1.txt"; git -C "$s" add .
+    git -C "$s" -c user.email=t@t -c user.name=t commit -qm l1
+    git -C "$s" repack -adl -q
+    echo local2 > "$s/l2.txt"; git -C "$s" add .
+    git -C "$s" -c user.email=t@t -c user.name=t commit -qm l2
+    git -C "$s" repack -d -q
+  done
+  before="$(wch_pack_count "$S")"
+  if [ "${before:-0}" -ge 2 ]; then
+    ok "fixture : $before packs locaux (le seuil 1 est franchi, le repack aura lieu)"
+  else
+    ko "fixture : seulement $before pack(s) -- le repack ne serait pas declenche"
+  fi
+
+  out="$(wch_maintenance_pass "$S" 1 2>&1)"
+  echo "$out" >> "$LOG"
+  if echo "$out" | grep -q -- "-adl"; then
+    ok "maintenance : le journal nomme les drapeaux -adl"
+  else
+    ko "maintenance : drapeaux -adl absents du journal ($out)"
+  fi
+  # Verdict du depot sous maintenance, mesure par RETRAIT des alternates : si
+  # l'objet du miroir reste resolvable sans eux, il a ete copie.
+  mv "$S/.git/objects/info/alternates" "$S/.git/objects/info/alternates.off"
+  if git -C "$S" cat-file -e "$BLOB" 2>/dev/null; then
+    ko "les objets du miroir ont ete COPIES dans le volume du slot (repack sans -l)"
+  else
+    ok "objets du miroir non copies : le miroir supprime bien le telechargement par slot"
+  fi
+  mv "$S/.git/objects/info/alternates.off" "$S/.git/objects/info/alternates"
+
+  # Controle par le MECANISME : la meme fixture sous l'ancienne forme doit,
+  # elle, copier. Sans ce temoin, le vert precedent pourrait venir de la
+  # fixture et non du drapeau.
+  git -C "$S2" repack -ad >/dev/null 2>&1
+  mv "$S2/.git/objects/info/alternates" "$S2/.git/objects/info/alternates.off"
+  if git -C "$S2" cat-file -e "$BLOB" 2>/dev/null; then
+    ok "temoin : repack -ad (sans -l) copie l'objet du miroir -- le drapeau est bien la cause"
+  else
+    ko "temoin : même -ad n'a pas copie -- la mesure precedente ne prouve rien"
+  fi
+  mv "$S2/.git/objects/info/alternates.off" "$S2/.git/objects/info/alternates"
 )
 echo ""
 

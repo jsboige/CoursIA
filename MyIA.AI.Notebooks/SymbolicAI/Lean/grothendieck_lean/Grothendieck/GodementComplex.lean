@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import Grothendieck.GodementExactness
 import Mathlib.Algebra.Homology.HomologicalComplex
+import Mathlib.Algebra.Homology.ShortComplex.HomologicalComplex
+import Mathlib.Algebra.Homology.ShortComplex.PreservesHomology
 import Mathlib.CategoryTheory.Comma.Arrow
 
 /-!
@@ -161,5 +163,109 @@ theorem godementCanonicalComplex_d_zero (F : X.Presheaf AddCommGrpCat.{u}) :
 theorem godementCanonicalComplex_d_one (F : X.Presheaf AddCommGrpCat.{u}) :
     (godementCanonicalComplex F).d 1 2 = godementCanonicalDOne F := by
   rw [godementCanonicalComplex_d, godementCanonicalD_one]
+
+/-- **Partie 93(b) — l'assemblage : le complexe canonique est exact en
+chaque tige, à tout degré, sans aucune hypothèse de faisceau** : pour tout
+`n`, la suite de tiges `CⁿFₓ₀ ⟶ C^{n+1}Fₓ₀ ⟶ C^{n+2}Fₓ₀` est exacte en
+`C^{n+1}Fₓ₀`. La récurrence promise par la Partie 93(a) est le lemme
+générique lui-même : chaque degré est `stalk_exact_godementStep` en
+`f = dⁿ`, les deux motifs d'assemblage — `d^{n+1} = godementStep dⁿ`
+(P89) et `C^{n+2} = C⁰(coker dⁿ)` (P92) — étant **définitionnels**
+(`rfl`), aucune récurrence sur `n` n'est à écrire. Les degrés explicités
+en 93(a) sont les instances `n = 0` du présent énoncé
+(`stalk_exact_godementCanonicalDZero_godementCanonicalDOne`) et le degré
+augmenté `Fₓ₀ ⟶ (C⁰F)ₓ₀ ⟶ (C¹F)ₓ₀` en `f = μ`
+(`stalk_exact_toGodement_godementCanonicalDZero`). La lecture homologique —
+l'acyclicité `Hⁿ(C⁰F) = 0` pour `n ≥ 1` — est livrée ci-dessous
+(`isZero_stalk_homology_godementCanonicalComplex`). -/
+theorem stalk_exact_godementCanonicalD (F : X.Presheaf AddCommGrpCat.{u})
+    (x₀ : X) (n : ℕ) :
+    (ShortComplex.mk
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalD F n))
+      ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+        (godementCanonicalD F (n + 1)))
+      (by rw [show ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalD F n) ≫
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalD F (n + 1))) =
+            (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).map
+              (godementCanonicalD F n ≫ godementCanonicalD F (n + 1)) from
+              (Functor.map_comp _ _ _).symm,
+        godementCanonicalD_comp_zero,
+        Functor.map_zero])).Exact :=
+  stalk_exact_godementStep (godementCanonicalD F n) x₀
+
+/-- **Partie 93(b) — la lecture homologique : l'homologie du complexe
+canonique est nulle en chaque tige, pour tout degré `n ≥ 1`** : pour tout
+point `x₀`, `IsZero` de la tige en `x₀` de `Hⁿ(C⁰F)` — **sans aucune
+hypothèse de faisceau**.
+
+C'est la lecture homologique de `stalk_exact_godementCanonicalD`, en trois
+gestes : le complexe court de tiges centré en `n` est exact (c'est ce
+théorème en `n - 1`) ; une suite courte exacte a une homologie nulle
+(`ShortComplex.exact_iff_isZero_homology`) ; et l'instance
+`stalkFunctor_preservesHomology` (Partie 93(a), AB5) transporte ce `IsZero`
+le long de l'isomorphisme canonique `ShortComplex.mapHomologyIso` :
+l'homologie de la tige est la tige de l'homologie.
+
+**Pourquoi les tiges et non le préfaisceau** : l'énoncé de [God58]
+(II Th. 5.2.1) est `Hⁿ(C⁰F) = 0` dans la catégorie des faisceaux. Un
+préfaisceau dont toutes les tiges sont nulles n'est pas nul en général
+(non séparé) : la nullité en chaque tige est la forme inconditionnelle —
+le corollaire « faisceau » (nullité de `Hⁿ` dans la catégorie des
+faisceaux) est le front suivant.
+
+Le degré `n = 0` est exclu : `H⁰(C⁰F) = ker d⁰` n'a aucune raison d'être
+nul — l'exactitude en `C⁰F` est celle du complexe augmenté
+`F ⟶ C⁰F ⟶ ⋯` (flèche entrante `μ`), déjà établie en chaque tige par
+`stalk_exact_toGodement_godementCanonicalDZero` (Partie 93(a)). -/
+theorem isZero_stalk_homology_godementCanonicalComplex
+    (F : X.Presheaf AddCommGrpCat.{u}) (x₀ : X) {n : ℕ} (hn : 1 ≤ n) :
+    IsZero ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).obj
+      ((godementCanonicalComplex F).homology n)) := by
+  obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
+  -- `ComplexShape.next`/`prev` sont choisis via `Exists.choose` : opaques en
+  -- defeq, leurs équations se prouvent à la main (split sur le dite).
+  have hprev : (ComplexShape.up ℕ).prev (m + 1) = m := by
+    unfold ComplexShape.prev
+    split
+    case isTrue h =>
+      have h2 : h.choose + 1 = m + 1 := h.choose_spec
+      omega
+    case isFalse h =>
+      exact (h (Exists.intro m rfl : ∃ j, (ComplexShape.up ℕ).Rel j (m + 1))).elim
+  have hnext : (ComplexShape.up ℕ).next (m + 1) = m + 1 + 1 := by
+    unfold ComplexShape.next
+    split
+    case isTrue h =>
+      have h2 : m + 1 + 1 = h.choose := h.choose_spec
+      exact h2.symm
+    case isFalse h =>
+      exact (h (Exists.intro (m + 1 + 1) rfl : ∃ j, (ComplexShape.up ℕ).Rel (m + 1) j)).elim
+  -- Les différentielles de `sc'` sont les `d` exacts du complexe ; `simp only`
+  -- (et non `rw`) réécrit `d` dans le champ autoParam `zero` dépendant :
+  have hex : (((godementCanonicalComplex F).sc' m (m + 1) (m + 1 + 1)).map
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).Exact := by
+    show ((ShortComplex.mk ((godementCanonicalComplex F).d m (m + 1))
+        ((godementCanonicalComplex F).d (m + 1) (m + 1 + 1))
+        ((godementCanonicalComplex F).d_comp_d m (m + 1) (m + 1 + 1))).map
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).Exact
+    simp only [godementCanonicalComplex_d]
+    exact stalk_exact_godementCanonicalD F x₀ m
+  have h0 : IsZero (((godementCanonicalComplex F).sc' m (m + 1) (m + 1 + 1)).map
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).homology :=
+    (ShortComplex.exact_iff_isZero_homology _).mp hex
+  have h1 : IsZero ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).obj
+      ((godementCanonicalComplex F).sc' m (m + 1) (m + 1 + 1)).homology) :=
+    IsZero.of_iso h0 (((godementCanonicalComplex F).sc' m (m + 1) (m + 1 + 1)).mapHomologyIso
+      (TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀)).symm
+  -- Raccord sc' ≅ sc (isoSc' + prev/next manuels) puis homologie du complexe
+  -- (`homologyMapIso` est une fonction de namespace, pas une projection) :
+  have e := (godementCanonicalComplex F).isoSc' (i := m) (j := m + 1) (k := m + 1 + 1)
+    hprev hnext
+  exact IsZero.of_iso h1
+    ((TopCat.Presheaf.stalkFunctor AddCommGrpCat.{u} x₀).mapIso
+      (ShortComplex.homologyMapIso e))
 
 end Grothendieck

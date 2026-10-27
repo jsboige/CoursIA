@@ -163,6 +163,15 @@ TOOL_FAILURE_PATTERNS = (
     re.compile(r"no such file or directory", re.IGNORECASE),
     # inherited from check_render_volume_delta._UNAVAILABLE_PATTERNS
     *DEGRADED_HINT_PATTERNS,
+    # Interpreteur Lean (#21578) : un `@[extern]` de la Storage TorchLean n'est
+    # resolu que par le binaire lie ; dans l'interpreteur, l'evaluation meurt sur
+    # ce message, qui atterrit tel quel dans les outputs committes du carnet. La
+    # classe est OUTIL (le runtime ne fournit pas la primitive), pas MACHINE : le
+    # message ne nomme ni OS, ni repertoire, ni binaire externe. Meme regime que
+    # le motif ImportError ci-dessous — la FORME de l'erreur, pas le symbole
+    # TorchLean particulier : tout paquet a `@[extern]` produit la meme classe.
+    re.compile(r"could not find native implementation of external declaration",
+               re.IGNORECASE),
     # ImportError (#20701) : la FORME d'une exception levee (le nom, son
     # deux-points et un message), et non le mot nu. Une reponse de LLM cite la
     # classe dans sa prose (« `ImportError` si la CLI est lancee ... ») : une
@@ -176,6 +185,35 @@ TOOL_FAILURE_PATTERNS = (
                r"|^[ \t]*(?:\x1b\[[0-9;]*m)*ImportError(?:\x1b\[[0-9;]*m)*"
                r"[ \t\r]*$",
                re.IGNORECASE | re.MULTILINE),
+    # Echec de workflow ComfyUI (#21816). Le service de generation repond une
+    # erreur et le carnet commite son repli a la place de l'illustration :
+    # exactement le degat C.2 que ce ratchet existe pour voir (#3473 /
+    # #11685). Les trois formes sont mesurees sur le blob d'avant #21815 de
+    # Barbie-Schreck (commit 0dbdd963ec) : la premiere est la levee du client
+    # partage (comfyui_client.py:233), les deux autres sont les lignes que la
+    # cellule journalise en repli, une par tour de generation.
+    #
+    # Ils sont DURS, pas doux : une banniere qui a remplace un rendu n'est pas
+    # un mode demo declare, et l'exemption de #18916/#19697 ne doit pas
+    # l'absoudre (mesure du 2026-10-24 : sur le blob degrade les trois rendent
+    # 4 hits en dur, sur le blob restaure 0). La classe est OUTIL -- un
+    # service externe a echoue -- jamais MACHINE : aucun des trois ne nomme un
+    # chemin, un OS ou un repertoire.
+    #
+    # `erreur generation image` est redondant avec `workflow execution failed`
+    # SUR CETTE INSTANCE (les deux rendent les memes 2 flux) ; il est garde
+    # parce que la cellule journalise ce prefixe quelle que soit l'exception :
+    # un delai d'attente produit le meme message sans la levee du client.
+    # Ce troisieme motif est EPINGLE A L'INSTANCE : il porte l'orthographe de
+    # cette cellule, sans accents. La forme PORTEUSE est la premiere
+    # (`workflow execution failed`), independante de l'orthographe -- c'est elle
+    # qui couvre tout autre carnet. Un carnet ecrivant « Erreur generation
+    # image » avec ses accents demanderait son propre motif mesure : aucune
+    # occurrence accentuee n'existe dans les sorties commitees (recherche du
+    # 2026-10-24), donc rien n'est devine ici.
+    re.compile(r"workflow execution failed", re.IGNORECASE),
+    re.compile(r"erreur generation image", re.IGNORECASE),
+    re.compile(r"illustration indisponible", re.IGNORECASE),
 )
 
 # Witnesses: real strings observed in committed outputs. The self-test asserts
@@ -192,6 +230,14 @@ _PATTERN_WITNESSES = (
     "bash: dot: command not found",
     "simanneal non disponible",
     "ImportError: cannot import name 'X' from 'y'",
+    "Could not find native implementation of external declaration "
+    "'TorchLean.Storage.Internal.floatBufferAppendSliceNative'",
+    # #21816 : les deux lignes committeees par le blob degrade de
+    # Barbie-Schreck (avant #21815), telles quelles -- la premiere porte deux
+    # des trois motifs, la seconde le troisieme.
+    "ERROR:BarbieVsAne:Erreur generation image: Workflow execution failed "
+    "(server reported error)",
+    "WARNING:BarbieVsAne:Illustration indisponible pour cette replique",
 )
 
 # --- benign banners: matched above, and NOT a tool failure -----------------
@@ -380,6 +426,14 @@ CAPABILITY_WITNESS_PATTERNS = (
 # cells verbatim, never read from git objects that may not be there.
 DOWNGRADE_REPLAY_FIXTURE = "demucs_downgrade_pair_14603.json"
 SELF_TEST_MIN_DOWNGRADE = 2
+
+# #21816 : la mesure du blob degrade de Barbie-Schreck (0dbdd963ec) est 4 hits
+# en dur, stable et reproduite hors du harnais (cellule 24, flux 17/20/36/39).
+# Le plancher du controle positif epingle cette mesure : un `>= 2` laissait
+# passer une regression qui perdrait deux des quatre motifs et resterait verte,
+# alors que la valeur attendue est connue. `--self-test` imprime la mesure, donc
+# une re-serialisation du carnet qui la deplacerait se lit dans la sortie.
+SELF_TEST_MIN_COMFY_HITS = 4
 
 
 def _cell_output_text(cell):
@@ -1342,6 +1396,71 @@ def self_test(cwd=None):
             failures.append("downgrade replay CAPABILITY_DOWNGRADE "
                             + str(n_down) + " < "
                             + str(SELF_TEST_MIN_DOWNGRADE) + " expected")
+
+    # Replay #21816 : l'echec de workflow ComfyUI. Le blob d'avant #21815
+    # (0dbdd963ec, parent du merge de restauration) portait deux tours de
+    # repli sur stderr et AUCUNE illustration ; 1179cadc63 restaure les deux
+    # images et ses sorties ne portent plus un seul des trois motifs. Le
+    # controle est bidirectionnel et sur les vrais blobs -- un motif qui
+    # n'attrape pas le cas fondateur n'est pas livre, et un motif qui
+    # continue de le voir apres restauration serait un faux positif. Les deux
+    # commits sont sur main : le replay ne s'auto-saute que sur un clone
+    # partiel, et le dit comme les autres.
+    c_21816_deg = "0dbdd963ecbe9194832456abaf3fa54faa57ab21"
+    c_21816_fix = "1179cadc6354804e4ae1d3eca73c1947c7c6c84e"
+    nb_21816 = ("MyIA.AI.Notebooks/GenAI/CaseStudies/Barbie-Schreck/"
+                "barbie-schreck.ipynb")
+    if (git("cat-file", "-e", c_21816_deg, cwd=cwd) is None
+            or git("cat-file", "-e", c_21816_fix, cwd=cwd) is None):
+        print("SKIP #21816 replay: 0dbdd963ec/1179cadc63 not in this clone")
+    else:
+        deg = scan(read_notebook_at(c_21816_deg, nb_21816, cwd=cwd))
+        fix = scan(read_notebook_at(c_21816_fix, nb_21816, cwd=cwd))
+        n_deg = len(deg["TOOL_FAILURE"])
+        n_fix = len(fix["TOOL_FAILURE"])
+        print("replay #21816: ComfyUI TOOL_FAILURE " + str(n_deg) + " -> "
+              + str(n_fix))
+        if n_deg < SELF_TEST_MIN_COMFY_HITS:
+            failures.append("#21816 replay: ComfyUI fallback not seen in the "
+                            "degraded blob (" + str(n_deg) + " < "
+                            + str(SELF_TEST_MIN_COMFY_HITS) + " measured; "
+                            + repr(deg["TOOL_FAILURE"]) + ")")
+        if n_fix:
+            failures.append("#21816 replay: ComfyUI failure still reported "
+                            "after the restoration (" + repr(fix["TOOL_FAILURE"])
+                            + ")")
+        # La direction qui compte vraiment : le PR qui a FAIT ENTRER le repli
+        # (133ffac507) a ete merge vert. Rejoue avec les motifs d'aujourd'hui,
+        # son delta doit etre positif -- c'est le trou que #21816 ferme, et
+        # un replay qui ne vaudrait que pour la restauration ne prouverait
+        # rien de ce trou.
+        #
+        # Le PARENT est garde comme les deux blobs, et la ligne `added` est
+        # refusee. Sans ces deux bornes l'assertion est satisfiable a vide :
+        # `compare()` ne rend pas d'erreur quand la base est illisible, il lit
+        # base_nb = None, marque la ligne `added`, scanne une base VIDE et
+        # calcule delta = 4 -- vert exactement comme sur un clone complet. Un
+        # clone superficiel dont la frontiere tombe sur ce commit produirait
+        # donc le vert que ce controle existe pour empecher (meme famille que
+        # #22277, « chercher OMIT_SHA partout est satisfiable a vide »).
+        c_21816_intro = "133ffac5071e255c7d594e601ba6b71a54104c3f"
+        if (git("cat-file", "-e", c_21816_intro, cwd=cwd) is None
+                or git("cat-file", "-e", c_21816_intro + "^", cwd=cwd) is None):
+            print("SKIP #21816 intro replay: 133ffac507 (or its parent) not "
+                  "in this clone")
+        else:
+            rows = compare(c_21816_intro + "^", c_21816_intro, [nb_21816],
+                           cwd=cwd)
+            delta = rows[0]["classes"]["TOOL_FAILURE"]["delta"]
+            print("replay #21816 intro: delta TOOL_FAILURE " + str(delta)
+                  + " (attendu > 0)")
+            if rows[0].get("added"):
+                failures.append("#21816 intro replay: the base carnet is "
+                                "unreadable (row marked added) -- delta "
+                                + str(delta) + " compares an empty base")
+            elif delta <= 0:
+                failures.append("#21816 intro replay: the entering commit is "
+                                "still green (delta " + str(delta) + ")")
 
     for f in failures:
         print("SELF-TEST FAIL: " + f)

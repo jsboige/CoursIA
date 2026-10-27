@@ -2,7 +2,7 @@
 series: QuantConnect-Python
 pedagogical_count: 63
 breakdown: Python=63
-maturity: DRAFT=34, BETA=22, ALPHA=7
+maturity: BETA=33, DRAFT=27, ALPHA=3
 -->
 
 # QuantConnect Python Notebooks
@@ -47,7 +47,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-05-Universe-Selection | NON EXÉCUTÉ | |
 | QC-Py-05b-FScore-Piotroski | EXÉCUTÉ | CPU local (yfinance/numpy/scipy), cellules code exécutées, données réelles 14 titres |
 | QC-Py-06-Options-Trading | NON EXÉCUTÉ | |
-| QC-Py-06b-Derivatives-Valuation-From-Scratch | EXÉCUTÉ | CPU local (numpy/scipy), 13/13 cellules code, 3 figures |
+| QC-Py-06b-Derivatives-Valuation-From-Scratch | EXÉCUTÉ | CPU local (numpy/scipy), cellules code exécutées |
 | QC-Py-07-Futures-Forex | NON EXÉCUTÉ | |
 | QC-Py-08-Multi-Asset-Strategies | NON EXÉCUTÉ | |
 | QC-Py-09-Order-Types | NON EXÉCUTÉ | |
@@ -103,6 +103,7 @@ Suite à l'audit du 5 mai 2026, voici l'état honnête de chaque notebook. **Auc
 | QC-Py-35-RL-Portfolio-Construction | EXÉCUTÉ | |
 | QC-Py-Dataset-Workflow | NON EXÉCUTÉ | |
 | QC-Py-43-Diffusion-Series-Synthetiques | EXÉCUTÉ | cellules exécutées localement sur SPY (yfinance, 2 515 rendements log) — diffusion vs bootstrap i.i.d., augmentation `INCONCLUSIF` |
+| QC-Py-44-Agent-Trading-Multi-LLM | EXÉCUTÉ | 295 appels LLM réels (gpt-5.6-luna) : débat bull/bear via `AgentGroupChat`, mémoire soldée vs single-shot — verdict §C `INCONCLUSIVE` |
 
 **Récapitulatif** : la majorité des notebooks sont NON EXÉCUTÉS (code réel, exécution kernel ou QC Cloud à faire) ; une part croissante est EXÉCUTÉE et 10 sont des `doc cloud` (markdown-only). Le décompte précis relève du catalogue généré.
 
@@ -138,7 +139,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 
 **[19 — La validation walk-forward, ou l'honnêteté temporelle.](QC-Py-19-ML-Supervised-Classification.ipynb)** Un modèle entraîné une fois puis testé sur tout l'échantillon triche avec le temps. La validation walk-forward décale une fenêtre d'entraînement puis re-teste, fold après fold, en mimant le retrain périodique qu'exige un trading réel. L'accuracy par fold révèle la robustesse — ou l'effondrement — hors échantillon.
 
-<p align="center"><a href="QC-Py-19-ML-Supervised-Classification.ipynb"><img src="assets/readme/quantpy19-walkforward.png" width="540" alt="Validation walk-forward d'un classifieur supervisé : deux sous-graphiques empilés sur 14 mois (2023-03 → 2024-05). Haut — accuracy par fold (bar chart bleu, axe Y = 0.0 → 1.0, axe X = 1 → 14) avec 2 lignes horizontales : Mean Accuracy = 0.874 (rouge pointillés, performance moyenne élevée) et Random Baseline = 0.5 (gris pointillés, baseline 50/50). Distribution hétérogène : folds 5/6/10/11 ≈ 1.0 (excellents), folds 7 ≈ 0.50 (le plus mauvais, à peine au-dessus du random), folds 3/9 ≈ 0.65 (sous-performances ponctuelles). Bas — accuracy cumulée au fil du temps (courbe bleue pleine, aire bleu clair sous la courbe), démarrant à 1.0 puis convergeant vers ~0.87 sur 14 mois malgré les folds médiocres. Démontre la stabilité OOS du modèle (accuracy cumulée reste > 0.85)."></a></p>
+<p align="center"><a href="QC-Py-19-ML-Supervised-Classification.ipynb"><img src="assets/readme/quantpy19-walkforward.png" width="540" alt="Validation walk-forward d'un classifieur supervisé : deux sous-graphiques empilés sur 14 mois (2023-03 → 2024-05). Haut — accuracy par fold (bar chart bleu, axe Y = 0.0 → 1.0, axe X = 1 → 14) avec des lignes horizontales de référence : Mean Accuracy = 0.874 (rouge pointillés, performance moyenne élevée) et Random Baseline = 0.5 (gris pointillés, baseline 50/50). Distribution hétérogène : folds 5/6/10/11 ≈ 1.0 (excellents), folds 7 ≈ 0.50 (le plus mauvais, à peine au-dessus du random), folds 3/9 ≈ 0.65 (sous-performances ponctuelles). Bas — accuracy cumulée au fil du temps (courbe bleue pleine, aire bleu clair sous la courbe), démarrant à 1.0 puis convergeant vers ~0.87 sur 14 mois malgré les folds médiocres. Démontre la stabilité OOS du modèle (accuracy cumulée reste > 0.85)."></a></p>
 
 **[32 — L'agent qui apprend à trader.](QC-Py-32-RL-DQN-Trading.ipynb)** Le deep reinforcement learning entraîne un agent par essais et erreurs : chaque épisode ajuste sa politique pour maximiser la récompense cumulée. La courbe des récompenses par épisode montre la transition de l'exploration vers l'exploitation — le moment où l'agent cesse de tâtonner et commence à exploiter ce qu'il a appris.
 
@@ -186,7 +187,7 @@ Chaque notebook de la série rend visible un geste quantitatif distinct, dans un
 |----------|---------|
 | [QC-Py-18-ML-Features-Engineering](QC-Py-18-ML-Features-Engineering.ipynb) | Feature engineering pour trading |
 | [QC-Py-19-ML-Supervised-Classification](QC-Py-19-ML-Supervised-Classification.ipynb) | Classification, signaux d'achat/vente |
-| [QC-Py-20-ML-Regression-Prediction](QC-Py-20-ML-Regression-Prediction.ipynb) | Régression, prédiction de prix |
+| [QC-Py-20-ML-Regression-Prediction](QC-Py-20-ML-Regression-Prediction.ipynb) | Régression, prédiction de prix ; ancrage canonique ML-factor (linéaire vs arbres vs réseau sous multi-graines + Diebold-Mariano) |
 | [QC-Py-21-Portfolio-Optimization-ML](QC-Py-21-Portfolio-Optimization-ML.ipynb) | Optimisation ML de portefeuille |
 | [QC-Py-22-Deep-Learning-LSTM](QC-Py-22-Deep-Learning-LSTM.ipynb) | Réseaux LSTM pour séries temporelles |
 | [QC-Py-23-State-Space-Models](QC-Py-23-State-Space-Models.ipynb) | State Space Models (S4/Mamba) pour séries temporelles |
@@ -284,6 +285,25 @@ stylisés** de la série réelle, et l'utilité mesurée des données engendrée
 Le carnet prend ses données sur **yfinance** (SPY, 2 515 rendements log quotidiens) : il
 requiert un accès réseau à l'exécution. Sa conclusion transférable est méthodologique — une
 perte de débruitage qui décroît ne dit rien de la qualité du générateur.
+
+## Recherche — agent de trading multi-LLM (QC-Py-44)
+
+Réduction pédagogique du cadre **TradingAgents** (Xiao et al., arXiv:2412.20138) : au lieu
+d'un seul appel LLM single-shot, deux **analystes** (momentum, risque) nourrissent un
+**débat bull/bear** borné à 2 tours via `AgentGroupChat` (semantic_kernel — organe natif de
+la série SemanticKernel), un **PM** tranche LONG/FLAT/SHORT avec prévision chiffrée, et une
+**mémoire de décisions soldées** journalise chaque décision, la solde au terme de l'horizon
+contre le rendement réalisé, et réinjecte une réflexion d'une phrase au point suivant.
+
+| Notebook | Méthode | Ce qu'il démontre |
+|----------|---------|-------------------|
+| [QC-Py-44-Agent-Trading-Multi-LLM](QC-Py-44-Agent-Trading-Multi-LLM.ipynb) | 2 bras sur les mêmes contextes (BTC-USD, 8 points espacés de 120 j ≈ 2,3 ans) : cadre complet vs single-shot, 4 graines (0, 1, 7, 42), pertes appariées, Diebold-Mariano Newey-West lag 1, frais 10 bps/côté, 295 appels LLM réels | La délibération **ne se décrète pas significative** : le cadre bat la baseline en perte appariée sur 3 graines sur 4 (edge +0,165 pt de %) sans atteindre la conjonction §C (ratio +0,45σ, DM p = 0,34) → verdict `INCONCLUSIVE`. Témoins : mémoire structurellement vide au premier point (0 → 7 entrées par graine), accord entre analystes 40,6 %, les deux bras surestiment (+0,80 / +0,75 pt) — l'edge mesuré vient de la précision, pas du biais |
+
+La conclusion transférable est méthodologique : un cadre multi-agents avec mémoire **peut**
+améliorer la précision appariée d'un LLM isolé — ici il le fait en tendance, sur un petit
+échantillon de 32 paires — mais la barre §C (≥ 2σ ET p < 0,05) existe précisément pour
+empêcher de déclarer victoire sur cette taille d'effet. Le carnet requiert `OPENAI_API_KEY`
+à l'exécution (lue depuis `.secrets/master.env`, hors dépôt).
 
 ## Utilitaires
 

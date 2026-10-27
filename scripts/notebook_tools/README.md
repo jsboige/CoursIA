@@ -27,6 +27,7 @@ complement. L'inventaire ci-dessous remplace la lecture en aveugle de
 | **C# / .NET persistence** | — (archivés : `_exec_bdd_csharp.py`, `_fix_gt15b_compilation.py`, `_fix_lean34_unused_vars.py` → `scripts/notebook_tools/_archive/`) | Diagnostic + fix cibles C# specifiques (GT-15, Lean34) ; voir `_archive/README.md` (palier 1 #18153, 2026-10-01) |
 | **Leak-fix batch (legacy)** | `_fix_leaks_batch1.py` (archivé), `restructure_sw_2613.py` | Migration SW (#2613) + de-leak batch 1 legacy 2026 ; batches 2-5 archivés 2026-10-01 (`_archive/README.md` palier 1 #18153) |
 | **Divers** | `_alpha_diag.py`, `cell_order_ci.py`, `fix_audio_dependencies.py`, `flatten_import_notebook.py`, `generate_16e.py`, `generate_parcours.py`, `epita_prcon_autograde.py`, `sudoku_validate_outputs.py` | Cibles specifiques (diagnostics, EPITA autograde, parcours 16e) ; `optimize_dvs.py` archivé 2026-10-01 (`_archive/README.md` palier 1 #18153) |
+| **Rendu pédagogique** | `knot_diagram.py` | Diagrammes de nœuds 2D depuis un PD-code SnapPy — Python pur (faces par système de rotation, plongement de Tutte, arcs Bezier, halo sur/sous), substitut portable au rendu POSIX `draw`+`mpost` de Spherogram (#21908) |
 
 Tests unitaires dans `scripts/notebook_tools/tests/`.
 
