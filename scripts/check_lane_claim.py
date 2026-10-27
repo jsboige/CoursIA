@@ -3045,6 +3045,23 @@ def _claim_age_hours(created_at: str | None, now: datetime) -> float | None:
     return (now - parsed).total_seconds() / 3600.0
 
 
+#: #22983 -- un titre d'EPIC qui nomme un PARENT (`[EPIC #10355] Phase 3`,
+#: `[Epic Origami #19742 - Pli 3]`, `Epic #21424 T3 : ...`) designe une
+#: TRANCHE, pas un conteneur. Mesure du 27/10 (615 issues ouvertes) : 41
+#: issues portent un titre `EPIC...` sans le label `EPIC` ; 10 d'entre elles
+#: nomment un parent, et les 10 sont des tranches (`Phase 2/5`, `Pli 3`,
+#: `Tranche C etape 3`, `T3`, `T5`). Les 31 autres sont de vrais
+#: conteneurs (`[EPIC] Consolidation...`, `[Epic Origami] ...`).
+#:
+#: Pourquoi cela compte : sur une UMBRELLA, le filtre de livraison ne
+#: cherche que le MARQUEUR DE CONTENEUR (`[INFO] candidate-delivered`), pas
+#: le marqueur de grain (`[DELIVERED] lane ... -- motif`). Une tranche
+#: livree et classee umbrella reste donc servable -- mesure du 27/10 sur
+#: #21435 (`[DELIVERED] lane myia-po-2028:CoursIA` present, issue servie
+#: quand meme avec un `[CLAIMED]` fantome).
+EPIC_PARENT_TITLE_RE = re.compile(r"^\s*\[?EPIC\b[^\]]{0,40}#\d+", re.IGNORECASE)
+
+
 def _is_umbrella_issue(payload: dict) -> bool:
     """Return True if `payload` describes an umbrella / EPIC-style issue (#12156).
 
@@ -3055,6 +3072,11 @@ def _is_umbrella_issue(payload: dict) -> bool:
     `[EPIC` / `EPIC` after stripping the leading `[`. The label-route is the
     authoritative one; the title-route catches the historic pre-label inventory
     that the picker also accepts.
+
+    #22983 -- la route par TITRE exclut les TRANCHES : un titre qui nomme
+    un parent (`[EPIC #10355] Phase 3`) designe une tranche, pas un
+    conteneur. Le label reste autoritaire : une issue explicitement
+    labelisee `EPIC` reste une umbrella, quoi que son titre.
 
     Returns False on missing keys (defensive: the from-json path may carry a
     subset of fields). Never raises -- a malformed payload should degrade to
@@ -3067,6 +3089,9 @@ def _is_umbrella_issue(payload: dict) -> bool:
             if isinstance(name, str) and name == "EPIC":
                 return True
         title = payload.get("title") or ""
+        if EPIC_PARENT_TITLE_RE.match(title.lstrip("[")):
+            # Route par titre, mais le titre nomme un parent : TRANCHE.
+            return False
         upper = title.upper().lstrip("[")
         return upper.startswith("EPIC")
     except (AttributeError, TypeError):

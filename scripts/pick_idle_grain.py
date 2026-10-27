@@ -1243,7 +1243,7 @@ def fetch_pool(
     for it in raw:
         labels = [lb["name"] for lb in it.get("labels", [])]
         title = it["title"]
-        is_umbrella = "EPIC" in labels or title.upper().lstrip("[").startswith("EPIC")
+        is_umbrella = is_umbrella_classification(title, labels)
         body = it.get("body") or ""
         # #13972 : le genre que l'AUTEUR de l'issue a declare dans le body
         # (`Grain: TIER/GENRE -- lane ...`) prime sur l'inference du titre.
@@ -4144,6 +4144,33 @@ def _claim_reader_module():
     import check_lane_claim as clc  # noqa: PLC0415 - import tardif assume
     _CLC_MODULE = clc
     return clc
+
+
+def is_umbrella_classification(title: str, labels: list[str]) -> bool:
+    """Cette issue est-elle une UMBRELLA (conteneur) ou un GRAIN ?
+
+    La classification est celle du **LECTEUR** (`check_lane_claim.py`), pas
+    une seconde copie : les deux organes doivent parler la meme langue.
+    Une divergence classait une TRANCHE en umbrella dans l'un et en grain
+    dans l'autre -- et le filtre de livraison (`[DELIVERED]`) ne s'applique
+    qu'au GRAIN, donc une tranche livree restait servable (mesure du
+    27/10 sur #21435, revue ai-01 du meme jour).
+
+    Repli : si le module LECTEUR n'est pas importable, on garde la
+    classification d'avant (titre `EPIC` sans parent nomme) plutot que de
+    faire echouer le tirage.
+    """
+    try:
+        clc = _claim_reader_module()
+    except Exception:  # noqa: BLE001 - le repli ci-dessous est plus sur
+        return ("EPIC" in labels
+                or title.upper().lstrip("[").startswith("EPIC"))
+    try:
+        return bool(clc._is_umbrella_issue(
+            {"title": title, "labels": [{"name": n} for n in labels]}))
+    except Exception:  # noqa: BLE001 - repli : le tirage ne doit pas tomber
+        return ("EPIC" in labels
+                or title.upper().lstrip("[").startswith("EPIC"))
 
 
 def _complete_open_prs() -> list[dict]:
@@ -9302,7 +9329,14 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 merged_pr_expired = bool(
                     delivery_age_h is not None
                     and delivery_age_h >= CONSOLIDATION_LAG_H)
-                verdict = (False if expired()
+                # #22983 -- le mur de temps atteint rend un triplet
+                # VIDE, pas un booleen : le destructureur plus bas
+                # (`recent_flag, delivered_flag, stamp = verdict`) leve
+                # `TypeError` sur un scalaire. Mesure du 27/10 : le tapis
+                # a CRASSE sur cette branche quand la phase des claims
+                # avait consomme tout le budget (fenetre de service
+                # portee a 150 numeros).
+                verdict = ((False, False, None) if expired()
                            else user_delivery_event_probe(n))
                 if verdict is None:
                     # Lecture en echec : fail-OPEN, rien n'est neutralise --

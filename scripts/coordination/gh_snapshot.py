@@ -56,11 +56,20 @@ SNAPSHOT_VERSION = 1
 DEFAULT_TTL_SECONDS = 1800
 
 #: Fenetre maximale lue par le balayage des commentaires du depot, en
-#: secondes (36 h). Le balayage lit TOUS les commentaires modifies depuis
+#: secondes (24 h). Le balayage lit TOUS les commentaires modifies depuis
 #: `since` : son cout croit avec la fenetre, pas avec le nombre d'issues
 #: visees. Mesure du 27/10 (ce siege) : 417 commentaires sur 1,5 jour =
-#: 23,7 s de lecture ; au-dela, la lecture par issue est plus honnete.
-MAX_SWEEP_LOOKBACK_SECONDS = 36 * 3600
+#: 23,7 s de lecture (5 pages) ; au-dela, la lecture par issue est plus
+#: honnete. La fenetre de 24 h a depasse le budget de 60 s du balayage
+#: (mesure : `TimeoutExpired`, l'instantane indisponible) -- d'ou le
+#: budget de 180 s et la fenetre de 24 h.
+MAX_SWEEP_LOOKBACK_SECONDS = 24 * 3600
+
+#: Budget du balayage (le reste de la phase reseau garde 60 s). Le balayage
+#: lit TOUT le fil du depot depuis `since` : c'est 5 pages pour 1,5 jour
+#: (mesure du 27/10, 23,7 s), 10 pages pour 24 h -- le budget de 60 s
+#: produisait un `TimeoutExpired` et l'instantane indisponible.
+SWEEP_TIMEOUT_SECONDS = 180.0
 
 #: Duree au-dela de laquelle un verrou est considere comme abandonne (min).
 LOCK_STALE_SECONDS = 900
@@ -412,7 +421,7 @@ def fetch_open_issues(repo: str, *, timeout: float = 60.0) -> dict[int, dict]:
 
 
 def sweep_repo_comments(repo: str, snapshot: dict, *, since: str | None = None,
-                        timeout: float = 60.0) -> tuple[dict, int]:
+                        timeout: float = SWEEP_TIMEOUT_SECONDS) -> tuple[dict, int]:
     """Balaye les commentaires du depot et les fusionne dans l'instantane.
 
     Le balayage est **incremental par construction** : `since` borne la
@@ -470,7 +479,7 @@ def sweep_repo_comments(repo: str, snapshot: dict, *, since: str | None = None,
 
 def ensure_comments(repo: str, numbers: list[int], snapshot: dict, *,
                     ttl_seconds: int = DEFAULT_TTL_SECONDS,
-                    timeout: float = 60.0) -> tuple[dict, int, dict]:
+                    timeout: float = SWEEP_TIMEOUT_SECONDS) -> tuple[dict, int, dict]:
     """Garantit les commentaires ET les metadonnees des issues demandees.
 
     Deux voies, dans cet ordre :
