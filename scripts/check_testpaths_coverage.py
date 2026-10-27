@@ -78,6 +78,13 @@ WORKFLOW_COVERAGE: dict[str, list[str]] = {
         # Cables dans la jambe CPU de ce workflow le 2026-10-26 ; hermeticite
         # mesuree firsthand (aucun Docker, aucun reseau ; `genai-stack` a
         # exige `bcrypt`, deja dans le pip install du job), 666 tests cumules.
+        # EXCEPTION mesuree le 2026-10-27 : `qc-mcp-lite` ne se joue pas dans
+        # le run partage -- `server.py` l.31 importe `mcp.server.fastmcp` a la
+        # collection et le SDK MCP n'est pas dans le pip install de ce job
+        # (run #122006788867 : `ModuleNotFoundError: No module named 'mcp'`).
+        # Elle a son propre job dedie dans le MEME workflow (`qc-mcp-lite-
+        # tests`, SDK epingle 1.30.0) : la cible reste couverte par ce
+        # fichier, l'env reste isole.
         "scripts/datasets/tests",
         "scripts/genai-stack/tests",
         "scripts/hashlife/tests",

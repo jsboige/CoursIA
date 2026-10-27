@@ -557,8 +557,18 @@ jobs:
         # defaut qu'elle refute redevient invisible. Hermeticite mesuree
         # firsthand sur ce poste (2026-10-26, Python 3.13) : 77 / 199+1 skip /
         # 164 / 50 / 58 / 26 / 60 / 31 tests verts, 58 s cumules, aucune
-        # dependance hors du pip install de ce job (bcrypt compris, deja
-        # installe ici). L'inventaire des suites -- disque contre CI -- est
+        # dependance hors du pip install de ce job pour SEPT des huit suites
+        # (bcrypt compris, deja installe ici).
+        #
+        # La huitieme, `qc-mcp-lite`, fait exception : `server.py` l.31 importe
+        # `mcp.server.fastmcp` a la COLLECTION, et le SDK MCP n'est pas dans le
+        # pip install de ce job. Premier run (#122006788867, 2026-10-27) : le
+        # job s'est arrete sur `ModuleNotFoundError: No module named 'mcp'`,
+        # avec 21590 tests verts par ailleurs. La suite sort donc de ce run
+        # et prend son propre job (`qc-mcp-lite-tests`), ou le SDK est
+        # installe et epingle -- env isole, rayon d'action nul sur les 16000+
+        # tests du job partage ( meme motif que `adk-contracts` plus bas).
+        # L'inventaire des suites -- disque contre CI -- est
         # desormais un organe (`scripts/check_testpaths_coverage.py`, garde
         # `.github/workflows/testpaths-coverage-guard.yml`) et non une relecture
         # de workflow.
@@ -617,7 +627,6 @@ jobs:
             scripts/genai-stack/tests \
             scripts/hashlife/tests \
             scripts/i18n/tests \
-            scripts/qc-mcp-lite/tests \
             scripts/smartcontracts/tests \
             scripts/sudoku/tests \
             scripts/validation/tests \
@@ -800,6 +809,45 @@ jobs:
         if: always()
         run: |
           python scripts/ci/check_absorbed_path_parity.py --base origin/main
+
+  qc-mcp-lite-tests:
+    name: qc-mcp-lite suite (58)
+    # #22735 : `scripts/qc-mcp-lite/tests` (58 tests, verts en local) etait
+    # verte mais jouee par AUCUN workflow -- le defaut qu'elle refute
+    # (rate limiting, extraction de stats, auth) redev Invisible. Premier
+    # cablage : ajout au run pytest partage du job CPU, qui a casse la
+    # COLLECTE du job -- `scripts/qc-mcp-lite/server.py` l.31 importe
+    # `mcp.server.fastmcp`, et le SDK MCP n'est pas dans le pip install de ce
+    # job (run #122006788867, 2026-10-27 :
+    # `ModuleNotFoundError: No module named 'mcp'`, 21590 tests verts par
+    # ailleurs).
+    #
+    # Job dedie, PAS une entree du run pytest partage : meme motif que
+    # `adk-contracts` -- installer une chaine de dependances dans l'env
+    # partage du job CPU risquerait des conflits de pin avec les 16000+ tests
+    # qui y tournent. Env isole = rayon d'action nul.
+    #
+    # Le SDK est epingle sur la version mesuree (1.30.0 -- 58 tests verts en
+    # 3,8 s sur ce poste le 2026-10-27) : le pin est une garantie de
+    # non-regression, pas un upgrade. pytest est epingle `>=8` pour
+    # l'option ini `consider_namespace_packages` (cf. le run CPU plus haut).
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install "mcp==1.30.0" "pytest>=8"
+
+      - name: Run qc-mcp-lite suite
+        run: |
+          python -m pytest scripts/qc-mcp-lite/tests -q --tb=short
 
   adk-contracts:
     name: ADK runtime contracts (18)
