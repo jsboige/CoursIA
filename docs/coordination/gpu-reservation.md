@@ -136,7 +136,7 @@ Le tenancier (`myia-ai-01:CoursIA-2`) :
 
 Le picker (`scripts/pick_idle_grain.py`) croise l'urne `delivered` avec un signal **pre-launch** :
 
-1. Avant de tirer un grain `training` ou `genai` marqué **GPU-bound** (heuristique : à définir), le picker vérifie qu'une observation `[OBS]` existe dans le ledger pour l'entité ciblée via la sous-commande `check_pending --entity <m>#gpu<n>`.
+1. Avant de tirer un grain `training` ou `genai` marqué **GPU-bound**, le picker vérifie qu'une observation `[OBS]` existe dans le ledger pour l'entité ciblée via la sous-commande `check_pending --entity <m>#gpu<n>`. **L'heuristique « GPU-bound » est fixée** : un candidat est GPU-borne si son genre est `training` ou `genai` — le genre retenu par le picker est celui que l'auteur a déclaré (tag `Grain:`) quand il existe, sinon celui inféré du titre et des labels (`GENRE_RULES`, qui reste « une aide au tri, pas un verdict »). **L'entité ciblée se résout** dans cet ordre : (a) le `<machine>#gpu<n>` écrit dans le **corps** du candidat, (b) l'option `--gpu-entity` du tirage (répétable) — la cible que la lane qui tire peut offrir. Sans entité résolue, le grain est écarté avec le motif `[DEFER gpu-reservation target-unresolved]`.
 2. **Pas d'observation `[OBS]`** (`verdict: NO_OBS`) → le picker saute le grain et log `[SKIP gpu-reservation missing]`. La lane worker qui rencontre ce skip doit poster l'observation OU prendre un grain non-GPU.
 3. **Observation `held` par une autre lane** (`verdict: HOLD`) → le picker signale `[DEFER gpu-reservation hold]` et passe au suivant.
 4. **Observation `held` par ma lane, dans la fenêtre** (`verdict: OK_TO_RUN`) → le picker tire normalement.
@@ -145,7 +145,17 @@ Le picker (`scripts/pick_idle_grain.py`) croise l'urne `delivered` avec un signa
 
 Le script `scripts/coordination/debt_ledger.py check_pending --entity <m>#gpu<n>` rend le verdict (`OK_TO_RUN`, `NO_OBS`, `HOLD`, `RELEASED`, `STALE`, `UNPOSTED`) en ~50 ms (cache local). **Implémentation 4e livrable : [PR #19855](https://github.com/jsboige/CoursIA/pull/19855)**, merge de la sous-commande et de `evaluate_gpu_pending()` (113/113 tests passent).
 
-**Codes de sortie** (promis par la docstring de la sous-commande, `debt_ledger.py:2419`) :
+### Ce que le picker en fait (c.2431, #22747)
+
+La section ci-dessus était une **promesse du protocole que le code ne tenait pas** : mesuré le 2026-10-27, `git grep -n check_pending scripts/` ne renvoyait que le ledger, ses tests et cette page — **zéro appelant** du côté du picker. Le gate est maintenant câblé :
+
+- **Où** : au moment de **servir** un candidat, sur les deux chemins de tirage — la voie pondérée (`draw_unclaimed`) et le tapis (`belt_pick_with_replacements`, celui que le cycle `/continue` emprunte). Le gate n'est donc consulté que pour une poignée de candidats, jamais pour tout le pool.
+- **Doctrine : fail-CLOSED.** Une observation de device tenu est un fait de **contention matérielle** — deux lanes qui lancent sur le même device se marchent dessus (#22456 : le premier essai de `po-2024` n'a pas été vu par la régie). Un gate **illisible** ne rend donc jamais « libre » : il rend `GATE_UNREAD`, et le grain est écarté avec un motif nommé. C'est l'inverse du fail-OPEN des sondes de claim (là, une lecture ratée ne doit pas inventer un blocage).
+- **Le verdict est lu dans le JSON, jamais dans le code de sortie** : `NO_OBS` sort 0 et doit pourtant écarter, `STALE` et une erreur d'usage sortent tous deux 2 — le code de sortie ne décide de rien.
+- **Le motif est nommé** : un grain écarté est un grain **dit**, pas un grain absent. Marqueurs : `[SKIP gpu-reservation missing]` (aucune observation), `[DEFER gpu-reservation hold]` (device tenu), `[DEFER gpu-reservation stale]`, `[DEFER gpu-reservation unposted]` (spool non drainé), `[DEFER gpu-reservation gate-unreadable]`, `[DEFER gpu-reservation target-unresolved]` (entité non résolue).
+- **Tests** : `scripts/tests/test_pick_idle_grain_gpu_gate.py` couvre les trois cas d'acceptation de #22747 (device libre → proposé, device tenu → écarté avec motif, gate indisponible → écarté avec motif), les deux non-régressions (verdict lu dans le JSON ; un grain non GPU-borne ne consulte jamais le gate) et les deux chemins de tirage.
+
+**Codes de sortie** (promis par la docstring de la sous-commande, `debt_ledger.py:2663`) :
 
 | Verdict | Code | Lecture |
 |---|---|---|
