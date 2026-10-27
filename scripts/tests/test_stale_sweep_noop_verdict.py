@@ -137,6 +137,30 @@ def test_les_replis_du_listing_sont_poses_avant_l_appel():
         )
 
 
+def _exige_omitter_sha_dans_sa_branche(texte: str) -> None:
+    """OMIT_SHA=$SHA doit vivre DANS la branche de no-op des check-runs.
+
+    La branche couvre du `; then` de l'appel check-runs au `continue` qui la
+    referme. Hors de cette fenetre, l'affectation s'executerait pour TOUTES
+    les PRs lues (reussies ou omises) : le no-op « last endpoint
+    .../$OMIT_SHA/... » nommerait alors un SHA arbitraire -- celui de la
+    derniere PR inspectee, pas celui du dernier echec (#22278).
+    """
+    appel = re.search(
+        r'if ! BODY=\$\(gh api "repos/\$REPO/commits/\$SHA/check-runs',
+        texte,
+    )
+    assert appel, "appel check-runs par PR introuvable : la forme de l'appel a change"
+    ouverture = texte.index("; then", appel.end())
+    sortie = texte.index("continue", ouverture)
+    affectation = texte.index("OMIT_SHA=$SHA")
+    assert ouverture < affectation < sortie, (
+        f"OMIT_SHA=$SHA vit hors de sa branche (position {affectation}, "
+        f"branche [{ouverture}, {sortie}]) : le no-op des check-runs ne "
+        "nommerait plus le SHA du DERNIER echec"
+    )
+
+
 def test_le_no_op_des_check_runs_nomme_le_dernier_endpoint_et_le_code():
     # Le no-op « check-runs unreadable for all N PRs » couvre une boucle : la
     # cause utile est celle du DERNIER echec, d'ou le SHA de la PR concernee.
@@ -146,10 +170,35 @@ def test_le_no_op_des_check_runs_nomme_le_dernier_endpoint_et_le_code():
         r"repos/\$REPO/commits/\$OMIT_SHA/check-runs code=\$OMIT_CODE",
         texte,
     ), "le no-op des check-runs ne nomme plus le dernier endpoint et son code"
-    assert "OMIT_SHA=$SHA" in texte, (
-        "sans le SHA, « last endpoint=.../commits//check-runs » ne designe rien"
-    )
+    # Positionnel, pas juste present : l'affectation doit s'executer DANS la
+    # branche d'echec, sinon elle ecrase le SHA pour chaque PR lue.
+    _exige_omitter_sha_dans_sa_branche(texte)
     assert "code=$OMIT_CODE" in texte and "detail=$OMIT_DETAIL" in texte
+
+
+def test_temoin_deplacer_omitter_sha_hors_de_sa_branche_fait_rougir():
+    # Preuve que l'assertion positionnelle a des dents (#22278) : on deplace
+    # l'affectation juste APRES le `fi` qui referme sa branche -- elle
+    # s'executerait alors sur chaque PR lue -- et on exige que la verification
+    # la refuse. Sans ce temoin, l'assertion pourrait passer par accident.
+    texte = SWEEP.read_text(encoding="utf-8")
+    ancre = re.search(r"^[ \t]*OMIT_SHA=\$SHA$", texte, re.M)
+    assert ancre, "affectation OMIT_SHA introuvable"
+    ligne = ancre.group(0)
+    assert texte.count(ligne) == 1, "ancre du temoin dupliquee : ambigu"
+    avant, apres = texte.split(ligne, 1)
+    # le `fi` qui referme SA branche suit immediatement son `continue` (le
+    # corps de la branche ne porte aucun if imbrique)
+    fin_branche = re.search(r"continue\n([ \t]*)fi\n", apres)
+    assert fin_branche, "structure continue/fi introuvable apres la branche"
+    indentation = fin_branche.group(1)
+    sorti = (
+        avant + apres[: fin_branche.end()]
+        + indentation + "OMIT_SHA=$SHA\n"
+        + apres[fin_branche.end():]
+    )
+    with pytest.raises(AssertionError, match="hors de sa branche"):
+        _exige_omitter_sha_dans_sa_branche(sorti)
 
 
 def test_l_appel_par_pr_ne_jette_plus_le_stderr():
@@ -170,7 +219,9 @@ def test_l_appel_par_pr_ne_jette_plus_le_stderr():
 def test_les_avertissements_de_timing_nomment_endpoint_et_code():
     # Les deux avertissements de mesure (run, jobs) sont *advisory* : ils ne
     # font pas rougir le run, mais une duree absente est indistinguable d'un
-    # balayage instantane si la cause n'est pas nommee.
+    # balayage instantane si la cause n'est pas nommee. #22278 : l'endpoint
+    # nomme est l'appel REEL -- `&per_page=100` compris, sinon un lecteur qui
+    # recopie l'URL pour rejouer l'echec interpelle un autre endpoint.
     texte = SWEEP.read_text(encoding="utf-8")
     assert re.search(
         r"timing unavailable: endpoint=GET repos/\$REPO/actions/runs/\$RUN_ID "
@@ -179,12 +230,63 @@ def test_les_avertissements_de_timing_nomment_endpoint_et_code():
     ), "l'avertissement de timing ne nomme plus l'endpoint du run"
     assert re.search(
         r"timing unavailable: endpoint=GET repos/\$REPO/actions/runs/\$RUN_ID/jobs\?"
-        r"filter=latest code=\$TIM_CODE",
+        r"filter=latest&per_page=100 code=\$TIM_CODE",
         texte,
-    ), "l'avertissement de timing ne nomme plus l'endpoint des jobs"
+    ), "l'avertissement de timing ne nomme plus l'endpoint REEL des jobs (avec per_page)"
     assert texte.count("grep -oE 'HTTP [0-9]+'") >= 3, (
         "chaque famille d'echec (listing, check-runs, timing) doit extraire le "
         "code du stderr, pas le deduire"
+    )
+
+
+# --- Muet ou nomme : l'inventaire des 2>/dev/null (#22278) --------------------
+
+
+def test_chaque_redirection_dev_null_restante_est_justifiee():
+    # Critere #22278 : chaque `2>/dev/null` actif restant du sweep emet un
+    # signal nomme (stderr capture, code extrait) OU porte son commentaire
+    # « silence justifie ». Les appels qui signalent ne redirigent plus vers
+    # /dev/null du tout (ils capturent), donc ce garde ne voit QUE les muets :
+    # un muet nouveau ou non justifie le fait rougir -- et un inventaire vide
+    # aussi, parce que les commentaires de justification seraient devenus du
+    # code mort a retirer.
+    texte = SWEEP.read_text(encoding="utf-8")
+    lignes = texte.splitlines()
+    muets = [
+        (i, ligne)
+        for i, ligne in enumerate(lignes)
+        if "2>/dev/null" in ligne and not ligne.lstrip().startswith("#")
+    ]
+    assert muets, (
+        "plus aucun 2>/dev/null actif : les commentaires « silence justifie » "
+        "sont devenus du code mort, a retirer avec ce garde"
+    )
+    for i, ligne in muets:
+        # le bloc de commentaires contigu juste au-dessus du site porte la
+        # justification (le marker peut y etre en premiere ligne d'un bloc
+        # de plusieurs)
+        bloc = []
+        j = i - 1
+        while j >= 0 and lignes[j].lstrip().startswith("#"):
+            bloc.append(lignes[j])
+            j -= 1
+        contexte = " ".join(bloc)
+        assert "# silence justifie" in ligne or "# silence justifie" in contexte, (
+            f"2>/dev/null muet et non justifie ligne {i + 1} : {ligne.strip()!r} "
+            "(#22278 : capturer le stderr et nommer le code, ou justifier le silence)"
+        )
+
+
+def test_les_details_gh_sont_tronques_a_une_meme_largeur():
+    # #22278 : le listing coupait son detail a 300, les familles OMIT et TIM
+    # a 200 -- deux `detail=` lus cote a cote ne peuvent pas dire si un ecart
+    # de longueur est un vrai contenu ou un budget different. Une seule
+    # largeur pour tous les details extraits du stderr de gh.
+    texte = SWEEP.read_text(encoding="utf-8")
+    largeurs = {int(m) for m in re.findall(r"cut -c1-(\d+)", texte)}
+    assert largeurs == {300}, (
+        f"largeurs de troncature divergentes : {sorted(largeurs)} -- unifier "
+        "(300, le budget historique du listing) ou justifier l'ecart"
     )
 
 

@@ -3,24 +3,43 @@
 This library formalizes key results in social choice theory in Lean 4.
 It is derived from multiple open-source projects and academic work.
 
+> **⚑ Tombstone documentaire — la notice suit les sources, elle ne décrit plus rien ici.**
+> Depuis la PR [#6058](https://github.com/jsboige/CoursIA/pull/6058) (EPIC
+> [#4365](https://github.com/jsboige/CoursIA/issues/4365), 2026-07-11), les sept modules
+> (`Basic`, `Framework`, `Arrow`, `Sen`, `Voting`, `MechanismDesign`, `SortedListCounting`)
+> ont été absorbés **byte-identique** dans
+> [`game_theory_lean/SocialChoice/`](../game_theory_lean/SocialChoice/), qui est le home
+> canonique. Ce répertoire ne contient plus aucun `.lean`.
+>
+> **L'attribution ci-dessous reste due, et elle s'applique au home canonique.** La provenance et
+> les obligations de licence voyagent avec le code, pas avec le dossier qui le contenait : c'est
+> pourquoi cette notice est conservée plutôt que supprimée avec les sources.
+
 ## Original Sources
 
 ### asouther4/lean-social-choice (Lean 3)
 - **URL**: https://github.com/asouther4/lean-social-choice
-- **License**: MIT
+- **License**: **aucune trouvée** — `license: null` à l'API GitHub et aucun fichier `LICENSE`
+  à la racine (mesure du 2026-10-06, cf. la note de fin de fichier et #14955). La mention
+  « MIT » qui figurait ici n'était vérifiée par aucune source et a été retirée.
+  **Licence demandée le 2026-10-25** ([asouther4/lean-social-choice#12](https://github.com/asouther4/lean-social-choice/issues/12)) :
+  demande déposée auprès de l'amont, restée sans réponse à cette date — la mesure du
+  2026-10-06 ci-dessus demeure donc celle en vigueur.
 - **Usage**: Original Lean 3 formalization of Arrow's theorem and Sen's paradox.
   Ported to Lean 4 with significant modifications including the Geanakoplos (2005)
   proof approach for Arrow's theorem and bidirectional formulation for Sen's theorem.
 
 ### chasenorman/lean-social-choice (Lean 3 fork)
 - **URL**: https://github.com/chasenorman/lean-social-choice
-- **License**: MIT
+- **License**: MIT **déclarée, non vérifiable** — dépôt introuvable (HTTP 404) à la mesure
+  du 2026-10-06.
 - **Usage**: Fork with additional definitions and lemma structures used as reference
   during the Lean 4 port.
 
 ### DominikPeters/lean-social-choice (Lean 3 fork)
 - **URL**: https://github.com/DominikPeters/lean-social-choice
-- **License**: MIT
+- **License**: MIT **déclarée, non vérifiable** — dépôt introuvable (HTTP 404) à la mesure
+  du 2026-10-06.
 - **Usage**: Fork with alternative proof structures consulted during development.
 
 ## Academic References
@@ -37,6 +56,10 @@ This project depends on **Mathlib**, the Lean 4 mathematical library:
 - **License**: Apache 2.0
 
 ## Lean Toolchain
+
+Valeurs du port initial. Le pin effectif est celui du home canonique
+([`game_theory_lean/lean-toolchain`](../game_theory_lean/lean-toolchain)) : ce répertoire n'a plus
+de `lean-toolchain` depuis l'absorption.
 
 - **Lean**: v4.28.0-rc1+
 - **Lake**: v5.0.0+
@@ -59,5 +82,8 @@ This project depends on **Mathlib**, the Lean 4 mathematical library:
 En conséquence, aucune copie de texte de licence n'est attachée à ce
 répertoire en l'état : poser un `LICENSE-MIT.txt` de notre main
 fabriquerait une permission qu'aucune source vérifiable n'accorde. Le
-dérivé est conservé en l'état — arbitrage en cours sur #14955 (issue
-amont demandant une licence, ou retrait du dérivé).
+dérivé est conservé en l'état, et la voie suivie est la demande de licence
+à l'amont plutôt qu'un texte fabriqué : elle a été déposée le 2026-10-25
+([asouther4/lean-social-choice#12](https://github.com/asouther4/lean-social-choice/issues/12))
+et reste ouverte à cette date. C'est cette notice qu'il faudra mettre à
+jour si la demande aboutit.
