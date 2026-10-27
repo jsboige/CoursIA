@@ -350,7 +350,7 @@ Chaque série non recensée ci-dessus, et pourquoi (contestable sur l'Epic sans 
 |-------|----------------------------|
 | `ML/` (ML.NET) | cursus .NET non rattaché aux 4 écoles in-scope ; le ML enseigné passe par QC-Py (ECE) et GenAI (EPF) |
 | `Search/Part4-Metaheuristics/` | au-delà du programme PrCon — Part1+Part2 couvrent le cours référencé |
-| `Search/Applications/`, `Search/MetaGeneticSharp/` | applications dérivées non citées par le calendrier des cours |
+| `Search/Part3-Cas-pratiques/`, `Search/MetaGeneticSharp/` | applications dérivées non citées par le calendrier des cours |
 | `Sudoku/` | série .NET autonome, non rattachée à un cours du calendrier |
 | `Probas/` (Infer.NET) | idem — non rattachée à une des 4 écoles |
 | `GameTheory/` | les preuves Lean associées sont du code (i18n #4980), non des notebooks à signer ; les `.ipynb` ne sont pas cités nommément par le calendrier |
