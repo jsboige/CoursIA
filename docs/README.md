@@ -379,6 +379,7 @@ Protocoles opérationnels de la coordination flotte (registres, tenanciers, liai
 | Fichier | Description |
 |---------|-------------|
 | [coordination/gpu-reservation.md](coordination/gpu-reservation.md) | Protocole de réservation GPU — schéma du ledger, garde 85 % charge hôte, CUDA devices explicites, GPU 2 dédié ai-01, fold hebdomadaire, liaison picker / file #1454. Chantier #16737. |
+| [coordination/ci-overflow-controller.md](coordination/ci-overflow-controller.md) | Contrôleur automatique de la variable de dépôt `CI_OVERFLOW_LOCAL` (phase B du débordement CI) — file hébergeuse saturée → `true`, file drainée → `false`, mesure illisible → aucune écriture ; prérequis : secret `ACTIONS_VARIABLES_PAT`. Chantier #22937. |
 
 ## Cadrage épistémique (docs/cadrage/)
 
