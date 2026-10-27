@@ -3,6 +3,30 @@
 > **Grain : DEEP/genai — lane `myia-po-2023:CoursIA-2` — tranche 1 de #14755.**
 > Date de vérification API : **2026-09-05**. **Aucune substitution de modèle dans cette tranche** — l'inventaire et la table ci-dessous précèdent les tranches 2-5 (substitution + re-exécution).
 
+## Politique d'exécution du chat
+
+La consigne du mainteneur du 26 octobre 2026, suivie dans **#22783**, s'applique aux appels de chat, pas au nettoyage de toutes les chaînes de caractères. **Aucune exécution ne doit cibler un modèle de chat obsolète.** La cible par défaut est **Swift via notre service vLLM**, avec le même contrat d'API que le client OpenAI.
+
+### Classer avant de modifier
+
+| Classe | Critère | Traitement |
+|---|---|---|
+| **EXECUTION** | Identifiant envoyé à un appel de chat, ou configuration réellement consommée par cet appel, même derrière un wrapper | Migrer la cible puis réexécuter complètement le carnet ; les sorties réelles nomment le modèle utilisé. |
+| **DOCUMENTATION** | Citation historique, tableau pédagogique ou exemple non appelé | Conserver si utile, en indiquant explicitement l'obsolescence et la cible recommandée. Une recommandation de nouvel appel ne doit pas proposer le modèle obsolète. |
+| **SPECIFIQUE** | Modèle de synthèse vocale, transcription ou embeddings | Hors de cette migration de chat : ne pas changer sa cible par analogie de préfixe. |
+
+Le dossier ne décide pas de la classe : `Audio/04-Applications/04-5-LiveCoding-LLM-Music.ipynb` appelle `chat.completions.create` pour produire du code musical ; ce n'est pas un appel TTS. Inversement, `gpt-4o-mini-tts` ne devient pas un modèle de chat parce que son nom commence par `gpt-4o`. Lire la configuration **et son consommateur** ; un nom seulement imprimé ou une sonde de catalogue `/models` ne prouve pas une exécution de chat. Pour un wrapper, vérifier l'organe source au commit épinglé avant de conclure depuis ses commentaires.
+
+### Route, alias et repli
+
+- Sur **le siège ai-01**, le service local expose `http://127.0.0.1:5002/v1`. Sur une autre machine, cette adresse désignerait la machine appelante : utiliser la route distante documentée, pas un `localhost` copié.
+- La façade OpenAI-compatible documentée est `https://models.myia.io/v1` ; le microbenchmark [10b — mécanique d'inférence](../../MyIA.AI.Notebooks/GenAI/Texte/10b_Inference_Mechanics.ipynb) montre également la route LAN du siège sur le port 5002. Vérifier la disponibilité avant l'exécution ; cette documentation n'est pas une sonde live.
+- L'identifiant servi documenté est `qwen3.6-35b-a3b`. Il s'agit d'un **alias**, pas d'une preuve du poids physique. La [référence du cluster](../reference/cluster-agents.md) documente Swift derrière cet alias et la vérification par la configuration du serveur. Ne pas inventer un identifiant API à partir du nom commercial Swift et ne pas prétendre qu'un `/models` révèle les poids chargés.
+- Si la cible locale est injoignable, choisir le modèle de chat courant du mapping pour le rôle demandé, **vérifier son identifiant et son accès**, et annoncer explicitement la raison du repli ainsi que l'endpoint et le modèle effectivement utilisés, sans afficher de clé. La table datée ci-dessous n'est pas une preuve de disponibilité actuelle.
+- Si ni la cible locale ni le repli vérifié ne sont utilisables, réparer la cause ou signaler le blocage ; ne pas substituer des réponses fabriquées ou un ancien modèle en silence.
+
+Changer le modèle ou l'endpoint exige une réexécution complète du carnet et la vérification de ses interprétations, conformément à C.2 et à la règle de préservation des sorties. On ne renomme jamais une sortie ancienne pour la faire passer pour une exécution Swift. Les familles spécialisées et les mesures historiques ci-dessous restent conservées comme état daté ; leurs anciennes recommandations ne remplacent pas cette politique de chat.
+
 ## Objet
 
 #14755 demande de remplacer les références datées (`gpt-4o-mini` 2024, `gpt-3.5-turbo`, …) par la génération courante, plutôt que de continuer à ré-exécuter sur des modèles qui n'ont plus de sens. La cible nommée par le user : **« OpenAI 5.6 »** pour le modèle principal, **« Luna »** pour la taille *mini*.
