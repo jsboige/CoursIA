@@ -128,7 +128,7 @@ La dernière ligne est le cas qui justifie la réserve de pool : le slot 10 éta
 
 ### Extrait de la sortie `--json` (fenêtre de 15 s, 2026-10-27T13:32:28Z)
 
-Projection des champs de tête, produite par le filtre ci-dessous appliqué à la sortie de l'organe. Les 13 entrées de `coverage.by_slot` sont toutes à `{"missing": 0, "fraction": 0.0}` (les slots vus ont tous été lus à chaque échantillon) ; `slots` et `slots_seen` listent les 13 noms vus :
+Projection des champs de tête, produite par le filtre ci-dessous appliqué à la sortie de l'organe. Le détail `coverage.by_slot` et les listes `slots` / `slots_seen` ne sont pas repris : ils portent les 13 slots vus pendant cette fenêtre (le 14ᵉ est précisément `slots_expected_missing`).
 
 ```bash
 python3 scripts/ci/check_dns_rate.py --window 15 --json | python3 -c "import json,sys; p=json.load(sys.stdin); print(json.dumps({k:p[k] for k in ('status','verdict','average_qps','burst_qps','burst_span_s','window_s','elapsed_s','sample_count','sample_period_s','datagrams_total','expected_slots','slots_expected_missing','pool_complete','reserves','machine')}, indent=2, ensure_ascii=False))"
