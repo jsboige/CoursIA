@@ -1241,17 +1241,55 @@ _SNAPSHOT: dict | None = None
 def set_snapshot(snapshot: dict | None) -> None:
     """Installe (ou retire) l'instantane local lu par ce module.
 
-    `snapshot` porte la cle `issues` (payload par numero d'issue, forme
-    `gh issue view --json number,title,labels,comments`) et, en option, la
-    cle `prs` (numero -> etat de la PR). Sans instantane, ce module lit
-    GitHub comme avant.
+    `snapshot` porte la cle `issues` et, en option, la cle `prs` (numero ->
+    etat de la PR). Deux formes sont servies pour `issues` (#22684) : le
+    payload complet par numero (forme `gh issue view --json
+    number,title,labels,comments`, cle `comments` incluse), ou la forme
+    **separee** de `gh_snapshot` (metadonnees dans `issues[n]`,
+    commentaires dans `comments[n]`) -- fusionnes a la lecture. Sans
+    instantane, ce module lit GitHub comme avant.
     """
     global _SNAPSHOT
     _SNAPSHOT = snapshot if isinstance(snapshot, dict) else None
 
 
+def _snapshot_comments_list(issue: str) -> list | None:
+    """Liste de commentaires `comments[issue]` de l'instantane, ou None."""
+    if not _SNAPSHOT:
+        return None
+    comments = _SNAPSHOT.get("comments") or {}
+    entry = comments.get(str(issue))
+    if entry is None:
+        try:
+            entry = comments.get(int(issue))
+        except (TypeError, ValueError):
+            entry = None
+    return entry if isinstance(entry, list) else None
+
+
 def _snapshot_issue_payload(issue: str) -> dict | None:
-    """Payload d'issue servi par l'instantane, ou None s'il n'y en a pas."""
+    """Payload d'issue servi par l'instantane, ou None s'il n'y en a pas.
+
+    Deux formes d'instantane sont servies -- toutes deux produites en
+    production :
+
+    - forme **fusionnee** : l'entree `issues[n]` porte elle-meme sa cle
+      `comments` (forme `gh issue view --json number,title,labels,comments`,
+      celle des payloads injectes directement). Servie telle quelle.
+    - forme **separee** : `issues[n]` ne porte que les metadonnees et les
+      commentaires vivent dans `comments[n]` -- la forme que fabrique
+      `gh_snapshot.ensure_issue_payloads` (deux fichiers disque). Les
+      commentaires sont fusionnes dans une COPIE servie au reducteur.
+
+    #22684 -- sans cette fusion, la voie en processus servait l'entree
+    telle quelle : `_sort_events` lisait `payload.get("comments", [])`,
+    voyait zero evenement et rendait FREE pour TOUTE issue, meme claimee
+    par une autre lane (review ai-01 2026-10-27T04:38Z). Une entree sans
+    cle `comments` ET sans liste dans `comments[n]` n'est PAS servie :
+    l'instantane n'etablit pas l'absence de commentaires, et le lecteur
+    retombe sur la voie reseau (fail-closed) plutot que de fabriquer un
+    FREE de zero lu.
+    """
     if not _SNAPSHOT:
         return None
     issues = _SNAPSHOT.get("issues") or {}
@@ -1263,7 +1301,14 @@ def _snapshot_issue_payload(issue: str) -> dict | None:
             entry = None
     if not isinstance(entry, dict):
         return None
-    return entry
+    if "comments" in entry:
+        return entry
+    comments = _snapshot_comments_list(issue)
+    if comments is None:
+        return None
+    payload = dict(entry)
+    payload["comments"] = comments
+    return payload
 
 
 def _snapshot_pr_state(pr_ref: int) -> str | None:

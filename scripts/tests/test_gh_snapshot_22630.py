@@ -326,6 +326,139 @@ def _payload_claime_par_autre_lane(n: int) -> dict:
                           "author": {"login": "jsboige"}, "url": "u"}]}
 
 
+# --- #22684 : la forme FABRIQUEE par la production doit servir les claims -----
+
+
+def _production_snapshot_avec_claim_autre_lane(monkeypatch, n: int) -> dict:
+    """Instantane construit par la voie de PRODUCTION (#22684).
+
+    `ensure_issue_payloads` -- exactement comme `refresh()` l'appelle --
+    range l'issue dans `issues[n]` (metadonnees seules) et ses commentaires
+    dans `comments[n]` : DEUX cles separees. C'est la seule forme que la
+    production fabrique ; les injections directes de payloads complets dans
+    `issues[n]` ne la reproduisent pas (defaut fondateur : les tests
+    passaient alors que la voie en processus lisait tout comme libre).
+    """
+    recent = (datetime.now(UTC)
+              - timedelta(hours=1)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    fake, _ = _faux_gh_api({
+        f"repos/jsboige/CoursIA/issues/{n}":
+            {"number": n, "title": f"T{n}", "labels": [],
+             "updated_at": recent, "state": "open"},
+        f"repos/jsboige/CoursIA/issues/{n}/comments":
+            [{"body": "[CLAIMED] lane myia-po-2099:CoursIA -- paths: x/**",
+              "created_at": recent, "updated_at": recent,
+              "user": {"login": "jsboige"}, "html_url": "u"}],
+    })
+    monkeypatch.setattr(gs, "_gh_api", fake)
+    snap = {"issues": {}, "comments": {}, "prs": {}, "checks": {}, "meta": {}}
+    snap, _calls = gs.ensure_issue_payloads("jsboige/CoursIA", [n], snap, 600)
+    return snap
+
+
+def test_voie_en_processus_forme_production_voit_le_claim_d_une_autre_lane(
+        monkeypatch):
+    """#22684 -- reproduction du defaut de production (review ai-01
+    2026-10-27T04:38Z) : via la forme FABRIQUEE par `ensure_issue_payloads`,
+    un `[CLAIMED]` d'une AUTRE lane doit etre VU, jamais FREE.
+
+    Avant le correctif, `issues[n]` ne portait pas `comments` et le lecteur
+    servait l'entree telle quelle : `_sort_events` voyait zero evenement de
+    claim et le verdict etait `FREE | CLEAR: no other lane claims ...` pour
+    toute issue claimee -- le claim d'une autre lane devenait invisible.
+    """
+    import contextlib
+    import io
+
+    n = 424242
+    snap = _production_snapshot_avec_claim_autre_lane(monkeypatch, n)
+    # La forme est bien celle de la production : deux cles separees.
+    assert "comments" not in snap["issues"][str(n)]
+    assert len(snap["comments"][str(n)]) == 1
+
+    clc.set_snapshot(snap)
+    monkeypatch.setattr(clc, "_OPEN_PRS_MEMO", [])
+
+    # (a) Voie BATCH en processus (celle de `_claims_in_process` a N >= 2) :
+    # le verdict n'est PAS FREE. Un appel sans `--paths` devant des
+    # bloqueurs rend le NOT_SCOPED historique (exit 2, #12322) -- la queue
+    # de son message dans stderr_tail prouve que le claim d'une autre lane
+    # est VU (le NOT_SCOPED n'est emis que dans la branche `if others:` ;
+    # l'en-tete "NOT_SCOPED:" peut etre tronque par la limite a 200 chars,
+    # la queue du message est stable).
+    out = clc.check_issues_batch([str(n)], "myia-ai-01:CoursIA-2",
+                                 from_json=None)
+    result = out["results"][str(n)]
+    assert result["code"] != "FREE"
+    assert result["exit"] == 2
+    assert "branch on the verdict" in result["stderr_tail"]
+
+    # (b) Voie SOLO (celle de `_claims_in_process` a N = 1) : le JSON de
+    # synthese porte le bloqueur -- c'est `blocking_lanes` que
+    # `_summarize_claim` lit pour rendre BLOCKED au tapis.
+    buf_out = io.StringIO()
+    with contextlib.redirect_stdout(buf_out):
+        payload = clc._gh_issue_comments(str(n))
+        clc._run_check(payload, "myia-ai-01:CoursIA-2", stale_threshold=48.0,
+                       my_paths=None, check_open_pr_paths=True)
+    summary_text = buf_out.getvalue()
+    brace = summary_text.find("{")
+    data, _ = json.JSONDecoder().raw_decode(summary_text[brace:])
+    assert data["blocked"] is True
+    assert "myia-po-2099:CoursIA" in data["blocking_lanes"]
+
+
+def test_les_deux_formes_d_instantane_rendent_le_meme_verdict(monkeypatch):
+    """Le seam doit servir la meme semantique aux deux formes : fusionnee
+    (payload complet injecte dans `issues[n]`) et separee (production).
+    Verdicts identiques par `check_issues_batch`, claim d'une autre lane."""
+    n = 424242
+    snap = _production_snapshot_avec_claim_autre_lane(monkeypatch, n)
+    entry = snap["issues"][str(n)]
+    fusionnee = {"issues": {str(n): dict(entry, comments=snap["comments"][str(n)])},
+                 "prs": {}}
+
+    verdicts = {}
+    for form_name, installed in (("separee", snap), ("fusionnee", fusionnee)):
+        clc.set_snapshot(installed)
+        monkeypatch.setattr(clc, "_OPEN_PRS_MEMO", [])
+        out = clc.check_issues_batch([str(n)], "myia-ai-01:CoursIA-2",
+                                     from_json=None)
+        verdicts[form_name] = out["results"][str(n)]
+    assert verdicts["separee"]["code"] != "FREE"
+    assert verdicts["separee"]["exit"] == verdicts["fusionnee"]["exit"]
+    assert verdicts["separee"]["human"] == verdicts["fusionnee"]["human"]
+    assert verdicts["separee"]["stderr_tail"] == \
+        verdicts["fusionnee"]["stderr_tail"]
+
+
+def test_le_seam_fusionne_les_commentaires_de_la_forme_separee():
+    """Le seam lui-meme : entree separee -> payload servi AVEC commentaires ;
+    entree fusionnee -> servie telle quelle (identite preservee)."""
+    payload_complet = {"number": 5, "title": "T", "labels": [], "comments": []}
+    clc.set_snapshot({"issues": {"5": payload_complet}, "prs": {}})
+    assert clc._snapshot_issue_payload("5") is payload_complet
+
+    clc.set_snapshot({"issues": {"6": {"number": 6, "title": "T", "labels": []}},
+                      "comments": {"6": [{"body": "x"}]},
+                      "prs": {}})
+    served = clc._snapshot_issue_payload("6")
+    assert served is not None
+    assert served["comments"] == [{"body": "x"}]
+    # La fusion ne mute pas l'entree d'origine de l'instantane.
+    assert "comments" not in clc._SNAPSHOT["issues"]["6"]
+
+
+def test_entree_sans_commentaires_n_est_pas_servie():
+    """Fail-closed : une entree `issues[n]` sans cle `comments` et sans liste
+    dans `comments[n]` n'etablit PAS l'absence de commentaires -- la servir
+    telle quelle fabriquerait un FREE de zero lu (#22684). Le seam rend None :
+    le lecteur retombe sur la voie reseau."""
+    clc.set_snapshot({"issues": {"7": {"number": 7, "title": "T", "labels": []}},
+                      "prs": {}})
+    assert clc._snapshot_issue_payload("7") is None
+
+
 def test_voie_en_processus_rend_les_memes_codes_que_la_voie_cli(monkeypatch):
     """La voie tapis (#22630) appelle les MEMES fonctions que la CLI.
 
