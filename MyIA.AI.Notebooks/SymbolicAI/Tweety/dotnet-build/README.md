@@ -89,7 +89,7 @@ ajoutés sont des paquets que l'ancienne chaîne sous-compilait et que la fermet
 
 Voir `Tweety-02-Basic-Logics-CSharp.ipynb` pour l'utilisation. Epic #4667.
 
-## Fichiers — IKVM shade 5 modules (notebooks Tweety-5/7a/7b)
+## Fichiers — IKVM shade (notebooks Tweety-5/7a/7b)
 
 Issue **#10411** : cinq shades `build-Tweety<Module>Shade.csproj` sur le modèle
 des onze existantes, chacune produisant `org.tweetyproject.tweety-<module>.dll`
@@ -123,7 +123,7 @@ bash dotnet-build/rebuild-5shades.sh
 # 5 jars dans libs/, prêts pour IKVM
 ```
 
-### Pipeline DLL — 5 modules
+### Pipeline DLL
 
 ```bash
 cd MyIA.AI.Notebooks/SymbolicAI/Tweety/dotnet-build
