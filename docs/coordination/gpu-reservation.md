@@ -2,7 +2,8 @@
 
 > **Tenancier** : `myia-ai-01:CoursIA-2` (mandat user 2026-09-18, mandat régisseur GPU 2026-10-05).
 > **Code source** : `scripts/coordination/debt_ledger.py` (kind `gpu-reservation`, fonction `_summarize_gpu_reservation`).
-> **Dashboard dédié** : `CoursIA-gpu-reservation-ledger` (un par kind, jamais partagé).
+> **Référence (autorité)** : le dépôt git **privé** `jsboige/coursia-gpu-ledger`, branche `ops/gpu-ledger` — décision du mainteneur du 2026-10-27 (arbitrage rendu sur [#22456](https://github.com/jsboige/CoursIA/issues/22456)) : l'état vivant des réservations GPU de la flotte y est versionné, et le dashboard n'en est plus qu'une copie.
+> **Dashboard dédié** : `CoursIA-gpu-reservation-ledger` (un par kind, jamais partagé) — **copie** de la référence.
 > **Issue de référence** : [#16737](https://github.com/jsboige/CoursIA/issues/16737).
 
 ## Vue d'ensemble
@@ -22,11 +23,13 @@ Le ledger `gpu-reservation` catalogue **une entrée par réservation GPU**, clé
 
 Le **README documente l'intention**, le **ledger documente l'usage réel**. Une réservation GPU consomme une fenêtre de temps qu'aucune autre lane ne doit chevaucher. Sans ledger, deux lanes peuvent exécuter en parallèle sur la même machine et se neutraliser (saturation mémoire, swap, etc.).
 
-Le dashboard `CoursIA-gpu-reservation-ledger` est la **seule source de vérité** de l'usage GPU réel de la flotte. Les fichiers `*.ledger.json` dans `scripts/coordination/_local/` sont des artefacts locaux (init/spool/reduce) qui n'ont aucune valeur cross-machine.
+Le dépôt privé `jsboige/coursia-gpu-ledger` (branche `ops/gpu-ledger`) est la **seule source de vérité** de l'usage GPU réel de la flotte : chaque machine y publie ses observations et y relit l'état des autres. Le dashboard `CoursIA-gpu-reservation-ledger` n'en est plus qu'une **copie** lisible, et les fichiers `*.ledger.json` dans `scripts/coordination/_local/` un **cache** local — jamais une autorité cross-machine.
+
+Cette référence a été **arbitrée**, pas déduite : le mainteneur a retenu l'option (a) — un dépôt git privé et dédié — le 2026-10-27 (arbitrage consigné sur [#22456](https://github.com/jsboige/CoursIA/issues/22456)). Le dépôt de travail, public, ne peut pas porter cet état ; l'organe le refuse par construction. La publication et la lecture sont décrites dans [gpu-ledger-transport.md](gpu-ledger-transport.md).
 
 ## Quand poster une observation
 
-**Toute lane** qui lance une expérience GPU poste une observation sur le dashboard dédié avant `nvidia-smi` (ou équivalent). Le geste est **rapide** (1 message), **atomique** (1 observation = 1 fenêtre), et **idempotent** (un re-post remplace l'observation précédente pour la même entité, fenêtre mise à jour).
+**Toute lane** qui lance une expérience GPU publie une observation dans la **référence** (dépôt privé `jsboige/coursia-gpu-ledger`, branche `ops/gpu-ledger`) avant `nvidia-smi` (ou équivalent) ; le dashboard dédié en reçoit la copie. Le geste est **rapide**, **atomique** (1 observation = 1 fenêtre), et **idempotent** (une republication remplace l'observation précédente pour la même entité, fenêtre mise à jour).
 
 **Proposition mesurée par `myia-po-2023` le 2026-10-25 — en attente d'arbitrage du coordinateur sur [#16737](https://github.com/jsboige/CoursIA/issues/16737), donc NON en vigueur : le seuil n'est pas la durée, c'est l'annonce.** Un run dont la durée est **annoncée à l'avance** poste un `held` avant son premier appel CUDA et un `released` à la fin, **quelle que soit sa longueur**. Un seuil de 15 min laissait invisibles les runs courts **répétés**, qui occupent le device autant qu'un long — et « machine silencieuse » y devient indiscernable de « machine active » (mesure `myia-po-2023`, 2026-10-25). La règle par l'annonce ne demande aucun jugement sur la durée, ce qui la rend opposable. **Tant que l'arbitrage n'est pas rendu, le seuil des 15 min demeure la règle du protocole.** Restent hors champ les appels d'inférence ponctuels non annoncés, qui ne constituent pas une fenêtre.
 
