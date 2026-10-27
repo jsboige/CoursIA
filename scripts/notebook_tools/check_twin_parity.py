@@ -1699,6 +1699,96 @@ def _classify_per_pair(base_status: str, head_status: str) -> str:
     return "DRIFT_PRE_EXISTING"
 
 
+# Gabarit de la commande de rebaseline : --update atteste une empreinte de
+# contenu, il ne RESTAURE pas un fichier supprime (cf split_introduced_pairs).
+REBASELINE_TEMPLATE = (
+    'python scripts/notebook_tools/check_twin_parity.py --update --pair '
+    '"%s" --by "<machine:workspace>"'
+)
+
+
+def split_introduced_pairs(pairs: list) -> tuple[list, list]:
+    """Separe les paires DRIFT_INTRODUCED selon la remediation applicable.
+
+    Le verdict per-pair (`_classify_per_pair`) dit que la PR a casse la parite ;
+    il ne dit pas COMMENT la reparer -- et les deux remediations n'ont rien a
+    voir. Le discriminant est deja dans la donnee : `head_status`, le statut de
+    la paire au HEAD produit par `check_pair` (vocabulaire
+    `OK / DRIFT / NUMBERING-DRIFT / MISSING`).
+
+      - `head_status == "MISSING"` : un carnet de la paire est absent au HEAD.
+        Un rebaseline (`--update --pair`) atteste une empreinte de contenu ; il
+        ne restaure pas un fichier supprime -- la commande echoue ou fait un
+        no-op et envoie l'agent sur une piste morte. Le lot « missing » porte
+        donc le constat de suppression et les deux corrections possibles.
+      - tout le reste (`DRIFT`, `NUMBERING-DRIFT`) : derive de contenu, les deux
+        carnets existent et leur blob SHA a bouge -> rebaseline apres re-audit
+        firsthand (comportement historique, inchange).
+
+    Retourne `(drift, missing)` : deux listes des dicts de paire, dans l'ordre du
+    rapport. Seules les paires `verdict == "DRIFT_INTRODUCED"` sont considerees
+    -- c'est exactement ce que le gate rougit ; une paire pre-existante
+    (`DRIFT_PRE_EXISTING`, y compris un carnet deja absent au base-ref) n'entre
+    dans aucun des deux lots.
+    """
+    drift: list = []
+    missing: list = []
+    for p in pairs or []:
+        if p.get("verdict") != "DRIFT_INTRODUCED":
+            continue
+        if p.get("head_status") == "MISSING":
+            missing.append(p)
+        else:
+            drift.append(p)
+    return drift, missing
+
+
+def _missing_remediation_line(pair: dict) -> str:
+    """Ligne de remediation d'une paire dont un carnet est absent au HEAD."""
+    name = pair.get("name", "?")
+    if pair.get("base_status") == "MISSING":
+        fix = ("entree ajoutee par cette PR mais carnet absent au HEAD -- cree le "
+               "carnet, ou retire l'entree du registre "
+               "scripts/notebook_tools/twin_pairs.d/")
+    else:
+        fix = ("carnet absent au HEAD alors qu'il existait au base-ref -- SUPPRIME "
+               "par cette PR : restaure le carnet dans cette PR, ou retire l'entree "
+               "du registre scripts/notebook_tools/twin_pairs.d/ si la suppression "
+               "est voulue")
+    details = " ; ".join(pair.get("head_details") or [])
+    suffix = f" ({details})" if details else ""
+    return f'  [MISSING] "{name}" : {fix}.{suffix}'
+
+
+def render_introduced_remediation(pairs: list) -> list:
+    """Lignes de remediation du gate, dans l'ordre des deux lots.
+
+    Consomme le rapport JSON `--per-pair` (`d["pairs"]`) et rend le texte que le
+    workflow imprime dans le log ET dans l'annotation ::error :
+
+      - derive de contenu -> la commande de rebaseline, inchangee ;
+      - carnet supprime  -> le constat de suppression et les deux corrections
+        possibles, SANS commande de rebaseline (elle ne restaure rien).
+
+    Aucun lot (rapport sans paire DRIFT_INTRODUCED) -> la commande generique
+    historique, a nom exact a completer.
+    """
+    drift, missing = split_introduced_pairs(pairs)
+    lines: list = []
+    if drift:
+        lines.append("Derive de contenu (rebaseline APRES re-audit firsthand) :")
+        for p in drift:
+            lines.append(REBASELINE_TEMPLATE % p.get("name", "?"))
+    if missing:
+        lines.append("Carnet SUPPRIME (aucun rebaseline ne restaure un fichier "
+                     "supprime) :")
+        for p in missing:
+            lines.append(_missing_remediation_line(p))
+    if not drift and not missing:
+        lines.append(REBASELINE_TEMPLATE % "<nom exact de l entree>")
+    return lines
+
+
 def _paire_inconnue(nom: str, pairs: list) -> None:
     """Message d'erreur pour un `--pair` qui ne nomme aucune paire (#20197)."""
     names = sorted({pp.get("name", "?") for pp in pairs})
