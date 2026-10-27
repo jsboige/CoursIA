@@ -86,12 +86,15 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # tranche 3d (#14283) : premier consommateur GitHub-hosted du depot une
     # fois secret-scan bascule -- 2650 runs same-repo du 2026-08-28 au
     # 2026-09-02, timeout 25 min, aucun filtre `paths:`.
-    "always-on-guards.yml",
-    # #22331 : le job de body est la moitie extraite de always-on-guards.yml
-    # (memes organes, meme pool, meme garde anti-fork, meme routage). Le laisser
-    # sur GitHub-hosted rendrait la famine de file pire qu'avant, puisque son
-    # declencheur `edited` est justement celui qui produit les re-declenchements.
-    "always-on-guards-body.yml",
+    #
+    # 2026-10-27 (PR #22820, lane myia-ai-01:CoursIA) : always-on-guards.yml et
+    # always-on-guards-body.yml MIGRENT vers ubuntu-latest par Q35 etape 2
+    # (#17397) -- l'organe `scripts/ci/audit_self_hosted_needs.py` les certifie
+    # sans aucun besoin local, et le parc local etait sature PAR SES CHECKOUTS
+    # (mesure 00:45Z : 11 des 12 slots occupes dans `actions/checkout`). Sortis
+    # de SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Precedent :
+    # repeated-prose-advisory.yml (#17443).
+    "pr-gate-stale-sweep.yml",
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
@@ -337,7 +340,14 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
     # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
     # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
-    "scripts-tests.yml",
+    # scripts-tests.yml : migre ubuntu-latest par Q35 etape 2 (#17397, PR
+    # #22820, lane myia-ai-01:CoursIA, 2026-10-27) -- le job installe toutes
+    # ses dependances par pip (numpy, pandas, scipy, pyarrow>=26, pytest,
+    # requests, bcrypt, jupyter_client, pytest-xdist, ipykernel, papermill,
+    # nbformat, nbconvert), aucun besoin local ; le parc local etait sature par
+    # ses CHECKOUTS (mesure 27/10 00:45Z : 11 des 12 slots occupes dans
+    # `actions/checkout`, 614 runs en file). Sorti de
+    # SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit.
     "series-naming-gate.yml",
     # registre TRANCHE14 (issue #16762, owner myia-po-2023:CoursIA) : meme
     #   profil que repeated-prose-advisory.yml (TRANCHE7) ci-dessus --
