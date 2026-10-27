@@ -98,6 +98,14 @@ jobs:
     # basculee.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Borne de securite (incident du 15/10) : la forme hybride renvoie ce job
+    # sur nos slots ephemeres, ou un run fige (checkout `filter: blob:none`
+    # sans borne) tient un slot pendant 6 h -- le defaut d'Actions -- et le
+    # retire aux PR gates ; 16 des 18 slots ephemeres etaient occupes de
+    # cette facon le 15/10.
+    # Duree mesuree sur 19 runs verts heberges : mediane 1,0 min, max 1,1 min
+    # -> borne a 15 min (marge large pour le parc local).
+    timeout-minutes: 15
 
     steps:
       - name: Checkout
