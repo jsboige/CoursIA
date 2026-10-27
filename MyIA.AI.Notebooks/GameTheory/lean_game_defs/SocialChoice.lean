@@ -353,3 +353,49 @@ theorem decisive_expand_left {I A : Type} [DecidableEq A]
   have hiff₂ : (swf.aggregate P).R y z ↔ (swf.aggregate prefs).R y z :=
     h_iia P prefs y z h₂ h₁
   exact ⟨hiff₁.mp hzyP.1, fun hyz' => hzyP.2 (hiff₂.mpr hyz')⟩
+
+/-- Symétrie du champ : si `D` est décisive sur `(x, y)`, elle l'est sur la
+paire renversée `(y, x)`.
+
+C'est le pas que l'étage 1 ne franchissait pas, et il n'est pas gratuit : `IIA`
+est énoncée pour la **paire ordonnée**, donc le renversement ne se transporte
+pas par une simple réécriture. La preuve traverse trois paires distinctes sur
+un vivier de trois alternatives — `(x, y) → (x, z) → (y, z) → (y, x)` — chaque
+étape étant une expansion du champ déjà établie. -/
+theorem decisive_swap {I A : Type} [DecidableEq A]
+    (swf : SocialWelfareFunction I A)
+    (D : I → Prop) [DecidablePred D] (h_iia : IIA swf) (h_pareto : WeakPareto swf)
+    {x y z : A} (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z)
+    (h : Decisive swf D x y) : Decisive swf D y x := by
+  have h1 : Decisive swf D x z :=
+    decisive_expand_right swf D h_iia h_pareto hxy hxz hyz h
+  have h2 : Decisive swf D y z :=
+    decisive_expand_left swf D h_iia h_pareto hxz hxy hyz.symm h1
+  exact decisive_expand_right swf D h_iia h_pareto hyz hxy.symm hxz.symm h2
+
+/-- Fermeture du champ : sur trois alternatives deux à deux distinctes, une
+coalition décisive sur une seule paire l'est sur les six paires ordonnées.
+
+Les deux expansions de l'étage 1 ne couvrent que les paires qui gardent un
+côté ; `decisive_swap` fournit les paires renversées, et la clôture en découle.
+C'est l'hypothèse exacte dont la suite du port a besoin : pour réduire la
+coalition décisive, il faut pouvoir lire une décision sur n'importe quelle
+paire, pas seulement sur celle qui a servi à l'établir. -/
+theorem decisive_field {I A : Type} [DecidableEq A]
+    (swf : SocialWelfareFunction I A)
+    (D : I → Prop) [DecidablePred D] (h_iia : IIA swf) (h_pareto : WeakPareto swf)
+    {x y z : A} (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z)
+    (h : Decisive swf D x y) :
+    Decisive swf D x y ∧ Decisive swf D y x ∧ Decisive swf D x z ∧
+    Decisive swf D z x ∧ Decisive swf D y z ∧ Decisive swf D z y := by
+  have h1 : Decisive swf D x z :=
+    decisive_expand_right swf D h_iia h_pareto hxy hxz hyz h
+  have h2 : Decisive swf D z y :=
+    decisive_expand_left swf D h_iia h_pareto hxy hxz hyz h
+  have h3 : Decisive swf D z x :=
+    decisive_expand_right swf D h_iia h_pareto hyz.symm hxz.symm hxy.symm h2
+  have h4 : Decisive swf D y x :=
+    decisive_swap swf D h_iia h_pareto hxy hxz hyz h
+  have h5 : Decisive swf D y z :=
+    decisive_expand_right swf D h_iia h_pareto hxy.symm hyz hxz h4
+  exact ⟨h, h4, h1, h3, h5, h2⟩
