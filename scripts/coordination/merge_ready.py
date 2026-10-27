@@ -116,10 +116,14 @@ Comportement :
   coordinateur -- le dashboard les distingue des PRs bloquees sur
   un autre probleme.
 - Journal : une ligne JSON par PR evaluee (ts UTC en Z, pr, head,
-  verdict, reason, merged, review) dans
+  verdict, reason, merged, review, stack, plus stack_incidents quand le
+  gate en a publie) dans
   ``%LOCALAPPDATA%/CoursIA/merge_ready/journal.jsonl`` (surchargeable
   ``--journal``), plus un resume humain sur stdout ; ``--json`` pour la
-  sortie machine.
+  sortie machine. ``stack`` nomme l'etat de la porte STACK tel que le
+  gate l'a publie (#22005) : ``measured`` | ``unmeasured`` | ``not-run`` ;
+  un READY dont la porte n'a pas ete mesuree est signale comme tel dans
+  le resume humain (#22066), sans changer la decision de merge.
 - Codes de sortie : 0 run termine (merge ou non) ; 1 arret sur erreur
   inattendue ; 2 impossible de demarrer (jeton/env).
 
@@ -355,9 +359,15 @@ class PRVerdict:
     #: Disposition de review classee a ``head`` (point 1 de #17672) ; une ligne
     #: ecrite avant evaluation (erreur inattendue) porte ``not-evaluated``.
     review: str = NOT_EVALUATED
+    #: Etat de la porte STACK tel que le gate l'a nomme (#22005) :
+    #: ``measured`` | ``unmeasured`` | ``not-run``. ``None`` = le gate n'a pas
+    #: ete atteint (skip en amont) ou ne nomme pas la porte.
+    stack: str | None = None
+    #: Incidents de mesure de la porte STACK, quand le gate en a publie.
+    stack_incidents: tuple[str, ...] | None = None
 
     def journal_dict(self) -> dict:
-        return {
+        row = {
             "ts": utc_now_iso(),
             "pr": self.pr,
             "head": self.head,
@@ -365,7 +375,11 @@ class PRVerdict:
             "reason": self.reason,
             "merged": self.merged,
             "review": self.review,
+            "stack": self.stack,
         }
+        if self.stack_incidents:
+            row["stack_incidents"] = list(self.stack_incidents)
+        return row
 
 
 def utc_now_iso() -> str:
@@ -737,8 +751,22 @@ def precheck_dossier(view: dict) -> str | None:
     return None
 
 
-def run_gate(runner: Runner, pr: int, gh_env: dict[str, str]) -> tuple[bool, str, str]:
-    """Etape 3 : le gate d'entree. Retourne (ready, head, raison si non ready).
+@dataclass(frozen=True)
+class GateOutcome:
+    """Ce que le gate d'entree a dit sur une PR (#22066)."""
+
+    ready: bool
+    head: str
+    reason: str
+    #: Etat de la porte STACK nomme par le gate (#22005) : ``measured`` |
+    #: ``unmeasured`` | ``not-run``. ``None`` = le gate ne nomme pas la porte.
+    stack: str | None = None
+    #: Incidents de mesure de la porte STACK, quand le gate en a publie.
+    stack_incidents: tuple[str, ...] | None = None
+
+
+def run_gate(runner: Runner, pr: int, gh_env: dict[str, str]) -> GateOutcome:
+    """Etape 3 : le gate d'entree. Retourne l'etat de la porte + la raison.
 
     rc hors {0,1,2,3} = erreur inattendue (le gate ne s'est pas prononce).
     """
@@ -755,13 +783,24 @@ def run_gate(runner: Runner, pr: int, gh_env: dict[str, str]) -> tuple[bool, str
         raise UnexpectedError(f"gate PR {pr} : la reponse n'est pas un objet")
     ready = res.returncode == 0 and data.get("ready") is True
     head = str(data.get("head") or "")
+    # La porte STACK : le gate la nomme depuis #22005. Elle ne fabrique
+    # aucun refus (fail-open assume) -- elle est journalisee pour qu'un
+    # READY sans STACK mesuree ne se lise pas comme un READY complet.
+    stack = data.get("stack")
+    stack = str(stack) if isinstance(stack, str) else None
+    incidents = data.get("stack_incidents")
+    stack_incidents = (
+        tuple(str(item) for item in incidents)
+        if isinstance(incidents, list) and incidents
+        else None
+    )
     if ready:
-        return True, head, ""
+        return GateOutcome(True, head, "", stack, stack_incidents)
     reason = GATE_RC_REASONS.get(res.returncode)
     if reason is None:
         # rc 0 avec ready faux : ne devrait pas se produire, fail-closed.
         reason = "gate:not-ready"
-    return False, head, reason
+    return GateOutcome(False, head, reason, stack, stack_incidents)
 
 
 def _first_line(body: str) -> str:
@@ -1178,8 +1217,10 @@ def evaluate_pr(
     view_head = str(view.get("headRefOid") or "")
     disposition = review_disposition(view, view_head)
 
-    def skip(reason: str) -> PRVerdict:
-        return PRVerdict(pr, view_head, "skipped", reason, False, disposition)
+    def skip(reason: str, stack: str | None = None,
+             stack_incidents: tuple[str, ...] | None = None) -> PRVerdict:
+        return PRVerdict(pr, view_head, "skipped", reason, False, disposition,
+                         stack, stack_incidents)
 
     # 1. prefiltre bon marche.
     if view.get("isDraft"):
@@ -1219,13 +1260,14 @@ def evaluate_pr(
     if reason is not None:
         return PRVerdict(pr, view_head, "skipped", reason, False, REVIEW_READY)
     # 3. gate d'entree.
-    ready, gate_head, gate_reason = run_gate(runner, pr, gh_env)
-    if not ready:
-        return skip(gate_reason)
+    gate = run_gate(runner, pr, gh_env)
+    if not gate.ready:
+        return skip(gate.reason, gate.stack, gate.stack_incidents)
+    gate_head = gate.head
     # L'approbation a ete jugee a la tete de la vue : une tete differente au
     # gate n'a pas ete couverte par ce jugement.
     if gate_head != view_head:
-        return skip("head-moved")
+        return skip("head-moved", gate.stack, gate.stack_incidents)
     # 4. b0 declaratif du dossier accepte.
     reason = dossier_b0_reason(runner, pr, gh_env)
     if reason is not None:
@@ -1287,7 +1329,8 @@ def evaluate_pr(
     if live_head != gate_head:
         return skip("head-moved")
     return PRVerdict(
-        pr, gate_head, "would-merge", None, False, review_disposition(view, gate_head)
+        pr, gate_head, "would-merge", None, False,
+        review_disposition(view, gate_head), gate.stack, gate.stack_incidents,
     )
 
 
@@ -1307,13 +1350,31 @@ def append_journal(path: Path, verdict: PRVerdict) -> None:
 # --- sortie --------------------------------------------------------------------
 
 
+def _stack_suffix(verdict: PRVerdict) -> str:
+    """Mention de la porte STACK quand la mesure n'a pas abouti (#22066).
+
+    La porte est fail-open : un incident de mesure ne fabrique aucun refus.
+    Mais un READY dont la porte STACK n'a pas ete mesuree ne doit pas se
+    lire comme un READY complet -- la mention le dit, sans rien changer a
+    la decision.
+    """
+    if verdict.stack != "unmeasured":
+        return ""
+    incidents = verdict.stack_incidents or ()
+    detail = f" ({'; '.join(incidents)})" if incidents else ""
+    return f" [STACK non mesure{detail}]"
+
+
 def _describe(verdict: PRVerdict) -> str:
     if verdict.verdict == "merged":
-        return f"PR #{verdict.pr} MERGED ({verdict.head}) [review: {verdict.review}]"
+        return (
+            f"PR #{verdict.pr} MERGED ({verdict.head}) [review: {verdict.review}]"
+            f"{_stack_suffix(verdict)}"
+        )
     if verdict.verdict == "would-merge":
         return (
             f"PR #{verdict.pr} WOULD MERGE ({verdict.head}) [dry-run] "
-            f"[review: {verdict.review}]"
+            f"[review: {verdict.review}]{_stack_suffix(verdict)}"
         )
     if verdict.verdict == "merge-failed":
         return f"PR #{verdict.pr} MERGE ECHOUE : {verdict.reason}"
@@ -1431,7 +1492,8 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                     except MergeFailedError as exc:
                         failed = PRVerdict(
                             pr, decision.head, "merge-failed", str(exc), False,
-                            decision.review,
+                            decision.review, decision.stack,
+                            decision.stack_incidents,
                         )
                         results.append(failed)
                         append_journal(journal_path, failed)
@@ -1439,7 +1501,8 @@ def run(argv: list[str] | None = None, runner: Runner | None = None) -> int:
                         exit_code = 1
                         break
                     decision = PRVerdict(
-                        pr, decision.head, "merged", None, True, decision.review
+                        pr, decision.head, "merged", None, True, decision.review,
+                        decision.stack, decision.stack_incidents,
                     )
                 merged_count += 1
             results.append(decision)

@@ -10,9 +10,9 @@ Le catalogue rassemble **plusieurs centaines de notebooks pédagogiques** répar
 
 <!-- CATALOG-STATUS
 series: ALL
-total: 1415
-breakdown: SymbolicAI=329, GenAI=276, Search=157, ML=137, QuantConnect=121, GameTheory=113, IIT=98, Probas=83, Sudoku=38, RL=35, Complexity=14, CaseStudies=6, NLP=5, cross-series=2, Compression=1
-maturity: BETA=1232, DRAFT=104, ALPHA=75, TEMPLATE=4
+total: 1506
+breakdown: SymbolicAI=364, GenAI=292, Search=161, ML=138, GameTheory=127, QuantConnect=122, IIT=106, Probas=89, Sudoku=38, RL=36, Complexity=16, CaseStudies=6, NLP=5, Compression=4, cross-series=2
+maturity: BETA=1314, DRAFT=105, ALPHA=83, TEMPLATE=4
 -->
 
 <sub>*Marqueur auto-régénéré quotidiennement par `.github/workflows/catalog-cron.yml` (file [`COURSE_CATALOG.generated.md`](../COURSE_CATALOG.generated.md) — source de vérité sur les volumes et la maturité). Toute PR qui modifierait ce bloc est signalée par `catalog-drift.yml` (read-only, catalog-pr-hygiene R1).*</sub>
@@ -27,7 +27,7 @@ Dernière mise à jour : 2026-08-05
 
 **[SymbolicAI](SymbolicAI/README.md)** — Le pôle « comprendre et prouver » du dépôt, et sa série la plus vaste : preuves formelles Lean 4 (théorème d'Arrow, Kochen-Specker, hommages à Grothendieck et Conway), smart contracts Solidity testés et déployés sur testnet, Web sémantique RDF/SPARQL, logiques d'argumentation (Tweety), planification PDDL et apprentissage symbolique (ILP, automates, neuro-symbolique). C'est ici que la dualité simulation / preuve prend sa forme la plus aboutie : ce que les autres séries calculent, celle-ci cherche à le certifier.
 
-**[Search](Search/README.md)** — Comment trouver une aiguille dans une botte de foin exponentielle ? Des algorithmes classiques (BFS, A*, Minimax, MCTS) à la programmation par contraintes (CP-SAT) et aux métaheuristiques, la série déroule un fil unique — réduire l'espace de recherche — et le confronte à des applications réelles adaptées de projets étudiants (cf. [Search/Applications/](Search/Applications/) pour l'inventaire à jour — NQueens, planification d'infirmiers, ordonnancement d'atelier, VRP logistique, génération procédurale de niveaux, etc.).
+**[Search](Search/README.md)** — Comment trouver une aiguille dans une botte de foin exponentielle ? Des algorithmes classiques (BFS, A*, Minimax, MCTS) à la programmation par contraintes (CP-SAT) et aux métaheuristiques, la série déroule un fil unique — réduire l'espace de recherche — et le confronte à des applications réelles adaptées de projets étudiants (cf. [Search/Part3-Cas-pratiques](Search/Part3-Cas-pratiques/) pour l'inventaire à jour — NQueens, planification d'infirmiers, ordonnancement d'atelier, VRP logistique, génération procédurale de niveaux, etc.).
 
 **[Probas](Probas/README.md)** — Raisonner avec l'incertitude plutôt que contre elle. La série a une particularité unique dans le dépôt : les mêmes modèles probabilistes y vivent deux fois, en Infer.NET (graphes de facteurs, C#) et en PyMC (MCMC, Python) — deux langues pour une même théorie bayésienne, dont la comparaison est elle-même instructive. Un **arc décision** de dix notebooks (utilité espérée vNM → bandits → indice de Gittins → Thompson Sampling), lui aussi doublé Infer.NET/PyMC, pousse jusqu'à la preuve avec deux compagnons Lean 4 (axiomes vNM, Gittins).
 

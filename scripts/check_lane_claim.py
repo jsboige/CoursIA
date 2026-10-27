@@ -85,12 +85,14 @@ Exit codes: 0 ok / 1 blocked (other lane holds active issue claim) /
 from __future__ import annotations
 
 import argparse
+import concurrent.futures
 import json
 import os
 import re
 import subprocess
 import sys
 import tempfile
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -114,7 +116,52 @@ _GH_OPEN_PRS_TIMEOUT_S = int(
 # invoque check_lane_claim N fois (1 par candidat), et sauve N-1 appels `gh`
 # (~6s x N = le bottleneck mesure du tapis c.1753). Le fallback fetch `gh`
 # est preserve si le fichier est absent ou corrompu.
+#
+# #21742 -- ce cache ne vaut PLUS comme preuve de liberte : le producteur
+# (picker belt) y ecrivait une liste issue de `gh pr list --limit 200`, donc
+# TRONQUEE (mesure : 362 PRs ouvertes sur le depot, 200 seulement dans la
+# fenetre). Le format v2 (`open-prs-v2`) porte explicitement la completude ;
+# une liste nue (format heritage) n'en porte aucune et vaut absence de cache.
 _OPEN_PRS_CACHE_PATH = os.environ.get("CHECK_LANE_CLAIM_OPEN_PRS_JSON")
+_OPEN_PRS_CACHE_FORMAT = "open-prs-v2"
+
+# --- #21742 : enumeration COMPLETE des PRs ouvertes ----------------------------
+#
+# Le mode `--paths` de ce script repond "CLEAR" quand aucune PR ouverte d'une
+# autre lane ne touche les chemins demandes. Cette reponse n'a de valeur que
+# si l'enumeration des PRs ouvertes est COMPLETE. Mesure du 2026-10-21 : deux
+# truncations distinctes, toutes deux silencieuses :
+#
+#   1. la LISTE des PRs : `gh pr list --limit 200` renvoyait 200 PRs sur 362
+#      ouvertes -> 162 PRs invisibles -> un "CLEAR" sur un chemin detenu par
+#      une PR hors fenetre (reproduction firsthand : chemin `scripts/` d'une
+#      PR ouverte #20802, verdict "Path is free") ;
+#   2. la liste de FICHIERS d'une PR : `--json files` plafonne a 100 chemins
+#      par PR (3 PRs ouvertes en depassent : #20687 1070, #21555 597,
+#      #21413 323) -> un chemin porte par la queue invisible d'une de ces PRs
+#      disparait du verdict.
+#
+# La voie retenue : enumeration PAGINEE explicite (GraphQL, `hasNextPage`
+# jusqu'a false -- la completude de la LISTE est etablie, pas supposee) +
+# refetch REST des seules PRs dont la liste de fichiers est plafonnee (le
+# `totalCount` de GraphQL dit exactement lesquelles). Quand la completude ne
+# peut pas etre etablie, l'enumeration leve `OpenPrsIncompleteError` et les
+# appelants rendent un verdict `UNKNOWN` -- fail-closed : une enumeration
+# incomplete ne prouve PAS la liberte d'un chemin.
+_OPEN_PRS_GRAPHQL_PAGE = 100
+# Plafond de securite : au-dela, l'enumeration est declaree incomplete
+# plutot que de bouffer la memoire. Mesure : 362 PRs ouvertes.
+_OPEN_PRS_HARD_CAP = int(os.environ.get("CHECK_LANE_CLAIM_OPEN_PRS_MAX", "3000"))
+# Budget global de l'enumeration complete (toutes pages + refetch fichiers).
+# Mesure : 13s (4 pages GraphQL) + 11s (refetch REST des 3 PRs plafonnees).
+_OPEN_PRS_TOTAL_TIMEOUT_S = int(
+    os.environ.get("CHECK_LANE_CLAIM_GH_TIMEOUT_TOTAL", "300")
+)
+# Memo de processus : le mode batch (#19643) boucle sur N issues et chaque
+# issue re-demande la liste des PRs ouvertes -> sans memo, N fetches. Le memo
+# rend le fetch unique par processus ; le fichier-cache (v2) le rend unique
+# par session.
+_OPEN_PRS_MEMO: list[dict] | None = None
 
 # --- markers -----------------------------------------------------------------
 
@@ -1177,6 +1224,112 @@ def _rest_issue_payload(issue: str, repo: str | None = None) -> dict:
     }
 
 
+# --- #22630 : seam d'instantane local ------------------------------------------
+#
+# L'instantane (`scripts/coordination/gh_snapshot.py`) remplace le TRANSPORT
+# des lectures GitHub, pas leur semantique : le code de reduction reste le
+# meme, seule la source des payloads change. C'est ce qui rend la sortie
+# identique entre l'ancienne voie (sous-processus + `gh issue view`) et la
+# nouvelle (instantane + calcul en processus).
+#
+# Le seam est OPT-IN : sans instantane installe, le module lit GitHub
+# exactement comme avant. Aucun comportement par defaut n'est modifie.
+
+_SNAPSHOT: dict | None = None
+
+
+def set_snapshot(snapshot: dict | None) -> None:
+    """Installe (ou retire) l'instantane local lu par ce module.
+
+    `snapshot` porte la cle `issues` et, en option, la cle `prs` (numero ->
+    etat de la PR). Deux formes sont servies pour `issues` (#22684) : le
+    payload complet par numero (forme `gh issue view --json
+    number,title,labels,comments`, cle `comments` incluse), ou la forme
+    **separee** de `gh_snapshot` (metadonnees dans `issues[n]`,
+    commentaires dans `comments[n]`) -- fusionnes a la lecture. Sans
+    instantane, ce module lit GitHub comme avant.
+    """
+    global _SNAPSHOT
+    _SNAPSHOT = snapshot if isinstance(snapshot, dict) else None
+
+
+def _snapshot_comments_list(issue: str) -> list | None:
+    """Liste de commentaires `comments[issue]` de l'instantane, ou None."""
+    if not _SNAPSHOT:
+        return None
+    comments = _SNAPSHOT.get("comments") or {}
+    entry = comments.get(str(issue))
+    if entry is None:
+        try:
+            entry = comments.get(int(issue))
+        except (TypeError, ValueError):
+            entry = None
+    return entry if isinstance(entry, list) else None
+
+
+def _snapshot_issue_payload(issue: str) -> dict | None:
+    """Payload d'issue servi par l'instantane, ou None s'il n'y en a pas.
+
+    Deux formes d'instantane sont servies -- toutes deux produites en
+    production :
+
+    - forme **fusionnee** : l'entree `issues[n]` porte elle-meme sa cle
+      `comments` (forme `gh issue view --json number,title,labels,comments`,
+      celle des payloads injectes directement). Servie telle quelle.
+    - forme **separee** : `issues[n]` ne porte que les metadonnees et les
+      commentaires vivent dans `comments[n]` -- la forme que fabrique
+      `gh_snapshot.ensure_issue_payloads` (deux fichiers disque). Les
+      commentaires sont fusionnes dans une COPIE servie au reducteur.
+
+    #22684 -- sans cette fusion, la voie en processus servait l'entree
+    telle quelle : `_sort_events` lisait `payload.get("comments", [])`,
+    voyait zero evenement et rendait FREE pour TOUTE issue, meme claimee
+    par une autre lane (review ai-01 2026-10-27T04:38Z). Une entree sans
+    cle `comments` ET sans liste dans `comments[n]` n'est PAS servie :
+    l'instantane n'etablit pas l'absence de commentaires, et le lecteur
+    retombe sur la voie reseau (fail-closed) plutot que de fabriquer un
+    FREE de zero lu.
+    """
+    if not _SNAPSHOT:
+        return None
+    issues = _SNAPSHOT.get("issues") or {}
+    entry = issues.get(str(issue))
+    if entry is None:
+        try:
+            entry = issues.get(int(issue))
+        except (TypeError, ValueError):
+            entry = None
+    if not isinstance(entry, dict):
+        return None
+    if "comments" in entry:
+        return entry
+    comments = _snapshot_comments_list(issue)
+    if comments is None:
+        return None
+    payload = dict(entry)
+    payload["comments"] = comments
+    return payload
+
+
+def _snapshot_pr_state(pr_ref: int) -> str | None:
+    """Etat d'une PR servi par l'instantane, ou None s'il n'y en a pas."""
+    if not _SNAPSHOT:
+        return None
+    prs = _SNAPSHOT.get("prs") or {}
+    entry = prs.get(str(pr_ref))
+    if entry is None:
+        try:
+            entry = prs.get(int(pr_ref))
+        except (TypeError, ValueError):
+            entry = None
+    if isinstance(entry, dict):
+        state = entry.get("state")
+        return state if isinstance(state, str) else None
+    if isinstance(entry, str):
+        return entry
+    return None
+
+
 def _gh_issue_comments(issue: str) -> dict:
     """Fetch issue metadata + comments as JSON via `gh`. Raises on failure.
 
@@ -1187,6 +1340,12 @@ def _gh_issue_comments(issue: str) -> dict:
     vocabulaire distinct de tout verdict de claim -- le picker propage cette
     distinction jusqu'au bandeau du tapis).
     """
+    # #22630 -- l'instantane local remplace la LECTURE, pas la semantique :
+    # le payload rendu a la forme attendue (`number`, `title`, `labels`,
+    # `comments`), et tout le reste du module s'execute a l'identique.
+    snapshot_payload = _snapshot_issue_payload(issue)
+    if snapshot_payload is not None:
+        return snapshot_payload
     proc = subprocess.run(
         [
             "gh", "issue", "view", str(issue),
@@ -1328,6 +1487,14 @@ def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
     per the #12320 contract. The reducer (`compute_active_claims`) is the only
     caller, and only for events that already have `pr_ref != None`.
     """
+    # #22630 -- l'instantane local peut porter l'etat de la PR : la lecture
+    # REST la remplace, la semantique (OPEN/CLOSED/MERGED) reste celle du
+    # reducteur.
+    snap_state = _snapshot_pr_state(pr_ref)
+    if snap_state is not None:
+        result = (snap_state, None)
+        _PR_STATE_CACHE[pr_ref] = result
+        return result
     if pr_ref in _PR_STATE_CACHE:
         return _PR_STATE_CACHE[pr_ref]
     try:
@@ -1457,8 +1624,347 @@ def _post_comment(issue: str, body: str) -> None:
         )
 
 
+class OpenPrsIncompleteError(RuntimeError):
+    """L'enumeration des PRs ouvertes n'est pas complete (#21742).
+
+    Distincte d'un echec `gh` (`RuntimeError`) : ici, l'appel a reussi mais
+    la reponse ne couvre pas TOUT l'ouvert -- liste tronquee, fichiers d'une
+    PR plafonnes, delai atteint, plafond de securite franchi. Dans les deux
+    cas le verdict doit etre fail-closed : une enumeration incomplete ne
+    prouve PAS la liberte d'un chemin.
+
+    Elle herite de `RuntimeError` pour que les handlers existants la
+    rattrapent (fail-closed par defaut) ; les appelants la captent
+    explicitement AVANT `RuntimeError` pour rendre un verdict `UNKNOWN`
+    (motif + incompletude nommes) plutot qu'une erreur de plomberie.
+    """
+
+    def __init__(self, reason: str, detail: str = ""):
+        self.reason = reason
+        self.detail = detail
+        super().__init__(f"{reason}: {detail}" if detail else reason)
+
+
+# Les deux requetes GraphQL de l'enumeration. `first` est plafonne a 100 par
+# l'API GraphQL -- c'est la pagination qui couvre le reste, et
+# `pageInfo.hasNextPage` dit exactement quand s'arreter. Le placeholder
+# `@OWNER@`/`@NAME@` vient de `gh repo view` (meme resolution de depot que
+# `gh pr list`), pas d'une saisie utilisateur.
+_OPEN_PRS_QUERY_FIRST = """
+query {
+  repository(owner:"@OWNER@", name:"@NAME@") {
+    pullRequests(states:OPEN, first:100, orderBy:{field:UPDATED_AT, direction:ASC}) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        number title headRefName body additions deletions
+        files(first:100) { totalCount nodes { path } }
+      }
+    }
+  }
+}
+"""
+
+_OPEN_PRS_QUERY_NEXT = """
+query($cursor: String) {
+  repository(owner:"@OWNER@", name:"@NAME@") {
+    pullRequests(states:OPEN, first:100, after:$cursor, orderBy:{field:UPDATED_AT, direction:ASC}) {
+      pageInfo { hasNextPage endCursor }
+      nodes {
+        number title headRefName body additions deletions
+        files(first:100) { totalCount nodes { path } }
+      }
+    }
+  }
+}
+"""
+
+
+def _gh_repo_name_with_owner() -> str:
+    """`owner/name` du depot courant (meme resolution que `gh pr list`).
+
+    L'enumeration GraphQL a besoin de l'identifiant du depot ; le CLI ne le
+    resout pas tout seul pour une requete `gh api graphql`. La forme rendue
+    est validee par motif : la chaine part dans une requete GraphQL.
+    """
+    try:
+        proc = subprocess.run(
+            ["gh", "repo", "view", "--json", "nameWithOwner",
+             "-q", ".nameWithOwner"],
+            capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",
+            timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(
+            f"gh repo view timed out after {_GH_OPEN_PRS_TIMEOUT_S}s "
+            f"(set CHECK_LANE_CLAIM_GH_TIMEOUT to override)"
+        ) from exc
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"gh repo view failed (exit {proc.returncode}): "
+            f"{proc.stderr.strip()[:300]}"
+        )
+    name = proc.stdout.strip()
+    if not re.match(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$", name):
+        raise RuntimeError(f"gh repo view returned an unexpected repo: {name!r}")
+    return name
+
+
+def _gh_graphql(query: str, variables: dict[str, str] | None = None) -> dict:
+    """Un appel `gh api graphql` ; leve RuntimeError / OpenPrsIncompleteError.
+
+    Le timeout est traite comme une INCOMPLETUDE (une reponse arrivee trop
+    tard ne couvre pas tout l'ouvert) ; les autres echecs `gh` (auth, reseau,
+    quota) restent des RuntimeError.
+    """
+    cmd = ["gh", "api", "graphql", "-f", "query=" + query]
+    for key, value in (variables or {}).items():
+        # `-f` (chaine brute) et non `-F` : `-F` interprete un `@` initial
+        # comme un fichier. Un curseur GraphQL est base64 (`A...=`), jamais
+        # un `@` initial, mais la forme brute evite la question.
+        cmd += ["-f", f"{key}={value}"]
+    try:
+        proc = subprocess.run(
+            cmd, capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",
+            timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise OpenPrsIncompleteError(
+            "delai de l'appel GraphQL depasse",
+            f"{_GH_OPEN_PRS_TIMEOUT_S}s",
+        ) from exc
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"gh api graphql failed (exit {proc.returncode}): "
+            f"{proc.stderr.strip()[:300]}"
+        )
+    try:
+        payload = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"gh api graphql returned non-JSON: {exc}") from exc
+    if payload.get("errors"):
+        raise OpenPrsIncompleteError(
+            "GraphQL a retourne des erreurs",
+            json.dumps(payload["errors"], ensure_ascii=False)[:300],
+        )
+    return payload
+
+
+def _gh_pr_files_rest(owner: str, name: str, number: int,
+                       expected: int) -> list[str]:
+    """Liste COMPLETE des fichiers d'une PR (REST, paginee).
+
+    Utilisee pour les seules PRs dont la liste de fichiers est plafonnee par
+    GraphQL (`files(first:100)`) -- mesure : 3 PRs ouvertes au 2026-10-21,
+    jusqu'a 1070 fichiers. L'endpoint REST `/pulls/{n}/files` n'a pas ce
+    plafond ; `--paginate` suit toutes les pages.
+
+    Le champ REST est `filename` (pas `path`). On NE passe PAS `--jq` : mesure
+    du 2026-10-21, `gh api --paginate ... --jq '.[].path'` rend un tableau de
+    lignes VIDES (323 lignes vides pour 323 fichiers) -- le filtre est
+    applique a une entree vide. On parse donc le JSON et on extrait
+    `filename` nous-memes.
+
+    Le nombre de chemins lus est compare a `expected` (le `totalCount`
+    GraphQL) : un ecart rend l'enumeration incomplete.
+    """
+    try:
+        proc = subprocess.run(
+            [
+                "gh", "api", "--paginate",
+                f"repos/{owner}/{name}/pulls/{number}/files?per_page=100",
+            ],
+            capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",
+            timeout=_GH_OPEN_PRS_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired as exc:
+        # #21742 -- un delai ici EST une incompletude (la liste des fichiers
+        # n'a pas ete entierement lue) : la convertir en
+        # `OpenPrsIncompleteError` pour que l'appelant rende le verdict
+        # `UNKNOWN`, et non une traceback `TimeoutExpired` qui echappe aux
+        # handlers (mesure : le timeout depasse, pas une erreur de
+        # plomberie).
+        raise OpenPrsIncompleteError(
+            f"delai du refetch des fichiers de la PR #{number} depasse",
+            f"{_GH_OPEN_PRS_TIMEOUT_S}s",
+        ) from exc
+    if proc.returncode != 0:
+        raise OpenPrsIncompleteError(
+            f"liste de fichiers illisible pour la PR #{number}",
+            f"exit {proc.returncode}: {proc.stderr.strip()[:200]}",
+        )
+    try:
+        payload = json.loads(proc.stdout)
+    except json.JSONDecodeError as exc:
+        raise OpenPrsIncompleteError(
+            f"liste de fichiers non-JSON pour la PR #{number}", str(exc)[:200],
+        ) from exc
+    if not isinstance(payload, list):
+        raise OpenPrsIncompleteError(
+            f"liste de fichiers inattendue pour la PR #{number}",
+            type(payload).__name__,
+        )
+    paths = [
+        entry.get("filename") for entry in payload
+        if isinstance(entry, dict) and entry.get("filename")
+    ]
+    if len(paths) != expected:
+        raise OpenPrsIncompleteError(
+            f"liste de fichiers incomplete pour la PR #{number}",
+            f"{len(paths)} chemins lus pour {expected} attendus",
+        )
+    return paths
+
+
+def _gh_open_prs_complete() -> list[dict]:
+    """Enumeration COMPLETE des PRs ouvertes.
+
+    Deux completudes etablies, pas supposees :
+
+      - la LISTE : pagination GraphQL jusqu'a `hasNextPage == false` (plus
+        aucune borne `--limit` susceptible de tronquer en silence) ;
+      - les FICHIERS de chaque PR : `files(first:100).totalCount` dit
+        exactement si la liste de chemins est plafonnee ; les PRs concernees
+        sont refetches en REST (pagination sans plafond), en parallele.
+
+    Leve `OpenPrsIncompleteError` si l'une des deux completudes ne peut pas
+    etre etablie (plafond de securite, delai, reponse GraphQL en erreur).
+    """
+    repo = _gh_repo_name_with_owner()
+    owner, name = repo.split("/", 1)
+    deadline = time.monotonic() + _OPEN_PRS_TOTAL_TIMEOUT_S
+    prs: list[dict] = []
+    by_number: dict[int, dict] = {}
+    cursor: str | None = None
+    while True:
+        if time.monotonic() > deadline:
+            raise OpenPrsIncompleteError(
+                "budget de temps depasse pendant l'enumeration des PRs ouvertes",
+                f"{_OPEN_PRS_TOTAL_TIMEOUT_S}s pour {len(prs)} PRs",
+            )
+        if cursor is None:
+            query = (_OPEN_PRS_QUERY_FIRST
+                     .replace("@OWNER@", owner).replace("@NAME@", name))
+            variables = None
+        else:
+            query = (_OPEN_PRS_QUERY_NEXT
+                     .replace("@OWNER@", owner).replace("@NAME@", name))
+            variables = {"cursor": cursor}
+        payload = _gh_graphql(query, variables)
+        repository = (payload.get("data") or {}).get("repository")
+        if not repository:
+            raise OpenPrsIncompleteError(
+                "depot introuvable dans la reponse GraphQL", repo)
+        connection = repository.get("pullRequests") or {}
+        overflow: list[tuple[int, int]] = []
+        for node in connection.get("nodes") or []:
+            files = node.get("files") or {}
+            paths = [f["path"] for f in (files.get("nodes") or [])]
+            total = int(files.get("totalCount") or 0)
+            number = int(node["number"])
+            if total > len(paths):
+                overflow.append((number, total))
+            entry = {
+                "number": number,
+                "title": node.get("title"),
+                "headRefName": node.get("headRefName"),
+                "body": node.get("body"),
+                "additions": node.get("additions"),
+                "deletions": node.get("deletions"),
+                "files": [{"path": p} for p in paths],
+            }
+            prs.append(entry)
+            by_number[number] = entry
+        if len(prs) > _OPEN_PRS_HARD_CAP:
+            raise OpenPrsIncompleteError(
+                "enumeration des PRs ouvertes au-dela du plafond de securite",
+                f"{len(prs)} > {_OPEN_PRS_HARD_CAP}",
+            )
+        if overflow:
+            # Refetch des seules PRs plafonnees, en parallele : les 3 PRs
+            # mesurees coutent ~11s en serie, ~7s en parallele.
+            with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
+                futures = {
+                    pool.submit(_gh_pr_files_rest, owner, name, num, tot): num
+                    for num, tot in overflow
+                }
+                for future in concurrent.futures.as_completed(futures):
+                    num = futures[future]
+                    paths = future.result()
+                    by_number[num]["files"] = [{"path": p} for p in paths]
+        page_info = connection.get("pageInfo") or {}
+        if not page_info.get("hasNextPage"):
+            break
+        cursor = page_info.get("endCursor")
+        if not cursor:
+            raise OpenPrsIncompleteError(
+                "cursor de pagination absent alors que hasNextPage=true", "")
+    return prs
+
+
+def _read_open_prs_cache() -> list[dict] | None:
+    """Cache de session (#19643) ; `None` = absent, corrompu ou heritage.
+
+    Le format v2 (`open-prs-v2`) porte la completude : un cache v2 marque
+    `complete: true` est une preuve ; un cache v2 marque incomplet leve
+    `OpenPrsIncompleteError` (on ne pretend pas avoir la liste).
+
+    Une liste NUE (format heritage, produit par le picker belt) ne porte
+    AUCUNE preuve de completude : elle vient de `gh pr list --limit 200`,
+    donc elle est tronquee des que le depot compte plus de 200 PRs ouvertes
+    (mesure : 362). Elle est donc traitee comme absente -- et le fetch
+    complet qui suit la REECRIT le fichier au format v2.
+    """
+    if not _OPEN_PRS_CACHE_PATH:
+        return None
+    try:
+        with open(_OPEN_PRS_CACHE_PATH, "r", encoding="utf-8") as handle:
+            cached = json.load(handle)
+    except (OSError, json.JSONDecodeError):
+        return None
+    if isinstance(cached, dict) and cached.get("format") == _OPEN_PRS_CACHE_FORMAT:
+        if cached.get("complete") is True:
+            prs = cached.get("prs")
+            return prs if isinstance(prs, list) else None
+        raise OpenPrsIncompleteError(
+            "cache des PRs ouvertes marque incomplet",
+            str(cached.get("reason") or "")[:200],
+        )
+    return None
+
+
+def _write_open_prs_cache(prs: list[dict]) -> None:
+    """Reecrit le cache de session au format v2 (completude explicite).
+
+    Best-effort : un echec d'ecriture ne doit pas faire echouer la lecture.
+    L'ecriture est ATOMIQUE (fichier temporaire + `os.replace`) pour qu'un
+    lecteur concurrent (le picker belt peut appeler l'organe en parallele)
+    ne lise jamais un fichier a moitie ecrit.
+    """
+    if not _OPEN_PRS_CACHE_PATH:
+        return
+    payload = {
+        "format": _OPEN_PRS_CACHE_FORMAT,
+        "complete": True,
+        "count": len(prs),
+        "prs": prs,
+    }
+    tmp_path = f"{_OPEN_PRS_CACHE_PATH}.{os.getpid()}.tmp"
+    try:
+        with open(tmp_path, "w", encoding="utf-8") as handle:
+            json.dump(payload, handle, ensure_ascii=False)
+        os.replace(tmp_path, _OPEN_PRS_CACHE_PATH)
+    except OSError:
+        try:
+            Path(tmp_path).unlink(missing_ok=True)
+        except OSError:
+            pass
+
+
 def _gh_open_prs_with_files() -> list[dict]:
-    """Fetch all open PRs (number, title, headRefName, body, files) via `gh`.
+    """Fetch ALL open PRs (number, title, headRefName, body, files).
 
     Used by `--paths` mode to intersect PR file lists with caller-provided
     patterns. Returns a list of dicts; each PR dict is {number, title,
@@ -1467,67 +1973,37 @@ def _gh_open_prs_with_files() -> list[dict]:
     `extract_lane` reader, NOT here, so the lane-detection rule lives in
     exactly one place (#9485 single-reader discipline).
 
-    If env `CHECK_LANE_CLAIM_OPEN_PRS_JSON` is set to a valid JSON file path,
-    reads the cache directly (#19643) -- the picker belt fetches once per
-    drawing pass and shares the cache across all N candidates, instead of
-    re-downloading per call. On any read/parse failure, falls back to a fresh
-    `gh pr list` (never silent corruption).
+    #21742 -- la liste rendue est COMPLETE, et sa completude est etablie :
 
-    Raises RuntimeError on `gh` failure (incl. timeout) so callers surface
-    exit 2 -- the picker (pick_idle_grain.py:2355) traduit ca en
-    `CLAIM_CODE_ERROR` (verdict "verification indisponible"), jamais un
-    silence.
+      - la LISTE des PRs est paginee jusqu'a `hasNextPage == false` (le
+        `--limit 200` d'avant tronquait silencieusement a 200 sur 362
+        ouvertes) ;
+      - la liste de FICHIERS de chaque PR est complete (`totalCount` vs
+        chemins lus ; refetch REST pour les PRs plafonnees a 100).
+
+    Si la completude ne peut pas etre etablie, leve `OpenPrsIncompleteError`
+    : l'appelant rend un verdict `UNKNOWN` (fail-closed) plutot qu'un
+    "CLEAR" qui ne prouve rien. Un echec `gh` reste un `RuntimeError`.
+
+    #19643 -- si l'env `CHECK_LANE_CLAIM_OPEN_PRS_JSON` pointe sur un cache
+    v2 complet, il est lu directement (le picker belt fetch une fois par
+    tirage). Un cache au format heritage (liste nue) n'est PAS une preuve
+    de completude : il est ignore, et le fetch complet le reecrit au format
+    v2.
     """
-    # #19643 -- chemin cache : 1 lecture de fichier au lieu d'un appel `gh`
-    # (chaque candidat du picker en sauve un, ~6s x N). Le path est porte
-    # par l'env plutot qu'un arg CLI : ca traverse le subprocess.run du
-    # picker sans modifier l'API publique (les 5 sites d'appel a
-    # `_gh_open_prs_with_files` restent byte-identiques).
-    if _OPEN_PRS_CACHE_PATH:
-        try:
-            with open(_OPEN_PRS_CACHE_PATH, "r", encoding="utf-8") as f:
-                cached = json.load(f)
-            if isinstance(cached, list):
-                return cached
-            # Format invalide : on tombe sur le fetch `gh` frais.
-        except (OSError, json.JSONDecodeError):
-            # Cache absent ou corrompu : on retombe sur le subprocess `gh`
-            # (avec timeout, comme toujours). Jamais de corruption silencieuse.
-            pass
-    try:
-        proc = subprocess.run(
-            [
-                "gh", "pr", "list", "--state", "open",
-                "--json", "number,title,headRefName,body,files,additions,deletions",
-                "--limit", "200",
-            ],
-            # #12811 -- 200 PR bodies in one payload: a single non-cp1252 byte
-            # anywhere kills the whole --paths mode on Windows.
-            capture_output=True, text=True, shell=False,
-            encoding="utf-8", errors="replace",
-            # #19643 / c.1753 -- borne sur le subprocess interne. Sans ca,
-            # un `gh` lent (rate-limit secondaire, backoff silencieux) bloque
-            # le tapis du picker (un appel par candidat, 40+ candidats par
-            # tirage) au-dela du timeout de l'appelant. Defaut 60s,
-            # surchargeable par env `CHECK_LANE_CLAIM_GH_TIMEOUT`.
-            timeout=_GH_OPEN_PRS_TIMEOUT_S,
-        )
-    except subprocess.TimeoutExpired as exc:
-        raise RuntimeError(
-            f"gh pr list --state open timed out after {_GH_OPEN_PRS_TIMEOUT_S}s "
-            f"(set CHECK_LANE_CLAIM_GH_TIMEOUT to override)"
-        ) from exc
-    if proc.returncode != 0:
-        raise RuntimeError(
-            f"gh pr list --state open failed (exit {proc.returncode}): "
-            f"{proc.stderr.strip()}"
-        )
-    try:
-        return json.loads(proc.stdout)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError(
-            f"gh pr list returned non-JSON (exit {proc.returncode}): {exc}"
-        )
+    global _OPEN_PRS_MEMO
+    # Memo de processus : le mode batch boucle sur N issues, chacune
+    # re-demande la liste des PRs ouvertes -> sans memo, N fetches.
+    if _OPEN_PRS_MEMO is not None:
+        return _OPEN_PRS_MEMO
+    cached = _read_open_prs_cache()
+    if cached is not None:
+        _OPEN_PRS_MEMO = cached
+        return cached
+    prs = _gh_open_prs_complete()
+    _OPEN_PRS_MEMO = prs
+    _write_open_prs_cache(prs)
+    return prs
 
 
 # #14300 -- the PR-body -> issue reference predicate, extracted from
@@ -1615,8 +2091,9 @@ def _find_open_prs_referencing_issue(
 # branch) want ONE function that returns "the PR to bind", and we want
 # the predicate (open + same-lane + references-the-issue) to live in
 # exactly one place. The legacy `_gh_open_prs_with_files()` is reused
-# because we already paginate 200 OPEN PRs (enough for typical work) and
-# we already consume its body field elsewhere.
+# because it already enumerates the OPEN PRs (now COMPLETELY -- #21742
+# replaced the truncating `--limit 200` window with a paginated
+# enumeration) and we already consume its body field elsewhere.
 #
 # Test injection: callers may pre-fetch the PRs once and pass `prs` to
 # avoid double `gh pr list` round-trips in tests; otherwise we fetch
@@ -2780,6 +3257,20 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         try:
             open_pr_collisions, _own = _compute_open_pr_collisions(
                 my_scope, my_lane)
+        except OpenPrsIncompleteError as exc:
+            # #21742 -- l'enumeration des PRs ouvertes n'a pas pu etre
+            # completee : ce CLEAR ne dit rien des PRs OUVERTES, comme le
+            # cas d'echec `gh` de #16570 dont il reprend la degrade. La
+            # difference : ici l'appel a reussi, c'est la COUVERTURE qui
+            # manque -- d'ou le libelle distinct.
+            print(
+                f"WARN: l'enumeration des PRs ouvertes n'est pas complete "
+                f"({exc}) : ce CLEAR ne dit rien des PRs OUVERTES touchant "
+                f"ces chemins. Verifier a la main avec "
+                f"`check_lane_claim.py --lane {my_lane} --paths ...` "
+                f"(sans numero d'issue) avant d'editer (#16570, #21742).",
+                file=sys.stderr,
+            )
         except RuntimeError as exc:
             print(
                 f"WARN: la jambe PR-ouverte n'a pas pu tourner sur "
@@ -3604,14 +4095,14 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
     return f"EXIT_{returncode}"
 
 
-def _run_check_batch(
+def check_issues_batch(
     issues: list[str],
     lane: str,
     stale_threshold: float | None = 48.0,
     from_json: str | None = None,
     my_paths: list[str] | None = None,
-) -> int:
-    """Mode batch N issues -> JSON.
+) -> dict:
+    """Mode batch N issues -> JSON **rendu** au lieu d'imprime (#22630).
 
     Une seule invocation de check_lane_claim traite N issues et sort un
     JSON `{results: {N: {code, exit, human, duration, ...}}, total_wall,
@@ -3746,6 +4237,26 @@ def _run_check_batch(
         "phases": phases,
         "total_wall": total_wall,
     }
+    return output
+
+
+def _run_check_batch(
+    issues: list[str],
+    lane: str,
+    stale_threshold: float | None = 48.0,
+    from_json: str | None = None,
+    my_paths: list[str] | None = None,
+) -> int:
+    """Mode batch **CLI** : `check_issues_batch` + impression du JSON sur stdout.
+
+    Le corps est dans `check_issues_batch`, qui REND le meme dictionnaire : le
+    tapis l'appelle en processus (#22630), la CLI l'imprime. Deux portes, un
+    seul calcul -- la sortie est identique par construction.
+    """
+    output = check_issues_batch(
+        issues, lane, stale_threshold=stale_threshold,
+        from_json=from_json, my_paths=my_paths,
+    )
     # Toujours ecrire le JSON final sur stdout, sans prefixe.
     print(json.dumps(output, ensure_ascii=False, indent=2))
     return 0
@@ -4163,8 +4674,11 @@ def _run_check_paths(
         2 if at least one OPEN PR of another lane (or with an unreadable
           lane tag) intersects -- the calling worker MUST pick another
           grain or wait for that PR to merge/close,
-        1 only on `gh` plumbing failure (raised RuntimeError is caught in
-          `main` and turned into exit 1).
+        1 on `gh` plumbing failure (raised RuntimeError is caught in
+          `main` and turned into exit 1) AND on an INCOMPLETE enumeration
+          of the open PRs (#21742) -- the verdict is then `UNKNOWN`, not
+          "CLEAR": an incomplete enumeration proves nothing about the
+          paths.
 
     Lane comparison is on the FULL `machine:workspace` string. Same
     machine + different workspace counts as a different lane (the
@@ -4178,6 +4692,33 @@ def _run_check_paths(
     try:
         collisions, self_overlap = _compute_open_pr_collisions(
             paths, my_lane, prs)
+    except OpenPrsIncompleteError as exc:
+        # #21742 -- fail-closed : l'enumeration des PRs ouvertes n'a pas pu
+        # etre completee, donc elle ne prouve RIEN de la liberte des
+        # chemins. Un "CLEAR" ici serait le meme mensonge que la
+        # fenetre `--limit 200` qui tronquait a 200 sur 362 PRs ouvertes.
+        # On rend `UNKNOWN` (motif nomme) et on sort en 1 -- jamais 0.
+        summary = {
+            "mode": "paths",
+            "paths": list(paths),
+            "my_lane": my_lane,
+            "verdict": "UNKNOWN",
+            "complete": False,
+            "reason": str(exc),
+            "other_lane_collisions": [],
+            "self_overlap": [],
+            "untagged_prs": [],
+        }
+        print(json.dumps(summary, ensure_ascii=False, indent=2))
+        print(
+            f"\nUNKNOWN: l'enumeration des PRs ouvertes n'est pas complete "
+            f"({exc}). Ce resultat ne prouve NI que {paths!r} est libre, NI "
+            f"qu'il est occupe : verifier a la main avec `gh pr list "
+            f"--state open --limit 1000 --json number,files` avant d'editer "
+            f"(#21742).",
+            file=sys.stderr,
+        )
+        return 1
     except RuntimeError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
@@ -4269,6 +4810,18 @@ def _run_open_prs_on(
     if prs is None:
         try:
             prs = _gh_open_prs_with_files()
+        except OpenPrsIncompleteError as exc:
+            # #21742 -- fail-closed : "NO open PR intersects paths ... Path is
+            # free." serait un faux liberte quand l'enumeration est
+            # incomplete. On rend `UNKNOWN` et on sort en 1.
+            print(
+                f"\nUNKNOWN: l'enumeration des PRs ouvertes n'est pas complete "
+                f"({exc}). Ce resultat ne prouve NI que {paths!r} est libre, "
+                f"NI qu'il est occupe : verifier a la main avec `gh pr list "
+                f"--state open --limit 1000 --json number,files` (#21742).",
+                file=sys.stderr,
+            )
+            return 1
         except RuntimeError as exc:
             print(f"error: {exc}", file=sys.stderr)
             return 1

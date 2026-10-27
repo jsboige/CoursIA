@@ -144,7 +144,8 @@ jobs:
     # rend auditable (une expression dynamique leve DYNAMIC_RUNS_ON).
     # Les PRs de fork sautent le job -- pr_gate.py compte `skipped` comme OK.
     # Retour arriere = remettre `runs-on: ubuntu-latest` + retrait de l'allowlist.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Offre GitHub d'abord (#17397, consigne user du 2026-10-25) : le CI local pallie ses limites. Retour = remettre le label.
+    runs-on: ubuntu-latest
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     # Plafond 15 -> 30 (#14598 Option A) -> 60 min. Le passage a 30 avait
     # DEPLACE le mur, pas mesure sa position : trois PRs de CONTENU sont mortes
@@ -255,6 +256,19 @@ jobs:
           # est le suspect n°1 de la variance 2,050 x mesuree. Un nombre fixe
           # et petit capte tout le gain sans ajouter au probleme.
           #
+          # POURQUOI `$XDIST_N` ET PAS 4 EN DUR (#21802) : le plafond MEMOIRE
+          # du conteneur qui recoit le job prime sur le confort du developpeur.
+          # Le job porte les memes etiquettes que `Scripts Tests (CPU)`, donc
+          # il peut atterrir sur les slots persistants plafonnes a 1,5 Gio, ou
+          # quatre workers ont ete tues par le cgroup (exit 137). `XDIST_N` est
+          # calcule au runtime par `scripts/ci/cgroup_worker_budget.py` a
+          # partir du budget MESURE de cette suite (1 181 MiB/worker :
+          # pic du worker le plus lourd, mesure du 2026-10-21 sur ai-01) :
+          # 1 worker sur les slots a 1,5 Gio (la ou quatre workers etaient
+          # tues), 1 a 2 Gio, 2 a 3 Gio, 3 a 4 Gio, 4 des 6 Gio. Le chemin
+          # critique de la suite est un module unique sous `--dist loadscope`,
+          # donc perdre un worker coute peu de temps de mur.
+          #
           # SURETE : `tests/` ne porte AUCUN `conftest.py` et AUCUNE fixture
           # `scope="session"` (verifie firsthand sur origin/main) -- les deux
           # choses qui rendent une suite hostile a xdist. Les 3 seuls sites
@@ -264,7 +278,7 @@ jobs:
           - suite-name: "tests/ (58)"
             test-cwd: MyIA.AI.Notebooks/IIT/ICT-Series
             test-args: tests
-            test-parallel: "-n 4 --dist loadscope"
+            test-parallel: "-n $XDIST_N --dist loadscope"
             test-floor: 1177
           # ict/tests/ : 42 strates package (85 - 43 consolides dans tests/,
           # #9478) -> 686 items collectes = 670 (mesure 2x sur
@@ -471,6 +485,31 @@ jobs:
       # sous xdist. Il garde donc l'invocation sequentielle, qui reste
       # identique au step Run de la jambe non parallelisee (piege d'import
       # #9387 : `pytest`, jamais `python -m pytest`).
+      # Nombre de workers xdist borne par le plafond memoire du conteneur
+      # (#21802, critere 5). La jambe `tests/ (58)` lancait `-n 4` quel que
+      # soit le runner : le job porte les memes etiquettes que `Scripts Tests
+      # (CPU)` (`self-hosted, coursia-ephemeral, coursia-linux`), donc les
+      # memes slots persistants plafonnes a 1,5 Gio, ou quatre workers ont
+      # ete tues par le cgroup (exit 137). Le budget applique est celui MESURE
+      # sur la suite ICT (1 181 MiB par worker, le plus lourd sous
+      # `--dist loadscope`) ; la suite `scripts` est bornee dans son propre
+      # workflow (#21554), les deux suites n'ayant pas le meme profil memoire.
+      # Le calcul est porte par `scripts/ci/cgroup_worker_budget.py` (lecture
+      # de `memory.max` / `memory.limit_in_bytes`, repli sur la valeur
+      # nominale si le plafond est absent ou illimite). Le diagnostic est ecrit
+      # sur stderr -- il apparait dans le log du job.
+      # `XDIST_N` est lu par le shell dans le step Run ci-dessous : la valeur
+      # de matrice porte `-n $XDIST_N`, donc elle reste dans le texte du
+      # script et non dans une expression `${{ }}` (les expressions sont
+      # evaluees a l'expansion de la matrice, avant que l'environnement du
+      # job ne soit construit).
+      - name: Borner les workers xdist au plafond memoire du conteneur
+        run: |
+          xdist_n=$(python scripts/ci/cgroup_worker_budget.py)
+          xdist_n=${xdist_n:-4}
+          echo "xdist workers: $xdist_n"
+          echo "XDIST_N=$xdist_n" >> "$GITHUB_ENV"
+
       - name: Run ${{ matrix.suite-name }}
         working-directory: ${{ matrix.test-cwd }}
         run: pytest ${{ matrix.test-args }} ${{ matrix.test-parallel }} --tb=short -v

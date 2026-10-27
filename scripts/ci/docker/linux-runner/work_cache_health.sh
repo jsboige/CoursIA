@@ -137,6 +137,20 @@ wch_pack_count() {
   wch_read ls "$repo"/.git/objects/pack/*.pack 2>/dev/null | wc -l | tr -d ' '
 }
 
+# Un clone porte-t-il ses objets EN VRAC ? (#21557) Un depot sans aucun packfile
+# oblige chaque `git cat-file` a parcourir les repertoires d'objets au lieu d'un
+# index : mesure ai-01 du 2026-10-20, trois slots a 0 pack et 3,9 Go de vrac
+# payaient ~600 s de scan par cycle la ou un slot a 294 packs payait 0,2 s.
+# Le predicat est un simple test de repertoire : les objets en vrac vivent sous
+# .git/objects/<2 hex>/ et sont absents d'un clone frais, qui a un pack.
+wch_loose_object_dirs() {
+  local repo="$1" d
+  for d in "$repo"/.git/objects/[0-9a-f][0-9a-f]; do
+    [ -d "$d" ] && return 0
+  done
+  return 1
+}
+
 # Compte de lignes non vides d'un bloc de texte. `grep -c` rend rc=1 quand le
 # compte est ZERO -- exactement le cas de la ligne de purge, ou `broken` est
 # vide (depot illisible) alors que le compte de refs est nul. Sous `set -e`, un
@@ -182,6 +196,74 @@ wch_integrity_pass() {
   return 0
 }
 
+# --- Escalade d'un repack qui echoue N fois de suite (#21745, limb B) ------
+#
+# Mesure ai-01 : `git repack -ad` echoue 4 fois de suite, packs 17 -> 20 -> 23
+# -> 24. Avant ce bloc, l'echec etait SEULEMENT journalise : le compte de
+# packs croissait sans borne et degradait le lazy fetch (limb A). Le compteur
+# vit dans .git/ -- il survit au conteneur, meurt avec le clone, et ne
+# voyage donc jamais d'un slot a l'autre.
+#
+# L'escalade est un RENOMMAGE, jamais une suppression : l'arbre reste
+# inspectable sous <repo>.stale-<ts>, et le job suivant reclone. C'est le
+# meme compromis que la purge de wch_integrity_pass, avec la preuve de
+# preservation en plus.
+wch_repack_streak_file() {
+  printf '%s/.git/work_cache_repack_failures\n' "$1"
+}
+
+wch_repack_streak_read() {
+  local f n
+  f="$(wch_repack_streak_file "$1")"
+  n="$(cat "$f" 2>/dev/null || true)"
+  case "$n" in
+    ''|*[!0-9]*) printf '0\n' ;;
+    *) printf '%s\n' "$n" ;;
+  esac
+}
+
+wch_repack_streak_write() {  # <repo> <n>
+  local f
+  f="$(wch_repack_streak_file "$1")"
+  printf '%s\n' "$2" > "$f" 2>/dev/null || true
+}
+
+wch_quarantine_clone() {  # <repo>
+  local repo="$1" parent base dest stamp
+  parent="$(dirname "$repo")"
+  base="$(basename "$repo")"
+  stamp="$(date -u +%Y%m%dT%H%M%SZ)"
+  dest="$parent/$base.stale-$stamp"
+  if mv -- "$repo" "$dest" 2>/dev/null; then
+    echo "work_cache: $repo QUARANTAINE -> $dest (renommage reversible, le job suivant reclonera)"
+    return 0
+  fi
+  echo "work_cache: quarantaine IMPOSSIBLE pour $repo -- cache conserve tel quel" >&2
+  return 0
+}
+
+# Le depot emprunte-t-il ses objets a un magasin partage (#18225) ? Un slot
+# seme par `git clone --shared` du miroir porte un fichier alternates non vide,
+# et c'est LUI qui distingue « ce slot ne tient que ses propres objets » de
+# « une partie de son contenu vit ailleurs ». Le predicat est le fichier, pas un
+# compte : un alternates vide ne fait emprunter aucun objet (`-s` est faux, et
+# le repack retombe alors sur le comportement d'avant).
+wch_has_alternates() {
+  [ -s "$1/.git/objects/info/alternates" ]
+}
+
+# Drapeaux de repack. `-a` SEUL parcourt tous les objets joignables, ALTERNATES
+# COMPRIS, et les COPIE dans le pack local : sur un slot seme, un `repack -ad`
+# ramene les ~5,5 Gio du miroir dans le volume du slot, et le miroir devient un
+# cout fixe au lieu de supprimer le telechargement par slot. `-l` (--local)
+# borne pack-objects aux objets du depot courant ; les objets empruntes restent
+# la ou ils sont. Les DEUX sites de repack passent par ici, pour qu'une seule
+# decision serve les deux -- un `-ad` oublie sur l'un remettrait la copie, et
+# seulement sur le chemin le moins frequent, donc le moins surveille.
+wch_repack_flags() {
+  if wch_has_alternates "$1"; then printf '%s\n' '-adl'; else printf '%s\n' '-ad'; fi
+}
+
 # Maintenance PERIODIQUE du cache : consolide les packs quand leur compte
 # depasse le seuil, avec la mesure avant/apres dans le journal. gc.auto=0
 # (pose par actions/checkout) fait que rien d'autre ne consolidera jamais --
@@ -199,19 +281,60 @@ wch_integrity_pass() {
 # prochain passage retentera -- le compte reste alors ce qu'il etait, le
 # garde ne cree pas de regression.
 wch_maintenance_pass() {
-  local repo="$1" threshold="$2" before after
+  local repo="$1" threshold="$2" before after streak max flags
+  max="${WCH_REPACK_FAIL_MAX:-3}"
+  case "$max" in ''|*[!0-9]*) max=3 ;; esac
   [ "$threshold" -gt 0 ] || return 0
   [ -d "$repo/.git" ] || return 0
+  flags="$(wch_repack_flags "$repo")"
   before="$(wch_pack_count "$repo")"
   if [ "$before" -le "$threshold" ]; then
+    # Cas NORMAL d'un cache frais : aucun pack, aucun objet en vrac non plus.
+    # Cas ANORMAL (#21557) : aucun pack ET des objets en vrac -- le clone a
+    # perdu ses packs (ou n'en a jamais recu) sans etre un clone frais. Le
+    # compte de packs est alors sous le seuil, donc la borne ci-dessus ne se
+    # declencherait jamais, et `gc.auto=0` fait que rien d'autre ne consolide :
+    # l'etat est stable et auto-entretenu, chaque `git cat-file` payant le
+    # parcours des repertoires d'objets (mesure du 2026-10-20 : ~600 s de scan
+    # par cycle contre 0,2 s sur un depot a 294 packs).
+    if [ "$before" -ne 0 ] || ! wch_loose_object_dirs "$repo"; then
+      return 0
+    fi
+    if ! wch_git -C "$repo" repack "$flags" >/dev/null 2>&1; then
+      streak=$(( $(wch_repack_streak_read "$repo") + 1 ))
+      wch_repack_streak_write "$repo" "$streak"
+      echo "work_cache: repack $flags ECHEC dans $repo (0 pack, objets en vrac, echec consecutif $streak/$max)" >&2
+      if [ "$streak" -ge "$max" ]; then wch_quarantine_clone "$repo"; fi
+      return 0
+    fi
+    wch_repack_streak_write "$repo" 0
+    after="$(wch_pack_count "$repo")"
+    echo "work_cache: $repo repack $flags 0 -> $after packs (0 pack mais objets en vrac, #21557)"
     return 0
   fi
-  if ! wch_git -C "$repo" repack -ad >/dev/null 2>&1; then
-    echo "work_cache: repack ECHEC dans $repo ($before packs) -- cache conserve tel quel, nouvelle tentative au prochain passage" >&2
+  # Stderr du repack : avant #20697, il partait dans `>/dev/null 2>&1` et
+  # les 223 'repack ECHEC' du journal du slot 1 (myia-ai-01-wsl) restaient
+  # sans cause nommee. On capture stderr vers un tmpfile et on le CAT-a-la-ligne
+  # sur le journal du slot. Le rc du repack reste 0 en sortie -- un garde de
+  # sante ne doit jamais etre la raison pour laquelle un slot meurt.
+  _wch_rep_err="$(mktemp -t wch-rep.XXXXXX 2>/dev/null)" || _wch_rep_err=""
+  if ! wch_git -C "$repo" repack "$flags" >/dev/null 2>"${_wch_rep_err:-/dev/null}"; then
+    streak=$(( $(wch_repack_streak_read "$repo") + 1 ))
+    wch_repack_streak_write "$repo" "$streak"
+    echo "work_cache: repack $flags ECHEC dans $repo ($before packs, echec consecutif $streak/$max)" >&2
+    if [ -n "$_wch_rep_err" ] && [ -s "$_wch_rep_err" ]; then
+      while IFS= read -r line; do
+        echo "work_cache: repack stderr: $line" >&2
+      done < "$_wch_rep_err"
+    fi
+    [ -n "$_wch_rep_err" ] && rm -f "$_wch_rep_err"
+    if [ "$streak" -ge "$max" ]; then wch_quarantine_clone "$repo"; fi
     return 0
   fi
+  [ -n "$_wch_rep_err" ] && rm -f "$_wch_rep_err"
+  wch_repack_streak_write "$repo" 0
   after="$(wch_pack_count "$repo")"
-  echo "work_cache: $repo repack $before -> $after packs (seuil $threshold)"
+  echo "work_cache: $repo repack $flags $before -> $after packs (seuil $threshold)"
   return 0
 }
 

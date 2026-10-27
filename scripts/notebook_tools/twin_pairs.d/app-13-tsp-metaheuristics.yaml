@@ -1,7 +1,7 @@
 - name: App-13 TSP Metaheuristics
-  family: Search/Applications
-  python: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13-TSP-Metaheuristics.ipynb
-  csharp: MyIA.AI.Notebooks/Search/Applications/Hybrid/App-13b-TSP-Metaheuristics-CSharp.ipynb
+  family: Search/Part3-Cas-pratiques
+  python: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13-TSP-Metaheuristics.ipynb
+  csharp: MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/App-13b-TSP-Metaheuristics-CSharp.ipynb
   parity_level: native-both
   bridge_verdict: SOTA-OK
   bridge_verdict_reason: "Python = OR-Tools constraint_solver routing (pywrapcp.RoutingModel + GLS Guided Local Search, OR-Tools 9.11) + numpy + matplotlib + itertools (22 cellules code). C# = Google.OrTools.ConstraintSolver (NuGet, C# binding du MEME engine OR-Tools 9.11) + Tranche 1 from-scratch BCL pure (System.*, 0 NuGet) PRESERVEE (11 cellules code). Verdict SOTA-OK (lib-vs-lib native-both) : les deux cotes invoquent le MEME moteur OR-Tools routing 9.11 (pywrapcp.RoutingModel <-> Google.OrTools.ConstraintSolver.RoutingModel). Prong-B (#3801) : discrimination metaheuristique vs exact (GLS ameliore significativement les couts vs nearest-neighbor from-scratch). Tranche 1 from-scratch preservee intacte (byte-identique a main). Python met l'accent sur SOTA + viz matplotlib + experimentation comparative ; C# demontre from-scratch + binding NuGet. parity_level: native-both preserve."

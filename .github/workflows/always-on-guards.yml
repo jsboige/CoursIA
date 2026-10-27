@@ -54,7 +54,13 @@ name: Always-on guards
 on:
   pull_request:
     branches: [ main ]
-    types: [ opened, synchronize, edited, reopened ]
+    # `edited` est ABSENT volontairement (#22331) : une edition de body annulait le
+    # run de contenu en file et le renvoyait en fin de file (113/268 re-declenchements
+    # a tete egale). Les organes qui lisent le body vivent desormais dans
+    # always-on-guards-body.yml, et ne doivent plus revenir ici sur AUCUN
+    # evenement : un rouge de body leve par une edition seule (sans push) doit
+    # laisser le verdict de contenu intact (coordinateur, review #22333).
+    types: [ opened, synchronize, reopened ]
     # PAS de `paths:` ici -- cf en-tete + regle 2 d'#10045 + #13232.
   # PAS de `pull_request_review` ici : c'est un declencheur fork-reachable
   # (FORK_REACHABLE_TRIGGERS, #14201 tranche 2), interdit sur un runner
@@ -100,7 +106,8 @@ jobs:
     # `IS_FORK` dans un `run:` laisse le job DEMARRER et le checkout
     # s'executer -- du code de fork atteindrait le volume de travail
     # persistant par slot (#14285). Seul un `if:` de job l'empeche.
-    # runs-on STATIQUE : une expression leverait DYNAMIC_RUNS_ON dans
+    # runs-on : seule la forme hybride enumeree (#13363/#22461) est auditee
+    # -- toute autre expression leverait DYNAMIC_RUNS_ON dans
     # scripts/ci/check_self_hosted_runner_policy.py (violation bloquante).
     #
     # Pas de jambe fork de remplacement, et c'est MESURE, pas suppose :
@@ -117,8 +124,36 @@ jobs:
     # Controle positif in-artefact : secret-scan.yml :: positive-controls
     # fait tourner `actions/setup-python@v5` sur CE pool -- run
     # 33691615314, runner myia-ai-01-linux-docker-6, success en 34 s.
-    # Retour arriere = remettre `runs-on: ubuntu-latest` + retirer le `if:`.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Retour arriere = remettre `runs-on: ubuntu-latest` + retirer le `if:`
+    # (remplace le 27/10 par la bascule de variable ci-dessous : le routage
+    # hybride rend le `if:` superflu pour la garde, il est conserve).
+    #
+    # 2026-10-27 (mesure ai-01) : ce job revient sur `ubuntu-latest`, comme
+    # l'ecrit deja la note de rollback ci-dessus, et comme le fait la
+    # politique « Q35 etape 2 » du depot (#17397) que porte
+    # `scripts/ci/audit_self_hosted_needs.py` : cet organe classe
+    # 58 workflows declenches par `pull_request` comme n'ayant besoin de
+    # RIEN qui n'existe que sur le parc local.
+    #
+    # Pourquoi maintenant : le parc local est sature PAR SES CHECKOUTS.
+    # Mesure du 27/10 00:45Z : 11 des 12 slots occupes etaient dans une
+    # etape `actions/checkout` (~29 min pour recloner 220k objets), 614
+    # runs en file, 6 runs termines en 20 min, et les 16 slots
+    # `coursia-waiter` (porteurs du PR gate) inoccupes. Ce job n'a aucun
+    # besoin local : il installe lui-meme ses dependances
+    # (`pip install pyyaml Pillow pytest`) et n'execute que des organes
+    # bash/python. La garde anti-fork est CONSERVEE : aucun code de fork
+    # ne change de surface.
+    #
+    # 2026-10-27 (#22461, phase A) : forme hybride de debordement -- PR
+    # meme-depot ET vars.CI_OVERFLOW_LOCAL == 'true' -> jambe Linux locale ;
+    # tout le reste (variable absente ou fausse, forks, push/schedule/
+    # dispatch) retombe sur ubuntu-latest (l'etat du 27/10). Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee : routage 100 %
+    # heberge, sans toucher ce fichier. Limite : runs-on se resout a la
+    # creation du job, les runs deja en file ne bougent pas.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
 
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 25
@@ -188,9 +223,10 @@ jobs:
       # Dependances des detecteurs du fast-lane (pyyaml pour le scan de
       # closure markdown-rendering, Pillow pour scan_md_hierarchy) --
       # #11850 : sans install, un ImportError etait reporte a tort comme
-      # un _quarto.yml invalide.
-      - name: "Installer dependances detecteurs (pyyaml, Pillow)"
-        run: pip install --quiet pyyaml Pillow
+      # un _quarto.yml invalide. pytest pour le garde dwell-narrative-pin
+      # (#22279) : son argv est un pytest de scripts/tests/.
+      - name: "Installer dependances detecteurs (pyyaml, Pillow, pytest)"
+        run: pip install --quiet pyyaml Pillow pytest
 
       # -----------------------------------------------------------------
       # BODY LIVE (#15697) : les organes qui lisent le corps (tag Grain:,
@@ -804,443 +840,13 @@ jobs:
       # rougir le job si l'un d'eux echoue -- cf en-tete).
       # -----------------------------------------------------------------
 
-      # Porte de variation-tag-guard.yml :: check-variation-tag-required.
-      - name: 'Require Grain tag (block on absent, #10045)'
-        id: tag_required
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        run: |
-          set -uo pipefail
-
-          case "$PR_AUTHOR" in
-            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
-          esac
-          if [ "$IS_FORK" = "true" ]; then
-            echo "PR issue d'un fork : hors scope (PR etudiante, cf student-pr-reviews.md)."
-            exit 0
-          fi
-
-          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
-
-          # #17713 -- exemption : une PR dont la branche commence par `claude/`
-          # ET dont le body porte "Hors flotte" est une session cloud du
-          # mainteneur, exempte du tag Grain: par `CLAUDE.md` ('A qui ce fichier
-          # s'adresse'). On passe HEAD_REF au script qui applique l'exemption
-          # (les DEUX conditions doivent etre reunies -- un renommage de
-          # branche seul ne suffit pas).
-          HEAD_REF="${HEAD_REF:-}"
-
-          # Capturer le RC via &&/|| (exempt d'errexit) -- jamais une
-          # commande suivie d'un RC=$? en ligne separee : sous bash -e elle
-          # meurt au block path meme, avant l'affectation.
-          python3 scripts/ci/variation_tag_required.py \
-            --body-file /tmp/pr_body.txt --head-ref "$HEAD_REF" > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
-
-          if [ -s /tmp/verdict.err ]; then
-            echo "--- helper stderr ---"
-            cat /tmp/verdict.err
-          fi
-          echo "--- verdict ---"
-          cat /tmp/verdict.json
-
-          OVERRIDDEN=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('overridden'))" 2>/dev/null || echo "None")
-          if [ "$OVERRIDDEN" = "True" ]; then
-            echo "::notice::Adjacence G-VAR-3 REELLE, levee par le coordinateur (clause 24h, section 3). Le grain suivant de la lane change de genre."
-          fi
-
-          if [ "$RC" -eq 0 ]; then
-            echo "Grain tag + lane present -- job passes."
-            exit 0
-          fi
-
-          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
-          echo "::error::Grain tag ou lane manquant : $REASON"
-
-          GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
-          <!-- vtr-required-block -->
-          **Grain tag obligatoire (#10045, bloquant).**
-
-          \`${REASON}\`.
-
-          Pour passer ce gate, le body doit porter en tete une ligne de la forme :
-
-          \`\`\`
-          Grain: <DEEP|MED|LIGHT>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<GENRE> #<PR>
-          \`\`\`
-
-          Le \`<genre>\` doit figurer dans l'enumeration §1 de \`variation-protocol.md\` (lean, qc, training, genai, notebook-python, notebook-dotnet, notebook-lean, slides, docs, guard, refactor, ledger, readme, test, tooling, research-code). Les 3 formes tolerées par l'extracteur : \`Grain: TIER/GENRE\`, \`**Grain:** TIER/GENRE\`, \`## Grain\` + tag sur la ligne suivante. La lane doit suivre le format \`<machine>:<workspace>\` (cf. \`lane-claim-protocol.md\`).
-          EOF
-          )" 2>/dev/null || true
-
-          exit 1
-
-      # Porte de variation-tag-guard.yml :: check-prev-close-keyword-required.
-      - name: 'Require prev: non-closing (block on close-keyword genre, #10093)'
-        id: prev_guard
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        run: |
-          set -uo pipefail
-
-          case "$PR_AUTHOR" in
-            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
-          esac
-          if [ "$IS_FORK" = "true" ]; then
-            echo "PR issue d'un fork : hors scope (PR etudiante, cf student-pr-reviews.md)."
-            exit 0
-          fi
-
-          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
-
-          # Commit messages : messageBody = ce que GitHub parse pour
-          # l'auto-close. Echec de fetch LOGGE, non masque (#10953).
-          if ! gh pr view "$PR_NUMBER" --json commits --jq '[.commits[].messageBody]' \
-              > /tmp/commits.json; then
-            echo "::warning::gh pr view --json commits a echoue — scan des commits vide, body seul couvert (#10953)"
-            printf '[]' > /tmp/commits.json
-          fi
-
-          # PREV-INVALID metadata (#13475) : la resolution de chaque
-          # `prev: ... #N` (PR mergee / PR ouverte / issue) vit desormais
-          # dans le module, sous test -- cf `resolve_prev_targets`. Elle
-          # etait ici, en heredoc, hors de portee de tout test, et elle
-          # etait fausse : elle demandait `gh pr view --json state,merged`,
-          # or `merged` n'est pas un champ de ce `gh`, donc l'appel echouait
-          # pour CHAQUE cible, retombait sur `gh issue view` (qui repond
-          # aussi pour les PRs) et classait toute PR en issue. `prev-not-pr`
-          # rougissait sur 100 % des PRs -- dont celle qui livrait le garde.
-          # Echec de resolution -> cible absente -> le gate s'abstient
-          # (contrat FN-safety inchange).
-
-          python3 scripts/ci/variation_prev_guard.py \
-            --body-file /tmp/pr_body.txt \
-            --commits-file /tmp/commits.json \
-            --current-pr "$PR_NUMBER" \
-            --resolve-targets > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
-
-          if [ -s /tmp/verdict.err ]; then
-            echo "--- helper stderr ---"
-            cat /tmp/verdict.err
-          fi
-          echo "--- verdict ---"
-          cat /tmp/verdict.json
-
-          if [ "$RC" -eq 0 ]; then
-            echo "No \`prev:\` close-keyword genre in body or commits -- job passes."
-            # #15372 : un run vert LEVE le commentaire bloquant precedent
-            # en place (s'il existe). No-op silencieux sinon -- un vert
-            # sur une PR jamais bloquee ne fabrique pas de bruit. Un mur
-            # qui ne se ferme jamais n'est pas un signal.
-            PREVS=$(python3 -c "import json; print(', '.join('#%s' % n for n in json.load(open('/tmp/verdict.json')).get('prev_targets_accepted', [])))" 2>/dev/null || echo "")
-            if ! GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" python3 scripts/ci/guard_comment_upsert.py \
-              --pr "$PR_NUMBER" \
-              --marker '<!-- vtr-prev-close-keyword -->' \
-              --lift --note "aucun genre mots-clé fermant dans le body ni les commits ; prev: accepté(s) : ${PREVS:-aucun}" \
-              >/dev/null 2>&1; then
-              # #15374 : le gate reste vert (run prev: propre), mais un
-              # lift qui echoue (quota, reseau, permissions) doit rester
-              # OBSERVABLE -- sinon le commentaire bloquant survit faux
-              # en silence.
-              echo "::warning::prev-guard lift failed (commentaire bloquant possiblement perime)"
-            fi
-            exit 0
-          fi
-
-          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
-          echo "::error::prev: close-keyword genre detected: $REASON"
-
-          # #15372 : upsert -- EDITE le commentaire bot existant (marqueur
-          # + auteur github-actions) au lieu d'en cumuler un nouveau par
-          # run rouge (19 faux bloquants mesures sur 4 PRs le 09/09).
-          cat > /tmp/prev_blocked_body.md <<EOF
-          <!-- vtr-prev-close-keyword -->
-          **\`prev:\` genre mots-clé fermant -- bloquant (#10093).**
-
-          ${REASON}
-
-          Une \`prev:\` dont le genre est \`fix\`/\`close\`/\`resolve\` (ou une inflexion) fait que GitHub interprète \`<genre> #N\` comme un ordre de fermeture automatique dès que le texte atterrit dans un message de commit -- c'est exactement ce qui a fermé #10067 (sans la merger) au squash-merge de #10063. Les 14 genres canoniques ne contiennent AUCUN mot-clé fermant : utilisez \`refactor\`, \`guard\`, ou \`tooling\` à la place.
-
-          Pour passer ce gate, réécrivez le champ \`prev:\` (dans le body ET dans chaque commit concerné) avec un genre non-fermant :
-
-          \`\`\`
-          Grain: <TIER>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<refactor|guard|tooling|...> #<PR>
-          \`\`\`
-          EOF
-          if ! GH_TOKEN="${{ secrets.GITHUB_TOKEN }}" python3 scripts/ci/guard_comment_upsert.py \
-            --pr "$PR_NUMBER" \
-            --marker '<!-- vtr-prev-close-keyword -->' \
-            --body-file /tmp/prev_blocked_body.md \
-            >/dev/null 2>&1; then
-            # #15374 : le gate est deja rouge (exit 1 ensuite), mais
-            # l'echec d'upsert ne doit pas passer inapercu -- il ne sera
-            # jamais presente comme une ecriture reussie.
-            echo "::warning::prev-guard upsert failed (commentaire bloquant non pose)"
-          fi
-
-          exit 1
-
-      # Porte de variation-tag-guard.yml :: check-close-keyword-pr-ref-required.
-      - name: 'Require no close-keyword + PR-number (block on auto-close of a PR, #10101)'
-        id: close_keyword
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        run: |
-          set -uo pipefail
-
-          case "$PR_AUTHOR" in
-            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
-          esac
-          if [ "$IS_FORK" = "true" ]; then
-            echo "PR issue d'un fork : hors scope (PR etudiante, cf student-pr-reviews.md)."
-            exit 0
-          fi
-
-          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
-
-          if ! gh pr view "$PR_NUMBER" --json commits --jq '[.commits[].messageBody]' \
-              > /tmp/commits.json; then
-            echo "::warning::gh pr view --json commits a echoue — scan des commits vide, body seul couvert (#10953)"
-            printf '[]' > /tmp/commits.json
-          fi
-
-          python3 scripts/ci/pr_close_keyword_guard.py \
-            --body-file /tmp/pr_body.txt \
-            --commits-file /tmp/commits.json > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
-
-          if [ -s /tmp/verdict.err ]; then
-            echo "--- helper stderr ---"
-            cat /tmp/verdict.err
-          fi
-          echo "--- verdict ---"
-          cat /tmp/verdict.json
-
-          # Warnings fail-open (refs perimees, blips) surfaces meme en pass.
-          python3 -c "import json; [print('::warning::'+w) for w in json.load(open('/tmp/verdict.json')).get('warnings',[])]" 2>/dev/null || true
-
-          if [ "$RC" -eq 0 ]; then
-            echo "No closing-keyword + PR-number reference in body or commits -- job passes."
-            exit 0
-          fi
-
-          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
-          echo "::error::closing-keyword + PR-number reference detected: $REASON"
-
-          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
-          <!-- vtr-close-keyword-pr-ref -->
-          **\`<mot-clé fermant> #N\` où N est une PR -- bloquant (#10101).**
-
-          ${REASON}
-
-          GitHub interprète \`close/closes/closed/fix/fixes/fixed/resolve/resolves/resolved #N\` comme un ordre de fermeture automatique dès que le texte atterrit dans le message de squash -- et fermer une **PR** par mot-clé n'est jamais intentionnel (une PR se merge ou se ferme explicitement, elle ne se « résout » pas). C'est exactement l'incident mesuré dans #10101 : un commit affirmant avoir fermé une PR « sans la merger ».
-
-          Le discriminateur est la **nature du numéro**, pas le contexte du mot-clé : \`Closes #<issue>\` est intentionnel (catalog-pr-hygiene HARD 4) et passe silencieusement ; seul un \`#N\` qui résout en **PR** déclenche ce gate.
-
-          Pour passer ce gate :
-          - **retirez le mot-clé fermant** devant le numéro, ou
-          - **écrivez le numéro SANS le \`#\`** (un nombre nu n'est pas un auto-close).
-          EOF
-          )" 2>/dev/null || true
-
-          exit 1
-
-      # Porte de variation-tag-guard.yml :: check-variation-adjacency-required.
-      - name: 'Require genre diversity vs prev (required, block on LIGHT adjacency, #11170)'
-        id: adjacency
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        run: |
-          set -uo pipefail
-
-          case "$PR_AUTHOR" in
-            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
-          esac
-          if [ "$IS_FORK" = "true" ]; then
-            echo "PR issue d'un fork : hors scope (PR etudiante, cf student-pr-reviews.md)."
-            exit 0
-          fi
-
-          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
-
-          # Comments, pour le marqueur [G-VAR-3 OVERRIDE] (#11708).
-          gh pr view "$PR_NUMBER" --json comments \
-            --jq '[.comments[] | {author: .author.login, body: .body}]' \
-            > /tmp/pr_comments.json 2>/dev/null || rm -f /tmp/pr_comments.json
-
-          COMMENTS_ARG=""
-          if [ -s /tmp/pr_comments.json ]; then
-            COMMENTS_ARG="--comments-file /tmp/pr_comments.json"
-          fi
-
-          # Merged PRs pour le VRAI predecesseur de la lane (#12095) :
-          # fenetre merge-time DECOUPEE EN TRANCHES DE DATES via fetch_merged_prs_since.py
-          # (#12636 : --limit 100 est creation-capped ; le cap de recherche a 1000
-          #  impose le decoupage -- une seule requete ne couvre pas 21 j).
-          python3 scripts/ci/fetch_merged_prs_since.py --days 21 \
-            > /tmp/merged_prs.json 2>/tmp/merged_fetch.err || rm -f /tmp/merged_prs.json
-
-          MERGED_ARG=""
-          if [ -s /tmp/merged_prs.json ]; then
-            MERGED_ARG="--merged-prs-file /tmp/merged_prs.json"
-          else
-            # Sans ce warning l'echec est INVISIBLE : le garde continue de
-            # passer et de bloquer, mais sur le champ prev: DECLARE que le
-            # worker ecrit lui-meme, pas sur ce qui a reellement merge. C'est
-            # ainsi que l'option inexistante --page a fait tourner l'adjacence
-            # sur le mauvais axe repo-wide pendant toute la vie du script,
-            # sans qu'aucun run ne le dise (mesure 2026-08-29, 5/5 PRs).
-            echo "::warning::G-VAR-3 : fenetre de merges NON recuperee -- l'adjacence retombe sur le champ prev: DECLARE (ecrit par le worker), pas sur la sequence reelle. Le verdict ci-dessous ne mesure pas ce qui a merge."
-            if [ -s /tmp/merged_fetch.err ]; then
-              echo "--- fetch stderr ---"
-              sed 's/^/  /' /tmp/merged_fetch.err
-            fi
-          fi
-
-          # shellcheck disable=SC2086  # COMMENTS_ARG/MERGED_ARG are deliberate 0-or-2 token splits
-          python3 scripts/ci/variation_adjacency_guard.py \
-            --body-file /tmp/pr_body.txt --pr-number "$PR_NUMBER" \
-            $COMMENTS_ARG $MERGED_ARG \
-            > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
-
-          if [ -s /tmp/verdict.err ]; then
-            echo "--- helper stderr ---"
-            cat /tmp/verdict.err
-          fi
-          echo "--- verdict ---"
-          cat /tmp/verdict.json
-
-          ADJACENT=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('adjacent'))" 2>/dev/null || echo "False")
-
-          # Label advisory pour l'adjacence DEEP/MED (jugement coord).
-          gh label create variation-adjacency-deep-med \
-            --description "Adjacence DEEP/MED hors LIGHT : §2 l'autorise si substance distincte (coordinateur)" \
-            --color FEF2C0 --force || true
-          if [ "$ADJACENT" = "True" ]; then
-            gh pr edit "$PR_NUMBER" --add-label variation-adjacency-deep-med 2>/dev/null || true
-          else
-            gh pr edit "$PR_NUMBER" --remove-label variation-adjacency-deep-med 2>/dev/null || true
-          fi
-
-          if [ "$RC" -eq 0 ]; then
-            echo "No LIGHT-genre adjacency vs prev: -- job passes."
-            exit 0
-          fi
-
-          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
-          # L'axe fait partie du verdict : un blocage calcule sur 'declared'
-          # et un blocage calcule sur 'merged-sequence' n'ont pas la meme
-          # valeur probante, et rien ne les distinguait dans la sortie.
-          PREV_SRC=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('prev_source','?'))" 2>/dev/null || echo "?")
-          # #15739 : le REFERENTIEL complet du verdict -- contre quoi il a
-          # conclu. Un rouge d'adjacence est une fonction de la sequence de
-          # merges AU MOMENT du check ; des qu'une autre PR de la lane merge,
-          # le rouge affiche devient perime sans que rien ne le re-tourne. Le
-          # referential rend la peremption VISIBLE (prev #N + genre + source +
-          # horodatage de la sequence) et la commande de recalcul est DANS le
-          # message, pas dans une doc a retrouver.
-          PREV_PR=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('prev_pr','?'))" 2>/dev/null || echo "?")
-          PREV_GENRE=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('prev_genre','?'))" 2>/dev/null || echo "?")
-          SEQ_AS_OF=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('sequence_as_of') or 'n/a')" 2>/dev/null || echo "n/a")
-          echo "::error::G-VAR-3 LIGHT-genre adjacency [prev: #${PREV_PR} ${PREV_GENRE} via ${PREV_SRC} ; sequence de merges au ${SEQ_AS_OF}]: $REASON"
-
-          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
-          <!-- vtr-adjacency-block -->
-          **G-VAR-3 : deux grains LIGHT du meme genre consecutifs -- bloquant (#11170).**
-
-          ${REASON}
-
-          **Referentiel du verdict (#15739)** -- ce verdict a ete calcule contre : predecesseur \#${PREV_PR} (\`${PREV_GENRE}\`, source \`${PREV_SRC}\`), sequence de merges arretee au \`${SEQ_AS_OF}\`. Un merge posterieur de la meme lane peut l'avoir invalide -- recalculer avec :
-
-          \`\`\`bash
-          python scripts/ci/variation_adjacency_guard.py --pr-number ${PR_NUMBER}
-          \`\`\`
-
-          variation-protocol.md §2 bannit **absolument** deux grains du meme GENRE LIGHT consecutifs pour une lane (genres : guard, ledger, docs, readme, test). Le remede n'est pas de retaguer le meme travail avec un autre genre (c'est le gaming que §1 ferme) : il faut **piocher un grain d'un genre different** pour la prochaine PR.
-
-          Pour passer ce gate, remplacez la \`prev:\` par un grain precedent d'un genre different (ou changez le genre du grain courant pour un genre de substance differente) :
-
-          \`\`\`
-          Grain: <TIER>/<genre> -- lane <machine:workspace> -- prev: <TIER>/<genre-different> #<PR>
-          \`\`\`
-          EOF
-          )" 2>/dev/null || true
-
-          exit 1
-
-      # Porte de lane-claim-guard.yml :: check-lane-claim-required.
-      - name: 'Require no closing-ref against another lane active claim (block on lane collision, #10223)'
-        id: lane_claim
-        if: github.event_name == 'pull_request'
-        continue-on-error: true
-        run: |
-          set -uo pipefail
-
-          case "$PR_AUTHOR" in
-            *"[bot]") echo "Auteur bot ($PR_AUTHOR) : hors scope."; exit 0 ;;
-          esac
-          if [ "$IS_FORK" = "true" ]; then
-            echo "PR issue d'un fork : hors scope (PR etudiante, cf student-pr-reviews.md)."
-            exit 0
-          fi
-
-          printf '%s' "${PR_BODY:-}" > /tmp/pr_body.txt
-
-          # #10323: GitHub-authoritative closing refs.
-          if PR_CLOSING_REFS=$(gh pr view "$PR_NUMBER" \
-              --json closingIssuesReferences \
-              --jq '[.closingIssuesReferences[].number] | join(",")' 2>/dev/null); then
-            PR_CREFS_ARG=(--pr-closing-refs "$PR_CLOSING_REFS")
-          else
-            PR_CREFS_ARG=()
-            echo "::warning::closingIssuesReferences fetch failed; falling back to regex finder (#10323)."
-          fi
-
-          # Le shell par defaut du runner est `bash -e -o pipefail` ; le
-          # `set -uo pipefail` ci-dessus n'y retire PAS -e. Sans le guard
-          # `&& RC=0 || RC=$?` (la convention des gardes freres
-          # variation_prev_guard / variation_adjacency_guard ci-dessus), un
-          # exit non nul du helper (1 = BLOCK legitime, 2 = caller error)
-          # tuait le step AVANT l'affichage du verdict et le commentaire de
-          # resolution (RELEASED/OVERRIDE/48 h) : blocage muet, diagnostique
-          # a la main sur #15846.
-          python3 scripts/ci/lane_claim_required.py \
-            --body-file /tmp/pr_body.txt "${PR_CREFS_ARG[@]}" \
-            > /tmp/verdict.json 2>/tmp/verdict.err && RC=0 || RC=$?
-
-          if [ -s /tmp/verdict.err ]; then
-            echo "--- helper stderr ---"
-            cat /tmp/verdict.err
-          fi
-          echo "--- verdict ---"
-          cat /tmp/verdict.json
-
-          python3 -c "import json; [print('::warning::'+w) for w in json.load(open('/tmp/verdict.json')).get('warnings',[])]" 2>/dev/null || true
-
-          if [ "$RC" -eq 0 ]; then
-            echo "Aucun claim frais d'une autre lane sur un renvoi fermant -- job passes."
-            exit 0
-          fi
-
-          REASON=$(python3 -c "import json; print(json.load(open('/tmp/verdict.json')).get('reason','unknown'))" 2>/dev/null || echo "unknown")
-          echo "::error::collision de lane sur une reference fermante: $REASON"
-
-          gh pr comment "$PR_NUMBER" --body "$(cat <<EOF
-          <!-- lane-claim-conflict -->
-          **Collision de lane sur une reference fermante (#10223).**
-
-          ${REASON}
-
-          Une autre lane detient un claim actif sur une issue que cette PR ferme par mot-cle (\`Closes\`/\`Fixes\`/\`Resolves #N\`). Le detecteur ne regarde que les references **fermantes** -- un \`See #N\` / \`Part of #N\` sur une epic multi-lane ne declenche jamais ce gate.
-
-          Les **trois sorties** pour passer ce gate :
-          - la lane detenrice **relache** son claim (\`[RELEASED] lane <machine:workspace>\` sur l'issue concernee), ou
-          - le **coordinateur ecrit** un arbitrage (\`[OVERRIDE] lane <cette lane>\` -- c'est la trace qui rend l'override mecaniquement traçable, #10223 Tache 2), ou
-          - le claim atteint **48 h** de peremption (le protocole re-arbitre les claims d'une lane inactive).
-
-          Voir #10223 et \`lane-claim-protocol.md\`.
-          EOF
-          )" 2>/dev/null || true
-
-          exit 1
+      # #22331 -- les cinq organes de BODY (Grain:, prev:, close-keyword, genre
+      # diversity, closing-ref vs claim) ne tournent PLUS dans ce job : ils
+      # sont juges par le SEUL workflow `Always-on guards -- body`. Les garder
+      # ici aussi laissait un rouge de body unlevable par une edition seule
+      # (ce job ne se declenche pas sur `edited`, le rouge y survivait a la
+      # correction du corps jusqu'au push suivant -- coordinateur, review
+      # #22333) et doublait chaque poste bloquant sur `opened`/`reopened`.
 
       # Porte de perimeter-review-guard.yml :: perimeter, sur `pull_request`
       # SEULEMENT. La surface `pull_request_review` est revenue au fichier
@@ -1303,6 +909,17 @@ jobs:
           # pour le workflow dedie md-content-loss-gate.yml et les tests
           # unitaires (cf PR #13673 follow-up c.715).
           MD_CONTENT_LOSS_PR_BODY: ${{ github.event.pull_request.body }}
+          # #21552 : meme canal in-memory pour le ratchet Output-collapse.
+          # Sans lui, le garde bloquant rendait `0 justified in body` sur
+          # toute PR : l'echappatoire `## Output-collapse justification`
+          # etait structurellement injoignable, et un `MAGNITUDE` justifie
+          # restait un rouge qu'aucun geste de lane ne pouvait lever.
+          COLLAPSE_PR_BODY: ${{ github.event.pull_request.body }}
+          # #21390 : meme canal in-memory pour l'echappement declaratif du
+          # cliquet Lean (`[LEAN-ANCHOR-DECLARED]`). Sans lui, une ancre
+          # legitime (squelette `sorry`, `native_decide` documente) restait
+          # rouge faute de moyen de la declarer.
+          LEAN_CLIQUET_PR_BODY: ${{ github.event.pull_request.body }}
         run: |
           git fetch origin "${{ github.base_ref }}" -q
           python scripts/ci/fast_lane.py --shadow
@@ -1347,10 +964,39 @@ jobs:
       # une PR bot qui toucherait les traductions -- c'est precisement ce
       # qu'il surveille. La definition du hot-subset (le semantique) est
       # epinglee par le test, pas par ce step.
+      # #22435 :: un rc de pytest n'est pas un verdict de contenu. Le couple
+      # &&/|| capturait le rc mais le traduisait entierement en « SRC_DRIFT » :
+      # un rc 2 (collecte interrompue) imprimait une derive de traduction alors
+      # que la MESURE n'avait pas eu lieu. Mesure du 25/10 : #22130 et #22264,
+      # `ImportError: cannot import name 'TerminalFormatter'` dans le toolcache
+      # partage, ratchet pourtant vert sur une tete exacte (`2 passed`). Trois
+      # regimes distincts, dans la doctrine de #8819 (« non mesure n'est pas
+      # sans defaut ») :
+      #   rc 0    -> vert, dit ;
+      #   rc 1    -> verdict de contenu, rouge, message inchange ;
+      #   rc >= 2 -> NON MESURE. Rouge seulement si la PR touche le perimetre
+      #              de l'organe (`scripts/translation/**`,
+      #              `scripts/notebook_tools/**`, ET l'organe de l'organe : ce
+      #              workflow lui-meme et son harnais de cablage) : la cause est
+      #              alors attribuable a la PR. Sinon `::warning::` non
+      #              bloquant, qui DIT que ce n'est pas un SRC_DRIFT.
+      #              Le perimetre inclut l'organe de l'organe depuis la reserve
+      #              de #22472 : une PR qui casse le harnais ou l'etape et fait
+      #              echouer la collecte repartait verte sous NON-MESURE, alors
+      #              que la cause lui est entierement attribuable.
+      # L'attribution lit le diff local (checkout en `fetch-depth: 0`, aucun
+      # appel reseau) ; un diff illisible laisse la cause NON ATTRIBUABLE et le
+      # step non bloquant, en le disant -- jamais un rouge qui nomme une derive
+      # inexistante, jamais un silence qui se lirait comme une couverture.
       - name: "Hot-subset ratchet translation SRC_DRIFT (#15196)"
         id: hot_subset
         if: github.event_name == 'pull_request'
         continue-on-error: true
+        env:
+          # #22472 : deuxieme chemin de lecture du diff (SHA de base de
+          # l'evenement, local au payload -- aucun appel reseau) pour le
+          # regime INDECISE, cf corps du step.
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -uo pipefail
           pip install --quiet pytest
@@ -1358,11 +1004,134 @@ jobs:
           # fichier, cf organe tag_required) ; -q suffit, la sortie de pytest
           # streame au log du step.
           python -m pytest scripts/translation/tests/test_hot_subset_ratchet.py -q && RC=0 || RC=$?
-          if [ "$RC" -ne 0 ]; then
-            echo "::error::Hot-subset ratchet : SRC_DRIFT sur un grain de traduction deposee ou definition du hot-subset derive. Resync la ligne CSV per-cell (jamais d'extraction globale, #13551) / corrige le semantique sous test (#15196)."
+          # #22472 : le regime est exporte vers l'agregat (outputs.regime) --
+          # l'etat NON MESURE laisse le statut vert (doctrine #8819) mais doit
+          # se lire au niveau du JOB, pas seulement en ouvrant le log du step
+          # (un runner durablement casse produirait des PR vertes dont
+          # personne ne verrait que la garde etait aveugle).
+          if [ "$RC" -eq 0 ]; then
+            echo "regime=MESURE-VERT" >> "${GITHUB_OUTPUT:-/dev/null}"
+            echo "Hot-subset ratchet : regime MESURE-VERT (rc 0) -- aucun SRC_DRIFT."
+            exit 0
+          fi
+          if [ "$RC" -eq 1 ]; then
+            echo "regime=VERDICT-CONTENU" >> "${GITHUB_OUTPUT:-/dev/null}"
+            echo "::error::Hot-subset ratchet : regime VERDICT DE CONTENU (rc 1) -- SRC_DRIFT sur un grain de traduction deposee ou definition du hot-subset derive. Resync la ligne CSV per-cell (jamais d'extraction globale, #13551) / corrige le semantique sous test (#15196)."
             exit 1
           fi
+          # rc >= 2 : pytest n'a PAS rendu de verdict (2 = collecte interrompue,
+          # 3 = erreur interne, 4 = usage, 5 = rien collecte). Ce n'est pas un
+          # SRC_DRIFT (#22435).
+          # Perimetre d'attribution, defini UNE fois : les deux chemins de
+          # lecture du diff le partagent (deux copies deriveraient). Il couvre
+          # les sources de l'organe ET l'organe de l'organe -- le workflow qui
+          # le porte et le harnais qui epingle son cablage (#22472, reserve
+          # Hermes du 25/10 13:01Z) : casser l'un des deux fait echouer la
+          # collecte pytest, et la cause est alors attribuable a la PR.
+          # `--no-renames` n'est pas cosmetique : sous --name-only un rename
+          # n'affiche que sa DESTINATION, donc un fichier renomme HORS du
+          # perimetre disparaissait de la liste et la PR repartait non
+          # attribuable (mesure du 25/10 : `--name-only` seul rend
+          # `docs_x.py`, `--no-renames` rend les DEUX chemins). Decomposer en
+          # suppression + ajout fait lire les deux -- c'est le sens
+          # fail-CLOSED de l'attribution (#22472, point NanoClaw du 09:18Z).
+          ORGANE_RE='^(scripts/(translation|notebook_tools)/|\.github/workflows/always-on-guards\.yml$|scripts/tests/test_hot_subset_ratchet_wiring\.py$)'
+          BASE="${GITHUB_BASE_REF:-main}"
+          if git diff --no-renames --name-only "origin/${BASE}...HEAD" > /tmp/hot_subset_diff.txt 2>/dev/null; then
+            MATCHED=$(grep -E "$ORGANE_RE" /tmp/hot_subset_diff.txt || true)
+            if [ -n "$MATCHED" ]; then
+              echo "regime=NON-MESURE-ATTRIBUABLE" >> "${GITHUB_OUTPUT:-/dev/null}"
+              echo "::error::Hot-subset ratchet : regime NON MESURE ATTRIBUABLE (rc ${RC}) -- pytest n'a pas rendu de verdict, et cette PR touche l'organe : $(echo "$MATCHED" | tr '\n' ' '). La cause est attribuable a la PR : corrige l'import ou la collecte, puis relance. Ce n'est PAS un verdict de SRC_DRIFT."
+              exit 1
+            fi
+            echo "regime=NON-MESURE" >> "${GITHUB_OUTPUT:-/dev/null}"
+            echo "::warning::Hot-subset ratchet : regime NON MESURE (rc ${RC}) -- pytest n'a pas rendu de verdict et la PR ne touche aucun fichier du perimetre de l'organe (traductions, notebook_tools, ce workflow, son harnais de cablage) : la mesure n'a pas eu lieu, ce n'est PAS un SRC_DRIFT (#22435, precedent #8819). Non bloquant ; si une derive reelle est en cause, seule une relance sur un runner sain le dira."
+            exit 0
+          fi
+          # #22472 reserve 2 : avant de conclure INDECISE, deuxieme lecture
+          # par le SHA de base de l'evenement (payload local, aucune ref
+          # origin requise -- la fragilite du unshallow documentee au
+          # checkout ne s'y applique pas). Si ce chemin lit le diff,
+          # l'attribution s'applique comme sur le chemin principal.
+          if [ -n "${PR_BASE_SHA:-}" ] && git diff --no-renames --name-only "${PR_BASE_SHA}...HEAD" > /tmp/hot_subset_diff.txt 2>/dev/null; then
+            MATCHED=$(grep -E "$ORGANE_RE" /tmp/hot_subset_diff.txt || true)
+            if [ -n "$MATCHED" ]; then
+              echo "regime=NON-MESURE-ATTRIBUABLE" >> "${GITHUB_OUTPUT:-/dev/null}"
+              echo "::error::Hot-subset ratchet : regime NON MESURE ATTRIBUABLE (rc ${RC}, diff lu par PR_BASE_SHA) -- pytest n'a pas rendu de verdict, et cette PR touche l'organe : $(echo "$MATCHED" | tr '\n' ' '). La cause est attribuable a la PR : corrige l'import ou la collecte, puis relance. Ce n'est PAS un verdict de SRC_DRIFT."
+              exit 1
+            fi
+            echo "regime=NON-MESURE" >> "${GITHUB_OUTPUT:-/dev/null}"
+            echo "::warning::Hot-subset ratchet : regime NON MESURE (rc ${RC}, diff lu par PR_BASE_SHA) -- pytest n'a pas rendu de verdict et la PR ne touche aucun fichier du perimetre de l'organe (traductions, notebook_tools, ce workflow, son harnais de cablage) : la mesure n'a pas eu lieu, ce n'est PAS un SRC_DRIFT (#22435, precedent #8819). Non bloquant ; si une derive reelle est en cause, seule une relance sur un runner sain le dira."
+            exit 0
+          fi
+          echo "regime=NON-MESURE-INDECISE" >> "${GITHUB_OUTPUT:-/dev/null}"
+          echo "::warning::Hot-subset ratchet : regime NON MESURE, ATTRIBUTION INDECISE (rc ${RC}) -- pytest n'a pas rendu de verdict, et le diff n'a pu etre lu ni par origin/${BASE} ni par le SHA de base de l'evenement. Choix explicite (#22472) : NON bloquant -- la barre de blocage exige la PREUVE d'attribution, jamais son absence. Ce n'est PAS un SRC_DRIFT ; la cause reste a etablir (#22435)."
           exit 0
+
+      # #21391 :: le compte de paires de traduction, au moment de la PR.
+      # Cinquieme occurrence du motif #10416 -- un cliquet aveugle a son
+      # MOMENT. Le test qui compare le compte
+      # (`test_full_repo_state_passes_parity`) vit dans `Scripts Tests (CPU)`,
+      # filtre sur `scripts/**` : une PR de carnet qui ajoute un
+      # `*_en.ipynb` ne le declenche pas, et `translation-parity.yml` ne
+      # tourne qu'en cron nocturne. La paire est donc arrivee sur main sans
+      # releve de `EXPECTED_PAIR_COUNT` cinq fois (#19996, #20392, #20453,
+      # #19943, #19916), rougissant main PUR et toute PR touchant
+      # `scripts/**` jusqu'au merge de la reparation.
+      #
+      # #21397 a livre l'organe (`scripts/translation/
+      # check_pair_count_declared.py`) et ses tests, mais AUCUN appelant :
+      # `git grep -l check_pair_count_declared` ne rendait que le script et
+      # son test. Ce step est le porteur.
+      #
+      # Purement local (git diff + git show, aucun appel gh, aucun jeton) :
+      # meme posture que hot_subset ci-dessus, donc pas de skip bot/fork --
+      # une paire ajoutee par un fork rougira main de la meme facon apres
+      # merge.
+      #
+      # `--no-disk-count` est un CHOIX, mesure : l'organe lit le DIFF, pas le
+      # disque (acceptance 4 de #21391). `discover_pairs` ne filtre pas
+      # `.tmp/` -- verifie le 2026-10-20, une paire parasite dans `.tmp/`
+      # fait passer le compte de 15 a 16 -- et ce pool REUTILISE le work dir
+      # entre jobs (cf HEAL #15387 ci-dessus) : un compte lu sur le disque
+      # rougirait la PR suivante pour un fichier qu'elle n'a pas touche.
+      # La verification de la VALEUR du releve (acceptance 3) n'est pas
+      # perdue : elle exige de toucher
+      # `scripts/translation/tests/test_check_translation_parity.py`, donc
+      # `Scripts Tests (CPU)` -- filtre sur `scripts/**` -- tourne sur la
+      # meme PR et porte deja `test_full_repo_state_passes_parity`. Le trou
+      # que ce step comble est l'AUTRE chemin : une PR de carnet qui ajoute
+      # un `*_en.ipynb` SANS toucher `scripts/**`.
+      - name: "Pair count declared at PR time (#21391)"
+        id: pair_count_declared
+        if: github.event_name == 'pull_request'
+        continue-on-error: true
+        run: |
+          set -uo pipefail
+          git fetch origin "${{ github.base_ref }}" -q
+          python3 scripts/translation/check_pair_count_declared.py \
+            --base "origin/${{ github.base_ref }}" \
+            --head "${{ github.event.pull_request.head.sha }}" \
+            --no-disk-count \
+            > /tmp/pair_count.out 2>/tmp/pair_count.err && RC=0 || RC=$?
+
+          if [ -s /tmp/pair_count.err ]; then
+            echo "--- helper stderr ---"
+            cat /tmp/pair_count.err
+          fi
+          echo "--- verdict ---"
+          cat /tmp/pair_count.out 2>/dev/null || true
+
+          if [ "$RC" -eq 0 ]; then
+            echo "Aucune paire ajoutee/retiree sans releve du compte -- organe vert."
+            exit 0
+          fi
+          if [ "$RC" -eq 1 ]; then
+            echo "::error::Paire de traduction ajoutee/retiree sans relever EXPECTED_PAIR_COUNT dans la meme PR (#21391). Le verdict ci-dessus nomme la paire, le fichier, la ligne et le total attendu."
+            exit 1
+          fi
+          echo "::error::Organe inutilisable (rc=$RC) -- instrument casse, PAS un constat de paire : base ou tete illisible. Ne pas acquitter ce rouge comme une offense de la PR."
+          exit 1
 
       # #15890 :: results artifact weight -- BLOQUANT sur les artefacts
       # NOUVEAUX. 7,43 Mo de JSON de resultats sont entres sur main
@@ -1539,15 +1308,11 @@ jobs:
               FAILED="$FAILED $1"
             fi
           }
-          check tag_required  "${{ steps.tag_required.outcome }}"
-          check prev_guard   "${{ steps.prev_guard.outcome }}"
-          check close_keyword "${{ steps.close_keyword.outcome }}"
-          check adjacency    "${{ steps.adjacency.outcome }}"
-          check lane_claim   "${{ steps.lane_claim.outcome }}"
           check perimeter    "${{ steps.perimeter.outcome }}"
           check fastlane     "${{ steps.fastlane.outcome }}"
           check identity     "${{ steps.identity.outcome }}"
           check hot_subset   "${{ steps.hot_subset.outcome }}"
+          check pair_count_declared "${{ steps.pair_count_declared.outcome }}"
           check results_weight "${{ steps.results_weight.outcome }}"
           check grothendieck_umbrella "${{ steps.grothendieck_umbrella.outcome }}"
           check secret_paths_ignored "${{ steps.secret_paths_ignored.outcome }}"
@@ -1557,4 +1322,15 @@ jobs:
             echo "::error::Organes bloquants en echec :$FAILED (le detail est dans les steps correspondants ci-dessus)."
             exit 1
           fi
-          echo "Tous les organes always-on sont verts (ou skips d'evenement)."
+          # #22472 : surface du regime hot-subset au niveau du JOB. Un NON
+          # MESURE laisse le statut vert (doctrine #8819), mais il doit se
+          # lire sur la ligne d'agregat, pas seulement en ouvrant le log du
+          # step -- sinon un runner durablement casse produit des PR vertes
+          # dont personne ne voit que la garde etait aveugle.
+          HS_REGIME="${{ steps.hot_subset.outputs.regime }}"
+          case "$HS_REGIME" in
+            NON-MESURE*)
+              echo "::warning::Hot-subset ratchet : organes verts ou NON MESURES (${HS_REGIME}) -- la mesure n'a pas eu lieu sur cette PR, ce n'est pas un verdict de contenu (#22435, precedent #8819). Le detail est dans le step hot_subset."
+              ;;
+          esac
+          echo "Tous les organes always-on sont verts (ou skips d'evenement)${HS_REGIME:+ ; hot-subset : ${HS_REGIME}}."

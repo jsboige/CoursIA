@@ -1324,6 +1324,34 @@ def cancel_own_run(repo: str, run_id: str) -> bool:
     return True
 
 
+def _foreign_suite_detail(response: dict, name: str) -> str | None:
+    """#21505 : message d'avertissement quand un check-run porte a la creation
+    dans une suite ETRANGERE, sinon None.
+
+    L'endpoint `POST /repos/.../check-runs` ne porte AUCUN selecteur de suite :
+    GitHub rattache le run a la suite qu'il resout pour (app, commit). Mesure
+    sur #18985 : la jambe `PR gate` a atterri dans la suite CodeQL `dynamic`
+    (run non relancable) et le rouge n'a plus pu etre remplace. Le tell est la
+    `details_url` : une suite d'Actions workflow pointe vers
+    `/actions/runs/<id>/...` ; une URL qui n'en porte PAS le segment signale
+    une suite etrangere. On la signale AU MOMENT du POST (la creation fabrique
+    la condition en silence), en nommant `check_suite.id`.
+    """
+    if not isinstance(response, dict):
+        return None
+    details_url = response.get("details_url") or ""
+    if not details_url or "/actions/runs/" in details_url:
+        return None
+    suite = response.get("check_suite") or {}
+    suite_id = suite.get("id") if isinstance(suite, dict) else None
+    return (
+        f"[pr-gate] WARN -- check-run `{name}` poste dans une suite ETRANGERE "
+        f"(details_url hors /actions/runs/) : suite id={suite_id} ; une suite "
+        f"`dynamic`/etrangere n'est pas relancable, le rouge ne sera pas "
+        f"remplace par le sweep (#21505)."
+    )
+
+
 def post_check_run(
     repo: str,
     sha: str,
@@ -1358,7 +1386,11 @@ def post_check_run(
         "output[title]": f"{name}: {title}"[:255],
         "output[summary]": message or title,
     }
-    return poster(f"repos/{repo}/check-runs", fields)
+    response = poster(f"repos/{repo}/check-runs", fields)
+    warning = _foreign_suite_detail(response, name)
+    if warning:
+        print(warning, flush=True)
+    return response
 
 
 def fetch_checks(repo: str, sha: str) -> list[dict]:
@@ -2349,8 +2381,22 @@ def _maybe_post_check_run(args, code: int, message: str) -> None:
     before #10433 item-1), never a false PASS. The exit code already reflects
     the verdict; this only concerns whether the fresh verdict *surfaces* on the
     PR head.
+
+    A DWELL verdict is a merge-floor timer, not a content failure -- POSTing it
+    as ``conclusion=failure`` lands an unliftable red on the PR head (#21543):
+    the POSTed check-run sits in a foreign suite (no workflow run behind it),
+    GitHub ANDs every same-named check, and neither re-run nor PATCH can lift
+    it.  The real ``PR gate`` job leg already surfaces the DWELL message, so
+    skipping the POST loses nothing.
     """
     if not args.post_check_run:
+        return
+    if message.startswith("DWELL"):
+        print(
+            "[pr-gate] DWELL verdict -- skipping check-run POST "
+            "(a timer is not a failure; #21543)",
+            flush=True,
+        )
         return
     try:
         post_check_run(args.repo, args.sha, args.self_name, code, message)
