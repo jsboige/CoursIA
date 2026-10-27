@@ -96,21 +96,25 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
     "banner-guard.yml",
-    "solution-leak-guard.yml",
     "prose-counts-guard.yml",
     "notebook-interp-positioning.yml",
     "cell-order-gate.yml",
     "pip-leak-guard.yml",
     "hooks-parity.yml",
-    "notebook-exec-sequence-ratchet.yml",
+    # 2026-10-27 (lane myia-ai-01:CoursIA, lot 2 de l'extension Q35 etape 2) :
+    #   ces 11 workflows MIGRENT vers ubuntu-latest -- l'organe
+    #   `scripts/ci/audit_self_hosted_needs.py` les certifie sans aucun besoin
+    #   local, et le parc local etait sature PAR SES CHECKOUTS (mesure 00:45Z :
+    #   11 des 12 slots occupes dans `actions/checkout`, 614 runs en file). La
+    #   garde anti-fork est conservee dans chaque fichier. Sortis de
+    #   SELF_HOSTED_WORKFLOW_ALLOWLIST dans le meme commit. Precedent :
+    #   repeated-prose-advisory.yml (#17443).
     "notebook-navlink-check.yml",
     "notebook-nav-chain-guard.yml",
     # tranche 3b (#14283, meme decision, meme owner) : suite des gardes PR
     #   pure-Python. Fondue dans la meme PR que 3a -- les scinder aurait produit
     #   un conflit sur cette meme ancre pour zero benefice de relecture.
     "markdown-claims-output-advisory.yml",
-    "orphaned-delivery-scan.yml",
-    "scan-md-hierarchy-drift.yml",
     "slides-composition-pr-relay.yml",
     "source-output-ratchet.yml",
     "translation-guard.yml",
@@ -158,7 +162,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   workflow_dispatch seulement). Son jumeau always-on-guards.yml ne l'est
     #   PAS -- il porte pull_request_review, classe FORK_REACHABLE (#14294).
     "always-on-metadata-guards.yml",
-    "twin-parity.yml",
     # tranche 4 (#14283, meme decision, meme owner) : balayages cron pur-Python.
     #   Declencheur `schedule` seul -- pas de contexte pull_request, donc aucune
     #   garde same-repo requise. 33 creneaux distincts, au plus 2 simultanes
@@ -320,7 +323,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Rollback = revert de la PR (l'entree disparait de l'allowlist).
     "notebook-output-collapse-ratchet.yml",
     "notebook-validation.yml",
-    "owui-playwright-check.yml",
     "perimeter-review-guard.yml",
     "regression-guard.yml",
     "render-volume-delta-advisory.yml",
@@ -365,7 +367,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # (#17397, PR dediee myia-ai-01:CoursIA-2 c.206, 5 workflows
     # agregateurs, 2026-10-06). Sorti de SELF_HOSTED_WORKFLOW_ALLOWLIST
     # dans le meme commit. Precedent : #17443 (po-2023, 4 agregateurs).
-    "translation-drift.yml",
     "translation-sync.yml",
     "variation-light-genre.yml",
     # tranche 6 (c.903, owner myia-po-2026:CoursIA-2) : garde advisory pur-Python
@@ -377,7 +378,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   seee (cf. test_universal_guard_with_combined_target_is_accepted, #13874)
     #   pour les forks PRs qui se font skipper proprement par pr_gate.
     #   Rollback = revert de cette PR (l'entree disparait de l'allowlist).
-    "notebook-link-render-check.yml",
     # tranche 7 (acceptance 3 #11703, owner myia-po-2027:CoursIA) : garde
     #   advisory pur-Python declenchee sur pull_request filtrant les
     #   `**/*_lean/**/*.lean`, mode --pr-base de l'organe canonique
@@ -433,7 +433,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Runner = jambe Linux containerisee (LINUX_RUNNER_LABELS, meme
     #   profil que notebook-latex-control-chars). Rollback = revert de la
     #   PR (l'entree disparait de l'allowlist).
-    "notebook-math-render.yml",
     # #14532 item 1 (owner myia-po-2026:CoursIA-2) : garde PR pure-Python sur
     #   les disparitions de section au plan des notebooks pedagogiques.
     #   workflow_dispatch-only ce cycle (anti-panic-deploiement, idem
@@ -499,7 +498,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Concurrency cancel-in-progress (le balayage de kernel sur N notebooks
     #   peut etre rejoue sans frais). Pas de label pose. Rollback = revert
     #   de la PR (l'entree disparait de l'allowlist).
-    "notebook-kernel-drift-guard.yml",
     # #16776 (owner myia-po-2023:CoursIA, PR #16801) : organ-duplication
     #   advisory -- signale les symboles ajoutes qui collident avec l'organ
     #   API d'une autre serie (scripts/audit/organ_api_index.yaml, regle
@@ -511,7 +509,6 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     #   Entree ajoutee par le repair du rouge WORKFLOW_NOT_ALLOWED signale
     #   par Hermes (CONCERNS 19/09) : la PR routait le job self-hosted sans
     #   toucher cette allowlist fail-closed. Rollback = revert de la PR.
-    "organ-duplication-advisory.yml",
     # #14623 (owner myia-po-2024:CoursIA, PR #18595) : docs-transients
     #   guard -- detecteur de fichiers transients (rapports/coordination)
     #   qui doivent vivre sur le dashboard, pas dans le repo (regle
