@@ -174,7 +174,7 @@ Sur les 21 lakes : **484 faux `sorry` pour 21 réels (23×)** — `grep -c sorry
 
 ### D.7 — #15209 : l'effondrement de sortie vert sur toutes les gates
 
-`Lean-7b-Examples.ipynb`, `6b327a9bf` → `56d98429a` (#15209) : **11 → 11 cellules, 0 erreur, `execution_count` réels partout** — et **10637 → 2985** caractères de sortie (cellules `2195 → 147`, `2568 → 38`, `2074 → 42`). Tous les organes d'exécition verts (`exec_count`, grep d'erreurs volontaires) : la perte réelle leur était invisible. C'est le contre-exemple fondateur du ratchet `Output-collapse` (bloquant, T2 de #21424/#15327) : une perte de sortie d'un ordre de grandeur ne déclenche **aucune** gate d'exécution, d'où le verdict `SIGNATURE` — la dégradation gracieuse (`if api_ok:`) est le contournement de C.2 par la porte de secours, pas une exécution réussie.
+`Lean-7b-Examples.ipynb`, `6b327a9bf` → `56d98429a` (#15209) : **nombre de cellules inchangé, 0 erreur, `execution_count` réels partout** — et **10637 → 2985** caractères de sortie (cellules `2195 → 147`, `2568 → 38`, `2074 → 42`). Tous les organes d'exécition verts (`exec_count`, grep d'erreurs volontaires) : la perte réelle leur était invisible. C'est le contre-exemple fondateur du ratchet `Output-collapse` (bloquant, T2 de #21424/#15327) : une perte de sortie d'un ordre de grandeur ne déclenche **aucune** gate d'exécution, d'où le verdict `SIGNATURE` — la dégradation gracieuse (`if api_ok:`) est le contournement de C.2 par la porte de secours, pas une exécution réussie.
 
 ### D.8 — #15862 / #16097 : la perte de source invisible aux ratchets de sortie
 
