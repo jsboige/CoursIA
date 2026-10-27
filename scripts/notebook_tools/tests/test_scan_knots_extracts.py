@@ -27,6 +27,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from scan_knots_extracts import (  # noqa: E402
     LeanTruth,
@@ -353,6 +355,28 @@ class TestClasse2:
         )
         assert scan_classe2(Path("nb.ipynb"), 16, src, truth) == []
 
+    def test_wrapped_sentence_still_fires(self, tmp_path: Path):
+        """Prose repliee a 80 colonnes : « ... FigureEight.lean » puis
+        « le noeud 8_1 ... ». Un cadrage mono-ligne perdait ce cas (c.478)."""
+        truth = _truth_from_disk(tmp_path, {"FigureEight": FIGURE_EIGHT_LEAN})
+        src = (
+            "Le module FigureEight.lean modelise le\n"
+            "noeud 8_1 (figure-eight) sous forme de diagramme.\n"
+        )
+        findings = scan_classe2(Path("nb.ipynb"), 16, src, truth)
+        assert len(findings) == 1
+        assert "8_1" in findings[0]
+        assert ":L1:" in findings[0]
+
+    def test_wrap_window_does_not_join_two_finished_sentences(self, tmp_path: Path):
+        """Une phrase terminee puis une autre ne forme pas une continuation."""
+        truth = _truth_from_disk(tmp_path, {"FigureEight": FIGURE_EIGHT_LEAN})
+        src = (
+            "On importe FigureEight.lean pour l'exemple.\n"
+            "Le noeud 8_1 sert de temoin ailleurs.\n"
+        )
+        assert scan_classe2(Path("nb.ipynb"), 16, src, truth) == []
+
     def test_bare_unknown_capitalised_word_is_not_a_module(self, tmp_path: Path):
         """Sans filtre sur les modules connus, tout mot capitalise deviendrait
         une reference de module."""
@@ -390,6 +414,59 @@ class TestClasse3:
             "Le PD-code de 11n102 n'est pas encore entre (extrait perime, "
             "refutation du TODO ci-dessous).\n"
             "knot_11n102_diagram est en fait defini."
+        )
+        assert scan_classe3(Path("nb.ipynb"), 23, src, truth) == []
+
+    @pytest.mark.parametrize(
+        "src",
+        [
+            "Le diagramme `knot_11n102_diagram` manque encore.",
+            "`knot_11n102_diagram` : TODO",
+            "`knot_11n102_diagram` reste a implementer.",
+            "`knot_11n102_diagram` n'existe pas encore.",
+            "`knot_11n102_diagram` n'est pas encore entre.",
+        ],
+    )
+    def test_absence_class_fires_on_every_measured_formulation(
+        self, tmp_path: Path, src: str
+    ):
+        """Mesure c.478 : quatre de ces cinq formulations rendaient rc 0.
+
+        La regle vise la CLASSE « absence affirmee », pas la formulation de
+        son instance fondatrice ; chaque ligne du tableau de review devient
+        un controle qui doit tirer.
+        """
+        truth = _truth_from_disk(tmp_path, {"Lidman": LIDMAN_LEAN})
+        findings = scan_classe3(Path("nb.ipynb"), 23, src, truth)
+        assert findings, f"aucun finding pour : {src}"
+        assert "STALE_TODO (classe 3)" in findings[0]
+
+    def test_caveat_elsewhere_in_cell_does_not_swallow_a_real_finding(
+        self, tmp_path: Path
+    ):
+        """Portee du caveat : la phrase, pas la cellule (mesure c.478).
+
+        Un « un autre passage est perime » ecrit deux lignes plus haut ne
+        doit plus neutraliser un TODO perime reel.
+        """
+        truth = _truth_from_disk(tmp_path, {"Lidman": LIDMAN_LEAN})
+        src = (
+            "Un autre passage est perime.\n"
+            "\n"
+            "`knot_11n102_diagram` n'est pas encore entre.\n"
+        )
+        findings = scan_classe3(Path("nb.ipynb"), 23, src, truth)
+        assert findings, "le caveat a portee cellule a encore avale le finding"
+
+    def test_caveat_attached_to_the_identifier_still_suppresses(
+        self, tmp_path: Path
+    ):
+        """Le caveat qui cite le MEME identifiant reste valide : il porte sur
+        la phrase concernee, pas sur la cellule."""
+        truth = _truth_from_disk(tmp_path, {"Lidman": LIDMAN_LEAN})
+        src = (
+            "Etat perime de `knot_11n102_diagram` :\n"
+            "`knot_11n102_diagram` n'est pas encore entre.\n"
         )
         assert scan_classe3(Path("nb.ipynb"), 23, src, truth) == []
 

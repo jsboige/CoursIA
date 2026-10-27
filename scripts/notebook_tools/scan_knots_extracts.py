@@ -73,12 +73,27 @@ NODE_NUM_RE = re.compile(r"\b(\d{1,2})_(\d{1,2})\b")
 # d'heritage l'ont attrapee, c'est une perte de rappel silencieuse.
 METIER_IDENT_RE = re.compile(r"\b([a-z0-9][a-z0-9]*_[a-z0-9_]+)\b")
 
+# Discriminants du repli de ligne (classe 2, cf. ``_is_sentence_wrap``).
+_SENTENCE_END_RE = re.compile(r"[.;:!?]\s*$")
+_LIST_ENTRY_RE = re.compile(r"^\s*(?:[-*+•]\s|\||\d+[.)]\s)")
+
 # Marqueurs d'absence (classe 3). Une cellule qui les porte affirme qu'un
 # element manque ; le ground truth est la declaration reelle au head.
 ABSENCE_MARKERS: tuple[re.Pattern[str], ...] = (
     re.compile(r"\bpas\s+(?:encore\s+)?(?:entr[ée]|d[ée]fini|fourni|cod[ée]|impl[ée]ment[ée])", re.I),
     re.compile(r"n['’]\s*(?:est|était|a)\s+pas\s+(?:encore\s+)?(?:entr[ée]|d[ée]fini|fourni|cod[ée]|impl[ée]ment[ée])", re.I),
     re.compile(r"\bmanquant\b", re.I),
+    # La classe visee est « absence affirmee », pas la formulation de son
+    # instance fondatrice. Mesure c.478 : quatre formulations reelles
+    # rendaient rc 0 -- « manque encore », « : TODO », « reste a
+    # implementer », « n'existe pas encore ». Un marqueur large garde la
+    # regle a la largeur de sa classe (cf. #21007).
+    re.compile(r"\bmanqu(?:e|ent|ait|er|é)\b", re.I),
+    re.compile(r"n['’]\s*existe\s+pas", re.I),
+    re.compile(r"reste\s+[àa]\s+(?:[êe]tre\s+)?impl[ée]ment[ée]", re.I),
+    # ``TODO`` nu subsume ``TODO: PD-code`` ; la forme etroite est conservee
+    # pour que l'instance fondatrice reste lisible dans le fichier.
+    re.compile(r"\bTODO\b"),
     re.compile(r"TODO\s*:?\s*PD-code", re.I),
     re.compile(r"diagram\s*:=\s*sorry\s*--\s*TODO", re.I),
     re.compile(r"\bnot\s+yet\b", re.I),
@@ -86,8 +101,14 @@ ABSENCE_MARKERS: tuple[re.Pattern[str], ...] = (
 )
 
 # Caveat qui annule un finding de classe 3 : la cellule reconnait
-# explicitement la perimation par rapport au head. Le caveat est cherche
-# dans la cellule entiere (comportement conservateur de la v1, conserve).
+# explicitement la perimation par rapport au head.
+#
+# PORTEE -- le caveat porte sur la LIGNE du finding, ou sur l'IDENTIFIANT
+# qu'il a trouve, jamais sur la cellule entiere. Mesure c.478 : a portee
+# cellule, un « un autre passage est perime » ecrit ailleurs avalait un vrai
+# TODO perime -- la neutralisation etait a portee de cellule la ou le
+# finding est a portee de ligne. Le body revendique le cadrage ligne : le
+# code le suit.
 STALE_TODO_CAVEAT_RE = re.compile(
     r"(depuis\s+la\s+r[ée]daction|au\s+head|état\s+actuel|p[ée]rim[ée]|"
     r"r[ée]futation\s+du\s+TODO|cross.?check)",
@@ -217,29 +238,76 @@ def scan_classe2(
     ne rend pas ce faux positif.
     """
     findings: list[str] = []
-    for line_no, line in enumerate(source.splitlines(), start=1):
-        modules = set(LEAN_MODULE_RE.findall(line))
-        modules |= {t for t in BARE_MODULE_RE.findall(line) if t in truth.defs}
-        if not modules:
+    lines = source.splitlines()
+    for line_no, line in enumerate(lines, start=1):
+        _classe2_line(notebook_path, cell_idx, line_no, line, truth, findings)
+    # Repli a 80 colonnes : la prose courante coupe « ... FigureEight.lean »
+    # et « (noeud 8_1) ... » sur deux lignes, et un cadrage strictement
+    # mono-ligne perd ce cas (mesure c.478). La fenetre n'est ouverte que
+    # pour une VRAIE continuation : la ligne suivante ne porte ni module ni
+    # marqueur de liste/arbre, et la premiere ne termine pas sa phrase. Sans
+    # ce discriminant, l'arbre d'architecture de la cellule 16 de KNOTS-01
+    # (`|-- Invariant.lean` puis `|-- FigureEight.lean (4_1)`) redevient le
+    # faux positif mesure.
+    for idx in range(len(lines) - 1):
+        head, tail = lines[idx], lines[idx + 1]
+        if not _is_sentence_wrap(head, tail):
             continue
-        claimed = {f"{a}_{b}" for a, b in NODE_NUM_RE.findall(line)}
-        if not claimed:
-            continue
-        for module in sorted(modules):
-            known = truth.nodes.get(module, set())
-            if not known:
-                # Le module ne cite aucun noeud (ou n'existe pas) : on ne
-                # sait pas conclure, on ne signale pas.
-                continue
-            if claimed & known:
-                continue
-            findings.append(
-                f"{notebook_path}:cell_{cell_idx:02d}:L{line_no}:"
-                f" STALE_IDENTITY (classe 2) -- la cellule attribue le(s)"
-                f" noeud(s) {sorted(claimed)} a {module}.lean, qui n'en cite"
-                f" aucun ; le module cite {sorted(known)}"
-            )
+        _classe2_line(
+            notebook_path, cell_idx, idx + 1, f"{head} {tail}", truth, findings
+        )
     return findings
+
+
+def _classe2_line(
+    notebook_path: Path,
+    cell_idx: int,
+    line_no: int,
+    text: str,
+    truth: LeanTruth,
+    findings: list[str],
+) -> None:
+    """Applique la regle de classe 2 a un fragment de texte (une ligne, ou
+    une ligne et son repli)."""
+    modules = set(LEAN_MODULE_RE.findall(text))
+    modules |= {t for t in BARE_MODULE_RE.findall(text) if t in truth.defs}
+    if not modules:
+        return
+    claimed = {f"{a}_{b}" for a, b in NODE_NUM_RE.findall(text)}
+    if not claimed:
+        return
+    for module in sorted(modules):
+        known = truth.nodes.get(module, set())
+        if not known:
+            # Le module ne cite aucun noeud (ou n'existe pas) : on ne
+            # sait pas conclure, on ne signale pas.
+            continue
+        if claimed & known:
+            continue
+        findings.append(
+            f"{notebook_path}:cell_{cell_idx:02d}:L{line_no}:"
+            f" STALE_IDENTITY (classe 2) -- la cellule attribue le(s)"
+            f" noeud(s) {sorted(claimed)} a {module}.lean, qui n'en cite"
+            f" aucun ; le module cite {sorted(known)}"
+        )
+
+
+def _is_sentence_wrap(head: str, tail: str) -> bool:
+    """Vrai si ``tail`` est la continuation enroulee de ``head``.
+
+    Trois exclusions, toutes mesurees sur des faux positifs reels : une tete
+    qui termine sa phrase (ponctuation finale), une queue qui ouvre une
+    entree de liste ou d'arbre (``-``, ``*``, ``|``, ``1.``), et les deux
+    cotes qui portent deja leur propre module ou leur propre numero de noeud
+    (deux revendications voisines, pas une phrase coupee).
+    """
+    if _SENTENCE_END_RE.search(head):
+        return False
+    if _LIST_ENTRY_RE.match(tail):
+        return False
+    if NODE_NUM_RE.search(head) or LEAN_MODULE_RE.search(tail):
+        return False
+    return True
 
 
 def scan_classe3(
@@ -252,17 +320,26 @@ def scan_classe3(
 
     Regle : sur une MEME LIGNE, un marqueur d'absence et un identifiant
     metier (underscore). Si l'identifiant est declare au head dans l'arbre
-    Lean, la cellule affirme une absence qui n'existe plus. Un caveat
-    explicite dans la cellule annule le finding.
+    Lean, la cellule affirme une absence qui n'existe plus.
+
+    Le caveat de perimation annule le finding quand il porte sur la LIGNE du
+    finding, ou sur une ligne qui cite le MEME identifiant (portee de la
+    phrase, pas de la cellule -- cf. STALE_TODO_CAVEAT_RE).
     """
     findings: list[str] = []
-    if STALE_TODO_CAVEAT_RE.search(source):
-        return findings
+    caveat_lines: set[int] = set()
+    caveat_idents: set[str] = set()
+    for idx, line in enumerate(source.splitlines(), start=1):
+        if STALE_TODO_CAVEAT_RE.search(line):
+            caveat_lines.add(idx)
+            caveat_idents.update(METIER_IDENT_RE.findall(line))
     for line_no, line in enumerate(source.splitlines(), start=1):
         if not any(marker.search(line) for marker in ABSENCE_MARKERS):
             continue
         for ident in METIER_IDENT_RE.findall(line):
             if ident not in truth.all_defs and ident not in truth.aliases:
+                continue
+            if line_no in caveat_lines or ident in caveat_idents:
                 continue
             findings.append(
                 f"{notebook_path}:cell_{cell_idx:02d}:L{line_no}:"
