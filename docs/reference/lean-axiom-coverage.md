@@ -229,6 +229,26 @@ forbidden union : []
 
 Le câblage du gate sur les lacs non-pilotes est un travail séparé qui sort du scope #8738 (chaque workflow lake est un livrable à part avec son `target-modules` adapté). Voir #11699 pour la roadmap tranche-par-tranche des 15 restants (mimo_lean = tranche 1 livrée par PR de cette PR).
 
+### 4.1. `gamedefs` — sortie retenue pour la preuve d'Arrow (#23022, 2026-10-28)
+
+`gamedefs` figure parmi les 15 lacs **sans** clé `axiom-target-modules` : il n'a **aucun gate d'axiomes**. L'axiome `arrow_impossibility` de `SocialChoice.lean` n'apparaît donc dans aucune whitelist, et le laisser en place ne change rien à un gate qui ne le lit pas.
+
+Le port de sa preuve se fait **par étages**, et l'axiome reste déclaré tant que la réduction n'est pas achevée. Le renommer ou le retirer sans sa preuve serait un blanchiment, pas un progrès : c'est la raison pour laquelle le critère « l'axiome a disparu » de #23022 n'est pas encore satisfait.
+
+**Étage 1 livré** — quatre résultats en Lean core pur, le lac restant **sans dépendance** (donc sans `Finset`/`Fintype`, ce qui ferme l'argument combinatoire classique tel quel, et impose de construire les profils auxiliaires autrement) :
+
+| Déclaration | Contenu |
+|---|---|
+| `Decisive` | la notion d'Arrow : `D` décisive sur `(x, y)` si ses membres unanimes pour `x` l'emportent face à des non-membres unanimes pour `y` |
+| `rank3`, `prefOfUtility` | les profils auxiliaires, construits par **utilités entières** (toute fonction `A → Int` définit une préférence valide) — c'est ce qui rend les constructions disponibles sans bibliothèque |
+| `decisive_unanimous` | Pareto faible ⇒ la coalition de tous les agents est décisive sur toute paire |
+| `decisive_expand_right` | décisive sur `(x, y)` ⇒ décisive sur `(x, z)` (axe des alternatives) |
+| `decisive_expand_left` | décisive sur `(x, y)` ⇒ décisive sur `(z, y)` (axe des agents) |
+
+**Mesures de l'étage 1** : `lake build` du lac entier SUCCESS (14 jobs, WSL, toolchain `leanprover/lean4:v4.33.0`) ; `count_code_sorry.py` → `distinct_code_sorry = 0` (inchangé — l'axiome n'est pas un `sorry`) ; `check_i18n_siblings.py --all` → `0 drift | 0 orphan` sur la paire FR/EN, corps byte-identiques.
+
+**Ce qui reste** (étages suivants) : la diffusion (une coalition décisive engendre une coalition décisive strictement plus petite) puis la récupération d'un ultrafiltre, d'où la dictature. **Quand** l'axiome tombera, le câblage du gate sur ce lac deviendra possible avec une whitelist vide ; tant qu'il est là, un câblage exigerait de nommer `arrow_impossibility` dans `axiom-allow-axioms`. C'est cette ligne, et non une doctrine, qui autorise un axiome à passer le gate.
+
 ## 5. Acceptance step 3 — verdict
 
 - [x] **knot_lean re-mesuré** : GREEN post-#8725 (cf. [#8738](https://github.com/jsboige/CoursIA/issues/8738) body §« Mesure firsthand »)
