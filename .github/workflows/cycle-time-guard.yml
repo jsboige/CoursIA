@@ -49,8 +49,18 @@ permissions:
   contents: read
 
 concurrency:
-  group: cycle-time-guard-${{ github.ref }}
-  cancel-in-progress: true
+  # #13372/#13488 -- le workflow a BOTH un declencheur `push: main` ET un
+  # groupe keyed sur `github.ref`. Sur main, `github.ref` vaut
+  # `refs/heads/main` pour TOUS les commits : le groupe est donc constant, et
+  # un `cancel-in-progress: true` litteral fait tuer le controle du commit
+  # precedent par le merge suivant. Le backstop cense attraper une mauvaise
+  # cascade etait tue par la cascade.
+  # Forme canonique du depot (`banner-guard.yml`, `bash-syntax-advisory.yml`) :
+  # sur PR, `github.ref` identifie la tete -- superseder est correct ; sur
+  # push, `github.sha` identifie le commit -- chaque commit de main est un
+  # sujet distinct qu'aucun autre ne peut remplacer, donc rien n'est annule.
+  group: cycle-time-guard-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   cycle_time:
