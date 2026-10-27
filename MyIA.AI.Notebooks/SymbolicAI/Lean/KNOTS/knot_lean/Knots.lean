@@ -19,6 +19,9 @@
     - `Knots.ReidemeisterMoves` — suite de mouvements vérifiable par le
       noyau (organe #18611 : inductif data + vérificateurs Bool +
       soundness vers `ReidemeisterEquiv`)
+    - `Knots.ReidemeisterAny` — langue de moves étendue (organe #22359 :
+      kink/bigon sans fraîcheur, forme canonique `canon` à renommage près,
+      embedding R1/R3 de la langue connectée, cadre de décision borné)
     - `Knots.Invariant` — invariants polynomiaux (Alexander,
       Jones), tricoloriabilité, genre
     - `Knots.Conway` — notations et conventions de Conway
@@ -57,6 +60,7 @@ import Knots.Slice
 import Knots.ReidemeisterInvariance
 import Knots.ReidemeisterMoves
 import Knots.ReidemeisterCombinatorial
+import Knots.ReidemeisterAny
 import Knots.Jones
 import Knots.Khovanov
 import Knots.FigureEight
