@@ -1848,7 +1848,15 @@ if [ ! -d "$MIRROR/objects" ]; then
     fi
     git --git-dir="$MIRROR" remote add origin "$REMOTE" 2>/dev/null \
       || git --git-dir="$MIRROR" remote set-url origin "$REMOTE" 2>/dev/null
-    if git --git-dir="$MIRROR" fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'; then
+    # gc.auto=0 (mission ai-01 26/10, #18225) : l'invariant documente plus haut
+    # (« un objet reste dans ses packs meme si la ref qui l'a fait entrer a
+    # disparu ») tient a l'ABSENCE de gc, pas a la prudence de l'appelant. Or un
+    # fetch declenche `gc --auto` par defaut -- un repack du miroir pendant qu'un
+    # slot emprunte ses objets est exactement ce que ce depot promet de ne jamais
+    # faire. Pose AVANT le premier fetch ; le refresh re-epingle la config pour
+    # les miroirs bootstrapes avant cette ligne.
+    git --git-dir="$MIRROR" config gc.auto 0
+    if git --git-dir="$MIRROR" -c gc.auto=0 fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*'; then
       git --git-dir="$MIRROR" symbolic-ref HEAD "$HEADREF" 2>/dev/null || true
       touch "$STAMP" 2>/dev/null || true
       echo "miroir: bootstrap OK en $(( $(date +%s) - t0 ))s"
@@ -1912,6 +1920,7 @@ if [ "$ACTION" = "status" ]; then
   echo "  bare: $(git --git-dir="$MIRROR" rev-parse --is-bare-repository 2>/dev/null)"
   echo "  refs: $(git --git-dir="$MIRROR" for-each-ref --format=x 2>/dev/null | wc -l | tr -d ' ')"
   echo "  taille: $(du -sh "$MIRROR" 2>/dev/null | awk '{print $1}')"
+  echo "  gc.auto: $(git --git-dir="$MIRROR" config gc.auto 2>/dev/null || echo 'non positionne (refresh le posera)')"
   echo "  dernier refresh: $([ -f "$STAMP" ] && date -Is -r "$STAMP" 2>/dev/null || echo jamais)"
   # PAS de compte d'emprunteurs ici : ce conteneur ne monte aucun volume _work,
   # donc il lirait zero et l'ecrirait comme un fait. Le compte se mesure depuis
@@ -1936,7 +1945,15 @@ fi
 # Horodatage AVANT le fetch : une panne reseau persistante ne doit pas se
 # transformer en marteau a chaque tick (meme choix que la recette source).
 touch "$STAMP" 2>/dev/null || true
-if git --git-dir="$MIRROR" fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' 2>&1; then
+# gc.auto=0 en `-c` ET en config re-epinglee (mission ai-01 26/10, #18225) : le
+# `-c` couvre des le PREMIER refresh post-mise a jour les miroirs bootstrapes
+# avant la ligne du bootstrap (leur config n'a pas encore la cle) ; la config
+# re-epinglee rend l'invariant durable pour tout autre appelant git du volume.
+# Raison d'etre : le fetch declenche `gc --auto` par defaut, et un repack du
+# miroir pendant qu'un job emprunte ses objets est la promesse que ce depot
+# ne doit jamais casser.
+git --git-dir="$MIRROR" config gc.auto 0 2>/dev/null || true
+if git --git-dir="$MIRROR" -c gc.auto=0 fetch --prune "$REMOTE" '+refs/heads/*:refs/heads/*' '+refs/tags/*:refs/tags/*' 2>&1; then
   echo "miroir: rafraichi ($(date -Is))"
 else
   echo "miroir: refresh echoue -- le parc continue sur l'etat precedent"
