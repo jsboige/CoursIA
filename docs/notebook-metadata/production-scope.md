@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-27
+
 # Périmètre PRODUCTION — dérivation mécanique v1
 
 > **Epic [#11259](https://github.com/jsboige/CoursIA/issues/11259) — tâches T1 + T1b.**
