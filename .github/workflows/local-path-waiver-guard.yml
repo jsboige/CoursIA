@@ -6,16 +6,32 @@ name: Local path waiver guard
 # every PR reader. This advisory guard FLAGS (warning, never a gate) any
 # comment body that is a lone path or carries a Windows profile path
 # segment. A waiver counts only if its substance is ON the PR.
+#
+# #22937 (vague 2) : la jambe `issue_comment` est RETIREE. Mesure du 28/10 sur
+# ce workflow : 72 des 100 runs les plus recents (tous dans la derniere heure
+# et demie) etaient des runs `issue_comment` -- le premier contributeur a la file
+# hebergee mesuree par le coordinateur (17 des 38 runs en file). Or le verdict
+# de ce run s'attache a `main` : il n'apparait sur AUCUNE PR, ce que le
+# workflow lui-meme documentait deja (#18853). La garde n'est pas retiree : son
+# declencheur `pull_request` couvre la meme surface de commentaires, et le
+# cote BLOQUANT de #16780 ne vit pas ici mais dans l'organe B.0
+# (`scripts/check_unaddressed_nits.py`, `can_lift` + `_LONE_PATH_BODY_RE`),
+# qui refuse un corps-pointeur comme levee. Ce qui disparait : l'avertissement
+# tardif et invisible d'un chemin depose apres le dernier evenement de PR.
+#
+# Option ecartee : le debordement local de cette jambe. `issue_comment` est
+# hors de `SAFE_SELF_HOSTED_TRIGGERS`
+# (`scripts/ci/check_self_hosted_runner_policy.py`), qui est un default-deny :
+# la passer en local relacherait une garde de securite pour un gain de slots.
 
 on:
-  issue_comment:
-    types: [created, edited]
   # Pas de filtre `paths:` (#18853, review ai-01 5395319838) : il supprimait le
   # run `pull_request` sur presque toutes les PRs, or c'est la SEULE surface ou
-  # l'avertissement s'affiche sur la PR -- le run `issue_comment` s'attache a
-  # `main`, jamais a la tete de PR. Un garde dont le verdict doit rester visible
-  # sur la PR ne peut pas etre filtre par chemins ; le sparse-checkout suffit au
-  # gain de temps (91 s -> ~6 s).
+  # l'avertissement s'affiche sur la PR. La garde porte sur la SURFACE DES
+  # COMMENTAIRES, pas sur le diff : un commentaire peut deposer un chemin local
+  # sur une PR qui ne touche aucun fichier particulier ; un filtre `paths:` la
+  # rendrait aveugle sur exactement les PRs ou le defect arrive. Le
+  # sparse-checkout suffit au gain de temps (91 s -> ~6 s).
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
@@ -29,22 +45,23 @@ permissions:
   issues: read
   pull-requests: read
 
-# The group is keyed by EVENT as well as by PR. An `issue_comment` run always
-# executes against the default branch, so its check-run attaches to `main`,
-# never to the PR head. Sharing one group with the `pull_request` run let every
-# comment cancel the PR-head run still waiting in the queue, leaving the head
-# with a `cancelled` check that `PR gate` reads as "never concluded" -> FAIL:
-# an advisory guard turned into a kill-switch (measured 2026-09-22 on 25 open
-# PRs, 22 gates citing it). Each event now only supersedes its own kind.
+# The group is keyed by EVENT as well as by PR, so a manual run
+# (`workflow_dispatch`) never supersedes the `pull_request` run of the same PR.
+# The `issue_comment` leg that once forced this split is gone (#22937 vague 2) :
+# it executed against the default branch, so its check-run attached to `main`,
+# never to the PR head, and sharing one group let every comment cancel the
+# PR-head run still waiting in the queue -- leaving the head with a `cancelled`
+# check that `PR gate` reads as "never concluded" -> FAIL : an advisory guard
+# turned into a kill-switch (measured 2026-09-22 on 25 open PRs, 22 gates
+# citing it). With no main-attached run left, that defect cannot recur; the
+# event key is kept so the two remaining kinds stay separated.
 concurrency:
-  group: local-path-waiver-${{ github.event_name }}-${{ github.event.issue.number || github.event.pull_request.number || github.event.inputs.pr_number }}
+  group: local-path-waiver-${{ github.event_name }}-${{ github.event.pull_request.number || github.event.inputs.pr_number }}
   cancel-in-progress: true
 
 jobs:
   guard:
     name: No local-path waiver bodies
-    # issue_comment also fires on plain issues -- only guard PR surfaces.
-    if: github.event_name != 'issue_comment' || github.event.issue.pull_request
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +75,7 @@ jobs:
       - name: Resolve PR number
         id: pr
         run: |
-          PR="${{ github.event.pull_request.number || github.event.issue.number || github.event.inputs.pr_number }}"
+          PR="${{ github.event.pull_request.number || github.event.inputs.pr_number }}"
           echo "number=$PR" >> "$GITHUB_OUTPUT"
       - name: Check PR comment surface
         env:
