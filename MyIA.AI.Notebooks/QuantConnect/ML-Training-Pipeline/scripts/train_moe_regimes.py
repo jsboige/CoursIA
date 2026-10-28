@@ -430,6 +430,11 @@ def train_moe_regimes_walk_forward(
         dir_acc = float(np.mean((oos_preds > 0) == (y_test > 0)))
         mse = float(np.mean((oos_preds - y_test) ** 2))
 
+        # Per-observation squared errors (full precision): the paired series
+        # that lets two runs differing only by regime_decode be compared with
+        # a Diebold-Mariano test on a precision loss (#21054 case 4, regle C).
+        oos_sq_errors = ((oos_preds - y_test) ** 2).tolist()
+
         fold_results.append({
             "fold": fold,
             "train_end": train_end,
@@ -440,6 +445,7 @@ def train_moe_regimes_walk_forward(
             "expert_regimes": list(experts.keys()),
             "expert_stats": expert_stats,
             "regime_pred_counts": regime_pred_counts,
+            "oos_sq_errors": oos_sq_errors,
         })
 
         log.info(
@@ -476,14 +482,24 @@ def train_moe_regimes_pipeline(
     end: str = "2025-01-01",
     output_dir: str | None = None,
     raw_data: pd.DataFrame | None = None,
+    regime_decode: str = "viterbi",
 ) -> dict:
     """Run full MoE-DL training pipeline.
 
     Returns dict with walk-forward results, baseline comparison, config.
+
+    ``regime_decode`` selects the HMM label decode (``regime_method="hmm"``
+    only): "viterbi" (default, retrospective -- the label at t depends on
+    observations after t) or "filter" (forward-only, causal). The default is
+    unchanged so existing datasets/results stay reproducible (#21054 case 4,
+    same opt-in pattern as build_dataset_v2 -- #22557).
     """
     import torch
 
     np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
     t0 = time.time()
     device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -511,11 +527,18 @@ def train_moe_regimes_pipeline(
     log.info(f"Sequences: {len(X)} samples, shape={X.shape}")
 
     # Regime detection on aligned price series
-    # CAUTION (#21054): default HMM decode is Viterbi = retrospective;
-    # for regime-routed MoE evaluated walk-forward, decode_mode="filter"
-    # (via method="hmm" kwargs) gives causal labels.
+    # #21054 case 4: the labels are decoded in ONE pass over the full series,
+    # so with regime_method="hmm" the default Viterbi decode leaks future
+    # observations into BOTH the expert training slices and the test-slice
+    # routing. regime_decode="filter" (forward-only) makes every label a
+    # function of observations up to t only.
     aligned_prices = raw["Close"].iloc[lookback:lookback + len(y)]
-    regime_series = detect_regimes(aligned_prices, method=regime_method)
+    if regime_method == "hmm":
+        regime_series = detect_regimes(
+            aligned_prices, method=regime_method, decode_mode=regime_decode,
+        )
+    else:
+        regime_series = detect_regimes(aligned_prices, method=regime_method)
 
     # Align regime labels to sequences (trim first seq_len labels)
     regime_labels = regime_series.iloc[-len(y):].values
@@ -557,6 +580,17 @@ def train_moe_regimes_pipeline(
         "symbol": symbol,
         "expert_type": expert_type,
         "regime_method": regime_method,
+        "regime_decode": regime_decode if regime_method == "hmm" else "n/a",
+        "regime_decode_causal": (
+            regime_decode == "filter" if regime_method == "hmm" else True
+        ),
+        "lookahead_note": (
+            "HMM labels decoded one-pass over the full series; viterbi is "
+            "retrospective (label at t sees observations after t), filter is "
+            "forward-only/causal (#21054)."
+            if regime_method == "hmm" else
+            "price-based regime labels are causal by construction."
+        ),
         "device": device,
         "data_hash": data_hash[:12],
         "n_folds": len(wf_results),
@@ -656,6 +690,7 @@ def run_multiseed(
         "per_seed_diraccs": [r["moe_mean_diracc"] for r in all_results],
         "expert_type": kwargs.get("expert_type", "lstm"),
         "regime_method": kwargs.get("regime_method", "price"),
+        "regime_decode": kwargs.get("regime_decode", "viterbi"),
         "symbol": kwargs.get("symbol", "SPY"),
     }
 
@@ -707,6 +742,14 @@ def main():
         "--regime-method", default="price", choices=["price", "hmm"],
         help="Regime detection method",
     )
+    parser.add_argument(
+        "--regime-decode", default="viterbi", choices=["viterbi", "filter"],
+        help=(
+            "HMM label decode (regime-method=hmm only): 'viterbi' = "
+            "retrospective (default, reproducibility of existing results), "
+            "'filter' = forward-only causal decode (#21054)."
+        ),
+    )
     parser.add_argument("--hidden-size", type=int, default=128)
     parser.add_argument("--num-layers", type=int, default=2)
     parser.add_argument("--nhead", type=int, default=4, help="Transformer heads")
@@ -745,6 +788,7 @@ def main():
         symbol=args.symbol,
         data_dir=args.data_dir,
         regime_method=args.regime_method,
+        regime_decode=args.regime_decode,
         expert_type=args.expert,
         hidden_size=args.hidden_size,
         num_layers=args.num_layers,
