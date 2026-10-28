@@ -18,7 +18,7 @@ Shared Lean 4 type definitions used by multiple GameTheory Lean projects. A **se
 - [Basic.lean](Basic.lean) — see catalogue. `NormalFormGame`, `FiniteGame`, `Game2x2` structures + expected payoffs. Source: `GameTheory-16-Lean-Definitions.ipynb`.
 - [Nash.lean](Nash.lean) — see catalogue. Best response, pure/mixed Nash equilibrium, strict dominance. Source: `GameTheory-16-Lean-Definitions.ipynb`.
 - [Combinatorial.lean](Combinatorial.lean) — see catalogue. `GameTree`, minimax evaluation, win/loss determination. Source: `GameTheory-18-Lean-CombinatorialGames.ipynb`.
-- [SocialChoice.lean](SocialChoice.lean) — see catalogue. `Preference`, `StrictPref`, Arrow's axioms (statements). Source: `GameTheory-19-Lean-SocialChoice.ipynb`.
+- [SocialChoice.lean](SocialChoice.lean) — see catalogue. `Preference`, `StrictPref`, Arrow's axioms and impossibility theorem **proved**. Source: `GameTheory-19-Lean-SocialChoice.ipynb`.
 - [Bayesian.lean](Bayesian.lean) — Bayesian games with incomplete information: `BayesianGame`, `TypeStrategy`, `BayesianNashEquilibrium`, `InformationSet`, `SignalingGame`, `FirstPriceAuction`, Kuhn poker definitions. Source: `GameTheory-11-BayesianGames-Python.ipynb`, `GameTheory-13-ImperfectInfo-CFR-Python.ipynb`.
 - [Regret.lean](Regret.lean) — Regret minimization and CFR: `CumulativeRegret`, `regretMatchingStrategy`, `CounterfactualRegret`, `CFRState`, `FictitiousPlayState`. Source: `GameTheory-13-ImperfectInfo-CFR-Python.ipynb`, `GameTheory-17-MultiAgent-RL-Python.ipynb`.
 
@@ -71,7 +71,7 @@ whole set (FR + `_en` siblings).
 Six reference files covering the game-theory curriculum: normal-form / finite games
 ([Basic.lean](Basic.lean)), Nash equilibrium and dominance ([Nash.lean](Nash.lean)),
 combinatorial game trees with minimax ([Combinatorial.lean](Combinatorial.lean)),
-social-choice primitives and Arrow's axioms ([SocialChoice.lean](SocialChoice.lean)),
+social-choice primitives and Arrow's proved impossibility theorem ([SocialChoice.lean](SocialChoice.lean)),
 Bayesian games and signaling ([Bayesian.lean](Bayesian.lean)), and regret
 minimization / CFR ([Regret.lean](Regret.lean)). Each maps to a specific teaching
 notebook and is self-contained.

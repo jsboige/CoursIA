@@ -81,26 +81,21 @@ def NonDictatorial {I A : Type} (swf : SocialWelfareFunction I A) : Prop :=
 ## Théorème d'impossibilité d'Arrow
 -/
 
-/--
-Théorème d'impossibilité d'Arrow (énoncé) :
-il n'existe pas de fonction de bien-être social avec ≥ 3 alternatives qui satisfasse :
-1. Pareto faible
-2. Indépendance des alternatives non pertinentes
-3. Non-dictature
+/-!
+**Énoncé.** Il n'existe pas de fonction de bien-être social sur au moins trois
+alternatives qui satisfasse simultanément :
 
-Note : énoncé avec des types `Fin n` explicites plutôt qu'un `Fintype` générique
-pour éviter la dépendance Mathlib. Le contenu mathématique du théorème est identique.
+1. Pareto faible ;
+2. Indépendance des alternatives non pertinentes (IIA) ;
+3. non-dictature.
+
+Énoncé avec des types `Fin n` explicites plutôt qu'un `Fintype` générique pour
+éviter la dépendance Mathlib : le contenu mathématique du théorème est identique.
+
+La preuve est donnée en fin de fichier (section « Étape 4b ») ; la déclaration
+`axiom arrow_impossibility` qui portait cet énoncé sans preuve a été retirée
+(#23022).
 -/
--- Port en cours (#23022) : les briques de la preuve vivent dans la section
--- « Coalitions décisives » plus bas ; le théorème reste énoncé comme axiome
--- tant que la réduction n'est pas achevée.
-axiom arrow_impossibility {nI nA : Nat}
-    (hI : nI ≥ 2)
-    (hA : nA ≥ 3)
-    (swf : SocialWelfareFunction (Fin nI) (Fin nA))
-    (h_pareto : WeakPareto swf)
-    (h_iia : IIA swf) :
-    ¬NonDictatorial swf
 
 /-!
 ## Exemples
@@ -741,3 +736,187 @@ theorem decisive_singleton_dictator {I A : Type} [DecidableEq I] [DecidableEq A]
   have hiff₂ : (swf.aggregate P).R y x ↔ (swf.aggregate prefs).R y x :=
     h_iia P prefs y x h₂ h₁
   exact ⟨hiff₁.mp hPxy.1, fun hyx => hPxy.2 (hiff₂.mpr hyx)⟩
+
+/-!
+## Étape 4b : extraction du dictateur
+
+Dernier étage du port direct (#23022) : il extrait un dictateur d'une coalition
+décisive, ce qui permet de **prouver** `arrow_impossibility` au lieu de
+l'énoncer.
+
+La machinerie de l'étage 4a suffit, **sans aucune mesure de cardinalité** — donc
+sans `Finset`, et sans quitter le Lean core. Plutôt que de chercher un minimum
+parmi toutes les coalitions décisives (ce qui demanderait de les compter), la
+preuve scinde une famille **explicite** de coalitions : la suite des « queues »
+`{i | m ≤ i}`.
+
+- La queue vide n'est jamais décisive (`empty_not_decisive`), donc la descente ne
+  peut pas s'éteindre sans avoir trouvé de dictateur.
+- `decisive_split` sur la queue `m` offre deux issues. Soit le singleton `{m}`
+  est décisif sur la paire `(x₀, w)`, et `decisive_global` en fait un dictateur
+  (`decisive_singleton_dictator`). Soit la queue `m + 1` est décisive sur
+  `(w, y₀)`, et la descente continue d'un cran.
+
+L'induction porte sur `nI - m`, qui décroît strictement à chaque cran : aucune
+mesure de cardinalité n'est nécessaire, et `Finset` reste hors du lake.
+
+Clôture axiomatique mesurée (`#print axioms`) : `propext`, `Quot.sound`, et
+`Classical.choice` **hérité** de `decisive_split`. Ce lemme tranche la
+préférence sociale sur une paire par `by_cases`, ce qui tire
+`Classical.propDecidable` sur une proposition arbitraire — il ne reçoit aucune
+instance de décidabilité sur la relation sociale. Cet étage-ci n'introduit donc
+aucun axiome nouveau ; il n'en supprime pas non plus.
+-/
+
+/-- L'individu `d` est un dictateur : chacune de ses préférences strictes devient
+la préférence stricte de la société, sur tout profil et toute paire. C'est
+exactement le prédicat dont `NonDictatorial` nie l'existence. -/
+def Dictator {I A : Type} (swf : SocialWelfareFunction I A) (d : I) : Prop :=
+  ∀ prefs : I → Preference A, ∀ x y : A,
+    StrictPref (prefs d) x y → StrictPref (swf.aggregate prefs) x y
+
+/-- Deux coalitions extensionnellement égales ont la même décisivité. -/
+theorem decisive_congr {I A : Type} (swf : SocialWelfareFunction I A)
+    {D D' : I → Prop} {x y : A} (h : ∀ i, D i ↔ D' i)
+    (hdec : Decisive swf D x y) : Decisive swf D' x y := by
+  intro prefs hD hND
+  exact hdec prefs (fun i hi => hD i ((h i).mp hi))
+    (fun i hi => hND i (fun hc => hi ((h i).mpr hc)))
+
+/-- La coalition des agents dont l'indice vaut au moins `m`. -/
+def tailCoal {n : Nat} (m : Nat) : Fin n → Prop := fun i => m ≤ i.val
+
+/-- Dès que l'ensemble compte au moins trois alternatives, tout couple
+d'alternatives laisse une alternative distincte des deux. Le témoin est cherché
+parmi `0`, `1` et `2` : deux valeurs y suffisent au plus. -/
+theorem exists_third {n : Nat} (h : n ≥ 3) (x y : Fin n) :
+    ∃ z : Fin n, z ≠ x ∧ z ≠ y := by
+  by_cases h0 : (0 : Nat) = x.val ∨ 0 = y.val
+  · by_cases h1 : (1 : Nat) = x.val ∨ 1 = y.val
+    · refine ⟨⟨2, by omega⟩, ?_, ?_⟩
+      · intro hc
+        have hv : (2 : Nat) = x.val := congrArg Fin.val hc
+        rcases h0 with h0 | h0 <;> rcases h1 with h1 | h1 <;> omega
+      · intro hc
+        have hv : (2 : Nat) = y.val := congrArg Fin.val hc
+        rcases h0 with h0 | h0 <;> rcases h1 with h1 | h1 <;> omega
+    · have h1x : (1 : Nat) ≠ x.val := fun e => h1 (Or.inl e)
+      have h1y : (1 : Nat) ≠ y.val := fun e => h1 (Or.inr e)
+      exact ⟨⟨1, by omega⟩, fun hc => h1x (congrArg Fin.val hc),
+        fun hc => h1y (congrArg Fin.val hc)⟩
+  · have h0x : (0 : Nat) ≠ x.val := fun e => h0 (Or.inl e)
+    have h0y : (0 : Nat) ≠ y.val := fun e => h0 (Or.inr e)
+    exact ⟨⟨0, by omega⟩, fun hc => h0x (congrArg Fin.val hc),
+      fun hc => h0y (congrArg Fin.val hc)⟩
+
+/-- Sous Pareto et IIA, une coalition décisive sur une paire d'alternatives
+distinctes contient un dictateur.
+
+La descente porte sur `nI - m` : à chaque cran, `decisive_split` détache l'agent
+`m` de la queue, et la queue vide est exclue par `empty_not_decisive`. -/
+theorem exists_dictator_of_decisive {nI nA : Nat} (hA : nA ≥ 3)
+    (swf : SocialWelfareFunction (Fin nI) (Fin nA))
+    (h_iia : IIA swf) (h_pareto : WeakPareto swf)
+    {x0 y0 w : Fin nA} (hx0y0 : x0 ≠ y0) (hx0w : x0 ≠ w) (hy0w : y0 ≠ w) :
+    ∀ (k : Nat) (m : Nat), m + k = nI →
+      Decisive swf (tailCoal m) x0 y0 → ∃ d : Fin nI, Dictator swf d := by
+  intro k
+  induction k with
+  | zero =>
+      intro m hm hdec
+      have hemp : Decisive swf (fun _ => False) x0 y0 :=
+        decisive_congr swf (D := tailCoal m) (D' := fun _ => False)
+          (fun i => ⟨fun hi => by
+            have hi' : m ≤ i.val := hi
+            omega, fun hf => False.elim hf⟩) hdec
+      exact False.elim (empty_not_decisive swf h_pareto hx0y0 hemp)
+  | succ k ih =>
+      intro m hm hdec
+      have hmn : m < nI := by omega
+      have hsplit :
+          Decisive swf (fun i : Fin nI => i = ⟨m, hmn⟩) x0 w ∨
+            Decisive swf (fun i : Fin nI => m + 1 ≤ i.val) w y0 :=
+        decisive_split swf (tailCoal m) (fun i : Fin nI => i = ⟨m, hmn⟩)
+          (fun i : Fin nI => m + 1 ≤ i.val) h_iia
+          (fun i hi => by rw [hi]; exact Nat.le_refl m)
+          (fun i hi => Nat.le_of_succ_le hi)
+          (fun i hi => by
+            have hi' : m ≤ i.val := hi
+            by_cases hc : i.val = m
+            · exact Or.inl (Fin.ext hc)
+            · exact Or.inr (by omega))
+          (fun i => by
+            rintro ⟨h1, h2⟩
+            have h2' : m + 1 ≤ i.val := h2
+            have h1' : i.val = m := by rw [h1]
+            omega)
+          hx0y0 hx0w hy0w hdec
+      rcases hsplit with hsingle | htail
+      · have hall : ∀ a b : Fin nA, a ≠ b →
+            Decisive swf (fun i : Fin nI => i = ⟨m, hmn⟩) a b :=
+          decisive_global (x := x0) (y := w) swf
+            (fun i : Fin nI => i = ⟨m, hmn⟩) h_iia h_pareto
+            hx0w ⟨y0, hx0y0.symm, hy0w⟩ hsingle
+        refine ⟨⟨m, hmn⟩, ?_⟩
+        intro prefs a b hab
+        have hne : a ≠ b := by
+          intro heq
+          subst heq
+          exact hab.2 hab.1
+        obtain ⟨z, hzx, hzy⟩ := exists_third hA a b
+        exact decisive_singleton_dictator swf h_iia h_pareto ⟨m, hmn⟩ hall prefs
+          hne hzx.symm hzy.symm hab
+      · have hall : ∀ a b : Fin nA, a ≠ b →
+            Decisive swf (fun i : Fin nI => m + 1 ≤ i.val) a b :=
+          decisive_global (x := w) (y := y0) swf
+            (fun i : Fin nI => m + 1 ≤ i.val) h_iia h_pareto
+            hy0w.symm ⟨x0, hx0w, hx0y0⟩ htail
+        exact ih (m + 1) (by omega) (hall x0 y0 hx0y0)
+
+/-- **Théorème d'impossibilité d'Arrow.** Il n'existe pas de fonction de
+bien-être social sur au moins trois alternatives qui satisfasse simultanément
+Pareto faible, indépendance des alternatives non pertinentes et non-dictature.
+
+Le théorème est ici **prouvé** : le profil unanime rend la coalition totale
+décisive, et `exists_dictator_of_decisive` en extrait un dictateur dès que
+l'ensemble des alternatives compte trois éléments.
+
+L'hypothèse `nI ≥ 2` est celle de l'énoncé historique, conservée pour la
+fidélité à la littérature ; la preuve ci-dessous vaut pour tout `nI`, d'où le
+nom `_hI` du paramètre. -/
+theorem arrow_impossibility {nI nA : Nat}
+    (_hI : nI ≥ 2)
+    (hA : nA ≥ 3)
+    (swf : SocialWelfareFunction (Fin nI) (Fin nA))
+    (h_pareto : WeakPareto swf)
+    (h_iia : IIA swf) :
+    ¬NonDictatorial swf := by
+  intro hnd
+  let x0 : Fin nA := ⟨0, by omega⟩
+  let y0 : Fin nA := ⟨1, by omega⟩
+  let w : Fin nA := ⟨2, by omega⟩
+  have hx0y0 : x0 ≠ y0 := by
+    intro h
+    have hv : x0.val = y0.val := congrArg Fin.val h
+    have h0v : x0.val = 0 := rfl
+    have h1v : y0.val = 1 := rfl
+    omega
+  have hx0w : x0 ≠ w := by
+    intro h
+    have hv : x0.val = w.val := congrArg Fin.val h
+    have h0v : x0.val = 0 := rfl
+    have hwv : w.val = 2 := rfl
+    omega
+  have hy0w : y0 ≠ w := by
+    intro h
+    have hv : y0.val = w.val := congrArg Fin.val h
+    have h1v : y0.val = 1 := rfl
+    have hwv : w.val = 2 := rfl
+    omega
+  have hunan : Decisive swf (fun _ => True) x0 y0 := decisive_unanimous swf h_pareto
+  have h0 : Decisive swf (tailCoal 0) x0 y0 :=
+    decisive_congr swf (D := fun _ => True) (D' := tailCoal 0)
+      (fun i => ⟨fun _ => Nat.zero_le i.val, fun _ => trivial⟩) hunan
+  obtain ⟨d, hd⟩ := exists_dictator_of_decisive hA swf h_iia h_pareto
+    hx0y0 hx0w hy0w nI 0 (by omega) h0
+  exact hnd ⟨d, hd⟩
