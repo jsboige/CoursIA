@@ -637,6 +637,27 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "translation-drift.yml",
     "twin-parity.yml",
     "unique-check-run-names-guard.yml",
+
+    # ------------------------------------------------------------------
+    # #23053 famille (c) -- Lean, Quarto et slides.
+    # 2026-10-28 (lane myia-ai-01:CoursIA-2) : les jobs declenches par
+    # `pull_request` de ces workflows passent a la forme hybride de debordement
+    # (#22937/#22944/#23016) : garde meme-depot && vars.CI_OVERFLOW_LOCAL ==
+    # 'true' -> LINUX_RUNNER_LABELS, sinon ubuntu-latest. Par defaut (variable
+    # absente ou != 'true'), chaque job resout sur ubuntu-latest : l'etat du
+    # 27/10 est conserve, et l'entree d'allowlist ne rend le pool local
+    # atteignable QUE si un operateur bascule la variable.
+    # Les six autres workflows de la famille (lean-conway, lean-i18n-drift,
+    # lean-knot, quarto-pages-deploy, slides-build-advisory,
+    # slides-composition-pr-relay) etaient DEJA declares plus haut : seuls les
+    # deux absents sont ajoutes ici.
+    # Exceptions nommees, laissees hebergees : quarto-pages-deploy `build`
+    # (OOM mesure sur le pool, #15202) et `deploy` (push-only, deploy-pages +
+    # OIDC/PAGES). Rollback = revert de la PR (l'entree disparait de
+    # l'allowlist, et le garde fail-closed refuse alors le runs-on).
+    # ------------------------------------------------------------------
+    "lean-ci-matrix.yml",
+    "lean-planning.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
