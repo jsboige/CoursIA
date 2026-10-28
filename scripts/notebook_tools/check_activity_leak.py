@@ -152,6 +152,20 @@ _URL_FRAGMENT_RE = re.compile(r"#L\d{3,4}(?:-L\d{3,4})?")
 # un nom de fichier cite en prose hors lien. La forme NUE « L128 » hors de
 # tout nom de fichier reste comptee -- la voie 1 couvre les liens, pas la
 # prose ; l'ecart est assume et fige par test_file_target_mask_leaves_bare_tag.
+#
+# Borne du masque, mesuree (revue Hermes du 2026-10-28, point 1) : la
+# substitution est de MEME LONGUEUR et porte sur le seul span du nom de
+# fichier, donc un renvoi aux lecons ecrit A COTE du nom reste compte. Le cas
+# que la revue designait -- un renvoi cache DERRIERE le nom, c'est-a-dire un
+# « L<n> » qui serait a l'interieur du nom de fichier -- n'est pas instancie
+# sur le corpus : 35 411 unites markdown (34 390 cellules de carnet + les
+# fichiers .md) mesurees au 2026-10-28, dont UNE seule cite un nom de fichier
+# portant un « L<n> » (README de la serie Percolation), et AUCUNE n'associe ce
+# nom a un mot « lecon » ecrit hors de lui. L'ecart est donc assume sur
+# mesure, comme celui de _URL_FRAGMENT_RE, et fige pour la meme raison : que
+# le comportement soit lisible avant d'etre decouvert par surprise. Le
+# controle positif qui l'empeche de s'elargir en silence est
+# test_file_target_mask_is_span_local.
 _FILE_TARGET_RE = re.compile(r"[\w./-]+\.(?:ipynb|md)\b")
 _DM_RE = re.compile(r"\bDM\b")
 

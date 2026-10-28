@@ -279,6 +279,27 @@ class TestNegativeControls(unittest.TestCase):
         v = judge_passage(0, para)
         self.assertIn("lesson_tag", {n for n, _, _ in v.markers})
 
+    def test_file_target_mask_is_span_local(self):
+        """Calibrage (revue Hermes du 2026-10-28) : le masque ne couvre QUE le nom.
+
+        La revue designait un risque de faux NEGATIF : un masque trop large
+        cacherait un renvoi aux lecons ecrit a cote d'un nom de fichier. Le
+        masque substitue le seul span du nom par des espaces de meme longueur,
+        donc un « L<n> » de prose reste compte dans le meme passage. Mesure du
+        corpus au 2026-10-28 : aucune unite markdown ne cache un tel renvoi
+        derriere un nom de fichier -- l'ecart est assume, pas observe.
+        """
+        para = (
+            "Voir Percolation-03b-Critique-L128-L256.ipynb pour le detail : "
+            "nous appliquons les lecons L512 avant de livrer."
+        )
+        v = judge_passage(0, para)
+        tags = sorted(extrait for n, extrait, _ in v.markers if n == "lesson_tag")
+        # L512 est de la prose, et il vient APRES le nom de fichier -- un masque
+        # qui deborderait sur la fin de phrase l'eteindrait, et c'est ce que ce
+        # test interdit. L128/L256 sont DANS le nom : tailles de systeme.
+        self.assertEqual(["L512"], tags)
+
     def test_course_prose_clean(self):
         para = (
             "Monroe propose une regle proportionnelle stricte ou chaque elu "
