@@ -165,6 +165,23 @@ on:
       # mesure par la relecture tierce de #21783). Miroir sous pull_request:
       # ci-dessous.
       - 'MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb'
+      # #21886 : le job execute `MyIA.AI.Notebooks/GameTheory/tests` (voir la
+      # commande pytest plus bas) et ces tests importent `game_theory_utils`,
+      # `limit_sets` et `trust_simulation`, mais aucune de ces cibles n'etait
+      # dans `paths:` : une PR qui ne touchait que la suite GameTheory, un de
+      # ses modules ou ses dependances ne declenchait pas CETTE jambe (#10416
+      # pattern). La suite garde sa couverture dediee par
+      # `gametheory-tests.yml` (paths GameTheory/**, plancher de collecte 600) :
+      # ces entrees sont une redondance assumee, pas le seul filet. Le garde
+      # `check_testpaths_coverage.py` ne voit pas cette classe : il verifie
+      # qu'un testpath est execute quelque part, pas que le workflow se
+      # declenche quand ses propres cibles changent. Miroir sous pull_request:
+      # ci-dessous.
+      - 'MyIA.AI.Notebooks/GameTheory/tests/**'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_utils.py'
+      - 'MyIA.AI.Notebooks/GameTheory/limit_sets.py'
+      - 'MyIA.AI.Notebooks/GameTheory/trust_simulation/**'
+      - 'MyIA.AI.Notebooks/GameTheory/requirements.txt'
       # #21100 pli 0 Origami (Kernel Gateway) : le coeur du service Z3 Sudoku
       # vit hors scripts/** (Z3-API/gateway/) ; sans entree, une PR qui ne
       # touche que lui n'executerait AUCUNE jambe pytest (#10416 pattern, cf.
@@ -240,6 +257,12 @@ on:
       - 'MyIA.AI.Notebooks/GameTheory/gateway/**'
       # #21764 (mirror of the push path above).
       - 'MyIA.AI.Notebooks/GameTheory/GameTheory-06-EvolutionTrust-Python.ipynb'
+      # #21886 (miroir du bloc push ci-dessus).
+      - 'MyIA.AI.Notebooks/GameTheory/tests/**'
+      - 'MyIA.AI.Notebooks/GameTheory/game_theory_utils.py'
+      - 'MyIA.AI.Notebooks/GameTheory/limit_sets.py'
+      - 'MyIA.AI.Notebooks/GameTheory/trust_simulation/**'
+      - 'MyIA.AI.Notebooks/GameTheory/requirements.txt'
       # #21100 pli 0 Origami (Kernel Gateway) (mirror of the push path above).
       - 'MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/**'
   workflow_dispatch:
@@ -425,11 +448,20 @@ jobs:
           # cible pytest ci-dessous est une erreur de collecte au lieu
           # d'exercer le service pour de vrai.
           pip install open_spiel
+          # ortools: GameTheory/tests collecte aussi amd_synthesis.py (#22381),
+          # qui importe CP-SAT au niveau module. Reprendre le plancher declare
+          # dans GameTheory/requirements.txt pour eviter une erreur de collecte.
+          pip install "ortools>=9.11"
           # z3-solver: MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/
           # test_z3_sudoku_core.py imports z3 at module level (#21100, pli 0
           # Origami). Without it the suite fails on ModuleNotFoundError
           # instead of exercising the service core.
           pip install z3-solver
+          # jupyter_kernel_gateway: son module s'importe `kernel_gateway` et
+          # `run_gateway.py` le sonde au preflight (#22439). Sans le paquet,
+          # test_run_gateway.py signalerait une dependance manquante au lieu
+          # d'exercer le lanceur.
+          pip install jupyter_kernel_gateway
           # opentelemetry-sdk + pydantic + openai : trois paquets que ce job
           # consomme a l'import mais n'installait pas -- il ne passait que sur
           # les slots au toolcache chaud (residu d'installations d'autres
@@ -573,6 +605,7 @@ jobs:
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/prosody_lab/test_bake_bank.py \
             MyIA.AI.Notebooks/GameTheory/gateway/test_openspiel_cfr_core.py \
             MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_z3_sudoku_core.py \
+            MyIA.AI.Notebooks/SymbolicAI/SMT/Z3-API/gateway/test_run_gateway.py \
             MyIA.AI.Notebooks/ML/DataScienceWithAgents/01-Python-For-Data-Science/tests \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_narrator_routing.py \
             MyIA.AI.Notebooks/GenAI/Audio/04-Applications/v4/tests/test_p5_customvoice_narrator.py \

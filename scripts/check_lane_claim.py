@@ -79,8 +79,18 @@ canonical repair gesture is documented in
 .claude/rules/lane-claim-protocol.md: ONE comment per marker, a broken
 marker is repaired by a NEW comment carrying only `[CLAIMED]`.
 
-Exit codes: 0 ok / 1 blocked (other lane holds active issue claim) /
-2 io-or-gh error (issue mode) OR cross-lane OPEN-PR collision (--paths mode).
+  - **Plafond hebdomadaire des EPICs (#22500 point 3)**: a claim on a DAUGHTER
+    of an `umbrella` (outside the `consolidation` class) that has already been
+    visited this week -- another daughter created, or a claim posted on the EPIC
+    itself -- is BLOCKED with the cause `PLAFOND EPIC (#22500)`. The semantic
+    is NOT re-implemented here: it is `umbrella_visit_cause` / `parent_refs` /
+    `claim_visit_stamp` / `is_consolidation` / `apply_child_visits` from
+    `scripts/pick_idle_grain.py`, imported on demand. Zero extra request when
+    the issue has no parent (the common case); see `epic_visit_cap`.
+
+Exit codes: 0 ok / 1 blocked (other lane holds active issue claim, OR the
+weekly EPIC cap of #22500) / 2 io-or-gh error (issue mode) OR cross-lane
+OPEN-PR collision (--paths mode).
 """
 from __future__ import annotations
 
@@ -400,6 +410,15 @@ _OVERRIDE = {"OVERRIDE"}
 # a full lane-close, so the scope is informational there), [OVERRIDE], and
 # [CLAIMED-AMEND] (#13022: the clause is the whole point of an amend -- it
 # names the corrected/union scope that replaces the lane's previous claim).
+# #22445 -- [DELIVERED] honours the clause too. It is a CLOSE marker, but the
+# v2 conditional reducer re-marks it as an ACTIVE OPEN claim while its PR is
+# OPEN/MERGED (`_resolve_delivered_v2`), so the lane keeps occupying the
+# issue: with the clause ignored, a lane that delivered a BOUNDED slice
+# re-locked the whole umbrella as epic-wide -- the exact opposite of the
+# protocol's advice to declare `paths:` and stop blocking siblings. On the
+# CLOSED branch the event is popped and the scope stays informational, same as
+# [RELEASED]. A dead glob still lifts the re-marked claim back to epic-wide
+# (`empty_scope`, #10958), so this widening cannot fail open.
 # Same leading-decoration tolerance as `_MARKER_RE` (#10906). In practice the
 # reducer feeds this regex the `_line_for_match` output (which starts at the
 # `[`), so the legacy `^[ \t]*\[` anchor already worked -- the prefix group is
@@ -409,7 +428,7 @@ _OVERRIDE = {"OVERRIDE"}
 # indistinguishable from a closing decorator by suffix alone. Trailing `*` in
 # fnmatch matches empty, so a captured `glob**` still matches `glob`.
 _PATHS_CLAUSE_RE = re.compile(
-    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED-AMEND|CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED-AMEND|CLAIMED|RELEASED|DELIVERED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
 )
 # #12320 -- `[DELIVERED] lane <m:w> -- PR #N`. The PR reference is OPTIONAL on
 # a DELIVERED marker (a DELIVERED without a PR is functionally equivalent to a
@@ -864,11 +883,14 @@ def _expand_brace_groups(pattern: str) -> list[str]:
 def _extract_paths_clause(text: str | None) -> list[str] | None:
     """Parse the optional `paths: <comma-list>` clause from a marker line.
 
-    Recognised on [CLAIMED], [RELEASED], [OVERRIDE], and [CLAIMED-AMEND]
-    marker lines (#10342 introduced the clause for [OVERRIDE]; #10419
-    extended it to [CLAIMED] and [RELEASED] so disjoint scoped claims no
+    Recognised on [CLAIMED], [RELEASED], [DELIVERED], [OVERRIDE], and
+    [CLAIMED-AMEND] marker lines (#10342 introduced the clause for [OVERRIDE];
+    #10419 extended it to [CLAIMED] and [RELEASED] so disjoint scoped claims no
     longer false-block each other on a multi-instance issue; #13022 added
-    [CLAIMED-AMEND], where the clause names the replacement scope). Returns
+    [CLAIMED-AMEND], where the clause names the replacement scope; #22445 added
+    [DELIVERED], whose v2 re-marking as an active claim while its PR is
+    OPEN/MERGED otherwise re-locked the whole umbrella epic-wide -- a bounded
+    delivery must not narrow back into a full-lane lock). Returns
     the trimmed path list, or None when the
     clause is absent -- the marker is then EPIC-WIDE (legacy semantics: an
     unscoped [CLAIMED] blocks every other lane, an unscoped [OVERRIDE] closes
@@ -1215,6 +1237,9 @@ def _rest_issue_payload(issue: str, repo: str | None = None) -> dict:
     return {
         "number": core.get("number"),
         "title": core.get("title") or "",
+        # #22500 point 3 -- meme champ que la voie GraphQL : `parent_refs`
+        # (picker) lit le lien `Part of #N` dans le corps de l'issue.
+        "body": core.get("body") or "",
         "labels": [
             {"name": (lb or {}).get("name")}
             for lb in core.get("labels") or []
@@ -1222,6 +1247,112 @@ def _rest_issue_payload(issue: str, repo: str | None = None) -> dict:
         ],
         "comments": comments,
     }
+
+
+# --- #22630 : seam d'instantane local ------------------------------------------
+#
+# L'instantane (`scripts/coordination/gh_snapshot.py`) remplace le TRANSPORT
+# des lectures GitHub, pas leur semantique : le code de reduction reste le
+# meme, seule la source des payloads change. C'est ce qui rend la sortie
+# identique entre l'ancienne voie (sous-processus + `gh issue view`) et la
+# nouvelle (instantane + calcul en processus).
+#
+# Le seam est OPT-IN : sans instantane installe, le module lit GitHub
+# exactement comme avant. Aucun comportement par defaut n'est modifie.
+
+_SNAPSHOT: dict | None = None
+
+
+def set_snapshot(snapshot: dict | None) -> None:
+    """Installe (ou retire) l'instantane local lu par ce module.
+
+    `snapshot` porte la cle `issues` et, en option, la cle `prs` (numero ->
+    etat de la PR). Deux formes sont servies pour `issues` (#22684) : le
+    payload complet par numero (forme `gh issue view --json
+    number,title,labels,comments`, cle `comments` incluse), ou la forme
+    **separee** de `gh_snapshot` (metadonnees dans `issues[n]`,
+    commentaires dans `comments[n]`) -- fusionnes a la lecture. Sans
+    instantane, ce module lit GitHub comme avant.
+    """
+    global _SNAPSHOT
+    _SNAPSHOT = snapshot if isinstance(snapshot, dict) else None
+
+
+def _snapshot_comments_list(issue: str) -> list | None:
+    """Liste de commentaires `comments[issue]` de l'instantane, ou None."""
+    if not _SNAPSHOT:
+        return None
+    comments = _SNAPSHOT.get("comments") or {}
+    entry = comments.get(str(issue))
+    if entry is None:
+        try:
+            entry = comments.get(int(issue))
+        except (TypeError, ValueError):
+            entry = None
+    return entry if isinstance(entry, list) else None
+
+
+def _snapshot_issue_payload(issue: str) -> dict | None:
+    """Payload d'issue servi par l'instantane, ou None s'il n'y en a pas.
+
+    Deux formes d'instantane sont servies -- toutes deux produites en
+    production :
+
+    - forme **fusionnee** : l'entree `issues[n]` porte elle-meme sa cle
+      `comments` (forme `gh issue view --json number,title,labels,comments`,
+      celle des payloads injectes directement). Servie telle quelle.
+    - forme **separee** : `issues[n]` ne porte que les metadonnees et les
+      commentaires vivent dans `comments[n]` -- la forme que fabrique
+      `gh_snapshot.ensure_issue_payloads` (deux fichiers disque). Les
+      commentaires sont fusionnes dans une COPIE servie au reducteur.
+
+    #22684 -- sans cette fusion, la voie en processus servait l'entree
+    telle quelle : `_sort_events` lisait `payload.get("comments", [])`,
+    voyait zero evenement et rendait FREE pour TOUTE issue, meme claimee
+    par une autre lane (review ai-01 2026-10-27T04:38Z). Une entree sans
+    cle `comments` ET sans liste dans `comments[n]` n'est PAS servie :
+    l'instantane n'etablit pas l'absence de commentaires, et le lecteur
+    retombe sur la voie reseau (fail-closed) plutot que de fabriquer un
+    FREE de zero lu.
+    """
+    if not _SNAPSHOT:
+        return None
+    issues = _SNAPSHOT.get("issues") or {}
+    entry = issues.get(str(issue))
+    if entry is None:
+        try:
+            entry = issues.get(int(issue))
+        except (TypeError, ValueError):
+            entry = None
+    if not isinstance(entry, dict):
+        return None
+    if "comments" in entry:
+        return entry
+    comments = _snapshot_comments_list(issue)
+    if comments is None:
+        return None
+    payload = dict(entry)
+    payload["comments"] = comments
+    return payload
+
+
+def _snapshot_pr_state(pr_ref: int) -> str | None:
+    """Etat d'une PR servi par l'instantane, ou None s'il n'y en a pas."""
+    if not _SNAPSHOT:
+        return None
+    prs = _SNAPSHOT.get("prs") or {}
+    entry = prs.get(str(pr_ref))
+    if entry is None:
+        try:
+            entry = prs.get(int(pr_ref))
+        except (TypeError, ValueError):
+            entry = None
+    if isinstance(entry, dict):
+        state = entry.get("state")
+        return state if isinstance(state, str) else None
+    if isinstance(entry, str):
+        return entry
+    return None
 
 
 def _gh_issue_comments(issue: str) -> dict:
@@ -1234,6 +1365,12 @@ def _gh_issue_comments(issue: str) -> dict:
     vocabulaire distinct de tout verdict de claim -- le picker propage cette
     distinction jusqu'au bandeau du tapis).
     """
+    # #22630 -- l'instantane local remplace la LECTURE, pas la semantique :
+    # le payload rendu a la forme attendue (`number`, `title`, `labels`,
+    # `comments`), et tout le reste du module s'execute a l'identique.
+    snapshot_payload = _snapshot_issue_payload(issue)
+    if snapshot_payload is not None:
+        return snapshot_payload
     proc = subprocess.run(
         [
             "gh", "issue", "view", str(issue),
@@ -1242,7 +1379,12 @@ def _gh_issue_comments(issue: str) -> dict:
             # picker hydrates from. The label-route is the authoritative one;
             # the title-route stays a fallback for the historic pre-label
             # inventory.
-            "--json", "number,title,labels,comments",
+            # #22500 point 3 -- `body` added for the SAME reason: `parent_refs`
+            # (picker, l. 5904) reads the `Part of #N` link in the body. Asking
+            # for the field costs no extra request (same GraphQL query), and
+            # the plafond would otherwise need a second read of the very issue
+            # we already have.
+            "--json", "number,title,labels,body,comments",
         ],
         # #12811 -- gh emits UTF-8; text=True alone decodes with the Windows
         # locale (cp1252), which raises UnicodeDecodeError on issue bodies
@@ -1375,6 +1517,14 @@ def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
     per the #12320 contract. The reducer (`compute_active_claims`) is the only
     caller, and only for events that already have `pr_ref != None`.
     """
+    # #22630 -- l'instantane local peut porter l'etat de la PR : la lecture
+    # REST la remplace, la semantique (OPEN/CLOSED/MERGED) reste celle du
+    # reducteur.
+    snap_state = _snapshot_pr_state(pr_ref)
+    if snap_state is not None:
+        result = (snap_state, None)
+        _PR_STATE_CACHE[pr_ref] = result
+        return result
     if pr_ref in _PR_STATE_CACHE:
         return _PR_STATE_CACHE[pr_ref]
     try:
@@ -1960,6 +2110,129 @@ def _find_open_prs_referencing_issue(
         })
     out.sort(key=lambda d: d["number"] or 0)
     return out
+
+
+# --- #22408 -- un claim age n'est pas un claim mort ---------------------------
+#
+# Le filtre de peremption ne regardait que l'horloge du `[CLAIMED]`. Instance
+# fondatrice #21881 (2026-10-24) : po-2023 avait claim le 2026-10-21T18:39Z,
+# ouvert #21884 (`closes #21881`) a 18:59Z et pousse jusqu'au 2026-10-23T06:29Z ;
+# a 73,8 h l'organe a rendu STALE, et po-2024 a repris le grain (#22251). Deux
+# carnets DEEP livres pour un seul grain, une PR fermee.
+#
+# Ce que l'age du claim ne dit pas, c'est si la lane LIVRE. Une PR OUVERTE de
+# la meme lane, qui reference l'issue et qui a recu un commit ou un commentaire
+# porte par cette lane dans la fenetre du seuil, prouve que le claim est vivant :
+# l'age apparent vient du fait qu'un `[CLAIMED]` n'est poste qu'une fois, alors
+# qu'une livraison dure des jours.
+#
+# Posture de mesure : quand l'activite ne peut pas etre lue (gh indisponible,
+# payload illisible), on garde le verdict d'avant #22408 (STALE) et on le dit --
+# une lecture qui echoue ne devient jamais une preuve d'inactivite.
+
+_GH_PR_ACTIVITY_TIMEOUT_S = int(
+    os.environ.get("CHECK_LANE_CLAIM_PR_ACTIVITY_TIMEOUT", "60")
+)
+
+
+def _iso_utc(value):
+    """Parse a `gh` ISO-8601 UTC timestamp; None when unreadable."""
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _lane_open_prs_referencing(
+    issue_number: int,
+    lane: str,
+    prs: list[dict] | None = None,
+) -> list[int]:
+    """OPEN PR numbers of `lane` whose body references `issue_number`.
+
+    Same body reader as `_find_open_prs_referencing_issue` / `_find_open_pr_
+    for_issue_by_lane` (unwrap + shared `extract_lane`), but filtered on the
+    CLAIMANT lane instead of excluding it -- here the question is "does the
+    holder still work?", not "does someone else collide?".
+    """
+    if prs is None:
+        prs = _gh_open_prs_with_files()
+    out: list[int] = []
+    for pr in prs:
+        body = _unwrap_trapped_body(pr.get("body") or "")
+        if extract_lane(body) != lane:
+            continue
+        if not _pr_body_references_issue(body, issue_number):
+            continue
+        try:
+            out.append(int(pr["number"]))
+        except (KeyError, ValueError, TypeError):
+            continue
+    return sorted(out)
+
+
+def _pr_last_lane_activity(pr_number: int, lane: str):
+    """Latest commit / lane-tagged comment of an OPEN PR, or None.
+
+    None means NOT MEASURED (gh failure, timeout, unreadable payload) -- the
+    caller keeps the pre-#22408 verdict. A commit counts whoever pushed it (the
+    PR is the lane's); a comment counts only when its body carries the lane tag,
+    because every agent posts under the shared `jsboige` login and the login
+    cannot tell lanes apart.
+    """
+    try:
+        proc = subprocess.run(
+            ["gh", "pr", "view", str(pr_number), "--json", "commits,comments"],
+            capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",
+            timeout=_GH_PR_ACTIVITY_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired:
+        return None
+    if proc.returncode != 0:
+        return None
+    try:
+        data = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return None
+    stamps = []
+    for commit in data.get("commits") or []:
+        ts = _iso_utc(commit.get("committedDate"))
+        if ts is not None:
+            stamps.append(ts)
+    for comment in data.get("comments") or []:
+        body = _unwrap_trapped_body(comment.get("body") or "")
+        if extract_lane(body) != lane:
+            continue
+        ts = _iso_utc(comment.get("createdAt"))
+        if ts is not None:
+            stamps.append(ts)
+    return max(stamps) if stamps else None
+
+
+def _claim_still_being_delivered(
+    issue_number: int,
+    lane: str,
+    threshold_h: float,
+    now,
+    prs: list[dict] | None = None,
+):
+    """`(pr_number, activity_age_h)` proving `lane` still works the grain.
+
+    None when no OPEN PR of `lane` references the issue, or when the last
+    measurable activity is older than `threshold_h`, or when activity could not
+    be measured at all.
+    """
+    for pr_number in _lane_open_prs_referencing(issue_number, lane, prs=prs):
+        last = _pr_last_lane_activity(pr_number, lane)
+        if last is None:
+            continue
+        age_h = (now - last).total_seconds() / 3600.0
+        if age_h < threshold_h:
+            return pr_number, age_h
+    return None
 
 
 # #12386 v2 -- `_find_open_pr_for_issue_by_lane` returns the unique OPEN PR
@@ -2971,11 +3244,246 @@ def _parse_iso_utc(iso: str) -> datetime | None:
         return None
 
 
+# --- #22500 point 3 -- le plafond hebdomadaire des EPICs s'applique au claim ---
+#
+# Demande (commentaire 6409466826 du 2026-10-26T06:10:07Z sur #22500), verbatim :
+#
+#   « `umbrella_visit_cause` agit au tirage : il retire l'EPIC du tapis. Mais
+#     #22609 (creee 01:45Z, claimee 01:45Z), #22617 et #22618 (03:41Z) n'ont
+#     jamais ete tirees : chaque lane cree l'issue fille « Part of #16334 » et
+#     la claime aussitot. `scripts/check_lane_claim.py`, que chaque lane lance
+#     avant d'editer, ne connait pas le plafond (0 occurrence de
+#     `umbrella_visit_cause` ni de `parent_refs`).
+#     **Attendu** : `check_lane_claim.py N` rend `BLOCKED` avec la cause
+#     `PLAFOND EPIC (#22500)` quand un parent de N (au sens de `parent_refs`)
+#     est une `umbrella` hors classe `consolidation` dont une AUTRE issue
+#     fille a ete creee, ou dont un claim a ete pose, il y a moins de 7 jours.
+#     L'issue N elle-meme ne compte pas, sinon le premier claim legitime de la
+#     semaine se bloquerait. Meme regle pour un claim pose directement sur
+#     l'EPIC. »
+#
+# ORGANE-FIRST : la semantique du plafond n'est PAS re-ecrite ici. Tout vient de
+# `scripts/pick_idle_grain.py`, importe a la demande (`_epic_cap_picker`) :
+#   - `parent_refs(it)` (l. 5904) : la definition d'un parent (prefixe de titre
+#     `[#N`, `Part of #N` en corps, forme `kind(zone,#EPIC):`) ;
+#   - `claim_visit_stamp(comments)` (l. 5987) : la date du dernier marqueur de
+#     lane, lue par la grammaire de CE module (`_sort_events`) -- jamais une
+#     regex propre ;
+#   - `is_consolidation(it)` (l. 5809) : la classe exemptee, lue au label seul ;
+#   - `apply_child_visits(pool, targets)` (l. 5966) : la date de la plus recente
+#     sous-issue creee qui nomme le parent ;
+#   - `umbrella_visit_cause(it)` (l. 5927) : LE LITTERAL de la cause, rendu tel
+#     quel -- aucune seconde ecriture du prefixe `PLAFOND EPIC (#22500)` dans ce
+#     module ; les tests l'epinglent, le code de production ne le reconstruit
+#     pas (une copie divergerait au premier amendement de l'organe) ;
+#   - `fetch_pool()` (l. 1087) : le pool ouvert, une seule requete.
+# `_is_umbrella_issue` (ce module, l. 2928) tient le role du classifieur
+# `klass == "umbrella"` du picker (il documente deja qu'il en est le miroir).
+#
+# COUT -- la contrainte du coordinateur est explicite (274 s pour la commande
+# des lanes, dont 45 s pour 8 sondes de claims) :
+#   - issue sans parent ET pas elle-meme un umbrella : **zero appel, zero
+#     seconde** (c'est le cas le plus frequent, et `parent_refs` se lit sur la
+#     charge deja telechargee) ;
+#   - issue avec parent(s) : 1 appel `gh issue view` par parent, et le pool
+#     (1 appel, 8,6 s mesure le 2026-10-26 sur 555 issues ouvertes) UNIQUEMENT
+#     si au moins un parent est un umbrella hors consolidation -- un parent
+#     ordinaire ne coute donc pas le pool ;
+#   - le pool est memoise par processus (`_EPIC_CAP_POOL_MEMO`) : le mode batch
+#     le paie une fois pour N issues ;
+#   - si une autre lane bloque deja (verdict exit 1 acquis), le plafond n'est
+#     pas mesure du tout : le detour serait paye pour un verdict deja rendu.
+#
+# PORTEE -- `_run_check(epic_cap=True)` est pose par les deux modes de
+# LECTURE/ECRITURE unitaires de la CLI (`check` et `--claim`), c'est-a-dire le
+# geste L898 qu'une lane lance avant d'editer. Le mode **batch** garde
+# `epic_cap=False` : c'est la sonde du tapis roulant, et le point 3 de #22500
+# est un gate de claim, pas un changement de tirage (#22630 possede le tirage).
+# Consequence annoncee : `_summarize_claim` du picker ne lit que
+# `blocking_lanes`/`my_active_claim`/`implicit_occupation`/`stale_claims`, donc
+# une sonde `check_claims([n])` sur une fille plafonnee rend encore FREE tant
+# qu'un suivi n'enseigne pas au picker la cle `epic_visit_cap`. Le gate de la
+# lane, lui, est rendu.
+#
+# ECHEC DE LECTURE -- le plafond est une discipline de visite, pas une garantie
+# anti-collision (celle-ci reste portee, fail-CLOSED, par `blocking_lanes`).
+# Un parent ou un pool illisible ne bloque donc PAS : il est NOMME dans
+# `epic_visit_cap_error` et sur stderr. Un plafond non mesurable ne doit jamais
+# se lire comme un plafond respecte, ni fermer la voie a une lane sur une panne
+# de transport.
+# Memo de processus : le pool coute 1 requete (~8,6 s mesure), le mode batch
+# boucle sur N issues -- sans memo, N requetes.
+_EPIC_CAP_POOL_MEMO: list[dict] | None = None
+_EPIC_CAP_POOL_ERROR: str | None = None
+# Memo des charges parent par numero : deux filles du meme EPIC dans un meme
+# processus ne paient qu'une lecture du parent.
+_EPIC_CAP_PARENT_MEMO: dict[int, dict | None] = {}
+
+
+def _epic_cap_picker():
+    """Le module organe `pick_idle_grain`, importe a la demande.
+
+    Import TARDIF et non un `import` de tete : le picker importe ce module
+    (dans `claim_visit_stamp`, `latest_claim_lane`, ...), donc un import de tete
+    des deux cotes ferait dependre l'ordre de chargement d'un cycle. Tardif, il
+    ne coute rien au chemin courant (issue sans parent), qui n'importe jamais.
+    """
+    scripts_dir = Path(__file__).resolve().parent
+    if str(scripts_dir) not in sys.path:
+        sys.path.insert(0, str(scripts_dir))
+    import pick_idle_grain  # tardif assume : cf la docstring ci-dessus
+    return pick_idle_grain
+
+
+def _epic_cap_parent_payload(number: int) -> dict:
+    """Charge d'un parent : meme forme que `_gh_issue_comments` (1 appel)."""
+    cached = _EPIC_CAP_PARENT_MEMO.get(number)
+    if cached is not None:
+        return cached
+    payload = _gh_issue_comments(str(number))
+    _EPIC_CAP_PARENT_MEMO[number] = payload
+    return payload
+
+
+def _epic_cap_pool() -> tuple[list[dict], str | None]:
+    """Le pool ouvert du picker, une fois par processus.
+
+    Rend `(pool, read_error)`. `read_error` est la chaine nommee par
+    `fetch_pool` quand les deux transports sont tombes ; le pool est alors vide
+    et la mesure est PARTIELLE (le signal `last_child_stamp` manque, le signal
+    `last_claim_stamp` reste lisible sur la charge du parent). L'echec est
+    memoise avec le pool : un processus de CLI est court, et le mode batch ne
+    doit pas repayer N fois une panne.
+    """
+    global _EPIC_CAP_POOL_MEMO, _EPIC_CAP_POOL_ERROR
+    if _EPIC_CAP_POOL_MEMO is not None:
+        return _EPIC_CAP_POOL_MEMO, _EPIC_CAP_POOL_ERROR
+    try:
+        pool, read_error = _epic_cap_picker().fetch_pool(probe=None)
+    except Exception as exc:  # noqa: BLE001 -- mesure best-effort, nommee
+        pool, read_error = [], f"{type(exc).__name__}: {exc}"
+    _EPIC_CAP_POOL_MEMO = pool
+    _EPIC_CAP_POOL_ERROR = read_error
+    return pool, read_error
+
+
+def epic_visit_cap(payload: dict, *, now: datetime | None = None,
+                   parent_loader=None,
+                   pool_loader=None) -> dict:
+    """#22500 point 3 -- verdict du plafond hebdomadaire pour un claim sur N.
+
+    Rend un dict a quatre cles, toutes serialisables dans le rapport JSON :
+
+      - ``cause`` : la cause **rendue par l'organe** (`umbrella_visit_cause`,
+        litteral inchange) ou ``None`` ;
+      - ``epic`` : le numero de l'EPIC qui plafonne (ou ``None``) ;
+      - ``calls`` : ``{"parent_payloads": n, "pool": 0|1}`` -- le cout reseau de
+        CETTE mesure, pour que la borne se verifie au lieu de se croire ;
+      - ``error`` : les lectures qui ont echoue (``None`` si tout a ete lu).
+
+    Sujets examines, dans l'ordre : l'issue N elle-meme si c'est un umbrella
+    (demande explicite : « Meme regle pour un claim pose directement sur
+    l'EPIC »), puis chaque parent de N au sens de `parent_refs`. Un sujet est
+    retenu s'il est un umbrella ET hors classe `consolidation`.
+
+    L'issue N **ne se compte pas comme sa propre visite** : `apply_child_visits`
+    recoit le pool prive de N, sinon la fille creee puis claimee dans la minute
+    -- le scenario fondateur de #22500 -- bloquerait son propre premier claim.
+
+    `parent_loader`/`pool_loader` sont injectables (tests hors reseau) ; par
+    defaut ils lisent GitHub et memoisent par processus.
+    """
+    parent_loader = parent_loader or _epic_cap_parent_payload
+    pool_loader = pool_loader or _epic_cap_pool
+    picker = _epic_cap_picker()
+    calls = {"parent_payloads": 0, "pool": 0}
+    errors: list[str] = []
+    verdict = {"cause": None, "epic": None, "calls": calls,
+               "error": None, "skipped": None}
+
+    number = payload.get("number")
+    number = int(number) if isinstance(number, int) else None
+
+    # (1) les sujets candidats, sans reseau : N si c'est un umbrella, puis ses
+    # parents (`parent_refs` lit titre/corps de la charge DEJA telechargee).
+    subjects: list[tuple[int, dict | None]] = []
+    if number is not None and _is_umbrella_issue(payload):
+        subjects.append((number, payload))
+    for parent in sorted(picker.parent_refs(payload)):
+        if parent == number:
+            continue  # une issue ne se visite pas elle-meme
+        subjects.append((parent, None))
+    if not subjects:
+        return verdict  # zero appel : le cas le plus frequent
+
+    # (2) resoudre les charges parent (1 appel chacune) et ne garder que les
+    # EPICs hors consolidation. AUCUN pool tant qu'aucun sujet n'est retenu.
+    capped: list[tuple[int, dict]] = []
+    for epic, body in subjects:
+        if body is None:
+            try:
+                body = parent_loader(epic)
+                calls["parent_payloads"] += 1
+            except Exception as exc:  # noqa: BLE001 -- nomme, ne bloque pas
+                errors.append(f"#{epic}: {type(exc).__name__}: {exc}")
+                continue
+            if not isinstance(body, dict):
+                errors.append(f"#{epic}: payload inattendu")
+                continue
+        if not _is_umbrella_issue(body):
+            continue
+        if picker.is_consolidation(body):
+            continue  # exemption : une consolidation REVIENT souvent, c'est son travail
+        capped.append((epic, body))
+    if not capped:
+        verdict["error"] = "; ".join(errors) or None
+        return verdict
+
+    # (3) le pool, paye UNE fois, seulement parce qu'un sujet est retenu.
+    pool, pool_error = pool_loader()
+    calls["pool"] = 1
+    if pool_error:
+        errors.append(f"pool: {pool_error}")
+    targets = [
+        {
+            "number": epic,
+            "title": body.get("title"),
+            "labels": body.get("labels"),
+            # `klass` est la cle que lit `umbrella_visit_cause` ; `_is_umbrella_issue`
+            # vient de la trancher, donc la valeur est celle de l'organe.
+            "klass": "umbrella",
+            "last_claim_stamp": picker.claim_visit_stamp(
+                [c for c in (body.get("comments") or []) if isinstance(c, dict)]
+            ),
+        }
+        for epic, body in capped
+    ]
+    if pool:
+        # N ne compte pas parmi les filles visitees (demande explicite).
+        daughters = [c for c in pool if c.get("number") != number]
+        picker.apply_child_visits(daughters, targets)
+
+    # (4) la cause de l'organe, telle quelle : aucune seconde ecriture du
+    # litteral, qui divergerait au premier amendement de l'organe. Le prefixe
+    # attendu (`PLAFOND EPIC (#22500)`) est epingle par les TESTS, pas par une
+    # assertion de production -- un gate de claim ne s'arrete pas sur un
+    # renommage de litteral chez l'organe.
+    for target in targets:
+        cause = picker.umbrella_visit_cause(target, now=now)
+        if cause:
+            verdict.update(cause=cause, epic=target["number"])
+            break
+    verdict["error"] = "; ".join(errors) or None
+    return verdict
+
+
 def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                now: datetime | None = None,
                my_paths: list[str] | None = None,
                pr_states: dict[int, str] | None = None,
-               check_open_pr_paths: bool = False) -> int:
+               check_open_pr_paths: bool = False,
+               epic_cap: bool = False,
+               epic_cap_probe=None) -> int:
     """Issue-claim check: exit 1 if another lane blocks, 0 if clear.
 
     Exit 3 (#14300): IMPLICIT -- no [CLAIMED] marker blocks, but an OPEN PR
@@ -3009,6 +3517,15 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             in the form L898 prescribes (issue + paths). The leg is
             best-effort: on `gh` failure it warns and leaves the primary
             verdict untouched rather than failing the whole check.
+        epic_cap: when True, ALSO apply the #22500 point 3 weekly cap on the
+            EPICs this issue belongs to (see `epic_visit_cap`). Off by default
+            so a direct call -- and every pre-#22500 unit test -- stays
+            network-free; the report then gains only ADDITIVE keys
+            (`epic_visit_cap*`, null), never a changed verdict. The CLI enables
+            it on the two unitary paths (`check`, `--claim`), never on batch
+            (see the region comment above `epic_visit_cap` for why).
+        epic_cap_probe: injectable `(payload) -> verdict dict` seam (tests).
+            Defaults to `epic_visit_cap`, which reads GitHub.
     """
     # One shared tracked-files walk feeds the #10958 empty-scope witness AND
     # the #19435 root-filename acceptance (best-effort: None outside a git
@@ -3198,12 +3715,60 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # their own [CLAIMED] (this is not a silent bypass). Without the flag
     # (default None), behaviour is unchanged: every active claim blocks.
     stale_others: dict[str, ClaimEvent] = {}
+    revived_claims: list[dict] = []
     if stale_threshold is not None:
         now = now or datetime.now(timezone.utc)
         for ln, ev in others.items():
             age = _claim_age_hours(ev.created_at, now)
             if age is not None and age >= stale_threshold:
                 stale_others[ln] = ev
+        # #22408 -- l'age du claim ne suffit pas : la lane titulaire peut etre
+        # en train de livrer. Une PR ouverte de cette lane, qui reference
+        # l'issue et qui a bouge dans la fenetre du seuil, ranime le claim (il
+        # continue de bloquer) et la mesure est rendue dans `revived_claims`.
+        # La lecture des PRs ouvertes n'est payee que s'il y a un candidat.
+        if stale_others and payload.get("number") is not None:
+            for ln, ev in list(stale_others.items()):
+                # #22408 / review Hermes 5641325382 -- la lecture de l'activite
+                # peut LEVER, pas seulement rendre None : `_lane_open_prs_
+                # referencing` passe par `_gh_open_prs_with_files()`, qui leve
+                # `RuntimeError` sur un `gh` en echec et `OpenPrsIncompleteError`
+                # (sous-classe de RuntimeError) sur une enumeration partielle.
+                # Sans ce filet, une enumeration morte faisait sortir l'exception
+                # de `_run_check` -- traceback au lieu d'un verdict, et quatre
+                # tests verts sur `main` (gh indisponible) rougissaient ici.
+                # Une lecture impossible n'est pas une preuve de livraison : le
+                # claim garde son verdict d'avant (STALE), et on le dit.
+                try:
+                    live = _claim_still_being_delivered(
+                        int(payload["number"]), ln, stale_threshold, now)
+                except (RuntimeError, ValueError, TypeError) as exc:
+                    print(
+                        f"WARN: activite de {ln} illisible "
+                        f"({type(exc).__name__}: {exc}) -- le claim garde son "
+                        f"verdict d'avant (perime) (#22408)",
+                        file=sys.stderr,
+                    )
+                    continue
+                if live is None:
+                    continue
+                pr_number, activity_age_h = live
+                revived_claims.append({
+                    "lane": ln,
+                    "claim_age_h": round(
+                        _claim_age_hours(ev.created_at, now) or 0.0, 1),
+                    "pr": pr_number,
+                    "last_activity_age_h": round(activity_age_h, 1),
+                })
+                print(
+                    f"INFO: claim de {ln} age de "
+                    f"{_claim_age_hours(ev.created_at, now):.1f}h, MAIS sa PR "
+                    f"ouverte #{pr_number} a bouge il y a "
+                    f"{activity_age_h:.1f}h (< {stale_threshold:g}h) -- le "
+                    f"claim N'EST PAS perime (#22408).",
+                    file=sys.stderr,
+                )
+                del stale_others[ln]
         others = {ln: ev for ln, ev in others.items() if ln not in stale_others}
     else:
         # #12751 -- a zero of absence-of-measurement must not re-read as a
@@ -3230,12 +3795,21 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # gh failure, same posture as the #16570 paths leg: a leg that cannot
     # measure must not fabricate a verdict.
     implicit_occupation: list[dict] = []
+    # #22408 (item 3) -- `[]` disait deux choses incompatibles : « mesure, et
+    # personne n'occupe » et « jambe non demandee ». Instance #21881 : le
+    # rapport de l'issue lisait `implicit_occupation: []` et en concluait que
+    # l'organe n'avait pas vu la PR tierce, alors que la jambe est *lazy by
+    # outcome* -- a cet instant le registre portait un claim actif, donc la
+    # jambe n'a pas tourne. Le booleen separe la mesure de son absence.
+    implicit_occupation_measured = False
     if (check_open_pr_paths and not others and mine is None
             and payload.get("number") is not None):
+        implicit_occupation_measured = True
         try:
             implicit_occupation = _find_open_prs_referencing_issue(
                 int(payload["number"]), my_lane)
         except (RuntimeError, ValueError, TypeError) as exc:
+            implicit_occupation_measured = False
             print(
                 f"WARN: la jambe IMPLICIT (#14300) n'a pas pu tourner "
                 f"({exc}) : le verdict ci-dessous ne dit rien des PRs "
@@ -3344,6 +3918,26 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
             my_scope, others, tracked,
         )
 
+    # #22500 point 3 -- plafond hebdomadaire des EPICs. Mesure APRES les
+    # filtres (un verdict deja bloque par une lane ne paie pas le detour) et
+    # AVANT la construction du rapport, qui doit le porter.
+    epic_cap_verdict: dict = {"cause": None, "epic": None, "calls": None,
+                              "error": None, "skipped": None}
+    if epic_cap:
+        if others:
+            # Le verdict est deja exit 1 : payer 8,6 s de pool pour le dire une
+            # seconde fois serait du cout sans information. On le DIT, pour que
+            # `epic_visit_cap: null` ne se lise pas comme « plafond respecte ».
+            epic_cap_verdict["skipped"] = (
+                "another lane already blocks -- verdict is exit 1 without the cap"
+            )
+        else:
+            probe = epic_cap_probe or epic_visit_cap
+            try:
+                epic_cap_verdict = probe(payload) or epic_cap_verdict
+            except Exception as exc:  # noqa: BLE001 -- mesure best-effort, nommee
+                epic_cap_verdict["error"] = f"{type(exc).__name__}: {exc}"
+
     summary = {
         "issue": payload.get("number"),
         "title": payload.get("title"),
@@ -3351,6 +3945,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
         "stale_claims": sorted(stale_others) if stale_threshold is not None else None,
+        # #22408 -- les claims dont l'age depassait le seuil mais dont la lane
+        # livrait encore : ils BLOQUENT (ils sont dans `others`, donc dans
+        # `blocking_lanes`) et la mesure qui les a ranimes est citee ici, pour
+        # qu'un lecteur ne voie pas un BLOCKED inexplique.
+        "revived_claims": revived_claims,
         # #12751 -- l'etat de la detection est nomme explicitement. "active" :
         # un seuil est pose, les claims plus vieux sont age-filtered (le
         # comportement par defaut, 48h). "disabled" : --no-stale / threshold
@@ -3500,7 +4099,23 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # here instead of silently swallowing the re-claim.
         "composite_single_line_markers": len(composites),
         "composite_single_line_marker_lines": [s["line"] for s in composites],
-        "blocked": bool(others),
+        "blocked": bool(others) or bool(epic_cap_verdict.get("cause")),
+        # #22500 point 3 -- le plafond hebdomadaire des EPICs (voir
+        # `epic_visit_cap`). `epic_visit_cap` porte le LITTERAL rendu par
+        # l'organe (`PLAFOND EPIC (#22500) : ...`), jamais une reformulation ;
+        # `epic_visit_cap_epic` nomme l'EPIC qui plafonne, pour que la lane
+        # puisse aller lire ses sous-grains ouverts au lieu de re-tenter ;
+        # `epic_visit_cap_calls` publie le cout reseau de CETTE mesure (la
+        # borne du coordinateur se verifie, elle ne se croit pas) ;
+        # `epic_visit_cap_error` nomme les lectures qui ont echoue -- un
+        # plafond non mesurable ne doit pas se confondre avec un plafond
+        # respecte ; `epic_visit_cap_skipped` dit pourquoi la mesure n'a pas
+        # eu lieu (verdict deja bloque par une lane, ou plafond non demande).
+        "epic_visit_cap": epic_cap_verdict.get("cause"),
+        "epic_visit_cap_epic": epic_cap_verdict.get("epic"),
+        "epic_visit_cap_calls": epic_cap_verdict.get("calls"),
+        "epic_visit_cap_error": epic_cap_verdict.get("error"),
+        "epic_visit_cap_skipped": epic_cap_verdict.get("skipped"),
         # #14187 -- free-paths counter: files in the caller's `--paths`
         # that intersect NO blocker. A lane with `--paths 'knot_lean/**'`
         # blocked by 3 lanes whose scopes intersect 3 of 12 sub-files can
@@ -3572,10 +4187,13 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # as open_pr_collisions above. Non-empty routes the verdict below
         # to `IMPLICIT` at exit 3 -- distinct from claim-BLOCKED (exit 1)
         # and from the io/gh-error exit 2 that check_grain_free.py
-        # documents for this mode. Empty list = no OPEN PR of another lane
-        # references the issue (or the leg was skipped: BLOCKED verdict,
-        # posting path, or a gh failure WARNed above).
+        # documents for this mode.
         "implicit_occupation": implicit_occupation,
+        # #22408 -- `[]` seul ne distinguait pas « mesure : personne » de
+        # « jambe non demandee » (lazy by outcome) ni de « lecture echouee ».
+        # Ce booleen porte la difference ; les lecteurs qui font
+        # `data.get("implicit_occupation") or []` gardent leur comportement.
+        "implicit_occupation_measured": implicit_occupation_measured,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
@@ -3818,6 +4436,29 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
                 file=sys.stderr,
             )
         return 1
+    # #22500 point 3 -- le plafond hebdomadaire des EPICs : exit 1, comme tout
+    # BLOCKED. Il passe AVANT la branche `NOT_SCOPED` ci-dessous : celle-ci
+    # invite a re-executer avec `--paths`, et re-scoper ne leve PAS un plafond
+    # de visite -- le conseil serait faux. La cause imprimee est le litteral de
+    # l'organe (`umbrella_visit_cause`), inchange.
+    if epic_cap_verdict.get("cause"):
+        epic_number = epic_cap_verdict.get("epic")
+        where = (f"#{epic_number}" if epic_number is not None
+                 else "un EPIC parent")
+        print(
+            f"\nBLOCKED: {epic_cap_verdict['cause']}\n"
+            f"  #{payload.get('number')} appartient a l'EPIC {where}, deja "
+            f"visite cette semaine : une sous-issue y a ete creee, ou un "
+            f"claim y a ete pose, il y a moins de 7 jours (#22500 point 3). "
+            f"Le plafond exempte les EPICs de classe `consolidation`, et "
+            f"l'issue elle-meme ne compte pas comme sa propre visite.\n"
+            f"  ACTION: servir un sous-grain DEJA OUVERT de l'EPIC "
+            f"{where}, ou prendre un autre grain du pool. Re-scoper avec "
+            f"`--paths` ne leve pas ce plafond ; `--force` reste reserve a "
+            f"l'arbitrage coordinateur.",
+            file=sys.stderr,
+        )
+        return 1
     # #12345 -- fail-CLOSED on an entirely-dead scope, EVEN with no
     # blockers. Without this branch, a caller who typo'd every glob in
     # `--paths` would see CLEAR + `exit 0` on an issue no one else has
@@ -3975,14 +4616,14 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
     return f"EXIT_{returncode}"
 
 
-def _run_check_batch(
+def check_issues_batch(
     issues: list[str],
     lane: str,
     stale_threshold: float | None = 48.0,
     from_json: str | None = None,
     my_paths: list[str] | None = None,
-) -> int:
-    """Mode batch N issues -> JSON.
+) -> dict:
+    """Mode batch N issues -> JSON **rendu** au lieu d'imprime (#22630).
 
     Une seule invocation de check_lane_claim traite N issues et sort un
     JSON `{results: {N: {code, exit, human, duration, ...}}, total_wall,
@@ -4117,6 +4758,26 @@ def _run_check_batch(
         "phases": phases,
         "total_wall": total_wall,
     }
+    return output
+
+
+def _run_check_batch(
+    issues: list[str],
+    lane: str,
+    stale_threshold: float | None = 48.0,
+    from_json: str | None = None,
+    my_paths: list[str] | None = None,
+) -> int:
+    """Mode batch **CLI** : `check_issues_batch` + impression du JSON sur stdout.
+
+    Le corps est dans `check_issues_batch`, qui REND le meme dictionnaire : le
+    tapis l'appelle en processus (#22630), la CLI l'imprime. Deux portes, un
+    seul calcul -- la sortie est identique par construction.
+    """
+    output = check_issues_batch(
+        issues, lane, stale_threshold=stale_threshold,
+        from_json=from_json, my_paths=my_paths,
+    )
     # Toujours ecrire le JSON final sur stdout, sans prefixe.
     print(json.dumps(output, ensure_ascii=False, indent=2))
     return 0
@@ -4930,11 +5591,19 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
             rc = _run_check(payload, args.lane,
                             stale_threshold=args.stale_threshold,
-                            my_paths=args.paths)
+                            my_paths=args.paths,
+                            # #22500 point 3 -- le plafond des EPICs suit le
+                            # chemin unitaire. `--from-json` est un contrat
+                            # HORS RESEAU : on ne va pas chercher un parent ni
+                            # un pool pour lui.
+                            epic_cap=not args.from_json)
             if rc != 0:
+                # #22500 point 3 -- le refus ne nomme plus une cause unique :
+                # le check peut aussi rendre le plafond hebdomadaire d'un EPIC.
                 print(f"BLOCKED: not posting [CLAIMED] on #{issue} "
-                      f"-- another lane holds an active claim (the check "
-                      f"above names it). Use --force only for coordinator "
+                      f"-- the check above names the blocking cause (another "
+                      f"lane's active claim, or the weekly EPIC cap of "
+                      f"#22500). Use --force only for coordinator "
                       f"arbitration.",
                       file=sys.stderr)
                 return rc
@@ -5044,6 +5713,9 @@ def main(argv: list[str] | None = None) -> int:
         # #16570 -- read path only: the caller is asking "may I start?", so the
         # open-PR leg is exactly what they need and could not reach.
         check_open_pr_paths=True,
+        # #22500 point 3 -- le geste L898 d'une lane. `--from-json` reste un
+        # contrat hors reseau (aucun parent, aucun pool n'est lu).
+        epic_cap=not args.from_json,
     )
 
 
