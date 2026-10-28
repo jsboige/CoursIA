@@ -1,0 +1,16 @@
+date: '2026-10-28'
+by: myia-po-2025:CoursIA
+python_sha: d0d7e00349f173e1029300b0cca0e1c8299873a3
+csharp_sha: d8ef7ee3d08d496e797bf082c13e260f2ea8c9b8
+content_python_sha: bb7a66d297768963cbdd00d4a3015933b56083a76f8da01d5db4e89be869b821
+content_csharp_sha: 247eae5b44f54494f2cb9d3d63fb154ced3001776390ec1f8b985a54191c68f3
+reason: >-
+  PR #23177 (#20381, lane myia-po-2025:CoursIA) : cote C# seul edite, markdown
+  seul -- le carnet portait DEUX barres de navigation dans la cellule 0, la
+  seconde annoncant 07-ExtensiveForm en contradiction avec la premiere. La seconde
+  est alignee sur la premiere plutot que supprimee en silence. Le jumeau Python est
+  intact : `python_sha` d0d7e003 et `content_python_sha` bb7a66d2 sont identiques a
+  l'attestation 0020 precedente. Aucune cellule de code touchee (10 cote C#, 14
+  cote Python), execution_count et outputs byte-identiques a la base, donc aucune
+  re-execution due (C.2). Diff mesure : 1+/1-. Rebaseline apres l'edit, sans
+  normalisation outillee intermediaire (#8957) ; niveau `semantic` preserve.
