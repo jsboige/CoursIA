@@ -239,6 +239,42 @@ def test_delta_flags_a_downgrade_introduced_by_the_pr():
     assert any(f["kind"] == "downgrade" and f["version"] == "3.0.5" for f in findings)
 
 
+def test_base_illisible_est_un_incident_nomme_pas_un_carnet_neuf(tmp_path):
+    """Point 6 -- base illisible et base absente ne sont pas la meme chose.
+
+    Avant correctif, `notebook_at` rendait `None` pour les deux : un `git
+    show` en echec faisait degenerer le delta en etat, et la derive
+    historique rougissait sans cause nommee.
+    """
+    import subprocess
+
+    repo = tmp_path / "r"
+    repo.mkdir()
+
+    def git(*args: str) -> None:
+        subprocess.run(
+            ["git", *args], cwd=repo, check=True, capture_output=True
+        )
+
+    git("init")
+    git("config", "user.email", "t@example.invalid")
+    git("config", "user.name", "t")
+    (repo / "casse.ipynb").write_text("{ ceci n'est pas du JSON", encoding="utf-8")
+    (repo / "sain.ipynb").write_text(
+        json.dumps(_notebook(['#r "nuget:IKVM,8.15.0"'])), encoding="utf-8"
+    )
+    git("add", ".")
+    git("commit", "-m", "x")
+
+    # Present mais illisible : incident nomme, pas une absence.
+    with pytest.raises(clv.BaseReadError):
+        clv.notebook_at(repo, "HEAD", "casse.ipynb")
+
+    # Controles positifs : absent reste une absence, et un carnet sain se lit.
+    assert clv.notebook_at(repo, "HEAD", "absent.ipynb") is None
+    assert clv.notebook_at(repo, "HEAD", "sain.ipynb") is not None
+
+
 def test_delta_compare_les_multiplicites_pas_les_ensembles():
     """Point 5 -- un carnet a DEUX versions ne fait pas rougir une PR muette.
 

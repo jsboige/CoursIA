@@ -768,17 +768,37 @@ def changed_notebooks(repo_root: Path, revision_range: str) -> tuple[list[Path],
     return paths, base
 
 
+class BaseReadError(RuntimeError):
+    """La base ne peut pas etre LUE pour ce carnet -- ce n'est pas une absence."""
+
+
 def notebook_at(repo_root: Path, revision: str | None, relative: str) -> dict | None:
-    """Charge le carnet tel qu'il etait a une revision ; None s'il n'existait pas."""
+    """Charge le carnet tel qu'il etait a une revision ; None s'il n'existait pas.
+
+    « Absent de la base » et « lecture en echec » sont deux choses
+    differentes, et les confondre coutait cher : la premiere est un carnet
+    neuf (tous ses epinglages sont nouveaux), la seconde faisait degenerer le
+    delta en etat, si bien que la derive historique rougissait sans cause
+    nommee. La presence est donc mesuree separement (`cat-file -e`) avant la
+    lecture ; une lecture qui echoue sur un carnet present leve
+    `BaseReadError`, que l'appelant traduit en rc 2 (relecture #23079 point 6).
+    """
     if not revision:
         return None
-    code, out, _err = _git(repo_root, ["show", f"{revision}:{relative}"])
-    if code != 0:
+    present, _out, _err = _git(repo_root, ["cat-file", "-e", f"{revision}:{relative}"])
+    if present != 0:
         return None
+    code, out, err = _git(repo_root, ["show", f"{revision}:{relative}"])
+    if code != 0:
+        raise BaseReadError(
+            f"{relative} a {revision} : git show a echoue ({err.strip()})"
+        )
     try:
         return json.loads(out)
-    except json.JSONDecodeError:
-        return None
+    except json.JSONDecodeError as exc:
+        raise BaseReadError(
+            f"{relative} a {revision} : JSON invalide ({exc})"
+        ) from exc
 
 
 def tracked_notebooks(repo_root: Path) -> list[Path]:
@@ -1057,7 +1077,11 @@ def main(argv: list[str] | None = None) -> int:
                         )
                     )
             else:
-                base_payload = notebook_at(repo_root, base, relative)
+                try:
+                    base_payload = notebook_at(repo_root, base, relative)
+                except BaseReadError as exc:
+                    print(f"ERREUR : {exc}", file=sys.stderr)
+                    return 2
                 base_pins = (
                     pins_from_payload(base_payload, manifest)
                     if base_payload is not None
