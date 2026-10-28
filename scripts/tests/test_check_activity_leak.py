@@ -225,6 +225,60 @@ class TestNegativeControls(unittest.TestCase):
         v = judge_passage(0, url_ts)
         self.assertIn("iso_ts", {n for n, _, _ in v.markers})
 
+    def test_link_file_target_is_not_a_lesson_tag(self):
+        """FP mesure #23004 : tailles de reseau dans des liens de navigation.
+
+        Cellule « Pour aller plus loin » de Percolation-05 (PR #22153) : des
+        liens vers les carnets voisins de la serie. ``Percolation-03b-Critique-
+        L128-L256.ipynb`` porte L128 + L256 (4 points) et ``Percolation-03c-
+        Critique-L512.ipynb`` porte L512 (2 points) : 6 points sur 665
+        caracteres, densite 9/1000 au-dessus du seuil de 8 -- alors que le
+        passage ne contient aucune reference a un cycle de travail. C'est le
+        geste meme que la navigation d'une serie recommande.
+        """
+        para = (
+            "Pour aller plus loin : la transition vers la dimension 2 est "
+            "mesuree dans [Percolation-03b-Critique-L128-L256.ipynb]"
+            "(Percolation-03b-Critique-L128-L256.ipynb), et l'effondrement "
+            "a la plus grande taille dans [Percolation-03c-Critique-L512.ipynb]"
+            "(Percolation-03c-Critique-L512.ipynb)."
+        )
+        v = judge_passage(0, para)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertFalse(v.dense)
+
+    def test_file_target_mask_scoped_to_lesson_tag(self):
+        """Calibrage #23004 : le masque fichier ne touche aucun autre marqueur.
+
+        Voie 1 de l'issue : la cible du lien est masquee pour ``lesson_tag``
+        seulement. Un marqueur de coordination present dans le MEME passage
+        continue de compter -- le masque ne doit pas blanchir du recit de
+        cycle qui cacherait ses lecons derriere un nom de fichier.
+        """
+        para = (
+            "La lane a livre la tranche, voir "
+            "Percolation-03b-Critique-L128-L256.ipynb pour le compte rendu."
+        )
+        v = judge_passage(0, para)
+        self.assertNotIn("lesson_tag", {n for n, _, _ in v.markers})
+        self.assertIn("lane", {n for n, _, _ in v.markers})
+
+    def test_file_target_mask_leaves_bare_tag(self):
+        """Controle positif du fix #23004 : la forme NUE reste comptee.
+
+        Le masque couvre les CIBLES DE LIENS, pas la prose : un « L512 » ecrit
+        hors de tout nom de fichier reste un renvoi potentiel aux lecons et
+        doit continuer de compter. Sans ce test, un elargissement accidentel
+        du masque (par exemple a tout le texte autour d'un lien) eteindrait
+        le marqueur en silence.
+        """
+        para = (
+            "Nous avons applique les lecons L512 et L721 du registre avant "
+            "de livrer cette tranche."
+        )
+        v = judge_passage(0, para)
+        self.assertIn("lesson_tag", {n for n, _, _ in v.markers})
+
     def test_course_prose_clean(self):
         para = (
             "Monroe propose une regle proportionnelle stricte ou chaque elu "
