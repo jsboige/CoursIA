@@ -36,9 +36,20 @@ L'enrichissement markdown-only est dispensé de re-exécution (C.3) — ce qui e
 
 Mesuré firsthand (audit #10678 Phase 3, 2026-08-13) : une cellule d'interp cite souvent une valeur qui est dans un plot matplotlib / un DataFrame HTML / une cellule voisine, pas dans l'output texte adjacent. Exiger la valeur dans l'output adjacent produit **164 faux positifs pour ~1 vrai positif** sur `origin/main`. Un gate aussi bruyant formerait les reviewers à l'ignorer — pire que pas de gate. La précision d'abord : on shippe le check structurel (zero-FP) + le triage opt-in + **cette règle process** (le regard humain obligatoire reste le remède).
 
+## Ce que les deux audits de #10678 ont calibré
+
+L'audit de positionnement du 2026-08-13, puis son re-scan des interps en fin de carnet le 2026-08-15, ont mesuré ce que la mécanique peut voir. Deux résultats tiennent, et ils disent tous deux de **ne pas** traiter un écart de position comme un défaut :
+
+- **Un écart de position n'est pas un signal.** L'heuristique d'écart (`avant ≥ 3` et `après ≥ 3`, ou un seul des deux `≥ 5`) remonte des candidates, mais le motif `code → interp → def suivante` est légitime et en explique l'essentiel : le `def` ouvre un sous-bloc, l'interp commente bien le code qui la précède. Le motif naïf « la cellule suivante est un `def`/`class` » avait déjà dû être écarté pour la même raison.
+- **Une interp en fin de carnet n'est pas orpheline.** Les cellules sans cellule de code après elles ont été reprises une par une : toutes ferment la dernière section, et le verdict qui les laissait tranquilles était juste. Une seule cellule de l'épisode était réellement mal placée (`02-SemanticKernel-Advanced`, corrigée par #10705), et elle parlait d'un sujet **différent** du code voisin — le classificateur positionnel ne peut pas la voir, seule la lecture le peut.
+
+Conséquence pratique pour un reviewer : `gap_after = None` (aucune cellule de code après l'interp) est une **absence de voisin**, pas un orphelin ; et un `def`/`class` entre l'interp et le code suivant n'est pas un déplacement. Un scan se **classe avant d'être committé** : la confiance dans un « détecteur élargi » est précisément ce qui a produit ces faux positifs. Méthode, comptes et cas nommés restent dans les rapports, cités ci-dessous.
+
 ## Voir aussi
 
 - Epic **#10678** — remise en ordre + prévention (audit Phase 1, fix Phase 2 PyMC-15 #10685/#10686, cette règle Phase 3/4)
+- [2026-08-13-10678-interp-positioning-audit.md](../../docs/transients/2026-08-13-10678-interp-positioning-audit.md) — rapport de l'audit de positionnement (Phase 1) : périmètre balayé, heuristique d'écart, cas classés
+- [2026-08-15-10678-orphan-interp-scan.md](../../docs/transients/2026-08-15-10678-orphan-interp-scan.md) — rapport du re-scan des interps en fin de carnet (Phase 1b) : la calibration ci-dessus, cellule par cellule
 - [notebook-conventions.md](notebook-conventions.md) C.3 — scope des re-exécutions (exception markdown-only = l'angle mort)
 - [verify-before-claiming.md](verify-before-claiming.md) — l'agent enricher qui déclare « inséré après outputs » sans vérifier = claim non vérifié
 - `scan_cell_ordering.py` docstring — catégorie `INTERP_BEFORE_CODE` (structurel) vs `INTERP_OUTPUT_MISMATCH` (triage)
