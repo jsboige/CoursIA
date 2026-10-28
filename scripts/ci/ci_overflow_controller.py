@@ -185,6 +185,12 @@ DEFAULT_CONFIRM_SECONDS = 30.0
 # attendre 90 min la prolonge. La LIBERATION n'echappe jamais au dwell.
 DEFAULT_PANIC_MINUTES = 30.0
 
+# Age minimal d'un run de cohorte en file pour etre REORIENTE (annulation
+# puis relance) vers le parc local (volet (c) de #22937). Meme ordre de
+# grandeur que le seuil d'age de saturation : un run plus jeune n'a pas
+# encore consommé d'attente.
+DEFAULT_REORIENT_MIN_AGE = 15.0
+
 
 @dataclass
 class HostedSample:
@@ -264,6 +270,39 @@ class CohortSample:
     def charge(self) -> int:
         """Charge rendue : jobs de la cohorte en file et en cours."""
         return self.queued + self.in_progress
+
+
+@dataclass
+class Reorientation:
+    """Etat de la REORIENTATION de la file de cohorte deja constituee.
+
+    Le `runs-on` d'un job se resout a la CREATION du job : un run de cohorte
+    cree avant le basculement de la variable reste sur `ubuntu-latest` meme
+    apres le basculement (mesure du coordinateur, 28/10 17:15Z : 155 runs de
+    cohorte en file, tous crees avant le flip).
+
+    Le levier mesure (28/10 17:48Z, run 40707135271 de `docs-transients-guard`) :
+    **une RELANCE relit `vars.*`**. Le job d'origine (cree a 14:33Z, variable
+    a `false`) portait `labels: [ubuntu-latest]` ; le job recree par la
+    relance (17:48Z, variable a `true`) porte
+    `labels: [self-hosted, coursia-ephemeral, coursia-linux]` et a demarre
+    sur `myia-ai-01-wsl-4`. Annuler puis relancer un run reoriente donc son
+    job vers le parc local.
+
+    `candidates` : runs de cohorte en file (tous ages). `targets` : ceux
+    qui passent le seuil d'age ET la borne des slots libres. `reoriented` :
+    ceux dont l'annulation puis la relance ont reussi. `failed` : les autres,
+    avec le motif -- un echec partiel est nomme, jamais masque.
+    """
+
+    measured: bool = False
+    candidates: int = 0
+    targets: list = field(default_factory=list)
+    reoriented: list = field(default_factory=list)
+    failed: list = field(default_factory=list)
+    free_slots: int = 0
+    min_age_min: float = 0.0
+    reason: str = ""
 
 
 def hosted_margin(hosted: HostedSample, cap: int = HOSTED_CONCURRENCY_CAP) -> int:
@@ -1111,6 +1150,132 @@ def collect_cohort_charge(
     )
 
 
+def collect_queued_cohort_runs(
+    repo: str,
+    cohort_paths: set[str],
+    token: str | None,
+    max_pages: int = 5,
+) -> tuple[list[dict], bool, str]:
+    """Runs EN FILE dont le workflow appartient a la cohorte.
+
+    Le chemin du workflow est dans la reponse des runs (`path`) : le filtre
+    ne coute aucun appel de plus, et la liste des chemins de la cohorte est
+    DERIVEE du depot (jamais recopiee).
+
+    Rend `(lignes, complet, motif)`. `complet=False` quand un listing est
+    illisible : la reorientation est alors bloquee (fail-CLOSED) -- on ne
+    peut pas affirmer « la file de cohorte est connue » sur une lecture
+    partielle.
+    """
+    lines: list[dict] = []
+    if not cohort_paths:
+        return lines, False, "liste de la cohorte vide"
+    for page in range(1, max_pages + 1):
+        rc, out, err = _gh_api(
+            [
+                f"repos/{repo}/actions/runs?status=queued&per_page=100&page={page}"
+            ],
+            token=token,
+        )
+        if rc != 0:
+            message = (err or out or "").strip().splitlines()
+            return lines, False, (
+                "listing de la file illisible ("
+                + (message[-1] if message else "raison inconnue")
+                + ")"
+            )
+        try:
+            data = json.loads(out)
+        except json.JSONDecodeError:
+            return lines, False, "reponse non-JSON"
+        runs = data.get("workflow_runs") if isinstance(data, dict) else None
+        if not isinstance(runs, list):
+            return lines, False, "reponse inattendue"
+        for run in runs:
+            if not isinstance(run, dict):
+                continue
+            path = run.get("path")
+            if not isinstance(path, str) or path not in cohort_paths:
+                continue
+            run_id = run.get("id")
+            created = run.get("created_at")
+            if run_id is None or not isinstance(created, str):
+                continue
+            lines.append({"id": run_id, "path": path, "created_at": created})
+        if len(runs) < 100:
+            break
+    return lines, True, ""
+
+
+def select_reorientation_targets(
+    lines: list[dict],
+    free_slots: int,
+    min_age_minutes: float,
+    now: datetime,
+) -> list[dict]:
+    """Cibles de la reorientation : les plus ANCIENS d'abord, bornées par les
+    slots locaux libres.
+
+    La borne est le nombre de slots LIBRES mesure : chaque run reoriente
+    occupe un slot du parc local. Sans borne, une file de 155 runs
+    declencherait 155 jobs locaux d'un coup sur un parc de 22 slots -- le
+    parc local sature est exactement le symptome que le controleur combat.
+
+    Un run dont la date de creation est illisible est IGNORE (il ne peut
+    pas etre age) : reorienter un run d'age inconnu, c'est risquer de
+    reorienter un run qui vient de partir.
+    """
+    if free_slots <= 0:
+        return []
+    aged: list[dict] = []
+    for line in lines:
+        try:
+            stamp = datetime.fromisoformat(
+                str(line["created_at"]).replace("Z", "+00:00")
+            )
+        except (KeyError, ValueError):
+            continue
+        age = (now - stamp).total_seconds() / 60.0
+        if age < min_age_minutes:
+            continue
+        aged.append({**line, "age_min": round(age, 1)})
+    aged.sort(key=lambda row: (-row["age_min"], str(row["id"])))
+    return aged[:free_slots]
+
+
+def reorient_run(repo: str, token: str | None, run_id) -> tuple[bool, str]:
+    """ANNULE puis RELANCE un run : le job recree relit `vars.*`.
+
+    L'annulation precede la relance : un run encore en file n'accepte pas la
+    relance (`rerun` ne porte que sur un run termine ou annule). Mesure du
+    28/10 : le job recree porte les labels du parc local quand la variable
+    est a `true`.
+    """
+    rc, out, err = _gh_api(
+        [f"repos/{repo}/actions/runs/{run_id}/cancel"],
+        token=token,
+        method="POST",
+    )
+    if rc != 0:
+        message = (err or out or "").strip().splitlines()
+        return False, (
+            "annulation refusee : "
+            + (message[-1] if message else "raison inconnue")
+        )
+    rc, out, err = _gh_api(
+        [f"repos/{repo}/actions/runs/{run_id}/rerun"],
+        token=token,
+        method="POST",
+    )
+    if rc != 0:
+        message = (err or out or "").strip().splitlines()
+        return False, (
+            "relance refusee : "
+            + (message[-1] if message else "raison inconnue")
+        )
+    return True, "run annule puis relance"
+
+
 def render_summary(report: dict, rc: int) -> str:
     """Rend le resume du job (markdown) a partir du rapport JSON.
 
@@ -1173,6 +1338,18 @@ def render_summary(report: dict, rc: int) -> str:
             else "NON MESUREE (pas de seconde lecture)"
         ),
     ]
+    reorientation = report.get("reorientation", {})
+    if reorientation:
+        lines.append(
+            f"- reorientation : {len(reorientation.get('reoriented') or [])} "
+            f"run(s) de cohorte reoriente(s) vers le parc local, "
+            f"{len(reorientation.get('failed') or [])} en echec, "
+            f"{reorientation.get('candidates')} candidat(s) en file, "
+            f"{reorientation.get('free_slots')} slot(s) libre(s) "
+            f"(age seuil {reorientation.get('min_age_min')} min)"
+        )
+        if reorientation.get("reason"):
+            lines.append(f"  - motif : {reorientation.get('reason')}")
     degraded = [
         item for item in (report.get("write_blocked"), report.get("state_reason"))
         if item
@@ -1274,6 +1451,18 @@ def main(argv: list[str] | None = None) -> int:
             "dernier passage du controleur est plus recent, ce passage rend "
             "SKIPPED sans mesurer et sans ecrire (0 = pas de garde, le "
             "comportement d'un declenchement manuel)"
+        ),
+    )
+    parser.add_argument(
+        "--reorient-min-age",
+        type=float,
+        default=DEFAULT_REORIENT_MIN_AGE,
+        metavar="MINUTES",
+        help=(
+            "age minimal d'un run de cohorte en file pour etre reoriente "
+            "(annulation puis relance) vers le parc local (volet (c)) : "
+            "reorienter un run qui vient d'etre cree n'apporte rien, il "
+            "reparait deja le run seul"
         ),
     )
     parser.add_argument("--json", action="store_true")
@@ -1506,6 +1695,71 @@ def main(argv: list[str] | None = None) -> int:
                 decision.action = "REFUSED"
                 decision.reason = f"ecriture refusee : {write_error}"
 
+    # Volet (c) : REORIENTATION de la file de cohorte deja constituee.
+    # Le `runs-on` se resout a la creation du job : un run de cohorte cree
+    # avant le basculement reste sur l'offre hebergee. Le levier mesure est
+    # la RELANCE (elle relit `vars.*`, mesure du 28/10 17:48Z) -- donc
+    # annuler puis relancer, dans la limite des slots locaux libres.
+    # Rien n'est fait si la variable n'est pas a `true`, si la lecture des
+    # slots est tronquee, ou en mode dry-run.
+    effective = (decision.target if written else current) or ""
+    reorientation = Reorientation(
+        free_slots=local.free, min_age_min=args.reorient_min_age
+    )
+    if not cohort_paths:
+        reorientation.reason = (
+            "liste de la cohorte derivee du depot vide ou illisible "
+            f"({cohort_reason}) : aucune reorientation"
+        )
+    elif effective != "true":
+        reorientation.reason = (
+            f"variable {args.variable} a {effective or 'inconnue'!r} : le "
+            "levier de reorientation n'a de sens qu'a `true`"
+        )
+    elif not (local.complete and not local.truncated):
+        reorientation.reason = (
+            "lecture des slots locaux tronquee ou illisible "
+            f"({local.reason}) : aucune reorientation"
+        )
+    elif local.free <= 0:
+        reorientation.reason = "aucun slot local libre : rien a reorienter"
+    else:
+        lines, complete, reason = collect_queued_cohort_runs(
+            args.repo, cohort_paths, token
+        )
+        reorientation.measured = True
+        reorientation.candidates = len(lines)
+        if not complete:
+            reorientation.reason = reason
+        else:
+            targets = select_reorientation_targets(
+                lines, local.free, args.reorient_min_age, now
+            )
+            reorientation.targets = targets
+            if not targets:
+                reorientation.reason = (
+                    "aucun run de cohorte en file depuis plus de "
+                    f"{args.reorient_min_age:.0f} min"
+                )
+            elif not args.apply:
+                reorientation.reason = (
+                    f"{len(targets)} cible(s) identifiee(s) -- mode dry-run : "
+                    "aucune reorientation executee"
+                )
+            else:
+                for target in targets:
+                    ok, why = reorient_run(args.repo, token, target["id"])
+                    entry = {**target, "ok": ok, "reason": why}
+                    if ok:
+                        reorientation.reoriented.append(entry)
+                    else:
+                        reorientation.failed.append(entry)
+                reorientation.reason = (
+                    f"{len(reorientation.reoriented)} run(s) de cohorte "
+                    f"reoriente(s) vers le parc local, "
+                    f"{len(reorientation.failed)} en echec"
+                )
+
     report = {
         "verdict": decision.action,
         "reason": decision.reason,
@@ -1579,6 +1833,18 @@ def main(argv: list[str] | None = None) -> int:
             "workflows": len(local_paths),
             "derivation": local_paths_reason,
         },
+        # La REORIENTATION de la file de cohorte deja constitutee (volet (c)) :
+        # ce qui a ete vise, ce qui a ete reoriente, ce qui a echoue.
+        "reorientation": {
+            "measured": reorientation.measured,
+            "candidates": reorientation.candidates,
+            "targets": reorientation.targets,
+            "reoriented": reorientation.reoriented,
+            "failed": reorientation.failed,
+            "free_slots": reorientation.free_slots,
+            "min_age_min": reorientation.min_age_min,
+            "reason": reorientation.reason,
+        },
         "thresholds": {
             "saturation_jobs": args.saturation_jobs,
             "saturation_minutes": args.saturation_minutes,
@@ -1633,6 +1899,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  ecriture : REFUSEE -- {write_blocked}")
         if state_reason and not write_blocked:
             print(f"  etat     : {state_reason}")
+        print(
+            f"  reorient.: {len(reorientation.reoriented)} run(s) reoriente(s), "
+            f"{len(reorientation.failed)} en echec -- {reorientation.reason}"
+        )
 
     if decision.action == "UNREADABLE":
         rc = EXIT_UNREADABLE

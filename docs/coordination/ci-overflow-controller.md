@@ -334,6 +334,42 @@ Le dwell est passe de 30 a **90 min** (point Hermes du 2026-10-27, 12:53Z) : le 
 
 Le dwell amortit l'oscillation entre deux passages ; il ne cadenche pas, et il ne doit pas faire croire qu'une file revenue a la normale reste gouvernee par une decision d'il y a deux heures.
 
+## La reorientation de la file de cohorte deja constituee (volet (c))
+
+Le `runs-on` d'un job se resout **a la creation du job** : un run de cohorte cree avant
+le basculement de la variable reste sur l'offre hebergee, meme apres le basculement.
+Mesure du coordinateur (28/10 17:15Z) : **155 runs de cohorte en file, tous crees avant
+le flip de 16:55Z** -- le debordement ne sert que les jobs neufs.
+
+Le levier est la **relance**, et il est **mesure** (28/10 17:48Z, run `40707135271` de
+`docs-transients-guard`, sur la PR #23041 de la lane) :
+
+| etape | job d'origine (cree a 14:33Z, variable a `false`) | job recree par la relance (17:48Z, variable a `true`) |
+|---|---|---|
+| `labels` | `["ubuntu-latest"]` | `["self-hosted", "coursia-ephemeral", "coursia-linux"]` |
+| runner | `GitHub Actions 1000742860` | `myia-ai-01-wsl-4` |
+
+Une **relance relit `vars.*`** : le job recree est resolu avec la valeur COURANTE de la
+variable. L'organe applique donc ce geste, dans ses bornes :
+
+| garde | regle |
+|---|---|
+| variable | le levier n'a de sens qu'a `true` : a `false`, le job recree retombait sur l'heberge |
+| slots | la lecture des slots doit etre **complete et non tronquee** -- on ne borne pas par une borne qu'on n'a pas mesuree |
+| borne | **au plus le nombre de slots locaux libres** : chaque run reoriente occupe un slot ; 155 runs d'un coup sur 22 slots, c'est le symptome que l'organe combat |
+| age | un run en file depuis moins de `--reorient-min-age` (15 min) n'est pas reoriente : il se reparait tout seul |
+| perimetre | **seulement** les runs dont le workflow appartient a la cohorte (liste derivee du depot) : un workflow statique heberge n'entre pas dans la file de cohorte |
+| dry-run | `--apply` absent -> les cibles sont **annoncees**, aucune n'est executee |
+
+Le geste est **annulation puis relance** : un run encore en file n'accepte pas la
+relance. Il a droit `actions: write` (portee du job du controleur) ; le jeton
+d'ecriture de la variable (`ACTIONS_VARIABLES_PAT`) n'est **pas** utilise pour lui --
+ce sont deux canaux distincts, comme pour tout le reste.
+
+Chaque run vise est **journalise** dans le rapport JSON (`reorientation.reoriented`,
+`reorientation.failed` avec le motif) et dans le resume du job : un echec partiel est
+nomme, jamais masque.
+
 ## Voir aussi
 
 - [#22921](https://github.com/jsboige/CoursIA/pull/22921) — phase A, la forme hybride des 25 workflows ;
