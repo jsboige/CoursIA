@@ -103,8 +103,15 @@ jobs:
           printf '%s' "$PR_BODY" > pr_body.txt
 
           set +e
+          # `--advisory` : the per-cell annotations are emitted as
+          # `::warning`, not `::error`. The check keeps its exit code (1 on a
+          # stale cell), but this job is report-only BY DESIGN (see the
+          # header) -- an `::error` on a job that is green on purpose reads
+          # as a failure that never happened. The workflow's own annotation
+          # for the SAME condition is already a `::warning`; the two must
+          # not contradict each other.
           python scripts/notebook_tools/check_source_output_ratchet.py \
-            "$BASE" --body-file pr_body.txt | tee ratchet_output.txt
+            "$BASE" --body-file pr_body.txt --advisory | tee ratchet_output.txt
           RC=${PIPESTATUS[0]}
           set -e
 
