@@ -54,13 +54,37 @@ Environment=COURSIA_RUNNER_STATE_DIR=/var/lib/coursia-waiters-b
 Environment=COURSIA_RUNNER_WAITER_NAME_PREFIX=myia-ai-01-wsl-waiterb
 Environment=COURSIA_RUNNER_PINNED_CTX=/var/lib/coursia-runner/image-context
 Environment=COURSIA_RUNNER_BUDGET_GB=80
-ExecStart=/bin/bash /mnt/d/CoursIA/scripts/ci/docker/linux-runner/persist/coursia-waiters-start.sh 10
+# LE WRAPPER EST PINLE HORS ARBRE DE TRAVAIL (arbitrage `ai01-c2721-23037-budget`,
+# point 3, 2026-10-28).
+#
+# Avant : `ExecStart` pointait vers le wrapper du CLONE DE TRAVAIL partage
+# (`/mnt/d/CoursIA/scripts/ci/docker/linux-runner/persist/coursia-waiters-start.sh`).
+# Un checkout de branche dans D:\CoursIA changeait donc le code du pool a son
+# prochain redemarrage, et des sessions concurrentes partageaient cet arbre :
+# le code que le pool execute n'etait pas une version identifiee.
+#
+# Apres : le wrapper est deploye dans `/usr/local/bin`, hors de tout arbre de
+# travail, avec son empreinte sha256 consignee dans `persist/README.md`. Une
+# modification du clone ne touche plus le pool ; la version qui s'execute est
+# celle qui a ete deployee, et elle est identifiable.
+#
+# CE QUE CE PIN NE COUVRE PAS -- a lire avant de s'en servir comme d'un
+# correctif complet : le wrapper est un lanceur mince. Il fait `cd $REPO_DIR`
+# puis `exec ./scripts/ci/docker/linux-runner/supervise.sh waiters "$ARG"`.
+# Le code DU SUPERVISEUR reste donc lu dans l'arbre de travail partage. Le pin
+# fixe l'ENTREE du pool ; il ne fige pas le corps du superviseur. Pour que le
+# pin couvre toute la chaine, il faudrait epingler aussi `supervise.sh` et sa
+# fermeture de dependances (image de runner comprise) -- un geste d'un autre
+# ordre, mesure a faire. Ce qui est traite ici est le point que
+# l'arbitrage a nomme : l'unite ne doit plus appeler un script de l'arbre de
+# travail partage.
+ExecStart=/bin/bash /usr/local/bin/coursia-waiters-start.sh 10
 # ExecStop PASSE PAR LE WRAPPER (#15091) : c'est sa branche « stop » qui
 # repartage le MEME COURSIA_RUNNER_STATE_DIR que la boucle surveille, donc la
 # sentinelle atterrit dans le fichier que la sentinelle surveille. Un
 # ExecStop sans ce state dir poserait la sentinelle ailleurs et l'arret
 # gracieux serait inerte (rc=0 sans arret reel).
-ExecStop=/bin/bash /mnt/d/CoursIA/scripts/ci/docker/linux-runner/persist/coursia-waiters-start.sh stop
+ExecStop=/bin/bash /usr/local/bin/coursia-waiters-start.sh stop
 # Restart=on-failure, comme l'unite transitoire : un `master.env` illisible ou
 # un token revoque finit en `failed` visible, sous le plafond 5/600 s, au lieu
 # de marteler indefiniment.
