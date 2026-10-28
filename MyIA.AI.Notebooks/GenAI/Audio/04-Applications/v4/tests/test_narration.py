@@ -31,6 +31,7 @@ from v4.narration import (  # noqa: E402  (apres l'insertion de sys.path)
     DEFAULT_ROLE,
     PAUSE_MARKER,
     PAUSE_TEXT,
+    find_out_of_grammar_markers,
     parse_narration_script,
 )
 
@@ -97,3 +98,79 @@ def test_les_carnets_importent_l_organe_au_lieu_de_le_redefinir():
         source = "\n".join("".join(cell["source"]) for cell in nb["cells"])
         assert "def parse_narration_script" not in source, f"{name} redefinit le parseur"
         assert "from v4.narration import" in source, f"{name} n'importe pas l'organe"
+
+
+def _script_committe_04_6() -> str:
+    """Relit le script que la cellule 12 de 04-6 a reellement produit.
+
+    Le script n'est pas fige dans une fixture : c'est la **sortie committee** qui
+    est mesuree, donc celle que le lecteur du carnet voit. Une fixture se
+    desynchronise du carnet sans que rien ne le signale.
+    """
+    nb = json.loads((_APPS / "04-6-Audiobook-Pipeline.ipynb").read_text(encoding="utf-8"))
+    for cell in nb["cells"]:
+        for out in cell.get("outputs", []):
+            text = out.get("text") or (out.get("data", {}) or {}).get("text/plain") or []
+            text = "".join(text)
+            if "--- Script multi-voix ---" in text:
+                body = text.split("--- Script multi-voix ---", 1)[1]
+                return body.split("--- Fin du script ---", 1)[0].strip()
+    raise AssertionError(
+        "script committe introuvable dans 04-6 : la cellule 12 doit imprimer son "
+        "script entre les reperes '--- Script multi-voix ---' et '--- Fin du script ---'"
+    )
+
+
+def test_le_script_committe_de_04_6_respecte_la_grammaire():
+    """Le vrai script, pas un cas synthetique : c'est lui qui a revele le defaut.
+
+    Mesure du 2026-10-27 : le LLM avait ecrit ``[BOULE_DE_SUIF]`` la ou le prompt
+    demandait ``[PERSONNAGE_1]``. Le parseur ne le reconnaissait pas, la replique
+    restait au role precedent et ``voice_mapping`` la lisait avec la voix du
+    narrateur — sans erreur, sans trace.
+    """
+    script = _script_committe_04_6()
+    assert script, "le script committe est vide"
+
+    inconnus = find_out_of_grammar_markers(script)
+    assert inconnus == [], f"marqueurs hors grammaire dans le script committe : {inconnus}"
+
+    segments = parse_narration_script(script)
+    assert segments, "un script non vide doit produire au moins un segment"
+
+    replique = [s for s in segments if "Tenez, messieurs" in s["text"]]
+    assert replique, "la replique de Boule de Suif doit se retrouver dans un segment"
+    assert replique[0]["role"] != DEFAULT_ROLE, (
+        "la seule replique du texte ne doit pas etre lue par la voix du narrateur : "
+        f"role mesure = {replique[0]['role']}"
+    )
+
+
+def test_un_marqueur_hors_grammaire_est_signale_et_reste_au_role_precedent():
+    """Le defaut mesure, epingle : le detecteur le nomme, le parseur ne l'invente pas.
+
+    On n'elargit **pas** la grammaire a tout token majuscule : ``[MUSIQUE]`` ou
+    ``[BRUIT]`` en deviendraient des personnages. On rend le defaut visible.
+    """
+    script = (
+        "[NARRATEUR] Boule de Suif offrit son panier aux voyageurs affames.\n"
+        "[BOULE_DE_SUIF] Tenez, messieurs, je vous en prie.\n"
+    )
+    assert find_out_of_grammar_markers(script) == ["[BOULE_DE_SUIF]"]
+
+    segments = parse_narration_script(script)
+    assert len(segments) == 1
+    assert segments[0]["role"] == DEFAULT_ROLE
+    assert "Tenez, messieurs" in segments[0]["text"]
+
+
+def test_un_script_conforme_ne_signale_rien():
+    """Controle negatif du detecteur : sans lui, il signalerait tout et ne dirait rien."""
+    script = (
+        "[NARRATEUR] Il faisait nuit.\n"
+        "[PAUSE]\n"
+        "[PERSONNAGE_1] Vous partez deja ?\n"
+        "[EXPERT] Le theoreme tient.\n"
+    )
+    assert find_out_of_grammar_markers(script) == []
+

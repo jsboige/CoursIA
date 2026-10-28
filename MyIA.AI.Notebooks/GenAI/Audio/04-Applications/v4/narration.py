@@ -27,6 +27,15 @@ le role par defaut ``NARRATEUR`` (les deux carnets retombent de toute facon sur 
 voix du narrateur pour un role inconnu), et la garde qui ecarte un segment reduit
 a une pause.
 
+3. **Le producteur peut sortir de la grammaire.** Mesure sur le script committe
+   de 04-6 (sortie de la cellule 12, 2026-10-27) : le LLM a ecrit
+   ``[BOULE_DE_SUIF]`` — le nom du personnage — la ou le prompt demandait
+   ``[PERSONNAGE_1]``. Le parseur ne le reconnait pas, la replique reste au role
+   precedent, et ``voice_mapping`` la lit avec la voix du narrateur : l'audiobook
+   perd la seule ligne de dialogue de l'extrait, **sans aucune erreur**. Le
+   prompt de 04-6 impose desormais le marqueur, et
+   :func:`find_out_of_grammar_markers` rend le defaut visible quand il revient.
+
 Ce qui n'est **pas** extrait ici : la boucle de synthese (``voice_mapping`` +
 ``client.audio.speech.create``). Les deux carnets n'ont pas la meme gestion
 d'erreur par segment — 04-6 encapsule chaque appel dans un ``try/except`` et
@@ -43,6 +52,10 @@ from typing import Dict, List
 
 #: Marqueurs de role reconnus par le parseur — union des deux copies d'origine.
 ROLE_MARKER_RE = re.compile(r"\[(NARRATEUR|EXPERT|PERSONNAGE_\d+)\]")
+
+#: Tout token entre crochets, quelle que soit sa forme — pour reperer ce que la
+#: grammaire ne couvre pas. Ne sert jamais a la segmentation.
+ANY_MARKER_RE = re.compile(r"\[([^\[\]\n]{1,60})\]")
 
 #: Marqueur de pause, remplace dans le texte par ``PAUSE_TEXT``.
 PAUSE_MARKER = "[PAUSE]"
@@ -97,3 +110,25 @@ def parse_narration_script(
 
     _flush()
     return segments
+
+
+def find_out_of_grammar_markers(script: str) -> List[str]:
+    """Tokens entre crochets que la grammaire ne reconnait pas, hors pause.
+
+    Un script ecrit par un LLM peut porter un marqueur que le parseur ignore :
+    ``[BOULE_DE_SUIF]`` au lieu de ``[PERSONNAGE_1]`` (mesure sur le script
+    committe de 04-6). Le parseur a raison de ne pas le reconnaitre — elargir la
+    grammaire a tout token majuscule ferait de ``[MUSIQUE]`` un personnage — mais
+    il ne doit pas se taire : sans ce controle, la replique est attribuee au role
+    precedent et lue avec la voix du narrateur, sans erreur ni trace.
+
+    Args:
+        script: script complet, tel que produit par le LLM.
+
+    Returns:
+        Les marqueurs inconnus, tries et sans doublon. Liste vide : le script
+        respecte la grammaire.
+    """
+    known = {PAUSE_MARKER, *(f"[{m}]" for m in ROLE_MARKER_RE.findall(script))}
+    return sorted({f"[{m}]" for m in ANY_MARKER_RE.findall(script)} - known)
+
