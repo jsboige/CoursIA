@@ -98,10 +98,21 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     # moitie extraite d'always-on-guards.yml (meme garde anti-fork). Fichier
     # propre depuis le correctif de la PR #22244 : un workflow YAML rejete en
     # entier (contexte runner dans un env: de niveau job) ne doit pas emporter
-    # le umbrella des 16 organes avec lui. Reste sur le pool self-hosted Linux
-    # (les gardes ont migre, l'emetteur de commentaires garde le routage de la
-    # tranche 1b) : l'entree allowlist est donc requise pour lui.
-    "always-on-commenters.yml",
+    # le umbrella des 16 organes avec lui.
+    #
+    # 2026-10-28 (#22244, revue du coordinateur) : always-on-commenters.yml
+    #   SORT de l'allowlist. Il porte la forme hybride de debordement de main
+    #   (meme-depot && vars.CI_OVERFLOW_LOCAL == 'true' -> pool Linux, sinon
+    #   ubuntu-latest) : sa jambe locale n'est atteinte QUE si un operateur a
+    #   bascule la variable de depot. L'autorisation EST ce basculement (un
+    #   geste d'operateur sur le depot, reversible par `gh variable set
+    #   CI_OVERFLOW_LOCAL --body false`), et l'etat par defaut -- variable
+    #   absente ou false, etat mesure au 2026-10-28 -- le laisse entierement
+    #   heberge. L'entree d'allowlist ne ferait donc que DUPLIQUER cette
+    #   autorisation (cf. `operator_gated` dans `scan_workflows`) : elle est
+    #   retiree, et la regle devient « une jambe locale non conditionnee par
+    #   un operateur exige une entree d'allowlist ; une jambe de debordement
+    #   est autorisee par le basculement ».
     "pr-gate-stale-sweep.yml",
     "windows-self-hosted-tests.yml",
     "linux-self-hosted-tests.yml",
@@ -862,7 +873,7 @@ _HYBRID_PATTERN = re.compile(
 )
 
 
-def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
+def _hybrid_runs_on(runs_on: Any) -> dict[str, Any] | None:
     """Return the audited hybrid legs for ``runs_on``, or None if it is not
     one of the enumerated forms (#13363, then the #22461 overflow guard).
     The caller keeps the DYNAMIC_RUNS_ON rejection for every other
@@ -887,7 +898,11 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
         return None
     if labels not in allowed_label_sets:
         return None
-    return {"labels": labels}
+    # La garde qui a matche est rendue avec les labels : c'est elle qui dit
+    # si la jambe locale est atteignable par un simple push de meme depot
+    # (garde meme-depot) ou seulement apres un basculement d'operateur
+    # (garde de debordement #22461).
+    return {"labels": labels, "guard": guard}
 
 
 def _normalise_condition(value: Any) -> str:
@@ -1080,9 +1095,14 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                 labels = hybrid["labels"]
                 selection_error = None
                 hybrid_leg = True
+                # Une jambe de DEBORDEMENT (#22461) n'atteint le pool local
+                # que si un operateur a bascule vars.CI_OVERFLOW_LOCAL : son
+                # autorisation est ce geste, pas une entree d'allowlist.
+                operator_gated = hybrid["guard"] == HYBRID_RUNS_ON_OVERFLOW_GUARD
             else:
                 is_self_hosted, group, labels, selection_error = _runner_selection(runs_on)
                 hybrid_leg = False
+                operator_gated = False
                 if selection_error is not None:
                     broken.append(f"{path.name}:{job_name}: {selection_error}")
                     continue
@@ -1141,7 +1161,15 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                     + ", ".join(unknown_unsafe),
                 ))
 
-            if path.name not in SELF_HOSTED_WORKFLOW_ALLOWLIST:
+            if (
+                path.name not in SELF_HOSTED_WORKFLOW_ALLOWLIST
+                and not operator_gated
+            ):
+                # Fail-closed : une jambe locale atteignable par le seul
+                # push d'un meme depot exige une entree d'allowlist. La
+                # jambe de DEBORDEMENT est exemptee : son acces depend d'un
+                # basculement d'operateur sur la variable de depot (cf.
+                # `operator_gated`), et l'etat par defaut la laisse hebergee.
                 violations.append(Violation(
                     path.name,
                     str(job_name),

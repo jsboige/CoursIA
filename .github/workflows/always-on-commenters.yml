@@ -65,10 +65,19 @@ concurrency:
 jobs:
   always-on-commenters:
     name: "Always-on commenters -- 3 organes, 1 checkout"
-    # Meme routage et meme garde anti-fork que le job principal : une PR de
-    # fork n'a pas le droit d'ecrire chez nous, et le token read-only d'un
-    # fork ne pourrait pas poser de commentaire de toute facon.
-    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Meme garde anti-fork que le job principal : une PR de fork n'a pas le
+    # droit d'ecrire chez nous, et le token read-only d'un fork ne pourrait
+    # pas poser de commentaire de toute facon.
+    #
+    # 2026-10-28 (#22244, revue du coordinateur) : forme hybride de main
+    # (always-on-guards.yml l. 156) -- la jambe self-hosted n'est atteinte
+    # QUE si la PR vient du depot ET que vars.CI_OVERFLOW_LOCAL == 'true' ;
+    # sinon le job resout sur ubuntu-latest. Par defaut (variable absente ou
+    # false -- etat mesure au 2026-10-28 : CI_OVERFLOW_LOCAL=false), l'emetteur
+    # des commentaires est donc ENTIEREMENT heberge : le parc local etait sature
+    # PAR SES CHECKOUTS (mesure #22461, 27/10 00:45Z), et ce job reclonait le
+    # depot entier (fetch-depth: 0).
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     timeout-minutes: 15
     # Moindre privilege : `contents: read` pour le checkout, `checks: write`
@@ -99,7 +108,10 @@ jobs:
     steps:
       # Meme HEAL que le job principal (#15387) : le work dir du pool est
       # reutilise entre jobs, et un clone shallow fait echouer le
-      # `fetch-depth: 0` en silence.
+      # `fetch-depth: 0` en silence. SUR UN RUNNER HEBERGE l'etape est sans
+      # effet (workspace neuf a chaque run) -- elle reste parce que le job
+      # retombe sur le pool local quand vars.CI_OVERFLOW_LOCAL est basculee
+      # (forme hybride ci-dessus).
       - name: "Purger un work dir reutilise au graphe incomplet (#15387)"
         shell: bash
         run: |
