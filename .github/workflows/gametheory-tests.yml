@@ -101,10 +101,12 @@ jobs:
       # nashpy : exigé par tests/test_bayesian_equilibria.py (grain #22382,
       # equilibres bayesiens). Cf run 40261684555 : "ModuleNotFoundError:
       # No module named 'nashpy'" → error de COLLECTE (exit 2).
-      - name: Install minimal deps (numpy + scipy + matplotlib + nashpy + pytest)
+      # ortools : apporté par main pendant la vie de cette branche, conservé
+      # tel quel — cette PR n'a pas de raison de le retirer.
+      - name: Install minimal deps (numpy + scipy + matplotlib + pytest + nashpy + ortools)
         run: |
           python -m pip install --upgrade pip
-          pip install numpy scipy matplotlib nashpy pytest
+          pip install numpy scipy matplotlib pytest nashpy ortools
 
       - name: Run GameTheory tests
         # working-directory = racine du dépôt : pytest.ini y est, donc le
