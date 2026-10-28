@@ -1263,13 +1263,56 @@ def check_notebook(path: Path) -> dict:
     }
 
 
+_DECIMAL_TOKEN_RE = re.compile(r"(?<![\d.,])\d+[.,]\d+(?![\d,])")
+
+
+def _rounds_to_claim(norm: str, out_text: str) -> bool:
+    """True when an output number rounds to the claimed value.
+
+    The claim carries d decimals, so it is a rounding of an output number
+    iff ``|out - claim| <= 0.5 * 10**-d``. Both directions are load
+    bearing: a genuine rounding ('1.75' vs '1.7465') must match, and a
+    neighbouring value that rounds elsewhere ('1.75' vs '1.7565', nearest
+    2-decimal '1.76') must not -- the truncated-prefix test this replaces
+    answered 'no' then 'yes', i.e. exactly backwards.
+    """
+    if "." not in norm:
+        return False
+    decimals = len(norm.split(".", 1)[1])
+    try:
+        claim = float(norm)
+    except ValueError:
+        return False
+    half_ulp = 0.5 * 10 ** -decimals
+    for match in _DECIMAL_TOKEN_RE.finditer(out_text):
+        token = match.group(0).replace(",", ".")
+        # An output coarser than the claim cannot round UP to it: '1.7'
+        # never satisfies '1.75'.
+        # Known limitation, measured: the comma is read as a decimal point,
+        # so a thousand separator is matched as one -- '19.80' matches
+        # '19,798.0862' through the token '19,798' read as 19.798. The two
+        # readings are genuinely ambiguous in French output ('1,798' may be
+        # 1.798 or 1,798); deciding it needs its own change, not this one.
+        if len(token.split(".", 1)[1]) < decimals:
+            continue
+        try:
+            value = float(token)
+        except ValueError:
+            continue
+        if abs(value - claim) <= half_ulp + 1e-12:
+            return True
+    return False
+
+
 def _fuzzy_present(norm: str, out_text: str) -> bool:
     """A numeric claim may match output via several patterns:
       (a) prefix-of-output: '1.3' matches '1.3B' for magnitude (followed by
-          non-digit) -- '1.3' does NOT match '1.32 Go' (followed by digit
-          AND not at start of output).
-      (b) rounded-head: '0.24' matches '0.2385' (output's start IS a
-          TRUNCATION of the norm with a digit continuation).
+          non-digit). A prefix followed by a digit is NOT matched here --
+          '1.32 Go' is reached through clause (b), as a rounding, not as a
+          magnitude prefix.
+      (b) rounded value: '0.24' matches '0.2385' (the claim is the output
+          number rounded to the claim's own precision), anywhere in the
+          output -- not only at its start.
       (c) magnitude-prefix against comma-stripped output: '3.1' matches
           '3,145,728' (output has 3,145,728 = 3.1M, claim is the magnitude
           prefix when thousand separators are stripped).
@@ -1289,14 +1332,14 @@ def _fuzzy_present(norm: str, out_text: str) -> bool:
             if not after or not after.isdigit():
                 return True
             pos = i + 1
-    # Clause (b): output's start IS a TRUNCATION of the norm with digit
-    # continuation (norm rounded up to a finer-precision output).
-    if len(norm) >= 4:
-        truncated = norm[:-1]
-        if out_text.startswith(truncated):
-            after = out_text[len(truncated):len(truncated) + 1]
-            if after and after.isdigit():
-                return True
+    # Clause (b): an output number ROUNDS to the norm at the norm's own
+    # precision ('0.24' vs '0.2385'). Position-independent: the previous
+    # form only inspected the START of the output, so a value cited from a
+    # multi-row results table was never matched, and it accepted a
+    # neighbouring value that rounds elsewhere ('1.75' vs '1.7565' -> 1.76).
+    # Both directions are defects; measured on CoursIA #22769 == #11435.
+    if _rounds_to_claim(norm, out_text):
+        return True
     # Clause (c): norm is a magnitude prefix when output's thousand
     # separators are stripped (output "3,145,728" -> "3145728", norm
     # "3.1" -- treat the dot in the norm as a marker; we re-anchor the
