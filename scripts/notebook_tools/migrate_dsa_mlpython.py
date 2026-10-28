@@ -9,14 +9,16 @@ amendement WS retenu par ai-01, DM ai01-dispatch-17417-table-20260923) :
       aplanissement de 01-Python-For-Data-Science/notebooks/)
   T3  notebooks N.M<acc>-Titre -> <Prefixe>-<NN><acc>-<Titre>-<Noyau> (94 mappages ci-dessous)
 
-L'EXECUTION REELLE (git mv + reecritures) EST GEELEE tant que les PRs ouvertes
-tenant des lignes du hub ne sont pas tombees (gate de sequenceement #5.4 de
-l'EPIC). Ce script se livre donc en mode dry-run par defaut : il construit le
-plan complet, execute toutes les verifications fail-closed, et n'ecrit rien.
+SEQUENCEMENT PAR FICHIER (decision ai-01 2026-10-23 sur #17417, T2-b) : une PR
+ouverte ne retient que les fichiers du plan qu'elle touche (git mv et sweep
+confondus) -- un fichier tenu attend sa PR, les autres partent. Le gel sur le
+hub entier a ete retire : il ne se levait jamais, la flotte n'etant pas freinee.
+Ce script se livre en mode dry-run par defaut : il construit le plan complet,
+execute toutes les verifications fail-closed, et n'ecrit rien.
 
     python scripts/notebook_tools/migrate_dsa_mlpython.py                # dry-run complet
-    python scripts/notebook_tools/migrate_dsa_mlpython.py --report-gating  # + PRs gelantes (gh)
-    python scripts/notebook_tools/migrate_dsa_mlpython.py --apply        # execute (a ne lancer qu'hors gel)
+    python scripts/notebook_tools/migrate_dsa_mlpython.py --report-gating  # + fichiers retenus, par PR (gh)
+    python scripts/notebook_tools/migrate_dsa_mlpython.py --apply        # execute (saute les fichiers tenus)
 
 Modes inspires de la convention check_* du depot : sortie lisible par defaut,
 --json pour la machine. Le dry-run sort 0 si toutes les verifications passent,
@@ -382,11 +384,17 @@ def apply_sweep(reps: list[tuple[str, str]], paths: list[str]) -> int:
     return total
 
 
-def report_gating() -> list[str] | None:
-    """PRs ouvertes tenant des lignes du hub (best-effort via gh).
+def report_gating(concerned: set[str]) -> dict[str, list[str]] | None:
+    """Fichiers du plan retenus par des PRs ouvertes, PAR PR (best-effort via gh).
 
-    None = mesure impossible (gh absent ou en echec) : distinct de [] (mesure
-    faite, hub libre) -- l'appelant refuse --apply sur None (fail-closed)."""
+    Porte par fichier (decision ai-01 2026-10-23, #17417 T2-b) : une PR ouverte
+    ne retient que l'INTERSECTION entre ses fichiers et les fichiers concernes
+    par la migration (git mv du plan + sweep des referents) -- plus la seule
+    presence d'un fichier dans le hub, qui ne se levait jamais.
+
+    Rend {"#N": [chemins retenus tries]} ; {} = mesure faite, aucun fichier
+    tenu. None = mesure impossible (gh absent ou en echec) : l'appelant refuse
+    --apply sur None (fail-closed)."""
     try:
         out = subprocess.run(
             ["gh", "pr", "list", "-R", "jsboige/CoursIA", "--state", "open",
@@ -399,17 +407,18 @@ def report_gating() -> list[str] | None:
         print("[gating] gh absent -- mesure impossible")
         return None
     prs = json.loads(out.stdout or "[]")
-    holding = []
+    holding: dict[str, list[str]] = {}
     for pr in prs:
-        if any(f["path"].startswith(HUB_OLD) for f in pr.get("files", [])):
-            holding.append(f"#{pr['number']}")
+        held = sorted({f["path"] for f in pr.get("files", []) if f["path"] in concerned})
+        if held:
+            holding[f"#{pr['number']}"] = held
     return holding
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="Migration DataScienceWithAgents -> ML/ML.Python (#17417, gele tant que les PRs gelantes tiennent le hub)")
-    ap.add_argument("--apply", action="store_true", help="execute les git mv et reecritures (defaut: dry-run, aucune ecriture)")
-    ap.add_argument("--report-gating", action="store_true", help="liste les PRs ouvertes tenant le hub (via gh)")
+    ap = argparse.ArgumentParser(description="Migration DataScienceWithAgents -> ML/ML.Python (#17417, sequencement par fichier : un fichier tenu par une PR ouverte attend sa PR)")
+    ap.add_argument("--apply", action="store_true", help="execute les git mv et reecritures, en sautant les fichiers tenus par des PRs ouvertes (defaut: dry-run, aucune ecriture)")
+    ap.add_argument("--report-gating", action="store_true", help="liste, par PR ouverte, les fichiers du plan qu'elle retient (via gh)")
     ap.add_argument("--json", action="store_true", help="sortie machine")
     args = ap.parse_args(argv)
 
@@ -418,7 +427,6 @@ def main(argv: list[str] | None = None) -> int:
     reps = build_replacements(plan)
 
     measure = args.report_gating or args.apply
-    gating = report_gating() if measure else None
 
     if not args.json:
         print(f"=== PLAN : {len(plan)} fichiers {HUB_OLD} -> {HUB_NEW} ===")
@@ -428,6 +436,12 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {old} -> {new}{marker}")
         print(f"\n=== SWEEP referents ({len(reps)} regles de remplacement, ordre longueur decroissante) ===")
     touched, total = run_sweep(reps)
+    gating = None
+    if measure:
+        # Fichiers que la migration toucherait : git mv du plan + referents sweep.
+        # Une PR ouverte ne retient que cette intersection (porte par fichier).
+        concerned = {old for old, _ in plan} | set(touched)
+        gating = report_gating(concerned)
     if not args.json:
         print(f"--- {len(touched)} fichiers referents touches, {total} occurrences a reecrire ---")
         for path, n in sorted(touched.items(), key=lambda kv: -kv[1]):
@@ -440,12 +454,16 @@ def main(argv: list[str] | None = None) -> int:
             print("  toutes les verifications passent (collisions, cibles, kernelspecs, couverture notebooks)")
         if measure:
             if gating is None:
-                print("\n=== PRs GELANTES : mesure impossible (fail-closed) ===")
+                print("\n=== FICHIERS RETENUS : mesure impossible (fail-closed) ===")
             elif gating:
-                print(f"\n=== PRs GELANTES tenant le hub ({len(gating)}) ===")
-                print("  " + ", ".join(gating))
+                n_held = sum(len(v) for v in gating.values())
+                print(f"\n=== FICHIERS RETENUS par des PRs ouvertes ({len(gating)} PRs, {n_held} fichiers -- attendent leur PR) ===")
+                for pr_id in sorted(gating, key=lambda k: int(k[1:])):
+                    print(f"  {pr_id} retient {len(gating[pr_id])} fichier(s) :")
+                    for f in gating[pr_id]:
+                        print(f"    {f}")
             else:
-                print("\n=== PRs GELANTES : aucune (le hub est libre) ===")
+                print("\n=== FICHIERS RETENUS : aucun (aucune PR ouverte ne touche le plan) ===")
         print(f"\nmode {'APPLY' if args.apply else 'DRY-RUN (aucune ecriture)'}")
 
     if args.json:
@@ -461,18 +479,27 @@ def main(argv: list[str] | None = None) -> int:
         if gating is None:
             print("REFUS : mesure des PRs gelantes impossible (gate #5.4 fail-closed) -- aucun git mv execute.")
             return 1
-        if gating:
-            print("REFUS : des PRs ouvertes tiennent le hub (gate #5.4) -- aucun git mv execute.")
-            return 1
+        held = {f for files in gating.values() for f in files}
+        plan_free = [(old, new) for old, new in plan if old not in held]
         # Ordre : git mv d'abord, puis sweep -- apres le mv, `git ls-files` liste
         # le hub a ses NOUVEAUX chemins (navlinks internes relatifs reecrits la),
-        # les referents externes a leurs chemins inchanges.
-        for old, new in plan:
+        # les referents externes a leurs chemins inchanges. Les fichiers tenus ne
+        # sont ni mv ni sweep : leur PR ouverte les tient a leur chemin actuel.
+        for old, new in plan_free:
             git("mv", old, new)
         all_paths = sweep_files()
-        n_out = apply_sweep(reps, [f for f in all_paths if not f.startswith(HUB_NEW)])
-        n_hub = apply_sweep(reps, [f for f in all_paths if f.startswith(HUB_NEW)])
-        print(f"APPLIQUE : {len(plan)} git mv + sweep ({n_out} referents externes + {n_hub} fichiers du hub reecrits). Aucun commit -- la lane reviewe puis commit.")
+        free_paths = [f for f in all_paths if f not in held]
+        n_out = apply_sweep(reps, [f for f in free_paths if not f.startswith(HUB_NEW)])
+        n_hub = apply_sweep(reps, [f for f in free_paths if f.startswith(HUB_NEW)])
+        if held:
+            print(f"ATTENDENT leur PR ({len(held)} fichiers, porte par fichier -- #17417 T2-b) :")
+            for pr_id in sorted(gating, key=lambda k: int(k[1:])):
+                for f in gating[pr_id]:
+                    print(f"  {pr_id}: {f}")
+        if not plan_free and n_out == 0 and n_hub == 0:
+            print("REFUS : tous les fichiers du plan sont retenus par des PRs ouvertes -- rien n'a ete applique.")
+            return 1
+        print(f"APPLIQUE : {len(plan_free)}/{len(plan)} git mv + sweep ({n_out} referents externes + {n_hub} fichiers du hub reecrits). Aucun commit -- la lane reviewe puis commit.")
     return 0
 
 
