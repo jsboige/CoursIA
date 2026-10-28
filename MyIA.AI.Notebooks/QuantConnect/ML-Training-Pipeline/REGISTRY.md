@@ -70,6 +70,8 @@ Updated: 2026-10-08 — P15294 re-run probe GRPO sur Hermes-function-calling-v1 
 
 Updated: 2026-10-10 — P15294 verdict de paire 2B vs 0.8B (issue #15294 acceptances 2 et 3 closes, lane myia-po-2024:CoursIA-2) : **le classement 2B > 0.8B tient en tendance sur la tâche calibrée — MiniCPM5-2B +0,4313 ± 0,0000 (réplication stricte, 0,2125→0,6438 et 0,2500→0,6813) vs Qwen3.5-0.8B +0,2500 ± 0,1875** ; contrôle de dégénérescence passé (le no-op eos des runs m19 ne s'est pas reproduit : `grad_norm` non nul sur 63-66 % des steps, loss strictement positive sur 30-33 %, entropy décroissante, complétions d'entraînement seed 1 350→136 = apprentissage d'EOS, aucune chute de longueur à l'eval 319→403 / 326→437) ; wallclock cumulé ~3,9× inférieur (18 344 s vs 70 717 s). **À n=2 par modèle, tendance convergente, pas un verdict BEATS formel** (protocole ≥ 4 seeds). Le BEATS M19 sur DAPO était un double artefact : casting + gradient nul eos. Manifestes `scripts/results/p15294_hermes_grpo/minicpm5_seed{0,1}.json` (chaîne GPU 2, lane myia-ai-01:CoursIA-2). Détail section P15294 verdict de paire + `docs/P15294_SMALL_MODEL_RL_DATASETS.md`.
 
+Updated: 2026-10-26 — P15293 bras >= 8-9B entrée §C (issue #15293, lane myia-ai-01:CoursIA-2) : **aucun verdict BEATS à ce budget — acceptance non remplie** (un backbone complet à trois graines + un smoke). Bras Qwen3-8B : graines 0, 1, 7 complètes aux agrégats committés, toutes progressent à l'éval held-out 160 générations (0,04375→0,10625 · 0,0625→0,14375 · 0,0375→0,05) ; graines 42 et 99 interrompues sans agrégat (motifs #1454 — non chiffrées ici). Smoke Qwen3-14B (3 steps, budget 384) ancré : **aucun signal** — loss et grad_norm nuls, pre/post eval identiques (reward_mean 0,03125 sur 32 générations), entropy 0,2297 à la step 3, saturation **partielle et fluctuante** (clipped_ratio 1,0/1,0/0,78125, mean_terminated_length 318,71) ; coût 3 183 s / 3 steps = 1 061 s/step, soit ~29,5 h par graine de 100 steps. Détail `docs/P15293_GRPO_8B_14B.md` + agrégats `scripts/results/m19_minicpm5_grpo/`.
+
 Total checkpoints: 70 (20 legacy ARCHIVED + 50 panier baselines)
 
 ## P15294 Hermes GRPO — Qwen3.5-0.8B 2/2 seeds (2026-10-08) — issue #15294
@@ -137,6 +139,27 @@ reproductible (0,644/0,681 vs 0,269/0,606), wallclock cumulé ~3,9× inférieur.
 la claim M19 « 2B > 0.8B » sur DAPO était un double artefact (casting + gradient
 nul eos) — sur Hermes corrigée, les deux backbones produisent du signal RL réel
 et la première mesure non artefactée de la paire confirme le sens observé.
+
+## P15293 bras >= 8-9B — graines Qwen3-8B et smoke Qwen3-14B (2026-10-26) — issue #15293
+
+Reprise de la probe B (#15099) à l'échelle : même harnais
+`scripts/probe_15099_dapo_grpo.py`, même recette GRPO+QLoRA NF4 r16
+non-thinking, budget de completion 384, runs sur le GPU 2 de ai-01 (file
+#1454). Agrégats versionnés dans `scripts/results/m19_minicpm5_grpo/`,
+adapters et séries complètes hors dépôt (`D:/Dev/probe15099_runs`).
+
+| Graine 8B | pre-eval | post-eval | longueur eval | wallclock | Agrégat |
+|---|---|---|---|---|---|
+| 0 | 0,04375 | 0,10625 | 1028,83 → 788,33 | 17 217,6 s | `qwen3_8b_seed0.json` |
+| 1 | 0,0625 | 0,14375 | 1026,82 → 511,68 | 18 228,8 s | `qwen3_8b_seed1.json` |
+| 7 | 0,0375 | 0,05 | 1020,33 → 1001,84 | 19 793,8 s | `qwen3_8b_seed7.json` |
+
+Le smoke 14B (`qwen3_14b_seed0_smoke.json`, 3 steps) ne produit aucun signal :
+loss/grad_norm nuls sur les steps tracées, éval pré/post identique (0,03125 sur
+32 générations), saturation partielle et fluctuante (clipped_ratio
+1,0/1,0/0,78125), 1 061 s/step (3 183 s / 3 steps) soit ~29,5 h par graine de
+100 steps. Graines 42 et 99 : runs interrompus sans agrégat, motifs dans
+#1454, non chiffrées. Détail dans `docs/P15293_GRPO_8B_14B.md`.
 
 ## M18 TimesFM 2.5 — revalidation cluster 7 actifs (2026-10-03) — Epic #1454
 

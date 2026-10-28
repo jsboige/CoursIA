@@ -214,12 +214,41 @@ repos:
           Catches the "stale path" class measured in KNOTS-01 (post-#20134 V5.3)
           where a cell cites a module that has moved, been renamed, or never
           existed at the claimed location. Pre-commit refuses the commit on
-          any mismatch; KNOTS-01 currently passes (paths resolved at head
-          `b73a74cc3f94`). Scope is KNOTS-01 only (filter `Lean/KNOTS/`);
-          generalisation to KNOTS-02+ and other Lean series is the (B) arm
-          (audit NanoClaw, follow-up). See #21007.
+          any mismatch. Scope is KNOTS-01 only (filter `Lean/KNOTS/`); the
+          classes 2 and 3 of the same issue are carried by the sibling hook
+          `knots-extracts-class23` below. See #21007.
         entry: python scripts/notebook_tools/check_knots_extracts.py
         language: system
         pass_filenames: true
         files: '^MyIA\.AI\.Notebooks/SymbolicAI/Lean/KNOTS/.*\.ipynb$'
+        stages: [pre-commit]
+
+      - id: knots-extracts-class23
+        name: '#21007 — refuse stale node identities and stale TODOs in KNOTS notebooks (classes 2, 3)'
+        description: |
+          Implements the (B) arm of #21007 (KNOTS), the two classes the
+          class-1 hook above cannot see: a cell that attributes to a Lean
+          module a node identity that module does not model (class 2,
+          founder instance: KNOTS-01 cell 16 claimed "FigureEight.lean
+          (noeud 8_1)" while the module models 4_1), and a cell that asserts
+          a name is not yet defined while the head defines it (class 3,
+          founder instance: KNOTS-01 cell 23 declared 11n102's PD-code "pas
+          encore entre" while ``knot_11n102_diagram`` exists with
+          ``numEdges := 22``). The organ derives ground truth from the Lean
+          tree itself (declarations and node numbers per module), so it
+          detects the class, not just its two founder instances. Compared
+          against the real tree, the founder claims both fire and the 4
+          KNOTS notebooks are clean; a naive identifier rule would have
+          produced 2 false positives on 2 candidates (``trefoil`` and
+          ``existe`` are ordinary words that are also ``def`` names), hence
+          the underscore discriminant, and cell-scoped node matching would
+          have flagged KNOTS-01 cell 16's architecture tree, hence line
+          scoping. It fires on notebook edits AND on Lean edits, because a
+          module change can stale an untouched notebook. Read-only; run
+          ad hoc with ``python scripts/notebook_tools/scan_knots_extracts.py``.
+          See #21007.
+        entry: python scripts/notebook_tools/scan_knots_extracts.py
+        language: system
+        pass_filenames: false
+        files: '^MyIA\.AI\.Notebooks/SymbolicAI/Lean/KNOTS/.*\.(ipynb|lean)$'
         stages: [pre-commit]

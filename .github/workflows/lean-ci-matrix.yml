@@ -112,9 +112,9 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain'
       # iit_lean (#18599, sans Mathlib — proxy relationnel IIT)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/IIT/iit_lean/**.lean'
+      - 'MyIA.AI.Notebooks/IIT/iit_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/IIT/iit_lean/lean-toolchain'
       # serre100_lean (#17336)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean'
@@ -172,6 +172,10 @@ on:
       - '.github/actions/lean-build/action.yml'
       - 'scripts/lean/ci_lakes.json'
       - 'scripts/lean/lake_matrix_dispatch.py'
+      # Le lecteur de fichiers modifies EST le gate de dispatch : s'il
+      # change, la detection change -> tous les lakes rejouent (#22065).
+      - 'scripts/lean/lean_matrix_changed_files.py'
+      - 'scripts/lean/tests/test_lean_matrix_changed_files.py'
       - 'scripts/ci/check_lake_matrix_paths.py'
       - '.github/actions/lean-axiom/action.yml'
       - 'scripts/lean/axiom_check_step.py'
@@ -248,9 +252,9 @@ on:
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lakefile.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/tegmark_muh_lean/lean-toolchain'
       # iit_lean (#18599, sans Mathlib — proxy relationnel IIT)
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/**.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/lakefile.lean'
-      - 'MyIA.AI.Notebooks/SymbolicAI/Lean/iit_lean/lean-toolchain'
+      - 'MyIA.AI.Notebooks/IIT/iit_lean/**.lean'
+      - 'MyIA.AI.Notebooks/IIT/iit_lean/lakefile.lean'
+      - 'MyIA.AI.Notebooks/IIT/iit_lean/lean-toolchain'
       # serre100_lean (#17336)
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/**.lean'
       - 'MyIA.AI.Notebooks/SymbolicAI/Lean/Serre100/serre100_lean/lakefile.lean'
@@ -307,6 +311,10 @@ on:
       - '.github/actions/lean-build/action.yml'
       - 'scripts/lean/ci_lakes.json'
       - 'scripts/lean/lake_matrix_dispatch.py'
+      # Le lecteur de fichiers modifies EST le gate de dispatch : s'il
+      # change, la detection change -> tous les lakes rejouent (#22065).
+      - 'scripts/lean/lean_matrix_changed_files.py'
+      - 'scripts/lean/tests/test_lean_matrix_changed_files.py'
       - 'scripts/ci/check_lake_matrix_paths.py'
       - '.github/actions/lean-axiom/action.yml'
       - 'scripts/lean/axiom_check_step.py'
@@ -332,38 +340,30 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
-      - name: Changed files for this event
-        run: |
-          set -eu
-          out="$RUNNER_TEMP/changed.txt"
-          case "${{ github.event_name }}" in
-            pull_request)
-              gh api --paginate "repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files" \
-                --jq '.[].filename' > "$out" || echo -n "" > "$out"
-              ;;
-            push)
-              before="${{ github.event.before }}"
-              sha="${{ github.sha }}"
-              if [ "${before:0:7}" = "0000000" ]; then
-                # Nouvelle histoire de branche : on ne peut pas differencer -> tout.
-                echo ".github/workflows/lean-ci-matrix.yml" > "$out"
-              else
-                gh api "repos/${{ github.repository }}/compare/${before}...${sha}" \
-                  --jq '.files[].filename' > "$out" || echo -n "" > "$out"
-              fi
-              ;;
-            workflow_dispatch)
-              # Self-cover -> tous les lakes du manifeste.
-              echo ".github/workflows/lean-ci-matrix.yml" > "$out"
-              ;;
-          esac
-          echo "--- changed files (${{ github.event_name }}) ---"
-          cat "$out"
+      # Le checkout passe AVANT la lecture (#22065) : la lecture est
+      # desormais un script du depot, pas une ligne de shell. Un repli
+      # muet y etait possible (`|| echo -n "" > "$out"`) : un 403 de
+      # quota vidait la liste des fichiers modifies, donc `any=false`,
+      # donc le build Lean etait `skipped` -- et `skipped` se lit comme
+      # un vert. Un build Lean qui n'a pas eu lieu s'affichait comme
+      # fait (instance #21999, run 39814286963).
       - name: Checkout (dispatch script + manifest only)
         uses: actions/checkout@v4
         with:
           sparse-checkout: |
             scripts/lean
+      - name: Changed files for this event
+        run: |
+          set -eu
+          python3 scripts/lean/lean_matrix_changed_files.py \
+            --event "${{ github.event_name }}" \
+            --repo "${{ github.repository }}" \
+            --pr "${{ github.event.pull_request.number }}" \
+            --before "${{ github.event.before }}" \
+            --sha "${{ github.sha }}" \
+            --out "$RUNNER_TEMP/changed.txt"
+          echo "--- changed files (${{ github.event_name }}) ---"
+          cat "$RUNNER_TEMP/changed.txt"
       - name: Dispatch lakes from manifest
         id: dispatch
         run: |
