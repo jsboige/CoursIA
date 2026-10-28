@@ -1,0 +1,153 @@
+{
+  "schema_version": 1,
+  "description": "Versions canoniques des bibliotheques chargees par les cellules des carnets (organe #23073). Quand un organe de serie fixe deja la version, le manifeste POINTE vers lui (canonical_source=organ) et ne recopie pas la valeur : deux surfaces qui recopient la meme valeur finissent par diverger.",
+  "libraries": [
+    {
+      "id": "Tweety",
+      "ecosystem": "tweety",
+      "canonical_source": "organ",
+      "organ_path": "MyIA.AI.Notebooks/SymbolicAI/Tweety/scripts/download_tweety_tools.py",
+      "organ_symbol": "TWEETY_VERSION",
+      "local_symbol": "TWEETY_VERSION",
+      "foreign_provisioning": [
+        {
+          "pattern": "tweetyproject\\.org/builds/",
+          "reason": "Source de provisionnement hors de l'organe de serie : le chemin tweetyproject.org/builds/<version>/ repond 404 depuis #12789 ; l'organe de serie telecharge depuis Maven Central (TWEETY_MAVEN_BASE). C'est le cas declencheur de #23047 (archive : TWEETY_VERSION redeclaree a 1.28 dans le carnet)."
+        }
+      ]
+    },
+    {
+      "id": "IKVM",
+      "ecosystem": "nuget",
+      "canonical": "8.15.0",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "8.14.0",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : #19673 a aligne la serie sur 8.15.0 ; six carnets de la serie Tweety sont restes en 8.14.0. Le classement « a converger » est la lecture par defaut ; un epinglage voulu doit etre justifie par une entree d'allowlist."
+        }
+      ]
+    },
+    {
+      "id": "IKVM.Image",
+      "ecosystem": "nuget",
+      "canonical": "8.15.0",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "8.14.0",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : meme vague que IKVM 8.14.0 (#19673), meme constat de derivation."
+        }
+      ]
+    },
+    {
+      "id": "pythonnet",
+      "ecosystem": "nuget",
+      "canonical": "3.1.0",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "3.0.5",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : la serie IKVM 8.15.0 s'accompagne de pythonnet 3.1.0 ; l'epingle 3.0.5 n'a pas de motif ecrit dans le depot."
+        }
+      ]
+    },
+    {
+      "id": "Google.OrTools",
+      "ecosystem": "nuget",
+      "canonical": "9.15.6755",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "9.11.4210",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : la version 9.11.4210 est la plus repandue (24 occurrences mesurees sur origin/main au 2026-10-28) et la 9.15.6755 n'est posee que par 6 ; l'ecart n'a pas de motif ecrit dans le depot, donc il est classe « a converger » et non « justifie »."
+        }
+      ]
+    },
+    {
+      "id": "dotNetRDF",
+      "ecosystem": "nuget",
+      "canonical": "3.4.1",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "3.2.1",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : aucune entree d'allowlist ni motif ecrit ne rattache l'epingle 3.2.1 a une contrainte de la serie."
+        },
+        {
+          "version": "3.4.0",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : meme constat que 3.2.1."
+        },
+        {
+          "version": "3.2.0",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : meme constat que 3.2.1."
+        }
+      ]
+    },
+    {
+      "id": "Microsoft.ML",
+      "ecosystem": "nuget",
+      "canonical": "5.0.0",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "3.0.0",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : Microsoft.ML 5.0.0 est l'epingle dominante ; 3.0.0 n'a pas de motif ecrit."
+        },
+        {
+          "version": "1.7.1",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : 1.7.1 n'a pas de motif ecrit dans le depot."
+        }
+      ]
+    },
+    {
+      "id": "SkiaSharp",
+      "ecosystem": "nuget",
+      "canonical": "3.119.4",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "2.88.3",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : SkiaSharp 3.119.4 est l'epingle dominante ; 2.88.3 n'a pas de motif ecrit."
+        }
+      ]
+    },
+    {
+      "id": "Microsoft.ML.AutoML",
+      "ecosystem": "nuget",
+      "canonical": "0.23.0",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "0.22.3",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : l'issue signale qu'un AutoML ancien peut etre requis par un ML.NET plus ancien -- mais aucun carnet du depot ne charge Microsoft.ML 3.0.0 avec AutoML 0.22.3 de maniere documentee, donc le motif n'est pas etabli et l'ecart reste a converger."
+        }
+      ]
+    },
+    {
+      "id": "CsvHelper",
+      "ecosystem": "nuget",
+      "canonical": "33.0.1",
+      "canonical_source": "manifest",
+      "divergences": [
+        {
+          "version": "27.1.1",
+          "decision": "to_converge",
+          "reason": "Ecart non justifie : aucune dependance documentee a CsvHelper 27.x dans le depot."
+        }
+      ]
+    }
+  ],
+  "allowlist": []
+}
