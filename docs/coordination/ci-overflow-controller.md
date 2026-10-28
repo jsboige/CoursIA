@@ -48,8 +48,8 @@ hebergee. Les compter comme charge rendue etait le defaut de la vague 2 : des tr
 jobs statiques en cours -- le regime normal d'une journee de PRs -- la liberation
 n'avait plus jamais lieu, la variable restait a `true` et la cohorte tournait en local
 meme quand l'heberge etait vide. Le pendule de la version precedente etait devenu un
-**verrou** (review du coordinateur, 28/10 : 29 fichiers de workflow lisent
-`CI_OVERFLOW_LOCAL`, 97 lignes `runs-on` sont statiquement sur le pool local).
+**verrou** (review du coordinateur, 28/10 : les workflows qui lisent
+`CI_OVERFLOW_LOCAL` gardent un `runs-on` statique sur le pool local).
 
 #### D'ou vient la liste de la cohorte
 
@@ -66,8 +66,8 @@ aussi dans la prose, et ranger son propre workflow dans la cohorte compterait un
 retirees avant la recherche, pour la meme raison : un en-tete qui cite la forme exacte
 (`vars.CI_OVERFLOW_LOCAL`) ne fait pas du workflow un membre de la cohorte. Le job de
 ce workflow, dont le `runs-on` est statique sur le pool local, n'est donc jamais dans
-la cohorte qu'il mesure -- verifie sur le depot : 28 workflows derives, le controleur
-exclu, contre les 29 fichiers qui citent la variable.
+la cohorte qu'il mesure -- verifie sur le depot : les workflows derives excluent le
+controleur lui-meme, qui cite la variable sans la lire.
 
 Une liste **vide** ou **illisible** (repertoire absent, fichier non lisible) n'est pas
 « une cohorte qui ne rend rien » : c'est une mesure **illisible**, et le verdict est
