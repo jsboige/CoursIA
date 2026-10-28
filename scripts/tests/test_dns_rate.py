@@ -639,3 +639,78 @@ def test_socket_absent_prime_depuis_main(monkeypatch, capsys):
     assert code == 2
     assert payload["status"] == STATUS_UNREADABLE
     assert "socket du moteur natif absent" in payload["reason"]
+
+
+def test_slot_liste_mais_jamais_lu_ne_rend_pas_un_ok(monkeypatch, capsys):
+    """De bout en bout : 14 slots listes, 13 lus, 1 jamais lu -> WARN.
+
+    Au head, un slot liste dont le `docker exec` echoue a chaque tour sortait
+    de TOUS les champs structures -- ni `coverage.by_slot`, ni
+    `missing_samples`, ni `slots_expected_missing` -- et `pool_complete`
+    restait `true`. L'organe publiait alors « 0 requete/s, OK » sur un parc
+    dont il n'avait pas lu un slot : le « zero non mesure » que le document
+    promet de ne jamais rendre, au seuil de fermeture de 1 q/s.
+
+    Ce test rougit au head et verdit au remede.
+    """
+    listing = {f"myia-ai-01-wsl-{i}": f"{i:04x}" for i in range(1, 15)}
+    mesure = Measurement(times=[0.0, 1.0, 2.0], totals=[0.0, 0.0, 0.0])
+    mesure.slots = [f"myia-ai-01-wsl-{i}" for i in range(1, 14)]
+    mesure.counters_read = 13
+    mesure.missing_samples = {}
+    mesure.average_qps = 0.0
+    mesure.datagrams_total = 0
+    monkeypatch.setattr(organ, "measure", lambda *a, **k: (
+        mesure, "", "myia-ai-01-wsl-14 : docker exec a echoue (rc=1)",
+        dict(listing)))
+    monkeypatch.setattr(organ, "count_slots_on_default_engine",
+                        lambda *a, **k: 14)
+    code = organ.main(["--json", "--name-prefix", "myia-ai-01-wsl",
+                       "--expected-slots", "14", "--window", "1",
+                       "--docker-host", "tcp://127.0.0.1:2375"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["status"] == STATUS_MEASURED
+    assert payload["verdict"] == STATUS_WARN
+    # Le slot listee et jamais lu est nomme partout ou il doit l'etre.
+    assert payload["slots_listed_never_read"] == ["myia-ai-01-wsl-14"]
+    assert payload["pool_complete"] is False
+    assert "myia-ai-01-wsl-14" in payload["coverage"]["degraded"]
+    assert payload["missing_samples"]["myia-ai-01-wsl-14"] == 3
+    assert any("jamais lu" in r for r in payload["reserves"])
+    # Le listing et les compteurs lus restent deux choses distinctes.
+    assert len(payload["slots_seen"]) == 14
+    assert len(payload["slots"]) == 13
+
+
+def test_pool_incomplet_ressort_de_bout_en_bout(monkeypatch, capsys):
+    """De bout en bout : 12 slots vus sur 14 attendus -> reserve + rc 1.
+
+    Le chemin des RESERVES n'etait couvert par aucun test de bout en bout :
+    les trois appels a `main()` du fichier ne traversaient pas `reserves`. Le
+    mutant neutralisant `expected_missing_slots(...)` -- donc toute la reserve
+    « pool incomplet » et le durcissement `OK` -> `WARN` -- survivait a
+    l'integralite des tests. Ce temoin le tue.
+    """
+    listing = {f"myia-ai-01-wsl-{i}": f"{i:04x}" for i in range(1, 13)}
+    mesure = Measurement(times=[0.0, 1.0, 2.0], totals=[0.0, 0.0, 0.0])
+    mesure.slots = list(listing)
+    mesure.counters_read = 12
+    mesure.missing_samples = {}
+    mesure.average_qps = 0.0
+    mesure.datagrams_total = 0
+    monkeypatch.setattr(organ, "measure", lambda *a, **k: (
+        mesure, "", "", dict(listing)))
+    monkeypatch.setattr(organ, "count_slots_on_default_engine",
+                        lambda *a, **k: 12)
+    code = organ.main(["--json", "--name-prefix", "myia-ai-01-wsl",
+                       "--expected-slots", "14", "--window", "1",
+                       "--docker-host", "tcp://127.0.0.1:2375"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 1
+    assert payload["status"] == STATUS_MEASURED
+    assert payload["verdict"] == STATUS_WARN
+    assert payload["pool_complete"] is False
+    assert payload["slots_expected_missing"] == ["myia-ai-01-wsl-13",
+                                                  "myia-ai-01-wsl-14"]
+    assert any("pool incomplet" in r for r in payload["reserves"])

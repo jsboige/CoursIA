@@ -66,7 +66,7 @@ Codes alignés sur les autres organes du dépôt (`gh_queue_health.py` : 0/1/2),
 
 Côté Windows, l'organe ne tente même pas la mesure sur un socket `unix://` : une **garde de plateforme** explicite (`windows_unix_socket_guard`) rend `UNREADABLE` (code 2) avant tout appel docker — `--dry-run` compris — et son motif nomme la cause autant que la voie (lancer la commande dans WSL, ou pointer `--docker-host` sur un endpoint `tcp://`). Ce refus est écrit dans le code et verrouillé par un test unitaire : ce n'est pas un effet de bord du chemin de socket.
 
-### Deux réserves qui interdisent un `OK`
+### Trois réserves qui interdisent un `OK`
 
 Elles **s'ajoutent** au calcul des deux seuils et ne peuvent que durcir le verdict (`effective_verdict`), jamais l'adoucir.
 
@@ -74,8 +74,11 @@ Elles **s'ajoutent** au calcul des deux seuils et ne peuvent que durcir le verdi
 |---|---|---|---|
 | **Couverture** | un slot lu sur **plus de la moitié** des échantillons (seuil strict : 50 % pile passe) | aucun slot au-dessus → `UNREADABLE` ; une partie seulement → verdict au moins `WARN` | `coverage.by_slot`, `coverage.degraded`, champ `reserves` |
 | **Pool incomplet** | un slot attendu n'est pas au listing | verdict au moins `WARN` | `slots_expected_missing`, `pool_complete`, champ `reserves` |
+| **Slot listé jamais lu** | un slot du listing dont aucun compteur n'a pu être lu | verdict au moins `WARN` | `slots_listed_never_read`, `coverage.degraded`, `missing_samples`, `pool_complete`, champ `reserves` |
 
 Sans la première, un `docker exec` qui répond au premier échantillon puis échoue sur les quinze suivants laissait `MEASURED`, une moyenne de 0,0 q/s et un `OK` à code 0 : une fenêtre non lue rendait un vert parfaitement faux. Sans la seconde, une somme portant sur 2 slots vivants sur 14 était comparée telle quelle à l'objectif de 1 q/s de la flotte entière.
+
+La troisième ferme le trou jumeau de la première : un slot **listé** dont le `docker exec` échoue à *chaque* tour ne passe par aucun champ structuré — il n'est ni dans `slots` (les compteurs lus), ni dans `slots_expected_missing` (les attendus et non vus), ni dans `coverage.by_slot` — et `pool_complete` restait `true`. L'organe publiait alors « 0 requête/s, `OK` » sur un parc dont il n'avait pas lu un slot. La couverture porte désormais sur le **listing** (`slots` ∪ `slots_seen`), et un slot listé jamais lu compte comme entièrement manquant : il est nommé dans `slots_listed_never_read`, il apparaît dans `coverage.degraded` et dans `missing_samples`, et `pool_complete` passe à `false`.
 
 ### Quelle machine fait quoi
 
@@ -100,7 +103,7 @@ Mesure du 2026-10-27 : `--docker-host unix:///var/run/docker.sock` rend `UNREADA
 3. **Toute mesure publiée porte son artefact** : la ligne de commande exacte, l'horodatage UTC (relevé par `date -u` dans la même commande), et la sortie `--json` (au moins un extrait des champs de tête). Un débit sans sa commande n'est pas une mesure, c'est un chiffre nu.
 4. Une fenêtre de moins de 5 s ne prouve rien de la rafale : `burst_qps` sera `null`, et le verdict ne portera que sur la moyenne.
 5. Le chiffre à comparer à « 1 requête/s » est `average_qps`, en sachant qu'il **majore** le DNS. `burst_qps` répond à l'autre question : le backoff et le jitter de `supervise.sh` dispersent-ils les rafales (le chiffre « 12 slots → ~48 appels `registration-token`/minute » de son en-tête est de cette famille) ?
-6. Lire les réserves avant de conclure : un `WARN` peut venir d'une couverture dégradée ou d'un pool incomplet, pas du débit. Les champs `reserves`, `coverage.degraded` et `slots_expected_missing` disent lequel.
+6. Lire les réserves avant de conclure : un `WARN` peut venir d'une couverture dégradée, d'un pool incomplet ou d'un slot listé jamais lu, pas du débit. Les champs `reserves`, `coverage.degraded`, `slots_expected_missing` et `slots_listed_never_read` disent lequel.
 
 ## Mesures du 2026-10-27 (artefact)
 

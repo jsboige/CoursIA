@@ -835,14 +835,23 @@ def build_payload(*, status: str, reason: str, m: Measurement, args,
                   verdict_value: str | None = None,
                   coverage: dict | None = None,
                   reserves: list[str] | None = None,
-                  expected_missing: list[str] | None = None) -> dict:
+                  expected_missing: list[str] | None = None,
+                  never_read: list[str] | None = None,
+                  missing_samples: dict[str, int] | None = None) -> dict:
     """Payload JSON. `found_slots` est le LISTING, `m.slots` les compteurs lus.
 
     Les deux champs sont nommes pour ce qu'ils sont : `slots_seen` (listing) et
     `slots` (compteurs lus). Les confondre faisait dire « 0 slot vu » a un
     listing qui en avait vu 14.
+
+    `slots_listed_never_read` nomme les slots du LISTING dont aucun compteur
+    n'a pu etre lu : ils ne sont ni dans `slots` (compteurs lus) ni dans
+    `slots_expected_missing` (attendus et non vus), et sans ce champ ils
+    sortaient de tout le payload. `pool_complete` tient compte des deux :
+    un parc qui porte un slot jamais lu n'est pas complet.
     """
     missing = expected_missing or []
+    never = never_read or []
     return {
         "status": status,
         "reason": reason,
@@ -862,7 +871,8 @@ def build_payload(*, status: str, reason: str, m: Measurement, args,
         "slots_seen": sorted(found_slots, key=slot_sort_key),
         "expected_slots": expected_slots,
         "slots_expected_missing": missing,
-        "pool_complete": not missing,
+        "slots_listed_never_read": never,
+        "pool_complete": not missing and not never,
         "coverage": coverage or {},
         "reserves": reserves or [],
         "name_prefix": prefix,
@@ -872,7 +882,8 @@ def build_payload(*, status: str, reason: str, m: Measurement, args,
              "after": r.after, "kind": r.kind}
             for r in m.resets
         ],
-        "missing_samples": m.missing_samples,
+        "missing_samples": m.missing_samples if missing_samples is None
+                          else missing_samples,
         "counts_all_udp": True,
         "measures": "Udp.OutDatagrams des conteneurs de runners (majorant du DNS)",
         "does_not_measure": [
@@ -1107,6 +1118,7 @@ def main(argv: list[str] | None = None) -> int:
             "slots_seen": [],
             "slots": [],
             "slots_expected_missing": not_measured_missing,
+            "slots_listed_never_read": [],
             "pool_complete": not not_measured_missing,
             "coverage": {},
             "reserves": [],
@@ -1146,12 +1158,26 @@ def main(argv: list[str] | None = None) -> int:
             "pas sur un point unique (fenetre trop courte, ou tours trop lents)")
 
     # Couverture : une fenetre presque entierement non lue n'est pas une mesure.
-    coverage = coverage_report(m.missing_samples, m.slots, len(m.times))
+    #
+    # La couverture porte sur le LISTING, pas sur les seuls slots lus. Un slot
+    # liste et jamais lu (le `docker exec` echoue a chaque tour) sortait de
+    # TOUS les champs structures -- ni `coverage.by_slot`, ni
+    # `missing_samples`, ni `slots_expected_missing` -- et laissait
+    # `pool_complete: true` avec un `OK` a 0 q/s sur un parc incomplet : le
+    # « zero non mesure » que le document promet de ne jamais rendre. Il
+    # compte ici comme entierement manquant.
+    never_read = [slot for slot in sorted(seen_slots, key=slot_sort_key)
+                  if slot not in m.slots]
+    coverage_slots = sorted(set(m.slots) | set(seen_slots), key=slot_sort_key)
+    coverage_missing = dict(m.missing_samples)
+    for slot in never_read:
+        coverage_missing[slot] = len(m.times)
+    coverage = coverage_report(coverage_missing, coverage_slots, len(m.times))
     if status == STATUS_MEASURED and window_is_unreadable(coverage):
         status = STATUS_UNREADABLE
         status_reason = (
             f"aucune serie n'a ete lue sur plus de la moitie de la fenetre "
-            f"({len(coverage['degraded'])} slot(s) sur {len(m.slots)}, "
+            f"({len(coverage['degraded'])} slot(s) sur {len(coverage_slots)}, "
             f"{len(m.times)} echantillon(s)) -- une moyenne proche de zero "
             f"serait un chiffre non mesure, pas un debit calme")
 
@@ -1171,11 +1197,16 @@ def main(argv: list[str] | None = None) -> int:
                 f"pool incomplet : {len(expected_missing)} slot(s) attendu(s) et "
                 f"non vu(s) sur {expected_slots} -- la somme porte sur les "
                 f"{len(seen_slots)} slot(s) vivants, pas sur la flotte entiere")
+        if never_read:
+            names = ", ".join(never_read)
+            reserves.append(
+                f"slot(s) liste(s) mais jamais lu(s) : {names} -- leur debit "
+                f"n'a pas ete mesure, il ne peut pas compter pour un calme")
         verdict_value = effective_verdict(
             verdict(m.average_qps, m.burst_qps,
                     args.threshold, args.max_burst_threshold),
             coverage_degraded=bool(coverage["degraded"]),
-            pool_incomplete=bool(expected_missing),
+            pool_incomplete=bool(expected_missing) or bool(never_read),
         )
 
     diagnostics: dict[str, object] = {}
@@ -1194,6 +1225,7 @@ def main(argv: list[str] | None = None) -> int:
         sample_period_s=sample_period, diagnostics=diagnostics,
         expected_slots=expected_slots, verdict_value=verdict_value,
         coverage=coverage, reserves=reserves, expected_missing=expected_missing,
+        never_read=never_read, missing_samples=coverage_missing,
     )
     payload["wall_s"] = elapsed_wall
     payload["machine"] = normalize_machine(machine)
