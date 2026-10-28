@@ -470,3 +470,148 @@ def test_une_mention_autorisee_est_supprimee():
     ])
     findings = clv.mention_findings("x.ipynb", payload, manifest, canonicals)
     assert all(f["version"] != "8.14.0" for f in findings)
+
+
+# --------------------------------------------------------------------------
+# Relecture coordinateur #23079 -- points 1, 2 et 11
+#
+# Ces trois tests portent chacun leur controle positif : sans lui, ils
+# passeraient aussi sur un organe qui refuse tout, ou sur un organe qui
+# n'eteint jamais rien.
+# --------------------------------------------------------------------------
+_LIB_IKVM = [
+    {
+        "id": "IKVM",
+        "ecosystem": "nuget",
+        "canonical": "8.15.0",
+        "canonical_source": "manifest",
+    }
+]
+
+
+def test_allowlist_sans_motif_refuse_le_manifeste(tmp_path):
+    """Point 1 -- une entree d'allowlist sans motif ecrit rend rc 2.
+
+    Le test d'origine (``test_allowlist_entry_without_a_reason_is_refused``)
+    parcourait le manifeste LIVRE ; il ne mordait pas tant que celui-ci
+    portait ``"allowlist": []``. Celui-ci exerce le comportement sur une
+    fixture, donc il mord quel que soit l'etat du manifeste livre.
+    """
+    sans_motif = _manifest_with(
+        tmp_path,
+        _LIB_IKVM,
+        [{"library": "IKVM", "version": "8.14.0", "reason": "   "}],
+    )
+    erreurs = clv.allowlist_errors(sans_motif)
+    assert erreurs, "une entree sans motif doit etre refusee"
+    assert "motif absent ou vide" in erreurs[0]
+
+    # Controle positif : le meme manifeste avec un motif ecrit passe.
+    avec_motif = _manifest_with(
+        tmp_path,
+        _LIB_IKVM,
+        [{"library": "IKVM", "version": "8.14.0", "reason": "DLL ombree liee a 8.14.0."}],
+    )
+    assert clv.allowlist_errors(avec_motif) == []
+
+    # Et une allowlist vide reste valide (le cas du manifeste d'origine).
+    assert clv.allowlist_errors(_manifest_with(tmp_path, _LIB_IKVM, [])) == []
+
+
+def test_allowlist_sans_motif_n_eteint_pas_le_constat(tmp_path):
+    """Point 1, seconde barriere -- meme sans la validation, le constat tient."""
+    manifest = _manifest_with(
+        tmp_path,
+        _LIB_IKVM,
+        [{"library": "IKVM", "version": "8.14.0", "reason": ""}],
+    )
+    assert clv._allowlisted(manifest, "IKVM", "8.14.0", "serie/x.ipynb") is None
+
+    # Controle positif : avec un motif, la meme entree eteint bien le constat.
+    manifest_ok = _manifest_with(
+        tmp_path,
+        _LIB_IKVM,
+        [{"library": "IKVM", "version": "8.14.0", "reason": "motif ecrit"}],
+    )
+    assert clv._allowlisted(manifest_ok, "IKVM", "8.14.0", "serie/x.ipynb") == "motif ecrit"
+
+
+def test_carnet_illisible_rend_rc_deux(tmp_path, capsys):
+    """Point 2 -- un carnet illisible ne doit pas rendre du vert silencieux.
+
+    Avant correctif, ``pins_from_file`` rendait ``[]`` sur ``JSONDecodeError``
+    et le rapport annoncait « les carnets examines sont alignes ».
+    """
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps({"schema_version": 1, "libraries": _LIB_IKVM, "allowlist": []}),
+        encoding="utf-8",
+    )
+    casse = tmp_path / "casse.ipynb"
+    casse.write_text("{ ceci n'est pas du JSON", encoding="utf-8")
+
+    rc = clv.main([
+        str(casse),
+        "--repo-root", str(tmp_path),
+        "--manifest", str(manifest_path),
+    ])
+    assert rc == 2
+    assert "illisible" in capsys.readouterr().err
+
+    # Controle positif : un carnet valide et aligne ne rend PAS 2.
+    sain = _write_notebook(tmp_path, "sain.ipynb", ['#r "nuget:IKVM,8.15.0"'])
+    rc_sain = clv.main([
+        str(sain),
+        "--repo-root", str(tmp_path),
+        "--manifest", str(manifest_path),
+    ])
+    assert rc_sain == 0
+
+
+def test_version_prefixe_v_et_composantes_manquantes():
+    """Point 7 -- `v` decore l'ecriture, et une composante absente vaut zero."""
+    # `v8.15.0` et `8.15.0` sont la meme version (avant : faux upgrade).
+    assert clv.compare_versions("v8.15.0", "8.15.0") == 0
+    # `8.15` et `8.15.0` sont la meme version (avant : faux downgrade).
+    assert clv.compare_versions("8.15", "8.15.0") == 0
+    # `1.0.0.0` et `1.0.0` sont la meme version (avant : faux upgrade).
+    assert clv.compare_versions("1.0.0.0", "1.0.0") == 0
+
+    # Controles positifs : l'ordre REEL reste tranche par les nombres.
+    assert clv.compare_versions("8.14.0", "8.15.0") < 0
+    assert clv.compare_versions("v8.16.0", "8.15.0") > 0
+    assert clv.compare_versions("9.11.4210", "9.15.6755") < 0
+
+
+def test_carnet_hors_depot_ne_leve_pas_de_traceback(tmp_path, capsys):
+    """Point 11 -- un carnet hors de la racine n'echoue pas sur `relative_to`.
+
+    Le test exerce le CHEMIN D'APPEL (``main`` sur un chemin explicite), pas
+    seulement l'utilitaire : c'est le site d'appel qui portait le defaut, et
+    tester l'utilitaire seul aurait passe avant le correctif.
+    """
+    depot = tmp_path / "depot"
+    depot.mkdir()
+    manifest_path = depot / "manifest.json"
+    manifest_path.write_text(
+        json.dumps({"schema_version": 1, "libraries": _LIB_IKVM, "allowlist": []}),
+        encoding="utf-8",
+    )
+    # Le carnet vit HORS de la racine passee a l'organe.
+    hors = _write_notebook(tmp_path, "hors.ipynb", ['#r "nuget:IKVM,8.15.0"'])
+    assert not str(hors).startswith(str(depot))
+
+    rc = clv.main([
+        str(hors),
+        "--repo-root", str(depot),
+        "--manifest", str(manifest_path),
+    ])
+    # Un carnet aligne hors depot n'est pas une erreur : rc 0, pas un rc 1
+    # de traceback ni une exception propagee.
+    assert rc == 0
+    assert "Traceback" not in capsys.readouterr().err
+
+    # Controle positif : l'utilitaire reste relatif dans le depot.
+    dedans = depot / "serie" / "x.ipynb"
+    assert clv._relative_to_repo(dedans, depot) == "serie/x.ipynb"
+
