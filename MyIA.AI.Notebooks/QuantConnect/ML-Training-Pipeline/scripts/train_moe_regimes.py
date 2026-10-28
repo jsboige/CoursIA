@@ -483,6 +483,8 @@ def train_moe_regimes_pipeline(
     output_dir: str | None = None,
     raw_data: pd.DataFrame | None = None,
     regime_decode: str = "viterbi",
+    regime_lookback: int = 400,
+    regime_n_states: int = 3,
 ) -> dict:
     """Run full MoE-DL training pipeline.
 
@@ -493,6 +495,13 @@ def train_moe_regimes_pipeline(
     observations after t) or "filter" (forward-only, causal). The default is
     unchanged so existing datasets/results stay reproducible (#21054 case 4,
     same opt-in pattern as build_dataset_v2 -- #22557).
+
+    ``regime_lookback``/``regime_n_states`` expose the detector window and
+    state count. CAUTION: the default ``lookback=400`` means the detector
+    labels only the LAST 400 days and pads the rest with state 0 -- on a
+    multi-year walk-forward most folds then train and route on padding
+    (measured on SPY 2015-2024: 83% of labels are padding). Pass
+    ``regime_lookback >= len(series)`` to label the full span.
     """
     import torch
 
@@ -536,6 +545,7 @@ def train_moe_regimes_pipeline(
     if regime_method == "hmm":
         regime_series = detect_regimes(
             aligned_prices, method=regime_method, decode_mode=regime_decode,
+            lookback=regime_lookback, n_states=regime_n_states,
         )
     else:
         regime_series = detect_regimes(aligned_prices, method=regime_method)
@@ -584,6 +594,8 @@ def train_moe_regimes_pipeline(
         "regime_decode_causal": (
             regime_decode == "filter" if regime_method == "hmm" else True
         ),
+        "regime_lookback": regime_lookback if regime_method == "hmm" else None,
+        "regime_n_states": regime_n_states if regime_method == "hmm" else None,
         "lookahead_note": (
             "HMM labels decoded one-pass over the full series; viterbi is "
             "retrospective (label at t sees observations after t), filter is "
@@ -750,6 +762,18 @@ def main():
             "'filter' = forward-only causal decode (#21054)."
         ),
     )
+    parser.add_argument(
+        "--regime-lookback", type=int, default=400,
+        help=(
+            "HMM detector window in days (regime-method=hmm only). Default "
+            "400 labels only the last 400 days (rest padded with state 0); "
+            "pass >= series length to label the full span (#21054 case 4)."
+        ),
+    )
+    parser.add_argument(
+        "--regime-n-states", type=int, default=3,
+        help="HMM state count (regime-method=hmm only).",
+    )
     parser.add_argument("--hidden-size", type=int, default=128)
     parser.add_argument("--num-layers", type=int, default=2)
     parser.add_argument("--nhead", type=int, default=4, help="Transformer heads")
@@ -789,6 +813,8 @@ def main():
         data_dir=args.data_dir,
         regime_method=args.regime_method,
         regime_decode=args.regime_decode,
+        regime_lookback=args.regime_lookback,
+        regime_n_states=args.regime_n_states,
         expert_type=args.expert,
         hidden_size=args.hidden_size,
         num_layers=args.num_layers,

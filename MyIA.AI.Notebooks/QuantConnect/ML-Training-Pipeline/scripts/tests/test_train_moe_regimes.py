@@ -93,6 +93,19 @@ class TestRegimeDecodePlumbing:
         assert result["regime_decode_causal"] is True
         assert "viterbi" in result["lookahead_note"].lower()
 
+    def test_lookback_and_n_states_reach_hmm_call(self, monkeypatch, synthetic_raw):
+        captured: dict = {}
+        result = _run_pipeline(
+            monkeypatch, synthetic_raw,
+            regime_method="hmm", regime_decode="filter", captured=captured,
+        )
+        # Defaults: the detector window is exposed so the labeling can span
+        # the walk-forward (#21054 case 4 -- default 400 pads the rest).
+        assert captured["kwargs"].get("lookback") == 400
+        assert captured["kwargs"].get("n_states") == 3
+        assert result["regime_lookback"] == 400
+        assert result["regime_n_states"] == 3
+
     def test_default_viterbi_reaches_hmm_call(self, monkeypatch, synthetic_raw):
         captured: dict = {}
         result = _run_pipeline(
