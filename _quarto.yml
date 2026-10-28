@@ -450,7 +450,7 @@ project:
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/finiteness_lean/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_groups_lean/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/formal_logic_lean/README.md"
-    - "MyIA.AI.Notebooks/SymbolicAI/Lean/galois_lean/README.md"
+    - "MyIA.AI.Notebooks/SymbolicAI/Lean/GALOIS/galois_lean/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/geometry_lean/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/Geometry/README.md"
     - "MyIA.AI.Notebooks/SymbolicAI/Lean/GOL/README.md"
