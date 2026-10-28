@@ -20,6 +20,8 @@ Le maintien des deux carnets ordonnes dans une sous-serie `ICT-19/` preserve le 
 4. `pedagogy_density_baseline.json` : deplacement des 2 cles vers les nouveaux chemins (garde LOST_KEY/ORPHAN_KEY #13815/#16122).
 5. Note de conception commitee dans `docs/ict/palier14-ict19-note-de-conception.md`.
 
+> **Renommage (28/10, #22949)** : la sous-série porte désormais le nom `ICT-19-EnjeuBattery/` ; le `ICT-19/` cité ci-dessus est l'état intermédiaire de cette même PR (descent en sous-série → nommage par sujet).
+
 ### Non-touched (deliberes)
 - `COURSE_CATALOG.generated.*` : byte-identique a main (regle catalog-pr-hygiene).
 - `_quarto.yml`, `translations/iit/iit.csv` : non touches par le precedent #22289 — l'automatisation les regenerera.
