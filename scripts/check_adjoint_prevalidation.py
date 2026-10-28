@@ -1206,34 +1206,9 @@ def _prune_stack_refs(keep: list[int]) -> None:
 #: clone de l'appelant (#23089). Le texte est celui de l'issue : il nomme le
 #: symptome ET le geste qui le leve.
 STACK_UNAVAILABLE_SHALLOW = (
-    "stack check unavailable: shallow clone — git fetch --unshallow"
+    "stack check unavailable: shallow clone — git fetch --unshallow "
+    "(racines mortes : python scripts/ci/merge_dwell.py --prune-shallow)"
 )
-
-
-def _prune_dead_shallow_roots() -> list[str]:
-    """Retire les racines shallow mortes du clone de l'appelant (#23089).
-
-    Ce sont elles qui rendent le depot "shallow" en permanence alors que son
-    historique est complet -- et qui font croire a toute garde fondee sur
-    `is-shallow-repository` que l'historique est tronque. Le retrait ne
-    touche a aucune ref ni a aucun commit ; il est signale sur stderr, sans
-    incident : la mesure de la pile reste mesuree.
-    """
-    try:
-        from ci.merge_dwell import prune_dead_shallow_roots
-    except Exception:  # noqa: BLE001 - lecteur optionnel, fail-open
-        return []
-    try:
-        dead = list(prune_dead_shallow_roots())
-    except Exception:  # noqa: BLE001 - idem
-        return []
-    if dead:
-        print(
-            "STACK (INFO, racines shallow mortes retirees) : "
-            + ", ".join(sha[:12] for sha in dead),
-            file=sys.stderr,
-        )
-    return dead
 
 
 def _base_history_truncated() -> bool:
@@ -1273,7 +1248,13 @@ def build_stack_index() -> tuple[dict[int, StackEntry] | None, list[str]]:
     # pouvait creer une borne) : meme question, meme source. Une lecture
     # indisponible ne bloque pas la mesure -- elle la laisse au comportement
     # d'avant (fail-open de la porte, jamais un refus fabrique).
-    _prune_dead_shallow_roots()
+    #
+    # #23110 (reserve ai-01 du 2026-10-28) : la passe LIT, elle n'ECRIT pas.
+    # Elle appelait `merge_dwell.prune_dead_shallow_roots()` ici, donc une
+    # garde reecrivait `.git/shallow` du clone de l'appelant a chaque passe --
+    # un fichier que seul le transport (clone/fetch) a le droit d'ecrire. Le
+    # nettoyage des racines mortes est devenu la commande explicite
+    # `merge_dwell.py --prune-shallow` ; le message d'incident la nomme.
     if _base_history_truncated():
         return None, [STACK_UNAVAILABLE_SHALLOW]
 

@@ -1787,3 +1787,88 @@ def test_une_racine_shallow_vivante_n_est_pas_retiree(tmp_path, monkeypatch):
     assert merge_dwell._default_run_git(
         ["rev-parse", "--is-shallow-repository"]
     )[1].strip() == "true"
+
+
+def _foreign_shallow_boundary(tmp_path, origin, clone):
+    """Cree dans `clone` une racine shallow dont le parent est ABSENT, et
+    renvoie son sha.
+
+    C'est la signature d'un `fetch --depth=1 <sha>` d'un commit etranger a
+    l'historique local (#23089) : le parent du commit n'est pas dans le
+    depot, et aucune ref locale ne contient le commit (un fetch par sha
+    n'ecrit que `FETCH_HEAD`, que `for-each-ref` ne voit pas).
+    """
+    work = tmp_path / "work"
+    _git_ok(_git(work, "checkout", "-q", "--orphan", "orpheline"), "orphan")
+    _git_ok(_git(work, "rm", "-rq", "--cached", "."), "rm cached")
+    (work / "o.txt").write_text("o\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o.txt"), "add o.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline"), "commit orpheline")
+    (work / "o2.txt").write_text("o2\n", encoding="utf-8")
+    _git_ok(_git(work, "add", "o2.txt"), "add o2.txt")
+    _git_ok(_git(work, "commit", "-m", "orpheline 2"), "commit orpheline 2")
+    _git_ok(_git(work, "push", "-q", "origin", "orpheline"), "push orpheline")
+    foreign = _git(work, "rev-parse", "HEAD").stdout.strip()
+    _git_ok(
+        _git(clone, "fetch", "--depth=1", "--quiet", "origin", foreign),
+        "fetch etranger",
+    )
+    return foreign
+
+
+def test_une_borne_atteinte_par_un_head_detache_survit(tmp_path, monkeypatch):
+    """#23110 : une borne atteinte par un HEAD DETACHE, sans aucune ref ni
+    aucune entree de reflog, n'est PAS morte.
+
+    Le critere d'avant ne regardait que `for-each-ref` : il la declarait morte
+    et la retirait du `.git/shallow`, coupant le parcours d'historique que ce
+    HEAD porte encore. Le HEAD detache est le seul temoin laisse par le
+    scenario, donc c'est bien le critere elargi qui le sauve.
+    """
+    origin, clone, _side = _disposable_repo(tmp_path)
+    foreign = _foreign_shallow_boundary(tmp_path, origin, clone)
+    monkeypatch.chdir(clone)
+    _git_ok(_git(clone, "checkout", "-q", "--detach", foreign), "detach")
+    _git_ok(
+        _git(clone, "reflog", "expire", "--expire=now", "--all"),
+        "expire reflogs",
+    )
+    assert _git(
+        clone, "for-each-ref", "--contains", foreign, "--format=%(refname)"
+    ).stdout.strip() == ""
+    assert merge_dwell.prune_dead_shallow_roots() == []
+    assert merge_dwell._default_run_git(
+        ["rev-parse", "--is-shallow-repository"]
+    )[1].strip() == "true"
+
+
+def test_une_borne_atteinte_par_le_head_d_un_worktree_lie_survit(
+    tmp_path, monkeypatch
+):
+    """#23110 : une borne atteinte par le HEAD d'un worktree LIE survit.
+
+    Ni les refs, ni le HEAD du depot courant, ni les reflogs n'atteignent
+    cette borne : seul `git worktree list --porcelain` (et le `rev-parse HEAD`
+    du worktree) la voit. C'est le troisieme temoin demande par la reserve.
+    """
+    origin, clone, _side = _disposable_repo(tmp_path)
+    foreign = _foreign_shallow_boundary(tmp_path, origin, clone)
+    monkeypatch.chdir(clone)
+    linked = tmp_path / "linked"
+    _git_ok(
+        _git(clone, "worktree", "add", "--detach", str(linked), foreign),
+        "worktree add --detach",
+    )
+    _git_ok(
+        _git(clone, "reflog", "expire", "--expire=now", "--all"),
+        "expire reflogs",
+    )
+    # Le reflog du worktree lie vit dans son propre gitdir : il faut le
+    # retirer aussi pour que le HEAD du worktree soit le seul temoin.
+    for logs in (clone / ".git" / "worktrees").glob("*/logs"):
+        shutil.rmtree(logs)
+    assert _git(
+        clone, "for-each-ref", "--contains", foreign, "--format=%(refname)"
+    ).stdout.strip() == ""
+    assert _git(clone, "rev-parse", "HEAD").stdout.strip() != foreign
+    assert merge_dwell.prune_dead_shallow_roots() == []

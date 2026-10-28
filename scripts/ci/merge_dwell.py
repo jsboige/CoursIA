@@ -519,6 +519,73 @@ def _first_parent(sha, run_git):
     return None
 
 
+#: Borne de lecture des reflogs dans `_alive_tips`. Un reflog de depot actif
+#: peut porter des dizaines de milliers d'entrees ; au-dela de cette borne on
+#: garde les plus recentes (l'ordre de `git reflog` est du plus recent au plus
+#: ancien), et `_reachable_from` reste fail-safe sur ce qui n'a pas ete lu.
+_ALIVE_TIPS_RELOG_MAX = 500
+
+
+def _alive_tips(run_git):
+    """Les tetes depuis lesquelles une racine shallow peut etre ATTEINTE.
+
+    `for-each-ref` ne voit que les refs. Trois temoins d'historique vive lui
+    echappent : un `HEAD` detache, le `HEAD` de chaque worktree lie, et les
+    entrees de reflog. Une racine atteinte depuis l'un d'eux n'est PAS morte :
+    la retirer couperait un `git log` reel (#23110, reserve ai-01 du
+    2026-10-28).
+
+    Lecture impossible -> liste vide, et c'est `_reachable_from` qui protege :
+    un doute ne retire jamais rien.
+    """
+    tips: list[str] = []
+    seen: set[str] = set()
+
+    def add(raw):
+        sha = (raw or "").strip()
+        if sha and sha not in seen:
+            seen.add(sha)
+            tips.append(sha)
+
+    def read(argv):
+        try:
+            rc, out = run_git(argv)
+        except (OSError, subprocess.SubprocessError):
+            return ""
+        return out or "" if rc == 0 else ""
+
+    add(read(["rev-parse", "HEAD"]))
+    # Worktrees lies : un worktree en HEAD detache n'apparait dans aucune ref,
+    # et son HEAD est distinct de celui du depot courant. On demande son HEAD
+    # par chemin (`-C <path>`) plutot que de lire la ligne `HEAD <sha>` du
+    # porcelain (git >= 2.36 seulement) : la meme reponse sur toute version.
+    for line in read(["worktree", "list", "--porcelain"]).splitlines():
+        if line.startswith("worktree "):
+            path = line.split(" ", 1)[1].strip()
+            if path:
+                add(read(["-C", path, "rev-parse", "HEAD"]))
+        elif line.startswith("HEAD "):
+            add(line.split(" ", 1)[1])
+    # Les reflogs retiennent des tetes qu'aucune ref ne porte plus.
+    for line in read(["reflog", "--format=%H", "--all"]).splitlines()[:_ALIVE_TIPS_RELOG_MAX]:
+        add(line)
+    return tips
+
+
+def _reachable_from(sha, tip, run_git):
+    """`sha` est-il un ancetre de `tip` (lui-meme inclus) ?
+
+    Lecture impossible -> `True` : on ne retire pas une racine sur un doute.
+    Retirer une racine VIVANTE casse le parcours qui la traversait, alors que
+    laisser une racine morte ne coute qu'un booleen `is-shallow-repository`.
+    """
+    try:
+        rc, _ = run_git(["merge-base", "--is-ancestor", sha, tip])
+    except (OSError, subprocess.SubprocessError):
+        return True
+    return rc == 0
+
+
 def prune_dead_shallow_roots(run_git=None):
     """Retire les racines shallow MORTES du depot courant.
 
@@ -538,6 +605,18 @@ def prune_dead_shallow_roots(run_git=None):
     absent -- le parcours s'arretait la de toute facon. Seule la reponse
     "shallow" du depot change.
 
+    **Commande EXPLICITE, jamais appelee par une garde (#23110).** La porte
+    pile (`check_adjoint_prevalidation.build_stack_index`) appelait cette
+    fonction a chaque passe : une lecture y ecrivait dans `.git/shallow` du
+    clone de l'appelant, alors que la liste des racines shallow appartient au
+    transport (`.git/shallow` est ce que `fetch` et `clone` ecrivent). Le
+    geste se fait donc a la main, par `merge_dwell.py --prune-shallow`, quand
+    l'operateur constate qu'un depot complet se declare shallow.
+
+    Le critere d'une racine VIVANTE ne se limite pas aux refs : `HEAD`, le
+    `HEAD` de chaque worktree lie et les reflogs comptent aussi, par
+    atteignabilite (`merge-base --is-ancestor`) et non par identite.
+
     Renvoie les SHA retires (liste vide si rien a faire).
     """
     if run_git is None:
@@ -545,6 +624,7 @@ def prune_dead_shallow_roots(run_git=None):
     boundaries = shallow_boundary_shas(run_git)
     if not boundaries:
         return []
+    tips = _alive_tips(run_git)
     dead: list[str] = []
     for sha in boundaries:
         try:
@@ -555,6 +635,8 @@ def prune_dead_shallow_roots(run_git=None):
             continue
         if rc == 0 and (out or "").strip():
             continue  # une ref contient cette racine : elle vit
+        if any(_reachable_from(sha, tip, run_git) for tip in tips):
+            continue  # HEAD, HEAD de worktree ou reflog l'atteint : elle vit
         parent = _first_parent(sha, run_git)
         if parent is None:
             continue  # racine d'histoire : rien a retirer
@@ -1206,3 +1288,31 @@ def check(
         waiver_motif=waiver_motif,
     )
     return ok, message + unmet_note
+
+
+if __name__ == "__main__":  # pragma: no cover - commande manuelle
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(
+        description=__doc__.splitlines()[0] if __doc__ else "merge_dwell"
+    )
+    parser.add_argument(
+        "--prune-shallow",
+        action="store_true",
+        help="#23110 : retirer les racines shallow MORTES du depot courant "
+        "(commande EXPLICITE, a lancer a la main -- aucune garde ne "
+        "l'appelle, `git fetch --unshallow` ne les efface pas). Les SHA "
+        "retires sortent sur stdout, un par ligne.",
+    )
+    args = parser.parse_args()
+    if not args.prune_shallow:
+        parser.error("exactly one of --prune-shallow is required")
+    removed = prune_dead_shallow_roots()
+    for sha in removed:
+        print(sha)
+    print(
+        "racines shallow mortes retirees : {}".format(len(removed)),
+        file=sys.stderr,
+    )
+    raise SystemExit(0)
