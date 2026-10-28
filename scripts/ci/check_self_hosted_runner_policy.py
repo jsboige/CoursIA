@@ -637,6 +637,33 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "translation-drift.yml",
     "twin-parity.yml",
     "unique-check-run-names-guard.yml",
+
+    # ------------------------------------------------------------------
+    # 2026-10-28 (#23053 famille b -- « les tests », lane
+    #   myia-ai-01:CoursIA-2) : ces 6 suites de tests n'avaient AUCUNE jambe
+    #   self-hosted sur main ; elles recoivent une jambe CONDITIONNELLE, la
+    #   forme hybride de debordement deja auditee (#22461 phase A : garde
+    #   meme-depot && vars.CI_OVERFLOW_LOCAL == 'true' -> LINUX_RUNNER_LABELS,
+    #   sinon ubuntu-latest). Par defaut (variable absente ou != 'true'),
+    #   chaque job resout sur ubuntu-latest : l'etat du 27/10 est conserve, et
+    #   cette entree ne rend le pool local atteignable QUE si un operateur
+    #   bascule la variable (gh variable set CI_OVERFLOW_LOCAL --body
+    #   true|false --repo jsboige/CoursIA, jeton jsboige). Rollback = variable
+    #   a false ou supprimee, sans toucher les fichiers.
+    #   Deja presents dans l'ensemble ci-dessus, donc NON reajoutes :
+    #   ict-tests.yml, ml-tests.yml, scripts-tests.yml, validation-matrix.yml.
+    #   Sur scripts-tests.yml, seul le job `adk-contracts` est reconcerne -- le
+    #   job `scripts-tests` reste sur la jambe locale STATIQUE (suite couplee a
+    #   la forme du runner, #22820). Sur validation-matrix.yml, le job
+    #   `validate` reste STATIQUE local : le basculer sur ubuntu-latest par
+    #   defaut serait un recul, il ne recoit donc pas la forme hybride.
+    # ------------------------------------------------------------------
+    "dotnet-AgentSafetyAnalyzer.yml",
+    "dotnet-ArgumentAnalysis.yml",
+    "dotnet-OrphanApps.yml",
+    "dotnet-Shared.Tests.yml",
+    "gametheory-tests.yml",
+    "genai-helpers-tests.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",

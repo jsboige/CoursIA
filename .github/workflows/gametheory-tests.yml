@@ -74,7 +74,11 @@ concurrency:
 jobs:
   gametheory-tests:
     name: GameTheory pytest (600 collected)
-    runs-on: ubuntu-latest
+    # 2026-10-28 (#23053 b, lane myia-ai-01:CoursIA-2) : forme hybride de
+    # debordement (#22461 phase A) -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL
+    # == 'true' -> jambe Linux locale ; sinon `ubuntu-latest` (etat du 27/10).
+    # Retour arriere = variable `false` ou supprimee, sans toucher ce fichier.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     timeout-minutes: 15
     env:
       # Floor mesuré firsthand — origine/main worktree, baseline 2026-09-04.
