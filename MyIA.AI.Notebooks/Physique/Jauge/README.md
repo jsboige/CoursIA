@@ -1,6 +1,6 @@
 # Jauge — l'arc Noether → Yang–Mills sur réseau
 
-Sous-série de [Physique](../README.md), ouverte par l'EPIC #23161 (veine V6 de #20428). Le fil « symétries » part de Galois (par la monodromie de `Lean-15e`), continue par les groupes de Lie et le théorème de Noether, puis la jauge locale U(1) et SU(2), et aboutit au réseau de jauge de Wilson.
+Sous-série Physique de la collection [MyIA.AI.Notebooks](../../README.md), ouverte par l'EPIC #23161 (veine V6 de #20428). Le fil « symétries » part de Galois (par la monodromie de `Lean-15e`), continue par les groupes de Lie et le théorème de Noether, puis la jauge locale U(1) et SU(2), et aboutit au réseau de jauge de Wilson.
 
 | Carnet | Ce qu'il démontre | Outils |
 |---|---|---|

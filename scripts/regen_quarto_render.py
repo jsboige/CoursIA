@@ -117,6 +117,7 @@ NOTEBOOK_SUBTREES = (
     "MyIA.AI.Notebooks/SymbolicAI/Lean/",             # tranche 13 #10923 (33 notebooks .ipynb pedagogique Lean)
     "MyIA.AI.Notebooks/cross-series/",                # tranche 13 #10923 (1)
     "MyIA.AI.Notebooks/Compression/",                 # tranche finale #18423 (1, codes prefixes Shannon-Fano -> Huffman)
+    "MyIA.AI.Notebooks/Physique/",                     # serie Physique #23161 (Jauge : Noether, jauge U(1)/SU(2), reseau de Wilson)
     # Prefix famille : couvre OR-tools-Stiegler.ipynb au niveau racine de
     # SymbolicAI/ (38 cellules, pedagogique). Les sous-repertoires deja
     # couverts par leurs entrees individuelles ci-dessus restent dedup
