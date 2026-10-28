@@ -39,6 +39,7 @@ Trois classes, sur les **cellules code** des carnets :
 | epinglage pip | `pip install x==1.2.3` |
 | version locale | un carnet qui **redeclare** un symbole que l'organe de serie possede (`TWEETY_VERSION = "1.28"`) |
 | provisionnement etranger | une URL de telechargement hors de l'organe de serie (ici `tweetyproject.org/builds/`) |
+| epinglage flottant | `#r "nuget: Google.OrTools"` — la version n'est pas fixee (cf #23086) |
 
 ## Les deux modes, et pourquoi ils diffèrent
 
@@ -48,7 +49,7 @@ Trois classes, sur les **cellules code** des carnets :
 | **garde (delta)** | `python scripts/notebook_tools/check_lib_versions.py --changed origin/main...HEAD` | ce que la PR **introduit** : comparaison des epinglages base -> tete |
 | **garde (etat)** | `... --state` ou des chemins explicites | l'etat brut d'un carnet : tout epinglage != canonique |
 
-Le delta n'est pas un detail d'implémentation, c'est la **semantique** de la
+Le delta n'est pas un detail d'implementation, c'est la **semantique** de la
 garde. Un epinglage deja present et non touche par la PR est une derive
 historique : elle se traite par la convergence (l'issue la classe), pas par
 un rouge sur une PR qui n'a rien fait de mal. Le provisionnement etranger,
@@ -75,29 +76,52 @@ Deux surfaces qui recopient la meme valeur finissent par divergir — c'est
 exactement la regression que l'organe doit empecher. Pour NuGet et pip, la
 version canonique est portee par le manifeste.
 
-Chaque ecart declare porte une **decision** (`to_converge` ou `justified`)
-et son **motif ecrit**. Une divergence `justified` ne dispense pas
-d'une entree d'allowlist : l'allowlist est ce qui eteint le constat, pour
-les carnets nommes, et elle porte elle aussi un motif.
+Chaque ecart declare porte une **decision** et son **motif ecrit**. Le
+vocabulaire du classement (celui du recensement) est :
 
-## Les 9 paquets a versions multiples — classement
+| classement | sens | ce que la lane doit en faire |
+|---|---|---|
+| `canonique` | la version fixee par le manifeste ou par l'organe de serie | rien : c'est la cible |
+| `justified` | l'ecart est **motive** dans le depot (contrainte reelle de la serie) | rien : l'ecart est assume |
+| `to_converge` | l'ecart n'a **aucun motif ecrit** dans le depot | converger le carnet vers la canonique |
+| `a_classer` | l'ecart est **constate mais pas arbitre** : aucune decision n'est ecrite pour lui | l'arbitrage a lieu ; tant qu'il n'est pas arbitre, l'ecart reste visible |
 
-Mesure sur `origin/main` au 2026-10-28 (recensement de l'organe, rc 0) :
+Une divergence `justified` ne dispense pas d'une entree d'allowlist :
+l'allowlist est ce qui eteint le constat, pour les carnets nommes, et elle
+porte elle aussi un motif. Une entree d'allowlist **sans motif ecrit** est
+refusee au chargement du manifeste : une allowlist sans motif n'est pas une
+justification.
 
-| paquet | canonique | ecarts | classement |
-|---|---|---|---|
-| IKVM | 8.15.0 | 8.14.0 (6 carnets, serie Tweety) | a converger — #19673 avait deja aligne la serie |
-| IKVM.Image | 8.15.0 | 8.14.0 (5 carnets) | a converger |
-| pythonnet | 3.1.0 | 3.0.5 (7 carnets) | a converger |
-| Google.OrTools | 9.15.6755 | 9.11.4210 (11 carnets) | a converger |
-| dotNetRDF | 3.4.1 | 3.2.1 (7 carnets), 3.4.0 (1), 3.2.0 (1) | a converger |
-| Microsoft.ML | 5.0.0 | 3.0.0 (1) | a converger |
-| SkiaSharp | 3.119.4 | 2.88.3 (1) | a converger |
-| Microsoft.ML.AutoML | 0.23.0 | 0.22.3 (1) | a converger |
-| CsvHelper | 33.0.1 | 27.1.1 (1) | a converger |
+Les **decompils ne sont jamais recopies** dans le manifeste ni dans cette
+page : le nombre de carnets par version, les epinglages flottants et le
+classement de chaque ecart sont produits par le recensement, seul a jour sur
+le corpus.
 
-Aucun de ces ecarts n'a de motif ecrit dans le depot : ils sont donc classes
-« a converger » et non « justifies ». Les series concernees sont la Tweety
+## Le classement du corpus — il se lit dans l'organe, pas dans cette page
+
+```bash
+python scripts/notebook_tools/check_lib_versions.py --census
+```
+
+Le recensement sort la table de dispersion complete : pour chaque
+bibliotheque du manifeste, sa version canonique, chaque version
+epinglee rencontree, le nombre de carnets qui la portent, le classement de
+l'ecart et son motif. Il sort aussi les **epinglages flottants**, qu'aucune
+table recopie ne pourrait dire.
+
+Deux usages :
+
+- **diagnostiquer** une serie avant de la converger (quels carnets portent
+  l'ecart, quel est son classement) ;
+- **verifier** qu'une convergence a bien ete rendue : la ligne disparait de
+  la table, elle ne se recopie pas ailleurs.
+
+Ce qui est ecrit dans le manifeste, en revanche, ce sont les **motifs** :
+pourquoi un ecart est justifie, pourquoi un autre doit converger. Un motif
+qui contient un decompil (« presente sur N carnets ») est un decompil
+copic qui perime au premier ajout de carnet ; il n'a pas sa place la.
+
+Les series concernees par les ecarts a converger sont la Tweety
 (IKVM / IKVM.Image), la SemanticWeb (dotNetRDF), le GameTheory et les
 Search (OrTools, pythonnet).
 
@@ -117,10 +141,10 @@ Le faux positif de la ligne « etat » est mesure : la PR `9364be282` modifie
 l'aurait fait rougir a tort.
 
 C'est la mesure qui fonde le demarrage **en advisory** : le stock porte des
-derives connues (IKVM 8.14.0 sur six carnets, dotNetRDF 3.2.1 sur sept,
-OrTools 9.11.4210 sur onze...), et un garde bloquant rougirait des PR qui ne
-font que retoucher un de ces carnets. La promotion en bloquant est une
-tranche distincte, apres convergence.
+derives connues (les epinglages ages, les epinglages flottants), et un garde
+bloquant rougirait des PR qui ne font que retoucher un de ces carnets. Le
+detail des derives se lit dans le recensement ; la promotion en bloquant est
+une tranche distincte, apres convergence.
 
 ## Monter une version d'une bibliotheque en un seul geste
 
@@ -144,9 +168,36 @@ La procedure (issue #23073, point 4) :
    dependance a une autre bibliotheque), l'ecart passe par une entree
    d'allowlist **avec son motif** — pas par un silence.
 
+## Codes de sortie
+
+| code | sens |
+|---|---|
+| **0** | aucun constat (ou recensement : il decrit, il ne juge) |
+| **1** | constats : la PR introduce un ecart, ou l'etat lu porte un ecart |
+| **2** | **incident** : l'organe n'a pas pu conclure |
+
+Le rc 2 est la regle de la famille : un carnet illisible, un manifeste dont
+une entree d'allowlist n'a pas de motif, un carnet hors du depot, une base
+illisible. Aucun de ces cas ne doit produire un **vert silencieux** : le
+silence se lirait comme « les carnets examinés sont alignes » alors que
+l'organe n'a rien lu. Un incident n'est pas un verdict de la PR : il ne
+bloque rien par lui-meme, il dit que la mesure est a refaire.
+
 ## Limites
 
 - L'organe ne reexecute aucun carnet et ne compare pas deux notebooks.
+- L'organe lit les **cellules code** : une declaration d'installation pip
+  ecrite dans une cellule **markdown** (documentation) n'est pas un epinglage
+  pour lui. Les declarations pip du corpus de reference (mealpy) sont en
+  cellules code ; celles d'autres series (z3-solver, torch) sont en markdown
+  et sortent du perimetre — le suivi est l'issue nommee dans le corps de la
+  PR #23079.
+- Les **binaires charges depuis un chemin hors du depot** ne sont pas
+  detectes : c'est un ecart de dependance, pas d'epinglage. Le suivi est
+  l'issue nommee dans le corps de la PR #23079.
+- Les **replis indexes sur une version** (`Skipped ... API change`) sont
+  signales par la lecture du carnet, pas par l'organe : le suivi est l'issue
+  nommee dans le corps de la PR #23079.
 - Il ne juge pas l'interpreteur : c'est le ressort de `check_kernel_drift.py`.
 - Mathlib et les lakes Lean restent a #4362 ; les sorties videes par un
   environnement absent restent a #21424.

@@ -71,6 +71,7 @@ import json
 import re
 import subprocess
 import sys
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -79,9 +80,23 @@ DEFAULT_MANIFEST = Path(__file__).resolve().parent / "lib_versions_manifest.json
 
 # Epinglages NuGet : `#r "nuget: IKVM, 8.15.0"`. La virgule peut suivre sans
 # espace (`nuget:pythonnet,3.1.0`) : le motif l'accepte.
+#
+# Trois formes sont lues, parce que les trois existent dans le corpus :
+#   - version simple      : `#r "nuget: IKVM, 8.15.0"`
+#   - version prefixee `v` : `#r "nuget: IKVM, v8.15.0"`
+#   - flux (troisieme argument) : `#r "nuget: IKVM, 8.15.0, https://flux/"`
+# Un epinglage **sans version** (`#r "nuget: IKVM"`) est un pin flottant : il
+# est reconnu (le groupe version reste vide) et signale comme tel -- voir
+# #23086, qui nomme le defaut ; il n'est pas jete en silence.
 NUGET_PIN_RE = re.compile(
-    r'#r\s*"nuget:\s*([^",\s]+)\s*(?:,\s*([0-9][^"\s]*))?\s*"',
+    r'#r\s*"nuget:\s*([^",\s]+)\s*(?:,\s*v?([0-9][^",\s]*))?(?:\s*,\s*[^"]*)?\s*"',
     re.IGNORECASE,
+)
+
+# Rappel : un epinglage flottant est signale par ce motif (cf #23086).
+FLOATING_PIN_REASON = (
+    "epinglage flottant : la version n'est pas fixee, donc le carnet peut "
+    "charger une version differente a chaque re-execution (cf #23086)"
 )
 
 # Epinglages pip : `pip install x==1.2.3` (avec ou sans `!` devant).
@@ -91,9 +106,22 @@ PIP_PIN_RE = re.compile(
 )
 
 
+class OrganIncident(Exception):
+    """Incident d'entree : l'organe ne peut pas conclure.
+
+    Distinct d'un constat (une PR qui s'ecarte) : ici l'outil n'a pas pu
+    mesurer. La famille rend alors rc 2, un code neutre qui ne tient jamais
+    le merge mais ne se lit pas comme un verdict de la PR.
+    """
+
+
 def _norm_version(value: str) -> str:
-    """Normalise une version : espaces retires, ponctuation terminale retiree."""
-    return value.strip().strip(";,)")
+    """Normalise une version : espaces retires, ponctuation terminale retiree,
+    prefixe `v` retire (`v8.15.0` et `8.15.0` sont la meme version)."""
+    value = value.strip().strip(";,)")
+    if value[:1] in ("v", "V") and len(value) > 1 and value[1].isdigit():
+        value = value[1:]
+    return value
 
 
 def version_key(value: str) -> tuple:
@@ -124,8 +152,17 @@ def version_key(value: str) -> tuple:
 
 
 def compare_versions(left: str, right: str) -> int:
-    """-1 si left < right, 0 si egales, +1 si left > right."""
+    """-1 si left < right, 0 si egales, +1 si left > right.
+
+    Les composantes manquantes valent **zero** : `8.15` et `8.15.0` sont la
+    meme version, `1.0.0.0` et `1.0` aussi. Sans cette completion, un
+    epinglage ecrit `8.15` face a une canonique `8.15.0` se lirait comme une
+    retrogradation.
+    """
     a, b = version_key(left), version_key(right)
+    length = max(len(a), len(b))
+    a = a + ((0, 0, 1, ""),) * (length - len(a))
+    b = b + ((0, 0, 1, ""),) * (length - len(b))
     if a < b:
         return -1
     if a > b:
@@ -153,6 +190,10 @@ class Library:
     local_symbol: str = ""
     # Motifs de provisionnement etranger a la serie : URL morte ou divergente.
     foreign_provisioning: list[dict] = field(default_factory=list)
+    # Note libre : d'ou vient la version canonique, quand elle n'est pas
+    # portee par un organe de serie. Pas un decompil, pas un nombre de
+    # carnets : une source.
+    note: str = ""
     # Ecarts classes : version -> {decision, reason}
     divergences: dict[str, dict] = field(default_factory=dict)
 
@@ -213,6 +254,7 @@ def load_manifest(path: Path) -> Manifest:
             organ_symbol=entry.get("organ_symbol", ""),
             local_symbol=entry.get("local_symbol", ""),
             foreign_provisioning=list(entry.get("foreign_provisioning", [])),
+            note=entry.get("note", ""),
             divergences={
                 d["version"]: {
                     "decision": d.get("decision", "to_converge"),
@@ -221,9 +263,17 @@ def load_manifest(path: Path) -> Manifest:
                 for d in entry.get("divergences", [])
             },
         )
+    allowlist = list(raw.get("allowlist", []))
+    for entry in allowlist:
+        motif = str(entry.get("reason", "")).strip()
+        if not motif:
+            raise ValueError(
+                "entree d'allowlist sans motif ecrit : une allowlist sans "
+                "motif n'est pas une justification (cf #23073)"
+            )
     return Manifest(
         libraries=libraries,
-        allowlist=list(raw.get("allowlist", [])),
+        allowlist=allowlist,
         path=path,
     )
 
@@ -269,8 +319,12 @@ def pins_from_payload(payload: dict, manifest: Manifest) -> list[Pin]:
         for lib in manifest.libraries.values()
         if lib.ecosystem == "pip"
     }
-    tweety_ids = [
-        lib for lib in manifest.libraries.values() if lib.ecosystem == "tweety"
+    # Le provisionnement etranger est cable PAR BIBLIOTHEQUE : les motifs
+    # vivent au manifeste, dans `foreign_provisioning`, quel que soit
+    # l'ecosysteme de la bibliotheque. Un cable dur sur `ecosystem ==
+    # "tweety"` laissait tous les autres motifs muets.
+    provisioning_libs = [
+        lib for lib in manifest.libraries.values() if lib.foreign_provisioning
     ]
     symbol_owners = {
         lib.local_symbol: lib for lib in manifest.libraries.values() if lib.local_symbol
@@ -295,12 +349,14 @@ def pins_from_payload(payload: dict, manifest: Manifest) -> list[Pin]:
                 )
         for match in NUGET_PIN_RE.finditer(line):
             lib_id = nuget_ids.get(match.group(1).lower())
-            if lib_id is None or not match.group(2):
+            if lib_id is None:
                 continue
+            # Version absente : epinglage flottant. Il est signale, pas jete.
+            version = _norm_version(match.group(2)) if match.group(2) else ""
             pins.append(
                 Pin(
                     lib_id,
-                    _norm_version(match.group(2)),
+                    version,
                     "nuget",
                     cell_index,
                     line.strip(),
@@ -321,7 +377,7 @@ def pins_from_payload(payload: dict, manifest: Manifest) -> list[Pin]:
                     line_no=line_number,
                 )
             )
-        for lib in tweety_ids:
+        for lib in provisioning_libs:
             for pattern in lib.foreign_provisioning:
                 match = re.search(pattern["pattern"], line, re.IGNORECASE)
                 if match:
@@ -352,20 +408,33 @@ def _relative_to_repo(notebook: Path, repo_root: Path) -> str:
         return notebook.as_posix()
 
 
-def payload_from_file(notebook_path: Path) -> dict | None:
-    """Charge un carnet sur disque ; None s'il est illisible."""
+def payload_from_file(notebook_path: Path) -> dict:
+    """Charge un carnet sur disque.
+
+    Un carnet illisible est un **incident** (rc 2) : le rendre « vide »
+    produirait un vert silencieux sur un carnet que l'organe n'a pas lu.
+    """
     try:
         return json.loads(notebook_path.read_text(encoding="utf-8", errors="replace"))
-    except (OSError, json.JSONDecodeError):
-        return None
+    except (OSError, json.JSONDecodeError) as exc:
+        raise OrganIncident(
+            f"carnet illisible : {notebook_path.as_posix()} ({exc})"
+        ) from exc
 
 
 def pins_from_file(notebook_path: Path, manifest: Manifest) -> list[Pin]:
-    """Relève les epinglages d'un carnet sur disque (vide si illisible)."""
+    """Relève les epinglages d'un carnet sur disque.
+
+    Un carnet illisible est un **incident**, pas un carnet vide : le rendre
+    « aligne » produirait un vert silencieux sur un carnet que l'organe n'a
+    pas reellement lu.
+    """
     try:
         payload = json.loads(notebook_path.read_text(encoding="utf-8", errors="replace"))
-    except (OSError, json.JSONDecodeError):
-        return []
+    except (OSError, json.JSONDecodeError) as exc:
+        raise OrganIncident(
+            f"carnet illisible : {notebook_path.as_posix()} ({exc})"
+        ) from exc
     return pins_from_payload(payload, manifest)
 
 
@@ -384,7 +453,9 @@ def _allowlisted(
             for n in notebooks
         ):
             continue
-        return entry.get("reason", "(motif absent)")
+        # Le motif est obligatoire : `load_manifest` refuse une entree sans
+        # motif non vide. Ce repli n'est donc pas atteignable.
+        return entry.get("reason", "")
     return None
 
 
@@ -418,6 +489,13 @@ def state_findings(
     for pin in pins:
         lib = manifest.libraries[pin.library]
         canonical = canonical_map.get(pin.library)
+        if pin.ecosystem == "nuget" and not pin.version:
+            # Epinglage flottant : la version n'est pas fixee (cf #23086).
+            findings.append(
+                _finding(notebook, pin, canonical, "pin_non_versionne",
+                         FLOATING_PIN_REASON)
+            )
+            continue
         if pin.ecosystem == "provisioning":
             reason = ""
             for pattern in lib.foreign_provisioning:
@@ -458,11 +536,17 @@ def delta_findings(
     la convergence traite -- pas une regression introduite par la PR.
     """
     findings: list[dict] = []
-    base_versions: dict[str, set[str]] = {}
+    # Les MULTIPLICITES comptent, pas les ensembles : un carnet qui porte
+    # deux versions d'une meme bibliotheque (base : A et B ; tete : A et B)
+    # n'a rien vu changer. Comparer des ensembles confondait « la version B
+    # est encore la et je l'ignore » avec « la version B a disparu » et
+    # produisait un faux downgrade.
+    base_counts: Counter = Counter()
     for pin in base_pins:
         if pin.ecosystem == "provisioning":
             continue
-        base_versions.setdefault(pin.library, set()).add(pin.version)
+        base_counts[(pin.library, pin.version)] += 1
+    consumed: Counter = Counter()
 
     for pin in head_pins:
         if pin.ecosystem == "provisioning":
@@ -472,12 +556,21 @@ def delta_findings(
                 state_findings(notebook, [pin], manifest, canonical_map)
             )
             continue
+        key = (pin.library, pin.version)
+        if consumed[key] < base_counts[key]:
+            # Epinglage deja present a la base, en nombre suffisant :
+            # hors perimetre du delta.
+            consumed[key] += 1
+            continue
+        consumed[key] += 1
         canonical = canonical_map.get(pin.library)
         if canonical is None:
             continue
-        previous = base_versions.get(pin.library, set())
-        if previous == {pin.version}:
-            # Epinglage inchange par la PR : hors perimetre du delta.
+        if pin.ecosystem == "nuget" and not pin.version:
+            findings.append(
+                _finding(notebook, pin, canonical, "pin_non_versionne",
+                         FLOATING_PIN_REASON)
+            )
             continue
         if _allowlisted(manifest, pin.library, pin.version, notebook):
             continue
@@ -712,9 +805,31 @@ def changed_notebooks(repo_root: Path, revision_range: str) -> tuple[list[Path],
 
 
 def notebook_at(repo_root: Path, revision: str | None, relative: str) -> dict | None:
-    """Charge le carnet tel qu'il etait a une revision ; None s'il n'existait pas."""
+    """Charge le carnet tel qu'il etait a une revision.
+
+    Trois cas, et le silence n'en est aucun :
+    - **absent** de la base (le carnet est nouveau dans la PR) : None ;
+    - **present mais illisible** : incident nomme ;
+    - **git show en echec** : incident nomme -- sinon le delta degenererait
+      en etat, et une derive historique rougirait sans cause.
+    """
     if not revision:
         return None
+    code, out, err = _git(repo_root, ["show", f"{revision}:{relative}"])
+    if code != 0:
+        if "does not exist" in err or "exists on disk" in err:
+            return None
+        raise OrganIncident(
+            f"base illisible : git show {revision}:{relative} a echoue "
+            f"({err.strip()[:200]})"
+        )
+    try:
+        return json.loads(out)
+    except json.JSONDecodeError as exc:
+        raise OrganIncident(
+            f"base illisible : {relative} a la revision {revision} n'est pas "
+            f"du JSON ({exc})"
+        ) from exc
     code, out, _err = _git(repo_root, ["show", f"{revision}:{relative}"])
     if code != 0:
         return None
@@ -758,10 +873,17 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
     """Recensement repo-wide : table de dispersion + classement des ecarts."""
     canonicals, errors = resolve_canonicals(manifest, repo_root)
     dispersion: dict[str, dict[str, list[str]]] = {}
+    floating: dict[str, list[str]] = {}
     for notebook in tracked_notebooks(repo_root):
         relative = notebook.relative_to(repo_root).as_posix()
         for pin in pins_from_file(notebook, manifest):
             if pin.ecosystem == "provisioning":
+                continue
+            if not pin.version:
+                # Epinglage flottant : compte a part (cf #23086).
+                bucket_f = floating.setdefault(pin.library, [])
+                if relative not in bucket_f:
+                    bucket_f.append(relative)
                 continue
             bucket = dispersion.setdefault(pin.library, {})
             bucket.setdefault(pin.version, [])
@@ -802,7 +924,9 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
                 "canonical": canonical,
                 "canonical_source": lib.canonical_source,
                 "versions": rows,
+                "note": lib.note,
                 "multiple_versions": len(rows) > 1,
+                "floating_notebooks": sorted(floating.get(lib_id, [])),
             }
         )
     return {
@@ -822,12 +946,20 @@ def render_census(report: dict) -> str:
         source = "organe de serie" if lib["canonical_source"] == "organ" else "manifeste"
         lines.append(f"## {lib['library']} (canonique : {canonical} -- {source})")
         lines.append("")
+        if lib.get("note"):
+            lines.append(lib["note"])
+            lines.append("")
         lines.append("| version | carnets | classement | motif |")
         lines.append("|---|---|---|---|")
         for row in lib["versions"]:
             motif = row["reason"].replace("|", "\\|")
             lines.append(
                 f"| {row['version']} | {row['count']} | {row['decision']} | {motif} |"
+            )
+        if lib.get("floating_notebooks"):
+            lines.append(
+                f"| (non versionne) | {len(lib['floating_notebooks'])} "
+                f"| pin flottant | {FLOATING_PIN_REASON} |"
             )
         lines.append("")
         for row in lib["versions"]:
@@ -940,24 +1072,42 @@ def main(argv: list[str] | None = None) -> int:
 
     findings: list[dict] = []
     checked = 0
+    # Le mode « chemins explicites » est un mode d'ETAT : la sortie JSON doit
+    # le dire, sinon elle annonce `"state": false` pour une lecture d'etat.
+    state_mode = bool(args.state) or bool(args.notebooks and not args.changed)
 
     if args.notebooks and not args.changed:
         for raw_path in args.notebooks:
             notebook = Path(raw_path)
             if not notebook.is_absolute():
                 notebook = repo_root / raw_path
+            notebook = notebook.resolve()
             if not notebook.is_file():
                 print(f"ERREUR : carnet introuvable : {raw_path}", file=sys.stderr)
                 return 2
-            relative = _relative_to_repo(notebook, repo_root)
-            pins = pins_from_file(notebook, manifest)
-            findings.extend(state_findings(relative, pins, manifest, canonicals))
-            if not args.no_mentions:
-                payload = payload_from_file(notebook)
-                if payload is not None:
+            if not notebook.is_relative_to(repo_root):
+                # Un carnet hors du depot n'est pas un carnet de la famille :
+                # le signaler nommement (rc 2), pas lever une ValueError.
+                print(
+                    f"ERREUR : carnet hors du depot : {notebook.as_posix()} "
+                    f"(racine : {repo_root.as_posix()})",
+                    file=sys.stderr,
+                )
+                return 2
+            relative = notebook.relative_to(repo_root).as_posix()
+            try:
+                pins = pins_from_file(notebook, manifest)
+                findings.extend(
+                    state_findings(relative, pins, manifest, canonicals)
+                )
+                if not args.no_mentions:
+                    payload = payload_from_file(notebook)
                     findings.extend(
                         mention_findings(relative, payload, manifest, canonicals)
                     )
+            except OrganIncident as exc:
+                print(f"ERREUR : {exc}", file=sys.stderr)
+                return 2
             checked += 1
     else:
         if not args.changed:
@@ -973,13 +1123,17 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         for notebook in targets:
             relative = notebook.relative_to(repo_root).as_posix()
-            head_pins = pins_from_file(notebook, manifest)
-            head_payload = payload_from_file(notebook)
+            try:
+                head_pins = pins_from_file(notebook, manifest)
+                head_payload = payload_from_file(notebook)
+            except OrganIncident as exc:
+                print(f"ERREUR : {exc}", file=sys.stderr)
+                return 2
             if args.state:
                 findings.extend(
                     state_findings(relative, head_pins, manifest, canonicals)
                 )
-                if not args.no_mentions and head_payload is not None:
+                if not args.no_mentions:
                     findings.extend(
                         mention_findings(
                             relative, head_payload, manifest, canonicals
@@ -997,7 +1151,7 @@ def main(argv: list[str] | None = None) -> int:
                         relative, base_pins, head_pins, manifest, canonicals
                     )
                 )
-                if not args.no_mentions and head_payload is not None:
+                if not args.no_mentions:
                     findings.extend(
                         delta_mention_findings(
                             relative, base_payload, head_payload,
@@ -1011,7 +1165,7 @@ def main(argv: list[str] | None = None) -> int:
             json.dumps(
                 {
                     "mode": "check",
-                    "state": bool(args.state),
+                    "state": state_mode,
                     "findings": findings,
                     "checked": checked,
                 },
