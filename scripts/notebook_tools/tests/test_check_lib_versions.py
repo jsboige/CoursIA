@@ -183,12 +183,29 @@ def test_positive_control_tweety_archive_is_red():
 
 
 def test_positive_control_ikvm_814_is_red():
-    """Un carnet en IKVM 8.14.0 s'ecarte de la canonique 8.15.0."""
+    """Un carnet en IKVM 8.14.0 s'ecarte de la canonique 8.15.0.
+
+    L'ecart 8.14.0 est **justifie** (les six carnets Tweety chargent une DLL
+    ombree compilee en 8.14.0) : le constat reste visible et porte son motif
+    pour tout carnet qui n'est pas dans l'allowlist -- il ne disparait pas.
+    """
     manifest = clv.load_manifest(MANIFEST_PATH)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
     payload = _notebook(['#r "nuget:IKVM,8.14.0"'])
     findings = clv.state_findings("x.ipynb", clv.pins_from_payload(payload, manifest), manifest, canonicals)
-    assert any(f["kind"] == "downgrade" and f["version"] == "8.14.0" for f in findings)
+    assert any(f["kind"] == "divergence" and f["version"] == "8.14.0" for f in findings)
+    assert any(f["reason"].strip() for f in findings if f["version"] == "8.14.0")
+
+
+def test_les_six_carnets_tweety_sont_allowlistes():
+    """Le motif d'allowlist porte les six carnets dont l'artefact est lie a 8.14.0."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    payload = _notebook(['#r "nuget:IKVM,8.14.0"'])
+    pins = clv.pins_from_payload(payload, manifest)
+    for name in ("Tweety-10-MLN-CSharp.ipynb", "Tweety-03-QBF-CSharp.ipynb"):
+        assert clv.state_findings(name, pins, manifest, canonicals) == []
+    assert clv.state_findings("Autre-Carnet.ipynb", pins, manifest, canonicals) != []
 
 
 def test_negative_control_aligned_notebook_is_green():
@@ -216,17 +233,17 @@ def test_delta_ignores_a_legacy_pin_the_pr_does_not_touch():
 def test_delta_flags_a_downgrade_introduced_by_the_pr():
     manifest = clv.load_manifest(MANIFEST_PATH)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
-    base = clv.pins_from_payload(_notebook(['#r "nuget:IKVM,8.15.0"']), manifest)
-    head = clv.pins_from_payload(_notebook(['#r "nuget:IKVM,8.14.0"']), manifest)
+    base = clv.pins_from_payload(_notebook(['#r "nuget:pythonnet,3.1.0"']), manifest)
+    head = clv.pins_from_payload(_notebook(['#r "nuget:pythonnet,3.0.5"']), manifest)
     findings = clv.delta_findings("x.ipynb", base, head, manifest, canonicals)
-    assert any(f["kind"] == "downgrade" and f["version"] == "8.14.0" for f in findings)
+    assert any(f["kind"] == "downgrade" and f["version"] == "3.0.5" for f in findings)
 
 
 def test_delta_flags_a_new_notebook_carrying_a_divergent_pin():
     """Un carnet ajoute par la PR n'a pas de base : tous ses epinglages sont nouveaux."""
     manifest = clv.load_manifest(MANIFEST_PATH)
     canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
-    head = clv.pins_from_payload(_notebook(['#r "nuget:IKVM,8.14.0"']), manifest)
+    head = clv.pins_from_payload(_notebook(['#r "nuget:pythonnet,3.0.5"']), manifest)
     findings = clv.delta_findings("x.ipynb", [], head, manifest, canonicals)
     assert any(f["kind"] == "downgrade" for f in findings)
 
@@ -291,10 +308,18 @@ def test_census_returns_rc_zero_and_reports_the_dispersion():
     assert ikvm["multiple_versions"] is True
     versions = {row["version"]: row for row in ikvm["versions"]}
     assert "8.14.0" in versions and "8.15.0" in versions
-    assert versions["8.14.0"]["decision"] == "to_converge"
+    assert versions["8.14.0"]["decision"] == "justified"
     assert versions["8.15.0"]["decision"] == "canonique"
     # le classement porte un motif ecrit
     assert versions["8.14.0"]["reason"].strip()
+
+
+def test_le_recensement_ne_classe_pas_un_ecart_justifie_comme_a_converger():
+    """Un ecart justifie ne doit pas apparaitre dans la liste « a converger »."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    rendered = clv.render_census(clv.run_census(REPO_ROOT, manifest))
+    section = rendered.split("## IKVM ")[1].split("## ")[0]
+    assert "**8.14.0**" not in section
 
 
 def test_census_cli_exits_zero():
@@ -326,3 +351,122 @@ def test_guard_is_aggregated_by_the_fast_lane_engine():
     """Un groupe non cable n'est jamais execute : le geste doit etre dans l'engine."""
     engine = (REPO_ROOT / "scripts" / "ci" / "fast_lane.py").read_text(encoding="utf-8")
     assert "TRANCHE29" in engine, "le groupe TRANCHE29 n'est pas cable dans fast_lane.py"
+
+
+# --------------------------------------------------------------------------
+# Mentions residuelles de version (corpus desynchronise)
+# --------------------------------------------------------------------------
+def _notebook_with(cells: list[dict]) -> dict:
+    """Carnet minimal a cellules libres (markdown, sorties)."""
+    return {
+        "cells": cells,
+        "metadata": {},
+        "nbformat": 4,
+        "nbformat_minor": 5,
+    }
+
+
+def _code(source: str, outputs: list[dict] | None = None) -> dict:
+    return {
+        "cell_type": "code",
+        "source": [source],
+        "metadata": {},
+        "outputs": outputs or [],
+    }
+
+
+def _markdown(source: str) -> dict:
+    return {"cell_type": "markdown", "source": [source], "metadata": {}}
+
+
+def test_une_mention_de_version_perimee_dans_la_prose_est_relevee():
+    """La prose qui annonce l'ancienne version est un constat, meme si l'epinglage est a jour."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    payload = _notebook_with([
+        _code('#r "nuget: pythonnet, 3.1.0"'),
+        _markdown("On utilise pythonnet 3.0.5 dans ce carnet."),
+    ])
+    findings = clv.mention_findings("x.ipynb", payload, manifest, canonicals)
+    assert any(
+        f["kind"] == "mention_residuelle" and f["version"] == "3.0.5"
+        for f in findings
+    )
+
+
+def test_la_ligne_depinglage_n_est_pas_une_mention():
+    """La ligne qui porte l'epinglage n'est pas une mention : elle est l'epinglage."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    payload = _notebook_with([_code('#r "nuget: pythonnet, 3.0.5"')])
+    assert clv.mention_findings("x.ipynb", payload, manifest, canonicals) == []
+
+
+def test_une_sortie_affichant_une_version_perimee_est_relevee():
+    """Le bandeau « Installed Packages » affiche la version reellement chargee."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    payload = _notebook_with([
+        _code(
+            '#r "nuget: pythonnet, 3.1.0"',
+            [{"output_type": "stream", "text": ["pythonnet 3.0.5" + chr(10)]}],
+        ),
+    ])
+    findings = clv.mention_findings("x.ipynb", payload, manifest, canonicals)
+    assert any(f["kind"] == "mention_residuelle" for f in findings)
+
+
+def test_une_mention_d_un_carnet_sans_epinglage_de_cette_bibliotheque_est_ignoree():
+    """Le perimetre est borne : on ne parle que des bibliotheques que le carnet epingle."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    payload = _notebook_with([
+        _code('#r "nuget: pythonnet, 3.1.0"'),
+        _markdown("Un autre sujet : dotNetRDF 3.2.1 est cite ici."),
+    ])
+    findings = clv.mention_findings("x.ipynb", payload, manifest, canonicals)
+    assert all(f["library"] == "pythonnet" for f in findings)
+
+
+def test_le_delta_ignore_une_mention_deja_presente():
+    """Une mention deja presente et non touchee par la PR est une derive historique."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    base = _notebook_with([
+        _code('#r "nuget: pythonnet, 3.1.0"'),
+        _markdown("On utilise pythonnet 3.0.5 dans ce carnet."),
+    ])
+    head = _notebook_with([
+        _code('#r "nuget: pythonnet, 3.1.0"'),
+        _markdown("On utilise pythonnet 3.0.5 dans ce carnet."),
+        _code('print("contenu sans rapport")'),
+    ])
+    assert clv.delta_mention_findings(
+        "x.ipynb", base, head, manifest, canonicals
+    ) == []
+
+
+def test_le_delta_releve_une_mention_introduite_par_la_pr():
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    base = _notebook_with([_code('#r "nuget: pythonnet, 3.1.0"')])
+    head = _notebook_with([
+        _code('#r "nuget: pythonnet, 3.1.0"'),
+        _markdown("On utilise pythonnet 3.0.5 dans ce carnet."),
+    ])
+    findings = clv.delta_mention_findings(
+        "x.ipynb", base, head, manifest, canonicals
+    )
+    assert any(f["kind"] == "mention_residuelle" for f in findings)
+
+
+def test_une_mention_autorisee_est_supprimee():
+    """L'allowlist porte aussi les mentions : le motif vaut pour la prose."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    payload = _notebook_with([
+        _code('#r "nuget: IKVM, 8.15.0"'),
+        _markdown("Historique : ce carnet a utilise IKVM 8.14.0."),
+    ])
+    findings = clv.mention_findings("x.ipynb", payload, manifest, canonicals)
+    assert all(f["version"] != "8.14.0" for f in findings)

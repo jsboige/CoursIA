@@ -237,6 +237,7 @@ class Pin:
     ecosystem: str
     cell: int = -1
     line: str = ""
+    line_no: int = 0
 
 
 def _cell_text(cell: dict) -> str:
@@ -275,7 +276,7 @@ def pins_from_payload(payload: dict, manifest: Manifest) -> list[Pin]:
         lib.local_symbol: lib for lib in manifest.libraries.values() if lib.local_symbol
     }
     pins: list[Pin] = []
-    for cell_index, _line_number, line in _code_lines(payload):
+    for cell_index, line_number, line in _code_lines(payload):
         # Redeclaration locale d'un symbole que l'organe de serie possede.
         for symbol, lib in symbol_owners.items():
             match = re.match(
@@ -289,6 +290,7 @@ def pins_from_payload(payload: dict, manifest: Manifest) -> list[Pin]:
                         "local_const",
                         cell_index,
                         line.strip(),
+                        line_no=line_number,
                     )
                 )
         for match in NUGET_PIN_RE.finditer(line):
@@ -302,6 +304,7 @@ def pins_from_payload(payload: dict, manifest: Manifest) -> list[Pin]:
                     "nuget",
                     cell_index,
                     line.strip(),
+                    line_no=line_number,
                 )
             )
         for match in PIP_PIN_RE.finditer(line):
@@ -315,6 +318,7 @@ def pins_from_payload(payload: dict, manifest: Manifest) -> list[Pin]:
                     "pip",
                     cell_index,
                     line.strip(),
+                    line_no=line_number,
                 )
             )
         for lib in tweety_ids:
@@ -329,9 +333,31 @@ def pins_from_payload(payload: dict, manifest: Manifest) -> list[Pin]:
                             "provisioning",
                             cell_index,
                             line.strip(),
+                            line_no=line_number,
                         )
                     )
     return pins
+
+
+def _relative_to_repo(notebook: Path, repo_root: Path) -> str:
+    """Chemin relatif au depot ; le chemin absolu si le carnet est hors depot.
+
+    Un carnet hors du depot est valide pour l'organe (verification d'un
+    carnet local) : il ne doit pas faire echouer l'outil sur une
+    `ValueError` de `relative_to`.
+    """
+    try:
+        return notebook.relative_to(repo_root).as_posix()
+    except ValueError:
+        return notebook.as_posix()
+
+
+def payload_from_file(notebook_path: Path) -> dict | None:
+    """Charge un carnet sur disque ; None s'il est illisible."""
+    try:
+        return json.loads(notebook_path.read_text(encoding="utf-8", errors="replace"))
+    except (OSError, json.JSONDecodeError):
+        return None
 
 
 def pins_from_file(notebook_path: Path, manifest: Manifest) -> list[Pin]:
@@ -467,6 +493,161 @@ def delta_findings(
             kind = "divergence"
         findings.append(_finding(notebook, pin, canonical, kind, reason))
     return findings
+
+
+def _output_texts(cell: dict) -> list[str]:
+    """Textes produits par une cellule : flux, resultats, erreurs."""
+    texts: list[str] = []
+    for output in cell.get("outputs", []) or []:
+        kind = output.get("output_type")
+        if kind == "stream":
+            texts.append("".join(output.get("text", []) or []))
+        elif kind in ("execute_result", "display_data"):
+            data = output.get("data", {}) or {}
+            texts.append("".join(data.get("text/plain", []) or []))
+        elif kind == "error":
+            texts.append(f"{output.get('ename', '')} {output.get('evalue', '')}")
+    return texts
+
+
+def _version_mentions(text: str, version: str) -> bool:
+    """Vrai si `version` apparait dans `text` comme un jeton de version.
+
+    Les gardes numeriques evitent qu'une version soit reconnue dans une autre :
+    `3.0.5` ne doit pas matcher `13.0.5` ni `3.0.50`.
+    """
+    pattern = r"(?<![\d.])" + re.escape(version) + r"(?![\d.])"
+    return re.search(pattern, text) is not None
+
+
+def _mention_finding(
+    notebook: str,
+    library: str,
+    version: str,
+    canonical: str | None,
+    cell: int,
+    where: str,
+    text: str,
+) -> dict:
+    extrait = text.strip()[:160]
+    return {
+        "notebook": notebook,
+        "library": library,
+        "kind": "mention_residuelle",
+        "version": version,
+        "canonical": canonical,
+        "cell": cell,
+        "line": extrait,
+        "reason": (
+            f"mention de la version perimee ({where}) : {extrait}"
+        ),
+    }
+
+
+def mention_findings(
+    notebook: str,
+    payload: dict,
+    manifest: Manifest,
+    canonical_map: dict[str, str | None],
+) -> list[dict]:
+    """Constats sur les MENTIONS de version perimee hors ligne d'epinglage.
+
+    L'organe lit la ligne d'epinglage ; il ne lit pas le reste du carnet. Un
+    carnet peut donc etre « aligne sur le manifeste » tout en annonçant
+    l'ancienne version dans sa prose ou dans ses sorties commitees -- c'est
+    exactement ce que la premiere tranche de convergence a montre (sept carnets
+    de la serie SemanticWeb, #23083) : l'epinglage etait a jour, le corpus
+    mentait.
+
+    Le perimetre est borne : une mention n'est signalee que dans un carnet qui
+    **declare un epinglage** de cette bibliotheque, et la ligne d'epinglage
+    elle-meme est exclue (elle porte la version, ce n'est pas une mention).
+    Les sorties sont en revanche balayees en entier : le bandeau « Installed
+    Packages » d'un kernel affiche la version reellement chargee, et c'est
+    souvent la que l'ecart se lit.
+    """
+    findings: list[dict] = []
+    pins = pins_from_payload(payload, manifest)
+    declared = {pin.library for pin in pins}
+    if not declared:
+        return findings
+
+    # Versions divergentes susceptibles d'apparaitre en prose.
+    targets: dict[str, set[str]] = {}
+    for lib_id, lib in manifest.libraries.items():
+        if lib_id not in declared:
+            continue
+        canonical = canonical_map.get(lib_id)
+        versions = {
+            version
+            for version in lib.divergences
+            if canonical is None or compare_versions(version, canonical) != 0
+        }
+        if versions:
+            targets[lib_id] = versions
+    if not targets:
+        return findings
+
+    # Lignes d'epinglage : exclues du balayage des sources.
+    pin_lines: set[tuple[str, int, int]] = set()
+    for pin in pins:
+        pin_lines.add((pin.library, pin.cell, pin.line_no))
+
+    for lib_id, versions in sorted(targets.items()):
+        canonical = canonical_map.get(lib_id)
+        for version in sorted(versions, key=version_key):
+            if _allowlisted(manifest, lib_id, version, notebook):
+                continue
+            for index, cell in enumerate(payload.get("cells", []) or []):
+                for line_number, line in enumerate(
+                    _cell_text(cell).splitlines(), start=1
+                ):
+                    if (lib_id, index, line_number) in pin_lines:
+                        continue
+                    if _version_mentions(line, version):
+                        findings.append(
+                            _mention_finding(
+                                notebook, lib_id, version, canonical,
+                                index, "source", line,
+                            )
+                        )
+                for text in _output_texts(cell):
+                    for line in text.splitlines():
+                        if _version_mentions(line, version):
+                            findings.append(
+                                _mention_finding(
+                                    notebook, lib_id, version, canonical,
+                                    index, "sortie", line,
+                                )
+                            )
+    return findings
+
+
+def delta_mention_findings(
+    notebook: str,
+    base_payload: dict | None,
+    head_payload: dict,
+    manifest: Manifest,
+    canonical_map: dict[str, str | None],
+) -> list[dict]:
+    """Mentions introduites par la PR : celles que la base ne portait pas.
+
+    Meme semantique que les epinglages : une mention deja presente et non
+    touchee par la PR est une derive historique -- le recensement la
+    rapporte, la convergence la traite, la PR ne la porte pas.
+    """
+    head = mention_findings(notebook, head_payload, manifest, canonical_map)
+    if base_payload is None:
+        return head
+    base = mention_findings(notebook, base_payload, manifest, canonical_map)
+    base_keys = {
+        (f["library"], f["version"], f["cell"], f["line"]) for f in base
+    }
+    return [
+        f
+        for f in head
+        if (f["library"], f["version"], f["cell"], f["line"]) not in base_keys
+    ]
 
 
 def _git(repo_root: Path, args: list[str]) -> tuple[int, str, str]:
@@ -650,7 +831,7 @@ def render_census(report: dict) -> str:
             )
         lines.append("")
         for row in lib["versions"]:
-            if row["decision"] in ("canonique", "justifie"):
+            if row["decision"] in ("canonique", "justified"):
                 continue
             lines.append(f"- **{row['version']}** : " + ", ".join(row["notebooks"]))
         lines.append("")
@@ -722,6 +903,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--json", action="store_true", help="sortie JSON")
     parser.add_argument(
+        "--no-mentions",
+        action="store_true",
+        help=(
+            "ne pas relever les mentions de version perimee dans la prose et "
+            "les sorties (lecture de la seule ligne d'epinglage)"
+        ),
+    )
+    parser.add_argument(
         "notebooks",
         nargs="*",
         help="carnets a verifier explicitement (mode etat)",
@@ -760,9 +949,15 @@ def main(argv: list[str] | None = None) -> int:
             if not notebook.is_file():
                 print(f"ERREUR : carnet introuvable : {raw_path}", file=sys.stderr)
                 return 2
-            relative = notebook.relative_to(repo_root).as_posix()
+            relative = _relative_to_repo(notebook, repo_root)
             pins = pins_from_file(notebook, manifest)
             findings.extend(state_findings(relative, pins, manifest, canonicals))
+            if not args.no_mentions:
+                payload = payload_from_file(notebook)
+                if payload is not None:
+                    findings.extend(
+                        mention_findings(relative, payload, manifest, canonicals)
+                    )
             checked += 1
     else:
         if not args.changed:
@@ -779,10 +974,17 @@ def main(argv: list[str] | None = None) -> int:
         for notebook in targets:
             relative = notebook.relative_to(repo_root).as_posix()
             head_pins = pins_from_file(notebook, manifest)
+            head_payload = payload_from_file(notebook)
             if args.state:
                 findings.extend(
                     state_findings(relative, head_pins, manifest, canonicals)
                 )
+                if not args.no_mentions and head_payload is not None:
+                    findings.extend(
+                        mention_findings(
+                            relative, head_payload, manifest, canonicals
+                        )
+                    )
             else:
                 base_payload = notebook_at(repo_root, base, relative)
                 base_pins = (
@@ -795,6 +997,13 @@ def main(argv: list[str] | None = None) -> int:
                         relative, base_pins, head_pins, manifest, canonicals
                     )
                 )
+                if not args.no_mentions and head_payload is not None:
+                    findings.extend(
+                        delta_mention_findings(
+                            relative, base_payload, head_payload,
+                            manifest, canonicals,
+                        )
+                    )
             checked += 1
 
     if args.json:

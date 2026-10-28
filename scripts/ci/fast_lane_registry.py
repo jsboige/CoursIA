@@ -2527,13 +2527,15 @@ TRANCHE28: list[Guard] = [
 # convergence traite), et ETAT pour le provisionnement etranger (son dommage
 # se produit a l'execution, pas a l'edition).
 #
-# Pourquoi ADVISORY : le stock porte des derives connues (IKVM 8.14.0 sur six
-# carnets de la serie Tweety, dotNetRDF 3.2.1 sur sept carnets de la serie
-# SemanticWeb, OrTools 9.11.4210 sur onze carnets). Un garde bloquant
-# rougirait des PR qui ne font que retoucher un de ces carnets -- un taux de
-# faux positifs qui nuirait a la lecture du rollup. Le taux est mesure sur
-# les dernieres PRs de carnets et publie ; la promotion en bloquant est une
-# tranche distincte, apres convergence.
+# Pourquoi ADVISORY : le stock porte des derives connues (dotNetRDF 3.2.1 sur
+# sept carnets de la serie SemanticWeb, OrTools 9.11.4210 sur onze carnets).
+# L'ecart IKVM 8.14.0 des six carnets Tweety n'en est pas une : leur artefact
+# ombre est compile en 8.14.0, l'ecart est justifie et porte au manifeste
+# (allowlist + motif). Un garde bloquant rougirait des PR qui ne font que
+# retoucher un de ces carnets -- un taux de faux positifs qui nuirait a la
+# lecture du rollup. Le taux est mesure sur les dernieres PRs de carnets et
+# publie ; la promotion en bloquant est une tranche distincte, apres
+# convergence.
 #
 # `absorbed=True` : garde natif (aucun workflow d'origine), convention des
 # tranches depuis TRANCHE8. Le nom porte `advisory` pour que `pr_gate` le

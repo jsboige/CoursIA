@@ -24,8 +24,8 @@
       "divergences": [
         {
           "version": "8.14.0",
-          "decision": "to_converge",
-          "reason": "Ecart non justifie : #19673 a aligne la serie sur 8.15.0 ; six carnets de la serie Tweety sont restes en 8.14.0. Le classement « a converger » est la lecture par defaut ; un epinglage voulu doit etre justifie par une entree d'allowlist."
+          "decision": "justified",
+          "reason": "Ecart justifie, NON convergent : les six carnets concernes chargent une DLL Tweety ombree precompilee contre IKVM 8.14.0 (recette de shade : dotnet-build/build-TweetyMlnShade.csproj pour Tweety-10) et figent ikvmVer = \"8.14.0\" dans leur cellule de setup. Monter la ligne d'epinglage a 8.15.0 sans recompiler l'artefact ombre charge une DLL compilee en 8.14.0 dans un runtime 8.15.0 : la convergence serait une regression fonctionnelle, pas un alignement. Les six carnets sont nommes dans les entrees d'allowlist."
         }
       ]
     },
@@ -37,8 +37,8 @@
       "divergences": [
         {
           "version": "8.14.0",
-          "decision": "to_converge",
-          "reason": "Ecart non justifie : meme vague que IKVM 8.14.0 (#19673), meme constat de derivation."
+          "decision": "justified",
+          "reason": "Ecart justifie, NON convergent : meme motif que IKVM 8.14.0 -- l'artefact ombre (DLL + runtime IKVM) est compile et prepare en 8.14.0 ; IKVM.Image suit la meme version que IKVM dans la recette de build."
         }
       ]
     },
@@ -149,5 +149,32 @@
       ]
     }
   ],
-  "allowlist": []
+  "allowlist": [
+    {
+      "library": "IKVM",
+      "version": "8.14.0",
+      "notebooks": [
+        "Tweety-03-Advanced-Logics-CSharp.ipynb",
+        "Tweety-03-Conditional-Logics-CSharp.ipynb",
+        "Tweety-03-ModalLogic-CSharp.ipynb",
+        "Tweety-03-QBF-CSharp.ipynb",
+        "Tweety-07b-Ranking-Probabilistic-CSharp.ipynb",
+        "Tweety-10-MLN-CSharp.ipynb"
+      ],
+      "reason": "Carnet Tweety chargeant une DLL ombree precompilee contre IKVM 8.14.0 et figeant ikvmVer = \"8.14.0\" : l'epinglage ne peut pas bouger sans recompiler l'artefact ombre. Converger a 8.15.0 serait une regression fonctionnelle, pas un alignement."
+    },
+    {
+      "library": "IKVM.Image",
+      "version": "8.14.0",
+      "notebooks": [
+        "Tweety-03-Advanced-Logics-CSharp.ipynb",
+        "Tweety-03-Conditional-Logics-CSharp.ipynb",
+        "Tweety-03-ModalLogic-CSharp.ipynb",
+        "Tweety-03-QBF-CSharp.ipynb",
+        "Tweety-07b-Ranking-Probabilistic-CSharp.ipynb",
+        "Tweety-10-MLN-CSharp.ipynb"
+      ],
+      "reason": "Carnet Tweety chargeant une DLL ombree precompilee contre IKVM 8.14.0 et figeant ikvmVer = \"8.14.0\" : l'epinglage ne peut pas bouger sans recompiler l'artefact ombre. Converger a 8.15.0 serait une regression fonctionnelle, pas un alignement."
+    }
+  ]
 }
