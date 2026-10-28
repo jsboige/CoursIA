@@ -406,9 +406,14 @@ def diff_kernel(base_info, head_info):
 #   - Python ``coursia-ml-training`` (serie 02-ML-Cours) : canon de serie
 #     declare CPython 3.13 par le requirements.txt de la serie (en-tete,
 #     #18331), mais les carnets committes historiques portent encore
-#     ``language_info`` 3.11.x -- toute re-execution canonique derive donc
+#     ``language_info`` 3.11.x -- la re-execution canonique derive donc
 #     3.11 -> 3.13 sous ce kernelspec (cas #22889, mesure 2026-10-27).
-#     Transition acceptee nominativement ci-dessous ; l'inverse reste rouge.
+#     Ce kernelspec est partage par une trentaine de carnets hors
+#     02-ML-Cours, qui n'ont pas de requirements.txt declarant 3.13 (reserve
+#     de revue sur #22979, mesuree) : la transition n'est donc PAS globale.
+#     Elle est nominative, dans ``CANONICAL_LANGUAGE_TRANSITIONS_SCOPED``,
+#     et ne vaut que pour le carnet qui la motive. Sous ce kernelspec,
+#     ``3.11 -> 3.13`` reste rouge globalement, comme l'inverse.
 #   - Decision duale sur le canon (coord. 2026-10-05T03:43:46Z, DM
 #     msg-20261005T034346-qyldsl) : **deux canons**, pas un seul --
 #     (a) **canon des algorithmes deployes sur QC Cloud = Python 3.11**,
@@ -452,11 +457,6 @@ CANONICAL_LANGUAGE_TRANSITIONS = {
         "Python 3.10 -> 3.13 : convergence directe vers le canon d'execution 3.13 (#19181, cas fondateur)",
     ("python3", "3.12", "3.13"):
         "Python 3.12 -> 3.13 : convergence vers le canon d'execution 3.13 (#19181, anticipation -- pas de carnet `python3` a 3.12 mesure)",
-    ("coursia-ml-training", "3.11", "3.13"):
-        "Python 3.11 -> 3.13 sous `coursia-ml-training` : convergence vers le "
-        "canon de la serie 02-ML-Cours, declare par son requirements.txt "
-        "en-tete (CPython 3.13, #18331/#18247) ; cas fondateur #22889 "
-        "(2.8c, base 3.11.15 -> tete 3.13.14, memes kernelspec base/tete)",
 }
 
 # #19181 (cas par cas, decision coordinateur du 11/10) : les transitions
@@ -474,6 +474,18 @@ CANONICAL_LANGUAGE_TRANSITIONS_SCOPED = {
      "python3", "3.8", "3.13"):
         "Python 3.8 -> 3.13 : re-execution selective du sous-ensemble local "
         "de QC-Py-16 (#19181, cas par cas)",
+    # 2.8c est le seul carnet dont la re-execution sous 3.13 est la
+    # convergence attendue vers le canon de SA serie. Le kernelspec
+    # ``coursia-ml-training`` est partage par une trentaine de carnets hors
+    # 02-ML-Cours qui ne declarent pas 3.13 : une entree globale les aurait
+    # tous rendus verts sur cette direction (reserve de revue sur #22979).
+    ("MyIA.AI.Notebooks/ML/DataScienceWithAgents/02-ML-Cours/"
+     "2.8c-Borne-Temoin-Concentration.ipynb",
+     "coursia-ml-training", "3.11", "3.13"):
+        "Python 3.11 -> 3.13 sous `coursia-ml-training` : convergence vers le "
+        "canon de la serie 02-ML-Cours, declare par son requirements.txt "
+        "en-tete (CPython 3.13, #18331/#18247) ; cas fondateur #22889 "
+        "(2.8c, base 3.11.15 -> tete 3.13.14, memes kernelspec base/tete)",
 }
 
 
