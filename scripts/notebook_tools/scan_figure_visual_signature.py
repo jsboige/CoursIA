@@ -5,7 +5,7 @@ Pourquoi cet outil existe
 -------------------------
 Le rollout MANIFEST-desc-visuelle (c.754-c.781+, EPIC #5780) a accumule 5
 cycles de stats RGB PIL sur les figures des MANIFESTs (ML.Net, ML racine,
-IIT/ICT-Series, Probas/DecisionTheory/DecPyMC, Search/Applications,
+IIT/ICT-Series, Probas/DecisionTheory/DecPyMC, Search/Part3-Cas-pratiques,
 QuantConnect/Python). Chaque cycle (c.777+) a developpe un script ad-hoc
 dans le scratchpad du worker (`pil_stats_<famille>.py`) qui samplait
 2000 pixels random seed 42 et sortait mean R/G/B + std R/G/B. Les 5
@@ -94,7 +94,7 @@ erreur de lecture / fichier non-PNG / dossier vide.
 Sortie type
 -----------
   {
-    "path": "MyIA.AI.Notebooks/Search/Applications/assets/readme/app11-picross-grid.png",
+    "path": "MyIA.AI.Notebooks/Search/Part3-Cas-pratiques/assets/readme/app11-picross-grid.png",
     "dimensions": [567, 590],
     "mean_rgb": [231.87, 231.87, 231.87],
     "std_rgb": [27.86, 27.86, 27.86],

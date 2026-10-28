@@ -98,10 +98,10 @@ jobs:
       # tests ne déclarent pas de couverture).
       # Cf log run #33876207607 : "ModuleNotFoundError: No module named
       # 'matplotlib'" / "No module named 'scipy'" → 12 erreurs collect.
-      - name: Install minimal deps (numpy + scipy + matplotlib + pytest)
+      - name: Install minimal deps (numpy + scipy + matplotlib + pytest + ortools)
         run: |
           python -m pip install --upgrade pip
-          pip install numpy scipy matplotlib pytest
+          pip install numpy scipy matplotlib pytest ortools
 
       - name: Run GameTheory tests
         # working-directory = racine du dépôt : pytest.ini y est, donc le
