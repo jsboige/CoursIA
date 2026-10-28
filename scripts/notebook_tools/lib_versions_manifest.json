@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "description": "Versions canoniques des bibliotheques chargees par les cellules des carnets (organe #23073). Quand un organe de serie fixe deja la version, le manifeste POINTE vers lui (canonical_source=organ) et ne recopie pas la valeur : deux surfaces qui recopient la meme valeur finissent par diverger.",
+  "description": "Versions canoniques des bibliotheques chargees par les cellules des carnets (organe #23073). Quand un organe de serie fixe deja la version, le manifeste POINTE vers lui (canonical_source=organ) et ne recopie pas la valeur : deux surfaces qui recopient la meme valeur finissent par diverger. AUCUN DECOMPIL N'EST RECOPIE DANS CE FICHIER : le nombre de carnets par version vient du recensement (`python scripts/notebook_tools/check_lib_versions.py --census`), seul a jour sur le corpus. Les motifs ecrivent POURQUOI un ecart est justifie ou a converger, pas combien de carnets le portent.",
   "libraries": [
     {
       "id": "Tweety",
@@ -25,7 +25,7 @@
         {
           "version": "8.14.0",
           "decision": "justified",
-          "reason": "Ecart justifie, NON convergent : les six carnets concernes chargent une DLL Tweety ombree precompilee contre IKVM 8.14.0 (recette de shade : dotnet-build/build-TweetyMlnShade.csproj pour Tweety-10) et figent ikvmVer = \"8.14.0\" dans leur cellule de setup. Monter la ligne d'epinglage a 8.15.0 sans recompiler l'artefact ombre charge une DLL compilee en 8.14.0 dans un runtime 8.15.0 : la convergence serait une regression fonctionnelle, pas un alignement. Les six carnets sont nommes dans les entrees d'allowlist."
+          "reason": "Ecart justifie, NON convergent : les carnets concernes chargent une DLL Tweety ombree precompilee contre IKVM 8.14.0 (recette de shade : dotnet-build/build-TweetyMlnShade.csproj pour Tweety-10) et figent ikvmVer = \"8.14.0\" dans leur cellule de setup. Monter la ligne d'epinglage a 8.15.0 sans recompiler l'artefact ombre charge une DLL compilee en 8.14.0 dans un runtime 8.15.0 : la convergence serait une regression fonctionnelle, pas un alignement. Les carnets concernes sont nommes dans les entrees d'allowlist."
         }
       ]
     },
@@ -51,7 +51,7 @@
         {
           "version": "3.0.5",
           "decision": "to_converge",
-          "reason": "Ecart non justifie : la serie IKVM 8.15.0 s'accompagne de pythonnet 3.1.0 ; l'epingle 3.0.5 n'a pas de motif ecrit dans le depot."
+          "reason": "Ecart non justifie : la serie IKVM 8.15.0 s'accompagne de pythonnet 3.1.0 ; l'epingle 3.0.5 n'a pas de motif ecrit dans le depot, donc il est classe « a converger » et non « justifie »."
         }
       ]
     },
@@ -64,7 +64,7 @@
         {
           "version": "9.11.4210",
           "decision": "to_converge",
-          "reason": "Ecart non justifie : 9.11.4210 est la version la plus repandue de la serie, 9.15.6755 n'est posee que sur une minorite de carnets, et l'ecart n'a aucun motif ecrit dans le depot -- il est donc classe « a converger » et non « justifie ». Le denombrement exact est la sortie de l'organe (`--census`), il n'est pas recopie ici : un chiffre recopie dans un fichier livre se lit comme une mesure et derive sans prevenier."
+          "reason": "Ecart non justifie : aucune entree d'allowlist ni motif ecrit dans le depot ne rattache l'epingle 9.11.4210 a une contrainte de la serie, donc l'ecart est classe « a converger ». Les decompils (nombre de carnets par version, epinglages flottants) ne sont PAS recopies ici : ils viennent du recensement, `python scripts/notebook_tools/check_lib_versions.py --census`, seul a jour sur le corpus."
         }
       ]
     },
@@ -82,7 +82,7 @@
         {
           "version": "3.4.0",
           "decision": "to_converge",
-          "reason": "Ecart non justifie : meme constat que 3.2.1."
+          "reason": "Ecart non justifie : meme constat que 3.2.1 -- aucun motif ecrit dans le depot ne rattache l'epingle 3.4.0 a une contrainte de la serie."
         }
       ]
     },
@@ -95,7 +95,7 @@
         {
           "version": "3.0.0",
           "decision": "to_converge",
-          "reason": "Ecart non justifie : Microsoft.ML 5.0.0 est l'epingle dominante ; 3.0.0 n'a pas de motif ecrit."
+          "reason": "Ecart non justifie : aucun motif ecrit dans le depot ne rattache l'epingle 3.0.0 a une contrainte de la serie, donc l'ecart est classe « a converger »."
         }
       ]
     },
@@ -108,7 +108,7 @@
         {
           "version": "2.88.3",
           "decision": "to_converge",
-          "reason": "Ecart non justifie : SkiaSharp 3.119.4 est l'epingle dominante ; 2.88.3 n'a pas de motif ecrit."
+          "reason": "Ecart non justifie : aucun motif ecrit dans le depot ne rattache l'epingle 2.88.3 a une contrainte de la serie, donc l'ecart est classe « a converger »."
         }
       ]
     },
@@ -121,7 +121,7 @@
         {
           "version": "0.22.3",
           "decision": "to_converge",
-          "reason": "Ecart non justifie : l'issue signale qu'un AutoML ancien peut etre requis par un ML.NET plus ancien -- mais aucun carnet du depot ne charge Microsoft.ML 3.0.0 avec AutoML 0.22.3 de maniere documentee, donc le motif n'est pas etabli et l'ecart reste a converger."
+          "reason": "Ecart non justifie : l'issue signale qu'un AutoML ancien peut etre requis par un ML.NET plus ancien -- mais aucun carnet du depot ne charge AutoML 0.22.3 avec un ML.NET ancien de maniere documentee, donc le motif n'est pas etabli et l'ecart reste a converger."
         }
       ]
     },
@@ -134,9 +134,16 @@
         {
           "version": "27.1.1",
           "decision": "to_converge",
-          "reason": "Ecart non justifie : aucune dependance documentee a CsvHelper 27.x dans le depot."
+          "reason": "Ecart non justifie : aucune dependance documentee a CsvHelper 27.x dans le depot, donc l'ecart est classe « a converger »."
         }
       ]
+    },
+    {
+      "id": "mealpy",
+      "ecosystem": "pip",
+      "canonical": "3.0.2",
+      "canonical_source": "manifest",
+      "note": "Version du paquet Python mealpy, celle que doit exposer l'environnement charge par `Config/PythonNetLoader.cs` pour les carnets qui l'importent. Les declarations du corpus (`MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-CSharp.ipynb` et `.../Sudoku-05-PSO-Python.ipynb`) s'accordent sur cette version."
     }
   ],
   "allowlist": [

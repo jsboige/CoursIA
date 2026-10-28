@@ -693,8 +693,8 @@ def test_version_prefixe_v_et_composantes_manquantes():
     assert clv.compare_versions("9.11.4210", "9.15.6755") < 0
 
 
-def test_carnet_hors_depot_ne_leve_pas_de_traceback(tmp_path, capsys):
-    """Point 11 -- un carnet hors de la racine n'echoue pas sur `relative_to`.
+def test_carnet_hors_depot_rend_rc_deux_nomme(tmp_path, capsys):
+    """Point 11 -- un carnet hors de la racine est un rc 2 nomme, sans traceback.
 
     Le test exerce le CHEMIN D'APPEL (``main`` sur un chemin explicite), pas
     seulement l'utilitaire : c'est le site d'appel qui portait le defaut, et
@@ -716,12 +716,248 @@ def test_carnet_hors_depot_ne_leve_pas_de_traceback(tmp_path, capsys):
         "--repo-root", str(depot),
         "--manifest", str(manifest_path),
     ])
-    # Un carnet aligne hors depot n'est pas une erreur : rc 0, pas un rc 1
-    # de traceback ni une exception propagee.
-    assert rc == 0
-    assert "Traceback" not in capsys.readouterr().err
+    # Un carnet hors du depot n'est pas un carnet de la famille : la
+    # relecture demande un rc 2 **nomme** (point 11), pas un rc 1 de
+    # traceback. Le message doit dire ce qui ne va pas.
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "hors du depot" in err
+    assert "Traceback" not in err
 
     # Controle positif : l'utilitaire reste relatif dans le depot.
     dedans = depot / "serie" / "x.ipynb"
     assert clv._relative_to_repo(dedans, depot) == "serie/x.ipynb"
 
+
+# --------------------------------------------------------------------------
+# Points de revue traites par le troisieme commit (les points 1, 2, 7 et 11
+# ont ete traites par le commit voisin b19f0ad68a8 -- voir le commentaire
+# point par point de la PR).
+# --------------------------------------------------------------------------
+def test_un_manifeste_avec_allowlist_sans_motif_rend_rc_deux(tmp_path, capsys):
+    """Point 1 : le refus se traduit par un rc 2 nomme, pas par un traceback."""
+    path = tmp_path / "manifest.json"
+    path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "libraries": [],
+                "allowlist": [{"library": "IKVM", "version": "8.14.0"}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert clv.main(["--manifest", str(path), "--repo-root", str(tmp_path)]) == 2
+    assert "motif absent ou vide" in capsys.readouterr().err
+
+
+def test_un_carnet_illisible_rend_rc_deux_et_non_un_vert(tmp_path, capsys):
+    """Point 2 : un carnet illisible est un incident nomme (rc 2).
+
+    Le rendre « aligne » produirait un vert silencieux sur un carnet que
+    l'organe n'a pas reellement lu.
+    """
+    broken = tmp_path / "casse.ipynb"
+    broken.write_text("{ ceci n'est pas du json", encoding="utf-8")
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "libraries": _LIB_IKVM,
+                "allowlist": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    assert (
+        clv.main(
+            [
+                "--manifest",
+                str(manifest_path),
+                "--repo-root",
+                str(tmp_path),
+                str(broken),
+            ]
+        )
+        == 2
+    )
+    assert "illisible" in capsys.readouterr().err
+
+
+def test_le_manifeste_couvre_un_ecosysteme_pip():
+    """Point 3 : pip est annonce dans la doc, donc il existe au manifeste."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    pip_libs = [
+        lib for lib in manifest.libraries.values() if lib.ecosystem == "pip"
+    ]
+    assert pip_libs, "le manifeste doit porter au moins une bibliotheque pip"
+    assert all(lib.canonical for lib in pip_libs)
+
+
+def test_un_epinglage_pip_est_releve_et_compare_a_la_canonique():
+    """Point 3 : le chemin pip n'est pas mort.
+
+    La bibliotheque pip du manifeste est **exercee par le corpus** : ses
+    declarations sont en cellules code, donc l'organe les voit.
+    """
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    pip_lib = next(
+        lib for lib in manifest.libraries.values() if lib.ecosystem == "pip"
+    )
+    payload = _notebook([f"pip install {pip_lib.id}=={pip_lib.canonical}"])
+    pins = clv.pins_from_payload(payload, manifest)
+    assert any(p.library == pip_lib.id and p.version == pip_lib.canonical for p in pins)
+    findings = clv.state_findings("x.ipynb", pins, manifest, canonicals)
+    assert findings == [], "le pin pip est a la version canonique"
+
+
+def test_le_pin_pip_du_corpus_est_vraiment_relu():
+    """Point 3 : la bibliotheque pip du manifeste a des declarations dans le
+    corpus -- une entree de manifeste inerte serait un mensonge de capacite."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    report = clv.run_census(REPO_ROOT, manifest)
+    pip_libs = [
+        lib
+        for lib in report["libraries"]
+        if lib["ecosystem"] == "pip" and lib["versions"]
+    ]
+    assert pip_libs, "aucune bibliotheque pip du manifeste n'a de pin dans le corpus"
+
+
+def test_le_delta_compare_les_multiplicites_et_non_les_ensembles():
+    """Point 5 : un carnet qui porte deux versions d'une bibliotheque ne
+    produit pas de faux downgrade quand la PR n'y touche pas."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    base = clv.pins_from_payload(
+        _notebook(['#r "nuget:IKVM,8.14.0"', '#r "nuget:IKVM,8.15.0"']), manifest
+    )
+    head = clv.pins_from_payload(
+        _notebook(
+            ['#r "nuget:IKVM,8.14.0"', '#r "nuget:IKVM,8.15.0"', 'print("x")']
+        ),
+        manifest,
+    )
+    assert clv.delta_findings("x.ipynb", base, head, manifest, canonicals) == []
+
+
+def test_le_delta_signale_un_epinglage_supprime_et_remplace_par_un_autre():
+    """Point 5 (contraire) : un deuxieme pin de la meme version est bien nouveau."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    base = clv.pins_from_payload(_notebook(['#r "nuget:pythonnet,3.1.0"']), manifest)
+    head = clv.pins_from_payload(
+        _notebook(['#r "nuget:pythonnet,3.1.0"', '#r "nuget:pythonnet,3.0.5"']),
+        manifest,
+    )
+    findings = clv.delta_findings("x.ipynb", base, head, manifest, canonicals)
+    assert any(f["kind"] == "downgrade" and f["version"] == "3.0.5" for f in findings)
+
+
+def test_les_formes_de_pin_non_versionne_et_avec_prefixe_v_sont_lues():
+    """Point 8 : prefixe `v`, forme a flux, et epinglage flottant."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    payload = _notebook(
+        [
+            '#r "nuget: IKVM, v8.15.0"',
+            '#r "nuget: IKVM.Image, 8.15.0, https://flux.example/ikvm"',
+            '#r "nuget: SkiaSharp"',
+        ]
+    )
+    pins = clv.pins_from_payload(payload, manifest)
+    versions = {(p.library, p.version) for p in pins}
+    assert ("IKVM", "8.15.0") in versions
+    assert ("IKVM.Image", "8.15.0") in versions
+    # Un pin flottant est conserve (version vide), pas jete.
+    assert ("SkiaSharp", "") in versions
+
+
+def test_un_epinglage_flottant_produit_un_constat_nomme():
+    """Point 8 : le pin flottant est signale, avec le renvoi a #23086."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    pins = clv.pins_from_payload(_notebook(['#r "nuget: Google.OrTools"']), manifest)
+    findings = clv.state_findings("x.ipynb", pins, manifest, canonicals)
+    assert any(f["kind"] == "pin_non_versionne" for f in findings)
+    assert any("#23086" in f["reason"] for f in findings)
+
+
+def test_un_pin_flottant_deja_present_ne_rougit_pas_la_pr():
+    """Point 8 : un pin flottant historique reste une derive, pas un rouge."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    base = clv.pins_from_payload(_notebook(['#r "nuget: Google.OrTools"']), manifest)
+    head = clv.pins_from_payload(
+        _notebook(['#r "nuget: Google.OrTools"', 'print("x")']), manifest
+    )
+    assert clv.delta_findings("x.ipynb", base, head, manifest, canonicals) == []
+
+
+def test_le_provisionnement_etranger_est_cable_par_bibliotheque(tmp_path):
+    """Point 10 : les motifs vivent au manifeste, pas sous un ecosysteme unique."""
+    libraries = [
+        {
+            "id": "Contoso",
+            "ecosystem": "nuget",
+            "canonical": "1.0.0",
+            "canonical_source": "manifest",
+            "foreign_provisioning": [
+                {
+                    "pattern": "contoso\\.invalid/",
+                    "reason": "Source hors de l'organe de serie.",
+                }
+            ],
+        }
+    ]
+    manifest = _manifest_with(tmp_path, libraries)
+    payload = _notebook(['BASE = "https://contoso.invalid/1.0.0/"'])
+    pins = clv.pins_from_payload(payload, manifest)
+    assert any(p.ecosystem == "provisioning" for p in pins)
+
+
+def test_la_sortie_json_annonce_le_mode_etat_en_mode_chemins_explicites(
+    tmp_path, capsys
+):
+    """Le mode « chemins explicites » est un mode d'etat : la sortie le dit."""
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "libraries": _LIB_IKVM,
+                "allowlist": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    notebook = tmp_path / "nb.ipynb"
+    notebook.write_text(
+        json.dumps(_notebook(['#r "nuget: IKVM, 8.15.0"'])), encoding="utf-8"
+    )
+    rc = clv.main(
+        [
+            "--json",
+            "--manifest",
+            str(manifest_path),
+            "--repo-root",
+            str(tmp_path),
+            "nb.ipynb",
+        ]
+    )
+    payload = json.loads(capsys.readouterr().out)
+    assert rc == 0
+    assert payload["state"] is True
+    assert payload["checked"] == 1
+
+
+def test_le_recensement_compte_les_epinglages_flottants():
+    """Point 8 : le recensement expose les pins flottants (ils ne sont pas
+    « aucune version pour cette bibliotheque »)."""
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    report = clv.run_census(REPO_ROOT, manifest)
+    by_library = {lib["library"]: lib for lib in report["libraries"]}
+    assert by_library["Google.OrTools"]["floating_notebooks"], (
+        "le corpus contient des epinglages OrTools sans version"
+    )
