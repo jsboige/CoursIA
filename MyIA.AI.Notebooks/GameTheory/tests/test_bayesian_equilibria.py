@@ -18,6 +18,13 @@ from typing import Callable, Dict, List, Tuple
 import numpy as np
 import pytest
 
+# Reserve Hermes #22615 (n.2) : si nashpy est absent localement, les tests
+# SKIPPent proprement au lieu d'echouer a la collecte. En CI, nashpy est
+# declare dans gametheory-tests.yml (job "GameTheory pytest").
+pytest.importorskip(
+    "nashpy", reason="nashpy requis (declare en CI ; localement: pip install nashpy)"
+)
+
 # Add parent directory to path (convention des tests GameTheory)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 

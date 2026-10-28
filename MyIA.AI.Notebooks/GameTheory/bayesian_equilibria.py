@@ -366,6 +366,16 @@ def validate_bne(
         for s in sigmas
     )
 
+    # Garde d'ordre (reserve Hermes #22615, n.3) : l'indexation positionnelle
+    # sigmas[k] <-> form.players[k] suppose que form et game partagent le meme
+    # ordre de joueurs. Un StrategicForm construit a la main, a l'ordre
+    # permuté, produirait des gains conditionnels silencieusement faux.
+    if list(form.players) != list(game.players):
+        raise ValueError(
+            "ordre des joueurs incohérent entre form et game : "
+            f"form.players={form.players} vs game.players={game.players}"
+        )
+
     reports: List[TypeReport] = []
     out_of_support: List[Tuple[str, str]] = []
     max_regret = 0.0
