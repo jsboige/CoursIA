@@ -161,7 +161,7 @@ En **local**, l'operateur n'a rien a poser : le jeton `jsboige` a le droit sur l
 
 ## Qui ecrit — arbitrage (a) du user (c.6441695482, 27/10)
 
-**Le workflow automatise ecrit la variable.** Option (a) de l'arbitrage user du 2026-10-27 : le secret `ACTIONS_VARIABLES_PAT` existe dans Actions (pose le 2026-10-27T17:05:48Z) et porte le droit fin `Variables: read-write` sur `jsboige/CoursIA` **seul** (expiration **2027-10-27** -- regeneree a 12 mois ; renouvellement suivi par le coordinateur). Il est expose **au seul pas qui ecrit la variable** : ni le checkout ni le `setup-python` ne le voient.
+**Le workflow automatise ecrit la variable.** Option (a) de l'arbitrage user du 2026-10-27 : le secret `ACTIONS_VARIABLES_PAT` existe dans Actions (pose le 2026-10-27T17:05:48Z) et porte le droit fin `Variables: read-write` sur `jsboige/CoursIA` **seul** (expiration 2027-01-25, renouvellement suivi par le coordinateur). Il est expose **au seul pas qui ecrit la variable** : ni le checkout ni le `setup-python` ne le voient.
 
 Les portees du job restent `actions: read` + `contents: read` : la portee `variables` **n'existe pas** dans la liste des portees admises sous `permissions:` (reference de syntaxe des workflows GitHub : actions, attestations, checks, contents, deployments, discussions, id-token, issues, packages, pages, pull-requests, security-events, statuses). Une cle hors liste rend le fichier entier invalide : la porter ici aurait suffi a empecher le workflow de demarrer. C'est donc un **PAT** qu'il faut, pas une portee.
 
