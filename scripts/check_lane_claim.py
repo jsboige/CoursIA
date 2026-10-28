@@ -1224,6 +1224,112 @@ def _rest_issue_payload(issue: str, repo: str | None = None) -> dict:
     }
 
 
+# --- #22630 : seam d'instantane local ------------------------------------------
+#
+# L'instantane (`scripts/coordination/gh_snapshot.py`) remplace le TRANSPORT
+# des lectures GitHub, pas leur semantique : le code de reduction reste le
+# meme, seule la source des payloads change. C'est ce qui rend la sortie
+# identique entre l'ancienne voie (sous-processus + `gh issue view`) et la
+# nouvelle (instantane + calcul en processus).
+#
+# Le seam est OPT-IN : sans instantane installe, le module lit GitHub
+# exactement comme avant. Aucun comportement par defaut n'est modifie.
+
+_SNAPSHOT: dict | None = None
+
+
+def set_snapshot(snapshot: dict | None) -> None:
+    """Installe (ou retire) l'instantane local lu par ce module.
+
+    `snapshot` porte la cle `issues` et, en option, la cle `prs` (numero ->
+    etat de la PR). Deux formes sont servies pour `issues` (#22684) : le
+    payload complet par numero (forme `gh issue view --json
+    number,title,labels,comments`, cle `comments` incluse), ou la forme
+    **separee** de `gh_snapshot` (metadonnees dans `issues[n]`,
+    commentaires dans `comments[n]`) -- fusionnes a la lecture. Sans
+    instantane, ce module lit GitHub comme avant.
+    """
+    global _SNAPSHOT
+    _SNAPSHOT = snapshot if isinstance(snapshot, dict) else None
+
+
+def _snapshot_comments_list(issue: str) -> list | None:
+    """Liste de commentaires `comments[issue]` de l'instantane, ou None."""
+    if not _SNAPSHOT:
+        return None
+    comments = _SNAPSHOT.get("comments") or {}
+    entry = comments.get(str(issue))
+    if entry is None:
+        try:
+            entry = comments.get(int(issue))
+        except (TypeError, ValueError):
+            entry = None
+    return entry if isinstance(entry, list) else None
+
+
+def _snapshot_issue_payload(issue: str) -> dict | None:
+    """Payload d'issue servi par l'instantane, ou None s'il n'y en a pas.
+
+    Deux formes d'instantane sont servies -- toutes deux produites en
+    production :
+
+    - forme **fusionnee** : l'entree `issues[n]` porte elle-meme sa cle
+      `comments` (forme `gh issue view --json number,title,labels,comments`,
+      celle des payloads injectes directement). Servie telle quelle.
+    - forme **separee** : `issues[n]` ne porte que les metadonnees et les
+      commentaires vivent dans `comments[n]` -- la forme que fabrique
+      `gh_snapshot.ensure_issue_payloads` (deux fichiers disque). Les
+      commentaires sont fusionnes dans une COPIE servie au reducteur.
+
+    #22684 -- sans cette fusion, la voie en processus servait l'entree
+    telle quelle : `_sort_events` lisait `payload.get("comments", [])`,
+    voyait zero evenement et rendait FREE pour TOUTE issue, meme claimee
+    par une autre lane (review ai-01 2026-10-27T04:38Z). Une entree sans
+    cle `comments` ET sans liste dans `comments[n]` n'est PAS servie :
+    l'instantane n'etablit pas l'absence de commentaires, et le lecteur
+    retombe sur la voie reseau (fail-closed) plutot que de fabriquer un
+    FREE de zero lu.
+    """
+    if not _SNAPSHOT:
+        return None
+    issues = _SNAPSHOT.get("issues") or {}
+    entry = issues.get(str(issue))
+    if entry is None:
+        try:
+            entry = issues.get(int(issue))
+        except (TypeError, ValueError):
+            entry = None
+    if not isinstance(entry, dict):
+        return None
+    if "comments" in entry:
+        return entry
+    comments = _snapshot_comments_list(issue)
+    if comments is None:
+        return None
+    payload = dict(entry)
+    payload["comments"] = comments
+    return payload
+
+
+def _snapshot_pr_state(pr_ref: int) -> str | None:
+    """Etat d'une PR servi par l'instantane, ou None s'il n'y en a pas."""
+    if not _SNAPSHOT:
+        return None
+    prs = _SNAPSHOT.get("prs") or {}
+    entry = prs.get(str(pr_ref))
+    if entry is None:
+        try:
+            entry = prs.get(int(pr_ref))
+        except (TypeError, ValueError):
+            entry = None
+    if isinstance(entry, dict):
+        state = entry.get("state")
+        return state if isinstance(state, str) else None
+    if isinstance(entry, str):
+        return entry
+    return None
+
+
 def _gh_issue_comments(issue: str) -> dict:
     """Fetch issue metadata + comments as JSON via `gh`. Raises on failure.
 
@@ -1234,6 +1340,12 @@ def _gh_issue_comments(issue: str) -> dict:
     vocabulaire distinct de tout verdict de claim -- le picker propage cette
     distinction jusqu'au bandeau du tapis).
     """
+    # #22630 -- l'instantane local remplace la LECTURE, pas la semantique :
+    # le payload rendu a la forme attendue (`number`, `title`, `labels`,
+    # `comments`), et tout le reste du module s'execute a l'identique.
+    snapshot_payload = _snapshot_issue_payload(issue)
+    if snapshot_payload is not None:
+        return snapshot_payload
     proc = subprocess.run(
         [
             "gh", "issue", "view", str(issue),
@@ -1375,6 +1487,14 @@ def _fetch_pr_state(pr_ref: int) -> tuple[str | None, str | None]:
     per the #12320 contract. The reducer (`compute_active_claims`) is the only
     caller, and only for events that already have `pr_ref != None`.
     """
+    # #22630 -- l'instantane local peut porter l'etat de la PR : la lecture
+    # REST la remplace, la semantique (OPEN/CLOSED/MERGED) reste celle du
+    # reducteur.
+    snap_state = _snapshot_pr_state(pr_ref)
+    if snap_state is not None:
+        result = (snap_state, None)
+        _PR_STATE_CACHE[pr_ref] = result
+        return result
     if pr_ref in _PR_STATE_CACHE:
         return _PR_STATE_CACHE[pr_ref]
     try:
@@ -1960,6 +2080,129 @@ def _find_open_prs_referencing_issue(
         })
     out.sort(key=lambda d: d["number"] or 0)
     return out
+
+
+# --- #22408 -- un claim age n'est pas un claim mort ---------------------------
+#
+# Le filtre de peremption ne regardait que l'horloge du `[CLAIMED]`. Instance
+# fondatrice #21881 (2026-10-24) : po-2023 avait claim le 2026-10-21T18:39Z,
+# ouvert #21884 (`closes #21881`) a 18:59Z et pousse jusqu'au 2026-10-23T06:29Z ;
+# a 73,8 h l'organe a rendu STALE, et po-2024 a repris le grain (#22251). Deux
+# carnets DEEP livres pour un seul grain, une PR fermee.
+#
+# Ce que l'age du claim ne dit pas, c'est si la lane LIVRE. Une PR OUVERTE de
+# la meme lane, qui reference l'issue et qui a recu un commit ou un commentaire
+# porte par cette lane dans la fenetre du seuil, prouve que le claim est vivant :
+# l'age apparent vient du fait qu'un `[CLAIMED]` n'est poste qu'une fois, alors
+# qu'une livraison dure des jours.
+#
+# Posture de mesure : quand l'activite ne peut pas etre lue (gh indisponible,
+# payload illisible), on garde le verdict d'avant #22408 (STALE) et on le dit --
+# une lecture qui echoue ne devient jamais une preuve d'inactivite.
+
+_GH_PR_ACTIVITY_TIMEOUT_S = int(
+    os.environ.get("CHECK_LANE_CLAIM_PR_ACTIVITY_TIMEOUT", "60")
+)
+
+
+def _iso_utc(value):
+    """Parse a `gh` ISO-8601 UTC timestamp; None when unreadable."""
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _lane_open_prs_referencing(
+    issue_number: int,
+    lane: str,
+    prs: list[dict] | None = None,
+) -> list[int]:
+    """OPEN PR numbers of `lane` whose body references `issue_number`.
+
+    Same body reader as `_find_open_prs_referencing_issue` / `_find_open_pr_
+    for_issue_by_lane` (unwrap + shared `extract_lane`), but filtered on the
+    CLAIMANT lane instead of excluding it -- here the question is "does the
+    holder still work?", not "does someone else collide?".
+    """
+    if prs is None:
+        prs = _gh_open_prs_with_files()
+    out: list[int] = []
+    for pr in prs:
+        body = _unwrap_trapped_body(pr.get("body") or "")
+        if extract_lane(body) != lane:
+            continue
+        if not _pr_body_references_issue(body, issue_number):
+            continue
+        try:
+            out.append(int(pr["number"]))
+        except (KeyError, ValueError, TypeError):
+            continue
+    return sorted(out)
+
+
+def _pr_last_lane_activity(pr_number: int, lane: str):
+    """Latest commit / lane-tagged comment of an OPEN PR, or None.
+
+    None means NOT MEASURED (gh failure, timeout, unreadable payload) -- the
+    caller keeps the pre-#22408 verdict. A commit counts whoever pushed it (the
+    PR is the lane's); a comment counts only when its body carries the lane tag,
+    because every agent posts under the shared `jsboige` login and the login
+    cannot tell lanes apart.
+    """
+    try:
+        proc = subprocess.run(
+            ["gh", "pr", "view", str(pr_number), "--json", "commits,comments"],
+            capture_output=True, text=True, shell=False,
+            encoding="utf-8", errors="replace",
+            timeout=_GH_PR_ACTIVITY_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired:
+        return None
+    if proc.returncode != 0:
+        return None
+    try:
+        data = json.loads(proc.stdout)
+    except json.JSONDecodeError:
+        return None
+    stamps = []
+    for commit in data.get("commits") or []:
+        ts = _iso_utc(commit.get("committedDate"))
+        if ts is not None:
+            stamps.append(ts)
+    for comment in data.get("comments") or []:
+        body = _unwrap_trapped_body(comment.get("body") or "")
+        if extract_lane(body) != lane:
+            continue
+        ts = _iso_utc(comment.get("createdAt"))
+        if ts is not None:
+            stamps.append(ts)
+    return max(stamps) if stamps else None
+
+
+def _claim_still_being_delivered(
+    issue_number: int,
+    lane: str,
+    threshold_h: float,
+    now,
+    prs: list[dict] | None = None,
+):
+    """`(pr_number, activity_age_h)` proving `lane` still works the grain.
+
+    None when no OPEN PR of `lane` references the issue, or when the last
+    measurable activity is older than `threshold_h`, or when activity could not
+    be measured at all.
+    """
+    for pr_number in _lane_open_prs_referencing(issue_number, lane, prs=prs):
+        last = _pr_last_lane_activity(pr_number, lane)
+        if last is None:
+            continue
+        age_h = (now - last).total_seconds() / 3600.0
+        if age_h < threshold_h:
+            return pr_number, age_h
+    return None
 
 
 # #12386 v2 -- `_find_open_pr_for_issue_by_lane` returns the unique OPEN PR
@@ -3198,12 +3441,60 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # their own [CLAIMED] (this is not a silent bypass). Without the flag
     # (default None), behaviour is unchanged: every active claim blocks.
     stale_others: dict[str, ClaimEvent] = {}
+    revived_claims: list[dict] = []
     if stale_threshold is not None:
         now = now or datetime.now(timezone.utc)
         for ln, ev in others.items():
             age = _claim_age_hours(ev.created_at, now)
             if age is not None and age >= stale_threshold:
                 stale_others[ln] = ev
+        # #22408 -- l'age du claim ne suffit pas : la lane titulaire peut etre
+        # en train de livrer. Une PR ouverte de cette lane, qui reference
+        # l'issue et qui a bouge dans la fenetre du seuil, ranime le claim (il
+        # continue de bloquer) et la mesure est rendue dans `revived_claims`.
+        # La lecture des PRs ouvertes n'est payee que s'il y a un candidat.
+        if stale_others and payload.get("number") is not None:
+            for ln, ev in list(stale_others.items()):
+                # #22408 / review Hermes 5641325382 -- la lecture de l'activite
+                # peut LEVER, pas seulement rendre None : `_lane_open_prs_
+                # referencing` passe par `_gh_open_prs_with_files()`, qui leve
+                # `RuntimeError` sur un `gh` en echec et `OpenPrsIncompleteError`
+                # (sous-classe de RuntimeError) sur une enumeration partielle.
+                # Sans ce filet, une enumeration morte faisait sortir l'exception
+                # de `_run_check` -- traceback au lieu d'un verdict, et quatre
+                # tests verts sur `main` (gh indisponible) rougissaient ici.
+                # Une lecture impossible n'est pas une preuve de livraison : le
+                # claim garde son verdict d'avant (STALE), et on le dit.
+                try:
+                    live = _claim_still_being_delivered(
+                        int(payload["number"]), ln, stale_threshold, now)
+                except (RuntimeError, ValueError, TypeError) as exc:
+                    print(
+                        f"WARN: activite de {ln} illisible "
+                        f"({type(exc).__name__}: {exc}) -- le claim garde son "
+                        f"verdict d'avant (perime) (#22408)",
+                        file=sys.stderr,
+                    )
+                    continue
+                if live is None:
+                    continue
+                pr_number, activity_age_h = live
+                revived_claims.append({
+                    "lane": ln,
+                    "claim_age_h": round(
+                        _claim_age_hours(ev.created_at, now) or 0.0, 1),
+                    "pr": pr_number,
+                    "last_activity_age_h": round(activity_age_h, 1),
+                })
+                print(
+                    f"INFO: claim de {ln} age de "
+                    f"{_claim_age_hours(ev.created_at, now):.1f}h, MAIS sa PR "
+                    f"ouverte #{pr_number} a bouge il y a "
+                    f"{activity_age_h:.1f}h (< {stale_threshold:g}h) -- le "
+                    f"claim N'EST PAS perime (#22408).",
+                    file=sys.stderr,
+                )
+                del stale_others[ln]
         others = {ln: ev for ln, ev in others.items() if ln not in stale_others}
     else:
         # #12751 -- a zero of absence-of-measurement must not re-read as a
@@ -3230,12 +3521,21 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
     # gh failure, same posture as the #16570 paths leg: a leg that cannot
     # measure must not fabricate a verdict.
     implicit_occupation: list[dict] = []
+    # #22408 (item 3) -- `[]` disait deux choses incompatibles : « mesure, et
+    # personne n'occupe » et « jambe non demandee ». Instance #21881 : le
+    # rapport de l'issue lisait `implicit_occupation: []` et en concluait que
+    # l'organe n'avait pas vu la PR tierce, alors que la jambe est *lazy by
+    # outcome* -- a cet instant le registre portait un claim actif, donc la
+    # jambe n'a pas tourne. Le booleen separe la mesure de son absence.
+    implicit_occupation_measured = False
     if (check_open_pr_paths and not others and mine is None
             and payload.get("number") is not None):
+        implicit_occupation_measured = True
         try:
             implicit_occupation = _find_open_prs_referencing_issue(
                 int(payload["number"]), my_lane)
         except (RuntimeError, ValueError, TypeError) as exc:
+            implicit_occupation_measured = False
             print(
                 f"WARN: la jambe IMPLICIT (#14300) n'a pas pu tourner "
                 f"({exc}) : le verdict ci-dessous ne dit rien des PRs "
@@ -3351,6 +3651,11 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         "my_active_claim": bool(mine),
         "blocking_lanes": sorted(others),
         "stale_claims": sorted(stale_others) if stale_threshold is not None else None,
+        # #22408 -- les claims dont l'age depassait le seuil mais dont la lane
+        # livrait encore : ils BLOQUENT (ils sont dans `others`, donc dans
+        # `blocking_lanes`) et la mesure qui les a ranimes est citee ici, pour
+        # qu'un lecteur ne voie pas un BLOCKED inexplique.
+        "revived_claims": revived_claims,
         # #12751 -- l'etat de la detection est nomme explicitement. "active" :
         # un seuil est pose, les claims plus vieux sont age-filtered (le
         # comportement par defaut, 48h). "disabled" : --no-stale / threshold
@@ -3572,10 +3877,13 @@ def _run_check(payload: dict, my_lane: str, stale_threshold=None,
         # as open_pr_collisions above. Non-empty routes the verdict below
         # to `IMPLICIT` at exit 3 -- distinct from claim-BLOCKED (exit 1)
         # and from the io/gh-error exit 2 that check_grain_free.py
-        # documents for this mode. Empty list = no OPEN PR of another lane
-        # references the issue (or the leg was skipped: BLOCKED verdict,
-        # posting path, or a gh failure WARNed above).
+        # documents for this mode.
         "implicit_occupation": implicit_occupation,
+        # #22408 -- `[]` seul ne distinguait pas « mesure : personne » de
+        # « jambe non demandee » (lazy by outcome) ni de « lecture echouee ».
+        # Ce booleen porte la difference ; les lecteurs qui font
+        # `data.get("implicit_occupation") or []` gardent leur comportement.
+        "implicit_occupation_measured": implicit_occupation_measured,
     }
     print(json.dumps(summary, ensure_ascii=False, indent=2))
 
@@ -3975,14 +4283,14 @@ def _summarize_run_check_output(stdout_text: str, returncode: int) -> str:
     return f"EXIT_{returncode}"
 
 
-def _run_check_batch(
+def check_issues_batch(
     issues: list[str],
     lane: str,
     stale_threshold: float | None = 48.0,
     from_json: str | None = None,
     my_paths: list[str] | None = None,
-) -> int:
-    """Mode batch N issues -> JSON.
+) -> dict:
+    """Mode batch N issues -> JSON **rendu** au lieu d'imprime (#22630).
 
     Une seule invocation de check_lane_claim traite N issues et sort un
     JSON `{results: {N: {code, exit, human, duration, ...}}, total_wall,
@@ -4117,6 +4425,26 @@ def _run_check_batch(
         "phases": phases,
         "total_wall": total_wall,
     }
+    return output
+
+
+def _run_check_batch(
+    issues: list[str],
+    lane: str,
+    stale_threshold: float | None = 48.0,
+    from_json: str | None = None,
+    my_paths: list[str] | None = None,
+) -> int:
+    """Mode batch **CLI** : `check_issues_batch` + impression du JSON sur stdout.
+
+    Le corps est dans `check_issues_batch`, qui REND le meme dictionnaire : le
+    tapis l'appelle en processus (#22630), la CLI l'imprime. Deux portes, un
+    seul calcul -- la sortie est identique par construction.
+    """
+    output = check_issues_batch(
+        issues, lane, stale_threshold=stale_threshold,
+        from_json=from_json, my_paths=my_paths,
+    )
     # Toujours ecrire le JSON final sur stdout, sans prefixe.
     print(json.dumps(output, ensure_ascii=False, indent=2))
     return 0
