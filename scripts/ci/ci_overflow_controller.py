@@ -32,7 +32,8 @@ deux canaux, jamais le meme** :
 - le jeton d'**ECRITURE** (`ACTIONS_VARIABLES_PAT`) sert **uniquement** a
   lire et a ecrire la variable de depot. Il porte le droit fin
   `Variables: read-write` sur `jsboige/CoursIA` seul (secret pose dans
-  Actions le 2026-10-27T17:05:48Z, expiration 2027-01-25).
+  Actions le 2026-10-27T17:05:48Z, valeur regeneree le 2026-10-27T17:24:12Z,
+  expiration 2027-10-27).
 
 **Aucun repli.** Sans jeton d'ecriture, le controleur **rend son verdict et
 n'ecrit rien** -- il ne se rabat jamais sur le jeton de mesure, qui n'a pas
