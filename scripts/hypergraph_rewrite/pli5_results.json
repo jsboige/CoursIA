@@ -1,0 +1,293 @@
+{
+  "issue": 23093,
+  "lane": "myia-po-2023:CoursIA-2",
+  "engine": {
+    "wolfram": {
+      "wolframscript": null,
+      "wolfram_kernel": null,
+      "install_dir_present": false
+    },
+    "setreplace_available": true,
+    "setreplace_version": "0.2.0"
+  },
+  "verdict": {
+    "verdict": "RECOVERABLE-LOCAL",
+    "motive": "alternative ouverte installee et invoquee localement (paquet MIT, semantique SetReplace exacte, aucun moteur Wolfram requis)"
+  },
+  "capabilities": {
+    "public_names": [
+      "Event",
+      "HypergraphSystem",
+      "Plot",
+      "Rule",
+      "SetReplaceError",
+      "Token",
+      "enumerate_rules",
+      "evolve",
+      "layout",
+      "plot",
+      "set_replace",
+      "set_replace_all",
+      "set_replace_fixed_point",
+      "set_replace_list",
+      "setreplace"
+    ],
+    "multiway_surface": [],
+    "multiway_available": false
+  },
+  "calibration": {
+    "rule": "{{x, y}} -> {{x, y}, {y, z}}",
+    "points": [
+      {
+        "events": 1,
+        "quantity": "edges",
+        "expected": 2,
+        "got": 2,
+        "ok": true
+      },
+      {
+        "events": 1,
+        "quantity": "atoms",
+        "expected": 2,
+        "got": 2,
+        "ok": true
+      },
+      {
+        "events": 2,
+        "quantity": "edges",
+        "expected": 3,
+        "got": 3,
+        "ok": true
+      },
+      {
+        "events": 2,
+        "quantity": "atoms",
+        "expected": 3,
+        "got": 3,
+        "ok": true
+      },
+      {
+        "events": 3,
+        "quantity": "edges",
+        "expected": 4,
+        "got": 4,
+        "ok": true
+      },
+      {
+        "events": 3,
+        "quantity": "atoms",
+        "expected": 4,
+        "got": 4,
+        "ok": true
+      }
+    ],
+    "passed": true
+  },
+  "growth": {
+    "chaine": [
+      {
+        "events_requested": 1,
+        "events_applied": 1,
+        "edges": 2,
+        "atoms": 2,
+        "generations": 1,
+        "termination": "MaxEvents"
+      },
+      {
+        "events_requested": 2,
+        "events_applied": 2,
+        "edges": 3,
+        "atoms": 3,
+        "generations": 2,
+        "termination": "MaxEvents"
+      },
+      {
+        "events_requested": 3,
+        "events_applied": 3,
+        "edges": 4,
+        "atoms": 4,
+        "generations": 2,
+        "termination": "MaxEvents"
+      },
+      {
+        "events_requested": 5,
+        "events_applied": 5,
+        "edges": 6,
+        "atoms": 6,
+        "generations": 3,
+        "termination": "MaxEvents"
+      },
+      {
+        "events_requested": 8,
+        "events_applied": 8,
+        "edges": 9,
+        "atoms": 9,
+        "generations": 4,
+        "termination": "MaxEvents"
+      },
+      {
+        "events_requested": 13,
+        "events_applied": 13,
+        "edges": 14,
+        "atoms": 14,
+        "generations": 4,
+        "termination": "MaxEvents"
+      },
+      {
+        "events_requested": 21,
+        "events_applied": 21,
+        "edges": 22,
+        "atoms": 22,
+        "generations": 5,
+        "termination": "MaxEvents"
+      }
+    ],
+    "branchante": [
+      {
+        "events_requested": 1,
+        "events_applied": 1,
+        "edges": 4,
+        "atoms": 2,
+        "generations": 1,
+        "termination": "MaxEvents"
+      },
+      {
+        "events_requested": 2,
+        "events_applied": 2,
+        "edges": 6,
+        "atoms": 3,
+        "generations": 2,
+        "termination": "MaxEvents"
+      },
+      {
+        "events_requested": 3,
+        "events_applied": 3,
+        "edges": 8,
+        "atoms": 4,
+        "generations": 2,
+        "termination": "MaxEvents"
+      },
+      {
+        "events_requested": 5,
+        "events_applied": 5,
+        "edges": 12,
+        "atoms": 6,
+        "generations": 3,
+        "termination": "MaxEvents"
+      },
+      {
+        "events_requested": 8,
+        "events_applied": 8,
+        "edges": 18,
+        "atoms": 9,
+        "generations": 4,
+        "termination": "MaxEvents"
+      },
+      {
+        "events_requested": 13,
+        "events_applied": 13,
+        "edges": 28,
+        "atoms": 14,
+        "generations": 5,
+        "termination": "MaxEvents"
+      },
+      {
+        "events_requested": 21,
+        "events_applied": 21,
+        "edges": 44,
+        "atoms": 22,
+        "generations": 5,
+        "termination": "MaxEvents"
+      }
+    ]
+  },
+  "fits": {
+    "chaine": {
+      "edges": {
+        "affine": {
+          "slope": 1.0,
+          "intercept": 1.0,
+          "r2": 1.0,
+          "n": 7
+        },
+        "power_law": {
+          "slope": 0.7971291974710808,
+          "intercept": 0.579555228994425,
+          "r2": 0.9925617161098041,
+          "n": 7
+        },
+        "chosen": "affine",
+        "classification": "affine (pente=1.000, ordonnee=1.000)"
+      },
+      "atoms": {
+        "affine": {
+          "slope": 1.0,
+          "intercept": 1.0,
+          "r2": 1.0,
+          "n": 7
+        },
+        "power_law": {
+          "slope": 0.7971291974710808,
+          "intercept": 0.579555228994425,
+          "r2": 0.9925617161098041,
+          "n": 7
+        },
+        "chosen": "affine",
+        "classification": "affine (pente=1.000, ordonnee=1.000)"
+      }
+    },
+    "branchante": {
+      "edges": {
+        "affine": {
+          "slope": 2.0,
+          "intercept": 2.0,
+          "r2": 1.0,
+          "n": 7
+        },
+        "power_law": {
+          "slope": 0.7971291974710808,
+          "intercept": 1.2727024095543704,
+          "r2": 0.9925617161098041,
+          "n": 7
+        },
+        "chosen": "affine",
+        "classification": "affine (pente=2.000, ordonnee=2.000)"
+      },
+      "atoms": {
+        "affine": {
+          "slope": 1.0,
+          "intercept": 1.0,
+          "r2": 1.0,
+          "n": 7
+        },
+        "power_law": {
+          "slope": 0.7971291974710808,
+          "intercept": 0.579555228994425,
+          "r2": 0.9925617161098041,
+          "n": 7
+        },
+        "chosen": "affine",
+        "classification": "affine (pente=1.000, ordonnee=1.000)"
+      }
+    }
+  },
+  "fanout": {
+    "chaine": {
+      "events": 13,
+      "tokens_consumed": 13,
+      "max_consumers": 1,
+      "branches": false
+    },
+    "branchante": {
+      "events": 13,
+      "tokens_consumed": 26,
+      "max_consumers": 1,
+      "branches": false
+    }
+  },
+  "limits": [
+    "l'API du moteur retenu n'expose aucune enumeration multiway : la question de la reductibilite du nombre de branches n'est pas tranchee par cette mesure, qui ne porte que sur un chemin unique",
+    "un seul ordre d'evenements est mesure (LeastRecentEdge par defaut) : les autres ordres ne sont pas explores",
+    "sur un chemin unique la croissance est affine par construction (chaque evenement consomme k aretes et en produit m) ; un ajustement en loi de puissance y rend un exposant inferieur a 1 avec un R2 trompeur, ce que la selection de modele corrige"
+  ]
+}
