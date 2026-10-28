@@ -122,6 +122,9 @@ LOCAL_LABEL = "coursia-linux"
 # depuis plus de `--saturation-minutes`, l'offre hebergee est saturee.
 DEFAULT_SATURATION_JOBS = 3
 DEFAULT_SATURATION_MINUTES = 15.0
+# En dessous de ce nombre de jobs hebergees en file, l'offre hebergee est
+# consideree comme videe (elle rend la main).
+DEFAULT_DRAIN_JOBS = 0
 # Nombre de slots locaux libres minimum pour accepter le debordement.
 DEFAULT_MIN_FREE_SLOTS = 2
 # Dwell : minimum entre deux bascules (anti-oscillation).
@@ -185,6 +188,7 @@ def evaluate(
     *,
     saturation_jobs: int = DEFAULT_SATURATION_JOBS,
     saturation_minutes: float = DEFAULT_SATURATION_MINUTES,
+    drain_jobs: int = DEFAULT_DRAIN_JOBS,
     min_free_slots: int = DEFAULT_MIN_FREE_SLOTS,
     dwell_minutes: float = DEFAULT_DWELL_MINUTES,
     last_change_at: datetime | None = None,
@@ -253,31 +257,17 @@ def evaluate(
             f"coursia-linux en file) -- on rend la main a l'offre hebergee",
         )
 
-    # 2. L'offre hebergee SUIT : elle rend la main.
-    #    PREMISSE NEGATIVE (« aucun job n'attend au-dela du seuil de
-    #    saturation ») : elle n'est etablie que par une lecture COMPLETE.
-    #    Sous troncature, le compte lu est une borne INFERIEURE -- un job
-    #    age peut etre dans la part non lue. On ne peut donc pas conclure
-    #    « l'offre suit », et cette bascule est bloquee.
-    #
-    # #22937 vague 2 -- la premise devient l'AGE de la file, pas son
-    # VIDE. Mesure du 27/10 a 22h50Z : la variable etait a `true` depuis
-    # 11:04Z, et le controleur lisait `hosted.old = 0` (74 jobs en file,
-    # AUCUN n'attendait depuis plus de 15 min -> l'offre hebergee suit)
-    # avec 29 slots locaux LIBRES. L'ancienne premise -- « file hebergee
-    # videe », soit ZERO job en file -- ne pouvait plus jamais s'etablir :
-    # le depot a toujours des jobs heberges hors debordement (CodeQL,
-    # Lean CI, les advisories), donc la variable ne pouvait plus jamais
-    # revenir a `false`. Le controleur etait un commutateur a SENS UNIQUE,
-    # et le parc local gardait la cohorte pendant que l'offre hebergee
-    # unusedait ses propres slots. Avec la vague 2 (40 jobs de plus dans la
-    # cohorte), cette borne aurait ete totale.
-    if hosted.old == 0 and not hosted.truncated:
+    # 2. Offre hebergee drainee : elle suffit, on libere le local.
+    #    PREMISSE NEGATIVE (« aucun job en file ») : elle n'est etablie que
+    #    par une lecture COMPLETE. Sous troncature, le compte lu est une
+    #    borne INFERIEURE -- la file peut contenir des jobs non lus. On ne
+    #    peut donc pas conclure « file videe », et cette bascule est
+    #    bloquee.
+    if hosted.queued <= drain_jobs and not hosted.truncated:
         return switch(
             "false",
-            f"l'offre hebergee suit ({hosted.queued} job(s) en file, aucun "
-            f"n'attend depuis plus de {saturation_minutes:.0f} min) -- "
-            f"elle suffit, le parc local se libere",
+            f"file hebergee videe ({hosted.queued} job(s) en file) -- "
+            f"l'offre GitHub suffit, le parc local se libere",
         )
 
     # 3. Offre hebergee saturee ET parc local libre : le local absorbe.
@@ -308,8 +298,8 @@ def evaluate(
         )
     if hosted.truncated:
         notes.append(
-            f"lecture hebergee TRONQUEE ({hosted.reason}) : « l'offre "
-            f"hebergee suit » n'est pas etablie -> pas de bascule vers "
+            f"lecture hebergee TRONQUEE ({hosted.reason}) : « la file "
+            f"hebergee est videe » n'est pas etablie -> pas de bascule vers "
             f"l'offre hebergee"
         )
     return hold(
@@ -577,6 +567,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--saturation-minutes", type=float, default=DEFAULT_SATURATION_MINUTES
     )
+    parser.add_argument("--drain-jobs", type=int, default=DEFAULT_DRAIN_JOBS)
     parser.add_argument("--min-free-slots", type=int, default=DEFAULT_MIN_FREE_SLOTS)
     parser.add_argument("--dwell-minutes", type=float, default=DEFAULT_DWELL_MINUTES)
     parser.add_argument(
@@ -686,6 +677,7 @@ def main(argv: list[str] | None = None) -> int:
         current,
         saturation_jobs=args.saturation_jobs,
         saturation_minutes=args.saturation_minutes,
+        drain_jobs=args.drain_jobs,
         min_free_slots=args.min_free_slots,
         dwell_minutes=args.dwell_minutes,
         last_change_at=updated_at,
@@ -756,6 +748,7 @@ def main(argv: list[str] | None = None) -> int:
         "thresholds": {
             "saturation_jobs": args.saturation_jobs,
             "saturation_minutes": args.saturation_minutes,
+            "drain_jobs": args.drain_jobs,
             "min_free_slots": args.min_free_slots,
             "dwell_minutes": args.dwell_minutes,
         },
