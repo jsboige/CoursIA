@@ -3785,6 +3785,83 @@ theorem hashlife_correct_margin_of_union_periodic_singleton (c : MacroCell) (k :
   rw [hsplit]
   exact hcap_of_union_periodic_singleton hTi g₁ g₂ hfix₁ hcan hg₂ hspan t
 
+/-! ### Link 5 — ships in formation (union of two synchronous spaceships)
+
+Links 1 to 4 covered **periodic** unions (fixed points of `evolve T`). A
+spaceship is not a fixed point: `evolve p g = shift v g` moves it, and
+`hcap_of_union_periodic` does not apply. But two spaceships with the **same
+period** `p` and the **same displacement** `v` whose trajectories stay
+3-separated themselves form a spaceship: the union reappears after `p`
+steps, translated by `v`. Capture via the spaceship route
+(`hcap_of_spaceship`) then applies to the whole union — two synchronous
+gliders separated by three cells are covered by the same proof as each one
+in isolation. -/
+
+/-- **Derived periodicity of the union of two synchronous spaceships.** Two
+    spaceships with the same period `p > 0` and the same displacement `v`,
+    whose trajectories stay 3-separated, form a union which is itself a
+    spaceship of period `p` and displacement `v` — in the strong sense of
+    the list equality required by `hcap_of_spaceship`, and **with no
+    canonicity hypothesis** (unlike `evolve_period_union`: both sides of
+    the `Canonical.ext` bridge are unconditionally canonical —
+    `canonical_evolve_of_pos` on the left, `canonical_shift` on the
+    right). Membership by `mem_evolve_union_sep` then the two spaceship
+    legs, the translation absorbed by `mem_shift` on all three sides. -/
+theorem evolve_ship_union {p : Nat} (hp0 : 0 < p) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (v : Int × Int) (hship₁ : evolve p g₁ = shift v g₁)
+    (hship₂ : evolve p g₂ = shift v g₂) :
+    evolve p (g₁ ++ g₂) = shift v (g₁ ++ g₂) := by
+  apply Canonical.ext (canonical_evolve_of_pos hp0 _) (canonical_shift v _)
+  intro q
+  rw [mem_evolve_union_sep g₁ g₂ hsep p q, hship₁, hship₂,
+    mem_shift v g₁ q, mem_shift v g₂ q, mem_shift v (g₁ ++ g₂) q]
+  exact List.mem_append.symm
+
+/-- **hcap for spaceship formations — link 5.** For two synchronous
+    spaceships (same `p > 0`, same `v`), with 3-separated trajectories,
+    whose every phase of the union has a reconstruction level divisible by
+    `p` and whose velocity satisfies `2·|v.i| ≤ p`, every time `t` of the
+    union trajectory is captured: the union is a spaceship
+    (`evolve_ship_union`), and capture via the spaceship route
+    (`hcap_of_spaceship`) applies to it as is. -/
+theorem hcap_of_spaceship_formation {p : Nat} (hp0 : 0 < p) (g₁ g₂ : Grid)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (v : Int × Int) (hship₁ : evolve p g₁ = shift v g₁)
+    (hship₂ : evolve p g₂ = shift v g₂) (hcan : Canonical (g₁ ++ g₂))
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (g₁ ++ g₂))).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    ∀ t, jumpCapturedF (gridToMacroCellWithOffset (evolve t (g₁ ++ g₂))).2 = true :=
+  hcap_of_spaceship (g₁ ++ g₂) hcan hp0 v
+    (evolve_ship_union hp0 g₁ g₂ hsep v hship₁ hship₂) hdiv hspd1 hspd2
+
+/-- **L3 closed for synchronous spaceship formations.** Assembly
+    corollary mirroring `hashlife_correct_margin_of_union_periodic`: a
+    MacroCell whose grid rendered at the origin splits into two spaceships
+    with the same period `p > 0` and the same displacement `v`, with
+    3-separated trajectories, satisfies the Hashlife equality at any
+    horizon `2 ^ k` under `centralCorrect`. Second **composed** L3 case
+    after the periodic unions: two synchronous gliders separated by three
+    cells — each spaceship covered alone already was, their formation was
+    not. -/
+theorem hashlife_correct_margin_of_spaceship_formation (c : MacroCell) (k : Nat)
+    (h_central : centralCorrect c k) {p : Nat} (hp0 : 0 < p) (v : Int × Int)
+    (g₁ g₂ : Grid) (hsplit : c.toGrid (0, 0) = g₁ ++ g₂)
+    (hsep : ∀ s, ∀ q ∈ evolve s g₁, ∀ r ∈ evolve s g₂, 3 ≤ chebDist q r)
+    (hship₁ : evolve p g₁ = shift v g₁) (hship₂ : evolve p g₂ = shift v g₂)
+    (hcan : Canonical (g₁ ++ g₂))
+    (hdiv : ∀ i, i < p →
+      p ∣ 2 ^ (gridToMacroCellWithOffset (evolve i (c.toGrid (0, 0)))).2.level)
+    (hspd1 : -(p : Int) ≤ 2 * v.1 ∧ 2 * v.1 ≤ (p : Int))
+    (hspd2 : -(p : Int) ≤ 2 * v.2 ∧ 2 * v.2 ≤ (p : Int)) :
+    evolveHashlifeFast (2 ^ k) (c.toGrid (0, 0)) = evolve (2 ^ k) (c.toGrid (0, 0)) := by
+  refine hashlife_correct_margin_of_hcap c k h_central ?_
+  intro t _
+  rw [hsplit]
+  exact hcap_of_spaceship_formation hp0 g₁ g₂ hsep v hship₁ hship₂ hcan (hsplit ▸ hdiv) hspd1 hspd2 t
+
 /-! ### Slice 15 — mixed-period unions (mod route, containment)
 
 Links 2-4 of the union chain require both parts to share the **same** period `T`

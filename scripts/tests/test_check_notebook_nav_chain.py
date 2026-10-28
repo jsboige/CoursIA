@@ -412,3 +412,115 @@ class TestIntraSeriesEntryStatus:
         assert per_b, report.get("series")
         anchors = per_b[0].get("externally_anchored", [])
         assert any(a["notebook"].endswith("B-1.ipynb") and a["sources"] for a in anchors)
+
+
+class TestBaselineProvenance:
+    """#22121 -- un baseline sans provenance absorbe un finding NEW en silence.
+
+    Instance fondatrice : #21696 (sujet sans rapport) a reecrit le baseline
+    depuis une branche qui contenait deja Z3-19, faisant passer un finding de
+    `main` a « connu ». Rien ne distinguait cette ecriture d'une re-derivation
+    sur `main`. Les tests couvrent les trois verrous : provenance ecrite,
+    refus hors main propre, verdict de --check distinct d'un finding NEW.
+    """
+
+    @staticmethod
+    def _fake_git(monkeypatch, head, branch, origin_main, status=""):
+        def _output(*args):
+            key = " ".join(args)
+            if key == "rev-parse HEAD":
+                return head
+            if key == "rev-parse --abbrev-ref HEAD":
+                return branch
+            if key == "rev-parse origin/main":
+                return origin_main
+            if key == "status --porcelain":
+                return status
+            if key.startswith("rev-list --count"):
+                return "0" if head == origin_main else "3"
+            return None
+        monkeypatch.setattr(nav_chain, "_git_output", _output)
+
+    def test_provenance_clean_main_is_comparable(self, monkeypatch, tmp_path):
+        self._fake_git(monkeypatch, "aaa111", "main", "aaa111")
+        prov = nav_chain._git_provenance(tmp_path / "baseline.json")
+        assert prov["non_main"] is False
+        assert prov["head"] == "aaa111"
+        assert prov["instrument"] == nav_chain.INSTRUMENT_VERSION
+        assert prov["written_at"].endswith("Z")
+
+    def test_provenance_branch_is_flagged_non_main(self, monkeypatch, tmp_path):
+        """Le cas fondateur : ecriture depuis une branche de sujet."""
+        self._fake_git(monkeypatch, "bbb222", "feature/sujet-sans-rapport", "aaa111")
+        prov = nav_chain._git_provenance(tmp_path / "baseline.json")
+        assert prov["non_main"] is True
+        assert prov["branch"] == "feature/sujet-sans-rapport"
+
+    def test_provenance_ignores_the_baseline_own_modification(self, monkeypatch, tmp_path):
+        """Ecrire le baseline salit l'arbre : ce n'est pas un etat de travail."""
+        target = tmp_path / "baseline.json"
+        monkeypatch.setattr(nav_chain, "REPO_ROOT", tmp_path)
+        self._fake_git(monkeypatch, "aaa111", "main", "aaa111",
+                       status=" M scripts/tests/baseline_nb_nav_chain.json")
+        prov = nav_chain._git_provenance(tmp_path / "scripts/tests/baseline_nb_nav_chain.json")
+        assert prov["dirty"] is False
+        assert prov["non_main"] is False
+
+    def test_provenance_other_modification_is_dirty(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(nav_chain, "REPO_ROOT", tmp_path)
+        self._fake_git(monkeypatch, "aaa111", "main", "aaa111",
+                       status=" M scripts/notebook_tools/autre.py")
+        prov = nav_chain._git_provenance(tmp_path / "scripts/tests/baseline_nb_nav_chain.json")
+        assert prov["dirty"] is True
+        assert prov["non_main"] is True
+
+    def test_baseline_refuses_non_main_and_names_both_heads(self, monkeypatch):
+        prov = {"head": "bbb222", "origin_main": "aaa111", "branch": "feature/x",
+                "dirty": False, "non_main": True, "written_at": "2026-10-23T00:00:00Z"}
+        code, msg = nav_chain._baseline_refusal(prov, anyway=False)
+        assert code == 3
+        assert "bbb222" in msg and "aaa111" in msg
+
+    def test_baseline_anyway_is_permitted(self):
+        prov = {"head": "bbb222", "origin_main": "aaa111", "branch": "feature/x",
+                "dirty": False, "non_main": True, "written_at": "2026-10-23T00:00:00Z"}
+        assert nav_chain._baseline_refusal(prov, anyway=True) == (0, "")
+
+    def test_write_then_read_provenance_roundtrip(self, tmp_path):
+        """Controle positif : un baseline re-derive porte sa provenance, et les
+        findings restent lisibles par `_finding_keys`."""
+        report = {"findings": [{"kind": "independent_chain", "notebook": "A/B",
+                                "series": "A/B", "message": "m"}],
+                  "wrapped": [], "not_judged": [], "series": []}
+        prov = {"head": "aaa111", "branch": "main", "origin_main": "aaa111",
+                "dirty": False, "non_main": False, "instrument": "x",
+                "behind_origin_main": 0, "written_at": "2026-10-23T00:00:00Z"}
+        target = tmp_path / "baseline.json"
+        nav_chain._write_baseline(report, path=target, provenance=prov)
+        import json
+        data = json.loads(target.read_text(encoding="utf-8"))
+        assert data["provenance"]["non_main"] is False
+        assert data["findings"][0]["kind"] == "independent_chain"
+        assert nav_chain._finding_keys(data) == {("independent_chain", "A/B", "")}
+
+    def test_provenance_verdict_three_cases(self):
+        assert nav_chain._provenance_verdict(None)[0] == 0
+        assert "sans provenance" in nav_chain._provenance_verdict(None)[1]
+        code, msg = nav_chain._provenance_verdict({"non_main": True, "branch": "feature/x",
+                                                   "head": "bbb222", "origin_main": "aaa111",
+                                                   "dirty": False,
+                                                   "written_at": "2026-10-23T00:00:00Z"})
+        assert code == 1 and "HORS de `main`" in msg
+        assert nav_chain._provenance_verdict({"non_main": False}) == (0, "")
+
+    def test_check_reddens_on_non_main_baseline_without_any_new_finding(self, monkeypatch):
+        """Controle negatif (instance fondee) : le depot n'a AUCUN finding NEW,
+        et --check rougit quand meme -- le verdict porte sur la source du
+        baseline, pas sur un diff du depot."""
+        monkeypatch.setattr(nav_chain, "_load_baseline", lambda: set())
+        monkeypatch.setattr(nav_chain, "_finding_keys", lambda report: set())
+        monkeypatch.setattr(nav_chain, "_baseline_provenance", lambda: {
+            "non_main": True, "branch": "feature/sujet-sans-rapport",
+            "head": "bbb222", "origin_main": "aaa111", "dirty": False,
+            "written_at": "2026-10-23T00:00:00Z"})
+        assert nav_chain.main(["--check"]) == 1
