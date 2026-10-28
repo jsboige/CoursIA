@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-25
+
 # Registre des revues scientifiques — `scientific_reviewed_by`
 
 **Statut** : pilote fondateur (c.997, phase 1 issue #14831 voie 1)
