@@ -11,9 +11,15 @@ from pathlib import Path
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+# Pattern du repertoire (test_check_source_collapse.py et consorts) :
+# `notebook_tools/` n'est PAS un package (pas d'__init__.py) ; on insere le
+# repertoire lui-meme et on importe le module en top-level. La forme
+# `from notebook_tools.check_encoding_corruption import ...` resout en
+# namespace package en local mais echoue en CI (un module homonyme ombrage
+# le repertoire) : ModuleNotFoundError 'notebook_tools' is not a package.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from notebook_tools.check_encoding_corruption import (  # noqa: E402
+from check_encoding_corruption import (  # noqa: E402
     count_in_notebook,
     count_in_text,
     main,
