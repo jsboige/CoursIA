@@ -2081,7 +2081,7 @@ def _main(argv=None) -> int:
         p.error("--summary-by-verdict est un mode de recensement integral : "
                 "--pair/--family n'y designent rien (compte les paires par "
                 "bridge_verdict). Retirer le selecteur.")
-    # Garde anti-derive MERGE_HEAD / REBASE_HEAD (#11732) : pendant un merge non
+    # Garde anti-derive merge/rebase en cours (#11732) : pendant un merge non
     # commite, `git ls-tree HEAD` lit l'ANCIENNE tete de branche (pas le resultat
     # du merge). --update atteste alors des blob SHAs qui ne refletent pas l'etat
     # final du notebook -- au commit du merge, les notebooks obtiennent de
@@ -2098,20 +2098,47 @@ def _main(argv=None) -> int:
         except SystemExit:
             repo_root_for_state = None
         if repo_root_for_state is not None:
-            # git rev-parse -q --verify MERGE_HEAD/REBASE_HEAD : rc=0 si le
-            # depot est en cours de merge/rebase interactif. Le check precede
-            # `_repo_root()` final pour economiser un subprocess en cas d'erreur
-            # deja connue (mais apres args.repo_root parse, qui peut etre override
-            # dans les tests --repo-root sur tmp_path).
-            for state_file, label in (("MERGE_HEAD", "merge"), ("REBASE_HEAD", "rebase")):
+            # Le check precede `_repo_root()` final pour economiser un subprocess
+            # en cas d'erreur deja connue (mais apres args.repo_root parse, qui
+            # peut etre override dans les tests --repo-root sur tmp_path).
+            #
+            # Merge en cours : `git rev-parse -q --verify MERGE_HEAD` (rc=0 si
+            # et seulement si un merge est non commite) -- detection inchangee.
+            r = _run_git(
+                ["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"],
+                cwd=str(repo_root_for_state),
+            )
+            if r.returncode == 0:
+                p.error("--update pendant un merge non committe : HEAD ne contient pas "
+                        "le resultat du merge. Commitez d'abord, puis re-attestez "
+                        "(cf #11732, variante operationnelle de #8957).")
+            # Rebase en cours : l'indicateur fiable est l'existence du repertoire
+            # `rebase-merge` (interactif/merge backend) ou `rebase-apply`
+            # (backend am), PAS le ref REBASE_HEAD. Git peut y laisser un
+            # REBASE_HEAD orphelin apres un rebase interrompu : un clone qui en
+            # porte un sans rebase en cours voyait alors --update refuse a tort
+            # (signale par le coordinateur 2026-10-27 : REBASE_HEAD du 20/09,
+            # ni rebase-merge ni rebase-apply, 3 tests update_guard rouges).
+            # `git rev-parse --git-path <name>` resout le chemin dans le git dir
+            # du depot (worktree compris) ; la sortie est relative au cwd dans
+            # le clone principal (`.git/rebase-merge`) et absolue dans un
+            # worktree -- d'ou la resolution explicite ci-dessous.
+            for state_dir in ("rebase-merge", "rebase-apply"):
                 r = _run_git(
-                    ["git", "rev-parse", "-q", "--verify", state_file],
+                    ["git", "rev-parse", "--git-path", state_dir],
                     cwd=str(repo_root_for_state),
                 )
-                if r.returncode == 0:
-                    p.error(f"--update pendant un {label} non committe : HEAD ne contient pas "
-                            f"le resultat du {label}. Commitez d'abord, puis re-attestez "
-                            f"(cf #11732, variante operationnelle de #8957).")
+                raw = r.stdout.strip() if r.returncode == 0 else ""
+                if not raw:
+                    continue
+                state_path = Path(raw)
+                if not state_path.is_absolute():
+                    state_path = repo_root_for_state / state_path
+                if state_path.exists():
+                    p.error("--update pendant un rebase non termine : HEAD ne contient pas "
+                            "le resultat du rebase. Terminez ou annulez le rebase "
+                            "(git rebase --continue / --abort), puis re-attestez "
+                            "(cf #11732, variante operationnelle de #8957).")
     if args.pair and args.family:
         p.error("--pair et --family sont mutuellement exclusifs avec --update.")
     if args.ci_strict and args.per_pair:
