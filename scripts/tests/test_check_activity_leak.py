@@ -241,11 +241,38 @@ class TestNegativeControls(unittest.TestCase):
             "Le test de Diebold-Mariano rend DM p = 0.032 sur 4 seeds, sous le seuil.",
             "La statistique DM compare les pertes MSE des deux modeles.",
             "Le dual momentum (DM) combine momentum absolu et relatif.",
+            "Demo DM-JEPA 1.7 : prediction latente sans generation.",
+            "Le modele DM-JEPA apprend une representation par masquage.",
         ):
             with self.subTest(text=text):
                 self.assertFalse(
                     any(n == "dm" for n, _, _ in markers_in_text(text)),
                     f"DM Diebold-Mariano/momentum signale a tort: {text}",
+                )
+
+    def test_dm_jepa_elargissement_porte_le_nom_du_modele(self):
+        """#22252 -- l'allowlist porte « DM-JEPA », pas « JEPA ».
+
+        Le nom du modele de prediction latente contient « DM », que le motif
+        `\\bDM\\b` prend pour le test de Diebold-Mariano. Elargir l'allowlist au
+        mot « JEPA » seul rendait la garde muette sur toute mention « DM »
+        voisine d'un « JEPA » isole : c'est une garde affaiblie en silence.
+        Le bigrame garde la mention du modele muette et laisse la garde
+        sensible au reste -- controle negatif mesure le 2026-10-27.
+        """
+        muet = "Demo DM-JEPA 1.7 : prediction latente sans generation."
+        self.assertFalse(
+            any(n == "dm" for n, _, _ in markers_in_text(muet)),
+            f"nom de modele DM-JEPA signale a tort: {muet}",
+        )
+        for text in (
+            "Le DM publie par l'equipe JEPA hier soir.",
+            "Le DM de l'equipe a publie apres la sortie de JEPA, en mars.",
+        ):
+            with self.subTest(text=text):
+                self.assertTrue(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"mention DM proche d'un JEPA isole doit rester detectee: {text}",
                 )
 
     def test_dm_formes_compactes_du_test_ne_sont_pas_du_recit(self):
