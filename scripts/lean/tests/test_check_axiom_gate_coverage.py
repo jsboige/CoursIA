@@ -535,10 +535,46 @@ class TestJustifiedUngated:
         """Le critere est le project-path, pas un mot du document."""
         assert justified_ungated("HEAD", ["MyIA.AI.Notebooks/C/c_lean"]) == set()
 
+    def test_prefix_path_does_not_leak_to_longer_sibling(self, monkeypatch):
+        """🟠1 (review #23019) : une ligne ne nommant que `lean_game_defs_ext`
+        ne justifie pas son prefixe `lean_game_defs`. L'ancien test ne voyait
+        pas la fuite : il comparait `A/a_lean` et `B/b_lean`, chemins non
+        prefixes ; le manifeste reel porte le couple prefixe/sibling."""
+        import check_axiom_gate_coverage as mod
+        doc = ("| `MyIA.AI.Notebooks/GameTheory/lean_game_defs_ext` "
+               "reste sans gate, motif mesure |\n")
+        monkeypatch.setattr(mod, "coverage_doc", lambda ref: doc)
+        assert justified_ungated(
+            "HEAD", ["MyIA.AI.Notebooks/GameTheory/lean_game_defs"]
+        ) == set()
+
+    def test_negated_mention_does_not_justify(self, monkeypatch):
+        """🟠1 (review #23019) : « n'est plus sans gate » dit l'inverse de la
+        decision -- elle ne doit pas blanchir le lake."""
+        import check_axiom_gate_coverage as mod
+        doc = ("| `MyIA.AI.Notebooks/A/a_lean` n'est plus sans gate : "
+               "cable depuis #22519 |\n")
+        monkeypatch.setattr(mod, "coverage_doc", lambda ref: doc)
+        assert justified_ungated("HEAD", ["MyIA.AI.Notebooks/A/a_lean"]) == set()
+
     def test_empty_doc_justifies_nothing(self, monkeypatch):
         import check_axiom_gate_coverage as mod
         monkeypatch.setattr(mod, "coverage_doc", lambda ref: "")
         assert justified_ungated("HEAD", ["MyIA.AI.Notebooks/A/a_lean"]) == set()
+
+
+class TestShippedManifestTranche:
+    """🟠2 (review #23019) : la suite doit confronter le garde au manifeste
+    LIVRE, pas a `origin/main` (l'etat d'avant la PR). `AXIOM_GATE_COVERAGE_REF`
+    n'est defini par aucun workflow du depot : le checkout courant (HEAD) est la
+    seule ref qui mesure ce que la PR livre. Un lake ajoute au manifeste sans
+    decision ecrite rougit ici, comme il rougirait au CLI."""
+
+    def test_le_manifeste_livre_est_integralement_tranche(self):
+        r = measure("HEAD")
+        if not r["matrix_lakes"]:
+            pytest.skip("no manifest at HEAD")
+        assert r["ungated_without_justification"] == []
 
 
 class TestStrictExitCode:

@@ -78,6 +78,22 @@ COVERAGE_DOC = "docs/reference/lean-axiom-coverage.md"
 # lisible par un humain dans le document qui l'explique.
 _GATE_ABSENT_RE = re.compile(r"sans\s+gate", re.I)
 
+# Reserve Hermes 🟠1 (review #23019) : une mention « sans gate » precedee, dans
+# la meme cellule, d'une negation (« n'est plus sans gate », « n'a plus sans
+# gate », « plus sans gate ») dit que le lake N'EST PLUS sans gate -- elle ne
+# justifie rien. La fenetre de 20 caracteres borne la negation a la cellule qui
+# porte la mention, pas a la ligne entiere.
+_NEGATION_RE = re.compile(r"\b(n'est|n'a)\s+plus\b|\bplus\b", re.I)
+_NEGATION_WINDOW = 20
+
+
+def _bounded_path_re(path: str) -> re.Pattern:
+    """Le ``project-path`` en position delimitee (backticks, cellule de table,
+    espace) : une occurrence qui est le PREFIXE d'un chemin plus long sur la
+    ligne (``lean_game_defs`` dans ``lean_game_defs_ext``) ne matche pas.
+    Reserve Hermes 🟠1 (review #23019)."""
+    return re.compile(r"(?<![\w./-])" + re.escape(path) + r"(?![\w.-])")
+
 # Un APPEL du gate : un job dont le `uses:` resout vers lean-axiom.yml.
 # Ancre en debut de ligne (indentation admise) et non `re.search` libre : un
 # `uses:` cite dans un COMMENTAIRE (`#   uses: .../lean-axiom.yml@main`, forme
@@ -329,13 +345,28 @@ def justified_ungated(ref: str, ungated: list[str]) -> set[str]:
     Un lake sans gate d'axiomes n'est pas illicite, il doit seulement etre CONNU
     comme tel (#17097 critere 3, tranche #22519). « Connu » se lit dans la doc de
     reference : la ligne porte le ``project-path`` **et** la mention « sans
-    gate ». Ce qui n'est pas justifie n'est pas un silence tolerable -- c'est un
-    lake dont personne n'a tranche, et c'est ce que ``--check --strict`` refuse.
+    gate ». Deux portes sont closes (reserve Hermes 🟠1, review #23019) : le
+    chemin doit etre en position delimitee -- une occurrence prefixe d'un chemin
+    plus long ne compte pas -- et la mention negative (« n'est plus sans gate »)
+    ne justifie rien. Ce qui n'est pas justifie n'est pas un silence tolerable :
+    c'est un lake dont personne n'a tranche, et c'est ce que
+    ``--check --strict`` refuse.
     """
     text = coverage_doc(ref)
-    return {p for p in ungated
-            if any(p in line and _GATE_ABSENT_RE.search(line)
-                   for line in text.splitlines())}
+    justified = set()
+    for p in ungated:
+        path_re = _bounded_path_re(p)
+        for line in text.splitlines():
+            m = _GATE_ABSENT_RE.search(line)
+            if not m:
+                continue
+            before = line[max(0, m.start() - _NEGATION_WINDOW):m.start()]
+            if _NEGATION_RE.search(before):
+                continue
+            if path_re.search(line):
+                justified.add(p)
+                break
+    return justified
 
 
 def measure(ref: str) -> dict:

@@ -323,7 +323,7 @@ représentable : un lake ajouté demain à la matrice doit être câblé ou just
 - [x] **3 lacs borderline** identifiés : whitelist `Classical.choice` recommandée au câblage futur avec issue nommée par lake (`sudoku_lean`, `learning_theory_lean`, `decision_theory_lean`)
 - [x] **14 lacs GREEN** : câblage futur sans coût
 
-**Recommendation pour le coordinateur (ai-01)** : la whitelist `native_decide.*` (19 noms explicites) est déjà déclarée dans le paramètre `allow-axioms` de `lean-conway.yml` (PR #8746 MERGED, commit `84eef8c76`). Le triage THEOREME PAR THEOREME de ces 19 axiomes est suivi sous #8749 (lots 3-5, schema #8731 vs whitelist justifiée, runtime mesuré). Le câblage tranche-par-tranche était suivi sous [#11699](https://github.com/jsboige/CoursIA/issues/11699) : il est **terminé** depuis #22519, plus aucun lake du manifeste n'est sans gate (§4.1).
+**Recommendation pour le coordinateur (ai-01)** : la whitelist `native_decide.*` (19 noms explicites) est déjà déclarée dans le paramètre `allow-axioms` de `lean-conway.yml` (PR #8746 MERGED, commit `84eef8c76`). Le triage THEOREME PAR THEOREME de ces 19 axiomes est suivi sous #8749 (lots 3-5, schema #8731 vs whitelist justifiée, runtime mesuré). Le câblage tranche-par-tranche était suivi sous [#11699](https://github.com/jsboige/CoursIA/issues/11699) : il est **terminé** depuis #22519 ; deux lakes du manifeste restent sans gate, **par décision écrite** (§4.1 : `conway_cgt_lean` et `mathlib_examples`).
 
 ## 6. Acceptance step 4 — note sur §B.3 pr-review-discipline.md
 
