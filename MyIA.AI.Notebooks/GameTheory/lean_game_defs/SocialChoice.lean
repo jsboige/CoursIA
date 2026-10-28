@@ -399,3 +399,147 @@ theorem decisive_field {I A : Type} [DecidableEq A]
   have h5 : Decisive swf D y z :=
     decisive_expand_right swf D h_iia h_pareto hxy.symm hyz hxz h4
   exact ⟨h, h4, h1, h3, h5, h2⟩
+
+/-- Contraction : une coalition décisive se scinde. Si `D` est décisive sur
+`(x, y)` et se partage en deux parties disjointes `D₁` et `D₂` qui la
+couvrent, alors l'une des deux est décisive — `D₁` sur `(x, z)`, `D₂` sur
+`(z, y)`.
+
+C'est la brique qui fait **décroître** les coalitions décisives : combinée à
+la fermeture du champ (`decisive_field`), elle produit, sur un ensemble fini
+d'agents, une coalition décisive minimale — et la minimalité en fera un
+dictateur. Preuve (argument d'Arrow) : sur le profil où `D₁` a `x ≻ y ≻ z`,
+`D₂` a `z ≻ x ≻ y` et les autres ont `y ≻ z ≻ x`, tous les membres de `D`
+préfèrent `x` à `y`, donc la décision de `D` donne `x ≻s y`. Si `z ≳s x`,
+alors `z ≳s y` par transitivité, et `z ≻s y` strictement (sinon
+`y ≳s z ≳s x ≳s y` contredirait `x ≻s y`) ; seuls les membres de `D₂`
+préfèrent `z` à `y` dans ce profil, donc IIA transporte la décision. Sinon
+`x ≻s z` par complétude, et seuls les membres de `D₁` préfèrent `x` à `z` :
+IIA transporte. Pareto n'intervient pas — la décision initiale vient de la
+décisivité de `D` elle-même. -/
+theorem decisive_split {I A : Type} [DecidableEq A]
+    (swf : SocialWelfareFunction I A)
+    (D D1 D2 : I → Prop) [DecidablePred D1] [DecidablePred D2]
+    (h_iia : IIA swf)
+    (h1in : ∀ i, D1 i → D i) (h2in : ∀ i, D2 i → D i)
+    (hcover : ∀ i, D i → D1 i ∨ D2 i) (hdisj : ∀ i, ¬ (D1 i ∧ D2 i))
+    {x y z : A} (hxy : x ≠ y) (hxz : x ≠ z) (hyz : y ≠ z)
+    (h : Decisive swf D x y) :
+    Decisive swf D1 x z ∨ Decisive swf D2 z y := by
+  -- Profil auxiliaire : D₁ a x ≻ y ≻ z, D₂ a z ≻ x ≻ y, les autres y ≻ z ≻ x.
+  let P : I → Preference A :=
+    fun i => if D1 i then prefOfUtility (rank3 x y z 3 2 1)
+             else if D2 i then prefOfUtility (rank3 z x y 3 2 1)
+             else prefOfUtility (rank3 y z x 3 2 1)
+  have hP1 : ∀ i, D1 i → P i = prefOfUtility (rank3 x y z 3 2 1) := by
+    intro i hi; simp [P, hi]
+  have hP2 : ∀ i, D2 i → P i = prefOfUtility (rank3 z x y 3 2 1) := by
+    intro i hi
+    have hnd1 : ¬ D1 i := fun hc => hdisj i ⟨hc, hi⟩
+    simp [P, hnd1, hi]
+  have hPout : ∀ i, ¬ D1 i → ¬ D2 i → P i = prefOfUtility (rank3 y z x 3 2 1) := by
+    intro i h1 h2; simp [P, h1, h2]
+  -- Tous les membres de D préfèrent x à y, tous les non-membres y à x :
+  -- la décisivité de D sur (x, y) s'applique telle quelle au profil P.
+  have hdec : StrictPref (swf.aggregate P) x y := by
+    apply h P
+    · intro i hi
+      by_cases h1 : D1 i
+      · rw [hP1 i h1]
+        exact ⟨by simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm] <;> decide,
+          by simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm] <;> decide⟩
+      · have h2 : D2 i := ((hcover i hi).resolve_left h1)
+        rw [hP2 i h2]
+        exact ⟨by simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm] <;> decide,
+          by simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm] <;> decide⟩
+    · intro i hi
+      have h1 : ¬ D1 i := fun hc => hi (h1in i hc)
+      have h2 : ¬ D2 i := fun hc => hi (h2in i hc)
+      rw [hPout i h1 h2]
+      exact ⟨by simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm] <;> decide,
+        by simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm] <;> decide⟩
+  -- Le sens social sur (z, x) tranche laquelle des deux moitiés est décisive.
+  by_cases hzx : (swf.aggregate P).R z x
+  · right
+    have hzy : StrictPref (swf.aggregate P) z y :=
+      ⟨(swf.aggregate P).trans z x y hzx hdec.1,
+       fun hyz' => hdec.2 ((swf.aggregate P).trans y z x hyz' hzx)⟩
+    intro prefs hD2 hND2
+    have h₁ : ∀ i, (P i).R z y ↔ (prefs i).R z y := by
+      intro i
+      by_cases hi : D2 i
+      · rw [hP2 i hi]
+        have hPtrue : (prefOfUtility (rank3 z x y 3 2 1)).R z y := by
+          simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+        have hT : (prefs i).R z y := (hD2 i hi).1
+        exact ⟨fun _ => hT, fun _ => hPtrue⟩
+      · have hPfalse : ¬ (P i).R z y := by
+          by_cases h1 : D1 i
+          · rw [hP1 i h1]
+            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+          · rw [hPout i h1 hi]
+            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+        have hT : ¬ (prefs i).R z y := (hND2 i hi).2
+        exact ⟨fun hc => absurd hc hPfalse, fun hc => absurd hc hT⟩
+    have h₂ : ∀ i, (P i).R y z ↔ (prefs i).R y z := by
+      intro i
+      by_cases hi : D2 i
+      · rw [hP2 i hi]
+        have hPfalse : ¬ (prefOfUtility (rank3 z x y 3 2 1)).R y z := by
+          simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+        have hT : ¬ (prefs i).R y z := (hD2 i hi).2
+        exact ⟨fun hc => absurd hc hPfalse, fun hc => absurd hc hT⟩
+      · have hPtrue : (P i).R y z := by
+          by_cases h1 : D1 i
+          · rw [hP1 i h1]
+            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+          · rw [hPout i h1 hi]
+            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+        have hT : (prefs i).R y z := (hND2 i hi).1
+        exact ⟨fun _ => hT, fun _ => hPtrue⟩
+    have hiff₁ : (swf.aggregate P).R z y ↔ (swf.aggregate prefs).R z y :=
+      h_iia P prefs z y h₁ h₂
+    have hiff₂ : (swf.aggregate P).R y z ↔ (swf.aggregate prefs).R y z :=
+      h_iia P prefs y z h₂ h₁
+    exact ⟨hiff₁.mp hzy.1, fun hyz' => hzy.2 (hiff₂.mpr hyz')⟩
+  · left
+    have hxzS : StrictPref (swf.aggregate P) x z :=
+      ⟨((swf.aggregate P).complete x z).resolve_right hzx, hzx⟩
+    intro prefs hD1 hND1
+    have h₁ : ∀ i, (P i).R x z ↔ (prefs i).R x z := by
+      intro i
+      by_cases hi : D1 i
+      · rw [hP1 i hi]
+        have hPtrue : (prefOfUtility (rank3 x y z 3 2 1)).R x z := by
+          simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+        have hT : (prefs i).R x z := (hD1 i hi).1
+        exact ⟨fun _ => hT, fun _ => hPtrue⟩
+      · have hPfalse : ¬ (P i).R x z := by
+          by_cases h2 : D2 i
+          · rw [hP2 i h2]
+            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+          · rw [hPout i hi h2]
+            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+        have hT : ¬ (prefs i).R x z := (hND1 i hi).2
+        exact ⟨fun hc => absurd hc hPfalse, fun hc => absurd hc hT⟩
+    have h₂ : ∀ i, (P i).R z x ↔ (prefs i).R z x := by
+      intro i
+      by_cases hi : D1 i
+      · rw [hP1 i hi]
+        have hPfalse : ¬ (prefOfUtility (rank3 x y z 3 2 1)).R z x := by
+          simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+        have hT : ¬ (prefs i).R z x := (hD1 i hi).2
+        exact ⟨fun hc => absurd hc hPfalse, fun hc => absurd hc hT⟩
+      · have hPtrue : (P i).R z x := by
+          by_cases h2 : D2 i
+          · rw [hP2 i h2]
+            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+          · rw [hPout i hi h2]
+            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+        have hT : (prefs i).R z x := (hND1 i hi).1
+        exact ⟨fun _ => hT, fun _ => hPtrue⟩
+    have hiff₁ : (swf.aggregate P).R x z ↔ (swf.aggregate prefs).R x z :=
+      h_iia P prefs x z h₁ h₂
+    have hiff₂ : (swf.aggregate P).R z x ↔ (swf.aggregate prefs).R z x :=
+      h_iia P prefs z x h₂ h₁
+    exact ⟨hiff₁.mp hxzS.1, fun hzx' => hxzS.2 (hiff₂.mpr hzx')⟩
