@@ -3169,6 +3169,7 @@
       "d1c885850ab8",
       "d24fdd4792e8"
     ],
-    "note": "Le run a tourne sur un commit local f3efa58 (jamais pousse), jumeau pre-rebase du commit pousse d1c88585 : le contenu de ict25_arms.py est byte-identique aux trois refs citatrices (sha256 ci-dessus), donc le code producteur est reconstituable depuis la branche. Le champ git_commit d'origine est conserve intact."
+    "note": "Le run a tourne sur un commit local f3efa58 (jamais pousse), jumeau pre-rebase du commit pousse d1c88585 : le contenu de ict25_arms.py est byte-identique aux trois refs citatrices (sha256 ci-dessus), donc le code producteur est reconstituable depuis la branche. Le champ git_commit d'origine est conserve intact.",
+    "volatile_until_script_patch": "_write_artifact reconstruit le dict de zero et ne preserve pas ce bloc : toute re-ecriture de l'agregat par le script en cours supprime ce bloc sans signal (review #23087, point 2). Drapeau pose pour que le bloc ne soit cite comme garantie qu'a partir du patch du script (preserved lecture-avant-ecriture de provenance)."
   }
 }
