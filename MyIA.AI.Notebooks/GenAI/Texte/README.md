@@ -39,6 +39,7 @@ La maîtrise des LLMs constitue la pierre angulaire de toute expertise en Géné
 | 3 | `3_Structured_Outputs.ipynb` | JSON Schema, Pydantic, mode strict, extraction de données | 55 min |
 | 3b | `3b_Typed_Decisions_System1.ipynb` | Décisions typées « système 1 » : contrat choice/score/noul, LLM gelé lu sur ses logits, tête d'attention fine-tunée (jevlike) et moteur de décision pré-entraîné (laya : zéro-shot puis fine-tuné) contre témoin classique, calibration (NLL, Brier, ECE, température), escalade, banc tiers CC0 hors domaine (v1/v2, chute mesurée) | 60 min |
 | 3c | `3c_Constrained_Decoding_Python.ipynb` | Décodage contraint au niveau du token : automate fini (DFA) codé à la main pour le format date ISO `\d{4}-\d{2}-\d{2}`, dérivation du masque de logits depuis les états de l'automate, génération pas à pas d'une date valide — le complément token-level du 3 (JSON Schema agit au niveau API, le masque agit sur la distribution elle-même) | — |
+| 3d | `3d_JEPA_PredictionLatente_System1.ipynb` | Prédiction latente sans génération : DM-JEPA 1.7 (moteur non-autorégressif, 349 M paramètres) exécuté via le harnais de validation local (#21997) — le distracteur qui partage l'ancre coule (rang moyen 5,7 sur 6), la négation reste au rang du hasard (3,75 contre 3,5), baseline du tri aléatoire à côté ; les chiffres de la page de validation reproduits en direct | 35 min |
 | 4 | `4_Function_Calling.ipynb` | Tools API, appels parallèles, boucle agentique | 60 min |
 
 ### Tier 3 : Augmentation (Intermédiaire)
