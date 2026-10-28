@@ -66,6 +66,13 @@ jobs:
     # creation du job, les runs deja en file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
 
+    # Borne de duree (#23016, review 5677732011) : sans `timeout-minutes`, un
+    # job herite de 360 min et peut figer un slot ephemere du parc local --
+    # 16 slots sur 18 ont ete tenus pendant des heures le 15/10. La borne vaut
+    # ~3x la duree mesuree (0-1 min sur les 8 derniers succes), plus la marge
+    # d'un clone froid.
+    timeout-minutes: 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4

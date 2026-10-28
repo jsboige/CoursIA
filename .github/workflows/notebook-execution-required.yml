@@ -67,6 +67,12 @@ jobs:
     # creation du job, les runs deja en file ne bougent pas.
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    # Borne de duree (#23016, review 5677732011) : sans `timeout-minutes`, un
+    # job herite de 360 min et peut figer un slot ephemere du parc local --
+    # 16 slots sur 18 ont ete tenus pendant des heures le 15/10. La borne vaut
+    # ~3x la duree mesuree (0-1 min sur les 8 derniers succes), plus la marge
+    # d'un clone froid.
+    timeout-minutes: 5
     outputs:
       notebooks: ${{ steps.detect.outputs.notebooks }}
       has_notebooks: ${{ steps.detect.outputs.has_notebooks }}
@@ -121,6 +127,12 @@ jobs:
     runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
     needs: detect-changes
     if: (github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository) && needs.detect-changes.outputs.has_notebooks > 0
+    # Borne de duree (#23016, review 5677732011) : sans `timeout-minutes`, un
+    # job herite de 360 min et peut figer un slot ephemere du parc local --
+    # 16 slots sur 18 ont ete tenus pendant des heures le 15/10. La borne vaut
+    # ~3x la duree mesuree (1 min sur les 8 derniers succes), plus la marge
+    # d'un clone froid.
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
