@@ -16,6 +16,8 @@ La doctrine « escalier » de la carte #20298 : les expériences dans l'ordre o�
 
 Le regroupement dans `ICT-12/` préserve ce récit ordonné (mesure → apprentissage → incarnation → inhibition → décision).
 
+> **Renommage (28/10, #22949)** : la convention uniforme `ICT-<NN>-<Sujet>/` est appliquée — la sous-série porte désormais le nom `ICT-12-ValenceFieldsAndAnimats/` ; le `ICT-12/` cité ci-dessous est l'état intermédiaire de cette même PR (descent en sous-série → nommage par sujet).
+
 ### Mouvement (6 étapes)
 1. `git mv` des 5 carnets vers `MyIA.AI.Notebooks/IIT/ICT-Series/ICT-12/` (5 renames, **100 % de similarité**). **Aucun renommage de fichier** : les noms `ICT-12*` sont conservés, seul le dossier regroupe.
 2. **Réparation des liens** — ce qui distingue cette tranche des paliers 10/14/19 : les 5 carnets portent **26 liens relatifs sortants** vers le reste de la série (`../../Probas/…`, `../../../docs/…`, `ict/…`, les siblings `ICT-13/18/30`, `../README.md`, `ICT-0-Framing.md`). Descendre d'un niveau les casse tous : **26 liens sortants des cellules markdown** re-préfixés d'un `../` (les **14 liens intra-famille** `ICT-12*` restent sans préfixe — les 5 carnets sont désormais *siblings*). Côté entrant : **32 refs de chemin** préfixées d'`ICT-12/`, réparties sur les fichiers porteurs — `ICT-Series/README.md`, `thom-synthese-distillation.md`, le carnet frère `ICT-Synthese-CrossSubstrat`, et 7 docs (`cadrage/grothendieckian-lens`, `cadrage/magnifica-humanitas-dialogue`, `curriculum/recherche`, `ict/feuille-de-route-notebooks`, `ict/genealogy-representation-interne`, `ict/tresse-cartographie`, `notebook-metadata/scientific-review-registry`).
