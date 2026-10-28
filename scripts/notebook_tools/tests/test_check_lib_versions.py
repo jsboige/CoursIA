@@ -239,6 +239,70 @@ def test_delta_flags_a_downgrade_introduced_by_the_pr():
     assert any(f["kind"] == "downgrade" and f["version"] == "3.0.5" for f in findings)
 
 
+def test_base_illisible_est_un_incident_nomme_pas_un_carnet_neuf(tmp_path):
+    """Point 6 -- base illisible et base absente ne sont pas la meme chose.
+
+    Avant correctif, `notebook_at` rendait `None` pour les deux : un `git
+    show` en echec faisait degenerer le delta en etat, et la derive
+    historique rougissait sans cause nommee.
+    """
+    import subprocess
+
+    repo = tmp_path / "r"
+    repo.mkdir()
+
+    def git(*args: str) -> None:
+        subprocess.run(
+            ["git", *args], cwd=repo, check=True, capture_output=True
+        )
+
+    git("init")
+    git("config", "user.email", "t@example.invalid")
+    git("config", "user.name", "t")
+    (repo / "casse.ipynb").write_text("{ ceci n'est pas du JSON", encoding="utf-8")
+    (repo / "sain.ipynb").write_text(
+        json.dumps(_notebook(['#r "nuget:IKVM,8.15.0"'])), encoding="utf-8"
+    )
+    git("add", ".")
+    git("commit", "-m", "x")
+
+    # Present mais illisible : incident nomme, pas une absence.
+    with pytest.raises(clv.BaseReadError):
+        clv.notebook_at(repo, "HEAD", "casse.ipynb")
+
+    # Controles positifs : absent reste une absence, et un carnet sain se lit.
+    assert clv.notebook_at(repo, "HEAD", "absent.ipynb") is None
+    assert clv.notebook_at(repo, "HEAD", "sain.ipynb") is not None
+
+
+def test_delta_compare_les_multiplicites_pas_les_ensembles():
+    """Point 5 -- un carnet a DEUX versions ne fait pas rougir une PR muette.
+
+    Avant correctif, la base etait lue comme un ensemble : une base portant
+    `{8.14.0, 8.15.0}` ne reconnaissait aucun des deux epinglages comme
+    inchange, et la PR heritait d'un faux `downgrade` sur un epinglage
+    qu'elle n'avait pas touche.
+    """
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    # pythonnet, PAS IKVM : IKVM 8.14.0 est sur l'allowlist du manifeste
+    # livre, donc il ne peut structurellement pas produire de downgrade --
+    # un controle positif ecrit dessus passerait pour la mauvaise raison.
+    deux_versions = ['#r "nuget:pythonnet,3.0.5"', '#r "nuget:pythonnet,3.1.0"']
+
+    base = clv.pins_from_payload(_notebook(deux_versions), manifest)
+    head = clv.pins_from_payload(_notebook(deux_versions), manifest)
+    assert clv.delta_findings("x.ipynb", base, head, manifest, canonicals) == []
+
+    # Controle positif : la PR ajoute un TROISIEME epinglage, non present en
+    # base -- celui-la est bien une introduction, et doit rougir.
+    head_plus = clv.pins_from_payload(
+        _notebook(deux_versions + ['#r "nuget:pythonnet,3.0.5"']), manifest
+    )
+    findings = clv.delta_findings("x.ipynb", base, head_plus, manifest, canonicals)
+    assert any(f["kind"] == "downgrade" for f in findings)
+
+
 def test_delta_flags_a_new_notebook_carrying_a_divergent_pin():
     """Un carnet ajoute par la PR n'a pas de base : tous ses epinglages sont nouveaux."""
     manifest = clv.load_manifest(MANIFEST_PATH)
@@ -744,15 +808,6 @@ def test_le_delta_signale_un_epinglage_supprime_et_remplace_par_un_autre():
     )
     findings = clv.delta_findings("x.ipynb", base, head, manifest, canonicals)
     assert any(f["kind"] == "downgrade" and f["version"] == "3.0.5" for f in findings)
-
-
-def test_une_base_illisible_est_un_incident_nomme():
-    """Point 6 : distinguer « absent de la base » de « lecture en echec »."""
-    # Revision inconnue : la lecture echoue -> incident.
-    with pytest.raises(clv.OrganIncident):
-        clv.notebook_at(REPO_ROOT, "deadbeefdeadbeefdeadbeefdeadbeef", "x.ipynb")
-    # Sans revision : pas de base, pas d'incident.
-    assert clv.notebook_at(REPO_ROOT, None, "x.ipynb") is None
 
 
 def test_les_formes_de_pin_non_versionne_et_avec_prefixe_v_sont_lues():

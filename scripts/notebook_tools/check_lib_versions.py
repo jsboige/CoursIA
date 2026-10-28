@@ -100,15 +100,6 @@ PIP_PIN_RE = re.compile(
 )
 
 
-class OrganIncident(Exception):
-    """Incident d'entree : l'organe ne peut pas conclure.
-
-    Distinct d'un constat (une PR qui s'ecarte) : ici l'outil n'a pas pu
-    mesurer. La famille rend alors rc 2, un code neutre qui ne tient jamais
-    le merge mais ne se lit pas comme un verdict de la PR.
-    """
-
-
 def _norm_version(value: str) -> str:
     """Normalise une version : espaces retires, ponctuation terminale retiree."""
     return value.strip().strip(";,)")
@@ -541,17 +532,17 @@ def delta_findings(
     la convergence traite -- pas une regression introduite par la PR.
     """
     findings: list[dict] = []
-    # Les MULTIPLICITES comptent, pas les ensembles : un carnet qui porte
-    # deux versions d'une meme bibliotheque (base : A et B ; tete : A et B)
-    # n'a rien vu changer. Comparer des ensembles confondait « la version B
-    # est encore la et je l'ignore » avec « la version B a disparu » et
-    # produisait un faux downgrade.
-    base_counts: Counter = Counter()
+    # Multiplicites, pas ensembles : un carnet peut porter DEUX versions de
+    # la meme bibliotheque. Avec `previous == {pin.version}`, une base qui
+    # porte `{8.14.0, 8.15.0}` ne reconnaissait aucun des deux epinglages
+    # comme inchange -- la PR heritait donc d'un faux `downgrade` sur un
+    # epinglage qu'elle n'avait pas touche (relecture #23079 point 5).
+    base_counts: dict[str, Counter] = {}
     for pin in base_pins:
         if pin.ecosystem == "provisioning":
             continue
-        base_counts[(pin.library, pin.version)] += 1
-    consumed: Counter = Counter()
+        base_counts.setdefault(pin.library, Counter())[pin.version] += 1
+    seen: Counter = Counter()
 
     for pin in head_pins:
         if pin.ecosystem == "provisioning":
@@ -561,17 +552,18 @@ def delta_findings(
                 state_findings(notebook, [pin], manifest, canonical_map)
             )
             continue
+        # Cet exemplaire existait-il deja en base, en meme nombre ? Les
+        # occurrences au-dela du compte de base sont celles que la PR
+        # ajoute ; les precedentes sont de la derive historique.
         key = (pin.library, pin.version)
-        if consumed[key] < base_counts[key]:
-            # Epinglage deja present a la base, en nombre suffisant :
-            # hors perimetre du delta.
-            consumed[key] += 1
+        seen[key] += 1
+        if seen[key] <= base_counts.get(pin.library, Counter())[pin.version]:
             continue
-        consumed[key] += 1
         canonical = canonical_map.get(pin.library)
         if canonical is None:
             continue
         if pin.ecosystem == "nuget" and not pin.version:
+            # Epinglage flottant : la version n'est pas fixee (cf #23086).
             findings.append(
                 _finding(notebook, pin, canonical, "pin_non_versionne",
                          FLOATING_PIN_REASON)
@@ -809,32 +801,38 @@ def changed_notebooks(repo_root: Path, revision_range: str) -> tuple[list[Path],
     return paths, base
 
 
-def notebook_at(repo_root: Path, revision: str | None, relative: str) -> dict | None:
-    """Charge le carnet tel qu'il etait a une revision.
+class BaseReadError(RuntimeError):
+    """La base ne peut pas etre LUE pour ce carnet -- ce n'est pas une absence."""
 
-    Trois cas, et le silence n'en est aucun :
-    - **absent** de la base (le carnet est nouveau dans la PR) : None ;
-    - **present mais illisible** : incident nomme ;
-    - **git show en echec** : incident nomme -- sinon le delta degenererait
-      en etat, et une derive historique rougirait sans cause.
+
+def notebook_at(repo_root: Path, revision: str | None, relative: str) -> dict | None:
+    """Charge le carnet tel qu'il etait a une revision ; None s'il n'existait pas.
+
+    « Absent de la base » et « lecture en echec » sont deux choses
+    differentes, et les confondre coutait cher : la premiere est un carnet
+    neuf (tous ses epinglages sont nouveaux), la seconde faisait degenerer le
+    delta en etat, si bien que la derive historique rougissait sans cause
+    nommee. La presence est donc mesuree separement (`cat-file -e`) avant la
+    lecture ; une lecture qui echoue sur un carnet present leve
+    `BaseReadError`, que l'appelant traduit en rc 2 (relecture #23079 point 6).
     """
     if not revision:
         return None
+    present, _out, _err = _git(repo_root, ["cat-file", "-e", f"{revision}:{relative}"])
+    if present != 0:
+        return None
     code, out, err = _git(repo_root, ["show", f"{revision}:{relative}"])
     if code != 0:
-        if "does not exist" in err or "exists on disk" in err:
-            return None
-        raise OrganIncident(
-            f"base illisible : git show {revision}:{relative} a echoue "
-            f"({err.strip()[:200]})"
+        raise BaseReadError(
+            f"{relative} a {revision} : git show a echoue ({err.strip()})"
         )
     try:
         return json.loads(out)
     except json.JSONDecodeError as exc:
-        raise OrganIncident(
-            f"base illisible : {relative} a la revision {revision} n'est pas "
-            f"du JSON ({exc})"
+        raise BaseReadError(
+            f"{relative} a {revision} : JSON invalide ({exc})"
         ) from exc
+
 
 def tracked_notebooks(repo_root: Path) -> list[Path]:
     """Liste les carnets suivis par git (les sous-modules ne sont pas des fichiers)."""
@@ -1145,7 +1143,7 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 try:
                     base_payload = notebook_at(repo_root, base, relative)
-                except OrganIncident as exc:
+                except BaseReadError as exc:
                     # Point 6 : une base qu'on ne sait pas lire n'est pas
                     # « un carnet neuf » -- c'est une lecture en echec, nommee.
                     print(f"ERREUR : {exc}", file=sys.stderr)
