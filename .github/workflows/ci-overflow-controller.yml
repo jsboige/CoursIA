@@ -1,0 +1,130 @@
+name: CI overflow controller (phase B)
+
+# Pilote la variable de depot CI_OVERFLOW_LOCAL, qui decide si un job de
+# garde part sur le parc local (legende Linux) ou sur l'offre GitHub-hosted.
+# #22937 volet 1, phase B -- la phase A (#22921) a pose la FORME hybride des
+# 27 workflows, la phase B decide de l'etat de la variable sans intervention
+# humaine.
+#
+# QUI ECRIT -- option (a) de l'arbitrage user du 27/10 (c.6441695482) :
+# le job **ecrit** la variable, avec le secret `ACTIONS_VARIABLES_PAT` (droit
+# fin `Variables: read-write` sur `jsboige/CoursIA` SEUL, pose le
+# 2026-10-27T17:05:48Z, valeur regeneree le 2026-10-27T17:24:12Z, expiration
+# 2027-10-27). Le secret est expose AU SEUL
+# pas qui ecrit : le checkout et le setup-python ne le voient pas.
+#
+# Les portees `permissions:` restent `actions: read` + `contents: read` : la
+# portee `variables` n'EXISTE PAS dans la liste des portees admises sous
+# `permissions:` (actions, attestations, checks, contents, deployments,
+# discussions, id-token, issues, packages, pages, pull-requests,
+# security-events, statuses...). Une cle hors liste rend le FICHIER entier
+# invalide -- le workflow n'aurait jamais demarre. C'est donc un PAT qu'il
+# faut, pas une portee.
+#
+# DEUX CANAUX, JAMAIS LE MEME :
+# - `github.token` MESURE (files de jobs, liste des runs) ;
+# - `secrets.ACTIONS_VARIABLES_PAT` LIT et ECRIT la variable ;
+# - `secrets.RUNNERS_READ_PAT` lit l'inventaire des runners (`github.token`
+#   ne porte pas le droit de lire `actions/runners`).
+# Aucun repli : secret d'ecriture absent ou vide -> le controleur rend son
+# VERDICT, n'ecrit rien, et le resume du job NOMME la cause. Le mode
+# degrade est visible, il n'est pas muet.
+#
+# Doctrine #12817, lue a la source : un organe `schedule` +
+# `workflow_dispatch` est ADVISORY PAR CONSTRUCTION -- jamais `pull_request`
+# ni `push`, donc un run rouge ne bloque aucune PR. Elle ne prescrit RIEN sur
+# le `runs-on` : la ligne « workflow sur schedule -> ubuntu-latest » qui
+# figurait ici etait une lecture erronee, et c'est elle qui placait ce job
+# dans la file meme qu'il mesure (review ai-01 du 27/10 sur #22946 : 17 des
+# 23 jobs en cours etaient heberges, file hebergee ouverte depuis 10:56Z).
+#
+# `runs-on` STATIQUE sur la jambe Linux self-hebergee, admis ICI parce
+# qu'aucun declencheur ne porte de fork (schedule + workflow_dispatch) :
+# meme profil, meme forme et meme garde same-repo au niveau job que
+# `linux-runner-version-pin-advisory.yml`, deja sur ce pool. L'image du
+# runner porte `gh` et `python3` -- aucune dependance ajoutee.
+
+on:
+  schedule:
+    # HORAIRE, minute 31 : hors :00/:30 (jitter de la flotte) et distincte
+    # des autres crons horaires du depot. `23,53` etait EXACTEMENT le cron de
+    # `linux-runner-version-pin-advisory.yml`, que ce dernier avait choisi
+    # pour ne pas collisionner (review ai-01 du 27/10). L'horaire suffit :
+    # une execution mesuree coute 313 appels `gh` (cf
+    # docs/coordination/ci-overflow-controller.md), et l'organe est une
+    # machine a etat -- une livraison tardive agit sur l'etat courant.
+    - cron: '31 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+concurrency:
+  group: ci-overflow-controller
+  cancel-in-progress: false
+
+jobs:
+  control:
+    name: "Bascule CI_OVERFLOW_LOCAL (verdict + ecriture)"
+    # Jambe Linux self-hebergee : le controleur mesure la file hebergee et
+    # route du travail vers le parc local -- il n'a aucune raison de faire la
+    # queue dans l'offre qu'il observe (review ai-01 du 27/10).
+    runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
+    # Garde same-repo au niveau job, forme du pool : les deux declencheurs
+    # sont `schedule` et `workflow_dispatch`, donc aucun fork ne peut
+    # atteindre ce job -- la garde est defensive et suit la forme etablie
+    # (linux-runner-version-pin-advisory.yml, runner-starvation-advisory.yml).
+    if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          filter: blob:none
+          # L'organe ne lit que scripts/ci : clone partiel, meme forme que le
+          # voisin ci-dessus (ce pool est sature par ses checkouts).
+          sparse-checkout: |
+            scripts/ci
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      # UNE seule mesure : l'organe mesure, rend un VERDICT, et -- si le
+      # verdict est une bascule ET le jeton d'ecriture est present -- ecrit
+      # la variable. Deux mesures couteraient le double en lectures de jobs :
+      # une execution mesuree coute ~320 appels `gh`, et le volume d'appels
+      # API est precisement l'objet du volet 5 de #22937.
+      - name: Verdict et bascule
+        env:
+          # Jeton de MESURE : files de jobs et liste des runs.
+          GH_TOKEN: ${{ github.token }}
+          # `github.token` ne porte PAS le droit de LIRE `actions/runners`
+          # (aucune portee de `permissions:` ne le donne). L'inventaire du
+          # parc se lit avec le secret read-only que six workflows freres
+          # exposent deja (`Administration:read`, incapable de minter un
+          # registration-token, par design) -- meme forme, meme nom, memes
+          # deux variables : linux-runner-starvation-advisory.yml:107-109.
+          # Secret absent -> l'organe rend UNREADABLE et NOMME la cause ; il
+          # n'ecrit rien et ne fabrique aucun vert.
+          RUNNERS_READ_PAT: ${{ secrets.RUNNERS_READ_PAT }}
+          # Jeton d'ECRITURE de la variable -- canal DEDIE, expose AU SEUL
+          # pas qui ecrit. Absent ou vide -> le controleur rend son verdict,
+          # n'ecrit rien, et le resume du job nomme la cause (ligne DEGRADE).
+          ACTIONS_VARIABLES_PAT: ${{ secrets.ACTIONS_VARIABLES_PAT }}
+        run: |
+          set +e
+          python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA \
+            --apply --json --summary-out summary.md > verdict.json
+          RC=$?
+          set -e
+          cat verdict.json || true
+          cat summary.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+          if grep -q '^DEGRADE' summary.md 2>/dev/null; then
+            echo "::warning title=CI overflow controller::mode degrade -- le resume du job nomme la cause (jeton d'ecriture absent ou etat de la variable illisible)"
+          fi
+          if [ "$RC" != "0" ]; then
+            echo "::warning title=CI overflow controller::verdict non nominal (rc=$RC) -- le detail est dans le resume du job"
+          fi
