@@ -668,6 +668,19 @@ from variation_light_cap import canonicalize_genre  # noqa: E402
 # et le PENDING perime d'un rerun dans la liste lue comme jambes courantes.
 from check_run_state import fold_latest  # noqa: E402
 
+# Regime consolidation (arbitrage user du 2026-10-28) : tant que le regime
+# tient, un grain tire dont la LIVRAISON est un carnet neuf se saute. Le
+# classement et sa mesure vivent dans `scripts/consolidation_regime.py` ; le
+# picker n'y branche qu'un interrupteur explicite
+# (`--consolidation-regime`), pose par le coordinateur pendant le regime et
+# retire quand le user leve le regime. Un ecart est toujours NOMME et
+# rappele en sortie : la lane pose sa ligne sur l'issue, puis tire le
+# suivant.
+from consolidation_regime import (  # noqa: E402
+    NotebookCatalog,
+    filter_pool as filter_pool_consolidation,
+)
+
 # Source de verite des organes bornes au diff (#19645) : un check qui ne lit
 # QUE les lignes ajoutees par la PR (ou compare base-vs-head par delta_argv)
 # ne peut pas heriter d'un rouge de main -- l'imputation a la base disait a
@@ -9428,6 +9441,14 @@ def main(argv: list[str] | None = None) -> int:
                          "PR citant l'issue (ordre d'avant le 2026-10-04 ; "
                          "par defaut, un claim et la creation d'une sous-issue "
                          "comptent aussi)")
+    ap.add_argument("--consolidation-regime", dest="consolidation_regime",
+                    action="store_true",
+                    help="regime consolidation (arbitrage user 2026-10-28) : "
+                         "ecarte du tapis les candidats dont la LIVRAISON est "
+                         "un carnet neuf. L'ecart est nomme (issue + preuve) "
+                         "et rappele en sortie ; la lane pose sa ligne sur "
+                         "l'issue et tire le suivant. Sans effet tant que "
+                         "l'interrupteur n'est pas pose.")
     ap.add_argument("--belt", action="store_true",
                     help="#18832 mode 'tapis roulant' : trie le pool ouvert "
                          "par date de derniere livraison (None = jamais servie en "
@@ -10037,6 +10058,32 @@ def main(argv: list[str] | None = None) -> int:
             withheld.append((it, cause))
         else:
             admitted.append(it)
+    # Regime consolidation (arbitrage user 2026-10-28) : un grain dont la
+    # livraison est un carnet neuf se saute. Le classement est porte par
+    # `scripts/consolidation_regime.py` (mesure du 2026-10-28 : precision 1,00
+    # sur 55 grains de reparation, rappel 0,92 sur 19 grains de creation ; 28
+    # ecarte(s) sur les 629 issues ouvertes, tous des creations). Le
+    # filtre est applique ICI, une fois, pour que les deux voies du picker
+    # (tapis et voie ponderee) voient le meme pool. Un ecart est toujours
+    # nomme : la lane ecrit sa ligne sur l'issue, puis tire le suivant.
+    consolidation_skipped: list[tuple[dict, str, str]] = []
+    if getattr(args, "consolidation_regime", False):
+        _catalog = NotebookCatalog.from_repo()
+        _kept, consolidation_skipped = filter_pool_consolidation(admitted, _catalog)
+        admitted = _kept
+        if not args.json:
+            print(f"[regime consolidation] {len(consolidation_skipped)} "
+                  f"candidat(s) ecarte(s) sur {len(_kept) + len(consolidation_skipped)} "
+                  f"(livraison = carnet neuf) ; "
+                  f"{len(_kept)} restent admissibles.")
+            for _it, _verdict, _why in consolidation_skipped[:12]:
+                print(f"   ECARTE #{_it['number']} — {_why}")
+            if len(consolidation_skipped) > 12:
+                print(f"   ... et {len(consolidation_skipped) - 12} autre(s).")
+            if consolidation_skipped:
+                print("   (une ligne par issue sautee : « regime consolidation, "
+                      "grain d'extension differe » ; puis on tire le suivant.)")
+
     filter_active = {
         "exclude_issue": sorted(excluded_issues),
         "require_label": sorted(required_labels, key=str.casefold),
@@ -10248,6 +10295,11 @@ def main(argv: list[str] | None = None) -> int:
                   f"pool trie par derniere visite, la plus ancienne en tite.")
             print(f"   file complete : {len(belt_pool)} issues ; "
                   f"picks : {len(belt_picks)}.")
+            if consolidation_skipped:
+                print(f"   REGIME CONSOLIDATION : {len(consolidation_skipped)} "
+                      f"candidat(s) ecarte(s) — livraison = carnet neuf "
+                      f"(detail plus haut) ; ils restent au pool pour le "
+                      f"prochain tour, une fois le regime leve.")
             if belt_dropped_validate:
                 # #20923 : la lane lit des « PRs inexistantes » alors que
                 # le pool vient de `gh issue list` et ses numeros sont
