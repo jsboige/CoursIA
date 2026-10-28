@@ -20,13 +20,15 @@ n'a pas ete remplacee. Un `git pull` ne deploie pas `persist/`.
 | `hold-runner.ps1` | po-2024 (hote Windows) | tache planifiee | reference |
 | `coursia-lean.service` | **po-2024** | `/etc/systemd/system/coursia-lean.service` | reference |
 | `coursia-lean-start.sh` | **po-2024** | `/usr/local/bin/coursia-lean-start.sh` | reference |
-| `coursia-waiters.service` | **ai-01** | `/etc/systemd/system/coursia-waiters.service` | **DEPRECATED 2026-10-15, #20835, c.500** -- service desactive et fichier detruit sur ai-01 (19:48Z), reference conservee pour reactivation (memo UAC Rule 1) ; NE PAS REDEPLOYER sans avoir verifie qu'un consommateur du label `coursia-waiter` existe a nouveau |
-| `coursia-waiters-start.sh` | **ai-01** | `/usr/local/bin/coursia-waiters-start.sh` | reference (DEPRECATED avec le service, voir ligne ci-dessus) |
+| `coursia-waiters.service` | ai-01 (execute telle quelle par po-2024, qui la dimensionne par son propre drop-in) | `/etc/systemd/system/coursia-waiters.service` | **reference partagee** -- 12 slots, prefixe par defaut de `supervise.sh`. NE PAS confondre avec `ai-01/coursia-waiters.service` (famille B, deposee le 2026-10-28) : les deux portent le meme nom vivant, sur deux sieges differents |
+| `coursia-waiters-start.sh` | **ai-01** | `/usr/local/bin/coursia-waiters-start.sh` | reference -- la copie `/usr/local/bin` n'est plus l'appelee par l'unite vivante d'ai-01 (son `ExecStart` pointe le wrapper du clone, `/mnt/d/CoursIA/scripts/ci/docker/linux-runner/persist/coursia-waiters-start.sh`) ; les deux copies portent la purge de sentinelle #15163 |
 | `coursia-ci.slice` | **ai-01** | `/etc/systemd/system/coursia-ci.slice` | **deploye et vivant** -- 7235 octets, documente, et il etait **en avance sur le depot** : c'est le depot qui a ete synchronise depuis le vivant, pas l'inverse (cf. correction 6) |
 | `daemon.json` | **ai-01** | `/etc/docker/daemon.json` | **deploye et vivant** -- 155 octets, **byte-identique** a la copie du depot (`sha256:1ef80038e470...`, mesure le 2026-09-08). **Ne se recopie PAS sur un autre daemon** : il ne sert que le daemon `systemd` -- cf. « Le nom plat de `cgroup-parent` » ci-dessous |
 | `ai-01/coursia-runner.service` | **ai-01** | `/etc/systemd/system/coursia-runner.service` | **a deployer** (corrige, cf. correction 3) -- **jamais seul**, cf. correction 4 |
 | `ai-01/coursia-runner.service.d/10-sizing.conf` | **ai-01** | `/etc/systemd/system/coursia-runner.service.d/10-sizing.conf` | **deploye et vivant** -- necessaire mais **pas suffisant** : il borne la memoire et laisse le CPU au defaut (cf. corrections 4 et 5) |
 | `ai-01/coursia-runner-start.sh` | **ai-01** | `/usr/local/bin/coursia-runner-start.sh` | **a deployer** (corrige, cf. correction 3) |
+| `ai-01/coursia-waiters.service` | **ai-01** | `/etc/systemd/system/coursia-waiters.service` | **deploye et vivant** (2026-10-28) -- unite PERSISTANTE du pool d'attente PR-gate (label `coursia-waiter`), famille B : 10 slots, prefixe `myia-ai-01-wsl-waiterb`, state dir `/var/lib/coursia-waiters-b`, `enable`d. Remplace l'unite TRANSITOIRE `coursia-waiters-b.service` (memes parametres, releves a l'identique), qui disparaitait au reboot. Le bandeau « DEPRECATED » qui figurait ici (2026-10-15, #20835) est REFUTE : `pr-gate.yml` l.172 consomme le label depuis #21063 (2026-10-16) |
+| `ai-01/coursia-waiters.service.d/10-sizing.conf` | **ai-01** | `/etc/systemd/system/coursia-waiters.service.d/10-sizing.conf` | **deploye et vivant** (2026-10-28) -- caps des slots waiters (1 vCPU, 512m, 128 pids, mesures sur le pool transitoire) + budget CPU **arme** a 10 vCPU : la famille waiters n'en declarait aucun, donc `assert_cpu_budget` y etait inactif |
 | `po-2026/pool.sh` | **po-2026** | `/home/jesse/CoursIA-runners-p0/pool.sh` (WSL Ubuntu) | **deploye et vivant** -- superviseur du pool, **8 slots** et **borne depuis le 2026-09-22** (cf. `po-2026/README.md`) |
 | `po-2026/run-pool-po2026.sh` | **po-2026** (hote Windows) | `C:\dev\CoursIA-runners-p0\run-pool-po2026.sh` | **deploye et vivant** -- lanceur de la tache planifiee, porte la borne CPU/memoire. **Attention : ce fichier vit sous `C:\dev\...`, pas sous `D:\Dev\CoursIA-runners-p0\`** (cf. `po-2026/README.md`) |
 | `po-2026/README.md` | -- | -- | **document** : architecture, dimensionnement, piege du verrou |
@@ -401,6 +403,72 @@ DOCKER_HOST=unix:///var/run/docker-ce.sock docker ps
 `supervise.sh status` est le controle qui compte : il enumere les familles actives,
 lit la slice, et **refuse** de rendre un vert si le budget est exige et absent
 (`COURSIA_RUNNER_REQUIRE_CGROUP_BUDGET=1`, arme par le wrapper d'ai-01).
+
+## Le pool d'attente PR-gate (ai-01) -- persistance et inscriptions mortes
+
+**Ce qui etait mesure le 2026-10-28.** La jambe d'attente PR-gate (label
+`coursia-waiter`) tournait sur une unite **transitoire**,
+`coursia-waiters-b.service`, creee via l'API systemd le 2026-10-27 21:58:58
+CET. Une unite transitoire vit sous `/run/systemd/transient/` : elle
+**disparait au reboot**, et avec elle le seul fournisseur du label sur ai-01.
+Le depot, lui, portait depuis le 2026-10-15 un bandeau **DEPRECATED** qui
+affirmait que le label n'avait plus aucun consommateur depuis #17436, et
+ordonnait de ne pas redeployer sans le verifier.
+
+**Le consommateur existe.** Mesure sur `origin/main` :
+`.github/workflows/pr-gate.yml` l.172 route la jambe same-repo vers
+`fromJSON('["self-hosted","coursia-waiter"]')` -- restaure par #21063
+(2026-10-16), sonde d'extinction ajoutee par #22183. La verification que le
+bandeau exigeait a donc ete faite, et elle est positive.
+
+**Ce qui a ete depose.** `ai-01/coursia-waiters.service` (unite PERSISTANTE) et
+`ai-01/coursia-waiters.service.d/10-sizing.conf` (dimensionnement), poses sur
+la machine le 2026-10-28 et **identiques octet pour octet** a ces copies. Les
+parametres sont ceux de l'unite transitoire, releves a l'identique : meme
+`ExecStart` (10 slots), meme state dir (`/var/lib/coursia-waiters-b`), meme
+prefixe de noms (`myia-ai-01-wsl-waiterb`), meme budget memoire. Le passage a
+la persistance ne change aucun comportement.
+
+**Le `--now` a ete volontairement omis.** L'unite a ete `enable` sans etre
+demarree : le pool transitoire portait les jobs en vol, et la bascule se fait au
+prochain reboot, sans interruption. Les deux ne peuvent pas cohabiter (famille B
+d'un cote, transitoire de l'autre) : le transitoire disparait au reboot.
+
+**Le budget CPU des waiters est desormais arme.** La famille ne declarait
+aucun `COURSIA_RUNNER_CPU_BUDGET` : `assert_cpu_budget` sort immediatement
+quand le budget vaut 0, donc le garde etait **inactif** pour elle -- un slot de
+plus serait passe sans jamais etre refuse. Le drop-in declare 10 vCPU, cale
+sur la demande mesuree (10 slots x 1 vCPU).
+
+**Ce que la mesure revele au passage.** L'instrument de dimensionnement
+(`ai-01/dryrun-sizing-control.sh`) ne pouvait plus produire de verdict : il
+refusait de sous-compter les waiters plutot que de rendre un verdict permissif,
+faute d'une unite a lire. L'unite deposee lui rend cette capacite, et le verdict
+sorti est : `start 14 x 2 = 28` + `waiters 10 x 1 = 10` = **38 vCPU contre un
+budget declare de 32**. Cette composition est anterieure a ce depot -- c'est
+celle qui tournait deja. Le noyau, lui, ne borne pas : la slice plafonne a 32
+coeurs sur une machine de 32 vCPU, et `cpu.stat` compte 7 evenements de
+throttling pour 2,4 s cumulees sur 22 h d'uptime. Les caps DECLARES ne sont
+donc pas satures simultanement. L'arbitrage du budget (elever la declaration,
+ou redimensionner une famille) appartient a la lane qui porte le parc.
+
+**Les inscriptions mortes ont ete retirees.** Recensement du 2026-10-28 :
+39 runners, dont **8 hors ligne et non reproductibles** sur ce siege --
+`myia-ai-01-linux-waiter-{4,5}` (prefixe par defaut de `supervise.sh`,
+atteignable seulement si une unite appelle le wrapper SANS
+`COURSIA_RUNNER_WAITER_NAME_PREFIX`) et `myia-ai-01-wsl-waiter-{1..6}` (prefixe
+d'une unite qui n'existe plus). Aucune unite vivante ni aucun fichier d'unite
+de ce siege ne declare ces prefixes. Les 8 ont ete supprimees via l'API
+`DELETE /repos/jsboige/CoursIA/actions/runners/{id}` ; les 21 runners ai-01
+vivants sont restes en ligne. Les inscriptions hors ligne d'autres sieges
+(`po-2024-linux-persist-*`, `po-2027-linux-docker-4`) n'ont pas ete touchees :
+elles ne sont pas les notres, et les `persistent` doivent revenir avec leur
+hote.
+
+```sh
+# Le prefixe vivant -- ne declare QUE la famille B :
+systemctl show coursia-waiters.service -p Environment --value
+```
 
 ## Rotation des journaux
 
