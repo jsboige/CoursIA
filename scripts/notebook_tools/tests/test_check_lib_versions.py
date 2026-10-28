@@ -390,6 +390,24 @@ def test_census_cli_exits_zero():
     assert clv.main(["--census", "--repo-root", str(REPO_ROOT)]) == 0
 
 
+def test_le_recensement_nomme_un_carnet_illisible(tmp_path, monkeypatch):
+    """Point 3 (relecture #23079) : un carnet illisible est **nomme**.
+
+    `pins_from_file` rendait `[]` pour un carnet illisible comme pour un carnet
+    sans epinglage : le recensement ne pouvait pas distinguer les deux, et le
+    carnet disparaisait silencieusement de la mesure.
+    """
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    broken = tmp_path / "Broken.ipynb"
+    broken.write_text("{ ceci n'est pas du JSON", encoding="utf-8")
+    monkeypatch.setattr(clv, "tracked_notebooks", lambda root: [broken])
+    report = clv.run_census(REPO_ROOT, manifest)
+    assert report["unreadable_notebooks"], "le carnet illisible doit etre nomme"
+    assert broken.as_posix() in report["unreadable_notebooks"]
+    rendered = clv.render_census(report)
+    assert "Carnets illisibles" in rendered
+
+
 def test_divergence_declaree_pour_une_version_absente_est_signalee(tmp_path):
     """Point 9 -- un fantome declare se lit comme un ecart reel.
 

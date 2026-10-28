@@ -897,9 +897,18 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
     canonicals, errors = resolve_canonicals(manifest, repo_root)
     dispersion: dict[str, dict[str, list[str]]] = {}
     floating: dict[str, list[str]] = {}
+    unreadable: list[str] = []
     for notebook in tracked_notebooks(repo_root):
         relative = _relative_to_repo(notebook, repo_root)
-        for pin in pins_from_file(notebook, manifest):
+        payload = payload_from_file(notebook)
+        if payload is None:
+            # Carnet illisible : il est **nomme**, pas compte comme un carnet
+            # sans epinglage. `pins_from_file` rendait `[]` dans les deux cas,
+            # et le recensement ne pouvait donc pas distinguer « aucun
+            # epinglage » de « carnet illisible » (relecture #23079, point 3).
+            unreadable.append(relative)
+            continue
+        for pin in pins_from_payload(payload, manifest):
             if pin.ecosystem == "provisioning":
                 continue
             if not pin.version:
@@ -972,6 +981,7 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
         "errors": errors,
         "libraries": table,
         "phantom_divergences": phantoms,
+        "unreadable_notebooks": sorted(unreadable),
     }
 
 
@@ -1026,6 +1036,17 @@ def render_census(report: dict) -> str:
         lines.append("")
         for error in report["errors"]:
             lines.append(f"- {error}")
+        lines.append("")
+    if report.get("unreadable_notebooks"):
+        lines.append("## Carnets illisibles")
+        lines.append("")
+        lines.append(
+            "Ces carnets n'ont pas pu etre lus : ils ne sont pas comptes comme "
+            "des carnets sans epinglage, et la mesure est a refaire."
+        )
+        lines.append("")
+        for notebook in report["unreadable_notebooks"]:
+            lines.append(f"- {notebook}")
         lines.append("")
     return "\n".join(lines)
 
