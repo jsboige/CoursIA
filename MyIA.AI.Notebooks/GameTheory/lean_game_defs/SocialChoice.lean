@@ -446,18 +446,18 @@ theorem decisive_split {I A : Type} [DecidableEq A]
     · intro i hi
       by_cases h1 : D1 i
       · rw [hP1 i h1]
-        exact ⟨by simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm] <;> decide,
-          by simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm] <;> decide⟩
+        exact ⟨by simp [prefOfUtility, rank3, hxy.symm] <;> decide,
+          by simp [prefOfUtility, rank3, hxy.symm] <;> decide⟩
       · have h2 : D2 i := ((hcover i hi).resolve_left h1)
         rw [hP2 i h2]
-        exact ⟨by simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm] <;> decide,
-          by simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm] <;> decide⟩
+        exact ⟨by simp [prefOfUtility, rank3, hxz, hyz, hxy.symm] <;> decide,
+          by simp [prefOfUtility, rank3, hxz, hyz, hxy.symm] <;> decide⟩
     · intro i hi
       have h1 : ¬ D1 i := fun hc => hi (h1in i hc)
       have h2 : ¬ D2 i := fun hc => hi (h2in i hc)
       rw [hPout i h1 h2]
-      exact ⟨by simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm] <;> decide,
-        by simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm] <;> decide⟩
+      exact ⟨by simp [prefOfUtility, rank3, hxy, hxz] <;> decide,
+        by simp [prefOfUtility, rank3, hxy, hxz] <;> decide⟩
   -- Le sens social sur (z, x) tranche laquelle des deux moitiés est décisive.
   by_cases hzx : (swf.aggregate P).R z x
   · right
@@ -470,15 +470,15 @@ theorem decisive_split {I A : Type} [DecidableEq A]
       by_cases hi : D2 i
       · rw [hP2 i hi]
         have hPtrue : (prefOfUtility (rank3 z x y 3 2 1)).R z y := by
-          simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+          simp [prefOfUtility, rank3, hyz, hxy.symm]
         have hT : (prefs i).R z y := (hD2 i hi).1
         exact ⟨fun _ => hT, fun _ => hPtrue⟩
       · have hPfalse : ¬ (P i).R z y := by
           by_cases h1 : D1 i
           · rw [hP1 i h1]
-            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+            simp [prefOfUtility, rank3, hxy.symm, hxz.symm, hyz.symm]
           · rw [hPout i h1 hi]
-            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+            simp [prefOfUtility, rank3, hyz.symm]
         have hT : ¬ (prefs i).R z y := (hND2 i hi).2
         exact ⟨fun hc => absurd hc hPfalse, fun hc => absurd hc hT⟩
     have h₂ : ∀ i, (P i).R y z ↔ (prefs i).R y z := by
@@ -486,15 +486,15 @@ theorem decisive_split {I A : Type} [DecidableEq A]
       by_cases hi : D2 i
       · rw [hP2 i hi]
         have hPfalse : ¬ (prefOfUtility (rank3 z x y 3 2 1)).R y z := by
-          simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+          simp [prefOfUtility, rank3, hyz, hxy.symm]
         have hT : ¬ (prefs i).R y z := (hD2 i hi).2
         exact ⟨fun hc => absurd hc hPfalse, fun hc => absurd hc hT⟩
       · have hPtrue : (P i).R y z := by
           by_cases h1 : D1 i
           · rw [hP1 i h1]
-            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+            simp [prefOfUtility, rank3, hxy.symm, hxz.symm, hyz.symm]
           · rw [hPout i h1 hi]
-            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+            simp [prefOfUtility, rank3, hyz.symm]
         have hT : (prefs i).R y z := (hND2 i hi).1
         exact ⟨fun _ => hT, fun _ => hPtrue⟩
     have hiff₁ : (swf.aggregate P).R z y ↔ (swf.aggregate prefs).R z y :=
@@ -511,15 +511,15 @@ theorem decisive_split {I A : Type} [DecidableEq A]
       by_cases hi : D1 i
       · rw [hP1 i hi]
         have hPtrue : (prefOfUtility (rank3 x y z 3 2 1)).R x z := by
-          simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+          simp [prefOfUtility, rank3, hxz.symm, hyz.symm]
         have hT : (prefs i).R x z := (hD1 i hi).1
         exact ⟨fun _ => hT, fun _ => hPtrue⟩
       · have hPfalse : ¬ (P i).R x z := by
           by_cases h2 : D2 i
           · rw [hP2 i h2]
-            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+            simp [prefOfUtility, rank3, hxz]
           · rw [hPout i hi h2]
-            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+            simp [prefOfUtility, rank3, hxy, hxz, hyz.symm]
         have hT : ¬ (prefs i).R x z := (hND1 i hi).2
         exact ⟨fun hc => absurd hc hPfalse, fun hc => absurd hc hT⟩
     have h₂ : ∀ i, (P i).R z x ↔ (prefs i).R z x := by
@@ -527,15 +527,15 @@ theorem decisive_split {I A : Type} [DecidableEq A]
       by_cases hi : D1 i
       · rw [hP1 i hi]
         have hPfalse : ¬ (prefOfUtility (rank3 x y z 3 2 1)).R z x := by
-          simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+          simp [prefOfUtility, rank3, hxz.symm, hyz.symm]
         have hT : ¬ (prefs i).R z x := (hD1 i hi).2
         exact ⟨fun hc => absurd hc hPfalse, fun hc => absurd hc hT⟩
       · have hPtrue : (P i).R z x := by
           by_cases h2 : D2 i
           · rw [hP2 i h2]
-            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+            simp [prefOfUtility, rank3, hxz]
           · rw [hPout i hi h2]
-            simp [prefOfUtility, rank3, hxy, hxz, hyz, hxy.symm, hxz.symm, hyz.symm]
+            simp [prefOfUtility, rank3, hxy, hxz, hyz.symm]
         have hT : (prefs i).R z x := (hND1 i hi).1
         exact ⟨fun _ => hT, fun _ => hPtrue⟩
     have hiff₁ : (swf.aggregate P).R x z ↔ (swf.aggregate prefs).R x z :=
