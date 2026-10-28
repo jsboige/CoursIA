@@ -242,6 +242,78 @@ wch_quarantine_clone() {  # <repo>
   return 0
 }
 
+# --- Retention des quarantaines `<repo>.stale-<ts>` -----------------------
+#
+# `wch_quarantine_clone` ci-dessus et `mirror_seed_work` (entrypoint.sh)
+# ecartent un clone en le RENOMMANT, jamais en le supprimant : le geste est
+# reversible et l'arbre reste inspectable. Rien ne retirait ensuite ces
+# repertoires -- et le renommage se repete a chaque echec de repack comme a
+# chaque `_work` trouve sans `.git`, si bien que la retention etait INFINIE
+# par construction. Mesure rapportee par po-2027 (offerte sur roo-extensions
+# #4376, 2026-10-28), non reproduite ici : 17,4 Gio de `.stale-*` sur les
+# cinq work-volumes d'ai-01 (5,8 + 2,9 + 1,4 + 2,9 + 4,4).
+#
+# La borne GARDE les plus recents et retire les autres : ce que l'intention
+# « inspectable » vise est le dernier incident, pas l'historique complet. Un
+# repertoire n'est retire que si son nom porte EXACTEMENT la forme emise par
+# les deux sites (`<base>.stale-<AAAAMMJJ>T<HHMMSS>Z`) -- un `*.stale-*`
+# cree a la main, ou un clone vivant, ne matche jamais.
+wch_is_quarantine_name() {  # <basename>
+  case "$1" in
+    *.stale-[0-9][0-9][0-9][0-9][0-9][0-9][0-9][0-9]T[0-9][0-9][0-9][0-9][0-9][0-9]Z) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+# Les horodatages sont de largeur fixe et en UTC : sous LC_ALL=C le tri
+# lexicographique EST un tri chronologique. `head -n -<keep>` rend tout SAUF
+# les <keep> derniers, c'est-a-dire les plus anciens -- ceux qu'on retire.
+wch_prune_quarantines() {  # <workdir>
+  local workdir="$1" keep="${WCH_STALE_KEEP:-2}" slot path base sz
+  local removed=0 reclaimed=0 idx
+  local -a list=()
+  case "$keep" in ''|*[!0-9]*) keep=2 ;; esac
+  # `keep=0` retirerait TOUT, y compris la quarantaine du dernier incident :
+  # la borne la plus basse qui preserve l'intention est 1.
+  [ "$keep" -ge 1 ] || keep=1
+  [ -d "$workdir" ] || return 0
+  for slot in "$workdir"/*; do
+    [ -d "$slot" ] || continue
+    list=()
+    # Le filtre de FORME passe AVANT le comptage. L'inverse a ete mesure : un
+    # `notes.stale-manuel` present dans le slot decalait la borne et faisait
+    # retirer une quarantaine de plus que le plafond demande (test dedie).
+    while IFS= read -r path; do
+      [ -n "$path" ] || continue
+      base="${path##*/}"
+      wch_is_quarantine_name "$base" || continue
+      list+=("$path")
+    done < <(find "$slot" -mindepth 1 -maxdepth 1 -type d -name '*.stale-*' -print 2>/dev/null \
+               | LC_ALL=C sort)
+    [ "${#list[@]}" -gt "$keep" ] || continue
+    for (( idx = 0; idx < ${#list[@]} - keep; idx++ )); do
+      path="${list[idx]}"
+      base="${path##*/}"
+      sz="$(du -sk -- "$path" 2>/dev/null | awk '{print $1}')"
+      case "$sz" in ''|*[!0-9]*) sz=0 ;; esac
+      if rm -rf -- "$path" 2>/dev/null; then
+        removed=$((removed + 1))
+        reclaimed=$((reclaimed + sz))
+        echo "work_cache: quarantaine $base retiree (${sz} Kio)"
+      else
+        echo "work_cache: quarantaine $base NON retirable -- conservee" >&2
+      fi
+    done
+  done
+  # Un passage qui ne retire rien ne dit rien : le journal d'un slot sain
+  # reste lisible, et l'absence de ligne n'est pas un echec silencieux -- le
+  # retrait se prouve par l'arbre, jamais par le journal seul.
+  if [ "$removed" -gt 0 ]; then
+    echo "work_cache: retention des quarantaines -- $removed retiree(s), $reclaimed Kio rendus"
+  fi
+  return 0
+}
+
 # Le depot emprunte-t-il ses objets a un magasin partage (#18225) ? Un slot
 # seme par `git clone --shared` du miroir porte un fichier alternates non vide,
 # et c'est LUI qui distingue « ce slot ne tient que ses propres objets » de
@@ -353,5 +425,9 @@ wch_check_workdir() {
     wch_integrity_pass "$repo"
     wch_maintenance_pass "$repo" "$threshold"
   done
+  # Les quarantaines vivent a COTE des clones (`<workdir>/<slug>/<base>.stale-<ts>`),
+  # pas sous un `.git` : la boucle ci-dessus ne les voit donc jamais, et c'est
+  # precisement pourquoi elles s'accumulaient sans borne.
+  wch_prune_quarantines "$workdir"
   return 0
 }

@@ -59,6 +59,23 @@ CONCESSION_RE = re.compile(
     r"|n'a pas pu|non execute|cle api absente|api non configuree|placeholder"
 )
 
+# Contextes ou « limites » n'est PAS un aveu (#21424 T5, mesure du 2026-10-27).
+# Sur 58 lignes vivantes portant le motif, 12 (21 %) sont des faux positifs
+# semantiques, en six familles mesurees : bornes de phrases (chunking), cas
+# limites (edge cases), verification aux limites (bornes d'intervalle),
+# contraintes de portefeuille (exposition/institutionnelles/position), DFS
+# borne, parametres de cout et de taux. Ces occurrences nomment une contrainte
+# technique, pas un etat degrade assume : elles ne doivent pas designer un
+# travail. Le motif reste actif partout ailleurs.
+NON_CONCESSION_CONTEXT_RE = re.compile(
+    r"limites? (de |d.)(exposition|position|cout|taux|phrase|mots)"
+    r"|limites? institutionnelles?"
+    r"|limites? par (une )?borne"
+    r"|aux limites"
+    r"|cas limites?"
+    r"|tester les limites"
+)
+
 # Controle positif reel (#21433 attendu 2) : ce commit ajoute EXACTEMENT une
 # ligne de prose de concession (cellule 39, « le cote honnete du verdict »).
 SELF_TEST_COMMIT = "6eb23754b7ee88856cc96a42bcd6fe2a5a5b8550"
@@ -73,6 +90,31 @@ def _normalize(text):
     stripped = "".join(c for c in decomposed
                        if unicodedata.category(c) != "Mn")
     return stripped.lower()
+
+
+def concession_match(norm):
+    """Premier match de concession dont l'occurrence n'est pas neutralisee.
+
+    « limites » est le motif le plus bruyant du detecteur. Une occurrence qui
+    tombe DANS l'empan d'un contexte de NON_CONCESSION_CONTEXT_RE nomme une
+    contrainte technique (bornes de phrases, cas limites, bornes
+    d'intervalle, contraintes de portefeuille, DFS borne, parametres de cout
+    ou de taux) : elle ne compte pas.
+
+    Les autres motifs de la meme ligne restent actifs : une ligne peut porter
+    une vraie concession ailleurs, et la neutralisation porte sur
+    l'occurrence, pas sur la ligne.
+
+    Rend un objet match (compatible `.group(0)` et `.search`) ou None.
+    """
+    neutral = [m.span() for m in NON_CONCESSION_CONTEXT_RE.finditer(norm)]
+    for m in CONCESSION_RE.finditer(norm):
+        if m.group(0).startswith("limite"):
+            if any(start <= m.start() and m.end() <= end
+                   for start, end in neutral):
+                continue
+        return m
+    return None
 
 
 def _source_text(cell):
@@ -126,7 +168,7 @@ def added_concession_lines(parent_nb, head_nb):
             norm = _normalize(line)
             if norm in parent_all:
                 continue
-            m = CONCESSION_RE.search(norm)
+            m = concession_match(norm)
             if m:
                 hits.append({"cell": key,
                              "line": line.strip()[:200],

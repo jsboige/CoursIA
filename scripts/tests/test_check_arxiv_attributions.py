@@ -634,3 +634,183 @@ def test_workflow_paths_cover_every_registry_notebook() -> None:
         f"arxiv-attributions-guard.yml : {missing}. Les ajouter au filtre, "
         "sinon une PR qui ne touche que ces notebooks esquive la garde."
     )
+
+
+# ===== 6. Mode détection (#22566) =====
+#
+# Pas de réseau dans la suite : le seam `ARXIV_DETECT_RESOLUTIONS` rejoue un
+# JSON `{id: {verdict, title, authors}}` à la place de l'API arXiv.
+
+
+def _write_resolutions(tmp: Path, data: dict) -> Path:
+    p = tmp / "resolutions.json"
+    p.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+    return p
+
+
+class TestDetectMode:
+    """Mode `--detect` : identifiants hors registre + contrôle d'identité."""
+
+    def test_mismatch_positive_control_1505_04322(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Contrôle positif de l'issue : le notebook cite `arXiv:1505.04322`
+        comme un article de Hoffman, mais l'API le résout vers l'article de
+        Huan Wang mesuré sur #22537 (géométrie complexe) → concordance nulle
+        → MISMATCH, exit 1. Le titre est le RÉEL, tel que l'API l'a rendu
+        dans le récit de #22537."""
+        _make_notebook(
+            tmp_path,
+            "MyIA.AI.Notebooks/X.ipynb",
+            [
+                {"type": "markdown",
+                 "source": "See arXiv:1505.04322 for the survey — Hoffman et al."},
+            ],
+        )
+        _make_registry(tmp_path, [])
+        fixture = _write_resolutions(tmp_path, {
+            "1505.04322": {
+                "verdict": "ok",
+                "title": "On the growth of von Neumann dimension of harmonic "
+                          "spaces of semipositive line bundles over covering "
+                          "manifolds",
+                "authors": ["Huan Wang"],
+            }
+        })
+        monkeypatch.setenv("ARXIV_DETECT_RESOLUTIONS", str(fixture))
+        result = _run_check("--detect", "--repo-root", str(tmp_path), "--json",
+                            cwd=tmp_path)
+        payload = json.loads(result.stdout)
+        assert payload["summary"]["MISMATCH"] == 1
+        r = payload["results"][0]
+        assert r["arxiv_id"] == "1505.04322"
+        assert r["status"] == "MISMATCH"
+        assert "concorde pas" in r["detail"]
+        assert result.returncode == 1
+
+    def test_ok_when_title_concords(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Concordance de titre dans le contexte de citation → OK, exit 0."""
+        _make_notebook(
+            tmp_path,
+            "MyIA.AI.Notebooks/X.ipynb",
+            [
+                {"type": "markdown",
+                 "source": "We use arXiv:1810.04805 — Universal Character "
+                            "Autocoders for generative modeling (Baevski)."},
+            ],
+        )
+        _make_registry(tmp_path, [])
+        fixture = _write_resolutions(tmp_path, {
+            "1810.04805": {
+                "verdict": "ok",
+                "title": "Universal Character Autocoders for Generative Modeling",
+                "authors": ["Alexey Baevski"],
+            }
+        })
+        monkeypatch.setenv("ARXIV_DETECT_RESOLUTIONS", str(fixture))
+        result = _run_check("--detect", "--repo-root", str(tmp_path), "--json",
+                            cwd=tmp_path)
+        payload = json.loads(result.stdout)
+        assert payload["summary"]["OK"] == 1
+        assert result.returncode == 0
+
+    def test_registered_ids_are_not_re_resolved(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Un ID déjà au registre est exclu de la détection : il ne figure ni
+        dans les résultats, ni dans les résolutions demandées."""
+        _make_notebook(
+            tmp_path,
+            "MyIA.AI.Notebooks/X.ipynb",
+            [
+                {"type": "markdown",
+                 "source": "Attention arXiv:1706.03762 — transformer paper."},
+            ],
+        )
+        _make_registry(tmp_path, [{
+            "arxiv_id": "1706.03762",
+            "notebook": "MyIA.AI.Notebooks/X.ipynb",
+            "cell_index": 0,
+            "expected_citation": "arXiv:1706.03762",
+            "source_pr": 0,
+        }])
+        # Fixture VIDE : si l'ID enregistré était re-résolu, il serait
+        # "notfound" et rougirait — c'est précisément ce que le test réfute.
+        fixture = _write_resolutions(tmp_path, {})
+        monkeypatch.setenv("ARXIV_DETECT_RESOLUTIONS", str(fixture))
+        result = _run_check("--detect", "--repo-root", str(tmp_path), "--json",
+                            cwd=tmp_path)
+        payload = json.loads(result.stdout)
+        assert payload["unregistered"] == 0
+        assert payload["results"] == []
+        assert result.returncode == 0
+
+    def test_transport_is_skipped_never_red(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Un transport (API injoignable) n'est jamais un MISMATCH : SKIPPED,
+        exit 0 (défaut repare le 2026-09-21, EPIC #11168)."""
+        _make_notebook(
+            tmp_path,
+            "MyIA.AI.Notebooks/X.ipynb",
+            [{"type": "markdown", "source": "And arXiv:1810.04805 here."}],
+        )
+        _make_registry(tmp_path, [])
+        fixture = _write_resolutions(tmp_path, {
+            "1810.04805": {"verdict": "transport", "error": "HTTP 429"}
+        })
+        monkeypatch.setenv("ARXIV_DETECT_RESOLUTIONS", str(fixture))
+        result = _run_check("--detect", "--repo-root", str(tmp_path), "--json",
+                            cwd=tmp_path)
+        payload = json.loads(result.stdout)
+        assert payload["summary"]["SKIPPED"] == 1
+        assert payload["summary"]["MISMATCH"] == 0
+        assert "aucun verdict" in payload["results"][0]["detail"]
+        assert result.returncode == 0
+
+    def test_notfound_is_red(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Un ID non résolu par l'API est un article inexistant : MISMATCH."""
+        _make_notebook(
+            tmp_path,
+            "MyIA.AI.Notebooks/X.ipynb",
+            [{"type": "markdown", "source": "Cf. arXiv:9999.99999 for details."}],
+        )
+        _make_registry(tmp_path, [])
+        fixture = _write_resolutions(tmp_path, {
+            "9999.99999": {"verdict": "notfound", "title": None, "authors": []}
+        })
+        monkeypatch.setenv("ARXIV_DETECT_RESOLUTIONS", str(fixture))
+        result = _run_check("--detect", "--repo-root", str(tmp_path), "--json",
+                            cwd=tmp_path)
+        payload = json.loads(result.stdout)
+        assert payload["summary"]["MISMATCH"] == 1
+        assert "inexistant" in payload["results"][0]["detail"]
+        assert result.returncode == 1
+
+    def test_paths_scope_limits_enumeration(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """`--paths` (globs de fichiers en mode détection) borne l'énumération."""
+        _make_notebook(
+            tmp_path,
+            "MyIA.AI.Notebooks/A.ipynb",
+            [{"type": "markdown", "source": "Cf. arXiv:9999.99999 here."}],
+        )
+        _make_notebook(
+            tmp_path,
+            "MyIA.AI.Notebooks/B.ipynb",
+            [{"type": "markdown", "source": "Cf. arXiv:8888.88888 there."}],
+        )
+        _make_registry(tmp_path, [])
+        fixture = _write_resolutions(tmp_path, {})
+        monkeypatch.setenv("ARXIV_DETECT_RESOLUTIONS", str(fixture))
+        result = _run_check(
+            "--detect", "--repo-root", str(tmp_path), "--json",
+            "--paths", "MyIA.AI.Notebooks/A.ipynb", cwd=tmp_path)
+        payload = json.loads(result.stdout)
+        assert payload["enumerated"] == 1
+        assert payload["results"][0]["arxiv_id"] == "9999.99999"
