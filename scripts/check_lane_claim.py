@@ -400,6 +400,15 @@ _OVERRIDE = {"OVERRIDE"}
 # a full lane-close, so the scope is informational there), [OVERRIDE], and
 # [CLAIMED-AMEND] (#13022: the clause is the whole point of an amend -- it
 # names the corrected/union scope that replaces the lane's previous claim).
+# #22445 -- [DELIVERED] honours the clause too. It is a CLOSE marker, but the
+# v2 conditional reducer re-marks it as an ACTIVE OPEN claim while its PR is
+# OPEN/MERGED (`_resolve_delivered_v2`), so the lane keeps occupying the
+# issue: with the clause ignored, a lane that delivered a BOUNDED slice
+# re-locked the whole umbrella as epic-wide -- the exact opposite of the
+# protocol's advice to declare `paths:` and stop blocking siblings. On the
+# CLOSED branch the event is popped and the scope stays informational, same as
+# [RELEASED]. A dead glob still lifts the re-marked claim back to epic-wide
+# (`empty_scope`, #10958), so this widening cannot fail open.
 # Same leading-decoration tolerance as `_MARKER_RE` (#10906). In practice the
 # reducer feeds this regex the `_line_for_match` output (which starts at the
 # `[`), so the legacy `^[ \t]*\[` anchor already worked -- the prefix group is
@@ -409,7 +418,7 @@ _OVERRIDE = {"OVERRIDE"}
 # indistinguishable from a closing decorator by suffix alone. Trailing `*` in
 # fnmatch matches empty, so a captured `glob**` still matches `glob`.
 _PATHS_CLAUSE_RE = re.compile(
-    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED-AMEND|CLAIMED|RELEASED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
+    r"(?im)^[ \t]*" + _DECOR + r"(?:\*\*|__)?[ \t]*\[\s*(?:CLAIMED-AMEND|CLAIMED|RELEASED|DELIVERED|OVERRIDE)\s*\][^\n]*?paths\s*:\s*([^\n]+?)\s*$"
 )
 # #12320 -- `[DELIVERED] lane <m:w> -- PR #N`. The PR reference is OPTIONAL on
 # a DELIVERED marker (a DELIVERED without a PR is functionally equivalent to a
@@ -864,11 +873,14 @@ def _expand_brace_groups(pattern: str) -> list[str]:
 def _extract_paths_clause(text: str | None) -> list[str] | None:
     """Parse the optional `paths: <comma-list>` clause from a marker line.
 
-    Recognised on [CLAIMED], [RELEASED], [OVERRIDE], and [CLAIMED-AMEND]
-    marker lines (#10342 introduced the clause for [OVERRIDE]; #10419
-    extended it to [CLAIMED] and [RELEASED] so disjoint scoped claims no
+    Recognised on [CLAIMED], [RELEASED], [DELIVERED], [OVERRIDE], and
+    [CLAIMED-AMEND] marker lines (#10342 introduced the clause for [OVERRIDE];
+    #10419 extended it to [CLAIMED] and [RELEASED] so disjoint scoped claims no
     longer false-block each other on a multi-instance issue; #13022 added
-    [CLAIMED-AMEND], where the clause names the replacement scope). Returns
+    [CLAIMED-AMEND], where the clause names the replacement scope; #22445 added
+    [DELIVERED], whose v2 re-marking as an active claim while its PR is
+    OPEN/MERGED otherwise re-locked the whole umbrella epic-wide -- a bounded
+    delivery must not narrow back into a full-lane lock). Returns
     the trimmed path list, or None when the
     clause is absent -- the marker is then EPIC-WIDE (legacy semantics: an
     unscoped [CLAIMED] blocks every other lane, an unscoped [OVERRIDE] closes
