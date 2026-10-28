@@ -512,6 +512,40 @@ def test_la_ligne_depinglage_n_est_pas_une_mention():
     assert clv.mention_findings("x.ipynb", payload, manifest, canonicals) == []
 
 
+def test_les_lignes_depinglage_de_deux_bibliotheques_ne_sont_pas_des_mentions():
+    """Point 1 (relecture #23079) : l'exclusion des lignes d'epinglage est
+    library-agnostique.
+
+    Deux epinglages voisins dans la meme cellule (`IKVM` et `IKVM.Image` en
+    8.14.0, hors allowlist) faisaient deux constats `mention_residuelle` qui
+    etaient precisement les deux lignes d'epinglage : le jeton de version de
+    l'une etait attribue a l'autre.
+    """
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    payload = _notebook_with([
+        _code('#r "nuget: IKVM, 8.14.0"\n#r "nuget: IKVM.Image, 8.14.0"'),
+    ])
+    findings = clv.mention_findings("x.ipynb", payload, manifest, canonicals)
+    assert findings == [], findings
+
+
+def test_une_mention_en_prose_reste_relevee_apres_le_correction_des_lignes_depinglage():
+    """Controle positif : l'exclusion elargie ne doit pas eteindre la prose.
+
+    La meme cellule epingle deux bibliotheques, et une cellule markdown
+    annonce la version perimee : le constat de prose doit rester.
+    """
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    payload = _notebook_with([
+        _code('#r "nuget: IKVM, 8.14.0"\n#r "nuget: IKVM.Image, 8.14.0"'),
+        _markdown("Note : l'artefact ombre est compile contre IKVM 8.14.0 (version figee)."),
+    ])
+    findings = clv.mention_findings("x.ipynb", payload, manifest, canonicals)
+    assert any(f["kind"] == "mention_residuelle" for f in findings), findings
+
+
 def test_une_sortie_affichant_une_version_perimee_est_relevee():
     """Le bandeau « Installed Packages » affiche la version reellement chargee."""
     manifest = clv.load_manifest(MANIFEST_PATH)
@@ -814,16 +848,64 @@ def test_un_epinglage_pip_est_releve_et_compare_a_la_canonique():
 
 
 def test_le_pin_pip_du_corpus_est_vraiment_relu():
-    """Point 3 : la bibliotheque pip du manifeste a des declarations dans le
-    corpus -- une entree de manifeste inerte serait un mensonge de capacite."""
+    """Point 2 (relecture #23079) : l'etat honnete du corpus pip.
+
+    La mention 3.0.2 du paquet mealpy n'apparait que dans la **prose** (un
+    commentaire C# et un `print` Python) ; sa seule commande d'installation
+    est ecrite dans une cellule markdown, donc hors perimetre de l'organe.
+    L'entree de manifeste ne doit donc pas pretendre que le corpus declare
+    cette version : ni epinglage versionne, ni epinglage flottant.
+    """
     manifest = clv.load_manifest(MANIFEST_PATH)
     report = clv.run_census(REPO_ROOT, manifest)
     pip_libs = [
-        lib
-        for lib in report["libraries"]
-        if lib["ecosystem"] == "pip" and lib["versions"]
+        lib for lib in report["libraries"] if lib["ecosystem"] == "pip"
     ]
-    assert pip_libs, "aucune bibliotheque pip du manifeste n'a de pin dans le corpus"
+    assert pip_libs, "le manifeste doit porter une bibliotheque pip"
+    for lib in pip_libs:
+        assert lib["versions"] == [], (
+            "aucun carnet ne doit epingler une version pip : "
+            f"{lib['library']} porte {lib['versions']}"
+        )
+        assert lib["floating_notebooks"] == [], (
+            "aucune commande d'installation pip en cellule code : "
+            f"{lib['library']} porte {lib['floating_notebooks']}"
+        )
+        assert "s'accordent" not in (lib["note"] or ""), (
+            "la note ne doit pas pretendre que le corpus declare la version"
+        )
+
+
+def test_une_version_pip_citee_en_prose_n_est_pas_un_epinglage():
+    """Point 2 : une version citee dans un commentaire ou dans une chaine
+    n'est pas une commande d'installation -- donc pas un epinglage.
+
+    Cas mesure sur le corpus : `pip install mealpy==3.0.2` dans un commentaire
+    C# et dans un `print` Python, alors que la commande reelle du corpus
+    (`pip install mealpy numpy matplotlib`) ne fixe aucune version.
+    """
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    payload = _notebook([
+        'print("mealpy non installe (pip install mealpy==3.0.2)")',
+        '// installe qui importe mealpy (pip install mealpy==3.0.2)',
+    ])
+    pins = clv.pins_from_payload(payload, manifest)
+    assert not [p for p in pins if p.library == "mealpy"], pins
+
+
+def test_un_epinglage_pip_sans_version_produit_un_constat_nomme():
+    """Point 2 : une installation pip sans version est un epinglage flottant.
+
+    Le constat existe deja pour NuGet (#23086) ; il manquait pour pip, ou le
+    corpus installait mealpy sans fixer la version.
+    """
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    payload = _notebook(["pip install mealpy numpy matplotlib"])
+    pins = clv.pins_from_payload(payload, manifest)
+    assert any(p.library == "mealpy" and p.version == "" for p in pins), pins
+    findings = clv.state_findings("x.ipynb", pins, manifest, canonicals)
+    assert any(f["kind"] == "pin_non_versionne" for f in findings), findings
 
 
 def test_le_delta_compare_les_multiplicites_et_non_les_ensembles():

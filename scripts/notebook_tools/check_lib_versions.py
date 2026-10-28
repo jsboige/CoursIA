@@ -93,9 +93,19 @@ FLOATING_PIN_REASON = (
     "charger une version differente a chaque re-execution (cf #23086)"
 )
 
-# Epinglages pip : `pip install x==1.2.3` (avec ou sans `!` devant).
+# Epinglages pip : la ligne doit etre une **COMMANDE** d'installation --
+# `pip install x==1.2.3`, `%pip install ...`, `!pip install ...`.
+#
+# Le motif est ancre sur le debut de la ligne (`^`) : une version citee dans
+# un commentaire ou dans une chaine n'est pas un epinglage. Le corpus portait
+# exactement ce piege -- `pip install mealpy==3.0.2` dans un commentaire C# et
+# dans un `print` Python -- et l'organe les comptait comme les declarations
+# du corpus (relecture #23079, point 2). La version du groupe 2 est
+# facultative : `pip install mealpy` (sans version) est un epinglage
+# **flottant**, signale comme tel et non jete (cf #23086).
 PIP_PIN_RE = re.compile(
-    r"pip\s+install\s+(?:--\S+\s+)*([A-Za-z0-9._\-]+)\s*==\s*([A-Za-z0-9._\-+!]+)",
+    r"^\s*[%!]?\s*pip\s+install\s+(?:--\S+\s+)*([A-Za-z0-9._\-]+)"
+    r"(?:\s*==\s*([A-Za-z0-9._\-+!]+))?",
     re.IGNORECASE,
 )
 
@@ -349,10 +359,13 @@ def pins_from_payload(payload: dict, manifest: Manifest) -> list[Pin]:
             lib_id = pip_ids.get(match.group(1).lower())
             if lib_id is None:
                 continue
+            # Version absente : epinglage flottant (`pip install mealpy`),
+            # signale comme tel -- cf #23086 et la relecture #23079.
+            version = _norm_version(match.group(2) or "")
             pins.append(
                 Pin(
                     lib_id,
-                    _norm_version(match.group(2)),
+                    version,
                     "pip",
                     cell_index,
                     line.strip(),
@@ -485,8 +498,11 @@ def state_findings(
     for pin in pins:
         lib = manifest.libraries[pin.library]
         canonical = canonical_map.get(pin.library)
-        if pin.ecosystem == "nuget" and not pin.version:
+        if pin.ecosystem in ("nuget", "pip") and not pin.version:
             # Epinglage flottant : la version n'est pas fixee (cf #23086).
+            # Le cas pip compte aussi : le corpus installait mealpy sans
+            # version (`pip install mealpy numpy matplotlib`), et l'organe
+            # ne le voyait pas (relecture #23079, point 2).
             findings.append(
                 _finding(notebook, pin, canonical, "pin_non_versionne",
                          FLOATING_PIN_REASON)
@@ -562,8 +578,11 @@ def delta_findings(
         canonical = canonical_map.get(pin.library)
         if canonical is None:
             continue
-        if pin.ecosystem == "nuget" and not pin.version:
+        if pin.ecosystem in ("nuget", "pip") and not pin.version:
             # Epinglage flottant : la version n'est pas fixee (cf #23086).
+            # Le cas pip compte aussi : le corpus installait mealpy sans
+            # version (`pip install mealpy numpy matplotlib`), et l'organe
+            # ne le voyait pas (relecture #23079, point 2).
             findings.append(
                 _finding(notebook, pin, canonical, "pin_non_versionne",
                          FLOATING_PIN_REASON)
@@ -650,8 +669,9 @@ def mention_findings(
     mentait.
 
     Le perimetre est borne : une mention n'est signalee que dans un carnet qui
-    **declare un epinglage** de cette bibliotheque, et la ligne d'epinglage
-    elle-meme est exclue (elle porte la version, ce n'est pas une mention).
+    **declare un epinglage** de cette bibliotheque, et **toute ligne
+    d'epinglage est exclue**, quelle que soit la bibliotheque qu'elle epingle
+    (elle porte la version qu'elle fixe, ce n'est pas une mention).
     Les sorties sont en revanche balayees en entier : le bandeau « Installed
     Packages » d'un kernel affiche la version reellement chargee, et c'est
     souvent la que l'ecart se lit.
@@ -678,10 +698,18 @@ def mention_findings(
     if not targets:
         return findings
 
-    # Lignes d'epinglage : exclues du balayage des sources.
-    pin_lines: set[tuple[str, int, int]] = set()
+    # Lignes d'epinglage : exclues du balayage des sources -- **toutes
+    # bibliotheques confondues**. Une ligne d'epinglage porte la version
+    # qu'elle epingle ; la rapporter comme une « mention » de la version
+    # perimee d'une AUTRE bibliotheque est un faux positif. Cas mesure : deux
+    # epinglages voisins dans la meme cellule (`#r "nuget: IKVM, 8.14.0"` et
+    # `#r "nuget: IKVM.Image, 8.14.0"`) faisaient deux constats
+    # `mention_residuelle` qui etaient precisement les lignes d'epinglage
+    # (relecture #23079, point 1). La cle de l'exclusion est donc le couple
+    # (cellule, ligne), sans le nom de la bibliotheque.
+    pin_lines: set[tuple[int, int]] = set()
     for pin in pins:
-        pin_lines.add((pin.library, pin.cell, pin.line_no))
+        pin_lines.add((pin.cell, pin.line_no))
 
     for lib_id, versions in sorted(targets.items()):
         canonical = canonical_map.get(lib_id)
@@ -692,7 +720,7 @@ def mention_findings(
                 for line_number, line in enumerate(
                     _cell_text(cell).splitlines(), start=1
                 ):
-                    if (lib_id, index, line_number) in pin_lines:
+                    if (index, line_number) in pin_lines:
                         continue
                     if _version_mentions(line, version):
                         findings.append(

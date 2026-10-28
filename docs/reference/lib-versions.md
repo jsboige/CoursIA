@@ -36,10 +36,10 @@ Trois classes, sur les **cellules code** des carnets :
 | classe | ce qui est releve |
 |---|---|
 | epinglage NuGet | `#r "nuget: IKVM, 8.15.0"` (la virgule peut suivre sans espace) |
-| epinglage pip | `pip install x==1.2.3` |
+| epinglage pip | une **commande** d'installation : `pip install x==1.2.3` (ou `%pip` / `!pip`). Une version citee dans un commentaire ou dans une chaine n'est pas un epinglage |
 | version locale | un carnet qui **redeclare** un symbole que l'organe de serie possede (`TWEETY_VERSION = "1.28"`) |
 | provisionnement etranger | une URL de telechargement hors de l'organe de serie (ici `tweetyproject.org/builds/`) |
-| epinglage flottant | `#r "nuget: Google.OrTools"` — la version n'est pas fixee (cf #23086) |
+| epinglage flottant | `#r "nuget: Google.OrTools"` ou `pip install mealpy` — la version n'est pas fixee (cf #23086) |
 
 ## Les deux modes, et pourquoi ils diffèrent
 
@@ -186,12 +186,21 @@ bloque rien par lui-meme, il dit que la mesure est a refaire.
 ## Limites
 
 - L'organe ne reexecute aucun carnet et ne compare pas deux notebooks.
-- L'organe lit les **cellules code** : une declaration d'installation pip
-  ecrite dans une cellule **markdown** (documentation) n'est pas un epinglage
-  pour lui. Les declarations pip du corpus de reference (mealpy) sont en
-  cellules code ; celles d'autres series (z3-solver, torch) sont en markdown
-  et sortent du perimetre — le suivi est l'issue nommee dans le corps de la
-  PR #23079.
+- L'organe ne reconnait un epinglage pip que dans une **commande
+  d'installation** (`pip install ...`, `%pip install ...`, `!pip install ...`),
+  dans une cellule **code** : une version citee dans un commentaire ou dans
+  une chaine n'est pas un epinglage, et une commande ecrite en markdown reste
+  hors perimetre. Sur le corpus de reference, mealpy n'est donc **pas epingle
+  du tout** : sa seule commande d'installation (`pip install mealpy numpy
+  matplotlib`) est ecrite dans une cellule markdown, et les deux occurrences
+  de 3.0.2 dans les cellules code sont de la prose (un `print` et un
+  commentaire C#). L'entree de manifeste porte donc un **contrat
+  d'environnement** (la version que `Config/PythonNetLoader.cs` doit
+  exposer), pas une observation du corpus ; le suivi de l'installation est
+  dans #23104.
+- Une version suivie du point final d'une phrase (`... contre IKVM 8.14.0.`)
+  n'est pas reconnue comme une mention : le jeton `8.14.0.` est ecarte pour
+  ne pas matcher un prefixe de version. Consequence a reboucler (#23104).
 - Les **binaires charges depuis un chemin hors du depot** ne sont pas
   detectes : c'est un ecart de dependance, pas d'epinglage. Le suivi est
   l'issue nommee dans le corps de la PR #23079.

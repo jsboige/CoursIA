@@ -143,7 +143,7 @@
       "ecosystem": "pip",
       "canonical": "3.0.2",
       "canonical_source": "manifest",
-      "note": "Version du paquet Python mealpy, celle que doit exposer l'environnement charge par `Config/PythonNetLoader.cs` pour les carnets qui l'importent. Les declarations du corpus (`MyIA.AI.Notebooks/Sudoku/Sudoku-05-PSO-CSharp.ipynb` et `.../Sudoku-05-PSO-Python.ipynb`) s'accordent sur cette version."
+      "note": "Version du paquet Python mealpy, celle que doit exposer l'environnement charge par `Config/PythonNetLoader.cs` pour les carnets qui l'importent. Le corpus ne l'epingle pas de facon executable : sa seule commande d'installation (`pip install mealpy numpy matplotlib`) est ecrite dans une cellule MARKDOWN (documentation, hors perimetre de l'organe), et les deux occurrences de 3.0.2 dans les cellules code sont de la prose (un `print` et un commentaire C#). L'entree de manifeste ne pretend donc pas que le corpus declare cette version ; c'est un contrat d'environnement, et le suivi de l'installation est dans #23104."
     }
   ],
   "allowlist": [
