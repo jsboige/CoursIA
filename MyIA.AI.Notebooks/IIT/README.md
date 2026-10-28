@@ -495,9 +495,9 @@ expériences ICT-26 à ICT-30).
 Chaque strate est **complétée par des notebooks de raffinement / extension** (suffixes lettrés
 `b`/`c`/`d`… ou titres non-numérotés) qui approfondissent un aspect ou appliquent l'instrumentation
 d'un notebook principal à un nouveau cas. Quelques exemples représentatifs :
-[ICT-15b-SensitivityCanonicity-Python](ICT-Series/ICT-15b-SensitivityCanonicity-Python.ipynb)
+[ICT-15b-SensitivityCanonicity-Python](ICT-Series/ICT-15/ICT-15b-SensitivityCanonicity-Python.ipynb)
 (sensibilité du verdict Φ/F/K d'ICT-15 aux perturbations contrôlées du substrat, re-mesure multi-graines),
-[ICT-15c-MetaProxyObstruction-Python](ICT-Series/ICT-15c-MetaProxyObstruction-Python.ipynb) (obstructions adversariales au verdict
+[ICT-15c-MetaProxyObstruction-Python](ICT-Series/ICT-15/ICT-15c-MetaProxyObstruction-Python.ipynb) (obstructions adversariales au verdict
 de convergence — exploration des faux-positifs quand le triplet co-varie par construction),
 [ICT-17b-Grokking-CompressionProgress-Python](ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) (grokking comme
 cas d'application de l'instrumentation ε-machine d'ICT-17 à la compression post-généralisation tardive, Power
