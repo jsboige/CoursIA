@@ -2650,6 +2650,13 @@ GPU_VERDICT_MARKER = {
     "STALE": "[DEFER gpu-reservation stale]",
     "UNPOSTED": "[DEFER gpu-reservation unposted]",
     "GATE_UNREAD": "[DEFER gpu-reservation gate-unreadable]",
+    # `UNREADABLE` est le verdict que le transport git rend ROUTINIER sur
+    # un siege sans remote `gpu-ledger` (#22755) : le gate refuse de repondre
+    # autour d'une source qu'il n'a pas pu lire. Sans marqueur nomme, ce
+    # verdict tombeait dans le repli `unknown-verdict` -- un motif qui
+    # pretend qu'on ne sait pas, alors que le ledger nomme tres bien son
+    # propre verdict et son remede.
+    "UNREADABLE": "[DEFER gpu-reservation unreadable]",
     "TARGET_AMBIGUOUS": "[DEFER gpu-reservation target-ambiguous]",
     # Defensif : la resolution rend `TARGET_UNRESOLVED` SANS appeler le gate
     # (cf `gpu_gate_target`), ce marqueur ne sert donc qu'a une sonde qui
@@ -2661,6 +2668,30 @@ GPU_VERDICT_MARKER = {
 #: confondre avec le marqueur d'ecart ci-dessus : le premier dit « servi,
 #: sans reservation a verifier », le second « ecarte ». Un motif qui dit
 #: l'inverse de ce qui s'est passe est pire qu'aucun motif.
+#: Remede des lectures "gate illisible" (timeout, exception, sortie non-JSON).
+#: Il est ecrit pour rester vrai AVANT et APRES #22755 : le cache local est
+#: l'autorite tant que le transport git n'est pas en vigueur, et cesse de
+#: l'etre quand il l'est. Un remede qui n'affirmerait qu'un des deux etats
+#: serait faux dans l'autre -- et le cache n'est plus consultable sur un
+#: siege qui n'a pas de remote.
+GPU_GATE_READ_REMEDY = (
+    "Remede : verifier d'abord que le remote `gpu-ledger` est configure sur "
+    "ce siege (`git remote get-url gpu-ledger`) -- apres #22755 c'est la "
+    "source primaire et le cache local n'est plus une autorite ; avant, "
+    "rafraichir le cache local (debt_ledger.py reduce)."
+)
+
+#: Remede propre au verdict `UNREADABLE` : la source primaire n'a pas pu
+#: etre lue, et la seule action utile est le geste de siege.
+GPU_VERDICT_REMEDY = {
+    "UNREADABLE": (
+        "Remede : configurer le remote `gpu-ledger` du siege "
+        "(`git remote add gpu-ledger <url>`) puis rejouer le tirage -- le "
+        "cache local n'est pas une source de remplacement de la branche "
+        "`ops/gpu-ledger`."
+    ),
+}
+
 GPU_UNRESOLVED_NOTE = (
     "[INFO gpu-reservation target-unresolved] aucune cible GPU declaree "
     "pour ce grain : la porte n'a aucun device a proteger et le grain est "
@@ -2819,13 +2850,12 @@ def gpu_gate_probe(item, args):
     except subprocess.TimeoutExpired:
         return ("GATE_UNREAD",
                 f"{entity} : le gate (check_pending) n'a pas repondu dans le "
-                "delai. Remede : rafraichir le snapshot local du ledger "
-                "(debt_ledger.py reduce) sur ce siege")
+                "delai. " + GPU_GATE_READ_REMEDY)
     except Exception as exc:  # noqa: BLE001 - diagnostic best-effort
         return ("GATE_UNREAD",
                 f"{entity} : gate illisible ({type(exc).__name__}). Remede : "
                 "verifier que scripts/coordination/debt_ledger.py est "
-                "executable et que le snapshot local existe sur ce siege")
+                "executable. " + GPU_GATE_READ_REMEDY)
     try:
         payload = json.loads(proc.stdout or "")
     except Exception:  # noqa: BLE001 - sortie non-JSON = gate illisible
@@ -2833,9 +2863,7 @@ def gpu_gate_probe(item, args):
     if not isinstance(payload, dict) or not payload.get("verdict"):
         return ("GATE_UNREAD",
                 f"{entity} : reponse illisible du gate (rc={proc.returncode}). "
-                "Remede : rafraichir le snapshot local du ledger, et "
-                "configurer le remote `gpu-ledger` du siege si #22755 a "
-                "change la source par defaut")
+                + GPU_GATE_READ_REMEDY)
     verdict = str(payload["verdict"])
     reason = str(payload.get("reason") or "").strip()
     return (verdict, f"{entity} : {verdict} -- {reason}".rstrip(" -"))
@@ -2885,11 +2913,13 @@ def gpu_gate_reason(item, args, probe=None, notes=None) -> str | None:
         return None
     marker = GPU_VERDICT_MARKER.get(
         verdict, "[DEFER gpu-reservation unknown-verdict]")
+    remedy = GPU_VERDICT_REMEDY.get(verdict, "")
+    tail = f" {remedy}" if remedy else ""
     return (f"{marker} {reason}. Source du verdict : ledger "
             "gpu-reservation (`check_pending`). Une experience GPU ne part "
             "pas sur un device dont l'etat n'est pas etabli ("
             "docs/coordination/gpu-reservation.md, « Liaison picker <-> file "
-            "#1454 »). Candidat remplace dans la meme urne.")
+            "#1454 »). Candidat remplace dans la meme urne." + tail)
 
 
 def open_cover_inert(issue_number: int) -> str:
