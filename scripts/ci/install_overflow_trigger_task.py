@@ -156,11 +156,13 @@ def workflow_inputs(repo: str, workflow: str) -> tuple[set[str], str]:
     on = data.get("on")
     if not isinstance(on, dict):
         return set(), "declencheur workflow_dispatch absent"
-    dispatch = on.get("workflow_dispatch")
-    if not isinstance(dispatch, dict):
+    if "workflow_dispatch" not in on:
         return set(), "declencheur workflow_dispatch absent"
-    inputs = dispatch.get("inputs")
+    dispatch = on.get("workflow_dispatch")
+    inputs = dispatch.get("inputs") if isinstance(dispatch, dict) else None
     if not isinstance(inputs, dict):
+        # `workflow_dispatch:` sans valeur = declencheur SANS input : la
+        # distinction importe (l'un se cable, l'autre non).
         return set(), "workflow_dispatch sans input"
     return set(inputs), ""
 
