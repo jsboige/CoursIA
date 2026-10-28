@@ -24,6 +24,7 @@ import argparse
 import heapq
 import itertools
 import json
+import os
 import random
 import sys
 from collections import Counter, deque
@@ -522,14 +523,22 @@ def _rebuild(meet: Optional[Diagram],
 # ---------------------------------------------------------------------------
 
 def astar(start: Diagram, targets: List[Diagram], max_crossings: int,
-          node_budget: int, epsilon: float = 1.0
+          node_budget: int, epsilon: float = 1.0,
+          stats: Optional[Dict[str, object]] = None
           ) -> Optional[List[Tuple[str, Diagram, Diagram]]]:
     """A* du `start` literal vers un des `targets`. Rend la chaine verifyee \
     (chaque lien l'a ete a l'insertion) ou None a budget epuise. \
     `epsilon` > 1 : A* pondere (f = cost + eps*h) — le temoin rendu est \
     sous-optimal mais verifie ; c'est le repli quand le ball f de l'arbre \
     montant etouffe la descente (mesure checkpoint : profondeur 9-10 non \
-    retrouvee a eps=1 malgre un chemin descendant par construction)."""
+    retrouvee a eps=1 malgre un chemin descendant par construction).
+
+    `stats` recoit `exhausted` et `expanded`. `exhausted=True` signifie que \
+    le tas s'est vide : sur un graphe d'etats FINI (labels renormalises par \
+    `canon`, croisements bornes par `max_crossings`) c'est une preuve \
+    d'absence de chemin, pas un budget atteint — A* pondere reste complet \
+    bien que sous-optimal. `exhausted=False` = borne de budget, aucun \
+    certificat d'absence."""
     target_norms = {normalize(t) for t in targets}
     start_norm = normalize(start)
     if start_norm in target_norms:
@@ -555,6 +564,9 @@ def astar(start: Diagram, targets: List[Diagram], max_crossings: int,
             chain.reverse()
             return chain
         if counter >= node_budget:
+            if stats is not None:
+                stats["exhausted"] = False
+                stats["expanded"] = counter
             return None
         for kind, cand in neighbors(d, max_crossings):
             nc = normalize(cand)
@@ -566,6 +578,9 @@ def astar(start: Diagram, targets: List[Diagram], max_crossings: int,
                 heapq.heappush(
                     heap, (ncost + epsilon * (len(cand[0]) // 2),
                            ncost, counter, cand))
+    if stats is not None:
+        stats["exhausted"] = True
+        stats["expanded"] = counter
     return None
 
 
@@ -579,14 +594,20 @@ def _ordered_neighbors(d: Diagram, max_crossings: int
 
 
 def descent_dfs(start: Diagram, targets: List[Diagram], max_crossings: int,
-                node_budget: int, max_up_steps: int = 0
+                node_budget: int, max_up_steps: int = 0,
+                stats: Optional[Dict[str, object]] = None
                 ) -> Optional[List[Tuple[str, Diagram, Diagram]]]:
     """DFS descente-d'abord. Les pousses n'appendent qu'en fin de liste, donc \
     l'inverse d'une chaine de pousses est entierement dans l'enumeration des \
     voisins descendants : cette strategie le retrouve en lineaire (la ou le \
     ball f de l'arbre montant etouffait A*). `max_up_steps` borne le nombre \
     CONSECUTIF de montees (R3 compte preserve non compte). Rend la chaine \
-    verifiee ou None a budget epuise."""
+    verifiee ou None a budget epuise.
+
+    `stats["exhausted"]` ici porte une portee RESTREINTE : l'elagage \
+    `new_ups > max_up_steps` retire des branches du graphe, donc l'epuisement \
+    prouve l'absence de chemin SOUS CETTE RESTRICTION, jamais dans le graphe \
+    complet. Seul l'epuisement d'`astar` porte une preuve non restreinte."""
     target_norms = {normalize(t) for t in targets}
     start_norm = normalize(start)
     if start_norm in target_norms:
@@ -619,12 +640,18 @@ def descent_dfs(start: Diagram, targets: List[Diagram], max_crossings: int,
             return chain
         expansions += 1
         if expansions > node_budget:
+            if stats is not None:
+                stats["exhausted"] = False
+                stats["expanded"] = expansions
             return None
         new_ups = ups + 1 if len(cand[0]) > len(d[0]) else 0
         if new_ups > max_up_steps:
             continue  # marque visite (elague), sans empiler
         frames.append((cand, new_ups,
                        _ordered_neighbors(cand, max_crossings), 0))
+    if stats is not None:
+        stats["exhausted"] = True
+        stats["expanded"] = expansions
     return None
 
 
@@ -774,29 +801,67 @@ def push_test(depth: int = 8, budget: int = 200_000,
     return 1 if failures else 0
 
 
+WITNESS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "knot_anymoves_witness.json")
+
+
+def _write_report(report: Dict) -> None:
+    """Ecrit le rapport a cote du script, jamais dans le cwd : un `open` \
+    relatif deposait le certificat a la racine du depot appelant (mesure du \
+    27/10 : le run 2 M a ecrit `D:\\dev\\CoursIA\\knot_anymoves_witness.json` \
+    au lieu du worktree, laissant croire que la jambe n'avait pas tourne)."""
+    with open(WITNESS_PATH, "w", encoding="utf-8") as fh:
+        json.dump(report, fh, indent=1)
+
+
 def astar_all_folds(max_crossings: int = 13, node_budget: int = 200_000,
                     max_changes: int = 2, per_fold_time_hint: int = 120
                     ) -> int:
     """Recherche par pli sur le corpus 11n102 : DFS descente-d'abord (montees \
     bornees 2), puis A* pondere eps=2, puis eps=3. Rend le premier temoin \
-    trouve (JSON) ou le certificat negatif borne (par pli : budget epuise)."""
+    trouve (JSON) ou le certificat negatif.
+
+    Le certificat distingue deux portees, mesurees et non supposees :
+    `exhaustive-canonical-bounded` si, sur CHAQUE pli, les deux A* se sont \
+    termines par epuisement du tas (graphe d'etats fini : labels renormalises \
+    par `canon`, croisements bornes) — l'absence de chemin est alors PROUVEE \
+    dans cet espace ; `budget-bounded` sinon. La DFS a `max_up_steps=2` \
+    n'entre jamais dans cette preuve : son elagage retire des branches."""
     import time
     fs = folds(KNOT_11N102, max_changes)
-    report: Dict = {"folds": [], "max_crossings": max_crossings}
+    report: Dict = {"folds": [], "max_crossings": max_crossings,
+                    "per_fold_search": []}
+    all_astar_exhausted = True
     for idx, fold in enumerate(fs):
         t0 = time.monotonic()
+        dfs_stats: Dict[str, object] = {}
         chain = descent_dfs(fold, [UNKNOT, EMPTY0], max_crossings,
-                            node_budget, max_up_steps=2)
+                            node_budget, max_up_steps=2, stats=dfs_stats)
         strategy = "descente-d'abord (montees<=2)"
+        a2_stats: Dict[str, object] = {}
+        a3_stats: Dict[str, object] = {}
         if chain is None:
             chain = astar(fold, [UNKNOT, EMPTY0], max_crossings, node_budget,
-                          epsilon=2.0)
+                          epsilon=2.0, stats=a2_stats)
             strategy = "A* pondere eps=2"
         if chain is None:
             chain = astar(fold, [UNKNOT, EMPTY0], max_crossings, node_budget,
-                          epsilon=3.0)
+                          epsilon=3.0, stats=a3_stats)
             strategy = "A* pondere eps=3"
         dt = time.monotonic() - t0
+        if chain is None:
+            # Les deux A* ont-ils epuise (et non atteint la borne) ?
+            if not (a2_stats.get("exhausted") and a3_stats.get("exhausted")):
+                all_astar_exhausted = False
+            report["per_fold_search"].append({
+                "fold": idx,
+                "dfs": {"exhausted_restricted": dfs_stats.get("exhausted"),
+                        "expanded": dfs_stats.get("expanded")},
+                "astar_eps2": {"exhausted": a2_stats.get("exhausted"),
+                               "expanded": a2_stats.get("expanded")},
+                "astar_eps3": {"exhausted": a3_stats.get("exhausted"),
+                               "expanded": a3_stats.get("expanded")},
+            })
         if chain is not None:
             ok = verify_any_moves(chain, fold, chain[-1][2] if chain else fold)
             max_len = max(len(x[1][0]) for x in chain) if chain else len(fold[0])
@@ -816,21 +881,70 @@ def astar_all_folds(max_crossings: int = 13, node_budget: int = 200_000,
                     for k, s, t in chain
                 ],
             }
-            with open("knot_anymoves_witness.json", "w", encoding="utf-8") as fh:
-                json.dump(report, fh, indent=1)
-            print("[astar] ecrit knot_anymoves_witness.json")
+            _write_report(report)
+            print(f"[astar] ecrit {WITNESS_PATH}")
             return 0
         print(f"[astar] pli #{idx}: aucun temoin (budget {node_budget} x 3 "
               f"strategies, {dt:.1f}s)")
         report["folds"].append(idx)
+    component_control = None
+    if all_astar_exhausted:
+        # Controle independant de l'epuisement : sur des plis sondes, on
+        # parcourt la composante entiere en largeur et on verifie (a) sa
+        # taille, (b) qu'elle ne contient aucune cible, (c) que les
+        # composantes sont deux a deux disjointes — sans quoi epuiser un pli
+        # ne dirait rien des autres (mesure du 27/10 : 2157 etats, 0
+        # intersection, d'ou `expanded` = 2156 constant).
+        sample = sorted({0, len(fs) // 2, len(fs) - 1})
+        comps = []
+        for i in sample:
+            seen = {normalize(fs[i])}
+            queue = deque([fs[i]])
+            while queue:
+                d = queue.popleft()
+                for _, cand in neighbors(d, max_crossings):
+                    nc = normalize(cand)
+                    if nc not in seen:
+                        seen.add(nc)
+                        queue.append(cand)
+            comps.append(seen)
+        target_norms = {normalize(t) for t in (UNKNOT, EMPTY0)}
+        component_control = {
+            "sampled_folds": sample,
+            "sizes": [len(c) for c in comps],
+            "pairwise_disjoint": all(
+                not (comps[a] & comps[b])
+                for a in range(len(comps)) for b in range(a + 1, len(comps))),
+            "contains_target": [bool(c & target_norms) for c in comps],
+        }
+    report["component_control"] = component_control
+    if all_astar_exhausted:
+        kind = "exhaustive-canonical-bounded"
+        note = ("les deux A* ponderes ont EPUISE leur tas sur les 67 plis : "
+                "dans l'espace des diagrammes canoniques a <= "
+                f"{max_crossings} croisements, aucun pli (<= {max_changes} "
+                "changements de croisement) n'atteint le trivial ni le vide. "
+                "Epuisement d'A* sur un graphe fini = preuve d'absence (A* "
+                "pondere est complet bien que sous-optimal) ; la DFS a "
+                "montees<=2 n'entre pas dans cette preuve (elagage).")
+    else:
+        kind = "budget-bounded"
+        note = ("au moins un pli a atteint la borne de budget sans epuiser "
+                "son graphe : le certificat ne porte que sur la partie "
+                "exploree, budget-borne")
     report["negative_certificate"] = {
-        "kind": "budget-bounded",
+        "kind": kind,
         "per_fold_budget": node_budget,
+        "strategies_per_fold": [
+            "descent_dfs (max_up_steps=2) — restricted, no proof value",
+            "astar weighted eps=2 — complete on the finite state graph",
+            "astar weighted eps=3 — complete on the finite state graph",
+        ],
         "folds_explored": len(fs),
+        "note": note,
     }
-    with open("knot_anymoves_witness.json", "w", encoding="utf-8") as fh:
-        json.dump(report, fh, indent=1)
-    print("[astar] certificat negatif borne ecrit (knot_anymoves_witness.json)")
+    _write_report(report)
+    print(f"[astar] certificat negatif ecrit ({kind}) -> {WITNESS_PATH}")
     return 2
 
 

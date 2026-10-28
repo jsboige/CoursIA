@@ -166,3 +166,31 @@ def test_astar_pondere_retrouve_une_poussee():
     assert chain is not None
     assert verify_any_moves(chain, d, chain[-1][2])
 
+
+def test_astar_stats_distinguent_epuisement_et_budget():
+    # Le certificat negatif ne vaut rien s'il ne distingue pas les deux
+    # causes de `None`. Graphe fini (labels renormalises par `canon`,
+    # croisements bornes) + budget large => le tas se vide : `exhausted`.
+    st_ex: dict = {}
+    assert astar(KNOT_11N102, [UNKNOT, EMPTY0], 13, 2_000_000,
+                 epsilon=3.0, stats=st_ex) is None
+    assert st_ex["exhausted"] is True
+    assert 0 < st_ex["expanded"] < 2_000_000  # epuise AVANT la borne
+
+    # Budget minuscule => borne atteinte, aucune preuve d'absence.
+    st_b: dict = {}
+    assert astar(KNOT_11N102, [UNKNOT, EMPTY0], 13, 5,
+                 epsilon=3.0, stats=st_b) is None
+    assert st_b["exhausted"] is False
+    assert st_b["expanded"] >= 5
+
+
+def test_descent_dfs_budget_rend_exhausted_faux():
+    # Meme contrat pour la DFS, dont l'epuisement ne porte aucune preuve
+    # (elagage des montees consecutives > max_up_steps).
+    st: dict = {}
+    assert descent_dfs(KNOT_11N102, [UNKNOT, EMPTY0], 13, 30, stats=st) is None
+    assert st["exhausted"] is False
+    assert st["expanded"] >= 30
+
+
