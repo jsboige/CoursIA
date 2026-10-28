@@ -89,8 +89,37 @@ fi
 # Les deux formes ne divergent que sur (runner vivant, waiters mort) -- soit
 # exactement le wedge observe sur cette jambe le 2026-09-07, resolu a la main.
 # Un futur `supervise.sh lean` prendra son propre predicat, pour la meme raison.
+#
+# LE PREDICAT EST PER-CHECKOUT, PAS PER-MACHINE (#21527).
+# `pgrep -f 'supervise\.sh waiters'` reconnait TOUT superviseur de la machine,
+# y compris ceux d'un autre checkout : un orphelin de test (etat sous /tmp,
+# 6-11 h, lance depuis un autre worktree) bloquait le purge et laissait le
+# service en failed, pool a zero. Le predicat par-checkout voit seulement le
+# superviseur de CE depot. Le chemin du superviseur est resolu par le noyau
+# (un shebang execute un script relatif avec son chemin ABSOLU dans argv), donc
+# la cmdline porte bien $REPO_DIR.
 if [ -e "$COURSIA_RUNNER_STATE_DIR/stop" ]; then
-  if pgrep -f 'supervise\.sh waiters' >/dev/null 2>&1; then
+  # Predicat PER-CHECKOUT (#21527) : le superviseur d'un AUTRE checkout
+  # (orphelin de test d'un autre worktree) ne doit pas bloquer le purge
+  # de CETTE sentinelle -- il bloquait le service en failed, pool a zero.
+  #
+  # L'organe est lu par `bash`, pas execute : son bit executable est 100644
+  # dans l'index, donc le noyau ne le rend pas executable sur un checkout
+  # Linux natif ; un exec refuse rendrait le predicat FAUX -- il repondrait
+  # « aucun superviseur vivant » et purgerait a tort.
+  #
+  # Repli CONSERVATEUR : si l'organe n'est pas lisible (depot perime sur la
+  # machine, ou wrapper deploye avant la mise a jour du checkout), on
+  # retombe sur le predicat per-machine : le repli peut REFUSER un purge
+  # a tort, jamais PURGER a tort.
+  HELPER="$REPO_DIR/scripts/ci/docker/linux-runner/persist/supervisor_live_for.sh"
+  SUPERVISOR_ALIVE=0
+  if [ -r "$HELPER" ]; then
+    if bash "$HELPER" "$REPO_DIR" waiters >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  else
+    if pgrep -f 'supervise\.sh waiters' >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  fi
+  if [ "$SUPERVISOR_ALIVE" -eq 1 ]; then
     echo "sentinelle presente ET superviseur vivant -- arret en cours, on n'interfere pas" >&2
     exit 1
   fi

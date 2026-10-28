@@ -147,7 +147,24 @@ if [ -e "$COURSIA_RUNNER_STATE_DIR/stop" ]; then
   # lances depuis d'autres worktrees (etat sous /tmp, 6-11 h) et bloquait le
   # purge : service reste en failed, pool a zero. Le predicat par-cmdline
   # filtre par le REPO_DIR de ce lanceur.
-  if "$REPO_DIR/scripts/ci/docker/linux-runner/persist/supervisor_live_for.sh" "$REPO_DIR" start; then
+  #
+  # Repli CONSERVATEUR : si l'organe n'est pas lisible (depot perime sur la
+  # machine, ou wrapper deploye avant la mise a jour du checkout), on retombe
+  # sur le predicat per-machine. Le repli peut REFUSER un purge a tort ; il
+  # ne peut pas PURGER a tort.
+  #
+  # L'organe est lu par `bash`, pas execute : son bit executable est 100644
+  # dans l'index, donc le noyau ne le rend pas executable sur un checkout
+  # Linux natif ; un exec refuse rendrait le predicat FAUX -- il repondrait
+  # « aucun superviseur vivant » et purgerait a tort.
+  HELPER="$REPO_DIR/scripts/ci/docker/linux-runner/persist/supervisor_live_for.sh"
+  SUPERVISOR_ALIVE=0
+  if [ -r "$HELPER" ]; then
+    if bash "$HELPER" "$REPO_DIR" start >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  else
+    if pgrep -f 'supervise\.sh start' >/dev/null 2>&1; then SUPERVISOR_ALIVE=1; fi
+  fi
+  if [ "$SUPERVISOR_ALIVE" -eq 1 ]; then
     echo "sentinelle presente ET superviseur vivant -- arret en cours, on n'interfere pas" >&2
     exit 1
   fi
