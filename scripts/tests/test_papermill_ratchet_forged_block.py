@@ -84,7 +84,7 @@ HAND_TOP = dict(REAL_TOP, duration=16.0,
 def _state_from_nb(nb, *, status="OK"):
     return (status, cpr.exec_evidence(nb), cpr.papermill_block(nb),
             None, cpr.cell_papermill_signature(nb),
-            cpr.cell_papermill_blocks(nb), None)
+            cpr.cell_papermill_blocks(nb))
 
 
 def _nb(top_block, cell_pm, base_outputs, head_outputs=None):
@@ -179,7 +179,7 @@ def test_outputs_unchanged_passes_regardless_of_block():
 
 def test_forged_block_not_triggered_on_added_notebook():
     """b_block is None on an added notebook - the FORGED_BLOCK branch requires it."""
-    base = ("ABSENT", None, None, None, None, None, None)
+    base = ("ABSENT", None, None, None, None, None)
     head = _state_from_nb(_nb(HAND_TOP, SHARED_CELL_PM, [{"text": ["hello fresh"]}], [{"text": ["hello fresh"]}]))
     verdict, regression = cpr.classify(base, head)
     assert verdict == "ADDED", verdict

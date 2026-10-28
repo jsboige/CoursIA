@@ -83,6 +83,24 @@ repos:
         files: '\.ipynb$'
         stages: [pre-commit]
 
+      - id: check-encoding-corruption
+        name: Block double-encoding UTF-8/cp1252 artifacts in staged notebooks
+        description: |
+          Detects the UTF-8→cp1252/latin-1 double-encoding artifact family
+          (`é` → `Ã©`, `—` → `â€”`, nbsp → `Â `) in staged notebooks — point 3
+          of #23021, the corruption class that hit RL-05 and TV-03. It is a
+          whole-file rewrite invisible to content-loss organs (volumes
+          unchanged). Full check on staged .ipynb; the CI guard form
+          (--base <ref>) checks added lines only. Block, never auto-fix: the
+          repair is a deterministic per-source-element cp1252 reversion
+          followed by a real re-execution (rule 6), which a hook must not
+          silently perform.
+        entry: python scripts/notebook_tools/check_encoding_corruption.py
+        language: system
+        pass_filenames: true
+        files: '\.ipynb$'
+        stages: [pre-commit]
+
       - id: fix-hr-separator
         name: Auto-fix decorative '---' cell openers (yaml_block_open_no_close)
         description: |
