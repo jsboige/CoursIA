@@ -155,6 +155,48 @@ else
   echo x >>"$TMP/fail"
 fi
 
+# Controle STRICT : une cmdline RELATIVE ne doit pas etre vue. Un argv relatif
+# (`./scripts/...`) ne porte pas REPO_DIR : il est indiscernable entre deux
+# checkouts, donc le predicat par-checkout le refuse -- c'est voulu. Ce refus
+# ne serait pas sans danger si la forme relative pouvait exister en production
+# (le predicat ne verrait pas le superviseur qu'il a lance) : c'est exactement
+# ce que le controle statique ci-dessous interdit.
+fake_proc_reset
+fake_proc_add "./scripts/ci/docker/linux-runner/supervise.sh" start 4
+if ! COURSIA_PROC_SCAN_ROOT="$PROC" "$HELPER" "$REPO_ROOT" start >/dev/null; then
+  echo "  PASS: une cmdline relative n'est pas vue (forme relative non admise -- controle statique plus bas)"
+  echo x >>"$TMP/pass"
+else
+  echo "  FAIL: le predicat voit un superviseur en argv relatif -- deux checkouts seraient confondus"
+  echo x >>"$TMP/fail"
+fi
+
+# Controle STATIQUE : les sept wrappers cables lancent le superviseur par un
+# CHEMIN ABSOLU. C'est l'invariant de production qui tient le predicat exact :
+# le predicat ne matche que "$REPO_DIR/scripts/ci/docker/linux-runner/
+# supervise.sh <mode>", donc un argv relatif produirait un faux negatif (le
+# superviseur vivant, invisible au predicat) et une purge a tort de la
+# sentinelle. Ce controle le rend visible dans le harnais, pas seulement a la
+# relecture d'un wrapper.
+PERSIST_DIR="$REPO_ROOT/scripts/ci/docker/linux-runner/persist"
+rel_wrappers=""
+for w in ai-01/coursia-runner-start.sh coursia-lean-start.sh \
+         coursia-waiters-start.sh coursia-runner-start.sh \
+         po-2025/coursia-runner-start.sh po-2027/coursia-runner-start.sh \
+         po-2028/coursia-runner-start.sh; do
+  if grep -nE '^[[:space:]]*exec[[:space:]]+(\./)?scripts/ci/docker/linux-runner/supervise\.sh' \
+       "$PERSIST_DIR/$w" >/dev/null 2>&1; then
+    rel_wrappers="$rel_wrappers $w"
+  fi
+done
+if [ -z "$rel_wrappers" ]; then
+  echo "  PASS: les sept wrappers lancent le superviseur par un chemin absolu (invariant de production)"
+  echo x >>"$TMP/pass"
+else
+  echo "  FAIL: argv relatif du superviseur dans :$rel_wrappers"
+  echo x >>"$TMP/fail"
+fi
+
 # Controle du stub `pgrep` : il doit savoir dire oui ET non, et ne JAMAIS voir
 # les processus reels de la machine hote (le stub est en tete de PATH).
 fake_proc_reset

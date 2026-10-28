@@ -35,6 +35,16 @@ if [ -z "$REPO_DIR" ]; then
   done
 fi
 [ -n "$REPO_DIR" ] || { echo "repo introuvable : ni /mnt/d/Dev/CoursIA ni /mnt/d/CoursIA -- definir COURSIA_REPO_DIR" >&2; exit 1; }
+# Le superviseur est lance par un CHEMIN ABSOLU, jamais relatif. Le
+# predicat per-checkout (#21527) reconnait un superviseur par la forme
+# "$REPO_DIR/scripts/ci/docker/linux-runner/supervise.sh <mode>" de sa
+# cmdline : un argv relatif (`./scripts/...`) porte un chemin qui ne
+# contient pas REPO_DIR, donc le predicat ne voit pas le superviseur
+# qu'il a lui-meme lance -- faux negatif, et purge a tort de la
+# sentinelle alors que le superviseur est vivant. Un argv relatif est de
+# plus indiscernable entre deux checkouts, ce que le predicat refuse par
+# construction : le chemin absolu est la seule forme admise.
+SUPERVISE="$REPO_DIR/scripts/ci/docker/linux-runner/supervise.sh"
 MASTER_ENV="${COURSIA_MASTER_ENV:-$REPO_DIR/.secrets/master.env}"
 ARG="${1:-12}"
 
@@ -55,7 +65,7 @@ mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 cd "$REPO_DIR" || exit 1
 
 if [ "$ARG" = "stop" ]; then
-  exec ./scripts/ci/docker/linux-runner/supervise.sh stop
+  exec "$SUPERVISE" stop
 fi
 # --- PURGE SENTINELLE PERIMEE (#15163) -----------------------------
 # supervise.sh pose "$STATE_DIR/stop" a l'arret gracieux et REFUSE de demarrer
@@ -127,4 +137,4 @@ if [ -e "$COURSIA_RUNNER_STATE_DIR/stop" ]; then
   rm -f "$COURSIA_RUNNER_STATE_DIR/stop"
 fi
 # ---------------------------------------------------------------------------
-exec ./scripts/ci/docker/linux-runner/supervise.sh waiters "$ARG"
+exec "$SUPERVISE" waiters "$ARG"
