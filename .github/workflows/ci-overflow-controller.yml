@@ -54,6 +54,17 @@ on:
     # machine a etat -- une livraison tardive agit sur l'etat courant.
     - cron: '31 * * * *'
   workflow_dispatch:
+    inputs:
+      min_interval:
+        description: >-
+          Intervalle minimal entre deux passages, en minutes. 0 = pas de
+          garde (comportement d'un declenchement manuel : la decision est
+          prise immediatement). La cadence locale sur ai-01 (#22937 volet
+          "declencheur") passe 15 : les passages qui se chevauchent sont
+          ecartes SANS mesure.
+        required: false
+        default: '0'
+        type: string
 
 permissions:
   actions: read
@@ -122,7 +133,8 @@ jobs:
         run: |
           set +e
           python scripts/ci/ci_overflow_controller.py --repo jsboige/CoursIA \
-            --apply --json --summary-out summary.md > verdict.json
+            --apply --json --summary-out summary.md \
+            --min-interval "${{ inputs.min_interval || '0' }}" > verdict.json
           RC=$?
           set -e
           cat verdict.json || true

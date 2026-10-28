@@ -275,6 +275,55 @@ Le terme dominant n'est pas le budget de jobs mais la **re-verification du resid
 
 ## Cadence et tolerance
 
+### Le declencheur : une cadence LOCALE, pas `workflow_run` (#22937, volet declencheur)
+
+Le `schedule` reste en filet, mais il ne peut pas etre le seul declencheur : mesure du
+coordinateur du 28/10, le cron `'31 * * * *'` n'a ete servi que **3 fois** le 28/10
+(00:39, 07:10, 14:19Z), et la livraison des crons du depot est, plus generalement, tardive
+et irreguliere (22 % des tics horaires servis, mediane 289 min de retard).
+
+Deux options etaient ouvertes. **`workflow_run` sur la fin du PR gate est impossible ici**,
+pour deux raisons mesurees :
+
+1. la **politique d'isolation du depot** refuse `workflow_run` sur un runner self-hosted
+   (`scripts/ci/check_self_hosted_runner_policy.py`, code `WORKFLOW_RUN` : « workflow_run
+   artifacts must never reach a self-hosted runner »). Or le controleur tourne sur le parc
+   local : le mettre sur l'offre hebergee le ferait faire la queue dans l'offre qu'il
+   observe (review ai-01 du 27/10). Les deux precedents du depot qui portent ce
+   declencheur (`linux-runner-starvation-advisory.yml`,
+   `coursia-waiter-starvation-advisory.yml`) sont sur `ubuntu-latest` ;
+2. un declencheur place sur `ubuntu-latest` ferait la queue dans l'offre **saturee** : le
+   coordinateur a mesure le 28/10 des gardes de quelques secondes, crees entre 15:56 et
+   16:21Z, qui n'ont demarre qu'entre 17:03 et 17:10Z -- **environ une heure de file**.
+   Le declencheur arriverait donc apres que la saturation se soit evacuee.
+
+Reste la **cadence locale sur ai-01**, le siege qui heberge le parc de debordement. Elle
+ne traverse aucune file : la tache planifiee **declenche** le workflow du depot, et c'est
+le workflow qui mesure et decide, avec les secrets du depot. Le siege est une
+**minuterie**, pas un decisionnaire.
+
+Le declencheur est cable par `scripts/ci/install_overflow_trigger_task.py` (meme forme que
+`scripts/coordination/install_merge_ready_task.py`, qui tourne deja sur ce siege) :
+
+| | |
+|---|---|
+| tache | `CoursIA\overflow_trigger`, toutes les **15 min**, depart `00:07` (phase decalee du cron `:31` du depot) |
+| action | `gh workflow run ci-overflow-controller.yml -f min_interval=15` |
+| identite | `gh auth token --user jsboige` lu **au moment du tir** -- aucun jeton n'est ecrit sur disque |
+| fenetre | masquee (lanceur VBS), comme le geste de l'audit de flotte du 24/09 |
+| journal | `%LOCALAPPDATA%\CoursIA\overflow_trigger\logs\overflow_trigger.log` |
+| discipline UAC | `--dry-run` par defaut : il imprime la commande `schtasks` exacte et le contenu exact des deux lanceurs, **sans rien ecrire** |
+
+L'**intervalle minimal entre deux decisions** est porte par l'organe lui-meme
+(`--min-interval`) : un passage dont le precedent est trop recent rend `SKIPPED` **avant
+toute mesure** -- il ne lit rien, ne consume ni appel API ni slot du parc local (le
+controleur tourne SUR ce parc). Un ecart **non etabli** (listing illisible) ne bloque pas
+le passage : eteindre la soupape parce qu'on n'a pas su lire un ecart serait l'inverse du
+sens. Un declenchement **manuel** passe `min_interval=0` : la decision de l'operateur est
+immediate.
+
+### Le cron horaire reste en filet
+
 Le workflow tourne **une fois par heure, minute 31** (`31 * * * *`) : hors `:00`/`:30` (jitter de la flotte) et distincte des autres crons horaires du depot. Le `23,53` d'origine etait **exactement** le cron de `linux-runner-version-pin-advisory.yml`, que ce dernier avait choisi pour ne pas collisionner (point 3 de la review du 27/10).
 
 Le controleur est desormais inscrit dans le registre de `scripts/ci/check_scheduler_liveness.py`, avec la cadence declaree lue dans ce fichier : un cron qui meurt se **mesure** (`LATE` / `DEAD`), il ne se suppose pas.

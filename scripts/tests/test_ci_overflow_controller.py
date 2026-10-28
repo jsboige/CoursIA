@@ -1049,3 +1049,68 @@ def test_derive_local_capable_workflows_propage_un_appel_reutilisable(tmp_path):
     assert reason == ""
     assert ".github/workflows/appele.yml" in paths
     assert ".github/workflows/appelant.yml" in paths
+
+
+# --- (b) GARDE DE CADENCE --------------------------------------------------
+#
+# Le declencheur tire plus souvent que le cron horaire. L'ecart minimal
+# entre deux passages borne ce que le declencheur consomme -- en occupation
+# du parc local (le controleur tourne SUR ce parc) et en appels API. Le
+# controle est fait AVANT toute mesure : un passage ecarte ne lit rien.
+
+def test_le_garde_de_cadence_ecomporte_sans_mesure_ni_ecriture(monkeypatch, capsys):
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (5.0, ""))
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("aucune lecture de variable quand la cadence n'est pas ecoulee")))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (_ for _ in ()).throw(
+        AssertionError("aucune ecriture quand la cadence n'est pas ecoulee")))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--min-interval", "15"])
+    assert rc == ctl.EXIT_OK
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] == "SKIPPED"
+    assert report["written"] is False
+    assert report["last_run_age_min"] == 5.0
+
+
+def test_le_garde_de_cadence_laisse_passer_un_passage_ancien(monkeypatch, capsys):
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (40.0, ""))
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=0, old=0, oldest=0.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/x.yml"}, ""))
+    monkeypatch.setattr(ctl, "collect_cohort_charge",
+                        lambda *a, **k: cohort(queued=0, in_progress=0))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--min-interval", "15"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] != "SKIPPED"
+
+
+def test_un_ecart_non_etabli_ne_bloque_pas_le_passage(monkeypatch, capsys):
+    """Un listing illisible ne doit pas eteindre la soupape : le passage
+    continue, et le motif est dit."""
+    monkeypatch.setenv("GH_TOKEN", "t")
+    monkeypatch.setattr(ctl, "last_run_age_minutes", lambda *a, **k: (None, "listing illisible"))
+    _env(monkeypatch, write_token="pat-variables")
+    monkeypatch.setattr(ctl, "read_variable", lambda *a, **k: ("false", OLD, ""))
+    monkeypatch.setattr(ctl, "collect_hosted",
+                        lambda *a, **k: hosted(queued=0, old=0, oldest=0.0))
+    monkeypatch.setattr(ctl, "collect_local",
+                        lambda *a, **k: local(free=21, online=22))
+    monkeypatch.setattr(ctl, "derive_cohort_workflows",
+                        lambda root: ({".github/workflows/x.yml"}, ""))
+    monkeypatch.setattr(ctl, "collect_cohort_charge",
+                        lambda *a, **k: cohort(queued=0, in_progress=0))
+    monkeypatch.setattr(ctl, "write_variable", lambda *a, **k: (True, "ok"))
+    rc = ctl.main(["--repo", "jsboige/CoursIA", "--apply", "--json",
+                    "--min-interval", "15"])
+    report = json.loads(capsys.readouterr().out)
+    assert report["verdict"] != "SKIPPED"
