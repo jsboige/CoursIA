@@ -1,3 +1,5 @@
+> REFERENCE — vivante — dernière révision 2026-10-25
+
 # Registre datasets — open-courseware CoursIA
 
 > **Statut.** Document de cadrage, grade **B-méthodologique** (registre applicable, pas suggestion). V0 = pilote cycle c.795 (issue #8055 tranche 2, parent #4208).
