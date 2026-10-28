@@ -383,3 +383,58 @@ def test_exact_flag_distinguishes_rational_from_enclosure():
     assert v_irr.status == "invalid" and v_irr.exact is False
     assert not rbg.verify_witness([x ** 2 - 2], y, [x, y], v_irr.witness).ok
     assert "encadrement" in str(v_irr)
+
+
+# ---------------------------------------------------------------------------
+# Coefficients non rationnels : refus explicite, jamais un verdict faux
+#
+# Review Hermes #23018 : `_poly_to_z3` tronquait un coefficient non rationnel
+# en int() (√2 → 1, π → 3) et `decide_real` certifiable un théorème FAUX.
+# Le module refuse désormais, au lieu de mentir.
+# ---------------------------------------------------------------------------
+
+def test_non_rational_coefficient_is_refused_not_truncated():
+    # x = √2 ne force pas x = 2 : le théorème est FAUX. Avant la garde, la
+    # troncation √2 → 1 faisait de `x - 1` une hypothèse *autrement fausse*
+    # et le système renvoyait un faux VALID, sans témoin. Le refus est
+    # l'issue honnête d'un décideur QF_NIA à coefficients rationnels.
+    x = sp.symbols('x')
+    with pytest.raises(ValueError, match="non rationnel"):
+        rbg.decide_real([x - sp.sqrt(2), x ** 2 - 2], x - 2, [x])
+
+
+def test_non_rational_coefficient_invalid_side_also_refused():
+    # Même garde, côté invalid : √2·x − 1 ne doit plus produire un témoin
+    # tronqué certifié exact=True ; la conversion refuse avant le solveur.
+    x = sp.symbols('x')
+    with pytest.raises(ValueError, match="non rationnel"):
+        rbg.decide_real([sp.sqrt(2) * x - 1], 2 * x ** 2 - 1, [x])
+
+
+# ---------------------------------------------------------------------------
+# Validateur : un résidu symbolique n'est pas une réfutation
+#
+# Review Hermes #23018 : les trois propriétés testaient != 0 / == 0 sans
+# exiger un NOMBRE, si bien qu'un résidu gardant un symbole libre passait
+# pour un contre-exemple (fail-open). La garde is_number ferme le trou.
+# ---------------------------------------------------------------------------
+
+def test_symbolic_conclusion_residual_is_not_a_refutation():
+    # Une conclusion portant un symbole hors de `symbols` laisse un résidu
+    # SYMBOLIQUE (z + 1) : sans la garde, `!= 0` le passait pour une
+    # violation. Le validateur le rejette — une famille d'affectations non
+    # évaluée ne certifie rien.
+    x, z = sp.symbols('x z')
+    check = rbg.verify_witness([x - 1], x + z, [x], {x: sp.Integer(1)})
+    assert not check.violates_conclusion
+    assert not check.ok
+    assert str(check).startswith("TEMOIN REJETE")
+
+
+def test_symbolic_assumption_residual_is_not_non_degenerate():
+    # Même garde pour une non-dégénérescence : un résidu `z` libre ne compte
+    # pas comme « non nul ».
+    x, z = sp.symbols('x z')
+    check = rbg.verify_witness([x - 1], x - 2, [x], {x: sp.Integer(1)},
+                               assumptions=[z])
+    assert not check.non_degenerate

@@ -74,7 +74,15 @@ def _poly_to_z3(expr, symbols: List, zvars: Dict) -> "_z3.ExprRef":
         if coef.is_Rational:
             fr = Fraction(int(coef.p), int(coef.q))
         else:
-            fr = Fraction(int(coef), 1)
+            # Un coefficient non rationnel (√2, π, …) ne se représente pas
+            # exactement en QF_NIA (coefficients rationnels). L'ancien
+            # `Fraction(int(coef), 1)` le TRONQUAIT (√2 → 1, π → 3) et
+            # produisait des verdicts faux, dont un faux VALID (review Hermes
+            # #23018). On refuse donc explicitement ; supporter √2 exactement
+            # (z3.RealVal / nombre algébrique) est un jalon à part.
+            raise ValueError(
+                f"coefficient non rationnel {coef!r} : Z3 ne le "
+                f"représenterait qu'après troncature entière")
         term: "_z3.ExprRef" = fr
         for sym, power in zip(symbols, monom):
             if power:
@@ -263,6 +271,18 @@ def real_model(constraints: Iterable, symbols: List,
 # Validateur indépendant d'un témoin (aucun solveur dans la boucle)
 # ---------------------------------------------------------------------------
 
+def _residue_decisif(r) -> bool:
+    """
+    Un résidu de substitution est **concluant** seulement s'il est un nombre.
+
+    Un résidu qui garde un symbole libre (``z + 1``) n'est ni une annulation
+    confirmée ni une violation confirmée : c'est une *famille* d'affectations
+    dont rien n'a été évalué. Sans cette garde, ``!= 0`` le passait pour une
+    réfutation (fail-open) — review Hermes #23018.
+    """
+    return bool(r.is_number) and r.is_zero is not None
+
+
 @dataclass
 class WitnessCheck:
     """
@@ -284,16 +304,17 @@ class WitnessCheck:
 
     @property
     def holds_hypotheses(self) -> bool:
-        return all(r == 0 for r in self.residuals)
+        return all(_residue_decisif(r) and r == 0 for r in self.residuals)
 
     @property
     def violates_conclusion(self) -> bool:
-        return self.conclusion_residual is not None \
-            and self.conclusion_residual != 0
+        r = self.conclusion_residual
+        return r is not None and _residue_decisif(r) and r != 0
 
     @property
     def non_degenerate(self) -> bool:
-        return all(r != 0 for r in self.assumption_residuals)
+        return all(_residue_decisif(r) and r != 0
+                   for r in self.assumption_residuals)
 
     @property
     def ok(self) -> bool:
