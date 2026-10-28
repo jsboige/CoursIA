@@ -251,3 +251,25 @@ def test_un_candidat_indetermine_nest_pas_saute(catalog):
     kept, skipped = cr.filter_pool(pool, catalog)
     assert skipped == []
     assert len(kept) == 1
+
+
+# --- l'interrupteur du regime -----------------------------------------------
+
+def test_l_interrupteur_est_sans_effet_par_defaut():
+    """Sans drapeau et sans variable, le regime est INACTIF : livrer
+    l'organe ne doit changer le comportement d'aucune lane."""
+    assert cr.regime_enabled(False, "") is False
+    assert cr.regime_enabled(False, "0") is False
+    assert cr.regime_enabled(False, "non") is False
+
+
+def test_le_drapeau_pose_le_regime():
+    assert cr.regime_enabled(True, "") is True
+
+
+def test_la_variable_fleet_pose_le_regime():
+    """`COURSIA_CONSOLIDATION_REGIME` permet au coordinateur de poser le
+    regime pour TOUTE la flotte sans que chaque lane modifie sa ligne de
+    commande."""
+    for valeur in ("1", "true", "yes", "ON", " on "):
+        assert cr.regime_enabled(False, valeur) is True

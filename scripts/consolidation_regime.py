@@ -95,11 +95,17 @@ vers les formes que les PRs couvrent) :
 
 Le module est sans effet tant qu'on ne l'appelle pas : le picker expose un
 interrupteur explicite (`--consolidation-regime`), pose par le
-coordinateur pendant le regime et retire quand le user leve le regime.
+coordinateur pendant le regime et retire quand le user leve le regime. La
+meme regle se pose FLEETE par la variable d'environnement
+`COURSIA_CONSOLIDATION_REGIME=1` — sans elle, le coordinateur devrait
+demander a chaque lane de modifier sa propre ligne de commande, et le
+regime tiendrait a la memoire de douze lignes : c'est precisement ce que
+l'organe pretend supprimer.
 """
 
 from __future__ import annotations
 
+import os
 import pathlib
 import re
 import subprocess
@@ -108,6 +114,25 @@ from collections.abc import Iterable, Sequence
 VERDICT_NEW = "carnet_neuf"
 VERDICT_EXISTING = "carnet_existant"
 VERDICT_UNKNOWN = "indetermine"
+
+# La variable d'environnement du regime FLEETE. Sans elle, le coordinateur
+# devrait demander a chaque lane de modifier sa propre ligne de commande :
+# le regime tiendrait alors a la memoire de douze lignes, ce que l'organe
+# pretend justement supprimer.
+ENV_VAR = "COURSIA_CONSOLIDATION_REGIME"
+
+
+def regime_enabled(flag: bool = False, env: str | None = None) -> bool:
+    """L'interrupteur du regime : drapeau de ligne de commande OU variable
+    d'environnement fleet.
+
+    Les deux sont **sans effet tant qu'ils ne sont pas poses** : c'est ce qui
+    permet de livrer l'organe sans changer le comportement d'une seule lane.
+    """
+    if flag:
+        return True
+    value = env if env is not None else os.environ.get(ENV_VAR, "")
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 # --- motifs de titre -------------------------------------------------------
 

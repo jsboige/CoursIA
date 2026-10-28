@@ -679,6 +679,7 @@ from check_run_state import fold_latest  # noqa: E402
 from consolidation_regime import (  # noqa: E402
     NotebookCatalog,
     filter_pool as filter_pool_consolidation,
+    regime_enabled,
 )
 
 # Source de verite des organes bornes au diff (#19645) : un check qui ne lit
@@ -9447,8 +9448,10 @@ def main(argv: list[str] | None = None) -> int:
                          "ecarte du tapis les candidats dont la LIVRAISON est "
                          "un carnet neuf. L'ecart est nomme (issue + preuve) "
                          "et rappele en sortie ; la lane pose sa ligne sur "
-                         "l'issue et tire le suivant. Sans effet tant que "
-                         "l'interrupteur n'est pas pose.")
+                         "l'issue et tire le suivant. Equivalent fleet : la "
+                         "variable d'environnement "
+                         "COURSIA_CONSOLIDATION_REGIME=1. Sans effet tant que "
+                         "ni l'un ni l'autre n'est pose.")
     ap.add_argument("--belt", action="store_true",
                     help="#18832 mode 'tapis roulant' : trie le pool ouvert "
                          "par date de derniere livraison (None = jamais servie en "
@@ -10067,7 +10070,14 @@ def main(argv: list[str] | None = None) -> int:
     # (tapis et voie ponderee) voient le meme pool. Un ecart est toujours
     # nomme : la lane ecrit sa ligne sur l'issue, puis tire le suivant.
     consolidation_skipped: list[tuple[dict, str, str]] = []
-    if getattr(args, "consolidation_regime", False):
+    # L'interrupteur se pose de deux facons : le drapeau de ligne de commande
+    # (`--consolidation-regime`) pour une lane qui le veut, et la variable
+    # d'environnement `COURSIA_CONSOLIDATION_REGIME` pour un regime
+    # FLEETE. Sans la variable, le coordinateur devrait demander a chaque
+    # lane de modifier sa propre ligne de commande — le regime tient alors
+    # a la memoire de douze lignes, ce que l'organe pretend justement
+    # supprimer. Les deux sont sans effet tant qu'ils ne sont poses.
+    if regime_enabled(bool(getattr(args, "consolidation_regime", False))):
         _catalog = NotebookCatalog.from_repo()
         _kept, consolidation_skipped = filter_pool_consolidation(admitted, _catalog)
         admitted = _kept
