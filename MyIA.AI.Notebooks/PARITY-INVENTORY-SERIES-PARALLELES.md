@@ -1,7 +1,8 @@
 # Inventaire de parité — séries parallèles hors DecisionTheory (tranche P2 de #12933)
 
 > **État mesuré au 2026-10-28** sur `origin/main` `2cd7d14e1443e54a2612c01ddb4aa1eedae5dd31`.
-> Méthode : énumération `find` des `.ipynb` hors `*_output.ipynb` dans `MyIA.AI.Notebooks/{Search,Sudoku,GameTheory,Probas,SymbolicAI/SemanticWeb,SymbolicAI/Planners}`, croisement avec le registre `scripts/notebook_tools/twin_pairs.d/*.yaml` sur les champs `python:`/`csharp:` (une mention en prose `known_differences` ne compte pas comme entrée — vérifié sur contre-exemples). Lecture Swift en volume, puis **recoupement lane sur les pivots** : cas de calibrage `App-9`/`App-10` (entrées registre lues), cinq trous registre (grep NONE re-vérifié), totaux **recomptés** depuis la table par paires (le résumé du scan portait 114 canoniques ; le recompte par lignes donne **105**, GameTheory racine 24 canoniques et non 23 — 105 + 19 + 1 + 3 = 128 paires mesurées au total).
+> Méthode : énumération `find` des `.ipynb` hors `*_output.ipynb` dans `MyIA.AI.Notebooks/{Search,Sudoku,GameTheory,Probas,SymbolicAI/SemanticWeb,SymbolicAI/Planners}`, croisement avec le registre `scripts/notebook_tools/twin_pairs.d/*.yaml` sur les champs `python:`/`csharp:` (une mention en prose `known_differences` ne compte pas comme entrée — vérifié sur contre-exemples). Lecture Swift en volume, puis **recoupement lane sur les pivots** : cas de calibrage `App-9`/`App-10` (entrées registre lues), cinq trous registre (grep NONE re-vérifié).
+> **Périmètre complet, en un endroit** : `.ipynb` hors `*_output.ipynb` — récursif dans `Search/` (Part1–Part5), `Sudoku/`, `GameTheory/` (racine + `Dynamics/` + `SocialChoice/`), `SymbolicAI/SemanticWeb/` et `SymbolicAI/Planners/` (**sous-dossiers compris** — la racine de Planners ne porte aucun carnet, contrairement aux autres familles énumérées au niveau racine) ; les familles sans paire (`Dynamics/`, `Search/Part4`, `Part5`) sont listées §4, les célibataires §4. Totaux **recomptés** depuis la table par paires : **109 paires mesurées** = 86 alignées + 19 compagnon-b + 2 décalées-numéro + 2 décalées-titre (classes disjointes, table §1) ; en canoniques au sens du scan (alignées + compagnon-b documentés) : **105**, contre 114 au résumé du scan.
 > **Aucun renommage effectué.** Aucune édition du registre (tranche P0bis #22701 distincte). Cet inventaire est la mesure qui alimente l'arbitrage de mapping de l'EPIC — les recommandations de renommage sont **non livrées** (§6).
 >
 > Part of #12933. Périmètre : familles **sans fichier d'inventaire** — Search (Part1/Part2/Part3), Sudoku, GameTheory (racine + SocialChoice), SemanticWeb, Planners = **109 paires**. Probas Infer⇄PyMC et DecisionTheory ont leurs inventaires propres (§7).
@@ -16,11 +17,11 @@ Vocabulaire aligné sur l'EPIC : `alignée` (même numéro complet et titre base
 | Search/Part2-CSP | 9 | 9 | 0 | 0 | 0 | 0 |
 | Search/Part3-Cas-pratiques | 20 | 5 | 13 | 1 | 1 | 0 (membres de trios hors registre, nommés au §3) |
 | Sudoku | 16 | 16 | 0 | 0 | 0 | 0 |
-| GameTheory (racine) | 25 | 24 | 0 | 0 | 1 | 3 |
+| GameTheory (racine) | 25 | 23 | 0 | 1 | 1 | 3 |
 | GameTheory/SocialChoice | 4 | 4 | 0 | 0 | 0 | 0 |
 | SymbolicAI/SemanticWeb | 11 | 5 | 6 | 0 | 0 | 0 |
 | SymbolicAI/Planners | 9 | 9 | 0 | 0 | 0 | 0 |
-| **Total (hors Probas/DT)** | **109** | **87** | **19** | **1** | **2** | **3** (+membres de trios) |
+| **Total (hors Probas/DT)** | **109** | **86** | **19** | **2** | **2** | **3** (+membres de trios) |
 
 ### Search/Part1-Foundations — 15 paires, toutes alignées, toutes enregistrées
 
@@ -61,17 +62,17 @@ Note registre : `03b`/`03c`/`03d` sont enregistrées sous les numéros historiqu
 
 `Sudoku-01-Backtracking` à `Sudoku-15-Infer` et `Sudoku-18-Comparison`, chaque `Sudoku-N-…-Python` ↔ `Sudoku-N-…-CSharp` (suffixe kernel explicite des deux côtés, convention la plus régulière du dépôt). Le n° 16 Python (`Sudoku-16-NeuralNetwork`) est célibataire (§4), le n° 17 aussi (LLM) ; `Sudoku-19` est Lean-only.
 
-### GameTheory (racine) — 25 paires, 24 alignées, 1 décalée-titre, 3 sans entrée registre
+### GameTheory (racine) — 25 paires, 23 alignées, 1 décalée-numéro, 1 décalée-titre, 3 sans entrée registre
 
 Paires alignées enregistrées : `02-NormalForm` (+ `02-NormalForm-Part2`, Part2 des deux côtés) · `02c-Travelers-Dilemma` (c des deux) · `03-Topology2x2` · `04-NashEquilibrium` · `04c-NashExistence` · `05-ZeroSum-Minimax` · `06-EvolutionTrust` · `06c-RepeatedGames-FolkTheorem` · `07-ExtensiveForm` · `08-CombinatorialGames` (+ `08c`, c des deux) · `09-BackwardInduction` · `10-ForwardInduction-SPE` · `11-BayesianGames` · `12-ReputationGames` · `13-ImperfectInfo-CFR` · `14-DifferentialGames` · `15-CooperativeGames` (+ `15c`, c des deux) · `16-MechanismDesign` · `17-MultiAgent-RL` — chaque paire `…-Python` ↔ `…-CSharp`.
 
 | Paire | Verdict | Registre |
 |---|---|---|
 | `GameTheory-06f-Bounded-Agents-Python` ↔ `…-Lean` | alignée (suffixes Python/Lean) | **sans entrée** (grep NONE, re-vérifié) |
-| `GameTheory-13c-Safe-Subgame-Solving-Python` ↔ `…-CSharp` | alignée (c des deux) | **sans entrée** (grep NONE, re-vérifié) |
+| `GameTheory-13b-Safe-Subgame-Solving-Python` ↔ `GameTheory-13c-Safe-Subgame-Solving-CSharp` | **décalée-numéro** (13b↔13c, même titre base, lettres d'accrétion différentes de part et d'autre — même forme que `App-12b`↔`App-12c`) | **sans entrée** (grep NONE des deux côtés, re-vérifié) |
 | `GameTheory-16f-Lean-Assignment-Lean` ↔ `GameTheory-16f-Munkres-Assignment-Python` | **décalée-titre** (même 16f, titres Lean-Assignment vs Munkres-Assignment) | **sans entrée** (grep NONE, re-vérifié) |
 
-Cas limite documenté : `GameTheory-13b-Safe-Subgame-Solving-Python` (célibataire, sans entrée) porte le **même titre base que la paire 13c** — doublon historique ou volet distinct, à trancher par l'EPIC.
+Cas limite documenté : la quasi-paire `13b`↔`13c` ci-dessus — **deux célibataires de même titre base** dont les lettres d'accrétion diffèrent (`13b` côté Python, `13c` côté CSharp ; il n'existe ni `13c-Python` ni `13b-CSharp` dans l'arbre, mesuré). L'inventaire la mesure comme décalée-numéro ; la promouvoir en paire alignée (par renommage d'un côté) est une décision de mapping qui revient à l'EPIC (§6), l'inventaire ne la préjuge pas.
 
 ### GameTheory/SocialChoice — 4 paires, toutes alignées, toutes enregistrées
 
@@ -95,7 +96,7 @@ Convention locale : suffixe kernel en **position médiane** (`SW-N-CSharp-X` / `
 | `SW-11-CSharp-KnowledgeGraphs` ↔ `SW-11-Python-…` | alignée |
 | `SW-13-Reasoners-CSharp` ↔ `SW-13-Python-Reasoners` | alignée (suffixes en position **finale**, incohérence d'ordre de position annotée) |
 
-### SymbolicAI/Planners — 9 paires, toutes alignées, toutes enregistrées
+### SymbolicAI/Planners — 9 paires, toutes alignées, toutes enregistrées (énumération **récursive** des sous-dossiers : la racine ne porte aucun `.ipynb`)
 
 `Planners-1-Introduction` à `Planners-9-HTN`, chaque `Planners-N-…` ↔ `Planners-N-…-Csharp` (suffixe local `-Csharp`, même graphie que SocialChoice).
 
@@ -108,7 +109,7 @@ Convention locale : suffixe kernel en **position médiane** (`SW-N-CSharp-X` / `
 ## 3. Trous du registre — paires réelles sans entrée `twin_pairs.d` (grep NONE re-vérifié par la lane)
 
 1. `GameTheory-06f-Bounded-Agents` (Python ↔ Lean) — paire alignée, invisible à la garde NUMBERING-DRIFT.
-2. `GameTheory-13c-Safe-Subgame-Solving` (Python ↔ CSharp) — paire alignée, invisible à la garde.
+2. `GameTheory-13b-Safe-Subgame-Solving-Python` ↔ `GameTheory-13c-Safe-Subgame-Solving-CSharp` — quasi-paire décalée-numéro (même titre, lettres 13b/13c), invisible à la garde.
 3. `GameTheory-16f` (Lean-Assignment ↔ Munkres-Assignment) — quasi-paire même numéro, décalée-titre, invisible.
 4. `App-17b-VRP-Logistics-Python.ipynb` et `App-18b-HyperparameterTuning-Python.ipynb` — membres Python de trios Part3 présents dans l'arbre, absents de toute entrée (les entrées `app-17`/`app-18` n'enregistrent que la paire Python-base ↔ CSharp-compagnon).
 
@@ -119,7 +120,7 @@ Hors périmètre nominal, même constat : `Probas/Applications/Percolation/Perco
 - **Search/Part1** : `Search-02c-QuikGraph`, `03e-AStar-Optimality`, `03f-Reparer-Localement-Sous-Garantie-Python`, `05b-NaturalEvolutionStrategies`, `09b-SpuriousMinima`, `09c-CombinatorialDiscrepancy`, `09d-BeckFiala-Lean-Python`, `09e-Komlos-Lean`, `09f-ConvexOptimisation-Python`, `11b-Metaheuristiques-Deep` (+Part2/3/4), `11c`, `11d`, `12a-Composer-Regards`, `13a-Traverser-Murs-Certifies`.
 - **Search/Part3** : `App-2-GraphColoring-Statistical-Validity-Python`, `App-17b-VRP-Logistics-Python`, `App-18b-HyperparameterTuning-Python`, `App-18c-HyperparameterTuning-Rustuna-vs-Optuna`, `App-21-VoiceLeading`, `App-22-AlgorithmSelection-Python`, `App-23-PRESENT-Differential-Cryptanalysis-SAT`, `App-27-Sparse-Index-Tracking-Walk-Forward`, `App-34b-15Puzzle-Admissible-Astar-CSharp` (n° 34 **sans base App-34 dans l'arbre**).
 - **Sudoku** : `Sudoku-00-Environment-CSharp` (setup, cité en prose dans `sudoku-02-dancinglinks.yaml`), `Sudoku-12b-Z3-Linq2Z3-CSharp`, `Sudoku-16-NeuralNetwork-Python`, `Sudoku-17-LLM-Python`, `Sudoku-18b-Statistical-Comparison-Python`, `Sudoku-19-Lean-Propagation-Lean`.
-- **GameTheory racine** : `01-Setup-Python` ; compagnons Lean `02b-Lean-Definitions`, `04b`, `05b`, `06b/06d–06k`, `08b`, `08d`, `11b`, `15b`, `16b–16k` (hors `16f` pairé §1), `17c`, `17d` ; Python `02e`, `03b–03f`, `04d–04j`, `05c`, `06e`, `09b–09d`, `11d`, **`13b` (titre identique à la paire 13c)**, `13d–13h`, `15d–15g`, `17e/17f`, `18/18b/18c`, `19/19b`, `20/20b/20c`, `21` ; `02d` (cité en prose dans `gametheory-2-normalform.yaml`) ; `gateway/openspiel-cfr-service.ipynb`.
+- **GameTheory racine** : `01-Setup-Python` ; compagnons Lean `02b-Lean-Definitions`, `04b`, `05b`, `06b/06d–06k`, `08b`, `08d`, `11b`, `15b`, `16b–16k` (hors `16f` pairé §1), `17c`, `17d` ; Python `02e`, `03b–03f`, `04d–04j`, `05c`, `06e`, `09b–09d`, `11d`, `13d–13h`, `15d–15g`, `17e/17f`, `18/18b/18c`, `19/19b`, `20/20b/20c`, `21` ; `02d` (cité en prose dans `gametheory-2-normalform.yaml`) ; `gateway/openspiel-cfr-service.ipynb`.
 - **SocialChoice** : `01b-Lean-SocialChoice-Formal`, `05` à `10` (Python).
 - **SemanticWeb** : `SW-1-CSharp-Setup`, `SW-12-Python-GraphRAG`, `SW-14-Python-Coup-Ontologique`, `SW-15-Python-Coup-Argumentatif`, `SW-16-Python-ProofCarryingOntologies` ; `RDF.Net-Legacy/RDF.Net.ipynb`.
 - **Planners** : `Planners-0-Setup`, `5b-Lean-Relaxation` et `10–12` (exclus explicitement dans `_schema.yaml`), `5c`, `Planners-13-Mesure-Qualite-Plans-Python` (cité en prose dans `planners-9-htn.yaml`).
