@@ -29,8 +29,6 @@ import tempfile
 import time
 from pathlib import Path
 
-import numpy as np
-
 # Contournement Windows : _load_windows_store_certs peut lever SSLError selon
 # l'etat du magasin de certificats (present dans la cellule d'origine).
 try:
@@ -53,6 +51,8 @@ from datasets import Dataset
 from peft import LoraConfig, TaskType
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, set_seed
 from trl import GRPOConfig, GRPOTrainer
+
+from .onset_artifact import DEFAULT_MAX_COMPLETION_LENGTH, artifact_payload, seed_metrics
 
 DEFAULT_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
 MAGIC_TOKEN = "HACK"
@@ -109,7 +109,8 @@ def make_reward(holder):
     return reward
 
 
-def run_seed(arm: str, seed: int, model_id: str, max_steps: int, lr: float, num_gen: int) -> dict:
+def run_seed(arm: str, seed: int, model_id: str, max_steps: int, lr: float, num_gen: int,
+             max_completion_length: int = DEFAULT_MAX_COMPLETION_LENGTH) -> dict:
     set_seed(seed)
     holder = {"records": [], "step": 0}
     print(f"[{arm}] === SEED {seed} : chargement 4-bit QLoRA frais ({model_id}) ===", flush=True)
@@ -125,7 +126,7 @@ def run_seed(arm: str, seed: int, model_id: str, max_steps: int, lr: float, num_
     )
     # Calibration EOS : voir issue #13596 -- mesure p95 distribution EOS
     cfg = GRPOConfig(
-        num_generations=num_gen, max_completion_length=80,
+        num_generations=num_gen, max_completion_length=max_completion_length,
         per_device_train_batch_size=num_gen, gradient_accumulation_steps=1,
         learning_rate=lr, num_train_epochs=1, max_steps=max_steps, logging_steps=30,
         output_dir=tempfile.mkdtemp(prefix=f"ict25_onset_{arm}_s{seed}_"),
@@ -141,19 +142,12 @@ def run_seed(arm: str, seed: int, model_id: str, max_steps: int, lr: float, num_
     trainer.train()
     dt = time.time() - t0
     recs = holder["records"]
-    hk = np.array([r["hack"] for r in recs], float)
-    mc = np.array([r["mc"] for r in recs], float)
-    rw = np.array([r["reward"] for r in recs], float)
-    h = len(hk) // 2 or 1
-    steps = np.array([r["step"] for r in recs])
-    per_step = [float(np.mean(hk[steps == s])) for s in range(max_steps)]
-    m = {
-        "arm": arm, "seed": seed, "train_s": dt,
-        "hack_early": float(np.mean(hk[:h])), "hack_late": float(np.mean(hk[h:])),
-        "mc_early": float(np.mean(mc[:h])), "mc_late": float(np.mean(mc[h:])),
-        "reward_early": float(np.mean(rw[:h])), "reward_late": float(np.mean(rw[h:])),
-        "per_step": per_step,
-    }
+    m = seed_metrics(
+        arm=arm, seed=seed, train_s=dt, max_completion_length=max_completion_length,
+        hack=[r["hack"] for r in recs], mc=[r["mc"] for r in recs],
+        reward=[r["reward"] for r in recs], steps=[r["step"] for r in recs],
+        max_steps=max_steps,
+    )
     print(
         f"[{arm}] seed {seed} DONE en {dt:.1f}s | hack early={m['hack_early']:.3f} "
         f"late={m['hack_late']:.3f} | mc early={m['mc_early']:.3f} late={m['mc_late']:.3f}",
@@ -201,6 +195,10 @@ def main(argv=None) -> int:
     p.add_argument("--max-steps", type=int, default=DEFAULT_STEPS)
     p.add_argument("--lr", type=float, default=DEFAULT_LR)
     p.add_argument("--num-gen", type=int, default=DEFAULT_NUM_GEN)
+    p.add_argument("--max-completion-length", type=int, default=DEFAULT_MAX_COMPLETION_LENGTH,
+                   help="budget de completion (defaut 1024 : le regime mesure des artefacts "
+                        "de reference ict25_arms.py, cap 1024 ; 80 tronque systematique — "
+                        "#13596). La valeur effective est enregistree dans l'artefact (#21998).")
     p.add_argument("--arms", default="W,S", help="bras a jouer (defaut W,S)")
     p.add_argument("--out", default=None,
                    help="chemin de sortie (defaut runs/onset_<tag>.json a cote du module)")
@@ -220,14 +218,16 @@ def main(argv=None) -> int:
     if not torch.cuda.is_available():
         print("[onset-eng] AVERTISSEMENT : CUDA indisponible — un run CPU sera extremement lent", file=sys.stderr)
 
-    print(f"[onset-eng] {args.model} | lr={args.lr} | num_generations={args.num_gen} | steps={args.max_steps}", flush=True)
+    print(f"[onset-eng] {args.model} | lr={args.lr} | num_generations={args.num_gen} | steps={args.max_steps} "
+          f"| cap={args.max_completion_length}", flush=True)
     print(f"[onset-eng] GPU: {torch.cuda.get_device_name(0) if torch.cuda.is_available() else 'CPU'} | "
           f"seeds={seeds} | arms={arms} | out={out}", flush=True)
 
     results: dict[str, list] = {a: [] for a in arms}
     for arm in arms:
         for s in seeds:
-            results[arm].append(run_seed(arm, s, args.model, args.max_steps, args.lr, args.num_gen))
+            results[arm].append(run_seed(arm, s, args.model, args.max_steps, args.lr, args.num_gen,
+                                         args.max_completion_length))
 
     print("\n" + "=" * 78)
     print(f"=== ONSET ENGINEERING @{model_tag(args.model)} : lr={args.lr}, gens={args.num_gen}, "
@@ -244,9 +244,10 @@ def main(argv=None) -> int:
         print(f"VERDICT [{arm}] : {v}")
 
     with open(out, "w", encoding="utf-8") as f:
-        json.dump({"model": args.model, "max_steps": args.max_steps, "lr": args.lr,
-                   "num_generations": args.num_gen, "seeds": seeds,
-                   "results": results, "summary": summary}, f, indent=1)
+        json.dump(artifact_payload(model=args.model, max_steps=args.max_steps, lr=args.lr,
+                                   num_gen=args.num_gen, seeds=seeds,
+                                   max_completion_length=args.max_completion_length,
+                                   results=results, summary=summary), f, indent=1)
     print(f"\n[onset-eng] sauvegarde {out}")
     return 0
 

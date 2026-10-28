@@ -29,7 +29,7 @@ Notes
 -----
 - Read-only : ne touche aucun notebook.
 - Couvre 5 familles (.NET C# heavy) : GameTheory, ML.Net, DecisionTheory/DecInfer,
-  Infer, Applications/CSP/Search, Sudoku, SMT/Z3, Part1-Foundations, Part4-Metaheuristics.
+  Infer, Search/Part3-Cas-pratiques, Sudoku, SMT/Z3, Part1-Foundations, Part4-Metaheuristics.
 - Le scope est strictement plus large que #6927 (8 nb Infer/DecInfer) : on trouve
   en pratique 22+ notebooks repo-wide. Ce tool sert de barometre + plan source
   pour les PRs de fix suivantes (1 PR par notebook, scope R3-atomique).
@@ -244,7 +244,7 @@ def main():
         lines.append("")
         lines.append("1. **Probas/Infer** (canonical famille of #6927): Infer-12 first (already covered by c.450, see if PR helps here)")
         lines.append("2. **GameTheory/GameTheory-*Csharp** (C548-L2 also used here, scope broader than #6927)")
-        lines.append("3. **Search/Applications/CSP** (App-7b App-8 — used by Search-series)")
+        lines.append("3. **Search/Part3-Cas-pratiques** (App-7b App-8 — used by Search-series)")
         lines.append("4. **ML.Net** (ML-5-TimeSeries)")
         lines.append("5. **Sudoku**, **SymbolicAI/SMT/Z3** (lower priority)")
         lines.append("")
