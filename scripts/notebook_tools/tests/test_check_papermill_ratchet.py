@@ -299,3 +299,63 @@ class TestSanctionedOutputStrips:
         recs = gate.ratchet(base, cwd=repo)
         assert [r["verdict"] for r in recs] == ["STALE_BLOCK"]
         assert recs[0]["regression"] is True
+
+
+class TestEncodingRepair:
+    """A cp1252 reversion of the outputs is not a re-execution (#23021).
+
+    The write path behind #23021 read a notebook back as cp1252 and rewrote it
+    as UTF-8, so every non-ASCII character of its sources AND its outputs
+    became mojibake (an em dash, one character, became three). The repair
+    reverses that transformation; no kernel runs, because a fresh run would
+    move every RNG-derived number and lose exactly what the committed outputs
+    are evidence of.
+
+    That repair changes the output evidence while leaving metadata.papermill
+    byte-identical - which is also the signature of a fabricated output, hence
+    the exemption has to be exact and not heuristic: it holds only when the
+    base outputs, passed through the SAME reversion, reproduce the head
+    evidence byte for byte. The second test is the positive control - an
+    ordinary content change is still caught, because the reversion of a base
+    string never invents a digit or a word.
+    """
+
+    MOJIBAKE = "le jeu cree â€” {env_slippery}"
+    REPAIRED = "le jeu cree — {env_slippery}"
+
+    def _out(self, text):
+        return [{"output_type": "stream", "name": "stdout", "text": [text]}]
+
+    def _branch_from(self, repo, head_text):
+        write_nb(repo, "a.ipynb",
+                 make_nb([self._out(self.MOJIBAKE)], papermill=PM))
+        base = commit(repo, "base: notebook whose outputs carry mojibake")
+        git_ok(repo, "checkout", "-q", "-b", "feature")
+        nb = make_nb([self._out(head_text)], papermill=PM)
+        nb["cells"].insert(0, {"cell_type": "markdown",
+                               "source": "# prose", "metadata": {}})
+        write_nb(repo, "a.ipynb", nb)
+        commit(repo, "feature: encoding repair")
+        return base
+
+    def test_cp1252_reversion_is_not_a_stale_block(self, repo):
+        assert gate.revert_cp1252(self.MOJIBAKE) == self.REPAIRED, (
+            "positive control: the reversion must actually undo this mojibake, "
+            "otherwise the test below would pass for the wrong reason")
+        base = self._branch_from(repo, self.REPAIRED)
+        recs = gate.ratchet(base, cwd=repo)
+        assert [r["verdict"] for r in recs] == [gate.ENCODING_REPAIR]
+        assert recs[0]["regression"] is False
+
+    def test_an_ordinary_output_change_is_still_caught(self, repo):
+        base = self._branch_from(
+            repo, self.REPAIRED + " v2")
+        recs = gate.ratchet(base, cwd=repo)
+        assert [r["verdict"] for r in recs] == ["STALE_BLOCK"]
+        assert recs[0]["regression"] is True
+
+    def test_legitimate_text_passes_through_the_reversion(self):
+        for text in ("", "hello", "cree — sans corruption", "café"):
+            assert gate.revert_cp1252(text) == text, (
+                "a string that is not pure mojibake must come back untouched: "
+                "the reversion raises on it rather than approximating")

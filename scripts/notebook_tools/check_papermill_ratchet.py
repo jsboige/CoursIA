@@ -17,6 +17,12 @@ Everything else is clean, by design of the issue body:
 - block changed or newly added (the executor rewrote it alongside outputs)
 - notebook added by the PR (no base blob; execution evidence itself is
   enforced by notebook-execution-required.yml, H.3)
+- outputs rewritten by a sanctioned output-strip pre-commit hook
+  (OUTPUTS_STRIPPED, #12366)
+- outputs that are exactly the cp1252 reversion of the base ones
+  (OUTPUTS_ENCODING_REPAIRED, #23021) - the file-wide double-encoding
+  repair of a notebook whose outputs carry the same corrupted text as its
+  sources; no run happened, so the block is not stale
 
 Usage:
     python check_papermill_ratchet.py <base-ref> [--json]
@@ -219,42 +225,111 @@ def stripped_evidence(content):
             pass
 
 
-def state_at_base(base, path, cwd=None):
-    """(status, evidence, block, ev_stripped, cell_sig, cell_pms) at base ref.
+# --- sanctioned text repair: UTF-8/cp1252 double encoding (#23021) ------
+# A notebook can be written after being read back as cp1252 and re-encoded
+# as UTF-8: every accented character and every em dash becomes a visible
+# artefact ('e' acute -> 'A-tilde copyright', em dash -> 'a-circumflex
+# euro right-double-quote'). The corruption is FILE-WIDE - it reaches the
+# committed outputs as well as the sources. The issue's repair is the
+# deterministic reversion `s.encode("cp1252").decode("utf-8")`, applied per
+# source element and per output string, with execution_count preserved.
+#
+# That repair changes exec_evidence while leaving metadata.papermill
+# untouched, which is exactly the signature of a fabricated output: the run
+# that produced the outputs did happen, it simply wrote them corrupted. The
+# exemption below separates the two cases the way OUTPUTS_STRIPPED does:
+# the base blob's output strings are passed through the SAME reversion, and
+# the result must equal the head evidence byte for byte. A fabricated
+# output cannot survive it, because the reversion of a base string never
+# changes a digit or a floating-point value.
+ENCODING_REPAIR = "OUTPUTS_ENCODING_REPAIRED"
 
-    Returns ("ABSENT", None, None, None, None, None) when the file does not
-    exist at base and ("PARSE_ERROR", None, None, None, None, None) on
-    invalid JSON.
+
+def revert_cp1252(text):
+    """cp1252 reversion of one decoded string, or the string itself.
+
+    Raising is the honesty guard, not an accident: a string carrying a real
+    accented character encodes to a byte that is not a UTF-8 start byte, so
+    `decode("utf-8")` fails and the string is returned untouched. Mixed and
+    partially corrupted strings are therefore left alone rather than
+    approximated.
+    """
+    try:
+        return text.encode("cp1252").decode("utf-8")
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        return text
+
+
+def revert_strings(node):
+    """Apply revert_cp1252 to every string nested in `node`."""
+    if isinstance(node, str):
+        return revert_cp1252(node)
+    if isinstance(node, list):
+        return [revert_strings(item) for item in node]
+    if isinstance(node, dict):
+        return {key: revert_strings(value) for key, value in node.items()}
+    return node
+
+
+def encoding_repaired_evidence(content):
+    """exec_evidence of `content` after the sanctioned cp1252 reversion.
+
+    Only the outputs are rewritten; execution_count and cell sources are out
+    of the evidence this gate hashes. Returns None when the blob cannot be
+    parsed, so a failure here can only leave the caller on its previous
+    (stricter) verdict - never turn a FAIL into a PASS by accident.
+    """
+    try:
+        nb = json.loads(content)
+        repaired = []
+        for cell in nb.get("cells", []):
+            if cell.get("cell_type") != "code":
+                continue
+            repaired.append({**cell,
+                             "outputs": revert_strings(cell.get("outputs"))})
+        return exec_evidence({"cells": repaired})
+    except Exception:
+        return None
+
+
+def state_at_base(base, path, cwd=None):
+    """(status, evidence, block, ev_stripped, cell_sig, cell_pms, ev_enc) at base.
+
+    Returns ("ABSENT", None, None, None, None, None, None) when the file does
+    not exist at base and ("PARSE_ERROR", None, None, None, None, None, None)
+    on invalid JSON.
     """
     content = git("show", f"{base}:{path}", cwd=cwd)
     if content is None:
-        return "ABSENT", None, None, None, None, None
+        return "ABSENT", None, None, None, None, None, None
     try:
         nb = json.loads(content)
     except Exception:
-        return "PARSE_ERROR", None, None, None, None, None
+        return "PARSE_ERROR", None, None, None, None, None, None
     # Lazy: the strip tools cost ~150 ms per notebook and are only ever
     # consulted on the STALE_BLOCK branch, which is the rare one. A thunk
     # keeps a 200-notebook PR at the cost it had before this exemption.
     return ("OK", exec_evidence(nb), papermill_block(nb),
             lambda: stripped_evidence(content), cell_papermill_signature(nb),
-            cell_papermill_blocks(nb))
+            cell_papermill_blocks(nb),
+            lambda: encoding_repaired_evidence(content))
 
 
 def state_at_head(path, cwd=None):
-    """(status, evidence, block, ev_stripped, cell_sig, cell_pms) at head."""
+    """(status, evidence, block, ev_stripped, cell_sig, cell_pms, ev_enc) at head."""
     try:
         nb = json.loads((Path(cwd or ".") / path).read_text(encoding="utf-8"))
     except Exception:
-        return "PARSE_ERROR", None, None, None, None, None
+        return "PARSE_ERROR", None, None, None, None, None, None
     return "OK", exec_evidence(nb), papermill_block(nb), None, \
-        cell_papermill_signature(nb), cell_papermill_blocks(nb)
+        cell_papermill_signature(nb), cell_papermill_blocks(nb), None
 
 
 def classify(base_state, head_state):
     """Verdict of one changed notebook. Regression iff stale or forged block ridden."""
-    b_status, b_ev, b_block, b_ev_stripped, b_cell_sig, b_cell_pms = base_state
-    h_status, h_ev, h_block, _, h_cell_sig, h_cell_pms = head_state
+    b_status, b_ev, b_block, b_ev_stripped, b_cell_sig, b_cell_pms, b_ev_enc = \
+        base_state
+    h_status, h_ev, h_block, _, h_cell_sig, h_cell_pms, _ = head_state
     if b_status == "ABSENT":
         return "ADDED", False
     if b_status == "PARSE_ERROR" or h_status == "PARSE_ERROR":
@@ -271,6 +346,15 @@ def classify(base_state, head_state):
         # execution that produced these outputs, minus a machine-path leak
         # that no re-execution could have removed.
         return "OUTPUTS_STRIPPED", False
+    if b_ev_enc is not None and h_ev == b_ev_enc():
+        # The whole delta is the sanctioned cp1252 reversion of #23021: the
+        # base outputs were the corrupted rendering of the very strings the
+        # head carries. No run happened, so the block is not stale - it still
+        # describes the execution that produced these outputs, minus the
+        # file-wide encoding corruption no re-execution could have repaired
+        # (a fresh run would rewrite the numbers too, which is why the issue
+        # mandates the reversion instead).
+        return ENCODING_REPAIR, False
     if h_block == b_block:
         # Outputs changed but the block is byte-identical: it describes the
         # previous run, not the one that produced the committed outputs.
