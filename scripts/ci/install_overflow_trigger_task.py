@@ -61,7 +61,6 @@ from __future__ import annotations
 
 import argparse
 import base64
-import datetime as _dt
 import json
 import os
 import shutil
@@ -115,9 +114,15 @@ def _run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
     )
 
 
-def log_path_for(day: _dt.date | None = None) -> Path:
-    day = day or _dt.date.today()
-    return LOG_DIR / f"overflow_trigger_{day:%Y%m%d}.log"
+def log_path_for(day: object | None = None) -> Path:
+    """Journal du declencheur.
+
+    Le lanceur `.cmd` ecrit un fichier de NOM FIXE (`overflow_trigger.log`) :
+    c'est le seul nom qu'un fichier batch peut garantir (la date du systeme
+    y depend de la locale). Le parametre `day` est donc ignore -- il reste
+    ici pour que l'appelant n'ait pas a le connaître.
+    """
+    return LOG_DIR / "overflow_trigger.log"
 
 
 def workflow_inputs(repo: str, workflow: str) -> tuple[set[str], str]:
