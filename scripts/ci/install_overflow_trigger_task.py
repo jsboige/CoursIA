@@ -60,7 +60,9 @@ Fichiers :
 from __future__ import annotations
 
 import argparse
+import base64
 import datetime as _dt
+import json
 import os
 import shutil
 import subprocess
@@ -118,11 +120,57 @@ def log_path_for(day: _dt.date | None = None) -> Path:
     return LOG_DIR / f"overflow_trigger_{day:%Y%m%d}.log"
 
 
+def workflow_inputs(repo: str, workflow: str) -> tuple[set[str], str]:
+    """Inputs `workflow_dispatch` que le workflow declare SUR LE DEPOT.
+
+    Lu dans le fichier tel qu'il est sur la branche par defaut, pas dans le
+    checkout local : c'est cette version que le declencheur executera
+    reellement. Le declencheur ne passe QUE les inputs declares -- un input
+    existant dans une PR mais absent de `main` ferait echouer chaque tir
+    (`gh workflow run` rejette un input inconnu).
+    """
+    path = f".github/workflows/{workflow}"
+    proc = _run(["gh", "api", f"repos/{repo}/contents/{path}"])
+    if proc.returncode != 0:
+        return set(), "contenu du workflow illisible"
+    try:
+        payload = json.loads(proc.stdout)
+        text = base64.b64decode(payload["content"]).decode("utf-8")
+    except Exception:  # pragma: no cover - forme de reponse inattendue
+        return set(), "contenu du workflow illisible"
+    try:
+        import yaml
+    except ImportError:
+        return set(), "PyYAML indisponible"
+    # `on:` se lit comme un booleen en YAML 1.1 : il faut le requoter.
+    lines = [
+        ('"on":' + line[3:]) if line.startswith("on:") else line
+        for line in text.splitlines()
+    ]
+    try:
+        data = yaml.safe_load("\n".join(lines))
+    except Exception:  # pragma: no cover - YAML invalide
+        return set(), "YAML du workflow illisible"
+    if not isinstance(data, dict):
+        return set(), "YAML du workflow inattendu"
+    on = data.get("on")
+    if not isinstance(on, dict):
+        return set(), "declencheur workflow_dispatch absent"
+    dispatch = on.get("workflow_dispatch")
+    if not isinstance(dispatch, dict):
+        return set(), "declencheur workflow_dispatch absent"
+    inputs = dispatch.get("inputs")
+    if not isinstance(inputs, dict):
+        return set(), "workflow_dispatch sans input"
+    return set(inputs), ""
+
+
 def cmd_content(
     repo: str,
     workflow: str,
     account: str,
     min_interval: int,
+    pass_min_interval: bool = True,
 ) -> str:
     """Contenu du lanceur .cmd : capture du jeton AU MOMENT de l'execution,
     puis declenchement du workflow du depot, puis journalisation.
@@ -131,6 +179,9 @@ def cmd_content(
     trousseau du siege par `gh auth token`, au moment ou la tache tourne.
     """
     log = "%LOCALAPPDATA%\\CoursIA\\overflow_trigger\\logs\\overflow_trigger.log"
+    dispatch = "gh workflow run %GH_WORKFLOW% --repo %GH_REPO%"
+    if pass_min_interval:
+        dispatch += " -f min_interval=%GH_MIN_INTERVAL%"
     return (
         "@echo off\r\n"
         "REM Genere par install_overflow_trigger_task.py -- ecrase a chaque\r\n"
@@ -151,8 +202,7 @@ def cmd_content(
         ")\r\n"
         f'echo [%DATE% %TIME%] declenchement de %GH_WORKFLOW% sur %GH_REPO% '
         f'(intervalle minimal %GH_MIN_INTERVAL% min)>> "%LOG%"\r\n'
-        'gh workflow run %GH_WORKFLOW% --repo %GH_REPO% '
-        '-f min_interval=%GH_MIN_INTERVAL% >> "%LOG%" 2>&1\r\n'
+        f'{dispatch} >> "%LOG%" 2>&1\r\n'
         "echo %ERRORLEVEL% > \"%LOG%.rc\"\r\n"
         "exit /b %ERRORLEVEL%\r\n"
     )
@@ -234,12 +284,20 @@ def cmd_dry_run(
     """N'ecrit RIEN et n'execute RIEN : la commande `schtasks` exacte et le
     contenu exact des deux lanceurs."""
     command = build_schtasks_install(task_action(), interval, start)
+    inputs, inputs_reason = workflow_inputs(repo, workflow)
+    pass_min_interval = "min_interval" in inputs
+    if not pass_min_interval:
+        print(
+            f"DRY-RUN -- le workflow {workflow} sur {repo} ne declare PAS "
+            f"l'input `min_interval` ({inputs_reason}) : le declencheur ne le "
+            f"passera pas (un input inconnu fait echouer chaque tir)."
+        )
     print("DRY-RUN -- commande schtasks que --install enregistrerait :")
     print("  " + subprocess.list2cmdline(command))
     print()
     print(f"DRY-RUN -- contenu de {CMD_PATH} que --install ecrirait :")
     print("-" * 60)
-    print(cmd_content(repo, workflow, account, min_interval))
+    print(cmd_content(repo, workflow, account, min_interval, pass_min_interval))
     print("-" * 60)
     print()
     print(f"DRY-RUN -- contenu de {VBS_PATH} que --install ecrirait :")
@@ -268,10 +326,13 @@ def cmd_install(
             file=sys.stderr,
         )
         return 2
+    inputs, _inputs_reason = workflow_inputs(repo, workflow)
+    pass_min_interval = "min_interval" in inputs
     BASE_DIR.mkdir(parents=True, exist_ok=True)
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     CMD_PATH.write_text(
-        cmd_content(repo, workflow, account, min_interval), encoding="ascii"
+        cmd_content(repo, workflow, account, min_interval, pass_min_interval),
+        encoding="ascii",
     )
     VBS_PATH.write_text(vbs_content(CMD_PATH), encoding="ascii")
     command = build_schtasks_install(task_action(), interval, start)

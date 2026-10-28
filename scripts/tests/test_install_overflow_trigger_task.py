@@ -71,3 +71,39 @@ def test_la_commande_schtasks_cible_la_tache_nommee():
     assert "/ST" in command and "00:07" in command
     # L'action enregistree est le lanceur VBS, pas python.exe en direct.
     assert command[-1].endswith("run_hidden.vbs")
+
+
+def test_le_declencheur_ne_passe_pas_un_input_que_le_depot_ne_declare_pas():
+    """Un input inconnu fait echouer chaque tir : le declencheur ne passe
+    que ce que le workflow declare reellement sur le depot."""
+    without = inst.cmd_content("jsboige/CoursIA", "ci-overflow-controller.yml",
+                               "jsboige", 15, pass_min_interval=False)
+    assert "-f min_interval" not in without
+    assert "gh workflow run %GH_WORKFLOW% --repo %GH_REPO%" in without
+    with_input = inst.cmd_content("jsboige/CoursIA", "ci-overflow-controller.yml",
+                                  "jsboige", 15, pass_min_interval=True)
+    assert "-f min_interval=%GH_MIN_INTERVAL%" in with_input
+
+
+def test_les_inputs_sont_lus_dans_le_workflow_du_depot(monkeypatch):
+    import base64
+    import json
+
+    workflow = (
+        "on:\n"
+        "  workflow_dispatch:\n"
+        "    inputs:\n"
+        "      min_interval:\n"
+        "        default: '0'\n"
+    )
+    payload = json.dumps({"content": base64.b64encode(workflow.encode()).decode()})
+
+    class _Proc:
+        returncode = 0
+        stdout = payload
+        stderr = ""
+
+    monkeypatch.setattr(inst, "_run", lambda cmd, **kw: _Proc())
+    inputs, reason = inst.workflow_inputs("jsboige/CoursIA", "ci-overflow-controller.yml")
+    assert inputs == {"min_interval"}
+    assert reason == ""
