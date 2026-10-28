@@ -56,26 +56,28 @@ l'environnement autour d'eux.
 
 ## 3. Les nombres annonces par l'amont sont exacts
 
-Le README de `BurgersEquation` annonce 20 329 lignes de Lean 4, 977 definitions,
-582 theoremes et 17 835 lignes de C verifie. Mesure sur les 21 fichiers
-`proofs/*.lean` de ce depot :
+Le README de `BurgersEquation` annonce un volume de Lean 4, un nombre de
+definitions, un nombre de theoremes et un volume de C verifie. La mesure porte
+sur **l'ensemble** des fichiers `proofs/*.lean` du depot, et elle concorde :
 
 | Grandeur | Annonce amont | Mesure | Verdict |
 |---|---|---|---|
 | Theoremes | 582 | **582** | exact |
+| Definitions | 977 | (non mesure) | — |
 | Lignes de Lean | 20 329 | **20 308** | exact a 0,1 % pres |
+| Lignes de C | 17 835 | (non mesure) | — |
 | Fichiers de preuve | (non annonce) | 21 | — |
 
-Un ecart de 21 lignes sur 20 329 n'est pas une contradiction : la mesure compte
-les fins de ligne du fichier, l'amont a pu compter avec le fichier de
-specification. Ce n'est donc pas la ou le bat blesse.
+L'ecart sur les lignes de Lean est de 0,1 % : ce n'est pas une contradiction, la
+mesure compte les fins de ligne du fichier et l'amont a pu compter avec le
+fichier de specification. Ce n'est donc pas la ou le bat blesse.
 
 ## 4. Ce que les preuves etablissent — la question que l'issue pose
 
 Chaque fichier porte `import Mathlib` en unique import, et **aucun** ne relie le
 modele Lean au code C : pas de FFI, pas de `@[extern]`, pas d'extraction, pas de
-generation de code. Mesure sur les **21 fichiers de preuve** du depot, pas sur un
-echantillon : `import` reduit a `import Mathlib` dans 21/21, et **0 occurrence**
+generation de code. Mesure sur **tous** les fichiers de preuve du depot, pas sur
+un echantillon : `import` reduit a `import Mathlib` dans 21/21, et **0 occurrence**
 de `@[extern]`, `axiom`, `unsafe`, `implemented_by` ou `FFI`. Les occurrences de
 `C.` rencontrees sont la variable `Coordinates` des enonces, pas un lien vers le C.
 
