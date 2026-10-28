@@ -1116,7 +1116,7 @@ qualités sensorielles : odeur/couleur/son), itérables deux à trois
 2. **Logos = spectre de réactions.** Le *logos* thomien (ensemble des
    actes/réactions aux perturbations) est structurellement un
    **spectre** — ce qu'on mesure en
-   [ICT-15b-SensitivityCanonicity-Python](ICT-15b-SensitivityCanonicity-Python.ipynb)
+   [ICT-15b-SensitivityCanonicity-Python](ICT-15/ICT-15b-SensitivityCanonicity-Python.ipynb)
    (sensibilité locale $s(f)$) : un proxy n'est pas défini par une
    valeur ponctuelle mais par son **comportement sous perturbation**.
    Pont vers Huang 2019 $s(f) \geq \sqrt{\deg(f)}$ (cf. matrice #7734

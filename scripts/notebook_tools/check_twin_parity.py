@@ -113,6 +113,11 @@ Usage
     # Compare le registre+blobs au base-ref (avant la PR) vs au HEAD (apres la PR).
     # Le drift pre-existant (deja present au base-ref) n'est PAS comptabilise ici
     # -- il releve d'une PR de rebaseline dediee (cf #8264 batch precedent).
+    # Verdict STALE_BRANCH (#22920) : paire DEPLACEE sur la branche base apres le
+    # fork (registre de la tete declare encore l'ancien chemin). Le rebaseline
+    # --update y serait FAUX (il attesterait un chemin que main a abandonne) --
+    # le remede est `gh pr update-branch`. Compteur dedie `stale_branch`, jamais
+    # compte dans `drift_introduced`.
     python check_twin_parity.py --check --per-pair --base origin/main
     python check_twin_parity.py --check --per-pair --base HEAD~1
     # mode CI cron (volet b #9399) : fleet-wide SANS base ref, breakdown 4 categories.
@@ -127,6 +132,8 @@ Exit codes
          OU zero drift toutes categories (mode --ci-strict --check)
     1 -- un ou plusieurs DRIFT / MISSING (mode --check fleet-wide)
          OU nouveau(s) DRIFT introduit(s) par la PR (mode --check --per-pair)
+         OU paire(s) STALE_BRANCH : deplacee(s) sur la branche base apres le
+         fork (#22920) -- le remede est `gh pr update-branch`, pas un rebaseline
          OU un ou plusieurs drift legacy/content/missing en --ci-strict --check
     2 -- erreur (registre illisible, pas un depot git, paire ou famille inconnue
          pour --check / --verify-recorded-sha)
@@ -1699,6 +1706,94 @@ def _classify_per_pair(base_status: str, head_status: str) -> str:
     return "DRIFT_PRE_EXISTING"
 
 
+def _pair_paths_diverge(base_pp: dict, head_pp: dict) -> bool:
+    """True si la paire est declaree avec des chemins differents aux deux refs (#22920).
+
+    Test PUR (aucun appel git) : sert de garde de cout -- les sondes croisees et
+    le merge-base ne se paient que sur les paires qui divergent.
+    """
+    for side in ("python", "csharp"):
+        b = base_pp.get(side)
+        h = head_pp.get(side)
+        if isinstance(b, str) and isinstance(h, str) and b != h:
+            return True
+    return False
+
+
+def _merge_base_ref(repo_root: Path, base_ref: str) -> str | None:
+    """Point de fork (merge-base) entre HEAD et `base_ref` ; None si indeterminable.
+
+    Sert uniquement a ORIENTER le verdict STALE_BRANCH (#22920) : savoir de quel
+    cote (base ou tete) vient le deplacement d'une paire exige une ref
+    ANTERIEURE aux deux. Les arbres base/tete seuls ne le peuvent pas -- les
+    scenarios « paire deplacee par main, branche en retard » et « paire renommee
+    par la PR » y sont des images miroir exactes (meme jeu d'observations :
+    chemin du base present au base / absent de la tete, chemin de la tete
+    present a la tete / absent du base). Un echec (histoires disjointes, ref
+    inconnue) degrade vers le comportement existant : pas de verdict STALE_BRANCH.
+    """
+    r = _run_git(["git", "merge-base", "HEAD", base_ref], cwd=str(repo_root))
+    if r.returncode != 0 or not r.stdout.strip():
+        return None
+    return r.stdout.strip()
+
+
+def _stale_branch_probe(repo_root: Path, base_pp: dict, head_pp: dict,
+                        base_ref: str, merge_base: str | None) -> dict | None:
+    """Detecte une paire DEPLACEE par la branche base apres le fork (#22920).
+
+    Contexte : `main` deplace une paire (O -> N) APRES le fork de la branche de
+    PR. Le registre au base-ref declare N ; le registre de la tete declare
+    encore O. `_classify_per_pair` ne recoit que deux STATUTS : ce cas lui est
+    indiscernable d'une vraie derive, et le rebaseline `--update` prescrit sur
+    ce malentendu attesterait un chemin que main a deja abandonne -- une
+    attestation qui REGRESSE le registre au merge.
+
+    Conditions (toutes requises, par cote python/csharp divergent) :
+
+      1. chemins divergents (`_pair_paths_diverge`, deja garanti par l'appelant) ;
+      2. sonde croisee : le chemin declare au BASE est absent de l'arbre de la
+         TETE, OU le chemin declare par la TETE est absent du BASE (le
+         deplacement fait par main a supprime l'ancien chemin) ;
+      3. orientation (merge-base) : le chemin declare par la TETE existait au
+         point de fork ET le chemin declare au BASE n'y existait PAS -- le
+         deplacement est l'oeuvre de la branche base, pas de la PR.
+
+    La condition 3 est le discriminateur que les sondes croisees de la condition
+    2 ne peuvent pas fournir (cf `_merge_base_ref` : symetrie exacte des deux
+    scenarios). Sans elle, un rename LEGITIME introduit par la PR serait
+    qualifie STALE_BRANCH a tort. Un rename par la PR echoue la condition 3 :
+    son nouveau chemin n'existe pas au point de fork.
+
+    Retourne None si le cas n'est pas etabli (comportement per-pair existant) ;
+    sinon {"paths_base": {...}, "paths_head": {...}} pour le rapport JSON.
+    """
+    for side in ("python", "csharp"):
+        base_path = base_pp.get(side)
+        head_path = head_pp.get(side)
+        if not (isinstance(base_path, str) and isinstance(head_path, str)
+                and base_path != head_path):
+            continue
+        # Sondes croisees (existence seulement) : la tete est-elle en retard ?
+        base_path_in_head = _git_blob_sha(repo_root, base_path, "HEAD") is not None
+        head_path_in_base = _git_blob_sha(repo_root, head_path, base_ref) is not None
+        if base_path_in_head and head_path_in_base:
+            continue  # les deux chemins existent aux deux refs : pas un deplacement
+        # Orientation : le deplacement vient-il de la branche base ?
+        if merge_base is None:
+            continue  # point de fork inconnu -> verdict non etabli (degradation safe)
+        head_path_at_fork = _git_blob_sha(repo_root, head_path, merge_base) is not None
+        base_path_at_fork = _git_blob_sha(repo_root, base_path, merge_base) is not None
+        if head_path_at_fork and not base_path_at_fork:
+            return {
+                "paths_base": {"python": base_pp.get("python"),
+                               "csharp": base_pp.get("csharp")},
+                "paths_head": {"python": head_pp.get("python"),
+                               "csharp": head_pp.get("csharp")},
+            }
+    return None
+
+
 # Gabarit de la commande de rebaseline : --update atteste une empreinte de
 # contenu, il ne RESTAURE pas un fichier supprime (cf split_introduced_pairs).
 REBASELINE_TEMPLATE = (
@@ -1760,20 +1855,58 @@ def _missing_remediation_line(pair: dict) -> str:
     return f'  [MISSING] "{name}" : {fix}.{suffix}'
 
 
+def split_stale_pairs(pairs: list) -> list:
+    """Paires STALE_BRANCH du rapport `--per-pair` (#22920), dans l'ordre du rapport.
+
+    Ces paires ne sont JAMAIS comptees dans `drift_introduced` (compteur dedie
+    `stale_branch`) : la derive n'est pas l'oeuvre de la PR, elle est le
+    deplacement d'une paire par la branche base APRES le fork. Fonction separee
+    de `split_introduced_pairs` (qui ne voit que les DRIFT_INTRODUCED) pour ne
+    pas en changer l'arite -- le contrat des tests du lot missing est preserved.
+    """
+    return [p for p in pairs or [] if p.get("verdict") == "STALE_BRANCH"]
+
+
+def _stale_remediation_line(pair: dict) -> str:
+    """Ligne de remediation d'une paire deplacee par la branche base (#22920).
+
+    Le remede est `gh pr update-branch` (reprendre le deplacement), JAMAIS un
+    rebaseline : la ligne ne doit contenir NI `--update` NI `--pair` -- un
+    rebaseline sur les anciens chemins ecraserait au merge la declaration a
+    jour du registre de main (regression du registre, cf #22920).
+    """
+    name = pair.get("name", "?")
+    pb = pair.get("paths_base") or {}
+    ph = pair.get("paths_head") or {}
+    return (
+        f'  [STALE-BRANCH] "{name}" : paire DEPLACEE sur la branche base apres '
+        f"le fork -- la tete declare python={ph.get('python', '?')} / "
+        f"csharp={ph.get('csharp', '?')}, le base declare "
+        f"python={pb.get('python', '?')} / csharp={pb.get('csharp', '?')}. "
+        f"Remede : gh pr update-branch, puis rejoue le travail et l attestation "
+        f"sur les NOUVEAUX chemins du base. Un rebaseline sur les anciens "
+        f"chemins regresserait le registre au merge (#22920)."
+    )
+
+
 def render_introduced_remediation(pairs: list) -> list:
-    """Lignes de remediation du gate, dans l'ordre des deux lots.
+    """Lignes de remediation du gate, dans l'ordre des trois lots.
 
     Consomme le rapport JSON `--per-pair` (`d["pairs"]`) et rend le texte que le
     workflow imprime dans le log ET dans l'annotation ::error :
 
       - derive de contenu -> la commande de rebaseline, inchangee ;
       - carnet supprime  -> le constat de suppression et les deux corrections
-        possibles, SANS commande de rebaseline (elle ne restaure rien).
+        possibles, SANS commande de rebaseline (elle ne restaure rien) ;
+      - branche perimee (#22920) -> `gh pr update-branch` + rejouer le travail
+        sur les nouveaux chemins, SANS rebaseline (il attesterait un chemin que
+        main a abandonne).
 
-    Aucun lot (rapport sans paire DRIFT_INTRODUCED) -> la commande generique
-    historique, a nom exact a completer.
+    Aucun lot (rapport sans paire DRIFT_INTRODUCED ni STALE_BRANCH) -> la
+    commande generique historique, a nom exact a completer.
     """
     drift, missing = split_introduced_pairs(pairs)
+    stale = split_stale_pairs(pairs)
     lines: list = []
     if drift:
         lines.append("Derive de contenu (rebaseline APRES re-audit firsthand) :")
@@ -1784,7 +1917,12 @@ def render_introduced_remediation(pairs: list) -> list:
                      "supprime) :")
         for p in missing:
             lines.append(_missing_remediation_line(p))
-    if not drift and not missing:
+    if stale:
+        lines.append("Branche PERIMEE (paire deplacee sur la branche base apres "
+                     "le fork -- le rebaseline y serait faux, #22920) :")
+        for p in stale:
+            lines.append(_stale_remediation_line(p))
+    if not drift and not missing and not stale:
         lines.append(REBASELINE_TEMPLATE % "<nom exact de l entree>")
     return lines
 
@@ -1943,7 +2081,7 @@ def _main(argv=None) -> int:
         p.error("--summary-by-verdict est un mode de recensement integral : "
                 "--pair/--family n'y designent rien (compte les paires par "
                 "bridge_verdict). Retirer le selecteur.")
-    # Garde anti-derive MERGE_HEAD / REBASE_HEAD (#11732) : pendant un merge non
+    # Garde anti-derive merge/rebase en cours (#11732) : pendant un merge non
     # commite, `git ls-tree HEAD` lit l'ANCIENNE tete de branche (pas le resultat
     # du merge). --update atteste alors des blob SHAs qui ne refletent pas l'etat
     # final du notebook -- au commit du merge, les notebooks obtiennent de
@@ -1960,20 +2098,47 @@ def _main(argv=None) -> int:
         except SystemExit:
             repo_root_for_state = None
         if repo_root_for_state is not None:
-            # git rev-parse -q --verify MERGE_HEAD/REBASE_HEAD : rc=0 si le
-            # depot est en cours de merge/rebase interactif. Le check precede
-            # `_repo_root()` final pour economiser un subprocess en cas d'erreur
-            # deja connue (mais apres args.repo_root parse, qui peut etre override
-            # dans les tests --repo-root sur tmp_path).
-            for state_file, label in (("MERGE_HEAD", "merge"), ("REBASE_HEAD", "rebase")):
+            # Le check precede `_repo_root()` final pour economiser un subprocess
+            # en cas d'erreur deja connue (mais apres args.repo_root parse, qui
+            # peut etre override dans les tests --repo-root sur tmp_path).
+            #
+            # Merge en cours : `git rev-parse -q --verify MERGE_HEAD` (rc=0 si
+            # et seulement si un merge est non commite) -- detection inchangee.
+            r = _run_git(
+                ["git", "rev-parse", "-q", "--verify", "MERGE_HEAD"],
+                cwd=str(repo_root_for_state),
+            )
+            if r.returncode == 0:
+                p.error("--update pendant un merge non committe : HEAD ne contient pas "
+                        "le resultat du merge. Commitez d'abord, puis re-attestez "
+                        "(cf #11732, variante operationnelle de #8957).")
+            # Rebase en cours : l'indicateur fiable est l'existence du repertoire
+            # `rebase-merge` (interactif/merge backend) ou `rebase-apply`
+            # (backend am), PAS le ref REBASE_HEAD. Git peut y laisser un
+            # REBASE_HEAD orphelin apres un rebase interrompu : un clone qui en
+            # porte un sans rebase en cours voyait alors --update refuse a tort
+            # (signale par le coordinateur 2026-10-27 : REBASE_HEAD du 20/09,
+            # ni rebase-merge ni rebase-apply, 3 tests update_guard rouges).
+            # `git rev-parse --git-path <name>` resout le chemin dans le git dir
+            # du depot (worktree compris) ; la sortie est relative au cwd dans
+            # le clone principal (`.git/rebase-merge`) et absolue dans un
+            # worktree -- d'ou la resolution explicite ci-dessous.
+            for state_dir in ("rebase-merge", "rebase-apply"):
                 r = _run_git(
-                    ["git", "rev-parse", "-q", "--verify", state_file],
+                    ["git", "rev-parse", "--git-path", state_dir],
                     cwd=str(repo_root_for_state),
                 )
-                if r.returncode == 0:
-                    p.error(f"--update pendant un {label} non committe : HEAD ne contient pas "
-                            f"le resultat du {label}. Commitez d'abord, puis re-attestez "
-                            f"(cf #11732, variante operationnelle de #8957).")
+                raw = r.stdout.strip() if r.returncode == 0 else ""
+                if not raw:
+                    continue
+                state_path = Path(raw)
+                if not state_path.is_absolute():
+                    state_path = repo_root_for_state / state_path
+                if state_path.exists():
+                    p.error("--update pendant un rebase non termine : HEAD ne contient pas "
+                            "le resultat du rebase. Terminez ou annulez le rebase "
+                            "(git rebase --continue / --abort), puis re-attestez "
+                            "(cf #11732, variante operationnelle de #8957).")
     if args.pair and args.family:
         p.error("--pair et --family sont mutuellement exclusifs avec --update.")
     if args.ci_strict and args.per_pair:
@@ -2109,6 +2274,21 @@ def _main(argv=None) -> int:
         # Index par nom (au cas ou l'ordre ou les ajouts/suppressions different)
         base_by_name = {pp.get("name", "?"): pp for pp in pairs_base}
 
+        # #22920 : verdict STALE_BRANCH, decide EN AMONT de _classify_per_pair
+        # (le cas est invisible dans ses entrees : deux statuts seulement). Le
+        # point de fork (merge-base) n'est resolu QUE si au moins une paire est
+        # declaree avec des chemins differents aux deux refs -- un test pur,
+        # sans appel git : un registre sans divergence ne paie rien.
+        merge_base = (
+            _merge_base_ref(repo_root, args.base)
+            if any(
+                (b := base_by_name.get(pp.get("name", "?"))) is not None
+                and _pair_paths_diverge(b, pp)
+                for pp in pairs_head
+            )
+            else None
+        )
+
         results = []
         for pp in pairs_head:
             name = pp.get("name", "?")
@@ -2124,11 +2304,24 @@ def _main(argv=None) -> int:
                 base_details = base_check["details"]
 
             head_status = head_state["status"]
-            # Classification per-pair (cf _classify_per_pair -- le cas paire ajoutee
-            # est special : pas d'etat pre-existant, l'etat HEAD = ce que la PR introduit).
-            verdict = _classify_per_pair(base_status, head_status)
+            # #22920 : branche perimee ? Paire deplacee par la branche base apres
+            # le fork -- le registre de la tete declare encore l'ancien chemin.
+            # Sondes croisees + orientation, uniquement si les chemins divergent.
+            stale_paths = (
+                _stale_branch_probe(repo_root, base_pp, pp, args.base, merge_base)
+                if base_pp is not None and _pair_paths_diverge(base_pp, pp)
+                else None
+            )
+            if stale_paths is not None:
+                # Verdict dedie : PAS un DRIFT_INTRODUCED (compteur propre), et le
+                # remede est `gh pr update-branch`, jamais un rebaseline.
+                verdict = "STALE_BRANCH"
+            else:
+                # Classification per-pair (cf _classify_per_pair -- le cas paire ajoutee
+                # est special : pas d'etat pre-existant, l'etat HEAD = ce que la PR introduit).
+                verdict = _classify_per_pair(base_status, head_status)
 
-            results.append({
+            entry = {
                 "name": name,
                 "family": pp.get("family", "?"),
                 "parity_level": pp.get("parity_level", "?"),
@@ -2138,12 +2331,17 @@ def _main(argv=None) -> int:
                 "verdict": verdict,
                 "base_details": base_details,
                 "head_details": head_state["details"],
-            })
+            }
+            if stale_paths is not None:
+                entry["paths_base"] = stale_paths["paths_base"]
+                entry["paths_head"] = stale_paths["paths_head"]
+            results.append(entry)
 
         n_ok = sum(1 for r in results if r["verdict"] == "OK")
         n_introduced = sum(1 for r in results if r["verdict"] == "DRIFT_INTRODUCED")
         n_resolved = sum(1 for r in results if r["verdict"] == "DRIFT_RESOLVED")
         n_pre_existing = sum(1 for r in results if r["verdict"] == "DRIFT_PRE_EXISTING")
+        n_stale = sum(1 for r in results if r["verdict"] == "STALE_BRANCH")
 
         if args.json:
             out = {
@@ -2155,6 +2353,7 @@ def _main(argv=None) -> int:
                 "drift_introduced": n_introduced,
                 "drift_resolved": n_resolved,
                 "drift_pre_existing": n_pre_existing,
+                "stale_branch": n_stale,
                 "pairs": results,
             }
             print(json.dumps(out, ensure_ascii=False, indent=2))
@@ -2164,6 +2363,7 @@ def _main(argv=None) -> int:
                 "DRIFT_INTRODUCED": "DRIFT-INTRO",
                 "DRIFT_RESOLVED": "DRIFT-FIXED",
                 "DRIFT_PRE_EXISTING": "DRIFT-PRE",
+                "STALE_BRANCH": "STALE-BRANCH",
             }
             for r in results:
                 tag = tag_map[r["verdict"]]
@@ -2173,9 +2373,15 @@ def _main(argv=None) -> int:
                     for d in r["head_details"]:
                         print(f"       HEAD: {d}")
             print(f"\nTotal : {len(results)} paire(s) | "
-                  f"OK={n_ok} INTRO={n_introduced} FIXED={n_resolved} PRE={n_pre_existing}")
+                  f"OK={n_ok} INTRO={n_introduced} FIXED={n_resolved} "
+                  f"PRE={n_pre_existing} STALE={n_stale}")
 
-        if args.check and n_introduced > 0:
+        # Le gate rougit sur DRIFT_INTRODUCED **et** sur STALE_BRANCH : une paire
+        # perimee exige une action lane (`gh pr update-branch`) -- le bloc de
+        # remediation du workflow, ou vit la ligne update-branch, n'est rendu que
+        # sur exit 1. Les paires STALE ne comptent PAS dans drift_introduced
+        # (#22920) : le message de derive de contenu ne doit pas les viser.
+        if args.check and (n_introduced > 0 or n_stale > 0):
             if args.per_pair:
                 # Le DRIFT d'une normalisation outillee (strip_probe_banner.py --apply,
                 # strip_machine_paths.py, scrub_papermill_paths.py) deplace le blob SHA
@@ -2190,14 +2396,19 @@ def _main(argv=None) -> int:
                 # JSON -> json.load levait "Extra data" et faisait tomber le gate en raw
                 # traceback (PRs #9097/#9098, exit 1 sur drift introduit). stderr reste visible
                 # dans les logs CI sans corrompre le rapport.
-                print(
-                    "\nRappel : si le DRIFT vient d'une normalisation outillee qui "
-                    "deplace le blob SHA (strip_probe_banner.py --apply, "
-                    "strip_machine_paths.py, scrub_papermill_paths.py), le rebaseline "
-                    "--update va EN DERNIER, apres ces strips -- attester PUIS "
-                    "stripper invalide l'attestation (#8957).",
-                    file=sys.stderr,
-                )
+                #
+                # Uniquement si un vrai DRIFT_INTRODUCED existe : sur une sortie
+                # rouge STALE_BRANCH seule, ce rappel (rebaseline apres strips)
+                # ne s'applique pas -- le remede est `gh pr update-branch`.
+                if n_introduced > 0:
+                    print(
+                        "\nRappel : si le DRIFT vient d'une normalisation outillee qui "
+                        "deplace le blob SHA (strip_probe_banner.py --apply, "
+                        "strip_machine_paths.py, scrub_papermill_paths.py), le rebaseline "
+                        "--update va EN DERNIER, apres ces strips -- attester PUIS "
+                        "stripper invalide l'attestation (#8957).",
+                        file=sys.stderr,
+                    )
             return 1
         return 0
 

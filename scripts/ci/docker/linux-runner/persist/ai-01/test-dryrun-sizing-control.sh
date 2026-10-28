@@ -667,6 +667,115 @@ make_fixture a3
 chmod 0755 "$FX/bin/ls"
 FX_PATH_PREFIX="$FX/bin" run_sut "$FX" --slots 1 --cpus 2
 expect_succes "K6c CONTROLE NEGATIF : sans « + », le meme faux ls ne refuse rien"
+
+# === L. Le temoin de throttling (section 4bis) ==============================
+#
+# CE QUE CETTE SECTION PROUVE, ET CE QU'ELLE NE PROUVE PAS.
+#
+# Elle prouve que le temoin LIT les compteurs du noyau et rend un verdict
+# qui change avec la MESURE -- pas avec une constante codee en dur. Les trois
+# jalons de la fenetre sont donc exercised avec des valeurs choisies pour
+# tomber de part et d'autre des deux bornes :
+#   allocation(fenetre min) = 60 x (741863 x 0,1 s) / 86 400 = 51,5 s
+#   allocation(fenetre max) = 60 x 90 298 / 86 400         = 62,7 s
+# Un cumul de 2,42 s (la valeur mesuree sur ai-01) passe ; 55 s est entre les
+# deux bornes (alerte INCERTAINE) ; 120 s depasse la borne la plus generouse
+# (alerte CERTAINE).
+#
+# Elle prouve aussi les deux defauts de mode de defaillance, qui sont ceux
+# que ce script combat depuis le debut :
+#   - un `cpu.stat` ABSENT ne doit produire NI « passe » NI « ALERTE » : une
+#     panne d'instrument ne se confond pas avec une absence de throttling ;
+#   - un `nr_periods` ILLISIBLE ne doit produire NI « passe » (la borne
+#     inferieure manque : le passe ne serait pas sound) NI « ALERTE » (rien
+#     ne prouve un depassement).
+#
+# Elle ne prouve PAS que le seuil de 60 s est le bon -- c'est un arbitrage du
+# coordinateur, pas une propriete du noyau.
+
+make_cgroup() {   # $1 = fixture, $2 = nr_throttled, $3 = throttled_usec, $4 = nr_periods
+  local cg="$1/sys/fs/cgroup/coursia.slice/coursia-ci.slice"
+  mkdir -p "$cg"
+  printf 'usage_usec 247339551044\nuser_usec 100000000000\nsystem_usec 147339551044\nnr_periods %s\nnr_throttled %s\nthrottled_usec %s\n' \
+    "$4" "$2" "$3" > "$cg/cpu.stat"
+  printf '3200000 100000\n' > "$cg/cpu.max"
+  printf '68719476736\n' > "$cg/memory.max"
+  printf '34359738368\n' > "$cg/memory.high"
+  printf '123456789\n' > "$cg/memory.current"
+  printf 'max 0\n' > "$cg/memory.events"
+  printf 'max 0\n' > "$cg/memory.events.local"
+}
+
+expect_rc() {      # $1 = libelle, $2 = rc attendu
+  if [ "$RC" -eq "$2" ]; then ok "$1"
+  else ko "$1" "attendu rc=$2, obtenu rc=$RC : $(printf '%s' "$OUTPUT" | tail -3)"; fi
+}
+expect_out() {     # $1 = libelle, $2 = motif attendu
+  if printf '%s' "$OUTPUT" | grep -qF "$2"; then ok "$1"
+  else ko "$1" "motif absent de la sortie : « $2 »"; fi
+}
+expect_no_out() {  # $1 = libelle, $2 = motif qui ne doit PAS apparaitre
+  if printf '%s' "$OUTPUT" | grep -qF "$2"; then
+    ko "$1" "motif PRESENT alors qu il ne devait pas : « $2 »"
+  else ok "$1"; fi
+}
+
+echo "=== L. Temoin de throttling ==="
+
+make_fixture l1
+make_cgroup "$TMP/fxl1" 7 2417700 741863
+COURSIA_DRYRUN_UPTIME_S=90298 run_sut "$TMP/fxl1" --slots 1 --cpus 2
+expect_rc "L1 cumul faible : sortie 0" 0
+expect_out "L1 cumul faible : le temoin passe" "TEMOIN THROTTLING : passe"
+
+make_fixture l2
+make_cgroup "$TMP/fxl2" 7 120000000 741863
+COURSIA_DRYRUN_UPTIME_S=90298 run_sut "$TMP/fxl2" --slots 1 --cpus 2
+expect_rc "L2 depassement de la borne la plus generouse : sortie 3" 3
+expect_out "L2 depassement certain : ALERTE CERTAINE" "ALERTE CERTAINE"
+
+make_fixture l3
+make_cgroup "$TMP/fxl3" 7 55000000 741863
+COURSIA_DRYRUN_UPTIME_S=90298 run_sut "$TMP/fxl3" --slots 1 --cpus 2
+expect_rc "L3 depassement entre les deux bornes : sortie 3" 3
+expect_out "L3 depassement entre les bornes : ALERTE INCERTAINE" "ALERTE INCERTAINE"
+
+make_fixture l4
+make_cgroup "$TMP/fxl4" 7 2417700 741863
+COURSIA_DRYRUN_UPTIME_S=90298 COURSIA_DRYRUN_THROTTLE_BUDGET_SPD=1 \
+  run_sut "$TMP/fxl4" --slots 1 --cpus 2
+expect_rc "L4 CONTROLE NEGATIF : seuil abaisse a 1 s -> sortie 3" 3
+expect_out "L4 le seuil est reellement lu" "ALERTE"
+
+make_fixture l5
+COURSIA_DRYRUN_UPTIME_S=90298 run_sut "$TMP/fxl5" --slots 1 --cpus 2
+expect_rc "L5 cpu.stat absent : sortie 0 (aucune alerte sans mesure)" 0
+expect_out "L5 cpu.stat absent : temoin INDISPONIBLE" "TEMOIN THROTTLING : INDISPONIBLE"
+expect_no_out "L5 cpu.stat absent : aucun « passe » rendu" "TEMOIN THROTTLING : passe"
+
+make_fixture l6
+make_cgroup "$TMP/fxl6" 7 2417700 741863
+printf 'usage_usec 247339551044\nnr_throttled 7\nthrottled_usec 2417700\n' \
+  > "$TMP/fxl6/sys/fs/cgroup/coursia.slice/coursia-ci.slice/cpu.stat"
+COURSIA_DRYRUN_UPTIME_S=90298 run_sut "$TMP/fxl6" --slots 1 --cpus 2
+expect_rc "L6 nr_periods illisible : sortie 0 (rien n est prouve)" 0
+expect_out "L6 nr_periods illisible : temoin INDETERMINE" "TEMOIN THROTTLING : INDETERMINE"
+expect_no_out "L6 nr_periods illisible : aucun « passe » rendu" "TEMOIN THROTTLING : passe"
+expect_no_out "L6 nr_periods illisible : aucune ALERTE sans borne inferieure" "ALERTE"
+
+# L7 : le temoin alerte ET une autre source refuse ensuite (un drop-in lu
+# apres la cible). Le code de sortie doit porter l'ALERTE (3), pas le refus
+# (1) : sinon la mesure qui contredit la declaration disparait derriere un
+# refus de configuration, et l'automatisme qui lit le code de sortie se
+# trompe de diagnostic. Le motif du refus doit rester imprime.
+make_fixture l7
+make_cgroup "$TMP/fxl7" 7 120000000 741863
+FX_DROPINS="$TMP/fxl7/etc/systemd/system/coursia-runner.service.d/20-pids.conf" \
+  COURSIA_DRYRUN_UPTIME_S=90298 run_sut "$TMP/fxl7" --slots 1 --cpus 2
+expect_rc "L7 alerte + refus concomitant : la sortie est 3 (l alerte prime)" 3
+expect_out "L7 le motif du refus reste imprime" "lus APRES la cible"
+expect_out "L7 l alerte est rappelee dans le refus" "la MESURE contredit la declaration"
+
 echo
 printf 'reussis=%d  echoues=%d  non-exercables=%d\n' "$PASS" "$FAIL" "$SKIP"
 [ "$FAIL" -eq 0 ] || exit 1

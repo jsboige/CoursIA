@@ -197,16 +197,16 @@ Inférence probabiliste (Infer.NET, Pyro, PyMC), théorie de l'information inté
 | 17 | [ICT-13 — Morphodynamique stratégique : une stratégie…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb) | BETA | Oui |
 | 18 | [ICT-13b — Décroisement dynamique × observable : d'où…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-13b-DecroisementDynamiqueObservable-Python.ipynb) | ALPHA | Oui |
 | 19 | [ICT-14 — Énergie libre et surprise du représentant…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-14-FreeEnergySurprise-Python.ipynb) | BETA | Oui |
-| 20 | [ICT-15 — Integrated Complexity : convergence Φ / F / K…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity-Python.ipynb) | BETA | Oui |
-| 21 | [ICT-15c — Méta-proxy d'obstruction : structure des…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15c-MetaProxyObstruction-Python.ipynb) | BETA | Oui |
-| 22 | [ICT-15d — Cochaîne de Čech pondérée : obstruction…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15d-CechObstruction-Python.ipynb) | BETA | Oui |
-| 23 | [ICT-15e -- Bridge #2 : recouvrabilite *est* agentivite…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb) | BETA | Oui |
-| 24 | [ICT-15f -- Pont #1-bis : la famille decouplee tranche…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15f-Bridge1bis-DecoupledFamily-Python.ipynb) | BETA | Oui |
-| 25 | [ICT-15h -- Pont #1-bis (chantier 2/3) : le regime…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb) | BETA | Oui |
-| 26 | [ICT-15i -- Pont #1-bis : le paysage 2D anisotrope clot…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15i-Bridge1bis-2DLandscape-Python.ipynb) | BETA | Oui |
-| 27 | [ICT-15j — Discriminant Čech par nerf simplicial (gudhi)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15j-NerveDiscriminant-Python.ipynb) | BETA | Oui |
-| 28 | [ICT-15k — Recollement des macrocells : le quadtree de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15k-RecollementMacroCells-Python.ipynb) | BETA | Oui |
-| 29 | [ICT-15l — Indépendance au générateur de nouveauté : le…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15l-IndependanceGenerateur-Python.ipynb) | BETA | Oui |
+| 20 | [ICT-15 — Integrated Complexity : convergence Φ / F / K…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15-IntegratedComplexity-Python.ipynb) | BETA | Oui |
+| 21 | [ICT-15c — Méta-proxy d'obstruction : structure des…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15c-MetaProxyObstruction-Python.ipynb) | BETA | Oui |
+| 22 | [ICT-15d — Cochaîne de Čech pondérée : obstruction…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15d-CechObstruction-Python.ipynb) | BETA | Oui |
+| 23 | [ICT-15e -- Bridge #2 : recouvrabilite *est* agentivite…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb) | BETA | Oui |
+| 24 | [ICT-15f -- Pont #1-bis : la famille decouplee tranche…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15f-Bridge1bis-DecoupledFamily-Python.ipynb) | BETA | Oui |
+| 25 | [ICT-15h -- Pont #1-bis (chantier 2/3) : le regime…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15h-Bridge1bis-AsymmetricFamily-Python.ipynb) | BETA | Oui |
+| 26 | [ICT-15i -- Pont #1-bis : le paysage 2D anisotrope clot…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15i-Bridge1bis-2DLandscape-Python.ipynb) | BETA | Oui |
+| 27 | [ICT-15j — Discriminant Čech par nerf simplicial (gudhi)](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15j-NerveDiscriminant-Python.ipynb) | BETA | Oui |
+| 28 | [ICT-15k — Recollement des macrocells : le quadtree de…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15k-RecollementMacroCells-Python.ipynb) | BETA | Oui |
+| 29 | [ICT-15l — Indépendance au générateur de nouveauté : le…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15l-IndependanceGenerateur-Python.ipynb) | BETA | Oui |
 | 30 | [ICT-16 — MDL / code en deux parties et bosse…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-16-MDLTwoPartCode-Python.ipynb) | BETA | Oui |
 | 31 | [ICT-17b — Grokking et compression-progress : la jambe K…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) | BETA | Oui |
 | 32 | [ICT-18 -- Fleche du temps et reversibilisation (strate…](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-18-ArrowOfTimeReversibilization-Python.ipynb) | BETA | Oui |
