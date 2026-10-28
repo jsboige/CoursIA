@@ -1,0 +1,38 @@
+{
+  "snapshot_of": {
+    "repo": "jsboige/CoursIA",
+    "base_ref": "origin/main",
+    "base_sha": "54002c6fb798787d5438f65500ca0c05e0d7a4fe",
+    "measured_at": "2026-10-28",
+    "measured_from": "worktree fix/14623-distillation-organ (docs/transients byte-identiques a la base -- la PR ne touche pas la lane)"
+  },
+  "organ": "scripts/check_docs_transients_lane.py --distillation --json",
+  "purpose": "ancrage perenne du numeral fondateur du quatrieme sens (revue Hermes #23033, reserve R1) : la mesure portait uniquement dans le body de la PR ; ce snapshot la rend rejouable et contestable par tout relecteur sans clone.",
+  "lane_files": 12,
+  "outside_scanned": 259,
+  "distillation": {
+    "reports": 12,
+    "distilled": 9,
+    "index_only": [
+      "2026-08-13-10678-interp-positioning-audit.md",
+      "2026-08-15-10678-orphan-interp-scan.md",
+      "2026-10-23-17578-hard-distractors-measurement.md"
+    ],
+    "measured": true
+  },
+  "distillation_findings": [
+    {
+      "file": "docs/transients/2026-08-13-10678-interp-positioning-audit.md",
+      "reason": "DISTILLATION_MISSING: aucun document perenne ne cite ce rapport -- seulement une entree de navigation (_quarto.yml, docs/README.md). La lane est un transit, pas un stock : distiller la conclusion durable dans le document qui la porte et l'y citer, ou retirer le rapport avec preuve de preservation"
+    },
+    {
+      "file": "docs/transients/2026-08-15-10678-orphan-interp-scan.md",
+      "reason": "DISTILLATION_MISSING: aucun document perenne ne cite ce rapport -- seulement une entree de navigation (_quarto.yml, docs/README.md). La lane est un transit, pas un stock : distiller la conclusion durable dans le document qui la porte et l'y citer, ou retirer le rapport avec preuve de preservation"
+    },
+    {
+      "file": "docs/transients/2026-10-23-17578-hard-distractors-measurement.md",
+      "reason": "DISTILLATION_MISSING: aucun document perenne ne cite ce rapport -- seulement une entree de navigation (_quarto.yml, docs/README.md). La lane est un transit, pas un stock : distiller la conclusion durable dans le document qui la porte et l'y citer, ou retirer le rapport avec preuve de preservation"
+    }
+  ],
+  "verdict": "CONFORME"
+}
