@@ -64,6 +64,8 @@ Codes alignés sur les autres organes du dépôt (`gh_queue_health.py` : 0/1/2),
 
 `UNREADABLE` couvre quatre causes, toutes nommées dans la sortie : socket du moteur absent (prédicat testé en premier, car un socket absent fait aussi échouer `docker ps`), `docker ps` en échec, zéro conteneur de runner **listé** alors que des slots sont attendus, et des conteneurs listés dont **aucun** compteur n'a pu être lu. Les deux derniers se distinguent par le champ qui les fonde : `found_slots` vient du **listing** (`docker ps`), pas des compteurs lus — les confondre nommait « mauvais moteur Docker » une cause qui était un `docker exec` en échec. **Un zéro non mesuré n'est jamais un `OK`.**
 
+Côté Windows, l'organe ne tente même pas la mesure sur un socket `unix://` : une **garde de plateforme** explicite (`windows_unix_socket_guard`) rend `UNREADABLE` (code 2) avant tout appel docker — `--dry-run` compris — et son motif nomme la cause autant que la voie (lancer la commande dans WSL, ou pointer `--docker-host` sur un endpoint `tcp://`). Ce refus est écrit dans le code et verrouillé par un test unitaire : ce n'est pas un effet de bord du chemin de socket.
+
 ### Deux réserves qui interdisent un `OK`
 
 Elles **s'ajoutent** au calcul des deux seuils et ne peuvent que durcir le verdict (`effective_verdict`), jamais l'adoucir.

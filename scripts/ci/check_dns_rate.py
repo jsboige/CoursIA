@@ -96,6 +96,7 @@ Alignes sur les autres organes du depot (`gh_queue_health.py` : 0/1/2) :
   - `RED`         : le rapport au seuil atteint 5x (moyenne ou rafale) ...... 1
   - `UNREADABLE`  : rien n'a pu etre mesure (moteur, socket, slots, exec) ... 2
   - `NOT_APPLICABLE` : le parc de runners n'est pas attendu sur cette machine 3
+  - `WIRED`       : `--dry-run` seulement : cablage vu, aucune mesure ...... 0
 
 Une mesure `MEASURED` ne rend `OK` qu'a deux conditions de plus, AJOUTEES au
 calcul des deux seuils (un `OK` par les seuils seules etait le defaut) :
@@ -592,7 +593,7 @@ def windows_unix_socket_guard(docker_host: str | None,
 
 def decide_status(*, read_error: str | None, socket_present: bool | None,
                   found_slots: int, expected_slots: int,
-                  counters_read: int) -> tuple[str, str]:
+                  counters_read: int, dry_run: bool = False) -> tuple[str, str]:
     """Separe « je n'ai pas mesure » de « j'ai mesure et c'est calme ».
 
     C'est la fonction qui ferme le piege principal de l'organe : sans elle, un
@@ -610,7 +611,13 @@ def decide_status(*, read_error: str | None, socket_present: bool | None,
     inatteignable), puis l'echec de listing, puis le mauvais moteur, puis
     l'absence de tout compteur.
 
-    Rend `(statut, motif)` ; motif est vide quand la mesure a eu lieu.
+    `dry_run=True` : aucun `docker exec` n'a ete tente, donc le predicat « aucun
+    compteur lu » est sans objet et le statut nominal est `WIRED` -- le cablage
+    est vu, la mesure n'a pas eu lieu. Aucun compteur de synthese n'est fabrique
+    pour traverser cette branche : c'est le mode qui la declare hors sujet.
+
+    Rend `(statut, motif)` ; motif est vide quand la mesure a eu lieu (ou quand
+    le cablage est vu).
     """
     if socket_present is False:
         return STATUS_UNREADABLE, (
@@ -623,12 +630,12 @@ def decide_status(*, read_error: str | None, socket_present: bool | None,
             f"0 conteneur de runner alors que {expected_slots} slot(s) sont "
             f"attendus -- mauvais moteur Docker (piege des deux moteurs), pool "
             f"arrete, ou prefixe de nom errone ; ce n'est PAS « 0 requete/s »")
-    if counters_read == 0:
+    if not dry_run and counters_read == 0:
         return STATUS_UNREADABLE, (
             f"{found_slots} conteneur(s) de runner liste(s), mais aucun compteur "
             f"Udp.OutDatagrams n'a pu etre lu -- la mesure n'a pas eu lieu "
             f"(docker exec en echec sur chaque slot, ou compteur illisible)")
-    return "MEASURED", ""
+    return (STATUS_WIRED if dry_run else STATUS_MEASURED), ""
 
 
 # ---------------------------------------------------------------------------
@@ -1060,15 +1067,17 @@ def main(argv: list[str] | None = None) -> int:
             payload["reason"] = guard
         else:
             slots, err = list_slots(args.docker_host, prefix)
-            # En dry-run, AUCUN `docker exec` n'a lieu : le predicat « aucun
-            # compteur » ne s'applique pas, d'ou le sentinelle. Le statut rendu
-            # est WIRED, jamais MEASURED -- un dry-run ne mesure rien.
+            # En dry-run, AUCUN `docker exec` n'a lieu : `dry_run=True` declare
+            # le predicat « aucun compteur » hors sujet et le statut nominal
+            # devient WIRED. Aucun compteur de synthese n'est fabrique pour
+            # traverser la branche, et un dry-run ne peut donc pas se publier
+            # comme MEASURED.
             status, reason = decide_status(
                 read_error=err, socket_present=None,
                 found_slots=len(slots), expected_slots=expected_slots,
-                counters_read=1 if slots else 0,
+                counters_read=0, dry_run=True,
             )
-            payload["status"] = STATUS_WIRED if status == STATUS_MEASURED else status
+            payload["status"] = status
             payload["reason"] = reason
             payload["slots_present"] = sorted(slots, key=slot_sort_key)
             if not slots:

@@ -13,6 +13,7 @@ Les cinq controles d'acceptance du volet 5.1 :
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -20,15 +21,19 @@ CI_DIR = Path(__file__).resolve().parents[1] / "ci"
 if str(CI_DIR) not in sys.path:
     sys.path.insert(0, str(CI_DIR))
 
+import check_dns_rate as organ
+
 from check_dns_rate import (  # noqa: E402
     RED_FACTOR,
     STATUS_NOT_APPLICABLE,
     STATUS_OK,
     STATUS_RED,
+    STATUS_MEASURED,
     STATUS_UNREADABLE,
     STATUS_WARN,
     STATUS_WIRED,
     BURST_WINDOW_S,
+    Measurement,
     Sample,
     coverage_report,
     decide_status,
@@ -252,11 +257,22 @@ def test_binaire_injoignable_rend_rc_none():
 
 
 def test_socket_absent_est_unreadable():
-    """Socket unix absent : fait mesure, et motif propre (pas de docker appele)."""
+    """Socket unix absent : fait mesure, et motif propre (pas de docker appele).
+
+    Le couple exerce est celui que `main()` forme quand le socket manque : un
+    socket absent fait echouer `docker ps`, donc `read_error` est renseigne en
+    meme temps que `socket_present` vaut `False`. Le couple « `read_error` vide
+    + socket absent » ne se produirait qu'en course (socket retire entre le
+    dernier listing et le test d'existence) : il n'est plus cadenasse ici, et
+    c'est le predicat socket, teste en premier, qui decide -- verrouille de bout
+    en bout par `test_socket_absent_prime_depuis_main`.
+    """
     assert socket_present_for("unix:///chemin/inexistant-22937.sock") is False
     assert socket_present_for("tcp://127.0.0.1:2375") is None
     status, reason = decide_status(
-        read_error=None, socket_present=False, found_slots=3,
+        read_error="docker ps a echoue (rc=1) : Cannot connect to the Docker "
+                   "daemon at unix:///chemin/inexistant-22937.sock",
+        socket_present=False, found_slots=0,
         expected_slots=14, counters_read=0)
     assert status == STATUS_UNREADABLE
     assert "socket" in reason
@@ -523,7 +539,103 @@ def test_garde_de_plateforme_windows_sur_un_socket_unix():
     assert windows_unix_socket_guard(None, is_windows=True) == ""
 
 
-def test_dry_run_ne_s_affiche_pas_comme_une_mesure():
-    """`--dry-run` rend WIRED / UNREADABLE / NOT_APPLICABLE, jamais MEASURED."""
-    assert STATUS_WIRED != "MEASURED"
-    assert STATUS_NOT_APPLICABLE != STATUS_UNREADABLE
+def test_decide_status_dry_run_rend_wired_sans_faux_compteur():
+    """En dry-run, le predicat « aucun compteur » est hors sujet : statut WIRED.
+
+    Aucun compteur de synthese n'est fabrique pour traverser la branche : c'est
+    le mode (`dry_run=True`) qui la declare hors sujet. Le meme appel hors
+    dry-run, avec 0 compteur lu, reste UNREADABLE -- le predicat n'est pas
+    supprime, il est seulement mis hors sujet la ou aucun `exec` n'est tente.
+    """
+    status, reason = decide_status(
+        read_error=None, socket_present=None, found_slots=14,
+        expected_slots=14, counters_read=0, dry_run=True)
+    assert (status, reason) == (STATUS_WIRED, "")
+    status_mesure, reason_mesure = decide_status(
+        read_error=None, socket_present=None, found_slots=14,
+        expected_slots=14, counters_read=0)
+    assert status_mesure == STATUS_UNREADABLE
+    assert "aucun compteur" in reason_mesure
+
+
+def test_dry_run_avec_slots_rend_wired_et_code_zero(monkeypatch, capsys):
+    """De bout en bout : un `--dry-run` qui voit les slots publie WIRED, code 0.
+
+    Au head, le meme cas publiait `"status": "MEASURED"` avec un code 0 : un
+    dry-run vert se lisait « debit sous le seuil » alors qu'aucune mesure
+    n'avait eu lieu. Aucun compteur lu, et pourtant zero indication que rien
+    n'avait ete mesure.
+    """
+    listing = {f"myia-ai-01-wsl-{i}": f"{i:04x}" for i in range(1, 15)}
+    monkeypatch.setattr(organ, "list_slots",
+                        lambda *a, **k: (dict(listing), None))
+    code = organ.main(["--dry-run", "--json",
+                       "--name-prefix", "myia-ai-01-wsl",
+                       "--expected-slots", "14",
+                       "--docker-host", "tcp://127.0.0.1:2375"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 0
+    assert payload["status"] == STATUS_WIRED
+    assert payload["status"] != STATUS_MEASURED
+    assert len(payload["slots_present"]) == 14
+
+
+def test_main_publie_le_listing_et_nomme_la_vraie_cause(monkeypatch, capsys):
+    """De bout en bout : 14 slots listes, aucun compteur lu.
+
+    C'est le cas du defaut du head. `main()` passait `len(m.slots)` (compteurs
+    lus) a `decide_status` et construisait `slots_seen` depuis `m.slots`, d'ou
+    « 0 slot(s) vu(s) », `"slots_seen": []` et « mauvais moteur Docker » --
+    alors que 14 conteneurs etaient listes et que la cause reelle etait un
+    `docker exec` en echec sur chaque slot.
+    """
+    listing = {f"myia-ai-01-wsl-{i}": f"{i:04x}" for i in range(1, 15)}
+    mesure = Measurement(times=[0.0, 1.0], totals=[0.0, 0.0])
+    mesure.slots = []
+    mesure.counters_read = 0
+    monkeypatch.setattr(organ, "measure", lambda *a, **k: (
+        mesure, "", "myia-ai-01-wsl-1 : docker exec a echoue (rc=1)",
+        dict(listing)))
+    monkeypatch.setattr(organ, "count_slots_on_default_engine",
+                        lambda *a, **k: 14)
+    code = organ.main(["--json", "--name-prefix", "myia-ai-01-wsl",
+                       "--expected-slots", "14", "--window", "1",
+                       "--docker-host", "tcp://127.0.0.1:2375"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == STATUS_UNREADABLE
+    assert "aucun compteur" in payload["reason"]
+    assert "mauvais moteur" not in payload["reason"]
+    # `slots_seen` ET le diagnostic viennent du MEME listing.
+    assert len(payload["slots_seen"]) == 14
+    assert payload["slots"] == []
+    assert "moteur epingle : 14 slot(s) au listing" in (
+        payload["diagnostics"]["moteur par defaut"])
+
+
+def test_socket_absent_prime_depuis_main(monkeypatch, capsys):
+    """De bout en bout : socket absent + listing en echec -> motif « socket ».
+
+    Au head, `read_error` etait teste avant `socket_present` : la branche
+    « socket absent » etait inatteignable depuis `main()`, et le motif recopiait
+    l'erreur de `docker ps` (« Cannot connect ... ») au lieu de nommer la cause
+    racine. Le couple exerce ici est celui que `main()` forme : un socket absent
+    fait aussi echouer `docker ps`.
+    """
+    mesure = Measurement(times=[], totals=[])
+    monkeypatch.setattr(organ, "measure", lambda *a, **k: (
+        mesure,
+        "docker ps a echoue (rc=1) : Cannot connect to the Docker daemon",
+        "", {}))
+    monkeypatch.setattr(organ, "socket_present_for", lambda host: False)
+    monkeypatch.setattr(organ, "count_slots_on_default_engine",
+                        lambda *a, **k: None)
+    monkeypatch.setattr(organ, "windows_unix_socket_guard",
+                        lambda host, **k: "")
+    code = organ.main(["--json", "--name-prefix", "myia-ai-01-wsl",
+                       "--expected-slots", "14", "--window", "1",
+                       "--docker-host", "unix:///var/run/absent-22948.sock"])
+    payload = json.loads(capsys.readouterr().out)
+    assert code == 2
+    assert payload["status"] == STATUS_UNREADABLE
+    assert "socket du moteur natif absent" in payload["reason"]
