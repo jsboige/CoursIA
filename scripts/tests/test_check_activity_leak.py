@@ -241,6 +241,8 @@ class TestNegativeControls(unittest.TestCase):
             "Le test de Diebold-Mariano rend DM p = 0.032 sur 4 seeds, sous le seuil.",
             "La statistique DM compare les pertes MSE des deux modeles.",
             "Le dual momentum (DM) combine momentum absolu et relatif.",
+            "Demo DM-JEPA 1.7 : prediction latente sans generation.",
+            "Le modele DM-JEPA apprend une representation par masquage.",
         ):
             with self.subTest(text=text):
                 self.assertFalse(
@@ -248,9 +250,71 @@ class TestNegativeControls(unittest.TestCase):
                     f"DM Diebold-Mariano/momentum signale a tort: {text}",
                 )
 
+    def test_dm_jepa_elargissement_porte_le_nom_du_modele(self):
+        """#22252 -- l'allowlist porte « DM-JEPA », pas « JEPA ».
+
+        Le nom du modele de prediction latente contient « DM », que le motif
+        `\\bDM\\b` prend pour le test de Diebold-Mariano. Elargir l'allowlist au
+        mot « JEPA » seul rendait la garde muette sur toute mention « DM »
+        voisine d'un « JEPA » isole : c'est une garde affaiblie en silence.
+        Le bigrame garde la mention du modele muette et laisse la garde
+        sensible au reste -- controle negatif mesure le 2026-10-27.
+        """
+        muet = "Demo DM-JEPA 1.7 : prediction latente sans generation."
+        self.assertFalse(
+            any(n == "dm" for n, _, _ in markers_in_text(muet)),
+            f"nom de modele DM-JEPA signale a tort: {muet}",
+        )
+        for text in (
+            "Le DM publie par l'equipe JEPA hier soir.",
+            "Le DM de l'equipe a publie apres la sortie de JEPA, en mars.",
+        ):
+            with self.subTest(text=text):
+                self.assertTrue(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"mention DM proche d'un JEPA isole doit rester detectee: {text}",
+                )
+
+    def test_dm_formes_compactes_du_test_ne_sont_pas_du_recit(self):
+        """#20250 -- les trois formes mesurees le 2026-10-25 sur la serie
+        ML-Training-Pipeline. Le nom etendu n'apparait pas a moins de 60
+        caracteres : la garde etait muette, et six passages denses sur six de
+        ``m15_lstm_rv_sc_validation.ipynb`` etaient declares recit d'activite
+        alors qu'ils ne portent que le test de Diebold-Mariano (part mesuree
+        13,7 % -> 0,0 % apres l'elargissement)."""
+        for text in (
+            # renvoi a la jambe de perte, sans le mot « test »
+            'entree du registre (conjonction multi-seed + DM `loss_fn="linear"`)',
+            # p-valeur ecrite en prose courte
+            "pas la significativite (piege mesure : +19,97σ avec DM p = 0,236) ;",
+            # titre de section : le test sur erreurs recentrees
+            "## 8. Re-validation M15 BTC debiaisee + DM recentree",
+        ):
+            with self.subTest(text=text):
+                self.assertFalse(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"forme compacte du test DM signalee a tort: {text}",
+                )
+
     def test_dm_coordination_still_flagged(self):
         text = "Le coordinateur a envoye un DM HIGH a la lane po-2025."
         self.assertTrue(any(n == "dm" for n, _, _ in markers_in_text(text)))
+
+    def test_dm_coordination_recentre_et_p_valeur_ne_blanchi_pas_le_reel(self):
+        """Controle negatif de l'elargissement : les trois nouveaux motifs sont
+        etroits, un DM de coordination reste signale. « recent » (masculin) ne
+        contient pas « recentr », et « p » n'est accepte qu'avant un operateur
+        de comparaison."""
+        for text in (
+            "J'ai recu un DM de po-2024 ce matin, sans suite.",
+            "Un DM recent, mais important, est arrive sur ma lane.",
+            "Le coordinateur a envoye un DM a la lane po-2025.",
+        ):
+            with self.subTest(text=text):
+                self.assertTrue(
+                    any(n == "dm" for n, _, _ in markers_in_text(text)),
+                    f"DM de coordination blanchi a tort: {text}",
+                )
 
     def test_adjoint_mathematical_not_flagged(self):
         for text in (

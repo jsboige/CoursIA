@@ -32,6 +32,7 @@ import posixpath
 import re
 import subprocess
 import sys
+import urllib.parse
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -488,6 +489,25 @@ def duplicate_render_entries(
     return dupes
 
 
+def _emit_entry(lines: list[str], emitted: set[str], path: str) -> None:
+    """Ajoute ``- "path"`` sauf si le chemin est deja emis (#22274).
+
+    Le meme fichier peut apparaitre dans deux sections : un
+    ``docs/reference/*.README.md`` satisfait le motif ``*README.md`` **et** le
+    motif ``docs/*.md``. Quarto ne rend le document qu'une fois, mais la liste
+    generee portait les deux lignes, et le doublon faisait echouer toute
+    comparaison « nombre d'entrees == nombre d'entrees uniques ». La premiere
+    section gagne (ordre d'emission : landing, readmes, docs, notebooks) ; le
+    dedup ne s'applique qu'a l'**emission**, jamais a
+    ``duplicate_render_entries``, qui garde son role de signal d'index non
+    resolu *intra*-section (#20055).
+    """
+    if path in emitted:
+        return
+    emitted.add(path)
+    lines.append(f'    - "{path}"')
+
+
 def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str]:
     """Build the YAML lines for the project.render list.
 
@@ -495,18 +515,24 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
     (cf. ``render_sections``) : la garde anti-doublon et l'emission portent
     alors sur la meme liste, au lieu de deux enumerations qui pourraient
     diverger entre deux appels a git.
+
+    Chaque chemin est emis **au plus une fois** (#22274) : un fichier present
+    dans deux sections n'est rendu qu'une fois par Quarto, et la liste generee
+    doit le refleter, sinon elle ne satisfait pas son propre critere de
+    fraicheur (« autant d'entrees que d'entrees uniques »).
     """
     if sections is None:
         sections = render_sections()
     readmes = sections["readmes"]
     docs_md = sections["docs"]
     notebooks = sections["notebooks"]
+    emitted: set[str] = set()
 
     lines = ["project:", "  type: site", "  output-dir: _site", "  render:"]
     # Landing pages (qmd) + catalogue genere (rendu HTML, cf. LANDING_PAGES)
     lines.append("    # Landing pages (.qmd) + COURSE_CATALOG.generated.md (rendu HTML).")
     for entry in sections["landing"]:
-        lines.append(f'    - "{entry}"')
+        _emit_entry(lines, emitted, entry)
     # READMEs (explicit list — globs do not expand in Quarto 1.7, see header)
     lines.append("    # README.md rendus en HTML (Axe C #4211). Liste explicite")
     lines.append("    # (regeneree par scripts/regen_quarto_render.py) car Quarto 1.7")
@@ -518,7 +544,7 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
     # #19901, cas mesure #19579). La liste triee qui suit fusionne sans conflit.
     lines.append("    # Archives et libs vendored EXCLUES (history interne, non pedagogique).")
     for p in readmes:
-        lines.append(f'    - "{p}"')
+        _emit_entry(lines, emitted, p)
     # docs/*.md (non-README) rendus en HTML (issue #18422, etend Axe C #4211).
     # Meme mecanisme que les READMEs : liste explicite par garde de Quarto 1.7
     # (cf. header). Les fichiers avec `---` hr sont exclus (garde #11451,
@@ -529,7 +555,7 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
         lines.append("    # que les READMEs : liste explicite (globs non etendus en Quarto 1.7).")
         lines.append("    # Garde `---` (#11451) appliquee auto-resorbante.")
         for p in docs_md:
-            lines.append(f'    - "{p}"')
+            _emit_entry(lines, emitted, p)
     # Notebooks rendered to HTML (EPIC #10921, pilote Search #10923). Explicit
     # list (globs do not expand in Quarto 1.7, see README comment above).
     if notebooks:
@@ -538,7 +564,7 @@ def build_render_block(sections: dict[str, list[str]] | None = None) -> list[str
         lines.append("    # Execution desactivee + echo: true au niveau racine (_quarto.yml).")
         lines.append("    # Sous-arbres rendus : " + ", ".join(sorted(NOTEBOOK_SUBTREES)) + ".")
         for p in notebooks:
-            lines.append(f'    - "{p}"')
+            _emit_entry(lines, emitted, p)
     return lines
 
 
@@ -624,13 +650,32 @@ def replace_render_block(yml_text: str, new_block_lines: list[str]) -> str:
 # rendu par la garde `---` #11451 ou hors sous-arbre rendu). Les READMEs hors
 # sous-arbres rendus (ex. QuantConnect/) forment la population « source
 # brute » documentee -- nonverifies par cette garde.
-_IPYNB_LINK_RE = re.compile(r"\]\(([^)#\s]+\.ipynb)\)")
-_HTML_LINK_RE = re.compile(r"\]\(([^)#\s]+\.html)\)")
+_IPYNB_LINK_RE = re.compile(r"\]\(([^)\s]+?\.ipynb(?:[?#][^)\s]*)?)\)")
+_HTML_LINK_RE = re.compile(r"\]\(([^)\s]+?\.html(?:[?#][^)\s]*)?)\)")
 
 
 def _normalise_readme_target(base: Path, href: str) -> str:
-    """Return a repository-relative POSIX path with ``..`` resolved."""
-    return posixpath.normpath((base / href).as_posix())
+    """Return a repository-relative POSIX path with ``..`` resolved.
+
+    Le href est decode de son percent-encoding avant resolution : sur
+    github.com le navigateur decode, donc ``Cr%C3%A9ateur%20de%20mail.ipynb``
+    vise reellement ``Créateur de mail.ipynb``. La comparaison litterale
+    produisait un faux positif BROKEN sur les README liençant des carnets
+    a accents/espaces (2 violations fantomes sur main, mesurees le 25/10).
+
+    La query et le fragment sont retires **avant** le decodage : un lien
+    ``carnet.ipynb#section`` ou ``carnet.ipynb?raw=1`` designe le fichier, pas
+    un nom qui contiendrait ``#`` ou ``?``. L'ordre est celui de
+    ``check_docs_index.py`` (split avant ``unquote``) ; le prendre a l'envers
+    laisserait un ``%23`` decode en ``#`` dans le chemin. Mesure du 25/10 sur
+    563 README : **0** lien relatif ``.ipynb``/``.html`` portant ``#`` ou ``?``
+    -- la classe est latente, pas active, mais elle produirait un BROKEN
+    fantome au premier lien ancre.
+    """
+    path_part = href.split("#", 1)[0].split("?", 1)[0]
+    return posixpath.normpath(
+        (base / urllib.parse.unquote(path_part)).as_posix()
+    )
 
 
 def readme_link_violations(
