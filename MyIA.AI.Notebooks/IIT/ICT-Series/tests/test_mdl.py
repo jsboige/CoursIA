@@ -1,22 +1,30 @@
 """Tests du module ict.mdl (ICT-16, strate 5 Epic #4588, See #5099).
 
-Verifient les 4 fonctions du scope ICT-16 :
-  - prior Krichevsky-Trofimov (``kt_log2``, ``_tpm_line_bits``)
+Verifient les estimateurs du scope ICT-16 :
+  - prior Krichevsky-Trofimov (``kt_log2``, ``kt_codelength``,
+    ``_tpm_line_bits``)
   - ``tpm_description_length`` (codelength d'une TPM empirique)
   - ``two_part_code`` (modele + residu sur split apprentissage / held-out)
+  - ``fit_markov_order`` (selection d'ordre MDL + controle NLL held-out)
   - ``entropy_rate_estimate`` (plug-in par entropies de bloc)
   - ``complexity_entropy_sweep`` (bosse complexite-entropie)
 
-Le controle *sans complaisance* : un cycle deterministe DOIT avoir un
-``residual_bits`` held-out ~ 0 sous un modele appris sur la trajectoire
-elle-meme ; un bruit iid DOIT avoir un ``model_bits`` non nul et un
-``residual_bits/n`` ~ ``H_1`` par symbole.
+Le controle *sans complaisance* : la codelength KT est comparee a une
+**reference rationnelle exacte** (``fractions.Fraction``) et a la somme des
+couts predictifs sequentiels. Une formule fausse peut passer une assertion
+de positivite ; elle ne peut pas passer les deux a la fois.
+
+Un cycle deterministe DOIT avoir un ``residual_bits`` held-out ~ 0 sous un
+modele appris sur la trajectoire elle-meme ; un bruit iid DOIT avoir un
+``model_bits`` non nul et un ``residual_bits/n`` ~ ``H_1`` par symbole.
 
 Numpy + pytest, comme les tests existants du package.
 """
 
+import math
 import os
 import sys
+from fractions import Fraction
 
 import numpy as np
 import pytest
@@ -27,21 +35,34 @@ from ict import mdl as M  # noqa: E402
 
 
 # --------------------------------------------------------------------------- #
+#  Reference exacte (rationnelle) de la marginale KT                          #
+# --------------------------------------------------------------------------- #
+
+
+def _exact_kt_probability(counts):
+    """Reference rationnelle : ``Gamma(k/2)``/``Gamma(n+k/2)`` * produit."""
+    alpha = Fraction(1, 2)
+    k = len(counts)
+    n = sum(counts)
+    numerator = Fraction(1)
+    for count in counts:
+        for i in range(count):
+            numerator *= alpha + i
+    denominator = Fraction(1)
+    for i in range(n):
+        denominator *= k * alpha + i
+    return numerator / denominator
+
+
+# --------------------------------------------------------------------------- #
 #  Prior Krichevsky-Trofimov                                                  #
 # --------------------------------------------------------------------------- #
 
 
-def test_kt_log2_zero_count_is_neg_half_bit():
-    # KT : log2(0 + 1/2) = -1 bit. Borne inferieure connue.
-    assert M.kt_log2(0, k=2) == pytest.approx(-1.0, abs=1e-12)
-
-
-def test_kt_log2_monotone_in_count():
-    # n=0 < n=1 < n=2 : KT additif est strictement croissant.
-    a = M.kt_log2(0, k=2)
-    b = M.kt_log2(1, k=2)
-    c = M.kt_log2(2, k=2)
-    assert a < b < c
+def test_kt_log2_zero_count_contributes_nothing():
+    # Terme par categorie : Gamma(0 + 1/2)/Gamma(1/2) = 1, soit 0 bit.
+    # L'ancien contrat rendait -1 bit et fabriquait la "codelength negative".
+    assert M.kt_log2(0, k=2) == pytest.approx(0.0, abs=1e-12)
 
 
 def test_kt_log2_negative_count_raises():
@@ -49,36 +70,100 @@ def test_kt_log2_negative_count_raises():
         M.kt_log2(-1, k=2)
 
 
+@pytest.mark.parametrize("counts", [
+    [3, 1],
+    [0, 0],
+    [2, 0, 1],
+    [4, 4, 4, 4],
+    [7],
+    [0, 0, 0, 0, 3],
+])
+def test_kt_codelength_matches_exact_rational_reference(counts):
+    # La codelength doit valoir exactement -log2 de la marginale exacte.
+    reference = -math.log2(float(_exact_kt_probability(counts)))
+    assert M.kt_codelength(counts) == pytest.approx(reference, abs=1e-9)
+
+
+def test_kt_codelength_empty_row_is_zero():
+    # Rien a transmettre : la distribution est connue, cout nul.
+    # C'est precisement le cas ou l'ancienne formule rendait des bits
+    # NEGATIFS (une ligne vide de TPM facturait -4.64 bits pour k=4).
+    assert M.kt_codelength([0, 0]) == 0.0
+    assert M.kt_codelength([0, 0, 0, 0]) == 0.0
+    assert M.kt_codelength([]) == 0.0
+
+
+@pytest.mark.parametrize("counts", [
+    [1, 0],
+    [1, 0, 0, 0],
+    [10, 0, 0, 0],
+    [3, 1],
+    [500, 498, 512, 490],
+])
+def test_kt_codelength_is_non_negative(counts):
+    assert M.kt_codelength(counts) >= 0.0
+
+
+def test_kt_codelength_matches_sequential_chain_rule():
+    # Identite de la regle de la chaine pour un prior echangeable : la
+    # codelength est la somme des couts predictifs sequentiels
+    # p = (n_i + 1/2) / (n + k/2). C'est LE test qui attrape une formule
+    # fausse : n'importe quel decor pourrait rester positif, pas celui-ci.
+    counts = [3, 1, 0, 2]
+    k = len(counts)
+    symbols = []
+    for index, count in enumerate(counts):
+        symbols.extend([index] * count)
+
+    running = np.zeros(k)
+    sequential = 0.0
+    for symbol in symbols:
+        n = running.sum()
+        p = (running[symbol] + 0.5) / (n + k * 0.5)
+        sequential += -math.log2(p)
+        running[symbol] += 1
+
+    assert M.kt_codelength(counts) == pytest.approx(sequential, abs=1e-12)
+
+
+def test_kt_codelength_increases_with_one_more_symbol():
+    base = [2, 0, 1]
+    for index in range(3):
+        incremented = list(base)
+        incremented[index] += 1
+        assert M.kt_codelength(incremented) > M.kt_codelength(base)
+
+
 # --------------------------------------------------------------------------- #
 #  Codelength du modele                                                       #
 # --------------------------------------------------------------------------- #
 
 
-def test_tpm_description_length_kt_can_be_negative():
-    # NOTE (propriete fondamentale de KT, lecon C197-HARD #1) : KT peut
-    # renvoyer des codelengths NEGATIVES pour des comptes < 1 -- le prior
-    # "offre" des bits imaginaires (chaque compte 0 contribue +1 bit de
-    # prior, ce qui peut etre compense par la constante multinomiale).
-    # C'est pourquoi le code deux parties est preferable a la comparaison
-    # directe de ``model_bits`` entre modeles.
-    assert M.tpm_description_length(np.eye(4)) < 0
-    assert M.tpm_description_length(np.ones((4, 4))) < 0
+def test_tpm_description_length_non_negative():
+    # Une TPM est un objet a transmettre : sa codelength ne peut pas etre
+    # negative. L'ancien test affirmait l'inverse ("propriete fondamentale
+    # de KT"), ce qui n'est vrai d'aucune longueur de code.
+    assert M.tpm_description_length(np.eye(4)) > 0
+    assert M.tpm_description_length(np.ones((4, 4))) > 0
 
 
-def test_tpm_description_length_more_categories_smaller_with_kt():
-    # Avec KT, plus de categories = codelength potentiellement plus
-    # negative (plus de prior multinomial offert). Ce n'est pas un
-    # "modele plus simple" : c'est l'effet du prior. Le bon comparateur
-    # est ``total_bits = model_bits + residual_bits`` (cf
-    # ``two_part_code``), pas ``model_bits`` seul.
+def test_tpm_description_length_more_categories_costs_more():
+    # Un alphabet plus grand coute plus cher : plus de lignes a declarer et
+    # plus de categories par ligne. C'est l'inverse de l'ancienne assertion
+    # ("le prior offre des bits pour les zeros"), qui decrivait en realite
+    # l'artefact de la formule fausse.
     counts_small = np.array([[10.0, 0.0], [0.0, 10.0]])
     counts_big = np.array([[10.0, 0.0, 0.0, 0.0],
                            [0.0, 10.0, 0.0, 0.0],
                            [0.0, 0.0, 10.0, 0.0],
                            [0.0, 0.0, 0.0, 10.0]])
-    # KT : big < small (plus de prior offert pour les zeros).
     assert (M.tpm_description_length(counts_big)
-            < M.tpm_description_length(counts_small))
+            > M.tpm_description_length(counts_small))
+
+
+def test_tpm_description_length_empty_matrix_is_only_overhead():
+    # Aucune transition observee : seuls les log2(k) bits de declaration.
+    assert M.tpm_description_length(np.zeros((4, 4))) == pytest.approx(2.0)
 
 
 def test_tpm_description_length_non_square_raises():
@@ -108,23 +193,19 @@ def test_two_part_code_deterministic_periodic_low_residual():
     # parfaitement predites.
     seq = [0, 1, 2] * 50  # 150 etats, 149 transitions
     out = M.two_part_code(seq, split=0.5)
-    # n_heldout = len(heldout) = 75 (toutes les transitions du split).
     assert out["n_heldout"] == 75
     assert out["n_covered"] == 75
-    # Residual par transition held-out ~ 0.08 bits (KT smoothing log2(0.94)).
+    assert out["n_escaped"] == 0
+    # Residual par transition held-out ~ 0.08 bits (KT smoothing).
     assert out["residual_bits"] / out["n_heldout"] < 0.2
 
 
 def test_two_part_code_iid_high_residual():
-    # Une trajectoire iid (tiree d'une distribution uniforme sur 4
-    # etats) doit avoir un residuel held-out substantiel : un modele
-    # appris sur la moitie d'apprentissage ne predit pas mieux que le
-    # hasard sur la moitie held-out. Le residuel par transition est
-    # proche de H_1 = log2(4) = 2 bits.
+    # Une trajectoire iid (uniforme sur 4 etats) doit avoir un residuel
+    # held-out substantiel, proche de H_1 = log2(4) = 2 bits.
     rng = np.random.default_rng(42)
     seq = rng.integers(0, 4, size=500).tolist()
     out = M.two_part_code(seq, split=0.5)
-    # 4 categories -> H_1 = 2 bits par symbole. KT lissage ~ 1.95.
     assert out["residual_bits"] / out["n_heldout"] > 1.5
 
 
@@ -138,14 +219,124 @@ def test_two_part_code_model_bits_non_negative():
     )
 
 
+def test_two_part_code_predictive_rows_sum_to_one():
+    # Predictive KT normalisee : (n_ij + 1/2) / (n_i* + k/2). Un terme
+    # additionnel au denominateur (l'ancien "+ 1/2") cassait la
+    # normalisation et sous-estimait le residu.
+    seq = [0, 1, 2, 0, 1, 2, 0, 1] * 20
+    out = M.two_part_code(seq, split=0.5, states_to_index={0: 0, 1: 1, 2: 2})
+    counts = np.zeros((3, 3))
+    transitions = list(zip(seq[:-1], seq[1:]))
+    n_train = out["n_train"]
+    for a, b in transitions[:n_train]:
+        counts[a, b] += 1
+    prob = (counts + 0.5) / (counts.sum(axis=1, keepdims=True) + 3 * 0.5)
+    np.testing.assert_allclose(prob.sum(axis=1), np.ones(3), atol=1e-12)
+
+
 def test_two_part_code_split_one_nearly_zero_residual():
     # split=1.0 : n_train est plafonne a n_trans - 1 (le code reserve au
-    # moins 1 transition held-out pour avoir un signal non-vide). Sur
-    # cette 1 transition held-out, KT applique un cout < 1 bit.
-    seq = [0, 1, 2] * 30  # 90 etats, 89 transitions
+    # moins 1 transition held-out pour avoir un signal non-vide).
+    seq = [0, 1, 2] * 30
     out = M.two_part_code(seq, split=1.0)
     assert out["n_heldout"] == 1
     assert out["residual_bits"] < 1.0
+
+
+def test_two_part_code_unseen_symbol_is_escaped():
+    # Un symbole absent de l'alphabet d'apprentissage coute un
+    # echappement : la transition n'est pas "gratuite".
+    seq = [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 3]
+    out = M.two_part_code(seq, split=0.5)
+    assert out["n_escaped"] > 0
+    assert out["n_escaped"] + out["n_covered"] == out["n_heldout"]
+
+
+# --------------------------------------------------------------------------- #
+#  Selection d'ordre : le pont MDL -> generalisation                          #
+# --------------------------------------------------------------------------- #
+
+
+def _markov_tpm(seed=0, order=2, k_states=4, alpha=0.3):
+    """TPM d'une chaine d'ordre ``order`` sur ``k_states`` etats.
+
+    Le tirage de la TPM est **separe** de celui de la trajectoire : une
+    trajectoire d'apprentissage et sa trajectoire tenue a l'ecart doivent
+    sortir de la **meme** source, sinon le NLL held-out mesure un changement
+    de source et non la qualite du modele (piege rencontre en ecrivant ces
+    tests : deux TPM differentes, NLL held-out qui s'effondre a l'ordre 2 et
+    fait croire que le pont est casse).
+    """
+    rng = np.random.default_rng(seed)
+    return np.array([rng.dirichlet([alpha] * k_states)
+                     for _ in range(k_states ** order)])
+
+
+def _markov_sequence(n, tpm, order=2, k_states=4, seed=0):
+    """Trajectoire tiree sous une TPM **fournie** (meme source des deux cotes)."""
+    rng = np.random.default_rng(seed)
+    states = [int(rng.integers(k_states)) for _ in range(order)]
+    for _ in range(n):
+        context = 0
+        for j in range(order):
+            context = context * k_states + states[-(order - j)]
+        states.append(int(rng.choice(k_states, p=tpm[context])))
+    return states
+
+
+def _iid_sequence(n, seed=0, k_states=4):
+    rng = np.random.default_rng(seed)
+    return [int(v) for v in rng.integers(0, k_states, size=n)]
+
+
+def test_fit_markov_order_structure_recovers_generator_order():
+    # Source structuree (Markov d'ordre 2) : MDL doit retrouver 2, et le
+    # controle independant (NLL held-out) doit dire la meme chose.
+    tpm = _markov_tpm(seed=0, order=2)
+    train = _markov_sequence(1000, tpm, seed=0)
+    heldout = _markov_sequence(3000, tpm, seed=7)
+    out = M.fit_markov_order(train, heldout=heldout, max_order=4)
+    assert out["best_mdl_order"] == 2
+    assert out["best_nll_order"] == 2
+    assert len(out["rows"]) == 5
+    # Le code MDL d'ordre 2 doit etre strictement meilleur que l'ordre 0.
+    by_order = {row["order"]: row for row in out["rows"]}
+    assert by_order[2]["mdl_bits"] < by_order[0]["mdl_bits"]
+
+
+def test_fit_markov_order_iid_selects_order_zero():
+    # Nul i.i.d. : rien a capturer, MDL doit retomber sur l'ordre 0.
+    train = _iid_sequence(1000, seed=0)
+    heldout = _iid_sequence(3000, seed=11)
+    out = M.fit_markov_order(train, heldout=heldout, max_order=4)
+    assert out["best_mdl_order"] == 0
+
+
+def test_fit_markov_order_rows_are_internally_consistent():
+    train = _markov_sequence(400, _markov_tpm(seed=3, order=1), order=1, seed=3)
+    out = M.fit_markov_order(train, max_order=3)
+    for row in out["rows"]:
+        assert row["mdl_bits"] == pytest.approx(
+            row["payload_bits"] + row["declare_bits"]
+        )
+        assert row["n_contexts"] == out["k_states"] ** row["order"]
+        assert 0 <= row["n_nonempty"] <= row["n_contexts"]
+        assert row["payload_bits"] >= 0
+
+
+def test_fit_markov_order_declares_the_undersampling_limit():
+    # Limite mesuree, epinglee volontairement : sur 60 tirages d'une source
+    # i.i.d. a 4 etats, l'ordre 4 compte 256 contextes dont la plupart sont
+    # vides -- une ligne vide coute 0 bit, donc l'ordre eleve n'est pas
+    # facture et gagne par chance. Ce test documente le regime de rupture ;
+    # s'il se met a passer a l'ordre 0, c'est que la formule a change et il
+    # faut relire le notebook, pas supprimer le test.
+    train = _iid_sequence(60, seed=0)
+    heldout = _iid_sequence(3000, seed=11)
+    out = M.fit_markov_order(train, heldout=heldout, max_order=4)
+    assert out["best_mdl_order"] != 0
+    # Le controle held-out, lui, reste juste : c'est le point du pont.
+    assert out["best_nll_order"] == 0
 
 
 # --------------------------------------------------------------------------- #
@@ -154,7 +345,6 @@ def test_two_part_code_split_one_nearly_zero_residual():
 
 
 def test_entropy_rate_deterministic_zero():
-    # Sequence constante : un seul 1-gramme, H_1 = 0 -> taux = 0.
     seq = [0] * 50
     h = M.entropy_rate_estimate(seq, block=1)
     assert h["H_block"] == pytest.approx(0.0)
@@ -162,8 +352,6 @@ def test_entropy_rate_deterministic_zero():
 
 
 def test_entropy_rate_iid_matches_log2_cardinal():
-    # Sequence iid uniforme sur 4 etats : H_1 = log2(4) = 2 bits par
-    # symbole. Le taux a block=1 doit etre exactement 2.
     rng = np.random.default_rng(0)
     seq = rng.integers(0, 4, size=2000).tolist()
     h = M.entropy_rate_estimate(seq, block=1)
@@ -171,9 +359,6 @@ def test_entropy_rate_iid_matches_log2_cardinal():
 
 
 def test_entropy_rate_periodic_below_uniform():
-    # Sequence periodique (periode 3) : H_1 = log2(3) < 2 (uniforme 4).
-    # Le taux a block=1 doit etre inferieur au taux iid du test
-    # precedent.
     seq = [0, 1, 2] * 100
     h = M.entropy_rate_estimate(seq, block=1)
     assert h["entropy_rate"] < 2.0
@@ -192,7 +377,6 @@ def test_entropy_rate_block_too_large_raises():
 
 
 def test_complexity_entropy_sweep_returns_rows():
-    # Trois trajectoires : deterministe, periodique, iid.
     seq_det = [0, 1] * 100
     seq_per = [0, 1, 2] * 50
     rng = np.random.default_rng(7)
@@ -206,16 +390,13 @@ def test_complexity_entropy_sweep_returns_rows():
     )
     assert "rows" in out and "summary" in out
     assert out["summary"]["n_rows"] > 0
-    # Les trois trajectoires produisent des H_rate differents.
     H_rates = sorted({row["H_rate"] for row in out["rows"]})
     assert len(H_rates) >= 2
 
 
 def test_complexity_entropy_sweep_summary_has_peak():
-    # Le resume doit indiquer la position du pic (bosse).
     rng = np.random.default_rng(11)
     seqs = []
-    # Trajectoires de complexite croissante par k_etats.
     for k in (2, 3, 4, 5):
         seqs.append(rng.integers(0, k, size=400).tolist())
     out = M.complexity_entropy_sweep(
@@ -230,6 +411,19 @@ def test_complexity_entropy_sweep_summary_has_peak():
     assert "peak_model_bits" in summary
     assert summary["peak_H_rate"] >= summary["H_rate_min"]
     assert summary["peak_H_rate"] <= summary["H_rate_max"]
+
+
+def test_complexity_entropy_sweep_model_bits_non_negative():
+    # La bosse s'appuie sur model_bits comme complexite statistique : une
+    # valeur negative n'aurait aucun sens.
+    out = M.complexity_entropy_sweep(
+        [[0, 1] * 60, [0, 1, 2] * 40],
+        blocks=(1, 2),
+        splits=(0.5,),
+        rng=np.random.default_rng(5),
+        n_shuffles=2,
+    )
+    assert all(row["model_bits"] >= 0 for row in out["rows"])
 
 
 def test_complexity_entropy_sweep_empty_input_safe():

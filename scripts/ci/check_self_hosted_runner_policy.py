@@ -664,6 +664,7 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "docs-reference-guard.yml",
     "dryrun-sizing-control.yml",
     "twin-attestation-name-guard.yml",
+    "local-path-waiver-guard.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
@@ -829,10 +830,6 @@ HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
         "write`), ~14 min/run heberge ; son routage sur le conteneur ephemere "
         "n'est pas verifie -- #23053 laisse la question ouverte"
     ),
-    "local-path-waiver-guard.yml": (
-        "declencheur `issue_comment` classe FORK_REACHABLE (#14201) : le runner "
-        "local est interdit, le garde refuse la jambe self-hosted"
-    ),
     "perimeter-review-guard.yml": (
         "declencheur `pull_request_review` classe FORK_REACHABLE (#14201) : le "
         "runner local est interdit, le garde refuse la jambe self-hosted"
@@ -862,7 +859,6 @@ HOSTED_PR_JOB_EXCEPTIONS_BASELINE: frozenset[str] = frozenset({
     "ict-tests.yml",
     "lean-ci-matrix.yml",
     "lean-planning.yml",
-    "local-path-waiver-guard.yml",
     "ml-tests.yml",
     "notebook-execution-required.yml",
     "notebook-validation.yml",
