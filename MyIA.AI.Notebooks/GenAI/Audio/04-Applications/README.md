@@ -20,6 +20,8 @@ Ce module présente des cas d'usage concrets et des workflows de production pour
 
 ## Notebooks
 
+Les sections de cet index sont **thématiques** : deux carnets peuvent y voisiner sans se suivre par le rang. La numérotation `04-NN` fixe l'**ordre de lecture**, et c'est elle que suit le fil de navigation — chaque carnet renvoie à son `NN+1`. L'écart est assumé : `04-18` (transcription note à note) est présenté dans la famille YuE2 dont il partage le service, avant `04-17` (MIR classique), qui vient ensuite comme le socle DSP de cette famille.
+
 ### Workflows généraux
 
 | # | Notebook | Contenu | Service | VRAM |
@@ -66,7 +68,7 @@ Là où SheetSage2 (04-16) produit une partition symbolique globale, la **transc
 
 | # | Notebook | Contenu | Service | VRAM |
 |---|----------|---------|---------|------|
-| 17 | [04-17-Basic-Pitch-Transcription](04-17-Basic-Pitch-Transcription.ipynb) | Transcription note à note : basic-pitch (ICASSP 2022, ONNX) sur vérité terrain synthétique (11 notes à onsets exacts) et trois accords (9 notes superposées) ; rappel/précision/écart d'onset mesurés, piano-roll vérité vs détection, balayage des seuils du décodeur (onset et frame), trois exercices | CPU local (kernel `basicpitch-t4`, onnxruntime) | 0 (CPU) |
+| 18 | [04-18-Basic-Pitch-Transcription](04-18-Basic-Pitch-Transcription.ipynb) | Transcription note à note : basic-pitch (ICASSP 2022, ONNX) sur vérité terrain synthétique (11 notes à onsets exacts) et trois accords (9 notes superposées) ; rappel/précision/écart d'onset mesurés, piano-roll vérité vs détection, balayage des seuils du décodeur (onset et frame), trois exercices | CPU local (kernel `basicpitch-t4`, onnxruntime) | 0 (CPU) |
 
 > **Note (consolidation #13741)** : un sibling pédagogique plus minimal (re-voicing CP-SAT + MIDI synthèse, version allégée du canonique) a été archivé sous [`MyIA.AI.Notebooks/GenAI/Audio/_archive/04-14-VoiceLeading-RenduGenAI.ipynb`](../_archive/04-14-VoiceLeading-RenduGenAI.ipynb) pour éliminer le doublon de slot 04-14. Le contenu reste préservé (re-voicing, synthèse MIDI, MusicGen, spectrogrammes, export WAV) ; ce notebook canonique `Rendu-GenAI` (version complète re-exécutée #13398) reste la référence.
 
