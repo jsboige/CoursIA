@@ -899,6 +899,141 @@ def _hybrid_runs_on(runs_on: Any) -> dict[str, set[str]] | None:
     return {"labels": labels}
 
 
+# --- Parc local mesure par le controleur de debordement (#22937 phase A) ----
+#
+# Le controleur mesure l'occupation du parc LOCAL (label `coursia-linux`) et
+# celle de l'offre HEBERGEE (label `ubuntu-latest`). Sa lecture locale doit
+# viser les runs qui PEUVENT porter un job local : sinon elle consomme son
+# budget de lectures sur des runs qui n'en portent pas (mesure du
+# coordinateur, 2026-10-28 16:55Z : 250 runs anciens en file, presque tous en
+# attente d'`ubuntu-latest`, budget 120 lectures -> la lecture locale se
+# tronque avant d'etablir quoi que ce soit, et la soupape se ferme exactement
+# dans le regime ou elle doit s'ouvrir).
+#
+# Ce module possede la connaissance « quel workflow peut atterrir sur quel
+# runner » : la liste est donc derivee ICI, pas reecrite dans le controleur.
+LOCAL_PARK_LABEL = "coursia-linux"
+
+
+def _job_can_reach_local_park(runs_on: Any) -> bool:
+    """True si un job portant ce `runs-on` peut atterrir sur le parc local.
+
+    - selection STATIQUE (scalaire, liste ou mapping) : il suffit qu'un de
+      ses labels soit celui du parc local ;
+    - forme hybride auditee : la jambe locale y est atteinte quand la garde
+      est vraie -> capable ;
+    - expression dynamique NON auditee : traitee comme CAPABLE. Une
+      expression non auditee peut atterrir n'importe ou ; l'ignorer
+      cacherait une affamescence locale -- c'est le piege que cet organe
+      combat partout ailleurs.
+    """
+    hybrid = _hybrid_runs_on(runs_on)
+    if hybrid is not None:
+        return LOCAL_PARK_LABEL in hybrid["labels"]
+    if _contains_expression(runs_on):
+        return True
+    _is_self_hosted, _group, labels, _error = _runner_selection(runs_on)
+    return LOCAL_PARK_LABEL in labels
+
+
+def local_capable_workflows(
+    workflows_dir: Path = DEFAULT_WORKFLOWS_DIR,
+) -> tuple[set[str], str]:
+    """Derive les workflows capables de porter un job sur le parc local.
+
+    Rend `(chemins, motif)`. Les chemins portent la forme de `run.path` dans
+    l'API des runs (`.github/workflows/<fichier>`). Le motif est VIDE quand la
+    derivation a reussi, et NON VIDE sinon.
+
+    Echec -- repertoire absent, PyYAML absent, fichier illisible, YAML
+    invalide, aucun workflow -- : ensemble VIDE et motif. Un ensemble vide ne
+    se lit JAMAIS « aucun workflow local » (ce serait une affirmation de
+    NON-affamescence locale) : il se lit « la liste n'est pas etablie »
+    (fail-CLOSED, meme convention que `derive_cohort_workflows`).
+
+    Un job dont le `runs-on` n'est pas analysable n'est jamais traite comme
+    absent : il est traite comme CAPABLE. Seule la LECTURE du fichier peut
+    faire echouer la derivation.
+
+    Les APPELS de workflow reutilisable sont propages : le `run.path` d'un run
+    est le workflow APPELANT, pas le workflow appele. Un appelant qui
+    appelle un workflow local est donc capable lui aussi (sinon ses jobs
+    locaux seraient invisibles) ; un appelant d'un workflow reutilisable
+    MEME-REPO est traite comme capable (le contenu distant n'est pas
+    analysable ici, et l'ignorer cacherait une affamescence).
+    """
+    yaml = _load_yaml()
+    if yaml is None:
+        return set(), "PyYAML est indisponible"
+
+    workflows_dir = Path(workflows_dir)
+    if not workflows_dir.is_dir():
+        return set(), f"repertoire des workflows absent ({workflows_dir})"
+    try:
+        files = sorted(
+            list(workflows_dir.glob("*.yml")) + list(workflows_dir.glob("*.yaml"))
+        )
+    except OSError as exc:
+        return set(), f"enumeration des workflows impossible ({exc})"
+    if not files:
+        return set(), f"aucun workflow dans {workflows_dir}"
+
+    parsed: dict[str, dict[str, Any]] = {}
+    for path in files:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError as exc:
+            return set(), f"lecture de {path.name} impossible ({exc})"
+        data = _parse_workflow(text, yaml)
+        if data is None:
+            return set(), f"YAML de {path.name} invalide"
+        parsed[path.name] = data
+
+    capable: set[str] = set()
+    calls: dict[str, set[str]] = {}
+    for name, data in parsed.items():
+        jobs = data.get("jobs")
+        if not isinstance(jobs, dict):
+            continue
+        for job in jobs.values():
+            if not isinstance(job, dict):
+                continue
+            if "uses" in job:
+                reusable = str(job["uses"])
+                if reusable.startswith(LOCAL_REUSABLE_PREFIX):
+                    calls.setdefault(name, set()).add(
+                        reusable[len(LOCAL_REUSABLE_PREFIX):].split("@", 1)[0]
+                    )
+                elif SAME_REPO_REUSABLE_PATTERN.fullmatch(reusable):
+                    # Contenu distant non analysable ici : l'appelant est
+                    # traite comme capable (fail-safe).
+                    capable.add(name)
+                continue
+            runs_on = job.get("runs-on")
+            if runs_on is None:
+                continue
+            if _job_can_reach_local_park(runs_on):
+                capable.add(name)
+                break
+
+    # Propagation : un appelant d'un workflow capable l'est aussi. Le
+    # `run.path` designe l'APPELANT -- sans cette propagation, les jobs d'un
+    # workflow reutilisable local seraient invisibles pour la mesure locale.
+    changed = True
+    while changed:
+        changed = False
+        for caller, callees in calls.items():
+            if caller in capable:
+                continue
+            for callee in callees:
+                if callee in capable:
+                    capable.add(caller)
+                    changed = True
+                    break
+
+    return {f".github/workflows/{name}" for name in capable}, ""
+
+
 def _normalise_condition(value: Any) -> str:
     if not isinstance(value, str):
         return ""
