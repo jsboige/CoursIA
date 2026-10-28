@@ -80,20 +80,14 @@ DEFAULT_MANIFEST = Path(__file__).resolve().parent / "lib_versions_manifest.json
 
 # Epinglages NuGet : `#r "nuget: IKVM, 8.15.0"`. La virgule peut suivre sans
 # espace (`nuget:pythonnet,3.1.0`) : le motif l'accepte.
-#
-# Trois formes sont lues, parce que les trois existent dans le corpus :
-#   - version simple      : `#r "nuget: IKVM, 8.15.0"`
-#   - version prefixee `v` : `#r "nuget: IKVM, v8.15.0"`
-#   - flux (troisieme argument) : `#r "nuget: IKVM, 8.15.0, https://flux/"`
-# Un epinglage **sans version** (`#r "nuget: IKVM"`) est un pin flottant : il
-# est reconnu (le groupe version reste vide) et signale comme tel -- voir
-# #23086, qui nomme le defaut ; il n'est pas jete en silence.
 NUGET_PIN_RE = re.compile(
     r'#r\s*"nuget:\s*([^",\s]+)\s*(?:,\s*v?([0-9][^",\s]*))?(?:\s*,\s*[^"]*)?\s*"',
     re.IGNORECASE,
 )
 
-# Rappel : un epinglage flottant est signale par ce motif (cf #23086).
+# Un epinglage **sans version** (`#r "nuget: IKVM"`) est un pin flottant : il
+# est reconnu (le groupe version reste vide) et signale comme tel -- cf
+# #23086, qui nomme le defaut ; il n'est pas jete en silence.
 FLOATING_PIN_REASON = (
     "epinglage flottant : la version n'est pas fixee, donc le carnet peut "
     "charger une version differente a chaque re-execution (cf #23086)"
@@ -116,12 +110,13 @@ class OrganIncident(Exception):
 
 
 def _norm_version(value: str) -> str:
-    """Normalise une version : espaces retires, ponctuation terminale retiree,
-    prefixe `v` retire (`v8.15.0` et `8.15.0` sont la meme version)."""
-    value = value.strip().strip(";,)")
-    if value[:1] in ("v", "V") and len(value) > 1 and value[1].isdigit():
-        value = value[1:]
-    return value
+    """Normalise une version : espaces retires, ponctuation terminale retiree."""
+    return value.strip().strip(";,)")
+
+# Nombre de composantes comparees : NuGet en utilise quatre (`1.0.0.0`).
+# Completer a cette longueur rend la comparaison totale, donc `8.15` et
+# `8.15.0` egales au lieu d'ordonnees par longueur de tuple.
+_VERSION_COMPONENTS = 4
 
 
 def version_key(value: str) -> tuple:
@@ -132,8 +127,14 @@ def version_key(value: str) -> tuple:
     version pre-publique (`1.0.0-preview`) est **inferieure** a la version
     correspondante sans suffixe (`1.0.0`), comme le veut semver.
     """
+    normalized = _norm_version(value)
+    # `v8.15.0` est une ecriture de `8.15.0`, pas une version superieure :
+    # sans ce retrait, `"v8.15.0" > "8.15.0"` comparait les caracteres
+    # (relecture #23079 point 7).
+    if normalized[:1] in ("v", "V"):
+        normalized = normalized[1:]
     parts = []
-    for segment in _norm_version(value).split("."):
+    for segment in normalized.split("."):
         digits = ""
         for char in segment:
             if char.isdigit():
@@ -148,21 +149,19 @@ def version_key(value: str) -> tuple:
             parts.append((0, int(digits), 0, segment[len(digits):]))
         else:
             parts.append((1, 0, 0, segment))
+    # `8.15` et `8.15.0` sont la MEME version. Sans completion, la
+    # comparaison de tuples rend le plus court inferieur -- c'etait le faux
+    # downgrade de `8.15` contre `8.15.0`, et le faux upgrade de `1.0.0.0`
+    # contre `1.0.0` (relecture #23079 point 7). NuGet s'arrete a quatre
+    # composantes : completer a quatre rend la comparaison totale.
+    while len(parts) < _VERSION_COMPONENTS:
+        parts.append((0, 0, 1, ""))
     return tuple(parts)
 
 
 def compare_versions(left: str, right: str) -> int:
-    """-1 si left < right, 0 si egales, +1 si left > right.
-
-    Les composantes manquantes valent **zero** : `8.15` et `8.15.0` sont la
-    meme version, `1.0.0.0` et `1.0` aussi. Sans cette completion, un
-    epinglage ecrit `8.15` face a une canonique `8.15.0` se lirait comme une
-    retrogradation.
-    """
+    """-1 si left < right, 0 si egales, +1 si left > right."""
     a, b = version_key(left), version_key(right)
-    length = max(len(a), len(b))
-    a = a + ((0, 0, 1, ""),) * (length - len(a))
-    b = b + ((0, 0, 1, ""),) * (length - len(b))
     if a < b:
         return -1
     if a > b:
@@ -263,17 +262,9 @@ def load_manifest(path: Path) -> Manifest:
                 for d in entry.get("divergences", [])
             },
         )
-    allowlist = list(raw.get("allowlist", []))
-    for entry in allowlist:
-        motif = str(entry.get("reason", "")).strip()
-        if not motif:
-            raise ValueError(
-                "entree d'allowlist sans motif ecrit : une allowlist sans "
-                "motif n'est pas une justification (cf #23073)"
-            )
     return Manifest(
         libraries=libraries,
-        allowlist=allowlist,
+        allowlist=list(raw.get("allowlist", [])),
         path=path,
     )
 
@@ -408,40 +399,35 @@ def _relative_to_repo(notebook: Path, repo_root: Path) -> str:
         return notebook.as_posix()
 
 
-def payload_from_file(notebook_path: Path) -> dict:
-    """Charge un carnet sur disque.
-
-    Un carnet illisible est un **incident** (rc 2) : le rendre « vide »
-    produirait un vert silencieux sur un carnet que l'organe n'a pas lu.
-    """
+def payload_from_file(notebook_path: Path) -> dict | None:
+    """Charge un carnet sur disque ; None s'il est illisible."""
     try:
         return json.loads(notebook_path.read_text(encoding="utf-8", errors="replace"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise OrganIncident(
-            f"carnet illisible : {notebook_path.as_posix()} ({exc})"
-        ) from exc
+    except (OSError, json.JSONDecodeError):
+        return None
 
 
 def pins_from_file(notebook_path: Path, manifest: Manifest) -> list[Pin]:
-    """Relève les epinglages d'un carnet sur disque.
-
-    Un carnet illisible est un **incident**, pas un carnet vide : le rendre
-    « aligne » produirait un vert silencieux sur un carnet que l'organe n'a
-    pas reellement lu.
-    """
+    """Relève les epinglages d'un carnet sur disque (vide si illisible)."""
     try:
         payload = json.loads(notebook_path.read_text(encoding="utf-8", errors="replace"))
-    except (OSError, json.JSONDecodeError) as exc:
-        raise OrganIncident(
-            f"carnet illisible : {notebook_path.as_posix()} ({exc})"
-        ) from exc
+    except (OSError, json.JSONDecodeError):
+        return []
     return pins_from_payload(payload, manifest)
 
 
 def _allowlisted(
     manifest: Manifest, lib_id: str, version: str, notebook: str
 ) -> str | None:
-    """Retourne le motif d'allowlist si l'ecart est justifie pour ce carnet."""
+    """Retourne le motif d'allowlist si l'ecart est justifie pour ce carnet.
+
+    Une entree sans motif non vide **n'eteint rien** : #23073 exige « une
+    entree d'allowlist arbitree, avec son motif ecrit ». La validation
+    `allowlist_errors` refuse le manifeste en amont (rc 2) ; le retour
+    `None` ici est la seconde barriere, pour que le silence ne puisse pas
+    revenir si la validation venait a etre contournee (relecture #23079
+    point 1).
+    """
     for entry in manifest.allowlist:
         if entry.get("library", "").lower() != lib_id.lower():
             continue
@@ -453,10 +439,29 @@ def _allowlisted(
             for n in notebooks
         ):
             continue
-        # Le motif est obligatoire : `load_manifest` refuse une entree sans
-        # motif non vide. Ce repli n'est donc pas atteignable.
-        return entry.get("reason", "")
+        reason = (entry.get("reason") or "").strip()
+        return reason or None
     return None
+
+
+def allowlist_errors(manifest: Manifest) -> list[str]:
+    """Entrees d'allowlist inexploitables — le manifeste est alors refuse.
+
+    L'allowlist est ce qui eteint un constat : une entree sans motif ecrit
+    transforme l'organe en distributeur de vert. On refuse le manifeste
+    (rc 2) plutot que d'ignorer l'entree en silence (#23079 point 1).
+    """
+    errors: list[str] = []
+    for index, entry in enumerate(manifest.allowlist):
+        if not (entry.get("library") or "").strip():
+            errors.append(f"allowlist[{index}] : champ 'library' vide ou absent")
+        if not (entry.get("reason") or "").strip():
+            lib = (entry.get("library") or "?").strip() or "?"
+            errors.append(
+                f"allowlist[{index}] ({lib}) : motif absent ou vide "
+                "-- une entree d'allowlist doit porter son motif ecrit"
+            )
+    return errors
 
 
 def _finding(
@@ -830,14 +835,6 @@ def notebook_at(repo_root: Path, revision: str | None, relative: str) -> dict | 
             f"base illisible : {relative} a la revision {revision} n'est pas "
             f"du JSON ({exc})"
         ) from exc
-    code, out, _err = _git(repo_root, ["show", f"{revision}:{relative}"])
-    if code != 0:
-        return None
-    try:
-        return json.loads(out)
-    except json.JSONDecodeError:
-        return None
-
 
 def tracked_notebooks(repo_root: Path) -> list[Path]:
     """Liste les carnets suivis par git (les sous-modules ne sont pas des fichiers)."""
@@ -875,7 +872,7 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
     dispersion: dict[str, dict[str, list[str]]] = {}
     floating: dict[str, list[str]] = {}
     for notebook in tracked_notebooks(repo_root):
-        relative = notebook.relative_to(repo_root).as_posix()
+        relative = _relative_to_repo(notebook, repo_root)
         for pin in pins_from_file(notebook, manifest):
             if pin.ecosystem == "provisioning":
                 continue
@@ -1065,6 +1062,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     canonicals, errors = resolve_canonicals(manifest, repo_root)
+    errors.extend(allowlist_errors(manifest))
     if errors:
         for error in errors:
             print(f"ERREUR : {error}", file=sys.stderr)
@@ -1081,33 +1079,34 @@ def main(argv: list[str] | None = None) -> int:
             notebook = Path(raw_path)
             if not notebook.is_absolute():
                 notebook = repo_root / raw_path
-            notebook = notebook.resolve()
             if not notebook.is_file():
                 print(f"ERREUR : carnet introuvable : {raw_path}", file=sys.stderr)
                 return 2
-            if not notebook.is_relative_to(repo_root):
-                # Un carnet hors du depot n'est pas un carnet de la famille :
-                # le signaler nommement (rc 2), pas lever une ValueError.
+            if not notebook.resolve().is_relative_to(repo_root):
+                # Un carnet hors du depot n'est pas un carnet de la famille.
+                # La relecture demande un rc 2 **nomme** la (point 11), pas
+                # une exception : on dit ce qui ne va pas, on ne leve pas.
                 print(
-                    f"ERREUR : carnet hors du depot : {notebook.as_posix()} "
+                    f"ERREUR : carnet hors du depot : "
+                    f"{notebook.resolve().as_posix()} "
                     f"(racine : {repo_root.as_posix()})",
                     file=sys.stderr,
                 )
                 return 2
-            relative = notebook.relative_to(repo_root).as_posix()
-            try:
-                pins = pins_from_file(notebook, manifest)
-                findings.extend(
-                    state_findings(relative, pins, manifest, canonicals)
-                )
-                if not args.no_mentions:
-                    payload = payload_from_file(notebook)
-                    findings.extend(
-                        mention_findings(relative, payload, manifest, canonicals)
-                    )
-            except OrganIncident as exc:
-                print(f"ERREUR : {exc}", file=sys.stderr)
+            relative = _relative_to_repo(notebook, repo_root)
+            payload = payload_from_file(notebook)
+            if payload is None:
+                # Un carnet illisible ne doit pas rendre du vert silencieux :
+                # la famille rend rc 2 quand elle ne peut pas lire sa cible
+                # (relecture coordinateur #23079, point 2).
+                print(f"ERREUR : carnet illisible : {raw_path}", file=sys.stderr)
                 return 2
+            pins = pins_from_payload(payload, manifest)
+            findings.extend(state_findings(relative, pins, manifest, canonicals))
+            if not args.no_mentions:
+                findings.extend(
+                    mention_findings(relative, payload, manifest, canonicals)
+                )
             checked += 1
     else:
         if not args.changed:
@@ -1122,13 +1121,17 @@ def main(argv: list[str] | None = None) -> int:
             print(f"ERREUR : {exc}", file=sys.stderr)
             return 2
         for notebook in targets:
-            relative = notebook.relative_to(repo_root).as_posix()
-            try:
-                head_pins = pins_from_file(notebook, manifest)
-                head_payload = payload_from_file(notebook)
-            except OrganIncident as exc:
-                print(f"ERREUR : {exc}", file=sys.stderr)
+            relative = _relative_to_repo(notebook, repo_root)
+            head_payload = payload_from_file(notebook)
+            if head_payload is None:
+                # Idem point 2 : une cible de `--changed` qu'on ne sait pas
+                # lire est une erreur nommee, pas un carnet aligne.
+                print(
+                    f"ERREUR : carnet illisible a la tete : {relative}",
+                    file=sys.stderr,
+                )
                 return 2
+            head_pins = pins_from_payload(head_payload, manifest)
             if args.state:
                 findings.extend(
                     state_findings(relative, head_pins, manifest, canonicals)
@@ -1140,7 +1143,13 @@ def main(argv: list[str] | None = None) -> int:
                         )
                     )
             else:
-                base_payload = notebook_at(repo_root, base, relative)
+                try:
+                    base_payload = notebook_at(repo_root, base, relative)
+                except OrganIncident as exc:
+                    # Point 6 : une base qu'on ne sait pas lire n'est pas
+                    # « un carnet neuf » -- c'est une lecture en echec, nommee.
+                    print(f"ERREUR : {exc}", file=sys.stderr)
+                    return 2
                 base_pins = (
                     pins_from_payload(base_payload, manifest)
                     if base_payload is not None
@@ -1151,7 +1160,7 @@ def main(argv: list[str] | None = None) -> int:
                         relative, base_pins, head_pins, manifest, canonicals
                     )
                 )
-                if not args.no_mentions:
+                if not args.no_mentions and head_payload is not None:
                     findings.extend(
                         delta_mention_findings(
                             relative, base_payload, head_payload,

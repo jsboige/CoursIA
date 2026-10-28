@@ -473,48 +473,157 @@ def test_une_mention_autorisee_est_supprimee():
 
 
 # --------------------------------------------------------------------------
-# Points de revue du coordinateur (demande de changements 5680079393)
+# Relecture coordinateur #23079 -- points 1, 2 et 11
+#
+# Ces trois tests portent chacun leur controle positif : sans lui, ils
+# passeraient aussi sur un organe qui refuse tout, ou sur un organe qui
+# n'eteint jamais rien.
 # --------------------------------------------------------------------------
-def test_une_allowlist_sans_motif_refuse_le_manifeste(tmp_path):
-    """Point 1 : une entree d'allowlist sans motif non vide est refusee (rc 2).
+_LIB_IKVM = [
+    {
+        "id": "IKVM",
+        "ecosystem": "nuget",
+        "canonical": "8.15.0",
+        "canonical_source": "manifest",
+    }
+]
 
-    Le test doit mordre sur une **entree reelle** : le manifeste livre
-    aujourd'hui des motifs, l'absence de motif ne se verrait pas.
+
+def test_allowlist_sans_motif_refuse_le_manifeste(tmp_path):
+    """Point 1 -- une entree d'allowlist sans motif ecrit rend rc 2.
+
+    Le test d'origine (``test_allowlist_entry_without_a_reason_is_refused``)
+    parcourait le manifeste LIVRE ; il ne mordait pas tant que celui-ci
+    portait ``"allowlist": []``. Celui-ci exerce le comportement sur une
+    fixture, donc il mord quel que soit l'etat du manifeste livre.
     """
-    path = tmp_path / "manifest.json"
-    path.write_text(
-        json.dumps(
-            {
-                "schema_version": 1,
-                "libraries": [
-                    {
-                        "id": "IKVM",
-                        "ecosystem": "nuget",
-                        "canonical": "8.15.0",
-                        "canonical_source": "manifest",
-                    }
-                ],
-                "allowlist": [
-                    {"library": "IKVM", "version": "8.14.0", "notebooks": ["x.ipynb"]}
-                ],
-            }
-        ),
-        encoding="utf-8",
+    sans_motif = _manifest_with(
+        tmp_path,
+        _LIB_IKVM,
+        [{"library": "IKVM", "version": "8.14.0", "reason": "   "}],
     )
-    with pytest.raises(ValueError) as excinfo:
-        clv.load_manifest(path)
-    assert "allowlist" in str(excinfo.value)
-    # Un motif blanc n'est pas un motif.
-    path.write_text(
-        path.read_text(encoding="utf-8").replace(
-            '"notebooks": ["x.ipynb"]', '"notebooks": ["x.ipynb"], "reason": "   "'
-        ),
-        encoding="utf-8",
+    erreurs = clv.allowlist_errors(sans_motif)
+    assert erreurs, "une entree sans motif doit etre refusee"
+    assert "motif absent ou vide" in erreurs[0]
+
+    # Controle positif : le meme manifeste avec un motif ecrit passe.
+    avec_motif = _manifest_with(
+        tmp_path,
+        _LIB_IKVM,
+        [{"library": "IKVM", "version": "8.14.0", "reason": "DLL ombree liee a 8.14.0."}],
     )
-    with pytest.raises(ValueError):
-        clv.load_manifest(path)
+    assert clv.allowlist_errors(avec_motif) == []
+
+    # Et une allowlist vide reste valide (le cas du manifeste d'origine).
+    assert clv.allowlist_errors(_manifest_with(tmp_path, _LIB_IKVM, [])) == []
 
 
+def test_allowlist_sans_motif_n_eteint_pas_le_constat(tmp_path):
+    """Point 1, seconde barriere -- meme sans la validation, le constat tient."""
+    manifest = _manifest_with(
+        tmp_path,
+        _LIB_IKVM,
+        [{"library": "IKVM", "version": "8.14.0", "reason": ""}],
+    )
+    assert clv._allowlisted(manifest, "IKVM", "8.14.0", "serie/x.ipynb") is None
+
+    # Controle positif : avec un motif, la meme entree eteint bien le constat.
+    manifest_ok = _manifest_with(
+        tmp_path,
+        _LIB_IKVM,
+        [{"library": "IKVM", "version": "8.14.0", "reason": "motif ecrit"}],
+    )
+    assert clv._allowlisted(manifest_ok, "IKVM", "8.14.0", "serie/x.ipynb") == "motif ecrit"
+
+
+def test_carnet_illisible_rend_rc_deux(tmp_path, capsys):
+    """Point 2 -- un carnet illisible ne doit pas rendre du vert silencieux.
+
+    Avant correctif, ``pins_from_file`` rendait ``[]`` sur ``JSONDecodeError``
+    et le rapport annoncait « les carnets examines sont alignes ».
+    """
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps({"schema_version": 1, "libraries": _LIB_IKVM, "allowlist": []}),
+        encoding="utf-8",
+    )
+    casse = tmp_path / "casse.ipynb"
+    casse.write_text("{ ceci n'est pas du JSON", encoding="utf-8")
+
+    rc = clv.main([
+        str(casse),
+        "--repo-root", str(tmp_path),
+        "--manifest", str(manifest_path),
+    ])
+    assert rc == 2
+    assert "illisible" in capsys.readouterr().err
+
+    # Controle positif : un carnet valide et aligne ne rend PAS 2.
+    sain = _write_notebook(tmp_path, "sain.ipynb", ['#r "nuget:IKVM,8.15.0"'])
+    rc_sain = clv.main([
+        str(sain),
+        "--repo-root", str(tmp_path),
+        "--manifest", str(manifest_path),
+    ])
+    assert rc_sain == 0
+
+
+def test_version_prefixe_v_et_composantes_manquantes():
+    """Point 7 -- `v` decore l'ecriture, et une composante absente vaut zero."""
+    # `v8.15.0` et `8.15.0` sont la meme version (avant : faux upgrade).
+    assert clv.compare_versions("v8.15.0", "8.15.0") == 0
+    # `8.15` et `8.15.0` sont la meme version (avant : faux downgrade).
+    assert clv.compare_versions("8.15", "8.15.0") == 0
+    # `1.0.0.0` et `1.0.0` sont la meme version (avant : faux upgrade).
+    assert clv.compare_versions("1.0.0.0", "1.0.0") == 0
+
+    # Controles positifs : l'ordre REEL reste tranche par les nombres.
+    assert clv.compare_versions("8.14.0", "8.15.0") < 0
+    assert clv.compare_versions("v8.16.0", "8.15.0") > 0
+    assert clv.compare_versions("9.11.4210", "9.15.6755") < 0
+
+
+def test_carnet_hors_depot_rend_rc_deux_nomme(tmp_path, capsys):
+    """Point 11 -- un carnet hors de la racine est un rc 2 nomme, sans traceback.
+
+    Le test exerce le CHEMIN D'APPEL (``main`` sur un chemin explicite), pas
+    seulement l'utilitaire : c'est le site d'appel qui portait le defaut, et
+    tester l'utilitaire seul aurait passe avant le correctif.
+    """
+    depot = tmp_path / "depot"
+    depot.mkdir()
+    manifest_path = depot / "manifest.json"
+    manifest_path.write_text(
+        json.dumps({"schema_version": 1, "libraries": _LIB_IKVM, "allowlist": []}),
+        encoding="utf-8",
+    )
+    # Le carnet vit HORS de la racine passee a l'organe.
+    hors = _write_notebook(tmp_path, "hors.ipynb", ['#r "nuget:IKVM,8.15.0"'])
+    assert not str(hors).startswith(str(depot))
+
+    rc = clv.main([
+        str(hors),
+        "--repo-root", str(depot),
+        "--manifest", str(manifest_path),
+    ])
+    # Un carnet hors du depot n'est pas un carnet de la famille : la
+    # relecture demande un rc 2 **nomme** (point 11), pas un rc 1 de
+    # traceback. Le message doit dire ce qui ne va pas.
+    assert rc == 2
+    err = capsys.readouterr().err
+    assert "hors du depot" in err
+    assert "Traceback" not in err
+
+    # Controle positif : l'utilitaire reste relatif dans le depot.
+    dedans = depot / "serie" / "x.ipynb"
+    assert clv._relative_to_repo(dedans, depot) == "serie/x.ipynb"
+
+
+# --------------------------------------------------------------------------
+# Points de revue traites par le troisieme commit (les points 1, 2, 7 et 11
+# ont ete traites par le commit voisin b19f0ad68a8 -- voir le commentaire
+# point par point de la PR).
+# --------------------------------------------------------------------------
 def test_un_manifeste_avec_allowlist_sans_motif_rend_rc_deux(tmp_path, capsys):
     """Point 1 : le refus se traduit par un rc 2 nomme, pas par un traceback."""
     path = tmp_path / "manifest.json"
@@ -529,7 +638,7 @@ def test_un_manifeste_avec_allowlist_sans_motif_rend_rc_deux(tmp_path, capsys):
         encoding="utf-8",
     )
     assert clv.main(["--manifest", str(path), "--repo-root", str(tmp_path)]) == 2
-    assert "allowlist" in capsys.readouterr().err
+    assert "motif absent ou vide" in capsys.readouterr().err
 
 
 def test_un_carnet_illisible_rend_rc_deux_et_non_un_vert(tmp_path, capsys):
@@ -540,23 +649,12 @@ def test_un_carnet_illisible_rend_rc_deux_et_non_un_vert(tmp_path, capsys):
     """
     broken = tmp_path / "casse.ipynb"
     broken.write_text("{ ceci n'est pas du json", encoding="utf-8")
-    with pytest.raises(clv.OrganIncident):
-        clv.pins_from_file(broken, clv.load_manifest(MANIFEST_PATH))
-    # Un manifeste minimal : l'incident porte sur le carnet, pas sur un
-    # organe de serie absent du repertoire de test.
     manifest_path = tmp_path / "manifest.json"
     manifest_path.write_text(
         json.dumps(
             {
                 "schema_version": 1,
-                "libraries": [
-                    {
-                        "id": "IKVM",
-                        "ecosystem": "nuget",
-                        "canonical": "8.15.0",
-                        "canonical_source": "manifest",
-                    }
-                ],
+                "libraries": _LIB_IKVM,
                 "allowlist": [],
             }
         ),
@@ -577,7 +675,7 @@ def test_un_carnet_illisible_rend_rc_deux_et_non_un_vert(tmp_path, capsys):
     assert "illisible" in capsys.readouterr().err
 
 
-def test_le_manifeste_couvre_un_ecosysteme_pip(tmp_path):
+def test_le_manifeste_couvre_un_ecosysteme_pip():
     """Point 3 : pip est annonce dans la doc, donc il existe au manifeste."""
     manifest = clv.load_manifest(MANIFEST_PATH)
     pip_libs = [
@@ -650,21 +748,11 @@ def test_le_delta_signale_un_epinglage_supprime_et_remplace_par_un_autre():
 
 def test_une_base_illisible_est_un_incident_nomme():
     """Point 6 : distinguer « absent de la base » de « lecture en echec »."""
-    manifest = clv.load_manifest(MANIFEST_PATH)
     # Revision inconnue : la lecture echoue -> incident.
     with pytest.raises(clv.OrganIncident):
         clv.notebook_at(REPO_ROOT, "deadbeefdeadbeefdeadbeefdeadbeef", "x.ipynb")
-    # Revision inconnue mais carnet absent : la distinction se joue sur le
-    # message de git, pas sur une exception.
+    # Sans revision : pas de base, pas d'incident.
     assert clv.notebook_at(REPO_ROOT, None, "x.ipynb") is None
-
-
-def test_le_prefixe_v_et_les_zeros_de_completion_sont_normalises():
-    """Point 7 : `v8.15.0` == `8.15.0`, `8.15` == `8.15.0`, `1.0.0.0` == `1.0.0`."""
-    assert clv.compare_versions("v8.15.0", "8.15.0") == 0
-    assert clv.compare_versions("8.15", "8.15.0") == 0
-    assert clv.compare_versions("1.0.0.0", "1.0.0") == 0
-    assert clv.compare_versions("v9.11.4210", "9.15.6755") < 0
 
 
 def test_les_formes_de_pin_non_versionne_et_avec_prefixe_v_sont_lues():
@@ -728,14 +816,6 @@ def test_le_provisionnement_etranger_est_cable_par_bibliotheque(tmp_path):
     assert any(p.ecosystem == "provisioning" for p in pins)
 
 
-def test_un_carnet_hors_du_depot_rend_rc_deux(tmp_path, capsys):
-    """Point 11 : un chemin hors racine est un rc 2 nomme, pas un traceback."""
-    outside = tmp_path / "hors.ipynb"
-    outside.write_text(json.dumps(_notebook([])), encoding="utf-8")
-    assert clv.main(["--repo-root", str(REPO_ROOT), str(outside)]) == 2
-    assert "hors du depot" in capsys.readouterr().err
-
-
 def test_la_sortie_json_annonce_le_mode_etat_en_mode_chemins_explicites(
     tmp_path, capsys
 ):
@@ -745,14 +825,7 @@ def test_la_sortie_json_annonce_le_mode_etat_en_mode_chemins_explicites(
         json.dumps(
             {
                 "schema_version": 1,
-                "libraries": [
-                    {
-                        "id": "IKVM",
-                        "ecosystem": "nuget",
-                        "canonical": "8.15.0",
-                        "canonical_source": "manifest",
-                    }
-                ],
+                "libraries": _LIB_IKVM,
                 "allowlist": [],
             }
         ),
