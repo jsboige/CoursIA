@@ -938,3 +938,91 @@ class TestResolveMovedEntries:
         entries = [_stale_entry(self.NEW, generate_catalog.code_source_sha(nb))]
 
         assert gp.resolve_moved_entries(entries, root=root) is entries
+
+
+class TestNiveauxManifest:
+    """Tests pour le manifeste des niveaux de sortie (item 3 du tri du 26/09
+    sur #13844) : cinq strates cumulatives (decouverte -> licence ->
+    ingenieur/master -> avancee -> recherche). Meme geste que l'instance
+    Actuariat (#17659) sur l'axe des niveaux de sortie.
+
+    Couvre : (a) tous les carnets cites existent sur disque et au catalogue ;
+    (b) les strates forment une chaine de prerequis lineaire et des ensembles
+    disjoints (une strate ajoute, elle ne repete pas) ; (c) le manifeste
+    compile dans l'ordre des niveaux et la duree cumulee croit strictement a
+    chaque strate ; (d) la declaration de transitions de noyau est portante.
+    """
+    manifest_path = gp.REPO_ROOT / "docs" / "curriculum" / "niveaux.json"
+    LEVELS = ["decouverte", "licence", "ingenieur-master", "avancee", "recherche"]
+
+    # Envs Python a nom de kernel sans prefixe "Python 3" dans le catalogue
+    # (mesure du 2026-10-26 : NLP/02 -> "coursia-ml-training", Texte/03 ->
+    # "base"). Ce sont des kernels Python : l'heuristique de famille par
+    # premier token ne doit pas les lire comme des changements de noyau.
+    PYTHON_LIKE = {"Python", "coursia-ml-training", "base"}
+
+    def _foreign_families(self, compiled):
+        return {notebook["kernel"].split(" ", 1)[0]
+                for group in compiled["groups"]
+                for notebook in group["notebooks"]} - self.PYTHON_LIKE
+
+    def test_catalog_paths_exist_and_strata_are_disjoint(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        catalog_paths = {entry["path"] for entry in catalog}
+        by_level = {b["id"]: b["notebooks"] for b in manifest["branches"]}
+
+        assert list(by_level) == self.LEVELS
+        assert not manifest["branches"][0].get("prerequisites"), (
+            "la strate decouverte n'a pas de prerequis")
+        for prev, branch in zip(self.LEVELS, manifest["branches"][1:]):
+            assert branch["prerequisites"] == [prev], (
+                f"la branche {branch['id']} ne chaine pas sur {prev}")
+
+        seen = set()
+        for level in self.LEVELS:
+            paths = by_level[level]
+            assert len(paths) == len(set(paths)), f"chemin duplique dans {level}"
+            assert not (set(paths) & seen), (
+                f"la strate {level} reprend un carnet d'une strate precedente")
+            seen.update(paths)
+        for path in seen:
+            assert path in catalog_paths, f"chemin absent du catalogue : {path}"
+            assert (gp.REPO_ROOT / "MyIA.AI.Notebooks" / path).is_file(), \
+                f"chemin introuvable sur disque : {path}"
+
+    def test_compiles_five_levels_in_order(self):
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = gp.compile_parcours(catalog, manifest, self.LEVELS, [])
+        assert [g["id"] for g in compiled["groups"]] == self.LEVELS
+        assert all(group["notebooks"] for group in compiled["groups"])
+        assert self._foreign_families(compiled) == set(
+            manifest["declared_kernel_transitions"])
+
+    def test_cumulative_duration_grows_with_each_level(self):
+        """Chaque strate ajoute du temps : une strate vide ou deja couverte
+        casserait la croissance stricte des durees cumulees."""
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        durations = [
+            gp.compile_parcours(catalog, manifest, self.LEVELS[:i + 1], [])
+            ["duration_minutes"]
+            for i in range(len(self.LEVELS))
+        ]
+        assert all(later > earlier for earlier, later in zip(durations, durations[1:])), (
+            f"une strate n'ajoute pas de temps : {durations}")
+
+    def test_kernel_transitions_declaration_is_load_bearing(self):
+        """Le parcours traverse Python, .NET et Lean : sans declaration de
+        transition, la continuite de noyau doit echouer ; la declaration du
+        manifeste couvre exactement les familles non-Python presentes."""
+        manifest = json.loads(self.manifest_path.read_text(encoding="utf-8"))
+        catalog = _catalog_with_pending_renames(manifest)
+        compiled = gp.compile_parcours(catalog, manifest, self.LEVELS, [])
+        with pytest.raises(AssertionError, match="sans déclaration"):
+            assert_kernel_continuity(compiled, [])
+        foreign = self._foreign_families(compiled)
+        assert foreign == set(manifest["declared_kernel_transitions"]), (
+            f"declaration et familles reelles divergent : "
+            f"{foreign} vs {manifest['declared_kernel_transitions']}")
