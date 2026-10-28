@@ -159,6 +159,20 @@ def test_un_instrument_qui_echoue_ne_donne_pas_de_zero():
     assert erreur
 
 
+def test_le_commentaire_publie_ne_publie_pas_de_chemin_de_machine():
+    """Le commentaire est PUBLIC : y afficher le chemin absolu de
+    l'interpreteur publie une empreinte de la machine
+    (`C:\\Python314\\python.exe`)."""
+    corps = aer.commentaire_du_jour(
+        [{"cle": "padding-nommage", "issue": 5081, "titre": "t",
+          "commande": [sys.executable, "scripts/notebook_tools/x.py", "--json"],
+          "sens": "descend", "cible": 0.0, "valeur": 813.0, "erreur": "",
+          "reference": None, "verdict": "RECULE"}],
+        "2026-10-28T23:00:00Z")
+    assert sys.executable not in corps
+    assert "python scripts/notebook_tools/x.py --json" in corps
+
+
 def test_un_code_de_sortie_non_nul_ne_rend_pas_la_mesure_invalide():
     """`check_catalog_freshness.py` sort 1 quand l'ecart constate est REEL :
     la valeur se lit quand meme."""

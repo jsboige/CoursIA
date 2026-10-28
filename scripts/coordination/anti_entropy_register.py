@@ -416,6 +416,23 @@ def dernier_commentaire_issue(issue: int) -> dict | None:
     return commentaires[-1] if commentaires else None
 
 
+def _commande_affichee(commande) -> str:
+    """La commande telle qu'elle est affichee dans le commentaire publie.
+
+    L'instrument s'execute avec `sys.executable` (l'interpreteur qui
+    tourne), mais le commentaire est **public** : y afficher le chemin
+    absolu de l'interpreteur publie une empreinte de la machine
+    (`C:\\Python314\\python.exe`). On affiche donc `python`.
+    """
+    mots = []
+    for mot in commande:
+        mot = str(mot)
+        if mot == sys.executable:
+            mot = "python"
+        mots.append(mot)
+    return " ".join(mots)
+
+
 def commentaire_du_jour(entrees: list[dict], mesure_le: str) -> str:
     """Le corps du commentaire balise.
 
@@ -444,7 +461,7 @@ def commentaire_du_jour(entrees: list[dict], mesure_le: str) -> str:
     lignes += ["", "Instrument, sens et cible de chaque entree :", ""]
     for e in entrees:
         detail = (f"- `{e['cle']}` (#{e['issue']}) — {e['titre']} : "
-                  f"`{' '.join(e['commande'])}`")
+                  f"`{_commande_affichee(e['commande'])}`")
         detail += f" — sens {e.get('sens')}, cible {_fmt(e.get('cible'))}"
         if e.get("erreur"):
             detail += f" — **INSTRUMENT ILLEGIBLE** : {e['erreur']}"
