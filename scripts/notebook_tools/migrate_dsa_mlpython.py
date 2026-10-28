@@ -384,6 +384,14 @@ def apply_sweep(reps: list[tuple[str, str]], paths: list[str]) -> int:
     return total
 
 
+# Nombre de PRs ouvertes lues en une passe. `gh pr list` ne pagine pas
+# au-dela de cette borne : atteindre la limite est une MESURE PARTIELLE, pas
+# une mesure complete (reserve Hermes sur #23114). La valeur est haute (le
+# pool tourne autour de 330 PRs ouvertes) mais elle reste une borne, donc
+# son atteinte se detecte et se refuse -- cf. report_gating.
+GH_PR_LIST_LIMIT = 1000
+
+
 def report_gating(concerned: set[str]) -> dict[str, list[str]] | None:
     """Fichiers du plan retenus par des PRs ouvertes, PAR PR (best-effort via gh).
 
@@ -393,12 +401,18 @@ def report_gating(concerned: set[str]) -> dict[str, list[str]] | None:
     presence d'un fichier dans le hub, qui ne se levait jamais.
 
     Rend {"#N": [chemins retenus tries]} ; {} = mesure faite, aucun fichier
-    tenu. None = mesure impossible (gh absent ou en echec) : l'appelant refuse
-    --apply sur None (fail-closed)."""
+    tenu. None = mesure impossible : gh absent, gh en echec, ou **liste
+    tronquee** (GH_PR_LIST_LIMIT atteinte). L'appelant refuse --apply sur
+    None (fail-closed).
+
+    La troncature est fail-closed pour la meme raison que l'echec gh : une
+    PR hors fenetre est indiscernable d'une PR inexistante, donc un fichier
+    qu'elle tient serait declare libre en silence. Une mesure partielle qui
+    se tait est exactement la classe de defaut que ce mode corrige."""
     try:
         out = subprocess.run(
             ["gh", "pr", "list", "-R", "jsboige/CoursIA", "--state", "open",
-             "--json", "number,files", "--limit", "300"],
+             "--json", "number,files", "--limit", str(GH_PR_LIST_LIMIT)],
             capture_output=True, text=True, encoding="utf-8", errors="replace", cwd=str(REPO_ROOT))
         if out.returncode != 0:
             print(f"[gating] gh a echoue ({out.stderr.strip()[:80]}) -- mesure impossible")
@@ -407,6 +421,10 @@ def report_gating(concerned: set[str]) -> dict[str, list[str]] | None:
         print("[gating] gh absent -- mesure impossible")
         return None
     prs = json.loads(out.stdout or "[]")
+    if len(prs) >= GH_PR_LIST_LIMIT:
+        print(f"[gating] TRONCATURE : {len(prs)} PRs lues (limite {GH_PR_LIST_LIMIT} atteinte) "
+              "-- les PRs plus anciennes ne sont pas mesurees, mesure impossible")
+        return None
     holding: dict[str, list[str]] = {}
     for pr in prs:
         held = sorted({f["path"] for f in pr.get("files", []) if f["path"] in concerned})
