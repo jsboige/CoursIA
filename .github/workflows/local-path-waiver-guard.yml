@@ -85,6 +85,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Cone-mode false (#23053) : le runner local `coursia-linux` embarque
+          # git 2.43.0, dont le mode par defaut (cone) REFUSE un chemin de
+          # fichier -- "is not a directory", rc=128 -- alors que git >= 2.44
+          # l'accepte. Mesure : WSL local, git 2.43.0 -- cone + fichier
+          # rc=128, --no-cone + fichier rc=0 (les deux fichiers materialises).
+          # Meme forme que `adjacency-stale-sweep.yml` et
+          # `candidate-delivered-advisory.yml`.
+          sparse-checkout-cone-mode: false
           sparse-checkout: |
             .github/workflows/local-path-waiver-guard.yml
             scripts/check_local_path_waivers.py

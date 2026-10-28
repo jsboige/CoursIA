@@ -63,6 +63,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
+          # Cone-mode false (#23053) : le runner local `coursia-linux` embarque
+          # git 2.43.0, dont le mode par defaut (cone) refuse un chemin de
+          # fichier -- "is not a directory", rc=128. Mesure : WSL local,
+          # git 2.43.0 -- cone + fichier rc=128, --no-cone + fichier rc=0.
+          sparse-checkout-cone-mode: false
           sparse-checkout: |
             .github/workflows/twin-attestation-name-guard.yml
             scripts/notebook_tools/twin_pairs.d/
