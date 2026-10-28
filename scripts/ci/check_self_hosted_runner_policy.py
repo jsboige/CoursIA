@@ -16,6 +16,13 @@ unlisted (e.g. check_run / check_suite, whose payload can name a fork pull
 request) is refused by default. Dynamic ``runs-on`` expressions are rejected
 because their target cannot be proved statically.
 
+A ratchet (#23053) additionally refuses any job of a ``pull_request`` workflow
+left on a naked ``ubuntu-latest`` -- it never reads the overflow variable, so
+it queues on the hosted pool while local slots sit idle -- unless its workflow
+is named in ``HOSTED_PR_JOB_EXCEPTIONS`` with a motive. That list is a subset
+of a frozen baseline and only shrinks: naming a new exception is itself a
+violation.
+
 Exit codes:
   0  policy satisfied (including the explicit baseline of zero self-hosted jobs)
   1  policy violation
@@ -27,7 +34,7 @@ import argparse
 import json
 import re
 import sys
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -637,6 +644,26 @@ SELF_HOSTED_WORKFLOW_ALLOWLIST = {
     "translation-drift.yml",
     "twin-parity.yml",
     "unique-check-run-names-guard.yml",
+
+    # #23053 (vague 3, ordre de passage du coordinateur du 2026-10-28, lane
+    #   myia-ai-01:CoursIA-2) : la famille « gardes et advisories » adopte la
+    #   forme hybride de debordement (#22944/#23016). Ces quatre workflows
+    #   n'avaient AUCUNE entree : leur job etait heberge et ne lisait jamais
+    #   `CI_OVERFLOW_LOCAL` (mesure #23053 : 12 des 12 jobs en file
+    #   demandaient `ubuntu-latest` alors que 12 slots locaux etaient libres).
+    #   L'entree ne rend la jambe locale ATTEIGNABLE que si un operateur
+    #   bascule la variable : par defaut (absente ou != 'true') le job resout
+    #   sur ubuntu-latest, l'etat du 28/10 est conserve. La garde anti-fork vit
+    #   DANS l'expression `runs-on` -- aucune ligne `if:` n'est ajoutee ni
+    #   retiree. Chaque job porte un `timeout-minutes` ancre sur une duree
+    #   mesuree (un job sans borne a tenu 16 slots ephemeres sur 18 le 15/10).
+    #   Rollback = variable a `false` ou supprimee, sans toucher les fichiers.
+    #   pedagogy-density-advisory.yml figure deja ci-dessus (tranche 4 #14283) :
+    #   seule sa seconde jambe (`baseline-orphans-guard`) est convertie ici.
+    "assert-memory-budget.yml",
+    "docs-reference-guard.yml",
+    "dryrun-sizing-control.yml",
+    "twin-attestation-name-guard.yml",
 }
 GITHUB_HOSTED_LABELS = {
     "ubuntu-latest",
@@ -702,6 +729,151 @@ SAFE_SELF_HOSTED_TRIGGERS = frozenset({
 })
 DEFAULT_WORKFLOWS_DIR = Path(__file__).resolve().parents[2] / ".github" / "workflows"
 
+# ---------------------------------------------------------------------------
+# Cliquet des jobs heberges sur pull_request (#23053)
+# ---------------------------------------------------------------------------
+# La forme hybride de debordement (#22944, #23016) ne sert a rien si un job
+# reste fige sur `ubuntu-latest` nu : il ne lit jamais `CI_OVERFLOW_LOCAL` et
+# rejoint la file hebergee meme quand le parc local est libre. Mesure
+# fondatrice (#23053, 2026-10-28 04:45Z) : 56 runs en file, 12 slots locaux
+# libres, et les 12 jobs echantillonnes demandaient TOUS `ubuntu-latest`. C'est
+# un defaut de routage, pas de capacite -- et sans cliquet, le prochain
+# workflow ajoute recree la file.
+#
+# Ce cliquet S'AJOUTE aux verifications existantes, il n'en remplace aucune :
+# il a ses propres codes, sa propre passe, et ne touche ni l'allowlist, ni la
+# forme hybride, ni les gardes de declencheur.
+#
+# Deux invariants :
+#   1. tout job d'un workflow declenche par `pull_request` dont le `runs-on`
+#      est `ubuntu-latest` NU (chaine seule, ou liste `[ubuntu-latest]`) doit
+#      appartenir a un workflow declare dans HOSTED_PR_JOB_EXCEPTIONS ;
+#   2. la liste courante ne fait que RETRECIR : ses cles doivent etre un
+#      sous-ensemble de HOSTED_PR_JOB_EXCEPTIONS_BASELINE. Une exception
+#      absente de la baseline est elle-meme une violation.
+#
+# Faire evoluer la liste : une PR de famille convertit des workflows et retire
+# leurs entrees de HOSTED_PR_JOB_EXCEPTIONS ET de
+# HOSTED_PR_JOB_EXCEPTIONS_BASELINE dans le meme commit. Ajouter une entree
+# reste possible mais exige d'etendre la baseline : c'est un geste delibere,
+# visible en diff et en review. Le garde ne lit pas les intentions ; il rend
+# l'ecart bloquant plutot que silencieux.
+#
+# Limite assumee : l'exception porte sur le WORKFLOW. Un job nu ajoute dans un
+# workflow deja excepte echappe au cliquet jusqu'a la conversion de ce
+# workflow. Le cliquet empeche la creation de nouvelles files ; il ne dispense
+# pas de lire le diff. La granularite par job rendrait la liste instable (les
+# jobs changent de nom plus souvent que les workflows) sans fermer cette
+# limite sur le fond.
+HOSTED_PR_JOB_EXCEPTIONS: dict[str, str] = {
+    # --- convertis par #23016 (vague 2), non encore merges sur main ---
+    "always-on-metadata-guards.yml": (
+        "#23016 (vague 2) : converti en hybride, PR non encore mergee sur main"
+    ),
+    "enrich-quality-gate.yml": (
+        "#23016 (vague 2) : converti en hybride, PR non encore mergee sur main"
+    ),
+    "notebook-execution-required.yml": (
+        "#23016 (vague 2) : converti en hybride, PR non encore mergee sur main"
+    ),
+    "notebook-validation.yml": (
+        "#23016 (vague 2) : converti en hybride, PR non encore mergee sur main"
+    ),
+    "quarto-render-list-freshness.yml": (
+        "#23016 (vague 2) : converti en hybride, PR non encore mergee sur main"
+    ),
+    # --- familles suivantes de #23053, converties par leurs propres PRs ---
+    "dotnet-AgentSafetyAnalyzer.yml": (
+        "famille (b) tests .NET : conversion portee par la PR #23058"
+    ),
+    "dotnet-ArgumentAnalysis.yml": (
+        "famille (b) tests .NET : conversion portee par la PR #23058"
+    ),
+    "dotnet-OrphanApps.yml": (
+        "famille (b) tests .NET : conversion portee par la PR #23058"
+    ),
+    "dotnet-Shared.Tests.yml": (
+        "famille (b) tests .NET : conversion portee par la PR #23058"
+    ),
+    "gametheory-tests.yml": (
+        "famille (b) tests : conversion portee par la PR #23058"
+    ),
+    "genai-helpers-tests.yml": (
+        "famille (b) tests : conversion portee par la PR #23058"
+    ),
+    "ict-tests.yml": (
+        "famille (b) tests : conversion portee par la PR #23058"
+    ),
+    "ml-tests.yml": (
+        "famille (b) tests ML : conversion portee par la PR #23058"
+    ),
+    "scripts-tests.yml": (
+        "famille (b) tests : conversion portee par la PR #23058"
+    ),
+    "lean-ci-matrix.yml": (
+        "famille (c) Lean : conversion portee par la PR #23059"
+    ),
+    "lean-planning.yml": (
+        "famille (c) Lean : conversion portee par la PR #23059"
+    ),
+    "quarto-pages-deploy.yml": (
+        "famille (c) Quarto : conversion portee par la PR #23059"
+    ),
+    "slides-build-advisory.yml": (
+        "famille (c) slides : conversion portee par la PR #23059"
+    ),
+    # --- exceptions durables, hors perimetre de conversion ---
+    "codeql.yml": (
+        "CodeQL en advanced setup (#22548) : `analyze` telecharge le bundle "
+        "CodeQL, lance l'analyse et televerse du SARIF (`security-events: "
+        "write`), ~14 min/run heberge ; son routage sur le conteneur ephemere "
+        "n'est pas verifie -- #23053 laisse la question ouverte"
+    ),
+    "local-path-waiver-guard.yml": (
+        "declencheur `issue_comment` classe FORK_REACHABLE (#14201) : le runner "
+        "local est interdit, le garde refuse la jambe self-hosted"
+    ),
+    "perimeter-review-guard.yml": (
+        "declencheur `pull_request_review` classe FORK_REACHABLE (#14201) : le "
+        "runner local est interdit, le garde refuse la jambe self-hosted"
+    ),
+    "secret-scan.yml": (
+        "jambe `gitleaks-fork` : elle n'existe QUE pour les PRs de fork (son "
+        "`if:` exclut le depot lui-meme) et appelle `docker run`, dont le "
+        "socket manque au pool conteneur (uid 1001, no-new-privileges) ; la "
+        "jambe self-hosted voisine couvre les runs du depot"
+    ),
+}
+
+# Figee a la creation du cliquet (#23053, 2026-10-28) : les workflows qui
+# restaient figes sur `ubuntu-latest` nu ce jour-la. Elle NE S'ELARGIT PAS --
+# seule une decision de review peut le faire, et la PR qui nomme une nouvelle
+# exception retire au moins autant d'entrees dans le meme commit.
+HOSTED_PR_JOB_EXCEPTIONS_BASELINE: frozenset[str] = frozenset({
+    "always-on-metadata-guards.yml",
+    "codeql.yml",
+    "dotnet-AgentSafetyAnalyzer.yml",
+    "dotnet-ArgumentAnalysis.yml",
+    "dotnet-OrphanApps.yml",
+    "dotnet-Shared.Tests.yml",
+    "enrich-quality-gate.yml",
+    "gametheory-tests.yml",
+    "genai-helpers-tests.yml",
+    "ict-tests.yml",
+    "lean-ci-matrix.yml",
+    "lean-planning.yml",
+    "local-path-waiver-guard.yml",
+    "ml-tests.yml",
+    "notebook-execution-required.yml",
+    "notebook-validation.yml",
+    "perimeter-review-guard.yml",
+    "quarto-pages-deploy.yml",
+    "quarto-render-list-freshness.yml",
+    "scripts-tests.yml",
+    "secret-scan.yml",
+    "slides-build-advisory.yml",
+})
+
 
 @dataclass(frozen=True)
 class Violation:
@@ -718,6 +890,16 @@ class ScanResult:
     self_hosted_jobs: int
     violations: list[Violation]
     broken: list[str]
+    # Workflows encore exceptes du cliquet #23053 (nom, trie). Expose pour que
+    # le verdict -- texte et JSON -- nomme la liste au lieu de la laisser
+    # implicite : une liste d'exceptions invisible est une liste qui ne
+    # retrecit pas.
+    hosted_pr_exceptions: list[str] = field(default_factory=list)
+    # Baseline effectivement utilisee pour le scan (toujours un sur-ensemble de
+    # ``hosted_pr_exceptions`` quand l'invariant tient). Portee par le resultat
+    # pour que le verdict -- texte et JSON -- ne mente pas quand un test
+    # injecte ses propres listes.
+    hosted_pr_exceptions_baseline: list[str] = field(default_factory=list)
 
 
 def _load_yaml():
@@ -995,10 +1177,106 @@ def _guard_violation_message(condition: str) -> str:
     return "pull_request self-hosted job must lead with the same-repo job guard"
 
 
-def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
+def _is_naked_hosted_runner(runs_on: Any) -> bool:
+    """Vrai si ``runs-on`` ne nomme QUE le label heberge par defaut.
+
+    ``ubuntu-latest`` seul (scalaire) ou une liste a un seul element
+    ``[ubuntu-latest]``. Une expression (forme hybride), un label self-hosted
+    ou une liste multi-labels ne sont PAS « nus » : ils sont deja routes, ou
+    le sont par construction.
+    """
+    if isinstance(runs_on, str):
+        return runs_on.strip().lower() == HYBRID_RUNS_ON_FALLBACK
+    if isinstance(runs_on, list):
+        return (
+            len(runs_on) == 1
+            and isinstance(runs_on[0], str)
+            and runs_on[0].strip().lower() == HYBRID_RUNS_ON_FALLBACK
+        )
+    return False
+
+
+def _hosted_pr_job_violations(
+    workflow: str,
+    triggers: set[str],
+    jobs: dict[str, Any],
+    exceptions: dict[str, str],
+) -> list[Violation]:
+    """Cliquet #23053, invariant 1 : un job nu sur un workflow PR doit etre
+    couvert par une exception nommee. La granularite est le workflow (cf. le
+    bloc de commentaire de ``HOSTED_PR_JOB_EXCEPTIONS``)."""
+    if "pull_request" not in triggers:
+        return []
+    violations: list[Violation] = []
+    for job_name, job in jobs.items():
+        if not isinstance(job, dict) or "uses" in job:
+            continue
+        if not _is_naked_hosted_runner(job.get("runs-on")):
+            continue
+        if workflow in exceptions:
+            continue
+        violations.append(Violation(
+            workflow,
+            str(job_name),
+            "HOSTED_PR_JOB_UNEXCEPTED",
+            "job fige sur `ubuntu-latest` dans un workflow declenche par "
+            "pull_request : adopter la forme hybride de debordement "
+            "(#22944/#23016) avec un `timeout-minutes`, ou declarer une "
+            "exception nommee dans HOSTED_PR_JOB_EXCEPTIONS avec son motif "
+            "(#23053)",
+        ))
+    return violations
+
+
+def _exception_list_violations(
+    exceptions: dict[str, str],
+    baseline: frozenset[str],
+) -> list[Violation]:
+    """Cliquet #23053, invariant 2 : la liste d'exceptions ne fait que
+    retrecir, et chaque entree porte un motif."""
+    violations: list[Violation] = []
+    for workflow in sorted(exceptions):
+        if workflow not in baseline:
+            violations.append(Violation(
+                workflow,
+                "*",
+                "HOSTED_PR_JOB_EXCEPTION_ADDED",
+                "exception absente de HOSTED_PR_JOB_EXCEPTIONS_BASELINE : la "
+                "liste ne fait que retrecir -- une exception ajoutee doit etre "
+                "compensee par au moins autant d'entrees retirees dans le meme "
+                "commit (#23053)",
+            ))
+        if not str(exceptions[workflow]).strip():
+            violations.append(Violation(
+                workflow,
+                "*",
+                "HOSTED_PR_JOB_EXCEPTION_NO_MOTIVE",
+                "une exception nommee porte un motif qui explique POURQUOI le "
+                "job reste heberge (#23053)",
+            ))
+    return violations
+
+
+def scan_workflows(
+    workflows_dir: Path = DEFAULT_WORKFLOWS_DIR,
+    *,
+    hosted_pr_exceptions: dict[str, str] | None = None,
+    hosted_pr_exceptions_baseline: frozenset[str] | None = None,
+) -> ScanResult:
     yaml = _load_yaml()
     if yaml is None:
         return ScanResult(0, 0, 0, [], ["PyYAML is unavailable"])
+
+    exceptions = (
+        HOSTED_PR_JOB_EXCEPTIONS
+        if hosted_pr_exceptions is None
+        else hosted_pr_exceptions
+    )
+    baseline = (
+        HOSTED_PR_JOB_EXCEPTIONS_BASELINE
+        if hosted_pr_exceptions_baseline is None
+        else hosted_pr_exceptions_baseline
+    )
 
     paths = sorted([*workflows_dir.glob("*.yml"), *workflows_dir.glob("*.yaml")])
     if not paths:
@@ -1200,7 +1478,25 @@ def scan_workflows(workflows_dir: Path = DEFAULT_WORKFLOWS_DIR) -> ScanResult:
                         _guard_violation_message(condition),
                     ))
 
-    return ScanResult(len(paths), jobs_scanned, self_hosted_jobs, violations, broken)
+        # Cliquet #23053 (passe independante, apres l'isolation : elle ne lit
+        # ni l'allowlist ni la forme hybride, seulement le `runs-on` nu).
+        violations.extend(
+            _hosted_pr_job_violations(path.name, triggers, jobs, exceptions)
+        )
+
+    # Invariant « la liste ne fait que retrecir » : une passe globale, elle ne
+    # depend d'aucun workflow du dossier scanne.
+    violations.extend(_exception_list_violations(exceptions, baseline))
+
+    return ScanResult(
+        len(paths),
+        jobs_scanned,
+        self_hosted_jobs,
+        violations,
+        broken,
+        sorted(exceptions),
+        sorted(baseline),
+    )
 
 
 def _payload(result: ScanResult) -> dict[str, Any]:
@@ -1211,6 +1507,8 @@ def _payload(result: ScanResult) -> dict[str, Any]:
         "self_hosted_jobs": result.self_hosted_jobs,
         "violations": [asdict(item) for item in result.violations],
         "broken": result.broken,
+        "hosted_pr_job_exceptions": result.hosted_pr_exceptions,
+        "hosted_pr_job_exceptions_baseline": result.hosted_pr_exceptions_baseline,
     }
 
 
@@ -1227,6 +1525,16 @@ def _print_text(result: ScanResult) -> None:
         )
     for item in result.broken:
         print(f"  BROKEN: {item}")
+    print(
+        "[self-hosted-policy] hosted-pr-ratchet (#23053): "
+        f"{len(result.hosted_pr_exceptions)} workflow(s) encore excepte(s) "
+        f"sur {len(result.hosted_pr_exceptions_baseline)} dans la baseline"
+    )
+    # La liste n'est detaillee que lorsqu'elle est en cause : sur un run vert,
+    # une ligne de synthese suffit et n'inonde pas le journal du garde.
+    if any(item.code.startswith("HOSTED_PR_JOB_") for item in result.violations):
+        for name in result.hosted_pr_exceptions:
+            print(f"  EXCEPTION {name}")
     if not result.violations and not result.broken:
         if result.self_hosted_jobs == 0:
             print("[self-hosted-policy] OK -- explicit baseline: 0 self-hosted jobs.")

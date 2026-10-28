@@ -44,7 +44,20 @@ concurrency:
 jobs:
   attestation-name:
     name: "No twin_pairs.d component >150 chars (#15112)"
-    runs-on: ubuntu-latest
+    # 2026-10-28 (#23053 vague 3, famille (a) gardes/advisories) : forme
+    # hybride de debordement -- PR meme-depot ET vars.CI_OVERFLOW_LOCAL ==
+    # 'true' -> jambe Linux locale ; tout le reste (variable absente ou fausse,
+    # forks, dispatch) retombe sur ubuntu-latest. Bascule :
+    # `gh variable set CI_OVERFLOW_LOCAL --body true|false --repo jsboige/CoursIA`.
+    # Retour arriere = variable a `false` ou supprimee, sans toucher ce fichier.
+    # La garde anti-fork vit DANS l'expression `runs-on` : aucune ligne `if:`
+    # ajoutee ni retiree.
+    runs-on: ${{ (github.event.pull_request.head.repo.full_name == github.repository && vars.CI_OVERFLOW_LOCAL == 'true') && fromJSON('["self-hosted","coursia-ephemeral","coursia-linux"]') || 'ubuntu-latest' }}
+    # Borne de duree (#23053) : 6 s mesures sur le dernier succes (run
+    # 40629348731, job `attestation-name`) ; 5 min couvrent un clone froid en
+    # sparse-checkout (le job ne lit que twin_pairs.d/ et son propre fichier)
+    # sans laisser un slot se figer.
+    timeout-minutes: 5
 
     steps:
       - name: Checkout

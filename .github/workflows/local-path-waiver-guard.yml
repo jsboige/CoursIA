@@ -45,6 +45,13 @@ jobs:
     name: No local-path waiver bodies
     # issue_comment also fires on plain issues -- only guard PR surfaces.
     if: github.event_name != 'issue_comment' || github.event.issue.pull_request
+    # Heberge OBLIGATOIRE (#23053, exception nommee) : le declencheur
+    # `issue_comment` est classe FORK_REACHABLE (#14201) -- il tourne sur le
+    # code de la branche par defaut et son payload peut nommer une PR de fork.
+    # check_self_hosted_runner_policy.py refuse la jambe self-hosted
+    # (FORK_REACHABLE_TRIGGER), y compris sous la forme hybride de debordement :
+    # verifie empiriquement le 2026-10-28 sur la forme exacte de #23016. Le
+    # workflow figure donc dans HOSTED_PR_JOB_EXCEPTIONS avec ce motif.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
