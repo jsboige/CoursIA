@@ -42,6 +42,12 @@ GameTheory-<NN><lettre?>-<Titre>[-Part<N>]-<Noyau>.ipynb
 
 Les jumeaux Python, C# et Lean d'un même notebook partagent son numéro : on choisit l'implémentation, pas le contenu. La série n'applique pas encore partout le suffixe de noyau. La passe de renommage de la série mettra chaque nom en conformité ; d'ici là, la colonne **Noyau** des tables fait foi.
 
+### Quand un lac nouveau est légitime
+
+Un lac nouveau dans cette série est légitime si (1) sa toolchain diverge de celle de `game_theory_lean`, (2) sa théorie est distincte au sens de la clause anti-god-lake (#4365), ou (3) à toolchain égale il est le **compagnon de construction d'un arc numéroté de carnets** — importé par au moins un carnet Lean de cet arc, sans import croisé avec le lac de la série, et sans lui imposer une dépendance (un path dep d'un lac tiers deviendrait sinon facteur commun). À défaut, c'est un module de plus de `game_theory_lean`.
+
+Statuts tranchés par la mesure (T2 #23097) : `assignment_lean` — légitime, cas (3), compagnon de l'arc 16f (`GameTheory-16f-Lean-Assignment-Lean` importe `Assignment.KuhnMunkres`) ; `asymmetric_information_lean` — légitime, cas (3), compagnon des arcs 17b-17e (17c importe `AsymmetricInformation.Lemons`, 17d en importe quatre modules) avec path dep non négociable vers `lean_game_defs_ext` (#12848) que la fusion imposerait aux 38 modules du lac de la série. La carte complète et rejouable : [docs/reference/lean-material-map.md](../../docs/reference/lean-material-map.md).
+
 ## Pourquoi cette série
 
 La théorie des jeux est le **point de rencontre** entre l'optimisation (maximiser son gain), la logique (raisonner sur les croyances d'autrui) et l'informatique (algorithmes de résolution, formalisation en assistant de preuve).
