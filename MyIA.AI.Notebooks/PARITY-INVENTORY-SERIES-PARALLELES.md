@@ -14,13 +14,13 @@ Vocabulaire aligné sur l'EPIC : `alignée` (même numéro complet et titre base
 |---|---|---|---|---|---|---|
 | Search/Part1-Foundations | 15 | 15 | 0 | 0 | 0 | 0 |
 | Search/Part2-CSP | 9 | 9 | 0 | 0 | 0 | 0 |
-| Search/Part3-Cas-pratiques | 20 | 5 | 13 | 1 | 1 | 0 (2 fichiers de trios hors registre, §3) |
+| Search/Part3-Cas-pratiques | 20 | 5 | 13 | 1 | 1 | 0 (membres de trios hors registre, nommés au §3) |
 | Sudoku | 16 | 16 | 0 | 0 | 0 | 0 |
 | GameTheory (racine) | 25 | 24 | 0 | 0 | 1 | 3 |
 | GameTheory/SocialChoice | 4 | 4 | 0 | 0 | 0 | 0 |
 | SymbolicAI/SemanticWeb | 11 | 5 | 6 | 0 | 0 | 0 |
 | SymbolicAI/Planners | 9 | 9 | 0 | 0 | 0 | 0 |
-| **Total (hors Probas/DT)** | **109** | **87** | **19** | **1** | **2** | **3** (+2 fichiers trio) |
+| **Total (hors Probas/DT)** | **109** | **87** | **19** | **1** | **2** | **3** (+membres de trios) |
 
 ### Search/Part1-Foundations — 15 paires, toutes alignées, toutes enregistrées
 
