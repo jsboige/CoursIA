@@ -90,8 +90,8 @@ Recensement chiffré des valeurs quantitatives écrites en dur dans les cellules
 | `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-25-InoculationRL-Python.ipynb` | 37 |
 | `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-21-SAETrajectoires-Python.ipynb` | 13 |
 | `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-13-AxelrodStrategicMorphodynamics-Python.ipynb` | 10 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb` | 9 |
-| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15c-MetaProxyObstruction-Python.ipynb` | 8 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15/ICT-15e-Bridge2-RecoverabilityAgency-Python.ipynb` | 9 |
+| `MyIA.AI.Notebooks\IIT\ICT-Series\ICT-15/ICT-15c-MetaProxyObstruction-Python.ipynb` | 8 |
 
 ### ML (drainable total = 433)
 
