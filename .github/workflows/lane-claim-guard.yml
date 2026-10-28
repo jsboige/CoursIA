@@ -62,6 +62,29 @@ jobs:
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
+      # 2026-10-27 (#22722) : la commande qui echoue est le `git checkout --force -B`
+      # final d'actions/checkout, pas son clean/reset interne (run 40476005592 :
+      # clean et reset passent, "HEAD is now at eb8ab03489", puis le checkout
+      # refuse le carnet JEPA "not uptodate; will not remove from working tree").
+      # Ce refus est la verification de retrait du retrecissement sparse
+      # (apply_sparse_checkout, WARNING_SPARSE_NOT_UPTODATE_FILE, git 2.43.0) :
+      # a blob inchange, elle compare le fichier au blob de l'index ; ni --force
+      # ni le reset interne ne la contournent. Mitigation EMPIRIQUE, mecanisme
+      # NON TRANCHE : sur git 2.43.0 tout etat residuel reproduit localement est
+      # deja nettoye par le clean+reset du built-in (ce step rejoue la meme
+      # commande, sans effet ajoute), et l'etat qui a survecu a son reset n'est
+      # pas reproduit (mutation entre reset et checkout ? checkout interrompu ?).
+      - name: Restore the warm work tree before the sparse checkout
+        run: |
+          set -u
+          if [ -d "$GITHUB_WORKSPACE/.git" ]; then
+            dirty=$(git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" status --porcelain 2>/dev/null | head -n 1)
+            if ! git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" reset --hard --quiet; then
+              echo "::warning::[heal-worktree] reset --hard a echoue -- le retrecissement sparse peut refuser (#22722)"
+            elif [ -n "$dirty" ]; then
+              echo "::notice::[heal-worktree] arbre restaure -- le job precedent avait laisse un etat sale (${dirty}) -- le retrecissement sparse passe (#22722)"
+            fi
+          fi
       - name: Checkout the lane-claim helper (sparse)
         uses: actions/checkout@v4
         with:
@@ -215,6 +238,29 @@ jobs:
     runs-on: [self-hosted, coursia-ephemeral, coursia-linux]
     if: github.event.pull_request.head.repo.full_name == null || github.event.pull_request.head.repo.full_name == github.repository
     steps:
+      # 2026-10-27 (#22722) : la commande qui echoue est le `git checkout --force -B`
+      # final d'actions/checkout, pas son clean/reset interne (run 40476005592 :
+      # clean et reset passent, "HEAD is now at eb8ab03489", puis le checkout
+      # refuse le carnet JEPA "not uptodate; will not remove from working tree").
+      # Ce refus est la verification de retrait du retrecissement sparse
+      # (apply_sparse_checkout, WARNING_SPARSE_NOT_UPTODATE_FILE, git 2.43.0) :
+      # a blob inchange, elle compare le fichier au blob de l'index ; ni --force
+      # ni le reset interne ne la contournent. Mitigation EMPIRIQUE, mecanisme
+      # NON TRANCHE : sur git 2.43.0 tout etat residuel reproduit localement est
+      # deja nettoye par le clean+reset du built-in (ce step rejoue la meme
+      # commande, sans effet ajoute), et l'etat qui a survecu a son reset n'est
+      # pas reproduit (mutation entre reset et checkout ? checkout interrompu ?).
+      - name: Restore the warm work tree before the sparse checkout
+        run: |
+          set -u
+          if [ -d "$GITHUB_WORKSPACE/.git" ]; then
+            dirty=$(git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" status --porcelain 2>/dev/null | head -n 1)
+            if ! git -C "$GITHUB_WORKSPACE" -c safe.directory="$GITHUB_WORKSPACE" reset --hard --quiet; then
+              echo "::warning::[heal-worktree] reset --hard a echoue -- le retrecissement sparse peut refuser (#22722)"
+            elif [ -n "$dirty" ]; then
+              echo "::notice::[heal-worktree] arbre restaure -- le job precedent avait laisse un etat sale (${dirty}) -- le retrecissement sparse passe (#22722)"
+            fi
+          fi
       - name: Checkout the lane-claim helper (sparse)
         uses: actions/checkout@v4
         with:
