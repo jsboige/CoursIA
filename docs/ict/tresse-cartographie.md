@@ -80,7 +80,7 @@ Quatre opérations, chacune avec son ancrage dans le dépôt, ses aboutissants o
 
 **Ancrage dépôt.**
 - [ICT-17b-Grokking-CompressionProgress-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-17b-Grokking-CompressionProgress-Python.ipynb) — la compression progressive lue comme transition de phase, avec bosse Crutchfield-Feldman sur `model_bits + résiduel` (cf. [`dissolution-scalaires.md`](dissolution-scalaires.md) palier 5 : K bipolaire puis tri-polaire, la bosse force deux dimensions).
-- [ICT-15-IntegratedComplexity-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15-IntegratedComplexity-Python.ipynb) — la convergence Φ/F/K comme *signature* conjointe, dont le resserrement signale une compression effective.
+- [ICT-15/ICT-15-IntegratedComplexity-Python.ipynb](../../MyIA.AI.Notebooks/IIT/ICT-Series/ICT-15/ICT-15-IntegratedComplexity-Python.ipynb) — la convergence Φ/F/K comme *signature* conjointe, dont le resserrement signale une compression effective.
 
 **Aboutissants opérationnels dans la série ICT.**
 - La dissociation est *portée* par un proxy (ICT-17b cell [13] interprétation honnête : `K_compression_progress` positif sur grokking, `K_rang_effectif` négatif, `K_fisher_md` saute — *choisir K = déclarer un proxy*, cf. [`dissolution-scalaires.md`](dissolution-scalaires.md) palier 6).
