@@ -127,11 +127,13 @@ def MinimalLiberalism {I A : Type} (swf : SocialWelfareFunction I A) : Prop :=
     ∀ prefs : I → Preference A,
       StrictPref (prefs i) x y → StrictPref (swf.aggregate prefs) x y
 
-/- Théorème d'impossibilité de Sen (énoncé) :
-   aucune SWF ne peut satisfaire à la fois Pareto faible et Libéralisme minimal
-   sous certaines configurations de préférences.
-   (Énoncé plus faible — le théorème complet nécessite de construire
-   des profils de préférences spécifiques.) -/
+/- Théorème d'impossibilité de Sen :
+   cette définition ne suffit pas à l'énoncer. La preuve est en fin de fichier
+   (section « Impossibilité de Sen : la preuve ») : elle porte sur une condition
+   plus forte, `SenLiberalism` (deux individus distincts, deux paires qui se
+   croisent). `dictatorship_minimally_liberal` montre pourquoi : la dictature
+   satisfait `MinimalLiberalism`, donc Pareto et libéralisme minimal sont
+   compatibles sous cette définition-là. -/
 
 /-!
 ## Représentations par utilité
@@ -925,3 +927,119 @@ theorem arrow_impossibility {nI nA : Nat}
   obtain ⟨d, hd⟩ := exists_dictator_of_decisive hA swf h_iia h_pareto
     hx0y0 hx0w hy0w nI 0 (by omega) h0
   exact hnd ⟨d, hd⟩
+
+/-!
+## Impossibilité de Sen : la preuve
+
+La section « Impossibilité de Sen » déclare `MinimalLiberalism` — un individu
+décisif sur une paire — et laisse l'énoncé en commentaire. Cette condition est
+**trop faible pour porter un théorème** : `dictatorship_minimally_liberal`
+ci-dessous montre qu'une dictature la satisfait, et le fichier prouve déjà
+qu'une dictature satisfait Pareto (`dictatorship_satisfies_pareto`) et IIA
+(`dictatorship_satisfies_iia`). Conclure une impossibilité de
+`MinimalLiberalism` et de Pareto reviendrait donc à prouver qu'une fonction
+existe et n'existe pas.
+
+Le théorème de Sen exige **deux** individus distincts, décisifs sur **deux**
+paires distinctes. Avec trois alternatives, deux paires distinctes partagent
+exactement une alternative ; c'est ce recouvrement qui produit le cycle social.
+À quatre alternatives, deux paires disjointes ne se contredisent pas : le
+recouvrement n'est pas un détail de la preuve, il en est la condition.
+
+La preuve n'utilise **pas** IIA. Sen est en ce sens plus fort qu'Arrow : le
+cycle vient de Pareto seul, sur un profil où chaque individu reste transitif.
+-/
+
+/-- Libéralisme au sens de Sen : deux individus **distincts** sont décisifs sur
+deux paires **distinctes** d'un même triplet d'alternatives.
+
+`i` tranche la paire `(x, y)`, `j` tranche la paire `(y, z)` ; les deux paires
+se croisent sur `y`, et les trois alternatives sont deux à deux distinctes.
+C'est le cas « affaire privée » de Sen : chacun décide d'une paire qui le
+concerne, et les deux décisions se rencontrent. -/
+def SenLiberalism {I A : Type} (swf : SocialWelfareFunction I A) : Prop :=
+  ∃ i j : I, i ≠ j ∧ ∃ x y z : A,
+    x ≠ y ∧ y ≠ z ∧ x ≠ z ∧
+      Decisive swf (fun k => k = i) x y ∧
+      Decisive swf (fun k => k = j) y z
+
+/-- Le libéralisme minimal est satisfait par une dictature : le témoin est le
+dictateur lui-même, sur la paire dégénérée `(a, a)`.
+
+C'est le contre-exemple qui justifie `SenLiberalism` : sans lui, la section
+« Impossibilité de Sen » laisserait croire qu'un théorème est à portée de la
+définition qui s'y trouve. -/
+theorem dictatorship_minimally_liberal {I A : Type} [Nonempty A] (d : I) :
+    MinimalLiberalism (dictatorship (I := I) (A := A) d) := by
+  obtain ⟨a⟩ := ‹Nonempty A›
+  exact ⟨d, a, a, fun _ h => h⟩
+
+/-- **Théorème d'impossibilité de Sen.** Sur trois alternatives, aucune
+fonction de bien-être social ne satisfait à la fois Pareto faible et le
+libéralisme de Sen : deux individus distincts ne peuvent pas être chacun
+décisif sur une paire qui lui est propre dès que les deux paires se croisent.
+
+Le profil auxiliaire est explicite — `i` a `z ≻ x ≻ y`, `j` a `y ≻ z ≻ x`,
+tous les autres `z ≻ y ≻ x` — et il reste transitif pour chacun. Les deux
+décisions privées donnent `x ≻s y` et `y ≻s z`, Pareto donne `z ≻s x`, et la
+transitivité sociale produit `x ≻s z` contre `z ≻s x`. -/
+theorem sen_impossibility {I A : Type} [DecidableEq I] [DecidableEq A]
+    (swf : SocialWelfareFunction I A) (h_pareto : WeakPareto swf) :
+    ¬ SenLiberalism swf := by
+  rintro ⟨i, j, hij, x, y, z, hxy, hyz, hxz, hi, hj⟩
+  let P : I → Preference A := fun k =>
+    if k = i then prefOfUtility (rank3 z x y 3 2 1)
+    else if k = j then prefOfUtility (rank3 y z x 3 2 1)
+    else prefOfUtility (rank3 z y x 3 2 1)
+  have hP_i : ∀ k, k = i → P k = prefOfUtility (rank3 z x y 3 2 1) := by
+    intro k hk
+    simp [P, hk]
+  have hP_j : ∀ k, k = j → P k = prefOfUtility (rank3 y z x 3 2 1) := by
+    intro k hk
+    simp [P, hk, hij.symm]
+  have hP_o : ∀ k, k ≠ i → k ≠ j → P k = prefOfUtility (rank3 z y x 3 2 1) := by
+    intro k hki hkj
+    simp [P, hki, hkj]
+  have hxy_s : StrictPref (swf.aggregate P) x y := by
+    apply hi P
+    · intro k hk
+      rw [hP_i k hk]
+      exact ⟨by simp [prefOfUtility, rank3, hxz, hyz, hxy.symm] <;> decide,
+        by simp [prefOfUtility, rank3, hxz, hyz, hxy.symm] <;> decide⟩
+    · intro k hk
+      by_cases hkj : k = j
+      · rw [hP_j k hkj]
+        exact ⟨by simp [prefOfUtility, rank3, hxy, hxz] <;> decide,
+          by simp [prefOfUtility, rank3, hxy, hxz] <;> decide⟩
+      · rw [hP_o k hk hkj]
+        exact ⟨by simp [prefOfUtility, rank3, hyz, hxz, hxy] <;> decide,
+          by simp [prefOfUtility, rank3, hyz, hxz, hxy] <;> decide⟩
+  have hyz_s : StrictPref (swf.aggregate P) y z := by
+    apply hj P
+    · intro k hk
+      rw [hP_j k hk]
+      exact ⟨by simp [prefOfUtility, rank3, hyz.symm] <;> decide,
+        by simp [prefOfUtility, rank3, hyz.symm] <;> decide⟩
+    · intro k hk
+      by_cases hki : k = i
+      · rw [hP_i k hki]
+        exact ⟨by simp [prefOfUtility, rank3, hyz, hxy.symm] <;> decide,
+          by simp [prefOfUtility, rank3, hyz, hxy.symm] <;> decide⟩
+      · rw [hP_o k hki hk]
+        exact ⟨by simp [prefOfUtility, rank3, hyz] <;> decide,
+          by simp [prefOfUtility, rank3, hyz] <;> decide⟩
+  have hzx : StrictPref (swf.aggregate P) z x := by
+    apply h_pareto P z x
+    intro k
+    by_cases hki : k = i
+    · rw [hP_i k hki]
+      exact ⟨by simp [prefOfUtility, rank3, hxz] <;> decide,
+        by simp [prefOfUtility, rank3, hxz] <;> decide⟩
+    · by_cases hkj : k = j
+      · rw [hP_j k hkj]
+        exact ⟨by simp [prefOfUtility, rank3, hyz.symm, hxy, hxz] <;> decide,
+          by simp [prefOfUtility, rank3, hyz.symm, hxy, hxz] <;> decide⟩
+      · rw [hP_o k hki hkj]
+        exact ⟨by simp [prefOfUtility, rank3, hxz, hxy] <;> decide,
+          by simp [prefOfUtility, rank3, hxz, hxy] <;> decide⟩
+  exact hzx.2 ((swf.aggregate P).trans x y z hxy_s.1 hyz_s.1)
