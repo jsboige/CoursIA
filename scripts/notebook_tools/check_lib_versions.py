@@ -71,6 +71,7 @@ import json
 import re
 import subprocess
 import sys
+from collections import Counter
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -505,11 +506,17 @@ def delta_findings(
     la convergence traite -- pas une regression introduite par la PR.
     """
     findings: list[dict] = []
-    base_versions: dict[str, set[str]] = {}
+    # Multiplicites, pas ensembles : un carnet peut porter DEUX versions de
+    # la meme bibliotheque. Avec `previous == {pin.version}`, une base qui
+    # porte `{8.14.0, 8.15.0}` ne reconnaissait aucun des deux epinglages
+    # comme inchange -- la PR heritait donc d'un faux `downgrade` sur un
+    # epinglage qu'elle n'avait pas touche (relecture #23079 point 5).
+    base_counts: dict[str, Counter] = {}
     for pin in base_pins:
         if pin.ecosystem == "provisioning":
             continue
-        base_versions.setdefault(pin.library, set()).add(pin.version)
+        base_counts.setdefault(pin.library, Counter())[pin.version] += 1
+    seen: Counter = Counter()
 
     for pin in head_pins:
         if pin.ecosystem == "provisioning":
@@ -522,9 +529,12 @@ def delta_findings(
         canonical = canonical_map.get(pin.library)
         if canonical is None:
             continue
-        previous = base_versions.get(pin.library, set())
-        if previous == {pin.version}:
-            # Epinglage inchange par la PR : hors perimetre du delta.
+        # Cet exemplaire existait-il deja en base, en meme nombre ? Les
+        # occurrences au-dela du compte de base sont celles que la PR
+        # ajoute ; les precedentes sont de la derive historique.
+        key = (pin.library, pin.version)
+        seen[key] += 1
+        if seen[key] <= base_counts.get(pin.library, Counter())[pin.version]:
             continue
         if _allowlisted(manifest, pin.library, pin.version, notebook):
             continue

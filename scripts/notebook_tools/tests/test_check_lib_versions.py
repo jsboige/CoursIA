@@ -239,6 +239,34 @@ def test_delta_flags_a_downgrade_introduced_by_the_pr():
     assert any(f["kind"] == "downgrade" and f["version"] == "3.0.5" for f in findings)
 
 
+def test_delta_compare_les_multiplicites_pas_les_ensembles():
+    """Point 5 -- un carnet a DEUX versions ne fait pas rougir une PR muette.
+
+    Avant correctif, la base etait lue comme un ensemble : une base portant
+    `{8.14.0, 8.15.0}` ne reconnaissait aucun des deux epinglages comme
+    inchange, et la PR heritait d'un faux `downgrade` sur un epinglage
+    qu'elle n'avait pas touche.
+    """
+    manifest = clv.load_manifest(MANIFEST_PATH)
+    canonicals, _errors = clv.resolve_canonicals(manifest, REPO_ROOT)
+    # pythonnet, PAS IKVM : IKVM 8.14.0 est sur l'allowlist du manifeste
+    # livre, donc il ne peut structurellement pas produire de downgrade --
+    # un controle positif ecrit dessus passerait pour la mauvaise raison.
+    deux_versions = ['#r "nuget:pythonnet,3.0.5"', '#r "nuget:pythonnet,3.1.0"']
+
+    base = clv.pins_from_payload(_notebook(deux_versions), manifest)
+    head = clv.pins_from_payload(_notebook(deux_versions), manifest)
+    assert clv.delta_findings("x.ipynb", base, head, manifest, canonicals) == []
+
+    # Controle positif : la PR ajoute un TROISIEME epinglage, non present en
+    # base -- celui-la est bien une introduction, et doit rougir.
+    head_plus = clv.pins_from_payload(
+        _notebook(deux_versions + ['#r "nuget:pythonnet,3.0.5"']), manifest
+    )
+    findings = clv.delta_findings("x.ipynb", base, head_plus, manifest, canonicals)
+    assert any(f["kind"] == "downgrade" for f in findings)
+
+
 def test_delta_flags_a_new_notebook_carrying_a_divergent_pin():
     """Un carnet ajoute par la PR n'a pas de base : tous ses epinglages sont nouveaux."""
     manifest = clv.load_manifest(MANIFEST_PATH)
