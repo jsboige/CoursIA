@@ -133,8 +133,15 @@ bad()  { echo "  FAIL: $1"; echo x >>"$TMP/fail"; }
 fake_proc_reset
 fake_proc_add "$(sup_path "$REPO_ROOT")" start 4
 HELPER="$REPO_ROOT/scripts/ci/docker/linux-runner/persist/supervisor_live_for.sh"
-if COURSIA_PROC_SCAN_ROOT="$PROC" "$HELPER" "$REPO_ROOT" start >/dev/null \
-   && ! COURSIA_PROC_SCAN_ROOT="$PROC" "$HELPER" "$REPO_ROOT" waiters >/dev/null; then
+# Le predicat est appele par `bash`, comme les SEPT wrappers de production
+# (coursia-runner-start.sh et les six variantes) : dans l'index git le helper
+# est en mode 100644, donc le noyau ne le rend pas executable sur un checkout
+# Linux natif -- un exec direct echouerait en "Permission denied" et le
+# controle d'instrument passerait A TORT (le predicat ne serait jamais
+# consulte). `bash` rend l'instrumentation fidele a la production.
+
+if COURSIA_PROC_SCAN_ROOT="$PROC" bash "$HELPER" "$REPO_ROOT" start >/dev/null \
+   && ! COURSIA_PROC_SCAN_ROOT="$PROC" bash "$HELPER" "$REPO_ROOT" waiters >/dev/null; then
   echo "  PASS: le predicat discrimine le mode start du mode waiters (controle d'instrument)"
   echo x >>"$TMP/pass"
 else
@@ -147,7 +154,7 @@ fi
 # le predicat per-checkout tient.
 fake_proc_reset
 fake_proc_add "$(sup_path "$LEURRE")" start 4
-if ! COURSIA_PROC_SCAN_ROOT="$PROC" "$HELPER" "$REPO_ROOT" start >/dev/null; then
+if ! COURSIA_PROC_SCAN_ROOT="$PROC" bash "$HELPER" "$REPO_ROOT" start >/dev/null; then
   echo "  PASS: un superviseur d'un autre checkout n'est pas vu (controle negatif #21527)"
   echo x >>"$TMP/pass"
 else
@@ -163,7 +170,7 @@ fi
 # ce que le controle statique ci-dessous interdit.
 fake_proc_reset
 fake_proc_add "./scripts/ci/docker/linux-runner/supervise.sh" start 4
-if ! COURSIA_PROC_SCAN_ROOT="$PROC" "$HELPER" "$REPO_ROOT" start >/dev/null; then
+if ! COURSIA_PROC_SCAN_ROOT="$PROC" bash "$HELPER" "$REPO_ROOT" start >/dev/null; then
   echo "  PASS: une cmdline relative n'est pas vue (forme relative non admise -- controle statique plus bas)"
   echo x >>"$TMP/pass"
 else
