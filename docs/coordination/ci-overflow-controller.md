@@ -21,31 +21,57 @@ La phase A est **manuelle** (un operateur pose la variable). La phase B, decrite
 | etat mesure | decision |
 |---|---|
 | offre hebergee **saturee** (au moins `--saturation-jobs` jobs `ubuntu-latest` en file depuis plus de `--saturation-minutes`) **et** parc local libre (au moins `--min-free-slots` slots en ligne **et libres**) | variable a `true` |
-| offre hebergee **qui suit** (aucun job `ubuntu-latest` en file depuis plus de `--saturation-minutes`) | variable a `false` |
+| **charge rendue predite et bornee** : l'offre hebergee n'attend pas **et** le parc local ne porte presque rien (au plus `--max-returned-jobs` slots occupes), confirme sur une **seconde** lecture | variable a `false` |
 | parc local **lui-meme affame** (des jobs `coursia-linux` attendent) | variable a `false` (on rend la main a l'heberge) |
 | sinon (1 ou 2 jobs ages : bande morte) | **HOLD** (rien n'est ecrit) |
 
-### La liberation se mesure par l'AGE de la file, pas par son VIDE (#22937 vague 2)
+### La liberation PREDIT la charge rendue (#22937 vague 2)
 
-La premiere version exigeait une file hebergee **videe** pour rendre la main. Cette
-premise est **inatteignable** : le depot porte toujours des jobs heberges hors
-debordement (CodeQL en setup par defaut, Lean CI, les advisories de starvation), donc
-la variable ne pouvait plus jamais revenir a `false` une fois posee -- le controleur
+La liberation rend la **cohorte** a l'offre hebergee. La charge qui revient est donc
+celle que le parc local porte **maintenant** : le nombre de slots occupes en est la
+borne. On ne libere que si cette borne est petite -- le parc local ne porte
+**presque rien** (`--max-returned-jobs`, 2 par defaut ; l'occupation **inconnue**
+d'un runner compte comme occupation, fail-CLOSED), et si la lecture est
+**confirmee** par une seconde lecture de l'inventaire espacee de
+`--confirm-seconds` (30 s) : une seule lecture peut tomber sur un instant vide.
+
+#### Pourquoi la seule lecture « l'offre hebergee n'attend pas » ne suffit pas
+
+Pendant que la cohorte tourne en local, l'offre hebergee ne porte **que** les jobs
+hors debordement (CodeQL en setup par defaut, Lean CI, les advisories de starvation).
+Elle parait donc **allegee**, meme quand la charge de la cohorte est enorme. Liberer
+sur cette seule lecture rend la cohorte entiere a une offre qui s'etouffe derriere,
+et le dwell de 90 min interdit ensuite de revenir a `true` : **on rejoue la nuit du
+27/10** (reserve du coordinateur, 28/10). La lecture de l'offre ne suffit donc pas :
+il faut celle du parc local, qui est la seule a borner la charge rendue.
+
+C'est aussi pour cela que la premiere version (file hebergee **videe**) etait
+inatteignable : le depot porte toujours des jobs heberges hors debordement, donc la
+variable ne pouvait plus jamais revenir a `false` une fois posee -- le controleur
 etait un **commutateur a sens unique**.
 
-Mesure du 27/10 a 22h50Z : variable a `true` depuis 11:04Z, `hosted.queued = 74`,
-`hosted.old = 0` (le plus ancien job attendait 15,0 min -- l'offre **suit**) et
-**29 slots locaux libres**. Le parc local gardait la cohorte pendant que l'offre
-hebergee avait de la marge.
+#### Le dwell : oppose a la liberation, deroge pour la re-absorption
 
-La liberation est donc desormais indexee sur l'**age** de la file : l'offre hebergee
-rend la main des qu'aucun job n'y attend au-dela du seuil de saturation. C'est la
-meme information que la saturation, lue dans l'autre sens -- et elle est
-symetrique avec elle (un job de plus de 15 min en file est, par definition, un job
-en file), ce qui donne une **bande morte** de 1 a 2 jobs ages entre les deux
-premises.
+Un **dwell** de `--dwell-minutes` (90 par defaut) interdit deux bascules rapprochees :
+une variable qui oscille est pire qu'une variable stable. Le dwell est **coherent
+avec la cadence** : il la depasse (90 > 60 min), sinon il ne peut jamais opposer quoi
+que ce soit -- deux passages consecutifs d'un cron horaire sont toujours a plus de
+60 min, et un dwell de 30 min etait donc inerte (point Hermes du 2026-10-27, 12:53Z).
 
-Un **dwell** de `--dwell-minutes` (90 par defaut) interdit deux bascules rapprochees : une variable qui oscille est pire qu'une variable stable. Le dwell est **coherent avec la cadence** : il la depasse (90 > 60 min), sinon il ne peut jamais opposer quoi que ce soit -- deux passages consecutifs d'un cron horaire sont toujours a plus de 60 min, et un dwell de 30 min etait donc inerte (point Hermes du 2026-10-27, 12:53Z).
+La **liberation** n'echappe jamais au dwell : c'est elle qui fait revenir la cohorte,
+donc c'est elle qui doit rester freinee.
+
+La **re-absorption** (offre hebergee -> parc local) y echappe quand le backlog
+heberge est **dur** : le plus ancien job attend depuis plus de `--panic-minutes`
+(30 min par defaut). La nuit du 27/10, la liberation a rendu la cohorte a une offre
+qui s'etouffee ensuite, et le dwell de 90 min a interdit de revenir a `true` : la
+file a starve pendant toute la fenetre. Attendre 90 min devant une starvation
+etablie prolonge la panne.
+
+Cet echappement ne peut pas creer d'oscillation : il exige un backlog **dur** (le
+plus ancien job attend), ce qui est **incompatible** avec la premise de liberation
+(« l'offre hebergee n'attend pas ») -- les deux ne peuvent pas etre vraies a la meme
+lecture.
 
 L'organe est **fail-CLOSED** : une mesure illisible (listing incomplet, inventaire des runners inaccessible) ne produit **aucune** ecriture.
 
@@ -53,8 +79,8 @@ Une lecture **tronquee** (budget de lecture atteint) n'est pas une mesure illisi
 
 | lecture tronquee | conclusion bloquee | conclusion conservee |
 |---|---|---|
-| offre hebergee | « l'offre hebergee **suit** » -> pas de bascule vers `false` | « l'offre hebergee est **saturee** » -> la bascule vers `true` reste possible |
-| parc local | « le parc local **n'est pas affame** » -> pas de bascule vers `true` | « le parc local **est affame** » -> la bascule vers `false` reste possible |
+| offre hebergee | « l'offre hebergee **n'attend pas** » -> pas de bascule vers `false` | « l'offre hebergee est **saturee** » -> la bascule vers `true` reste possible |
+| parc local | « le parc local **n'est pas affame** » -> pas de bascule vers `true` · « le parc local ne porte **rien** » -> pas de bascule vers `false` | « le parc local **est affame** » -> la bascule vers `false` reste possible |
 
 Mesure du 2026-10-27 sur la file reelle, avant correction : lecture hebergee complete (`budget_unread = 0`) mais lecture **locale tronquee a 15 runs**, ages de 15 a 20 min -- donc **au-dessus** du seuil de 15 min, donc desertes par une lecture complete. Le compte `starved = 0` etait alors une **borne inferieure** : « le parc local n'est pas affame » n'etait pas etabli, et la garde de securite s'ouvrait en faux. Le budget local a ete aligne sur le budget hebergee (40 -> 120) pour que la lecture locale soit complete dans le regime nominal : a 40, le parc local (44 a 55 runs eligibles mesures) etait a la limite exacte du plafond, donc la troncature etait une loterie.
 
@@ -70,6 +96,14 @@ ACTIONS_VARIABLES_PAT=... python scripts/ci/ci_overflow_controller.py \
 ```
 
 Codes de retour : `0` nominal (HOLD ou bascule), `1` mesure illisible ou **etat de la variable illisible** (`UNREADABLE`), `2` refus (`REFUSED` : jeton de mesure absent, ou ecriture refusee par le depot).
+
+### Les seuils de la liberation
+
+| option | defaut | role |
+|---|---|---|
+| `--max-returned-jobs` | 2 | charge rendue maximum a la liberation : le parc local doit porter au plus ce nombre de slots occupes (occupation inconnue comprise) |
+| `--confirm-seconds` | 30 | pause avant la **seconde** lecture de l'inventaire qui confirme l'inaction du parc |
+| `--panic-minutes` | 30 | age du plus ancien job heberge au-dela duquel le backlog est **dur** : la re-absorption n'est alors plus differee par le dwell |
 
 ## Jeton d'inventaire du parc (`RUNNERS_READ_PAT`)
 
@@ -137,6 +171,8 @@ Le job planifie rend son verdict dans le resume de chaque passage (horaire, minu
   "local": {"online": 32, "free": 26, "starved": 0, "complete": true}
 }
 ```
+
+Cette mesure est anterieure a la correction « la liberation predit la charge rendue » : elle a ete produite par la regle qui lisait la seule file hebergee. Le **verdict** reste identique sous la regle actuelle (la file etait saturee, donc la saturation prime et l'etat etait deja au bout) ; ce qui change est la **premise de liberation**, qui exige desormais la lecture du parc local.
 
 Lecture : au moment de la mesure, l'offre hebergee portait **136 jobs en file** (dont 134 de plus de 15 min, le plus ancien a 74 min) pendant que le parc local availait **26 slots libres sur 32 en ligne**. La variable etait deja a `true` : le controleur **n'ecrit rien** (etat deja au bout). C'est cette meme execution qui a servi a compter les 313 appels `gh` ci-dessous.
 

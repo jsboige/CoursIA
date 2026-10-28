@@ -11,8 +11,10 @@ Regle de decision (celle de l'arbitrage, pas une invention de l'organe) :
 - offre hebergee **saturee** (jobs `ubuntu-latest` en file au-dela du seuil
   d'age) **et** parc local libre -> variable a `true` (le local absorbe le
   debordement) ;
-- file hebergee **videe** -> variable a `false` (l'offre hebergee suffit, le
-  local se libere) ;
+- **charge rendue predite et bornee** -> variable a `false` : l'offre
+  hebergee n'attend pas **et** le parc local ne porte presque rien (le
+  nombre de slots occupes borne la charge qui revient avec la cohorte),
+  confirmation sur une **seconde** lecture ;
 - sinon -> **HOLD** (on ne touche a rien : une variable qui oscille est pire
   qu'une variable stable).
 
@@ -101,6 +103,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -132,6 +135,20 @@ DEFAULT_MIN_FREE_SLOTS = 2
 # inerte, un decor et non une protection. Regle appliquee : le dwell depasse
 # la cadence (90 > 60).
 DEFAULT_DWELL_MINUTES = 90.0
+# Charge rendue maximum toleree a la liberation. La liberation rend la
+# COHORTE a l'offre hebergee : le nombre de jobs que le parc local porte au
+# moment de la liberation borne la charge qui revient. On ne libere donc que
+# si le parc local ne porte presque rien (au plus ce nombre de slots
+# occupes) -- la charge rendue est alors PREDITE et BORNEE, pas subie.
+DEFAULT_MAX_RETURNED_JOBS = 2
+# Pause entre les deux lectures de l'inventaire local qui confirment
+# l'inaction du parc (une seule lecture peut tomber sur un instant vide).
+DEFAULT_CONFIRM_SECONDS = 30.0
+# Backlog DUR : au-dela de cet age, le plus ancien job heberge n'attend plus
+# « un peu » -- il etouffe la file. La RE-ABSORPTION (offre -> local) n'est
+# alors plus bloquee par le dwell : c'est la starvation qu'on a vecue, et
+# attendre 90 min la prolonge. La LIBERATION n'echappe jamais au dwell.
+DEFAULT_PANIC_MINUTES = 30.0
 
 
 @dataclass
@@ -165,6 +182,40 @@ class LocalSample:
     truncated: bool = False
     in_progress_unread: int = 0
     reason: str = ""
+    # Occupation reelle du parc : slots en ligne et OCCUPES. C'est la borne
+    # de la charge rendue a la liberation (le parc local porte ces jobs ;
+    # ils reviennent a l'offre hebergee si on libere la cohorte).
+    busy: int = 0
+    # Slots en ligne dont l'occupation est INCONNUE (champ `busy` absent de
+    # la reponse) : ils sont comptes comme occupes (fail-CLOSED), jamais
+    # comme libres.
+    unknown: int = 0
+
+    @property
+    def charge(self) -> int:
+        """Charge que le parc local porte, borne superieure de la rendue."""
+        return self.busy + self.unknown
+
+
+@dataclass
+class LoadConfirm:
+    """Confirmation d'inaction du parc local (seconde lecture).
+
+    La liberation exige que le parc local ne porte **presque rien** : le
+    nombre de slots occupes borne la charge qui revient a l'offre hebergee.
+    Une seule lecture peut tomber sur un instant vide (le parc vient de
+    finir un lot) : la lecture est donc **confirmee** par une seconde
+    lecture de l'inventaire, espacee de `--confirm-seconds`.
+    """
+
+    busy: int = 0
+    unknown: int = 0
+    complete: bool = True
+    reason: str = ""
+
+    @property
+    def charge(self) -> int:
+        return self.busy + self.unknown
 
 
 @dataclass
@@ -187,6 +238,9 @@ def evaluate(
     saturation_minutes: float = DEFAULT_SATURATION_MINUTES,
     min_free_slots: int = DEFAULT_MIN_FREE_SLOTS,
     dwell_minutes: float = DEFAULT_DWELL_MINUTES,
+    max_returned_jobs: int = DEFAULT_MAX_RETURNED_JOBS,
+    panic_minutes: float = DEFAULT_PANIC_MINUTES,
+    local_confirm: LoadConfirm | None = None,
     last_change_at: datetime | None = None,
     now: datetime | None = None,
 ) -> Decision:
@@ -220,6 +274,18 @@ def evaluate(
             details={"hosted": hosted, "local": local},
         )
 
+    def hard_backlog() -> bool:
+        """Le backlog heberge est-il DUR (starvation etablie) ?
+
+        PREMISSE POSITIVE : « le plus ancien job attend depuis plus de
+        `panic_minutes` » est etablie par une lecture meme partielle.
+        """
+        return (
+            hosted.old >= saturation_jobs
+            and hosted.oldest_age_min >= panic_minutes
+            and local.free >= min_free_slots
+        )
+
     def switch(target: str, reason: str) -> Decision:
         if target == current:
             return hold(f"deja a {target} -- {reason}", target)
@@ -229,6 +295,35 @@ def evaluate(
             and (now - last_change_at).total_seconds() < dwell_minutes * 60
         ):
             minutes = (now - last_change_at).total_seconds() / 60.0
+            # ECHAPPEMENT DU DWELL -- uniquement pour la RE-ABSORPTION
+            # (offre hebergee -> parc local) et uniquement quand le backlog
+            # heberge est DUR. La nuit du 27/10, la liberation a rendu la
+            # cohorte a une offre qui s'etait ensuite etouffeee, et le
+            # dwell de 90 min a interdit de revenir a `true` : la file a
+            # starve pendant toute la fenetre. Attendre 90 min devant une
+            # starvation etablie prolonge la panne.
+            #
+            # La LIBERATION n'echappe jamais : c'est elle qui fait revenir
+            # la cohorte, donc c'est elle qui doit rester freinee.
+            #
+            # L'echappement ne peut pas creer d'oscillation : il exige un
+            # backlog DUR (le plus ancien job attend depuis plus de
+            # `panic_minutes`), ce qui est incompatible avec la premise de
+            # liberation (« l'offre hebergee n'attend pas ») -- les deux ne
+            # peuvent pas etre vraies a la meme lecture.
+            if target == "true" and hard_backlog():
+                return Decision(
+                    action="SWITCH_TRUE",
+                    reason=(
+                        f"{reason} -- dwell de {dwell_minutes:.0f} min "
+                        f"ignore : le plus ancien job heberge attend depuis "
+                        f"{hosted.oldest_age_min:.0f} min (backlog dur, "
+                        f"seuil {panic_minutes:.0f} min)"
+                    ),
+                    current=current,
+                    target=target,
+                    details={"hosted": hosted, "local": local},
+                )
             return hold(
                 f"bascule vers {target} differee par le dwell "
                 f"({minutes:.1f} min < {dwell_minutes:.0f} min depuis la "
@@ -253,31 +348,82 @@ def evaluate(
             f"coursia-linux en file) -- on rend la main a l'offre hebergee",
         )
 
-    # 2. L'offre hebergee SUIT : elle rend la main.
-    #    PREMISSE NEGATIVE (« aucun job n'attend au-dela du seuil de
-    #    saturation ») : elle n'est etablie que par une lecture COMPLETE.
-    #    Sous troncature, le compte lu est une borne INFERIEURE -- un job
-    #    age peut etre dans la part non lue. On ne peut donc pas conclure
-    #    « l'offre suit », et cette bascule est bloquee.
+    # 2. LIBERATION : la charge RENDUE doit etre PREDITE et BORNEE.
     #
-    # #22937 vague 2 -- la premise devient l'AGE de la file, pas son
-    # VIDE. Mesure du 27/10 a 22h50Z : la variable etait a `true` depuis
-    # 11:04Z, et le controleur lisait `hosted.old = 0` (74 jobs en file,
-    # AUCUN n'attendait depuis plus de 15 min -> l'offre hebergee suit)
-    # avec 29 slots locaux LIBRES. L'ancienne premise -- « file hebergee
-    # videe », soit ZERO job en file -- ne pouvait plus jamais s'etablir :
-    # le depot a toujours des jobs heberges hors debordement (CodeQL,
-    # Lean CI, les advisories), donc la variable ne pouvait plus jamais
-    # revenir a `false`. Le controleur etait un commutateur a SENS UNIQUE,
-    # et le parc local gardait la cohorte pendant que l'offre hebergee
-    # unusedait ses propres slots. Avec la vague 2 (40 jobs de plus dans la
-    # cohorte), cette borne aurait ete totale.
-    if hosted.old == 0 and not hosted.truncated:
+    #    Ce que la liberation fait : elle rend la COHORTE a l'offre
+    #    hebergee. La charge qui revient est donc celle que le parc local
+    #    porte MAINTENANT. On ne libere donc que si le parc local ne porte
+    #    presque rien : le nombre de slots occupes est la borne de la
+    #    charge rendue.
+    #
+    #    Pourquoi la seule lecture « l'offre hebergee n'attend pas » ne
+    #    suffit pas (reserve du coordinateur, 28/10) : pendant que la
+    #    cohorte tourne en local, l'offre hebergee ne porte QUE les jobs
+    #    hors debordement -- elle parait donc allegee, meme quand la charge
+    #    de la cohorte est enorme. Liberer sur cette seule lecture rend
+    #    la cohorte entiere a une offre qui s'etouffe derriere, et le dwell
+    #    de 90 min interdit ensuite de revenir a `true` : on rejoue la
+    #    nuit du 27/10.
+    #
+    #    Les conditions sont donc CUMULEES :
+    #      a) l'offre hebergee n'attend pas (premise NEGATIVE : elle
+    #         n'est etablie que par une lecture COMPLETE) ;
+    #      b) le parc local ne porte presque rien -- `local.charge`
+    #         (occupes + occupation inconnue) <= `--max-returned-jobs` ;
+    #      c) aucun job local n'attend (`local.starved == 0`) ;
+    #      d) la lecture est CONFIRMEE : une seconde lecture de
+    #         l'inventaire, espacee de `--confirm-seconds`, doit porter la
+    #         meme borne. Une seule lecture peut tomber sur un instant
+    #         vide (le parc vient de finir un lot).
+    #
+    #    Toute condition non remplie est un HOLD qui NOMME celle qui
+    #    manque : un operateur doit pouvoir lire pourquoi la liberation n'a
+    #    pas eu lieu.
+    release_blockers: list[str] = []
+    if hosted.truncated:
+        release_blockers.append(
+            f"lecture hebergee TRONQUEE ({hosted.reason}) : « l'offre "
+            f"hebergee n'attend pas » n'est pas etablie"
+        )
+    elif hosted.old != 0:
+        release_blockers.append(
+            f"l'offre hebergee attend encore ({hosted.old} job(s) de plus de "
+            f"{saturation_minutes:.0f} min, plus ancien "
+            f"{hosted.oldest_age_min:.0f} min)"
+        )
+    if local.starved > 0:
+        release_blockers.append(
+            f"{local.starved} job(s) coursia-linux attendent sur le parc local"
+        )
+    if local.charge > max_returned_jobs:
+        release_blockers.append(
+            f"le parc local porte {local.charge} job(s) (occupes "
+            f"{local.busy} + occupation inconnue {local.unknown}) -- la "
+            f"charge rendue depasse le seuil ({max_returned_jobs})"
+        )
+    if local_confirm is None:
+        release_blockers.append(
+            "la lecture de confirmation n'a pas ete faite : l'inaction du "
+            "parc n'est pas etablie"
+        )
+    elif not local_confirm.complete:
+        release_blockers.append(
+            f"lecture de confirmation illisible ({local_confirm.reason})"
+        )
+    elif local_confirm.charge > max_returned_jobs:
+        release_blockers.append(
+            f"la lecture de confirmation porte {local_confirm.charge} job(s) "
+            f"au lieu de {max_returned_jobs} ou moins : l'inaction du parc "
+            f"n'est pas confirmee"
+        )
+    if not release_blockers:
         return switch(
             "false",
-            f"l'offre hebergee suit ({hosted.queued} job(s) en file, aucun "
-            f"n'attend depuis plus de {saturation_minutes:.0f} min) -- "
-            f"elle suffit, le parc local se libere",
+            f"la charge rendue est predite et bornee : le parc local ne "
+            f"porte rien ({local.charge} job(s) confirme(s) a "
+            f"{local_confirm.charge if local_confirm else '?'} sur la "
+            f"seconde lecture) et l'offre hebergee n'attend pas -- la "
+            f"cohorte revient a l'offre hebergee",
         )
 
     # 3. Offre hebergee saturee ET parc local libre : le local absorbe.
@@ -306,17 +452,16 @@ def evaluate(
             f"n'est pas affame » n'est pas etablie -> pas de debordement "
             f"vers le local"
         )
-    if hosted.truncated:
-        notes.append(
-            f"lecture hebergee TRONQUEE ({hosted.reason}) : « l'offre "
-            f"hebergee suit » n'est pas etablie -> pas de bascule vers "
-            f"l'offre hebergee"
-        )
     return hold(
         f"conditions non reunies : {hosted.old} job(s) heberge(s) en file "
         f"au-dela de {saturation_minutes:.0f} min (seuil {saturation_jobs}), "
         f"{local.free} slot(s) local(aux) libre(s) (seuil {min_free_slots})"
-        + (" ; " + " ; ".join(notes) if notes else ""),
+        + (" ; " + " ; ".join(notes) if notes else "")
+        + (
+            " ; liberation bloquee : " + " ; ".join(release_blockers)
+            if release_blockers
+            else ""
+        ),
         None,
     )
 
@@ -498,6 +643,8 @@ def collect_local(
             return LocalSample(
                 online=len(inv.online),
                 free=inv.free,
+                busy=len(inv.busy),
+                unknown=len(inv.unknown),
                 complete=False,
                 reason="lecture de la file locale incomplete",
             )
@@ -520,6 +667,45 @@ def collect_local(
         truncated=truncated,
         in_progress_unread=in_progress_unread,
         reason=reason,
+        busy=len(inv.busy),
+        unknown=len(inv.unknown),
+    )
+
+
+def confirm_local_idle(
+    repo: str,
+    token: str | None,
+    runners_token: str | None = None,
+    delay_seconds: float = DEFAULT_CONFIRM_SECONDS,
+) -> LoadConfirm:
+    """Seconde lecture de l'occupation du parc local (confirmation).
+
+    La liberation rend la cohorte a l'offre hebergee : la charge qui revient
+    est bornee par ce que le parc local porte. Une seule lecture peut
+    tomber sur un instant vide (le parc vient de finir un lot) -- la lecture
+    est donc confirmee par une **seconde** lecture de l'inventaire,
+    espacee de `delay_seconds`.
+
+    Cout : **un** appel d'inventaire (l'inventaire est un seul appel, contre
+    ~295 pour la lecture des files). L'appel n'est fait que lorsque la
+    liberation est autrement candidate (le parc parait inactif ET l'offre
+    hebergee n'attend pas) -- c'est rare, donc la pause aussi.
+
+    Echec de lecture : `complete=False` et la cause nommee -- la liberation
+    est alors bloquee (fail-CLOSED).
+    """
+    if delay_seconds > 0:
+        time.sleep(delay_seconds)
+    inv = crs.fetch_inventory(repo, LOCAL_LABEL, runners_token or token)
+    if not inv.available:
+        return LoadConfirm(
+            complete=False,
+            reason=inv.reason or "inventaire des runners illisible",
+        )
+    return LoadConfirm(
+        busy=len(inv.busy),
+        unknown=len(inv.unknown),
+        complete=True,
     )
 
 
@@ -579,6 +765,37 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--min-free-slots", type=int, default=DEFAULT_MIN_FREE_SLOTS)
     parser.add_argument("--dwell-minutes", type=float, default=DEFAULT_DWELL_MINUTES)
+    parser.add_argument(
+        "--max-returned-jobs",
+        type=int,
+        default=DEFAULT_MAX_RETURNED_JOBS,
+        help=(
+            "charge rendue maximum toleree a la liberation : le parc local "
+            "doit porter au plus ce nombre de slots occupes (occupation "
+            "inconnue comprise) pour que la liberation soit predicts et "
+            "bornee"
+        ),
+    )
+    parser.add_argument(
+        "--confirm-seconds",
+        type=float,
+        default=DEFAULT_CONFIRM_SECONDS,
+        help=(
+            "pause avant la seconde lecture de l'inventaire local qui "
+            "confirme l'inaction du parc (la liberation n'a lieu que si les "
+            "DEUX lectures portent une charge sous le seuil)"
+        ),
+    )
+    parser.add_argument(
+        "--panic-minutes",
+        type=float,
+        default=DEFAULT_PANIC_MINUTES,
+        help=(
+            "age du plus ancien job heberge au-dela duquel le backlog est "
+            "considere DUR : la re-absorption (offre -> parc local) n'est "
+            "alors plus differee par le dwell"
+        ),
+    )
     parser.add_argument(
         "--runners-token-env",
         default="RUNNERS_READ_PAT",
@@ -670,6 +887,7 @@ def main(argv: list[str] | None = None) -> int:
     hosted = collect_hosted(
         args.repo, args.saturation_minutes, args.job_budget, now, token
     )
+    runners_token = os.environ.get(args.runners_token_env) or None
     local = collect_local(
         args.repo,
         args.saturation_minutes,
@@ -677,8 +895,28 @@ def main(argv: list[str] | None = None) -> int:
         now,
         token,
         measure_starvation=not args.no_local_starvation,
-        runners_token=os.environ.get(args.runners_token_env) or None,
+        runners_token=runners_token,
     )
+
+    # Confirmation de l'inaction du parc local : elle n'est lue QUE si la
+    # liberation est autrement candidate (l'offre hebergee n'attend pas et le
+    # parc parait inactif). Cout : un appel d'inventaire + la pause.
+    local_confirm: LoadConfirm | None = None
+    release_candidate = (
+        hosted.complete
+        and not hosted.truncated
+        and hosted.old == 0
+        and local.complete
+        and local.starved == 0
+        and local.charge <= args.max_returned_jobs
+    )
+    if release_candidate:
+        local_confirm = confirm_local_idle(
+            args.repo,
+            token,
+            runners_token=runners_token,
+            delay_seconds=args.confirm_seconds,
+        )
 
     decision = evaluate(
         hosted,
@@ -688,6 +926,9 @@ def main(argv: list[str] | None = None) -> int:
         saturation_minutes=args.saturation_minutes,
         min_free_slots=args.min_free_slots,
         dwell_minutes=args.dwell_minutes,
+        max_returned_jobs=args.max_returned_jobs,
+        panic_minutes=args.panic_minutes,
+        local_confirm=local_confirm,
         last_change_at=updated_at,
         now=now,
     )
@@ -752,12 +993,26 @@ def main(argv: list[str] | None = None) -> int:
             "truncated": local.truncated,
             "in_progress_unread": local.in_progress_unread,
             "reason": local.reason,
+            "busy": local.busy,
+            "unknown": local.unknown,
+            "charge": local.charge,
+        },
+        "local_confirm": {
+            "read": local_confirm is not None,
+            "busy": local_confirm.busy if local_confirm else 0,
+            "unknown": local_confirm.unknown if local_confirm else 0,
+            "charge": local_confirm.charge if local_confirm else 0,
+            "complete": bool(local_confirm.complete) if local_confirm else False,
+            "reason": local_confirm.reason if local_confirm else "",
         },
         "thresholds": {
             "saturation_jobs": args.saturation_jobs,
             "saturation_minutes": args.saturation_minutes,
             "min_free_slots": args.min_free_slots,
             "dwell_minutes": args.dwell_minutes,
+            "max_returned_jobs": args.max_returned_jobs,
+            "confirm_seconds": args.confirm_seconds,
+            "panic_minutes": args.panic_minutes,
         },
     }
     if write_error:
@@ -773,8 +1028,16 @@ def main(argv: list[str] | None = None) -> int:
             f"plus ancien {hosted.oldest_age_min:.0f} min)"
             f"{' -- LECTURE TRONQUEE' if hosted.truncated else ''}\n"
             f"  local    : {local.online} slot(s) en ligne, {local.free} libre(s), "
-            f"{local.starved} affame(s)"
+            f"{local.starved} affame(s), {local.charge} job(s) porte(s) "
+            f"(occupes {local.busy} + inconnu {local.unknown})"
             f"{' -- LECTURE TRONQUEE' if local.truncated else ''}\n"
+            f"  confirme : "
+            + (
+                f"{local_confirm.charge} job(s) porte(s) sur la 2e lecture"
+                if local_confirm
+                else "lecture de confirmation NON faite"
+            )
+            + "\n"
             f"  variable : {decision.current} -> {decision.target} "
             f"({'ecrit' if written else 'non ecrit'})"
         )

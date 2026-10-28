@@ -23,9 +23,17 @@ def hosted(queued: int = 0, old: int = 0, oldest: float = 0.0,
 
 
 def local(free: int = 0, online: int = 0, starved: int = 0,
+          busy: int = 0, unknown: int = 0,
           complete: bool = True, truncated: bool = False, reason: str = "") -> ctl.LocalSample:
-    return ctl.LocalSample(online=online, free=free, starved=starved,
-                            complete=complete, truncated=truncated, reason=reason)
+    return ctl.LocalSample(online=online, free=free, starved=starved, busy=busy,
+                            unknown=unknown, complete=complete, truncated=truncated,
+                            reason=reason)
+
+
+def confirm(busy: int = 0, unknown: int = 0, complete: bool = True,
+            reason: str = "") -> ctl.LoadConfirm:
+    """Seconde lecture de l'inventaire local (confirmation d'inaction)."""
+    return ctl.LoadConfirm(busy=busy, unknown=unknown, complete=complete, reason=reason)
 
 
 # --- Regle de decision (fonction pure) -------------------------------------
@@ -37,8 +45,10 @@ def test_offre_saturee_et_parc_local_libre_bascule_vers_true():
 
 
 def test_file_hebergee_videe_bascule_vers_false():
+    # La liberation exige une charge rendue bornee ET sa confirmation : le
+    # parc local ne porte rien sur les DEUX lectures.
     d = ctl.evaluate(hosted(queued=0, old=0, oldest=0.0), local(free=7, online=14),
-                     current="true", now=NOW)
+                     current="true", local_confirm=confirm(), now=NOW)
     assert d.action == "SWITCH_FALSE" and d.target == "false"
 
 
@@ -89,8 +99,10 @@ def test_mesure_locale_illisible_ne_bascule_jamais():
 
 
 def test_dwell_differe_la_bascule():
+    # Backlog SOFT (le plus ancien attend 20 min, sous le seuil de panique
+    # de 30 min) : le dwell oppose la re-absorption.
     recent = NOW - timedelta(minutes=5)
-    d = ctl.evaluate(hosted(queued=9, old=6, oldest=41.0), local(free=7, online=14),
+    d = ctl.evaluate(hosted(queued=9, old=6, oldest=20.0), local(free=7, online=14),
                      current="false", dwell_minutes=30, last_change_at=recent, now=NOW)
     assert d.action == "HOLD" and "dwell" in d.reason
 
@@ -480,22 +492,22 @@ def test_troncature_locale_ne_bloque_pas_la_constatation_d_affamescence():
 
 def test_offre_hebergee_suit_bascule_vers_false_malgre_une_file_non_vide():
     """Le cas MESURE du 27/10 : la file hebergee est pleine mais RIEN n'y
-    attend au-dela du seuil de saturation.
+    attend au-dela du seuil de saturation, et le parc local ne porte rien.
 
     Mesure de 22h50Z sur ce siege : variable a `true` depuis 11:04Z,
     `hosted.queued = 74`, `hosted.old = 0` (le plus ancien attend 15,0 min),
-    29 slots locaux LIBRES. L'offre hebergee suit : elle rend la main.
+    29 slots locaux LIBRES. L'offre hebergee n'attend pas et le parc ne
+    porte rien : la charge rendue est predite (elle est nulle) -> la
+    cohorte rend la main.
 
-    Avant ce correctif, la premise exigeait une file hebergee VIDE
-    (`--drain-jobs 0`) -- inatteignable, le depot portant toujours des jobs
-    heberges hors debordement (CodeQL, Lean CI, les advisories). La variable
-    ne pouvait donc plus jamais revenir a `false` : le controleur etait un
-    commutateur a sens unique.
+    La liberation exige DEUX lectures inactives : sans la confirmation,
+    l'inaction du parc n'est pas etablie et le controleur attend.
     """
     d = ctl.evaluate(hosted(queued=74, old=0, oldest=15.0),
-                     local(free=29, online=32), current="true", now=NOW)
+                     local(free=29, online=32), current="true",
+                     local_confirm=confirm(), now=NOW)
     assert d.action == "SWITCH_FALSE" and d.target == "false"
-    assert "suit" in d.reason
+    assert "charge rendue" in d.reason
 
 
 def test_offre_hebergee_en_retard_de_1_a_2_jobs_ne_bascule_pas():
@@ -508,11 +520,13 @@ def test_offre_hebergee_en_retard_de_1_a_2_jobs_ne_bascule_pas():
 
 
 def test_offre_hebergee_suit_mais_troncuree_ne_bascule_pas():
-    """« l'offre hebergee suit » est une premise NEGATIVE : sous troncature,
-    un job age peut etre dans la part non lue -> on ne rend pas la main."""
+    """« l'offre hebergee n'attend pas » est une premise NEGATIVE : sous
+    troncature, un job age peut etre dans la part non lue -> on ne rend pas
+    la main."""
     d = ctl.evaluate(hosted(queued=74, old=0, oldest=15.0, truncated=True,
                              reason="3 run(s) non lu(s)"),
-                     local(free=29, online=32), current="true", now=NOW)
+                     local(free=29, online=32), current="true",
+                     local_confirm=confirm(), now=NOW)
     assert d.action == "HOLD"
     assert "TRONQUEE" in d.reason
 
@@ -526,3 +540,90 @@ def test_l_offre_hebergee_suit_prime_sur_la_saturation():
     d = ctl.evaluate(hosted(queued=9, old=6, oldest=41.0),
                      local(free=7, online=14), current="false", now=NOW)
     assert d.action == "SWITCH_TRUE" and d.target == "true"
+
+
+# --- #22937 vague 2 (bis) : la liberation PREDIT la charge rendue ---------
+#
+# La regle `hosted.old == 0` seule est un ARTEFACT : pendant que la cohorte
+# tourne en local, l'offre hebergee ne porte que les jobs hors debordement,
+# elle parait donc allegee meme quand la charge de la cohorte est enorme.
+# Liberer sur cette seule lecture rend la cohorte entiere a une offre qui
+# s'etouffe derriere, et le dwell de 90 min interdit ensuite de revenir a
+# `true` : on rejoue la nuit du 27/10 (reserve du coordinateur, 28/10).
+#
+# La liberation exige donc que la charge RENDUE soit predite et bornee :
+# le parc local ne porte presque rien, confirme sur deux lectures.
+
+
+def test_liberation_exige_une_charge_rendue_bornee():
+    """Le parc local porte 5 jobs : la charge rendue depasse le seuil
+    (2), on ne rend pas la main."""
+    d = ctl.evaluate(hosted(queued=74, old=0, oldest=15.0),
+                     local(free=29, online=32, busy=5), current="true",
+                     local_confirm=confirm(busy=5), now=NOW)
+    assert d.action == "HOLD"
+    assert "charge rendue" in d.reason
+
+
+def test_liberation_exige_la_confirmation_de_la_lecture():
+    """Sans seconde lecture, l'inaction du parc n'est pas etablie."""
+    d = ctl.evaluate(hosted(queued=74, old=0, oldest=15.0),
+                     local(free=29, online=32), current="true", now=NOW)
+    assert d.action == "HOLD"
+    assert "confirmation" in d.reason
+
+
+def test_liberation_refusee_par_une_confirmation_qui_contredit():
+    """La premiere lecture dit le parc inactif, la seconde dit le contraire :
+    l'inaction n'est pas confirmee, on attend."""
+    d = ctl.evaluate(hosted(queued=74, old=0, oldest=15.0),
+                     local(free=29, online=32), current="true",
+                     local_confirm=confirm(busy=4), now=NOW)
+    assert d.action == "HOLD"
+    assert "confirmation" in d.reason
+
+
+def test_occupation_inconnue_compte_comme_occupee():
+    """Un runner dont l'occupation est illisible n'est PAS comptabilise comme
+    libre (fail-CLOSED) : il compte dans la charge."""
+    d = ctl.evaluate(hosted(queued=74, old=0, oldest=15.0),
+                     local(free=29, online=32, unknown=3), current="true",
+                     local_confirm=confirm(unknown=3), now=NOW)
+    assert d.action == "HOLD"
+
+
+def test_deux_lectures_inactives_liberent():
+    """Les DEUX lectures sont inactives : la charge rendue est predite
+    (nulle) et la liberation a lieu."""
+    d = ctl.evaluate(hosted(queued=74, old=0, oldest=15.0),
+                     local(free=29, online=32), current="true",
+                     local_confirm=confirm(), now=NOW)
+    assert d.action == "SWITCH_FALSE" and d.target == "false"
+
+
+def test_le_dwell_ne_derange_jamais_la_liberation():
+    """Le dwell oppose la LIBERATION comme il oppose la re-absorption : c'est
+    elle qui fait revenir la cohorte, donc c'est elle qui reste freinee."""
+    recent = NOW - timedelta(minutes=5)
+    d = ctl.evaluate(hosted(queued=74, old=0, oldest=15.0),
+                     local(free=29, online=32), current="true",
+                     local_confirm=confirm(), dwell_minutes=90,
+                     last_change_at=recent, now=NOW)
+    assert d.action == "HOLD" and "dwell" in d.reason
+
+
+def test_le_dwell_derape_la_reabsorption_quand_le_backlog_est_dur():
+    """Backlog DUR (le plus ancien attend 41 min > 30) : la re-absorption
+    n'est plus differee par le dwell. C'est la starvation qu'on a vecue le
+    27/10 : attendre 90 min la prolonge.
+
+    L'echappement ne peut pas creer d'oscillation : il exige un backlog dur
+    (le plus ancien job attend), ce qui est incompatible avec la premise de
+    liberation (« l'offre hebergee n'attend pas »).
+    """
+    recent = NOW - timedelta(minutes=5)
+    d = ctl.evaluate(hosted(queued=9, old=6, oldest=41.0),
+                     local(free=7, online=14), current="false",
+                     dwell_minutes=90, last_change_at=recent, now=NOW)
+    assert d.action == "SWITCH_TRUE" and d.target == "true"
+    assert "backlog dur" in d.reason
