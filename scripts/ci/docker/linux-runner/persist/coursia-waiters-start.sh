@@ -44,9 +44,27 @@ fi
 # sentinelle alors que le superviseur est vivant. Un argv relatif est de
 # plus indiscernable entre deux checkouts, ce que le predicat refuse par
 # construction : le chemin absolu est la seule forme admise.
-SUPERVISE="$REPO_DIR/scripts/ci/docker/linux-runner/supervise.sh"
+#
+# La definition qui fait foi est `SUPERVISE_SH` (plus bas) : elle porte le
+# meme chemin par defaut et ajoute deux choses -- une surcharge par
+# `COURSIA_SUPERVISE_SH` (epingler le superviseur devient un geste de
+# configuration) et une garde de lisibilite. Une surcharge doit rester
+# ABSOLUE, pour la raison ci-dessus : un chemin relatif rendrait le
+# predicat aveugle au superviseur que le wrapper a lui-meme lance.
 MASTER_ENV="${COURSIA_MASTER_ENV:-$REPO_DIR/.secrets/master.env}"
 ARG="${1:-12}"
+
+# DEPENDANCE EXPLICITE VERS LE SUPERVISEUR (arbitrage `ai01-c2721-23037-budget`).
+#
+# Le wrapper est deploye HORS ARBRE DE TRAVAIL (`/usr/local/bin`) pour que le
+# pool n'execute pas le contenu d'un checkout de branche partage. Il reste
+# une dependance au superviseur, qui vit dans l'arbre de travail : ce chemin
+# est donc explicite et surchargeable, pour que l'epinglage du superviseur
+# soit un geste de configuration (une variable) et non une modification du
+# wrapper. La valeur par defaut est INCHANGEE : les deux sieges qui deployent
+# ce fichier (ai-01, po-2024) se comportent exactement comme avant.
+SUPERVISE_SH="${COURSIA_SUPERVISE_SH:-$REPO_DIR/scripts/ci/docker/linux-runner/supervise.sh}"
+[ -r "$SUPERVISE_SH" ] || { echo "superviseur illisible : $SUPERVISE_SH" >&2; exit 1; }
 
 [ -r "$MASTER_ENV" ] || { echo "master.env illisible : $MASTER_ENV" >&2; exit 1; }
 
@@ -65,7 +83,7 @@ mkdir -p "$COURSIA_RUNNER_STATE_DIR"
 cd "$REPO_DIR" || exit 1
 
 if [ "$ARG" = "stop" ]; then
-  exec "$SUPERVISE" stop
+  exec "$SUPERVISE_SH" stop
 fi
 # --- PURGE SENTINELLE PERIMEE (#15163) -----------------------------
 # supervise.sh pose "$STATE_DIR/stop" a l'arret gracieux et REFUSE de demarrer
@@ -137,4 +155,4 @@ if [ -e "$COURSIA_RUNNER_STATE_DIR/stop" ]; then
   rm -f "$COURSIA_RUNNER_STATE_DIR/stop"
 fi
 # ---------------------------------------------------------------------------
-exec "$SUPERVISE" waiters "$ARG"
+exec "$SUPERVISE_SH" waiters "$ARG"
