@@ -9229,7 +9229,15 @@ def belt_pick_with_replacements(belt_pool, belt_claims, args, probe_budget,
                 merged_pr_expired = bool(
                     delivery_age_h is not None
                     and delivery_age_h >= CONSOLIDATION_LAG_H)
-                verdict = (False if expired()
+                # Le mur de temps est atteint : la sonde n'est pas lue (elle
+                # coute) et rien n'est neutralise -- fail-OPEN explicite.
+                # Le TUPLE est forme ici : un `False` nu n'est pas
+                # decomposable en trois. Mesure du 26/10 : le tapis levait
+                # `TypeError: cannot unpack non-iterable bool object`
+                # des que le budget de temps etait epuise -- donc des que
+                # la boucle de service demarrait, et le tirage entier
+                # rendait zero grain (aucune consolidation servie).
+                verdict = ((False, False, None) if expired()
                            else user_delivery_event_probe(n))
                 if verdict is None:
                     # Lecture en echec : fail-OPEN, rien n'est neutralise --
