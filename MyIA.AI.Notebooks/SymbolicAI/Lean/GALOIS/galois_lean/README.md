@@ -38,6 +38,6 @@ Per `sota-not-workaround` : refaire une échelle de petits groupes à côté d'u
 
 ## Voir aussi
 
-- [Lean-15-Grothendieck-Tribute](../Lean-15-Grothendieck-Tribute.ipynb) — hommage comparable (prouve ce qu'il annonce)
+- [Lean-15-Grothendieck-Tribute](../../Lean-15-Grothendieck-Tribute.ipynb) — hommage comparable (prouve ce qu'il annonce)
 - `grothendieck_lean` — angle SGA1 (π₁ étale, existence de Riemann) pour le chaînon-pont vers la réalisation galoisienne
 - EPIC i18n #4980 : siblings `_en` à venir
