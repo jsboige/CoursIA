@@ -546,8 +546,10 @@ theorem decisive_split {I A : Type} [DecidableEq A]
 ## Stage 4a: global decisiveness and the dictator
 
 Second-to-last stage of the reduction of the `arrow_impossibility` axiom
-(#23022). What remains afterwards is extracting a decisive singleton by
-iterated contraction (stage 4b, which needs a cardinality measure on `Fin nI`).
+(#23022). What remains afterwards is producing a decisive singleton — stage 4b
+does it by descending over the tails `{i | m ≤ i}` pre-split by
+`decisive_split`, with no cardinality measure at all (the induction runs on
+`nI - m`).
 
 - `decisive_global`: a coalition decisive on a single pair of distinct
   alternatives is decisive on every pair. The two expansion lemmas move each
@@ -566,8 +568,10 @@ iterated contraction (stage 4b, which needs a cardinality measure on `Fin nI`).
   transitivity produces `x ≻ₛ y`, which IIA transports back to the original
   profile, individual by individual. The `zLast` construction preserves both
   directions of the `x`/`y` relation with no case analysis on other agents'
-  preferences, hence no `Classical` and no axioms beyond `propext` and
-  `Quot.sound`.
+  preferences; its order proofs (`complete`, `antisymm`) do split on equalities
+  over `A` via `by_cases` with no `DecidableEq` instance, which draws
+  `Classical.choice` — `zLast` carries `[propext, Classical.choice, Quot.sound]`,
+  just like `decisive_split`.
 -/
 
 /-- Preference where `z` moves to a strict last position: relations between
@@ -764,11 +768,13 @@ The induction runs on `nI - m`, which strictly decreases at each step: no
 cardinality measure is needed, and `Finset` stays out of the lake.
 
 Measured axiomatic closure (`#print axioms`): `propext`, `Quot.sound`, and
-`Classical.choice` **inherited** from `decisive_split`. That lemma decides the
-social preference on a pair by `by_cases`, which draws
-`Classical.propDecidable` on an arbitrary proposition — it receives no
-decidability instance on the social relation. This stage therefore introduces no
-new axiom; it removes none either.
+`Classical.choice` **inherited from two independent sources**, `decisive_split`
+and `zLast`. The former decides the social preference on a pair by `by_cases`
+with no decidability instance on the social relation; the latter splits on
+equalities over `A` in its order proofs, with no `DecidableEq`. Purging
+`decisive_split` alone would therefore not remove `Classical.choice` from
+`arrow_impossibility` — both would need a decidability instance. This stage
+introduces no new axiom; it removes none either.
 -/
 
 /-- Individual `d` is a dictator: each of its strict preferences becomes the

@@ -543,8 +543,9 @@ theorem decisive_split {I A : Type} [DecidableEq A]
 ## Étape 4a : champ global et dictateur
 
 Avant-dernier étage de la réduction de l'axiome `arrow_impossibility` (#23022).
-Il reste, après lui, à extraire un singleton décisif par contraction itérée
-(l'étape 4b, qui demande une mesure de cardinalité sur `Fin nI`).
+Il reste, après lui, à produire un singleton décisif — l'étape 4b le fait par
+une descente sur les queues `{i | m ≤ i}` pré-scindées par `decisive_split`,
+sans aucune mesure de cardinalité (l'induction porte sur `nI - m`).
 
 - `decisive_global` : une coalition décisive sur une seule paire d'alternatives
   distinctes l'est sur toute paire. Les deux lemmes d'expansion déplacent chaque
@@ -562,9 +563,11 @@ Il reste, après lui, à extraire un singleton décisif par contraction itérée
   donne `x ≻ₛ z` (unanimité) et la décisivité donne `z ≻ₛ y` ; la transitivité
   produit `x ≻ₛ y`, que l'IIA transporte vers le profil d'origine, accord
   individuel par individu. La construction `zLast` préserve les deux sens de la
-  relation `x`/`y` sans aucun raisonnement par cas sur les préférences d'autrui,
-  d'où aucun recours à `Classical` et donc aucun axiome au-delà de `propext` et
-  `Quot.sound`.
+  relation `x`/`y` sans raisonnement par cas sur les préférences d'autrui ; ses
+  preuves d'ordre (`complete`, `antisymm`) tranchent par contre des égalités
+  sur `A` par `by_cases` sans instance `DecidableEq`, ce qui tire
+  `Classical.choice` — `zLast` porte `[propext, Classical.choice, Quot.sound]`,
+  au même titre que `decisive_split`.
 -/
 
 /-- Préférence où `z` passe strictement en dernière position : les rapports
@@ -761,11 +764,13 @@ L'induction porte sur `nI - m`, qui décroît strictement à chaque cran : aucun
 mesure de cardinalité n'est nécessaire, et `Finset` reste hors du lake.
 
 Clôture axiomatique mesurée (`#print axioms`) : `propext`, `Quot.sound`, et
-`Classical.choice` **hérité** de `decisive_split`. Ce lemme tranche la
-préférence sociale sur une paire par `by_cases`, ce qui tire
-`Classical.propDecidable` sur une proposition arbitraire — il ne reçoit aucune
-instance de décidabilité sur la relation sociale. Cet étage-ci n'introduit donc
-aucun axiome nouveau ; il n'en supprime pas non plus.
+`Classical.choice` **hérité de deux sources indépendantes**, `decisive_split`
+et `zLast`. La première tranche la préférence sociale sur une paire par
+`by_cases` sans instance de décidabilité sur la relation sociale ; la seconde
+tranche des égalités sur `A` dans ses preuves d'ordre, sans `DecidableEq`.
+Purger la seule `decisive_split` ne retirerait donc pas `Classical.choice` de
+`arrow_impossibility` — il faudrait donner une décidabilité aux deux. Cet
+étage-ci n'introduit aucun axiome nouveau ; il n'en supprime pas non plus.
 -/
 
 /-- L'individu `d` est un dictateur : chacune de ses préférences strictes devient
