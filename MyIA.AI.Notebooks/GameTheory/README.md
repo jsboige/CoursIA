@@ -256,6 +256,7 @@ Ces lettres prolongent la table périodique du 03 en une géométrie de l'espace
 | Lettre | Notebook | Ce qu'il ajoute | Noyau | Public |
 |--------|----------|-----------------|-------|--------|
 | 11b | [Vickrey en Lean](GameTheory-11b-Lean-BayesianGamesExt-Lean.ipynb) | Le théorème de Vickrey (enchère au second prix : dire la vérité est dominant) prouvé sans `sorry` dans le lake `lean_game_defs_ext` | Lean | Licence |
+| 11c | [Jeux globaux](GameTheory-11c-Global-Games-Python.ipynb) | Un signal bruité d'un fondamental commun tranche la multiplicité d'un jeu de coordination 2×2 : un seul seuil d'équilibre (mesuré en forme close), qui sélectionne l'équilibre efficace dès que le fondamental dépasse le coût d'agir seul (Kay–Perry) | Python | Licence |
 | 11d | [Raffinements séquentiels](GameTheory-11d-Raffinements-Sequentiels-Python.ipynb) | Un moteur Python calcule les trois notions sur un même arbre à information imparfaite : l'équilibre séquentiel faible accepte un assessment que l'équilibre séquentiel rejette (croyance inatteignable), et l'équilibre bayésien parfait le rejette pour une autre raison — un cycle de plausibilité, non une limite | Python | Licence |
 
 ### Autour de 13 — information imparfaite
