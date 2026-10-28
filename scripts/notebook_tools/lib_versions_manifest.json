@@ -64,7 +64,7 @@
         {
           "version": "9.11.4210",
           "decision": "to_converge",
-          "reason": "Ecart non justifie : la version 9.11.4210 est la plus repandue (24 occurrences mesurees sur origin/main au 2026-10-28) et la 9.15.6755 n'est posee que par 6 ; l'ecart n'a pas de motif ecrit dans le depot, donc il est classe « a converger » et non « justifie »."
+          "reason": "Ecart non justifie : 9.11.4210 est la version la plus repandue de la serie, 9.15.6755 n'est posee que sur une minorite de carnets, et l'ecart n'a aucun motif ecrit dans le depot -- il est donc classe « a converger » et non « justifie ». Le denombrement exact est la sortie de l'organe (`--census`), il n'est pas recopie ici : un chiffre recopie dans un fichier livre se lit comme une mesure et derive sans prevenier."
         }
       ]
     },
@@ -83,11 +83,6 @@
           "version": "3.4.0",
           "decision": "to_converge",
           "reason": "Ecart non justifie : meme constat que 3.2.1."
-        },
-        {
-          "version": "3.2.0",
-          "decision": "to_converge",
-          "reason": "Ecart non justifie : meme constat que 3.2.1."
         }
       ]
     },
@@ -101,11 +96,6 @@
           "version": "3.0.0",
           "decision": "to_converge",
           "reason": "Ecart non justifie : Microsoft.ML 5.0.0 est l'epingle dominante ; 3.0.0 n'a pas de motif ecrit."
-        },
-        {
-          "version": "1.7.1",
-          "decision": "to_converge",
-          "reason": "Ecart non justifie : 1.7.1 n'a pas de motif ecrit dans le depot."
         }
       ]
     },

@@ -846,10 +846,24 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
                 bucket[pin.version].append(relative)
 
     table = []
+    phantoms: list[dict] = []
     for lib_id in sorted(manifest.libraries):
         lib = manifest.libraries[lib_id]
         canonical = canonicals.get(lib_id)
         versions = dispersion.get(lib_id, {})
+        # Une divergence declaree pour une version que personne n'epingle est un
+        # fantome : elle se lit comme un ecart reel dans la doc et dans le
+        # manifeste, alors qu'aucun carnet ne la porte. Cas fondeur : « dotNetRDF
+        # 3.2.0 » annonce au classement, absent du depot.
+        for declared in sorted(set(lib.divergences) - set(versions), key=version_key):
+            phantoms.append(
+                {
+                    "library": lib_id,
+                    "version": declared,
+                    "decision": lib.divergences[declared].get("decision", ""),
+                    "reason": lib.divergences[declared].get("reason", ""),
+                }
+            )
         rows = []
         for version in sorted(versions, key=version_key):
             notebooks = sorted(versions[version])
@@ -887,6 +901,7 @@ def run_census(repo_root: Path, manifest: Manifest) -> dict:
         "generated_from": str(manifest.path),
         "errors": errors,
         "libraries": table,
+        "phantom_divergences": phantoms,
     }
 
 
@@ -911,6 +926,22 @@ def render_census(report: dict) -> str:
             if row["decision"] in ("canonique", "justified"):
                 continue
             lines.append(f"- **{row['version']}** : " + ", ".join(row["notebooks"]))
+        lines.append("")
+    if report.get("phantom_divergences"):
+        lines.append("## Divergences declarees mais absentes du depot")
+        lines.append("")
+        lines.append(
+            "Ces versions figurent dans le manifeste comme ecarts reels, mais "
+            "aucun carnet ne les epingle : l'entree est a retirer, ou la "
+            "divergence a revenir avec le carnet qui la porte."
+        )
+        lines.append("")
+        lines.append("| bibliotheque | version | decision declaree |")
+        lines.append("|---|---|---|")
+        for phantom in report["phantom_divergences"]:
+            lines.append(
+                f"| {phantom['library']} | {phantom['version']} | {phantom['decision']} |"
+            )
         lines.append("")
     if report["errors"]:
         lines.append("## Erreurs de resolution")

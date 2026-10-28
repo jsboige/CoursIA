@@ -390,6 +390,52 @@ def test_census_cli_exits_zero():
     assert clv.main(["--census", "--repo-root", str(REPO_ROOT)]) == 0
 
 
+def test_divergence_declaree_pour_une_version_absente_est_signalee(tmp_path):
+    """Point 9 -- un fantome declare se lit comme un ecart reel.
+
+    Cas fondeur : le manifeste livrait « dotNetRDF 3.2.0 » au classement,
+    alors qu'aucun carnet du depot ne l'epinglait. Rien ne le mesurait, donc
+    la doc le comptait comme une divergence a traiter.
+    """
+    import subprocess
+
+    repo = tmp_path / "r"
+    repo.mkdir()
+
+    def git(*args: str) -> None:
+        subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True)
+
+    git("init")
+    git("config", "user.email", "t@example.invalid")
+    git("config", "user.name", "t")
+    (repo / "a.ipynb").write_text(
+        json.dumps(_notebook(['#r "nuget:dotNetRDF,3.2.1"'])), encoding="utf-8"
+    )
+    git("add", ".")
+    git("commit", "-m", "x")
+
+    libraries = [
+        {
+            "id": "dotNetRDF",
+            "ecosystem": "nuget",
+            "canonical": "3.4.1",
+            "canonical_source": "manifest",
+            "divergences": [
+                {"version": "3.2.1", "decision": "to_converge", "reason": "r"},
+                {"version": "3.2.0", "decision": "to_converge", "reason": "r"},
+            ],
+        }
+    ]
+    report = clv.run_census(repo, _manifest_with(tmp_path, libraries))
+    # Controle positif : l'ecart reellement epingle n'est pas un fantome.
+    assert [p["version"] for p in report["phantom_divergences"]] == ["3.2.0"]
+    assert "Divergences declarees mais absentes" in clv.render_census(report)
+
+    # Et le carnet livre ne porte plus de fantome.
+    shipped = clv.run_census(REPO_ROOT, clv.load_manifest(MANIFEST_PATH))
+    assert shipped["phantom_divergences"] == []
+
+
 # --------------------------------------------------------------------------
 # Cablage dans la voie rapide
 # --------------------------------------------------------------------------

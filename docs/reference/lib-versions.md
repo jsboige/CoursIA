@@ -80,26 +80,41 @@ et son **motif ecrit**. Une divergence `justified` ne dispense pas
 d'une entree d'allowlist : l'allowlist est ce qui eteint le constat, pour
 les carnets nommes, et elle porte elle aussi un motif.
 
-## Les 9 paquets a versions multiples — classement
+## Les paquets a versions multiples — classement
 
-Mesure sur `origin/main` au 2026-10-28 (recensement de l'organe, rc 0) :
+Ce tableau declare le **classement** : la version canonique, les ecarts
+connus, et la decision. Il ne porte **ni le nombre de carnets concernes, ni
+un total de paquets** : ces chiffres sont la sortie de l'organe,
 
-| paquet | canonique | ecarts | classement |
+```bash
+python scripts/notebook_tools/check_lib_versions.py --census
+```
+
+et ils ne sont pas recopies ici. Un compte recopie dans une page de
+documentation derive au premier carnet touche, sans que rien ne rougisse —
+il se lit comme une mesure alors qu'il n'en est plus une.
+
+| paquet | canonique | ecarts declares | classement |
 |---|---|---|---|
-| IKVM | 8.15.0 | 8.14.0 (6 carnets, serie Tweety) | a converger — #19673 avait deja aligne la serie |
-| IKVM.Image | 8.15.0 | 8.14.0 (5 carnets) | a converger |
-| pythonnet | 3.1.0 | 3.0.5 (7 carnets) | a converger |
-| Google.OrTools | 9.15.6755 | 9.11.4210 (11 carnets) | a converger |
-| dotNetRDF | 3.4.1 | 3.2.1 (7 carnets), 3.4.0 (1), 3.2.0 (1) | a converger |
-| Microsoft.ML | 5.0.0 | 3.0.0 (1) | a converger |
-| SkiaSharp | 3.119.4 | 2.88.3 (1) | a converger |
-| Microsoft.ML.AutoML | 0.23.0 | 0.22.3 (1) | a converger |
-| CsvHelper | 33.0.1 | 27.1.1 (1) | a converger |
+| Tweety | organe de serie | 1.28 | a classer |
+| IKVM | 8.15.0 | 8.14.0 | justifie — DLL Tweety ombree compilee en 8.14.0 |
+| IKVM.Image | 8.15.0 | 8.14.0 | justifie — suit IKVM dans la recette de build |
+| pythonnet | 3.1.0 | 3.0.5 | a converger — aucun motif ecrit |
+| Google.OrTools | 9.15.6755 | 9.11.4210 | a converger — aucun motif ecrit |
+| dotNetRDF | 3.4.1 | 3.2.1, 3.4.0 | a converger — aucun motif ecrit |
+| Microsoft.ML | 5.0.0 | 3.0.0 | a converger — aucun motif ecrit |
+| SkiaSharp | 3.119.4 | 2.88.3 | a converger — aucun motif ecrit |
+| Microsoft.ML.AutoML | 0.23.0 | 0.22.3 | a converger — aucun motif ecrit |
+| CsvHelper | 33.0.1 | 27.1.1 | a converger — aucun motif ecrit |
 
-Aucun de ces ecarts n'a de motif ecrit dans le depot : ils sont donc classes
-« a converger » et non « justifies ». Les series concernees sont la Tweety
-(IKVM / IKVM.Image), la SemanticWeb (dotNetRDF), le GameTheory et les
-Search (OrTools, pythonnet).
+Les deux ecarts IKVM font exception : ils portent un motif ecrit dans le
+manifeste (l'artefact ombre charge une DLL compilee en 8.14.0, la monter
+sans recompiler serait une regression fonctionnelle) et sont donc
+`justified`, pas `to_converge`. Les autres series concernees sont la
+SemanticWeb (dotNetRDF), le GameTheory et les Search (OrTools, pythonnet).
+
+Une entree `a classer` signale un epinglage que le manifeste ne classe pas
+encore : c'est un etat a traiter, pas une decision.
 
 ## Taux de faux positifs — mesure
 
@@ -117,10 +132,10 @@ Le faux positif de la ligne « etat » est mesure : la PR `9364be282` modifie
 l'aurait fait rougir a tort.
 
 C'est la mesure qui fonde le demarrage **en advisory** : le stock porte des
-derives connues (IKVM 8.14.0 sur six carnets, dotNetRDF 3.2.1 sur sept,
-OrTools 9.11.4210 sur onze...), et un garde bloquant rougirait des PR qui ne
-font que retoucher un de ces carnets. La promotion en bloquant est une
-tranche distincte, apres convergence.
+derives connues (IKVM 8.14.0, dotNetRDF 3.2.1, OrTools 9.11.4210, pour ne
+citer qu'elles — l'etendue se lit au `--census`, pas ici), et un garde
+bloquant rougirait des PR qui ne font que retoucher un de ces carnets. La
+promotion en bloquant est une tranche distincte, apres convergence.
 
 ## Monter une version d'une bibliotheque en un seul geste
 
